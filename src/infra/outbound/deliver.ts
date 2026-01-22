@@ -27,9 +27,6 @@ import {
   toPluginMessageSentEvent,
 } from "../../hooks/message-hook-mappers.js";
 import type { sendMessageIMessage } from "../../imessage/send.js";
-import { createSubsystemLogger } from "../../logging/subsystem.js";
-import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
-import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { markdownToSignalTextChunks, type SignalTextStyleRange } from "../../signal/format.js";
 import { sendMessageSignal } from "../../signal/send.js";
 import type { sendMessageSlack } from "../../slack/send.js";
@@ -62,11 +59,18 @@ type SendMatrixMessage = (
   },
 ) => Promise<{ messageId: string; roomId: string }>;
 
+type SendMattermostMessage = (
+  to: string,
+  text: string,
+  opts?: { accountId?: string; mediaUrl?: string; replyToId?: string },
+) => Promise<{ messageId: string; channelId: string }>;
+
 export type OutboundSendDeps = {
   sendWhatsApp?: typeof sendMessageWhatsApp;
   sendTelegram?: typeof sendMessageTelegram;
   sendDiscord?: typeof sendMessageDiscord;
   sendSlack?: typeof sendMessageSlack;
+  sendMattermost?: SendMattermostMessage;
   sendSignal?: typeof sendMessageSignal;
   sendIMessage?: typeof sendMessageIMessage;
   sendMatrix?: SendMatrixMessage;

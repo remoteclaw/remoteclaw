@@ -10,188 +10,31 @@ import {
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
-  formatNormalizedAllowFromEntries,
-  mapAllowFromEntries,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
-  resolveAllowlistProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
   setAccountEnabledInConfigSection,
-  type ChannelMessageActionAdapter,
-  type ChannelMessageActionName,
   type ChannelPlugin,
-} from "remoteclaw/plugin-sdk";
+} from "clawdbot/plugin-sdk";
+
 import { MattermostConfigSchema } from "./config-schema.js";
 import { resolveMattermostGroupRequireMention } from "./group-mentions.js";
+import {
+  looksLikeMattermostTargetId,
+  normalizeMattermostMessagingTarget,
+} from "./normalize.js";
+import { mattermostOnboardingAdapter } from "./onboarding.js";
 import {
   listMattermostAccountIds,
   resolveDefaultMattermostAccountId,
   resolveMattermostAccount,
-  resolveMattermostReplyToMode,
   type ResolvedMattermostAccount,
 } from "./mattermost/accounts.js";
 import { normalizeMattermostBaseUrl } from "./mattermost/client.js";
-import {
-  listMattermostDirectoryGroups,
-  listMattermostDirectoryPeers,
-} from "./mattermost/directory.js";
 import { monitorMattermostProvider } from "./mattermost/monitor.js";
 import { probeMattermost } from "./mattermost/probe.js";
-import { addMattermostReaction, removeMattermostReaction } from "./mattermost/reactions.js";
 import { sendMessageMattermost } from "./mattermost/send.js";
-import { looksLikeMattermostTargetId, normalizeMattermostMessagingTarget } from "./normalize.js";
-import { mattermostOnboardingAdapter } from "./onboarding.js";
 import { getMattermostRuntime } from "./runtime.js";
 import { mattermostSetupAdapter } from "./setup-core.js";
-
-const mattermostMessageActions: ChannelMessageActionAdapter = {
-  listActions: ({ cfg }) => {
-    const enabledAccounts = listMattermostAccountIds(cfg)
-      .map((accountId) => resolveMattermostAccount({ cfg, accountId }))
-      .filter((account) => account.enabled)
-      .filter((account) => Boolean(account.botToken?.trim() && account.baseUrl?.trim()));
-
-    const actions: ChannelMessageActionName[] = [];
-
-    // Send (buttons) is available whenever there's at least one enabled account
-    if (enabledAccounts.length > 0) {
-      actions.push("send");
-    }
-
-    // React requires per-account reactions config check
-    const actionsConfig = cfg.channels?.mattermost?.actions as { reactions?: boolean } | undefined;
-    const baseReactions = actionsConfig?.reactions;
-    const hasReactionCapableAccount = enabledAccounts.some((account) => {
-      const accountActions = account.config.actions as { reactions?: boolean } | undefined;
-      return (accountActions?.reactions ?? baseReactions ?? true) !== false;
-    });
-    if (hasReactionCapableAccount) {
-      actions.push("react");
-    }
-
-    return actions;
-  },
-  supportsAction: ({ action }) => {
-    return action === "send" || action === "react";
-  },
-  supportsButtons: ({ cfg }) => {
-    const accounts = listMattermostAccountIds(cfg)
-      .map((id) => resolveMattermostAccount({ cfg, accountId: id }))
-      .filter((a) => a.enabled && a.botToken?.trim() && a.baseUrl?.trim());
-    return accounts.length > 0;
-  },
-  handleAction: async ({ action, params, cfg, accountId }) => {
-    if (action === "react") {
-      // Check reactions gate: per-account config takes precedence over base config
-      const mmBase = cfg?.channels?.mattermost as Record<string, unknown> | undefined;
-      const accounts = mmBase?.accounts as Record<string, Record<string, unknown>> | undefined;
-      const resolvedAccountId = accountId ?? resolveDefaultMattermostAccountId(cfg);
-      const acctConfig = accounts?.[resolvedAccountId];
-      const acctActions = acctConfig?.actions as { reactions?: boolean } | undefined;
-      const baseActions = mmBase?.actions as { reactions?: boolean } | undefined;
-      const reactionsEnabled = acctActions?.reactions ?? baseActions?.reactions ?? true;
-      if (!reactionsEnabled) {
-        throw new Error("Mattermost reactions are disabled in config");
-      }
-
-      const postIdRaw =
-        typeof (params as any)?.messageId === "string"
-          ? (params as any).messageId
-          : typeof (params as any)?.postId === "string"
-            ? (params as any).postId
-            : "";
-      const postId = postIdRaw.trim();
-      if (!postId) {
-        throw new Error("Mattermost react requires messageId (post id)");
-      }
-
-      const emojiRaw = typeof (params as any)?.emoji === "string" ? (params as any).emoji : "";
-      const emojiName = emojiRaw.trim().replace(/^:+|:+$/g, "");
-      if (!emojiName) {
-        throw new Error("Mattermost react requires emoji");
-      }
-
-      const remove = (params as any)?.remove === true;
-      if (remove) {
-        const result = await removeMattermostReaction({
-          cfg,
-          postId,
-          emojiName,
-          accountId: resolvedAccountId,
-        });
-        if (!result.ok) {
-          throw new Error(result.error);
-        }
-        return {
-          content: [
-            { type: "text" as const, text: `Removed reaction :${emojiName}: from ${postId}` },
-          ],
-          details: {},
-        };
-      }
-
-      const result = await addMattermostReaction({
-        cfg,
-        postId,
-        emojiName,
-        accountId: resolvedAccountId,
-      });
-      if (!result.ok) {
-        throw new Error(result.error);
-      }
-
-      return {
-        content: [{ type: "text" as const, text: `Reacted with :${emojiName}: on ${postId}` }],
-        details: {},
-      };
-    }
-
-    if (action !== "send") {
-      throw new Error(`Unsupported Mattermost action: ${action}`);
-    }
-
-    // Send action with optional interactive buttons
-    const to =
-      typeof params.to === "string"
-        ? params.to.trim()
-        : typeof params.target === "string"
-          ? params.target.trim()
-          : "";
-    if (!to) {
-      throw new Error("Mattermost send requires a target (to).");
-    }
-
-    const message = typeof params.message === "string" ? params.message : "";
-    const replyToId = typeof params.replyToId === "string" ? params.replyToId : undefined;
-    const resolvedAccountId = accountId || undefined;
-
-    const mediaUrl =
-      typeof params.media === "string" ? params.media.trim() || undefined : undefined;
-
-    const result = await sendMessageMattermost(to, message, {
-      accountId: resolvedAccountId,
-      replyToId,
-      buttons: Array.isArray(params.buttons) ? params.buttons : undefined,
-      attachmentText: typeof params.attachmentText === "string" ? params.attachmentText : undefined,
-      mediaUrl,
-    });
-
-    return {
-      content: [
-        {
-          type: "text" as const,
-          text: JSON.stringify({
-            ok: true,
-            channel: "mattermost",
-            messageId: result.messageId,
-            channelId: result.channelId,
-          }),
-        },
-      ],
-      details: {},
-    };
-  },
-};
 
 const meta = {
   id: "mattermost",
@@ -203,38 +46,7 @@ const meta = {
   blurb: "self-hosted Slack-style chat; install the plugin to enable.",
   systemImage: "bubble.left.and.bubble.right",
   order: 65,
-  quickstartAllowFrom: true,
 } as const;
-
-function normalizeAllowEntry(entry: string): string {
-  return entry
-    .trim()
-    .replace(/^(mattermost|user):/i, "")
-    .replace(/^@/, "")
-    .toLowerCase();
-}
-
-function formatAllowEntry(entry: string): string {
-  const trimmed = entry.trim();
-  if (!trimmed) {
-    return "";
-  }
-  if (trimmed.startsWith("@")) {
-    const username = trimmed.slice(1).trim();
-    return username ? `@${username.toLowerCase()}` : "";
-  }
-  return trimmed.replace(/^(mattermost|user):/i, "").toLowerCase();
-}
-
-const mattermostConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveMattermostAccount({ cfg, accountId }),
-  resolveAllowFrom: (account: ResolvedMattermostAccount) => account.config.allowFrom,
-  formatAllowFrom: (allowFrom) =>
-    formatNormalizedAllowFromEntries({
-      allowFrom,
-      normalizeEntry: formatAllowEntry,
-    }),
-});
 
 export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
   id: "mattermost",
@@ -360,26 +172,17 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
       }
       return { ok: true, to: trimmed };
     },
-    sendText: async ({ cfg, to, text, accountId, replyToId, threadId }) => {
-      const result = await sendMessageMattermost(to, text, {
-        cfg,
+    sendText: async ({ to, text, accountId, deps, replyToId }) => {
+      const send = deps?.sendMattermost ?? sendMessageMattermost;
+      const result = await send(to, text, {
         accountId: accountId ?? undefined,
         replyToId: replyToId ?? (threadId != null ? String(threadId) : undefined),
       });
       return { channel: "mattermost", ...result };
     },
-    sendMedia: async ({
-      cfg,
-      to,
-      text,
-      mediaUrl,
-      mediaLocalRoots,
-      accountId,
-      replyToId,
-      threadId,
-    }) => {
-      const result = await sendMessageMattermost(to, text, {
-        cfg,
+    sendMedia: async ({ to, text, mediaUrl, accountId, deps, replyToId }) => {
+      const send = deps?.sendMattermost ?? sendMessageMattermost;
+      const result = await send(to, text, {
         accountId: accountId ?? undefined,
         mediaUrl,
         mediaLocalRoots,
@@ -418,24 +221,6 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
         return { ok: false, error: "bot token or baseUrl missing" };
       }
       return await probeMattermost(baseUrl, token, timeoutMs);
-    },
-    buildAccountSnapshot: ({ account, runtime, probe }) => {
-      const base = buildComputedAccountStatusSnapshot({
-        accountId: account.accountId,
-        name: account.name,
-        enabled: account.enabled,
-        configured: Boolean(account.botToken && account.baseUrl),
-        runtime,
-        probe,
-      });
-      return {
-        ...base,
-        botTokenSource: account.botTokenSource,
-        baseUrl: account.baseUrl,
-        connected: runtime?.connected ?? false,
-        lastConnectedAt: runtime?.lastConnectedAt ?? null,
-        lastDisconnect: runtime?.lastDisconnect ?? null,
-      };
     },
   },
   setup: {

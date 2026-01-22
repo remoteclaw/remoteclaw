@@ -11,7 +11,6 @@
     "extensions": [
       "./index.ts"
     ],
-    "setupEntry": "./setup-entry.ts",
     "channel": {
       "id": "mattermost",
       "label": "Mattermost",
@@ -22,7 +21,7 @@
       "order": 65
     },
     "install": {
-      "npmSpec": "@remoteclaw/mattermost",
+      "npmSpec": "@clawdbot/mattermost",
       "localPath": "extensions/mattermost",
       "defaultChoice": "npm"
     }

@@ -1,15 +1,12 @@
-import type {
-  ChannelOnboardingAdapter,
-  RemoteClawConfig,
-  WizardPrompter,
-} from "remoteclaw/plugin-sdk";
-import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/account-id";
+import type { ChannelOnboardingAdapter, ClawdbotConfig, WizardPrompter } from "clawdbot/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "clawdbot/plugin-sdk";
+
 import {
   listMattermostAccountIds,
   resolveDefaultMattermostAccountId,
   resolveMattermostAccount,
 } from "./mattermost/accounts.js";
-import { resolveAccountIdForConfigure } from "./onboarding-helpers.js";
+import { promptAccountId } from "./onboarding-helpers.js";
 
 const channel = "mattermost" as const;
 
@@ -20,7 +17,7 @@ async function noteMattermostSetup(prompter: WizardPrompter): Promise<void> {
       "2) Create a bot + copy its token",
       "3) Use your server base URL (e.g., https://chat.example.com)",
       "Tip: the bot must be a member of any channel you want it to monitor.",
-      "Docs: https://docs.remoteclaw.org/channels/mattermost",
+      "Docs: https://docs.clawd.bot/channels/mattermost",
     ].join("\n"),
     "Mattermost bot token",
   );

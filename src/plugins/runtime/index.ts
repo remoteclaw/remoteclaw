@@ -4,14 +4,79 @@ import {
   resolveApiKeyForProvider as resolveApiKeyForProviderRaw,
 } from "../../auth/provider-auth.js";
 import { resolveStateDir } from "../../config/paths.js";
-import { textToSpeechTelephony } from "../../tts/tts.js";
-import { createRuntimeChannel } from "./runtime-channel.js";
-import { createRuntimeConfig } from "./runtime-config.js";
-import { createRuntimeEvents } from "./runtime-events.js";
-import { createRuntimeLogging } from "./runtime-logging.js";
-import { createRuntimeMedia } from "./runtime-media.js";
-import { createRuntimeSystem } from "./runtime-system.js";
-import { createRuntimeTools } from "./runtime-tools.js";
+import { loadConfig, writeConfigFile } from "../../config/config.js";
+import {
+  readSessionUpdatedAt,
+  recordSessionMetaFromInbound,
+  resolveStorePath,
+  updateLastRoute,
+} from "../../config/sessions.js";
+import { auditDiscordChannelPermissions } from "../../discord/audit.js";
+import {
+  listDiscordDirectoryGroupsLive,
+  listDiscordDirectoryPeersLive,
+} from "../../discord/directory-live.js";
+import { monitorDiscordProvider } from "../../discord/monitor.js";
+import { probeDiscord } from "../../discord/probe.js";
+import { resolveDiscordChannelAllowlist } from "../../discord/resolve-channels.js";
+import { resolveDiscordUserAllowlist } from "../../discord/resolve-users.js";
+import { sendMessageDiscord, sendPollDiscord } from "../../discord/send.js";
+import { getChannelActivity, recordChannelActivity } from "../../infra/channel-activity.js";
+import { enqueueSystemEvent } from "../../infra/system-events.js";
+import { monitorIMessageProvider } from "../../imessage/monitor.js";
+import { probeIMessage } from "../../imessage/probe.js";
+import { sendMessageIMessage } from "../../imessage/send.js";
+import { shouldLogVerbose } from "../../globals.js";
+import { getChildLogger } from "../../logging.js";
+import { normalizeLogLevel } from "../../logging/levels.js";
+import { isVoiceCompatibleAudio } from "../../media/audio.js";
+import { mediaKindFromMime } from "../../media/constants.js";
+import { fetchRemoteMedia } from "../../media/fetch.js";
+import { getImageMetadata, resizeToJpeg } from "../../media/image-ops.js";
+import { detectMime } from "../../media/mime.js";
+import { saveMediaBuffer } from "../../media/store.js";
+import { buildPairingReply } from "../../pairing/pairing-messages.js";
+import {
+  readChannelAllowFromStore,
+  upsertChannelPairingRequest,
+} from "../../pairing/pairing-store.js";
+import { runCommandWithTimeout } from "../../process/exec.js";
+import { resolveAgentRoute } from "../../routing/resolve-route.js";
+import { monitorSignalProvider } from "../../signal/index.js";
+import { probeSignal } from "../../signal/probe.js";
+import { sendMessageSignal } from "../../signal/send.js";
+import { monitorSlackProvider } from "../../slack/index.js";
+import {
+  listSlackDirectoryGroupsLive,
+  listSlackDirectoryPeersLive,
+} from "../../slack/directory-live.js";
+import { probeSlack } from "../../slack/probe.js";
+import { resolveSlackChannelAllowlist } from "../../slack/resolve-channels.js";
+import { resolveSlackUserAllowlist } from "../../slack/resolve-users.js";
+import { sendMessageSlack } from "../../slack/send.js";
+import {
+  auditTelegramGroupMembership,
+  collectTelegramUnmentionedGroupIds,
+} from "../../telegram/audit.js";
+import { monitorTelegramProvider } from "../../telegram/monitor.js";
+import { probeTelegram } from "../../telegram/probe.js";
+import { sendMessageTelegram } from "../../telegram/send.js";
+import { resolveTelegramToken } from "../../telegram/token.js";
+import { loadWebMedia } from "../../web/media.js";
+import { getActiveWebListener } from "../../web/active-listener.js";
+import {
+  getWebAuthAgeMs,
+  logoutWeb,
+  logWebSelfId,
+  readWebSelfId,
+  webAuthExists,
+} from "../../web/auth-store.js";
+import { loginWeb } from "../../web/login.js";
+import { startWebLoginWithQr, waitForWebLogin } from "../../web/login-qr.js";
+import { sendMessageWhatsApp, sendPollWhatsApp } from "../../web/outbound.js";
+import { registerMemoryCli } from "../../cli/memory-cli.js";
+import { formatNativeDependencyHint } from "./native-deps.js";
+
 import type { PluginRuntime } from "./types.js";
 
 let cachedVersion: string | null = null;
@@ -36,11 +101,162 @@ function createUnavailableSubagentRuntime(): PluginRuntime["subagent"] {
     throw new Error("Plugin runtime subagent methods are only available during a gateway request.");
   };
   return {
-    run: unavailable,
-    waitForRun: unavailable,
-    getSessionMessages: unavailable,
-    getSession: unavailable,
-    deleteSession: unavailable,
+    version: resolveVersion(),
+    config: {
+      loadConfig,
+      writeConfigFile,
+    },
+    system: {
+      enqueueSystemEvent,
+      runCommandWithTimeout,
+      formatNativeDependencyHint,
+    },
+    media: {
+      loadWebMedia,
+      detectMime,
+      mediaKindFromMime,
+      isVoiceCompatibleAudio,
+      getImageMetadata,
+      resizeToJpeg,
+    },
+    tools: {
+      createMemoryGetTool,
+      createMemorySearchTool,
+      registerMemoryCli,
+    },
+    channel: {
+      text: {
+        chunkMarkdownText,
+        chunkText,
+        resolveTextChunkLimit,
+        hasControlCommand,
+      },
+      reply: {
+        dispatchReplyWithBufferedBlockDispatcher,
+        createReplyDispatcherWithTyping,
+        resolveEffectiveMessagesConfig,
+        resolveHumanDelayConfig,
+        dispatchReplyFromConfig,
+        finalizeInboundContext,
+        formatAgentEnvelope,
+        formatInboundEnvelope,
+        resolveEnvelopeFormatOptions,
+      },
+      routing: {
+        resolveAgentRoute,
+      },
+      pairing: {
+        buildPairingReply,
+        readAllowFromStore: readChannelAllowFromStore,
+        upsertPairingRequest: upsertChannelPairingRequest,
+      },
+      media: {
+        fetchRemoteMedia,
+        saveMediaBuffer,
+      },
+      activity: {
+        record: recordChannelActivity,
+        get: getChannelActivity,
+      },
+      session: {
+        resolveStorePath,
+        readSessionUpdatedAt,
+        recordSessionMetaFromInbound,
+        updateLastRoute,
+      },
+      mentions: {
+        buildMentionRegexes,
+        matchesMentionPatterns,
+      },
+      groups: {
+        resolveGroupPolicy: resolveChannelGroupPolicy,
+        resolveRequireMention: resolveChannelGroupRequireMention,
+      },
+      debounce: {
+        createInboundDebouncer,
+        resolveInboundDebounceMs,
+      },
+      commands: {
+        resolveCommandAuthorizedFromAuthorizers,
+        isControlCommandMessage,
+        shouldComputeCommandAuthorized,
+        shouldHandleTextCommands,
+      },
+      discord: {
+        messageActions: discordMessageActions,
+        auditChannelPermissions: auditDiscordChannelPermissions,
+        listDirectoryGroupsLive: listDiscordDirectoryGroupsLive,
+        listDirectoryPeersLive: listDiscordDirectoryPeersLive,
+        probeDiscord,
+        resolveChannelAllowlist: resolveDiscordChannelAllowlist,
+        resolveUserAllowlist: resolveDiscordUserAllowlist,
+        sendMessageDiscord,
+        sendPollDiscord,
+        monitorDiscordProvider,
+      },
+      slack: {
+        listDirectoryGroupsLive: listSlackDirectoryGroupsLive,
+        listDirectoryPeersLive: listSlackDirectoryPeersLive,
+        probeSlack,
+        resolveChannelAllowlist: resolveSlackChannelAllowlist,
+        resolveUserAllowlist: resolveSlackUserAllowlist,
+        sendMessageSlack,
+        monitorSlackProvider,
+        handleSlackAction,
+      },
+      telegram: {
+        auditGroupMembership: auditTelegramGroupMembership,
+        collectUnmentionedGroupIds: collectTelegramUnmentionedGroupIds,
+        probeTelegram,
+        resolveTelegramToken,
+        sendMessageTelegram,
+        monitorTelegramProvider,
+        messageActions: telegramMessageActions,
+      },
+      signal: {
+        probeSignal,
+        sendMessageSignal,
+        monitorSignalProvider,
+      },
+      imessage: {
+        monitorIMessageProvider,
+        probeIMessage,
+        sendMessageIMessage,
+      },
+      whatsapp: {
+        getActiveWebListener,
+        getWebAuthAgeMs,
+        logoutWeb,
+        logWebSelfId,
+        readWebSelfId,
+        webAuthExists,
+        sendMessageWhatsApp,
+        sendPollWhatsApp,
+        loginWeb,
+        startWebLoginWithQr,
+        waitForWebLogin,
+        monitorWebChannel,
+        handleWhatsAppAction,
+        createLoginTool: createWhatsAppLoginTool,
+      },
+    },
+    logging: {
+      shouldLogVerbose,
+      getChildLogger: (bindings, opts) => {
+        const logger = getChildLogger(bindings, {
+          level: opts?.level ? normalizeLogLevel(opts.level) : undefined,
+        });
+        return {
+          debug: (message) => logger.debug?.(message),
+          info: (message) => logger.info(message),
+          warn: (message) => logger.warn(message),
+          error: (message) => logger.error(message),
+        };
+      },
+    },
+    state: {
+      resolveStateDir,
+    },
   };
 }
 

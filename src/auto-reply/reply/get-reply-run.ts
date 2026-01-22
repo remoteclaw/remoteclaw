@@ -196,6 +196,8 @@ export async function runPreparedReply(
 
   const isFirstTurnInSession = isNewSession || !currentSystemSent;
   const isGroupChat = sessionCtx.ChatType === "group";
+  const originatingChannel =
+    (ctx.OriginatingChannel ?? ctx.Surface ?? ctx.Provider)?.toString().toLowerCase() ?? "";
   const wasMentioned = ctx.WasMentioned === true;
   const isHeartbeat = opts?.isHeartbeat === true;
   const { typingPolicy, suppressTyping } = resolveRunTypingPolicy({

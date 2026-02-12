@@ -42,7 +42,7 @@ Model note: while any model is supported, I strongly recommend **Anthropic Pro/M
 | -------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------- |
 | **Audience**         | `~/.<agent>` power users with lots of skills                                 | People who don't have that (yet)                     |
 | **Execution engine** | [AgentRuntime](AGENT_RUNTIME.md) (Claude Agent SDK reference implementation) | pi-agent-core / pi-ai / pi-coding-agent              |
-| **Skills**           | BYOS — your workspace, your risk                                             | ClawHub marketplace + regex-scanned community skills |
+| **Ecosystem**        | Your `~/.<agent>` setup runs as-is — your workspace, your responsibility     | ClawHub marketplace + regex-scanned community skills |
 
 ## Models (selection + auth)
 

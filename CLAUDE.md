@@ -79,7 +79,7 @@ Core channel docs: `docs/channels/`
 - Use fake placeholders in docs, tests, and examples
 - Secret detection: `.detect-secrets.cfg` baseline maintained
 - No `jiti` — no dynamic TypeScript transpilation at runtime
-- No `skill-scanner.ts` — BYOS means your skills, your risk
+- No `skill-scanner.ts` — your skills run as-is, your responsibility
 - No ClawHub — no downloading untrusted code
 
 ## Dependencies

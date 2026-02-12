@@ -25,31 +25,31 @@ Fork of `openclaw/openclaw` (git remote: `openclaw`). Replacing OpenClaw's execu
 
 Three commit origins, distinguishable in `git log`:
 
-| Origin | Convention | Trailer |
-|--------|-----------|---------|
-| **RemoteClaw original** | `feat(middleware): wire channel-bridge` | None (default) |
-| **Cherry-pick** | `feat(security): add audit logging` | `Cherry-picked-from: openclaw/openclaw#NNNN` |
-| **Upstream sync** | `chore(upstream): sync channel adapters` | `Upstream-sync: openclaw/openclaw@abc..def` |
+| Origin                  | Convention                               | Trailer                                      |
+| ----------------------- | ---------------------------------------- | -------------------------------------------- |
+| **RemoteClaw original** | `feat(middleware): wire channel-bridge`  | None (default)                               |
+| **Cherry-pick**         | `feat(security): add audit logging`      | `Cherry-picked-from: openclaw/openclaw#NNNN` |
+| **Upstream sync**       | `chore(upstream): sync channel adapters` | `Upstream-sync: openclaw/openclaw@abc..def`  |
 
 ### Branch Naming
 
-| Origin | Pattern | Example |
-|--------|---------|---------|
-| RemoteClaw original | `feat/description`, `fix/description` | `feat/middleware-bridge` |
-| Cherry-pick | `cherry-pick/NNNN-description` | `cherry-pick/3948-audit-logging` |
-| Upstream sync | `upstream/YYYY-MM-DD` | `upstream/2026-02-15` |
+| Origin              | Pattern                               | Example                          |
+| ------------------- | ------------------------------------- | -------------------------------- |
+| RemoteClaw original | `feat/description`, `fix/description` | `feat/middleware-bridge`         |
+| Cherry-pick         | `cherry-pick/NNNN-description`        | `cherry-pick/3948-audit-logging` |
+| Upstream sync       | `upstream/YYYY-MM-DD`                 | `upstream/2026-02-15`            |
 
 ## Development
 
-| Command | Purpose |
-|---------|---------|
-| `pnpm install` | Install dependencies |
-| `pnpm build` | Build |
-| `pnpm check` | Type-check + lint + format check |
-| `pnpm format` | Auto-fix formatting |
-| `pnpm test` | Run tests (Vitest) |
-| `pnpm test:coverage` | Tests with V8 coverage |
-| `pnpm dev` | Run in development mode |
+| Command              | Purpose                          |
+| -------------------- | -------------------------------- |
+| `pnpm install`       | Install dependencies             |
+| `pnpm build`         | Build                            |
+| `pnpm check`         | Type-check + lint + format check |
+| `pnpm format`        | Auto-fix formatting              |
+| `pnpm test`          | Run tests (Vitest)               |
+| `pnpm test:coverage` | Tests with V8 coverage           |
+| `pnpm dev`           | Run in development mode          |
 
 ### Testing
 

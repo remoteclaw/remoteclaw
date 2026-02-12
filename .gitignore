@@ -52,6 +52,9 @@ local/
 USER.md
 CLAUDE.local.md
 
+# local tooling
+.serena/
+
 # Agent credentials and memory (NEVER COMMIT)
 /memory/
 .agent/*.json

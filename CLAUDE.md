@@ -57,6 +57,10 @@ Three commit origins, distinguishable in `git log`:
 - Run `pnpm test` before pushing when touching logic
 - Live tests: `LIVE=1 pnpm test:live`
 
+### GitHub CLI
+
+This is a fork — always pass `--repo remoteclaw/remoteclaw` to `gh` commands (e.g. `gh issue view {N} --repo remoteclaw/remoteclaw`).
+
 ## Channel Adapters
 
 When refactoring shared channel logic (routing, allowlists, pairing, command gating), consider ALL channels:

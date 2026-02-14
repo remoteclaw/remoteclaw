@@ -1,19 +1,14 @@
 import type { AgentCommandOpts } from "./agent/types.js";
 import {
   listAgentIds,
-  resolveAgentDir,
-  resolveAgentModelFallbacksOverride,
   resolveAgentModelPrimary,
   resolveAgentSkillsFilter,
   resolveAgentWorkspaceDir,
 } from "../agents/agent-scope.js";
 import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
 import { clearSessionAuthProfileOverride } from "../agents/auth-profiles/session-override.js";
-import { runCliAgent } from "../agents/cli-runner.js";
-import { getCliSessionId } from "../agents/cli-session.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
-import { runWithModelFallback } from "../agents/model-fallback.js";
 import {
   buildAllowedModelSet,
   isCliProvider,
@@ -21,7 +16,6 @@ import {
   resolveConfiguredModelRef,
   resolveThinkingDefault,
 } from "../agents/model-selection.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";
 import { getSkillsSnapshotVersion } from "../agents/skills/refresh.js";
 import { resolveAgentTimeoutMs } from "../agents/timeout.js";
@@ -40,7 +34,6 @@ import { type CliDeps, createDefaultDeps } from "../cli/deps.js";
 import { loadConfig } from "../config/config.js";
 import {
   resolveAgentIdFromSessionKey,
-  resolveSessionFilePath,
   type SessionEntry,
   updateSessionStore,
 } from "../config/sessions.js";
@@ -50,12 +43,17 @@ import {
   registerAgentRunContext,
 } from "../infra/agent-events.js";
 import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
+import {
+  ChannelBridge,
+  ClaudeCliRuntime,
+  toDeliveryResult,
+  type ChannelMessage,
+} from "../middleware/index.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { applyVerboseOverride } from "../sessions/level-overrides.js";
 import { applyModelOverrideToSessionEntry } from "../sessions/model-overrides.js";
 import { resolveSendPolicy } from "../sessions/send-policy.js";
-import { resolveMessageChannel } from "../utils/message-channel.js";
 import { deliverAgentCommandResult } from "./agent/delivery.js";
 import { resolveAgentRunContext } from "./agent/run-context.js";
 import { updateSessionStoreAfterAgentRun } from "./agent/session-store.js";
@@ -96,7 +94,6 @@ export async function agentCommand(
   const agentCfg = cfg.agents?.defaults;
   const sessionAgentId = agentIdOverride ?? resolveAgentIdFromSessionKey(opts.sessionKey?.trim());
   const workspaceDirRaw = resolveAgentWorkspaceDir(cfg, sessionAgentId);
-  const agentDir = resolveAgentDir(cfg, sessionAgentId);
   const workspace = await ensureAgentWorkspace({
     dir: workspaceDirRaw,
     ensureBootstrapFiles: !agentCfg?.skipBootstrap,
@@ -365,133 +362,47 @@ export async function agentCommand(
         });
       }
     }
-    const sessionFile = resolveSessionFilePath(sessionId, sessionEntry, {
-      agentId: sessionAgentId,
-    });
-
     const startedAt = Date.now();
-    let lifecycleEnded = false;
 
-    let result: Awaited<ReturnType<typeof runEmbeddedPiAgent>>;
-    let fallbackProvider = provider;
-    let fallbackModel = model;
+    let result: ReturnType<typeof toDeliveryResult>;
     try {
       const runContext = resolveAgentRunContext(opts);
-      const messageChannel = resolveMessageChannel(
-        runContext.messageChannel,
-        opts.replyChannel ?? opts.channel,
-      );
-      const spawnedBy = opts.spawnedBy ?? sessionEntry?.spawnedBy;
-      const fallbackResult = await runWithModelFallback({
-        cfg,
-        provider,
-        model,
-        agentDir,
-        fallbacksOverride: resolveAgentModelFallbacksOverride(cfg, sessionAgentId),
-        run: (providerOverride, modelOverride) => {
-          if (isCliProvider(providerOverride, cfg)) {
-            const cliSessionId = getCliSessionId(sessionEntry, providerOverride);
-            return runCliAgent({
-              sessionId,
-              sessionKey,
-              agentId: sessionAgentId,
-              sessionFile,
-              workspaceDir,
-              config: cfg,
-              prompt: body,
-              provider: providerOverride,
-              model: modelOverride,
-              thinkLevel: resolvedThinkLevel,
-              timeoutMs,
-              runId,
-              extraSystemPrompt: opts.extraSystemPrompt,
-              cliSessionId,
-              images: opts.images,
-              streamParams: opts.streamParams,
-            });
-          }
-          const authProfileId =
-            providerOverride === provider ? sessionEntry?.authProfileOverride : undefined;
-          return runEmbeddedPiAgent({
-            sessionId,
-            sessionKey,
-            agentId: sessionAgentId,
-            messageChannel,
-            agentAccountId: runContext.accountId,
-            messageTo: opts.replyTo ?? opts.to,
-            messageThreadId: opts.threadId,
-            groupId: runContext.groupId,
-            groupChannel: runContext.groupChannel,
-            groupSpace: runContext.groupSpace,
-            spawnedBy,
-            currentChannelId: runContext.currentChannelId,
-            currentThreadTs: runContext.currentThreadTs,
-            replyToMode: runContext.replyToMode,
-            hasRepliedRef: runContext.hasRepliedRef,
-            senderIsOwner: true,
-            sessionFile,
-            workspaceDir,
-            config: cfg,
-            skillsSnapshot,
-            prompt: body,
-            images: opts.images,
-            clientTools: opts.clientTools,
-            provider: providerOverride,
-            model: modelOverride,
-            authProfileId,
-            authProfileIdSource: authProfileId
-              ? sessionEntry?.authProfileOverrideSource
-              : undefined,
-            thinkLevel: resolvedThinkLevel,
-            verboseLevel: resolvedVerboseLevel,
-            timeoutMs,
-            runId,
-            lane: opts.lane,
-            abortSignal: opts.abortSignal,
-            extraSystemPrompt: opts.extraSystemPrompt,
-            streamParams: opts.streamParams,
-            agentDir,
-            onAgentEvent: (evt) => {
-              // Track lifecycle end for fallback emission below.
-              if (
-                evt.stream === "lifecycle" &&
-                typeof evt.data?.phase === "string" &&
-                (evt.data.phase === "end" || evt.data.phase === "error")
-              ) {
-                lifecycleEnded = true;
-              }
-            },
-          });
+      const bridge = new ChannelBridge({
+        runtime: new ClaudeCliRuntime(),
+        sessionDir: workspaceDir,
+        defaultModel: model,
+        defaultTimeoutMs: timeoutMs,
+      });
+      const channelMessage: ChannelMessage = {
+        channelId: runContext.currentChannelId ?? opts.channel ?? "cli",
+        userId: runContext.accountId ?? opts.accountId ?? "owner",
+        threadId: opts.threadId?.toString(),
+        text: body,
+        workspaceDir,
+      };
+      const reply = await bridge.handle(channelMessage, undefined, opts.abortSignal);
+      result = toDeliveryResult(reply, "claude-cli", model);
+      emitAgentEvent({
+        runId,
+        stream: "lifecycle",
+        data: {
+          phase: "end",
+          startedAt,
+          endedAt: Date.now(),
+          aborted: result.meta.aborted ?? false,
         },
       });
-      result = fallbackResult.result;
-      fallbackProvider = fallbackResult.provider;
-      fallbackModel = fallbackResult.model;
-      if (!lifecycleEnded) {
-        emitAgentEvent({
-          runId,
-          stream: "lifecycle",
-          data: {
-            phase: "end",
-            startedAt,
-            endedAt: Date.now(),
-            aborted: result.meta.aborted ?? false,
-          },
-        });
-      }
     } catch (err) {
-      if (!lifecycleEnded) {
-        emitAgentEvent({
-          runId,
-          stream: "lifecycle",
-          data: {
-            phase: "error",
-            startedAt,
-            endedAt: Date.now(),
-            error: String(err),
-          },
-        });
-      }
+      emitAgentEvent({
+        runId,
+        stream: "lifecycle",
+        data: {
+          phase: "error",
+          startedAt,
+          endedAt: Date.now(),
+          error: String(err),
+        },
+      });
       throw err;
     }
 
@@ -504,10 +415,8 @@ export async function agentCommand(
         sessionKey,
         storePath,
         sessionStore,
-        defaultProvider: provider,
+        defaultProvider: "claude-cli",
         defaultModel: model,
-        fallbackProvider,
-        fallbackModel,
         result,
       });
     }

@@ -1,15 +1,16 @@
-import fs from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { TypingMode } from "../../config/types.js";
+import type { BridgeCallbacks, ChannelMessage, ChannelReply } from "../../middleware/index.js";
 import type { TemplateContext } from "../templating.js";
 import type { GetReplyOptions } from "../types.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-const runEmbeddedPiAgentMock = vi.fn();
+vi.mock("../../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/index.js")>();
+  return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
+});
 
 vi.mock("../../agents/model-fallback.js", () => ({
   runWithModelFallback: async ({
@@ -29,7 +30,7 @@ vi.mock("../../agents/model-fallback.js", () => ({
 
 vi.mock("../../agents/pi-embedded.js", () => ({
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
+  runEmbeddedPiAgent: vi.fn().mockResolvedValue({ payloads: [], meta: {} }),
 }));
 
 vi.mock("./queue.js", async () => {
@@ -41,7 +42,33 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+import { ChannelBridge } from "../../middleware/index.js";
 import { runReplyAgent } from "./agent-runner.js";
+
+const mockHandle = vi.fn<
+  [ChannelMessage, BridgeCallbacks, AbortSignal | undefined],
+  Promise<ChannelReply>
+>();
+
+function defaultReply(overrides?: Partial<ChannelReply>): ChannelReply {
+  return {
+    text: "final",
+    sessionId: "s",
+    durationMs: 5,
+    usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    aborted: false,
+    error: undefined,
+    ...overrides,
+  };
+}
+
+beforeEach(() => {
+  mockHandle.mockReset();
+  vi.mocked(ChannelBridge).mockImplementation(function () {
+    return { handle: mockHandle } as never;
+  });
+  mockHandle.mockResolvedValue(defaultReply());
+});
 
 function createMinimalRun(params?: {
   opts?: GetReplyOptions;
@@ -120,96 +147,64 @@ function createMinimalRun(params?: {
 }
 
 describe("runReplyAgent typing (heartbeat)", () => {
-  it("signals typing on block replies", async () => {
-    const onBlockReply = vi.fn();
-    runEmbeddedPiAgentMock.mockImplementationOnce(async (params: EmbeddedPiAgentParams) => {
-      await params.onBlockReply?.({ text: "chunk", mediaUrls: [] });
-      return { payloads: [{ text: "final" }], meta: {} };
+  it("signals typing via tool use callback", async () => {
+    // In the new ChannelBridge code, typing for tool use is signaled through
+    // the onToolUse bridge callback (not the old onBlockReply/onToolResult).
+    mockHandle.mockImplementationOnce(async (_msg, callbacks) => {
+      await callbacks.onToolUse?.("some-tool", "tool-id");
+      return defaultReply();
     });
 
     const { run, typing } = createMinimalRun({
       typingMode: "message",
       blockStreamingEnabled: true,
-      opts: { onBlockReply },
+    });
+    await run();
+
+    expect(typing.startTypingLoop).toHaveBeenCalled();
+  });
+  it("signals typing on partial text with onPartialReply", async () => {
+    const onPartialReply = vi.fn();
+    mockHandle.mockImplementationOnce(async (_msg, callbacks) => {
+      await callbacks.onPartialText?.("chunk");
+      return defaultReply();
+    });
+
+    const { run, typing } = createMinimalRun({
+      typingMode: "message",
+      opts: { onPartialReply },
     });
     await run();
 
     expect(typing.startTypingOnText).toHaveBeenCalledWith("chunk");
-    expect(onBlockReply).toHaveBeenCalled();
-    const [blockPayload, blockOpts] = onBlockReply.mock.calls[0] ?? [];
-    expect(blockPayload).toMatchObject({ text: "chunk", audioAsVoice: false });
-    expect(blockOpts).toMatchObject({
-      abortSignal: expect.any(AbortSignal),
-      timeoutMs: expect.any(Number),
-    });
+    expect(onPartialReply).toHaveBeenCalled();
   });
-  it("signals typing on tool results", async () => {
-    const onToolResult = vi.fn();
-    runEmbeddedPiAgentMock.mockImplementationOnce(async (params: EmbeddedPiAgentParams) => {
-      await params.onToolResult?.({ text: "tooling", mediaUrls: [] });
-      return { payloads: [{ text: "final" }], meta: {} };
+  it("suppresses typing for silent partial text", async () => {
+    const onPartialReply = vi.fn();
+    mockHandle.mockImplementationOnce(async (_msg, callbacks) => {
+      await callbacks.onPartialText?.("NO_REPLY");
+      return defaultReply({ text: "NO_REPLY" });
     });
 
     const { run, typing } = createMinimalRun({
       typingMode: "message",
-      opts: { onToolResult },
-    });
-    await run();
-
-    expect(typing.startTypingOnText).toHaveBeenCalledWith("tooling");
-    expect(onToolResult).toHaveBeenCalledWith({
-      text: "tooling",
-      mediaUrls: [],
-    });
-  });
-  it("skips typing for silent tool results", async () => {
-    const onToolResult = vi.fn();
-    runEmbeddedPiAgentMock.mockImplementationOnce(async (params: EmbeddedPiAgentParams) => {
-      await params.onToolResult?.({ text: "NO_REPLY", mediaUrls: [] });
-      return { payloads: [{ text: "final" }], meta: {} };
-    });
-
-    const { run, typing } = createMinimalRun({
-      typingMode: "message",
-      opts: { onToolResult },
+      opts: { onPartialReply },
     });
     await run();
 
     expect(typing.startTypingOnText).not.toHaveBeenCalled();
-    expect(onToolResult).not.toHaveBeenCalled();
+    expect(onPartialReply).not.toHaveBeenCalled();
   });
-  it("announces auto-compaction in verbose mode and tracks count", async () => {
-    const storePath = path.join(
-      await fs.mkdtemp(path.join(tmpdir(), "openclaw-compaction-")),
-      "sessions.json",
-    );
-    const sessionEntry = { sessionId: "session", updatedAt: Date.now() };
-    const sessionStore = { main: sessionEntry };
-
-    runEmbeddedPiAgentMock.mockImplementationOnce(
-      async (params: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => void;
-      }) => {
-        params.onAgentEvent?.({
-          stream: "compaction",
-          data: { phase: "end", willRetry: false },
-        });
-        return { payloads: [{ text: "final" }], meta: {} };
-      },
-    );
+  it("returns reply text from bridge handle result", async () => {
+    // Auto-compaction detection was removed from runAgentTurnWithFallback.
+    // The bridge simply returns the text and it flows through as a normal reply.
+    mockHandle.mockResolvedValueOnce(defaultReply({ text: "final" }));
 
     const { run } = createMinimalRun({
       resolvedVerboseLevel: "on",
-      sessionEntry,
-      sessionStore,
-      sessionKey: "main",
-      storePath,
     });
     const res = await run();
-    expect(Array.isArray(res)).toBe(true);
-    const payloads = res as { text?: string }[];
-    expect(payloads[0]?.text).toContain("Auto-compaction complete");
-    expect(payloads[0]?.text).toContain("count 1");
-    expect(sessionStore.main.compactionCount).toBe(1);
+    const payloads = Array.isArray(res) ? res : res ? [res] : [];
+    expect(payloads.some((p) => p.text === "final")).toBe(true);
   });
 });

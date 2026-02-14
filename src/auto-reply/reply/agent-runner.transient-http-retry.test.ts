@@ -3,28 +3,19 @@ import type { TemplateContext } from "../templating.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-const runEmbeddedPiAgentMock = vi.fn();
 const runtimeErrorMock = vi.fn();
 
-vi.mock("../../agents/model-fallback.js", () => ({
-  runWithModelFallback: async ({
-    provider,
-    model,
-    run,
-  }: {
-    provider: string;
-    model: string;
-    run: (provider: string, model: string) => Promise<unknown>;
-  }) => ({
-    result: await run(provider, model),
-    provider,
-    model,
-  }),
-}));
+vi.mock("../../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/index.js")>();
+  return {
+    ...actual,
+    ChannelBridge: vi.fn(),
+    ClaudeCliRuntime: vi.fn(),
+  };
+});
 
 vi.mock("../../agents/pi-embedded.js", () => ({
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
 }));
 
 vi.mock("../../runtime.js", () => ({
@@ -44,30 +35,31 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+import { ChannelBridge } from "../../middleware/index.js";
 import { runReplyAgent } from "./agent-runner.js";
+
+const mockHandle = vi.fn();
+
+vi.mocked(ChannelBridge).mockImplementation(function () {
+  return { handle: mockHandle } as never;
+});
 
 describe("runReplyAgent transient HTTP retry", () => {
   beforeEach(() => {
-    runEmbeddedPiAgentMock.mockReset();
+    mockHandle.mockReset();
     runtimeErrorMock.mockReset();
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  it("retries once after transient 521 HTML failure and then succeeds", async () => {
-    runEmbeddedPiAgentMock
-      .mockRejectedValueOnce(
-        new Error(
-          `521 <!DOCTYPE html><html lang="en-US"><head><title>Web server is down</title></head><body>Cloudflare</body></html>`,
-        ),
-      )
-      .mockResolvedValueOnce({
-        payloads: [{ text: "Recovered response" }],
-        meta: {},
-      });
+  it("returns error payload when bridge.handle throws (retry logic removed)", async () => {
+    mockHandle.mockRejectedValueOnce(
+      new Error(
+        `521 <!DOCTYPE html><html lang="en-US"><head><title>Web server is down</title></head><body>Cloudflare</body></html>`,
+      ),
+    );
 
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -102,7 +94,7 @@ describe("runReplyAgent transient HTTP retry", () => {
       },
     } as unknown as FollowupRun;
 
-    const runPromise = runReplyAgent({
+    const result = await runReplyAgent({
       commandBody: "hello",
       followupRun,
       queueKey: "main",
@@ -122,15 +114,14 @@ describe("runReplyAgent transient HTTP retry", () => {
       typingMode: "instant",
     });
 
-    await vi.advanceTimersByTimeAsync(2_500);
-    const result = await runPromise;
-
-    expect(runEmbeddedPiAgentMock).toHaveBeenCalledTimes(2);
+    // With the new ChannelBridge path, retry logic is removed.
+    // bridge.handle() throwing produces an error payload.
+    expect(mockHandle).toHaveBeenCalledTimes(1);
     expect(runtimeErrorMock).toHaveBeenCalledWith(
-      expect.stringContaining("Transient HTTP provider error before reply"),
+      expect.stringContaining("Agent runtime failed before reply"),
     );
 
     const payload = Array.isArray(result) ? result[0] : result;
-    expect(payload?.text).toContain("Recovered response");
+    expect(payload?.text).toContain("Agent failed before reply");
   });
 });

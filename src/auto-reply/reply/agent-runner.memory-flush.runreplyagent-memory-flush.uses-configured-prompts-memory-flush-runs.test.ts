@@ -1,20 +1,25 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { BridgeCallbacks, ChannelMessage, ChannelReply } from "../../middleware/index.js";
 import type { TemplateContext } from "../templating.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
 import { DEFAULT_MEMORY_FLUSH_PROMPT } from "./memory-flush.js";
 import { createMockTypingController } from "./test-helpers.js";
 
 const runEmbeddedPiAgentMock = vi.fn();
-const runCliAgentMock = vi.fn();
 
 type EmbeddedRunParams = {
   prompt?: string;
   extraSystemPrompt?: string;
   onAgentEvent?: (evt: { stream?: string; data?: { phase?: string; willRetry?: boolean } }) => void;
 };
+
+vi.mock("../../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/index.js")>();
+  return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
+});
 
 vi.mock("../../agents/model-fallback.js", () => ({
   runWithModelFallback: async ({
@@ -33,7 +38,7 @@ vi.mock("../../agents/model-fallback.js", () => ({
 }));
 
 vi.mock("../../agents/cli-runner.js", () => ({
-  runCliAgent: (params: unknown) => runCliAgentMock(params),
+  runCliAgent: vi.fn(),
 }));
 
 vi.mock("../../agents/pi-embedded.js", () => ({
@@ -50,7 +55,33 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+import { ChannelBridge } from "../../middleware/index.js";
 import { runReplyAgent } from "./agent-runner.js";
+
+const mockHandle = vi.fn<
+  [ChannelMessage, BridgeCallbacks, AbortSignal | undefined],
+  Promise<ChannelReply>
+>();
+
+function defaultReply(overrides?: Partial<ChannelReply>): ChannelReply {
+  return {
+    text: "ok",
+    sessionId: "s",
+    durationMs: 5,
+    usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    aborted: false,
+    error: undefined,
+    ...overrides,
+  };
+}
+
+beforeEach(() => {
+  mockHandle.mockReset();
+  vi.mocked(ChannelBridge).mockImplementation(function () {
+    return { handle: mockHandle } as never;
+  });
+  mockHandle.mockResolvedValue(defaultReply());
+});
 
 async function seedSessionStore(params: {
   storePath: string;
@@ -136,6 +167,7 @@ describe("runReplyAgent memory flush", () => {
 
     await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
 
+    // Memory flush goes through runEmbeddedPiAgent (old path).
     const calls: Array<EmbeddedRunParams> = [];
     runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
       calls.push(params);
@@ -147,6 +179,9 @@ describe("runReplyAgent memory flush", () => {
         meta: { agentMeta: { usage: { input: 1, output: 1 } } },
       };
     });
+
+    // Main turn goes through ChannelBridge (new path).
+    mockHandle.mockResolvedValue(defaultReply({ text: "ok" }));
 
     const { typing, sessionCtx, resolvedQueue, followupRun } = createBaseRun({
       storePath,
@@ -191,13 +226,18 @@ describe("runReplyAgent memory flush", () => {
       typingMode: "instant",
     });
 
+    // Memory flush call (via runEmbeddedPiAgent)
     const flushCall = calls[0];
     expect(flushCall?.prompt).toContain("Write notes.");
     expect(flushCall?.prompt).toContain("NO_REPLY");
     expect(flushCall?.extraSystemPrompt).toContain("extra system");
     expect(flushCall?.extraSystemPrompt).toContain("Flush memory now.");
     expect(flushCall?.extraSystemPrompt).toContain("NO_REPLY");
-    expect(calls[1]?.prompt).toBe("hello");
+
+    // Main turn went through ChannelBridge (not via runEmbeddedPiAgent)
+    expect(mockHandle).toHaveBeenCalledTimes(1);
+    // Only the flush call should have gone through runEmbeddedPiAgent
+    expect(calls.length).toBe(1);
   });
   it("skips memory flush after a prior flush in the same compaction cycle", async () => {
     runEmbeddedPiAgentMock.mockReset();
@@ -214,14 +254,8 @@ describe("runReplyAgent memory flush", () => {
 
     await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
 
-    const calls: Array<{ prompt?: string }> = [];
-    runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
-      calls.push({ prompt: params.prompt });
-      return {
-        payloads: [{ text: "ok" }],
-        meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-      };
-    });
+    // Main turn goes through ChannelBridge (no flush expected).
+    mockHandle.mockResolvedValue(defaultReply({ text: "ok" }));
 
     const { typing, sessionCtx, resolvedQueue, followupRun } = createBaseRun({
       storePath,
@@ -253,6 +287,9 @@ describe("runReplyAgent memory flush", () => {
       typingMode: "instant",
     });
 
-    expect(calls.map((call) => call.prompt)).toEqual(["hello"]);
+    // No flush call -- runEmbeddedPiAgent should not have been called
+    expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+    // Main turn went through ChannelBridge
+    expect(mockHandle).toHaveBeenCalledTimes(1);
   });
 });

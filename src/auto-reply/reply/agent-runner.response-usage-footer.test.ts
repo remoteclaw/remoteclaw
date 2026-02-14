@@ -4,20 +4,17 @@ import type { TemplateContext } from "../templating.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-const runEmbeddedPiAgentMock = vi.fn();
-const runWithModelFallbackMock = vi.fn();
-
-vi.mock("../../agents/model-fallback.js", () => ({
-  runWithModelFallback: (params: {
-    provider: string;
-    model: string;
-    run: (provider: string, model: string) => Promise<unknown>;
-  }) => runWithModelFallbackMock(params),
-}));
+vi.mock("../../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/index.js")>();
+  return {
+    ...actual,
+    ChannelBridge: vi.fn(),
+    ClaudeCliRuntime: vi.fn(),
+  };
+});
 
 vi.mock("../../agents/pi-embedded.js", () => ({
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
 }));
 
 vi.mock("./queue.js", async () => {
@@ -29,7 +26,14 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+import { ChannelBridge } from "../../middleware/index.js";
 import { runReplyAgent } from "./agent-runner.js";
+
+const mockHandle = vi.fn();
+
+vi.mocked(ChannelBridge).mockImplementation(function () {
+  return { handle: mockHandle } as never;
+});
 
 function createRun(params: { responseUsage: "tokens" | "full"; sessionKey: string }) {
   const typing = createMockTypingController();
@@ -101,28 +105,18 @@ function createRun(params: { responseUsage: "tokens" | "full"; sessionKey: strin
 
 describe("runReplyAgent response usage footer", () => {
   beforeEach(() => {
-    runEmbeddedPiAgentMock.mockReset();
-    runWithModelFallbackMock.mockReset();
+    mockHandle.mockReset();
   });
 
   it("appends session key when responseUsage=full", async () => {
-    runEmbeddedPiAgentMock.mockResolvedValueOnce({
-      payloads: [{ text: "ok" }],
-      meta: {
-        agentMeta: {
-          provider: "anthropic",
-          model: "claude",
-          usage: { input: 12, output: 3 },
-        },
-      },
+    mockHandle.mockResolvedValueOnce({
+      text: "ok",
+      sessionId: "s",
+      durationMs: 5,
+      usage: { inputTokens: 12, outputTokens: 3, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      aborted: false,
+      error: undefined,
     });
-    runWithModelFallbackMock.mockImplementationOnce(
-      async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
-        result: await run("anthropic", "claude"),
-        provider: "anthropic",
-        model: "claude",
-      }),
-    );
 
     const sessionKey = "agent:main:whatsapp:dm:+1000";
     const res = await createRun({ responseUsage: "full", sessionKey });
@@ -132,23 +126,14 @@ describe("runReplyAgent response usage footer", () => {
   });
 
   it("does not append session key when responseUsage=tokens", async () => {
-    runEmbeddedPiAgentMock.mockResolvedValueOnce({
-      payloads: [{ text: "ok" }],
-      meta: {
-        agentMeta: {
-          provider: "anthropic",
-          model: "claude",
-          usage: { input: 12, output: 3 },
-        },
-      },
+    mockHandle.mockResolvedValueOnce({
+      text: "ok",
+      sessionId: "s",
+      durationMs: 5,
+      usage: { inputTokens: 12, outputTokens: 3, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      aborted: false,
+      error: undefined,
     });
-    runWithModelFallbackMock.mockImplementationOnce(
-      async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
-        result: await run("anthropic", "claude"),
-        provider: "anthropic",
-        model: "claude",
-      }),
-    );
 
     const sessionKey = "agent:main:whatsapp:dm:+1000";
     const res = await createRun({ responseUsage: "tokens", sessionKey });

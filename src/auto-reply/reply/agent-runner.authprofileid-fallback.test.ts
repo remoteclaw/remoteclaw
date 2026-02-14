@@ -3,24 +3,17 @@ import type { TemplateContext } from "../templating.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-const runEmbeddedPiAgentMock = vi.fn();
-
-vi.mock("../../agents/model-fallback.js", () => ({
-  runWithModelFallback: async ({
-    run,
-  }: {
-    run: (provider: string, model: string) => Promise<unknown>;
-  }) => ({
-    // Force a cross-provider fallback candidate
-    result: await run("openai-codex", "gpt-5.2"),
-    provider: "openai-codex",
-    model: "gpt-5.2",
-  }),
-}));
+vi.mock("../../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/index.js")>();
+  return {
+    ...actual,
+    ChannelBridge: vi.fn(),
+    ClaudeCliRuntime: vi.fn(),
+  };
+});
 
 vi.mock("../../agents/pi-embedded.js", () => ({
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
 }));
 
 vi.mock("./queue.js", async () => {
@@ -32,7 +25,14 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+import { ChannelBridge } from "../../middleware/index.js";
 import { runReplyAgent } from "./agent-runner.js";
+
+const mockHandle = vi.fn();
+
+vi.mocked(ChannelBridge).mockImplementation(function () {
+  return { handle: mockHandle } as never;
+});
 
 function createBaseRun(params: { runOverrides?: Partial<FollowupRun["run"]> }) {
   const typing = createMockTypingController();
@@ -89,9 +89,16 @@ function createBaseRun(params: { runOverrides?: Partial<FollowupRun["run"]> }) {
 }
 
 describe("authProfileId fallback scoping", () => {
-  it("drops authProfileId when provider changes during fallback", async () => {
-    runEmbeddedPiAgentMock.mockReset();
-    runEmbeddedPiAgentMock.mockResolvedValue({ payloads: [{ text: "ok" }], meta: {} });
+  it("calls bridge.handle successfully (fallback logic removed)", async () => {
+    mockHandle.mockReset();
+    mockHandle.mockResolvedValue({
+      text: "ok",
+      sessionId: "s",
+      durationMs: 5,
+      usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      aborted: false,
+      error: undefined,
+    });
 
     const sessionKey = "main";
     const sessionEntry = {
@@ -110,7 +117,7 @@ describe("authProfileId fallback scoping", () => {
       },
     });
 
-    await runReplyAgent({
+    const result = await runReplyAgent({
       commandBody: "hello",
       followupRun,
       queueKey: sessionKey,
@@ -135,15 +142,7 @@ describe("authProfileId fallback scoping", () => {
       typingMode: "instant",
     });
 
-    expect(runEmbeddedPiAgentMock).toHaveBeenCalledTimes(1);
-    const call = runEmbeddedPiAgentMock.mock.calls[0]?.[0] as {
-      authProfileId?: unknown;
-      authProfileIdSource?: unknown;
-      provider?: unknown;
-    };
-
-    expect(call.provider).toBe("openai-codex");
-    expect(call.authProfileId).toBeUndefined();
-    expect(call.authProfileIdSource).toBeUndefined();
+    expect(mockHandle).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({ text: "ok" });
   });
 });

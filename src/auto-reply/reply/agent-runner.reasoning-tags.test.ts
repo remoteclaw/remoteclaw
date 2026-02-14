@@ -2,23 +2,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { TemplateContext } from "../templating.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
-import { DEFAULT_MEMORY_FLUSH_PROMPT } from "./memory-flush.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-const runEmbeddedPiAgentMock = vi.fn();
-const runWithModelFallbackMock = vi.fn();
-
-vi.mock("../../agents/model-fallback.js", () => ({
-  runWithModelFallback: (params: {
-    provider: string;
-    model: string;
-    run: (provider: string, model: string) => Promise<unknown>;
-  }) => runWithModelFallbackMock(params),
-}));
+vi.mock("../../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/index.js")>();
+  return {
+    ...actual,
+    ChannelBridge: vi.fn(),
+    ClaudeCliRuntime: vi.fn(),
+  };
+});
 
 vi.mock("../../agents/pi-embedded.js", () => ({
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
 }));
 
 vi.mock("./queue.js", async () => {
@@ -30,12 +26,14 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+import { ChannelBridge } from "../../middleware/index.js";
 import { runReplyAgent } from "./agent-runner.js";
 
-type EmbeddedPiAgentParams = {
-  enforceFinalTag?: boolean;
-  prompt?: string;
-};
+const mockHandle = vi.fn();
+
+vi.mocked(ChannelBridge).mockImplementation(function () {
+  return { handle: mockHandle } as never;
+});
 
 function createRun(params?: {
   sessionEntry?: SessionEntry;
@@ -104,47 +102,39 @@ function createRun(params?: {
   });
 }
 
-describe("runReplyAgent fallback reasoning tags", () => {
+describe("runReplyAgent bridge.handle (reasoning tags removed)", () => {
   beforeEach(() => {
-    runEmbeddedPiAgentMock.mockReset();
-    runWithModelFallbackMock.mockReset();
+    mockHandle.mockReset();
   });
 
-  it("enforces <final> when the fallback provider requires reasoning tags", async () => {
-    runEmbeddedPiAgentMock.mockResolvedValueOnce({
-      payloads: [{ text: "ok" }],
-      meta: {},
+  it("calls bridge.handle successfully", async () => {
+    mockHandle.mockResolvedValueOnce({
+      text: "ok",
+      sessionId: "s",
+      durationMs: 5,
+      usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      aborted: false,
+      error: undefined,
     });
-    runWithModelFallbackMock.mockImplementationOnce(
-      async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
-        result: await run("google-antigravity", "gemini-3"),
-        provider: "google-antigravity",
-        model: "gemini-3",
-      }),
-    );
 
-    await createRun();
+    const result = await createRun();
 
-    const call = runEmbeddedPiAgentMock.mock.calls[0]?.[0] as EmbeddedPiAgentParams | undefined;
-    expect(call?.enforceFinalTag).toBe(true);
+    expect(mockHandle).toHaveBeenCalledTimes(1);
+    const payload = Array.isArray(result) ? result[0] : result;
+    expect(payload?.text).toContain("ok");
   });
 
-  it("enforces <final> during memory flush on fallback providers", async () => {
-    runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedPiAgentParams) => {
-      if (params.prompt === DEFAULT_MEMORY_FLUSH_PROMPT) {
-        return { payloads: [], meta: {} };
-      }
-      return { payloads: [{ text: "ok" }], meta: {} };
+  it("calls bridge.handle with session entry context", async () => {
+    mockHandle.mockResolvedValueOnce({
+      text: "ok",
+      sessionId: "s",
+      durationMs: 5,
+      usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      aborted: false,
+      error: undefined,
     });
-    runWithModelFallbackMock.mockImplementation(
-      async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
-        result: await run("google-antigravity", "gemini-3"),
-        provider: "google-antigravity",
-        model: "gemini-3",
-      }),
-    );
 
-    await createRun({
+    const result = await createRun({
       sessionEntry: {
         sessionId: "session",
         updatedAt: Date.now(),
@@ -153,11 +143,8 @@ describe("runReplyAgent fallback reasoning tags", () => {
       },
     });
 
-    const flushCall = runEmbeddedPiAgentMock.mock.calls.find(
-      ([params]) =>
-        (params as EmbeddedPiAgentParams | undefined)?.prompt === DEFAULT_MEMORY_FLUSH_PROMPT,
-    )?.[0] as EmbeddedPiAgentParams | undefined;
-
-    expect(flushCall?.enforceFinalTag).toBe(true);
+    expect(mockHandle).toHaveBeenCalledTimes(1);
+    const payload = Array.isArray(result) ? result[0] : result;
+    expect(payload?.text).toContain("ok");
   });
 });

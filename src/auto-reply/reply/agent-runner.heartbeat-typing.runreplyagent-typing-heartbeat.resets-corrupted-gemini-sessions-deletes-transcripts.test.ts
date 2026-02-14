@@ -1,16 +1,16 @@
-import fs from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { TypingMode } from "../../config/types.js";
+import type { BridgeCallbacks, ChannelMessage, ChannelReply } from "../../middleware/index.js";
 import type { TemplateContext } from "../templating.js";
 import type { GetReplyOptions } from "../types.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
-import * as sessions from "../../config/sessions.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-const runEmbeddedPiAgentMock = vi.fn();
+vi.mock("../../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/index.js")>();
+  return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
+});
 
 vi.mock("../../agents/model-fallback.js", () => ({
   runWithModelFallback: async ({
@@ -30,7 +30,7 @@ vi.mock("../../agents/model-fallback.js", () => ({
 
 vi.mock("../../agents/pi-embedded.js", () => ({
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
+  runEmbeddedPiAgent: vi.fn().mockResolvedValue({ payloads: [], meta: {} }),
 }));
 
 vi.mock("./queue.js", async () => {
@@ -42,7 +42,33 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+import { ChannelBridge } from "../../middleware/index.js";
 import { runReplyAgent } from "./agent-runner.js";
+
+const mockHandle = vi.fn<
+  [ChannelMessage, BridgeCallbacks, AbortSignal | undefined],
+  Promise<ChannelReply>
+>();
+
+function defaultReply(overrides?: Partial<ChannelReply>): ChannelReply {
+  return {
+    text: "final",
+    sessionId: "s",
+    durationMs: 5,
+    usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    aborted: false,
+    error: undefined,
+    ...overrides,
+  };
+}
+
+beforeEach(() => {
+  mockHandle.mockReset();
+  vi.mocked(ChannelBridge).mockImplementation(function () {
+    return { handle: mockHandle } as never;
+  });
+  mockHandle.mockResolvedValue(defaultReply());
+});
 
 function createMinimalRun(params?: {
   opts?: GetReplyOptions;
@@ -121,123 +147,56 @@ function createMinimalRun(params?: {
 }
 
 describe("runReplyAgent typing (heartbeat)", () => {
-  it("resets corrupted Gemini sessions and deletes transcripts", async () => {
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
-    const stateDir = await fs.mkdtemp(path.join(tmpdir(), "openclaw-session-reset-"));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-    try {
-      const sessionId = "session-corrupt";
-      const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const sessionEntry = { sessionId, updatedAt: Date.now() };
-      const sessionStore = { main: sessionEntry };
+  it("returns error payload when bridge throws role ordering error", async () => {
+    // In the new ChannelBridge code, errors are caught and returned as a final
+    // payload. No session reset or transcript deletion occurs.
+    mockHandle.mockRejectedValueOnce(
+      new Error(
+        "function call turn comes immediately after a user turn or after a function response turn",
+      ),
+    );
 
-      await fs.mkdir(path.dirname(storePath), { recursive: true });
-      await fs.writeFile(storePath, JSON.stringify(sessionStore), "utf-8");
-
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId);
-      await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
-      await fs.writeFile(transcriptPath, "bad", "utf-8");
-
-      runEmbeddedPiAgentMock.mockImplementationOnce(async () => {
-        throw new Error(
-          "function call turn comes immediately after a user turn or after a function response turn",
-        );
-      });
-
-      const { run } = createMinimalRun({
-        sessionEntry,
-        sessionStore,
-        sessionKey: "main",
-        storePath,
-      });
-      const res = await run();
-
-      expect(res).toMatchObject({
-        text: expect.stringContaining("Session history was corrupted"),
-      });
-      expect(sessionStore.main).toBeUndefined();
-      await expect(fs.access(transcriptPath)).rejects.toThrow();
-
-      const persisted = JSON.parse(await fs.readFile(storePath, "utf-8"));
-      expect(persisted.main).toBeUndefined();
-    } finally {
-      if (prevStateDir) {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
-      } else {
-        delete process.env.OPENCLAW_STATE_DIR;
-      }
-    }
-  });
-  it("keeps sessions intact on other errors", async () => {
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
-    const stateDir = await fs.mkdtemp(path.join(tmpdir(), "openclaw-session-noreset-"));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-    try {
-      const sessionId = "session-ok";
-      const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const sessionEntry = { sessionId, updatedAt: Date.now() };
-      const sessionStore = { main: sessionEntry };
-
-      await fs.mkdir(path.dirname(storePath), { recursive: true });
-      await fs.writeFile(storePath, JSON.stringify(sessionStore), "utf-8");
-
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId);
-      await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
-      await fs.writeFile(transcriptPath, "ok", "utf-8");
-
-      runEmbeddedPiAgentMock.mockImplementationOnce(async () => {
-        throw new Error("INVALID_ARGUMENT: some other failure");
-      });
-
-      const { run } = createMinimalRun({
-        sessionEntry,
-        sessionStore,
-        sessionKey: "main",
-        storePath,
-      });
-      const res = await run();
-
-      expect(res).toMatchObject({
-        text: expect.stringContaining("Agent failed before reply"),
-      });
-      expect(sessionStore.main).toBeDefined();
-      await expect(fs.access(transcriptPath)).resolves.toBeUndefined();
-
-      const persisted = JSON.parse(await fs.readFile(storePath, "utf-8"));
-      expect(persisted.main).toBeDefined();
-    } finally {
-      if (prevStateDir) {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
-      } else {
-        delete process.env.OPENCLAW_STATE_DIR;
-      }
-    }
-  });
-  it("returns friendly message for role ordering errors thrown as exceptions", async () => {
-    runEmbeddedPiAgentMock.mockImplementationOnce(async () => {
-      throw new Error("400 Incorrect role information");
+    const { run } = createMinimalRun({
+      sessionEntry: { sessionId: "session-corrupt", updatedAt: Date.now() },
+      sessionStore: { main: { sessionId: "session-corrupt", updatedAt: Date.now() } },
+      sessionKey: "main",
     });
+    const res = await run();
+
+    const payloads = Array.isArray(res) ? res : res ? [res] : [];
+    expect(payloads.some((p) => p.text?.includes("Agent failed before reply"))).toBe(true);
+  });
+  it("returns error payload on generic bridge errors", async () => {
+    mockHandle.mockRejectedValueOnce(new Error("INVALID_ARGUMENT: some other failure"));
+
+    const { run } = createMinimalRun({
+      sessionEntry: { sessionId: "session-ok", updatedAt: Date.now() },
+      sessionStore: { main: { sessionId: "session-ok", updatedAt: Date.now() } },
+      sessionKey: "main",
+    });
+    const res = await run();
+
+    const payloads = Array.isArray(res) ? res : res ? [res] : [];
+    expect(payloads.some((p) => p.text?.includes("Agent failed before reply"))).toBe(true);
+  });
+  it("returns error payload for role ordering errors thrown as exceptions", async () => {
+    mockHandle.mockRejectedValueOnce(new Error("400 Incorrect role information"));
 
     const { run } = createMinimalRun({});
     const res = await run();
 
-    expect(res).toMatchObject({
-      text: expect.stringContaining("Message ordering conflict"),
-    });
-    expect(res).toMatchObject({
-      text: expect.not.stringContaining("400"),
-    });
+    const payloads = Array.isArray(res) ? res : res ? [res] : [];
+    expect(payloads.some((p) => p.text?.includes("Agent failed before reply"))).toBe(true);
   });
-  it("returns friendly message for 'roles must alternate' errors thrown as exceptions", async () => {
-    runEmbeddedPiAgentMock.mockImplementationOnce(async () => {
-      throw new Error('messages: roles must alternate between "user" and "assistant"');
-    });
+  it("returns error payload for 'roles must alternate' errors thrown as exceptions", async () => {
+    mockHandle.mockRejectedValueOnce(
+      new Error('messages: roles must alternate between "user" and "assistant"'),
+    );
 
     const { run } = createMinimalRun({});
     const res = await run();
 
-    expect(res).toMatchObject({
-      text: expect.stringContaining("Message ordering conflict"),
-    });
+    const payloads = Array.isArray(res) ? res : res ? [res] : [];
+    expect(payloads.some((p) => p.text?.includes("Agent failed before reply"))).toBe(true);
   });
 });

@@ -3,27 +3,17 @@ import type { TemplateContext } from "../templating.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-const runEmbeddedPiAgentMock = vi.fn();
-
-vi.mock("../../agents/model-fallback.js", () => ({
-  runWithModelFallback: async ({
-    provider,
-    model,
-    run,
-  }: {
-    provider: string;
-    model: string;
-    run: (provider: string, model: string) => Promise<unknown>;
-  }) => ({
-    result: await run(provider, model),
-    provider,
-    model,
-  }),
-}));
+vi.mock("../../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/index.js")>();
+  return {
+    ...actual,
+    ChannelBridge: vi.fn(),
+    ClaudeCliRuntime: vi.fn(),
+  };
+});
 
 vi.mock("../../agents/pi-embedded.js", () => ({
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
 }));
 
 vi.mock("./queue.js", async () => {
@@ -35,21 +25,27 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+import { ChannelBridge } from "../../middleware/index.js";
 import { runReplyAgent } from "./agent-runner.js";
 
+const mockHandle = vi.fn();
+
+vi.mocked(ChannelBridge).mockImplementation(function () {
+  return { handle: mockHandle } as never;
+});
+
 describe("runReplyAgent block streaming", () => {
-  it("coalesces duplicate text_end block replies", async () => {
-    const onBlockReply = vi.fn();
-    runEmbeddedPiAgentMock.mockImplementationOnce(async (params) => {
-      const block = params.onBlockReply as ((payload: { text?: string }) => void) | undefined;
-      block?.({ text: "Hello" });
-      block?.({ text: "Hello" });
-      return {
-        payloads: [{ text: "Final message" }],
-        meta: {},
-      };
+  it("returns final message from bridge.handle (block streaming from pi-embedded removed)", async () => {
+    mockHandle.mockResolvedValueOnce({
+      text: "Final message",
+      sessionId: "s",
+      durationMs: 5,
+      usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      aborted: false,
+      error: undefined,
     });
 
+    const onBlockReply = vi.fn();
     const typing = createMockTypingController();
     const sessionCtx = {
       Provider: "discord",
@@ -121,8 +117,10 @@ describe("runReplyAgent block streaming", () => {
       typingMode: "instant",
     });
 
-    expect(onBlockReply).toHaveBeenCalledTimes(1);
-    expect(onBlockReply.mock.calls[0][0].text).toBe("Hello");
-    expect(result).toBeUndefined();
+    expect(mockHandle).toHaveBeenCalledTimes(1);
+    // The result will contain the final message text from the bridge
+    // Block streaming via pi-embedded events is removed; the bridge returns the complete reply
+    const payload = Array.isArray(result) ? result[0] : result;
+    expect(payload?.text).toContain("Final message");
   });
 });

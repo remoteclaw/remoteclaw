@@ -2,10 +2,9 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import { getReplyFromConfig } from "./reply.js";
 
-vi.mock("../agents/pi-embedded.js", () => ({
+const piEmbeddedMock = vi.hoisted(() => ({
   abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
   runEmbeddedPiAgent: vi.fn(),
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
@@ -13,9 +12,19 @@ vi.mock("../agents/pi-embedded.js", () => ({
   isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
   isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
 }));
+
+vi.mock("../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware/index.js")>();
+  return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
+});
+vi.mock("../agents/pi-embedded.js", () => piEmbeddedMock);
 vi.mock("../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(),
 }));
+
+import { ChannelBridge } from "../middleware/index.js";
+
+const mockHandle = vi.fn();
 
 async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
   return withTempHomeBase(
@@ -34,7 +43,10 @@ async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
 
 describe("RawBody directive parsing", () => {
   beforeEach(() => {
-    vi.mocked(runEmbeddedPiAgent).mockReset();
+    vi.mocked(ChannelBridge).mockImplementation(function () {
+      return { handle: mockHandle };
+    } as never);
+    mockHandle.mockReset();
     vi.mocked(loadModelCatalog).mockResolvedValue([
       { id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" },
     ]);
@@ -46,8 +58,6 @@ describe("RawBody directive parsing", () => {
 
   it("/model, /think, /verbose directives detected from RawBody even when Body has structural wrapper", async () => {
     await withTempHome(async (home) => {
-      vi.mocked(runEmbeddedPiAgent).mockReset();
-
       const groupMessageCtx = {
         Body: `[Chat messages since your last reply - for context]\\n[WhatsApp ...] Someone: hello\\n\\n[Current message - respond to this]\\n[WhatsApp ...] Jake: /think:high\\n[from: Jake McInteer (+6421807830)]`,
         RawBody: "/think:high",
@@ -74,14 +84,12 @@ describe("RawBody directive parsing", () => {
 
       const text = Array.isArray(res) ? res[0]?.text : res?.text;
       expect(text).toContain("Thinking level set to high.");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(mockHandle).not.toHaveBeenCalled();
     });
   });
 
   it("/model status detected from RawBody", async () => {
     await withTempHome(async (home) => {
-      vi.mocked(runEmbeddedPiAgent).mockReset();
-
       const groupMessageCtx = {
         Body: `[Context]\nJake: /model status\n[from: Jake]`,
         RawBody: "/model status",
@@ -111,14 +119,12 @@ describe("RawBody directive parsing", () => {
 
       const text = Array.isArray(res) ? res[0]?.text : res?.text;
       expect(text).toContain("anthropic/claude-opus-4-5");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(mockHandle).not.toHaveBeenCalled();
     });
   });
 
   it("CommandBody is honored when RawBody is missing", async () => {
     await withTempHome(async (home) => {
-      vi.mocked(runEmbeddedPiAgent).mockReset();
-
       const groupMessageCtx = {
         Body: `[Context]\nJake: /verbose on\n[from: Jake]`,
         CommandBody: "/verbose on",
@@ -145,14 +151,12 @@ describe("RawBody directive parsing", () => {
 
       const text = Array.isArray(res) ? res[0]?.text : res?.text;
       expect(text).toContain("Verbose logging enabled.");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(mockHandle).not.toHaveBeenCalled();
     });
   });
 
   it("Integration: WhatsApp group message with structural wrapper and RawBody command", async () => {
     await withTempHome(async (home) => {
-      vi.mocked(runEmbeddedPiAgent).mockReset();
-
       const groupMessageCtx = {
         Body: `[Chat messages since your last reply - for context]\\n[WhatsApp ...] Someone: hello\\n\\n[Current message - respond to this]\\n[WhatsApp ...] Jake: /status\\n[from: Jake McInteer (+6421807830)]`,
         RawBody: "/status",
@@ -184,18 +188,19 @@ describe("RawBody directive parsing", () => {
       const text = Array.isArray(res) ? res[0]?.text : res?.text;
       expect(text).toContain("Session: agent:main:whatsapp:group:g1");
       expect(text).toContain("anthropic/claude-opus-4-5");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(mockHandle).not.toHaveBeenCalled();
     });
   });
 
   it("preserves history when RawBody is provided for command parsing", async () => {
     await withTempHome(async (home) => {
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "ok" }],
-        meta: {
-          durationMs: 1,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
+      mockHandle.mockResolvedValue({
+        text: "ok",
+        sessionId: "s",
+        durationMs: 1,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
 
       const groupMessageCtx = {
@@ -229,8 +234,9 @@ describe("RawBody directive parsing", () => {
 
       const text = Array.isArray(res) ? res[0]?.text : res?.text;
       expect(text).toBe("ok");
-      expect(runEmbeddedPiAgent).toHaveBeenCalledOnce();
-      const prompt = vi.mocked(runEmbeddedPiAgent).mock.calls[0]?.[0]?.prompt ?? "";
+      expect(mockHandle).toHaveBeenCalledOnce();
+      const channelMessage = mockHandle.mock.calls[0]?.[0] as { text?: string };
+      const prompt = channelMessage?.text ?? "";
       expect(prompt).toContain("Chat history since last reply (untrusted, for context):");
       expect(prompt).toContain('"sender": "Peter"');
       expect(prompt).toContain('"body": "hello"');

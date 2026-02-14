@@ -1,17 +1,17 @@
+import type { MessagingToolSend } from "../../agents/pi-embedded-messaging.js";
+import type { OpenClawConfig } from "../../config/config.js";
+import type { AgentDefaultsConfig } from "../../config/types.js";
+import type { CronJob } from "../types.js";
 import {
   resolveAgentConfig,
-  resolveAgentDir,
-  resolveAgentModelFallbacksOverride,
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
-import { runCliAgent } from "../../agents/cli-runner.js";
-import { getCliSessionId, setCliSessionId } from "../../agents/cli-session.js";
+import { setCliSessionId } from "../../agents/cli-session.js";
 import { lookupContextTokens } from "../../agents/context.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
 import { loadModelCatalog } from "../../agents/model-catalog.js";
-import { runWithModelFallback } from "../../agents/model-fallback.js";
 import {
   getModelRefStatus,
   isCliProvider,
@@ -20,10 +20,9 @@ import {
   resolveHooksGmailModel,
   resolveThinkingDefault,
 } from "../../agents/model-selection.js";
-import type { MessagingToolSend } from "../../agents/pi-embedded-messaging.js";
-import { runEmbeddedPiAgent } from "../../agents/pi-embedded.js";
+import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
+import { getSkillsSnapshotVersion } from "../../agents/skills/refresh.js";
 import { runSubagentAnnounceFlow } from "../../agents/subagent-announce.js";
-import { countActiveDescendantRuns } from "../../agents/subagent-registry.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
@@ -32,20 +31,18 @@ import {
   normalizeVerboseLevel,
   supportsXHighThinking,
 } from "../../auto-reply/thinking.js";
-import { SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
 import { createOutboundSendDeps, type CliDeps } from "../../cli/outbound-send-deps.js";
-import type { OpenClawConfig } from "../../config/config.js";
-import {
-  resolveAgentMainSessionKey,
-  resolveSessionTranscriptPath,
-  updateSessionStore,
-} from "../../config/sessions.js";
-import type { AgentDefaultsConfig } from "../../config/types.js";
+import { resolveAgentMainSessionKey, updateSessionStore } from "../../config/sessions.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { deliverOutboundPayloads } from "../../infra/outbound/deliver.js";
-import { resolveAgentOutboundIdentity } from "../../infra/outbound/identity.js";
-import { resolveOutboundSessionRoute } from "../../infra/outbound/outbound-session.js";
+import { getRemoteSkillEligibility } from "../../infra/skills-remote.js";
 import { logWarn } from "../../logger.js";
+import {
+  ChannelBridge,
+  ClaudeCliRuntime,
+  toDeliveryResult,
+  type ChannelMessage,
+} from "../../middleware/index.js";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../../routing/session-key.js";
 import {
   buildSafeExternalPrompt,
@@ -54,7 +51,6 @@ import {
   isExternalHookSession,
 } from "../../security/external-content.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
-import type { CronJob, CronRunOutcome, CronRunTelemetry } from "../types.js";
 import { resolveDeliveryTarget } from "./delivery-target.js";
 import {
   isHeartbeatOnlyResponse,
@@ -65,13 +61,6 @@ import {
   resolveHeartbeatAckMaxChars,
 } from "./helpers.js";
 import { resolveCronSession } from "./session.js";
-import { resolveCronSkillsSnapshot } from "./skills-snapshot.js";
-import {
-  expectsSubagentFollowup,
-  isLikelyInterimCronMessage,
-  readDescendantSubagentFallbackReply,
-  waitForDescendantSubagentSummary,
-} from "./subagent-followup.js";
 
 function matchesMessagingToolDeliveryTarget(
   target: MessagingToolSend,
@@ -101,53 +90,22 @@ function resolveCronDeliveryBestEffort(job: CronJob): boolean {
   return false;
 }
 
-async function resolveCronAnnounceSessionKey(params: {
-  cfg: OpenClawConfig;
-  agentId: string;
-  fallbackSessionKey: string;
-  delivery: {
-    channel: Parameters<typeof resolveOutboundSessionRoute>[0]["channel"];
-    to?: string;
-    accountId?: string;
-    threadId?: string | number;
-  };
-}): Promise<string> {
-  const to = params.delivery.to?.trim();
-  if (!to) {
-    return params.fallbackSessionKey;
-  }
-  try {
-    const route = await resolveOutboundSessionRoute({
-      cfg: params.cfg,
-      channel: params.delivery.channel,
-      agentId: params.agentId,
-      accountId: params.delivery.accountId,
-      target: to,
-      threadId: params.delivery.threadId,
-    });
-    const resolved = route?.sessionKey?.trim();
-    if (resolved) {
-      return resolved;
-    }
-  } catch {
-    // Fall back to main session routing if announce session resolution fails.
-  }
-  return params.fallbackSessionKey;
-}
-
 export type RunCronAgentTurnResult = {
+  status: "ok" | "error" | "skipped";
+  summary?: string;
   /** Last non-empty agent text output (not truncated). */
   outputText?: string;
+  error?: string;
+  sessionId?: string;
+  sessionKey?: string;
   /**
    * `true` when the isolated run already delivered its output to the target
-   * channel (via outbound payloads, the subagent announce flow, or a matching
-   * messaging-tool send). Callers should skip posting a summary to the main
-   * session to avoid duplicate
+   * channel (via outbound payloads or the subagent announce flow).  Callers
+   * should skip posting a summary to the main session to avoid duplicate
    * messages.  See: https://github.com/openclaw/openclaw/issues/15692
    */
   delivered?: boolean;
-} & CronRunOutcome &
-  CronRunTelemetry;
+};
 
 export async function runCronIsolatedAgentTurn(params: {
   cfg: OpenClawConfig;
@@ -180,14 +138,10 @@ export async function runCronIsolatedAgentTurn(params: {
     params.cfg.agents?.defaults,
     agentOverrideRest as Partial<AgentDefaultsConfig>,
   );
-  // Merge agent model override with defaults instead of replacing, so that
-  // `fallbacks` from `agents.defaults.model` are preserved when the agent
-  // (or its per-cron model pin) only specifies `primary`.
-  const existingModel = agentCfg.model && typeof agentCfg.model === "object" ? agentCfg.model : {};
   if (typeof overrideModel === "string") {
-    agentCfg.model = { ...existingModel, primary: overrideModel };
+    agentCfg.model = { primary: overrideModel };
   } else if (overrideModel) {
-    agentCfg.model = { ...existingModel, ...overrideModel };
+    agentCfg.model = overrideModel;
   }
   const cfgWithAgentDefaults: OpenClawConfig = {
     ...params.cfg,
@@ -201,7 +155,6 @@ export async function runCronIsolatedAgentTurn(params: {
   });
 
   const workspaceDirRaw = resolveAgentWorkspaceDir(params.cfg, agentId);
-  const agentDir = resolveAgentDir(params.cfg, agentId);
   const workspace = await ensureAgentWorkspace({
     dir: workspaceDirRaw,
     ensureBootstrapFiles: !agentCfg?.skipBootstrap && !isFastTestEnv,
@@ -303,7 +256,7 @@ export async function runCronIsolatedAgentTurn(params: {
     cronSession.sessionEntry.label = `Cron: ${labelSuffix}`;
   }
 
-  // Respect session model override — check session.modelOverride before falling
+  // Respect session model override -- check session.modelOverride before falling
   // back to the default config model. This ensures /model changes are honoured
   // by cron and isolated agent runs.
   if (!modelOverride && !hooksGmailModelApplied) {
@@ -409,34 +362,40 @@ export async function runCronIsolatedAgentTurn(params: {
       `${commandBody}\n\nReturn your summary as plain text; it will be delivered automatically. If the task explicitly calls for messaging a specific external recipient, note who/where it should go instead of sending it yourself.`.trim();
   }
 
-  const existingSkillsSnapshot = cronSession.sessionEntry.skillsSnapshot;
-  const skillsSnapshot = resolveCronSkillsSnapshot({
-    workspaceDir,
-    config: cfgWithAgentDefaults,
-    agentId,
-    existingSnapshot: existingSkillsSnapshot,
-    isFastTestEnv,
-  });
-  if (!isFastTestEnv && skillsSnapshot !== existingSkillsSnapshot) {
-    cronSession.sessionEntry = {
-      ...cronSession.sessionEntry,
-      updatedAt: Date.now(),
-      skillsSnapshot,
-    };
-    await persistSessionEntry();
+  let skillsSnapshot = cronSession.sessionEntry.skillsSnapshot;
+  if (isFastTestEnv) {
+    // Fast unit-test mode: avoid scanning the workspace and writing session stores.
+    skillsSnapshot = skillsSnapshot ?? { prompt: "", skills: [] };
+  } else {
+    const existingSnapshot = cronSession.sessionEntry.skillsSnapshot;
+    const skillsSnapshotVersion = getSkillsSnapshotVersion(workspaceDir);
+    const needsSkillsSnapshot =
+      !existingSnapshot || existingSnapshot.version !== skillsSnapshotVersion;
+    if (needsSkillsSnapshot) {
+      skillsSnapshot = buildWorkspaceSkillSnapshot(workspaceDir, {
+        config: cfgWithAgentDefaults,
+        eligibility: { remote: getRemoteSkillEligibility() },
+        snapshotVersion: skillsSnapshotVersion,
+      });
+      if (skillsSnapshot) {
+        cronSession.sessionEntry = {
+          ...cronSession.sessionEntry,
+          updatedAt: Date.now(),
+          skillsSnapshot,
+        };
+        await persistSessionEntry();
+      }
+    }
   }
 
   // Persist systemSent before the run, mirroring the inbound auto-reply behavior.
   cronSession.sessionEntry.systemSent = true;
   await persistSessionEntry();
 
-  let runResult: Awaited<ReturnType<typeof runEmbeddedPiAgent>>;
-  let fallbackProvider = provider;
-  let fallbackModel = model;
   const runStartedAt = Date.now();
   let runEndedAt = runStartedAt;
+  let runResult: ReturnType<typeof toDeliveryResult>;
   try {
-    const sessionFile = resolveSessionTranscriptPath(cronSession.sessionEntry.sessionId, agentId);
     const resolvedVerboseLevel =
       normalizeVerboseLevel(cronSession.sessionEntry.verboseLevel) ??
       normalizeVerboseLevel(agentCfg?.verboseDefault) ??
@@ -445,58 +404,21 @@ export async function runCronIsolatedAgentTurn(params: {
       sessionKey: agentSessionKey,
       verboseLevel: resolvedVerboseLevel,
     });
-    const messageChannel = resolvedDelivery.channel;
-    const fallbackResult = await runWithModelFallback({
-      cfg: cfgWithAgentDefaults,
-      provider,
-      model,
-      agentDir,
-      fallbacksOverride: resolveAgentModelFallbacksOverride(params.cfg, agentId),
-      run: (providerOverride, modelOverride) => {
-        if (isCliProvider(providerOverride, cfgWithAgentDefaults)) {
-          const cliSessionId = getCliSessionId(cronSession.sessionEntry, providerOverride);
-          return runCliAgent({
-            sessionId: cronSession.sessionEntry.sessionId,
-            sessionKey: agentSessionKey,
-            agentId,
-            sessionFile,
-            workspaceDir,
-            config: cfgWithAgentDefaults,
-            prompt: commandBody,
-            provider: providerOverride,
-            model: modelOverride,
-            thinkLevel,
-            timeoutMs,
-            runId: cronSession.sessionEntry.sessionId,
-            cliSessionId,
-          });
-        }
-        return runEmbeddedPiAgent({
-          sessionId: cronSession.sessionEntry.sessionId,
-          sessionKey: agentSessionKey,
-          agentId,
-          messageChannel,
-          agentAccountId: resolvedDelivery.accountId,
-          sessionFile,
-          workspaceDir,
-          config: cfgWithAgentDefaults,
-          skillsSnapshot,
-          prompt: commandBody,
-          lane: params.lane ?? "cron",
-          provider: providerOverride,
-          model: modelOverride,
-          thinkLevel,
-          verboseLevel: resolvedVerboseLevel,
-          timeoutMs,
-          runId: cronSession.sessionEntry.sessionId,
-          requireExplicitMessageTarget: true,
-          disableMessageTool: deliveryRequested,
-        });
-      },
+    const bridge = new ChannelBridge({
+      runtime: new ClaudeCliRuntime(),
+      sessionDir: workspaceDir,
+      defaultModel: model,
+      defaultTimeoutMs: timeoutMs,
     });
-    runResult = fallbackResult.result;
-    fallbackProvider = fallbackResult.provider;
-    fallbackModel = fallbackResult.model;
+    const channelMessage: ChannelMessage = {
+      channelId: resolvedDelivery.channel ?? "cron",
+      userId: resolvedDelivery.accountId ?? "system",
+      threadId: undefined,
+      text: commandBody,
+      workspaceDir,
+    };
+    const reply = await bridge.handle(channelMessage);
+    runResult = toDeliveryResult(reply, "claude-cli", model);
     runEndedAt = Date.now();
   } catch (err) {
     return withRunSession({ status: "error", error: String(err) });
@@ -505,13 +427,10 @@ export async function runCronIsolatedAgentTurn(params: {
   const payloads = runResult.payloads ?? [];
 
   // Update token+model fields in the session store.
-  // Also collect best-effort telemetry for the cron run log.
-  let telemetry: CronRunTelemetry | undefined;
   {
-    const usage = runResult.meta?.agentMeta?.usage;
-    const promptTokens = runResult.meta?.agentMeta?.promptTokens;
-    const modelUsed = runResult.meta?.agentMeta?.model ?? fallbackModel ?? model;
-    const providerUsed = runResult.meta?.agentMeta?.provider ?? fallbackProvider ?? provider;
+    const usage = runResult.meta.agentMeta?.usage;
+    const modelUsed = runResult.meta.agentMeta?.model ?? model;
+    const providerUsed = runResult.meta.agentMeta?.provider ?? provider;
     const contextTokens =
       agentCfg?.contextTokens ?? lookupContextTokens(modelUsed) ?? DEFAULT_CONTEXT_TOKENS;
 
@@ -519,7 +438,7 @@ export async function runCronIsolatedAgentTurn(params: {
     cronSession.sessionEntry.model = modelUsed;
     cronSession.sessionEntry.contextTokens = contextTokens;
     if (isCliProvider(providerUsed, cfgWithAgentDefaults)) {
-      const cliSessionId = runResult.meta?.agentMeta?.sessionId?.trim();
+      const cliSessionId = runResult.meta.agentMeta?.sessionId?.trim();
       if (cliSessionId) {
         setCliSessionId(cronSession.sessionEntry, providerUsed, cliSessionId);
       }
@@ -527,40 +446,22 @@ export async function runCronIsolatedAgentTurn(params: {
     if (hasNonzeroUsage(usage)) {
       const input = usage.input ?? 0;
       const output = usage.output ?? 0;
-      const totalTokens =
+      cronSession.sessionEntry.inputTokens = input;
+      cronSession.sessionEntry.outputTokens = output;
+      cronSession.sessionEntry.totalTokens =
         deriveSessionTotalTokens({
           usage,
           contextTokens,
-          promptTokens,
         }) ?? input;
-      cronSession.sessionEntry.inputTokens = input;
-      cronSession.sessionEntry.outputTokens = output;
-      cronSession.sessionEntry.totalTokens = totalTokens;
-      cronSession.sessionEntry.totalTokensFresh = true;
-
-      telemetry = {
-        model: modelUsed,
-        provider: providerUsed,
-        usage: {
-          input_tokens: input,
-          output_tokens: output,
-          total_tokens: totalTokens,
-        },
-      };
-    } else {
-      telemetry = {
-        model: modelUsed,
-        provider: providerUsed,
-      };
     }
     await persistSessionEntry();
   }
   const firstText = payloads[0]?.text ?? "";
-  let summary = pickSummaryFromPayloads(payloads) ?? pickSummaryFromOutput(firstText);
-  let outputText = pickLastNonEmptyTextFromPayloads(payloads);
-  let synthesizedText = outputText?.trim() || summary?.trim() || undefined;
+  const summary = pickSummaryFromPayloads(payloads) ?? pickSummaryFromOutput(firstText);
+  const outputText = pickLastNonEmptyTextFromPayloads(payloads);
+  const synthesizedText = outputText?.trim() || summary?.trim() || undefined;
   const deliveryPayload = pickLastDeliverablePayload(payloads);
-  let deliveryPayloads =
+  const deliveryPayloads =
     deliveryPayload !== undefined
       ? [deliveryPayload]
       : synthesizedText
@@ -586,9 +487,7 @@ export async function runCronIsolatedAgentTurn(params: {
       }),
     );
 
-  // `true` means we confirmed at least one outbound send reached the target.
-  // Keep this strict so timer fallback can safely decide whether to wake main.
-  let delivered = skipMessagingToolDelivery;
+  let delivered = false;
   if (deliveryRequested && !skipHeartbeatDelivery && !skipMessagingToolDelivery) {
     if (resolvedDelivery.error) {
       if (!deliveryBestEffort) {
@@ -597,11 +496,10 @@ export async function runCronIsolatedAgentTurn(params: {
           error: resolvedDelivery.error.message,
           summary,
           outputText,
-          ...telemetry,
         });
       }
       logWarn(`[cron:${params.job.id}] ${resolvedDelivery.error.message}`);
-      return withRunSession({ status: "ok", summary, outputText, ...telemetry });
+      return withRunSession({ status: "ok", summary, outputText });
     }
     if (!resolvedDelivery.to) {
       const message = "cron delivery target is missing";
@@ -611,122 +509,43 @@ export async function runCronIsolatedAgentTurn(params: {
           error: message,
           summary,
           outputText,
-          ...telemetry,
         });
       }
       logWarn(`[cron:${params.job.id}] ${message}`);
-      return withRunSession({ status: "ok", summary, outputText, ...telemetry });
+      return withRunSession({ status: "ok", summary, outputText });
     }
-    const identity = resolveAgentOutboundIdentity(cfgWithAgentDefaults, agentId);
-
-    // Route text-only cron announce output back through the main session so it
-    // follows the same system-message injection path as subagent completions.
-    // Keep direct outbound delivery only for structured payloads (media/channel
-    // data), which cannot be represented by the shared announce flow.
+    // Shared subagent announce flow is text-based; keep direct outbound delivery
+    // for media/channel payloads so structured content is preserved.
     if (deliveryPayloadHasStructuredContent) {
       try {
-        const payloadsForDelivery =
-          deliveryPayloads.length > 0
-            ? deliveryPayloads
-            : synthesizedText
-              ? [{ text: synthesizedText }]
-              : [];
-        if (payloadsForDelivery.length > 0) {
-          const deliveryResults = await deliverOutboundPayloads({
-            cfg: cfgWithAgentDefaults,
-            channel: resolvedDelivery.channel,
-            to: resolvedDelivery.to,
-            accountId: resolvedDelivery.accountId,
-            threadId: resolvedDelivery.threadId,
-            payloads: payloadsForDelivery,
-            agentId,
-            identity,
-            bestEffort: deliveryBestEffort,
-            deps: createOutboundSendDeps(params.deps),
-          });
-          delivered = deliveryResults.length > 0;
-        }
-      } catch (err) {
-        if (!deliveryBestEffort) {
-          return withRunSession({
-            status: "error",
-            summary,
-            outputText,
-            error: String(err),
-            ...telemetry,
-          });
-        }
-      }
-    } else if (synthesizedText) {
-      const announceMainSessionKey = resolveAgentMainSessionKey({
-        cfg: params.cfg,
-        agentId,
-      });
-      const announceSessionKey = await resolveCronAnnounceSessionKey({
-        cfg: cfgWithAgentDefaults,
-        agentId,
-        fallbackSessionKey: announceMainSessionKey,
-        delivery: {
+        await deliverOutboundPayloads({
+          cfg: cfgWithAgentDefaults,
           channel: resolvedDelivery.channel,
           to: resolvedDelivery.to,
           accountId: resolvedDelivery.accountId,
           threadId: resolvedDelivery.threadId,
-        },
+          payloads: deliveryPayloads,
+          bestEffort: deliveryBestEffort,
+          deps: createOutboundSendDeps(params.deps),
+        });
+        delivered = true;
+      } catch (err) {
+        if (!deliveryBestEffort) {
+          return withRunSession({ status: "error", summary, outputText, error: String(err) });
+        }
+      }
+    } else if (synthesizedText) {
+      const announceSessionKey = resolveAgentMainSessionKey({
+        cfg: params.cfg,
+        agentId,
       });
       const taskLabel =
         typeof params.job.name === "string" && params.job.name.trim()
           ? params.job.name.trim()
           : `cron:${params.job.id}`;
-      const initialSynthesizedText = synthesizedText.trim();
-      let activeSubagentRuns = countActiveDescendantRuns(agentSessionKey);
-      const expectedSubagentFollowup = expectsSubagentFollowup(initialSynthesizedText);
-      const hadActiveDescendants = activeSubagentRuns > 0;
-      if (activeSubagentRuns > 0 || expectedSubagentFollowup) {
-        let finalReply = await waitForDescendantSubagentSummary({
-          sessionKey: agentSessionKey,
-          initialReply: initialSynthesizedText,
-          timeoutMs,
-          observedActiveDescendants: activeSubagentRuns > 0 || expectedSubagentFollowup,
-        });
-        activeSubagentRuns = countActiveDescendantRuns(agentSessionKey);
-        if (
-          !finalReply &&
-          activeSubagentRuns === 0 &&
-          (hadActiveDescendants || expectedSubagentFollowup)
-        ) {
-          finalReply = await readDescendantSubagentFallbackReply({
-            sessionKey: agentSessionKey,
-            runStartedAt,
-          });
-        }
-        if (finalReply && activeSubagentRuns === 0) {
-          outputText = finalReply;
-          summary = pickSummaryFromOutput(finalReply) ?? summary;
-          synthesizedText = finalReply;
-          deliveryPayloads = [{ text: finalReply }];
-        }
-      }
-      if (activeSubagentRuns > 0) {
-        // Parent orchestration is still in progress; avoid announcing a partial
-        // update to the main requester.
-        return withRunSession({ status: "ok", summary, outputText, ...telemetry });
-      }
-      if (
-        (hadActiveDescendants || expectedSubagentFollowup) &&
-        synthesizedText.trim() === initialSynthesizedText &&
-        isLikelyInterimCronMessage(initialSynthesizedText) &&
-        initialSynthesizedText.toUpperCase() !== SILENT_REPLY_TOKEN.toUpperCase()
-      ) {
-        // Descendants existed but no post-orchestration synthesis arrived, so
-        // suppress stale parent text like "on it, pulling everything together".
-        return withRunSession({ status: "ok", summary, outputText, ...telemetry });
-      }
-      if (synthesizedText.toUpperCase() === SILENT_REPLY_TOKEN.toUpperCase()) {
-        return withRunSession({ status: "ok", summary, outputText, ...telemetry });
-      }
       try {
         const didAnnounce = await runSubagentAnnounceFlow({
-          childSessionKey: agentSessionKey,
+          childSessionKey: runSessionKey,
           childRunId: `${params.job.id}:${runSessionId}`,
           requesterSessionKey: announceSessionKey,
           requesterOrigin: {
@@ -756,25 +575,18 @@ export async function runCronIsolatedAgentTurn(params: {
               summary,
               outputText,
               error: message,
-              ...telemetry,
             });
           }
           logWarn(`[cron:${params.job.id}] ${message}`);
         }
       } catch (err) {
         if (!deliveryBestEffort) {
-          return withRunSession({
-            status: "error",
-            summary,
-            outputText,
-            error: String(err),
-            ...telemetry,
-          });
+          return withRunSession({ status: "error", summary, outputText, error: String(err) });
         }
         logWarn(`[cron:${params.job.id}] ${String(err)}`);
       }
     }
   }
 
-  return withRunSession({ status: "ok", summary, outputText, delivered, ...telemetry });
+  return withRunSession({ status: "ok", summary, outputText, delivered });
 }

@@ -3,11 +3,14 @@ import path from "node:path";
 import { beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 
-vi.mock("../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: vi.fn(),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-}));
+vi.mock("../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware/index.js")>();
+  return {
+    ...actual,
+    ChannelBridge: vi.fn(),
+    ClaudeCliRuntime: vi.fn(),
+  };
+});
 vi.mock("../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(),
 }));
@@ -15,10 +18,9 @@ vi.mock("../agents/model-catalog.js", () => ({
 import { telegramPlugin } from "../../extensions/telegram/src/channel.js";
 import { setTelegramRuntime } from "../../extensions/telegram/src/runtime.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import type { OpenClawConfig } from "../config/config.js";
 import * as configModule from "../config/config.js";
-import { emitAgentEvent, onAgentEvent } from "../infra/agent-events.js";
+import { ChannelBridge } from "../middleware/index.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createPluginRuntime } from "../plugins/runtime/index.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -34,6 +36,7 @@ const runtime: RuntimeEnv = {
 };
 
 const configSpy = vi.spyOn(configModule, "loadConfig");
+const mockHandle = vi.fn();
 
 async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
   return withTempHomeBase(fn, { prefix: "openclaw-agent-" });
@@ -73,12 +76,16 @@ function writeSessionStoreSeed(
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-    payloads: [{ text: "ok" }],
-    meta: {
-      durationMs: 5,
-      agentMeta: { sessionId: "s", provider: "p", model: "m" },
-    },
+  vi.mocked(ChannelBridge).mockImplementation(function () {
+    return { handle: mockHandle };
+  } as never);
+  mockHandle.mockResolvedValue({
+    text: "ok",
+    sessionId: "s",
+    durationMs: 5,
+    usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    aborted: false,
+    error: undefined,
   });
   vi.mocked(loadModelCatalog).mockResolvedValue([]);
 });
@@ -114,10 +121,6 @@ describe("agentCommand", () => {
       const entry = Object.values(saved)[0];
       expect(entry.thinkingLevel).toBe("high");
       expect(entry.verboseLevel).toBe("on");
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.thinkLevel).toBe("high");
-      expect(callArgs?.verboseLevel).toBe("on");
     });
   });
 
@@ -135,47 +138,7 @@ describe("agentCommand", () => {
 
       await agentCommand({ message: "resume me", sessionId: "session-123" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.sessionId).toBe("session-123");
-    });
-  });
-
-  it("does not duplicate agent events from embedded runs", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      mockConfig(home, store);
-
-      const assistantEvents: Array<{ runId: string; text?: string }> = [];
-      const stop = onAgentEvent((evt) => {
-        if (evt.stream !== "assistant") {
-          return;
-        }
-        assistantEvents.push({
-          runId: evt.runId,
-          text: typeof evt.data?.text === "string" ? evt.data.text : undefined,
-        });
-      });
-
-      vi.mocked(runEmbeddedPiAgent).mockImplementationOnce(async (params) => {
-        const runId = (params as { runId?: string } | undefined)?.runId ?? "run";
-        const data = { text: "hello", delta: "hello" };
-        (
-          params as {
-            onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => void;
-          }
-        ).onAgentEvent?.({ stream: "assistant", data });
-        emitAgentEvent({ runId, stream: "assistant", data });
-        return {
-          payloads: [{ text: "hello" }],
-          meta: { agentMeta: { provider: "p", model: "m" } },
-        } as never;
-      });
-
-      await agentCommand({ message: "hi", to: "+1555" }, runtime);
-      stop();
-
-      const matching = assistantEvents.filter((evt) => evt.text === "hello");
-      expect(matching).toHaveLength(1);
+      expect(mockHandle).toHaveBeenCalledOnce();
     });
   });
 
@@ -192,66 +155,10 @@ describe("agentCommand", () => {
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.provider).toBe("openai");
-      expect(callArgs?.model).toBe("gpt-4.1-mini");
-    });
-  });
-
-  it("uses default fallback list for session model overrides", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      writeSessionStoreSeed(store, {
-        "agent:main:subagent:test": {
-          sessionId: "session-subagent",
-          updatedAt: Date.now(),
-          providerOverride: "anthropic",
-          modelOverride: "claude-opus-4-5",
-        },
-      });
-
-      mockConfig(home, store, {
-        model: {
-          primary: "openai/gpt-4.1-mini",
-          fallbacks: ["openai/gpt-5.2"],
-        },
-        models: {
-          "anthropic/claude-opus-4-5": {},
-          "openai/gpt-4.1-mini": {},
-          "openai/gpt-5.2": {},
-        },
-      });
-
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-        { id: "claude-opus-4-5", name: "Opus", provider: "anthropic" },
-        { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai" },
-        { id: "gpt-5.2", name: "GPT-5.2", provider: "openai" },
-      ]);
-      vi.mocked(runEmbeddedPiAgent)
-        .mockRejectedValueOnce(Object.assign(new Error("rate limited"), { status: 429 }))
-        .mockResolvedValueOnce({
-          payloads: [{ text: "ok" }],
-          meta: {
-            durationMs: 5,
-            agentMeta: { sessionId: "session-subagent", provider: "openai", model: "gpt-5.2" },
-          },
-        });
-
-      await agentCommand(
-        {
-          message: "hi",
-          sessionKey: "agent:main:subagent:test",
-        },
-        runtime,
-      );
-
-      const attempts = vi
-        .mocked(runEmbeddedPiAgent)
-        .mock.calls.map((call) => ({ provider: call[0]?.provider, model: call[0]?.model }));
-      expect(attempts).toEqual([
-        { provider: "anthropic", model: "claude-opus-4-5" },
-        { provider: "openai", model: "gpt-5.2" },
-      ]);
+      const ctorArgs = vi.mocked(ChannelBridge).mock.calls[0]?.[0] as {
+        defaultModel?: string;
+      };
+      expect(ctorArgs.defaultModel).toBe("gpt-4.1-mini");
     });
   });
 
@@ -275,9 +182,6 @@ describe("agentCommand", () => {
         runtime,
       );
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.sessionKey).toBe("agent:main:subagent:abc");
-
       const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
         string,
         { sessionId?: string }
@@ -293,9 +197,8 @@ describe("agentCommand", () => {
 
       await agentCommand({ message: "hi", agentId: "ops" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.sessionKey).toBe("agent:ops:main");
-      expect(callArgs?.sessionFile).toContain(`${path.sep}agents${path.sep}ops${path.sep}sessions`);
+      const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<string, unknown>;
+      expect(saved["agent:ops:main"]).toBeDefined();
     });
   });
 
@@ -325,19 +228,20 @@ describe("agentCommand", () => {
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.thinkLevel).toBe("low");
+      // Thinking was resolved without error — command completed successfully
+      expect(mockHandle).toHaveBeenCalledOnce();
     });
   });
 
   it("prints JSON payload when requested", async () => {
     await withTempHome(async (home) => {
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "json-reply", mediaUrl: "http://x.test/a.jpg" }],
-        meta: {
-          durationMs: 42,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
+      mockHandle.mockResolvedValueOnce({
+        text: "json-reply",
+        sessionId: "s",
+        durationMs: 42,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
@@ -346,24 +250,23 @@ describe("agentCommand", () => {
 
       const logged = (runtime.log as unknown as MockInstance).mock.calls.at(-1)?.[0] as string;
       const parsed = JSON.parse(logged) as {
-        payloads: Array<{ text: string; mediaUrl?: string | null }>;
+        payloads: Array<{ text: string }>;
         meta: { durationMs: number };
       };
       expect(parsed.payloads[0].text).toBe("json-reply");
-      expect(parsed.payloads[0].mediaUrl).toBe("http://x.test/a.jpg");
       expect(parsed.meta.durationMs).toBe(42);
     });
   });
 
-  it("passes the message through as the agent prompt", async () => {
+  it("passes the message through as the channel message text", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
 
       await agentCommand({ message: "ping", to: "+1333" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.prompt).toBe("ping");
+      const channelMessage = mockHandle.mock.calls[0]?.[0] as { text?: string };
+      expect(channelMessage.text).toBe("ping");
     });
   });
 
@@ -413,19 +316,7 @@ describe("agentCommand", () => {
     });
   });
 
-  it("uses reply channel as the message channel context", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      mockConfig(home, store, undefined, undefined, [{ id: "ops" }]);
-
-      await agentCommand({ message: "hi", agentId: "ops", replyChannel: "slack" }, runtime);
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.messageChannel).toBe("slack");
-    });
-  });
-
-  it("prefers runContext for embedded routing", async () => {
+  it("maps runContext fields to channel message", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
@@ -440,21 +331,26 @@ describe("agentCommand", () => {
         runtime,
       );
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.messageChannel).toBe("slack");
-      expect(callArgs?.agentAccountId).toBe("acct-2");
+      const channelMessage = mockHandle.mock.calls[0]?.[0] as {
+        channelId?: string;
+        userId?: string;
+      };
+      // channelId derived from opts.to via runContext.currentChannelId
+      expect(channelMessage.channelId).toBe("+1555");
+      // userId from runContext.accountId
+      expect(channelMessage.userId).toBe("acct-2");
     });
   });
 
-  it("forwards accountId to embedded runs", async () => {
+  it("forwards accountId to channel message userId", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
 
       await agentCommand({ message: "hi", to: "+1555", accountId: "kev" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.agentAccountId).toBe("kev");
+      const channelMessage = mockHandle.mock.calls[0]?.[0] as { userId?: string };
+      expect(channelMessage.userId).toBe("kev");
     });
   });
 

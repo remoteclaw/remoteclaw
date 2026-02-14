@@ -1,11 +1,9 @@
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
-import type { OpenClawConfig } from "../config/config.js";
 import { getReplyFromConfig } from "./reply.js";
 
-vi.mock("../agents/pi-embedded.js", () => ({
+const piEmbeddedMock = vi.hoisted(() => ({
   abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
   runEmbeddedPiAgent: vi.fn(),
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
@@ -14,20 +12,23 @@ vi.mock("../agents/pi-embedded.js", () => ({
   isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
 }));
 
-function makeResult(text: string) {
-  return {
-    payloads: [{ text }],
-    meta: {
-      durationMs: 5,
-      agentMeta: { sessionId: "s", provider: "p", model: "m" },
-    },
-  };
-}
+vi.mock("../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware/index.js")>();
+  return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
+});
+vi.mock("../agents/pi-embedded.js", () => piEmbeddedMock);
+
+import { ChannelBridge } from "../middleware/index.js";
+
+const mockHandle = vi.fn();
 
 async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
   return withTempHomeBase(
     async (home) => {
-      vi.mocked(runEmbeddedPiAgent).mockReset();
+      vi.mocked(ChannelBridge).mockImplementation(function () {
+        return { handle: mockHandle };
+      } as never);
+      mockHandle.mockReset();
       return await fn(home);
     },
     {
@@ -43,22 +44,25 @@ function makeCfg(home: string) {
   return {
     agents: {
       defaults: {
-        model: "anthropic/claude-opus-4-5",
+        model: { primary: "anthropic/claude-opus-4-5" },
         workspace: path.join(home, "openclaw"),
       },
     },
     channels: { whatsapp: { allowFrom: ["*"] } },
     session: { store: path.join(home, "sessions.json") },
-  } as unknown as OpenClawConfig;
+  };
 }
 
 describe("getReplyFromConfig media note plumbing", () => {
   it("includes all MediaPaths in the agent prompt", async () => {
     await withTempHome(async (home) => {
-      let seenPrompt: string | undefined;
-      vi.mocked(runEmbeddedPiAgent).mockImplementation(async (params) => {
-        seenPrompt = params.prompt;
-        return makeResult("ok");
+      mockHandle.mockResolvedValue({
+        text: "ok",
+        sessionId: "s",
+        durationMs: 5,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
 
       const cfg = makeCfg(home);
@@ -76,15 +80,18 @@ describe("getReplyFromConfig media note plumbing", () => {
 
       const text = Array.isArray(res) ? res[0]?.text : res?.text;
       expect(text).toBe("ok");
+      expect(mockHandle).toHaveBeenCalledOnce();
+      const channelMessage = mockHandle.mock.calls[0]?.[0] as { text?: string };
+      const seenPrompt = channelMessage?.text ?? "";
       expect(seenPrompt).toBeTruthy();
       expect(seenPrompt).toContain("[media attached: 2 files]");
-      const idxA = seenPrompt?.indexOf("[media attached 1/2: /tmp/a.png");
-      const idxB = seenPrompt?.indexOf("[media attached 2/2: /tmp/b.png");
+      const idxA = seenPrompt.indexOf("[media attached 1/2: /tmp/a.png");
+      const idxB = seenPrompt.indexOf("[media attached 2/2: /tmp/b.png");
       expect(typeof idxA).toBe("number");
       expect(typeof idxB).toBe("number");
-      expect((idxA ?? -1) >= 0).toBe(true);
-      expect((idxB ?? -1) >= 0).toBe(true);
-      expect((idxA ?? 0) < (idxB ?? 0)).toBe(true);
+      expect(idxA >= 0).toBe(true);
+      expect(idxB >= 0).toBe(true);
+      expect(idxA < idxB).toBe(true);
     });
   });
 });

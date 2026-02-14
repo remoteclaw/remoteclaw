@@ -1,60 +1,206 @@
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
-import { createTempHomeHarness, makeReplyConfig } from "./reply.test-harness.js";
+import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
+import { loadModelCatalog } from "../agents/model-catalog.js";
+import { getReplyFromConfig } from "./reply.js";
 
-const agentMocks = vi.hoisted(() => ({
-  runEmbeddedPiAgent: vi.fn(),
-  loadModelCatalog: vi.fn(),
-  webAuthExists: vi.fn().mockResolvedValue(true),
-  getWebAuthAgeMs: vi.fn().mockReturnValue(120_000),
-  readWebSelfId: vi.fn().mockReturnValue({ e164: "+1999" }),
-}));
-
-vi.mock("../agents/pi-embedded.js", () => ({
+const piEmbeddedMock = vi.hoisted(() => ({
   abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: agentMocks.runEmbeddedPiAgent,
+  runEmbeddedPiAgent: vi.fn(),
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
   resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
   isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
   isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
 }));
 
+vi.mock("../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware/index.js")>();
+  return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
+});
+vi.mock("../agents/pi-embedded.js", () => piEmbeddedMock);
 vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: agentMocks.loadModelCatalog,
+  loadModelCatalog: vi.fn(),
 }));
 
-vi.mock("../web/session.js", () => ({
-  webAuthExists: agentMocks.webAuthExists,
-  getWebAuthAgeMs: agentMocks.getWebAuthAgeMs,
-  readWebSelfId: agentMocks.readWebSelfId,
-}));
+import { ChannelBridge } from "../middleware/index.js";
 
-import { getReplyFromConfig } from "./reply.js";
+const mockHandle = vi.fn();
 
-const { withTempHome } = createTempHomeHarness({ prefix: "openclaw-rawbody-" });
+async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
+  return withTempHomeBase(
+    async (home) => {
+      return await fn(home);
+    },
+    {
+      env: {
+        OPENCLAW_AGENT_DIR: (home) => path.join(home, ".openclaw", "agent"),
+        PI_CODING_AGENT_DIR: (home) => path.join(home, ".openclaw", "agent"),
+      },
+      prefix: "openclaw-rawbody-",
+    },
+  );
+}
 
 describe("RawBody directive parsing", () => {
   beforeEach(() => {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
-    agentMocks.runEmbeddedPiAgent.mockReset();
-    agentMocks.loadModelCatalog.mockReset();
-    agentMocks.loadModelCatalog.mockResolvedValue([
+    vi.mocked(ChannelBridge).mockImplementation(function () {
+      return { handle: mockHandle };
+    } as never);
+    mockHandle.mockReset();
+    vi.mocked(loadModelCatalog).mockResolvedValue([
       { id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" },
     ]);
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
-  it("handles directives and history in the prompt", async () => {
+  it("/model, /think, /verbose directives detected from RawBody even when Body has structural wrapper", async () => {
     await withTempHome(async (home) => {
-      agentMocks.runEmbeddedPiAgent.mockResolvedValue({
-        payloads: [{ text: "ok" }],
-        meta: {
-          durationMs: 1,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
+      const groupMessageCtx = {
+        Body: `[Chat messages since your last reply - for context]\\n[WhatsApp ...] Someone: hello\\n\\n[Current message - respond to this]\\n[WhatsApp ...] Jake: /think:high\\n[from: Jake McInteer (+6421807830)]`,
+        RawBody: "/think:high",
+        From: "+1222",
+        To: "+1222",
+        ChatType: "group",
+        CommandAuthorized: true,
+      };
+
+      const res = await getReplyFromConfig(
+        groupMessageCtx,
+        {},
+        {
+          agents: {
+            defaults: {
+              model: { primary: "anthropic/claude-opus-4-5" },
+              workspace: path.join(home, "openclaw"),
+            },
+          },
+          channels: { whatsapp: { allowFrom: ["*"] } },
+          session: { store: path.join(home, "sessions.json") },
         },
+      );
+
+      const text = Array.isArray(res) ? res[0]?.text : res?.text;
+      expect(text).toContain("Thinking level set to high.");
+      expect(mockHandle).not.toHaveBeenCalled();
+    });
+  });
+
+  it("/model status detected from RawBody", async () => {
+    await withTempHome(async (home) => {
+      const groupMessageCtx = {
+        Body: `[Context]\nJake: /model status\n[from: Jake]`,
+        RawBody: "/model status",
+        From: "+1222",
+        To: "+1222",
+        ChatType: "group",
+        CommandAuthorized: true,
+      };
+
+      const res = await getReplyFromConfig(
+        groupMessageCtx,
+        {},
+        {
+          agents: {
+            defaults: {
+              model: { primary: "anthropic/claude-opus-4-5" },
+              workspace: path.join(home, "openclaw"),
+              models: {
+                "anthropic/claude-opus-4-5": {},
+              },
+            },
+          },
+          channels: { whatsapp: { allowFrom: ["*"] } },
+          session: { store: path.join(home, "sessions.json") },
+        },
+      );
+
+      const text = Array.isArray(res) ? res[0]?.text : res?.text;
+      expect(text).toContain("anthropic/claude-opus-4-5");
+      expect(mockHandle).not.toHaveBeenCalled();
+    });
+  });
+
+  it("CommandBody is honored when RawBody is missing", async () => {
+    await withTempHome(async (home) => {
+      const groupMessageCtx = {
+        Body: `[Context]\nJake: /verbose on\n[from: Jake]`,
+        CommandBody: "/verbose on",
+        From: "+1222",
+        To: "+1222",
+        ChatType: "group",
+        CommandAuthorized: true,
+      };
+
+      const res = await getReplyFromConfig(
+        groupMessageCtx,
+        {},
+        {
+          agents: {
+            defaults: {
+              model: { primary: "anthropic/claude-opus-4-5" },
+              workspace: path.join(home, "openclaw"),
+            },
+          },
+          channels: { whatsapp: { allowFrom: ["*"] } },
+          session: { store: path.join(home, "sessions.json") },
+        },
+      );
+
+      const text = Array.isArray(res) ? res[0]?.text : res?.text;
+      expect(text).toContain("Verbose logging enabled.");
+      expect(mockHandle).not.toHaveBeenCalled();
+    });
+  });
+
+  it("Integration: WhatsApp group message with structural wrapper and RawBody command", async () => {
+    await withTempHome(async (home) => {
+      const groupMessageCtx = {
+        Body: `[Chat messages since your last reply - for context]\\n[WhatsApp ...] Someone: hello\\n\\n[Current message - respond to this]\\n[WhatsApp ...] Jake: /status\\n[from: Jake McInteer (+6421807830)]`,
+        RawBody: "/status",
+        ChatType: "group",
+        From: "+1222",
+        To: "+1222",
+        SessionKey: "agent:main:whatsapp:group:g1",
+        Provider: "whatsapp",
+        Surface: "whatsapp",
+        SenderE164: "+1222",
+        CommandAuthorized: true,
+      };
+
+      const res = await getReplyFromConfig(
+        groupMessageCtx,
+        {},
+        {
+          agents: {
+            defaults: {
+              model: { primary: "anthropic/claude-opus-4-5" },
+              workspace: path.join(home, "openclaw"),
+            },
+          },
+          channels: { whatsapp: { allowFrom: ["+1222"] } },
+          session: { store: path.join(home, "sessions.json") },
+        },
+      );
+
+      const text = Array.isArray(res) ? res[0]?.text : res?.text;
+      expect(text).toContain("Session: agent:main:whatsapp:group:g1");
+      expect(text).toContain("anthropic/claude-opus-4-5");
+      expect(mockHandle).not.toHaveBeenCalled();
+    });
+  });
+
+  it("preserves history when RawBody is provided for command parsing", async () => {
+    await withTempHome(async (home) => {
+      mockHandle.mockResolvedValue({
+        text: "ok",
+        sessionId: "s",
+        durationMs: 1,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
 
       const groupMessageCtx = {
@@ -74,15 +220,23 @@ describe("RawBody directive parsing", () => {
       const res = await getReplyFromConfig(
         groupMessageCtx,
         {},
-        makeReplyConfig(home) as OpenClawConfig,
+        {
+          agents: {
+            defaults: {
+              model: { primary: "anthropic/claude-opus-4-5" },
+              workspace: path.join(home, "openclaw"),
+            },
+          },
+          channels: { whatsapp: { allowFrom: ["*"] } },
+          session: { store: path.join(home, "sessions.json") },
+        },
       );
 
       const text = Array.isArray(res) ? res[0]?.text : res?.text;
       expect(text).toBe("ok");
-      expect(agentMocks.runEmbeddedPiAgent).toHaveBeenCalledOnce();
-      const prompt =
-        (agentMocks.runEmbeddedPiAgent.mock.calls[0]?.[0] as { prompt?: string } | undefined)
-          ?.prompt ?? "";
+      expect(mockHandle).toHaveBeenCalledOnce();
+      const channelMessage = mockHandle.mock.calls[0]?.[0] as { text?: string };
+      const prompt = channelMessage?.text ?? "";
       expect(prompt).toContain("Chat history since last reply (untrusted, for context):");
       expect(prompt).toContain('"sender": "Peter"');
       expect(prompt).toContain('"body": "hello"');

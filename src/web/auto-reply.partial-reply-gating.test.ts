@@ -4,6 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware/index.js")>();
+  return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
+});
 vi.mock("../agents/pi-embedded.js", () => ({
   abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
   isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
@@ -14,11 +18,13 @@ vi.mock("../agents/pi-embedded.js", () => ({
 }));
 
 import type { OpenClawConfig } from "../config/config.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import { getReplyFromConfig } from "../auto-reply/reply.js";
 import { resetInboundDedupe } from "../auto-reply/reply/inbound-dedupe.js";
+import { ChannelBridge } from "../middleware/index.js";
 import { monitorWebChannel } from "./auto-reply.js";
 import { resetLoadConfigMock, setLoadConfigMock } from "./test-helpers.js";
+
+const mockHandle = vi.fn();
 
 let previousHome: string | undefined;
 let tempHome: string | undefined;
@@ -47,6 +53,18 @@ const rmDirWithRetries = async (dir: string): Promise<void> => {
 
 beforeEach(async () => {
   resetInboundDedupe();
+  vi.mocked(ChannelBridge).mockImplementation(function () {
+    return { handle: mockHandle };
+  } as never);
+  mockHandle.mockReset();
+  mockHandle.mockResolvedValue({
+    text: "ok",
+    sessionId: "s",
+    durationMs: 5,
+    usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    aborted: false,
+    error: undefined,
+  });
   previousHome = process.env.HOME;
   tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-web-home-"));
   process.env.HOME = tempHome;
@@ -315,14 +333,6 @@ describe("partial reply gating", () => {
     await store.cleanup();
   });
   it("defaults to self-only when no config is present", async () => {
-    vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-      payloads: [{ text: "ok" }],
-      meta: {
-        durationMs: 1,
-        agentMeta: { sessionId: "s", provider: "p", model: "m" },
-      },
-    });
-
     // Not self: should be blocked
     const blocked = await getReplyFromConfig(
       {
@@ -334,7 +344,7 @@ describe("partial reply gating", () => {
       {},
     );
     expect(blocked).toBeUndefined();
-    expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+    expect(mockHandle).not.toHaveBeenCalled();
 
     // Self: should be allowed
     const allowed = await getReplyFromConfig(
@@ -347,6 +357,6 @@ describe("partial reply gating", () => {
       {},
     );
     expect(allowed).toMatchObject({ text: "ok", audioAsVoice: false });
-    expect(runEmbeddedPiAgent).toHaveBeenCalledOnce();
+    expect(mockHandle).toHaveBeenCalledOnce();
   });
 });

@@ -1,36 +1,19 @@
-import crypto from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import type { TemplateContext } from "../templating.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
-import { onAgentEvent } from "../../infra/agent-events.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-const runEmbeddedPiAgentMock = vi.fn();
-const runCliAgentMock = vi.fn();
-
-vi.mock("../../agents/model-fallback.js", () => ({
-  runWithModelFallback: async ({
-    provider,
-    model,
-    run,
-  }: {
-    provider: string;
-    model: string;
-    run: (provider: string, model: string) => Promise<unknown>;
-  }) => ({
-    result: await run(provider, model),
-    provider,
-    model,
-  }),
-}));
+vi.mock("../../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/index.js")>();
+  return {
+    ...actual,
+    ChannelBridge: vi.fn(),
+    ClaudeCliRuntime: vi.fn(),
+  };
+});
 
 vi.mock("../../agents/pi-embedded.js", () => ({
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
-}));
-
-vi.mock("../../agents/cli-runner.js", () => ({
-  runCliAgent: (params: unknown) => runCliAgentMock(params),
 }));
 
 vi.mock("./queue.js", async () => {
@@ -42,7 +25,14 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+import { ChannelBridge } from "../../middleware/index.js";
 import { runReplyAgent } from "./agent-runner.js";
+
+const mockHandle = vi.fn();
+
+vi.mocked(ChannelBridge).mockImplementation(function () {
+  return { handle: mockHandle } as never;
+});
 
 function createRun() {
   const typing = createMockTypingController();
@@ -102,38 +92,19 @@ function createRun() {
 }
 
 describe("runReplyAgent claude-cli routing", () => {
-  it("uses claude-cli runner for claude-cli provider", async () => {
-    const randomSpy = vi.spyOn(crypto, "randomUUID").mockReturnValue("run-1");
-    const lifecyclePhases: string[] = [];
-    const unsubscribe = onAgentEvent((evt) => {
-      if (evt.runId !== "run-1") {
-        return;
-      }
-      if (evt.stream !== "lifecycle") {
-        return;
-      }
-      const phase = evt.data?.phase;
-      if (typeof phase === "string") {
-        lifecyclePhases.push(phase);
-      }
-    });
-    runCliAgentMock.mockResolvedValueOnce({
-      payloads: [{ text: "ok" }],
-      meta: {
-        agentMeta: {
-          provider: "claude-cli",
-          model: "opus-4.5",
-        },
-      },
+  it("uses ChannelBridge for claude-cli provider", async () => {
+    mockHandle.mockResolvedValueOnce({
+      text: "ok",
+      sessionId: "s",
+      durationMs: 5,
+      usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      aborted: false,
+      error: undefined,
     });
 
     const result = await createRun();
-    unsubscribe();
-    randomSpy.mockRestore();
 
-    expect(runCliAgentMock).toHaveBeenCalledTimes(1);
-    expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
-    expect(lifecyclePhases).toEqual(["start", "end"]);
+    expect(mockHandle).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({ text: "ok" });
   });
 });

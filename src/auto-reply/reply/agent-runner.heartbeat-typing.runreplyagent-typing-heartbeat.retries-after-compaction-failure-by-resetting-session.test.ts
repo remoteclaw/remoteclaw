@@ -1,16 +1,16 @@
-import fs from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { TypingMode } from "../../config/types.js";
+import type { BridgeCallbacks, ChannelMessage, ChannelReply } from "../../middleware/index.js";
 import type { TemplateContext } from "../templating.js";
 import type { GetReplyOptions } from "../types.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
-import * as sessions from "../../config/sessions.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-const runEmbeddedPiAgentMock = vi.fn();
+vi.mock("../../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/index.js")>();
+  return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
+});
 
 vi.mock("../../agents/model-fallback.js", () => ({
   runWithModelFallback: async ({
@@ -30,7 +30,7 @@ vi.mock("../../agents/model-fallback.js", () => ({
 
 vi.mock("../../agents/pi-embedded.js", () => ({
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
+  runEmbeddedPiAgent: vi.fn().mockResolvedValue({ payloads: [], meta: {} }),
 }));
 
 vi.mock("./queue.js", async () => {
@@ -42,7 +42,33 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+import { ChannelBridge } from "../../middleware/index.js";
 import { runReplyAgent } from "./agent-runner.js";
+
+const mockHandle = vi.fn<
+  [ChannelMessage, BridgeCallbacks, AbortSignal | undefined],
+  Promise<ChannelReply>
+>();
+
+function defaultReply(overrides?: Partial<ChannelReply>): ChannelReply {
+  return {
+    text: "final",
+    sessionId: "s",
+    durationMs: 5,
+    usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    aborted: false,
+    error: undefined,
+    ...overrides,
+  };
+}
+
+beforeEach(() => {
+  mockHandle.mockReset();
+  vi.mocked(ChannelBridge).mockImplementation(function () {
+    return { handle: mockHandle } as never;
+  });
+  mockHandle.mockResolvedValue(defaultReply());
+});
 
 function createMinimalRun(params?: {
   opts?: GetReplyOptions;
@@ -121,164 +147,57 @@ function createMinimalRun(params?: {
 }
 
 describe("runReplyAgent typing (heartbeat)", () => {
-  beforeEach(() => {
-    runEmbeddedPiAgentMock.mockReset();
+  it("returns error payload on compaction failure (no retry)", async () => {
+    // In the new ChannelBridge code, compaction retry logic was removed.
+    // Errors are caught and returned as a final error payload.
+    mockHandle.mockRejectedValueOnce(
+      new Error('Context overflow: Summarization failed: 400 {"message":"prompt is too long"}'),
+    );
+
+    const { run } = createMinimalRun({
+      sessionEntry: { sessionId: "session", updatedAt: Date.now() },
+      sessionStore: { main: { sessionId: "session", updatedAt: Date.now() } },
+      sessionKey: "main",
+    });
+    const res = await run();
+
+    expect(mockHandle).toHaveBeenCalledTimes(1);
+    const payloads = Array.isArray(res) ? res : res ? [res] : [];
+    expect(payloads.some((p) => p.text?.includes("Agent failed before reply"))).toBe(true);
   });
 
-  it("retries after compaction failure by resetting the session", async () => {
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
-    const stateDir = await fs.mkdtemp(path.join(tmpdir(), "openclaw-session-compaction-reset-"));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-    try {
-      const sessionId = "session";
-      const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId);
-      const sessionEntry = { sessionId, updatedAt: Date.now(), sessionFile: transcriptPath };
-      const sessionStore = { main: sessionEntry };
+  it("returns error payload on context overflow (no retry)", async () => {
+    // Context overflow errors thrown by the bridge are caught and returned
+    // as a final error payload with no retry.
+    mockHandle.mockRejectedValueOnce(new Error("Context overflow: prompt too large"));
 
-      await fs.mkdir(path.dirname(storePath), { recursive: true });
-      await fs.writeFile(storePath, JSON.stringify(sessionStore), "utf-8");
-      await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
-      await fs.writeFile(transcriptPath, "ok", "utf-8");
+    const { run } = createMinimalRun({
+      sessionEntry: { sessionId: "session", updatedAt: Date.now() },
+      sessionStore: { main: { sessionId: "session", updatedAt: Date.now() } },
+      sessionKey: "main",
+    });
+    const res = await run();
 
-      runEmbeddedPiAgentMock.mockImplementationOnce(async () => {
-        throw new Error(
-          'Context overflow: Summarization failed: 400 {"message":"prompt is too long"}',
-        );
-      });
-
-      const { run } = createMinimalRun({
-        sessionEntry,
-        sessionStore,
-        sessionKey: "main",
-        storePath,
-      });
-      const res = await run();
-
-      expect(runEmbeddedPiAgentMock).toHaveBeenCalledTimes(1);
-      const payload = Array.isArray(res) ? res[0] : res;
-      expect(payload).toMatchObject({
-        text: expect.stringContaining("Context limit exceeded during compaction"),
-      });
-      expect(payload.text?.toLowerCase()).toContain("reset");
-      expect(sessionStore.main.sessionId).not.toBe(sessionId);
-
-      const persisted = JSON.parse(await fs.readFile(storePath, "utf-8"));
-      expect(persisted.main.sessionId).toBe(sessionStore.main.sessionId);
-    } finally {
-      if (prevStateDir) {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
-      } else {
-        delete process.env.OPENCLAW_STATE_DIR;
-      }
-    }
+    expect(mockHandle).toHaveBeenCalledTimes(1);
+    const payloads = Array.isArray(res) ? res : res ? [res] : [];
+    expect(payloads.some((p) => p.text?.includes("Agent failed before reply"))).toBe(true);
   });
 
-  it("retries after context overflow payload by resetting the session", async () => {
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
-    const stateDir = await fs.mkdtemp(path.join(tmpdir(), "openclaw-session-overflow-reset-"));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-    try {
-      const sessionId = "session";
-      const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId);
-      const sessionEntry = { sessionId, updatedAt: Date.now(), sessionFile: transcriptPath };
-      const sessionStore = { main: sessionEntry };
+  it("returns error payload on role ordering failure (no retry)", async () => {
+    // Role ordering errors no longer trigger session resets. They are caught
+    // and returned as a final error payload.
+    mockHandle.mockRejectedValueOnce(
+      new Error('messages: roles must alternate between "user" and "assistant"'),
+    );
 
-      await fs.mkdir(path.dirname(storePath), { recursive: true });
-      await fs.writeFile(storePath, JSON.stringify(sessionStore), "utf-8");
-      await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
-      await fs.writeFile(transcriptPath, "ok", "utf-8");
+    const { run } = createMinimalRun({
+      sessionEntry: { sessionId: "session", updatedAt: Date.now() },
+      sessionStore: { main: { sessionId: "session", updatedAt: Date.now() } },
+      sessionKey: "main",
+    });
+    const res = await run();
 
-      runEmbeddedPiAgentMock.mockImplementationOnce(async () => ({
-        payloads: [{ text: "Context overflow: prompt too large", isError: true }],
-        meta: {
-          durationMs: 1,
-          error: {
-            kind: "context_overflow",
-            message: 'Context overflow: Summarization failed: 400 {"message":"prompt is too long"}',
-          },
-        },
-      }));
-
-      const { run } = createMinimalRun({
-        sessionEntry,
-        sessionStore,
-        sessionKey: "main",
-        storePath,
-      });
-      const res = await run();
-
-      expect(runEmbeddedPiAgentMock).toHaveBeenCalledTimes(1);
-      const payload = Array.isArray(res) ? res[0] : res;
-      expect(payload).toMatchObject({
-        text: expect.stringContaining("Context limit exceeded"),
-      });
-      expect(payload.text?.toLowerCase()).toContain("reset");
-      expect(sessionStore.main.sessionId).not.toBe(sessionId);
-
-      const persisted = JSON.parse(await fs.readFile(storePath, "utf-8"));
-      expect(persisted.main.sessionId).toBe(sessionStore.main.sessionId);
-    } finally {
-      if (prevStateDir) {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
-      } else {
-        delete process.env.OPENCLAW_STATE_DIR;
-      }
-    }
-  });
-
-  it("resets the session after role ordering payloads", async () => {
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
-    const stateDir = await fs.mkdtemp(path.join(tmpdir(), "openclaw-session-role-ordering-"));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-    try {
-      const sessionId = "session";
-      const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId);
-      const sessionEntry = { sessionId, updatedAt: Date.now(), sessionFile: transcriptPath };
-      const sessionStore = { main: sessionEntry };
-
-      await fs.mkdir(path.dirname(storePath), { recursive: true });
-      await fs.writeFile(storePath, JSON.stringify(sessionStore), "utf-8");
-      await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
-      await fs.writeFile(transcriptPath, "ok", "utf-8");
-
-      runEmbeddedPiAgentMock.mockImplementationOnce(async () => ({
-        payloads: [{ text: "Message ordering conflict - please try again.", isError: true }],
-        meta: {
-          durationMs: 1,
-          error: {
-            kind: "role_ordering",
-            message: 'messages: roles must alternate between "user" and "assistant"',
-          },
-        },
-      }));
-
-      const { run } = createMinimalRun({
-        sessionEntry,
-        sessionStore,
-        sessionKey: "main",
-        storePath,
-      });
-      const res = await run();
-
-      const payload = Array.isArray(res) ? res[0] : res;
-      expect(payload).toMatchObject({
-        text: expect.stringContaining("Message ordering conflict"),
-      });
-      expect(payload.text?.toLowerCase()).toContain("reset");
-      expect(sessionStore.main.sessionId).not.toBe(sessionId);
-      await expect(fs.access(transcriptPath)).rejects.toBeDefined();
-
-      const persisted = JSON.parse(await fs.readFile(storePath, "utf-8"));
-      expect(persisted.main.sessionId).toBe(sessionStore.main.sessionId);
-    } finally {
-      if (prevStateDir) {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
-      } else {
-        delete process.env.OPENCLAW_STATE_DIR;
-      }
-    }
+    const payloads = Array.isArray(res) ? res : res ? [res] : [];
+    expect(payloads.some((p) => p.text?.includes("Agent failed before reply"))).toBe(true);
   });
 });

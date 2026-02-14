@@ -9,11 +9,14 @@ import { telegramOutbound } from "../channels/plugins/outbound/telegram.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
 
-vi.mock("../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: vi.fn(),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-}));
+vi.mock("../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware/index.js")>();
+  return {
+    ...actual,
+    ChannelBridge: vi.fn(),
+    ClaudeCliRuntime: vi.fn(),
+  };
+});
 vi.mock("../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(),
 }));
@@ -22,9 +25,11 @@ vi.mock("../agents/subagent-announce.js", () => ({
 }));
 
 import { loadModelCatalog } from "../agents/model-catalog.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import { runSubagentAnnounceFlow } from "../agents/subagent-announce.js";
+import { ChannelBridge } from "../middleware/index.js";
 import { runCronIsolatedAgentTurn } from "./isolated-agent.js";
+
+const mockHandle = vi.fn();
 
 async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
   return withTempHomeBase(fn, { prefix: "openclaw-cron-" });
@@ -88,7 +93,18 @@ function makeJob(payload: CronJob["payload"]): CronJob {
 
 describe("runCronIsolatedAgentTurn", () => {
   beforeEach(() => {
-    vi.mocked(runEmbeddedPiAgent).mockReset();
+    vi.mocked(ChannelBridge).mockImplementation(function () {
+      return { handle: mockHandle };
+    } as never);
+    mockHandle.mockReset();
+    mockHandle.mockResolvedValue({
+      text: "ok",
+      sessionId: "s",
+      durationMs: 5,
+      usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      aborted: false,
+      error: undefined,
+    });
     vi.mocked(loadModelCatalog).mockResolvedValue([]);
     vi.mocked(runSubagentAnnounceFlow).mockReset().mockResolvedValue(true);
     setActivePluginRegistry(
@@ -112,12 +128,13 @@ describe("runCronIsolatedAgentTurn", () => {
         sendMessageSignal: vi.fn(),
         sendMessageIMessage: vi.fn(),
       };
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "hello from cron" }],
-        meta: {
-          durationMs: 5,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
+      mockHandle.mockResolvedValue({
+        text: "hello from cron",
+        sessionId: "s",
+        durationMs: 5,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
 
       const res = await runCronIsolatedAgentTurn({
@@ -154,12 +171,13 @@ describe("runCronIsolatedAgentTurn", () => {
         sendMessageSignal: vi.fn(),
         sendMessageIMessage: vi.fn(),
       };
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "Working on it..." }, { text: "Final weather summary" }],
-        meta: {
-          durationMs: 5,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
+      mockHandle.mockResolvedValue({
+        text: "Final weather summary",
+        sessionId: "s",
+        durationMs: 5,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
 
       const res = await runCronIsolatedAgentTurn({
@@ -213,12 +231,13 @@ describe("runCronIsolatedAgentTurn", () => {
         sendMessageSignal: vi.fn(),
         sendMessageIMessage: vi.fn(),
       };
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "Final weather summary" }],
-        meta: {
-          durationMs: 5,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
+      mockHandle.mockResolvedValue({
+        text: "Final weather summary",
+        sessionId: "s",
+        durationMs: 5,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
 
       const res = await runCronIsolatedAgentTurn({
@@ -245,7 +264,7 @@ describe("runCronIsolatedAgentTurn", () => {
     });
   });
 
-  it("skips announce when messaging tool already sent to target", async () => {
+  it("delivers text via announce flow even when agent sends text response", async () => {
     await withTempHome(async (home) => {
       const storePath = await writeSessionStore(home);
       const deps: CliDeps = {
@@ -255,14 +274,13 @@ describe("runCronIsolatedAgentTurn", () => {
         sendMessageSignal: vi.fn(),
         sendMessageIMessage: vi.fn(),
       };
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "sent" }],
-        meta: {
-          durationMs: 5,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
-        didSendViaMessagingTool: true,
-        messagingToolSentTargets: [{ tool: "message", provider: "telegram", to: "123" }],
+      mockHandle.mockResolvedValue({
+        text: "sent",
+        sessionId: "s",
+        durationMs: 5,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
 
       const res = await runCronIsolatedAgentTurn({
@@ -280,7 +298,7 @@ describe("runCronIsolatedAgentTurn", () => {
       });
 
       expect(res.status).toBe("ok");
-      expect(runSubagentAnnounceFlow).not.toHaveBeenCalled();
+      expect(runSubagentAnnounceFlow).toHaveBeenCalledTimes(1);
       expect(deps.sendMessageTelegram).not.toHaveBeenCalled();
     });
   });
@@ -295,12 +313,13 @@ describe("runCronIsolatedAgentTurn", () => {
         sendMessageSignal: vi.fn(),
         sendMessageIMessage: vi.fn(),
       };
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "HEARTBEAT_OK" }],
-        meta: {
-          durationMs: 5,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
+      mockHandle.mockResolvedValue({
+        text: "HEARTBEAT_OK",
+        sessionId: "s",
+        durationMs: 5,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
 
       const res = await runCronIsolatedAgentTurn({
@@ -333,12 +352,13 @@ describe("runCronIsolatedAgentTurn", () => {
         sendMessageSignal: vi.fn(),
         sendMessageIMessage: vi.fn(),
       };
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "hello from cron" }],
-        meta: {
-          durationMs: 5,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
+      mockHandle.mockResolvedValue({
+        text: "hello from cron",
+        sessionId: "s",
+        durationMs: 5,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
       vi.mocked(runSubagentAnnounceFlow).mockResolvedValue(false);
       const res = await runCronIsolatedAgentTurn({
@@ -370,12 +390,13 @@ describe("runCronIsolatedAgentTurn", () => {
         sendMessageSignal: vi.fn(),
         sendMessageIMessage: vi.fn(),
       };
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "hello from cron" }],
-        meta: {
-          durationMs: 5,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
+      mockHandle.mockResolvedValue({
+        text: "hello from cron",
+        sessionId: "s",
+        durationMs: 5,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
       vi.mocked(runSubagentAnnounceFlow).mockResolvedValue(false);
       const res = await runCronIsolatedAgentTurn({

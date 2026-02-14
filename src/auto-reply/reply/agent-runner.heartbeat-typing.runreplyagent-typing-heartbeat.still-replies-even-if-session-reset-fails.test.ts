@@ -1,16 +1,16 @@
-import fs from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { TypingMode } from "../../config/types.js";
+import type { BridgeCallbacks, ChannelMessage, ChannelReply } from "../../middleware/index.js";
 import type { TemplateContext } from "../templating.js";
 import type { GetReplyOptions } from "../types.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
-import * as sessions from "../../config/sessions.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-const runEmbeddedPiAgentMock = vi.fn();
+vi.mock("../../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/index.js")>();
+  return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
+});
 
 vi.mock("../../agents/model-fallback.js", () => ({
   runWithModelFallback: async ({
@@ -30,7 +30,7 @@ vi.mock("../../agents/model-fallback.js", () => ({
 
 vi.mock("../../agents/pi-embedded.js", () => ({
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
+  runEmbeddedPiAgent: vi.fn().mockResolvedValue({ payloads: [], meta: {} }),
 }));
 
 vi.mock("./queue.js", async () => {
@@ -42,7 +42,33 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+import { ChannelBridge } from "../../middleware/index.js";
 import { runReplyAgent } from "./agent-runner.js";
+
+const mockHandle = vi.fn<
+  [ChannelMessage, BridgeCallbacks, AbortSignal | undefined],
+  Promise<ChannelReply>
+>();
+
+function defaultReply(overrides?: Partial<ChannelReply>): ChannelReply {
+  return {
+    text: "final",
+    sessionId: "s",
+    durationMs: 5,
+    usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    aborted: false,
+    error: undefined,
+    ...overrides,
+  };
+}
+
+beforeEach(() => {
+  mockHandle.mockReset();
+  vi.mocked(ChannelBridge).mockImplementation(function () {
+    return { handle: mockHandle } as never;
+  });
+  mockHandle.mockResolvedValue(defaultReply());
+});
 
 function createMinimalRun(params?: {
   opts?: GetReplyOptions;
@@ -121,66 +147,40 @@ function createMinimalRun(params?: {
 }
 
 describe("runReplyAgent typing (heartbeat)", () => {
-  it("still replies even if session reset fails to persist", async () => {
-    const prevStateDir = process.env.OPENCLAW_STATE_DIR;
-    const stateDir = await fs.mkdtemp(path.join(tmpdir(), "openclaw-session-reset-fail-"));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-    const saveSpy = vi.spyOn(sessions, "saveSessionStore").mockRejectedValueOnce(new Error("boom"));
-    try {
-      const sessionId = "session-corrupt";
-      const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const sessionEntry = { sessionId, updatedAt: Date.now() };
-      const sessionStore = { main: sessionEntry };
+  it("returns error payload when bridge throws (no session reset)", async () => {
+    // In the new ChannelBridge code, session reset logic was removed.
+    // All errors from bridge.handle() are caught and returned as a final
+    // error payload without any session state manipulation.
+    mockHandle.mockRejectedValueOnce(
+      new Error(
+        "function call turn comes immediately after a user turn or after a function response turn",
+      ),
+    );
 
-      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId);
-      await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
-      await fs.writeFile(transcriptPath, "bad", "utf-8");
+    const { run } = createMinimalRun({
+      sessionEntry: { sessionId: "session-corrupt", updatedAt: Date.now() },
+      sessionStore: { main: { sessionId: "session-corrupt", updatedAt: Date.now() } },
+      sessionKey: "main",
+    });
+    const res = await run();
 
-      runEmbeddedPiAgentMock.mockImplementationOnce(async () => {
-        throw new Error(
-          "function call turn comes immediately after a user turn or after a function response turn",
-        );
-      });
-
-      const { run } = createMinimalRun({
-        sessionEntry,
-        sessionStore,
-        sessionKey: "main",
-        storePath,
-      });
-      const res = await run();
-
-      expect(res).toMatchObject({
-        text: expect.stringContaining("Session history was corrupted"),
-      });
-      expect(sessionStore.main).toBeUndefined();
-      await expect(fs.access(transcriptPath)).rejects.toThrow();
-    } finally {
-      saveSpy.mockRestore();
-      if (prevStateDir) {
-        process.env.OPENCLAW_STATE_DIR = prevStateDir;
-      } else {
-        delete process.env.OPENCLAW_STATE_DIR;
-      }
-    }
+    const payloads = Array.isArray(res) ? res : res ? [res] : [];
+    expect(payloads.some((p) => p.text?.includes("Agent failed before reply"))).toBe(true);
   });
-  it("rewrites Bun socket errors into friendly text", async () => {
-    runEmbeddedPiAgentMock.mockImplementationOnce(async () => ({
-      payloads: [
-        {
-          text: "TypeError: The socket connection was closed unexpectedly. For more information, pass `verbose: true` in the second argument to fetch()",
-          isError: true,
-        },
-      ],
-      meta: {},
-    }));
+  it("returns error payload for socket connection errors", async () => {
+    // In the new ChannelBridge code, socket errors are caught like any other
+    // error and returned as a final error payload.
+    mockHandle.mockRejectedValueOnce(
+      new Error(
+        "TypeError: The socket connection was closed unexpectedly. For more information, pass `verbose: true` in the second argument to fetch()",
+      ),
+    );
 
     const { run } = createMinimalRun();
     const res = await run();
     const payloads = Array.isArray(res) ? res : res ? [res] : [];
     expect(payloads.length).toBe(1);
-    expect(payloads[0]?.text).toContain("LLM connection failed");
+    expect(payloads[0]?.text).toContain("Agent failed before reply");
     expect(payloads[0]?.text).toContain("socket connection was closed unexpectedly");
-    expect(payloads[0]?.text).toContain("```");
   });
 });

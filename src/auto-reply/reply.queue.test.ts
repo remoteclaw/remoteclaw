@@ -9,7 +9,7 @@ import {
 } from "../agents/pi-embedded.js";
 import { getReplyFromConfig } from "./reply.js";
 
-vi.mock("../agents/pi-embedded.js", () => ({
+const piEmbeddedMock = vi.hoisted(() => ({
   abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
   runEmbeddedPiAgent: vi.fn(),
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
@@ -17,6 +17,16 @@ vi.mock("../agents/pi-embedded.js", () => ({
   isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
   isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
 }));
+
+vi.mock("../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware/index.js")>();
+  return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
+});
+vi.mock("../agents/pi-embedded.js", () => piEmbeddedMock);
+
+import { ChannelBridge } from "../middleware/index.js";
+
+const mockHandle = vi.fn();
 
 function makeResult(text: string) {
   return {
@@ -31,7 +41,10 @@ function makeResult(text: string) {
 async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
   return withTempHomeBase(
     async (home) => {
-      vi.mocked(runEmbeddedPiAgent).mockReset();
+      vi.mocked(ChannelBridge).mockImplementation(function () {
+        return { handle: mockHandle };
+      } as never);
+      mockHandle.mockReset();
       return await fn(home);
     },
     { prefix: "openclaw-queue-" },
@@ -61,12 +74,22 @@ describe("queue followups", () => {
     vi.useFakeTimers();
     await withTempHome(async (home) => {
       const prompts: string[] = [];
+      // Primary path uses ChannelBridge (mockHandle)
+      mockHandle.mockImplementation(async (msg: { text?: string }) => {
+        prompts.push(msg?.text ?? "");
+        return {
+          text: "main",
+          sessionId: "s",
+          durationMs: 5,
+          usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+          aborted: false,
+          error: undefined,
+        };
+      });
+      // Followup path still uses runEmbeddedPiAgent
       vi.mocked(runEmbeddedPiAgent).mockImplementation(async (params) => {
         prompts.push(params.prompt);
-        if (params.prompt.includes("[Queued messages while agent was busy]")) {
-          return makeResult("followup");
-        }
-        return makeResult("main");
+        return makeResult("followup");
       });
 
       vi.mocked(isEmbeddedPiRunActive).mockReturnValue(true);
@@ -85,7 +108,7 @@ describe("queue followups", () => {
         cfg,
       );
       expect(first).toBeUndefined();
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(mockHandle).not.toHaveBeenCalled();
 
       vi.mocked(isEmbeddedPiRunActive).mockReturnValue(false);
       vi.mocked(isEmbeddedPiRunStreaming).mockReturnValue(false);
@@ -102,7 +125,8 @@ describe("queue followups", () => {
       await vi.advanceTimersByTimeAsync(500);
       await Promise.resolve();
 
-      expect(runEmbeddedPiAgent).toHaveBeenCalledTimes(2);
+      expect(mockHandle).toHaveBeenCalledTimes(1);
+      expect(runEmbeddedPiAgent).toHaveBeenCalledTimes(1);
       const queuedPrompt = prompts.find((p) =>
         p.includes("[Queued messages while agent was busy]"),
       );
@@ -117,6 +141,19 @@ describe("queue followups", () => {
   it("summarizes dropped followups when cap is exceeded", async () => {
     await withTempHome(async (home) => {
       const prompts: string[] = [];
+      // Primary path uses ChannelBridge (mockHandle)
+      mockHandle.mockImplementation(async (msg: { text?: string }) => {
+        prompts.push(msg?.text ?? "");
+        return {
+          text: "ok",
+          sessionId: "s",
+          durationMs: 5,
+          usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+          aborted: false,
+          error: undefined,
+        };
+      });
+      // Followup path still uses runEmbeddedPiAgent
       vi.mocked(runEmbeddedPiAgent).mockImplementation(async (params) => {
         prompts.push(params.prompt);
         return makeResult("ok");

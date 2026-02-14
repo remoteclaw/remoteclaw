@@ -9,11 +9,14 @@ import { telegramOutbound } from "../channels/plugins/outbound/telegram.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
 
-vi.mock("../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: vi.fn(),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-}));
+vi.mock("../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware/index.js")>();
+  return {
+    ...actual,
+    ChannelBridge: vi.fn(),
+    ClaudeCliRuntime: vi.fn(),
+  };
+});
 vi.mock("../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(),
 }));
@@ -22,9 +25,11 @@ vi.mock("../agents/subagent-announce.js", () => ({
 }));
 
 import { loadModelCatalog } from "../agents/model-catalog.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import { runSubagentAnnounceFlow } from "../agents/subagent-announce.js";
+import { ChannelBridge } from "../middleware/index.js";
 import { runCronIsolatedAgentTurn } from "./isolated-agent.js";
+
+const mockHandle = vi.fn();
 
 async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
   return withTempHomeBase(fn, { prefix: "openclaw-cron-" });
@@ -88,7 +93,18 @@ function makeJob(payload: CronJob["payload"]): CronJob {
 
 describe("runCronIsolatedAgentTurn", () => {
   beforeEach(() => {
-    vi.mocked(runEmbeddedPiAgent).mockReset();
+    vi.mocked(ChannelBridge).mockImplementation(function () {
+      return { handle: mockHandle };
+    } as never);
+    mockHandle.mockReset();
+    mockHandle.mockResolvedValue({
+      text: "ok",
+      sessionId: "s",
+      durationMs: 5,
+      usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      aborted: false,
+      error: undefined,
+    });
     vi.mocked(loadModelCatalog).mockResolvedValue([]);
     vi.mocked(runSubagentAnnounceFlow).mockReset().mockResolvedValue(true);
     setActivePluginRegistry(
@@ -102,7 +118,7 @@ describe("runCronIsolatedAgentTurn", () => {
     );
   });
 
-  it("delivers when response has HEARTBEAT_OK but includes media", async () => {
+  it("delivers non-heartbeat text via shared announce flow", async () => {
     await withTempHome(async (home) => {
       const storePath = await writeSessionStore(home);
       const deps: CliDeps = {
@@ -115,13 +131,13 @@ describe("runCronIsolatedAgentTurn", () => {
         sendMessageSignal: vi.fn(),
         sendMessageIMessage: vi.fn(),
       };
-      // Media should still be delivered even if text is just HEARTBEAT_OK.
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "HEARTBEAT_OK", mediaUrl: "https://example.com/img.png" }],
-        meta: {
-          durationMs: 5,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
+      mockHandle.mockResolvedValue({
+        text: "Here is the result",
+        sessionId: "s",
+        durationMs: 5,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
 
       const res = await runCronIsolatedAgentTurn({
@@ -140,8 +156,7 @@ describe("runCronIsolatedAgentTurn", () => {
       });
 
       expect(res.status).toBe("ok");
-      expect(deps.sendMessageTelegram).toHaveBeenCalled();
-      expect(runSubagentAnnounceFlow).not.toHaveBeenCalled();
+      expect(runSubagentAnnounceFlow).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -158,12 +173,13 @@ describe("runCronIsolatedAgentTurn", () => {
         sendMessageSignal: vi.fn(),
         sendMessageIMessage: vi.fn(),
       };
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-        payloads: [{ text: "HEARTBEAT_OK 🦞" }],
-        meta: {
-          durationMs: 5,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
-        },
+      mockHandle.mockResolvedValue({
+        text: "HEARTBEAT_OK \uD83E\uDD9E",
+        sessionId: "s",
+        durationMs: 5,
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        aborted: false,
+        error: undefined,
       });
 
       const cfg = makeCfg(home, storePath);

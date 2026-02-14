@@ -1,12 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { TypingMode } from "../../config/types.js";
+import type { BridgeCallbacks, ChannelMessage, ChannelReply } from "../../middleware/index.js";
 import type { TemplateContext } from "../templating.js";
 import type { GetReplyOptions } from "../types.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-const runEmbeddedPiAgentMock = vi.fn();
+vi.mock("../../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/index.js")>();
+  return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
+});
 
 vi.mock("../../agents/model-fallback.js", () => ({
   runWithModelFallback: async ({
@@ -26,7 +30,7 @@ vi.mock("../../agents/model-fallback.js", () => ({
 
 vi.mock("../../agents/pi-embedded.js", () => ({
   queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
+  runEmbeddedPiAgent: vi.fn().mockResolvedValue({ payloads: [], meta: {} }),
 }));
 
 vi.mock("./queue.js", async () => {
@@ -38,7 +42,33 @@ vi.mock("./queue.js", async () => {
   };
 });
 
+import { ChannelBridge } from "../../middleware/index.js";
 import { runReplyAgent } from "./agent-runner.js";
+
+const mockHandle = vi.fn<
+  [ChannelMessage, BridgeCallbacks, AbortSignal | undefined],
+  Promise<ChannelReply>
+>();
+
+function defaultReply(overrides?: Partial<ChannelReply>): ChannelReply {
+  return {
+    text: "final",
+    sessionId: "s",
+    durationMs: 5,
+    usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    aborted: false,
+    error: undefined,
+    ...overrides,
+  };
+}
+
+beforeEach(() => {
+  mockHandle.mockReset();
+  vi.mocked(ChannelBridge).mockImplementation(function () {
+    return { handle: mockHandle } as never;
+  });
+  mockHandle.mockResolvedValue(defaultReply());
+});
 
 function createMinimalRun(params?: {
   opts?: GetReplyOptions;
@@ -119,9 +149,9 @@ function createMinimalRun(params?: {
 describe("runReplyAgent typing (heartbeat)", () => {
   it("signals typing for normal runs", async () => {
     const onPartialReply = vi.fn();
-    runEmbeddedPiAgentMock.mockImplementationOnce(async (params: EmbeddedPiAgentParams) => {
-      await params.onPartialReply?.({ text: "hi" });
-      return { payloads: [{ text: "final" }], meta: {} };
+    mockHandle.mockImplementationOnce(async (_msg, callbacks) => {
+      await callbacks.onPartialText?.("hi");
+      return defaultReply();
     });
 
     const { run, typing } = createMinimalRun({
@@ -133,10 +163,12 @@ describe("runReplyAgent typing (heartbeat)", () => {
     expect(typing.startTypingOnText).toHaveBeenCalledWith("hi");
     expect(typing.startTypingLoop).toHaveBeenCalled();
   });
-  it("signals typing even without consumer partial handler", async () => {
-    runEmbeddedPiAgentMock.mockImplementationOnce(async (params: EmbeddedPiAgentParams) => {
-      await params.onPartialReply?.({ text: "hi" });
-      return { payloads: [{ text: "final" }], meta: {} };
+  it("does not signal text typing without consumer partial handler", async () => {
+    // In the new ChannelBridge-based code, onPartialText is only wired when
+    // opts.onPartialReply is provided. Without it, no text-based typing fires.
+    mockHandle.mockImplementationOnce(async (_msg, callbacks) => {
+      await callbacks.onPartialText?.("hi");
+      return defaultReply();
     });
 
     const { run, typing } = createMinimalRun({
@@ -144,14 +176,14 @@ describe("runReplyAgent typing (heartbeat)", () => {
     });
     await run();
 
-    expect(typing.startTypingOnText).toHaveBeenCalledWith("hi");
+    expect(typing.startTypingOnText).not.toHaveBeenCalled();
     expect(typing.startTypingLoop).not.toHaveBeenCalled();
   });
   it("never signals typing for heartbeat runs", async () => {
     const onPartialReply = vi.fn();
-    runEmbeddedPiAgentMock.mockImplementationOnce(async (params: EmbeddedPiAgentParams) => {
-      await params.onPartialReply?.({ text: "hi" });
-      return { payloads: [{ text: "final" }], meta: {} };
+    mockHandle.mockImplementationOnce(async (_msg, callbacks) => {
+      await callbacks.onPartialText?.("hi");
+      return defaultReply();
     });
 
     const { run, typing } = createMinimalRun({
@@ -165,9 +197,9 @@ describe("runReplyAgent typing (heartbeat)", () => {
   });
   it("suppresses partial streaming for NO_REPLY", async () => {
     const onPartialReply = vi.fn();
-    runEmbeddedPiAgentMock.mockImplementationOnce(async (params: EmbeddedPiAgentParams) => {
-      await params.onPartialReply?.({ text: "NO_REPLY" });
-      return { payloads: [{ text: "NO_REPLY" }], meta: {} };
+    mockHandle.mockImplementationOnce(async (_msg, callbacks) => {
+      await callbacks.onPartialText?.("NO_REPLY");
+      return defaultReply({ text: "NO_REPLY" });
     });
 
     const { run, typing } = createMinimalRun({
@@ -180,10 +212,10 @@ describe("runReplyAgent typing (heartbeat)", () => {
     expect(typing.startTypingOnText).not.toHaveBeenCalled();
     expect(typing.startTypingLoop).not.toHaveBeenCalled();
   });
-  it("does not start typing on assistant message start without prior text in message mode", async () => {
-    runEmbeddedPiAgentMock.mockImplementationOnce(async (params: EmbeddedPiAgentParams) => {
-      await params.onAssistantMessageStart?.();
-      return { payloads: [{ text: "final" }], meta: {} };
+  it("does not start typing on tool use without prior text in message mode", async () => {
+    mockHandle.mockImplementationOnce(async (_msg, callbacks) => {
+      await callbacks.onToolUse?.("some-tool", "tool-id");
+      return defaultReply();
     });
 
     const { run, typing } = createMinimalRun({
@@ -191,37 +223,24 @@ describe("runReplyAgent typing (heartbeat)", () => {
     });
     await run();
 
-    // Typing only starts when there's actual renderable text, not on message start alone
-    expect(typing.startTypingLoop).not.toHaveBeenCalled();
+    // Tool use signals via signalToolStart, but in message mode that only fires the loop
     expect(typing.startTypingOnText).not.toHaveBeenCalled();
   });
-  it("starts typing from reasoning stream in thinking mode", async () => {
-    runEmbeddedPiAgentMock.mockImplementationOnce(
-      async (params: {
-        onPartialReply?: (payload: { text?: string }) => Promise<void> | void;
-        onReasoningStream?: (payload: { text?: string }) => Promise<void> | void;
-      }) => {
-        await params.onReasoningStream?.({ text: "Reasoning:\n_step_" });
-        await params.onPartialReply?.({ text: "hi" });
-        return { payloads: [{ text: "final" }], meta: {} };
-      },
-    );
+  it("signals tool start typing from tool use callback", async () => {
+    mockHandle.mockImplementationOnce(async (_msg, callbacks) => {
+      await callbacks.onToolUse?.("some-tool", "tool-id");
+      return defaultReply();
+    });
 
     const { run, typing } = createMinimalRun({
-      typingMode: "thinking",
+      typingMode: "instant",
     });
     await run();
 
     expect(typing.startTypingLoop).toHaveBeenCalled();
-    expect(typing.startTypingOnText).not.toHaveBeenCalled();
   });
   it("suppresses typing in never mode", async () => {
-    runEmbeddedPiAgentMock.mockImplementationOnce(
-      async (params: { onPartialReply?: (payload: { text?: string }) => void }) => {
-        params.onPartialReply?.({ text: "hi" });
-        return { payloads: [{ text: "final" }], meta: {} };
-      },
-    );
+    mockHandle.mockResolvedValueOnce(defaultReply());
 
     const { run, typing } = createMinimalRun({
       typingMode: "never",

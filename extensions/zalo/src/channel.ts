@@ -19,12 +19,11 @@ import {
   deleteAccountFromConfigSection,
   chunkTextForOutbound,
   formatAllowFromLowercase,
-  mapAllowFromEntries,
-  listDirectoryUserEntriesFromAllowFrom,
-  isNumericTargetId,
+  formatPairingApproveHint,
+  migrateBaseNameToDefaultAccount,
+  normalizeAccountId,
   PAIRING_APPROVED_MESSAGE,
-  resolveOutboundMediaUrls,
-  sendPayloadWithChunkedTextAndMedia,
+  resolveChannelAccountConfigBasePath,
   setAccountEnabledInConfigSection,
 } from "remoteclaw/plugin-sdk";
 import {
@@ -132,12 +131,14 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
-      return buildAccountScopedDmSecurityPolicy({
+      const resolvedAccountId = accountId ?? account.accountId ?? DEFAULT_ACCOUNT_ID;
+      const basePath = resolveChannelAccountConfigBasePath({
         cfg,
         channelKey: "zalo",
-        accountId,
-        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-        policy: account.config.dmPolicy,
+        accountId: resolvedAccountId,
+      });
+      return {
+        policy: account.config.dmPolicy ?? "pairing",
         allowFrom: account.config.allowFrom ?? [],
         policyPathSuffix: "dmPolicy",
         normalizeEntry: (raw) => raw.replace(/^(zalo|zl):/i, ""),

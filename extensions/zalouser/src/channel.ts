@@ -10,9 +10,10 @@ import {
   chunkTextForOutbound,
   deleteAccountFromConfigSection,
   formatAllowFromLowercase,
-  isNumericTargetId,
+  formatPairingApproveHint,
+  migrateBaseNameToDefaultAccount,
   normalizeAccountId,
-  sendPayloadWithChunkedTextAndMedia,
+  resolveChannelAccountConfigBasePath,
   setAccountEnabledInConfigSection,
   type ChannelAccountSnapshot,
   type ChannelDirectoryEntry,
@@ -368,12 +369,14 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
-      return buildAccountScopedDmSecurityPolicy({
+      const resolvedAccountId = accountId ?? account.accountId ?? DEFAULT_ACCOUNT_ID;
+      const basePath = resolveChannelAccountConfigBasePath({
         cfg,
         channelKey: "zalouser",
-        accountId,
-        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-        policy: account.config.dmPolicy,
+        accountId: resolvedAccountId,
+      });
+      return {
+        policy: account.config.dmPolicy ?? "pairing",
         allowFrom: account.config.allowFrom ?? [],
         policyPathSuffix: "dmPolicy",
         normalizeEntry: (raw) => raw.replace(/^(zalouser|zlu):/i, ""),

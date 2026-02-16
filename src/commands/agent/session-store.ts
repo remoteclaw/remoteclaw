@@ -6,9 +6,28 @@ import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js
 import type { OpenClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 
-type RunResult = Awaited<
-  ReturnType<(typeof import("../../agents/pi-embedded.js"))["runEmbeddedPiAgent"]>
->;
+// pi-embedded: dynamic type import removed (dead code after AgentRuntime migration)
+type RunResult = {
+  payloads?: Array<{ text?: string; mediaUrl?: string; mediaUrls?: string[] }>;
+  meta: {
+    agentMeta?: {
+      usage?: {
+        input?: number;
+        output?: number;
+        total?: number;
+        cacheRead?: number;
+        cacheWrite?: number;
+      };
+      model?: string;
+      provider?: string;
+      sessionId?: string;
+      compactionCount?: number;
+      promptTokens?: number;
+    };
+    aborted?: boolean;
+    systemPromptReport?: unknown;
+  };
+};
 
 export async function updateSessionStoreAfterAgentRun(params: {
   cfg: OpenClawConfig;

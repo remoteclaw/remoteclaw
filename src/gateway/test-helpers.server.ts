@@ -24,7 +24,6 @@ import type { GatewayServerOptions } from "./server.js";
 import {
   agentCommand,
   cronIsolatedRun,
-  embeddedRunMock,
   piSdkMock,
   sessionStoreSaveDelayMs,
   setTestConfigRoot,
@@ -159,10 +158,6 @@ async function resetGatewayTestState(options: { uniqueConfigRoot: boolean }) {
   testIsNixMode.value = false;
   cronIsolatedRun.mockClear();
   agentCommand.mockClear();
-  embeddedRunMock.activeIds.clear();
-  embeddedRunMock.abortCalls = [];
-  embeddedRunMock.waitCalls = [];
-  embeddedRunMock.waitResults.clear();
   drainSystemEvents(resolveMainSessionKeyFromConfig());
   resetAgentRunContextForTest();
   const mod = await getServerModule();

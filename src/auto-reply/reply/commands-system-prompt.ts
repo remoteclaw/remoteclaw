@@ -3,7 +3,6 @@ import { resolveSessionAgentIds } from "../../agents/agent-scope.js";
 import { resolveBootstrapContextForRun } from "../../agents/bootstrap-files.js";
 import { resolveDefaultModelForAgent } from "../../agents/model-selection.js";
 import type { EmbeddedContextFile } from "../../agents/pi-embedded-helpers.js";
-import { createOpenClawCodingTools } from "../../agents/pi-tools.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
 import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
 import { getSkillsSnapshotVersion } from "../../agents/skills/refresh.js";
@@ -50,25 +49,9 @@ export async function resolveCommandsSystemPromptBundle(
     cfg: params.cfg,
     sessionKey: params.ctx.SessionKey ?? params.sessionKey,
   });
-  const tools = (() => {
-    try {
-      return createOpenClawCodingTools({
-        config: params.cfg,
-        workspaceDir,
-        sessionKey: params.sessionKey,
-        messageProvider: params.command.channel,
-        groupId: params.sessionEntry?.groupId ?? undefined,
-        groupChannel: params.sessionEntry?.groupChannel ?? undefined,
-        groupSpace: params.sessionEntry?.space ?? undefined,
-        spawnedBy: params.sessionEntry?.spawnedBy ?? undefined,
-        senderIsOwner: params.command.senderIsOwner,
-        modelProvider: params.provider,
-        modelId: params.model,
-      });
-    } catch {
-      return [];
-    }
-  })();
+  // pi-embedded: createOpenClawCodingTools removed (dead code after AgentRuntime migration)
+  // Tool creation is now handled by the AgentRuntime middleware.
+  const tools: AgentTool[] = [];
   const toolSummaries = buildToolSummaryMap(tools);
   const toolNames = tools.map((t) => t.name);
   const { sessionAgentId } = resolveSessionAgentIds({

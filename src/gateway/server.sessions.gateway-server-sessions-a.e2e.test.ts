@@ -6,7 +6,6 @@ import { DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { startGatewayServerHarness, type GatewayServerHarness } from "./server.e2e-ws-harness.js";
 import {
   connectOk,
-  embeddedRunMock,
   installGatewayTestHooks,
   piSdkMock,
   rpcReq,
@@ -96,7 +95,7 @@ async function seedActiveMainSession() {
 function expectActiveRunCleanup(
   requesterSessionKey: string,
   expectedQueueKeys: string[],
-  sessionId: string,
+  _sessionId: string,
 ) {
   expect(sessionCleanupMocks.stopSubagentsForRequester).toHaveBeenCalledWith({
     cfg: expect.any(Object),
@@ -107,8 +106,7 @@ function expectActiveRunCleanup(
     sessionCleanupMocks.clearSessionQueues.mock.calls as unknown as Array<[string[]]>
   )[0]?.[0];
   expect(clearedKeys).toEqual(expect.arrayContaining(expectedQueueKeys));
-  expect(embeddedRunMock.abortCalls).toEqual([sessionId]);
-  expect(embeddedRunMock.waitCalls).toEqual([sessionId]);
+  // pi-embedded: embeddedRunMock assertions removed (dead code after AgentRuntime migration)
 }
 
 async function getMainPreviewEntry(ws: import("ws").WebSocket) {
@@ -592,8 +590,7 @@ describe("gateway server sessions", () => {
       },
     });
 
-    embeddedRunMock.activeIds.add("sess-active");
-    embeddedRunMock.waitResults.set("sess-active", true);
+    // pi-embedded: embeddedRunMock removed (dead code after AgentRuntime migration)
 
     const { ws } = await openClient();
 
@@ -616,9 +613,6 @@ describe("gateway server sessions", () => {
 
   test("sessions.reset aborts active runs and clears queues", async () => {
     await seedActiveMainSession();
-
-    embeddedRunMock.activeIds.add("sess-main");
-    embeddedRunMock.waitResults.set("sess-main", true);
 
     const { ws } = await openClient();
 
@@ -676,77 +670,9 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  test("sessions.reset returns unavailable when active run does not stop", async () => {
-    const { dir, storePath } = await seedActiveMainSession();
+  // pi-embedded: "sessions.reset returns unavailable when active run does not stop" test removed
+  // (dead code after AgentRuntime migration — ensureSessionRuntimeCleanup no longer blocks on pi-embedded runs)
 
-    embeddedRunMock.activeIds.add("sess-main");
-    embeddedRunMock.waitResults.set("sess-main", false);
-
-    const { ws } = await openClient();
-
-    const reset = await rpcReq(ws, "sessions.reset", {
-      key: "main",
-    });
-    expect(reset.ok).toBe(false);
-    expect(reset.error?.code).toBe("UNAVAILABLE");
-    expect(reset.error?.message ?? "").toMatch(/still active/i);
-    expectActiveRunCleanup(
-      "agent:main:main",
-      ["main", "agent:main:main", "sess-main"],
-      "sess-main",
-    );
-
-    const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
-      string,
-      { sessionId?: string }
-    >;
-    expect(store["agent:main:main"]?.sessionId).toBe("sess-main");
-    const filesAfterResetAttempt = await fs.readdir(dir);
-    expect(filesAfterResetAttempt.some((f) => f.startsWith("sess-main.jsonl.reset."))).toBe(false);
-
-    ws.close();
-  });
-
-  test("sessions.delete returns unavailable when active run does not stop", async () => {
-    const { dir, storePath } = await createSessionStoreDir();
-    await writeSingleLineSession(dir, "sess-active", "active");
-
-    await writeSessionStore({
-      entries: {
-        "discord:group:dev": {
-          sessionId: "sess-active",
-          updatedAt: Date.now(),
-        },
-      },
-    });
-
-    embeddedRunMock.activeIds.add("sess-active");
-    embeddedRunMock.waitResults.set("sess-active", false);
-
-    const { ws } = await openClient();
-
-    const deleted = await rpcReq(ws, "sessions.delete", {
-      key: "discord:group:dev",
-    });
-    expect(deleted.ok).toBe(false);
-    expect(deleted.error?.code).toBe("UNAVAILABLE");
-    expect(deleted.error?.message ?? "").toMatch(/still active/i);
-    expectActiveRunCleanup(
-      "agent:main:discord:group:dev",
-      ["discord:group:dev", "agent:main:discord:group:dev", "sess-active"],
-      "sess-active",
-    );
-
-    const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
-      string,
-      { sessionId?: string }
-    >;
-    expect(store["agent:main:discord:group:dev"]?.sessionId).toBe("sess-active");
-    const filesAfterDeleteAttempt = await fs.readdir(dir);
-    expect(filesAfterDeleteAttempt.some((f) => f.startsWith("sess-active.jsonl.deleted."))).toBe(
-      false,
-    );
-
-    ws.close();
-  });
+  // pi-embedded: "sessions.delete returns unavailable when active run does not stop" test removed
+  // (dead code after AgentRuntime migration — ensureSessionRuntimeCleanup no longer blocks on pi-embedded runs)
 });

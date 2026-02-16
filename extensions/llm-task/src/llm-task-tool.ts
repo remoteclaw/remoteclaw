@@ -11,25 +11,9 @@ import type { OpenClawPluginApi } from "../../../src/plugins/types.js";
 
 type RunEmbeddedPiAgentFn = (params: Record<string, unknown>) => Promise<unknown>;
 
+// pi-embedded: loadRunEmbeddedPiAgent stubbed (dead code after AgentRuntime migration)
 async function loadRunEmbeddedPiAgent(): Promise<RunEmbeddedPiAgentFn> {
-  // Source checkout (tests/dev)
-  try {
-    const mod = await import("../../../src/agents/pi-embedded-runner.js");
-    // oxlint-disable-next-line typescript/no-explicit-any
-    if (typeof (mod as any).runEmbeddedPiAgent === "function") {
-      // oxlint-disable-next-line typescript/no-explicit-any
-      return (mod as any).runEmbeddedPiAgent;
-    }
-  } catch {
-    // ignore
-  }
-
-  // Bundled install (built)
-  const mod = await import("../../../src/agents/pi-embedded-runner.js");
-  if (typeof mod.runEmbeddedPiAgent !== "function") {
-    throw new Error("Internal error: runEmbeddedPiAgent not available");
-  }
-  return mod.runEmbeddedPiAgent as RunEmbeddedPiAgentFn;
+  throw new Error("runEmbeddedPiAgent not available: pi-embedded engine removed");
 }
 
 function stripCodeFences(s: string): string {

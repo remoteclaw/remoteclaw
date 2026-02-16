@@ -20,9 +20,11 @@ import type { RuntimeEnv } from "../../runtime.js";
 import { isInternalMessageChannel } from "../../utils/message-channel.js";
 import type { AgentCommandOpts } from "./types.js";
 
-type RunResult = Awaited<
-  ReturnType<(typeof import("../../agents/pi-embedded.js"))["runEmbeddedPiAgent"]>
->;
+// pi-embedded: dynamic type import removed (dead code after AgentRuntime migration)
+type RunResult = {
+  payloads?: Array<{ text?: string; mediaUrl?: string; mediaUrls?: string[] }>;
+  meta: Record<string, unknown>;
+};
 
 const NESTED_LOG_PREFIX = "[agent:nested]";
 

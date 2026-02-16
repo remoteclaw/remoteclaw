@@ -1,5 +1,14 @@
-import type { ClientToolDefinition } from "../../agents/pi-embedded-runner/run/params.js";
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
+
+// pi-embedded: ClientToolDefinition inlined (original module removed after AgentRuntime migration)
+export type ClientToolDefinition = {
+  type: "function";
+  function: {
+    name: string;
+    description?: string;
+    parameters?: Record<string, unknown>;
+  };
+};
 import type { InputProvenance } from "../../sessions/input-provenance.js";
 
 /** Image content block for Claude API multimodal messages. */

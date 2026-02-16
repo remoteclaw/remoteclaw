@@ -162,12 +162,6 @@ const hoisted = vi.hoisted(() => ({
   agentCommand: vi.fn().mockResolvedValue(undefined),
   testIsNixMode: { value: false },
   sessionStoreSaveDelayMs: { value: 0 },
-  embeddedRunMock: {
-    activeIds: new Set<string>(),
-    abortCalls: [] as string[],
-    waitCalls: [] as string[],
-    waitResults: new Map<string, boolean>(),
-  },
   testTailscaleWhois: { value: null as TailscaleWhoisIdentity | null },
   getReplyFromConfig: vi.fn().mockResolvedValue(undefined),
   sendWhatsAppMock: vi.fn().mockResolvedValue({ messageId: "msg-1", toJid: "jid-1" }),
@@ -227,7 +221,6 @@ export const testState = {
 
 export const testIsNixMode = hoisted.testIsNixMode;
 export const sessionStoreSaveDelayMs = hoisted.sessionStoreSaveDelayMs;
-export const embeddedRunMock = hoisted.embeddedRunMock;
 
 vi.mock("../agents/pi-model-discovery.js", async () => {
   const actual = await vi.importActual<typeof import("../agents/pi-model-discovery.js")>(
@@ -528,24 +521,6 @@ vi.mock("../config/config.js", async () => {
     }),
     readConfigFileSnapshot,
     writeConfigFile,
-  };
-});
-
-vi.mock("../agents/pi-embedded.js", async () => {
-  const actual = await vi.importActual<typeof import("../agents/pi-embedded.js")>(
-    "../agents/pi-embedded.js",
-  );
-  return {
-    ...actual,
-    isEmbeddedPiRunActive: (sessionId: string) => embeddedRunMock.activeIds.has(sessionId),
-    abortEmbeddedPiRun: (sessionId: string) => {
-      embeddedRunMock.abortCalls.push(sessionId);
-      return embeddedRunMock.activeIds.has(sessionId);
-    },
-    waitForEmbeddedPiRunEnd: async (sessionId: string) => {
-      embeddedRunMock.waitCalls.push(sessionId);
-      return embeddedRunMock.waitResults.get(sessionId) ?? true;
-    },
   };
 });
 

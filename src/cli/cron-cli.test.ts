@@ -539,7 +539,7 @@ describe("cron cli", () => {
   it("applies --exact to existing cron job without requiring --cron on edit", async () => {
     resetGatewayMock();
     callGatewayFromCli.mockImplementation(
-      async (method: string, _opts: unknown, params?: unknown) => {
+      (async (method: string, _opts: unknown, params?: unknown, _timeoutMs?: number) => {
         if (method === "cron.status") {
           return { enabled: true };
         }
@@ -556,7 +556,7 @@ describe("cron cli", () => {
           };
         }
         return { ok: true, params };
-      },
+      }) as never,
     );
     const program = buildProgram();
 
@@ -577,7 +577,7 @@ describe("cron cli", () => {
   it("rejects --exact on edit when existing job is not cron", async () => {
     resetGatewayMock();
     callGatewayFromCli.mockImplementation(
-      async (method: string, _opts: unknown, params?: unknown) => {
+      (async (method: string, _opts: unknown, params?: unknown, _timeoutMs?: number) => {
         if (method === "cron.status") {
           return { enabled: true };
         }
@@ -589,7 +589,7 @@ describe("cron cli", () => {
           };
         }
         return { ok: true, params };
-      },
+      }) as never,
     );
     const program = buildProgram();
 

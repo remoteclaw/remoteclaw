@@ -1,10 +1,13 @@
 import crypto from "node:crypto";
+import type { OpenClawConfig } from "../../config/config.js";
+import type { TemplateContext } from "../templating.js";
+import type { VerboseLevel } from "../thinking.js";
+import type { GetReplyOptions } from "../types.js";
+import type { FollowupRun } from "./queue.js";
 import { resolveAgentModelFallbacksOverride } from "../../agents/agent-scope.js";
 import { runWithModelFallback } from "../../agents/model-fallback.js";
 import { isCliProvider } from "../../agents/model-selection.js";
-import { runEmbeddedPiAgent } from "../../agents/pi-embedded.js";
 import { resolveSandboxConfigForAgent, resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
-import type { OpenClawConfig } from "../../config/config.js";
 import {
   resolveAgentIdFromSessionKey,
   type SessionEntry,
@@ -12,22 +15,11 @@ import {
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
-import type { TemplateContext } from "../templating.js";
-import type { VerboseLevel } from "../thinking.js";
-import type { GetReplyOptions } from "../types.js";
-import {
-  buildEmbeddedContextFromTemplate,
-  buildTemplateSenderContext,
-  resolveRunAuthProfile,
-} from "./agent-runner-utils.js";
-import { resolveEnforceFinalTag } from "./agent-runner-utils.js";
 import {
   resolveMemoryFlushContextWindowTokens,
-  resolveMemoryFlushPromptForRun,
   resolveMemoryFlushSettings,
   shouldRunMemoryFlush,
 } from "./memory-flush.js";
-import type { FollowupRun } from "./queue.js";
 import { incrementCompactionCount } from "./session-updates.js";
 
 export async function runMemoryFlushIfNeeded(params: {
@@ -95,12 +87,6 @@ export async function runMemoryFlushIfNeeded(params: {
     });
   }
   let memoryCompactionCompleted = false;
-  const flushSystemPrompt = [
-    params.followupRun.run.extraSystemPrompt,
-    memoryFlushSettings.systemPrompt,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
   try {
     await runWithModelFallback({
       cfg: params.followupRun.run.config,
@@ -111,48 +97,9 @@ export async function runMemoryFlushIfNeeded(params: {
         params.followupRun.run.config,
         resolveAgentIdFromSessionKey(params.followupRun.run.sessionKey),
       ),
-      run: (provider, model) => {
-        const authProfile = resolveRunAuthProfile(params.followupRun.run, provider);
-        const embeddedContext = buildEmbeddedContextFromTemplate({
-          run: params.followupRun.run,
-          sessionCtx: params.sessionCtx,
-          hasRepliedRef: params.opts?.hasRepliedRef,
-        });
-        const senderContext = buildTemplateSenderContext(params.sessionCtx);
-        return runEmbeddedPiAgent({
-          ...embeddedContext,
-          ...senderContext,
-          sessionFile: params.followupRun.run.sessionFile,
-          workspaceDir: params.followupRun.run.workspaceDir,
-          agentDir: params.followupRun.run.agentDir,
-          config: params.followupRun.run.config,
-          skillsSnapshot: params.followupRun.run.skillsSnapshot,
-          prompt: resolveMemoryFlushPromptForRun({
-            prompt: memoryFlushSettings.prompt,
-            cfg: params.cfg,
-          }),
-          extraSystemPrompt: flushSystemPrompt,
-          ownerNumbers: params.followupRun.run.ownerNumbers,
-          enforceFinalTag: resolveEnforceFinalTag(params.followupRun.run, provider),
-          provider,
-          model,
-          ...authProfile,
-          thinkLevel: params.followupRun.run.thinkLevel,
-          verboseLevel: params.followupRun.run.verboseLevel,
-          reasoningLevel: params.followupRun.run.reasoningLevel,
-          execOverrides: params.followupRun.run.execOverrides,
-          bashElevated: params.followupRun.run.bashElevated,
-          timeoutMs: params.followupRun.run.timeoutMs,
-          runId: flushRunId,
-          onAgentEvent: (evt) => {
-            if (evt.stream === "compaction") {
-              const phase = typeof evt.data.phase === "string" ? evt.data.phase : "";
-              if (phase === "end") {
-                memoryCompactionCompleted = true;
-              }
-            }
-          },
-        });
+      // pi-embedded: runEmbeddedPiAgent removed (dead code after AgentRuntime migration)
+      run: () => {
+        throw new Error("Memory flush not available: pi-embedded engine removed");
       },
     });
     let memoryFlushCompactionCount =

@@ -233,8 +233,6 @@ export async function spawnSubagentDirect(
     childSessionKey,
     label: label || undefined,
     task,
-    childDepth,
-    maxSpawnDepth,
   });
   const childTaskMessage = [
     `[Subagent Context] You are running as a subagent (depth ${childDepth}/${maxSpawnDepth}). Results auto-announce to your requester; do not busy-poll for status.`,

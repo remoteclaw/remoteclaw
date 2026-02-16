@@ -443,7 +443,9 @@ describe("runCronIsolatedAgentTurn", () => {
         mockTexts: ["done"],
       });
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
+      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0] as {
+        thinkLevel?: string;
+      };
       expect(callArgs?.thinkLevel).toBe("low");
     });
   });

@@ -500,8 +500,7 @@ describe("buildSubagentSystemPrompt", () => {
     const prompt = buildSubagentSystemPrompt({
       childSessionKey: "agent:main:subagent:abc",
       task: "research task",
-      childDepth: 1,
-      maxSpawnDepth: 2,
+      // childDepth/maxSpawnDepth removed after AgentRuntime migration
     });
 
     expect(prompt).toContain("## Sub-Agent Spawning");
@@ -516,8 +515,7 @@ describe("buildSubagentSystemPrompt", () => {
     const prompt = buildSubagentSystemPrompt({
       childSessionKey: "agent:main:subagent:abc",
       task: "research task",
-      childDepth: 1,
-      maxSpawnDepth: 1,
+      // childDepth/maxSpawnDepth removed after AgentRuntime migration
     });
 
     expect(prompt).not.toContain("## Sub-Agent Spawning");
@@ -528,8 +526,7 @@ describe("buildSubagentSystemPrompt", () => {
     const prompt = buildSubagentSystemPrompt({
       childSessionKey: "agent:main:subagent:abc:subagent:def",
       task: "leaf task",
-      childDepth: 2,
-      maxSpawnDepth: 2,
+      // childDepth/maxSpawnDepth removed after AgentRuntime migration
     });
 
     expect(prompt).toContain("## Sub-Agent Spawning");
@@ -541,8 +538,7 @@ describe("buildSubagentSystemPrompt", () => {
     const prompt = buildSubagentSystemPrompt({
       childSessionKey: "agent:main:subagent:abc:subagent:def",
       task: "leaf task",
-      childDepth: 2,
-      maxSpawnDepth: 2,
+      // childDepth/maxSpawnDepth removed after AgentRuntime migration
     });
 
     expect(prompt).toContain("spawned by the parent orchestrator");
@@ -553,8 +549,7 @@ describe("buildSubagentSystemPrompt", () => {
     const prompt = buildSubagentSystemPrompt({
       childSessionKey: "agent:main:subagent:abc",
       task: "orchestrator task",
-      childDepth: 1,
-      maxSpawnDepth: 2,
+      // childDepth/maxSpawnDepth removed after AgentRuntime migration
     });
 
     expect(prompt).toContain("spawned by the main agent");
@@ -565,8 +560,6 @@ describe("buildSubagentSystemPrompt", () => {
     const prompt = buildSubagentSystemPrompt({
       childSessionKey: "agent:main:subagent:abc",
       task: "investigate logs",
-      childDepth: 1,
-      maxSpawnDepth: 2,
     });
 
     expect(prompt).toContain("[compacted: tool output removed to free context]");

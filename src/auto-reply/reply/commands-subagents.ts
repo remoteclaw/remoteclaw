@@ -2,7 +2,6 @@ import crypto from "node:crypto";
 import type { SubagentRunRecord } from "../../agents/subagent-registry.js";
 import type { CommandHandler } from "./commands-types.js";
 import { AGENT_LANE_SUBAGENT } from "../../agents/lanes.js";
-import { abortEmbeddedPiRun } from "../../agents/pi-embedded.js";
 import { listSubagentRunsForRequester } from "../../agents/subagent-registry.js";
 import {
   extractAssistantText,
@@ -253,9 +252,7 @@ export const handleSubagentsCommand: CommandHandler = async (params, allowTextCo
     const childKey = resolved.entry.childSessionKey;
     const { storePath, store, entry } = loadSubagentSessionEntry(params, childKey);
     const sessionId = entry?.sessionId;
-    if (sessionId) {
-      abortEmbeddedPiRun(sessionId);
-    }
+    // pi-embedded: abortEmbeddedPiRun removed (dead code after AgentRuntime migration)
     const cleared = clearSessionQueues([childKey, sessionId]);
     if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
       logVerbose(

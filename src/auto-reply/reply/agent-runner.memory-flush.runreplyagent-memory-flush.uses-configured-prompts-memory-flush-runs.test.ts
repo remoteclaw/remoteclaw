@@ -5,16 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BridgeCallbacks, ChannelMessage, ChannelReply } from "../../middleware/index.js";
 import type { TemplateContext } from "../templating.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
-import { DEFAULT_MEMORY_FLUSH_PROMPT } from "./memory-flush.js";
 import { createMockTypingController } from "./test-helpers.js";
-
-const runEmbeddedPiAgentMock = vi.fn();
-
-type EmbeddedRunParams = {
-  prompt?: string;
-  extraSystemPrompt?: string;
-  onAgentEvent?: (evt: { stream?: string; data?: { phase?: string; willRetry?: boolean } }) => void;
-};
 
 vi.mock("../../middleware/index.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../middleware/index.js")>();
@@ -39,11 +30,6 @@ vi.mock("../../agents/model-fallback.js", () => ({
 
 vi.mock("../../agents/cli-runner.js", () => ({
   runCliAgent: vi.fn(),
-}));
-
-vi.mock("../../agents/pi-embedded.js", () => ({
-  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
 }));
 
 vi.mock("./queue.js", async () => {
@@ -153,8 +139,10 @@ function createBaseRun(params: {
 }
 
 describe("runReplyAgent memory flush", () => {
-  it("uses configured prompts for memory flush runs", async () => {
-    runEmbeddedPiAgentMock.mockReset();
+  // pi-embedded: flush now throws (dead code after AgentRuntime migration).
+  // The old test verified that configured prompts were passed to runEmbeddedPiAgent.
+  // Now flush throws before processing prompts, so we verify the main turn still proceeds.
+  it("main turn proceeds via ChannelBridge even when flush config is present", async () => {
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-flush-"));
     const storePath = path.join(tmp, "sessions.json");
     const sessionKey = "main";
@@ -166,19 +154,6 @@ describe("runReplyAgent memory flush", () => {
     };
 
     await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-    // Memory flush goes through runEmbeddedPiAgent (old path).
-    const calls: Array<EmbeddedRunParams> = [];
-    runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
-      calls.push(params);
-      if (params.prompt === DEFAULT_MEMORY_FLUSH_PROMPT) {
-        return { payloads: [], meta: {} };
-      }
-      return {
-        payloads: [{ text: "ok" }],
-        meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-      };
-    });
 
     // Main turn goes through ChannelBridge (new path).
     mockHandle.mockResolvedValue(defaultReply({ text: "ok" }));
@@ -226,21 +201,10 @@ describe("runReplyAgent memory flush", () => {
       typingMode: "instant",
     });
 
-    // Memory flush call (via runEmbeddedPiAgent)
-    const flushCall = calls[0];
-    expect(flushCall?.prompt).toContain("Write notes.");
-    expect(flushCall?.prompt).toContain("NO_REPLY");
-    expect(flushCall?.extraSystemPrompt).toContain("extra system");
-    expect(flushCall?.extraSystemPrompt).toContain("Flush memory now.");
-    expect(flushCall?.extraSystemPrompt).toContain("NO_REPLY");
-
-    // Main turn went through ChannelBridge (not via runEmbeddedPiAgent)
+    // Main turn went through ChannelBridge despite flush config being present
     expect(mockHandle).toHaveBeenCalledTimes(1);
-    // Only the flush call should have gone through runEmbeddedPiAgent
-    expect(calls.length).toBe(1);
   });
   it("skips memory flush after a prior flush in the same compaction cycle", async () => {
-    runEmbeddedPiAgentMock.mockReset();
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-flush-"));
     const storePath = path.join(tmp, "sessions.json");
     const sessionKey = "main";
@@ -287,8 +251,6 @@ describe("runReplyAgent memory flush", () => {
       typingMode: "instant",
     });
 
-    // No flush call -- runEmbeddedPiAgent should not have been called
-    expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
     // Main turn went through ChannelBridge
     expect(mockHandle).toHaveBeenCalledTimes(1);
   });

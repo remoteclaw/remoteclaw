@@ -9,12 +9,6 @@ import type { createModelSelectionState } from "./model-selection.js";
 import type { TypingController } from "./typing.js";
 import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
 import {
-  abortEmbeddedPiRun,
-  isEmbeddedPiRunActive,
-  isEmbeddedPiRunStreaming,
-  resolveEmbeddedSessionLane,
-} from "../../agents/pi-embedded.js";
-import {
   resolveGroupSessionKey,
   resolveSessionFilePath,
   type SessionEntry,
@@ -328,16 +322,16 @@ export async function runPreparedReply(
     inlineMode: perMessageQueueMode,
     inlineOptions: perMessageQueueOptions,
   });
-  const sessionLaneKey = resolveEmbeddedSessionLane(sessionKey ?? sessionIdFinal);
+  // pi-embedded: resolveEmbeddedSessionLane/abort/active/streaming removed (dead code after AgentRuntime migration)
+  const sessionLaneKey = `lane:${sessionKey ?? sessionIdFinal}`;
   const laneSize = getQueueSize(sessionLaneKey);
   if (resolvedQueue.mode === "interrupt" && laneSize > 0) {
     const cleared = clearCommandLane(sessionLaneKey);
-    const aborted = abortEmbeddedPiRun(sessionIdFinal);
-    logVerbose(`Interrupting ${sessionLaneKey} (cleared ${cleared}, aborted=${aborted})`);
+    logVerbose(`Interrupting ${sessionLaneKey} (cleared ${cleared})`);
   }
   const queueKey = sessionKey ?? sessionIdFinal;
-  const isActive = isEmbeddedPiRunActive(sessionIdFinal);
-  const isStreaming = isEmbeddedPiRunStreaming(sessionIdFinal);
+  const isActive = false;
+  const isStreaming = false;
   const shouldSteer = resolvedQueue.mode === "steer" || resolvedQueue.mode === "steer-backlog";
   const shouldFollowup =
     resolvedQueue.mode === "followup" ||

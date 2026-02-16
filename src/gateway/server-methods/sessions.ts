@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import type { GatewayRequestHandlers } from "./types.js";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
-import { abortEmbeddedPiRun, waitForEmbeddedPiRunEnd } from "../../agents/pi-embedded.js";
 import { stopSubagentsForRequester } from "../../auto-reply/reply/abort.js";
 import { clearSessionQueues } from "../../auto-reply/reply/queue.js";
 import { loadConfig } from "../../config/config.js";
@@ -314,21 +313,7 @@ export const sessionsHandlers: GatewayRequestHandlers = {
     }
     clearSessionQueues([...queueKeys]);
     stopSubagentsForRequester({ cfg, requesterSessionKey: target.canonicalKey });
-    if (sessionId) {
-      abortEmbeddedPiRun(sessionId);
-      const ended = await waitForEmbeddedPiRunEnd(sessionId, 15_000);
-      if (!ended) {
-        respond(
-          false,
-          undefined,
-          errorShape(
-            ErrorCodes.UNAVAILABLE,
-            `Session ${key} is still active; try again in a moment.`,
-          ),
-        );
-        return;
-      }
-    }
+    // pi-embedded: abort/wait removed (dead code after AgentRuntime migration)
     await updateSessionStore(storePath, (store) => {
       const primaryKey = target.storeKeys[0] ?? key;
       const existingKey = target.storeKeys.find((candidate) => store[candidate]);

@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import type { OpenClawConfig } from "../../config/config.js";
 import { resolveOpenClawAgentDir } from "../../agents/agent-paths.js";
@@ -9,20 +8,12 @@ import {
   resolveAuthProfileDisplayLabel,
   resolveAuthProfileOrder,
 } from "../../agents/auth-profiles.js";
-import { describeFailoverError } from "../../agents/failover-error.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "../../agents/model-auth.js";
 import { loadModelCatalog } from "../../agents/model-catalog.js";
 import { normalizeProviderId, parseModelRef } from "../../agents/model-selection.js";
-import { runEmbeddedPiAgent } from "../../agents/pi-embedded.js";
 import { resolveDefaultAgentWorkspaceDir } from "../../agents/workspace.js";
-import {
-  resolveSessionTranscriptPath,
-  resolveSessionTranscriptsDirForAgent,
-} from "../../config/sessions/paths.js";
-import { redactSecrets } from "../status-all/format.js";
+import { resolveSessionTranscriptsDirForAgent } from "../../config/sessions/paths.js";
 import { DEFAULT_PROVIDER, formatMs } from "./shared.js";
-
-const PROBE_PROMPT = "Reply with OK. Do not use tools.";
 
 export type AuthProbeStatus =
   | "ok"
@@ -76,28 +67,6 @@ export type AuthProbeOptions = {
   timeoutMs: number;
   concurrency: number;
   maxTokens: number;
-};
-
-const toStatus = (reason?: string | null): AuthProbeStatus => {
-  if (!reason) {
-    return "unknown";
-  }
-  if (reason === "auth") {
-    return "auth";
-  }
-  if (reason === "rate_limit") {
-    return "rate_limit";
-  }
-  if (reason === "billing") {
-    return "billing";
-  }
-  if (reason === "timeout") {
-    return "timeout";
-  }
-  if (reason === "format") {
-    return "format";
-  }
-  return "unknown";
 };
 
 function buildCandidateMap(modelCandidates: string[]): Map<string, string[]> {
@@ -296,7 +265,7 @@ async function probeTarget(params: {
   timeoutMs: number;
   maxTokens: number;
 }): Promise<AuthProbeResult> {
-  const { cfg, agentId, agentDir, workspaceDir, sessionDir, target, timeoutMs, maxTokens } = params;
+  const { target } = params;
   if (!target.model) {
     return {
       provider: target.provider,
@@ -310,56 +279,17 @@ async function probeTarget(params: {
     };
   }
 
-  const sessionId = `probe-${target.provider}-${crypto.randomUUID()}`;
-  const sessionFile = resolveSessionTranscriptPath(sessionId, agentId);
-  await fs.mkdir(sessionDir, { recursive: true });
-
-  const start = Date.now();
-  try {
-    await runEmbeddedPiAgent({
-      sessionId,
-      sessionFile,
-      agentId,
-      workspaceDir,
-      agentDir,
-      config: cfg,
-      prompt: PROBE_PROMPT,
-      provider: target.model.provider,
-      model: target.model.model,
-      authProfileId: target.profileId,
-      authProfileIdSource: target.profileId ? "user" : undefined,
-      timeoutMs,
-      runId: `probe-${crypto.randomUUID()}`,
-      lane: `auth-probe:${target.provider}:${target.profileId ?? target.source}`,
-      thinkLevel: "off",
-      reasoningLevel: "off",
-      verboseLevel: "off",
-      streamParams: { maxTokens },
-    });
-    return {
-      provider: target.provider,
-      model: `${target.model.provider}/${target.model.model}`,
-      profileId: target.profileId,
-      label: target.label,
-      source: target.source,
-      mode: target.mode,
-      status: "ok",
-      latencyMs: Date.now() - start,
-    };
-  } catch (err) {
-    const described = describeFailoverError(err);
-    return {
-      provider: target.provider,
-      model: `${target.model.provider}/${target.model.model}`,
-      profileId: target.profileId,
-      label: target.label,
-      source: target.source,
-      mode: target.mode,
-      status: toStatus(described.reason),
-      error: redactSecrets(described.message),
-      latencyMs: Date.now() - start,
-    };
-  }
+  // pi-embedded: runEmbeddedPiAgent removed (dead code after AgentRuntime migration)
+  return {
+    provider: target.provider,
+    model: `${target.model.provider}/${target.model.model}`,
+    profileId: target.profileId,
+    label: target.label,
+    source: target.source,
+    mode: target.mode,
+    status: "unknown" as AuthProbeStatus,
+    error: "Probe not available: pi-embedded engine removed",
+  };
 }
 
 async function runTargetsWithConcurrency(params: {

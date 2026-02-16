@@ -1,6 +1,6 @@
 import type { OpenClawConfig } from "../config/config.js";
-import type { AnyAgentTool } from "./pi-tools.types.js";
 import type { SandboxToolPolicy } from "./sandbox.js";
+import type { AnyAgentTool } from "./tools/common.js";
 import { getChannelDock } from "../channels/dock.js";
 import { resolveChannelGroupToolsPolicy } from "../config/group-policy.js";
 import { resolveThreadParentSessionKey } from "../sessions/session-key-utils.js";

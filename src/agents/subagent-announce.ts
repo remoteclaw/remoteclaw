@@ -18,11 +18,6 @@ import {
   mergeDeliveryContext,
   normalizeDeliveryContext,
 } from "../utils/delivery-context.js";
-import {
-  isEmbeddedPiRunActive,
-  queueEmbeddedPiMessage,
-  waitForEmbeddedPiRunEnd,
-} from "./pi-embedded.js";
 import { type AnnounceQueueItem, enqueueAnnounce } from "./subagent-announce-queue.js";
 import { readLatestAssistantReply } from "./tools/agent-step.js";
 
@@ -183,14 +178,12 @@ async function maybeQueueSubagentAnnounce(params: {
     channel: entry?.channel ?? entry?.lastChannel,
     sessionEntry: entry,
   });
-  const isActive = isEmbeddedPiRunActive(sessionId);
+  // pi-embedded: removed (dead code after AgentRuntime migration)
+  const isActive = false;
 
   const shouldSteer = queueSettings.mode === "steer" || queueSettings.mode === "steer-backlog";
   if (shouldSteer) {
-    const steered = queueEmbeddedPiMessage(sessionId, params.triggerMessage);
-    if (steered) {
-      return "steered";
-    }
+    // pi-embedded: steering removed (dead code after AgentRuntime migration)
   }
 
   const shouldFollowup =
@@ -274,14 +267,6 @@ async function buildSubagentStatsLine(params: {
   }
 
   return `Stats: ${parts.join(" \u2022 ")}`;
-}
-
-function loadSessionEntryByKey(sessionKey: string) {
-  const cfg = loadConfig();
-  const agentId = resolveAgentIdFromSessionKey(sessionKey);
-  const storePath = resolveStorePath(cfg.session?.store, { agentId });
-  const store = loadSessionStore(storePath);
-  return store[sessionKey];
 }
 
 async function readLatestAssistantReplyWithRetry(params: {
@@ -385,27 +370,10 @@ export async function runSubagentAnnounceFlow(params: {
   let shouldDeleteChildSession = params.cleanup === "delete";
   try {
     const requesterOrigin = normalizeDeliveryContext(params.requesterOrigin);
-    const childSessionId = (() => {
-      const entry = loadSessionEntryByKey(params.childSessionKey);
-      return typeof entry?.sessionId === "string" && entry.sessionId.trim()
-        ? entry.sessionId.trim()
-        : undefined;
-    })();
     const settleTimeoutMs = Math.min(Math.max(params.timeoutMs, 1), 120_000);
     let reply = params.roundOneReply;
     let outcome: SubagentRunOutcome | undefined = params.outcome;
-    // Lifecycle "end" can arrive before auto-compaction retries finish. If the
-    // subagent is still active, wait for the embedded run to fully settle.
-    if (childSessionId && isEmbeddedPiRunActive(childSessionId)) {
-      const settled = await waitForEmbeddedPiRunEnd(childSessionId, settleTimeoutMs);
-      if (!settled && isEmbeddedPiRunActive(childSessionId)) {
-        // The child run is still active (e.g., compaction retry still in progress).
-        // Defer announcement so we don't report stale/partial output.
-        // Keep the child session so output is not lost while the run is still active.
-        shouldDeleteChildSession = false;
-        return false;
-      }
-    }
+    // pi-embedded: settling removed (dead code after AgentRuntime migration)
 
     if (!reply && params.waitForCompletion !== false) {
       const waitMs = settleTimeoutMs;
@@ -456,11 +424,7 @@ export async function runSubagentAnnounceFlow(params: {
       });
     }
 
-    if (!reply?.trim() && childSessionId && isEmbeddedPiRunActive(childSessionId)) {
-      // Avoid announcing "(no output)" while the child run is still producing output.
-      shouldDeleteChildSession = false;
-      return false;
-    }
+    // pi-embedded: active-run check removed (dead code after AgentRuntime migration)
 
     if (!outcome) {
       outcome = { status: "unknown" };

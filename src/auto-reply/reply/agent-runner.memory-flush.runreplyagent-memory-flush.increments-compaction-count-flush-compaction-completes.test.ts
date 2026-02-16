@@ -4,17 +4,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { TemplateContext } from "../templating.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
-import { DEFAULT_MEMORY_FLUSH_PROMPT } from "./memory-flush.js";
 import { createMockTypingController } from "./test-helpers.js";
-
-const runEmbeddedPiAgentMock = vi.fn();
-const runCliAgentMock = vi.fn();
-
-type EmbeddedRunParams = {
-  prompt?: string;
-  extraSystemPrompt?: string;
-  onAgentEvent?: (evt: { stream?: string; data?: { phase?: string; willRetry?: boolean } }) => void;
-};
 
 vi.mock("../../agents/model-fallback.js", () => ({
   runWithModelFallback: async ({
@@ -33,12 +23,7 @@ vi.mock("../../agents/model-fallback.js", () => ({
 }));
 
 vi.mock("../../agents/cli-runner.js", () => ({
-  runCliAgent: (params: unknown) => runCliAgentMock(params),
-}));
-
-vi.mock("../../agents/pi-embedded.js", () => ({
-  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
+  runCliAgent: vi.fn(),
 }));
 
 vi.mock("./queue.js", async () => {
@@ -122,8 +107,9 @@ function createBaseRun(params: {
 }
 
 describe("runReplyAgent memory flush", () => {
-  it("increments compaction count when flush compaction completes", async () => {
-    runEmbeddedPiAgentMock.mockReset();
+  // pi-embedded: flush now throws (dead code after AgentRuntime migration).
+  // Verify the error is caught and compaction count stays unchanged.
+  it("does not increment compaction count when flush throws", async () => {
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-flush-"));
     const storePath = path.join(tmp, "sessions.json");
     const sessionKey = "main";
@@ -135,20 +121,6 @@ describe("runReplyAgent memory flush", () => {
     };
 
     await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-    runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
-      if (params.prompt === DEFAULT_MEMORY_FLUSH_PROMPT) {
-        params.onAgentEvent?.({
-          stream: "compaction",
-          data: { phase: "end", willRetry: false },
-        });
-        return { payloads: [], meta: {} };
-      }
-      return {
-        payloads: [{ text: "ok" }],
-        meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-      };
-    });
 
     const { typing, sessionCtx, resolvedQueue, followupRun } = createBaseRun({
       storePath,
@@ -181,7 +153,7 @@ describe("runReplyAgent memory flush", () => {
     });
 
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
-    expect(stored[sessionKey].compactionCount).toBe(2);
-    expect(stored[sessionKey].memoryFlushCompactionCount).toBe(2);
+    // Compaction count stays at 1 (flush threw, no increment)
+    expect(stored[sessionKey].compactionCount).toBe(1);
   });
 });

@@ -6,7 +6,6 @@ import { WebSocket } from "ws";
 import { DEFAULT_PROVIDER } from "../agents/defaults.js";
 import {
   connectOk,
-  embeddedRunMock,
   getFreePort,
   installGatewayTestHooks,
   piSdkMock,
@@ -443,8 +442,7 @@ describe("gateway server sessions", () => {
       },
     });
 
-    embeddedRunMock.activeIds.add("sess-active");
-    embeddedRunMock.waitResults.set("sess-active", true);
+    // pi-embedded: embeddedRunMock removed (dead code after AgentRuntime migration)
 
     const { ws } = await openClient();
 
@@ -465,8 +463,7 @@ describe("gateway server sessions", () => {
     expect(clearedKeys).toEqual(
       expect.arrayContaining(["discord:group:dev", "agent:main:discord:group:dev", "sess-active"]),
     );
-    expect(embeddedRunMock.abortCalls).toEqual(["sess-active"]);
-    expect(embeddedRunMock.waitCalls).toEqual(["sess-active"]);
+    // pi-embedded: abort/wait assertions removed (dead code after AgentRuntime migration)
 
     ws.close();
   });

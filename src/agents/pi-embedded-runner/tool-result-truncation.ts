@@ -1,7 +1,12 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
 import { SessionManager } from "@mariozechner/pi-coding-agent";
-import { log } from "./logger.js";
+import { logVerbose } from "../../globals.js";
+
+const log = {
+  info: logVerbose,
+  warn: logVerbose,
+};
 
 /**
  * Maximum share of the context window a single tool result should occupy.

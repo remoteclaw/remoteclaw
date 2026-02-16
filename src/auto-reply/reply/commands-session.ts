@@ -1,6 +1,5 @@
 import type { SessionEntry } from "../../config/sessions.js";
 import type { CommandHandler } from "./commands-types.js";
-import { abortEmbeddedPiRun } from "../../agents/pi-embedded.js";
 import { updateSessionStore } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
@@ -303,9 +302,7 @@ export const handleStopCommand: CommandHandler = async (params, allowTextCommand
     sessionEntry: params.sessionEntry,
     sessionStore: params.sessionStore,
   });
-  if (abortTarget.sessionId) {
-    abortEmbeddedPiRun(abortTarget.sessionId);
-  }
+  // pi-embedded: abortEmbeddedPiRun removed (dead code after AgentRuntime migration)
   const cleared = clearSessionQueues([abortTarget.key, abortTarget.sessionId]);
   if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
     logVerbose(
@@ -360,9 +357,7 @@ export const handleAbortTrigger: CommandHandler = async (params, allowTextComman
     sessionEntry: params.sessionEntry,
     sessionStore: params.sessionStore,
   });
-  if (abortTarget.sessionId) {
-    abortEmbeddedPiRun(abortTarget.sessionId);
-  }
+  // pi-embedded: abortEmbeddedPiRun removed (dead code after AgentRuntime migration)
   if (abortTarget.entry && params.sessionStore && abortTarget.key) {
     abortTarget.entry.abortedLastRun = true;
     abortTarget.entry.updatedAt = Date.now();

@@ -8,7 +8,6 @@ import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { resolveModelAuthMode } from "../../agents/model-auth.js";
 import { isCliProvider } from "../../agents/model-selection.js";
-import { queueEmbeddedPiMessage } from "../../agents/pi-embedded.js";
 import { hasNonzeroUsage } from "../../agents/usage.js";
 import {
   resolveAgentIdFromSessionKey,
@@ -160,7 +159,8 @@ export async function runReplyAgent(params: {
       : null;
 
   if (shouldSteer && isStreaming) {
-    const steered = queueEmbeddedPiMessage(followupRun.run.sessionId, followupRun.prompt);
+    // pi-embedded: queueEmbeddedPiMessage removed (dead code after AgentRuntime migration)
+    const steered = false;
     if (steered && !shouldFollowup) {
       if (activeSessionEntry && activeSessionStore && sessionKey) {
         const updatedAt = Date.now();

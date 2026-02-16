@@ -1,7 +1,6 @@
 import type { OpenClawConfig } from "../../config/config.js";
 import type { FinalizedMsgContext, MsgContext } from "../templating.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
-import { abortEmbeddedPiRun } from "../../agents/pi-embedded.js";
 import { listSubagentRunsForRequester } from "../../agents/subagent-registry.js";
 import {
   resolveInternalSessionKey,
@@ -14,7 +13,6 @@ import {
   updateSessionStore,
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
-import { parseAgentSessionKey } from "../../routing/session-key.js";
 import { resolveCommandAuthorization } from "../command-auth.js";
 import { normalizeCommandBody } from "../commands-registry.js";
 import { stripMentions, stripStructuralPrefixes } from "./mentions.js";
@@ -95,7 +93,6 @@ export function stopSubagentsForRequester(params: {
     return { stopped: 0 };
   }
 
-  const storeCache = new Map<string, Record<string, SessionEntry>>();
   const seenChildKeys = new Set<string>();
   let stopped = 0;
 
@@ -110,18 +107,9 @@ export function stopSubagentsForRequester(params: {
     seenChildKeys.add(childKey);
 
     const cleared = clearSessionQueues([childKey]);
-    const parsed = parseAgentSessionKey(childKey);
-    const storePath = resolveStorePath(params.cfg.session?.store, { agentId: parsed?.agentId });
-    let store = storeCache.get(storePath);
-    if (!store) {
-      store = loadSessionStore(storePath);
-      storeCache.set(storePath, store);
-    }
-    const entry = store[childKey];
-    const sessionId = entry?.sessionId;
-    const aborted = sessionId ? abortEmbeddedPiRun(sessionId) : false;
+    // pi-embedded: abortEmbeddedPiRun removed (dead code after AgentRuntime migration)
 
-    if (aborted || cleared.followupCleared > 0 || cleared.laneCleared > 0) {
+    if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
       stopped += 1;
     }
   }
@@ -170,7 +158,8 @@ export async function tryFastAbortFromMessage(params: {
     const store = loadSessionStore(storePath);
     const { entry, key } = resolveSessionEntryForKey(store, targetKey);
     const sessionId = entry?.sessionId;
-    const aborted = sessionId ? abortEmbeddedPiRun(sessionId) : false;
+    // pi-embedded: abortEmbeddedPiRun removed (dead code after AgentRuntime migration)
+    const aborted = false;
     const cleared = clearSessionQueues([key ?? targetKey, sessionId]);
     if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
       logVerbose(

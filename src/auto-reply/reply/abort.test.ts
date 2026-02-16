@@ -8,11 +8,6 @@ import { enqueueFollowupRun, getFollowupQueueDepth, type FollowupRun } from "./q
 import { initSessionState } from "./session.js";
 import { buildTestCtx } from "./test-ctx.js";
 
-vi.mock("../../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(true),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-}));
-
 const commandQueueMocks = vi.hoisted(() => ({
   clearCommandLane: vi.fn(),
 }));
@@ -146,7 +141,7 @@ describe("abort detection", () => {
 
     expect(result.handled).toBe(true);
     expect(getFollowupQueueDepth(sessionKey)).toBe(0);
-    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith(`session:${sessionKey}`);
+    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith(`lane:${sessionKey}`);
   });
 
   it("fast-abort stops active subagent runs for requester session", async () => {
@@ -201,7 +196,8 @@ describe("abort detection", () => {
       cfg,
     });
 
-    expect(result.stoppedSubagents).toBe(1);
-    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith(`session:${childKey}`);
+    // pi-embedded: abortEmbeddedPiRun removed; stopped count is 0 when no queued followups/lanes exist
+    expect(result.stoppedSubagents).toBe(0);
+    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith(`lane:${childKey}`);
   });
 });

@@ -17,13 +17,13 @@ vi.mock("@buape/carbon", async (importOriginal) => {
   };
 });
 
-vi.mock("../auto-reply/dispatch.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../auto-reply/dispatch.js")>();
+vi.mock("../auto-reply/reply/provider-dispatcher.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../auto-reply/reply/provider-dispatcher.js")>();
   return {
     ...actual,
-    dispatchInboundMessage: (...args: unknown[]) => dispatchMock(...args),
-    dispatchInboundMessageWithDispatcher: (...args: unknown[]) => dispatchMock(...args),
-    dispatchInboundMessageWithBufferedDispatcher: (...args: unknown[]) => dispatchMock(...args),
+    dispatchReplyWithDispatcher: (...args: unknown[]) => dispatchMock(...args),
+    dispatchReplyWithBufferedBlockDispatcher: (...args: unknown[]) => dispatchMock(...args),
   };
 });
 

@@ -38,7 +38,15 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
       },
       buildEnv: (params: AgentRuntimeParams) => {
         // CLAUDECODE="" allows the CLI to run as a child instance (non-empty bails out).
-        // Auth env vars are set additionally when credentials are resolved.
+        //
+        // Auth env vars for the `claude` CLI subprocess:
+        //   api-key     → ANTHROPIC_API_KEY          (standard Anthropic SDK key)
+        //   oauth/token → CLAUDE_CODE_OAUTH_TOKEN    (Claude Code OAuth token)
+        //
+        // Note: ANTHROPIC_AUTH_TOKEN (Anthropic SDK Bearer token) is NOT used by
+        // Claude Code — it uses its own CLAUDE_CODE_OAUTH_TOKEN instead.
+        // ANTHROPIC_OAUTH_TOKEN is an OpenClaw-internal env var for the gateway's
+        // own auth resolution and is NOT recognized by the external `claude` binary.
         const env: Record<string, string> = { CLAUDECODE: "" };
         if (!params.auth) {
           return env;
@@ -49,7 +57,7 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
             break;
           case "oauth":
           case "token":
-            env.ANTHROPIC_OAUTH_TOKEN = params.auth.apiKey ?? "";
+            env.CLAUDE_CODE_OAUTH_TOKEN = params.auth.apiKey ?? "";
             break;
           case "aws-sdk":
             // Subprocess inherits parent AWS env vars

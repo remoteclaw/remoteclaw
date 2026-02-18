@@ -1,8 +1,10 @@
 import { spawn } from "node:child_process";
+import { logDebug } from "../logger.js";
+import { maskSecret } from "../logging/redact.js";
 import type { AgentRuntime } from "./agent-runtime.js";
-import type { AgentDoneEvent, AgentEvent, AgentRuntimeParams, AgentUsage } from "./types.js";
 import { classifyError } from "./error-classify.js";
 import { parseLine } from "./event-extract.js";
+import type { AgentDoneEvent, AgentEvent, AgentRuntimeParams, AgentUsage } from "./types.js";
 
 export type CLIRuntimeConfig = {
   command: string;
@@ -28,9 +30,22 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     let timedOut = false;
     let stderrChunks: string[] = [];
 
+    const runtimeEnv = cfg.buildEnv(params);
+    const safeAuth = params.auth
+      ? {
+          mode: params.auth.mode,
+          source: params.auth.source,
+          key: maskSecret(params.auth.apiKey ?? ""),
+        }
+      : null;
+    const safeEnv = Object.fromEntries(
+      Object.entries(runtimeEnv).map(([k, v]) => [k, maskSecret(v)]),
+    );
+    logDebug(`${this.name}: auth=${JSON.stringify(safeAuth)} env=${JSON.stringify(safeEnv)}`);
+
     const child = spawn(cfg.command, cfg.buildArgs(params), {
       cwd: params.workspaceDir,
-      env: { ...process.env, ...cfg.buildEnv(params) },
+      env: { ...process.env, ...runtimeEnv },
       stdio: ["pipe", "pipe", "pipe"],
     });
 

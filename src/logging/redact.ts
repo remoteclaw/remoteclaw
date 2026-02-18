@@ -138,6 +138,20 @@ export function redactSensitiveText(text: string, options?: RedactOptions): stri
   return redactText(text, patterns);
 }
 
+/**
+ * Mask a secret value for safe logging: first 8 + last 4 chars with `…` in between.
+ * Values shorter than 16 chars are fully replaced with `***`.
+ */
+export function maskSecret(value: string): string {
+  if (!value) {
+    return "***";
+  }
+  if (value.length < 16) {
+    return "***";
+  }
+  return `${value.slice(0, 8)}…${value.slice(-4)}`;
+}
+
 export function redactToolDetail(detail: string): string {
   const resolved = resolveConfigRedaction();
   if (normalizeMode(resolved.mode) !== "tools") {

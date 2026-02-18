@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDefaultRedactPatterns, redactSensitiveText } from "./redact.js";
+import { getDefaultRedactPatterns, maskSecret, redactSensitiveText } from "./redact.js";
 
 const defaults = getDefaultRedactPatterns();
 
@@ -100,5 +100,24 @@ describe("redactSensitiveText", () => {
       patterns: defaults,
     });
     expect(output).toBe(input);
+  });
+});
+
+describe("maskSecret", () => {
+  it("masks long values showing first 8 and last 4", () => {
+    expect(maskSecret("abcdefghijklmnopqrstuvwx")).toBe("abcdefgh…uvwx");
+  });
+
+  it("fully masks short values", () => {
+    expect(maskSecret("short")).toBe("***");
+    expect(maskSecret("fifteencharsss!")).toBe("***");
+  });
+
+  it("masks empty and missing values", () => {
+    expect(maskSecret("")).toBe("***");
+  });
+
+  it("handles 16-char boundary", () => {
+    expect(maskSecret("1234567890abcdef")).toBe("12345678…cdef");
   });
 });

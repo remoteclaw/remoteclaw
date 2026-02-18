@@ -107,7 +107,7 @@ describe("ClaudeCliRuntime", () => {
     expect(opts.env.CLAUDECODE).toBe("");
   });
 
-  it("sets ANTHROPIC_OAUTH_TOKEN env for oauth auth mode", async () => {
+  it("sets CLAUDE_CODE_OAUTH_TOKEN env for oauth auth mode", async () => {
     const child = createMockChild();
     spawnMock.mockReturnValue(child);
 
@@ -122,11 +122,11 @@ describe("ClaudeCliRuntime", () => {
     await collectEvents(iter);
 
     const opts = spawnMock.mock.calls[0][2] as { env: Record<string, string> };
-    expect(opts.env.ANTHROPIC_OAUTH_TOKEN).toBe("oauth-token");
+    expect(opts.env.CLAUDE_CODE_OAUTH_TOKEN).toBe("oauth-token");
     expect(opts.env.CLAUDECODE).toBe("");
   });
 
-  it("sets ANTHROPIC_OAUTH_TOKEN env for token auth mode", async () => {
+  it("sets CLAUDE_CODE_OAUTH_TOKEN env for token auth mode", async () => {
     const child = createMockChild();
     spawnMock.mockReturnValue(child);
 
@@ -141,7 +141,7 @@ describe("ClaudeCliRuntime", () => {
     await collectEvents(iter);
 
     const opts = spawnMock.mock.calls[0][2] as { env: Record<string, string> };
-    expect(opts.env.ANTHROPIC_OAUTH_TOKEN).toBe("some-token");
+    expect(opts.env.CLAUDE_CODE_OAUTH_TOKEN).toBe("some-token");
   });
 
   it("sets empty env for aws-sdk auth mode", async () => {
@@ -160,7 +160,7 @@ describe("ClaudeCliRuntime", () => {
 
     const opts = spawnMock.mock.calls[0][2] as { env: Record<string, string> };
     expect(opts.env.ANTHROPIC_API_KEY).toBeUndefined();
-    expect(opts.env.ANTHROPIC_OAUTH_TOKEN).toBeUndefined();
+    expect(opts.env.CLAUDE_CODE_OAUTH_TOKEN).toBeUndefined();
     expect(opts.env.CLAUDECODE).toBe("");
   });
 

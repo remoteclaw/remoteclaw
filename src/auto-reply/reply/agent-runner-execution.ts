@@ -1,13 +1,9 @@
 import crypto from "node:crypto";
+import { ensureAuthProfileStore } from "../../agents/auth-profiles.js";
+import { type ResolvedProviderAuth, resolveApiKeyForProvider } from "../../agents/model-auth.js";
+import { sanitizeUserFacingText } from "../../agents/pi-embedded-helpers.js";
 import type { EmbeddedPiRunResult } from "../../agents/pi-embedded-runner/types.js";
 import type { SessionEntry } from "../../config/sessions.js";
-import type { TemplateContext } from "../templating.js";
-import type { VerboseLevel } from "../thinking.js";
-import type { GetReplyOptions, ReplyPayload } from "../types.js";
-import type { BlockReplyPipeline } from "./block-reply-pipeline.js";
-import type { FollowupRun } from "./queue.js";
-import type { TypingSignaler } from "./typing-mode.js";
-import { sanitizeUserFacingText } from "../../agents/pi-embedded-helpers.js";
 import { logVerbose } from "../../globals.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import {
@@ -19,7 +15,13 @@ import {
 } from "../../middleware/index.js";
 import { defaultRuntime } from "../../runtime.js";
 import { stripHeartbeatToken } from "../heartbeat.js";
+import type { TemplateContext } from "../templating.js";
+import type { VerboseLevel } from "../thinking.js";
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
+import type { GetReplyOptions, ReplyPayload } from "../types.js";
+import type { BlockReplyPipeline } from "./block-reply-pipeline.js";
+import type { FollowupRun } from "./queue.js";
+import type { TypingSignaler } from "./typing-mode.js";
 
 export type AgentRunLoopResult =
   | {
@@ -113,11 +115,24 @@ export async function runAgentTurnWithFallback(params: {
     thinkLevel: params.followupRun.run.thinkLevel,
   });
 
+  let resolvedAuth: ResolvedProviderAuth | undefined;
+  if (params.followupRun.run.authProfileId) {
+    const store = ensureAuthProfileStore(params.followupRun.run.workspaceDir);
+    resolvedAuth = await resolveApiKeyForProvider({
+      provider: params.followupRun.run.provider,
+      cfg: params.followupRun.run.config,
+      profileId: params.followupRun.run.authProfileId,
+      store,
+      agentDir: params.followupRun.run.workspaceDir,
+    });
+  }
+
   const bridge = new ChannelBridge({
     runtime: new ClaudeCliRuntime(),
     sessionDir: params.followupRun.run.workspaceDir,
     defaultModel: params.followupRun.run.model,
     defaultTimeoutMs: params.followupRun.run.timeoutMs,
+    auth: resolvedAuth,
   });
 
   const channelMessage: ChannelMessage = {

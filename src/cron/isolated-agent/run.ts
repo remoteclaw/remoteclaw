@@ -1,16 +1,15 @@
-import type { MessagingToolSend } from "../../agents/pi-embedded-messaging.js";
-import type { OpenClawConfig } from "../../config/config.js";
-import type { AgentDefaultsConfig } from "../../config/types.js";
-import type { CronJob } from "../types.js";
 import {
   resolveAgentConfig,
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
+import { ensureAuthProfileStore } from "../../agents/auth-profiles.js";
+import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
 import { setCliSessionId } from "../../agents/cli-session.js";
 import { lookupContextTokens } from "../../agents/context.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
+import { type ResolvedProviderAuth, resolveApiKeyForProvider } from "../../agents/model-auth.js";
 import { loadModelCatalog } from "../../agents/model-catalog.js";
 import {
   getModelRefStatus,
@@ -20,6 +19,7 @@ import {
   resolveHooksGmailModel,
   resolveThinkingDefault,
 } from "../../agents/model-selection.js";
+import type { MessagingToolSend } from "../../agents/pi-embedded-messaging.js";
 import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
 import { getSkillsSnapshotVersion } from "../../agents/skills/refresh.js";
 import { runSubagentAnnounceFlow } from "../../agents/subagent-announce.js";
@@ -32,7 +32,9 @@ import {
   supportsXHighThinking,
 } from "../../auto-reply/thinking.js";
 import { createOutboundSendDeps, type CliDeps } from "../../cli/outbound-send-deps.js";
+import type { OpenClawConfig } from "../../config/config.js";
 import { resolveAgentMainSessionKey, updateSessionStore } from "../../config/sessions.js";
+import type { AgentDefaultsConfig } from "../../config/types.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { deliverOutboundPayloads } from "../../infra/outbound/deliver.js";
 import { getRemoteSkillEligibility } from "../../infra/skills-remote.js";
@@ -51,6 +53,7 @@ import {
   isExternalHookSession,
 } from "../../security/external-content.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
+import type { CronJob } from "../types.js";
 import { resolveDeliveryTarget } from "./delivery-target.js";
 import {
   isHeartbeatOnlyResponse,
@@ -404,11 +407,34 @@ export async function runCronIsolatedAgentTurn(params: {
       sessionKey: agentSessionKey,
       verboseLevel: resolvedVerboseLevel,
     });
+    let resolvedAuth: ResolvedProviderAuth | undefined;
+    const authProfileStore = ensureAuthProfileStore(workspaceDir);
+    const resolvedProfileId = await resolveSessionAuthProfileOverride({
+      cfg: cfgWithAgentDefaults,
+      provider,
+      agentDir: workspaceDir,
+      sessionEntry: cronSession.sessionEntry,
+      sessionStore: cronSession.store,
+      sessionKey: agentSessionKey,
+      storePath: cronSession.storePath,
+      isNewSession: cronSession.isNewSession,
+    });
+    if (resolvedProfileId) {
+      resolvedAuth = await resolveApiKeyForProvider({
+        provider,
+        cfg: cfgWithAgentDefaults,
+        profileId: resolvedProfileId,
+        store: authProfileStore,
+        agentDir: workspaceDir,
+      });
+    }
+
     const bridge = new ChannelBridge({
       runtime: new ClaudeCliRuntime(),
       sessionDir: workspaceDir,
       defaultModel: model,
       defaultTimeoutMs: timeoutMs,
+      auth: resolvedAuth,
     });
     const channelMessage: ChannelMessage = {
       channelId: resolvedDelivery.channel ?? "cron",

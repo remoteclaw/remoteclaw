@@ -1,6 +1,6 @@
 import type { CLIRuntimeConfig } from "./cli-runtime-base.js";
-import type { AgentRuntimeParams } from "./types.js";
 import { CLIRuntimeBase } from "./cli-runtime-base.js";
+import type { AgentRuntimeParams } from "./types.js";
 
 const STDIN_THRESHOLD = 10_000;
 
@@ -36,7 +36,27 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
 
         return args;
       },
-      buildEnv: () => ({ CLAUDECODE: "" }),
+      buildEnv: (params: AgentRuntimeParams) => {
+        // CLAUDECODE="" allows the CLI to run as a child instance (non-empty bails out).
+        // Auth env vars are set additionally when credentials are resolved.
+        const env: Record<string, string> = { CLAUDECODE: "" };
+        if (!params.auth) {
+          return env;
+        }
+        switch (params.auth.mode) {
+          case "api-key":
+            env.ANTHROPIC_API_KEY = params.auth.apiKey ?? "";
+            break;
+          case "oauth":
+          case "token":
+            env.ANTHROPIC_OAUTH_TOKEN = params.auth.apiKey ?? "";
+            break;
+          case "aws-sdk":
+            // Subprocess inherits parent AWS env vars
+            break;
+        }
+        return env;
+      },
       buildStdin: (params: AgentRuntimeParams) => {
         if (params.prompt.length > STDIN_THRESHOLD) {
           return params.prompt;

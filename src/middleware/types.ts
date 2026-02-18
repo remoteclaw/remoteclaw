@@ -1,3 +1,5 @@
+import type { ResolvedProviderAuth } from "../agents/model-auth.js";
+
 // ── Error Classification ──
 
 export type ErrorCategory = "retryable" | "fatal" | "context_overflow" | "aborted" | "timeout";
@@ -50,6 +52,7 @@ export type AgentRuntimeParams = {
   timeoutMs?: number;
   model?: string;
   maxTurns?: number;
+  auth?: ResolvedProviderAuth;
 };
 
 // ── Run Result ──

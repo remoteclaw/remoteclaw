@@ -3,8 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AgentRuntime } from "./agent-runtime.js";
-import type { AgentEvent, AgentRuntimeParams, ChannelMessage } from "./types.js";
 import { ChannelBridge } from "./channel-bridge.js";
+import type { AgentEvent, AgentRuntimeParams, ChannelMessage } from "./types.js";
 
 function createMockRuntime(events: AgentEvent[]): AgentRuntime {
   return {
@@ -214,6 +214,57 @@ describe("ChannelBridge", () => {
 
     expect(reply.error).toBe("generator exploded");
     expect(reply.text).toBe("");
+  });
+
+  it("passes auth to runtime execute params", async () => {
+    let capturedParams: AgentRuntimeParams | undefined;
+    const runtime: AgentRuntime = {
+      name: "auth-capture-runtime",
+      async *execute(params: AgentRuntimeParams) {
+        capturedParams = params;
+        yield {
+          type: "done" as const,
+          result: {
+            text: "ok",
+            sessionId: undefined,
+            durationMs: 10,
+            usage: undefined,
+            aborted: false,
+          },
+        };
+      },
+    };
+
+    const auth = { apiKey: "sk-test", source: "profile:test", mode: "api-key" as const };
+    const bridge = new ChannelBridge({ runtime, sessionDir: tmpDir, auth });
+    await bridge.handle(defaultMessage());
+
+    expect(capturedParams?.auth).toEqual(auth);
+  });
+
+  it("passes undefined auth when not configured", async () => {
+    let capturedParams: AgentRuntimeParams | undefined;
+    const runtime: AgentRuntime = {
+      name: "no-auth-runtime",
+      async *execute(params: AgentRuntimeParams) {
+        capturedParams = params;
+        yield {
+          type: "done" as const,
+          result: {
+            text: "ok",
+            sessionId: undefined,
+            durationMs: 10,
+            usage: undefined,
+            aborted: false,
+          },
+        };
+      },
+    };
+
+    const bridge = new ChannelBridge({ runtime, sessionDir: tmpDir });
+    await bridge.handle(defaultMessage());
+
+    expect(capturedParams?.auth).toBeUndefined();
   });
 
   it("passes abort signal to runtime", async () => {

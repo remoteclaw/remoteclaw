@@ -74,7 +74,7 @@ describe("ClaudeCliRuntime", () => {
     );
   });
 
-  it("sets CLAUDECODE env to empty string", async () => {
+  it("sets CLAUDECODE env when no auth provided", async () => {
     const child = createMockChild();
     spawnMock.mockReturnValue(child);
 
@@ -85,6 +85,82 @@ describe("ClaudeCliRuntime", () => {
     await collectEvents(iter);
 
     const opts = spawnMock.mock.calls[0][2] as { env: Record<string, string> };
+    expect(opts.env.CLAUDECODE).toBe("");
+  });
+
+  it("sets ANTHROPIC_API_KEY env for api-key auth mode", async () => {
+    const child = createMockChild();
+    spawnMock.mockReturnValue(child);
+
+    const runtime = new ClaudeCliRuntime();
+    const iter = runtime.execute(
+      defaultParams({
+        auth: { apiKey: "sk-test-key", source: "profile:test", mode: "api-key" },
+      }),
+    );
+
+    queueMicrotask(() => child.emit("close", 0));
+    await collectEvents(iter);
+
+    const opts = spawnMock.mock.calls[0][2] as { env: Record<string, string> };
+    expect(opts.env.ANTHROPIC_API_KEY).toBe("sk-test-key");
+    expect(opts.env.CLAUDECODE).toBe("");
+  });
+
+  it("sets ANTHROPIC_OAUTH_TOKEN env for oauth auth mode", async () => {
+    const child = createMockChild();
+    spawnMock.mockReturnValue(child);
+
+    const runtime = new ClaudeCliRuntime();
+    const iter = runtime.execute(
+      defaultParams({
+        auth: { apiKey: "oauth-token", source: "profile:oauth", mode: "oauth" },
+      }),
+    );
+
+    queueMicrotask(() => child.emit("close", 0));
+    await collectEvents(iter);
+
+    const opts = spawnMock.mock.calls[0][2] as { env: Record<string, string> };
+    expect(opts.env.ANTHROPIC_OAUTH_TOKEN).toBe("oauth-token");
+    expect(opts.env.CLAUDECODE).toBe("");
+  });
+
+  it("sets ANTHROPIC_OAUTH_TOKEN env for token auth mode", async () => {
+    const child = createMockChild();
+    spawnMock.mockReturnValue(child);
+
+    const runtime = new ClaudeCliRuntime();
+    const iter = runtime.execute(
+      defaultParams({
+        auth: { apiKey: "some-token", source: "profile:token", mode: "token" },
+      }),
+    );
+
+    queueMicrotask(() => child.emit("close", 0));
+    await collectEvents(iter);
+
+    const opts = spawnMock.mock.calls[0][2] as { env: Record<string, string> };
+    expect(opts.env.ANTHROPIC_OAUTH_TOKEN).toBe("some-token");
+  });
+
+  it("sets empty env for aws-sdk auth mode", async () => {
+    const child = createMockChild();
+    spawnMock.mockReturnValue(child);
+
+    const runtime = new ClaudeCliRuntime();
+    const iter = runtime.execute(
+      defaultParams({
+        auth: { source: "aws-sdk default chain", mode: "aws-sdk" },
+      }),
+    );
+
+    queueMicrotask(() => child.emit("close", 0));
+    await collectEvents(iter);
+
+    const opts = spawnMock.mock.calls[0][2] as { env: Record<string, string> };
+    expect(opts.env.ANTHROPIC_API_KEY).toBeUndefined();
+    expect(opts.env.ANTHROPIC_OAUTH_TOKEN).toBeUndefined();
     expect(opts.env.CLAUDECODE).toBe("");
   });
 

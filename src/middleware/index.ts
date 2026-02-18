@@ -15,6 +15,7 @@ export { classifyError } from "./error-classify.js";
 export { parseLine } from "./event-extract.js";
 export type { ParsedLine } from "./event-extract.js";
 export { SessionMap } from "./session-map.js";
+export type { ResolvedProviderAuth } from "../agents/model-auth.js";
 export type {
   AgentDoneEvent,
   AgentErrorEvent,

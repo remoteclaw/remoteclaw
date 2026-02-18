@@ -1,4 +1,6 @@
+import type { ResolvedProviderAuth } from "../agents/model-auth.js";
 import type { AgentRuntime } from "./agent-runtime.js";
+import { SessionMap } from "./session-map.js";
 import type {
   AgentEvent,
   AgentRunResult,
@@ -6,7 +8,6 @@ import type {
   ChannelMessage,
   ChannelReply,
 } from "./types.js";
-import { SessionMap } from "./session-map.js";
 
 export type ChannelBridgeOptions = {
   runtime: AgentRuntime;
@@ -15,6 +16,7 @@ export type ChannelBridgeOptions = {
   defaultModel?: string;
   defaultMaxTurns?: number;
   defaultTimeoutMs?: number;
+  auth?: ResolvedProviderAuth;
 };
 
 export class ChannelBridge {
@@ -23,6 +25,7 @@ export class ChannelBridge {
   private readonly defaultModel: string | undefined;
   private readonly defaultMaxTurns: number | undefined;
   private readonly defaultTimeoutMs: number | undefined;
+  private readonly auth: ResolvedProviderAuth | undefined;
 
   constructor(options: ChannelBridgeOptions) {
     this.runtime = options.runtime;
@@ -30,6 +33,7 @@ export class ChannelBridge {
     this.defaultModel = options.defaultModel;
     this.defaultMaxTurns = options.defaultMaxTurns;
     this.defaultTimeoutMs = options.defaultTimeoutMs;
+    this.auth = options.auth;
   }
 
   async handle(
@@ -53,6 +57,7 @@ export class ChannelBridge {
       timeoutMs: this.defaultTimeoutMs,
       model: this.defaultModel,
       maxTurns: this.defaultMaxTurns,
+      auth: this.auth,
     });
 
     let result: AgentRunResult | undefined;

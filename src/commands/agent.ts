@@ -1,4 +1,3 @@
-import type { AgentCommandOpts } from "./agent/types.js";
 import {
   listAgentIds,
   resolveAgentModelPrimary,
@@ -6,8 +5,10 @@ import {
   resolveAgentWorkspaceDir,
 } from "../agents/agent-scope.js";
 import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
-import { clearSessionAuthProfileOverride } from "../agents/auth-profiles/session-override.js";
+import { resolveSessionAuthProfileOverride } from "../agents/auth-profiles/session-override.js";
+import { markAuthProfileFailure, markAuthProfileUsed } from "../agents/auth-profiles/usage.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
+import { type ResolvedProviderAuth, resolveApiKeyForProvider } from "../agents/model-auth.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
 import {
   buildAllowedModelSet,
@@ -58,6 +59,7 @@ import { deliverAgentCommandResult } from "./agent/delivery.js";
 import { resolveAgentRunContext } from "./agent/run-context.js";
 import { updateSessionStoreAfterAgentRun } from "./agent/session-store.js";
 import { resolveSession } from "./agent/session.js";
+import type { AgentCommandOpts } from "./agent/types.js";
 
 export async function agentCommand(
   opts: AgentCommandOpts,
@@ -314,23 +316,27 @@ export async function agentCommand(
         model = storedModelOverride;
       }
     }
-    if (sessionEntry) {
-      const authProfileId = sessionEntry.authProfileOverride;
-      if (authProfileId) {
-        const entry = sessionEntry;
-        const store = ensureAuthProfileStore();
-        const profile = store.profiles[authProfileId];
-        if (!profile || profile.provider !== provider) {
-          if (sessionStore && sessionKey) {
-            await clearSessionAuthProfileOverride({
-              sessionEntry: entry,
-              sessionStore,
-              sessionKey,
-              storePath,
-            });
-          }
-        }
-      }
+    // Resolve auth-profile credentials for the provider
+    let resolvedAuth: ResolvedProviderAuth | undefined;
+    const authProfileStore = ensureAuthProfileStore(workspaceDir);
+    const resolvedProfileId = await resolveSessionAuthProfileOverride({
+      cfg,
+      provider,
+      agentDir: workspaceDir,
+      sessionEntry,
+      sessionStore,
+      sessionKey,
+      storePath,
+      isNewSession,
+    });
+    if (resolvedProfileId) {
+      resolvedAuth = await resolveApiKeyForProvider({
+        provider,
+        cfg,
+        profileId: resolvedProfileId,
+        store: authProfileStore,
+        agentDir: workspaceDir,
+      });
     }
 
     if (!resolvedThinkLevel) {
@@ -372,6 +378,7 @@ export async function agentCommand(
         sessionDir: workspaceDir,
         defaultModel: model,
         defaultTimeoutMs: timeoutMs,
+        auth: resolvedAuth,
       });
       const channelMessage: ChannelMessage = {
         channelId: runContext.currentChannelId ?? opts.channel ?? "cli",
@@ -392,7 +399,23 @@ export async function agentCommand(
           aborted: result.meta.aborted ?? false,
         },
       });
+      if (resolvedAuth?.profileId) {
+        await markAuthProfileUsed({
+          store: authProfileStore,
+          profileId: resolvedAuth.profileId,
+          agentDir: workspaceDir,
+        });
+      }
     } catch (err) {
+      if (resolvedAuth?.profileId) {
+        await markAuthProfileFailure({
+          store: authProfileStore,
+          profileId: resolvedAuth.profileId,
+          reason: "unknown",
+          cfg,
+          agentDir: workspaceDir,
+        });
+      }
       emitAgentEvent({
         runId,
         stream: "lifecycle",

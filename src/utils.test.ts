@@ -42,7 +42,7 @@ describe("withWhatsAppPrefix", () => {
 
 describe("ensureDir", () => {
   it("creates nested directory", async () => {
-    const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), "openclaw-test-"));
+    const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), "remoteclaw-test-"));
     const target = path.join(tmp, "nested", "dir");
     await ensureDir(target);
     expect(fs.existsSync(target)).toBe(true);
@@ -97,7 +97,7 @@ describe("jidToE164", () => {
   });
 
   it("maps @lid from authDir mapping files", () => {
-    const authDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-auth-"));
+    const authDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-auth-"));
     const mappingPath = path.join(authDir, "lid-mapping-456_reverse.json");
     fs.writeFileSync(mappingPath, JSON.stringify("5559876"));
     expect(jidToE164("456@lid", { authDir })).toBe("+5559876");
@@ -105,7 +105,7 @@ describe("jidToE164", () => {
   });
 
   it("maps @hosted.lid from authDir mapping files", () => {
-    const authDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-auth-"));
+    const authDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-auth-"));
     const mappingPath = path.join(authDir, "lid-mapping-789_reverse.json");
     fs.writeFileSync(mappingPath, JSON.stringify(4440001));
     expect(jidToE164("789@hosted.lid", { authDir })).toBe("+4440001");
@@ -117,8 +117,8 @@ describe("jidToE164", () => {
   });
 
   it("falls back through lidMappingDirs in order", () => {
-    const first = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-lid-a-"));
-    const second = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-lid-b-"));
+    const first = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-lid-a-"));
+    const second = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-lid-b-"));
     const mappingPath = path.join(second, "lid-mapping-321_reverse.json");
     fs.writeFileSync(mappingPath, JSON.stringify("123321"));
     expect(jidToE164("321@lid", { lidMappingDirs: [first, second] })).toBe("+123321");
@@ -129,7 +129,7 @@ describe("jidToE164", () => {
 
 describe("resolveConfigDir", () => {
   it("prefers ~/.remoteclaw when legacy dir is missing", async () => {
-    const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), "openclaw-config-dir-"));
+    const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), "remoteclaw-config-dir-"));
     try {
       const newDir = path.join(root, ".remoteclaw");
       await fs.promises.mkdir(newDir, { recursive: true });
@@ -143,10 +143,10 @@ describe("resolveConfigDir", () => {
 
 describe("resolveHomeDir", () => {
   it("prefers REMOTECLAW_HOME over HOME", () => {
-    vi.stubEnv("REMOTECLAW_HOME", "/srv/openclaw-home");
+    vi.stubEnv("REMOTECLAW_HOME", "/srv/remoteclaw-home");
     vi.stubEnv("HOME", "/home/other");
 
-    expect(resolveHomeDir()).toBe(path.resolve("/srv/openclaw-home"));
+    expect(resolveHomeDir()).toBe(path.resolve("/srv/remoteclaw-home"));
 
     vi.unstubAllEnvs();
   });
@@ -154,11 +154,11 @@ describe("resolveHomeDir", () => {
 
 describe("shortenHomePath", () => {
   it("uses $REMOTECLAW_HOME prefix when REMOTECLAW_HOME is set", () => {
-    vi.stubEnv("REMOTECLAW_HOME", "/srv/openclaw-home");
+    vi.stubEnv("REMOTECLAW_HOME", "/srv/remoteclaw-home");
     vi.stubEnv("HOME", "/home/other");
 
     expect(
-      shortenHomePath(`${path.resolve("/srv/openclaw-home")}/.remoteclaw/remoteclaw.json`),
+      shortenHomePath(`${path.resolve("/srv/remoteclaw-home")}/.remoteclaw/remoteclaw.json`),
     ).toBe("$REMOTECLAW_HOME/.remoteclaw/remoteclaw.json");
 
     vi.unstubAllEnvs();
@@ -167,12 +167,12 @@ describe("shortenHomePath", () => {
 
 describe("shortenHomeInString", () => {
   it("uses $REMOTECLAW_HOME replacement when REMOTECLAW_HOME is set", () => {
-    vi.stubEnv("REMOTECLAW_HOME", "/srv/openclaw-home");
+    vi.stubEnv("REMOTECLAW_HOME", "/srv/remoteclaw-home");
     vi.stubEnv("HOME", "/home/other");
 
     expect(
       shortenHomeInString(
-        `config: ${path.resolve("/srv/openclaw-home")}/.remoteclaw/remoteclaw.json`,
+        `config: ${path.resolve("/srv/remoteclaw-home")}/.remoteclaw/remoteclaw.json`,
       ),
     ).toBe("config: $REMOTECLAW_HOME/.remoteclaw/remoteclaw.json");
 
@@ -204,7 +204,7 @@ describe("resolveUserPath", () => {
   });
 
   it("expands ~/ to home dir", () => {
-    expect(resolveUserPath("~/openclaw")).toBe(path.resolve(os.homedir(), "openclaw"));
+    expect(resolveUserPath("~/remoteclaw")).toBe(path.resolve(os.homedir(), "remoteclaw"));
   });
 
   it("resolves relative paths", () => {
@@ -212,10 +212,12 @@ describe("resolveUserPath", () => {
   });
 
   it("prefers REMOTECLAW_HOME for tilde expansion", () => {
-    vi.stubEnv("REMOTECLAW_HOME", "/srv/openclaw-home");
+    vi.stubEnv("REMOTECLAW_HOME", "/srv/remoteclaw-home");
     vi.stubEnv("HOME", "/home/other");
 
-    expect(resolveUserPath("~/openclaw")).toBe(path.resolve("/srv/openclaw-home", "openclaw"));
+    expect(resolveUserPath("~/remoteclaw")).toBe(
+      path.resolve("/srv/remoteclaw-home", "remoteclaw"),
+    );
 
     vi.unstubAllEnvs();
   });

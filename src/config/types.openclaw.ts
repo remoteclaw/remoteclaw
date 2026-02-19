@@ -25,9 +25,9 @@ import type { PluginsConfig } from "./types.plugins.js";
 import type { SkillsConfig } from "./types.skills.js";
 import type { ToolsConfig } from "./types.tools.js";
 
-export type OpenClawConfig = {
+export type RemoteClawConfig = {
   meta?: {
-    /** Last OpenClaw version that wrote this config. */
+    /** Last RemoteClaw version that wrote this config. */
     lastTouchedVersion?: string;
     /** ISO timestamp when this config was last written. */
     lastTouchedAt?: string;
@@ -66,7 +66,7 @@ export type OpenClawConfig = {
   };
   browser?: BrowserConfig;
   ui?: {
-    /** Accent color for OpenClaw UI chrome (hex). */
+    /** Accent color for RemoteClaw UI chrome (hex). */
     seamColor?: string;
     assistant?: {
       /** Assistant display name for UI surfaces. */
@@ -119,9 +119,9 @@ export type ConfigFileSnapshot = {
    * defaults are applied. Use this for config set/unset operations to avoid
    * leaking runtime defaults into the written config file.
    */
-  resolved: OpenClawConfig;
+  resolved: RemoteClawConfig;
   valid: boolean;
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   hash?: string;
   issues: ConfigValidationIssue[];
   warnings: ConfigValidationIssue[];

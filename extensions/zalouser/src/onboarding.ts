@@ -1,7 +1,7 @@
 import type {
   ChannelOnboardingAdapter,
   ChannelOnboardingDmPolicy,
-  OpenClawConfig,
+  RemoteClawConfig,
   WizardPrompter,
 } from "openclaw/plugin-sdk";
 import {
@@ -24,9 +24,9 @@ import { runZca, runZcaInteractive, checkZcaInstalled, parseJsonOutput } from ".
 const channel = "zalouser" as const;
 
 function setZalouserDmPolicy(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   dmPolicy: "pairing" | "allowlist" | "open" | "disabled",
-): OpenClawConfig {
+): RemoteClawConfig {
   const allowFrom =
     dmPolicy === "open" ? addWildcardAllowFrom(cfg.channels?.zalouser?.allowFrom) : undefined;
   return {
@@ -39,7 +39,7 @@ function setZalouserDmPolicy(
         ...(allowFrom ? { allowFrom } : {}),
       },
     },
-  } as OpenClawConfig;
+  } as RemoteClawConfig;
 }
 
 async function noteZalouserHelp(prompter: WizardPrompter): Promise<void> {
@@ -58,10 +58,10 @@ async function noteZalouserHelp(prompter: WizardPrompter): Promise<void> {
 }
 
 async function promptZalouserAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   prompter: WizardPrompter;
   accountId: string;
-}): Promise<OpenClawConfig> {
+}): Promise<RemoteClawConfig> {
   const { cfg, prompter, accountId } = params;
   const resolved = resolveZalouserAccountSync({ cfg, accountId });
   const existingAllowFrom = resolved.config.allowFrom ?? [];
@@ -135,7 +135,7 @@ async function promptZalouserAllowFrom(params: {
             allowFrom: unique,
           },
         },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
     }
 
     return {
@@ -156,15 +156,15 @@ async function promptZalouserAllowFrom(params: {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
   }
 }
 
 function setZalouserGroupPolicy(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   accountId: string,
   groupPolicy: "open" | "allowlist" | "disabled",
-): OpenClawConfig {
+): RemoteClawConfig {
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return {
       ...cfg,
@@ -176,7 +176,7 @@ function setZalouserGroupPolicy(
           groupPolicy,
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
   }
   return {
     ...cfg,
@@ -195,14 +195,14 @@ function setZalouserGroupPolicy(
         },
       },
     },
-  } as OpenClawConfig;
+  } as RemoteClawConfig;
 }
 
 function setZalouserGroupAllowlist(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   accountId: string,
   groupKeys: string[],
-): OpenClawConfig {
+): RemoteClawConfig {
   const groups = Object.fromEntries(groupKeys.map((key) => [key, { allow: true }]));
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return {
@@ -215,7 +215,7 @@ function setZalouserGroupAllowlist(
           groups,
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
   }
   return {
     ...cfg,
@@ -234,11 +234,11 @@ function setZalouserGroupAllowlist(
         },
       },
     },
-  } as OpenClawConfig;
+  } as RemoteClawConfig;
 }
 
 async function resolveZalouserGroups(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId: string;
   entries: string[];
 }): Promise<Array<{ input: string; resolved: boolean; id?: string }>> {
@@ -414,7 +414,7 @@ export const zalouserOnboardingAdapter: ChannelOnboardingAdapter = {
             profile: account.profile !== "default" ? account.profile : undefined,
           },
         },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
     } else {
       next = {
         ...next,
@@ -433,7 +433,7 @@ export const zalouserOnboardingAdapter: ChannelOnboardingAdapter = {
             },
           },
         },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
     }
 
     if (forceAllowFrom) {

@@ -7,7 +7,7 @@ import type {
   GroupToolPolicyBySenderConfig,
   GroupToolPolicyConfig,
   MarkdownConfig,
-  OpenClawConfig,
+  RemoteClawConfig,
 } from "openclaw/plugin-sdk";
 
 export type IrcChannelConfig = {
@@ -64,8 +64,8 @@ export type IrcConfig = IrcAccountConfig & {
   accounts?: Record<string, IrcAccountConfig>;
 };
 
-export type CoreConfig = OpenClawConfig & {
-  channels?: OpenClawConfig["channels"] & {
+export type CoreConfig = RemoteClawConfig & {
+  channels?: RemoteClawConfig["channels"] & {
     irc?: IrcConfig;
   };
 };

@@ -45,7 +45,7 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
         //
         // Note: ANTHROPIC_AUTH_TOKEN (Anthropic SDK Bearer token) is NOT used by
         // Claude Code — it uses its own CLAUDE_CODE_OAUTH_TOKEN instead.
-        // ANTHROPIC_OAUTH_TOKEN is an OpenClaw-internal env var for the gateway's
+        // ANTHROPIC_OAUTH_TOKEN is an RemoteClaw-internal env var for the gateway's
         // own auth resolution and is NOT recognized by the external `claude` binary.
         const env: Record<string, string> = { CLAUDECODE: "" };
         if (!params.auth) {

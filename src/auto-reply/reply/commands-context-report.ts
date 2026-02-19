@@ -1,7 +1,7 @@
 import { resolveSessionAgentIds } from "../../agents/agent-scope.js";
 import { resolveBootstrapContextForRun } from "../../agents/bootstrap-files.js";
 import { resolveDefaultModelForAgent } from "../../agents/model-selection.js";
-import { createOpenClawTools } from "../../agents/openclaw-tools.js";
+import { createRemoteClawTools } from "../../agents/openclaw-tools.js";
 import { resolveBootstrapMaxChars } from "../../agents/pi-embedded-helpers.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
 import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
@@ -83,8 +83,8 @@ async function resolveContextReport(
   });
   const tools = (() => {
     try {
-      // pi-tools.js (createOpenClawCodingTools) was removed; use createOpenClawTools instead.
-      return createOpenClawTools({
+      // pi-tools.js (createRemoteClawCodingTools) was removed; use createRemoteClawTools instead.
+      return createRemoteClawTools({
         config: params.cfg,
         workspaceDir,
         agentSessionKey: params.sessionKey,

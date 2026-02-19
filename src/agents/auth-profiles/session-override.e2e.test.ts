@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { resolveSessionAuthProfileOverride } from "./session-override.js";
 
@@ -22,7 +22,7 @@ async function writeAuthStore(agentDir: string) {
 
 describe("resolveSessionAuthProfileOverride", () => {
   it("keeps user override when provider alias differs", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-auth-"));
     const prevStateDir = process.env.REMOTECLAW_STATE_DIR;
     process.env.REMOTECLAW_STATE_DIR = tmpDir;
     try {
@@ -39,7 +39,7 @@ describe("resolveSessionAuthProfileOverride", () => {
       const sessionStore = { "agent:main:main": sessionEntry };
 
       const resolved = await resolveSessionAuthProfileOverride({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as RemoteClawConfig,
         provider: "z.ai",
         agentDir,
         sessionEntry,

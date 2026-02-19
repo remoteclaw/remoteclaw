@@ -40,7 +40,10 @@ function dnsLabel(raw: string, fallback: string): string {
 }
 
 function txtQuote(value: string): string {
-  const escaped = value.replaceAll("\\", "\\\\").replaceAll('"', '\\"').replaceAll("\n", "\\n");
+  const escaped = value
+    .replaceAll("\\", "\\[remoteclaw\\]")
+    .replaceAll('"', '\\"')
+    .replaceAll("\n", "\\n");
   return `"${escaped}"`;
 }
 
@@ -74,7 +77,7 @@ function extractSerial(zoneText: string): number | null {
 }
 
 function extractContentHash(zoneText: string): string | null {
-  const match = zoneText.match(/^\s*;\s*openclaw-content-hash:\s*(\S+)\s*$/m);
+  const match = zoneText.match(/^\s*;\s*remoteclaw-content-hash:\s*(\S+)\s*$/m);
   return match?.[1] ?? null;
 }
 
@@ -104,9 +107,9 @@ export type WideAreaGatewayZoneOpts = {
 };
 
 function renderZone(opts: WideAreaGatewayZoneOpts & { serial: number }): string {
-  const hostname = os.hostname().split(".")[0] ?? "openclaw";
-  const hostLabel = dnsLabel(opts.hostLabel ?? hostname, "openclaw");
-  const instanceLabel = dnsLabel(opts.instanceLabel ?? `${hostname}-gateway`, "openclaw-gw");
+  const hostname = os.hostname().split(".")[0] ?? "remoteclaw";
+  const hostLabel = dnsLabel(opts.hostLabel ?? hostname, "remoteclaw");
+  const instanceLabel = dnsLabel(opts.instanceLabel ?? `${hostname}-gateway`, "remoteclaw-gw");
   const domain = normalizeWideAreaDomain(opts.domain) ?? "local.";
 
   const txt = [
@@ -144,9 +147,9 @@ function renderZone(opts: WideAreaGatewayZoneOpts & { serial: number }): string 
     records.push(`${hostLabel} IN AAAA ${opts.tailnetIPv6}`);
   }
 
-  records.push(`_openclaw-gw._tcp IN PTR ${instanceLabel}._openclaw-gw._tcp`);
-  records.push(`${instanceLabel}._openclaw-gw._tcp IN SRV 0 0 ${opts.gatewayPort} ${hostLabel}`);
-  records.push(`${instanceLabel}._openclaw-gw._tcp IN TXT ${txt.map(txtQuote).join(" ")}`);
+  records.push(`_remoteclaw-gw._tcp IN PTR ${instanceLabel}._remoteclaw-gw._tcp`);
+  records.push(`${instanceLabel}._remoteclaw-gw._tcp IN SRV 0 0 ${opts.gatewayPort} ${hostLabel}`);
+  records.push(`${instanceLabel}._remoteclaw-gw._tcp IN TXT ${txt.map(txtQuote).join(" ")}`);
 
   const contentBody = `${records.join("\n")}\n`;
   const hashBody = `${records
@@ -156,7 +159,7 @@ function renderZone(opts: WideAreaGatewayZoneOpts & { serial: number }): string 
     .join("\n")}\n`;
   const contentHash = computeContentHash(hashBody);
 
-  return `; openclaw-content-hash: ${contentHash}\n${contentBody}`;
+  return `; remoteclaw-content-hash: ${contentHash}\n${contentBody}`;
 }
 
 export function renderWideAreaGatewayZoneText(

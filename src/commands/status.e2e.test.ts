@@ -152,7 +152,7 @@ vi.mock("../memory/manager.js", () => ({
         files: 2,
         chunks: 3,
         dirty: false,
-        workspaceDir: "/tmp/openclaw",
+        workspaceDir: "/tmp/remoteclaw",
         dbPath: "/tmp/memory.sqlite",
         provider: "openai",
         model: "text-embedding-3-small",
@@ -244,7 +244,7 @@ vi.mock("../gateway/session-utils.js", async (importOriginal) => {
   };
 });
 vi.mock("../infra/openclaw-root.js", () => ({
-  resolveOpenClawPackageRoot: vi.fn().mockResolvedValue("/tmp/openclaw"),
+  resolveOpenClawPackageRoot: vi.fn().mockResolvedValue("/tmp/remoteclaw"),
 }));
 vi.mock("../infra/os-summary.js", () => ({
   resolveOsSummary: () => ({
@@ -256,11 +256,11 @@ vi.mock("../infra/os-summary.js", () => ({
 }));
 vi.mock("../infra/update-check.js", () => ({
   checkUpdateStatus: vi.fn().mockResolvedValue({
-    root: "/tmp/openclaw",
+    root: "/tmp/remoteclaw",
     installKind: "git",
     packageManager: "pnpm",
     git: {
-      root: "/tmp/openclaw",
+      root: "/tmp/remoteclaw",
       branch: "main",
       upstream: "origin/main",
       dirty: false,
@@ -271,8 +271,8 @@ vi.mock("../infra/update-check.js", () => ({
     deps: {
       manager: "pnpm",
       status: "ok",
-      lockfilePath: "/tmp/openclaw/pnpm-lock.yaml",
-      markerPath: "/tmp/openclaw/node_modules/.modules.yaml",
+      lockfilePath: "/tmp/remoteclaw/pnpm-lock.yaml",
+      markerPath: "/tmp/remoteclaw/node_modules/.modules.yaml",
     },
     registry: { latestVersion: "0.0.0" },
   }),
@@ -374,7 +374,7 @@ describe("statusCommand", () => {
     runtimeLogMock.mockClear();
     await statusCommand({}, runtime as never);
     const logs = runtimeLogMock.mock.calls.map((c: unknown[]) => String(c[0]));
-    expect(logs.some((l: string) => l.includes("OpenClaw status"))).toBe(true);
+    expect(logs.some((l: string) => l.includes("RemoteClaw status"))).toBe(true);
     expect(logs.some((l: string) => l.includes("Overview"))).toBe(true);
     expect(logs.some((l: string) => l.includes("Security audit"))).toBe(true);
     expect(logs.some((l: string) => l.includes("Summary:"))).toBe(true);
@@ -394,10 +394,10 @@ describe("statusCommand", () => {
     expect(
       logs.some(
         (l: string) =>
-          l.includes("openclaw status --all") ||
-          l.includes("openclaw --profile isolated status --all") ||
-          l.includes("openclaw status --all") ||
-          l.includes("openclaw --profile isolated status --all"),
+          l.includes("remoteclaw status --all") ||
+          l.includes("remoteclaw --profile isolated status --all") ||
+          l.includes("remoteclaw status --all") ||
+          l.includes("remoteclaw --profile isolated status --all"),
       ),
     ).toBe(true);
   });

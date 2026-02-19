@@ -8,7 +8,7 @@ describe("doctor command", () => {
   it("warns when the state directory is missing", async () => {
     mockDoctorConfigSnapshot();
 
-    const missingDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-missing-state-"));
+    const missingDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-missing-state-"));
     fs.rmSync(missingDir, { recursive: true, force: true });
     process.env.REMOTECLAW_STATE_DIR = missingDir;
     note.mockClear();

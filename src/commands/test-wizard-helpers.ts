@@ -37,7 +37,7 @@ export function createWizardPrompter(
 }
 
 export async function setupAuthTestEnv(
-  prefix = "openclaw-auth-",
+  prefix = "remoteclaw-auth-",
   options?: { agentSubdir?: string },
 ): Promise<{
   stateDir: string;
@@ -74,7 +74,7 @@ export function createAuthTestLifecycle(envKeys: string[]): AuthTestLifecycle {
   };
 }
 
-export function requireOpenClawAgentDir(): string {
+export function requireRemoteClawAgentDir(): string {
   const agentDir = process.env.REMOTECLAW_AGENT_DIR;
   if (!agentDir) {
     throw new Error("REMOTECLAW_AGENT_DIR not set");

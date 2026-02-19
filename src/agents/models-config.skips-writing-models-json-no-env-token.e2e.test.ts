@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolveOpenClawAgentDir } from "./agent-paths.js";
+import { resolveRemoteClawAgentDir } from "./agent-paths.js";
 import {
   CUSTOM_PROXY_MODELS_CONFIG,
   installModelsConfigTestHooks,
@@ -10,7 +10,7 @@ import {
   withTempEnv,
   withModelsTempHome as withTempHome,
 } from "./models-config.e2e-harness.js";
-import { ensureOpenClawModelsJson } from "./models-config.js";
+import { ensureRemoteClawModelsJson } from "./models-config.js";
 
 installModelsConfigTestHooks();
 
@@ -31,9 +31,9 @@ async function runEnvProviderCase(params: {
   const previousValue = process.env[params.envVar];
   process.env[params.envVar] = params.envValue;
   try {
-    await ensureOpenClawModelsJson({});
+    await ensureRemoteClawModelsJson({});
 
-    const modelPath = path.join(resolveOpenClawAgentDir(), "models.json");
+    const modelPath = path.join(resolveRemoteClawAgentDir(), "models.json");
     const raw = await fs.readFile(modelPath, "utf8");
     const parsed = JSON.parse(raw) as { providers: Record<string, ProviderConfig> };
     const provider = parsed.providers[params.providerKey];
@@ -63,7 +63,7 @@ describe("models-config", () => {
         process.env.REMOTECLAW_AGENT_DIR = agentDir;
         process.env.PI_CODING_AGENT_DIR = agentDir;
 
-        const result = await ensureOpenClawModelsJson(
+        const result = await ensureRemoteClawModelsJson(
           {
             models: { providers: {} },
           },
@@ -78,9 +78,9 @@ describe("models-config", () => {
 
   it("writes models.json for configured providers", async () => {
     await withTempHome(async () => {
-      await ensureOpenClawModelsJson(CUSTOM_PROXY_MODELS_CONFIG);
+      await ensureRemoteClawModelsJson(CUSTOM_PROXY_MODELS_CONFIG);
 
-      const modelPath = path.join(resolveOpenClawAgentDir(), "models.json");
+      const modelPath = path.join(resolveRemoteClawAgentDir(), "models.json");
       const raw = await fs.readFile(modelPath, "utf8");
       const parsed = JSON.parse(raw) as {
         providers: Record<string, { baseUrl?: string }>;

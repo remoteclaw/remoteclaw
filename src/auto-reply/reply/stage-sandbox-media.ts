@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertSandboxPath } from "../../agents/sandbox-paths.js";
 import { ensureSandboxWorkspaceForSession } from "../../agents/sandbox.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { logVerbose } from "../../globals.js";
 import { getMediaDir } from "../../media/store.js";
 import { CONFIG_DIR } from "../../utils.js";
@@ -13,7 +13,7 @@ import type { MsgContext, TemplateContext } from "../templating.js";
 export async function stageSandboxMedia(params: {
   ctx: MsgContext;
   sessionCtx: TemplateContext;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   sessionKey?: string;
   workspaceDir: string;
 }) {

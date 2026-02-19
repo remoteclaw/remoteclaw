@@ -88,7 +88,7 @@ export function loadShellEnvFallback(opts: ShellEnvFallbackOptions): ShellEnvFal
     stdout = execLoginShellEnvZero({ shell, env: opts.env, exec, timeoutMs });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    logger.warn(`[openclaw] shell env fallback failed: ${msg}`);
+    logger.warn(`[remoteclaw] shell env fallback failed: ${msg}`);
     lastAppliedKeys = [];
     return { ok: false, error: msg, applied: [] };
   }

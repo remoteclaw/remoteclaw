@@ -4,7 +4,7 @@ import {
   buildOauthProviderAuthResult,
   emptyPluginConfigSchema,
   isWSL2Sync,
-  type OpenClawPluginApi,
+  type RemoteClawPluginApi,
   type ProviderAuthContext,
 } from "openclaw/plugin-sdk";
 
@@ -37,7 +37,7 @@ const RESPONSE_PAGE = `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>OpenClaw Antigravity OAuth</title>
+    <title>RemoteClaw Antigravity OAuth</title>
   </head>
   <body>
     <main>
@@ -373,7 +373,7 @@ const antigravityPlugin = {
   name: "Google Antigravity Auth",
   description: "OAuth flow for Google Antigravity (Cloud Code Assist)",
   configSchema: emptyPluginConfigSchema(),
-  register(api: OpenClawPluginApi) {
+  register(api: RemoteClawPluginApi) {
     api.registerProvider({
       id: "google-antigravity",
       label: "Google Antigravity",

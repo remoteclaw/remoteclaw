@@ -52,7 +52,7 @@ describe("update-startup", () => {
   let loaded = false;
 
   beforeAll(async () => {
-    suiteRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-check-suite-"));
+    suiteRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-update-check-suite-"));
   });
 
   beforeEach(async () => {
@@ -110,9 +110,9 @@ describe("update-startup", () => {
   });
 
   async function runUpdateCheckAndReadState(channel: "stable" | "beta") {
-    vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue("/opt/openclaw");
+    vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue("/opt/remoteclaw");
     vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: "/opt/openclaw",
+      root: "/opt/remoteclaw",
       installKind: "package",
       packageManager: "npm",
     } satisfies UpdateCheckResult);

@@ -19,7 +19,7 @@ export async function writeDownloadSkill(params: {
   const skillDir = path.join(params.workspaceDir, "skills", params.name);
   await fs.mkdir(skillDir, { recursive: true });
   const meta = {
-    openclaw: {
+    remoteclaw: {
       install: [
         {
           id: params.installId,

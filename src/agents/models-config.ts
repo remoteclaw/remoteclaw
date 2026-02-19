@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { type OpenClawConfig, loadConfig } from "../config/config.js";
+import { type RemoteClawConfig, loadConfig } from "../config/config.js";
 import { isRecord } from "../utils.js";
-import { resolveOpenClawAgentDir } from "./agent-paths.js";
+import { resolveRemoteClawAgentDir } from "./agent-paths.js";
 import {
   normalizeProviders,
   type ProviderConfig,
@@ -11,7 +11,7 @@ import {
   resolveImplicitProviders,
 } from "./models-config.providers.js";
 
-type ModelsConfig = NonNullable<OpenClawConfig["models"]>;
+type ModelsConfig = NonNullable<RemoteClawConfig["models"]>;
 
 const DEFAULT_MODE: NonNullable<ModelsConfig["mode"]> = "merge";
 
@@ -78,12 +78,12 @@ async function readJson(pathname: string): Promise<unknown> {
   }
 }
 
-export async function ensureOpenClawModelsJson(
-  config?: OpenClawConfig,
+export async function ensureRemoteClawModelsJson(
+  config?: RemoteClawConfig,
   agentDirOverride?: string,
 ): Promise<{ agentDir: string; wrote: boolean }> {
   const cfg = config ?? loadConfig();
-  const agentDir = agentDirOverride?.trim() ? agentDirOverride.trim() : resolveOpenClawAgentDir();
+  const agentDir = agentDirOverride?.trim() ? agentDirOverride.trim() : resolveRemoteClawAgentDir();
 
   const explicitProviders = cfg.models?.providers ?? {};
   const implicitProviders = await resolveImplicitProviders({ agentDir, explicitProviders });

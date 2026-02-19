@@ -40,7 +40,7 @@ describe("gateway e2e", () => {
 
       const { baseUrl: openaiBaseUrl, restore } = installOpenAiResponsesMock();
 
-      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-mock-home-"));
+      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-gw-mock-home-"));
       process.env.HOME = tempHome;
       process.env.REMOTECLAW_SKIP_CHANNELS = "1";
       process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = "1";
@@ -51,12 +51,12 @@ describe("gateway e2e", () => {
       const token = `test-${randomUUID()}`;
       process.env.REMOTECLAW_GATEWAY_TOKEN = token;
 
-      const workspaceDir = path.join(tempHome, "openclaw");
+      const workspaceDir = path.join(tempHome, "remoteclaw");
       await fs.mkdir(workspaceDir, { recursive: true });
 
       const nonceA = randomUUID();
       const nonceB = randomUUID();
-      const toolProbePath = path.join(workspaceDir, `.openclaw-tool-probe.${nonceA}.txt`);
+      const toolProbePath = path.join(workspaceDir, `.remoteclaw-tool-probe.${nonceA}.txt`);
       await fs.writeFile(toolProbePath, `nonceA=${nonceA}\nnonceB=${nonceB}\n`);
 
       const configDir = path.join(tempHome, ".remoteclaw");
@@ -147,7 +147,7 @@ describe("gateway e2e", () => {
     process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
     delete process.env.REMOTECLAW_GATEWAY_TOKEN;
 
-    const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-wizard-home-"));
+    const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-wizard-home-"));
     process.env.HOME = tempHome;
     delete process.env.REMOTECLAW_STATE_DIR;
     delete process.env.REMOTECLAW_CONFIG_PATH;

@@ -42,7 +42,7 @@ describe("signal event handler sender prefix", () => {
         },
       },
       cfg: {
-        agents: { defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/openclaw" } },
+        agents: { defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/remoteclaw" } },
         channels: { signal: {} },
       } as never,
       baseUrl: "http://localhost",

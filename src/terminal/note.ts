@@ -33,7 +33,7 @@ function isCopySensitiveToken(word: string): boolean {
   ) {
     return true;
   }
-  if (WINDOWS_DRIVE_RE.test(word) || word.startsWith("\\\\")) {
+  if (WINDOWS_DRIVE_RE.test(word) || word.startsWith("\\[remoteclaw\\]")) {
     return true;
   }
   if (word.includes("/") || word.includes("\\")) {

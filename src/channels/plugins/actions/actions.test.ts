@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 
 const handleDiscordAction = vi.fn(async (..._args: unknown[]) => ({ details: { ok: true } }));
 const handleTelegramAction = vi.fn(async (..._args: unknown[]) => ({ ok: true }));
@@ -30,12 +30,12 @@ const { telegramMessageActions } = await import("./telegram.js");
 const { signalMessageActions } = await import("./signal.js");
 const { createSlackActions } = await import("../slack.actions.js");
 
-function telegramCfg(): OpenClawConfig {
-  return { channels: { telegram: { botToken: "tok" } } } as OpenClawConfig;
+function telegramCfg(): RemoteClawConfig {
+  return { channels: { telegram: { botToken: "tok" } } } as RemoteClawConfig;
 }
 
 function slackHarness() {
-  const cfg = { channels: { slack: { botToken: "tok" } } } as OpenClawConfig;
+  const cfg = { channels: { slack: { botToken: "tok" } } } as RemoteClawConfig;
   const actions = createSlackActions("slack");
   return { cfg, actions };
 }
@@ -88,7 +88,7 @@ beforeEach(() => {
 
 describe("discord message actions", () => {
   it("lists channel and upload actions by default", async () => {
-    const cfg = { channels: { discord: { token: "d0" } } } as OpenClawConfig;
+    const cfg = { channels: { discord: { token: "d0" } } } as RemoteClawConfig;
     const actions = discordMessageActions.listActions?.({ cfg }) ?? [];
 
     expect(actions).toContain("emoji-upload");
@@ -99,7 +99,7 @@ describe("discord message actions", () => {
   it("respects disabled channel actions", async () => {
     const cfg = {
       channels: { discord: { token: "d0", actions: { channels: false } } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const actions = discordMessageActions.listActions?.({ cfg }) ?? [];
 
     expect(actions).not.toContain("channel-create");
@@ -114,7 +114,7 @@ describe("discord message actions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const actions = discordMessageActions.listActions?.({ cfg }) ?? [];
 
     expectModerationActions(actions);
@@ -130,7 +130,7 @@ describe("discord message actions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const actions = discordMessageActions.listActions?.({ cfg }) ?? [];
 
     expectModerationActions(actions);
@@ -146,7 +146,7 @@ describe("discord message actions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const actions = discordMessageActions.listActions?.({ cfg }) ?? [];
 
     // moderation defaults to false, so without explicit true it stays hidden
@@ -165,7 +165,7 @@ describe("discord message actions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const actions = discordMessageActions.listActions?.({ cfg }) ?? [];
 
     expect(actions).toContain("timeout");
@@ -182,7 +182,7 @@ describe("discord message actions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const actions = discordMessageActions.listActions?.({ cfg }) ?? [];
 
     expect(actions).toContain("timeout");
@@ -198,7 +198,7 @@ describe("handleDiscordMessageAction", () => {
         to: "channel:123",
         message: "hi",
       },
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       accountId: "ops",
     });
 
@@ -223,7 +223,7 @@ describe("handleDiscordMessageAction", () => {
         message: "hi",
         embeds,
       },
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
     });
 
     expect(handleDiscordAction).toHaveBeenCalledWith(
@@ -246,7 +246,7 @@ describe("handleDiscordMessageAction", () => {
         pollOption: ["Yes", "No"],
         accountId: "marve",
       },
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
     });
 
     expect(handleDiscordAction).toHaveBeenCalledWith(
@@ -268,7 +268,7 @@ describe("handleDiscordMessageAction", () => {
         channelId: "123",
         message: "hi",
       },
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       accountId: "ops",
     });
 
@@ -293,7 +293,7 @@ describe("handleDiscordMessageAction", () => {
         channelId: "123",
         message: "hi",
       },
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       accountId: "ops",
     });
 
@@ -316,7 +316,7 @@ describe("handleDiscordMessageAction", () => {
         threadName: "Forum thread",
         message: "Initial forum post body",
       },
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
     });
 
     expect(handleDiscordAction).toHaveBeenCalledWith(
@@ -339,7 +339,7 @@ describe("handleDiscordMessageAction", () => {
         locked: false,
         autoArchiveDuration: 1440,
       },
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
     });
 
     expect(handleDiscordAction).toHaveBeenCalledWith(
@@ -478,7 +478,7 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const actions = telegramMessageActions.listActions?.({ cfg }) ?? [];
 
     expect(actions).toContain("sticker");
@@ -495,7 +495,7 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const actions = telegramMessageActions.listActions?.({ cfg }) ?? [];
 
     expect(actions).not.toContain("sticker");
@@ -512,7 +512,7 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const actions = telegramMessageActions.listActions?.({ cfg }) ?? [];
 
     expect(actions).toContain("sticker");
@@ -577,14 +577,14 @@ describe("telegramMessageActions", () => {
 
 describe("signalMessageActions", () => {
   it("returns no actions when no configured accounts exist", () => {
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as RemoteClawConfig;
     expect(signalMessageActions.listActions?.({ cfg }) ?? []).toEqual([]);
   });
 
   it("hides react when reactions are disabled", () => {
     const cfg = {
       channels: { signal: { account: "+15550001111", actions: { reactions: false } } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     expect(signalMessageActions.listActions?.({ cfg }) ?? []).toEqual(["send"]);
   });
 
@@ -598,7 +598,7 @@ describe("signalMessageActions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     expect(signalMessageActions.listActions?.({ cfg }) ?? []).toEqual(["send", "react"]);
   });
 
@@ -610,7 +610,7 @@ describe("signalMessageActions", () => {
   it("blocks reactions when action gate is disabled", async () => {
     const cfg = {
       channels: { signal: { account: "+15550001111", actions: { reactions: false } } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const handleAction = signalMessageActions.handleAction;
     if (!handleAction) {
       throw new Error("signal handleAction unavailable");
@@ -637,7 +637,7 @@ describe("signalMessageActions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     await signalMessageActions.handleAction?.({
       channel: "signal",
@@ -655,7 +655,7 @@ describe("signalMessageActions", () => {
   it("normalizes uuid recipients", async () => {
     const cfg = {
       channels: { signal: { account: "+15550001111" } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     await signalMessageActions.handleAction?.({
       channel: "signal",
@@ -680,7 +680,7 @@ describe("signalMessageActions", () => {
   it("requires targetAuthor for group reactions", async () => {
     const cfg = {
       channels: { signal: { account: "+15550001111" } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const handleAction = signalMessageActions.handleAction;
     if (!handleAction) {
       throw new Error("signal handleAction unavailable");
@@ -700,7 +700,7 @@ describe("signalMessageActions", () => {
   it("passes groupId and targetAuthor for group reactions", async () => {
     const cfg = {
       channels: { signal: { account: "+15550001111" } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     await signalMessageActions.handleAction?.({
       channel: "signal",

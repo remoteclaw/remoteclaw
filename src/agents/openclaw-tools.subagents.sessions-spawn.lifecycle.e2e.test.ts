@@ -17,13 +17,13 @@ vi.mock("./pi-embedded.js", () => ({
 
 const callGatewayMock = getCallGatewayMock();
 
-type CreateOpenClawTools = (typeof import("./openclaw-tools.js"))["createOpenClawTools"];
-type CreateOpenClawToolsOpts = Parameters<CreateOpenClawTools>[0];
+type CreateRemoteClawTools = (typeof import("./openclaw-tools.js"))["createRemoteClawTools"];
+type CreateRemoteClawToolsOpts = Parameters<CreateRemoteClawTools>[0];
 
-async function getSessionsSpawnTool(opts: CreateOpenClawToolsOpts) {
+async function getSessionsSpawnTool(opts: CreateRemoteClawToolsOpts) {
   // Dynamic import: ensure harness mocks are installed before tool modules load.
-  const { createOpenClawTools } = await import("./openclaw-tools.js");
-  const tool = createOpenClawTools(opts).find((candidate) => candidate.name === "sessions_spawn");
+  const { createRemoteClawTools } = await import("./openclaw-tools.js");
+  const tool = createRemoteClawTools(opts).find((candidate) => candidate.name === "sessions_spawn");
   if (!tool) {
     throw new Error("missing sessions_spawn tool");
   }
@@ -135,7 +135,7 @@ const waitFor = async (predicate: () => boolean, timeoutMs = 2000) => {
   }
 };
 
-describe("openclaw-tools: subagents (sessions_spawn lifecycle)", () => {
+describe("remoteclaw-tools: subagents (sessions_spawn lifecycle)", () => {
   beforeEach(() => {
     resetSessionsSpawnConfigOverride();
   });

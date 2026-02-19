@@ -1,6 +1,6 @@
 import {
   emptyPluginConfigSchema,
-  type OpenClawPluginApi,
+  type RemoteClawPluginApi,
   type ProviderAuthContext,
   type ProviderAuthResult,
 } from "openclaw/plugin-sdk";
@@ -132,7 +132,7 @@ const minimaxPortalPlugin = {
   name: "MiniMax OAuth",
   description: "OAuth flow for MiniMax models",
   configSchema: emptyPluginConfigSchema(),
-  register(api: OpenClawPluginApi) {
+  register(api: RemoteClawPluginApi) {
     api.registerProvider({
       id: PROVIDER_ID,
       label: PROVIDER_LABEL,

@@ -251,7 +251,7 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
                   await sendMessageMatrix(
                     `room:${roomId}`,
                     [
-                      "OpenClaw: access not configured.",
+                      "RemoteClaw: access not configured.",
                       "",
                       `Pairing code: ${code}`,
                       "",

@@ -28,7 +28,7 @@ function isLikelyLocalPath(candidate: string): boolean {
     candidate.startsWith("../") ||
     candidate.startsWith("~") ||
     WINDOWS_DRIVE_RE.test(candidate) ||
-    candidate.startsWith("\\\\") ||
+    candidate.startsWith("\\[remoteclaw\\]") ||
     (!SCHEME_RE.test(candidate) && (candidate.includes("/") || candidate.includes("\\")))
   );
 }

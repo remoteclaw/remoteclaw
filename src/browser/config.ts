@@ -1,4 +1,4 @@
-import type { BrowserConfig, BrowserProfileConfig, OpenClawConfig } from "../config/config.js";
+import type { BrowserConfig, BrowserProfileConfig, RemoteClawConfig } from "../config/config.js";
 import { resolveGatewayPort } from "../config/paths.js";
 import {
   deriveDefaultBrowserCdpPortRange,
@@ -41,7 +41,7 @@ export type ResolvedBrowserProfile = {
   cdpHost: string;
   cdpIsLoopback: boolean;
   color: string;
-  driver: "openclaw" | "extension";
+  driver: "remoteclaw" | "extension";
 };
 
 function normalizeHexColor(raw: string | undefined) {
@@ -87,7 +87,7 @@ export function parseHttpUrl(raw: string, label: string) {
 }
 
 /**
- * Ensure the default "openclaw" profile exists in the profiles map.
+ * Ensure the default "remoteclaw" profile exists in the profiles map.
  * Auto-creates it with the legacy CDP port (from browser.cdpUrl) or first port if missing.
  */
 function ensureDefaultProfile(
@@ -109,7 +109,7 @@ function ensureDefaultProfile(
 /**
  * Ensure a built-in "chrome" profile exists for the Chrome extension relay.
  *
- * Note: this is an OpenClaw browser profile (routing config), not a Chrome user profile.
+ * Note: this is an RemoteClaw browser profile (routing config), not a Chrome user profile.
  * It points at the local relay CDP endpoint (controlPort + 1).
  */
 function ensureDefaultChromeExtensionProfile(
@@ -138,7 +138,7 @@ function ensureDefaultChromeExtensionProfile(
 }
 export function resolveBrowserConfig(
   cfg: BrowserConfig | undefined,
-  rootConfig?: OpenClawConfig,
+  rootConfig?: RemoteClawConfig,
 ): ResolvedBrowserConfig {
   const enabled = cfg?.enabled ?? DEFAULT_REMOTECLAW_BROWSER_ENABLED;
   const evaluateEnabled = cfg?.evaluateEnabled ?? DEFAULT_BROWSER_EVALUATE_ENABLED;
@@ -238,7 +238,7 @@ export function resolveProfile(
   let cdpHost = resolved.cdpHost;
   let cdpPort = profile.cdpPort ?? 0;
   let cdpUrl = "";
-  const driver = profile.driver === "extension" ? "extension" : "openclaw";
+  const driver = profile.driver === "extension" ? "extension" : "remoteclaw";
 
   if (rawProfileUrl) {
     const parsed = parseHttpUrl(rawProfileUrl, `browser.profiles.${profileName}.cdpUrl`);

@@ -1,11 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
-import { MANIFEST_KEY } from "../compat/legacy-names.js";
+import {
+  LEGACY_MANIFEST_KEYS,
+  LEGACY_PLUGIN_MANIFEST_FILENAMES,
+  MANIFEST_KEY,
+} from "../compat/legacy-names.js";
 import { isRecord } from "../utils.js";
 import type { PluginConfigUiHint, PluginKind } from "./types.js";
 
-export const PLUGIN_MANIFEST_FILENAME = "openclaw.plugin.json";
-export const PLUGIN_MANIFEST_FILENAMES = [PLUGIN_MANIFEST_FILENAME] as const;
+export const PLUGIN_MANIFEST_FILENAME = "remoteclaw.plugin.json";
+export const PLUGIN_MANIFEST_FILENAMES = [
+  PLUGIN_MANIFEST_FILENAME,
+  ...LEGACY_PLUGIN_MANIFEST_FILENAMES,
+] as const;
 
 export type PluginManifest = {
   id: string;
@@ -99,7 +106,7 @@ export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
   };
 }
 
-// package.json "openclaw" metadata (used for onboarding/catalog)
+// package.json "remoteclaw" metadata (used for onboarding/catalog)
 export type PluginPackageChannel = {
   id?: string;
   label?: string;
@@ -127,7 +134,7 @@ export type PluginPackageInstall = {
   defaultChoice?: "npm" | "local";
 };
 
-export type OpenClawPackageManifest = {
+export type RemoteClawPackageManifest = {
   extensions?: string[];
   channel?: PluginPackageChannel;
   install?: PluginPackageInstall;
@@ -139,13 +146,20 @@ export type PackageManifest = {
   name?: string;
   version?: string;
   description?: string;
-} & Partial<Record<ManifestKey, OpenClawPackageManifest>>;
+} & Partial<Record<ManifestKey, RemoteClawPackageManifest>>;
 
 export function getPackageManifestMetadata(
   manifest: PackageManifest | undefined,
-): OpenClawPackageManifest | undefined {
+): RemoteClawPackageManifest | undefined {
   if (!manifest) {
     return undefined;
   }
-  return manifest[MANIFEST_KEY];
+  const manifestKeys = [MANIFEST_KEY, ...LEGACY_MANIFEST_KEYS];
+  for (const key of manifestKeys) {
+    const value = (manifest as Record<string, unknown>)[key];
+    if (value && typeof value === "object") {
+      return value as RemoteClawPackageManifest;
+    }
+  }
+  return undefined;
 }

@@ -2,9 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-export const POSIX_REMOTECLAW_TMP_DIR = "/tmp/openclaw";
+export const POSIX_REMOTECLAW_TMP_DIR = "/tmp/remoteclaw";
 
-type ResolvePreferredOpenClawTmpDirOptions = {
+type ResolvePreferredRemoteClawTmpDirOptions = {
   accessSync?: (path: string, mode?: number) => void;
   lstatSync?: (path: string) => {
     isDirectory(): boolean;
@@ -28,8 +28,8 @@ function isNodeErrorWithCode(err: unknown, code: string): err is MaybeNodeError 
   );
 }
 
-export function resolvePreferredOpenClawTmpDir(
-  options: ResolvePreferredOpenClawTmpDirOptions = {},
+export function resolvePreferredRemoteClawTmpDir(
+  options: ResolvePreferredRemoteClawTmpDirOptions = {},
 ): string {
   const accessSync = options.accessSync ?? fs.accessSync;
   const lstatSync = options.lstatSync ?? fs.lstatSync;
@@ -62,7 +62,7 @@ export function resolvePreferredOpenClawTmpDir(
 
   const fallback = (): string => {
     const base = tmpdir();
-    const suffix = uid === undefined ? "openclaw" : `openclaw-${uid}`;
+    const suffix = uid === undefined ? "remoteclaw" : `remoteclaw-${uid}`;
     return path.join(base, suffix);
   };
 

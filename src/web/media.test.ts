@@ -44,7 +44,7 @@ async function createLargeTestJpeg(): Promise<{ buffer: Buffer; file: string }> 
 }
 
 beforeAll(async () => {
-  fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-media-test-"));
+  fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-media-test-"));
   largeJpegBuffer = await sharp({
     create: {
       width: 800,
@@ -107,7 +107,7 @@ describe("web media loading", () => {
       path.parse(os.tmpdir()).root,
       "var",
       "lib",
-      "openclaw-media-state-test",
+      "remoteclaw-media-state-test",
     );
   });
 
@@ -354,7 +354,7 @@ describe("local media root guard", () => {
     ).rejects.toThrow(/refuses filesystem root/i);
   });
 
-  it("allows default OpenClaw state workspace and sandbox roots", async () => {
+  it("allows default RemoteClaw state workspace and sandbox roots", async () => {
     const { resolveStateDir } = await import("../config/paths.js");
     const stateDir = resolveStateDir();
     const readFile = vi.fn(async () => Buffer.from("generated-media"));
@@ -382,7 +382,7 @@ describe("local media root guard", () => {
     );
   });
 
-  it("rejects default OpenClaw state per-agent workspace-* roots without explicit local roots", async () => {
+  it("rejects default RemoteClaw state per-agent workspace-* roots without explicit local roots", async () => {
     const { resolveStateDir } = await import("../config/paths.js");
     const stateDir = resolveStateDir();
     const readFile = vi.fn(async () => Buffer.from("generated-media"));

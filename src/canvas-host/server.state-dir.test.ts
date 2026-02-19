@@ -22,7 +22,7 @@ describe("canvas host state dir defaults", () => {
   });
 
   it("uses REMOTECLAW_STATE_DIR for the default canvas root", async () => {
-    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-canvas-state-"));
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-canvas-state-"));
     const stateDir = path.join(tempRoot, "state");
     setStateDirEnv(stateDir);
     const handler = await createCanvasHostHandler({
@@ -36,7 +36,7 @@ describe("canvas host state dir defaults", () => {
       expect(actualRoot).toBe(expectedRoot);
       const indexPath = path.join(expectedRoot, "index.html");
       const indexContents = await fs.readFile(indexPath, "utf8");
-      expect(indexContents).toContain("OpenClaw Canvas");
+      expect(indexContents).toContain("RemoteClaw Canvas");
     } finally {
       await handler.close();
       await fs.rm(tempRoot, { recursive: true, force: true });

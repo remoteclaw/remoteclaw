@@ -8,7 +8,7 @@ import {
   initializeGlobalHookRunner,
   resetGlobalHookRunner,
 } from "../plugins/hook-runner-global.js";
-import { loadOpenClawPlugins } from "../plugins/loader.js";
+import { loadRemoteClawPlugins } from "../plugins/loader.js";
 import { guardSessionManager } from "./session-tool-result-guard-wrapper.js";
 
 const EMPTY_PLUGIN_SCHEMA = { type: "object", additionalProperties: false, properties: {} };
@@ -19,7 +19,7 @@ function writeTempPlugin(params: { dir: string; id: string; body: string }): str
   const file = path.join(pluginDir, `${params.id}.mjs`);
   fs.writeFileSync(file, params.body, "utf-8");
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "remoteclaw.plugin.json"),
     JSON.stringify(
       {
         id: params.id,
@@ -77,7 +77,7 @@ describe("tool_result_persist hook", () => {
   });
 
   it("loads tool_result_persist hooks without breaking persistence", () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-toolpersist-"));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-toolpersist-"));
     process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
 
     const pluginA = writeTempPlugin({
@@ -104,7 +104,7 @@ describe("tool_result_persist hook", () => {
 } };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: tmp,
       config: {
@@ -132,7 +132,7 @@ describe("tool_result_persist hook", () => {
 
 describe("before_message_write hook", () => {
   it("continues persistence when a before_message_write hook throws", () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-before-write-"));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-before-write-"));
     process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
 
     const plugin = writeTempPlugin({
@@ -145,7 +145,7 @@ describe("before_message_write hook", () => {
 } };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: tmp,
       config: {

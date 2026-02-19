@@ -4,7 +4,7 @@ import type {
   ChannelDock,
   ChannelGroupContext,
   ChannelPlugin,
-  OpenClawConfig,
+  RemoteClawConfig,
   GroupToolPolicyConfig,
 } from "openclaw/plugin-sdk";
 import {
@@ -253,7 +253,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
               enabled: true,
             },
           },
-        } as OpenClawConfig;
+        } as RemoteClawConfig;
       }
       return {
         ...next,
@@ -271,7 +271,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
             },
           },
         },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
     },
   },
   messaging: {

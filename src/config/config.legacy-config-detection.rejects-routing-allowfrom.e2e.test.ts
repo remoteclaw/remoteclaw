@@ -80,12 +80,12 @@ describe("legacy config detection", () => {
   });
   it("migrates routing.groupChat.mentionPatterns to messages.groupChat.mentionPatterns", async () => {
     const res = migrateLegacyConfig({
-      routing: { groupChat: { mentionPatterns: ["@openclaw"] } },
+      routing: { groupChat: { mentionPatterns: ["@remoteclaw"] } },
     });
     expect(res.changes).toContain(
       "Moved routing.groupChat.mentionPatterns → messages.groupChat.mentionPatterns.",
     );
-    expect(res.config?.messages?.groupChat?.mentionPatterns).toEqual(["@openclaw"]);
+    expect(res.config?.messages?.groupChat?.mentionPatterns).toEqual(["@remoteclaw"]);
     expect(getLegacyRouting(res.config)?.groupChat).toBeUndefined();
   });
   it("migrates routing agentToAgent/queue/transcribeAudio to tools/messages/media", async () => {
@@ -287,7 +287,7 @@ describe("legacy config detection", () => {
         list: [
           {
             id: "work",
-            workspace: "~/openclaw-work",
+            workspace: "~/remoteclaw-work",
             tools: {
               elevated: {
                 enabled: false,

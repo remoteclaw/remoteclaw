@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { maybeRemoveDeprecatedCliAuthProfiles } from "./doctor-auth.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 
@@ -25,7 +25,7 @@ function makePrompter(confirmValue: boolean): DoctorPrompter {
 beforeEach(() => {
   originalAgentDir = process.env.REMOTECLAW_AGENT_DIR;
   originalPiAgentDir = process.env.PI_CODING_AGENT_DIR;
-  tempAgentDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-auth-"));
+  tempAgentDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-auth-"));
   process.env.REMOTECLAW_AGENT_DIR = tempAgentDir;
   process.env.PI_CODING_AGENT_DIR = tempAgentDir;
 });
@@ -95,7 +95,7 @@ describe("maybeRemoveDeprecatedCliAuthProfiles", () => {
     } as const;
 
     const next = await maybeRemoveDeprecatedCliAuthProfiles(
-      cfg as unknown as OpenClawConfig,
+      cfg as unknown as RemoteClawConfig,
       makePrompter(true),
     );
 

@@ -55,7 +55,7 @@ function mockTarExtractionFlow(params: {
 async function withTempWorkspace(
   run: (params: { workspaceDir: string; stateDir: string }) => Promise<void>,
 ) {
-  const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-skills-install-"));
+  const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-skills-install-"));
   try {
     const stateDir = setTempStateDir(workspaceDir);
     await run({ workspaceDir, stateDir });
@@ -85,7 +85,7 @@ async function writeTarBz2Skill(params: {
   });
 }
 
-function restoreOpenClawStateDir(originalValue: string | undefined): void {
+function restoreRemoteClawStateDir(originalValue: string | undefined): void {
   if (originalValue === undefined) {
     delete process.env.REMOTECLAW_STATE_DIR;
     return;
@@ -96,7 +96,7 @@ function restoreOpenClawStateDir(originalValue: string | undefined): void {
 const originalStateDir = process.env.REMOTECLAW_STATE_DIR;
 
 afterEach(() => {
-  restoreOpenClawStateDir(originalStateDir);
+  restoreRemoteClawStateDir(originalStateDir);
 });
 
 vi.mock("../process/exec.js", () => ({

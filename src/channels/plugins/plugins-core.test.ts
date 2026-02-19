@@ -84,7 +84,7 @@ describe("channel plugin catalog", () => {
   });
 
   it("includes external catalog entries", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-catalog-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-catalog-"));
     const catalogPath = path.join(dir, "catalog.json");
     fs.writeFileSync(
       catalogPath,
@@ -92,7 +92,7 @@ describe("channel plugin catalog", () => {
         entries: [
           {
             name: "@openclaw/demo-channel",
-            openclaw: {
+            remoteclaw: {
               channel: {
                 id: "demo-channel",
                 label: "Demo Channel",

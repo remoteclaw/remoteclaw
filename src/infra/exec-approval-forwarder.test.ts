@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { createExecApprovalForwarder } from "./exec-approval-forwarder.js";
 
 const baseRequest = {
@@ -32,10 +32,10 @@ const TARGETS_CFG = {
       targets: [{ channel: "telegram", to: "123" }],
     },
   },
-} as OpenClawConfig;
+} as RemoteClawConfig;
 
 function createForwarder(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   deliver?: ReturnType<typeof vi.fn>;
   resolveSessionTarget?: () => { channel: string; to: string } | null;
 }) {
@@ -56,7 +56,7 @@ describe("exec approval forwarder", () => {
     vi.useFakeTimers();
     const cfg = {
       approvals: { exec: { enabled: true, mode: "session" } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const { deliver, forwarder } = createForwarder({
       cfg,
@@ -117,7 +117,7 @@ describe("exec approval forwarder", () => {
     vi.useFakeTimers();
     const cfg = {
       approvals: { exec: { enabled: true, mode: "session" } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const { deliver, forwarder } = createForwarder({
       cfg,

@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { deriveQmdScopeChannel, deriveQmdScopeChatType, isQmdScopeAllowed } from "./qmd-scope.js";
@@ -54,7 +54,7 @@ type QmdManagerMode = "full" | "status";
 
 export class QmdMemoryManager implements MemorySearchManager {
   static async create(params: {
-    cfg: OpenClawConfig;
+    cfg: RemoteClawConfig;
     agentId: string;
     resolved: ResolvedMemoryBackendConfig;
     mode?: QmdManagerMode;
@@ -68,7 +68,7 @@ export class QmdMemoryManager implements MemorySearchManager {
     return manager;
   }
 
-  private readonly cfg: OpenClawConfig;
+  private readonly cfg: RemoteClawConfig;
   private readonly agentId: string;
   private readonly qmd: ResolvedQmdConfig;
   private readonly workspaceDir: string;
@@ -106,7 +106,7 @@ export class QmdMemoryManager implements MemorySearchManager {
   private attemptedNullByteCollectionRepair = false;
 
   private constructor(params: {
-    cfg: OpenClawConfig;
+    cfg: RemoteClawConfig;
     agentId: string;
     resolved: ResolvedQmdConfig;
   }) {

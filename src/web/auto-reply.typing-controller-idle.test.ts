@@ -1,6 +1,6 @@
 import "./test-helpers.js";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { monitorWebChannel } from "./auto-reply.js";
 import {
   installWebAutoReplyTestHomeHooks,
@@ -47,7 +47,7 @@ describe("typing controller idle", () => {
       return { text: "final reply" };
     });
 
-    const mockConfig: OpenClawConfig = {
+    const mockConfig: RemoteClawConfig = {
       channels: { whatsapp: { allowFrom: ["*"] } },
     };
 

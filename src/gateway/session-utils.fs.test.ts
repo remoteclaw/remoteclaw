@@ -32,7 +32,7 @@ describe("readFirstUserMessageFromTranscript", () => {
   let tmpDir: string;
   let storePath: string;
 
-  registerTempSessionStore("openclaw-session-fs-test-", (nextTmpDir, nextStorePath) => {
+  registerTempSessionStore("remoteclaw-session-fs-test-", (nextTmpDir, nextStorePath) => {
     tmpDir = nextTmpDir;
     storePath = nextStorePath;
   });
@@ -195,7 +195,7 @@ describe("readLastMessagePreviewFromTranscript", () => {
   let tmpDir: string;
   let storePath: string;
 
-  registerTempSessionStore("openclaw-session-fs-test-", (nextTmpDir, nextStorePath) => {
+  registerTempSessionStore("remoteclaw-session-fs-test-", (nextTmpDir, nextStorePath) => {
     tmpDir = nextTmpDir;
     storePath = nextStorePath;
   });
@@ -380,7 +380,7 @@ describe("readSessionTitleFieldsFromTranscript cache", () => {
   let tmpDir: string;
   let storePath: string;
 
-  registerTempSessionStore("openclaw-session-fs-test-", (nextTmpDir, nextStorePath) => {
+  registerTempSessionStore("remoteclaw-session-fs-test-", (nextTmpDir, nextStorePath) => {
     tmpDir = nextTmpDir;
     storePath = nextStorePath;
   });
@@ -440,7 +440,7 @@ describe("readSessionMessages", () => {
   let tmpDir: string;
   let storePath: string;
 
-  registerTempSessionStore("openclaw-session-fs-test-", (nextTmpDir, nextStorePath) => {
+  registerTempSessionStore("remoteclaw-session-fs-test-", (nextTmpDir, nextStorePath) => {
     tmpDir = nextTmpDir;
     storePath = nextStorePath;
   });
@@ -468,13 +468,13 @@ describe("readSessionMessages", () => {
     const marker = out[1] as {
       role: string;
       content?: Array<{ text?: string }>;
-      __openclaw?: { kind?: string; id?: string };
+      __remoteclaw?: { kind?: string; id?: string };
       timestamp?: number;
     };
     expect(marker.role).toBe("system");
     expect(marker.content?.[0]?.text).toBe("Compaction");
-    expect(marker.__openclaw?.kind).toBe("compaction");
-    expect(marker.__openclaw?.id).toBe("comp-1");
+    expect(marker.__remoteclaw?.kind).toBe("compaction");
+    expect(marker.__remoteclaw?.id).toBe("comp-1");
     expect(typeof marker.timestamp).toBe("number");
   });
 
@@ -535,7 +535,7 @@ describe("readSessionPreviewItemsFromTranscript", () => {
   let tmpDir: string;
   let storePath: string;
 
-  registerTempSessionStore("openclaw-session-preview-test-", (nextTmpDir, nextStorePath) => {
+  registerTempSessionStore("remoteclaw-session-preview-test-", (nextTmpDir, nextStorePath) => {
     tmpDir = nextTmpDir;
     storePath = nextStorePath;
   });
@@ -621,21 +621,21 @@ describe("resolveSessionTranscriptCandidates", () => {
   });
 
   test("fallback candidate uses REMOTECLAW_HOME instead of os.homedir()", () => {
-    vi.stubEnv("REMOTECLAW_HOME", "/srv/openclaw-home");
+    vi.stubEnv("REMOTECLAW_HOME", "/srv/remoteclaw-home");
     vi.stubEnv("HOME", "/home/other");
 
     const candidates = resolveSessionTranscriptCandidates("sess-1", undefined);
     const fallback = candidates[candidates.length - 1];
     expect(fallback).toBe(
-      path.join(path.resolve("/srv/openclaw-home"), ".remoteclaw", "sessions", "sess-1.jsonl"),
+      path.join(path.resolve("/srv/remoteclaw-home"), ".remoteclaw", "sessions", "sess-1.jsonl"),
     );
   });
 });
 
 describe("resolveSessionTranscriptCandidates safety", () => {
   test("keeps cross-agent absolute sessionFile when storePath agent context differs", () => {
-    const storePath = "/tmp/openclaw/agents/main/sessions/sessions.json";
-    const sessionFile = "/tmp/openclaw/agents/ops/sessions/sess-safe.jsonl";
+    const storePath = "/tmp/remoteclaw/agents/main/sessions/sessions.json";
+    const sessionFile = "/tmp/remoteclaw/agents/ops/sessions/sess-safe.jsonl";
     const candidates = resolveSessionTranscriptCandidates("sess-safe", storePath, sessionFile);
 
     expect(candidates.map((value) => path.resolve(value))).toContain(path.resolve(sessionFile));
@@ -652,14 +652,14 @@ describe("resolveSessionTranscriptCandidates safety", () => {
   test("drops unsafe session IDs instead of producing traversal paths", () => {
     const candidates = resolveSessionTranscriptCandidates(
       "../etc/passwd",
-      "/tmp/openclaw/agents/main/sessions/sessions.json",
+      "/tmp/remoteclaw/agents/main/sessions/sessions.json",
     );
 
     expect(candidates).toEqual([]);
   });
 
   test("drops unsafe sessionFile candidates and keeps safe fallbacks", () => {
-    const storePath = "/tmp/openclaw/agents/main/sessions/sessions.json";
+    const storePath = "/tmp/remoteclaw/agents/main/sessions/sessions.json";
     const candidates = resolveSessionTranscriptCandidates(
       "sess-safe",
       storePath,
@@ -677,7 +677,7 @@ describe("archiveSessionTranscripts", () => {
   let tmpDir: string;
   let storePath: string;
 
-  registerTempSessionStore("openclaw-archive-test-", (nextTmpDir, nextStorePath) => {
+  registerTempSessionStore("remoteclaw-archive-test-", (nextTmpDir, nextStorePath) => {
     tmpDir = nextTmpDir;
     storePath = nextStorePath;
   });

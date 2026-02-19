@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 
 vi.mock("../../../slack/send.js", () => ({
   sendMessageSlack: vi.fn().mockResolvedValue({ messageId: "1234.5678", channelId: "C123" }),
@@ -26,7 +26,7 @@ const sendSlackText = async (ctx: {
 }) => {
   const sendText = slackOutbound.sendText as NonNullable<typeof slackOutbound.sendText>;
   return await sendText({
-    cfg: {} as OpenClawConfig,
+    cfg: {} as RemoteClawConfig,
     ...ctx,
   });
 };

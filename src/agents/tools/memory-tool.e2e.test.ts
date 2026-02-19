@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 
 let backend: "builtin" | "qmd" = "builtin";
 let searchImpl: () => Promise<unknown[]> = async () => [
@@ -43,8 +43,8 @@ vi.mock("../../memory/index.js", () => {
 
 import { createMemoryGetTool, createMemorySearchTool } from "./memory-tool.js";
 
-function asOpenClawConfig(config: Partial<OpenClawConfig>): OpenClawConfig {
-  return config as OpenClawConfig;
+function asRemoteClawConfig(config: Partial<RemoteClawConfig>): RemoteClawConfig {
+  return config as RemoteClawConfig;
 }
 
 beforeEach(() => {
@@ -66,7 +66,7 @@ beforeEach(() => {
 describe("memory search citations", () => {
   it("appends source information when citations are enabled", async () => {
     backend = "builtin";
-    const cfg = asOpenClawConfig({
+    const cfg = asRemoteClawConfig({
       memory: { citations: "on" },
       agents: { list: [{ id: "main", default: true }] },
     });
@@ -82,7 +82,7 @@ describe("memory search citations", () => {
 
   it("leaves snippet untouched when citations are off", async () => {
     backend = "builtin";
-    const cfg = asOpenClawConfig({
+    const cfg = asRemoteClawConfig({
       memory: { citations: "off" },
       agents: { list: [{ id: "main", default: true }] },
     });
@@ -98,7 +98,7 @@ describe("memory search citations", () => {
 
   it("clamps decorated snippets to qmd injected budget", async () => {
     backend = "qmd";
-    const cfg = asOpenClawConfig({
+    const cfg = asRemoteClawConfig({
       memory: { citations: "on", backend: "qmd", qmd: { limits: { maxInjectedChars: 20 } } },
       agents: { list: [{ id: "main", default: true }] },
     });
@@ -113,7 +113,7 @@ describe("memory search citations", () => {
 
   it("honors auto mode for direct chats", async () => {
     backend = "builtin";
-    const cfg = asOpenClawConfig({
+    const cfg = asRemoteClawConfig({
       memory: { citations: "auto" },
       agents: { list: [{ id: "main", default: true }] },
     });
@@ -131,7 +131,7 @@ describe("memory search citations", () => {
 
   it("suppresses citations for auto mode in group chats", async () => {
     backend = "builtin";
-    const cfg = asOpenClawConfig({
+    const cfg = asRemoteClawConfig({
       memory: { citations: "auto" },
       agents: { list: [{ id: "main", default: true }] },
     });

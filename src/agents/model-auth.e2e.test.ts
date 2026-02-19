@@ -93,7 +93,7 @@ describe("getApiKeyForModel", () => {
       "REMOTECLAW_AGENT_DIR",
       "PI_CODING_AGENT_DIR",
     ]);
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-oauth-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-oauth-"));
 
     try {
       process.env.REMOTECLAW_STATE_DIR = tempDir;
@@ -160,7 +160,7 @@ describe("getApiKeyForModel", () => {
       "REMOTECLAW_AGENT_DIR",
       "PI_CODING_AGENT_DIR",
     ]);
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-auth-"));
 
     try {
       delete process.env.OPENAI_API_KEY;

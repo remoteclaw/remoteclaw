@@ -54,7 +54,7 @@ vi.mock("node:child_process", async (importOriginal) => {
       } else if (
         args[0] === "inspect" &&
         args[1] === "-f" &&
-        args[2]?.includes('index .Config.Labels "openclaw.configHash"')
+        args[2]?.includes('index .Config.Labels "remoteclaw.configHash"')
       ) {
         stdout = `${spawnState.labelHash}\n`;
       } else if (
@@ -90,7 +90,7 @@ function createSandboxConfig(dns: string[]): SandboxConfig {
     workspaceAccess: "rw",
     workspaceRoot: "~/.remoteclaw/sandboxes",
     docker: {
-      image: "openclaw-sandbox:test",
+      image: "remoteclaw-sandbox:test",
       containerPrefix: "oc-test-",
       workdir: "/workspace",
       readOnlyRoot: true,
@@ -104,7 +104,7 @@ function createSandboxConfig(dns: string[]): SandboxConfig {
     },
     browser: {
       enabled: false,
-      image: "openclaw-browser:test",
+      image: "remoteclaw-browser:test",
       containerPrefix: "oc-browser-",
       cdpPort: 9222,
       vncPort: 5900,
@@ -180,7 +180,7 @@ describe("ensureSandboxContainer config-hash recreation", () => {
     ).toBe(true);
     const createCall = dockerCalls.find((call) => call.args[0] === "create");
     expect(createCall).toBeDefined();
-    expect(createCall?.args).toContain(`openclaw.configHash=${newHash}`);
+    expect(createCall?.args).toContain(`remoteclaw.configHash=${newHash}`);
     expect(registryMocks.updateRegistry).toHaveBeenCalledWith(
       expect.objectContaining({
         containerName: "oc-test-shared",

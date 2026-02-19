@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { RemoteClawConfig } from "../config/types.js";
 import { ensureBrowserControlAuth } from "./control-auth.js";
 
 describe("ensureBrowserControlAuth", () => {
   describe("trusted-proxy mode", () => {
     it("should not auto-generate token when auth mode is trusted-proxy", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         gateway: {
           auth: {
             mode: "trusted-proxy",
@@ -30,7 +30,7 @@ describe("ensureBrowserControlAuth", () => {
 
   describe("password mode", () => {
     it("should not auto-generate token when auth mode is password (even if password not set)", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         gateway: {
           auth: {
             mode: "password",
@@ -51,7 +51,7 @@ describe("ensureBrowserControlAuth", () => {
 
   describe("token mode", () => {
     it("should return existing token if configured", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         gateway: {
           auth: {
             mode: "token",
@@ -70,7 +70,7 @@ describe("ensureBrowserControlAuth", () => {
     });
 
     it("should skip auto-generation in test environment", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         gateway: {
           auth: {
             mode: "token",

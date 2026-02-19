@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { MANIFEST_KEY } from "../compat/legacy-names.js";
+import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
 import {
   extractArchive,
   fileExists,
@@ -28,7 +28,7 @@ type HookPackageManifest = {
   name?: string;
   version?: string;
   dependencies?: Record<string, string>;
-} & Partial<Record<typeof MANIFEST_KEY, { hooks?: string[] }>>;
+} & Partial<Record<string, { hooks?: string[] }>>;
 
 export type InstallHooksResult =
   | {
@@ -72,14 +72,15 @@ export function resolveHookInstallDir(hookId: string, hooksDir?: string): string
   return targetDirResult.path;
 }
 
-async function ensureOpenClawHooks(manifest: HookPackageManifest) {
-  const hooks = manifest[MANIFEST_KEY]?.hooks;
+async function ensureRemoteClawHooks(manifest: HookPackageManifest) {
+  const manifestKeys = [MANIFEST_KEY, ...LEGACY_MANIFEST_KEYS];
+  const hooks = manifestKeys.map((key) => manifest[key]?.hooks).find(Array.isArray);
   if (!Array.isArray(hooks)) {
-    throw new Error("package.json missing openclaw.hooks");
+    throw new Error(`package.json missing ${MANIFEST_KEY}.hooks`);
   }
   const list = hooks.map((e) => (typeof e === "string" ? e.trim() : "")).filter(Boolean);
   if (list.length === 0) {
-    throw new Error("package.json openclaw.hooks is empty");
+    throw new Error("package.json remoteclaw.hooks is empty");
   }
   return list;
 }
@@ -177,7 +178,7 @@ async function installHookPackageFromDir(params: {
 
   let hookEntries: string[];
   try {
-    hookEntries = await ensureOpenClawHooks(manifest);
+    hookEntries = await ensureRemoteClawHooks(manifest);
   } catch (err) {
     return { ok: false, error: String(err) };
   }
@@ -325,7 +326,7 @@ export async function installHooksFromArchive(params: {
   }
   const archivePath = archivePathResult.path;
 
-  return await withTempDir("openclaw-hook-", async (tmpDir) => {
+  return await withTempDir("remoteclaw-hook-", async (tmpDir) => {
     const extractDir = path.join(tmpDir, "extract");
     await fs.mkdir(extractDir, { recursive: true });
 
@@ -384,7 +385,7 @@ export async function installHooksFromNpmSpec(params: {
     return { ok: false, error: specError };
   }
 
-  return await withTempDir("openclaw-hook-pack-", async (tmpDir) => {
+  return await withTempDir("remoteclaw-hook-pack-", async (tmpDir) => {
     logger.info?.(`Downloading ${spec}…`);
     const packedResult = await packNpmSpecToArchive({
       spec,

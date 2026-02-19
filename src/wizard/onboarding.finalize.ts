@@ -21,7 +21,7 @@ import {
   resolveControlUiLinks,
 } from "../commands/onboard-helpers.js";
 import type { OnboardOptions } from "../commands/onboard-types.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveGatewayService } from "../daemon/service.js";
 import { isSystemdUserServiceAvailable } from "../daemon/systemd.js";
 import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
@@ -36,8 +36,8 @@ import type { WizardPrompter } from "./prompts.js";
 type FinalizeOnboardingOptions = {
   flow: WizardFlow;
   opts: OnboardOptions;
-  baseConfig: OpenClawConfig;
-  nextConfig: OpenClawConfig;
+  baseConfig: RemoteClawConfig;
+  nextConfig: RemoteClawConfig;
   workspaceDir: string;
   settings: GatewayWizardSettings;
   prompter: WizardPrompter;
@@ -215,8 +215,8 @@ export async function finalizeOnboardingWizard(
       await prompter.note(
         [
           "Docs:",
-          "https://docs.openclaw.ai/gateway/health",
-          "https://docs.openclaw.ai/gateway/troubleshooting",
+          "https://docs.remoteclaw.ai/gateway/health",
+          "https://docs.remoteclaw.ai/gateway/troubleshooting",
         ].join("\n"),
         "Health check help",
       );
@@ -279,7 +279,7 @@ export async function finalizeOnboardingWizard(
         : undefined,
       `Gateway WS: ${links.wsUrl}`,
       gatewayStatusLine,
-      "Docs: https://docs.openclaw.ai/web/control-ui",
+      "Docs: https://docs.remoteclaw.ai/web/control-ui",
     ]
       .filter(Boolean)
       .join("\n"),
@@ -309,10 +309,10 @@ export async function finalizeOnboardingWizard(
       [
         "Gateway token: shared auth for the Gateway + Control UI.",
         "Stored in: ~/.remoteclaw/remoteclaw.json (gateway.auth.token) or REMOTECLAW_GATEWAY_TOKEN.",
-        `View token: ${formatCliCommand("openclaw config get gateway.auth.token")}`,
-        `Generate token: ${formatCliCommand("openclaw doctor --generate-gateway-token")}`,
-        "Web UI stores a copy in this browser's localStorage (openclaw.control.settings.v1).",
-        `Open the dashboard anytime: ${formatCliCommand("openclaw dashboard --no-open")}`,
+        `View token: ${formatCliCommand("remoteclaw config get gateway.auth.token")}`,
+        `Generate token: ${formatCliCommand("remoteclaw doctor --generate-gateway-token")}`,
+        "Web UI stores a copy in this browser's localStorage (remoteclaw.control.settings.v1).",
+        `Open the dashboard anytime: ${formatCliCommand("remoteclaw dashboard --no-open")}`,
         "If prompted: paste the token into Control UI settings (or use the tokenized dashboard URL).",
       ].join("\n"),
       "Token",
@@ -361,8 +361,8 @@ export async function finalizeOnboardingWizard(
         [
           `Dashboard link (with token): ${authedUrl}`,
           controlUiOpened
-            ? "Opened in your browser. Keep that tab to control OpenClaw."
-            : "Copy/paste this URL in a browser on this machine to control OpenClaw.",
+            ? "Opened in your browser. Keep that tab to control RemoteClaw."
+            : "Copy/paste this URL in a browser on this machine to control RemoteClaw.",
           controlUiOpenHint,
         ]
           .filter(Boolean)
@@ -371,7 +371,7 @@ export async function finalizeOnboardingWizard(
       );
     } else {
       await prompter.note(
-        `When you're ready: ${formatCliCommand("openclaw dashboard --no-open")}`,
+        `When you're ready: ${formatCliCommand("remoteclaw dashboard --no-open")}`,
         "Later",
       );
     }
@@ -382,13 +382,13 @@ export async function finalizeOnboardingWizard(
   await prompter.note(
     [
       "Back up your agent workspace.",
-      "Docs: https://docs.openclaw.ai/concepts/agent-workspace",
+      "Docs: https://docs.remoteclaw.ai/concepts/agent-workspace",
     ].join("\n"),
     "Workspace backup",
   );
 
   await prompter.note(
-    "Running agents on your computer is risky — harden your setup: https://docs.openclaw.ai/security",
+    "Running agents on your computer is risky — harden your setup: https://docs.remoteclaw.ai/security",
     "Security",
   );
 
@@ -422,8 +422,8 @@ export async function finalizeOnboardingWizard(
       [
         `Dashboard link (with token): ${authedUrl}`,
         controlUiOpened
-          ? "Opened in your browser. Keep that tab to control OpenClaw."
-          : "Copy/paste this URL in a browser on this machine to control OpenClaw.",
+          ? "Opened in your browser. Keep that tab to control RemoteClaw."
+          : "Copy/paste this URL in a browser on this machine to control RemoteClaw.",
         controlUiOpenHint,
       ]
         .filter(Boolean)
@@ -443,34 +443,34 @@ export async function finalizeOnboardingWizard(
           webSearchKey
             ? "API key: stored in config (tools.web.search.apiKey)."
             : "API key: provided via BRAVE_API_KEY env var (Gateway environment).",
-          "Docs: https://docs.openclaw.ai/tools/web",
+          "Docs: https://docs.remoteclaw.ai/tools/web",
         ].join("\n")
       : [
           "If you want your agent to be able to search the web, you’ll need an API key.",
           "",
-          "OpenClaw uses Brave Search for the `web_search` tool. Without a Brave Search API key, web search won’t work.",
+          "RemoteClaw uses Brave Search for the `web_search` tool. Without a Brave Search API key, web search won’t work.",
           "",
           "Set it up interactively:",
-          `- Run: ${formatCliCommand("openclaw configure --section web")}`,
+          `- Run: ${formatCliCommand("remoteclaw configure --section web")}`,
           "- Enable web_search and paste your Brave Search API key",
           "",
           "Alternative: set BRAVE_API_KEY in the Gateway environment (no config changes).",
-          "Docs: https://docs.openclaw.ai/tools/web",
+          "Docs: https://docs.remoteclaw.ai/tools/web",
         ].join("\n"),
     "Web search (optional)",
   );
 
   await prompter.note(
-    'What now: https://openclaw.ai/showcase ("What People Are Building").',
+    'What now: https://remoteclaw.ai/showcase ("What People Are Building").',
     "What now",
   );
 
   await prompter.outro(
     controlUiOpened
-      ? "Onboarding complete. Dashboard opened; keep that tab to control OpenClaw."
+      ? "Onboarding complete. Dashboard opened; keep that tab to control RemoteClaw."
       : seededInBackground
         ? "Onboarding complete. Web UI seeded in the background; open it anytime with the dashboard link above."
-        : "Onboarding complete. Use the dashboard link above to control OpenClaw.",
+        : "Onboarding complete. Use the dashboard link above to control RemoteClaw.",
   );
 
   return { launchedTui };

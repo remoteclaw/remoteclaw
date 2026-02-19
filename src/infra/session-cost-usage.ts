@@ -3,7 +3,7 @@ import path from "node:path";
 import readline from "node:readline";
 import type { NormalizedUsage, UsageLike } from "../agents/usage.js";
 import { normalizeUsage } from "../agents/usage.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import {
   resolveSessionFilePath,
   resolveSessionTranscriptsDirForAgent,
@@ -239,7 +239,7 @@ async function* readJsonlRecords(filePath: string): AsyncGenerator<Record<string
 
 async function scanTranscriptFile(params: {
   filePath: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   onEntry: (entry: ParsedTranscriptEntry) => void;
 }): Promise<void> {
   for await (const parsed of readJsonlRecords(params.filePath)) {
@@ -263,7 +263,7 @@ async function scanTranscriptFile(params: {
 
 async function scanUsageFile(params: {
   filePath: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   onEntry: (entry: ParsedUsageEntry) => void;
 }): Promise<void> {
   await scanTranscriptFile({
@@ -289,7 +289,7 @@ export async function loadCostUsageSummary(params?: {
   startMs?: number;
   endMs?: number;
   days?: number; // Deprecated, for backwards compatibility
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   agentId?: string;
 }): Promise<CostUsageSummary> {
   const now = new Date();
@@ -461,7 +461,7 @@ export async function loadSessionCostSummary(params: {
   sessionId?: string;
   sessionEntry?: SessionEntry;
   sessionFile?: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   agentId?: string;
   startMs?: number;
   endMs?: number;
@@ -739,7 +739,7 @@ export async function loadSessionUsageTimeSeries(params: {
   sessionId?: string;
   sessionEntry?: SessionEntry;
   sessionFile?: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   agentId?: string;
   maxPoints?: number;
 }): Promise<SessionUsageTimeSeries | null> {
@@ -848,7 +848,7 @@ export async function loadSessionLogs(params: {
   sessionId?: string;
   sessionEntry?: SessionEntry;
   sessionFile?: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   agentId?: string;
   limit?: number;
 }): Promise<SessionLogEntry[] | null> {

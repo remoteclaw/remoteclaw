@@ -1,6 +1,6 @@
-import { type OpenClawConfig, loadConfig } from "../config/config.js";
-import { resolveOpenClawAgentDir } from "./agent-paths.js";
-import { ensureOpenClawModelsJson } from "./models-config.js";
+import { type RemoteClawConfig, loadConfig } from "../config/config.js";
+import { resolveRemoteClawAgentDir } from "./agent-paths.js";
+import { ensureRemoteClawModelsJson } from "./models-config.js";
 
 export type ModelCatalogEntry = {
   id: string;
@@ -76,7 +76,7 @@ function createAuthStorage(AuthStorageLike: unknown, path: string) {
 }
 
 export async function loadModelCatalog(params?: {
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   useCache?: boolean;
 }): Promise<ModelCatalogEntry[]> {
   if (params?.useCache === false) {
@@ -98,16 +98,16 @@ export async function loadModelCatalog(params?: {
       });
     try {
       const cfg = params?.config ?? loadConfig();
-      await ensureOpenClawModelsJson(cfg);
+      await ensureRemoteClawModelsJson(cfg);
       await (
         await import("./pi-auth-json.js")
-      ).ensurePiAuthJsonFromAuthProfiles(resolveOpenClawAgentDir());
+      ).ensurePiAuthJsonFromAuthProfiles(resolveRemoteClawAgentDir());
       // IMPORTANT: keep the dynamic import *inside* the try/catch.
       // If this fails once (e.g. during a pnpm install that temporarily swaps node_modules),
       // we must not poison the cache with a rejected promise (otherwise all channel handlers
       // will keep failing until restart).
       const piSdk = await importPiSdk();
-      const agentDir = resolveOpenClawAgentDir();
+      const agentDir = resolveRemoteClawAgentDir();
       const { join } = await import("node:path");
       const authStorage = createAuthStorage(piSdk.AuthStorage, join(agentDir, "auth.json"));
       const registry = new (piSdk.ModelRegistry as unknown as {

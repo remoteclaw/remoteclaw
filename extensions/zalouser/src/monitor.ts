@@ -1,5 +1,5 @@
 import type { ChildProcess } from "node:child_process";
-import type { OpenClawConfig, MarkdownTableMode, RuntimeEnv } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, MarkdownTableMode, RuntimeEnv } from "openclaw/plugin-sdk";
 import {
   createReplyPrefixOptions,
   mergeAllowlist,
@@ -13,7 +13,7 @@ import { parseJsonOutput, runZca, runZcaStreaming } from "./zca.js";
 
 export type ZalouserMonitorOptions = {
   account: ResolvedZalouserAccount;
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   runtime: RuntimeEnv;
   abortSignal: AbortSignal;
   statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
@@ -161,7 +161,7 @@ function startZcaListener(
 async function processMessage(
   message: ZcaMessage,
   account: ResolvedZalouserAccount,
-  config: OpenClawConfig,
+  config: RemoteClawConfig,
   core: ZalouserCoreRuntime,
   runtime: RuntimeEnv,
   statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void,
@@ -385,7 +385,7 @@ async function deliverZalouserReply(params: {
   isGroup: boolean;
   runtime: RuntimeEnv;
   core: ZalouserCoreRuntime;
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   accountId?: string;
   statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
   tableMode?: MarkdownTableMode;

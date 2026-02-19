@@ -3,11 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import { Type } from "@sinclair/typebox";
 import Ajv from "ajv";
-// NOTE: This extension is intended to be bundled with OpenClaw.
-// When running from source (tests/dev), OpenClaw internals live under src/.
+// NOTE: This extension is intended to be bundled with RemoteClaw.
+// When running from source (tests/dev), RemoteClaw internals live under src/.
 // When running from a built install, internals live under dist/ (no src/ tree).
 // So we resolve internal imports dynamically with src-first, dist-fallback.
-import type { OpenClawPluginApi } from "../../../src/plugins/types.js";
+import type { RemoteClawPluginApi } from "../../../src/plugins/types.js";
 
 type RunEmbeddedPiAgentFn = (params: Record<string, unknown>) => Promise<unknown>;
 
@@ -50,7 +50,7 @@ type PluginCfg = {
   timeoutMs?: number;
 };
 
-export function createLlmTaskTool(api: OpenClawPluginApi) {
+export function createLlmTaskTool(api: RemoteClawPluginApi) {
   return {
     name: "llm-task",
     label: "LLM Task",

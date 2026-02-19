@@ -8,7 +8,7 @@
  * - Account ID normalization
  */
 
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "openclaw/plugin-sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveTwitchToken, type TwitchTokenSource } from "./token.js";
 
@@ -29,7 +29,7 @@ describe("token", () => {
         },
       },
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as RemoteClawConfig;
 
   // Simplified single-account config
   const mockSimplifiedConfig = {
@@ -39,7 +39,7 @@ describe("token", () => {
         accessToken: "oauth:config-token",
       },
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as RemoteClawConfig;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -85,7 +85,7 @@ describe("token", () => {
             accessToken: "",
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as RemoteClawConfig;
 
       const result = resolveTwitchToken(configWithEmptyToken, { accountId: "default" });
 
@@ -101,7 +101,7 @@ describe("token", () => {
             accessToken: "",
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as RemoteClawConfig;
 
       const result = resolveTwitchToken(configWithoutToken, { accountId: "default" });
 
@@ -123,7 +123,7 @@ describe("token", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as RemoteClawConfig;
 
       const result = resolveTwitchToken(configWithoutToken, { accountId: "secondary" });
 
@@ -139,7 +139,7 @@ describe("token", () => {
             accounts: {},
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as RemoteClawConfig;
 
       const result = resolveTwitchToken(configWithoutAccount, { accountId: "nonexistent" });
 
@@ -150,7 +150,7 @@ describe("token", () => {
     it("should handle missing Twitch config section", () => {
       const configWithoutSection = {
         channels: {},
-      } as unknown as OpenClawConfig;
+      } as unknown as RemoteClawConfig;
 
       const result = resolveTwitchToken(configWithoutSection, { accountId: "default" });
 

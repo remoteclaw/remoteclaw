@@ -44,7 +44,7 @@ export async function withTempHeartbeatSandbox<T>(
     unsetEnvVars?: string[];
   },
 ): Promise<T> {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), options?.prefix ?? "openclaw-hb-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), options?.prefix ?? "remoteclaw-hb-"));
   const storePath = path.join(tmpDir, "sessions.json");
   const replySpy = vi.spyOn(replyModule, "getReplyFromConfig");
   const previousEnv = new Map<string, string | undefined>();

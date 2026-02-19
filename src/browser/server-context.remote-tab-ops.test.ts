@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 function makeState(
-  profile: "remote" | "openclaw",
+  profile: "remote" | "remoteclaw",
 ): BrowserServerState & { profiles: Map<string, { lastTargetId?: string | null }> } {
   return {
     // oxlint-disable-next-line typescript/no-explicit-any
@@ -41,7 +41,7 @@ function makeState(
           cdpPort: 443,
           color: "#00AA00",
         },
-        openclaw: { cdpPort: 18800, color: "#FF4500" },
+        remoteclaw: { cdpPort: 18800, color: "#FF4500" },
       },
     },
     profiles: new Map(),
@@ -236,12 +236,12 @@ describe("browser server-context tab selection state", () => {
 
     global.fetch = withFetchPreconnect(fetchMock);
 
-    const state = makeState("openclaw");
+    const state = makeState("remoteclaw");
     const ctx = createBrowserRouteContext({ getState: () => state });
-    const openclaw = ctx.forProfile("openclaw");
+    const remoteclaw = ctx.forProfile("remoteclaw");
 
-    const opened = await openclaw.openTab("https://created.example");
+    const opened = await remoteclaw.openTab("https://created.example");
     expect(opened.targetId).toBe("CREATED");
-    expect(state.profiles.get("openclaw")?.lastTargetId).toBe("CREATED");
+    expect(state.profiles.get("remoteclaw")?.lastTargetId).toBe("CREATED");
   });
 });

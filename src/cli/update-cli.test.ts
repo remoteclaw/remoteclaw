@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig, ConfigFileSnapshot } from "../config/types.openclaw.js";
+import type { RemoteClawConfig, ConfigFileSnapshot } from "../config/types.openclaw.js";
 import type { UpdateRunResult } from "../infra/update-runner.js";
 import { captureEnv } from "../test-utils/env.js";
 
@@ -130,16 +130,16 @@ describe("update-cli", () => {
   };
 
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-tests-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-update-tests-"));
   });
 
   afterAll(async () => {
     await fs.rm(fixtureRoot, { recursive: true, force: true });
   });
 
-  const baseConfig = {} as OpenClawConfig;
+  const baseConfig = {} as RemoteClawConfig;
   const baseSnapshot: ConfigFileSnapshot = {
-    path: "/tmp/openclaw-config.json",
+    path: "/tmp/remoteclaw-config.json",
     exists: true,
     raw: "{}",
     parsed: {},
@@ -166,7 +166,7 @@ describe("update-cli", () => {
   };
 
   const setupNonInteractiveDowngrade = async () => {
-    const tempDir = await createCaseDir("openclaw-update");
+    const tempDir = await createCaseDir("remoteclaw-update");
     setTty(false);
     readPackageVersion.mockResolvedValue("2.0.0");
 
@@ -267,7 +267,7 @@ describe("update-cli", () => {
     readPackageVersion.mockResolvedValue("1.0.0");
     resolveGlobalManager.mockResolvedValue("npm");
     serviceLoaded.mockResolvedValue(false);
-    prepareRestartScript.mockResolvedValue("/tmp/openclaw-restart-test.sh");
+    prepareRestartScript.mockResolvedValue("/tmp/remoteclaw-restart-test.sh");
     runRestartScript.mockResolvedValue(undefined);
     setTty(false);
     setStdoutTty(false);
@@ -310,7 +310,7 @@ describe("update-cli", () => {
     await updateStatusCommand({ json: false });
 
     const logs = vi.mocked(defaultRuntime.log).mock.calls.map((call) => call[0]);
-    expect(logs.join("\n")).toContain("OpenClaw update status");
+    expect(logs.join("\n")).toContain("RemoteClaw update status");
   });
 
   it("updateStatusCommand emits JSON", async () => {
@@ -337,7 +337,7 @@ describe("update-cli", () => {
   });
 
   it("defaults to stable channel for package installs when unset", async () => {
-    const tempDir = await createCaseDir("openclaw-update");
+    const tempDir = await createCaseDir("remoteclaw-update");
 
     vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue(tempDir);
     vi.mocked(checkUpdateStatus).mockResolvedValue({
@@ -368,7 +368,7 @@ describe("update-cli", () => {
   it("uses stored beta channel when configured", async () => {
     vi.mocked(readConfigFileSnapshot).mockResolvedValue({
       ...baseSnapshot,
-      config: { update: { channel: "beta" } } as OpenClawConfig,
+      config: { update: { channel: "beta" } } as RemoteClawConfig,
     });
     vi.mocked(runGatewayUpdate).mockResolvedValue({
       status: "ok",
@@ -384,12 +384,12 @@ describe("update-cli", () => {
   });
 
   it("falls back to latest when beta tag is older than release", async () => {
-    const tempDir = await createCaseDir("openclaw-update");
+    const tempDir = await createCaseDir("remoteclaw-update");
 
     vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue(tempDir);
     vi.mocked(readConfigFileSnapshot).mockResolvedValue({
       ...baseSnapshot,
-      config: { update: { channel: "beta" } } as OpenClawConfig,
+      config: { update: { channel: "beta" } } as RemoteClawConfig,
     });
     vi.mocked(checkUpdateStatus).mockResolvedValue({
       root: tempDir,
@@ -421,7 +421,7 @@ describe("update-cli", () => {
   });
 
   it("honors --tag override", async () => {
-    const tempDir = await createCaseDir("openclaw-update");
+    const tempDir = await createCaseDir("remoteclaw-update");
 
     vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue(tempDir);
     vi.mocked(runGatewayUpdate).mockResolvedValue({
@@ -628,7 +628,7 @@ describe("update-cli", () => {
   });
 
   it("updateWizardCommand offers dev checkout and forwards selections", async () => {
-    const tempDir = await createCaseDir("openclaw-update-wizard");
+    const tempDir = await createCaseDir("remoteclaw-update-wizard");
     const envSnapshot = captureEnv(["REMOTECLAW_GIT_DIR"]);
     try {
       setTty(true);

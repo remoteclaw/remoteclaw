@@ -9,7 +9,7 @@ describe("resolveProviderAuths key normalization", () => {
   let suiteCase = 0;
 
   beforeAll(async () => {
-    suiteRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-provider-auth-suite-"));
+    suiteRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-provider-auth-suite-"));
   });
 
   afterAll(async () => {

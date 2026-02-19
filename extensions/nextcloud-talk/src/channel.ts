@@ -7,7 +7,7 @@ import {
   normalizeAccountId,
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
-  type OpenClawConfig,
+  type RemoteClawConfig,
   type ChannelSetupInput,
 } from "openclaw/plugin-sdk";
 import {
@@ -222,7 +222,7 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
                     : {}),
             },
           },
-        } as OpenClawConfig;
+        } as RemoteClawConfig;
       }
       return {
         ...namedConfig,
@@ -246,7 +246,7 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
             },
           },
         },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
     },
   },
   outbound: {
@@ -328,7 +328,7 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
       return { stop };
     },
     logoutAccount: async ({ accountId, cfg }) => {
-      const nextCfg = { ...cfg } as OpenClawConfig;
+      const nextCfg = { ...cfg } as RemoteClawConfig;
       const nextSection = cfg.channels?.["nextcloud-talk"]
         ? { ...cfg.channels["nextcloud-talk"] }
         : undefined;
@@ -382,7 +382,7 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
           const nextChannels = { ...nextCfg.channels } as Record<string, unknown>;
           delete nextChannels["nextcloud-talk"];
           if (Object.keys(nextChannels).length > 0) {
-            nextCfg.channels = nextChannels as OpenClawConfig["channels"];
+            nextCfg.channels = nextChannels as RemoteClawConfig["channels"];
           } else {
             delete nextCfg.channels;
           }

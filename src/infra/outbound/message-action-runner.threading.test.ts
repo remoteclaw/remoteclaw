@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { slackPlugin } from "../../../extensions/slack/src/channel.js";
 import { telegramPlugin } from "../../../extensions/telegram/src/channel.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 
@@ -39,7 +39,7 @@ const slackConfig = {
       appToken: "xapp-test",
     },
   },
-} as OpenClawConfig;
+} as RemoteClawConfig;
 
 const telegramConfig = {
   channels: {
@@ -47,10 +47,10 @@ const telegramConfig = {
       botToken: "telegram-test",
     },
   },
-} as OpenClawConfig;
+} as RemoteClawConfig;
 
 async function runThreadingAction(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   actionParams: Record<string, unknown>;
   toolContext?: Record<string, unknown>;
 }) {

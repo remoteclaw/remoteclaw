@@ -62,7 +62,7 @@ function isCopySensitiveToken(token: string): boolean {
   ) {
     return true;
   }
-  if (WINDOWS_DRIVE_RE.test(token) || token.startsWith("\\\\")) {
+  if (WINDOWS_DRIVE_RE.test(token) || token.startsWith("\\[remoteclaw\\]")) {
     return true;
   }
   if (token.includes("/") || token.includes("\\")) {

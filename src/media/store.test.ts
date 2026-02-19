@@ -20,7 +20,7 @@ describe("media store", () => {
       "HOMEPATH",
       "REMOTECLAW_STATE_DIR",
     ]);
-    home = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-test-home-"));
+    home = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-test-home-"));
     process.env.HOME = home;
     process.env.USERPROFILE = home;
     process.env.REMOTECLAW_STATE_DIR = path.join(home, ".remoteclaw");
@@ -54,7 +54,7 @@ describe("media store", () => {
     await withTempStore(async (store, home) => {
       const dir = await store.ensureMediaDir();
       expect(isPathWithinBase(home, dir)).toBe(true);
-      expect(path.normalize(dir)).toContain(`${path.sep}.openclaw${path.sep}media`);
+      expect(path.normalize(dir)).toContain(`${path.sep}.remoteclaw${path.sep}media`);
       const stat = await fs.stat(dir);
       expect(stat.isDirectory()).toBe(true);
     });

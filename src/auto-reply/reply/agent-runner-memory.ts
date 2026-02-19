@@ -3,7 +3,7 @@ import { resolveAgentModelFallbacksOverride } from "../../agents/agent-scope.js"
 import { runWithModelFallback } from "../../agents/model-fallback.js";
 import { isCliProvider } from "../../agents/model-selection.js";
 import { resolveSandboxConfigForAgent, resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import {
   resolveAgentIdFromSessionKey,
   type SessionEntry,
@@ -23,7 +23,7 @@ import type { FollowupRun } from "./queue.js";
 import { incrementCompactionCount } from "./session-updates.js";
 
 export async function runMemoryFlushIfNeeded(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   followupRun: FollowupRun;
   sessionCtx: TemplateContext;
   opts?: GetReplyOptions;

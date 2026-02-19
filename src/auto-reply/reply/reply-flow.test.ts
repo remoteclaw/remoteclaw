@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { expectInboundContextContract } from "../../../test/helpers/inbound-contract.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { defaultRuntime } from "../../runtime.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
 import { HEARTBEAT_TOKEN, SILENT_REPLY_TOKEN } from "../tokens.js";
@@ -17,7 +17,7 @@ describe("buildInboundUserContextPrefix", () => {
   it("omits conversation label block for direct chats", () => {
     const text = buildInboundUserContextPrefix({
       ChatType: "direct",
-      ConversationLabel: "openclaw-tui",
+      ConversationLabel: "remoteclaw-tui",
     } as TemplateContext);
 
     expect(text).toBe("");
@@ -641,7 +641,7 @@ function createRun(params: {
       sessionId: "sess",
       sessionFile: "/tmp/session.json",
       workspaceDir: "/tmp",
-      config: {} as OpenClawConfig,
+      config: {} as RemoteClawConfig,
       provider: "openai",
       model: "gpt-test",
       timeoutMs: 10_000,
@@ -1072,7 +1072,7 @@ describe("followup queue collect routing", () => {
   });
 });
 
-const emptyCfg = {} as OpenClawConfig;
+const emptyCfg = {} as RemoteClawConfig;
 
 describe("createReplyDispatcher", () => {
   it("drops empty payloads and silent tokens without media", async () => {
@@ -1247,7 +1247,7 @@ describe("resolveReplyToMode", () => {
         discord: { replyToMode: "first" },
         slack: { replyToMode: "all" },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     expect(resolveReplyToMode(cfg, "telegram")).toBe("all");
     expect(resolveReplyToMode(cfg, "discord")).toBe("first");
     expect(resolveReplyToMode(cfg, "slack")).toBe("all");
@@ -1261,7 +1261,7 @@ describe("resolveReplyToMode", () => {
           replyToModeByChatType: { direct: "all", group: "first" },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     expect(resolveReplyToMode(cfg, "slack", null, "direct")).toBe("all");
     expect(resolveReplyToMode(cfg, "slack", null, "group")).toBe("first");
     expect(resolveReplyToMode(cfg, "slack", null, "channel")).toBe("off");
@@ -1275,7 +1275,7 @@ describe("resolveReplyToMode", () => {
           replyToMode: "first",
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     expect(resolveReplyToMode(cfg, "slack", null, "direct")).toBe("first");
     expect(resolveReplyToMode(cfg, "slack", null, "channel")).toBe("first");
   });
@@ -1288,7 +1288,7 @@ describe("resolveReplyToMode", () => {
           dm: { replyToMode: "all" },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     expect(resolveReplyToMode(cfg, "slack", null, "direct")).toBe("all");
     expect(resolveReplyToMode(cfg, "slack", null, "channel")).toBe("off");
   });

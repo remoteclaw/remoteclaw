@@ -28,8 +28,8 @@ describe("resolveBundledSkillsDir", () => {
   it("resolves bundled skills under a flattened dist layout", async () => {
     delete process.env.REMOTECLAW_BUNDLED_SKILLS_DIR;
 
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-bundled-"));
-    await fs.writeFile(path.join(root, "package.json"), JSON.stringify({ name: "openclaw" }));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-bundled-"));
+    await fs.writeFile(path.join(root, "package.json"), JSON.stringify({ name: "remoteclaw" }));
 
     await writeSkill(path.join(root, "skills", "peekaboo"), "peekaboo");
 

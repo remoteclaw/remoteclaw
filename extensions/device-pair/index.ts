@@ -1,5 +1,5 @@
 import os from "node:os";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
+import type { RemoteClawPluginApi } from "openclaw/plugin-sdk";
 import { approveDevicePairing, listDevicePairing } from "openclaw/plugin-sdk";
 import qrcode from "qrcode-terminal";
 
@@ -68,7 +68,7 @@ function normalizeUrl(raw: string, schemeFallback: "ws" | "wss"): string | null 
   return `${schemeFallback}://${withoutPath}`;
 }
 
-function resolveGatewayPort(cfg: OpenClawPluginApi["config"]): number {
+function resolveGatewayPort(cfg: RemoteClawPluginApi["config"]): number {
   const envRaw =
     process.env.OPENCLAW_GATEWAY_PORT?.trim() || process.env.CLAWDBOT_GATEWAY_PORT?.trim();
   if (envRaw) {
@@ -85,7 +85,7 @@ function resolveGatewayPort(cfg: OpenClawPluginApi["config"]): number {
 }
 
 function resolveScheme(
-  cfg: OpenClawPluginApi["config"],
+  cfg: RemoteClawPluginApi["config"],
   opts?: { forceSecure?: boolean },
 ): "ws" | "wss" {
   if (opts?.forceSecure) {
@@ -162,7 +162,7 @@ function pickTailnetIPv4(): string | null {
   return pickMatchingIPv4(isTailnetIPv4);
 }
 
-async function resolveTailnetHost(api: OpenClawPluginApi): Promise<string | null> {
+async function resolveTailnetHost(api: RemoteClawPluginApi): Promise<string | null> {
   const candidates = ["tailscale", "/Applications/Tailscale.app/Contents/MacOS/Tailscale"];
   for (const candidate of candidates) {
     try {
@@ -212,7 +212,7 @@ function parsePossiblyNoisyJsonObject(raw: string): Record<string, unknown> {
   }
 }
 
-function resolveAuth(cfg: OpenClawPluginApi["config"]): ResolveAuthResult {
+function resolveAuth(cfg: RemoteClawPluginApi["config"]): ResolveAuthResult {
   const mode = cfg.gateway?.auth?.mode;
   const token =
     process.env.OPENCLAW_GATEWAY_TOKEN?.trim() ||
@@ -244,7 +244,7 @@ function resolveAuth(cfg: OpenClawPluginApi["config"]): ResolveAuthResult {
   return { error: "Gateway auth is not configured (no token or password)." };
 }
 
-async function resolveGatewayUrl(api: OpenClawPluginApi): Promise<ResolveUrlResult> {
+async function resolveGatewayUrl(api: RemoteClawPluginApi): Promise<ResolveUrlResult> {
   const cfg = api.config;
   const pluginCfg = (api.pluginConfig ?? {}) as DevicePairPluginConfig;
   const scheme = resolveScheme(cfg);
@@ -368,7 +368,7 @@ function formatPendingRequests(pending: PendingPairingRequest[]): string {
   return lines.join("\n");
 }
 
-export default function register(api: OpenClawPluginApi) {
+export default function register(api: RemoteClawPluginApi) {
   api.registerCommand({
     name: "pair",
     description: "Generate setup codes and approve device pairing requests.",
@@ -457,7 +457,7 @@ export default function register(api: OpenClawPluginApi) {
             if (send) {
               await send(
                 target,
-                ["Scan this QR code with the OpenClaw iOS app:", "", "```", qrAscii, "```"].join(
+                ["Scan this QR code with the RemoteClaw iOS app:", "", "```", qrAscii, "```"].join(
                   "\n",
                 ),
                 {
@@ -495,7 +495,7 @@ export default function register(api: OpenClawPluginApi) {
         // WebUI + CLI/TUI: ASCII QR
         return {
           text: [
-            "Scan this QR code with the OpenClaw iOS app:",
+            "Scan this QR code with the RemoteClaw iOS app:",
             "",
             "```",
             qrAscii,

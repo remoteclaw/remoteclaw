@@ -33,7 +33,7 @@ import { dispatchReplyWithDispatcher } from "../../auto-reply/reply/provider-dis
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import { resolveCommandAuthorizedFromAuthorizers } from "../../channels/command-gating.js";
 import { createReplyPrefixOptions } from "../../channels/reply-prefix.js";
-import type { OpenClawConfig, loadConfig } from "../../config/config.js";
+import type { RemoteClawConfig, loadConfig } from "../../config/config.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { buildPairingReply } from "../../pairing/pairing-messages.js";
 import {
@@ -59,7 +59,7 @@ import { resolveDiscordChannelInfo } from "./message-utils.js";
 import { resolveDiscordSenderIdentity } from "./sender-identity.js";
 import { resolveDiscordThreadParentInfo } from "./threading.js";
 
-type DiscordConfig = NonNullable<OpenClawConfig["channels"]>["discord"];
+type DiscordConfig = NonNullable<RemoteClawConfig["channels"]>["discord"];
 
 function buildDiscordCommandOptions(params: {
   command: ChatCommandDefinition;

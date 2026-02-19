@@ -382,7 +382,7 @@ export function checkTokenDrift(params: {
       code: SERVICE_AUDIT_CODES.gatewayTokenDrift,
       message:
         "Config token differs from service token. The daemon will use the old token after restart.",
-      detail: "Run `openclaw gateway install --force` to sync the token.",
+      detail: "Run `remoteclaw gateway install --force` to sync the token.",
       level: "recommended",
     };
   }

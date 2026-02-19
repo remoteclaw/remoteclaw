@@ -286,7 +286,7 @@ async function waitForLocalCallback(params: {
         res.end(
           "<!doctype html><html><head><meta charset='utf-8'/></head>" +
             "<body><h2>Gemini CLI OAuth complete</h2>" +
-            "<p>You can close this window and return to OpenClaw.</p></body></html>",
+            "<p>You can close this window and return to RemoteClaw.</p></body></html>",
         );
 
         finish(undefined, { code, state });

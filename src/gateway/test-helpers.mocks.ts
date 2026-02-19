@@ -183,7 +183,7 @@ export const resetTestPluginRegistry = () => {
 };
 
 const testConfigRoot = {
-  value: path.join(os.tmpdir(), `openclaw-gateway-test-${process.pid}-${crypto.randomUUID()}`),
+  value: path.join(os.tmpdir(), `remoteclaw-gateway-test-${process.pid}-${crypto.randomUUID()}`),
 };
 
 export const setTestConfigRoot = (root: string) => {
@@ -398,7 +398,7 @@ vi.mock("../config/config.js", async () => {
           : {};
       const defaults = {
         model: { primary: "anthropic/claude-opus-4-6" },
-        workspace: path.join(os.tmpdir(), "openclaw-gateway-test"),
+        workspace: path.join(os.tmpdir(), "remoteclaw-gateway-test"),
         ...fileDefaults,
         ...testState.agentConfig,
       };
@@ -570,7 +570,7 @@ vi.mock("../plugins/loader.js", async () => {
     await vi.importActual<typeof import("../plugins/loader.js")>("../plugins/loader.js");
   return {
     ...actual,
-    loadOpenClawPlugins: () => pluginRegistryState.registry,
+    loadRemoteClawPlugins: () => pluginRegistryState.registry,
   };
 });
 

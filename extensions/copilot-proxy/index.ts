@@ -1,6 +1,6 @@
 import {
   emptyPluginConfigSchema,
-  type OpenClawPluginApi,
+  type RemoteClawPluginApi,
   type ProviderAuthContext,
   type ProviderAuthResult,
 } from "openclaw/plugin-sdk";
@@ -76,7 +76,7 @@ const copilotProxyPlugin = {
   name: "Copilot Proxy",
   description: "Local Copilot Proxy (VS Code LM) provider plugin",
   configSchema: emptyPluginConfigSchema(),
-  register(api: OpenClawPluginApi) {
+  register(api: RemoteClawPluginApi) {
     api.registerProvider({
       id: "copilot-proxy",
       label: "Copilot Proxy",

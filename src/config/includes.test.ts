@@ -11,7 +11,7 @@ import {
 
 const ROOT_DIR = path.parse(process.cwd()).root;
 const CONFIG_DIR = path.join(ROOT_DIR, "config");
-const ETC_REMOTECLAW_DIR = path.join(ROOT_DIR, "etc", "openclaw");
+const ETC_REMOTECLAW_DIR = path.join(ROOT_DIR, "etc", "remoteclaw");
 const SHARED_DIR = path.join(ROOT_DIR, "shared");
 
 const DEFAULT_BASE_PATH = path.join(CONFIG_DIR, "remoteclaw.json");
@@ -20,7 +20,7 @@ function configPath(...parts: string[]) {
   return path.join(CONFIG_DIR, ...parts);
 }
 
-function etcOpenClawPath(...parts: string[]) {
+function etcRemoteClawPath(...parts: string[]) {
   return path.join(ETC_REMOTECLAW_DIR, ...parts);
 }
 
@@ -70,7 +70,7 @@ describe("resolveConfigIncludes", () => {
   });
 
   it("rejects absolute path outside config directory (CWE-22)", () => {
-    const absolute = etcOpenClawPath("agents.json");
+    const absolute = etcRemoteClawPath("agents.json");
     const files = { [absolute]: { list: [{ id: "main" }] } };
     const obj = { agents: { $include: absolute } };
     expect(() => resolve(obj, files)).toThrow(ConfigIncludeError);
@@ -542,7 +542,7 @@ describe("security: path traversal protection (CWE-22)", () => {
     });
 
     it("allows include files when the config root path is a symlink", async () => {
-      const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-includes-symlink-"));
+      const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-includes-symlink-"));
       try {
         const realRoot = path.join(tempRoot, "real");
         const linkRoot = path.join(tempRoot, "link");

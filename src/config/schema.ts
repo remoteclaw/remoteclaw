@@ -2,11 +2,11 @@ import { CHANNEL_IDS } from "../channels/registry.js";
 import { VERSION } from "../version.js";
 import type { ConfigUiHint, ConfigUiHints } from "./schema.hints.js";
 import { applySensitiveHints, buildBaseHints, mapSensitivePaths } from "./schema.hints.js";
-import { OpenClawSchema } from "./zod-schema.js";
+import { RemoteClawSchema } from "./zod-schema.js";
 
 export type { ConfigUiHint, ConfigUiHints } from "./schema.hints.js";
 
-export type ConfigSchema = ReturnType<typeof OpenClawSchema.toJSONSchema>;
+export type ConfigSchema = ReturnType<typeof RemoteClawSchema.toJSONSchema>;
 
 type JsonSchemaNode = Record<string, unknown>;
 
@@ -322,12 +322,12 @@ function buildBaseConfigSchema(): ConfigSchemaResponse {
   if (cachedBase) {
     return cachedBase;
   }
-  const schema = OpenClawSchema.toJSONSchema({
+  const schema = RemoteClawSchema.toJSONSchema({
     target: "draft-07",
     unrepresentable: "any",
   });
-  schema.title = "OpenClawConfig";
-  const hints = mapSensitivePaths(OpenClawSchema, "", buildBaseHints());
+  schema.title = "RemoteClawConfig";
+  const hints = mapSensitivePaths(RemoteClawSchema, "", buildBaseHints());
   const next = {
     schema: stripChannelSchema(schema),
     uiHints: hints,

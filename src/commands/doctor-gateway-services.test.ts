@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 
 const mocks = vi.hoisted(() => ({
   readCommand: vi.fn(),
@@ -67,13 +67,13 @@ function makeDoctorPrompts() {
   };
 }
 
-async function runRepair(cfg: OpenClawConfig) {
+async function runRepair(cfg: RemoteClawConfig) {
   await maybeRepairGatewayServiceConfig(cfg, "local", makeDoctorIo(), makeDoctorPrompts());
 }
 
 const gatewayProgramArguments = [
   "/usr/bin/node",
-  "/usr/local/bin/openclaw",
+  "/usr/local/bin/remoteclaw",
   "gateway",
   "--port",
   "18789",
@@ -114,7 +114,7 @@ describe("maybeRepairGatewayServiceConfig", () => {
   it("treats gateway.auth.token as source of truth for service token repairs", async () => {
     setupGatewayTokenRepairScenario("config-token");
 
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       gateway: {
         auth: {
           mode: "token",
@@ -144,7 +144,7 @@ describe("maybeRepairGatewayServiceConfig", () => {
     try {
       setupGatewayTokenRepairScenario("env-token");
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         gateway: {},
       };
 

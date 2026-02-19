@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "openclaw/plugin-sdk";
 import { resolveBlueBubblesServerAccount } from "./account-resolve.js";
 import { postMultipartFormData } from "./multipart.js";
 import { getCachedBlueBubblesPrivateApiStatus } from "./probe.js";
@@ -18,7 +18,7 @@ export type BlueBubblesAttachmentOpts = {
   password?: string;
   accountId?: string;
   timeoutMs?: number;
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
 };
 
 const DEFAULT_ATTACHMENT_MAX_BYTES = 8 * 1024 * 1024;

@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { resolveUserTimezone } from "../../agents/date-time.js";
 import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
 import { ensureSkillsWatcher, getSkillsSnapshotVersion } from "../../agents/skills/refresh.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 import { buildChannelSummary } from "../../infra/channel-summary.js";
 import {
@@ -14,7 +14,7 @@ import { getRemoteSkillEligibility } from "../../infra/skills-remote.js";
 import { drainSystemEventEntries } from "../../infra/system-events.js";
 
 export async function prependSystemEvents(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   sessionKey: string;
   isMainSession: boolean;
   isNewSession: boolean;
@@ -44,7 +44,7 @@ export async function prependSystemEvents(params: {
     return trimmed;
   };
 
-  const resolveSystemEventTimezone = (cfg: OpenClawConfig) => {
+  const resolveSystemEventTimezone = (cfg: RemoteClawConfig) => {
     const raw = cfg.agents?.defaults?.envelopeTimezone?.trim();
     if (!raw) {
       return { mode: "local" as const };
@@ -66,7 +66,7 @@ export async function prependSystemEvents(params: {
     return explicit ? { mode: "iana" as const, timeZone: explicit } : { mode: "local" as const };
   };
 
-  const formatSystemEventTimestamp = (ts: number, cfg: OpenClawConfig) => {
+  const formatSystemEventTimestamp = (ts: number, cfg: RemoteClawConfig) => {
     const date = new Date(ts);
     if (Number.isNaN(date.getTime())) {
       return "unknown-time";
@@ -119,7 +119,7 @@ export async function ensureSkillSnapshot(params: {
   sessionId?: string;
   isFirstTurnInSession: boolean;
   workspaceDir: string;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   /** If provided, only load skills with these names (for per-channel skill filtering) */
   skillFilter?: string[];
 }): Promise<{

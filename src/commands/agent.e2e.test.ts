@@ -18,7 +18,7 @@ vi.mock("../agents/model-catalog.js", () => ({
 import { telegramPlugin } from "../../extensions/telegram/src/channel.js";
 import { setTelegramRuntime } from "../../extensions/telegram/src/runtime.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import * as configModule from "../config/config.js";
 import { ChannelBridge } from "../middleware/index.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
@@ -39,14 +39,14 @@ const configSpy = vi.spyOn(configModule, "loadConfig");
 const mockHandle = vi.fn();
 
 async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
-  return withTempHomeBase(fn, { prefix: "openclaw-agent-" });
+  return withTempHomeBase(fn, { prefix: "remoteclaw-agent-" });
 }
 
 function mockConfig(
   home: string,
   storePath: string,
-  agentOverrides?: Partial<NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]>>,
-  telegramOverrides?: Partial<NonNullable<NonNullable<OpenClawConfig["channels"]>["telegram"]>>,
+  agentOverrides?: Partial<NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>>,
+  telegramOverrides?: Partial<NonNullable<NonNullable<RemoteClawConfig["channels"]>["telegram"]>>,
   agentsList?: Array<{ id: string; default?: boolean }>,
 ) {
   configSpy.mockReturnValue({
@@ -54,7 +54,7 @@ function mockConfig(
       defaults: {
         model: { primary: "anthropic/claude-opus-4-5" },
         models: { "anthropic/claude-opus-4-5": {} },
-        workspace: path.join(home, "openclaw"),
+        workspace: path.join(home, "remoteclaw"),
         ...agentOverrides,
       },
       list: agentsList,

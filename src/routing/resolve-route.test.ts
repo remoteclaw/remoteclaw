@@ -1,11 +1,11 @@
 import { describe, expect, test } from "vitest";
 import type { ChatType } from "../channels/chat-type.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveAgentRoute } from "./resolve-route.js";
 
 describe("resolveAgentRoute", () => {
   test("defaults to main/default when no bindings exist", () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const route = resolveAgentRoute({
       cfg,
       channel: "whatsapp",
@@ -19,7 +19,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("dmScope=per-peer isolates DM sessions by sender id", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       session: { dmScope: "per-peer" },
     };
     const route = resolveAgentRoute({
@@ -32,7 +32,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("dmScope=per-channel-peer isolates DM sessions per channel and sender", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       session: { dmScope: "per-channel-peer" },
     };
     const route = resolveAgentRoute({
@@ -45,7 +45,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("identityLinks collapses per-peer DM sessions across providers", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       session: {
         dmScope: "per-peer",
         identityLinks: {
@@ -63,7 +63,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("identityLinks applies to per-channel-peer DM sessions", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       session: {
         dmScope: "per-channel-peer",
         identityLinks: {
@@ -81,7 +81,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("peer binding wins over account binding", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         {
           agentId: "a",
@@ -109,7 +109,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("discord channel peer binding wins over guild binding", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         {
           agentId: "chan",
@@ -142,7 +142,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("coerces numeric peer ids to stable session keys", () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const route = resolveAgentRoute({
       cfg,
       channel: "discord",
@@ -153,7 +153,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("guild binding wins over account binding when peer not bound", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         {
           agentId: "guild",
@@ -181,7 +181,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("peer+guild binding does not act as guild-wide fallback when peer mismatches (#14752)", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         {
           agentId: "olga",
@@ -211,7 +211,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("peer+guild binding requires guild match even when peer matches", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         {
           agentId: "wrongguild",
@@ -241,7 +241,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("peer+team binding does not act as team-wide fallback when peer mismatches", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         {
           agentId: "roomonly",
@@ -271,7 +271,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("peer+team binding requires team match even when peer matches", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         {
           agentId: "wrongteam",
@@ -301,7 +301,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("missing accountId in binding matches default account only", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [{ agentId: "defaultAcct", match: { channel: "whatsapp" } }],
     };
 
@@ -324,7 +324,7 @@ describe("resolveAgentRoute", () => {
   });
 
   test("accountId=* matches any account as a channel fallback", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         {
           agentId: "any",
@@ -343,9 +343,9 @@ describe("resolveAgentRoute", () => {
   });
 
   test("defaultAgentId is used when no binding matches", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "home", default: true, workspace: "~/openclaw-home" }],
+        list: [{ id: "home", default: true, workspace: "~/remoteclaw-home" }],
       },
     };
     const route = resolveAgentRoute({
@@ -360,7 +360,7 @@ describe("resolveAgentRoute", () => {
 });
 
 test("dmScope=per-account-channel-peer isolates DM sessions per account, channel and sender", () => {
-  const cfg: OpenClawConfig = {
+  const cfg: RemoteClawConfig = {
     session: { dmScope: "per-account-channel-peer" },
   };
   const route = resolveAgentRoute({
@@ -373,7 +373,7 @@ test("dmScope=per-account-channel-peer isolates DM sessions per account, channel
 });
 
 test("dmScope=per-account-channel-peer uses default accountId when not provided", () => {
-  const cfg: OpenClawConfig = {
+  const cfg: RemoteClawConfig = {
     session: { dmScope: "per-account-channel-peer" },
   };
   const route = resolveAgentRoute({
@@ -410,7 +410,7 @@ describe("parentPeer binding inheritance (thread support)", () => {
   }
 
   function resolveDiscordThreadRoute(params: {
-    cfg: OpenClawConfig;
+    cfg: RemoteClawConfig;
     parentPeer?: { kind: "channel"; id: string } | null;
     guildId?: string;
   }) {
@@ -425,7 +425,7 @@ describe("parentPeer binding inheritance (thread support)", () => {
   }
 
   test("thread inherits binding from parent channel when no direct match", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [makeDiscordPeerBinding("adecco", defaultParentPeer.id)],
     };
     const route = resolveDiscordThreadRoute({ cfg });
@@ -434,7 +434,7 @@ describe("parentPeer binding inheritance (thread support)", () => {
   });
 
   test("direct peer binding wins over parent peer binding", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         makeDiscordPeerBinding("thread-agent", threadPeer.id),
         makeDiscordPeerBinding("parent-agent", defaultParentPeer.id),
@@ -446,7 +446,7 @@ describe("parentPeer binding inheritance (thread support)", () => {
   });
 
   test("parent peer binding wins over guild binding", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         makeDiscordPeerBinding("parent-agent", defaultParentPeer.id),
         makeDiscordGuildBinding("guild-agent", "guild-789"),
@@ -458,7 +458,7 @@ describe("parentPeer binding inheritance (thread support)", () => {
   });
 
   test("falls back to guild binding when no parent peer match", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         makeDiscordPeerBinding("other-parent-agent", "other-parent-999"),
         makeDiscordGuildBinding("guild-agent", "guild-789"),
@@ -470,7 +470,7 @@ describe("parentPeer binding inheritance (thread support)", () => {
   });
 
   test("parentPeer with empty id is ignored", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [makeDiscordPeerBinding("parent-agent", defaultParentPeer.id)],
     };
     const route = resolveDiscordThreadRoute({ cfg, parentPeer: { kind: "channel", id: "" } });
@@ -479,7 +479,7 @@ describe("parentPeer binding inheritance (thread support)", () => {
   });
 
   test("null parentPeer is handled gracefully", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [makeDiscordPeerBinding("parent-agent", defaultParentPeer.id)],
     };
     const route = resolveDiscordThreadRoute({ cfg, parentPeer: null });
@@ -490,7 +490,7 @@ describe("parentPeer binding inheritance (thread support)", () => {
 
 describe("backward compatibility: peer.kind dm → direct", () => {
   test("legacy dm in config matches runtime direct peer", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         {
           agentId: "alex",
@@ -515,7 +515,7 @@ describe("backward compatibility: peer.kind dm → direct", () => {
 });
 
 describe("role-based agent routing", () => {
-  type DiscordBinding = NonNullable<OpenClawConfig["bindings"]>[number];
+  type DiscordBinding = NonNullable<RemoteClawConfig["bindings"]>[number];
 
   function makeDiscordRoleBinding(
     agentId: string,

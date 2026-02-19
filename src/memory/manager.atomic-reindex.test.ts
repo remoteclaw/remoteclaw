@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { getEmbedBatchMock, resetEmbeddingMocks } from "./embedding.test-mocks.js";
 import type { MemoryIndexManager } from "./index.js";
 import { getRequiredMemoryIndexManager } from "./test-manager-helpers.js";
@@ -18,7 +18,7 @@ describe("memory manager atomic reindex", () => {
   const embedBatch = getEmbedBatchMock();
 
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-mem-atomic-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-mem-atomic-"));
   });
 
   beforeEach(async () => {
@@ -69,7 +69,7 @@ describe("memory manager atomic reindex", () => {
         },
         list: [{ id: "main", default: true }],
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     manager = await getRequiredMemoryIndexManager({ cfg, agentId: "main" });
 

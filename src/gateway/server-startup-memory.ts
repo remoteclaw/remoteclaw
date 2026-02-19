@@ -1,10 +1,10 @@
 import { listAgentIds } from "../agents/agent-scope.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveMemoryBackendConfig } from "../memory/backend-config.js";
 import { getMemorySearchManager } from "../memory/index.js";
 
 export async function startGatewayMemoryBackend(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   log: { info?: (msg: string) => void; warn: (msg: string) => void };
 }): Promise<void> {
   const agentIds = listAgentIds(params.cfg);

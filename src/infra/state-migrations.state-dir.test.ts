@@ -10,7 +10,7 @@ import {
 let tempRoot: string | null = null;
 
 async function makeTempRoot() {
-  const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), "openclaw-state-dir-"));
+  const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), "remoteclaw-state-dir-"));
   tempRoot = root;
   return root;
 }

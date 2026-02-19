@@ -104,7 +104,7 @@ vi.mock("openclaw/plugin-sdk", async () => {
   };
 });
 
-import type { OpenClawPluginServiceContext } from "openclaw/plugin-sdk";
+import type { RemoteClawPluginServiceContext } from "openclaw/plugin-sdk";
 import { emitDiagnosticEvent } from "openclaw/plugin-sdk";
 import { createDiagnosticsOtelService } from "./service.js";
 
@@ -131,7 +131,7 @@ describe("diagnostics-otel service", () => {
     });
 
     const service = createDiagnosticsOtelService();
-    const ctx: OpenClawPluginServiceContext = {
+    const ctx: RemoteClawPluginServiceContext = {
       config: {
         diagnostics: {
           enabled: true,

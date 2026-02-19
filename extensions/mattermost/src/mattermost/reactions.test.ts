@@ -1,8 +1,8 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "openclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { addMattermostReaction, removeMattermostReaction } from "./reactions.js";
 
-function createCfg(): OpenClawConfig {
+function createCfg(): RemoteClawConfig {
   return {
     channels: {
       mattermost: {

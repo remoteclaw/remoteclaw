@@ -2,12 +2,12 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { captureFullEnv } from "../test-utils/env.js";
 import { resolveSandboxContext } from "./sandbox.js";
 
 vi.mock("./sandbox/docker.js", () => ({
-  ensureSandboxContainer: vi.fn(async () => "openclaw-sbx-test"),
+  ensureSandboxContainer: vi.fn(async () => "remoteclaw-sbx-test"),
 }));
 
 vi.mock("./sandbox/browser.js", () => ({
@@ -40,19 +40,19 @@ describe("sandbox skill mirroring", () => {
   });
 
   const runContext = async (workspaceAccess: "none" | "ro") => {
-    const bundledDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-bundled-skills-"));
+    const bundledDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-bundled-skills-"));
     await fs.mkdir(bundledDir, { recursive: true });
 
     process.env.REMOTECLAW_BUNDLED_SKILLS_DIR = bundledDir;
 
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-workspace-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-workspace-"));
     await writeSkill({
       dir: path.join(workspaceDir, "skills", "demo-skill"),
       name: "demo-skill",
       description: "Demo skill",
     });
 
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
           sandbox: {

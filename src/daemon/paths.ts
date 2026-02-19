@@ -2,7 +2,7 @@ import path from "node:path";
 import { resolveGatewayProfileSuffix } from "./constants.js";
 
 const windowsAbsolutePath = /^[a-zA-Z]:[\\/]/;
-const windowsUncPath = /^\\\\/;
+const windowsUncPath = /^\\[remoteclaw\\]/;
 
 export function resolveHomeDir(env: Record<string, string | undefined>): string {
   const home = env.HOME?.trim() || env.USERPROFILE?.trim();

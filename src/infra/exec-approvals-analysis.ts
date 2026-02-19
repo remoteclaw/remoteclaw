@@ -125,10 +125,10 @@ export function resolveCommandResolutionFromArgv(
 
 function normalizeMatchTarget(value: string): string {
   if (process.platform === "win32") {
-    const stripped = value.replace(/^\\\\[?.]\\/, "");
+    const stripped = value.replace(/^\\[remoteclaw\\][?.]\\/, "");
     return stripped.replace(/\\/g, "/").toLowerCase();
   }
-  return value.replace(/\\\\/g, "/").toLowerCase();
+  return value.replace(/\\[remoteclaw\\]/g, "/").toLowerCase();
 }
 
 function tryRealpath(value: string): string | null {
@@ -160,7 +160,7 @@ function globToRegExp(pattern: string): RegExp {
       i += 1;
       continue;
     }
-    regex += ch.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&");
+    regex += ch.replace(/[.*+?^${}()|[\\]\\[remoteclaw\\]]/g, "\\$&");
     i += 1;
   }
   regex += "$";

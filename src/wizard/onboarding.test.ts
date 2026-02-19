@@ -194,6 +194,10 @@ vi.mock("./onboarding.completion.js", () => ({
   setupOnboardingShellCompletion,
 }));
 
+vi.mock("./onboarding.openclaw-import.js", () => ({
+  detectAndOfferOpenClawImport: vi.fn(async () => ({ imported: false, config: null })),
+}));
+
 function createWizardPrompter(overrides?: Partial<WizardPrompter>): WizardPrompter {
   const select = vi.fn(
     async (_params: WizardSelectParams<unknown>) => "quickstart",

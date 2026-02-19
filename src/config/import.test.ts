@@ -208,6 +208,7 @@ describe("importConfig", () => {
       const auth = gw.auth as Record<string, unknown>;
       expect(auth.password).toBe("existing-pw");
       // token from source since existing.gateway.auth has no token
+      expect(auth.token).toBe("src");
     });
 
     it("skips meta from existing during merge", () => {

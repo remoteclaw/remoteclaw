@@ -60,9 +60,9 @@ describe("update-startup", () => {
     vi.setSystemTime(new Date("2026-01-17T10:00:00Z"));
     tempDir = path.join(suiteRoot, `case-${++suiteCase}`);
     await fs.mkdir(tempDir);
-    hadStateDir = Object.prototype.hasOwnProperty.call(process.env, "OPENCLAW_STATE_DIR");
-    prevStateDir = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = tempDir;
+    hadStateDir = Object.prototype.hasOwnProperty.call(process.env, "REMOTECLAW_STATE_DIR");
+    prevStateDir = process.env.REMOTECLAW_STATE_DIR;
+    process.env.REMOTECLAW_STATE_DIR = tempDir;
 
     hadNodeEnv = Object.prototype.hasOwnProperty.call(process.env, "NODE_ENV");
     prevNodeEnv = process.env.NODE_ENV;
@@ -85,9 +85,9 @@ describe("update-startup", () => {
   afterEach(async () => {
     vi.useRealTimers();
     if (hadStateDir) {
-      process.env.OPENCLAW_STATE_DIR = prevStateDir;
+      process.env.REMOTECLAW_STATE_DIR = prevStateDir;
     } else {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.REMOTECLAW_STATE_DIR;
     }
     if (hadNodeEnv) {
       process.env.NODE_ENV = prevNodeEnv;

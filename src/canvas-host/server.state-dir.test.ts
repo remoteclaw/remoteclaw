@@ -21,7 +21,7 @@ describe("canvas host state dir defaults", () => {
     restoreStateDirEnv(envSnapshot);
   });
 
-  it("uses OPENCLAW_STATE_DIR for the default canvas root", async () => {
+  it("uses REMOTECLAW_STATE_DIR for the default canvas root", async () => {
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-canvas-state-"));
     const stateDir = path.join(tempRoot, "state");
     setStateDirEnv(stateDir);

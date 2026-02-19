@@ -12,16 +12,16 @@ function withTempDir(): string {
 }
 
 async function withTempStateDir<T>(fn: (dir: string) => Promise<T>) {
-  const previous = process.env.OPENCLAW_STATE_DIR;
+  const previous = process.env.REMOTECLAW_STATE_DIR;
   const dir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-"));
-  process.env.OPENCLAW_STATE_DIR = dir;
+  process.env.REMOTECLAW_STATE_DIR = dir;
   try {
     return await fn(dir);
   } finally {
     if (previous === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.REMOTECLAW_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = previous;
+      process.env.REMOTECLAW_STATE_DIR = previous;
     }
     await fsPromises.rm(dir, { recursive: true, force: true });
   }

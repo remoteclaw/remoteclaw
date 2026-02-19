@@ -94,9 +94,9 @@ const spawnGatewayInstance = async (name: string): Promise<GatewayInstance> => {
   const hookToken = `token-${name}-${randomUUID()}`;
   const gatewayToken = `gateway-${name}-${randomUUID()}`;
   const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), `openclaw-e2e-${name}-`));
-  const configDir = path.join(homeDir, ".openclaw");
+  const configDir = path.join(homeDir, ".remoteclaw");
   await fs.mkdir(configDir, { recursive: true });
-  const configPath = path.join(configDir, "openclaw.json");
+  const configPath = path.join(configDir, "remoteclaw.json");
   const stateDir = path.join(configDir, "state");
   const config = {
     gateway: { port, auth: { mode: "token", token: gatewayToken } },
@@ -125,8 +125,8 @@ const spawnGatewayInstance = async (name: string): Promise<GatewayInstance> => {
         env: {
           ...process.env,
           HOME: homeDir,
-          OPENCLAW_CONFIG_PATH: configPath,
-          OPENCLAW_STATE_DIR: stateDir,
+          REMOTECLAW_CONFIG_PATH: configPath,
+          REMOTECLAW_STATE_DIR: stateDir,
           OPENCLAW_GATEWAY_TOKEN: "",
           OPENCLAW_GATEWAY_PASSWORD: "",
           OPENCLAW_SKIP_CHANNELS: "1",

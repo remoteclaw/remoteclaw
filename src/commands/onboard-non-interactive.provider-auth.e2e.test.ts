@@ -56,8 +56,8 @@ async function withOnboardEnv(
 ): Promise<void> {
   const prev = captureEnv([
     "HOME",
-    "OPENCLAW_STATE_DIR",
-    "OPENCLAW_CONFIG_PATH",
+    "REMOTECLAW_STATE_DIR",
+    "REMOTECLAW_CONFIG_PATH",
     "OPENCLAW_SKIP_CHANNELS",
     "OPENCLAW_SKIP_GMAIL_WATCHER",
     "OPENCLAW_SKIP_CRON",
@@ -78,10 +78,10 @@ async function withOnboardEnv(
   delete process.env.CUSTOM_API_KEY;
 
   const tempHome = await makeTempWorkspace(prefix);
-  const configPath = path.join(tempHome, "openclaw.json");
+  const configPath = path.join(tempHome, "remoteclaw.json");
   process.env.HOME = tempHome;
-  process.env.OPENCLAW_STATE_DIR = tempHome;
-  process.env.OPENCLAW_CONFIG_PATH = configPath;
+  process.env.REMOTECLAW_STATE_DIR = tempHome;
+  process.env.REMOTECLAW_CONFIG_PATH = configPath;
 
   const runtime = createThrowingRuntime();
 

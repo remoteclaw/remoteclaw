@@ -82,7 +82,7 @@ describe("provider timeouts (e2e)", () => {
     async () => {
       const prev = {
         home: process.env.HOME,
-        configPath: process.env.OPENCLAW_CONFIG_PATH,
+        configPath: process.env.REMOTECLAW_CONFIG_PATH,
         token: process.env.OPENCLAW_GATEWAY_TOKEN,
         skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
         skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
@@ -127,9 +127,9 @@ describe("provider timeouts (e2e)", () => {
       const token = `test-${randomUUID()}`;
       process.env.OPENCLAW_GATEWAY_TOKEN = token;
 
-      const configDir = path.join(tempHome, ".openclaw");
+      const configDir = path.join(tempHome, ".remoteclaw");
       await fs.mkdir(configDir, { recursive: true });
-      const configPath = path.join(configDir, "openclaw.json");
+      const configPath = path.join(configDir, "remoteclaw.json");
 
       const cfg = {
         agents: {
@@ -195,9 +195,9 @@ describe("provider timeouts (e2e)", () => {
           process.env.HOME = prev.home;
         }
         if (prev.configPath === undefined) {
-          delete process.env.OPENCLAW_CONFIG_PATH;
+          delete process.env.REMOTECLAW_CONFIG_PATH;
         } else {
-          process.env.OPENCLAW_CONFIG_PATH = prev.configPath;
+          process.env.REMOTECLAW_CONFIG_PATH = prev.configPath;
         }
         if (prev.token === undefined) {
           delete process.env.OPENCLAW_GATEWAY_TOKEN;

@@ -100,10 +100,10 @@ afterEach(() => {
 
 describe("web media loading", () => {
   beforeAll(() => {
-    // Ensure state dir is stable and not influenced by other tests that stub OPENCLAW_STATE_DIR.
+    // Ensure state dir is stable and not influenced by other tests that stub REMOTECLAW_STATE_DIR.
     // Also keep it outside os.tmpdir() so tmpdir localRoots doesn't accidentally make all state readable.
-    stateDirSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-    process.env.OPENCLAW_STATE_DIR = path.join(
+    stateDirSnapshot = captureEnv(["REMOTECLAW_STATE_DIR"]);
+    process.env.REMOTECLAW_STATE_DIR = path.join(
       path.parse(os.tmpdir()).root,
       "var",
       "lib",

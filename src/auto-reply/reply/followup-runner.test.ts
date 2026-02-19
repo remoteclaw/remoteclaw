@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FollowupRun } from "./queue.js";
 import { createFollowupRunner } from "./followup-runner.js";
+import type { FollowupRun } from "./queue.js";
 import { createMockTypingController } from "./test-helpers.js";
 
 const baseQueuedRun = (messageProvider = "whatsapp"): FollowupRun =>

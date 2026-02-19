@@ -167,9 +167,9 @@ describe("browser extension install (fs-mocked)", () => {
   });
 
   it("copies extension path to clipboard", async () => {
-    const prev = process.env.OPENCLAW_STATE_DIR;
+    const prev = process.env.REMOTECLAW_STATE_DIR;
     const tmp = abs("/tmp/openclaw-ext-path");
-    process.env.OPENCLAW_STATE_DIR = tmp;
+    process.env.REMOTECLAW_STATE_DIR = tmp;
 
     try {
       copyToClipboard.mockResolvedValue(true);
@@ -190,9 +190,9 @@ describe("browser extension install (fs-mocked)", () => {
       expect(copyToClipboard).toHaveBeenCalledWith(dir);
     } finally {
       if (prev === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.REMOTECLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prev;
+        process.env.REMOTECLAW_STATE_DIR = prev;
       }
     }
   });

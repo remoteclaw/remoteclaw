@@ -1,12 +1,12 @@
-import type { OpenClawConfig } from "../config/config.js";
-import type { SandboxToolPolicy } from "./sandbox.js";
-import type { AnyAgentTool } from "./tools/common.js";
 import { getChannelDock } from "../channels/dock.js";
+import type { OpenClawConfig } from "../config/config.js";
 import { resolveChannelGroupToolsPolicy } from "../config/group-policy.js";
 import { resolveThreadParentSessionKey } from "../sessions/session-key-utils.js";
 import { normalizeMessageChannel } from "../utils/message-channel.js";
 import { resolveAgentConfig, resolveAgentIdFromSessionKey } from "./agent-scope.js";
+import type { SandboxToolPolicy } from "./sandbox.js";
 import { expandToolGroups, normalizeToolName } from "./tool-policy.js";
+import type { AnyAgentTool } from "./tools/common.js";
 
 type CompiledPattern =
   | { kind: "all" }

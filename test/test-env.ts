@@ -72,8 +72,8 @@ export function installTestEnv(): { cleanup: () => void; tempHome: string } {
     { key: "XDG_DATA_HOME", value: process.env.XDG_DATA_HOME },
     { key: "XDG_STATE_HOME", value: process.env.XDG_STATE_HOME },
     { key: "XDG_CACHE_HOME", value: process.env.XDG_CACHE_HOME },
-    { key: "OPENCLAW_STATE_DIR", value: process.env.OPENCLAW_STATE_DIR },
-    { key: "OPENCLAW_CONFIG_PATH", value: process.env.OPENCLAW_CONFIG_PATH },
+    { key: "REMOTECLAW_STATE_DIR", value: process.env.REMOTECLAW_STATE_DIR },
+    { key: "REMOTECLAW_CONFIG_PATH", value: process.env.REMOTECLAW_CONFIG_PATH },
     { key: "OPENCLAW_GATEWAY_PORT", value: process.env.OPENCLAW_GATEWAY_PORT },
     { key: "OPENCLAW_BRIDGE_ENABLED", value: process.env.OPENCLAW_BRIDGE_ENABLED },
     { key: "OPENCLAW_BRIDGE_HOST", value: process.env.OPENCLAW_BRIDGE_HOST },
@@ -99,9 +99,9 @@ export function installTestEnv(): { cleanup: () => void; tempHome: string } {
   process.env.OPENCLAW_TEST_FAST = "1";
 
   // Ensure test runs never touch the developer's real config/state, even if they have overrides set.
-  delete process.env.OPENCLAW_CONFIG_PATH;
+  delete process.env.REMOTECLAW_CONFIG_PATH;
   // Prefer deriving state dir from HOME so nested tests that change HOME also isolate correctly.
-  delete process.env.OPENCLAW_STATE_DIR;
+  delete process.env.REMOTECLAW_STATE_DIR;
   // Prefer test-controlled ports over developer overrides (avoid port collisions across tests/workers).
   delete process.env.OPENCLAW_GATEWAY_PORT;
   delete process.env.OPENCLAW_BRIDGE_ENABLED;
@@ -122,7 +122,7 @@ export function installTestEnv(): { cleanup: () => void; tempHome: string } {
 
   // Windows: prefer the default state dir so auth/profile tests match real paths.
   if (process.platform === "win32") {
-    process.env.OPENCLAW_STATE_DIR = path.join(tempHome, ".openclaw");
+    process.env.REMOTECLAW_STATE_DIR = path.join(tempHome, ".remoteclaw");
   }
 
   process.env.XDG_CONFIG_HOME = path.join(tempHome, ".config");

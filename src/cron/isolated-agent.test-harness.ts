@@ -12,7 +12,7 @@ export async function writeSessionStore(
   home: string,
   session: { lastProvider: string; lastTo: string; lastChannel?: string },
 ): Promise<string> {
-  const dir = path.join(home, ".openclaw", "sessions");
+  const dir = path.join(home, ".remoteclaw", "sessions");
   await fs.mkdir(dir, { recursive: true });
   const storePath = path.join(dir, "sessions.json");
   await fs.writeFile(

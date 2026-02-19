@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { AgentEvent } from "./types.js";
 import { ClaudeCliRuntime } from "./claude-cli-runtime.js";
+import type { AgentEvent } from "./types.js";
 
 const LIVE = process.env.LIVE === "1";
 

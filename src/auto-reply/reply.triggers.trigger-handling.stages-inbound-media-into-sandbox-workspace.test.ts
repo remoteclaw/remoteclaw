@@ -23,7 +23,7 @@ afterEach(() => {
 describe("stageSandboxMedia", () => {
   it("stages inbound media into the sandbox workspace", async () => {
     await withSandboxMediaTempHome("openclaw-triggers-", async (home) => {
-      const inboundDir = join(home, ".openclaw", "media", "inbound");
+      const inboundDir = join(home, ".remoteclaw", "media", "inbound");
       await fs.mkdir(inboundDir, { recursive: true });
       const mediaPath = join(inboundDir, "photo.jpg");
       await fs.writeFile(mediaPath, "test");
@@ -57,7 +57,7 @@ describe("stageSandboxMedia", () => {
 
   it("rejects staging host files from outside the media directory", async () => {
     await withSandboxMediaTempHome("openclaw-triggers-bypass-", async (home) => {
-      // Sensitive host file outside .openclaw
+      // Sensitive host file outside .remoteclaw
       const sensitiveFile = join(home, "secrets.txt");
       await fs.writeFile(sensitiveFile, "SENSITIVE DATA");
 

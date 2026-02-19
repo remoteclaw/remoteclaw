@@ -81,31 +81,31 @@ vi.mock("./progress.js", () => ({
 
 describe("daemon-cli coverage", () => {
   const originalEnv = {
-    OPENCLAW_STATE_DIR: process.env.OPENCLAW_STATE_DIR,
-    OPENCLAW_CONFIG_PATH: process.env.OPENCLAW_CONFIG_PATH,
+    REMOTECLAW_STATE_DIR: process.env.REMOTECLAW_STATE_DIR,
+    REMOTECLAW_CONFIG_PATH: process.env.REMOTECLAW_CONFIG_PATH,
     OPENCLAW_GATEWAY_PORT: process.env.OPENCLAW_GATEWAY_PORT,
     OPENCLAW_PROFILE: process.env.OPENCLAW_PROFILE,
   };
 
   beforeEach(() => {
-    process.env.OPENCLAW_STATE_DIR = "/tmp/openclaw-cli-state";
-    process.env.OPENCLAW_CONFIG_PATH = "/tmp/openclaw-cli-state/openclaw.json";
+    process.env.REMOTECLAW_STATE_DIR = "/tmp/openclaw-cli-state";
+    process.env.REMOTECLAW_CONFIG_PATH = "/tmp/openclaw-cli-state/remoteclaw.json";
     delete process.env.OPENCLAW_GATEWAY_PORT;
     delete process.env.OPENCLAW_PROFILE;
     serviceReadCommand.mockResolvedValue(null);
   });
 
   afterEach(() => {
-    if (originalEnv.OPENCLAW_STATE_DIR !== undefined) {
-      process.env.OPENCLAW_STATE_DIR = originalEnv.OPENCLAW_STATE_DIR;
+    if (originalEnv.REMOTECLAW_STATE_DIR !== undefined) {
+      process.env.REMOTECLAW_STATE_DIR = originalEnv.REMOTECLAW_STATE_DIR;
     } else {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.REMOTECLAW_STATE_DIR;
     }
 
-    if (originalEnv.OPENCLAW_CONFIG_PATH !== undefined) {
-      process.env.OPENCLAW_CONFIG_PATH = originalEnv.OPENCLAW_CONFIG_PATH;
+    if (originalEnv.REMOTECLAW_CONFIG_PATH !== undefined) {
+      process.env.REMOTECLAW_CONFIG_PATH = originalEnv.REMOTECLAW_CONFIG_PATH;
     } else {
-      delete process.env.OPENCLAW_CONFIG_PATH;
+      delete process.env.REMOTECLAW_CONFIG_PATH;
     }
 
     if (originalEnv.OPENCLAW_GATEWAY_PORT !== undefined) {
@@ -149,8 +149,8 @@ describe("daemon-cli coverage", () => {
       programArguments: ["/bin/node", "cli", "gateway", "--port", "19001"],
       environment: {
         OPENCLAW_PROFILE: "dev",
-        OPENCLAW_STATE_DIR: "/tmp/openclaw-daemon-state",
-        OPENCLAW_CONFIG_PATH: "/tmp/openclaw-daemon-state/openclaw.json",
+        REMOTECLAW_STATE_DIR: "/tmp/openclaw-daemon-state",
+        REMOTECLAW_CONFIG_PATH: "/tmp/openclaw-daemon-state/remoteclaw.json",
         OPENCLAW_GATEWAY_PORT: "19001",
       },
       sourcePath: "/tmp/bot.molt.gateway.plist",

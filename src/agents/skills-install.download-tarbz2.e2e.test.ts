@@ -87,13 +87,13 @@ async function writeTarBz2Skill(params: {
 
 function restoreOpenClawStateDir(originalValue: string | undefined): void {
   if (originalValue === undefined) {
-    delete process.env.OPENCLAW_STATE_DIR;
+    delete process.env.REMOTECLAW_STATE_DIR;
     return;
   }
-  process.env.OPENCLAW_STATE_DIR = originalValue;
+  process.env.REMOTECLAW_STATE_DIR = originalValue;
 }
 
-const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+const originalStateDir = process.env.REMOTECLAW_STATE_DIR;
 
 afterEach(() => {
   restoreOpenClawStateDir(originalStateDir);

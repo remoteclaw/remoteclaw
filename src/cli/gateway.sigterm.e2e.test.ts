@@ -87,7 +87,7 @@ describe("gateway SIGTERM", () => {
     const env = {
       ...process.env,
       OPENCLAW_NO_RESPAWN: "1",
-      OPENCLAW_STATE_DIR: stateDir,
+      REMOTECLAW_STATE_DIR: stateDir,
       OPENCLAW_SKIP_CHANNELS: "1",
       OPENCLAW_SKIP_GMAIL_WATCHER: "1",
       OPENCLAW_SKIP_CRON: "1",

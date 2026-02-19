@@ -7,10 +7,10 @@ import { withTempHome } from "./home-env.test-harness.js";
 
 describe("config identity defaults", () => {
   const writeAndLoadConfig = async (home: string, config: Record<string, unknown>) => {
-    const configDir = path.join(home, ".openclaw");
+    const configDir = path.join(home, ".remoteclaw");
     await fs.mkdir(configDir, { recursive: true });
     await fs.writeFile(
-      path.join(configDir, "openclaw.json"),
+      path.join(configDir, "remoteclaw.json"),
       JSON.stringify(config, null, 2),
       "utf-8",
     );

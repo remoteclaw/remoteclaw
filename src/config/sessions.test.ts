@@ -419,17 +419,17 @@ describe("sessions", () => {
     expect(entry.lastProvider).toBeUndefined();
   });
 
-  it("derives session transcripts dir from OPENCLAW_STATE_DIR", () => {
+  it("derives session transcripts dir from REMOTECLAW_STATE_DIR", () => {
     const dir = resolveSessionTranscriptsDir(
-      { OPENCLAW_STATE_DIR: "/custom/state" } as NodeJS.ProcessEnv,
+      { REMOTECLAW_STATE_DIR: "/custom/state" } as NodeJS.ProcessEnv,
       () => "/home/ignored",
     );
     expect(dir).toBe(path.join(path.resolve("/custom/state"), "agents", "main", "sessions"));
   });
 
   it("includes topic ids in session transcript filenames", () => {
-    const prev = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = "/custom/state";
+    const prev = process.env.REMOTECLAW_STATE_DIR;
+    process.env.REMOTECLAW_STATE_DIR = "/custom/state";
     try {
       const sessionFile = resolveSessionTranscriptPath("sess-1", "main", 123);
       expect(sessionFile).toBe(
@@ -443,16 +443,16 @@ describe("sessions", () => {
       );
     } finally {
       if (prev === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.REMOTECLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prev;
+        process.env.REMOTECLAW_STATE_DIR = prev;
       }
     }
   });
 
   it("uses agent id when resolving session file fallback paths", () => {
-    const prev = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = "/custom/state";
+    const prev = process.env.REMOTECLAW_STATE_DIR;
+    process.env.REMOTECLAW_STATE_DIR = "/custom/state";
     try {
       const sessionFile = resolveSessionFilePath("sess-2", undefined, {
         agentId: "codex",
@@ -462,17 +462,17 @@ describe("sessions", () => {
       );
     } finally {
       if (prev === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.REMOTECLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prev;
+        process.env.REMOTECLAW_STATE_DIR = prev;
       }
     }
   });
 
   it("resolves cross-agent absolute sessionFile paths", () => {
-    const prev = process.env.OPENCLAW_STATE_DIR;
-    const stateDir = path.resolve("/home/user/.openclaw");
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    const prev = process.env.REMOTECLAW_STATE_DIR;
+    const stateDir = path.resolve("/home/user/.remoteclaw");
+    process.env.REMOTECLAW_STATE_DIR = stateDir;
     try {
       const bot2Session = path.join(stateDir, "agents", "bot2", "sessions", "sess-1.jsonl");
       // Agent bot1 resolves a sessionFile that belongs to agent bot2
@@ -484,16 +484,16 @@ describe("sessions", () => {
       expect(sessionFile).toBe(bot2Session);
     } finally {
       if (prev === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.REMOTECLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prev;
+        process.env.REMOTECLAW_STATE_DIR = prev;
       }
     }
   });
 
-  it("resolves cross-agent paths when OPENCLAW_STATE_DIR differs from stored paths", () => {
-    const prev = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = path.resolve("/different/state");
+  it("resolves cross-agent paths when REMOTECLAW_STATE_DIR differs from stored paths", () => {
+    const prev = process.env.REMOTECLAW_STATE_DIR;
+    process.env.REMOTECLAW_STATE_DIR = path.resolve("/different/state");
     try {
       const originalBase = path.resolve("/original/state");
       const bot2Session = path.join(originalBase, "agents", "bot2", "sessions", "sess-1.jsonl");
@@ -506,16 +506,16 @@ describe("sessions", () => {
       expect(sessionFile).toBe(bot2Session);
     } finally {
       if (prev === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.REMOTECLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prev;
+        process.env.REMOTECLAW_STATE_DIR = prev;
       }
     }
   });
 
   it("rejects absolute sessionFile paths outside agent sessions directories", () => {
-    const prev = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = path.resolve("/home/user/.openclaw");
+    const prev = process.env.REMOTECLAW_STATE_DIR;
+    process.env.REMOTECLAW_STATE_DIR = path.resolve("/home/user/.remoteclaw");
     try {
       expect(() =>
         resolveSessionFilePath(
@@ -526,9 +526,9 @@ describe("sessions", () => {
       ).toThrow(/within sessions directory/);
     } finally {
       if (prev === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.REMOTECLAW_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = prev;
+        process.env.REMOTECLAW_STATE_DIR = prev;
       }
     }
   });

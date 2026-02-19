@@ -14,7 +14,7 @@ const CONFIG_DIR = path.join(ROOT_DIR, "config");
 const ETC_OPENCLAW_DIR = path.join(ROOT_DIR, "etc", "openclaw");
 const SHARED_DIR = path.join(ROOT_DIR, "shared");
 
-const DEFAULT_BASE_PATH = path.join(CONFIG_DIR, "openclaw.json");
+const DEFAULT_BASE_PATH = path.join(CONFIG_DIR, "remoteclaw.json");
 
 function configPath(...parts: string[]) {
   return path.join(CONFIG_DIR, ...parts);
@@ -282,10 +282,10 @@ describe("resolveConfigIncludes", () => {
   it("rejects parent directory traversal escaping config directory (CWE-22)", () => {
     const files = { [sharedPath("common.json")]: { shared: true } };
     const obj = { $include: "../../shared/common.json" };
-    expect(() => resolve(obj, files, configPath("sub", "openclaw.json"))).toThrow(
+    expect(() => resolve(obj, files, configPath("sub", "remoteclaw.json"))).toThrow(
       ConfigIncludeError,
     );
-    expect(() => resolve(obj, files, configPath("sub", "openclaw.json"))).toThrow(
+    expect(() => resolve(obj, files, configPath("sub", "remoteclaw.json"))).toThrow(
       /escapes config directory/,
     );
   });
@@ -556,7 +556,7 @@ describe("security: path traversal protection (CWE-22)", () => {
 
         const result = resolveConfigIncludes(
           { $include: "./includes/extra.json5" },
-          path.join(linkRoot, "openclaw.json"),
+          path.join(linkRoot, "remoteclaw.json"),
         );
         expect(result).toEqual({ logging: { redactSensitive: "tools" } });
       } finally {

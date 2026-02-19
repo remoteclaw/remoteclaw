@@ -11,7 +11,7 @@ import {
 } from "./version.js";
 
 async function withTempDir<T>(run: (dir: string) => Promise<T>): Promise<T> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-version-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-version-"));
   try {
     return await run(dir);
   } finally {
@@ -29,7 +29,7 @@ describe("version resolution", () => {
       await fs.mkdir(path.join(root, "dist", "plugin-sdk"), { recursive: true });
       await fs.writeFile(
         path.join(root, "package.json"),
-        JSON.stringify({ name: "openclaw", version: "1.2.3" }),
+        JSON.stringify({ name: "remoteclaw", version: "1.2.3" }),
         "utf-8",
       );
 
@@ -44,7 +44,7 @@ describe("version resolution", () => {
       await fs.mkdir(path.join(root, "dist", "plugin-sdk"), { recursive: true });
       await fs.writeFile(
         path.join(root, "package.json"),
-        JSON.stringify({ name: "openclaw", version: "2.3.4" }),
+        JSON.stringify({ name: "remoteclaw", version: "2.3.4" }),
         "utf-8",
       );
       await fs.writeFile(

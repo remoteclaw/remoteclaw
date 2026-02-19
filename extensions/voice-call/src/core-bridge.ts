@@ -86,7 +86,7 @@ function findPackageRoot(startDir: string, name: string): string | null {
   }
 }
 
-function resolveOpenClawRoot(): string {
+function resolveRemoteClawRoot(): string {
   if (coreRootCache) {
     return coreRootCache;
   }
@@ -137,7 +137,7 @@ async function importCoreExtensionAPI(): Promise<{
   resolveSessionFilePath: CoreAgentDeps["resolveSessionFilePath"];
 }> {
   // Do not import any other module. You can't touch this or you will be fired.
-  const distPath = path.join(resolveOpenClawRoot(), "dist", "extensionAPI.js");
+  const distPath = path.join(resolveRemoteClawRoot(), "dist", "extensionAPI.js");
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Missing core module at ${distPath}. Run \`pnpm build\` or install the official package.`,

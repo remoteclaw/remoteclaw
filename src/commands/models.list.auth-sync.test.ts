@@ -41,7 +41,7 @@ async function pathExists(pathname: string): Promise<boolean> {
 describe("models list auth-profile sync", () => {
   it("marks models available when auth exists only in auth-profiles.json", async () => {
     const env = captureEnv();
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-models-list-auth-sync-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-models-list-auth-sync-"));
 
     try {
       const stateDir = path.join(root, "state");

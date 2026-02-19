@@ -3,17 +3,17 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 let modelsListCommand: typeof import("./models/list.list-command.js").modelsListCommand;
 
 const loadConfig = vi.fn();
-const ensureOpenClawModelsJson = vi.fn().mockResolvedValue(undefined);
+const ensureRemoteClawModelsJson = vi.fn().mockResolvedValue(undefined);
 const ensurePiAuthJsonFromAuthProfiles = vi
   .fn()
-  .mockResolvedValue({ wrote: false, authPath: "/tmp/openclaw-agent/auth.json" });
-const resolveOpenClawAgentDir = vi.fn().mockReturnValue("/tmp/openclaw-agent");
+  .mockResolvedValue({ wrote: false, authPath: "/tmp/remoteclaw-agent/auth.json" });
+const resolveRemoteClawAgentDir = vi.fn().mockReturnValue("/tmp/remoteclaw-agent");
 const ensureAuthProfileStore = vi.fn().mockReturnValue({ version: 1, profiles: {} });
 const listProfilesForProvider = vi.fn().mockReturnValue([]);
 const resolveAuthProfileDisplayLabel = vi.fn(({ profileId }: { profileId: string }) => profileId);
 const resolveAuthStorePathForDisplay = vi
   .fn()
-  .mockReturnValue("/tmp/openclaw-agent/auth-profiles.json");
+  .mockReturnValue("/tmp/remoteclaw-agent/auth-profiles.json");
 const resolveProfileUnusableUntilForDisplay = vi.fn().mockReturnValue(null);
 const resolveEnvApiKey = vi.fn().mockReturnValue(undefined);
 const resolveAwsSdkEnvVarName = vi.fn().mockReturnValue(undefined);
@@ -28,12 +28,12 @@ let previousExitCode: typeof process.exitCode;
 
 vi.mock("../config/config.js", () => ({
   CONFIG_PATH: "/tmp/remoteclaw.json",
-  STATE_DIR: "/tmp/openclaw-state",
+  STATE_DIR: "/tmp/remoteclaw-state",
   loadConfig,
 }));
 
 vi.mock("../agents/models-config.js", () => ({
-  ensureOpenClawModelsJson,
+  ensureRemoteClawModelsJson,
 }));
 
 vi.mock("../agents/pi-auth-json.js", () => ({
@@ -41,7 +41,7 @@ vi.mock("../agents/pi-auth-json.js", () => ({
 }));
 
 vi.mock("../agents/agent-paths.js", () => ({
-  resolveOpenClawAgentDir,
+  resolveRemoteClawAgentDir,
 }));
 
 vi.mock("../agents/auth-profiles.js", () => ({
@@ -282,7 +282,7 @@ describe("models list/status", () => {
 
     await modelsListCommand({ all: true, json: true }, runtime);
 
-    expect(ensurePiAuthJsonFromAuthProfiles).toHaveBeenCalledWith("/tmp/openclaw-agent");
+    expect(ensurePiAuthJsonFromAuthProfiles).toHaveBeenCalledWith("/tmp/remoteclaw-agent");
   });
 
   it("models list outputs canonical zai key for configured z.ai model", async () => {

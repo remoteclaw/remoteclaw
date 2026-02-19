@@ -30,7 +30,7 @@ ${body ?? `# ${name}\n`}
 
 describe("buildWorkspaceSkillSnapshot", () => {
   it("returns an empty snapshot when skills dirs are missing", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-"));
 
     const snapshot = buildWorkspaceSkillSnapshot(workspaceDir, {
       managedSkillsDir: path.join(workspaceDir, ".managed"),
@@ -42,7 +42,7 @@ describe("buildWorkspaceSkillSnapshot", () => {
   });
 
   it("omits disable-model-invocation skills from the prompt", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-"));
     await _writeSkill({
       dir: path.join(workspaceDir, "skills", "visible-skill"),
       name: "visible-skill",
@@ -69,7 +69,7 @@ describe("buildWorkspaceSkillSnapshot", () => {
   });
 
   it("truncates the skills prompt when it exceeds the configured char budget", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-"));
 
     // Make a bunch of skills with very long descriptions.
     for (let i = 0; i < 25; i += 1) {
@@ -99,8 +99,8 @@ describe("buildWorkspaceSkillSnapshot", () => {
   });
 
   it("limits discovery for nested repo-style skills roots (dir/skills/*)", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-"));
-    const repoDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-skills-repo-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-"));
+    const repoDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-skills-repo-"));
 
     for (let i = 0; i < 20; i += 1) {
       const name = `repo-skill-${String(i).padStart(2, "0")}`;
@@ -134,7 +134,7 @@ describe("buildWorkspaceSkillSnapshot", () => {
   });
 
   it("skips skills whose SKILL.md exceeds maxSkillFileBytes", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-"));
 
     await _writeSkill({
       dir: path.join(workspaceDir, "skills", "small-skill"),
@@ -168,8 +168,8 @@ describe("buildWorkspaceSkillSnapshot", () => {
   });
 
   it("detects nested skills roots beyond the first 25 entries", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-"));
-    const repoDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-skills-repo-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-"));
+    const repoDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-skills-repo-"));
 
     // Create 30 nested dirs, but only the last one is an actual skill.
     for (let i = 0; i < 30; i += 1) {
@@ -205,8 +205,8 @@ describe("buildWorkspaceSkillSnapshot", () => {
   });
 
   it("enforces maxSkillFileBytes for root-level SKILL.md", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-"));
-    const rootSkillDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-root-skill-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-"));
+    const rootSkillDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-root-skill-"));
 
     await _writeSkill({
       dir: rootSkillDir,

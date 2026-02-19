@@ -4,7 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginApi, OpenClawPluginToolContext } from "../../../src/plugins/types.js";
+import type {
+  RemoteClawPluginApi,
+  RemoteClawPluginToolContext,
+} from "../../../src/plugins/types.js";
 
 const spawnState = vi.hoisted(() => ({
   queue: [] as Array<{ stdout: string; stderr?: string; exitCode?: number }>,
@@ -17,7 +20,7 @@ vi.mock("node:child_process", () => ({
 
 let createLobsterTool: typeof import("./lobster-tool.js").createLobsterTool;
 
-function fakeApi(overrides: Partial<OpenClawPluginApi> = {}): OpenClawPluginApi {
+function fakeApi(overrides: Partial<RemoteClawPluginApi> = {}): RemoteClawPluginApi {
   return {
     id: "lobster",
     name: "lobster",
@@ -43,7 +46,9 @@ function fakeApi(overrides: Partial<OpenClawPluginApi> = {}): OpenClawPluginApi 
   };
 }
 
-function fakeCtx(overrides: Partial<OpenClawPluginToolContext> = {}): OpenClawPluginToolContext {
+function fakeCtx(
+  overrides: Partial<RemoteClawPluginToolContext> = {},
+): RemoteClawPluginToolContext {
   return {
     config: {},
     workspaceDir: "/tmp",
@@ -228,7 +233,7 @@ describe("lobster plugin tool", () => {
 
   it("can be gated off in sandboxed contexts", async () => {
     const api = fakeApi();
-    const factoryTool = (ctx: OpenClawPluginToolContext) => {
+    const factoryTool = (ctx: RemoteClawPluginToolContext) => {
       if (ctx.sandboxed) {
         return null;
       }

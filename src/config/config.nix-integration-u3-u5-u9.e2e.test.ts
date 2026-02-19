@@ -44,7 +44,9 @@ describe("Nix integration (U3, U5, U9)", () => {
 
   describe("U5: CONFIG_PATH and STATE_DIR env var overrides", () => {
     it("STATE_DIR defaults to ~/.remoteclaw when env not set", () => {
-      expect(resolveStateDir(envWith({ REMOTECLAW_STATE_DIR: undefined }))).toMatch(/\.openclaw$/);
+      expect(resolveStateDir(envWith({ REMOTECLAW_STATE_DIR: undefined }))).toMatch(
+        /\.remoteclaw$/,
+      );
     });
 
     it("STATE_DIR respects REMOTECLAW_STATE_DIR override", () => {
@@ -78,7 +80,7 @@ describe("Nix integration (U3, U5, U9)", () => {
         resolveConfigPathCandidate(
           envWith({ REMOTECLAW_CONFIG_PATH: undefined, REMOTECLAW_STATE_DIR: undefined }),
         ),
-      ).toMatch(/\.openclaw[\\/]openclaw\.json$/);
+      ).toMatch(/\.remoteclaw[\\/]remoteclaw\.json$/);
     });
 
     it("CONFIG_PATH respects REMOTECLAW_CONFIG_PATH override", () => {
@@ -120,7 +122,7 @@ describe("Nix integration (U3, U5, U9)", () => {
           "utf-8",
         );
         await fs.writeFile(
-          path.join(pluginDir, "openclaw.plugin.json"),
+          path.join(pluginDir, "remoteclaw.plugin.json"),
           JSON.stringify(
             {
               id: "demo-plugin",

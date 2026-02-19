@@ -7,7 +7,7 @@ import { setTelegramRuntime } from "../../extensions/telegram/src/runtime.js";
 import { whatsappPlugin } from "../../extensions/whatsapp/src/channel.js";
 import { setWhatsAppRuntime } from "../../extensions/whatsapp/src/runtime.js";
 import * as replyModule from "../auto-reply/reply.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveAgentMainSessionKey, resolveMainSessionKey } from "../config/sessions.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createPluginRuntime } from "../plugins/runtime/index.js";
@@ -30,7 +30,7 @@ async function withHeartbeatFixture(
     seedSession: (sessionKey: string, input: SeedSessionInput) => Promise<void>;
   }) => Promise<unknown>,
 ): Promise<unknown> {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-hb-model-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-hb-model-"));
   const storePath = path.join(tmpDir, "sessions.json");
 
   const seedSession = async (sessionKey: string, input: SeedSessionInput) => {
@@ -80,7 +80,7 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
     suppressToolErrorWarnings?: boolean;
   }) {
     return withHeartbeatFixture(async ({ tmpDir, storePath, seedSession }) => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         agents: {
           defaults: {
             workspace: tmpDir,
@@ -137,7 +137,7 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
 
   it("passes per-agent heartbeat model override (merged with defaults)", async () => {
     await withHeartbeatFixture(async ({ storePath, seedSession }) => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         agents: {
           defaults: {
             heartbeat: {

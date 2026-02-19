@@ -1,5 +1,5 @@
 import os from "node:os";
-import type { OpenClawConfig } from "../config/types.js";
+import type { RemoteClawConfig } from "../config/types.js";
 
 const DEFAULT_GATEWAY_PORT = 18789;
 
@@ -86,7 +86,7 @@ function normalizeUrl(raw: string, schemeFallback: "ws" | "wss"): string | null 
   return `${schemeFallback}://${withoutPath}`;
 }
 
-function resolveGatewayPort(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): number {
+function resolveGatewayPort(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): number {
   const envRaw = env.REMOTECLAW_GATEWAY_PORT?.trim() || env.CLAWDBOT_GATEWAY_PORT?.trim();
   if (envRaw) {
     const parsed = Number.parseInt(envRaw, 10);
@@ -102,7 +102,7 @@ function resolveGatewayPort(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): number
 }
 
 function resolveScheme(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   opts?: {
     forceSecure?: boolean;
   },
@@ -243,7 +243,7 @@ async function resolveTailnetHost(
   return null;
 }
 
-function resolveAuth(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): ResolveAuthResult {
+function resolveAuth(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): ResolveAuthResult {
   const mode = cfg.gateway?.auth?.mode;
   const token =
     env.REMOTECLAW_GATEWAY_TOKEN?.trim() ||
@@ -276,7 +276,7 @@ function resolveAuth(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): ResolveAuthRe
 }
 
 async function resolveGatewayUrl(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   opts: {
     env: NodeJS.ProcessEnv;
     publicUrl?: string;
@@ -357,7 +357,7 @@ export function encodePairingSetupCode(payload: PairingSetupPayload): string {
 }
 
 export async function resolvePairingSetupFromConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   options: ResolvePairingSetupOptions = {},
 ): Promise<PairingSetupResolution> {
   const env = options.env ?? process.env;

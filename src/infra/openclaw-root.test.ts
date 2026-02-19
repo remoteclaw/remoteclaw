@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type FakeFsEntry = { kind: "file"; content: string } | { kind: "dir" };
 
-const VITEST_FS_BASE = path.join(path.parse(process.cwd()).root, "__openclaw_vitest__");
+const VITEST_FS_BASE = path.join(path.parse(process.cwd()).root, "__remoteclaw_vitest__");
 const FIXTURE_BASE = path.join(VITEST_FS_BASE, "openclaw-root");
 
 const state = vi.hoisted(() => ({
@@ -103,7 +103,7 @@ describe("resolveOpenClawPackageRoot", () => {
     const project = fx("symlink-scenario");
     const bin = path.join(project, "bin", "openclaw");
     const realPkg = path.join(project, "real-pkg");
-    state.realpaths.set(abs(bin), abs(path.join(realPkg, "openclaw.mjs")));
+    state.realpaths.set(abs(bin), abs(path.join(realPkg, "remoteclaw.mjs")));
     setFile(path.join(realPkg, "package.json"), JSON.stringify({ name: "openclaw" }));
 
     expect(resolveOpenClawPackageRootSync({ argv1: bin })).toBe(realPkg);
@@ -122,8 +122,8 @@ describe("resolveOpenClawPackageRoot", () => {
   it("returns null for non-openclaw package roots", async () => {
     const { resolveOpenClawPackageRootSync } = await import("./openclaw-root.js");
 
-    const pkgRoot = fx("not-openclaw");
-    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "not-openclaw" }));
+    const pkgRoot = fx("not-remoteclaw");
+    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "not-remoteclaw" }));
 
     expect(resolveOpenClawPackageRootSync({ cwd: pkgRoot })).toBeNull();
   });

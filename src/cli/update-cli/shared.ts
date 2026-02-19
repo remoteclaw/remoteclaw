@@ -51,8 +51,8 @@ export function normalizeTag(value?: string | null): string | null {
   if (!trimmed) {
     return null;
   }
-  if (trimmed.startsWith("openclaw@")) {
-    return trimmed.slice("openclaw@".length);
+  if (trimmed.startsWith("remoteclaw@")) {
+    return trimmed.slice("remoteclaw@".length);
   }
   if (trimmed.startsWith(`${DEFAULT_PACKAGE_NAME}@`)) {
     return trimmed.slice(`${DEFAULT_PACKAGE_NAME}@`.length);
@@ -199,7 +199,7 @@ export async function ensureGitCheckout(params: {
     const empty = await isEmptyDir(params.dir);
     if (!empty) {
       throw new Error(
-        `REMOTECLAW_GIT_DIR points at a non-git directory: ${params.dir}. Set REMOTECLAW_GIT_DIR to an empty folder or an openclaw checkout.`,
+        `REMOTECLAW_GIT_DIR points at a non-git directory: ${params.dir}. Set REMOTECLAW_GIT_DIR to an empty folder or an remoteclaw checkout.`,
       );
     }
 
@@ -245,7 +245,7 @@ export async function resolveGlobalManager(params: {
 }
 
 export async function tryWriteCompletionCache(root: string, jsonMode: boolean): Promise<void> {
-  const binPath = path.join(root, "openclaw.mjs");
+  const binPath = path.join(root, "remoteclaw.mjs");
   if (!(await pathExists(binPath))) {
     return;
   }

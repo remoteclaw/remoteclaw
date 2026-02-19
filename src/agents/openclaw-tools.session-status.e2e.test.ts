@@ -77,7 +77,7 @@ vi.mock("../infra/provider-usage.js", () => ({
 }));
 
 import "./test-helpers/fast-core-tools.js";
-import { createOpenClawTools } from "./openclaw-tools.js";
+import { createRemoteClawTools } from "./openclaw-tools.js";
 
 function resetSessionStore(store: Record<string, unknown>) {
   loadSessionStoreMock.mockReset();
@@ -86,7 +86,7 @@ function resetSessionStore(store: Record<string, unknown>) {
 }
 
 function getSessionStatusTool(agentSessionKey = "main") {
-  const tool = createOpenClawTools({ agentSessionKey }).find(
+  const tool = createRemoteClawTools({ agentSessionKey }).find(
     (candidate) => candidate.name === "session_status",
   );
   expect(tool).toBeDefined();
@@ -110,7 +110,7 @@ describe("session_status tool", () => {
     const result = await tool.execute("call1", {});
     const details = result.details as { ok?: boolean; statusText?: string };
     expect(details.ok).toBe(true);
-    expect(details.statusText).toContain("OpenClaw");
+    expect(details.statusText).toContain("RemoteClaw");
     expect(details.statusText).toContain("🧠 Model:");
     expect(details.statusText).not.toContain("OAuth/token status");
   });

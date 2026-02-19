@@ -7,7 +7,7 @@ import { parseSchtasksQuery, readScheduledTaskCommand, resolveTaskScriptPath } f
 describe("schtasks runtime parsing", () => {
   it("parses status and last run info", () => {
     const output = [
-      "TaskName: \\OpenClaw Gateway",
+      "TaskName: \\RemoteClaw Gateway",
       "Status: Ready",
       "Last Run Time: 1/8/2026 1:23:45 AM",
       "Last Run Result: 0x0",
@@ -21,7 +21,7 @@ describe("schtasks runtime parsing", () => {
 
   it("parses running status", () => {
     const output = [
-      "TaskName: \\OpenClaw Gateway",
+      "TaskName: \\RemoteClaw Gateway",
       "Status: Running",
       "Last Run Time: 1/8/2026 1:23:45 AM",
       "Last Run Result: 0x0",
@@ -53,9 +53,9 @@ describe("resolveTaskScriptPath", () => {
     const env = {
       USERPROFILE: "C:\\Users\\test",
       REMOTECLAW_PROFILE: "rescue",
-      REMOTECLAW_STATE_DIR: "C:\\State\\openclaw",
+      REMOTECLAW_STATE_DIR: "C:\\State\\remoteclaw",
     };
-    expect(resolveTaskScriptPath(env)).toBe(path.join("C:\\State\\openclaw", "gateway.cmd"));
+    expect(resolveTaskScriptPath(env)).toBe(path.join("C:\\State\\remoteclaw", "gateway.cmd"));
   });
 
   it("falls back to HOME when USERPROFILE is not set", () => {
@@ -66,7 +66,7 @@ describe("resolveTaskScriptPath", () => {
 
 describe("readScheduledTaskCommand", () => {
   it("parses script with quoted arguments containing spaces", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-schtasks-test-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-schtasks-test-"));
     try {
       const scriptPath = path.join(tmpDir, ".remoteclaw", "gateway.cmd");
       await fs.mkdir(path.dirname(scriptPath), { recursive: true });
@@ -88,7 +88,7 @@ describe("readScheduledTaskCommand", () => {
   });
 
   it("returns null when script does not exist", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-schtasks-test-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-schtasks-test-"));
     try {
       const env = { USERPROFILE: tmpDir, REMOTECLAW_PROFILE: "default" };
       const result = await readScheduledTaskCommand(env);
@@ -99,7 +99,7 @@ describe("readScheduledTaskCommand", () => {
   });
 
   it("returns null when script has no command", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-schtasks-test-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-schtasks-test-"));
     try {
       const scriptPath = path.join(tmpDir, ".remoteclaw", "gateway.cmd");
       await fs.mkdir(path.dirname(scriptPath), { recursive: true });
@@ -118,7 +118,7 @@ describe("readScheduledTaskCommand", () => {
   });
 
   it("parses full script with all components", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-schtasks-test-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-schtasks-test-"));
     try {
       const scriptPath = path.join(tmpDir, ".remoteclaw", "gateway.cmd");
       await fs.mkdir(path.dirname(scriptPath), { recursive: true });
@@ -126,8 +126,8 @@ describe("readScheduledTaskCommand", () => {
         scriptPath,
         [
           "@echo off",
-          "rem OpenClaw Gateway",
-          "cd /d C:\\Projects\\openclaw",
+          "rem RemoteClaw Gateway",
+          "cd /d C:\\Projects\\remoteclaw",
           "set NODE_ENV=production",
           "set REMOTECLAW_PORT=18789",
           "node gateway.js --verbose",
@@ -139,7 +139,7 @@ describe("readScheduledTaskCommand", () => {
       const result = await readScheduledTaskCommand(env);
       expect(result).toEqual({
         programArguments: ["node", "gateway.js", "--verbose"],
-        workingDirectory: "C:\\Projects\\openclaw",
+        workingDirectory: "C:\\Projects\\remoteclaw",
         environment: {
           NODE_ENV: "production",
           REMOTECLAW_PORT: "18789",
@@ -150,7 +150,7 @@ describe("readScheduledTaskCommand", () => {
     }
   });
   it("parses command with Windows backslash paths", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-schtasks-test-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-schtasks-test-"));
     try {
       const scriptPath = path.join(tmpDir, ".remoteclaw", "gateway.cmd");
       await fs.mkdir(path.dirname(scriptPath), { recursive: true });
@@ -180,7 +180,7 @@ describe("readScheduledTaskCommand", () => {
   });
 
   it("preserves UNC paths in command arguments", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-schtasks-test-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-schtasks-test-"));
     try {
       const scriptPath = path.join(tmpDir, ".remoteclaw", "gateway.cmd");
       await fs.mkdir(path.dirname(scriptPath), { recursive: true });
@@ -188,7 +188,7 @@ describe("readScheduledTaskCommand", () => {
         scriptPath,
         [
           "@echo off",
-          '"\\\\fileserver\\OpenClaw Share\\node.exe" "\\\\fileserver\\OpenClaw Share\\dist\\index.js" gateway --port 18789',
+          '"\\[remoteclaw\\]fileserver\\RemoteClaw Share\\node.exe" "\\[remoteclaw\\]fileserver\\RemoteClaw Share\\dist\\index.js" gateway --port 18789',
         ].join("\r\n"),
         "utf8",
       );
@@ -197,8 +197,8 @@ describe("readScheduledTaskCommand", () => {
       const result = await readScheduledTaskCommand(env);
       expect(result).toEqual({
         programArguments: [
-          "\\\\fileserver\\OpenClaw Share\\node.exe",
-          "\\\\fileserver\\OpenClaw Share\\dist\\index.js",
+          "\\[remoteclaw\\]fileserver\\RemoteClaw Share\\node.exe",
+          "\\[remoteclaw\\]fileserver\\RemoteClaw Share\\dist\\index.js",
           "gateway",
           "--port",
           "18789",

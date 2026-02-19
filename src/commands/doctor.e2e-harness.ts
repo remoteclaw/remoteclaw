@@ -180,7 +180,7 @@ vi.mock("../agents/skills-status.js", () => ({
 }));
 
 vi.mock("../plugins/loader.js", () => ({
-  loadOpenClawPlugins: () => ({ plugins: [], diagnostics: [] }),
+  loadRemoteClawPlugins: () => ({ plugins: [], diagnostics: [] }),
 }));
 
 vi.mock("../config/config.js", async (importOriginal) => {
@@ -399,7 +399,7 @@ beforeEach(() => {
   originalStateDir = process.env.REMOTECLAW_STATE_DIR;
   originalUpdateInProgress = process.env.REMOTECLAW_UPDATE_IN_PROGRESS;
   process.env.REMOTECLAW_UPDATE_IN_PROGRESS = "1";
-  tempStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-state-"));
+  tempStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-doctor-state-"));
   process.env.REMOTECLAW_STATE_DIR = tempStateDir;
   fs.mkdirSync(path.join(tempStateDir, "agents", "main", "sessions"), {
     recursive: true,

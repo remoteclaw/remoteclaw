@@ -25,7 +25,7 @@ export function normalizeWindowsArgv(argv: string[]): string[] {
       .replace(/^['"]+|['"]+$/g, "")
       .trim();
   const normalizeCandidate = (value: string): string =>
-    normalizeArg(value).replace(/^\\\\\\?\\/, "");
+    normalizeArg(value).replace(/^\\[remoteclaw\\]\\?\\/, "");
 
   const execPath = normalizeCandidate(process.execPath);
   const execPathLower = execPath.toLowerCase();

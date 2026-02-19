@@ -7,7 +7,7 @@ describe("parseCliProfileArgs", () => {
   it("leaves gateway --dev for subcommands", () => {
     const res = parseCliProfileArgs([
       "node",
-      "openclaw",
+      "remoteclaw",
       "gateway",
       "--dev",
       "--allow-unconfigured",
@@ -16,39 +16,39 @@ describe("parseCliProfileArgs", () => {
       throw new Error(res.error);
     }
     expect(res.profile).toBeNull();
-    expect(res.argv).toEqual(["node", "openclaw", "gateway", "--dev", "--allow-unconfigured"]);
+    expect(res.argv).toEqual(["node", "remoteclaw", "gateway", "--dev", "--allow-unconfigured"]);
   });
 
   it("still accepts global --dev before subcommand", () => {
-    const res = parseCliProfileArgs(["node", "openclaw", "--dev", "gateway"]);
+    const res = parseCliProfileArgs(["node", "remoteclaw", "--dev", "gateway"]);
     if (!res.ok) {
       throw new Error(res.error);
     }
     expect(res.profile).toBe("dev");
-    expect(res.argv).toEqual(["node", "openclaw", "gateway"]);
+    expect(res.argv).toEqual(["node", "remoteclaw", "gateway"]);
   });
 
   it("parses --profile value and strips it", () => {
-    const res = parseCliProfileArgs(["node", "openclaw", "--profile", "work", "status"]);
+    const res = parseCliProfileArgs(["node", "remoteclaw", "--profile", "work", "status"]);
     if (!res.ok) {
       throw new Error(res.error);
     }
     expect(res.profile).toBe("work");
-    expect(res.argv).toEqual(["node", "openclaw", "status"]);
+    expect(res.argv).toEqual(["node", "remoteclaw", "status"]);
   });
 
   it("rejects missing profile value", () => {
-    const res = parseCliProfileArgs(["node", "openclaw", "--profile"]);
+    const res = parseCliProfileArgs(["node", "remoteclaw", "--profile"]);
     expect(res.ok).toBe(false);
   });
 
   it("rejects combining --dev with --profile (dev first)", () => {
-    const res = parseCliProfileArgs(["node", "openclaw", "--dev", "--profile", "work", "status"]);
+    const res = parseCliProfileArgs(["node", "remoteclaw", "--dev", "--profile", "work", "status"]);
     expect(res.ok).toBe(false);
   });
 
   it("rejects combining --dev with --profile (profile first)", () => {
-    const res = parseCliProfileArgs(["node", "openclaw", "--profile", "work", "--dev", "status"]);
+    const res = parseCliProfileArgs(["node", "remoteclaw", "--profile", "work", "--dev", "status"]);
     expect(res.ok).toBe(false);
   });
 });
@@ -85,7 +85,7 @@ describe("applyCliProfileEnv", () => {
 
   it("uses REMOTECLAW_HOME when deriving profile state dir", () => {
     const env: Record<string, string | undefined> = {
-      REMOTECLAW_HOME: "/srv/openclaw-home",
+      REMOTECLAW_HOME: "/srv/remoteclaw-home",
       HOME: "/home/other",
     };
     applyCliProfileEnv({
@@ -94,7 +94,7 @@ describe("applyCliProfileEnv", () => {
       homedir: () => "/home/fallback",
     });
 
-    const resolvedHome = path.resolve("/srv/openclaw-home");
+    const resolvedHome = path.resolve("/srv/remoteclaw-home");
     expect(env.REMOTECLAW_STATE_DIR).toBe(path.join(resolvedHome, ".remoteclaw-work"));
     expect(env.REMOTECLAW_CONFIG_PATH).toBe(
       path.join(resolvedHome, ".remoteclaw-work", "remoteclaw.json"),
@@ -104,60 +104,60 @@ describe("applyCliProfileEnv", () => {
 
 describe("formatCliCommand", () => {
   it("returns command unchanged when no profile is set", () => {
-    expect(formatCliCommand("openclaw doctor --fix", {})).toBe("openclaw doctor --fix");
+    expect(formatCliCommand("remoteclaw doctor --fix", {})).toBe("remoteclaw doctor --fix");
   });
 
   it("returns command unchanged when profile is default", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { REMOTECLAW_PROFILE: "default" })).toBe(
-      "openclaw doctor --fix",
+    expect(formatCliCommand("remoteclaw doctor --fix", { REMOTECLAW_PROFILE: "default" })).toBe(
+      "remoteclaw doctor --fix",
     );
   });
 
   it("returns command unchanged when profile is Default (case-insensitive)", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { REMOTECLAW_PROFILE: "Default" })).toBe(
-      "openclaw doctor --fix",
+    expect(formatCliCommand("remoteclaw doctor --fix", { REMOTECLAW_PROFILE: "Default" })).toBe(
+      "remoteclaw doctor --fix",
     );
   });
 
   it("returns command unchanged when profile is invalid", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { REMOTECLAW_PROFILE: "bad profile" })).toBe(
-      "openclaw doctor --fix",
+    expect(formatCliCommand("remoteclaw doctor --fix", { REMOTECLAW_PROFILE: "bad profile" })).toBe(
+      "remoteclaw doctor --fix",
     );
   });
 
   it("returns command unchanged when --profile is already present", () => {
     expect(
-      formatCliCommand("openclaw --profile work doctor --fix", { REMOTECLAW_PROFILE: "work" }),
-    ).toBe("openclaw --profile work doctor --fix");
+      formatCliCommand("remoteclaw --profile work doctor --fix", { REMOTECLAW_PROFILE: "work" }),
+    ).toBe("remoteclaw --profile work doctor --fix");
   });
 
   it("returns command unchanged when --dev is already present", () => {
-    expect(formatCliCommand("openclaw --dev doctor", { REMOTECLAW_PROFILE: "dev" })).toBe(
-      "openclaw --dev doctor",
+    expect(formatCliCommand("remoteclaw --dev doctor", { REMOTECLAW_PROFILE: "dev" })).toBe(
+      "remoteclaw --dev doctor",
     );
   });
 
   it("inserts --profile flag when profile is set", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { REMOTECLAW_PROFILE: "work" })).toBe(
-      "openclaw --profile work doctor --fix",
+    expect(formatCliCommand("remoteclaw doctor --fix", { REMOTECLAW_PROFILE: "work" })).toBe(
+      "remoteclaw --profile work doctor --fix",
     );
   });
 
   it("trims whitespace from profile", () => {
     expect(
-      formatCliCommand("openclaw doctor --fix", { REMOTECLAW_PROFILE: "  jbopenclaw  " }),
-    ).toBe("openclaw --profile jbopenclaw doctor --fix");
+      formatCliCommand("remoteclaw doctor --fix", { REMOTECLAW_PROFILE: "  jbremoteclaw  " }),
+    ).toBe("remoteclaw --profile jbremoteclaw doctor --fix");
   });
 
-  it("handles command with no args after openclaw", () => {
-    expect(formatCliCommand("openclaw", { REMOTECLAW_PROFILE: "test" })).toBe(
-      "openclaw --profile test",
+  it("handles command with no args after remoteclaw", () => {
+    expect(formatCliCommand("remoteclaw", { REMOTECLAW_PROFILE: "test" })).toBe(
+      "remoteclaw --profile test",
     );
   });
 
   it("handles pnpm wrapper", () => {
-    expect(formatCliCommand("pnpm openclaw doctor", { REMOTECLAW_PROFILE: "work" })).toBe(
-      "pnpm openclaw --profile work doctor",
+    expect(formatCliCommand("pnpm remoteclaw doctor", { REMOTECLAW_PROFILE: "work" })).toBe(
+      "pnpm remoteclaw --profile work doctor",
     );
   });
 });

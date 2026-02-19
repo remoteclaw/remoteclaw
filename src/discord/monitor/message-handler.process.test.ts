@@ -15,7 +15,7 @@ const dispatchInboundMessage = vi.fn(async (_params?: DispatchInboundParams) => 
 }));
 const recordInboundSession = vi.fn(async () => {});
 const readSessionUpdatedAt = vi.fn(() => undefined);
-const resolveStorePath = vi.fn(() => "/tmp/openclaw-discord-process-test-sessions.json");
+const resolveStorePath = vi.fn(() => "/tmp/remoteclaw-discord-process-test-sessions.json");
 
 vi.mock("../send.js", () => ({
   reactMessageDiscord,
@@ -68,7 +68,7 @@ beforeEach(() => {
   });
   recordInboundSession.mockResolvedValue(undefined);
   readSessionUpdatedAt.mockReturnValue(undefined);
-  resolveStorePath.mockReturnValue("/tmp/openclaw-discord-process-test-sessions.json");
+  resolveStorePath.mockReturnValue("/tmp/remoteclaw-discord-process-test-sessions.json");
 });
 
 function getLastRouteUpdate():

@@ -1,10 +1,10 @@
 import { splitArgsPreservingQuotes } from "./arg-split.js";
 
 function systemdEscapeArg(value: string): string {
-  if (!/[\\s"\\\\]/.test(value)) {
+  if (!/[\\s"\\[remoteclaw\\]]/.test(value)) {
     return value;
   }
-  return `"${value.replace(/\\\\/g, "\\\\\\\\").replace(/"/g, '\\\\"')}"`;
+  return `"${value.replace(/\\[remoteclaw\\]/g, "\\[remoteclaw\\]\\[remoteclaw\\]").replace(/"/g, '\\[remoteclaw\\]"')}"`;
 }
 
 function renderEnvLines(env: Record<string, string | undefined> | undefined): string[] {
@@ -34,7 +34,7 @@ export function buildSystemdUnit({
   environment?: Record<string, string | undefined>;
 }): string {
   const execStart = programArguments.map(systemdEscapeArg).join(" ");
-  const descriptionLine = `Description=${description?.trim() || "OpenClaw Gateway"}`;
+  const descriptionLine = `Description=${description?.trim() || "RemoteClaw Gateway"}`;
   const workingDirLine = workingDirectory
     ? `WorkingDirectory=${systemdEscapeArg(workingDirectory)}`
     : null;
@@ -86,7 +86,7 @@ export function parseSystemdEnvAssignment(raw: string): { key: string; value: st
         escapeNext = false;
         continue;
       }
-      if (ch === "\\\\") {
+      if (ch === "\\[remoteclaw\\]") {
         escapeNext = true;
         continue;
       }

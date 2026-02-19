@@ -72,7 +72,7 @@ describe("sessions_spawn depth + child limits", () => {
     callGatewayMock.mockReset();
     storeTemplatePath = path.join(
       os.tmpdir(),
-      `openclaw-subagent-depth-${Date.now()}-${Math.random().toString(16).slice(2)}-{agentId}.json`,
+      `remoteclaw-subagent-depth-${Date.now()}-${Math.random().toString(16).slice(2)}-{agentId}.json`,
     );
     configOverride = {
       session: {

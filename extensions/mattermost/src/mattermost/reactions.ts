@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "openclaw/plugin-sdk";
 import { resolveMattermostAccount } from "./accounts.js";
 import { createMattermostClient, fetchMattermostMe, type MattermostClient } from "./client.js";
 
@@ -25,7 +25,7 @@ async function resolveBotUserId(
 }
 
 export async function addMattermostReaction(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   postId: string;
   emojiName: string;
   accountId?: string | null;
@@ -64,7 +64,7 @@ export async function addMattermostReaction(params: {
 }
 
 export async function removeMattermostReaction(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   postId: string;
   emojiName: string;
   accountId?: string | null;

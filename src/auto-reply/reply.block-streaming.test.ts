@@ -28,7 +28,7 @@ import { ChannelBridge } from "../middleware/index.js";
 const mockHandle = vi.fn();
 
 async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
-  return withTempHomeBase(fn, { prefix: "openclaw-stream-" });
+  return withTempHomeBase(fn, { prefix: "remoteclaw-stream-" });
 }
 
 describe("block streaming", () => {
@@ -101,7 +101,7 @@ describe("block streaming", () => {
           agents: {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
-              workspace: path.join(home, "openclaw"),
+              workspace: path.join(home, "remoteclaw"),
             },
           },
           channels: { whatsapp: { allowFrom: ["*"] } },
@@ -155,7 +155,7 @@ describe("block streaming", () => {
           agents: {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
-              workspace: path.join(home, "openclaw"),
+              workspace: path.join(home, "remoteclaw"),
             },
           },
           channels: { telegram: { allowFrom: ["*"] } },
@@ -200,7 +200,7 @@ describe("block streaming", () => {
           agents: {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
-              workspace: path.join(home, "openclaw"),
+              workspace: path.join(home, "remoteclaw"),
             },
           },
           channels: { whatsapp: { allowFrom: ["*"] } },
@@ -242,7 +242,7 @@ describe("block streaming", () => {
           agents: {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
-              workspace: path.join(home, "openclaw"),
+              workspace: path.join(home, "remoteclaw"),
             },
           },
           channels: { telegram: { allowFrom: ["*"] } },
@@ -283,7 +283,7 @@ describe("block streaming", () => {
           agents: {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
-              workspace: path.join(home, "openclaw"),
+              workspace: path.join(home, "remoteclaw"),
             },
           },
           channels: { telegram: { allowFrom: ["*"], streamMode: "block" } },

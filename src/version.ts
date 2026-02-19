@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 
 declare const __REMOTECLAW_VERSION__: string | undefined;
-const CORE_PACKAGE_NAME = "openclaw";
+const CORE_PACKAGE_NAME = "remoteclaw";
 
 const PACKAGE_JSON_CANDIDATES = [
   "../package.json",
@@ -88,7 +88,7 @@ export function resolveRuntimeServiceVersion(
   );
 }
 
-// Single source of truth for the current OpenClaw version.
+// Single source of truth for the current RemoteClaw version.
 // - Embedded/bundled builds: injected define or env var.
 // - Dev/npm builds: package.json.
 export const VERSION =

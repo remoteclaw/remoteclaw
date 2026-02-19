@@ -52,7 +52,7 @@ async function withGatewayChatHarness(
   const tempDirs: string[] = [];
   const { server, ws } = await startServerWithClient();
   const createSessionDir = async () => {
-    const sessionDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-"));
+    const sessionDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-gw-"));
     tempDirs.push(sessionDir);
     testState.sessionStorePath = path.join(sessionDir, "sessions.json");
     return sessionDir;

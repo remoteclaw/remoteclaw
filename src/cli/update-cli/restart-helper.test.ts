@@ -32,7 +32,7 @@ describe("restart-helper", () => {
 
       const content = await fs.readFile(scriptPath!, "utf-8");
       expect(content).toContain("#!/bin/sh");
-      expect(content).toContain("systemctl --user restart 'openclaw-gateway.service'");
+      expect(content).toContain("systemctl --user restart 'remoteclaw-gateway.service'");
       // Script should self-cleanup
       expect(content).toContain('rm -f "$0"');
 
@@ -70,7 +70,7 @@ describe("restart-helper", () => {
 
       const content = await fs.readFile(scriptPath!, "utf-8");
       expect(content).toContain("#!/bin/sh");
-      expect(content).toContain("launchctl kickstart -k 'gui/501/ai.openclaw.gateway'");
+      expect(content).toContain("launchctl kickstart -k 'gui/501/ai.remoteclaw.gateway'");
       expect(content).toContain('rm -f "$0"');
 
       if (scriptPath) {
@@ -84,12 +84,12 @@ describe("restart-helper", () => {
 
       const scriptPath = await prepareRestartScript({
         REMOTECLAW_PROFILE: "default",
-        REMOTECLAW_LAUNCHD_LABEL: "com.custom.openclaw",
+        REMOTECLAW_LAUNCHD_LABEL: "com.custom.remoteclaw",
       });
 
       expect(scriptPath).toBeTruthy();
       const content = await fs.readFile(scriptPath!, "utf-8");
-      expect(content).toContain("launchctl kickstart -k 'gui/501/com.custom.openclaw'");
+      expect(content).toContain("launchctl kickstart -k 'gui/501/com.custom.remoteclaw'");
 
       if (scriptPath) {
         await fs.unlink(scriptPath);
@@ -108,8 +108,8 @@ describe("restart-helper", () => {
 
       const content = await fs.readFile(scriptPath!, "utf-8");
       expect(content).toContain("@echo off");
-      expect(content).toContain('schtasks /End /TN "OpenClaw Gateway"');
-      expect(content).toContain('schtasks /Run /TN "OpenClaw Gateway"');
+      expect(content).toContain('schtasks /End /TN "RemoteClaw Gateway"');
+      expect(content).toContain('schtasks /Run /TN "RemoteClaw Gateway"');
       // Batch self-cleanup
       expect(content).toContain('del "%~f0"');
 
@@ -123,13 +123,13 @@ describe("restart-helper", () => {
 
       const scriptPath = await prepareRestartScript({
         REMOTECLAW_PROFILE: "default",
-        REMOTECLAW_WINDOWS_TASK_NAME: "OpenClaw Gateway (custom)",
+        REMOTECLAW_WINDOWS_TASK_NAME: "RemoteClaw Gateway (custom)",
       });
 
       expect(scriptPath).toBeTruthy();
       const content = await fs.readFile(scriptPath!, "utf-8");
-      expect(content).toContain('schtasks /End /TN "OpenClaw Gateway (custom)"');
-      expect(content).toContain('schtasks /Run /TN "OpenClaw Gateway (custom)"');
+      expect(content).toContain('schtasks /End /TN "RemoteClaw Gateway (custom)"');
+      expect(content).toContain('schtasks /Run /TN "RemoteClaw Gateway (custom)"');
 
       if (scriptPath) {
         await fs.unlink(scriptPath);
@@ -144,7 +144,7 @@ describe("restart-helper", () => {
 
       expect(scriptPath).toBeTruthy();
       const content = await fs.readFile(scriptPath!, "utf-8");
-      expect(content).toContain("openclaw-gateway-production.service");
+      expect(content).toContain("remoteclaw-gateway-production.service");
 
       if (scriptPath) {
         await fs.unlink(scriptPath);
@@ -161,7 +161,7 @@ describe("restart-helper", () => {
 
       expect(scriptPath).toBeTruthy();
       const content = await fs.readFile(scriptPath!, "utf-8");
-      expect(content).toContain("gui/502/ai.openclaw.staging");
+      expect(content).toContain("gui/502/ai.remoteclaw.staging");
 
       if (scriptPath) {
         await fs.unlink(scriptPath);
@@ -177,7 +177,7 @@ describe("restart-helper", () => {
 
       expect(scriptPath).toBeTruthy();
       const content = await fs.readFile(scriptPath!, "utf-8");
-      expect(content).toContain('schtasks /End /TN "OpenClaw Gateway (production)"');
+      expect(content).toContain('schtasks /End /TN "RemoteClaw Gateway (production)"');
 
       if (scriptPath) {
         await fs.unlink(scriptPath);

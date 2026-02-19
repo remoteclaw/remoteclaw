@@ -83,7 +83,7 @@ function mockProcStatRead(params: { onProcRead: () => string }) {
 
 describe("gateway lock", () => {
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gateway-lock-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-gateway-lock-"));
   });
 
   beforeEach(() => {

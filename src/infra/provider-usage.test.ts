@@ -299,7 +299,7 @@ describe("provider usage loading", () => {
         env: {
           REMOTECLAW_STATE_DIR: (home) => path.join(home, ".remoteclaw"),
         },
-        prefix: "openclaw-provider-usage-",
+        prefix: "remoteclaw-provider-usage-",
       },
     );
   });

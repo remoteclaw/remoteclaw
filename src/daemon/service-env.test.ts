@@ -186,10 +186,10 @@ describe("buildMinimalServicePath", () => {
 
   it("returns PATH as-is on Windows", () => {
     const result = buildMinimalServicePath({
-      env: { PATH: "C:\\\\Windows\\\\System32" },
+      env: { PATH: "C:\\[remoteclaw\\]Windows\\[remoteclaw\\]System32" },
       platform: "win32",
     });
-    expect(result).toBe("C:\\\\Windows\\\\System32");
+    expect(result).toBe("C:\\[remoteclaw\\]Windows\\[remoteclaw\\]System32");
   });
 
   it("includes Linux user directories when HOME is set in env", () => {
@@ -273,12 +273,12 @@ describe("buildServiceEnvironment", () => {
     }
     expect(env.REMOTECLAW_GATEWAY_PORT).toBe("18789");
     expect(env.REMOTECLAW_GATEWAY_TOKEN).toBe("secret");
-    expect(env.REMOTECLAW_SERVICE_MARKER).toBe("openclaw");
+    expect(env.REMOTECLAW_SERVICE_MARKER).toBe("remoteclaw");
     expect(env.REMOTECLAW_SERVICE_KIND).toBe("gateway");
     expect(typeof env.REMOTECLAW_SERVICE_VERSION).toBe("string");
-    expect(env.REMOTECLAW_SYSTEMD_UNIT).toBe("openclaw-gateway.service");
+    expect(env.REMOTECLAW_SYSTEMD_UNIT).toBe("remoteclaw-gateway.service");
     if (process.platform === "darwin") {
-      expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("ai.openclaw.gateway");
+      expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("ai.remoteclaw.gateway");
     }
   });
 
@@ -287,9 +287,9 @@ describe("buildServiceEnvironment", () => {
       env: { HOME: "/home/user", REMOTECLAW_PROFILE: "work" },
       port: 18789,
     });
-    expect(env.REMOTECLAW_SYSTEMD_UNIT).toBe("openclaw-gateway-work.service");
+    expect(env.REMOTECLAW_SYSTEMD_UNIT).toBe("remoteclaw-gateway-work.service");
     if (process.platform === "darwin") {
-      expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("ai.openclaw.work");
+      expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("ai.remoteclaw.work");
     }
   });
 });
@@ -320,17 +320,17 @@ describe("resolveGatewayStateDir", () => {
   });
 
   it("uses REMOTECLAW_STATE_DIR when provided", () => {
-    const env = { HOME: "/Users/test", REMOTECLAW_STATE_DIR: "/var/lib/openclaw" };
-    expect(resolveGatewayStateDir(env)).toBe(path.resolve("/var/lib/openclaw"));
+    const env = { HOME: "/Users/test", REMOTECLAW_STATE_DIR: "/var/lib/remoteclaw" };
+    expect(resolveGatewayStateDir(env)).toBe(path.resolve("/var/lib/remoteclaw"));
   });
 
   it("expands ~ in REMOTECLAW_STATE_DIR", () => {
-    const env = { HOME: "/Users/test", REMOTECLAW_STATE_DIR: "~/openclaw-state" };
-    expect(resolveGatewayStateDir(env)).toBe(path.resolve("/Users/test/openclaw-state"));
+    const env = { HOME: "/Users/test", REMOTECLAW_STATE_DIR: "~/remoteclaw-state" };
+    expect(resolveGatewayStateDir(env)).toBe(path.resolve("/Users/test/remoteclaw-state"));
   });
 
   it("preserves Windows absolute paths without HOME", () => {
-    const env = { REMOTECLAW_STATE_DIR: "C:\\State\\openclaw" };
-    expect(resolveGatewayStateDir(env)).toBe("C:\\State\\openclaw");
+    const env = { REMOTECLAW_STATE_DIR: "C:\\State\\remoteclaw" };
+    expect(resolveGatewayStateDir(env)).toBe("C:\\State\\remoteclaw");
   });
 });

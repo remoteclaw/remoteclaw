@@ -184,7 +184,7 @@ export async function runAgentTurnWithFallback(params: {
     return {
       kind: "final",
       payload: {
-        text: `\u26a0\ufe0f Agent failed before reply: ${trimmedMessage}.\nLogs: openclaw logs --follow`,
+        text: `\u26a0\ufe0f Agent failed before reply: ${trimmedMessage}.\nLogs: remoteclaw logs --follow`,
       },
     };
   }

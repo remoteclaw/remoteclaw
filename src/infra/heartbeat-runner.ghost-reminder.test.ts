@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { telegramPlugin } from "../../extensions/telegram/src/channel.js";
 import { setTelegramRuntime } from "../../extensions/telegram/src/runtime.js";
 import * as replyModule from "../auto-reply/reply.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveMainSessionKey } from "../config/sessions.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createPluginRuntime } from "../plugins/runtime/index.js";
@@ -33,9 +33,9 @@ afterEach(() => {
 describe("Ghost reminder bug (issue #13317)", () => {
   const createConfig = async (
     tmpDir: string,
-  ): Promise<{ cfg: OpenClawConfig; sessionKey: string }> => {
+  ): Promise<{ cfg: RemoteClawConfig; sessionKey: string }> => {
     const storePath = path.join(tmpDir, "sessions.json");
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
           workspace: tmpDir,
@@ -121,7 +121,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
   };
 
   it("does not use CRON_EVENT_PROMPT when only a HEARTBEAT_OK event is present", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ghost-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-ghost-"));
     const sendTelegram = vi.fn().mockResolvedValue({
       messageId: "m1",
       chatId: "155462274",
@@ -157,7 +157,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
 
   it("uses CRON_EVENT_PROMPT when an actionable cron event exists", async () => {
     const { result, sendTelegram, getReplySpy } = await runCronReminderCase(
-      "openclaw-cron-",
+      "remoteclaw-cron-",
       (sessionKey) => {
         enqueueSystemEvent("Reminder: Check Base Scout results", { sessionKey });
       },
@@ -169,7 +169,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
 
   it("uses CRON_EVENT_PROMPT when cron events are mixed with heartbeat noise", async () => {
     const { result, sendTelegram, getReplySpy } = await runCronReminderCase(
-      "openclaw-cron-mixed-",
+      "remoteclaw-cron-mixed-",
       (sessionKey) => {
         enqueueSystemEvent("HEARTBEAT_OK", { sessionKey });
         enqueueSystemEvent("Reminder: Check Base Scout results", { sessionKey });
@@ -181,7 +181,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
   });
 
   it("uses CRON_EVENT_PROMPT for tagged cron events on interval wake", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cron-interval-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-cron-interval-"));
     const sendTelegram = vi.fn().mockResolvedValue({
       messageId: "m1",
       chatId: "155462274",

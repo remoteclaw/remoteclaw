@@ -31,7 +31,7 @@ describe("auth-profiles (chutes)", () => {
       "PI_CODING_AGENT_DIR",
       "CHUTES_CLIENT_ID",
     ]);
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-chutes-"));
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-chutes-"));
     process.env.REMOTECLAW_STATE_DIR = tempDir;
     process.env.REMOTECLAW_AGENT_DIR = path.join(tempDir, "agents", "main", "agent");
     process.env.PI_CODING_AGENT_DIR = process.env.REMOTECLAW_AGENT_DIR;

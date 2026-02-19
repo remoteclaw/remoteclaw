@@ -33,7 +33,7 @@ describe("irc onboarding", () => {
           return "openclaw";
         }
         if (message === "IRC real name") {
-          return "OpenClaw Bot";
+          return "RemoteClaw Bot";
         }
         if (message.startsWith("Auto-join IRC channels")) {
           return "#openclaw, #ops";

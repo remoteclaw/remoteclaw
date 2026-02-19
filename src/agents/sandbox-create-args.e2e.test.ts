@@ -4,8 +4,8 @@ import { buildSandboxCreateArgs, type SandboxDockerConfig } from "./sandbox.js";
 describe("buildSandboxCreateArgs", () => {
   it("includes hardening and resource flags", () => {
     const cfg: SandboxDockerConfig = {
-      image: "openclaw-sandbox:bookworm-slim",
-      containerPrefix: "openclaw-sbx-",
+      image: "remoteclaw-sandbox:bookworm-slim",
+      containerPrefix: "remoteclaw-sbx-",
       workdir: "/workspace",
       readOnlyRoot: true,
       tmpfs: ["/tmp"],
@@ -23,32 +23,32 @@ describe("buildSandboxCreateArgs", () => {
         core: "0",
       },
       seccompProfile: "/tmp/seccomp.json",
-      apparmorProfile: "openclaw-sandbox",
+      apparmorProfile: "remoteclaw-sandbox",
       dns: ["1.1.1.1"],
       extraHosts: ["internal.service:10.0.0.5"],
     };
 
     const args = buildSandboxCreateArgs({
-      name: "openclaw-sbx-test",
+      name: "remoteclaw-sbx-test",
       cfg,
       scopeKey: "main",
       createdAtMs: 1700000000000,
-      labels: { "openclaw.sandboxBrowser": "1" },
+      labels: { "remoteclaw.sandboxBrowser": "1" },
     });
 
     expect(args).toEqual(
       expect.arrayContaining([
         "create",
         "--name",
-        "openclaw-sbx-test",
+        "remoteclaw-sbx-test",
         "--label",
-        "openclaw.sandbox=1",
+        "remoteclaw.sandbox=1",
         "--label",
-        "openclaw.sessionKey=main",
+        "remoteclaw.sessionKey=main",
         "--label",
-        "openclaw.createdAtMs=1700000000000",
+        "remoteclaw.createdAtMs=1700000000000",
         "--label",
-        "openclaw.sandboxBrowser=1",
+        "remoteclaw.sandboxBrowser=1",
         "--read-only",
         "--tmpfs",
         "/tmp",
@@ -63,7 +63,7 @@ describe("buildSandboxCreateArgs", () => {
         "--security-opt",
         "seccomp=/tmp/seccomp.json",
         "--security-opt",
-        "apparmor=openclaw-sandbox",
+        "apparmor=remoteclaw-sandbox",
         "--dns",
         "1.1.1.1",
         "--add-host",
@@ -96,8 +96,8 @@ describe("buildSandboxCreateArgs", () => {
 
   it("emits -v flags for safe custom binds", () => {
     const cfg: SandboxDockerConfig = {
-      image: "openclaw-sandbox:bookworm-slim",
-      containerPrefix: "openclaw-sbx-",
+      image: "remoteclaw-sandbox:bookworm-slim",
+      containerPrefix: "remoteclaw-sbx-",
       workdir: "/workspace",
       readOnlyRoot: false,
       tmpfs: [],
@@ -107,7 +107,7 @@ describe("buildSandboxCreateArgs", () => {
     };
 
     const args = buildSandboxCreateArgs({
-      name: "openclaw-sbx-binds",
+      name: "remoteclaw-sbx-binds",
       cfg,
       scopeKey: "main",
       createdAtMs: 1700000000000,
@@ -129,8 +129,8 @@ describe("buildSandboxCreateArgs", () => {
 
   it("throws on dangerous bind mounts (Docker socket)", () => {
     const cfg: SandboxDockerConfig = {
-      image: "openclaw-sandbox:bookworm-slim",
-      containerPrefix: "openclaw-sbx-",
+      image: "remoteclaw-sandbox:bookworm-slim",
+      containerPrefix: "remoteclaw-sbx-",
       workdir: "/workspace",
       readOnlyRoot: false,
       tmpfs: [],
@@ -141,7 +141,7 @@ describe("buildSandboxCreateArgs", () => {
 
     expect(() =>
       buildSandboxCreateArgs({
-        name: "openclaw-sbx-dangerous",
+        name: "remoteclaw-sbx-dangerous",
         cfg,
         scopeKey: "main",
         createdAtMs: 1700000000000,
@@ -151,8 +151,8 @@ describe("buildSandboxCreateArgs", () => {
 
   it("throws on dangerous bind mounts (parent path)", () => {
     const cfg: SandboxDockerConfig = {
-      image: "openclaw-sandbox:bookworm-slim",
-      containerPrefix: "openclaw-sbx-",
+      image: "remoteclaw-sandbox:bookworm-slim",
+      containerPrefix: "remoteclaw-sbx-",
       workdir: "/workspace",
       readOnlyRoot: false,
       tmpfs: [],
@@ -163,7 +163,7 @@ describe("buildSandboxCreateArgs", () => {
 
     expect(() =>
       buildSandboxCreateArgs({
-        name: "openclaw-sbx-dangerous-parent",
+        name: "remoteclaw-sbx-dangerous-parent",
         cfg,
         scopeKey: "main",
         createdAtMs: 1700000000000,
@@ -173,8 +173,8 @@ describe("buildSandboxCreateArgs", () => {
 
   it("throws on network host mode", () => {
     const cfg: SandboxDockerConfig = {
-      image: "openclaw-sandbox:bookworm-slim",
-      containerPrefix: "openclaw-sbx-",
+      image: "remoteclaw-sandbox:bookworm-slim",
+      containerPrefix: "remoteclaw-sbx-",
       workdir: "/workspace",
       readOnlyRoot: false,
       tmpfs: [],
@@ -184,7 +184,7 @@ describe("buildSandboxCreateArgs", () => {
 
     expect(() =>
       buildSandboxCreateArgs({
-        name: "openclaw-sbx-host",
+        name: "remoteclaw-sbx-host",
         cfg,
         scopeKey: "main",
         createdAtMs: 1700000000000,
@@ -194,8 +194,8 @@ describe("buildSandboxCreateArgs", () => {
 
   it("throws on seccomp unconfined", () => {
     const cfg: SandboxDockerConfig = {
-      image: "openclaw-sandbox:bookworm-slim",
-      containerPrefix: "openclaw-sbx-",
+      image: "remoteclaw-sandbox:bookworm-slim",
+      containerPrefix: "remoteclaw-sbx-",
       workdir: "/workspace",
       readOnlyRoot: false,
       tmpfs: [],
@@ -206,7 +206,7 @@ describe("buildSandboxCreateArgs", () => {
 
     expect(() =>
       buildSandboxCreateArgs({
-        name: "openclaw-sbx-seccomp",
+        name: "remoteclaw-sbx-seccomp",
         cfg,
         scopeKey: "main",
         createdAtMs: 1700000000000,
@@ -216,8 +216,8 @@ describe("buildSandboxCreateArgs", () => {
 
   it("throws on apparmor unconfined", () => {
     const cfg: SandboxDockerConfig = {
-      image: "openclaw-sandbox:bookworm-slim",
-      containerPrefix: "openclaw-sbx-",
+      image: "remoteclaw-sandbox:bookworm-slim",
+      containerPrefix: "remoteclaw-sbx-",
       workdir: "/workspace",
       readOnlyRoot: false,
       tmpfs: [],
@@ -228,7 +228,7 @@ describe("buildSandboxCreateArgs", () => {
 
     expect(() =>
       buildSandboxCreateArgs({
-        name: "openclaw-sbx-apparmor",
+        name: "remoteclaw-sbx-apparmor",
         cfg,
         scopeKey: "main",
         createdAtMs: 1700000000000,
@@ -238,8 +238,8 @@ describe("buildSandboxCreateArgs", () => {
 
   it("omits -v flags when binds is empty or undefined", () => {
     const cfg: SandboxDockerConfig = {
-      image: "openclaw-sandbox:bookworm-slim",
-      containerPrefix: "openclaw-sbx-",
+      image: "remoteclaw-sandbox:bookworm-slim",
+      containerPrefix: "remoteclaw-sbx-",
       workdir: "/workspace",
       readOnlyRoot: false,
       tmpfs: [],
@@ -249,7 +249,7 @@ describe("buildSandboxCreateArgs", () => {
     };
 
     const args = buildSandboxCreateArgs({
-      name: "openclaw-sbx-no-binds",
+      name: "remoteclaw-sbx-no-binds",
       cfg,
       scopeKey: "main",
       createdAtMs: 1700000000000,

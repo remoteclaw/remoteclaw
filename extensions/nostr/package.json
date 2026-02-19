@@ -10,7 +10,7 @@
   "devDependencies": {
     "openclaw": "workspace:*"
   },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],

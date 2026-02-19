@@ -47,10 +47,10 @@ describe("state + config path candidates", () => {
 
   it("uses REMOTECLAW_HOME for default state/config locations", () => {
     const env = {
-      REMOTECLAW_HOME: "/srv/openclaw-home",
+      REMOTECLAW_HOME: "/srv/remoteclaw-home",
     } as NodeJS.ProcessEnv;
 
-    const resolvedHome = path.resolve("/srv/openclaw-home");
+    const resolvedHome = path.resolve("/srv/remoteclaw-home");
     expect(resolveStateDir(env)).toBe(path.join(resolvedHome, ".remoteclaw"));
 
     const candidates = resolveDefaultConfigCandidates(env);
@@ -59,11 +59,11 @@ describe("state + config path candidates", () => {
 
   it("prefers REMOTECLAW_HOME over HOME for default state/config locations", () => {
     const env = {
-      REMOTECLAW_HOME: "/srv/openclaw-home",
+      REMOTECLAW_HOME: "/srv/remoteclaw-home",
       HOME: "/home/other",
     } as NodeJS.ProcessEnv;
 
-    const resolvedHome = path.resolve("/srv/openclaw-home");
+    const resolvedHome = path.resolve("/srv/remoteclaw-home");
     expect(resolveStateDir(env)).toBe(path.join(resolvedHome, ".remoteclaw"));
 
     const candidates = resolveDefaultConfigCandidates(env);
@@ -96,7 +96,7 @@ describe("state + config path candidates", () => {
   });
 
   it("prefers ~/.remoteclaw when it exists and legacy dir is missing", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-state-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-state-"));
     try {
       const newDir = path.join(root, ".remoteclaw");
       await fs.mkdir(newDir, { recursive: true });
@@ -108,7 +108,7 @@ describe("state + config path candidates", () => {
   });
 
   it("CONFIG_PATH prefers existing config when present", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-config-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-config-"));
     try {
       const legacyDir = path.join(root, ".remoteclaw");
       await fs.mkdir(legacyDir, { recursive: true });
@@ -123,7 +123,7 @@ describe("state + config path candidates", () => {
   });
 
   it("respects state dir overrides when config is missing", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-config-override-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-config-override-"));
     try {
       const legacyDir = path.join(root, ".remoteclaw");
       await fs.mkdir(legacyDir, { recursive: true });

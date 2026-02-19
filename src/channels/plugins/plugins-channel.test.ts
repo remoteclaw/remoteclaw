@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { normalizeIMessageMessagingTarget } from "./normalize/imessage.js";
 import { looksLikeSignalTargetId, normalizeSignalMessagingTarget } from "./normalize/signal.js";
 import { normalizeSignalAccountInput } from "./onboarding/signal.js";
@@ -63,7 +63,7 @@ describe("telegramOutbound.sendPayload", () => {
     const sendTelegram = vi.fn(async () => ({ messageId: "m1", chatId: "c1" }));
 
     const result = await telegramOutbound.sendPayload?.({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       to: "telegram:123",
       text: "ignored",
       payload: {
@@ -96,7 +96,7 @@ describe("telegramOutbound.sendPayload", () => {
       .mockResolvedValueOnce({ messageId: "m2", chatId: "c1" });
 
     const result = await telegramOutbound.sendPayload?.({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       to: "telegram:123",
       text: "ignored",
       payload: {

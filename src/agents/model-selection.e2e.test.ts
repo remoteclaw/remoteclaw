@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import {
   parseModelRef,
   resolveModelRefFromString,
@@ -91,7 +91,7 @@ describe("model-selection", () => {
 
   describe("buildModelAliasIndex", () => {
     it("should build alias index from config", () => {
-      const cfg: Partial<OpenClawConfig> = {
+      const cfg: Partial<RemoteClawConfig> = {
         agents: {
           defaults: {
             models: {
@@ -103,7 +103,7 @@ describe("model-selection", () => {
       };
 
       const index = buildModelAliasIndex({
-        cfg: cfg as OpenClawConfig,
+        cfg: cfg as RemoteClawConfig,
         defaultProvider: "anthropic",
       });
 
@@ -147,7 +147,7 @@ describe("model-selection", () => {
   describe("resolveConfiguredModelRef", () => {
     it("should fall back to anthropic and warn if provider is missing for non-alias", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-      const cfg: Partial<OpenClawConfig> = {
+      const cfg: Partial<RemoteClawConfig> = {
         agents: {
           defaults: {
             model: { primary: "claude-3-5-sonnet" },
@@ -156,7 +156,7 @@ describe("model-selection", () => {
       };
 
       const result = resolveConfiguredModelRef({
-        cfg: cfg as OpenClawConfig,
+        cfg: cfg as RemoteClawConfig,
         defaultProvider: "google",
         defaultModel: "gemini-pro",
       });
@@ -169,9 +169,9 @@ describe("model-selection", () => {
     });
 
     it("should use default provider/model if config is empty", () => {
-      const cfg: Partial<OpenClawConfig> = {};
+      const cfg: Partial<RemoteClawConfig> = {};
       const result = resolveConfiguredModelRef({
-        cfg: cfg as OpenClawConfig,
+        cfg: cfg as RemoteClawConfig,
         defaultProvider: "openai",
         defaultModel: "gpt-4",
       });

@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import type { MemoryCitationsMode } from "../../config/types.memory.js";
 import { resolveMemoryBackendConfig } from "../../memory/backend-config.js";
 import { getMemorySearchManager } from "../../memory/index.js";
@@ -22,7 +22,10 @@ const MemoryGetSchema = Type.Object({
   lines: Type.Optional(Type.Number()),
 });
 
-function resolveMemoryToolContext(options: { config?: OpenClawConfig; agentSessionKey?: string }) {
+function resolveMemoryToolContext(options: {
+  config?: RemoteClawConfig;
+  agentSessionKey?: string;
+}) {
   const cfg = options.config;
   if (!cfg) {
     return null;
@@ -38,7 +41,7 @@ function resolveMemoryToolContext(options: { config?: OpenClawConfig; agentSessi
 }
 
 export function createMemorySearchTool(options: {
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   agentSessionKey?: string;
 }): AnyAgentTool | null {
   const ctx = resolveMemoryToolContext(options);
@@ -99,7 +102,7 @@ export function createMemorySearchTool(options: {
 }
 
 export function createMemoryGetTool(options: {
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   agentSessionKey?: string;
 }): AnyAgentTool | null {
   const ctx = resolveMemoryToolContext(options);
@@ -139,7 +142,7 @@ export function createMemoryGetTool(options: {
   };
 }
 
-function resolveMemoryCitationsMode(cfg: OpenClawConfig): MemoryCitationsMode {
+function resolveMemoryCitationsMode(cfg: RemoteClawConfig): MemoryCitationsMode {
   const mode = cfg.memory?.citations;
   if (mode === "on" || mode === "off" || mode === "auto") {
     return mode;

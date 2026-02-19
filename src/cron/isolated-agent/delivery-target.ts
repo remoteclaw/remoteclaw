@@ -1,6 +1,6 @@
 import type { ChannelId } from "../../channels/plugins/types.js";
 import { DEFAULT_CHAT_CHANNEL } from "../../channels/registry.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import {
   loadSessionStore,
   resolveAgentMainSessionKey,
@@ -16,7 +16,7 @@ import { buildChannelAccountBindings } from "../../routing/bindings.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 
 export async function resolveDeliveryTarget(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   agentId: string,
   jobPayload: {
     channel?: "last" | ChannelId;

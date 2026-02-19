@@ -62,8 +62,8 @@ function connectReq(
 }
 
 test.each([
-  { clientId: "openclaw-ios", platform: "ios" },
-  { clientId: "openclaw-android", platform: "android" },
+  { clientId: "remoteclaw-ios", platform: "ios" },
+  { clientId: "remoteclaw-android", platform: "android" },
 ])("accepts $clientId as a valid gateway client id", async ({ clientId, platform }) => {
   const ws = new WebSocket(`ws://127.0.0.1:${port}`);
   await new Promise<void>((resolve) => ws.once("open", resolve));

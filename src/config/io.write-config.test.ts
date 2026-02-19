@@ -30,7 +30,7 @@ describe("config io write", () => {
   }
 
   it("persists caller changes onto resolved config without leaking runtime defaults", async () => {
-    await withTempHome("openclaw-config-io-", async (home) => {
+    await withTempHome("remoteclaw-config-io-", async (home) => {
       const { configPath, io, snapshot } = await writeConfigAndCreateIo({
         home,
         initialConfig: { gateway: { port: 18789 } },
@@ -59,7 +59,7 @@ describe("config io write", () => {
   });
 
   it("preserves env var references when writing", async () => {
-    await withTempHome("openclaw-config-io-", async (home) => {
+    await withTempHome("remoteclaw-config-io-", async (home) => {
       const { configPath, io, snapshot } = await writeConfigAndCreateIo({
         home,
         env: { OPENAI_API_KEY: "sk-secret" } as NodeJS.ProcessEnv,
@@ -103,7 +103,7 @@ describe("config io write", () => {
   });
 
   it("does not reintroduce Slack/Discord legacy dm.policy defaults when writing", async () => {
-    await withTempHome("openclaw-config-io-", async (home) => {
+    await withTempHome("remoteclaw-config-io-", async (home) => {
       const { configPath, io, snapshot } = await writeConfigAndCreateIo({
         home,
         initialConfig: {
@@ -149,7 +149,7 @@ describe("config io write", () => {
   });
 
   it("keeps env refs in arrays when appending entries", async () => {
-    await withTempHome("openclaw-config-io-", async (home) => {
+    await withTempHome("remoteclaw-config-io-", async (home) => {
       const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(
@@ -222,7 +222,7 @@ describe("config io write", () => {
   });
 
   it("logs an overwrite audit entry when replacing an existing config file", async () => {
-    await withTempHome("openclaw-config-io-", async (home) => {
+    await withTempHome("remoteclaw-config-io-", async (home) => {
       const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(
@@ -261,7 +261,7 @@ describe("config io write", () => {
   });
 
   it("does not log an overwrite audit entry when creating config for the first time", async () => {
-    await withTempHome("openclaw-config-io-", async (home) => {
+    await withTempHome("remoteclaw-config-io-", async (home) => {
       const warn = vi.fn();
       const io = createConfigIO({
         env: {} as NodeJS.ProcessEnv,
@@ -284,7 +284,7 @@ describe("config io write", () => {
   });
 
   it("appends config write audit JSONL entries with forensic metadata", async () => {
-    await withTempHome("openclaw-config-io-", async (home) => {
+    await withTempHome("remoteclaw-config-io-", async (home) => {
       const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
       const auditPath = path.join(home, ".remoteclaw", "logs", "config-audit.jsonl");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
@@ -329,7 +329,7 @@ describe("config io write", () => {
   });
 
   it("records gateway watch session markers in config audit entries", async () => {
-    await withTempHome("openclaw-config-io-", async (home) => {
+    await withTempHome("remoteclaw-config-io-", async (home) => {
       const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
       const auditPath = path.join(home, ".remoteclaw", "logs", "config-audit.jsonl");
       await fs.mkdir(path.dirname(configPath), { recursive: true });

@@ -9,7 +9,7 @@ import {
 } from "./agent-limits.js";
 import { loadConfig } from "./config.js";
 import { withTempHome } from "./test-helpers.js";
-import { OpenClawSchema } from "./zod-schema.js";
+import { RemoteClawSchema } from "./zod-schema.js";
 
 describe("agent concurrency defaults", () => {
   it("resolves defaults when unset", () => {
@@ -31,7 +31,7 @@ describe("agent concurrency defaults", () => {
   });
 
   it("accepts subagent spawn depth and per-agent child limits", () => {
-    const parsed = OpenClawSchema.parse({
+    const parsed = RemoteClawSchema.parse({
       agents: {
         defaults: {
           subagents: {

@@ -60,7 +60,7 @@ function mockPatchAndSingleAgentRun(params: { calls: GatewayCall[]; runId: strin
   });
 }
 
-describe("openclaw-tools: subagents (sessions_spawn model + thinking)", () => {
+describe("remoteclaw-tools: subagents (sessions_spawn model + thinking)", () => {
   beforeEach(() => {
     resetSessionsSpawnConfigOverride();
   });

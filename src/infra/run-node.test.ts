@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 async function withTempDir<T>(run: (dir: string) => Promise<T>): Promise<T> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-run-node-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-run-node-"));
   try {
     return await run(dir);
   } finally {

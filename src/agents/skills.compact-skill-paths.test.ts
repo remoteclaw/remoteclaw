@@ -7,7 +7,7 @@ import { writeSkill } from "./skills.test-helpers.js";
 
 describe("compactSkillPaths", () => {
   it("replaces home directory prefix with ~ in skill locations", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-compact-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-compact-"));
     const skillDir = path.join(workspaceDir, "skills", "test-skill");
 
     await writeSkill({
@@ -38,7 +38,7 @@ describe("compactSkillPaths", () => {
 
   it("preserves paths outside home directory", async () => {
     // Skills outside ~ should keep their absolute paths
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-compact-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-compact-"));
     const skillDir = path.join(workspaceDir, "skills", "ext-skill");
 
     await writeSkill({

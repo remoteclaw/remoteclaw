@@ -16,7 +16,7 @@ import {
   type ChannelMessageActionAdapter,
   type ChannelPlugin,
   type ChannelStatusIssue,
-  type OpenClawConfig,
+  type RemoteClawConfig,
 } from "openclaw/plugin-sdk";
 import { GoogleChatConfigSchema } from "openclaw/plugin-sdk";
 import {
@@ -348,7 +348,7 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
               ...configPatch,
             },
           },
-        } as OpenClawConfig;
+        } as RemoteClawConfig;
       }
       return {
         ...next,
@@ -367,7 +367,7 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
             },
           },
         },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
     },
   },
   outbound: {

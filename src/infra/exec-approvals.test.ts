@@ -31,7 +31,7 @@ function makePathEnv(binDir: string): NodeJS.ProcessEnv {
 }
 
 function makeTempDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-exec-approvals-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-exec-approvals-"));
 }
 
 describe("exec approvals allowlist matching", () => {

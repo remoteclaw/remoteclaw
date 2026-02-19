@@ -1,6 +1,6 @@
 import {
   emptyPluginConfigSchema,
-  type OpenClawPluginApi,
+  type RemoteClawPluginApi,
   type ProviderAuthContext,
 } from "openclaw/plugin-sdk";
 import { loginQwenPortalOAuth } from "./oauth.js";
@@ -40,7 +40,7 @@ const qwenPortalPlugin = {
   name: "Qwen OAuth",
   description: "OAuth flow for Qwen (free-tier) models",
   configSchema: emptyPluginConfigSchema(),
-  register(api: OpenClawPluginApi) {
+  register(api: RemoteClawPluginApi) {
     api.registerProvider({
       id: PROVIDER_ID,
       label: PROVIDER_LABEL,

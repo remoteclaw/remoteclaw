@@ -4,8 +4,8 @@ import { enqueueSystemEvent } from "../../../infra/system-events.js";
 import { parseSlackModalPrivateMetadata } from "../../modal-metadata.js";
 import type { SlackMonitorContext } from "../context.js";
 
-// Prefix for OpenClaw-generated action IDs to scope our handler
-const REMOTECLAW_ACTION_PREFIX = "openclaw:";
+// Prefix for RemoteClaw-generated action IDs to scope our handler
+const REMOTECLAW_ACTION_PREFIX = "remoteclaw:";
 
 type InteractionMessageBlock = {
   type?: string;
@@ -99,7 +99,7 @@ function uniqueNonEmptyStrings(values: string[]): string[] {
 
 function escapeSlackMrkdwn(value: string): string {
   return value
-    .replaceAll("\\", "\\\\")
+    .replaceAll("\\", "\\[remoteclaw\\]")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -380,7 +380,7 @@ export function registerSlackInteractionEvents(params: { ctx: SlackMonitorContex
     return;
   }
 
-  // Handle Block Kit button clicks from OpenClaw-generated messages
+  // Handle Block Kit button clicks from RemoteClaw-generated messages
   // Only matches action_ids that start with our prefix to avoid interfering
   // with other Slack integrations or future features
   ctx.app.action(
@@ -538,7 +538,7 @@ export function registerSlackInteractionEvents(params: { ctx: SlackMonitorContex
     return;
   }
 
-  // Handle OpenClaw modal submissions with callback_ids scoped by our prefix.
+  // Handle RemoteClaw modal submissions with callback_ids scoped by our prefix.
   ctx.app.view(
     new RegExp(`^${REMOTECLAW_ACTION_PREFIX}`),
     async ({ ack, body }: { ack: () => Promise<void>; body: unknown }) => {

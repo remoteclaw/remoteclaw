@@ -1,4 +1,8 @@
-import type { ChannelOnboardingAdapter, OpenClawConfig, WizardPrompter } from "openclaw/plugin-sdk";
+import type {
+  ChannelOnboardingAdapter,
+  RemoteClawConfig,
+  WizardPrompter,
+} from "openclaw/plugin-sdk";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
 import {
   listMattermostAccountIds,
@@ -176,7 +180,7 @@ export const mattermostOnboardingAdapter: ChannelOnboardingAdapter = {
 
     return { cfg: next, accountId };
   },
-  disable: (cfg: OpenClawConfig) => ({
+  disable: (cfg: RemoteClawConfig) => ({
     ...cfg,
     channels: {
       ...cfg.channels,

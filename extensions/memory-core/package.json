@@ -10,7 +10,7 @@
   "peerDependencies": {
     "openclaw": ">=2026.1.26"
   },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ]

@@ -49,7 +49,7 @@ export async function resolveCommandsSystemPromptBundle(
     cfg: params.cfg,
     sessionKey: params.ctx.SessionKey ?? params.sessionKey,
   });
-  // pi-embedded: createOpenClawCodingTools removed (dead code after AgentRuntime migration)
+  // pi-embedded: createRemoteClawCodingTools removed (dead code after AgentRuntime migration)
   // Tool creation is now handled by the AgentRuntime middleware.
   const tools: AgentTool[] = [];
   const toolSummaries = buildToolSummaryMap(tools);

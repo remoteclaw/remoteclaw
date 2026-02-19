@@ -36,7 +36,7 @@ async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
         REMOTECLAW_AGENT_DIR: (home) => path.join(home, ".remoteclaw", "agent"),
         PI_CODING_AGENT_DIR: (home) => path.join(home, ".remoteclaw", "agent"),
       },
-      prefix: "openclaw-rawbody-",
+      prefix: "remoteclaw-rawbody-",
     },
   );
 }
@@ -74,7 +74,7 @@ describe("RawBody directive parsing", () => {
           agents: {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
-              workspace: path.join(home, "openclaw"),
+              workspace: path.join(home, "remoteclaw"),
             },
           },
           channels: { whatsapp: { allowFrom: ["*"] } },
@@ -106,7 +106,7 @@ describe("RawBody directive parsing", () => {
           agents: {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
-              workspace: path.join(home, "openclaw"),
+              workspace: path.join(home, "remoteclaw"),
               models: {
                 "anthropic/claude-opus-4-5": {},
               },
@@ -141,7 +141,7 @@ describe("RawBody directive parsing", () => {
           agents: {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
-              workspace: path.join(home, "openclaw"),
+              workspace: path.join(home, "remoteclaw"),
             },
           },
           channels: { whatsapp: { allowFrom: ["*"] } },
@@ -177,7 +177,7 @@ describe("RawBody directive parsing", () => {
           agents: {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
-              workspace: path.join(home, "openclaw"),
+              workspace: path.join(home, "remoteclaw"),
             },
           },
           channels: { whatsapp: { allowFrom: ["+1222"] } },
@@ -224,7 +224,7 @@ describe("RawBody directive parsing", () => {
           agents: {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
-              workspace: path.join(home, "openclaw"),
+              workspace: path.join(home, "remoteclaw"),
             },
           },
           channels: { whatsapp: { allowFrom: ["*"] } },

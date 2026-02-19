@@ -48,7 +48,7 @@ apps/ios/fastlane/logs/
 # Local / user files
 .local/
 docs/.local/
-local/
+/local/
 USER.md
 CLAUDE.local.md
 

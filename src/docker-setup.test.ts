@@ -39,7 +39,7 @@ exit 0
 }
 
 async function createDockerSetupSandbox(): Promise<DockerSetupSandbox> {
-  const rootDir = await mkdtemp(join(tmpdir(), "openclaw-docker-setup-"));
+  const rootDir = await mkdtemp(join(tmpdir(), "remoteclaw-docker-setup-"));
   const scriptPath = join(rootDir, "docker-setup.sh");
   const dockerfilePath = join(rootDir, "Dockerfile");
   const composePath = join(rootDir, "docker-compose.yml");
@@ -51,7 +51,7 @@ async function createDockerSetupSandbox(): Promise<DockerSetupSandbox> {
   await writeFile(dockerfilePath, "FROM scratch\n");
   await writeFile(
     composePath,
-    "services:\n  openclaw-gateway:\n    image: noop\n  openclaw-cli:\n    image: noop\n",
+    "services:\n  remoteclaw-gateway:\n    image: noop\n  remoteclaw-cli:\n    image: noop\n",
   );
   await writeDockerStub(binDir, logPath);
 
@@ -71,7 +71,7 @@ function createEnv(
     DOCKER_STUB_LOG: sandbox.logPath,
     REMOTECLAW_GATEWAY_TOKEN: "test-token",
     REMOTECLAW_CONFIG_DIR: join(sandbox.rootDir, "config"),
-    REMOTECLAW_WORKSPACE_DIR: join(sandbox.rootDir, "openclaw"),
+    REMOTECLAW_WORKSPACE_DIR: join(sandbox.rootDir, "remoteclaw"),
   };
 
   for (const [key, value] of Object.entries(overrides)) {
@@ -120,7 +120,7 @@ describe("docker-setup.sh", () => {
       env: createEnv(sandbox, {
         REMOTECLAW_DOCKER_APT_PACKAGES: "ffmpeg build-essential",
         REMOTECLAW_EXTRA_MOUNTS: undefined,
-        REMOTECLAW_HOME_VOLUME: "openclaw-home",
+        REMOTECLAW_HOME_VOLUME: "remoteclaw-home",
       }),
       stdio: ["ignore", "ignore", "pipe"],
     });
@@ -128,11 +128,11 @@ describe("docker-setup.sh", () => {
     const envFile = await readFile(join(sandbox.rootDir, ".env"), "utf8");
     expect(envFile).toContain("REMOTECLAW_DOCKER_APT_PACKAGES=ffmpeg build-essential");
     expect(envFile).toContain("REMOTECLAW_EXTRA_MOUNTS=");
-    expect(envFile).toContain("REMOTECLAW_HOME_VOLUME=openclaw-home");
+    expect(envFile).toContain("REMOTECLAW_HOME_VOLUME=remoteclaw-home");
     const extraCompose = await readFile(join(sandbox.rootDir, "docker-compose.extra.yml"), "utf8");
-    expect(extraCompose).toContain("openclaw-home:/home/node");
+    expect(extraCompose).toContain("remoteclaw-home:/home/node");
     expect(extraCompose).toContain("volumes:");
-    expect(extraCompose).toContain("openclaw-home:");
+    expect(extraCompose).toContain("remoteclaw-home:");
     const log = await readFile(sandbox.logPath, "utf8");
     expect(log).toContain("--build-arg REMOTECLAW_DOCKER_APT_PACKAGES=ffmpeg build-essential");
   });

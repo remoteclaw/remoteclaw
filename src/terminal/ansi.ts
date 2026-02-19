@@ -1,6 +1,6 @@
 const ANSI_SGR_PATTERN = "\\x1b\\[[0-9;]*m";
 // OSC-8 hyperlinks: ESC ] 8 ; ; url ST ... ESC ] 8 ; ; ST
-const OSC8_PATTERN = "\\x1b\\]8;;.*?\\x1b\\\\|\\x1b\\]8;;\\x1b\\\\";
+const OSC8_PATTERN = "\\x1b\\]8;;.*?\\x1b\\[remoteclaw\\]|\\x1b\\]8;;\\x1b\\[remoteclaw\\]";
 
 const ANSI_REGEX = new RegExp(ANSI_SGR_PATTERN, "g");
 const OSC8_REGEX = new RegExp(OSC8_PATTERN, "g");

@@ -48,7 +48,7 @@ describe("Integration: saveSessionStore with pruning", () => {
   let mockLoadConfig: ReturnType<typeof vi.fn>;
 
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-pruning-integ-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-pruning-integ-"));
   });
 
   afterAll(async () => {

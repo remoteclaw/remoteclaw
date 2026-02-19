@@ -175,13 +175,15 @@ describe("wrapNoteMessage", () => {
 
   it("preserves long Windows paths without inserting spaces/newlines", () => {
     // No spaces: wrapNoteMessage splits on whitespace, so a "Program Files" style path would wrap.
-    const input = "C:\\\\State\\\\OpenClaw\\\\bin\\\\openclaw.exe";
+    const input =
+      "C:\\[remoteclaw\\]State\\[remoteclaw\\]RemoteClaw\\[remoteclaw\\]bin\\[remoteclaw\\]remoteclaw.exe";
     const wrapped = wrapNoteMessage(input, { maxWidth: 10, columns: 80 });
     expect(wrapped).toBe(input);
   });
 
   it("preserves UNC paths without inserting spaces/newlines", () => {
-    const input = "\\\\\\\\server\\\\share\\\\some\\\\really\\\\long\\\\path\\\\file.txt";
+    const input =
+      "\\[remoteclaw\\]\\[remoteclaw\\]server\\[remoteclaw\\]share\\[remoteclaw\\]some\\[remoteclaw\\]really\\[remoteclaw\\]long\\[remoteclaw\\]path\\[remoteclaw\\]file.txt";
     const wrapped = wrapNoteMessage(input, { maxWidth: 12, columns: 80 });
     expect(wrapped).toBe(input);
   });

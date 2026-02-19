@@ -98,7 +98,7 @@ async function setupGatewayTestHome() {
   previousSkipProviders = process.env.REMOTECLAW_SKIP_PROVIDERS;
   previousSkipCron = process.env.REMOTECLAW_SKIP_CRON;
   previousMinimalGateway = process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY;
-  tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gateway-home-"));
+  tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-gateway-home-"));
   process.env.HOME = tempHome;
   process.env.USERPROFILE = tempHome;
   process.env.REMOTECLAW_STATE_DIR = path.join(tempHome, ".remoteclaw");
@@ -114,8 +114,8 @@ function applyGatewaySkipEnv() {
   process.env.REMOTECLAW_SKIP_CRON = "1";
   process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY = "1";
   process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = tempHome
-    ? path.join(tempHome, "openclaw-test-no-bundled-extensions")
-    : "openclaw-test-no-bundled-extensions";
+    ? path.join(tempHome, "remoteclaw-test-no-bundled-extensions")
+    : "remoteclaw-test-no-bundled-extensions";
 }
 
 async function resetGatewayTestState(options: { uniqueConfigRoot: boolean }) {
@@ -127,9 +127,9 @@ async function resetGatewayTestState(options: { uniqueConfigRoot: boolean }) {
   }
   applyGatewaySkipEnv();
   if (options.uniqueConfigRoot) {
-    tempConfigRoot = await fs.mkdtemp(path.join(tempHome, "openclaw-test-"));
+    tempConfigRoot = await fs.mkdtemp(path.join(tempHome, "remoteclaw-test-"));
   } else {
-    tempConfigRoot = path.join(tempHome, ".openclaw-test");
+    tempConfigRoot = path.join(tempHome, ".remoteclaw-test");
     await fs.rm(tempConfigRoot, { recursive: true, force: true });
     await fs.mkdir(tempConfigRoot, { recursive: true });
   }

@@ -125,7 +125,7 @@ export function applyCliProfileEnv(params: {
     env.REMOTECLAW_CONFIG_PATH = path.join(stateDir, "remoteclaw.json");
   }
 
-  if (profile === "dev" && !env.OPENCLAW_GATEWAY_PORT?.trim()) {
-    env.OPENCLAW_GATEWAY_PORT = "19001";
+  if (profile === "dev" && !env.REMOTECLAW_GATEWAY_PORT?.trim()) {
+    env.REMOTECLAW_GATEWAY_PORT = "19001";
   }
 }

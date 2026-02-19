@@ -62,8 +62,8 @@ async function withOnboardEnv(
     "OPENCLAW_SKIP_GMAIL_WATCHER",
     "OPENCLAW_SKIP_CRON",
     "OPENCLAW_SKIP_CANVAS_HOST",
-    "OPENCLAW_GATEWAY_TOKEN",
-    "OPENCLAW_GATEWAY_PASSWORD",
+    "REMOTECLAW_GATEWAY_TOKEN",
+    "REMOTECLAW_GATEWAY_PASSWORD",
     "CUSTOM_API_KEY",
     "OPENCLAW_DISABLE_CONFIG_CACHE",
   ]);
@@ -73,8 +73,8 @@ async function withOnboardEnv(
   process.env.OPENCLAW_SKIP_CRON = "1";
   process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
   process.env.OPENCLAW_DISABLE_CONFIG_CACHE = "1";
-  delete process.env.OPENCLAW_GATEWAY_TOKEN;
-  delete process.env.OPENCLAW_GATEWAY_PASSWORD;
+  delete process.env.REMOTECLAW_GATEWAY_TOKEN;
+  delete process.env.REMOTECLAW_GATEWAY_PASSWORD;
   delete process.env.CUSTOM_API_KEY;
 
   const tempHome = await makeTempWorkspace(prefix);

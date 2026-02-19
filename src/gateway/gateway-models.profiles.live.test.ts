@@ -495,7 +495,7 @@ function buildMinimaxProviderOverride(params: {
 async function runGatewayModelSuite(params: GatewayModelSuiteParams) {
   const previous = {
     configPath: process.env.REMOTECLAW_CONFIG_PATH,
-    token: process.env.OPENCLAW_GATEWAY_TOKEN,
+    token: process.env.REMOTECLAW_GATEWAY_TOKEN,
     skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
     skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
     skipCron: process.env.OPENCLAW_SKIP_CRON,
@@ -513,7 +513,7 @@ async function runGatewayModelSuite(params: GatewayModelSuiteParams) {
   process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
 
   const token = `test-${randomUUID()}`;
-  process.env.OPENCLAW_GATEWAY_TOKEN = token;
+  process.env.REMOTECLAW_GATEWAY_TOKEN = token;
   const agentId = "dev";
 
   const hostAgentDir = resolveOpenClawAgentDir();
@@ -1001,7 +1001,7 @@ async function runGatewayModelSuite(params: GatewayModelSuiteParams) {
     }
 
     process.env.REMOTECLAW_CONFIG_PATH = previous.configPath;
-    process.env.OPENCLAW_GATEWAY_TOKEN = previous.token;
+    process.env.REMOTECLAW_GATEWAY_TOKEN = previous.token;
     process.env.OPENCLAW_SKIP_CHANNELS = previous.skipChannels;
     process.env.OPENCLAW_SKIP_GMAIL_WATCHER = previous.skipGmail;
     process.env.OPENCLAW_SKIP_CRON = previous.skipCron;
@@ -1109,7 +1109,7 @@ describeLive("gateway live (dev agent, profile keys)", () => {
     }
     const previous = {
       configPath: process.env.REMOTECLAW_CONFIG_PATH,
-      token: process.env.OPENCLAW_GATEWAY_TOKEN,
+      token: process.env.REMOTECLAW_GATEWAY_TOKEN,
       skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
       skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
       skipCron: process.env.OPENCLAW_SKIP_CRON,
@@ -1122,7 +1122,7 @@ describeLive("gateway live (dev agent, profile keys)", () => {
     process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
 
     const token = `test-${randomUUID()}`;
-    process.env.OPENCLAW_GATEWAY_TOKEN = token;
+    process.env.REMOTECLAW_GATEWAY_TOKEN = token;
 
     const cfg = loadConfig();
     await ensureOpenClawModelsJson(cfg);
@@ -1240,7 +1240,7 @@ describeLive("gateway live (dev agent, profile keys)", () => {
       await fs.rm(toolProbePath, { force: true });
 
       process.env.REMOTECLAW_CONFIG_PATH = previous.configPath;
-      process.env.OPENCLAW_GATEWAY_TOKEN = previous.token;
+      process.env.REMOTECLAW_GATEWAY_TOKEN = previous.token;
       process.env.OPENCLAW_SKIP_CHANNELS = previous.skipChannels;
       process.env.OPENCLAW_SKIP_GMAIL_WATCHER = previous.skipGmail;
       process.env.OPENCLAW_SKIP_CRON = previous.skipCron;

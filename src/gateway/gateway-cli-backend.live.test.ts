@@ -163,7 +163,7 @@ describeLive("gateway live (cli backend)", () => {
   it("runs the agent pipeline against the local CLI backend", async () => {
     const previous = {
       configPath: process.env.REMOTECLAW_CONFIG_PATH,
-      token: process.env.OPENCLAW_GATEWAY_TOKEN,
+      token: process.env.REMOTECLAW_GATEWAY_TOKEN,
       skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
       skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
       skipCron: process.env.OPENCLAW_SKIP_CRON,
@@ -180,7 +180,7 @@ describeLive("gateway live (cli backend)", () => {
     delete process.env.ANTHROPIC_API_KEY_OLD;
 
     const token = `test-${randomUUID()}`;
-    process.env.OPENCLAW_GATEWAY_TOKEN = token;
+    process.env.REMOTECLAW_GATEWAY_TOKEN = token;
 
     const rawModel = process.env.OPENCLAW_LIVE_CLI_BACKEND_MODEL ?? DEFAULT_MODEL;
     const parsed = parseModelRef(rawModel, "claude-cli");
@@ -388,9 +388,9 @@ describeLive("gateway live (cli backend)", () => {
         process.env.REMOTECLAW_CONFIG_PATH = previous.configPath;
       }
       if (previous.token === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.REMOTECLAW_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = previous.token;
+        process.env.REMOTECLAW_GATEWAY_TOKEN = previous.token;
       }
       if (previous.skipChannels === undefined) {
         delete process.env.OPENCLAW_SKIP_CHANNELS;

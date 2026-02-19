@@ -22,11 +22,11 @@ const gatewayToken = "test-token";
 let envSnapshot: ReturnType<typeof captureEnv>;
 
 beforeAll(async () => {
-  envSnapshot = captureEnv(["OPENCLAW_GATEWAY_PORT", "OPENCLAW_GATEWAY_TOKEN"]);
+  envSnapshot = captureEnv(["REMOTECLAW_GATEWAY_PORT", "REMOTECLAW_GATEWAY_TOKEN"]);
   gatewayPort = await getFreePort();
   testState.gatewayAuth = { mode: "token", token: gatewayToken };
-  process.env.OPENCLAW_GATEWAY_PORT = String(gatewayPort);
-  process.env.OPENCLAW_GATEWAY_TOKEN = gatewayToken;
+  process.env.REMOTECLAW_GATEWAY_PORT = String(gatewayPort);
+  process.env.REMOTECLAW_GATEWAY_TOKEN = gatewayToken;
   server = await startGatewayServer(gatewayPort);
 });
 

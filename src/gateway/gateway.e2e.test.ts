@@ -30,7 +30,7 @@ describe("gateway e2e", () => {
       const prev = {
         home: process.env.HOME,
         configPath: process.env.REMOTECLAW_CONFIG_PATH,
-        token: process.env.OPENCLAW_GATEWAY_TOKEN,
+        token: process.env.REMOTECLAW_GATEWAY_TOKEN,
         skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
         skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
         skipCron: process.env.OPENCLAW_SKIP_CRON,
@@ -49,7 +49,7 @@ describe("gateway e2e", () => {
       process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
 
       const token = `test-${randomUUID()}`;
-      process.env.OPENCLAW_GATEWAY_TOKEN = token;
+      process.env.REMOTECLAW_GATEWAY_TOKEN = token;
 
       const workspaceDir = path.join(tempHome, "openclaw");
       await fs.mkdir(workspaceDir, { recursive: true });
@@ -117,7 +117,7 @@ describe("gateway e2e", () => {
         restore();
         process.env.HOME = prev.home;
         process.env.REMOTECLAW_CONFIG_PATH = prev.configPath;
-        process.env.OPENCLAW_GATEWAY_TOKEN = prev.token;
+        process.env.REMOTECLAW_GATEWAY_TOKEN = prev.token;
         process.env.OPENCLAW_SKIP_CHANNELS = prev.skipChannels;
         process.env.OPENCLAW_SKIP_GMAIL_WATCHER = prev.skipGmail;
         process.env.OPENCLAW_SKIP_CRON = prev.skipCron;
@@ -132,7 +132,7 @@ describe("gateway e2e", () => {
       home: process.env.HOME,
       stateDir: process.env.REMOTECLAW_STATE_DIR,
       configPath: process.env.REMOTECLAW_CONFIG_PATH,
-      token: process.env.OPENCLAW_GATEWAY_TOKEN,
+      token: process.env.REMOTECLAW_GATEWAY_TOKEN,
       skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
       skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
       skipCron: process.env.OPENCLAW_SKIP_CRON,
@@ -145,7 +145,7 @@ describe("gateway e2e", () => {
     process.env.OPENCLAW_SKIP_CRON = "1";
     process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
     process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
+    delete process.env.REMOTECLAW_GATEWAY_TOKEN;
 
     const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-wizard-home-"));
     process.env.HOME = tempHome;
@@ -244,7 +244,7 @@ describe("gateway e2e", () => {
       process.env.HOME = prev.home;
       process.env.REMOTECLAW_STATE_DIR = prev.stateDir;
       process.env.REMOTECLAW_CONFIG_PATH = prev.configPath;
-      process.env.OPENCLAW_GATEWAY_TOKEN = prev.token;
+      process.env.REMOTECLAW_GATEWAY_TOKEN = prev.token;
       process.env.OPENCLAW_SKIP_CHANNELS = prev.skipChannels;
       process.env.OPENCLAW_SKIP_GMAIL_WATCHER = prev.skipGmail;
       process.env.OPENCLAW_SKIP_CRON = prev.skipCron;

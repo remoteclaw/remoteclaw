@@ -37,7 +37,7 @@ vi.mock("../../config/config.js", () => ({
 vi.mock("../../gateway/auth.js", () => ({
   resolveGatewayAuth: (params: { authConfig?: { token?: string }; env?: NodeJS.ProcessEnv }) => ({
     mode: "token",
-    token: params.authConfig?.token ?? params.env?.OPENCLAW_GATEWAY_TOKEN,
+    token: params.authConfig?.token ?? params.env?.REMOTECLAW_GATEWAY_TOKEN,
     password: undefined,
     allowTailscale: false,
   }),

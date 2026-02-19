@@ -84,7 +84,7 @@ async function main() {
   const cfg = loadConfig();
   const portRaw =
     argValue(args, "--port") ??
-    process.env.OPENCLAW_GATEWAY_PORT ??
+    process.env.REMOTECLAW_GATEWAY_PORT ??
     process.env.CLAWDBOT_GATEWAY_PORT ??
     (typeof cfg.gateway?.port === "number" ? String(cfg.gateway.port) : "") ??
     "18789";
@@ -115,7 +115,7 @@ async function main() {
 
   const token = argValue(args, "--token");
   if (token) {
-    process.env.OPENCLAW_GATEWAY_TOKEN = token;
+    process.env.REMOTECLAW_GATEWAY_TOKEN = token;
   }
 
   let server: Awaited<ReturnType<typeof startGatewayServer>> | null = null;

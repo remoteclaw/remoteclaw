@@ -65,13 +65,13 @@ describe("applyCliProfileEnv", () => {
     expect(env.OPENCLAW_PROFILE).toBe("dev");
     expect(env.REMOTECLAW_STATE_DIR).toBe(expectedStateDir);
     expect(env.REMOTECLAW_CONFIG_PATH).toBe(path.join(expectedStateDir, "remoteclaw.json"));
-    expect(env.OPENCLAW_GATEWAY_PORT).toBe("19001");
+    expect(env.REMOTECLAW_GATEWAY_PORT).toBe("19001");
   });
 
   it("does not override explicit env values", () => {
     const env: Record<string, string | undefined> = {
       REMOTECLAW_STATE_DIR: "/custom",
-      OPENCLAW_GATEWAY_PORT: "19099",
+      REMOTECLAW_GATEWAY_PORT: "19099",
     };
     applyCliProfileEnv({
       profile: "dev",
@@ -79,7 +79,7 @@ describe("applyCliProfileEnv", () => {
       homedir: () => "/home/peter",
     });
     expect(env.REMOTECLAW_STATE_DIR).toBe("/custom");
-    expect(env.OPENCLAW_GATEWAY_PORT).toBe("19099");
+    expect(env.REMOTECLAW_GATEWAY_PORT).toBe("19099");
     expect(env.REMOTECLAW_CONFIG_PATH).toBe(path.join("/custom", "remoteclaw.json"));
   });
 

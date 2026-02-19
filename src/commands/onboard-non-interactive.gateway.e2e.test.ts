@@ -84,8 +84,8 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
     skipCron: process.env.OPENCLAW_SKIP_CRON,
     skipCanvas: process.env.OPENCLAW_SKIP_CANVAS_HOST,
     skipBrowser: process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER,
-    token: process.env.OPENCLAW_GATEWAY_TOKEN,
-    password: process.env.OPENCLAW_GATEWAY_PASSWORD,
+    token: process.env.REMOTECLAW_GATEWAY_TOKEN,
+    password: process.env.REMOTECLAW_GATEWAY_PASSWORD,
   };
   let tempHome: string | undefined;
 
@@ -115,8 +115,8 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
     process.env.OPENCLAW_SKIP_CRON = "1";
     process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
     process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
-    delete process.env.OPENCLAW_GATEWAY_PASSWORD;
+    delete process.env.REMOTECLAW_GATEWAY_TOKEN;
+    delete process.env.REMOTECLAW_GATEWAY_PASSWORD;
 
     tempHome = await makeTempWorkspace("openclaw-onboard-");
     process.env.HOME = tempHome;
@@ -134,8 +134,8 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
     process.env.OPENCLAW_SKIP_CRON = prev.skipCron;
     process.env.OPENCLAW_SKIP_CANVAS_HOST = prev.skipCanvas;
     process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = prev.skipBrowser;
-    process.env.OPENCLAW_GATEWAY_TOKEN = prev.token;
-    process.env.OPENCLAW_GATEWAY_PASSWORD = prev.password;
+    process.env.REMOTECLAW_GATEWAY_TOKEN = prev.token;
+    process.env.REMOTECLAW_GATEWAY_PASSWORD = prev.password;
   });
 
   it("writes gateway token auth into config and gateway enforces it", async () => {

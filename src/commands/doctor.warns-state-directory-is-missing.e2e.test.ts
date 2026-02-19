@@ -51,15 +51,15 @@ describe("doctor command", () => {
     expect(warned).toBe(true);
   });
 
-  it("skips gateway auth warning when OPENCLAW_GATEWAY_TOKEN is set", async () => {
+  it("skips gateway auth warning when REMOTECLAW_GATEWAY_TOKEN is set", async () => {
     mockDoctorConfigSnapshot({
       config: {
         gateway: { mode: "local" },
       },
     });
 
-    const prevToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    process.env.OPENCLAW_GATEWAY_TOKEN = "env-token-1234567890";
+    const prevToken = process.env.REMOTECLAW_GATEWAY_TOKEN;
+    process.env.REMOTECLAW_GATEWAY_TOKEN = "env-token-1234567890";
     note.mockClear();
 
     try {
@@ -70,9 +70,9 @@ describe("doctor command", () => {
       });
     } finally {
       if (prevToken === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.REMOTECLAW_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = prevToken;
+        process.env.REMOTECLAW_GATEWAY_TOKEN = prevToken;
       }
     }
 

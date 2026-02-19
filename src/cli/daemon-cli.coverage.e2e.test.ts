@@ -83,14 +83,14 @@ describe("daemon-cli coverage", () => {
   const originalEnv = {
     REMOTECLAW_STATE_DIR: process.env.REMOTECLAW_STATE_DIR,
     REMOTECLAW_CONFIG_PATH: process.env.REMOTECLAW_CONFIG_PATH,
-    OPENCLAW_GATEWAY_PORT: process.env.OPENCLAW_GATEWAY_PORT,
+    REMOTECLAW_GATEWAY_PORT: process.env.REMOTECLAW_GATEWAY_PORT,
     OPENCLAW_PROFILE: process.env.OPENCLAW_PROFILE,
   };
 
   beforeEach(() => {
     process.env.REMOTECLAW_STATE_DIR = "/tmp/openclaw-cli-state";
     process.env.REMOTECLAW_CONFIG_PATH = "/tmp/openclaw-cli-state/remoteclaw.json";
-    delete process.env.OPENCLAW_GATEWAY_PORT;
+    delete process.env.REMOTECLAW_GATEWAY_PORT;
     delete process.env.OPENCLAW_PROFILE;
     serviceReadCommand.mockResolvedValue(null);
   });
@@ -108,10 +108,10 @@ describe("daemon-cli coverage", () => {
       delete process.env.REMOTECLAW_CONFIG_PATH;
     }
 
-    if (originalEnv.OPENCLAW_GATEWAY_PORT !== undefined) {
-      process.env.OPENCLAW_GATEWAY_PORT = originalEnv.OPENCLAW_GATEWAY_PORT;
+    if (originalEnv.REMOTECLAW_GATEWAY_PORT !== undefined) {
+      process.env.REMOTECLAW_GATEWAY_PORT = originalEnv.REMOTECLAW_GATEWAY_PORT;
     } else {
-      delete process.env.OPENCLAW_GATEWAY_PORT;
+      delete process.env.REMOTECLAW_GATEWAY_PORT;
     }
 
     if (originalEnv.OPENCLAW_PROFILE !== undefined) {
@@ -151,7 +151,7 @@ describe("daemon-cli coverage", () => {
         OPENCLAW_PROFILE: "dev",
         REMOTECLAW_STATE_DIR: "/tmp/openclaw-daemon-state",
         REMOTECLAW_CONFIG_PATH: "/tmp/openclaw-daemon-state/remoteclaw.json",
-        OPENCLAW_GATEWAY_PORT: "19001",
+        REMOTECLAW_GATEWAY_PORT: "19001",
       },
       sourcePath: "/tmp/bot.molt.gateway.plist",
     });

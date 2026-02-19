@@ -3,9 +3,9 @@ import { encodePairingSetupCode, resolvePairingSetupFromConfig } from "./setup-c
 
 describe("pairing setup code", () => {
   beforeEach(() => {
-    vi.stubEnv("OPENCLAW_GATEWAY_TOKEN", "");
+    vi.stubEnv("REMOTECLAW_GATEWAY_TOKEN", "");
     vi.stubEnv("CLAWDBOT_GATEWAY_TOKEN", "");
-    vi.stubEnv("OPENCLAW_GATEWAY_PASSWORD", "");
+    vi.stubEnv("REMOTECLAW_GATEWAY_PASSWORD", "");
     vi.stubEnv("CLAWDBOT_GATEWAY_PASSWORD", "");
   });
 
@@ -55,7 +55,7 @@ describe("pairing setup code", () => {
       },
       {
         env: {
-          OPENCLAW_GATEWAY_TOKEN: "new-token",
+          REMOTECLAW_GATEWAY_TOKEN: "new-token",
         },
       },
     );

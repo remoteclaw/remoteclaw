@@ -26,7 +26,7 @@ x-i18n:
 ## 默认位置
 
 - 默认：`~/.openclaw/workspace`
-- 如果设置了 `OPENCLAW_PROFILE` 且不是 `"default"`，默认值变为
+- 如果设置了 `REMOTECLAW_PROFILE` 且不是 `"default"`，默认值变为
   `~/.openclaw/workspace-<profile>`。
 - 在 `~/.openclaw/openclaw.json` 中覆盖：
 

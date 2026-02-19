@@ -89,7 +89,7 @@ describe("version resolution", () => {
     expect(
       resolveRuntimeServiceVersion({
         OPENCLAW_VERSION: "9.9.9",
-        OPENCLAW_SERVICE_VERSION: "2.2.2",
+        REMOTECLAW_SERVICE_VERSION: "2.2.2",
         npm_package_version: "1.1.1",
       }),
     ).toBe("9.9.9");
@@ -99,7 +99,7 @@ describe("version resolution", () => {
     expect(
       resolveRuntimeServiceVersion({
         OPENCLAW_VERSION: "   ",
-        OPENCLAW_SERVICE_VERSION: "  2.0.0  ",
+        REMOTECLAW_SERVICE_VERSION: "  2.0.0  ",
         npm_package_version: "1.0.0",
       }),
     ).toBe("2.0.0");
@@ -107,7 +107,7 @@ describe("version resolution", () => {
     expect(
       resolveRuntimeServiceVersion({
         OPENCLAW_VERSION: " ",
-        OPENCLAW_SERVICE_VERSION: "\t",
+        REMOTECLAW_SERVICE_VERSION: "\t",
         npm_package_version: " 1.0.0-package ",
       }),
     ).toBe("1.0.0-package");
@@ -116,7 +116,7 @@ describe("version resolution", () => {
       resolveRuntimeServiceVersion(
         {
           OPENCLAW_VERSION: "",
-          OPENCLAW_SERVICE_VERSION: " ",
+          REMOTECLAW_SERVICE_VERSION: " ",
           npm_package_version: "",
         },
         "fallback",

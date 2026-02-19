@@ -326,7 +326,7 @@ describe("gateway server auth/connect", () => {
       await withRuntimeVersionEnv(
         {
           OPENCLAW_VERSION: " ",
-          OPENCLAW_SERVICE_VERSION: "2.4.6-service",
+          REMOTECLAW_SERVICE_VERSION: "2.4.6-service",
           npm_package_version: "1.0.0-package",
         },
         async () => expectHelloOkServerVersion(port, "2.4.6-service"),
@@ -337,7 +337,7 @@ describe("gateway server auth/connect", () => {
       await withRuntimeVersionEnv(
         {
           OPENCLAW_VERSION: "9.9.9-cli",
-          OPENCLAW_SERVICE_VERSION: "2.4.6-service",
+          REMOTECLAW_SERVICE_VERSION: "2.4.6-service",
           npm_package_version: "1.0.0-package",
         },
         async () => expectHelloOkServerVersion(port, "9.9.9-cli"),
@@ -348,7 +348,7 @@ describe("gateway server auth/connect", () => {
       await withRuntimeVersionEnv(
         {
           OPENCLAW_VERSION: " ",
-          OPENCLAW_SERVICE_VERSION: "\t",
+          REMOTECLAW_SERVICE_VERSION: "\t",
           npm_package_version: "1.0.0-package",
         },
         async () => expectHelloOkServerVersion(port, "1.0.0-package"),

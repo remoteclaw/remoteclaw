@@ -83,8 +83,9 @@ export function resolveGatewayServiceDescription(params: {
   return (
     params.description ??
     formatGatewayServiceDescription({
-      profile: params.env.OPENCLAW_PROFILE,
-      version: params.environment?.OPENCLAW_SERVICE_VERSION ?? params.env.OPENCLAW_SERVICE_VERSION,
+      profile: params.env.REMOTECLAW_PROFILE,
+      version:
+        params.environment?.REMOTECLAW_SERVICE_VERSION ?? params.env.REMOTECLAW_SERVICE_VERSION,
     })
   );
 }

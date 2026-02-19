@@ -24,7 +24,7 @@ describe("restart-helper", () => {
     it("creates a systemd restart script on Linux", async () => {
       Object.defineProperty(process, "platform", { value: "linux" });
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "default",
+        REMOTECLAW_PROFILE: "default",
       });
 
       expect(scriptPath).toBeTruthy();
@@ -41,11 +41,11 @@ describe("restart-helper", () => {
       }
     });
 
-    it("uses OPENCLAW_SYSTEMD_UNIT override for systemd scripts", async () => {
+    it("uses REMOTECLAW_SYSTEMD_UNIT override for systemd scripts", async () => {
       Object.defineProperty(process, "platform", { value: "linux" });
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "default",
-        OPENCLAW_SYSTEMD_UNIT: "custom-gateway",
+        REMOTECLAW_PROFILE: "default",
+        REMOTECLAW_SYSTEMD_UNIT: "custom-gateway",
       });
 
       expect(scriptPath).toBeTruthy();
@@ -62,7 +62,7 @@ describe("restart-helper", () => {
       process.getuid = () => 501;
 
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "default",
+        REMOTECLAW_PROFILE: "default",
       });
 
       expect(scriptPath).toBeTruthy();
@@ -78,13 +78,13 @@ describe("restart-helper", () => {
       }
     });
 
-    it("uses OPENCLAW_LAUNCHD_LABEL override on macOS", async () => {
+    it("uses REMOTECLAW_LAUNCHD_LABEL override on macOS", async () => {
       Object.defineProperty(process, "platform", { value: "darwin" });
       process.getuid = () => 501;
 
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "default",
-        OPENCLAW_LAUNCHD_LABEL: "com.custom.openclaw",
+        REMOTECLAW_PROFILE: "default",
+        REMOTECLAW_LAUNCHD_LABEL: "com.custom.openclaw",
       });
 
       expect(scriptPath).toBeTruthy();
@@ -100,7 +100,7 @@ describe("restart-helper", () => {
       Object.defineProperty(process, "platform", { value: "win32" });
 
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "default",
+        REMOTECLAW_PROFILE: "default",
       });
 
       expect(scriptPath).toBeTruthy();
@@ -118,12 +118,12 @@ describe("restart-helper", () => {
       }
     });
 
-    it("uses OPENCLAW_WINDOWS_TASK_NAME override on Windows", async () => {
+    it("uses REMOTECLAW_WINDOWS_TASK_NAME override on Windows", async () => {
       Object.defineProperty(process, "platform", { value: "win32" });
 
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "default",
-        OPENCLAW_WINDOWS_TASK_NAME: "OpenClaw Gateway (custom)",
+        REMOTECLAW_PROFILE: "default",
+        REMOTECLAW_WINDOWS_TASK_NAME: "OpenClaw Gateway (custom)",
       });
 
       expect(scriptPath).toBeTruthy();
@@ -139,7 +139,7 @@ describe("restart-helper", () => {
     it("uses custom profile in service names", async () => {
       Object.defineProperty(process, "platform", { value: "linux" });
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "production",
+        REMOTECLAW_PROFILE: "production",
       });
 
       expect(scriptPath).toBeTruthy();
@@ -156,7 +156,7 @@ describe("restart-helper", () => {
       process.getuid = () => 502;
 
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "staging",
+        REMOTECLAW_PROFILE: "staging",
       });
 
       expect(scriptPath).toBeTruthy();
@@ -172,7 +172,7 @@ describe("restart-helper", () => {
       Object.defineProperty(process, "platform", { value: "win32" });
 
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "production",
+        REMOTECLAW_PROFILE: "production",
       });
 
       expect(scriptPath).toBeTruthy();
@@ -197,7 +197,7 @@ describe("restart-helper", () => {
         .mockRejectedValueOnce(new Error("simulated write failure"));
 
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "default",
+        REMOTECLAW_PROFILE: "default",
       });
 
       expect(scriptPath).toBeNull();
@@ -207,7 +207,7 @@ describe("restart-helper", () => {
     it("escapes single quotes in profile names for shell scripts", async () => {
       Object.defineProperty(process, "platform", { value: "linux" });
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "it's-a-test",
+        REMOTECLAW_PROFILE: "it's-a-test",
       });
 
       expect(scriptPath).toBeTruthy();
@@ -224,7 +224,7 @@ describe("restart-helper", () => {
     it("rejects unsafe batch profile names on Windows", async () => {
       Object.defineProperty(process, "platform", { value: "win32" });
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "test&whoami",
+        REMOTECLAW_PROFILE: "test&whoami",
       });
 
       expect(scriptPath).toBeNull();

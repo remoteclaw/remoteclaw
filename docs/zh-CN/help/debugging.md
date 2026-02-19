@@ -62,7 +62,7 @@ tsx watch src/entry.ts gateway --force
 
 ```bash
 pnpm gateway:dev
-OPENCLAW_PROFILE=dev openclaw tui
+REMOTECLAW_PROFILE=dev openclaw tui
 ```
 
 如果你还没有全局安装，请通过 `pnpm openclaw ...` 运行 CLI。
@@ -70,7 +70,7 @@ OPENCLAW_PROFILE=dev openclaw tui
 这会执行：
 
 1. **配置文件隔离**（全局 `--dev`）
-   - `OPENCLAW_PROFILE=dev`
+   - `REMOTECLAW_PROFILE=dev`
    - `OPENCLAW_STATE_DIR=~/.openclaw-dev`
    - `OPENCLAW_CONFIG_PATH=~/.openclaw-dev/openclaw.json`
    - `OPENCLAW_GATEWAY_PORT=19001`（浏览器/画布相应移动）
@@ -94,7 +94,7 @@ pnpm gateway:dev:reset
 如果你需要明确拼写，请使用环境变量形式：
 
 ```bash
-OPENCLAW_PROFILE=dev openclaw gateway --dev --reset
+REMOTECLAW_PROFILE=dev openclaw gateway --dev --reset
 ```
 
 `--reset` 清除配置、凭证、会话和 dev 工作区（使用 `trash`，而非 `rm`），然后重新创建默认的 dev 设置。

@@ -62,7 +62,7 @@ describe("applyCliProfileEnv", () => {
       homedir: () => "/home/peter",
     });
     const expectedStateDir = path.join(path.resolve("/home/peter"), ".remoteclaw-dev");
-    expect(env.OPENCLAW_PROFILE).toBe("dev");
+    expect(env.REMOTECLAW_PROFILE).toBe("dev");
     expect(env.REMOTECLAW_STATE_DIR).toBe(expectedStateDir);
     expect(env.REMOTECLAW_CONFIG_PATH).toBe(path.join(expectedStateDir, "remoteclaw.json"));
     expect(env.REMOTECLAW_GATEWAY_PORT).toBe("19001");
@@ -108,55 +108,55 @@ describe("formatCliCommand", () => {
   });
 
   it("returns command unchanged when profile is default", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { OPENCLAW_PROFILE: "default" })).toBe(
+    expect(formatCliCommand("openclaw doctor --fix", { REMOTECLAW_PROFILE: "default" })).toBe(
       "openclaw doctor --fix",
     );
   });
 
   it("returns command unchanged when profile is Default (case-insensitive)", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { OPENCLAW_PROFILE: "Default" })).toBe(
+    expect(formatCliCommand("openclaw doctor --fix", { REMOTECLAW_PROFILE: "Default" })).toBe(
       "openclaw doctor --fix",
     );
   });
 
   it("returns command unchanged when profile is invalid", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { OPENCLAW_PROFILE: "bad profile" })).toBe(
+    expect(formatCliCommand("openclaw doctor --fix", { REMOTECLAW_PROFILE: "bad profile" })).toBe(
       "openclaw doctor --fix",
     );
   });
 
   it("returns command unchanged when --profile is already present", () => {
     expect(
-      formatCliCommand("openclaw --profile work doctor --fix", { OPENCLAW_PROFILE: "work" }),
+      formatCliCommand("openclaw --profile work doctor --fix", { REMOTECLAW_PROFILE: "work" }),
     ).toBe("openclaw --profile work doctor --fix");
   });
 
   it("returns command unchanged when --dev is already present", () => {
-    expect(formatCliCommand("openclaw --dev doctor", { OPENCLAW_PROFILE: "dev" })).toBe(
+    expect(formatCliCommand("openclaw --dev doctor", { REMOTECLAW_PROFILE: "dev" })).toBe(
       "openclaw --dev doctor",
     );
   });
 
   it("inserts --profile flag when profile is set", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { OPENCLAW_PROFILE: "work" })).toBe(
+    expect(formatCliCommand("openclaw doctor --fix", { REMOTECLAW_PROFILE: "work" })).toBe(
       "openclaw --profile work doctor --fix",
     );
   });
 
   it("trims whitespace from profile", () => {
-    expect(formatCliCommand("openclaw doctor --fix", { OPENCLAW_PROFILE: "  jbopenclaw  " })).toBe(
-      "openclaw --profile jbopenclaw doctor --fix",
-    );
+    expect(
+      formatCliCommand("openclaw doctor --fix", { REMOTECLAW_PROFILE: "  jbopenclaw  " }),
+    ).toBe("openclaw --profile jbopenclaw doctor --fix");
   });
 
   it("handles command with no args after openclaw", () => {
-    expect(formatCliCommand("openclaw", { OPENCLAW_PROFILE: "test" })).toBe(
+    expect(formatCliCommand("openclaw", { REMOTECLAW_PROFILE: "test" })).toBe(
       "openclaw --profile test",
     );
   });
 
   it("handles pnpm wrapper", () => {
-    expect(formatCliCommand("pnpm openclaw doctor", { OPENCLAW_PROFILE: "work" })).toBe(
+    expect(formatCliCommand("pnpm openclaw doctor", { REMOTECLAW_PROFILE: "work" })).toBe(
       "pnpm openclaw --profile work doctor",
     );
   });

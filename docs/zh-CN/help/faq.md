@@ -1633,7 +1633,7 @@ openclaw onboard --install-daemon
 注意：
 
 - 新手引导向导在看到现有配置时也提供**重置**选项。参阅[向导](/start/wizard)。
-- 如果你使用了配置文件（`--profile` / `OPENCLAW_PROFILE`），重置每个状态目录（默认为 `~/.openclaw-<profile>`）。
+- 如果你使用了配置文件（`--profile` / `REMOTECLAW_PROFILE`），重置每个状态目录（默认为 `~/.openclaw-<profile>`）。
 - 开发重置：`openclaw gateway --dev --reset`（仅限开发；清除开发配置 + 凭据 + 会话 + 工作区）。
 
 ### 我遇到了 context too large 错误——如何重置或压缩

@@ -44,12 +44,7 @@ import {
   registerAgentRunContext,
 } from "../infra/agent-events.js";
 import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
-import {
-  ChannelBridge,
-  ClaudeCliRuntime,
-  toDeliveryResult,
-  type ChannelMessage,
-} from "../middleware/index.js";
+import { ChannelBridge, ClaudeCliRuntime, type ChannelMessage } from "../middleware/index.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { applyVerboseOverride } from "../sessions/level-overrides.js";
@@ -370,7 +365,7 @@ export async function agentCommand(
     }
     const startedAt = Date.now();
 
-    let result: ReturnType<typeof toDeliveryResult>;
+    let reply: Awaited<ReturnType<ChannelBridge["handle"]>>;
     try {
       const runContext = resolveAgentRunContext(opts);
       const bridge = new ChannelBridge({
@@ -387,8 +382,7 @@ export async function agentCommand(
         text: body,
         workspaceDir,
       };
-      const reply = await bridge.handle(channelMessage, undefined, opts.abortSignal);
-      result = toDeliveryResult(reply, "claude-cli", model);
+      reply = await bridge.handle(channelMessage, undefined, opts.abortSignal);
       emitAgentEvent({
         runId,
         stream: "lifecycle",
@@ -396,7 +390,7 @@ export async function agentCommand(
           phase: "end",
           startedAt,
           endedAt: Date.now(),
-          aborted: result.meta.aborted ?? false,
+          aborted: reply.aborted,
         },
       });
       if (resolvedAuth?.profileId) {
@@ -429,6 +423,28 @@ export async function agentCommand(
       throw err;
     }
 
+    // Build result envelope for downstream consumers (session store, delivery).
+    const result = {
+      payloads: reply.text ? [{ text: reply.text }] : undefined,
+      meta: {
+        durationMs: reply.durationMs,
+        agentMeta: {
+          sessionId: reply.sessionId ?? "",
+          provider: "claude-cli",
+          model,
+          usage: reply.usage
+            ? {
+                input: reply.usage.inputTokens,
+                output: reply.usage.outputTokens,
+                cacheRead: reply.usage.cacheReadTokens,
+                cacheWrite: reply.usage.cacheWriteTokens,
+              }
+            : undefined,
+        },
+        aborted: reply.aborted || undefined,
+      },
+    };
+
     // Update token+model fields in the session store.
     if (sessionStore && sessionKey) {
       await updateSessionStoreAfterAgentRun({
@@ -444,7 +460,7 @@ export async function agentCommand(
       });
     }
 
-    const payloads = result.payloads ?? [];
+    const payloads = reply.text ? [{ text: reply.text }] : [];
     return await deliverAgentCommandResult({
       cfg,
       deps,

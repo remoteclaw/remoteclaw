@@ -2,16 +2,15 @@ import crypto from "node:crypto";
 import { ensureAuthProfileStore } from "../../agents/auth-profiles.js";
 import { type ResolvedProviderAuth, resolveApiKeyForProvider } from "../../agents/model-auth.js";
 import { sanitizeUserFacingText } from "../../agents/pi-embedded-helpers.js";
-import type { EmbeddedPiRunResult } from "../../agents/pi-embedded-runner/types.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import {
   ChannelBridge,
   ClaudeCliRuntime,
-  toDeliveryResult,
   type BridgeCallbacks,
   type ChannelMessage,
+  type ChannelReply,
 } from "../../middleware/index.js";
 import { defaultRuntime } from "../../runtime.js";
 import { stripHeartbeatToken } from "../heartbeat.js";
@@ -26,7 +25,7 @@ import type { TypingSignaler } from "./typing-mode.js";
 export type AgentRunLoopResult =
   | {
       kind: "success";
-      runResult: EmbeddedPiRunResult;
+      runResult: ChannelReply;
       fallbackProvider?: string;
       fallbackModel?: string;
       didLogHeartbeatStrip: boolean;
@@ -167,11 +166,10 @@ export async function runAgentTurnWithFallback(params: {
 
   try {
     const reply = await bridge.handle(channelMessage, callbacks, params.opts?.abortSignal);
-    const runResult = toDeliveryResult(reply, "claude-cli", params.followupRun.run.model);
 
     return {
       kind: "success",
-      runResult,
+      runResult: reply,
       didLogHeartbeatStrip,
       autoCompactionCompleted: false,
     };

@@ -399,7 +399,7 @@ export async function runReplyAgent(params: {
       }
     }
 
-    const payloadArray = runResult.payloads ?? [];
+    const payloadArray = runResult.text ? [{ text: runResult.text }] : [];
 
     if (blockReplyPipeline) {
       await blockReplyPipeline.flush({ force: true });
@@ -409,14 +409,18 @@ export async function runReplyAgent(params: {
       await Promise.allSettled(pendingToolTasks);
     }
 
-    const usage = runResult.meta?.agentMeta?.usage;
-    const promptTokens = runResult.meta?.agentMeta?.promptTokens;
-    const modelUsed = runResult.meta?.agentMeta?.model ?? fallbackModel ?? defaultModel;
-    const providerUsed =
-      runResult.meta?.agentMeta?.provider ?? fallbackProvider ?? followupRun.run.provider;
-    const cliSessionId = isCliProvider(providerUsed, cfg)
-      ? runResult.meta?.agentMeta?.sessionId?.trim()
+    const usage = runResult.usage
+      ? {
+          input: runResult.usage.inputTokens,
+          output: runResult.usage.outputTokens,
+          cacheRead: runResult.usage.cacheReadTokens,
+          cacheWrite: runResult.usage.cacheWriteTokens,
+        }
       : undefined;
+    const promptTokens = undefined;
+    const modelUsed = fallbackModel ?? defaultModel;
+    const providerUsed = fallbackProvider ?? "claude-cli";
+    const cliSessionId = isCliProvider(providerUsed, cfg) ? runResult.sessionId?.trim() : undefined;
     const contextTokensUsed =
       agentCfgContextTokens ??
       lookupContextTokens(modelUsed) ??
@@ -427,12 +431,12 @@ export async function runReplyAgent(params: {
       storePath,
       sessionKey,
       usage,
-      lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage,
+      lastCallUsage: undefined,
       promptTokens,
       modelUsed,
       providerUsed,
       contextTokensUsed,
-      systemPromptReport: runResult.meta?.systemPromptReport,
+      systemPromptReport: undefined,
       cliSessionId,
     });
 
@@ -454,9 +458,9 @@ export async function runReplyAgent(params: {
       replyToChannel,
       currentMessageId: sessionCtx.MessageSidFull ?? sessionCtx.MessageSid,
       messageProvider: followupRun.run.messageProvider,
-      messagingToolSentTexts: runResult.messagingToolSentTexts,
-      messagingToolSentMediaUrls: runResult.messagingToolSentMediaUrls,
-      messagingToolSentTargets: runResult.messagingToolSentTargets,
+      messagingToolSentTexts: undefined,
+      messagingToolSentMediaUrls: undefined,
+      messagingToolSentTargets: undefined,
       originatingTo: sessionCtx.OriginatingTo ?? sessionCtx.To,
       accountId: sessionCtx.AccountId,
     });
@@ -467,7 +471,7 @@ export async function runReplyAgent(params: {
       return finalizeWithFollowup(undefined, queueKey, runFollowupTurn);
     }
 
-    const successfulCronAdds = runResult.successfulCronAdds ?? 0;
+    const successfulCronAdds = 0;
     const hasReminderCommitment = replyPayloads.some(
       (payload) =>
         !payload.isError &&
@@ -509,7 +513,7 @@ export async function runReplyAgent(params: {
           promptTokens,
           total: totalTokens,
         },
-        lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage,
+        lastCallUsage: undefined,
         context: {
           limit: contextTokensUsed,
           used: totalTokens,
@@ -555,7 +559,7 @@ export async function runReplyAgent(params: {
         sessionStore: activeSessionStore,
         sessionKey,
         storePath,
-        lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage,
+        lastCallUsage: undefined,
         contextTokensUsed,
       });
 

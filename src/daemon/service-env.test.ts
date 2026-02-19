@@ -273,8 +273,8 @@ describe("buildServiceEnvironment", () => {
     }
     expect(env.REMOTECLAW_GATEWAY_PORT).toBe("18789");
     expect(env.REMOTECLAW_GATEWAY_TOKEN).toBe("secret");
-    expect(env.OPENCLAW_SERVICE_MARKER).toBe("openclaw");
-    expect(env.OPENCLAW_SERVICE_KIND).toBe("gateway");
+    expect(env.REMOTECLAW_SERVICE_MARKER).toBe("openclaw");
+    expect(env.REMOTECLAW_SERVICE_KIND).toBe("gateway");
     expect(typeof env.REMOTECLAW_SERVICE_VERSION).toBe("string");
     expect(env.REMOTECLAW_SYSTEMD_UNIT).toBe("openclaw-gateway.service");
     if (process.platform === "darwin") {

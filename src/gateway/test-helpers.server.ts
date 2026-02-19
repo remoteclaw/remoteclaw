@@ -90,14 +90,14 @@ async function setupGatewayTestHome() {
   previousUserProfile = process.env.USERPROFILE;
   previousStateDir = process.env.REMOTECLAW_STATE_DIR;
   previousConfigPath = process.env.REMOTECLAW_CONFIG_PATH;
-  previousSkipBrowserControl = process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER;
-  previousSkipGmailWatcher = process.env.OPENCLAW_SKIP_GMAIL_WATCHER;
-  previousSkipCanvasHost = process.env.OPENCLAW_SKIP_CANVAS_HOST;
-  previousBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
-  previousSkipChannels = process.env.OPENCLAW_SKIP_CHANNELS;
-  previousSkipProviders = process.env.OPENCLAW_SKIP_PROVIDERS;
-  previousSkipCron = process.env.OPENCLAW_SKIP_CRON;
-  previousMinimalGateway = process.env.OPENCLAW_TEST_MINIMAL_GATEWAY;
+  previousSkipBrowserControl = process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER;
+  previousSkipGmailWatcher = process.env.REMOTECLAW_SKIP_GMAIL_WATCHER;
+  previousSkipCanvasHost = process.env.REMOTECLAW_SKIP_CANVAS_HOST;
+  previousBundledPluginsDir = process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR;
+  previousSkipChannels = process.env.REMOTECLAW_SKIP_CHANNELS;
+  previousSkipProviders = process.env.REMOTECLAW_SKIP_PROVIDERS;
+  previousSkipCron = process.env.REMOTECLAW_SKIP_CRON;
+  previousMinimalGateway = process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY;
   tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gateway-home-"));
   process.env.HOME = tempHome;
   process.env.USERPROFILE = tempHome;
@@ -106,14 +106,14 @@ async function setupGatewayTestHome() {
 }
 
 function applyGatewaySkipEnv() {
-  process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
-  process.env.OPENCLAW_SKIP_GMAIL_WATCHER = "1";
-  process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
-  process.env.OPENCLAW_SKIP_CHANNELS = "1";
-  process.env.OPENCLAW_SKIP_PROVIDERS = "1";
-  process.env.OPENCLAW_SKIP_CRON = "1";
-  process.env.OPENCLAW_TEST_MINIMAL_GATEWAY = "1";
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = tempHome
+  process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
+  process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = "1";
+  process.env.REMOTECLAW_SKIP_CANVAS_HOST = "1";
+  process.env.REMOTECLAW_SKIP_CHANNELS = "1";
+  process.env.REMOTECLAW_SKIP_PROVIDERS = "1";
+  process.env.REMOTECLAW_SKIP_CRON = "1";
+  process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY = "1";
+  process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = tempHome
     ? path.join(tempHome, "openclaw-test-no-bundled-extensions")
     : "openclaw-test-no-bundled-extensions";
 }
@@ -192,44 +192,44 @@ async function cleanupGatewayTestHome(options: { restoreEnv: boolean }) {
       process.env.REMOTECLAW_CONFIG_PATH = previousConfigPath;
     }
     if (previousSkipBrowserControl === undefined) {
-      delete process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER;
+      delete process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER;
     } else {
-      process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = previousSkipBrowserControl;
+      process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = previousSkipBrowserControl;
     }
     if (previousSkipGmailWatcher === undefined) {
-      delete process.env.OPENCLAW_SKIP_GMAIL_WATCHER;
+      delete process.env.REMOTECLAW_SKIP_GMAIL_WATCHER;
     } else {
-      process.env.OPENCLAW_SKIP_GMAIL_WATCHER = previousSkipGmailWatcher;
+      process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = previousSkipGmailWatcher;
     }
     if (previousSkipCanvasHost === undefined) {
-      delete process.env.OPENCLAW_SKIP_CANVAS_HOST;
+      delete process.env.REMOTECLAW_SKIP_CANVAS_HOST;
     } else {
-      process.env.OPENCLAW_SKIP_CANVAS_HOST = previousSkipCanvasHost;
+      process.env.REMOTECLAW_SKIP_CANVAS_HOST = previousSkipCanvasHost;
     }
     if (previousBundledPluginsDir === undefined) {
-      delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+      delete process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR;
     } else {
-      process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = previousBundledPluginsDir;
+      process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = previousBundledPluginsDir;
     }
     if (previousSkipChannels === undefined) {
-      delete process.env.OPENCLAW_SKIP_CHANNELS;
+      delete process.env.REMOTECLAW_SKIP_CHANNELS;
     } else {
-      process.env.OPENCLAW_SKIP_CHANNELS = previousSkipChannels;
+      process.env.REMOTECLAW_SKIP_CHANNELS = previousSkipChannels;
     }
     if (previousSkipProviders === undefined) {
-      delete process.env.OPENCLAW_SKIP_PROVIDERS;
+      delete process.env.REMOTECLAW_SKIP_PROVIDERS;
     } else {
-      process.env.OPENCLAW_SKIP_PROVIDERS = previousSkipProviders;
+      process.env.REMOTECLAW_SKIP_PROVIDERS = previousSkipProviders;
     }
     if (previousSkipCron === undefined) {
-      delete process.env.OPENCLAW_SKIP_CRON;
+      delete process.env.REMOTECLAW_SKIP_CRON;
     } else {
-      process.env.OPENCLAW_SKIP_CRON = previousSkipCron;
+      process.env.REMOTECLAW_SKIP_CRON = previousSkipCron;
     }
     if (previousMinimalGateway === undefined) {
-      delete process.env.OPENCLAW_TEST_MINIMAL_GATEWAY;
+      delete process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY;
     } else {
-      process.env.OPENCLAW_TEST_MINIMAL_GATEWAY = previousMinimalGateway;
+      process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY = previousMinimalGateway;
     }
   }
   if (options.restoreEnv && tempHome) {

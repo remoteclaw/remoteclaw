@@ -3,11 +3,11 @@ import process from "node:process";
 import type { GatewayLockHandle } from "../infra/gateway-lock.js";
 import { restartGatewayProcessWithFreshPid } from "../infra/process-respawn.js";
 
-declare const __OPENCLAW_VERSION__: string | undefined;
+declare const __REMOTECLAW_VERSION__: string | undefined;
 
 const BUNDLED_VERSION =
-  (typeof __OPENCLAW_VERSION__ === "string" && __OPENCLAW_VERSION__) ||
-  process.env.OPENCLAW_BUNDLED_VERSION ||
+  (typeof __REMOTECLAW_VERSION__ === "string" && __REMOTECLAW_VERSION__) ||
+  process.env.REMOTECLAW_BUNDLED_VERSION ||
   "0.0.0";
 
 function argValue(args: string[], flag: string): string | undefined {
@@ -96,7 +96,7 @@ async function main() {
 
   const bindRaw =
     argValue(args, "--bind") ??
-    process.env.OPENCLAW_GATEWAY_BIND ??
+    process.env.REMOTECLAW_GATEWAY_BIND ??
     process.env.CLAWDBOT_GATEWAY_BIND ??
     cfg.gateway?.bind ??
     "loopback";
@@ -194,7 +194,9 @@ async function main() {
                 `gateway: full process restart failed (${respawn.detail ?? "unknown error"}); falling back to in-process restart`,
               );
             } else {
-              defaultRuntime.log("gateway: restart mode in-process restart (OPENCLAW_NO_RESPAWN)");
+              defaultRuntime.log(
+                "gateway: restart mode in-process restart (REMOTECLAW_NO_RESPAWN)",
+              );
             }
             shuttingDown = false;
             restartResolver?.();

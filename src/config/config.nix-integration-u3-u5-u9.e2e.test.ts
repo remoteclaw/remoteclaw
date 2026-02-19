@@ -25,20 +25,20 @@ function loadConfigForHome(home: string) {
 
 describe("Nix integration (U3, U5, U9)", () => {
   describe("U3: isNixMode env var detection", () => {
-    it("isNixMode is false when OPENCLAW_NIX_MODE is not set", () => {
-      expect(resolveIsNixMode(envWith({ OPENCLAW_NIX_MODE: undefined }))).toBe(false);
+    it("isNixMode is false when REMOTECLAW_NIX_MODE is not set", () => {
+      expect(resolveIsNixMode(envWith({ REMOTECLAW_NIX_MODE: undefined }))).toBe(false);
     });
 
-    it("isNixMode is false when OPENCLAW_NIX_MODE is empty", () => {
-      expect(resolveIsNixMode(envWith({ OPENCLAW_NIX_MODE: "" }))).toBe(false);
+    it("isNixMode is false when REMOTECLAW_NIX_MODE is empty", () => {
+      expect(resolveIsNixMode(envWith({ REMOTECLAW_NIX_MODE: "" }))).toBe(false);
     });
 
-    it("isNixMode is false when OPENCLAW_NIX_MODE is not '1'", () => {
-      expect(resolveIsNixMode(envWith({ OPENCLAW_NIX_MODE: "true" }))).toBe(false);
+    it("isNixMode is false when REMOTECLAW_NIX_MODE is not '1'", () => {
+      expect(resolveIsNixMode(envWith({ REMOTECLAW_NIX_MODE: "true" }))).toBe(false);
     });
 
-    it("isNixMode is true when OPENCLAW_NIX_MODE=1", () => {
-      expect(resolveIsNixMode(envWith({ OPENCLAW_NIX_MODE: "1" }))).toBe(true);
+    it("isNixMode is true when REMOTECLAW_NIX_MODE=1", () => {
+      expect(resolveIsNixMode(envWith({ REMOTECLAW_NIX_MODE: "1" }))).toBe(true);
     });
   });
 

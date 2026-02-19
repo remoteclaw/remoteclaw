@@ -86,13 +86,13 @@ describe("gateway SIGTERM", () => {
     const nodeBin = process.execPath;
     const env = {
       ...process.env,
-      OPENCLAW_NO_RESPAWN: "1",
+      REMOTECLAW_NO_RESPAWN: "1",
       REMOTECLAW_STATE_DIR: stateDir,
-      OPENCLAW_SKIP_CHANNELS: "1",
-      OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-      OPENCLAW_SKIP_CRON: "1",
-      OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-      OPENCLAW_SKIP_CANVAS_HOST: "1",
+      REMOTECLAW_SKIP_CHANNELS: "1",
+      REMOTECLAW_SKIP_GMAIL_WATCHER: "1",
+      REMOTECLAW_SKIP_CRON: "1",
+      REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
+      REMOTECLAW_SKIP_CANVAS_HOST: "1",
     };
     const bootstrapPath = path.join(stateDir, "openclaw-entry-bootstrap.mjs");
     const runLoopPath = path.resolve("src/cli/gateway-cli/run-loop.ts");

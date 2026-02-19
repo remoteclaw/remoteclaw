@@ -19,7 +19,7 @@ describe("ensureBrowserControlAuth", () => {
 
       const result = await ensureBrowserControlAuth({
         cfg,
-        env: { OPENCLAW_BROWSER_AUTO_AUTH: "1" },
+        env: { REMOTECLAW_BROWSER_AUTO_AUTH: "1" },
       });
 
       expect(result.generatedToken).toBeUndefined();
@@ -40,7 +40,7 @@ describe("ensureBrowserControlAuth", () => {
 
       const result = await ensureBrowserControlAuth({
         cfg,
-        env: { OPENCLAW_BROWSER_AUTO_AUTH: "1" },
+        env: { REMOTECLAW_BROWSER_AUTO_AUTH: "1" },
       });
 
       expect(result.generatedToken).toBeUndefined();
@@ -62,7 +62,7 @@ describe("ensureBrowserControlAuth", () => {
 
       const result = await ensureBrowserControlAuth({
         cfg,
-        env: { OPENCLAW_BROWSER_AUTO_AUTH: "1" },
+        env: { REMOTECLAW_BROWSER_AUTO_AUTH: "1" },
       });
 
       expect(result.generatedToken).toBeUndefined();

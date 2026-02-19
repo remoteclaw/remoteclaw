@@ -776,7 +776,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
     // schema changes between versions, preventing a startup validation crash.
     const doctorArgv = [process.execPath, doctorEntry, "doctor", "--non-interactive", "--fix"];
     const doctorStep = await runStep(
-      step("openclaw doctor", doctorArgv, gitRoot, { OPENCLAW_UPDATE_IN_PROGRESS: "1" }),
+      step("openclaw doctor", doctorArgv, gitRoot, { REMOTECLAW_UPDATE_IN_PROGRESS: "1" }),
     );
     steps.push(doctorStep);
 

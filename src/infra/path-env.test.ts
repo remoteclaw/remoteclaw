@@ -38,8 +38,8 @@ let ensureOpenClawCliOnPath: typeof import("./path-env.js").ensureOpenClawCliOnP
 describe("ensureOpenClawCliOnPath", () => {
   const envKeys = [
     "PATH",
-    "OPENCLAW_PATH_BOOTSTRAPPED",
-    "OPENCLAW_ALLOW_PROJECT_LOCAL_BIN",
+    "REMOTECLAW_PATH_BOOTSTRAPPED",
+    "REMOTECLAW_ALLOW_PROJECT_LOCAL_BIN",
     "MISE_DATA_DIR",
     "HOMEBREW_PREFIX",
     "HOMEBREW_BREW_FILE",
@@ -81,7 +81,7 @@ describe("ensureOpenClawCliOnPath", () => {
     setExe(cliPath);
 
     process.env.PATH = "/usr/bin";
-    delete process.env.OPENCLAW_PATH_BOOTSTRAPPED;
+    delete process.env.REMOTECLAW_PATH_BOOTSTRAPPED;
 
     ensureOpenClawCliOnPath({
       execPath: cliPath,
@@ -96,7 +96,7 @@ describe("ensureOpenClawCliOnPath", () => {
 
   it("is idempotent", () => {
     process.env.PATH = "/bin";
-    process.env.OPENCLAW_PATH_BOOTSTRAPPED = "1";
+    process.env.REMOTECLAW_PATH_BOOTSTRAPPED = "1";
     ensureOpenClawCliOnPath({
       execPath: "/tmp/does-not-matter",
       cwd: "/tmp",
@@ -121,7 +121,7 @@ describe("ensureOpenClawCliOnPath", () => {
 
     process.env.MISE_DATA_DIR = miseDataDir;
     process.env.PATH = "/usr/bin";
-    delete process.env.OPENCLAW_PATH_BOOTSTRAPPED;
+    delete process.env.REMOTECLAW_PATH_BOOTSTRAPPED;
 
     ensureOpenClawCliOnPath({
       execPath: appCli,
@@ -153,7 +153,7 @@ describe("ensureOpenClawCliOnPath", () => {
     setExe(localCli);
 
     process.env.PATH = "/usr/bin";
-    delete process.env.OPENCLAW_PATH_BOOTSTRAPPED;
+    delete process.env.REMOTECLAW_PATH_BOOTSTRAPPED;
 
     ensureOpenClawCliOnPath({
       execPath: appCli,
@@ -165,7 +165,7 @@ describe("ensureOpenClawCliOnPath", () => {
     expect(withoutOptIn.includes(localBinDir)).toBe(false);
 
     process.env.PATH = "/usr/bin";
-    delete process.env.OPENCLAW_PATH_BOOTSTRAPPED;
+    delete process.env.REMOTECLAW_PATH_BOOTSTRAPPED;
 
     ensureOpenClawCliOnPath({
       execPath: appCli,
@@ -195,7 +195,7 @@ describe("ensureOpenClawCliOnPath", () => {
     setDir(linuxbrewSbin);
 
     process.env.PATH = "/usr/bin";
-    delete process.env.OPENCLAW_PATH_BOOTSTRAPPED;
+    delete process.env.REMOTECLAW_PATH_BOOTSTRAPPED;
     delete process.env.HOMEBREW_PREFIX;
     delete process.env.HOMEBREW_BREW_FILE;
     delete process.env.XDG_BIN_HOME;

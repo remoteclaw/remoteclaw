@@ -574,7 +574,7 @@ vi.mock("../plugins/loader.js", async () => {
   };
 });
 
-process.env.OPENCLAW_SKIP_CHANNELS = "1";
-process.env.OPENCLAW_SKIP_CRON = "1";
-process.env.OPENCLAW_SKIP_CHANNELS = "1";
-process.env.OPENCLAW_SKIP_CRON = "1";
+process.env.REMOTECLAW_SKIP_CHANNELS = "1";
+process.env.REMOTECLAW_SKIP_CRON = "1";
+process.env.REMOTECLAW_SKIP_CHANNELS = "1";
+process.env.REMOTECLAW_SKIP_CRON = "1";

@@ -7,7 +7,7 @@ import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/chan
 
 export function setupIsolatedAgentTurnMocks(params?: { fast?: boolean }): void {
   if (params?.fast) {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("REMOTECLAW_TEST_FAST", "1");
   }
   // pi-embedded: runEmbeddedPiAgent mock removed (dead code after AgentRuntime migration)
   vi.mocked(loadModelCatalog).mockResolvedValue([]);

@@ -106,7 +106,7 @@ function expectAliasPreserved(
 describe("writeOAuthCredentials", () => {
   const lifecycle = createAuthTestLifecycle([
     "REMOTECLAW_STATE_DIR",
-    "OPENCLAW_AGENT_DIR",
+    "REMOTECLAW_AGENT_DIR",
     "PI_CODING_AGENT_DIR",
     "REMOTECLAW_OAUTH_DIR",
   ]);
@@ -115,7 +115,7 @@ describe("writeOAuthCredentials", () => {
     await lifecycle.cleanup();
   });
 
-  it("writes auth-profiles.json under OPENCLAW_AGENT_DIR when set", async () => {
+  it("writes auth-profiles.json under REMOTECLAW_AGENT_DIR when set", async () => {
     const env = await setupAuthTestEnv("openclaw-oauth-");
     lifecycle.setStateDir(env.stateDir);
 
@@ -145,7 +145,7 @@ describe("writeOAuthCredentials", () => {
 describe("setMinimaxApiKey", () => {
   const lifecycle = createAuthTestLifecycle([
     "REMOTECLAW_STATE_DIR",
-    "OPENCLAW_AGENT_DIR",
+    "REMOTECLAW_AGENT_DIR",
     "PI_CODING_AGENT_DIR",
   ]);
 
@@ -153,7 +153,7 @@ describe("setMinimaxApiKey", () => {
     await lifecycle.cleanup();
   });
 
-  it("writes to OPENCLAW_AGENT_DIR when set", async () => {
+  it("writes to REMOTECLAW_AGENT_DIR when set", async () => {
     const env = await setupAuthTestEnv("openclaw-minimax-", { agentSubdir: "custom-agent" });
     lifecycle.setStateDir(env.stateDir);
 

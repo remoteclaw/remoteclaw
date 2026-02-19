@@ -27,13 +27,13 @@ describe("parseRelaySmokeTest", () => {
   });
 
   it("parses env var smoke mode only when no args", () => {
-    expect(parseRelaySmokeTest([], { OPENCLAW_SMOKE_QR: "1" })).toBe("qr");
-    expect(parseRelaySmokeTest(["send"], { OPENCLAW_SMOKE_QR: "1" })).toBe(null);
+    expect(parseRelaySmokeTest([], { REMOTECLAW_SMOKE_QR: "1" })).toBe("qr");
+    expect(parseRelaySmokeTest(["send"], { REMOTECLAW_SMOKE_QR: "1" })).toBe(null);
   });
 
-  it("supports OPENCLAW_SMOKE=qr only when no args", () => {
-    expect(parseRelaySmokeTest([], { OPENCLAW_SMOKE: "qr" })).toBe("qr");
-    expect(parseRelaySmokeTest(["send"], { OPENCLAW_SMOKE: "qr" })).toBe(null);
+  it("supports REMOTECLAW_SMOKE=qr only when no args", () => {
+    expect(parseRelaySmokeTest([], { REMOTECLAW_SMOKE: "qr" })).toBe("qr");
+    expect(parseRelaySmokeTest(["send"], { REMOTECLAW_SMOKE: "qr" })).toBe(null);
   });
 
   it("rejects unknown smoke values", () => {
@@ -41,7 +41,7 @@ describe("parseRelaySmokeTest", () => {
   });
 
   it("prefers explicit --smoke over env vars", () => {
-    expect(parseRelaySmokeTest(["--smoke", "qr"], { OPENCLAW_SMOKE: "nope" })).toBe("qr");
+    expect(parseRelaySmokeTest(["--smoke", "qr"], { REMOTECLAW_SMOKE: "nope" })).toBe("qr");
   });
 });
 

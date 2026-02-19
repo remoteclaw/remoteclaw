@@ -341,9 +341,9 @@ describe("config io write", () => {
 
       const io = createConfigIO({
         env: {
-          OPENCLAW_WATCH_MODE: "1",
-          OPENCLAW_WATCH_SESSION: "watch-session-1",
-          OPENCLAW_WATCH_COMMAND: "gateway --force",
+          REMOTECLAW_WATCH_MODE: "1",
+          REMOTECLAW_WATCH_SESSION: "watch-session-1",
+          REMOTECLAW_WATCH_COMMAND: "gateway --force",
         } as NodeJS.ProcessEnv,
         homedir: () => home,
         logger: {

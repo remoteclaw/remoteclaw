@@ -220,4 +220,52 @@ describe("importCommand", () => {
     expect(runtime.exit).not.toHaveBeenCalled();
     expect(fs.existsSync(path.join(nestedDir, "remoteclaw.json"))).toBe(true);
   });
+
+  it("prints env var reminder when OPENCLAW_* vars are set", async () => {
+    writeSourceConfig({ channels: {} });
+    const env = { OPENCLAW_STATE_DIR: "/old/dir", OPENCLAW_GATEWAY_PORT: "8080" };
+
+    await importCommand(sourceDir, {}, runtime, env);
+
+    const output = runtime.log.mock.calls.map(String).join("\n");
+    expect(output).toContain("Environment variables:");
+    expect(output).toContain("OPENCLAW_STATE_DIR is set");
+    expect(output).toContain("REMOTECLAW_STATE_DIR");
+    expect(output).toContain("OPENCLAW_GATEWAY_PORT is set");
+    expect(output).toContain("REMOTECLAW_GATEWAY_PORT");
+  });
+
+  it("omits env var section when no OPENCLAW_* vars are set", async () => {
+    writeSourceConfig({ channels: {} });
+    const env = { HOME: os.homedir(), PATH: "/usr/bin" };
+
+    await importCommand(sourceDir, {}, runtime, env);
+
+    const output = runtime.log.mock.calls.map(String).join("\n");
+    expect(output).not.toContain("Environment variables:");
+  });
+
+  it("does not trigger reminders for CLAWDBOT_* vars", async () => {
+    writeSourceConfig({ channels: {} });
+    const env = { CLAWDBOT_STATE_DIR: "/old/clawdbot" };
+
+    await importCommand(sourceDir, {}, runtime, env);
+
+    const output = runtime.log.mock.calls.map(String).join("\n");
+    expect(output).not.toContain("Environment variables:");
+    expect(output).not.toContain("CLAWDBOT_STATE_DIR");
+  });
+
+  it("shows env var reminders in dry-run mode", async () => {
+    writeSourceConfig({ channels: {} });
+    const env = { OPENCLAW_STATE_DIR: "/old/dir" };
+
+    await importCommand(sourceDir, { dryRun: true }, runtime, env);
+
+    const output = runtime.log.mock.calls.map(String).join("\n");
+    expect(output).toContain("[dry run]");
+    expect(output).toContain("Environment variables:");
+    expect(output).toContain("OPENCLAW_STATE_DIR is set");
+    expect(output).toContain("REMOTECLAW_STATE_DIR");
+  });
 });

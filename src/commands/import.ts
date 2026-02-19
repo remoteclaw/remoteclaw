@@ -57,6 +57,19 @@ function shortenPath(filePath: string): string {
   return filePath;
 }
 
+function findOpenClawEnvVars(env: NodeJS.ProcessEnv): string[] {
+  return Object.keys(env).filter((key) => key.startsWith("OPENCLAW_"));
+}
+
+function formatEnvVarReminder(openclawVars: string[]): string {
+  const lines: string[] = ["Environment variables:"];
+  for (const v of openclawVars) {
+    const replacement = v.replace(/^OPENCLAW_/, "REMOTECLAW_");
+    lines.push(`  ${v} is set \u2192 add ${replacement} to your shell profile`);
+  }
+  return lines.join("\n");
+}
+
 function formatReport(
   sourcePath: string,
   destPath: string,
@@ -109,6 +122,7 @@ export async function importCommand(
   sourceDir: string,
   opts: ImportCommandOptions,
   runtime: RuntimeEnv,
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<void> {
   // 1. Locate source config
   const sourcePath = resolveSourcePath(sourceDir);
@@ -162,7 +176,14 @@ export async function importCommand(
   const report = formatReport(sourcePath, shortenPath(destPath), result, Boolean(opts.dryRun));
   runtime.log(report);
 
-  // 8. Write unless dry-run
+  // 8. Print env var migration reminders if OPENCLAW_* vars are detected
+  const openclawVars = findOpenClawEnvVars(env);
+  if (openclawVars.length > 0) {
+    runtime.log("");
+    runtime.log(formatEnvVarReminder(openclawVars));
+  }
+
+  // 9. Write unless dry-run
   if (opts.dryRun) {
     return;
   }

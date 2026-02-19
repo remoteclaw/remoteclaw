@@ -15,6 +15,7 @@ import {
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { resolveUserPath } from "../utils.js";
+import { detectAndOfferOpenClawImport } from "./onboarding.openclaw-import.js";
 import type { QuickstartGatewayDefaults, WizardFlow } from "./onboarding.types.js";
 import { WizardCancelledError, type WizardPrompter } from "./prompts.js";
 
@@ -73,6 +74,17 @@ export async function runOnboardingWizard(
 
   const snapshot = await readConfigFileSnapshot();
   let baseConfig: RemoteClawConfig = snapshot.valid ? snapshot.config : {};
+  let openclawImported = false;
+
+  // First-run OpenClaw detection: offer to import when no RemoteClaw config exists.
+  if (!snapshot.exists) {
+    const openclawResult = await detectAndOfferOpenClawImport({ opts, prompter });
+    if (openclawResult.imported && openclawResult.config) {
+      baseConfig = openclawResult.config as RemoteClawConfig;
+      openclawImported = true;
+      await writeConfigFile(baseConfig);
+    }
+  }
 
   if (snapshot.exists && !snapshot.valid) {
     await prompter.note(onboardHelpers.summarizeExistingConfig(baseConfig), "Invalid config");
@@ -129,7 +141,7 @@ export async function runOnboardingWizard(
     flow = "advanced";
   }
 
-  if (snapshot.exists) {
+  if (snapshot.exists && !openclawImported) {
     await prompter.note(
       onboardHelpers.summarizeExistingConfig(baseConfig),
       "Existing config detected",

@@ -210,10 +210,10 @@ describe("skills-cli", () => {
     let buildWorkspaceSkillStatus: typeof import("../agents/skills-status.js").buildWorkspaceSkillStatus;
 
     beforeAll(async () => {
-      envSnapshot = captureEnv(["OPENCLAW_BUNDLED_SKILLS_DIR"]);
+      envSnapshot = captureEnv(["REMOTECLAW_BUNDLED_SKILLS_DIR"]);
       tempWorkspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-skills-test-"));
       tempBundledDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-bundled-skills-test-"));
-      process.env.OPENCLAW_BUNDLED_SKILLS_DIR = tempBundledDir;
+      process.env.REMOTECLAW_BUNDLED_SKILLS_DIR = tempBundledDir;
       ({ buildWorkspaceSkillStatus } = await import("../agents/skills-status.js"));
     });
 

@@ -503,10 +503,10 @@ describe("update-cli", () => {
       durationMs: 100,
     };
 
-    const envSnapshot = captureEnv(["OPENCLAW_UPDATE_IN_PROGRESS"]);
+    const envSnapshot = captureEnv(["REMOTECLAW_UPDATE_IN_PROGRESS"]);
     const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
     try {
-      delete process.env.OPENCLAW_UPDATE_IN_PROGRESS;
+      delete process.env.REMOTECLAW_UPDATE_IN_PROGRESS;
       vi.mocked(runGatewayUpdate).mockResolvedValue(mockResult);
       vi.mocked(runDaemonRestart).mockResolvedValue(true);
       vi.mocked(doctorCommand).mockResolvedValue(undefined);
@@ -518,7 +518,7 @@ describe("update-cli", () => {
         defaultRuntime,
         expect.objectContaining({ nonInteractive: true }),
       );
-      expect(process.env.OPENCLAW_UPDATE_IN_PROGRESS).toBeUndefined();
+      expect(process.env.REMOTECLAW_UPDATE_IN_PROGRESS).toBeUndefined();
 
       const logLines = vi.mocked(defaultRuntime.log).mock.calls.map((call) => String(call[0]));
       expect(
@@ -629,10 +629,10 @@ describe("update-cli", () => {
 
   it("updateWizardCommand offers dev checkout and forwards selections", async () => {
     const tempDir = await createCaseDir("openclaw-update-wizard");
-    const envSnapshot = captureEnv(["OPENCLAW_GIT_DIR"]);
+    const envSnapshot = captureEnv(["REMOTECLAW_GIT_DIR"]);
     try {
       setTty(true);
-      process.env.OPENCLAW_GIT_DIR = tempDir;
+      process.env.REMOTECLAW_GIT_DIR = tempDir;
 
       vi.mocked(checkUpdateStatus).mockResolvedValue({
         root: "/test/path",

@@ -42,7 +42,7 @@ export function registerModelsCli(program: Command) {
     .option("--status-plain", "Plain output (alias for `models status --plain`)", false)
     .option(
       "--agent <id>",
-      "Agent id to inspect (overrides OPENCLAW_AGENT_DIR/PI_CODING_AGENT_DIR)",
+      "Agent id to inspect (overrides REMOTECLAW_AGENT_DIR/PI_CODING_AGENT_DIR)",
     )
     .addHelpText(
       "after",
@@ -90,7 +90,7 @@ export function registerModelsCli(program: Command) {
     .option("--probe-max-tokens <n>", "Probe max tokens (best-effort)")
     .option(
       "--agent <id>",
-      "Agent id to inspect (overrides OPENCLAW_AGENT_DIR/PI_CODING_AGENT_DIR)",
+      "Agent id to inspect (overrides REMOTECLAW_AGENT_DIR/PI_CODING_AGENT_DIR)",
     )
     .action(async (opts, command) => {
       const agent =

@@ -11,7 +11,7 @@ import {
 
 const ROOT_DIR = path.parse(process.cwd()).root;
 const CONFIG_DIR = path.join(ROOT_DIR, "config");
-const ETC_OPENCLAW_DIR = path.join(ROOT_DIR, "etc", "openclaw");
+const ETC_REMOTECLAW_DIR = path.join(ROOT_DIR, "etc", "openclaw");
 const SHARED_DIR = path.join(ROOT_DIR, "shared");
 
 const DEFAULT_BASE_PATH = path.join(CONFIG_DIR, "remoteclaw.json");
@@ -21,7 +21,7 @@ function configPath(...parts: string[]) {
 }
 
 function etcOpenClawPath(...parts: string[]) {
-  return path.join(ETC_OPENCLAW_DIR, ...parts);
+  return path.join(ETC_REMOTECLAW_DIR, ...parts);
 }
 
 function sharedPath(...parts: string[]) {

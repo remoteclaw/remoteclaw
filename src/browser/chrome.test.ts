@@ -13,8 +13,8 @@ import {
   stopOpenClawChrome,
 } from "./chrome.js";
 import {
-  DEFAULT_OPENCLAW_BROWSER_COLOR,
-  DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME,
+  DEFAULT_REMOTECLAW_BROWSER_COLOR,
+  DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME,
 } from "./constants.js";
 
 async function readJson(filePath: string): Promise<Record<string, unknown>> {
@@ -49,7 +49,7 @@ describe("browser chrome profile decoration", () => {
 
   it("writes expected name + signed ARGB seed to Chrome prefs", async () => {
     const userDataDir = await createUserDataDir();
-    decorateOpenClawProfile(userDataDir, { color: DEFAULT_OPENCLAW_BROWSER_COLOR });
+    decorateOpenClawProfile(userDataDir, { color: DEFAULT_REMOTECLAW_BROWSER_COLOR });
 
     const expectedSignedArgb = ((0xff << 24) | 0xff4500) >> 0;
 
@@ -58,8 +58,8 @@ describe("browser chrome profile decoration", () => {
     const infoCache = profile.info_cache as Record<string, unknown>;
     const def = infoCache.Default as Record<string, unknown>;
 
-    expect(def.name).toBe(DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME);
-    expect(def.shortcut_name).toBe(DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME);
+    expect(def.name).toBe(DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME);
+    expect(def.shortcut_name).toBe(DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME);
     expect(def.profile_color_seed).toBe(expectedSignedArgb);
     expect(def.profile_highlight_color).toBe(expectedSignedArgb);
     expect(def.default_avatar_fill_color).toBe(expectedSignedArgb);
@@ -89,7 +89,7 @@ describe("browser chrome profile decoration", () => {
     const infoCache = profile.info_cache as Record<string, unknown>;
     const def = infoCache.Default as Record<string, unknown>;
 
-    expect(def.name).toBe(DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME);
+    expect(def.name).toBe(DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME);
     expect(def.profile_color_seed).toBeUndefined();
   });
 
@@ -103,7 +103,7 @@ describe("browser chrome profile decoration", () => {
       "utf-8",
     );
 
-    decorateOpenClawProfile(userDataDir, { color: DEFAULT_OPENCLAW_BROWSER_COLOR });
+    decorateOpenClawProfile(userDataDir, { color: DEFAULT_REMOTECLAW_BROWSER_COLOR });
 
     const localState = await readJson(path.join(userDataDir, "Local State"));
     expect(typeof localState.profile).toBe("object");
@@ -122,12 +122,12 @@ describe("browser chrome profile decoration", () => {
 
   it("is idempotent when rerun on an existing profile", async () => {
     const userDataDir = await createUserDataDir();
-    decorateOpenClawProfile(userDataDir, { color: DEFAULT_OPENCLAW_BROWSER_COLOR });
-    decorateOpenClawProfile(userDataDir, { color: DEFAULT_OPENCLAW_BROWSER_COLOR });
+    decorateOpenClawProfile(userDataDir, { color: DEFAULT_REMOTECLAW_BROWSER_COLOR });
+    decorateOpenClawProfile(userDataDir, { color: DEFAULT_REMOTECLAW_BROWSER_COLOR });
 
     const prefs = await readJson(path.join(userDataDir, "Default", "Preferences"));
     const profile = prefs.profile as Record<string, unknown>;
-    expect(profile.name).toBe(DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME);
+    expect(profile.name).toBe(DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME);
   });
 });
 

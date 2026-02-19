@@ -8,13 +8,13 @@ export async function withTempConfig(params: {
   prefix?: string;
 }): Promise<void> {
   const prevConfigPath = process.env.REMOTECLAW_CONFIG_PATH;
-  const prevDisableCache = process.env.OPENCLAW_DISABLE_CONFIG_CACHE;
+  const prevDisableCache = process.env.REMOTECLAW_DISABLE_CONFIG_CACHE;
 
   const dir = await mkdtemp(path.join(os.tmpdir(), params.prefix ?? "openclaw-test-config-"));
   const configPath = path.join(dir, "remoteclaw.json");
 
   process.env.REMOTECLAW_CONFIG_PATH = configPath;
-  process.env.OPENCLAW_DISABLE_CONFIG_CACHE = "1";
+  process.env.REMOTECLAW_DISABLE_CONFIG_CACHE = "1";
 
   try {
     await writeFile(configPath, JSON.stringify(params.cfg, null, 2), "utf-8");
@@ -26,9 +26,9 @@ export async function withTempConfig(params: {
       process.env.REMOTECLAW_CONFIG_PATH = prevConfigPath;
     }
     if (prevDisableCache === undefined) {
-      delete process.env.OPENCLAW_DISABLE_CONFIG_CACHE;
+      delete process.env.REMOTECLAW_DISABLE_CONFIG_CACHE;
     } else {
-      process.env.OPENCLAW_DISABLE_CONFIG_CACHE = prevDisableCache;
+      process.env.REMOTECLAW_DISABLE_CONFIG_CACHE = prevDisableCache;
     }
     await rm(dir, { recursive: true, force: true });
   }

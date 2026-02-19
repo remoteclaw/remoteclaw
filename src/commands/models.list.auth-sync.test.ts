@@ -8,7 +8,7 @@ import { modelsListCommand } from "./models/list.list-command.js";
 
 const ENV_KEYS = [
   "REMOTECLAW_STATE_DIR",
-  "OPENCLAW_AGENT_DIR",
+  "REMOTECLAW_AGENT_DIR",
   "PI_CODING_AGENT_DIR",
   "REMOTECLAW_CONFIG_PATH",
   "OPENROUTER_API_KEY",
@@ -51,7 +51,7 @@ describe("models list auth-profile sync", () => {
       await fs.writeFile(configPath, "{}\n", "utf8");
 
       process.env.REMOTECLAW_STATE_DIR = stateDir;
-      process.env.OPENCLAW_AGENT_DIR = agentDir;
+      process.env.REMOTECLAW_AGENT_DIR = agentDir;
       process.env.PI_CODING_AGENT_DIR = agentDir;
       process.env.REMOTECLAW_CONFIG_PATH = configPath;
       delete process.env.OPENROUTER_API_KEY;

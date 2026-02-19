@@ -9,11 +9,11 @@ services:
         value: "8080"
       - key: SETUP_PASSWORD
         sync: false
-      - key: OPENCLAW_STATE_DIR
+      - key: REMOTECLAW_STATE_DIR
         value: /data/.openclaw
-      - key: OPENCLAW_WORKSPACE_DIR
+      - key: REMOTECLAW_WORKSPACE_DIR
         value: /data/workspace
-      - key: OPENCLAW_GATEWAY_TOKEN
+      - key: REMOTECLAW_GATEWAY_TOKEN
         generateValue: true
     disk:
       name: openclaw-data

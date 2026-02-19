@@ -12,17 +12,17 @@ const {
 const tailscaleBin = expect.stringMatching(/tailscale$/i);
 
 describe("tailscale helpers", () => {
-  const originalForcedBinary = process.env.OPENCLAW_TEST_TAILSCALE_BINARY;
+  const originalForcedBinary = process.env.REMOTECLAW_TEST_TAILSCALE_BINARY;
 
   beforeEach(() => {
-    process.env.OPENCLAW_TEST_TAILSCALE_BINARY = "tailscale";
+    process.env.REMOTECLAW_TEST_TAILSCALE_BINARY = "tailscale";
   });
 
   afterEach(() => {
     if (originalForcedBinary === undefined) {
-      delete process.env.OPENCLAW_TEST_TAILSCALE_BINARY;
+      delete process.env.REMOTECLAW_TEST_TAILSCALE_BINARY;
     } else {
-      process.env.OPENCLAW_TEST_TAILSCALE_BINARY = originalForcedBinary;
+      process.env.REMOTECLAW_TEST_TAILSCALE_BINARY = originalForcedBinary;
     }
     vi.restoreAllMocks();
   });

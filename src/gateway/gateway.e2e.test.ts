@@ -31,22 +31,22 @@ describe("gateway e2e", () => {
         home: process.env.HOME,
         configPath: process.env.REMOTECLAW_CONFIG_PATH,
         token: process.env.REMOTECLAW_GATEWAY_TOKEN,
-        skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
-        skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
-        skipCron: process.env.OPENCLAW_SKIP_CRON,
-        skipCanvas: process.env.OPENCLAW_SKIP_CANVAS_HOST,
-        skipBrowser: process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER,
+        skipChannels: process.env.REMOTECLAW_SKIP_CHANNELS,
+        skipGmail: process.env.REMOTECLAW_SKIP_GMAIL_WATCHER,
+        skipCron: process.env.REMOTECLAW_SKIP_CRON,
+        skipCanvas: process.env.REMOTECLAW_SKIP_CANVAS_HOST,
+        skipBrowser: process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER,
       };
 
       const { baseUrl: openaiBaseUrl, restore } = installOpenAiResponsesMock();
 
       const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-mock-home-"));
       process.env.HOME = tempHome;
-      process.env.OPENCLAW_SKIP_CHANNELS = "1";
-      process.env.OPENCLAW_SKIP_GMAIL_WATCHER = "1";
-      process.env.OPENCLAW_SKIP_CRON = "1";
-      process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
-      process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
+      process.env.REMOTECLAW_SKIP_CHANNELS = "1";
+      process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = "1";
+      process.env.REMOTECLAW_SKIP_CRON = "1";
+      process.env.REMOTECLAW_SKIP_CANVAS_HOST = "1";
+      process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
 
       const token = `test-${randomUUID()}`;
       process.env.REMOTECLAW_GATEWAY_TOKEN = token;
@@ -118,11 +118,11 @@ describe("gateway e2e", () => {
         process.env.HOME = prev.home;
         process.env.REMOTECLAW_CONFIG_PATH = prev.configPath;
         process.env.REMOTECLAW_GATEWAY_TOKEN = prev.token;
-        process.env.OPENCLAW_SKIP_CHANNELS = prev.skipChannels;
-        process.env.OPENCLAW_SKIP_GMAIL_WATCHER = prev.skipGmail;
-        process.env.OPENCLAW_SKIP_CRON = prev.skipCron;
-        process.env.OPENCLAW_SKIP_CANVAS_HOST = prev.skipCanvas;
-        process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = prev.skipBrowser;
+        process.env.REMOTECLAW_SKIP_CHANNELS = prev.skipChannels;
+        process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = prev.skipGmail;
+        process.env.REMOTECLAW_SKIP_CRON = prev.skipCron;
+        process.env.REMOTECLAW_SKIP_CANVAS_HOST = prev.skipCanvas;
+        process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = prev.skipBrowser;
       }
     },
   );
@@ -133,18 +133,18 @@ describe("gateway e2e", () => {
       stateDir: process.env.REMOTECLAW_STATE_DIR,
       configPath: process.env.REMOTECLAW_CONFIG_PATH,
       token: process.env.REMOTECLAW_GATEWAY_TOKEN,
-      skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
-      skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
-      skipCron: process.env.OPENCLAW_SKIP_CRON,
-      skipCanvas: process.env.OPENCLAW_SKIP_CANVAS_HOST,
-      skipBrowser: process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER,
+      skipChannels: process.env.REMOTECLAW_SKIP_CHANNELS,
+      skipGmail: process.env.REMOTECLAW_SKIP_GMAIL_WATCHER,
+      skipCron: process.env.REMOTECLAW_SKIP_CRON,
+      skipCanvas: process.env.REMOTECLAW_SKIP_CANVAS_HOST,
+      skipBrowser: process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER,
     };
 
-    process.env.OPENCLAW_SKIP_CHANNELS = "1";
-    process.env.OPENCLAW_SKIP_GMAIL_WATCHER = "1";
-    process.env.OPENCLAW_SKIP_CRON = "1";
-    process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
-    process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
+    process.env.REMOTECLAW_SKIP_CHANNELS = "1";
+    process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = "1";
+    process.env.REMOTECLAW_SKIP_CRON = "1";
+    process.env.REMOTECLAW_SKIP_CANVAS_HOST = "1";
+    process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
     delete process.env.REMOTECLAW_GATEWAY_TOKEN;
 
     const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-wizard-home-"));
@@ -245,11 +245,11 @@ describe("gateway e2e", () => {
       process.env.REMOTECLAW_STATE_DIR = prev.stateDir;
       process.env.REMOTECLAW_CONFIG_PATH = prev.configPath;
       process.env.REMOTECLAW_GATEWAY_TOKEN = prev.token;
-      process.env.OPENCLAW_SKIP_CHANNELS = prev.skipChannels;
-      process.env.OPENCLAW_SKIP_GMAIL_WATCHER = prev.skipGmail;
-      process.env.OPENCLAW_SKIP_CRON = prev.skipCron;
-      process.env.OPENCLAW_SKIP_CANVAS_HOST = prev.skipCanvas;
-      process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = prev.skipBrowser;
+      process.env.REMOTECLAW_SKIP_CHANNELS = prev.skipChannels;
+      process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = prev.skipGmail;
+      process.env.REMOTECLAW_SKIP_CRON = prev.skipCron;
+      process.env.REMOTECLAW_SKIP_CANVAS_HOST = prev.skipCanvas;
+      process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = prev.skipBrowser;
     }
   });
 });

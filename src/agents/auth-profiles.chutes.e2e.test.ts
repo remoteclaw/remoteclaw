@@ -27,14 +27,14 @@ describe("auth-profiles (chutes)", () => {
   it("refreshes expired Chutes OAuth credentials", async () => {
     envSnapshot = captureEnv([
       "REMOTECLAW_STATE_DIR",
-      "OPENCLAW_AGENT_DIR",
+      "REMOTECLAW_AGENT_DIR",
       "PI_CODING_AGENT_DIR",
       "CHUTES_CLIENT_ID",
     ]);
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-chutes-"));
     process.env.REMOTECLAW_STATE_DIR = tempDir;
-    process.env.OPENCLAW_AGENT_DIR = path.join(tempDir, "agents", "main", "agent");
-    process.env.PI_CODING_AGENT_DIR = process.env.OPENCLAW_AGENT_DIR;
+    process.env.REMOTECLAW_AGENT_DIR = path.join(tempDir, "agents", "main", "agent");
+    process.env.PI_CODING_AGENT_DIR = process.env.REMOTECLAW_AGENT_DIR;
 
     const authProfilePath = path.join(tempDir, "agents", "main", "agent", "auth-profiles.json");
     await fs.mkdir(path.dirname(authProfilePath), { recursive: true });

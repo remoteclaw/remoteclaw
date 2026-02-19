@@ -9,7 +9,7 @@ type HomeEnvSnapshot = {
   HOMEDRIVE: string | undefined;
   HOMEPATH: string | undefined;
   REMOTECLAW_STATE_DIR: string | undefined;
-  OPENCLAW_AGENT_DIR: string | undefined;
+  REMOTECLAW_AGENT_DIR: string | undefined;
   PI_CODING_AGENT_DIR: string | undefined;
 };
 
@@ -20,7 +20,7 @@ function snapshotHomeEnv(): HomeEnvSnapshot {
     HOMEDRIVE: process.env.HOMEDRIVE,
     HOMEPATH: process.env.HOMEPATH,
     REMOTECLAW_STATE_DIR: process.env.REMOTECLAW_STATE_DIR,
-    OPENCLAW_AGENT_DIR: process.env.OPENCLAW_AGENT_DIR,
+    REMOTECLAW_AGENT_DIR: process.env.REMOTECLAW_AGENT_DIR,
     PI_CODING_AGENT_DIR: process.env.PI_CODING_AGENT_DIR,
   };
 }
@@ -59,7 +59,7 @@ export function createTempHomeHarness(options: { prefix: string; beforeEachCase?
     process.env.HOME = home;
     process.env.USERPROFILE = home;
     process.env.REMOTECLAW_STATE_DIR = path.join(home, ".remoteclaw");
-    process.env.OPENCLAW_AGENT_DIR = path.join(home, ".remoteclaw", "agent");
+    process.env.REMOTECLAW_AGENT_DIR = path.join(home, ".remoteclaw", "agent");
     process.env.PI_CODING_AGENT_DIR = path.join(home, ".remoteclaw", "agent");
 
     if (process.platform === "win32") {

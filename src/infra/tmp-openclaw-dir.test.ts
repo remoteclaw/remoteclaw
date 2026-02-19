@@ -1,6 +1,6 @@
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { POSIX_OPENCLAW_TMP_DIR, resolvePreferredOpenClawTmpDir } from "./tmp-openclaw-dir.js";
+import { POSIX_REMOTECLAW_TMP_DIR, resolvePreferredOpenClawTmpDir } from "./tmp-openclaw-dir.js";
 
 type TmpDirOptions = NonNullable<Parameters<typeof resolvePreferredOpenClawTmpDir>[0]>;
 
@@ -40,7 +40,7 @@ describe("resolvePreferredOpenClawTmpDir", () => {
 
     expect(lstatSync).toHaveBeenCalledTimes(1);
     expect(accessSync).toHaveBeenCalledTimes(1);
-    expect(resolved).toBe(POSIX_OPENCLAW_TMP_DIR);
+    expect(resolved).toBe(POSIX_REMOTECLAW_TMP_DIR);
     expect(tmpdir).not.toHaveBeenCalled();
   });
 
@@ -68,9 +68,9 @@ describe("resolvePreferredOpenClawTmpDir", () => {
       lstatSync: lstatSyncMock,
     });
 
-    expect(resolved).toBe(POSIX_OPENCLAW_TMP_DIR);
+    expect(resolved).toBe(POSIX_REMOTECLAW_TMP_DIR);
     expect(accessSync).toHaveBeenCalledWith("/tmp", expect.any(Number));
-    expect(mkdirSync).toHaveBeenCalledWith(POSIX_OPENCLAW_TMP_DIR, expect.any(Object));
+    expect(mkdirSync).toHaveBeenCalledWith(POSIX_REMOTECLAW_TMP_DIR, expect.any(Object));
     expect(tmpdir).not.toHaveBeenCalled();
   });
 

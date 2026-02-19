@@ -3,8 +3,9 @@ import type { TelegramNetworkConfig } from "../config/types.telegram.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 
 export const TELEGRAM_DISABLE_AUTO_SELECT_FAMILY_ENV =
-  "OPENCLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY";
-export const TELEGRAM_ENABLE_AUTO_SELECT_FAMILY_ENV = "OPENCLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY";
+  "REMOTECLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY";
+export const TELEGRAM_ENABLE_AUTO_SELECT_FAMILY_ENV =
+  "REMOTECLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY";
 
 export type TelegramAutoSelectFamilyDecision = {
   value: boolean | null;

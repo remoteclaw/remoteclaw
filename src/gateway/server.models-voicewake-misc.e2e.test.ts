@@ -304,14 +304,14 @@ describe("gateway server models + voicewake", () => {
 
 describe("gateway server misc", () => {
   test("hello-ok advertises the gateway port for canvas host", async () => {
-    const envSnapshot = captureEnv(["OPENCLAW_CANVAS_HOST_PORT", "REMOTECLAW_GATEWAY_TOKEN"]);
+    const envSnapshot = captureEnv(["REMOTECLAW_CANVAS_HOST_PORT", "REMOTECLAW_GATEWAY_TOKEN"]);
     try {
       process.env.REMOTECLAW_GATEWAY_TOKEN = "secret";
       testTailnetIPv4.value = "100.64.0.1";
       testState.gatewayBind = "lan";
       const canvasPort = await getFreePort();
       testState.canvasHostPort = canvasPort;
-      process.env.OPENCLAW_CANVAS_HOST_PORT = String(canvasPort);
+      process.env.REMOTECLAW_CANVAS_HOST_PORT = String(canvasPort);
 
       const testPort = await getFreePort();
       const canvasHostUrl = resolveCanvasHostUrl({

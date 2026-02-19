@@ -16,9 +16,9 @@ function makeTempDir() {
 
 async function withStateDir<T>(stateDir: string, fn: () => Promise<T>) {
   const prev = process.env.REMOTECLAW_STATE_DIR;
-  const prevBundled = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+  const prevBundled = process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR;
   process.env.REMOTECLAW_STATE_DIR = stateDir;
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+  process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
   try {
     return await fn();
   } finally {
@@ -28,9 +28,9 @@ async function withStateDir<T>(stateDir: string, fn: () => Promise<T>) {
       process.env.REMOTECLAW_STATE_DIR = prev;
     }
     if (prevBundled === undefined) {
-      delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+      delete process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR;
     } else {
-      process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = prevBundled;
+      process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = prevBundled;
     }
   }
 }

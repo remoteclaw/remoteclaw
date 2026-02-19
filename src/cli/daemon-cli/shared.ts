@@ -72,7 +72,7 @@ const SAFE_DAEMON_ENV_KEYS = [
   "REMOTECLAW_STATE_DIR",
   "REMOTECLAW_CONFIG_PATH",
   "REMOTECLAW_GATEWAY_PORT",
-  "OPENCLAW_NIX_MODE",
+  "REMOTECLAW_NIX_MODE",
 ];
 
 export function filterDaemonEnv(env: Record<string, string> | undefined): Record<string, string> {

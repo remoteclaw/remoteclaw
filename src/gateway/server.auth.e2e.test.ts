@@ -287,8 +287,8 @@ describe("gateway server auth/connect", () => {
 
     test("closes silent handshakes after timeout", { timeout: 60_000 }, async () => {
       vi.useRealTimers();
-      const prevHandshakeTimeout = process.env.OPENCLAW_TEST_HANDSHAKE_TIMEOUT_MS;
-      process.env.OPENCLAW_TEST_HANDSHAKE_TIMEOUT_MS = "50";
+      const prevHandshakeTimeout = process.env.REMOTECLAW_TEST_HANDSHAKE_TIMEOUT_MS;
+      process.env.REMOTECLAW_TEST_HANDSHAKE_TIMEOUT_MS = "50";
       try {
         const ws = await openWs(port);
         const handshakeTimeoutMs = getHandshakeTimeoutMs();
@@ -296,9 +296,9 @@ describe("gateway server auth/connect", () => {
         expect(closed).toBe(true);
       } finally {
         if (prevHandshakeTimeout === undefined) {
-          delete process.env.OPENCLAW_TEST_HANDSHAKE_TIMEOUT_MS;
+          delete process.env.REMOTECLAW_TEST_HANDSHAKE_TIMEOUT_MS;
         } else {
-          process.env.OPENCLAW_TEST_HANDSHAKE_TIMEOUT_MS = prevHandshakeTimeout;
+          process.env.REMOTECLAW_TEST_HANDSHAKE_TIMEOUT_MS = prevHandshakeTimeout;
         }
       }
     });
@@ -325,7 +325,7 @@ describe("gateway server auth/connect", () => {
     test("connect (req) handshake prefers service version fallback in hello-ok payload", async () => {
       await withRuntimeVersionEnv(
         {
-          OPENCLAW_VERSION: " ",
+          REMOTECLAW_VERSION: " ",
           REMOTECLAW_SERVICE_VERSION: "2.4.6-service",
           npm_package_version: "1.0.0-package",
         },
@@ -333,10 +333,10 @@ describe("gateway server auth/connect", () => {
       );
     });
 
-    test("connect (req) handshake prefers OPENCLAW_VERSION over service version", async () => {
+    test("connect (req) handshake prefers REMOTECLAW_VERSION over service version", async () => {
       await withRuntimeVersionEnv(
         {
-          OPENCLAW_VERSION: "9.9.9-cli",
+          REMOTECLAW_VERSION: "9.9.9-cli",
           REMOTECLAW_SERVICE_VERSION: "2.4.6-service",
           npm_package_version: "1.0.0-package",
         },
@@ -347,7 +347,7 @@ describe("gateway server auth/connect", () => {
     test("connect (req) handshake falls back to npm_package_version when higher-precedence env values are blank", async () => {
       await withRuntimeVersionEnv(
         {
-          OPENCLAW_VERSION: " ",
+          REMOTECLAW_VERSION: " ",
           REMOTECLAW_SERVICE_VERSION: "\t",
           npm_package_version: "1.0.0-package",
         },

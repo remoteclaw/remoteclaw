@@ -5,7 +5,7 @@ import { parseSlackModalPrivateMetadata } from "../../modal-metadata.js";
 import type { SlackMonitorContext } from "../context.js";
 
 // Prefix for OpenClaw-generated action IDs to scope our handler
-const OPENCLAW_ACTION_PREFIX = "openclaw:";
+const REMOTECLAW_ACTION_PREFIX = "openclaw:";
 
 type InteractionMessageBlock = {
   type?: string;
@@ -384,7 +384,7 @@ export function registerSlackInteractionEvents(params: { ctx: SlackMonitorContex
   // Only matches action_ids that start with our prefix to avoid interfering
   // with other Slack integrations or future features
   ctx.app.action(
-    new RegExp(`^${OPENCLAW_ACTION_PREFIX}`),
+    new RegExp(`^${REMOTECLAW_ACTION_PREFIX}`),
     async (args: SlackActionMiddlewareArgs) => {
       const { ack, body, action, respond } = args;
       const typedBody = body as unknown as {
@@ -540,7 +540,7 @@ export function registerSlackInteractionEvents(params: { ctx: SlackMonitorContex
 
   // Handle OpenClaw modal submissions with callback_ids scoped by our prefix.
   ctx.app.view(
-    new RegExp(`^${OPENCLAW_ACTION_PREFIX}`),
+    new RegExp(`^${REMOTECLAW_ACTION_PREFIX}`),
     async ({ ack, body }: { ack: () => Promise<void>; body: unknown }) => {
       await ack();
 
@@ -613,7 +613,7 @@ export function registerSlackInteractionEvents(params: { ctx: SlackMonitorContex
 
   // Handle modal close events so agent workflows can react to cancelled forms.
   viewClosed(
-    new RegExp(`^${OPENCLAW_ACTION_PREFIX}`),
+    new RegExp(`^${REMOTECLAW_ACTION_PREFIX}`),
     async ({ ack, body }: { ack: () => Promise<void>; body: unknown }) => {
       await ack();
 

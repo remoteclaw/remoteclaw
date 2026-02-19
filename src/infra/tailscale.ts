@@ -150,7 +150,7 @@ export async function getTailnetHostname(exec: typeof runExec = runExec, detecte
 let cachedTailscaleBinary: string | null = null;
 
 export async function getTailscaleBinary(): Promise<string> {
-  const forcedBinary = process.env.OPENCLAW_TEST_TAILSCALE_BINARY?.trim();
+  const forcedBinary = process.env.REMOTECLAW_TEST_TAILSCALE_BINARY?.trim();
   if (forcedBinary) {
     cachedTailscaleBinary = forcedBinary;
     return forcedBinary;

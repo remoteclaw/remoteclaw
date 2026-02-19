@@ -29,7 +29,7 @@ describe("gateway talk.config", () => {
       );
       expect(res.ok).toBe(true);
       expect(res.payload?.config?.talk?.voiceId).toBe("voice-123");
-      expect(res.payload?.config?.talk?.apiKey).toBe("__OPENCLAW_REDACTED__");
+      expect(res.payload?.config?.talk?.apiKey).toBe("__REMOTECLAW_REDACTED__");
     });
   });
 

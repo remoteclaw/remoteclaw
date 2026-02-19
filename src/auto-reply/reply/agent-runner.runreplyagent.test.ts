@@ -79,7 +79,7 @@ beforeAll(async () => {
 beforeEach(() => {
   state.runEmbeddedPiAgentMock.mockReset();
   state.runCliAgentMock.mockReset();
-  vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+  vi.stubEnv("REMOTECLAW_TEST_FAST", "1");
 });
 
 function createMinimalRun(params?: {

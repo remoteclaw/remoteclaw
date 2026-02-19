@@ -29,7 +29,7 @@ describe("registerSubCliCommands", () => {
 
   beforeEach(() => {
     process.env = { ...originalEnv };
-    delete process.env.OPENCLAW_DISABLE_LAZY_SUBCOMMANDS;
+    delete process.env.REMOTECLAW_DISABLE_LAZY_SUBCOMMANDS;
     registerAcpCli.mockClear();
     acpAction.mockClear();
     registerNodesCli.mockClear();

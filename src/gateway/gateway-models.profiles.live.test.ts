@@ -30,10 +30,11 @@ import { GatewayClient } from "./client.js";
 import { renderCatNoncePngBase64 } from "./live-image-probe.js";
 import { startGatewayServer } from "./server.js";
 
-const LIVE = isTruthyEnvValue(process.env.LIVE) || isTruthyEnvValue(process.env.OPENCLAW_LIVE_TEST);
-const GATEWAY_LIVE = isTruthyEnvValue(process.env.OPENCLAW_LIVE_GATEWAY);
-const ZAI_FALLBACK = isTruthyEnvValue(process.env.OPENCLAW_LIVE_GATEWAY_ZAI_FALLBACK);
-const PROVIDERS = parseFilter(process.env.OPENCLAW_LIVE_GATEWAY_PROVIDERS);
+const LIVE =
+  isTruthyEnvValue(process.env.LIVE) || isTruthyEnvValue(process.env.REMOTECLAW_LIVE_TEST);
+const GATEWAY_LIVE = isTruthyEnvValue(process.env.REMOTECLAW_LIVE_GATEWAY);
+const ZAI_FALLBACK = isTruthyEnvValue(process.env.REMOTECLAW_LIVE_GATEWAY_ZAI_FALLBACK);
+const PROVIDERS = parseFilter(process.env.REMOTECLAW_LIVE_GATEWAY_PROVIDERS);
 const THINKING_LEVEL = "high";
 const THINKING_TAG_RE = /<\s*\/?\s*(?:think(?:ing)?|thought|antthinking)\s*>/i;
 const FINAL_TAG_RE = /<\s*\/?\s*final\s*>/i;
@@ -496,21 +497,21 @@ async function runGatewayModelSuite(params: GatewayModelSuiteParams) {
   const previous = {
     configPath: process.env.REMOTECLAW_CONFIG_PATH,
     token: process.env.REMOTECLAW_GATEWAY_TOKEN,
-    skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
-    skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
-    skipCron: process.env.OPENCLAW_SKIP_CRON,
-    skipCanvas: process.env.OPENCLAW_SKIP_CANVAS_HOST,
-    agentDir: process.env.OPENCLAW_AGENT_DIR,
+    skipChannels: process.env.REMOTECLAW_SKIP_CHANNELS,
+    skipGmail: process.env.REMOTECLAW_SKIP_GMAIL_WATCHER,
+    skipCron: process.env.REMOTECLAW_SKIP_CRON,
+    skipCanvas: process.env.REMOTECLAW_SKIP_CANVAS_HOST,
+    agentDir: process.env.REMOTECLAW_AGENT_DIR,
     piAgentDir: process.env.PI_CODING_AGENT_DIR,
     stateDir: process.env.REMOTECLAW_STATE_DIR,
   };
   let tempAgentDir: string | undefined;
   let tempStateDir: string | undefined;
 
-  process.env.OPENCLAW_SKIP_CHANNELS = "1";
-  process.env.OPENCLAW_SKIP_GMAIL_WATCHER = "1";
-  process.env.OPENCLAW_SKIP_CRON = "1";
-  process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
+  process.env.REMOTECLAW_SKIP_CHANNELS = "1";
+  process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = "1";
+  process.env.REMOTECLAW_SKIP_CRON = "1";
+  process.env.REMOTECLAW_SKIP_CANVAS_HOST = "1";
 
   const token = `test-${randomUUID()}`;
   process.env.REMOTECLAW_GATEWAY_TOKEN = token;
@@ -537,7 +538,7 @@ async function runGatewayModelSuite(params: GatewayModelSuiteParams) {
   if (tempSessionAgentDir !== tempAgentDir) {
     saveAuthProfileStore(sanitizedStore, tempSessionAgentDir);
   }
-  process.env.OPENCLAW_AGENT_DIR = tempAgentDir;
+  process.env.REMOTECLAW_AGENT_DIR = tempAgentDir;
   process.env.PI_CODING_AGENT_DIR = tempAgentDir;
 
   const workspaceDir = resolveAgentWorkspaceDir(params.cfg, agentId);
@@ -1002,11 +1003,11 @@ async function runGatewayModelSuite(params: GatewayModelSuiteParams) {
 
     process.env.REMOTECLAW_CONFIG_PATH = previous.configPath;
     process.env.REMOTECLAW_GATEWAY_TOKEN = previous.token;
-    process.env.OPENCLAW_SKIP_CHANNELS = previous.skipChannels;
-    process.env.OPENCLAW_SKIP_GMAIL_WATCHER = previous.skipGmail;
-    process.env.OPENCLAW_SKIP_CRON = previous.skipCron;
-    process.env.OPENCLAW_SKIP_CANVAS_HOST = previous.skipCanvas;
-    process.env.OPENCLAW_AGENT_DIR = previous.agentDir;
+    process.env.REMOTECLAW_SKIP_CHANNELS = previous.skipChannels;
+    process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = previous.skipGmail;
+    process.env.REMOTECLAW_SKIP_CRON = previous.skipCron;
+    process.env.REMOTECLAW_SKIP_CANVAS_HOST = previous.skipCanvas;
+    process.env.REMOTECLAW_AGENT_DIR = previous.agentDir;
     process.env.PI_CODING_AGENT_DIR = previous.piAgentDir;
     process.env.REMOTECLAW_STATE_DIR = previous.stateDir;
   }
@@ -1027,7 +1028,7 @@ describeLive("gateway live (dev agent, profile keys)", () => {
       const modelRegistry = discoverModels(authStorage, agentDir);
       const all = modelRegistry.getAll();
 
-      const rawModels = process.env.OPENCLAW_LIVE_GATEWAY_MODELS?.trim();
+      const rawModels = process.env.REMOTECLAW_LIVE_GATEWAY_MODELS?.trim();
       const useModern = !rawModels || rawModels === "modern" || rawModels === "all";
       const useExplicit = Boolean(rawModels) && !useModern;
       const filter = useExplicit ? parseFilter(rawModels) : null;
@@ -1110,16 +1111,16 @@ describeLive("gateway live (dev agent, profile keys)", () => {
     const previous = {
       configPath: process.env.REMOTECLAW_CONFIG_PATH,
       token: process.env.REMOTECLAW_GATEWAY_TOKEN,
-      skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
-      skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
-      skipCron: process.env.OPENCLAW_SKIP_CRON,
-      skipCanvas: process.env.OPENCLAW_SKIP_CANVAS_HOST,
+      skipChannels: process.env.REMOTECLAW_SKIP_CHANNELS,
+      skipGmail: process.env.REMOTECLAW_SKIP_GMAIL_WATCHER,
+      skipCron: process.env.REMOTECLAW_SKIP_CRON,
+      skipCanvas: process.env.REMOTECLAW_SKIP_CANVAS_HOST,
     };
 
-    process.env.OPENCLAW_SKIP_CHANNELS = "1";
-    process.env.OPENCLAW_SKIP_GMAIL_WATCHER = "1";
-    process.env.OPENCLAW_SKIP_CRON = "1";
-    process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
+    process.env.REMOTECLAW_SKIP_CHANNELS = "1";
+    process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = "1";
+    process.env.REMOTECLAW_SKIP_CRON = "1";
+    process.env.REMOTECLAW_SKIP_CANVAS_HOST = "1";
 
     const token = `test-${randomUUID()}`;
     process.env.REMOTECLAW_GATEWAY_TOKEN = token;
@@ -1241,10 +1242,10 @@ describeLive("gateway live (dev agent, profile keys)", () => {
 
       process.env.REMOTECLAW_CONFIG_PATH = previous.configPath;
       process.env.REMOTECLAW_GATEWAY_TOKEN = previous.token;
-      process.env.OPENCLAW_SKIP_CHANNELS = previous.skipChannels;
-      process.env.OPENCLAW_SKIP_GMAIL_WATCHER = previous.skipGmail;
-      process.env.OPENCLAW_SKIP_CRON = previous.skipCron;
-      process.env.OPENCLAW_SKIP_CANVAS_HOST = previous.skipCanvas;
+      process.env.REMOTECLAW_SKIP_CHANNELS = previous.skipChannels;
+      process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = previous.skipGmail;
+      process.env.REMOTECLAW_SKIP_CRON = previous.skipCron;
+      process.env.REMOTECLAW_SKIP_CANVAS_HOST = previous.skipCanvas;
     }
   }, 180_000);
 });

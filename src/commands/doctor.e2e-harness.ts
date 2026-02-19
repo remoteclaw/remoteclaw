@@ -397,8 +397,8 @@ beforeEach(() => {
   originalIsTTY = process.stdin.isTTY;
   setStdinTty(true);
   originalStateDir = process.env.REMOTECLAW_STATE_DIR;
-  originalUpdateInProgress = process.env.OPENCLAW_UPDATE_IN_PROGRESS;
-  process.env.OPENCLAW_UPDATE_IN_PROGRESS = "1";
+  originalUpdateInProgress = process.env.REMOTECLAW_UPDATE_IN_PROGRESS;
+  process.env.REMOTECLAW_UPDATE_IN_PROGRESS = "1";
   tempStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-state-"));
   process.env.REMOTECLAW_STATE_DIR = tempStateDir;
   fs.mkdirSync(path.join(tempStateDir, "agents", "main", "sessions"), {
@@ -415,9 +415,9 @@ afterEach(() => {
     process.env.REMOTECLAW_STATE_DIR = originalStateDir;
   }
   if (originalUpdateInProgress === undefined) {
-    delete process.env.OPENCLAW_UPDATE_IN_PROGRESS;
+    delete process.env.REMOTECLAW_UPDATE_IN_PROGRESS;
   } else {
-    process.env.OPENCLAW_UPDATE_IN_PROGRESS = originalUpdateInProgress;
+    process.env.REMOTECLAW_UPDATE_IN_PROGRESS = originalUpdateInProgress;
   }
   if (tempStateDir) {
     fs.rmSync(tempStateDir, { recursive: true, force: true });

@@ -67,8 +67,8 @@ async function waitForCondition(check: () => boolean, timeoutMs = 2000) {
 
 describe("gateway server cron", () => {
   test("handles cron CRUD, normalization, and patch semantics", { timeout: 120_000 }, async () => {
-    const prevSkipCron = process.env.OPENCLAW_SKIP_CRON;
-    process.env.OPENCLAW_SKIP_CRON = "0";
+    const prevSkipCron = process.env.REMOTECLAW_SKIP_CRON;
+    process.env.REMOTECLAW_SKIP_CRON = "0";
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-cron-"));
     testState.cronStorePath = path.join(dir, "cron", "jobs.json");
     testState.sessionConfig = { mainKey: "primary" };
@@ -339,16 +339,16 @@ describe("gateway server cron", () => {
       testState.sessionConfig = undefined;
       testState.cronEnabled = undefined;
       if (prevSkipCron === undefined) {
-        delete process.env.OPENCLAW_SKIP_CRON;
+        delete process.env.REMOTECLAW_SKIP_CRON;
       } else {
-        process.env.OPENCLAW_SKIP_CRON = prevSkipCron;
+        process.env.REMOTECLAW_SKIP_CRON = prevSkipCron;
       }
     }
   });
 
   test("writes cron run history and auto-runs due jobs", async () => {
-    const prevSkipCron = process.env.OPENCLAW_SKIP_CRON;
-    process.env.OPENCLAW_SKIP_CRON = "0";
+    const prevSkipCron = process.env.REMOTECLAW_SKIP_CRON;
+    process.env.REMOTECLAW_SKIP_CRON = "0";
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-cron-log-"));
     testState.cronStorePath = path.join(dir, "cron", "jobs.json");
     testState.cronEnabled = undefined;
@@ -436,16 +436,16 @@ describe("gateway server cron", () => {
       testState.cronStorePath = undefined;
       testState.cronEnabled = undefined;
       if (prevSkipCron === undefined) {
-        delete process.env.OPENCLAW_SKIP_CRON;
+        delete process.env.REMOTECLAW_SKIP_CRON;
       } else {
-        process.env.OPENCLAW_SKIP_CRON = prevSkipCron;
+        process.env.REMOTECLAW_SKIP_CRON = prevSkipCron;
       }
     }
   }, 45_000);
 
   test("posts webhooks for delivery mode and legacy notify fallback only when summary exists", async () => {
-    const prevSkipCron = process.env.OPENCLAW_SKIP_CRON;
-    process.env.OPENCLAW_SKIP_CRON = "0";
+    const prevSkipCron = process.env.REMOTECLAW_SKIP_CRON;
+    process.env.REMOTECLAW_SKIP_CRON = "0";
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-cron-webhook-"));
     testState.cronStorePath = path.join(dir, "cron", "jobs.json");
     testState.cronEnabled = false;
@@ -614,9 +614,9 @@ describe("gateway server cron", () => {
       testState.cronStorePath = undefined;
       testState.cronEnabled = undefined;
       if (prevSkipCron === undefined) {
-        delete process.env.OPENCLAW_SKIP_CRON;
+        delete process.env.REMOTECLAW_SKIP_CRON;
       } else {
-        process.env.OPENCLAW_SKIP_CRON = prevSkipCron;
+        process.env.REMOTECLAW_SKIP_CRON = prevSkipCron;
       }
     }
   }, 60_000);

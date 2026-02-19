@@ -53,6 +53,19 @@ const coreEntries: CoreCliEntry[] = [
   {
     commands: [
       {
+        name: "import",
+        description: "Import an OpenClaw config directory into RemoteClaw format",
+        hasSubcommands: false,
+      },
+    ],
+    register: async ({ program }) => {
+      const mod = await import("./register.import.js");
+      mod.registerImportCommand(program);
+    },
+  },
+  {
+    commands: [
+      {
         name: "onboard",
         description: "Interactive onboarding wizard for gateway, workspace, and skills",
         hasSubcommands: false,

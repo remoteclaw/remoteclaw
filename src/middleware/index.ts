@@ -6,7 +6,6 @@ export {
   registerRuntime,
 } from "./agent-runtime.js";
 export { ChannelBridge } from "./channel-bridge.js";
-export { toDeliveryResult } from "./delivery-adapter.js";
 export type { ChannelBridgeOptions } from "./channel-bridge.js";
 export { ClaudeCliRuntime } from "./claude-cli-runtime.js";
 export { CLIRuntimeBase } from "./cli-runtime-base.js";

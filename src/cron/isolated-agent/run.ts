@@ -19,7 +19,6 @@ import {
   resolveHooksGmailModel,
   resolveThinkingDefault,
 } from "../../agents/model-selection.js";
-import type { MessagingToolSend } from "../../agents/pi-embedded-messaging.js";
 import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
 import { getSkillsSnapshotVersion } from "../../agents/skills/refresh.js";
 import { runSubagentAnnounceFlow } from "../../agents/subagent-announce.js";
@@ -39,12 +38,7 @@ import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { deliverOutboundPayloads } from "../../infra/outbound/deliver.js";
 import { getRemoteSkillEligibility } from "../../infra/skills-remote.js";
 import { logWarn } from "../../logger.js";
-import {
-  ChannelBridge,
-  ClaudeCliRuntime,
-  toDeliveryResult,
-  type ChannelMessage,
-} from "../../middleware/index.js";
+import { ChannelBridge, ClaudeCliRuntime, type ChannelMessage } from "../../middleware/index.js";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../../routing/session-key.js";
 import {
   buildSafeExternalPrompt,
@@ -64,24 +58,6 @@ import {
   resolveHeartbeatAckMaxChars,
 } from "./helpers.js";
 import { resolveCronSession } from "./session.js";
-
-function matchesMessagingToolDeliveryTarget(
-  target: MessagingToolSend,
-  delivery: { channel: string; to?: string; accountId?: string },
-): boolean {
-  if (!delivery.to || !target.to) {
-    return false;
-  }
-  const channel = delivery.channel.trim().toLowerCase();
-  const provider = target.provider?.trim().toLowerCase();
-  if (provider && provider !== "message" && provider !== channel) {
-    return false;
-  }
-  if (target.accountId && delivery.accountId && target.accountId !== delivery.accountId) {
-    return false;
-  }
-  return target.to === delivery.to;
-}
 
 function resolveCronDeliveryBestEffort(job: CronJob): boolean {
   if (typeof job.delivery?.bestEffort === "boolean") {
@@ -397,7 +373,7 @@ export async function runCronIsolatedAgentTurn(params: {
 
   const runStartedAt = Date.now();
   let runEndedAt = runStartedAt;
-  let runResult: ReturnType<typeof toDeliveryResult>;
+  let reply: Awaited<ReturnType<ChannelBridge["handle"]>>;
   try {
     const resolvedVerboseLevel =
       normalizeVerboseLevel(cronSession.sessionEntry.verboseLevel) ??
@@ -443,20 +419,26 @@ export async function runCronIsolatedAgentTurn(params: {
       text: commandBody,
       workspaceDir,
     };
-    const reply = await bridge.handle(channelMessage);
-    runResult = toDeliveryResult(reply, "claude-cli", model);
+    reply = await bridge.handle(channelMessage);
     runEndedAt = Date.now();
   } catch (err) {
     return withRunSession({ status: "error", error: String(err) });
   }
 
-  const payloads = runResult.payloads ?? [];
+  const payloads = reply.text ? [{ text: reply.text }] : [];
 
   // Update token+model fields in the session store.
   {
-    const usage = runResult.meta.agentMeta?.usage;
-    const modelUsed = runResult.meta.agentMeta?.model ?? model;
-    const providerUsed = runResult.meta.agentMeta?.provider ?? provider;
+    const usage = reply.usage
+      ? {
+          input: reply.usage.inputTokens,
+          output: reply.usage.outputTokens,
+          cacheRead: reply.usage.cacheReadTokens,
+          cacheWrite: reply.usage.cacheWriteTokens,
+        }
+      : undefined;
+    const modelUsed = model;
+    const providerUsed = provider;
     const contextTokens =
       agentCfg?.contextTokens ?? lookupContextTokens(modelUsed) ?? DEFAULT_CONTEXT_TOKENS;
 
@@ -464,7 +446,7 @@ export async function runCronIsolatedAgentTurn(params: {
     cronSession.sessionEntry.model = modelUsed;
     cronSession.sessionEntry.contextTokens = contextTokens;
     if (isCliProvider(providerUsed, cfgWithAgentDefaults)) {
-      const cliSessionId = runResult.meta.agentMeta?.sessionId?.trim();
+      const cliSessionId = reply.sessionId?.trim();
       if (cliSessionId) {
         setCliSessionId(cronSession.sessionEntry, providerUsed, cliSessionId);
       }
@@ -502,16 +484,8 @@ export async function runCronIsolatedAgentTurn(params: {
   // Skip delivery for heartbeat-only responses (HEARTBEAT_OK with no real content).
   const ackMaxChars = resolveHeartbeatAckMaxChars(agentCfg);
   const skipHeartbeatDelivery = deliveryRequested && isHeartbeatOnlyResponse(payloads, ackMaxChars);
-  const skipMessagingToolDelivery =
-    deliveryRequested &&
-    runResult.didSendViaMessagingTool === true &&
-    (runResult.messagingToolSentTargets ?? []).some((target) =>
-      matchesMessagingToolDeliveryTarget(target, {
-        channel: resolvedDelivery.channel,
-        to: resolvedDelivery.to,
-        accountId: resolvedDelivery.accountId,
-      }),
-    );
+  // ChannelBridge does not support messaging tools; always false.
+  const skipMessagingToolDelivery = false;
 
   let delivered = false;
   if (deliveryRequested && !skipHeartbeatDelivery && !skipMessagingToolDelivery) {

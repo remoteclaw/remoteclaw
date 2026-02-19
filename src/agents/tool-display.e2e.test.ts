@@ -94,14 +94,14 @@ describe("tool display details", () => {
         name: "exec",
         args: {
           command:
-            "set -euo pipefail\ngit -C /Users/adityasingh/.openclaw/workspace status --short | head -n 3",
-          workdir: "/Users/adityasingh/.openclaw/workspace",
+            "set -euo pipefail\ngit -C /Users/adityasingh/.remoteclaw/workspace status --short | head -n 3",
+          workdir: "/Users/adityasingh/.remoteclaw/workspace",
         },
       }),
     );
 
     expect(detail).toContain("check git status -> show first 3 lines");
-    expect(detail).toContain(".openclaw/workspace)");
+    expect(detail).toContain(".remoteclaw/workspace)");
   });
 
   it("recognizes heredoc/inline script exec details", () => {
@@ -110,7 +110,7 @@ describe("tool display details", () => {
         name: "exec",
         args: {
           command: "python3 <<PY\nprint('x')\nPY",
-          workdir: "/Users/adityasingh/.openclaw/workspace",
+          workdir: "/Users/adityasingh/.remoteclaw/workspace",
         },
       }),
     );
@@ -119,7 +119,7 @@ describe("tool display details", () => {
         name: "exec",
         args: {
           command: "node --check /tmp/test.js",
-          workdir: "/Users/adityasingh/.openclaw/workspace",
+          workdir: "/Users/adityasingh/.remoteclaw/workspace",
         },
       }),
     );
@@ -128,7 +128,7 @@ describe("tool display details", () => {
         name: "exec",
         args: {
           command: "node -c /tmp/test.js",
-          workdir: "/Users/adityasingh/.openclaw/workspace",
+          workdir: "/Users/adityasingh/.remoteclaw/workspace",
         },
       }),
     );

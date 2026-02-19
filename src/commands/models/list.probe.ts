@@ -1,5 +1,4 @@
 import fs from "node:fs/promises";
-import type { OpenClawConfig } from "../../config/config.js";
 import { resolveOpenClawAgentDir } from "../../agents/agent-paths.js";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import {
@@ -12,6 +11,7 @@ import { getCustomProviderApiKey, resolveEnvApiKey } from "../../agents/model-au
 import { loadModelCatalog } from "../../agents/model-catalog.js";
 import { normalizeProviderId, parseModelRef } from "../../agents/model-selection.js";
 import { resolveDefaultAgentWorkspaceDir } from "../../agents/workspace.js";
+import type { OpenClawConfig } from "../../config/config.js";
 import { resolveSessionTranscriptsDirForAgent } from "../../config/sessions/paths.js";
 import { DEFAULT_PROVIDER, formatMs } from "./shared.js";
 

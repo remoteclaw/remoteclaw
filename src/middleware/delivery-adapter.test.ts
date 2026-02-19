@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ChannelReply } from "./types.js";
 import { toDeliveryResult } from "./delivery-adapter.js";
+import type { ChannelReply } from "./types.js";
 
 describe("toDeliveryResult", () => {
   const baseReply: ChannelReply = {

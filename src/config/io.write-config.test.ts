@@ -15,7 +15,7 @@ describe("config io write", () => {
     initialConfig: Record<string, unknown>;
     env?: NodeJS.ProcessEnv;
   }) {
-    const configPath = path.join(params.home, ".openclaw", "openclaw.json");
+    const configPath = path.join(params.home, ".remoteclaw", "remoteclaw.json");
     await fs.mkdir(path.dirname(configPath), { recursive: true });
     await fs.writeFile(configPath, JSON.stringify(params.initialConfig, null, 2), "utf-8");
 
@@ -150,7 +150,7 @@ describe("config io write", () => {
 
   it("keeps env refs in arrays when appending entries", async () => {
     await withTempHome("openclaw-config-io-", async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(
         configPath,
@@ -223,7 +223,7 @@ describe("config io write", () => {
 
   it("logs an overwrite audit entry when replacing an existing config file", async () => {
     await withTempHome("openclaw-config-io-", async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(
         configPath,
@@ -285,8 +285,8 @@ describe("config io write", () => {
 
   it("appends config write audit JSONL entries with forensic metadata", async () => {
     await withTempHome("openclaw-config-io-", async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
-      const auditPath = path.join(home, ".openclaw", "logs", "config-audit.jsonl");
+      const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
+      const auditPath = path.join(home, ".remoteclaw", "logs", "config-audit.jsonl");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(
         configPath,
@@ -330,8 +330,8 @@ describe("config io write", () => {
 
   it("records gateway watch session markers in config audit entries", async () => {
     await withTempHome("openclaw-config-io-", async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
-      const auditPath = path.join(home, ".openclaw", "logs", "config-audit.jsonl");
+      const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
+      const auditPath = path.join(home, ".remoteclaw", "logs", "config-audit.jsonl");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(
         configPath,

@@ -602,7 +602,7 @@ describe("exec approvals wildcard agent", () => {
     const homedirSpy = vi.spyOn(os, "homedir").mockReturnValue(dir);
 
     try {
-      const approvalsPath = path.join(dir, ".openclaw", "exec-approvals.json");
+      const approvalsPath = path.join(dir, ".remoteclaw", "exec-approvals.json");
       fs.mkdirSync(path.dirname(approvalsPath), { recursive: true });
       fs.writeFileSync(
         approvalsPath,

@@ -61,16 +61,16 @@ describe("applyCliProfileEnv", () => {
       env,
       homedir: () => "/home/peter",
     });
-    const expectedStateDir = path.join(path.resolve("/home/peter"), ".openclaw-dev");
+    const expectedStateDir = path.join(path.resolve("/home/peter"), ".remoteclaw-dev");
     expect(env.OPENCLAW_PROFILE).toBe("dev");
-    expect(env.OPENCLAW_STATE_DIR).toBe(expectedStateDir);
-    expect(env.OPENCLAW_CONFIG_PATH).toBe(path.join(expectedStateDir, "openclaw.json"));
+    expect(env.REMOTECLAW_STATE_DIR).toBe(expectedStateDir);
+    expect(env.REMOTECLAW_CONFIG_PATH).toBe(path.join(expectedStateDir, "remoteclaw.json"));
     expect(env.OPENCLAW_GATEWAY_PORT).toBe("19001");
   });
 
   it("does not override explicit env values", () => {
     const env: Record<string, string | undefined> = {
-      OPENCLAW_STATE_DIR: "/custom",
+      REMOTECLAW_STATE_DIR: "/custom",
       OPENCLAW_GATEWAY_PORT: "19099",
     };
     applyCliProfileEnv({
@@ -78,14 +78,14 @@ describe("applyCliProfileEnv", () => {
       env,
       homedir: () => "/home/peter",
     });
-    expect(env.OPENCLAW_STATE_DIR).toBe("/custom");
+    expect(env.REMOTECLAW_STATE_DIR).toBe("/custom");
     expect(env.OPENCLAW_GATEWAY_PORT).toBe("19099");
-    expect(env.OPENCLAW_CONFIG_PATH).toBe(path.join("/custom", "openclaw.json"));
+    expect(env.REMOTECLAW_CONFIG_PATH).toBe(path.join("/custom", "remoteclaw.json"));
   });
 
-  it("uses OPENCLAW_HOME when deriving profile state dir", () => {
+  it("uses REMOTECLAW_HOME when deriving profile state dir", () => {
     const env: Record<string, string | undefined> = {
-      OPENCLAW_HOME: "/srv/openclaw-home",
+      REMOTECLAW_HOME: "/srv/openclaw-home",
       HOME: "/home/other",
     };
     applyCliProfileEnv({
@@ -95,9 +95,9 @@ describe("applyCliProfileEnv", () => {
     });
 
     const resolvedHome = path.resolve("/srv/openclaw-home");
-    expect(env.OPENCLAW_STATE_DIR).toBe(path.join(resolvedHome, ".openclaw-work"));
-    expect(env.OPENCLAW_CONFIG_PATH).toBe(
-      path.join(resolvedHome, ".openclaw-work", "openclaw.json"),
+    expect(env.REMOTECLAW_STATE_DIR).toBe(path.join(resolvedHome, ".remoteclaw-work"));
+    expect(env.REMOTECLAW_CONFIG_PATH).toBe(
+      path.join(resolvedHome, ".remoteclaw-work", "remoteclaw.json"),
     );
   });
 });

@@ -245,14 +245,14 @@ describe("initSessionState RawBody", () => {
 
   it("uses the default per-agent sessions store when config store is unset", async () => {
     const root = await makeCaseDir("openclaw-session-store-default-");
-    const stateDir = path.join(root, ".openclaw");
+    const stateDir = path.join(root, ".remoteclaw");
     const agentId = "worker1";
     const sessionKey = `agent:${agentId}:telegram:12345`;
     const sessionId = "sess-worker-1";
     const sessionFile = path.join(stateDir, "agents", agentId, "sessions", `${sessionId}.jsonl`);
     const storePath = path.join(stateDir, "agents", agentId, "sessions", "sessions.json");
 
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    vi.stubEnv("REMOTECLAW_STATE_DIR", stateDir);
     try {
       await fs.mkdir(path.dirname(storePath), { recursive: true });
       await saveSessionStore(storePath, {

@@ -469,7 +469,7 @@ describe("gateway server cron", () => {
       JSON.stringify({ version: 1, jobs: [legacyNotifyJob] }),
     );
 
-    const configPath = process.env.OPENCLAW_CONFIG_PATH;
+    const configPath = process.env.REMOTECLAW_CONFIG_PATH;
     expect(typeof configPath).toBe("string");
     await fs.mkdir(path.dirname(configPath as string), { recursive: true });
     await fs.writeFile(

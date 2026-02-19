@@ -69,7 +69,7 @@ const ensureWorkspaceAndSessions = vi.hoisted(() => vi.fn(async () => {}));
 const writeConfigFile = vi.hoisted(() => vi.fn(async () => {}));
 const readConfigFileSnapshot = vi.hoisted(() =>
   vi.fn(async () => ({
-    path: "/tmp/.openclaw/openclaw.json",
+    path: "/tmp/.remoteclaw/remoteclaw.json",
     exists: false,
     raw: null as string | null,
     parsed: {},
@@ -251,7 +251,7 @@ describe("runOnboardingWizard", () => {
 
   it("exits when config is invalid", async () => {
     readConfigFileSnapshot.mockResolvedValueOnce({
-      path: "/tmp/.openclaw/openclaw.json",
+      path: "/tmp/.remoteclaw/remoteclaw.json",
       exists: true,
       raw: "{}",
       parsed: {},

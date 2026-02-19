@@ -88,7 +88,7 @@ function createSandboxConfig(dns: string[]): SandboxConfig {
     mode: "all",
     scope: "shared",
     workspaceAccess: "rw",
-    workspaceRoot: "~/.openclaw/sandboxes",
+    workspaceRoot: "~/.remoteclaw/sandboxes",
     docker: {
       image: "openclaw-sandbox:test",
       containerPrefix: "oc-test-",

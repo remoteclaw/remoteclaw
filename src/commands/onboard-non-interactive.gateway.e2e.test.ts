@@ -77,8 +77,8 @@ async function expectGatewayTokenAuth(params: {
 describe("onboard (non-interactive): gateway and remote auth", () => {
   const prev = {
     home: process.env.HOME,
-    stateDir: process.env.OPENCLAW_STATE_DIR,
-    configPath: process.env.OPENCLAW_CONFIG_PATH,
+    stateDir: process.env.REMOTECLAW_STATE_DIR,
+    configPath: process.env.REMOTECLAW_CONFIG_PATH,
     skipChannels: process.env.OPENCLAW_SKIP_CHANNELS,
     skipGmail: process.env.OPENCLAW_SKIP_GMAIL_WATCHER,
     skipCron: process.env.OPENCLAW_SKIP_CRON,
@@ -94,8 +94,8 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
       throw new Error("temp home not initialized");
     }
     const stateDir = await fs.mkdtemp(path.join(tempHome, prefix));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-    delete process.env.OPENCLAW_CONFIG_PATH;
+    process.env.REMOTECLAW_STATE_DIR = stateDir;
+    delete process.env.REMOTECLAW_CONFIG_PATH;
     return stateDir;
   };
   const withStateDir = async (
@@ -127,8 +127,8 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
       await fs.rm(tempHome, { recursive: true, force: true });
     }
     process.env.HOME = prev.home;
-    process.env.OPENCLAW_STATE_DIR = prev.stateDir;
-    process.env.OPENCLAW_CONFIG_PATH = prev.configPath;
+    process.env.REMOTECLAW_STATE_DIR = prev.stateDir;
+    process.env.REMOTECLAW_CONFIG_PATH = prev.configPath;
     process.env.OPENCLAW_SKIP_CHANNELS = prev.skipChannels;
     process.env.OPENCLAW_SKIP_GMAIL_WATCHER = prev.skipGmail;
     process.env.OPENCLAW_SKIP_CRON = prev.skipCron;
@@ -219,8 +219,8 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
       return;
     }
     await withStateDir("state-lan-", async (stateDir) => {
-      process.env.OPENCLAW_STATE_DIR = stateDir;
-      process.env.OPENCLAW_CONFIG_PATH = path.join(stateDir, "openclaw.json");
+      process.env.REMOTECLAW_STATE_DIR = stateDir;
+      process.env.REMOTECLAW_CONFIG_PATH = path.join(stateDir, "remoteclaw.json");
 
       const port = await getFreeGatewayPort();
       const workspace = path.join(stateDir, "openclaw");

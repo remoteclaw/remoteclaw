@@ -88,8 +88,8 @@ export async function writeSessionStore(params: {
 async function setupGatewayTestHome() {
   previousHome = process.env.HOME;
   previousUserProfile = process.env.USERPROFILE;
-  previousStateDir = process.env.OPENCLAW_STATE_DIR;
-  previousConfigPath = process.env.OPENCLAW_CONFIG_PATH;
+  previousStateDir = process.env.REMOTECLAW_STATE_DIR;
+  previousConfigPath = process.env.REMOTECLAW_CONFIG_PATH;
   previousSkipBrowserControl = process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER;
   previousSkipGmailWatcher = process.env.OPENCLAW_SKIP_GMAIL_WATCHER;
   previousSkipCanvasHost = process.env.OPENCLAW_SKIP_CANVAS_HOST;
@@ -101,8 +101,8 @@ async function setupGatewayTestHome() {
   tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gateway-home-"));
   process.env.HOME = tempHome;
   process.env.USERPROFILE = tempHome;
-  process.env.OPENCLAW_STATE_DIR = path.join(tempHome, ".openclaw");
-  delete process.env.OPENCLAW_CONFIG_PATH;
+  process.env.REMOTECLAW_STATE_DIR = path.join(tempHome, ".remoteclaw");
+  delete process.env.REMOTECLAW_CONFIG_PATH;
 }
 
 function applyGatewaySkipEnv() {
@@ -182,14 +182,14 @@ async function cleanupGatewayTestHome(options: { restoreEnv: boolean }) {
       process.env.USERPROFILE = previousUserProfile;
     }
     if (previousStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.REMOTECLAW_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = previousStateDir;
+      process.env.REMOTECLAW_STATE_DIR = previousStateDir;
     }
     if (previousConfigPath === undefined) {
-      delete process.env.OPENCLAW_CONFIG_PATH;
+      delete process.env.REMOTECLAW_CONFIG_PATH;
     } else {
-      process.env.OPENCLAW_CONFIG_PATH = previousConfigPath;
+      process.env.REMOTECLAW_CONFIG_PATH = previousConfigPath;
     }
     if (previousSkipBrowserControl === undefined) {
       delete process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER;

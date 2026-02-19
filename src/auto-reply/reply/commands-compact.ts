@@ -1,7 +1,7 @@
-import type { CommandHandler } from "./commands-types.js";
 import { logVerbose } from "../../globals.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { formatContextUsageShort, formatTokenCount } from "../status.js";
+import type { CommandHandler } from "./commands-types.js";
 import { incrementCompactionCount } from "./session-updates.js";
 
 export const handleCompactCommand: CommandHandler = async (params) => {

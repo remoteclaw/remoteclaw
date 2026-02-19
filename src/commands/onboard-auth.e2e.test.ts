@@ -105,10 +105,10 @@ function expectAliasPreserved(
 
 describe("writeOAuthCredentials", () => {
   const lifecycle = createAuthTestLifecycle([
-    "OPENCLAW_STATE_DIR",
+    "REMOTECLAW_STATE_DIR",
     "OPENCLAW_AGENT_DIR",
     "PI_CODING_AGENT_DIR",
-    "OPENCLAW_OAUTH_DIR",
+    "REMOTECLAW_OAUTH_DIR",
   ]);
 
   afterEach(async () => {
@@ -144,7 +144,7 @@ describe("writeOAuthCredentials", () => {
 
 describe("setMinimaxApiKey", () => {
   const lifecycle = createAuthTestLifecycle([
-    "OPENCLAW_STATE_DIR",
+    "REMOTECLAW_STATE_DIR",
     "OPENCLAW_AGENT_DIR",
     "PI_CODING_AGENT_DIR",
   ]);

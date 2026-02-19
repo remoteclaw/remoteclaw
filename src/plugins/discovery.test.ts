@@ -15,17 +15,17 @@ function makeTempDir() {
 }
 
 async function withStateDir<T>(stateDir: string, fn: () => Promise<T>) {
-  const prev = process.env.OPENCLAW_STATE_DIR;
+  const prev = process.env.REMOTECLAW_STATE_DIR;
   const prevBundled = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
-  process.env.OPENCLAW_STATE_DIR = stateDir;
+  process.env.REMOTECLAW_STATE_DIR = stateDir;
   process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
   try {
     return await fn();
   } finally {
     if (prev === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.REMOTECLAW_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = prev;
+      process.env.REMOTECLAW_STATE_DIR = prev;
     }
     if (prevBundled === undefined) {
       delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
@@ -54,7 +54,7 @@ describe("discoverOpenClawPlugins", () => {
     fs.mkdirSync(globalExt, { recursive: true });
     fs.writeFileSync(path.join(globalExt, "alpha.ts"), "export default function () {}", "utf-8");
 
-    const workspaceExt = path.join(workspaceDir, ".openclaw", "extensions");
+    const workspaceExt = path.join(workspaceDir, ".remoteclaw", "extensions");
     fs.mkdirSync(workspaceExt, { recursive: true });
     fs.writeFileSync(path.join(workspaceExt, "beta.ts"), "export default function () {}", "utf-8");
 

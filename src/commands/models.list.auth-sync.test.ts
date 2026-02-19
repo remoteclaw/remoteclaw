@@ -7,10 +7,10 @@ import { clearConfigCache } from "../config/config.js";
 import { modelsListCommand } from "./models/list.list-command.js";
 
 const ENV_KEYS = [
-  "OPENCLAW_STATE_DIR",
+  "REMOTECLAW_STATE_DIR",
   "OPENCLAW_AGENT_DIR",
   "PI_CODING_AGENT_DIR",
-  "OPENCLAW_CONFIG_PATH",
+  "REMOTECLAW_CONFIG_PATH",
   "OPENROUTER_API_KEY",
 ] as const;
 
@@ -46,14 +46,14 @@ describe("models list auth-profile sync", () => {
     try {
       const stateDir = path.join(root, "state");
       const agentDir = path.join(stateDir, "agents", "main", "agent");
-      const configPath = path.join(stateDir, "openclaw.json");
+      const configPath = path.join(stateDir, "remoteclaw.json");
       await fs.mkdir(agentDir, { recursive: true });
       await fs.writeFile(configPath, "{}\n", "utf8");
 
-      process.env.OPENCLAW_STATE_DIR = stateDir;
+      process.env.REMOTECLAW_STATE_DIR = stateDir;
       process.env.OPENCLAW_AGENT_DIR = agentDir;
       process.env.PI_CODING_AGENT_DIR = agentDir;
-      process.env.OPENCLAW_CONFIG_PATH = configPath;
+      process.env.REMOTECLAW_CONFIG_PATH = configPath;
       delete process.env.OPENROUTER_API_KEY;
 
       saveAuthProfileStore(

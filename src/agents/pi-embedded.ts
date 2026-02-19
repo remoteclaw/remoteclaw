@@ -5,9 +5,7 @@ export function abortEmbeddedPiRun(_sessionId: string): boolean {
   return false;
 }
 
-export async function runEmbeddedPiAgent(
-  ..._args: unknown[]
-): Promise<{
+export async function runEmbeddedPiAgent(..._args: unknown[]): Promise<{
   payloads: Array<Record<string, unknown>>;
   meta: {
     durationMs: number;

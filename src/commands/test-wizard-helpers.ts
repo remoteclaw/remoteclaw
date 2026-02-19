@@ -45,7 +45,7 @@ export async function setupAuthTestEnv(
 }> {
   const stateDir = await makeTempWorkspace(prefix);
   const agentDir = path.join(stateDir, options?.agentSubdir ?? "agent");
-  process.env.OPENCLAW_STATE_DIR = stateDir;
+  process.env.REMOTECLAW_STATE_DIR = stateDir;
   process.env.OPENCLAW_AGENT_DIR = agentDir;
   process.env.PI_CODING_AGENT_DIR = agentDir;
   await fs.mkdir(agentDir, { recursive: true });

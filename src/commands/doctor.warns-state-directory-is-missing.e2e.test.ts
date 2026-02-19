@@ -10,7 +10,7 @@ describe("doctor command", () => {
 
     const missingDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-missing-state-"));
     fs.rmSync(missingDir, { recursive: true, force: true });
-    process.env.OPENCLAW_STATE_DIR = missingDir;
+    process.env.REMOTECLAW_STATE_DIR = missingDir;
     note.mockClear();
 
     const { doctorCommand } = await import("./doctor.js");

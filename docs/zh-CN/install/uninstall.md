@@ -79,7 +79,7 @@ rm -rf /Applications/OpenClaw.app
 
 注意事项：
 
-- 如果你使用了配置文件（`--profile` / `OPENCLAW_PROFILE`），对每个状态目录重复步骤 3（默认为 `~/.openclaw-<profile>`）。
+- 如果你使用了配置文件（`--profile` / `REMOTECLAW_PROFILE`），对每个状态目录重复步骤 3（默认为 `~/.openclaw-<profile>`）。
 - 在远程模式下，状态目录位于 **Gateway 网关主机**上，因此也需要在那里运行步骤 1-4。
 
 ## 手动服务移除（CLI 未安装）

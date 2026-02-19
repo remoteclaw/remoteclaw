@@ -51,7 +51,7 @@ If you do nothing, OpenClaw runs a single agent:
 
 - `agentId` defaults to **`main`**.
 - Sessions are keyed as `agent:main:<mainKey>`.
-- Workspace defaults to `~/.openclaw/workspace` (or `~/.openclaw/workspace-<profile>` when `OPENCLAW_PROFILE` is set).
+- Workspace defaults to `~/.openclaw/workspace` (or `~/.openclaw/workspace-<profile>` when `REMOTECLAW_PROFILE` is set).
 - State defaults to `~/.openclaw/agents/main/agent`.
 
 ## Agent helper

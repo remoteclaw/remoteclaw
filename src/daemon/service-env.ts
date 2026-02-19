@@ -205,7 +205,7 @@ export function buildServiceEnvironment(params: {
   launchdLabel?: string;
 }): Record<string, string | undefined> {
   const { env, port, token, launchdLabel } = params;
-  const profile = env.OPENCLAW_PROFILE;
+  const profile = env.REMOTECLAW_PROFILE;
   const resolvedLaunchdLabel =
     launchdLabel ||
     (process.platform === "darwin" ? resolveGatewayLaunchAgentLabel(profile) : undefined);
@@ -215,16 +215,16 @@ export function buildServiceEnvironment(params: {
   return {
     HOME: env.HOME,
     PATH: buildMinimalServicePath({ env }),
-    OPENCLAW_PROFILE: profile,
+    REMOTECLAW_PROFILE: profile,
     REMOTECLAW_STATE_DIR: stateDir,
     REMOTECLAW_CONFIG_PATH: configPath,
     REMOTECLAW_GATEWAY_PORT: String(port),
     REMOTECLAW_GATEWAY_TOKEN: token,
-    OPENCLAW_LAUNCHD_LABEL: resolvedLaunchdLabel,
-    OPENCLAW_SYSTEMD_UNIT: systemdUnit,
+    REMOTECLAW_LAUNCHD_LABEL: resolvedLaunchdLabel,
+    REMOTECLAW_SYSTEMD_UNIT: systemdUnit,
     OPENCLAW_SERVICE_MARKER: GATEWAY_SERVICE_MARKER,
     OPENCLAW_SERVICE_KIND: GATEWAY_SERVICE_KIND,
-    OPENCLAW_SERVICE_VERSION: VERSION,
+    REMOTECLAW_SERVICE_VERSION: VERSION,
   };
 }
 
@@ -239,13 +239,13 @@ export function buildNodeServiceEnvironment(params: {
     PATH: buildMinimalServicePath({ env }),
     REMOTECLAW_STATE_DIR: stateDir,
     REMOTECLAW_CONFIG_PATH: configPath,
-    OPENCLAW_LAUNCHD_LABEL: resolveNodeLaunchAgentLabel(),
-    OPENCLAW_SYSTEMD_UNIT: resolveNodeSystemdServiceName(),
-    OPENCLAW_WINDOWS_TASK_NAME: resolveNodeWindowsTaskName(),
-    OPENCLAW_TASK_SCRIPT_NAME: NODE_WINDOWS_TASK_SCRIPT_NAME,
-    OPENCLAW_LOG_PREFIX: "node",
+    REMOTECLAW_LAUNCHD_LABEL: resolveNodeLaunchAgentLabel(),
+    REMOTECLAW_SYSTEMD_UNIT: resolveNodeSystemdServiceName(),
+    REMOTECLAW_WINDOWS_TASK_NAME: resolveNodeWindowsTaskName(),
+    REMOTECLAW_TASK_SCRIPT_NAME: NODE_WINDOWS_TASK_SCRIPT_NAME,
+    REMOTECLAW_LOG_PREFIX: "node",
     OPENCLAW_SERVICE_MARKER: NODE_SERVICE_MARKER,
     OPENCLAW_SERVICE_KIND: NODE_SERVICE_KIND,
-    OPENCLAW_SERVICE_VERSION: VERSION,
+    REMOTECLAW_SERVICE_VERSION: VERSION,
   };
 }

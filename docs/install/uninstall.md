@@ -72,7 +72,7 @@ rm -rf /Applications/OpenClaw.app
 
 Notes:
 
-- If you used profiles (`--profile` / `OPENCLAW_PROFILE`), repeat step 3 for each state dir (defaults are `~/.openclaw-<profile>`).
+- If you used profiles (`--profile` / `REMOTECLAW_PROFILE`), repeat step 3 for each state dir (defaults are `~/.openclaw-<profile>`).
 - In remote mode, the state dir lives on the **gateway host**, so run steps 1-4 there too.
 
 ## Manual service removal (CLI not installed)

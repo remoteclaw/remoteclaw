@@ -1810,7 +1810,7 @@ openclaw onboard --install-daemon
 Notes:
 
 - The onboarding wizard also offers **Reset** if it sees an existing config. See [Wizard](/start/wizard).
-- If you used profiles (`--profile` / `OPENCLAW_PROFILE`), reset each state dir (defaults are `~/.openclaw-<profile>`).
+- If you used profiles (`--profile` / `REMOTECLAW_PROFILE`), reset each state dir (defaults are `~/.openclaw-<profile>`).
 - Dev reset: `openclaw gateway --dev --reset` (dev-only; wipes dev config + credentials + sessions + workspace).
 
 ### Im getting context too large errors how do I reset or compact

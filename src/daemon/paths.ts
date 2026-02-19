@@ -37,6 +37,6 @@ export function resolveGatewayStateDir(env: Record<string, string | undefined>):
     return resolveUserPathWithHome(override, home);
   }
   const home = resolveHomeDir(env);
-  const suffix = resolveGatewayProfileSuffix(env.OPENCLAW_PROFILE);
+  const suffix = resolveGatewayProfileSuffix(env.REMOTECLAW_PROFILE);
   return path.join(home, `.remoteclaw${suffix}`);
 }

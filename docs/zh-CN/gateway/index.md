@@ -78,7 +78,7 @@ pnpm gateway:watch
 
 - `OPENCLAW_SERVICE_MARKER=openclaw`
 - `OPENCLAW_SERVICE_KIND=gateway`
-- `OPENCLAW_SERVICE_VERSION=<version>`
+- `REMOTECLAW_SERVICE_VERSION=<version>`
 
 救援机器人模式：保持第二个 Gateway 网关隔离，使用自己的配置文件、状态目录、工作区和基础端口间隔。完整指南：[救援机器人指南](/gateway/multiple-gateways#rescue-bot-guide)。
 

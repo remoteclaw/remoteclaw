@@ -120,7 +120,7 @@ export async function maybeRepairGatewayDaemon(params: {
     await maybeRepairLaunchAgentBootstrap({
       env: {
         ...process.env,
-        OPENCLAW_LAUNCHD_LABEL: resolveNodeLaunchAgentLabel(),
+        REMOTECLAW_LAUNCHD_LABEL: resolveNodeLaunchAgentLabel(),
       },
       title: "Node",
       runtime: params.runtime,
@@ -226,7 +226,7 @@ export async function maybeRepairGatewayDaemon(params: {
   }
 
   if (process.platform === "darwin") {
-    const label = resolveGatewayLaunchAgentLabel(process.env.OPENCLAW_PROFILE);
+    const label = resolveGatewayLaunchAgentLabel(process.env.REMOTECLAW_PROFILE);
     note(
       `LaunchAgent loaded; stopping requires "${formatCliCommand("openclaw gateway stop")}" or launchctl bootout gui/$UID/${label}.`,
       "Gateway",

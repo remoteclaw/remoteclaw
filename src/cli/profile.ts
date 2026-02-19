@@ -113,7 +113,7 @@ export function applyCliProfileEnv(params: {
   }
 
   // Convenience only: fill defaults, never override explicit env values.
-  env.OPENCLAW_PROFILE = profile;
+  env.REMOTECLAW_PROFILE = profile;
 
   const stateDir =
     env.REMOTECLAW_STATE_DIR?.trim() || resolveProfileStateDir(profile, env, homedir);

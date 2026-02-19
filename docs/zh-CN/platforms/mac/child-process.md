@@ -25,7 +25,7 @@ Gateway 网关；如果无法访问，它会通过外部 `openclaw` CLI（无嵌
 ## 默认行为（launchd）
 
 - 应用安装标记为 `bot.molt.gateway` 的按用户 LaunchAgent
-  （使用 `--profile`/`OPENCLAW_PROFILE` 时为 `bot.molt.<profile>`；支持旧版 `com.openclaw.*`）。
+  （使用 `--profile`/`REMOTECLAW_PROFILE` 时为 `bot.molt.<profile>`；支持旧版 `com.openclaw.*`）。
 - 当启用本地模式时，应用确保 LaunchAgent 已加载，并
   在需要时启动 Gateway 网关。
 - 日志写入 launchd Gateway 网关日志路径（在调试设置中可见）。

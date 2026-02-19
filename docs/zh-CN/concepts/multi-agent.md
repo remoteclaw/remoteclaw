@@ -52,7 +52,7 @@ Gateway 网关可以托管**一个智能体**（默认）或**多个智能体**�
 
 - `agentId` 默认为 **`main`**。
 - 会话键为 `agent:main:<mainKey>`。
-- 工作区默认为 `~/.openclaw/workspace`（或当设置了 `OPENCLAW_PROFILE` 时为 `~/.openclaw/workspace-<profile>`）。
+- 工作区默认为 `~/.openclaw/workspace`（或当设置了 `REMOTECLAW_PROFILE` 时为 `~/.openclaw/workspace-<profile>`）。
 - 状态默认为 `~/.openclaw/agents/main/agent`。
 
 ## 智能体助手

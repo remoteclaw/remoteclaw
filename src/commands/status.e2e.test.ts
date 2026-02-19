@@ -5,8 +5,8 @@ import { captureEnv } from "../test-utils/env.js";
 let envSnapshot: ReturnType<typeof captureEnv>;
 
 beforeAll(() => {
-  envSnapshot = captureEnv(["OPENCLAW_PROFILE"]);
-  process.env.OPENCLAW_PROFILE = "isolated";
+  envSnapshot = captureEnv(["REMOTECLAW_PROFILE"]);
+  process.env.REMOTECLAW_PROFILE = "isolated";
 });
 
 afterAll(() => {

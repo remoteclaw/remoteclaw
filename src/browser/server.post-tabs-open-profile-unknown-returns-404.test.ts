@@ -48,8 +48,8 @@ describe("profile CRUD endpoints", () => {
 
     state.testPort = await getFreePort();
     state.cdpBaseUrl = `http://127.0.0.1:${state.testPort + 1}`;
-    state.prevGatewayPort = process.env.OPENCLAW_GATEWAY_PORT;
-    process.env.OPENCLAW_GATEWAY_PORT = String(state.testPort - 2);
+    state.prevGatewayPort = process.env.REMOTECLAW_GATEWAY_PORT;
+    process.env.REMOTECLAW_GATEWAY_PORT = String(state.testPort - 2);
 
     vi.stubGlobal(
       "fetch",
@@ -67,9 +67,9 @@ describe("profile CRUD endpoints", () => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     if (state.prevGatewayPort === undefined) {
-      delete process.env.OPENCLAW_GATEWAY_PORT;
+      delete process.env.REMOTECLAW_GATEWAY_PORT;
     } else {
-      process.env.OPENCLAW_GATEWAY_PORT = state.prevGatewayPort;
+      process.env.REMOTECLAW_GATEWAY_PORT = state.prevGatewayPort;
     }
     await stopBrowserControlServer();
   });

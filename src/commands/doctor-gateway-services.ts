@@ -55,7 +55,7 @@ function resolveGatewayAuthToken(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): s
   if (configToken) {
     return configToken;
   }
-  const envToken = env.OPENCLAW_GATEWAY_TOKEN ?? env.CLAWDBOT_GATEWAY_TOKEN;
+  const envToken = env.REMOTECLAW_GATEWAY_TOKEN ?? env.CLAWDBOT_GATEWAY_TOKEN;
   const trimmedEnvToken = envToken?.trim();
   return trimmedEnvToken || undefined;
 }

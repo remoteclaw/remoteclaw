@@ -15,11 +15,11 @@ export function resolveGatewayProbeAuth(params: {
       ? typeof remote?.token === "string" && remote.token.trim()
         ? remote.token.trim()
         : undefined
-      : env.OPENCLAW_GATEWAY_TOKEN?.trim() ||
+      : env.REMOTECLAW_GATEWAY_TOKEN?.trim() ||
         (typeof authToken === "string" && authToken.trim() ? authToken.trim() : undefined);
 
   const password =
-    env.OPENCLAW_GATEWAY_PASSWORD?.trim() ||
+    env.REMOTECLAW_GATEWAY_PASSWORD?.trim() ||
     (params.mode === "remote"
       ? typeof remote?.password === "string" && remote.password.trim()
         ? remote.password.trim()

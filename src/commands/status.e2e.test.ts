@@ -243,8 +243,8 @@ vi.mock("../gateway/session-utils.js", async (importOriginal) => {
     listAgentsForGateway: mocks.listAgentsForGateway,
   };
 });
-vi.mock("../infra/openclaw-root.js", () => ({
-  resolveOpenClawPackageRoot: vi.fn().mockResolvedValue("/tmp/remoteclaw"),
+vi.mock("../infra/remoteclaw-root.js", () => ({
+  resolveRemoteClawPackageRoot: vi.fn().mockResolvedValue("/tmp/remoteclaw"),
 }));
 vi.mock("../infra/os-summary.js", () => ({
   resolveOsSummary: () => ({

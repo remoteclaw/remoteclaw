@@ -6,7 +6,7 @@ import {
   mockDoctorConfigSnapshot,
   note,
   readConfigFileSnapshot,
-  resolveOpenClawPackageRoot,
+  resolveRemoteClawPackageRoot,
   runCommandWithTimeout,
   runGatewayUpdate,
   serviceInstall,
@@ -104,7 +104,7 @@ describe("doctor command", () => {
     delete process.env.REMOTECLAW_UPDATE_IN_PROGRESS;
 
     const root = "/tmp/remoteclaw";
-    resolveOpenClawPackageRoot.mockResolvedValueOnce(root);
+    resolveRemoteClawPackageRoot.mockResolvedValueOnce(root);
     runCommandWithTimeout.mockResolvedValueOnce({
       stdout: `${root}\n`,
       stderr: "",

@@ -68,9 +68,9 @@ vi.mock("node:fs", async (importOriginal) => {
   return { ...wrapped, default: wrapped };
 });
 
-vi.mock("./openclaw-root.js", () => ({
-  resolveOpenClawPackageRoot: vi.fn(async () => null),
-  resolveOpenClawPackageRootSync: vi.fn(() => null),
+vi.mock("./remoteclaw-root.js", () => ({
+  resolveRemoteClawPackageRoot: vi.fn(async () => null),
+  resolveRemoteClawPackageRootSync: vi.fn(() => null),
 }));
 
 describe("control UI assets helpers (fs-mocked)", () => {
@@ -111,13 +111,13 @@ describe("control UI assets helpers (fs-mocked)", () => {
     );
   });
 
-  it("uses resolveOpenClawPackageRoot when available", async () => {
-    const openclawRoot = await import("./openclaw-root.js");
+  it("uses resolveRemoteClawPackageRoot when available", async () => {
+    const openclawRoot = await import("./remoteclaw-root.js");
     const { resolveControlUiDistIndexPath } = await import("./control-ui-assets.js");
 
     const pkgRoot = abs("fixtures/openclaw");
     (
-      openclawRoot.resolveOpenClawPackageRoot as unknown as ReturnType<typeof vi.fn>
+      openclawRoot.resolveRemoteClawPackageRoot as unknown as ReturnType<typeof vi.fn>
     ).mockResolvedValueOnce(pkgRoot);
 
     await expect(resolveControlUiDistIndexPath(abs("fixtures/bin/remoteclaw"))).resolves.toBe(
@@ -129,7 +129,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
     const { resolveControlUiDistIndexPath } = await import("./control-ui-assets.js");
 
     const root = abs("fixtures/fallback");
-    setFile(path.join(root, "package.json"), JSON.stringify({ name: "openclaw" }));
+    setFile(path.join(root, "package.json"), JSON.stringify({ name: "remoteclaw" }));
     setFile(path.join(root, "dist", "control-ui", "index.html"), "<html></html>\n");
 
     await expect(resolveControlUiDistIndexPath(path.join(root, "remoteclaw.mjs"))).resolves.toBe(
@@ -181,12 +181,12 @@ describe("control UI assets helpers (fs-mocked)", () => {
   });
 
   it("resolves control-ui root for dist bundle argv1 and moduleUrl candidates", async () => {
-    const openclawRoot = await import("./openclaw-root.js");
+    const openclawRoot = await import("./remoteclaw-root.js");
     const { resolveControlUiRootSync } = await import("./control-ui-assets.js");
 
     const pkgRoot = abs("fixtures/openclaw-bundle");
     (
-      openclawRoot.resolveOpenClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+      openclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
     ).mockReturnValueOnce(pkgRoot);
 
     const uiDir = path.join(pkgRoot, "dist", "control-ui");

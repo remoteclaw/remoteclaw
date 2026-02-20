@@ -4,7 +4,7 @@ import { formatCliCommand } from "../cli/command-format.js";
 import type { loadConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { VERSION } from "../version.js";
-import { resolveOpenClawPackageRoot } from "./openclaw-root.js";
+import { resolveRemoteClawPackageRoot } from "./remoteclaw-root.js";
 import { normalizeUpdateChannel, DEFAULT_PACKAGE_CHANNEL } from "./update-channels.js";
 import { compareSemverStrings, resolveNpmChannelTag, checkUpdateStatus } from "./update-check.js";
 
@@ -68,7 +68,7 @@ export async function runGatewayUpdateCheck(params: {
     }
   }
 
-  const root = await resolveOpenClawPackageRoot({
+  const root = await resolveRemoteClawPackageRoot({
     moduleUrl: import.meta.url,
     argv1: process.argv[1],
     cwd: process.cwd(),

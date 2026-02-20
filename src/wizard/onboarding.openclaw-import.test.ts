@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { detectAndOfferOpenClawImport } from "./onboarding.openclaw-import.js";
+import { detectAndOfferLegacyImport } from "./onboarding.openclaw-import.js";
 import type { WizardPrompter, WizardSelectParams } from "./prompts.js";
 
 type NoteMock = WizardPrompter["note"] & {
@@ -27,7 +27,7 @@ function createPrompter(overrides?: Partial<WizardPrompter>): WizardPrompter {
   };
 }
 
-describe("detectAndOfferOpenClawImport", () => {
+describe("detectAndOfferLegacyImport", () => {
   let tmpHome: string;
   let env: NodeJS.ProcessEnv;
 
@@ -40,7 +40,7 @@ describe("detectAndOfferOpenClawImport", () => {
     fs.rmSync(tmpHome, { recursive: true, force: true });
   });
 
-  function writeOpenClawConfig(config: Record<string, unknown>, dir?: string): string {
+  function writeLegacyConfig(config: Record<string, unknown>, dir?: string): string {
     const targetDir = dir ?? path.join(tmpHome, ".openclaw");
     fs.mkdirSync(targetDir, { recursive: true });
     const filePath = path.join(targetDir, "openclaw.json");
@@ -50,7 +50,7 @@ describe("detectAndOfferOpenClawImport", () => {
 
   it("returns no-import when no OpenClaw config exists", async () => {
     const prompter = createPrompter();
-    const result = await detectAndOfferOpenClawImport({
+    const result = await detectAndOfferLegacyImport({
       opts: {},
       prompter,
       env,
@@ -63,10 +63,10 @@ describe("detectAndOfferOpenClawImport", () => {
   });
 
   it("returns no-import in non-interactive mode even when OpenClaw config exists", async () => {
-    writeOpenClawConfig({ channels: { telegram: {} } });
+    writeLegacyConfig({ channels: { telegram: {} } });
     const prompter = createPrompter();
 
-    const result = await detectAndOfferOpenClawImport({
+    const result = await detectAndOfferLegacyImport({
       opts: { nonInteractive: true },
       prompter,
       env,
@@ -78,7 +78,7 @@ describe("detectAndOfferOpenClawImport", () => {
   });
 
   it("imports config when user selects 'Import config'", async () => {
-    writeOpenClawConfig({
+    writeLegacyConfig({
       channels: { telegram: { enabled: true } },
       agents: { list: [{ id: "main" }] },
     });
@@ -87,7 +87,7 @@ describe("detectAndOfferOpenClawImport", () => {
     const note = createNote();
     const prompter = createPrompter({ select, note });
 
-    const result = await detectAndOfferOpenClawImport({
+    const result = await detectAndOfferLegacyImport({
       opts: {},
       prompter,
       env,
@@ -103,12 +103,12 @@ describe("detectAndOfferOpenClawImport", () => {
   });
 
   it("returns no-import when user selects 'Start fresh'", async () => {
-    writeOpenClawConfig({ channels: { telegram: {} } });
+    writeLegacyConfig({ channels: { telegram: {} } });
 
     const select = vi.fn(async () => "fresh") as unknown as WizardPrompter["select"];
     const prompter = createPrompter({ select });
 
-    const result = await detectAndOfferOpenClawImport({
+    const result = await detectAndOfferLegacyImport({
       opts: {},
       prompter,
       env,
@@ -119,7 +119,7 @@ describe("detectAndOfferOpenClawImport", () => {
   });
 
   it("shows preview then imports when user selects preview then import", async () => {
-    writeOpenClawConfig({
+    writeLegacyConfig({
       channels: { telegram: {} },
       skills: { load: {} },
     });
@@ -132,7 +132,7 @@ describe("detectAndOfferOpenClawImport", () => {
     const note = createNote();
     const prompter = createPrompter({ select, note });
 
-    const result = await detectAndOfferOpenClawImport({
+    const result = await detectAndOfferLegacyImport({
       opts: {},
       prompter,
       env,
@@ -152,7 +152,7 @@ describe("detectAndOfferOpenClawImport", () => {
   });
 
   it("shows preview then starts fresh when user selects preview then fresh", async () => {
-    writeOpenClawConfig({ channels: { telegram: {} } });
+    writeLegacyConfig({ channels: { telegram: {} } });
 
     let callCount = 0;
     const select = vi.fn(async () => {
@@ -162,7 +162,7 @@ describe("detectAndOfferOpenClawImport", () => {
     const note = createNote();
     const prompter = createPrompter({ select, note });
 
-    const result = await detectAndOfferOpenClawImport({
+    const result = await detectAndOfferLegacyImport({
       opts: {},
       prompter,
       env,
@@ -180,12 +180,12 @@ describe("detectAndOfferOpenClawImport", () => {
 
   it("detects OpenClaw config via OPENCLAW_STATE_DIR env var", async () => {
     const customDir = path.join(tmpHome, "custom-openclaw-dir");
-    writeOpenClawConfig({ channels: { discord: {} } }, customDir);
+    writeLegacyConfig({ channels: { discord: {} } }, customDir);
 
     const select = vi.fn(async () => "import") as unknown as WizardPrompter["select"];
     const prompter = createPrompter({ select });
 
-    const result = await detectAndOfferOpenClawImport({
+    const result = await detectAndOfferLegacyImport({
       opts: {},
       prompter,
       env: { ...env, OPENCLAW_STATE_DIR: customDir },
@@ -197,15 +197,15 @@ describe("detectAndOfferOpenClawImport", () => {
 
   it("prefers canonical path over OPENCLAW_STATE_DIR", async () => {
     // Write both canonical and custom
-    writeOpenClawConfig({ channels: { telegram: {} } });
+    writeLegacyConfig({ channels: { telegram: {} } });
     const customDir = path.join(tmpHome, "custom-openclaw-dir");
-    writeOpenClawConfig({ channels: { discord: {} } }, customDir);
+    writeLegacyConfig({ channels: { discord: {} } }, customDir);
 
     const select = vi.fn(async () => "import") as unknown as WizardPrompter["select"];
     const note = createNote();
     const prompter = createPrompter({ select, note });
 
-    const result = await detectAndOfferOpenClawImport({
+    const result = await detectAndOfferLegacyImport({
       opts: {},
       prompter,
       env: { ...env, OPENCLAW_STATE_DIR: customDir },
@@ -217,13 +217,13 @@ describe("detectAndOfferOpenClawImport", () => {
   });
 
   it("shows env var reminder when OPENCLAW_* vars are set and user imports", async () => {
-    writeOpenClawConfig({ channels: {} });
+    writeLegacyConfig({ channels: {} });
 
     const select = vi.fn(async () => "import") as unknown as WizardPrompter["select"];
     const note = createNote();
     const prompter = createPrompter({ select, note });
 
-    const result = await detectAndOfferOpenClawImport({
+    const result = await detectAndOfferLegacyImport({
       opts: {},
       prompter,
       env: {
@@ -245,25 +245,25 @@ describe("detectAndOfferOpenClawImport", () => {
   });
 
   it("does not show env var reminder when no OPENCLAW_* vars are set", async () => {
-    writeOpenClawConfig({ channels: {} });
+    writeLegacyConfig({ channels: {} });
 
     const select = vi.fn(async () => "import") as unknown as WizardPrompter["select"];
     const note = createNote();
     const prompter = createPrompter({ select, note });
 
-    await detectAndOfferOpenClawImport({ opts: {}, prompter, env });
+    await detectAndOfferLegacyImport({ opts: {}, prompter, env });
 
     expect(note.mock.calls.every((call) => call[1] !== "Environment variables")).toBe(true);
   });
 
   it("does not show env var reminder when user starts fresh", async () => {
-    writeOpenClawConfig({ channels: {} });
+    writeLegacyConfig({ channels: {} });
 
     const select = vi.fn(async () => "fresh") as unknown as WizardPrompter["select"];
     const note = createNote();
     const prompter = createPrompter({ select, note });
 
-    await detectAndOfferOpenClawImport({
+    await detectAndOfferLegacyImport({
       opts: {},
       prompter,
       env: { ...env, OPENCLAW_STATE_DIR: "/some/dir" },
@@ -273,7 +273,7 @@ describe("detectAndOfferOpenClawImport", () => {
   });
 
   it("drops skills, plugins, models, wizard, update sections", async () => {
-    writeOpenClawConfig({
+    writeLegacyConfig({
       channels: { telegram: {} },
       skills: { load: {} },
       plugins: { enabled: true },
@@ -285,7 +285,7 @@ describe("detectAndOfferOpenClawImport", () => {
     const select = vi.fn(async () => "import") as unknown as WizardPrompter["select"];
     const prompter = createPrompter({ select });
 
-    const result = await detectAndOfferOpenClawImport({
+    const result = await detectAndOfferLegacyImport({
       opts: {},
       prompter,
       env,
@@ -307,7 +307,7 @@ describe("detectAndOfferOpenClawImport", () => {
 
     const prompter = createPrompter();
 
-    const result = await detectAndOfferOpenClawImport({
+    const result = await detectAndOfferLegacyImport({
       opts: {},
       prompter,
       env,
@@ -318,13 +318,13 @@ describe("detectAndOfferOpenClawImport", () => {
   });
 
   it("shows detection note with shortened path", async () => {
-    writeOpenClawConfig({ channels: {} });
+    writeLegacyConfig({ channels: {} });
 
     const select = vi.fn(async () => "fresh") as unknown as WizardPrompter["select"];
     const note = createNote();
     const prompter = createPrompter({ select, note });
 
-    await detectAndOfferOpenClawImport({ opts: {}, prompter, env });
+    await detectAndOfferLegacyImport({ opts: {}, prompter, env });
 
     const migrationNote = note.mock.calls.find((call) => call[1] === "OpenClaw migration");
     expect(migrationNote).toBeDefined();
@@ -332,7 +332,7 @@ describe("detectAndOfferOpenClawImport", () => {
   });
 
   it("offers select prompt with three options", async () => {
-    writeOpenClawConfig({ channels: {} });
+    writeLegacyConfig({ channels: {} });
 
     const select = vi.fn(async (params: WizardSelectParams) => {
       expect(params.message).toBe("Import OpenClaw config?");
@@ -342,6 +342,6 @@ describe("detectAndOfferOpenClawImport", () => {
     }) as unknown as WizardPrompter["select"];
     const prompter = createPrompter({ select });
 
-    await detectAndOfferOpenClawImport({ opts: {}, prompter, env });
+    await detectAndOfferLegacyImport({ opts: {}, prompter, env });
   });
 });

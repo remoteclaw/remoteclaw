@@ -1,7 +1,7 @@
 {
   "name": "@openclaw/discord",
   "version": "2026.2.18",
-  "description": "OpenClaw Discord channel plugin",
+  "description": "RemoteClaw Discord channel plugin",
   "type": "module",
   "devDependencies": {
     "openclaw": "workspace:*"

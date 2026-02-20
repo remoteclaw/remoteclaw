@@ -2,7 +2,7 @@
   "name": "@openclaw/line",
   "version": "2026.2.18",
   "private": true,
-  "description": "OpenClaw LINE channel plugin",
+  "description": "RemoteClaw LINE channel plugin",
   "type": "module",
   "devDependencies": {
     "openclaw": "workspace:*"

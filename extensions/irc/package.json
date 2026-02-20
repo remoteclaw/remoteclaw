@@ -1,7 +1,7 @@
 {
   "name": "@openclaw/irc",
   "version": "2026.2.18",
-  "description": "OpenClaw IRC channel plugin",
+  "description": "RemoteClaw IRC channel plugin",
   "type": "module",
   "devDependencies": {
     "openclaw": "workspace:*"

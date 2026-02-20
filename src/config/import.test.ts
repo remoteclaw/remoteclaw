@@ -34,6 +34,7 @@ describe("importConfig", () => {
       const dropped = findDropped(result, "skills");
       expect(dropped).toBeDefined();
       expect(dropped?.reason).toContain("~/.claude/");
+      expect(dropped?.reason).toContain("Not supported");
     });
 
     it("drops plugins with reason", () => {
@@ -41,7 +42,9 @@ describe("importConfig", () => {
       const result = importConfig(source, null, "overwrite");
 
       expect(result.config).not.toHaveProperty("plugins");
-      expect(findDropped(result, "plugins")?.reason).toContain("marketplace removed");
+      const dropped = findDropped(result, "plugins");
+      expect(dropped).toBeDefined();
+      expect(dropped?.reason).toContain("plugin SDK");
     });
 
     it("drops models with reason", () => {
@@ -49,7 +52,9 @@ describe("importConfig", () => {
       const result = importConfig(source, null, "overwrite");
 
       expect(result.config).not.toHaveProperty("models");
-      expect(findDropped(result, "models")?.reason).toContain("agents.defaults.model");
+      const dropped = findDropped(result, "models");
+      expect(dropped).toBeDefined();
+      expect(dropped?.reason).toContain("CLI backends");
     });
 
     it("drops wizard with reason", () => {

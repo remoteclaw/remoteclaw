@@ -7,9 +7,9 @@
 
 /** Sections explicitly dropped during import with user-facing reasons. */
 const DROPPED_SECTIONS: Readonly<Record<string, string>> = {
-  skills: "RemoteClaw uses ~/.claude/ skills; configure skills there instead",
-  plugins: "Plugin marketplace removed; channel adapters are built-in",
-  models: "Use agents.defaults.model and ANTHROPIC_API_KEY instead",
+  skills: "Not supported; RemoteClaw loads skills from your ~/.claude/ directory",
+  models: "Not supported; CLI backends manage their own models and auth",
+  plugins: "Not compatible; RemoteClaw uses a different plugin SDK",
   wizard: "Session-specific; not meaningful after migration",
   update: "RemoteClaw manages its own update channel",
 };

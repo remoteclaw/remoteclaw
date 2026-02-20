@@ -1,5 +1,5 @@
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/sdk/account-id";
 import { normalizeBlueBubblesServerUrl, type BlueBubblesAccountConfig } from "./types.js";
 
 export type ResolvedBlueBubblesAccount = {

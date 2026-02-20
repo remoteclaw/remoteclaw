@@ -1,5 +1,5 @@
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
-import { createReplyPrefixOptions } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
+import { createReplyPrefixOptions } from "remoteclaw/sdk";
 import { describe, expect, it, vi } from "vitest";
 import { mattermostPlugin } from "./channel.js";
 

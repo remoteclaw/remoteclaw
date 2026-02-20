@@ -9,7 +9,7 @@ import {
   type ChannelOnboardingDmPolicy,
   type RemoteClawConfig,
   type WizardPrompter,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import {
   listNextcloudTalkAccountIds,
   resolveDefaultNextcloudTalkAccountId,

@@ -2,7 +2,7 @@ import type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
   RemoteClawConfig,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import {
   createActionGate,
   extractToolSend,
@@ -10,7 +10,7 @@ import {
   readNumberParam,
   readReactionParams,
   readStringParam,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import { listEnabledGoogleChatAccounts, resolveGoogleChatAccount } from "./accounts.js";
 import {
   createGoogleChatReaction,

@@ -1,4 +1,4 @@
-import type { RemoteClawConfig, DmPolicy } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, DmPolicy } from "remoteclaw/sdk";
 import {
   addWildcardAllowFrom,
   formatDocsLink,
@@ -10,7 +10,7 @@ import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
   migrateBaseNameToDefaultAccount,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import {
   listGoogleChatAccountIds,
   resolveDefaultGoogleChatAccountId,

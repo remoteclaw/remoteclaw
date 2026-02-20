@@ -1,4 +1,4 @@
-import type { RemoteClawConfig, RemoteClawPluginApi } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, RemoteClawPluginApi } from "remoteclaw/sdk";
 
 type ThreadOwnershipConfig = {
   forwarderUrl?: string;

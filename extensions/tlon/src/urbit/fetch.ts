@@ -1,5 +1,5 @@
-import type { LookupFn, SsrFPolicy } from "openclaw/plugin-sdk";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk";
+import type { LookupFn, SsrFPolicy } from "remoteclaw/sdk";
+import { fetchWithSsrFGuard } from "remoteclaw/sdk";
 import { validateUrbitBaseUrl } from "./base-url.js";
 import { UrbitUrlError } from "./errors.js";
 

@@ -6,7 +6,7 @@ import {
   MarkdownConfigSchema,
   ToolPolicySchema,
   requireOpenAllowFrom,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import { z } from "zod";
 
 const IrcGroupSchema = z

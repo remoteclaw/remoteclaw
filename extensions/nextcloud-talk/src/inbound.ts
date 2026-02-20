@@ -4,7 +4,7 @@ import {
   resolveControlCommandGate,
   type RemoteClawConfig,
   type RuntimeEnv,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import type { ResolvedNextcloudTalkAccount } from "./accounts.js";
 import {
   normalizeNextcloudTalkAllowlist,

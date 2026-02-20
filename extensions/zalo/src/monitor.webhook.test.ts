@@ -1,6 +1,6 @@
 import { createServer, type RequestListener } from "node:http";
 import type { AddressInfo } from "node:net";
-import type { RemoteClawConfig, PluginRuntime } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/sdk";
 import { describe, expect, it, vi } from "vitest";
 import { handleZaloWebhookRequest, registerZaloWebhookTarget } from "./monitor.js";
 import type { ResolvedZaloAccount } from "./types.js";

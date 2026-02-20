@@ -1,11 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
 import {
   registerWebhookTarget,
   rejectNonPostWebhookRequest,
   resolveWebhookTargets,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import {
   normalizeWebhookMessage,
   normalizeWebhookReaction,

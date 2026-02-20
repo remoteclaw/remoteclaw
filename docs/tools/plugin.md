@@ -321,7 +321,7 @@ event-driven automation without a separate hook pack install.
 ### Example
 
 ```
-import { registerPluginHooksFromDir } from "openclaw/plugin-sdk";
+import { registerPluginHooksFromDir } from "remoteclaw/sdk";
 
 export default function register(api) {
   registerPluginHooksFromDir(api, "./hooks");

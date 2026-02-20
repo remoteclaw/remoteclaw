@@ -4,7 +4,7 @@ import type {
   RemoteClawConfig,
   DmPolicy,
   WizardPrompter,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import {
   DEFAULT_ACCOUNT_ID,
   addWildcardAllowFrom,
@@ -12,7 +12,7 @@ import {
   mergeAllowFromEntries,
   normalizeAccountId,
   promptAccountId,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import {
   listBlueBubblesAccountIds,
   resolveBlueBubblesAccount,

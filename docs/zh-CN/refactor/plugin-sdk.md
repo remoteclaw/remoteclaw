@@ -41,7 +41,7 @@ x-i18n:
 
 交付方式：
 
-- 以 `openclaw/plugin-sdk` 发布（或从核心以 `openclaw/plugin-sdk` 导出）。
+- 以 `remoteclaw/sdk` 发布（或从核心以 `remoteclaw/sdk` 导出）。
 - 使用语义化版本控制，提供明确的稳定性保证。
 
 ### 2）插件运行时（执行层，注入式）
@@ -161,7 +161,7 @@ export type PluginRuntime = {
 
 ### 阶段 0：基础搭建
 
-- 引入 `openclaw/plugin-sdk`。
+- 引入 `remoteclaw/sdk`。
 - 在 `OpenClawPluginApi` 中添加带有上述接口的 `api.runtime`。
 - 在过渡期内保留现有导入方式（添加弃用警告）。
 

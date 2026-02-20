@@ -5,19 +5,24 @@ import type { CliDeps } from "../cli/deps.js";
 import { makeCfg, makeJob, withTempCronHome } from "./isolated-agent.test-harness.js";
 import type { CronJob } from "./types.js";
 
-vi.mock("../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: vi.fn(),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-}));
+vi.mock("../middleware/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../middleware/index.js")>();
+  return {
+    ...actual,
+    ChannelBridge: vi.fn(),
+    ClaudeCliRuntime: vi.fn(),
+  };
+});
 vi.mock("../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(),
 }));
 
 import { loadModelCatalog } from "../agents/model-catalog.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
+import { ChannelBridge } from "../middleware/index.js";
 import { runCronIsolatedAgentTurn } from "./isolated-agent.js";
 const withTempHome = withTempCronHome;
+
+const mockHandle = vi.fn();
 
 function makeDeps(): CliDeps {
   return {
@@ -30,27 +35,26 @@ function makeDeps(): CliDeps {
   };
 }
 
-function mockEmbeddedTexts(texts: string[]) {
-  vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-    payloads: texts.map((text) => ({ text })),
-    meta: {
-      durationMs: 5,
-      agentMeta: { sessionId: "s", provider: "p", model: "m" },
-    },
+function mockBridgeReply(text: string) {
+  mockHandle.mockResolvedValue({
+    text,
+    sessionId: "s",
+    durationMs: 5,
+    usage: undefined,
+    aborted: false,
+    error: undefined,
   });
 }
 
-function mockEmbeddedOk() {
-  mockEmbeddedTexts(["ok"]);
+function mockBridgeOk() {
+  mockBridgeReply("ok");
 }
 
-function expectEmbeddedProviderModel(expected: { provider: string; model: string }) {
-  const call = vi.mocked(runEmbeddedPiAgent).mock.calls[0]?.[0] as {
-    provider?: string;
-    model?: string;
+function expectBridgeModel(expected: { model: string }) {
+  const ctorArgs = vi.mocked(ChannelBridge).mock.calls[0]?.[0] as {
+    defaultModel?: string;
   };
-  expect(call?.provider).toBe(expected.provider);
-  expect(call?.model).toBe(expected.model);
+  expect(ctorArgs?.defaultModel).toBe(expected.model);
 }
 
 async function writeSessionStore(
@@ -100,7 +104,7 @@ type RunCronTurnOptions = {
   deps?: CliDeps;
   jobPayload?: CronJob["payload"];
   message?: string;
-  mockTexts?: string[] | null;
+  mockText?: string | null;
   sessionKey?: string;
   storeEntries?: Record<string, Record<string, unknown>>;
   storePath?: string;
@@ -109,10 +113,10 @@ type RunCronTurnOptions = {
 async function runCronTurn(home: string, options: RunCronTurnOptions = {}) {
   const storePath = options.storePath ?? (await writeSessionStore(home, options.storeEntries));
   const deps = options.deps ?? makeDeps();
-  if (options.mockTexts === null) {
-    vi.mocked(runEmbeddedPiAgent).mockReset();
+  if (options.mockText === null) {
+    mockHandle.mockReset();
   } else {
-    mockEmbeddedTexts(options.mockTexts ?? ["ok"]);
+    mockBridgeReply(options.mockText ?? "ok");
   }
 
   const jobPayload = options.jobPayload ?? DEFAULT_AGENT_TURN_PAYLOAD;
@@ -167,7 +171,12 @@ async function runTurnWithStoredModelOverride(
 
 describe("runCronIsolatedAgentTurn", () => {
   beforeEach(() => {
-    vi.mocked(runEmbeddedPiAgent).mockReset();
+    vi.mocked(ChannelBridge).mockClear();
+    vi.mocked(ChannelBridge).mockImplementation(function () {
+      return { handle: mockHandle };
+    } as never);
+    mockHandle.mockReset();
+    mockBridgeOk();
     vi.mocked(loadModelCatalog).mockResolvedValue([]);
   });
 
@@ -178,7 +187,7 @@ describe("runCronIsolatedAgentTurn", () => {
       });
 
       expect(res.status).toBe("ok");
-      expect(vi.mocked(runEmbeddedPiAgent)).toHaveBeenCalledTimes(1);
+      expect(mockHandle).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -186,7 +195,7 @@ describe("runCronIsolatedAgentTurn", () => {
     await withTempHome(async (home) => {
       const { res } = await runCronTurn(home, {
         jobPayload: DEFAULT_AGENT_TURN_PAYLOAD,
-        mockTexts: ["first", " ", " last "],
+        mockText: " last ",
       });
 
       expect(res.status).toBe("ok");
@@ -200,10 +209,10 @@ describe("runCronIsolatedAgentTurn", () => {
         jobPayload: DEFAULT_AGENT_TURN_PAYLOAD,
       });
 
-      const call = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0] as {
-        prompt?: string;
+      const call = mockHandle.mock.calls.at(-1)?.[0] as {
+        text?: string;
       };
-      const lines = call?.prompt?.split("\n") ?? [];
+      const lines = call?.text?.split("\n") ?? [];
       expect(lines[0]).toContain("[cron:job-1");
       expect(lines[0]).toContain("do it");
       expect(lines[1]).toMatch(/^Current time: .+ \(.+\)$/);
@@ -214,7 +223,7 @@ describe("runCronIsolatedAgentTurn", () => {
     await withTempHome(async (home) => {
       const deps = makeDeps();
       const opsWorkspace = path.join(home, "ops-workspace");
-      mockEmbeddedOk();
+      mockBridgeOk();
 
       const cfg = makeCfg(
         home,
@@ -249,14 +258,15 @@ describe("runCronIsolatedAgentTurn", () => {
       });
 
       expect(res.status).toBe("ok");
-      const call = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0] as {
-        sessionKey?: string;
-        workspaceDir?: string;
-        sessionFile?: string;
+      const ctorArgs = vi.mocked(ChannelBridge).mock.calls.at(-1)?.[0] as {
+        sessionDir?: string;
       };
-      expect(call?.sessionKey).toBe("agent:ops:cron:job-ops");
-      expect(call?.workspaceDir).toBe(opsWorkspace);
-      expect(call?.sessionFile).toContain(path.join("agents", "ops"));
+      const msgArgs = mockHandle.mock.calls.at(-1)?.[0] as {
+        workspaceDir?: string;
+      };
+      expect(ctorArgs?.sessionDir).toBe(opsWorkspace);
+      expect(msgArgs?.workspaceDir).toBe(opsWorkspace);
+      expect(res.sessionKey).toContain("agent:ops:cron:job-ops");
     });
   });
 
@@ -271,7 +281,7 @@ describe("runCronIsolatedAgentTurn", () => {
       });
 
       expect(res.status).toBe("ok");
-      expectEmbeddedProviderModel({ provider: "openai", model: "gpt-4.1-mini" });
+      expectBridgeModel({ model: "gpt-4.1-mini" });
     });
   });
 
@@ -284,7 +294,7 @@ describe("runCronIsolatedAgentTurn", () => {
       });
 
       expect(res.status).toBe("ok");
-      expectEmbeddedProviderModel({ provider: "openai", model: "gpt-4.1-mini" });
+      expectBridgeModel({ model: "gpt-4.1-mini" });
     });
   });
 
@@ -298,7 +308,7 @@ describe("runCronIsolatedAgentTurn", () => {
       });
 
       expect(res.status).toBe("ok");
-      expectEmbeddedProviderModel({ provider: "anthropic", model: "claude-opus-4-5" });
+      expectBridgeModel({ model: "claude-opus-4-5" });
     });
   });
 
@@ -307,8 +317,7 @@ describe("runCronIsolatedAgentTurn", () => {
       const { res } = await runGmailHookTurn(home);
 
       expect(res.status).toBe("ok");
-      expectEmbeddedProviderModel({
-        provider: "openrouter",
+      expectBridgeModel({
         model: GMAIL_MODEL.replace("openrouter/", ""),
       });
     });
@@ -326,8 +335,7 @@ describe("runCronIsolatedAgentTurn", () => {
       });
 
       expect(res.status).toBe("ok");
-      expectEmbeddedProviderModel({
-        provider: "openrouter",
+      expectBridgeModel({
         model: GMAIL_MODEL.replace("openrouter/", ""),
       });
     });
@@ -342,9 +350,9 @@ describe("runCronIsolatedAgentTurn", () => {
       });
 
       expect(res.status).toBe("ok");
-      const call = vi.mocked(runEmbeddedPiAgent).mock.calls[0]?.[0] as { prompt?: string };
-      expect(call?.prompt).toContain("EXTERNAL, UNTRUSTED");
-      expect(call?.prompt).toContain("Hello");
+      const call = mockHandle.mock.calls[0]?.[0] as { text?: string };
+      expect(call?.text).toContain("EXTERNAL, UNTRUSTED");
+      expect(call?.text).toContain("Hello");
     });
   });
 
@@ -364,9 +372,9 @@ describe("runCronIsolatedAgentTurn", () => {
       });
 
       expect(res.status).toBe("ok");
-      const call = vi.mocked(runEmbeddedPiAgent).mock.calls[0]?.[0] as { prompt?: string };
-      expect(call?.prompt).not.toContain("EXTERNAL, UNTRUSTED");
-      expect(call?.prompt).toContain("Hello");
+      const call = mockHandle.mock.calls[0]?.[0] as { text?: string };
+      expect(call?.text).not.toContain("EXTERNAL, UNTRUSTED");
+      expect(call?.text).toContain("Hello");
     });
   });
 
@@ -401,12 +409,7 @@ describe("runCronIsolatedAgentTurn", () => {
       });
 
       expect(res.status).toBe("ok");
-      const call = vi.mocked(runEmbeddedPiAgent).mock.calls[0]?.[0] as {
-        provider?: string;
-        model?: string;
-      };
-      expect(call?.provider).toBe("anthropic");
-      expect(call?.model).toBe("claude-opus-4-5");
+      expectBridgeModel({ model: "claude-opus-4-5" });
     });
   });
 
@@ -418,35 +421,12 @@ describe("runCronIsolatedAgentTurn", () => {
           message: DEFAULT_MESSAGE,
           model: "openai/",
         },
-        mockTexts: null,
+        mockText: null,
       });
 
       expect(res.status).toBe("error");
       expect(res.error).toMatch("invalid model");
-      expect(vi.mocked(runEmbeddedPiAgent)).not.toHaveBeenCalled();
-    });
-  });
-
-  it("defaults thinking to low for reasoning-capable models", async () => {
-    await withTempHome(async (home) => {
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-        {
-          id: "claude-opus-4-5",
-          name: "Opus 4.5",
-          provider: "anthropic",
-          reasoning: true,
-        },
-      ]);
-
-      await runCronTurn(home, {
-        jobPayload: DEFAULT_AGENT_TURN_PAYLOAD,
-        mockTexts: ["done"],
-      });
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0] as {
-        thinkLevel?: string;
-      };
-      expect(callArgs?.thinkLevel).toBe("low");
+      expect(vi.mocked(ChannelBridge)).not.toHaveBeenCalled();
     });
   });
 
@@ -455,7 +435,7 @@ describe("runCronIsolatedAgentTurn", () => {
       const long = "a".repeat(2001);
       const { res } = await runCronTurn(home, {
         jobPayload: DEFAULT_AGENT_TURN_PAYLOAD,
-        mockTexts: [long],
+        mockText: long,
       });
 
       expect(res.status).toBe("ok");
@@ -473,7 +453,7 @@ describe("runCronIsolatedAgentTurn", () => {
           deps,
           jobPayload: { kind: "agentTurn", message: "ping", deliver: false },
           message: "ping",
-          mockTexts: ["ok"],
+          mockText: "ok",
           storePath,
         })
       ).res;
@@ -483,7 +463,7 @@ describe("runCronIsolatedAgentTurn", () => {
           deps,
           jobPayload: { kind: "agentTurn", message: "ping", deliver: false },
           message: "ping",
-          mockTexts: ["ok"],
+          mockText: "ok",
           storePath,
         })
       ).res;

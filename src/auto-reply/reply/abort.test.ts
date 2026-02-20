@@ -243,7 +243,6 @@ describe("abort detection", () => {
       to: "telegram:parent",
     });
 
-    // pi-embedded: abortEmbeddedPiRun removed; stopped count is 0 when no queued followups/lanes exist
     expect(result.stoppedSubagents).toBe(0);
     expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith(`lane:${childKey}`);
   });

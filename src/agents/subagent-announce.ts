@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
 import path from "node:path";
-import { resolveQueueSettings } from "../auto-reply/reply/queue.js";
 import { loadConfig } from "../config/config.js";
 import {
   loadSessionStore,
@@ -16,10 +15,8 @@ import { defaultRuntime } from "../runtime.js";
 import {
   type DeliveryContext,
   deliveryContextFromSession,
-  mergeDeliveryContext,
   normalizeDeliveryContext,
 } from "../utils/delivery-context.js";
-import { type AnnounceQueueItem, enqueueAnnounce } from "./subagent-announce-queue.js";
 import { readLatestAssistantReply } from "./tools/agent-step.js";
 
 function formatTokenCount(value?: number) {
@@ -96,39 +93,6 @@ async function waitForSessionUsage(params: { sessionKey: string }) {
   return { entry, storePath };
 }
 
-type DeliveryContextSource = Parameters<typeof deliveryContextFromSession>[0];
-
-function resolveAnnounceOrigin(
-  entry?: DeliveryContextSource,
-  requesterOrigin?: DeliveryContext,
-): DeliveryContext | undefined {
-  // requesterOrigin (captured at spawn time) reflects the channel the user is
-  // actually on and must take priority over the session entry, which may carry
-  // stale lastChannel / lastTo values from a previous channel interaction.
-  return mergeDeliveryContext(requesterOrigin, deliveryContextFromSession(entry));
-}
-
-async function sendAnnounce(item: AnnounceQueueItem) {
-  const origin = item.origin;
-  const threadId =
-    origin?.threadId != null && origin.threadId !== "" ? String(origin.threadId) : undefined;
-  await callGateway({
-    method: "agent",
-    params: {
-      sessionKey: item.sessionKey,
-      message: item.prompt,
-      channel: origin?.channel,
-      accountId: origin?.accountId,
-      to: origin?.to,
-      threadId,
-      deliver: true,
-      idempotencyKey: crypto.randomUUID(),
-    },
-    expectFinal: true,
-    timeoutMs: 60_000,
-  });
-}
-
 function resolveRequesterStoreKey(
   cfg: ReturnType<typeof loadConfig>,
   requesterSessionKey: string,
@@ -161,54 +125,12 @@ function loadRequesterSessionEntry(requesterSessionKey: string) {
   return { cfg, entry, canonicalKey };
 }
 
-async function maybeQueueSubagentAnnounce(params: {
+async function maybeQueueSubagentAnnounce(_params: {
   requesterSessionKey: string;
   triggerMessage: string;
   summaryLine?: string;
   requesterOrigin?: DeliveryContext;
 }): Promise<"steered" | "queued" | "none"> {
-  const { cfg, entry } = loadRequesterSessionEntry(params.requesterSessionKey);
-  const canonicalKey = resolveRequesterStoreKey(cfg, params.requesterSessionKey);
-  const sessionId = entry?.sessionId;
-  if (!sessionId) {
-    return "none";
-  }
-
-  const queueSettings = resolveQueueSettings({
-    cfg,
-    channel: entry?.channel ?? entry?.lastChannel,
-    sessionEntry: entry,
-  });
-  // pi-embedded: removed (dead code after AgentRuntime migration)
-  const isActive = false;
-
-  const shouldSteer = queueSettings.mode === "steer" || queueSettings.mode === "steer-backlog";
-  if (shouldSteer) {
-    // pi-embedded: steering removed (dead code after AgentRuntime migration)
-  }
-
-  const shouldFollowup =
-    queueSettings.mode === "followup" ||
-    queueSettings.mode === "collect" ||
-    queueSettings.mode === "steer-backlog" ||
-    queueSettings.mode === "interrupt";
-  if (isActive && (shouldFollowup || queueSettings.mode === "steer")) {
-    const origin = resolveAnnounceOrigin(entry, params.requesterOrigin);
-    enqueueAnnounce({
-      key: canonicalKey,
-      item: {
-        prompt: params.triggerMessage,
-        summaryLine: params.summaryLine,
-        enqueuedAt: Date.now(),
-        sessionKey: canonicalKey,
-        origin,
-      },
-      settings: queueSettings,
-      send: sendAnnounce,
-    });
-    return "queued";
-  }
-
   return "none";
 }
 
@@ -383,7 +305,6 @@ export async function runSubagentAnnounceFlow(params: {
     const settleTimeoutMs = Math.min(Math.max(params.timeoutMs, 1), 120_000);
     let reply = params.roundOneReply;
     let outcome: SubagentRunOutcome | undefined = params.outcome;
-    // pi-embedded: settling removed (dead code after AgentRuntime migration)
 
     if (!reply && params.waitForCompletion !== false) {
       const waitMs = settleTimeoutMs;
@@ -433,8 +354,6 @@ export async function runSubagentAnnounceFlow(params: {
         maxWaitMs: params.timeoutMs,
       });
     }
-
-    // pi-embedded: active-run check removed (dead code after AgentRuntime migration)
 
     if (!outcome) {
       outcome = { status: "unknown" };

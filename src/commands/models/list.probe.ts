@@ -279,7 +279,6 @@ async function probeTarget(params: {
     };
   }
 
-  // pi-embedded: runEmbeddedPiAgent removed (dead code after AgentRuntime migration)
   return {
     provider: target.provider,
     model: `${target.model.provider}/${target.model.model}`,

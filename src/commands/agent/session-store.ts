@@ -6,7 +6,6 @@ import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js
 import type { RemoteClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 
-// pi-embedded: dynamic type import removed (dead code after AgentRuntime migration)
 type RunResult = {
   payloads?: Array<{ text?: string; mediaUrl?: string; mediaUrls?: string[] }>;
   meta: {

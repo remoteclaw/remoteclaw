@@ -124,7 +124,6 @@ async function ensureSessionRuntimeCleanup(params: {
   }
   clearSessionQueues([...queueKeys]);
   stopSubagentsForRequester({ cfg: params.cfg, requesterSessionKey: params.target.canonicalKey });
-  // pi-embedded: abort/wait removed (dead code after AgentRuntime migration)
   return undefined;
 }
 

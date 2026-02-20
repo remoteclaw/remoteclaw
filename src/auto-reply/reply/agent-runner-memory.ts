@@ -97,7 +97,6 @@ export async function runMemoryFlushIfNeeded(params: {
         params.followupRun.run.config,
         resolveAgentIdFromSessionKey(params.followupRun.run.sessionKey),
       ),
-      // pi-embedded: runEmbeddedPiAgent removed (dead code after AgentRuntime migration)
       run: () => {
         throw new Error("Memory flush not available: pi-embedded engine removed");
       },

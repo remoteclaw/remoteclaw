@@ -219,7 +219,6 @@ export async function runReplyAgent(params: {
   };
 
   if (shouldSteer && isStreaming) {
-    // pi-embedded: queueEmbeddedPiMessage removed (dead code after AgentRuntime migration)
     const steered = false;
     if (steered && !shouldFollowup) {
       await touchActiveSessionEntry();

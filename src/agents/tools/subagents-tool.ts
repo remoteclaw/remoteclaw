@@ -19,10 +19,6 @@ import {
 } from "../../shared/subagents-format.js";
 import { INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel.js";
 import { AGENT_LANE_SUBAGENT } from "../lanes.js";
-// pi-embedded: abortEmbeddedPiRun stubbed to no-op (dead code after AgentRuntime migration)
-function abortEmbeddedPiRun(_sessionId: string): boolean {
-  return false;
-}
 import { optionalStringEnum } from "../schema/typebox.js";
 import { getSubagentDepthFromSessionStore } from "../subagent-depth.js";
 import {
@@ -292,7 +288,6 @@ async function killSubagentRun(params: {
     cache: params.cache,
   });
   const sessionId = resolved.entry?.sessionId;
-  const aborted = sessionId ? abortEmbeddedPiRun(sessionId) : false;
   const cleared = clearSessionQueues([childSessionKey, sessionId]);
   if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
     logVerbose(
@@ -315,7 +310,7 @@ async function killSubagentRun(params: {
     childSessionKey,
     reason: "killed",
   });
-  const killed = marked > 0 || aborted || cleared.followupCleared > 0 || cleared.laneCleared > 0;
+  const killed = marked > 0 || cleared.followupCleared > 0 || cleared.laneCleared > 0;
   return { killed, sessionId };
 }
 
@@ -640,10 +635,6 @@ export function createSubagentsTool(opts?: { agentSessionKey?: string }): AnyAge
             ? targetSession.entry.sessionId.trim()
             : undefined;
 
-        // Interrupt current work first so steer takes precedence immediately.
-        if (sessionId) {
-          abortEmbeddedPiRun(sessionId);
-        }
         const cleared = clearSessionQueues([resolved.entry.childSessionKey, sessionId]);
         if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
           logVerbose(

@@ -351,7 +351,6 @@ export async function runPreparedReply(
     inlineMode: perMessageQueueMode,
     inlineOptions: perMessageQueueOptions,
   });
-  // pi-embedded: resolveEmbeddedSessionLane/abort/active/streaming removed (dead code after AgentRuntime migration)
   const sessionLaneKey = `lane:${sessionKey ?? sessionIdFinal}`;
   const laneSize = getQueueSize(sessionLaneKey);
   if (resolvedQueue.mode === "interrupt" && laneSize > 0) {

@@ -21,7 +21,6 @@ export function clearSessionQueues(keys: Array<string | undefined>): ClearSessio
     seen.add(cleaned);
     clearedKeys.push(cleaned);
     followupCleared += clearFollowupQueue(cleaned);
-    // pi-embedded: resolveEmbeddedSessionLane removed (dead code after AgentRuntime migration)
     laneCleared += clearCommandLane(`lane:${cleaned}`);
   }
 

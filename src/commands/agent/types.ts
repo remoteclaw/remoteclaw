@@ -1,6 +1,5 @@
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
 
-// pi-embedded: ClientToolDefinition inlined (original module removed after AgentRuntime migration)
 export type ClientToolDefinition = {
   type: "function";
   function: {

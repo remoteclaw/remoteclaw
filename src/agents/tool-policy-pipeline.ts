@@ -8,7 +8,6 @@ import {
   type ToolPolicyLike,
 } from "./tool-policy.js";
 
-// pi-embedded: AnyAgentTool inlined (original module pi-tools.types.js removed after AgentRuntime migration)
 // oxlint-disable-next-line typescript/no-explicit-any
 type AnyAgentTool = AgentTool<any, unknown>;
 

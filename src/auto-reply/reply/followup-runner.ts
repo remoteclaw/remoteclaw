@@ -35,7 +35,6 @@ export function createFollowupRunner(params: {
           verboseLevel: queued.run.verboseLevel,
         });
       }
-      // pi-embedded: runEmbeddedPiAgent removed (dead code after AgentRuntime migration)
       defaultRuntime.error?.("Followup runner not available: pi-embedded engine removed");
       return;
     } finally {

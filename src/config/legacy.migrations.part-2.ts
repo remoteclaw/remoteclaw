@@ -13,7 +13,7 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
   {
     id: "agent.model-config-v2",
     describe:
-      "Migrate legacy agent.model/allowedModels/modelAliases/modelFallbacks/imageModelFallbacks to agent.models + model lists",
+      "Migrate legacy agent.model/modelFallbacks/imageModelFallbacks to model lists, drop allowedModels/modelAliases/models",
     apply: (raw, changes) => {
       const agentRoot = getRecord(raw.agent);
       const defaults = getRecord(getRecord(raw.agents)?.defaults);
@@ -26,83 +26,32 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
       const legacyModel = typeof agent.model === "string" ? String(agent.model) : undefined;
       const legacyImageModel =
         typeof agent.imageModel === "string" ? String(agent.imageModel) : undefined;
-      const legacyAllowed = Array.isArray(agent.allowedModels)
-        ? (agent.allowedModels as unknown[]).map(String)
-        : [];
       const legacyModelFallbacks = Array.isArray(agent.modelFallbacks)
         ? (agent.modelFallbacks as unknown[]).map(String)
         : [];
       const legacyImageModelFallbacks = Array.isArray(agent.imageModelFallbacks)
         ? (agent.imageModelFallbacks as unknown[]).map(String)
         : [];
-      const legacyAliases =
-        agent.modelAliases && typeof agent.modelAliases === "object"
-          ? (agent.modelAliases as Record<string, unknown>)
-          : {};
+      const hasAllowed = Array.isArray(agent.allowedModels);
+      const hasAliases =
+        agent.modelAliases &&
+        typeof agent.modelAliases === "object" &&
+        Object.keys(agent.modelAliases as Record<string, unknown>).length > 0;
+      const hasModels =
+        agent.models &&
+        typeof agent.models === "object" &&
+        Object.keys(agent.models as Record<string, unknown>).length > 0;
 
       const hasLegacy =
         legacyModel ||
         legacyImageModel ||
-        legacyAllowed.length > 0 ||
+        hasAllowed ||
         legacyModelFallbacks.length > 0 ||
         legacyImageModelFallbacks.length > 0 ||
-        Object.keys(legacyAliases).length > 0;
+        hasAliases ||
+        hasModels;
       if (!hasLegacy) {
         return;
-      }
-
-      const models =
-        agent.models && typeof agent.models === "object"
-          ? (agent.models as Record<string, unknown>)
-          : {};
-
-      const ensureModel = (rawKey?: string) => {
-        if (typeof rawKey !== "string") {
-          return;
-        }
-        const key = rawKey.trim();
-        if (!key) {
-          return;
-        }
-        if (!models[key]) {
-          models[key] = {};
-        }
-      };
-
-      ensureModel(legacyModel);
-      ensureModel(legacyImageModel);
-      for (const key of legacyAllowed) {
-        ensureModel(key);
-      }
-      for (const key of legacyModelFallbacks) {
-        ensureModel(key);
-      }
-      for (const key of legacyImageModelFallbacks) {
-        ensureModel(key);
-      }
-      for (const target of Object.values(legacyAliases)) {
-        if (typeof target !== "string") {
-          continue;
-        }
-        ensureModel(target);
-      }
-
-      for (const [alias, targetRaw] of Object.entries(legacyAliases)) {
-        if (typeof targetRaw !== "string") {
-          continue;
-        }
-        const target = targetRaw.trim();
-        if (!target) {
-          continue;
-        }
-        const entry =
-          models[target] && typeof models[target] === "object"
-            ? (models[target] as Record<string, unknown>)
-            : {};
-        if (!("alias" in entry)) {
-          entry.alias = alias;
-          models[target] = entry;
-        }
       }
 
       const currentModel =
@@ -149,8 +98,6 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
         };
       }
 
-      agent.models = models;
-
       if (legacyModel !== undefined) {
         changes.push(`Migrated ${label}.model string → ${label}.model.primary.`);
       }
@@ -163,17 +110,21 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
       if (legacyImageModelFallbacks.length > 0) {
         changes.push(`Migrated ${label}.imageModelFallbacks → ${label}.imageModel.fallbacks.`);
       }
-      if (legacyAllowed.length > 0) {
-        changes.push(`Migrated ${label}.allowedModels → ${label}.models.`);
+      if (hasAllowed) {
+        changes.push(`Dropped ${label}.allowedModels (model allowlist removed).`);
       }
-      if (Object.keys(legacyAliases).length > 0) {
-        changes.push(`Migrated ${label}.modelAliases → ${label}.models.*.alias.`);
+      if (hasAliases) {
+        changes.push(`Dropped ${label}.modelAliases (model catalog removed).`);
+      }
+      if (hasModels) {
+        changes.push(`Dropped ${label}.models (model catalog removed).`);
       }
 
       delete agent.allowedModels;
       delete agent.modelAliases;
       delete agent.modelFallbacks;
       delete agent.imageModelFallbacks;
+      delete agent.models;
     },
   },
   {

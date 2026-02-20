@@ -101,14 +101,7 @@ const qwenPortalPlugin = {
                       },
                     },
                   },
-                  agents: {
-                    defaults: {
-                      models: {
-                        "qwen-portal/coder-model": { alias: "qwen" },
-                        "qwen-portal/vision-model": {},
-                      },
-                    },
-                  },
+                  agents: {},
                 },
                 defaultModel: DEFAULT_MODEL,
                 notes: [

@@ -199,7 +199,7 @@ describe("legacy config detection", () => {
     expect(res.config?.messages?.tts?.auto).toBe("always");
     expect(res.config?.messages?.tts?.enabled).toBeUndefined();
   });
-  it("migrates legacy model config to agent.models + model lists", async () => {
+  it("migrates legacy model config to model lists and drops catalog fields", async () => {
     const res = migrateLegacyConfig({
       agent: {
         model: "anthropic/claude-opus-4-5",
@@ -217,10 +217,10 @@ describe("legacy config detection", () => {
     expect(res.config?.agents?.defaults?.imageModel?.fallbacks).toEqual([
       "anthropic/claude-opus-4-5",
     ]);
-    expect(res.config?.agents?.defaults?.models?.["anthropic/claude-opus-4-5"]).toMatchObject({
-      alias: "Opus",
-    });
-    expect(res.config?.agents?.defaults?.models?.["openai/gpt-4.1-mini"]).toBeTruthy();
+    // models catalog, allowedModels, and modelAliases are dropped (dead for CLI backends)
+    expect(
+      (res.config?.agents?.defaults as Record<string, unknown> | undefined)?.models,
+    ).toBeUndefined();
     expect((res.config as { agent?: unknown } | undefined)?.agent).toBeUndefined();
   });
   it("flags legacy config in snapshot", async () => {

@@ -9,10 +9,6 @@ vi.mock("../middleware/index.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(),
-}));
-
 vi.mock("../agents/subagent-announce.js", () => ({
   runSubagentAnnounceFlow: vi.fn(),
 }));

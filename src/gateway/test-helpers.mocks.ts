@@ -67,7 +67,6 @@ const createStubChannelPlugin = (params: StubChannelOptions): ChannelPlugin => (
 
 const createStubPluginRegistry = (): PluginRegistry => ({
   plugins: [],
-  tools: [],
   hooks: [],
   typedHooks: [],
   channels: [

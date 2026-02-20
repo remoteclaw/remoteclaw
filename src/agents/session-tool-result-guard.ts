@@ -1,17 +1,13 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { TextContent } from "@mariozechner/pi-ai";
 import type { SessionManager } from "@mariozechner/pi-coding-agent";
-import type {
-  PluginHookBeforeMessageWriteEvent,
-  PluginHookBeforeMessageWriteResult,
-} from "../plugins/types.js";
 import { emitSessionTranscriptUpdate } from "../sessions/transcript-events.js";
 import { HARD_MAX_TOOL_RESULT_CHARS } from "./pi-embedded-runner/tool-result-truncation.js";
 import { makeMissingToolResult, sanitizeToolCallInputs } from "./session-transcript-repair.js";
 import { extractToolCallsFromAssistant, extractToolResultId } from "./tool-call-id.js";
 
 const GUARD_TRUNCATION_SUFFIX =
-  "\n\n⚠️ [Content truncated during persistence — original exceeded size limit. " +
+  "\n\n\u26a0\ufe0f [Content truncated during persistence \u2014 original exceeded size limit. " +
   "Use offset/limit parameters or request specific sections for large content.]";
 
 /**
@@ -84,26 +80,10 @@ export function installSessionToolResultGuard(
      */
     transformMessageForPersistence?: (message: AgentMessage) => AgentMessage;
     /**
-     * Optional, synchronous transform applied to toolResult messages *before* they are
-     * persisted to the session transcript.
-     */
-    transformToolResultForPersistence?: (
-      message: AgentMessage,
-      meta: { toolCallId?: string; toolName?: string; isSynthetic?: boolean },
-    ) => AgentMessage;
-    /**
      * Whether to synthesize missing tool results to satisfy strict providers.
      * Defaults to true.
      */
     allowSyntheticToolResults?: boolean;
-    /**
-     * Synchronous hook invoked before any message is written to the session JSONL.
-     * If the hook returns { block: true }, the message is silently dropped.
-     * If it returns { message }, the modified message is written instead.
-     */
-    beforeMessageWriteHook?: (
-      event: PluginHookBeforeMessageWriteEvent,
-    ) => PluginHookBeforeMessageWriteResult | undefined;
   },
 ): {
   flushPendingToolResults: () => void;
@@ -116,34 +96,7 @@ export function installSessionToolResultGuard(
     return transformer ? transformer(message) : message;
   };
 
-  const persistToolResult = (
-    message: AgentMessage,
-    meta: { toolCallId?: string; toolName?: string; isSynthetic?: boolean },
-  ) => {
-    const transformer = opts?.transformToolResultForPersistence;
-    return transformer ? transformer(message, meta) : message;
-  };
-
   const allowSyntheticToolResults = opts?.allowSyntheticToolResults ?? true;
-  const beforeWrite = opts?.beforeMessageWriteHook;
-
-  /**
-   * Run the before_message_write hook. Returns the (possibly modified) message,
-   * or null if the message should be blocked.
-   */
-  const applyBeforeWriteHook = (msg: AgentMessage): AgentMessage | null => {
-    if (!beforeWrite) {
-      return msg;
-    }
-    const result = beforeWrite({ message: msg });
-    if (result?.block) {
-      return null;
-    }
-    if (result?.message) {
-      return result.message;
-    }
-    return msg;
-  };
 
   const flushPendingToolResults = () => {
     if (pending.size === 0) {
@@ -152,16 +105,8 @@ export function installSessionToolResultGuard(
     if (allowSyntheticToolResults) {
       for (const [id, name] of pending.entries()) {
         const synthetic = makeMissingToolResult({ toolCallId: id, toolName: name });
-        const flushed = applyBeforeWriteHook(
-          persistToolResult(persistMessage(synthetic), {
-            toolCallId: id,
-            toolName: name,
-            isSynthetic: true,
-          }),
-        );
-        if (flushed) {
-          originalAppend(flushed as never);
-        }
+        const flushed = persistMessage(synthetic);
+        originalAppend(flushed as never);
       }
     }
     pending.clear();
@@ -184,23 +129,12 @@ export function installSessionToolResultGuard(
 
     if (nextRole === "toolResult") {
       const id = extractToolResultId(nextMessage as Extract<AgentMessage, { role: "toolResult" }>);
-      const toolName = id ? pending.get(id) : undefined;
       if (id) {
         pending.delete(id);
       }
       // Apply hard size cap before persistence to prevent oversized tool results
       // from consuming the entire context window on subsequent LLM calls.
-      const capped = capToolResultSize(persistMessage(nextMessage));
-      const persisted = applyBeforeWriteHook(
-        persistToolResult(capped, {
-          toolCallId: id ?? undefined,
-          toolName,
-          isSynthetic: false,
-        }),
-      );
-      if (!persisted) {
-        return undefined;
-      }
+      const persisted = capToolResultSize(persistMessage(nextMessage));
       return originalAppend(persisted as never);
     }
 
@@ -220,10 +154,7 @@ export function installSessionToolResultGuard(
       }
     }
 
-    const finalMessage = applyBeforeWriteHook(persistMessage(nextMessage));
-    if (!finalMessage) {
-      return undefined;
-    }
+    const finalMessage = persistMessage(nextMessage);
     const result = originalAppend(finalMessage as never);
 
     const sessionFile = (

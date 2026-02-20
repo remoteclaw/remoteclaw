@@ -1,5 +1,4 @@
 import path from "node:path";
-import type { AnyAgentTool } from "../agents/tools/common.js";
 import type { ChannelDock } from "../channels/dock.js";
 import type { ChannelPlugin } from "../channels/plugins/types.js";
 import type {
@@ -22,8 +21,6 @@ import type {
   RemoteClawPluginHookOptions,
   ProviderPlugin,
   RemoteClawPluginService,
-  RemoteClawPluginToolContext,
-  RemoteClawPluginToolFactory,
   PluginConfigUiHint,
   PluginDiagnostic,
   PluginLogger,
@@ -33,14 +30,6 @@ import type {
   PluginHookHandlerMap,
   PluginHookRegistration as TypedPluginHookRegistration,
 } from "./types.js";
-
-export type PluginToolRegistration = {
-  pluginId: string;
-  factory: RemoteClawPluginToolFactory;
-  names: string[];
-  optional: boolean;
-  source: string;
-};
 
 export type PluginCliRegistration = {
   pluginId: string;
@@ -123,7 +112,6 @@ export type PluginRecord = {
 
 export type PluginRegistry = {
   plugins: PluginRecord[];
-  tools: PluginToolRegistration[];
   hooks: PluginHookRegistration[];
   typedHooks: TypedPluginHookRegistration[];
   channels: PluginChannelRegistration[];
@@ -146,7 +134,6 @@ export type PluginRegistryParams = {
 export function createEmptyPluginRegistry(): PluginRegistry {
   return {
     plugins: [],
-    tools: [],
     hooks: [],
     typedHooks: [],
     channels: [],
@@ -169,32 +156,13 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     registry.diagnostics.push(diag);
   };
 
+  // registerTool is a no-op: subprocess agents cannot call tools registered in the main process.
+  // The API surface is preserved for extension compatibility.
   const registerTool = (
-    record: PluginRecord,
-    tool: AnyAgentTool | RemoteClawPluginToolFactory,
-    opts?: { name?: string; names?: string[]; optional?: boolean },
-  ) => {
-    const names = opts?.names ?? (opts?.name ? [opts.name] : []);
-    const optional = opts?.optional === true;
-    const factory: RemoteClawPluginToolFactory =
-      typeof tool === "function" ? tool : (_ctx: RemoteClawPluginToolContext) => tool;
-
-    if (typeof tool !== "function") {
-      names.push(tool.name);
-    }
-
-    const normalized = names.map((name) => name.trim()).filter(Boolean);
-    if (normalized.length > 0) {
-      record.toolNames.push(...normalized);
-    }
-    registry.tools.push({
-      pluginId: record.id,
-      factory,
-      names: normalized,
-      optional,
-      source: record.source,
-    });
-  };
+    _record: PluginRecord,
+    _tool: unknown,
+    _opts?: { name?: string; names?: string[]; optional?: boolean },
+  ) => {};
 
   const registerHook = (
     record: PluginRecord,
@@ -506,7 +474,6 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     registry,
     createApi,
     pushDiagnostic,
-    registerTool,
     registerChannel,
     registerProvider,
     registerGatewayMethod,

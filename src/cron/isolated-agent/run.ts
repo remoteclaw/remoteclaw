@@ -19,8 +19,6 @@ import {
   resolveHooksGmailModel,
   resolveThinkingDefault,
 } from "../../agents/model-selection.js";
-import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
-import { getSkillsSnapshotVersion } from "../../agents/skills/refresh.js";
 import { runSubagentAnnounceFlow } from "../../agents/subagent-announce.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
@@ -36,7 +34,6 @@ import { resolveAgentMainSessionKey, updateSessionStore } from "../../config/ses
 import type { AgentDefaultsConfig } from "../../config/types.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { deliverOutboundPayloads } from "../../infra/outbound/deliver.js";
-import { getRemoteSkillEligibility } from "../../infra/skills-remote.js";
 import { logWarn } from "../../logger.js";
 import { ChannelBridge, ClaudeCliRuntime, type ChannelMessage } from "../../middleware/index.js";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../../routing/session-key.js";
@@ -339,32 +336,6 @@ export async function runCronIsolatedAgentTurn(params: {
   if (deliveryRequested) {
     commandBody =
       `${commandBody}\n\nReturn your summary as plain text; it will be delivered automatically. If the task explicitly calls for messaging a specific external recipient, note who/where it should go instead of sending it yourself.`.trim();
-  }
-
-  let skillsSnapshot = cronSession.sessionEntry.skillsSnapshot;
-  if (isFastTestEnv) {
-    // Fast unit-test mode: avoid scanning the workspace and writing session stores.
-    skillsSnapshot = skillsSnapshot ?? { prompt: "", skills: [] };
-  } else {
-    const existingSnapshot = cronSession.sessionEntry.skillsSnapshot;
-    const skillsSnapshotVersion = getSkillsSnapshotVersion(workspaceDir);
-    const needsSkillsSnapshot =
-      !existingSnapshot || existingSnapshot.version !== skillsSnapshotVersion;
-    if (needsSkillsSnapshot) {
-      skillsSnapshot = buildWorkspaceSkillSnapshot(workspaceDir, {
-        config: cfgWithAgentDefaults,
-        eligibility: { remote: getRemoteSkillEligibility() },
-        snapshotVersion: skillsSnapshotVersion,
-      });
-      if (skillsSnapshot) {
-        cronSession.sessionEntry = {
-          ...cronSession.sessionEntry,
-          updatedAt: Date.now(),
-          skillsSnapshot,
-        };
-        await persistSessionEntry();
-      }
-    }
   }
 
   // Persist systemSent before the run, mirroring the inbound auto-reply behavior.

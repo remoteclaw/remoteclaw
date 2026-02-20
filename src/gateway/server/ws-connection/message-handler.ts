@@ -16,7 +16,6 @@ import {
   verifyDeviceToken,
 } from "../../../infra/device-pairing.js";
 import { updatePairedNodeMetadata } from "../../../infra/node-pairing.js";
-import { recordRemoteNodeInfo, refreshRemoteNodeBins } from "../../../infra/skills-remote.js";
 import { upsertPresence } from "../../../infra/system-presence.js";
 import { loadVoiceWakeConfig } from "../../../infra/voicewake.js";
 import { rawDataToString } from "../../../infra/ws.js";
@@ -843,25 +842,6 @@ export function attachGatewayWsMessageHandler(params: {
               logGateway.warn(`failed to record last connect for ${nodeId}: ${formatForLog(err)}`),
             );
           }
-          recordRemoteNodeInfo({
-            nodeId: nodeSession.nodeId,
-            displayName: nodeSession.displayName,
-            platform: nodeSession.platform,
-            deviceFamily: nodeSession.deviceFamily,
-            commands: nodeSession.commands,
-            remoteIp: nodeSession.remoteIp,
-          });
-          void refreshRemoteNodeBins({
-            nodeId: nodeSession.nodeId,
-            platform: nodeSession.platform,
-            deviceFamily: nodeSession.deviceFamily,
-            commands: nodeSession.commands,
-            cfg: loadConfig(),
-          }).catch((err) =>
-            logGateway.warn(
-              `remote bin probe failed for ${nodeSession.nodeId}: ${formatForLog(err)}`,
-            ),
-          );
           void loadVoiceWakeConfig()
             .then((cfg) => {
               context.nodeRegistry.sendEvent(nodeSession.nodeId, "voicewake.changed", {

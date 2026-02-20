@@ -1,4 +1,3 @@
-import { buildWorkspaceSkillStatus } from "../agents/skills-status.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { withProgress } from "../cli/progress.js";
 import { loadConfig, readConfigFileSnapshot, resolveGatewayPort } from "../config/config.js";
@@ -15,7 +14,6 @@ import { resolveOpenClawPackageRoot } from "../infra/openclaw-root.js";
 import { resolveOsSummary } from "../infra/os-summary.js";
 import { inspectPortUsage } from "../infra/ports.js";
 import { readRestartSentinel } from "../infra/restart-sentinel.js";
-import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
 import { readTailscaleStatusJson } from "../infra/tailscale.js";
 import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../infra/update-channels.js";
 import { checkUpdateStatus, formatGitInstallLabel } from "../infra/update-check.js";
@@ -204,23 +202,7 @@ export async function statusAllCommand(
     const portUsage = await inspectPortUsage(port).catch(() => null);
     progress.tick();
 
-    const defaultWorkspace =
-      agentStatus.agents.find((a) => a.id === agentStatus.defaultId)?.workspaceDir ??
-      agentStatus.agents[0]?.workspaceDir ??
-      null;
-    const skillStatus =
-      defaultWorkspace != null
-        ? (() => {
-            try {
-              return buildWorkspaceSkillStatus(defaultWorkspace, {
-                config: cfg,
-                eligibility: { remote: getRemoteSkillEligibility() },
-              });
-            } catch {
-              return null;
-            }
-          })()
-        : null;
+    const skillStatus = null;
 
     const controlUiEnabled = cfg.gateway?.controlUi?.enabled ?? true;
     const dashboard = controlUiEnabled

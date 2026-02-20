@@ -1,7 +1,6 @@
 import {
   listAgentIds,
   resolveAgentModelPrimary,
-  resolveAgentSkillsFilter,
   resolveAgentWorkspaceDir,
 } from "../agents/agent-scope.js";
 import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
@@ -17,8 +16,6 @@ import {
   resolveConfiguredModelRef,
   resolveThinkingDefault,
 } from "../agents/model-selection.js";
-import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";
-import { getSkillsSnapshotVersion } from "../agents/skills/refresh.js";
 import { resolveAgentTimeoutMs } from "../agents/timeout.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import {
@@ -43,7 +40,6 @@ import {
   emitAgentEvent,
   registerAgentRunContext,
 } from "../infra/agent-events.js";
-import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
 import { ChannelBridge, ClaudeCliRuntime, type ChannelMessage } from "../middleware/index.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
@@ -178,36 +174,6 @@ export async function agentCommand(
         sessionKey,
         verboseLevel: resolvedVerboseLevel,
       });
-    }
-
-    const needsSkillsSnapshot = isNewSession || !sessionEntry?.skillsSnapshot;
-    const skillsSnapshotVersion = getSkillsSnapshotVersion(workspaceDir);
-    const skillFilter = resolveAgentSkillsFilter(cfg, sessionAgentId);
-    const skillsSnapshot = needsSkillsSnapshot
-      ? buildWorkspaceSkillSnapshot(workspaceDir, {
-          config: cfg,
-          eligibility: { remote: getRemoteSkillEligibility() },
-          snapshotVersion: skillsSnapshotVersion,
-          skillFilter,
-        })
-      : sessionEntry?.skillsSnapshot;
-
-    if (skillsSnapshot && sessionStore && sessionKey && needsSkillsSnapshot) {
-      const current = sessionEntry ?? {
-        sessionId,
-        updatedAt: Date.now(),
-      };
-      const next: SessionEntry = {
-        ...current,
-        sessionId,
-        updatedAt: Date.now(),
-        skillsSnapshot,
-      };
-      sessionStore[sessionKey] = next;
-      await updateSessionStore(storePath, (store) => {
-        store[sessionKey] = next;
-      });
-      sessionEntry = next;
     }
 
     // Persist explicit /command overrides to the session store when we have a key.

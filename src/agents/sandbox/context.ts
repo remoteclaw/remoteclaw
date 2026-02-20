@@ -5,7 +5,6 @@ import type { RemoteClawConfig } from "../../config/config.js";
 import { loadConfig } from "../../config/config.js";
 import { defaultRuntime } from "../../runtime.js";
 import { resolveUserPath } from "../../utils.js";
-import { syncSkillsToWorkspace } from "../skills.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR } from "../workspace.js";
 import { ensureSandboxBrowser } from "./browser.js";
 import { resolveSandboxConfigForAgent } from "./config.js";
@@ -45,18 +44,6 @@ async function ensureSandboxWorkspaceLayout(params: {
       agentWorkspaceDir,
       params.config?.agents?.defaults?.skipBootstrap,
     );
-    if (cfg.workspaceAccess !== "rw") {
-      try {
-        await syncSkillsToWorkspace({
-          sourceWorkspaceDir: agentWorkspaceDir,
-          targetWorkspaceDir: sandboxWorkspaceDir,
-          config: params.config,
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : JSON.stringify(error);
-        defaultRuntime.error?.(`Sandbox skill sync failed: ${message}`);
-      }
-    }
   } else {
     await fs.mkdir(workspaceDir, { recursive: true });
   }

@@ -27,7 +27,6 @@ export {
 // Async collectors
 export {
   collectIncludeFilePermFindings,
-  collectInstalledSkillsCodeSafetyFindings,
   collectPluginsCodeSafetyFindings,
   collectPluginsTrustFindings,
   collectStateDeepFilesystemFindings,

@@ -4,14 +4,11 @@ import { resolveDefaultModelForAgent } from "../../agents/model-selection.js";
 import { createRemoteClawTools } from "../../agents/openclaw-tools.js";
 import { resolveBootstrapMaxChars } from "../../agents/pi-embedded-helpers.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
-import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
-import { getSkillsSnapshotVersion } from "../../agents/skills/refresh.js";
 import { buildSystemPromptParams } from "../../agents/system-prompt-params.js";
 import { buildSystemPromptReport } from "../../agents/system-prompt-report.js";
 import { buildAgentSystemPrompt } from "../../agents/system-prompt.js";
 import { buildToolSummaryMap } from "../../agents/tool-summaries.js";
 import type { SessionSystemPromptReport } from "../../config/sessions/types.js";
-import { getRemoteSkillEligibility } from "../../infra/skills-remote.js";
 import { buildTtsSystemPromptHint } from "../../tts/tts.js";
 import type { ReplyPayload } from "../types.js";
 import type { HandleCommandsParams } from "./commands-types.js";
@@ -65,18 +62,7 @@ async function resolveContextReport(
     sessionKey: params.sessionKey,
     sessionId: params.sessionEntry?.sessionId,
   });
-  const skillsSnapshot = (() => {
-    try {
-      return buildWorkspaceSkillSnapshot(workspaceDir, {
-        config: params.cfg,
-        eligibility: { remote: getRemoteSkillEligibility() },
-        snapshotVersion: getSkillsSnapshotVersion(workspaceDir),
-      });
-    } catch {
-      return { prompt: "", skills: [], resolvedSkills: [] };
-    }
-  })();
-  const skillsPrompt = skillsSnapshot.prompt ?? "";
+  const skillsPrompt = "";
   const sandboxRuntime = resolveSandboxRuntimeStatus({
     cfg: params.cfg,
     sessionKey: params.ctx.SessionKey ?? params.sessionKey,

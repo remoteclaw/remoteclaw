@@ -60,9 +60,6 @@ export function summarizeExistingConfig(config: RemoteClawConfig): string {
   if (config.gateway?.remote?.url) {
     rows.push(shortenHomeInString(`gateway.remote.url: ${config.gateway.remote.url}`));
   }
-  if (config.skills?.install?.nodeManager) {
-    rows.push(shortenHomeInString(`skills.nodeManager: ${config.skills.install.nodeManager}`));
-  }
   return rows.length ? rows.join("\n") : "No key settings detected.";
 }
 

@@ -1,9 +1,18 @@
-import { hasBinary } from "../agents/skills.js";
+import { execFileSync } from "node:child_process";
 import { formatCliCommand } from "../cli/command-format.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { isRich, theme } from "../terminal/theme.js";
+
+function hasBinary(name: string): boolean {
+  try {
+    execFileSync("which", [name], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const SEARCH_TOOL = "https://docs.remoteclaw.ai/mcp.SearchRemoteClaw";
 const SEARCH_TIMEOUT_MS = 30_000;

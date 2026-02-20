@@ -4,7 +4,6 @@ import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agen
 import { resolveModelAuthMode } from "../agents/model-auth.js";
 import { resolveConfiguredModelRef } from "../agents/model-selection.js";
 import { resolveSandboxRuntimeStatus } from "../agents/sandbox.js";
-import type { SkillCommandSpec } from "../agents/skills.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../agents/usage.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
@@ -552,9 +551,6 @@ export function buildHelpMessage(cfg?: RemoteClawConfig): string {
   lines.push("  /status  |  /whoami  |  /context");
   lines.push("");
 
-  lines.push("Skills");
-  lines.push("  /skill <name> [input]");
-
   lines.push("");
   lines.push("More: /commands for full list");
 
@@ -652,7 +648,7 @@ function formatCommandList(items: CommandsListItem[]): string {
 
 export function buildCommandsMessage(
   cfg?: RemoteClawConfig,
-  skillCommands?: SkillCommandSpec[],
+  skillCommands?: unknown[],
   options?: CommandsMessageOptions,
 ): string {
   const result = buildCommandsMessagePaginated(cfg, skillCommands, options);
@@ -661,7 +657,7 @@ export function buildCommandsMessage(
 
 export function buildCommandsMessagePaginated(
   cfg?: RemoteClawConfig,
-  skillCommands?: SkillCommandSpec[],
+  skillCommands?: unknown[],
   options?: CommandsMessageOptions,
 ): CommandsMessageResult {
   const page = Math.max(1, options?.page ?? 1);

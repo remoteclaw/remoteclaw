@@ -8,7 +8,6 @@ import {
 import { buildCommandsPaginationKeyboard } from "../auto-reply/reply/commands-info.js";
 import { buildModelsProviderData } from "../auto-reply/reply/commands-models.js";
 import { resolveStoredModelOverride } from "../auto-reply/reply/model-selection.js";
-import { listSkillCommandsForAgents } from "../auto-reply/skill-commands.js";
 import { buildCommandsMessagePaginated } from "../auto-reply/status.js";
 import { resolveChannelConfigWrites } from "../channels/plugins/config-writes.js";
 import { loadConfig } from "../config/config.js";
@@ -841,10 +840,7 @@ export const registerTelegramHandlers = ({
         }
 
         const agentId = paginationMatch[2]?.trim() || resolveDefaultAgentId(cfg) || undefined;
-        const skillCommands = listSkillCommandsForAgents({
-          cfg,
-          agentIds: agentId ? [agentId] : undefined,
-        });
+        const skillCommands: never[] = [];
         const result = buildCommandsMessagePaginated(cfg, skillCommands, {
           page,
           surface: "telegram",

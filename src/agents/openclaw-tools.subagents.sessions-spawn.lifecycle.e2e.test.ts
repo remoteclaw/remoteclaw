@@ -8,13 +8,6 @@ import {
 } from "./openclaw-tools.subagents.sessions-spawn.test-harness.js";
 import { resetSubagentRegistryForTests } from "./subagent-registry.js";
 
-vi.mock("./pi-embedded.js", () => ({
-  isEmbeddedPiRunActive: () => false,
-  isEmbeddedPiRunStreaming: () => false,
-  queueEmbeddedPiMessage: () => false,
-  waitForEmbeddedPiRunEnd: async () => true,
-}));
-
 const callGatewayMock = getCallGatewayMock();
 
 type CreateRemoteClawTools = (typeof import("./openclaw-tools.js"))["createRemoteClawTools"];

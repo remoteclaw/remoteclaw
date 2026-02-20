@@ -97,7 +97,7 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   {
     path: ["agent", "model"],
     message:
-      "agent.model string was replaced by agents.defaults.model.primary/fallbacks and agents.defaults.models (auto-migrated on load).",
+      "agent.model string was replaced by agents.defaults.model.primary/fallbacks (auto-migrated on load).",
     match: (value) => typeof value === "string",
   },
   {
@@ -108,12 +108,11 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   },
   {
     path: ["agent", "allowedModels"],
-    message: "agent.allowedModels was replaced by agents.defaults.models (auto-migrated on load).",
+    message: "agent.allowedModels was removed (model allowlist removed; dropped on load).",
   },
   {
     path: ["agent", "modelAliases"],
-    message:
-      "agent.modelAliases was replaced by agents.defaults.models.*.alias (auto-migrated on load).",
+    message: "agent.modelAliases was removed (model catalog removed; dropped on load).",
   },
   {
     path: ["agent", "modelFallbacks"],

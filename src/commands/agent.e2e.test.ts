@@ -48,7 +48,6 @@ function mockConfig(
     agents: {
       defaults: {
         model: { primary: "anthropic/claude-opus-4-5" },
-        models: { "anthropic/claude-opus-4-5": {} },
         workspace: path.join(home, "remoteclaw"),
         ...agentOverrides,
       },
@@ -141,10 +140,6 @@ describe("agentCommand", () => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store, {
         model: { primary: "openai/gpt-4.1-mini" },
-        models: {
-          "anthropic/claude-opus-4-5": {},
-          "openai/gpt-4.1-mini": {},
-        },
       });
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);

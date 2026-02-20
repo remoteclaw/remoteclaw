@@ -62,7 +62,6 @@ export type InlineDirectives = {
 export function parseInlineDirectives(
   body: string,
   options?: {
-    modelAliases?: string[];
     disableElevated?: boolean;
     allowStatusDirective?: boolean;
   },

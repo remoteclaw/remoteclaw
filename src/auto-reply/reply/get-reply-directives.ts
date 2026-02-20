@@ -2,7 +2,7 @@ import type { ExecToolDefaults } from "../../agents/bash-tools.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
-import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
+import { shouldHandleTextCommands } from "../commands-registry.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
@@ -169,23 +169,8 @@ export async function resolveReplyDirectives(params: {
     surface: command.surface,
     commandSource: ctx.CommandSource,
   });
-  const reservedCommands = new Set(
-    listChatCommands().flatMap((cmd) =>
-      cmd.textAliases.map((a) => a.replace(/^\//, "").toLowerCase()),
-    ),
-  );
-
-  const rawAliases = Object.values(cfg.agents?.defaults?.models ?? {})
-    .map((entry) => entry.alias?.trim())
-    .filter((alias): alias is string => Boolean(alias))
-    .filter((alias) => !reservedCommands.has(alias.toLowerCase()));
-
-  const configuredAliases = rawAliases.filter(
-    (alias) => !reservedCommands.has(alias.toLowerCase()),
-  );
   const allowStatusDirective = allowTextCommands && command.isAuthorizedSender;
   let parsedDirectives = parseInlineDirectives(commandText, {
-    modelAliases: configuredAliases,
     allowStatusDirective,
   });
   const hasInlineStatus =
@@ -223,9 +208,7 @@ export async function resolveReplyDirectives(params: {
     const stripped = stripStructuralPrefixes(parsedDirectives.cleaned);
     const noMentions = isGroup ? stripMentions(stripped, ctx, cfg, agentId) : stripped;
     if (noMentions.trim().length > 0) {
-      const directiveOnlyCheck = parseInlineDirectives(noMentions, {
-        modelAliases: configuredAliases,
-      });
+      const directiveOnlyCheck = parseInlineDirectives(noMentions, {});
       if (directiveOnlyCheck.cleaned.trim().length > 0) {
         const allowInlineStatus =
           parsedDirectives.hasStatusDirective && allowTextCommands && command.isAuthorizedSender;
@@ -257,7 +240,6 @@ export async function resolveReplyDirectives(params: {
     }
     if (!sessionCtx.CommandBody && !sessionCtx.RawBody) {
       return parseInlineDirectives(existingBody, {
-        modelAliases: configuredAliases,
         allowStatusDirective,
       }).cleaned;
     }
@@ -265,7 +247,6 @@ export async function resolveReplyDirectives(params: {
     const markerIndex = existingBody.indexOf(CURRENT_MESSAGE_MARKER);
     if (markerIndex < 0) {
       return parseInlineDirectives(existingBody, {
-        modelAliases: configuredAliases,
         allowStatusDirective,
       }).cleaned;
     }
@@ -273,7 +254,6 @@ export async function resolveReplyDirectives(params: {
     const head = existingBody.slice(0, markerIndex + CURRENT_MESSAGE_MARKER.length);
     const tail = existingBody.slice(markerIndex + CURRENT_MESSAGE_MARKER.length);
     const cleanedTail = parseInlineDirectives(tail, {
-      modelAliases: configuredAliases,
       allowStatusDirective,
     }).cleaned;
     return `${head}${cleanedTail}`;

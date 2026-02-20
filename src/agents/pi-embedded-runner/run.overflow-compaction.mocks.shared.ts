@@ -90,10 +90,6 @@ vi.mock("../model-auth.js", () => ({
   resolveAuthProfileOrder: vi.fn(() => []),
 }));
 
-vi.mock("../models-config.js", () => ({
-  ensureRemoteClawModelsJson: vi.fn(async () => {}),
-}));
-
 vi.mock("../context-window-guard.js", () => ({
   CONTEXT_WINDOW_HARD_MIN_TOKENS: 1000,
   CONTEXT_WINDOW_WARN_BELOW_TOKENS: 5000,

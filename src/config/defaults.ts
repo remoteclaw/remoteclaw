@@ -1,4 +1,3 @@
-import { parseModelRef } from "../agents/cli-routing.js";
 import { DEFAULT_AGENT_MAX_CONCURRENT, DEFAULT_SUBAGENT_MAX_CONCURRENT } from "./agent-limits.js";
 import { resolveTalkApiKey } from "./talk.js";
 import type { RemoteClawConfig } from "./types.js";
@@ -7,20 +6,6 @@ type WarnState = { warned: boolean };
 let defaultWarnState: WarnState = { warned: false };
 
 type AnthropicAuthDefaultsMode = "api_key" | "oauth";
-
-const DEFAULT_MODEL_ALIASES: Readonly<Record<string, string>> = {
-  // Anthropic (pi-ai catalog uses "latest" ids without date suffix)
-  opus: "anthropic/claude-opus-4-6",
-  sonnet: "anthropic/claude-sonnet-4-6",
-
-  // OpenAI
-  gpt: "openai/gpt-5.2",
-  "gpt-mini": "openai/gpt-5-mini",
-
-  // Google Gemini (3.x are preview ids in the catalog)
-  gemini: "google/gemini-3-pro-preview",
-  "gemini-flash": "google/gemini-3-flash-preview",
-};
 
 function resolveAnthropicDefaultAuthMode(cfg: RemoteClawConfig): AnthropicAuthDefaultsMode | null {
   const profiles = cfg.auth?.profiles ?? {};
@@ -60,18 +45,6 @@ function resolveAnthropicDefaultAuthMode(cfg: RemoteClawConfig): AnthropicAuthDe
     return "api_key";
   }
   return null;
-}
-
-function resolvePrimaryModelRef(raw?: string): string | null {
-  if (!raw || typeof raw !== "string") {
-    return null;
-  }
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return null;
-  }
-  const aliasKey = trimmed.toLowerCase();
-  return DEFAULT_MODEL_ALIASES[aliasKey] ?? trimmed;
 }
 
 export type SessionDefaultsOptions = {
@@ -227,51 +200,6 @@ export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawCo
       every: authMode === "oauth" ? "1h" : "30m",
     };
     mutated = true;
-  }
-
-  if (authMode === "api_key") {
-    const nextModels = defaults.models ? { ...defaults.models } : {};
-    let modelsMutated = false;
-
-    for (const [key, entry] of Object.entries(nextModels)) {
-      const parsed = parseModelRef(key, "anthropic");
-      if (!parsed || parsed.provider !== "anthropic") {
-        continue;
-      }
-      const current = entry ?? {};
-      const params = (current as { params?: Record<string, unknown> }).params ?? {};
-      if (typeof params.cacheRetention === "string") {
-        continue;
-      }
-      nextModels[key] = {
-        ...(current as Record<string, unknown>),
-        params: { ...params, cacheRetention: "short" },
-      };
-      modelsMutated = true;
-    }
-
-    const primary = resolvePrimaryModelRef(defaults.model?.primary ?? undefined);
-    if (primary) {
-      const parsedPrimary = parseModelRef(primary, "anthropic");
-      if (parsedPrimary?.provider === "anthropic") {
-        const key = `${parsedPrimary.provider}/${parsedPrimary.model}`;
-        const entry = nextModels[key];
-        const current = entry ?? {};
-        const params = (current as { params?: Record<string, unknown> }).params ?? {};
-        if (typeof params.cacheRetention !== "string") {
-          nextModels[key] = {
-            ...(current as Record<string, unknown>),
-            params: { ...params, cacheRetention: "short" },
-          };
-          modelsMutated = true;
-        }
-      }
-    }
-
-    if (modelsMutated) {
-      nextDefaults.models = nextModels;
-      mutated = true;
-    }
   }
 
   if (!mutated) {

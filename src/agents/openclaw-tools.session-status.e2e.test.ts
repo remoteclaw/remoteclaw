@@ -31,29 +31,11 @@ vi.mock("../config/config.js", async (importOriginal) => {
       agents: {
         defaults: {
           model: { primary: "anthropic/claude-opus-4-5" },
-          models: {},
         },
       },
     }),
   };
 });
-
-vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: async () => [
-    {
-      provider: "anthropic",
-      id: "claude-opus-4-5",
-      name: "Opus",
-      contextWindow: 200000,
-    },
-    {
-      provider: "anthropic",
-      id: "claude-sonnet-4-5",
-      name: "Sonnet",
-      contextWindow: 200000,
-    },
-  ],
-}));
 
 vi.mock("../agents/auth-profiles.js", () => ({
   ensureAuthProfileStore: () => ({ profiles: {} }),
@@ -62,8 +44,6 @@ vi.mock("../agents/auth-profiles.js", () => ({
 }));
 
 vi.mock("../agents/model-auth.js", () => ({
-  resolveEnvApiKey: () => null,
-  getCustomProviderApiKey: () => null,
   resolveModelAuthMode: () => "api-key",
 }));
 

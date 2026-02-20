@@ -45,10 +45,6 @@ vi.mock("../plugins/config-state.js", () => ({
   isTestDefaultMemorySlotDisabled: () => false,
 }));
 
-vi.mock("../plugins/tools.js", () => ({
-  getPluginToolMeta: () => undefined,
-}));
-
 // Perf: the real tool factory instantiates many tools per request; for these HTTP
 // routing/policy tests we only need a small set of tool names.
 vi.mock("../agents/openclaw-tools.js", () => {

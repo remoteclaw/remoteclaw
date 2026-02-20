@@ -19,7 +19,6 @@ import { loadConfig } from "../config/config.js";
 import { resolveMainSessionKey } from "../config/sessions.js";
 import { logWarn } from "../logger.js";
 import { isTestDefaultMemorySlotDisabled } from "../plugins/config-state.js";
-import { getPluginToolMeta } from "../plugins/tools.js";
 import { isSubagentSessionKey } from "../routing/session-key.js";
 import { DEFAULT_GATEWAY_HTTP_TOOL_DENY } from "../security/dangerous-tools.js";
 import { normalizeMessageChannel } from "../utils/message-channel.js";
@@ -256,7 +255,7 @@ export async function handleToolsInvokeHttpRequest(
     // oxlint-disable-next-line typescript/no-explicit-any
     tools: allTools as any,
     // oxlint-disable-next-line typescript/no-explicit-any
-    toolMeta: (tool) => getPluginToolMeta(tool as any),
+    toolMeta: () => undefined,
     warn: logWarn,
     steps: [
       ...buildDefaultToolPolicyPipelineSteps({

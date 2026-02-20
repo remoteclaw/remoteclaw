@@ -1,7 +1,5 @@
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolvePluginTools } from "../plugins/tools.js";
 import type { GatewayMessageChannel } from "../utils/message-channel.js";
-import { resolveSessionAgentId } from "./agent-scope.js";
 import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
 import { createAgentsListTool } from "./tools/agents-list-tool.js";
 import { createBrowserTool } from "./tools/browser-tool.js";
@@ -160,23 +158,5 @@ export function createRemoteClawTools(options?: {
     ...(imageTool ? [imageTool] : []),
   ];
 
-  const pluginTools = resolvePluginTools({
-    context: {
-      config: options?.config,
-      workspaceDir,
-      agentDir: options?.agentDir,
-      agentId: resolveSessionAgentId({
-        sessionKey: options?.agentSessionKey,
-        config: options?.config,
-      }),
-      sessionKey: options?.agentSessionKey,
-      messageChannel: options?.agentChannel,
-      agentAccountId: options?.agentAccountId,
-      sandboxed: options?.sandboxed,
-    },
-    existingToolNames: new Set(tools.map((tool) => tool.name)),
-    toolAllowlist: options?.pluginToolAllowlist,
-  });
-
-  return [...tools, ...pluginTools];
+  return tools;
 }

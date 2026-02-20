@@ -1,5 +1,4 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Command } from "commander";
 import type { AuthProfileCredential, OAuthCredential } from "../agents/auth-profiles/types.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
@@ -296,22 +295,10 @@ export type PluginDiagnostic = {
 // ============================================================================
 
 export type PluginHookName =
-  | "before_model_resolve"
-  | "before_prompt_build"
-  | "before_agent_start"
-  | "llm_input"
-  | "llm_output"
-  | "agent_end"
-  | "before_compaction"
-  | "after_compaction"
   | "before_reset"
   | "message_received"
   | "message_sending"
   | "message_sent"
-  | "before_tool_call"
-  | "after_tool_call"
-  | "tool_result_persist"
-  | "before_message_write"
   | "session_start"
   | "session_end"
   | "gateway_start"
@@ -326,107 +313,11 @@ export type PluginHookAgentContext = {
   messageProvider?: string;
 };
 
-// before_model_resolve hook
-export type PluginHookBeforeModelResolveEvent = {
-  /** User prompt for this run. No session messages are available yet in this phase. */
-  prompt: string;
-};
-
-export type PluginHookBeforeModelResolveResult = {
-  /** Override the model for this agent run. E.g. "llama3.3:8b" */
-  modelOverride?: string;
-  /** Override the provider for this agent run. E.g. "ollama" */
-  providerOverride?: string;
-};
-
-// before_prompt_build hook
-export type PluginHookBeforePromptBuildEvent = {
-  prompt: string;
-  /** Session messages prepared for this run. */
-  messages: unknown[];
-};
-
-export type PluginHookBeforePromptBuildResult = {
-  systemPrompt?: string;
-  prependContext?: string;
-};
-
-// before_agent_start hook (legacy compatibility: combines both phases)
-export type PluginHookBeforeAgentStartEvent = {
-  prompt: string;
-  /** Optional because legacy hook can run in pre-session phase. */
-  messages?: unknown[];
-};
-
-export type PluginHookBeforeAgentStartResult = PluginHookBeforePromptBuildResult &
-  PluginHookBeforeModelResolveResult;
-
-// llm_input hook
-export type PluginHookLlmInputEvent = {
-  runId: string;
-  sessionId: string;
-  provider: string;
-  model: string;
-  systemPrompt?: string;
-  prompt: string;
-  historyMessages: unknown[];
-  imagesCount: number;
-};
-
-// llm_output hook
-export type PluginHookLlmOutputEvent = {
-  runId: string;
-  sessionId: string;
-  provider: string;
-  model: string;
-  assistantTexts: string[];
-  lastAssistant?: unknown;
-  usage?: {
-    input?: number;
-    output?: number;
-    cacheRead?: number;
-    cacheWrite?: number;
-    total?: number;
-  };
-};
-
-// agent_end hook
-export type PluginHookAgentEndEvent = {
-  messages: unknown[];
-  success: boolean;
-  error?: string;
-  durationMs?: number;
-};
-
-// Compaction hooks
-export type PluginHookBeforeCompactionEvent = {
-  /** Total messages in the session before any truncation or compaction */
-  messageCount: number;
-  /** Messages being fed to the compaction LLM (after history-limit truncation) */
-  compactingCount?: number;
-  tokenCount?: number;
-  messages?: unknown[];
-  /** Path to the session JSONL transcript. All messages are already on disk
-   *  before compaction starts, so plugins can read this file asynchronously
-   *  and process in parallel with the compaction LLM call. */
-  sessionFile?: string;
-};
-
 // before_reset hook — fired when /new or /reset clears a session
 export type PluginHookBeforeResetEvent = {
   sessionFile?: string;
   messages?: unknown[];
   reason?: string;
-};
-
-export type PluginHookAfterCompactionEvent = {
-  messageCount: number;
-  tokenCount?: number;
-  compactedCount: number;
-  /** Path to the session JSONL transcript. All pre-compaction messages are
-   *  preserved on disk, so plugins can read and process them asynchronously
-   *  without blocking the compaction pipeline. */
-  sessionFile?: string;
 };
 
 // Message context
@@ -462,70 +353,6 @@ export type PluginHookMessageSentEvent = {
   content: string;
   success: boolean;
   error?: string;
-};
-
-// Tool context
-export type PluginHookToolContext = {
-  agentId?: string;
-  sessionKey?: string;
-  toolName: string;
-};
-
-// before_tool_call hook
-export type PluginHookBeforeToolCallEvent = {
-  toolName: string;
-  params: Record<string, unknown>;
-};
-
-export type PluginHookBeforeToolCallResult = {
-  params?: Record<string, unknown>;
-  block?: boolean;
-  blockReason?: string;
-};
-
-// after_tool_call hook
-export type PluginHookAfterToolCallEvent = {
-  toolName: string;
-  params: Record<string, unknown>;
-  result?: unknown;
-  error?: string;
-  durationMs?: number;
-};
-
-// tool_result_persist hook
-export type PluginHookToolResultPersistContext = {
-  agentId?: string;
-  sessionKey?: string;
-  toolName?: string;
-  toolCallId?: string;
-};
-
-export type PluginHookToolResultPersistEvent = {
-  toolName?: string;
-  toolCallId?: string;
-  /**
-   * The toolResult message about to be written to the session transcript.
-   * Handlers may return a modified message (e.g. drop non-essential fields).
-   */
-  message: AgentMessage;
-  /** True when the tool result was synthesized by a guard/repair step. */
-  isSynthetic?: boolean;
-};
-
-export type PluginHookToolResultPersistResult = {
-  message?: AgentMessage;
-};
-
-// before_message_write hook
-export type PluginHookBeforeMessageWriteEvent = {
-  message: AgentMessage;
-  sessionKey?: string;
-  agentId?: string;
-};
-
-export type PluginHookBeforeMessageWriteResult = {
-  block?: boolean; // If true, message is NOT written to JSONL
-  message?: AgentMessage; // Optional: modified message to write instead
 };
 
 // Session context
@@ -564,35 +391,6 @@ export type PluginHookGatewayStopEvent = {
 
 // Hook handler types mapped by hook name
 export type PluginHookHandlerMap = {
-  before_model_resolve: (
-    event: PluginHookBeforeModelResolveEvent,
-    ctx: PluginHookAgentContext,
-  ) =>
-    | Promise<PluginHookBeforeModelResolveResult | void>
-    | PluginHookBeforeModelResolveResult
-    | void;
-  before_prompt_build: (
-    event: PluginHookBeforePromptBuildEvent,
-    ctx: PluginHookAgentContext,
-  ) => Promise<PluginHookBeforePromptBuildResult | void> | PluginHookBeforePromptBuildResult | void;
-  before_agent_start: (
-    event: PluginHookBeforeAgentStartEvent,
-    ctx: PluginHookAgentContext,
-  ) => Promise<PluginHookBeforeAgentStartResult | void> | PluginHookBeforeAgentStartResult | void;
-  llm_input: (event: PluginHookLlmInputEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
-  llm_output: (
-    event: PluginHookLlmOutputEvent,
-    ctx: PluginHookAgentContext,
-  ) => Promise<void> | void;
-  agent_end: (event: PluginHookAgentEndEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
-  before_compaction: (
-    event: PluginHookBeforeCompactionEvent,
-    ctx: PluginHookAgentContext,
-  ) => Promise<void> | void;
-  after_compaction: (
-    event: PluginHookAfterCompactionEvent,
-    ctx: PluginHookAgentContext,
-  ) => Promise<void> | void;
   before_reset: (
     event: PluginHookBeforeResetEvent,
     ctx: PluginHookAgentContext,
@@ -609,22 +407,6 @@ export type PluginHookHandlerMap = {
     event: PluginHookMessageSentEvent,
     ctx: PluginHookMessageContext,
   ) => Promise<void> | void;
-  before_tool_call: (
-    event: PluginHookBeforeToolCallEvent,
-    ctx: PluginHookToolContext,
-  ) => Promise<PluginHookBeforeToolCallResult | void> | PluginHookBeforeToolCallResult | void;
-  after_tool_call: (
-    event: PluginHookAfterToolCallEvent,
-    ctx: PluginHookToolContext,
-  ) => Promise<void> | void;
-  tool_result_persist: (
-    event: PluginHookToolResultPersistEvent,
-    ctx: PluginHookToolResultPersistContext,
-  ) => PluginHookToolResultPersistResult | void;
-  before_message_write: (
-    event: PluginHookBeforeMessageWriteEvent,
-    ctx: { agentId?: string; sessionKey?: string },
-  ) => PluginHookBeforeMessageWriteResult | void;
   session_start: (
     event: PluginHookSessionStartEvent,
     ctx: PluginHookSessionContext,

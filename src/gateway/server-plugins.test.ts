@@ -11,7 +11,6 @@ vi.mock("../plugins/loader.js", () => ({
 
 const createRegistry = (diagnostics: PluginDiagnostic[]): PluginRegistry => ({
   plugins: [],
-  tools: [],
   hooks: [],
   typedHooks: [],
   channels: [],

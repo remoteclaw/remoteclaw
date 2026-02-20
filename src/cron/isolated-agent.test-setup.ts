@@ -9,7 +9,6 @@ export function setupIsolatedAgentTurnMocks(params?: { fast?: boolean }): void {
   if (params?.fast) {
     vi.stubEnv("REMOTECLAW_TEST_FAST", "1");
   }
-  // pi-embedded: runEmbeddedPiAgent mock removed (dead code after AgentRuntime migration)
   vi.mocked(loadModelCatalog).mockResolvedValue([]);
   vi.mocked(runSubagentAnnounceFlow).mockReset().mockResolvedValue(true);
   setActivePluginRegistry(

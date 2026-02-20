@@ -302,7 +302,6 @@ export const handleStopCommand: CommandHandler = async (params, allowTextCommand
     sessionEntry: params.sessionEntry,
     sessionStore: params.sessionStore,
   });
-  // pi-embedded: abortEmbeddedPiRun removed (dead code after AgentRuntime migration)
   const cleared = clearSessionQueues([abortTarget.key, abortTarget.sessionId]);
   if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
     logVerbose(
@@ -357,7 +356,6 @@ export const handleAbortTrigger: CommandHandler = async (params, allowTextComman
     sessionEntry: params.sessionEntry,
     sessionStore: params.sessionStore,
   });
-  // pi-embedded: abortEmbeddedPiRun removed (dead code after AgentRuntime migration)
   if (abortTarget.entry && params.sessionStore && abortTarget.key) {
     abortTarget.entry.abortedLastRun = true;
     abortTarget.entry.updatedAt = Date.now();

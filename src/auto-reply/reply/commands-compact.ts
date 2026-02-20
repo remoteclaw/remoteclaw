@@ -23,7 +23,6 @@ export const handleCompactCommand: CommandHandler = async (params) => {
       reply: { text: "⚙️ Compaction unavailable (missing session id)." },
     };
   }
-  // pi-embedded: abort/wait/compact removed (dead code after AgentRuntime migration)
   const result = {
     ok: false as const,
     compacted: false,

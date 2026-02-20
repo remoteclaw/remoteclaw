@@ -159,8 +159,6 @@ export function stopSubagentsForRequester(params: {
     seenChildKeys.add(childKey);
 
     const cleared = clearSessionQueues([childKey]);
-    // pi-embedded: abortEmbeddedPiRun removed (dead code after AgentRuntime migration)
-
     if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
       stopped += 1;
     }
@@ -210,7 +208,6 @@ export async function tryFastAbortFromMessage(params: {
     const store = loadSessionStore(storePath);
     const { entry, key } = resolveSessionEntryForKey(store, targetKey);
     const sessionId = entry?.sessionId;
-    // pi-embedded: abortEmbeddedPiRun removed (dead code after AgentRuntime migration)
     const aborted = false;
     const cleared = clearSessionQueues([key ?? targetKey, sessionId]);
     if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {

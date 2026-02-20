@@ -106,7 +106,6 @@ function expectActiveRunCleanup(
     sessionCleanupMocks.clearSessionQueues.mock.calls as unknown as Array<[string[]]>
   )[0]?.[0];
   expect(clearedKeys).toEqual(expect.arrayContaining(expectedQueueKeys));
-  // pi-embedded: embeddedRunMock assertions removed (dead code after AgentRuntime migration)
 }
 
 async function getMainPreviewEntry(ws: import("ws").WebSocket) {
@@ -590,8 +589,6 @@ describe("gateway server sessions", () => {
       },
     });
 
-    // pi-embedded: embeddedRunMock removed (dead code after AgentRuntime migration)
-
     const { ws } = await openClient();
 
     const mainDelete = await rpcReq(ws, "sessions.delete", { key: "main" });
@@ -669,10 +666,4 @@ describe("gateway server sessions", () => {
     expect(event.context?.previousSessionEntry).toMatchObject({ sessionId: "sess-main" });
     ws.close();
   });
-
-  // pi-embedded: "sessions.reset returns unavailable when active run does not stop" test removed
-  // (dead code after AgentRuntime migration — ensureSessionRuntimeCleanup no longer blocks on pi-embedded runs)
-
-  // pi-embedded: "sessions.delete returns unavailable when active run does not stop" test removed
-  // (dead code after AgentRuntime migration — ensureSessionRuntimeCleanup no longer blocks on pi-embedded runs)
 });

@@ -41,11 +41,6 @@ describe("pi-tools.policy", () => {
   });
 });
 
-// pi-embedded: Depth-awareness tests adapted after AgentRuntime migration.
-// resolveSubagentToolPolicy no longer accepts a depth parameter (depth tracking
-// is now handled by the AgentRuntime middleware). Tests that relied on depth-based
-// orchestrator/leaf distinctions have been simplified to verify the single-depth
-// policy behavior.
 describe("resolveSubagentToolPolicy", () => {
   const baseCfg = {
     agents: { defaults: { subagents: { maxSpawnDepth: 2 } } },

@@ -353,7 +353,6 @@ export const handleSubagentsCommand: CommandHandler = async (params, allowTextCo
 
     const childKey = resolved.entry.childSessionKey;
     const { storePath, store, entry } = loadSubagentSessionEntry(params, childKey);
-    // pi-embedded: abortEmbeddedPiRun removed (dead code after AgentRuntime migration)
     const cleared = clearSessionQueues([childKey, entry?.sessionId]);
     if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
       logVerbose(

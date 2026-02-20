@@ -33,9 +33,6 @@ const baseQueuedRun = (messageProvider = "whatsapp"): FollowupRun =>
     },
   }) as FollowupRun;
 
-// pi-embedded: payload delivery, dedupe, compaction, and usage persistence tests removed
-// (dead code after AgentRuntime migration — runner returns early without processing payloads)
-
 describe("createFollowupRunner", () => {
   it("returns early without crashing and marks run complete", async () => {
     const onBlockReply = vi.fn(async () => {});
@@ -50,7 +47,6 @@ describe("createFollowupRunner", () => {
 
     await runner(baseQueuedRun());
 
-    // pi-embedded: runner no longer processes payloads, so onBlockReply is not called
     expect(onBlockReply).not.toHaveBeenCalled();
     expect(typing.markRunComplete).toHaveBeenCalled();
   });

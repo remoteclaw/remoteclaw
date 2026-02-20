@@ -4,20 +4,10 @@ import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.j
 import { loadModelCatalog } from "../agents/model-catalog.js";
 import { getReplyFromConfig } from "./reply.js";
 
-const piEmbeddedMock = vi.hoisted(() => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: vi.fn(),
-  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
-}));
-
 vi.mock("../middleware/index.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware/index.js")>();
   return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
 });
-vi.mock("../agents/pi-embedded.js", () => piEmbeddedMock);
 vi.mock("../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(),
 }));

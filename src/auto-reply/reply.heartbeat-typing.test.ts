@@ -1,32 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { createTempHomeHarness, makeReplyConfig } from "./reply.test-harness.js";
+import type { AgentRunLoopResult } from "./reply/agent-runner-execution.js";
 
-const runEmbeddedPiAgentMock = vi.fn();
-
-vi.mock("../agents/model-fallback.js", () => ({
-  runWithModelFallback: async ({
-    provider,
-    model,
-    run,
-  }: {
-    provider: string;
-    model: string;
-    run: (provider: string, model: string) => Promise<unknown>;
-  }) => ({
-    result: await run(provider, model),
-    provider,
-    model,
-  }),
+const state = vi.hoisted(() => ({
+  runAgentTurnMock: vi.fn(),
 }));
 
-vi.mock("../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => runEmbeddedPiAgentMock(params),
-  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
+vi.mock("./reply/agent-runner-execution.js", () => ({
+  runAgentTurnWithFallback: (params: unknown) => state.runAgentTurnMock(params),
 }));
 
 const webMocks = vi.hoisted(() => ({
@@ -39,9 +21,25 @@ vi.mock("../web/session.js", () => webMocks);
 
 import { getReplyFromConfig } from "./reply.js";
 
+function makeSuccessResult(text: string): AgentRunLoopResult {
+  return {
+    kind: "success",
+    runResult: {
+      text,
+      sessionId: undefined,
+      durationMs: 0,
+      usage: undefined,
+      aborted: false,
+      error: undefined,
+    },
+    didLogHeartbeatStrip: false,
+    autoCompactionCompleted: false,
+  };
+}
+
 const { withTempHome } = createTempHomeHarness({
   prefix: "remoteclaw-typing-",
-  beforeEachCase: () => runEmbeddedPiAgentMock.mockClear(),
+  beforeEachCase: () => state.runAgentTurnMock.mockClear(),
 });
 
 afterEach(() => {
@@ -55,10 +53,7 @@ describe("getReplyFromConfig typing (heartbeat)", () => {
 
   it("starts typing for normal runs", async () => {
     await withTempHome(async (home) => {
-      runEmbeddedPiAgentMock.mockResolvedValueOnce({
-        payloads: [{ text: "ok" }],
-        meta: {},
-      });
+      state.runAgentTurnMock.mockResolvedValueOnce(makeSuccessResult("ok"));
       const onReplyStart = vi.fn();
 
       await getReplyFromConfig(
@@ -73,10 +68,7 @@ describe("getReplyFromConfig typing (heartbeat)", () => {
 
   it("does not start typing for heartbeat runs", async () => {
     await withTempHome(async (home) => {
-      runEmbeddedPiAgentMock.mockResolvedValueOnce({
-        payloads: [{ text: "ok" }],
-        meta: {},
-      });
+      state.runAgentTurnMock.mockResolvedValueOnce(makeSuccessResult("ok"));
       const onReplyStart = vi.fn();
 
       await getReplyFromConfig(

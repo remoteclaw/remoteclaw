@@ -2,11 +2,12 @@ import path from "node:path";
 import { afterEach, beforeEach, expect, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import { loadSessionStore } from "../config/sessions.js";
+import type { AgentRunLoopResult } from "./reply/agent-runner-execution.js";
+import { runAgentTurnWithFallback } from "./reply/agent-runner-execution.js";
 
 export { loadModelCatalog } from "../agents/model-catalog.js";
-export { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
+export { runAgentTurnWithFallback } from "./reply/agent-runner-execution.js";
 
 export const MAIN_SESSION_KEY = "agent:main:main";
 
@@ -111,9 +112,25 @@ export function assertModelSelection(
   expect(entry?.providerOverride).toBe(selection.provider);
 }
 
+function makeSuccessResult(text: string): AgentRunLoopResult {
+  return {
+    kind: "success",
+    runResult: {
+      text,
+      sessionId: "s",
+      durationMs: 1,
+      usage: undefined,
+      aborted: false,
+      error: undefined,
+    },
+    didLogHeartbeatStrip: false,
+    autoCompactionCompleted: false,
+  };
+}
+
 export function installDirectiveBehaviorE2EHooks() {
   beforeEach(() => {
-    vi.mocked(runEmbeddedPiAgent).mockReset();
+    vi.mocked(runAgentTurnWithFallback).mockReset();
     vi.mocked(loadModelCatalog).mockResolvedValue(DEFAULT_TEST_MODEL_CATALOG);
   });
 
@@ -146,4 +163,8 @@ export function makeRestrictedElevatedDisabledConfig(home: string) {
     channels: { whatsapp: { allowFrom: ["+1222"] } },
     session: { store: path.join(home, "sessions.json") },
   } as const;
+}
+
+export function mockRunAgentTurnOk(text = "ok") {
+  vi.mocked(runAgentTurnWithFallback).mockResolvedValue(makeSuccessResult(text));
 }

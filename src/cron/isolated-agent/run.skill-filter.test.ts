@@ -84,10 +84,6 @@ vi.mock("../../agents/subagent-announce.js", () => ({
   runSubagentAnnounceFlow: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("../../agents/cli-runner.js", () => ({
-  runCliAgent: vi.fn(),
-}));
-
 vi.mock("../../agents/cli-session.js", () => ({
   getCliSessionId: vi.fn().mockReturnValue(undefined),
   setCliSessionId: vi.fn(),

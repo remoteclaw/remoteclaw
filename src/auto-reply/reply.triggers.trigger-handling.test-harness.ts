@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { afterEach, expect, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import type { RemoteClawConfig } from "../config/config.js";
+import type { AgentRunLoopResult } from "./reply/agent-runner-execution.js";
 
 // Avoid exporting vitest mock types (TS2742 under pnpm + d.ts emit).
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -10,41 +11,16 @@ type AnyMock = any;
 // oxlint-disable-next-line typescript/no-explicit-any
 type AnyMocks = Record<string, any>;
 
-const piEmbeddedMocks = vi.hoisted(() => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  compactEmbeddedPiSession: vi.fn(),
-  runEmbeddedPiAgent: vi.fn(),
-  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
+const agentRunnerMocks = vi.hoisted(() => ({
+  runAgentTurnWithFallback: vi.fn(),
 }));
 
-export function getAbortEmbeddedPiRunMock(): AnyMock {
-  return piEmbeddedMocks.abortEmbeddedPiRun;
+export function getRunAgentTurnMock(): AnyMock {
+  return agentRunnerMocks.runAgentTurnWithFallback;
 }
 
-export function getCompactEmbeddedPiSessionMock(): AnyMock {
-  return piEmbeddedMocks.compactEmbeddedPiSession;
-}
-
-export function getRunEmbeddedPiAgentMock(): AnyMock {
-  return piEmbeddedMocks.runEmbeddedPiAgent;
-}
-
-export function getQueueEmbeddedPiMessageMock(): AnyMock {
-  return piEmbeddedMocks.queueEmbeddedPiMessage;
-}
-
-vi.mock("../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: (...args: unknown[]) => piEmbeddedMocks.abortEmbeddedPiRun(...args),
-  compactEmbeddedPiSession: (...args: unknown[]) =>
-    piEmbeddedMocks.compactEmbeddedPiSession(...args),
-  runEmbeddedPiAgent: (...args: unknown[]) => piEmbeddedMocks.runEmbeddedPiAgent(...args),
-  queueEmbeddedPiMessage: (...args: unknown[]) => piEmbeddedMocks.queueEmbeddedPiMessage(...args),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-  isEmbeddedPiRunActive: (...args: unknown[]) => piEmbeddedMocks.isEmbeddedPiRunActive(...args),
-  isEmbeddedPiRunStreaming: (...args: unknown[]) =>
-    piEmbeddedMocks.isEmbeddedPiRunStreaming(...args),
+vi.mock("./reply/agent-runner-execution.js", () => ({
+  runAgentTurnWithFallback: (params: unknown) => agentRunnerMocks.runAgentTurnWithFallback(params),
 }));
 
 const providerUsageMocks = vi.hoisted(() => ({
@@ -109,9 +85,7 @@ export async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise
   return withTempHomeBase(
     async (home) => {
       // Avoid cross-test leakage if a test doesn't touch these mocks.
-      piEmbeddedMocks.runEmbeddedPiAgent.mockClear();
-      piEmbeddedMocks.abortEmbeddedPiRun.mockClear();
-      piEmbeddedMocks.compactEmbeddedPiSession.mockClear();
+      agentRunnerMocks.runAgentTurnWithFallback.mockClear();
       return await fn(home);
     },
     { prefix: "remoteclaw-triggers-" },
@@ -171,6 +145,22 @@ export function makeWhatsAppElevatedCfg(
   return cfg;
 }
 
+function makeSuccessResult(text: string): AgentRunLoopResult {
+  return {
+    kind: "success",
+    runResult: {
+      text,
+      sessionId: "s",
+      durationMs: 1,
+      usage: undefined,
+      aborted: false,
+      error: undefined,
+    },
+    didLogHeartbeatStrip: false,
+    autoCompactionCompleted: false,
+  };
+}
+
 export async function runDirectElevatedToggleAndLoadStore(params: {
   cfg: RemoteClawConfig;
   getReplyFromConfig: typeof import("./reply.js").getReplyFromConfig;
@@ -206,13 +196,7 @@ export async function runGreetingPromptForBareNewOrReset(params: {
   body: "/new" | "/reset";
   getReplyFromConfig: typeof import("./reply.js").getReplyFromConfig;
 }) {
-  getRunEmbeddedPiAgentMock().mockResolvedValue({
-    payloads: [{ text: "hello" }],
-    meta: {
-      durationMs: 1,
-      agentMeta: { sessionId: "s", provider: "p", model: "m" },
-    },
-  });
+  getRunAgentTurnMock().mockResolvedValue(makeSuccessResult("hello"));
 
   const res = await params.getReplyFromConfig(
     {
@@ -226,8 +210,8 @@ export async function runGreetingPromptForBareNewOrReset(params: {
   );
   const text = Array.isArray(res) ? res[0]?.text : res?.text;
   expect(text).toBe("hello");
-  expect(getRunEmbeddedPiAgentMock()).toHaveBeenCalledOnce();
-  const prompt = getRunEmbeddedPiAgentMock().mock.calls[0]?.[0]?.prompt ?? "";
+  expect(getRunAgentTurnMock()).toHaveBeenCalledOnce();
+  const prompt = getRunAgentTurnMock().mock.calls[0]?.[0]?.commandBody ?? "";
   expect(prompt).toContain("A new session was started via /new or /reset");
 }
 
@@ -237,16 +221,10 @@ export function installTriggerHandlingE2eTestHooks() {
   });
 }
 
-export function mockRunEmbeddedPiAgentOk(text = "ok"): AnyMock {
-  const runEmbeddedPiAgentMock = getRunEmbeddedPiAgentMock();
-  runEmbeddedPiAgentMock.mockResolvedValue({
-    payloads: [{ text }],
-    meta: {
-      durationMs: 1,
-      agentMeta: { sessionId: "s", provider: "p", model: "m" },
-    },
-  });
-  return runEmbeddedPiAgentMock;
+export function mockRunAgentTurnOk(text = "ok"): AnyMock {
+  const mock = getRunAgentTurnMock();
+  mock.mockResolvedValue(makeSuccessResult(text));
+  return mock;
 }
 
 export function createBlockReplyCollector() {

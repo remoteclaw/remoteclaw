@@ -72,23 +72,6 @@ vi.mock("../../agents/model-catalog.js", () => ({
   ]),
 }));
 
-vi.mock("../../agents/pi-embedded.js", () => {
-  const resolveEmbeddedSessionLane = (key: string) => {
-    const cleaned = key.trim() || "main";
-    return cleaned.startsWith("session:") ? cleaned : `session:${cleaned}`;
-  };
-  return {
-    abortEmbeddedPiRun: vi.fn(),
-    compactEmbeddedPiSession: vi.fn(),
-    isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-    isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
-    queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-    resolveEmbeddedSessionLane,
-    runEmbeddedPiAgent: vi.fn(),
-    waitForEmbeddedPiRunEnd: vi.fn().mockResolvedValue(undefined),
-  };
-});
-
 vi.mock("../../infra/system-events.js", () => ({
   enqueueSystemEvent: vi.fn(),
 }));
@@ -298,7 +281,6 @@ describe("/compact command", () => {
   });
 
   it("returns null when command is not /compact", async () => {
-    const { compactEmbeddedPiSession } = await import("../../agents/pi-embedded.js");
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
@@ -313,11 +295,9 @@ describe("/compact command", () => {
     );
 
     expect(result).toBeNull();
-    expect(vi.mocked(compactEmbeddedPiSession)).not.toHaveBeenCalled();
   });
 
   it("rejects unauthorized /compact commands", async () => {
-    const { compactEmbeddedPiSession } = await import("../../agents/pi-embedded.js");
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
@@ -337,11 +317,9 @@ describe("/compact command", () => {
     );
 
     expect(result).toEqual({ shouldContinue: false });
-    expect(vi.mocked(compactEmbeddedPiSession)).not.toHaveBeenCalled();
   });
 
-  it("routes manual compaction with explicit trigger and context metadata", async () => {
-    const { compactEmbeddedPiSession } = await import("../../agents/pi-embedded.js");
+  it("returns compaction-unavailable reply (pi-embedded engine removed)", async () => {
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
@@ -350,10 +328,6 @@ describe("/compact command", () => {
     const params = buildParams("/compact: focus on decisions", cfg, {
       From: "+15550001",
       To: "+15550002",
-    });
-    vi.mocked(compactEmbeddedPiSession).mockResolvedValueOnce({
-      ok: true,
-      compacted: false,
     });
 
     const result = await handleCompactCommand(
@@ -373,20 +347,7 @@ describe("/compact command", () => {
     );
 
     expect(result?.shouldContinue).toBe(false);
-    expect(vi.mocked(compactEmbeddedPiSession)).toHaveBeenCalledOnce();
-    expect(vi.mocked(compactEmbeddedPiSession)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionId: "session-1",
-        sessionKey: "agent:main:main",
-        trigger: "manual",
-        customInstructions: "focus on decisions",
-        messageChannel: "whatsapp",
-        groupId: "group-1",
-        groupChannel: "#general",
-        groupSpace: "workspace-1",
-        spawnedBy: "agent:main:parent",
-      }),
-    );
+    expect(result?.reply?.text).toContain("Compaction failed");
   });
 });
 

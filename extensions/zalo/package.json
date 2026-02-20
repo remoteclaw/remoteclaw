@@ -1,7 +1,7 @@
 {
   "name": "@openclaw/zalo",
   "version": "2026.2.18",
-  "description": "OpenClaw Zalo channel plugin",
+  "description": "RemoteClaw Zalo channel plugin",
   "type": "module",
   "dependencies": {
     "undici": "7.22.0"

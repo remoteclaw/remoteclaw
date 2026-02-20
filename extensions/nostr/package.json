@@ -1,7 +1,7 @@
 {
   "name": "@openclaw/nostr",
   "version": "2026.2.18",
-  "description": "OpenClaw Nostr channel plugin for NIP-04 encrypted DMs",
+  "description": "RemoteClaw Nostr channel plugin for NIP-04 encrypted DMs",
   "type": "module",
   "dependencies": {
     "nostr-tools": "^2.23.1",

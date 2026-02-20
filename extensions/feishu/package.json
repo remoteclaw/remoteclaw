@@ -1,7 +1,7 @@
 {
   "name": "@openclaw/feishu",
   "version": "2026.2.18",
-  "description": "OpenClaw Feishu/Lark channel plugin (community maintained by @m1heng)",
+  "description": "RemoteClaw Feishu/Lark channel plugin (community maintained by @m1heng)",
   "type": "module",
   "dependencies": {
     "@larksuiteoapi/node-sdk": "^1.59.0",

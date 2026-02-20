@@ -1,7 +1,7 @@
 {
   "name": "@openclaw/bluebubbles",
   "version": "2026.2.18",
-  "description": "OpenClaw BlueBubbles channel plugin",
+  "description": "RemoteClaw BlueBubbles channel plugin",
   "type": "module",
   "devDependencies": {
     "openclaw": "workspace:*"

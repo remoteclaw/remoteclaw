@@ -1,5 +1,5 @@
 /**
- * OpenClaw config detection and import for the setup wizard.
+ * Legacy OpenClaw config detection and import for the setup wizard.
  *
  * Used during first-run onboarding to detect an existing OpenClaw installation
  * and offer config migration. Reuses the pure import logic from config/import.ts.
@@ -24,7 +24,7 @@ const OPENCLAW_CONFIG_FILENAME = "openclaw.json";
  * 1. ~/.openclaw/openclaw.json (canonical)
  * 2. $OPENCLAW_STATE_DIR/openclaw.json (migration hint, if env var set)
  */
-function detectOpenClawConfig(env: NodeJS.ProcessEnv): string | null {
+function detectLegacyConfig(env: NodeJS.ProcessEnv): string | null {
   const home = env.HOME ?? env.USERPROFILE ?? os.homedir();
   const canonical = path.join(home, OPENCLAW_STATE_DIRNAME, OPENCLAW_CONFIG_FILENAME);
   if (fs.existsSync(canonical)) {
@@ -90,7 +90,7 @@ function formatImportReport(result: ImportResult): string {
  * Find OPENCLAW_* environment variables that the user should migrate
  * to REMOTECLAW_* counterparts.
  */
-function findOpenClawEnvVars(env: NodeJS.ProcessEnv): string[] {
+function findLegacyEnvVars(env: NodeJS.ProcessEnv): string[] {
   return Object.keys(env).filter((key) => key.startsWith("OPENCLAW_"));
 }
 
@@ -105,7 +105,7 @@ function formatEnvVarReminder(openclawVars: string[]): string {
   ].join("\n");
 }
 
-export type OpenClawImportOutcome = {
+export type LegacyImportOutcome = {
   /** Whether the user chose to import their OpenClaw config. */
   imported: boolean;
   /** The imported config (plain object), or null if not imported. */
@@ -120,15 +120,15 @@ export type OpenClawImportOutcome = {
  *
  * Skips detection when running in non-interactive mode (proceeds as "start fresh").
  */
-export async function detectAndOfferOpenClawImport(params: {
+export async function detectAndOfferLegacyImport(params: {
   opts: OnboardOptions;
   prompter: WizardPrompter;
   env?: NodeJS.ProcessEnv;
-}): Promise<OpenClawImportOutcome> {
+}): Promise<LegacyImportOutcome> {
   const env = params.env ?? process.env;
-  const noImport: OpenClawImportOutcome = { imported: false, config: null };
+  const noImport: LegacyImportOutcome = { imported: false, config: null };
 
-  const sourcePath = detectOpenClawConfig(env);
+  const sourcePath = detectLegacyConfig(env);
   if (!sourcePath) {
     return noImport;
   }
@@ -184,7 +184,7 @@ export async function detectAndOfferOpenClawImport(params: {
     await params.prompter.note(formatImportReport(result), "Import complete");
 
     // Remind user about OPENCLAW_* env vars that need migration
-    const openclawVars = findOpenClawEnvVars(env);
+    const openclawVars = findLegacyEnvVars(env);
     if (openclawVars.length > 0) {
       await params.prompter.note(formatEnvVarReminder(openclawVars), "Environment variables");
     }

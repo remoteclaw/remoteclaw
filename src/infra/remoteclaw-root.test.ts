@@ -80,60 +80,60 @@ vi.mock("node:fs/promises", async (importOriginal) => {
   return { ...wrapped, default: wrapped };
 });
 
-describe("resolveOpenClawPackageRoot", () => {
+describe("resolveRemoteClawPackageRoot", () => {
   beforeEach(() => {
     state.entries.clear();
     state.realpaths.clear();
   });
 
   it("resolves package root from .bin argv1", async () => {
-    const { resolveOpenClawPackageRootSync } = await import("./openclaw-root.js");
+    const { resolveRemoteClawPackageRootSync } = await import("./remoteclaw-root.js");
 
     const project = fx("bin-scenario");
-    const argv1 = path.join(project, "node_modules", ".bin", "openclaw");
-    const pkgRoot = path.join(project, "node_modules", "openclaw");
-    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "openclaw" }));
+    const argv1 = path.join(project, "node_modules", ".bin", "remoteclaw");
+    const pkgRoot = path.join(project, "node_modules", "remoteclaw");
+    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "remoteclaw" }));
 
-    expect(resolveOpenClawPackageRootSync({ argv1 })).toBe(pkgRoot);
+    expect(resolveRemoteClawPackageRootSync({ argv1 })).toBe(pkgRoot);
   });
 
   it("resolves package root via symlinked argv1", async () => {
-    const { resolveOpenClawPackageRootSync } = await import("./openclaw-root.js");
+    const { resolveRemoteClawPackageRootSync } = await import("./remoteclaw-root.js");
 
     const project = fx("symlink-scenario");
-    const bin = path.join(project, "bin", "openclaw");
+    const bin = path.join(project, "bin", "remoteclaw");
     const realPkg = path.join(project, "real-pkg");
     state.realpaths.set(abs(bin), abs(path.join(realPkg, "remoteclaw.mjs")));
-    setFile(path.join(realPkg, "package.json"), JSON.stringify({ name: "openclaw" }));
+    setFile(path.join(realPkg, "package.json"), JSON.stringify({ name: "remoteclaw" }));
 
-    expect(resolveOpenClawPackageRootSync({ argv1: bin })).toBe(realPkg);
+    expect(resolveRemoteClawPackageRootSync({ argv1: bin })).toBe(realPkg);
   });
 
   it("prefers moduleUrl candidates", async () => {
-    const { resolveOpenClawPackageRootSync } = await import("./openclaw-root.js");
+    const { resolveRemoteClawPackageRootSync } = await import("./remoteclaw-root.js");
 
     const pkgRoot = fx("moduleurl");
-    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "openclaw" }));
+    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "remoteclaw" }));
     const moduleUrl = pathToFileURL(path.join(pkgRoot, "dist", "index.js")).toString();
 
-    expect(resolveOpenClawPackageRootSync({ moduleUrl })).toBe(pkgRoot);
+    expect(resolveRemoteClawPackageRootSync({ moduleUrl })).toBe(pkgRoot);
   });
 
-  it("returns null for non-openclaw package roots", async () => {
-    const { resolveOpenClawPackageRootSync } = await import("./openclaw-root.js");
+  it("returns null for non-remoteclaw package roots", async () => {
+    const { resolveRemoteClawPackageRootSync } = await import("./remoteclaw-root.js");
 
     const pkgRoot = fx("not-remoteclaw");
     setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "not-remoteclaw" }));
 
-    expect(resolveOpenClawPackageRootSync({ cwd: pkgRoot })).toBeNull();
+    expect(resolveRemoteClawPackageRootSync({ cwd: pkgRoot })).toBeNull();
   });
 
   it("async resolver matches sync behavior", async () => {
-    const { resolveOpenClawPackageRoot } = await import("./openclaw-root.js");
+    const { resolveRemoteClawPackageRoot } = await import("./remoteclaw-root.js");
 
     const pkgRoot = fx("async");
-    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "openclaw" }));
+    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "remoteclaw" }));
 
-    await expect(resolveOpenClawPackageRoot({ cwd: pkgRoot })).resolves.toBe(pkgRoot);
+    await expect(resolveRemoteClawPackageRoot({ cwd: pkgRoot })).resolves.toBe(pkgRoot);
   });
 });

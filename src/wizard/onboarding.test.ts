@@ -195,7 +195,7 @@ vi.mock("./onboarding.completion.js", () => ({
 }));
 
 vi.mock("./onboarding.openclaw-import.js", () => ({
-  detectAndOfferOpenClawImport: vi.fn(async () => ({ imported: false, config: null })),
+  detectAndOfferLegacyImport: vi.fn(async () => ({ imported: false, config: null })),
 }));
 
 function createWizardPrompter(overrides?: Partial<WizardPrompter>): WizardPrompter {

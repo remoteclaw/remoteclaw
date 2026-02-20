@@ -57,7 +57,7 @@ function shortenPath(filePath: string): string {
   return filePath;
 }
 
-function findOpenClawEnvVars(env: NodeJS.ProcessEnv): string[] {
+function findLegacyEnvVars(env: NodeJS.ProcessEnv): string[] {
   return Object.keys(env).filter((key) => key.startsWith("OPENCLAW_"));
 }
 
@@ -177,7 +177,7 @@ export async function importCommand(
   runtime.log(report);
 
   // 8. Print env var migration reminders if OPENCLAW_* vars are detected
-  const openclawVars = findOpenClawEnvVars(env);
+  const openclawVars = findLegacyEnvVars(env);
   if (openclawVars.length > 0) {
     runtime.log("");
     runtime.log(formatEnvVarReminder(openclawVars));

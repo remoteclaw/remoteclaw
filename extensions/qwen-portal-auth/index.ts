@@ -2,7 +2,7 @@ import {
   emptyPluginConfigSchema,
   type RemoteClawPluginApi,
   type ProviderAuthContext,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import { loginQwenPortalOAuth } from "./oauth.js";
 
 const PROVIDER_ID = "qwen-portal";

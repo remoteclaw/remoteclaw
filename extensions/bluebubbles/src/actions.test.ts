@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { bluebubblesMessageActions } from "./actions.js";
 import { getCachedBlueBubblesPrivateApiStatus } from "./probe.js";

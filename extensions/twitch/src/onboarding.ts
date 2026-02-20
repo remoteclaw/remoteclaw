@@ -2,14 +2,14 @@
  * Twitch onboarding adapter for CLI setup wizard.
  */
 
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
 import {
   formatDocsLink,
   promptChannelAccessConfig,
   type ChannelOnboardingAdapter,
   type ChannelOnboardingDmPolicy,
   type WizardPrompter,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import { DEFAULT_ACCOUNT_ID, getAccountConfig } from "./config.js";
 import type { TwitchAccountConfig, TwitchRole } from "./types.js";
 import { isAccountConfigured } from "./utils/twitch.js";

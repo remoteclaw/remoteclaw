@@ -5,7 +5,7 @@
  * They support dependency injection via the `deps` parameter for testability.
  */
 
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
 import { getClientManager as getRegistryClientManager } from "./client-manager-registry.js";
 import { DEFAULT_ACCOUNT_ID, getAccountConfig } from "./config.js";
 import { resolveTwitchToken } from "./token.js";

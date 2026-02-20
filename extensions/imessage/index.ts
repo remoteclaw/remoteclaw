@@ -1,5 +1,5 @@
-import type { RemoteClawPluginApi } from "openclaw/plugin-sdk";
-import { emptyPluginConfigSchema } from "openclaw/plugin-sdk";
+import type { RemoteClawPluginApi } from "remoteclaw/sdk";
+import { emptyPluginConfigSchema } from "remoteclaw/sdk";
 import { imessagePlugin } from "./src/channel.js";
 import { setIMessageRuntime } from "./src/runtime.js";
 

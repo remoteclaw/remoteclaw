@@ -3,7 +3,7 @@ import {
   type RemoteClawPluginApi,
   type ProviderAuthContext,
   type ProviderAuthResult,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import { loginMiniMaxPortalOAuth, type MiniMaxRegion } from "./oauth.js";
 
 const PROVIDER_ID = "minimax-portal";

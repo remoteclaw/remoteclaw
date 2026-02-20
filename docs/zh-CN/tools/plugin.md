@@ -297,7 +297,7 @@ openclaw plugins doctor
 ### 示例
 
 ```
-import { registerPluginHooksFromDir } from "openclaw/plugin-sdk";
+import { registerPluginHooksFromDir } from "remoteclaw/sdk";
 
 export default function register(api) {
   registerPluginHooksFromDir(api, "./hooks");

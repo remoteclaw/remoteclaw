@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { RemoteClawPluginApi } from "openclaw/plugin-sdk";
+import type { RemoteClawPluginApi } from "remoteclaw/sdk";
 import { createFeishuClient } from "./client.js";
 import type { FeishuConfig } from "./types.js";
 

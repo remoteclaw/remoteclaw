@@ -9,8 +9,8 @@ import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { ParentBasedSampler, TraceIdRatioBasedSampler } from "@opentelemetry/sdk-trace-base";
 import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
-import type { DiagnosticEventPayload, RemoteClawPluginService } from "openclaw/plugin-sdk";
-import { onDiagnosticEvent, registerLogTransport } from "openclaw/plugin-sdk";
+import type { DiagnosticEventPayload, RemoteClawPluginService } from "remoteclaw/sdk";
+import { onDiagnosticEvent, registerLogTransport } from "remoteclaw/sdk";
 
 const DEFAULT_SERVICE_NAME = "openclaw";
 

@@ -4,12 +4,12 @@ import type {
   ChannelPlugin,
   ChannelSetupInput,
   RemoteClawConfig,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import {
   applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import { buildTlonAccountFields } from "./account-fields.js";
 import { tlonChannelConfigSchema } from "./config-schema.js";
 import { monitorTlonProvider } from "./monitor/index.js";

@@ -1,9 +1,4 @@
-import type {
-  BlockStreamingCoalesceConfig,
-  DmConfig,
-  DmPolicy,
-  GroupPolicy,
-} from "openclaw/plugin-sdk";
+import type { BlockStreamingCoalesceConfig, DmConfig, DmPolicy, GroupPolicy } from "remoteclaw/sdk";
 
 export type { DmPolicy, GroupPolicy };
 

@@ -3,7 +3,7 @@ import {
   emptyPluginConfigSchema,
   type RemoteClawPluginApi,
   type ProviderAuthContext,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import { loginGeminiCliOAuth } from "./oauth.js";
 
 const PROVIDER_ID = "google-gemini-cli";

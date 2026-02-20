@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
 import { resolveMattermostAccount } from "./accounts.js";
 import { createMattermostClient, fetchMattermostMe, type MattermostClient } from "./client.js";
 

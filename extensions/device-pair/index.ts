@@ -1,7 +1,7 @@
 import os from "node:os";
-import type { RemoteClawPluginApi } from "openclaw/plugin-sdk";
-import { approveDevicePairing, listDevicePairing } from "openclaw/plugin-sdk";
 import qrcode from "qrcode-terminal";
+import type { RemoteClawPluginApi } from "remoteclaw/sdk";
+import { approveDevicePairing, listDevicePairing } from "remoteclaw/sdk";
 
 function renderQrAscii(data: string): Promise<string> {
   return new Promise((resolve) => {

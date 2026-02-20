@@ -3,7 +3,7 @@ import type {
   PluginRuntime,
   ResolvedLineAccount,
   RuntimeEnv,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { linePlugin } from "./channel.js";
 import { setLineRuntime } from "./runtime.js";

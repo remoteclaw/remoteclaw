@@ -1,5 +1,5 @@
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
-import { loadWebMedia, resolveChannelMediaMaxBytes } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
+import { loadWebMedia, resolveChannelMediaMaxBytes } from "remoteclaw/sdk";
 import { createMSTeamsConversationStoreFs } from "./conversation-store-fs.js";
 import {
   classifyMSTeamsSendError,

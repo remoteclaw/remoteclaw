@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
 import {
   createReplyPrefixOptions,
   readJsonBodyWithLimit,
@@ -9,7 +9,7 @@ import {
   resolveWebhookTargets,
   requestBodyErrorToText,
   resolveMentionGatingWithBypass,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import { type ResolvedGoogleChatAccount } from "./accounts.js";
 import {
   downloadGoogleChatMedia,

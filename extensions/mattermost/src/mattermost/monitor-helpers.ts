@@ -1,5 +1,5 @@
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
-export { createDedupeCache, rawDataToString } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
+export { createDedupeCache, rawDataToString } from "remoteclaw/sdk";
 
 export type ResponsePrefixContext = {
   model?: string;

@@ -1,4 +1,4 @@
-import type { RemoteClawConfig, RuntimeEnv } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/sdk";
 import { describe, expect, it } from "vitest";
 import { msteamsPlugin } from "./channel.js";
 

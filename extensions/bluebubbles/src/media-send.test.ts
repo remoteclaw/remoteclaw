@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import type { RemoteClawConfig, PluginRuntime } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sendBlueBubblesMedia } from "./media-send.js";
 import { setBlueBubblesRuntime } from "./runtime.js";

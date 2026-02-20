@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/sdk/account-id";
 import type { CoreConfig, NextcloudTalkAccountConfig } from "./types.js";
 
 function isTruthyEnvValue(value?: string): boolean {

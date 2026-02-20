@@ -1,4 +1,4 @@
-import type { RemoteClawPluginApi } from "openclaw/plugin-sdk";
+import type { RemoteClawPluginApi } from "remoteclaw/sdk";
 
 type ElevenLabsVoice = {
   voice_id: string;

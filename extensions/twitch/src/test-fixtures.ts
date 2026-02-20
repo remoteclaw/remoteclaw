@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
 import { afterEach, beforeEach, vi } from "vitest";
 
 export const BASE_TWITCH_TEST_ACCOUNT = {

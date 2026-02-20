@@ -1,5 +1,5 @@
 import type * as Lark from "@larksuiteoapi/node-sdk";
-import type { RemoteClawPluginApi } from "openclaw/plugin-sdk";
+import type { RemoteClawPluginApi } from "remoteclaw/sdk";
 import { listEnabledFeishuAccounts } from "./accounts.js";
 import { createFeishuClient } from "./client.js";
 import { resolveToolsConfig } from "./tools-config.js";

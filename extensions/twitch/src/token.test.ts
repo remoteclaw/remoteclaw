@@ -8,7 +8,7 @@
  * - Account ID normalization
  */
 
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveTwitchToken, type TwitchTokenSource } from "./token.js";
 

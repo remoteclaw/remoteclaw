@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
 import { resolveZaloAccount } from "./accounts.js";
 import type { ZaloFetch } from "./api.js";
 import { sendMessage, sendPhoto } from "./api.js";

@@ -1,11 +1,11 @@
 import type { ChildProcess } from "node:child_process";
-import type { RemoteClawConfig, MarkdownTableMode, RuntimeEnv } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, MarkdownTableMode, RuntimeEnv } from "remoteclaw/sdk";
 import {
   createReplyPrefixOptions,
   mergeAllowlist,
   resolveSenderCommandAuthorization,
   summarizeMapping,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import { getZalouserRuntime } from "./runtime.js";
 import { sendMessageZalouser } from "./send.js";
 import type { ResolvedZalouserAccount, ZcaFriend, ZcaGroup, ZcaMessage } from "./types.js";

@@ -234,9 +234,9 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       ...(pluginSdkAlias || pluginSdkAccountIdAlias
         ? {
             alias: {
-              ...(pluginSdkAlias ? { "openclaw/plugin-sdk": pluginSdkAlias } : {}),
+              ...(pluginSdkAlias ? { "remoteclaw/sdk": pluginSdkAlias } : {}),
               ...(pluginSdkAccountIdAlias
-                ? { "openclaw/plugin-sdk/account-id": pluginSdkAccountIdAlias }
+                ? { "remoteclaw/sdk/account-id": pluginSdkAccountIdAlias }
                 : {}),
             },
           }

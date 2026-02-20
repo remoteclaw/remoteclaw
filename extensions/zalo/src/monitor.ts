@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { RemoteClawConfig, MarkdownTableMode } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, MarkdownTableMode } from "remoteclaw/sdk";
 import {
   createReplyPrefixOptions,
   readJsonBodyWithLimit,
@@ -9,7 +9,7 @@ import {
   resolveWebhookPath,
   resolveWebhookTargets,
   requestBodyErrorToText,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import type { ResolvedZaloAccount } from "./accounts.js";
 import {
   ZaloApiError,

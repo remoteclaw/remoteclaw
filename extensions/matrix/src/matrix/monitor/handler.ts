@@ -9,7 +9,7 @@ import {
   type PluginRuntime,
   type RuntimeEnv,
   type RuntimeLogger,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import type { CoreConfig, MatrixRoomConfig, ReplyToMode } from "../../types.js";
 import { fetchEventSummary } from "../actions/summary.js";
 import {

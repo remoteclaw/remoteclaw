@@ -9,7 +9,7 @@ import {
   type ChannelPlugin,
   type RemoteClawConfig,
   type ChannelSetupInput,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import {
   listNextcloudTalkAccountIds,
   resolveDefaultNextcloudTalkAccountId,

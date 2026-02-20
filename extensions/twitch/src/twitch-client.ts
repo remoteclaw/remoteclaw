@@ -1,6 +1,6 @@
 import { RefreshingAuthProvider, StaticAuthProvider } from "@twurple/auth";
 import { ChatClient, LogLevel } from "@twurple/chat";
-import type { RemoteClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/sdk";
 import { resolveTwitchToken } from "./token.js";
 import type { ChannelLogSink, TwitchAccountConfig, TwitchChatMessage } from "./types.js";
 import { normalizeToken } from "./utils/twitch.js";

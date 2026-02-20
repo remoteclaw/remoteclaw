@@ -1,4 +1,4 @@
-import type { ChannelOutboundAdapter } from "openclaw/plugin-sdk";
+import type { ChannelOutboundAdapter } from "remoteclaw/sdk";
 import { sendMessageMatrix, sendPollMatrix } from "./matrix/send.js";
 import { getMatrixRuntime } from "./runtime.js";
 

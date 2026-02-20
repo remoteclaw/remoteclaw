@@ -1,4 +1,4 @@
-import type { ChannelAccountSnapshot, ChannelPlugin, RemoteClawConfig } from "openclaw/plugin-sdk";
+import type { ChannelAccountSnapshot, ChannelPlugin, RemoteClawConfig } from "remoteclaw/sdk";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,
@@ -12,7 +12,7 @@ import {
   resolveBlueBubblesGroupRequireMention,
   resolveBlueBubblesGroupToolPolicy,
   setAccountEnabledInConfigSection,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,

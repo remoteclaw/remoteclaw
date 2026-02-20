@@ -1,4 +1,4 @@
-import type { RemoteClawConfig, PluginRuntime } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/sdk";
 import { describe, expect, it, vi } from "vitest";
 import { linePlugin } from "./channel.js";
 import { setLineRuntime } from "./runtime.js";

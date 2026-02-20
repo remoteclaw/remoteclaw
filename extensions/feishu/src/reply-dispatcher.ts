@@ -5,7 +5,7 @@ import {
   type ClawdbotConfig,
   type ReplyPayload,
   type RuntimeEnv,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/sdk";
 import { resolveFeishuAccount } from "./accounts.js";
 import { createFeishuClient } from "./client.js";
 import type { MentionTarget } from "./mention.js";

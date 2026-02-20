@@ -1,6 +1,6 @@
 import { format } from "node:util";
-import type { RuntimeEnv, ReplyPayload, RemoteClawConfig } from "openclaw/plugin-sdk";
-import { createReplyPrefixOptions } from "openclaw/plugin-sdk";
+import type { RuntimeEnv, ReplyPayload, RemoteClawConfig } from "remoteclaw/sdk";
+import { createReplyPrefixOptions } from "remoteclaw/sdk";
 import { getTlonRuntime } from "../runtime.js";
 import { normalizeShip, parseChannelNest } from "../targets.js";
 import { resolveTlonAccount } from "../types.js";

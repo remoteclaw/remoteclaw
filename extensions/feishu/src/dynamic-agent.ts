@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { RemoteClawConfig, PluginRuntime } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/sdk";
 import type { DynamicAgentCreationConfig } from "./types.js";
 
 export type MaybeCreateDynamicAgentResult = {

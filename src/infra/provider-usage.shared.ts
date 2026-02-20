@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "../agents/model-selection.js";
+import { normalizeProviderId } from "../agents/cli-routing.js";
 import type { UsageProviderId } from "./provider-usage.types.js";
 
 export const DEFAULT_TIMEOUT_MS = 5000;

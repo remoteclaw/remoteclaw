@@ -7,8 +7,6 @@ import {
 
 const DEFAULT_BASE_URL = "http://localhost:3000/v1";
 const DEFAULT_API_KEY = "n/a";
-const DEFAULT_CONTEXT_WINDOW = 128_000;
-const DEFAULT_MAX_TOKENS = 8192;
 const DEFAULT_MODEL_IDS = [
   "gpt-5.2",
   "gpt-5.2-codex",
@@ -58,19 +56,6 @@ function parseModelIds(input: string): string[] {
   return Array.from(new Set(parsed));
 }
 
-function buildModelDefinition(modelId: string) {
-  return {
-    id: modelId,
-    name: modelId,
-    api: "openai-completions" as const,
-    reasoning: false,
-    input: ["text", "image"] as Array<"text" | "image">,
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: DEFAULT_CONTEXT_WINDOW,
-    maxTokens: DEFAULT_MAX_TOKENS,
-  };
-}
-
 const copilotProxyPlugin = {
   id: "copilot-proxy",
   name: "Copilot Proxy",
@@ -117,26 +102,7 @@ const copilotProxyPlugin = {
                   },
                 },
               ],
-              configPatch: {
-                models: {
-                  providers: {
-                    "copilot-proxy": {
-                      baseUrl,
-                      apiKey: DEFAULT_API_KEY,
-                      api: "openai-completions",
-                      authHeader: false,
-                      models: modelIds.map((modelId) => buildModelDefinition(modelId)),
-                    },
-                  },
-                },
-                agents: {
-                  defaults: {
-                    models: Object.fromEntries(
-                      modelIds.map((modelId) => [`copilot-proxy/${modelId}`, {}]),
-                    ),
-                  },
-                },
-              },
+              configPatch: {},
               defaultModel: defaultModelRef,
               notes: [
                 "Start the Copilot Proxy VS Code extension before using these models.",

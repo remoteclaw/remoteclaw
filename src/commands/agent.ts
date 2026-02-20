@@ -6,16 +6,9 @@ import {
 import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
 import { resolveSessionAuthProfileOverride } from "../agents/auth-profiles/session-override.js";
 import { markAuthProfileFailure, markAuthProfileUsed } from "../agents/auth-profiles/usage.js";
+import { resolveConfiguredModelRef, resolveThinkingDefault } from "../agents/cli-routing.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { type ResolvedProviderAuth, resolveApiKeyForProvider } from "../agents/model-auth.js";
-import { loadModelCatalog } from "../agents/model-catalog.js";
-import {
-  buildAllowedModelSet,
-  isCliProvider,
-  modelKey,
-  resolveConfiguredModelRef,
-  resolveThinkingDefault,
-} from "../agents/model-selection.js";
 import { resolveAgentTimeoutMs } from "../agents/timeout.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import {
@@ -44,7 +37,6 @@ import { ChannelBridge, ClaudeCliRuntime, type ChannelMessage } from "../middlew
 import { normalizeAgentId } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { applyVerboseOverride } from "../sessions/level-overrides.js";
-import { applyModelOverrideToSessionEntry } from "../sessions/model-overrides.js";
 import { resolveSendPolicy } from "../sessions/send-policy.js";
 import { deliverAgentCommandResult } from "./agent/delivery.js";
 import { resolveAgentRunContext } from "./agent/run-context.js";
@@ -217,65 +209,12 @@ export async function agentCommand(
     });
     let provider = defaultProvider;
     let model = defaultModel;
-    const hasAllowlist = agentCfg?.models && Object.keys(agentCfg.models).length > 0;
-    const hasStoredOverride = Boolean(
-      sessionEntry?.modelOverride || sessionEntry?.providerOverride,
-    );
-    const needsModelCatalog = hasAllowlist || hasStoredOverride;
-    let allowedModelKeys = new Set<string>();
-    let allowedModelCatalog: Awaited<ReturnType<typeof loadModelCatalog>> = [];
-    let modelCatalog: Awaited<ReturnType<typeof loadModelCatalog>> | null = null;
-
-    if (needsModelCatalog) {
-      modelCatalog = await loadModelCatalog({ config: cfg });
-      const allowed = buildAllowedModelSet({
-        cfg,
-        catalog: modelCatalog,
-        defaultProvider,
-        defaultModel,
-      });
-      allowedModelKeys = allowed.allowedKeys;
-      allowedModelCatalog = allowed.allowedCatalog;
-    }
-
-    if (sessionEntry && sessionStore && sessionKey && hasStoredOverride) {
-      const entry = sessionEntry;
-      const overrideProvider = sessionEntry.providerOverride?.trim() || defaultProvider;
-      const overrideModel = sessionEntry.modelOverride?.trim();
-      if (overrideModel) {
-        const key = modelKey(overrideProvider, overrideModel);
-        if (
-          !isCliProvider(overrideProvider, cfg) &&
-          allowedModelKeys.size > 0 &&
-          !allowedModelKeys.has(key)
-        ) {
-          const { updated } = applyModelOverrideToSessionEntry({
-            entry,
-            selection: { provider: defaultProvider, model: defaultModel, isDefault: true },
-          });
-          if (updated) {
-            sessionStore[sessionKey] = entry;
-            await updateSessionStore(storePath, (store) => {
-              store[sessionKey] = entry;
-            });
-          }
-        }
-      }
-    }
 
     const storedProviderOverride = sessionEntry?.providerOverride?.trim();
     const storedModelOverride = sessionEntry?.modelOverride?.trim();
     if (storedModelOverride) {
-      const candidateProvider = storedProviderOverride || defaultProvider;
-      const key = modelKey(candidateProvider, storedModelOverride);
-      if (
-        isCliProvider(candidateProvider, cfg) ||
-        allowedModelKeys.size === 0 ||
-        allowedModelKeys.has(key)
-      ) {
-        provider = candidateProvider;
-        model = storedModelOverride;
-      }
+      provider = storedProviderOverride || defaultProvider;
+      model = storedModelOverride;
     }
     // Resolve auth-profile credentials for the provider
     let resolvedAuth: ResolvedProviderAuth | undefined;
@@ -301,17 +240,7 @@ export async function agentCommand(
     }
 
     if (!resolvedThinkLevel) {
-      let catalogForThinking = modelCatalog ?? allowedModelCatalog;
-      if (!catalogForThinking || catalogForThinking.length === 0) {
-        modelCatalog = await loadModelCatalog({ config: cfg });
-        catalogForThinking = modelCatalog;
-      }
-      resolvedThinkLevel = resolveThinkingDefault({
-        cfg,
-        provider,
-        model,
-        catalog: catalogForThinking,
-      });
+      resolvedThinkLevel = resolveThinkingDefault({ cfg });
     }
     if (resolvedThinkLevel === "xhigh" && !supportsXHighThinking(provider, model)) {
       const explicitThink = Boolean(thinkOnce || thinkOverride);

@@ -1,5 +1,5 @@
 import type { RemoteClawConfig } from "../../config/config.js";
-import { findNormalizedProviderValue, normalizeProviderId } from "../model-selection.js";
+import { findNormalizedProviderValue, normalizeProviderId } from "../cli-routing.js";
 import { dedupeProfileIds, listProfilesForProvider } from "./profiles.js";
 import type { AuthProfileStore } from "./types.js";
 import { clearExpiredCooldowns, isProfileInCooldown } from "./usage.js";

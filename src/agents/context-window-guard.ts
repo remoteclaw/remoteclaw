@@ -3,7 +3,7 @@ import type { RemoteClawConfig } from "../config/config.js";
 export const CONTEXT_WINDOW_HARD_MIN_TOKENS = 16_000;
 export const CONTEXT_WINDOW_WARN_BELOW_TOKENS = 32_000;
 
-export type ContextWindowSource = "model" | "modelsConfig" | "agentContextTokens" | "default";
+export type ContextWindowSource = "model" | "agentContextTokens" | "default";
 
 export type ContextWindowInfo = {
   tokens: number;
@@ -25,21 +25,10 @@ export function resolveContextWindowInfo(params: {
   modelContextWindow?: number;
   defaultTokens: number;
 }): ContextWindowInfo {
-  const fromModelsConfig = (() => {
-    const providers = params.cfg?.models?.providers as
-      | Record<string, { models?: Array<{ id?: string; contextWindow?: number }> }>
-      | undefined;
-    const providerEntry = providers?.[params.provider];
-    const models = Array.isArray(providerEntry?.models) ? providerEntry.models : [];
-    const match = models.find((m) => m?.id === params.modelId);
-    return normalizePositiveInt(match?.contextWindow);
-  })();
   const fromModel = normalizePositiveInt(params.modelContextWindow);
-  const baseInfo = fromModelsConfig
-    ? { tokens: fromModelsConfig, source: "modelsConfig" as const }
-    : fromModel
-      ? { tokens: fromModel, source: "model" as const }
-      : { tokens: Math.floor(params.defaultTokens), source: "default" as const };
+  const baseInfo = fromModel
+    ? { tokens: fromModel, source: "model" as const }
+    : { tokens: Math.floor(params.defaultTokens), source: "default" as const };
 
   const capTokens = normalizePositiveInt(params.cfg?.agents?.defaults?.contextTokens);
   if (capTokens && capTokens < baseInfo.tokens) {

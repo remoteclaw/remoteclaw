@@ -5,13 +5,10 @@ import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveUserPath } from "../../utils.js";
 import { getDefaultLocalRoots, loadWebMedia } from "../../web/media.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "../auth-profiles.js";
+import { parseModelRef, resolveConfiguredModelRef } from "../cli-routing.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../defaults.js";
 import { minimaxUnderstandImage } from "../minimax-vlm.js";
-import { getApiKeyForModel, requireApiKey, resolveEnvApiKey } from "../model-auth.js";
-import { runWithImageModelFallback } from "../model-fallback.js";
-import { resolveConfiguredModelRef } from "../model-selection.js";
-import { ensureRemoteClawModelsJson } from "../models-config.js";
-import { discoverAuthStorage, discoverModels } from "../pi-model-discovery.js";
+import { getApiKeyForModel, requireApiKey } from "../model-auth.js";
 import type { SandboxFsBridge } from "../sandbox/fs-bridge.js";
 import { normalizeWorkspaceDir } from "../workspace-dir.js";
 import type { AnyAgentTool } from "./common.js";
@@ -61,9 +58,6 @@ function resolveDefaultModelRef(cfg?: RemoteClawConfig): {
 }
 
 function hasAuthForProvider(params: { provider: string; agentDir: string }): boolean {
-  if (resolveEnvApiKey(params.provider)?.apiKey) {
-    return true;
-  }
   const store = ensureAuthProfileStore(params.agentDir, {
     allowKeychainPrompt: false,
   });
@@ -256,79 +250,98 @@ async function runImagePrompt(params: {
   model: string;
   attempts: Array<{ provider: string; model: string; error: string }>;
 }> {
-  const effectiveCfg: RemoteClawConfig | undefined = params.cfg
-    ? {
-        ...params.cfg,
-        agents: {
-          ...params.cfg.agents,
-          defaults: {
-            ...params.cfg.agents?.defaults,
-            imageModel: params.imageModelConfig,
-          },
-        },
-      }
-    : undefined;
+  const modelRef = params.modelOverride?.trim() || params.imageModelConfig.primary?.trim() || "";
+  if (!modelRef) {
+    throw new Error("No image model configured.");
+  }
 
-  await ensureRemoteClawModelsJson(effectiveCfg, params.agentDir);
-  const authStorage = discoverAuthStorage(params.agentDir);
-  const modelRegistry = discoverModels(authStorage, params.agentDir);
+  const parsed = parseModelRef(modelRef, DEFAULT_PROVIDER);
+  if (!parsed) {
+    throw new Error(`Invalid image model reference: ${modelRef}`);
+  }
 
-  const result = await runWithImageModelFallback({
-    cfg: effectiveCfg,
-    modelOverride: params.modelOverride,
-    run: async (provider, modelId) => {
-      const model = modelRegistry.find(provider, modelId) as Model<Api> | null;
-      if (!model) {
-        throw new Error(`Unknown model: ${provider}/${modelId}`);
-      }
-      if (!model.input?.includes("image")) {
-        throw new Error(`Model does not support images: ${provider}/${modelId}`);
-      }
-      const apiKeyInfo = await getApiKeyForModel({
-        model,
-        cfg: effectiveCfg,
+  const attempts: Array<{ provider: string; model: string; error: string }> = [];
+  const candidates = [modelRef, ...(params.imageModelConfig.fallbacks ?? [])];
+
+  for (const candidate of candidates) {
+    const ref = parseModelRef(candidate, parsed.provider);
+    if (!ref) {
+      continue;
+    }
+
+    try {
+      const result = await runSingleImageModel({
+        cfg: params.cfg,
         agentDir: params.agentDir,
+        provider: ref.provider,
+        modelId: ref.model,
+        prompt: params.prompt,
+        images: params.images,
       });
-      const apiKey = requireApiKey(apiKeyInfo, model.provider);
-      authStorage.setRuntimeApiKey(model.provider, apiKey);
+      return { ...result, attempts };
+    } catch (err: unknown) {
+      attempts.push({
+        provider: ref.provider,
+        model: ref.model,
+        error: String(err instanceof Error ? err.message : err),
+      });
+    }
+  }
 
-      // MiniMax VLM only supports a single image; use the first one.
-      if (model.provider === "minimax") {
-        const first = params.images[0];
-        const imageDataUrl = `data:${first.mimeType};base64,${first.base64}`;
-        const text = await minimaxUnderstandImage({
-          apiKey,
-          prompt: params.prompt,
-          imageDataUrl,
-          modelBaseUrl: model.baseUrl,
-        });
-        return { text, provider: model.provider, model: model.id };
-      }
+  const lastAttempt = attempts[attempts.length - 1];
+  throw new Error(
+    `All image model attempts failed. Last: ${lastAttempt?.provider}/${lastAttempt?.model}: ${lastAttempt?.error}`,
+  );
+}
 
-      const context = buildImageContext(params.prompt, params.images);
-      const message = await complete(model, context, {
-        apiKey,
-        maxTokens: resolveImageToolMaxTokens(model.maxTokens),
-      });
-      const text = coerceImageAssistantText({
-        message,
-        provider: model.provider,
-        model: model.id,
-      });
-      return { text, provider: model.provider, model: model.id };
-    },
+async function runSingleImageModel(params: {
+  cfg?: RemoteClawConfig;
+  agentDir: string;
+  provider: string;
+  modelId: string;
+  prompt: string;
+  images: Array<{ base64: string; mimeType: string }>;
+}): Promise<{ text: string; provider: string; model: string }> {
+  const { getModel } = await import("@mariozechner/pi-ai");
+  let model: Model<Api>;
+  try {
+    model = getModel(params.provider as never, params.modelId as never) as Model<Api>;
+  } catch {
+    throw new Error(`Unknown model: ${params.provider}/${params.modelId}`);
+  }
+  if (!model.input?.includes("image")) {
+    throw new Error(`Model does not support images: ${params.provider}/${params.modelId}`);
+  }
+  const apiKeyInfo = await getApiKeyForModel({
+    model,
+    cfg: params.cfg,
+    agentDir: params.agentDir,
   });
+  const apiKey = requireApiKey(apiKeyInfo, params.provider);
 
-  return {
-    text: result.result.text,
-    provider: result.result.provider,
-    model: result.result.model,
-    attempts: result.attempts.map((attempt) => ({
-      provider: attempt.provider,
-      model: attempt.model,
-      error: attempt.error,
-    })),
-  };
+  if (params.provider === "minimax") {
+    const first = params.images[0];
+    const imageDataUrl = `data:${first.mimeType};base64,${first.base64}`;
+    const text = await minimaxUnderstandImage({
+      apiKey,
+      prompt: params.prompt,
+      imageDataUrl,
+      modelBaseUrl: model.baseUrl,
+    });
+    return { text, provider: params.provider, model: params.modelId };
+  }
+
+  const context = buildImageContext(params.prompt, params.images);
+  const message = await complete(model, context, {
+    apiKey,
+    maxTokens: resolveImageToolMaxTokens(model.maxTokens),
+  });
+  const text = coerceImageAssistantText({
+    message,
+    provider: params.provider,
+    model: params.modelId,
+  });
+  return { text, provider: params.provider, model: params.modelId };
 }
 
 export function createImageTool(options?: {

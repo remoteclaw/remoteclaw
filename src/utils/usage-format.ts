@@ -43,19 +43,12 @@ export function formatUsd(value?: number): string | undefined {
   return `$${value.toFixed(4)}`;
 }
 
-export function resolveModelCostConfig(params: {
+export function resolveModelCostConfig(_params: {
   provider?: string;
   model?: string;
   config?: RemoteClawConfig;
 }): ModelCostConfig | undefined {
-  const provider = params.provider?.trim();
-  const model = params.model?.trim();
-  if (!provider || !model) {
-    return undefined;
-  }
-  const providers = params.config?.models?.providers ?? {};
-  const entry = providers[provider]?.models?.find((item) => item.id === model);
-  return entry?.cost;
+  return undefined;
 }
 
 const toNumber = (value: number | undefined): number =>

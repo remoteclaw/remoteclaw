@@ -13,7 +13,6 @@ import {
 } from "./directive-handling.js";
 import { resolveCurrentDirectiveLevels } from "./directive-handling.levels.js";
 import { clearInlineDirectives } from "./get-reply-directives-utils.js";
-import type { createModelSelectionState } from "./model-selection.js";
 import type { TypingController } from "./typing.js";
 
 type AgentDefaults = NonNullable<RemoteClawConfig["agents"]>["defaults"];
@@ -59,7 +58,14 @@ export async function applyInlineDirectiveOverrides(params: {
   aliasIndex: Parameters<typeof applyInlineDirectivesFastLane>[0]["aliasIndex"];
   provider: string;
   model: string;
-  modelState: Awaited<ReturnType<typeof createModelSelectionState>>;
+  modelState: {
+    provider: string;
+    model: string;
+    allowedModelKeys: Set<string>;
+    allowedModelCatalog: Array<{ id: string; name: string; provider: string }>;
+    resetModelOverride: boolean;
+    resolveDefaultThinkingLevel: () => Promise<import("../thinking.js").ThinkLevel | undefined>;
+  };
   initialModelLabel: string;
   formatModelSwitchEvent: (label: string, alias?: string) => string;
   resolvedElevatedLevel: ElevatedLevel;

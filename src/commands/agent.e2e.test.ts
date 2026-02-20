@@ -11,13 +11,8 @@ vi.mock("../middleware/index.js", async (importOriginal) => {
     ClaudeCliRuntime: vi.fn(),
   };
 });
-vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(),
-}));
-
 import { telegramPlugin } from "../../extensions/telegram/src/channel.js";
 import { setTelegramRuntime } from "../../extensions/telegram/src/runtime.js";
-import { loadModelCatalog } from "../agents/model-catalog.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import * as configModule from "../config/config.js";
 import { ChannelBridge } from "../middleware/index.js";
@@ -87,7 +82,6 @@ beforeEach(() => {
     aborted: false,
     error: undefined,
   });
-  vi.mocked(loadModelCatalog).mockResolvedValue([]);
 });
 
 describe("agentCommand", () => {
@@ -217,14 +211,6 @@ describe("agentCommand", () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-        {
-          id: "claude-opus-4-5",
-          name: "Opus 4.5",
-          provider: "anthropic",
-          reasoning: true,
-        },
-      ]);
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
 

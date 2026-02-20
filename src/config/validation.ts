@@ -10,7 +10,7 @@ import { loadPluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { validateJsonSchemaValue } from "../plugins/schema-validator.js";
 import { isRecord } from "../utils.js";
 import { findDuplicateAgentDirs, formatDuplicateAgentDirError } from "./agent-dirs.js";
-import { applyAgentDefaults, applyModelDefaults, applySessionDefaults } from "./defaults.js";
+import { applyAgentDefaults, applySessionDefaults } from "./defaults.js";
 import { findLegacyConfigIssues } from "./legacy.js";
 import type { RemoteClawConfig, ConfigValidationIssue } from "./types.js";
 import { RemoteClawSchema } from "./zod-schema.js";
@@ -141,7 +141,7 @@ export function validateConfigObject(
   }
   return {
     ok: true,
-    config: applyModelDefaults(applyAgentDefaults(applySessionDefaults(result.config))),
+    config: applyAgentDefaults(applySessionDefaults(result.config)),
   };
 }
 

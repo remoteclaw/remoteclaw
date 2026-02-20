@@ -57,7 +57,6 @@ import { coreGatewayHandlers } from "./server-methods.js";
 import { createExecApprovalHandlers } from "./server-methods/exec-approval.js";
 import { safeParseJson } from "./server-methods/nodes.helpers.js";
 import { hasConnectedMobileNode } from "./server-mobile-nodes.js";
-import { loadGatewayModelCatalog } from "./server-model-catalog.js";
 import { createNodeSubscriptionManager } from "./server-node-subscriptions.js";
 import { loadGatewayPlugins } from "./server-plugins.js";
 import { createGatewayReloadHandlers } from "./server-reload-handlers.js";
@@ -77,8 +76,6 @@ import {
   refreshGatewayHealthSnapshot,
 } from "./server/health-state.js";
 import { loadGatewayTlsRuntime } from "./server/tls.js";
-
-export { __resetModelCatalogCacheForTest } from "./server-model-catalog.js";
 
 ensureRemoteClawCliOnPath();
 
@@ -528,7 +525,7 @@ export async function startGatewayServer(
       cron,
       cronStorePath,
       execApprovalManager,
-      loadGatewayModelCatalog,
+      loadGatewayModelCatalog: async () => [],
       getHealthCache,
       refreshHealthSnapshot: refreshGatewayHealthSnapshot,
       logHealth,

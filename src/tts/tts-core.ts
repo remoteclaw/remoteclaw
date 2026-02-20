@@ -1,14 +1,12 @@
 import { rmSync } from "node:fs";
-import { completeSimple, type TextContent } from "@mariozechner/pi-ai";
+import { completeSimple, getModel, type TextContent } from "@mariozechner/pi-ai";
 import { EdgeTTS } from "node-edge-tts";
-import { getApiKeyForModel, requireApiKey } from "../agents/model-auth.js";
 import {
-  buildModelAliasIndex,
+  parseModelRef,
   resolveDefaultModelForAgent,
-  resolveModelRefFromString,
   type ModelRef,
-} from "../agents/model-selection.js";
-import { resolveModel } from "../agents/pi-embedded-runner/model.js";
+} from "../agents/cli-routing.js";
+import { getApiKeyForModel, requireApiKey } from "../agents/model-auth.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type {
   ResolvedTtsConfig,
@@ -401,16 +399,11 @@ function resolveSummaryModelRef(
     return { ref: defaultRef, source: "default" };
   }
 
-  const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: defaultRef.provider });
-  const resolved = resolveModelRefFromString({
-    raw: override,
-    defaultProvider: defaultRef.provider,
-    aliasIndex,
-  });
+  const resolved = parseModelRef(override, defaultRef.provider);
   if (!resolved) {
     return { ref: defaultRef, source: "default" };
   }
-  return { ref: resolved.ref, source: "summaryModel" };
+  return { ref: resolved, source: "summaryModel" };
 }
 
 function isTextContentBlock(block: { type: string }): block is TextContent {
@@ -431,14 +424,13 @@ export async function summarizeText(params: {
 
   const startTime = Date.now();
   const { ref } = resolveSummaryModelRef(cfg, config);
-  const resolved = resolveModel(ref.provider, ref.model, undefined, cfg);
-  if (!resolved.model) {
-    throw new Error(resolved.error ?? `Unknown summary model: ${ref.provider}/${ref.model}`);
+  let model;
+  try {
+    model = getModel(ref.provider as never, ref.model as never);
+  } catch {
+    throw new Error(`Unknown summary model: ${ref.provider}/${ref.model}`);
   }
-  const apiKey = requireApiKey(
-    await getApiKeyForModel({ model: resolved.model, cfg }),
-    ref.provider,
-  );
+  const apiKey = requireApiKey(await getApiKeyForModel({ model, cfg }), ref.provider);
 
   try {
     const controller = new AbortController();
@@ -446,7 +438,7 @@ export async function summarizeText(params: {
 
     try {
       const res = await completeSimple(
-        resolved.model,
+        model,
         {
           messages: [
             {

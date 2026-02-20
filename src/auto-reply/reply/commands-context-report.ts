@@ -1,6 +1,6 @@
 import { resolveSessionAgentIds } from "../../agents/agent-scope.js";
 import { resolveBootstrapContextForRun } from "../../agents/bootstrap-files.js";
-import { resolveDefaultModelForAgent } from "../../agents/model-selection.js";
+import { resolveDefaultModelForAgent } from "../../agents/cli-routing.js";
 import { createRemoteClawTools } from "../../agents/openclaw-tools.js";
 import { resolveBootstrapMaxChars } from "../../agents/pi-embedded-helpers.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";

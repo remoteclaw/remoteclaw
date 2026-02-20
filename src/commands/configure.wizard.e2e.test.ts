@@ -71,10 +71,6 @@ vi.mock("./configure.gateway.js", () => ({
   promptGatewayConfig: vi.fn(),
 }));
 
-vi.mock("./configure.gateway-auth.js", () => ({
-  promptAuthConfig: vi.fn(),
-}));
-
 vi.mock("./configure.channels.js", () => ({
   removeChannelConfigWizard: vi.fn(),
 }));

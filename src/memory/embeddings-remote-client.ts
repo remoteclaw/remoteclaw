@@ -11,7 +11,6 @@ export async function resolveRemoteEmbeddingBearerClient(params: {
   const remote = params.options.remote;
   const remoteApiKey = remote?.apiKey?.trim();
   const remoteBaseUrl = remote?.baseUrl?.trim();
-  const providerConfig = params.options.config.models?.providers?.[params.provider];
   const apiKey = remoteApiKey
     ? remoteApiKey
     : requireApiKey(
@@ -22,8 +21,8 @@ export async function resolveRemoteEmbeddingBearerClient(params: {
         }),
         params.provider,
       );
-  const baseUrl = remoteBaseUrl || providerConfig?.baseUrl?.trim() || params.defaultBaseUrl;
-  const headerOverrides = Object.assign({}, providerConfig?.headers, remote?.headers);
+  const baseUrl = remoteBaseUrl || params.defaultBaseUrl;
+  const headerOverrides = Object.assign({}, remote?.headers);
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${apiKey}`,

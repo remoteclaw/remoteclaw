@@ -1,6 +1,6 @@
 import { formatCliCommand } from "../../cli/command-format.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { normalizeProviderId } from "../model-selection.js";
+import { normalizeProviderId } from "../cli-routing.js";
 import { listProfilesForProvider } from "./profiles.js";
 import { suggestOAuthProfileIdForLegacyDefault } from "./repair.js";
 import type { AuthProfileStore } from "./types.js";

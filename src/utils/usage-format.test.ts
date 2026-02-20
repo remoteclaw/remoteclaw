@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { RemoteClawConfig } from "../config/config.js";
 import {
   estimateUsageCost,
   formatTokenCount,
@@ -22,37 +21,17 @@ describe("usage-format", () => {
   });
 
   it("resolves model cost config and estimates usage cost", () => {
-    const config = {
-      models: {
-        providers: {
-          test: {
-            models: [
-              {
-                id: "m1",
-                cost: { input: 1, output: 2, cacheRead: 0.5, cacheWrite: 0 },
-              },
-            ],
-          },
-        },
-      },
-    } as unknown as RemoteClawConfig;
-
     const cost = resolveModelCostConfig({
       provider: "test",
       model: "m1",
-      config,
     });
 
-    expect(cost).toEqual({
-      input: 1,
-      output: 2,
-      cacheRead: 0.5,
-      cacheWrite: 0,
-    });
+    expect(cost).toBeUndefined();
 
+    const manualCost = { input: 1, output: 2, cacheRead: 0.5, cacheWrite: 0 };
     const total = estimateUsageCost({
       usage: { input: 1000, output: 500, cacheRead: 2000 },
-      cost,
+      cost: manualCost,
     });
 
     expect(total).toBeCloseTo(0.003);

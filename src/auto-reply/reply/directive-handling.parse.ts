@@ -1,6 +1,5 @@
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { ExecAsk, ExecHost, ExecSecurity } from "../../infra/exec-approvals.js";
-import { extractModelDirective } from "../model.js";
 import type { MsgContext } from "../templating.js";
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "./directives.js";
 import {
@@ -120,14 +119,10 @@ export function parseInlineDirectives(
   const { cleaned: statusCleaned, hasDirective: hasStatusDirective } = allowStatusDirective
     ? extractStatusDirective(execCleaned)
     : { cleaned: execCleaned, hasDirective: false };
-  const {
-    cleaned: modelCleaned,
-    rawModel,
-    rawProfile,
-    hasDirective: hasModelDirective,
-  } = extractModelDirective(statusCleaned, {
-    aliases: options?.modelAliases,
-  });
+  const modelCleaned = statusCleaned;
+  const rawModel: string | undefined = undefined;
+  const rawProfile: string | undefined = undefined;
+  const hasModelDirective = false;
   const {
     cleaned: queueCleaned,
     queueMode,

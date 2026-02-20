@@ -1,10 +1,3 @@
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { loadModelCatalog } from "../agents/model-catalog.js";
-import {
-  getModelRefStatus,
-  resolveConfiguredModelRef,
-  resolveHooksGmailModel,
-} from "../agents/model-selection.js";
 import { resolveAgentSessionDirs } from "../agents/session-dirs.js";
 import { cleanStaleLockFiles } from "../agents/session-write-lock.js";
 import type { CliDeps } from "../cli/deps.js";
@@ -82,39 +75,6 @@ export async function startGatewaySidecars(params: {
       }
     } catch (err) {
       params.logHooks.error(`gmail watcher failed to start: ${String(err)}`);
-    }
-  }
-
-  // Validate hooks.gmail.model if configured.
-  if (params.cfg.hooks?.gmail?.model) {
-    const hooksModelRef = resolveHooksGmailModel({
-      cfg: params.cfg,
-      defaultProvider: DEFAULT_PROVIDER,
-    });
-    if (hooksModelRef) {
-      const { provider: defaultProvider, model: defaultModel } = resolveConfiguredModelRef({
-        cfg: params.cfg,
-        defaultProvider: DEFAULT_PROVIDER,
-        defaultModel: DEFAULT_MODEL,
-      });
-      const catalog = await loadModelCatalog({ config: params.cfg });
-      const status = getModelRefStatus({
-        cfg: params.cfg,
-        catalog,
-        ref: hooksModelRef,
-        defaultProvider,
-        defaultModel,
-      });
-      if (!status.allowed) {
-        params.logHooks.warn(
-          `hooks.gmail.model "${status.key}" not in agents.defaults.models allowlist (will use primary instead)`,
-        );
-      }
-      if (!status.inCatalog) {
-        params.logHooks.warn(
-          `hooks.gmail.model "${status.key}" not in the model catalog (may fail at runtime)`,
-        );
-      }
     }
   }
 

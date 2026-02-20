@@ -78,25 +78,7 @@ describe("session cost usage", () => {
       "utf-8",
     );
 
-    const config = {
-      models: {
-        providers: {
-          openai: {
-            models: [
-              {
-                id: "gpt-5.2",
-                cost: {
-                  input: 1,
-                  output: 2,
-                  cacheRead: 0,
-                  cacheWrite: 0,
-                },
-              },
-            ],
-          },
-        },
-      },
-    } as unknown as RemoteClawConfig;
+    const config = {} as unknown as RemoteClawConfig;
 
     const originalState = process.env.REMOTECLAW_STATE_DIR;
     process.env.REMOTECLAW_STATE_DIR = root;
@@ -104,7 +86,7 @@ describe("session cost usage", () => {
       const summary = await loadCostUsageSummary({ days: 30, config });
       expect(summary.daily.length).toBe(1);
       expect(summary.totals.totalTokens).toBe(50);
-      expect(summary.totals.totalCost).toBeCloseTo(0.03003, 5);
+      expect(summary.totals.totalCost).toBeCloseTo(0.03, 5);
     } finally {
       if (originalState === undefined) {
         delete process.env.REMOTECLAW_STATE_DIR;

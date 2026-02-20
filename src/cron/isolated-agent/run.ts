@@ -5,20 +5,17 @@ import {
 } from "../../agents/agent-scope.js";
 import { ensureAuthProfileStore } from "../../agents/auth-profiles.js";
 import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
+import {
+  isCliProvider,
+  parseModelRef,
+  resolveConfiguredModelRef,
+  resolveThinkingDefault,
+} from "../../agents/cli-routing.js";
 import { setCliSessionId } from "../../agents/cli-session.js";
 import { lookupContextTokens } from "../../agents/context.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
 import { type ResolvedProviderAuth, resolveApiKeyForProvider } from "../../agents/model-auth.js";
-import { loadModelCatalog } from "../../agents/model-catalog.js";
-import {
-  getModelRefStatus,
-  isCliProvider,
-  resolveAllowedModelRef,
-  resolveConfiguredModelRef,
-  resolveHooksGmailModel,
-  resolveThinkingDefault,
-} from "../../agents/model-selection.js";
 import { runSubagentAnnounceFlow } from "../../agents/subagent-announce.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
@@ -144,33 +141,15 @@ export async function runCronIsolatedAgentTurn(params: {
   });
   let provider = resolvedDefault.provider;
   let model = resolvedDefault.model;
-  let catalog: Awaited<ReturnType<typeof loadModelCatalog>> | undefined;
-  const loadCatalog = async () => {
-    if (!catalog) {
-      catalog = await loadModelCatalog({ config: cfgWithAgentDefaults });
-    }
-    return catalog;
-  };
   // Resolve model - prefer hooks.gmail.model for Gmail hooks.
   const isGmailHook = baseSessionKey.startsWith("hook:gmail:");
   let hooksGmailModelApplied = false;
-  const hooksGmailModelRef = isGmailHook
-    ? resolveHooksGmailModel({
-        cfg: params.cfg,
-        defaultProvider: DEFAULT_PROVIDER,
-      })
-    : null;
-  if (hooksGmailModelRef) {
-    const status = getModelRefStatus({
-      cfg: params.cfg,
-      catalog: await loadCatalog(),
-      ref: hooksGmailModelRef,
-      defaultProvider: resolvedDefault.provider,
-      defaultModel: resolvedDefault.model,
-    });
-    if (status.allowed) {
-      provider = hooksGmailModelRef.provider;
-      model = hooksGmailModelRef.model;
+  const hooksGmailModelRaw = isGmailHook ? params.cfg.hooks?.gmail?.model?.trim() : undefined;
+  if (hooksGmailModelRaw) {
+    const parsed = parseModelRef(hooksGmailModelRaw, resolvedDefault.provider);
+    if (parsed) {
+      provider = parsed.provider;
+      model = parsed.model;
       hooksGmailModelApplied = true;
     }
   }
@@ -178,18 +157,12 @@ export async function runCronIsolatedAgentTurn(params: {
     params.job.payload.kind === "agentTurn" ? params.job.payload.model : undefined;
   const modelOverride = typeof modelOverrideRaw === "string" ? modelOverrideRaw.trim() : undefined;
   if (modelOverride !== undefined && modelOverride.length > 0) {
-    const resolvedOverride = resolveAllowedModelRef({
-      cfg: cfgWithAgentDefaults,
-      catalog: await loadCatalog(),
-      raw: modelOverride,
-      defaultProvider: resolvedDefault.provider,
-      defaultModel: resolvedDefault.model,
-    });
-    if ("error" in resolvedOverride) {
-      return { status: "error", error: resolvedOverride.error };
+    const parsed = parseModelRef(modelOverride, resolvedDefault.provider);
+    if (!parsed) {
+      return { status: "error", error: `invalid model override: ${modelOverride}` };
     }
-    provider = resolvedOverride.ref.provider;
-    model = resolvedOverride.ref.model;
+    provider = parsed.provider;
+    model = parsed.model;
   }
   const now = Date.now();
   const cronSession = resolveCronSession({
@@ -238,19 +211,8 @@ export async function runCronIsolatedAgentTurn(params: {
   if (!modelOverride && !hooksGmailModelApplied) {
     const sessionModelOverride = cronSession.sessionEntry.modelOverride?.trim();
     if (sessionModelOverride) {
-      const sessionProviderOverride =
-        cronSession.sessionEntry.providerOverride?.trim() || resolvedDefault.provider;
-      const resolvedSessionOverride = resolveAllowedModelRef({
-        cfg: cfgWithAgentDefaults,
-        catalog: await loadCatalog(),
-        raw: `${sessionProviderOverride}/${sessionModelOverride}`,
-        defaultProvider: resolvedDefault.provider,
-        defaultModel: resolvedDefault.model,
-      });
-      if (!("error" in resolvedSessionOverride)) {
-        provider = resolvedSessionOverride.ref.provider;
-        model = resolvedSessionOverride.ref.model;
-      }
+      provider = cronSession.sessionEntry.providerOverride?.trim() || resolvedDefault.provider;
+      model = sessionModelOverride;
     }
   }
 
@@ -265,12 +227,7 @@ export async function runCronIsolatedAgentTurn(params: {
   );
   let thinkLevel = jobThink ?? hooksGmailThinking ?? thinkOverride;
   if (!thinkLevel) {
-    thinkLevel = resolveThinkingDefault({
-      cfg: cfgWithAgentDefaults,
-      provider,
-      model,
-      catalog: await loadCatalog(),
-    });
+    thinkLevel = resolveThinkingDefault({ cfg: cfgWithAgentDefaults });
   }
   if (thinkLevel === "xhigh" && !supportsXHighThinking(provider, model)) {
     logWarn(

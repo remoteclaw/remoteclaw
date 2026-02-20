@@ -417,10 +417,8 @@ export async function runProviderEntry(params: {
       provider: providerId,
       primaryApiKey: requireApiKey(auth, providerId),
     });
-    const providerConfig = cfg.models?.providers?.[providerId];
-    const baseUrl = entry.baseUrl ?? params.config?.baseUrl ?? providerConfig?.baseUrl;
+    const baseUrl = entry.baseUrl ?? params.config?.baseUrl;
     const mergedHeaders = {
-      ...providerConfig?.headers,
       ...params.config?.headers,
       ...entry.headers,
     };
@@ -486,7 +484,6 @@ export async function runProviderEntry(params: {
     provider: providerId,
     primaryApiKey: requireApiKey(auth, providerId),
   });
-  const providerConfig = cfg.models?.providers?.[providerId];
   const result = await executeWithApiKeyRotation({
     provider: providerId,
     apiKeys,
@@ -496,8 +493,6 @@ export async function runProviderEntry(params: {
         fileName: media.fileName,
         mime: media.mime,
         apiKey,
-        baseUrl: providerConfig?.baseUrl,
-        headers: providerConfig?.headers,
         model: entry.model,
         prompt,
         timeoutMs,

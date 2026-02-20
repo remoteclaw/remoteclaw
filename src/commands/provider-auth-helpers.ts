@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "../agents/model-selection.js";
+import { normalizeProviderId } from "../agents/cli-routing.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { ProviderAuthMethod, ProviderPlugin } from "../plugins/types.js";
 

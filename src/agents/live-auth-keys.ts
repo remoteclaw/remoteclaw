@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "./model-selection.js";
+import { normalizeProviderId } from "./cli-routing.js";
 
 const KEY_SPLIT_RE = /[\s,;]+/g;
 const GOOGLE_LIVE_SINGLE_KEY = "REMOTECLAW_LIVE_GEMINI_KEY";

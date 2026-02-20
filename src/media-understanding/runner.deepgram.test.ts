@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
@@ -10,6 +10,22 @@ import {
   normalizeMediaAttachments,
   runCapability,
 } from "./runner.js";
+
+vi.mock("../agents/model-auth.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../agents/model-auth.js")>();
+  return {
+    ...actual,
+    resolveApiKeyForProvider: vi.fn().mockResolvedValue({
+      apiKey: "test-key",
+      mode: "api-key",
+      source: "test",
+    }),
+  };
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("runCapability deepgram provider options", () => {
   it("merges provider options, headers, and baseUrl overrides", async () => {
@@ -37,16 +53,6 @@ describe("runCapability deepgram provider options", () => {
     });
 
     const cfg = {
-      models: {
-        providers: {
-          deepgram: {
-            baseUrl: "https://provider.example",
-            apiKey: "test-key",
-            headers: { "X-Provider": "1" },
-            models: [],
-          },
-        },
-      },
       tools: {
         media: {
           audio: {
@@ -92,7 +98,6 @@ describe("runCapability deepgram provider options", () => {
       expect(result.outputs[0]?.text).toBe("ok");
       expect(seenBaseUrl).toBe("https://entry.example");
       expect(seenHeaders).toMatchObject({
-        "X-Provider": "1",
         "X-Config": "2",
         "X-Entry": "3",
       });

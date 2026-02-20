@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { CURRENT_SESSION_VERSION, SessionManager } from "@mariozechner/pi-coding-agent";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
-import { resolveThinkingDefault } from "../../agents/model-selection.js";
+import { resolveThinkingDefault } from "../../agents/cli-routing.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { dispatchInboundMessage } from "../../auto-reply/dispatch.js";
 import { createReplyDispatcher } from "../../auto-reply/reply/reply-dispatcher.js";
@@ -32,12 +32,7 @@ import {
   validateChatSendParams,
 } from "../protocol/index.js";
 import { getMaxChatHistoryMessagesBytes } from "../server-constants.js";
-import {
-  capArrayByJsonBytes,
-  loadSessionEntry,
-  readSessionMessages,
-  resolveSessionModelRef,
-} from "../session-utils.js";
+import { capArrayByJsonBytes, loadSessionEntry, readSessionMessages } from "../session-utils.js";
 import { formatForLog } from "../ws-log.js";
 import { injectTimestamp, timestampOptsFromConfig } from "./agent-timestamp.js";
 import { normalizeRpcAttachmentsToChatAttachments } from "./attachment-normalize.js";
@@ -606,20 +601,7 @@ export const chatHandlers: GatewayRequestHandlers = {
     }
     let thinkingLevel = entry?.thinkingLevel;
     if (!thinkingLevel) {
-      const configured = cfg.agents?.defaults?.thinkingDefault;
-      if (configured) {
-        thinkingLevel = configured;
-      } else {
-        const sessionAgentId = resolveSessionAgentId({ sessionKey, config: cfg });
-        const { provider, model } = resolveSessionModelRef(cfg, entry, sessionAgentId);
-        const catalog = await context.loadGatewayModelCatalog();
-        thinkingLevel = resolveThinkingDefault({
-          cfg,
-          provider,
-          model,
-          catalog,
-        });
-      }
+      thinkingLevel = resolveThinkingDefault({ cfg });
     }
     const verboseLevel = entry?.verboseLevel ?? cfg.agents?.defaults?.verboseDefault;
     respond(true, {

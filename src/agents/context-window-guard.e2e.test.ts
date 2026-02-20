@@ -50,41 +50,6 @@ describe("context-window-guard", () => {
     expect(guard.shouldBlock).toBe(false);
   });
 
-  it("uses models.providers.*.models[].contextWindow when present", () => {
-    const cfg = {
-      models: {
-        providers: {
-          openrouter: {
-            baseUrl: "http://localhost",
-            apiKey: "x",
-            models: [
-              {
-                id: "tiny",
-                name: "tiny",
-                reasoning: false,
-                input: ["text"],
-                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                contextWindow: 12_000,
-                maxTokens: 256,
-              },
-            ],
-          },
-        },
-      },
-    } satisfies RemoteClawConfig;
-
-    const info = resolveContextWindowInfo({
-      cfg,
-      provider: "openrouter",
-      modelId: "tiny",
-      modelContextWindow: 64_000,
-      defaultTokens: 200_000,
-    });
-    const guard = evaluateContextWindowGuard({ info });
-    expect(info.source).toBe("modelsConfig");
-    expect(guard.shouldBlock).toBe(true);
-  });
-
   it("caps with agents.defaults.contextTokens", () => {
     const cfg = {
       agents: { defaults: { contextTokens: 20_000 } },

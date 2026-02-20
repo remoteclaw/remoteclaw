@@ -3,7 +3,6 @@ import {
   resolveDefaultAgentId,
   resolveSessionAgentId,
 } from "../../agents/agent-scope.js";
-import { resolveModelAuthLabel } from "../../agents/model-auth-label.js";
 import { listSubagentRunsForRequester } from "../../agents/subagent-registry.js";
 import {
   resolveInternalSessionKey,
@@ -160,12 +159,6 @@ export async function buildStatusReply(params: {
     resolvedVerbose: resolvedVerboseLevel,
     resolvedReasoning: resolvedReasoningLevel,
     resolvedElevated: resolvedElevatedLevel,
-    modelAuth: resolveModelAuthLabel({
-      provider,
-      cfg,
-      sessionEntry,
-      agentDir: statusAgentDir,
-    }),
     usageLine: usageLine ?? undefined,
     queue: {
       mode: queueSettings.mode,

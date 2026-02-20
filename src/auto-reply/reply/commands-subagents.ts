@@ -40,6 +40,7 @@ type SubagentTargetResolution = {
 };
 
 const COMMAND = "/subagents";
+const KILL_COMMAND = "/kill";
 const ACTIONS = new Set(["list", "stop", "log", "send", "info", "help"]);
 const RECENT_WINDOW_MINUTES = 30;
 const SUBAGENT_TASK_PREVIEW_MAX = 110;
@@ -232,12 +233,23 @@ function loadSubagentSessionEntry(
   return { storePath, store, entry: store[childKey] };
 }
 
+function rewriteKillAlias(normalized: string): string | null {
+  if (normalized === KILL_COMMAND || normalized.startsWith(`${KILL_COMMAND} `)) {
+    const rest = normalized.slice(KILL_COMMAND.length).trim();
+    return rest ? `${COMMAND} stop ${rest}` : `${COMMAND} stop`;
+  }
+  return null;
+}
+
 export const handleSubagentsCommand: CommandHandler = async (params, allowTextCommands) => {
   if (!allowTextCommands) {
     return null;
   }
-  const normalized = params.command.commandBodyNormalized;
-  if (!normalized.startsWith(COMMAND)) {
+  let normalized = params.command.commandBodyNormalized;
+  const rewritten = rewriteKillAlias(normalized);
+  if (rewritten) {
+    normalized = rewritten;
+  } else if (!normalized.startsWith(COMMAND)) {
     return null;
   }
   if (!params.command.isAuthorizedSender) {

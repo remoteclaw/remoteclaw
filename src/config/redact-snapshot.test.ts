@@ -70,20 +70,6 @@ describe("redactConfigSnapshot", () => {
     expect(channels.slack.botToken).toBe(REDACTED_SENTINEL);
   });
 
-  it("redacts apiKey in model providers", () => {
-    const snapshot = makeSnapshot({
-      models: {
-        providers: {
-          openai: { apiKey: "sk-proj-abcdef1234567890ghij", baseUrl: "https://api.openai.com" },
-        },
-      },
-    });
-    const result = redactConfigSnapshot(snapshot);
-    const models = result.config.models as Record<string, Record<string, Record<string, string>>>;
-    expect(models.providers.openai.apiKey).toBe(REDACTED_SENTINEL);
-    expect(models.providers.openai.baseUrl).toBe("https://api.openai.com");
-  });
-
   it("redacts password fields", () => {
     const snapshot = makeSnapshot({
       gateway: { auth: { password: "super-secret-password-value-here" } },
@@ -128,7 +114,6 @@ describe("redactConfigSnapshot", () => {
     const snapshot = makeSnapshot({
       ui: { seamColor: "#0088cc" },
       gateway: { port: 18789 },
-      models: { providers: { openai: { baseUrl: "https://api.openai.com" } } },
     });
     const result = redactConfigSnapshot(snapshot);
     expect(result.config).toEqual(snapshot.config);
@@ -137,52 +122,11 @@ describe("redactConfigSnapshot", () => {
   it("does not redact maxTokens-style fields", () => {
     const snapshot = makeSnapshot({
       maxTokens: 16384,
-      models: {
-        providers: {
-          openai: {
-            models: [
-              {
-                id: "gpt-5",
-                maxTokens: 65536,
-                contextTokens: 200000,
-                maxTokensField: "max_completion_tokens",
-              },
-            ],
-            apiKey: "sk-proj-abcdef1234567890ghij",
-            accessToken: "access-token-value-1234567890",
-            maxTokens: 8192,
-            maxOutputTokens: 4096,
-            maxCompletionTokens: 2048,
-            contextTokens: 128000,
-            tokenCount: 500,
-            tokenLimit: 100000,
-            tokenBudget: 50000,
-          },
-        },
-      },
       gateway: { auth: { token: "secret-gateway-token-value" } },
     });
 
     const result = redactConfigSnapshot(snapshot);
     expect((result.config as Record<string, unknown>).maxTokens).toBe(16384);
-    const models = result.config.models as Record<string, unknown>;
-    const providerList = ((
-      (models.providers as Record<string, unknown>).openai as Record<string, unknown>
-    ).models ?? []) as Array<Record<string, unknown>>;
-    expect(providerList[0]?.maxTokens).toBe(65536);
-    expect(providerList[0]?.contextTokens).toBe(200000);
-    expect(providerList[0]?.maxTokensField).toBe("max_completion_tokens");
-
-    const providers = (models.providers as Record<string, Record<string, unknown>>) ?? {};
-    expect(providers.openai.apiKey).toBe(REDACTED_SENTINEL);
-    expect(providers.openai.accessToken).toBe(REDACTED_SENTINEL);
-    expect(providers.openai.maxTokens).toBe(8192);
-    expect(providers.openai.maxOutputTokens).toBe(4096);
-    expect(providers.openai.maxCompletionTokens).toBe(2048);
-    expect(providers.openai.contextTokens).toBe(128000);
-    expect(providers.openai.tokenCount).toBe(500);
-    expect(providers.openai.tokenLimit).toBe(100000);
-    expect(providers.openai.tokenBudget).toBe(50000);
 
     const gw = result.config.gateway as Record<string, Record<string, string>>;
     expect(gw.auth.token).toBe(REDACTED_SENTINEL);

@@ -11,33 +11,12 @@ const PROVIDER_LABEL = "MiniMax";
 const DEFAULT_MODEL = "MiniMax-M2.5";
 const DEFAULT_BASE_URL_CN = "https://api.minimaxi.com/anthropic";
 const DEFAULT_BASE_URL_GLOBAL = "https://api.minimax.io/anthropic";
-const DEFAULT_CONTEXT_WINDOW = 200000;
-const DEFAULT_MAX_TOKENS = 8192;
-const OAUTH_PLACEHOLDER = "minimax-oauth";
-
 function getDefaultBaseUrl(region: MiniMaxRegion): string {
   return region === "cn" ? DEFAULT_BASE_URL_CN : DEFAULT_BASE_URL_GLOBAL;
 }
 
 function modelRef(modelId: string): string {
   return `${PROVIDER_ID}/${modelId}`;
-}
-
-function buildModelDefinition(params: {
-  id: string;
-  name: string;
-  input: Array<"text" | "image">;
-  reasoning?: boolean;
-}) {
-  return {
-    id: params.id,
-    name: params.name,
-    reasoning: params.reasoning ?? false,
-    input: params.input,
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: DEFAULT_CONTEXT_WINDOW,
-    maxTokens: DEFAULT_MAX_TOKENS,
-  };
 }
 
 function createOAuthHandler(region: MiniMaxRegion) {
@@ -76,38 +55,7 @@ function createOAuthHandler(region: MiniMaxRegion) {
             },
           },
         ],
-        configPatch: {
-          models: {
-            providers: {
-              [PROVIDER_ID]: {
-                baseUrl,
-                apiKey: OAUTH_PLACEHOLDER,
-                api: "anthropic-messages",
-                models: [
-                  buildModelDefinition({
-                    id: "MiniMax-M2.1",
-                    name: "MiniMax M2.1",
-                    input: ["text"],
-                  }),
-                  buildModelDefinition({
-                    id: "MiniMax-M2.5",
-                    name: "MiniMax M2.5",
-                    input: ["text"],
-                    reasoning: true,
-                  }),
-                ],
-              },
-            },
-          },
-          agents: {
-            defaults: {
-              models: {
-                [modelRef("MiniMax-M2.1")]: { alias: "minimax-m2.1" },
-                [modelRef("MiniMax-M2.5")]: { alias: "minimax-m2.5" },
-              },
-            },
-          },
-        },
+        configPatch: {},
         defaultModel: modelRef(DEFAULT_MODEL),
         notes: [
           "MiniMax OAuth tokens auto-refresh. Re-run login if refresh fails or access is revoked.",

@@ -348,65 +348,7 @@ export async function runOnboardingWizard(
   const { applyOnboardingLocalWorkspaceConfig } = await import("../commands/onboard-config.js");
   let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
 
-  const { ensureAuthProfileStore } = await import("../agents/auth-profiles.js");
-  const { promptAuthChoiceGrouped } = await import("../commands/auth-choice-prompt.js");
-  const { promptCustomApiConfig } = await import("../commands/onboard-custom.js");
-  const { applyAuthChoice, resolvePreferredProviderForAuthChoice, warnIfModelConfigLooksOff } =
-    await import("../commands/auth-choice.js");
-  const { applyPrimaryModel, promptDefaultModel } = await import("../commands/model-picker.js");
-
-  const authStore = ensureAuthProfileStore(undefined, {
-    allowKeychainPrompt: false,
-  });
-  const authChoiceFromPrompt = opts.authChoice === undefined;
-  const authChoice =
-    opts.authChoice ??
-    (await promptAuthChoiceGrouped({
-      prompter,
-      store: authStore,
-      includeSkip: true,
-    }));
-
-  if (authChoice === "custom-api-key") {
-    const customResult = await promptCustomApiConfig({
-      prompter,
-      runtime,
-      config: nextConfig,
-    });
-    nextConfig = customResult.config;
-  } else {
-    const authResult = await applyAuthChoice({
-      authChoice,
-      config: nextConfig,
-      prompter,
-      runtime,
-      setDefaultModel: true,
-      opts: {
-        tokenProvider: opts.tokenProvider,
-        token: opts.authChoice === "apiKey" && opts.token ? opts.token : undefined,
-      },
-    });
-    nextConfig = authResult.config;
-  }
-
-  if (authChoiceFromPrompt && authChoice !== "custom-api-key") {
-    const modelSelection = await promptDefaultModel({
-      config: nextConfig,
-      prompter,
-      allowKeep: true,
-      ignoreAllowlist: true,
-      includeVllm: true,
-      preferredProvider: resolvePreferredProviderForAuthChoice(authChoice),
-    });
-    if (modelSelection.config) {
-      nextConfig = modelSelection.config;
-    }
-    if (modelSelection.model) {
-      nextConfig = applyPrimaryModel(nextConfig, modelSelection.model);
-    }
-  }
-
-  await warnIfModelConfigLooksOff(nextConfig, prompter);
+  // TODO: model/auth configuration removed with model infrastructure; re-implement when new model layer lands
 
   const { configureGatewayForOnboarding } = await import("./onboarding.gateway-config.js");
   const gateway = await configureGatewayForOnboarding({

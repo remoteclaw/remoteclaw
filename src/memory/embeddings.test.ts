@@ -47,22 +47,8 @@ describe("embedding provider remote overrides", () => {
       source: "test",
     });
 
-    const cfg = {
-      models: {
-        providers: {
-          openai: {
-            baseUrl: "https://provider.example/v1",
-            headers: {
-              "X-Provider": "p",
-              "X-Shared": "provider",
-            },
-          },
-        },
-      },
-    };
-
     const result = await createEmbeddingProvider({
-      config: cfg as never,
+      config: {} as never,
       provider: "openai",
       remote: {
         baseUrl: "https://remote.example/v1",
@@ -86,7 +72,6 @@ describe("embedding provider remote overrides", () => {
     const headers = (init?.headers ?? {}) as Record<string, string>;
     expect(headers.Authorization).toBe("Bearer remote-key");
     expect(headers["Content-Type"]).toBe("application/json");
-    expect(headers["X-Provider"]).toBe("p");
     expect(headers["X-Shared"]).toBe("remote");
     expect(headers["X-Remote"]).toBe("r");
   });
@@ -100,18 +85,8 @@ describe("embedding provider remote overrides", () => {
       source: "test",
     });
 
-    const cfg = {
-      models: {
-        providers: {
-          openai: {
-            baseUrl: "https://provider.example/v1",
-          },
-        },
-      },
-    };
-
     const result = await createEmbeddingProvider({
-      config: cfg as never,
+      config: {} as never,
       provider: "openai",
       remote: {
         baseUrl: "https://remote.example/v1",
@@ -143,18 +118,8 @@ describe("embedding provider remote overrides", () => {
       source: "test",
     });
 
-    const cfg = {
-      models: {
-        providers: {
-          google: {
-            baseUrl: "https://generativelanguage.googleapis.com/v1beta",
-          },
-        },
-      },
-    };
-
     const result = await createEmbeddingProvider({
-      config: cfg as never,
+      config: {} as never,
       provider: "gemini",
       remote: {
         apiKey: "gemini-key",

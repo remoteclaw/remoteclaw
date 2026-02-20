@@ -19,7 +19,6 @@ export {
   collectSandboxDangerousConfigFindings,
   collectSandboxDockerNoopFindings,
   collectSecretsInConfigFindings,
-  collectSmallModelRiskFindings,
   collectSyncedFolderFindings,
   type SecurityAuditFinding,
 } from "./audit-extra.sync.js";

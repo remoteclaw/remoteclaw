@@ -222,28 +222,6 @@ export const testState = {
 export const testIsNixMode = hoisted.testIsNixMode;
 export const sessionStoreSaveDelayMs = hoisted.sessionStoreSaveDelayMs;
 
-vi.mock("../agents/pi-model-discovery.js", async () => {
-  const actual = await vi.importActual<typeof import("../agents/pi-model-discovery.js")>(
-    "../agents/pi-model-discovery.js",
-  );
-
-  class MockModelRegistry extends actual.ModelRegistry {
-    override getAll(): ReturnType<typeof actual.ModelRegistry.prototype.getAll> {
-      if (!piSdkMock.enabled) {
-        return super.getAll();
-      }
-      piSdkMock.discoverCalls += 1;
-      // Cast to expected type for testing purposes
-      return piSdkMock.models as ReturnType<typeof actual.ModelRegistry.prototype.getAll>;
-    }
-  }
-
-  return {
-    ...actual,
-    ModelRegistry: MockModelRegistry,
-  };
-});
-
 vi.mock("../cron/isolated-agent.js", () => ({
   runCronIsolatedAgentTurn: (...args: unknown[]) =>
     (cronIsolatedRun as (...args: unknown[]) => unknown)(...args),

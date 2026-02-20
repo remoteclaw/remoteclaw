@@ -1,23 +1,10 @@
-import {
-  resolveAgentDir,
-  resolveDefaultAgentId,
-  resolveSessionAgentId,
-} from "../../agents/agent-scope.js";
+import { resolveDefaultModelForAgent } from "../../agents/cli-routing.js";
 import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
-import {
-  buildModelAliasIndex,
-  type ModelAliasIndex,
-  modelKey,
-  resolveDefaultModelForAgent,
-  resolveModelRefFromString,
-} from "../../agents/model-selection.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { applyVerboseOverride } from "../../sessions/level-overrides.js";
-import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
-import { resolveProfileOverride } from "./directive-handling.auth.js";
 import type { InlineDirectives } from "./directive-handling.parse.js";
 import { enqueueModeSwitchEvents } from "./directive-handling.shared.js";
 import type { ElevatedLevel, ReasoningLevel } from "./directives.js";
@@ -35,7 +22,7 @@ export async function persistInlineDirectives(params: {
   elevatedAllowed: boolean;
   defaultProvider: string;
   defaultModel: string;
-  aliasIndex: ModelAliasIndex;
+  aliasIndex: Record<string, never>;
   allowedModelKeys: Set<string>;
   provider: string;
   model: string;
@@ -45,26 +32,15 @@ export async function persistInlineDirectives(params: {
 }): Promise<{ provider: string; model: string; contextTokens: number }> {
   const {
     directives,
-    cfg,
     sessionEntry,
     sessionStore,
     sessionKey,
     storePath,
     elevatedEnabled,
     elevatedAllowed,
-    defaultProvider,
-    defaultModel,
-    aliasIndex,
-    allowedModelKeys,
-    initialModelLabel,
-    formatModelSwitchEvent,
     agentCfg,
   } = params;
   let { provider, model } = params;
-  const activeAgentId = sessionKey
-    ? resolveSessionAgentId({ sessionKey, config: cfg })
-    : resolveDefaultAgentId(cfg);
-  const agentDir = resolveAgentDir(cfg, activeAgentId);
 
   if (sessionEntry && sessionStore && sessionKey) {
     const prevElevatedLevel =
@@ -133,56 +109,6 @@ export async function persistInlineDirectives(params: {
       }
     }
 
-    const modelDirective =
-      directives.hasModelDirective && params.effectiveModelDirective
-        ? params.effectiveModelDirective
-        : undefined;
-    if (modelDirective) {
-      const resolved = resolveModelRefFromString({
-        raw: modelDirective,
-        defaultProvider,
-        aliasIndex,
-      });
-      if (resolved) {
-        const key = modelKey(resolved.ref.provider, resolved.ref.model);
-        if (allowedModelKeys.size === 0 || allowedModelKeys.has(key)) {
-          let profileOverride: string | undefined;
-          if (directives.rawModelProfile) {
-            const profileResolved = resolveProfileOverride({
-              rawProfile: directives.rawModelProfile,
-              provider: resolved.ref.provider,
-              cfg,
-              agentDir,
-            });
-            if (profileResolved.error) {
-              throw new Error(profileResolved.error);
-            }
-            profileOverride = profileResolved.profileId;
-          }
-          const isDefault =
-            resolved.ref.provider === defaultProvider && resolved.ref.model === defaultModel;
-          const { updated: modelUpdated } = applyModelOverrideToSessionEntry({
-            entry: sessionEntry,
-            selection: {
-              provider: resolved.ref.provider,
-              model: resolved.ref.model,
-              isDefault,
-            },
-            profileOverride,
-          });
-          provider = resolved.ref.provider;
-          model = resolved.ref.model;
-          const nextLabel = `${provider}/${model}`;
-          if (nextLabel !== initialModelLabel) {
-            enqueueSystemEvent(formatModelSwitchEvent(nextLabel, resolved.alias), {
-              sessionKey,
-              contextKey: `model:${nextLabel}`,
-            });
-          }
-          updated = updated || modelUpdated;
-        }
-      }
-    }
     if (directives.hasQueueDirective && directives.queueReset) {
       delete sessionEntry.queueMode;
       delete sessionEntry.queueDebounceMs;
@@ -219,7 +145,7 @@ export async function persistInlineDirectives(params: {
 export function resolveDefaultModel(params: { cfg: RemoteClawConfig; agentId?: string }): {
   defaultProvider: string;
   defaultModel: string;
-  aliasIndex: ModelAliasIndex;
+  aliasIndex: Record<string, never>;
 } {
   const mainModel = resolveDefaultModelForAgent({
     cfg: params.cfg,
@@ -227,9 +153,6 @@ export function resolveDefaultModel(params: { cfg: RemoteClawConfig; agentId?: s
   });
   const defaultProvider = mainModel.provider;
   const defaultModel = mainModel.model;
-  const aliasIndex = buildModelAliasIndex({
-    cfg: params.cfg,
-    defaultProvider,
-  });
+  const aliasIndex: Record<string, never> = {};
   return { defaultProvider, defaultModel, aliasIndex };
 }

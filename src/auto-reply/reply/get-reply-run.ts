@@ -33,7 +33,6 @@ import type { buildCommandContext } from "./commands.js";
 import type { InlineDirectives } from "./directive-handling.js";
 import { buildGroupChatContext, buildGroupIntro } from "./groups.js";
 import { buildInboundMetaSystemPrompt, buildInboundUserContextPrefix } from "./inbound-meta.js";
-import type { createModelSelectionState } from "./model-selection.js";
 import { resolveQueueSettings } from "./queue.js";
 import { routeReply } from "./route-reply.js";
 import { BARE_SESSION_RESET_PROMPT } from "./session-reset-prompt.js";
@@ -74,7 +73,9 @@ type RunPreparedReplyParams = {
     flushOnParagraph?: boolean;
   };
   resolvedBlockStreamingBreak: "text_end" | "message_end";
-  modelState: Awaited<ReturnType<typeof createModelSelectionState>>;
+  modelState: {
+    resolveDefaultThinkingLevel: () => Promise<import("../thinking.js").ThinkLevel | undefined>;
+  };
   provider: string;
   model: string;
   perMessageQueueMode?: InlineDirectives["queueMode"];

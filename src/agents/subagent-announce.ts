@@ -32,41 +32,6 @@ function formatTokenCount(value?: number) {
   return String(Math.round(value));
 }
 
-function formatUsd(value?: number) {
-  if (value === undefined || !Number.isFinite(value)) {
-    return undefined;
-  }
-  if (value >= 1) {
-    return `$${value.toFixed(2)}`;
-  }
-  if (value >= 0.01) {
-    return `$${value.toFixed(2)}`;
-  }
-  return `$${value.toFixed(4)}`;
-}
-
-function resolveModelCost(params: {
-  provider?: string;
-  model?: string;
-  config: ReturnType<typeof loadConfig>;
-}):
-  | {
-      input: number;
-      output: number;
-      cacheRead: number;
-      cacheWrite: number;
-    }
-  | undefined {
-  const provider = params.provider?.trim();
-  const model = params.model?.trim();
-  if (!provider || !model) {
-    return undefined;
-  }
-  const models = params.config.models?.providers?.[provider]?.models ?? [];
-  const entry = models.find((candidate) => candidate.id === model);
-  return entry?.cost;
-}
-
 async function waitForSessionUsage(params: { sessionKey: string }) {
   const cfg = loadConfig();
   const agentId = resolveAgentIdFromSessionKey(params.sessionKey);
@@ -139,7 +104,6 @@ async function buildSubagentStatsLine(params: {
   startedAt?: number;
   endedAt?: number;
 }) {
-  const cfg = loadConfig();
   const { entry, storePath } = await waitForSessionUsage({
     sessionKey: params.sessionKey,
   });
@@ -166,14 +130,6 @@ async function buildSubagentStatsLine(params: {
       ? Math.max(0, params.endedAt - params.startedAt)
       : undefined;
 
-  const provider = entry?.modelProvider;
-  const model = entry?.model;
-  const costConfig = resolveModelCost({ provider, model, config: cfg });
-  const cost =
-    costConfig && typeof input === "number" && typeof output === "number"
-      ? (input * costConfig.input + output * costConfig.output) / 1_000_000
-      : undefined;
-
   const parts: string[] = [];
   const runtime = formatDurationCompact(runtimeMs);
   parts.push(`runtime ${runtime ?? "n/a"}`);
@@ -184,10 +140,6 @@ async function buildSubagentStatsLine(params: {
     parts.push(`tokens ${totalText} (in ${inputText} / out ${outputText})`);
   } else {
     parts.push("tokens n/a");
-  }
-  const costText = formatUsd(cost);
-  if (costText) {
-    parts.push(`est ${costText}`);
   }
   parts.push(`sessionKey ${params.sessionKey}`);
   if (sessionId) {

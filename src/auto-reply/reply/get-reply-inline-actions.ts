@@ -8,7 +8,6 @@ import { getAbortMemory } from "./abort.js";
 import { buildStatusReply, handleCommands } from "./commands.js";
 import type { InlineDirectives } from "./directive-handling.js";
 import { isDirectiveOnly } from "./directive-handling.js";
-import type { createModelSelectionState } from "./model-selection.js";
 import { extractInlineSimpleCommand } from "./reply-inline.js";
 import type { TypingController } from "./typing.js";
 
@@ -49,9 +48,7 @@ export async function handleInlineActions(params: {
   resolvedVerboseLevel: VerboseLevel | undefined;
   resolvedReasoningLevel: ReasoningLevel;
   resolvedElevatedLevel: ElevatedLevel;
-  resolveDefaultThinkingLevel: Awaited<
-    ReturnType<typeof createModelSelectionState>
-  >["resolveDefaultThinkingLevel"];
+  resolveDefaultThinkingLevel: () => Promise<import("../thinking.js").ThinkLevel | undefined>;
   provider: string;
   model: string;
   contextTokens: number;

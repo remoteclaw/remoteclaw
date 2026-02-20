@@ -1,17 +1,12 @@
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
-import { loadModelCatalog } from "../agents/model-catalog.js";
 import { getReplyFromConfig } from "./reply.js";
 
 vi.mock("../middleware/index.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware/index.js")>();
   return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
 });
-vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(),
-}));
-
 import { ChannelBridge } from "../middleware/index.js";
 
 const mockHandle = vi.fn();
@@ -34,10 +29,6 @@ describe("block streaming", () => {
       aborted: false,
       error: undefined,
     });
-    vi.mocked(loadModelCatalog).mockResolvedValue([
-      { id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" },
-      { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai" },
-    ]);
   });
 
   async function waitForCalls(fn: () => number, calls: number) {

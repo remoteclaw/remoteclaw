@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { isCliProvider } from "../../agents/cli-routing.js";
 import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { resolveModelAuthMode } from "../../agents/model-auth.js";
-import { isCliProvider } from "../../agents/model-selection.js";
 import { hasNonzeroUsage } from "../../agents/usage.js";
 import {
   resolveAgentIdFromSessionKey,

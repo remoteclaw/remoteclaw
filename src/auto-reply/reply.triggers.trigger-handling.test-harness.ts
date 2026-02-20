@@ -39,34 +39,6 @@ export function getProviderUsageMocks(): AnyMocks {
 
 vi.mock("../infra/provider-usage.js", () => providerUsageMocks);
 
-const modelCatalogMocks = vi.hoisted(() => ({
-  loadModelCatalog: vi.fn().mockResolvedValue([
-    {
-      provider: "anthropic",
-      id: "claude-opus-4-5",
-      name: "Claude Opus 4.5",
-      contextWindow: 200000,
-    },
-    {
-      provider: "openrouter",
-      id: "anthropic/claude-opus-4-5",
-      name: "Claude Opus 4.5 (OpenRouter)",
-      contextWindow: 200000,
-    },
-    { provider: "openai", id: "gpt-4.1-mini", name: "GPT-4.1 mini" },
-    { provider: "openai", id: "gpt-5.2", name: "GPT-5.2" },
-    { provider: "openai-codex", id: "gpt-5.2", name: "GPT-5.2 (Codex)" },
-    { provider: "minimax", id: "MiniMax-M2.1", name: "MiniMax M2.1" },
-  ]),
-  resetModelCatalogCacheForTest: vi.fn(),
-}));
-
-export function getModelCatalogMocks(): AnyMocks {
-  return modelCatalogMocks;
-}
-
-vi.mock("../agents/model-catalog.js", () => modelCatalogMocks);
-
 const webSessionMocks = vi.hoisted(() => ({
   webAuthExists: vi.fn().mockResolvedValue(true),
   getWebAuthAgeMs: vi.fn().mockReturnValue(120_000),

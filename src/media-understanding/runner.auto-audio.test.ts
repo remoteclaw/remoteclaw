@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
@@ -10,6 +10,22 @@ import {
   normalizeMediaAttachments,
   runCapability,
 } from "./runner.js";
+
+vi.mock("../agents/model-auth.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../agents/model-auth.js")>();
+  return {
+    ...actual,
+    resolveApiKeyForProvider: vi.fn().mockResolvedValue({
+      apiKey: "test-key",
+      mode: "api-key",
+      source: "test",
+    }),
+  };
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("runCapability auto audio entries", () => {
   it("uses provider keys to auto-enable audio transcription", async () => {
@@ -33,16 +49,7 @@ describe("runCapability auto audio entries", () => {
       },
     });
 
-    const cfg = {
-      models: {
-        providers: {
-          openai: {
-            apiKey: "test-key",
-            models: [],
-          },
-        },
-      },
-    } as unknown as RemoteClawConfig;
+    const cfg = {} as unknown as RemoteClawConfig;
 
     try {
       const result = await runCapability({
@@ -81,14 +88,6 @@ describe("runCapability auto audio entries", () => {
     });
 
     const cfg = {
-      models: {
-        providers: {
-          openai: {
-            apiKey: "test-key",
-            models: [],
-          },
-        },
-      },
       tools: {
         media: {
           audio: {

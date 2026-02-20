@@ -1,14 +1,8 @@
 import crypto from "node:crypto";
-import { resolveAgentModelFallbacksOverride } from "../../agents/agent-scope.js";
-import { runWithModelFallback } from "../../agents/model-fallback.js";
-import { isCliProvider } from "../../agents/model-selection.js";
+import { isCliProvider } from "../../agents/cli-routing.js";
 import { resolveSandboxConfigForAgent, resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import {
-  resolveAgentIdFromSessionKey,
-  type SessionEntry,
-  updateSessionStoreEntry,
-} from "../../config/sessions.js";
+import type { SessionEntry } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import type { TemplateContext } from "../templating.js";
@@ -20,7 +14,6 @@ import {
   shouldRunMemoryFlush,
 } from "./memory-flush.js";
 import type { FollowupRun } from "./queue.js";
-import { incrementCompactionCount } from "./session-updates.js";
 
 export async function runMemoryFlushIfNeeded(params: {
   cfg: RemoteClawConfig;
@@ -78,7 +71,6 @@ export async function runMemoryFlushIfNeeded(params: {
   }
 
   let activeSessionEntry = params.sessionEntry;
-  const activeSessionStore = params.sessionStore;
   const flushRunId = crypto.randomUUID();
   if (params.sessionKey) {
     registerAgentRunContext(flushRunId, {
@@ -86,53 +78,8 @@ export async function runMemoryFlushIfNeeded(params: {
       verboseLevel: params.resolvedVerboseLevel,
     });
   }
-  let memoryCompactionCompleted = false;
   try {
-    await runWithModelFallback({
-      cfg: params.followupRun.run.config,
-      provider: params.followupRun.run.provider,
-      model: params.followupRun.run.model,
-      agentDir: params.followupRun.run.agentDir,
-      fallbacksOverride: resolveAgentModelFallbacksOverride(
-        params.followupRun.run.config,
-        resolveAgentIdFromSessionKey(params.followupRun.run.sessionKey),
-      ),
-      run: () => {
-        throw new Error("Memory flush not available: pi-embedded engine removed");
-      },
-    });
-    let memoryFlushCompactionCount =
-      activeSessionEntry?.compactionCount ??
-      (params.sessionKey ? activeSessionStore?.[params.sessionKey]?.compactionCount : 0) ??
-      0;
-    if (memoryCompactionCompleted) {
-      const nextCount = await incrementCompactionCount({
-        sessionEntry: activeSessionEntry,
-        sessionStore: activeSessionStore,
-        sessionKey: params.sessionKey,
-        storePath: params.storePath,
-      });
-      if (typeof nextCount === "number") {
-        memoryFlushCompactionCount = nextCount;
-      }
-    }
-    if (params.storePath && params.sessionKey) {
-      try {
-        const updatedEntry = await updateSessionStoreEntry({
-          storePath: params.storePath,
-          sessionKey: params.sessionKey,
-          update: async () => ({
-            memoryFlushAt: Date.now(),
-            memoryFlushCompactionCount,
-          }),
-        });
-        if (updatedEntry) {
-          activeSessionEntry = updatedEntry;
-        }
-      } catch (err) {
-        logVerbose(`failed to persist memory flush metadata: ${String(err)}`);
-      }
-    }
+    throw new Error("Memory flush not available: pi-embedded engine removed");
   } catch (err) {
     logVerbose(`memory flush run failed: ${String(err)}`);
   }

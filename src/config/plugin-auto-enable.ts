@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "../agents/model-selection.js";
+import { normalizeProviderId } from "../agents/cli-routing.js";
 import {
   getChannelPluginCatalogEntry,
   listChannelPluginCatalogEntries,
@@ -285,15 +285,6 @@ function isProviderConfigured(cfg: RemoteClawConfig, providerId: string): boolea
       }
       const provider = normalizeProviderId(String(profile.provider ?? ""));
       if (provider === normalized) {
-        return true;
-      }
-    }
-  }
-
-  const providerConfig = cfg.models?.providers;
-  if (providerConfig && typeof providerConfig === "object") {
-    for (const key of Object.keys(providerConfig)) {
-      if (normalizeProviderId(key) === normalized) {
         return true;
       }
     }

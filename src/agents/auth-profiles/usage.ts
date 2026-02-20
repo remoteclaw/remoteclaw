@@ -1,5 +1,5 @@
 import type { RemoteClawConfig } from "../../config/config.js";
-import { normalizeProviderId } from "../model-selection.js";
+import { normalizeProviderId } from "../cli-routing.js";
 import { saveAuthProfileStore, updateAuthProfileStoreWithLock } from "./store.js";
 import type { AuthProfileFailureReason, AuthProfileStore, ProfileUsageStats } from "./types.js";
 

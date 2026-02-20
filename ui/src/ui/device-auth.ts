@@ -5,7 +5,23 @@ import {
   normalizeDeviceAuthScopes,
 } from "../../../src/shared/device-auth.js";
 
-const STORAGE_KEY = "openclaw.device.auth.v1";
+const STORAGE_KEY = "remoteclaw.device.auth.v1";
+const LEGACY_STORAGE_KEY = "openclaw.device.auth.v1";
+
+/** Migrate device auth from the legacy OpenClaw storage key (one-time). */
+function migrateLegacyAuth(): void {
+  try {
+    const legacy = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacy && !window.localStorage.getItem(STORAGE_KEY)) {
+      window.localStorage.setItem(STORAGE_KEY, legacy);
+    }
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // best-effort
+  }
+}
+
+migrateLegacyAuth();
 
 function readStore(): DeviceAuthStore | null {
   try {

@@ -14,7 +14,23 @@ export type DeviceIdentity = {
   privateKey: string;
 };
 
-const STORAGE_KEY = "openclaw-device-identity-v1";
+const STORAGE_KEY = "remoteclaw-device-identity-v1";
+const LEGACY_STORAGE_KEY = "openclaw-device-identity-v1";
+
+/** Migrate device identity from the legacy OpenClaw storage key (one-time). */
+function migrateLegacyIdentity(): void {
+  try {
+    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacy && !localStorage.getItem(STORAGE_KEY)) {
+      localStorage.setItem(STORAGE_KEY, legacy);
+    }
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // best-effort
+  }
+}
+
+migrateLegacyIdentity();
 
 function base64UrlEncode(bytes: Uint8Array): string {
   let binary = "";

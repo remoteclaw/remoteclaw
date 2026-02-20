@@ -21,18 +21,9 @@ import {
   DEFAULT_AGENT_ID,
   resolveAgentIdFromSessionKey,
 } from "../../routing/session-key.js";
-import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
 import { resolveAgentDir } from "../agent-scope.js";
+import { parseModelRef, resolveDefaultModelForAgent } from "../cli-routing.js";
 import { formatUserTime, resolveUserTimeFormat, resolveUserTimezone } from "../date-time.js";
-import { resolveModelAuthLabel } from "../model-auth-label.js";
-import { loadModelCatalog } from "../model-catalog.js";
-import {
-  buildAllowedModelSet,
-  buildModelAliasIndex,
-  modelKey,
-  resolveDefaultModelForAgent,
-  resolveModelRefFromString,
-} from "../model-selection.js";
 import type { AnyAgentTool } from "./common.js";
 import { readStringParam } from "./common.js";
 import {
@@ -109,20 +100,19 @@ function resolveSessionKeyFromSessionId(params: {
   return match?.[0] ?? null;
 }
 
-async function resolveModelOverride(params: {
+function resolveModelOverride(params: {
   cfg: RemoteClawConfig;
   raw: string;
   sessionEntry?: SessionEntry;
   agentId: string;
-}): Promise<
+}):
   | { kind: "reset" }
   | {
       kind: "set";
       provider: string;
       model: string;
       isDefault: boolean;
-    }
-> {
+    } {
   const raw = params.raw.trim();
   if (!raw) {
     return { kind: "reset" };
@@ -136,38 +126,17 @@ async function resolveModelOverride(params: {
     agentId: params.agentId,
   });
   const currentProvider = params.sessionEntry?.providerOverride?.trim() || configDefault.provider;
-  const currentModel = params.sessionEntry?.modelOverride?.trim() || configDefault.model;
 
-  const aliasIndex = buildModelAliasIndex({
-    cfg: params.cfg,
-    defaultProvider: currentProvider,
-  });
-  const catalog = await loadModelCatalog({ config: params.cfg });
-  const allowed = buildAllowedModelSet({
-    cfg: params.cfg,
-    catalog,
-    defaultProvider: currentProvider,
-    defaultModel: currentModel,
-  });
-
-  const resolved = resolveModelRefFromString({
-    raw,
-    defaultProvider: currentProvider,
-    aliasIndex,
-  });
+  const resolved = parseModelRef(raw, currentProvider);
   if (!resolved) {
     throw new Error(`Unrecognized model "${raw}".`);
   }
-  const key = modelKey(resolved.ref.provider, resolved.ref.model);
-  if (allowed.allowedKeys.size > 0 && !allowed.allowedKeys.has(key)) {
-    throw new Error(`Model "${key}" is not allowed.`);
-  }
   const isDefault =
-    resolved.ref.provider === configDefault.provider && resolved.ref.model === configDefault.model;
+    resolved.provider === configDefault.provider && resolved.model === configDefault.model;
   return {
     kind: "set",
-    provider: resolved.ref.provider,
-    model: resolved.ref.model,
+    provider: resolved.provider,
+    model: resolved.model,
     isDefault,
   };
 }
@@ -262,35 +231,44 @@ export function createSessionStatusTool(opts?: {
       const modelRaw = readStringParam(params, "model");
       let changedModel = false;
       if (typeof modelRaw === "string") {
-        const selection = await resolveModelOverride({
+        const selection = resolveModelOverride({
           cfg,
           raw: modelRaw,
           sessionEntry: resolved.entry,
           agentId,
         });
         const nextEntry: SessionEntry = { ...resolved.entry };
-        const applied = applyModelOverrideToSessionEntry({
-          entry: nextEntry,
-          selection:
-            selection.kind === "reset"
-              ? {
-                  provider: configured.provider,
-                  model: configured.model,
-                  isDefault: true,
-                }
-              : {
-                  provider: selection.provider,
-                  model: selection.model,
-                  isDefault: selection.isDefault,
-                },
-        });
-        if (applied.updated) {
-          store[resolved.key] = nextEntry;
-          await updateSessionStore(storePath, (nextStore) => {
-            nextStore[resolved.key] = nextEntry;
-          });
-          resolved.entry = nextEntry;
-          changedModel = true;
+        if (selection.kind === "reset") {
+          const hadOverride = !!nextEntry.providerOverride || !!nextEntry.modelOverride;
+          delete nextEntry.providerOverride;
+          delete nextEntry.modelOverride;
+          if (hadOverride) {
+            store[resolved.key] = nextEntry;
+            await updateSessionStore(storePath, (nextStore) => {
+              nextStore[resolved.key] = nextEntry;
+            });
+            resolved.entry = nextEntry;
+            changedModel = true;
+          }
+        } else {
+          const changed =
+            nextEntry.providerOverride !== selection.provider ||
+            nextEntry.modelOverride !== selection.model;
+          if (changed) {
+            if (selection.isDefault) {
+              delete nextEntry.providerOverride;
+              delete nextEntry.modelOverride;
+            } else {
+              nextEntry.providerOverride = selection.provider;
+              nextEntry.modelOverride = selection.model;
+            }
+            store[resolved.key] = nextEntry;
+            await updateSessionStore(storePath, (nextStore) => {
+              nextStore[resolved.key] = nextEntry;
+            });
+            resolved.entry = nextEntry;
+            changedModel = true;
+          }
         }
       }
 
@@ -365,12 +343,7 @@ export function createSessionStatusTool(opts?: {
         sessionKey: resolved.key,
         sessionStorePath: storePath,
         groupActivation,
-        modelAuth: resolveModelAuthLabel({
-          provider: providerForCard,
-          cfg,
-          sessionEntry: resolved.entry,
-          agentDir,
-        }),
+        modelAuth: undefined,
         usageLine,
         timeLine,
         queue: {

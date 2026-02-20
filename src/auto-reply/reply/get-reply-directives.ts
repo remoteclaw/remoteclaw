@@ -1,5 +1,4 @@
 import type { ExecToolDefaults } from "../../agents/bash-tools.js";
-import type { ModelAliasIndex } from "../../agents/model-selection.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
@@ -14,7 +13,6 @@ import { applyInlineDirectiveOverrides } from "./get-reply-directives-apply.js";
 import { clearExecInlineDirectives, clearInlineDirectives } from "./get-reply-directives-utils.js";
 import { defaultGroupActivation, resolveGroupRequireMention } from "./groups.js";
 import { CURRENT_MESSAGE_MARKER, stripMentions, stripStructuralPrefixes } from "./mentions.js";
-import { createModelSelectionState, resolveContextTokens } from "./model-selection.js";
 import { formatElevatedUnavailableMessage, resolveElevatedPermissions } from "./reply-elevated.js";
 import { stripInlineStatus } from "./reply-inline.js";
 import type { TypingController } from "./typing.js";
@@ -48,7 +46,14 @@ export type ReplyDirectiveContinuation = {
   resolvedBlockStreamingBreak: "text_end" | "message_end";
   provider: string;
   model: string;
-  modelState: Awaited<ReturnType<typeof createModelSelectionState>>;
+  modelState: {
+    provider: string;
+    model: string;
+    allowedModelKeys: Set<string>;
+    allowedModelCatalog: Array<{ id: string; name: string; provider: string }>;
+    resetModelOverride: boolean;
+    resolveDefaultThinkingLevel: () => Promise<import("../thinking.js").ThinkLevel | undefined>;
+  };
   contextTokens: number;
   inlineStatusRequested: boolean;
   directiveAck?: ReplyPayload;
@@ -100,7 +105,7 @@ export async function resolveReplyDirectives(params: {
   commandAuthorized: boolean;
   defaultProvider: string;
   defaultModel: string;
-  aliasIndex: ModelAliasIndex;
+  aliasIndex: Record<string, never>;
   provider: string;
   model: string;
   hasResolvedHeartbeatModelOverride: boolean;
@@ -128,7 +133,7 @@ export async function resolveReplyDirectives(params: {
     defaultModel,
     provider: initialProvider,
     model: initialModel,
-    hasResolvedHeartbeatModelOverride,
+    hasResolvedHeartbeatModelOverride: _hasResolvedHeartbeatModelOverride,
     typing,
     opts,
   } = params;
@@ -352,28 +357,17 @@ export async function resolveReplyDirectives(params: {
     ? resolveBlockStreamingChunking(cfg, sessionCtx.Provider, sessionCtx.AccountId)
     : undefined;
 
-  const modelState = await createModelSelectionState({
-    cfg,
-    agentCfg,
-    sessionEntry,
-    sessionStore,
-    sessionKey,
-    parentSessionKey: ctx.ParentSessionKey,
-    storePath,
-    defaultProvider,
-    defaultModel,
+  const modelState = {
     provider,
     model,
-    hasModelDirective: directives.hasModelDirective,
-    hasResolvedHeartbeatModelOverride,
-  });
-  provider = modelState.provider;
-  model = modelState.model;
+    allowedModelKeys: new Set<string>(),
+    allowedModelCatalog: [] as Array<{ id: string; name: string; provider: string }>,
+    resetModelOverride: false,
+    resolveDefaultThinkingLevel: async () =>
+      agentCfg?.thinkingDefault as import("../thinking.js").ThinkLevel | undefined,
+  };
 
-  let contextTokens = resolveContextTokens({
-    agentCfg,
-    model,
-  });
+  let contextTokens = agentCfg?.contextTokens ?? 200_000;
 
   const initialModelLabel = `${provider}/${model}`;
   const formatModelSwitchEvent = (label: string, alias?: string) =>

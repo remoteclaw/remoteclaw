@@ -1,17 +1,12 @@
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
-import { loadModelCatalog } from "../agents/model-catalog.js";
 import { getReplyFromConfig } from "./reply.js";
 
 vi.mock("../middleware/index.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware/index.js")>();
   return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
 });
-vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(),
-}));
-
 import { ChannelBridge } from "../middleware/index.js";
 
 const mockHandle = vi.fn();
@@ -37,9 +32,6 @@ describe("RawBody directive parsing", () => {
       return { handle: mockHandle };
     } as never);
     mockHandle.mockReset();
-    vi.mocked(loadModelCatalog).mockResolvedValue([
-      { id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" },
-    ]);
   });
 
   afterEach(() => {
@@ -78,11 +70,11 @@ describe("RawBody directive parsing", () => {
     });
   });
 
-  it("/model status detected from RawBody", async () => {
+  it("/status detected from RawBody", async () => {
     await withTempHome(async (home) => {
       const groupMessageCtx = {
-        Body: `[Context]\nJake: /model status\n[from: Jake]`,
-        RawBody: "/model status",
+        Body: `[Context]\nJake: /status\n[from: Jake]`,
+        RawBody: "/status",
         From: "+1222",
         To: "+1222",
         ChatType: "group",
@@ -97,9 +89,6 @@ describe("RawBody directive parsing", () => {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
               workspace: path.join(home, "remoteclaw"),
-              models: {
-                "anthropic/claude-opus-4-5": {},
-              },
             },
           },
           channels: { whatsapp: { allowFrom: ["*"] } },

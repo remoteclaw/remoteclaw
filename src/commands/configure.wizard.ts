@@ -11,7 +11,6 @@ import { createClackPrompter } from "../wizard/clack-prompter.js";
 import { WizardCancelledError } from "../wizard/prompts.js";
 import { removeChannelConfigWizard } from "./configure.channels.js";
 import { maybeInstallDaemon } from "./configure.daemon.js";
-import { promptAuthConfig } from "./configure.gateway-auth.js";
 import { promptGatewayConfig } from "./configure.gateway.js";
 import type {
   ChannelsWizardMode,
@@ -355,7 +354,7 @@ export async function runConfigureWizard(
       }
 
       if (selected.includes("model")) {
-        nextConfig = await promptAuthConfig(nextConfig, runtime, prompter);
+        // TODO: model/auth configuration removed with model infrastructure; re-implement when new model layer lands
       }
 
       if (selected.includes("web")) {
@@ -422,7 +421,7 @@ export async function runConfigureWizard(
         }
 
         if (choice === "model") {
-          nextConfig = await promptAuthConfig(nextConfig, runtime, prompter);
+          // TODO: model/auth configuration removed with model infrastructure; re-implement when new model layer lands
           await persistConfig();
         }
 

@@ -4,7 +4,6 @@ import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   addSubagentRunForTests,
-  listSubagentRunsForRequester,
   resetSubagentRegistryForTests,
 } from "../../agents/subagent-registry.js";
 import type { RemoteClawConfig } from "../../config/config.js";
@@ -61,16 +60,6 @@ vi.mock("../../channels/plugins/pairing.js", async () => {
     listPairingChannels: () => ["telegram"],
   };
 });
-
-vi.mock("../../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(async () => [
-    { provider: "anthropic", id: "claude-opus-4-5", name: "Claude Opus" },
-    { provider: "anthropic", id: "claude-sonnet-4-5", name: "Claude Sonnet" },
-    { provider: "openai", id: "gpt-4.1", name: "GPT-4.1" },
-    { provider: "openai", id: "gpt-4.1-mini", name: "GPT-4.1 Mini" },
-    { provider: "google", id: "gemini-2.0-flash", name: "Gemini Flash" },
-  ]),
-}));
 
 vi.mock("../../infra/system-events.js", () => ({
   enqueueSystemEvent: vi.fn(),
@@ -653,103 +642,6 @@ describe("handleCommands /allowlist", () => {
   });
 });
 
-describe("/models command", () => {
-  const cfg = {
-    commands: { text: true },
-    agents: { defaults: { model: { primary: "anthropic/claude-opus-4-5" } } },
-  } as unknown as RemoteClawConfig;
-
-  it.each(["discord", "whatsapp"])("lists providers on %s (text)", async (surface) => {
-    const params = buildPolicyParams("/models", cfg, { Provider: surface, Surface: surface });
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Providers:");
-    expect(result.reply?.text).toContain("anthropic");
-    expect(result.reply?.text).toContain("Use: /models <provider>");
-  });
-
-  it("lists providers on telegram (buttons)", async () => {
-    const params = buildPolicyParams("/models", cfg, { Provider: "telegram", Surface: "telegram" });
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toBe("Select a provider:");
-    const buttons = (result.reply?.channelData as { telegram?: { buttons?: unknown[][] } })
-      ?.telegram?.buttons;
-    expect(buttons).toBeDefined();
-    expect(buttons?.length).toBeGreaterThan(0);
-  });
-
-  it("lists provider models with pagination hints", async () => {
-    // Use discord surface for text-based output tests
-    const params = buildPolicyParams("/models anthropic", cfg, { Surface: "discord" });
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Models (anthropic)");
-    expect(result.reply?.text).toContain("page 1/");
-    expect(result.reply?.text).toContain("anthropic/claude-opus-4-5");
-    expect(result.reply?.text).toContain("Switch: /model <provider/model>");
-    expect(result.reply?.text).toContain("All: /models anthropic all");
-  });
-
-  it("ignores page argument when all flag is present", async () => {
-    // Use discord surface for text-based output tests
-    const params = buildPolicyParams("/models anthropic 3 all", cfg, { Surface: "discord" });
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Models (anthropic)");
-    expect(result.reply?.text).toContain("page 1/1");
-    expect(result.reply?.text).toContain("anthropic/claude-opus-4-5");
-    expect(result.reply?.text).not.toContain("Page out of range");
-  });
-
-  it("errors on out-of-range pages", async () => {
-    // Use discord surface for text-based output tests
-    const params = buildPolicyParams("/models anthropic 4", cfg, { Surface: "discord" });
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Page out of range");
-    expect(result.reply?.text).toContain("valid: 1-");
-  });
-
-  it("handles unknown providers", async () => {
-    const params = buildPolicyParams("/models not-a-provider", cfg);
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Unknown provider");
-    expect(result.reply?.text).toContain("Available providers");
-  });
-
-  it("lists configured models outside the curated catalog", async () => {
-    const customCfg = {
-      commands: { text: true },
-      agents: {
-        defaults: {
-          model: {
-            primary: "localai/ultra-chat",
-            fallbacks: ["anthropic/claude-opus-4-5"],
-          },
-          imageModel: "visionpro/studio-v1",
-        },
-      },
-    } as unknown as RemoteClawConfig;
-
-    // Use discord surface for text-based output tests
-    const providerList = await handleCommands(
-      buildPolicyParams("/models", customCfg, { Surface: "discord" }),
-    );
-    expect(providerList.reply?.text).toContain("localai");
-    expect(providerList.reply?.text).toContain("visionpro");
-
-    const result = await handleCommands(
-      buildPolicyParams("/models localai", customCfg, { Surface: "discord" }),
-    );
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Models (localai)");
-    expect(result.reply?.text).toContain("localai/ultra-chat");
-    expect(result.reply?.text).not.toContain("Unknown provider");
-  });
-});
-
 describe("handleCommands plugin commands", () => {
   it("dispatches registered plugin commands", async () => {
     clearPluginCommands();
@@ -1215,110 +1107,6 @@ describe("handleCommands subagents", () => {
           "run-followup-1",
     );
     expect(waitCall).toBeDefined();
-  });
-
-  it("steers subagents via /steer alias", async () => {
-    resetSubagentRegistryForTests();
-    callGatewayMock.mockReset();
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string };
-      if (request.method === "agent") {
-        return { runId: "run-steer-1" };
-      }
-      return {};
-    });
-    const storePath = path.join(testWorkspaceDir, "sessions-subagents-steer.json");
-    await updateSessionStore(storePath, (store) => {
-      store["agent:main:subagent:abc"] = {
-        sessionId: "child-session-steer",
-        updatedAt: Date.now(),
-      };
-    });
-    addSubagentRunForTests({
-      runId: "run-1",
-      childSessionKey: "agent:main:subagent:abc",
-      requesterSessionKey: "agent:main:main",
-      requesterDisplayKey: "main",
-      task: "do thing",
-      cleanup: "keep",
-      createdAt: 1000,
-      startedAt: 1000,
-    });
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-      session: { store: storePath },
-    } as RemoteClawConfig;
-    const params = buildParams("/steer 1 check timer.ts instead", cfg);
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("steered");
-    const steerWaitIndex = callGatewayMock.mock.calls.findIndex(
-      (call) =>
-        (call[0] as { method?: string; params?: { runId?: string } }).method === "agent.wait" &&
-        (call[0] as { method?: string; params?: { runId?: string } }).params?.runId === "run-1",
-    );
-    expect(steerWaitIndex).toBeGreaterThanOrEqual(0);
-    const steerRunIndex = callGatewayMock.mock.calls.findIndex(
-      (call) => (call[0] as { method?: string }).method === "agent",
-    );
-    expect(steerRunIndex).toBeGreaterThan(steerWaitIndex);
-    expect(callGatewayMock.mock.calls[steerWaitIndex]?.[0]).toMatchObject({
-      method: "agent.wait",
-      params: { runId: "run-1", timeoutMs: 5_000 },
-      timeoutMs: 7_000,
-    });
-    expect(callGatewayMock.mock.calls[steerRunIndex]?.[0]).toMatchObject({
-      method: "agent",
-      params: {
-        lane: "subagent",
-        sessionKey: "agent:main:subagent:abc",
-        sessionId: "child-session-steer",
-        timeout: 0,
-      },
-    });
-    const trackedRuns = listSubagentRunsForRequester("agent:main:main");
-    expect(trackedRuns).toHaveLength(1);
-    expect(trackedRuns[0].runId).toBe("run-steer-1");
-    expect(trackedRuns[0].endedAt).toBeUndefined();
-  });
-
-  it("restores announce behavior when /steer replacement dispatch fails", async () => {
-    resetSubagentRegistryForTests();
-    callGatewayMock.mockReset();
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string };
-      if (request.method === "agent.wait") {
-        return { status: "timeout" };
-      }
-      if (request.method === "agent") {
-        throw new Error("dispatch failed");
-      }
-      return {};
-    });
-    addSubagentRunForTests({
-      runId: "run-1",
-      childSessionKey: "agent:main:subagent:abc",
-      requesterSessionKey: "agent:main:main",
-      requesterDisplayKey: "main",
-      task: "do thing",
-      cleanup: "keep",
-      createdAt: 1000,
-      startedAt: 1000,
-    });
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as RemoteClawConfig;
-    const params = buildParams("/steer 1 check timer.ts instead", cfg);
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("send failed: dispatch failed");
-
-    const trackedRuns = listSubagentRunsForRequester("agent:main:main");
-    expect(trackedRuns).toHaveLength(1);
-    expect(trackedRuns[0].runId).toBe("run-1");
-    expect(trackedRuns[0].suppressAnnounceReason).toBeUndefined();
   });
 });
 

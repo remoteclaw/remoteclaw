@@ -1,6 +1,6 @@
 import chalk from "chalk";
+import { resolveConfiguredModelRef } from "../agents/cli-routing.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { resolveConfiguredModelRef } from "../agents/model-selection.js";
 import type { loadConfig } from "../config/config.js";
 import { getResolvedLoggerSettings } from "../logging.js";
 

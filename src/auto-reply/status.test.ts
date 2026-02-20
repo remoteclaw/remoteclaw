@@ -29,26 +29,6 @@ afterEach(() => {
 describe("buildStatusMessage", () => {
   it("summarizes agent readiness and context usage", () => {
     const text = buildStatusMessage({
-      config: {
-        models: {
-          providers: {
-            anthropic: {
-              apiKey: "test-key",
-              models: [
-                {
-                  id: "pi:opus",
-                  cost: {
-                    input: 1,
-                    output: 1,
-                    cacheRead: 0,
-                    cacheWrite: 0,
-                  },
-                },
-              ],
-            },
-          },
-        },
-      } as unknown as RemoteClawConfig,
       agent: {
         model: "anthropic/pi:opus",
         contextTokens: 32_000,
@@ -78,7 +58,6 @@ describe("buildStatusMessage", () => {
     expect(normalized).toContain("Model: anthropic/pi:opus");
     expect(normalized).toContain("api-key");
     expect(normalized).toContain("Tokens: 1.2k in / 800 out");
-    expect(normalized).toContain("Cost: $0.0020");
     expect(normalized).toContain("Context: 16k/32k (50%)");
     expect(normalized).toContain("Compactions: 2");
     expect(normalized).toContain("Session: agent:main:main");
@@ -298,25 +277,6 @@ describe("buildStatusMessage", () => {
 
   it("hides cost when not using an API key", () => {
     const text = buildStatusMessage({
-      config: {
-        models: {
-          providers: {
-            anthropic: {
-              models: [
-                {
-                  id: "claude-opus-4-5",
-                  cost: {
-                    input: 1,
-                    output: 1,
-                    cacheRead: 0,
-                    cacheWrite: 0,
-                  },
-                },
-              ],
-            },
-          },
-        },
-      } as unknown as RemoteClawConfig,
       agent: { model: "anthropic/claude-opus-4-5" },
       sessionEntry: { sessionId: "c1", updatedAt: 0, inputTokens: 10 },
       sessionKey: "agent:main:main",

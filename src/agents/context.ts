@@ -1,18 +1,10 @@
-// Lazy-load pi-coding-agent model metadata so we can infer context windows when
-// the agent reports a model id. This includes custom models.json entries.
+// Lazy-load context window hints from configured model entries.
 
-import { loadConfig } from "../config/config.js";
-import { resolveRemoteClawAgentDir } from "./agent-paths.js";
-import { ensureRemoteClawModelsJson } from "./models-config.js";
-
-type ModelEntry = { id: string; contextWindow?: number };
-type ModelRegistryLike = {
-  getAvailable?: () => ModelEntry[];
-  getAll: () => ModelEntry[];
-};
 type ConfigModelEntry = { id?: string; contextWindow?: number };
 type ProviderConfigEntry = { models?: ConfigModelEntry[] };
 type ModelsConfig = { providers?: Record<string, ProviderConfigEntry | undefined> };
+
+export type ModelEntry = { id: string; contextWindow?: number };
 
 export function applyDiscoveredContextWindows(params: {
   cache: Map<string, number>;
@@ -61,51 +53,10 @@ export function applyConfiguredContextWindows(params: {
 }
 
 const MODEL_CACHE = new Map<string, number>();
-const loadPromise = (async () => {
-  let cfg: ReturnType<typeof loadConfig> | undefined;
-  try {
-    cfg = loadConfig();
-  } catch {
-    // If config can't be loaded, leave cache empty.
-    return;
-  }
-
-  try {
-    await ensureRemoteClawModelsJson(cfg);
-  } catch {
-    // Continue with best-effort discovery/overrides.
-  }
-
-  try {
-    const { discoverAuthStorage, discoverModels } = await import("./pi-model-discovery.js");
-    const agentDir = resolveRemoteClawAgentDir();
-    const authStorage = discoverAuthStorage(agentDir);
-    const modelRegistry = discoverModels(authStorage, agentDir) as unknown as ModelRegistryLike;
-    const models =
-      typeof modelRegistry.getAvailable === "function"
-        ? modelRegistry.getAvailable()
-        : modelRegistry.getAll();
-    applyDiscoveredContextWindows({
-      cache: MODEL_CACHE,
-      models,
-    });
-  } catch {
-    // If model discovery fails, continue with config overrides only.
-  }
-
-  applyConfiguredContextWindows({
-    cache: MODEL_CACHE,
-    modelsConfig: cfg.models as ModelsConfig | undefined,
-  });
-})().catch(() => {
-  // Keep lookup best-effort.
-});
 
 export function lookupContextTokens(modelId?: string): number | undefined {
   if (!modelId) {
     return undefined;
   }
-  // Best-effort: kick off loading, but don't block.
-  void loadPromise;
   return MODEL_CACHE.get(modelId);
 }

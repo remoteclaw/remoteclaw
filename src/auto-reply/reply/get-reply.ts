@@ -3,7 +3,7 @@ import {
   resolveAgentWorkspaceDir,
   resolveSessionAgentId,
 } from "../../agents/agent-scope.js";
-import { resolveModelRefFromString } from "../../agents/model-selection.js";
+import { parseModelRef } from "../../agents/cli-routing.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
 import { type RemoteClawConfig, loadConfig } from "../../config/config.js";
@@ -19,7 +19,6 @@ import { resolveReplyDirectives } from "./get-reply-directives.js";
 import { handleInlineActions } from "./get-reply-inline-actions.js";
 import { runPreparedReply } from "./get-reply-run.js";
 import { finalizeInboundContext } from "./inbound-context.js";
-import { applyResetModelOverride } from "./session-reset-model.js";
 import { initSessionState } from "./session.js";
 import { stageSandboxMedia } from "./stage-sandbox-media.js";
 import { createTypingController } from "./typing.js";
@@ -52,16 +51,10 @@ export async function getReplyFromConfig(
     // fall back to the global defaults heartbeat model for backward compatibility.
     const heartbeatRaw =
       opts.heartbeatModelOverride?.trim() ?? agentCfg?.heartbeat?.model?.trim() ?? "";
-    const heartbeatRef = heartbeatRaw
-      ? resolveModelRefFromString({
-          raw: heartbeatRaw,
-          defaultProvider,
-          aliasIndex,
-        })
-      : null;
+    const heartbeatRef = heartbeatRaw ? parseModelRef(heartbeatRaw, defaultProvider) : null;
     if (heartbeatRef) {
-      provider = heartbeatRef.ref.provider;
-      model = heartbeatRef.ref.model;
+      provider = heartbeatRef.provider;
+      model = heartbeatRef.model;
       hasResolvedHeartbeatModelOverride = true;
     }
   }
@@ -129,23 +122,7 @@ export async function getReplyFromConfig(
     groupResolution,
     isGroup,
     triggerBodyNormalized,
-    bodyStripped,
   } = sessionState;
-
-  await applyResetModelOverride({
-    cfg,
-    resetTriggered,
-    bodyStripped,
-    sessionCtx,
-    ctx: finalized,
-    sessionEntry,
-    sessionStore,
-    sessionKey,
-    storePath,
-    defaultProvider,
-    defaultModel,
-    aliasIndex,
-  });
 
   const directiveResult = await resolveReplyDirectives({
     ctx: finalized,

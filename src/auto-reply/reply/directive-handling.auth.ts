@@ -3,13 +3,8 @@ import {
   resolveAuthProfileDisplayLabel,
   resolveAuthStorePathForDisplay,
 } from "../../agents/auth-profiles.js";
-import {
-  ensureAuthProfileStore,
-  getCustomProviderApiKey,
-  resolveAuthProfileOrder,
-  resolveEnvApiKey,
-} from "../../agents/model-auth.js";
-import { findNormalizedProviderValue, normalizeProviderId } from "../../agents/model-selection.js";
+import { findNormalizedProviderValue, normalizeProviderId } from "../../agents/cli-routing.js";
+import { ensureAuthProfileStore, resolveAuthProfileOrder } from "../../agents/model-auth.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { shortenHomePath } from "../../utils.js";
 
@@ -184,21 +179,6 @@ export const resolveAuthLabel = async (
     };
   }
 
-  const envKey = resolveEnvApiKey(provider);
-  if (envKey) {
-    const isOAuthEnv =
-      envKey.source.includes("ANTHROPIC_OAUTH_TOKEN") ||
-      envKey.source.toLowerCase().includes("oauth");
-    const label = isOAuthEnv ? "OAuth (env)" : maskApiKey(envKey.apiKey);
-    return { label, source: mode === "verbose" ? envKey.source : "" };
-  }
-  const customKey = getCustomProviderApiKey(cfg, provider);
-  if (customKey) {
-    return {
-      label: maskApiKey(customKey),
-      source: mode === "verbose" ? `models.json: ${formatPath(modelsPath)}` : "",
-    };
-  }
   return { label: "missing", source: "missing" };
 };
 

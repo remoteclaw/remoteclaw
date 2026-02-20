@@ -13,11 +13,6 @@ vi.mock("../middleware/index.js", async (importOriginal) => {
     ClaudeCliRuntime: vi.fn(),
   };
 });
-vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(),
-}));
-
-import { loadModelCatalog } from "../agents/model-catalog.js";
 import { ChannelBridge } from "../middleware/index.js";
 import { runCronIsolatedAgentTurn } from "./isolated-agent.js";
 const withTempHome = withTempCronHome;
@@ -177,7 +172,6 @@ describe("runCronIsolatedAgentTurn", () => {
     } as never);
     mockHandle.mockReset();
     mockBridgeOk();
-    vi.mocked(loadModelCatalog).mockResolvedValue([]);
   });
 
   it("treats blank model overrides as unset", async () => {
@@ -378,24 +372,13 @@ describe("runCronIsolatedAgentTurn", () => {
     });
   });
 
-  it("ignores hooks.gmail.model when not in the allowlist", async () => {
+  it("applies hooks.gmail.model regardless of models config", async () => {
     await withTempHome(async (home) => {
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-        {
-          id: "claude-opus-4-5",
-          name: "Opus 4.5",
-          provider: "anthropic",
-        },
-      ]);
-
       const { res } = await runCronTurn(home, {
         cfgOverrides: {
           agents: {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
-              models: {
-                "anthropic/claude-opus-4-5": { alias: "Opus" },
-              },
             },
           },
           hooks: {
@@ -409,7 +392,7 @@ describe("runCronIsolatedAgentTurn", () => {
       });
 
       expect(res.status).toBe("ok");
-      expectBridgeModel({ model: "claude-opus-4-5" });
+      expectBridgeModel({ model: "meta-llama/llama-3.3-70b:free" });
     });
   });
 

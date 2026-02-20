@@ -1,4 +1,3 @@
-import type { ModelCatalogEntry } from "../agents/model-catalog.js";
 import type { CliDeps } from "../cli/deps.js";
 import type { HealthSummary } from "../commands/health.js";
 import type { ChatAbortControllerEntry } from "./chat-abort.js";
@@ -26,7 +25,7 @@ export type NodeEventContext = {
   agentRunSeq: Map<string, number>;
   getHealthCache: () => HealthSummary | null;
   refreshHealthSnapshot: (opts?: { probe?: boolean }) => Promise<HealthSummary>;
-  loadGatewayModelCatalog: () => Promise<ModelCatalogEntry[]>;
+  loadGatewayModelCatalog: () => Promise<unknown[]>;
   logGateway: { warn: (msg: string) => void };
 };
 

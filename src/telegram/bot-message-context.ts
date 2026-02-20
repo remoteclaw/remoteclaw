@@ -1,11 +1,5 @@
 import type { Bot } from "grammy";
 import { resolveAckReaction } from "../agents/identity.js";
-import {
-  findModelInCatalog,
-  loadModelCatalog,
-  modelSupportsVision,
-} from "../agents/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
 import { hasControlCommand } from "../auto-reply/command-detection.js";
 import { normalizeCommandBody } from "../auto-reply/commands-registry.js";
 import { formatInboundEnvelope, resolveEnvelopeFormatOptions } from "../auto-reply/envelope.js";
@@ -107,26 +101,6 @@ export type BuildTelegramMessageContextParams = {
   resolveGroupRequireMention: ResolveGroupRequireMention;
   resolveTelegramGroupConfig: ResolveTelegramGroupConfig;
 };
-
-async function resolveStickerVisionSupport(params: {
-  cfg: RemoteClawConfig;
-  agentId?: string;
-}): Promise<boolean> {
-  try {
-    const catalog = await loadModelCatalog({ config: params.cfg });
-    const defaultModel = resolveDefaultModelForAgent({
-      cfg: params.cfg,
-      agentId: params.agentId,
-    });
-    const entry = findModelInCatalog(catalog, defaultModel.provider, defaultModel.model);
-    if (!entry) {
-      return false;
-    }
-    return modelSupportsVision(entry);
-  } catch {
-    return false;
-  }
-}
 
 export const buildTelegramMessageContext = async ({
   primaryCtx,
@@ -361,10 +335,7 @@ export const buildTelegramMessageContext = async ({
 
   // Check if sticker has a cached description - if so, use it instead of sending the image
   const cachedStickerDescription = allMedia[0]?.stickerMetadata?.cachedDescription;
-  const stickerSupportsVision = msg.sticker
-    ? await resolveStickerVisionSupport({ cfg, agentId: route.agentId })
-    : false;
-  const stickerCacheHit = Boolean(cachedStickerDescription) && !stickerSupportsVision;
+  const stickerCacheHit = Boolean(cachedStickerDescription);
   if (stickerCacheHit) {
     // Format cached description with sticker context
     const emoji = allMedia[0]?.stickerMetadata?.emoji;

@@ -63,26 +63,9 @@ export function coerceImageModelConfig(cfg?: RemoteClawConfig): ImageModelConfig
   };
 }
 
-export function resolveProviderVisionModelFromConfig(params: {
+export function resolveProviderVisionModelFromConfig(_params: {
   cfg?: RemoteClawConfig;
   provider: string;
 }): string | null {
-  const providerCfg = params.cfg?.models?.providers?.[params.provider] as unknown as
-    | { models?: Array<{ id?: string; input?: string[] }> }
-    | undefined;
-  const models = providerCfg?.models ?? [];
-  const preferMinimaxVl =
-    params.provider === "minimax"
-      ? models.find(
-          (m) =>
-            (m?.id ?? "").trim() === "MiniMax-VL-01" &&
-            Array.isArray(m?.input) &&
-            m.input.includes("image"),
-        )
-      : null;
-  const picked =
-    preferMinimaxVl ??
-    models.find((m) => Boolean((m?.id ?? "").trim()) && m.input?.includes("image"));
-  const id = (picked?.id ?? "").trim();
-  return id ? `${params.provider}/${id}` : null;
+  return null;
 }

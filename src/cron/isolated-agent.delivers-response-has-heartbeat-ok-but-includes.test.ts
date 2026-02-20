@@ -17,14 +17,10 @@ vi.mock("../middleware/index.js", async (importOriginal) => {
     ClaudeCliRuntime: vi.fn(),
   };
 });
-vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(),
-}));
 vi.mock("../agents/subagent-announce.js", () => ({
   runSubagentAnnounceFlow: vi.fn(),
 }));
 
-import { loadModelCatalog } from "../agents/model-catalog.js";
 import { runSubagentAnnounceFlow } from "../agents/subagent-announce.js";
 import { ChannelBridge } from "../middleware/index.js";
 import { runCronIsolatedAgentTurn } from "./isolated-agent.js";
@@ -105,7 +101,6 @@ describe("runCronIsolatedAgentTurn", () => {
       aborted: false,
       error: undefined,
     });
-    vi.mocked(loadModelCatalog).mockResolvedValue([]);
     vi.mocked(runSubagentAnnounceFlow).mockReset().mockResolvedValue(true);
     setActivePluginRegistry(
       createTestRegistry([

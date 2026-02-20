@@ -5,7 +5,7 @@ import {
   isProfileInCooldown,
   resolveAuthProfileOrder,
 } from "../auth-profiles.js";
-import { normalizeProviderId } from "../model-selection.js";
+import { normalizeProviderId } from "../cli-routing.js";
 
 function isProfileForProvider(params: {
   provider: string;

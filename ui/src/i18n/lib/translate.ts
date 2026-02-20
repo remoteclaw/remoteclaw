@@ -19,7 +19,19 @@ class I18nManager {
   }
 
   private loadLocale() {
-    const saved = localStorage.getItem("openclaw.i18n.locale");
+    // Migrate legacy locale key (one-time)
+    const legacyLocaleKey = "openclaw.i18n.locale";
+    try {
+      const legacy = localStorage.getItem(legacyLocaleKey);
+      if (legacy && !localStorage.getItem("remoteclaw.i18n.locale")) {
+        localStorage.setItem("remoteclaw.i18n.locale", legacy);
+      }
+      localStorage.removeItem(legacyLocaleKey);
+    } catch {
+      // best-effort
+    }
+
+    const saved = localStorage.getItem("remoteclaw.i18n.locale");
     if (isSupportedLocale(saved)) {
       this.locale = saved;
     } else {
@@ -64,7 +76,7 @@ class I18nManager {
     }
 
     this.locale = locale;
-    localStorage.setItem("openclaw.i18n.locale", locale);
+    localStorage.setItem("remoteclaw.i18n.locale", locale);
     this.notify();
   }
 

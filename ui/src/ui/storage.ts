@@ -1,4 +1,20 @@
-const KEY = "openclaw.control.settings.v1";
+const KEY = "remoteclaw.control.settings.v1";
+const LEGACY_KEY = "openclaw.control.settings.v1";
+
+/** Migrate settings from the legacy OpenClaw storage key (one-time). */
+function migrateLegacySettings(): void {
+  try {
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy && !localStorage.getItem(KEY)) {
+      localStorage.setItem(KEY, legacy);
+    }
+    localStorage.removeItem(LEGACY_KEY);
+  } catch {
+    // best-effort
+  }
+}
+
+migrateLegacySettings();
 
 import { isSupportedLocale } from "../i18n/index.ts";
 import type { ThemeMode } from "./theme.ts";

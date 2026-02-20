@@ -62,29 +62,6 @@ describe("commands registry", () => {
     expect(nativeDisabled.find((spec) => spec.name === "debug")).toBeFalsy();
   });
 
-  it("appends skill commands when provided", () => {
-    const skillCommands = [
-      {
-        name: "demo_skill",
-        skillName: "demo-skill",
-        description: "Demo skill",
-      },
-    ];
-    const commands = listChatCommandsForConfig(
-      {
-        commands: { config: false, debug: false },
-      },
-      { skillCommands },
-    );
-    expect(commands.find((spec) => spec.nativeName === "demo_skill")).toBeTruthy();
-
-    const native = listNativeCommandSpecsForConfig(
-      { commands: { config: false, debug: false, native: true } },
-      { skillCommands },
-    );
-    expect(native.find((spec) => spec.name === "demo_skill")).toBeTruthy();
-  });
-
   it("applies provider-specific native names", () => {
     const native = listNativeCommandSpecsForConfig(
       { commands: { native: true } },

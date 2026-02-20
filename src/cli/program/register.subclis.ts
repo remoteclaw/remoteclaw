@@ -260,15 +260,6 @@ const entries: SubCliEntry[] = [
     },
   },
   {
-    name: "skills",
-    description: "List and inspect available skills",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../skills-cli.js");
-      mod.registerSkillsCli(program);
-    },
-  },
-  {
     name: "update",
     description: "Update RemoteClaw and inspect update channel status",
     hasSubcommands: true,

@@ -41,14 +41,6 @@ vi.mock("node:child_process", async (importOriginal) => {
   };
 });
 
-vi.mock("./skills.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./skills.js")>();
-  return {
-    ...actual,
-    syncSkillsToWorkspace: vi.fn(async () => undefined),
-  };
-});
-
 let resolveSandboxContext: typeof import("./sandbox.js").resolveSandboxContext;
 let resolveSandboxConfigForAgent: typeof import("./sandbox.js").resolveSandboxConfigForAgent;
 

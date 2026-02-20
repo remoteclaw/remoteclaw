@@ -1,6 +1,5 @@
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { resolveConfiguredModelRef } from "../agents/model-selection.js";
-import type { SkillCommandSpec } from "../agents/skills.js";
 import type { RemoteClawConfig } from "../config/types.js";
 import { escapeRegExp } from "../utils.js";
 import { getChatCommands, getNativeCommandSurfaces } from "./commands-registry.data.js";
@@ -69,29 +68,8 @@ function getTextAliasMap(): Map<string, TextAliasSpec> {
   return map;
 }
 
-function buildSkillCommandDefinitions(skillCommands?: SkillCommandSpec[]): ChatCommandDefinition[] {
-  if (!skillCommands || skillCommands.length === 0) {
-    return [];
-  }
-  return skillCommands.map((spec) => ({
-    key: `skill:${spec.skillName}`,
-    nativeName: spec.name,
-    description: spec.description,
-    textAliases: [`/${spec.name}`],
-    acceptsArgs: true,
-    argsParsing: "none",
-    scope: "both",
-  }));
-}
-
-export function listChatCommands(params?: {
-  skillCommands?: SkillCommandSpec[];
-}): ChatCommandDefinition[] {
-  const commands = getChatCommands();
-  if (!params?.skillCommands?.length) {
-    return [...commands];
-  }
-  return [...commands, ...buildSkillCommandDefinitions(params.skillCommands)];
+export function listChatCommands(_params?: { skillCommands?: unknown[] }): ChatCommandDefinition[] {
+  return [...getChatCommands()];
 }
 
 export function isCommandEnabled(cfg: RemoteClawConfig, commandKey: string): boolean {
@@ -109,13 +87,9 @@ export function isCommandEnabled(cfg: RemoteClawConfig, commandKey: string): boo
 
 export function listChatCommandsForConfig(
   cfg: RemoteClawConfig,
-  params?: { skillCommands?: SkillCommandSpec[] },
+  _params?: { skillCommands?: unknown[] },
 ): ChatCommandDefinition[] {
-  const base = getChatCommands().filter((command) => isCommandEnabled(cfg, command.key));
-  if (!params?.skillCommands?.length) {
-    return base;
-  }
-  return [...base, ...buildSkillCommandDefinitions(params.skillCommands)];
+  return getChatCommands().filter((command) => isCommandEnabled(cfg, command.key));
 }
 
 const NATIVE_NAME_OVERRIDES: Record<string, Record<string, string>> = {
@@ -138,10 +112,10 @@ function resolveNativeName(command: ChatCommandDefinition, provider?: string): s
 }
 
 export function listNativeCommandSpecs(params?: {
-  skillCommands?: SkillCommandSpec[];
+  skillCommands?: unknown[];
   provider?: string;
 }): NativeCommandSpec[] {
-  return listChatCommands({ skillCommands: params?.skillCommands })
+  return listChatCommands()
     .filter((command) => command.scope !== "text" && command.nativeName)
     .map((command) => ({
       name: resolveNativeName(command, params?.provider) ?? command.key,
@@ -153,9 +127,9 @@ export function listNativeCommandSpecs(params?: {
 
 export function listNativeCommandSpecsForConfig(
   cfg: RemoteClawConfig,
-  params?: { skillCommands?: SkillCommandSpec[]; provider?: string },
+  params?: { skillCommands?: unknown[]; provider?: string },
 ): NativeCommandSpec[] {
-  return listChatCommandsForConfig(cfg, params)
+  return listChatCommandsForConfig(cfg)
     .filter((command) => command.scope !== "text" && command.nativeName)
     .map((command) => ({
       name: resolveNativeName(command, params?.provider) ?? command.key,

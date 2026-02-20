@@ -1,15 +1,6 @@
-import { createRemoteClawTools } from "../../agents/openclaw-tools.js";
-import type { SkillCommandSpec } from "../../agents/skills.js";
 import { getChannelDock } from "../../channels/dock.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
-import { logVerbose } from "../../globals.js";
-import { resolveGatewayMessageChannel } from "../../utils/message-channel.js";
-import {
-  listReservedChatSlashCommandNames,
-  listSkillCommandsForWorkspace,
-  resolveSkillCommandInvocation,
-} from "../skill-commands.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
@@ -21,29 +12,6 @@ import type { createModelSelectionState } from "./model-selection.js";
 import { extractInlineSimpleCommand } from "./reply-inline.js";
 import type { TypingController } from "./typing.js";
 
-const builtinSlashCommands = (() => {
-  return listReservedChatSlashCommandNames([
-    "think",
-    "verbose",
-    "reasoning",
-    "elevated",
-    "exec",
-    "model",
-    "status",
-    "queue",
-  ]);
-})();
-
-function resolveSlashCommandName(commandBodyNormalized: string): string | null {
-  const trimmed = commandBodyNormalized.trim();
-  if (!trimmed.startsWith("/")) {
-    return null;
-  }
-  const match = trimmed.match(/^\/([^\s:]+)(?::|\s|$)/);
-  const name = match?.[1]?.trim().toLowerCase() ?? "";
-  return name ? name : null;
-}
-
 export type InlineActionResult =
   | { kind: "reply"; reply: ReplyPayload | ReplyPayload[] | undefined }
   | {
@@ -51,35 +19,6 @@ export type InlineActionResult =
       directives: InlineDirectives;
       abortedLastRun: boolean;
     };
-
-// oxlint-disable-next-line typescript/no-explicit-any
-function extractTextFromToolResult(result: any): string | null {
-  if (!result || typeof result !== "object") {
-    return null;
-  }
-  const content = (result as { content?: unknown }).content;
-  if (typeof content === "string") {
-    const trimmed = content.trim();
-    return trimmed ? trimmed : null;
-  }
-  if (!Array.isArray(content)) {
-    return null;
-  }
-
-  const parts: string[] = [];
-  for (const block of content) {
-    if (!block || typeof block !== "object") {
-      continue;
-    }
-    const rec = block as { type?: unknown; text?: unknown };
-    if (rec.type === "text" && typeof rec.text === "string") {
-      parts.push(rec.text);
-    }
-  }
-  const out = parts.join("");
-  const trimmed = out.trim();
-  return trimmed ? trimmed : null;
-}
 
 export async function handleInlineActions(params: {
   ctx: MsgContext;
@@ -100,7 +39,6 @@ export async function handleInlineActions(params: {
   allowTextCommands: boolean;
   inlineStatusRequested: boolean;
   command: Parameters<typeof handleCommands>[0]["command"];
-  skillCommands?: SkillCommandSpec[];
   directives: InlineDirectives;
   cleanedBody: string;
   elevatedEnabled: boolean;
@@ -119,14 +57,12 @@ export async function handleInlineActions(params: {
   contextTokens: number;
   directiveAck?: ReplyPayload;
   abortedLastRun: boolean;
-  skillFilter?: string[];
 }): Promise<InlineActionResult> {
   const {
     ctx,
     sessionCtx,
     cfg,
     agentId,
-    agentDir,
     sessionEntry,
     previousSessionEntry,
     sessionStore,
@@ -156,100 +92,10 @@ export async function handleInlineActions(params: {
     contextTokens,
     directiveAck,
     abortedLastRun: initialAbortedLastRun,
-    skillFilter,
   } = params;
 
   let directives = initialDirectives;
   let cleanedBody = initialCleanedBody;
-
-  const slashCommandName = resolveSlashCommandName(command.commandBodyNormalized);
-  const shouldLoadSkillCommands =
-    allowTextCommands &&
-    slashCommandName !== null &&
-    // `/skill …` needs the full skill command list.
-    (slashCommandName === "skill" || !builtinSlashCommands.has(slashCommandName));
-  const skillCommands =
-    shouldLoadSkillCommands && params.skillCommands
-      ? params.skillCommands
-      : shouldLoadSkillCommands
-        ? listSkillCommandsForWorkspace({
-            workspaceDir,
-            cfg,
-            skillFilter,
-          })
-        : [];
-
-  const skillInvocation =
-    allowTextCommands && skillCommands.length > 0
-      ? resolveSkillCommandInvocation({
-          commandBodyNormalized: command.commandBodyNormalized,
-          skillCommands,
-        })
-      : null;
-  if (skillInvocation) {
-    if (!command.isAuthorizedSender) {
-      logVerbose(
-        `Ignoring /${skillInvocation.command.name} from unauthorized sender: ${command.senderId || "<unknown>"}`,
-      );
-      typing.cleanup();
-      return { kind: "reply", reply: undefined };
-    }
-
-    const dispatch = skillInvocation.command.dispatch;
-    if (dispatch?.kind === "tool") {
-      const rawArgs = (skillInvocation.args ?? "").trim();
-      const channel =
-        resolveGatewayMessageChannel(ctx.Surface) ??
-        resolveGatewayMessageChannel(ctx.Provider) ??
-        undefined;
-
-      const tools = createRemoteClawTools({
-        agentSessionKey: sessionKey,
-        agentChannel: channel,
-        agentAccountId: (ctx as { AccountId?: string }).AccountId,
-        agentTo: ctx.OriginatingTo ?? ctx.To,
-        agentThreadId: ctx.MessageThreadId ?? undefined,
-        agentDir,
-        workspaceDir,
-        config: cfg,
-      });
-
-      const tool = tools.find((candidate) => candidate.name === dispatch.toolName);
-      if (!tool) {
-        typing.cleanup();
-        return { kind: "reply", reply: { text: `❌ Tool not available: ${dispatch.toolName}` } };
-      }
-
-      const toolCallId = `cmd_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-      try {
-        const result = await tool.execute(toolCallId, {
-          command: rawArgs,
-          commandName: skillInvocation.command.name,
-          skillName: skillInvocation.command.skillName,
-          // oxlint-disable-next-line typescript/no-explicit-any
-        } as any);
-        const text = extractTextFromToolResult(result) ?? "✅ Done.";
-        typing.cleanup();
-        return { kind: "reply", reply: { text } };
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        typing.cleanup();
-        return { kind: "reply", reply: { text: `❌ ${message}` } };
-      }
-    }
-
-    const promptParts = [
-      `Use the "${skillInvocation.command.skillName}" skill for this request.`,
-      skillInvocation.args ? `User input:\n${skillInvocation.args}` : null,
-    ].filter((entry): entry is string => Boolean(entry));
-    const rewrittenBody = promptParts.join("\n\n");
-    ctx.Body = rewrittenBody;
-    ctx.BodyForAgent = rewrittenBody;
-    sessionCtx.Body = rewrittenBody;
-    sessionCtx.BodyForAgent = rewrittenBody;
-    sessionCtx.BodyStripped = rewrittenBody;
-    cleanedBody = rewrittenBody;
-  }
 
   const sendInlineReply = async (reply?: ReplyPayload) => {
     if (!reply) {
@@ -333,7 +179,6 @@ export async function handleInlineActions(params: {
       model,
       contextTokens,
       isGroup,
-      skillCommands,
     });
 
   if (inlineCommand) {

@@ -15,7 +15,6 @@ import { modelsHandlers } from "./server-methods/models.js";
 import { nodeHandlers } from "./server-methods/nodes.js";
 import { sendHandlers } from "./server-methods/send.js";
 import { sessionsHandlers } from "./server-methods/sessions.js";
-import { skillsHandlers } from "./server-methods/skills.js";
 import { systemHandlers } from "./server-methods/system.js";
 import { talkHandlers } from "./server-methods/talk.js";
 import { ttsHandlers } from "./server-methods/tts.js";
@@ -37,7 +36,7 @@ const APPROVAL_METHODS = new Set([
   "exec.approval.waitDecision",
   "exec.approval.resolve",
 ]);
-const NODE_ROLE_METHODS = new Set(["node.invoke.result", "node.event", "skills.bins"]);
+const NODE_ROLE_METHODS = new Set(["node.invoke.result", "node.event"]);
 const PAIRING_METHODS = new Set([
   "node.pair.request",
   "node.pair.list",
@@ -64,7 +63,6 @@ const READ_METHODS = new Set([
   "models.list",
   "agents.list",
   "agent.identity.get",
-  "skills.status",
   "voicewake.get",
   "sessions.list",
   "sessions.preview",
@@ -152,8 +150,6 @@ function authorizeGatewayMethod(method: string, client: GatewayRequestOptions["c
     method === "agents.create" ||
     method === "agents.update" ||
     method === "agents.delete" ||
-    method === "skills.install" ||
-    method === "skills.update" ||
     method === "cron.add" ||
     method === "cron.update" ||
     method === "cron.remove" ||
@@ -184,7 +180,6 @@ export const coreGatewayHandlers: GatewayRequestHandlers = {
   ...wizardHandlers,
   ...talkHandlers,
   ...ttsHandlers,
-  ...skillsHandlers,
   ...sessionsHandlers,
   ...systemHandlers,
   ...updateHandlers,

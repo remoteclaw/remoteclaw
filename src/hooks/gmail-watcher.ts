@@ -5,8 +5,7 @@
  * if hooks.gmail is configured with an account.
  */
 
-import { type ChildProcess, spawn } from "node:child_process";
-import { hasBinary } from "../agents/skills.js";
+import { type ChildProcess, execFileSync, spawn } from "node:child_process";
 import type { RemoteClawConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runCommandWithTimeout } from "../process/exec.js";
@@ -30,6 +29,15 @@ let watcherProcess: ChildProcess | null = null;
 let renewInterval: ReturnType<typeof setInterval> | null = null;
 let shuttingDown = false;
 let currentConfig: GmailHookRuntimeConfig | null = null;
+
+function hasBinary(name: string): boolean {
+  try {
+    execFileSync("which", [name], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Check if gog binary is available

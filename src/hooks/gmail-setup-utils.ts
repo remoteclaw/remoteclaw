@@ -1,6 +1,6 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { hasBinary } from "../agents/skills.js";
 import { runCommandWithTimeout, type SpawnResult } from "../process/exec.js";
 import { resolveUserPath } from "../utils.js";
 import { normalizeServePath } from "./gmail.js";
@@ -95,6 +95,15 @@ function ensurePathIncludes(dirPath: string, position: "append" | "prepend") {
   }
   const next = position === "prepend" ? [dirPath, ...parts] : [...parts, dirPath];
   process.env.PATH = next.join(path.delimiter);
+}
+
+function hasBinary(name: string): boolean {
+  try {
+    execFileSync("which", [name], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function ensureGcloudOnPath(): boolean {

@@ -1,5 +1,4 @@
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { buildWorkspaceSkillStatus } from "../agents/skills-status.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { loadRemoteClawPlugins } from "../plugins/loader.js";
 import { note } from "../terminal/note.js";
@@ -11,19 +10,6 @@ export function noteWorkspaceStatus(cfg: RemoteClawConfig) {
   if (legacyWorkspace.legacyDirs.length > 0) {
     note(formatLegacyWorkspaceWarning(legacyWorkspace), "Extra workspace");
   }
-
-  const skillsReport = buildWorkspaceSkillStatus(workspaceDir, { config: cfg });
-  note(
-    [
-      `Eligible: ${skillsReport.skills.filter((s) => s.eligible).length}`,
-      `Missing requirements: ${
-        skillsReport.skills.filter((s) => !s.eligible && !s.disabled && !s.blockedByAllowlist)
-          .length
-      }`,
-      `Blocked by allowlist: ${skillsReport.skills.filter((s) => s.blockedByAllowlist).length}`,
-    ].join("\n"),
-    "Skills status",
-  );
 
   const pluginRegistry = loadRemoteClawPlugins({
     config: cfg,

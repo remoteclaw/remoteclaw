@@ -172,38 +172,3 @@ export const ModelsListResultSchema = Type.Object(
   },
   { additionalProperties: false },
 );
-
-export const SkillsStatusParamsSchema = Type.Object(
-  {
-    agentId: Type.Optional(NonEmptyString),
-  },
-  { additionalProperties: false },
-);
-
-export const SkillsBinsParamsSchema = Type.Object({}, { additionalProperties: false });
-
-export const SkillsBinsResultSchema = Type.Object(
-  {
-    bins: Type.Array(NonEmptyString),
-  },
-  { additionalProperties: false },
-);
-
-export const SkillsInstallParamsSchema = Type.Object(
-  {
-    name: NonEmptyString,
-    installId: NonEmptyString,
-    timeoutMs: Type.Optional(Type.Integer({ minimum: 1000 })),
-  },
-  { additionalProperties: false },
-);
-
-export const SkillsUpdateParamsSchema = Type.Object(
-  {
-    skillKey: NonEmptyString,
-    enabled: Type.Optional(Type.Boolean()),
-    apiKey: Type.Optional(Type.String()),
-    env: Type.Optional(Type.Record(NonEmptyString, Type.String())),
-  },
-  { additionalProperties: false },
-);

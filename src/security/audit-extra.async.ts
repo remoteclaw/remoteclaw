@@ -12,9 +12,7 @@ import {
   resolveSandboxToolPolicyForAgent,
 } from "../agents/sandbox.js";
 import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
-import { loadWorkspaceSkillEntries } from "../agents/skills.js";
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
-import { listAgentWorkspaceDirs } from "../agents/workspace-dirs.js";
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import { resolveNativeSkillsEnabled } from "../config/commands.js";
 import type { RemoteClawConfig, ConfigFileSnapshot } from "../config/config.js";
@@ -32,8 +30,6 @@ import {
 } from "./audit-fs.js";
 import { pickSandboxToolPolicy } from "./audit-tool-policy.js";
 import { extensionUsesSkippedScannerPath, isPathInside } from "./scan-paths.js";
-import type { SkillScanFinding } from "./skill-scanner.js";
-import * as skillScanner from "./skill-scanner.js";
 import type { ExecFn } from "./windows-acl.js";
 
 export type SecurityAuditFinding = {
@@ -80,20 +76,6 @@ async function readPluginManifestExtensions(pluginPath: string): Promise<string[
     return [];
   }
   return extensions.map((entry) => (typeof entry === "string" ? entry.trim() : "")).filter(Boolean);
-}
-
-function formatCodeSafetyDetails(findings: SkillScanFinding[], rootDir: string): string {
-  return findings
-    .map((finding) => {
-      const relPath = path.relative(rootDir, finding.file);
-      const filePath =
-        relPath && relPath !== "." && !relPath.startsWith("..")
-          ? relPath
-          : path.basename(finding.file);
-      const normalizedPath = filePath.replaceAll("\\", "/");
-      return `  - [${finding.ruleId}] ${finding.message} (${normalizedPath}:${finding.line})`;
-    })
-    .join("\n");
 }
 
 function resolveToolPolicies(params: {
@@ -641,7 +623,6 @@ export async function collectPluginsCodeSafetyFindings(params: {
   for (const pluginName of pluginDirs) {
     const pluginPath = path.join(extensionsDir, pluginName);
     const extensionEntries = await readPluginManifestExtensions(pluginPath).catch(() => []);
-    const forcedScanEntries: string[] = [];
     const escapedEntries: string[] = [];
 
     for (const entry of extensionEntries) {
@@ -655,11 +636,10 @@ export async function collectPluginsCodeSafetyFindings(params: {
           checkId: "plugins.code_safety.entry_path",
           severity: "warn",
           title: `Plugin "${pluginName}" entry path is hidden or node_modules`,
-          detail: `Extension entry "${entry}" points to a hidden or node_modules path. Deep code scan will cover this entry explicitly, but review this path choice carefully.`,
+          detail: `Extension entry "${entry}" points to a hidden or node_modules path. Review this path choice carefully.`,
           remediation: "Prefer extension entrypoints under normal source paths like dist/ or src/.",
         });
       }
-      forcedScanEntries.push(resolvedEntry);
     }
 
     if (escapedEntries.length > 0) {
@@ -672,122 +652,9 @@ export async function collectPluginsCodeSafetyFindings(params: {
           "Update the plugin manifest so all remoteclaw.extensions entries stay inside the plugin directory.",
       });
     }
-
-    const summary = await skillScanner
-      .scanDirectoryWithSummary(pluginPath, {
-        includeFiles: forcedScanEntries,
-      })
-      .catch((err) => {
-        findings.push({
-          checkId: "plugins.code_safety.scan_failed",
-          severity: "warn",
-          title: `Plugin "${pluginName}" code scan failed`,
-          detail: `Static code scan could not complete: ${String(err)}`,
-          remediation:
-            "Check file permissions and plugin layout, then rerun `remoteclaw security audit --deep`.",
-        });
-        return null;
-      });
-    if (!summary) {
-      continue;
-    }
-
-    if (summary.critical > 0) {
-      const criticalFindings = summary.findings.filter((f) => f.severity === "critical");
-      const details = formatCodeSafetyDetails(criticalFindings, pluginPath);
-
-      findings.push({
-        checkId: "plugins.code_safety",
-        severity: "critical",
-        title: `Plugin "${pluginName}" contains dangerous code patterns`,
-        detail: `Found ${summary.critical} critical issue(s) in ${summary.scannedFiles} scanned file(s):\n${details}`,
-        remediation:
-          "Review the plugin source code carefully before use. If untrusted, remove the plugin from your RemoteClaw extensions state directory.",
-      });
-    } else if (summary.warn > 0) {
-      const warnFindings = summary.findings.filter((f) => f.severity === "warn");
-      const details = formatCodeSafetyDetails(warnFindings, pluginPath);
-
-      findings.push({
-        checkId: "plugins.code_safety",
-        severity: "warn",
-        title: `Plugin "${pluginName}" contains suspicious code patterns`,
-        detail: `Found ${summary.warn} warning(s) in ${summary.scannedFiles} scanned file(s):\n${details}`,
-        remediation: `Review the flagged code to ensure it is intentional and safe.`,
-      });
-    }
   }
 
   return findings;
 }
 
-export async function collectInstalledSkillsCodeSafetyFindings(params: {
-  cfg: RemoteClawConfig;
-  stateDir: string;
-}): Promise<SecurityAuditFinding[]> {
-  const findings: SecurityAuditFinding[] = [];
-  const pluginExtensionsDir = path.join(params.stateDir, "extensions");
-  const scannedSkillDirs = new Set<string>();
-  const workspaceDirs = listAgentWorkspaceDirs(params.cfg);
-
-  for (const workspaceDir of workspaceDirs) {
-    const entries = loadWorkspaceSkillEntries(workspaceDir, { config: params.cfg });
-    for (const entry of entries) {
-      if (entry.skill.source === "remoteclaw-bundled") {
-        continue;
-      }
-
-      const skillDir = path.resolve(entry.skill.baseDir);
-      if (isPathInside(pluginExtensionsDir, skillDir)) {
-        // Plugin code is already covered by plugins.code_safety checks.
-        continue;
-      }
-      if (scannedSkillDirs.has(skillDir)) {
-        continue;
-      }
-      scannedSkillDirs.add(skillDir);
-
-      const skillName = entry.skill.name;
-      const summary = await skillScanner.scanDirectoryWithSummary(skillDir).catch((err) => {
-        findings.push({
-          checkId: "skills.code_safety.scan_failed",
-          severity: "warn",
-          title: `Skill "${skillName}" code scan failed`,
-          detail: `Static code scan could not complete for ${skillDir}: ${String(err)}`,
-          remediation:
-            "Check file permissions and skill layout, then rerun `remoteclaw security audit --deep`.",
-        });
-        return null;
-      });
-      if (!summary) {
-        continue;
-      }
-
-      if (summary.critical > 0) {
-        const criticalFindings = summary.findings.filter(
-          (finding) => finding.severity === "critical",
-        );
-        const details = formatCodeSafetyDetails(criticalFindings, skillDir);
-        findings.push({
-          checkId: "skills.code_safety",
-          severity: "critical",
-          title: `Skill "${skillName}" contains dangerous code patterns`,
-          detail: `Found ${summary.critical} critical issue(s) in ${summary.scannedFiles} scanned file(s) under ${skillDir}:\n${details}`,
-          remediation: `Review the skill source code before use. If untrusted, remove "${skillDir}".`,
-        });
-      } else if (summary.warn > 0) {
-        const warnFindings = summary.findings.filter((finding) => finding.severity === "warn");
-        const details = formatCodeSafetyDetails(warnFindings, skillDir);
-        findings.push({
-          checkId: "skills.code_safety",
-          severity: "warn",
-          title: `Skill "${skillName}" contains suspicious code patterns`,
-          detail: `Found ${summary.warn} warning(s) in ${summary.scannedFiles} scanned file(s) under ${skillDir}:\n${details}`,
-          remediation: "Review flagged lines to ensure the behavior is intentional and safe.",
-        });
-      }
-    }
-  }
-
-  return findings;
-}
+// Skills system removed -- collectInstalledSkillsCodeSafetyFindings deleted.

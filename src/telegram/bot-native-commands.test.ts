@@ -7,9 +7,6 @@ import type { TelegramAccountConfig } from "../config/types.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 
-const { listSkillCommandsForAgents } = vi.hoisted(() => ({
-  listSkillCommandsForAgents: vi.fn(() => []),
-}));
 const pluginCommandMocks = vi.hoisted(() => ({
   getPluginCommandSpecs: vi.fn(() => []),
   matchPluginCommand: vi.fn(() => null),
@@ -19,13 +16,6 @@ const deliveryMocks = vi.hoisted(() => ({
   deliverReplies: vi.fn(async () => ({ delivered: true })),
 }));
 
-vi.mock("../auto-reply/skill-commands.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../auto-reply/skill-commands.js")>();
-  return {
-    ...actual,
-    listSkillCommandsForAgents,
-  };
-});
 vi.mock("../plugins/commands.js", () => ({
   getPluginCommandSpecs: pluginCommandMocks.getPluginCommandSpecs,
   matchPluginCommand: pluginCommandMocks.matchPluginCommand,
@@ -37,7 +27,6 @@ vi.mock("./bot/delivery.js", () => ({
 
 describe("registerTelegramNativeCommands", () => {
   beforeEach(() => {
-    listSkillCommandsForAgents.mockReset();
     pluginCommandMocks.getPluginCommandSpecs.mockReset();
     pluginCommandMocks.getPluginCommandSpecs.mockReturnValue([]);
     pluginCommandMocks.matchPluginCommand.mockReset();
@@ -66,7 +55,6 @@ describe("registerTelegramNativeCommands", () => {
     textLimit: 4096,
     useAccessGroups: false,
     nativeEnabled: true,
-    nativeSkillsEnabled: true,
     nativeDisabledExplicit: false,
     resolveGroupPolicy: () => ({ allowlistEnabled: false, allowed: true }),
     resolveTelegramGroupConfig: () => ({
@@ -75,42 +63,6 @@ describe("registerTelegramNativeCommands", () => {
     }),
     shouldSkipUpdate: () => false,
     opts: { token: "token" },
-  });
-
-  it("scopes skill commands when account binding exists", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [{ id: "main", default: true }, { id: "butler" }],
-      },
-      bindings: [
-        {
-          agentId: "butler",
-          match: { channel: "telegram", accountId: "bot-a" },
-        },
-      ],
-    };
-
-    registerTelegramNativeCommands(buildParams(cfg, "bot-a"));
-
-    expect(listSkillCommandsForAgents).toHaveBeenCalledWith({
-      cfg,
-      agentIds: ["butler"],
-    });
-  });
-
-  it("scopes skill commands to default agent without a matching binding (#15599)", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        list: [{ id: "main", default: true }, { id: "butler" }],
-      },
-    };
-
-    registerTelegramNativeCommands(buildParams(cfg, "bot-a"));
-
-    expect(listSkillCommandsForAgents).toHaveBeenCalledWith({
-      cfg,
-      agentIds: ["main"],
-    });
   });
 
   it("truncates Telegram command registration to 100 commands", () => {
@@ -136,7 +88,6 @@ describe("registerTelegramNativeCommands", () => {
       runtime: { log: runtimeLog } as unknown as RuntimeEnv,
       telegramCfg: { customCommands } as TelegramAccountConfig,
       nativeEnabled: false,
-      nativeSkillsEnabled: false,
     });
 
     const registeredCommands = setMyCommands.mock.calls[0]?.[0] as Array<{

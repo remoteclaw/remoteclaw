@@ -479,7 +479,7 @@ describe("runGatewayUpdate", () => {
     expect(calls.some((call) => call.includes("status --porcelain"))).toBe(false);
   });
 
-  it("fails with a clear reason when openclaw.mjs is missing", async () => {
+  it("fails with a clear reason when remoteclaw.mjs is missing", async () => {
     await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
     await fs.rm(path.join(tempDir, "remoteclaw.mjs"), { force: true });
 

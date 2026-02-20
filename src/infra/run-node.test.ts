@@ -61,7 +61,7 @@ describe("run-node script", () => {
         expect(exitCode).toBe(0);
         await expect(fs.readFile(argsPath, "utf-8")).resolves.toContain("exec tsdown --no-clean");
         await expect(fs.readFile(indexPath, "utf-8")).resolves.toContain("sentinel");
-        expect(nodeCalls).toEqual([[process.execPath, "openclaw.mjs", "--version"]]);
+        expect(nodeCalls).toEqual([[process.execPath, "remoteclaw.mjs", "--version"]]);
       });
     },
   );

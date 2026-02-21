@@ -139,22 +139,20 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     let remainder = "";
 
     const processLine = (line: string) => {
-      const parsed = parseLine(line);
-      if (!parsed) {
-        return;
-      }
-
-      if (parsed.sessionId !== undefined) {
-        accSessionId = parsed.sessionId;
-      }
-      if (parsed.usage !== undefined) {
-        accUsage = parsed.usage;
-      }
-      if (parsed.event) {
-        if (parsed.event.type === "text") {
-          accText += parsed.event.text;
+      const results = parseLine(line);
+      for (const parsed of results) {
+        if (parsed.sessionId !== undefined) {
+          accSessionId = parsed.sessionId;
         }
-        queue.push(parsed.event);
+        if (parsed.usage !== undefined) {
+          accUsage = parsed.usage;
+        }
+        if (parsed.event) {
+          if (parsed.event.type === "text") {
+            accText += parsed.event.text;
+          }
+          queue.push(parsed.event);
+        }
       }
     };
 

@@ -15,6 +15,7 @@ import { setCliSessionId } from "../../agents/cli-session.js";
 import { lookupContextTokens } from "../../agents/context.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
+import { resolveAgentMaxTurns } from "../../agents/max-turns.js";
 import { type ResolvedProviderAuth, resolveApiKeyForProvider } from "../../agents/model-auth.js";
 import { runSubagentAnnounceFlow } from "../../agents/subagent-announce.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
@@ -241,6 +242,7 @@ export async function runCronIsolatedAgentTurn(params: {
     overrideSeconds:
       params.job.payload.kind === "agentTurn" ? params.job.payload.timeoutSeconds : undefined,
   });
+  const maxTurns = resolveAgentMaxTurns({ cfg: cfgWithAgentDefaults });
 
   const agentPayload = params.job.payload.kind === "agentTurn" ? params.job.payload : null;
   const deliveryPlan = resolveCronDeliveryPlan(params.job);
@@ -337,6 +339,7 @@ export async function runCronIsolatedAgentTurn(params: {
       runtime: createCliRuntime(provider, cfgWithAgentDefaults),
       sessionDir: workspaceDir,
       defaultModel: model,
+      defaultMaxTurns: maxTurns,
       defaultTimeoutMs: timeoutMs,
       auth: resolvedAuth,
     });

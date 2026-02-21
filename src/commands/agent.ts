@@ -33,7 +33,12 @@ import {
   emitAgentEvent,
   registerAgentRunContext,
 } from "../infra/agent-events.js";
-import { ChannelBridge, createCliRuntime, type ChannelMessage } from "../middleware/index.js";
+import {
+  type BridgeCallbacks,
+  ChannelBridge,
+  type ChannelMessage,
+  createCliRuntime,
+} from "../middleware/index.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { applyVerboseOverride } from "../sessions/level-overrides.js";
@@ -277,7 +282,21 @@ export async function agentCommand(
         text: body,
         workspaceDir,
       };
-      reply = await bridge.handle(channelMessage, undefined, opts.abortSignal);
+      const isVerbose = resolvedVerboseLevel === "on" || resolvedVerboseLevel === "full";
+      const callbacks: BridgeCallbacks = {
+        onPartialText: (text) => {
+          process.stdout.write(text);
+        },
+        onToolUse: isVerbose
+          ? (toolName) => {
+              process.stderr.write(`[tool] ${toolName}\n`);
+            }
+          : undefined,
+        onError: (message) => {
+          process.stderr.write(`[error] ${message}\n`);
+        },
+      };
+      reply = await bridge.handle(channelMessage, callbacks, opts.abortSignal);
       emitAgentEvent({
         runId,
         stream: "lifecycle",

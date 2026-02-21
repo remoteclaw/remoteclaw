@@ -131,6 +131,7 @@ describe("mapSensitivePaths", () => {
     const hints = mapSensitivePaths(RemoteClawSchema, "", {});
 
     expect(hints["channels.discord.accounts.*.token"]?.sensitive).toBe(true);
+    expect(hints["channels.googlechat.serviceAccount"]?.sensitive).toBe(true);
     expect(hints["gateway.auth.token"]?.sensitive).toBe(true);
     // skills.entries.*.apiKey removed: skills section was gutted from schema.
   });

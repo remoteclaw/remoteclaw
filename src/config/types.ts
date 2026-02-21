@@ -21,6 +21,7 @@ export * from "./types.node-host.js";
 export * from "./types.msteams.js";
 export * from "./types.plugins.js";
 export * from "./types.queue.js";
+export * from "./types.secrets.js";
 export * from "./types.signal.js";
 export * from "./types.slack.js";
 export * from "./types.telegram.js";

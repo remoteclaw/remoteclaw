@@ -51,6 +51,24 @@ class TestRuntime extends CLIRuntimeBase {
   }
 }
 
+class WatchdogTestRuntime extends CLIRuntimeBase {
+  readonly name = "watchdog-test-cli";
+  private readonly _watchdogMs: number | undefined;
+
+  constructor(watchdogMs: number | undefined) {
+    super();
+    this._watchdogMs = watchdogMs;
+  }
+
+  protected config(): CLIRuntimeConfig {
+    return { command: "test-cmd", buildArgs: () => [], buildEnv: () => ({}) };
+  }
+
+  protected override resolveWatchdogMs(_params: AgentRuntimeParams): number | undefined {
+    return this._watchdogMs;
+  }
+}
+
 function defaultParams(overrides?: Partial<AgentRuntimeParams>): AgentRuntimeParams {
   return {
     prompt: "hello",
@@ -375,6 +393,118 @@ describe("CLIRuntimeBase", () => {
       cwd: "/my/dir",
       env: expect.objectContaining({ CUSTOM_VAR: "value" }),
       stdio: ["pipe", "pipe", "pipe"],
+    });
+  });
+
+  describe("no-output watchdog", () => {
+    it("kills process that produces no output before watchdog fires", async () => {
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      const runtime = new WatchdogTestRuntime(50);
+      const iter = runtime.execute(defaultParams());
+
+      // Let the watchdog fire (50ms), then close after kill
+      setTimeout(() => {
+        child.emit("close", null);
+      }, 100);
+
+      const events = await collectEvents(iter);
+      const errEvent = events.find((e) => e.type === "error");
+      expect(errEvent).toEqual({
+        type: "error",
+        message: "No output for 50ms (watchdog)",
+        category: "timeout",
+      });
+      expect(child.kill).toHaveBeenCalledWith("SIGKILL");
+
+      const doneEvent = events.find((e) => e.type === "done");
+      expect(doneEvent?.type === "done" && doneEvent.result.aborted).toBe(true);
+    });
+
+    it("does not kill process that streams output continuously", async () => {
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      const runtime = new WatchdogTestRuntime(80);
+      const iter = runtime.execute(defaultParams());
+
+      // Emit output every 30ms (well within 80ms watchdog), then close
+      const interval = setInterval(() => {
+        child.stdout.emit("data", Buffer.from("ping\n"));
+      }, 30);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        child.emit("close", 0);
+      }, 200);
+
+      const events = await collectEvents(iter);
+      const errEvent = events.find((e) => e.type === "error");
+      expect(errEvent).toBeUndefined();
+
+      const doneEvent = events.find((e) => e.type === "done");
+      expect(doneEvent?.type === "done" && doneEvent.result.aborted).toBe(false);
+    });
+
+    it("does not activate watchdog when resolveWatchdogMs returns undefined", async () => {
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      const runtime = new WatchdogTestRuntime(undefined);
+      const iter = runtime.execute(defaultParams());
+
+      // Close immediately with no output — no watchdog error expected
+      queueMicrotask(() => {
+        child.emit("close", 0);
+      });
+
+      const events = await collectEvents(iter);
+      const errEvent = events.find((e) => e.type === "error");
+      expect(errEvent).toBeUndefined();
+    });
+
+    it("clears watchdog timer on process exit", async () => {
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      const runtime = new WatchdogTestRuntime(100);
+      const iter = runtime.execute(defaultParams());
+
+      // Emit some output then close quickly (before watchdog fires)
+      queueMicrotask(() => {
+        child.stdout.emit("data", Buffer.from("output\n"));
+        child.emit("close", 0);
+      });
+
+      const events = await collectEvents(iter);
+      const errEvent = events.find((e) => e.type === "error");
+      expect(errEvent).toBeUndefined();
+
+      const doneEvent = events.find((e) => e.type === "done");
+      expect(doneEvent?.type === "done" && doneEvent.result.aborted).toBe(false);
+    });
+
+    it("watchdog fires before overall timeout", async () => {
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      // Watchdog at 50ms, overall timeout at 500ms
+      const runtime = new WatchdogTestRuntime(50);
+      const iter = runtime.execute(defaultParams({ timeoutMs: 500 }));
+
+      setTimeout(() => {
+        child.emit("close", null);
+      }, 100);
+
+      const events = await collectEvents(iter);
+      const errEvent = events.find((e) => e.type === "error");
+      // Should be watchdog error, not overall timeout
+      expect(errEvent).toEqual({
+        type: "error",
+        message: "No output for 50ms (watchdog)",
+        category: "timeout",
+      });
     });
   });
 });

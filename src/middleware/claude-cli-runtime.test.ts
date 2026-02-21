@@ -343,4 +343,127 @@ describe("ClaudeCliRuntime", () => {
       ]);
     });
   });
+
+  describe("no-output watchdog", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("activates watchdog using default profile without backend config", async () => {
+      vi.useFakeTimers();
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      // No backend config — uses defaults
+      // Fresh ratio 0.8 * 300_000 = 240_000, clamped to [180_000, 600_000] = 240_000
+      const runtime = new ClaudeCliRuntime();
+      const iter = runtime.execute(defaultParams({ timeoutMs: 300_000 }));
+      const eventsPromise = collectEvents(iter);
+
+      // Advance past the 240_000ms watchdog
+      await vi.advanceTimersByTimeAsync(240_500);
+      child.emit("close", null);
+
+      const events = await eventsPromise;
+      const errEvent = events.find((e) => e.type === "error");
+      expect(errEvent).toEqual({
+        type: "error",
+        message: "No output for 240000ms (watchdog)",
+        category: "timeout",
+      });
+      expect(child.kill).toHaveBeenCalledWith("SIGKILL");
+    });
+
+    it("uses resume profile when sessionId is set", async () => {
+      vi.useFakeTimers();
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      // noOutputTimeoutMs: 5_000 (above CLI_WATCHDOG_MIN_TIMEOUT_MS = 1_000)
+      const runtime = new ClaudeCliRuntime({
+        command: "claude",
+        reliability: {
+          watchdog: {
+            resume: { noOutputTimeoutMs: 5_000 },
+          },
+        },
+      });
+      const iter = runtime.execute(defaultParams({ sessionId: "s-existing", timeoutMs: 300_000 }));
+      const eventsPromise = collectEvents(iter);
+
+      await vi.advanceTimersByTimeAsync(5_500);
+      child.emit("close", null);
+
+      const events = await eventsPromise;
+      const errEvent = events.find((e) => e.type === "error");
+      expect(errEvent).toEqual({
+        type: "error",
+        message: "No output for 5000ms (watchdog)",
+        category: "timeout",
+      });
+      expect(child.kill).toHaveBeenCalledWith("SIGKILL");
+    });
+
+    it("uses fresh profile when no sessionId", async () => {
+      vi.useFakeTimers();
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      // noOutputTimeoutMs: 5_000 (above CLI_WATCHDOG_MIN_TIMEOUT_MS = 1_000)
+      const runtime = new ClaudeCliRuntime({
+        command: "claude",
+        reliability: {
+          watchdog: {
+            fresh: { noOutputTimeoutMs: 5_000 },
+          },
+        },
+      });
+      const iter = runtime.execute(defaultParams({ timeoutMs: 300_000 }));
+      const eventsPromise = collectEvents(iter);
+
+      await vi.advanceTimersByTimeAsync(5_500);
+      child.emit("close", null);
+
+      const events = await eventsPromise;
+      const errEvent = events.find((e) => e.type === "error");
+      expect(errEvent).toEqual({
+        type: "error",
+        message: "No output for 5000ms (watchdog)",
+        category: "timeout",
+      });
+    });
+
+    it("resets watchdog on stdout output", async () => {
+      vi.useFakeTimers();
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      // Watchdog at 5_000ms
+      const runtime = new ClaudeCliRuntime({
+        command: "claude",
+        reliability: {
+          watchdog: {
+            fresh: { noOutputTimeoutMs: 5_000 },
+          },
+        },
+      });
+      const iter = runtime.execute(defaultParams({ timeoutMs: 300_000 }));
+      const eventsPromise = collectEvents(iter);
+
+      // Emit output at 3s and 6s (each resets the 5s watchdog)
+      await vi.advanceTimersByTimeAsync(3_000);
+      child.stdout.emit("data", Buffer.from("output\n"));
+
+      await vi.advanceTimersByTimeAsync(3_000);
+      child.stdout.emit("data", Buffer.from("output\n"));
+
+      // Close at 8s — watchdog would have fired at 11s (6s + 5s), so no error
+      await vi.advanceTimersByTimeAsync(2_000);
+      child.emit("close", 0);
+
+      const events = await eventsPromise;
+      const errEvent = events.find((e) => e.type === "error");
+      expect(errEvent).toBeUndefined();
+    });
+  });
 });

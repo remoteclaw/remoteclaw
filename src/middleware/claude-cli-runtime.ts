@@ -1,3 +1,4 @@
+import { resolveCliNoOutputTimeoutMs } from "../agents/cli-runner/reliability.js";
 import type { CliBackendConfig } from "../config/types.agent-defaults.js";
 import type { CLIRuntimeConfig } from "./cli-runtime-base.js";
 import { CLIRuntimeBase } from "./cli-runtime-base.js";
@@ -13,6 +14,14 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
   constructor(backendConfig?: CliBackendConfig) {
     super();
     this.backendConfig = backendConfig;
+  }
+
+  protected override resolveWatchdogMs(params: AgentRuntimeParams): number | undefined {
+    return resolveCliNoOutputTimeoutMs({
+      backend: this.backendConfig ?? { command: "claude" },
+      timeoutMs: params.timeoutMs ?? Number.MAX_SAFE_INTEGER,
+      useResume: !!params.sessionId,
+    });
   }
 
   protected config(): CLIRuntimeConfig {

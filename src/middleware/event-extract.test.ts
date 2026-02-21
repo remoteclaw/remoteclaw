@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { parseLine } from "./event-extract.js";
 
 describe("parseLine", () => {
-  it("returns null for empty/whitespace lines", () => {
-    expect(parseLine("")).toBeNull();
-    expect(parseLine("   ")).toBeNull();
-    expect(parseLine("\n")).toBeNull();
+  it("returns empty array for empty/whitespace lines", () => {
+    expect(parseLine("")).toEqual([]);
+    expect(parseLine("   ")).toEqual([]);
+    expect(parseLine("\n")).toEqual([]);
   });
 
-  it("returns null for malformed JSON", () => {
-    expect(parseLine("not json")).toBeNull();
-    expect(parseLine("{broken")).toBeNull();
+  it("returns empty array for malformed JSON", () => {
+    expect(parseLine("not json")).toEqual([]);
+    expect(parseLine("{broken")).toEqual([]);
   });
 
   it("extracts session_id from system init event", () => {
@@ -22,9 +22,10 @@ describe("parseLine", () => {
       mcp_servers: [],
       model: "claude-sonnet-4-5-20250514",
     });
-    const result = parseLine(line);
-    expect(result?.sessionId).toBe("abc-123");
-    expect(result?.event).toBeNull();
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].sessionId).toBe("abc-123");
+    expect(results[0].event).toBeNull();
   });
 
   it("parses assistant text content", () => {
@@ -35,12 +36,13 @@ describe("parseLine", () => {
         content: [{ type: "text", text: "hello world", citations: null }],
       },
     });
-    const result = parseLine(line);
-    expect(result?.event).toEqual({ type: "text", text: "hello world" });
-    expect(result?.sessionId).toBe("s1");
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toEqual({ type: "text", text: "hello world" });
+    expect(results[0].sessionId).toBe("s1");
   });
 
-  it("joins multiple text blocks in assistant content", () => {
+  it("returns separate events for multiple text blocks in assistant content", () => {
     const line = JSON.stringify({
       type: "assistant",
       session_id: "s1",
@@ -51,8 +53,10 @@ describe("parseLine", () => {
         ],
       },
     });
-    const result = parseLine(line);
-    expect(result?.event).toEqual({ type: "text", text: "hello world" });
+    const results = parseLine(line);
+    expect(results).toHaveLength(2);
+    expect(results[0].event).toEqual({ type: "text", text: "hello " });
+    expect(results[1].event).toEqual({ type: "text", text: "world" });
   });
 
   it("parses tool_use from assistant content", () => {
@@ -63,8 +67,9 @@ describe("parseLine", () => {
         content: [{ type: "tool_use", id: "t1", name: "Read", input: { file_path: "/foo" } }],
       },
     });
-    const result = parseLine(line);
-    expect(result?.event).toEqual({
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toEqual({
       type: "tool_use",
       toolId: "t1",
       toolName: "Read",
@@ -80,13 +85,38 @@ describe("parseLine", () => {
         content: [{ type: "tool_use", id: "t2", name: "Bash", input: "ls -la" }],
       },
     });
-    const result = parseLine(line);
-    expect(result?.event).toEqual({
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toEqual({
       type: "tool_use",
       toolId: "t2",
       toolName: "Bash",
       input: "ls -la",
     });
+  });
+
+  it("parses all content blocks from assistant message (text + tool_use + text)", () => {
+    const line = JSON.stringify({
+      type: "assistant",
+      session_id: "s1",
+      message: {
+        content: [
+          { type: "text", text: "Let me check", citations: null },
+          { type: "tool_use", id: "t1", name: "Read", input: { file_path: "/foo" } },
+          { type: "text", text: "Done reading", citations: null },
+        ],
+      },
+    });
+    const results = parseLine(line);
+    expect(results).toHaveLength(3);
+    expect(results[0].event).toEqual({ type: "text", text: "Let me check" });
+    expect(results[1].event).toEqual({
+      type: "tool_use",
+      toolId: "t1",
+      toolName: "Read",
+      input: JSON.stringify({ file_path: "/foo" }),
+    });
+    expect(results[2].event).toEqual({ type: "text", text: "Done reading" });
   });
 
   it("extracts usage from result event via top-level usage (snake_case)", () => {
@@ -103,14 +133,15 @@ describe("parseLine", () => {
       },
       modelUsage: {},
     });
-    const result = parseLine(line);
-    expect(result?.usage).toEqual({
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].usage).toEqual({
       inputTokens: 100,
       outputTokens: 50,
       cacheReadTokens: 10,
       cacheWriteTokens: 5,
     });
-    expect(result?.event).toBeNull();
+    expect(results[0].event).toBeNull();
   });
 
   it("prefers modelUsage over top-level usage", () => {
@@ -133,8 +164,9 @@ describe("parseLine", () => {
         },
       },
     });
-    const result = parseLine(line);
-    expect(result?.usage).toEqual({
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].usage).toEqual({
       inputTokens: 300,
       outputTokens: 150,
       cacheReadTokens: 30,
@@ -151,21 +183,24 @@ describe("parseLine", () => {
       usage: { input_tokens: 10, output_tokens: 5 },
       modelUsage: {},
     });
-    const result = parseLine(line);
-    expect(result?.sessionId).toBe("s2");
-    expect(result?.event).toBeNull();
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].sessionId).toBe("s2");
+    expect(results[0].event).toBeNull();
   });
 
   it("returns null event for assistant without content", () => {
     const line = JSON.stringify({ type: "assistant", session_id: "s1", message: { content: [] } });
-    const result = parseLine(line);
-    expect(result?.event).toBeNull();
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toBeNull();
   });
 
   it("skips unknown event types", () => {
     const line = JSON.stringify({ type: "unknown_event", data: "whatever" });
-    const result = parseLine(line);
-    expect(result?.event).toBeNull();
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toBeNull();
   });
 
   it("skips thinking blocks in assistant content", () => {
@@ -179,7 +214,185 @@ describe("parseLine", () => {
         ],
       },
     });
-    const result = parseLine(line);
-    expect(result?.event).toEqual({ type: "text", text: "Here is my answer" });
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toEqual({ type: "text", text: "Here is my answer" });
+  });
+
+  // ── New SDK message type tests ──
+
+  it("parses tool_progress event", () => {
+    const line = JSON.stringify({
+      type: "tool_progress",
+      tool_use_id: "t1",
+      tool_name: "Bash",
+      parent_tool_use_id: null,
+      elapsed_time_seconds: 5.2,
+      uuid: "00000000-0000-0000-0000-000000000001",
+      session_id: "s1",
+    });
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toEqual({
+      type: "tool_progress",
+      toolId: "t1",
+      toolName: "Bash",
+      elapsedSeconds: 5.2,
+    });
+    expect(results[0].sessionId).toBe("s1");
+  });
+
+  it("parses tool_use_summary event", () => {
+    const line = JSON.stringify({
+      type: "tool_use_summary",
+      summary: "Read 3 files, wrote 1 file",
+      preceding_tool_use_ids: ["t1", "t2", "t3"],
+      uuid: "00000000-0000-0000-0000-000000000002",
+      session_id: "s1",
+    });
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toEqual({
+      type: "tool_summary",
+      summary: "Read 3 files, wrote 1 file",
+      toolIds: ["t1", "t2", "t3"],
+    });
+    expect(results[0].sessionId).toBe("s1");
+  });
+
+  it("parses system status event", () => {
+    const line = JSON.stringify({
+      type: "system",
+      subtype: "status",
+      status: "compacting",
+      uuid: "00000000-0000-0000-0000-000000000003",
+      session_id: "s1",
+    });
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toEqual({
+      type: "status",
+      status: "compacting",
+    });
+    expect(results[0].sessionId).toBe("s1");
+  });
+
+  it("parses system status with null status", () => {
+    const line = JSON.stringify({
+      type: "system",
+      subtype: "status",
+      status: null,
+      uuid: "00000000-0000-0000-0000-000000000003",
+      session_id: "s1",
+    });
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toEqual({
+      type: "status",
+      status: "unknown",
+    });
+  });
+
+  it("parses task_started event", () => {
+    const line = JSON.stringify({
+      type: "system",
+      subtype: "task_started",
+      task_id: "task-1",
+      description: "Searching for files",
+      task_type: "explore",
+      uuid: "00000000-0000-0000-0000-000000000004",
+      session_id: "s1",
+    });
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toEqual({
+      type: "task_started",
+      taskId: "task-1",
+      description: "Searching for files",
+      taskType: "explore",
+    });
+    expect(results[0].sessionId).toBe("s1");
+  });
+
+  it("parses task_started without task_type", () => {
+    const line = JSON.stringify({
+      type: "system",
+      subtype: "task_started",
+      task_id: "task-2",
+      description: "Running analysis",
+      uuid: "00000000-0000-0000-0000-000000000005",
+      session_id: "s1",
+    });
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toEqual({
+      type: "task_started",
+      taskId: "task-2",
+      description: "Running analysis",
+      taskType: undefined,
+    });
+  });
+
+  it("parses task_notification event", () => {
+    const line = JSON.stringify({
+      type: "system",
+      subtype: "task_notification",
+      task_id: "task-1",
+      status: "completed",
+      output_file: "/tmp/output.txt",
+      summary: "Found 5 matching files",
+      uuid: "00000000-0000-0000-0000-000000000006",
+      session_id: "s1",
+    });
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toEqual({
+      type: "task_notification",
+      taskId: "task-1",
+      status: "completed",
+      summary: "Found 5 matching files",
+    });
+    expect(results[0].sessionId).toBe("s1");
+  });
+
+  it("parses task_notification with failed status", () => {
+    const line = JSON.stringify({
+      type: "system",
+      subtype: "task_notification",
+      task_id: "task-2",
+      status: "failed",
+      output_file: "/tmp/err.txt",
+      summary: "Task timed out",
+      uuid: "00000000-0000-0000-0000-000000000007",
+      session_id: "s1",
+    });
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].event).toEqual({
+      type: "task_notification",
+      taskId: "task-2",
+      status: "failed",
+      summary: "Task timed out",
+    });
+  });
+
+  it("passes through other system subtypes without event", () => {
+    for (const subtype of [
+      "hook_started",
+      "hook_progress",
+      "hook_response",
+      "compact_boundary",
+      "files_persisted",
+    ]) {
+      const line = JSON.stringify({
+        type: "system",
+        subtype,
+        session_id: "s1",
+      });
+      const results = parseLine(line);
+      expect(results).toHaveLength(1);
+      expect(results[0].event).toBeNull();
+      expect(results[0].sessionId).toBe("s1");
+    }
   });
 });

@@ -267,6 +267,168 @@ describe("ChannelBridge", () => {
     expect(capturedParams?.auth).toBeUndefined();
   });
 
+  it("fires onToolResult callbacks", async () => {
+    const runtime = createMockRuntime([
+      { type: "tool_result", toolId: "t1", output: "file contents", isError: false },
+      {
+        type: "done",
+        result: {
+          text: "",
+          sessionId: undefined,
+          durationMs: 10,
+          usage: undefined,
+          aborted: false,
+        },
+      },
+    ]);
+
+    const bridge = new ChannelBridge({ runtime, sessionDir: tmpDir });
+    const results: Array<{ id: string; output: string; isError: boolean }> = [];
+
+    await bridge.handle(defaultMessage(), {
+      onToolResult: (id, output, isError) => {
+        results.push({ id, output, isError });
+      },
+    });
+
+    expect(results).toEqual([{ id: "t1", output: "file contents", isError: false }]);
+  });
+
+  it("fires onToolProgress callbacks", async () => {
+    const runtime = createMockRuntime([
+      { type: "tool_progress", toolId: "t1", toolName: "Bash", elapsedSeconds: 3.5 },
+      {
+        type: "done",
+        result: {
+          text: "",
+          sessionId: undefined,
+          durationMs: 10,
+          usage: undefined,
+          aborted: false,
+        },
+      },
+    ]);
+
+    const bridge = new ChannelBridge({ runtime, sessionDir: tmpDir });
+    const progress: Array<{ id: string; name: string; elapsed: number }> = [];
+
+    await bridge.handle(defaultMessage(), {
+      onToolProgress: (id, name, elapsed) => {
+        progress.push({ id, name, elapsed });
+      },
+    });
+
+    expect(progress).toEqual([{ id: "t1", name: "Bash", elapsed: 3.5 }]);
+  });
+
+  it("fires onToolSummary callbacks", async () => {
+    const runtime = createMockRuntime([
+      { type: "tool_summary", summary: "Read 3 files", toolIds: ["t1", "t2", "t3"] },
+      {
+        type: "done",
+        result: {
+          text: "",
+          sessionId: undefined,
+          durationMs: 10,
+          usage: undefined,
+          aborted: false,
+        },
+      },
+    ]);
+
+    const bridge = new ChannelBridge({ runtime, sessionDir: tmpDir });
+    const summaries: string[] = [];
+
+    await bridge.handle(defaultMessage(), {
+      onToolSummary: (summary) => {
+        summaries.push(summary);
+      },
+    });
+
+    expect(summaries).toEqual(["Read 3 files"]);
+  });
+
+  it("fires onStatus callbacks", async () => {
+    const runtime = createMockRuntime([
+      { type: "status", status: "compacting" },
+      {
+        type: "done",
+        result: {
+          text: "",
+          sessionId: undefined,
+          durationMs: 10,
+          usage: undefined,
+          aborted: false,
+        },
+      },
+    ]);
+
+    const bridge = new ChannelBridge({ runtime, sessionDir: tmpDir });
+    const statuses: string[] = [];
+
+    await bridge.handle(defaultMessage(), {
+      onStatus: (status) => {
+        statuses.push(status);
+      },
+    });
+
+    expect(statuses).toEqual(["compacting"]);
+  });
+
+  it("fires onTaskStarted callbacks", async () => {
+    const runtime = createMockRuntime([
+      { type: "task_started", taskId: "task-1", description: "Searching", taskType: "explore" },
+      {
+        type: "done",
+        result: {
+          text: "",
+          sessionId: undefined,
+          durationMs: 10,
+          usage: undefined,
+          aborted: false,
+        },
+      },
+    ]);
+
+    const bridge = new ChannelBridge({ runtime, sessionDir: tmpDir });
+    const tasks: Array<{ id: string; desc: string; taskType: string | undefined }> = [];
+
+    await bridge.handle(defaultMessage(), {
+      onTaskStarted: (id, desc, taskType) => {
+        tasks.push({ id, desc, taskType });
+      },
+    });
+
+    expect(tasks).toEqual([{ id: "task-1", desc: "Searching", taskType: "explore" }]);
+  });
+
+  it("fires onTaskNotification callbacks", async () => {
+    const runtime = createMockRuntime([
+      { type: "task_notification", taskId: "task-1", status: "completed", summary: "Done" },
+      {
+        type: "done",
+        result: {
+          text: "",
+          sessionId: undefined,
+          durationMs: 10,
+          usage: undefined,
+          aborted: false,
+        },
+      },
+    ]);
+
+    const bridge = new ChannelBridge({ runtime, sessionDir: tmpDir });
+    const notifs: Array<{ id: string; status: string; summary: string }> = [];
+
+    await bridge.handle(defaultMessage(), {
+      onTaskNotification: (id, status, summary) => {
+        notifs.push({ id, status, summary });
+      },
+    });
+
+    expect(notifs).toEqual([{ id: "task-1", status: "completed", summary: "Done" }]);
+  });
+
   it("passes abort signal to runtime", async () => {
     let receivedSignal: AbortSignal | undefined;
     const runtime: AgentRuntime = {

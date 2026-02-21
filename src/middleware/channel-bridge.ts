@@ -105,6 +105,24 @@ export class ChannelBridge {
       case "tool_use":
         await callbacks.onToolUse?.(event.toolName, event.toolId);
         break;
+      case "tool_result":
+        await callbacks.onToolResult?.(event.toolId, event.output, event.isError);
+        break;
+      case "tool_progress":
+        await callbacks.onToolProgress?.(event.toolId, event.toolName, event.elapsedSeconds);
+        break;
+      case "tool_summary":
+        await callbacks.onToolSummary?.(event.summary);
+        break;
+      case "status":
+        await callbacks.onStatus?.(event.status);
+        break;
+      case "task_started":
+        await callbacks.onTaskStarted?.(event.taskId, event.description, event.taskType);
+        break;
+      case "task_notification":
+        await callbacks.onTaskNotification?.(event.taskId, event.status, event.summary);
+        break;
       case "error":
         await callbacks.onError?.(event.message, event.category);
         break;

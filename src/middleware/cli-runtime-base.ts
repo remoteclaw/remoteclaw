@@ -74,6 +74,11 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     return { ...process.env, ...runtimeEnv } as Record<string, string>;
   }
 
+  /** Resolve the no-output watchdog timeout in ms, or undefined to disable. Subclasses override to enable. */
+  protected resolveWatchdogMs(_params: AgentRuntimeParams): number | undefined {
+    return undefined;
+  }
+
   async *execute(params: AgentRuntimeParams): AsyncIterable<AgentEvent> {
     const cfg = this.config();
     const startTime = Date.now();
@@ -136,6 +141,24 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       }, params.timeoutMs);
     }
 
+    // No-output watchdog
+    const watchdogMs = this.resolveWatchdogMs(params);
+    let watchdogTimedOut = false;
+    let watchdogTimer: ReturnType<typeof setTimeout> | undefined;
+    const resetWatchdog =
+      watchdogMs !== undefined
+        ? () => {
+            if (watchdogTimer !== undefined) {
+              clearTimeout(watchdogTimer);
+            }
+            watchdogTimer = setTimeout(() => {
+              watchdogTimedOut = true;
+              child.kill("SIGKILL");
+            }, watchdogMs);
+          }
+        : undefined;
+    resetWatchdog?.();
+
     // Collect stderr
     child.stderr.on("data", (chunk: Buffer) => {
       stderrChunks.push(chunk.toString());
@@ -167,6 +190,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     };
 
     child.stdout.on("data", (chunk: Buffer) => {
+      resetWatchdog?.();
       remainder += chunk.toString();
       const lines = remainder.split("\n");
       remainder = lines.pop()!; // last element is partial or empty
@@ -178,6 +202,10 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
 
     child.on("close", (code) => {
       exitCode = code;
+
+      if (watchdogTimer !== undefined) {
+        clearTimeout(watchdogTimer);
+      }
 
       // Flush any remaining partial line
       if (remainder.trim()) {
@@ -196,11 +224,20 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     if (timeoutId !== undefined) {
       clearTimeout(timeoutId);
     }
+    if (watchdogTimer !== undefined) {
+      clearTimeout(watchdogTimer);
+    }
     params.abortSignal?.removeEventListener("abort", onAbort);
 
     // Yield error event if needed
     if (aborted) {
       yield { type: "error", message: "Aborted by user", category: "aborted" };
+    } else if (watchdogTimedOut) {
+      yield {
+        type: "error",
+        message: `No output for ${String(watchdogMs)}ms (watchdog)`,
+        category: "timeout",
+      };
     } else if (timedOut) {
       yield {
         type: "error",
@@ -222,7 +259,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
         sessionId: accSessionId,
         durationMs: Date.now() - startTime,
         usage: accUsage,
-        aborted: aborted || timedOut,
+        aborted: aborted || timedOut || watchdogTimedOut,
         totalCostUsd: accResultMeta?.totalCostUsd,
         apiDurationMs: accResultMeta?.apiDurationMs,
         numTurns: accResultMeta?.numTurns,

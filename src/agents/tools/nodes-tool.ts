@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
 import {
   type CameraFacing,
@@ -18,6 +17,7 @@ import {
 import { parseDurationMs } from "../../cli/parse-duration.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { imageMimeFromFormat } from "../../media/mime.js";
+import type { AgentToolResult } from "../../types/pi-agent-core.js";
 import { resolveSessionAgentId } from "../agent-scope.js";
 import { resolveImageSanitizationLimits } from "../image-sanitization.js";
 import { optionalStringEnum, stringEnum } from "../schema/typebox.js";
@@ -196,7 +196,7 @@ export function createNodesTool(options?: {
                 ? params.deviceId.trim()
                 : undefined;
 
-            const content: AgentToolResult<unknown>["content"] = [];
+            const content: AgentToolResult["content"] = [];
             const details: Array<Record<string, unknown>> = [];
 
             for (const facing of facings) {
@@ -251,7 +251,7 @@ export function createNodesTool(options?: {
               });
             }
 
-            const result: AgentToolResult<unknown> = { content, details };
+            const result: AgentToolResult = { content, details };
             return await sanitizeToolResultImages(result, "nodes:camera_snap", imageSanitization);
           }
           case "camera_list": {

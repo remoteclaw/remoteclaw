@@ -1,8 +1,8 @@
-import type { SessionManager } from "@mariozechner/pi-coding-agent";
 import {
   applyInputProvenanceToUserMessage,
   type InputProvenance,
 } from "../sessions/input-provenance.js";
+import type { SessionManager } from "../types/pi-coding-agent.js";
 import { installSessionToolResultGuard } from "./session-tool-result-guard.js";
 
 export type GuardedSessionManager = SessionManager & {

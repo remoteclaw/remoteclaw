@@ -1,5 +1,5 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { RemoteClawConfig } from "../../config/config.js";
+import type { AgentToolResult } from "../../types/pi-agent-core.js";
 import { getChannelPlugin, listChannelPlugins } from "./index.js";
 import type { ChannelMessageActionContext, ChannelMessageActionName } from "./types.js";
 
@@ -59,7 +59,7 @@ export function supportsChannelMessageCardsForChannel(params: {
 
 export async function dispatchChannelMessageAction(
   ctx: ChannelMessageActionContext,
-): Promise<AgentToolResult<unknown> | null> {
+): Promise<AgentToolResult | null> {
   const plugin = getChannelPlugin(ctx.channel);
   if (!plugin?.actions?.handleAction) {
     return null;

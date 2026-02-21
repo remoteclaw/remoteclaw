@@ -2,9 +2,9 @@ import { execFileSync, execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import type { OAuthCredentials, OAuthProvider } from "@mariozechner/pi-ai";
 import { loadJsonFile, saveJsonFile } from "../infra/json-file.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import type { OAuthCredentials, OAuthProvider } from "../types/pi-ai.js";
 import { resolveUserPath } from "../utils.js";
 
 const log = createSubsystemLogger("agents/auth-profiles");

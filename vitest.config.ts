@@ -21,6 +21,34 @@ export default defineConfig({
         find: "remoteclaw/sdk",
         replacement: path.join(repoRoot, "src", "plugin-sdk", "index.ts"),
       },
+      // Deep subpath aliases for @mariozechner/pi-coding-agent (whose exports
+      // map only exposes "." and "./hooks").  Vite/Vitest enforce the exports
+      // map at runtime, so we resolve these paths manually.
+      {
+        find: "@mariozechner/pi-coding-agent/dist/core/session-manager.js",
+        replacement: path.join(
+          repoRoot,
+          "node_modules",
+          "@mariozechner",
+          "pi-coding-agent",
+          "dist",
+          "core",
+          "session-manager.js",
+        ),
+      },
+      {
+        find: "@mariozechner/pi-coding-agent/dist/core/compaction/compaction.js",
+        replacement: path.join(
+          repoRoot,
+          "node_modules",
+          "@mariozechner",
+          "pi-coding-agent",
+          "dist",
+          "core",
+          "compaction",
+          "compaction.js",
+        ),
+      },
     ],
   },
   test: {

@@ -1,16 +1,17 @@
-import type { Api, Context, Model } from "@mariozechner/pi-ai";
-import { complete, getModel } from "@mariozechner/pi-ai";
+import { getModel } from "@mariozechner/pi-ai/dist/models.js";
+import { complete } from "@mariozechner/pi-ai/dist/stream.js";
 import { minimaxUnderstandImage } from "../../agents/minimax-vlm.js";
 import { getApiKeyForModel, requireApiKey } from "../../agents/model-auth.js";
 import { coerceImageAssistantText } from "../../agents/tools/image-tool.helpers.js";
+import type { Context, Model } from "../../types/pi-ai.js";
 import type { ImageDescriptionRequest, ImageDescriptionResult } from "../types.js";
 
 export async function describeImageWithModel(
   params: ImageDescriptionRequest,
 ): Promise<ImageDescriptionResult> {
-  let model: Model<Api>;
+  let model: Model;
   try {
-    model = getModel(params.provider as never, params.model as never) as Model<Api>;
+    model = getModel(params.provider as never, params.model as never) as Model;
   } catch {
     throw new Error(`Unknown model: ${params.provider}/${params.model}`);
   }

@@ -1,4 +1,3 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import {
   createActionGate,
   jsonResult,
@@ -6,6 +5,7 @@ import {
   readReactionParams,
   readStringParam,
 } from "remoteclaw/sdk";
+import type { AgentToolResult } from "../../../src/types/pi-agent-core.js";
 import {
   deleteMatrixMessage,
   editMatrixMessage,
@@ -40,7 +40,7 @@ function readRoomId(params: Record<string, unknown>, required = true): string {
 export async function handleMatrixAction(
   params: Record<string, unknown>,
   cfg: CoreConfig,
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult> {
   const action = readStringParam(params, "action", { required: true });
   const isActionEnabled = createActionGate(cfg.channels?.matrix?.actions);
 

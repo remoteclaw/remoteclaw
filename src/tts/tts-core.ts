@@ -1,5 +1,6 @@
 import { rmSync } from "node:fs";
-import { completeSimple, getModel, type TextContent } from "@mariozechner/pi-ai";
+import { getModel } from "@mariozechner/pi-ai/dist/models.js";
+import { completeSimple } from "@mariozechner/pi-ai/dist/stream.js";
 import { EdgeTTS } from "node-edge-tts";
 import {
   parseModelRef,
@@ -8,6 +9,7 @@ import {
 } from "../agents/cli-routing.js";
 import { getApiKeyForModel, requireApiKey } from "../agents/model-auth.js";
 import type { RemoteClawConfig } from "../config/config.js";
+import type { TextContent } from "../types/pi-ai.js";
 import type {
   ResolvedTtsConfig,
   ResolvedTtsModelOverrides,

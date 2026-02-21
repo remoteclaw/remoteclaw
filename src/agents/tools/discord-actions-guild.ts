@@ -1,4 +1,3 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { DiscordActionConfig } from "../../config/config.js";
 import { getPresence } from "../../discord/monitor/presence-cache.js";
 import {
@@ -21,6 +20,7 @@ import {
   uploadEmojiDiscord,
   uploadStickerDiscord,
 } from "../../discord/send.js";
+import type { AgentToolResult } from "../../types/pi-agent-core.js";
 import {
   type ActionGate,
   jsonResult,
@@ -43,7 +43,7 @@ export async function handleDiscordGuildAction(
   action: string,
   params: Record<string, unknown>,
   isActionEnabled: ActionGate<DiscordActionConfig>,
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult> {
   const accountId = readStringParam(params, "accountId");
   switch (action) {
     case "memberInfo": {

@@ -1,7 +1,8 @@
 import path from "node:path";
-import { type Api, type Context, complete, type Model } from "@mariozechner/pi-ai";
+import { complete } from "@mariozechner/pi-ai/dist/stream.js";
 import { Type } from "@sinclair/typebox";
 import type { RemoteClawConfig } from "../../config/config.js";
+import type { Context, Model } from "../../types/pi-ai.js";
 import { resolveUserPath } from "../../utils.js";
 import { getDefaultLocalRoots, loadWebMedia } from "../../web/media.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "../auth-profiles.js";
@@ -303,9 +304,9 @@ async function runSingleImageModel(params: {
   images: Array<{ base64: string; mimeType: string }>;
 }): Promise<{ text: string; provider: string; model: string }> {
   const { getModel } = await import("@mariozechner/pi-ai");
-  let model: Model<Api>;
+  let model: Model;
   try {
-    model = getModel(params.provider as never, params.modelId as never) as Model<Api>;
+    model = getModel(params.provider as never, params.modelId as never) as Model;
   } catch {
     throw new Error(`Unknown model: ${params.provider}/${params.modelId}`);
   }

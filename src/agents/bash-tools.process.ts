@@ -1,9 +1,9 @@
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
 import { formatDurationCompact } from "../infra/format-time/format-duration.ts";
 import { getDiagnosticSessionState } from "../logging/diagnostic-session-state.js";
 import { killProcessTree } from "../process/kill-tree.js";
 import { getProcessSupervisor } from "../process/supervisor/index.js";
+import type { AgentTool, AgentToolResult } from "../types/pi-agent-core.js";
 import {
   type ProcessSession,
   deleteSession,
@@ -86,7 +86,7 @@ function resolvePollWaitMs(value: unknown) {
   return 0;
 }
 
-function failText(text: string): AgentToolResult<unknown> {
+function failText(text: string): AgentToolResult {
   return {
     content: [
       {
@@ -119,7 +119,7 @@ function resetPollRetrySuggestion(sessionId: string): void {
 export function createProcessTool(
   defaults?: ProcessToolDefaults,
   // oxlint-disable-next-line typescript/no-explicit-any
-): AgentTool<any, unknown> {
+): AgentTool<any> {
   if (defaults?.cleanupMs !== undefined) {
     setJobTtlMs(defaults.cleanupMs);
   }
@@ -152,7 +152,7 @@ export function createProcessTool(
     description:
       "Manage running exec sessions: list, poll, log, write, send-keys, submit, paste, kill.",
     parameters: processSchema,
-    execute: async (_toolCallId, args, _signal, _onUpdate): Promise<AgentToolResult<unknown>> => {
+    execute: async (_toolCallId, args, _signal, _onUpdate): Promise<AgentToolResult> => {
       const params = args as {
         action:
           | "list"
@@ -238,7 +238,7 @@ export function createProcessTool(
       const scopedSession = isInScope(session) ? session : undefined;
       const scopedFinished = isInScope(finished) ? finished : undefined;
 
-      const failedResult = (text: string): AgentToolResult<unknown> => ({
+      const failedResult = (text: string): AgentToolResult => ({
         content: [{ type: "text", text }],
         details: { status: "failed" },
       });

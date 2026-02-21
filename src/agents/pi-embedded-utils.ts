@@ -1,6 +1,6 @@
-import type { AssistantMessage } from "@mariozechner/pi-ai";
 import { extractTextFromChatContent } from "../shared/chat-content.js";
 import { stripReasoningTagsFromText } from "../shared/text/reasoning-tags.js";
+import type { AssistantMessage } from "../types/pi-ai.js";
 import { sanitizeUserFacingText } from "./pi-embedded-helpers.js";
 
 /**

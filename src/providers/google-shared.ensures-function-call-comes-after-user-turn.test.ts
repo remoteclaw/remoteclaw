@@ -1,6 +1,6 @@
 import { convertMessages } from "@mariozechner/pi-ai/dist/providers/google-shared.js";
-import type { Context } from "@mariozechner/pi-ai/dist/types.js";
 import { describe, expect, it } from "vitest";
+import type { Context } from "../types/pi-ai.js";
 import {
   asRecord,
   makeGeminiCliAssistantMessage,

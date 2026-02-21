@@ -1,8 +1,8 @@
 import path from "node:path";
-import type { Api, Model } from "@mariozechner/pi-ai";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { getShellEnvAppliedKeys } from "../infra/shell-env.js";
+import type { Model } from "../types/pi-ai.js";
 import { normalizeSecretInput } from "../utils/normalize-secret-input.js";
 import {
   type AuthProfileStore,
@@ -199,7 +199,7 @@ export function resolveModelAuthMode(
 }
 
 export async function getApiKeyForModel(params: {
-  model: Model<Api>;
+  model: Model;
   cfg?: RemoteClawConfig;
   profileId?: string;
   preferredProfile?: string;

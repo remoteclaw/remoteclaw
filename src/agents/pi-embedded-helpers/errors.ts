@@ -1,5 +1,5 @@
-import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { RemoteClawConfig } from "../../config/config.js";
+import type { AssistantMessage } from "../../types/pi-ai.js";
 import { formatSandboxToolPolicyBlockedMessage } from "../sandbox.js";
 import type { FailoverReason } from "./types.js";
 

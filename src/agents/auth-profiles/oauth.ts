@@ -1,12 +1,8 @@
-import {
-  getOAuthApiKey,
-  getOAuthProviders,
-  type OAuthCredentials,
-  type OAuthProvider,
-} from "@mariozechner/pi-ai";
+import { getOAuthProvider } from "@mariozechner/pi-ai/dist/utils/oauth/index.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { withFileLock } from "../../infra/file-lock.js";
 import { refreshQwenPortalCredentials } from "../../providers/qwen-portal-oauth.js";
+import type { OAuthCredentials, OAuthProvider } from "../../types/pi-ai.js";
 import { refreshChutesTokens } from "../chutes-oauth.js";
 import { AUTH_STORE_LOCK_OPTIONS, log } from "./constants.js";
 import { formatAuthDoctorHint } from "./doctor.js";
@@ -15,7 +11,14 @@ import { suggestOAuthProfileIdForLegacyDefault } from "./repair.js";
 import { ensureAuthProfileStore, saveAuthProfileStore } from "./store.js";
 import type { AuthProfileStore } from "./types.js";
 
-const OAUTH_PROVIDER_IDS = new Set<string>(getOAuthProviders().map((provider) => provider.id));
+/** Known pi-ai OAuth provider IDs (static, avoids getOAuthProviders() barrel import) */
+const OAUTH_PROVIDER_IDS = new Set<string>([
+  "anthropic",
+  "github-copilot",
+  "google-gemini-cli",
+  "google-antigravity",
+  "openai-codex",
+]);
 
 const isOAuthProvider = (provider: string): provider is OAuthProvider =>
   OAUTH_PROVIDER_IDS.has(provider);
@@ -54,10 +57,6 @@ async function refreshOAuthTokenWithLock(params: {
       };
     }
 
-    const oauthCreds: Record<string, OAuthCredentials> = {
-      [cred.provider]: cred,
-    };
-
     const result =
       String(cred.provider) === "chutes"
         ? await (async () => {
@@ -72,11 +71,17 @@ async function refreshOAuthTokenWithLock(params: {
               return { apiKey: newCredentials.access, newCredentials };
             })()
           : await (async () => {
-              const oauthProvider = resolveOAuthProvider(cred.provider);
-              if (!oauthProvider) {
+              const oauthProviderId = resolveOAuthProvider(cred.provider);
+              if (!oauthProviderId) {
                 return null;
               }
-              return await getOAuthApiKey(oauthProvider, oauthCreds);
+              const provider = getOAuthProvider(oauthProviderId);
+              if (!provider) {
+                return null;
+              }
+              const newCredentials = await provider.refreshToken(cred);
+              const apiKey = provider.getApiKey(newCredentials);
+              return { newCredentials, apiKey };
             })();
     if (!result) {
       return null;

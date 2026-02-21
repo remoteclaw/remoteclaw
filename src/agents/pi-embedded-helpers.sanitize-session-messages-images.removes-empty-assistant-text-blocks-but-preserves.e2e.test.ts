@@ -1,5 +1,5 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import { describe, expect, it } from "vitest";
+import type { AgentMessage } from "../types/pi-agent-core.js";
 import {
   sanitizeGoogleTurnOrdering,
   sanitizeSessionMessagesImages,
@@ -86,7 +86,7 @@ describe("sanitizeSessionMessagesImages", () => {
     ] as unknown as AgentMessage[];
 
     const out = await sanitizeSessionMessagesImages(input, "test");
-    const assistant = out[0] as { content?: Array<Record<string, unknown>> };
+    const assistant = out[0] as unknown as { content?: Array<Record<string, unknown>> };
     const toolCall = assistant.content?.find((b) => b.type === "toolCall");
     expect(toolCall).toBeTruthy();
     expect("input" in (toolCall ?? {})).toBe(false);

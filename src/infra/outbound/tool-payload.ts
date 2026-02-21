@@ -1,6 +1,6 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
+import type { AgentToolResult } from "../../types/pi-agent-core.js";
 
-export function extractToolPayload(result: AgentToolResult<unknown>): unknown {
+export function extractToolPayload(result: AgentToolResult): unknown {
   if (result.details !== undefined) {
     return result.details;
   }

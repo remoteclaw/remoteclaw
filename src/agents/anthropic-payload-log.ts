@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
 import path from "node:path";
-import type { AgentMessage, StreamFn } from "@mariozechner/pi-agent-core";
-import type { Api, Model } from "@mariozechner/pi-ai";
 import { resolveStateDir } from "../config/paths.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import type { AgentMessage, StreamFn } from "../types/pi-agent-core.js";
+import type { Model } from "../types/pi-ai.js";
 import { resolveUserPath } from "../utils.js";
 import { parseBooleanValue } from "../utils/boolean.js";
 import { safeJsonStringify } from "../utils/safe-json.js";
@@ -74,7 +74,7 @@ function digest(value: unknown): string | undefined {
   return crypto.createHash("sha256").update(serialized).digest("hex");
 }
 
-function isAnthropicModel(model: Model<Api> | undefined | null): boolean {
+function isAnthropicModel(model: Model | undefined | null): boolean {
   return (model as { api?: unknown })?.api === "anthropic-messages";
 }
 

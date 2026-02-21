@@ -1,10 +1,10 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import {
   readNumberParam,
   readStringArrayParam,
   readStringParam,
 } from "../../../../agents/tools/common.js";
 import { handleDiscordAction } from "../../../../agents/tools/discord-actions.js";
+import type { AgentToolResult } from "../../../../types/pi-agent-core.js";
 import type { ChannelMessageActionContext } from "../../types.js";
 
 type Ctx = Pick<ChannelMessageActionContext, "action" | "params" | "cfg" | "accountId">;
@@ -13,7 +13,7 @@ export async function tryHandleDiscordMessageActionGuildAdmin(params: {
   ctx: Ctx;
   resolveChannelId: () => string;
   readParentIdParam: (params: Record<string, unknown>) => string | null | undefined;
-}): Promise<AgentToolResult<unknown> | undefined> {
+}): Promise<AgentToolResult | undefined> {
   const { ctx, resolveChannelId, readParentIdParam } = params;
   const { action, params: actionParams, cfg } = ctx;
   const accountId = ctx.accountId ?? readStringParam(actionParams, "accountId");

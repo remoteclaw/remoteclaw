@@ -4,6 +4,7 @@ import {
   resolveSessionAgentId,
 } from "../../agents/agent-scope.js";
 import { parseModelRef } from "../../agents/cli-routing.js";
+import { resolveAgentMaxTurns } from "../../agents/max-turns.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
 import { type RemoteClawConfig, loadConfig } from "../../config/config.js";
@@ -67,6 +68,7 @@ export async function getReplyFromConfig(
   const workspaceDir = workspace.dir;
   const agentDir = resolveAgentDir(cfg, agentId);
   const timeoutMs = resolveAgentTimeoutMs({ cfg, overrideSeconds: opts?.timeoutOverrideSeconds });
+  const maxTurns = resolveAgentMaxTurns({ cfg });
   const configuredTypingSeconds =
     agentCfg?.typingIntervalSeconds ?? sessionCfg?.typingIntervalSeconds;
   const typingIntervalSeconds =
@@ -268,6 +270,7 @@ export async function getReplyFromConfig(
     defaultProvider,
     defaultModel,
     timeoutMs,
+    maxTurns,
     isNewSession,
     resetTriggered,
     systemSent,

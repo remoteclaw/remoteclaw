@@ -129,6 +129,7 @@ export async function runAgentTurnWithFallback(params: {
     runtime: createCliRuntime(params.followupRun.run.provider, params.followupRun.run.config),
     sessionDir: params.followupRun.run.workspaceDir,
     defaultModel: params.followupRun.run.model,
+    defaultMaxTurns: params.followupRun.run.maxTurns,
     defaultTimeoutMs: params.followupRun.run.timeoutMs,
     auth: resolvedAuth,
   });

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { ClaudeCliRuntime } from "./claude-cli-runtime.js";
 import { createCliRuntime } from "./cli-runtime-factory.js";
+import { OpenCodeCliRuntime } from "./opencode-cli-runtime.js";
 
 function makeCfg(
   cliBackends?: Record<string, { command?: string; args?: string[] }>,
@@ -61,5 +62,25 @@ describe("createCliRuntime", () => {
       makeCfg({ "my-backend": { command: "custom-cli" } }),
     );
     expect(runtime).toBeInstanceOf(ClaudeCliRuntime);
+  });
+
+  it("returns OpenCodeCliRuntime for opencode without config", () => {
+    const runtime = createCliRuntime("opencode", makeCfg());
+    expect(runtime).toBeInstanceOf(OpenCodeCliRuntime);
+    expect(runtime.name).toBe("opencode");
+  });
+
+  it("returns OpenCodeCliRuntime for opencode with config", () => {
+    const runtime = createCliRuntime(
+      "opencode",
+      makeCfg({ opencode: { command: "/usr/local/bin/opencode" } }),
+    );
+    expect(runtime).toBeInstanceOf(OpenCodeCliRuntime);
+  });
+
+  it("normalizes opencode-zen to opencode provider", () => {
+    const runtime = createCliRuntime("opencode-zen", makeCfg());
+    expect(runtime).toBeInstanceOf(OpenCodeCliRuntime);
+    expect(runtime.name).toBe("opencode");
   });
 });

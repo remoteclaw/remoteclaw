@@ -73,6 +73,9 @@ export function isCliProvider(provider: string, cfg?: RemoteClawConfig): boolean
   if (normalized === "codex-cli") {
     return true;
   }
+  if (normalized === "opencode") {
+    return true;
+  }
   const backends = cfg?.agents?.defaults?.cliBackends ?? {};
   return Object.keys(backends).some((key) => normalizeProviderId(key) === normalized);
 }

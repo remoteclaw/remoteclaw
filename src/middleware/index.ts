@@ -8,6 +8,8 @@ export type { CLIRuntimeConfig } from "./cli-runtime-base.js";
 export { classifyError } from "./error-classify.js";
 export { parseLine } from "./event-extract.js";
 export type { ParsedLine } from "./event-extract.js";
+export { OpenCodeCliRuntime } from "./opencode-cli-runtime.js";
+export { parseOpenCodeLine } from "./opencode-event-extract.js";
 export { SessionMap } from "./session-map.js";
 export type { ResolvedProviderAuth } from "../agents/model-auth.js";
 export type {

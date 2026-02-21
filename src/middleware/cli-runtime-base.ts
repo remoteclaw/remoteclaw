@@ -3,8 +3,8 @@ import { logDebug } from "../logger.js";
 import { maskSecret } from "../logging/redact.js";
 import type { AgentRuntime } from "./agent-runtime.js";
 import { classifyError } from "./error-classify.js";
-import { parseLine } from "./event-extract.js";
-import type { ResultMeta } from "./event-extract.js";
+import { parseLine as defaultParseLine } from "./event-extract.js";
+import type { ParsedLine, ResultMeta } from "./event-extract.js";
 import type { AgentDoneEvent, AgentEvent, AgentRuntimeParams, AgentUsage } from "./types.js";
 
 export type CLIRuntimeConfig = {
@@ -12,6 +12,8 @@ export type CLIRuntimeConfig = {
   buildArgs: (params: AgentRuntimeParams) => string[];
   buildEnv: (params: AgentRuntimeParams) => Record<string, string>;
   buildStdin?: (params: AgentRuntimeParams) => string | undefined;
+  /** Override the NDJSON line parser. Defaults to the Claude SDK parser. */
+  parseLine?: (line: string) => ParsedLine[];
 };
 
 const SIGTERM_GRACE_MS = 5_000;
@@ -168,8 +170,9 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     const queue = createAsyncQueue<AgentEvent>();
     let remainder = "";
 
+    const lineParser = cfg.parseLine ?? defaultParseLine;
     const processLine = (line: string) => {
-      const results = parseLine(line);
+      const results = lineParser(line);
       for (const parsed of results) {
         if (parsed.sessionId !== undefined) {
           accSessionId = parsed.sessionId;

@@ -1,6 +1,6 @@
-import { getOAuthProvider } from "@mariozechner/pi-ai/dist/utils/oauth/index.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { withFileLock } from "../../infra/file-lock.js";
+import { getOAuthProvider } from "../../providers/oauth/index.js";
 import { refreshQwenPortalCredentials } from "../../providers/qwen-portal-oauth.js";
 import type { OAuthCredentials, OAuthProvider } from "../../types/pi-ai.js";
 import { refreshChutesTokens } from "../chutes-oauth.js";

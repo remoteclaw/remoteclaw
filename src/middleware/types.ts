@@ -77,6 +77,8 @@ export type AgentUsage = {
   outputTokens: number | undefined;
   cacheReadTokens: number | undefined;
   cacheWriteTokens: number | undefined;
+  costUsd?: number | undefined;
+  webSearchRequests?: number | undefined;
 };
 
 // ── Runtime Parameters ──
@@ -94,12 +96,23 @@ export type AgentRuntimeParams = {
 
 // ── Run Result ──
 
+export type PermissionDenial = {
+  toolName: string;
+  toolUseId: string;
+};
+
 export type AgentRunResult = {
   text: string;
   sessionId: string | undefined;
   durationMs: number;
   usage: AgentUsage | undefined;
   aborted: boolean;
+  totalCostUsd?: number | undefined;
+  apiDurationMs?: number | undefined;
+  numTurns?: number | undefined;
+  stopReason?: string | undefined;
+  errorSubtype?: string | undefined;
+  permissionDenials?: PermissionDenial[] | undefined;
 };
 
 // ── Channel Bridge Types ──
@@ -121,6 +134,12 @@ export type ChannelReply = {
   usage: AgentUsage | undefined;
   aborted: boolean;
   error: string | undefined;
+  totalCostUsd?: number | undefined;
+  apiDurationMs?: number | undefined;
+  numTurns?: number | undefined;
+  stopReason?: string | undefined;
+  errorSubtype?: string | undefined;
+  permissionDenials?: PermissionDenial[] | undefined;
 };
 
 export type BridgeCallbacks = {

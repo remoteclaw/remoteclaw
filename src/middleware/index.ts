@@ -34,5 +34,6 @@ export type {
   ChannelMessage,
   ChannelReply,
   ErrorCategory,
+  PermissionDenial,
   SessionMapKey,
 } from "./types.js";

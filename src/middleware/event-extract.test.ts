@@ -125,6 +125,11 @@ describe("parseLine", () => {
       subtype: "success",
       session_id: "s1",
       result: "done",
+      total_cost_usd: 0.005,
+      duration_api_ms: 1200,
+      num_turns: 1,
+      stop_reason: "end_turn",
+      permission_denials: [],
       usage: {
         input_tokens: 100,
         output_tokens: 50,
@@ -140,16 +145,23 @@ describe("parseLine", () => {
       outputTokens: 50,
       cacheReadTokens: 10,
       cacheWriteTokens: 5,
+      costUsd: undefined,
+      webSearchRequests: undefined,
     });
     expect(results[0].event).toBeNull();
   });
 
-  it("prefers modelUsage over top-level usage", () => {
+  it("prefers modelUsage over top-level usage and extracts costUsd and webSearchRequests", () => {
     const line = JSON.stringify({
       type: "result",
       subtype: "success",
       session_id: "s1",
       result: "done",
+      total_cost_usd: 0.01,
+      duration_api_ms: 2500,
+      num_turns: 3,
+      stop_reason: "end_turn",
+      permission_denials: [],
       usage: { input_tokens: 1, output_tokens: 1 },
       modelUsage: {
         "claude-sonnet-4-5-20250514": {
@@ -157,7 +169,7 @@ describe("parseLine", () => {
           outputTokens: 150,
           cacheReadInputTokens: 30,
           cacheCreationInputTokens: 15,
-          webSearchRequests: 0,
+          webSearchRequests: 2,
           costUSD: 0.01,
           contextWindow: 200000,
           maxOutputTokens: 8192,
@@ -171,6 +183,8 @@ describe("parseLine", () => {
       outputTokens: 150,
       cacheReadTokens: 30,
       cacheWriteTokens: 15,
+      costUsd: 0.01,
+      webSearchRequests: 2,
     });
   });
 
@@ -394,5 +408,162 @@ describe("parseLine", () => {
       expect(results[0].event).toBeNull();
       expect(results[0].sessionId).toBe("s1");
     }
+  });
+
+  // ── Result metadata extraction tests ──
+
+  it("extracts result metadata from success result", () => {
+    const line = JSON.stringify({
+      type: "result",
+      subtype: "success",
+      session_id: "s1",
+      result: "done",
+      total_cost_usd: 0.042,
+      duration_api_ms: 3200,
+      num_turns: 5,
+      stop_reason: "end_turn",
+      permission_denials: [],
+      usage: { input_tokens: 100, output_tokens: 50 },
+      modelUsage: {},
+    });
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].resultMeta).toEqual({
+      totalCostUsd: 0.042,
+      apiDurationMs: 3200,
+      numTurns: 5,
+      stopReason: "end_turn",
+      errorSubtype: undefined,
+      permissionDenials: undefined,
+    });
+  });
+
+  it("extracts errorSubtype from error result", () => {
+    const line = JSON.stringify({
+      type: "result",
+      subtype: "error_max_turns",
+      session_id: "s1",
+      is_error: true,
+      total_cost_usd: 0.15,
+      duration_api_ms: 45000,
+      num_turns: 10,
+      stop_reason: null,
+      permission_denials: [],
+      errors: ["Max turns reached"],
+      usage: { input_tokens: 500, output_tokens: 200 },
+      modelUsage: {},
+    });
+    const results = parseLine(line);
+    expect(results).toHaveLength(1);
+    expect(results[0].resultMeta).toEqual({
+      totalCostUsd: 0.15,
+      apiDurationMs: 45000,
+      numTurns: 10,
+      stopReason: undefined,
+      errorSubtype: "error_max_turns",
+      permissionDenials: undefined,
+    });
+  });
+
+  it("extracts errorSubtype from budget exceeded result", () => {
+    const line = JSON.stringify({
+      type: "result",
+      subtype: "error_max_budget_usd",
+      session_id: "s1",
+      is_error: true,
+      total_cost_usd: 1.0,
+      duration_api_ms: 60000,
+      num_turns: 8,
+      stop_reason: null,
+      permission_denials: [],
+      errors: ["Budget exceeded"],
+      usage: { input_tokens: 1000, output_tokens: 500 },
+      modelUsage: {},
+    });
+    const results = parseLine(line);
+    expect(results[0].resultMeta?.errorSubtype).toBe("error_max_budget_usd");
+  });
+
+  it("extracts permission denials from result", () => {
+    const line = JSON.stringify({
+      type: "result",
+      subtype: "success",
+      session_id: "s1",
+      result: "done",
+      total_cost_usd: 0.01,
+      duration_api_ms: 1000,
+      num_turns: 2,
+      stop_reason: "end_turn",
+      permission_denials: [
+        { tool_name: "Bash", tool_use_id: "tu-1", tool_input: { command: "rm -rf /" } },
+        { tool_name: "Write", tool_use_id: "tu-2", tool_input: { file_path: "/etc/passwd" } },
+      ],
+      usage: { input_tokens: 100, output_tokens: 50 },
+      modelUsage: {},
+    });
+    const results = parseLine(line);
+    expect(results[0].resultMeta?.permissionDenials).toEqual([
+      { toolName: "Bash", toolUseId: "tu-1" },
+      { toolName: "Write", toolUseId: "tu-2" },
+    ]);
+  });
+
+  it("returns undefined permissionDenials when empty array", () => {
+    const line = JSON.stringify({
+      type: "result",
+      subtype: "success",
+      session_id: "s1",
+      result: "done",
+      total_cost_usd: 0.01,
+      duration_api_ms: 500,
+      num_turns: 1,
+      stop_reason: "end_turn",
+      permission_denials: [],
+      usage: { input_tokens: 10, output_tokens: 5 },
+      modelUsage: {},
+    });
+    const results = parseLine(line);
+    expect(results[0].resultMeta?.permissionDenials).toBeUndefined();
+  });
+
+  it("converts null stop_reason to undefined", () => {
+    const line = JSON.stringify({
+      type: "result",
+      subtype: "error_during_execution",
+      session_id: "s1",
+      is_error: true,
+      total_cost_usd: 0.05,
+      duration_api_ms: 2000,
+      num_turns: 3,
+      stop_reason: null,
+      permission_denials: [],
+      errors: ["Something went wrong"],
+      usage: { input_tokens: 200, output_tokens: 100 },
+      modelUsage: {},
+    });
+    const results = parseLine(line);
+    expect(results[0].resultMeta?.stopReason).toBeUndefined();
+    expect(results[0].resultMeta?.errorSubtype).toBe("error_during_execution");
+  });
+
+  it("does not set resultMeta for non-result messages", () => {
+    const textLine = JSON.stringify({
+      type: "assistant",
+      session_id: "s1",
+      message: { content: [{ type: "text", text: "hello" }] },
+    });
+    const results = parseLine(textLine);
+    expect(results[0].resultMeta).toBeUndefined();
+
+    const systemLine = JSON.stringify({
+      type: "system",
+      subtype: "init",
+      session_id: "s1",
+      tools: [],
+      mcp_servers: [],
+      model: "claude-sonnet-4-5-20250514",
+    });
+    const sysResults = parseLine(systemLine);
+    expect(sysResults[0].resultMeta).toBeUndefined();
   });
 });

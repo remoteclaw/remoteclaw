@@ -9,12 +9,22 @@ import type {
   SDKToolProgressMessage,
   SDKToolUseSummaryMessage,
 } from "@anthropic-ai/claude-agent-sdk";
-import type { AgentEvent, AgentUsage } from "./types.js";
+import type { AgentEvent, AgentUsage, PermissionDenial } from "./types.js";
+
+export type ResultMeta = {
+  totalCostUsd: number | undefined;
+  apiDurationMs: number | undefined;
+  numTurns: number | undefined;
+  stopReason: string | undefined;
+  errorSubtype: string | undefined;
+  permissionDenials: PermissionDenial[] | undefined;
+};
 
 export type ParsedLine = {
   event: AgentEvent | null;
   sessionId: string | undefined;
   usage: AgentUsage | undefined;
+  resultMeta: ResultMeta | undefined;
 };
 
 export function parseLine(line: string): ParsedLine[] {
@@ -33,17 +43,24 @@ export function parseLine(line: string): ParsedLine[] {
   const type = json.type as string | undefined;
 
   if (type === "system") {
-    return parseSystemMessage(json);
+    return parseSystemMessage(json).map((p) => ({ ...p, resultMeta: undefined }));
   }
 
   if (type === "assistant") {
     const msg = json as unknown as SDKAssistantMessage;
-    return parseAssistantContent(msg);
+    return parseAssistantContent(msg).map((p) => ({ ...p, resultMeta: undefined }));
   }
 
   if (type === "result") {
     const msg = json as unknown as SDKResultMessage;
-    return [{ event: null, sessionId: msg.session_id, usage: extractUsage(msg) }];
+    return [
+      {
+        event: null,
+        sessionId: msg.session_id,
+        usage: extractUsage(msg),
+        resultMeta: extractResultMeta(msg),
+      },
+    ];
   }
 
   if (type === "tool_progress") {
@@ -58,6 +75,7 @@ export function parseLine(line: string): ParsedLine[] {
         },
         sessionId: msg.session_id,
         usage: undefined,
+        resultMeta: undefined,
       },
     ];
   }
@@ -73,14 +91,17 @@ export function parseLine(line: string): ParsedLine[] {
         },
         sessionId: msg.session_id,
         usage: undefined,
+        resultMeta: undefined,
       },
     ];
   }
 
-  return [{ event: null, sessionId: undefined, usage: undefined }];
+  return [{ event: null, sessionId: undefined, usage: undefined, resultMeta: undefined }];
 }
 
-function parseSystemMessage(json: Record<string, unknown>): ParsedLine[] {
+type ParsedLineBase = Omit<ParsedLine, "resultMeta">;
+
+function parseSystemMessage(json: Record<string, unknown>): ParsedLineBase[] {
   const subtype = json.subtype as string | undefined;
   const sessionId = json.session_id as string | undefined;
 
@@ -138,8 +159,8 @@ function parseSystemMessage(json: Record<string, unknown>): ParsedLine[] {
   return [{ event: null, sessionId, usage: undefined }];
 }
 
-function parseAssistantContent(msg: SDKAssistantMessage): ParsedLine[] {
-  const results: ParsedLine[] = [];
+function parseAssistantContent(msg: SDKAssistantMessage): ParsedLineBase[] {
+  const results: ParsedLineBase[] = [];
 
   for (const block of msg.message.content) {
     if (block.type === "text") {
@@ -180,6 +201,8 @@ function extractUsage(msg: SDKResultMessage): AgentUsage | undefined {
       outputTokens: modelUsage.outputTokens,
       cacheReadTokens: modelUsage.cacheReadInputTokens,
       cacheWriteTokens: modelUsage.cacheCreationInputTokens,
+      costUsd: modelUsage.costUSD,
+      webSearchRequests: modelUsage.webSearchRequests,
     };
   }
 
@@ -189,8 +212,25 @@ function extractUsage(msg: SDKResultMessage): AgentUsage | undefined {
       outputTokens: msg.usage.output_tokens,
       cacheReadTokens: msg.usage.cache_read_input_tokens,
       cacheWriteTokens: msg.usage.cache_creation_input_tokens,
+      costUsd: undefined,
+      webSearchRequests: undefined,
     };
   }
 
   return undefined;
+}
+
+function extractResultMeta(msg: SDKResultMessage): ResultMeta {
+  const denials = msg.permission_denials;
+  return {
+    totalCostUsd: msg.total_cost_usd,
+    apiDurationMs: msg.duration_api_ms,
+    numTurns: msg.num_turns,
+    stopReason: msg.stop_reason ?? undefined,
+    errorSubtype: msg.subtype === "success" ? undefined : msg.subtype,
+    permissionDenials:
+      denials && denials.length > 0
+        ? denials.map((d) => ({ toolName: d.tool_name, toolUseId: d.tool_use_id }))
+        : undefined,
+  };
 }

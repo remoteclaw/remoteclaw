@@ -90,6 +90,12 @@ export class ChannelBridge {
       usage: result?.usage,
       aborted: result?.aborted ?? false,
       error: lastError,
+      totalCostUsd: result?.totalCostUsd,
+      apiDurationMs: result?.apiDurationMs,
+      numTurns: result?.numTurns,
+      stopReason: result?.stopReason,
+      errorSubtype: result?.errorSubtype,
+      permissionDenials: result?.permissionDenials,
     };
   }
 

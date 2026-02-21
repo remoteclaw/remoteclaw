@@ -4,6 +4,7 @@ import { maskSecret } from "../logging/redact.js";
 import type { AgentRuntime } from "./agent-runtime.js";
 import { classifyError } from "./error-classify.js";
 import { parseLine } from "./event-extract.js";
+import type { ResultMeta } from "./event-extract.js";
 import type { AgentDoneEvent, AgentEvent, AgentRuntimeParams, AgentUsage } from "./types.js";
 
 export type CLIRuntimeConfig = {
@@ -75,6 +76,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     let accText = "";
     let accSessionId: string | undefined;
     let accUsage: AgentUsage | undefined;
+    let accResultMeta: ResultMeta | undefined;
     let aborted = false;
     let timedOut = false;
     let exitCode: number | null = null;
@@ -147,6 +149,9 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
         if (parsed.usage !== undefined) {
           accUsage = parsed.usage;
         }
+        if (parsed.resultMeta !== undefined) {
+          accResultMeta = parsed.resultMeta;
+        }
         if (parsed.event) {
           if (parsed.event.type === "text") {
             accText += parsed.event.text;
@@ -213,6 +218,12 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
         durationMs: Date.now() - startTime,
         usage: accUsage,
         aborted: aborted || timedOut,
+        totalCostUsd: accResultMeta?.totalCostUsd,
+        apiDurationMs: accResultMeta?.apiDurationMs,
+        numTurns: accResultMeta?.numTurns,
+        stopReason: accResultMeta?.stopReason,
+        errorSubtype: accResultMeta?.errorSubtype,
+        permissionDenials: accResultMeta?.permissionDenials,
       },
     };
     yield done;

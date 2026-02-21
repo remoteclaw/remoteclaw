@@ -7,7 +7,7 @@ import { logVerbose } from "../../globals.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import {
   ChannelBridge,
-  ClaudeCliRuntime,
+  createCliRuntime,
   type BridgeCallbacks,
   type ChannelMessage,
   type ChannelReply,
@@ -107,9 +107,8 @@ export async function runAgentTurnWithFallback(params: {
     return { text: sanitized, skip: false };
   };
 
-  // Notify model selection (no fallback — always claude-cli).
   params.opts?.onModelSelected?.({
-    provider: "claude-cli",
+    provider: params.followupRun.run.provider,
     model: params.followupRun.run.model,
     thinkLevel: params.followupRun.run.thinkLevel,
   });
@@ -127,7 +126,7 @@ export async function runAgentTurnWithFallback(params: {
   }
 
   const bridge = new ChannelBridge({
-    runtime: new ClaudeCliRuntime(),
+    runtime: createCliRuntime(params.followupRun.run.provider, params.followupRun.run.config),
     sessionDir: params.followupRun.run.workspaceDir,
     defaultModel: params.followupRun.run.model,
     defaultTimeoutMs: params.followupRun.run.timeoutMs,

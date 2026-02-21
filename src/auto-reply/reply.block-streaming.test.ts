@@ -5,7 +5,7 @@ import { getReplyFromConfig } from "./reply.js";
 
 vi.mock("../middleware/index.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../middleware/index.js")>();
-  return { ...actual, ChannelBridge: vi.fn(), ClaudeCliRuntime: vi.fn() };
+  return { ...actual, ChannelBridge: vi.fn(), createCliRuntime: vi.fn() };
 });
 import { ChannelBridge } from "../middleware/index.js";
 

@@ -584,7 +584,7 @@ describe("runReplyAgent response usage footer", () => {
 
   it("appends session key when responseUsage=full", async () => {
     // In the new code path:
-    // - providerUsed = fallbackProvider ?? "claude-cli" = "claude-cli"
+    // - providerUsed = fallbackProvider ?? followupRun.run.provider = "claude-cli"
     // - modelUsed = fallbackModel ?? defaultModel = "anthropic/claude-opus-4-5"
     // - usage.input = runResult.usage.inputTokens = 12
     // - usage.output = runResult.usage.outputTokens = 3

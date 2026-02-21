@@ -15,6 +15,55 @@ export type CLIRuntimeConfig = {
 
 const SIGTERM_GRACE_MS = 5_000;
 
+/**
+ * Push-to-pull bridge: buffers items pushed from EventEmitter callbacks
+ * and yields them via async iteration.
+ */
+function createAsyncQueue<T>(): {
+  push: (value: T) => void;
+  end: () => void;
+  [Symbol.asyncIterator]: () => AsyncIterator<T>;
+} {
+  const buffer: T[] = [];
+  let resolve: ((result: IteratorResult<T>) => void) | null = null;
+  let done = false;
+
+  return {
+    push(value: T) {
+      if (resolve) {
+        const r = resolve;
+        resolve = null;
+        r({ value, done: false });
+      } else {
+        buffer.push(value);
+      }
+    },
+    end() {
+      done = true;
+      if (resolve) {
+        const r = resolve;
+        resolve = null;
+        r({ value: undefined as T, done: true });
+      }
+    },
+    [Symbol.asyncIterator]() {
+      return {
+        next(): Promise<IteratorResult<T>> {
+          if (buffer.length > 0) {
+            return Promise.resolve({ value: buffer.shift()!, done: false });
+          }
+          if (done) {
+            return Promise.resolve({ value: undefined as T, done: true });
+          }
+          return new Promise<IteratorResult<T>>((r) => {
+            resolve = r;
+          });
+        },
+      };
+    },
+  };
+}
+
 export abstract class CLIRuntimeBase implements AgentRuntime {
   abstract readonly name: string;
   protected abstract config(): CLIRuntimeConfig;
@@ -28,7 +77,8 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     let accUsage: AgentUsage | undefined;
     let aborted = false;
     let timedOut = false;
-    let stderrChunks: string[] = [];
+    let exitCode: number | null = null;
+    const stderrChunks: string[] = [];
 
     const runtimeEnv = cfg.buildEnv(params);
     const safeAuth = params.auth
@@ -84,9 +134,29 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       stderrChunks.push(chunk.toString());
     });
 
-    // Read stdout as NDJSON lines
-    const events: AgentEvent[] = [];
+    // Bridge stdout events into an async queue for real-time streaming
+    const queue = createAsyncQueue<AgentEvent>();
     let remainder = "";
+
+    const processLine = (line: string) => {
+      const parsed = parseLine(line);
+      if (!parsed) {
+        return;
+      }
+
+      if (parsed.sessionId !== undefined) {
+        accSessionId = parsed.sessionId;
+      }
+      if (parsed.usage !== undefined) {
+        accUsage = parsed.usage;
+      }
+      if (parsed.event) {
+        if (parsed.event.type === "text") {
+          accText += parsed.event.text;
+        }
+        queue.push(parsed.event);
+      }
+    };
 
     child.stdout.on("data", (chunk: Buffer) => {
       remainder += chunk.toString();
@@ -94,49 +164,24 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       remainder = lines.pop()!; // last element is partial or empty
 
       for (const line of lines) {
-        const parsed = parseLine(line);
-        if (!parsed) {
-          continue;
-        }
-
-        if (parsed.sessionId !== undefined) {
-          accSessionId = parsed.sessionId;
-        }
-        if (parsed.usage !== undefined) {
-          accUsage = parsed.usage;
-        }
-
-        if (parsed.event) {
-          if (parsed.event.type === "text") {
-            accText += parsed.event.text;
-          }
-          events.push(parsed.event);
-        }
+        processLine(line);
       }
     });
 
-    // Wait for process to exit
-    const exitCode = await new Promise<number | null>((resolve) => {
-      child.on("close", (code) => resolve(code));
+    child.on("close", (code) => {
+      exitCode = code;
+
+      // Flush any remaining partial line
+      if (remainder.trim()) {
+        processLine(remainder);
+      }
+
+      queue.end();
     });
 
-    // Process any remaining data in buffer
-    if (remainder.trim()) {
-      const parsed = parseLine(remainder);
-      if (parsed) {
-        if (parsed.sessionId !== undefined) {
-          accSessionId = parsed.sessionId;
-        }
-        if (parsed.usage !== undefined) {
-          accUsage = parsed.usage;
-        }
-        if (parsed.event) {
-          if (parsed.event.type === "text") {
-            accText += parsed.event.text;
-          }
-          events.push(parsed.event);
-        }
-      }
+    // Yield events in real-time as they arrive
+    for await (const event of queue) {
+      yield event;
     }
 
     // Cleanup
@@ -144,11 +189,6 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       clearTimeout(timeoutId);
     }
     params.abortSignal?.removeEventListener("abort", onAbort);
-
-    // Yield accumulated events
-    for (const event of events) {
-      yield event;
-    }
 
     // Yield error event if needed
     if (aborted) {
@@ -161,7 +201,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       };
     } else if (exitCode !== 0 && exitCode !== null) {
       const stderrText = stderrChunks.join("").trim();
-      const message = stderrText || `Process exited with code ${exitCode}`;
+      const message = stderrText || `Process exited with code ${String(exitCode)}`;
       const category = classifyError(message);
       yield { type: "error", message, category };
     }

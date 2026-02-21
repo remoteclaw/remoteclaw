@@ -252,6 +252,79 @@ describe("CLIRuntimeBase", () => {
     expect(events[0].type).toBe("done");
   });
 
+  it("streams events before process exits", async () => {
+    const child = createMockChild();
+    spawnMock.mockReturnValue(child);
+
+    const runtime = new TestRuntime();
+    const iter = runtime.execute(defaultParams());
+
+    const textLine1 = JSON.stringify({
+      type: "assistant",
+      message: { content: [{ type: "text", text: "first" }] },
+    });
+    const textLine2 = JSON.stringify({
+      type: "assistant",
+      message: { content: [{ type: "text", text: "second" }] },
+    });
+
+    const received: AgentEvent[] = [];
+
+    // Emit first line, then defer close
+    queueMicrotask(() => {
+      child.stdout.emit("data", Buffer.from(textLine1 + "\n"));
+    });
+
+    // Consume events one at a time to verify streaming
+    const iterator = iter[Symbol.asyncIterator]();
+
+    // First event should arrive before close
+    const first = await iterator.next();
+    expect(first.done).toBe(false);
+    expect(first.value).toEqual({ type: "text", text: "first" });
+    received.push(first.value);
+
+    // Now emit second line and close
+    queueMicrotask(() => {
+      child.stdout.emit("data", Buffer.from(textLine2 + "\n"));
+      child.emit("close", 0);
+    });
+
+    // Consume remaining
+    let result = await iterator.next();
+    while (!result.done) {
+      received.push(result.value);
+      result = await iterator.next();
+    }
+
+    // First text event was received before close fired
+    expect(received[0]).toEqual({ type: "text", text: "first" });
+    expect(received[1]).toEqual({ type: "text", text: "second" });
+    expect(received[received.length - 1].type).toBe("done");
+  });
+
+  it("flushes remainder line on close", async () => {
+    const child = createMockChild();
+    spawnMock.mockReturnValue(child);
+
+    const runtime = new TestRuntime();
+    const iter = runtime.execute(defaultParams());
+
+    const textLine = JSON.stringify({
+      type: "assistant",
+      message: { content: [{ type: "text", text: "remainder" }] },
+    });
+
+    // Emit data without trailing newline, then close
+    queueMicrotask(() => {
+      child.stdout.emit("data", Buffer.from(textLine));
+      child.emit("close", 0);
+    });
+
+    const events = await collectEvents(iter);
+    expect(events.find((e) => e.type === "text")).toEqual({ type: "text", text: "remainder" });
+  });
+
   it("writes stdin when buildStdin returns content", async () => {
     const child = createMockChild();
     spawnMock.mockReturnValue(child);

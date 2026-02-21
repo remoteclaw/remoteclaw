@@ -124,29 +124,28 @@ describe("resolveAuthProfileOrder", () => {
     });
     expect(order).toEqual([]);
   });
-  it("keeps oauth profiles that can refresh", () => {
+  it("keeps token profiles that are not yet expired", () => {
     const order = resolveAuthProfileOrder({
       cfg: {
         auth: {
           order: {
-            anthropic: ["anthropic:oauth"],
+            anthropic: ["anthropic:token-profile"],
           },
         },
       },
       store: {
         version: 1,
         profiles: {
-          "anthropic:oauth": {
-            type: "oauth",
+          "anthropic:token-profile": {
+            type: "token",
             provider: "anthropic",
-            access: "",
-            refresh: "refresh-token",
-            expires: Date.now() - 1000,
+            token: "refresh-token",
+            expires: Date.now() + 60_000,
           },
         },
       },
       provider: "anthropic",
     });
-    expect(order).toEqual(["anthropic:oauth"]);
+    expect(order).toEqual(["anthropic:token-profile"]);
   });
 });

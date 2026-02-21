@@ -78,9 +78,8 @@ export class OpenCodeCliRuntime extends CLIRuntimeBase {
           case "api-key":
             env.ANTHROPIC_API_KEY = params.auth.apiKey ?? "";
             break;
-          case "oauth":
           case "token":
-            // OpenCode doesn't have a direct OAuth token env var like Claude;
+            // OpenCode doesn't have a direct token env var like Claude;
             // pass as ANTHROPIC_API_KEY as fallback
             env.ANTHROPIC_API_KEY = params.auth.apiKey ?? "";
             break;

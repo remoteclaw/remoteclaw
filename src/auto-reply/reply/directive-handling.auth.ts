@@ -1,8 +1,4 @@
-import {
-  isProfileInCooldown,
-  resolveAuthProfileDisplayLabel,
-  resolveAuthStorePathForDisplay,
-} from "../../agents/auth-profiles.js";
+import { isProfileInCooldown, resolveAuthStorePathForDisplay } from "../../agents/auth-profiles.js";
 import { findNormalizedProviderValue, normalizeProviderId } from "../../agents/cli-routing.js";
 import { ensureAuthProfileStore, resolveAuthProfileOrder } from "../../agents/model-auth.js";
 import type { RemoteClawConfig } from "../../config/config.js";
@@ -95,17 +91,7 @@ export const resolveAuthLabel = async (
           source: "",
         };
       }
-      const display = resolveAuthProfileDisplayLabel({ cfg, store, profileId });
-      const label = display === profileId ? profileId : display;
-      const exp =
-        typeof profile.expires === "number" &&
-        Number.isFinite(profile.expires) &&
-        profile.expires > 0
-          ? profile.expires <= now
-            ? " expired"
-            : ` exp ${formatUntil(profile.expires)}`
-          : "";
-      return { label: `${label} oauth${exp}${more}`, source: "" };
+      return { label: `${profileId} unknown${more}`, source: "" };
     }
 
     const labels = order.map((profileId) => {
@@ -151,27 +137,8 @@ export const resolveAuthLabel = async (
         const suffix = flags.length > 0 ? ` (${flags.join(", ")})` : "";
         return `${profileId}=token:${maskApiKey(profile.token)}${suffix}`;
       }
-      const display = resolveAuthProfileDisplayLabel({
-        cfg,
-        store,
-        profileId,
-      });
-      const suffix =
-        display === profileId
-          ? ""
-          : display.startsWith(profileId)
-            ? display.slice(profileId.length).trim()
-            : `(${display})`;
-      if (
-        typeof profile.expires === "number" &&
-        Number.isFinite(profile.expires) &&
-        profile.expires > 0
-      ) {
-        flags.push(profile.expires <= now ? "expired" : `exp ${formatUntil(profile.expires)}`);
-      }
-      const suffixLabel = suffix ? ` ${suffix}` : "";
-      const suffixFlags = flags.length > 0 ? ` (${flags.join(", ")})` : "";
-      return `${profileId}=OAuth${suffixLabel}${suffixFlags}`;
+      const suffix = flags.length > 0 ? ` (${flags.join(", ")})` : "";
+      return `${profileId}=unknown${suffix}`;
     });
     return {
       label: labels.join(", "),

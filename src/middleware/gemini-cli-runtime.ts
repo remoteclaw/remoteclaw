@@ -81,7 +81,6 @@ export class GeminiCliRuntime extends CLIRuntimeBase {
           case "api-key":
             env.GEMINI_API_KEY = params.auth.apiKey ?? "";
             break;
-          case "oauth":
           case "token":
           case "aws-sdk":
             // GCP credentials are inherited from parent process env

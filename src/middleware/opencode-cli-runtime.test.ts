@@ -109,14 +109,14 @@ describe("OpenCodeCliRuntime", () => {
     expect(opts.env.ANTHROPIC_API_KEY).toBe("sk-test-key");
   });
 
-  it("sets ANTHROPIC_API_KEY for oauth/token auth mode as fallback", async () => {
+  it("sets ANTHROPIC_API_KEY for token auth mode as fallback", async () => {
     const child = createMockChild();
     spawnMock.mockReturnValue(child);
 
     const runtime = new OpenCodeCliRuntime();
     const iter = runtime.execute(
       defaultParams({
-        auth: { apiKey: "oauth-token", source: "profile:oauth", mode: "oauth" },
+        auth: { apiKey: "some-token", source: "profile:token", mode: "token" },
       }),
     );
 
@@ -124,7 +124,7 @@ describe("OpenCodeCliRuntime", () => {
     await collectEvents(iter);
 
     const opts = spawnMock.mock.calls[0][2] as { env: Record<string, string> };
-    expect(opts.env.ANTHROPIC_API_KEY).toBe("oauth-token");
+    expect(opts.env.ANTHROPIC_API_KEY).toBe("some-token");
   });
 
   it("sets empty env for aws-sdk auth mode", async () => {

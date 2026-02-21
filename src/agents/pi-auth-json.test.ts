@@ -27,15 +27,14 @@ async function readAuthJson(agentDir: string) {
 }
 
 describe("ensurePiAuthJsonFromAuthProfiles", () => {
-  it("writes openai-codex oauth credentials into auth.json for pi-coding-agent discovery", async () => {
+  it("writes openai-codex token credentials into auth.json for pi-coding-agent discovery", async () => {
     const agentDir = await createAgentDir();
 
     writeProfiles(agentDir, {
       "openai-codex:default": {
-        type: "oauth",
+        type: "token",
         provider: "openai-codex",
-        access: "access-token",
-        refresh: "refresh-token",
+        token: "access-token",
         expires: Date.now() + 60_000,
       },
     });
@@ -45,9 +44,8 @@ describe("ensurePiAuthJsonFromAuthProfiles", () => {
 
     const auth = await readAuthJson(agentDir);
     expect(auth["openai-codex"]).toMatchObject({
-      type: "oauth",
-      access: "access-token",
-      refresh: "refresh-token",
+      type: "api_key",
+      key: "access-token",
     });
 
     const second = await ensurePiAuthJsonFromAuthProfiles(agentDir);
@@ -111,10 +109,9 @@ describe("ensurePiAuthJsonFromAuthProfiles", () => {
         token: "sk-ant-token",
       },
       "openai-codex:default": {
-        type: "oauth",
+        type: "token",
         provider: "openai-codex",
-        access: "access",
-        refresh: "refresh",
+        token: "access",
         expires: Date.now() + 60_000,
       },
     });
@@ -126,7 +123,7 @@ describe("ensurePiAuthJsonFromAuthProfiles", () => {
 
     expect(auth["openrouter"]).toMatchObject({ type: "api_key", key: "sk-or-key" });
     expect(auth["anthropic"]).toMatchObject({ type: "api_key", key: "sk-ant-token" });
-    expect(auth["openai-codex"]).toMatchObject({ type: "oauth", access: "access" });
+    expect(auth["openai-codex"]).toMatchObject({ type: "api_key", key: "access" });
   });
 
   it("skips profiles with empty keys", async () => {

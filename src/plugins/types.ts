@@ -1,11 +1,10 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Command } from "commander";
-import type { AuthProfileCredential, OAuthCredential } from "../agents/auth-profiles/types.js";
+import type { AuthProfileCredential } from "../agents/auth-profiles/types.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import type { ChannelDock } from "../channels/dock.js";
 import type { ChannelId, ChannelPlugin } from "../channels/plugins/types.js";
-import type { createVpsAwareOAuthHandlers } from "../commands/oauth-flow.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
 import type { InternalHookHandler } from "../hooks/internal-hooks.js";
@@ -97,9 +96,6 @@ export type ProviderAuthContext = {
   runtime: RuntimeEnv;
   isRemote: boolean;
   openUrl: (url: string) => Promise<void>;
-  oauth: {
-    createVpsAwareHandlers: typeof createVpsAwareOAuthHandlers;
-  };
 };
 
 export type ProviderAuthMethod = {
@@ -118,7 +114,6 @@ export type ProviderPlugin = {
   envVars?: string[];
   auth: ProviderAuthMethod[];
   formatApiKey?: (cred: AuthProfileCredential) => string;
-  refreshOAuth?: (cred: OAuthCredential) => Promise<OAuthCredential>;
 };
 
 export type RemoteClawPluginGatewayMethod = {

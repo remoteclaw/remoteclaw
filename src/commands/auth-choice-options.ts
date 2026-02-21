@@ -25,20 +25,14 @@ const AUTH_CHOICE_GROUP_DEFS: {
   {
     value: "openai",
     label: "OpenAI",
-    hint: "Codex OAuth + API key",
-    choices: ["openai-codex", "openai-api-key"],
+    hint: "API key",
+    choices: ["openai-api-key"],
   },
   {
     value: "anthropic",
     label: "Anthropic",
     hint: "setup-token + API key",
     choices: ["token", "apiKey"],
-  },
-  {
-    value: "chutes",
-    label: "Chutes",
-    hint: "OAuth",
-    choices: ["chutes"],
   },
   {
     value: "vllm",
@@ -50,7 +44,7 @@ const AUTH_CHOICE_GROUP_DEFS: {
     value: "minimax",
     label: "MiniMax",
     hint: "M2.5 (recommended)",
-    choices: ["minimax-portal", "minimax-api", "minimax-api-key-cn", "minimax-api-lightning"],
+    choices: ["minimax-api", "minimax-api-key-cn", "minimax-api-lightning"],
   },
   {
     value: "moonshot",
@@ -61,8 +55,8 @@ const AUTH_CHOICE_GROUP_DEFS: {
   {
     value: "google",
     label: "Google",
-    hint: "Gemini API key + OAuth",
-    choices: ["gemini-api-key", "google-antigravity", "google-gemini-cli"],
+    hint: "Gemini API key",
+    choices: ["gemini-api-key"],
   },
   {
     value: "xai",
@@ -75,12 +69,6 @@ const AUTH_CHOICE_GROUP_DEFS: {
     label: "OpenRouter",
     hint: "API key",
     choices: ["openrouter-api-key"],
-  },
-  {
-    value: "qwen",
-    label: "Qwen",
-    hint: "OAuth",
-    choices: ["qwen-portal"],
   },
   {
     value: "zai",
@@ -169,11 +157,6 @@ const BASE_AUTH_CHOICE_OPTIONS: ReadonlyArray<AuthChoiceOption> = [
     hint: "run `claude setup-token` elsewhere, then paste the token here",
   },
   {
-    value: "openai-codex",
-    label: "OpenAI Codex (ChatGPT OAuth)",
-  },
-  { value: "chutes", label: "Chutes (OAuth)" },
-  {
     value: "vllm",
     label: "vLLM (custom URL + model)",
     hint: "Local/self-hosted OpenAI-compatible server",
@@ -233,16 +216,6 @@ const BASE_AUTH_CHOICE_OPTIONS: ReadonlyArray<AuthChoiceOption> = [
     hint: "Uses GitHub device flow",
   },
   { value: "gemini-api-key", label: "Google Gemini API key" },
-  {
-    value: "google-antigravity",
-    label: "Google Antigravity OAuth",
-    hint: "Uses the bundled Antigravity auth plugin",
-  },
-  {
-    value: "google-gemini-cli",
-    label: "Google Gemini CLI OAuth",
-    hint: "Uses the bundled Gemini CLI auth plugin",
-  },
   { value: "zai-api-key", label: "Z.AI API key" },
   {
     value: "zai-coding-global",
@@ -268,12 +241,6 @@ const BASE_AUTH_CHOICE_OPTIONS: ReadonlyArray<AuthChoiceOption> = [
     value: "xiaomi-api-key",
     label: "Xiaomi API key",
   },
-  {
-    value: "minimax-portal",
-    label: "MiniMax OAuth",
-    hint: "Oauth plugin for MiniMax",
-  },
-  { value: "qwen-portal", label: "Qwen OAuth" },
   {
     value: "copilot-proxy",
     label: "Copilot Proxy (local)",

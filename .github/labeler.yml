@@ -204,14 +204,6 @@
   - changed-files:
       - any-glob-to-any-file:
           - "extensions/diagnostics-otel/**"
-"extensions: google-antigravity-auth":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "extensions/google-antigravity-auth/**"
-"extensions: google-gemini-cli-auth":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "extensions/google-gemini-cli-auth/**"
 "extensions: llm-task":
   - changed-files:
       - any-glob-to-any-file:
@@ -232,18 +224,10 @@
   - changed-files:
       - any-glob-to-any-file:
           - "extensions/open-prose/**"
-"extensions: qwen-portal-auth":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "extensions/qwen-portal-auth/**"
 "extensions: device-pair":
   - changed-files:
       - any-glob-to-any-file:
           - "extensions/device-pair/**"
-"extensions: minimax-portal-auth":
-  - changed-files:
-      - any-glob-to-any-file:
-          - "extensions/minimax-portal-auth/**"
 "extensions: phone-control":
   - changed-files:
       - any-glob-to-any-file:

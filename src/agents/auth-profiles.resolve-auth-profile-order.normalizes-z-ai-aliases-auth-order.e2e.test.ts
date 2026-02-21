@@ -76,7 +76,7 @@ describe("resolveAuthProfileOrder", () => {
     });
     expect(order).toEqual(["zai:default", "zai:work"]);
   });
-  it("prioritizes oauth profiles when order missing", () => {
+  it("prioritizes token profiles when order missing", () => {
     const mixedStore: AuthProfileStore = {
       version: 1,
       profiles: {
@@ -85,11 +85,10 @@ describe("resolveAuthProfileOrder", () => {
           provider: "anthropic",
           key: "sk-default",
         },
-        "anthropic:oauth": {
-          type: "oauth",
+        "anthropic:token": {
+          type: "token",
           provider: "anthropic",
-          access: "access-token",
-          refresh: "refresh-token",
+          token: "access-token",
           expires: Date.now() + 60_000,
         },
       },
@@ -98,6 +97,6 @@ describe("resolveAuthProfileOrder", () => {
       store: mixedStore,
       provider: "anthropic",
     });
-    expect(order).toEqual(["anthropic:oauth", "anthropic:default"]);
+    expect(order).toEqual(["anthropic:token", "anthropic:default"]);
   });
 });

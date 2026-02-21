@@ -2,6 +2,12 @@ import type { AuthProfileCredential } from "../agents/auth-profiles/types.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { ProviderAuthResult } from "../plugins/types.js";
 
+/**
+ * Build a provider auth result storing the access token as a `token` credential.
+ *
+ * Kept for backward compatibility with extensions that call this helper.
+ * Previously created `type: "oauth"` credentials; now creates `type: "token"`.
+ */
 export function buildOauthProviderAuthResult(params: {
   providerId: string;
   defaultModel: string;
@@ -19,14 +25,12 @@ export function buildOauthProviderAuthResult(params: {
   const profileId = `${profilePrefix}:${email ?? "default"}`;
 
   const credential: AuthProfileCredential = {
-    type: "oauth",
+    type: "token",
     provider: params.providerId,
-    access: params.access,
-    ...(params.refresh ? { refresh: params.refresh } : {}),
+    token: params.access,
     ...(Number.isFinite(params.expires) ? { expires: params.expires as number } : {}),
     ...(email ? { email } : {}),
-    ...params.credentialExtra,
-  } as AuthProfileCredential;
+  };
 
   return {
     profiles: [{ profileId, credential }],

@@ -70,7 +70,7 @@ export type ResolvedProviderAuth = {
   apiKey?: string;
   profileId?: string;
   source: string;
-  mode: "api-key" | "oauth" | "token" | "aws-sdk";
+  mode: "api-key" | "token" | "aws-sdk";
 };
 
 export async function resolveApiKeyForProvider(params: {
@@ -99,7 +99,7 @@ export async function resolveApiKeyForProvider(params: {
       apiKey: resolved.apiKey,
       profileId,
       source: `profile:${profileId}`,
-      mode: mode === "oauth" ? "oauth" : mode === "token" ? "token" : "api-key",
+      mode: mode === "token" ? "token" : "api-key",
     };
   }
 
@@ -123,7 +123,7 @@ export async function resolveApiKeyForProvider(params: {
           apiKey: resolved.apiKey,
           profileId: candidate,
           source: `profile:${candidate}`,
-          mode: mode === "oauth" ? "oauth" : mode === "token" ? "token" : "api-key",
+          mode: mode === "token" ? "token" : "api-key",
         };
       }
     } catch {}
@@ -154,7 +154,7 @@ export async function resolveApiKeyForProvider(params: {
   );
 }
 
-export type ModelAuthMode = "api-key" | "oauth" | "token" | "mixed" | "aws-sdk" | "unknown";
+export type ModelAuthMode = "api-key" | "token" | "mixed" | "aws-sdk" | "unknown";
 
 export function resolveModelAuthMode(
   provider?: string,
@@ -172,16 +172,11 @@ export function resolveModelAuthMode(
     const modes = new Set(
       profiles
         .map((id) => authStore.profiles[id]?.type)
-        .filter((mode): mode is "api_key" | "oauth" | "token" => Boolean(mode)),
+        .filter((mode): mode is "api_key" | "token" => Boolean(mode)),
     );
-    const distinct = ["oauth", "token", "api_key"].filter((k) =>
-      modes.has(k as "oauth" | "token" | "api_key"),
-    );
+    const distinct = ["token", "api_key"].filter((k) => modes.has(k as "token" | "api_key"));
     if (distinct.length >= 2) {
       return "mixed";
-    }
-    if (modes.has("oauth")) {
-      return "oauth";
     }
     if (modes.has("token")) {
       return "token";

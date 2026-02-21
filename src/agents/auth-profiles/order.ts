@@ -60,10 +60,7 @@ export function resolveAuthProfileOrder(params: {
         return false;
       }
       if (profileConfig.mode !== cred.type) {
-        const oauthCompatible = profileConfig.mode === "oauth" && cred.type === "token";
-        if (!oauthCompatible) {
-          return false;
-        }
+        return false;
       }
     }
     if (cred.type === "api_key") {
@@ -82,9 +79,6 @@ export function resolveAuthProfileOrder(params: {
         return false;
       }
       return true;
-    }
-    if (cred.type === "oauth") {
-      return Boolean(cred.access?.trim() || cred.refresh?.trim());
     }
     return false;
   });
@@ -157,7 +151,7 @@ function orderProfilesByMode(order: string[], store: AuthProfileStore): string[]
   // Then by lastUsed (oldest first = round-robin within type)
   const scored = available.map((profileId) => {
     const type = store.profiles[profileId]?.type;
-    const typeScore = type === "oauth" ? 0 : type === "token" ? 1 : type === "api_key" ? 2 : 3;
+    const typeScore = type === "token" ? 0 : type === "api_key" ? 1 : 2;
     const lastUsed = store.usageStats?.[profileId]?.lastUsed ?? 0;
     return { profileId, typeScore, lastUsed };
   });

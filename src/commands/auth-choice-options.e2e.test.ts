@@ -40,8 +40,6 @@ describe("buildAuthChoiceOptions", () => {
     ["Cloudflare AI Gateway auth choice", ["cloudflare-ai-gateway-api-key"]],
     ["Together AI auth choice", ["together-api-key"]],
     ["Synthetic auth choice", ["synthetic-api-key"]],
-    ["Chutes OAuth auth choice", ["chutes"]],
-    ["Qwen auth choice", ["qwen-portal"]],
     ["xAI auth choice", ["xai-api-key"]],
     ["vLLM auth choice", ["vllm"]],
   ])("includes %s", (_label, expectedValues) => {
@@ -76,14 +74,15 @@ describe("buildAuthChoiceOptions", () => {
     expect(cliChoices).toContain("codex-cli");
   });
 
-  it("shows Chutes in grouped provider selection", () => {
+  it("does not include removed OAuth-only groups", () => {
     const { groups } = buildAuthChoiceGroups({
       store: EMPTY_STORE,
       includeSkip: false,
     });
-    const chutesGroup = groups.find((group) => group.value === "chutes");
+    const chutesGroup = groups.find((group) => group.value === ("chutes" as string));
+    const qwenGroup = groups.find((group) => group.value === ("qwen" as string));
 
-    expect(chutesGroup).toBeDefined();
-    expect(chutesGroup?.options.some((opt) => opt.value === "chutes")).toBe(true);
+    expect(chutesGroup).toBeUndefined();
+    expect(qwenGroup).toBeUndefined();
   });
 });

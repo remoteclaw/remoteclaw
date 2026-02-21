@@ -60,17 +60,15 @@ describe("maybeRemoveDeprecatedCliAuthProfiles", () => {
           version: 1,
           profiles: {
             "anthropic:claude-cli": {
-              type: "oauth",
+              type: "token",
               provider: "anthropic",
-              access: "token-a",
-              refresh: "token-r",
+              token: "token-a",
               expires: Date.now() + 60_000,
             },
             "openai-codex:codex-cli": {
-              type: "oauth",
+              type: "token",
               provider: "openai-codex",
-              access: "token-b",
-              refresh: "token-r2",
+              token: "token-b",
               expires: Date.now() + 60_000,
             },
           },
@@ -84,8 +82,8 @@ describe("maybeRemoveDeprecatedCliAuthProfiles", () => {
     const cfg = {
       auth: {
         profiles: {
-          "anthropic:claude-cli": { provider: "anthropic", mode: "oauth" },
-          "openai-codex:codex-cli": { provider: "openai-codex", mode: "oauth" },
+          "anthropic:claude-cli": { provider: "anthropic", mode: "token" },
+          "openai-codex:codex-cli": { provider: "openai-codex", mode: "token" },
         },
         order: {
           anthropic: ["anthropic:claude-cli"],

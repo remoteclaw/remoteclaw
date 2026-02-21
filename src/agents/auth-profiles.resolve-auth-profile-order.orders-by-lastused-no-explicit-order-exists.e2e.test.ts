@@ -8,10 +8,9 @@ describe("resolveAuthProfileOrder", () => {
         version: 1,
         profiles: {
           "anthropic:a": {
-            type: "oauth",
+            type: "token",
             provider: "anthropic",
-            access: "access-token",
-            refresh: "refresh-token",
+            token: "access-token",
             expires: Date.now() + 60_000,
           },
           "anthropic:b": {
@@ -47,10 +46,9 @@ describe("resolveAuthProfileOrder", () => {
             key: "sk-ready",
           },
           "anthropic:cool1": {
-            type: "oauth",
+            type: "token",
             provider: "anthropic",
-            access: "access-token",
-            refresh: "refresh-token",
+            token: "access-token",
             expires: now + 60_000,
           },
           "anthropic:cool2": {

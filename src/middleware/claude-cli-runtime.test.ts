@@ -107,25 +107,6 @@ describe("ClaudeCliRuntime", () => {
     expect(opts.env.CLAUDECODE).toBe("");
   });
 
-  it("sets CLAUDE_CODE_OAUTH_TOKEN env for oauth auth mode", async () => {
-    const child = createMockChild();
-    spawnMock.mockReturnValue(child);
-
-    const runtime = new ClaudeCliRuntime();
-    const iter = runtime.execute(
-      defaultParams({
-        auth: { apiKey: "oauth-token", source: "profile:oauth", mode: "oauth" },
-      }),
-    );
-
-    queueMicrotask(() => child.emit("close", 0));
-    await collectEvents(iter);
-
-    const opts = spawnMock.mock.calls[0][2] as { env: Record<string, string> };
-    expect(opts.env.CLAUDE_CODE_OAUTH_TOKEN).toBe("oauth-token");
-    expect(opts.env.CLAUDECODE).toBe("");
-  });
-
   it("sets CLAUDE_CODE_OAUTH_TOKEN env for token auth mode", async () => {
     const child = createMockChild();
     spawnMock.mockReturnValue(child);

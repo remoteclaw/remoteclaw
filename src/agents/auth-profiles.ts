@@ -12,10 +12,7 @@ export {
   upsertAuthProfile,
   upsertAuthProfileWithLock,
 } from "./auth-profiles/profiles.js";
-export {
-  repairOAuthProfileIdMismatch,
-  suggestOAuthProfileIdForLegacyDefault,
-} from "./auth-profiles/repair.js";
+export { repairOAuthProfileIdMismatch } from "./auth-profiles/repair.js";
 export {
   ensureAuthProfileStore,
   loadAuthProfileStore,
@@ -27,7 +24,6 @@ export type {
   AuthProfileFailureReason,
   AuthProfileIdRepairResult,
   AuthProfileStore,
-  OAuthCredential,
   ProfileUsageStats,
   TokenCredential,
 } from "./auth-profiles/types.js";

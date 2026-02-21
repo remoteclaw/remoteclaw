@@ -4,18 +4,10 @@ import { ensureAuthProfileStore } from "./auth-profiles.js";
 import type { AuthProfileCredential } from "./auth-profiles/types.js";
 import { normalizeProviderId } from "./cli-routing.js";
 
-type AuthJsonCredential =
-  | {
-      type: "api_key";
-      key: string;
-    }
-  | {
-      type: "oauth";
-      access: string;
-      refresh: string;
-      expires: number;
-      [key: string]: unknown;
-    };
+type AuthJsonCredential = {
+  type: "api_key";
+  key: string;
+};
 
 type AuthJsonShape = Record<string, AuthJsonCredential>;
 
@@ -61,21 +53,6 @@ function convertCredential(cred: AuthProfileCredential): AuthJsonCredential | nu
     return { type: "api_key", key: token };
   }
 
-  if (cred.type === "oauth") {
-    const accessRaw = (cred as { access?: unknown }).access;
-    const refreshRaw = (cred as { refresh?: unknown }).refresh;
-    const expiresRaw = (cred as { expires?: unknown }).expires;
-
-    const access = typeof accessRaw === "string" ? accessRaw.trim() : "";
-    const refresh = typeof refreshRaw === "string" ? refreshRaw.trim() : "";
-    const expires = typeof expiresRaw === "number" ? expiresRaw : Number.NaN;
-
-    if (!access || !refresh || !Number.isFinite(expires) || expires <= 0) {
-      return null;
-    }
-    return { type: "oauth", access, refresh, expires };
-  }
-
   return null;
 }
 
@@ -94,10 +71,6 @@ function credentialsEqual(a: AuthJsonCredential | undefined, b: AuthJsonCredenti
     return a.key === b.key;
   }
 
-  if (a.type === "oauth" && b.type === "oauth") {
-    return a.access === b.access && a.refresh === b.refresh && a.expires === b.expires;
-  }
-
   return false;
 }
 
@@ -109,7 +82,7 @@ function credentialsEqual(a: AuthJsonCredential | undefined, b: AuthJsonCredenti
  * (a) consider providers authenticated and (b) include built-in models in its
  * registry/catalog output.
  *
- * Syncs all credential types: api_key, token (as api_key), and oauth.
+ * Syncs all credential types: api_key and token (as api_key).
  */
 export async function ensurePiAuthJsonFromAuthProfiles(agentDir: string): Promise<{
   wrote: boolean;

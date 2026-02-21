@@ -126,7 +126,7 @@ async function resolveOAuthToken(params: {
 
   for (const profileId of deduped) {
     const cred = store.profiles[profileId];
-    if (!cred || (cred.type !== "oauth" && cred.type !== "token")) {
+    if (!cred || cred.type !== "token") {
       continue;
     }
     try {
@@ -149,10 +149,6 @@ async function resolveOAuthToken(params: {
       return {
         provider: params.provider,
         token,
-        accountId:
-          cred.type === "oauth" && "accountId" in cred
-            ? (cred as { accountId?: string }).accountId
-            : undefined,
       };
     } catch {
       // ignore
@@ -176,7 +172,7 @@ function resolveOAuthProviders(agentDir?: string): UsageProviderId[] {
   ] satisfies UsageProviderId[];
   const isOAuthLikeCredential = (id: string) => {
     const cred = store.profiles[id];
-    return cred?.type === "oauth" || cred?.type === "token";
+    return cred?.type === "token";
   };
   return providers.filter((provider) => {
     const profiles = listProfilesForProvider(store, provider).filter(isOAuthLikeCredential);

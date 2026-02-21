@@ -134,8 +134,8 @@ export async function maybeRemoveDeprecatedCliAuthProfiles(
   }
   if (deprecated.has(CODEX_CLI_PROFILE_ID)) {
     lines.push(
-      `- ${CODEX_CLI_PROFILE_ID} (OpenAI Codex): use OAuth → ${formatCliCommand(
-        "remoteclaw models auth login --provider openai-codex",
+      `- ${CODEX_CLI_PROFILE_ID} (OpenAI Codex): use API key → ${formatCliCommand(
+        "remoteclaw models auth login --provider openai",
       )}`,
     );
   }
@@ -214,7 +214,7 @@ function formatAuthIssueHint(issue: AuthIssue): string | null {
   }
   if (issue.provider === "openai-codex" && issue.profileId === CODEX_CLI_PROFILE_ID) {
     return `Deprecated profile. Use ${formatCliCommand(
-      "remoteclaw models auth login --provider openai-codex",
+      "remoteclaw models auth login --provider openai",
     )} or ${formatCliCommand("remoteclaw configure")}.`;
   }
   return `Re-auth via \`${formatCliCommand("remoteclaw configure")}\` or \`${formatCliCommand("remoteclaw onboard")}\`.`;
@@ -270,7 +270,7 @@ export async function noteAuthProfileHealth(params: {
   const findIssues = () =>
     summary.profiles.filter(
       (profile) =>
-        (profile.type === "oauth" || profile.type === "token") &&
+        profile.type === "token" &&
         (profile.status === "expired" ||
           profile.status === "expiring" ||
           profile.status === "missing"),
@@ -289,7 +289,7 @@ export async function noteAuthProfileHealth(params: {
   if (shouldRefresh) {
     const refreshTargets = issues.filter(
       (issue) =>
-        issue.type === "oauth" && ["expired", "expiring", "missing"].includes(issue.status),
+        issue.type === "token" && ["expired", "expiring", "missing"].includes(issue.status),
     );
     const errors: string[] = [];
     for (const profile of refreshTargets) {

@@ -1,5 +1,4 @@
 import type { RemoteClawConfig } from "../../config/config.js";
-import type { OAuthCredentials } from "../../types/pi-ai.js";
 
 export type ApiKeyCredential = {
   type: "api_key";
@@ -11,10 +10,7 @@ export type ApiKeyCredential = {
 };
 
 export type TokenCredential = {
-  /**
-   * Static bearer-style token (often OAuth access token / PAT).
-   * Not refreshable by RemoteClaw (unlike `type: "oauth"`).
-   */
+  /** Static bearer-style token (PAT, service token, etc.). */
   type: "token";
   provider: string;
   token: string;
@@ -23,14 +19,7 @@ export type TokenCredential = {
   email?: string;
 };
 
-export type OAuthCredential = OAuthCredentials & {
-  type: "oauth";
-  provider: string;
-  clientId?: string;
-  email?: string;
-};
-
-export type AuthProfileCredential = ApiKeyCredential | TokenCredential | OAuthCredential;
+export type AuthProfileCredential = ApiKeyCredential | TokenCredential;
 
 export type AuthProfileFailureReason =
   | "auth"

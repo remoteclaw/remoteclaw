@@ -135,7 +135,7 @@ describe("GeminiCliRuntime", () => {
     expect(opts.env.GEMINI_API_KEY).toBe("AIza-test-key");
   });
 
-  it("does not set auth env vars for oauth mode (inherits from parent)", async () => {
+  it("does not set auth env vars for token mode (inherits from parent)", async () => {
     const child = createMockChild();
     spawnMock.mockReturnValue(child);
 
@@ -147,7 +147,7 @@ describe("GeminiCliRuntime", () => {
       const runtime = new GeminiCliRuntime();
       const iter = runtime.execute(
         defaultParams({
-          auth: { apiKey: "oauth-tok", source: "profile:gcp", mode: "oauth" },
+          auth: { apiKey: "gcp-tok", source: "profile:gcp", mode: "token" },
         }),
       );
 

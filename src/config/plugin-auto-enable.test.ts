@@ -47,9 +47,9 @@ describe("applyPluginAutoEnable", () => {
       config: {
         auth: {
           profiles: {
-            "google-antigravity:default": {
-              provider: "google-antigravity",
-              mode: "oauth",
+            "copilot-proxy:default": {
+              provider: "copilot-proxy",
+              mode: "token",
             },
           },
         },
@@ -57,7 +57,7 @@ describe("applyPluginAutoEnable", () => {
       env: {},
     });
 
-    expect(result.config.plugins?.entries?.["google-antigravity-auth"]?.enabled).toBe(true);
+    expect(result.config.plugins?.entries?.["copilot-proxy"]?.enabled).toBe(true);
   });
 
   it("skips when plugins are globally disabled", () => {

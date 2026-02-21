@@ -1,6 +1,6 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { createDiscordActionGate } from "../../discord/accounts.js";
+import type { AgentToolResult } from "../../types/pi-agent-core.js";
 import { readStringParam } from "./common.js";
 import { handleDiscordGuildAction } from "./discord-actions-guild.js";
 import { handleDiscordMessagingAction } from "./discord-actions-messaging.js";
@@ -58,7 +58,7 @@ const presenceActions = new Set(["setPresence"]);
 export async function handleDiscordAction(
   params: Record<string, unknown>,
   cfg: RemoteClawConfig,
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult> {
   const action = readStringParam(params, "action", { required: true });
   const accountId = readStringParam(params, "accountId");
   const isActionEnabled = createDiscordActionGate({ cfg, accountId });

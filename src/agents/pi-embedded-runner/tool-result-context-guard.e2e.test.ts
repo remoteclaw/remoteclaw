@@ -1,5 +1,5 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import { describe, expect, it } from "vitest";
+import type { AgentMessage } from "../../types/pi-agent-core.js";
 import {
   CONTEXT_LIMIT_TRUNCATION_NOTICE,
   PREEMPTIVE_TOOL_RESULT_COMPACTION_PLACEHOLDER,

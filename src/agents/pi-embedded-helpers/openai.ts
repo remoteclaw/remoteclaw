@@ -1,4 +1,4 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "../../types/pi-agent-core.js";
 
 type OpenAIThinkingBlock = {
   type?: unknown;

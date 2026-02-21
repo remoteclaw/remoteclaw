@@ -1,4 +1,3 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveSlackAccount } from "../../slack/accounts.js";
 import {
@@ -18,6 +17,7 @@ import {
 } from "../../slack/actions.js";
 import { parseSlackBlocksInput } from "../../slack/blocks-input.js";
 import { parseSlackTarget, resolveSlackChannelId } from "../../slack/targets.js";
+import type { AgentToolResult } from "../../types/pi-agent-core.js";
 import { withNormalizedTimestamp } from "../date-time.js";
 import {
   createActionGate,
@@ -93,7 +93,7 @@ export async function handleSlackAction(
   params: Record<string, unknown>,
   cfg: RemoteClawConfig,
   context?: SlackActionContext,
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult> {
   const resolveChannelId = () =>
     resolveSlackChannelId(
       readStringParam(params, "channelId", {

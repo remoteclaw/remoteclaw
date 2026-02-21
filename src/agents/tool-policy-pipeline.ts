@@ -1,4 +1,4 @@
-import type { AgentTool } from "@mariozechner/pi-agent-core";
+import type { AgentTool } from "../types/pi-agent-core.js";
 import { filterToolsByPolicy } from "./pi-tools.policy.js";
 import {
   buildPluginToolGroups,
@@ -9,7 +9,7 @@ import {
 } from "./tool-policy.js";
 
 // oxlint-disable-next-line typescript/no-explicit-any
-type AnyAgentTool = AgentTool<any, unknown>;
+type AnyAgentTool = AgentTool<any>;
 
 export type ToolPolicyPipelineStep = {
   policy: ToolPolicyLike | undefined;

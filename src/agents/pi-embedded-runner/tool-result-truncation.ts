@@ -1,7 +1,7 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { TextContent } from "@mariozechner/pi-ai";
-import { SessionManager } from "@mariozechner/pi-coding-agent";
+import { SessionManager } from "@mariozechner/pi-coding-agent/dist/core/session-manager.js";
 import { logVerbose } from "../../globals.js";
+import type { AgentMessage } from "../../types/pi-agent-core.js";
+import type { TextContent } from "../../types/pi-ai.js";
 
 const log = {
   info: logVerbose,
@@ -164,7 +164,7 @@ export async function truncateOversizedToolResultsInSession(params: {
       if (entry.type !== "message") {
         continue;
       }
-      const msg = entry.message;
+      const msg = entry.message as AgentMessage;
       if ((msg as { role?: string }).role !== "toolResult") {
         continue;
       }
@@ -204,7 +204,7 @@ export async function truncateOversizedToolResultsInSession(params: {
       const entry = branch[i];
 
       if (entry.type === "message") {
-        let message = entry.message;
+        let message = entry.message as AgentMessage;
 
         if (oversizedSet.has(i)) {
           message = truncateToolResultMessage(message, maxChars);

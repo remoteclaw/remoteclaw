@@ -1,4 +1,5 @@
-import { completeSimple, getModel } from "@mariozechner/pi-ai";
+import { getModel } from "@mariozechner/pi-ai/dist/models.js";
+import { completeSimple } from "@mariozechner/pi-ai/dist/stream.js";
 import { describe, expect, it } from "vitest";
 import { isTruthyEnvValue } from "../infra/env.js";
 

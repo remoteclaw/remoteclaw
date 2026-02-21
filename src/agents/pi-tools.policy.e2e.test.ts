@@ -1,7 +1,7 @@
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
+import type { AgentTool, AgentToolResult } from "../types/pi-agent-core.js";
 import {
   filterToolsByPolicy,
   isToolAllowedByPolicyName,
@@ -14,7 +14,7 @@ function createStubTool(name: string): AgentTool {
     label: name,
     description: "",
     parameters: Type.Object({}),
-    execute: async () => ({}) as AgentToolResult<unknown>,
+    execute: async () => ({}) as AgentToolResult,
   };
 }
 

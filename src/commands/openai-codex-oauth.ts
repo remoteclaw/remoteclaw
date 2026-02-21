@@ -1,6 +1,6 @@
-import type { OAuthCredentials } from "@mariozechner/pi-ai";
-import { loginOpenAICodex } from "@mariozechner/pi-ai";
+import { loginOpenAICodex } from "@mariozechner/pi-ai/dist/utils/oauth/openai-codex.js";
 import type { RuntimeEnv } from "../runtime.js";
+import type { OAuthCredentials } from "../types/pi-ai.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { createVpsAwareOAuthHandlers } from "./oauth-flow.js";
 

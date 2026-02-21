@@ -1,4 +1,3 @@
-import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { resolveSessionAgentIds } from "../../agents/agent-scope.js";
 import { resolveBootstrapContextForRun } from "../../agents/bootstrap-files.js";
 import { resolveDefaultModelForAgent } from "../../agents/cli-routing.js";
@@ -9,6 +8,7 @@ import { buildAgentSystemPrompt } from "../../agents/system-prompt.js";
 import { buildToolSummaryMap } from "../../agents/tool-summaries.js";
 import type { WorkspaceBootstrapFile } from "../../agents/workspace.js";
 import { buildTtsSystemPromptHint } from "../../tts/tts.js";
+import type { AgentTool } from "../../types/pi-agent-core.js";
 import type { HandleCommandsParams } from "./commands-types.js";
 
 export type CommandsSystemPromptBundle = {

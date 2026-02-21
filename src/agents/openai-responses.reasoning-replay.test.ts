@@ -1,7 +1,7 @@
-import type { AssistantMessage, Model, ToolResultMessage } from "@mariozechner/pi-ai";
-import { streamOpenAIResponses } from "@mariozechner/pi-ai";
+import { streamOpenAIResponses } from "@mariozechner/pi-ai/dist/providers/openai-responses.js";
 import { Type } from "@sinclair/typebox";
 import { describe, expect, it } from "vitest";
+import type { AssistantMessage, Model, ToolResultMessage } from "../types/pi-ai.js";
 
 function buildModel(): Model<"openai-responses"> {
   return {

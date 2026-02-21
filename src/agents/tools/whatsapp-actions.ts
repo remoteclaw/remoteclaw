@@ -1,12 +1,12 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { RemoteClawConfig } from "../../config/config.js";
+import type { AgentToolResult } from "../../types/pi-agent-core.js";
 import { sendReactionWhatsApp } from "../../web/outbound.js";
 import { createActionGate, jsonResult, readReactionParams, readStringParam } from "./common.js";
 
 export async function handleWhatsAppAction(
   params: Record<string, unknown>,
   cfg: RemoteClawConfig,
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult> {
   const action = readStringParam(params, "action", { required: true });
   const isActionEnabled = createActionGate(cfg.channels?.whatsapp?.actions);
 

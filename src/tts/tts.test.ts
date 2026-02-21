@@ -1,12 +1,20 @@
-import { completeSimple, getModel, type AssistantMessage } from "@mariozechner/pi-ai";
+import { getModel } from "@mariozechner/pi-ai/dist/models.js";
+import { completeSimple } from "@mariozechner/pi-ai/dist/stream.js";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { getApiKeyForModel } from "../agents/model-auth.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { withEnv } from "../test-utils/env.js";
+import type { AssistantMessage } from "../types/pi-ai.js";
 import * as tts from "./tts.js";
 
-vi.mock("@mariozechner/pi-ai", () => ({
+vi.mock("@mariozechner/pi-ai/dist/stream.js", () => ({
   completeSimple: vi.fn(),
+  // Some auth helpers import oauth provider metadata at module load time.
+  getOAuthProviders: () => [],
+  getOAuthApiKey: vi.fn(async () => null),
+}));
+
+vi.mock("@mariozechner/pi-ai/dist/models.js", () => ({
   getModel: vi.fn((provider: string, modelId: string) => ({
     provider,
     id: modelId,
@@ -18,9 +26,6 @@ vi.mock("@mariozechner/pi-ai", () => ({
     contextWindow: 128000,
     maxTokens: 8192,
   })),
-  // Some auth helpers import oauth provider metadata at module load time.
-  getOAuthProviders: () => [],
-  getOAuthApiKey: vi.fn(async () => null),
 }));
 
 vi.mock("../agents/model-auth.js", () => ({

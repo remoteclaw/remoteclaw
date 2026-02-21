@@ -1,7 +1,7 @@
 import type { Activity, UpdatePresenceData } from "@buape/carbon/gateway";
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { DiscordActionConfig } from "../../config/config.js";
 import { getGateway } from "../../discord/monitor/gateway-registry.js";
+import type { AgentToolResult } from "../../types/pi-agent-core.js";
 import { type ActionGate, jsonResult, readStringParam } from "./common.js";
 
 const ACTIVITY_TYPE_MAP: Record<string, number> = {
@@ -19,7 +19,7 @@ export async function handleDiscordPresenceAction(
   action: string,
   params: Record<string, unknown>,
   isActionEnabled: ActionGate<DiscordActionConfig>,
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult> {
   if (action !== "setPresence") {
     throw new Error(`Unknown presence action: ${action}`);
   }

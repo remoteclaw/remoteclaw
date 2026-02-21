@@ -1,5 +1,5 @@
-import type { Model } from "@mariozechner/pi-ai/dist/types.js";
 import { expect } from "vitest";
+import type { Model } from "../types/pi-ai.js";
 
 export const asRecord = (value: unknown): Record<string, unknown> => {
   expect(value).toBeTruthy();

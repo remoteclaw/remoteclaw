@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { StreamFn } from "@mariozechner/pi-agent-core";
+import { createAssistantMessageEventStream } from "@mariozechner/pi-ai/dist/utils/event-stream.js";
+import type { StreamFn } from "../types/pi-agent-core.js";
 import type {
   AssistantMessage,
   StopReason,
@@ -7,8 +8,7 @@ import type {
   ToolCall,
   Tool,
   Usage,
-} from "@mariozechner/pi-ai";
-import { createAssistantMessageEventStream } from "@mariozechner/pi-ai";
+} from "../types/pi-ai.js";
 
 export const OLLAMA_NATIVE_BASE_URL = "http://127.0.0.1:11434";
 

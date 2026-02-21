@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import {
   type ExecAsk,
   type ExecHost,
@@ -26,6 +25,7 @@ import {
 } from "../infra/shell-env.js";
 import { logInfo } from "../logger.js";
 import { parseAgentSessionKey, resolveAgentIdFromSessionKey } from "../routing/session-key.js";
+import type { AgentTool, AgentToolResult } from "../types/pi-agent-core.js";
 import { markBackgrounded, tail } from "./bash-process-registry.js";
 import {
   DEFAULT_APPROVAL_REQUEST_TIMEOUT_MS,

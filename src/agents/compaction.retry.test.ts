@@ -1,17 +1,20 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
-import * as piCodingAgent from "@mariozechner/pi-coding-agent";
+import * as piCodingAgent from "@mariozechner/pi-coding-agent/dist/core/compaction/compaction.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { retryAsync } from "../infra/retry.js";
+import type { AgentMessage } from "../types/pi-agent-core.js";
+import type { ExtensionContext } from "../types/pi-coding-agent.js";
 
 // Mock the external generateSummary function
-vi.mock("@mariozechner/pi-coding-agent", async (importOriginal) => {
-  const actual = await importOriginal<typeof piCodingAgent>();
-  return {
-    ...actual,
-    generateSummary: vi.fn(),
-  };
-});
+vi.mock(
+  "@mariozechner/pi-coding-agent/dist/core/compaction/compaction.js",
+  async (importOriginal) => {
+    const actual = await importOriginal<typeof piCodingAgent>();
+    return {
+      ...actual,
+      generateSummary: vi.fn(),
+    };
+  },
+);
 
 const mockGenerateSummary = vi.mocked(piCodingAgent.generateSummary);
 

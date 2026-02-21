@@ -1,13 +1,13 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { DiscordActionConfig } from "../../config/config.js";
 import { banMemberDiscord, kickMemberDiscord, timeoutMemberDiscord } from "../../discord/send.js";
+import type { AgentToolResult } from "../../types/pi-agent-core.js";
 import { type ActionGate, jsonResult, readStringParam } from "./common.js";
 
 export async function handleDiscordModerationAction(
   action: string,
   params: Record<string, unknown>,
   isActionEnabled: ActionGate<DiscordActionConfig>,
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult> {
   const accountId = readStringParam(params, "accountId");
   switch (action) {
     case "timeout": {

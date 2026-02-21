@@ -1,4 +1,5 @@
-import { completeSimple, getModel, type Model } from "@mariozechner/pi-ai";
+import { completeSimple, getModel } from "@mariozechner/pi-ai";
+import type { Model } from "../src/types/pi-ai.js";
 
 type Usage = {
   input?: number;

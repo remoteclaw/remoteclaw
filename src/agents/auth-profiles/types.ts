@@ -1,5 +1,5 @@
-import type { OAuthCredentials } from "@mariozechner/pi-ai";
 import type { RemoteClawConfig } from "../../config/config.js";
+import type { OAuthCredentials } from "../../types/pi-ai.js";
 
 export type ApiKeyCredential = {
   type: "api_key";

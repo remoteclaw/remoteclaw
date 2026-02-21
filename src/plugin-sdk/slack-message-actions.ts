@@ -1,13 +1,13 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { readNumberParam, readStringParam } from "../agents/tools/common.js";
 import type { ChannelMessageActionContext } from "../channels/plugins/types.js";
 import { parseSlackBlocksInput } from "../slack/blocks-input.js";
+import type { AgentToolResult } from "../types/pi-agent-core.js";
 
 type SlackActionInvoke = (
   action: Record<string, unknown>,
   cfg: ChannelMessageActionContext["cfg"],
   toolContext?: ChannelMessageActionContext["toolContext"],
-) => Promise<AgentToolResult<unknown>>;
+) => Promise<AgentToolResult>;
 
 function readSlackBlocksParam(actionParams: Record<string, unknown>) {
   return parseSlackBlocksInput(actionParams.blocks) as Record<string, unknown>[] | undefined;
@@ -19,7 +19,7 @@ export async function handleSlackMessageAction(params: {
   invoke: SlackActionInvoke;
   normalizeChannelId?: (channelId: string) => string;
   includeReadThreadId?: boolean;
-}): Promise<AgentToolResult<unknown>> {
+}): Promise<AgentToolResult> {
   const { providerId, ctx, invoke, normalizeChannelId, includeReadThreadId = false } = params;
   const { action, cfg, params: actionParams } = ctx;
   const accountId = ctx.accountId ?? undefined;

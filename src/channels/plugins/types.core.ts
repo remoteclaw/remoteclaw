@@ -1,8 +1,7 @@
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import type { TSchema } from "@sinclair/typebox";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { PollInput } from "../../polls.js";
+import type { AgentTool, AgentToolResult } from "../../types/pi-agent-core.js";
 import type { GatewayClientMode, GatewayClientName } from "../../utils/message-channel.js";
 import type { ChatType } from "../chat-type.js";
 import type { ChatChannelId } from "../registry.js";
@@ -12,7 +11,7 @@ export type ChannelId = ChatChannelId | (string & {});
 
 export type ChannelOutboundTargetMode = "explicit" | "implicit" | "heartbeat";
 
-export type ChannelAgentTool = AgentTool<TSchema, unknown>;
+export type ChannelAgentTool = AgentTool;
 
 export type ChannelAgentToolFactory = (params: { cfg?: RemoteClawConfig }) => ChannelAgentTool[];
 
@@ -327,7 +326,7 @@ export type ChannelMessageActionAdapter = {
   supportsButtons?: (params: { cfg: RemoteClawConfig }) => boolean;
   supportsCards?: (params: { cfg: RemoteClawConfig }) => boolean;
   extractToolSend?: (params: { args: Record<string, unknown> }) => ChannelToolSend | null;
-  handleAction?: (ctx: ChannelMessageActionContext) => Promise<AgentToolResult<unknown>>;
+  handleAction?: (ctx: ChannelMessageActionContext) => Promise<AgentToolResult>;
 };
 
 export type ChannelPollResult = {

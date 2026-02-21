@@ -31,8 +31,13 @@ import { resolveAgentMainSessionKey, updateSessionStore } from "../../config/ses
 import type { AgentDefaultsConfig } from "../../config/types.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { deliverOutboundPayloads } from "../../infra/outbound/deliver.js";
-import { logWarn } from "../../logger.js";
-import { ChannelBridge, createCliRuntime, type ChannelMessage } from "../../middleware/index.js";
+import { logDebug, logWarn } from "../../logger.js";
+import {
+  type BridgeCallbacks,
+  ChannelBridge,
+  type ChannelMessage,
+  createCliRuntime,
+} from "../../middleware/index.js";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../../routing/session-key.js";
 import {
   buildSafeExternalPrompt,
@@ -347,7 +352,15 @@ export async function runCronIsolatedAgentTurn(params: {
       text: commandBody,
       workspaceDir,
     };
-    reply = await bridge.handle(channelMessage);
+    const cronCallbacks: BridgeCallbacks = {
+      onToolUse: (toolName) => {
+        logDebug(`[cron:${params.job.id}] tool started: ${toolName}`);
+      },
+      onError: (message) => {
+        logWarn(`[cron:${params.job.id}] agent error: ${message}`);
+      },
+    };
+    reply = await bridge.handle(channelMessage, cronCallbacks);
     runEndedAt = Date.now();
   } catch (err) {
     return withRunSession({ status: "error", error: String(err) });

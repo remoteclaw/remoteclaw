@@ -69,6 +69,11 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
   abstract readonly name: string;
   protected abstract config(): CLIRuntimeConfig;
 
+  /** Build the full process env by merging inherited env with runtime env. Subclasses may override to strip or modify inherited vars. */
+  protected buildProcessEnv(runtimeEnv: Record<string, string>): Record<string, string> {
+    return { ...process.env, ...runtimeEnv } as Record<string, string>;
+  }
+
   async *execute(params: AgentRuntimeParams): AsyncIterable<AgentEvent> {
     const cfg = this.config();
     const startTime = Date.now();
@@ -97,7 +102,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
 
     const child = spawn(cfg.command, cfg.buildArgs(params), {
       cwd: params.workspaceDir,
-      env: { ...process.env, ...runtimeEnv },
+      env: this.buildProcessEnv(runtimeEnv),
       stdio: ["pipe", "pipe", "pipe"],
     });
 

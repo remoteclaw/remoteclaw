@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { ClaudeCliRuntime } from "./claude-cli-runtime.js";
 import { createCliRuntime } from "./cli-runtime-factory.js";
+import { CodexCliRuntime } from "./codex-cli-runtime.js";
 import { GeminiCliRuntime } from "./gemini-cli-runtime.js";
 import { OpenCodeCliRuntime } from "./opencode-cli-runtime.js";
 
@@ -35,6 +36,25 @@ describe("createCliRuntime", () => {
   it("normalizes provider id for built-in lookup", () => {
     const runtime = createCliRuntime("Claude-CLI", makeCfg());
     expect(runtime).toBeInstanceOf(ClaudeCliRuntime);
+  });
+
+  it("returns CodexCliRuntime for codex-cli without config", () => {
+    const runtime = createCliRuntime("codex-cli", makeCfg());
+    expect(runtime).toBeInstanceOf(CodexCliRuntime);
+    expect(runtime.name).toBe("codex-cli");
+  });
+
+  it("returns CodexCliRuntime for codex-cli with config", () => {
+    const runtime = createCliRuntime(
+      "codex-cli",
+      makeCfg({ "codex-cli": { command: "/usr/local/bin/codex" } }),
+    );
+    expect(runtime).toBeInstanceOf(CodexCliRuntime);
+  });
+
+  it("normalizes provider id for codex-cli lookup", () => {
+    const runtime = createCliRuntime("Codex-CLI", makeCfg());
+    expect(runtime).toBeInstanceOf(CodexCliRuntime);
   });
 
   it("returns runtime for custom CLI backend with config", () => {

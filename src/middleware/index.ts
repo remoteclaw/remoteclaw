@@ -2,6 +2,8 @@ export type { AgentRuntime } from "./agent-runtime.js";
 export { ChannelBridge } from "./channel-bridge.js";
 export type { ChannelBridgeOptions } from "./channel-bridge.js";
 export { ClaudeCliRuntime } from "./claude-cli-runtime.js";
+export { CodexCliRuntime } from "./codex-cli-runtime.js";
+export { parseCodexLine } from "./codex-event-extract.js";
 export { createCliRuntime } from "./cli-runtime-factory.js";
 export { GeminiCliRuntime } from "./gemini-cli-runtime.js";
 export { parseGeminiLine } from "./gemini-event-extract.js";

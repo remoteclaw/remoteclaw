@@ -5,15 +5,26 @@ import type { AgentRuntime } from "./agent-runtime.js";
 import { classifyError } from "./error-classify.js";
 import { parseLine as defaultParseLine } from "./event-extract.js";
 import type { ParsedLine, ResultMeta } from "./event-extract.js";
-import type { AgentDoneEvent, AgentEvent, AgentRuntimeParams, AgentUsage } from "./types.js";
+import type {
+  AgentDoneEvent,
+  AgentEvent,
+  AgentRuntimeParams,
+  AgentUsage,
+  ErrorCategory,
+} from "./types.js";
 
 export type CLIRuntimeConfig = {
   command: string;
   buildArgs: (params: AgentRuntimeParams) => string[];
   buildEnv: (params: AgentRuntimeParams) => Record<string, string>;
   buildStdin?: (params: AgentRuntimeParams) => string | undefined;
-  /** Override the NDJSON line parser. Defaults to the Claude SDK parser. */
+  /** Override the default (Claude SDK) line parser. */
   parseLine?: (line: string) => ParsedLine[];
+  /** Classify a non-zero exit code before falling back to stderr-based classification. */
+  classifyExitCode?: (
+    code: number,
+    stderr: string,
+  ) => { message: string; category: ErrorCategory } | undefined;
 };
 
 const SIGTERM_GRACE_MS = 5_000;
@@ -170,9 +181,9 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     const queue = createAsyncQueue<AgentEvent>();
     let remainder = "";
 
-    const lineParser = cfg.parseLine ?? defaultParseLine;
+    const parseLineFn = cfg.parseLine ?? defaultParseLine;
     const processLine = (line: string) => {
-      const results = lineParser(line);
+      const results = parseLineFn(line);
       for (const parsed of results) {
         if (parsed.sessionId !== undefined) {
           accSessionId = parsed.sessionId;
@@ -249,9 +260,14 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       };
     } else if (exitCode !== 0 && exitCode !== null) {
       const stderrText = stderrChunks.join("").trim();
-      const message = stderrText || `Process exited with code ${String(exitCode)}`;
-      const category = classifyError(message);
-      yield { type: "error", message, category };
+      const custom = cfg.classifyExitCode?.(exitCode, stderrText);
+      if (custom) {
+        yield { type: "error", message: custom.message, category: custom.category };
+      } else {
+        const message = stderrText || `Process exited with code ${String(exitCode)}`;
+        const category = classifyError(message);
+        yield { type: "error", message, category };
+      }
     }
 
     // Always yield done as final event

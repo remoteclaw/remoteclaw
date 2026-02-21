@@ -3,6 +3,8 @@ export { ChannelBridge } from "./channel-bridge.js";
 export type { ChannelBridgeOptions } from "./channel-bridge.js";
 export { ClaudeCliRuntime } from "./claude-cli-runtime.js";
 export { createCliRuntime } from "./cli-runtime-factory.js";
+export { GeminiCliRuntime } from "./gemini-cli-runtime.js";
+export { parseGeminiLine } from "./gemini-event-extract.js";
 export { CLIRuntimeBase } from "./cli-runtime-base.js";
 export type { CLIRuntimeConfig } from "./cli-runtime-base.js";
 export { classifyError } from "./error-classify.js";

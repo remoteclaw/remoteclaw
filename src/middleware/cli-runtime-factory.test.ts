@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { ClaudeCliRuntime } from "./claude-cli-runtime.js";
 import { createCliRuntime } from "./cli-runtime-factory.js";
+import { GeminiCliRuntime } from "./gemini-cli-runtime.js";
 import { OpenCodeCliRuntime } from "./opencode-cli-runtime.js";
 
 function makeCfg(
@@ -82,5 +83,24 @@ describe("createCliRuntime", () => {
     const runtime = createCliRuntime("opencode-zen", makeCfg());
     expect(runtime).toBeInstanceOf(OpenCodeCliRuntime);
     expect(runtime.name).toBe("opencode");
+  });
+
+  it("returns GeminiCliRuntime for google-gemini-cli without config", () => {
+    const runtime = createCliRuntime("google-gemini-cli", makeCfg());
+    expect(runtime).toBeInstanceOf(GeminiCliRuntime);
+    expect(runtime.name).toBe("google-gemini-cli");
+  });
+
+  it("returns GeminiCliRuntime for google-gemini-cli with config", () => {
+    const runtime = createCliRuntime(
+      "google-gemini-cli",
+      makeCfg({ "google-gemini-cli": { command: "/opt/gemini" } }),
+    );
+    expect(runtime).toBeInstanceOf(GeminiCliRuntime);
+  });
+
+  it("normalizes provider id for google-gemini-cli lookup", () => {
+    const runtime = createCliRuntime("Google-Gemini-CLI", makeCfg());
+    expect(runtime).toBeInstanceOf(GeminiCliRuntime);
   });
 });

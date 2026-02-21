@@ -76,6 +76,9 @@ export function isCliProvider(provider: string, cfg?: RemoteClawConfig): boolean
   if (normalized === "opencode") {
     return true;
   }
+  if (normalized === "google-gemini-cli") {
+    return true;
+  }
   const backends = cfg?.agents?.defaults?.cliBackends ?? {};
   return Object.keys(backends).some((key) => normalizeProviderId(key) === normalized);
 }

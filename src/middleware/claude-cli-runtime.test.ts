@@ -231,4 +231,116 @@ describe("ClaudeCliRuntime", () => {
     const runtime = new ClaudeCliRuntime();
     expect(runtime.name).toBe("claude-cli");
   });
+
+  describe("CliBackendConfig injection", () => {
+    it("uses config.command instead of default", async () => {
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      const runtime = new ClaudeCliRuntime({ command: "/usr/local/bin/claude" });
+      const iter = runtime.execute(defaultParams());
+
+      queueMicrotask(() => child.emit("close", 0));
+      await collectEvents(iter);
+
+      expect(spawnMock.mock.calls[0][0]).toBe("/usr/local/bin/claude");
+    });
+
+    it("places config.args between intrinsic and per-invocation args", async () => {
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      const runtime = new ClaudeCliRuntime({
+        command: "claude",
+        args: ["--allowedTools", "Bash(git:*)"],
+      });
+      const iter = runtime.execute(defaultParams({ model: "sonnet" }));
+
+      queueMicrotask(() => child.emit("close", 0));
+      await collectEvents(iter);
+
+      const args = spawnMock.mock.calls[0][1] as string[];
+      // Intrinsic args come first
+      expect(args.indexOf("--dangerously-skip-permissions")).toBeLessThan(
+        args.indexOf("--allowedTools"),
+      );
+      // Config args before per-invocation args
+      expect(args.indexOf("--allowedTools")).toBeLessThan(args.indexOf("--model"));
+      // Per-invocation args before prompt
+      expect(args.indexOf("--model")).toBeLessThan(args.indexOf("hello"));
+    });
+
+    it("merges config.env into runtime env", async () => {
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      const runtime = new ClaudeCliRuntime({
+        command: "claude",
+        env: { MY_VAR: "value", EXTRA: "extra" },
+      });
+      const iter = runtime.execute(defaultParams());
+
+      queueMicrotask(() => child.emit("close", 0));
+      await collectEvents(iter);
+
+      const opts = spawnMock.mock.calls[0][2] as { env: Record<string, string> };
+      expect(opts.env.MY_VAR).toBe("value");
+      expect(opts.env.EXTRA).toBe("extra");
+      expect(opts.env.CLAUDECODE).toBe("");
+    });
+
+    it("clearEnv strips vars from inherited process env", async () => {
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      // Set a process env var to verify it gets cleared
+      const origVal = process.env.TEST_CLEAR_ME;
+      process.env.TEST_CLEAR_ME = "should-be-gone";
+
+      try {
+        const runtime = new ClaudeCliRuntime({
+          command: "claude",
+          clearEnv: ["TEST_CLEAR_ME"],
+        });
+        const iter = runtime.execute(defaultParams());
+
+        queueMicrotask(() => child.emit("close", 0));
+        await collectEvents(iter);
+
+        const opts = spawnMock.mock.calls[0][2] as { env: Record<string, string> };
+        expect(opts.env.TEST_CLEAR_ME).toBeUndefined();
+        // Other env vars should still be present
+        expect(opts.env.CLAUDECODE).toBe("");
+      } finally {
+        if (origVal === undefined) {
+          delete process.env.TEST_CLEAR_ME;
+        } else {
+          process.env.TEST_CLEAR_ME = origVal;
+        }
+      }
+    });
+
+    it("preserves backward compatibility when no config provided", async () => {
+      const child = createMockChild();
+      spawnMock.mockReturnValue(child);
+
+      const runtime = new ClaudeCliRuntime();
+      const iter = runtime.execute(defaultParams());
+
+      queueMicrotask(() => child.emit("close", 0));
+      await collectEvents(iter);
+
+      expect(spawnMock.mock.calls[0][0]).toBe("claude");
+
+      const args = spawnMock.mock.calls[0][1] as string[];
+      expect(args).toEqual([
+        "--print",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--dangerously-skip-permissions",
+        "hello",
+      ]);
+    });
+  });
 });

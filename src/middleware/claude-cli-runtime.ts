@@ -1,3 +1,4 @@
+import type { CliBackendConfig } from "../config/types.agent-defaults.js";
 import type { CLIRuntimeConfig } from "./cli-runtime-base.js";
 import { CLIRuntimeBase } from "./cli-runtime-base.js";
 import type { AgentRuntimeParams } from "./types.js";
@@ -7,10 +8,20 @@ const STDIN_THRESHOLD = 10_000;
 export class ClaudeCliRuntime extends CLIRuntimeBase {
   readonly name = "claude-cli";
 
+  private readonly backendConfig: CliBackendConfig | undefined;
+
+  constructor(backendConfig?: CliBackendConfig) {
+    super();
+    this.backendConfig = backendConfig;
+  }
+
   protected config(): CLIRuntimeConfig {
+    const bc = this.backendConfig;
+
     return {
-      command: "claude",
+      command: bc?.command ?? "claude",
       buildArgs: (params: AgentRuntimeParams) => {
+        // 1. Intrinsic args — required for correct I/O protocol
         const args = [
           "--print",
           "--output-format",
@@ -19,6 +30,12 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
           "--dangerously-skip-permissions",
         ];
 
+        // 2. Config args — operator-provided extra args
+        if (bc?.args) {
+          args.push(...bc.args);
+        }
+
+        // 3. Per-invocation args — derived from AgentRuntimeParams
         if (params.model) {
           args.push("--model", params.model);
         }
@@ -29,7 +46,7 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
           args.push("--resume", params.sessionId);
         }
 
-        // Short prompts go as positional arg; long ones via stdin
+        // 4. Prompt — positional arg (short) or stdin (long)
         if (params.prompt.length <= STDIN_THRESHOLD) {
           args.push(params.prompt);
         }
@@ -48,6 +65,12 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
         // ANTHROPIC_OAUTH_TOKEN is an RemoteClaw-internal env var for the gateway's
         // own auth resolution and is NOT recognized by the external `claude` binary.
         const env: Record<string, string> = { CLAUDECODE: "" };
+
+        // Merge operator-provided env vars (config.env)
+        if (bc?.env) {
+          Object.assign(env, bc.env);
+        }
+
         if (!params.auth) {
           return env;
         }
@@ -72,5 +95,16 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
         return undefined;
       },
     };
+  }
+
+  protected override buildProcessEnv(runtimeEnv: Record<string, string>): Record<string, string> {
+    if (!this.backendConfig?.clearEnv?.length) {
+      return super.buildProcessEnv(runtimeEnv);
+    }
+    const base = { ...process.env } as Record<string, string>;
+    for (const key of this.backendConfig.clearEnv) {
+      delete base[key];
+    }
+    return { ...base, ...runtimeEnv };
   }
 }

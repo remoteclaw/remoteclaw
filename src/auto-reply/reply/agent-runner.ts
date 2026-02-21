@@ -418,7 +418,7 @@ export async function runReplyAgent(params: {
       : undefined;
     const promptTokens = undefined;
     const modelUsed = fallbackModel ?? defaultModel;
-    const providerUsed = fallbackProvider ?? "claude-cli";
+    const providerUsed = fallbackProvider ?? followupRun.run.provider;
     const cliSessionId = isCliProvider(providerUsed, cfg) ? runResult.sessionId?.trim() : undefined;
     const contextTokensUsed =
       agentCfgContextTokens ??

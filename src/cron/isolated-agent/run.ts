@@ -32,7 +32,7 @@ import type { AgentDefaultsConfig } from "../../config/types.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { deliverOutboundPayloads } from "../../infra/outbound/deliver.js";
 import { logWarn } from "../../logger.js";
-import { ChannelBridge, ClaudeCliRuntime, type ChannelMessage } from "../../middleware/index.js";
+import { ChannelBridge, createCliRuntime, type ChannelMessage } from "../../middleware/index.js";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../../routing/session-key.js";
 import {
   buildSafeExternalPrompt,
@@ -334,7 +334,7 @@ export async function runCronIsolatedAgentTurn(params: {
     }
 
     const bridge = new ChannelBridge({
-      runtime: new ClaudeCliRuntime(),
+      runtime: createCliRuntime(provider, cfgWithAgentDefaults),
       sessionDir: workspaceDir,
       defaultModel: model,
       defaultTimeoutMs: timeoutMs,

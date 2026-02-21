@@ -33,7 +33,7 @@ import {
   emitAgentEvent,
   registerAgentRunContext,
 } from "../infra/agent-events.js";
-import { ChannelBridge, ClaudeCliRuntime, type ChannelMessage } from "../middleware/index.js";
+import { ChannelBridge, createCliRuntime, type ChannelMessage } from "../middleware/index.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { applyVerboseOverride } from "../sessions/level-overrides.js";
@@ -264,7 +264,7 @@ export async function agentCommand(
     try {
       const runContext = resolveAgentRunContext(opts);
       const bridge = new ChannelBridge({
-        runtime: new ClaudeCliRuntime(),
+        runtime: createCliRuntime(provider, cfg),
         sessionDir: workspaceDir,
         defaultModel: model,
         defaultTimeoutMs: timeoutMs,
@@ -325,7 +325,7 @@ export async function agentCommand(
         durationMs: reply.durationMs,
         agentMeta: {
           sessionId: reply.sessionId ?? "",
-          provider: "claude-cli",
+          provider,
           model,
           usage: reply.usage
             ? {
@@ -349,7 +349,7 @@ export async function agentCommand(
         sessionKey,
         storePath,
         sessionStore,
-        defaultProvider: "claude-cli",
+        defaultProvider: provider,
         defaultModel: model,
         result,
       });

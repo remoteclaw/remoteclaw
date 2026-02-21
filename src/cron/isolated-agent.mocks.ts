@@ -5,7 +5,7 @@ vi.mock("../middleware/index.js", async (importOriginal) => {
   return {
     ...actual,
     ChannelBridge: vi.fn(),
-    ClaudeCliRuntime: vi.fn(),
+    createCliRuntime: vi.fn(),
   };
 });
 

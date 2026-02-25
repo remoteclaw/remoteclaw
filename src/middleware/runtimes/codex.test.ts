@@ -470,21 +470,15 @@ describe("CodexCliRuntime", () => {
   // ── buildEnv ──────────────────────────────────────────────────────────
 
   describe("buildEnv", () => {
-    it("strips ANTHROPIC_API_KEY for cross-contamination prevention", () => {
+    it("returns empty record", () => {
       const env = runtime.testBuildEnv(makeParams());
-      expect(env).toEqual({ ANTHROPIC_API_KEY: "" });
+      expect(env).toEqual({});
     });
 
-    it("does not inject OPENAI_API_KEY (caller responsibility)", () => {
+    it("does not inject auth vars regardless of params", () => {
       const env = runtime.testBuildEnv(makeParams({ env: { OPENAI_API_KEY: "sk-test" } }));
+      expect(env).toEqual({});
       expect(env).not.toHaveProperty("OPENAI_API_KEY");
-      expect(env).toEqual({ ANTHROPIC_API_KEY: "" });
-    });
-
-    it("returns same env regardless of params content", () => {
-      const env1 = runtime.testBuildEnv(makeParams());
-      const env2 = runtime.testBuildEnv(makeParams({ sessionId: "s", prompt: "p" }));
-      expect(env1).toEqual(env2);
     });
   });
 

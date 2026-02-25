@@ -1,32 +1,20 @@
 import type { RemoteClawConfig, PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
-import "./monitor.send-mocks.js";
-import "./zalo-js.test-mocks.js";
 import { __testing } from "./monitor.js";
-import { sendMessageZalouserMock } from "./monitor.send-mocks.js";
 import { setZalouserRuntime } from "./runtime.js";
-import { createZalouserRuntimeEnv } from "./test-helpers.js";
-import type { ResolvedZalouserAccount, ZaloInboundMessage } from "./types.js";
+import type { ResolvedZalouserAccount, ZcaMessage } from "./types.js";
+
+const sendMessageZalouserMock = vi.hoisted(() => vi.fn(async () => {}));
+
+vi.mock("./send.js", () => ({
+  sendMessageZalouser: sendMessageZalouserMock,
+}));
 
 describe("zalouser monitor pairing account scoping", () => {
   it("scopes DM pairing-store reads and pairing requests to accountId", async () => {
     const readAllowFromStore = vi.fn(
-      async (
-        channelOrParams:
-          | string
-          | {
-              channel?: string;
-              accountId?: string;
-            },
-        _env?: NodeJS.ProcessEnv,
-        accountId?: string,
-      ) => {
-        const scopedAccountId =
-          typeof channelOrParams === "object" && channelOrParams !== null
-            ? channelOrParams.accountId
-            : accountId;
-        return scopedAccountId === "beta" ? [] : ["attacker"];
-      },
+      async (_channel: string, _env?: NodeJS.ProcessEnv, accountId?: string) =>
+        accountId === "beta" ? [] : ["attacker"],
     );
     const upsertPairingRequest = vi.fn(async () => ({ code: "PAIRME88", created: true }));
 
@@ -70,31 +58,35 @@ describe("zalouser monitor pairing account scoping", () => {
       },
     };
 
-    const message: ZaloInboundMessage = {
+    const message: ZcaMessage = {
       threadId: "chat-1",
-      isGroup: false,
-      senderId: "attacker",
-      senderName: "Attacker",
-      groupName: undefined,
-      timestampMs: Date.now(),
       msgId: "msg-1",
+      type: 1,
       content: "hello",
-      raw: { source: "test" },
+      timestamp: Math.floor(Date.now() / 1000),
+      metadata: {
+        isGroup: false,
+        fromId: "attacker",
+        senderName: "Attacker",
+      },
+    };
+
+    const runtime: RuntimeEnv = {
+      log: vi.fn(),
+      error: vi.fn(),
+      exit: ((code: number): never => {
+        throw new Error(`exit ${code}`);
+      }) as RuntimeEnv["exit"],
     };
 
     await __testing.processMessage({
       message,
       account,
       config,
-      runtime: createZalouserRuntimeEnv(),
+      runtime,
     });
 
-    expect(readAllowFromStore).toHaveBeenCalledWith(
-      expect.objectContaining({
-        channel: "zalouser",
-        accountId: "beta",
-      }),
-    );
+    expect(readAllowFromStore).toHaveBeenCalledWith("zalouser", undefined, "beta");
     expect(upsertPairingRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         channel: "zalouser",

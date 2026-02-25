@@ -453,10 +453,20 @@ if (passthroughArgs.length > 0) {
   process.exit(Number(code) || 0);
 }
 
-const parallelCodes = await Promise.all(parallelRuns.map(run));
-const failedParallel = parallelCodes.find((code) => code !== 0);
-if (failedParallel !== undefined) {
-  process.exit(failedParallel);
+const maxParallelSuites = (() => {
+  const raw = Number.parseInt(process.env.OPENCLAW_TEST_MAX_PARALLEL_SUITES ?? "", 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : parallelRuns.length;
+})();
+
+// Run parallel suites in batches to cap peak memory (e.g. 2 suites at a time instead of 3).
+for (let i = 0; i < parallelRuns.length; i += maxParallelSuites) {
+  const batch = parallelRuns.slice(i, i + maxParallelSuites);
+  // eslint-disable-next-line no-await-in-loop
+  const batchCodes = await Promise.all(batch.map(run));
+  const failed = batchCodes.find((code) => code !== 0);
+  if (failed !== undefined) {
+    process.exit(failed);
+  }
 }
 
 for (const entry of serialRuns) {

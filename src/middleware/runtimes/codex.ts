@@ -108,9 +108,7 @@ export class CodexCliRuntime extends CLIRuntimeBase {
   }
 
   protected buildEnv(_params: AgentExecuteParams): Record<string, string> {
-    return {
-      ANTHROPIC_API_KEY: "", // Prevent cross-provider leakage
-    };
+    return {};
   }
 
   // ── Event handlers ────────────────────────────────────────────────────

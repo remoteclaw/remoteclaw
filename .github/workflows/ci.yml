@@ -45,6 +45,6 @@ jobs:
       - name: Test
         run: pnpm test
         env:
-          OPENCLAW_TEST_WORKERS: 2
+          OPENCLAW_TEST_WORKERS: 1
           OPENCLAW_TEST_MAX_OLD_SPACE_SIZE_MB: 4096
           OPENCLAW_TEST_MAX_PARALLEL_SUITES: 2

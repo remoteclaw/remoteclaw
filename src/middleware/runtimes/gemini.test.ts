@@ -73,26 +73,26 @@ describe("GeminiCliRuntime", () => {
   // ── buildArgs ─────────────────────────────────────────────────────────
 
   describe("buildArgs", () => {
-    it("produces base flags with prompt via -p flag", () => {
+    it("produces base flags with prompt via --prompt flag", () => {
       const args = runtime.testBuildArgs(makeParams());
-      expect(args).toEqual(["--output-format", "stream-json", "-p", "Hello, Gemini!"]);
+      expect(args).toEqual(["--output-format", "stream-json", "--prompt", "Hello, Gemini!"]);
     });
 
-    it("adds -r when sessionId is provided", () => {
+    it("adds --resume when sessionId is provided", () => {
       const args = runtime.testBuildArgs(makeParams({ sessionId: "sess-123" }));
-      expect(args).toContain("-r");
+      expect(args).toContain("--resume");
       expect(args).toContain("sess-123");
-      expect(args.indexOf("-r")).toBeLessThan(args.indexOf("sess-123"));
+      expect(args.indexOf("--resume")).toBeLessThan(args.indexOf("sess-123"));
     });
 
-    it("does not add -r when sessionId is absent", () => {
+    it("does not add --resume when sessionId is absent", () => {
       const args = runtime.testBuildArgs(makeParams());
-      expect(args).not.toContain("-r");
+      expect(args).not.toContain("--resume");
     });
 
-    it("delivers prompt via -p flag, not positional", () => {
+    it("delivers prompt via --prompt flag, not positional", () => {
       const args = runtime.testBuildArgs(makeParams({ prompt: "test prompt" }));
-      const pIdx = args.indexOf("-p");
+      const pIdx = args.indexOf("--prompt");
       expect(pIdx).toBeGreaterThan(-1);
       expect(args[pIdx + 1]).toBe("test prompt");
     });
@@ -106,9 +106,9 @@ describe("GeminiCliRuntime", () => {
 
       expect(args).toContain("--output-format");
       expect(args).toContain("stream-json");
-      expect(args).toContain("-p");
+      expect(args).toContain("--prompt");
       expect(args).toContain("Hello, Gemini!");
-      expect(args).toContain("-r");
+      expect(args).toContain("--resume");
       expect(args).toContain("sess-456");
     });
 

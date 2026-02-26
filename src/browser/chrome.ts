@@ -285,7 +285,7 @@ export async function launchRemoteClawChrome(
     args.push("about:blank");
 
     return spawn(exe.path, args, {
-      stdio: "pipe",
+      stdio: ["ignore", "ignore", "ignore"],
       env: {
         ...process.env,
         // Reduce accidental sharing with the user's env.

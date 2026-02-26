@@ -75,16 +75,17 @@ export function resolvePreferredRemoteClawTmpDir(
     return st.isDirectory() && !st.isSymbolicLink() && isSecureDirForUser(st);
   };
 
-  const resolvePreferredState = (
+  const resolveDirState = (
+    candidatePath: string,
     requireWritableAccess: boolean,
   ): "available" | "missing" | "invalid" => {
     try {
-      const preferred = lstatSync(POSIX_REMOTECLAW_TMP_DIR);
-      if (!isTrustedPreferredDir(preferred)) {
+      const candidate = lstatSync(candidatePath);
+      if (!isTrustedPreferredDir(candidate)) {
         return "invalid";
       }
       if (requireWritableAccess) {
-        accessSync(POSIX_REMOTECLAW_TMP_DIR, fs.constants.W_OK | fs.constants.X_OK);
+        accessSync(candidatePath, fs.constants.W_OK | fs.constants.X_OK);
       }
       return "available";
     } catch (err) {
@@ -95,23 +96,43 @@ export function resolvePreferredRemoteClawTmpDir(
     }
   };
 
-  const existingPreferredState = resolvePreferredState(true);
+  const ensureTrustedFallbackDir = (): string => {
+    const fallbackPath = fallback();
+    const state = resolveDirState(fallbackPath, true);
+    if (state === "available") {
+      return fallbackPath;
+    }
+    if (state === "invalid") {
+      throw new Error(`Unsafe fallback RemoteClaw temp dir: ${fallbackPath}`);
+    }
+    try {
+      mkdirSync(fallbackPath, { recursive: true, mode: 0o700 });
+    } catch {
+      throw new Error(`Unable to create fallback RemoteClaw temp dir: ${fallbackPath}`);
+    }
+    if (resolveDirState(fallbackPath, true) !== "available") {
+      throw new Error(`Unsafe fallback RemoteClaw temp dir: ${fallbackPath}`);
+    }
+    return fallbackPath;
+  };
+
+  const existingPreferredState = resolveDirState(POSIX_REMOTECLAW_TMP_DIR, true);
   if (existingPreferredState === "available") {
     return POSIX_REMOTECLAW_TMP_DIR;
   }
   if (existingPreferredState === "invalid") {
-    return fallback();
+    return ensureTrustedFallbackDir();
   }
 
   try {
     accessSync("/tmp", fs.constants.W_OK | fs.constants.X_OK);
     // Create with a safe default; subsequent callers expect it exists.
     mkdirSync(POSIX_REMOTECLAW_TMP_DIR, { recursive: true, mode: 0o700 });
-    if (resolvePreferredState(true) !== "available") {
-      return fallback();
+    if (resolveDirState(POSIX_REMOTECLAW_TMP_DIR, true) !== "available") {
+      return ensureTrustedFallbackDir();
     }
     return POSIX_REMOTECLAW_TMP_DIR;
   } catch {
-    return fallback();
+    return ensureTrustedFallbackDir();
   }
 }

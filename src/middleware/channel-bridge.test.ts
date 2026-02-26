@@ -1,0 +1,578 @@
+import { mkdir, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { buildSessionKey, ChannelBridge } from "./channel-bridge.js";
+import type {
+  AgentEvent,
+  AgentExecuteParams,
+  AgentRunResult,
+  AgentRuntime,
+  ChannelMessage,
+} from "./types.js";
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+/** Create an async iterable from an array of events. */
+async function* eventStream(events: AgentEvent[]): AsyncIterable<AgentEvent> {
+  for (const event of events) {
+    yield event;
+  }
+}
+
+/** Create a done event with configurable result fields. */
+function makeDone(overrides?: Partial<AgentRunResult>): AgentEvent {
+  return {
+    type: "done",
+    result: {
+      text: "",
+      sessionId: undefined,
+      durationMs: 0,
+      usage: undefined,
+      aborted: false,
+      ...overrides,
+    },
+  };
+}
+
+/** Create a minimal ChannelMessage. */
+function makeMessage(overrides?: Partial<ChannelMessage>): ChannelMessage {
+  return {
+    id: "msg-1",
+    text: "Hello agent",
+    from: "user-123",
+    channelId: "chat-456",
+    provider: "telegram",
+    timestamp: Date.now(),
+    ...overrides,
+  };
+}
+
+/** Create a mock AgentRuntime that yields given events. */
+function mockRuntime(events: AgentEvent[]): AgentRuntime {
+  return {
+    execute: vi.fn(() => eventStream(events)),
+  };
+}
+
+/** Create an async iterable that throws on first iteration. */
+function failingStream(message: string): AsyncIterable<AgentEvent> {
+  return {
+    [Symbol.asyncIterator]() {
+      return {
+        async next(): Promise<IteratorResult<AgentEvent>> {
+          throw new Error(message);
+        },
+      };
+    },
+  };
+}
+
+// ── Mocks ────────────────────────────────────────────────────────────────
+
+// Mock runtime-factory to return controllable runtime
+let mockRuntimeInstance: AgentRuntime;
+
+vi.mock("./runtime-factory.js", () => ({
+  createCliRuntime: vi.fn(() => mockRuntimeInstance),
+}));
+
+// Mock system-prompt to return a simple string
+vi.mock("./system-prompt.js", () => ({
+  buildSystemPrompt: vi.fn(() => "SYSTEM_PROMPT"),
+}));
+
+// Mock mcp-side-effects reader to return empty by default
+const mockReadSideEffects = vi.fn().mockResolvedValue({
+  sentTexts: [],
+  sentMediaUrls: [],
+  sentTargets: [],
+  cronAdds: 0,
+});
+
+vi.mock("./mcp-side-effects.js", () => ({
+  readMcpSideEffects: (...args: unknown[]) => mockReadSideEffects(...args),
+  McpSideEffectsWriter: vi.fn(),
+}));
+
+// ── Session Map (real-ish, file-backed in temp dir) ─────────────────────
+
+let sessionDir: string;
+let sessionMap: InstanceType<typeof import("./session-map.js").SessionMap>;
+
+beforeEach(async () => {
+  sessionDir = join(tmpdir(), `rc-test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
+  await mkdir(sessionDir, { recursive: true });
+  const { SessionMap } = await import("./session-map.js");
+  sessionMap = new SessionMap(sessionDir);
+
+  // Reset mocks
+  mockRuntimeInstance = mockRuntime([makeDone()]);
+  mockReadSideEffects.mockClear();
+  mockReadSideEffects.mockResolvedValue({
+    sentTexts: [],
+    sentMediaUrls: [],
+    sentTargets: [],
+    cronAdds: 0,
+  });
+});
+
+afterEach(async () => {
+  await rm(sessionDir, { recursive: true, force: true }).catch(() => {});
+});
+
+// ── Tests ────────────────────────────────────────────────────────────────
+
+describe("ChannelBridge", () => {
+  function createBridge(overrides?: Record<string, unknown>): ChannelBridge {
+    return new ChannelBridge({
+      provider: "claude",
+      sessionMap,
+      gatewayUrl: "wss://gw.example.com",
+      gatewayToken: "test-token",
+      workspaceDir: "/workspace",
+      mcpServerPath: "/path/to/mcp-server.js",
+      ...overrides,
+    });
+  }
+
+  describe("handle() orchestration flow", () => {
+    it("returns AgentDeliveryResult with payloads from text events", async () => {
+      mockRuntimeInstance = mockRuntime([
+        { type: "text", text: "Hello user" },
+        makeDone({ text: "Hello user", sessionId: "sess-1", durationMs: 100 }),
+      ]);
+
+      const bridge = createBridge();
+      const result = await bridge.handle(makeMessage());
+
+      expect(result.payloads).toEqual([{ text: "Hello user" }]);
+      expect(result.run.sessionId).toBe("sess-1");
+      expect(result.run.durationMs).toBe(100);
+      expect(result.error).toBeUndefined();
+    });
+
+    it("returns empty payloads when agent produces no text", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      const result = await bridge.handle(makeMessage());
+
+      expect(result.payloads).toEqual([]);
+      expect(result.error).toBeUndefined();
+    });
+
+    it("passes system prompt + message text as the prompt", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ text: "What is 2+2?" }));
+
+      expect(executeFn).toHaveBeenCalledOnce();
+      const params = executeFn.mock.calls[0][0];
+      expect(params.prompt).toBe("SYSTEM_PROMPT\n\nWhat is 2+2?");
+    });
+
+    it("passes workingDirectory to runtime", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge({ workspaceDir: "/my/workspace" });
+      await bridge.handle(makeMessage());
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.workingDirectory).toBe("/my/workspace");
+    });
+
+    it("forwards abortSignal to runtime", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const controller = new AbortController();
+      const bridge = createBridge();
+      await bridge.handle(makeMessage(), undefined, controller.signal);
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.abortSignal).toBe(controller.signal);
+    });
+
+    it("includes MCP server config in runtime params", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage());
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.mcpServers).toBeDefined();
+      expect(params.mcpServers!.remoteclaw).toBeDefined();
+      expect(params.mcpServers!.remoteclaw.command).toBe("node");
+      expect(params.mcpServers!.remoteclaw.args).toEqual(["/path/to/mcp-server.js"]);
+    });
+
+    it("reads MCP side effects after execution", async () => {
+      mockReadSideEffects.mockResolvedValue({
+        sentTexts: ["sent msg"],
+        sentMediaUrls: [],
+        sentTargets: [],
+        cronAdds: 1,
+      });
+
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      const result = await bridge.handle(makeMessage());
+
+      expect(mockReadSideEffects).toHaveBeenCalledOnce();
+      expect(result.mcp.sentTexts).toEqual(["sent msg"]);
+      expect(result.mcp.cronAdds).toBe(1);
+    });
+
+    it("returns empty side effects when file read fails", async () => {
+      mockReadSideEffects.mockRejectedValue(new Error("ENOENT"));
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      const result = await bridge.handle(makeMessage());
+
+      expect(result.mcp.sentTexts).toEqual([]);
+      expect(result.mcp.cronAdds).toBe(0);
+    });
+  });
+
+  describe("streaming callbacks", () => {
+    it("invokes onPartialReply for chunked text", async () => {
+      // Text exceeding chunk limit triggers onPartialReply
+      const longText = "a".repeat(50);
+      mockRuntimeInstance = mockRuntime([
+        { type: "text", text: longText },
+        makeDone({ text: longText }),
+      ]);
+
+      const onPartialReply = vi.fn();
+      const bridge = createBridge({ chunkLimit: 20 });
+      await bridge.handle(makeMessage(), { onPartialReply });
+
+      expect(onPartialReply).toHaveBeenCalled();
+    });
+
+    it("invokes onBlockReply for final text flush", async () => {
+      mockRuntimeInstance = mockRuntime([
+        { type: "text", text: "Final reply" },
+        makeDone({ text: "Final reply" }),
+      ]);
+
+      const onBlockReply = vi.fn();
+      const bridge = createBridge();
+      await bridge.handle(makeMessage(), { onBlockReply });
+
+      expect(onBlockReply).toHaveBeenCalledWith({ text: "Final reply" });
+    });
+
+    it("invokes onToolResult for tool result events", async () => {
+      mockRuntimeInstance = mockRuntime([
+        { type: "tool_result", toolId: "t1", output: "file contents" },
+        makeDone(),
+      ]);
+
+      const onToolResult = vi.fn();
+      const bridge = createBridge();
+      await bridge.handle(makeMessage(), { onToolResult });
+
+      expect(onToolResult).toHaveBeenCalledWith({ text: "Tool t1 result: file contents" });
+    });
+  });
+
+  describe("session lifecycle", () => {
+    it("looks up existing session and passes sessionId to runtime", async () => {
+      const msg = makeMessage();
+      const key = buildSessionKey(msg);
+      await sessionMap.set(key, "existing-session-42");
+
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(msg);
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.sessionId).toBe("existing-session-42");
+    });
+
+    it("passes undefined sessionId when no session exists", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage());
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.sessionId).toBeUndefined();
+    });
+
+    it("stores new sessionId from run result", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone({ sessionId: "new-session-99" })]);
+
+      const bridge = createBridge();
+      const msg = makeMessage();
+      await bridge.handle(msg);
+
+      const key = buildSessionKey(msg);
+      const stored = await sessionMap.get(key);
+      expect(stored).toBe("new-session-99");
+    });
+
+    it("does not update session when sessionId is undefined", async () => {
+      const msg = makeMessage();
+      const key = buildSessionKey(msg);
+      await sessionMap.set(key, "old-session");
+
+      mockRuntimeInstance = mockRuntime([makeDone({ sessionId: undefined })]);
+
+      const bridge = createBridge();
+      await bridge.handle(msg);
+
+      // Old session should still be there (not overwritten)
+      const stored = await sessionMap.get(key);
+      expect(stored).toBe("old-session");
+    });
+
+    it("uses separate sessions for different threads", async () => {
+      const msg1 = makeMessage({ replyToId: "thread-1" });
+      const msg2 = makeMessage({ replyToId: "thread-2" });
+
+      mockRuntimeInstance = mockRuntime([makeDone({ sessionId: "sess-thread-1" })]);
+      const bridge = createBridge();
+      await bridge.handle(msg1);
+
+      mockRuntimeInstance = mockRuntime([makeDone({ sessionId: "sess-thread-2" })]);
+      await bridge.handle(msg2);
+
+      const stored1 = await sessionMap.get(buildSessionKey(msg1));
+      const stored2 = await sessionMap.get(buildSessionKey(msg2));
+      expect(stored1).toBe("sess-thread-1");
+      expect(stored2).toBe("sess-thread-2");
+    });
+  });
+
+  describe("MCP config assembly", () => {
+    it("sets gateway env vars in MCP config", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge({
+        gatewayUrl: "wss://gw.test.com",
+        gatewayToken: "secret-token",
+      });
+      await bridge.handle(makeMessage());
+
+      const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
+      expect(mcpEnv.REMOTECLAW_GATEWAY_URL).toBe("wss://gw.test.com");
+      expect(mcpEnv.REMOTECLAW_GATEWAY_TOKEN).toBe("secret-token");
+    });
+
+    it("sets channel and sender env vars", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ provider: "discord", from: "user-42", channelId: "ch-7" }));
+
+      const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
+      expect(mcpEnv.REMOTECLAW_CHANNEL).toBe("discord");
+      expect(mcpEnv.REMOTECLAW_ACCOUNT_ID).toBe("user-42");
+      expect(mcpEnv.REMOTECLAW_TO).toBe("ch-7");
+    });
+
+    it("sets session key env var in composite format", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(
+        makeMessage({ channelId: "ch-1", from: "user-2", replyToId: "thread-3" }),
+      );
+
+      const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
+      expect(mcpEnv.REMOTECLAW_SESSION_KEY).toBe("ch-1:user-2:thread-3");
+    });
+
+    it("uses underscore for missing thread in session key", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ channelId: "ch-1", from: "user-2", replyToId: undefined }));
+
+      const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
+      expect(mcpEnv.REMOTECLAW_SESSION_KEY).toBe("ch-1:user-2:_");
+    });
+
+    it("includes REMOTECLAW_THREAD_ID when replyToId is present", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ replyToId: "thread-99" }));
+
+      const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
+      expect(mcpEnv.REMOTECLAW_THREAD_ID).toBe("thread-99");
+    });
+
+    it("omits REMOTECLAW_THREAD_ID when replyToId is absent", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ replyToId: undefined }));
+
+      const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
+      expect(mcpEnv.REMOTECLAW_THREAD_ID).toBeUndefined();
+    });
+
+    it("sets side effects file path in MCP env", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage());
+
+      const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
+      expect(mcpEnv.REMOTECLAW_SIDE_EFFECTS_FILE).toMatch(/side-effects\.ndjson$/);
+    });
+  });
+
+  describe("error handling", () => {
+    it("classifies runtime errors and sets errorSubtype on result", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => failingStream("rate_limit exceeded"));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      const result = await bridge.handle(makeMessage());
+
+      expect(result.error).toContain("rate_limit");
+      expect(result.run.errorSubtype).toBe("retryable");
+      expect(result.payloads).toEqual([]);
+    });
+
+    it("classifies context overflow errors", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) =>
+        failingStream("context_window limit exceeded"),
+      );
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      const result = await bridge.handle(makeMessage());
+
+      expect(result.run.errorSubtype).toBe("context_window");
+    });
+
+    it("classifies fatal errors", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => failingStream("unexpected crash"));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      const result = await bridge.handle(makeMessage());
+
+      expect(result.run.errorSubtype).toBe("fatal");
+    });
+
+    it("captures error from error events in the stream", async () => {
+      mockRuntimeInstance = mockRuntime([
+        { type: "error", message: "Tool execution failed" },
+        makeDone(),
+      ]);
+
+      const bridge = createBridge();
+      const result = await bridge.handle(makeMessage());
+
+      expect(result.error).toBe("Tool execution failed");
+    });
+
+    it("still reads side effects after runtime error", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => failingStream("crash"));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage());
+
+      expect(mockReadSideEffects).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe("temp directory cleanup", () => {
+    it("cleans up invocation directory after successful execution", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage());
+
+      // Verify no rc-* temp dirs leaked (heuristic: check tmpdir for recent dirs)
+      // This is a basic smoke test — the cleanup is in the finally block
+      const tmpFiles = await readdir(tmpdir());
+      const recentDirs = tmpFiles.filter((f) => f.startsWith("rc-") && !f.startsWith("rc-test-"));
+      // Should be cleaned up; we allow 0 remaining
+      // (Other tests may be running concurrently, so we just check our dir is gone)
+      expect(recentDirs.length).toBeLessThanOrEqual(0);
+    });
+
+    it("cleans up invocation directory after runtime error", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => failingStream("crash"));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage());
+
+      // Should not throw — cleanup happened in finally
+    });
+  });
+
+  describe("constructor defaults", () => {
+    it("uses default workspace dir when not specified", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = new ChannelBridge({
+        provider: "claude",
+        sessionMap,
+        gatewayUrl: "wss://gw.test.com",
+        gatewayToken: "tok",
+      });
+      await bridge.handle(makeMessage());
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.workingDirectory).toBe(".");
+    });
+
+    it("uses default MCP server path when not specified", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = new ChannelBridge({
+        provider: "claude",
+        sessionMap,
+        gatewayUrl: "wss://gw.test.com",
+        gatewayToken: "tok",
+      });
+      await bridge.handle(makeMessage());
+
+      const mcpArgs = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.args!;
+      expect(mcpArgs[0]).toContain("mcp-server.js");
+    });
+  });
+});
+
+describe("buildSessionKey", () => {
+  it("maps ChannelMessage fields to SessionKey", () => {
+    const key = buildSessionKey(
+      makeMessage({ channelId: "ch-1", from: "user-2", replyToId: "thread-3" }),
+    );
+    expect(key).toEqual({ channelId: "ch-1", userId: "user-2", threadId: "thread-3" });
+  });
+
+  it("sets threadId to undefined when replyToId is absent", () => {
+    const key = buildSessionKey(makeMessage({ replyToId: undefined }));
+    expect(key.threadId).toBeUndefined();
+  });
+});

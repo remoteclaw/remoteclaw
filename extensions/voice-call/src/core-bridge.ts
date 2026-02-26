@@ -13,49 +13,59 @@ export type CoreConfig = {
   [key: string]: unknown;
 };
 
+/** Minimal ChannelMessage shape for building voice dispatch messages. */
+type ChannelMessage = {
+  id: string;
+  text: string;
+  from: string;
+  channelId: string;
+  provider: string;
+  timestamp: number;
+  replyToId?: string;
+};
+
+/** Minimal AgentDeliveryResult shape returned by ChannelBridge.handle(). */
+type AgentDeliveryResult = {
+  payloads: Array<{ text?: string; isError?: boolean }>;
+  run: { sessionId?: string; aborted?: boolean };
+  mcp: unknown;
+  error?: string;
+};
+
+/** Duck-typed SessionMap interface for the no-op adapter pattern. */
+type SessionMapLike = {
+  get(key: unknown): Promise<string | undefined>;
+  set(key: unknown, sessionId: string): Promise<void>;
+  delete(key: unknown): Promise<void>;
+};
+
 type CoreAgentDeps = {
-  resolveAgentDir: (cfg: CoreConfig, agentId: string) => string;
+  ChannelBridge: new (options: {
+    provider: string;
+    sessionMap: SessionMapLike;
+    gatewayUrl: string;
+    gatewayToken: string;
+    workspaceDir?: string;
+  }) => {
+    handle(
+      message: ChannelMessage,
+      callbacks?: unknown,
+      abortSignal?: AbortSignal,
+    ): Promise<AgentDeliveryResult>;
+  };
+  resolveGatewayPort: (cfg?: CoreConfig) => number;
+  resolveGatewayCredentialsFromConfig: (params: { cfg: CoreConfig; env?: NodeJS.ProcessEnv }) => {
+    token?: string;
+  };
   resolveAgentWorkspaceDir: (cfg: CoreConfig, agentId: string) => string;
   resolveAgentIdentity: (
     cfg: CoreConfig,
     agentId: string,
   ) => { name?: string | null } | null | undefined;
-  resolveThinkingDefault: (params: {
-    cfg: CoreConfig;
-    provider?: string;
-    model?: string;
-  }) => string;
-  runEmbeddedPiAgent: (params: {
-    sessionId: string;
-    sessionKey?: string;
-    messageProvider?: string;
-    sessionFile: string;
-    workspaceDir: string;
-    config?: CoreConfig;
-    prompt: string;
-    provider?: string;
-    model?: string;
-    thinkLevel?: string;
-    verboseLevel?: string;
-    timeoutMs: number;
-    runId: string;
-    lane?: string;
-    extraSystemPrompt?: string;
-    agentDir?: string;
-  }) => Promise<{
-    payloads?: Array<{ text?: string; isError?: boolean }>;
-    meta?: { aborted?: boolean };
-  }>;
-  resolveAgentTimeoutMs: (opts: { cfg: CoreConfig }) => number;
   ensureAgentWorkspace: (params?: { dir: string }) => Promise<void>;
   resolveStorePath: (store?: string, opts?: { agentId?: string }) => string;
   loadSessionStore: (storePath: string) => Record<string, unknown>;
   saveSessionStore: (storePath: string, store: Record<string, unknown>) => Promise<void>;
-  resolveSessionFilePath: (
-    sessionId: string,
-    entry: unknown,
-    opts?: { agentId?: string },
-  ) => string;
   DEFAULT_MODEL: string;
   DEFAULT_PROVIDER: string;
 };
@@ -122,19 +132,17 @@ function resolveOpenClawRoot(): string {
 }
 
 async function importCoreExtensionAPI(): Promise<{
-  resolveAgentDir: CoreAgentDeps["resolveAgentDir"];
+  ChannelBridge: CoreAgentDeps["ChannelBridge"];
+  resolveGatewayPort: CoreAgentDeps["resolveGatewayPort"];
+  resolveGatewayCredentialsFromConfig: CoreAgentDeps["resolveGatewayCredentialsFromConfig"];
   resolveAgentWorkspaceDir: CoreAgentDeps["resolveAgentWorkspaceDir"];
-  DEFAULT_MODEL: string;
-  DEFAULT_PROVIDER: string;
   resolveAgentIdentity: CoreAgentDeps["resolveAgentIdentity"];
-  resolveThinkingDefault: CoreAgentDeps["resolveThinkingDefault"];
-  runEmbeddedPiAgent: CoreAgentDeps["runEmbeddedPiAgent"];
-  resolveAgentTimeoutMs: CoreAgentDeps["resolveAgentTimeoutMs"];
   ensureAgentWorkspace: CoreAgentDeps["ensureAgentWorkspace"];
   resolveStorePath: CoreAgentDeps["resolveStorePath"];
   loadSessionStore: CoreAgentDeps["loadSessionStore"];
   saveSessionStore: CoreAgentDeps["saveSessionStore"];
-  resolveSessionFilePath: CoreAgentDeps["resolveSessionFilePath"];
+  DEFAULT_MODEL: string;
+  DEFAULT_PROVIDER: string;
 }> {
   // Do not import any other module. You can't touch this or you will be fired.
   const distPath = path.join(resolveOpenClawRoot(), "dist", "extensionAPI.js");

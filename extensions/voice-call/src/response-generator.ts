@@ -1,6 +1,6 @@
 /**
- * Voice call response generator - uses the embedded Pi agent for tool support.
- * Routes voice responses through the same agent infrastructure as messaging.
+ * Voice call response generator - routes voice responses through ChannelBridge.
+ * Uses the same middleware infrastructure as all other dispatch sites.
  */
 
 import crypto from "node:crypto";
@@ -33,8 +33,8 @@ type SessionEntry = {
 };
 
 /**
- * Generate a voice response using the embedded Pi agent with full tool support.
- * Uses the same agent infrastructure as messaging for consistent behavior.
+ * Generate a voice response by routing through ChannelBridge.
+ * Uses the same middleware pipeline as messaging, cron, and CLI dispatch sites.
  */
 export async function generateVoiceResponse(
   params: VoiceResponseParams,
@@ -56,20 +56,20 @@ export async function generateVoiceResponse(
   }
   const cfg = coreConfig;
 
-  // Build voice-specific session key based on phone number
-  const normalizedPhone = from.replace(/\D/g, "");
-  const sessionKey = `voice:${normalizedPhone}`;
+  // Resolve provider from config (e.g., "claude/claude-sonnet-4" → "claude")
+  const modelRef = voiceConfig.responseModel || `${deps.DEFAULT_PROVIDER}/${deps.DEFAULT_MODEL}`;
+  const slashIndex = modelRef.indexOf("/");
+  const provider = slashIndex === -1 ? deps.DEFAULT_PROVIDER : modelRef.slice(0, slashIndex);
+
+  // Resolve workspace
   const agentId = "main";
-
-  // Resolve paths
-  const storePath = deps.resolveStorePath(cfg.session?.store, { agentId });
-  const agentDir = deps.resolveAgentDir(cfg, agentId);
   const workspaceDir = deps.resolveAgentWorkspaceDir(cfg, agentId);
-
-  // Ensure workspace exists
   await deps.ensureAgentWorkspace({ dir: workspaceDir });
 
-  // Load or create session entry
+  // Load or create session entry (legacy store for backward compatibility)
+  const normalizedPhone = from.replace(/\D/g, "");
+  const sessionKey = `voice:${normalizedPhone}`;
+  const storePath = deps.resolveStorePath(cfg.session?.store, { agentId });
   const sessionStore = deps.loadSessionStore(storePath);
   const now = Date.now();
   let sessionEntry = sessionStore[sessionKey] as SessionEntry | undefined;
@@ -83,75 +83,90 @@ export async function generateVoiceResponse(
     await deps.saveSessionStore(storePath, sessionStore);
   }
 
-  const sessionId = sessionEntry.sessionId;
-  const sessionFile = deps.resolveSessionFilePath(sessionId, sessionEntry, {
-    agentId,
+  // Session map adapter: read-only, matching the pattern used by all dispatch sites.
+  // set()/delete() are no-ops — session persistence is handled after the run.
+  const sessionMap = {
+    async get() {
+      return sessionEntry.sessionId;
+    },
+    async set() {},
+    async delete() {},
+  };
+
+  // Gateway credentials
+  const gatewayPort = deps.resolveGatewayPort(cfg);
+  const gatewayUrl = `ws://127.0.0.1:${gatewayPort}`;
+  const gatewayToken =
+    deps.resolveGatewayCredentialsFromConfig({ cfg, env: process.env }).token ?? "";
+
+  // Create ChannelBridge
+  const bridge = new deps.ChannelBridge({
+    provider,
+    sessionMap,
+    gatewayUrl,
+    gatewayToken,
+    workspaceDir,
   });
 
-  // Resolve model from config
-  const modelRef = voiceConfig.responseModel || `${deps.DEFAULT_PROVIDER}/${deps.DEFAULT_MODEL}`;
-  const slashIndex = modelRef.indexOf("/");
-  const provider = slashIndex === -1 ? deps.DEFAULT_PROVIDER : modelRef.slice(0, slashIndex);
-  const model = slashIndex === -1 ? modelRef : modelRef.slice(slashIndex + 1);
-
-  // Resolve thinking level
-  const thinkLevel = deps.resolveThinkingDefault({ cfg, provider, model });
-
-  // Resolve agent identity for personalized prompt
+  // Build voice-specific system prompt with conversation history
   const identity = deps.resolveAgentIdentity(cfg, agentId);
   const agentName = identity?.name?.trim() || "assistant";
 
-  // Build system prompt with conversation history
   const basePrompt =
     voiceConfig.responseSystemPrompt ??
     `You are ${agentName}, a helpful voice assistant on a phone call. Keep responses brief and conversational (1-2 sentences max). Be natural and friendly. The caller's phone number is ${from}. You have access to tools - use them when helpful.`;
 
-  let extraSystemPrompt = basePrompt;
+  let voiceContext = basePrompt;
   if (transcript.length > 0) {
     const history = transcript
       .map((entry) => `${entry.speaker === "bot" ? "You" : "Caller"}: ${entry.text}`)
       .join("\n");
-    extraSystemPrompt = `${basePrompt}\n\nConversation so far:\n${history}`;
+    voiceContext = `${basePrompt}\n\nConversation so far:\n${history}`;
   }
 
-  // Resolve timeout
-  const timeoutMs = voiceConfig.responseTimeoutMs ?? deps.resolveAgentTimeoutMs({ cfg });
-  const runId = `voice:${callId}:${Date.now()}`;
+  // Build ChannelMessage for voice dispatch
+  const runId = `voice:${callId}:${now}`;
+  const message = {
+    id: runId,
+    text: `${voiceContext}\n\nCaller: ${userMessage}`,
+    from: normalizedPhone,
+    channelId: "voice",
+    provider: "voice",
+    timestamp: now,
+  };
+
+  // Execute with timeout (voice calls have real-time constraints)
+  const timeoutMs = voiceConfig.responseTimeoutMs ?? 30_000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const result = await deps.runEmbeddedPiAgent({
-      sessionId,
-      sessionKey,
-      messageProvider: "voice",
-      sessionFile,
-      workspaceDir,
-      config: cfg,
-      prompt: userMessage,
-      provider,
-      model,
-      thinkLevel,
-      verboseLevel: "off",
-      timeoutMs,
-      runId,
-      lane: "voice",
-      extraSystemPrompt,
-      agentDir,
-    });
+    const delivery = await bridge.handle(message, undefined, controller.signal);
+    clearTimeout(timer);
+
+    // Update session with new CLI session ID for conversation continuity
+    if (delivery.run.sessionId) {
+      sessionEntry.sessionId = delivery.run.sessionId;
+      sessionEntry.updatedAt = Date.now();
+      sessionStore[sessionKey] = sessionEntry;
+      await deps.saveSessionStore(storePath, sessionStore);
+    }
 
     // Extract text from payloads
-    const texts = (result.payloads ?? [])
+    const texts = (delivery.payloads ?? [])
       .filter((p) => p.text && !p.isError)
       .map((p) => p.text?.trim())
       .filter(Boolean);
 
     const text = texts.join(" ") || null;
 
-    if (!text && result.meta?.aborted) {
+    if (!text && delivery.run.aborted) {
       return { text: null, error: "Response generation was aborted" };
     }
 
     return { text };
   } catch (err) {
+    clearTimeout(timer);
     console.error(`[voice-call] Response generation failed:`, err);
     return { text: null, error: String(err) };
   }

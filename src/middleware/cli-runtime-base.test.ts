@@ -277,11 +277,12 @@ describe("CLIRuntimeBase", () => {
       expect(stdinEnded).toBe(true);
     });
 
-    it("does not write short prompts to stdin", async () => {
+    it("does not write short prompts to stdin but still closes it", async () => {
       const runtime = new TestRuntime("test-cli");
       const shortPrompt = "x".repeat(9_999);
 
       const stdinSpy = vi.spyOn(mockChild.stdin, "write");
+      const endSpy = vi.spyOn(mockChild.stdin, "end");
 
       const promise = collectEvents(runtime.execute({ ...defaultParams, prompt: shortPrompt }));
 
@@ -291,6 +292,7 @@ describe("CLIRuntimeBase", () => {
       await promise;
 
       expect(stdinSpy).not.toHaveBeenCalled();
+      expect(endSpy).toHaveBeenCalled();
     });
   });
 

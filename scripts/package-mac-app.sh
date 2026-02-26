@@ -36,6 +36,43 @@ if [[ "$BUNDLE_ID" == *.debug ]]; then
   SPARKLE_FEED_URL=""
   AUTO_CHECKS=false
 fi
+
+canonical_build_from_version() {
+  local version="$1"
+  if [[ "$version" =~ ^([0-9]{4})\.([0-9]{1,2})\.([0-9]{1,2})([.-].*)?$ ]]; then
+    local year="${BASH_REMATCH[1]}"
+    local month="${BASH_REMATCH[2]}"
+    local day="${BASH_REMATCH[3]}"
+    local suffix="${BASH_REMATCH[4]:-}"
+    local lane=90
+    # Keep stable releases above same-day prereleases so Sparkle can advance beta -> stable.
+    if [[ -n "$suffix" ]]; then
+      if [[ "$suffix" =~ ([0-9]+)$ ]]; then
+        lane=$((10#${BASH_REMATCH[1]}))
+        if (( lane > 89 )); then
+          lane=89
+        fi
+      else
+        lane=1
+      fi
+    fi
+    printf "%d%02d%02d%02d" "$year" "$month" "$day" "$lane"
+    return 0
+  fi
+  return 1
+}
+
+if [[ -z "${APP_BUILD+x}" ]]; then
+  APP_BUILD="$GIT_BUILD_NUMBER"
+  if CANONICAL_BUILD="$(canonical_build_from_version "$APP_VERSION")"; then
+    if [[ "$CANONICAL_BUILD" =~ ^[0-9]+$ ]] && (( CANONICAL_BUILD > APP_BUILD )); then
+      APP_BUILD="$CANONICAL_BUILD"
+    fi
+  fi
+else
+  APP_BUILD="${APP_BUILD}"
+fi
+
 if [[ "$AUTO_CHECKS" == "true" && ! "$APP_BUILD" =~ ^[0-9]+$ ]]; then
   echo "ERROR: APP_BUILD must be numeric for Sparkle compare (CFBundleVersion). Got: $APP_BUILD" >&2
   exit 1

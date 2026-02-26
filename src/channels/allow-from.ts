@@ -9,6 +9,23 @@ export function mergeAllowFromSources(params: {
     .filter(Boolean);
 }
 
+export function resolveGroupAllowFromSources(params: {
+  allowFrom?: Array<string | number>;
+  groupAllowFrom?: Array<string | number>;
+  fallbackToAllowFrom?: boolean;
+}): string[] {
+  const explicitGroupAllowFrom =
+    Array.isArray(params.groupAllowFrom) && params.groupAllowFrom.length > 0
+      ? params.groupAllowFrom
+      : undefined;
+  const scoped = explicitGroupAllowFrom
+    ? explicitGroupAllowFrom
+    : params.fallbackToAllowFrom === false
+      ? []
+      : (params.allowFrom ?? []);
+  return scoped.map((value) => String(value).trim()).filter(Boolean);
+}
+
 export function firstDefined<T>(...values: Array<T | undefined>) {
   for (const value of values) {
     if (typeof value !== "undefined") {

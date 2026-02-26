@@ -28,11 +28,7 @@ import { logWarn } from "../../logger.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
 import type { SessionMap } from "../../middleware/session-map.js";
 import type { AgentDeliveryResult, ChannelMessage } from "../../middleware/types.js";
-import {
-  buildAgentMainSessionKey,
-  normalizeAgentId,
-  parseAgentSessionKey,
-} from "../../routing/session-key.js";
+import { normalizeAgentId } from "../../routing/session-key.js";
 import {
   buildSafeExternalPrompt,
   detectSuspiciousPatterns,
@@ -53,6 +49,7 @@ import {
   pickSummaryFromOutput,
   pickSummaryFromPayloads,
 } from "./helpers.js";
+import { resolveCronAgentSessionKey } from "./session-key.js";
 import { resolveCronSession } from "./session.js";
 
 // ── ChannelBridge helpers ───────────────────────────────────────────────
@@ -608,19 +605,4 @@ export async function runCronIsolatedAgentTurn(params: {
   outputText = deliveryResult.outputText;
 
   return resolveRunOutcome({ delivered, deliveryAttempted });
-}
-
-export function resolveCronAgentSessionKey(params: {
-  sessionKey: string;
-  agentId: string;
-}): string {
-  const baseSessionKey = params.sessionKey.trim();
-  const normalizedBaseSessionKey = baseSessionKey.toLowerCase();
-  if (parseAgentSessionKey(normalizedBaseSessionKey)) {
-    return normalizedBaseSessionKey;
-  }
-  return buildAgentMainSessionKey({
-    agentId: params.agentId,
-    mainKey: baseSessionKey,
-  });
 }

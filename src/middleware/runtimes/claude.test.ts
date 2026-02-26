@@ -82,9 +82,16 @@ describe("ClaudeCliRuntime", () => {
   // ── buildArgs ─────────────────────────────────────────────────────────
 
   describe("buildArgs", () => {
-    it("produces base flags with prompt as positional arg", () => {
+    it("produces base flags with --print prompt at the end", () => {
       const args = runtime.testBuildArgs(makeParams());
-      expect(args).toEqual(["-p", "--output-format", "stream-json", "--verbose", "Hello, Claude!"]);
+      expect(args).toEqual([
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--include-partial-messages",
+        "--print",
+        "Hello, Claude!",
+      ]);
     });
 
     it("adds --resume when sessionId is provided", () => {
@@ -137,19 +144,20 @@ describe("ClaudeCliRuntime", () => {
         }),
       );
 
-      expect(args).toContain("-p");
       expect(args).toContain("--output-format");
       expect(args).toContain("stream-json");
       expect(args).toContain("--verbose");
       expect(args).toContain("--resume");
       expect(args).toContain("sess-456");
       expect(args).toContain("--mcp-config");
-      // Prompt is always last
+      // --print prompt comes last
+      expect(args[args.length - 2]).toBe("--print");
       expect(args[args.length - 1]).toBe("Hello, Claude!");
     });
 
-    it("always includes prompt as last argument", () => {
+    it("places --print prompt at the end", () => {
       const args = runtime.testBuildArgs(makeParams({ prompt: "test prompt" }));
+      expect(args[args.length - 2]).toBe("--print");
       expect(args[args.length - 1]).toBe("test prompt");
     });
   });

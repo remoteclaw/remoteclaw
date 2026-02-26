@@ -91,19 +91,22 @@ export class OpenCodeCliRuntime extends CLIRuntimeBase {
       this.currentSessionId = parsed.sessionID;
     }
 
+    // OpenCode wraps event data in a `part` field; unwrap for handlers.
+    const data = isObject(parsed.part) ? parsed.part : parsed;
+
     switch (parsed.type) {
       case "text":
-        return this.handleText(parsed);
+        return this.handleText(data);
       case "tool_use":
-        return this.handleToolUse(parsed);
+        return this.handleToolUse(data);
       case "step_start":
         return null;
       case "step_finish":
-        return this.handleStepFinish(parsed);
+        return this.handleStepFinish(data);
       case "reasoning":
         return null;
       case "error":
-        return this.handleError(parsed);
+        return this.handleError(data);
       default:
         return null;
     }
@@ -116,7 +119,13 @@ export class OpenCodeCliRuntime extends CLIRuntimeBase {
   // ── Event handlers ────────────────────────────────────────────────────
 
   private handleText(parsed: Record<string, unknown>): AgentEvent | null {
-    const content = typeof parsed.content === "string" ? parsed.content : "";
+    // Text is in `text` field (from `part.text`) or legacy `content` field.
+    const content =
+      typeof parsed.text === "string"
+        ? parsed.text
+        : typeof parsed.content === "string"
+          ? parsed.content
+          : "";
     this.accumulatedText += content;
     return { type: "text", text: content } satisfies AgentTextEvent;
   }

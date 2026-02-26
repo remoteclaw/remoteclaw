@@ -9,7 +9,7 @@ import type {
 } from "../types.js";
 
 /**
- * Claude CLI runtime — invokes `claude -p --output-format stream-json`
+ * Claude CLI runtime — invokes `claude --print --output-format stream-json`
  * and maps the streaming NDJSON output to {@link AgentEvent} instances.
  */
 export class ClaudeCliRuntime extends CLIRuntimeBase {
@@ -40,13 +40,13 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
 
   // ── CLIRuntimeBase overrides ──────────────────────────────────────────
 
-  /** Claude CLI emits stream-json NDJSON on stderr, not stdout. */
-  protected override get ndjsonStream(): "stdout" | "stderr" {
-    return "stderr";
-  }
-
   protected buildArgs(params: AgentExecuteParams): string[] {
-    const args: string[] = ["-p", "--output-format", "stream-json", "--verbose"];
+    const args: string[] = [
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--include-partial-messages",
+    ];
 
     if (params.sessionId) {
       args.push("--resume", params.sessionId);
@@ -56,7 +56,8 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
       args.push("--mcp-config", JSON.stringify({ mcpServers: params.mcpServers }));
     }
 
-    args.push(params.prompt);
+    // --print <prompt> comes last so it doesn't interfere with other flags.
+    args.push("--print", params.prompt);
 
     return args;
   }
@@ -64,6 +65,14 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
   protected extractEvent(line: string): AgentEvent | null {
     const parsed: unknown = JSON.parse(line);
     if (!isObject(parsed)) {
+      return null;
+    }
+
+    // system init event — capture session_id
+    if (parsed.type === "system") {
+      if (typeof parsed.session_id === "string" && !this.currentSessionId) {
+        this.currentSessionId = parsed.session_id;
+      }
       return null;
     }
 
@@ -82,6 +91,8 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
       return null;
     }
 
+    // assistant, rate_limit_event, and other types are skipped
+    // (text and tool data come via stream_event when --include-partial-messages is set)
     return null;
   }
 

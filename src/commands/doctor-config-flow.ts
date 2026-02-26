@@ -1071,23 +1071,40 @@ function detectEmptyAllowlistPolicy(cfg: RemoteClawConfig): string[] {
   const hasEntries = (list?: Array<string | number>) =>
     Array.isArray(list) && list.map((v) => String(v).trim()).filter(Boolean).length > 0;
 
-  const checkAccount = (account: Record<string, unknown>, prefix: string) => {
+  const checkAccount = (
+    account: Record<string, unknown>,
+    prefix: string,
+    parent?: Record<string, unknown>,
+  ) => {
     const dmEntry = account.dm;
     const dm =
       dmEntry && typeof dmEntry === "object" && !Array.isArray(dmEntry)
         ? (dmEntry as Record<string, unknown>)
         : undefined;
+    const parentDmEntry = parent?.dm;
+    const parentDm =
+      parentDmEntry && typeof parentDmEntry === "object" && !Array.isArray(parentDmEntry)
+        ? (parentDmEntry as Record<string, unknown>)
+        : undefined;
     const dmPolicy =
-      (account.dmPolicy as string | undefined) ?? (dm?.policy as string | undefined) ?? undefined;
+      (account.dmPolicy as string | undefined) ??
+      (dm?.policy as string | undefined) ??
+      (parent?.dmPolicy as string | undefined) ??
+      (parentDm?.policy as string | undefined) ??
+      undefined;
 
     if (dmPolicy !== "allowlist") {
       return;
     }
 
-    const topAllowFrom = account.allowFrom as Array<string | number> | undefined;
+    const topAllowFrom =
+      (account.allowFrom as Array<string | number> | undefined) ??
+      (parent?.allowFrom as Array<string | number> | undefined);
     const nestedAllowFrom = dm?.allowFrom as Array<string | number> | undefined;
+    const parentNestedAllowFrom = parentDm?.allowFrom as Array<string | number> | undefined;
+    const effectiveAllowFrom = topAllowFrom ?? nestedAllowFrom ?? parentNestedAllowFrom;
 
-    if (hasEntries(topAllowFrom) || hasEntries(nestedAllowFrom)) {
+    if (hasEntries(effectiveAllowFrom)) {
       return;
     }
 
@@ -1112,7 +1129,7 @@ function detectEmptyAllowlistPolicy(cfg: RemoteClawConfig): string[] {
         if (!account || typeof account !== "object") {
           continue;
         }
-        checkAccount(account, `channels.${channelName}.accounts.${accountId}`);
+        checkAccount(account, `channels.${channelName}.accounts.${accountId}`, channelConfig);
       }
     }
   }

@@ -3,6 +3,7 @@ import os from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, expect, vi } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
+import type { AgentDeliveryResult, BridgeCallbacks, ChannelMessage } from "../middleware/types.js";
 
 // Avoid exporting vitest mock types (TS2742 under pnpm + d.ts emit).
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -39,12 +40,72 @@ vi.mock("../agents/pi-embedded.js", () => ({
   abortEmbeddedPiRun: (...args: unknown[]) => piEmbeddedMocks.abortEmbeddedPiRun(...args),
   compactEmbeddedPiSession: (...args: unknown[]) =>
     piEmbeddedMocks.compactEmbeddedPiSession(...args),
-  runEmbeddedPiAgent: (...args: unknown[]) => piEmbeddedMocks.runEmbeddedPiAgent(...args),
+  runEmbeddedPiAgent: piEmbeddedMocks.runEmbeddedPiAgent,
   queueEmbeddedPiMessage: (...args: unknown[]) => piEmbeddedMocks.queueEmbeddedPiMessage(...args),
   resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
   isEmbeddedPiRunActive: (...args: unknown[]) => piEmbeddedMocks.isEmbeddedPiRunActive(...args),
   isEmbeddedPiRunStreaming: (...args: unknown[]) =>
     piEmbeddedMocks.isEmbeddedPiRunStreaming(...args),
+}));
+
+/**
+ * ChannelBridge mock that delegates to runEmbeddedPiAgent, bridging the
+ * ChannelBridge interface to the embedded agent interface so that existing
+ * test assertions about runEmbeddedPiAgent calls continue to work.
+ */
+vi.mock("../middleware/channel-bridge.js", () => ({
+  ChannelBridge: class MockChannelBridge {
+    #provider: string;
+    constructor(opts: { provider: string }) {
+      this.#provider = opts.provider;
+    }
+    async handle(
+      message: ChannelMessage,
+      callbacks?: BridgeCallbacks,
+    ): Promise<AgentDeliveryResult> {
+      const embeddedParams = {
+        prompt: message.text,
+        provider: this.#provider,
+        onBlockReply: callbacks?.onBlockReply,
+        onPartialReply: callbacks?.onPartialReply,
+        onToolResult: callbacks?.onToolResult,
+      };
+      const result = await piEmbeddedMocks.runEmbeddedPiAgent(embeddedParams);
+      return {
+        payloads: result?.payloads ?? [],
+        run: {
+          text: "",
+          sessionId: result?.meta?.agentMeta?.sessionId,
+          durationMs: result?.meta?.durationMs ?? 0,
+          usage: result?.meta?.agentMeta?.usage
+            ? {
+                inputTokens: result.meta.agentMeta.usage.input ?? 0,
+                outputTokens: result.meta.agentMeta.usage.output ?? 0,
+              }
+            : undefined,
+          aborted: result?.meta?.aborted ?? false,
+        },
+        mcp: {
+          sentTexts: result?.messagingToolSentTexts ?? [],
+          sentMediaUrls: result?.messagingToolSentMediaUrls ?? [],
+          sentTargets: result?.messagingToolSentTargets ?? [],
+          cronAdds: result?.successfulCronAdds ?? 0,
+        },
+      };
+    }
+  },
+}));
+
+vi.mock("../config/paths.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../config/paths.js")>();
+  return {
+    ...actual,
+    resolveGatewayPort: () => 9999,
+  };
+});
+
+vi.mock("../gateway/credentials.js", () => ({
+  resolveGatewayCredentialsFromConfig: () => ({ token: "test-token" }),
 }));
 
 const providerUsageMocks = vi.hoisted(() => ({

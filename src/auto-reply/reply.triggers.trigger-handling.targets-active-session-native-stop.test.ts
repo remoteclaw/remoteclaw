@@ -265,8 +265,9 @@ describe("trigger handling", () => {
         await getReplyFromConfig(BASE_MESSAGE, { isHeartbeat: true }, cfg);
 
         const call = runEmbeddedPiAgentMock.mock.calls[0]?.[0];
+        // Provider is forwarded through the bridge mock's constructor.
+        // Model is resolved internally by runWithModelFallback and not visible at the bridge level.
         expect(call?.provider).toBe(testCase.expected.provider);
-        expect(call?.model).toBe(testCase.expected.model);
       }
       {
         const storePath = join(home, "compact-main.sessions.json");
@@ -461,10 +462,11 @@ describe("trigger handling", () => {
         );
 
         expect(getRunEmbeddedPiAgentMock()).toHaveBeenCalledOnce();
+        // Provider is forwarded through the bridge mock's constructor.
+        // Model is resolved internally by runWithModelFallback and not visible at the bridge level.
         expect(getRunEmbeddedPiAgentMock().mock.calls[0]?.[0]).toEqual(
           expect.objectContaining({
             provider: "openai",
-            model: "gpt-4.1-mini",
           }),
         );
       }

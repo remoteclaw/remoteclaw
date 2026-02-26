@@ -36,6 +36,7 @@ import {
   upsertChannelPairingRequest,
 } from "../../pairing/pairing-store.js";
 import { resolveAgentRoute } from "../../routing/resolve-route.js";
+import { resolveDmGroupAccessWithLists } from "../../security/dm-policy-shared.js";
 import { normalizeE164 } from "../../utils.js";
 import {
   formatSignalPairingIdLine,
@@ -366,6 +367,25 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
     const quoteText = dataMessage?.quote?.text?.trim() ?? "";
     const hasBodyContent =
       Boolean(messageText || quoteText) || Boolean(!reaction && dataMessage?.attachments?.length);
+    const senderDisplay = formatSignalSenderDisplay(sender);
+    const storeAllowFrom =
+      deps.dmPolicy === "allowlist"
+        ? []
+        : await readChannelAllowFromStore("signal").catch(() => []);
+    const resolveAccessDecision = (isGroup: boolean) =>
+      resolveDmGroupAccessWithLists({
+        isGroup,
+        dmPolicy: deps.dmPolicy,
+        groupPolicy: deps.groupPolicy,
+        allowFrom: deps.allowFrom,
+        groupAllowFrom: deps.groupAllowFrom,
+        storeAllowFrom,
+        isSenderAllowed: (allowEntries) => isSignalSenderAllowed(sender, allowEntries),
+      });
+    const dmAccess = resolveAccessDecision(false);
+    const effectiveDmAllow = dmAccess.effectiveAllowFrom;
+    const effectiveGroupAllow = dmAccess.effectiveGroupAllowFrom;
+    const dmAllowed = dmAccess.decision === "allow";
 
     if (reaction && !hasBodyContent) {
       if (reaction.isRemove) {
@@ -430,7 +450,6 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
       return;
     }
 
-    const senderDisplay = formatSignalSenderDisplay(sender);
     const senderRecipient = resolveSignalRecipient(sender);
     const senderPeerId = resolveSignalPeerId(sender);
     const senderAllowId = formatSignalSenderId(sender);
@@ -441,14 +460,6 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
     const groupId = dataMessage.groupInfo?.groupId ?? undefined;
     const groupName = dataMessage.groupInfo?.groupName ?? undefined;
     const isGroup = Boolean(groupId);
-    const storeAllowFrom =
-      deps.dmPolicy === "allowlist"
-        ? []
-        : await readChannelAllowFromStore("signal").catch(() => []);
-    const effectiveDmAllow = [...deps.allowFrom, ...storeAllowFrom];
-    const effectiveGroupAllow = [...deps.groupAllowFrom, ...storeAllowFrom];
-    const dmAllowed =
-      deps.dmPolicy === "open" ? true : isSignalSenderAllowed(sender, effectiveDmAllow);
 
     if (!isGroup) {
       if (deps.dmPolicy === "disabled") {

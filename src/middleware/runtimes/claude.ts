@@ -38,7 +38,12 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
     }
   }
 
-  // ── CLIRuntimeBase abstract method implementations ────────────────────
+  // ── CLIRuntimeBase overrides ──────────────────────────────────────────
+
+  /** Claude CLI emits stream-json NDJSON on stderr, not stdout. */
+  protected override get ndjsonStream(): "stdout" | "stderr" {
+    return "stderr";
+  }
 
   protected buildArgs(params: AgentExecuteParams): string[] {
     const args: string[] = ["-p", "--output-format", "stream-json", "--verbose"];

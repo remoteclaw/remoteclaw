@@ -40,6 +40,15 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     return true;
   }
 
+  /**
+   * Which subprocess stream carries NDJSON output.
+   * Defaults to `"stdout"`. Override to `"stderr"` for CLIs (like Claude)
+   * that emit structured output on stderr.
+   */
+  protected get ndjsonStream(): "stdout" | "stderr" {
+    return "stdout";
+  }
+
   async *execute(params: AgentExecuteParams): AsyncIterable<AgentEvent> {
     const args = this.buildArgs(params);
     const env = { ...process.env, ...this.buildEnv(params), ...params.env };
@@ -68,13 +77,16 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     };
     resetWatchdog();
 
-    // ── Stderr capture ───────────────────────────────────────────────
-    child.stderr?.on("data", (chunk: Buffer) => {
+    // ── Stream selection: NDJSON source + diagnostic capture ─────────
+    const ndjsonSource = this.ndjsonStream === "stderr" ? child.stderr : child.stdout;
+    const diagnosticStream = this.ndjsonStream === "stderr" ? child.stdout : child.stderr;
+
+    diagnosticStream?.on("data", (chunk: Buffer) => {
       stderrChunks.push(chunk.toString());
     });
 
-    // ── NDJSON stdout parsing ────────────────────────────────────────
-    const rl = createInterface({ input: child.stdout });
+    // ── NDJSON parsing ─────────────────────────────────────────────
+    const rl = createInterface({ input: ndjsonSource });
 
     // Buffer events from readline so the async generator can yield them.
     const eventQueue: (AgentEvent | null)[] = [];

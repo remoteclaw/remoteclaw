@@ -112,6 +112,17 @@ describe("gateway run option collisions", () => {
     });
   }
 
+  function expectAuthOverrideMode(mode: string) {
+    expect(startGatewayServer).toHaveBeenCalledWith(
+      18789,
+      expect.objectContaining({
+        auth: expect.objectContaining({
+          mode,
+        }),
+      }),
+    );
+  }
+
   it("forwards parent-captured options to `gateway run` subcommand", async () => {
     await runGatewayCli([
       "gateway",
@@ -150,27 +161,13 @@ describe("gateway run option collisions", () => {
   it("accepts --auth none override", async () => {
     await runGatewayCli(["gateway", "run", "--auth", "none", "--allow-unconfigured"]);
 
-    expect(startGatewayServer).toHaveBeenCalledWith(
-      18789,
-      expect.objectContaining({
-        auth: expect.objectContaining({
-          mode: "none",
-        }),
-      }),
-    );
+    expectAuthOverrideMode("none");
   });
 
   it("accepts --auth trusted-proxy override", async () => {
     await runGatewayCli(["gateway", "run", "--auth", "trusted-proxy", "--allow-unconfigured"]);
 
-    expect(startGatewayServer).toHaveBeenCalledWith(
-      18789,
-      expect.objectContaining({
-        auth: expect.objectContaining({
-          mode: "trusted-proxy",
-        }),
-      }),
-    );
+    expectAuthOverrideMode("trusted-proxy");
   });
 
   it("prints all supported modes on invalid --auth value", async () => {

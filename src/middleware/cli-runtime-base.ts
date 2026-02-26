@@ -138,8 +138,9 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       child.stdin
     ) {
       child.stdin.write(params.prompt);
-      child.stdin.end();
     }
+    // Always close stdin so CLIs that read from stdin get EOF and don't hang.
+    child.stdin?.end();
 
     // ── Abort signal wiring (after event infrastructure is ready) ────
     const onAbort = () => {

@@ -12,3 +12,7 @@ export {
   saveSessionStore,
   resolveSessionFilePath,
 } from "./config/sessions.ts";
+
+export { ChannelBridge } from "./middleware/channel-bridge.ts";
+export { resolveGatewayPort } from "./config/paths.ts";
+export { resolveGatewayCredentialsFromConfig } from "./gateway/credentials.ts";

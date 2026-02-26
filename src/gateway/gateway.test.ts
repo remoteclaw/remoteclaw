@@ -24,7 +24,10 @@ describe("gateway e2e", () => {
     ({ writeConfigFile, resolveConfigPath } = await import("../config/config.js"));
   });
 
-  it(
+  // Skipped: this test exercises the embedded Pi agent's OpenAI provider,
+  // which was replaced by ChannelBridge (CLI-only runtimes) in #46.
+  // The "openai" provider is not a supported CLI runtime.
+  it.skip(
     "runs a mock OpenAI tool call end-to-end via gateway agent loop",
     { timeout: GATEWAY_E2E_TIMEOUT_MS },
     async () => {

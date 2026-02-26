@@ -8,10 +8,8 @@ import {
 } from "../agents/agent-scope.js";
 import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
 import { clearSessionAuthProfileOverride } from "../agents/auth-profiles/session-override.js";
-import { runCliAgent } from "../agents/cli-runner.js";
 import { getCliSessionId } from "../agents/cli-session.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { AGENT_LANE_SUBAGENT } from "../agents/lanes.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
 import { runWithModelFallback } from "../agents/model-fallback.js";
 import {
@@ -23,10 +21,9 @@ import {
   resolveDefaultModelForAgent,
   resolveThinkingDefault,
 } from "../agents/model-selection.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
+import type { EmbeddedPiRunResult } from "../agents/pi-embedded-runner/types.js";
 import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";
 import { getSkillsSnapshotVersion } from "../agents/skills/refresh.js";
-import { resolveAgentTimeoutMs } from "../agents/timeout.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import {
   formatThinkingLevels,
@@ -39,23 +36,27 @@ import {
 } from "../auto-reply/thinking.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { type CliDeps, createDefaultDeps } from "../cli/deps.js";
-import { loadConfig } from "../config/config.js";
+import { type OpenClawConfig, loadConfig } from "../config/config.js";
+import { resolveGatewayPort } from "../config/paths.js";
 import {
   parseSessionThreadInfo,
   resolveAndPersistSessionFile,
   resolveAgentIdFromSessionKey,
-  resolveSessionFilePath,
   resolveSessionFilePathOptions,
   resolveSessionTranscriptPath,
   type SessionEntry,
   updateSessionStore,
 } from "../config/sessions.js";
+import { resolveGatewayCredentialsFromConfig } from "../gateway/credentials.js";
 import {
   clearAgentRunContext,
   emitAgentEvent,
   registerAgentRunContext,
 } from "../infra/agent-events.js";
 import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
+import { ChannelBridge } from "../middleware/channel-bridge.js";
+import type { SessionMap } from "../middleware/session-map.js";
+import type { AgentDeliveryResult, ChannelMessage } from "../middleware/types.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { applyVerboseOverride } from "../sessions/level-overrides.js";
@@ -89,101 +90,113 @@ function resolveFallbackRetryPrompt(params: { body: string; isFallbackRetry: boo
   return "Continue where you left off. The previous model attempt failed or timed out.";
 }
 
-function runAgentAttempt(params: {
-  providerOverride: string;
-  modelOverride: string;
-  cfg: ReturnType<typeof loadConfig>;
-  sessionEntry: SessionEntry | undefined;
-  sessionId: string;
-  sessionKey: string | undefined;
-  sessionAgentId: string;
-  sessionFile: string;
-  workspaceDir: string;
-  body: string;
-  isFallbackRetry: boolean;
-  resolvedThinkLevel: ThinkLevel;
-  timeoutMs: number;
+// ── ChannelBridge helpers ───────────────────────────────────────────────
+
+/**
+ * Create a SessionMap-compatible adapter that bridges the agent command
+ * session store to the ChannelBridge's SessionMap interface.
+ *
+ * `get()` returns the CLI session ID from the session entry.
+ * `set()` is a no-op — session updates are handled by the caller after the run.
+ */
+function createSessionMapAdapter(params: { getSessionId: () => string | undefined }): SessionMap {
+  return {
+    async get() {
+      return params.getSessionId();
+    },
+    async set() {
+      // Session updates handled by caller (updateSessionStoreAfterAgentRun)
+    },
+    async delete() {
+      // Session cleanup handled by caller
+    },
+  } as unknown as SessionMap;
+}
+
+/** Resolve gateway URL from config for local gateway. */
+function resolveGatewayUrlFromConfig(cfg: OpenClawConfig): string {
+  const port = resolveGatewayPort(cfg);
+  return `ws://127.0.0.1:${port}`;
+}
+
+/** Resolve gateway auth token from config. */
+function resolveGatewayTokenFromConfig(cfg: OpenClawConfig): string {
+  return resolveGatewayCredentialsFromConfig({ cfg, env: process.env }).token ?? "";
+}
+
+/** Build a ChannelMessage from the CLI command context. */
+function buildCliChannelMessage(params: {
   runId: string;
-  opts: AgentCommandOpts;
-  runContext: ReturnType<typeof resolveAgentRunContext>;
-  spawnedBy: string | undefined;
-  messageChannel: ReturnType<typeof resolveMessageChannel>;
-  skillsSnapshot: ReturnType<typeof buildWorkspaceSkillSnapshot> | undefined;
-  resolvedVerboseLevel: VerboseLevel | undefined;
-  agentDir: string;
-  onAgentEvent: (evt: { stream: string; data?: Record<string, unknown> }) => void;
-  primaryProvider: string;
-}) {
-  const effectivePrompt = resolveFallbackRetryPrompt({
-    body: params.body,
-    isFallbackRetry: params.isFallbackRetry,
-  });
-  if (isCliProvider(params.providerOverride, params.cfg)) {
-    const cliSessionId = getCliSessionId(params.sessionEntry, params.providerOverride);
-    return runCliAgent({
-      sessionId: params.sessionId,
-      sessionKey: params.sessionKey,
-      agentId: params.sessionAgentId,
-      sessionFile: params.sessionFile,
-      workspaceDir: params.workspaceDir,
-      config: params.cfg,
-      prompt: effectivePrompt,
-      provider: params.providerOverride,
-      model: params.modelOverride,
-      thinkLevel: params.resolvedThinkLevel,
-      timeoutMs: params.timeoutMs,
-      runId: params.runId,
-      extraSystemPrompt: params.opts.extraSystemPrompt,
-      cliSessionId,
-      images: params.isFallbackRetry ? undefined : params.opts.images,
-      streamParams: params.opts.streamParams,
-    });
+  text: string;
+  accountId: string | undefined;
+  channelId: string | undefined;
+  messageChannel: string | undefined;
+  threadId: string | undefined;
+  timestamp: number;
+}): ChannelMessage {
+  return {
+    id: params.runId,
+    text: params.text,
+    from: params.accountId ?? "cli",
+    channelId: params.channelId ?? "",
+    provider: params.messageChannel ?? "cli",
+    timestamp: params.timestamp,
+    replyToId: params.threadId,
+  };
+}
+
+/**
+ * Map ChannelBridge's AgentDeliveryResult to EmbeddedPiRunResult for
+ * backward-compatibility with the agent command result processing pipeline.
+ */
+function mapToEmbeddedPiRunResult(
+  delivery: AgentDeliveryResult,
+  provider: string,
+  model: string,
+): EmbeddedPiRunResult {
+  const run = delivery.run;
+  const mcp = delivery.mcp;
+
+  let metaError: EmbeddedPiRunResult["meta"]["error"];
+  if (delivery.error && run.errorSubtype === "context_window") {
+    metaError = { kind: "context_overflow", message: delivery.error };
   }
 
-  const authProfileId =
-    params.providerOverride === params.primaryProvider
-      ? params.sessionEntry?.authProfileOverride
-      : undefined;
-  return runEmbeddedPiAgent({
-    sessionId: params.sessionId,
-    sessionKey: params.sessionKey,
-    agentId: params.sessionAgentId,
-    messageChannel: params.messageChannel,
-    agentAccountId: params.runContext.accountId,
-    messageTo: params.opts.replyTo ?? params.opts.to,
-    messageThreadId: params.opts.threadId,
-    groupId: params.runContext.groupId,
-    groupChannel: params.runContext.groupChannel,
-    groupSpace: params.runContext.groupSpace,
-    spawnedBy: params.spawnedBy,
-    currentChannelId: params.runContext.currentChannelId,
-    currentThreadTs: params.runContext.currentThreadTs,
-    replyToMode: params.runContext.replyToMode,
-    hasRepliedRef: params.runContext.hasRepliedRef,
-    senderIsOwner: true,
-    sessionFile: params.sessionFile,
-    workspaceDir: params.workspaceDir,
-    config: params.cfg,
-    skillsSnapshot: params.skillsSnapshot,
-    prompt: effectivePrompt,
-    images: params.isFallbackRetry ? undefined : params.opts.images,
-    clientTools: params.opts.clientTools,
-    provider: params.providerOverride,
-    model: params.modelOverride,
-    authProfileId,
-    authProfileIdSource: authProfileId ? params.sessionEntry?.authProfileOverrideSource : undefined,
-    thinkLevel: params.resolvedThinkLevel,
-    verboseLevel: params.resolvedVerboseLevel,
-    timeoutMs: params.timeoutMs,
-    runId: params.runId,
-    lane: params.opts.lane,
-    abortSignal: params.opts.abortSignal,
-    extraSystemPrompt: params.opts.extraSystemPrompt,
-    inputProvenance: params.opts.inputProvenance,
-    streamParams: params.opts.streamParams,
-    agentDir: params.agentDir,
-    onAgentEvent: params.onAgentEvent,
-  });
+  return {
+    payloads: delivery.payloads.length > 0 ? delivery.payloads : undefined,
+    meta: {
+      durationMs: run.durationMs,
+      agentMeta: {
+        sessionId: run.sessionId ?? "",
+        provider,
+        model,
+        usage: run.usage
+          ? {
+              input: run.usage.inputTokens,
+              output: run.usage.outputTokens,
+              cacheRead: run.usage.cacheReadTokens,
+              cacheWrite: run.usage.cacheWriteTokens,
+            }
+          : undefined,
+      },
+      aborted: run.aborted || undefined,
+      error: metaError,
+      stopReason: run.stopReason,
+    },
+    didSendViaMessagingTool: mcp.sentTexts.length > 0 || mcp.sentMediaUrls.length > 0 || undefined,
+    messagingToolSentTexts: mcp.sentTexts.length > 0 ? mcp.sentTexts : undefined,
+    messagingToolSentMediaUrls: mcp.sentMediaUrls.length > 0 ? mcp.sentMediaUrls : undefined,
+    messagingToolSentTargets:
+      mcp.sentTargets.length > 0
+        ? mcp.sentTargets.map((t) => ({
+            tool: t.tool,
+            provider: t.provider,
+            accountId: t.accountId,
+            to: t.to,
+          }))
+        : undefined,
+    successfulCronAdds: mcp.cronAdds || undefined,
+  };
 }
 
 export async function agentCommand(
@@ -240,24 +253,12 @@ export async function agentCommand(
     throw new Error('Invalid verbose level. Use "on", "full", or "off".');
   }
 
-  const laneRaw = typeof opts.lane === "string" ? opts.lane.trim() : "";
-  const isSubagentLane = laneRaw === String(AGENT_LANE_SUBAGENT);
-  const timeoutSecondsRaw =
-    opts.timeout !== undefined
-      ? Number.parseInt(String(opts.timeout), 10)
-      : isSubagentLane
-        ? 0
-        : undefined;
-  if (
-    timeoutSecondsRaw !== undefined &&
-    (Number.isNaN(timeoutSecondsRaw) || timeoutSecondsRaw < 0)
-  ) {
-    throw new Error("--timeout must be a non-negative integer (seconds; 0 means no timeout)");
+  if (opts.timeout !== undefined) {
+    const timeoutSecondsRaw = Number.parseInt(String(opts.timeout), 10);
+    if (Number.isNaN(timeoutSecondsRaw) || timeoutSecondsRaw < 0) {
+      throw new Error("--timeout must be a non-negative integer (seconds; 0 means no timeout)");
+    }
   }
-  const timeoutMs = resolveAgentTimeoutMs({
-    cfg,
-    overrideSeconds: timeoutSecondsRaw,
-  });
 
   const sessionResolution = resolveSession({
     cfg,
@@ -502,7 +503,6 @@ export async function agentCommand(
       agentId: sessionAgentId,
       storePath,
     });
-    let sessionFile = resolveSessionFilePath(sessionId, sessionEntry, sessionPathOpts);
     if (sessionStore && sessionKey) {
       const threadIdFromSessionKey = parseSessionThreadInfo(sessionKey).threadId;
       const fallbackSessionFile = !sessionEntry?.sessionFile
@@ -522,14 +522,12 @@ export async function agentCommand(
         sessionsDir: sessionPathOpts?.sessionsDir,
         fallbackSessionFile,
       });
-      sessionFile = resolvedSessionFile.sessionFile;
       sessionEntry = resolvedSessionFile.sessionEntry;
     }
 
     const startedAt = Date.now();
-    let lifecycleEnded = false;
 
-    let result: Awaited<ReturnType<typeof runEmbeddedPiAgent>>;
+    let result: EmbeddedPiRunResult;
     let fallbackProvider = provider;
     let fallbackModel = model;
     try {
@@ -538,7 +536,6 @@ export async function agentCommand(
         runContext.messageChannel,
         opts.replyChannel ?? opts.channel,
       );
-      const spawnedBy = opts.spawnedBy ?? sessionEntry?.spawnedBy;
       // Keep fallback candidate resolution centralized so session model overrides,
       // per-agent overrides, and default fallbacks stay consistent across callers.
       const effectiveFallbacksOverride = resolveEffectiveModelFallbacks({
@@ -556,73 +553,71 @@ export async function agentCommand(
         model,
         agentDir,
         fallbacksOverride: effectiveFallbacksOverride,
-        run: (providerOverride, modelOverride) => {
+        run: async (providerOverride, modelOverride) => {
           const isFallbackRetry = fallbackAttemptIndex > 0;
           fallbackAttemptIndex += 1;
-          return runAgentAttempt({
-            providerOverride,
-            modelOverride,
-            cfg,
-            sessionEntry,
-            sessionId,
-            sessionKey,
-            sessionAgentId,
-            sessionFile,
+
+          const sessionMap = createSessionMapAdapter({
+            getSessionId: () => getCliSessionId(sessionEntry, providerOverride),
+          });
+
+          const bridge = new ChannelBridge({
+            provider: providerOverride,
+            sessionMap,
+            gatewayUrl: resolveGatewayUrlFromConfig(cfg),
+            gatewayToken: resolveGatewayTokenFromConfig(cfg),
             workspaceDir,
+          });
+
+          const effectivePrompt = resolveFallbackRetryPrompt({
             body,
             isFallbackRetry,
-            resolvedThinkLevel,
-            timeoutMs,
-            runId,
-            opts,
-            runContext,
-            spawnedBy,
-            messageChannel,
-            skillsSnapshot,
-            resolvedVerboseLevel,
-            agentDir,
-            primaryProvider: provider,
-            onAgentEvent: (evt) => {
-              // Track lifecycle end for fallback emission below.
-              if (
-                evt.stream === "lifecycle" &&
-                typeof evt.data?.phase === "string" &&
-                (evt.data.phase === "end" || evt.data.phase === "error")
-              ) {
-                lifecycleEnded = true;
-              }
-            },
           });
+
+          const message = buildCliChannelMessage({
+            runId,
+            text: effectivePrompt,
+            accountId: runContext.accountId ?? opts.accountId,
+            channelId: opts.to,
+            messageChannel,
+            threadId: opts.threadId != null ? String(opts.threadId) : undefined,
+            timestamp: Date.now(),
+          });
+
+          const delivery = await bridge.handle(message, undefined, opts.abortSignal);
+
+          // Complete runtime failure: re-throw so runWithModelFallback can try fallback.
+          if (delivery.error && delivery.payloads.length === 0) {
+            throw new Error(delivery.error);
+          }
+
+          return mapToEmbeddedPiRunResult(delivery, providerOverride, modelOverride);
         },
       });
       result = fallbackResult.result;
       fallbackProvider = fallbackResult.provider;
       fallbackModel = fallbackResult.model;
-      if (!lifecycleEnded) {
-        emitAgentEvent({
-          runId,
-          stream: "lifecycle",
-          data: {
-            phase: "end",
-            startedAt,
-            endedAt: Date.now(),
-            aborted: result.meta.aborted ?? false,
-          },
-        });
-      }
+      emitAgentEvent({
+        runId,
+        stream: "lifecycle",
+        data: {
+          phase: "end",
+          startedAt,
+          endedAt: Date.now(),
+          aborted: result.meta.aborted ?? false,
+        },
+      });
     } catch (err) {
-      if (!lifecycleEnded) {
-        emitAgentEvent({
-          runId,
-          stream: "lifecycle",
-          data: {
-            phase: "error",
-            startedAt,
-            endedAt: Date.now(),
-            error: String(err),
-          },
-        });
-      }
+      emitAgentEvent({
+        runId,
+        stream: "lifecycle",
+        data: {
+          phase: "error",
+          startedAt,
+          endedAt: Date.now(),
+          error: String(err),
+        },
+      });
       throw err;
     }
 

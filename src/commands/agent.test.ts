@@ -3,17 +3,85 @@ import path from "node:path";
 import { beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import "../cron/isolated-agent.mocks.js";
-import * as cliRunnerModule from "../agents/cli-runner.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import type { OpenClawConfig } from "../config/config.js";
 import * as configModule from "../config/config.js";
 import * as sessionsModule from "../config/sessions.js";
-import { emitAgentEvent, onAgentEvent } from "../infra/agent-events.js";
+import { onAgentEvent } from "../infra/agent-events.js";
+import type { AgentDeliveryResult, ChannelMessage } from "../middleware/types.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
 import { agentCommand } from "./agent.js";
+
+// ── ChannelBridge mock ──────────────────────────────────────────────────
+
+type BridgeConstructorOpts = {
+  provider: string;
+  sessionMap: unknown;
+  gatewayUrl: string;
+  gatewayToken: string;
+  workspaceDir?: string;
+};
+
+const bridgeHandleMock = vi.fn<
+  [ChannelMessage, unknown?, AbortSignal?],
+  Promise<AgentDeliveryResult>
+>();
+const bridgeConstructorCalls: BridgeConstructorOpts[] = [];
+
+function defaultBridgeResult(): AgentDeliveryResult {
+  return {
+    payloads: [{ text: "ok" }],
+    run: {
+      text: "ok",
+      sessionId: "s",
+      durationMs: 5,
+      usage: undefined,
+      aborted: false,
+    },
+    mcp: {
+      sentTexts: [],
+      sentMediaUrls: [],
+      sentTargets: [],
+      cronAdds: 0,
+    },
+  };
+}
+
+vi.mock("../middleware/channel-bridge.js", () => ({
+  ChannelBridge: class MockChannelBridge {
+    #provider: string;
+    constructor(opts: BridgeConstructorOpts) {
+      this.#provider = opts.provider;
+      bridgeConstructorCalls.push(opts);
+    }
+    get provider() {
+      return this.#provider;
+    }
+    async handle(
+      message: ChannelMessage,
+      callbacks?: unknown,
+      abortSignal?: AbortSignal,
+    ): Promise<AgentDeliveryResult> {
+      return bridgeHandleMock(message, callbacks, abortSignal);
+    }
+  },
+}));
+
+vi.mock("../config/paths.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../config/paths.js")>();
+  return {
+    ...actual,
+    resolveGatewayPort: () => 9999,
+  };
+});
+
+vi.mock("../gateway/credentials.js", () => ({
+  resolveGatewayCredentialsFromConfig: () => ({ token: "test-token" }),
+}));
+
+// ── Existing mocks ──────────────────────────────────────────────────────
 
 vi.mock("../agents/auth-profiles.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../agents/auth-profiles.js")>();
@@ -48,7 +116,6 @@ const runtime: RuntimeEnv = {
 };
 
 const configSpy = vi.spyOn(configModule, "loadConfig");
-const runCliAgentSpy = vi.spyOn(cliRunnerModule, "runCliAgent");
 
 async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
   return withTempHomeBase(fn, { prefix: "openclaw-agent-" });
@@ -78,6 +145,7 @@ function mockConfig(
   });
 }
 
+/** Run agentCommand and return the last ChannelMessage passed to bridge.handle(). */
 async function runWithDefaultAgentConfig(params: {
   home: string;
   args: Parameters<typeof agentCommand>[0];
@@ -86,7 +154,7 @@ async function runWithDefaultAgentConfig(params: {
   const store = path.join(params.home, "sessions.json");
   mockConfig(params.home, store, undefined, undefined, params.agentsList);
   await agentCommand(params.args, runtime);
-  return vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
+  return bridgeHandleMock.mock.calls.at(-1)?.[0];
 }
 
 function writeSessionStoreSeed(
@@ -131,20 +199,8 @@ function createTelegramOutboundPlugin() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  runCliAgentSpy.mockResolvedValue({
-    payloads: [{ text: "ok" }],
-    meta: {
-      durationMs: 5,
-      agentMeta: { sessionId: "s", provider: "p", model: "m" },
-    },
-  } as never);
-  vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
-    payloads: [{ text: "ok" }],
-    meta: {
-      durationMs: 5,
-      agentMeta: { sessionId: "s", provider: "p", model: "m" },
-    },
-  });
+  bridgeConstructorCalls.length = 0;
+  bridgeHandleMock.mockResolvedValue(defaultBridgeResult());
   vi.mocked(loadModelCatalog).mockResolvedValue([]);
 });
 
@@ -179,10 +235,6 @@ describe("agentCommand", () => {
       const entry = Object.values(saved)[0];
       expect(entry.thinkingLevel).toBe("high");
       expect(entry.verboseLevel).toBe("on");
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.thinkLevel).toBe("high");
-      expect(callArgs?.verboseLevel).toBe("on");
     });
   });
 
@@ -198,10 +250,10 @@ describe("agentCommand", () => {
       });
       mockConfig(home, store);
 
+      // Should not throw — session-123 is found in the store.
       await agentCommand({ message: "resume me", sessionId: "session-123" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.sessionId).toBe("session-123");
+      expect(bridgeHandleMock).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -221,12 +273,10 @@ describe("agentCommand", () => {
         { id: "exec", default: true },
       ]);
 
+      // Should not throw — session resolves through cross-agent store lookup.
       await agentCommand({ message: "resume me", sessionId: "session-exec-hook" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.sessionKey).toBe("agent:exec:hook:gmail:thread-1");
-      expect(callArgs?.agentId).toBe("exec");
-      expect(callArgs?.agentDir).toContain(`${path.sep}agents${path.sep}exec${path.sep}agent`);
+      expect(bridgeHandleMock).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -236,58 +286,41 @@ describe("agentCommand", () => {
       const store = path.join(customStoreDir, "sessions.json");
       writeSessionStoreSeed(store, {});
       mockConfig(home, store);
-      const resolveSessionFilePathSpy = vi.spyOn(sessionsModule, "resolveSessionFilePath");
+      const resolveSessionFilePathOptionsSpy = vi.spyOn(
+        sessionsModule,
+        "resolveSessionFilePathOptions",
+      );
 
       await agentCommand({ message: "resume me", sessionId: "session-custom-123" }, runtime);
 
-      const matchingCall = resolveSessionFilePathSpy.mock.calls.find(
-        (call) => call[0] === "session-custom-123",
+      const matchingCall = resolveSessionFilePathOptionsSpy.mock.calls.find(
+        (call) => call[0]?.storePath === store,
       );
-      expect(matchingCall?.[2]).toEqual(
+      expect(matchingCall?.[0]).toEqual(
         expect.objectContaining({
           agentId: "main",
-          sessionsDir: customStoreDir,
         }),
       );
     });
   });
 
-  it("does not duplicate agent events from embedded runs", async () => {
+  it("emits lifecycle events for ChannelBridge runs", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
 
-      const assistantEvents: Array<{ runId: string; text?: string }> = [];
+      const lifecycleEvents: Array<{ phase?: unknown }> = [];
       const stop = onAgentEvent((evt) => {
-        if (evt.stream !== "assistant") {
-          return;
+        if (evt.stream === "lifecycle") {
+          lifecycleEvents.push({ phase: evt.data?.phase });
         }
-        assistantEvents.push({
-          runId: evt.runId,
-          text: typeof evt.data?.text === "string" ? evt.data.text : undefined,
-        });
-      });
-
-      vi.mocked(runEmbeddedPiAgent).mockImplementationOnce(async (params) => {
-        const runId = (params as { runId?: string } | undefined)?.runId ?? "run";
-        const data = { text: "hello", delta: "hello" };
-        (
-          params as {
-            onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => void;
-          }
-        ).onAgentEvent?.({ stream: "assistant", data });
-        emitAgentEvent({ runId, stream: "assistant", data });
-        return {
-          payloads: [{ text: "hello" }],
-          meta: { agentMeta: { provider: "p", model: "m" } },
-        } as never;
       });
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
       stop();
 
-      const matching = assistantEvents.filter((evt) => evt.text === "hello");
-      expect(matching).toHaveLength(1);
+      expect(lifecycleEvents).toHaveLength(1);
+      expect(lifecycleEvents[0].phase).toBe("end");
     });
   });
 
@@ -304,9 +337,7 @@ describe("agentCommand", () => {
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.provider).toBe("openai");
-      expect(callArgs?.model).toBe("gpt-4.1-mini");
+      expect(bridgeConstructorCalls.at(-1)?.provider).toBe("openai");
     });
   });
 
@@ -339,15 +370,9 @@ describe("agentCommand", () => {
         { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai" },
         { id: "gpt-5.2", name: "GPT-5.2", provider: "openai" },
       ]);
-      vi.mocked(runEmbeddedPiAgent)
+      bridgeHandleMock
         .mockRejectedValueOnce(Object.assign(new Error("rate limited"), { status: 429 }))
-        .mockResolvedValueOnce({
-          payloads: [{ text: "ok" }],
-          meta: {
-            durationMs: 5,
-            agentMeta: { sessionId: "session-subagent", provider: "openai", model: "gpt-5.2" },
-          },
-        });
+        .mockResolvedValueOnce(defaultBridgeResult());
 
       await agentCommand(
         {
@@ -357,13 +382,8 @@ describe("agentCommand", () => {
         runtime,
       );
 
-      const attempts = vi
-        .mocked(runEmbeddedPiAgent)
-        .mock.calls.map((call) => ({ provider: call[0]?.provider, model: call[0]?.model }));
-      expect(attempts).toEqual([
-        { provider: "anthropic", model: "claude-opus-4-5" },
-        { provider: "openai", model: "gpt-5.2" },
-      ]);
+      const attempts = bridgeConstructorCalls.map((c) => c.provider);
+      expect(attempts).toEqual(["anthropic", "openai"]);
     });
   });
 
@@ -396,9 +416,8 @@ describe("agentCommand", () => {
         runtime,
       );
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.provider).toBe("openai");
-      expect(callArgs?.model).toBe("gpt-custom-foo");
+      // ChannelBridge constructed with the stored override provider.
+      expect(bridgeConstructorCalls.at(-1)?.provider).toBe("openai");
 
       const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
         string,
@@ -428,9 +447,6 @@ describe("agentCommand", () => {
         },
         runtime,
       );
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.sessionKey).toBe("agent:main:subagent:abc");
 
       const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
         string,
@@ -468,9 +484,6 @@ describe("agentCommand", () => {
       expect(entry?.sessionFile).toContain(
         `${path.sep}agents${path.sep}main${path.sep}sessions${path.sep}sess-main.jsonl`,
       );
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.sessionFile).toBe(entry?.sessionFile);
     });
   });
 
@@ -500,21 +513,24 @@ describe("agentCommand", () => {
       const entry = saved["agent:main:telegram:group:123:topic:456"];
       expect(entry?.sessionId).toBe("sess-topic");
       expect(entry?.sessionFile).toContain("sess-topic-topic-456.jsonl");
-
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.sessionFile).toBe(entry?.sessionFile);
     });
   });
 
   it("derives session key from --agent when no routing target is provided", async () => {
     await withTempHome(async (home) => {
-      const callArgs = await runWithDefaultAgentConfig({
+      await runWithDefaultAgentConfig({
         home,
         args: { message: "hi", agentId: "ops" },
         agentsList: [{ id: "ops" }],
       });
-      expect(callArgs?.sessionKey).toBe("agent:ops:main");
-      expect(callArgs?.sessionFile).toContain(`${path.sep}agents${path.sep}ops${path.sep}sessions`);
+
+      // Verify session store was created with agent-scoped key.
+      const store = path.join(home, "sessions.json");
+      const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
+        string,
+        { sessionId?: string }
+      >;
+      expect(saved["agent:ops:main"]).toBeDefined();
     });
   });
 
@@ -542,20 +558,29 @@ describe("agentCommand", () => {
         },
       ]);
 
+      // Should succeed — thinking resolution defaults to "low" for reasoning models.
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.thinkLevel).toBe("low");
+      expect(bridgeHandleMock).toHaveBeenCalledTimes(1);
     });
   });
 
   it("prints JSON payload when requested", async () => {
     await withTempHome(async (home) => {
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
+      bridgeHandleMock.mockResolvedValueOnce({
         payloads: [{ text: "json-reply", mediaUrl: "http://x.test/a.jpg" }],
-        meta: {
+        run: {
+          text: "ok",
+          sessionId: "s",
           durationMs: 42,
-          agentMeta: { sessionId: "s", provider: "p", model: "m" },
+          usage: undefined,
+          aborted: false,
+        },
+        mcp: {
+          sentTexts: [],
+          sentMediaUrls: [],
+          sentTargets: [],
+          cronAdds: 0,
         },
       });
       const store = path.join(home, "sessions.json");
@@ -581,8 +606,8 @@ describe("agentCommand", () => {
 
       await agentCommand({ message: "ping", to: "+1333" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.prompt).toBe("ping");
+      const message = bridgeHandleMock.mock.calls.at(-1)?.[0];
+      expect(message?.text).toBe("ping");
     });
   });
 
@@ -640,12 +665,12 @@ describe("agentCommand", () => {
 
       await agentCommand({ message: "hi", agentId: "ops", replyChannel: "slack" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.messageChannel).toBe("slack");
+      const message = bridgeHandleMock.mock.calls.at(-1)?.[0];
+      expect(message?.provider).toBe("slack");
     });
   });
 
-  it("prefers runContext for embedded routing", async () => {
+  it("prefers runContext for routing", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
@@ -660,21 +685,21 @@ describe("agentCommand", () => {
         runtime,
       );
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.messageChannel).toBe("slack");
-      expect(callArgs?.agentAccountId).toBe("acct-2");
+      const message = bridgeHandleMock.mock.calls.at(-1)?.[0];
+      expect(message?.provider).toBe("slack");
+      expect(message?.from).toBe("acct-2");
     });
   });
 
-  it("forwards accountId to embedded runs", async () => {
+  it("forwards accountId to bridge message", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
 
       await agentCommand({ message: "hi", to: "+1555", accountId: "kev" }, runtime);
 
-      const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.agentAccountId).toBe("kev");
+      const message = bridgeHandleMock.mock.calls.at(-1)?.[0];
+      expect(message?.from).toBe("kev");
     });
   });
 

@@ -27,6 +27,8 @@ This app now ships Sparkle auto-updates. Release builds must be Developer ID–s
 Notes:
 
 - `APP_BUILD` maps to `CFBundleVersion`/`sparkle:version`; keep it numeric + monotonic (no `-beta`), or Sparkle compares it as equal.
+- If `APP_BUILD` is omitted, `scripts/package-mac-app.sh` derives a Sparkle-safe default from `APP_VERSION` (`YYYYMMDD0`) and uses the higher of that value and git commit count.
+- You can still override `APP_BUILD` explicitly when release engineering needs a specific monotonic value.
 - For `BUILD_CONFIG=release`, `scripts/package-mac-app.sh` now defaults to universal (`arm64 x86_64`) automatically. You can still override with `BUILD_ARCHS=arm64` or `BUILD_ARCHS=x86_64`. For local/dev builds (`BUILD_CONFIG=debug`), it defaults to the current architecture (`$(uname -m)`).
 - Use `scripts/package-mac-dist.sh` for release artifacts (zip + DMG + notarization). Use `scripts/package-mac-app.sh` for local/dev packaging.
 
@@ -34,6 +36,7 @@ Notes:
 # From repo root; set release IDs so Sparkle feed is enabled.
 # This command builds release artifacts without notarization.
 # APP_BUILD must be numeric + monotonic for Sparkle compare.
+# Default is auto-derived from APP_VERSION when omitted.
 SKIP_NOTARIZE=1 \
 BUNDLE_ID=org.remoteclaw.mac \
 APP_VERSION=0.1.0 \

@@ -124,3 +124,15 @@ ecosystem, consumer onboarding UX.
 
 When encountering `openclaw` references in code, understand they are upstream
 artifacts. New code should use `remoteclaw` naming where possible.
+
+## PR Submission Workflow
+
+When submitting PRs on this project:
+
+1. **LIVE smoke tests**: If the PR touches middleware or runtime code
+   (`src/middleware/`), run `LIVE=1 pnpm test:live` before or during the
+   PR drive loop. Report results in the PR description or as a comment.
+
+2. **Auto-merge**: Enable auto-merge on PRs when CI is green. Use
+   `gh pr merge --auto --squash` after creating the PR. No manual merge
+   needed -- let CI + auto-merge handle it.

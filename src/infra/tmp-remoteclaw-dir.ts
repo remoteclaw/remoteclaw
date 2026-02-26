@@ -76,33 +76,17 @@ export function resolvePreferredRemoteClawTmpDir(
     return st.isDirectory() && !st.isSymbolicLink() && isSecureDirForUser(st);
   };
 
-  const resolvePreferredState = (): "available" | "missing" | "invalid" => {
-    try {
-      const preferred = lstatSync(POSIX_REMOTECLAW_TMP_DIR);
-      if (!isTrustedTmpDir(preferred)) {
-        return "invalid";
-      }
-      accessSync(POSIX_REMOTECLAW_TMP_DIR, TMP_DIR_ACCESS_MODE);
-      return "available";
-    } catch (err) {
-      if (isNodeErrorWithCode(err, "ENOENT")) {
-        return "missing";
-      }
-      return "invalid";
-    }
-  };
-
-  const resolveFallbackState = (
-    fallbackPath: string,
+  const resolveDirState = (
+    candidatePath: string,
     requireWritableAccess: boolean,
   ): "available" | "missing" | "invalid" => {
     try {
-      const candidate = lstatSync(fallbackPath);
+      const candidate = lstatSync(candidatePath);
       if (!isTrustedTmpDir(candidate)) {
         return "invalid";
       }
       if (requireWritableAccess) {
-        accessSync(fallbackPath, fs.constants.W_OK | fs.constants.X_OK);
+        accessSync(candidatePath, fs.constants.W_OK | fs.constants.X_OK);
       }
       return "available";
     } catch (err) {
@@ -115,7 +99,7 @@ export function resolvePreferredRemoteClawTmpDir(
 
   const ensureTrustedFallbackDir = (): string => {
     const fallbackPath = fallback();
-    const state = resolveFallbackState(fallbackPath, true);
+    const state = resolveDirState(fallbackPath, true);
     if (state === "available") {
       return fallbackPath;
     }
@@ -127,13 +111,13 @@ export function resolvePreferredRemoteClawTmpDir(
     } catch {
       throw new Error(`Unable to create fallback RemoteClaw temp dir: ${fallbackPath}`);
     }
-    if (resolveFallbackState(fallbackPath, true) !== "available") {
+    if (resolveDirState(fallbackPath, true) !== "available") {
       throw new Error(`Unsafe fallback RemoteClaw temp dir: ${fallbackPath}`);
     }
     return fallbackPath;
   };
 
-  const existingPreferredState = resolvePreferredState();
+  const existingPreferredState = resolveDirState(POSIX_REMOTECLAW_TMP_DIR, true);
   if (existingPreferredState === "available") {
     return POSIX_REMOTECLAW_TMP_DIR;
   }
@@ -145,7 +129,7 @@ export function resolvePreferredRemoteClawTmpDir(
     accessSync("/tmp", TMP_DIR_ACCESS_MODE);
     // Create with a safe default; subsequent callers expect it exists.
     mkdirSync(POSIX_REMOTECLAW_TMP_DIR, { recursive: true, mode: 0o700 });
-    if (resolvePreferredState() !== "available") {
+    if (resolveDirState(POSIX_REMOTECLAW_TMP_DIR, true) !== "available") {
       return ensureTrustedFallbackDir();
     }
     return POSIX_REMOTECLAW_TMP_DIR;

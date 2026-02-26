@@ -95,7 +95,7 @@ describe("OpenCodeCliRuntime", () => {
       ]);
     });
 
-    it("includes prompt on session resume (unlike Codex)", () => {
+    it("includes prompt on session resume", () => {
       const args = runtime.testBuildArgs(
         makeParams({ sessionId: "sess-123", prompt: "Follow up prompt" }),
       );

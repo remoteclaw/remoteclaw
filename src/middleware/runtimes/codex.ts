@@ -72,8 +72,9 @@ export class CodexCliRuntime extends CLIRuntimeBase {
 
   protected buildArgs(params: AgentExecuteParams): string[] {
     if (params.sessionId) {
-      // Session resume: codex exec resume <id> --json --color never
-      return ["exec", "resume", params.sessionId, "--json", "--color", "never"];
+      // Session resume: codex exec resume --json <id> <prompt>
+      // Note: --color is not supported by the resume subcommand
+      return ["exec", "resume", "--json", params.sessionId, params.prompt];
     }
 
     // New session: codex exec --json --color never <prompt>
@@ -429,7 +430,8 @@ export class CodexMcpConfigManager {
  * ```toml
  * [mcp_servers.server_name]
  * type = "stdio"
- * command = ["node", "server.js"]
+ * command = "node"
+ * args = ["server.js"]
  *
  * [mcp_servers.server_name.env]
  * KEY = "VALUE"
@@ -443,9 +445,12 @@ export function serializeMcpServersToToml(mcpServers: Record<string, McpServerCo
     lines.push(`[mcp_servers.${name}]`);
     lines.push(`type = "stdio"`);
 
-    // command is an array: [config.command, ...(config.args ?? [])]
-    const commandArray = [config.command, ...(config.args ?? [])];
-    lines.push(`command = [${commandArray.map((s) => toTomlString(s)).join(", ")}]`);
+    // command is a string; args is a separate array
+    lines.push(`command = ${toTomlString(config.command)}`);
+    const args = config.args ?? [];
+    if (args.length > 0) {
+      lines.push(`args = [${args.map((s) => toTomlString(s)).join(", ")}]`);
+    }
 
     sections.push(lines.join("\n"));
 

@@ -205,6 +205,18 @@ describe("argv helpers", () => {
         expected: ["/usr/bin/node-22.2.0", "remoteclaw", "status"],
       },
       {
+        rawArgs: ["node24", "remoteclaw", "status"],
+        expected: ["node24", "remoteclaw", "status"],
+      },
+      {
+        rawArgs: ["/usr/bin/node24", "remoteclaw", "status"],
+        expected: ["/usr/bin/node24", "remoteclaw", "status"],
+      },
+      {
+        rawArgs: ["node24.exe", "remoteclaw", "status"],
+        expected: ["node24.exe", "remoteclaw", "status"],
+      },
+      {
         rawArgs: ["nodejs", "remoteclaw", "status"],
         expected: ["nodejs", "remoteclaw", "status"],
       },

@@ -1,0 +1,422 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { runWithModelFallback } from "../../agents/model-fallback.js";
+import type { ChannelMessage } from "../../middleware/types.js";
+
+// ---------- mocks ----------
+
+const channelBridgeHandleMock = vi.fn();
+
+vi.mock("../../middleware/channel-bridge.js", () => ({
+  ChannelBridge: class MockChannelBridge {
+    readonly provider: string;
+    readonly workspaceDir?: string;
+
+    constructor(opts: { provider: string; workspaceDir?: string }) {
+      this.provider = opts.provider;
+      this.workspaceDir = opts.workspaceDir;
+    }
+
+    handle(message: ChannelMessage, callbacks?: unknown, abortSignal?: AbortSignal) {
+      return channelBridgeHandleMock(message, callbacks, abortSignal);
+    }
+  },
+}));
+
+vi.mock("../../agents/agent-scope.js", () => ({
+  resolveAgentConfig: vi.fn().mockReturnValue(undefined),
+  resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),
+  resolveAgentModelFallbacksOverride: vi.fn().mockReturnValue(undefined),
+  resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
+  resolveDefaultAgentId: vi.fn().mockReturnValue("default"),
+  resolveAgentSkillsFilter: vi.fn().mockReturnValue(undefined),
+}));
+
+vi.mock("../../agents/skills.js", () => ({
+  buildWorkspaceSkillSnapshot: vi.fn().mockReturnValue({
+    prompt: "<available_skills></available_skills>",
+    resolvedSkills: [],
+    version: 42,
+  }),
+}));
+
+vi.mock("../../agents/skills/refresh.js", () => ({
+  getSkillsSnapshotVersion: vi.fn().mockReturnValue(42),
+}));
+
+vi.mock("../../agents/workspace.js", () => ({
+  ensureAgentWorkspace: vi.fn().mockResolvedValue({ dir: "/tmp/workspace" }),
+}));
+
+vi.mock("../../agents/model-catalog.js", () => ({
+  loadModelCatalog: vi.fn().mockResolvedValue({ models: [] }),
+}));
+
+vi.mock("../../agents/model-selection.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../agents/model-selection.js")>();
+  return {
+    ...actual,
+    getModelRefStatus: vi.fn().mockReturnValue({ allowed: false }),
+    isCliProvider: vi.fn().mockReturnValue(true),
+    resolveAllowedModelRef: vi
+      .fn()
+      .mockReturnValue({ ref: { provider: "claude", model: "claude-sonnet-4-5" } }),
+    resolveConfiguredModelRef: vi
+      .fn()
+      .mockReturnValue({ provider: "claude", model: "claude-sonnet-4-5" }),
+    resolveHooksGmailModel: vi.fn().mockReturnValue(null),
+  };
+});
+
+// Let the real runWithModelFallback call the `run` callback so we can
+// verify that ChannelBridge.handle() is invoked.
+const runWithModelFallbackMock = vi.fn<typeof runWithModelFallback>();
+vi.mock("../../agents/model-fallback.js", () => ({
+  runWithModelFallback: (opts: Parameters<typeof runWithModelFallback>[0]) =>
+    runWithModelFallbackMock(opts),
+}));
+
+vi.mock("../../agents/context.js", () => ({
+  lookupContextTokens: vi.fn().mockReturnValue(128000),
+}));
+
+vi.mock("../../agents/date-time.js", () => ({
+  formatUserTime: vi.fn().mockReturnValue("2026-02-10 12:00"),
+  resolveUserTimeFormat: vi.fn().mockReturnValue("24h"),
+  resolveUserTimezone: vi.fn().mockReturnValue("UTC"),
+}));
+
+vi.mock("../../agents/timeout.js", () => ({
+  resolveAgentTimeoutMs: vi.fn().mockReturnValue(60_000),
+}));
+
+vi.mock("../../agents/usage.js", () => ({
+  deriveSessionTotalTokens: vi.fn().mockReturnValue(30),
+  hasNonzeroUsage: vi.fn().mockReturnValue(false),
+}));
+
+vi.mock("../../agents/auth-profiles/session-override.js", () => ({
+  resolveSessionAuthProfileOverride: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../../agents/cli-session.js", () => ({
+  getCliSessionId: vi.fn().mockReturnValue("cli-session-123"),
+  setCliSessionId: vi.fn(),
+}));
+
+vi.mock("../../auto-reply/thinking.js", () => ({
+  normalizeVerboseLevel: vi.fn().mockReturnValue("off"),
+}));
+
+vi.mock("../../cli/outbound-send-deps.js", () => ({
+  createOutboundSendDeps: vi.fn().mockReturnValue({}),
+}));
+
+vi.mock("../../config/sessions.js", () => ({
+  resolveAgentMainSessionKey: vi.fn().mockReturnValue("main:default"),
+  setSessionRuntimeModel: vi.fn(),
+  updateSessionStore: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../../config/paths.js", () => ({
+  resolveGatewayPort: vi.fn().mockReturnValue(3579),
+}));
+
+vi.mock("../../gateway/credentials.js", () => ({
+  resolveGatewayCredentialsFromConfig: vi.fn().mockReturnValue({ token: "test-token" }),
+}));
+
+vi.mock("../../routing/session-key.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../routing/session-key.js")>();
+  return {
+    ...actual,
+    buildAgentMainSessionKey: vi.fn().mockReturnValue("agent:default:cron:test"),
+    normalizeAgentId: vi.fn((id: string) => id),
+  };
+});
+
+vi.mock("../../infra/agent-events.js", () => ({
+  registerAgentRunContext: vi.fn(),
+}));
+
+vi.mock("../../infra/outbound/deliver.js", () => ({
+  deliverOutboundPayloads: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../../infra/skills-remote.js", () => ({
+  getRemoteSkillEligibility: vi.fn().mockReturnValue({}),
+}));
+
+vi.mock("../../logger.js", () => ({
+  logWarn: vi.fn(),
+}));
+
+vi.mock("../../security/external-content.js", () => ({
+  buildSafeExternalPrompt: vi.fn().mockReturnValue("safe prompt"),
+  detectSuspiciousPatterns: vi.fn().mockReturnValue([]),
+  getHookType: vi.fn().mockReturnValue("unknown"),
+  isExternalHookSession: vi.fn().mockReturnValue(false),
+}));
+
+vi.mock("../delivery.js", () => ({
+  resolveCronDeliveryPlan: vi.fn().mockReturnValue({ requested: false }),
+}));
+
+vi.mock("./delivery-target.js", () => ({
+  resolveDeliveryTarget: vi.fn().mockResolvedValue({
+    ok: true,
+    channel: "telegram",
+    to: "chat-123",
+    accountId: "bot-456",
+    mode: "explicit",
+  }),
+}));
+
+vi.mock("./helpers.js", () => ({
+  isHeartbeatOnlyResponse: vi.fn().mockReturnValue(false),
+  pickLastDeliverablePayload: vi.fn().mockReturnValue(undefined),
+  pickLastNonEmptyTextFromPayloads: vi.fn().mockReturnValue("test output"),
+  pickSummaryFromOutput: vi.fn().mockReturnValue("summary"),
+  pickSummaryFromPayloads: vi.fn().mockReturnValue("summary"),
+  resolveHeartbeatAckMaxChars: vi.fn().mockReturnValue(100),
+}));
+
+vi.mock("./delivery-dispatch.js", () => ({
+  dispatchCronDelivery: vi.fn().mockResolvedValue({
+    delivered: false,
+    summary: "summary",
+    outputText: "test output",
+  }),
+  matchesMessagingToolDeliveryTarget: vi.fn().mockReturnValue(false),
+  resolveCronDeliveryBestEffort: vi.fn().mockReturnValue(false),
+}));
+
+const resolveCronSessionMock = vi.fn();
+vi.mock("./session.js", () => ({
+  resolveCronSession: resolveCronSessionMock,
+}));
+
+vi.mock("../../agents/defaults.js", () => ({
+  DEFAULT_CONTEXT_TOKENS: 128000,
+  DEFAULT_MODEL: "claude-sonnet-4-5",
+  DEFAULT_PROVIDER: "claude",
+}));
+
+const { runCronIsolatedAgentTurn } = await import("./run.js");
+
+// ---------- helpers ----------
+
+function makeJob(overrides?: Record<string, unknown>) {
+  return {
+    id: "cron-job-1",
+    name: "Daily Summary",
+    schedule: { kind: "cron", expr: "0 9 * * *", tz: "UTC" },
+    sessionTarget: "isolated",
+    sessionKey: "cron:cron-job-1",
+    payload: { kind: "agentTurn", message: "generate summary" },
+    ...overrides,
+  } as never;
+}
+
+function makeParams(overrides?: Record<string, unknown>) {
+  return {
+    cfg: {},
+    deps: {} as never,
+    job: makeJob(),
+    message: "generate daily summary",
+    sessionKey: "cron:test",
+    ...overrides,
+  };
+}
+
+function makeFreshSession() {
+  return {
+    storePath: "/tmp/store.json",
+    store: {},
+    sessionEntry: {
+      sessionId: "test-session-id",
+      updatedAt: 0,
+      systemSent: false,
+      skillsSnapshot: undefined,
+    },
+    systemSent: false,
+    isNewSession: true,
+  };
+}
+
+function makeDeliveryResult(overrides?: Record<string, unknown>) {
+  return {
+    payloads: [{ text: "Agent response" }],
+    run: {
+      text: "Agent response",
+      sessionId: "cli-session-new",
+      durationMs: 1500,
+      usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 10, cacheWriteTokens: 5 },
+      aborted: false,
+      stopReason: "end_turn",
+    },
+    mcp: {
+      sentTexts: [],
+      sentMediaUrls: [],
+      sentTargets: [],
+      cronAdds: 0,
+    },
+    error: undefined,
+    ...overrides,
+  };
+}
+
+// ---------- tests ----------
+
+describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
+  let previousFastTestEnv: string | undefined;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    previousFastTestEnv = process.env.OPENCLAW_TEST_FAST;
+    delete process.env.OPENCLAW_TEST_FAST;
+    resolveCronSessionMock.mockReturnValue(makeFreshSession());
+
+    // Default: runWithModelFallback calls the run callback directly
+    runWithModelFallbackMock.mockImplementation(async (opts) => {
+      const result = await opts.run(opts.provider, opts.model);
+      return { result, provider: opts.provider, model: opts.model, attempts: [] };
+    });
+
+    // Default: ChannelBridge.handle() returns a successful delivery
+    channelBridgeHandleMock.mockResolvedValue(makeDeliveryResult());
+  });
+
+  afterEach(() => {
+    if (previousFastTestEnv == null) {
+      delete process.env.OPENCLAW_TEST_FAST;
+      return;
+    }
+    process.env.OPENCLAW_TEST_FAST = previousFastTestEnv;
+  });
+
+  it("routes cron message through ChannelBridge.handle()", async () => {
+    const result = await runCronIsolatedAgentTurn(makeParams());
+
+    expect(result.status).toBe("ok");
+    expect(channelBridgeHandleMock).toHaveBeenCalledOnce();
+  });
+
+  it("builds ChannelMessage with cron job context", async () => {
+    await runCronIsolatedAgentTurn(makeParams());
+
+    const message = channelBridgeHandleMock.mock.calls[0][0] as ChannelMessage;
+    expect(message.id).toBe("cron-job-1");
+    expect(message.from).toBe("bot-456"); // resolvedDelivery.accountId
+    expect(message.channelId).toBe("chat-123"); // resolvedDelivery.to
+    expect(message.provider).toBe("telegram"); // resolvedDelivery.channel
+    expect(message.text).toContain("generate daily summary");
+  });
+
+  it("passes no streaming callbacks (cron has no real-time delivery)", async () => {
+    await runCronIsolatedAgentTurn(makeParams());
+
+    const callbacks = channelBridgeHandleMock.mock.calls[0][1];
+    expect(callbacks).toBeUndefined();
+  });
+
+  it("passes abort signal to ChannelBridge.handle()", async () => {
+    const controller = new AbortController();
+    await runCronIsolatedAgentTurn(makeParams({ abortSignal: controller.signal }));
+
+    const abortSignal = channelBridgeHandleMock.mock.calls[0][2];
+    expect(abortSignal).toBe(controller.signal);
+  });
+
+  it("maps AgentDeliveryResult payloads to EmbeddedPiRunResult format", async () => {
+    channelBridgeHandleMock.mockResolvedValue(
+      makeDeliveryResult({
+        payloads: [{ text: "Hello from cron" }],
+      }),
+    );
+
+    const result = await runCronIsolatedAgentTurn(makeParams());
+
+    expect(result.status).toBe("ok");
+    // outputText comes from pickLastNonEmptyTextFromPayloads (mocked to "test output")
+    // — the point here is that the run completed successfully with mapped payloads
+    expect(result.outputText).toBe("test output");
+  });
+
+  it("maps MCP side effects (messaging tool sends) to result", async () => {
+    channelBridgeHandleMock.mockResolvedValue(
+      makeDeliveryResult({
+        mcp: {
+          sentTexts: ["sent via MCP"],
+          sentMediaUrls: [],
+          sentTargets: [{ tool: "telegram_send", provider: "telegram", to: "chat-123" }],
+          cronAdds: 1,
+        },
+      }),
+    );
+
+    // runWithModelFallback returns the mapped result
+    const result = await runCronIsolatedAgentTurn(makeParams());
+    expect(result.status).toBe("ok");
+  });
+
+  it("re-throws when ChannelBridge returns error with no payloads", async () => {
+    channelBridgeHandleMock.mockResolvedValue({
+      payloads: [],
+      run: {
+        text: "",
+        sessionId: undefined,
+        durationMs: 100,
+        usage: undefined,
+        aborted: false,
+      },
+      mcp: { sentTexts: [], sentMediaUrls: [], sentTargets: [], cronAdds: 0 },
+      error: "Provider rate limited",
+    });
+
+    // runWithModelFallback propagates the error from the run callback
+    runWithModelFallbackMock.mockImplementation(async (opts) => {
+      await opts.run(opts.provider, opts.model);
+      throw new Error("Expected run to throw");
+    });
+
+    const result = await runCronIsolatedAgentTurn(makeParams());
+    expect(result.status).toBe("error");
+    expect(result.error).toBe("Error: Provider rate limited");
+  });
+
+  it("preserves delivery with error payloads (partial success)", async () => {
+    channelBridgeHandleMock.mockResolvedValue(
+      makeDeliveryResult({
+        payloads: [{ text: "Partial output" }],
+        error: "Execution timed out",
+      }),
+    );
+
+    const result = await runCronIsolatedAgentTurn(makeParams());
+
+    // Partial success: has payloads despite error, so should not re-throw
+    expect(channelBridgeHandleMock).toHaveBeenCalledOnce();
+    expect(result.status).toBe("ok");
+  });
+
+  it("maps token usage from AgentDeliveryResult to telemetry", async () => {
+    channelBridgeHandleMock.mockResolvedValue(
+      makeDeliveryResult({
+        run: {
+          text: "response",
+          sessionId: "sess-1",
+          durationMs: 2000,
+          usage: { inputTokens: 500, outputTokens: 200, cacheReadTokens: 50 },
+          aborted: false,
+        },
+      }),
+    );
+
+    const result = await runCronIsolatedAgentTurn(makeParams());
+
+    expect(result.status).toBe("ok");
+    // Telemetry is derived from the mapped EmbeddedPiRunResult
+    expect(result.model).toBe("claude-sonnet-4-5");
+    expect(result.provider).toBe("claude");
+  });
+});

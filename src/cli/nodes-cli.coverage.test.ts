@@ -28,6 +28,35 @@ const callGateway = vi.fn(async (opts: NodeInvokeCall) => {
     };
   }
   if (opts.method === "node.invoke") {
+    const command = opts.params?.command;
+    if (command === "system.run.prepare") {
+      const params = (opts.params?.params ?? {}) as {
+        command?: unknown[];
+        rawCommand?: unknown;
+        cwd?: unknown;
+        agentId?: unknown;
+      };
+      const argv = Array.isArray(params.command)
+        ? params.command.map((entry) => String(entry))
+        : [];
+      const rawCommand =
+        typeof params.rawCommand === "string" && params.rawCommand.trim().length > 0
+          ? params.rawCommand
+          : null;
+      return {
+        payload: {
+          cmdText: rawCommand ?? argv.join(" "),
+          plan: {
+            version: 2,
+            argv,
+            cwd: typeof params.cwd === "string" ? params.cwd : null,
+            rawCommand,
+            agentId: typeof params.agentId === "string" ? params.agentId : null,
+            sessionKey: null,
+          },
+        },
+      };
+    }
     return {
       payload: {
         stdout: "",
@@ -80,8 +109,16 @@ vi.mock("../config/config.js", () => ({
 describe("nodes-cli coverage", () => {
   let registerNodesCli: (program: Command) => void;
 
-  const getNodeInvokeCall = () =>
-    callGateway.mock.calls.find((call) => call[0]?.method === "node.invoke")?.[0] as NodeInvokeCall;
+  const getNodeInvokeCall = () => {
+    const nodeInvokeCalls = callGateway.mock.calls
+      .map((call) => call[0])
+      .filter((entry): entry is NodeInvokeCall => entry?.method === "node.invoke");
+    const last = nodeInvokeCalls.at(-1);
+    if (!last) {
+      throw new Error("expected node.invoke call");
+    }
+    return last;
+  };
 
   const createNodesProgram = () => {
     const program = new Command();
@@ -130,6 +167,7 @@ describe("nodes-cli coverage", () => {
     expect(invoke?.params?.command).toBe("system.run");
     expect(invoke?.params?.params).toEqual({
       command: ["echo", "hi"],
+      rawCommand: null,
       cwd: "/tmp",
       env: { FOO: "bar" },
       timeoutMs: 1200,

@@ -87,16 +87,16 @@ describe("CodexCliRuntime", () => {
       expect(args).toEqual(["exec", "--json", "--color", "never", "Hello, Codex!"]);
     });
 
-    it("produces exec resume <id> --json --color never for session resume", () => {
+    it("produces exec resume --json <id> <prompt> for session resume", () => {
       const args = runtime.testBuildArgs(makeParams({ sessionId: "thread-abc-123" }));
-      expect(args).toEqual(["exec", "resume", "thread-abc-123", "--json", "--color", "never"]);
+      expect(args).toEqual(["exec", "resume", "--json", "thread-abc-123", "Hello, Codex!"]);
     });
 
-    it("excludes prompt on session resume", () => {
+    it("includes prompt on session resume", () => {
       const args = runtime.testBuildArgs(
-        makeParams({ sessionId: "thread-abc-123", prompt: "This should be excluded" }),
+        makeParams({ sessionId: "thread-abc-123", prompt: "Follow-up message" }),
       );
-      expect(args).not.toContain("This should be excluded");
+      expect(args).toContain("Follow-up message");
     });
 
     it("always starts with exec", () => {
@@ -107,16 +107,16 @@ describe("CodexCliRuntime", () => {
       expect(resumeArgs[0]).toBe("exec");
     });
 
-    it("always includes --color never", () => {
+    it("includes --color never for new sessions", () => {
       const newArgs = runtime.testBuildArgs(makeParams());
       const colorIdx = newArgs.indexOf("--color");
       expect(colorIdx).toBeGreaterThan(-1);
       expect(newArgs[colorIdx + 1]).toBe("never");
+    });
 
+    it("does not include --color for resume (unsupported by resume subcommand)", () => {
       const resumeArgs = runtime.testBuildArgs(makeParams({ sessionId: "s" }));
-      const resumeColorIdx = resumeArgs.indexOf("--color");
-      expect(resumeColorIdx).toBeGreaterThan(-1);
-      expect(resumeArgs[resumeColorIdx + 1]).toBe("never");
+      expect(resumeArgs).not.toContain("--color");
     });
 
     it("always includes --json", () => {
@@ -610,15 +610,16 @@ describe("CodexCliRuntime", () => {
         myServer: { command: "node" },
       });
 
-      expect(toml).toBe(`[mcp_servers.myServer]\ntype = "stdio"\ncommand = ["node"]\n`);
+      expect(toml).toBe(`[mcp_servers.myServer]\ntype = "stdio"\ncommand = "node"\n`);
     });
 
-    it("serializes command with args as array", () => {
+    it("serializes command as string and args as separate array", () => {
       const toml = serializeMcpServersToToml({
         myServer: { command: "node", args: ["server.js", "--port", "3000"] },
       });
 
-      expect(toml).toContain(`command = ["node", "server.js", "--port", "3000"]`);
+      expect(toml).toContain(`command = "node"`);
+      expect(toml).toContain(`args = ["server.js", "--port", "3000"]`);
     });
 
     it("serializes env vars as sub-table", () => {
@@ -643,8 +644,10 @@ describe("CodexCliRuntime", () => {
 
       expect(toml).toContain("[mcp_servers.server1]");
       expect(toml).toContain("[mcp_servers.server2]");
-      expect(toml).toContain(`command = ["node", "s1.js"]`);
-      expect(toml).toContain(`command = ["python", "s2.py"]`);
+      expect(toml).toContain(`command = "node"`);
+      expect(toml).toContain(`args = ["s1.js"]`);
+      expect(toml).toContain(`command = "python"`);
+      expect(toml).toContain(`args = ["s2.py"]`);
     });
 
     it("escapes special characters in TOML strings", () => {
@@ -652,6 +655,7 @@ describe("CodexCliRuntime", () => {
         s: { command: "node", args: ['path with "quotes"', "path\\with\\backslashes"] },
       });
 
+      expect(toml).toContain(`command = "node"`);
       expect(toml).toContain(`"path with \\"quotes\\""`);
       expect(toml).toContain(`"path\\\\with\\\\backslashes"`);
     });
@@ -689,7 +693,8 @@ describe("CodexCliRuntime", () => {
       const content = await readFile(configPath, "utf-8");
       expect(content).toContain("[mcp_servers.myServer]");
       expect(content).toContain('type = "stdio"');
-      expect(content).toContain('command = ["node", "server.js"]');
+      expect(content).toContain('command = "node"');
+      expect(content).toContain('args = ["server.js"]');
 
       await manager.teardown();
     });
@@ -747,8 +752,10 @@ describe("CodexCliRuntime", () => {
       const content = await readFile(configPath, "utf-8");
       expect(content).toContain("[mcp_servers.server1]");
       expect(content).toContain("[mcp_servers.server2]");
-      expect(content).toContain('command = ["node", "s1.js"]');
-      expect(content).toContain('command = ["python", "s2.py"]');
+      expect(content).toContain('command = "node"');
+      expect(content).toContain('args = ["s1.js"]');
+      expect(content).toContain('command = "python"');
+      expect(content).toContain('args = ["s2.py"]');
       expect(content).toContain("[mcp_servers.server2.env]");
       expect(content).toContain('KEY = "val"');
 

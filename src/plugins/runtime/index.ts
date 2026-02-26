@@ -16,6 +16,7 @@ import {
   shouldComputeCommandAuthorized,
 } from "../../auto-reply/command-detection.js";
 import { shouldHandleTextCommands } from "../../auto-reply/commands-registry.js";
+import { withReplyDispatcher } from "../../auto-reply/dispatch.js";
 import {
   formatAgentEnvelope,
   formatInboundEnvelope,
@@ -298,6 +299,7 @@ function createRuntimeChannel(): PluginRuntime["channel"] {
       resolveEffectiveMessagesConfig,
       resolveHumanDelayConfig,
       dispatchReplyFromConfig,
+      withReplyDispatcher,
       finalizeInboundContext,
       formatAgentEnvelope,
       /** @deprecated Prefer `BodyForAgent` + structured user-context blocks (do not build plaintext envelopes for prompts). */

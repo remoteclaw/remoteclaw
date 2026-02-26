@@ -74,6 +74,7 @@ import { resolveConnectAuthDecision, resolveConnectAuthState } from "./auth-cont
 import { formatGatewayAuthFailureMessage, type AuthProvidedKind } from "./auth-messages.js";
 import {
   evaluateMissingDeviceIdentity,
+  isTrustedProxyControlUiOperatorAuth,
   resolveControlUiAuthPolicy,
   shouldSkipControlUiPairing,
 } from "./connect-policy.js";
@@ -426,11 +427,13 @@ export function attachGatewayWsMessageHandler(params: {
           if (!device) {
             clearUnboundScopes();
           }
-          const trustedProxyAuthOk =
-            isControlUi &&
-            resolvedAuth.mode === "trusted-proxy" &&
-            authOk &&
-            authMethod === "trusted-proxy";
+          const trustedProxyAuthOk = isTrustedProxyControlUiOperatorAuth({
+            isControlUi,
+            role,
+            authMode: resolvedAuth.mode,
+            authOk,
+            authMethod,
+          });
           const decision = evaluateMissingDeviceIdentity({
             hasDeviceIdentity: Boolean(device),
             role,
@@ -568,11 +571,13 @@ export function attachGatewayWsMessageHandler(params: {
         // In that case, don't force device pairing on first connect.
         const skipPairingForOperatorSharedAuth =
           role === "operator" && sharedAuthOk && !isControlUi && !isWebchat;
-        const trustedProxyAuthOk =
-          isControlUi &&
-          resolvedAuth.mode === "trusted-proxy" &&
-          authOk &&
-          authMethod === "trusted-proxy";
+        const trustedProxyAuthOk = isTrustedProxyControlUiOperatorAuth({
+          isControlUi,
+          role,
+          authMode: resolvedAuth.mode,
+          authOk,
+          authMethod,
+        });
         const skipPairing =
           shouldSkipControlUiPairing(controlUiAuthPolicy, sharedAuthOk, trustedProxyAuthOk) ||
           skipPairingForOperatorSharedAuth;

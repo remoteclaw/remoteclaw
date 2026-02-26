@@ -138,18 +138,15 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
     const configuredDmAllowFrom = dmAllowFrom.map((v) => String(v));
     const effectiveDmAllowFrom = [...configuredDmAllowFrom, ...storedAllowFrom];
     if (isDirectMessage && msteamsCfg) {
-      const allowFrom = dmAllowFrom;
-
       if (dmPolicy === "disabled") {
         log.debug?.("dropping dm (dms disabled)");
         return;
       }
 
       if (dmPolicy !== "open") {
-        const effectiveAllowFrom = [...allowFrom.map((v) => String(v)), ...storedAllowFrom];
         const allowNameMatching = isDangerousNameMatchingEnabled(msteamsCfg);
         const allowMatch = resolveMSTeamsAllowlistMatch({
-          allowFrom: effectiveAllowFrom,
+          allowFrom: effectiveDmAllowFrom,
           senderId,
           senderName,
           allowNameMatching,

@@ -610,4 +610,66 @@ describe("agents.files.set", () => {
     );
     expect(mocks.fsWriteFile).not.toHaveBeenCalled();
   });
+
+  it("rejects agents.files.get when allowlisted file is a hardlinked alias", async () => {
+    const workspace = "/workspace/test-agent";
+    const candidate = path.resolve(workspace, "AGENTS.md");
+    mocks.fsRealpath.mockImplementation(async (p: string) => {
+      if (p === workspace) {
+        return workspace;
+      }
+      return p;
+    });
+    mocks.fsLstat.mockImplementation(async (...args: unknown[]) => {
+      const p = typeof args[0] === "string" ? args[0] : "";
+      if (p === candidate) {
+        return makeFileStat({ nlink: 2 });
+      }
+      throw createEnoentError();
+    });
+
+    const { respond, promise } = makeCall("agents.files.get", {
+      agentId: "main",
+      name: "AGENTS.md",
+    });
+    await promise;
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({ message: expect.stringContaining("unsafe workspace file") }),
+    );
+  });
+
+  it("rejects agents.files.set when allowlisted file is a hardlinked alias", async () => {
+    const workspace = "/workspace/test-agent";
+    const candidate = path.resolve(workspace, "AGENTS.md");
+    mocks.fsRealpath.mockImplementation(async (p: string) => {
+      if (p === workspace) {
+        return workspace;
+      }
+      return p;
+    });
+    mocks.fsLstat.mockImplementation(async (...args: unknown[]) => {
+      const p = typeof args[0] === "string" ? args[0] : "";
+      if (p === candidate) {
+        return makeFileStat({ nlink: 2 });
+      }
+      throw createEnoentError();
+    });
+
+    const { respond, promise } = makeCall("agents.files.set", {
+      agentId: "main",
+      name: "AGENTS.md",
+      content: "x",
+    });
+    await promise;
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({ message: expect.stringContaining("unsafe workspace file") }),
+    );
+    expect(mocks.fsOpen).not.toHaveBeenCalled();
+  });
 });

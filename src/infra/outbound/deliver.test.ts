@@ -29,6 +29,9 @@ const queueMocks = vi.hoisted(() => ({
   ackDelivery: vi.fn(async () => {}),
   failDelivery: vi.fn(async () => {}),
 }));
+const logMocks = vi.hoisted(() => ({
+  warn: vi.fn(),
+}));
 
 vi.mock("../../config/sessions.js", async () => {
   const actual = await vi.importActual<typeof import("../../config/sessions.js")>(
@@ -50,6 +53,18 @@ vi.mock("./delivery-queue.js", () => ({
   enqueueDelivery: queueMocks.enqueueDelivery,
   ackDelivery: queueMocks.ackDelivery,
   failDelivery: queueMocks.failDelivery,
+}));
+vi.mock("../../logging/subsystem.js", () => ({
+  createSubsystemLogger: () => {
+    const makeLogger = () => ({
+      warn: logMocks.warn,
+      info: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+      child: vi.fn(() => makeLogger()),
+    });
+    return makeLogger();
+  },
 }));
 
 const { deliverOutboundPayloads, normalizeOutboundPayloads } = await import("./deliver.js");
@@ -121,6 +136,7 @@ describe("deliverOutboundPayloads", () => {
     queueMocks.ackDelivery.mockResolvedValue(undefined);
     queueMocks.failDelivery.mockClear();
     queueMocks.failDelivery.mockResolvedValue(undefined);
+    logMocks.warn.mockClear();
   });
 
   afterEach(() => {
@@ -192,7 +208,7 @@ describe("deliverOutboundPayloads", () => {
       cfg: telegramChunkConfig,
       channel: "telegram",
       to: "123",
-      agentId: "work",
+      session: { agentId: "work" },
       payloads: [{ text: "hi", mediaUrl: "file:///tmp/f.png" }],
       deps: { sendTelegram },
     });
@@ -587,7 +603,7 @@ describe("deliverOutboundPayloads", () => {
       to: "+1555",
       payloads: [{ text: "hello" }],
       deps: { sendWhatsApp },
-      sessionKey: "agent:main:main",
+      session: { key: "agent:main:main" },
     });
 
     expect(internalHookMocks.createInternalHookEvent).toHaveBeenCalledTimes(1);
@@ -605,6 +621,25 @@ describe("deliverOutboundPayloads", () => {
       }),
     );
     expect(internalHookMocks.triggerInternalHook).toHaveBeenCalledTimes(1);
+  });
+
+  it("warns when session.agentId is set without a session key", async () => {
+    const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w1", toJid: "jid" });
+    hookMocks.runner.hasHooks.mockReturnValue(true);
+
+    await deliverOutboundPayloads({
+      cfg: whatsappChunkConfig,
+      channel: "whatsapp",
+      to: "+1555",
+      payloads: [{ text: "hello" }],
+      deps: { sendWhatsApp },
+      session: { agentId: "agent-main" },
+    });
+
+    expect(logMocks.warn).toHaveBeenCalledWith(
+      "deliverOutboundPayloads: session.agentId present without session key; internal message:sent hook will be skipped",
+      expect.objectContaining({ channel: "whatsapp", to: "+1555", agentId: "agent-main" }),
+    );
   });
 
   it("calls failDelivery instead of ackDelivery on bestEffort partial failure", async () => {

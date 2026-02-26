@@ -16,7 +16,7 @@ import {
   normalizeOutboundPayloads,
   normalizeOutboundPayloadsForJson,
 } from "../../infra/outbound/payloads.js";
-import { buildOutboundSessionContext } from "../../infra/outbound/session-context.js";
+import type { OutboundSessionContext } from "../../infra/outbound/session-context.js";
 import type { AgentDeliveryResult } from "../../middleware/types.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { isInternalMessageChannel } from "../../utils/message-channel.js";
@@ -61,11 +61,12 @@ export async function deliverAgentCommandResult(params: {
   deps: CliDeps;
   runtime: RuntimeEnv;
   opts: AgentCommandOpts;
+  outboundSession: OutboundSessionContext | undefined;
   sessionEntry: SessionEntry | undefined;
   result: AgentDeliveryResult;
   payloads: AgentDeliveryResult["payloads"];
 }) {
-  const { cfg, deps, runtime, opts, sessionEntry, payloads, result } = params;
+  const { cfg, deps, runtime, opts, outboundSession, sessionEntry, payloads, result } = params;
   // Derive a meta object for backward-compatible JSON envelope output.
   const resultMeta = {
     durationMs: result.run.durationMs,
@@ -218,18 +219,13 @@ export async function deliverAgentCommandResult(params: {
   }
   if (deliver && deliveryChannel && !isInternalMessageChannel(deliveryChannel)) {
     if (deliveryTarget) {
-      const deliverySession = buildOutboundSessionContext({
-        cfg,
-        agentId: opts.agentId,
-        sessionKey: opts.sessionKey,
-      });
       await deliverOutboundPayloads({
         cfg,
         channel: deliveryChannel,
         to: deliveryTarget,
         accountId: resolvedAccountId,
         payloads: deliveryPayloads,
-        session: deliverySession,
+        session: outboundSession,
         replyToId: resolvedReplyToId ?? null,
         threadId: resolvedThreadTarget ?? null,
         bestEffort: bestEffortDeliver,

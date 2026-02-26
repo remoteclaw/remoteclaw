@@ -99,6 +99,7 @@ export class ChannelBridge {
     const systemPrompt = buildSystemPrompt({
       channelName: message.provider,
       workspaceDir: this.#workspaceDir,
+      messageToolHints: message.messageToolHints,
     });
 
     // 3. MCP config: temp dir for side effects file

@@ -8,6 +8,7 @@ import {
 } from "../agents/agent-scope.js";
 import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
 import { clearSessionAuthProfileOverride } from "../agents/auth-profiles/session-override.js";
+import { resolveChannelMessageToolHints } from "../agents/channel-tools.js";
 import { getCliSessionId } from "../agents/cli-session.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
@@ -133,6 +134,7 @@ function buildCliChannelMessage(params: {
   messageChannel: string | undefined;
   threadId: string | undefined;
   timestamp: number;
+  messageToolHints: string[] | undefined;
 }): ChannelMessage {
   return {
     id: params.runId,
@@ -142,6 +144,7 @@ function buildCliChannelMessage(params: {
     provider: params.messageChannel ?? "cli",
     timestamp: params.timestamp,
     replyToId: params.threadId,
+    messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
   };
 }
 
@@ -574,6 +577,12 @@ export async function agentCommand(
             isFallbackRetry,
           });
 
+          const messageToolHints = resolveChannelMessageToolHints({
+            cfg,
+            channel: messageChannel,
+            accountId: runContext.accountId ?? opts.accountId,
+          });
+
           const message = buildCliChannelMessage({
             runId,
             text: effectivePrompt,
@@ -582,6 +591,7 @@ export async function agentCommand(
             messageChannel,
             threadId: opts.threadId != null ? String(opts.threadId) : undefined,
             timestamp: Date.now(),
+            messageToolHints,
           });
 
           const delivery = await bridge.handle(message, undefined, opts.abortSignal);

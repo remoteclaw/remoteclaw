@@ -78,8 +78,9 @@ vi.mock("./runtime-factory.js", () => ({
 }));
 
 // Mock system-prompt to return a simple string
+const mockBuildSystemPrompt = vi.fn((_params: unknown) => "SYSTEM_PROMPT");
 vi.mock("./system-prompt.js", () => ({
-  buildSystemPrompt: vi.fn(() => "SYSTEM_PROMPT"),
+  buildSystemPrompt: (params: unknown) => mockBuildSystemPrompt(params),
 }));
 
 // Mock mcp-side-effects reader to return empty by default
@@ -108,6 +109,7 @@ beforeEach(async () => {
 
   // Reset mocks
   mockRuntimeInstance = mockRuntime([makeDone()]);
+  mockBuildSystemPrompt.mockClear();
   mockReadSideEffects.mockClear();
   mockReadSideEffects.mockResolvedValue({
     sentTexts: [],
@@ -440,6 +442,77 @@ describe("ChannelBridge", () => {
 
       const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
       expect(mcpEnv.REMOTECLAW_SIDE_EFFECTS_FILE).toMatch(/side-effects\.ndjson$/);
+    });
+  });
+
+  describe("messageToolHints forwarding", () => {
+    it("passes messageToolHints from ChannelMessage to buildSystemPrompt", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      await bridge.handle(
+        makeMessage({
+          provider: "discord",
+          messageToolHints: [
+            "Use the discord_send MCP tool with components.",
+            "Forms: pass components.modal to discord_send.",
+          ],
+        }),
+      );
+
+      expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
+      const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
+      expect(params.messageToolHints).toEqual([
+        "Use the discord_send MCP tool with components.",
+        "Forms: pass components.modal to discord_send.",
+      ]);
+    });
+
+    it("passes undefined messageToolHints when message has no hints", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage());
+
+      expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
+      const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
+      expect(params.messageToolHints).toBeUndefined();
+    });
+
+    it("passes text-directive hints (LINE model) to buildSystemPrompt", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      await bridge.handle(
+        makeMessage({
+          provider: "line",
+          messageToolHints: ["[[quick_replies: Option 1, Option 2]]"],
+        }),
+      );
+
+      expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
+      const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
+      expect(params.messageToolHints).toEqual(["[[quick_replies: Option 1, Option 2]]"]);
+    });
+
+    it("passes auto-detection hints (Feishu model) to buildSystemPrompt", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      await bridge.handle(
+        makeMessage({
+          provider: "feishu",
+          messageToolHints: [
+            "Feishu auto-detects markdown patterns and renders them as Card Kit 2.0.",
+          ],
+        }),
+      );
+
+      expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
+      const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
+      expect(params.messageToolHints).toEqual([
+        "Feishu auto-detects markdown patterns and renders them as Card Kit 2.0.",
+      ]);
     });
   });
 

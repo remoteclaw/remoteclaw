@@ -66,7 +66,7 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
   agentPrompt: {
     messageToolHints: () => [
       "- Feishu targeting: omit `target` to reply to the current conversation (auto-inferred). Explicit targets: `user:open_id` or `chat:chat_id`.",
-      "- Feishu supports interactive cards for rich messages.",
+      "- Feishu auto-detects markdown patterns in messages and renders them as Card Kit 2.0 interactive cards. Use standard markdown (headings, lists, bold, links) for rich formatting without any special tool calls.",
     ],
   },
   groups: {

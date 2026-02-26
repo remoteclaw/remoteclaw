@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { runWithModelFallback } from "../../agents/model-fallback.js";
 import {
   isCompactionFailureError,
@@ -102,6 +103,7 @@ function resolveGatewayTokenFromConfig(cfg: FollowupRun["run"]["config"]): strin
 function buildChannelMessage(params: {
   commandBody: string;
   sessionCtx: TemplateContext;
+  messageToolHints: string[] | undefined;
 }): ChannelMessage {
   return {
     id: params.sessionCtx.MessageSidFull ?? params.sessionCtx.MessageSid ?? crypto.randomUUID(),
@@ -111,6 +113,7 @@ function buildChannelMessage(params: {
     provider: params.sessionCtx.Provider?.trim() ?? "",
     timestamp: Date.now(),
     replyToId: params.sessionCtx.ReplyToId?.trim() || undefined,
+    messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
   };
 }
 
@@ -315,9 +318,16 @@ export async function runAgentTurnWithFallback(params: {
                 workspaceDir: params.followupRun.run.workspaceDir,
               });
 
+              const messageToolHints = resolveChannelMessageToolHints({
+                cfg,
+                channel: params.sessionCtx.Provider?.trim(),
+                accountId: params.sessionCtx.AccountId?.trim(),
+              });
+
               const message = buildChannelMessage({
                 commandBody: params.commandBody,
                 sessionCtx: params.sessionCtx,
+                messageToolHints,
               });
 
               // Build BridgeCallbacks that wrap the existing typing/normalization logic.

@@ -68,7 +68,7 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
   },
   agentPrompt: {
     messageToolHints: () => [
-      "- Adaptive Cards supported. Use `action=send` with `card={type,version,body}` to send rich cards.",
+      "- Adaptive Cards supported. Use the `msteams_send` MCP tool with a `card` parameter (`{type, version, body}`) to send rich Adaptive Card messages.",
       "- MSTeams targeting: omit `target` to reply to the current conversation (auto-inferred). Explicit targets: `user:ID` or `user:Display Name` (requires Graph API) for DMs, `conversation:19:...@thread.tacv2` for groups/channels. Prefer IDs over display names for speed.",
     ],
   },

@@ -22,6 +22,10 @@ vi.mock("../../middleware/channel-bridge.js", () => ({
   },
 }));
 
+vi.mock("../../agents/channel-tools.js", () => ({
+  resolveChannelMessageToolHints: vi.fn().mockReturnValue([]),
+}));
+
 vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentConfig: vi.fn().mockReturnValue(undefined),
   resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),

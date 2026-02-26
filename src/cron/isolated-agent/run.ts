@@ -7,6 +7,7 @@ import {
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
 import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
+import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { getCliSessionId, setCliSessionId } from "../../agents/cli-session.js";
 import { lookupContextTokens } from "../../agents/context.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
@@ -102,6 +103,7 @@ function buildCronChannelMessage(params: {
   commandBody: string;
   resolvedDelivery: { channel?: string; to?: string; accountId?: string };
   timestamp: number;
+  messageToolHints: string[] | undefined;
 }): ChannelMessage {
   return {
     id: params.job.id ?? crypto.randomUUID(),
@@ -110,6 +112,7 @@ function buildCronChannelMessage(params: {
     channelId: params.resolvedDelivery.to ?? "",
     provider: params.resolvedDelivery.channel ?? "cron",
     timestamp: params.timestamp,
+    messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
   };
 }
 
@@ -504,11 +507,18 @@ export async function runCronIsolatedAgentTurn(params: {
           workspaceDir,
         });
 
+        const messageToolHints = resolveChannelMessageToolHints({
+          cfg: cfgWithAgentDefaults,
+          channel: resolvedDelivery.channel,
+          accountId: resolvedDelivery.accountId,
+        });
+
         const message = buildCronChannelMessage({
           job: params.job,
           commandBody,
           resolvedDelivery,
           timestamp: now,
+          messageToolHints,
         });
 
         const delivery = await bridge.handle(message, undefined, abortSignal);

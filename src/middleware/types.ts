@@ -177,6 +177,8 @@ export type ChannelMessage = {
   replyToId?: string | undefined;
   /** Media URLs attached to the message. */
   mediaUrls?: string[] | undefined;
+  /** Channel-specific formatting hints (e.g., LINE directives, Discord component schema). */
+  messageToolHints?: string[] | undefined;
   /** Provider-specific metadata. */
   metadata?: Record<string, unknown> | undefined;
 };

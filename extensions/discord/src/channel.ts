@@ -170,8 +170,8 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
   },
   agentPrompt: {
     messageToolHints: () => [
-      "- Discord components: set `components` when sending messages to include buttons, selects, or v2 containers.",
-      "- Forms: add `components.modal` (title, fields). OpenClaw adds a trigger button and routes submissions as new messages.",
+      "- Use the `discord_send` MCP tool with a `components` parameter to include buttons, selects, or v2 containers in messages.",
+      "- Forms: pass `components.modal` (with title and fields) to `discord_send`. RemoteClaw adds a trigger button and routes submissions as new messages.",
     ],
   },
   messaging: {

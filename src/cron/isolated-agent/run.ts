@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import {
   resolveAgentConfig,
   resolveAgentDir,
@@ -6,7 +7,6 @@ import {
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
 import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
-import { runCliAgent } from "../../agents/cli-runner.js";
 import { getCliSessionId, setCliSessionId } from "../../agents/cli-session.js";
 import { lookupContextTokens } from "../../agents/context.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
@@ -19,27 +19,23 @@ import {
   resolveAllowedModelRef,
   resolveConfiguredModelRef,
   resolveHooksGmailModel,
-  resolveThinkingDefault,
 } from "../../agents/model-selection.js";
-import { runEmbeddedPiAgent } from "../../agents/pi-embedded.js";
+import type { EmbeddedPiRunResult } from "../../agents/pi-embedded-runner/types.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
-import {
-  normalizeThinkLevel,
-  normalizeVerboseLevel,
-  supportsXHighThinking,
-} from "../../auto-reply/thinking.js";
+import { normalizeVerboseLevel } from "../../auto-reply/thinking.js";
 import type { CliDeps } from "../../cli/outbound-send-deps.js";
 import type { OpenClawConfig } from "../../config/config.js";
-import {
-  resolveSessionTranscriptPath,
-  setSessionRuntimeModel,
-  updateSessionStore,
-} from "../../config/sessions.js";
+import { resolveGatewayPort } from "../../config/paths.js";
+import { setSessionRuntimeModel, updateSessionStore } from "../../config/sessions.js";
 import type { AgentDefaultsConfig } from "../../config/types.js";
+import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { logWarn } from "../../logger.js";
+import { ChannelBridge } from "../../middleware/channel-bridge.js";
+import type { SessionMap } from "../../middleware/session-map.js";
+import type { AgentDeliveryResult, ChannelMessage } from "../../middleware/types.js";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../../routing/session-key.js";
 import {
   buildSafeExternalPrompt,
@@ -65,6 +61,113 @@ import {
 } from "./helpers.js";
 import { resolveCronSession } from "./session.js";
 import { resolveCronSkillsSnapshot } from "./skills-snapshot.js";
+
+// ── ChannelBridge helpers ───────────────────────────────────────────────
+
+/**
+ * Create a SessionMap-compatible adapter that bridges the cron session
+ * store to the ChannelBridge's SessionMap interface.
+ *
+ * `get()` returns the CLI session ID from the cron session entry.
+ * `set()` is a no-op — session updates are handled by the caller after the run.
+ */
+function createSessionMapAdapter(params: { getSessionId: () => string | undefined }): SessionMap {
+  return {
+    async get() {
+      return params.getSessionId();
+    },
+    async set() {
+      // Session updates handled by caller (persistSessionEntry / setCliSessionId)
+    },
+    async delete() {
+      // Session cleanup handled by caller
+    },
+  } as unknown as SessionMap;
+}
+
+/** Resolve gateway URL from config for local gateway. */
+function resolveGatewayUrlFromConfig(cfg: OpenClawConfig): string {
+  const port = resolveGatewayPort(cfg);
+  return `ws://127.0.0.1:${port}`;
+}
+
+/** Resolve gateway auth token from config. */
+function resolveGatewayTokenFromConfig(cfg: OpenClawConfig): string {
+  return resolveGatewayCredentialsFromConfig({ cfg, env: process.env }).token ?? "";
+}
+
+/** Build a ChannelMessage from the cron job context. */
+function buildCronChannelMessage(params: {
+  job: CronJob;
+  commandBody: string;
+  resolvedDelivery: { channel?: string; to?: string; accountId?: string };
+  timestamp: number;
+}): ChannelMessage {
+  return {
+    id: params.job.id ?? crypto.randomUUID(),
+    text: params.commandBody,
+    from: params.resolvedDelivery.accountId ?? "system",
+    channelId: params.resolvedDelivery.to ?? "",
+    provider: params.resolvedDelivery.channel ?? "cron",
+    timestamp: params.timestamp,
+  };
+}
+
+/**
+ * Map ChannelBridge's AgentDeliveryResult to EmbeddedPiRunResult for
+ * backward-compatibility with the cron result processing pipeline.
+ */
+function mapToEmbeddedPiRunResult(
+  delivery: AgentDeliveryResult,
+  provider: string,
+  model: string,
+): EmbeddedPiRunResult {
+  const run = delivery.run;
+  const mcp = delivery.mcp;
+
+  let metaError: EmbeddedPiRunResult["meta"]["error"];
+  if (delivery.error && run.errorSubtype === "context_window") {
+    metaError = { kind: "context_overflow", message: delivery.error };
+  }
+
+  return {
+    payloads: delivery.payloads.length > 0 ? delivery.payloads : undefined,
+    meta: {
+      durationMs: run.durationMs,
+      agentMeta: {
+        sessionId: run.sessionId ?? "",
+        provider,
+        model,
+        usage: run.usage
+          ? {
+              input: run.usage.inputTokens,
+              output: run.usage.outputTokens,
+              cacheRead: run.usage.cacheReadTokens,
+              cacheWrite: run.usage.cacheWriteTokens,
+            }
+          : undefined,
+      },
+      aborted: run.aborted || undefined,
+      error: metaError,
+      stopReason: run.stopReason,
+    },
+    didSendViaMessagingTool: mcp.sentTexts.length > 0 || mcp.sentMediaUrls.length > 0 || undefined,
+    messagingToolSentTexts: mcp.sentTexts.length > 0 ? mcp.sentTexts : undefined,
+    messagingToolSentMediaUrls: mcp.sentMediaUrls.length > 0 ? mcp.sentMediaUrls : undefined,
+    messagingToolSentTargets:
+      mcp.sentTargets.length > 0
+        ? mcp.sentTargets.map((t) => ({
+            tool: t.tool,
+            provider: t.provider,
+            accountId: t.accountId,
+            to: t.to,
+          }))
+        : undefined,
+    successfulCronAdds: mcp.cronAdds || undefined,
+  };
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────
 
 export type RunCronAgentTurnResult = {
   /** Last non-empty agent text output (not truncated). */
@@ -268,31 +371,6 @@ export async function runCronIsolatedAgentTurn(params: {
     }
   }
 
-  // Resolve thinking level - job thinking > hooks.gmail.thinking > agent default
-  const hooksGmailThinking = isGmailHook
-    ? normalizeThinkLevel(params.cfg.hooks?.gmail?.thinking)
-    : undefined;
-  const thinkOverride = normalizeThinkLevel(agentCfg?.thinkingDefault);
-  const jobThink = normalizeThinkLevel(
-    (params.job.payload.kind === "agentTurn" ? params.job.payload.thinking : undefined) ??
-      undefined,
-  );
-  let thinkLevel = jobThink ?? hooksGmailThinking ?? thinkOverride;
-  if (!thinkLevel) {
-    thinkLevel = resolveThinkingDefault({
-      cfg: cfgWithAgentDefaults,
-      provider,
-      model,
-      catalog: await loadCatalog(),
-    });
-  }
-  if (thinkLevel === "xhigh" && !supportsXHighThinking(provider, model)) {
-    logWarn(
-      `[cron:${params.job.id}] Thinking level "xhigh" is not supported for ${provider}/${model}; downgrading to "high".`,
-    );
-    thinkLevel = "high";
-  }
-
   const timeoutMs = resolveAgentTimeoutMs({
     cfg: cfgWithAgentDefaults,
     overrideSeconds:
@@ -377,7 +455,8 @@ export async function runCronIsolatedAgentTurn(params: {
   // Resolve auth profile for the session, mirroring the inbound auto-reply path
   // (get-reply-run.ts). Without this, isolated cron sessions fall back to env-var
   // auth which may not match the configured auth-profiles, causing 401 errors.
-  const authProfileId = await resolveSessionAuthProfileOverride({
+  // Resolve auth profile for the session (side effect: updates cronSession.sessionEntry).
+  await resolveSessionAuthProfileOverride({
     cfg: cfgWithAgentDefaults,
     provider,
     agentDir,
@@ -387,15 +466,13 @@ export async function runCronIsolatedAgentTurn(params: {
     storePath: cronSession.storePath,
     isNewSession: cronSession.isNewSession,
   });
-  const authProfileIdSource = cronSession.sessionEntry.authProfileOverrideSource;
 
-  let runResult: Awaited<ReturnType<typeof runEmbeddedPiAgent>>;
+  let runResult: EmbeddedPiRunResult;
   let fallbackProvider = provider;
   let fallbackModel = model;
   const runStartedAt = Date.now();
   let runEndedAt = runStartedAt;
   try {
-    const sessionFile = resolveSessionTranscriptPath(cronSession.sessionEntry.sessionId, agentId);
     const resolvedVerboseLevel =
       normalizeVerboseLevel(cronSession.sessionEntry.verboseLevel) ??
       normalizeVerboseLevel(agentCfg?.verboseDefault) ??
@@ -404,60 +481,44 @@ export async function runCronIsolatedAgentTurn(params: {
       sessionKey: agentSessionKey,
       verboseLevel: resolvedVerboseLevel,
     });
-    const messageChannel = resolvedDelivery.channel;
     const fallbackResult = await runWithModelFallback({
       cfg: cfgWithAgentDefaults,
       provider,
       model,
       agentDir,
       fallbacksOverride: resolveAgentModelFallbacksOverride(params.cfg, agentId),
-      run: (providerOverride, modelOverride) => {
+      run: async (providerOverride, modelOverride) => {
         if (abortSignal?.aborted) {
           throw new Error(abortReason());
         }
-        if (isCliProvider(providerOverride, cfgWithAgentDefaults)) {
-          const cliSessionId = getCliSessionId(cronSession.sessionEntry, providerOverride);
-          return runCliAgent({
-            sessionId: cronSession.sessionEntry.sessionId,
-            sessionKey: agentSessionKey,
-            agentId,
-            sessionFile,
-            workspaceDir,
-            config: cfgWithAgentDefaults,
-            prompt: commandBody,
-            provider: providerOverride,
-            model: modelOverride,
-            thinkLevel,
-            timeoutMs,
-            runId: cronSession.sessionEntry.sessionId,
-            cliSessionId,
-          });
-        }
-        return runEmbeddedPiAgent({
-          sessionId: cronSession.sessionEntry.sessionId,
-          sessionKey: agentSessionKey,
-          agentId,
-          messageChannel,
-          agentAccountId: resolvedDelivery.accountId,
-          sessionFile,
-          agentDir,
-          workspaceDir,
-          config: cfgWithAgentDefaults,
-          skillsSnapshot,
-          prompt: commandBody,
-          lane: params.lane ?? "cron",
-          provider: providerOverride,
-          model: modelOverride,
-          authProfileId,
-          authProfileIdSource,
-          thinkLevel,
-          verboseLevel: resolvedVerboseLevel,
-          timeoutMs,
-          runId: cronSession.sessionEntry.sessionId,
-          requireExplicitMessageTarget: true,
-          disableMessageTool: deliveryRequested,
-          abortSignal,
+
+        const sessionMap = createSessionMapAdapter({
+          getSessionId: () => getCliSessionId(cronSession.sessionEntry, providerOverride),
         });
+
+        const bridge = new ChannelBridge({
+          provider: providerOverride,
+          sessionMap,
+          gatewayUrl: resolveGatewayUrlFromConfig(cfgWithAgentDefaults),
+          gatewayToken: resolveGatewayTokenFromConfig(cfgWithAgentDefaults),
+          workspaceDir,
+        });
+
+        const message = buildCronChannelMessage({
+          job: params.job,
+          commandBody,
+          resolvedDelivery,
+          timestamp: now,
+        });
+
+        const delivery = await bridge.handle(message, undefined, abortSignal);
+
+        // Complete runtime failure: re-throw so runWithModelFallback can try fallback.
+        if (delivery.error && delivery.payloads.length === 0) {
+          throw new Error(delivery.error);
+        }
+
+        return mapToEmbeddedPiRunResult(delivery, providerOverride, modelOverride);
       },
     });
     runResult = fallbackResult.result;

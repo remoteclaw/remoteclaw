@@ -6,8 +6,7 @@ import { DeliveryAdapter } from "./delivery-adapter.js";
 import { classifyError } from "./error-classifier.js";
 import { readMcpSideEffects } from "./mcp-side-effects.js";
 import { createCliRuntime } from "./runtime-factory.js";
-import type { SessionKey } from "./session-map.js";
-import { SessionMap } from "./session-map.js";
+import type { SessionKey, SessionMap } from "./session-map.js";
 import { buildSystemPrompt } from "./system-prompt.js";
 import type {
   AgentDeliveryResult,
@@ -142,6 +141,7 @@ export class ChannelBridge {
         payloads = [];
         runResult = {
           ...DEFAULT_RUN_RESULT,
+          // ErrorClassifier uses "context_overflow"; AgentRunResult uses "context_window"
           errorSubtype: category === "context_overflow" ? "context_window" : category,
         };
       }

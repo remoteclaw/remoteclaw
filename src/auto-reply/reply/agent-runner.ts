@@ -2,7 +2,6 @@ import fs from "node:fs";
 import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { resolveModelAuthMode } from "../../agents/model-auth.js";
-import { isCliProvider } from "../../agents/model-selection.js";
 import { queueEmbeddedPiMessage } from "../../agents/pi-embedded.js";
 import { hasNonzeroUsage } from "../../agents/usage.js";
 import {
@@ -484,9 +483,9 @@ export async function runReplyAgent(params: {
         });
       }
     }
-    const cliSessionId = isCliProvider(providerUsed, cfg)
-      ? runResult.meta?.agentMeta?.sessionId?.trim()
-      : undefined;
+    // All providers now route through ChannelBridge (CLI-only execution), so
+    // the session ID is always present when returned by the runtime.
+    const cliSessionId = runResult.meta?.agentMeta?.sessionId?.trim() || undefined;
     const contextTokensUsed =
       agentCfgContextTokens ??
       lookupContextTokens(modelUsed) ??

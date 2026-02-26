@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
+import type { AgentDeliveryResult, BridgeCallbacks, ChannelMessage } from "../middleware/types.js";
 import { createTempHomeHarness, makeReplyConfig } from "./reply.test-harness.js";
 
 const agentMocks = vi.hoisted(() => ({
@@ -27,6 +28,48 @@ vi.mock("../web/session.js", () => ({
   webAuthExists: agentMocks.webAuthExists,
   getWebAuthAgeMs: agentMocks.getWebAuthAgeMs,
   readWebSelfId: agentMocks.readWebSelfId,
+}));
+
+vi.mock("../middleware/channel-bridge.js", () => ({
+  ChannelBridge: class MockChannelBridge {
+    #provider: string;
+    constructor(opts: { provider: string }) {
+      this.#provider = opts.provider;
+    }
+    async handle(
+      message: ChannelMessage,
+      callbacks?: BridgeCallbacks,
+    ): Promise<AgentDeliveryResult> {
+      const embeddedParams = {
+        prompt: message.text,
+        provider: this.#provider,
+        onBlockReply: callbacks?.onBlockReply,
+        onPartialReply: callbacks?.onPartialReply,
+        onToolResult: callbacks?.onToolResult,
+      };
+      const result = await agentMocks.runEmbeddedPiAgent(embeddedParams);
+      return {
+        payloads: result?.payloads ?? [],
+        run: {
+          text: "",
+          sessionId: result?.meta?.agentMeta?.sessionId,
+          durationMs: result?.meta?.durationMs ?? 0,
+          usage: undefined,
+          aborted: false,
+        },
+        mcp: { sentTexts: [], sentMediaUrls: [], sentTargets: [], cronAdds: 0 },
+      };
+    }
+  },
+}));
+
+vi.mock("../config/paths.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../config/paths.js")>();
+  return { ...actual, resolveGatewayPort: () => 9999 };
+});
+
+vi.mock("../gateway/credentials.js", () => ({
+  resolveGatewayCredentialsFromConfig: () => ({ token: "test-token" }),
 }));
 
 import { getReplyFromConfig } from "./reply.js";

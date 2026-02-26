@@ -4,11 +4,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadModelCatalog } from "../agents/model-catalog.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { withTempHome as withTempHomeHarness } from "../config/home-env.test-harness.js";
+import type {
+  AgentDeliveryResult,
+  BridgeCallbacks,
+  ChannelMessage,
+  McpSideEffects,
+} from "../middleware/types.js";
 import { getReplyFromConfig } from "./reply.js";
 
 type RunEmbeddedPiAgent = typeof import("../agents/pi-embedded.js").runEmbeddedPiAgent;
 type RunEmbeddedPiAgentParams = Parameters<RunEmbeddedPiAgent>[0];
 type RunEmbeddedPiAgentReply = Awaited<ReturnType<RunEmbeddedPiAgent>>;
+
+const EMPTY_MCP: McpSideEffects = {
+  sentTexts: [],
+  sentMediaUrls: [],
+  sentTargets: [],
+  cronAdds: 0,
+};
 
 const piEmbeddedMock = vi.hoisted(() => ({
   abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
@@ -23,6 +36,54 @@ vi.mock("/src/agents/pi-embedded.js", () => piEmbeddedMock);
 vi.mock("../agents/pi-embedded.js", () => piEmbeddedMock);
 vi.mock("../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(),
+}));
+
+/** Convert EmbeddedPiRunResult to AgentDeliveryResult for the bridge mock. */
+function toDeliveryResult(result: RunEmbeddedPiAgentReply): AgentDeliveryResult {
+  return {
+    payloads: result?.payloads ?? [],
+    run: {
+      text: "",
+      sessionId: result?.meta?.agentMeta?.sessionId,
+      durationMs: result?.meta?.durationMs ?? 0,
+      usage: result?.meta?.agentMeta?.usage
+        ? {
+            inputTokens: result.meta.agentMeta.usage.input ?? 0,
+            outputTokens: result.meta.agentMeta.usage.output ?? 0,
+          }
+        : undefined,
+      aborted: result?.meta?.aborted ?? false,
+    },
+    mcp: { ...EMPTY_MCP },
+  };
+}
+
+vi.mock("../middleware/channel-bridge.js", () => ({
+  ChannelBridge: class MockChannelBridge {
+    async handle(message: ChannelMessage, callbacks?: BridgeCallbacks) {
+      // Translate bridge callbacks to embedded-agent-style params
+      const embeddedParams = {
+        prompt: message.text,
+        onBlockReply: callbacks?.onBlockReply,
+        onPartialReply: callbacks?.onPartialReply,
+        onToolResult: callbacks?.onToolResult,
+      } as unknown as RunEmbeddedPiAgentParams;
+      const result = await piEmbeddedMock.runEmbeddedPiAgent(embeddedParams);
+      return toDeliveryResult(result);
+    }
+  },
+}));
+
+vi.mock("../config/paths.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../config/paths.js")>();
+  return {
+    ...actual,
+    resolveGatewayPort: () => 9999,
+  };
+});
+
+vi.mock("../gateway/credentials.js", () => ({
+  resolveGatewayCredentialsFromConfig: () => ({ token: "test-token" }),
 }));
 
 type GetReplyOptions = NonNullable<Parameters<typeof getReplyFromConfig>[1]>;

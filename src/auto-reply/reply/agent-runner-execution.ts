@@ -1,9 +1,6 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
-import { runCliAgent } from "../../agents/cli-runner.js";
-import { getCliSessionId } from "../../agents/cli-session.js";
 import { runWithModelFallback } from "../../agents/model-fallback.js";
-import { isCliProvider } from "../../agents/model-selection.js";
 import {
   isCompactionFailureError,
   isContextOverflowError,
@@ -11,30 +8,30 @@ import {
   isTransientHttpError,
   sanitizeUserFacingText,
 } from "../../agents/pi-embedded-helpers.js";
-import { runEmbeddedPiAgent } from "../../agents/pi-embedded.js";
+import type { EmbeddedPiRunResult } from "../../agents/pi-embedded-runner/types.js";
+import { resolveGatewayPort } from "../../config/paths.js";
 import {
-  resolveGroupSessionKey,
   resolveSessionTranscriptPath,
   type SessionEntry,
   updateSessionStore,
 } from "../../config/sessions.js";
+import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.js";
 import { logVerbose } from "../../globals.js";
 import { emitAgentEvent, registerAgentRunContext } from "../../infra/agent-events.js";
+import { ChannelBridge } from "../../middleware/channel-bridge.js";
+import type { SessionMap } from "../../middleware/session-map.js";
+import type {
+  AgentDeliveryResult,
+  BridgeCallbacks,
+  ChannelMessage,
+} from "../../middleware/types.js";
 import { defaultRuntime } from "../../runtime.js";
-import {
-  isMarkdownCapableMessageChannel,
-  resolveMessageChannel,
-} from "../../utils/message-channel.js";
 import { stripHeartbeatToken } from "../heartbeat.js";
 import type { TemplateContext } from "../templating.js";
 import type { VerboseLevel } from "../thinking.js";
 import { isSilentReplyPrefixText, isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
-import {
-  buildEmbeddedRunBaseParams,
-  buildEmbeddedRunContexts,
-  resolveModelFallbackOptions,
-} from "./agent-runner-utils.js";
+import { resolveModelFallbackOptions } from "./agent-runner-utils.js";
 import { type BlockReplyPipeline } from "./block-reply-pipeline.js";
 import type { FollowupRun } from "./queue.js";
 import { createBlockReplyDeliveryHandler } from "./reply-delivery.js";
@@ -53,7 +50,7 @@ export type AgentRunLoopResult =
   | {
       kind: "success";
       runId: string;
-      runResult: Awaited<ReturnType<typeof runEmbeddedPiAgent>>;
+      runResult: EmbeddedPiRunResult;
       fallbackProvider?: string;
       fallbackModel?: string;
       fallbackAttempts: RuntimeFallbackAttempt[];
@@ -63,6 +60,116 @@ export type AgentRunLoopResult =
       directlySentBlockKeys?: Set<string>;
     }
   | { kind: "final"; payload: ReplyPayload };
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Create a SessionMap-compatible adapter that bridges the auto-reply session
+ * store to the ChannelBridge's SessionMap interface.
+ *
+ * `get()` returns the CLI session ID from the active session entry.
+ * `set()` is a no-op — session updates are handled by the caller after the run.
+ */
+function createSessionMapAdapter(params: { getSessionId: () => string | undefined }): SessionMap {
+  return {
+    async get() {
+      return params.getSessionId();
+    },
+    async set() {
+      // Session updates handled by caller (persistRunSessionUsage)
+    },
+    async delete() {
+      // Session cleanup handled by caller
+    },
+  } as unknown as SessionMap;
+}
+
+/** Resolve gateway URL from config for local gateway. */
+function resolveGatewayUrlFromConfig(cfg: FollowupRun["run"]["config"]): string {
+  const port = resolveGatewayPort(cfg ?? undefined);
+  return `ws://127.0.0.1:${port}`;
+}
+
+/** Resolve gateway auth token from config. */
+function resolveGatewayTokenFromConfig(cfg: FollowupRun["run"]["config"]): string {
+  if (!cfg) {
+    return "";
+  }
+  return resolveGatewayCredentialsFromConfig({ cfg, env: process.env }).token ?? "";
+}
+
+/** Build a ChannelMessage from the auto-reply's template context. */
+function buildChannelMessage(params: {
+  commandBody: string;
+  sessionCtx: TemplateContext;
+}): ChannelMessage {
+  return {
+    id: params.sessionCtx.MessageSidFull ?? params.sessionCtx.MessageSid ?? crypto.randomUUID(),
+    text: params.commandBody,
+    from: params.sessionCtx.From?.trim() ?? "",
+    channelId: params.sessionCtx.To?.trim() ?? "",
+    provider: params.sessionCtx.Provider?.trim() ?? "",
+    timestamp: Date.now(),
+    replyToId: params.sessionCtx.ReplyToId?.trim() || undefined,
+  };
+}
+
+/**
+ * Map ChannelBridge's AgentDeliveryResult to EmbeddedPiRunResult for
+ * backward-compatibility with the auto-reply result processing pipeline.
+ */
+function mapToEmbeddedPiRunResult(
+  delivery: AgentDeliveryResult,
+  provider: string,
+  model: string,
+): EmbeddedPiRunResult {
+  const run = delivery.run;
+  const mcp = delivery.mcp;
+
+  // Map error subtype to the meta.error format used by the auto-reply pipeline
+  let metaError: EmbeddedPiRunResult["meta"]["error"];
+  if (delivery.error && run.errorSubtype === "context_window") {
+    metaError = { kind: "context_overflow", message: delivery.error };
+  }
+
+  return {
+    payloads: delivery.payloads.length > 0 ? delivery.payloads : undefined,
+    meta: {
+      durationMs: run.durationMs,
+      agentMeta: {
+        sessionId: run.sessionId ?? "",
+        provider,
+        model,
+        usage: run.usage
+          ? {
+              input: run.usage.inputTokens,
+              output: run.usage.outputTokens,
+              cacheRead: run.usage.cacheReadTokens,
+              cacheWrite: run.usage.cacheWriteTokens,
+            }
+          : undefined,
+      },
+      aborted: run.aborted || undefined,
+      error: metaError,
+      stopReason: run.stopReason,
+    },
+    didSendViaMessagingTool: mcp.sentTexts.length > 0 || mcp.sentMediaUrls.length > 0 || undefined,
+    messagingToolSentTexts: mcp.sentTexts.length > 0 ? mcp.sentTexts : undefined,
+    messagingToolSentMediaUrls: mcp.sentMediaUrls.length > 0 ? mcp.sentMediaUrls : undefined,
+    messagingToolSentTargets:
+      mcp.sentTargets.length > 0
+        ? mcp.sentTargets.map((t) => ({
+            tool: t.tool,
+            provider: t.provider,
+            accountId: t.accountId,
+            to: t.to,
+          }))
+        : undefined,
+    successfulCronAdds: mcp.cronAdds || undefined,
+  };
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────
 
 export async function runAgentTurnWithFallback(params: {
   commandBody: string;
@@ -94,7 +201,7 @@ export async function runAgentTurnWithFallback(params: {
 }): Promise<AgentRunLoopResult> {
   const TRANSIENT_HTTP_RETRY_DELAY_MS = 2_500;
   let didLogHeartbeatStrip = false;
-  let autoCompactionCompleted = false;
+  const autoCompactionCompleted = false;
   // Track payloads sent directly (not via pipeline) during tool flush to avoid duplicates.
   const directlySentBlockKeys = new Set<string>();
 
@@ -114,7 +221,7 @@ export async function runAgentTurnWithFallback(params: {
       isHeartbeat: params.isHeartbeat,
     });
   }
-  let runResult: Awaited<ReturnType<typeof runEmbeddedPiAgent>>;
+  let runResult: EmbeddedPiRunResult;
   let fallbackProvider = params.followupRun.run.provider;
   let fallbackModel = params.followupRun.run.model;
   let fallbackAttempts: RuntimeFallbackAttempt[] = [];
@@ -180,65 +287,144 @@ export async function runAgentTurnWithFallback(params: {
             thinkLevel: params.followupRun.run.thinkLevel,
           });
 
-          if (isCliProvider(provider, params.followupRun.run.config)) {
-            const startedAt = Date.now();
-            notifyAgentRunStart();
-            emitAgentEvent({
-              runId,
-              stream: "lifecycle",
-              data: {
-                phase: "start",
-                startedAt,
-              },
-            });
-            const cliSessionId = getCliSessionId(params.getActiveSessionEntry(), provider);
-            return (async () => {
-              let lifecycleTerminalEmitted = false;
-              try {
-                const result = await runCliAgent({
-                  sessionId: params.followupRun.run.sessionId,
-                  sessionKey: params.sessionKey,
-                  agentId: params.followupRun.run.agentId,
-                  sessionFile: params.followupRun.run.sessionFile,
-                  workspaceDir: params.followupRun.run.workspaceDir,
-                  config: params.followupRun.run.config,
-                  prompt: params.commandBody,
-                  provider,
-                  model,
-                  thinkLevel: params.followupRun.run.thinkLevel,
-                  timeoutMs: params.followupRun.run.timeoutMs,
-                  runId,
-                  extraSystemPrompt: params.followupRun.run.extraSystemPrompt,
-                  ownerNumbers: params.followupRun.run.ownerNumbers,
-                  cliSessionId,
-                  images: params.opts?.images,
-                });
+          const startedAt = Date.now();
+          notifyAgentRunStart();
+          emitAgentEvent({
+            runId,
+            stream: "lifecycle",
+            data: {
+              phase: "start",
+              startedAt,
+            },
+          });
 
-                // CLI backends don't emit streaming assistant events, so we need to
-                // emit one with the final text so server-chat can populate its buffer
-                // and send the response to TUI/WebSocket clients.
-                const cliText = result.payloads?.[0]?.text?.trim();
-                if (cliText) {
-                  emitAgentEvent({
-                    runId,
-                    stream: "assistant",
-                    data: { text: cliText },
+          return (async () => {
+            let lifecycleTerminalEmitted = false;
+            try {
+              // Session adapter: reads the CLI session ID from the auto-reply session entry.
+              const sessionMap = createSessionMapAdapter({
+                getSessionId: () => params.getActiveSessionEntry()?.cliSessionIds?.[provider],
+              });
+
+              const cfg = params.followupRun.run.config;
+              const bridge = new ChannelBridge({
+                provider,
+                sessionMap,
+                gatewayUrl: resolveGatewayUrlFromConfig(cfg),
+                gatewayToken: resolveGatewayTokenFromConfig(cfg),
+                workspaceDir: params.followupRun.run.workspaceDir,
+              });
+
+              const message = buildChannelMessage({
+                commandBody: params.commandBody,
+                sessionCtx: params.sessionCtx,
+              });
+
+              // Build BridgeCallbacks that wrap the existing typing/normalization logic.
+              const callbacks: BridgeCallbacks = {
+                onPartialReply: async (payload) => {
+                  const textForTyping = await handlePartialForTyping(payload);
+                  if (!params.opts?.onPartialReply || textForTyping === undefined) {
+                    return;
+                  }
+                  await params.opts.onPartialReply({
+                    text: textForTyping,
+                    mediaUrls: payload.mediaUrls,
                   });
-                }
+                },
+                onBlockReply: params.opts?.onBlockReply
+                  ? createBlockReplyDeliveryHandler({
+                      onBlockReply: params.opts.onBlockReply,
+                      currentMessageId:
+                        params.sessionCtx.MessageSidFull ?? params.sessionCtx.MessageSid,
+                      normalizeStreamingText,
+                      applyReplyToMode: params.applyReplyToMode,
+                      typingSignals: params.typingSignals,
+                      blockStreamingEnabled: params.blockStreamingEnabled,
+                      blockReplyPipeline,
+                      directlySentBlockKeys,
+                    })
+                  : undefined,
+                onToolResult: onToolResult
+                  ? (() => {
+                      // Serialize tool result delivery to preserve message ordering.
+                      // Without this, concurrent tool callbacks race through typing signals
+                      // and message sends, causing out-of-order delivery to the user.
+                      // See: https://github.com/openclaw/openclaw/issues/11044
+                      let toolResultChain: Promise<void> = Promise.resolve();
+                      return (payload: ReplyPayload) => {
+                        toolResultChain = toolResultChain
+                          .then(async () => {
+                            const { text, skip } = normalizeStreamingText(payload);
+                            if (skip) {
+                              return;
+                            }
+                            await params.typingSignals.signalTextDelta(text);
+                            await onToolResult({
+                              text,
+                              mediaUrls: payload.mediaUrls,
+                            });
+                          })
+                          .catch((err) => {
+                            // Keep chain healthy after an error so later tool results still deliver.
+                            logVerbose(`tool result delivery failed: ${String(err)}`);
+                          });
+                        const task = toolResultChain.finally(() => {
+                          params.pendingToolTasks.delete(task);
+                        });
+                        params.pendingToolTasks.add(task);
+                      };
+                    })()
+                  : undefined,
+              };
 
+              const delivery = await bridge.handle(message, callbacks, params.opts?.abortSignal);
+
+              // Complete runtime failure: re-throw so runWithModelFallback can try fallback.
+              if (delivery.error && delivery.payloads.length === 0) {
+                throw new Error(delivery.error);
+              }
+
+              // Emit assistant text event for TUI/WebSocket clients (CLI backends don't
+              // stream assistant events, so we emit one with the final text).
+              const finalText = delivery.run.text?.trim();
+              if (finalText) {
                 emitAgentEvent({
                   runId,
-                  stream: "lifecycle",
-                  data: {
-                    phase: "end",
-                    startedAt,
-                    endedAt: Date.now(),
-                  },
+                  stream: "assistant",
+                  data: { text: finalText },
                 });
-                lifecycleTerminalEmitted = true;
+              }
 
-                return result;
-              } catch (err) {
+              emitAgentEvent({
+                runId,
+                stream: "lifecycle",
+                data: {
+                  phase: "end",
+                  startedAt,
+                  endedAt: Date.now(),
+                },
+              });
+              lifecycleTerminalEmitted = true;
+
+              return mapToEmbeddedPiRunResult(delivery, provider, model);
+            } catch (err) {
+              emitAgentEvent({
+                runId,
+                stream: "lifecycle",
+                data: {
+                  phase: "error",
+                  startedAt,
+                  endedAt: Date.now(),
+                  error: String(err),
+                },
+              });
+              lifecycleTerminalEmitted = true;
+              throw err;
+            } finally {
+              // Defensive backstop: never let a run complete without a terminal
+              // lifecycle event, otherwise downstream consumers can hang.
+              if (!lifecycleTerminalEmitted) {
                 emitAgentEvent({
                   runId,
                   stream: "lifecycle",
@@ -246,173 +432,12 @@ export async function runAgentTurnWithFallback(params: {
                     phase: "error",
                     startedAt,
                     endedAt: Date.now(),
-                    error: String(err),
+                    error: "Bridge run completed without lifecycle terminal event",
                   },
                 });
-                lifecycleTerminalEmitted = true;
-                throw err;
-              } finally {
-                // Defensive backstop: never let a CLI run complete without a terminal
-                // lifecycle event, otherwise downstream consumers can hang.
-                if (!lifecycleTerminalEmitted) {
-                  emitAgentEvent({
-                    runId,
-                    stream: "lifecycle",
-                    data: {
-                      phase: "error",
-                      startedAt,
-                      endedAt: Date.now(),
-                      error: "CLI run completed without lifecycle terminal event",
-                    },
-                  });
-                }
               }
-            })();
-          }
-          const { authProfile, embeddedContext, senderContext } = buildEmbeddedRunContexts({
-            run: params.followupRun.run,
-            sessionCtx: params.sessionCtx,
-            hasRepliedRef: params.opts?.hasRepliedRef,
-            provider,
-          });
-          const runBaseParams = buildEmbeddedRunBaseParams({
-            run: params.followupRun.run,
-            provider,
-            model,
-            runId,
-            authProfile,
-          });
-          return runEmbeddedPiAgent({
-            ...embeddedContext,
-            groupId: resolveGroupSessionKey(params.sessionCtx)?.id,
-            groupChannel:
-              params.sessionCtx.GroupChannel?.trim() ?? params.sessionCtx.GroupSubject?.trim(),
-            groupSpace: params.sessionCtx.GroupSpace?.trim() ?? undefined,
-            ...senderContext,
-            ...runBaseParams,
-            prompt: params.commandBody,
-            extraSystemPrompt: params.followupRun.run.extraSystemPrompt,
-            toolResultFormat: (() => {
-              const channel = resolveMessageChannel(
-                params.sessionCtx.Surface,
-                params.sessionCtx.Provider,
-              );
-              if (!channel) {
-                return "markdown";
-              }
-              return isMarkdownCapableMessageChannel(channel) ? "markdown" : "plain";
-            })(),
-            suppressToolErrorWarnings: params.opts?.suppressToolErrorWarnings,
-            images: params.opts?.images,
-            abortSignal: params.opts?.abortSignal,
-            blockReplyBreak: params.resolvedBlockStreamingBreak,
-            blockReplyChunking: params.blockReplyChunking,
-            onPartialReply: async (payload) => {
-              const textForTyping = await handlePartialForTyping(payload);
-              if (!params.opts?.onPartialReply || textForTyping === undefined) {
-                return;
-              }
-              await params.opts.onPartialReply({
-                text: textForTyping,
-                mediaUrls: payload.mediaUrls,
-              });
-            },
-            onAssistantMessageStart: async () => {
-              await params.typingSignals.signalMessageStart();
-              await params.opts?.onAssistantMessageStart?.();
-            },
-            onReasoningStream:
-              params.typingSignals.shouldStartOnReasoning || params.opts?.onReasoningStream
-                ? async (payload) => {
-                    await params.typingSignals.signalReasoningDelta();
-                    await params.opts?.onReasoningStream?.({
-                      text: payload.text,
-                      mediaUrls: payload.mediaUrls,
-                    });
-                  }
-                : undefined,
-            onReasoningEnd: params.opts?.onReasoningEnd,
-            onAgentEvent: async (evt) => {
-              // Signal run start only after the embedded agent emits real activity.
-              const hasLifecyclePhase =
-                evt.stream === "lifecycle" && typeof evt.data.phase === "string";
-              if (evt.stream !== "lifecycle" || hasLifecyclePhase) {
-                notifyAgentRunStart();
-              }
-              // Trigger typing when tools start executing.
-              // Must await to ensure typing indicator starts before tool summaries are emitted.
-              if (evt.stream === "tool") {
-                const phase = typeof evt.data.phase === "string" ? evt.data.phase : "";
-                const name = typeof evt.data.name === "string" ? evt.data.name : undefined;
-                if (phase === "start" || phase === "update") {
-                  await params.typingSignals.signalToolStart();
-                  await params.opts?.onToolStart?.({ name, phase });
-                }
-              }
-              // Track auto-compaction completion
-              if (evt.stream === "compaction") {
-                const phase = typeof evt.data.phase === "string" ? evt.data.phase : "";
-                if (phase === "end") {
-                  autoCompactionCompleted = true;
-                }
-              }
-            },
-            // Always pass onBlockReply so flushBlockReplyBuffer works before tool execution,
-            // even when regular block streaming is disabled. The handler sends directly
-            // via opts.onBlockReply when the pipeline isn't available.
-            onBlockReply: params.opts?.onBlockReply
-              ? createBlockReplyDeliveryHandler({
-                  onBlockReply: params.opts.onBlockReply,
-                  currentMessageId:
-                    params.sessionCtx.MessageSidFull ?? params.sessionCtx.MessageSid,
-                  normalizeStreamingText,
-                  applyReplyToMode: params.applyReplyToMode,
-                  typingSignals: params.typingSignals,
-                  blockStreamingEnabled: params.blockStreamingEnabled,
-                  blockReplyPipeline,
-                  directlySentBlockKeys,
-                })
-              : undefined,
-            onBlockReplyFlush:
-              params.blockStreamingEnabled && blockReplyPipeline
-                ? async () => {
-                    await blockReplyPipeline.flush({ force: true });
-                  }
-                : undefined,
-            shouldEmitToolResult: params.shouldEmitToolResult,
-            shouldEmitToolOutput: params.shouldEmitToolOutput,
-            onToolResult: onToolResult
-              ? (() => {
-                  // Serialize tool result delivery to preserve message ordering.
-                  // Without this, concurrent tool callbacks race through typing signals
-                  // and message sends, causing out-of-order delivery to the user.
-                  // See: https://github.com/openclaw/openclaw/issues/11044
-                  let toolResultChain: Promise<void> = Promise.resolve();
-                  return (payload: ReplyPayload) => {
-                    toolResultChain = toolResultChain
-                      .then(async () => {
-                        const { text, skip } = normalizeStreamingText(payload);
-                        if (skip) {
-                          return;
-                        }
-                        await params.typingSignals.signalTextDelta(text);
-                        await onToolResult({
-                          text,
-                          mediaUrls: payload.mediaUrls,
-                        });
-                      })
-                      .catch((err) => {
-                        // Keep chain healthy after an error so later tool results still deliver.
-                        logVerbose(`tool result delivery failed: ${String(err)}`);
-                      });
-                    const task = toolResultChain.finally(() => {
-                      params.pendingToolTasks.delete(task);
-                    });
-                    params.pendingToolTasks.add(task);
-                  };
-                })()
-              : undefined,
-          });
+            }
+          })();
         },
       });
       runResult = fallbackResult.result;
@@ -429,14 +454,14 @@ export async function runAgentTurnWithFallback(params: {
           }))
         : [];
 
-      // Some embedded runs surface context overflow as an error payload instead of throwing.
-      // Treat those as a session-level failure and auto-recover by starting a fresh session.
-      const embeddedError = runResult.meta?.error;
+      // Surface context overflow errors returned in the result (not thrown).
+      // Treat these as a session-level failure and auto-recover by starting a fresh session.
+      const bridgeError = runResult.meta?.error;
       if (
-        embeddedError &&
-        isContextOverflowError(embeddedError.message) &&
+        bridgeError &&
+        isContextOverflowError(bridgeError.message) &&
         !didResetAfterCompactionFailure &&
-        (await params.resetSessionAfterCompactionFailure(embeddedError.message))
+        (await params.resetSessionAfterCompactionFailure(bridgeError.message))
       ) {
         didResetAfterCompactionFailure = true;
         return {
@@ -446,8 +471,8 @@ export async function runAgentTurnWithFallback(params: {
           },
         };
       }
-      if (embeddedError?.kind === "role_ordering") {
-        const didReset = await params.resetSessionAfterRoleOrderingConflict(embeddedError.message);
+      if (bridgeError?.kind === "role_ordering") {
+        const didReset = await params.resetSessionAfterRoleOrderingConflict(bridgeError.message);
         if (didReset) {
           return {
             kind: "final",
@@ -552,7 +577,7 @@ export async function runAgentTurnWithFallback(params: {
         continue;
       }
 
-      defaultRuntime.error(`Embedded agent failed before reply: ${message}`);
+      defaultRuntime.error(`Agent failed before reply: ${message}`);
       const safeMessage = isTransientHttp
         ? sanitizeUserFacingText(message, { errorContext: true })
         : message;

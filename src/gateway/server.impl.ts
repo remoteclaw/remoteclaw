@@ -301,6 +301,11 @@ export async function startGatewayServer(
   const authRateLimiter: AuthRateLimiter | undefined = rateLimitConfig
     ? createAuthRateLimiter(rateLimitConfig)
     : undefined;
+  // Always keep a browser-origin fallback limiter for WS auth attempts.
+  const browserAuthRateLimiter: AuthRateLimiter = createAuthRateLimiter({
+    ...rateLimitConfig,
+    exemptLoopback: false,
+  });
 
   let controlUiRootState: ControlUiRootState | undefined;
   if (controlUiRootOverride) {
@@ -528,6 +533,7 @@ export async function startGatewayServer(
     canvasHostServerPort,
     resolvedAuth,
     rateLimiter: authRateLimiter,
+    browserRateLimiter: browserAuthRateLimiter,
     gatewayMethods,
     events: GATEWAY_EVENTS,
     logGateway: log,
@@ -712,6 +718,7 @@ export async function startGatewayServer(
         stopDiagnosticHeartbeat();
       }
       authRateLimiter?.dispose();
+      browserAuthRateLimiter.dispose();
       channelHealthMonitor?.stop();
       await close(opts);
     },

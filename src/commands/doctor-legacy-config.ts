@@ -1,6 +1,6 @@
 import type { RemoteClawConfig } from "../config/config.js";
 
-export function normalizeLegacyConfigValues(cfg: RemoteClawConfig): {
+export function normalizeCompatibilityConfigValues(cfg: RemoteClawConfig): {
   config: RemoteClawConfig;
   changes: string[];
 } {

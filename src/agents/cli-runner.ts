@@ -6,6 +6,7 @@ import { shouldLogVerbose } from "../globals.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { getProcessSupervisor } from "../process/supervisor/index.js";
+import { classifyFailoverReason, isFailoverErrorMessage } from "./agent-helpers.js";
 import { resolveSessionAgentIds } from "./agent-scope.js";
 import { makeBootstrapWarn, resolveBootstrapContextForRun } from "./bootstrap-files.js";
 import { resolveCliBackendConfig } from "./cli-backends.js";
@@ -26,9 +27,26 @@ import {
 } from "./cli-runner/helpers.js";
 import { resolveOpenClawDocsPath } from "./docs-path.js";
 import { FailoverError, resolveFailoverStatus } from "./failover-error.js";
-import { classifyFailoverReason, isFailoverErrorMessage } from "./pi-embedded-helpers.js";
-import type { EmbeddedPiRunResult } from "./pi-embedded-runner.js";
 import { redactRunIdentifier, resolveRunWorkspaceDir } from "./workspace-run.js";
+
+/** Return type for CLI agent runs. */
+export type CliRunResult = {
+  payloads?: Array<{ text?: string }>;
+  meta: {
+    durationMs: number;
+    agentMeta?: {
+      sessionId: string;
+      provider: string;
+      model: string;
+      usage?: {
+        input?: number;
+        output?: number;
+        cacheRead?: number;
+        cacheWrite?: number;
+      };
+    };
+  };
+};
 
 const log = createSubsystemLogger("agent/claude-cli");
 
@@ -50,7 +68,7 @@ export async function runCliAgent(params: {
   ownerNumbers?: string[];
   cliSessionId?: string;
   images?: ImageContent[];
-}): Promise<EmbeddedPiRunResult> {
+}): Promise<CliRunResult> {
   const started = Date.now();
   const workspaceResolution = resolveRunWorkspaceDir({
     workspaceDir: params.workspaceDir,
@@ -375,7 +393,7 @@ export async function runClaudeCliAgent(params: {
   ownerNumbers?: string[];
   claudeSessionId?: string;
   images?: ImageContent[];
-}): Promise<EmbeddedPiRunResult> {
+}): Promise<CliRunResult> {
   return runCliAgent({
     sessionId: params.sessionId,
     sessionKey: params.sessionKey,

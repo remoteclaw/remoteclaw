@@ -1,4 +1,4 @@
-import { formatReasoningMessage } from "../agents/pi-embedded-utils.js";
+import { formatReasoningMessage } from "../agents/agent-utils.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import { findCodeRegions, isInsideCode } from "../shared/text/code-regions.js";
 import { stripReasoningTagsFromText } from "../shared/text/reasoning-tags.js";

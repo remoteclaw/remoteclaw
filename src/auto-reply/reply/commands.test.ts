@@ -334,7 +334,7 @@ describe("/compact command", () => {
     expect(vi.mocked(compactEmbeddedPiSession)).not.toHaveBeenCalled();
   });
 
-  it("routes manual compaction with explicit trigger and context metadata", async () => {
+  it("returns compaction unavailable (embedded engine removed)", async () => {
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
@@ -345,10 +345,6 @@ describe("/compact command", () => {
       To: "+15550002",
     });
     const agentDir = "/tmp/openclaw-agent-compact";
-    vi.mocked(compactEmbeddedPiSession).mockResolvedValueOnce({
-      ok: true,
-      compacted: false,
-    });
 
     const result = await handleCompactCommand(
       {
@@ -368,21 +364,7 @@ describe("/compact command", () => {
     );
 
     expect(result?.shouldContinue).toBe(false);
-    expect(vi.mocked(compactEmbeddedPiSession)).toHaveBeenCalledOnce();
-    expect(vi.mocked(compactEmbeddedPiSession)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionId: "session-1",
-        sessionKey: "agent:main:main",
-        trigger: "manual",
-        customInstructions: "focus on decisions",
-        messageChannel: "whatsapp",
-        groupId: "group-1",
-        groupChannel: "#general",
-        groupSpace: "workspace-1",
-        spawnedBy: "agent:main:parent",
-        agentDir,
-      }),
-    );
+    expect(result?.reply?.text).toContain("Compaction unavailable");
   });
 });
 

@@ -42,7 +42,19 @@ describe("deliverAgentCommandResult", () => {
   function createResult(text = "hi") {
     return {
       payloads: [{ text }],
-      meta: { durationMs: 1 },
+      run: {
+        text,
+        sessionId: undefined,
+        durationMs: 1,
+        usage: undefined,
+        aborted: false,
+      },
+      mcp: {
+        sentTexts: [],
+        sentMediaUrls: [],
+        sentTargets: [],
+        cronAdds: 0,
+      },
     };
   }
 

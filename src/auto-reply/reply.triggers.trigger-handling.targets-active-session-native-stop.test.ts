@@ -1,13 +1,12 @@
 import fs from "node:fs/promises";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { loadSessionStore, resolveSessionKey } from "../config/sessions.js";
+import { loadSessionStore } from "../config/sessions.js";
 import { registerGroupIntroPromptCases } from "./reply.triggers.group-intro-prompts.cases.js";
 import { registerTriggerHandlingUsageSummaryCases } from "./reply.triggers.trigger-handling.filters-usage-summary-current-model-provider.cases.js";
 import {
   expectInlineCommandHandledAndStripped,
   getAbortEmbeddedPiRunMock,
-  getCompactEmbeddedPiSessionMock,
   getRunEmbeddedPiAgentMock,
   installTriggerHandlingE2eTestHooks,
   MAIN_SESSION_KEY,
@@ -64,18 +63,6 @@ async function writeStoredModelOverride(cfg: ReturnType<typeof makeCfg>): Promis
     }),
     "utf-8",
   );
-}
-
-function mockSuccessfulCompaction() {
-  getCompactEmbeddedPiSessionMock().mockResolvedValue({
-    ok: true,
-    compacted: true,
-    result: {
-      summary: "summary",
-      firstKeptEntryId: "x",
-      tokensBefore: 12000,
-    },
-  });
 }
 
 function makeUnauthorizedWhatsAppCfg(home: string) {
@@ -273,7 +260,6 @@ describe("trigger handling", () => {
         const storePath = join(home, "compact-main.sessions.json");
         const cfg = makeCfg(home);
         cfg.session = { ...cfg.session, store: storePath };
-        mockSuccessfulCompaction();
 
         const request = {
           Body: "/compact focus on decisions",
@@ -290,16 +276,11 @@ describe("trigger handling", () => {
           cfg,
         );
         const text = maybeReplyText(res);
-        expect(text?.startsWith("⚙️ Compacted")).toBe(true);
-        expect(getCompactEmbeddedPiSessionMock()).toHaveBeenCalledOnce();
-        const store = loadSessionStore(storePath);
-        const sessionKey = resolveSessionKey("per-sender", request);
-        expect(store[sessionKey]?.compactionCount).toBe(1);
+        // Embedded engine removed (#74) — compaction is unavailable
+        expect(text?.startsWith("\u2699\uFE0F Compaction unavailable")).toBe(true);
       }
 
       {
-        getCompactEmbeddedPiSessionMock().mockClear();
-        mockSuccessfulCompaction();
         const cfg = makeCfg(home);
         cfg.session = { ...cfg.session, store: join(home, "compact-worker.sessions.json") };
         const res = await getReplyFromConfig(
@@ -315,11 +296,8 @@ describe("trigger handling", () => {
         );
 
         const text = maybeReplyText(res);
-        expect(text?.startsWith("⚙️ Compacted")).toBe(true);
-        expect(getCompactEmbeddedPiSessionMock()).toHaveBeenCalledOnce();
-        expect(getCompactEmbeddedPiSessionMock().mock.calls[0]?.[0]?.sessionFile).toContain(
-          join("agents", "worker1", "sessions"),
-        );
+        // Embedded engine removed (#74) — compaction is unavailable
+        expect(text?.startsWith("\u2699\uFE0F Compaction unavailable")).toBe(true);
       }
 
       {

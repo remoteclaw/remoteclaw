@@ -90,12 +90,6 @@ vi.mock("../agents/pi-model-discovery.js", () => {
   };
 });
 
-vi.mock("../agents/pi-embedded-runner/model.js", () => ({
-  resolveModel: () => {
-    throw new Error("resolveModel should not be called from models.list tests");
-  },
-}));
-
 function makeRuntime() {
   return {
     log: vi.fn(),

@@ -14,6 +14,18 @@ import { __resetDiscordChannelInfoCacheForTest } from "./monitor/message-utils.j
 import { createNoopThreadBindingManager } from "./monitor/thread-bindings.js";
 const loadConfigMock = vi.fn();
 
+// Re-register dispatch mock directly in test file for provider-dispatcher path
+vi.mock("../auto-reply/reply/provider-dispatcher.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../auto-reply/reply/provider-dispatcher.js")>();
+  const { dispatchMock: dm } = await import("./monitor.tool-result.test-harness.js");
+  return {
+    ...actual,
+    dispatchReplyWithDispatcher: (...args: unknown[]) => dm(...args),
+    dispatchReplyWithBufferedBlockDispatcher: (...args: unknown[]) => dm(...args),
+  };
+});
+
 vi.mock("../config/config.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../config/config.js")>();
   return {

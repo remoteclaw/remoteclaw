@@ -1,6 +1,5 @@
 // Stub: bash-tools infrastructure was gutted (#68/#70).
-// This file provides type-only exports consumed by pi-embedded-runner
-// (which cannot be modified).
+// This file provides type-only exports consumed by other modules.
 
 export type ExecToolDefaults = {
   host?: string;

@@ -9,10 +9,10 @@ import type { OpenClawConfig } from "../../config/config.js";
 import type { CliBackendConfig } from "../../config/types.js";
 import { buildTtsSystemPromptHint } from "../../tts/tts.js";
 import { isRecord } from "../../utils.js";
+import type { ContextFile } from "../agent-helpers.js";
 import { buildModelAliasLines } from "../model-alias-lines.js";
 import { resolveDefaultModelForAgent } from "../model-selection.js";
 import { resolveOwnerDisplaySetting } from "../owner-display.js";
-import type { EmbeddedContextFile } from "../pi-embedded-helpers.js";
 import { detectRuntimeShell } from "../shell-utils.js";
 import { buildSystemPromptParams } from "../system-prompt-params.js";
 import { buildAgentSystemPrompt } from "../system-prompt.js";
@@ -57,7 +57,7 @@ export function buildSystemPrompt(params: {
   heartbeatPrompt?: string;
   docsPath?: string;
   tools: AgentTool[];
-  contextFiles?: EmbeddedContextFile[];
+  contextFiles?: ContextFile[];
   modelDisplay: string;
   agentId?: string;
 }) {

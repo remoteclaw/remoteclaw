@@ -17,13 +17,10 @@ import {
   normalizeOutboundPayloads,
   normalizeOutboundPayloadsForJson,
 } from "../../infra/outbound/payloads.js";
+import type { AgentDeliveryResult } from "../../middleware/types.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { isInternalMessageChannel } from "../../utils/message-channel.js";
 import type { AgentCommandOpts } from "./types.js";
-
-type RunResult = Awaited<
-  ReturnType<(typeof import("../../agents/pi-embedded.js"))["runEmbeddedPiAgent"]>
->;
 
 const NESTED_LOG_PREFIX = "[agent:nested]";
 
@@ -65,10 +62,19 @@ export async function deliverAgentCommandResult(params: {
   runtime: RuntimeEnv;
   opts: AgentCommandOpts;
   sessionEntry: SessionEntry | undefined;
-  result: RunResult;
-  payloads: RunResult["payloads"];
+  result: AgentDeliveryResult;
+  payloads: AgentDeliveryResult["payloads"];
 }) {
   const { cfg, deps, runtime, opts, sessionEntry, payloads, result } = params;
+  // Derive a meta object for backward-compatible JSON envelope output.
+  const resultMeta = {
+    durationMs: result.run.durationMs,
+    aborted: result.run.aborted,
+    agentMeta: {
+      sessionId: result.run.sessionId,
+      usage: result.run.usage,
+    },
+  };
   const deliver = opts.deliver === true;
   const bestEffortDeliver = opts.bestEffortDeliver === true;
   const turnSourceChannel = opts.runContext?.messageChannel ?? opts.messageChannel;
@@ -174,20 +180,20 @@ export async function deliverAgentCommandResult(params: {
       JSON.stringify(
         buildOutboundResultEnvelope({
           payloads: normalizedPayloads,
-          meta: result.meta,
+          meta: resultMeta,
         }),
         null,
         2,
       ),
     );
     if (!deliver) {
-      return { payloads: normalizedPayloads, meta: result.meta };
+      return { payloads: normalizedPayloads, meta: resultMeta };
     }
   }
 
   if (!payloads || payloads.length === 0) {
     runtime.log("No reply from agent.");
-    return { payloads: [], meta: result.meta };
+    return { payloads: [], meta: resultMeta };
   }
 
   const deliveryPayloads = normalizeOutboundPayloads(payloads);
@@ -234,5 +240,5 @@ export async function deliverAgentCommandResult(params: {
     }
   }
 
-  return { payloads: normalizedPayloads, meta: result.meta };
+  return { payloads: normalizedPayloads, meta: resultMeta };
 }

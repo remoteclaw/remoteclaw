@@ -1,5 +1,18 @@
-import type { ClientToolDefinition } from "../../agents/pi-embedded-runner/run/params.js";
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
+
+/**
+ * OpenAI-compatible function-calling tool definition.
+ * Previously imported from the pi-embedded-runner; inlined after engine
+ * removal (#74).
+ */
+export type ClientToolDefinition = {
+  type: string;
+  function: {
+    name: string;
+    description?: string;
+    parameters?: Record<string, unknown>;
+  };
+};
 import type { InputProvenance } from "../../sessions/input-provenance.js";
 
 /** Image content block for Claude API multimodal messages. */

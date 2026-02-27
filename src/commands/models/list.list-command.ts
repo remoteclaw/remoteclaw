@@ -109,10 +109,10 @@ export async function modelsListCommand(
           modelByKey.set(entry.key, forwardCompat);
         }
       }
-      if (!model) {
-        const { resolveModel } = await import("../../agents/pi-embedded-runner/model.js");
-        model = resolveModel(entry.ref.provider, entry.ref.model, undefined, cfg).model;
-      }
+      // Embedded model resolver removed (#74); use model directly if already
+      // resolved via forward-compat or catalog lookup above.  When neither
+      // resolved, `model` stays undefined and the row renders without a
+      // resolved base URL.
       if (opts.local && model && !isLocalBaseUrl(model.baseUrl)) {
         continue;
       }

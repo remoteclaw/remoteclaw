@@ -442,11 +442,19 @@ export async function runReplyAgent(params: {
       await Promise.allSettled(pendingToolTasks);
     }
 
-    const usage = runResult.meta?.agentMeta?.usage;
-    const promptTokens = runResult.meta?.agentMeta?.promptTokens;
-    const modelUsed = runResult.meta?.agentMeta?.model ?? fallbackModel ?? defaultModel;
-    const providerUsed =
-      runResult.meta?.agentMeta?.provider ?? fallbackProvider ?? followupRun.run.provider;
+    // Map AgentUsage (inputTokens/outputTokens) to NormalizedUsage shape (input/output).
+    const runUsage = runResult.run.usage;
+    const usage = runUsage
+      ? {
+          input: runUsage.inputTokens,
+          output: runUsage.outputTokens,
+          cacheRead: runUsage.cacheReadTokens,
+          cacheWrite: runUsage.cacheWriteTokens,
+        }
+      : undefined;
+    const promptTokens: number | undefined = undefined;
+    const modelUsed = fallbackModel ?? defaultModel;
+    const providerUsed = fallbackProvider ?? followupRun.run.provider;
     const verboseEnabled = resolvedVerboseLevel !== "off";
     const selectedProvider = followupRun.run.provider;
     const selectedModel = followupRun.run.model;
@@ -485,7 +493,7 @@ export async function runReplyAgent(params: {
     }
     // All providers now route through ChannelBridge (CLI-only execution), so
     // the session ID is always present when returned by the runtime.
-    const cliSessionId = runResult.meta?.agentMeta?.sessionId?.trim() || undefined;
+    const cliSessionId = runResult.run.sessionId?.trim() || undefined;
     const contextTokensUsed =
       agentCfgContextTokens ??
       lookupContextTokens(modelUsed) ??
@@ -496,12 +504,12 @@ export async function runReplyAgent(params: {
       storePath,
       sessionKey,
       usage,
-      lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage,
+      lastCallUsage: undefined,
       promptTokens,
       modelUsed,
       providerUsed,
       contextTokensUsed,
-      systemPromptReport: runResult.meta?.systemPromptReport,
+      systemPromptReport: undefined,
       cliSessionId,
     });
 
@@ -523,9 +531,9 @@ export async function runReplyAgent(params: {
       replyToChannel,
       currentMessageId: sessionCtx.MessageSidFull ?? sessionCtx.MessageSid,
       messageProvider: followupRun.run.messageProvider,
-      messagingToolSentTexts: runResult.messagingToolSentTexts,
-      messagingToolSentMediaUrls: runResult.messagingToolSentMediaUrls,
-      messagingToolSentTargets: runResult.messagingToolSentTargets,
+      messagingToolSentTexts: runResult.mcp.sentTexts,
+      messagingToolSentMediaUrls: runResult.mcp.sentMediaUrls,
+      messagingToolSentTargets: runResult.mcp.sentTargets,
       originatingChannel: sessionCtx.OriginatingChannel,
       originatingTo: resolveOriginMessageTo({
         originatingTo: sessionCtx.OriginatingTo,
@@ -540,7 +548,7 @@ export async function runReplyAgent(params: {
       return finalizeWithFollowup(undefined, queueKey, runFollowupTurn);
     }
 
-    const successfulCronAdds = runResult.successfulCronAdds ?? 0;
+    const successfulCronAdds = runResult.mcp.cronAdds ?? 0;
     const hasReminderCommitment = replyPayloads.some(
       (payload) =>
         !payload.isError &&
@@ -582,7 +590,7 @@ export async function runReplyAgent(params: {
           promptTokens,
           total: totalTokens,
         },
-        lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage,
+        lastCallUsage: undefined,
         context: {
           limit: contextTokensUsed,
           used: totalTokens,
@@ -687,7 +695,7 @@ export async function runReplyAgent(params: {
         sessionStore: activeSessionStore,
         sessionKey,
         storePath,
-        lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage,
+        lastCallUsage: undefined,
         contextTokensUsed,
       });
 

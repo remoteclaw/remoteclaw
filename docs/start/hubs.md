@@ -66,7 +66,6 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Chat channels hub](/channels)
 - [WhatsApp](/channels/whatsapp)
 - [Telegram](/channels/telegram)
-- [Telegram (grammY notes)](/channels/grammy)
 - [Slack](/channels/slack)
 - [Discord](/channels/discord)
 - [Mattermost](/channels/mattermost) (plugin)

@@ -43,5 +43,4 @@ Text is supported everywhere; media and reactions vary by channel.
   stores more state on disk.
 - Group behavior varies by channel; see [Groups](/channels/groups).
 - DM pairing and allowlists are enforced for safety; see [Security](/gateway/security).
-- Telegram internals: [grammY notes](/channels/grammy).
 - Troubleshooting: [Channel troubleshooting](/channels/troubleshooting).

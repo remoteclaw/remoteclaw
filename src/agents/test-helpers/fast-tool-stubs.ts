@@ -15,15 +15,6 @@ export const stubTool = (name: string): StubTool => ({
   execute: vi.fn() as unknown as (...args: unknown[]) => unknown,
 });
 
-vi.mock("../tools/image-tool.js", () => ({
-  createImageTool: () => stubTool("image"),
-}));
-
-vi.mock("../tools/web-tools.js", () => ({
-  createWebSearchTool: () => null,
-  createWebFetchTool: () => null,
-}));
-
 vi.mock("../../plugins/tools.js", () => ({
   resolvePluginTools: () => [],
   getPluginToolMeta: () => undefined,

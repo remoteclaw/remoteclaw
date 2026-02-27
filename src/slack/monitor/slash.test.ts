@@ -234,7 +234,7 @@ function createArgMenusHarness() {
   };
 
   const ctx = {
-    cfg: { commands: { native: true, nativeSkills: false } },
+    cfg: { commands: { native: true } },
     runtime: {},
     botToken: "bot-token",
     botUserId: "bot",
@@ -263,7 +263,7 @@ function createArgMenusHarness() {
 
   const account = {
     accountId: "acct",
-    config: { commands: { native: true, nativeSkills: false } },
+    config: { commands: { native: true } },
   } as unknown;
 
   return {

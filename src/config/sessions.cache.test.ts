@@ -91,10 +91,6 @@ describe("Session Store Cache", () => {
     const testStore = createSingleSessionStore(
       createSessionEntry({
         cliSessionIds: { openai: "sess-1" },
-        skillsSnapshot: {
-          prompt: "skills",
-          skills: [{ name: "alpha" }],
-        },
       }),
     );
 
@@ -102,13 +98,9 @@ describe("Session Store Cache", () => {
 
     const loaded1 = loadSessionStore(storePath);
     loaded1["session:1"].cliSessionIds = { openai: "mutated" };
-    if (loaded1["session:1"].skillsSnapshot?.skills?.length) {
-      loaded1["session:1"].skillsSnapshot.skills[0].name = "mutated";
-    }
 
     const loaded2 = loadSessionStore(storePath);
     expect(loaded2["session:1"].cliSessionIds?.openai).toBe("sess-1");
-    expect(loaded2["session:1"].skillsSnapshot?.skills?.[0]?.name).toBe("alpha");
   });
 
   it("should refresh cache when store file changes on disk", async () => {

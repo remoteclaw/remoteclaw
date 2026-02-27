@@ -64,7 +64,6 @@ const logConfigUpdated = vi.hoisted(() => vi.fn(() => {}));
 const setupInternalHooks = vi.hoisted(() => vi.fn(async (cfg) => cfg));
 
 const setupChannels = vi.hoisted(() => vi.fn(async (cfg) => cfg));
-const setupSkills = vi.hoisted(() => vi.fn(async (cfg) => cfg));
 const healthCommand = vi.hoisted(() => vi.fn(async () => {}));
 const ensureWorkspaceAndSessions = vi.hoisted(() => vi.fn(async () => {}));
 const writeConfigFile = vi.hoisted(() => vi.fn(async () => {}));
@@ -90,10 +89,6 @@ const setupOnboardingShellCompletion = vi.hoisted(() => vi.fn(async () => {}));
 
 vi.mock("../commands/onboard-channels.js", () => ({
   setupChannels,
-}));
-
-vi.mock("../commands/onboard-skills.js", () => ({
-  setupSkills,
 }));
 
 vi.mock("../agents/auth-profiles.js", () => ({
@@ -299,7 +294,6 @@ describe("runOnboardingWizard", () => {
 
     expect(select).not.toHaveBeenCalled();
     expect(setupChannels).not.toHaveBeenCalled();
-    expect(setupSkills).not.toHaveBeenCalled();
     expect(healthCommand).not.toHaveBeenCalled();
     expect(runTui).not.toHaveBeenCalled();
   });

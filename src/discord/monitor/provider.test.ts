@@ -8,12 +8,10 @@ const {
   createThreadBindingManagerMock,
   createdBindingManagers,
   listNativeCommandSpecsForConfigMock,
-  listSkillCommandsForAgentsMock,
   monitorLifecycleMock,
   resolveDiscordAccountMock,
   resolveDiscordAllowlistConfigMock,
   resolveNativeCommandsEnabledMock,
-  resolveNativeSkillsEnabledMock,
 } = vi.hoisted(() => {
   const createdBindingManagers: Array<{ stop: ReturnType<typeof vi.fn> }> = [];
   return {
@@ -30,7 +28,6 @@ const {
     }),
     createdBindingManagers,
     listNativeCommandSpecsForConfigMock: vi.fn(() => [{ name: "cmd" }]),
-    listSkillCommandsForAgentsMock: vi.fn(() => []),
     monitorLifecycleMock: vi.fn(async (params: { threadBindings: { stop: () => void } }) => {
       params.threadBindings.stop();
     }),
@@ -38,7 +35,7 @@ const {
       accountId: "default",
       token: "cfg-token",
       config: {
-        commands: { native: true, nativeSkills: false },
+        commands: { native: true },
         voice: { enabled: false },
         agentComponents: { enabled: false },
         execApprovals: { enabled: false },
@@ -49,7 +46,6 @@ const {
       allowFrom: undefined,
     })),
     resolveNativeCommandsEnabledMock: vi.fn(() => true),
-    resolveNativeSkillsEnabledMock: vi.fn(() => false),
   };
 });
 
@@ -91,14 +87,9 @@ vi.mock("../../auto-reply/commands-registry.js", () => ({
   listNativeCommandSpecsForConfig: listNativeCommandSpecsForConfigMock,
 }));
 
-vi.mock("../../auto-reply/skill-commands.js", () => ({
-  listSkillCommandsForAgents: listSkillCommandsForAgentsMock,
-}));
-
 vi.mock("../../config/commands.js", () => ({
   isNativeCommandsExplicitlyDisabled: () => false,
   resolveNativeCommandsEnabled: resolveNativeCommandsEnabledMock,
-  resolveNativeSkillsEnabled: resolveNativeSkillsEnabledMock,
 }));
 
 vi.mock("../../config/config.js", () => ({
@@ -247,7 +238,6 @@ describe("monitorDiscordProvider", () => {
     createThreadBindingManagerMock.mockClear();
     createdBindingManagers.length = 0;
     listNativeCommandSpecsForConfigMock.mockClear().mockReturnValue([{ name: "cmd" }]);
-    listSkillCommandsForAgentsMock.mockClear().mockReturnValue([]);
     monitorLifecycleMock.mockClear().mockImplementation(async (params) => {
       params.threadBindings.stop();
     });
@@ -257,7 +247,6 @@ describe("monitorDiscordProvider", () => {
       allowFrom: undefined,
     });
     resolveNativeCommandsEnabledMock.mockClear().mockReturnValue(true);
-    resolveNativeSkillsEnabledMock.mockClear().mockReturnValue(false);
   });
 
   it("stops thread bindings when startup fails before lifecycle begins", async () => {

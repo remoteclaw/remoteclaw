@@ -171,7 +171,6 @@ export function buildEmbeddedRunBaseParams(params: {
     workspaceDir: params.run.workspaceDir,
     agentDir: params.run.agentDir,
     config: params.run.config,
-    skillsSnapshot: params.run.skillsSnapshot,
     ownerNumbers: params.run.ownerNumbers,
     senderIsOwner: params.run.senderIsOwner,
     enforceFinalTag: resolveEnforceFinalTag(params.run, params.provider),

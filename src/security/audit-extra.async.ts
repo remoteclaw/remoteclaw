@@ -14,12 +14,9 @@ import {
 import { SANDBOX_BROWSER_SECURITY_HASH_EPOCH } from "../agents/sandbox/constants.js";
 import { execDockerRaw, type ExecDockerRawResult } from "../agents/sandbox/docker.js";
 import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
-import { loadWorkspaceSkillEntries } from "../agents/skills.js";
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
-import { listAgentWorkspaceDirs } from "../agents/workspace-dirs.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
-import { resolveNativeSkillsEnabled } from "../config/commands.js";
 import type { OpenClawConfig, ConfigFileSnapshot } from "../config/config.js";
 import { createConfigIO } from "../config/config.js";
 import { collectIncludePathsRecursive } from "../config/includes-scan.js";
@@ -35,8 +32,6 @@ import {
 } from "./audit-fs.js";
 import { pickSandboxToolPolicy } from "./audit-tool-policy.js";
 import { extensionUsesSkippedScannerPath, isPathInside } from "./scan-paths.js";
-import type { SkillScanFinding } from "./skill-scanner.js";
-import * as skillScanner from "./skill-scanner.js";
 import type { ExecFn } from "./windows-acl.js";
 
 export type SecurityAuditFinding = {
@@ -88,20 +83,6 @@ async function readPluginManifestExtensions(pluginPath: string): Promise<string[
     return [];
   }
   return extensions.map((entry) => (typeof entry === "string" ? entry.trim() : "")).filter(Boolean);
-}
-
-function formatCodeSafetyDetails(findings: SkillScanFinding[], rootDir: string): string {
-  return findings
-    .map((finding) => {
-      const relPath = path.relative(rootDir, finding.file);
-      const filePath =
-        relPath && relPath !== "." && !relPath.startsWith("..")
-          ? relPath
-          : path.basename(finding.file);
-      const normalizedPath = filePath.replaceAll("\\", "/");
-      return `  - [${finding.ruleId}] ${finding.message} (${normalizedPath}:${finding.line})`;
-    })
-    .join("\n");
 }
 
 async function listInstalledPluginDirs(params: {
@@ -443,76 +424,11 @@ export async function collectPluginsTrustFindings(params: {
     const allow = params.cfg.plugins?.allow;
     const allowConfigured = Array.isArray(allow) && allow.length > 0;
     if (!allowConfigured) {
-      const hasString = (value: unknown) => typeof value === "string" && value.trim().length > 0;
-      const hasAccountStringKey = (account: unknown, key: string) =>
-        Boolean(
-          account &&
-          typeof account === "object" &&
-          hasString((account as Record<string, unknown>)[key]),
-        );
-
-      const discordConfigured =
-        hasString(params.cfg.channels?.discord?.token) ||
-        Boolean(
-          params.cfg.channels?.discord?.accounts &&
-          Object.values(params.cfg.channels.discord.accounts).some((a) =>
-            hasAccountStringKey(a, "token"),
-          ),
-        ) ||
-        hasString(process.env.DISCORD_BOT_TOKEN);
-
-      const telegramConfigured =
-        hasString(params.cfg.channels?.telegram?.botToken) ||
-        hasString(params.cfg.channels?.telegram?.tokenFile) ||
-        Boolean(
-          params.cfg.channels?.telegram?.accounts &&
-          Object.values(params.cfg.channels.telegram.accounts).some(
-            (a) => hasAccountStringKey(a, "botToken") || hasAccountStringKey(a, "tokenFile"),
-          ),
-        ) ||
-        hasString(process.env.TELEGRAM_BOT_TOKEN);
-
-      const slackConfigured =
-        hasString(params.cfg.channels?.slack?.botToken) ||
-        hasString(params.cfg.channels?.slack?.appToken) ||
-        Boolean(
-          params.cfg.channels?.slack?.accounts &&
-          Object.values(params.cfg.channels.slack.accounts).some(
-            (a) => hasAccountStringKey(a, "botToken") || hasAccountStringKey(a, "appToken"),
-          ),
-        ) ||
-        hasString(process.env.SLACK_BOT_TOKEN) ||
-        hasString(process.env.SLACK_APP_TOKEN);
-
-      const skillCommandsLikelyExposed =
-        (discordConfigured &&
-          resolveNativeSkillsEnabled({
-            providerId: "discord",
-            providerSetting: params.cfg.channels?.discord?.commands?.nativeSkills,
-            globalSetting: params.cfg.commands?.nativeSkills,
-          })) ||
-        (telegramConfigured &&
-          resolveNativeSkillsEnabled({
-            providerId: "telegram",
-            providerSetting: params.cfg.channels?.telegram?.commands?.nativeSkills,
-            globalSetting: params.cfg.commands?.nativeSkills,
-          })) ||
-        (slackConfigured &&
-          resolveNativeSkillsEnabled({
-            providerId: "slack",
-            providerSetting: params.cfg.channels?.slack?.commands?.nativeSkills,
-            globalSetting: params.cfg.commands?.nativeSkills,
-          }));
-
       findings.push({
         checkId: "plugins.extensions_no_allowlist",
-        severity: skillCommandsLikelyExposed ? "critical" : "warn",
+        severity: "warn",
         title: "Extensions exist but plugins.allow is not set",
-        detail:
-          `Found ${pluginDirs.length} extension(s) under ${extensionsDir}. Without plugins.allow, any discovered plugin id may load (depending on config and plugin behavior).` +
-          (skillCommandsLikelyExposed
-            ? "\nNative skill commands are enabled on at least one configured chat surface; treat unpinned/unallowlisted extensions as high risk."
-            : ""),
+        detail: `Found ${pluginDirs.length} extension(s) under ${extensionsDir}. Without plugins.allow, any discovered plugin id may load (depending on config and plugin behavior).`,
         remediation: "Set plugins.allow to an explicit list of plugin ids you trust.",
       });
     }
@@ -1014,121 +930,6 @@ export async function collectPluginsCodeSafetyFindings(params: {
         remediation:
           "Update the plugin manifest so all openclaw.extensions entries stay inside the plugin directory.",
       });
-    }
-
-    const summary = await skillScanner
-      .scanDirectoryWithSummary(pluginPath, {
-        includeFiles: forcedScanEntries,
-      })
-      .catch((err) => {
-        findings.push({
-          checkId: "plugins.code_safety.scan_failed",
-          severity: "warn",
-          title: `Plugin "${pluginName}" code scan failed`,
-          detail: `Static code scan could not complete: ${String(err)}`,
-          remediation:
-            "Check file permissions and plugin layout, then rerun `openclaw security audit --deep`.",
-        });
-        return null;
-      });
-    if (!summary) {
-      continue;
-    }
-
-    if (summary.critical > 0) {
-      const criticalFindings = summary.findings.filter((f) => f.severity === "critical");
-      const details = formatCodeSafetyDetails(criticalFindings, pluginPath);
-
-      findings.push({
-        checkId: "plugins.code_safety",
-        severity: "critical",
-        title: `Plugin "${pluginName}" contains dangerous code patterns`,
-        detail: `Found ${summary.critical} critical issue(s) in ${summary.scannedFiles} scanned file(s):\n${details}`,
-        remediation:
-          "Review the plugin source code carefully before use. If untrusted, remove the plugin from your OpenClaw extensions state directory.",
-      });
-    } else if (summary.warn > 0) {
-      const warnFindings = summary.findings.filter((f) => f.severity === "warn");
-      const details = formatCodeSafetyDetails(warnFindings, pluginPath);
-
-      findings.push({
-        checkId: "plugins.code_safety",
-        severity: "warn",
-        title: `Plugin "${pluginName}" contains suspicious code patterns`,
-        detail: `Found ${summary.warn} warning(s) in ${summary.scannedFiles} scanned file(s):\n${details}`,
-        remediation: `Review the flagged code to ensure it is intentional and safe.`,
-      });
-    }
-  }
-
-  return findings;
-}
-
-export async function collectInstalledSkillsCodeSafetyFindings(params: {
-  cfg: OpenClawConfig;
-  stateDir: string;
-}): Promise<SecurityAuditFinding[]> {
-  const findings: SecurityAuditFinding[] = [];
-  const pluginExtensionsDir = path.join(params.stateDir, "extensions");
-  const scannedSkillDirs = new Set<string>();
-  const workspaceDirs = listAgentWorkspaceDirs(params.cfg);
-
-  for (const workspaceDir of workspaceDirs) {
-    const entries = loadWorkspaceSkillEntries(workspaceDir, { config: params.cfg });
-    for (const entry of entries) {
-      if (entry.skill.source === "openclaw-bundled") {
-        continue;
-      }
-
-      const skillDir = path.resolve(entry.skill.baseDir);
-      if (isPathInside(pluginExtensionsDir, skillDir)) {
-        // Plugin code is already covered by plugins.code_safety checks.
-        continue;
-      }
-      if (scannedSkillDirs.has(skillDir)) {
-        continue;
-      }
-      scannedSkillDirs.add(skillDir);
-
-      const skillName = entry.skill.name;
-      const summary = await skillScanner.scanDirectoryWithSummary(skillDir).catch((err) => {
-        findings.push({
-          checkId: "skills.code_safety.scan_failed",
-          severity: "warn",
-          title: `Skill "${skillName}" code scan failed`,
-          detail: `Static code scan could not complete for ${skillDir}: ${String(err)}`,
-          remediation:
-            "Check file permissions and skill layout, then rerun `openclaw security audit --deep`.",
-        });
-        return null;
-      });
-      if (!summary) {
-        continue;
-      }
-
-      if (summary.critical > 0) {
-        const criticalFindings = summary.findings.filter(
-          (finding) => finding.severity === "critical",
-        );
-        const details = formatCodeSafetyDetails(criticalFindings, skillDir);
-        findings.push({
-          checkId: "skills.code_safety",
-          severity: "critical",
-          title: `Skill "${skillName}" contains dangerous code patterns`,
-          detail: `Found ${summary.critical} critical issue(s) in ${summary.scannedFiles} scanned file(s) under ${skillDir}:\n${details}`,
-          remediation: `Review the skill source code before use. If untrusted, remove "${skillDir}".`,
-        });
-      } else if (summary.warn > 0) {
-        const warnFindings = summary.findings.filter((finding) => finding.severity === "warn");
-        const details = formatCodeSafetyDetails(warnFindings, skillDir);
-        findings.push({
-          checkId: "skills.code_safety",
-          severity: "warn",
-          title: `Skill "${skillName}" contains suspicious code patterns`,
-          detail: `Found ${summary.warn} warning(s) in ${summary.scannedFiles} scanned file(s) under ${skillDir}:\n${details}`,
-          remediation: "Review flagged lines to ensure the behavior is intentional and safe.",
-        });
-      }
     }
   }
 

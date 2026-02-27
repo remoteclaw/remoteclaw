@@ -175,10 +175,6 @@ vi.mock("@clack/prompts", () => ({
   select,
 }));
 
-vi.mock("../agents/skills-status.js", () => ({
-  buildWorkspaceSkillStatus: () => ({ skills: [] }),
-}));
-
 vi.mock("../plugins/loader.js", () => ({
   loadOpenClawPlugins: () => ({ plugins: [], diagnostics: [] }),
 }));

@@ -7,7 +7,6 @@ import type { InputProvenance } from "../../../sessions/input-provenance.js";
 import type { ExecElevatedDefaults, ExecToolDefaults } from "../../bash-tools.js";
 import type { BlockReplyPayload } from "../../pi-embedded-payloads.js";
 import type { BlockReplyChunking, ToolResultFormat } from "../../pi-embedded-subscribe.js";
-import type { SkillSnapshot } from "../../skills.js";
 
 // Simplified tool definition for client-provided tools (OpenResponses hosted tools)
 export type ClientToolDefinition = {
@@ -62,7 +61,6 @@ export type RunEmbeddedPiAgentParams = {
   workspaceDir: string;
   agentDir?: string;
   config?: OpenClawConfig;
-  skillsSnapshot?: SkillSnapshot;
   prompt: string;
   images?: ImageContent[];
   /** Optional client-provided tools (OpenResponses hosted tools). */

@@ -14,7 +14,6 @@ import {
   getLoadConfigMock,
   getReadChannelAllowFromStoreMock,
   getOnHandler,
-  listSkillCommandsForAgents,
   onSpy,
   replySpy,
   sendMessageSpy,
@@ -25,13 +24,6 @@ import { createTelegramBot } from "./bot.js";
 
 const loadConfig = getLoadConfigMock();
 const readChannelAllowFromStore = getReadChannelAllowFromStoreMock();
-
-function resolveSkillCommands(config: Parameters<typeof listNativeCommandSpecsForConfig>[0]) {
-  void config;
-  return listSkillCommandsForAgents() as NonNullable<
-    Parameters<typeof listNativeCommandSpecsForConfig>[1]
-  >["skillCommands"];
-}
 
 const ORIGINAL_TZ = process.env.TZ;
 describe("createTelegramBot", () => {
@@ -71,8 +63,7 @@ describe("createTelegramBot", () => {
       command: string;
       description: string;
     }>;
-    const skillCommands = resolveSkillCommands(config);
-    const native = listNativeCommandSpecsForConfig(config, { skillCommands }).map((command) => ({
+    const native = listNativeCommandSpecsForConfig(config).map((command) => ({
       command: normalizeTelegramCommandName(command.name),
       description: command.description,
     }));
@@ -112,8 +103,7 @@ describe("createTelegramBot", () => {
       command: string;
       description: string;
     }>;
-    const skillCommands = resolveSkillCommands(config);
-    const native = listNativeCommandSpecsForConfig(config, { skillCommands }).map((command) => ({
+    const native = listNativeCommandSpecsForConfig(config).map((command) => ({
       command: normalizeTelegramCommandName(command.name),
       description: command.description,
     }));
@@ -195,7 +185,6 @@ describe("createTelegramBot", () => {
 
   it("edits commands list for pagination callbacks", async () => {
     onSpy.mockClear();
-    listSkillCommandsForAgents.mockClear();
 
     createTelegramBot({ token: "tok" });
     const callbackHandler = onSpy.mock.calls.find((call) => call[0] === "callback_query")?.[1] as (
@@ -218,10 +207,6 @@ describe("createTelegramBot", () => {
       getFile: async () => ({ download: async () => new Uint8Array() }),
     });
 
-    expect(listSkillCommandsForAgents).toHaveBeenCalledWith({
-      cfg: expect.any(Object),
-      agentIds: ["main"],
-    });
     expect(editMessageTextSpy).toHaveBeenCalledTimes(1);
     const [chatId, messageId, text, params] = editMessageTextSpy.mock.calls[0] ?? [];
     expect(chatId).toBe(1234);

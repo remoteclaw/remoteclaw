@@ -99,14 +99,6 @@ vi.mock("../agents/workspace.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../agents/skills.js", () => ({
-  buildWorkspaceSkillSnapshot: vi.fn(() => undefined),
-}));
-
-vi.mock("../agents/skills/refresh.js", () => ({
-  getSkillsSnapshotVersion: vi.fn(() => 0),
-}));
-
 const runtime: RuntimeEnv = {
   log: vi.fn(),
   error: vi.fn(),

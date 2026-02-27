@@ -6,7 +6,7 @@ import {
   normalizeTelegramAllowFromEntry,
 } from "../channels/telegram/allow-from.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import { resolveNativeCommandsEnabled, resolveNativeSkillsEnabled } from "../config/commands.js";
+import { resolveNativeCommandsEnabled } from "../config/commands.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
@@ -304,14 +304,7 @@ export async function collectChannelSecurityFindings(params: {
           ),
           globalSetting: params.cfg.commands?.native,
         });
-        const nativeSkillsEnabled = resolveNativeSkillsEnabled({
-          providerId: "discord",
-          providerSetting: coerceNativeSetting(
-            (discordCfg.commands as { nativeSkills?: unknown } | undefined)?.nativeSkills,
-          ),
-          globalSetting: params.cfg.commands?.nativeSkills,
-        });
-        const slashEnabled = nativeEnabled || nativeSkillsEnabled;
+        const slashEnabled = nativeEnabled;
         if (slashEnabled) {
           const defaultGroupPolicy = params.cfg.channels?.defaults?.groupPolicy;
           const groupPolicy =
@@ -390,16 +383,8 @@ export async function collectChannelSecurityFindings(params: {
           ),
           globalSetting: params.cfg.commands?.native,
         });
-        const nativeSkillsEnabled = resolveNativeSkillsEnabled({
-          providerId: "slack",
-          providerSetting: coerceNativeSetting(
-            (slackCfg.commands as { nativeSkills?: unknown } | undefined)?.nativeSkills,
-          ),
-          globalSetting: params.cfg.commands?.nativeSkills,
-        });
         const slashCommandEnabled =
           nativeEnabled ||
-          nativeSkillsEnabled ||
           (slackCfg.slashCommand as { enabled?: unknown } | undefined)?.enabled === true;
         if (slashCommandEnabled) {
           const useAccessGroups = params.cfg.commands?.useAccessGroups !== false;
@@ -627,21 +612,12 @@ export async function collectChannelSecurityFindings(params: {
       }
 
       if (!hasAnySenderAllowlist) {
-        const providerSetting = (telegramCfg.commands as { nativeSkills?: unknown } | undefined)
-          // oxlint-disable-next-line typescript/no-explicit-any
-          ?.nativeSkills as any;
-        const skillsEnabled = resolveNativeSkillsEnabled({
-          providerId: "telegram",
-          providerSetting,
-          globalSetting: params.cfg.commands?.nativeSkills,
-        });
         findings.push({
           checkId: "channels.telegram.groups.allowFrom.missing",
           severity: "critical",
           title: "Telegram group commands have no sender allowlist",
           detail:
-            `Telegram group access is enabled but no sender allowlist is configured; this allows any group member to invoke /… commands` +
-            (skillsEnabled ? " (including skill commands)." : "."),
+            "Telegram group access is enabled but no sender allowlist is configured; this allows any group member to invoke /… commands.",
           remediation:
             "Approve yourself via pairing (recommended), or set channels.telegram.groupAllowFrom (or per-group groups.<id>.allowFrom).",
         });

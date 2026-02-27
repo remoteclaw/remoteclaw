@@ -8,7 +8,6 @@ import {
   resolveModelRefFromString,
 } from "../agents/model-selection.js";
 import { resolveSandboxRuntimeStatus } from "../agents/sandbox.js";
-import type { SkillCommandSpec } from "../agents/skills.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../agents/usage.js";
 import { resolveChannelModelOverride } from "../channels/model-overrides.js";
 import { isCommandFlagEnabled } from "../config/commands.js";
@@ -841,25 +840,21 @@ function formatCommandList(items: CommandsListItem[]): string {
 
 export function buildCommandsMessage(
   cfg?: OpenClawConfig,
-  skillCommands?: SkillCommandSpec[],
   options?: CommandsMessageOptions,
 ): string {
-  const result = buildCommandsMessagePaginated(cfg, skillCommands, options);
+  const result = buildCommandsMessagePaginated(cfg, options);
   return result.text;
 }
 
 export function buildCommandsMessagePaginated(
   cfg?: OpenClawConfig,
-  skillCommands?: SkillCommandSpec[],
   options?: CommandsMessageOptions,
 ): CommandsMessageResult {
   const page = Math.max(1, options?.page ?? 1);
   const surface = options?.surface?.toLowerCase();
   const isTelegram = surface === "telegram";
 
-  const commands = cfg
-    ? listChatCommandsForConfig(cfg, { skillCommands })
-    : listChatCommands({ skillCommands });
+  const commands = cfg ? listChatCommandsForConfig(cfg) : listChatCommands();
   const pluginCommands = listPluginCommands();
   const items = buildCommandItems(commands, pluginCommands);
 

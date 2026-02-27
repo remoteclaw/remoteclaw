@@ -31,7 +31,6 @@ export {
 export {
   collectSandboxBrowserHashLabelFindings,
   collectIncludeFilePermFindings,
-  collectInstalledSkillsCodeSafetyFindings,
   collectPluginsCodeSafetyFindings,
   collectPluginsTrustFindings,
   collectStateDeepFilesystemFindings,

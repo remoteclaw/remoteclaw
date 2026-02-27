@@ -409,7 +409,7 @@ export const FIELD_LABELS: Record<string, string> = {
     "Sandbox Docker Allow Container Namespace Join",
   commands: "Commands",
   "commands.native": "Native Commands",
-  "commands.nativeSkills": "Native Skill Commands",
+
   "commands.text": "Text Commands",
   "commands.bash": "Allow Bash Chat Command",
   "commands.bashForegroundMs": "Bash Foreground Window (ms)",
@@ -633,7 +633,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.telegram.dmPolicy": "Telegram DM Policy",
   "channels.telegram.configWrites": "Telegram Config Writes",
   "channels.telegram.commands.native": "Telegram Native Commands",
-  "channels.telegram.commands.nativeSkills": "Telegram Native Skill Commands",
+
   "channels.telegram.streaming": "Telegram Streaming Mode",
   "channels.telegram.retry.attempts": "Telegram Retry Attempts",
   "channels.telegram.retry.minDelayMs": "Telegram Retry Min Delay (ms)",
@@ -658,7 +658,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.discord.configWrites": "Discord Config Writes",
   "channels.discord.proxy": "Discord Proxy URL",
   "channels.discord.commands.native": "Discord Native Commands",
-  "channels.discord.commands.nativeSkills": "Discord Native Skill Commands",
+
   "channels.discord.streaming": "Discord Streaming Mode",
   "channels.discord.streamMode": "Discord Stream Mode (Legacy)",
   "channels.discord.draftChunk.minChars": "Discord Draft Chunk Min Chars",
@@ -690,7 +690,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.slack.dmPolicy": "Slack DM Policy",
   "channels.slack.configWrites": "Slack Config Writes",
   "channels.slack.commands.native": "Slack Native Commands",
-  "channels.slack.commands.nativeSkills": "Slack Native Skill Commands",
+
   "channels.slack.allowBots": "Slack Allow Bot Messages",
   "channels.discord.token": "Discord Bot Token",
   "channels.slack.botToken": "Slack Bot Token",

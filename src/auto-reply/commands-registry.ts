@@ -1,6 +1,5 @@
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { resolveConfiguredModelRef } from "../agents/model-selection.js";
-import type { SkillCommandSpec } from "../agents/skills.js";
 import { isCommandFlagEnabled } from "../config/commands.js";
 import type { OpenClawConfig } from "../config/types.js";
 import { escapeRegExp } from "../utils.js";
@@ -70,29 +69,8 @@ function getTextAliasMap(): Map<string, TextAliasSpec> {
   return map;
 }
 
-function buildSkillCommandDefinitions(skillCommands?: SkillCommandSpec[]): ChatCommandDefinition[] {
-  if (!skillCommands || skillCommands.length === 0) {
-    return [];
-  }
-  return skillCommands.map((spec) => ({
-    key: `skill:${spec.skillName}`,
-    nativeName: spec.name,
-    description: spec.description,
-    textAliases: [`/${spec.name}`],
-    acceptsArgs: true,
-    argsParsing: "none",
-    scope: "both",
-  }));
-}
-
-export function listChatCommands(params?: {
-  skillCommands?: SkillCommandSpec[];
-}): ChatCommandDefinition[] {
-  const commands = getChatCommands();
-  if (!params?.skillCommands?.length) {
-    return [...commands];
-  }
-  return [...commands, ...buildSkillCommandDefinitions(params.skillCommands)];
+export function listChatCommands(): ChatCommandDefinition[] {
+  return getChatCommands();
 }
 
 export function isCommandEnabled(cfg: OpenClawConfig, commandKey: string): boolean {
@@ -108,15 +86,8 @@ export function isCommandEnabled(cfg: OpenClawConfig, commandKey: string): boole
   return true;
 }
 
-export function listChatCommandsForConfig(
-  cfg: OpenClawConfig,
-  params?: { skillCommands?: SkillCommandSpec[] },
-): ChatCommandDefinition[] {
-  const base = getChatCommands().filter((command) => isCommandEnabled(cfg, command.key));
-  if (!params?.skillCommands?.length) {
-    return base;
-  }
-  return [...base, ...buildSkillCommandDefinitions(params.skillCommands)];
+export function listChatCommandsForConfig(cfg: OpenClawConfig): ChatCommandDefinition[] {
+  return getChatCommands().filter((command) => isCommandEnabled(cfg, command.key));
 }
 
 const NATIVE_NAME_OVERRIDES: Record<string, Record<string, string>> = {
@@ -156,21 +127,15 @@ function listNativeSpecsFromCommands(
     .map((command) => toNativeCommandSpec(command, provider));
 }
 
-export function listNativeCommandSpecs(params?: {
-  skillCommands?: SkillCommandSpec[];
-  provider?: string;
-}): NativeCommandSpec[] {
-  return listNativeSpecsFromCommands(
-    listChatCommands({ skillCommands: params?.skillCommands }),
-    params?.provider,
-  );
+export function listNativeCommandSpecs(params?: { provider?: string }): NativeCommandSpec[] {
+  return listNativeSpecsFromCommands(listChatCommands(), params?.provider);
 }
 
 export function listNativeCommandSpecsForConfig(
   cfg: OpenClawConfig,
-  params?: { skillCommands?: SkillCommandSpec[]; provider?: string },
+  params?: { provider?: string },
 ): NativeCommandSpec[] {
-  return listNativeSpecsFromCommands(listChatCommandsForConfig(cfg, params), params?.provider);
+  return listNativeSpecsFromCommands(listChatCommandsForConfig(cfg), params?.provider);
 }
 
 export function findCommandByNativeName(

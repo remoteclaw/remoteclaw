@@ -190,7 +190,7 @@ export const MessagesSchema = z
 export const CommandsSchema = z
   .object({
     native: NativeCommandsSettingSchema.optional().default("auto"),
-    nativeSkills: NativeCommandsSettingSchema.optional().default("auto"),
+
     text: z.boolean().optional(),
     bash: z.boolean().optional(),
     bashForegroundMs: z.number().int().min(0).max(30_000).optional(),
@@ -205,6 +205,4 @@ export const CommandsSchema = z
   })
   .strict()
   .optional()
-  .default(
-    () => ({ native: "auto", nativeSkills: "auto", restart: true, ownerDisplay: "raw" }) as const,
-  );
+  .default(() => ({ native: "auto", restart: true, ownerDisplay: "raw" }) as const);

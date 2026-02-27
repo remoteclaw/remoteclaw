@@ -10,7 +10,6 @@ import {
   resolveAgentIdFromSessionKey,
 } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
-import { normalizeSkillFilter } from "./skills/filter.js";
 import { resolveDefaultAgentWorkspaceDir } from "./workspace.js";
 const log = createSubsystemLogger("agent-scope");
 
@@ -141,13 +140,6 @@ export function resolveAgentConfig(
     sandbox: entry.sandbox,
     tools: entry.tools,
   };
-}
-
-export function resolveAgentSkillsFilter(
-  cfg: OpenClawConfig,
-  agentId: string,
-): string[] | undefined {
-  return normalizeSkillFilter(resolveAgentConfig(cfg, agentId)?.skills);
 }
 
 function resolveModelPrimary(raw: unknown): string | undefined {

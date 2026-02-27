@@ -1,5 +1,4 @@
 import type { ExecToolDefaults } from "../../../agents/bash-tools.js";
-import type { SkillSnapshot } from "../../../agents/skills.js";
 import type { OpenClawConfig } from "../../../config/config.js";
 import type { SessionEntry } from "../../../config/sessions.js";
 import type { OriginatingChannelType } from "../../templating.js";
@@ -59,7 +58,6 @@ export type FollowupRun = {
     sessionFile: string;
     workspaceDir: string;
     config: OpenClawConfig;
-    skillsSnapshot?: SkillSnapshot;
     provider: string;
     model: string;
     authProfileId?: string;

@@ -2,7 +2,6 @@ import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
   resolveSessionAgentId,
-  resolveAgentSkillsFilter,
 } from "../../agents/agent-scope.js";
 import { resolveModelRefFromString } from "../../agents/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
@@ -27,31 +26,6 @@ import { initSessionState } from "./session.js";
 import { stageSandboxMedia } from "./stage-sandbox-media.js";
 import { createTypingController } from "./typing.js";
 
-function mergeSkillFilters(channelFilter?: string[], agentFilter?: string[]): string[] | undefined {
-  const normalize = (list?: string[]) => {
-    if (!Array.isArray(list)) {
-      return undefined;
-    }
-    return list.map((entry) => String(entry).trim()).filter(Boolean);
-  };
-  const channel = normalize(channelFilter);
-  const agent = normalize(agentFilter);
-  if (!channel && !agent) {
-    return undefined;
-  }
-  if (!channel) {
-    return agent;
-  }
-  if (!agent) {
-    return channel;
-  }
-  if (channel.length === 0 || agent.length === 0) {
-    return [];
-  }
-  const agentSet = new Set(agent);
-  return channel.filter((name) => agentSet.has(name));
-}
-
 export async function getReplyFromConfig(
   ctx: MsgContext,
   opts?: GetReplyOptions,
@@ -66,12 +40,6 @@ export async function getReplyFromConfig(
     sessionKey: agentSessionKey,
     config: cfg,
   });
-  const mergedSkillFilter = mergeSkillFilters(
-    opts?.skillFilter,
-    resolveAgentSkillsFilter(cfg, agentId),
-  );
-  const resolvedOpts =
-    mergedSkillFilter !== undefined ? { ...opts, skillFilter: mergedSkillFilter } : opts;
   const agentCfg = cfg.agents?.defaults;
   const sessionCfg = cfg.session;
   const { defaultProvider, defaultModel, aliasIndex } = resolveDefaultModel({
@@ -235,8 +203,7 @@ export async function getReplyFromConfig(
     model,
     hasResolvedHeartbeatModelOverride,
     typing,
-    opts: resolvedOpts,
-    skillFilter: mergedSkillFilter,
+    opts,
   });
   if (directiveResult.kind === "reply") {
     return directiveResult.reply;
@@ -246,7 +213,6 @@ export async function getReplyFromConfig(
     commandSource,
     command,
     allowTextCommands,
-    skillCommands,
     directives,
     cleanedBody,
     elevatedEnabled,
@@ -308,12 +274,11 @@ export async function getReplyFromConfig(
     sessionScope,
     workspaceDir,
     isGroup,
-    opts: resolvedOpts,
+    opts,
     typing,
     allowTextCommands,
     inlineStatusRequested,
     command,
-    skillCommands,
     directives,
     cleanedBody,
     elevatedEnabled,
@@ -330,7 +295,6 @@ export async function getReplyFromConfig(
     contextTokens,
     directiveAck,
     abortedLastRun,
-    skillFilter: mergedSkillFilter,
   });
   if (inlineActionResult.kind === "reply") {
     await maybeEmitMissingResetHooks();
@@ -378,7 +342,7 @@ export async function getReplyFromConfig(
     perMessageQueueMode,
     perMessageQueueOptions,
     typing,
-    opts: resolvedOpts,
+    opts,
     defaultProvider,
     defaultModel,
     timeoutMs,

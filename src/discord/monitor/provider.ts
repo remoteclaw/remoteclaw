@@ -13,11 +13,9 @@ import { Routes } from "discord-api-types/v10";
 import { resolveTextChunkLimit } from "../../auto-reply/chunk.js";
 import { listNativeCommandSpecsForConfig } from "../../auto-reply/commands-registry.js";
 import type { HistoryEntry } from "../../auto-reply/reply/history.js";
-import { listSkillCommandsForAgents } from "../../auto-reply/skill-commands.js";
 import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
-  resolveNativeSkillsEnabled,
 } from "../../config/commands.js";
 import type { OpenClawConfig, ReplyToMode } from "../../config/config.js";
 import { loadConfig } from "../../config/config.js";
@@ -149,26 +147,6 @@ function formatThreadBindingSessionTtlLabel(ttlMs: number): string {
   return label === "disabled" ? "off" : label;
 }
 
-function dedupeSkillCommandsForDiscord(
-  skillCommands: ReturnType<typeof listSkillCommandsForAgents>,
-) {
-  const seen = new Set<string>();
-  const deduped: ReturnType<typeof listSkillCommandsForAgents> = [];
-  for (const command of skillCommands) {
-    const key = command.skillName.trim().toLowerCase();
-    if (!key) {
-      deduped.push(command);
-      continue;
-    }
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    deduped.push(command);
-  }
-  return deduped;
-}
-
 async function deployDiscordCommands(params: {
   client: Client;
   runtime: RuntimeEnv;
@@ -295,11 +273,6 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     providerSetting: discordCfg.commands?.native,
     globalSetting: cfg.commands?.native,
   });
-  const nativeSkillsEnabled = resolveNativeSkillsEnabled({
-    providerId: "discord",
-    providerSetting: discordCfg.commands?.nativeSkills,
-    globalSetting: cfg.commands?.nativeSkills,
-  });
   const nativeDisabledExplicit = isNativeCommandsExplicitlyDisabled({
     providerSetting: discordCfg.commands?.native,
     globalSetting: cfg.commands?.native,
@@ -322,7 +295,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
 
   if (shouldLogVerbose()) {
     logVerbose(
-      `discord: config dm=${dmEnabled ? "on" : "off"} dmPolicy=${dmPolicy} allowFrom=${summarizeAllowList(allowFrom)} groupDm=${groupDmEnabled ? "on" : "off"} groupDmChannels=${summarizeAllowList(groupDmChannels)} groupPolicy=${groupPolicy} guilds=${summarizeGuilds(guildEntries)} historyLimit=${historyLimit} mediaMaxMb=${Math.round(mediaMaxBytes / (1024 * 1024))} native=${nativeEnabled ? "on" : "off"} nativeSkills=${nativeSkillsEnabled ? "on" : "off"} accessGroups=${useAccessGroups ? "on" : "off"} threadBindings=${threadBindingsEnabled ? "on" : "off"} threadSessionTtl=${formatThreadBindingSessionTtlLabel(threadBindingSessionTtlMs)}`,
+      `discord: config dm=${dmEnabled ? "on" : "off"} dmPolicy=${dmPolicy} allowFrom=${summarizeAllowList(allowFrom)} groupDm=${groupDmEnabled ? "on" : "off"} groupDmChannels=${summarizeAllowList(groupDmChannels)} groupPolicy=${groupPolicy} guilds=${summarizeGuilds(guildEntries)} historyLimit=${historyLimit} mediaMaxMb=${Math.round(mediaMaxBytes / (1024 * 1024))} native=${nativeEnabled ? "on" : "off"} accessGroups=${useAccessGroups ? "on" : "off"} threadBindings=${threadBindingsEnabled ? "on" : "off"} threadSessionTtl=${formatThreadBindingSessionTtlLabel(threadBindingSessionTtlMs)}`,
     );
   }
 
@@ -332,23 +305,9 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
   }
 
   const maxDiscordCommands = 100;
-  let skillCommands =
-    nativeEnabled && nativeSkillsEnabled
-      ? dedupeSkillCommandsForDiscord(listSkillCommandsForAgents({ cfg }))
-      : [];
-  let commandSpecs = nativeEnabled
-    ? listNativeCommandSpecsForConfig(cfg, { skillCommands, provider: "discord" })
+  const commandSpecs = nativeEnabled
+    ? listNativeCommandSpecsForConfig(cfg, { provider: "discord" })
     : [];
-  const initialCommandCount = commandSpecs.length;
-  if (nativeEnabled && nativeSkillsEnabled && commandSpecs.length > maxDiscordCommands) {
-    skillCommands = [];
-    commandSpecs = listNativeCommandSpecsForConfig(cfg, { skillCommands: [], provider: "discord" });
-    runtime.log?.(
-      warn(
-        `discord: ${initialCommandCount} commands exceeds limit; removing per-skill commands and keeping /skill.`,
-      ),
-    );
-  }
   if (nativeEnabled && commandSpecs.length > maxDiscordCommands) {
     runtime.log?.(
       warn(
@@ -625,7 +584,6 @@ async function clearDiscordNativeCommands(params: {
 
 export const __testing = {
   createDiscordGatewayPlugin,
-  dedupeSkillCommandsForDiscord,
   resolveDiscordRuntimeGroupPolicy: resolveOpenProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   resolveDiscordRestFetch,

@@ -687,36 +687,6 @@ describe("redactConfigSnapshot", () => {
     expect(restored.env.NODE_ENV).toBe("production");
   });
 
-  it("redacts and restores skills entry env secrets in dynamic record paths", () => {
-    const hints: ConfigUiHints = {
-      "some.other.path": { sensitive: true },
-    };
-    const snapshot = makeSnapshot({
-      skills: {
-        entries: {
-          web_search: {
-            env: {
-              GEMINI_API_KEY: "gemini-secret-456",
-              BRAVE_REGION: "us",
-            },
-          },
-        },
-      },
-    });
-    const redacted = redactConfigSnapshot(snapshot, hints);
-    const entry = (
-      redacted.config.skills as {
-        entries: Record<string, { env: Record<string, string> }>;
-      }
-    ).entries.web_search;
-    expect(entry.env.GEMINI_API_KEY).toBe(REDACTED_SENTINEL);
-    expect(entry.env.BRAVE_REGION).toBe("us");
-
-    const restored = restoreRedactedValues(redacted.config, snapshot.config, hints);
-    expect(restored.skills.entries.web_search.env.GEMINI_API_KEY).toBe("gemini-secret-456");
-    expect(restored.skills.entries.web_search.env.BRAVE_REGION).toBe("us");
-  });
-
   it("contract-covers dynamic catchall/record paths for redact+restore", () => {
     const hints = mapSensitivePaths(OpenClawSchema, "", {});
     const snapshot = makeSnapshot({

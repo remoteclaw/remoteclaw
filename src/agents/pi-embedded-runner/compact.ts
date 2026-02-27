@@ -51,13 +51,6 @@ import {
   resolveSessionLockMaxHoldFromTimeout,
 } from "../session-write-lock.js";
 import { detectRuntimeShell } from "../shell-utils.js";
-import {
-  applySkillEnvOverrides,
-  applySkillEnvOverridesFromSnapshot,
-  loadWorkspaceSkillEntries,
-  resolveSkillsPromptForRun,
-  type SkillSnapshot,
-} from "../skills.js";
 import { resolveTranscriptPolicy } from "../transcript-policy.js";
 import {
   compactWithSafetyTimeout,
@@ -108,7 +101,6 @@ export type CompactEmbeddedPiSessionParams = {
   workspaceDir: string;
   agentDir?: string;
   config?: OpenClawConfig;
-  skillsSnapshot?: SkillSnapshot;
   provider?: string;
   model?: string;
   thinkLevel?: ThinkLevel;
@@ -331,28 +323,9 @@ export async function compactEmbeddedPiSessionDirect(
     cwd: effectiveWorkspace,
   });
 
-  let restoreSkillEnv: (() => void) | undefined;
   process.chdir(effectiveWorkspace);
   try {
-    const shouldLoadSkillEntries = !params.skillsSnapshot || !params.skillsSnapshot.resolvedSkills;
-    const skillEntries = shouldLoadSkillEntries
-      ? loadWorkspaceSkillEntries(effectiveWorkspace)
-      : [];
-    restoreSkillEnv = params.skillsSnapshot
-      ? applySkillEnvOverridesFromSnapshot({
-          snapshot: params.skillsSnapshot,
-          config: params.config,
-        })
-      : applySkillEnvOverrides({
-          skills: skillEntries ?? [],
-          config: params.config,
-        });
-    const skillsPrompt = resolveSkillsPromptForRun({
-      skillsSnapshot: params.skillsSnapshot,
-      entries: shouldLoadSkillEntries ? skillEntries : undefined,
-      config: params.config,
-      workspaceDir: effectiveWorkspace,
-    });
+    const skillsPrompt = "";
 
     const sessionLabel = params.sessionKey ?? params.sessionId;
     const { contextFiles } = await resolveBootstrapContextForRun({
@@ -738,7 +711,6 @@ export async function compactEmbeddedPiSessionDirect(
     const reason = describeUnknownError(err);
     return fail(reason);
   } finally {
-    restoreSkillEnv?.();
     process.chdir(prevCwd);
   }
 }

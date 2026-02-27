@@ -109,6 +109,7 @@ function buildCronChannelMessage(params: {
     id: params.job.id ?? crypto.randomUUID(),
     text: params.commandBody,
     from: params.resolvedDelivery.accountId ?? "system",
+    replyToId: `cron:${params.job.id}`,
     channelId: params.resolvedDelivery.to ?? "",
     provider: params.resolvedDelivery.channel ?? "cron",
     timestamp: params.timestamp,

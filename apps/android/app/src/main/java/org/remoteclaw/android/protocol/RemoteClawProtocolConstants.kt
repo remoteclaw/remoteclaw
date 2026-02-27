@@ -70,8 +70,21 @@ enum class RemoteClawLocationCommand(val rawValue: String) {
   }
 }
 
+enum class RemoteClawDeviceCommand(val rawValue: String) {
+  Status("device.status"),
+  Info("device.info"),
+  Permissions("device.permissions"),
+  Health("device.health"),
+  ;
+
+  companion object {
+    const val NamespacePrefix: String = "device."
+  }
+}
+
 enum class RemoteClawNotificationsCommand(val rawValue: String) {
   List("notifications.list"),
+  Actions("notifications.actions"),
   ;
 
   companion object {

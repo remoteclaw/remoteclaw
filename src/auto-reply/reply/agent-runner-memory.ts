@@ -2,7 +2,6 @@ import crypto from "node:crypto";
 import { runWithModelFallback } from "../../agents/model-fallback.js";
 import { isCliProvider } from "../../agents/model-selection.js";
 import { runEmbeddedPiAgent } from "../../agents/pi-embedded.js";
-import { resolveSandboxConfigForAgent, resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStoreEntry } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
@@ -43,20 +42,8 @@ export async function runMemoryFlushIfNeeded(params: {
     return params.sessionEntry;
   }
 
-  const memoryFlushWritable = (() => {
-    if (!params.sessionKey) {
-      return true;
-    }
-    const runtime = resolveSandboxRuntimeStatus({
-      cfg: params.cfg,
-      sessionKey: params.sessionKey,
-    });
-    if (!runtime.sandboxed) {
-      return true;
-    }
-    const sandboxCfg = resolveSandboxConfigForAgent(params.cfg, runtime.agentId);
-    return sandboxCfg.workspaceAccess === "rw";
-  })();
+  // Sandbox infrastructure removed (#68); memory flush is always writable in direct mode.
+  const memoryFlushWritable = true;
 
   const shouldFlushMemory =
     memoryFlushSettings &&

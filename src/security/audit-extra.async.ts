@@ -7,13 +7,15 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
-import {
-  resolveSandboxConfigForAgent,
-  resolveSandboxToolPolicyForAgent,
-} from "../agents/sandbox.js";
-import { SANDBOX_BROWSER_SECURITY_HASH_EPOCH } from "../agents/sandbox/constants.js";
-import { execDockerRaw, type ExecDockerRawResult } from "../agents/sandbox/docker.js";
-import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
+// Sandbox infrastructure removed (#68)
+const resolveSandboxConfigForAgent = (_cfg: unknown, _agentId?: string) => ({
+  mode: "off" as const,
+});
+const resolveSandboxToolPolicyForAgent = (_cfg: unknown, _agentId?: string) =>
+  undefined as SandboxToolPolicy | undefined;
+const SANDBOX_BROWSER_SECURITY_HASH_EPOCH = "";
+type ExecDockerRawResult = { code: number; stdout: Buffer; stderr: Buffer };
+type SandboxToolPolicy = { allow?: string[]; deny?: string[] };
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
@@ -30,7 +32,21 @@ import {
   inspectPathPermissions,
   safeStat,
 } from "./audit-fs.js";
-import { pickSandboxToolPolicy } from "./audit-tool-policy.js";
+// Sandbox infrastructure removed (#68)
+function pickSandboxToolPolicy(config?: {
+  allow?: string[];
+  deny?: string[];
+}): SandboxToolPolicy | undefined {
+  if (!config) {
+    return undefined;
+  }
+  const allow = Array.isArray(config.allow) ? config.allow : undefined;
+  const deny = Array.isArray(config.deny) ? config.deny : undefined;
+  if (!allow && !deny) {
+    return undefined;
+  }
+  return { allow, deny };
+}
 import { extensionUsesSkippedScannerPath, isPathInside } from "./scan-paths.js";
 import type { ExecFn } from "./windows-acl.js";
 
@@ -46,6 +62,13 @@ type ExecDockerRawFn = (
   args: string[],
   opts?: { allowFailure?: boolean; input?: Buffer | string; signal?: AbortSignal },
 ) => Promise<ExecDockerRawResult>;
+
+// Sandbox infrastructure removed (#68)
+const execDockerRaw: ExecDockerRawFn = async () => ({
+  code: 1,
+  stdout: Buffer.from(""),
+  stderr: Buffer.from("sandbox removed"),
+});
 
 // --------------------------------------------------------------------------
 // Helpers

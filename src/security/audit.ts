@@ -1,7 +1,5 @@
 import { isIP } from "node:net";
 import path from "node:path";
-import { resolveSandboxConfigForAgent } from "../agents/sandbox.js";
-import { execDockerRaw } from "../agents/sandbox/docker.js";
 import { resolveBrowserConfig, resolveProfile } from "../browser/config.js";
 import { resolveBrowserControlAuth } from "../browser/control-auth.js";
 import { listChannelPlugins } from "../channels/plugins/index.js";
@@ -100,8 +98,6 @@ export type SecurityAuditOptions = {
   probeGatewayFn?: typeof probeGateway;
   /** Dependency injection for tests (Windows ACL checks). */
   execIcacls?: ExecFn;
-  /** Dependency injection for tests (Docker label checks). */
-  execDockerRawFn?: typeof execDockerRaw;
 };
 
 function countBySeverity(findings: SecurityAuditFinding[]): SecurityAuditSummary {
@@ -694,48 +690,8 @@ function collectElevatedFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
 
 function collectExecRuntimeFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
-  const globalExecHost = cfg.tools?.exec?.host;
-  const defaultSandboxMode = resolveSandboxConfigForAgent(cfg).mode;
-  const defaultHostIsExplicitSandbox = globalExecHost === "sandbox";
-
-  if (defaultHostIsExplicitSandbox && defaultSandboxMode === "off") {
-    findings.push({
-      checkId: "tools.exec.host_sandbox_no_sandbox_defaults",
-      severity: "warn",
-      title: "Exec host is sandbox but sandbox mode is off",
-      detail:
-        "tools.exec.host is explicitly set to sandbox while agents.defaults.sandbox.mode=off. " +
-        "In this mode, exec runs directly on the gateway host.",
-      remediation:
-        'Enable sandbox mode (`agents.defaults.sandbox.mode="non-main"` or `"all"`) or set tools.exec.host to "gateway" with approvals.',
-    });
-  }
 
   const agents = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
-  const riskyAgents = agents
-    .filter(
-      (entry) =>
-        entry &&
-        typeof entry === "object" &&
-        typeof entry.id === "string" &&
-        entry.tools?.exec?.host === "sandbox" &&
-        resolveSandboxConfigForAgent(cfg, entry.id).mode === "off",
-    )
-    .map((entry) => entry.id)
-    .slice(0, 5);
-
-  if (riskyAgents.length > 0) {
-    findings.push({
-      checkId: "tools.exec.host_sandbox_no_sandbox_agents",
-      severity: "warn",
-      title: "Agent exec host uses sandbox while sandbox mode is off",
-      detail:
-        `agents.list.*.tools.exec.host is set to sandbox for: ${riskyAgents.join(", ")}. ` +
-        "With sandbox mode off, exec runs directly on the gateway host.",
-      remediation:
-        'Enable sandbox mode for these agents (`agents.list[].sandbox.mode`) or set their tools.exec.host to "gateway".',
-    });
-  }
 
   const normalizeConfiguredSafeBins = (entries: unknown): string[] => {
     if (!Array.isArray(entries)) {
@@ -977,11 +933,7 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
     findings.push(
       ...(await collectStateDeepFilesystemFindings({ cfg, env, stateDir, platform, execIcacls })),
     );
-    findings.push(
-      ...(await collectSandboxBrowserHashLabelFindings({
-        execDockerRawFn: opts.execDockerRawFn,
-      })),
-    );
+    findings.push(...(await collectSandboxBrowserHashLabelFindings({})));
     findings.push(...(await collectPluginsTrustFindings({ cfg, stateDir })));
     if (opts.deep === true) {
       findings.push(...(await collectPluginsCodeSafetyFindings({ stateDir })));

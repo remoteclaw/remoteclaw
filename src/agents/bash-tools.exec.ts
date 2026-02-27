@@ -43,7 +43,20 @@ import {
   resolveWorkdir,
   truncateMiddle,
 } from "./bash-tools.shared.js";
-import { assertSandboxPath } from "./sandbox-paths.js";
+// Sandbox infrastructure removed (#68); this file is deleted when bash-tools is gutted.
+const assertSandboxPath = async (opts: {
+  filePath: string;
+  cwd: string;
+  root: string;
+}): Promise<{ resolved: string; relative: string }> => {
+  const resolved = path.resolve(opts.cwd, opts.filePath);
+  const normalizedRoot = path.resolve(opts.root);
+  if (resolved !== normalizedRoot && !resolved.startsWith(normalizedRoot + path.sep)) {
+    throw new Error(`Path ${resolved} is outside workspace root ${normalizedRoot}`);
+  }
+  const relative = path.relative(normalizedRoot, resolved);
+  return { resolved, relative };
+};
 
 export type { BashSandboxConfig } from "./bash-tools.shared.js";
 export type {

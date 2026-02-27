@@ -157,7 +157,6 @@ describe("Nix integration (U3, U5, U9)", () => {
                     id: "main",
                     workspace: "~/ws-agent",
                     agentDir: "~/.openclaw/agents/main",
-                    sandbox: { workspaceRoot: "~/sandbox-root" },
                   },
                 ],
               },
@@ -185,7 +184,6 @@ describe("Nix integration (U3, U5, U9)", () => {
         expect(cfg.agents?.list?.[0]?.agentDir).toBe(
           path.join(home, ".openclaw", "agents", "main"),
         );
-        expect(cfg.agents?.list?.[0]?.sandbox?.workspaceRoot).toBe(path.join(home, "sandbox-root"));
         expect(cfg.channels?.whatsapp?.accounts?.personal?.authDir).toBe(
           path.join(home, ".openclaw", "credentials", "wa-personal"),
         );

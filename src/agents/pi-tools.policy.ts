@@ -8,9 +8,25 @@ import { normalizeMessageChannel } from "../utils/message-channel.js";
 import { resolveAgentConfig, resolveAgentIdFromSessionKey } from "./agent-scope.js";
 import { compileGlobPatterns, matchesAnyGlobPattern } from "./glob-pattern.js";
 import type { AnyAgentTool } from "./pi-tools.types.js";
-import { pickSandboxToolPolicy } from "./sandbox-tool-policy.js";
-import type { SandboxToolPolicy } from "./sandbox.js";
 import { expandToolGroups, normalizeToolName } from "./tool-policy.js";
+
+// Sandbox infrastructure removed (#68); inline the types and helpers that survived the gut.
+type SandboxToolPolicy = { allow?: string[]; deny?: string[] };
+
+function pickSandboxToolPolicy(config?: {
+  allow?: string[];
+  deny?: string[];
+}): SandboxToolPolicy | undefined {
+  if (!config) {
+    return undefined;
+  }
+  const allow = Array.isArray(config.allow) ? config.allow : undefined;
+  const deny = Array.isArray(config.deny) ? config.deny : undefined;
+  if (!allow && !deny) {
+    return undefined;
+  }
+  return { allow, deny };
+}
 
 function makeToolPolicyMatcher(policy: SandboxToolPolicy) {
   const deny = compileGlobPatterns({

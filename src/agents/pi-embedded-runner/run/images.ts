@@ -4,9 +4,14 @@ import type { ImageContent } from "@mariozechner/pi-ai";
 import { resolveUserPath } from "../../../utils.js";
 import { loadWebMedia } from "../../../web/media.js";
 import type { ImageSanitizationLimits } from "../../image-sanitization.js";
-import { resolveSandboxedBridgeMediaPath } from "../../sandbox-media-paths.js";
-import { assertSandboxPath } from "../../sandbox-paths.js";
-import type { SandboxFsBridge } from "../../sandbox/fs-bridge.js";
+// Sandbox infrastructure removed (#68); this file is deleted when pi-embedded-runner is gutted.
+type SandboxFsBridge = {
+  resolve: (p: string) => Promise<{ hostPath: string }>;
+  readFile(params: { filePath: string; cwd: string }): Promise<Buffer>;
+};
+const resolveSandboxedBridgeMediaPath = async (_opts: Record<string, unknown>) =>
+  undefined as { resolved: string } | undefined;
+const assertSandboxPath = async (_opts: Record<string, unknown>) => {};
 import { sanitizeImageBlocks } from "../../tool-images.js";
 import { log } from "../logger.js";
 
@@ -208,7 +213,7 @@ export async function loadImageFromRef(
             },
             mediaPath: targetPath,
           });
-          targetPath = resolved.resolved;
+          targetPath = resolved!.resolved;
         } catch (err) {
           log.debug(
             `Native image: sandbox validation failed for ${ref.resolved}: ${err instanceof Error ? err.message : String(err)}`,

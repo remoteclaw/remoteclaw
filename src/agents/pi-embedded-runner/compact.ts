@@ -42,7 +42,9 @@ import {
 } from "../pi-embedded-helpers.js";
 import { applyPiCompactionSettingsFromConfig } from "../pi-settings.js";
 import { createOpenClawCodingTools } from "../pi-tools.js";
-import { resolveSandboxContext } from "../sandbox.js";
+// Sandbox infrastructure removed (#68); this file is deleted when pi-embedded-runner is gutted.
+// oxlint-disable-next-line typescript/no-explicit-any
+const resolveSandboxContext = async (_opts: Record<string, unknown>): Promise<any> => undefined;
 import { repairSessionFileIfNeeded } from "../session-file-repair.js";
 import { guardSessionManager } from "../session-tool-result-guard-wrapper.js";
 import { sanitizeToolUseResultPairing } from "../session-transcript-repair.js";

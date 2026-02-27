@@ -1,7 +1,6 @@
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { OpenClawConfig } from "../../config/config.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
-import { formatSandboxToolPolicyBlockedMessage } from "../sandbox.js";
 import { stableStringify } from "../stable-stringify.js";
 import type { FailoverReason } from "./types.js";
 
@@ -470,20 +469,6 @@ export function formatAssistantErrorText(
   }
   if (!raw) {
     return "LLM request failed with an unknown error.";
-  }
-
-  const unknownTool =
-    raw.match(/unknown tool[:\s]+["']?([a-z0-9_-]+)["']?/i) ??
-    raw.match(/tool\s+["']?([a-z0-9_-]+)["']?\s+(?:not found|is not available)/i);
-  if (unknownTool?.[1]) {
-    const rewritten = formatSandboxToolPolicyBlockedMessage({
-      cfg: opts?.cfg,
-      sessionKey: opts?.sessionKey,
-      toolName: unknownTool[1],
-    });
-    if (rewritten) {
-      return rewritten;
-    }
   }
 
   if (isContextOverflowError(raw)) {

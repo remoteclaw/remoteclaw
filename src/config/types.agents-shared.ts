@@ -1,8 +1,24 @@
-import type {
-  SandboxBrowserSettings,
-  SandboxDockerSettings,
-  SandboxPruneSettings,
-} from "./types.sandbox.js";
+// Sandbox infrastructure removed (#68)
+type SandboxDockerSettings = {
+  image?: string;
+  network?: string;
+  networkMode?: string;
+  dns?: string[];
+  env?: Record<string, string>;
+  ports?: Array<string | number>;
+  binds?: string[];
+  memory?: string;
+  cpus?: number;
+};
+type SandboxBrowserSettings = {
+  enabled?: boolean;
+  image?: string;
+  ports?: Array<string | number>;
+};
+type SandboxPruneSettings = {
+  enabled?: boolean;
+  maxAge?: string;
+};
 
 export type AgentModelConfig =
   | string

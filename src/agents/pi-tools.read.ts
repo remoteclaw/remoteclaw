@@ -6,9 +6,37 @@ import { detectMime } from "../media/mime.js";
 import { sniffMimeFromBase64 } from "../media/sniff-mime-from-base64.js";
 import type { ImageSanitizationLimits } from "./image-sanitization.js";
 import type { AnyAgentTool } from "./pi-tools.types.js";
-import { assertSandboxPath } from "./sandbox-paths.js";
-import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
 import { sanitizeToolResultImages } from "./tool-images.js";
+
+// Sandbox infrastructure removed (#68); inline the types and helpers that survived the gut.
+type SandboxFsBridge = {
+  readFile(params: { filePath: string; cwd: string }): Promise<Buffer>;
+  writeFile(params: { filePath: string; cwd: string; data: string }): Promise<void>;
+  stat(params: {
+    filePath: string;
+    cwd: string;
+  }): Promise<{ isFile(): boolean; size: number } | null>;
+  mkdirp(params: { filePath: string; cwd: string }): Promise<void>;
+  remove(params: { filePath: string; cwd: string; force: boolean }): Promise<void>;
+  resolvePath(params: { filePath: string; cwd: string }): {
+    hostPath: string;
+    relativePath: string;
+  };
+};
+async function assertSandboxPath(opts: {
+  filePath: string;
+  cwd: string;
+  root: string;
+  allowFinalSymlink?: boolean;
+}): Promise<{ resolved: string; relative: string }> {
+  const resolved = path.resolve(opts.cwd, opts.filePath);
+  const normalizedRoot = path.resolve(opts.root);
+  if (resolved !== normalizedRoot && !resolved.startsWith(normalizedRoot + path.sep)) {
+    throw new Error(`Path ${resolved} is outside workspace root ${normalizedRoot}`);
+  }
+  const relative = path.relative(normalizedRoot, resolved);
+  return { resolved, relative };
+}
 
 // NOTE(steipete): Upstream read now does file-magic MIME detection; we keep the wrapper
 // to normalize payloads and sanitize oversized images before they hit providers.

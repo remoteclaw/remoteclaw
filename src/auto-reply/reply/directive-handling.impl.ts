@@ -3,7 +3,12 @@ import {
   resolveAgentDir,
   resolveSessionAgentId,
 } from "../../agents/agent-scope.js";
-import { resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
+// Sandbox infrastructure removed (#68)
+const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
+  sandboxed: false as const,
+  mode: "off" as const,
+  agentId: undefined as string | undefined,
+});
 import type { OpenClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 import type { ExecAsk, ExecHost, ExecSecurity } from "../../infra/exec-approvals.js";

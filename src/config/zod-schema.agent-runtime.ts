@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { getBlockedNetworkModeReason } from "../agents/sandbox/network-mode.js";
 import { parseDurationMs } from "../cli/parse-duration.js";
 import { AgentModelSchema } from "./zod-schema.agent-model.js";
 import {
@@ -87,152 +86,6 @@ export const HeartbeatSchema = z
     validateTime(active.start, { allow24: false }, "start");
     validateTime(active.end, { allow24: true }, "end");
   })
-  .optional();
-
-export const SandboxDockerSchema = z
-  .object({
-    image: z.string().optional(),
-    containerPrefix: z.string().optional(),
-    workdir: z.string().optional(),
-    readOnlyRoot: z.boolean().optional(),
-    tmpfs: z.array(z.string()).optional(),
-    network: z.string().optional(),
-    user: z.string().optional(),
-    capDrop: z.array(z.string()).optional(),
-    env: z.record(z.string(), z.string()).optional(),
-    setupCommand: z.string().optional(),
-    pidsLimit: z.number().int().positive().optional(),
-    memory: z.union([z.string(), z.number()]).optional(),
-    memorySwap: z.union([z.string(), z.number()]).optional(),
-    cpus: z.number().positive().optional(),
-    ulimits: z
-      .record(
-        z.string(),
-        z.union([
-          z.string(),
-          z.number(),
-          z
-            .object({
-              soft: z.number().int().nonnegative().optional(),
-              hard: z.number().int().nonnegative().optional(),
-            })
-            .strict(),
-        ]),
-      )
-      .optional(),
-    seccompProfile: z.string().optional(),
-    apparmorProfile: z.string().optional(),
-    dns: z.array(z.string()).optional(),
-    extraHosts: z.array(z.string()).optional(),
-    binds: z.array(z.string()).optional(),
-    dangerouslyAllowReservedContainerTargets: z.boolean().optional(),
-    dangerouslyAllowExternalBindSources: z.boolean().optional(),
-    dangerouslyAllowContainerNamespaceJoin: z.boolean().optional(),
-  })
-  .strict()
-  .superRefine((data, ctx) => {
-    if (data.binds) {
-      for (let i = 0; i < data.binds.length; i += 1) {
-        const bind = data.binds[i]?.trim() ?? "";
-        if (!bind) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["binds", i],
-            message: "Sandbox security: bind mount entry must be a non-empty string.",
-          });
-          continue;
-        }
-        const firstColon = bind.indexOf(":");
-        const source = (firstColon <= 0 ? bind : bind.slice(0, firstColon)).trim();
-        if (!source.startsWith("/")) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["binds", i],
-            message:
-              `Sandbox security: bind mount "${bind}" uses a non-absolute source path "${source}". ` +
-              "Only absolute POSIX paths are supported for sandbox binds.",
-          });
-        }
-      }
-    }
-    const blockedNetworkReason = getBlockedNetworkModeReason({
-      network: data.network,
-      allowContainerNamespaceJoin: data.dangerouslyAllowContainerNamespaceJoin === true,
-    });
-    if (blockedNetworkReason === "host") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["network"],
-        message:
-          'Sandbox security: network mode "host" is blocked. Use "bridge" or "none" instead.',
-      });
-    }
-    if (blockedNetworkReason === "container_namespace_join") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["network"],
-        message:
-          'Sandbox security: network mode "container:*" is blocked by default. ' +
-          "Use a custom bridge network, or set dangerouslyAllowContainerNamespaceJoin=true only when you fully trust this runtime.",
-      });
-    }
-    if (data.seccompProfile?.trim().toLowerCase() === "unconfined") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["seccompProfile"],
-        message:
-          'Sandbox security: seccomp profile "unconfined" is blocked. ' +
-          "Use a custom seccomp profile file or omit this setting.",
-      });
-    }
-    if (data.apparmorProfile?.trim().toLowerCase() === "unconfined") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["apparmorProfile"],
-        message:
-          'Sandbox security: apparmor profile "unconfined" is blocked. ' +
-          "Use a named AppArmor profile or omit this setting.",
-      });
-    }
-  })
-  .optional();
-
-export const SandboxBrowserSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    image: z.string().optional(),
-    containerPrefix: z.string().optional(),
-    network: z.string().optional(),
-    cdpPort: z.number().int().positive().optional(),
-    cdpSourceRange: z.string().optional(),
-    vncPort: z.number().int().positive().optional(),
-    noVncPort: z.number().int().positive().optional(),
-    headless: z.boolean().optional(),
-    enableNoVnc: z.boolean().optional(),
-    allowHostControl: z.boolean().optional(),
-    autoStart: z.boolean().optional(),
-    autoStartTimeoutMs: z.number().int().positive().optional(),
-    binds: z.array(z.string()).optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.network?.trim().toLowerCase() === "host") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["network"],
-        message:
-          'Sandbox security: browser network mode "host" is blocked. Use "bridge" or a custom bridge network instead.',
-      });
-    }
-  })
-  .strict()
-  .optional();
-
-export const SandboxPruneSchema = z
-  .object({
-    idleHours: z.number().int().nonnegative().optional(),
-    maxAgeDays: z.number().int().nonnegative().optional(),
-  })
-  .strict()
   .optional();
 
 const ToolPolicyBaseSchema = z
@@ -466,36 +319,6 @@ const ToolLoopDetectionSchema = z
   })
   .optional();
 
-export const AgentSandboxSchema = z
-  .object({
-    mode: z.union([z.literal("off"), z.literal("non-main"), z.literal("all")]).optional(),
-    workspaceAccess: z.union([z.literal("none"), z.literal("ro"), z.literal("rw")]).optional(),
-    sessionToolsVisibility: z.union([z.literal("spawned"), z.literal("all")]).optional(),
-    scope: z.union([z.literal("session"), z.literal("agent"), z.literal("shared")]).optional(),
-    perSession: z.boolean().optional(),
-    workspaceRoot: z.string().optional(),
-    docker: SandboxDockerSchema,
-    browser: SandboxBrowserSchema,
-    prune: SandboxPruneSchema,
-  })
-  .strict()
-  .superRefine((data, ctx) => {
-    const blockedBrowserNetworkReason = getBlockedNetworkModeReason({
-      network: data.browser?.network,
-      allowContainerNamespaceJoin: data.docker?.dangerouslyAllowContainerNamespaceJoin === true,
-    });
-    if (blockedBrowserNetworkReason === "container_namespace_join") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["browser", "network"],
-        message:
-          'Sandbox security: browser network mode "container:*" is blocked by default. ' +
-          "Set sandbox.docker.dangerouslyAllowContainerNamespaceJoin=true only when you fully trust this runtime.",
-      });
-    }
-  })
-  .optional();
-
 const CommonToolPolicyFields = {
   profile: ToolProfileSchema,
   allow: z.array(z.string()).optional(),
@@ -517,12 +340,6 @@ export const AgentToolsSchema = z
     exec: AgentToolExecSchema,
     fs: ToolFsSchema,
     loopDetection: ToolLoopDetectionSchema,
-    sandbox: z
-      .object({
-        tools: ToolPolicySchema,
-      })
-      .strict()
-      .optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -701,7 +518,6 @@ export const AgentEntrySchema = z
       })
       .strict()
       .optional(),
-    sandbox: AgentSandboxSchema,
     tools: AgentToolsSchema,
   })
   .strict();
@@ -763,12 +579,6 @@ export const ToolsSchema = z
     exec: ToolExecSchema,
     fs: ToolFsSchema,
     subagents: z
-      .object({
-        tools: ToolPolicySchema,
-      })
-      .strict()
-      .optional(),
-    sandbox: z
       .object({
         tools: ToolPolicySchema,
       })

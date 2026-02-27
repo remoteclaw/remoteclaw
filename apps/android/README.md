@@ -116,6 +116,56 @@ More details: `docs/platforms/android.md`.
   - `CAMERA` for `camera.snap` and `camera.clip`
   - `RECORD_AUDIO` for `camera.clip` when `includeAudio=true`
 
+## Integration Capability Test (Preconditioned)
+
+This suite assumes setup is already done manually. It does **not** install/run/pair automatically.
+
+Pre-req checklist:
+
+1) Gateway is running and reachable from the Android app.
+2) Android app is connected to that gateway and `remoteclaw nodes status` shows it as paired + connected.
+3) App stays unlocked and in foreground for the whole run.
+4) Open the app **Screen** tab and keep it active during the run (canvas/A2UI commands require the canvas WebView attached there).
+5) Grant runtime permissions for capabilities you expect to pass (camera/mic/location/notification listener/location, etc.).
+6) No interactive system dialogs should be pending before test start.
+7) Canvas host is enabled and reachable from the device (do not run gateway with `REMOTECLAW_SKIP_CANVAS_HOST=1`; startup logs should include `canvas host mounted at .../__remoteclaw__/`).
+8) Local operator test client pairing is approved. If first run fails with `pairing required`, approve latest pending device pairing request, then rerun:
+9) For A2UI checks, keep the app on **Screen** tab; the node now auto-refreshes canvas capability once on first A2UI reachability failure (TTL-safe retry).
+
+```bash
+remoteclaw devices list
+remoteclaw devices approve --latest
+```
+
+Run:
+
+```bash
+pnpm android:test:integration
+```
+
+Optional overrides:
+
+- `REMOTECLAW_ANDROID_GATEWAY_URL=ws://...` (default: from your local RemoteClaw config)
+- `REMOTECLAW_ANDROID_GATEWAY_TOKEN=...`
+- `REMOTECLAW_ANDROID_GATEWAY_PASSWORD=...`
+- `REMOTECLAW_ANDROID_NODE_ID=...` or `REMOTECLAW_ANDROID_NODE_NAME=...`
+
+What it does:
+
+- Reads `node.describe` command list from the selected Android node.
+- Invokes advertised non-interactive commands.
+- Skips `screen.record` in this suite (Android requires interactive per-invocation screen-capture consent).
+- Asserts command contracts (success or expected deterministic error for safe-invalid calls like `sms.send`, `notifications.actions`, `app.update`).
+
+Common failure quick-fixes:
+
+- `pairing required` before tests start:
+  - approve pending device pairing (`remoteclaw devices approve --latest`) and rerun.
+- `A2UI host not reachable` / `A2UI_HOST_NOT_CONFIGURED`:
+  - ensure gateway canvas host is running and reachable, keep the app on the **Screen** tab. The app will auto-refresh canvas capability once; if it still fails, reconnect app and rerun.
+- `NODE_BACKGROUND_UNAVAILABLE: canvas unavailable`:
+  - app is not effectively ready for canvas commands; keep app foregrounded and **Screen** tab active.
+
 ## Contributions
 
 This Android app is currently being rebuilt.

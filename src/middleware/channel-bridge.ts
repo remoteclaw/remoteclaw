@@ -192,6 +192,8 @@ export class ChannelBridge {
           REMOTECLAW_ACCOUNT_ID: message.from,
           REMOTECLAW_TO: message.channelId,
           ...(message.replyToId ? { REMOTECLAW_THREAD_ID: message.replyToId } : {}),
+          REMOTECLAW_SENDER_IS_OWNER: String(message.senderIsOwner ?? false),
+          REMOTECLAW_TOOL_PROFILE: message.toolProfile ?? "full",
         },
       },
     };

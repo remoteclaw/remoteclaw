@@ -22,6 +22,8 @@ function createContext(): McpHandlerContext {
     accountId: process.env.REMOTECLAW_ACCOUNT_ID ?? "",
     to: process.env.REMOTECLAW_TO ?? "",
     threadId: process.env.REMOTECLAW_THREAD_ID ?? "",
+    senderIsOwner: process.env.REMOTECLAW_SENDER_IS_OWNER === "true",
+    toolProfile: process.env.REMOTECLAW_TOOL_PROFILE || "full",
   };
 }
 

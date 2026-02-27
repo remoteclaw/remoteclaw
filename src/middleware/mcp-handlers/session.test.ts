@@ -29,6 +29,8 @@ function createMockContext(): McpHandlerContext {
     accountId: "test-account",
     to: "test-target",
     threadId: "",
+    senderIsOwner: true,
+    toolProfile: "full",
   };
 }
 

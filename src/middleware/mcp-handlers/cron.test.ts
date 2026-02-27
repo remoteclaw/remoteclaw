@@ -51,6 +51,8 @@ describe("registerCronTools", () => {
       accountId: "acc-1",
       to: "chat-123",
       threadId: "",
+      senderIsOwner: true,
+      toolProfile: "full",
     };
     // oxlint-disable-next-line typescript/no-explicit-any
     registerCronTools(mockServer as any, ctx);

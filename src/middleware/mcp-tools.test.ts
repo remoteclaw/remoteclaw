@@ -15,7 +15,7 @@ function createMockServer() {
   };
 }
 
-function createMockContext(): McpHandlerContext {
+function createMockContext(overrides?: Partial<McpHandlerContext>): McpHandlerContext {
   return {
     gatewayUrl: "ws://127.0.0.1:18789",
     gatewayToken: "test-token",
@@ -25,6 +25,9 @@ function createMockContext(): McpHandlerContext {
     accountId: "test-account",
     to: "test-target",
     threadId: "test-thread",
+    senderIsOwner: true,
+    toolProfile: "full",
+    ...overrides,
   };
 }
 
@@ -110,5 +113,63 @@ describe("registerAllTools", () => {
     for (const [name, config] of mockServer.registeredTools) {
       expect(config.description, `tool "${name}" should have a description`).toBeTruthy();
     }
+  });
+
+  describe("owner-only tool gating", () => {
+    it("registers only 17 tools for non-owner senders", () => {
+      ctx = createMockContext({ senderIsOwner: false });
+      // oxlint-disable-next-line typescript/no-explicit-any
+      registerAllTools(mockServer as any, ctx);
+      // 7 session + 10 message = 17 (no cron or gateway)
+      expect(mockServer.registerTool).toHaveBeenCalledTimes(17);
+    });
+
+    it("does NOT register cron tools for non-owner senders", () => {
+      ctx = createMockContext({ senderIsOwner: false });
+      // oxlint-disable-next-line typescript/no-explicit-any
+      registerAllTools(mockServer as any, ctx);
+      const names = [...mockServer.registeredTools.keys()];
+      expect(names).not.toContain("cron_status");
+      expect(names).not.toContain("cron_list");
+      expect(names).not.toContain("cron_add");
+      expect(names).not.toContain("cron_update");
+      expect(names).not.toContain("cron_remove");
+      expect(names).not.toContain("cron_run");
+      expect(names).not.toContain("cron_runs");
+    });
+
+    it("does NOT register gateway tools for non-owner senders", () => {
+      ctx = createMockContext({ senderIsOwner: false });
+      // oxlint-disable-next-line typescript/no-explicit-any
+      registerAllTools(mockServer as any, ctx);
+      const names = [...mockServer.registeredTools.keys()];
+      expect(names).not.toContain("gateway_restart");
+      expect(names).not.toContain("gateway_config_get");
+      expect(names).not.toContain("gateway_config_apply");
+      expect(names).not.toContain("gateway_config_patch");
+      expect(names).not.toContain("gateway_config_schema");
+    });
+
+    it("still registers session and message tools for non-owner senders", () => {
+      ctx = createMockContext({ senderIsOwner: false });
+      // oxlint-disable-next-line typescript/no-explicit-any
+      registerAllTools(mockServer as any, ctx);
+      const names = [...mockServer.registeredTools.keys()];
+      // Session tools
+      expect(names).toContain("sessions_list");
+      expect(names).toContain("sessions_history");
+      expect(names).toContain("sessions_send");
+      // Message tools
+      expect(names).toContain("message_send");
+      expect(names).toContain("message_reply");
+      expect(names).toContain("message_broadcast");
+    });
+
+    it("registers all 29 tools for owner senders", () => {
+      ctx = createMockContext({ senderIsOwner: true });
+      // oxlint-disable-next-line typescript/no-explicit-any
+      registerAllTools(mockServer as any, ctx);
+      expect(mockServer.registerTool).toHaveBeenCalledTimes(29);
+    });
   });
 });

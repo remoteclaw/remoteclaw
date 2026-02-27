@@ -23,4 +23,8 @@ export type McpHandlerContext = {
   to: string;
   /** Originating thread/topic ID. */
   threadId: string;
+  /** Whether the message sender is the bot owner. */
+  senderIsOwner: boolean;
+  /** Tool profile controlling which tool categories are available. */
+  toolProfile: string;
 };

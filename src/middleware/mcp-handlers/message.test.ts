@@ -51,6 +51,8 @@ describe("registerMessageTools", () => {
       accountId: "acc-1",
       to: "chat-123",
       threadId: "",
+      senderIsOwner: true,
+      toolProfile: "full",
     };
     // oxlint-disable-next-line typescript/no-explicit-any
     registerMessageTools(mockServer as any, ctx);

@@ -443,6 +443,61 @@ describe("ChannelBridge", () => {
       const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
       expect(mcpEnv.REMOTECLAW_SIDE_EFFECTS_FILE).toMatch(/side-effects\.ndjson$/);
     });
+
+    it("sets REMOTECLAW_SENDER_IS_OWNER=true when senderIsOwner is true", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ senderIsOwner: true }));
+
+      const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
+      expect(mcpEnv.REMOTECLAW_SENDER_IS_OWNER).toBe("true");
+    });
+
+    it("sets REMOTECLAW_SENDER_IS_OWNER=false when senderIsOwner is false", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ senderIsOwner: false }));
+
+      const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
+      expect(mcpEnv.REMOTECLAW_SENDER_IS_OWNER).toBe("false");
+    });
+
+    it("defaults REMOTECLAW_SENDER_IS_OWNER to false when not set", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage());
+
+      const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
+      expect(mcpEnv.REMOTECLAW_SENDER_IS_OWNER).toBe("false");
+    });
+
+    it("sets REMOTECLAW_TOOL_PROFILE from message", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ toolProfile: "messaging" }));
+
+      const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
+      expect(mcpEnv.REMOTECLAW_TOOL_PROFILE).toBe("messaging");
+    });
+
+    it("defaults REMOTECLAW_TOOL_PROFILE to full when not set", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage());
+
+      const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
+      expect(mcpEnv.REMOTECLAW_TOOL_PROFILE).toBe("full");
+    });
   });
 
   describe("messageToolHints forwarding", () => {

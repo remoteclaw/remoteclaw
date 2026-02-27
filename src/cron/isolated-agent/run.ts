@@ -114,6 +114,7 @@ function buildCronChannelMessage(params: {
     provider: params.resolvedDelivery.channel ?? "cron",
     timestamp: params.timestamp,
     messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
+    senderIsOwner: false, // Cron agents must not self-modify via owner-only tools
   };
 }
 

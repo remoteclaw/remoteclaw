@@ -104,6 +104,7 @@ function buildChannelMessage(params: {
   commandBody: string;
   sessionCtx: TemplateContext;
   messageToolHints: string[] | undefined;
+  senderIsOwner?: boolean;
 }): ChannelMessage {
   return {
     id: params.sessionCtx.MessageSidFull ?? params.sessionCtx.MessageSid ?? crypto.randomUUID(),
@@ -114,6 +115,7 @@ function buildChannelMessage(params: {
     timestamp: Date.now(),
     replyToId: params.sessionCtx.ReplyToId?.trim() || undefined,
     messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
+    senderIsOwner: params.senderIsOwner,
   };
 }
 
@@ -328,6 +330,7 @@ export async function runAgentTurnWithFallback(params: {
                 commandBody: params.commandBody,
                 sessionCtx: params.sessionCtx,
                 messageToolHints,
+                senderIsOwner: params.followupRun.run.senderIsOwner,
               });
 
               // Build BridgeCallbacks that wrap the existing typing/normalization logic.

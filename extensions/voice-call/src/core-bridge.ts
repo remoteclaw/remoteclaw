@@ -23,6 +23,8 @@ type ChannelMessage = {
   timestamp: number;
   replyToId?: string;
   messageToolHints?: string[];
+  senderIsOwner?: boolean;
+  toolProfile?: string;
 };
 
 /** Minimal AgentDeliveryResult shape returned by ChannelBridge.handle(). */

@@ -181,6 +181,10 @@ export type ChannelMessage = {
   messageToolHints?: string[] | undefined;
   /** Provider-specific metadata. */
   metadata?: Record<string, unknown> | undefined;
+  /** Whether the message sender is the bot owner. Defaults to `false`. */
+  senderIsOwner?: boolean | undefined;
+  /** Tool profile controlling which tool categories are available. Defaults to `"full"`. */
+  toolProfile?: string | undefined;
 };
 
 // ── Bridge Callbacks ────────────────────────────────────────────────────

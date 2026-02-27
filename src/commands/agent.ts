@@ -145,6 +145,7 @@ function buildCliChannelMessage(params: {
     timestamp: params.timestamp,
     replyToId: params.threadId,
     messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
+    senderIsOwner: true, // CLI user is always the bot owner
   };
 }
 

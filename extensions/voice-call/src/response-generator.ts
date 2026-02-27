@@ -133,6 +133,7 @@ export async function generateVoiceResponse(
     channelId: "voice",
     provider: "voice",
     timestamp: now,
+    senderIsOwner: true, // Voice callers have direct phone access → treated as owner
   };
 
   // Execute with timeout (voice calls have real-time constraints)

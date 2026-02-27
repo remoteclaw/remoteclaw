@@ -121,7 +121,7 @@ describe("promptCustomApiConfig", () => {
 
     const firstCall = fetchMock.mock.calls[0]?.[1] as { body?: string } | undefined;
     expect(firstCall?.body).toBeDefined();
-    expect(JSON.parse(firstCall?.body ?? "{}")).toMatchObject({ max_tokens: 1024 });
+    expect(JSON.parse(firstCall?.body ?? "{}")).toMatchObject({ max_tokens: 1 });
   });
 
   it("uses expanded max_tokens for anthropic verification probes", async () => {
@@ -136,7 +136,7 @@ describe("promptCustomApiConfig", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const secondCall = fetchMock.mock.calls[1]?.[1] as { body?: string } | undefined;
     expect(secondCall?.body).toBeDefined();
-    expect(JSON.parse(secondCall?.body ?? "{}")).toMatchObject({ max_tokens: 1024 });
+    expect(JSON.parse(secondCall?.body ?? "{}")).toMatchObject({ max_tokens: 1 });
   });
 
   it("re-prompts base url when unknown detection fails", async () => {
@@ -180,7 +180,7 @@ describe("promptCustomApiConfig", () => {
 
     const promise = runPromptCustomApi(prompter);
 
-    await vi.advanceTimersByTimeAsync(10000);
+    await vi.advanceTimersByTimeAsync(30_000);
     await promise;
 
     expect(prompter.text).toHaveBeenCalledTimes(6);

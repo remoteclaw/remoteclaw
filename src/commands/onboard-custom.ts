@@ -16,7 +16,7 @@ function normalizeAlias(alias: string): string {
 }
 
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1";
-const VERIFY_TIMEOUT_MS = 10000;
+const VERIFY_TIMEOUT_MS = 30_000;
 
 /**
  * Detects if a URL is from Azure AI Foundry or Azure OpenAI.
@@ -306,7 +306,8 @@ async function requestOpenAiVerification(params: {
     body: {
       model: params.modelId,
       messages: [{ role: "user", content: "Hi" }],
-      max_tokens: 1024,
+      max_tokens: 1,
+      stream: false,
     },
   });
 }
@@ -332,8 +333,9 @@ async function requestAnthropicVerification(params: {
     headers: buildAnthropicHeaders(params.apiKey),
     body: {
       model: params.modelId,
-      max_tokens: 1024,
+      max_tokens: 1,
       messages: [{ role: "user", content: "Hi" }],
+      stream: false,
     },
   });
 }

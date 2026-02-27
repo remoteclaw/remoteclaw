@@ -524,7 +524,6 @@ export const NativeCommandsSettingSchema = z.union([z.boolean(), z.literal("auto
 export const ProviderCommandsSchema = z
   .object({
     native: NativeCommandsSettingSchema.optional(),
-    nativeSkills: NativeCommandsSettingSchema.optional(),
   })
   .strict()
   .optional();

@@ -11,7 +11,6 @@ import {
 } from "../auto-reply/commands-registry.js";
 import { finalizeInboundContext } from "../auto-reply/reply/inbound-context.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/provider-dispatcher.js";
-import { listSkillCommandsForAgents } from "../auto-reply/skill-commands.js";
 import { resolveCommandAuthorizedFromAuthorizers } from "../channels/command-gating.js";
 import { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 import type { OpenClawConfig } from "../config/config.js";
@@ -123,7 +122,6 @@ type RegisterTelegramNativeCommandsParams = {
   textLimit: number;
   useAccessGroups: boolean;
   nativeEnabled: boolean;
-  nativeSkillsEnabled: boolean;
   nativeDisabledExplicit: boolean;
   resolveGroupPolicy: (chatId: string | number) => ChannelGroupPolicy;
   resolveTelegramGroupConfig: (
@@ -296,34 +294,20 @@ export const registerTelegramNativeCommands = ({
   textLimit,
   useAccessGroups,
   nativeEnabled,
-  nativeSkillsEnabled,
   nativeDisabledExplicit,
   resolveGroupPolicy,
   resolveTelegramGroupConfig,
   shouldSkipUpdate,
   opts,
 }: RegisterTelegramNativeCommandsParams) => {
-  const boundRoute =
-    nativeEnabled && nativeSkillsEnabled
-      ? resolveAgentRoute({ cfg, channel: "telegram", accountId })
-      : null;
-  const boundAgentIds = boundRoute ? [boundRoute.agentId] : null;
-  const skillCommands =
-    nativeEnabled && nativeSkillsEnabled
-      ? listSkillCommandsForAgents(boundAgentIds ? { cfg, agentIds: boundAgentIds } : { cfg })
-      : [];
   const nativeCommands = nativeEnabled
     ? listNativeCommandSpecsForConfig(cfg, {
-        skillCommands,
         provider: "telegram",
       })
     : [];
   const reservedCommands = new Set(
     listNativeCommandSpecs().map((command) => normalizeTelegramCommandName(command.name)),
   );
-  for (const command of skillCommands) {
-    reservedCommands.add(command.name.toLowerCase());
-  }
   const customResolution = resolveTelegramCustomCommands({
     commands: telegramCfg.customCommands,
     reservedCommands,

@@ -73,15 +73,6 @@ vi.mock("../pairing/pairing-store.js", () => ({
   upsertChannelPairingRequest,
 }));
 
-const skillCommandsHoisted = vi.hoisted(() => ({
-  listSkillCommandsForAgents: vi.fn(() => []),
-}));
-export const listSkillCommandsForAgents = skillCommandsHoisted.listSkillCommandsForAgents;
-
-vi.mock("../auto-reply/skill-commands.js", () => ({
-  listSkillCommandsForAgents,
-}));
-
 const systemEventsHoisted = vi.hoisted(() => ({
   enqueueSystemEventSpy: vi.fn(),
 }));
@@ -309,8 +300,7 @@ beforeEach(() => {
   enqueueSystemEventSpy.mockReset();
   wasSentByBot.mockReset();
   wasSentByBot.mockReturnValue(false);
-  listSkillCommandsForAgents.mockReset();
-  listSkillCommandsForAgents.mockReturnValue([]);
+
   middlewareUseSpy.mockReset();
   sequentializeSpy.mockReset();
   botCtorSpy.mockReset();

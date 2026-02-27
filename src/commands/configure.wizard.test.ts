@@ -87,10 +87,6 @@ vi.mock("./onboard-remote.js", () => ({
   promptRemoteGatewayConfig: vi.fn(),
 }));
 
-vi.mock("./onboard-skills.js", () => ({
-  setupSkills: vi.fn(),
-}));
-
 vi.mock("./onboard-channels.js", () => ({
   setupChannels: vi.fn(),
 }));

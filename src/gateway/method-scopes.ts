@@ -19,7 +19,7 @@ export const CLI_DEFAULT_OPERATOR_SCOPES: OperatorScope[] = [
   PAIRING_SCOPE,
 ];
 
-const NODE_ROLE_METHODS = new Set(["node.invoke.result", "node.event", "skills.bins"]);
+const NODE_ROLE_METHODS = new Set(["node.invoke.result", "node.event"]);
 
 const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
   [APPROVALS_SCOPE]: [
@@ -55,7 +55,6 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "tools.catalog",
     "agents.list",
     "agent.identity.get",
-    "skills.status",
     "voicewake.get",
     "sessions.list",
     "sessions.preview",
@@ -99,8 +98,6 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "agents.create",
     "agents.update",
     "agents.delete",
-    "skills.install",
-    "skills.update",
     "cron.add",
     "cron.update",
     "cron.remove",

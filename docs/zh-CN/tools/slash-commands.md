@@ -37,7 +37,7 @@ x-i18n:
 {
   commands: {
     native: "auto",
-    nativeSkills: "auto",
+
     text: true,
     bash: false,
     bashForegroundMs: 2000,
@@ -55,9 +55,7 @@ x-i18n:
   - Auto：在 Discord/Telegram 上启用；在 Slack 上禁用（直到你添加斜杠命令）；在不支持原生命令的提供商上忽略。
   - 设置 `channels.discord.commands.native`、`channels.telegram.commands.native` 或 `channels.slack.commands.native` 以按提供商覆盖（布尔值或 `"auto"`）。
   - `false` 在启动时清除 Discord/Telegram 上之前注册的命令。Slack 命令在 Slack 应用中管理，不会自动删除。
-- `commands.nativeSkills`（默认 `"auto"`）在支持时原生注册 **Skill** 命令。
-  - Auto：在 Discord/Telegram 上启用；在 Slack 上禁用（Slack 需要为每个 Skill 创建一个斜杠命令）。
-  - 设置 `channels.discord.commands.nativeSkills`、`channels.telegram.commands.nativeSkills` 或 `channels.slack.commands.nativeSkills` 以按提供商覆盖（布尔值或 `"auto"`）。
+
 - `commands.bash`（默认 `false`）启用 `! <cmd>` 来运行主机 shell 命令（`/bash <cmd>` 是别名；需要 `tools.elevated` 白名单）。
 - `commands.bashForegroundMs`（默认 `2000`）控制 bash 切换到后台模式之前等待多长时间（`0` 立即后台运行）。
 - `commands.config`（默认 `false`）启用 `/config`（读写 `openclaw.json`）。

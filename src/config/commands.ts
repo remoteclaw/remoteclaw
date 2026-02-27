@@ -21,14 +21,6 @@ function resolveAutoDefault(providerId?: ChannelId): boolean {
   return false;
 }
 
-export function resolveNativeSkillsEnabled(params: {
-  providerId: ChannelId;
-  providerSetting?: NativeCommandsSetting;
-  globalSetting?: NativeCommandsSetting;
-}): boolean {
-  return resolveNativeCommandSetting(params);
-}
-
 export function resolveNativeCommandsEnabled(params: {
   providerId: ChannelId;
   providerSetting?: NativeCommandsSetting;

@@ -37,19 +37,6 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentModelFallbacksOverride: vi.fn().mockReturnValue(undefined),
   resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
   resolveDefaultAgentId: vi.fn().mockReturnValue("default"),
-  resolveAgentSkillsFilter: vi.fn().mockReturnValue(undefined),
-}));
-
-vi.mock("../../agents/skills.js", () => ({
-  buildWorkspaceSkillSnapshot: vi.fn().mockReturnValue({
-    prompt: "<available_skills></available_skills>",
-    resolvedSkills: [],
-    version: 42,
-  }),
-}));
-
-vi.mock("../../agents/skills/refresh.js", () => ({
-  getSkillsSnapshotVersion: vi.fn().mockReturnValue(42),
 }));
 
 vi.mock("../../agents/workspace.js", () => ({
@@ -151,10 +138,6 @@ vi.mock("../../infra/outbound/deliver.js", () => ({
   deliverOutboundPayloads: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../infra/skills-remote.js", () => ({
-  getRemoteSkillEligibility: vi.fn().mockReturnValue({}),
-}));
-
 vi.mock("../../logger.js", () => ({
   logWarn: vi.fn(),
 }));
@@ -245,7 +228,6 @@ function makeFreshSession() {
       sessionId: "test-session-id",
       updatedAt: 0,
       systemSent: false,
-      skillsSnapshot: undefined,
     },
     systemSent: false,
     isNewSession: true,

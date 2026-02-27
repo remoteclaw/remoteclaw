@@ -1,6 +1,4 @@
 import "./reply.directive.directive-behavior.e2e-mocks.js";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { loadSessionStore } from "../config/sessions.js";
 import {
@@ -14,17 +12,6 @@ import {
   withTempHome,
 } from "./reply.directive.directive-behavior.e2e-harness.js";
 import { getReplyFromConfig } from "./reply.js";
-
-async function writeSkill(params: { workspaceDir: string; name: string; description: string }) {
-  const { workspaceDir, name, description } = params;
-  const skillDir = path.join(workspaceDir, "skills", name);
-  await fs.mkdir(skillDir, { recursive: true });
-  await fs.writeFile(
-    path.join(skillDir, "SKILL.md"),
-    `---\nname: ${name}\ndescription: ${description}\n---\n\n# ${name}\n`,
-    "utf-8",
-  );
-}
 
 async function runThinkingDirective(home: string, model: string) {
   const res = await getReplyFromConfig(
@@ -241,41 +228,6 @@ describe("directive behavior", () => {
       const text = replyText(res);
       expect(text).toContain("Help");
       expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
-    });
-  });
-  it("treats skill commands as reserved for model aliases", async () => {
-    await withTempHome(async (home) => {
-      const workspace = path.join(home, "openclaw");
-      await writeSkill({
-        workspaceDir: workspace,
-        name: "demo-skill",
-        description: "Demo skill",
-      });
-
-      await getReplyFromConfig(
-        {
-          Body: "/demo_skill",
-          From: "+1222",
-          To: "+1222",
-          CommandAuthorized: true,
-        },
-        {},
-        makeWhatsAppDirectiveConfig(
-          home,
-          {
-            model: "anthropic/claude-opus-4-5",
-            workspace,
-            models: {
-              "anthropic/claude-opus-4-5": { alias: "demo_skill" },
-            },
-          },
-          { session: { store: sessionStorePath(home) } },
-        ),
-      );
-
-      expect(runEmbeddedPiAgent).toHaveBeenCalled();
-      const prompt = vi.mocked(runEmbeddedPiAgent).mock.calls[0]?.[0]?.prompt ?? "";
-      expect(prompt).toContain('Use the "demo-skill" skill');
     });
   });
   it("reports invalid queue options and current queue settings", async () => {

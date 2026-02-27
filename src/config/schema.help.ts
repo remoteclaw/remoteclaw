@@ -915,8 +915,7 @@ export const FIELD_HELP: Record<string, string> = {
     "Controls chat command surfaces, owner gating, and elevated command access behavior across providers. Keep defaults unless you need stricter operator controls or broader command availability.",
   "commands.native":
     "Registers native slash/menu commands with channels that support command registration (Discord, Slack, Telegram). Keep enabled for discoverability unless you intentionally run text-only command workflows.",
-  "commands.nativeSkills":
-    "Registers native skill commands so users can invoke skills directly from provider command menus where supported. Keep aligned with your skill policy so exposed commands match what operators expect.",
+
   "commands.text":
     "Enables text-command parsing in chat input in addition to native command surfaces where available. Keep this enabled for compatibility across channels that do not support native command registration.",
   "commands.bash":
@@ -1276,14 +1275,11 @@ export const FIELD_HELP: Record<string, string> = {
     "Map provider -> channel id -> model override (values are provider/model or aliases).",
   ...IRC_FIELD_HELP,
   "channels.discord.commands.native": 'Override native commands for Discord (bool or "auto").',
-  "channels.discord.commands.nativeSkills":
-    'Override native skill commands for Discord (bool or "auto").',
+
   "channels.telegram.commands.native": 'Override native commands for Telegram (bool or "auto").',
-  "channels.telegram.commands.nativeSkills":
-    'Override native skill commands for Telegram (bool or "auto").',
+
   "channels.slack.commands.native": 'Override native commands for Slack (bool or "auto").',
-  "channels.slack.commands.nativeSkills":
-    'Override native skill commands for Slack (bool or "auto").',
+
   "channels.slack.streaming":
     'Unified Slack stream preview mode: "off" | "partial" | "block" | "progress". Legacy boolean/streamMode keys are auto-mapped.',
   "channels.slack.nativeStreaming":

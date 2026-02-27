@@ -17,7 +17,6 @@ export function createNativeCommandTestParams(params: {
   textLimit?: number;
   useAccessGroups?: boolean;
   nativeEnabled?: boolean;
-  nativeSkillsEnabled?: boolean;
   nativeDisabledExplicit?: boolean;
   opts?: RegisterTelegramNativeCommandParams["opts"];
 }): RegisterTelegramNativeCommandParams {
@@ -33,7 +32,6 @@ export function createNativeCommandTestParams(params: {
     textLimit: params.textLimit ?? 4096,
     useAccessGroups: params.useAccessGroups ?? false,
     nativeEnabled: params.nativeEnabled ?? true,
-    nativeSkillsEnabled: params.nativeSkillsEnabled ?? true,
     nativeDisabledExplicit: params.nativeDisabledExplicit ?? false,
     resolveGroupPolicy: () => ({ allowlistEnabled: false, allowed: true }),
     resolveTelegramGroupConfig: () => ({

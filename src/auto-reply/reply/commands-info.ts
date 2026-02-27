@@ -1,5 +1,4 @@
 import { logVerbose } from "../../globals.js";
-import { listSkillCommandsForAgents } from "../skill-commands.js";
 import {
   buildCommandsMessage,
   buildCommandsMessagePaginated,
@@ -42,16 +41,10 @@ export const handleCommandsListCommand: CommandHandler = async (params, allowTex
     );
     return { shouldContinue: false };
   }
-  const skillCommands =
-    params.skillCommands ??
-    listSkillCommandsForAgents({
-      cfg: params.cfg,
-      agentIds: params.agentId ? [params.agentId] : undefined,
-    });
   const surface = params.ctx.Surface;
 
   if (surface === "telegram") {
-    const result = buildCommandsMessagePaginated(params.cfg, skillCommands, {
+    const result = buildCommandsMessagePaginated(params.cfg, {
       page: 1,
       surface,
     });
@@ -82,7 +75,7 @@ export const handleCommandsListCommand: CommandHandler = async (params, allowTex
 
   return {
     shouldContinue: false,
-    reply: { text: buildCommandsMessage(params.cfg, skillCommands, { surface }) },
+    reply: { text: buildCommandsMessage(params.cfg, { surface }) },
   };
 };
 

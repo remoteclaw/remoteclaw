@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { hasBinary } from "../agents/skills.js";
 import { runCommandWithTimeout, type SpawnResult } from "../process/exec.js";
+import { hasBinary } from "../shared/config-eval.js";
 import { resolveUserPath } from "../utils.js";
 import { normalizeServePath } from "./gmail.js";
 

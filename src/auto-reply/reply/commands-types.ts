@@ -1,4 +1,3 @@
-import type { SkillCommandSpec } from "../../agents/skills.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { SessionEntry, SessionScope } from "../../config/sessions.js";
@@ -53,7 +52,6 @@ export type HandleCommandsParams = {
   model: string;
   contextTokens: number;
   isGroup: boolean;
-  skillCommands?: SkillCommandSpec[];
 };
 
 export type CommandHandlerResult = {

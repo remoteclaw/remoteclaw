@@ -1,7 +1,4 @@
-import crypto from "node:crypto";
 import { resolveUserTimezone } from "../../agents/date-time.js";
-import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
-import { ensureSkillsWatcher, getSkillsSnapshotVersion } from "../../agents/skills/refresh.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 import { buildChannelSummary } from "../../infra/channel-summary.js";
@@ -10,7 +7,6 @@ import {
   formatUtcTimestamp,
   formatZonedTimestamp,
 } from "../../infra/format-time/format-datetime.ts";
-import { getRemoteSkillEligibility } from "../../infra/skills-remote.js";
 import { drainSystemEventEntries } from "../../infra/system-events.js";
 
 export async function prependSystemEvents(params: {
@@ -109,127 +105,6 @@ export async function prependSystemEvents(params: {
 
   const block = systemLines.map((l) => `System: ${l}`).join("\n");
   return `${block}\n\n${params.prefixedBodyBase}`;
-}
-
-export async function ensureSkillSnapshot(params: {
-  sessionEntry?: SessionEntry;
-  sessionStore?: Record<string, SessionEntry>;
-  sessionKey?: string;
-  storePath?: string;
-  sessionId?: string;
-  isFirstTurnInSession: boolean;
-  workspaceDir: string;
-  cfg: OpenClawConfig;
-  /** If provided, only load skills with these names (for per-channel skill filtering) */
-  skillFilter?: string[];
-}): Promise<{
-  sessionEntry?: SessionEntry;
-  skillsSnapshot?: SessionEntry["skillsSnapshot"];
-  systemSent: boolean;
-}> {
-  if (process.env.OPENCLAW_TEST_FAST === "1") {
-    // In fast unit-test runs we skip filesystem scanning, watchers, and session-store writes.
-    // Dedicated skills tests cover snapshot generation behavior.
-    return {
-      sessionEntry: params.sessionEntry,
-      skillsSnapshot: params.sessionEntry?.skillsSnapshot,
-      systemSent: params.sessionEntry?.systemSent ?? false,
-    };
-  }
-
-  const {
-    sessionEntry,
-    sessionStore,
-    sessionKey,
-    storePath,
-    sessionId,
-    isFirstTurnInSession,
-    workspaceDir,
-    cfg,
-    skillFilter,
-  } = params;
-
-  let nextEntry = sessionEntry;
-  let systemSent = sessionEntry?.systemSent ?? false;
-  const remoteEligibility = getRemoteSkillEligibility();
-  const snapshotVersion = getSkillsSnapshotVersion(workspaceDir);
-  ensureSkillsWatcher({ workspaceDir, config: cfg });
-  const shouldRefreshSnapshot =
-    snapshotVersion > 0 && (nextEntry?.skillsSnapshot?.version ?? 0) < snapshotVersion;
-
-  if (isFirstTurnInSession && sessionStore && sessionKey) {
-    const current = nextEntry ??
-      sessionStore[sessionKey] ?? {
-        sessionId: sessionId ?? crypto.randomUUID(),
-        updatedAt: Date.now(),
-      };
-    const skillSnapshot =
-      isFirstTurnInSession || !current.skillsSnapshot || shouldRefreshSnapshot
-        ? buildWorkspaceSkillSnapshot(workspaceDir, {
-            config: cfg,
-            skillFilter,
-            eligibility: { remote: remoteEligibility },
-            snapshotVersion,
-          })
-        : current.skillsSnapshot;
-    nextEntry = {
-      ...current,
-      sessionId: sessionId ?? current.sessionId ?? crypto.randomUUID(),
-      updatedAt: Date.now(),
-      systemSent: true,
-      skillsSnapshot: skillSnapshot,
-    };
-    sessionStore[sessionKey] = { ...sessionStore[sessionKey], ...nextEntry };
-    if (storePath) {
-      await updateSessionStore(storePath, (store) => {
-        store[sessionKey] = { ...store[sessionKey], ...nextEntry };
-      });
-    }
-    systemSent = true;
-  }
-
-  const skillsSnapshot = shouldRefreshSnapshot
-    ? buildWorkspaceSkillSnapshot(workspaceDir, {
-        config: cfg,
-        skillFilter,
-        eligibility: { remote: remoteEligibility },
-        snapshotVersion,
-      })
-    : (nextEntry?.skillsSnapshot ??
-      (isFirstTurnInSession
-        ? undefined
-        : buildWorkspaceSkillSnapshot(workspaceDir, {
-            config: cfg,
-            skillFilter,
-            eligibility: { remote: remoteEligibility },
-            snapshotVersion,
-          })));
-  if (
-    skillsSnapshot &&
-    sessionStore &&
-    sessionKey &&
-    !isFirstTurnInSession &&
-    (!nextEntry?.skillsSnapshot || shouldRefreshSnapshot)
-  ) {
-    const current = nextEntry ?? {
-      sessionId: sessionId ?? crypto.randomUUID(),
-      updatedAt: Date.now(),
-    };
-    nextEntry = {
-      ...current,
-      sessionId: sessionId ?? current.sessionId ?? crypto.randomUUID(),
-      updatedAt: Date.now(),
-      skillsSnapshot,
-    };
-    sessionStore[sessionKey] = { ...sessionStore[sessionKey], ...nextEntry };
-    if (storePath) {
-      await updateSessionStore(storePath, (store) => {
-        store[sessionKey] = { ...store[sessionKey], ...nextEntry };
-      });
-    }
-  }
-
-  return { sessionEntry: nextEntry, skillsSnapshot, systemSent };
 }
 
 export async function incrementCompactionCount(params: {

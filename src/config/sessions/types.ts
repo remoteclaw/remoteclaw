@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import type { Skill } from "@mariozechner/pi-coding-agent";
 import type { ChatType } from "../../channels/chat-type.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import type { DeliveryContext } from "../../utils/delivery-context.js";
@@ -110,7 +109,6 @@ export type SessionEntry = {
   lastTo?: string;
   lastAccountId?: string;
   lastThreadId?: string | number;
-  skillsSnapshot?: SessionSkillSnapshot;
   systemPromptReport?: SessionSystemPromptReport;
 };
 
@@ -220,15 +218,6 @@ export type GroupKeyResolution = {
   channel?: string;
   id?: string;
   chatType?: SessionChatType;
-};
-
-export type SessionSkillSnapshot = {
-  prompt: string;
-  skills: Array<{ name: string; primaryEnv?: string; requiredEnv?: string[] }>;
-  /** Normalized agent-level filter used to build this snapshot; undefined means unrestricted. */
-  skillFilter?: string[];
-  resolvedSkills?: Skill[];
-  version?: number;
 };
 
 export type SessionSystemPromptReport = {

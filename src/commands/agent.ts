@@ -3,7 +3,6 @@ import {
   resolveAgentDir,
   resolveEffectiveModelFallbacks,
   resolveSessionAgentId,
-  resolveAgentSkillsFilter,
   resolveAgentWorkspaceDir,
 } from "../agents/agent-scope.js";
 import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
@@ -23,8 +22,6 @@ import {
   resolveThinkingDefault,
 } from "../agents/model-selection.js";
 import type { EmbeddedPiRunResult } from "../agents/pi-embedded-runner/types.js";
-import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";
-import { getSkillsSnapshotVersion } from "../agents/skills/refresh.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import {
   formatThinkingLevels,
@@ -54,7 +51,6 @@ import {
   emitAgentEvent,
   registerAgentRunContext,
 } from "../infra/agent-events.js";
-import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
 import { ChannelBridge } from "../middleware/channel-bridge.js";
 import type { SessionMap } from "../middleware/session-map.js";
 import type { AgentDeliveryResult, ChannelMessage } from "../middleware/types.js";
@@ -278,7 +274,7 @@ export async function agentCommand(
     sessionEntry: resolvedSessionEntry,
     sessionStore,
     storePath,
-    isNewSession,
+    isNewSession: _isNewSession,
     persistedThinking,
     persistedVerbose,
   } = sessionResolution;
@@ -325,38 +321,6 @@ export async function agentCommand(
         sessionKey,
         verboseLevel: resolvedVerboseLevel,
       });
-    }
-
-    const needsSkillsSnapshot = isNewSession || !sessionEntry?.skillsSnapshot;
-    const skillsSnapshotVersion = getSkillsSnapshotVersion(workspaceDir);
-    const skillFilter = resolveAgentSkillsFilter(cfg, sessionAgentId);
-    const skillsSnapshot = needsSkillsSnapshot
-      ? buildWorkspaceSkillSnapshot(workspaceDir, {
-          config: cfg,
-          eligibility: { remote: getRemoteSkillEligibility() },
-          snapshotVersion: skillsSnapshotVersion,
-          skillFilter,
-        })
-      : sessionEntry?.skillsSnapshot;
-
-    if (skillsSnapshot && sessionStore && sessionKey && needsSkillsSnapshot) {
-      const current = sessionEntry ?? {
-        sessionId,
-        updatedAt: Date.now(),
-      };
-      const next: SessionEntry = {
-        ...current,
-        sessionId,
-        updatedAt: Date.now(),
-        skillsSnapshot,
-      };
-      await persistSessionEntry({
-        sessionStore,
-        sessionKey,
-        storePath,
-        entry: next,
-      });
-      sessionEntry = next;
     }
 
     // Persist explicit /command overrides to the session store when we have a key.

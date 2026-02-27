@@ -21,7 +21,6 @@ import {
   resolveDefaultModelForAgent,
   resolveThinkingDefault,
 } from "../agents/model-selection.js";
-import type { EmbeddedPiRunResult } from "../agents/pi-embedded-runner/types.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import {
   formatThinkingLevels,
@@ -142,60 +141,6 @@ function buildCliChannelMessage(params: {
     replyToId: params.threadId,
     messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
     senderIsOwner: true, // CLI user is always the bot owner
-  };
-}
-
-/**
- * Map ChannelBridge's AgentDeliveryResult to EmbeddedPiRunResult for
- * backward-compatibility with the agent command result processing pipeline.
- */
-function mapToEmbeddedPiRunResult(
-  delivery: AgentDeliveryResult,
-  provider: string,
-  model: string,
-): EmbeddedPiRunResult {
-  const run = delivery.run;
-  const mcp = delivery.mcp;
-
-  let metaError: EmbeddedPiRunResult["meta"]["error"];
-  if (delivery.error && run.errorSubtype === "context_window") {
-    metaError = { kind: "context_overflow", message: delivery.error };
-  }
-
-  return {
-    payloads: delivery.payloads.length > 0 ? delivery.payloads : undefined,
-    meta: {
-      durationMs: run.durationMs,
-      agentMeta: {
-        sessionId: run.sessionId ?? "",
-        provider,
-        model,
-        usage: run.usage
-          ? {
-              input: run.usage.inputTokens,
-              output: run.usage.outputTokens,
-              cacheRead: run.usage.cacheReadTokens,
-              cacheWrite: run.usage.cacheWriteTokens,
-            }
-          : undefined,
-      },
-      aborted: run.aborted || undefined,
-      error: metaError,
-      stopReason: run.stopReason,
-    },
-    didSendViaMessagingTool: mcp.sentTexts.length > 0 || mcp.sentMediaUrls.length > 0 || undefined,
-    messagingToolSentTexts: mcp.sentTexts.length > 0 ? mcp.sentTexts : undefined,
-    messagingToolSentMediaUrls: mcp.sentMediaUrls.length > 0 ? mcp.sentMediaUrls : undefined,
-    messagingToolSentTargets:
-      mcp.sentTargets.length > 0
-        ? mcp.sentTargets.map((t) => ({
-            tool: t.tool,
-            provider: t.provider,
-            accountId: t.accountId,
-            to: t.to,
-          }))
-        : undefined,
-    successfulCronAdds: mcp.cronAdds || undefined,
   };
 }
 
@@ -495,7 +440,7 @@ export async function agentCommand(
 
     const startedAt = Date.now();
 
-    let result: EmbeddedPiRunResult;
+    let result: AgentDeliveryResult;
     let fallbackProvider = provider;
     let fallbackModel = model;
     try {
@@ -521,7 +466,7 @@ export async function agentCommand(
         model,
         agentDir,
         fallbacksOverride: effectiveFallbacksOverride,
-        run: async (providerOverride, modelOverride) => {
+        run: async (providerOverride, _modelOverride) => {
           const isFallbackRetry = fallbackAttemptIndex > 0;
           fallbackAttemptIndex += 1;
 
@@ -566,7 +511,7 @@ export async function agentCommand(
             throw new Error(delivery.error);
           }
 
-          return mapToEmbeddedPiRunResult(delivery, providerOverride, modelOverride);
+          return delivery;
         },
       });
       result = fallbackResult.result;
@@ -579,7 +524,7 @@ export async function agentCommand(
           phase: "end",
           startedAt,
           endedAt: Date.now(),
-          aborted: result.meta.aborted ?? false,
+          aborted: result.run.aborted ?? false,
         },
       });
     } catch (err) {

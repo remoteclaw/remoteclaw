@@ -1,7 +1,7 @@
 import path from "node:path";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import type { SessionSystemPromptReport } from "../config/sessions/types.js";
-import type { EmbeddedContextFile } from "./pi-embedded-helpers.js";
+import type { ContextFile } from "./agent-helpers.js";
 import type { WorkspaceBootstrapFile } from "./workspace.js";
 
 function extractBetween(
@@ -38,7 +38,7 @@ function parseSkillBlocks(skillsPrompt: string): Array<{ name: string; blockChar
 
 function buildInjectedWorkspaceFiles(params: {
   bootstrapFiles: WorkspaceBootstrapFile[];
-  injectedFiles: EmbeddedContextFile[];
+  injectedFiles: ContextFile[];
 }): SessionSystemPromptReport["injectedWorkspaceFiles"] {
   const injectedByPath = new Map<string, string>();
   const injectedByBaseName = new Map<string, string>();
@@ -130,7 +130,7 @@ export function buildSystemPromptReport(params: {
   sandbox?: SessionSystemPromptReport["sandbox"];
   systemPrompt: string;
   bootstrapFiles: WorkspaceBootstrapFile[];
-  injectedFiles: EmbeddedContextFile[];
+  injectedFiles: ContextFile[];
   skillsPrompt: string;
   tools: AgentTool[];
 }): SessionSystemPromptReport {

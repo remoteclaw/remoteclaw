@@ -1,9 +1,9 @@
 import type { Api, AssistantMessage, Context, Model } from "@mariozechner/pi-ai";
 import { complete } from "@mariozechner/pi-ai";
+import { extractAssistantText } from "../../agents/agent-utils.js";
 import { minimaxUnderstandImage } from "../../agents/minimax-vlm.js";
 import { getApiKeyForModel, requireApiKey } from "../../agents/model-auth.js";
 import { ensureOpenClawModelsJson } from "../../agents/models-config.js";
-import { extractAssistantText } from "../../agents/pi-embedded-utils.js";
 import { discoverAuthStorage, discoverModels } from "../../agents/pi-model-discovery.js";
 import type { ImageDescriptionRequest, ImageDescriptionResult } from "../types.js";
 

@@ -14,7 +14,7 @@ type RunEmbeddedPiAgentFn = (params: Record<string, unknown>) => Promise<unknown
 async function loadRunEmbeddedPiAgent(): Promise<RunEmbeddedPiAgentFn> {
   // Source checkout (tests/dev)
   try {
-    const mod = await import("../../../src/agents/pi-embedded-runner.js");
+    const mod = await import("../../../src/agents/pi-embedded.js");
     // oxlint-disable-next-line typescript/no-explicit-any
     if (typeof (mod as any).runEmbeddedPiAgent === "function") {
       // oxlint-disable-next-line typescript/no-explicit-any
@@ -25,7 +25,7 @@ async function loadRunEmbeddedPiAgent(): Promise<RunEmbeddedPiAgentFn> {
   }
 
   // Bundled install (built)
-  const mod = await import("../../../src/agents/pi-embedded-runner.js");
+  const mod = await import("../../../src/agents/pi-embedded.js");
   if (typeof mod.runEmbeddedPiAgent !== "function") {
     throw new Error("Internal error: runEmbeddedPiAgent not available");
   }

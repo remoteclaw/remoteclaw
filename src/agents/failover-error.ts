@@ -1,4 +1,4 @@
-import { classifyFailoverReason, type FailoverReason } from "./pi-embedded-helpers.js";
+import { classifyFailoverReason, type FailoverReason } from "./agent-helpers.js";
 
 const TIMEOUT_HINT_RE =
   /timeout|timed out|deadline exceeded|context deadline exceeded|stop reason:\s*abort|reason:\s*abort|unhandled stop reason:\s*abort/i;

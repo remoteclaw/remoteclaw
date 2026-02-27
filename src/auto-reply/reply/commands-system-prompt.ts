@@ -1,8 +1,8 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
+import type { ContextFile } from "../../agents/agent-helpers.js";
 import { resolveSessionAgentIds } from "../../agents/agent-scope.js";
 import { resolveBootstrapContextForRun } from "../../agents/bootstrap-files.js";
 import { resolveDefaultModelForAgent } from "../../agents/model-selection.js";
-import type { EmbeddedContextFile } from "../../agents/pi-embedded-helpers.js";
 import { createOpenClawCodingTools } from "../../agents/pi-tools.js";
 // Sandbox infrastructure removed (#68)
 const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
@@ -22,7 +22,7 @@ export type CommandsSystemPromptBundle = {
   tools: AgentTool[];
   skillsPrompt: string;
   bootstrapFiles: WorkspaceBootstrapFile[];
-  injectedFiles: EmbeddedContextFile[];
+  injectedFiles: ContextFile[];
   sandboxRuntime: ReturnType<typeof resolveSandboxRuntimeStatus>;
 };
 
@@ -87,17 +87,6 @@ export async function resolveCommandsSystemPromptBundle(
       defaultModel: defaultModelLabel,
     },
   });
-  const sandboxInfo = sandboxRuntime.sandboxed
-    ? {
-        enabled: true,
-        workspaceDir,
-        workspaceAccess: "rw" as const,
-        elevated: {
-          allowed: params.elevated.allowed,
-          defaultLevel: (params.resolvedElevatedLevel ?? "off") as "on" | "off" | "ask" | "full",
-        },
-      }
-    : { enabled: false };
   const ttsHint = params.cfg ? buildTtsSystemPromptHint(params.cfg) : undefined;
 
   const systemPrompt = buildAgentSystemPrompt({
@@ -118,7 +107,6 @@ export async function resolveCommandsSystemPromptBundle(
     heartbeatPrompt: undefined,
     ttsHint,
     runtimeInfo,
-    sandboxInfo,
     memoryCitationsMode: params.cfg?.memory?.citations,
   });
 

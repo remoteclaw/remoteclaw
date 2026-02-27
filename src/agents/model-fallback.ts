@@ -3,6 +3,8 @@ import {
   resolveAgentModelFallbackValues,
   resolveAgentModelPrimaryValue,
 } from "../config/model-input.js";
+import type { FailoverReason } from "./agent-helpers.js";
+import { isLikelyContextOverflowError } from "./agent-helpers.js";
 import {
   ensureAuthProfileStore,
   getSoonestCooldownExpiry,
@@ -25,8 +27,6 @@ import {
   resolveConfiguredModelRef,
   resolveModelRefFromString,
 } from "./model-selection.js";
-import type { FailoverReason } from "./pi-embedded-helpers.js";
-import { isLikelyContextOverflowError } from "./pi-embedded-helpers.js";
 
 type ModelCandidate = {
   provider: string;

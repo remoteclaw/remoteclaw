@@ -1,4 +1,4 @@
-import { formatRawAssistantErrorForUi } from "../agents/pi-embedded-helpers.js";
+import { formatRawAssistantErrorForUi } from "../agents/agent-helpers.js";
 import { stripLeadingInboundMetadata } from "../auto-reply/reply/strip-inbound-meta.js";
 import { stripAnsi } from "../terminal/ansi.js";
 import { formatTokenCount } from "../utils/usage-format.js";

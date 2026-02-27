@@ -1,15 +1,14 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
-import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
-import { runWithModelFallback } from "../../agents/model-fallback.js";
 import {
   isCompactionFailureError,
   isContextOverflowError,
   isLikelyContextOverflowError,
   isTransientHttpError,
   sanitizeUserFacingText,
-} from "../../agents/pi-embedded-helpers.js";
-import type { EmbeddedPiRunResult } from "../../agents/pi-embedded-runner/types.js";
+} from "../../agents/agent-helpers.js";
+import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
+import { runWithModelFallback } from "../../agents/model-fallback.js";
 import { resolveGatewayPort } from "../../config/paths.js";
 import {
   resolveSessionTranscriptPath,
@@ -51,7 +50,7 @@ export type AgentRunLoopResult =
   | {
       kind: "success";
       runId: string;
-      runResult: EmbeddedPiRunResult;
+      runResult: AgentDeliveryResult;
       fallbackProvider?: string;
       fallbackModel?: string;
       fallbackAttempts: RuntimeFallbackAttempt[];
@@ -119,61 +118,6 @@ function buildChannelMessage(params: {
   };
 }
 
-/**
- * Map ChannelBridge's AgentDeliveryResult to EmbeddedPiRunResult for
- * backward-compatibility with the auto-reply result processing pipeline.
- */
-function mapToEmbeddedPiRunResult(
-  delivery: AgentDeliveryResult,
-  provider: string,
-  model: string,
-): EmbeddedPiRunResult {
-  const run = delivery.run;
-  const mcp = delivery.mcp;
-
-  // Map error subtype to the meta.error format used by the auto-reply pipeline
-  let metaError: EmbeddedPiRunResult["meta"]["error"];
-  if (delivery.error && run.errorSubtype === "context_window") {
-    metaError = { kind: "context_overflow", message: delivery.error };
-  }
-
-  return {
-    payloads: delivery.payloads.length > 0 ? delivery.payloads : undefined,
-    meta: {
-      durationMs: run.durationMs,
-      agentMeta: {
-        sessionId: run.sessionId ?? "",
-        provider,
-        model,
-        usage: run.usage
-          ? {
-              input: run.usage.inputTokens,
-              output: run.usage.outputTokens,
-              cacheRead: run.usage.cacheReadTokens,
-              cacheWrite: run.usage.cacheWriteTokens,
-            }
-          : undefined,
-      },
-      aborted: run.aborted || undefined,
-      error: metaError,
-      stopReason: run.stopReason,
-    },
-    didSendViaMessagingTool: mcp.sentTexts.length > 0 || mcp.sentMediaUrls.length > 0 || undefined,
-    messagingToolSentTexts: mcp.sentTexts.length > 0 ? mcp.sentTexts : undefined,
-    messagingToolSentMediaUrls: mcp.sentMediaUrls.length > 0 ? mcp.sentMediaUrls : undefined,
-    messagingToolSentTargets:
-      mcp.sentTargets.length > 0
-        ? mcp.sentTargets.map((t) => ({
-            tool: t.tool,
-            provider: t.provider,
-            accountId: t.accountId,
-            to: t.to,
-          }))
-        : undefined,
-    successfulCronAdds: mcp.cronAdds || undefined,
-  };
-}
-
 // ── Main ─────────────────────────────────────────────────────────────────
 
 export async function runAgentTurnWithFallback(params: {
@@ -226,7 +170,7 @@ export async function runAgentTurnWithFallback(params: {
       isHeartbeat: params.isHeartbeat,
     });
   }
-  let runResult: EmbeddedPiRunResult;
+  let runResult: AgentDeliveryResult;
   let fallbackProvider = params.followupRun.run.provider;
   let fallbackModel = params.followupRun.run.model;
   let fallbackAttempts: RuntimeFallbackAttempt[] = [];
@@ -420,7 +364,7 @@ export async function runAgentTurnWithFallback(params: {
               });
               lifecycleTerminalEmitted = true;
 
-              return mapToEmbeddedPiRunResult(delivery, provider, model);
+              return delivery;
             } catch (err) {
               emitAgentEvent({
                 runId,
@@ -469,12 +413,14 @@ export async function runAgentTurnWithFallback(params: {
 
       // Surface context overflow errors returned in the result (not thrown).
       // Treat these as a session-level failure and auto-recover by starting a fresh session.
-      const bridgeError = runResult.meta?.error;
+      const bridgeErrorMsg = runResult.error;
+      const bridgeErrorSubtype = runResult.run.errorSubtype;
       if (
-        bridgeError &&
-        isContextOverflowError(bridgeError.message) &&
+        bridgeErrorMsg &&
+        bridgeErrorSubtype === "context_window" &&
+        isContextOverflowError(bridgeErrorMsg) &&
         !didResetAfterCompactionFailure &&
-        (await params.resetSessionAfterCompactionFailure(bridgeError.message))
+        (await params.resetSessionAfterCompactionFailure(bridgeErrorMsg))
       ) {
         didResetAfterCompactionFailure = true;
         return {
@@ -484,8 +430,8 @@ export async function runAgentTurnWithFallback(params: {
           },
         };
       }
-      if (bridgeError?.kind === "role_ordering") {
-        const didReset = await params.resetSessionAfterRoleOrderingConflict(bridgeError.message);
+      if (bridgeErrorMsg && bridgeErrorSubtype === "role_ordering") {
+        const didReset = await params.resetSessionAfterRoleOrderingConflict(bridgeErrorMsg);
         if (didReset) {
           return {
             kind: "final",

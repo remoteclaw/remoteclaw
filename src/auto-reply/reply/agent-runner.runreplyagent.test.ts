@@ -17,12 +17,6 @@ import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { enqueueFollowupRun, type FollowupRun, type QueueSettings } from "./queue.js";
 import { createMockTypingController } from "./test-helpers.js";
 
-type EmbeddedRunParams = {
-  prompt?: string;
-  extraSystemPrompt?: string;
-  onAgentEvent?: (evt: { stream?: string; data?: { phase?: string; willRetry?: boolean } }) => void;
-};
-
 const state = vi.hoisted(() => ({
   channelBridgeHandleMock: vi.fn(),
   runEmbeddedPiAgentMock: vi.fn(),
@@ -1533,7 +1527,7 @@ describe("runReplyAgent memory flush", () => {
     });
   });
 
-  it("runs a memory flush turn and updates session metadata", async () => {
+  it("does not run memory flush (embedded engine removed)", async () => {
     await withTempStore(async (storePath) => {
       const sessionKey = "main";
       const sessionEntry = {
@@ -1544,19 +1538,6 @@ describe("runReplyAgent memory flush", () => {
       };
 
       await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-      // Memory flush still uses runEmbeddedPiAgent directly (agent-runner-memory.ts)
-      const flushCalls: Array<{ prompt?: string }> = [];
-      state.runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
-        flushCalls.push({ prompt: params.prompt });
-        if (params.prompt?.includes("Pre-compaction memory flush.")) {
-          return { payloads: [], meta: {} };
-        }
-        return {
-          payloads: [{ text: "ok" }],
-          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-        };
-      });
 
       // Main run goes through ChannelBridge
       state.channelBridgeHandleMock.mockResolvedValue(
@@ -1579,17 +1560,14 @@ describe("runReplyAgent memory flush", () => {
         commandBody: "hello",
       });
 
-      // Memory flush uses runEmbeddedPiAgent
-      expect(flushCalls).toHaveLength(1);
-      expect(flushCalls[0]?.prompt).toContain("Pre-compaction memory flush.");
-      expect(flushCalls[0]?.prompt).toContain("Current time:");
-      expect(flushCalls[0]?.prompt).toMatch(/memory\/\d{4}-\d{2}-\d{2}\.md/);
+      // Memory flush is gutted (#74) — runEmbeddedPiAgent should NOT be called
+      expect(state.runEmbeddedPiAgentMock).not.toHaveBeenCalled();
       // Main run uses ChannelBridge
       expect(state.channelBridgeHandleMock).toHaveBeenCalledTimes(1);
 
       const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
-      expect(stored[sessionKey].memoryFlushAt).toBeTypeOf("number");
-      expect(stored[sessionKey].memoryFlushCompactionCount).toBe(1);
+      expect(stored[sessionKey].memoryFlushAt).toBeUndefined();
+      expect(stored[sessionKey].memoryFlushCompactionCount).toBeUndefined();
     });
   });
 
@@ -1674,7 +1652,7 @@ describe("runReplyAgent memory flush", () => {
     });
   });
 
-  it("increments compaction count when flush compaction completes", async () => {
+  it("does not increment compaction count (memory flush gutted)", async () => {
     await withTempStore(async (storePath) => {
       const sessionKey = "main";
       const sessionEntry = {
@@ -1685,21 +1663,6 @@ describe("runReplyAgent memory flush", () => {
       };
 
       await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-      // Memory flush uses runEmbeddedPiAgent with onAgentEvent callback
-      state.runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
-        if (params.prompt?.includes("Pre-compaction memory flush.")) {
-          params.onAgentEvent?.({
-            stream: "compaction",
-            data: { phase: "end", willRetry: false },
-          });
-          return { payloads: [], meta: {} };
-        }
-        return {
-          payloads: [{ text: "ok" }],
-          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
-        };
-      });
 
       // Main run through ChannelBridge
       state.channelBridgeHandleMock.mockResolvedValue(
@@ -1723,8 +1686,9 @@ describe("runReplyAgent memory flush", () => {
       });
 
       const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
-      expect(stored[sessionKey].compactionCount).toBe(2);
-      expect(stored[sessionKey].memoryFlushCompactionCount).toBe(2);
+      // compactionCount stays at 1 (initial), not incremented since flush is gutted
+      expect(stored[sessionKey].compactionCount).toBe(1);
+      expect(stored[sessionKey].memoryFlushCompactionCount).toBeUndefined();
     });
   });
 });

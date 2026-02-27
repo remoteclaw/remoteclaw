@@ -21,7 +21,6 @@ import {
   resolveConfiguredModelRef,
   resolveHooksGmailModel,
 } from "../../agents/model-selection.js";
-import type { EmbeddedPiRunResult } from "../../agents/pi-embedded-runner/types.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
@@ -114,60 +113,6 @@ function buildCronChannelMessage(params: {
     timestamp: params.timestamp,
     messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
     senderIsOwner: false, // Cron agents must not self-modify via owner-only tools
-  };
-}
-
-/**
- * Map ChannelBridge's AgentDeliveryResult to EmbeddedPiRunResult for
- * backward-compatibility with the cron result processing pipeline.
- */
-function mapToEmbeddedPiRunResult(
-  delivery: AgentDeliveryResult,
-  provider: string,
-  model: string,
-): EmbeddedPiRunResult {
-  const run = delivery.run;
-  const mcp = delivery.mcp;
-
-  let metaError: EmbeddedPiRunResult["meta"]["error"];
-  if (delivery.error && run.errorSubtype === "context_window") {
-    metaError = { kind: "context_overflow", message: delivery.error };
-  }
-
-  return {
-    payloads: delivery.payloads.length > 0 ? delivery.payloads : undefined,
-    meta: {
-      durationMs: run.durationMs,
-      agentMeta: {
-        sessionId: run.sessionId ?? "",
-        provider,
-        model,
-        usage: run.usage
-          ? {
-              input: run.usage.inputTokens,
-              output: run.usage.outputTokens,
-              cacheRead: run.usage.cacheReadTokens,
-              cacheWrite: run.usage.cacheWriteTokens,
-            }
-          : undefined,
-      },
-      aborted: run.aborted || undefined,
-      error: metaError,
-      stopReason: run.stopReason,
-    },
-    didSendViaMessagingTool: mcp.sentTexts.length > 0 || mcp.sentMediaUrls.length > 0 || undefined,
-    messagingToolSentTexts: mcp.sentTexts.length > 0 ? mcp.sentTexts : undefined,
-    messagingToolSentMediaUrls: mcp.sentMediaUrls.length > 0 ? mcp.sentMediaUrls : undefined,
-    messagingToolSentTargets:
-      mcp.sentTargets.length > 0
-        ? mcp.sentTargets.map((t) => ({
-            tool: t.tool,
-            provider: t.provider,
-            accountId: t.accountId,
-            to: t.to,
-          }))
-        : undefined,
-    successfulCronAdds: mcp.cronAdds || undefined,
   };
 }
 
@@ -454,7 +399,7 @@ export async function runCronIsolatedAgentTurn(params: {
     isNewSession: cronSession.isNewSession,
   });
 
-  let runResult: EmbeddedPiRunResult;
+  let runResult: AgentDeliveryResult;
   let fallbackProvider = provider;
   let fallbackModel = model;
   const runStartedAt = Date.now();
@@ -474,7 +419,7 @@ export async function runCronIsolatedAgentTurn(params: {
       model,
       agentDir,
       fallbacksOverride: resolveAgentModelFallbacksOverride(params.cfg, agentId),
-      run: async (providerOverride, modelOverride) => {
+      run: async (providerOverride, _modelOverride) => {
         if (abortSignal?.aborted) {
           throw new Error(abortReason());
         }
@@ -512,7 +457,7 @@ export async function runCronIsolatedAgentTurn(params: {
           throw new Error(delivery.error);
         }
 
-        return mapToEmbeddedPiRunResult(delivery, providerOverride, modelOverride);
+        return delivery;
       },
     });
     runResult = fallbackResult.result;
@@ -533,10 +478,18 @@ export async function runCronIsolatedAgentTurn(params: {
   // Also collect best-effort telemetry for the cron run log.
   let telemetry: CronRunTelemetry | undefined;
   {
-    const usage = runResult.meta?.agentMeta?.usage;
-    const promptTokens = runResult.meta?.agentMeta?.promptTokens;
-    const modelUsed = runResult.meta?.agentMeta?.model ?? fallbackModel ?? model;
-    const providerUsed = runResult.meta?.agentMeta?.provider ?? fallbackProvider ?? provider;
+    const runUsage = runResult.run.usage;
+    // Map AgentUsage to NormalizedUsage shape expected by usage helpers
+    const usage = runUsage
+      ? {
+          input: runUsage.inputTokens,
+          output: runUsage.outputTokens,
+          cacheRead: runUsage.cacheReadTokens,
+          cacheWrite: runUsage.cacheWriteTokens,
+        }
+      : undefined;
+    const modelUsed = fallbackModel ?? model;
+    const providerUsed = fallbackProvider ?? provider;
     const contextTokens =
       agentCfg?.contextTokens ?? lookupContextTokens(modelUsed) ?? DEFAULT_CONTEXT_TOKENS;
 
@@ -546,7 +499,7 @@ export async function runCronIsolatedAgentTurn(params: {
     });
     cronSession.sessionEntry.contextTokens = contextTokens;
     if (isCliProvider(providerUsed, cfgWithAgentDefaults)) {
-      const cliSessionId = runResult.meta?.agentMeta?.sessionId?.trim();
+      const cliSessionId = runResult.run.sessionId?.trim();
       if (cliSessionId) {
         setCliSessionId(cronSession.sessionEntry, providerUsed, cliSessionId);
       }
@@ -558,7 +511,6 @@ export async function runCronIsolatedAgentTurn(params: {
         deriveSessionTotalTokens({
           usage,
           contextTokens,
-          promptTokens,
         }) ?? input;
       cronSession.sessionEntry.inputTokens = input;
       cronSession.sessionEntry.outputTokens = output;
@@ -627,10 +579,12 @@ export async function runCronIsolatedAgentTurn(params: {
   // Skip delivery for heartbeat-only responses (HEARTBEAT_OK with no real content).
   const ackMaxChars = resolveHeartbeatAckMaxChars(agentCfg);
   const skipHeartbeatDelivery = deliveryRequested && isHeartbeatOnlyResponse(payloads, ackMaxChars);
+  const didSendViaMessagingTool =
+    runResult.mcp.sentTexts.length > 0 || runResult.mcp.sentMediaUrls.length > 0;
   const skipMessagingToolDelivery =
     deliveryRequested &&
-    runResult.didSendViaMessagingTool === true &&
-    (runResult.messagingToolSentTargets ?? []).some((target) =>
+    didSendViaMessagingTool &&
+    runResult.mcp.sentTargets.some((target) =>
       matchesMessagingToolDeliveryTarget(target, {
         channel: resolvedDelivery.channel,
         to: resolvedDelivery.to,

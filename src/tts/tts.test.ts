@@ -1,7 +1,4 @@
-import { completeSimple, type AssistantMessage } from "@mariozechner/pi-ai";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { getApiKeyForModel } from "../agents/model-auth.js";
-import { resolveModel } from "../agents/pi-embedded-runner/model.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { withEnv } from "../test-utils/env.js";
 import * as tts from "./tts.js";
@@ -11,24 +8,6 @@ vi.mock("@mariozechner/pi-ai", () => ({
   // Some auth helpers import oauth provider metadata at module load time.
   getOAuthProviders: () => [],
   getOAuthApiKey: vi.fn(async () => null),
-}));
-
-vi.mock("../agents/pi-embedded-runner/model.js", () => ({
-  resolveModel: vi.fn((provider: string, modelId: string) => ({
-    model: {
-      provider,
-      id: modelId,
-      name: modelId,
-      api: "openai-completions",
-      reasoning: false,
-      input: ["text"],
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-      contextWindow: 128000,
-      maxTokens: 8192,
-    },
-    authStorage: { profiles: {} },
-    modelRegistry: { find: vi.fn() },
-  })),
 }));
 
 vi.mock("../agents/model-auth.js", () => ({
@@ -55,36 +34,9 @@ const {
   resolveEdgeOutputFormat,
 } = _test;
 
-const mockAssistantMessage = (content: AssistantMessage["content"]): AssistantMessage => ({
-  role: "assistant",
-  content,
-  api: "openai-completions",
-  provider: "openai",
-  model: "gpt-4o-mini",
-  usage: {
-    input: 1,
-    output: 1,
-    cacheRead: 0,
-    cacheWrite: 0,
-    totalTokens: 2,
-    cost: {
-      input: 0,
-      output: 0,
-      cacheRead: 0,
-      cacheWrite: 0,
-      total: 0,
-    },
-  },
-  stopReason: "stop",
-  timestamp: Date.now(),
-});
-
 describe("tts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(completeSimple).mockResolvedValue(
-      mockAssistantMessage([{ type: "text", text: "Summary" }]),
-    );
   });
 
   describe("isValidVoiceId", () => {
@@ -268,107 +220,16 @@ describe("tts", () => {
     };
     const baseConfig = resolveTtsConfig(baseCfg);
 
-    it("summarizes text and returns result with metrics", async () => {
-      const mockSummary = "This is a summarized version of the text.";
-      vi.mocked(completeSimple).mockResolvedValue(
-        mockAssistantMessage([{ type: "text", text: mockSummary }]),
-      );
-
-      const longText = "A".repeat(2000);
-      const result = await summarizeText({
-        text: longText,
-        targetLength: 1500,
-        cfg: baseCfg,
-        config: baseConfig,
-        timeoutMs: 30_000,
-      });
-
-      expect(result.summary).toBe(mockSummary);
-      expect(result.inputLength).toBe(2000);
-      expect(result.outputLength).toBe(mockSummary.length);
-      expect(result.latencyMs).toBeGreaterThanOrEqual(0);
-      expect(completeSimple).toHaveBeenCalledTimes(1);
-    });
-
-    it("calls the summary model with the expected parameters", async () => {
-      await summarizeText({
-        text: "Long text to summarize",
-        targetLength: 500,
-        cfg: baseCfg,
-        config: baseConfig,
-        timeoutMs: 30_000,
-      });
-
-      const callArgs = vi.mocked(completeSimple).mock.calls[0];
-      expect(callArgs?.[1]?.messages?.[0]?.role).toBe("user");
-      expect(callArgs?.[2]?.maxTokens).toBe(250);
-      expect(callArgs?.[2]?.temperature).toBe(0.3);
-      expect(getApiKeyForModel).toHaveBeenCalledTimes(1);
-    });
-
-    it("uses summaryModel override when configured", async () => {
-      const cfg: OpenClawConfig = {
-        agents: { defaults: { model: { primary: "anthropic/claude-opus-4-5" } } },
-        messages: { tts: { summaryModel: "openai/gpt-4.1-mini" } },
-      };
-      const config = resolveTtsConfig(cfg);
-      await summarizeText({
-        text: "Long text to summarize",
-        targetLength: 500,
-        cfg,
-        config,
-        timeoutMs: 30_000,
-      });
-
-      expect(resolveModel).toHaveBeenCalledWith("openai", "gpt-4.1-mini", undefined, cfg);
-    });
-
-    it("validates targetLength bounds", async () => {
-      const cases = [
-        { targetLength: 99, shouldThrow: true },
-        { targetLength: 100, shouldThrow: false },
-        { targetLength: 10000, shouldThrow: false },
-        { targetLength: 10001, shouldThrow: true },
-      ] as const;
-      for (const testCase of cases) {
-        const call = summarizeText({
-          text: "text",
-          targetLength: testCase.targetLength,
+    it("throws because embedded model resolver was removed", async () => {
+      await expect(
+        summarizeText({
+          text: "A".repeat(2000),
+          targetLength: 1500,
           cfg: baseCfg,
           config: baseConfig,
           timeoutMs: 30_000,
-        });
-        if (testCase.shouldThrow) {
-          await expect(call, String(testCase.targetLength)).rejects.toThrow(
-            `Invalid targetLength: ${testCase.targetLength}`,
-          );
-        } else {
-          await expect(call, String(testCase.targetLength)).resolves.toBeDefined();
-        }
-      }
-    });
-
-    it("throws when summary output is missing or empty", async () => {
-      const cases = [
-        { name: "no summary blocks", message: mockAssistantMessage([]) },
-        {
-          name: "empty summary content",
-          message: mockAssistantMessage([{ type: "text", text: "   " }]),
-        },
-      ] as const;
-      for (const testCase of cases) {
-        vi.mocked(completeSimple).mockResolvedValue(testCase.message);
-        await expect(
-          summarizeText({
-            text: "text",
-            targetLength: 500,
-            cfg: baseCfg,
-            config: baseConfig,
-            timeoutMs: 30_000,
-          }),
-          testCase.name,
-        ).rejects.toThrow("No summary returned");
-      }
+        }),
+      ).rejects.toThrow("TTS summarisation unavailable: embedded model resolver removed (#74).");
     });
   });
 

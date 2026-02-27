@@ -10,7 +10,7 @@ export type LegacyConfigMigration = {
   apply: (raw: Record<string, unknown>, changes: string[]) => void;
 };
 
-import { isSafeExecutableValue } from "../infra/exec-safety.js";
+import { isSafeExecutableValue } from "../infra/safe-executable-value.js";
 import { isRecord } from "../utils.js";
 import { isBlockedObjectKey } from "./prototype-keys.js";
 export { isRecord };

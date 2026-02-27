@@ -48,7 +48,6 @@ import {
   createDiscordComponentUserSelect,
 } from "./agent-components.js";
 import { resolveDiscordSlashCommandConfig } from "./commands.js";
-import { createExecApprovalButton, DiscordExecApprovalHandler } from "./exec-approvals.js";
 import { createDiscordGatewayPlugin } from "./gateway-plugin.js";
 import {
   DiscordMessageListener,
@@ -350,18 +349,6 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       );
     }
 
-    // Initialize exec approvals handler if enabled
-    const execApprovalsConfig = discordCfg.execApprovals ?? {};
-    const execApprovalsHandler = execApprovalsConfig.enabled
-      ? new DiscordExecApprovalHandler({
-          token,
-          accountId: account.accountId,
-          config: execApprovalsConfig,
-          cfg,
-          runtime,
-        })
-      : null;
-
     const agentComponentsConfig = discordCfg.agentComponents ?? {};
     const agentComponentsEnabled = agentComponentsConfig.enabled ?? true;
 
@@ -389,10 +376,6 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       }),
     ];
     const modals: Modal[] = [];
-
-    if (execApprovalsHandler) {
-      components.push(createExecApprovalButton({ handler: execApprovalsHandler }));
-    }
 
     if (agentComponentsEnabled) {
       const componentContext = {
@@ -557,7 +540,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       isDisallowedIntentsError: isDiscordDisallowedIntentsError,
       voiceManager,
       voiceManagerRef,
-      execApprovalsHandler,
+      execApprovalsHandler: null,
       threadBindings,
     });
   } finally {

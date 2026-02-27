@@ -14,7 +14,6 @@ import * as internalHooks from "../../hooks/internal-hooks.js";
 import { clearPluginCommands, registerPluginCommand } from "../../plugins/commands.js";
 import { typedCases } from "../../test-utils/typed-cases.js";
 import type { MsgContext } from "../templating.js";
-import { resetBashChatCommandForTests } from "./bash-command.js";
 import { handleCompactCommand } from "./commands-compact.js";
 import { buildCommandsPaginationKeyboard } from "./commands-info.js";
 import { extractMessageText } from "./commands-subagents.js";
@@ -146,33 +145,6 @@ describe("handleCommands gating", () => {
       expectedText: string;
     }>([
       {
-        name: "disabled bash command",
-        commandBody: "/bash echo hi",
-        makeCfg: () =>
-          ({
-            commands: { bash: false, text: true },
-            whatsapp: { allowFrom: ["*"] },
-          }) as OpenClawConfig,
-        expectedText: "bash is disabled",
-      },
-      {
-        name: "missing elevated allowlist",
-        commandBody: "/bash echo hi",
-        makeCfg: () =>
-          ({
-            commands: { bash: true, text: true },
-            whatsapp: { allowFrom: ["*"] },
-          }) as OpenClawConfig,
-        applyParams: (params: ReturnType<typeof buildParams>) => {
-          params.elevated = {
-            enabled: true,
-            allowed: false,
-            failures: [{ gate: "allowFrom", key: "tools.elevated.allowFrom.whatsapp" }],
-          };
-        },
-        expectedText: "elevated is not available",
-      },
-      {
         name: "disabled config command",
         commandBody: "/config show",
         makeCfg: () =>
@@ -191,22 +163,6 @@ describe("handleCommands gating", () => {
             channels: { whatsapp: { allowFrom: ["*"] } },
           }) as OpenClawConfig,
         expectedText: "/debug is disabled",
-      },
-      {
-        name: "inherited bash flag does not enable command",
-        commandBody: "/bash echo hi",
-        makeCfg: () => {
-          const inheritedCommands = Object.create({
-            bash: true,
-            config: true,
-            debug: true,
-          }) as Record<string, unknown>;
-          return {
-            commands: inheritedCommands as never,
-            channels: { whatsapp: { allowFrom: ["*"] } },
-          } as OpenClawConfig;
-        },
-        expectedText: "bash is disabled",
       },
       {
         name: "inherited config flag does not enable command",
@@ -243,7 +199,6 @@ describe("handleCommands gating", () => {
     ]);
 
     for (const testCase of cases) {
-      resetBashChatCommandForTests();
       const params = buildParams(testCase.commandBody, testCase.makeCfg());
       testCase.applyParams?.(params);
       const result = await handleCommands(params);
@@ -526,22 +481,6 @@ describe("handleCommands /config configWrites gating", () => {
     const result = await handleCommands(params);
     expect(result.shouldContinue).toBe(false);
     expect(result.reply?.text).toContain("Config writes are disabled");
-  });
-});
-
-describe("handleCommands bash alias", () => {
-  it("routes !poll and !stop through the /bash handler", async () => {
-    const cfg = {
-      commands: { bash: true, text: true },
-      whatsapp: { allowFrom: ["*"] },
-    } as OpenClawConfig;
-    for (const aliasCommand of ["!poll", "!stop"]) {
-      resetBashChatCommandForTests();
-      const params = buildParams(aliasCommand, cfg);
-      const result = await handleCommands(params);
-      expect(result.shouldContinue).toBe(false);
-      expect(result.reply?.text).toContain("No active bash job");
-    }
   });
 });
 

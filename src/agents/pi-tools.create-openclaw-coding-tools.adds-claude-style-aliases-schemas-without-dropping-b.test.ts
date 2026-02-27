@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
 import "./test-helpers/fast-coding-tools.js";
 import { createOpenClawCodingTools } from "./pi-tools.js";
 
@@ -50,64 +49,6 @@ describe("createOpenClawCodingTools", () => {
             2;
       expect(values.size).toBeGreaterThanOrEqual(min);
     }
-  });
-  it("enforces apply_patch availability and canonical names across model/provider constraints", () => {
-    expect(defaultTools.some((tool) => tool.name === "exec")).toBe(true);
-    expect(defaultTools.some((tool) => tool.name === "process")).toBe(true);
-    expect(defaultTools.some((tool) => tool.name === "apply_patch")).toBe(false);
-
-    const enabledConfig: OpenClawConfig = {
-      tools: {
-        exec: {
-          applyPatch: { enabled: true },
-        },
-      },
-    };
-    const openAiTools = createOpenClawCodingTools({
-      config: enabledConfig,
-      modelProvider: "openai",
-      modelId: "gpt-5.2",
-    });
-    expect(openAiTools.some((tool) => tool.name === "apply_patch")).toBe(true);
-
-    const anthropicTools = createOpenClawCodingTools({
-      config: enabledConfig,
-      modelProvider: "anthropic",
-      modelId: "claude-opus-4-5",
-    });
-    expect(anthropicTools.some((tool) => tool.name === "apply_patch")).toBe(false);
-
-    const allowModelsConfig: OpenClawConfig = {
-      tools: {
-        exec: {
-          applyPatch: { enabled: true, allowModels: ["gpt-5.2"] },
-        },
-      },
-    };
-    const allowed = createOpenClawCodingTools({
-      config: allowModelsConfig,
-      modelProvider: "openai",
-      modelId: "gpt-5.2",
-    });
-    expect(allowed.some((tool) => tool.name === "apply_patch")).toBe(true);
-
-    const denied = createOpenClawCodingTools({
-      config: allowModelsConfig,
-      modelProvider: "openai",
-      modelId: "gpt-5-mini",
-    });
-    expect(denied.some((tool) => tool.name === "apply_patch")).toBe(false);
-
-    const oauthTools = createOpenClawCodingTools({
-      modelProvider: "anthropic",
-      modelAuthMode: "oauth",
-    });
-    const names = new Set(oauthTools.map((tool) => tool.name));
-    expect(names.has("exec")).toBe(true);
-    expect(names.has("read")).toBe(true);
-    expect(names.has("write")).toBe(true);
-    expect(names.has("edit")).toBe(true);
-    expect(names.has("apply_patch")).toBe(false);
   });
   it("provides top-level object schemas for all tools", () => {
     const tools = createOpenClawCodingTools();

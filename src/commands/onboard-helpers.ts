@@ -11,7 +11,7 @@ import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
 import { callGateway } from "../gateway/call.js";
 import { normalizeControlUiBasePath } from "../gateway/control-ui-shared.js";
 import { pickPrimaryLanIPv4, isValidIPv4 } from "../gateway/net.js";
-import { isSafeExecutableValue } from "../infra/exec-safety.js";
+import { isSafeExecutableValue } from "../infra/safe-executable-value.js";
 import { pickPrimaryTailnetIPv4 } from "../infra/tailnet.js";
 import { isWSL } from "../infra/wsl.js";
 import { runCommandWithTimeout } from "../process/exec.js";

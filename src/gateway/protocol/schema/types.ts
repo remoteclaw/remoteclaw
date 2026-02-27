@@ -72,15 +72,6 @@ import type {
   DeviceTokenRotateParamsSchema,
 } from "./devices.js";
 import type {
-  ExecApprovalsGetParamsSchema,
-  ExecApprovalsNodeGetParamsSchema,
-  ExecApprovalsNodeSetParamsSchema,
-  ExecApprovalsSetParamsSchema,
-  ExecApprovalsSnapshotSchema,
-  ExecApprovalRequestParamsSchema,
-  ExecApprovalResolveParamsSchema,
-} from "./exec-approvals.js";
-import type {
   ConnectParamsSchema,
   ErrorShapeSchema,
   EventFrameSchema,
@@ -228,13 +219,6 @@ export type CronRunsParams = Static<typeof CronRunsParamsSchema>;
 export type CronRunLogEntry = Static<typeof CronRunLogEntrySchema>;
 export type LogsTailParams = Static<typeof LogsTailParamsSchema>;
 export type LogsTailResult = Static<typeof LogsTailResultSchema>;
-export type ExecApprovalsGetParams = Static<typeof ExecApprovalsGetParamsSchema>;
-export type ExecApprovalsSetParams = Static<typeof ExecApprovalsSetParamsSchema>;
-export type ExecApprovalsNodeGetParams = Static<typeof ExecApprovalsNodeGetParamsSchema>;
-export type ExecApprovalsNodeSetParams = Static<typeof ExecApprovalsNodeSetParamsSchema>;
-export type ExecApprovalsSnapshot = Static<typeof ExecApprovalsSnapshotSchema>;
-export type ExecApprovalRequestParams = Static<typeof ExecApprovalRequestParamsSchema>;
-export type ExecApprovalResolveParams = Static<typeof ExecApprovalResolveParamsSchema>;
 export type DevicePairListParams = Static<typeof DevicePairListParamsSchema>;
 export type DevicePairApproveParams = Static<typeof DevicePairApproveParamsSchema>;
 export type DevicePairRejectParams = Static<typeof DevicePairRejectParamsSchema>;

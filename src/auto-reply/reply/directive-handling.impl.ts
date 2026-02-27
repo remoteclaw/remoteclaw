@@ -11,8 +11,13 @@ const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
 });
 import type { OpenClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
-import type { ExecAsk, ExecHost, ExecSecurity } from "../../infra/exec-approvals.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
+
+// Stub types: exec-approvals infrastructure was gutted.
+type ExecHost = "sandbox" | "gateway" | "node";
+type ExecSecurity = "deny" | "allowlist" | "full";
+type ExecAsk = "off" | "on-miss" | "always";
+
 import { applyVerboseOverride } from "../../sessions/level-overrides.js";
 import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
 import { formatThinkingLevels, formatXHighModelHint, supportsXHighThinking } from "../thinking.js";

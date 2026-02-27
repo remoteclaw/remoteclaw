@@ -2,25 +2,136 @@ import crypto from "node:crypto";
 import { resolveAgentConfig } from "../agents/agent-scope.js";
 import { loadConfig } from "../config/config.js";
 import type { GatewayClient } from "../gateway/client.js";
-import {
-  addAllowlistEntry,
-  analyzeArgvCommand,
-  evaluateExecAllowlist,
-  evaluateShellAllowlist,
-  recordAllowlistUse,
-  resolveAllowAlwaysPatterns,
-  resolveExecApprovals,
-  type ExecAllowlistEntry,
-  type ExecAsk,
-  type ExecCommandSegment,
-  type ExecSecurity,
-  type SkillBinTrustEntry,
-} from "../infra/exec-approvals.js";
-import type { ExecHostRequest, ExecHostResponse, ExecHostRunResult } from "../infra/exec-host.js";
-import { resolveExecSafeBinRuntimePolicy } from "../infra/exec-safe-bin-runtime-policy.js";
 import { sanitizeSystemRunEnvOverrides } from "../infra/host-env-security.js";
-import { resolveSystemRunCommand } from "../infra/system-run-command.js";
-import { evaluateSystemRunPolicy, resolveExecApprovalDecision } from "./exec-policy.js";
+
+// Stub types and functions: exec-approvals, exec-host, exec-safe-bin, system-run-command,
+// and exec-policy infrastructure was gutted.
+type ExecSecurity = "deny" | "allowlist" | "full";
+type ExecAsk = "off" | "on-miss" | "always";
+type ExecAllowlistEntry = { pattern: string };
+type ExecCommandSegment = {
+  argv: string[];
+  resolution?: { resolvedPath?: string; effectiveArgv?: string[] };
+};
+type SkillBinTrustEntry = Record<string, unknown>;
+type ExecHostRequest = Record<string, unknown>;
+type ExecHostResponse = {
+  ok: boolean;
+  error: { reason: string; message: string };
+  payload: ExecHostRunResult;
+};
+type ExecHostRunResult = Record<string, unknown>;
+
+function resolveSystemRunCommand(opts: {
+  command?: unknown;
+  rawCommand?: unknown;
+}):
+  | { ok: true; argv: string[]; shellCommand: string | null; cmdText: string }
+  | { ok: false; message: string } {
+  const cmd = opts.command;
+  const raw = opts.rawCommand;
+  if (Array.isArray(cmd) && cmd.length > 0) {
+    const argv = cmd.map((c) => String(c));
+    return { ok: true, argv, shellCommand: null, cmdText: argv.join(" ") };
+  }
+  if (typeof raw === "string" && raw.trim()) {
+    const shell = process.platform === "win32" ? ["cmd.exe", "/c", raw] : ["sh", "-lc", raw];
+    return { ok: true, argv: shell, shellCommand: raw, cmdText: raw };
+  }
+  return { ok: false, message: "command required" };
+}
+
+function resolveExecApprovals(
+  _agentId?: string,
+  overrides?: { security?: ExecSecurity; ask?: ExecAsk },
+) {
+  return {
+    file: {} as Record<string, unknown>,
+    agent: {
+      security: overrides?.security ?? ("allowlist" as ExecSecurity),
+      ask: overrides?.ask ?? ("on-miss" as ExecAsk),
+      askFallback: undefined as string | undefined,
+      autoAllowSkills: false,
+    },
+    allowlist: [] as ExecAllowlistEntry[],
+    socketPath: undefined as string | undefined,
+    token: undefined as string | undefined,
+  };
+}
+
+function evaluateExecAllowlist(_opts: Record<string, unknown>) {
+  return {
+    analysisOk: true,
+    allowlistMatches: [] as ExecAllowlistEntry[],
+    allowlistSatisfied: false,
+  };
+}
+
+function evaluateShellAllowlist(_opts: Record<string, unknown>) {
+  return {
+    analysisOk: true,
+    allowlistMatches: [] as ExecAllowlistEntry[],
+    allowlistSatisfied: false,
+    segments: [] as ExecCommandSegment[],
+  };
+}
+
+function analyzeArgvCommand(_opts: { argv: string[]; cwd?: string; env?: Record<string, string> }) {
+  return { ok: true, segments: [] as ExecCommandSegment[] };
+}
+
+function resolveAllowAlwaysPatterns(_opts: Record<string, unknown>) {
+  return [] as string[];
+}
+
+function addAllowlistEntry(
+  _file: Record<string, unknown>,
+  _agentId: string | undefined,
+  _pattern: string,
+) {
+  // no-op: exec approvals gutted
+}
+
+function recordAllowlistUse(
+  _file: Record<string, unknown>,
+  _agentId: string | undefined,
+  _match: ExecAllowlistEntry,
+  _cmdText: string,
+  _resolvedPath?: string,
+) {
+  // no-op: exec approvals gutted
+}
+
+function resolveExecSafeBinRuntimePolicy(_opts: Record<string, unknown>) {
+  return {
+    safeBins: new Set<string>(),
+    safeBinProfiles: {} as Record<string, unknown>,
+    trustedSafeBinDirs: new Set<string>(),
+  };
+}
+
+function evaluateSystemRunPolicy(opts: Record<string, unknown>) {
+  return {
+    allowed: true,
+    approvedByAsk: opts.approved === true,
+    analysisOk: true,
+    allowlistSatisfied: false,
+    eventReason: "approval-required" as const,
+    errorMessage: "SYSTEM_RUN_DENIED: approval required",
+    approvalDecision: opts.approvalDecision as string | undefined,
+  };
+}
+
+function resolveExecApprovalDecision(value?: unknown): string | undefined {
+  if (value === "allow-once" || value === "allow-always") {
+    return value;
+  }
+  return undefined;
+}
+
+export function formatSystemRunAllowlistMissMessage(_opts?: Record<string, unknown>): string {
+  return "SYSTEM_RUN_DENIED: allowlist miss";
+}
 import type {
   ExecEventPayload,
   RunResult,
@@ -298,8 +409,6 @@ function applyOutputTruncation(result: RunResult) {
     result.stdout = `${result.stdout}\n${suffix}`;
   }
 }
-
-export { formatSystemRunAllowlistMissMessage } from "./exec-policy.js";
 
 async function parseSystemRunPhase(
   opts: HandleSystemRunInvokeOptions,

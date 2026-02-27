@@ -25,7 +25,6 @@ import {
 } from "../infra/control-ui-assets.js";
 import { isDiagnosticsEnabled } from "../infra/diagnostic-events.js";
 import { logAcceptedEnvOption } from "../infra/env.js";
-import { createExecApprovalForwarder } from "../infra/exec-approval-forwarder.js";
 import { onHeartbeatEvent } from "../infra/heartbeat-events.js";
 import { startHeartbeatRunner, type HeartbeatRunner } from "../infra/heartbeat-runner.js";
 import { getMachineDisplayName } from "../infra/machine-name.js";
@@ -48,7 +47,6 @@ import {
   GATEWAY_EVENT_UPDATE_AVAILABLE,
   type GatewayUpdateAvailableEventPayload,
 } from "./events.js";
-import { ExecApprovalManager } from "./exec-approval-manager.js";
 import { NodeRegistry } from "./node-registry.js";
 import type { startBrowserControlServerIfEnabled } from "./server-browser.js";
 import { createChannelManager } from "./server-channels.js";
@@ -60,7 +58,6 @@ import { applyGatewayLaneConcurrency } from "./server-lanes.js";
 import { startGatewayMaintenanceTimers } from "./server-maintenance.js";
 import { GATEWAY_EVENTS, listGatewayMethods } from "./server-methods-list.js";
 import { coreGatewayHandlers } from "./server-methods.js";
-import { createExecApprovalHandlers } from "./server-methods/exec-approval.js";
 import { safeParseJson } from "./server-methods/nodes.helpers.js";
 import { hasConnectedMobileNode } from "./server-mobile-nodes.js";
 import { loadGatewayModelCatalog } from "./server-model-catalog.js";
@@ -526,12 +523,6 @@ export async function startGatewayServer(
     })().catch((err) => log.error(`Delivery recovery failed: ${String(err)}`));
   }
 
-  const execApprovalManager = new ExecApprovalManager();
-  const execApprovalForwarder = createExecApprovalForwarder();
-  const execApprovalHandlers = createExecApprovalHandlers(execApprovalManager, {
-    forwarder: execApprovalForwarder,
-  });
-
   const canvasHostServerPort = (canvasHostServer as CanvasHostServer | null)?.port;
 
   attachGatewayWsHandlers({
@@ -550,14 +541,12 @@ export async function startGatewayServer(
     logWsControl,
     extraHandlers: {
       ...pluginRegistry.gatewayHandlers,
-      ...execApprovalHandlers,
     },
     broadcast,
     context: {
       deps,
       cron,
       cronStorePath,
-      execApprovalManager,
       loadGatewayModelCatalog,
       getHealthCache,
       refreshHealthSnapshot: refreshGatewayHealthSnapshot,
@@ -573,17 +562,6 @@ export async function startGatewayServer(
       nodeUnsubscribe,
       nodeUnsubscribeAll,
       hasConnectedMobileNode: hasMobileNodeConnected,
-      hasExecApprovalClients: () => {
-        for (const gatewayClient of clients) {
-          const scopes = Array.isArray(gatewayClient.connect.scopes)
-            ? gatewayClient.connect.scopes
-            : [];
-          if (scopes.includes("operator.admin") || scopes.includes("operator.approvals")) {
-            return true;
-          }
-        }
-        return false;
-      },
       nodeRegistry,
       agentRunSeq,
       chatAbortControllers,

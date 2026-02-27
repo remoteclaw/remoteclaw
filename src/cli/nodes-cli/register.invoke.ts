@@ -2,15 +2,6 @@ import type { Command } from "commander";
 import { resolveAgentConfig, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { loadConfig } from "../../config/config.js";
 import { randomIdempotencyKey } from "../../gateway/call.js";
-import {
-  DEFAULT_EXEC_APPROVAL_TIMEOUT_MS,
-  type ExecApprovalsFile,
-  type ExecAsk,
-  type ExecSecurity,
-  maxAsk,
-  minSecurity,
-  resolveExecApprovalsFromFile,
-} from "../../infra/exec-approvals.js";
 import { buildNodeShellCommand } from "../../infra/node-shell.js";
 import { applyPathPrepend } from "../../infra/path-prepend.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -19,6 +10,34 @@ import { getNodesTheme, runNodesCommand } from "./cli-utils.js";
 import { parseNodeList } from "./format.js";
 import { callGatewayCli, nodesCallOpts, resolveNodeId, unauthorizedHintForMessage } from "./rpc.js";
 import type { NodesRpcOpts } from "./types.js";
+
+// Stub types and functions: exec-approvals infrastructure was gutted.
+type ExecSecurity = "deny" | "allowlist" | "full";
+type ExecAsk = "off" | "on-miss" | "always";
+type ExecApprovalsFile = Record<string, unknown>;
+const DEFAULT_EXEC_APPROVAL_TIMEOUT_MS = 120_000;
+function minSecurity(a: ExecSecurity, b: ExecSecurity): ExecSecurity {
+  const order: ExecSecurity[] = ["deny", "allowlist", "full"];
+  return order[Math.min(order.indexOf(a), order.indexOf(b))] ?? "deny";
+}
+function maxAsk(a: ExecAsk, b: ExecAsk): ExecAsk {
+  const order: ExecAsk[] = ["off", "on-miss", "always"];
+  return order[Math.max(order.indexOf(a), order.indexOf(b))] ?? "on-miss";
+}
+function resolveExecApprovalsFromFile(_opts: {
+  file: ExecApprovalsFile;
+  agentId?: string;
+  overrides?: { security?: ExecSecurity; ask?: ExecAsk };
+}): {
+  agent: { security: ExecSecurity; ask: ExecAsk; askFallback?: string };
+} {
+  return {
+    agent: {
+      security: _opts.overrides?.security ?? "allowlist",
+      ask: _opts.overrides?.ask ?? "on-miss",
+    },
+  };
+}
 
 type NodesRunOpts = NodesRpcOpts & {
   node?: string;

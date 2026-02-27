@@ -76,15 +76,6 @@ import {
   DeviceTokenRotateParamsSchema,
 } from "./devices.js";
 import {
-  ExecApprovalsGetParamsSchema,
-  ExecApprovalsNodeGetParamsSchema,
-  ExecApprovalsNodeSetParamsSchema,
-  ExecApprovalsSetParamsSchema,
-  ExecApprovalsSnapshotSchema,
-  ExecApprovalRequestParamsSchema,
-  ExecApprovalResolveParamsSchema,
-} from "./exec-approvals.js";
-import {
   ConnectParamsSchema,
   ErrorShapeSchema,
   EventFrameSchema,
@@ -239,13 +230,6 @@ export const ProtocolSchemas: Record<string, TSchema> = {
   CronRunLogEntry: CronRunLogEntrySchema,
   LogsTailParams: LogsTailParamsSchema,
   LogsTailResult: LogsTailResultSchema,
-  ExecApprovalsGetParams: ExecApprovalsGetParamsSchema,
-  ExecApprovalsSetParams: ExecApprovalsSetParamsSchema,
-  ExecApprovalsNodeGetParams: ExecApprovalsNodeGetParamsSchema,
-  ExecApprovalsNodeSetParams: ExecApprovalsNodeSetParamsSchema,
-  ExecApprovalsSnapshot: ExecApprovalsSnapshotSchema,
-  ExecApprovalRequestParams: ExecApprovalRequestParamsSchema,
-  ExecApprovalResolveParams: ExecApprovalResolveParamsSchema,
   DevicePairListParams: DevicePairListParamsSchema,
   DevicePairApproveParams: DevicePairApproveParamsSchema,
   DevicePairRejectParams: DevicePairRejectParamsSchema,

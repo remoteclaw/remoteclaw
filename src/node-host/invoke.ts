@@ -2,23 +2,62 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { GatewayClient } from "../gateway/client.js";
-import {
-  ensureExecApprovals,
-  mergeExecApprovalsSocketDefaults,
-  normalizeExecApprovals,
-  readExecApprovalsSnapshot,
-  saveExecApprovals,
-  type ExecAsk,
-  type ExecApprovalsFile,
-  type ExecApprovalsResolved,
-  type ExecSecurity,
-} from "../infra/exec-approvals.js";
-import {
-  requestExecHostViaSocket,
-  type ExecHostRequest,
-  type ExecHostResponse,
-} from "../infra/exec-host.js";
 import { sanitizeHostExecEnv } from "../infra/host-env-security.js";
+
+// Stub types and functions: exec-approvals and exec-host infrastructure was gutted.
+type ExecSecurity = "deny" | "allowlist" | "full";
+type ExecAsk = "off" | "on-miss" | "always";
+type ExecAllowlistEntry = { pattern: string };
+type ExecApprovalsFile = { socket?: { path?: string } } & Record<string, unknown>;
+type ExecApprovalsResolved = {
+  file: Record<string, unknown>;
+  agent: {
+    security: ExecSecurity;
+    ask: ExecAsk;
+    askFallback: string | undefined;
+    autoAllowSkills: boolean;
+  };
+  allowlist: ExecAllowlistEntry[];
+  socketPath: string | undefined;
+  token: string | undefined;
+};
+type ExecHostRequest = Record<string, unknown>;
+type ExecHostResponse = {
+  ok: boolean;
+  error: { reason: string; message: string };
+  payload: Record<string, unknown>;
+};
+
+function ensureExecApprovals(): void {
+  // no-op: exec approvals gutted
+}
+function readExecApprovalsSnapshot(): {
+  path: string;
+  exists: boolean;
+  hash: string;
+  file: ExecApprovalsFile;
+} {
+  return { path: "", exists: false, hash: "", file: {} };
+}
+function normalizeExecApprovals(_file: ExecApprovalsFile): ExecApprovalsFile {
+  return {};
+}
+function mergeExecApprovalsSocketDefaults(_opts: {
+  normalized: ExecApprovalsFile;
+  current: ExecApprovalsFile;
+}): ExecApprovalsFile {
+  return {};
+}
+function saveExecApprovals(_file: ExecApprovalsFile): void {
+  // no-op: exec approvals gutted
+}
+async function requestExecHostViaSocket(_opts: {
+  socketPath?: string;
+  token?: string;
+  request: ExecHostRequest;
+}): Promise<ExecHostResponse | null> {
+  return null;
+}
 import { runBrowserProxyCommand } from "./invoke-browser.js";
 import { handleSystemRunInvoke } from "./invoke-system-run.js";
 import type {

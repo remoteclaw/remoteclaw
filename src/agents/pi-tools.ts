@@ -7,19 +7,12 @@ import {
 } from "@mariozechner/pi-coding-agent";
 import type { OpenClawConfig } from "../config/config.js";
 import type { ToolLoopDetectionConfig } from "../config/types.tools.js";
-import { resolveMergedSafeBinProfileFixtures } from "../infra/exec-safe-bin-runtime-policy.js";
 import { logWarn } from "../logger.js";
 import { getPluginToolMeta } from "../plugins/tools.js";
 import { isSubagentSessionKey } from "../routing/session-key.js";
 import { resolveGatewayMessageChannel } from "../utils/message-channel.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 import { createApplyPatchTool } from "./apply-patch.js";
-import {
-  createExecTool,
-  createProcessTool,
-  type ExecToolDefaults,
-  type ProcessToolDefaults,
-} from "./bash-tools.js";
 import { listChannelAgentTools } from "./channel-tools.js";
 import { resolveImageSanitizationLimits } from "./image-sanitization.js";
 import type { ModelAuthMode } from "./model-auth.js";
@@ -27,7 +20,6 @@ import { createOpenClawTools } from "./openclaw-tools.js";
 import { wrapToolWithAbortSignal } from "./pi-tools.abort.js";
 import { wrapToolWithBeforeToolCallHook } from "./pi-tools.before-tool-call.js";
 import {
-  isToolAllowedByPolicies,
   resolveEffectiveToolPolicy,
   resolveGroupToolPolicy,
   resolveSubagentToolPolicy,
@@ -120,35 +112,6 @@ function isApplyPatchAllowedForModel(params: {
   });
 }
 
-function resolveExecConfig(params: { cfg?: OpenClawConfig; agentId?: string }) {
-  const cfg = params.cfg;
-  const globalExec = cfg?.tools?.exec;
-  const agentExec =
-    cfg && params.agentId ? resolveAgentConfig(cfg, params.agentId)?.tools?.exec : undefined;
-  return {
-    host: agentExec?.host ?? globalExec?.host,
-    security: agentExec?.security ?? globalExec?.security,
-    ask: agentExec?.ask ?? globalExec?.ask,
-    node: agentExec?.node ?? globalExec?.node,
-    pathPrepend: agentExec?.pathPrepend ?? globalExec?.pathPrepend,
-    safeBins: agentExec?.safeBins ?? globalExec?.safeBins,
-    safeBinTrustedDirs: agentExec?.safeBinTrustedDirs ?? globalExec?.safeBinTrustedDirs,
-    safeBinProfiles: resolveMergedSafeBinProfileFixtures({
-      global: globalExec,
-      local: agentExec,
-    }),
-    backgroundMs: agentExec?.backgroundMs ?? globalExec?.backgroundMs,
-    timeoutSec: agentExec?.timeoutSec ?? globalExec?.timeoutSec,
-    approvalRunningNoticeMs:
-      agentExec?.approvalRunningNoticeMs ?? globalExec?.approvalRunningNoticeMs,
-    cleanupMs: agentExec?.cleanupMs ?? globalExec?.cleanupMs,
-    notifyOnExit: agentExec?.notifyOnExit ?? globalExec?.notifyOnExit,
-    notifyOnExitEmptySuccess:
-      agentExec?.notifyOnExitEmptySuccess ?? globalExec?.notifyOnExitEmptySuccess,
-    applyPatch: agentExec?.applyPatch ?? globalExec?.applyPatch,
-  };
-}
-
 export function resolveToolLoopDetectionConfig(params: {
   cfg?: OpenClawConfig;
   agentId?: string;
@@ -186,7 +149,8 @@ export const __testing = {
 
 export function createOpenClawCodingTools(options?: {
   agentId?: string;
-  exec?: ExecToolDefaults & ProcessToolDefaults;
+  // Exec tool infrastructure removed (#70) — accept but ignore for backward-compat
+  exec?: Record<string, unknown>;
   messageProvider?: string;
   agentAccountId?: string;
   messageTo?: string;
@@ -242,7 +206,6 @@ export function createOpenClawCodingTools(options?: {
   /** Whether the sender is an owner (required for owner-only tools). */
   senderIsOwner?: boolean;
 }): AnyAgentTool[] {
-  const execToolName = "exec";
   const sandbox = options?.sandbox?.enabled ? options.sandbox : undefined;
   const {
     agentId,
@@ -283,10 +246,6 @@ export function createOpenClawCodingTools(options?: {
     providerProfilePolicy,
     providerProfileAlsoAllow,
   );
-  // Prefer sessionKey for process isolation scope to prevent cross-session process visibility/killing.
-  // Fallback to agentId if no sessionKey is available (e.g. legacy or global contexts).
-  const scopeKey =
-    options?.exec?.scopeKey ?? options?.sessionKey ?? (agentId ? `agent:${agentId}` : undefined);
   const subagentPolicy =
     isSubagentSessionKey(options?.sessionKey) && options?.sessionKey
       ? resolveSubagentToolPolicy(
@@ -294,18 +253,6 @@ export function createOpenClawCodingTools(options?: {
           getSubagentDepthFromSessionStore(options.sessionKey, { cfg: options.config }),
         )
       : undefined;
-  const allowBackground = isToolAllowedByPolicies("process", [
-    profilePolicyWithAlsoAllow,
-    providerProfilePolicyWithAlsoAllow,
-    globalPolicy,
-    globalProviderPolicy,
-    agentPolicy,
-    agentProviderPolicy,
-    groupPolicy,
-    sandbox?.tools,
-    subagentPolicy,
-  ]);
-  const execConfig = resolveExecConfig({ cfg: options?.config, agentId });
   const fsConfig = resolveToolFsConfig({ cfg: options?.config, agentId });
   const fsPolicy = createToolFsPolicy({
     workspaceOnly: fsConfig.workspaceOnly,
@@ -315,7 +262,13 @@ export function createOpenClawCodingTools(options?: {
   const allowWorkspaceWrites = sandbox?.workspaceAccess !== "ro";
   const workspaceRoot = resolveWorkspaceRoot(options?.workspaceDir);
   const workspaceOnly = fsPolicy.workspaceOnly;
-  const applyPatchConfig = execConfig.applyPatch;
+  // Resolve apply_patch config (nested under tools.exec.applyPatch in config hierarchy)
+  const globalApplyPatch = options?.config?.tools?.exec?.applyPatch;
+  const agentApplyPatch =
+    options?.config && agentId
+      ? resolveAgentConfig(options.config, agentId)?.tools?.exec?.applyPatch
+      : undefined;
+  const applyPatchConfig = agentApplyPatch ?? globalApplyPatch;
   // Secure by default: apply_patch is workspace-contained unless explicitly disabled.
   // (tools.fs.workspaceOnly is a separate umbrella flag for read/write/edit/apply_patch.)
   const applyPatchWorkspaceOnly = workspaceOnly || applyPatchConfig?.workspaceOnly !== false;
@@ -357,7 +310,7 @@ export function createOpenClawCodingTools(options?: {
       });
       return [workspaceOnly ? wrapToolWorkspaceRootGuard(wrapped, workspaceRoot) : wrapped];
     }
-    if (tool.name === "bash" || tool.name === execToolName) {
+    if (tool.name === "bash" || tool.name === "exec") {
       return [];
     }
     if (tool.name === "write") {
@@ -383,43 +336,6 @@ export function createOpenClawCodingTools(options?: {
       return [workspaceOnly ? wrapToolWorkspaceRootGuard(wrapped, workspaceRoot) : wrapped];
     }
     return [tool];
-  });
-  const { cleanupMs: cleanupMsOverride, ...execDefaults } = options?.exec ?? {};
-  const execTool = createExecTool({
-    ...execDefaults,
-    host: options?.exec?.host ?? execConfig.host,
-    security: options?.exec?.security ?? execConfig.security,
-    ask: options?.exec?.ask ?? execConfig.ask,
-    node: options?.exec?.node ?? execConfig.node,
-    pathPrepend: options?.exec?.pathPrepend ?? execConfig.pathPrepend,
-    safeBins: options?.exec?.safeBins ?? execConfig.safeBins,
-    safeBinTrustedDirs: options?.exec?.safeBinTrustedDirs ?? execConfig.safeBinTrustedDirs,
-    safeBinProfiles: options?.exec?.safeBinProfiles ?? execConfig.safeBinProfiles,
-    agentId,
-    cwd: workspaceRoot,
-    allowBackground,
-    scopeKey,
-    sessionKey: options?.sessionKey,
-    messageProvider: options?.messageProvider,
-    backgroundMs: options?.exec?.backgroundMs ?? execConfig.backgroundMs,
-    timeoutSec: options?.exec?.timeoutSec ?? execConfig.timeoutSec,
-    approvalRunningNoticeMs:
-      options?.exec?.approvalRunningNoticeMs ?? execConfig.approvalRunningNoticeMs,
-    notifyOnExit: options?.exec?.notifyOnExit ?? execConfig.notifyOnExit,
-    notifyOnExitEmptySuccess:
-      options?.exec?.notifyOnExitEmptySuccess ?? execConfig.notifyOnExitEmptySuccess,
-    sandbox: sandbox
-      ? {
-          containerName: sandbox.containerName,
-          workspaceDir: sandbox.workspaceDir,
-          containerWorkdir: sandbox.containerWorkdir,
-          env: sandbox.docker.env,
-        }
-      : undefined,
-  });
-  const processTool = createProcessTool({
-    cleanupMs: cleanupMsOverride ?? execConfig.cleanupMs,
-    scopeKey,
   });
   const applyPatchTool =
     !applyPatchEnabled || (sandboxRoot && !allowWorkspaceWrites)
@@ -459,8 +375,6 @@ export function createOpenClawCodingTools(options?: {
         : []
       : []),
     ...(applyPatchTool ? [applyPatchTool as unknown as AnyAgentTool] : []),
-    execTool as unknown as AnyAgentTool,
-    processTool as unknown as AnyAgentTool,
     // Channel docking: include channel-defined agent tools (login, etc.).
     ...listChannelAgentTools({ cfg: options?.config }),
     ...createOpenClawTools({

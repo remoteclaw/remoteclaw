@@ -1,4 +1,3 @@
-import type { ExecToolDefaults } from "../../../agents/bash-tools.js";
 import type { OpenClawConfig } from "../../../config/config.js";
 import type { SessionEntry } from "../../../config/sessions.js";
 import type { OriginatingChannelType } from "../../templating.js";
@@ -66,7 +65,8 @@ export type FollowupRun = {
     verboseLevel?: VerboseLevel;
     reasoningLevel?: ReasoningLevel;
     elevatedLevel?: ElevatedLevel;
-    execOverrides?: Pick<ExecToolDefaults, "host" | "security" | "ask" | "node">;
+    // Exec tool infrastructure removed (#70) — inline type for remaining directive plumbing
+    execOverrides?: { host?: string; security?: string; ask?: string; node?: string | boolean };
     bashElevated?: {
       enabled: boolean;
       allowed: boolean;

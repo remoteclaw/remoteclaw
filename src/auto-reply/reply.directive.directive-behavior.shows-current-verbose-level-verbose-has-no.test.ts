@@ -140,24 +140,6 @@ describe("directive behavior", () => {
       expect(elevatedText).toContain("Current elevated level: on");
       expect(elevatedText).toContain("Options: on, off, ask, full.");
 
-      const execText = await runCommand(home, "/exec", {
-        extra: {
-          tools: {
-            exec: {
-              host: "gateway",
-              security: "allowlist",
-              ask: "always",
-              node: "mac-1",
-            },
-          },
-        },
-      });
-      expect(execText).toContain(
-        "Current exec defaults: host=gateway, security=allowlist, ask=always, node=mac-1.",
-      );
-      expect(execText).toContain(
-        "Options: host=sandbox|gateway|node, security=deny|allowlist|full, ask=off|on-miss|always, node=<id>.",
-      );
       expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
     });
   });

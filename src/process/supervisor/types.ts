@@ -90,12 +90,7 @@ type SpawnChildInput = SpawnBaseInput & {
   stdinMode?: "inherit" | "pipe-open" | "pipe-closed";
 };
 
-type SpawnPtyInput = SpawnBaseInput & {
-  mode: "pty";
-  ptyCommand: string;
-};
-
-export type SpawnInput = SpawnChildInput | SpawnPtyInput;
+export type SpawnInput = SpawnChildInput;
 
 export interface ProcessSupervisor {
   spawn(input: SpawnInput): Promise<ManagedRun>;

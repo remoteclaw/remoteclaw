@@ -702,7 +702,6 @@ export const nodeHandlers: GatewayRequestHandlers = {
         command,
         rawParams: p.params,
         client,
-        execApprovalManager: context.execApprovalManager,
       });
       if (!forwardedParams.ok) {
         respond(

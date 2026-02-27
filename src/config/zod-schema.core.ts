@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isSafeExecutableValue } from "../infra/exec-safety.js";
+import { isSafeExecutableValue } from "../infra/safe-executable-value.js";
 import { createAllowDenyChannelRulesSchema } from "./zod-schema.allowdeny.js";
 import { sensitive } from "./zod-schema.sensitive.js";
 

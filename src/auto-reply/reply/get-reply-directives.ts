@@ -1,4 +1,3 @@
-import type { ExecToolDefaults } from "../../agents/bash-tools.js";
 import type { ModelAliasIndex } from "../../agents/model-selection.js";
 // Sandbox infrastructure removed (#68)
 const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
@@ -25,7 +24,8 @@ import { stripInlineStatus } from "./reply-inline.js";
 import type { TypingController } from "./typing.js";
 
 type AgentDefaults = NonNullable<OpenClawConfig["agents"]>["defaults"];
-type ExecOverrides = Pick<ExecToolDefaults, "host" | "security" | "ask" | "node">;
+// Exec tool infrastructure removed (#70) — inline type for remaining directive plumbing
+type ExecOverrides = { host?: string; security?: string; ask?: string; node?: string | boolean };
 
 export type ReplyDirectiveContinuation = {
   commandSource: string;
@@ -69,12 +69,9 @@ function resolveExecOverrides(params: {
   directives: InlineDirectives;
   sessionEntry?: SessionEntry;
 }): ExecOverrides | undefined {
-  const host =
-    params.directives.execHost ?? (params.sessionEntry?.execHost as ExecOverrides["host"]);
-  const security =
-    params.directives.execSecurity ??
-    (params.sessionEntry?.execSecurity as ExecOverrides["security"]);
-  const ask = params.directives.execAsk ?? (params.sessionEntry?.execAsk as ExecOverrides["ask"]);
+  const host = params.directives.execHost ?? params.sessionEntry?.execHost;
+  const security = params.directives.execSecurity ?? params.sessionEntry?.execSecurity;
+  const ask = params.directives.execAsk ?? params.sessionEntry?.execAsk;
   const node = params.directives.execNode ?? params.sessionEntry?.execNode;
   if (!host && !security && !ask && !node) {
     return undefined;

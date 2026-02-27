@@ -1,4 +1,4 @@
-import type { SkillBinTrustEntry } from "../infra/exec-approvals.js";
+type SkillBinTrustEntry = Record<string, unknown>;
 
 export type SystemRunParams = {
   command: string[];

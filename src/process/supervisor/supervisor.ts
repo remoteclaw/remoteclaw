@@ -1,8 +1,6 @@
 import crypto from "node:crypto";
-import { getShellConfig } from "../../agents/shell-utils.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { createChildAdapter } from "./adapters/child.js";
-import { createPtyAdapter } from "./adapters/pty.js";
 import { createRunRegistry } from "./registry.js";
 import type {
   ManagedRun,
@@ -117,32 +115,17 @@ export function createProcessSupervisor(): ProcessSupervisor {
     };
 
     try {
-      if (input.mode === "child" && input.argv.length === 0) {
+      if (input.argv.length === 0) {
         throw new Error("spawn argv cannot be empty");
       }
-      const adapter =
-        input.mode === "pty"
-          ? await (async () => {
-              const { shell, args: shellArgs } = getShellConfig();
-              const ptyCommand = input.ptyCommand.trim();
-              if (!ptyCommand) {
-                throw new Error("PTY command cannot be empty");
-              }
-              return await createPtyAdapter({
-                shell,
-                args: [...shellArgs, ptyCommand],
-                cwd: input.cwd,
-                env: input.env,
-              });
-            })()
-          : await createChildAdapter({
-              argv: input.argv,
-              cwd: input.cwd,
-              env: input.env,
-              windowsVerbatimArguments: input.windowsVerbatimArguments,
-              input: input.input,
-              stdinMode: input.stdinMode,
-            });
+      const adapter = await createChildAdapter({
+        argv: input.argv,
+        cwd: input.cwd,
+        env: input.env,
+        windowsVerbatimArguments: input.windowsVerbatimArguments,
+        input: input.input,
+        stdinMode: input.stdinMode,
+      });
 
       registry.updateState(runId, "running", { pid: adapter.pid });
 

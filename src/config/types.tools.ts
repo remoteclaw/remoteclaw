@@ -1,6 +1,13 @@
 import type { ChatType } from "../channels/chat-type.js";
-import type { SafeBinProfileFixture } from "../infra/exec-safe-bin-policy.js";
 import type { AgentElevatedAllowFromConfig, SessionSendPolicyAction } from "./types.base.js";
+
+// Stub type: exec-safe-bin-policy infrastructure was gutted.
+type SafeBinProfileFixture = {
+  minPositional?: number;
+  maxPositional?: number;
+  allowedValueFlags?: readonly string[];
+  deniedFlags?: readonly string[];
+};
 
 export type MediaUnderstandingScopeMatch = {
   channel?: string;

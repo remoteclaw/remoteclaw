@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
 import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
-import type { ExecToolDefaults } from "../../agents/bash-tools.js";
 import {
   abortEmbeddedPiRun,
   isEmbeddedPiRunActive,
@@ -50,7 +49,8 @@ import type { TypingController } from "./typing.js";
 import { appendUntrustedContext } from "./untrusted-context.js";
 
 type AgentDefaults = NonNullable<OpenClawConfig["agents"]>["defaults"];
-type ExecOverrides = Pick<ExecToolDefaults, "host" | "security" | "ask" | "node">;
+// Exec tool infrastructure removed (#70) — inline type for remaining directive plumbing
+type ExecOverrides = { host?: string; security?: string; ask?: string; node?: string | boolean };
 
 function buildResetSessionNoticeText(params: {
   provider: string;

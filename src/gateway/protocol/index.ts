@@ -103,19 +103,6 @@ import {
   DeviceTokenRevokeParamsSchema,
   type DeviceTokenRotateParams,
   DeviceTokenRotateParamsSchema,
-  type ExecApprovalsGetParams,
-  ExecApprovalsGetParamsSchema,
-  type ExecApprovalsNodeGetParams,
-  ExecApprovalsNodeGetParamsSchema,
-  type ExecApprovalsNodeSetParams,
-  ExecApprovalsNodeSetParamsSchema,
-  type ExecApprovalsSetParams,
-  ExecApprovalsSetParamsSchema,
-  type ExecApprovalsSnapshot,
-  type ExecApprovalRequestParams,
-  ExecApprovalRequestParamsSchema,
-  type ExecApprovalResolveParams,
-  ExecApprovalResolveParamsSchema,
   ErrorCodes,
   type ErrorShape,
   ErrorShapeSchema,
@@ -337,24 +324,6 @@ export const validateDeviceTokenRotateParams = ajv.compile<DeviceTokenRotatePara
 );
 export const validateDeviceTokenRevokeParams = ajv.compile<DeviceTokenRevokeParams>(
   DeviceTokenRevokeParamsSchema,
-);
-export const validateExecApprovalsGetParams = ajv.compile<ExecApprovalsGetParams>(
-  ExecApprovalsGetParamsSchema,
-);
-export const validateExecApprovalsSetParams = ajv.compile<ExecApprovalsSetParams>(
-  ExecApprovalsSetParamsSchema,
-);
-export const validateExecApprovalRequestParams = ajv.compile<ExecApprovalRequestParams>(
-  ExecApprovalRequestParamsSchema,
-);
-export const validateExecApprovalResolveParams = ajv.compile<ExecApprovalResolveParams>(
-  ExecApprovalResolveParamsSchema,
-);
-export const validateExecApprovalsNodeGetParams = ajv.compile<ExecApprovalsNodeGetParams>(
-  ExecApprovalsNodeGetParamsSchema,
-);
-export const validateExecApprovalsNodeSetParams = ajv.compile<ExecApprovalsNodeSetParams>(
-  ExecApprovalsNodeSetParamsSchema,
 );
 export const validateLogsTailParams = ajv.compile<LogsTailParams>(LogsTailParamsSchema);
 export const validateChatHistoryParams = ajv.compile(ChatHistoryParamsSchema);
@@ -588,9 +557,6 @@ export type {
   CronRunParams,
   CronRunsParams,
   CronRunLogEntry,
-  ExecApprovalsGetParams,
-  ExecApprovalsSetParams,
-  ExecApprovalsSnapshot,
   LogsTailParams,
   LogsTailResult,
   PollParams,

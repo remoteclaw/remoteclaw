@@ -92,15 +92,6 @@ const entries: SubCliEntry[] = [
     },
   },
   {
-    name: "approvals",
-    description: "Manage exec approvals (gateway or node host)",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../exec-approvals-cli.js");
-      mod.registerExecApprovalsCli(program);
-    },
-  },
-  {
     name: "nodes",
     description: "Manage gateway-owned node pairing and node commands",
     hasSubcommands: true,

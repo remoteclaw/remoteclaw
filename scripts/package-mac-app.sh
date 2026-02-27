@@ -41,7 +41,7 @@ sparkle_canonical_build_from_version() {
   node --import tsx "$ROOT_DIR/scripts/sparkle-build.ts" canonical-build "$1"
 }
 
-if [[ -z "${APP_BUILD+x}" ]]; then
+if [[ -z "${APP_BUILD:-}" ]]; then
   APP_BUILD="$GIT_BUILD_NUMBER"
   if CANONICAL_BUILD="$(sparkle_canonical_build_from_version "$APP_VERSION" 2>/dev/null)"; then
     if [[ "$CANONICAL_BUILD" =~ ^[0-9]+$ ]] && (( CANONICAL_BUILD > APP_BUILD )); then

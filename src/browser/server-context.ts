@@ -294,22 +294,15 @@ function createProfileContext(
           cdpUrl: profile.cdpUrl,
           bindHost: current.resolved.relayBindHost,
         });
-        if (await isHttpReachable(1200)) {
-          // continue: we still need the extension to connect for CDP websocket.
-        } else {
+        if (!(await isHttpReachable(1200))) {
           throw new Error(
             `Chrome extension relay for profile "${profile.name}" is not reachable at ${profile.cdpUrl}.`,
           );
         }
       }
-
-      if (await isReachable(600)) {
-        return;
-      }
-      // Relay server is up, but no attached tab yet. Prompt user to attach.
-      throw new Error(
-        `Chrome extension relay is running, but no tab is connected. Click the RemoteClaw Chrome extension icon on a tab to attach it (profile "${profile.name}").`,
-      );
+      // Browser startup should only ensure relay availability.
+      // Tab attachment is checked when a tab is actually required.
+      return;
     }
 
     if (!httpReachable) {

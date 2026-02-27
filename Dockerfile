@@ -51,7 +51,11 @@ RUN pnpm build
 # Force pnpm for UI build (Bun may fail on ARM/Synology architectures)
 ENV REMOTECLAW_PREFER_PNPM=1
 RUN pnpm ui:build
-RUN npm link
+
+# Expose the CLI binary without requiring npm global writes as non-root.
+USER root
+RUN ln -sf /app/remoteclaw.mjs /usr/local/bin/remoteclaw \
+ && chmod 755 /app/remoteclaw.mjs
 
 ENV NODE_ENV=production
 

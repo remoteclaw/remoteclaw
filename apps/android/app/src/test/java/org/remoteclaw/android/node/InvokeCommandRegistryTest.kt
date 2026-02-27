@@ -22,6 +22,7 @@ class InvokeCommandRegistryTest {
 
     assertFalse(commands.contains(RemoteClawCameraCommand.Snap.rawValue))
     assertFalse(commands.contains(RemoteClawCameraCommand.Clip.rawValue))
+    assertFalse(commands.contains(RemoteClawCameraCommand.List.rawValue))
     assertFalse(commands.contains(RemoteClawLocationCommand.Get.rawValue))
     assertTrue(commands.contains(RemoteClawDeviceCommand.Permissions.rawValue))
     assertTrue(commands.contains(RemoteClawDeviceCommand.Health.rawValue))
@@ -45,6 +46,7 @@ class InvokeCommandRegistryTest {
 
     assertTrue(commands.contains(RemoteClawCameraCommand.Snap.rawValue))
     assertTrue(commands.contains(RemoteClawCameraCommand.Clip.rawValue))
+    assertTrue(commands.contains(RemoteClawCameraCommand.List.rawValue))
     assertTrue(commands.contains(RemoteClawLocationCommand.Get.rawValue))
     assertTrue(commands.contains(RemoteClawDeviceCommand.Permissions.rawValue))
     assertTrue(commands.contains(RemoteClawDeviceCommand.Health.rawValue))

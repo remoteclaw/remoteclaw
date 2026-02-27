@@ -110,6 +110,7 @@ class InvokeDispatcher(
       }
 
       // Camera commands
+      RemoteClawCameraCommand.List.rawValue -> cameraHandler.handleList(paramsJson)
       RemoteClawCameraCommand.Snap.rawValue -> cameraHandler.handleSnap(paramsJson)
       RemoteClawCameraCommand.Clip.rawValue -> cameraHandler.handleClip(paramsJson)
 

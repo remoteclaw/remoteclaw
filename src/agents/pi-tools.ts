@@ -47,7 +47,32 @@ import {
 } from "./pi-tools.read.js";
 import { cleanToolSchemaForGemini, normalizeToolParameters } from "./pi-tools.schema.js";
 import type { AnyAgentTool } from "./pi-tools.types.js";
-import type { SandboxContext } from "./sandbox.js";
+// Sandbox infrastructure removed (#68)
+type SandboxContext = {
+  enabled: boolean;
+  containerName: string;
+  workspaceDir: string;
+  containerWorkdir: string;
+  workspaceAccess?: string;
+  docker: { env?: Record<string, string> };
+  fsBridge: {
+    readFile(params: { filePath: string; cwd: string }): Promise<Buffer>;
+    writeFile(params: { filePath: string; cwd: string; data: string }): Promise<void>;
+    stat(params: {
+      filePath: string;
+      cwd: string;
+    }): Promise<{ isFile(): boolean; size: number } | null>;
+    mkdirp(params: { filePath: string; cwd: string }): Promise<void>;
+    remove(params: { filePath: string; cwd: string; force: boolean }): Promise<void>;
+    resolvePath(params: { filePath: string; cwd: string }): {
+      hostPath: string;
+      relativePath: string;
+    };
+  };
+  browser?: { bridgeUrl?: string; noVncUrl?: string };
+  browserAllowHostControl?: boolean;
+  tools?: { allow?: string[]; deny?: string[] };
+};
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import { createToolFsPolicy, resolveToolFsConfig } from "./tool-fs-policy.js";
 import {

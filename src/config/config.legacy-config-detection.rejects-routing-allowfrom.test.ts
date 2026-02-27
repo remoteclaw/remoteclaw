@@ -192,7 +192,6 @@ describe("legacy config detection", () => {
         tools: { allow: ["sessions.list"], deny: ["danger"] },
         elevated: { enabled: true, allowFrom: { discord: ["user:1"] } },
         bash: { timeoutSec: 12 },
-        sandbox: { tools: { allow: ["browser.open"] } },
         subagents: { tools: { deny: ["sandbox"] } },
       },
     });
@@ -200,7 +199,6 @@ describe("legacy config detection", () => {
     expect(res.changes).toContain("Moved agent.tools.deny → tools.deny.");
     expect(res.changes).toContain("Moved agent.elevated → tools.elevated.");
     expect(res.changes).toContain("Moved agent.bash → tools.exec.");
-    expect(res.changes).toContain("Moved agent.sandbox.tools → tools.sandbox.tools.");
     expect(res.changes).toContain("Moved agent.subagents.tools → tools.subagents.tools.");
     expect(res.changes).toContain("Moved agent → agents.defaults.");
     expect(res.config?.agents?.defaults?.model).toEqual({
@@ -214,9 +212,6 @@ describe("legacy config detection", () => {
       allowFrom: { discord: ["user:1"] },
     });
     expect(res.config?.tools?.exec).toEqual({ timeoutSec: 12 });
-    expect(res.config?.tools?.sandbox?.tools).toEqual({
-      allow: ["browser.open"],
-    });
     expect(res.config?.tools?.subagents?.tools).toEqual({
       deny: ["sandbox"],
     });

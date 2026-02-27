@@ -128,15 +128,6 @@ const entries: SubCliEntry[] = [
     },
   },
   {
-    name: "sandbox",
-    description: "Manage sandbox containers for agent isolation",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../sandbox-cli.js");
-      mod.registerSandboxCli(program);
-    },
-  },
-  {
     name: "tui",
     description: "Open a terminal UI connected to the Gateway",
     hasSubcommands: false,

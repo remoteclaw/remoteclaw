@@ -1,16 +1,38 @@
 import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
-import {
-  resolveSandboxConfigForAgent,
-  resolveSandboxToolPolicyForAgent,
-} from "../agents/sandbox.js";
-import { isDangerousNetworkMode, normalizeNetworkMode } from "../agents/sandbox/network-mode.js";
+// Sandbox infrastructure removed (#68)
+type SandboxToolPolicy = { allow?: string[]; deny?: string[] };
+const resolveSandboxConfigForAgent = (_cfg: unknown, _agentId?: string) => ({
+  mode: "off" as const,
+  workspaceAccess: undefined,
+  docker: undefined,
+  browser: { enabled: false, network: "", cdpSourceRange: undefined as string | undefined },
+  prune: undefined,
+  scope: undefined,
+});
+const resolveSandboxToolPolicyForAgent = (_cfg: unknown, _agentId?: string) =>
+  undefined as SandboxToolPolicy | undefined;
+const isDangerousNetworkMode = (_mode: string) => false;
+const normalizeNetworkMode = (_mode?: string) => undefined as string | undefined;
+const getBlockedBindReason = (_bind: string) => undefined as string | undefined;
+function pickSandboxToolPolicy(config?: {
+  allow?: string[];
+  deny?: string[];
+}): SandboxToolPolicy | undefined {
+  if (!config) {
+    return undefined;
+  }
+  const allow = Array.isArray(config.allow) ? config.allow : undefined;
+  const deny = Array.isArray(config.deny) ? config.deny : undefined;
+  if (!allow && !deny) {
+    return undefined;
+  }
+  return { allow, deny };
+}
 /**
  * Synchronous security audit collector functions.
  *
  * These functions analyze config-based security properties without I/O.
  */
-import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
-import { getBlockedBindReason } from "../agents/sandbox/validate-sandbox-security.js";
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
 import { resolveBrowserConfig } from "../browser/config.js";
 import { formatCliCommand } from "../cli/command-format.js";
@@ -26,7 +48,6 @@ import {
   resolveNodeCommandAllowlist,
 } from "../gateway/node-command-policy.js";
 import { inferParamBFromIdOrName } from "../shared/model-param-b.js";
-import { pickSandboxToolPolicy } from "./audit-tool-policy.js";
 
 export type SecurityAuditFinding = {
   checkId: string;

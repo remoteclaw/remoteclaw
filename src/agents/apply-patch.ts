@@ -3,8 +3,35 @@ import path from "node:path";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
 import { applyUpdateHunk } from "./apply-patch-update.js";
-import { assertSandboxPath, resolveSandboxInputPath } from "./sandbox-paths.js";
-import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
+
+// Sandbox infrastructure removed (#68); inline the types and helpers that survived the gut.
+type SandboxFsBridge = {
+  readFile(params: { filePath: string; cwd: string }): Promise<Buffer>;
+  writeFile(params: { filePath: string; cwd: string; data: string }): Promise<void>;
+  remove(params: { filePath: string; cwd: string; force: boolean }): Promise<void>;
+  mkdirp(params: { filePath: string; cwd: string }): Promise<void>;
+  resolvePath(params: { filePath: string; cwd: string }): {
+    hostPath: string;
+    relativePath: string;
+  };
+};
+async function assertSandboxPath(opts: {
+  filePath: string;
+  cwd: string;
+  root: string;
+  allowFinalSymlink?: boolean;
+}): Promise<{ resolved: string; relative: string }> {
+  const resolved = path.resolve(opts.cwd, opts.filePath);
+  const normalizedRoot = path.resolve(opts.root);
+  if (resolved !== normalizedRoot && !resolved.startsWith(normalizedRoot + path.sep)) {
+    throw new Error(`Path ${resolved} is outside workspace root ${normalizedRoot}`);
+  }
+  const relative = path.relative(normalizedRoot, resolved);
+  return { resolved, relative };
+}
+function resolveSandboxInputPath(filePath: string, cwd: string): string {
+  return path.resolve(cwd, filePath);
+}
 
 const BEGIN_PATCH_MARKER = "*** Begin Patch";
 const END_PATCH_MARKER = "*** End Patch";

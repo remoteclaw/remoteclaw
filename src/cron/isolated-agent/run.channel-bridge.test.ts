@@ -1,26 +1,31 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runWithModelFallback } from "../../agents/model-fallback.js";
+import { buildSessionKey } from "../../middleware/channel-bridge.js";
 import type { ChannelMessage } from "../../middleware/types.js";
 
 // ---------- mocks ----------
 
 const channelBridgeHandleMock = vi.fn();
 
-vi.mock("../../middleware/channel-bridge.js", () => ({
-  ChannelBridge: class MockChannelBridge {
-    readonly provider: string;
-    readonly workspaceDir?: string;
+vi.mock("../../middleware/channel-bridge.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/channel-bridge.js")>();
+  return {
+    ...actual,
+    ChannelBridge: class MockChannelBridge {
+      readonly provider: string;
+      readonly workspaceDir?: string;
 
-    constructor(opts: { provider: string; workspaceDir?: string }) {
-      this.provider = opts.provider;
-      this.workspaceDir = opts.workspaceDir;
-    }
+      constructor(opts: { provider: string; workspaceDir?: string }) {
+        this.provider = opts.provider;
+        this.workspaceDir = opts.workspaceDir;
+      }
 
-    handle(message: ChannelMessage, callbacks?: unknown, abortSignal?: AbortSignal) {
-      return channelBridgeHandleMock(message, callbacks, abortSignal);
-    }
-  },
-}));
+      handle(message: ChannelMessage, callbacks?: unknown, abortSignal?: AbortSignal) {
+        return channelBridgeHandleMock(message, callbacks, abortSignal);
+      }
+    },
+  };
+});
 
 vi.mock("../../agents/channel-tools.js", () => ({
   resolveChannelMessageToolHints: vi.fn().mockReturnValue([]),
@@ -311,9 +316,28 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
     const message = channelBridgeHandleMock.mock.calls[0][0] as ChannelMessage;
     expect(message.id).toBe("cron-job-1");
     expect(message.from).toBe("bot-456"); // resolvedDelivery.accountId
+    expect(message.replyToId).toBe("cron:cron-job-1"); // job ID for session key distinction
     expect(message.channelId).toBe("chat-123"); // resolvedDelivery.to
     expect(message.provider).toBe("telegram"); // resolvedDelivery.channel
     expect(message.text).toContain("generate daily summary");
+  });
+
+  it("produces distinct session keys for different cron jobs", async () => {
+    // Run two cron jobs with different IDs
+    await runCronIsolatedAgentTurn(makeParams({ job: makeJob({ id: "daily-review" }) }));
+    await runCronIsolatedAgentTurn(makeParams({ job: makeJob({ id: "weekly-digest" }) }));
+
+    const messageA = channelBridgeHandleMock.mock.calls[0][0] as ChannelMessage;
+    const messageB = channelBridgeHandleMock.mock.calls[1][0] as ChannelMessage;
+
+    // replyToId carries the job-specific identifier
+    expect(messageA.replyToId).toBe("cron:daily-review");
+    expect(messageB.replyToId).toBe("cron:weekly-digest");
+
+    // buildSessionKey maps replyToId → threadId, producing distinct keys
+    const keyA = buildSessionKey(messageA);
+    const keyB = buildSessionKey(messageB);
+    expect(keyA.threadId).not.toBe(keyB.threadId);
   });
 
   it("passes no streaming callbacks (cron has no real-time delivery)", async () => {

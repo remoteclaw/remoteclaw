@@ -7,7 +7,7 @@ const defaultTools = createOpenClawCodingTools({ senderIsOwner: true });
 
 describe("createOpenClawCodingTools", () => {
   it("preserves action enums in normalized schemas", () => {
-    const toolNames = ["browser", "canvas", "nodes", "cron", "gateway", "message"];
+    const toolNames = ["canvas", "nodes", "cron", "gateway", "message"];
 
     const collectActionValues = (schema: unknown, values: Set<string>): void => {
       if (!schema || typeof schema !== "object") {

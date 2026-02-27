@@ -1,11 +1,35 @@
-import type { Api, Context, Model } from "@mariozechner/pi-ai";
+import type { Api, AssistantMessage, Context, Model } from "@mariozechner/pi-ai";
 import { complete } from "@mariozechner/pi-ai";
 import { minimaxUnderstandImage } from "../../agents/minimax-vlm.js";
 import { getApiKeyForModel, requireApiKey } from "../../agents/model-auth.js";
 import { ensureOpenClawModelsJson } from "../../agents/models-config.js";
+import { extractAssistantText } from "../../agents/pi-embedded-utils.js";
 import { discoverAuthStorage, discoverModels } from "../../agents/pi-model-discovery.js";
-import { coerceImageAssistantText } from "../../agents/tools/image-tool.helpers.js";
 import type { ImageDescriptionRequest, ImageDescriptionResult } from "../types.js";
+
+function coerceImageAssistantText(params: {
+  message: AssistantMessage;
+  provider: string;
+  model: string;
+}): string {
+  const stop = params.message.stopReason;
+  const errorMessage = params.message.errorMessage?.trim();
+  if (stop === "error" || stop === "aborted") {
+    throw new Error(
+      errorMessage
+        ? `Image model failed (${params.provider}/${params.model}): ${errorMessage}`
+        : `Image model failed (${params.provider}/${params.model})`,
+    );
+  }
+  if (errorMessage) {
+    throw new Error(`Image model failed (${params.provider}/${params.model}): ${errorMessage}`);
+  }
+  const text = extractAssistantText(params.message);
+  if (text.trim()) {
+    return text.trim();
+  }
+  throw new Error(`Image model returned no text (${params.provider}/${params.model}).`);
+}
 
 export async function describeImageWithModel(
   params: ImageDescriptionRequest,

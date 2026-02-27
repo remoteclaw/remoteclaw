@@ -5,18 +5,25 @@ export type {
 } from "./thread-bindings.types.js";
 
 export {
-  formatThreadBindingTtlLabel,
+  formatThreadBindingDurationLabel,
   resolveThreadBindingIntroText,
   resolveThreadBindingThreadName,
 } from "./thread-bindings.messages.js";
 
-export { isRecentlyUnboundThreadWebhookMessage } from "./thread-bindings.state.js";
+export {
+  isRecentlyUnboundThreadWebhookMessage,
+  resolveThreadBindingIdleTimeoutMs,
+  resolveThreadBindingInactivityExpiresAt,
+  resolveThreadBindingMaxAgeExpiresAt,
+  resolveThreadBindingMaxAgeMs,
+} from "./thread-bindings.state.js";
 
 export {
   autoBindSpawnedDiscordSubagent,
   listThreadBindingsBySessionKey,
   listThreadBindingsForAccount,
-  setThreadBindingTtlBySessionKey,
+  setThreadBindingIdleTimeoutBySessionKey,
+  setThreadBindingMaxAgeBySessionKey,
   unbindThreadBindingsBySessionKey,
 } from "./thread-bindings.lifecycle.js";
 

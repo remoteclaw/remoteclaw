@@ -11,7 +11,6 @@ import {
   MANAGERS_BY_ACCOUNT_ID,
   ensureBindingsLoaded,
   getThreadBindingToken,
-  normalizeThreadBindingTtlMs,
   normalizeThreadId,
   rememberRecentUnboundWebhookEcho,
   removeBindingRecord,
@@ -21,6 +20,13 @@ import {
   shouldPersistBindingMutations,
 } from "./thread-bindings.state.js";
 import type { ThreadBindingRecord, ThreadBindingTargetKind } from "./thread-bindings.types.js";
+
+function normalizeNonNegativeMs(raw: number): number {
+  if (!Number.isFinite(raw)) {
+    return 0;
+  }
+  return Math.max(0, Math.floor(raw));
+}
 
 function resolveBindingIdsForTargetSession(params: {
   targetSessionKey: string;
@@ -131,7 +137,8 @@ export async function autoBindSpawnedDiscordSubagent(params: {
     introText: resolveThreadBindingIntroText({
       agentId: params.agentId,
       label: params.label,
-      sessionTtlMs: manager.getSessionTtlMs(),
+      idleTimeoutMs: manager.getIdleTimeoutMs(),
+      maxAgeMs: manager.getMaxAgeMs(),
     }),
   });
 }
@@ -181,18 +188,17 @@ export function unbindThreadBindingsBySessionKey(params: {
   return removed;
 }
 
-export function setThreadBindingTtlBySessionKey(params: {
+export function setThreadBindingIdleTimeoutBySessionKey(params: {
   targetSessionKey: string;
   accountId?: string;
-  ttlMs: number;
+  idleTimeoutMs: number;
 }): ThreadBindingRecord[] {
   const ids = resolveBindingIdsForTargetSession(params);
   if (ids.length === 0) {
     return [];
   }
-  const ttlMs = normalizeThreadBindingTtlMs(params.ttlMs);
+  const idleTimeoutMs = normalizeNonNegativeMs(params.idleTimeoutMs);
   const now = Date.now();
-  const expiresAt = ttlMs > 0 ? now + ttlMs : 0;
   const updated: ThreadBindingRecord[] = [];
   for (const bindingKey of ids) {
     const existing = BINDINGS_BY_THREAD_ID.get(bindingKey);
@@ -201,8 +207,40 @@ export function setThreadBindingTtlBySessionKey(params: {
     }
     const nextRecord: ThreadBindingRecord = {
       ...existing,
+      idleTimeoutMs,
+      lastActivityAt: now,
+    };
+    setBindingRecord(nextRecord);
+    updated.push(nextRecord);
+  }
+  if (updated.length > 0 && shouldPersistBindingMutations()) {
+    saveBindingsToDisk({ force: true });
+  }
+  return updated;
+}
+
+export function setThreadBindingMaxAgeBySessionKey(params: {
+  targetSessionKey: string;
+  accountId?: string;
+  maxAgeMs: number;
+}): ThreadBindingRecord[] {
+  const ids = resolveBindingIdsForTargetSession(params);
+  if (ids.length === 0) {
+    return [];
+  }
+  const maxAgeMs = normalizeNonNegativeMs(params.maxAgeMs);
+  const now = Date.now();
+  const updated: ThreadBindingRecord[] = [];
+  for (const bindingKey of ids) {
+    const existing = BINDINGS_BY_THREAD_ID.get(bindingKey);
+    if (!existing) {
+      continue;
+    }
+    const nextRecord: ThreadBindingRecord = {
+      ...existing,
+      maxAgeMs,
       boundAt: now,
-      expiresAt,
+      lastActivityAt: now,
     };
     setBindingRecord(nextRecord);
     updated.push(nextRecord);

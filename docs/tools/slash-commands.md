@@ -69,7 +69,8 @@ Text + native (when enabled):
 - `/allowlist` (list/add/remove allowlist entries)
 - `/export-session [path]` (alias: `/export`) (export current session to HTML)
 - `/whoami` (show your sender id; alias: `/id`)
-- `/session ttl <duration|off>` (manage session-level settings, such as TTL)
+- `/session idle <duration|off>` (manage inactivity auto-unfocus for focused thread bindings)
+- `/session max-age <duration|off>` (manage hard max-age auto-unfocus for focused thread bindings)
 - `/subagents list|kill|log|info|send|steer|spawn` (inspect, control, or spawn sub-agent runs for the current session)
 - `/agents` (list thread-bound agents for this session)
 - `/focus <target>` (Discord: bind this thread, or a new thread, to a session/subagent target)
@@ -102,7 +103,7 @@ Notes:
 - `/usage` controls the per-response usage footer; `/usage cost` prints a cost summary from session logs (relayed from the CLI agent).
 - `/restart` is enabled by default; set `commands.restart: false` to disable it.
 - Discord-only native command: `/vc join|leave|status` controls voice channels (requires `channels.discord.voice` and native commands; not available as text).
-- Discord thread-binding commands (`/focus`, `/unfocus`, `/agents`, `/session ttl`) require effective thread bindings to be enabled (`session.threadBindings.enabled` and/or `channels.discord.threadBindings.enabled`).
+- Discord thread-binding commands (`/focus`, `/unfocus`, `/agents`, `/session idle`, `/session max-age`) require effective thread bindings to be enabled (`session.threadBindings.enabled` and/or `channels.discord.threadBindings.enabled`).
 - `/verbose` is meant for debugging and extra visibility; keep it **off** in normal use.
 - Tool failure summaries are still shown when relevant, but detailed failure text is only included when `/verbose` is `on` or `full`.
 - **Fast path:** command-only messages from allowlisted senders are handled immediately (bypass queue + model).

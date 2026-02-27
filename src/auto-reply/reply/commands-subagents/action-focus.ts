@@ -75,7 +75,8 @@ export async function handleSubagentsFocusAction(
     introText: resolveThreadBindingIntroText({
       agentId: focusTarget.agentId,
       label,
-      sessionTtlMs: threadBindings.getSessionTtlMs(),
+      idleTimeoutMs: threadBindings.getIdleTimeoutMs(),
+      maxAgeMs: threadBindings.getMaxAgeMs(),
     }),
   });
 

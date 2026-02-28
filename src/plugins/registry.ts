@@ -161,6 +161,23 @@ export function createEmptyPluginRegistry(): PluginRegistry {
   };
 }
 
+/**
+ * Hooks that belonged to the in-process LLM execution pipeline.
+ * Their trigger points no longer exist in CLI-only mode — registrations
+ * are silently dropped with a diagnostic warning.
+ */
+const DEAD_HOOKS: ReadonlySet<string> = new Set([
+  "before_model_resolve",
+  "before_prompt_build",
+  "before_agent_start",
+  "llm_input",
+  "llm_output",
+  "agent_end",
+  "before_compaction",
+  "after_compaction",
+  "tool_result_persist",
+]);
+
 export function createPluginRegistry(registryParams: PluginRegistryParams) {
   const registry = createEmptyPluginRegistry();
   const coreGatewayMethods = new Set(Object.keys(registryParams.coreGatewayHandlers ?? {}));
@@ -204,7 +221,29 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     config: OpenClawPluginApi["config"],
   ) => {
     const eventList = Array.isArray(events) ? events : [events];
-    const normalizedEvents = eventList.map((event) => event.trim()).filter(Boolean);
+    const trimmedEvents = eventList.map((event) => event.trim()).filter(Boolean);
+
+    // Filter out dead hooks with warnings
+    const normalizedEvents: string[] = [];
+    for (const event of trimmedEvents) {
+      if (DEAD_HOOKS.has(event)) {
+        pushDiagnostic({
+          level: "warn",
+          pluginId: record.id,
+          source: record.source,
+          message:
+            `Hook "${event}" is not available in CLI-only mode. ` +
+            "LLM pipeline hooks are managed by the CLI agent runtime. " +
+            "This hook will not fire.",
+        });
+        continue;
+      }
+      normalizedEvents.push(event);
+    }
+    if (normalizedEvents.length === 0) {
+      return;
+    }
+
     const entry = opts?.entry ?? null;
     const name = entry?.hook.name ?? opts?.name?.trim();
     if (!name) {
@@ -468,7 +507,21 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       registerService: (service) => registerService(record, service),
       registerCommand: (command) => registerCommand(record, command),
       resolvePath: (input: string) => resolveUserPath(input),
-      on: (hookName, handler, opts) => registerTypedHook(record, hookName, handler, opts),
+      on: (hookName, handler, opts) => {
+        if (DEAD_HOOKS.has(hookName as string)) {
+          pushDiagnostic({
+            level: "warn",
+            pluginId: record.id,
+            source: record.source,
+            message:
+              `Hook "${hookName}" is not available in CLI-only mode. ` +
+              "LLM pipeline hooks are managed by the CLI agent runtime. " +
+              "This hook will not fire.",
+          });
+          return;
+        }
+        registerTypedHook(record, hookName, handler, opts);
+      },
     };
   };
 

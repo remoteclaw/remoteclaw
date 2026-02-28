@@ -62,7 +62,7 @@ describe("fs-safe", () => {
         rootDir: root,
         relativePath: path.join("..", path.basename(outside), "outside.txt"),
       }),
-    ).rejects.toMatchObject({ code: "invalid-path" });
+    ).rejects.toMatchObject({ code: "outside-workspace" });
   });
 
   it.runIf(process.platform !== "win32")("blocks symlink escapes under root", async () => {

@@ -34,12 +34,7 @@ const CHANNEL_PLUGIN_IDS = Array.from(
   ]),
 );
 
-const PROVIDER_PLUGIN_IDS: Array<{ pluginId: string; providerId: string }> = [
-  { pluginId: "google-gemini-cli-auth", providerId: "google-gemini-cli" },
-  { pluginId: "qwen-portal-auth", providerId: "qwen-portal" },
-  { pluginId: "copilot-proxy", providerId: "copilot-proxy" },
-  { pluginId: "minimax-portal-auth", providerId: "minimax-portal" },
-];
+const PROVIDER_PLUGIN_IDS: Array<{ pluginId: string; providerId: string }> = [];
 
 function hasNonEmptyString(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;

@@ -5,6 +5,9 @@ const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
   mode: "off" as const,
   agentId: undefined as string | undefined,
 });
+import { lookupContextTokens } from "../../agents/context.js";
+import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
+import type { ModelCatalogEntry } from "../../agents/model-catalog.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
@@ -18,7 +21,45 @@ import { applyInlineDirectiveOverrides } from "./get-reply-directives-apply.js";
 import { clearExecInlineDirectives, clearInlineDirectives } from "./get-reply-directives-utils.js";
 import { defaultGroupActivation, resolveGroupRequireMention } from "./groups.js";
 import { CURRENT_MESSAGE_MARKER, stripMentions, stripStructuralPrefixes } from "./mentions.js";
-import { createModelSelectionState, resolveContextTokens } from "./model-selection.js";
+
+// Model catalog infrastructure gutted in RemoteClaw.
+// Stub `createModelSelectionState` returns defaults so the downstream pipeline
+// still receives the expected shape without loading model catalogs.
+export async function createModelSelectionState(params: {
+  cfg: OpenClawConfig;
+  agentCfg: NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]> | undefined;
+  sessionEntry?: SessionEntry;
+  sessionStore?: Record<string, SessionEntry>;
+  sessionKey?: string;
+  parentSessionKey?: string;
+  storePath?: string;
+  defaultProvider: string;
+  defaultModel: string;
+  provider: string;
+  model: string;
+  hasModelDirective: boolean;
+  hasResolvedHeartbeatModelOverride?: boolean;
+}) {
+  return {
+    provider: params.provider,
+    model: params.model,
+    allowedModelKeys: new Set<string>(),
+    allowedModelCatalog: [] as ModelCatalogEntry[],
+    resetModelOverride: false,
+    resolveDefaultThinkingLevel: async (): Promise<ThinkLevel | undefined> => "off" as ThinkLevel,
+    resolveDefaultReasoningLevel: async (): Promise<"on" | "off"> => "off" as const,
+    needsModelCatalog: false,
+  };
+}
+
+function resolveContextTokens(params: {
+  agentCfg: NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]> | undefined;
+  model: string;
+}): number {
+  return (
+    params.agentCfg?.contextTokens ?? lookupContextTokens(params.model) ?? DEFAULT_CONTEXT_TOKENS
+  );
+}
 import { formatElevatedUnavailableMessage, resolveElevatedPermissions } from "./reply-elevated.js";
 import { stripInlineStatus } from "./reply-inline.js";
 import type { TypingController } from "./typing.js";

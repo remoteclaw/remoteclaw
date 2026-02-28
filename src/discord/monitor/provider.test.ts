@@ -186,8 +186,6 @@ vi.mock("./message-handler.js", () => ({
 
 vi.mock("./native-command.js", () => ({
   createDiscordCommandArgFallbackButton: () => ({ id: "arg-fallback" }),
-  createDiscordModelPickerFallbackButton: () => ({ id: "model-fallback-btn" }),
-  createDiscordModelPickerFallbackSelect: () => ({ id: "model-fallback-select" }),
   createDiscordNativeCommand: createDiscordNativeCommandMock,
 }));
 

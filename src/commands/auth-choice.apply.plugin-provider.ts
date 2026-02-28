@@ -13,12 +13,7 @@ import { isRemoteEnvironment } from "./oauth-env.js";
 import { createVpsAwareOAuthHandlers } from "./oauth-flow.js";
 import { applyAuthProfileConfig } from "./onboard-auth.js";
 import { openUrl } from "./onboard-helpers.js";
-import {
-  applyDefaultModel,
-  mergeConfigPatch,
-  pickAuthMethod,
-  resolveProviderMatch,
-} from "./provider-auth-helpers.js";
+import { mergeConfigPatch, pickAuthMethod, resolveProviderMatch } from "./provider-auth-helpers.js";
 
 export type PluginProviderAuthChoiceOptions = {
   authChoice: string;
@@ -107,23 +102,9 @@ export async function applyAuthChoicePluginProvider(
     });
   }
 
-  let agentModelOverride: string | undefined;
-  if (result.defaultModel) {
-    if (params.setDefaultModel) {
-      nextConfig = applyDefaultModel(nextConfig, result.defaultModel);
-      await params.prompter.note(`Default model set to ${result.defaultModel}`, "Model configured");
-    } else if (params.agentId) {
-      agentModelOverride = result.defaultModel;
-      await params.prompter.note(
-        `Default model set to ${result.defaultModel} for agent "${params.agentId}".`,
-        "Model configured",
-      );
-    }
-  }
-
   if (result.notes && result.notes.length > 0) {
     await params.prompter.note(result.notes.join("\n"), "Provider notes");
   }
 
-  return { config: nextConfig, agentModelOverride };
+  return { config: nextConfig };
 }

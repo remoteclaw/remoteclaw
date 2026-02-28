@@ -3,13 +3,8 @@ import {
   isHuggingfacePolicyLocked,
 } from "../agents/huggingface-models.js";
 import { normalizeApiKeyInput, validateApiKeyInput } from "./auth-choice.api-key.js";
-import {
-  createAuthChoiceAgentModelNoter,
-  ensureApiKeyFromOptionEnvOrPrompt,
-} from "./auth-choice.apply-helpers.js";
+import { ensureApiKeyFromOptionEnvOrPrompt } from "./auth-choice.apply-helpers.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
-import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
-import { ensureModelAllowlistEntry } from "./model-allowlist.js";
 import {
   applyAuthProfileConfig,
   applyHuggingfaceProviderConfig,
@@ -25,8 +20,6 @@ export async function applyAuthChoiceHuggingface(
   }
 
   let nextConfig = params.config;
-  let agentModelOverride: string | undefined;
-  const noteAgentModel = createAuthChoiceAgentModelNoter(params);
 
   const hfKey = await ensureApiKeyFromOptionEnvOrPrompt({
     token: params.opts?.token,
@@ -86,47 +79,12 @@ export async function applyAuthChoiceHuggingface(
 
   if (isHuggingfacePolicyLocked(selectedModelRef)) {
     await params.prompter.note(
-      "Provider locked — router will choose backend by cost or speed.",
+      "Provider locked -- router will choose backend by cost or speed.",
       "Hugging Face",
     );
   }
 
-  const applied = await applyDefaultModelChoice({
-    config: nextConfig,
-    setDefaultModel: params.setDefaultModel,
-    defaultModel: selectedModelRef,
-    applyDefaultConfig: (config) => {
-      const withProvider = applyHuggingfaceProviderConfig(config);
-      const existingModel = withProvider.agents?.defaults?.model;
-      const withPrimary = {
-        ...withProvider,
-        agents: {
-          ...withProvider.agents,
-          defaults: {
-            ...withProvider.agents?.defaults,
-            model: {
-              ...(existingModel && typeof existingModel === "object" && "fallbacks" in existingModel
-                ? {
-                    fallbacks: (existingModel as { fallbacks?: string[] }).fallbacks,
-                  }
-                : {}),
-              primary: selectedModelRef,
-            },
-          },
-        },
-      };
-      return ensureModelAllowlistEntry({
-        cfg: withPrimary,
-        modelRef: selectedModelRef,
-      });
-    },
-    applyProviderConfig: applyHuggingfaceProviderConfig,
-    noteDefault: selectedModelRef,
-    noteAgentModel,
-    prompter: params.prompter,
-  });
-  nextConfig = applied.config;
-  agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
+  nextConfig = applyHuggingfaceProviderConfig(nextConfig);
 
-  return { config: nextConfig, agentModelOverride };
+  return { config: nextConfig };
 }

@@ -2,7 +2,6 @@ import "./reply.directive.directive-behavior.e2e-mocks.js";
 import { describe, expect, it, vi } from "vitest";
 import { loadSessionStore } from "../config/sessions.js";
 import {
-  assertModelSelection,
   installDirectiveBehaviorE2EHooks,
   loadModelCatalog,
   makeAgentTextResult,
@@ -14,7 +13,6 @@ import {
   sessionStorePath,
   withTempHome,
 } from "./reply.directive.directive-behavior.e2e-harness.js";
-import { runModelDirectiveText } from "./reply.directive.directive-behavior.model-directive-test-utils.js";
 import { getReplyFromConfig } from "./reply.js";
 
 function makeDefaultModelConfig(home: string) {
@@ -44,213 +42,8 @@ async function runReplyToCurrentCase(home: string, text: string) {
   return Array.isArray(res) ? res[0] : res;
 }
 
-async function expectThinkStatusForReasoningModel(params: {
-  home: string;
-  reasoning: boolean;
-  expectedLevel: "low" | "off";
-}): Promise<void> {
-  vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-    {
-      id: "claude-opus-4-5",
-      name: "Opus 4.5",
-      provider: "anthropic",
-      reasoning: params.reasoning,
-    },
-  ]);
-
-  const res = await getReplyFromConfig(
-    { Body: "/think", From: "+1222", To: "+1222", CommandAuthorized: true },
-    {},
-    makeWhatsAppDirectiveConfig(params.home, { model: "anthropic/claude-opus-4-5" }),
-  );
-
-  const text = replyText(res);
-  expect(text).toContain(`Current thinking level: ${params.expectedLevel}`);
-  expect(text).toContain("Options: off, minimal, low, medium, high.");
-}
-
-function mockReasoningCapableCatalog() {
-  vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-    {
-      id: "claude-opus-4-5",
-      name: "Opus 4.5",
-      provider: "anthropic",
-      reasoning: true,
-    },
-  ]);
-}
-
-async function runReasoningDefaultCase(params: {
-  home: string;
-  thinkingDefault?: "off" | "low" | "medium" | "high";
-}) {
-  vi.mocked(runAgent).mockClear();
-  mockAgentTextResult("done");
-  mockReasoningCapableCatalog();
-
-  await getReplyFromConfig(
-    {
-      Body: "hello",
-      From: "+1004",
-      To: "+2000",
-    },
-    {},
-    makeWhatsAppDirectiveConfig(params.home, {
-      model: { primary: "anthropic/claude-opus-4-5" },
-      ...(params.thinkingDefault ? { thinkingDefault: params.thinkingDefault } : {}),
-    }),
-  );
-
-  // Verify the agent was called (thinkLevel/reasoningLevel are resolved
-  // internally by the pipeline and are no longer visible at the bridge level).
-  expect(runAgent).toHaveBeenCalledOnce();
-}
-
 describe("directive behavior", () => {
   installDirectiveBehaviorE2EHooks();
-
-  it("covers /think status and reasoning defaults for reasoning and non-reasoning models", async () => {
-    await withTempHome(async (home) => {
-      await expectThinkStatusForReasoningModel({
-        home,
-        reasoning: true,
-        expectedLevel: "low",
-      });
-      await expectThinkStatusForReasoningModel({
-        home,
-        reasoning: false,
-        expectedLevel: "off",
-      });
-      expect(runAgent).not.toHaveBeenCalled();
-
-      vi.mocked(runAgent).mockClear();
-
-      for (const scenario of [{}, { thinkingDefault: "off" as const }]) {
-        await runReasoningDefaultCase({
-          home,
-          ...scenario,
-        });
-      }
-    });
-  });
-  it("renders model list and status variants across catalog/config combinations", async () => {
-    await withTempHome(async (home) => {
-      const aliasText = await runModelDirectiveText(home, "/model list");
-      expect(aliasText).toContain("Providers:");
-      expect(aliasText).toContain("- anthropic");
-      expect(aliasText).toContain("- openai");
-      expect(aliasText).toContain("Use: /models <provider>");
-      expect(aliasText).toContain("Switch: /model <provider/model>");
-
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([]);
-      const unavailableCatalogText = await runModelDirectiveText(home, "/model");
-      expect(unavailableCatalogText).toContain("Current: anthropic/claude-opus-4-5");
-      expect(unavailableCatalogText).toContain("Switch: /model <provider/model>");
-      expect(unavailableCatalogText).toContain(
-        "Browse: /models (providers) or /models <provider> (models)",
-      );
-      expect(unavailableCatalogText).toContain("More: /model status");
-
-      const allowlistedStatusText = await runModelDirectiveText(home, "/model status", {
-        includeSessionStore: false,
-      });
-      expect(allowlistedStatusText).toContain("anthropic/claude-opus-4-5");
-      expect(allowlistedStatusText).toContain("openai/gpt-4.1-mini");
-      expect(allowlistedStatusText).not.toContain("claude-sonnet-4-1");
-      expect(allowlistedStatusText).toContain("auth:");
-
-      vi.mocked(loadModelCatalog).mockResolvedValue([
-        { id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" },
-        { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai" },
-        { id: "grok-4", name: "Grok 4", provider: "xai" },
-      ]);
-      const noAllowlistText = await runModelDirectiveText(home, "/model list", {
-        defaults: {
-          model: {
-            primary: "anthropic/claude-opus-4-5",
-            fallbacks: ["openai/gpt-4.1-mini"],
-          },
-          imageModel: { primary: "minimax/MiniMax-M2.1" },
-          models: undefined,
-        },
-      });
-      expect(noAllowlistText).toContain("Providers:");
-      expect(noAllowlistText).toContain("- anthropic");
-      expect(noAllowlistText).toContain("- openai");
-      expect(noAllowlistText).toContain("- xai");
-      expect(noAllowlistText).toContain("Use: /models <provider>");
-
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-        {
-          provider: "anthropic",
-          id: "claude-opus-4-5",
-          name: "Claude Opus 4.5",
-        },
-        { provider: "openai", id: "gpt-4.1-mini", name: "GPT-4.1 mini" },
-      ]);
-      const configOnlyProviderText = await runModelDirectiveText(home, "/models minimax", {
-        defaults: {
-          models: {
-            "anthropic/claude-opus-4-5": {},
-            "openai/gpt-4.1-mini": {},
-            "minimax/MiniMax-M2.1": { alias: "minimax" },
-          },
-        },
-        extra: {
-          models: {
-            mode: "merge",
-            providers: {
-              minimax: {
-                baseUrl: "https://api.minimax.io/anthropic",
-                api: "anthropic-messages",
-                models: [{ id: "MiniMax-M2.1", name: "MiniMax M2.1" }],
-              },
-            },
-          },
-        },
-      });
-      expect(configOnlyProviderText).toContain("Models (minimax");
-      expect(configOnlyProviderText).toContain("minimax/MiniMax-M2.1");
-
-      const missingAuthText = await runModelDirectiveText(home, "/model list", {
-        defaults: {
-          models: {
-            "anthropic/claude-opus-4-5": {},
-          },
-        },
-      });
-      expect(missingAuthText).toContain("Providers:");
-      expect(missingAuthText).not.toContain("missing (missing)");
-      expect(runAgent).not.toHaveBeenCalled();
-    });
-  });
-  it("sets model override on /model directive", async () => {
-    await withTempHome(async (home) => {
-      const storePath = sessionStorePath(home);
-
-      await getReplyFromConfig(
-        { Body: "/model openai/gpt-4.1-mini", From: "+1222", To: "+1222", CommandAuthorized: true },
-        {},
-        makeWhatsAppDirectiveConfig(
-          home,
-          {
-            model: { primary: "anthropic/claude-opus-4-5" },
-            models: {
-              "anthropic/claude-opus-4-5": {},
-              "openai/gpt-4.1-mini": {},
-            },
-          },
-          { session: { store: storePath } },
-        ),
-      );
-
-      assertModelSelection(storePath, {
-        model: "gpt-4.1-mini",
-        provider: "openai",
-      });
-      expect(runAgent).not.toHaveBeenCalled();
-    });
-  });
   it("ignores inline /model and /think directives while still running agent content", async () => {
     await withTempHome(async (home) => {
       mockAgentTextResult("done");

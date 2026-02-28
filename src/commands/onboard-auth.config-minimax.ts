@@ -1,10 +1,7 @@
 import type { OpenClawConfig } from "../config/config.js";
 import { toAgentModelListLike } from "../config/model-input.js";
 import type { ModelProviderConfig } from "../config/types.models.js";
-import {
-  applyAgentDefaultModelPrimary,
-  applyOnboardAuthAgentModelsAndProviders,
-} from "./onboard-auth.config-shared.js";
+import { applyOnboardAuthAgentModelsAndProviders } from "./onboard-auth.config-shared.js";
 import {
   buildMinimaxApiModelDefinition,
   buildMinimaxModelDefinition,
@@ -85,8 +82,7 @@ export function applyMinimaxHostedProviderConfig(
 }
 
 export function applyMinimaxConfig(cfg: OpenClawConfig): OpenClawConfig {
-  const next = applyMinimaxProviderConfig(cfg);
-  return applyAgentDefaultModelPrimary(next, "lmstudio/minimax-m2.1-gs32");
+  return applyMinimaxProviderConfig(cfg);
 }
 
 export function applyMinimaxHostedConfig(
@@ -209,6 +205,5 @@ function applyMinimaxApiConfigWithBaseUrl(
   cfg: OpenClawConfig,
   params: MinimaxApiProviderConfigParams,
 ): OpenClawConfig {
-  const next = applyMinimaxApiProviderConfigWithBaseUrl(cfg, params);
-  return applyAgentDefaultModelPrimary(next, `${params.providerId}/${params.modelId}`);
+  return applyMinimaxApiProviderConfigWithBaseUrl(cfg, params);
 }

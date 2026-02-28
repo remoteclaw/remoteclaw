@@ -78,13 +78,13 @@ describe("applyAuthChoice (moonshot)", () => {
     );
     expect(result.config.models?.providers?.moonshot?.baseUrl).toBe("https://api.moonshot.cn/v1");
     expect(result.config.models?.providers?.moonshot?.models?.[0]?.input).toContain("image");
-    expect(result.agentModelOverride).toBe("moonshot/kimi-k2.5");
+    expect(result.agentModelOverride).toBeUndefined();
 
     const parsed = await readAuthProfiles();
     expect(parsed.profiles?.["moonshot:default"]?.key).toBe("sk-moonshot-cn-test");
   });
 
-  it("sets the default model when setDefaultModel is true", async () => {
+  it("does not set a default model even when setDefaultModel is true", async () => {
     await setupTempState();
 
     const { result } = await runMoonshotCnFlow({
@@ -92,9 +92,7 @@ describe("applyAuthChoice (moonshot)", () => {
       setDefaultModel: true,
     });
 
-    expect(resolveAgentModelPrimaryValue(result.config.agents?.defaults?.model)).toBe(
-      "moonshot/kimi-k2.5",
-    );
+    expect(resolveAgentModelPrimaryValue(result.config.agents?.defaults?.model)).toBeUndefined();
     expect(result.config.models?.providers?.moonshot?.baseUrl).toBe("https://api.moonshot.cn/v1");
     expect(result.config.models?.providers?.moonshot?.models?.[0]?.input).toContain("image");
     expect(result.agentModelOverride).toBeUndefined();

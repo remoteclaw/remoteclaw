@@ -1,8 +1,4 @@
-import {
-  resolveAgentConfig,
-  resolveAgentDir,
-  resolveSessionAgentId,
-} from "../../agents/agent-scope.js";
+import { resolveAgentConfig, resolveSessionAgentId } from "../../agents/agent-scope.js";
 // Sandbox infrastructure removed (#68)
 const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
   sandboxed: false as const,
@@ -19,13 +15,10 @@ type ExecSecurity = "deny" | "allowlist" | "full";
 type ExecAsk = "off" | "on-miss" | "always";
 
 import { applyVerboseOverride } from "../../sessions/level-overrides.js";
-import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
+// Model override to session entry removed (model catalog gutted in RemoteClaw).
 import { formatThinkingLevels, formatXHighModelHint, supportsXHighThinking } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";
-import {
-  maybeHandleModelDirectiveInfo,
-  resolveModelSelectionFromDirective,
-} from "./directive-handling.model.js";
+// Model directive handling removed (model catalog gutted in RemoteClaw)
 import type { HandleDirectiveOnlyParams } from "./directive-handling.params.js";
 import { maybeHandleQueueDirective } from "./directive-handling.queue-validation.js";
 import {
@@ -77,16 +70,8 @@ export async function handleDirectiveOnly(
     storePath,
     elevatedEnabled,
     elevatedAllowed,
-    defaultProvider,
-    defaultModel,
-    aliasIndex,
-    allowedModelKeys,
-    allowedModelCatalog,
-    resetModelOverride,
     provider,
     model,
-    initialModelLabel,
-    formatModelSwitchEvent,
     currentThinkLevel,
     currentVerboseLevel,
     currentReasoningLevel,
@@ -96,51 +81,15 @@ export async function handleDirectiveOnly(
     sessionKey: params.sessionKey,
     config: params.cfg,
   });
-  const agentDir = resolveAgentDir(params.cfg, activeAgentId);
   const runtimeIsSandboxed = resolveSandboxRuntimeStatus({
     cfg: params.cfg,
     sessionKey: params.sessionKey,
   }).sandboxed;
   const shouldHintDirectRuntime = directives.hasElevatedDirective && !runtimeIsSandboxed;
 
-  const modelInfo = await maybeHandleModelDirectiveInfo({
-    directives,
-    cfg: params.cfg,
-    agentDir,
-    activeAgentId,
-    provider,
-    model,
-    defaultProvider,
-    defaultModel,
-    aliasIndex,
-    allowedModelCatalog,
-    resetModelOverride,
-    surface: params.surface,
-    sessionEntry,
-  });
-  if (modelInfo) {
-    return modelInfo;
-  }
-
-  const modelResolution = resolveModelSelectionFromDirective({
-    directives,
-    cfg: params.cfg,
-    agentDir,
-    defaultProvider,
-    defaultModel,
-    aliasIndex,
-    allowedModelKeys,
-    allowedModelCatalog,
-    provider,
-  });
-  if (modelResolution.errorText) {
-    return { text: modelResolution.errorText };
-  }
-  const modelSelection = modelResolution.modelSelection;
-  const profileOverride = modelResolution.profileOverride;
-
-  const resolvedProvider = modelSelection?.provider ?? provider;
-  const resolvedModel = modelSelection?.model ?? model;
+  // Model directive info and selection removed (model catalog gutted).
+  const resolvedProvider = provider;
+  const resolvedModel = model;
 
   if (directives.hasThinkDirective && !directives.thinkLevel) {
     // If no argument was provided, show the current level
@@ -332,13 +281,6 @@ export async function handleDirectiveOnly(
       sessionEntry.execNode = directives.execNode;
     }
   }
-  if (modelSelection) {
-    applyModelOverrideToSessionEntry({
-      entry: sessionEntry,
-      selection: modelSelection,
-      profileOverride,
-    });
-  }
   if (directives.hasQueueDirective && directives.queueReset) {
     delete sessionEntry.queueMode;
     delete sessionEntry.queueDebounceMs;
@@ -364,15 +306,6 @@ export async function handleDirectiveOnly(
     await updateSessionStore(storePath, (store) => {
       store[sessionKey] = sessionEntry;
     });
-  }
-  if (modelSelection) {
-    const nextLabel = `${modelSelection.provider}/${modelSelection.model}`;
-    if (nextLabel !== initialModelLabel) {
-      enqueueSystemEvent(formatModelSwitchEvent(nextLabel, modelSelection.alias), {
-        sessionKey,
-        contextKey: `model:${nextLabel}`,
-      });
-    }
   }
   enqueueModeSwitchEvents({
     enqueueSystemEvent,
@@ -442,18 +375,6 @@ export async function handleDirectiveOnly(
     parts.push(
       `Thinking level set to high (xhigh not supported for ${resolvedProvider}/${resolvedModel}).`,
     );
-  }
-  if (modelSelection) {
-    const label = `${modelSelection.provider}/${modelSelection.model}`;
-    const labelWithAlias = modelSelection.alias ? `${modelSelection.alias} (${label})` : label;
-    parts.push(
-      modelSelection.isDefault
-        ? `Model reset to default (${labelWithAlias}).`
-        : `Model set to ${labelWithAlias}.`,
-    );
-    if (profileOverride) {
-      parts.push(`Auth profile set to ${profileOverride}.`);
-    }
   }
   if (directives.hasQueueDirective && directives.queueMode) {
     parts.push(formatDirectiveAck(`Queue mode set to ${directives.queueMode}.`));

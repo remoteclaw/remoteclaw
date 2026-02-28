@@ -30,7 +30,6 @@ import {
   OPENROUTER_DEFAULT_MODEL_REF,
   MISTRAL_DEFAULT_MODEL_REF,
   SYNTHETIC_DEFAULT_MODEL_ID,
-  SYNTHETIC_DEFAULT_MODEL_REF,
   XAI_DEFAULT_MODEL_REF,
   setMinimaxApiKey,
   writeOAuthCredentials,
@@ -477,7 +476,7 @@ describe("applyZaiConfig", () => {
     for (const modelId of ["glm-4.7-flash", "glm-4.7-flashx"] as const) {
       const cfg = applyZaiConfig({}, { endpoint: "coding-cn", modelId });
       expect(cfg.models?.providers?.zai?.baseUrl).toBe(ZAI_CODING_CN_BASE_URL);
-      expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBe(`zai/${modelId}`);
+      expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
     }
   });
 });
@@ -508,24 +507,21 @@ describe("applySyntheticConfig", () => {
 });
 
 describe("primary model defaults", () => {
-  it("sets correct primary model", () => {
+  it("does not set a default primary model", () => {
     const configCases = [
       {
         getConfig: () => applyMinimaxApiConfig({}, "MiniMax-M2.1-lightning"),
-        primaryModel: "minimax/MiniMax-M2.1-lightning",
       },
       {
         getConfig: () => applyZaiConfig({}, { modelId: "glm-5" }),
-        primaryModel: "zai/glm-5",
       },
       {
         getConfig: () => applySyntheticConfig({}),
-        primaryModel: SYNTHETIC_DEFAULT_MODEL_REF,
       },
     ] as const;
-    for (const { getConfig, primaryModel } of configCases) {
+    for (const { getConfig } of configCases) {
       const cfg = getConfig();
-      expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBe(primaryModel);
+      expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
     }
   });
 });
@@ -537,7 +533,7 @@ describe("applyXiaomiConfig", () => {
       baseUrl: "https://api.xiaomimimo.com/anthropic",
       api: "anthropic-messages",
     });
-    expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBe("xiaomi/mimo-v2-flash");
+    expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
   });
 
   it("merges Xiaomi models and keeps existing provider overrides", () => {
@@ -567,7 +563,7 @@ describe("applyXaiConfig", () => {
       baseUrl: "https://api.x.ai/v1",
       api: "openai-completions",
     });
-    expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBe(XAI_DEFAULT_MODEL_REF);
+    expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
   });
 });
 
@@ -596,9 +592,7 @@ describe("applyMistralConfig", () => {
       baseUrl: "https://api.mistral.ai/v1",
       api: "openai-completions",
     });
-    expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBe(
-      MISTRAL_DEFAULT_MODEL_REF,
-    );
+    expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
   });
 });
 
@@ -720,20 +714,18 @@ describe("applyLitellmProviderConfig", () => {
 });
 
 describe("default-model config helpers", () => {
-  it("sets primary model and preserves existing model fallbacks", () => {
+  it("does not set primary model but preserves existing model fallbacks", () => {
     const configCases = [
       {
         applyConfig: applyOpencodeZenConfig,
-        primaryModel: "opencode/claude-opus-4-6",
       },
       {
         applyConfig: applyOpenrouterConfig,
-        primaryModel: OPENROUTER_DEFAULT_MODEL_REF,
       },
     ] as const;
-    for (const { applyConfig, primaryModel } of configCases) {
+    for (const { applyConfig } of configCases) {
       const cfg = applyConfig({});
-      expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBe(primaryModel);
+      expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
 
       const cfgWithFallbacks = applyConfig(createConfigWithFallbacks());
       expectFallbacksPreserved(cfgWithFallbacks);

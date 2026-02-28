@@ -6,17 +6,6 @@ import type {
   ModelProviderConfig,
 } from "../config/types.models.js";
 
-function extractAgentDefaultModelFallbacks(model: unknown): string[] | undefined {
-  if (!model || typeof model !== "object") {
-    return undefined;
-  }
-  if (!("fallbacks" in model)) {
-    return undefined;
-  }
-  const fallbacks = (model as { fallbacks?: unknown }).fallbacks;
-  return Array.isArray(fallbacks) ? fallbacks.map((v) => String(v)) : undefined;
-}
-
 export function applyOnboardAuthAgentModelsAndProviders(
   cfg: OpenClawConfig,
   params: {
@@ -36,26 +25,6 @@ export function applyOnboardAuthAgentModelsAndProviders(
     models: {
       mode: cfg.models?.mode ?? "merge",
       providers: params.providers,
-    },
-  };
-}
-
-export function applyAgentDefaultModelPrimary(
-  cfg: OpenClawConfig,
-  primary: string,
-): OpenClawConfig {
-  const existingFallbacks = extractAgentDefaultModelFallbacks(cfg.agents?.defaults?.model);
-  return {
-    ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...cfg.agents?.defaults,
-        model: {
-          ...(existingFallbacks ? { fallbacks: existingFallbacks } : undefined),
-          primary,
-        },
-      },
     },
   };
 }

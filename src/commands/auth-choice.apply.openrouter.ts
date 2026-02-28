@@ -5,23 +5,17 @@ import {
   normalizeApiKeyInput,
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
-import { createAuthChoiceAgentModelNoter } from "./auth-choice.apply-helpers.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
-import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
 import {
   applyAuthProfileConfig,
   applyOpenrouterConfig,
-  applyOpenrouterProviderConfig,
   setOpenrouterApiKey,
-  OPENROUTER_DEFAULT_MODEL_REF,
 } from "./onboard-auth.js";
 
 export async function applyAuthChoiceOpenRouter(
   params: ApplyAuthChoiceParams,
 ): Promise<ApplyAuthChoiceResult> {
   let nextConfig = params.config;
-  let agentModelOverride: string | undefined;
-  const noteAgentModel = createAuthChoiceAgentModelNoter(params);
 
   const store = ensureAuthProfileStore(params.agentDir, { allowKeychainPrompt: false });
   const profileOrder = resolveAuthProfileOrder({
@@ -78,18 +72,7 @@ export async function applyAuthChoiceOpenRouter(
     });
   }
 
-  const applied = await applyDefaultModelChoice({
-    config: nextConfig,
-    setDefaultModel: params.setDefaultModel,
-    defaultModel: OPENROUTER_DEFAULT_MODEL_REF,
-    applyDefaultConfig: applyOpenrouterConfig,
-    applyProviderConfig: applyOpenrouterProviderConfig,
-    noteDefault: OPENROUTER_DEFAULT_MODEL_REF,
-    noteAgentModel,
-    prompter: params.prompter,
-  });
-  nextConfig = applied.config;
-  agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
+  nextConfig = applyOpenrouterConfig(nextConfig);
 
-  return { config: nextConfig, agentModelOverride };
+  return { config: nextConfig };
 }

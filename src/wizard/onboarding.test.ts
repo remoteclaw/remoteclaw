@@ -12,9 +12,6 @@ const ensureAuthProfileStore = vi.hoisted(() => vi.fn(() => ({ profiles: {} })))
 const promptAuthChoiceGrouped = vi.hoisted(() => vi.fn(async () => "skip"));
 const applyAuthChoice = vi.hoisted(() => vi.fn(async (args) => ({ config: args.config })));
 const resolvePreferredProviderForAuthChoice = vi.hoisted(() => vi.fn(() => "openai"));
-const warnIfModelConfigLooksOff = vi.hoisted(() => vi.fn(async () => {}));
-const applyPrimaryModel = vi.hoisted(() => vi.fn((cfg) => cfg));
-const promptDefaultModel = vi.hoisted(() => vi.fn(async () => ({ config: null, model: null })));
 const promptCustomApiConfig = vi.hoisted(() => vi.fn(async (args) => ({ config: args.config })));
 const configureGatewayForOnboarding = vi.hoisted(() =>
   vi.fn(async (args) => ({
@@ -102,12 +99,6 @@ vi.mock("../commands/auth-choice-prompt.js", () => ({
 vi.mock("../commands/auth-choice.js", () => ({
   applyAuthChoice,
   resolvePreferredProviderForAuthChoice,
-  warnIfModelConfigLooksOff,
-}));
-
-vi.mock("../commands/model-picker.js", () => ({
-  applyPrimaryModel,
-  promptDefaultModel,
 }));
 
 vi.mock("../commands/onboard-custom.js", () => ({

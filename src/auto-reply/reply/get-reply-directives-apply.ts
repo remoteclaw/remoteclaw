@@ -13,7 +13,7 @@ import {
 } from "./directive-handling.js";
 import { resolveCurrentDirectiveLevels } from "./directive-handling.levels.js";
 import { clearInlineDirectives } from "./get-reply-directives-utils.js";
-import type { createModelSelectionState } from "./model-selection.js";
+import type { createModelSelectionState } from "./get-reply-directives.js";
 import type { TypingController } from "./typing.js";
 
 type AgentDefaults = NonNullable<OpenClawConfig["agents"]>["defaults"];

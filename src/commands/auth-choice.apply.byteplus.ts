@@ -6,10 +6,6 @@ import {
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
-import { applyPrimaryModel } from "./model-picker.js";
-
-/** Default model for BytePlus auth onboarding. */
-export const BYTEPLUS_DEFAULT_MODEL = "byteplus-plan/ark-code-latest";
 
 export async function applyAuthChoiceBytePlus(
   params: ApplyAuthChoiceParams,
@@ -36,10 +32,8 @@ export async function applyAuthChoiceBytePlus(
         `Copied BYTEPLUS_API_KEY to ${result.path} for launchd compatibility.`,
         "BytePlus API key",
       );
-      const configWithModel = applyPrimaryModel(params.config, BYTEPLUS_DEFAULT_MODEL);
       return {
-        config: configWithModel,
-        agentModelOverride: BYTEPLUS_DEFAULT_MODEL,
+        config: params.config,
       };
     }
   }
@@ -65,9 +59,7 @@ export async function applyAuthChoiceBytePlus(
     "BytePlus API key",
   );
 
-  const configWithModel = applyPrimaryModel(params.config, BYTEPLUS_DEFAULT_MODEL);
   return {
-    config: configWithModel,
-    agentModelOverride: BYTEPLUS_DEFAULT_MODEL,
+    config: params.config,
   };
 }

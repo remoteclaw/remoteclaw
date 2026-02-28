@@ -220,40 +220,24 @@ describe("trigger handling", () => {
         getRunAgentMock().mockClear();
       }
 
-      const modelCases = [
-        {
-          label: "heartbeat-override",
-          setup: (cfg: ReturnType<typeof makeCfg>) => {
-            cfg.agents = {
-              ...cfg.agents,
-              defaults: {
-                ...cfg.agents?.defaults,
-                heartbeat: { model: "anthropic/claude-haiku-4-5-20251001" },
-              },
-            };
-          },
-          expected: { provider: "anthropic", model: "claude-haiku-4-5-20251001" },
-        },
-        {
-          label: "stored-override",
-          setup: () => undefined,
-          expected: { provider: "openai", model: "gpt-5.2" },
-        },
-      ] as const;
-
-      for (const testCase of modelCases) {
+      // Heartbeat model override: agents.defaults.heartbeat.model config takes effect
+      {
         mockAgentOkPayload();
         runAgentMock.mockClear();
         const cfg = makeCfg(home);
-        cfg.session = { ...cfg.session, store: join(home, `${testCase.label}.sessions.json`) };
+        cfg.session = { ...cfg.session, store: join(home, "heartbeat-override.sessions.json") };
         await writeStoredModelOverride(cfg);
-        testCase.setup(cfg);
+        cfg.agents = {
+          ...cfg.agents,
+          defaults: {
+            ...cfg.agents?.defaults,
+            heartbeat: { model: "anthropic/claude-haiku-4-5-20251001" },
+          },
+        };
         await getReplyFromConfig(BASE_MESSAGE, { isHeartbeat: true }, cfg);
 
         const call = runAgentMock.mock.calls[0]?.[0];
-        // Provider is forwarded through the bridge mock's constructor.
-        // Model is resolved internally by runWithModelFallback and not visible at the bridge level.
-        expect(call?.provider).toBe(testCase.expected.provider);
+        expect(call?.provider).toBe("anthropic");
       }
       {
         const storePath = join(home, "compact-main.sessions.json");
@@ -366,84 +350,6 @@ describe("trigger handling", () => {
         const store = loadSessionStore(storePath);
         expect(store[targetSessionKey]?.abortedLastRun).toBe(true);
         expect(getFollowupQueueDepth(targetSessionKey)).toBe(0);
-      }
-
-      {
-        const cfg = makeCfg(home);
-        cfg.session = { ...cfg.session, store: join(home, "native-model.sessions.json") };
-        getRunAgentMock().mockClear();
-        const storePath = cfg.session?.store;
-        if (!storePath) {
-          throw new Error("missing session store path");
-        }
-        const slashSessionKey = "telegram:slash:111";
-        const targetSessionKey = MAIN_SESSION_KEY;
-
-        // Seed the target session to ensure the native command mutates it.
-        await fs.writeFile(
-          storePath,
-          JSON.stringify({
-            [targetSessionKey]: {
-              sessionId: "session-target",
-              updatedAt: Date.now(),
-            },
-          }),
-        );
-
-        const res = await getReplyFromConfig(
-          {
-            Body: "/model openai/gpt-4.1-mini",
-            From: "telegram:111",
-            To: "telegram:111",
-            ChatType: "direct",
-            Provider: "telegram",
-            Surface: "telegram",
-            SessionKey: slashSessionKey,
-            CommandSource: "native",
-            CommandTargetSessionKey: targetSessionKey,
-            CommandAuthorized: true,
-          },
-          {},
-          cfg,
-        );
-
-        const text = Array.isArray(res) ? res[0]?.text : res?.text;
-        expect(text).toContain("Model set to openai/gpt-4.1-mini");
-
-        const store = loadSessionStore(storePath);
-        expect(store[targetSessionKey]?.providerOverride).toBe("openai");
-        expect(store[targetSessionKey]?.modelOverride).toBe("gpt-4.1-mini");
-        expect(store[slashSessionKey]).toBeUndefined();
-
-        getRunAgentMock().mockResolvedValue({
-          payloads: [{ text: "ok" }],
-          meta: {
-            durationMs: 5,
-            agentMeta: { sessionId: "s", provider: "p", model: "m" },
-          },
-        });
-
-        await getReplyFromConfig(
-          {
-            Body: "hi",
-            From: "telegram:111",
-            To: "telegram:111",
-            ChatType: "direct",
-            Provider: "telegram",
-            Surface: "telegram",
-          },
-          {},
-          cfg,
-        );
-
-        expect(getRunAgentMock()).toHaveBeenCalledOnce();
-        // Provider is forwarded through the bridge mock's constructor.
-        // Model is resolved internally by runWithModelFallback and not visible at the bridge level.
-        expect(getRunAgentMock().mock.calls[0]?.[0]).toEqual(
-          expect.objectContaining({
-            provider: "openai",
-          }),
-        );
       }
 
       await runGreetingPromptForBareNewOrReset({ home, body: "/new", getReplyFromConfig });

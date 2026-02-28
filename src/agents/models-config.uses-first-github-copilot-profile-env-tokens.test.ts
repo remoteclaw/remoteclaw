@@ -1,11 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolveOpenClawAgentDir } from "./agent-paths.js";
 import {
   installModelsConfigTestHooks,
   mockCopilotTokenExchangeSuccess,
-  withCopilotGithubToken,
   withUnsetCopilotTokenEnv,
   withModelsTempHome as withTempHome,
 } from "./models-config.e2e-harness.js";
@@ -51,29 +49,6 @@ describe("models-config", () => {
     });
   });
 
-  it("does not override explicit github-copilot provider config", async () => {
-    await withTempHome(async () => {
-      await withCopilotGithubToken("gh-token", async () => {
-        await ensureOpenClawModelsJson({
-          models: {
-            providers: {
-              "github-copilot": {
-                baseUrl: "https://copilot.local",
-                api: "openai-responses",
-                models: [],
-              },
-            },
-          },
-        });
-
-        const agentDir = resolveOpenClawAgentDir();
-        const raw = await fs.readFile(path.join(agentDir, "models.json"), "utf8");
-        const parsed = JSON.parse(raw) as {
-          providers: Record<string, { baseUrl?: string }>;
-        };
-
-        expect(parsed.providers["github-copilot"]?.baseUrl).toBe("https://copilot.local");
-      });
-    });
-  });
+  // Test "does not override explicit github-copilot provider config" removed:
+  // config.models.providers was gutted so explicit provider config is dead code.
 });

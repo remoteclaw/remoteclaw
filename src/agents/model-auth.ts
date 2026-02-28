@@ -26,25 +26,12 @@ const AWS_SECRET_KEY_ENV = "AWS_SECRET_ACCESS_KEY";
 const AWS_PROFILE_ENV = "AWS_PROFILE";
 
 function resolveProviderConfig(
-  cfg: OpenClawConfig | undefined,
-  provider: string,
+  _cfg: OpenClawConfig | undefined,
+  _provider: string,
 ): ModelProviderConfig | undefined {
-  const providers = cfg?.models?.providers ?? {};
-  const direct = providers[provider] as ModelProviderConfig | undefined;
-  if (direct) {
-    return direct;
-  }
-  const normalized = normalizeProviderId(provider);
-  if (normalized === provider) {
-    const matched = Object.entries(providers).find(
-      ([key]) => normalizeProviderId(key) === normalized,
-    );
-    return matched?.[1];
-  }
-  return (
-    (providers[normalized] as ModelProviderConfig | undefined) ??
-    Object.entries(providers).find(([key]) => normalizeProviderId(key) === normalized)?.[1]
-  );
+  // Models config section has been removed — provider configs are no longer
+  // stored in the config file. CLI agents resolve providers directly.
+  return undefined;
 }
 
 export function getCustomProviderApiKey(

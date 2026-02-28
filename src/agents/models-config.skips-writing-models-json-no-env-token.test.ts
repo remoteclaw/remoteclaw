@@ -3,7 +3,6 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { resolveOpenClawAgentDir } from "./agent-paths.js";
 import {
-  CUSTOM_PROXY_MODELS_CONFIG,
   installModelsConfigTestHooks,
   MODELS_CONFIG_IMPLICIT_ENV_VARS,
   unsetEnv,
@@ -76,19 +75,8 @@ describe("models-config", () => {
     });
   });
 
-  it("writes models.json for configured providers", async () => {
-    await withTempHome(async () => {
-      await ensureOpenClawModelsJson(CUSTOM_PROXY_MODELS_CONFIG);
-
-      const modelPath = path.join(resolveOpenClawAgentDir(), "models.json");
-      const raw = await fs.readFile(modelPath, "utf8");
-      const parsed = JSON.parse(raw) as {
-        providers: Record<string, { baseUrl?: string }>;
-      };
-
-      expect(parsed.providers["custom-proxy"]?.baseUrl).toBe("http://localhost:4000/v1");
-    });
-  });
+  // Test "writes models.json for configured providers" removed: CUSTOM_PROXY_MODELS_CONFIG
+  // is now {} (config.models.providers was gutted), so no providers to write.
 
   it("adds minimax provider when MINIMAX_API_KEY is set", async () => {
     await withTempHome(async () => {

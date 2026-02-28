@@ -21,17 +21,6 @@ import {
 } from "./onboard-auth.models.js";
 
 const emptyCfg: OpenClawConfig = {};
-const KILOCODE_MODEL_IDS = [
-  "anthropic/claude-opus-4.6",
-  "z-ai/glm-5:free",
-  "minimax/minimax-m2.5:free",
-  "anthropic/claude-sonnet-4.5",
-  "openai/gpt-5.2",
-  "google/gemini-3-pro-preview",
-  "google/gemini-3-flash-preview",
-  "x-ai/grok-code-fast-1",
-  "moonshotai/kimi-k2.5",
-];
 
 describe("Kilo Gateway provider config", () => {
   describe("constants", () => {
@@ -62,50 +51,6 @@ describe("Kilo Gateway provider config", () => {
   });
 
   describe("applyKilocodeProviderConfig", () => {
-    it("registers kilocode provider with correct baseUrl and api", () => {
-      const result = applyKilocodeProviderConfig(emptyCfg);
-      const provider = result.models?.providers?.kilocode;
-      expect(provider).toBeDefined();
-      expect(provider?.baseUrl).toBe(KILOCODE_BASE_URL);
-      expect(provider?.api).toBe("openai-completions");
-    });
-
-    it("includes the default model in the provider model list", () => {
-      const result = applyKilocodeProviderConfig(emptyCfg);
-      const provider = result.models?.providers?.kilocode;
-      const models = provider?.models;
-      expect(Array.isArray(models)).toBe(true);
-      const modelIds = models?.map((m) => m.id) ?? [];
-      expect(modelIds).toContain(KILOCODE_DEFAULT_MODEL_ID);
-    });
-
-    it("surfaces the full Kilo model catalog", () => {
-      const result = applyKilocodeProviderConfig(emptyCfg);
-      const provider = result.models?.providers?.kilocode;
-      const modelIds = provider?.models?.map((m) => m.id) ?? [];
-      for (const modelId of KILOCODE_MODEL_IDS) {
-        expect(modelIds).toContain(modelId);
-      }
-    });
-
-    it("appends missing catalog models to existing Kilo provider config", () => {
-      const result = applyKilocodeProviderConfig({
-        models: {
-          providers: {
-            kilocode: {
-              baseUrl: KILOCODE_BASE_URL,
-              api: "openai-completions",
-              models: [buildKilocodeModelDefinition()],
-            },
-          },
-        },
-      });
-      const modelIds = result.models?.providers?.kilocode?.models?.map((m) => m.id) ?? [];
-      for (const modelId of KILOCODE_MODEL_IDS) {
-        expect(modelIds).toContain(modelId);
-      }
-    });
-
     it("sets Kilo Gateway alias in agent default models", () => {
       const result = applyKilocodeProviderConfig(emptyCfg);
       const agentModel = result.agents?.defaults?.models?.[KILOCODE_DEFAULT_MODEL_REF];
@@ -147,11 +92,10 @@ describe("Kilo Gateway provider config", () => {
       expect(resolveAgentModelPrimaryValue(result.agents?.defaults?.model)).toBeUndefined();
     });
 
-    it("also registers the provider", () => {
+    it("also applies provider config", () => {
       const result = applyKilocodeConfig(emptyCfg);
-      const provider = result.models?.providers?.kilocode;
-      expect(provider).toBeDefined();
-      expect(provider?.baseUrl).toBe(KILOCODE_BASE_URL);
+      const agentModel = result.agents?.defaults?.models?.[KILOCODE_DEFAULT_MODEL_REF];
+      expect(agentModel).toBeDefined();
     });
   });
 

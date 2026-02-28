@@ -17,7 +17,7 @@ export async function promptAndConfigureVllm(params: {
   prompter: WizardPrompter;
   agentDir?: string;
 }): Promise<{ config: OpenClawConfig; modelId: string; modelRef: string }> {
-  const baseUrlRaw = await params.prompter.text({
+  const _baseUrlRaw = await params.prompter.text({
     message: "vLLM base URL",
     initialValue: VLLM_DEFAULT_BASE_URL,
     placeholder: VLLM_DEFAULT_BASE_URL,
@@ -34,9 +34,6 @@ export async function promptAndConfigureVllm(params: {
     validate: (value) => (value?.trim() ? undefined : "Required"),
   });
 
-  const baseUrl = String(baseUrlRaw ?? "")
-    .trim()
-    .replace(/\/+$/, "");
   const apiKey = String(apiKeyRaw ?? "").trim();
   const modelId = String(modelIdRaw ?? "").trim();
   const modelRef = `vllm/${modelId}`;
@@ -49,29 +46,6 @@ export async function promptAndConfigureVllm(params: {
 
   const nextConfig: OpenClawConfig = {
     ...params.cfg,
-    models: {
-      ...params.cfg.models,
-      mode: params.cfg.models?.mode ?? "merge",
-      providers: {
-        ...params.cfg.models?.providers,
-        vllm: {
-          baseUrl,
-          api: "openai-completions",
-          apiKey: "VLLM_API_KEY",
-          models: [
-            {
-              id: modelId,
-              name: modelId,
-              reasoning: false,
-              input: ["text"],
-              cost: VLLM_DEFAULT_COST,
-              contextWindow: VLLM_DEFAULT_CONTEXT_WINDOW,
-              maxTokens: VLLM_DEFAULT_MAX_TOKENS,
-            },
-          ],
-        },
-      },
-    },
   };
 
   return { config: nextConfig, modelId, modelRef };

@@ -316,7 +316,6 @@ async function resolveProviderExecutionAuth(params: {
       provider: params.providerId,
       primaryApiKey: requireApiKey(auth, params.providerId),
     }),
-    providerConfig: params.cfg.models?.providers?.[params.providerId],
   };
 }
 
@@ -327,15 +326,14 @@ async function resolveProviderExecutionContext(params: {
   config?: MediaUnderstandingConfig;
   agentDir?: string;
 }) {
-  const { apiKeys, providerConfig } = await resolveProviderExecutionAuth({
+  const { apiKeys } = await resolveProviderExecutionAuth({
     providerId: params.providerId,
     cfg: params.cfg,
     entry: params.entry,
     agentDir: params.agentDir,
   });
-  const baseUrl = params.entry.baseUrl ?? params.config?.baseUrl ?? providerConfig?.baseUrl;
+  const baseUrl = params.entry.baseUrl ?? params.config?.baseUrl;
   const mergedHeaders = {
-    ...providerConfig?.headers,
     ...params.config?.headers,
     ...params.entry.headers,
   };

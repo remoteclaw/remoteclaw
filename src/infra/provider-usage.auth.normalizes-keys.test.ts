@@ -230,36 +230,17 @@ describe("resolveProviderAuths key normalization", () => {
     }, {});
   });
 
-  it("uses config api keys when env and profiles are missing", async () => {
+  it("returns empty when config api keys are the only source (config provider lookup gutted)", async () => {
     await withSuiteHome(
       async (home) => {
-        const modelDef = {
-          id: "test-model",
-          name: "Test Model",
-          reasoning: false,
-          input: ["text"],
-          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-          contextWindow: 1024,
-          maxTokens: 256,
-        };
+        // config.models.providers was gutted — getCustomProviderApiKey always returns undefined.
+        // Even with provider apiKey values in config, no auth should resolve.
         await writeConfig(home, {
           models: {
             providers: {
-              zai: {
-                baseUrl: "https://api.z.ai",
-                models: [modelDef],
-                apiKey: "cfg-zai-key",
-              },
-              minimax: {
-                baseUrl: "https://api.minimaxi.com",
-                models: [modelDef],
-                apiKey: "cfg-minimax-key",
-              },
-              xiaomi: {
-                baseUrl: "https://api.xiaomi.example",
-                models: [modelDef],
-                apiKey: "cfg-xiaomi-key",
-              },
+              zai: { apiKey: "cfg-zai-key" },
+              minimax: { apiKey: "cfg-minimax-key" },
+              xiaomi: { apiKey: "cfg-xiaomi-key" },
             },
           },
         });
@@ -267,11 +248,7 @@ describe("resolveProviderAuths key normalization", () => {
         const auths = await resolveProviderAuths({
           providers: ["zai", "minimax", "xiaomi"],
         });
-        expect(auths).toEqual([
-          { provider: "zai", token: "cfg-zai-key" },
-          { provider: "minimax", token: "cfg-minimax-key" },
-          { provider: "xiaomi", token: "cfg-xiaomi-key" },
-        ]);
+        expect(auths).toEqual([]);
       },
       {
         ZAI_API_KEY: undefined,

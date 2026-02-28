@@ -11,9 +11,6 @@ type ModelRegistryLike = {
   getAvailable?: () => ModelEntry[];
   getAll: () => ModelEntry[];
 };
-type ConfigModelEntry = { id?: string; contextWindow?: number };
-type ProviderConfigEntry = { models?: ConfigModelEntry[] };
-type ModelsConfig = { providers?: Record<string, ProviderConfigEntry | undefined> };
 type AgentModelEntry = { params?: Record<string, unknown> };
 
 const ANTHROPIC_1M_MODEL_PREFIXES = ["claude-opus-4", "claude-sonnet-4"] as const;
@@ -37,30 +34,6 @@ export function applyDiscoveredContextWindows(params: {
     // prefer the smaller window so token budgeting is fail-safe (no overestimation).
     if (existing === undefined || contextWindow < existing) {
       params.cache.set(model.id, contextWindow);
-    }
-  }
-}
-
-export function applyConfiguredContextWindows(params: {
-  cache: Map<string, number>;
-  modelsConfig: ModelsConfig | undefined;
-}) {
-  const providers = params.modelsConfig?.providers;
-  if (!providers || typeof providers !== "object") {
-    return;
-  }
-  for (const provider of Object.values(providers)) {
-    if (!Array.isArray(provider?.models)) {
-      continue;
-    }
-    for (const model of provider.models) {
-      const modelId = typeof model?.id === "string" ? model.id : undefined;
-      const contextWindow =
-        typeof model?.contextWindow === "number" ? model.contextWindow : undefined;
-      if (!modelId || !contextWindow || contextWindow <= 0) {
-        continue;
-      }
-      params.cache.set(modelId, contextWindow);
     }
   }
 }
@@ -95,13 +68,8 @@ const loadPromise = (async () => {
       models,
     });
   } catch {
-    // If model discovery fails, continue with config overrides only.
+    // If model discovery fails, continue with best-effort cache.
   }
-
-  applyConfiguredContextWindows({
-    cache: MODEL_CACHE,
-    modelsConfig: cfg.models as ModelsConfig | undefined,
-  });
 })().catch(() => {
   // Keep lookup best-effort.
 });

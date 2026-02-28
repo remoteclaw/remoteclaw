@@ -8,11 +8,7 @@ import type { RuntimeEnv } from "../runtime.js";
 import { runOnboardingWizard } from "./onboarding.js";
 import type { WizardPrompter, WizardSelectParams } from "./prompts.js";
 
-const ensureAuthProfileStore = vi.hoisted(() => vi.fn(() => ({ profiles: {} })));
-const promptAuthChoiceGrouped = vi.hoisted(() => vi.fn(async () => "skip"));
-const applyAuthChoice = vi.hoisted(() => vi.fn(async (args) => ({ config: args.config })));
-const resolvePreferredProviderForAuthChoice = vi.hoisted(() => vi.fn(() => "openai"));
-const promptCustomApiConfig = vi.hoisted(() => vi.fn(async (args) => ({ config: args.config })));
+const upsertAuthProfile = vi.hoisted(() => vi.fn());
 const configureGatewayForOnboarding = vi.hoisted(() =>
   vi.fn(async (args) => ({
     nextConfig: args.nextConfig,
@@ -89,20 +85,7 @@ vi.mock("../commands/onboard-channels.js", () => ({
 }));
 
 vi.mock("../agents/auth-profiles.js", () => ({
-  ensureAuthProfileStore,
-}));
-
-vi.mock("../commands/auth-choice-prompt.js", () => ({
-  promptAuthChoiceGrouped,
-}));
-
-vi.mock("../commands/auth-choice.js", () => ({
-  applyAuthChoice,
-  resolvePreferredProviderForAuthChoice,
-}));
-
-vi.mock("../commands/onboard-custom.js", () => ({
-  promptCustomApiConfig,
+  upsertAuthProfile,
 }));
 
 vi.mock("../commands/health.js", () => ({
@@ -244,7 +227,7 @@ describe("runOnboardingWizard", () => {
         {
           acceptRisk: true,
           flow: "quickstart",
-          authChoice: "skip",
+          runtime: "claude",
           installDaemon: false,
           skipProviders: true,
           skipSkills: true,
@@ -261,9 +244,18 @@ describe("runOnboardingWizard", () => {
   });
 
   it("skips prompts and setup steps when flags are set", async () => {
-    const select = vi.fn(
-      async (_params: WizardSelectParams<unknown>) => "quickstart",
-    ) as unknown as WizardPrompter["select"];
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      // Runtime credential prompt: choose skip
+      if (
+        params.message === "Authentication for Claude Code" ||
+        params.message === "Authentication for Gemini CLI" ||
+        params.message === "Authentication for Codex CLI" ||
+        params.message === "Authentication for OpenCode"
+      ) {
+        return "skip";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
     const multiselect: WizardPrompter["multiselect"] = vi.fn(async () => []);
     const prompter = buildWizardPrompter({ select, multiselect });
     const runtime = createRuntime({ throwsOnExit: true });
@@ -272,7 +264,7 @@ describe("runOnboardingWizard", () => {
       {
         acceptRisk: true,
         flow: "quickstart",
-        authChoice: "skip",
+        runtime: "claude",
         installDaemon: false,
         skipProviders: true,
         skipSkills: true,
@@ -283,7 +275,6 @@ describe("runOnboardingWizard", () => {
       prompter,
     );
 
-    expect(select).not.toHaveBeenCalled();
     expect(setupChannels).not.toHaveBeenCalled();
     expect(healthCommand).not.toHaveBeenCalled();
     expect(runTui).not.toHaveBeenCalled();
@@ -304,6 +295,14 @@ describe("runOnboardingWizard", () => {
       if (opts.message === "How do you want to hatch your bot?") {
         return "tui";
       }
+      if (
+        opts.message === "Authentication for Claude Code" ||
+        opts.message === "Authentication for Gemini CLI" ||
+        opts.message === "Authentication for Codex CLI" ||
+        opts.message === "Authentication for OpenCode"
+      ) {
+        return "skip";
+      }
       return "quickstart";
     }) as unknown as WizardPrompter["select"];
 
@@ -316,7 +315,7 @@ describe("runOnboardingWizard", () => {
         flow: "quickstart",
         mode: "local",
         workspace: workspaceDir,
-        authChoice: "skip",
+        runtime: "claude",
         skipProviders: true,
         skipSkills: true,
         skipHealth: true,
@@ -347,15 +346,26 @@ describe("runOnboardingWizard", () => {
     delete process.env.BRAVE_API_KEY;
 
     try {
+      const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+        if (
+          params.message === "Authentication for Claude Code" ||
+          params.message === "Authentication for Gemini CLI" ||
+          params.message === "Authentication for Codex CLI" ||
+          params.message === "Authentication for OpenCode"
+        ) {
+          return "skip";
+        }
+        return "quickstart";
+      }) as unknown as WizardPrompter["select"];
       const note: WizardPrompter["note"] = vi.fn(async () => {});
-      const prompter = buildWizardPrompter({ note });
+      const prompter = buildWizardPrompter({ note, select });
       const runtime = createRuntime();
 
       await runOnboardingWizard(
         {
           acceptRisk: true,
           flow: "quickstart",
-          authChoice: "skip",
+          runtime: "claude",
           installDaemon: false,
           skipProviders: true,
           skipSkills: true,

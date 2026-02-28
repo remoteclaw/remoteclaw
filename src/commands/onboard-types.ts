@@ -88,6 +88,8 @@ export type ChannelChoice = ChannelId;
 // Legacy alias (pre-rename).
 export type ProviderChoice = ChannelChoice;
 
+export type AgentRuntime = "claude" | "gemini" | "codex" | "opencode";
+
 export type OnboardOptions = {
   mode?: OnboardMode;
   /** "manual" is an alias for "advanced". */
@@ -97,28 +99,22 @@ export type OnboardOptions = {
   /** Required for non-interactive onboarding; skips the interactive risk prompt when true. */
   acceptRisk?: boolean;
   reset?: boolean;
-  authChoice?: AuthChoice;
-  /** Used when `authChoice=token` in non-interactive mode. */
-  tokenProvider?: string;
-  /** Used when `authChoice=token` in non-interactive mode. */
-  token?: string;
-  /** Used when `authChoice=token` in non-interactive mode. */
-  tokenProfileId?: string;
-  /** Used when `authChoice=token` in non-interactive mode. */
-  tokenExpiresIn?: string;
+  runtime?: AgentRuntime;
   anthropicApiKey?: string;
   openaiApiKey?: string;
+  geminiApiKey?: string;
+  codexApiKey?: string;
+  /** Auth token (e.g., CLAUDE_CODE_OAUTH_TOKEN for Claude). */
+  authToken?: string;
+  // Provider API key fields (consumed by legacy auth-choice system via ONBOARD_PROVIDER_AUTH_FLAGS).
   mistralApiKey?: string;
   openrouterApiKey?: string;
   kilocodeApiKey?: string;
   litellmApiKey?: string;
   aiGatewayApiKey?: string;
-  cloudflareAiGatewayAccountId?: string;
-  cloudflareAiGatewayGatewayId?: string;
   cloudflareAiGatewayApiKey?: string;
   moonshotApiKey?: string;
   kimiCodeApiKey?: string;
-  geminiApiKey?: string;
   zaiApiKey?: string;
   xiaomiApiKey?: string;
   minimaxApiKey?: string;
@@ -128,14 +124,9 @@ export type OnboardOptions = {
   huggingfaceApiKey?: string;
   opencodeZenApiKey?: string;
   xaiApiKey?: string;
+  qianfanApiKey?: string;
   volcengineApiKey?: string;
   byteplusApiKey?: string;
-  qianfanApiKey?: string;
-  customBaseUrl?: string;
-  customApiKey?: string;
-  customModelId?: string;
-  customProviderId?: string;
-  customCompatibility?: "openai" | "anthropic";
   gatewayPort?: number;
   gatewayBind?: GatewayBind;
   gatewayAuth?: GatewayAuthChoice;

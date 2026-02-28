@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { makeTempWorkspace } from "../test-helpers/workspace.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import {
@@ -33,25 +33,6 @@ const NON_INTERACTIVE_DEFAULT_OPTIONS = {
   skipChannels: true,
   json: true,
 } as const;
-
-let ensureAuthProfileStore: typeof import("../agents/auth-profiles.js").ensureAuthProfileStore;
-let upsertAuthProfile: typeof import("../agents/auth-profiles.js").upsertAuthProfile;
-
-type ProviderAuthConfigSnapshot = {
-  auth?: { profiles?: Record<string, { provider?: string; mode?: string }> };
-  agents?: { defaults?: { model?: { primary?: string } } };
-  models?: {
-    providers?: Record<
-      string,
-      {
-        baseUrl?: string;
-        api?: string;
-        apiKey?: string;
-        models?: Array<{ id?: string }>;
-      }
-    >;
-  };
-};
 
 async function removeDirWithRetry(dir: string): Promise<void> {
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -89,7 +70,6 @@ async function withOnboardEnv(
         OPENCLAW_SKIP_CANVAS_HOST: "1",
         OPENCLAW_GATEWAY_TOKEN: undefined,
         OPENCLAW_GATEWAY_PASSWORD: undefined,
-        CUSTOM_API_KEY: undefined,
         OPENCLAW_DISABLE_CONFIG_CACHE: "1",
       },
       async () => {
@@ -100,6 +80,10 @@ async function withOnboardEnv(
     await removeDirWithRetry(tempHome);
   }
 }
+
+type RuntimeConfigSnapshot = {
+  agents?: { defaults?: { runtime?: string } };
+};
 
 async function runNonInteractiveOnboardingWithDefaults(
   runtime: NonInteractiveRuntime,
@@ -114,448 +98,81 @@ async function runNonInteractiveOnboardingWithDefaults(
   );
 }
 
-async function runOnboardingAndReadConfig(
-  env: OnboardEnv,
-  options: Record<string, unknown>,
-): Promise<ProviderAuthConfigSnapshot> {
-  await runNonInteractiveOnboardingWithDefaults(env.runtime, {
-    skipSkills: true,
-    ...options,
-  });
-  return readJsonFile<ProviderAuthConfigSnapshot>(env.configPath);
-}
-
-const CUSTOM_LOCAL_BASE_URL = "https://models.custom.local/v1";
-const CUSTOM_LOCAL_MODEL_ID = "local-large";
-const CUSTOM_LOCAL_PROVIDER_ID = "custom-models-custom-local";
-
-async function runCustomLocalNonInteractive(
-  runtime: NonInteractiveRuntime,
-  overrides: Record<string, unknown> = {},
-): Promise<void> {
-  await runNonInteractiveOnboardingWithDefaults(runtime, {
-    authChoice: "custom-api-key",
-    customBaseUrl: CUSTOM_LOCAL_BASE_URL,
-    customModelId: CUSTOM_LOCAL_MODEL_ID,
-    skipSkills: true,
-    ...overrides,
-  });
-}
-
-async function readCustomLocalProviderApiKey(configPath: string): Promise<string | undefined> {
-  const cfg = await readJsonFile<ProviderAuthConfigSnapshot>(configPath);
-  return cfg.models?.providers?.[CUSTOM_LOCAL_PROVIDER_ID]?.apiKey;
-}
-
-async function expectApiKeyProfile(params: {
-  profileId: string;
-  provider: string;
-  key: string;
-  metadata?: Record<string, string>;
-}): Promise<void> {
-  const store = ensureAuthProfileStore();
-  const profile = store.profiles[params.profileId];
-  expect(profile?.type).toBe("api_key");
-  if (profile?.type === "api_key") {
-    expect(profile.provider).toBe(params.provider);
-    expect(profile.key).toBe(params.key);
-    if (params.metadata) {
-      expect(profile.metadata).toEqual(params.metadata);
-    }
-  }
-}
-
-describe("onboard (non-interactive): provider auth", () => {
-  beforeAll(async () => {
-    ({ ensureAuthProfileStore, upsertAuthProfile } = await import("../agents/auth-profiles.js"));
-  });
-
-  it("stores MiniMax API key and uses global baseUrl by default", async () => {
-    await withOnboardEnv("openclaw-onboard-minimax-", async (env) => {
-      const cfg = await runOnboardingAndReadConfig(env, {
-        authChoice: "minimax-api",
-        minimaxApiKey: "sk-minimax-test",
-      });
-
-      expect(cfg.auth?.profiles?.["minimax:default"]?.provider).toBe("minimax");
-      expect(cfg.auth?.profiles?.["minimax:default"]?.mode).toBe("api_key");
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-      await expectApiKeyProfile({
-        profileId: "minimax:default",
-        provider: "minimax",
-        key: "sk-minimax-test",
-      });
-    });
-  });
-
-  it("supports MiniMax CN API endpoint auth choice", async () => {
-    await withOnboardEnv("openclaw-onboard-minimax-cn-", async (env) => {
-      const cfg = await runOnboardingAndReadConfig(env, {
-        authChoice: "minimax-api-key-cn",
-        minimaxApiKey: "sk-minimax-test",
-      });
-
-      expect(cfg.auth?.profiles?.["minimax-cn:default"]?.provider).toBe("minimax-cn");
-      expect(cfg.auth?.profiles?.["minimax-cn:default"]?.mode).toBe("api_key");
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-      await expectApiKeyProfile({
-        profileId: "minimax-cn:default",
-        provider: "minimax-cn",
-        key: "sk-minimax-test",
-      });
-    });
-  });
-
-  it("stores Z.AI API key and uses global baseUrl by default", async () => {
-    await withOnboardEnv("openclaw-onboard-zai-", async (env) => {
-      const cfg = await runOnboardingAndReadConfig(env, {
-        authChoice: "zai-api-key",
-        zaiApiKey: "zai-test-key",
-      });
-
-      expect(cfg.auth?.profiles?.["zai:default"]?.provider).toBe("zai");
-      expect(cfg.auth?.profiles?.["zai:default"]?.mode).toBe("api_key");
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-      await expectApiKeyProfile({ profileId: "zai:default", provider: "zai", key: "zai-test-key" });
-    });
-  });
-
-  it("supports Z.AI CN coding endpoint auth choice", async () => {
-    await withOnboardEnv("openclaw-onboard-zai-cn-", async (env) => {
-      const cfg = await runOnboardingAndReadConfig(env, {
-        authChoice: "zai-coding-cn",
-        zaiApiKey: "zai-test-key",
-      });
-
-      // models.providers.zai assertion removed: config.models.providers was gutted.
-      // Verify auth profile was created instead.
-      expect(cfg.auth?.profiles?.["zai:default"]?.provider).toBe("zai");
-    });
-  });
-
-  it("stores xAI API key without setting a default model", async () => {
-    await withOnboardEnv("openclaw-onboard-xai-", async (env) => {
-      const rawKey = "xai-test-\r\nkey";
-      const cfg = await runOnboardingAndReadConfig(env, {
-        authChoice: "xai-api-key",
-        xaiApiKey: rawKey,
-      });
-
-      expect(cfg.auth?.profiles?.["xai:default"]?.provider).toBe("xai");
-      expect(cfg.auth?.profiles?.["xai:default"]?.mode).toBe("api_key");
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-      await expectApiKeyProfile({ profileId: "xai:default", provider: "xai", key: "xai-test-key" });
-    });
-  });
-
-  it("infers Mistral auth choice from --mistral-api-key without setting a default model", async () => {
-    await withOnboardEnv("openclaw-onboard-mistral-infer-", async (env) => {
-      const cfg = await runOnboardingAndReadConfig(env, {
-        mistralApiKey: "mistral-test-key",
-      });
-
-      expect(cfg.auth?.profiles?.["mistral:default"]?.provider).toBe("mistral");
-      expect(cfg.auth?.profiles?.["mistral:default"]?.mode).toBe("api_key");
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-      await expectApiKeyProfile({
-        profileId: "mistral:default",
-        provider: "mistral",
-        key: "mistral-test-key",
-      });
-    });
-  });
-
-  it("stores Volcano Engine API key without setting a default model", async () => {
-    await withOnboardEnv("openclaw-onboard-volcengine-", async (env) => {
-      const cfg = await runOnboardingAndReadConfig(env, {
-        authChoice: "volcengine-api-key",
-        volcengineApiKey: "volcengine-test-key",
-      });
-
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-    });
-  });
-
-  it("infers BytePlus auth choice from --byteplus-api-key without setting a default model", async () => {
-    await withOnboardEnv("openclaw-onboard-byteplus-infer-", async (env) => {
-      const cfg = await runOnboardingAndReadConfig(env, {
-        byteplusApiKey: "byteplus-test-key",
-      });
-
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-    });
-  });
-
-  it("stores Vercel AI Gateway API key without setting a default model", async () => {
-    await withOnboardEnv("openclaw-onboard-ai-gateway-", async (env) => {
-      const cfg = await runOnboardingAndReadConfig(env, {
-        authChoice: "ai-gateway-api-key",
-        aiGatewayApiKey: "gateway-test-key",
-      });
-
-      expect(cfg.auth?.profiles?.["vercel-ai-gateway:default"]?.provider).toBe("vercel-ai-gateway");
-      expect(cfg.auth?.profiles?.["vercel-ai-gateway:default"]?.mode).toBe("api_key");
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-      await expectApiKeyProfile({
-        profileId: "vercel-ai-gateway:default",
-        provider: "vercel-ai-gateway",
-        key: "gateway-test-key",
-      });
-    });
-  });
-
-  it("stores token auth profile", async () => {
-    await withOnboardEnv("openclaw-onboard-token-", async ({ configPath, runtime }) => {
-      const cleanToken = `sk-ant-oat01-${"a".repeat(80)}`;
-      const token = `${cleanToken.slice(0, 30)}\r${cleanToken.slice(30)}`;
-
+describe("onboard (non-interactive): runtime auth", () => {
+  it("stores runtime selection in config when --runtime is provided", async () => {
+    await withOnboardEnv("openclaw-onboard-runtime-claude-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
-        authChoice: "token",
-        tokenProvider: "anthropic",
-        token,
-        tokenProfileId: "anthropic:default",
-      });
-
-      const cfg = await readJsonFile<ProviderAuthConfigSnapshot>(configPath);
-
-      expect(cfg.auth?.profiles?.["anthropic:default"]?.provider).toBe("anthropic");
-      expect(cfg.auth?.profiles?.["anthropic:default"]?.mode).toBe("token");
-
-      const store = ensureAuthProfileStore();
-      const profile = store.profiles["anthropic:default"];
-      expect(profile?.type).toBe("token");
-      if (profile?.type === "token") {
-        expect(profile.provider).toBe("anthropic");
-        expect(profile.token).toBe(cleanToken);
-      }
-    });
-  });
-
-  it("stores OpenAI API key without setting a default model", async () => {
-    await withOnboardEnv("openclaw-onboard-openai-", async (env) => {
-      const cfg = await runOnboardingAndReadConfig(env, {
-        authChoice: "openai-api-key",
-        openaiApiKey: "sk-openai-test",
-      });
-
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-    });
-  });
-
-  it("rejects vLLM auth choice in non-interactive mode", async () => {
-    await withOnboardEnv("openclaw-onboard-vllm-non-interactive-", async ({ runtime }) => {
-      await expect(
-        runNonInteractiveOnboardingWithDefaults(runtime, {
-          authChoice: "vllm",
-          skipSkills: true,
-        }),
-      ).rejects.toThrow('Auth choice "vllm" requires interactive mode.');
-    });
-  });
-
-  it("stores LiteLLM API key without setting a default model", async () => {
-    await withOnboardEnv("openclaw-onboard-litellm-", async (env) => {
-      const cfg = await runOnboardingAndReadConfig(env, {
-        authChoice: "litellm-api-key",
-        litellmApiKey: "litellm-test-key",
-      });
-
-      expect(cfg.auth?.profiles?.["litellm:default"]?.provider).toBe("litellm");
-      expect(cfg.auth?.profiles?.["litellm:default"]?.mode).toBe("api_key");
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-      await expectApiKeyProfile({
-        profileId: "litellm:default",
-        provider: "litellm",
-        key: "litellm-test-key",
-      });
-    });
-  });
-
-  it.each([
-    {
-      name: "stores Cloudflare AI Gateway API key and metadata",
-      prefix: "openclaw-onboard-cf-gateway-",
-      options: {
-        authChoice: "cloudflare-ai-gateway-api-key",
-      },
-    },
-    {
-      name: "infers Cloudflare auth choice from API key flags",
-      prefix: "openclaw-onboard-cf-gateway-infer-",
-      options: {},
-    },
-  ])("$name", async ({ prefix, options }) => {
-    await withOnboardEnv(prefix, async ({ configPath, runtime }) => {
-      await runNonInteractiveOnboardingWithDefaults(runtime, {
-        cloudflareAiGatewayAccountId: "cf-account-id",
-        cloudflareAiGatewayGatewayId: "cf-gateway-id",
-        cloudflareAiGatewayApiKey: "cf-gateway-test-key",
-        skipSkills: true,
-        ...options,
-      });
-
-      const cfg = await readJsonFile<ProviderAuthConfigSnapshot>(configPath);
-
-      expect(cfg.auth?.profiles?.["cloudflare-ai-gateway:default"]?.provider).toBe(
-        "cloudflare-ai-gateway",
-      );
-      expect(cfg.auth?.profiles?.["cloudflare-ai-gateway:default"]?.mode).toBe("api_key");
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-      await expectApiKeyProfile({
-        profileId: "cloudflare-ai-gateway:default",
-        provider: "cloudflare-ai-gateway",
-        key: "cf-gateway-test-key",
-        metadata: { accountId: "cf-account-id", gatewayId: "cf-gateway-id" },
-      });
-    });
-  });
-
-  it("infers Together auth choice from --together-api-key without setting a default model", async () => {
-    await withOnboardEnv("openclaw-onboard-together-infer-", async (env) => {
-      const cfg = await runOnboardingAndReadConfig(env, {
-        togetherApiKey: "together-test-key",
-      });
-
-      expect(cfg.auth?.profiles?.["together:default"]?.provider).toBe("together");
-      expect(cfg.auth?.profiles?.["together:default"]?.mode).toBe("api_key");
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-      await expectApiKeyProfile({
-        profileId: "together:default",
-        provider: "together",
-        key: "together-test-key",
-      });
-    });
-  });
-
-  it("infers QIANFAN auth choice from --qianfan-api-key without setting a default model", async () => {
-    await withOnboardEnv("openclaw-onboard-qianfan-infer-", async (env) => {
-      const cfg = await runOnboardingAndReadConfig(env, {
-        qianfanApiKey: "qianfan-test-key",
-      });
-
-      expect(cfg.auth?.profiles?.["qianfan:default"]?.provider).toBe("qianfan");
-      expect(cfg.auth?.profiles?.["qianfan:default"]?.mode).toBe("api_key");
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-      await expectApiKeyProfile({
-        profileId: "qianfan:default",
-        provider: "qianfan",
-        key: "qianfan-test-key",
-      });
-    });
-  });
-
-  it("configures a custom provider from non-interactive flags", async () => {
-    await withOnboardEnv("openclaw-onboard-custom-provider-", async ({ configPath, runtime }) => {
-      await runNonInteractiveOnboardingWithDefaults(runtime, {
-        authChoice: "custom-api-key",
-        customBaseUrl: "https://llm.example.com/v1",
-        customApiKey: "custom-test-key",
-        customModelId: "foo-large",
-        customCompatibility: "anthropic",
+        runtime: "claude",
         skipSkills: true,
       });
-
-      const cfg = await readJsonFile<ProviderAuthConfigSnapshot>(configPath);
-
-      // models.providers assertions removed: config.models.providers was gutted.
-      expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
+      const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
+      expect(config.agents?.defaults?.runtime).toBe("claude");
     });
   });
 
-  it("infers custom provider auth choice from custom flags", async () => {
-    await withOnboardEnv(
-      "openclaw-onboard-custom-provider-infer-",
-      async ({ configPath, runtime }) => {
-        await runNonInteractiveOnboardingWithDefaults(runtime, {
-          customBaseUrl: "https://models.custom.local/v1",
-          customModelId: "local-large",
-          customApiKey: "custom-test-key",
-          skipSkills: true,
-        });
-
-        const cfg = await readJsonFile<ProviderAuthConfigSnapshot>(configPath);
-
-        // models.providers assertions removed: config.models.providers was gutted.
-        expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
-      },
-    );
-  });
-
-  it("uses CUSTOM_API_KEY env fallback for non-interactive custom provider auth", async () => {
-    await withOnboardEnv(
-      "openclaw-onboard-custom-provider-env-fallback-",
-      async ({ configPath, runtime }) => {
-        process.env.CUSTOM_API_KEY = "custom-env-key";
-        await runCustomLocalNonInteractive(runtime);
-        // models.providers was gutted; apiKey is no longer stored in config.
-        expect(await readCustomLocalProviderApiKey(configPath)).toBeUndefined();
-      },
-    );
-  });
-
-  it("uses matching profile fallback for non-interactive custom provider auth", async () => {
-    await withOnboardEnv(
-      "openclaw-onboard-custom-provider-profile-fallback-",
-      async ({ configPath, runtime }) => {
-        upsertAuthProfile({
-          profileId: `${CUSTOM_LOCAL_PROVIDER_ID}:default`,
-          credential: {
-            type: "api_key",
-            provider: CUSTOM_LOCAL_PROVIDER_ID,
-            key: "custom-profile-key",
-          },
-        });
-        await runCustomLocalNonInteractive(runtime);
-        // models.providers was gutted; apiKey is no longer stored in config.
-        expect(await readCustomLocalProviderApiKey(configPath)).toBeUndefined();
-      },
-    );
-  });
-
-  it("fails custom provider auth when compatibility is invalid", async () => {
-    await withOnboardEnv(
-      "openclaw-onboard-custom-provider-invalid-compat-",
-      async ({ runtime }) => {
-        await expect(
-          runNonInteractiveOnboardingWithDefaults(runtime, {
-            authChoice: "custom-api-key",
-            customBaseUrl: "https://models.custom.local/v1",
-            customModelId: "local-large",
-            customCompatibility: "xmlrpc",
-            skipSkills: true,
-          }),
-        ).rejects.toThrow('Invalid --custom-compatibility (use "openai" or "anthropic").');
-      },
-    );
-  });
-
-  it("fails custom provider auth when explicit provider id is invalid", async () => {
-    await withOnboardEnv("openclaw-onboard-custom-provider-invalid-id-", async ({ runtime }) => {
-      await expect(
-        runNonInteractiveOnboardingWithDefaults(runtime, {
-          authChoice: "custom-api-key",
-          customBaseUrl: "https://models.custom.local/v1",
-          customModelId: "local-large",
-          customProviderId: "!!!",
-          skipSkills: true,
-        }),
-      ).rejects.toThrow(
-        "Invalid custom provider config: Custom provider ID must include letters, numbers, or hyphens.",
-      );
+  it("infers claude runtime from --anthropic-api-key", async () => {
+    await withOnboardEnv("openclaw-onboard-infer-claude-", async ({ configPath, runtime }) => {
+      await runNonInteractiveOnboardingWithDefaults(runtime, {
+        anthropicApiKey: "sk-ant-test-key",
+        skipSkills: true,
+      });
+      const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
+      expect(config.agents?.defaults?.runtime).toBe("claude");
     });
   });
 
-  it("fails inferred custom auth when required flags are incomplete", async () => {
-    await withOnboardEnv(
-      "openclaw-onboard-custom-provider-missing-required-",
-      async ({ runtime }) => {
-        await expect(
-          runNonInteractiveOnboardingWithDefaults(runtime, {
-            customApiKey: "custom-test-key",
-            skipSkills: true,
-          }),
-        ).rejects.toThrow('Auth choice "custom-api-key" requires a base URL and model ID.');
-      },
-    );
+  it("infers gemini runtime from --gemini-api-key", async () => {
+    await withOnboardEnv("openclaw-onboard-infer-gemini-", async ({ configPath, runtime }) => {
+      await runNonInteractiveOnboardingWithDefaults(runtime, {
+        geminiApiKey: "gemini-test-key",
+        skipSkills: true,
+      });
+      const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
+      expect(config.agents?.defaults?.runtime).toBe("gemini");
+    });
+  });
+
+  it("infers codex runtime from --codex-api-key", async () => {
+    await withOnboardEnv("openclaw-onboard-infer-codex-", async ({ configPath, runtime }) => {
+      await runNonInteractiveOnboardingWithDefaults(runtime, {
+        codexApiKey: "codex-test-key",
+        skipSkills: true,
+      });
+      const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
+      expect(config.agents?.defaults?.runtime).toBe("codex");
+    });
+  });
+
+  it("infers opencode runtime from --openai-api-key", async () => {
+    await withOnboardEnv("openclaw-onboard-infer-opencode-", async ({ configPath, runtime }) => {
+      await runNonInteractiveOnboardingWithDefaults(runtime, {
+        openaiApiKey: "sk-openai-test-key",
+        skipSkills: true,
+      });
+      const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
+      expect(config.agents?.defaults?.runtime).toBe("opencode");
+    });
+  });
+
+  it("infers claude runtime from --auth-token", async () => {
+    await withOnboardEnv("openclaw-onboard-auth-token-", async ({ configPath, runtime }) => {
+      await runNonInteractiveOnboardingWithDefaults(runtime, {
+        authToken: "my-oauth-token",
+        skipSkills: true,
+      });
+      const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
+      expect(config.agents?.defaults?.runtime).toBe("claude");
+    });
+  });
+
+  it("completes without error when no runtime or key is provided (skip mode)", async () => {
+    await withOnboardEnv("openclaw-onboard-no-runtime-", async ({ configPath, runtime }) => {
+      await runNonInteractiveOnboardingWithDefaults(runtime, {
+        skipSkills: true,
+      });
+      const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
+      // No runtime set when none specified.
+      expect(config.agents?.defaults?.runtime).toBeUndefined();
+    });
   });
 });

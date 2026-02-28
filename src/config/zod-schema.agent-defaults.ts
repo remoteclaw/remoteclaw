@@ -167,6 +167,9 @@ export const AgentDefaultsSchema = z
       .strict()
       .optional(),
     sandbox: AgentSandboxSchema,
+    runtime: z
+      .union([z.literal("claude"), z.literal("gemini"), z.literal("codex"), z.literal("opencode")])
+      .optional(),
   })
   .strict()
   .optional();

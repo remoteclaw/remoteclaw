@@ -6,7 +6,7 @@ export function logNonInteractiveOnboardingJson(params: {
   runtime: RuntimeEnv;
   mode: "local" | "remote";
   workspaceDir?: string;
-  authChoice?: string;
+  runtimeChoice?: string;
   gateway?: {
     port: number;
     bind: string;
@@ -26,7 +26,7 @@ export function logNonInteractiveOnboardingJson(params: {
       {
         mode: params.mode,
         workspace: params.workspaceDir,
-        authChoice: params.authChoice,
+        runtime: params.runtimeChoice,
         gateway: params.gateway,
         installDaemon: Boolean(params.installDaemon),
         daemonRuntime: params.daemonRuntime,

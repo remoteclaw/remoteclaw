@@ -12,11 +12,95 @@ import {
   resolveControlUiLinks,
   waitForGatewayReachable,
 } from "../onboard-helpers.js";
-import type { OnboardOptions } from "../onboard-types.js";
-import { inferAuthChoiceFromFlags } from "./local/auth-choice-inference.js";
+import type { AgentRuntime, OnboardOptions } from "../onboard-types.js";
 import { applyNonInteractiveGatewayConfig } from "./local/gateway-config.js";
 import { logNonInteractiveOnboardingJson } from "./local/output.js";
 import { resolveNonInteractiveWorkspaceDir } from "./local/workspace.js";
+
+function inferRuntimeFromFlags(opts: OnboardOptions): AgentRuntime | undefined {
+  if (opts.runtime) {
+    return opts.runtime;
+  }
+  // Infer from provided key flags.
+  if (opts.codexApiKey) {
+    return "codex";
+  }
+  if (opts.geminiApiKey) {
+    return "gemini";
+  }
+  if (opts.authToken) {
+    return "claude";
+  }
+  if (opts.anthropicApiKey) {
+    return "claude";
+  }
+  if (opts.openaiApiKey) {
+    return "opencode";
+  }
+  return undefined;
+}
+
+async function applyNonInteractiveRuntimeAuth(params: {
+  nextConfig: OpenClawConfig;
+  runtime: AgentRuntime;
+  opts: OnboardOptions;
+}): Promise<OpenClawConfig> {
+  const { runtime, opts } = params;
+  let config = {
+    ...params.nextConfig,
+    agents: {
+      ...params.nextConfig.agents,
+      defaults: {
+        ...params.nextConfig.agents?.defaults,
+        runtime,
+      },
+    },
+  };
+
+  const { upsertAuthProfile } = await import("../../agents/auth-profiles.js");
+
+  if (runtime === "claude") {
+    if (opts.authToken) {
+      upsertAuthProfile({
+        profileId: "claude:oauth-token",
+        credential: { type: "api_key", provider: "anthropic", key: opts.authToken },
+      });
+    } else if (opts.anthropicApiKey) {
+      upsertAuthProfile({
+        profileId: "anthropic:default",
+        credential: { type: "api_key", provider: "anthropic", key: opts.anthropicApiKey },
+      });
+    }
+  } else if (runtime === "gemini") {
+    if (opts.geminiApiKey) {
+      upsertAuthProfile({
+        profileId: "google:default",
+        credential: { type: "api_key", provider: "google", key: opts.geminiApiKey },
+      });
+    }
+  } else if (runtime === "codex") {
+    if (opts.codexApiKey) {
+      upsertAuthProfile({
+        profileId: "codex:default",
+        credential: { type: "api_key", provider: "codex", key: opts.codexApiKey },
+      });
+    }
+  } else if (runtime === "opencode") {
+    if (opts.anthropicApiKey) {
+      upsertAuthProfile({
+        profileId: "anthropic:default",
+        credential: { type: "api_key", provider: "anthropic", key: opts.anthropicApiKey },
+      });
+    } else if (opts.openaiApiKey) {
+      upsertAuthProfile({
+        profileId: "openai:default",
+        credential: { type: "api_key", provider: "openai", key: opts.openaiApiKey },
+      });
+    }
+  }
+
+  return config;
+}
 
 export async function runNonInteractiveOnboardingLocal(params: {
   opts: OnboardOptions;
@@ -34,32 +118,13 @@ export async function runNonInteractiveOnboardingLocal(params: {
 
   let nextConfig: OpenClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
 
-  const inferredAuthChoice = inferAuthChoiceFromFlags(opts);
-  if (!opts.authChoice && inferredAuthChoice.matches.length > 1) {
-    runtime.error(
-      [
-        "Multiple API key flags were provided for non-interactive onboarding.",
-        "Use a single provider flag or pass --auth-choice explicitly.",
-        `Flags: ${inferredAuthChoice.matches.map((match) => match.label).join(", ")}`,
-      ].join("\n"),
-    );
-    runtime.exit(1);
-    return;
-  }
-  const authChoice = opts.authChoice ?? inferredAuthChoice.choice ?? "skip";
-  if (authChoice !== "skip") {
-    const { applyNonInteractiveAuthChoice } = await import("./local/auth-choice.js");
-    const nextConfigAfterAuth = await applyNonInteractiveAuthChoice({
+  const selectedRuntime = inferRuntimeFromFlags(opts);
+  if (selectedRuntime) {
+    nextConfig = await applyNonInteractiveRuntimeAuth({
       nextConfig,
-      authChoice,
+      runtime: selectedRuntime,
       opts,
-      runtime,
-      baseConfig,
     });
-    if (!nextConfigAfterAuth) {
-      return;
-    }
-    nextConfig = nextConfigAfterAuth;
   }
 
   const gatewayBasePort = resolveGatewayPort(baseConfig);
@@ -115,7 +180,7 @@ export async function runNonInteractiveOnboardingLocal(params: {
     runtime,
     mode,
     workspaceDir,
-    authChoice,
+    runtimeChoice: selectedRuntime,
     gateway: {
       port: gatewayResult.port,
       bind: gatewayResult.bind,

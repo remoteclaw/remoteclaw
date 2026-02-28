@@ -1,5 +1,6 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import type {
+  AgentRuntime,
   GatewayAuthChoice,
   OnboardMode,
   OnboardOptions,
@@ -17,6 +18,213 @@ import { defaultRuntime } from "../runtime.js";
 import { resolveUserPath } from "../utils.js";
 import type { QuickstartGatewayDefaults, WizardFlow } from "./onboarding.types.js";
 import { WizardCancelledError, type WizardPrompter } from "./prompts.js";
+
+// Skip guidance messages shown when user chooses "Skip" for credential.
+const SKIP_GUIDANCE: Record<AgentRuntime, string> = {
+  claude: [
+    "Make sure Claude Code can authenticate. Options: run `claude login`,",
+    "set `ANTHROPIC_API_KEY`, or configure AWS Bedrock (`CLAUDE_CODE_USE_BEDROCK=1`)",
+    "or Google Vertex AI (`CLAUDE_CODE_USE_VERTEX=1`).",
+  ].join(" "),
+  gemini: [
+    "Make sure Gemini CLI can authenticate. Options: run `gemini` and select",
+    "'Login with Google', set `GEMINI_API_KEY`, or configure",
+    "`gcloud auth application-default login` for Vertex AI.",
+  ].join(" "),
+  codex: [
+    "Make sure Codex CLI can authenticate. Options: run `codex login`,",
+    "or set `CODEX_API_KEY` in your environment.",
+  ].join(" "),
+  opencode: [
+    "Make sure OpenCode can authenticate. Options: run `opencode` and use `/connect`,",
+    "configure `opencode.json`, or set the appropriate provider env var",
+    "(e.g., `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`).",
+  ].join(" "),
+};
+
+type UpsertAuthProfileFn = (params: {
+  profileId: string;
+  credential: { type: "api_key"; provider: string; key: string };
+}) => void;
+
+async function promptRuntimeCredential(params: {
+  runtime: AgentRuntime;
+  config: OpenClawConfig;
+  prompter: WizardPrompter;
+  upsertAuthProfile: UpsertAuthProfileFn;
+  opts: OnboardOptions;
+}): Promise<OpenClawConfig> {
+  const { runtime, prompter, upsertAuthProfile, opts } = params;
+  let config = params.config;
+
+  if (runtime === "claude") {
+    const choice = await prompter.select({
+      message: "Authentication for Claude Code",
+      options: [
+        {
+          value: "api-key",
+          label: "Provide API key",
+          hint: "RemoteClaw injects ANTHROPIC_API_KEY",
+        },
+        {
+          value: "auth-token",
+          label: "Provide auth token",
+          hint: "RemoteClaw injects CLAUDE_CODE_OAUTH_TOKEN",
+        },
+        {
+          value: "skip",
+          label: "Skip",
+          hint: "Claude CLI is already authorized",
+        },
+      ],
+      initialValue: "skip",
+    });
+
+    if (choice === "api-key") {
+      const key =
+        opts.anthropicApiKey ??
+        (await prompter.text({ message: "Anthropic API key", initialValue: "" }));
+      if (key.trim()) {
+        upsertAuthProfile({
+          profileId: "anthropic:default",
+          credential: { type: "api_key", provider: "anthropic", key: key.trim() },
+        });
+      }
+    } else if (choice === "auth-token") {
+      const token =
+        opts.authToken ?? (await prompter.text({ message: "Claude auth token", initialValue: "" }));
+      if (token.trim()) {
+        upsertAuthProfile({
+          profileId: "claude:oauth-token",
+          credential: { type: "api_key", provider: "anthropic", key: token.trim() },
+        });
+      }
+    } else {
+      await prompter.note(SKIP_GUIDANCE.claude, "Authentication");
+    }
+  } else if (runtime === "gemini") {
+    const choice = await prompter.select({
+      message: "Authentication for Gemini CLI",
+      options: [
+        { value: "api-key", label: "Provide API key", hint: "RemoteClaw injects GEMINI_API_KEY" },
+        {
+          value: "skip",
+          label: "Skip",
+          hint: "Already authorized",
+        },
+      ],
+      initialValue: "skip",
+    });
+
+    if (choice === "api-key") {
+      const key =
+        opts.geminiApiKey ?? (await prompter.text({ message: "Gemini API key", initialValue: "" }));
+      if (key.trim()) {
+        upsertAuthProfile({
+          profileId: "google:default",
+          credential: { type: "api_key", provider: "google", key: key.trim() },
+        });
+      }
+    } else {
+      await prompter.note(SKIP_GUIDANCE.gemini, "Authentication");
+    }
+  } else if (runtime === "codex") {
+    const choice = await prompter.select({
+      message: "Authentication for Codex CLI",
+      options: [
+        { value: "api-key", label: "Provide API key", hint: "RemoteClaw injects CODEX_API_KEY" },
+        {
+          value: "skip",
+          label: "Skip",
+          hint: "Already authorized",
+        },
+      ],
+      initialValue: "skip",
+    });
+
+    if (choice === "api-key") {
+      const key =
+        opts.codexApiKey ?? (await prompter.text({ message: "Codex API key", initialValue: "" }));
+      if (key.trim()) {
+        upsertAuthProfile({
+          profileId: "codex:default",
+          credential: { type: "api_key", provider: "codex", key: key.trim() },
+        });
+      }
+    } else {
+      await prompter.note(SKIP_GUIDANCE.codex, "Authentication");
+    }
+  } else if (runtime === "opencode") {
+    const choice = await prompter.select({
+      message: "Authentication for OpenCode",
+      options: [
+        { value: "api-key", label: "Provide API key" },
+        {
+          value: "skip",
+          label: "Skip",
+          hint: "Already authorized",
+        },
+      ],
+      initialValue: "skip",
+    });
+
+    if (choice === "api-key") {
+      const provider = await prompter.select({
+        message: "Which provider does your OpenCode use?",
+        options: [
+          { value: "anthropic", label: "Anthropic", hint: "Injects ANTHROPIC_API_KEY" },
+          { value: "openai", label: "OpenAI", hint: "Injects OPENAI_API_KEY" },
+          { value: "other", label: "Other", hint: "Prompt for env var name + value" },
+        ],
+      });
+
+      if (provider === "anthropic") {
+        const key =
+          opts.anthropicApiKey ??
+          (await prompter.text({ message: "Anthropic API key", initialValue: "" }));
+        if (key.trim()) {
+          upsertAuthProfile({
+            profileId: "anthropic:default",
+            credential: { type: "api_key", provider: "anthropic", key: key.trim() },
+          });
+        }
+      } else if (provider === "openai") {
+        const key =
+          opts.openaiApiKey ??
+          (await prompter.text({ message: "OpenAI API key", initialValue: "" }));
+        if (key.trim()) {
+          upsertAuthProfile({
+            profileId: "openai:default",
+            credential: { type: "api_key", provider: "openai", key: key.trim() },
+          });
+        }
+      } else {
+        const envVarName = await prompter.text({
+          message: "Environment variable name",
+          initialValue: "",
+        });
+        const envVarValue = await prompter.text({
+          message: `Value for ${envVarName.trim() || "env var"}`,
+          initialValue: "",
+        });
+        if (envVarName.trim() && envVarValue.trim()) {
+          upsertAuthProfile({
+            profileId: `opencode:${envVarName.trim().toLowerCase()}`,
+            credential: {
+              type: "api_key",
+              provider: "opencode",
+              key: envVarValue.trim(),
+            },
+          });
+        }
+      }
+    } else {
+      await prompter.note(SKIP_GUIDANCE.opencode, "Authentication");
+    }
+  }
+
+  return config;
+}
 
 async function requireRiskAcknowledgement(params: {
   opts: OnboardOptions;
@@ -336,43 +544,41 @@ export async function runOnboardingWizard(
   const { applyOnboardingLocalWorkspaceConfig } = await import("../commands/onboard-config.js");
   let nextConfig: OpenClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
 
-  const { ensureAuthProfileStore } = await import("../agents/auth-profiles.js");
-  const { promptAuthChoiceGrouped } = await import("../commands/auth-choice-prompt.js");
-  const { promptCustomApiConfig } = await import("../commands/onboard-custom.js");
-  const { applyAuthChoice } = await import("../commands/auth-choice.js");
+  const { upsertAuthProfile } = await import("../agents/auth-profiles.js");
 
-  const authStore = ensureAuthProfileStore(undefined, {
-    allowKeychainPrompt: false,
-  });
-  const authChoice =
-    opts.authChoice ??
-    (await promptAuthChoiceGrouped({
-      prompter,
-      store: authStore,
-      includeSkip: true,
+  // Step 1: Runtime selection
+  const selectedRuntime: AgentRuntime =
+    opts.runtime ??
+    (await prompter.select({
+      message: "Which agent runtime?",
+      options: [
+        { value: "claude", label: "Claude Code (claude --print)" },
+        { value: "gemini", label: "Gemini CLI (gemini)" },
+        { value: "codex", label: "Codex CLI (codex exec)" },
+        { value: "opencode", label: "OpenCode (opencode)" },
+      ],
+      initialValue: "claude",
     }));
 
-  if (authChoice === "custom-api-key") {
-    const customResult = await promptCustomApiConfig({
-      prompter,
-      runtime,
-      config: nextConfig,
-    });
-    nextConfig = customResult.config;
-  } else {
-    const authResult = await applyAuthChoice({
-      authChoice,
-      config: nextConfig,
-      prompter,
-      runtime,
-      setDefaultModel: true,
-      opts: {
-        tokenProvider: opts.tokenProvider,
-        token: opts.authChoice === "apiKey" && opts.token ? opts.token : undefined,
+  nextConfig = {
+    ...nextConfig,
+    agents: {
+      ...nextConfig.agents,
+      defaults: {
+        ...nextConfig.agents?.defaults,
+        runtime: selectedRuntime,
       },
-    });
-    nextConfig = authResult.config;
-  }
+    },
+  };
+
+  // Step 2: Credential prompt (runtime-specific)
+  nextConfig = await promptRuntimeCredential({
+    runtime: selectedRuntime,
+    config: nextConfig,
+    prompter,
+    upsertAuthProfile,
+    opts,
+  });
 
   const { configureGatewayForOnboarding } = await import("./onboarding.gateway-config.js");
   const gateway = await configureGatewayForOnboarding({

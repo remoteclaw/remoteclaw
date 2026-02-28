@@ -1,7 +1,7 @@
 import type { ClawdbotConfig, PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { FeishuMessageEvent } from "./bot.js";
-import { handleFeishuMessage } from "./bot.js";
+import { handleFeishuMessage, toMessageResourceType } from "./bot.js";
 import { setFeishuRuntime } from "./runtime.js";
 
 const {
@@ -967,5 +967,21 @@ describe("handleFeishuMessage command authorization", () => {
         parentPeer: { kind: "group", id: "oc-group" },
       }),
     );
+  });
+});
+
+describe("toMessageResourceType", () => {
+  it("maps image to image", () => {
+    expect(toMessageResourceType("image")).toBe("image");
+  });
+
+  it("maps audio to file", () => {
+    expect(toMessageResourceType("audio")).toBe("file");
+  });
+
+  it("maps video/file/sticker to file", () => {
+    expect(toMessageResourceType("video")).toBe("file");
+    expect(toMessageResourceType("file")).toBe("file");
+    expect(toMessageResourceType("sticker")).toBe("file");
   });
 });

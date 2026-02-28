@@ -603,6 +603,8 @@ class NodeRuntime(context: Context) {
     if (voiceReplySpeakerLazy.isInitialized()) {
       voiceReplySpeaker.setPlaybackEnabled(value)
     }
+    // Keep TalkMode in sync so speaker mute works when ttsOnAllResponses is active.
+    talkMode.setPlaybackEnabled(value)
   }
 
   fun refreshGatewayConnection() {

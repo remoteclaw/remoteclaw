@@ -66,6 +66,24 @@ describe("buildStatusMessage", () => {
     expect(normalized).toContain("Queue: collect");
   });
 
+  it("falls back to sessionEntry verboseLevel when resolvedVerbose is not passed", async () => {
+    const text = await buildStatusMessage({
+      agent: {
+        model: "anthropic/pi:opus",
+      },
+      sessionEntry: {
+        sessionId: "abc",
+        updatedAt: 0,
+        verboseLevel: "full",
+      },
+      sessionKey: "agent:main:main",
+      queue: { mode: "collect", depth: 0 },
+    });
+    const normalized = normalizeTestText(text);
+
+    expect(normalized).toContain("verbose:full");
+  });
+
   it("notes channel model overrides in status output", async () => {
     const text = await buildStatusMessage({
       config: {

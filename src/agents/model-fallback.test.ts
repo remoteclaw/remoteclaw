@@ -1,12 +1,5 @@
-import crypto from "node:crypto";
-import fs from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
-import type { AuthProfileStore } from "./auth-profiles.js";
-import { saveAuthProfileStore } from "./auth-profiles.js";
-import { AUTH_STORE_VERSION } from "./auth-profiles/constants.js";
 import { isAnthropicBillingError } from "./live-auth-keys.js";
 import { runWithImageModelFallback, runWithModelFallback } from "./model-fallback.js";
 import { makeModelFallbackCfg } from "./test-helpers/model-fallback-config-fixture.js";
@@ -23,49 +16,6 @@ function makeFallbacksOnlyCfg(): OpenClawConfig {
       },
     },
   } as OpenClawConfig;
-}
-
-function makeProviderFallbackCfg(provider: string): OpenClawConfig {
-  return makeCfg({
-    agents: {
-      defaults: {
-        model: {
-          primary: `${provider}/m1`,
-          fallbacks: ["fallback/ok-model"],
-        },
-      },
-    },
-  });
-}
-
-async function withTempAuthStore<T>(
-  store: AuthProfileStore,
-  run: (tempDir: string) => Promise<T>,
-): Promise<T> {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
-  saveAuthProfileStore(store, tempDir);
-  try {
-    return await run(tempDir);
-  } finally {
-    await fs.rm(tempDir, { recursive: true, force: true });
-  }
-}
-
-async function runWithStoredAuth(params: {
-  cfg: OpenClawConfig;
-  store: AuthProfileStore;
-  provider: string;
-  run: (provider: string, model: string) => Promise<string>;
-}) {
-  return withTempAuthStore(params.store, async (tempDir) =>
-    runWithModelFallback({
-      cfg: params.cfg,
-      provider: params.provider,
-      model: "m1",
-      agentDir: tempDir,
-      run: params.run,
-    }),
-  );
 }
 
 async function expectFallsBackToHaiku(params: {
@@ -105,60 +55,6 @@ function createOverrideFailureRun(params: {
     }
     throw new Error(`unexpected fallback candidate: ${provider}/${model}`);
   });
-}
-
-function makeSingleProviderStore(params: {
-  provider: string;
-  usageStat: NonNullable<AuthProfileStore["usageStats"]>[string];
-}): AuthProfileStore {
-  const profileId = `${params.provider}:default`;
-  return {
-    version: AUTH_STORE_VERSION,
-    profiles: {
-      [profileId]: {
-        type: "api_key",
-        provider: params.provider,
-        key: "test-key",
-      },
-    },
-    usageStats: {
-      [profileId]: params.usageStat,
-    },
-  };
-}
-
-function createFallbackOnlyRun() {
-  return vi.fn().mockImplementation(async (providerId, modelId) => {
-    if (providerId === "fallback") {
-      return "ok";
-    }
-    throw new Error(`unexpected provider: ${providerId}/${modelId}`);
-  });
-}
-
-async function expectSkippedUnavailableProvider(params: {
-  providerPrefix: string;
-  usageStat: NonNullable<AuthProfileStore["usageStats"]>[string];
-  expectedReason: string;
-}) {
-  const provider = `${params.providerPrefix}-${crypto.randomUUID()}`;
-  const cfg = makeProviderFallbackCfg(provider);
-  const store = makeSingleProviderStore({
-    provider,
-    usageStat: params.usageStat,
-  });
-  const run = createFallbackOnlyRun();
-
-  const result = await runWithStoredAuth({
-    cfg,
-    store,
-    provider,
-    run,
-  });
-
-  expect(result.result).toBe("ok");
-  expect(run.mock.calls).toEqual([["fallback", "ok-model"]]);
-  expect(result.attempts[0]?.reason).toBe(params.expectedReason);
 }
 
 describe("runWithModelFallback", () => {
@@ -441,106 +337,6 @@ describe("runWithModelFallback", () => {
     expect(run).toHaveBeenCalledTimes(2);
     expect(run.mock.calls[1]?.[0]).toBe("openai");
     expect(run.mock.calls[1]?.[1]).toBe("gpt-4.1-mini");
-  });
-
-  it("skips providers when all profiles are in cooldown", async () => {
-    await expectSkippedUnavailableProvider({
-      providerPrefix: "cooldown-test",
-      usageStat: {
-        cooldownUntil: Date.now() + 5 * 60_000,
-      },
-      expectedReason: "rate_limit",
-    });
-  });
-
-  it("does not skip OpenRouter when legacy cooldown markers exist", async () => {
-    const provider = "openrouter";
-    const cfg = makeProviderFallbackCfg(provider);
-    const store = makeSingleProviderStore({
-      provider,
-      usageStat: {
-        cooldownUntil: Date.now() + 5 * 60_000,
-        disabledUntil: Date.now() + 10 * 60_000,
-        disabledReason: "billing",
-      },
-    });
-    const run = vi.fn().mockImplementation(async (providerId) => {
-      if (providerId === "openrouter") {
-        return "ok";
-      }
-      throw new Error(`unexpected provider: ${providerId}`);
-    });
-
-    const result = await runWithStoredAuth({
-      cfg,
-      store,
-      provider,
-      run,
-    });
-
-    expect(result.result).toBe("ok");
-    expect(run).toHaveBeenCalledTimes(1);
-    expect(run.mock.calls[0]?.[0]).toBe("openrouter");
-    expect(result.attempts).toEqual([]);
-  });
-
-  it("propagates disabled reason when all profiles are unavailable", async () => {
-    const now = Date.now();
-    await expectSkippedUnavailableProvider({
-      providerPrefix: "disabled-test",
-      usageStat: {
-        disabledUntil: now + 5 * 60_000,
-        disabledReason: "billing",
-        failureCounts: { rate_limit: 4 },
-      },
-      expectedReason: "billing",
-    });
-  });
-
-  it("does not skip when any profile is available", async () => {
-    const provider = `cooldown-mixed-${crypto.randomUUID()}`;
-    const profileA = `${provider}:a`;
-    const profileB = `${provider}:b`;
-
-    const store: AuthProfileStore = {
-      version: AUTH_STORE_VERSION,
-      profiles: {
-        [profileA]: {
-          type: "api_key",
-          provider,
-          key: "key-a",
-        },
-        [profileB]: {
-          type: "api_key",
-          provider,
-          key: "key-b",
-        },
-      },
-      usageStats: {
-        [profileA]: {
-          cooldownUntil: Date.now() + 60_000,
-        },
-      },
-    };
-
-    const cfg = makeProviderFallbackCfg(provider);
-    const run = vi.fn().mockImplementation(async (providerId) => {
-      if (providerId === provider) {
-        return "ok";
-      }
-      return "unexpected";
-    });
-
-    const result = await runWithStoredAuth({
-      cfg,
-      store,
-      provider,
-      run,
-    });
-
-    expect(result.result).toBe("ok");
-    expect(run.mock.calls).toEqual([[provider, "m1"]]);
-    expect(result.attempts).toEqual([]);
   });
 
   it("does not append configured primary when fallbacksOverride is set", async () => {

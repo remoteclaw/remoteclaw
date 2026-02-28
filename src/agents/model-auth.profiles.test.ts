@@ -1,37 +1,11 @@
-import fs from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import type { Api, Model } from "@mariozechner/pi-ai";
 import { describe, expect, it } from "vitest";
 import { withEnvAsync } from "../test-utils/env.js";
-import { ensureAuthProfileStore } from "./auth-profiles.js";
-import { getApiKeyForModel, resolveApiKeyForProvider, resolveEnvApiKey } from "./model-auth.js";
-
-const oauthFixture = {
-  access: "access-token",
-  refresh: "refresh-token",
-  expires: Date.now() + 60_000,
-  accountId: "acct_123",
-};
-
-const BEDROCK_PROVIDER_CFG = {
-  models: {
-    providers: {
-      "amazon-bedrock": {
-        baseUrl: "https://bedrock-runtime.us-east-1.amazonaws.com",
-        api: "bedrock-converse-stream",
-        auth: "aws-sdk",
-        models: [],
-      },
-    },
-  },
-} as const;
+import { resolveApiKeyForProvider, resolveEnvApiKey } from "./model-auth.js";
 
 async function resolveBedrockProvider() {
   return resolveApiKeyForProvider({
     provider: "amazon-bedrock",
     store: { version: 1, profiles: {} },
-    cfg: BEDROCK_PROVIDER_CFG as never,
   });
 }
 
@@ -41,130 +15,13 @@ async function expectBedrockAuthSource(params: {
 }) {
   await withEnvAsync(params.env, async () => {
     const resolved = await resolveBedrockProvider();
-    expect(resolved.mode).toBe("aws-sdk");
+    expect(resolved.mode).toBe("api-key");
     expect(resolved.apiKey).toBeUndefined();
     expect(resolved.source).toContain(params.expectedSource);
   });
 }
 
 describe("getApiKeyForModel", () => {
-  it("migrates legacy oauth.json into auth-profiles.json", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-oauth-"));
-
-    try {
-      const agentDir = path.join(tempDir, "agent");
-      await withEnvAsync(
-        {
-          OPENCLAW_STATE_DIR: tempDir,
-          OPENCLAW_AGENT_DIR: agentDir,
-          PI_CODING_AGENT_DIR: agentDir,
-        },
-        async () => {
-          const oauthDir = path.join(tempDir, "credentials");
-          await fs.mkdir(oauthDir, { recursive: true, mode: 0o700 });
-          await fs.writeFile(
-            path.join(oauthDir, "oauth.json"),
-            `${JSON.stringify({ "openai-codex": oauthFixture }, null, 2)}\n`,
-            "utf8",
-          );
-
-          const model = {
-            id: "codex-mini-latest",
-            provider: "openai-codex",
-            api: "openai-codex-responses",
-          } as Model<Api>;
-
-          const store = ensureAuthProfileStore(process.env.OPENCLAW_AGENT_DIR, {
-            allowKeychainPrompt: false,
-          });
-          const apiKey = await getApiKeyForModel({
-            model,
-            cfg: {
-              auth: {
-                profiles: {
-                  "openai-codex:default": {
-                    provider: "openai-codex",
-                    mode: "oauth",
-                  },
-                },
-              },
-            },
-            store,
-            agentDir: process.env.OPENCLAW_AGENT_DIR,
-          });
-          expect(apiKey.apiKey).toBe(oauthFixture.access);
-
-          const authProfiles = await fs.readFile(
-            path.join(tempDir, "agent", "auth-profiles.json"),
-            "utf8",
-          );
-          const authData = JSON.parse(authProfiles) as Record<string, unknown>;
-          expect(authData.profiles).toMatchObject({
-            "openai-codex:default": {
-              type: "oauth",
-              provider: "openai-codex",
-              access: oauthFixture.access,
-              refresh: oauthFixture.refresh,
-            },
-          });
-        },
-      );
-    } finally {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    }
-  });
-
-  it("suggests openai-codex when only Codex OAuth is configured", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
-
-    try {
-      const agentDir = path.join(tempDir, "agent");
-      await withEnvAsync(
-        {
-          OPENAI_API_KEY: undefined,
-          OPENCLAW_STATE_DIR: tempDir,
-          OPENCLAW_AGENT_DIR: agentDir,
-          PI_CODING_AGENT_DIR: agentDir,
-        },
-        async () => {
-          const authProfilesPath = path.join(tempDir, "agent", "auth-profiles.json");
-          await fs.mkdir(path.dirname(authProfilesPath), {
-            recursive: true,
-            mode: 0o700,
-          });
-          await fs.writeFile(
-            authProfilesPath,
-            `${JSON.stringify(
-              {
-                version: 1,
-                profiles: {
-                  "openai-codex:default": {
-                    type: "oauth",
-                    provider: "openai-codex",
-                    ...oauthFixture,
-                  },
-                },
-              },
-              null,
-              2,
-            )}\n`,
-            "utf8",
-          );
-
-          let error: unknown = null;
-          try {
-            await resolveApiKeyForProvider({ provider: "openai" });
-          } catch (err) {
-            error = err;
-          }
-          expect(String(error)).toContain("openai-codex/gpt-5.3-codex");
-        },
-      );
-    } finally {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    }
-  });
-
   it("throws when ZAI API key is missing", async () => {
     await withEnvAsync(
       {

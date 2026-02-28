@@ -1,22 +1,11 @@
 import fs from "node:fs";
-import type { OAuthCredentials } from "@mariozechner/pi-ai";
-import { resolveOAuthPath } from "../../config/paths.js";
 import { withFileLock } from "../../infra/file-lock.js";
 import { loadJsonFile, saveJsonFile } from "../../infra/json-file.js";
 import { AUTH_STORE_LOCK_OPTIONS, AUTH_STORE_VERSION, log } from "./constants.js";
-import { syncExternalCliCredentials } from "./external-cli-sync.js";
 import { ensureAuthStoreFile, resolveAuthStorePath, resolveLegacyAuthStorePath } from "./paths.js";
-import type { AuthProfileCredential, AuthProfileStore, ProfileUsageStats } from "./types.js";
+import type { AuthProfileCredential, AuthProfileStore } from "./types.js";
 
 type LegacyAuthStore = Record<string, AuthProfileCredential>;
-
-function _syncAuthProfileStore(target: AuthProfileStore, source: AuthProfileStore): void {
-  target.version = source.version;
-  target.profiles = source.profiles;
-  target.order = source.order;
-  target.lastGood = source.lastGood;
-  target.usageStats = source.usageStats;
-}
 
 export async function updateAuthProfileStoreWithLock(params: {
   agentDir?: string;
@@ -53,7 +42,7 @@ function coerceLegacyStore(raw: unknown): LegacyAuthStore | null {
       continue;
     }
     const typed = value as Partial<AuthProfileCredential>;
-    if (typed.type !== "api_key" && typed.type !== "oauth" && typed.type !== "token") {
+    if (typed.type !== "api_key") {
       continue;
     }
     entries[key] = {
@@ -78,110 +67,36 @@ function coerceAuthStore(raw: unknown): AuthProfileStore | null {
     if (!value || typeof value !== "object") {
       continue;
     }
-    const typed = value as Partial<AuthProfileCredential>;
-    if (typed.type !== "api_key" && typed.type !== "oauth" && typed.type !== "token") {
+    const typed = value as Record<string, unknown>;
+    const provider = typeof typed.provider === "string" ? typed.provider : "";
+    if (!provider) {
       continue;
     }
-    if (!typed.provider) {
-      continue;
-    }
-    normalized[key] = typed as AuthProfileCredential;
+    // Accept any credential type from disk — coerce to api_key since
+    // OAuth/token types have been removed.
+    normalized[key] = {
+      ...typed,
+      type: "api_key",
+      provider,
+    } as AuthProfileCredential;
   }
-  const order =
-    record.order && typeof record.order === "object"
-      ? Object.entries(record.order as Record<string, unknown>).reduce(
-          (acc, [provider, value]) => {
-            if (!Array.isArray(value)) {
-              return acc;
-            }
-            const list = value
-              .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
-              .filter(Boolean);
-            if (list.length === 0) {
-              return acc;
-            }
-            acc[provider] = list;
-            return acc;
-          },
-          {} as Record<string, string[]>,
-        )
-      : undefined;
   return {
     version: Number(record.version ?? AUTH_STORE_VERSION),
     profiles: normalized,
-    order,
-    lastGood:
-      record.lastGood && typeof record.lastGood === "object"
-        ? (record.lastGood as Record<string, string>)
-        : undefined,
-    usageStats:
-      record.usageStats && typeof record.usageStats === "object"
-        ? (record.usageStats as Record<string, ProfileUsageStats>)
-        : undefined,
   };
-}
-
-function mergeRecord<T>(
-  base?: Record<string, T>,
-  override?: Record<string, T>,
-): Record<string, T> | undefined {
-  if (!base && !override) {
-    return undefined;
-  }
-  if (!base) {
-    return { ...override };
-  }
-  if (!override) {
-    return { ...base };
-  }
-  return { ...base, ...override };
 }
 
 function mergeAuthProfileStores(
   base: AuthProfileStore,
   override: AuthProfileStore,
 ): AuthProfileStore {
-  if (
-    Object.keys(override.profiles).length === 0 &&
-    !override.order &&
-    !override.lastGood &&
-    !override.usageStats
-  ) {
+  if (Object.keys(override.profiles).length === 0) {
     return base;
   }
   return {
     version: Math.max(base.version, override.version ?? base.version),
     profiles: { ...base.profiles, ...override.profiles },
-    order: mergeRecord(base.order, override.order),
-    lastGood: mergeRecord(base.lastGood, override.lastGood),
-    usageStats: mergeRecord(base.usageStats, override.usageStats),
   };
-}
-
-function mergeOAuthFileIntoStore(store: AuthProfileStore): boolean {
-  const oauthPath = resolveOAuthPath();
-  const oauthRaw = loadJsonFile(oauthPath);
-  if (!oauthRaw || typeof oauthRaw !== "object") {
-    return false;
-  }
-  const oauthEntries = oauthRaw as Record<string, OAuthCredentials>;
-  let mutated = false;
-  for (const [provider, creds] of Object.entries(oauthEntries)) {
-    if (!creds || typeof creds !== "object") {
-      continue;
-    }
-    const profileId = `${provider}:default`;
-    if (store.profiles[profileId]) {
-      continue;
-    }
-    store.profiles[profileId] = {
-      type: "oauth",
-      provider,
-      ...creds,
-    };
-    mutated = true;
-  }
-  return mutated;
 }
 
 function applyLegacyStore(store: AuthProfileStore, legacy: LegacyAuthStore): void {
@@ -194,29 +109,7 @@ function applyLegacyStore(store: AuthProfileStore, legacy: LegacyAuthStore): voi
         key: cred.key,
         ...(cred.email ? { email: cred.email } : {}),
       };
-      continue;
     }
-    if (cred.type === "token") {
-      store.profiles[profileId] = {
-        type: "token",
-        provider: String(cred.provider ?? provider),
-        token: cred.token,
-        ...(typeof cred.expires === "number" ? { expires: cred.expires } : {}),
-        ...(cred.email ? { email: cred.email } : {}),
-      };
-      continue;
-    }
-    store.profiles[profileId] = {
-      type: "oauth",
-      provider: String(cred.provider ?? provider),
-      access: cred.access,
-      refresh: cred.refresh,
-      expires: cred.expires,
-      ...(cred.enterpriseUrl ? { enterpriseUrl: cred.enterpriseUrl } : {}),
-      ...(cred.projectId ? { projectId: cred.projectId } : {}),
-      ...(cred.accountId ? { accountId: cred.accountId } : {}),
-      ...(cred.email ? { email: cred.email } : {}),
-    };
   }
 }
 
@@ -225,11 +118,6 @@ export function loadAuthProfileStore(): AuthProfileStore {
   const raw = loadJsonFile(authPath);
   const asStore = coerceAuthStore(raw);
   if (asStore) {
-    // Sync from external CLI tools on every load
-    const synced = syncExternalCliCredentials(asStore);
-    if (synced) {
-      saveJsonFile(authPath, asStore);
-    }
     return asStore;
   }
 
@@ -241,13 +129,10 @@ export function loadAuthProfileStore(): AuthProfileStore {
       profiles: {},
     };
     applyLegacyStore(store, legacy);
-    syncExternalCliCredentials(store);
     return store;
   }
 
-  const store: AuthProfileStore = { version: AUTH_STORE_VERSION, profiles: {} };
-  syncExternalCliCredentials(store);
-  return store;
+  return { version: AUTH_STORE_VERSION, profiles: {} };
 }
 
 function loadAuthProfileStoreForAgent(
@@ -258,11 +143,6 @@ function loadAuthProfileStoreForAgent(
   const raw = loadJsonFile(authPath);
   const asStore = coerceAuthStore(raw);
   if (asStore) {
-    // Sync from external CLI tools on every load
-    const synced = syncExternalCliCredentials(asStore);
-    if (synced) {
-      saveJsonFile(authPath, asStore);
-    }
     return asStore;
   }
 
@@ -289,16 +169,12 @@ function loadAuthProfileStoreForAgent(
     applyLegacyStore(store, legacy);
   }
 
-  const mergedOAuth = mergeOAuthFileIntoStore(store);
-  const syncedCli = syncExternalCliCredentials(store);
-  const shouldWrite = legacy !== null || mergedOAuth || syncedCli;
+  const shouldWrite = legacy !== null;
   if (shouldWrite) {
     saveJsonFile(authPath, store);
   }
 
-  // PR #368: legacy auth.json could get re-migrated from other agent dirs,
-  // overwriting fresh OAuth creds with stale tokens (fixes #363). Delete only
-  // after we've successfully written auth-profiles.json.
+  // Delete legacy auth.json after successful migration.
   if (shouldWrite && legacy !== null) {
     const legacyPath = resolveLegacyAuthStorePath(agentDir);
     try {
@@ -338,9 +214,6 @@ export function saveAuthProfileStore(store: AuthProfileStore, agentDir?: string)
   const payload = {
     version: AUTH_STORE_VERSION,
     profiles: store.profiles,
-    order: store.order ?? undefined,
-    lastGood: store.lastGood ?? undefined,
-    usageStats: store.usageStats ?? undefined,
   } satisfies AuthProfileStore;
   saveJsonFile(authPath, payload);
 }

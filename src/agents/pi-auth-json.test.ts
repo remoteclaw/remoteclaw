@@ -27,33 +27,6 @@ async function readAuthJson(agentDir: string) {
 }
 
 describe("ensurePiAuthJsonFromAuthProfiles", () => {
-  it("writes openai-codex oauth credentials into auth.json for pi-coding-agent discovery", async () => {
-    const agentDir = await createAgentDir();
-
-    writeProfiles(agentDir, {
-      "openai-codex:default": {
-        type: "oauth",
-        provider: "openai-codex",
-        access: "access-token",
-        refresh: "refresh-token",
-        expires: Date.now() + 60_000,
-      },
-    });
-
-    const first = await ensurePiAuthJsonFromAuthProfiles(agentDir);
-    expect(first.wrote).toBe(true);
-
-    const auth = await readAuthJson(agentDir);
-    expect(auth["openai-codex"]).toMatchObject({
-      type: "oauth",
-      access: "access-token",
-      refresh: "refresh-token",
-    });
-
-    const second = await ensurePiAuthJsonFromAuthProfiles(agentDir);
-    expect(second.wrote).toBe(false);
-  });
-
   it("writes api_key credentials into auth.json", async () => {
     const agentDir = await createAgentDir();
 
@@ -75,27 +48,6 @@ describe("ensurePiAuthJsonFromAuthProfiles", () => {
     });
   });
 
-  it("writes token credentials as api_key into auth.json", async () => {
-    const agentDir = await createAgentDir();
-
-    writeProfiles(agentDir, {
-      "anthropic:default": {
-        type: "token",
-        provider: "anthropic",
-        token: "sk-ant-test-token",
-      },
-    });
-
-    const result = await ensurePiAuthJsonFromAuthProfiles(agentDir);
-    expect(result.wrote).toBe(true);
-
-    const auth = await readAuthJson(agentDir);
-    expect(auth["anthropic"]).toMatchObject({
-      type: "api_key",
-      key: "sk-ant-test-token",
-    });
-  });
-
   it("syncs multiple providers at once", async () => {
     const agentDir = await createAgentDir();
 
@@ -106,16 +58,14 @@ describe("ensurePiAuthJsonFromAuthProfiles", () => {
         key: "sk-or-key",
       },
       "anthropic:default": {
-        type: "token",
+        type: "api_key",
         provider: "anthropic",
-        token: "sk-ant-token",
+        key: "sk-ant-key",
       },
       "openai-codex:default": {
-        type: "oauth",
+        type: "api_key",
         provider: "openai-codex",
-        access: "access",
-        refresh: "refresh",
-        expires: Date.now() + 60_000,
+        key: "sk-codex-key",
       },
     });
 
@@ -125,8 +75,8 @@ describe("ensurePiAuthJsonFromAuthProfiles", () => {
     const auth = await readAuthJson(agentDir);
 
     expect(auth["openrouter"]).toMatchObject({ type: "api_key", key: "sk-or-key" });
-    expect(auth["anthropic"]).toMatchObject({ type: "api_key", key: "sk-ant-token" });
-    expect(auth["openai-codex"]).toMatchObject({ type: "oauth", access: "access" });
+    expect(auth["anthropic"]).toMatchObject({ type: "api_key", key: "sk-ant-key" });
+    expect(auth["openai-codex"]).toMatchObject({ type: "api_key", key: "sk-codex-key" });
   });
 
   it("skips profiles with empty keys", async () => {
@@ -137,22 +87,6 @@ describe("ensurePiAuthJsonFromAuthProfiles", () => {
         type: "api_key",
         provider: "openrouter",
         key: "",
-      },
-    });
-
-    const result = await ensurePiAuthJsonFromAuthProfiles(agentDir);
-    expect(result.wrote).toBe(false);
-  });
-
-  it("skips expired token credentials", async () => {
-    const agentDir = await createAgentDir();
-
-    writeProfiles(agentDir, {
-      "anthropic:default": {
-        type: "token",
-        provider: "anthropic",
-        token: "sk-ant-expired",
-        expires: Date.now() - 60_000,
       },
     });
 

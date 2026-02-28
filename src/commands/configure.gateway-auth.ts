@@ -1,11 +1,8 @@
-import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
+import { upsertAuthProfile } from "../agents/auth-profiles.js";
 import type { OpenClawConfig, GatewayAuthConfig } from "../config/config.js";
-import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
-import { promptAuthChoiceGrouped } from "./auth-choice-prompt.js";
-import { applyAuthChoice } from "./auth-choice.js";
-import { promptCustomApiConfig } from "./onboard-custom.js";
 import { randomToken } from "./onboard-helpers.js";
+import type { AgentRuntime } from "./onboard-types.js";
 
 type GatewayAuthChoice = "token" | "password" | "trusted-proxy";
 
@@ -58,31 +55,67 @@ export function buildGatewayAuthConfig(params: {
 
 export async function promptAuthConfig(
   cfg: OpenClawConfig,
-  runtime: RuntimeEnv,
+  _runtime: unknown,
   prompter: WizardPrompter,
 ): Promise<OpenClawConfig> {
-  const authChoice = await promptAuthChoiceGrouped({
-    prompter,
-    store: ensureAuthProfileStore(undefined, {
-      allowKeychainPrompt: false,
-    }),
-    includeSkip: true,
+  const selectedRuntime: AgentRuntime = await prompter.select({
+    message: "Which agent runtime?",
+    options: [
+      { value: "claude", label: "Claude Code (claude --print)" },
+      { value: "gemini", label: "Gemini CLI (gemini)" },
+      { value: "codex", label: "Codex CLI (codex exec)" },
+      { value: "opencode", label: "OpenCode (opencode)" },
+    ],
+    initialValue: "claude",
   });
 
-  let next = cfg;
-  if (authChoice === "custom-api-key") {
-    const customResult = await promptCustomApiConfig({ prompter, runtime, config: next });
-    next = customResult.config;
-  } else if (authChoice !== "skip") {
-    const applied = await applyAuthChoice({
-      authChoice,
-      config: next,
-      prompter,
-      runtime,
-      setDefaultModel: true,
-    });
-    next = applied.config;
+  const promptApiKey = async (message: string) => {
+    const key = await prompter.text({ message, initialValue: "" });
+    return key.trim();
+  };
+
+  if (selectedRuntime === "claude") {
+    const key = await promptApiKey("Anthropic API key (or leave empty to skip)");
+    if (key) {
+      upsertAuthProfile({
+        profileId: "anthropic:default",
+        credential: { type: "api_key", provider: "anthropic", key },
+      });
+    }
+  } else if (selectedRuntime === "gemini") {
+    const key = await promptApiKey("Gemini API key (or leave empty to skip)");
+    if (key) {
+      upsertAuthProfile({
+        profileId: "google:default",
+        credential: { type: "api_key", provider: "google", key },
+      });
+    }
+  } else if (selectedRuntime === "codex") {
+    const key = await promptApiKey("Codex API key (or leave empty to skip)");
+    if (key) {
+      upsertAuthProfile({
+        profileId: "codex:default",
+        credential: { type: "api_key", provider: "codex", key },
+      });
+    }
+  } else if (selectedRuntime === "opencode") {
+    const key = await promptApiKey("API key (or leave empty to skip)");
+    if (key) {
+      upsertAuthProfile({
+        profileId: "opencode:default",
+        credential: { type: "api_key", provider: "opencode", key },
+      });
+    }
   }
 
-  return next;
+  return {
+    ...cfg,
+    agents: {
+      ...cfg.agents,
+      defaults: {
+        ...cfg.agents?.defaults,
+        runtime: selectedRuntime,
+      },
+    },
+  };
 }

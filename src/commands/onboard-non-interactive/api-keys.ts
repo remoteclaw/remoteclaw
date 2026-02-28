@@ -1,7 +1,7 @@
 import {
   ensureAuthProfileStore,
+  listProfilesForProvider,
   resolveApiKeyForProfile,
-  resolveAuthProfileOrder,
 } from "../../agents/auth-profiles.js";
 import { resolveEnvApiKey } from "../../agents/model-auth.js";
 import type { OpenClawConfig } from "../../config/config.js";
@@ -16,12 +16,8 @@ async function resolveApiKeyFromProfiles(params: {
   agentDir?: string;
 }): Promise<string | null> {
   const store = ensureAuthProfileStore(params.agentDir);
-  const order = resolveAuthProfileOrder({
-    cfg: params.cfg,
-    store,
-    provider: params.provider,
-  });
-  for (const profileId of order) {
+  const profiles = listProfilesForProvider(store, params.provider);
+  for (const profileId of profiles) {
     const cred = store.profiles[profileId];
     if (cred?.type !== "api_key") {
       continue;

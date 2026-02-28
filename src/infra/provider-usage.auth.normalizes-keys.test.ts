@@ -84,23 +84,6 @@ describe("resolveProviderAuths key normalization", () => {
     );
   }
 
-  async function writeProfileOrder(home: string, provider: string, profileIds: string[]) {
-    const agentDir = path.join(home, ".openclaw", "agents", "main", "agent");
-    const parsed = JSON.parse(
-      await fs.readFile(path.join(agentDir, "auth-profiles.json"), "utf8"),
-    ) as Record<string, unknown>;
-    const order = (parsed.order && typeof parsed.order === "object" ? parsed.order : {}) as Record<
-      string,
-      unknown
-    >;
-    order[provider] = profileIds;
-    parsed.order = order;
-    await fs.writeFile(
-      path.join(agentDir, "auth-profiles.json"),
-      `${JSON.stringify(parsed, null, 2)}\n`,
-    );
-  }
-
   async function writeLegacyPiAuth(home: string, raw: string) {
     const legacyDir = path.join(home, ".pi", "agent");
     await fs.mkdir(legacyDir, { recursive: true });
@@ -127,11 +110,11 @@ describe("resolveProviderAuths key normalization", () => {
     );
   });
 
-  it("strips embedded CR/LF from stored auth profiles (token + api_key)", async () => {
+  it("strips embedded CR/LF from stored auth profiles (api_key)", async () => {
     await withSuiteHome(
       async (home) => {
         await writeAuthProfiles(home, {
-          "minimax:default": { type: "token", provider: "minimax", token: "mini-\r\nmax" },
+          "minimax:default": { type: "api_key", provider: "minimax", key: "mini-\r\nmax" },
           "xiaomi:default": { type: "api_key", provider: "xiaomi", key: "xiao-\r\nmi" },
         });
 
@@ -196,39 +179,7 @@ describe("resolveProviderAuths key normalization", () => {
     );
   });
 
-  it("extracts google oauth token from JSON payload in token profiles", async () => {
-    await withSuiteHome(async (home) => {
-      await writeAuthProfiles(home, {
-        "google-gemini-cli:default": {
-          type: "token",
-          provider: "google-gemini-cli",
-          token: '{"token":"google-oauth-token"}',
-        },
-      });
-
-      const auths = await resolveProviderAuths({
-        providers: ["google-gemini-cli"],
-      });
-      expect(auths).toEqual([{ provider: "google-gemini-cli", token: "google-oauth-token" }]);
-    }, {});
-  });
-
-  it("keeps raw google token when token payload is not JSON", async () => {
-    await withSuiteHome(async (home) => {
-      await writeAuthProfiles(home, {
-        "google-gemini-cli:default": {
-          type: "token",
-          provider: "google-gemini-cli",
-          token: "plain-google-token",
-        },
-      });
-
-      const auths = await resolveProviderAuths({
-        providers: ["google-gemini-cli"],
-      });
-      expect(auths).toEqual([{ provider: "google-gemini-cli", token: "plain-google-token" }]);
-    }, {});
-  });
+  // Google OAuth token JSON extraction tests removed: OAuth/token support was gutted.
 
   it("returns empty when config api keys are the only source (config provider lookup gutted)", async () => {
     await withSuiteHome(
@@ -313,20 +264,20 @@ describe("resolveProviderAuths key normalization", () => {
     );
   });
 
-  it("discovers oauth provider from config but skips mismatched profile providers", async () => {
+  it("skips profiles where config provider mismatches stored profile provider", async () => {
     await withSuiteHome(async (home) => {
       await writeConfig(home, {
         auth: {
           profiles: {
-            "anthropic:default": { provider: "anthropic", mode: "token" },
+            "anthropic:default": { provider: "anthropic", mode: "api_key" },
           },
         },
       });
       await writeAuthProfiles(home, {
         "anthropic:default": {
-          type: "token",
+          type: "api_key",
           provider: "zai",
-          token: "mismatched-provider-token",
+          key: "mismatched-provider-key",
         },
       });
 
@@ -346,38 +297,20 @@ describe("resolveProviderAuths key normalization", () => {
     }, {});
   });
 
-  it("skips oauth profiles that resolve without an api key and uses later profiles", async () => {
+  it("skips profiles without a key and uses later profiles", async () => {
     await withSuiteHome(async (home) => {
       await writeAuthProfiles(home, {
         "anthropic:empty": {
-          type: "token",
+          type: "api_key",
           provider: "anthropic",
-          token: "expired-token",
-          expires: Date.now() - 60_000,
         },
-        "anthropic:valid": { type: "token", provider: "anthropic", token: "anthropic-token" },
+        "anthropic:valid": { type: "api_key", provider: "anthropic", key: "anthropic-key" },
       });
-      await writeProfileOrder(home, "anthropic", ["anthropic:empty", "anthropic:valid"]);
 
       const auths = await resolveProviderAuths({
         providers: ["anthropic"],
       });
-      expect(auths).toEqual([{ provider: "anthropic", token: "anthropic-token" }]);
-    }, {});
-  });
-
-  it("skips api_key entries in oauth token resolution order", async () => {
-    await withSuiteHome(async (home) => {
-      await writeAuthProfiles(home, {
-        "anthropic:api": { type: "api_key", provider: "anthropic", key: "api-key-1" },
-        "anthropic:token": { type: "token", provider: "anthropic", token: "token-1" },
-      });
-      await writeProfileOrder(home, "anthropic", ["anthropic:api", "anthropic:token"]);
-
-      const auths = await resolveProviderAuths({
-        providers: ["anthropic"],
-      });
-      expect(auths).toEqual([{ provider: "anthropic", token: "token-1" }]);
+      expect(auths).toEqual([{ provider: "anthropic", token: "anthropic-key" }]);
     }, {});
   });
 });

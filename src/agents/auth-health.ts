@@ -7,26 +7,22 @@ import {
 
 export type AuthProfileSource = "store";
 
-export type AuthProfileHealthStatus = "ok" | "expiring" | "expired" | "missing" | "static";
+export type AuthProfileHealthStatus = "ok" | "missing" | "static";
 
 export type AuthProfileHealth = {
   profileId: string;
   provider: string;
-  type: "oauth" | "token" | "api_key";
+  type: "api_key";
   status: AuthProfileHealthStatus;
-  expiresAt?: number;
-  remainingMs?: number;
   source: AuthProfileSource;
   label: string;
 };
 
-export type AuthProviderHealthStatus = "ok" | "expiring" | "expired" | "missing" | "static";
+export type AuthProviderHealthStatus = "ok" | "missing" | "static";
 
 export type AuthProviderHealth = {
   provider: string;
   status: AuthProviderHealthStatus;
-  expiresAt?: number;
-  remainingMs?: number;
   profiles: AuthProfileHealth[];
 };
 
@@ -71,92 +67,21 @@ export function formatRemainingShort(
   return `${days}d`;
 }
 
-function resolveOAuthStatus(
-  expiresAt: number | undefined,
-  now: number,
-  warnAfterMs: number,
-): { status: AuthProfileHealthStatus; remainingMs?: number } {
-  if (!expiresAt || !Number.isFinite(expiresAt) || expiresAt <= 0) {
-    return { status: "missing" };
-  }
-  const remainingMs = expiresAt - now;
-  if (remainingMs <= 0) {
-    return { status: "expired", remainingMs };
-  }
-  if (remainingMs <= warnAfterMs) {
-    return { status: "expiring", remainingMs };
-  }
-  return { status: "ok", remainingMs };
-}
-
 function buildProfileHealth(params: {
   profileId: string;
   credential: AuthProfileCredential;
   store: AuthProfileStore;
   cfg?: OpenClawConfig;
-  now: number;
-  warnAfterMs: number;
 }): AuthProfileHealth {
-  const { profileId, credential, store, cfg, now, warnAfterMs } = params;
+  const { profileId, credential, store, cfg } = params;
   const label = resolveAuthProfileDisplayLabel({ cfg, store, profileId });
   const source = resolveAuthProfileSource(profileId);
 
-  if (credential.type === "api_key") {
-    return {
-      profileId,
-      provider: credential.provider,
-      type: "api_key",
-      status: "static",
-      source,
-      label,
-    };
-  }
-
-  if (credential.type === "token") {
-    const expiresAt =
-      typeof credential.expires === "number" && Number.isFinite(credential.expires)
-        ? credential.expires
-        : undefined;
-    if (!expiresAt || expiresAt <= 0) {
-      return {
-        profileId,
-        provider: credential.provider,
-        type: "token",
-        status: "static",
-        source,
-        label,
-      };
-    }
-    const { status, remainingMs } = resolveOAuthStatus(expiresAt, now, warnAfterMs);
-    return {
-      profileId,
-      provider: credential.provider,
-      type: "token",
-      status,
-      expiresAt,
-      remainingMs,
-      source,
-      label,
-    };
-  }
-
-  const hasRefreshToken = typeof credential.refresh === "string" && credential.refresh.length > 0;
-  const { status: rawStatus, remainingMs } = resolveOAuthStatus(
-    credential.expires,
-    now,
-    warnAfterMs,
-  );
-  // OAuth credentials with a valid refresh token auto-renew on first API call,
-  // so don't warn about access token expiration.
-  const status =
-    hasRefreshToken && (rawStatus === "expired" || rawStatus === "expiring") ? "ok" : rawStatus;
   return {
     profileId,
     provider: credential.provider,
-    type: "oauth",
-    status,
-    expiresAt: credential.expires,
-    remainingMs,
+    type: "api_key",
+    status: "static",
     source,
     label,
   };
@@ -182,8 +107,6 @@ export function buildAuthHealthSummary(params: {
         credential,
         store: params.store,
         cfg: params.cfg,
-        now,
-        warnAfterMs,
       }),
     )
     .toSorted((a, b) => {
@@ -224,33 +147,7 @@ export function buildAuthHealthSummary(params: {
       provider.status = "missing";
       continue;
     }
-
-    const oauthProfiles = provider.profiles.filter((p) => p.type === "oauth");
-    const tokenProfiles = provider.profiles.filter((p) => p.type === "token");
-    const apiKeyProfiles = provider.profiles.filter((p) => p.type === "api_key");
-
-    const expirable = [...oauthProfiles, ...tokenProfiles];
-    if (expirable.length === 0) {
-      provider.status = apiKeyProfiles.length > 0 ? "static" : "missing";
-      continue;
-    }
-
-    const expiryCandidates = expirable
-      .map((p) => p.expiresAt)
-      .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
-    if (expiryCandidates.length > 0) {
-      provider.expiresAt = Math.min(...expiryCandidates);
-      provider.remainingMs = provider.expiresAt - now;
-    }
-
-    const statuses = new Set(expirable.map((p) => p.status));
-    if (statuses.has("expired") || statuses.has("missing")) {
-      provider.status = "expired";
-    } else if (statuses.has("expiring")) {
-      provider.status = "expiring";
-    } else {
-      provider.status = "ok";
-    }
+    provider.status = "static";
   }
 
   const providers = Array.from(providersMap.values()).toSorted((a, b) =>

@@ -2,14 +2,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
-  dedupeProfileIds,
   ensureAuthProfileStore,
   listProfilesForProvider,
   resolveApiKeyForProfile,
-  resolveAuthProfileOrder,
 } from "../agents/auth-profiles.js";
 import { getCustomProviderApiKey } from "../agents/model-auth.js";
-import { normalizeProviderId } from "../agents/model-selection.js";
 import { loadConfig } from "../config/config.js";
 import { normalizeSecretInput } from "../utils/normalize-secret-input.js";
 import { resolveRequiredHomeDir } from "./home-dir.js";
@@ -20,18 +17,6 @@ export type ProviderAuth = {
   token: string;
   accountId?: string;
 };
-
-function parseGoogleToken(apiKey: string): { token: string } | null {
-  try {
-    const parsed = JSON.parse(apiKey) as { token?: unknown };
-    if (parsed && typeof parsed.token === "string") {
-      return { token: parsed.token };
-    }
-  } catch {
-    // ignore
-  }
-  return null;
-}
 
 function resolveZaiApiKey(): string | undefined {
   const envDirect =
@@ -111,64 +96,36 @@ function resolveProviderApiKeyFromConfigAndStore(params: {
   const cred = listProfilesForProvider(store, params.providerId)
     .map((id) => store.profiles[id])
     .find(
-      (
-        profile,
-      ): profile is
-        | { type: "api_key"; provider: string; key: string }
-        | { type: "token"; provider: string; token: string } =>
-        profile?.type === "api_key" || profile?.type === "token",
+      (profile): profile is { type: "api_key"; provider: string; key: string } =>
+        profile?.type === "api_key",
     );
   if (!cred) {
     return undefined;
   }
-  if (cred.type === "api_key") {
-    return normalizeSecretInput(cred.key);
-  }
-  return normalizeSecretInput(cred.token);
+  return normalizeSecretInput(cred.key);
 }
 
-async function resolveOAuthToken(params: {
+async function resolveProfileToken(params: {
   provider: UsageProviderId;
   agentDir?: string;
 }): Promise<ProviderAuth | null> {
-  const cfg = loadConfig();
   const store = ensureAuthProfileStore(params.agentDir, {
     allowKeychainPrompt: false,
   });
-  const order = resolveAuthProfileOrder({
-    cfg,
-    store,
-    provider: params.provider,
-  });
-  const deduped = dedupeProfileIds(order);
+  const profiles = listProfilesForProvider(store, params.provider);
 
-  for (const profileId of deduped) {
-    const cred = store.profiles[profileId];
-    if (!cred || (cred.type !== "oauth" && cred.type !== "token")) {
-      continue;
-    }
+  for (const profileId of profiles) {
     try {
       const resolved = await resolveApiKeyForProfile({
-        // Usage snapshots should work even if config profile metadata is stale.
-        // (e.g. config says api_key but the store has a token profile.)
         cfg: undefined,
         store,
         profileId,
         agentDir: params.agentDir,
       });
       if (resolved) {
-        let token = resolved.apiKey;
-        if (params.provider === "google-gemini-cli") {
-          const parsed = parseGoogleToken(resolved.apiKey);
-          token = parsed?.token ?? resolved.apiKey;
-        }
         return {
           provider: params.provider,
-          token,
-          accountId:
-            cred.type === "oauth" && "accountId" in cred
-              ? (cred as { accountId?: string }).accountId
-              : undefined,
+          token: resolved.apiKey,
         };
       }
     } catch {
@@ -179,32 +136,19 @@ async function resolveOAuthToken(params: {
   return null;
 }
 
-function resolveOAuthProviders(agentDir?: string): UsageProviderId[] {
+function resolveProviderCandidates(agentDir?: string): UsageProviderId[] {
   const store = ensureAuthProfileStore(agentDir, {
     allowKeychainPrompt: false,
   });
-  const cfg = loadConfig();
   const providers = [
     "anthropic",
     "github-copilot",
     "google-gemini-cli",
     "openai-codex",
   ] satisfies UsageProviderId[];
-  const isOAuthLikeCredential = (id: string) => {
-    const cred = store.profiles[id];
-    return cred?.type === "oauth" || cred?.type === "token";
-  };
   return providers.filter((provider) => {
-    const profiles = listProfilesForProvider(store, provider).filter(isOAuthLikeCredential);
-    if (profiles.length > 0) {
-      return true;
-    }
-    const normalized = normalizeProviderId(provider);
-    const configuredProfiles = Object.entries(cfg.auth?.profiles ?? {})
-      .filter(([, profile]) => normalizeProviderId(profile.provider) === normalized)
-      .map(([id]) => id)
-      .filter(isOAuthLikeCredential);
-    return configuredProfiles.length > 0;
+    const profiles = listProfilesForProvider(store, provider);
+    return profiles.length > 0;
   });
 }
 
@@ -217,7 +161,7 @@ export async function resolveProviderAuths(params: {
     return params.auth;
   }
 
-  const oauthProviders = resolveOAuthProviders(params.agentDir);
+  const candidates = resolveProviderCandidates(params.agentDir);
   const auths: ProviderAuth[] = [];
 
   for (const provider of params.providers) {
@@ -243,10 +187,10 @@ export async function resolveProviderAuths(params: {
       continue;
     }
 
-    if (!oauthProviders.includes(provider)) {
+    if (!candidates.includes(provider)) {
       continue;
     }
-    const auth = await resolveOAuthToken({
+    const auth = await resolveProfileToken({
       provider,
       agentDir: params.agentDir,
     });

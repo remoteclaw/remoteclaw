@@ -360,9 +360,6 @@ function resolveApiKeyFromProfiles(params: {
     if (cred.type === "api_key") {
       return cred.key;
     }
-    if (cred.type === "token") {
-      return cred.token;
-    }
   }
   return undefined;
 }
@@ -1014,8 +1011,8 @@ export async function resolveImplicitCopilotProvider(params: {
     // re-resolved per-run by the embedded runner).
     const profileId = listProfilesForProvider(authStore, "github-copilot")[0];
     const profile = profileId ? authStore.profiles[profileId] : undefined;
-    if (profile && profile.type === "token") {
-      selectedGithubToken = profile.token;
+    if (profile && profile.type === "api_key" && profile.key) {
+      selectedGithubToken = profile.key;
     }
   }
 

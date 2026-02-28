@@ -45,37 +45,6 @@ function convertCredential(cred: AuthProfileCredential): AuthJsonCredential | nu
     return { type: "api_key", key };
   }
 
-  if (cred.type === "token") {
-    // pi-coding-agent treats static tokens as api_key type
-    const token = typeof cred.token === "string" ? cred.token.trim() : "";
-    if (!token) {
-      return null;
-    }
-    const expires =
-      typeof (cred as { expires?: unknown }).expires === "number"
-        ? (cred as { expires: number }).expires
-        : Number.NaN;
-    if (Number.isFinite(expires) && expires > 0 && Date.now() >= expires) {
-      return null;
-    }
-    return { type: "api_key", key: token };
-  }
-
-  if (cred.type === "oauth") {
-    const accessRaw = (cred as { access?: unknown }).access;
-    const refreshRaw = (cred as { refresh?: unknown }).refresh;
-    const expiresRaw = (cred as { expires?: unknown }).expires;
-
-    const access = typeof accessRaw === "string" ? accessRaw.trim() : "";
-    const refresh = typeof refreshRaw === "string" ? refreshRaw.trim() : "";
-    const expires = typeof expiresRaw === "number" ? expiresRaw : Number.NaN;
-
-    if (!access || !refresh || !Number.isFinite(expires) || expires <= 0) {
-      return null;
-    }
-    return { type: "oauth", access, refresh, expires };
-  }
-
   return null;
 }
 

@@ -174,11 +174,9 @@ export async function githubCopilotLoginCommand(
   upsertAuthProfile({
     profileId,
     credential: {
-      type: "token",
+      type: "api_key",
       provider: "github-copilot",
-      token: accessToken,
-      // GitHub device flow token doesn't reliably include expiry here.
-      // Leave expires unset; we'll exchange into Copilot token plus expiry later.
+      key: accessToken,
     },
   });
 
@@ -191,7 +189,7 @@ export async function githubCopilotLoginCommand(
   );
 
   logConfigUpdated(runtime);
-  runtime.log(`Auth profile: ${profileId} (github-copilot/token)`);
+  runtime.log(`Auth profile: ${profileId} (github-copilot/api-key)`);
 
   outro("Done");
 }

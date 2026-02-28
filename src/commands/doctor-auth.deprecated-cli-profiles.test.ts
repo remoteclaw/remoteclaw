@@ -50,18 +50,14 @@ describe("maybeRemoveDeprecatedCliAuthProfiles", () => {
           version: 1,
           profiles: {
             "anthropic:claude-cli": {
-              type: "oauth",
+              type: "api_key",
               provider: "anthropic",
-              access: "token-a",
-              refresh: "token-r",
-              expires: Date.now() + 60_000,
+              key: "sk-ant-cli-key",
             },
             "openai-codex:codex-cli": {
-              type: "oauth",
+              type: "api_key",
               provider: "openai-codex",
-              access: "token-b",
-              refresh: "token-r2",
-              expires: Date.now() + 60_000,
+              key: "sk-codex-cli-key",
             },
           },
         },
@@ -74,12 +70,8 @@ describe("maybeRemoveDeprecatedCliAuthProfiles", () => {
     const cfg = {
       auth: {
         profiles: {
-          "anthropic:claude-cli": { provider: "anthropic", mode: "oauth" },
-          "openai-codex:codex-cli": { provider: "openai-codex", mode: "oauth" },
-        },
-        order: {
-          anthropic: ["anthropic:claude-cli"],
-          "openai-codex": ["openai-codex:codex-cli"],
+          "anthropic:claude-cli": { provider: "anthropic", mode: "api_key" },
+          "openai-codex:codex-cli": { provider: "openai-codex", mode: "api_key" },
         },
       },
     } as const;
@@ -97,7 +89,5 @@ describe("maybeRemoveDeprecatedCliAuthProfiles", () => {
 
     expect(next.auth?.profiles?.["anthropic:claude-cli"]).toBeUndefined();
     expect(next.auth?.profiles?.["openai-codex:codex-cli"]).toBeUndefined();
-    expect(next.auth?.order?.anthropic).toBeUndefined();
-    expect(next.auth?.order?.["openai-codex"]).toBeUndefined();
   });
 });

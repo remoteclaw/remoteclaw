@@ -2,7 +2,6 @@ import path from "node:path";
 import { type Api, getEnvApiKey, type Model } from "@mariozechner/pi-ai";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { OpenClawConfig } from "../config/config.js";
-import type { ModelProviderAuthMode, ModelProviderConfig } from "../config/types.js";
 import { getShellEnvAppliedKeys } from "../infra/shell-env.js";
 import {
   normalizeOptionalSecretInput,
@@ -13,44 +12,23 @@ import {
   ensureAuthProfileStore,
   listProfilesForProvider,
   resolveApiKeyForProfile,
-  resolveAuthProfileOrder,
   resolveAuthStorePathForDisplay,
 } from "./auth-profiles.js";
 import { normalizeProviderId } from "./model-selection.js";
 
-export { ensureAuthProfileStore, resolveAuthProfileOrder } from "./auth-profiles.js";
+export { ensureAuthProfileStore } from "./auth-profiles.js";
 
 const AWS_BEARER_ENV = "AWS_BEARER_TOKEN_BEDROCK";
 const AWS_ACCESS_KEY_ENV = "AWS_ACCESS_KEY_ID";
 const AWS_SECRET_KEY_ENV = "AWS_SECRET_ACCESS_KEY";
 const AWS_PROFILE_ENV = "AWS_PROFILE";
 
-function resolveProviderConfig(
+export function getCustomProviderApiKey(
   _cfg: OpenClawConfig | undefined,
   _provider: string,
-): ModelProviderConfig | undefined {
+): string | undefined {
   // Models config section has been removed — provider configs are no longer
   // stored in the config file. CLI agents resolve providers directly.
-  return undefined;
-}
-
-export function getCustomProviderApiKey(
-  cfg: OpenClawConfig | undefined,
-  provider: string,
-): string | undefined {
-  const entry = resolveProviderConfig(cfg, provider);
-  return normalizeOptionalSecretInput(entry?.apiKey);
-}
-
-function resolveProviderAuthOverride(
-  cfg: OpenClawConfig | undefined,
-  provider: string,
-): ModelProviderAuthMode | undefined {
-  const entry = resolveProviderConfig(cfg, provider);
-  const auth = entry?.auth;
-  if (auth === "api-key" || auth === "aws-sdk" || auth === "oauth" || auth === "token") {
-    return auth;
-  }
   return undefined;
 }
 
@@ -77,11 +55,11 @@ export function resolveAwsSdkEnvVarName(env: NodeJS.ProcessEnv = process.env): s
   return undefined;
 }
 
-function resolveAwsSdkAuthInfo(): { mode: "aws-sdk"; source: string } {
+function resolveAwsSdkAuthInfo(): { mode: "api-key"; source: string } {
   const applied = new Set(getShellEnvAppliedKeys());
   if (process.env[AWS_BEARER_ENV]?.trim()) {
     return {
-      mode: "aws-sdk",
+      mode: "api-key",
       source: resolveEnvSourceLabel({
         applied,
         envVars: [AWS_BEARER_ENV],
@@ -91,7 +69,7 @@ function resolveAwsSdkAuthInfo(): { mode: "aws-sdk"; source: string } {
   }
   if (process.env[AWS_ACCESS_KEY_ENV]?.trim() && process.env[AWS_SECRET_KEY_ENV]?.trim()) {
     return {
-      mode: "aws-sdk",
+      mode: "api-key",
       source: resolveEnvSourceLabel({
         applied,
         envVars: [AWS_ACCESS_KEY_ENV, AWS_SECRET_KEY_ENV],
@@ -101,7 +79,7 @@ function resolveAwsSdkAuthInfo(): { mode: "aws-sdk"; source: string } {
   }
   if (process.env[AWS_PROFILE_ENV]?.trim()) {
     return {
-      mode: "aws-sdk",
+      mode: "api-key",
       source: resolveEnvSourceLabel({
         applied,
         envVars: [AWS_PROFILE_ENV],
@@ -109,14 +87,14 @@ function resolveAwsSdkAuthInfo(): { mode: "aws-sdk"; source: string } {
       }),
     };
   }
-  return { mode: "aws-sdk", source: "aws-sdk default chain" };
+  return { mode: "api-key", source: "aws-sdk default chain" };
 }
 
 export type ResolvedProviderAuth = {
   apiKey?: string;
   profileId?: string;
   source: string;
-  mode: "api-key" | "oauth" | "token" | "aws-sdk";
+  mode: "api-key";
 };
 
 export async function resolveApiKeyForProvider(params: {
@@ -127,7 +105,7 @@ export async function resolveApiKeyForProvider(params: {
   store?: AuthProfileStore;
   agentDir?: string;
 }): Promise<ResolvedProviderAuth> {
-  const { provider, cfg, profileId, preferredProfile } = params;
+  const { provider, cfg, profileId } = params;
   const store = params.store ?? ensureAuthProfileStore(params.agentDir);
 
   if (profileId) {
@@ -140,27 +118,23 @@ export async function resolveApiKeyForProvider(params: {
     if (!resolved) {
       throw new Error(`No credentials found for profile "${profileId}".`);
     }
-    const mode = store.profiles[profileId]?.type;
     return {
       apiKey: resolved.apiKey,
       profileId,
       source: `profile:${profileId}`,
-      mode: mode === "oauth" ? "oauth" : mode === "token" ? "token" : "api-key",
+      mode: "api-key",
     };
   }
 
-  const authOverride = resolveProviderAuthOverride(cfg, provider);
-  if (authOverride === "aws-sdk") {
-    return resolveAwsSdkAuthInfo();
-  }
+  // Check profiles for the provider
+  const profiles = listProfilesForProvider(store, provider);
+  const preferred = params.preferredProfile;
+  const candidates =
+    preferred && profiles.includes(preferred)
+      ? [preferred, ...profiles.filter((id) => id !== preferred)]
+      : profiles;
 
-  const order = resolveAuthProfileOrder({
-    cfg,
-    store,
-    provider,
-    preferredProfile,
-  });
-  for (const candidate of order) {
+  for (const candidate of candidates) {
     try {
       const resolved = await resolveApiKeyForProfile({
         cfg,
@@ -169,12 +143,11 @@ export async function resolveApiKeyForProvider(params: {
         agentDir: params.agentDir,
       });
       if (resolved) {
-        const mode = store.profiles[candidate]?.type;
         return {
           apiKey: resolved.apiKey,
           profileId: candidate,
           source: `profile:${candidate}`,
-          mode: mode === "oauth" ? "oauth" : mode === "token" ? "token" : "api-key",
+          mode: "api-key",
         };
       }
     } catch {}
@@ -185,17 +158,12 @@ export async function resolveApiKeyForProvider(params: {
     return {
       apiKey: envResolved.apiKey,
       source: envResolved.source,
-      mode: envResolved.source.includes("OAUTH_TOKEN") ? "oauth" : "api-key",
+      mode: "api-key",
     };
   }
 
-  const customKey = getCustomProviderApiKey(cfg, provider);
-  if (customKey) {
-    return { apiKey: customKey, source: "models.json", mode: "api-key" };
-  }
-
   const normalized = normalizeProviderId(provider);
-  if (authOverride === undefined && normalized === "amazon-bedrock") {
+  if (normalized === "amazon-bedrock") {
     return resolveAwsSdkAuthInfo();
   }
 
@@ -214,13 +182,13 @@ export async function resolveApiKeyForProvider(params: {
     [
       `No API key found for provider "${provider}".`,
       `Auth store: ${authStorePath} (agentDir: ${resolvedAgentDir}).`,
-      `Configure auth for this agent (${formatCliCommand("openclaw agents add <id>")}) or copy auth-profiles.json from the main agentDir.`,
+      `Configure auth for this agent (${formatCliCommand("remoteclaw agents add <id>")}) or copy auth-profiles.json from the main agentDir.`,
     ].join(" "),
   );
 }
 
 export type EnvApiKeyResult = { apiKey: string; source: string };
-export type ModelAuthMode = "api-key" | "oauth" | "token" | "mixed" | "aws-sdk" | "unknown";
+export type ModelAuthMode = "api-key" | "unknown";
 
 export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
   const normalized = normalizeProviderId(provider);
@@ -328,43 +296,19 @@ export function resolveModelAuthMode(
     return undefined;
   }
 
-  const authOverride = resolveProviderAuthOverride(cfg, resolved);
-  if (authOverride === "aws-sdk") {
-    return "aws-sdk";
-  }
-
   const authStore = store ?? ensureAuthProfileStore();
   const profiles = listProfilesForProvider(authStore, resolved);
   if (profiles.length > 0) {
-    const modes = new Set(
-      profiles
-        .map((id) => authStore.profiles[id]?.type)
-        .filter((mode): mode is "api_key" | "oauth" | "token" => Boolean(mode)),
-    );
-    const distinct = ["oauth", "token", "api_key"].filter((k) =>
-      modes.has(k as "oauth" | "token" | "api_key"),
-    );
-    if (distinct.length >= 2) {
-      return "mixed";
-    }
-    if (modes.has("oauth")) {
-      return "oauth";
-    }
-    if (modes.has("token")) {
-      return "token";
-    }
-    if (modes.has("api_key")) {
-      return "api-key";
-    }
+    return "api-key";
   }
 
-  if (authOverride === undefined && normalizeProviderId(resolved) === "amazon-bedrock") {
-    return "aws-sdk";
+  if (normalizeProviderId(resolved) === "amazon-bedrock") {
+    return "api-key";
   }
 
   const envKey = resolveEnvApiKey(resolved);
   if (envKey?.apiKey) {
-    return envKey.source.includes("OAUTH_TOKEN") ? "oauth" : "api-key";
+    return "api-key";
   }
 
   if (getCustomProviderApiKey(cfg, resolved)) {

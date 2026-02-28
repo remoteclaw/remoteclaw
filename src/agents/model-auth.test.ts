@@ -38,15 +38,10 @@ describe("resolveAwsSdkEnvVarName", () => {
 });
 
 describe("resolveModelAuthMode", () => {
-  it("returns mixed when provider has both token and api key profiles", () => {
+  it("returns api-key when provider has profiles", () => {
     const store: AuthProfileStore = {
       version: 1,
       profiles: {
-        "openai:token": {
-          type: "token",
-          provider: "openai",
-          token: "token-value",
-        },
         "openai:key": {
           type: "api_key",
           provider: "openai",
@@ -55,18 +50,18 @@ describe("resolveModelAuthMode", () => {
       },
     };
 
-    expect(resolveModelAuthMode("openai", undefined, store)).toBe("mixed");
+    expect(resolveModelAuthMode("openai", undefined, store)).toBe("api-key");
   });
 
-  it("returns aws-sdk for bedrock alias without explicit auth override", () => {
+  it("returns api-key for bedrock alias", () => {
     expect(resolveModelAuthMode("bedrock", undefined, { version: 1, profiles: {} })).toBe(
-      "aws-sdk",
+      "api-key",
     );
   });
 
-  it("returns aws-sdk for aws-bedrock alias without explicit auth override", () => {
+  it("returns api-key for aws-bedrock alias", () => {
     expect(resolveModelAuthMode("aws-bedrock", undefined, { version: 1, profiles: {} })).toBe(
-      "aws-sdk",
+      "api-key",
     );
   });
 });

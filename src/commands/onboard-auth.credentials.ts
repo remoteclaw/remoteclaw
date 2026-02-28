@@ -77,10 +77,12 @@ export async function writeOAuthCredentials(
     ? resolveSiblingAgentDirs(resolvedAgentDir)
     : [resolvedAgentDir];
 
+  const credEmail = email !== "default" ? email : undefined;
   const credential = {
-    type: "oauth" as const,
+    type: "api_key" as const,
     provider,
-    ...creds,
+    key: creds.access,
+    ...(credEmail ? { email: credEmail } : {}),
   };
 
   // Primary write must succeed — let it throw on failure.

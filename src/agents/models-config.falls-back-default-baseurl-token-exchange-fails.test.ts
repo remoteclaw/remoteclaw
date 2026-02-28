@@ -51,9 +51,9 @@ describe("models-config", () => {
               version: 1,
               profiles: {
                 "github-copilot:github": {
-                  type: "token",
+                  type: "api_key",
                   provider: "github-copilot",
-                  token: "gh-profile-token",
+                  key: "gh-profile-token",
                 },
               },
             },

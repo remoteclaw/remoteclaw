@@ -116,12 +116,12 @@ describe("writeOAuthCredentials", () => {
     await writeOAuthCredentials("openai-codex", creds);
 
     const parsed = await readAuthProfilesForAgent<{
-      profiles?: Record<string, OAuthCredentials & { type?: string }>;
+      profiles?: Record<string, { type?: string; key?: string; provider?: string }>;
     }>(env.agentDir);
     expect(parsed.profiles?.["openai-codex:default"]).toMatchObject({
-      refresh: "refresh-token",
-      access: "access-token",
-      type: "oauth",
+      type: "api_key",
+      provider: "openai-codex",
+      key: "access-token",
     });
 
     await expect(
@@ -156,12 +156,12 @@ describe("writeOAuthCredentials", () => {
     for (const dir of [mainAgentDir, kidAgentDir, workerAgentDir]) {
       const raw = await fs.readFile(authProfilePathFor(dir), "utf8");
       const parsed = JSON.parse(raw) as {
-        profiles?: Record<string, OAuthCredentials & { type?: string }>;
+        profiles?: Record<string, { type?: string; key?: string; provider?: string }>;
       };
       expect(parsed.profiles?.["openai-codex:default"]).toMatchObject({
-        refresh: "refresh-sync",
-        access: "access-sync",
-        type: "oauth",
+        type: "api_key",
+        provider: "openai-codex",
+        key: "access-sync",
       });
     }
   });
@@ -188,11 +188,12 @@ describe("writeOAuthCredentials", () => {
 
     const kidRaw = await fs.readFile(authProfilePathFor(kidAgentDir), "utf8");
     const kidParsed = JSON.parse(kidRaw) as {
-      profiles?: Record<string, OAuthCredentials & { type?: string }>;
+      profiles?: Record<string, { type?: string; key?: string; provider?: string }>;
     };
     expect(kidParsed.profiles?.["openai-codex:default"]).toMatchObject({
-      access: "access-kid",
-      type: "oauth",
+      type: "api_key",
+      provider: "openai-codex",
+      key: "access-kid",
     });
 
     await expect(fs.readFile(authProfilePathFor(mainAgentDir), "utf8")).rejects.toThrow();
@@ -225,12 +226,12 @@ describe("writeOAuthCredentials", () => {
     for (const dir of [extMain, extKid, extWorker]) {
       const raw = await fs.readFile(authProfilePathFor(dir), "utf8");
       const parsed = JSON.parse(raw) as {
-        profiles?: Record<string, OAuthCredentials & { type?: string }>;
+        profiles?: Record<string, { type?: string; key?: string; provider?: string }>;
       };
       expect(parsed.profiles?.["openai-codex:default"]).toMatchObject({
-        refresh: "refresh-ext",
-        access: "access-ext",
-        type: "oauth",
+        type: "api_key",
+        provider: "openai-codex",
+        key: "access-ext",
       });
     }
 

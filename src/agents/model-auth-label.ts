@@ -2,8 +2,8 @@ import type { OpenClawConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
 import {
   ensureAuthProfileStore,
+  listProfilesForProvider,
   resolveAuthProfileDisplayLabel,
-  resolveAuthProfileOrder,
 } from "./auth-profiles.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "./model-auth.js";
 import { normalizeProviderId } from "./model-selection.js";
@@ -35,13 +35,8 @@ export function resolveModelAuthLabel(params: {
     allowKeychainPrompt: false,
   });
   const profileOverride = params.sessionEntry?.authProfileOverride?.trim();
-  const order = resolveAuthProfileOrder({
-    cfg: params.cfg,
-    store,
-    provider: providerKey,
-    preferredProfile: profileOverride,
-  });
-  const candidates = [profileOverride, ...order].filter(Boolean) as string[];
+  const profiles = listProfilesForProvider(store, providerKey);
+  const candidates = [profileOverride, ...profiles].filter(Boolean) as string[];
 
   for (const profileId of candidates) {
     const profile = store.profiles[profileId];
@@ -53,12 +48,6 @@ export function resolveModelAuthLabel(params: {
       store,
       profileId,
     });
-    if (profile.type === "oauth") {
-      return `oauth${label ? ` (${label})` : ""}`;
-    }
-    if (profile.type === "token") {
-      return `token ${formatApiKeySnippet(profile.token)}${label ? ` (${label})` : ""}`;
-    }
     return `api-key ${formatApiKeySnippet(profile.key ?? "")}${label ? ` (${label})` : ""}`;
   }
 

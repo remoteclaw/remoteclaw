@@ -15,11 +15,9 @@ describe("ensureAuthProfileStore", () => {
         `${JSON.stringify(
           {
             anthropic: {
-              type: "oauth",
+              type: "api_key",
               provider: "anthropic",
-              access: "access-token",
-              refresh: "refresh-token",
-              expires: Date.now() + 60_000,
+              key: "sk-ant-legacy-key",
             },
           },
           null,
@@ -30,7 +28,7 @@ describe("ensureAuthProfileStore", () => {
 
       const store = ensureAuthProfileStore(agentDir);
       expect(store.profiles["anthropic:default"]).toMatchObject({
-        type: "oauth",
+        type: "api_key",
         provider: "anthropic",
       });
 

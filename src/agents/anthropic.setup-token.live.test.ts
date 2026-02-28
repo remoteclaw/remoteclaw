@@ -45,13 +45,13 @@ function listSetupTokenProfiles(store: {
 }): string[] {
   return Object.entries(store.profiles)
     .filter(([, cred]) => {
-      if (cred.type !== "token") {
+      if (cred.type !== "api_key") {
         return false;
       }
       if (normalizeProviderId(cred.provider) !== "anthropic") {
         return false;
       }
-      return isSetupToken(cred.token);
+      return isSetupToken(cred.key ?? "");
     })
     .map(([id]) => id);
 }
@@ -81,9 +81,9 @@ async function resolveTokenSource(): Promise<TokenSource> {
       allowKeychainPrompt: false,
     });
     store.profiles[profileId] = {
-      type: "token",
+      type: "api_key",
       provider: "anthropic",
-      token: explicitToken,
+      key: explicitToken,
     };
     saveAuthProfileStore(store, tempDir);
     return {

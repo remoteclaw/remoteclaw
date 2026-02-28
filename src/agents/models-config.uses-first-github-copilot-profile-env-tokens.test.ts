@@ -25,14 +25,14 @@ describe("models-config", () => {
               version: 1,
               profiles: {
                 "github-copilot:alpha": {
-                  type: "token",
+                  type: "api_key",
                   provider: "github-copilot",
-                  token: "alpha-token",
+                  key: "alpha-token",
                 },
                 "github-copilot:beta": {
-                  type: "token",
+                  type: "api_key",
                   provider: "github-copilot",
-                  token: "beta-token",
+                  key: "beta-token",
                 },
               },
             },

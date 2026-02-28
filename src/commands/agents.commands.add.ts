@@ -5,7 +5,7 @@ import {
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../agents/agent-scope.js";
-import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
+import { upsertAuthProfile } from "../agents/auth-profiles.js";
 import { resolveAuthStorePath } from "../agents/auth-profiles/paths.js";
 import { writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
@@ -23,11 +23,9 @@ import {
 } from "./agents.bindings.js";
 import { createQuietRuntime, requireValidConfig } from "./agents.command-shared.js";
 import { applyAgentConfig, findAgentEntryIndex, listAgentEntries } from "./agents.config.js";
-import { promptAuthChoiceGrouped } from "./auth-choice-prompt.js";
-import { applyAuthChoice } from "./auth-choice.js";
 import { setupChannels } from "./onboard-channels.js";
 import { ensureWorkspaceAndSessions } from "./onboard-helpers.js";
-import type { ChannelChoice } from "./onboard-types.js";
+import type { AgentRuntime, ChannelChoice } from "./onboard-types.js";
 
 type AgentsAddOptions = {
   name?: string;
@@ -258,31 +256,64 @@ export async function agentsAddCommand(
       initialValue: false,
     });
     if (wantsAuth) {
-      const authStore = ensureAuthProfileStore(agentDir, {
-        allowKeychainPrompt: false,
-      });
-      const authChoice = await promptAuthChoiceGrouped({
-        prompter,
-        store: authStore,
-        includeSkip: true,
+      const selectedRuntime: AgentRuntime = await prompter.select({
+        message: "Which agent runtime?",
+        options: [
+          { value: "claude", label: "Claude Code (claude --print)" },
+          { value: "gemini", label: "Gemini CLI (gemini)" },
+          { value: "codex", label: "Codex CLI (codex exec)" },
+          { value: "opencode", label: "OpenCode (opencode)" },
+        ],
+        initialValue: "claude",
       });
 
-      const authResult = await applyAuthChoice({
-        authChoice,
-        config: nextConfig,
-        prompter,
-        runtime,
-        agentDir,
-        setDefaultModel: false,
-        agentId,
-      });
-      nextConfig = authResult.config;
-      if (authResult.agentModelOverride) {
-        nextConfig = applyAgentConfig(nextConfig, {
-          agentId,
-          model: authResult.agentModelOverride,
-        });
+      const promptApiKey = async (message: string) => {
+        const key = await prompter.text({ message, initialValue: "" });
+        return key.trim();
+      };
+
+      if (selectedRuntime === "claude") {
+        const key = await promptApiKey("Anthropic API key (or leave empty to skip)");
+        if (key) {
+          upsertAuthProfile({
+            profileId: "anthropic:default",
+            credential: { type: "api_key", provider: "anthropic", key },
+            agentDir,
+          });
+        }
+      } else if (selectedRuntime === "gemini") {
+        const key = await promptApiKey("Gemini API key (or leave empty to skip)");
+        if (key) {
+          upsertAuthProfile({
+            profileId: "google:default",
+            credential: { type: "api_key", provider: "google", key },
+            agentDir,
+          });
+        }
+      } else if (selectedRuntime === "codex") {
+        const key = await promptApiKey("Codex API key (or leave empty to skip)");
+        if (key) {
+          upsertAuthProfile({
+            profileId: "codex:default",
+            credential: { type: "api_key", provider: "codex", key },
+            agentDir,
+          });
+        }
+      } else if (selectedRuntime === "opencode") {
+        const key = await promptApiKey("API key (or leave empty to skip)");
+        if (key) {
+          upsertAuthProfile({
+            profileId: "opencode:default",
+            credential: { type: "api_key", provider: "opencode", key },
+            agentDir,
+          });
+        }
       }
+
+      nextConfig = applyAgentConfig(nextConfig, {
+        agentId,
+        model: selectedRuntime,
+      });
     }
 
     let selection: ChannelChoice[] = [];

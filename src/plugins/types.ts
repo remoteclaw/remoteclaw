@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Command } from "commander";
-import type { AuthProfileCredential, OAuthCredential } from "../agents/auth-profiles/types.js";
+import type { AuthProfileCredential } from "../agents/auth-profiles/types.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import type { ChannelDock } from "../channels/dock.js";
@@ -122,7 +122,6 @@ export type ProviderPlugin = {
   models?: ModelProviderConfig;
   auth: ProviderAuthMethod[];
   formatApiKey?: (cred: AuthProfileCredential) => string;
-  refreshOAuth?: (cred: OAuthCredential) => Promise<OAuthCredential>;
 };
 
 export type OpenClawPluginGatewayMethod = {

@@ -233,7 +233,7 @@ describe("provider usage loading", () => {
     );
   });
 
-  it("discovers Claude usage from token auth profiles", async () => {
+  it("discovers Claude usage from api_key auth profiles", async () => {
     await withTempHome(
       async (tempHome) => {
         const agentDir = path.join(
@@ -248,13 +248,11 @@ describe("provider usage loading", () => {
           `${JSON.stringify(
             {
               version: 1,
-              order: { anthropic: ["anthropic:default"] },
               profiles: {
                 "anthropic:default": {
-                  type: "token",
+                  type: "api_key",
                   provider: "anthropic",
-                  token: "token-1",
-                  expires: Date.UTC(2100, 0, 1, 0, 0, 0),
+                  key: "token-1",
                 },
               },
             },

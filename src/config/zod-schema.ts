@@ -248,6 +248,7 @@ export const RemoteClawSchema = z
           )
           .optional(),
         relayBindHost: z.union([z.string().ipv4(), z.string().ipv6()]).optional(),
+        extraArgs: z.array(z.string()).optional(),
       })
       .strict()
       .optional(),

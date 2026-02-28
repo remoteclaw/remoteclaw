@@ -88,9 +88,7 @@ describe("applyAuthChoiceHuggingface", () => {
       provider: "huggingface",
       mode: "api_key",
     });
-    expect(resolveAgentModelPrimaryValue(result?.config.agents?.defaults?.model)).toMatch(
-      /^huggingface\/.+/,
-    );
+    expect(resolveAgentModelPrimaryValue(result?.config.agents?.defaults?.model)).toBeUndefined();
     expect(text).toHaveBeenCalledWith(
       expect.objectContaining({ message: expect.stringContaining("Hugging Face") }),
     );
@@ -176,11 +174,9 @@ describe("applyAuthChoiceHuggingface", () => {
     });
 
     expect(result).not.toBeNull();
-    expect(String(resolveAgentModelPrimaryValue(result?.config.agents?.defaults?.model))).toContain(
-      ":cheapest",
-    );
+    expect(resolveAgentModelPrimaryValue(result?.config.agents?.defaults?.model)).toBeUndefined();
     expect(note).toHaveBeenCalledWith(
-      "Provider locked — router will choose backend by cost or speed.",
+      "Provider locked -- router will choose backend by cost or speed.",
       "Hugging Face",
     );
   });

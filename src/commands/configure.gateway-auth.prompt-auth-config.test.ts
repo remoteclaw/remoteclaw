@@ -5,8 +5,6 @@ import type { WizardPrompter } from "../wizard/prompts.js";
 const mocks = vi.hoisted(() => ({
   promptAuthChoiceGrouped: vi.fn(),
   applyAuthChoice: vi.fn(),
-  promptModelAllowlist: vi.fn(),
-  promptDefaultModel: vi.fn(),
   promptCustomApiConfig: vi.fn(),
 }));
 
@@ -23,17 +21,7 @@ vi.mock("./auth-choice-prompt.js", () => ({
 
 vi.mock("./auth-choice.js", () => ({
   applyAuthChoice: mocks.applyAuthChoice,
-  resolvePreferredProviderForAuthChoice: vi.fn(() => undefined),
 }));
-
-vi.mock("./model-picker.js", async (importActual) => {
-  const actual = await importActual<typeof import("./model-picker.js")>();
-  return {
-    ...actual,
-    promptModelAllowlist: mocks.promptModelAllowlist,
-    promptDefaultModel: mocks.promptDefaultModel,
-  };
-});
 
 vi.mock("./onboard-custom.js", () => ({
   promptCustomApiConfig: mocks.promptCustomApiConfig,
@@ -52,7 +40,7 @@ function makeRuntime(): RuntimeEnv {
 const noopPrompter = {} as WizardPrompter;
 
 describe("promptAuthConfig", () => {
-  it("keeps Kilo provider models while applying allowlist defaults", async () => {
+  it("passes through Kilo provider config from applyAuthChoice", async () => {
     mocks.promptAuthChoiceGrouped.mockResolvedValue("kilocode-api-key");
     mocks.applyAuthChoice.mockResolvedValue({
       config: {
@@ -75,21 +63,15 @@ describe("promptAuthConfig", () => {
         },
       },
     });
-    mocks.promptModelAllowlist.mockResolvedValue({
-      models: ["kilocode/anthropic/claude-opus-4.6"],
-    });
 
     const result = await promptAuthConfig({}, makeRuntime(), noopPrompter);
     expect(result.models?.providers?.kilocode?.models?.map((model) => model.id)).toEqual([
       "anthropic/claude-opus-4.6",
       "minimax/minimax-m2.5:free",
     ]);
-    expect(Object.keys(result.agents?.defaults?.models ?? {})).toEqual([
-      "kilocode/anthropic/claude-opus-4.6",
-    ]);
   });
 
-  it("does not mutate provider model catalogs when allowlist is set", async () => {
+  it("does not mutate provider model catalogs", async () => {
     mocks.promptAuthChoiceGrouped.mockResolvedValue("kilocode-api-key");
     mocks.applyAuthChoice.mockResolvedValue({
       config: {
@@ -116,9 +98,6 @@ describe("promptAuthConfig", () => {
           },
         },
       },
-    });
-    mocks.promptModelAllowlist.mockResolvedValue({
-      models: ["kilocode/anthropic/claude-opus-4.6"],
     });
 
     const result = await promptAuthConfig({}, makeRuntime(), noopPrompter);

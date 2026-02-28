@@ -6,9 +6,6 @@ import {
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
 import {
-  createAuthChoiceAgentModelNoter,
-  createAuthChoiceDefaultModelApplier,
-  createAuthChoiceModelStateBridge,
   ensureApiKeyFromOptionEnvOrPrompt,
   normalizeTokenProviderInput,
 } from "./auth-choice.apply-helpers.js";
@@ -16,53 +13,22 @@ import { applyAuthChoiceHuggingface } from "./auth-choice.apply.huggingface.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
 import { applyAuthChoiceOpenRouter } from "./auth-choice.apply.openrouter.js";
 import {
-  applyGoogleGeminiModelDefault,
-  GOOGLE_GEMINI_DEFAULT_MODEL,
-} from "./google-gemini-model-default.js";
-import {
   applyAuthProfileConfig,
   applyCloudflareAiGatewayConfig,
-  applyCloudflareAiGatewayProviderConfig,
   applyKilocodeConfig,
-  applyKilocodeProviderConfig,
   applyQianfanConfig,
-  applyQianfanProviderConfig,
   applyKimiCodeConfig,
-  applyKimiCodeProviderConfig,
   applyLitellmConfig,
-  applyLitellmProviderConfig,
   applyMistralConfig,
-  applyMistralProviderConfig,
   applyMoonshotConfig,
   applyMoonshotConfigCn,
-  applyMoonshotProviderConfig,
-  applyMoonshotProviderConfigCn,
   applyOpencodeZenConfig,
-  applyOpencodeZenProviderConfig,
   applySyntheticConfig,
-  applySyntheticProviderConfig,
   applyTogetherConfig,
-  applyTogetherProviderConfig,
   applyVeniceConfig,
-  applyVeniceProviderConfig,
   applyVercelAiGatewayConfig,
-  applyVercelAiGatewayProviderConfig,
   applyXiaomiConfig,
-  applyXiaomiProviderConfig,
   applyZaiConfig,
-  applyZaiProviderConfig,
-  CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
-  KILOCODE_DEFAULT_MODEL_REF,
-  LITELLM_DEFAULT_MODEL_REF,
-  QIANFAN_DEFAULT_MODEL_REF,
-  KIMI_CODING_MODEL_REF,
-  MOONSHOT_DEFAULT_MODEL_REF,
-  MISTRAL_DEFAULT_MODEL_REF,
-  SYNTHETIC_DEFAULT_MODEL_REF,
-  TOGETHER_DEFAULT_MODEL_REF,
-  VENICE_DEFAULT_MODEL_REF,
-  VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF,
-  XIAOMI_DEFAULT_MODEL_REF,
   setCloudflareAiGatewayConfig,
   setQianfanApiKey,
   setGeminiApiKey,
@@ -78,10 +44,8 @@ import {
   setVercelAiGatewayApiKey,
   setXiaomiApiKey,
   setZaiApiKey,
-  ZAI_DEFAULT_MODEL_REF,
 } from "./onboard-auth.js";
 import type { AuthChoice } from "./onboard-types.js";
-import { OPENCODE_ZEN_DEFAULT_MODEL } from "./opencode-zen-model-default.js";
 import { detectZaiEndpoint } from "./zai-endpoint-detect.js";
 
 const API_KEY_TOKEN_PROVIDER_AUTH_CHOICE: Record<string, AuthChoice> = {
@@ -125,13 +89,10 @@ type SimpleApiKeyProviderFlow = {
   envLabel: string;
   promptMessage: string;
   setCredential: (apiKey: string, agentDir?: string) => void | Promise<void>;
-  defaultModel: string;
-  applyDefaultConfig: ApiKeyProviderConfigApplier;
-  applyProviderConfig: ApiKeyProviderConfigApplier;
+  applyConfig: ApiKeyProviderConfigApplier;
   tokenProvider?: string;
   normalize?: (value: string) => string;
   validate?: (value: string) => string | undefined;
-  noteDefault?: string;
   noteMessage?: string;
   noteTitle?: string;
 };
@@ -144,10 +105,7 @@ const SIMPLE_API_KEY_PROVIDER_FLOWS: Partial<Record<AuthChoice, SimpleApiKeyProv
     envLabel: "AI_GATEWAY_API_KEY",
     promptMessage: "Enter Vercel AI Gateway API key",
     setCredential: setVercelAiGatewayApiKey,
-    defaultModel: VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF,
-    applyDefaultConfig: applyVercelAiGatewayConfig,
-    applyProviderConfig: applyVercelAiGatewayProviderConfig,
-    noteDefault: VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF,
+    applyConfig: applyVercelAiGatewayConfig,
   },
   "moonshot-api-key": {
     provider: "moonshot",
@@ -156,9 +114,7 @@ const SIMPLE_API_KEY_PROVIDER_FLOWS: Partial<Record<AuthChoice, SimpleApiKeyProv
     envLabel: "MOONSHOT_API_KEY",
     promptMessage: "Enter Moonshot API key",
     setCredential: setMoonshotApiKey,
-    defaultModel: MOONSHOT_DEFAULT_MODEL_REF,
-    applyDefaultConfig: applyMoonshotConfig,
-    applyProviderConfig: applyMoonshotProviderConfig,
+    applyConfig: applyMoonshotConfig,
   },
   "moonshot-api-key-cn": {
     provider: "moonshot",
@@ -167,9 +123,7 @@ const SIMPLE_API_KEY_PROVIDER_FLOWS: Partial<Record<AuthChoice, SimpleApiKeyProv
     envLabel: "MOONSHOT_API_KEY",
     promptMessage: "Enter Moonshot API key (.cn)",
     setCredential: setMoonshotApiKey,
-    defaultModel: MOONSHOT_DEFAULT_MODEL_REF,
-    applyDefaultConfig: applyMoonshotConfigCn,
-    applyProviderConfig: applyMoonshotProviderConfigCn,
+    applyConfig: applyMoonshotConfigCn,
   },
   "kimi-code-api-key": {
     provider: "kimi-coding",
@@ -178,10 +132,7 @@ const SIMPLE_API_KEY_PROVIDER_FLOWS: Partial<Record<AuthChoice, SimpleApiKeyProv
     envLabel: "KIMI_API_KEY",
     promptMessage: "Enter Kimi Coding API key",
     setCredential: setKimiCodingApiKey,
-    defaultModel: KIMI_CODING_MODEL_REF,
-    applyDefaultConfig: applyKimiCodeConfig,
-    applyProviderConfig: applyKimiCodeProviderConfig,
-    noteDefault: KIMI_CODING_MODEL_REF,
+    applyConfig: applyKimiCodeConfig,
     noteMessage: [
       "Kimi Coding uses a dedicated endpoint and API key.",
       "Get your API key at: https://www.kimi.com/code/en",
@@ -195,10 +146,7 @@ const SIMPLE_API_KEY_PROVIDER_FLOWS: Partial<Record<AuthChoice, SimpleApiKeyProv
     envLabel: "XIAOMI_API_KEY",
     promptMessage: "Enter Xiaomi API key",
     setCredential: setXiaomiApiKey,
-    defaultModel: XIAOMI_DEFAULT_MODEL_REF,
-    applyDefaultConfig: applyXiaomiConfig,
-    applyProviderConfig: applyXiaomiProviderConfig,
-    noteDefault: XIAOMI_DEFAULT_MODEL_REF,
+    applyConfig: applyXiaomiConfig,
   },
   "mistral-api-key": {
     provider: "mistral",
@@ -207,10 +155,7 @@ const SIMPLE_API_KEY_PROVIDER_FLOWS: Partial<Record<AuthChoice, SimpleApiKeyProv
     envLabel: "MISTRAL_API_KEY",
     promptMessage: "Enter Mistral API key",
     setCredential: setMistralApiKey,
-    defaultModel: MISTRAL_DEFAULT_MODEL_REF,
-    applyDefaultConfig: applyMistralConfig,
-    applyProviderConfig: applyMistralProviderConfig,
-    noteDefault: MISTRAL_DEFAULT_MODEL_REF,
+    applyConfig: applyMistralConfig,
   },
   "venice-api-key": {
     provider: "venice",
@@ -219,10 +164,7 @@ const SIMPLE_API_KEY_PROVIDER_FLOWS: Partial<Record<AuthChoice, SimpleApiKeyProv
     envLabel: "VENICE_API_KEY",
     promptMessage: "Enter Venice AI API key",
     setCredential: setVeniceApiKey,
-    defaultModel: VENICE_DEFAULT_MODEL_REF,
-    applyDefaultConfig: applyVeniceConfig,
-    applyProviderConfig: applyVeniceProviderConfig,
-    noteDefault: VENICE_DEFAULT_MODEL_REF,
+    applyConfig: applyVeniceConfig,
     noteMessage: [
       "Venice AI provides privacy-focused inference with uncensored models.",
       "Get your API key at: https://venice.ai/settings/api",
@@ -237,10 +179,7 @@ const SIMPLE_API_KEY_PROVIDER_FLOWS: Partial<Record<AuthChoice, SimpleApiKeyProv
     envLabel: "OPENCODE_API_KEY",
     promptMessage: "Enter OpenCode Zen API key",
     setCredential: setOpencodeZenApiKey,
-    defaultModel: OPENCODE_ZEN_DEFAULT_MODEL,
-    applyDefaultConfig: applyOpencodeZenConfig,
-    applyProviderConfig: applyOpencodeZenProviderConfig,
-    noteDefault: OPENCODE_ZEN_DEFAULT_MODEL,
+    applyConfig: applyOpencodeZenConfig,
     noteMessage: [
       "OpenCode Zen provides access to Claude, GPT, Gemini, and more models.",
       "Get your API key at: https://opencode.ai/auth",
@@ -255,10 +194,7 @@ const SIMPLE_API_KEY_PROVIDER_FLOWS: Partial<Record<AuthChoice, SimpleApiKeyProv
     envLabel: "TOGETHER_API_KEY",
     promptMessage: "Enter Together AI API key",
     setCredential: setTogetherApiKey,
-    defaultModel: TOGETHER_DEFAULT_MODEL_REF,
-    applyDefaultConfig: applyTogetherConfig,
-    applyProviderConfig: applyTogetherProviderConfig,
-    noteDefault: TOGETHER_DEFAULT_MODEL_REF,
+    applyConfig: applyTogetherConfig,
     noteMessage: [
       "Together AI provides access to leading open-source models including Llama, DeepSeek, Qwen, and more.",
       "Get your API key at: https://api.together.xyz/settings/api-keys",
@@ -272,10 +208,7 @@ const SIMPLE_API_KEY_PROVIDER_FLOWS: Partial<Record<AuthChoice, SimpleApiKeyProv
     envLabel: "QIANFAN_API_KEY",
     promptMessage: "Enter QIANFAN API key",
     setCredential: setQianfanApiKey,
-    defaultModel: QIANFAN_DEFAULT_MODEL_REF,
-    applyDefaultConfig: applyQianfanConfig,
-    applyProviderConfig: applyQianfanProviderConfig,
-    noteDefault: QIANFAN_DEFAULT_MODEL_REF,
+    applyConfig: applyQianfanConfig,
     noteMessage: [
       "Get your API key at: https://console.bce.baidu.com/qianfan/ais/console/apiKey",
       "API key format: bce-v3/ALTAK-...",
@@ -289,10 +222,7 @@ const SIMPLE_API_KEY_PROVIDER_FLOWS: Partial<Record<AuthChoice, SimpleApiKeyProv
     envLabel: "KILOCODE_API_KEY",
     promptMessage: "Enter Kilo Gateway API key",
     setCredential: setKilocodeApiKey,
-    defaultModel: KILOCODE_DEFAULT_MODEL_REF,
-    applyDefaultConfig: applyKilocodeConfig,
-    applyProviderConfig: applyKilocodeProviderConfig,
-    noteDefault: KILOCODE_DEFAULT_MODEL_REF,
+    applyConfig: applyKilocodeConfig,
   },
   "synthetic-api-key": {
     provider: "synthetic",
@@ -301,9 +231,7 @@ const SIMPLE_API_KEY_PROVIDER_FLOWS: Partial<Record<AuthChoice, SimpleApiKeyProv
     envLabel: "SYNTHETIC_API_KEY",
     promptMessage: "Enter Synthetic API key",
     setCredential: setSyntheticApiKey,
-    defaultModel: SYNTHETIC_DEFAULT_MODEL_REF,
-    applyDefaultConfig: applySyntheticConfig,
-    applyProviderConfig: applySyntheticProviderConfig,
+    applyConfig: applySyntheticConfig,
     normalize: (value) => String(value ?? "").trim(),
     validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
   },
@@ -313,17 +241,6 @@ export async function applyAuthChoiceApiProviders(
   params: ApplyAuthChoiceParams,
 ): Promise<ApplyAuthChoiceResult | null> {
   let nextConfig = params.config;
-  let agentModelOverride: string | undefined;
-  const noteAgentModel = createAuthChoiceAgentModelNoter(params);
-  const applyProviderDefaultModel = createAuthChoiceDefaultModelApplier(
-    params,
-    createAuthChoiceModelStateBridge({
-      getConfig: () => nextConfig,
-      setConfig: (config) => (nextConfig = config),
-      getAgentModelOverride: () => agentModelOverride,
-      setAgentModelOverride: (model) => (agentModelOverride = model),
-    }),
-  );
 
   let authChoice = params.authChoice;
   const normalizedTokenProvider = normalizeTokenProviderInput(params.opts?.tokenProvider);
@@ -333,22 +250,19 @@ export async function applyAuthChoiceApiProviders(
     }
   }
 
-  async function applyApiKeyProviderWithDefaultModel({
+  async function applyApiKeyProvider({
     provider,
     profileId,
     expectedProviders,
     envLabel,
     promptMessage,
     setCredential,
-    defaultModel,
-    applyDefaultConfig,
-    applyProviderConfig,
+    applyConfig,
     noteMessage,
     noteTitle,
     tokenProvider = normalizedTokenProvider,
     normalize = normalizeApiKeyInput,
     validate = validateApiKeyInput,
-    noteDefault = defaultModel,
   }: {
     provider: Parameters<typeof ensureApiKeyFromOptionEnvOrPrompt>[0]["provider"];
     profileId: string;
@@ -356,19 +270,12 @@ export async function applyAuthChoiceApiProviders(
     envLabel: string;
     promptMessage: string;
     setCredential: (apiKey: string) => void | Promise<void>;
-    defaultModel: string;
-    applyDefaultConfig: (
-      config: ApplyAuthChoiceParams["config"],
-    ) => ApplyAuthChoiceParams["config"];
-    applyProviderConfig: (
-      config: ApplyAuthChoiceParams["config"],
-    ) => ApplyAuthChoiceParams["config"];
+    applyConfig: (config: ApplyAuthChoiceParams["config"]) => ApplyAuthChoiceParams["config"];
     noteMessage?: string;
     noteTitle?: string;
     tokenProvider?: string;
     normalize?: (value: string) => string;
     validate?: (value: string) => string | undefined;
-    noteDefault?: string;
   }): Promise<ApplyAuthChoiceResult> {
     await ensureApiKeyFromOptionEnvOrPrompt({
       token: params.opts?.token,
@@ -392,14 +299,9 @@ export async function applyAuthChoiceApiProviders(
       provider,
       mode: "api_key",
     });
-    await applyProviderDefaultModel({
-      defaultModel,
-      applyDefaultConfig,
-      applyProviderConfig,
-      noteDefault,
-    });
+    nextConfig = applyConfig(nextConfig);
 
-    return { config: nextConfig, agentModelOverride };
+    return { config: nextConfig };
   }
 
   if (authChoice === "openrouter-api-key") {
@@ -443,18 +345,13 @@ export async function applyAuthChoiceApiProviders(
         mode: "api_key",
       });
     }
-    await applyProviderDefaultModel({
-      defaultModel: LITELLM_DEFAULT_MODEL_REF,
-      applyDefaultConfig: applyLitellmConfig,
-      applyProviderConfig: applyLitellmProviderConfig,
-      noteDefault: LITELLM_DEFAULT_MODEL_REF,
-    });
-    return { config: nextConfig, agentModelOverride };
+    nextConfig = applyLitellmConfig(nextConfig);
+    return { config: nextConfig };
   }
 
   const simpleApiKeyProviderFlow = SIMPLE_API_KEY_PROVIDER_FLOWS[authChoice];
   if (simpleApiKeyProviderFlow) {
-    return await applyApiKeyProviderWithDefaultModel({
+    return await applyApiKeyProvider({
       provider: simpleApiKeyProviderFlow.provider,
       profileId: simpleApiKeyProviderFlow.profileId,
       expectedProviders: simpleApiKeyProviderFlow.expectedProviders,
@@ -462,10 +359,7 @@ export async function applyAuthChoiceApiProviders(
       promptMessage: simpleApiKeyProviderFlow.promptMessage,
       setCredential: async (apiKey) =>
         simpleApiKeyProviderFlow.setCredential(apiKey, params.agentDir),
-      defaultModel: simpleApiKeyProviderFlow.defaultModel,
-      applyDefaultConfig: simpleApiKeyProviderFlow.applyDefaultConfig,
-      applyProviderConfig: simpleApiKeyProviderFlow.applyProviderConfig,
-      noteDefault: simpleApiKeyProviderFlow.noteDefault,
+      applyConfig: simpleApiKeyProviderFlow.applyConfig,
       noteMessage: simpleApiKeyProviderFlow.noteMessage,
       noteTitle: simpleApiKeyProviderFlow.noteTitle,
       tokenProvider: simpleApiKeyProviderFlow.tokenProvider,
@@ -533,21 +427,11 @@ export async function applyAuthChoiceApiProviders(
       provider: "cloudflare-ai-gateway",
       mode: "api_key",
     });
-    await applyProviderDefaultModel({
-      defaultModel: CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
-      applyDefaultConfig: (cfg) =>
-        applyCloudflareAiGatewayConfig(cfg, {
-          accountId: accountId || params.opts?.cloudflareAiGatewayAccountId,
-          gatewayId: gatewayId || params.opts?.cloudflareAiGatewayGatewayId,
-        }),
-      applyProviderConfig: (cfg) =>
-        applyCloudflareAiGatewayProviderConfig(cfg, {
-          accountId: accountId || params.opts?.cloudflareAiGatewayAccountId,
-          gatewayId: gatewayId || params.opts?.cloudflareAiGatewayGatewayId,
-        }),
-      noteDefault: CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
+    nextConfig = applyCloudflareAiGatewayConfig(nextConfig, {
+      accountId: accountId || params.opts?.cloudflareAiGatewayAccountId,
+      gatewayId: gatewayId || params.opts?.cloudflareAiGatewayGatewayId,
     });
-    return { config: nextConfig, agentModelOverride };
+    return { config: nextConfig };
   }
 
   if (authChoice === "gemini-api-key") {
@@ -568,20 +452,7 @@ export async function applyAuthChoiceApiProviders(
       provider: "google",
       mode: "api_key",
     });
-    if (params.setDefaultModel) {
-      const applied = applyGoogleGeminiModelDefault(nextConfig);
-      nextConfig = applied.next;
-      if (applied.changed) {
-        await params.prompter.note(
-          `Default model set to ${GOOGLE_GEMINI_DEFAULT_MODEL}`,
-          "Model configured",
-        );
-      }
-    } else {
-      agentModelOverride = GOOGLE_GEMINI_DEFAULT_MODEL;
-      await noteAgentModel(GOOGLE_GEMINI_DEFAULT_MODEL);
-    }
-    return { config: nextConfig, agentModelOverride };
+    return { config: nextConfig };
   }
 
   if (
@@ -650,23 +521,12 @@ export async function applyAuthChoiceApiProviders(
       mode: "api_key",
     });
 
-    const defaultModel = modelIdOverride ? `zai/${modelIdOverride}` : ZAI_DEFAULT_MODEL_REF;
-    await applyProviderDefaultModel({
-      defaultModel,
-      applyDefaultConfig: (config) =>
-        applyZaiConfig(config, {
-          endpoint,
-          ...(modelIdOverride ? { modelId: modelIdOverride } : {}),
-        }),
-      applyProviderConfig: (config) =>
-        applyZaiProviderConfig(config, {
-          endpoint,
-          ...(modelIdOverride ? { modelId: modelIdOverride } : {}),
-        }),
-      noteDefault: defaultModel,
+    nextConfig = applyZaiConfig(nextConfig, {
+      endpoint,
+      ...(modelIdOverride ? { modelId: modelIdOverride } : {}),
     });
 
-    return { config: nextConfig, agentModelOverride };
+    return { config: nextConfig };
   }
 
   if (authChoice === "huggingface-api-key") {

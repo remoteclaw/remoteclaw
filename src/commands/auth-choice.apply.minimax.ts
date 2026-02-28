@@ -1,19 +1,12 @@
 import { normalizeApiKeyInput, validateApiKeyInput } from "./auth-choice.api-key.js";
-import {
-  createAuthChoiceDefaultModelApplier,
-  createAuthChoiceModelStateBridge,
-  ensureApiKeyFromOptionEnvOrPrompt,
-} from "./auth-choice.apply-helpers.js";
+import { ensureApiKeyFromOptionEnvOrPrompt } from "./auth-choice.apply-helpers.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
 import { applyAuthChoicePluginProvider } from "./auth-choice.apply.plugin-provider.js";
 import {
   applyAuthProfileConfig,
   applyMinimaxApiConfig,
   applyMinimaxApiConfigCn,
-  applyMinimaxApiProviderConfig,
-  applyMinimaxApiProviderConfigCn,
   applyMinimaxConfig,
-  applyMinimaxProviderConfig,
   setMinimaxApiKey,
 } from "./onboard-auth.js";
 
@@ -21,16 +14,6 @@ export async function applyAuthChoiceMiniMax(
   params: ApplyAuthChoiceParams,
 ): Promise<ApplyAuthChoiceResult | null> {
   let nextConfig = params.config;
-  let agentModelOverride: string | undefined;
-  const applyProviderDefaultModel = createAuthChoiceDefaultModelApplier(
-    params,
-    createAuthChoiceModelStateBridge({
-      getConfig: () => nextConfig,
-      setConfig: (config) => (nextConfig = config),
-      getAgentModelOverride: () => agentModelOverride,
-      setAgentModelOverride: (model) => (agentModelOverride = model),
-    }),
-  );
   const ensureMinimaxApiKey = async (opts: {
     profileId: string;
     promptMessage: string;
@@ -52,13 +35,8 @@ export async function applyAuthChoiceMiniMax(
     profileId: string;
     provider: "minimax" | "minimax-cn";
     promptMessage: string;
-    modelRefPrefix: "minimax" | "minimax-cn";
     modelId: string;
     applyDefaultConfig: (
-      config: ApplyAuthChoiceParams["config"],
-      modelId: string,
-    ) => ApplyAuthChoiceParams["config"];
-    applyProviderConfig: (
       config: ApplyAuthChoiceParams["config"],
       modelId: string,
     ) => ApplyAuthChoiceParams["config"];
@@ -72,13 +50,8 @@ export async function applyAuthChoiceMiniMax(
       provider: opts.provider,
       mode: "api_key",
     });
-    const modelRef = `${opts.modelRefPrefix}/${opts.modelId}`;
-    await applyProviderDefaultModel({
-      defaultModel: modelRef,
-      applyDefaultConfig: (config) => opts.applyDefaultConfig(config, opts.modelId),
-      applyProviderConfig: (config) => opts.applyProviderConfig(config, opts.modelId),
-    });
-    return { config: nextConfig, agentModelOverride };
+    nextConfig = opts.applyDefaultConfig(nextConfig, opts.modelId);
+    return { config: nextConfig };
   };
   if (params.authChoice === "minimax-portal") {
     // Let user choose between Global/CN endpoints
@@ -108,11 +81,9 @@ export async function applyAuthChoiceMiniMax(
       profileId: "minimax:default",
       provider: "minimax",
       promptMessage: "Enter MiniMax API key",
-      modelRefPrefix: "minimax",
       modelId:
         params.authChoice === "minimax-api-lightning" ? "MiniMax-M2.5-Lightning" : "MiniMax-M2.5",
       applyDefaultConfig: applyMinimaxApiConfig,
-      applyProviderConfig: applyMinimaxApiProviderConfig,
     });
   }
 
@@ -121,20 +92,14 @@ export async function applyAuthChoiceMiniMax(
       profileId: "minimax-cn:default",
       provider: "minimax-cn",
       promptMessage: "Enter MiniMax China API key",
-      modelRefPrefix: "minimax-cn",
       modelId: "MiniMax-M2.5",
       applyDefaultConfig: applyMinimaxApiConfigCn,
-      applyProviderConfig: applyMinimaxApiProviderConfigCn,
     });
   }
 
   if (params.authChoice === "minimax") {
-    await applyProviderDefaultModel({
-      defaultModel: "lmstudio/minimax-m2.1-gs32",
-      applyDefaultConfig: applyMinimaxConfig,
-      applyProviderConfig: applyMinimaxProviderConfig,
-    });
-    return { config: nextConfig, agentModelOverride };
+    nextConfig = applyMinimaxConfig(nextConfig);
+    return { config: nextConfig };
   }
 
   return null;

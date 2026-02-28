@@ -4,16 +4,8 @@ import {
   normalizeApiKeyInput,
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
-import { createAuthChoiceAgentModelNoter } from "./auth-choice.apply-helpers.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
-import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
-import {
-  applyAuthProfileConfig,
-  applyXaiConfig,
-  applyXaiProviderConfig,
-  setXaiApiKey,
-  XAI_DEFAULT_MODEL_REF,
-} from "./onboard-auth.js";
+import { applyAuthProfileConfig, applyXaiConfig, setXaiApiKey } from "./onboard-auth.js";
 
 export async function applyAuthChoiceXAI(
   params: ApplyAuthChoiceParams,
@@ -23,8 +15,6 @@ export async function applyAuthChoiceXAI(
   }
 
   let nextConfig = params.config;
-  let agentModelOverride: string | undefined;
-  const noteAgentModel = createAuthChoiceAgentModelNoter(params);
 
   let hasCredential = false;
   const optsKey = params.opts?.xaiApiKey?.trim();
@@ -60,20 +50,7 @@ export async function applyAuthChoiceXAI(
     provider: "xai",
     mode: "api_key",
   });
-  {
-    const applied = await applyDefaultModelChoice({
-      config: nextConfig,
-      setDefaultModel: params.setDefaultModel,
-      defaultModel: XAI_DEFAULT_MODEL_REF,
-      applyDefaultConfig: applyXaiConfig,
-      applyProviderConfig: applyXaiProviderConfig,
-      noteDefault: XAI_DEFAULT_MODEL_REF,
-      noteAgentModel,
-      prompter: params.prompter,
-    });
-    nextConfig = applied.config;
-    agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
-  }
+  nextConfig = applyXaiConfig(nextConfig);
 
-  return { config: nextConfig, agentModelOverride };
+  return { config: nextConfig };
 }

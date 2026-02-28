@@ -3,14 +3,7 @@ import type { OpenClawConfig, GatewayAuthConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { promptAuthChoiceGrouped } from "./auth-choice-prompt.js";
-import { applyAuthChoice, resolvePreferredProviderForAuthChoice } from "./auth-choice.js";
-import {
-  applyModelAllowlist,
-  applyModelFallbacksFromSelection,
-  applyPrimaryModel,
-  promptDefaultModel,
-  promptModelAllowlist,
-} from "./model-picker.js";
+import { applyAuthChoice } from "./auth-choice.js";
 import { promptCustomApiConfig } from "./onboard-custom.js";
 import { randomToken } from "./onboard-helpers.js";
 
@@ -27,14 +20,6 @@ function sanitizeTokenValue(value: string | undefined): string | undefined {
   }
   return trimmed;
 }
-
-const ANTHROPIC_OAUTH_MODEL_KEYS = [
-  "anthropic/claude-sonnet-4-6",
-  "anthropic/claude-opus-4-6",
-  "anthropic/claude-opus-4-5",
-  "anthropic/claude-sonnet-4-5",
-  "anthropic/claude-haiku-4-5",
-];
 
 export function buildGatewayAuthConfig(params: {
   existing?: GatewayAuthConfig;
@@ -97,37 +82,6 @@ export async function promptAuthConfig(
       setDefaultModel: true,
     });
     next = applied.config;
-  } else {
-    const modelSelection = await promptDefaultModel({
-      config: next,
-      prompter,
-      allowKeep: true,
-      ignoreAllowlist: true,
-      preferredProvider: resolvePreferredProviderForAuthChoice(authChoice),
-    });
-    if (modelSelection.config) {
-      next = modelSelection.config;
-    }
-    if (modelSelection.model) {
-      next = applyPrimaryModel(next, modelSelection.model);
-    }
-  }
-
-  const anthropicOAuth =
-    authChoice === "setup-token" || authChoice === "token" || authChoice === "oauth";
-
-  if (authChoice !== "custom-api-key") {
-    const allowlistSelection = await promptModelAllowlist({
-      config: next,
-      prompter,
-      allowedKeys: anthropicOAuth ? ANTHROPIC_OAUTH_MODEL_KEYS : undefined,
-      initialSelections: anthropicOAuth ? ["anthropic/claude-sonnet-4-6"] : undefined,
-      message: anthropicOAuth ? "Anthropic OAuth models" : undefined,
-    });
-    if (allowlistSelection.models) {
-      next = applyModelAllowlist(next, allowlistSelection.models);
-      next = applyModelFallbacksFromSelection(next, allowlistSelection.models);
-    }
   }
 
   return next;

@@ -53,38 +53,4 @@ describe("program routes", () => {
   it("returns false for memory status route when --agent value is missing", async () => {
     await expectRunFalse(["memory", "status"], ["node", "openclaw", "memory", "status", "--agent"]);
   });
-
-  it("returns false for models list route when --provider value is missing", async () => {
-    await expectRunFalse(["models", "list"], ["node", "openclaw", "models", "list", "--provider"]);
-  });
-
-  it("returns false for models status route when probe flags are missing values", async () => {
-    await expectRunFalse(
-      ["models", "status"],
-      ["node", "openclaw", "models", "status", "--probe-provider"],
-    );
-    await expectRunFalse(
-      ["models", "status"],
-      ["node", "openclaw", "models", "status", "--probe-timeout"],
-    );
-    await expectRunFalse(
-      ["models", "status"],
-      ["node", "openclaw", "models", "status", "--probe-concurrency"],
-    );
-    await expectRunFalse(
-      ["models", "status"],
-      ["node", "openclaw", "models", "status", "--probe-max-tokens"],
-    );
-    await expectRunFalse(
-      ["models", "status"],
-      ["node", "openclaw", "models", "status", "--probe-provider", "openai", "--agent"],
-    );
-  });
-
-  it("returns false for models status route when --probe-profile has no value", async () => {
-    await expectRunFalse(
-      ["models", "status"],
-      ["node", "openclaw", "models", "status", "--probe-profile"],
-    );
-  });
 });

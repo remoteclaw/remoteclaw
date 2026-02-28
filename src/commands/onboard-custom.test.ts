@@ -6,11 +6,6 @@ import {
   promptCustomApiConfig,
 } from "./onboard-custom.js";
 
-// Mock dependencies
-vi.mock("./model-picker.js", () => ({
-  applyPrimaryModel: vi.fn((cfg) => cfg),
-}));
-
 function createTestPrompter(params: { text: string[]; select?: string[] }): {
   text: ReturnType<typeof vi.fn>;
   select: ReturnType<typeof vi.fn>;

@@ -15,10 +15,6 @@ async function applySubagentModelPatch(cfg: OpenClawConfig) {
       key: KIMI_SUBAGENT_KEY,
       model: SUBAGENT_MODEL,
     },
-    loadGatewayModelCatalog: async () => [
-      { provider: "anthropic", id: "claude-sonnet-4-6", name: "sonnet" },
-      { provider: "synthetic", id: "hf:moonshotai/Kimi-K2.5", name: "kimi" },
-    ],
   });
   expect(res.ok).toBe(true);
   if (!res.ok) {
@@ -198,7 +194,6 @@ describe("gateway sessions patch", () => {
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", model: "openai/gpt-5.2" },
-      loadGatewayModelCatalog: async () => [{ provider: "openai", id: "gpt-5.2", name: "gpt-5.2" }],
     });
     expect(res.ok).toBe(true);
     if (!res.ok) {
@@ -229,10 +224,6 @@ describe("gateway sessions patch", () => {
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", model: "anthropic/claude-sonnet-4-6" },
-      loadGatewayModelCatalog: async () => [
-        { provider: "anthropic", id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6" },
-        { provider: "anthropic", id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5" },
-      ],
     });
 
     expect(res.ok).toBe(true);
@@ -261,10 +252,6 @@ describe("gateway sessions patch", () => {
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", model: "anthropic/claude-sonnet-4-6" },
-      loadGatewayModelCatalog: async () => [
-        { provider: "anthropic", id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5" },
-        { provider: "openai", id: "gpt-5.2", name: "GPT-5.2" },
-      ],
     });
 
     expect(res.ok).toBe(true);

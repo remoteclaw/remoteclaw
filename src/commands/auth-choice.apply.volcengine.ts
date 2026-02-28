@@ -6,10 +6,6 @@ import {
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
-import { applyPrimaryModel } from "./model-picker.js";
-
-/** Default model for Volcano Engine auth onboarding. */
-export const VOLCENGINE_DEFAULT_MODEL = "volcengine-plan/ark-code-latest";
 
 export async function applyAuthChoiceVolcengine(
   params: ApplyAuthChoiceParams,
@@ -36,10 +32,8 @@ export async function applyAuthChoiceVolcengine(
         `Copied VOLCANO_ENGINE_API_KEY to ${result.path} for launchd compatibility.`,
         "Volcano Engine API Key",
       );
-      const configWithModel = applyPrimaryModel(params.config, VOLCENGINE_DEFAULT_MODEL);
       return {
-        config: configWithModel,
-        agentModelOverride: VOLCENGINE_DEFAULT_MODEL,
+        config: params.config,
       };
     }
   }
@@ -65,9 +59,7 @@ export async function applyAuthChoiceVolcengine(
     "Volcano Engine API Key",
   );
 
-  const configWithModel = applyPrimaryModel(params.config, VOLCENGINE_DEFAULT_MODEL);
   return {
-    config: configWithModel,
-    agentModelOverride: VOLCENGINE_DEFAULT_MODEL,
+    config: params.config,
   };
 }

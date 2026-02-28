@@ -85,7 +85,6 @@ function buildCtx(): NodeEventContext {
     agentRunSeq: new Map(),
     getHealthCache: () => null,
     refreshHealthSnapshot: async () => ({}) as HealthSummary,
-    loadGatewayModelCatalog: async () => [],
     logGateway: { warn: () => {} },
   };
 }

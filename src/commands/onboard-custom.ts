@@ -5,8 +5,16 @@ import type { ModelProviderConfig } from "../config/types.models.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { fetchWithTimeout } from "../utils/fetch-timeout.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
-import { applyPrimaryModel } from "./model-picker.js";
-import { normalizeAlias } from "./models/shared.js";
+function normalizeAlias(alias: string): string {
+  const trimmed = alias.trim();
+  if (!trimmed) {
+    throw new Error("Alias cannot be empty.");
+  }
+  if (!/^[A-Za-z0-9_.:-]+$/.test(trimmed)) {
+    throw new Error("Alias must use letters, numbers, dots, underscores, colons, or dashes.");
+  }
+  return trimmed;
+}
 
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1";
 const DEFAULT_CONTEXT_WINDOW = 4096;
@@ -561,7 +569,6 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
     },
   };
 
-  config = applyPrimaryModel(config, modelRef);
   if (alias) {
     config = {
       ...config,

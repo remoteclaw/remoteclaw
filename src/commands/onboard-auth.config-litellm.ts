@@ -1,8 +1,5 @@
 import type { OpenClawConfig } from "../config/config.js";
-import {
-  applyAgentDefaultModelPrimary,
-  applyProviderConfigWithDefaultModel,
-} from "./onboard-auth.config-shared.js";
+import { applyProviderConfigWithDefaultModel } from "./onboard-auth.config-shared.js";
 import { LITELLM_DEFAULT_MODEL_REF } from "./onboard-auth.credentials.js";
 
 export const LITELLM_BASE_URL = "http://localhost:4000";
@@ -60,6 +57,5 @@ export function applyLitellmProviderConfig(cfg: OpenClawConfig): OpenClawConfig 
 }
 
 export function applyLitellmConfig(cfg: OpenClawConfig): OpenClawConfig {
-  const next = applyLitellmProviderConfig(cfg);
-  return applyAgentDefaultModelPrimary(next, LITELLM_DEFAULT_MODEL_REF);
+  return applyLitellmProviderConfig(cfg);
 }

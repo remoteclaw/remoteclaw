@@ -142,11 +142,9 @@ describe("Kilo Gateway provider config", () => {
   });
 
   describe("applyKilocodeConfig", () => {
-    it("sets kilocode as the default model", () => {
+    it("does not set a default model", () => {
       const result = applyKilocodeConfig(emptyCfg);
-      expect(resolveAgentModelPrimaryValue(result.agents?.defaults?.model)).toBe(
-        KILOCODE_DEFAULT_MODEL_REF,
-      );
+      expect(resolveAgentModelPrimaryValue(result.agents?.defaults?.model)).toBeUndefined();
     });
 
     it("also registers the provider", () => {

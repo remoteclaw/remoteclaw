@@ -7,8 +7,6 @@ import type { RuntimeEnv } from "../../../runtime.js";
 import { shortenHomePath } from "../../../utils.js";
 import { normalizeSecretInput } from "../../../utils/normalize-secret-input.js";
 import { buildTokenProfileId, validateAnthropicSetupToken } from "../../auth-token.js";
-import { applyGoogleGeminiModelDefault } from "../../google-gemini-model-default.js";
-import { applyPrimaryModel } from "../../model-picker.js";
 import {
   applyAuthProfileConfig,
   applyCloudflareAiGatewayConfig,
@@ -60,7 +58,6 @@ import {
   resolveCustomProviderId,
 } from "../../onboard-custom.js";
 import type { AuthChoice, OnboardOptions } from "../../onboard-types.js";
-import { applyOpenAIConfig } from "../../openai-model-default.js";
 import { detectZaiEndpoint } from "../../zai-endpoint-detect.js";
 import { resolveNonInteractiveApiKey } from "../api-keys.js";
 
@@ -204,7 +201,7 @@ export async function applyNonInteractiveAuthChoice(params: {
       provider: "google",
       mode: "api_key",
     });
-    return applyGoogleGeminiModelDefault(nextConfig).next;
+    return nextConfig;
   }
 
   if (
@@ -351,7 +348,7 @@ export async function applyNonInteractiveAuthChoice(params: {
       process.env.VOLCANO_ENGINE_API_KEY = resolved.key;
       runtime.log(`Saved VOLCANO_ENGINE_API_KEY to ${shortenHomePath(result.path)}`);
     }
-    return applyPrimaryModel(nextConfig, "volcengine-plan/ark-code-latest");
+    return nextConfig;
   }
 
   if (authChoice === "byteplus-api-key") {
@@ -374,7 +371,7 @@ export async function applyNonInteractiveAuthChoice(params: {
       process.env.BYTEPLUS_API_KEY = resolved.key;
       runtime.log(`Saved BYTEPLUS_API_KEY to ${shortenHomePath(result.path)}`);
     }
-    return applyPrimaryModel(nextConfig, "byteplus-plan/ark-code-latest");
+    return nextConfig;
   }
 
   if (authChoice === "qianfan-api-key") {
@@ -417,7 +414,7 @@ export async function applyNonInteractiveAuthChoice(params: {
     const result = upsertSharedEnvVar({ key: "OPENAI_API_KEY", value: key });
     process.env.OPENAI_API_KEY = key;
     runtime.log(`Saved OPENAI_API_KEY to ${shortenHomePath(result.path)}`);
-    return applyOpenAIConfig(nextConfig);
+    return nextConfig;
   }
 
   if (authChoice === "openrouter-api-key") {

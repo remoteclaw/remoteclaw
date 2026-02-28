@@ -83,15 +83,6 @@ const entries: SubCliEntry[] = [
     },
   },
   {
-    name: "models",
-    description: "Discover, scan, and configure models",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../models-cli.js");
-      mod.registerModelsCli(program);
-    },
-  },
-  {
     name: "nodes",
     description: "Manage gateway-owned node pairing and node commands",
     hasSubcommands: true,

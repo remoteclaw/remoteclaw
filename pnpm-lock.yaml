@@ -256,8 +256,6 @@ importers:
 
   extensions/bluebubbles: {}
 
-  extensions/copilot-proxy: {}
-
   extensions/diagnostics-otel:
     dependencies:
       '@opentelemetry/api':
@@ -308,8 +306,6 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
 
-  extensions/google-gemini-cli-auth: {}
-
   extensions/googlechat:
     dependencies:
       google-auth-library:
@@ -324,8 +320,6 @@ importers:
   extensions/irc: {}
 
   extensions/line: {}
-
-  extensions/llm-task: {}
 
   extensions/lobster: {}
 
@@ -367,8 +361,6 @@ importers:
         specifier: ^6.25.0
         version: 6.25.0(ws@8.19.0)(zod@4.3.6)
 
-  extensions/minimax-portal-auth: {}
-
   extensions/msteams:
     dependencies:
       '@microsoft/agents-hosting':
@@ -388,8 +380,6 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-
-  extensions/open-prose: {}
 
   extensions/signal: {}
 

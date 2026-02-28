@@ -123,24 +123,6 @@ describe("applyPluginAutoEnable", () => {
     expect(result.changes.join("\n")).toContain("IRC configured, enabled automatically.");
   });
 
-  it("auto-enables provider auth plugins when profiles exist", () => {
-    const result = applyPluginAutoEnable({
-      config: {
-        auth: {
-          profiles: {
-            "google-gemini-cli:default": {
-              provider: "google-gemini-cli",
-              mode: "oauth",
-            },
-          },
-        },
-      },
-      env: {},
-    });
-
-    expect(result.config.plugins?.entries?.["google-gemini-cli-auth"]?.enabled).toBe(true);
-  });
-
   it("skips when plugins are globally disabled", () => {
     const result = applyPluginAutoEnable({
       config: {

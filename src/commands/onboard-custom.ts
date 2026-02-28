@@ -321,7 +321,7 @@ async function requestOpenAiVerification(params: {
         temperature: 1,
         max_completion_tokens: DEFAULT_MAX_TOKENS,
         stream: false,
-      }
+      },
     });
   } else {
     return await requestVerification({
@@ -333,7 +333,7 @@ async function requestOpenAiVerification(params: {
         temperature: 1,
         max_tokens: 1,
         stream: false,
-      }
+      },
     });
   }
 }

@@ -31,7 +31,6 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -421,28 +420,6 @@ class TalkModeManager(
     if (!enabled) {
       playbackGeneration.incrementAndGet()
       stopActiveStreamingTts()
-      stopSpeaking()
-    }
-  }
-
-  suspend fun refreshConfig() {
-    reloadConfig()
-  }
-
-  suspend fun speakAssistantReply(text: String) {
-    if (!playbackEnabled) return
-    val playbackToken = playbackGeneration.incrementAndGet()
-    stopSpeaking(resetInterrupt = false)
-    ensureConfigLoaded()
-    ensurePlaybackActive(playbackToken)
-    playAssistant(text, playbackToken)
-  }
-
-  fun setPlaybackEnabled(enabled: Boolean) {
-    if (playbackEnabled == enabled) return
-    playbackEnabled = enabled
-    if (!enabled) {
-      playbackGeneration.incrementAndGet()
       stopSpeaking()
     }
   }

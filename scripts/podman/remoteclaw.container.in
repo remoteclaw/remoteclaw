@@ -9,6 +9,8 @@ Description=RemoteClaw gateway (rootless Podman)
 Image=remoteclaw:local
 ContainerName=remoteclaw
 UserNS=keep-id
+# Keep container UID/GID aligned with the invoking user so mounted config is readable.
+User=%U:%G
 Volume={{REMOTECLAW_HOME}}/.remoteclaw:/home/node/.remoteclaw
 EnvironmentFile={{REMOTECLAW_HOME}}/.remoteclaw/.env
 Environment=HOME=/home/node

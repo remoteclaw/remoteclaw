@@ -61,6 +61,11 @@ run_as_remoteclaw() {
   run_as_user "$REMOTECLAW_USER" env HOME="$REMOTECLAW_HOME" "$@"
 }
 
+escape_sed_replacement_pipe_delim() {
+  # Escape replacement metacharacters for sed "s|...|...|g" replacement text.
+  printf '%s' "$1" | sed -e 's/[\\&|]/\\&/g'
+}
+
 # Quadlet: opt-in via --quadlet or REMOTECLAW_PODMAN_QUADLET=1
 INSTALL_QUADLET=false
 for arg in "$@"; do
@@ -229,7 +234,7 @@ QUADLET_DIR="$REMOTECLAW_HOME/.config/containers/systemd"
 if [[ "$INSTALL_QUADLET" == true && -f "$QUADLET_TEMPLATE" ]]; then
   echo "Installing systemd quadlet for $REMOTECLAW_USER..."
   run_as_remoteclaw mkdir -p "$QUADLET_DIR"
-  REMOTECLAW_HOME_SED="$(printf '%s' "$REMOTECLAW_HOME" | sed -e 's/[\\/&|]/\\\\&/g')"
+  REMOTECLAW_HOME_SED="$(escape_sed_replacement_pipe_delim "$REMOTECLAW_HOME")"
   sed "s|{{REMOTECLAW_HOME}}|$REMOTECLAW_HOME_SED|g" "$QUADLET_TEMPLATE" | run_as_remoteclaw tee "$QUADLET_DIR/remoteclaw.container" >/dev/null
   run_as_remoteclaw chmod 700 "$REMOTECLAW_HOME/.config" "$REMOTECLAW_HOME/.config/containers" "$QUADLET_DIR" 2>/dev/null || true
   run_as_remoteclaw chmod 600 "$QUADLET_DIR/remoteclaw.container" 2>/dev/null || true

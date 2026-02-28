@@ -442,7 +442,7 @@ class TalkModeManager(
     if (playbackEnabled == enabled) return
     playbackEnabled = enabled
     if (!enabled) {
-      playbackGeneration += 1
+      playbackGeneration.incrementAndGet()
       stopSpeaking()
     }
   }
@@ -453,7 +453,8 @@ class TalkModeManager(
 
   suspend fun speakAssistantReply(text: String) {
     if (!playbackEnabled) return
-    val playbackToken = playbackGeneration
+    val playbackToken = playbackGeneration.incrementAndGet()
+    stopSpeaking(resetInterrupt = false)
     ensureConfigLoaded()
     ensurePlaybackActive(playbackToken)
     playAssistant(text, playbackToken)

@@ -3,12 +3,14 @@
 import { execSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import {
   collectBundledExtensionManifestErrors,
   normalizeBundledExtensionMetadata,
   type BundledExtension,
   type ExtensionPackageJson as PackageJson,
 } from "./lib/bundled-extension-manifest.ts";
+import { sparkleBuildFloorsFromShortVersion, type SparkleBuildFloors } from "./sparkle-build.ts";
 
 export { collectBundledExtensionManifestErrors } from "./lib/bundled-extension-manifest.ts";
 
@@ -24,12 +26,8 @@ const requiredPathGroups = [
 ];
 const forbiddenPrefixes = ["dist/RemoteClaw.app/"];
 const appcastPath = resolve("appcast.xml");
-
-type CalverSparkleFloors = {
-  dateKey: number;
-  legacyFloor: number;
-  laneFloor: number;
-};
+const laneBuildMin = 1_000_000_000;
+const laneFloorAdoptionDateKey = 20260227;
 
 function normalizePluginSyncVersion(version: string): string {
   const normalized = version.trim().replace(/^v/, "");
@@ -181,56 +179,16 @@ function checkPluginVersions() {
   }
 }
 
-function sparkleFloorsFromShortVersion(shortVersion: string): CalverSparkleFloors | null {
-  const match = /^([0-9]{4})\.([0-9]{1,2})\.([0-9]{1,2})([.-].*)?$/.exec(shortVersion.trim());
-  if (!match) {
-    return null;
-  }
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  if (
-    !Number.isInteger(year) ||
-    !Number.isInteger(month) ||
-    !Number.isInteger(day) ||
-    month < 1 ||
-    month > 12 ||
-    day < 1 ||
-    day > 31
-  ) {
-    return null;
-  }
-
-  const dateKey = Number(`${year}${String(month).padStart(2, "0")}${String(day).padStart(2, "0")}`);
-  const legacyFloor = Number(`${dateKey}0`);
-
-  // Must stay aligned with canonical_build_from_version in scripts/package-mac-app.sh.
-  const suffix = match[4] ?? "";
-  let lane = 90;
-  if (suffix.length > 0) {
-    const numericSuffix = /([0-9]+)$/.exec(suffix)?.[1];
-    if (numericSuffix) {
-      lane = Math.min(Number.parseInt(numericSuffix, 10), 89);
-    } else {
-      lane = 1;
-    }
-  }
-
-  const laneFloor = Number(`${dateKey}${String(lane).padStart(2, "0")}`);
-  return { dateKey, legacyFloor, laneFloor };
-}
-
 function extractTag(item: string, tag: string): string | null {
   const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(`<${escapedTag}>([^<]+)</${escapedTag}>`);
   return regex.exec(item)?.[1]?.trim() ?? null;
 }
 
-function checkAppcastSparkleVersions() {
-  const xml = readFileSync(appcastPath, "utf8");
+export function collectAppcastSparkleVersionErrors(xml: string): string[] {
   const itemMatches = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
   const errors: string[] = [];
-  const calverItems: Array<{ title: string; sparkleBuild: number; floors: CalverSparkleFloors }> =
+  const calverItems: Array<{ title: string; sparkleBuild: number; floors: SparkleBuildFloors }> =
     [];
 
   if (itemMatches.length === 0) {
@@ -254,7 +212,7 @@ function checkAppcastSparkleVersions() {
     if (!shortVersion) {
       continue;
     }
-    const floors = sparkleFloorsFromShortVersion(shortVersion);
+    const floors = sparkleBuildFloorsFromShortVersion(shortVersion);
     if (floors === null) {
       continue;
     }
@@ -263,15 +221,18 @@ function checkAppcastSparkleVersions() {
     calverItems.push({ title, sparkleBuild, floors });
   }
 
-  const adoptionDateKey = calverItems
-    .filter((item) => item.sparkleBuild >= 1_000_000_000)
+  const observedLaneAdoptionDateKey = calverItems
+    .filter((item) => item.sparkleBuild >= laneBuildMin)
     .map((item) => item.floors.dateKey)
     .toSorted((a, b) => a - b)[0];
+  const effectiveLaneAdoptionDateKey =
+    typeof observedLaneAdoptionDateKey === "number"
+      ? Math.min(observedLaneAdoptionDateKey, laneFloorAdoptionDateKey)
+      : laneFloorAdoptionDateKey;
 
   for (const item of calverItems) {
     const expectLaneFloor =
-      item.sparkleBuild >= 1_000_000_000 ||
-      (typeof adoptionDateKey === "number" && item.floors.dateKey >= adoptionDateKey);
+      item.sparkleBuild >= laneBuildMin || item.floors.dateKey >= effectiveLaneAdoptionDateKey;
     const floor = expectLaneFloor ? item.floors.laneFloor : item.floors.legacyFloor;
 
     if (item.sparkleBuild < floor) {
@@ -282,6 +243,12 @@ function checkAppcastSparkleVersions() {
     }
   }
 
+  return errors;
+}
+
+function checkAppcastSparkleVersions() {
+  const xml = readFileSync(appcastPath, "utf8");
+  const errors = collectAppcastSparkleVersionErrors(xml);
   if (errors.length > 0) {
     console.error("release-check: appcast sparkle version validation failed:");
     for (const error of errors) {
@@ -331,4 +298,6 @@ function main() {
   console.log("release-check: npm pack contents look OK.");
 }
 
-main();
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  main();
+}

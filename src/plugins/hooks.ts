@@ -7,19 +7,8 @@
 
 import type { PluginRegistry } from "./registry.js";
 import type {
-  PluginHookAfterCompactionEvent,
   PluginHookAfterToolCallEvent,
   PluginHookAgentContext,
-  PluginHookAgentEndEvent,
-  PluginHookBeforeAgentStartEvent,
-  PluginHookBeforeAgentStartResult,
-  PluginHookBeforeModelResolveEvent,
-  PluginHookBeforeModelResolveResult,
-  PluginHookBeforePromptBuildEvent,
-  PluginHookBeforePromptBuildResult,
-  PluginHookBeforeCompactionEvent,
-  PluginHookLlmInputEvent,
-  PluginHookLlmOutputEvent,
   PluginHookBeforeResetEvent,
   PluginHookBeforeToolCallEvent,
   PluginHookBeforeToolCallResult,
@@ -44,9 +33,6 @@ import type {
   PluginHookSubagentEndedEvent,
   PluginHookSubagentSpawnedEvent,
   PluginHookToolContext,
-  PluginHookToolResultPersistContext,
-  PluginHookToolResultPersistEvent,
-  PluginHookToolResultPersistResult,
   PluginHookBeforeMessageWriteEvent,
   PluginHookBeforeMessageWriteResult,
 } from "./types.js";
@@ -54,18 +40,7 @@ import type {
 // Re-export types for consumers
 export type {
   PluginHookAgentContext,
-  PluginHookBeforeAgentStartEvent,
-  PluginHookBeforeAgentStartResult,
-  PluginHookBeforeModelResolveEvent,
-  PluginHookBeforeModelResolveResult,
-  PluginHookBeforePromptBuildEvent,
-  PluginHookBeforePromptBuildResult,
-  PluginHookLlmInputEvent,
-  PluginHookLlmOutputEvent,
-  PluginHookAgentEndEvent,
-  PluginHookBeforeCompactionEvent,
   PluginHookBeforeResetEvent,
-  PluginHookAfterCompactionEvent,
   PluginHookMessageContext,
   PluginHookMessageReceivedEvent,
   PluginHookMessageSendingEvent,
@@ -75,9 +50,6 @@ export type {
   PluginHookBeforeToolCallEvent,
   PluginHookBeforeToolCallResult,
   PluginHookAfterToolCallEvent,
-  PluginHookToolResultPersistContext,
-  PluginHookToolResultPersistEvent,
-  PluginHookToolResultPersistResult,
   PluginHookBeforeMessageWriteEvent,
   PluginHookBeforeMessageWriteResult,
   PluginHookSessionContext,
@@ -125,26 +97,6 @@ function getHooksForName<K extends PluginHookName>(
 export function createHookRunner(registry: PluginRegistry, options: HookRunnerOptions = {}) {
   const logger = options.logger;
   const catchErrors = options.catchErrors ?? true;
-
-  const mergeBeforeModelResolve = (
-    acc: PluginHookBeforeModelResolveResult | undefined,
-    next: PluginHookBeforeModelResolveResult,
-  ): PluginHookBeforeModelResolveResult => ({
-    // Keep the first defined override so higher-priority hooks win.
-    modelOverride: acc?.modelOverride ?? next.modelOverride,
-    providerOverride: acc?.providerOverride ?? next.providerOverride,
-  });
-
-  const mergeBeforePromptBuild = (
-    acc: PluginHookBeforePromptBuildResult | undefined,
-    next: PluginHookBeforePromptBuildResult,
-  ): PluginHookBeforePromptBuildResult => ({
-    systemPrompt: next.systemPrompt ?? acc?.systemPrompt,
-    prependContext:
-      acc?.prependContext && next.prependContext
-        ? `${acc.prependContext}\n\n${next.prependContext}`
-        : (next.prependContext ?? acc?.prependContext),
-  });
 
   const mergeSubagentSpawningResult = (
     acc: PluginHookSubagentSpawningResult | undefined,
@@ -259,107 +211,6 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
   // =========================================================================
 
   /**
-   * Run before_model_resolve hook.
-   * Allows plugins to override provider/model before model resolution.
-   */
-  async function runBeforeModelResolve(
-    event: PluginHookBeforeModelResolveEvent,
-    ctx: PluginHookAgentContext,
-  ): Promise<PluginHookBeforeModelResolveResult | undefined> {
-    return runModifyingHook<"before_model_resolve", PluginHookBeforeModelResolveResult>(
-      "before_model_resolve",
-      event,
-      ctx,
-      mergeBeforeModelResolve,
-    );
-  }
-
-  /**
-   * Run before_prompt_build hook.
-   * Allows plugins to inject context and system prompt before prompt submission.
-   */
-  async function runBeforePromptBuild(
-    event: PluginHookBeforePromptBuildEvent,
-    ctx: PluginHookAgentContext,
-  ): Promise<PluginHookBeforePromptBuildResult | undefined> {
-    return runModifyingHook<"before_prompt_build", PluginHookBeforePromptBuildResult>(
-      "before_prompt_build",
-      event,
-      ctx,
-      mergeBeforePromptBuild,
-    );
-  }
-
-  /**
-   * Run before_agent_start hook.
-   * Legacy compatibility hook that combines model resolve + prompt build phases.
-   */
-  async function runBeforeAgentStart(
-    event: PluginHookBeforeAgentStartEvent,
-    ctx: PluginHookAgentContext,
-  ): Promise<PluginHookBeforeAgentStartResult | undefined> {
-    return runModifyingHook<"before_agent_start", PluginHookBeforeAgentStartResult>(
-      "before_agent_start",
-      event,
-      ctx,
-      (acc, next) => ({
-        ...mergeBeforePromptBuild(acc, next),
-        ...mergeBeforeModelResolve(acc, next),
-      }),
-    );
-  }
-
-  /**
-   * Run agent_end hook.
-   * Allows plugins to analyze completed conversations.
-   * Runs in parallel (fire-and-forget).
-   */
-  async function runAgentEnd(
-    event: PluginHookAgentEndEvent,
-    ctx: PluginHookAgentContext,
-  ): Promise<void> {
-    return runVoidHook("agent_end", event, ctx);
-  }
-
-  /**
-   * Run llm_input hook.
-   * Allows plugins to observe the exact input payload sent to the LLM.
-   * Runs in parallel (fire-and-forget).
-   */
-  async function runLlmInput(event: PluginHookLlmInputEvent, ctx: PluginHookAgentContext) {
-    return runVoidHook("llm_input", event, ctx);
-  }
-
-  /**
-   * Run llm_output hook.
-   * Allows plugins to observe the exact output payload returned by the LLM.
-   * Runs in parallel (fire-and-forget).
-   */
-  async function runLlmOutput(event: PluginHookLlmOutputEvent, ctx: PluginHookAgentContext) {
-    return runVoidHook("llm_output", event, ctx);
-  }
-
-  /**
-   * Run before_compaction hook.
-   */
-  async function runBeforeCompaction(
-    event: PluginHookBeforeCompactionEvent,
-    ctx: PluginHookAgentContext,
-  ): Promise<void> {
-    return runVoidHook("before_compaction", event, ctx);
-  }
-
-  /**
-   * Run after_compaction hook.
-   */
-  async function runAfterCompaction(
-    event: PluginHookAfterCompactionEvent,
-    ctx: PluginHookAgentContext,
-  ): Promise<void> {
-    return runVoidHook("after_compaction", event, ctx);
-  }
-
-  /**
    * Run before_reset hook.
    * Fired when /new or /reset clears a session, before messages are lost.
    * Runs in parallel (fire-and-forget).
@@ -451,65 +302,6 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
     ctx: PluginHookToolContext,
   ): Promise<void> {
     return runVoidHook("after_tool_call", event, ctx);
-  }
-
-  /**
-   * Run tool_result_persist hook.
-   *
-   * This hook is intentionally synchronous: it runs in hot paths where session
-   * transcripts are appended synchronously.
-   *
-   * Handlers are executed sequentially in priority order (higher first). Each
-   * handler may return `{ message }` to replace the message passed to the next
-   * handler.
-   */
-  function runToolResultPersist(
-    event: PluginHookToolResultPersistEvent,
-    ctx: PluginHookToolResultPersistContext,
-  ): PluginHookToolResultPersistResult | undefined {
-    const hooks = getHooksForName(registry, "tool_result_persist");
-    if (hooks.length === 0) {
-      return undefined;
-    }
-
-    let current = event.message;
-
-    for (const hook of hooks) {
-      try {
-        // oxlint-disable-next-line typescript/no-explicit-any
-        const out = (hook.handler as any)({ ...event, message: current }, ctx) as
-          | PluginHookToolResultPersistResult
-          | void
-          | Promise<unknown>;
-
-        // Guard against accidental async handlers (this hook is sync-only).
-        // oxlint-disable-next-line typescript/no-explicit-any
-        if (out && typeof (out as any).then === "function") {
-          const msg =
-            `[hooks] tool_result_persist handler from ${hook.pluginId} returned a Promise; ` +
-            `this hook is synchronous and the result was ignored.`;
-          if (catchErrors) {
-            logger?.warn?.(msg);
-            continue;
-          }
-          throw new Error(msg);
-        }
-
-        const next = (out as PluginHookToolResultPersistResult | undefined)?.message;
-        if (next) {
-          current = next;
-        }
-      } catch (err) {
-        const msg = `[hooks] tool_result_persist handler from ${hook.pluginId} failed: ${String(err)}`;
-        if (catchErrors) {
-          logger?.error(msg);
-        } else {
-          throw new Error(msg, { cause: err });
-        }
-      }
-    }
-
-    return { message: current };
   }
 
   // =========================================================================
@@ -715,14 +507,6 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
 
   return {
     // Agent hooks
-    runBeforeModelResolve,
-    runBeforePromptBuild,
-    runBeforeAgentStart,
-    runLlmInput,
-    runLlmOutput,
-    runAgentEnd,
-    runBeforeCompaction,
-    runAfterCompaction,
     runBeforeReset,
     // Message hooks
     runMessageReceived,
@@ -731,7 +515,6 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
     // Tool hooks
     runBeforeToolCall,
     runAfterToolCall,
-    runToolResultPersist,
     // Message write hooks
     runBeforeMessageWrite,
     // Session hooks

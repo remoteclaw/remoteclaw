@@ -254,6 +254,8 @@ export type AgentDefaultsConfig = {
   };
   /** Optional sandbox settings for non-main sessions. */
   sandbox?: AgentSandboxConfig;
+  /** Selected agent runtime (claude, gemini, codex, opencode). */
+  runtime?: "claude" | "gemini" | "codex" | "opencode";
 };
 
 export type AgentCompactionMode = "default" | "safeguard";

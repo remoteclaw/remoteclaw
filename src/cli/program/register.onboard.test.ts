@@ -9,15 +9,11 @@ const runtime = {
   exit: vi.fn(),
 };
 
-vi.mock("../../commands/auth-choice-options.js", () => ({
-  formatAuthChoiceChoicesForCli: () => "token|oauth",
-}));
-
 vi.mock("../../commands/onboard-provider-auth-flags.js", () => ({
   ONBOARD_PROVIDER_AUTH_FLAGS: [
     {
-      cliOption: "--mistral-api-key <key>",
-      description: "Mistral API key",
+      cliOption: "--anthropic-api-key <key>",
+      description: "Anthropic API key",
     },
   ] as Array<{ cliOption: string; description: string }>,
 }));
@@ -108,11 +104,31 @@ describe("registerOnboardCommand", () => {
     );
   });
 
-  it("parses --mistral-api-key and forwards mistralApiKey", async () => {
-    await runCli(["onboard", "--mistral-api-key", "sk-mistral-test"]);
+  it("parses --runtime flag", async () => {
+    await runCli(["onboard", "--runtime", "claude"]);
     expect(onboardCommandMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        mistralApiKey: "sk-mistral-test",
+        runtime: "claude",
+      }),
+      runtime,
+    );
+  });
+
+  it("parses --anthropic-api-key and forwards anthropicApiKey", async () => {
+    await runCli(["onboard", "--anthropic-api-key", "sk-ant-test"]);
+    expect(onboardCommandMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        anthropicApiKey: "sk-ant-test",
+      }),
+      runtime,
+    );
+  });
+
+  it("parses --auth-token flag", async () => {
+    await runCli(["onboard", "--auth-token", "my-token"]);
+    expect(onboardCommandMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        authToken: "my-token",
       }),
       runtime,
     );

@@ -38,6 +38,7 @@ import { createAudioAsVoiceBuffer, createBlockReplyPipeline } from "./block-repl
 import { resolveBlockStreamingCoalescing } from "./block-streaming.js";
 import { createFollowupRunner } from "./followup-runner.js";
 import { resolveOriginMessageProvider, resolveOriginMessageTo } from "./origin-routing.js";
+import { readPostCompactionContext } from "./post-compaction-context.js";
 import { resolveActiveRunQueueAction } from "./queue-policy.js";
 import { enqueueFollowupRun, type FollowupRun, type QueueSettings } from "./queue.js";
 import { createReplyToModeFilterForChannel, resolveReplyToMode } from "./reply-threading.js";
@@ -661,6 +662,35 @@ export async function runReplyAgent(params: {
       }
     }
 
+    if (autoCompactionCompleted) {
+      const count = await incrementRunCompactionCount({
+        sessionEntry: activeSessionEntry,
+        sessionStore: activeSessionStore,
+        sessionKey,
+        storePath,
+        lastCallUsage: runResult.meta?.agentMeta?.lastCallUsage,
+        contextTokensUsed,
+      });
+
+      // Inject post-compaction workspace context for the next agent turn
+      if (sessionKey) {
+        const workspaceDir = process.cwd();
+        readPostCompactionContext(workspaceDir)
+          .then((contextContent) => {
+            if (contextContent) {
+              enqueueSystemEvent(contextContent, { sessionKey });
+            }
+          })
+          .catch(() => {
+            // Silent failure — post-compaction context is best-effort
+          });
+      }
+
+      if (verboseEnabled) {
+        const suffix = typeof count === "number" ? ` (count ${count})` : "";
+        verboseNotices.push({ text: `🧹 Auto-compaction complete${suffix}.` });
+      }
+    }
     if (verboseNotices.length > 0) {
       finalPayloads = [...verboseNotices, ...finalPayloads];
     }

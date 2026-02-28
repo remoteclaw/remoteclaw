@@ -1,20 +1,27 @@
 package org.remoteclaw.android.node
 
+import org.remoteclaw.android.protocol.RemoteClawCalendarCommand
 import org.remoteclaw.android.protocol.RemoteClawCanvasA2UICommand
 import org.remoteclaw.android.protocol.RemoteClawCanvasCommand
 import org.remoteclaw.android.protocol.RemoteClawCameraCommand
 import org.remoteclaw.android.protocol.RemoteClawCapability
+import org.remoteclaw.android.protocol.RemoteClawContactsCommand
 import org.remoteclaw.android.protocol.RemoteClawDeviceCommand
 import org.remoteclaw.android.protocol.RemoteClawLocationCommand
+import org.remoteclaw.android.protocol.RemoteClawMotionCommand
 import org.remoteclaw.android.protocol.RemoteClawNotificationsCommand
+import org.remoteclaw.android.protocol.RemoteClawPhotosCommand
 import org.remoteclaw.android.protocol.RemoteClawScreenCommand
 import org.remoteclaw.android.protocol.RemoteClawSmsCommand
+import org.remoteclaw.android.protocol.RemoteClawSystemCommand
 
 data class NodeRuntimeFlags(
   val cameraEnabled: Boolean,
   val locationEnabled: Boolean,
   val smsAvailable: Boolean,
   val voiceWakeEnabled: Boolean,
+  val motionActivityAvailable: Boolean,
+  val motionPedometerAvailable: Boolean,
   val debugBuild: Boolean,
 )
 
@@ -23,6 +30,8 @@ enum class InvokeCommandAvailability {
   CameraEnabled,
   LocationEnabled,
   SmsAvailable,
+  MotionActivityAvailable,
+  MotionPedometerAvailable,
   DebugBuild,
 }
 
@@ -32,6 +41,7 @@ enum class NodeCapabilityAvailability {
   LocationEnabled,
   SmsAvailable,
   VoiceWakeEnabled,
+  MotionAvailable,
 }
 
 data class NodeCapabilitySpec(
@@ -66,6 +76,13 @@ object InvokeCommandRegistry {
       NodeCapabilitySpec(
         name = RemoteClawCapability.Location.rawValue,
         availability = NodeCapabilityAvailability.LocationEnabled,
+      ),
+      NodeCapabilitySpec(name = RemoteClawCapability.Photos.rawValue),
+      NodeCapabilitySpec(name = RemoteClawCapability.Contacts.rawValue),
+      NodeCapabilitySpec(name = RemoteClawCapability.Calendar.rawValue),
+      NodeCapabilitySpec(
+        name = RemoteClawCapability.Motion.rawValue,
+        availability = NodeCapabilityAvailability.MotionAvailable,
       ),
     )
 
@@ -108,6 +125,9 @@ object InvokeCommandRegistry {
         requiresForeground = true,
       ),
       InvokeCommandSpec(
+        name = RemoteClawSystemCommand.Notify.rawValue,
+      ),
+      InvokeCommandSpec(
         name = RemoteClawCameraCommand.List.rawValue,
         requiresForeground = true,
         availability = InvokeCommandAvailability.CameraEnabled,
@@ -127,6 +147,12 @@ object InvokeCommandRegistry {
         availability = InvokeCommandAvailability.LocationEnabled,
       ),
       InvokeCommandSpec(
+        name = RemoteClawDeviceCommand.Status.rawValue,
+      ),
+      InvokeCommandSpec(
+        name = RemoteClawDeviceCommand.Info.rawValue,
+      ),
+      InvokeCommandSpec(
         name = RemoteClawDeviceCommand.Permissions.rawValue,
       ),
       InvokeCommandSpec(
@@ -137,6 +163,29 @@ object InvokeCommandRegistry {
       ),
       InvokeCommandSpec(
         name = RemoteClawNotificationsCommand.Actions.rawValue,
+      ),
+      InvokeCommandSpec(
+        name = RemoteClawPhotosCommand.Latest.rawValue,
+      ),
+      InvokeCommandSpec(
+        name = RemoteClawContactsCommand.Search.rawValue,
+      ),
+      InvokeCommandSpec(
+        name = RemoteClawContactsCommand.Add.rawValue,
+      ),
+      InvokeCommandSpec(
+        name = RemoteClawCalendarCommand.Events.rawValue,
+      ),
+      InvokeCommandSpec(
+        name = RemoteClawCalendarCommand.Add.rawValue,
+      ),
+      InvokeCommandSpec(
+        name = RemoteClawMotionCommand.Activity.rawValue,
+        availability = InvokeCommandAvailability.MotionActivityAvailable,
+      ),
+      InvokeCommandSpec(
+        name = RemoteClawMotionCommand.Pedometer.rawValue,
+        availability = InvokeCommandAvailability.MotionPedometerAvailable,
       ),
       InvokeCommandSpec(
         name = RemoteClawSmsCommand.Send.rawValue,
@@ -166,6 +215,7 @@ object InvokeCommandRegistry {
           NodeCapabilityAvailability.LocationEnabled -> flags.locationEnabled
           NodeCapabilityAvailability.SmsAvailable -> flags.smsAvailable
           NodeCapabilityAvailability.VoiceWakeEnabled -> flags.voiceWakeEnabled
+          NodeCapabilityAvailability.MotionAvailable -> flags.motionActivityAvailable || flags.motionPedometerAvailable
         }
       }
       .map { it.name }
@@ -179,6 +229,8 @@ object InvokeCommandRegistry {
           InvokeCommandAvailability.CameraEnabled -> flags.cameraEnabled
           InvokeCommandAvailability.LocationEnabled -> flags.locationEnabled
           InvokeCommandAvailability.SmsAvailable -> flags.smsAvailable
+          InvokeCommandAvailability.MotionActivityAvailable -> flags.motionActivityAvailable
+          InvokeCommandAvailability.MotionPedometerAvailable -> flags.motionPedometerAvailable
           InvokeCommandAvailability.DebugBuild -> flags.debugBuild
         }
       }

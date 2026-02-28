@@ -104,6 +104,8 @@ class NodeRuntime(context: Context) {
     cameraEnabled = { cameraEnabled.value },
     locationMode = { locationMode.value },
     voiceWakeMode = { VoiceWakeMode.Off },
+    motionActivityAvailable = { motionHandler.isActivityAvailable() },
+    motionPedometerAvailable = { motionHandler.isPedometerAvailable() },
     smsAvailable = { sms.canSendSms() },
     hasRecordAudioPermission = { hasRecordAudioPermission() },
     manualTls = { manualTls.value },
@@ -131,6 +133,8 @@ class NodeRuntime(context: Context) {
       _canvasRehydrateErrorText.value = null
     },
     onCanvasA2uiReset = { _canvasA2uiHydrated.value = false },
+    motionActivityAvailable = { motionHandler.isActivityAvailable() },
+    motionPedometerAvailable = { motionHandler.isPedometerAvailable() },
   )
 
   data class GatewayTrustPrompt(

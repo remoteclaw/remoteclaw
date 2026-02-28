@@ -1,11 +1,16 @@
 package org.remoteclaw.android.node
 
+import org.remoteclaw.android.protocol.RemoteClawCalendarCommand
 import org.remoteclaw.android.protocol.RemoteClawCameraCommand
 import org.remoteclaw.android.protocol.RemoteClawCapability
+import org.remoteclaw.android.protocol.RemoteClawContactsCommand
 import org.remoteclaw.android.protocol.RemoteClawDeviceCommand
 import org.remoteclaw.android.protocol.RemoteClawLocationCommand
+import org.remoteclaw.android.protocol.RemoteClawMotionCommand
 import org.remoteclaw.android.protocol.RemoteClawNotificationsCommand
+import org.remoteclaw.android.protocol.RemoteClawPhotosCommand
 import org.remoteclaw.android.protocol.RemoteClawSmsCommand
+import org.remoteclaw.android.protocol.RemoteClawSystemCommand
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -20,6 +25,8 @@ class InvokeCommandRegistryTest {
           locationEnabled = false,
           smsAvailable = false,
           voiceWakeEnabled = false,
+          motionActivityAvailable = false,
+          motionPedometerAvailable = false,
           debugBuild = false,
         ),
       )
@@ -31,6 +38,10 @@ class InvokeCommandRegistryTest {
     assertFalse(capabilities.contains(RemoteClawCapability.Location.rawValue))
     assertFalse(capabilities.contains(RemoteClawCapability.Sms.rawValue))
     assertFalse(capabilities.contains(RemoteClawCapability.VoiceWake.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Photos.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Contacts.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Calendar.rawValue))
+    assertFalse(capabilities.contains(RemoteClawCapability.Motion.rawValue))
   }
 
   @Test
@@ -42,6 +53,8 @@ class InvokeCommandRegistryTest {
           locationEnabled = true,
           smsAvailable = true,
           voiceWakeEnabled = true,
+          motionActivityAvailable = true,
+          motionPedometerAvailable = true,
           debugBuild = false,
         ),
       )
@@ -53,6 +66,10 @@ class InvokeCommandRegistryTest {
     assertTrue(capabilities.contains(RemoteClawCapability.Location.rawValue))
     assertTrue(capabilities.contains(RemoteClawCapability.Sms.rawValue))
     assertTrue(capabilities.contains(RemoteClawCapability.VoiceWake.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Photos.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Contacts.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Calendar.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Motion.rawValue))
   }
 
   @Test
@@ -64,6 +81,8 @@ class InvokeCommandRegistryTest {
           locationEnabled = false,
           smsAvailable = false,
           voiceWakeEnabled = false,
+          motionActivityAvailable = false,
+          motionPedometerAvailable = false,
           debugBuild = false,
         ),
       )
@@ -72,10 +91,20 @@ class InvokeCommandRegistryTest {
     assertFalse(commands.contains(RemoteClawCameraCommand.Clip.rawValue))
     assertFalse(commands.contains(RemoteClawCameraCommand.List.rawValue))
     assertFalse(commands.contains(RemoteClawLocationCommand.Get.rawValue))
+    assertTrue(commands.contains(RemoteClawDeviceCommand.Status.rawValue))
+    assertTrue(commands.contains(RemoteClawDeviceCommand.Info.rawValue))
     assertTrue(commands.contains(RemoteClawDeviceCommand.Permissions.rawValue))
     assertTrue(commands.contains(RemoteClawDeviceCommand.Health.rawValue))
     assertTrue(commands.contains(RemoteClawNotificationsCommand.List.rawValue))
     assertTrue(commands.contains(RemoteClawNotificationsCommand.Actions.rawValue))
+    assertTrue(commands.contains(RemoteClawSystemCommand.Notify.rawValue))
+    assertTrue(commands.contains(RemoteClawPhotosCommand.Latest.rawValue))
+    assertTrue(commands.contains(RemoteClawContactsCommand.Search.rawValue))
+    assertTrue(commands.contains(RemoteClawContactsCommand.Add.rawValue))
+    assertTrue(commands.contains(RemoteClawCalendarCommand.Events.rawValue))
+    assertTrue(commands.contains(RemoteClawCalendarCommand.Add.rawValue))
+    assertFalse(commands.contains(RemoteClawMotionCommand.Activity.rawValue))
+    assertFalse(commands.contains(RemoteClawMotionCommand.Pedometer.rawValue))
     assertFalse(commands.contains(RemoteClawSmsCommand.Send.rawValue))
     assertFalse(commands.contains("debug.logs"))
     assertFalse(commands.contains("debug.ed25519"))
@@ -91,6 +120,8 @@ class InvokeCommandRegistryTest {
           locationEnabled = true,
           smsAvailable = true,
           voiceWakeEnabled = false,
+          motionActivityAvailable = true,
+          motionPedometerAvailable = true,
           debugBuild = true,
         ),
       )
@@ -99,13 +130,42 @@ class InvokeCommandRegistryTest {
     assertTrue(commands.contains(RemoteClawCameraCommand.Clip.rawValue))
     assertTrue(commands.contains(RemoteClawCameraCommand.List.rawValue))
     assertTrue(commands.contains(RemoteClawLocationCommand.Get.rawValue))
+    assertTrue(commands.contains(RemoteClawDeviceCommand.Status.rawValue))
+    assertTrue(commands.contains(RemoteClawDeviceCommand.Info.rawValue))
     assertTrue(commands.contains(RemoteClawDeviceCommand.Permissions.rawValue))
     assertTrue(commands.contains(RemoteClawDeviceCommand.Health.rawValue))
     assertTrue(commands.contains(RemoteClawNotificationsCommand.List.rawValue))
     assertTrue(commands.contains(RemoteClawNotificationsCommand.Actions.rawValue))
+    assertTrue(commands.contains(RemoteClawSystemCommand.Notify.rawValue))
+    assertTrue(commands.contains(RemoteClawPhotosCommand.Latest.rawValue))
+    assertTrue(commands.contains(RemoteClawContactsCommand.Search.rawValue))
+    assertTrue(commands.contains(RemoteClawContactsCommand.Add.rawValue))
+    assertTrue(commands.contains(RemoteClawCalendarCommand.Events.rawValue))
+    assertTrue(commands.contains(RemoteClawCalendarCommand.Add.rawValue))
+    assertTrue(commands.contains(RemoteClawMotionCommand.Activity.rawValue))
+    assertTrue(commands.contains(RemoteClawMotionCommand.Pedometer.rawValue))
     assertTrue(commands.contains(RemoteClawSmsCommand.Send.rawValue))
     assertTrue(commands.contains("debug.logs"))
     assertTrue(commands.contains("debug.ed25519"))
     assertTrue(commands.contains("app.update"))
+  }
+
+  @Test
+  fun advertisedCommands_onlyIncludesSupportedMotionCommands() {
+    val commands =
+      InvokeCommandRegistry.advertisedCommands(
+        NodeRuntimeFlags(
+          cameraEnabled = false,
+          locationEnabled = false,
+          smsAvailable = false,
+          voiceWakeEnabled = false,
+          motionActivityAvailable = true,
+          motionPedometerAvailable = false,
+          debugBuild = false,
+        ),
+      )
+
+    assertTrue(commands.contains(RemoteClawMotionCommand.Activity.rawValue))
+    assertFalse(commands.contains(RemoteClawMotionCommand.Pedometer.rawValue))
   }
 }

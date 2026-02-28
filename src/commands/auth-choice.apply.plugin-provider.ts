@@ -7,7 +7,7 @@ import {
 import { upsertAuthProfile } from "../agents/auth-profiles.js";
 import { resolveDefaultAgentWorkspaceDir } from "../agents/workspace.js";
 import { enablePluginInConfig } from "../plugins/enable.js";
-import { resolvePluginProviders } from "../plugins/providers.js";
+import type { ProviderPlugin } from "../plugins/types.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
 import { isRemoteEnvironment } from "./oauth-env.js";
 import { createVpsAwareOAuthHandlers } from "./oauth-flow.js";
@@ -49,7 +49,7 @@ export async function applyAuthChoicePluginProvider(
   const workspaceDir =
     resolveAgentWorkspaceDir(nextConfig, agentId) ?? resolveDefaultAgentWorkspaceDir();
 
-  const providers = resolvePluginProviders({ config: nextConfig, workspaceDir });
+  const providers: ProviderPlugin[] = [];
   const provider = resolveProviderMatch(providers, options.providerId);
   if (!provider) {
     await params.prompter.note(

@@ -357,35 +357,6 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     });
   };
 
-  const registerProvider = (record: PluginRecord, provider: ProviderPlugin) => {
-    const id = typeof provider?.id === "string" ? provider.id.trim() : "";
-    if (!id) {
-      pushDiagnostic({
-        level: "error",
-        pluginId: record.id,
-        source: record.source,
-        message: "provider registration missing id",
-      });
-      return;
-    }
-    const existing = registry.providers.find((entry) => entry.provider.id === id);
-    if (existing) {
-      pushDiagnostic({
-        level: "error",
-        pluginId: record.id,
-        source: record.source,
-        message: `provider already registered: ${id} (${existing.pluginId})`,
-      });
-      return;
-    }
-    record.providerIds.push(id);
-    registry.providers.push({
-      pluginId: record.id,
-      provider,
-      source: record.source,
-    });
-  };
-
   const registerCli = (
     record: PluginRecord,
     registrar: OpenClawPluginCliRegistrar,
@@ -492,7 +463,6 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       registerHttpHandler: (handler) => registerHttpHandler(record, handler),
       registerHttpRoute: (params) => registerHttpRoute(record, params),
       registerChannel: (registration) => registerChannel(record, registration),
-      registerProvider: (provider) => registerProvider(record, provider),
       registerGatewayMethod: (method, handler) => registerGatewayMethod(record, method, handler),
       registerCli: (registrar, opts) => registerCli(record, registrar, opts),
       registerService: (service) => registerService(record, service),
@@ -508,7 +478,6 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     pushDiagnostic,
     registerTool,
     registerChannel,
-    registerProvider,
     registerGatewayMethod,
     registerCli,
     registerService,

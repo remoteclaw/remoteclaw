@@ -10,7 +10,7 @@ import {
   makeRestrictedElevatedDisabledConfig,
   makeWhatsAppDirectiveConfig,
   replyText,
-  runEmbeddedPiAgent,
+  runAgent,
   sessionStorePath,
   withTempHome,
 } from "./reply.directive.directive-behavior.e2e-harness.js";
@@ -140,7 +140,7 @@ describe("directive behavior", () => {
       expect(elevatedText).toContain("Current elevated level: on");
       expect(elevatedText).toContain("Options: on, off, ask, full.");
 
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("persists elevated toggles across /status and /elevated", async () => {
@@ -163,7 +163,7 @@ describe("directive behavior", () => {
 
       const store = loadSessionStore(storePath);
       expect(store["agent:main:main"]?.elevatedLevel).toBe("on");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("enforces per-agent elevated restrictions and status visibility", async () => {
@@ -199,7 +199,7 @@ describe("directive behavior", () => {
       );
       const statusText = replyText(statusRes);
       expect(statusText).not.toContain("elevated");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("applies per-agent allowlist requirements before allowing elevated", async () => {
@@ -227,7 +227,7 @@ describe("directive behavior", () => {
 
       const allowedText = replyText(allowedRes);
       expect(allowedText).toContain("Elevated mode set to ask");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("handles runtime warning, invalid level, and multi-directive elevated inputs", async () => {
@@ -262,7 +262,7 @@ describe("directive behavior", () => {
           expect(text).toContain(snippet);
         }
       }
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("persists queue overrides and reset behavior", async () => {
@@ -299,12 +299,12 @@ describe("directive behavior", () => {
       expect(entry?.queueDebounceMs).toBeUndefined();
       expect(entry?.queueCap).toBeUndefined();
       expect(entry?.queueDrop).toBeUndefined();
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("strips inline elevated directives from the user text (does not persist session override)", async () => {
     await withTempHome(async (home) => {
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue({
+      vi.mocked(runAgent).mockResolvedValue({
         payloads: [{ text: "ok" }],
         meta: {
           durationMs: 1,
@@ -328,7 +328,7 @@ describe("directive behavior", () => {
       const store = loadSessionStore(storePath);
       expect(store["agent:main:main"]?.elevatedLevel).toBeUndefined();
 
-      const calls = vi.mocked(runEmbeddedPiAgent).mock.calls;
+      const calls = vi.mocked(runAgent).mock.calls;
       expect(calls.length).toBeGreaterThan(0);
       const call = calls[0]?.[0];
       expect(call?.prompt).toContain("hello there");

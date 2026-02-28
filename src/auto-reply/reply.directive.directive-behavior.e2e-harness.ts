@@ -2,11 +2,11 @@ import path from "node:path";
 import { afterEach, beforeEach, expect, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import { loadModelCatalog } from "../agents/model-catalog.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import { loadSessionStore } from "../config/sessions.js";
+import { runAgent } from "./reply.directive.directive-behavior.e2e-mocks.js";
 
 export { loadModelCatalog } from "../agents/model-catalog.js";
-export { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
+export { runAgent } from "./reply.directive.directive-behavior.e2e-mocks.js";
 
 export const MAIN_SESSION_KEY = "agent:main:main";
 
@@ -36,7 +36,7 @@ export function replyTexts(res: ReplyPayloadText | ReplyPayloadText[]): string[]
     .filter((value): value is string => Boolean(value));
 }
 
-export function makeEmbeddedTextResult(text = "done") {
+export function makeAgentTextResult(text = "done") {
   return {
     payloads: [{ text }],
     meta: {
@@ -46,8 +46,8 @@ export function makeEmbeddedTextResult(text = "done") {
   };
 }
 
-export function mockEmbeddedTextResult(text = "done") {
-  vi.mocked(runEmbeddedPiAgent).mockResolvedValue(makeEmbeddedTextResult(text));
+export function mockAgentTextResult(text = "done") {
+  vi.mocked(runAgent).mockResolvedValue(makeAgentTextResult(text));
 }
 
 export async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
@@ -134,7 +134,7 @@ export function assertElevatedOffStatusReply(text: string | undefined) {
 
 export function installDirectiveBehaviorE2EHooks() {
   beforeEach(() => {
-    vi.mocked(runEmbeddedPiAgent).mockReset();
+    vi.mocked(runAgent).mockReset();
     vi.mocked(loadModelCatalog).mockResolvedValue(DEFAULT_TEST_MODEL_CATALOG);
   });
 

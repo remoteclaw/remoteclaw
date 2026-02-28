@@ -27,11 +27,6 @@ import {
   buildAnnounceIdempotencyKey,
   resolveQueueAnnounceId,
 } from "./announce-idempotency.js";
-import {
-  isEmbeddedPiRunActive,
-  queueEmbeddedPiMessage,
-  waitForEmbeddedPiRunEnd,
-} from "./pi-embedded.js";
 import { type AnnounceQueueItem, enqueueAnnounce } from "./subagent-announce-queue.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import type { SpawnSubagentMode } from "./subagent-spawn.js";
@@ -669,15 +664,7 @@ async function maybeQueueSubagentAnnounce(params: {
     channel: entry?.channel ?? entry?.lastChannel,
     sessionEntry: entry,
   });
-  const isActive = isEmbeddedPiRunActive(sessionId);
-
-  const shouldSteer = queueSettings.mode === "steer" || queueSettings.mode === "steer-backlog";
-  if (shouldSteer) {
-    const steered = queueEmbeddedPiMessage(sessionId, params.triggerMessage);
-    if (steered) {
-      return "steered";
-    }
-  }
+  const isActive = false;
 
   const shouldFollowup =
     queueSettings.mode === "followup" ||
@@ -1127,18 +1114,7 @@ export async function runSubagentAnnounceFlow(params: {
     const settleTimeoutMs = Math.min(Math.max(params.timeoutMs, 1), 120_000);
     let reply = params.roundOneReply;
     let outcome: SubagentRunOutcome | undefined = params.outcome;
-    // Lifecycle "end" can arrive before auto-compaction retries finish. If the
-    // subagent is still active, wait for the embedded run to fully settle.
-    if (childSessionId && isEmbeddedPiRunActive(childSessionId)) {
-      const settled = await waitForEmbeddedPiRunEnd(childSessionId, settleTimeoutMs);
-      if (!settled && isEmbeddedPiRunActive(childSessionId)) {
-        // The child run is still active (e.g., compaction retry still in progress).
-        // Defer announcement so we don't report stale/partial output.
-        // Keep the child session so output is not lost while the run is still active.
-        shouldDeleteChildSession = false;
-        return false;
-      }
-    }
+    // Embedded engine removed (#74); no active runs to settle.
 
     if (!reply && params.waitForCompletion !== false) {
       const waitMs = settleTimeoutMs;
@@ -1188,16 +1164,7 @@ export async function runSubagentAnnounceFlow(params: {
       });
     }
 
-    if (
-      !expectsCompletionMessage &&
-      !reply?.trim() &&
-      childSessionId &&
-      isEmbeddedPiRunActive(childSessionId)
-    ) {
-      // Avoid announcing "(no output)" while the child run is still producing output.
-      shouldDeleteChildSession = false;
-      return false;
-    }
+    // Embedded engine removed (#74); no active runs to check.
 
     if (isAnnounceSkip(reply)) {
       return true;

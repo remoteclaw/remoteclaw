@@ -12,7 +12,7 @@ import {
   MAIN_SESSION_KEY,
   makeWhatsAppDirectiveConfig,
   replyText,
-  runEmbeddedPiAgent,
+  runAgent,
   sessionStorePath,
   withTempHome,
 } from "./reply.directive.directive-behavior.e2e-harness.js";
@@ -92,7 +92,7 @@ describe("directive behavior", () => {
       provider: "moonshot",
       model: "kimi-k2-0905-preview",
     });
-    expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+    expect(runAgent).not.toHaveBeenCalled();
   }
 
   it("supports unambiguous fuzzy model matches across /model forms", async () => {
@@ -107,7 +107,7 @@ describe("directive behavior", () => {
         });
         expectMoonshotSelectionFromResponse({ response: res, storePath });
       }
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("picks the best fuzzy match for global and provider-scoped minimax queries", async () => {
@@ -188,7 +188,7 @@ describe("directive behavior", () => {
         );
         assertModelSelection(testCase.storePath);
       }
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("prefers alias matches when fuzzy selection is ambiguous", async () => {
@@ -237,7 +237,7 @@ describe("directive behavior", () => {
         provider: "moonshot",
         model: "kimi-k2-0905-preview",
       });
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("stores auth profile overrides on /model directive", async () => {
@@ -274,7 +274,7 @@ describe("directive behavior", () => {
       const store = loadSessionStore(storePath);
       const entry = store["agent:main:main"];
       expect(entry.authProfileOverride).toBe("anthropic:work");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("queues system events for model, elevated, and reasoning directives", async () => {
@@ -326,7 +326,7 @@ describe("directive behavior", () => {
 
       events = drainSystemEvents(MAIN_SESSION_KEY);
       expect(events.some((e) => e.includes("Reasoning STREAM"))).toBe(true);
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
 });

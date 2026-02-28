@@ -1,29 +1,23 @@
 import { vi } from "vitest";
 import type { AgentDeliveryResult, BridgeCallbacks, ChannelMessage } from "../middleware/types.js";
 
-// Hoisted mock for runEmbeddedPiAgent — the ChannelBridge mock delegates to this
-// so that test assertions on vi.mocked(runEmbeddedPiAgent) continue to work.
+// Hoisted mock for runAgent — the ChannelBridge mock delegates to this
+// so that test assertions on vi.mocked(runAgent) continue to work.
 const hoisted = vi.hoisted(() => ({
-  runEmbeddedPiAgent: vi.fn(),
+  runAgent: vi.fn(),
 }));
 
-vi.mock("../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: hoisted.runEmbeddedPiAgent,
-  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
-}));
+/** Exported so test harnesses can reference the mock directly. */
+export const runAgent = hoisted.runAgent;
 
 vi.mock("../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(),
 }));
 
 /**
- * ChannelBridge mock that delegates to runEmbeddedPiAgent, bridging the
+ * ChannelBridge mock that delegates to runAgent, bridging the
  * ChannelBridge interface to the embedded agent interface so that existing
- * test assertions about runEmbeddedPiAgent calls continue to work.
+ * test assertions about runAgent calls continue to work.
  */
 vi.mock("../middleware/channel-bridge.js", () => ({
   ChannelBridge: class MockChannelBridge {
@@ -43,8 +37,8 @@ vi.mock("../middleware/channel-bridge.js", () => ({
         onPartialReply: callbacks?.onPartialReply,
         onToolResult: callbacks?.onToolResult,
       };
-      const result = await hoisted.runEmbeddedPiAgent(embeddedParams);
-      // Convert EmbeddedPiRunResult → AgentDeliveryResult
+      const result = await hoisted.runAgent(embeddedParams);
+      // Convert agent run result → AgentDeliveryResult
       return {
         payloads: result?.payloads ?? [],
         run: {

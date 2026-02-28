@@ -12,10 +12,6 @@ import type {
 } from "../middleware/types.js";
 import { getReplyFromConfig } from "./reply.js";
 
-type RunEmbeddedPiAgent = typeof import("../agents/pi-embedded.js").runEmbeddedPiAgent;
-type RunEmbeddedPiAgentParams = Parameters<RunEmbeddedPiAgent>[0];
-type RunEmbeddedPiAgentReply = Awaited<ReturnType<RunEmbeddedPiAgent>>;
-
 const EMPTY_MCP: McpSideEffects = {
   sentTexts: [],
   sentMediaUrls: [],
@@ -23,23 +19,31 @@ const EMPTY_MCP: McpSideEffects = {
   cronAdds: 0,
 };
 
-const piEmbeddedMock = vi.hoisted(() => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: vi.fn<RunEmbeddedPiAgent>(),
-  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
+/** Shape returned by the bridge mock's runAgent. */
+type AgentRunResult = {
+  payloads?: Array<{ text?: string; mediaUrls?: string[] }>;
+  meta?: {
+    durationMs?: number;
+    aborted?: boolean;
+    agentMeta?: {
+      sessionId?: string;
+      provider?: string;
+      model?: string;
+      usage?: { input?: number; output?: number };
+    };
+  };
+};
+
+const bridgeMock = vi.hoisted(() => ({
+  runAgent: vi.fn(),
 }));
 
-vi.mock("/src/agents/pi-embedded.js", () => piEmbeddedMock);
-vi.mock("../agents/pi-embedded.js", () => piEmbeddedMock);
 vi.mock("../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(),
 }));
 
-/** Convert EmbeddedPiRunResult to AgentDeliveryResult for the bridge mock. */
-function toDeliveryResult(result: RunEmbeddedPiAgentReply): AgentDeliveryResult {
+/** Convert AgentRunResult to AgentDeliveryResult for the bridge mock. */
+function toDeliveryResult(result: AgentRunResult): AgentDeliveryResult {
   return {
     payloads: result?.payloads ?? [],
     run: {
@@ -61,14 +65,13 @@ function toDeliveryResult(result: RunEmbeddedPiAgentReply): AgentDeliveryResult 
 vi.mock("../middleware/channel-bridge.js", () => ({
   ChannelBridge: class MockChannelBridge {
     async handle(message: ChannelMessage, callbacks?: BridgeCallbacks) {
-      // Translate bridge callbacks to embedded-agent-style params
-      const embeddedParams = {
+      const params = {
         prompt: message.text,
         onBlockReply: callbacks?.onBlockReply,
         onPartialReply: callbacks?.onPartialReply,
         onToolResult: callbacks?.onToolResult,
-      } as unknown as RunEmbeddedPiAgentParams;
-      const result = await piEmbeddedMock.runEmbeddedPiAgent(embeddedParams);
+      } as Record<string, unknown>;
+      const result = await bridgeMock.runAgent(params);
       return toDeliveryResult(result);
     }
   },
@@ -88,7 +91,7 @@ vi.mock("../gateway/credentials.js", () => ({
 
 type GetReplyOptions = NonNullable<Parameters<typeof getReplyFromConfig>[1]>;
 
-function createEmbeddedReply(text: string): RunEmbeddedPiAgentReply {
+function createAgentReply(text: string) {
   return {
     payloads: [{ text }],
     meta: {
@@ -150,11 +153,7 @@ async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
 describe("block streaming", () => {
   beforeEach(() => {
     vi.stubEnv("OPENCLAW_TEST_FAST", "1");
-    piEmbeddedMock.abortEmbeddedPiRun.mockClear().mockReturnValue(false);
-    piEmbeddedMock.queueEmbeddedPiMessage.mockClear().mockReturnValue(false);
-    piEmbeddedMock.isEmbeddedPiRunActive.mockClear().mockReturnValue(false);
-    piEmbeddedMock.isEmbeddedPiRunStreaming.mockClear().mockReturnValue(false);
-    piEmbeddedMock.runEmbeddedPiAgent.mockClear();
+    bridgeMock.runAgent.mockClear();
     vi.mocked(loadModelCatalog).mockResolvedValue([
       { id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" },
       { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai" },
@@ -180,15 +179,17 @@ describe("block streaming", () => {
         seen.push(payload.text ?? "");
       });
 
-      const impl = async (params: RunEmbeddedPiAgentParams) => {
+      const impl = async (params: {
+        onBlockReply?: (payload: { text?: string; mediaUrls?: string[] }) => void | Promise<void>;
+      }) => {
         void params.onBlockReply?.({ text: "first" });
         void params.onBlockReply?.({ text: "second" });
         return {
           payloads: [{ text: "first" }, { text: "second" }],
-          meta: createEmbeddedReply("first").meta,
+          meta: createAgentReply("first").meta,
         };
       };
-      piEmbeddedMock.runEmbeddedPiAgent.mockImplementation(impl);
+      bridgeMock.runAgent.mockImplementation(impl);
 
       const replyPromise = runTelegramReply({
         home,
@@ -206,9 +207,7 @@ describe("block streaming", () => {
       expect(seen).toEqual(["first\n\nsecond"]);
 
       const onBlockReplyStreamMode = vi.fn().mockResolvedValue(undefined);
-      piEmbeddedMock.runEmbeddedPiAgent.mockImplementation(async () =>
-        createEmbeddedReply("final"),
-      );
+      bridgeMock.runAgent.mockImplementation(async () => createAgentReply("final"));
 
       const resStreamMode = await runTelegramReply({
         home,
@@ -230,10 +229,12 @@ describe("block streaming", () => {
         seen.push(payload.text ?? "");
       });
 
-      piEmbeddedMock.runEmbeddedPiAgent.mockImplementation(
-        async (params: RunEmbeddedPiAgentParams) => {
+      bridgeMock.runAgent.mockImplementation(
+        async (params: {
+          onBlockReply?: (payload: { text?: string; mediaUrls?: string[] }) => void | Promise<void>;
+        }) => {
           void params.onBlockReply?.({ text: "\n\n  Hello from stream" });
-          return createEmbeddedReply("\n\n  Hello from stream");
+          return createAgentReply("\n\n  Hello from stream");
         },
       );
 
@@ -254,10 +255,12 @@ describe("block streaming", () => {
     await withTempHome(async (home) => {
       const onBlockReply = vi.fn();
 
-      piEmbeddedMock.runEmbeddedPiAgent.mockImplementation(
-        async (params: RunEmbeddedPiAgentParams) => {
+      bridgeMock.runAgent.mockImplementation(
+        async (params: {
+          onBlockReply?: (payload: { text?: string; mediaUrls?: string[] }) => void | Promise<void>;
+        }) => {
           void params.onBlockReply?.({ text: "Result\nMEDIA: ./image.png" });
-          return createEmbeddedReply("Result\nMEDIA: ./image.png");
+          return createAgentReply("Result\nMEDIA: ./image.png");
         },
       );
 

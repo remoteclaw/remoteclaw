@@ -3,11 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import { loadSessionStore } from "../config/sessions.js";
 import {
   installDirectiveBehaviorE2EHooks,
-  makeEmbeddedTextResult,
+  makeAgentTextResult,
   makeWhatsAppDirectiveConfig,
   replyText,
   replyTexts,
-  runEmbeddedPiAgent,
+  runAgent,
   sessionStorePath,
   withTempHome,
 } from "./reply.directive.directive-behavior.e2e-harness.js";
@@ -40,7 +40,7 @@ async function runThinkDirectiveAndGetText(home: string): Promise<string | undef
 }
 
 function mockEmbeddedResponse(text: string) {
-  vi.mocked(runEmbeddedPiAgent).mockResolvedValue(makeEmbeddedTextResult(text));
+  vi.mocked(runAgent).mockResolvedValue(makeAgentTextResult(text));
 }
 
 async function runInlineReasoningMessage(params: {
@@ -93,8 +93,8 @@ async function runInFlightVerboseToggleCase(params: {
     To: "+2000",
   };
 
-  // The bridge mock delegates to runEmbeddedPiAgent; mock it to return success.
-  vi.mocked(runEmbeddedPiAgent).mockResolvedValue(makeEmbeddedTextResult("done"));
+  // The bridge mock delegates to runAgent; mock it to return success.
+  vi.mocked(runAgent).mockResolvedValue(makeAgentTextResult("done"));
 
   if (params.seedVerboseOn) {
     await getReplyFromConfig(
@@ -133,7 +133,7 @@ describe("directive behavior", () => {
         blockReplies,
       });
 
-      expect(runEmbeddedPiAgent).toHaveBeenCalledTimes(2);
+      expect(runAgent).toHaveBeenCalledTimes(2);
       expect(blockReplies.length).toBe(0);
     });
   });
@@ -165,7 +165,7 @@ describe("directive behavior", () => {
       const store = loadSessionStore(storePath);
       const entry = Object.values(store)[0];
       expect(entry?.verboseLevel).toBe("off");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("runs agent with verbose toggle on/off", async () => {
@@ -174,14 +174,14 @@ describe("directive behavior", () => {
         { toggledVerboseLevel: "on" as const },
         { toggledVerboseLevel: "off" as const, seedVerboseOn: true },
       ]) {
-        vi.mocked(runEmbeddedPiAgent).mockClear();
+        vi.mocked(runAgent).mockClear();
         const { res } = await runInFlightVerboseToggleCase({
           home,
           ...testCase,
         });
         const texts = replyTexts(res);
         expect(texts).toContain("done");
-        expect(runEmbeddedPiAgent).toHaveBeenCalledOnce();
+        expect(runAgent).toHaveBeenCalledOnce();
       }
     });
   });
@@ -200,7 +200,7 @@ describe("directive behavior", () => {
       expect(unsupportedModelTexts).toContain(
         'Thinking level "xhigh" is only supported for openai/gpt-5.2, openai-codex/gpt-5.3-codex, openai-codex/gpt-5.3-codex-spark, openai-codex/gpt-5.2-codex, openai-codex/gpt-5.1-codex, github-copilot/gpt-5.2-codex or github-copilot/gpt-5.2.',
       );
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("keeps reserved command aliases from matching after trimming", async () => {
@@ -227,7 +227,7 @@ describe("directive behavior", () => {
 
       const text = replyText(res);
       expect(text).toContain("Help");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("reports invalid queue options and current queue settings", async () => {
@@ -287,7 +287,7 @@ describe("directive behavior", () => {
       expect(text).toContain(
         "Options: modes steer, followup, collect, steer+backlog, interrupt; debounce:<ms|s|m>, cap:<n>, drop:old|new|summarize.",
       );
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
 });

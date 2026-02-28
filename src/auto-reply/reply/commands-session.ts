@@ -1,4 +1,3 @@
-import { abortEmbeddedPiRun } from "../../agents/pi-embedded.js";
 import { parseDurationMs } from "../../cli/parse-duration.js";
 import { isRestartEnabled } from "../../config/commands.js";
 import type { SessionEntry } from "../../config/sessions.js";
@@ -101,9 +100,6 @@ async function applyAbortTarget(params: {
   abortKey?: string;
 }) {
   const { abortTarget } = params;
-  if (abortTarget.sessionId) {
-    abortEmbeddedPiRun(abortTarget.sessionId);
-  }
   if (abortTarget.entry && params.sessionStore && abortTarget.key) {
     abortTarget.entry.abortedLastRun = true;
     abortTarget.entry.updatedAt = Date.now();

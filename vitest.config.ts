@@ -100,7 +100,6 @@ export default defineConfig({
 
         // Some agent integrations are intentionally validated via manual/e2e runs.
         "src/agents/model-scan.ts",
-        "src/agents/pi-embedded-runner.ts",
         "src/agents/sandbox-paths.ts",
         "src/agents/sandbox.ts",
         "src/agents/skills-install.ts",

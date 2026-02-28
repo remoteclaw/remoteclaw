@@ -1,8 +1,3 @@
-import {
-  abortEmbeddedPiRun,
-  isEmbeddedPiRunActive,
-  waitForEmbeddedPiRunEnd,
-} from "../../agents/pi-embedded.js";
 import { resolveFreshSessionTotalTokens } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
@@ -28,15 +23,6 @@ export const handleCompactCommand: CommandHandler = async (params) => {
       reply: { text: "Compaction unavailable (missing session id)." },
     };
   }
-  const sessionId = params.sessionEntry.sessionId;
-
-  // Stubs: these are no-ops after engine removal (#74), but kept for
-  // forward-compatibility in case a new engine re-implements them.
-  if (isEmbeddedPiRunActive(sessionId)) {
-    abortEmbeddedPiRun(sessionId);
-    await waitForEmbeddedPiRunEnd(sessionId, 15_000);
-  }
-
   // Embedded engine removed (#74); compaction is unavailable.
   const compactLabel = "Compaction unavailable";
   const reason = "Embedded engine removed; compaction not yet re-implemented.";

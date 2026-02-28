@@ -40,7 +40,6 @@ Notes:
 SKIP_NOTARIZE=1 \
 BUNDLE_ID=org.remoteclaw.mac \
 APP_VERSION=0.1.0 \
-APP_BUILD="$(git rev-list --count HEAD)" \
 BUILD_CONFIG=release \
 SIGN_IDENTITY="Developer ID Application: <Developer Name> (<TEAMID>)" \
 scripts/package-mac-dist.sh
@@ -60,7 +59,6 @@ scripts/create-dmg.sh dist/RemoteClaw.app dist/RemoteClaw-0.1.0.dmg
 NOTARIZE=1 NOTARYTOOL_PROFILE=remoteclaw-notary \
 BUNDLE_ID=org.remoteclaw.mac \
 APP_VERSION=0.1.0 \
-APP_BUILD="$(git rev-list --count HEAD)" \
 BUILD_CONFIG=release \
 SIGN_IDENTITY="Developer ID Application: <Developer Name> (<TEAMID>)" \
 scripts/package-mac-dist.sh

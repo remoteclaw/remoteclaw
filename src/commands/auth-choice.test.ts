@@ -33,11 +33,6 @@ vi.mock("./openai-codex-oauth.js", () => ({
   loginOpenAICodexOAuth,
 }));
 
-const resolvePluginProviders = vi.hoisted(() => vi.fn(() => []));
-vi.mock("../plugins/providers.js", () => ({
-  resolvePluginProviders,
-}));
-
 const detectZaiEndpoint = vi.hoisted(() => vi.fn<DetectZaiEndpoint>(async () => null));
 vi.mock("./zai-endpoint-detect.js", () => ({
   detectZaiEndpoint,
@@ -124,7 +119,6 @@ describe("applyAuthChoice", () => {
 
   afterEach(async () => {
     vi.unstubAllGlobals();
-    resolvePluginProviders.mockReset();
     detectZaiEndpoint.mockReset();
     detectZaiEndpoint.mockResolvedValue(null);
     loginOpenAICodexOAuth.mockReset();
@@ -1002,122 +996,6 @@ describe("applyAuthChoice", () => {
       refresh: "rt_test",
       email: "remote-user",
     });
-  });
-
-  it("writes portal OAuth credentials for plugin providers", async () => {
-    const scenarios: Array<{
-      authChoice: "qwen-portal" | "minimax-portal";
-      label: string;
-      authId: string;
-      authLabel: string;
-      providerId: string;
-      profileId: string;
-      baseUrl: string;
-      api: "openai-completions" | "anthropic-messages";
-      defaultModel: string;
-      apiKey: string;
-      selectValue?: string;
-    }> = [
-      {
-        authChoice: "qwen-portal",
-        label: "Qwen",
-        authId: "device",
-        authLabel: "Qwen OAuth",
-        providerId: "qwen-portal",
-        profileId: "qwen-portal:default",
-        baseUrl: "https://portal.qwen.ai/v1",
-        api: "openai-completions",
-        defaultModel: "qwen-portal/coder-model",
-        apiKey: "qwen-oauth",
-      },
-      {
-        authChoice: "minimax-portal",
-        label: "MiniMax",
-        authId: "oauth",
-        authLabel: "MiniMax OAuth (Global)",
-        providerId: "minimax-portal",
-        profileId: "minimax-portal:default",
-        baseUrl: "https://api.minimax.io/anthropic",
-        api: "anthropic-messages",
-        defaultModel: "minimax-portal/MiniMax-M2.1",
-        apiKey: "minimax-oauth",
-        selectValue: "oauth",
-      },
-    ];
-    for (const scenario of scenarios) {
-      await setupTempState();
-
-      resolvePluginProviders.mockReturnValue([
-        {
-          id: scenario.providerId,
-          label: scenario.label,
-          auth: [
-            {
-              id: scenario.authId,
-              label: scenario.authLabel,
-              kind: "device_code",
-              run: vi.fn(async () => ({
-                profiles: [
-                  {
-                    profileId: scenario.profileId,
-                    credential: {
-                      type: "oauth",
-                      provider: scenario.providerId,
-                      access: "access",
-                      refresh: "refresh",
-                      expires: Date.now() + 60 * 60 * 1000,
-                    },
-                  },
-                ],
-                configPatch: {
-                  models: {
-                    providers: {
-                      [scenario.providerId]: {
-                        baseUrl: scenario.baseUrl,
-                        apiKey: scenario.apiKey,
-                        api: scenario.api,
-                        models: [],
-                      },
-                    },
-                  },
-                },
-                defaultModel: scenario.defaultModel,
-              })),
-            },
-          ],
-        },
-      ] as never);
-
-      const prompter = createPrompter(
-        scenario.selectValue
-          ? { select: vi.fn(async () => scenario.selectValue as never) as WizardPrompter["select"] }
-          : {},
-      );
-      const runtime = createExitThrowingRuntime();
-
-      const result = await applyAuthChoice({
-        authChoice: scenario.authChoice,
-        config: {},
-        prompter,
-        runtime,
-        setDefaultModel: true,
-      });
-
-      expect(result.config.auth?.profiles?.[scenario.profileId]).toMatchObject({
-        provider: scenario.providerId,
-        mode: "oauth",
-      });
-      expect(resolveAgentModelPrimaryValue(result.config.agents?.defaults?.model)).toBeUndefined();
-      expect(result.config.models?.providers?.[scenario.providerId]).toMatchObject({
-        baseUrl: scenario.baseUrl,
-        apiKey: scenario.apiKey,
-      });
-      expect(await readAuthProfile(scenario.profileId)).toMatchObject({
-        provider: scenario.providerId,
-        access: "access",
-        refresh: "refresh",
-      });
-    }
   });
 });
 

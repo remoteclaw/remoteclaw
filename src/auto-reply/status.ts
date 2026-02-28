@@ -335,7 +335,8 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
     }
   }
 
-  const verboseLevel = args.resolvedVerbose ?? args.agent?.verboseDefault ?? "off";
+  const verboseLevel =
+    args.resolvedVerbose ?? args.sessionEntry?.verboseLevel ?? args.agent?.verboseDefault ?? "off";
 
   const runtime = { label: resolveRuntimeLabel(args) };
 

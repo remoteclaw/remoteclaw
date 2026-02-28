@@ -7,7 +7,6 @@ import org.remoteclaw.android.gateway.GatewayClientInfo
 import org.remoteclaw.android.gateway.GatewayConnectOptions
 import org.remoteclaw.android.gateway.GatewayEndpoint
 import org.remoteclaw.android.gateway.GatewayTlsParams
-import org.remoteclaw.android.protocol.RemoteClawCapability
 import org.remoteclaw.android.LocationMode
 import org.remoteclaw.android.VoiceWakeMode
 
@@ -73,27 +72,18 @@ class ConnectionManager(
     }
   }
 
-  fun buildInvokeCommands(): List<String> =
-    InvokeCommandRegistry.advertisedCommands(
+  private fun runtimeFlags(): NodeRuntimeFlags =
+    NodeRuntimeFlags(
       cameraEnabled = cameraEnabled(),
       locationEnabled = locationMode() != LocationMode.Off,
       smsAvailable = smsAvailable(),
+      voiceWakeEnabled = voiceWakeMode() != VoiceWakeMode.Off && hasRecordAudioPermission(),
       debugBuild = BuildConfig.DEBUG,
     )
 
-  fun buildCapabilities(): List<String> =
-    buildList {
-      add(RemoteClawCapability.Canvas.rawValue)
-      add(RemoteClawCapability.Screen.rawValue)
-      if (cameraEnabled()) add(RemoteClawCapability.Camera.rawValue)
-      if (smsAvailable()) add(RemoteClawCapability.Sms.rawValue)
-      if (voiceWakeMode() != VoiceWakeMode.Off && hasRecordAudioPermission()) {
-        add(RemoteClawCapability.VoiceWake.rawValue)
-      }
-      if (locationMode() != LocationMode.Off) {
-        add(RemoteClawCapability.Location.rawValue)
-      }
-    }
+  fun buildInvokeCommands(): List<String> = InvokeCommandRegistry.advertisedCommands(runtimeFlags())
+
+  fun buildCapabilities(): List<String> = InvokeCommandRegistry.advertisedCapabilities(runtimeFlags())
 
   fun resolvedVersionName(): String {
     val versionName = BuildConfig.VERSION_NAME.trim().ifEmpty { "dev" }

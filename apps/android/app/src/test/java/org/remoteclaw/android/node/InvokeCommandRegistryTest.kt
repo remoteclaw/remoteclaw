@@ -1,6 +1,7 @@
 package org.remoteclaw.android.node
 
 import org.remoteclaw.android.protocol.RemoteClawCameraCommand
+import org.remoteclaw.android.protocol.RemoteClawCapability
 import org.remoteclaw.android.protocol.RemoteClawDeviceCommand
 import org.remoteclaw.android.protocol.RemoteClawLocationCommand
 import org.remoteclaw.android.protocol.RemoteClawNotificationsCommand
@@ -11,13 +12,60 @@ import org.junit.Test
 
 class InvokeCommandRegistryTest {
   @Test
+  fun advertisedCapabilities_respectsFeatureAvailability() {
+    val capabilities =
+      InvokeCommandRegistry.advertisedCapabilities(
+        NodeRuntimeFlags(
+          cameraEnabled = false,
+          locationEnabled = false,
+          smsAvailable = false,
+          voiceWakeEnabled = false,
+          debugBuild = false,
+        ),
+      )
+
+    assertTrue(capabilities.contains(RemoteClawCapability.Canvas.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Screen.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Device.rawValue))
+    assertFalse(capabilities.contains(RemoteClawCapability.Camera.rawValue))
+    assertFalse(capabilities.contains(RemoteClawCapability.Location.rawValue))
+    assertFalse(capabilities.contains(RemoteClawCapability.Sms.rawValue))
+    assertFalse(capabilities.contains(RemoteClawCapability.VoiceWake.rawValue))
+  }
+
+  @Test
+  fun advertisedCapabilities_includesFeatureCapabilitiesWhenEnabled() {
+    val capabilities =
+      InvokeCommandRegistry.advertisedCapabilities(
+        NodeRuntimeFlags(
+          cameraEnabled = true,
+          locationEnabled = true,
+          smsAvailable = true,
+          voiceWakeEnabled = true,
+          debugBuild = false,
+        ),
+      )
+
+    assertTrue(capabilities.contains(RemoteClawCapability.Canvas.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Screen.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Device.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Camera.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Location.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.Sms.rawValue))
+    assertTrue(capabilities.contains(RemoteClawCapability.VoiceWake.rawValue))
+  }
+
+  @Test
   fun advertisedCommands_respectsFeatureAvailability() {
     val commands =
       InvokeCommandRegistry.advertisedCommands(
-        cameraEnabled = false,
-        locationEnabled = false,
-        smsAvailable = false,
-        debugBuild = false,
+        NodeRuntimeFlags(
+          cameraEnabled = false,
+          locationEnabled = false,
+          smsAvailable = false,
+          voiceWakeEnabled = false,
+          debugBuild = false,
+        ),
       )
 
     assertFalse(commands.contains(RemoteClawCameraCommand.Snap.rawValue))
@@ -38,10 +86,13 @@ class InvokeCommandRegistryTest {
   fun advertisedCommands_includesFeatureCommandsWhenEnabled() {
     val commands =
       InvokeCommandRegistry.advertisedCommands(
-        cameraEnabled = true,
-        locationEnabled = true,
-        smsAvailable = true,
-        debugBuild = true,
+        NodeRuntimeFlags(
+          cameraEnabled = true,
+          locationEnabled = true,
+          smsAvailable = true,
+          voiceWakeEnabled = false,
+          debugBuild = true,
+        ),
       )
 
     assertTrue(commands.contains(RemoteClawCameraCommand.Snap.rawValue))

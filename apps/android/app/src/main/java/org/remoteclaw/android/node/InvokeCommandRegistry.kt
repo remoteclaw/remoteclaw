@@ -3,11 +3,20 @@ package org.remoteclaw.android.node
 import org.remoteclaw.android.protocol.RemoteClawCanvasA2UICommand
 import org.remoteclaw.android.protocol.RemoteClawCanvasCommand
 import org.remoteclaw.android.protocol.RemoteClawCameraCommand
+import org.remoteclaw.android.protocol.RemoteClawCapability
 import org.remoteclaw.android.protocol.RemoteClawDeviceCommand
 import org.remoteclaw.android.protocol.RemoteClawLocationCommand
 import org.remoteclaw.android.protocol.RemoteClawNotificationsCommand
 import org.remoteclaw.android.protocol.RemoteClawScreenCommand
 import org.remoteclaw.android.protocol.RemoteClawSmsCommand
+
+data class NodeRuntimeFlags(
+  val cameraEnabled: Boolean,
+  val locationEnabled: Boolean,
+  val smsAvailable: Boolean,
+  val voiceWakeEnabled: Boolean,
+  val debugBuild: Boolean,
+)
 
 enum class InvokeCommandAvailability {
   Always,
@@ -17,6 +26,19 @@ enum class InvokeCommandAvailability {
   DebugBuild,
 }
 
+enum class NodeCapabilityAvailability {
+  Always,
+  CameraEnabled,
+  LocationEnabled,
+  SmsAvailable,
+  VoiceWakeEnabled,
+}
+
+data class NodeCapabilitySpec(
+  val name: String,
+  val availability: NodeCapabilityAvailability = NodeCapabilityAvailability.Always,
+)
+
 data class InvokeCommandSpec(
   val name: String,
   val requiresForeground: Boolean = false,
@@ -24,6 +46,29 @@ data class InvokeCommandSpec(
 )
 
 object InvokeCommandRegistry {
+  val capabilityManifest: List<NodeCapabilitySpec> =
+    listOf(
+      NodeCapabilitySpec(name = RemoteClawCapability.Canvas.rawValue),
+      NodeCapabilitySpec(name = RemoteClawCapability.Screen.rawValue),
+      NodeCapabilitySpec(name = RemoteClawCapability.Device.rawValue),
+      NodeCapabilitySpec(
+        name = RemoteClawCapability.Camera.rawValue,
+        availability = NodeCapabilityAvailability.CameraEnabled,
+      ),
+      NodeCapabilitySpec(
+        name = RemoteClawCapability.Sms.rawValue,
+        availability = NodeCapabilityAvailability.SmsAvailable,
+      ),
+      NodeCapabilitySpec(
+        name = RemoteClawCapability.VoiceWake.rawValue,
+        availability = NodeCapabilityAvailability.VoiceWakeEnabled,
+      ),
+      NodeCapabilitySpec(
+        name = RemoteClawCapability.Location.rawValue,
+        availability = NodeCapabilityAvailability.LocationEnabled,
+      ),
+    )
+
   val all: List<InvokeCommandSpec> =
     listOf(
       InvokeCommandSpec(
@@ -112,20 +157,29 @@ object InvokeCommandRegistry {
 
   fun find(command: String): InvokeCommandSpec? = byNameInternal[command]
 
-  fun advertisedCommands(
-    cameraEnabled: Boolean,
-    locationEnabled: Boolean,
-    smsAvailable: Boolean,
-    debugBuild: Boolean,
-  ): List<String> {
+  fun advertisedCapabilities(flags: NodeRuntimeFlags): List<String> {
+    return capabilityManifest
+      .filter { spec ->
+        when (spec.availability) {
+          NodeCapabilityAvailability.Always -> true
+          NodeCapabilityAvailability.CameraEnabled -> flags.cameraEnabled
+          NodeCapabilityAvailability.LocationEnabled -> flags.locationEnabled
+          NodeCapabilityAvailability.SmsAvailable -> flags.smsAvailable
+          NodeCapabilityAvailability.VoiceWakeEnabled -> flags.voiceWakeEnabled
+        }
+      }
+      .map { it.name }
+  }
+
+  fun advertisedCommands(flags: NodeRuntimeFlags): List<String> {
     return all
       .filter { spec ->
         when (spec.availability) {
           InvokeCommandAvailability.Always -> true
-          InvokeCommandAvailability.CameraEnabled -> cameraEnabled
-          InvokeCommandAvailability.LocationEnabled -> locationEnabled
-          InvokeCommandAvailability.SmsAvailable -> smsAvailable
-          InvokeCommandAvailability.DebugBuild -> debugBuild
+          InvokeCommandAvailability.CameraEnabled -> flags.cameraEnabled
+          InvokeCommandAvailability.LocationEnabled -> flags.locationEnabled
+          InvokeCommandAvailability.SmsAvailable -> flags.smsAvailable
+          InvokeCommandAvailability.DebugBuild -> flags.debugBuild
         }
       }
       .map { it.name }

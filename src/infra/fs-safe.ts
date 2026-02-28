@@ -9,6 +9,7 @@ import { isNotFoundPathError, isPathInside, isSymlinkOpenError } from "./path-gu
 export type SafeOpenErrorCode =
   | "invalid-path"
   | "not-found"
+  | "outside-workspace"
   | "symlink"
   | "not-file"
   | "path-mismatch"
@@ -102,7 +103,7 @@ export async function openFileWithinRoot(params: {
   const rootWithSep = ensureTrailingSep(rootReal);
   const resolved = path.resolve(rootWithSep, params.relativePath);
   if (!isPathInside(rootWithSep, resolved)) {
-    throw new SafeOpenError("invalid-path", "path escapes root");
+    throw new SafeOpenError("outside-workspace", "file is outside workspace root");
   }
 
   let opened: SafeOpenResult;
@@ -122,7 +123,7 @@ export async function openFileWithinRoot(params: {
 
   if (!isPathInside(rootWithSep, opened.realPath)) {
     await opened.handle.close().catch(() => {});
-    throw new SafeOpenError("invalid-path", "path escapes root");
+    throw new SafeOpenError("outside-workspace", "file is outside workspace root");
   }
 
   return opened;

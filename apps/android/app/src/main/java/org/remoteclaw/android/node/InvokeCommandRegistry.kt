@@ -61,6 +61,9 @@ object InvokeCommandRegistry {
       NodeCapabilitySpec(name = RemoteClawCapability.Canvas.rawValue),
       NodeCapabilitySpec(name = RemoteClawCapability.Screen.rawValue),
       NodeCapabilitySpec(name = RemoteClawCapability.Device.rawValue),
+      NodeCapabilitySpec(name = RemoteClawCapability.Notifications.rawValue),
+      NodeCapabilitySpec(name = RemoteClawCapability.System.rawValue),
+      NodeCapabilitySpec(name = RemoteClawCapability.AppUpdate.rawValue),
       NodeCapabilitySpec(
         name = RemoteClawCapability.Camera.rawValue,
         availability = NodeCapabilityAvailability.CameraEnabled,

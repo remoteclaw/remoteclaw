@@ -1,4 +1,3 @@
-import { getActiveEmbeddedRunCount } from "../agents/pi-embedded.js";
 import { getTotalPendingReplies } from "../auto-reply/reply/dispatcher-registry.js";
 import type { CliDeps } from "../cli/deps.js";
 import { resolveAgentMaxConcurrent, resolveSubagentMaxConcurrent } from "../config/agent-limits.js";
@@ -152,7 +151,7 @@ export function createGatewayReloadHandlers(params: {
     const getActiveCounts = () => {
       const queueSize = getTotalQueueSize();
       const pendingReplies = getTotalPendingReplies();
-      const embeddedRuns = getActiveEmbeddedRunCount();
+      const embeddedRuns = 0;
       return {
         queueSize,
         pendingReplies,

@@ -16,13 +16,6 @@ const fastModeEnv = vi.hoisted(() => {
   return { previous };
 });
 
-vi.mock("./pi-embedded.js", () => ({
-  isEmbeddedPiRunActive: () => false,
-  isEmbeddedPiRunStreaming: () => false,
-  queueEmbeddedPiMessage: () => false,
-  waitForEmbeddedPiRunEnd: async () => true,
-}));
-
 vi.mock("./tools/agent-step.js", () => ({
   readLatestAssistantReply: async () => "done",
 }));

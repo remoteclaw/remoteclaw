@@ -5,7 +5,7 @@ import { normalizeTestText } from "../../test/helpers/normalize-text.js";
 import { resolveSessionKey } from "../config/sessions.js";
 import {
   getProviderUsageMocks,
-  getRunEmbeddedPiAgentMock,
+  getRunAgentMock,
   makeCfg,
   requireSessionStorePath,
   withTempHome,
@@ -35,7 +35,7 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
   describe("usage and status command handling", () => {
     it("handles status, usage cycles, and auth-profile status details", async () => {
       await withTempHome(async (home) => {
-        const runEmbeddedPiAgentMock = getRunEmbeddedPiAgentMock();
+        const runAgentMock = getRunAgentMock();
         const getReplyFromConfig = getReplyFromConfigNow(params.getReplyFromConfig);
         usageMocks.loadProviderUsageSummary.mockClear();
         usageMocks.loadProviderUsageSummary.mockResolvedValue({
@@ -75,7 +75,7 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
           expect(usageMocks.loadProviderUsageSummary).toHaveBeenCalledWith(
             expect.objectContaining({ providers: ["anthropic"] }),
           );
-          expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+          expect(runAgentMock).not.toHaveBeenCalled();
         }
 
         {
@@ -149,11 +149,11 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
           expect(pickFirstStoreEntry<{ responseUsage?: string }>(finalStore)?.responseUsage).toBe(
             "tokens",
           );
-          expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+          expect(runAgentMock).not.toHaveBeenCalled();
         }
 
         {
-          runEmbeddedPiAgentMock.mockClear();
+          runAgentMock.mockClear();
           const cfg = makeCfg(home);
           cfg.session = { ...cfg.session, store: join(home, "auth-profile-status.sessions.json") };
           const agentDir = join(home, ".openclaw", "agents", "main", "agent");
@@ -217,7 +217,7 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
           expect(text).not.toContain("1234567890abcdef");
           expect(text).toContain("(anthropic:work)");
           expect(text).not.toContain("mixed");
-          expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+          expect(runAgentMock).not.toHaveBeenCalled();
         }
       });
     });

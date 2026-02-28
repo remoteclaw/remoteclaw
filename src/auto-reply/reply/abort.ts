@@ -1,5 +1,4 @@
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
-import { abortEmbeddedPiRun } from "../../agents/pi-embedded.js";
 import {
   listSubagentRunsForRequester,
   markSubagentRunTerminated,
@@ -229,9 +228,6 @@ export function stopSubagentsForRequester(params: {
         store = loadSessionStore(storePath);
         storeCache.set(storePath, store);
       }
-      const entry = store[childKey];
-      const sessionId = entry?.sessionId;
-      const aborted = sessionId ? abortEmbeddedPiRun(sessionId) : false;
       const markedTerminated =
         markSubagentRunTerminated({
           runId: run.runId,
@@ -239,7 +235,7 @@ export function stopSubagentsForRequester(params: {
           reason: "killed",
         }) > 0;
 
-      if (markedTerminated || aborted || cleared.followupCleared > 0 || cleared.laneCleared > 0) {
+      if (markedTerminated || cleared.followupCleared > 0 || cleared.laneCleared > 0) {
         stopped += 1;
       }
     }
@@ -295,7 +291,6 @@ export async function tryFastAbortFromMessage(params: {
     const store = loadSessionStore(storePath);
     const { entry, key } = resolveSessionEntryForKey(store, targetKey);
     const sessionId = entry?.sessionId;
-    const aborted = sessionId ? abortEmbeddedPiRun(sessionId) : false;
     const cleared = clearSessionQueues([key ?? targetKey, sessionId]);
     if (cleared.followupCleared > 0 || cleared.laneCleared > 0) {
       logVerbose(
@@ -319,7 +314,7 @@ export async function tryFastAbortFromMessage(params: {
       setAbortMemory(abortKey, true);
     }
     const { stopped } = stopSubagentsForRequester({ cfg, requesterSessionKey });
-    return { handled: true, aborted, stoppedSubagents: stopped };
+    return { handled: true, aborted: false, stoppedSubagents: stopped };
   }
 
   if (abortKey) {

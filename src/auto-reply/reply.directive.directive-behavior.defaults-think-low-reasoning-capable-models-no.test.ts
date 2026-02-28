@@ -5,12 +5,12 @@ import {
   assertModelSelection,
   installDirectiveBehaviorE2EHooks,
   loadModelCatalog,
-  makeEmbeddedTextResult,
+  makeAgentTextResult,
   makeWhatsAppDirectiveConfig,
-  mockEmbeddedTextResult,
+  mockAgentTextResult,
   replyText,
   replyTexts,
-  runEmbeddedPiAgent,
+  runAgent,
   sessionStorePath,
   withTempHome,
 } from "./reply.directive.directive-behavior.e2e-harness.js";
@@ -28,7 +28,7 @@ function makeDefaultModelConfig(home: string) {
 }
 
 async function runReplyToCurrentCase(home: string, text: string) {
-  vi.mocked(runEmbeddedPiAgent).mockResolvedValue(makeEmbeddedTextResult(text));
+  vi.mocked(runAgent).mockResolvedValue(makeAgentTextResult(text));
 
   const res = await getReplyFromConfig(
     {
@@ -84,8 +84,8 @@ async function runReasoningDefaultCase(params: {
   home: string;
   thinkingDefault?: "off" | "low" | "medium" | "high";
 }) {
-  vi.mocked(runEmbeddedPiAgent).mockClear();
-  mockEmbeddedTextResult("done");
+  vi.mocked(runAgent).mockClear();
+  mockAgentTextResult("done");
   mockReasoningCapableCatalog();
 
   await getReplyFromConfig(
@@ -103,7 +103,7 @@ async function runReasoningDefaultCase(params: {
 
   // Verify the agent was called (thinkLevel/reasoningLevel are resolved
   // internally by the pipeline and are no longer visible at the bridge level).
-  expect(runEmbeddedPiAgent).toHaveBeenCalledOnce();
+  expect(runAgent).toHaveBeenCalledOnce();
 }
 
 describe("directive behavior", () => {
@@ -121,9 +121,9 @@ describe("directive behavior", () => {
         reasoning: false,
         expectedLevel: "off",
       });
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
 
-      vi.mocked(runEmbeddedPiAgent).mockClear();
+      vi.mocked(runAgent).mockClear();
 
       for (const scenario of [{}, { thinkingDefault: "off" as const }]) {
         await runReasoningDefaultCase({
@@ -221,7 +221,7 @@ describe("directive behavior", () => {
       });
       expect(missingAuthText).toContain("Providers:");
       expect(missingAuthText).not.toContain("missing (missing)");
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("sets model override on /model directive", async () => {
@@ -248,12 +248,12 @@ describe("directive behavior", () => {
         model: "gpt-4.1-mini",
         provider: "openai",
       });
-      expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("ignores inline /model and /think directives while still running agent content", async () => {
     await withTempHome(async (home) => {
-      mockEmbeddedTextResult("done");
+      mockAgentTextResult("done");
 
       const inlineModelRes = await getReplyFromConfig(
         {
@@ -267,14 +267,14 @@ describe("directive behavior", () => {
 
       const texts = replyTexts(inlineModelRes);
       expect(texts).toContain("done");
-      expect(runEmbeddedPiAgent).toHaveBeenCalledOnce();
+      expect(runAgent).toHaveBeenCalledOnce();
       // Provider is forwarded through the bridge mock's constructor;
       // model is resolved internally and not visible at the bridge level.
-      const call = vi.mocked(runEmbeddedPiAgent).mock.calls[0]?.[0];
+      const call = vi.mocked(runAgent).mock.calls[0]?.[0];
       expect(call?.provider).toBe("anthropic");
-      vi.mocked(runEmbeddedPiAgent).mockClear();
+      vi.mocked(runAgent).mockClear();
 
-      mockEmbeddedTextResult("done");
+      mockAgentTextResult("done");
       const inlineThinkRes = await getReplyFromConfig(
         {
           Body: "please sync /think:high now",
@@ -286,12 +286,12 @@ describe("directive behavior", () => {
       );
 
       expect(replyTexts(inlineThinkRes)).toContain("done");
-      expect(runEmbeddedPiAgent).toHaveBeenCalledOnce();
+      expect(runAgent).toHaveBeenCalledOnce();
     });
   });
   it("passes elevated defaults when sender is approved", async () => {
     await withTempHome(async (home) => {
-      mockEmbeddedTextResult("done");
+      mockAgentTextResult("done");
 
       await getReplyFromConfig(
         {
@@ -317,13 +317,13 @@ describe("directive behavior", () => {
 
       // Verify the agent was called (elevated params are resolved internally
       // by the pipeline and forwarded to the FollowupRun, not visible at the bridge level).
-      expect(runEmbeddedPiAgent).toHaveBeenCalledOnce();
+      expect(runAgent).toHaveBeenCalledOnce();
     });
   });
   it("persists /reasoning off on discord even when model defaults reasoning on", async () => {
     await withTempHome(async (home) => {
       const storePath = sessionStorePath(home);
-      mockEmbeddedTextResult("done");
+      mockAgentTextResult("done");
       vi.mocked(loadModelCatalog).mockResolvedValue([
         {
           id: "x-ai/grok-4.1-fast",
@@ -381,7 +381,7 @@ describe("directive behavior", () => {
 
       // Verify the agent was called (reasoningLevel is resolved internally by the
       // pipeline and recorded in the session store, not visible at the bridge level).
-      expect(runEmbeddedPiAgent).toHaveBeenCalledOnce();
+      expect(runAgent).toHaveBeenCalledOnce();
     });
   });
   it("handles reply_to_current tags and explicit reply_to precedence", async () => {
@@ -392,8 +392,8 @@ describe("directive behavior", () => {
         expect(payload?.replyToId).toBe("msg-123");
       }
 
-      vi.mocked(runEmbeddedPiAgent).mockResolvedValue(
-        makeEmbeddedTextResult("hi [[reply_to_current]] [[reply_to:abc-456]]"),
+      vi.mocked(runAgent).mockResolvedValue(
+        makeAgentTextResult("hi [[reply_to_current]] [[reply_to:abc-456]]"),
       );
 
       const res = await getReplyFromConfig(

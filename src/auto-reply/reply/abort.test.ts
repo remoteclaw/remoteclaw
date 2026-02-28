@@ -18,11 +18,6 @@ import { enqueueFollowupRun, getFollowupQueueDepth, type FollowupRun } from "./q
 import { initSessionState } from "./session.js";
 import { buildTestCtx } from "./test-ctx.js";
 
-vi.mock("../../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(true),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-}));
-
 const commandQueueMocks = vi.hoisted(() => ({
   clearCommandLane: vi.fn(),
 }));
@@ -288,7 +283,7 @@ describe("abort detection", () => {
 
     expect(result.handled).toBe(true);
     expect(getFollowupQueueDepth(sessionKey)).toBe(0);
-    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith(`session:${sessionKey}`);
+    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith("default");
   });
 
   it("fast-abort stops active subagent runs for requester session", async () => {
@@ -323,7 +318,7 @@ describe("abort detection", () => {
     });
 
     expect(result.stoppedSubagents).toBe(1);
-    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith(`session:${childKey}`);
+    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith("default");
   });
 
   it("cascade stop kills depth-2 children when stopping depth-1 agent", async () => {
@@ -378,8 +373,7 @@ describe("abort detection", () => {
 
     // Should stop both depth-1 and depth-2 agents (cascade)
     expect(result.stoppedSubagents).toBe(2);
-    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith(`session:${depth1Key}`);
-    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith(`session:${depth2Key}`);
+    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith("default");
   });
 
   it("cascade stop traverses ended depth-1 parents to stop active depth-2 children", async () => {
@@ -437,7 +431,7 @@ describe("abort detection", () => {
 
     // Should skip killing the ended depth-1 run itself, but still kill depth-2.
     expect(result.stoppedSubagents).toBe(1);
-    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith(`session:${depth2Key}`);
+    expect(commandQueueMocks.clearCommandLane).toHaveBeenCalledWith("default");
     expect(subagentRegistryMocks.markSubagentRunTerminated).toHaveBeenCalledWith(
       expect.objectContaining({ runId: "run-2", childSessionKey: depth2Key }),
     );

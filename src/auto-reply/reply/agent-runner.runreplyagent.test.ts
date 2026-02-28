@@ -19,7 +19,7 @@ import { createMockTypingController } from "./test-helpers.js";
 
 const state = vi.hoisted(() => ({
   channelBridgeHandleMock: vi.fn(),
-  runEmbeddedPiAgentMock: vi.fn(),
+  runAgentMock: vi.fn(),
 }));
 
 let modelFallbackModule: typeof import("../../agents/model-fallback.js");
@@ -51,11 +51,6 @@ vi.mock("../../agents/model-fallback.js", () => ({
     model,
     attempts: [],
   }),
-}));
-
-vi.mock("../../agents/pi-embedded.js", () => ({
-  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedPiAgent: (params: unknown) => state.runEmbeddedPiAgentMock(params),
 }));
 
 vi.mock("../../middleware/channel-bridge.js", () => ({
@@ -92,7 +87,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   state.channelBridgeHandleMock.mockClear();
-  state.runEmbeddedPiAgentMock.mockClear();
+  state.runAgentMock.mockClear();
   vi.mocked(enqueueFollowupRun).mockClear();
   vi.stubEnv("OPENCLAW_TEST_FAST", "1");
 });
@@ -1523,7 +1518,7 @@ describe("runReplyAgent memory flush", () => {
       // Main run goes through ChannelBridge
       expect(state.channelBridgeHandleMock).toHaveBeenCalledTimes(1);
       // Memory flush does NOT run for CLI providers, so runEmbeddedPiAgent should not be called
-      expect(state.runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+      expect(state.runAgentMock).not.toHaveBeenCalled();
     });
   });
 
@@ -1561,7 +1556,7 @@ describe("runReplyAgent memory flush", () => {
       });
 
       // Memory flush is gutted (#74) — runEmbeddedPiAgent should NOT be called
-      expect(state.runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+      expect(state.runAgentMock).not.toHaveBeenCalled();
       // Main run uses ChannelBridge
       expect(state.channelBridgeHandleMock).toHaveBeenCalledTimes(1);
 
@@ -1606,7 +1601,7 @@ describe("runReplyAgent memory flush", () => {
 
       // Main run goes through ChannelBridge, no memory flush
       expect(state.channelBridgeHandleMock).toHaveBeenCalledTimes(1);
-      expect(state.runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+      expect(state.runAgentMock).not.toHaveBeenCalled();
 
       const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
       expect(stored[sessionKey].memoryFlushAt).toBeUndefined();
@@ -1648,7 +1643,7 @@ describe("runReplyAgent memory flush", () => {
 
       // Main run through ChannelBridge, no flush (already flushed this cycle)
       expect(state.channelBridgeHandleMock).toHaveBeenCalledTimes(1);
-      expect(state.runEmbeddedPiAgentMock).not.toHaveBeenCalled();
+      expect(state.runAgentMock).not.toHaveBeenCalled();
     });
   });
 

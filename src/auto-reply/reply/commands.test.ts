@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { compactEmbeddedPiSession } from "../../agents/pi-embedded.js";
 import {
   addSubagentRunForTests,
   listSubagentRunsForRequester,
@@ -72,23 +71,6 @@ vi.mock("../../agents/model-catalog.js", () => ({
     { provider: "google", id: "gemini-2.0-flash", name: "Gemini Flash" },
   ]),
 }));
-
-vi.mock("../../agents/pi-embedded.js", () => {
-  const resolveEmbeddedSessionLane = (key: string) => {
-    const cleaned = key.trim() || "main";
-    return cleaned.startsWith("session:") ? cleaned : `session:${cleaned}`;
-  };
-  return {
-    abortEmbeddedPiRun: vi.fn(),
-    compactEmbeddedPiSession: vi.fn(),
-    isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-    isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
-    queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-    resolveEmbeddedSessionLane,
-    runEmbeddedPiAgent: vi.fn(),
-    waitForEmbeddedPiRunEnd: vi.fn().mockResolvedValue(undefined),
-  };
-});
 
 vi.mock("../../infra/system-events.js", () => ({
   enqueueSystemEvent: vi.fn(),
@@ -308,7 +290,6 @@ describe("/compact command", () => {
     );
 
     expect(result).toBeNull();
-    expect(vi.mocked(compactEmbeddedPiSession)).not.toHaveBeenCalled();
   });
 
   it("rejects unauthorized /compact commands", async () => {
@@ -331,7 +312,6 @@ describe("/compact command", () => {
     );
 
     expect(result).toEqual({ shouldContinue: false });
-    expect(vi.mocked(compactEmbeddedPiSession)).not.toHaveBeenCalled();
   });
 
   it("returns compaction unavailable (embedded engine removed)", async () => {

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  getRunEmbeddedPiAgentMock,
+  getRunAgentMock,
   makeCfg,
-  mockRunEmbeddedPiAgentOk,
+  mockRunAgentOk,
   withTempHome,
 } from "./reply.triggers.trigger-handling.test-harness.js";
 
@@ -10,7 +10,7 @@ type GetReplyFromConfig = typeof import("./reply.js").getReplyFromConfig;
 type InboundMessage = Parameters<GetReplyFromConfig>[0];
 
 function getLastExtraSystemPrompt() {
-  return getRunEmbeddedPiAgentMock().mock.calls.at(-1)?.[0]?.extraSystemPrompt ?? "";
+  return getRunAgentMock().mock.calls.at(-1)?.[0]?.extraSystemPrompt ?? "";
 }
 
 export function registerGroupIntroPromptCases(params: {
@@ -28,7 +28,7 @@ export function registerGroupIntroPromptCases(params: {
     // Skipped: extraSystemPrompt is built by get-reply-run.ts and stored in FollowupRun.run,
     // but agent-runner-execution.ts does not forward it through the ChannelBridge. The bridge
     // only receives ChannelMessage (text, from, channelId, provider) and BridgeCallbacks.
-    // This test asserts on extraSystemPrompt passed to runEmbeddedPiAgent, which is no longer
+    // This test asserts on extraSystemPrompt passed to runAgent, which is no longer
     // the dispatch path for the main agent turn. Re-enable once extraSystemPrompt is threaded
     // through the bridge (e.g. via ChannelMessage.metadata or a dedicated bridge option).
     it.skip("labels group chats using channel-specific metadata", async () => {
@@ -117,19 +117,19 @@ export function registerGroupIntroPromptCases(params: {
         ];
 
         for (const testCase of cases) {
-          mockRunEmbeddedPiAgentOk();
+          mockRunAgentOk();
           const cfg = makeCfg(home);
           testCase.setup?.(cfg);
           await params.getReplyFromConfig()(testCase.message, {}, cfg);
 
-          expect(getRunEmbeddedPiAgentMock(), testCase.name).toHaveBeenCalledOnce();
+          expect(getRunAgentMock(), testCase.name).toHaveBeenCalledOnce();
           const extraSystemPrompt = getLastExtraSystemPrompt();
           for (const expectedFragment of testCase.expected) {
             expect(extraSystemPrompt, `${testCase.name}:${expectedFragment}`).toContain(
               expectedFragment,
             );
           }
-          getRunEmbeddedPiAgentMock().mockClear();
+          getRunAgentMock().mockClear();
         }
       });
     });

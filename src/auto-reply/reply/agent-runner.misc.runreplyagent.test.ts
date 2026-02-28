@@ -29,16 +29,6 @@ vi.mock("../../agents/model-fallback.js", () => ({
   }) => runWithModelFallbackMock(params),
 }));
 
-vi.mock("../../agents/pi-embedded.js", async () => {
-  const actual = await vi.importActual<typeof import("../../agents/pi-embedded.js")>(
-    "../../agents/pi-embedded.js",
-  );
-  return {
-    ...actual,
-    queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  };
-});
-
 vi.mock("../../middleware/channel-bridge.js", () => ({
   ChannelBridge: class MockChannelBridge {
     handle(message: ChannelMessage, callbacks?: BridgeCallbacks, abortSignal?: AbortSignal) {

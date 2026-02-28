@@ -11,47 +11,18 @@ type AnyMock = any;
 // oxlint-disable-next-line typescript/no-explicit-any
 type AnyMocks = Record<string, any>;
 
-const piEmbeddedMocks = vi.hoisted(() => ({
-  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
-  compactEmbeddedPiSession: vi.fn(),
-  runEmbeddedPiAgent: vi.fn(),
-  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
-  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
+const bridgeMocks = vi.hoisted(() => ({
+  runAgent: vi.fn(),
 }));
 
-export function getAbortEmbeddedPiRunMock(): AnyMock {
-  return piEmbeddedMocks.abortEmbeddedPiRun;
+export function getRunAgentMock(): AnyMock {
+  return bridgeMocks.runAgent;
 }
-
-export function getCompactEmbeddedPiSessionMock(): AnyMock {
-  return piEmbeddedMocks.compactEmbeddedPiSession;
-}
-
-export function getRunEmbeddedPiAgentMock(): AnyMock {
-  return piEmbeddedMocks.runEmbeddedPiAgent;
-}
-
-export function getQueueEmbeddedPiMessageMock(): AnyMock {
-  return piEmbeddedMocks.queueEmbeddedPiMessage;
-}
-
-vi.mock("../agents/pi-embedded.js", () => ({
-  abortEmbeddedPiRun: (...args: unknown[]) => piEmbeddedMocks.abortEmbeddedPiRun(...args),
-  compactEmbeddedPiSession: (...args: unknown[]) =>
-    piEmbeddedMocks.compactEmbeddedPiSession(...args),
-  runEmbeddedPiAgent: piEmbeddedMocks.runEmbeddedPiAgent,
-  queueEmbeddedPiMessage: (...args: unknown[]) => piEmbeddedMocks.queueEmbeddedPiMessage(...args),
-  resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-  isEmbeddedPiRunActive: (...args: unknown[]) => piEmbeddedMocks.isEmbeddedPiRunActive(...args),
-  isEmbeddedPiRunStreaming: (...args: unknown[]) =>
-    piEmbeddedMocks.isEmbeddedPiRunStreaming(...args),
-}));
 
 /**
- * ChannelBridge mock that delegates to runEmbeddedPiAgent, bridging the
- * ChannelBridge interface to the embedded agent interface so that existing
- * test assertions about runEmbeddedPiAgent calls continue to work.
+ * ChannelBridge mock that delegates to runAgent, bridging the
+ * ChannelBridge interface to the agent interface so that existing
+ * test assertions about runAgent calls continue to work.
  */
 vi.mock("../middleware/channel-bridge.js", () => ({
   ChannelBridge: class MockChannelBridge {
@@ -70,7 +41,7 @@ vi.mock("../middleware/channel-bridge.js", () => ({
         onPartialReply: callbacks?.onPartialReply,
         onToolResult: callbacks?.onToolResult,
       };
-      const result = await piEmbeddedMocks.runEmbeddedPiAgent(embeddedParams);
+      const result = await bridgeMocks.runAgent(embeddedParams);
       return {
         payloads: result?.payloads ?? [],
         run: {
@@ -244,9 +215,7 @@ export async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise
 
   try {
     // Avoid cross-test leakage if a test doesn't touch these mocks.
-    piEmbeddedMocks.runEmbeddedPiAgent.mockClear();
-    piEmbeddedMocks.abortEmbeddedPiRun.mockClear();
-    piEmbeddedMocks.compactEmbeddedPiSession.mockClear();
+    bridgeMocks.runAgent.mockClear();
     return await fn(home);
   } finally {
     restoreTempHomeEnv(snapshot);
@@ -370,8 +339,8 @@ export async function expectInlineCommandHandledAndStripped(params: {
   blockReplyContains: string;
   requestOverrides?: Record<string, unknown>;
 }) {
-  const runEmbeddedPiAgentMock = mockRunEmbeddedPiAgentOk();
-  runEmbeddedPiAgentMock.mockClear();
+  const runAgentMock = mockRunAgentOk();
+  runAgentMock.mockClear();
   const { blockReplies, handlers } = createBlockReplyCollector();
   const res = await params.getReplyFromConfig(
     {
@@ -388,8 +357,8 @@ export async function expectInlineCommandHandledAndStripped(params: {
   const text = Array.isArray(res) ? res[0]?.text : res?.text;
   expect(blockReplies.length).toBe(1);
   expect(blockReplies[0]?.text).toContain(params.blockReplyContains);
-  expect(runEmbeddedPiAgentMock).toHaveBeenCalled();
-  const prompt = runEmbeddedPiAgentMock.mock.calls.at(-1)?.[0]?.prompt ?? "";
+  expect(runAgentMock).toHaveBeenCalled();
+  const prompt = runAgentMock.mock.calls.at(-1)?.[0]?.prompt ?? "";
   expect(prompt).not.toContain(params.stripToken);
   expect(text).toBe("ok");
 }
@@ -399,9 +368,9 @@ export async function runGreetingPromptForBareNewOrReset(params: {
   body: "/new" | "/reset";
   getReplyFromConfig: typeof import("./reply.js").getReplyFromConfig;
 }) {
-  const runEmbeddedPiAgentMock = getRunEmbeddedPiAgentMock();
-  runEmbeddedPiAgentMock.mockClear();
-  runEmbeddedPiAgentMock.mockResolvedValue({
+  const runAgentMock = getRunAgentMock();
+  runAgentMock.mockClear();
+  runAgentMock.mockResolvedValue({
     payloads: [{ text: "hello" }],
     meta: {
       durationMs: 1,
@@ -421,8 +390,8 @@ export async function runGreetingPromptForBareNewOrReset(params: {
   );
   const text = Array.isArray(res) ? res[0]?.text : res?.text;
   expect(text).toBe("hello");
-  expect(runEmbeddedPiAgentMock).toHaveBeenCalledOnce();
-  const prompt = runEmbeddedPiAgentMock.mock.calls.at(-1)?.[0]?.prompt ?? "";
+  expect(runAgentMock).toHaveBeenCalledOnce();
+  const prompt = runAgentMock.mock.calls.at(-1)?.[0]?.prompt ?? "";
   expect(prompt).toContain("A new session was started via /new or /reset");
   expect(prompt).toContain("Execute your Session Startup sequence now");
 }
@@ -433,16 +402,16 @@ export function installTriggerHandlingE2eTestHooks() {
   });
 }
 
-export function mockRunEmbeddedPiAgentOk(text = "ok"): AnyMock {
-  const runEmbeddedPiAgentMock = getRunEmbeddedPiAgentMock();
-  runEmbeddedPiAgentMock.mockResolvedValue({
+export function mockRunAgentOk(text = "ok"): AnyMock {
+  const runAgentMock = getRunAgentMock();
+  runAgentMock.mockResolvedValue({
     payloads: [{ text }],
     meta: {
       durationMs: 1,
       agentMeta: { sessionId: "s", provider: "p", model: "m" },
     },
   });
-  return runEmbeddedPiAgentMock;
+  return runAgentMock;
 }
 
 export function createBlockReplyCollector() {

@@ -88,7 +88,7 @@ describe("redactConfigSnapshot", () => {
         },
         feishu: { appSecret: "feishu-app-secret-value-here-1234" },
       },
-      models: {
+      custom: {
         providers: {
           openai: { apiKey: "sk-proj-abcdef1234567890ghij", baseUrl: "https://api.openai.com" },
         },
@@ -107,8 +107,8 @@ describe("redactConfigSnapshot", () => {
     expect(cfg.channels.slack.signingSecret).toBe(REDACTED_SENTINEL);
     expect(cfg.channels.slack.token).toBe(REDACTED_SENTINEL);
     expect(cfg.channels.feishu.appSecret).toBe(REDACTED_SENTINEL);
-    expect(cfg.models.providers.openai.apiKey).toBe(REDACTED_SENTINEL);
-    expect(cfg.models.providers.openai.baseUrl).toBe("https://api.openai.com");
+    expect(cfg.custom.providers.openai.apiKey).toBe(REDACTED_SENTINEL);
+    expect(cfg.custom.providers.openai.baseUrl).toBe("https://api.openai.com");
     expect(cfg.shortSecret.token).toBe(REDACTED_SENTINEL);
   });
 
@@ -116,7 +116,6 @@ describe("redactConfigSnapshot", () => {
     const snapshot = makeSnapshot({
       ui: { seamColor: "#0088cc" },
       gateway: { port: 18789 },
-      models: { providers: { openai: { baseUrl: "https://api.openai.com" } } },
     });
     const result = redactConfigSnapshot(snapshot);
     expect(result.config).toEqual(snapshot.config);
@@ -125,10 +124,10 @@ describe("redactConfigSnapshot", () => {
   it("does not redact maxTokens-style fields", () => {
     const snapshot = makeSnapshot({
       maxTokens: 16384,
-      models: {
+      custom: {
         providers: {
           openai: {
-            models: [
+            entries: [
               {
                 id: "gpt-5",
                 maxTokens: 65536,
@@ -153,15 +152,15 @@ describe("redactConfigSnapshot", () => {
 
     const result = redactConfigSnapshot(snapshot);
     expect((result.config as Record<string, unknown>).maxTokens).toBe(16384);
-    const models = result.config.models as Record<string, unknown>;
+    const custom = (result.config as Record<string, unknown>).custom as Record<string, unknown>;
     const providerList = ((
-      (models.providers as Record<string, unknown>).openai as Record<string, unknown>
-    ).models ?? []) as Array<Record<string, unknown>>;
+      (custom.providers as Record<string, unknown>).openai as Record<string, unknown>
+    ).entries ?? []) as Array<Record<string, unknown>>;
     expect(providerList[0]?.maxTokens).toBe(65536);
     expect(providerList[0]?.contextTokens).toBe(200000);
     expect(providerList[0]?.maxTokensField).toBe("max_completion_tokens");
 
-    const providers = (models.providers as Record<string, Record<string, unknown>>) ?? {};
+    const providers = (custom.providers as Record<string, Record<string, unknown>>) ?? {};
     expect(providers.openai.apiKey).toBe(REDACTED_SENTINEL);
     expect(providers.openai.accessToken).toBe(REDACTED_SENTINEL);
     expect(providers.openai.maxTokens).toBe(8192);
@@ -870,7 +869,7 @@ describe("restoreRedactedValues", () => {
           webhookSecret: "fake-tg-secret-placeholder-value",
         },
       },
-      models: {
+      custom: {
         providers: {
           openai: {
             apiKey: "sk-proj-fake-openai-api-key-value",

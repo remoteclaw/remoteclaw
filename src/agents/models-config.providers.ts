@@ -1,5 +1,8 @@
-import type { OpenClawConfig } from "../config/config.js";
-import type { ModelDefinitionConfig } from "../config/types.models.js";
+import type {
+  BedrockDiscoveryConfig,
+  ModelDefinitionConfig,
+  ModelsConfig,
+} from "../config/types.models.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   DEFAULT_COPILOT_API_BASE_URL,
@@ -52,7 +55,6 @@ import {
 } from "./together-models.js";
 import { discoverVeniceModels, VENICE_BASE_URL } from "./venice-models.js";
 
-type ModelsConfig = NonNullable<OpenClawConfig["models"]>;
 export type ProviderConfig = NonNullable<ModelsConfig["providers"]>[string];
 
 const MINIMAX_PORTAL_BASE_URL = "https://api.minimax.io/anthropic";
@@ -1053,11 +1055,11 @@ export async function resolveImplicitCopilotProvider(params: {
 
 export async function resolveImplicitBedrockProvider(params: {
   agentDir: string;
-  config?: OpenClawConfig;
+  bedrockDiscovery?: BedrockDiscoveryConfig;
   env?: NodeJS.ProcessEnv;
 }): Promise<ProviderConfig | null> {
   const env = params.env ?? process.env;
-  const discoveryConfig = params.config?.models?.bedrockDiscovery;
+  const discoveryConfig = params.bedrockDiscovery;
   const enabled = discoveryConfig?.enabled;
   const hasAwsCreds = resolveAwsSdkEnvVarName(env) !== undefined;
   if (enabled === false) {

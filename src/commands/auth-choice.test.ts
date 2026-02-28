@@ -4,11 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { applyAuthChoice, resolvePreferredProviderForAuthChoice } from "./auth-choice.js";
-import {
-  MINIMAX_CN_API_BASE_URL,
-  ZAI_CODING_CN_BASE_URL,
-  ZAI_CODING_GLOBAL_BASE_URL,
-} from "./onboard-auth.js";
+import { ZAI_CODING_GLOBAL_BASE_URL } from "./onboard-auth.js";
 import type { AuthChoice } from "./onboard-types.js";
 import {
   authProfilePathForAgent,
@@ -192,7 +188,6 @@ describe("applyAuthChoice", () => {
       profileId: string;
       provider: string;
       token: string;
-      expectedBaseUrl?: string;
     }> = [
       {
         authChoice: "minimax-api" as const,
@@ -207,7 +202,6 @@ describe("applyAuthChoice", () => {
         profileId: "minimax-cn:default",
         provider: "minimax-cn",
         token: "sk-minimax-test",
-        expectedBaseUrl: MINIMAX_CN_API_BASE_URL,
       },
       {
         authChoice: "synthetic-api-key" as const,
@@ -245,11 +239,6 @@ describe("applyAuthChoice", () => {
         provider: scenario.provider,
         mode: "api_key",
       });
-      if (scenario.expectedBaseUrl) {
-        expect(result.config.models?.providers?.[scenario.provider]?.baseUrl).toBe(
-          scenario.expectedBaseUrl,
-        );
-      }
       expect((await readAuthProfile(scenario.profileId))?.key).toBe(scenario.token);
     }
   });
@@ -265,7 +254,6 @@ describe("applyAuthChoice", () => {
         baseUrl: string;
         note: string;
       };
-      expectedBaseUrl: string;
       shouldPromptForEndpoint: boolean;
       shouldAssertDetectCall?: boolean;
     }> = [
@@ -273,13 +261,11 @@ describe("applyAuthChoice", () => {
         authChoice: "zai-api-key",
         token: "zai-test-key",
         endpointSelection: "coding-cn",
-        expectedBaseUrl: ZAI_CODING_CN_BASE_URL,
         shouldPromptForEndpoint: true,
       },
       {
         authChoice: "zai-coding-global",
         token: "zai-test-key",
-        expectedBaseUrl: ZAI_CODING_GLOBAL_BASE_URL,
         shouldPromptForEndpoint: false,
       },
       {
@@ -291,7 +277,6 @@ describe("applyAuthChoice", () => {
           baseUrl: ZAI_CODING_GLOBAL_BASE_URL,
           note: "Detected coding-global endpoint",
         },
-        expectedBaseUrl: ZAI_CODING_GLOBAL_BASE_URL,
         shouldPromptForEndpoint: false,
         shouldAssertDetectCall: true,
       },
@@ -316,7 +301,7 @@ describe("applyAuthChoice", () => {
         text,
       });
 
-      const result = await applyAuthChoice({
+      await applyAuthChoice({
         authChoice: scenario.authChoice,
         config: {},
         prompter,
@@ -336,7 +321,6 @@ describe("applyAuthChoice", () => {
           expect.objectContaining({ message: "Select Z.AI endpoint" }),
         );
       }
-      expect(result.config.models?.providers?.zai?.baseUrl).toBe(scenario.expectedBaseUrl);
       if (scenario.authChoice === "zai-api-key") {
         expect((await readAuthProfile("zai:default"))?.key).toBe(scenario.token);
       }
@@ -478,7 +462,7 @@ describe("applyAuthChoice", () => {
     },
   ] as const)(
     "uses opts token for $authChoice without prompting",
-    async ({ authChoice, tokenProvider, profileId, provider, _modelPrefix }) => {
+    async ({ authChoice, tokenProvider, profileId, provider }) => {
       await setupTempState();
 
       const text = vi.fn();
@@ -645,7 +629,6 @@ describe("applyAuthChoice", () => {
       existingPrimary: string;
       profileId?: string;
       profileProvider?: string;
-      expectProviderConfigUndefined?: "opencode-zen";
       agentId?: string;
     }> = [
       {
@@ -662,7 +645,6 @@ describe("applyAuthChoice", () => {
         token: "sk-opencode-zen-test",
         promptMessage: "Enter OpenCode Zen API key",
         existingPrimary: "anthropic/claude-opus-4-5",
-        expectProviderConfigUndefined: "opencode-zen",
       },
     ];
     for (const scenario of scenarios) {
@@ -693,11 +675,6 @@ describe("applyAuthChoice", () => {
           mode: "api_key",
         });
         expect((await readAuthProfile(scenario.profileId))?.key).toBe(scenario.token);
-      }
-      if (scenario.expectProviderConfigUndefined) {
-        expect(
-          result.config.models?.providers?.[scenario.expectProviderConfigUndefined],
-        ).toBeUndefined();
       }
     }
   });

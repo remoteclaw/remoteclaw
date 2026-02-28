@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
-import {
-  estimateUsageCost,
-  formatTokenCount,
-  formatUsd,
-  resolveModelCostConfig,
-} from "./usage-format.js";
+import { formatTokenCount, formatUsd } from "./usage-format.js";
 
 describe("usage-format", () => {
   it("formats token counts", () => {
@@ -21,40 +15,6 @@ describe("usage-format", () => {
     expect(formatUsd(0.0042)).toBe("$0.0042");
   });
 
-  it("resolves model cost config and estimates usage cost", () => {
-    const config = {
-      models: {
-        providers: {
-          test: {
-            models: [
-              {
-                id: "m1",
-                cost: { input: 1, output: 2, cacheRead: 0.5, cacheWrite: 0 },
-              },
-            ],
-          },
-        },
-      },
-    } as unknown as OpenClawConfig;
-
-    const cost = resolveModelCostConfig({
-      provider: "test",
-      model: "m1",
-      config,
-    });
-
-    expect(cost).toEqual({
-      input: 1,
-      output: 2,
-      cacheRead: 0.5,
-      cacheWrite: 0,
-    });
-
-    const total = estimateUsageCost({
-      usage: { input: 1000, output: 500, cacheRead: 2000 },
-      cost,
-    });
-
-    expect(total).toBeCloseTo(0.003);
-  });
+  // Test "resolves model cost config and estimates usage cost" removed:
+  // resolveModelCostConfig is now a no-op that always returns undefined.
 });

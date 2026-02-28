@@ -4,7 +4,7 @@ import { parseDurationMs } from "../cli/parse-duration.js";
 import { ToolsSchema } from "./zod-schema.agent-runtime.js";
 import { AgentsSchema, AudioSchema, BindingsSchema, BroadcastSchema } from "./zod-schema.agents.js";
 import { ApprovalsSchema } from "./zod-schema.approvals.js";
-import { HexColorSchema, ModelsConfigSchema } from "./zod-schema.core.js";
+import { HexColorSchema } from "./zod-schema.core.js";
 import { HookMappingSchema, HooksGmailSchema, InternalHooksSchema } from "./zod-schema.hooks.js";
 import { InstallRecordShape } from "./zod-schema.installs.js";
 import { ChannelsSchema } from "./zod-schema.providers.js";
@@ -316,7 +316,6 @@ export const OpenClawSchema = z
       })
       .strict()
       .optional(),
-    models: ModelsConfigSchema,
     nodeHost: NodeHostSchema,
     agents: AgentsSchema,
     tools: ToolsSchema,
@@ -655,52 +654,6 @@ export const OpenClawSchema = z
       .strict()
       .optional(),
     memory: MemorySchema,
-    skills: z
-      .object({
-        allowBundled: z.array(z.string()).optional(),
-        load: z
-          .object({
-            extraDirs: z.array(z.string()).optional(),
-            watch: z.boolean().optional(),
-            watchDebounceMs: z.number().int().min(0).optional(),
-          })
-          .strict()
-          .optional(),
-        install: z
-          .object({
-            preferBrew: z.boolean().optional(),
-            nodeManager: z
-              .union([z.literal("npm"), z.literal("pnpm"), z.literal("yarn"), z.literal("bun")])
-              .optional(),
-          })
-          .strict()
-          .optional(),
-        limits: z
-          .object({
-            maxCandidatesPerRoot: z.number().int().min(1).optional(),
-            maxSkillsLoadedPerSource: z.number().int().min(1).optional(),
-            maxSkillsInPrompt: z.number().int().min(0).optional(),
-            maxSkillsPromptChars: z.number().int().min(0).optional(),
-            maxSkillFileBytes: z.number().int().min(0).optional(),
-          })
-          .strict()
-          .optional(),
-        entries: z
-          .record(
-            z.string(),
-            z
-              .object({
-                enabled: z.boolean().optional(),
-                apiKey: z.string().optional().register(sensitive),
-                env: z.record(z.string(), z.string()).optional(),
-                config: z.record(z.string(), z.unknown()).optional(),
-              })
-              .strict(),
-          )
-          .optional(),
-      })
-      .strict()
-      .optional(),
     plugins: z
       .object({
         enabled: z.boolean().optional(),

@@ -17,8 +17,6 @@ function normalizeAlias(alias: string): string {
 }
 
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1";
-const DEFAULT_CONTEXT_WINDOW = 4096;
-const DEFAULT_MAX_TOKENS = 4096;
 const VERIFY_TIMEOUT_MS = 10000;
 
 /**
@@ -411,12 +409,6 @@ async function applyCustomApiRetryChoice(params: {
   return { baseUrl, apiKey, modelId };
 }
 
-function resolveProviderApi(
-  compatibility: CustomApiCompatibility,
-): "openai-completions" | "anthropic-messages" {
-  return compatibility === "anthropic" ? "anthropic-messages" : "openai-completions";
-}
-
 function parseCustomApiCompatibility(raw?: string): CustomApiCompatibility {
   const compatibilityRaw = raw?.trim().toLowerCase();
   if (!compatibilityRaw) {
@@ -434,7 +426,7 @@ function parseCustomApiCompatibility(raw?: string): CustomApiCompatibility {
 export function resolveCustomProviderId(
   params: ResolveCustomProviderIdParams,
 ): ResolvedCustomProviderId {
-  const providers = params.config.models?.providers ?? {};
+  const providers: Record<string, undefined> = {};
   const baseUrl = params.baseUrl.trim();
   const explicitProviderId = params.providerId?.trim();
   if (explicitProviderId && !normalizeEndpointId(explicitProviderId)) {
@@ -521,7 +513,6 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
     providerId: params.providerId,
   });
   const providerId = providerIdResult.providerId;
-  const providers = params.config.models?.providers ?? {};
 
   const modelRef = modelKey(providerId, modelId);
   const alias = params.alias?.trim() ?? "";
@@ -534,40 +525,7 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
     throw new CustomApiError("invalid_alias", aliasError);
   }
 
-  const existingProvider = providers[providerId];
-  const existingModels = Array.isArray(existingProvider?.models) ? existingProvider.models : [];
-  const hasModel = existingModels.some((model) => model.id === modelId);
-  const nextModel = {
-    id: modelId,
-    name: `${modelId} (Custom Provider)`,
-    contextWindow: DEFAULT_CONTEXT_WINDOW,
-    maxTokens: DEFAULT_MAX_TOKENS,
-    input: ["text"] as ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    reasoning: false,
-  };
-  const mergedModels = hasModel ? existingModels : [...existingModels, nextModel];
-  const { apiKey: existingApiKey, ...existingProviderRest } = existingProvider ?? {};
-  const normalizedApiKey =
-    params.apiKey?.trim() || (existingApiKey ? existingApiKey.trim() : undefined);
-
-  let config: OpenClawConfig = {
-    ...params.config,
-    models: {
-      ...params.config.models,
-      mode: params.config.models?.mode ?? "merge",
-      providers: {
-        ...providers,
-        [providerId]: {
-          ...existingProviderRest,
-          baseUrl: resolvedBaseUrl,
-          api: resolveProviderApi(params.compatibility),
-          ...(normalizedApiKey ? { apiKey: normalizedApiKey } : {}),
-          models: mergedModels.length > 0 ? mergedModels : [nextModel],
-        },
-      },
-    },
-  };
+  let config: OpenClawConfig = { ...params.config };
 
   if (alias) {
     config = {
@@ -684,7 +642,6 @@ export async function promptCustomApiConfig(params: {
     }
   }
 
-  const providers = config.models?.providers ?? {};
   const suggestedId = buildEndpointIdFromUrl(baseUrl);
   const providerIdInput = await prompter.text({
     message: "Endpoint ID",
@@ -707,7 +664,7 @@ export async function promptCustomApiConfig(params: {
       const providerIdResult = resolveUniqueEndpointId({
         requestedId,
         baseUrl,
-        providers,
+        providers: {},
       });
       const modelRef = modelKey(providerIdResult.providerId, modelId);
       return resolveAliasError({ raw: value, cfg: config, modelRef });

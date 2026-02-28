@@ -265,15 +265,6 @@ function isProviderConfigured(cfg: OpenClawConfig, providerId: string): boolean 
     }
   }
 
-  const providerConfig = cfg.models?.providers;
-  if (providerConfig && typeof providerConfig === "object") {
-    for (const key of Object.keys(providerConfig)) {
-      if (normalizeProviderId(key) === normalized) {
-        return true;
-      }
-    }
-  }
-
   const modelRefs = collectModelRefs(cfg);
   for (const ref of modelRefs) {
     const provider = extractProviderFromModelRef(ref);

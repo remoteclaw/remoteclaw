@@ -67,7 +67,6 @@ function expectOpenAiCompatResult(params: {
 }) {
   expect(params.prompter.text).toHaveBeenCalledTimes(params.textCalls);
   expect(params.prompter.select).toHaveBeenCalledTimes(params.selectCalls);
-  expect(params.result.config.models?.providers?.custom?.api).toBe("openai-completions");
 }
 
 describe("promptCustomApiConfig", () => {
@@ -160,39 +159,6 @@ describe("promptCustomApiConfig", () => {
       expect.stringContaining("did not respond"),
       "Endpoint detection",
     );
-  });
-
-  it("renames provider id when baseUrl differs", async () => {
-    const prompter = createTestPrompter({
-      text: ["http://localhost:11434/v1", "", "llama3", "custom", ""],
-      select: ["openai"],
-    });
-    stubFetchSequence([{ ok: true }]);
-    const result = await runPromptCustomApi(prompter, {
-      models: {
-        providers: {
-          custom: {
-            baseUrl: "http://old.example.com/v1",
-            api: "openai-completions",
-            models: [
-              {
-                id: "old-model",
-                name: "Old",
-                contextWindow: 1,
-                maxTokens: 1,
-                input: ["text"],
-                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                reasoning: false,
-              },
-            ],
-          },
-        },
-      },
-    });
-
-    expect(result.providerId).toBe("custom-2");
-    expect(result.config.models?.providers?.custom).toBeDefined();
-    expect(result.config.models?.providers?.["custom-2"]).toBeDefined();
   });
 
   it("aborts verification after timeout", async () => {

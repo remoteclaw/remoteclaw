@@ -1,19 +1,10 @@
 import type { OpenClawConfig } from "../config/config.js";
 import { toAgentModelListLike } from "../config/model-input.js";
-import type { ModelProviderConfig } from "../config/types.models.js";
 import { applyOnboardAuthAgentModelsAndProviders } from "./onboard-auth.config-shared.js";
 import {
-  buildMinimaxApiModelDefinition,
-  buildMinimaxModelDefinition,
-  DEFAULT_MINIMAX_BASE_URL,
-  DEFAULT_MINIMAX_CONTEXT_WINDOW,
-  DEFAULT_MINIMAX_MAX_TOKENS,
   MINIMAX_API_BASE_URL,
   MINIMAX_CN_API_BASE_URL,
-  MINIMAX_HOSTED_COST,
-  MINIMAX_HOSTED_MODEL_ID,
   MINIMAX_HOSTED_MODEL_REF,
-  MINIMAX_LM_STUDIO_COST,
 } from "./onboard-auth.models.js";
 
 export function applyMinimaxProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
@@ -27,31 +18,12 @@ export function applyMinimaxProviderConfig(cfg: OpenClawConfig): OpenClawConfig 
     alias: models["lmstudio/minimax-m2.1-gs32"]?.alias ?? "Minimax",
   };
 
-  const providers = { ...cfg.models?.providers };
-  if (!providers.lmstudio) {
-    providers.lmstudio = {
-      baseUrl: "http://127.0.0.1:1234/v1",
-      apiKey: "lmstudio",
-      api: "openai-responses",
-      models: [
-        buildMinimaxModelDefinition({
-          id: "minimax-m2.1-gs32",
-          name: "MiniMax M2.1 GS32",
-          reasoning: false,
-          cost: MINIMAX_LM_STUDIO_COST,
-          contextWindow: 196608,
-          maxTokens: 8192,
-        }),
-      ],
-    };
-  }
-
-  return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models, providers });
+  return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
 export function applyMinimaxHostedProviderConfig(
   cfg: OpenClawConfig,
-  params?: { baseUrl?: string },
+  _params?: { baseUrl?: string },
 ): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[MINIMAX_HOSTED_MODEL_REF] = {
@@ -59,26 +31,7 @@ export function applyMinimaxHostedProviderConfig(
     alias: models[MINIMAX_HOSTED_MODEL_REF]?.alias ?? "Minimax",
   };
 
-  const providers = { ...cfg.models?.providers };
-  const hostedModel = buildMinimaxModelDefinition({
-    id: MINIMAX_HOSTED_MODEL_ID,
-    cost: MINIMAX_HOSTED_COST,
-    contextWindow: DEFAULT_MINIMAX_CONTEXT_WINDOW,
-    maxTokens: DEFAULT_MINIMAX_MAX_TOKENS,
-  });
-  const existingProvider = providers.minimax;
-  const existingModels = Array.isArray(existingProvider?.models) ? existingProvider.models : [];
-  const hasHostedModel = existingModels.some((model) => model.id === MINIMAX_HOSTED_MODEL_ID);
-  const mergedModels = hasHostedModel ? existingModels : [...existingModels, hostedModel];
-  providers.minimax = {
-    ...existingProvider,
-    baseUrl: params?.baseUrl?.trim() || DEFAULT_MINIMAX_BASE_URL,
-    apiKey: "minimax",
-    api: "openai-completions",
-    models: mergedModels.length > 0 ? mergedModels : [hostedModel],
-  };
-
-  return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models, providers });
+  return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
 export function applyMinimaxConfig(cfg: OpenClawConfig): OpenClawConfig {
@@ -161,26 +114,6 @@ function applyMinimaxApiProviderConfigWithBaseUrl(
   cfg: OpenClawConfig,
   params: MinimaxApiProviderConfigParams,
 ): OpenClawConfig {
-  const providers = { ...cfg.models?.providers } as Record<string, ModelProviderConfig>;
-  const existingProvider = providers[params.providerId];
-  const existingModels = existingProvider?.models ?? [];
-  const apiModel = buildMinimaxApiModelDefinition(params.modelId);
-  const hasApiModel = existingModels.some((model) => model.id === params.modelId);
-  const mergedModels = hasApiModel ? existingModels : [...existingModels, apiModel];
-  const { apiKey: existingApiKey, ...existingProviderRest } = existingProvider ?? {
-    baseUrl: params.baseUrl,
-    models: [],
-  };
-  const resolvedApiKey = typeof existingApiKey === "string" ? existingApiKey : undefined;
-  const normalizedApiKey = resolvedApiKey?.trim() === "minimax" ? "" : resolvedApiKey;
-  providers[params.providerId] = {
-    ...existingProviderRest,
-    baseUrl: params.baseUrl,
-    api: "anthropic-messages",
-    ...(normalizedApiKey?.trim() ? { apiKey: normalizedApiKey } : {}),
-    models: mergedModels.length > 0 ? mergedModels : [apiModel],
-  };
-
   const models = { ...cfg.agents?.defaults?.models };
   const modelRef = `${params.providerId}/${params.modelId}`;
   models[modelRef] = {
@@ -188,17 +121,7 @@ function applyMinimaxApiProviderConfigWithBaseUrl(
     alias: "Minimax",
   };
 
-  return {
-    ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...cfg.agents?.defaults,
-        models,
-      },
-    },
-    models: { mode: cfg.models?.mode ?? "merge", providers },
-  };
+  return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
 function applyMinimaxApiConfigWithBaseUrl(

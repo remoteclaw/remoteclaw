@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { type OpenClawConfig, loadConfig } from "../config/config.js";
 import { isRecord } from "../utils.js";
 import { resolveOpenClawAgentDir } from "./agent-paths.js";
 import {
@@ -11,9 +10,7 @@ import {
   resolveImplicitProviders,
 } from "./models-config.providers.js";
 
-type ModelsConfig = NonNullable<OpenClawConfig["models"]>;
-
-const DEFAULT_MODE: NonNullable<ModelsConfig["mode"]> = "merge";
+const DEFAULT_MODE = "merge" as const;
 
 function mergeProviderModels(implicit: ProviderConfig, explicit: ProviderConfig): ProviderConfig {
   const implicitModels = Array.isArray(implicit.models) ? implicit.models : [];
@@ -102,19 +99,18 @@ async function readJson(pathname: string): Promise<unknown> {
 }
 
 export async function ensureOpenClawModelsJson(
-  config?: OpenClawConfig,
+  _config?: unknown,
   agentDirOverride?: string,
 ): Promise<{ agentDir: string; wrote: boolean }> {
-  const cfg = config ?? loadConfig();
   const agentDir = agentDirOverride?.trim() ? agentDirOverride.trim() : resolveOpenClawAgentDir();
 
-  const explicitProviders = cfg.models?.providers ?? {};
+  const explicitProviders: Record<string, ProviderConfig> = {};
   const implicitProviders = await resolveImplicitProviders({ agentDir, explicitProviders });
   const providers: Record<string, ProviderConfig> = mergeProviders({
     implicit: implicitProviders,
     explicit: explicitProviders,
   });
-  const implicitBedrock = await resolveImplicitBedrockProvider({ agentDir, config: cfg });
+  const implicitBedrock = await resolveImplicitBedrockProvider({ agentDir });
   if (implicitBedrock) {
     const existing = providers["amazon-bedrock"];
     providers["amazon-bedrock"] = existing
@@ -130,7 +126,7 @@ export async function ensureOpenClawModelsJson(
     return { agentDir, wrote: false };
   }
 
-  const mode = cfg.models?.mode ?? DEFAULT_MODE;
+  const mode = DEFAULT_MODE;
   const targetPath = path.join(agentDir, "models.json");
 
   let mergedProviders = providers;
@@ -138,10 +134,7 @@ export async function ensureOpenClawModelsJson(
   if (mode === "merge") {
     const existing = await readJson(targetPath);
     if (isRecord(existing) && isRecord(existing.providers)) {
-      const existingProviders = existing.providers as Record<
-        string,
-        NonNullable<ModelsConfig["providers"]>[string]
-      >;
+      const existingProviders = existing.providers as Record<string, ProviderConfig>;
       mergedProviders = { ...existingProviders, ...providers };
     }
   }

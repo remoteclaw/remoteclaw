@@ -4,7 +4,6 @@ import { setTimeout as delay } from "node:timers/promises";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { makeTempWorkspace } from "../test-helpers/workspace.js";
 import { withEnvAsync } from "../test-utils/env.js";
-import { MINIMAX_API_BASE_URL, MINIMAX_CN_API_BASE_URL } from "./onboard-auth.js";
 import {
   createThrowingRuntime,
   readJsonFile,
@@ -180,7 +179,6 @@ describe("onboard (non-interactive): provider auth", () => {
 
       expect(cfg.auth?.profiles?.["minimax:default"]?.provider).toBe("minimax");
       expect(cfg.auth?.profiles?.["minimax:default"]?.mode).toBe("api_key");
-      expect(cfg.models?.providers?.minimax?.baseUrl).toBe(MINIMAX_API_BASE_URL);
       expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
       await expectApiKeyProfile({
         profileId: "minimax:default",
@@ -199,7 +197,6 @@ describe("onboard (non-interactive): provider auth", () => {
 
       expect(cfg.auth?.profiles?.["minimax-cn:default"]?.provider).toBe("minimax-cn");
       expect(cfg.auth?.profiles?.["minimax-cn:default"]?.mode).toBe("api_key");
-      expect(cfg.models?.providers?.["minimax-cn"]?.baseUrl).toBe(MINIMAX_CN_API_BASE_URL);
       expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
       await expectApiKeyProfile({
         profileId: "minimax-cn:default",
@@ -218,7 +215,6 @@ describe("onboard (non-interactive): provider auth", () => {
 
       expect(cfg.auth?.profiles?.["zai:default"]?.provider).toBe("zai");
       expect(cfg.auth?.profiles?.["zai:default"]?.mode).toBe("api_key");
-      expect(cfg.models?.providers?.zai?.baseUrl).toBe("https://api.z.ai/api/paas/v4");
       expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
       await expectApiKeyProfile({ profileId: "zai:default", provider: "zai", key: "zai-test-key" });
     });
@@ -231,9 +227,9 @@ describe("onboard (non-interactive): provider auth", () => {
         zaiApiKey: "zai-test-key",
       });
 
-      expect(cfg.models?.providers?.zai?.baseUrl).toBe(
-        "https://open.bigmodel.cn/api/coding/paas/v4",
-      );
+      // models.providers.zai assertion removed: config.models.providers was gutted.
+      // Verify auth profile was created instead.
+      expect(cfg.auth?.profiles?.["zai:default"]?.provider).toBe("zai");
     });
   });
 
@@ -461,11 +457,7 @@ describe("onboard (non-interactive): provider auth", () => {
 
       const cfg = await readJsonFile<ProviderAuthConfigSnapshot>(configPath);
 
-      const provider = cfg.models?.providers?.["custom-llm-example-com"];
-      expect(provider?.baseUrl).toBe("https://llm.example.com/v1");
-      expect(provider?.api).toBe("anthropic-messages");
-      expect(provider?.apiKey).toBe("custom-test-key");
-      expect(provider?.models?.some((model) => model.id === "foo-large")).toBe(true);
+      // models.providers assertions removed: config.models.providers was gutted.
       expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
     });
   });
@@ -483,12 +475,7 @@ describe("onboard (non-interactive): provider auth", () => {
 
         const cfg = await readJsonFile<ProviderAuthConfigSnapshot>(configPath);
 
-        expect(cfg.models?.providers?.["custom-models-custom-local"]?.baseUrl).toBe(
-          "https://models.custom.local/v1",
-        );
-        expect(cfg.models?.providers?.["custom-models-custom-local"]?.api).toBe(
-          "openai-completions",
-        );
+        // models.providers assertions removed: config.models.providers was gutted.
         expect(cfg.agents?.defaults?.model?.primary).toBeUndefined();
       },
     );
@@ -500,7 +487,8 @@ describe("onboard (non-interactive): provider auth", () => {
       async ({ configPath, runtime }) => {
         process.env.CUSTOM_API_KEY = "custom-env-key";
         await runCustomLocalNonInteractive(runtime);
-        expect(await readCustomLocalProviderApiKey(configPath)).toBe("custom-env-key");
+        // models.providers was gutted; apiKey is no longer stored in config.
+        expect(await readCustomLocalProviderApiKey(configPath)).toBeUndefined();
       },
     );
   });
@@ -518,7 +506,8 @@ describe("onboard (non-interactive): provider auth", () => {
           },
         });
         await runCustomLocalNonInteractive(runtime);
-        expect(await readCustomLocalProviderApiKey(configPath)).toBe("custom-profile-key");
+        // models.providers was gutted; apiKey is no longer stored in config.
+        expect(await readCustomLocalProviderApiKey(configPath)).toBeUndefined();
       },
     );
   });

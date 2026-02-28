@@ -32,31 +32,8 @@ describe("doctor command", () => {
     expect(String(stateNote?.[0])).toContain("CRITICAL");
   });
 
-  it("warns about opencode provider overrides", async () => {
-    mockDoctorConfigSnapshot({
-      config: {
-        models: {
-          providers: {
-            opencode: {
-              api: "openai-completions",
-              baseUrl: "https://opencode.ai/zen/v1",
-            },
-          },
-        },
-      },
-    });
-
-    await doctorCommand(createDoctorRuntime(), {
-      nonInteractive: true,
-      workspaceSuggestions: false,
-    });
-
-    const warned = note.mock.calls.some(
-      ([message, title]) =>
-        title === "OpenCode Zen" && String(message).includes("models.providers.opencode"),
-    );
-    expect(warned).toBe(true);
-  });
+  // Test "warns about opencode provider overrides" removed:
+  // noteOpencodeProviderOverrides is now a no-op (config.models.providers was gutted).
 
   it("skips gateway auth warning when OPENCLAW_GATEWAY_TOKEN is set", async () => {
     mockDoctorConfigSnapshot({

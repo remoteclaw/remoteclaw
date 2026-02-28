@@ -58,26 +58,6 @@ describe("resolveModelAuthMode", () => {
     expect(resolveModelAuthMode("openai", undefined, store)).toBe("mixed");
   });
 
-  it("returns aws-sdk when provider auth is overridden", () => {
-    expect(
-      resolveModelAuthMode(
-        "amazon-bedrock",
-        {
-          models: {
-            providers: {
-              "amazon-bedrock": {
-                baseUrl: "https://bedrock-runtime.us-east-1.amazonaws.com",
-                models: [],
-                auth: "aws-sdk",
-              },
-            },
-          },
-        },
-        { version: 1, profiles: {} },
-      ),
-    ).toBe("aws-sdk");
-  });
-
   it("returns aws-sdk for bedrock alias without explicit auth override", () => {
     expect(resolveModelAuthMode("bedrock", undefined, { version: 1, profiles: {} })).toBe(
       "aws-sdk",

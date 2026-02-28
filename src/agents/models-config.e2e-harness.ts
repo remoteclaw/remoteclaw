@@ -122,26 +122,4 @@ export const MODELS_CONFIG_IMPLICIT_ENV_VARS = [
   "AWS_SHARED_CREDENTIALS_FILE",
 ];
 
-export const CUSTOM_PROXY_MODELS_CONFIG: OpenClawConfig = {
-  models: {
-    providers: {
-      "custom-proxy": {
-        baseUrl: "http://localhost:4000/v1",
-        apiKey: "TEST_KEY",
-        api: "openai-completions",
-        models: [
-          {
-            id: "llama-3.1-8b",
-            name: "Llama 3.1 8B (Proxy)",
-            api: "openai-completions",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 128000,
-            maxTokens: 32000,
-          },
-        ],
-      },
-    },
-  },
-};
+export const CUSTOM_PROXY_MODELS_CONFIG: OpenClawConfig = {};

@@ -20,21 +20,16 @@ import {
   applyOpenrouterConfig,
   applyOpenrouterProviderConfig,
   applySyntheticConfig,
-  applySyntheticProviderConfig,
   applyXaiConfig,
   applyXaiProviderConfig,
   applyXiaomiConfig,
-  applyXiaomiProviderConfig,
   applyZaiConfig,
   applyZaiProviderConfig,
   OPENROUTER_DEFAULT_MODEL_REF,
   MISTRAL_DEFAULT_MODEL_REF,
-  SYNTHETIC_DEFAULT_MODEL_ID,
   XAI_DEFAULT_MODEL_REF,
   setMinimaxApiKey,
   writeOAuthCredentials,
-  ZAI_CODING_CN_BASE_URL,
-  ZAI_GLOBAL_BASE_URL,
 } from "./onboard-auth.js";
 import {
   createAuthTestLifecycle,
@@ -42,7 +37,7 @@ import {
   setupAuthTestEnv,
 } from "./test-wizard-helpers.js";
 
-function createLegacyProviderConfig(params: {
+function createLegacyProviderConfig(_params: {
   providerId: string;
   api: "anthropic-messages" | "openai-completions" | "openai-responses";
   modelId?: string;
@@ -50,28 +45,7 @@ function createLegacyProviderConfig(params: {
   baseUrl?: string;
   apiKey?: string;
 }): OpenClawConfig {
-  return {
-    models: {
-      providers: {
-        [params.providerId]: {
-          baseUrl: params.baseUrl ?? "https://old.example.com",
-          apiKey: params.apiKey ?? "old-key",
-          api: params.api,
-          models: [
-            {
-              id: params.modelId ?? "old-model",
-              name: params.modelName ?? "Old",
-              reasoning: false,
-              input: ["text"],
-              cost: { input: 1, output: 2, cacheRead: 0, cacheWrite: 0 },
-              contextWindow: 1000,
-              maxTokens: 100,
-            },
-          ],
-        },
-      },
-    },
-  } as OpenClawConfig;
+  return {} as OpenClawConfig;
 }
 
 const EXPECTED_FALLBACKS = ["anthropic/claude-opus-4-5"] as const;
@@ -359,17 +333,9 @@ describe("applyAuthProfileConfig", () => {
 });
 
 describe("applyMinimaxApiConfig", () => {
-  it("adds minimax provider with correct settings", () => {
+  it("sets agent default models for minimax", () => {
     const cfg = applyMinimaxApiConfig({});
-    expect(cfg.models?.providers?.minimax).toMatchObject({
-      baseUrl: "https://api.minimax.io/anthropic",
-      api: "anthropic-messages",
-    });
-  });
-
-  it("does not set reasoning for non-reasoning models", () => {
-    const cfg = applyMinimaxApiConfig({}, "MiniMax-M2.1");
-    expect(cfg.models?.providers?.minimax?.models[0]?.reasoning).toBe(false);
+    expect(cfg.agents?.defaults?.models).toBeDefined();
   });
 
   it("preserves existing model params when adding alias", () => {
@@ -394,54 +360,14 @@ describe("applyMinimaxApiConfig", () => {
     });
   });
 
-  it("merges existing minimax provider models", () => {
+  it("applies minimax config from legacy provider config", () => {
     const cfg = applyMinimaxApiConfig(
       createLegacyProviderConfig({
         providerId: "minimax",
         api: "openai-completions",
       }),
     );
-    expect(cfg.models?.providers?.minimax?.baseUrl).toBe("https://api.minimax.io/anthropic");
-    expect(cfg.models?.providers?.minimax?.api).toBe("anthropic-messages");
-    expect(cfg.models?.providers?.minimax?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.minimax?.models.map((m) => m.id)).toEqual([
-      "old-model",
-      "MiniMax-M2.5",
-    ]);
-  });
-
-  it("preserves other providers when adding minimax", () => {
-    const cfg = applyMinimaxApiConfig({
-      models: {
-        providers: {
-          anthropic: {
-            baseUrl: "https://api.anthropic.com",
-            apiKey: "anthropic-key",
-            api: "anthropic-messages",
-            models: [
-              {
-                id: "claude-opus-4-5",
-                name: "Claude Opus 4.5",
-                reasoning: false,
-                input: ["text"],
-                cost: { input: 15, output: 75, cacheRead: 0, cacheWrite: 0 },
-                contextWindow: 200000,
-                maxTokens: 8192,
-              },
-            ],
-          },
-        },
-      },
-    });
-    expect(cfg.models?.providers?.anthropic).toBeDefined();
-    expect(cfg.models?.providers?.minimax).toBeDefined();
-  });
-
-  it("preserves existing models mode", () => {
-    const cfg = applyMinimaxApiConfig({
-      models: { mode: "replace", providers: {} },
-    });
-    expect(cfg.models?.mode).toBe("replace");
+    expect(cfg.agents?.defaults?.models).toBeDefined();
   });
 });
 
@@ -458,51 +384,23 @@ describe("provider config helpers", () => {
 });
 
 describe("applyZaiConfig", () => {
-  it("adds zai provider with correct settings", () => {
+  it("sets agent default models for zai", () => {
     const cfg = applyZaiConfig({});
-    expect(cfg.models?.providers?.zai).toMatchObject({
-      // Default: general (non-coding) endpoint. Coding Plan endpoint is detected during onboarding.
-      baseUrl: ZAI_GLOBAL_BASE_URL,
-      api: "openai-completions",
-    });
-    const ids = cfg.models?.providers?.zai?.models?.map((m) => m.id);
-    expect(ids).toContain("glm-5");
-    expect(ids).toContain("glm-4.7");
-    expect(ids).toContain("glm-4.7-flash");
-    expect(ids).toContain("glm-4.7-flashx");
+    expect(cfg.agents?.defaults?.models).toBeDefined();
   });
 
-  it("supports CN endpoint for supported coding models", () => {
+  it("does not set default primary model for CN endpoint", () => {
     for (const modelId of ["glm-4.7-flash", "glm-4.7-flashx"] as const) {
       const cfg = applyZaiConfig({}, { endpoint: "coding-cn", modelId });
-      expect(cfg.models?.providers?.zai?.baseUrl).toBe(ZAI_CODING_CN_BASE_URL);
       expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
     }
   });
 });
 
 describe("applySyntheticConfig", () => {
-  it("adds synthetic provider with correct settings", () => {
+  it("sets agent default models for synthetic", () => {
     const cfg = applySyntheticConfig({});
-    expect(cfg.models?.providers?.synthetic).toMatchObject({
-      baseUrl: "https://api.synthetic.new/anthropic",
-      api: "anthropic-messages",
-    });
-  });
-
-  it("merges existing synthetic provider models", () => {
-    const cfg = applySyntheticProviderConfig(
-      createLegacyProviderConfig({
-        providerId: "synthetic",
-        api: "openai-completions",
-      }),
-    );
-    expect(cfg.models?.providers?.synthetic?.baseUrl).toBe("https://api.synthetic.new/anthropic");
-    expect(cfg.models?.providers?.synthetic?.api).toBe("anthropic-messages");
-    expect(cfg.models?.providers?.synthetic?.apiKey).toBe("old-key");
-    const ids = cfg.models?.providers?.synthetic?.models.map((m) => m.id);
-    expect(ids).toContain("old-model");
-    expect(ids).toContain(SYNTHETIC_DEFAULT_MODEL_ID);
+    expect(cfg.agents?.defaults?.models).toBeDefined();
   });
 });
 
@@ -527,48 +425,23 @@ describe("primary model defaults", () => {
 });
 
 describe("applyXiaomiConfig", () => {
-  it("adds Xiaomi provider with correct settings", () => {
+  it("sets agent default models for xiaomi and does not set primary model", () => {
     const cfg = applyXiaomiConfig({});
-    expect(cfg.models?.providers?.xiaomi).toMatchObject({
-      baseUrl: "https://api.xiaomimimo.com/anthropic",
-      api: "anthropic-messages",
-    });
+    expect(cfg.agents?.defaults?.models).toBeDefined();
     expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
-  });
-
-  it("merges Xiaomi models and keeps existing provider overrides", () => {
-    const cfg = applyXiaomiProviderConfig(
-      createLegacyProviderConfig({
-        providerId: "xiaomi",
-        api: "openai-completions",
-        modelId: "custom-model",
-        modelName: "Custom",
-      }),
-    );
-
-    expect(cfg.models?.providers?.xiaomi?.baseUrl).toBe("https://api.xiaomimimo.com/anthropic");
-    expect(cfg.models?.providers?.xiaomi?.api).toBe("anthropic-messages");
-    expect(cfg.models?.providers?.xiaomi?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.xiaomi?.models.map((m) => m.id)).toEqual([
-      "custom-model",
-      "mimo-v2-flash",
-    ]);
   });
 });
 
 describe("applyXaiConfig", () => {
-  it("adds xAI provider with correct settings", () => {
+  it("sets agent default models for xai and does not set primary model", () => {
     const cfg = applyXaiConfig({});
-    expect(cfg.models?.providers?.xai).toMatchObject({
-      baseUrl: "https://api.x.ai/v1",
-      api: "openai-completions",
-    });
+    expect(cfg.agents?.defaults?.models).toBeDefined();
     expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
   });
 });
 
 describe("applyXaiProviderConfig", () => {
-  it("merges xAI models and keeps existing provider overrides", () => {
+  it("sets agent default models for xai provider config", () => {
     const cfg = applyXaiProviderConfig(
       createLegacyProviderConfig({
         providerId: "xai",
@@ -577,27 +450,20 @@ describe("applyXaiProviderConfig", () => {
         modelName: "Custom",
       }),
     );
-
-    expect(cfg.models?.providers?.xai?.baseUrl).toBe("https://api.x.ai/v1");
-    expect(cfg.models?.providers?.xai?.api).toBe("openai-completions");
-    expect(cfg.models?.providers?.xai?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.xai?.models.map((m) => m.id)).toEqual(["custom-model", "grok-4"]);
+    expect(cfg.agents?.defaults?.models).toBeDefined();
   });
 });
 
 describe("applyMistralConfig", () => {
-  it("adds Mistral provider with correct settings", () => {
+  it("sets agent default models for mistral and does not set primary model", () => {
     const cfg = applyMistralConfig({});
-    expect(cfg.models?.providers?.mistral).toMatchObject({
-      baseUrl: "https://api.mistral.ai/v1",
-      api: "openai-completions",
-    });
+    expect(cfg.agents?.defaults?.models).toBeDefined();
     expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
   });
 });
 
 describe("applyMistralProviderConfig", () => {
-  it("merges Mistral models and keeps existing provider overrides", () => {
+  it("sets agent default models for mistral provider config", () => {
     const cfg = applyMistralProviderConfig(
       createLegacyProviderConfig({
         providerId: "mistral",
@@ -606,19 +472,7 @@ describe("applyMistralProviderConfig", () => {
         modelName: "Custom",
       }),
     );
-
-    expect(cfg.models?.providers?.mistral?.baseUrl).toBe("https://api.mistral.ai/v1");
-    expect(cfg.models?.providers?.mistral?.api).toBe("openai-completions");
-    expect(cfg.models?.providers?.mistral?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.mistral?.models.map((m) => m.id)).toEqual([
-      "custom-model",
-      "mistral-large-latest",
-    ]);
-    const mistralDefault = cfg.models?.providers?.mistral?.models.find(
-      (model) => model.id === "mistral-large-latest",
-    );
-    expect(mistralDefault?.contextWindow).toBe(262144);
-    expect(mistralDefault?.maxTokens).toBe(262144);
+    expect(cfg.agents?.defaults?.models).toBeDefined();
   });
 });
 
@@ -691,7 +545,7 @@ describe("allowlist provider helpers", () => {
 });
 
 describe("applyLitellmProviderConfig", () => {
-  it("preserves existing baseUrl and api key while adding the default model", () => {
+  it("sets agent default models for litellm provider config", () => {
     const cfg = applyLitellmProviderConfig(
       createLegacyProviderConfig({
         providerId: "litellm",
@@ -702,14 +556,7 @@ describe("applyLitellmProviderConfig", () => {
         apiKey: "  old-key  ",
       }),
     );
-
-    expect(cfg.models?.providers?.litellm?.baseUrl).toBe("https://litellm.example/v1");
-    expect(cfg.models?.providers?.litellm?.api).toBe("openai-completions");
-    expect(cfg.models?.providers?.litellm?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.litellm?.models.map((m) => m.id)).toEqual([
-      "custom-model",
-      "claude-opus-4-6",
-    ]);
+    expect(cfg.agents?.defaults?.models).toBeDefined();
   });
 });
 

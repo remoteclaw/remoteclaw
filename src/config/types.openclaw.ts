@@ -19,7 +19,6 @@ import type {
   CommandsConfig,
   MessagesConfig,
 } from "./types.messages.js";
-import type { ModelsConfig } from "./types.models.js";
 import type { NodeHostConfig } from "./types.node-host.js";
 import type { PluginsConfig } from "./types.plugins.js";
 import type { ToolsConfig } from "./types.tools.js";
@@ -86,7 +85,6 @@ export type OpenClawConfig = {
     };
   };
   plugins?: PluginsConfig;
-  models?: ModelsConfig;
   nodeHost?: NodeHostConfig;
   agents?: AgentsConfig;
   tools?: ToolsConfig;

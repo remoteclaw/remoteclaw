@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 
@@ -40,7 +41,7 @@ function makeRuntime(): RuntimeEnv {
 const noopPrompter = {} as WizardPrompter;
 
 describe("promptAuthConfig", () => {
-  it("passes through Kilo provider config from applyAuthChoice", async () => {
+  it("passes through agent config from applyAuthChoice", async () => {
     mocks.promptAuthChoiceGrouped.mockResolvedValue("kilocode-api-key");
     mocks.applyAuthChoice.mockResolvedValue({
       config: {
@@ -49,29 +50,16 @@ describe("promptAuthConfig", () => {
             model: { primary: "kilocode/anthropic/claude-opus-4.6" },
           },
         },
-        models: {
-          providers: {
-            kilocode: {
-              baseUrl: "https://api.kilo.ai/api/gateway/",
-              api: "openai-completions",
-              models: [
-                { id: "anthropic/claude-opus-4.6", name: "Claude Opus 4.6" },
-                { id: "minimax/minimax-m2.5:free", name: "MiniMax M2.5 (Free)" },
-              ],
-            },
-          },
-        },
       },
     });
 
     const result = await promptAuthConfig({}, makeRuntime(), noopPrompter);
-    expect(result.models?.providers?.kilocode?.models?.map((model) => model.id)).toEqual([
-      "anthropic/claude-opus-4.6",
-      "minimax/minimax-m2.5:free",
-    ]);
+    expect(resolveAgentModelPrimaryValue(result.agents?.defaults?.model)).toBe(
+      "kilocode/anthropic/claude-opus-4.6",
+    );
   });
 
-  it("does not mutate provider model catalogs", async () => {
+  it("does not mutate agent defaults", async () => {
     mocks.promptAuthChoiceGrouped.mockResolvedValue("kilocode-api-key");
     mocks.applyAuthChoice.mockResolvedValue({
       config: {
@@ -80,33 +68,12 @@ describe("promptAuthConfig", () => {
             model: { primary: "kilocode/anthropic/claude-opus-4.6" },
           },
         },
-        models: {
-          providers: {
-            kilocode: {
-              baseUrl: "https://api.kilo.ai/api/gateway/",
-              api: "openai-completions",
-              models: [
-                { id: "anthropic/claude-opus-4.6", name: "Claude Opus 4.6" },
-                { id: "minimax/minimax-m2.5:free", name: "MiniMax M2.5 (Free)" },
-              ],
-            },
-            minimax: {
-              baseUrl: "https://api.minimax.io/anthropic",
-              api: "anthropic-messages",
-              models: [{ id: "MiniMax-M2.1", name: "MiniMax M2.1" }],
-            },
-          },
-        },
       },
     });
 
     const result = await promptAuthConfig({}, makeRuntime(), noopPrompter);
-    expect(result.models?.providers?.kilocode?.models?.map((model) => model.id)).toEqual([
-      "anthropic/claude-opus-4.6",
-      "minimax/minimax-m2.5:free",
-    ]);
-    expect(result.models?.providers?.minimax?.models?.map((model) => model.id)).toEqual([
-      "MiniMax-M2.1",
-    ]);
+    expect(resolveAgentModelPrimaryValue(result.agents?.defaults?.model)).toBe(
+      "kilocode/anthropic/claude-opus-4.6",
+    );
   });
 });

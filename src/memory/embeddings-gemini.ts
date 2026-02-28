@@ -165,11 +165,10 @@ export async function resolveGeminiEmbeddingClient(
         "google",
       );
 
-  const providerConfig = options.config.models?.providers?.google;
-  const rawBaseUrl = remoteBaseUrl || providerConfig?.baseUrl?.trim() || DEFAULT_GEMINI_BASE_URL;
+  const rawBaseUrl = remoteBaseUrl || DEFAULT_GEMINI_BASE_URL;
   const baseUrl = normalizeGeminiBaseUrl(rawBaseUrl);
   const ssrfPolicy = buildRemoteBaseUrlPolicy(baseUrl);
-  const headerOverrides = Object.assign({}, providerConfig?.headers, remote?.headers);
+  const headerOverrides = Object.assign({}, remote?.headers);
   const headers: Record<string, string> = {
     ...headerOverrides,
   };

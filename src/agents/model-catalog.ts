@@ -70,8 +70,8 @@ function normalizeConfiguredModelInput(input: unknown): Array<"text" | "image"> 
   return normalized.length > 0 ? normalized : undefined;
 }
 
-function readConfiguredOptInProviderModels(config: OpenClawConfig): ModelCatalogEntry[] {
-  const providers = config.models?.providers;
+function readConfiguredOptInProviderModels(_config: OpenClawConfig): ModelCatalogEntry[] {
+  const providers: Record<string, unknown> | undefined = undefined;
   if (!providers || typeof providers !== "object") {
     return [];
   }

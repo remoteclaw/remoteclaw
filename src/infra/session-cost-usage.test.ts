@@ -82,31 +82,15 @@ describe("session cost usage", () => {
       "utf-8",
     );
 
-    const config = {
-      models: {
-        providers: {
-          openai: {
-            models: [
-              {
-                id: "gpt-5.2",
-                cost: {
-                  input: 1,
-                  output: 2,
-                  cacheRead: 0,
-                  cacheWrite: 0,
-                },
-              },
-            ],
-          },
-        },
-      },
-    } as unknown as OpenClawConfig;
+    const config = {} as unknown as OpenClawConfig;
 
     await withStateDir(root, async () => {
       const summary = await loadCostUsageSummary({ days: 30, config });
       expect(summary.daily.length).toBe(1);
       expect(summary.totals.totalTokens).toBe(50);
-      expect(summary.totals.totalCost).toBeCloseTo(0.03003, 5);
+      // Only explicit cost.total from log entries counts; pricing fallback no longer works
+      // because resolveModelCostConfig is now a no-op. Entry 1: $0.03, Entry 2: $0.
+      expect(summary.totals.totalCost).toBeCloseTo(0.03, 5);
     });
   });
 

@@ -98,6 +98,9 @@ class SecurePrefs(context: Context) {
   private val _talkEnabled = MutableStateFlow(prefs.getBoolean("talk.enabled", false))
   val talkEnabled: StateFlow<Boolean> = _talkEnabled
 
+  private val _speakerEnabled = MutableStateFlow(plainPrefs.getBoolean("voice.speakerEnabled", true))
+  val speakerEnabled: StateFlow<Boolean> = _speakerEnabled
+
   fun setLastDiscoveredStableId(value: String) {
     val trimmed = value.trim()
     prefs.edit { putString("gateway.lastDiscoveredStableID", trimmed) }
@@ -262,6 +265,11 @@ class SecurePrefs(context: Context) {
   fun setTalkEnabled(value: Boolean) {
     prefs.edit { putBoolean("talk.enabled", value) }
     _talkEnabled.value = value
+  }
+
+  fun setSpeakerEnabled(value: Boolean) {
+    plainPrefs.edit { putBoolean("voice.speakerEnabled", value) }
+    _speakerEnabled.value = value
   }
 
   private fun loadVoiceWakeMode(): VoiceWakeMode {

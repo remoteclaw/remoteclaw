@@ -53,6 +53,7 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "tts.providers",
     "models.list",
     "tools.catalog",
+    "plugin:tools:list",
     "agents.list",
     "agent.identity.get",
     "voicewake.get",
@@ -94,6 +95,7 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "push.test",
     "hooks.tool.before",
     "hooks.tool.after",
+    "plugin:tools:invoke",
   ],
   [ADMIN_SCOPE]: [
     "channels.logout",

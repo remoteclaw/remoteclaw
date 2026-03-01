@@ -65,7 +65,7 @@ describe("tool hook wrapping", () => {
 
   it("fires hooks.tool.before when an MCP tool is invoked", async () => {
     // oxlint-disable-next-line typescript/no-explicit-any
-    registerAllTools(mockServer as any, ctx);
+    await registerAllTools(mockServer as any, ctx);
 
     const { handler } = mockServer.registeredTools.get("sessions_list")!;
     await handler({ limit: 10 });
@@ -85,7 +85,7 @@ describe("tool hook wrapping", () => {
 
   it("fires hooks.tool.after with durationMs after tool execution", async () => {
     // oxlint-disable-next-line typescript/no-explicit-any
-    registerAllTools(mockServer as any, ctx);
+    await registerAllTools(mockServer as any, ctx);
 
     const { handler } = mockServer.registeredTools.get("sessions_list")!;
     await handler({ limit: 10 });
@@ -104,7 +104,7 @@ describe("tool hook wrapping", () => {
 
   it("fires hooks in order: before, tool, after", async () => {
     // oxlint-disable-next-line typescript/no-explicit-any
-    registerAllTools(mockServer as any, ctx);
+    await registerAllTools(mockServer as any, ctx);
 
     const { handler } = mockServer.registeredTools.get("sessions_list")!;
     await handler({ limit: 10 });
@@ -128,7 +128,7 @@ describe("tool hook wrapping", () => {
     });
 
     // oxlint-disable-next-line typescript/no-explicit-any
-    registerAllTools(mockServer as any, ctx);
+    await registerAllTools(mockServer as any, ctx);
 
     const { handler } = mockServer.registeredTools.get("sessions_list")!;
     const result = await handler({ limit: 10 });

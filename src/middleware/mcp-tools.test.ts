@@ -3,6 +3,11 @@ import type { McpHandlerContext } from "./mcp-handlers/context.js";
 import { McpSideEffectsWriter } from "./mcp-side-effects.js";
 import { registerAllTools } from "./mcp-tools.js";
 
+// Mock registerPluginTools so it doesn't call the real gateway
+vi.mock("./mcp-plugin-tools.js", () => ({
+  registerPluginTools: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Create a minimal mock McpServer
 function createMockServer() {
   const registeredTools = new Map<string, { description?: string }>();
@@ -40,15 +45,15 @@ describe("registerAllTools", () => {
     ctx = createMockContext();
   });
 
-  it("registers exactly 29 tools", () => {
+  it("registers exactly 29 core tools", async () => {
     // oxlint-disable-next-line typescript/no-explicit-any
-    registerAllTools(mockServer as any, ctx);
+    await registerAllTools(mockServer as any, ctx);
     expect(mockServer.registerTool).toHaveBeenCalledTimes(29);
   });
 
-  it("registers all session management tools", () => {
+  it("registers all session management tools", async () => {
     // oxlint-disable-next-line typescript/no-explicit-any
-    registerAllTools(mockServer as any, ctx);
+    await registerAllTools(mockServer as any, ctx);
     const names = [...mockServer.registeredTools.keys()];
     expect(names).toContain("sessions_list");
     expect(names).toContain("sessions_history");
@@ -59,9 +64,9 @@ describe("registerAllTools", () => {
     expect(names).toContain("subagents");
   });
 
-  it("registers all channel messaging tools", () => {
+  it("registers all channel messaging tools", async () => {
     // oxlint-disable-next-line typescript/no-explicit-any
-    registerAllTools(mockServer as any, ctx);
+    await registerAllTools(mockServer as any, ctx);
     const names = [...mockServer.registeredTools.keys()];
     expect(names).toContain("message_send");
     expect(names).toContain("message_reply");
@@ -75,9 +80,9 @@ describe("registerAllTools", () => {
     expect(names).toContain("message_read");
   });
 
-  it("registers all cron scheduling tools", () => {
+  it("registers all cron scheduling tools", async () => {
     // oxlint-disable-next-line typescript/no-explicit-any
-    registerAllTools(mockServer as any, ctx);
+    await registerAllTools(mockServer as any, ctx);
     const names = [...mockServer.registeredTools.keys()];
     expect(names).toContain("cron_status");
     expect(names).toContain("cron_list");
@@ -88,9 +93,9 @@ describe("registerAllTools", () => {
     expect(names).toContain("cron_runs");
   });
 
-  it("registers all gateway admin tools", () => {
+  it("registers all gateway admin tools", async () => {
     // oxlint-disable-next-line typescript/no-explicit-any
-    registerAllTools(mockServer as any, ctx);
+    await registerAllTools(mockServer as any, ctx);
     const names = [...mockServer.registeredTools.keys()];
     expect(names).toContain("gateway_restart");
     expect(names).toContain("gateway_config_get");
@@ -99,35 +104,35 @@ describe("registerAllTools", () => {
     expect(names).toContain("gateway_config_schema");
   });
 
-  it("registers no duplicate tool names", () => {
+  it("registers no duplicate tool names", async () => {
     // oxlint-disable-next-line typescript/no-explicit-any
-    registerAllTools(mockServer as any, ctx);
+    await registerAllTools(mockServer as any, ctx);
     const names = mockServer.registerTool.mock.calls.map((call: unknown[]) => call[0]);
     const uniqueNames = new Set(names);
     expect(uniqueNames.size).toBe(names.length);
   });
 
-  it("every tool has a description", () => {
+  it("every tool has a description", async () => {
     // oxlint-disable-next-line typescript/no-explicit-any
-    registerAllTools(mockServer as any, ctx);
+    await registerAllTools(mockServer as any, ctx);
     for (const [name, config] of mockServer.registeredTools) {
       expect(config.description, `tool "${name}" should have a description`).toBeTruthy();
     }
   });
 
   describe("owner-only tool gating", () => {
-    it("registers only 17 tools for non-owner senders", () => {
+    it("registers only 17 tools for non-owner senders", async () => {
       ctx = createMockContext({ senderIsOwner: false });
       // oxlint-disable-next-line typescript/no-explicit-any
-      registerAllTools(mockServer as any, ctx);
+      await registerAllTools(mockServer as any, ctx);
       // 7 session + 10 message = 17 (no cron or gateway)
       expect(mockServer.registerTool).toHaveBeenCalledTimes(17);
     });
 
-    it("does NOT register cron tools for non-owner senders", () => {
+    it("does NOT register cron tools for non-owner senders", async () => {
       ctx = createMockContext({ senderIsOwner: false });
       // oxlint-disable-next-line typescript/no-explicit-any
-      registerAllTools(mockServer as any, ctx);
+      await registerAllTools(mockServer as any, ctx);
       const names = [...mockServer.registeredTools.keys()];
       expect(names).not.toContain("cron_status");
       expect(names).not.toContain("cron_list");
@@ -138,10 +143,10 @@ describe("registerAllTools", () => {
       expect(names).not.toContain("cron_runs");
     });
 
-    it("does NOT register gateway tools for non-owner senders", () => {
+    it("does NOT register gateway tools for non-owner senders", async () => {
       ctx = createMockContext({ senderIsOwner: false });
       // oxlint-disable-next-line typescript/no-explicit-any
-      registerAllTools(mockServer as any, ctx);
+      await registerAllTools(mockServer as any, ctx);
       const names = [...mockServer.registeredTools.keys()];
       expect(names).not.toContain("gateway_restart");
       expect(names).not.toContain("gateway_config_get");
@@ -150,10 +155,10 @@ describe("registerAllTools", () => {
       expect(names).not.toContain("gateway_config_schema");
     });
 
-    it("still registers session and message tools for non-owner senders", () => {
+    it("still registers session and message tools for non-owner senders", async () => {
       ctx = createMockContext({ senderIsOwner: false });
       // oxlint-disable-next-line typescript/no-explicit-any
-      registerAllTools(mockServer as any, ctx);
+      await registerAllTools(mockServer as any, ctx);
       const names = [...mockServer.registeredTools.keys()];
       // Session tools
       expect(names).toContain("sessions_list");
@@ -165,10 +170,10 @@ describe("registerAllTools", () => {
       expect(names).toContain("message_broadcast");
     });
 
-    it("registers all 29 tools for owner senders", () => {
+    it("registers all 29 core tools for owner senders", async () => {
       ctx = createMockContext({ senderIsOwner: true });
       // oxlint-disable-next-line typescript/no-explicit-any
-      registerAllTools(mockServer as any, ctx);
+      await registerAllTools(mockServer as any, ctx);
       expect(mockServer.registerTool).toHaveBeenCalledTimes(29);
     });
   });

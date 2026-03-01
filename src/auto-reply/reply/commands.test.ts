@@ -1007,3 +1007,39 @@ describe("handleCommands /tts", () => {
     expect(result.reply?.text).toContain("TTS status");
   });
 });
+
+describe("abort trigger command", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("rejects unauthorized natural-language abort triggers", async () => {
+    const cfg = {
+      commands: { text: true },
+      channels: { whatsapp: { allowFrom: ["*"] } },
+    } as RemoteClawConfig;
+    const params = buildParams("stop", cfg);
+    const sessionEntry: SessionEntry = {
+      sessionId: "session-1",
+      updatedAt: Date.now(),
+      abortedLastRun: false,
+    };
+    const sessionStore: Record<string, SessionEntry> = {
+      [params.sessionKey]: sessionEntry,
+    };
+
+    const result = await handleCommands({
+      ...params,
+      sessionEntry,
+      sessionStore,
+      command: {
+        ...params.command,
+        isAuthorizedSender: false,
+        senderId: "unauthorized",
+      },
+    });
+
+    expect(result).toEqual({ shouldContinue: false });
+    expect(sessionStore[params.sessionKey]?.abortedLastRun).toBe(false);
+  });
+});

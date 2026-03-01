@@ -1,4 +1,3 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import {
   parseAvailableTags,
   readNumberParam,
@@ -10,6 +9,7 @@ import {
   readDiscordModerationCommand,
 } from "../../../../agents/tools/discord-actions-moderation-shared.js";
 import { handleDiscordAction } from "../../../../agents/tools/discord-actions.js";
+import type { AgentToolResult } from "../../../../types/pi-compat.js";
 import type { ChannelMessageActionContext } from "../../types.js";
 
 type Ctx = Pick<
@@ -21,7 +21,7 @@ export async function tryHandleDiscordMessageActionGuildAdmin(params: {
   ctx: Ctx;
   resolveChannelId: () => string;
   readParentIdParam: (params: Record<string, unknown>) => string | null | undefined;
-}): Promise<AgentToolResult<unknown> | undefined> {
+}): Promise<AgentToolResult | undefined> {
   const { ctx, resolveChannelId, readParentIdParam } = params;
   const { action, params: actionParams, cfg } = ctx;
   const accountId = ctx.accountId ?? readStringParam(actionParams, "accountId");

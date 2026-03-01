@@ -1,5 +1,5 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import { describe, expect, it } from "vitest";
+import type { AgentMessage } from "./pi-types.js";
 import {
   sanitizeToolCallInputs,
   sanitizeToolUseResultPairing,

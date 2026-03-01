@@ -1,4 +1,3 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import {
   createActionGate,
   jsonResult,
@@ -6,6 +5,7 @@ import {
   readReactionParams,
   readStringParam,
 } from "openclaw/plugin-sdk";
+import type { AgentToolResult } from "../../../src/types/pi-compat.js";
 import {
   deleteMatrixMessage,
   editMatrixMessage,

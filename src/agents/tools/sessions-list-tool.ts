@@ -36,7 +36,7 @@ export function createSessionsListTool(opts?: {
     description: "List sessions with optional filters and last messages.",
     parameters: SessionsListToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args;
       const cfg = loadConfig();
       const { mainKey, alias, requesterInternalKey, restrictToSpawned } =
         resolveSandboxedSessionToolContext({

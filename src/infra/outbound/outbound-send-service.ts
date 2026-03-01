@@ -1,9 +1,9 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { dispatchChannelMessageAction } from "../../channels/plugins/message-actions.js";
 import type { ChannelId, ChannelThreadingToolContext } from "../../channels/plugins/types.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { appendAssistantMessageToSessionTranscript } from "../../config/sessions.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
+import type { AgentToolResult } from "../../types/pi-compat.js";
 import type { GatewayClientMode, GatewayClientName } from "../../utils/message-channel.js";
 import { throwIfAborted } from "./abort.js";
 import type { OutboundSendDeps } from "./deliver.js";
@@ -44,7 +44,7 @@ export type OutboundSendContext = {
 type PluginHandledResult = {
   handledBy: "plugin";
   payload: unknown;
-  toolResult: AgentToolResult<unknown>;
+  toolResult: AgentToolResult;
 };
 
 async function tryHandleWithPluginAction(params: {
@@ -94,7 +94,7 @@ export async function executeSendAction(params: {
 }): Promise<{
   handledBy: "plugin" | "core";
   payload: unknown;
-  toolResult?: AgentToolResult<unknown>;
+  toolResult?: AgentToolResult;
   sendResult?: MessageSendResult;
 }> {
   throwIfAborted(params.ctx.abortSignal);
@@ -164,7 +164,7 @@ export async function executePollAction(params: {
 }): Promise<{
   handledBy: "plugin" | "core";
   payload: unknown;
-  toolResult?: AgentToolResult<unknown>;
+  toolResult?: AgentToolResult;
   pollResult?: MessagePollResult;
 }> {
   const pluginHandled = await tryHandleWithPluginAction({

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { CURRENT_SESSION_VERSION, SessionManager } from "@mariozechner/pi-coding-agent";
 import { emitSessionTranscriptUpdate } from "../../sessions/transcript-events.js";
+import { CURRENT_SESSION_VERSION } from "./constants.js";
 import { resolveDefaultSessionStorePath } from "./paths.js";
 import { resolveAndPersistSessionFile } from "./session-file.js";
 import { loadSessionStore } from "./store.js";
@@ -128,8 +128,7 @@ export async function appendAssistantMessageToSessionTranscript(params: {
 
   await ensureSessionHeader({ sessionFile, sessionId: entry.sessionId });
 
-  const sessionManager = SessionManager.open(sessionFile);
-  sessionManager.appendMessage({
+  const message = {
     role: "assistant",
     content: [{ type: "text", text: mirrorText }],
     api: "openai-responses",
@@ -151,7 +150,9 @@ export async function appendAssistantMessageToSessionTranscript(params: {
     },
     stopReason: "stop",
     timestamp: Date.now(),
-  });
+  };
+  const line = { type: "message", message };
+  await fs.promises.appendFile(sessionFile, `${JSON.stringify(line)}\n`, "utf-8");
 
   emitSessionTranscriptUpdate(sessionFile);
   return { ok: true, sessionFile };

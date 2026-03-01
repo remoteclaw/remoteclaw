@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import "./test-helpers/fast-coding-tools.js";
+import "./test-helpers/fast-tool-stubs.js";
 import { createOpenClawCodingTools } from "./pi-tools.js";
 
 const defaultTools = createOpenClawCodingTools({ senderIsOwner: true });

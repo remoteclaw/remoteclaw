@@ -127,7 +127,12 @@ describe("before_tool_call hook integration", () => {
     });
     const extensionContext = {} as Parameters<typeof tool.execute>[3];
 
-    await tool.execute("call-5", "not-an-object", undefined, extensionContext);
+    await tool.execute(
+      "call-5",
+      "not-an-object" as unknown as Record<string, unknown>,
+      undefined,
+      extensionContext,
+    );
 
     expect(hookRunner.runBeforeToolCall).toHaveBeenCalledWith(
       {

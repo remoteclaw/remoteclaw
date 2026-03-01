@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { OpenClawConfig } from "../../config/config.js";
 import { truncateUtf16Safe } from "../../utils.js";
+import type { AgentMessage } from "../pi-types.js";
 import type { WorkspaceBootstrapFile } from "../workspace.js";
 import type { ContextFile } from "./types.js";
 

@@ -1,10 +1,3 @@
-import {
-  codingTools,
-  createEditTool,
-  createReadTool,
-  createWriteTool,
-  readTool,
-} from "@mariozechner/pi-coding-agent";
 import type { OpenClawConfig } from "../config/config.js";
 import type { ToolLoopDetectionConfig } from "../config/types.tools.js";
 import { logWarn } from "../logger.js";
@@ -14,7 +7,6 @@ import { resolveGatewayMessageChannel } from "../utils/message-channel.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 import { createApplyPatchTool } from "./apply-patch.js";
 import { listChannelAgentTools } from "./channel-tools.js";
-import { resolveImageSanitizationLimits } from "./image-sanitization.js";
 import { createOpenClawTools } from "./openclaw-tools.js";
 import { wrapToolWithAbortSignal } from "./pi-tools.abort.js";
 import { wrapToolWithBeforeToolCallHook } from "./pi-tools.before-tool-call.js";
@@ -25,46 +17,13 @@ import {
 } from "./pi-tools.policy.js";
 import {
   assertRequiredParams,
-  CLAUDE_PARAM_GROUPS,
-  createOpenClawReadTool,
-  createSandboxedEditTool,
-  createSandboxedReadTool,
-  createSandboxedWriteTool,
   normalizeToolParams,
   patchToolSchemaForClaudeCompatibility,
-  wrapToolWorkspaceRootGuard,
-  wrapToolWorkspaceRootGuardWithOptions,
   wrapToolParamNormalization,
 } from "./pi-tools.read.js";
 import { cleanToolSchemaForGemini, normalizeToolParameters } from "./pi-tools.schema.js";
 import type { AnyAgentTool } from "./pi-tools.types.js";
 import type { ModelAuthMode } from "./provider-auth.js";
-// Sandbox infrastructure removed (#68)
-type SandboxContext = {
-  enabled: boolean;
-  containerName: string;
-  workspaceDir: string;
-  containerWorkdir: string;
-  workspaceAccess?: string;
-  docker: { env?: Record<string, string> };
-  fsBridge: {
-    readFile(params: { filePath: string; cwd: string }): Promise<Buffer>;
-    writeFile(params: { filePath: string; cwd: string; data: string }): Promise<void>;
-    stat(params: {
-      filePath: string;
-      cwd: string;
-    }): Promise<{ isFile(): boolean; size: number } | null>;
-    mkdirp(params: { filePath: string; cwd: string }): Promise<void>;
-    remove(params: { filePath: string; cwd: string; force: boolean }): Promise<void>;
-    resolvePath(params: { filePath: string; cwd: string }): {
-      hostPath: string;
-      relativePath: string;
-    };
-  };
-  browser?: { bridgeUrl?: string; noVncUrl?: string };
-  browserAllowHostControl?: boolean;
-  tools?: { allow?: string[]; deny?: string[] };
-};
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import { createToolFsPolicy, resolveToolFsConfig } from "./tool-fs-policy.js";
 import {
@@ -149,13 +108,10 @@ export const __testing = {
 
 export function createOpenClawCodingTools(options?: {
   agentId?: string;
-  // Exec tool infrastructure removed (#70) — accept but ignore for backward-compat
-  exec?: Record<string, unknown>;
   messageProvider?: string;
   agentAccountId?: string;
   messageTo?: string;
   messageThreadId?: string | number;
-  sandbox?: SandboxContext | null;
   sessionKey?: string;
   agentDir?: string;
   workspaceDir?: string;
@@ -168,8 +124,6 @@ export function createOpenClawCodingTools(options?: {
   modelProvider?: string;
   /** Model id for the current provider (used for model-specific tool gating). */
   modelId?: string;
-  /** Model context window in tokens (used to scale read-tool output budget). */
-  modelContextWindowTokens?: number;
   /**
    * Auth mode for the current provider. We only need this for Anthropic OAuth
    * tool-name blocking quirks.
@@ -206,7 +160,6 @@ export function createOpenClawCodingTools(options?: {
   /** Whether the sender is an owner (required for owner-only tools). */
   senderIsOwner?: boolean;
 }): AnyAgentTool[] {
-  const sandbox = options?.sandbox?.enabled ? options.sandbox : undefined;
   const {
     agentId,
     globalPolicy,
@@ -257,9 +210,6 @@ export function createOpenClawCodingTools(options?: {
   const fsPolicy = createToolFsPolicy({
     workspaceOnly: fsConfig.workspaceOnly,
   });
-  const sandboxRoot = sandbox?.workspaceDir;
-  const sandboxFsBridge = sandbox?.fsBridge;
-  const allowWorkspaceWrites = sandbox?.workspaceAccess !== "ro";
   const workspaceRoot = resolveWorkspaceRoot(options?.workspaceDir);
   const workspaceOnly = fsPolicy.workspaceOnly;
   // Resolve apply_patch config (nested under tools.exec.applyPatch in config hierarchy)
@@ -281,105 +231,18 @@ export function createOpenClawCodingTools(options?: {
       allowModels: applyPatchConfig?.allowModels,
     });
 
-  if (sandboxRoot && !sandboxFsBridge) {
-    throw new Error("Sandbox filesystem bridge is unavailable.");
-  }
-  const imageSanitization = resolveImageSanitizationLimits(options?.config);
-
-  const base = (codingTools as unknown as AnyAgentTool[]).flatMap((tool) => {
-    if (tool.name === readTool.name) {
-      if (sandboxRoot) {
-        const sandboxed = createSandboxedReadTool({
-          root: sandboxRoot,
-          bridge: sandboxFsBridge!,
-          modelContextWindowTokens: options?.modelContextWindowTokens,
-          imageSanitization,
-        });
-        return [
-          workspaceOnly
-            ? wrapToolWorkspaceRootGuardWithOptions(sandboxed, sandboxRoot, {
-                containerWorkdir: sandbox.containerWorkdir,
-              })
-            : sandboxed,
-        ];
-      }
-      const freshReadTool = createReadTool(workspaceRoot);
-      const wrapped = createOpenClawReadTool(freshReadTool, {
-        modelContextWindowTokens: options?.modelContextWindowTokens,
-        imageSanitization,
+  const applyPatchTool = !applyPatchEnabled
+    ? null
+    : createApplyPatchTool({
+        cwd: workspaceRoot,
+        workspaceOnly: applyPatchWorkspaceOnly,
       });
-      return [workspaceOnly ? wrapToolWorkspaceRootGuard(wrapped, workspaceRoot) : wrapped];
-    }
-    if (tool.name === "bash" || tool.name === "exec") {
-      return [];
-    }
-    if (tool.name === "write") {
-      if (sandboxRoot) {
-        return [];
-      }
-      // Wrap with param normalization for Claude Code compatibility
-      const wrapped = wrapToolParamNormalization(
-        createWriteTool(workspaceRoot),
-        CLAUDE_PARAM_GROUPS.write,
-      );
-      return [workspaceOnly ? wrapToolWorkspaceRootGuard(wrapped, workspaceRoot) : wrapped];
-    }
-    if (tool.name === "edit") {
-      if (sandboxRoot) {
-        return [];
-      }
-      // Wrap with param normalization for Claude Code compatibility
-      const wrapped = wrapToolParamNormalization(
-        createEditTool(workspaceRoot),
-        CLAUDE_PARAM_GROUPS.edit,
-      );
-      return [workspaceOnly ? wrapToolWorkspaceRootGuard(wrapped, workspaceRoot) : wrapped];
-    }
-    return [tool];
-  });
-  const applyPatchTool =
-    !applyPatchEnabled || (sandboxRoot && !allowWorkspaceWrites)
-      ? null
-      : createApplyPatchTool({
-          cwd: sandboxRoot ?? workspaceRoot,
-          sandbox:
-            sandboxRoot && allowWorkspaceWrites
-              ? { root: sandboxRoot, bridge: sandboxFsBridge! }
-              : undefined,
-          workspaceOnly: applyPatchWorkspaceOnly,
-        });
   const tools: AnyAgentTool[] = [
-    ...base,
-    ...(sandboxRoot
-      ? allowWorkspaceWrites
-        ? [
-            workspaceOnly
-              ? wrapToolWorkspaceRootGuardWithOptions(
-                  createSandboxedEditTool({ root: sandboxRoot, bridge: sandboxFsBridge! }),
-                  sandboxRoot,
-                  {
-                    containerWorkdir: sandbox.containerWorkdir,
-                  },
-                )
-              : createSandboxedEditTool({ root: sandboxRoot, bridge: sandboxFsBridge! }),
-            workspaceOnly
-              ? wrapToolWorkspaceRootGuardWithOptions(
-                  createSandboxedWriteTool({ root: sandboxRoot, bridge: sandboxFsBridge! }),
-                  sandboxRoot,
-                  {
-                    containerWorkdir: sandbox.containerWorkdir,
-                  },
-                )
-              : createSandboxedWriteTool({ root: sandboxRoot, bridge: sandboxFsBridge! }),
-          ]
-        : []
-      : []),
     ...(applyPatchTool ? [applyPatchTool as unknown as AnyAgentTool] : []),
     // Channel docking: include channel-defined agent tools (login, etc.).
     ...listChannelAgentTools({ cfg: options?.config }),
     ...createOpenClawTools({
-      sandboxBrowserBridgeUrl: sandbox?.browser?.bridgeUrl,
-      allowHostBrowserControl: sandbox ? sandbox.browserAllowHostControl : true,
+      allowHostBrowserControl: true,
       agentSessionKey: options?.sessionKey,
       agentChannel: resolveGatewayMessageChannel(options?.messageProvider),
       agentAccountId: options?.agentAccountId,
@@ -389,11 +252,9 @@ export function createOpenClawCodingTools(options?: {
       agentGroupChannel: options?.groupChannel ?? null,
       agentGroupSpace: options?.groupSpace ?? null,
       agentDir: options?.agentDir,
-      sandboxRoot,
-      sandboxFsBridge,
       fsPolicy,
       workspaceDir: workspaceRoot,
-      sandboxed: !!sandbox,
+      sandboxed: false,
       config: options?.config,
       pluginToolAllowlist: collectExplicitAllowlist([
         profilePolicy,
@@ -403,7 +264,6 @@ export function createOpenClawCodingTools(options?: {
         agentPolicy,
         agentProviderPolicy,
         groupPolicy,
-        sandbox?.tools,
         subagentPolicy,
       ]),
       currentChannelId: options?.currentChannelId,
@@ -439,7 +299,6 @@ export function createOpenClawCodingTools(options?: {
         groupPolicy,
         agentId,
       }),
-      { policy: sandbox?.tools, label: "sandbox tools.allow" },
       { policy: subagentPolicy, label: "subagent tools.allow" },
     ],
   });

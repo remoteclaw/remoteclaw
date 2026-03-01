@@ -1,5 +1,5 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { OpenClawConfig } from "../../config/config.js";
+import type { AgentToolResult } from "../../types/pi-compat.js";
 import { getChannelPlugin, listChannelPlugins } from "./index.js";
 import type { ChannelMessageActionContext, ChannelMessageActionName } from "./types.js";
 
@@ -86,7 +86,7 @@ function supportsMessageFeatureForChannel(
 
 export async function dispatchChannelMessageAction(
   ctx: ChannelMessageActionContext,
-): Promise<AgentToolResult<unknown> | null> {
+): Promise<AgentToolResult | null> {
   if (requiresTrustedRequesterSender(ctx) && !ctx.requesterSenderId?.trim()) {
     throw new Error(
       `Trusted sender identity is required for ${ctx.channel}:${ctx.action} in tool-driven contexts.`,

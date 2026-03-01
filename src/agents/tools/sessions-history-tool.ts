@@ -183,7 +183,7 @@ export function createSessionsHistoryTool(opts?: {
     description: "Fetch message history for a session.",
     parameters: SessionsHistoryToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args;
       const sessionKeyParam = readStringParam(params, "sessionKey", {
         required: true,
       });

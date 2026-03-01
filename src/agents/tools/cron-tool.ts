@@ -268,7 +268,7 @@ WAKE MODES (for wake action):
 Use jobId as the canonical identifier; id is accepted for compatibility. Use contextMessages (0-10) to add previous messages as context to the job text.`,
     parameters: CronToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args;
       const action = readStringParam(params, "action", { required: true });
       const gatewayOpts: GatewayCallOptions = {
         ...readGatewayCallOptions(params),

@@ -33,6 +33,9 @@ export type CronFieldKey =
 
 export type CronFieldErrors = Partial<Record<CronFieldKey, string>>;
 
+export type CronJobsScheduleKindFilter = "all" | "at" | "every" | "cron";
+export type CronJobsLastStatusFilter = "all" | "ok" | "error" | "skipped";
+
 export type CronState = {
   client: GatewayBrowserClient | null;
   connected: boolean;
@@ -45,6 +48,8 @@ export type CronState = {
   cronJobsLimit: number;
   cronJobsQuery: string;
   cronJobsEnabledFilter: CronJobsEnabledFilter;
+  cronJobsScheduleKindFilter: CronJobsScheduleKindFilter;
+  cronJobsLastStatusFilter: CronJobsLastStatusFilter;
   cronJobsSortBy: CronJobsSortBy;
   cronJobsSortDir: CronSortDir;
   cronStatus: CronStatus | null;
@@ -277,7 +282,12 @@ export function updateCronJobsFilter(
   patch: Partial<
     Pick<
       CronState,
-      "cronJobsQuery" | "cronJobsEnabledFilter" | "cronJobsSortBy" | "cronJobsSortDir"
+      | "cronJobsQuery"
+      | "cronJobsEnabledFilter"
+      | "cronJobsScheduleKindFilter"
+      | "cronJobsLastStatusFilter"
+      | "cronJobsSortBy"
+      | "cronJobsSortDir"
     >
   >,
 ) {
@@ -287,12 +297,38 @@ export function updateCronJobsFilter(
   if (patch.cronJobsEnabledFilter) {
     state.cronJobsEnabledFilter = patch.cronJobsEnabledFilter;
   }
+  if (patch.cronJobsScheduleKindFilter) {
+    state.cronJobsScheduleKindFilter = patch.cronJobsScheduleKindFilter;
+  }
+  if (patch.cronJobsLastStatusFilter) {
+    state.cronJobsLastStatusFilter = patch.cronJobsLastStatusFilter;
+  }
   if (patch.cronJobsSortBy) {
     state.cronJobsSortBy = patch.cronJobsSortBy;
   }
   if (patch.cronJobsSortDir) {
     state.cronJobsSortDir = patch.cronJobsSortDir;
   }
+}
+
+export function getVisibleCronJobs(
+  state: Pick<CronState, "cronJobs" | "cronJobsScheduleKindFilter" | "cronJobsLastStatusFilter">,
+): CronJob[] {
+  return state.cronJobs.filter((job) => {
+    if (
+      state.cronJobsScheduleKindFilter !== "all" &&
+      job.schedule.kind !== state.cronJobsScheduleKindFilter
+    ) {
+      return false;
+    }
+    if (
+      state.cronJobsLastStatusFilter !== "all" &&
+      job.state?.lastStatus !== state.cronJobsLastStatusFilter
+    ) {
+      return false;
+    }
+    return true;
+  });
 }
 
 function clearCronEditState(state: CronState) {

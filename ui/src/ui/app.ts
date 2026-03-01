@@ -57,7 +57,6 @@ import type { CronFieldErrors } from "./controllers/cron.ts";
 import type { DevicePairingList } from "./controllers/devices.ts";
 import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.ts";
-import type { SkillMessage } from "./controllers/skills.ts";
 import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.ts";
 import type { Tab } from "./navigation.ts";
 import { loadSettings, type UiSettings } from "./storage.ts";
@@ -77,7 +76,6 @@ import type {
   PresenceEntry,
   ChannelsStatusSnapshot,
   SessionsListResult,
-  SkillStatusReport,
   ToolsCatalogResult,
   StatusSummary,
   NostrProfile,
@@ -221,8 +219,7 @@ export class OpenClawApp extends LitElement {
   @state() toolsCatalogLoading = false;
   @state() toolsCatalogError: string | null = null;
   @state() toolsCatalogResult: ToolsCatalogResult | null = null;
-  @state() agentsPanel: "overview" | "files" | "tools" | "skills" | "channels" | "cron" =
-    "overview";
+  @state() agentsPanel: "overview" | "files" | "tools" | "channels" | "cron" = "overview";
   @state() agentFilesLoading = false;
   @state() agentFilesError: string | null = null;
   @state() agentFilesList: AgentsFilesListResult | null = null;
@@ -233,10 +230,6 @@ export class OpenClawApp extends LitElement {
   @state() agentIdentityLoading = false;
   @state() agentIdentityError: string | null = null;
   @state() agentIdentityById: Record<string, AgentIdentityResult> = {};
-  @state() agentSkillsLoading = false;
-  @state() agentSkillsError: string | null = null;
-  @state() agentSkillsReport: SkillStatusReport | null = null;
-  @state() agentSkillsAgentId: string | null = null;
 
   @state() sessionsLoading = false;
   @state() sessionsResult: SessionsListResult | null = null;
@@ -335,18 +328,9 @@ export class OpenClawApp extends LitElement {
 
   @state() updateAvailable: import("./types.js").UpdateAvailable | null = null;
 
-  @state() skillsLoading = false;
-  @state() skillsReport: SkillStatusReport | null = null;
-  @state() skillsError: string | null = null;
-  @state() skillsFilter = "";
-  @state() skillEdits: Record<string, string> = {};
-  @state() skillsBusyKey: string | null = null;
-  @state() skillMessages: Record<string, SkillMessage> = {};
-
   @state() debugLoading = false;
   @state() debugStatus: StatusSummary | null = null;
   @state() debugHealth: HealthSnapshot | null = null;
-  @state() debugModels: unknown[] = [];
   @state() debugHeartbeat: unknown = null;
   @state() debugCallMethod = "";
   @state() debugCallParams = "{}";

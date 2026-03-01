@@ -71,13 +71,6 @@ const sectionIcons = {
       <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
     </svg>
   `,
-  skills: html`
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <polygon
-        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-      ></polygon>
-    </svg>
-  `,
   tools: html`
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <path
@@ -92,19 +85,6 @@ const sectionIcons = {
       <path
         d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
       ></path>
-    </svg>
-  `,
-  wizard: html`
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <path d="M15 4V2"></path>
-      <path d="M15 16v-2"></path>
-      <path d="M8 9h2"></path>
-      <path d="M20 9h2"></path>
-      <path d="M17.8 11.8 19 13"></path>
-      <path d="M15 9h0"></path>
-      <path d="M17.8 6.2 19 5"></path>
-      <path d="m3 21 9-9"></path>
-      <path d="M12.2 6.2 11 5"></path>
     </svg>
   `,
   // Additional sections
@@ -201,13 +181,6 @@ const sectionIcons = {
       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
   `,
-  canvasHost: html`
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-      <circle cx="8.5" cy="8.5" r="1.5"></circle>
-      <polyline points="21 15 16 10 5 21"></polyline>
-    </svg>
-  `,
   talk: html`
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -252,10 +225,8 @@ export const SECTION_META: Record<string, { label: string; description: string }
   messages: { label: "Messages", description: "Message handling and routing settings" },
   commands: { label: "Commands", description: "Custom slash commands" },
   hooks: { label: "Hooks", description: "Webhooks and event hooks" },
-  skills: { label: "Skills", description: "Skill packs and capabilities" },
   tools: { label: "Tools", description: "Tool configurations (browser, search, etc.)" },
   gateway: { label: "Gateway", description: "Gateway server settings (port, auth, binding)" },
-  wizard: { label: "Setup Wizard", description: "Setup wizard state and history" },
   // Additional sections
   meta: { label: "Metadata", description: "Gateway metadata and version information" },
   logging: { label: "Logging", description: "Log levels and output configuration" },
@@ -269,7 +240,6 @@ export const SECTION_META: Record<string, { label: string; description: string }
   cron: { label: "Cron", description: "Scheduled tasks and automation" },
   web: { label: "Web", description: "Web server and API settings" },
   discovery: { label: "Discovery", description: "Service discovery and networking" },
-  canvasHost: { label: "Canvas Host", description: "Canvas rendering and display" },
   talk: { label: "Talk", description: "Voice and speech settings" },
   plugins: { label: "Plugins", description: "Plugin management and extensions" },
 };

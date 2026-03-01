@@ -39,10 +39,6 @@ function renderAgentContextCard(context: AgentContext, subtitle: string) {
           <div>${context.identityEmoji}</div>
         </div>
         <div class="agent-kv">
-          <div class="label">Skills Filter</div>
-          <div>${context.skillsLabel}</div>
-        </div>
-        <div class="agent-kv">
           <div class="label">Default</div>
           <div>${context.isDefault ? "yes" : "no"}</div>
         </div>

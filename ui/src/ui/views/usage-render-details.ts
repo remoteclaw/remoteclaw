@@ -729,14 +729,13 @@ function renderContextPanel(
     `;
   }
   const systemTokens = charsToTokens(contextWeight.systemPrompt.chars);
-  const skillsTokens = charsToTokens(contextWeight.skills.promptChars);
   const toolsTokens = charsToTokens(
     contextWeight.tools.listChars + contextWeight.tools.schemaChars,
   );
   const filesTokens = charsToTokens(
     contextWeight.injectedWorkspaceFiles.reduce((sum, f) => sum + f.injectedChars, 0),
   );
-  const totalContextTokens = systemTokens + skillsTokens + toolsTokens + filesTokens;
+  const totalContextTokens = systemTokens + toolsTokens + filesTokens;
 
   let contextPct = "";
   if (usage && usage.totalTokens > 0) {
@@ -746,7 +745,6 @@ function renderContextPanel(
     }
   }
 
-  const skillsList = contextWeight.skills.entries.toSorted((a, b) => b.blockChars - a.blockChars);
   const toolsList = contextWeight.tools.entries.toSorted(
     (a, b) => b.summaryChars + b.schemaChars - (a.summaryChars + a.schemaChars),
   );
@@ -755,13 +753,9 @@ function renderContextPanel(
   );
   const defaultLimit = 4;
   const showAll = expanded;
-  const skillsTop = showAll ? skillsList : skillsList.slice(0, defaultLimit);
   const toolsTop = showAll ? toolsList : toolsList.slice(0, defaultLimit);
   const filesTop = showAll ? filesList : filesList.slice(0, defaultLimit);
-  const hasMore =
-    skillsList.length > defaultLimit ||
-    toolsList.length > defaultLimit ||
-    filesList.length > defaultLimit;
+  const hasMore = toolsList.length > defaultLimit || filesList.length > defaultLimit;
 
   return html`
     <div class="context-details-panel">
@@ -780,45 +774,16 @@ function renderContextPanel(
       </p>
       <div class="context-stacked-bar">
         <div class="context-segment system" style="width: ${pct(systemTokens, totalContextTokens).toFixed(1)}%" title="System: ~${formatTokens(systemTokens)}"></div>
-        <div class="context-segment skills" style="width: ${pct(skillsTokens, totalContextTokens).toFixed(1)}%" title="Skills: ~${formatTokens(skillsTokens)}"></div>
         <div class="context-segment tools" style="width: ${pct(toolsTokens, totalContextTokens).toFixed(1)}%" title="Tools: ~${formatTokens(toolsTokens)}"></div>
         <div class="context-segment files" style="width: ${pct(filesTokens, totalContextTokens).toFixed(1)}%" title="Files: ~${formatTokens(filesTokens)}"></div>
       </div>
       <div class="context-legend">
         <span class="legend-item"><span class="legend-dot system"></span>Sys ~${formatTokens(systemTokens)}</span>
-        <span class="legend-item"><span class="legend-dot skills"></span>Skills ~${formatTokens(skillsTokens)}</span>
         <span class="legend-item"><span class="legend-dot tools"></span>Tools ~${formatTokens(toolsTokens)}</span>
         <span class="legend-item"><span class="legend-dot files"></span>Files ~${formatTokens(filesTokens)}</span>
       </div>
       <div class="context-total">Total: ~${formatTokens(totalContextTokens)}</div>
       <div class="context-breakdown-grid">
-        ${
-          skillsList.length > 0
-            ? (() => {
-                const more = skillsList.length - skillsTop.length;
-                return html`
-                  <div class="context-breakdown-card">
-                    <div class="context-breakdown-title">Skills (${skillsList.length})</div>
-                    <div class="context-breakdown-list">
-                      ${skillsTop.map(
-                        (s) => html`
-                          <div class="context-breakdown-item">
-                            <span class="mono">${s.name}</span>
-                            <span class="muted">~${formatTokens(charsToTokens(s.blockChars))}</span>
-                          </div>
-                        `,
-                      )}
-                    </div>
-                    ${
-                      more > 0
-                        ? html`<div class="context-breakdown-more">+${more} more</div>`
-                        : nothing
-                    }
-                  </div>
-                `;
-              })()
-            : nothing
-        }
         ${
           toolsList.length > 0
             ? (() => {

@@ -6,7 +6,6 @@ export type DebugProps = {
   loading: boolean;
   status: Record<string, unknown> | null;
   health: Record<string, unknown> | null;
-  models: unknown[];
   heartbeat: unknown;
   eventLog: EventLogEntry[];
   callMethod: string;
@@ -106,16 +105,6 @@ export function renderDebug(props: DebugProps) {
             : nothing
         }
       </div>
-    </section>
-
-    <section class="card" style="margin-top: 18px;">
-      <div class="card-title">Models</div>
-      <div class="card-sub">Catalog from models.list.</div>
-      <pre class="code-block" style="margin-top: 12px;">${JSON.stringify(
-        props.models ?? [],
-        null,
-        2,
-      )}</pre>
     </section>
 
     <section class="card" style="margin-top: 18px;">

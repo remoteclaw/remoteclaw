@@ -284,9 +284,6 @@ export const usageStylesPart2 = `
   .legend-dot.system {
     background: #ff4d4d;
   }
-  .legend-dot.skills {
-    background: #8b5cf6;
-  }
   .legend-dot.tools {
     background: #ec4899;
   }
@@ -583,9 +580,6 @@ export const usageStylesPart2 = `
   }
   .context-segment.system {
     background: #ff4d4d;
-  }
-  .context-segment.skills {
-    background: #8b5cf6;
   }
   .context-segment.tools {
     background: #ec4899;

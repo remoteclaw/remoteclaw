@@ -309,7 +309,11 @@ export type PluginHookName =
   | "subagent_spawned"
   | "subagent_ended"
   | "gateway_start"
-  | "gateway_stop";
+  | "gateway_stop"
+  | "before_runtime_spawn"
+  | "after_runtime_exit"
+  | "session_resumed"
+  | "agent_end";
 
 // Agent context shared across agent hooks
 export type PluginHookAgentContext = {
@@ -523,6 +527,63 @@ export type PluginHookGatewayStopEvent = {
   reason?: string;
 };
 
+// ── ChannelBridge Runtime Hooks ──────────────────────────────────────────
+
+// before_runtime_spawn hook — fired before CLI subprocess starts (modifiable)
+export type PluginHookBeforeRuntimeSpawnEvent = {
+  runtimeName: string;
+  sessionId: string | undefined;
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+  workspaceDir: string;
+  channelId: string;
+};
+
+export type PluginHookBeforeRuntimeSpawnResult = {
+  env?: Record<string, string>;
+  workspaceDir?: string;
+};
+
+// after_runtime_exit hook — fired after CLI subprocess exits (observe-only)
+export type PluginHookAfterRuntimeExitEvent = {
+  runtimeName: string;
+  sessionId: string | undefined;
+  exitCode: number | undefined;
+  durationMs: number;
+  stdout: string;
+  stderr: string | undefined;
+  mcpSideEffects: {
+    sentTexts: string[];
+    sentMediaUrls: string[];
+    cronAdds: number;
+  };
+};
+
+// session_resumed hook — fired when an existing session is reused
+export type PluginHookSessionResumedEvent = {
+  sessionId: string;
+  runtimeName: string;
+  channelId: string;
+  userId: string;
+  resumeMethod: "session_map";
+};
+
+// agent_end hook — reconstructed from CLI subprocess exit
+export type PluginHookAgentEndEvent = {
+  runId: string;
+  sessionId: string | undefined;
+  success: boolean;
+  durationMs: number;
+};
+
+// Runtime hook context (shared across before_runtime_spawn / after_runtime_exit)
+export type PluginHookRuntimeContext = {
+  sessionId?: string;
+  channelId: string;
+  runtimeName: string;
+};
+
 // Hook handler types mapped by hook name
 export type PluginHookHandlerMap = {
   before_reset: (
@@ -587,6 +648,25 @@ export type PluginHookHandlerMap = {
   gateway_stop: (
     event: PluginHookGatewayStopEvent,
     ctx: PluginHookGatewayContext,
+  ) => Promise<void> | void;
+  before_runtime_spawn: (
+    event: PluginHookBeforeRuntimeSpawnEvent,
+    ctx: PluginHookRuntimeContext,
+  ) =>
+    | Promise<PluginHookBeforeRuntimeSpawnResult | void>
+    | PluginHookBeforeRuntimeSpawnResult
+    | void;
+  after_runtime_exit: (
+    event: PluginHookAfterRuntimeExitEvent,
+    ctx: PluginHookRuntimeContext,
+  ) => Promise<void> | void;
+  session_resumed: (
+    event: PluginHookSessionResumedEvent,
+    ctx: PluginHookRuntimeContext,
+  ) => Promise<void> | void;
+  agent_end: (
+    event: PluginHookAgentEndEvent,
+    ctx: PluginHookRuntimeContext,
   ) => Promise<void> | void;
 };
 

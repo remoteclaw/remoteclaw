@@ -1,7 +1,9 @@
+import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ReplyPayload } from "../auto-reply/types.js";
+import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { DeliveryAdapter } from "./delivery-adapter.js";
 import { classifyError } from "./error-classifier.js";
 import { readMcpSideEffects } from "./mcp-side-effects.js";
@@ -94,6 +96,25 @@ export class ChannelBridge {
     // 1. Session lookup
     const sessionKey = buildSessionKey(message);
     const existingSessionId = await this.#sessionMap.get(sessionKey);
+    const hookRunner = getGlobalHookRunner();
+
+    // Hook: session_resumed — fires when reusing an existing session
+    if (existingSessionId && hookRunner?.hasHooks("session_resumed")) {
+      await hookRunner.runSessionResumed(
+        {
+          sessionId: existingSessionId,
+          runtimeName: this.#provider,
+          channelId: message.channelId,
+          userId: message.from,
+          resumeMethod: "session_map",
+        },
+        {
+          sessionId: existingSessionId,
+          channelId: message.channelId,
+          runtimeName: this.#provider,
+        },
+      );
+    }
 
     // 2. System prompt
     const systemPrompt = buildSystemPrompt({
@@ -111,6 +132,35 @@ export class ChannelBridge {
 
       // 4. Runtime params
       const runtime = createCliRuntime(this.#provider);
+      let workspaceDir = this.#workspaceDir;
+      let extraEnv: Record<string, string> | undefined;
+      const runId = randomUUID();
+
+      // Hook: before_runtime_spawn — extensions can modify env and workspaceDir
+      if (hookRunner?.hasHooks("before_runtime_spawn")) {
+        const spawnResult = await hookRunner.runBeforeRuntimeSpawn(
+          {
+            runtimeName: this.#provider,
+            sessionId: existingSessionId,
+            command: "node",
+            args: [this.#mcpServerPath],
+            env: mcpServers.remoteclaw?.env ?? {},
+            workspaceDir,
+            channelId: message.channelId,
+          },
+          {
+            sessionId: existingSessionId,
+            channelId: message.channelId,
+            runtimeName: this.#provider,
+          },
+        );
+        if (spawnResult?.workspaceDir) {
+          workspaceDir = spawnResult.workspaceDir;
+        }
+        if (spawnResult?.env) {
+          extraEnv = spawnResult.env;
+        }
+      }
 
       // 5-6. Execute + stream events through DeliveryAdapter
       const adapter = new DeliveryAdapter(
@@ -128,7 +178,8 @@ export class ChannelBridge {
             sessionId: existingSessionId,
             mcpServers,
             abortSignal,
-            workingDirectory: this.#workspaceDir,
+            workingDirectory: workspaceDir,
+            env: extraEnv,
           }),
         );
         payloads = await adapter.process(captured.events, callbacks);
@@ -160,10 +211,51 @@ export class ChannelBridge {
         await this.#sessionMap.set(sessionKey, runResult.sessionId);
       }
 
+      // Hooks: after_runtime_exit + agent_end — fire after session update
+      const finalResult = runResult ?? { ...DEFAULT_RUN_RESULT };
+      if (hookRunner) {
+        const runtimeCtx = {
+          sessionId: finalResult.sessionId,
+          channelId: message.channelId,
+          runtimeName: this.#provider,
+        };
+
+        if (hookRunner.hasHooks("after_runtime_exit")) {
+          void hookRunner.runAfterRuntimeExit(
+            {
+              runtimeName: this.#provider,
+              sessionId: finalResult.sessionId,
+              exitCode: finalResult.errorSubtype ? 1 : 0,
+              durationMs: finalResult.durationMs,
+              stdout: finalResult.text,
+              stderr: lastError,
+              mcpSideEffects: {
+                sentTexts: mcp.sentTexts,
+                sentMediaUrls: mcp.sentMediaUrls,
+                cronAdds: mcp.cronAdds,
+              },
+            },
+            runtimeCtx,
+          );
+        }
+
+        if (hookRunner.hasHooks("agent_end")) {
+          void hookRunner.runAgentEnd(
+            {
+              runId,
+              sessionId: finalResult.sessionId,
+              success: !finalResult.errorSubtype && !lastError,
+              durationMs: finalResult.durationMs,
+            },
+            runtimeCtx,
+          );
+        }
+      }
+
       // 10. Return result
       return {
         payloads,
-        run: runResult ?? { ...DEFAULT_RUN_RESULT },
+        run: finalResult,
         mcp,
         error: lastError,
       };

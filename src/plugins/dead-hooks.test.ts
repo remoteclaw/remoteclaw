@@ -38,7 +38,6 @@ const DEAD_HOOK_NAMES = [
   "before_agent_start",
   "llm_input",
   "llm_output",
-  "agent_end",
   "before_compaction",
   "after_compaction",
   "tool_result_persist",
@@ -84,7 +83,7 @@ describe("dead hook guards", () => {
 
       registerHook(
         record,
-        ["llm_input", "message_received", "agent_end"],
+        ["llm_input", "message_received", "llm_output"],
         handler,
         { name: "test-hook" },
         undefined,
@@ -97,7 +96,7 @@ describe("dead hook guards", () => {
       // Two dead hooks should produce two warnings
       expect(registry.diagnostics).toHaveLength(2);
       expect(registry.diagnostics[0].message).toContain("llm_input");
-      expect(registry.diagnostics[1].message).toContain("agent_end");
+      expect(registry.diagnostics[1].message).toContain("llm_output");
     });
 
     it("returns early when all events in array are dead", () => {

@@ -172,7 +172,6 @@ const DEAD_HOOKS: ReadonlySet<string> = new Set([
   "before_agent_start",
   "llm_input",
   "llm_output",
-  "agent_end",
   "before_compaction",
   "after_compaction",
   "tool_result_persist",

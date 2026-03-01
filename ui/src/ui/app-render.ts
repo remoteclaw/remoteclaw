@@ -57,6 +57,7 @@ import { deleteSessionAndRefresh, loadSessions, patchSession } from "./controlle
 import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "./external-link.ts";
 import { icons } from "./icons.ts";
 import { normalizeBasePath, TAB_GROUPS, subtitleForTab, titleForTab } from "./navigation.ts";
+import { resolveConfiguredCronModelSuggestions } from "./views/agents-utils.ts";
 import { renderAgents } from "./views/agents.ts";
 import { renderChannels } from "./views/channels.ts";
 import { renderChat } from "./views/chat.ts";
@@ -168,6 +169,7 @@ export function renderApp(state: AppViewState) {
     new Set(
       [
         ...state.cronModelSuggestions,
+        ...resolveConfiguredCronModelSuggestions(configValue),
         ...state.cronJobs
           .map((job) => {
             if (job.payload.kind !== "agentTurn" || typeof job.payload.model !== "string") {

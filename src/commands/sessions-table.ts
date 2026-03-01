@@ -1,5 +1,4 @@
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { resolveConfiguredModelRef } from "../agents/model-selection.js";
+import { DEFAULT_MODEL } from "../agents/defaults.js";
 import type { SessionEntry } from "../config/sessions.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { resolveSessionModelRef } from "../gateway/session-utils.js";
@@ -70,14 +69,9 @@ export function toSessionDisplayRows(store: Record<string, SessionEntry>): Sessi
     .toSorted((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
 }
 
-export function resolveSessionDisplayDefaults(cfg: OpenClawConfig): SessionDisplayDefaults {
-  const resolved = resolveConfiguredModelRef({
-    cfg,
-    defaultProvider: DEFAULT_PROVIDER,
-    defaultModel: DEFAULT_MODEL,
-  });
+export function resolveSessionDisplayDefaults(_cfg: OpenClawConfig): SessionDisplayDefaults {
   return {
-    model: resolved.model ?? DEFAULT_MODEL,
+    model: DEFAULT_MODEL,
   };
 }
 

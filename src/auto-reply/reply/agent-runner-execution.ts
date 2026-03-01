@@ -8,7 +8,6 @@ import {
   sanitizeUserFacingText,
 } from "../../agents/agent-helpers.js";
 import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
-import { runWithModelFallback } from "../../agents/model-fallback.js";
 import { resolveGatewayPort } from "../../config/paths.js";
 import {
   resolveSessionTranscriptPath,
@@ -31,7 +30,6 @@ import type { TemplateContext } from "../templating.js";
 import type { VerboseLevel } from "../thinking.js";
 import { isSilentReplyPrefixText, isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
-import { resolveModelFallbackOptions } from "./agent-runner-utils.js";
 import { type BlockReplyPipeline } from "./block-reply-pipeline.js";
 import type { FollowupRun } from "./queue.js";
 import { createBlockReplyDeliveryHandler } from "./reply-delivery.js";
@@ -225,191 +223,181 @@ export async function runAgentTurnWithFallback(params: {
       };
       const blockReplyPipeline = params.blockReplyPipeline;
       const onToolResult = params.opts?.onToolResult;
-      const fallbackResult = await runWithModelFallback({
-        ...resolveModelFallbackOptions(params.followupRun.run),
-        run: (provider, model) => {
-          // Notify that model selection is complete (including after fallback).
-          // This allows responsePrefix template interpolation with the actual model.
-          params.opts?.onModelSelected?.({
-            provider,
-            model,
-            thinkLevel: params.followupRun.run.thinkLevel,
-          });
+      const provider = params.followupRun.run.provider;
+      const model = params.followupRun.run.model;
 
-          const startedAt = Date.now();
-          notifyAgentRunStart();
+      // Model fallback gutted in RemoteClaw — CLI agents handle their own model
+      // selection and fallback. Run the agent directly with the configured model.
+
+      // Notify that model selection is complete.
+      // This allows responsePrefix template interpolation with the actual model.
+      params.opts?.onModelSelected?.({
+        provider,
+        model,
+        thinkLevel: params.followupRun.run.thinkLevel,
+      });
+
+      const startedAt = Date.now();
+      notifyAgentRunStart();
+      emitAgentEvent({
+        runId,
+        stream: "lifecycle",
+        data: {
+          phase: "start",
+          startedAt,
+        },
+      });
+
+      let lifecycleTerminalEmitted = false;
+      try {
+        // Session adapter: reads the CLI session ID from the auto-reply session entry.
+        const sessionMap = createSessionMapAdapter({
+          getSessionId: () => params.getActiveSessionEntry()?.cliSessionIds?.[provider],
+        });
+
+        const cfg = params.followupRun.run.config;
+        const bridge = new ChannelBridge({
+          provider,
+          sessionMap,
+          gatewayUrl: resolveGatewayUrlFromConfig(cfg),
+          gatewayToken: resolveGatewayTokenFromConfig(cfg),
+          workspaceDir: params.followupRun.run.workspaceDir,
+        });
+
+        const messageToolHints = resolveChannelMessageToolHints({
+          cfg,
+          channel: params.sessionCtx.Provider?.trim(),
+          accountId: params.sessionCtx.AccountId?.trim(),
+        });
+
+        const message = buildChannelMessage({
+          commandBody: params.commandBody,
+          sessionCtx: params.sessionCtx,
+          messageToolHints,
+          senderIsOwner: params.followupRun.run.senderIsOwner,
+        });
+
+        // Build BridgeCallbacks that wrap the existing typing/normalization logic.
+        const callbacks: BridgeCallbacks = {
+          onPartialReply: async (payload) => {
+            const textForTyping = await handlePartialForTyping(payload);
+            if (!params.opts?.onPartialReply || textForTyping === undefined) {
+              return;
+            }
+            await params.opts.onPartialReply({
+              text: textForTyping,
+              mediaUrls: payload.mediaUrls,
+            });
+          },
+          onBlockReply: params.opts?.onBlockReply
+            ? createBlockReplyDeliveryHandler({
+                onBlockReply: params.opts.onBlockReply,
+                currentMessageId: params.sessionCtx.MessageSidFull ?? params.sessionCtx.MessageSid,
+                normalizeStreamingText,
+                applyReplyToMode: params.applyReplyToMode,
+                typingSignals: params.typingSignals,
+                blockStreamingEnabled: params.blockStreamingEnabled,
+                blockReplyPipeline,
+                directlySentBlockKeys,
+              })
+            : undefined,
+          onToolResult: onToolResult
+            ? (() => {
+                // Serialize tool result delivery to preserve message ordering.
+                // Without this, concurrent tool callbacks race through typing signals
+                // and message sends, causing out-of-order delivery to the user.
+                // See: https://github.com/openclaw/openclaw/issues/11044
+                let toolResultChain: Promise<void> = Promise.resolve();
+                return (payload: ReplyPayload) => {
+                  toolResultChain = toolResultChain
+                    .then(async () => {
+                      const { text, skip } = normalizeStreamingText(payload);
+                      if (skip) {
+                        return;
+                      }
+                      await params.typingSignals.signalTextDelta(text);
+                      await onToolResult({
+                        text,
+                        mediaUrls: payload.mediaUrls,
+                      });
+                    })
+                    .catch((err) => {
+                      // Keep chain healthy after an error so later tool results still deliver.
+                      logVerbose(`tool result delivery failed: ${String(err)}`);
+                    });
+                  const task = toolResultChain.finally(() => {
+                    params.pendingToolTasks.delete(task);
+                  });
+                  params.pendingToolTasks.add(task);
+                };
+              })()
+            : undefined,
+        };
+
+        const delivery = await bridge.handle(message, callbacks, params.opts?.abortSignal);
+
+        // Complete runtime failure: throw so the catch block can handle it.
+        if (delivery.error && delivery.payloads.length === 0) {
+          throw new Error(delivery.error);
+        }
+
+        // Emit assistant text event for TUI/WebSocket clients (CLI backends don't
+        // stream assistant events, so we emit one with the final text).
+        const finalText = delivery.run.text?.trim();
+        if (finalText) {
+          emitAgentEvent({
+            runId,
+            stream: "assistant",
+            data: { text: finalText },
+          });
+        }
+
+        emitAgentEvent({
+          runId,
+          stream: "lifecycle",
+          data: {
+            phase: "end",
+            startedAt,
+            endedAt: Date.now(),
+          },
+        });
+        lifecycleTerminalEmitted = true;
+
+        runResult = delivery;
+      } catch (err) {
+        if (!lifecycleTerminalEmitted) {
           emitAgentEvent({
             runId,
             stream: "lifecycle",
             data: {
-              phase: "start",
+              phase: "error",
               startedAt,
+              endedAt: Date.now(),
+              error: String(err),
             },
           });
-
-          return (async () => {
-            let lifecycleTerminalEmitted = false;
-            try {
-              // Session adapter: reads the CLI session ID from the auto-reply session entry.
-              const sessionMap = createSessionMapAdapter({
-                getSessionId: () => params.getActiveSessionEntry()?.cliSessionIds?.[provider],
-              });
-
-              const cfg = params.followupRun.run.config;
-              const bridge = new ChannelBridge({
-                provider,
-                sessionMap,
-                gatewayUrl: resolveGatewayUrlFromConfig(cfg),
-                gatewayToken: resolveGatewayTokenFromConfig(cfg),
-                workspaceDir: params.followupRun.run.workspaceDir,
-              });
-
-              const messageToolHints = resolveChannelMessageToolHints({
-                cfg,
-                channel: params.sessionCtx.Provider?.trim(),
-                accountId: params.sessionCtx.AccountId?.trim(),
-              });
-
-              const message = buildChannelMessage({
-                commandBody: params.commandBody,
-                sessionCtx: params.sessionCtx,
-                messageToolHints,
-                senderIsOwner: params.followupRun.run.senderIsOwner,
-              });
-
-              // Build BridgeCallbacks that wrap the existing typing/normalization logic.
-              const callbacks: BridgeCallbacks = {
-                onPartialReply: async (payload) => {
-                  const textForTyping = await handlePartialForTyping(payload);
-                  if (!params.opts?.onPartialReply || textForTyping === undefined) {
-                    return;
-                  }
-                  await params.opts.onPartialReply({
-                    text: textForTyping,
-                    mediaUrls: payload.mediaUrls,
-                  });
-                },
-                onBlockReply: params.opts?.onBlockReply
-                  ? createBlockReplyDeliveryHandler({
-                      onBlockReply: params.opts.onBlockReply,
-                      currentMessageId:
-                        params.sessionCtx.MessageSidFull ?? params.sessionCtx.MessageSid,
-                      normalizeStreamingText,
-                      applyReplyToMode: params.applyReplyToMode,
-                      typingSignals: params.typingSignals,
-                      blockStreamingEnabled: params.blockStreamingEnabled,
-                      blockReplyPipeline,
-                      directlySentBlockKeys,
-                    })
-                  : undefined,
-                onToolResult: onToolResult
-                  ? (() => {
-                      // Serialize tool result delivery to preserve message ordering.
-                      // Without this, concurrent tool callbacks race through typing signals
-                      // and message sends, causing out-of-order delivery to the user.
-                      // See: https://github.com/openclaw/openclaw/issues/11044
-                      let toolResultChain: Promise<void> = Promise.resolve();
-                      return (payload: ReplyPayload) => {
-                        toolResultChain = toolResultChain
-                          .then(async () => {
-                            const { text, skip } = normalizeStreamingText(payload);
-                            if (skip) {
-                              return;
-                            }
-                            await params.typingSignals.signalTextDelta(text);
-                            await onToolResult({
-                              text,
-                              mediaUrls: payload.mediaUrls,
-                            });
-                          })
-                          .catch((err) => {
-                            // Keep chain healthy after an error so later tool results still deliver.
-                            logVerbose(`tool result delivery failed: ${String(err)}`);
-                          });
-                        const task = toolResultChain.finally(() => {
-                          params.pendingToolTasks.delete(task);
-                        });
-                        params.pendingToolTasks.add(task);
-                      };
-                    })()
-                  : undefined,
-              };
-
-              const delivery = await bridge.handle(message, callbacks, params.opts?.abortSignal);
-
-              // Complete runtime failure: re-throw so runWithModelFallback can try fallback.
-              if (delivery.error && delivery.payloads.length === 0) {
-                throw new Error(delivery.error);
-              }
-
-              // Emit assistant text event for TUI/WebSocket clients (CLI backends don't
-              // stream assistant events, so we emit one with the final text).
-              const finalText = delivery.run.text?.trim();
-              if (finalText) {
-                emitAgentEvent({
-                  runId,
-                  stream: "assistant",
-                  data: { text: finalText },
-                });
-              }
-
-              emitAgentEvent({
-                runId,
-                stream: "lifecycle",
-                data: {
-                  phase: "end",
-                  startedAt,
-                  endedAt: Date.now(),
-                },
-              });
-              lifecycleTerminalEmitted = true;
-
-              return delivery;
-            } catch (err) {
-              emitAgentEvent({
-                runId,
-                stream: "lifecycle",
-                data: {
-                  phase: "error",
-                  startedAt,
-                  endedAt: Date.now(),
-                  error: String(err),
-                },
-              });
-              lifecycleTerminalEmitted = true;
-              throw err;
-            } finally {
-              // Defensive backstop: never let a run complete without a terminal
-              // lifecycle event, otherwise downstream consumers can hang.
-              if (!lifecycleTerminalEmitted) {
-                emitAgentEvent({
-                  runId,
-                  stream: "lifecycle",
-                  data: {
-                    phase: "error",
-                    startedAt,
-                    endedAt: Date.now(),
-                    error: "Bridge run completed without lifecycle terminal event",
-                  },
-                });
-              }
-            }
-          })();
-        },
-      });
-      runResult = fallbackResult.result;
-      fallbackProvider = fallbackResult.provider;
-      fallbackModel = fallbackResult.model;
-      fallbackAttempts = Array.isArray(fallbackResult.attempts)
-        ? fallbackResult.attempts.map((attempt) => ({
-            provider: String(attempt.provider ?? ""),
-            model: String(attempt.model ?? ""),
-            error: String(attempt.error ?? ""),
-            reason: attempt.reason ? String(attempt.reason) : undefined,
-            status: typeof attempt.status === "number" ? attempt.status : undefined,
-            code: attempt.code ? String(attempt.code) : undefined,
-          }))
-        : [];
+          lifecycleTerminalEmitted = true;
+        }
+        throw err;
+      } finally {
+        // Defensive backstop: never let a run complete without a terminal
+        // lifecycle event, otherwise downstream consumers can hang.
+        if (!lifecycleTerminalEmitted) {
+          emitAgentEvent({
+            runId,
+            stream: "lifecycle",
+            data: {
+              phase: "error",
+              startedAt,
+              endedAt: Date.now(),
+              error: "Bridge run completed without lifecycle terminal event",
+            },
+          });
+        }
+      }
+      fallbackProvider = provider;
+      fallbackModel = model;
+      fallbackAttempts = [];
 
       // Surface context overflow errors returned in the result (not thrown).
       // Treat these as a session-level failure and auto-recover by starting a fresh session.

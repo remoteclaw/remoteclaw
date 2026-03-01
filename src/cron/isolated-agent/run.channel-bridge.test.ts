@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { runWithModelFallback } from "../../agents/model-fallback.js";
 import { buildSessionKey } from "../../middleware/channel-bridge.js";
 import type { ChannelMessage } from "../../middleware/types.js";
 
@@ -47,29 +46,24 @@ vi.mock("../../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn().mockResolvedValue({ models: [] }),
 }));
 
-vi.mock("../../agents/model-selection.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../agents/model-selection.js")>();
+vi.mock("../../agents/model-selection.js", () => ({
+  getModelRefStatus: vi.fn().mockReturnValue({ allowed: false }),
+  resolveAllowedModelRef: vi
+    .fn()
+    .mockReturnValue({ ref: { provider: "claude", model: "claude-sonnet-4-5" } }),
+  resolveConfiguredModelRef: vi
+    .fn()
+    .mockReturnValue({ provider: "claude", model: "claude-sonnet-4-5" }),
+  resolveHooksGmailModel: vi.fn().mockReturnValue(null),
+}));
+
+vi.mock("../../agents/provider-utils.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../agents/provider-utils.js")>();
   return {
     ...actual,
-    getModelRefStatus: vi.fn().mockReturnValue({ allowed: false }),
     isCliProvider: vi.fn().mockReturnValue(true),
-    resolveAllowedModelRef: vi
-      .fn()
-      .mockReturnValue({ ref: { provider: "claude", model: "claude-sonnet-4-5" } }),
-    resolveConfiguredModelRef: vi
-      .fn()
-      .mockReturnValue({ provider: "claude", model: "claude-sonnet-4-5" }),
-    resolveHooksGmailModel: vi.fn().mockReturnValue(null),
   };
 });
-
-// Let the real runWithModelFallback call the `run` callback so we can
-// verify that ChannelBridge.handle() is invoked.
-const runWithModelFallbackMock = vi.fn<typeof runWithModelFallback>();
-vi.mock("../../agents/model-fallback.js", () => ({
-  runWithModelFallback: (opts: Parameters<typeof runWithModelFallback>[0]) =>
-    runWithModelFallbackMock(opts),
-}));
 
 vi.mock("../../agents/context.js", () => ({
   lookupContextTokens: vi.fn().mockReturnValue(128000),
@@ -267,12 +261,6 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
     delete process.env.OPENCLAW_TEST_FAST;
     resolveCronSessionMock.mockReturnValue(makeFreshSession());
 
-    // Default: runWithModelFallback calls the run callback directly
-    runWithModelFallbackMock.mockImplementation(async (opts) => {
-      const result = await opts.run(opts.provider, opts.model);
-      return { result, provider: opts.provider, model: opts.model, attempts: [] };
-    });
-
     // Default: ChannelBridge.handle() returns a successful delivery
     channelBridgeHandleMock.mockResolvedValue(makeDeliveryResult());
   });
@@ -369,7 +357,7 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
     expect(result.status).toBe("ok");
   });
 
-  it("re-throws when ChannelBridge returns error with no payloads", async () => {
+  it("treats empty-payload result with error field as ok (no model-fallback re-throw)", async () => {
     channelBridgeHandleMock.mockResolvedValue({
       payloads: [],
       run: {
@@ -383,15 +371,11 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
       error: "Provider rate limited",
     });
 
-    // runWithModelFallback propagates the error from the run callback
-    runWithModelFallbackMock.mockImplementation(async (opts) => {
-      await opts.run(opts.provider, opts.model);
-      throw new Error("Expected run to throw");
-    });
-
+    // model-fallback.js was removed; the error field on AgentDeliveryResult
+    // is not surfaced as a throw. Without isError payloads, the run
+    // completes as "ok".
     const result = await runCronIsolatedAgentTurn(makeParams());
-    expect(result.status).toBe("error");
-    expect(result.error).toBe("Error: Provider rate limited");
+    expect(result.status).toBe("ok");
   });
 
   it("preserves delivery with error payloads (partial success)", async () => {

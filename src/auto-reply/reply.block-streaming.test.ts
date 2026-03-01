@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { loadModelCatalog } from "../agents/model-catalog.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { withTempHome as withTempHomeHarness } from "../config/home-env.test-harness.js";
 import type {
@@ -39,7 +38,7 @@ const bridgeMock = vi.hoisted(() => ({
 }));
 
 vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn(),
+  loadModelCatalog: vi.fn().mockResolvedValue([]),
 }));
 
 /** Convert AgentRunResult to AgentDeliveryResult for the bridge mock. */
@@ -154,10 +153,6 @@ describe("block streaming", () => {
   beforeEach(() => {
     vi.stubEnv("OPENCLAW_TEST_FAST", "1");
     bridgeMock.runAgent.mockClear();
-    vi.mocked(loadModelCatalog).mockResolvedValue([
-      { id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" },
-      { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai" },
-    ]);
   });
 
   it("handles ordering, timeout fallback, and telegram streamMode block", async () => {

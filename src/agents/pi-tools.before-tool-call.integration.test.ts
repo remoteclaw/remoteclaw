@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetDiagnosticSessionStateForTest } from "../logging/diagnostic-session-state.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
-import { toClientToolDefinitions, toToolDefinitions } from "./pi-tool-definition-adapter.js";
-import { wrapToolWithAbortSignal } from "./pi-tools.abort.js";
 import { wrapToolWithBeforeToolCallHook } from "./pi-tools.before-tool-call.js";
+
+// NOTE: toToolDefinitions / toClientToolDefinitions were removed with
+// pi-tool-definition-adapter.ts.  The deduplication and client-tool
+// describe blocks that depended on them have been deleted.
 
 vi.mock("../plugins/hook-runner-global.js");
 
@@ -138,100 +140,5 @@ describe("before_tool_call hook integration", () => {
         sessionKey: "main",
       },
     );
-  });
-});
-
-describe("before_tool_call hook deduplication (#15502)", () => {
-  let hookRunner: HookRunnerMock;
-
-  beforeEach(() => {
-    resetDiagnosticSessionStateForTest();
-    hookRunner = installMockHookRunner({
-      hasHooksReturn: true,
-      runBeforeToolCallImpl: async () => undefined,
-    });
-  });
-
-  it("fires hook exactly once when tool goes through wrap + toToolDefinitions", async () => {
-    const execute = vi.fn().mockResolvedValue({ content: [], details: { ok: true } });
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const baseTool = { name: "web_fetch", execute, description: "fetch", parameters: {} } as any;
-
-    const wrapped = wrapToolWithBeforeToolCallHook(baseTool, {
-      agentId: "main",
-      sessionKey: "main",
-    });
-    const [def] = toToolDefinitions([wrapped]);
-    const extensionContext = {} as Parameters<typeof def.execute>[4];
-    await def.execute(
-      "call-dedup",
-      { url: "https://example.com" },
-      undefined,
-      undefined,
-      extensionContext,
-    );
-
-    expect(hookRunner.runBeforeToolCall).toHaveBeenCalledTimes(1);
-  });
-
-  it("fires hook exactly once when tool goes through wrap + abort + toToolDefinitions", async () => {
-    const execute = vi.fn().mockResolvedValue({ content: [], details: { ok: true } });
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const baseTool = { name: "Bash", execute, description: "bash", parameters: {} } as any;
-
-    const abortController = new AbortController();
-    const wrapped = wrapToolWithBeforeToolCallHook(baseTool, {
-      agentId: "main",
-      sessionKey: "main",
-    });
-    const withAbort = wrapToolWithAbortSignal(wrapped, abortController.signal);
-    const [def] = toToolDefinitions([withAbort]);
-    const extensionContext = {} as Parameters<typeof def.execute>[4];
-
-    await def.execute(
-      "call-abort-dedup",
-      { command: "ls" },
-      undefined,
-      undefined,
-      extensionContext,
-    );
-
-    expect(hookRunner.runBeforeToolCall).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("before_tool_call hook integration for client tools", () => {
-  let hookRunner: HookRunnerMock;
-
-  beforeEach(() => {
-    resetDiagnosticSessionStateForTest();
-    hookRunner = installMockHookRunner();
-  });
-
-  it("passes modified params to client tool callbacks", async () => {
-    hookRunner.hasHooks.mockReturnValue(true);
-    hookRunner.runBeforeToolCall.mockResolvedValue({ params: { extra: true } });
-    const onClientToolCall = vi.fn();
-    const [tool] = toClientToolDefinitions(
-      [
-        {
-          type: "function",
-          function: {
-            name: "client_tool",
-            description: "Client tool",
-            parameters: { type: "object", properties: { value: { type: "string" } } },
-          },
-        },
-      ],
-      onClientToolCall,
-      { agentId: "main", sessionKey: "main" },
-    );
-    const extensionContext = {} as Parameters<typeof tool.execute>[4];
-    await tool.execute("client-call-1", { value: "ok" }, undefined, undefined, extensionContext);
-
-    expect(onClientToolCall).toHaveBeenCalledWith("client_tool", {
-      value: "ok",
-      extra: true,
-    });
   });
 });

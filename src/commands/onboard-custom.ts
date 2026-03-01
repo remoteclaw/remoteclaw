@@ -1,5 +1,4 @@
-import { DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { buildModelAliasIndex, modelKey } from "../agents/model-selection.js";
+import { modelKey } from "../agents/provider-utils.js";
 import type { OpenClawConfig } from "../config/config.js";
 import type { ModelProviderConfig } from "../config/types.models.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -194,20 +193,18 @@ function resolveAliasError(params: {
   } catch (err) {
     return err instanceof Error ? err.message : "Alias is invalid.";
   }
-  const aliasIndex = buildModelAliasIndex({
-    cfg: params.cfg,
-    defaultProvider: DEFAULT_PROVIDER,
-  });
+  // Check existing models config for alias collisions.
+  const models = params.cfg.agents?.defaults?.models ?? {};
   const aliasKey = normalized.toLowerCase();
-  const existing = aliasIndex.byAlias.get(aliasKey);
-  if (!existing) {
-    return undefined;
+  for (const [ref, modelCfg] of Object.entries(models)) {
+    if (ref === params.modelRef) {
+      continue;
+    }
+    if (typeof modelCfg?.alias === "string" && modelCfg.alias.toLowerCase() === aliasKey) {
+      return `Alias ${normalized} already points to ${ref}.`;
+    }
   }
-  const existingKey = modelKey(existing.ref.provider, existing.ref.model);
-  if (existingKey === params.modelRef) {
-    return undefined;
-  }
-  return `Alias ${normalized} already points to ${existingKey}.`;
+  return undefined;
 }
 
 function buildOpenAiHeaders(apiKey: string) {

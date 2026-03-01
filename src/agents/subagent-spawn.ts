@@ -2,13 +2,14 @@ import crypto from "node:crypto";
 import { formatThinkingLevels, normalizeThinkLevel } from "../auto-reply/thinking.js";
 import { DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH } from "../config/agent-limits.js";
 import { loadConfig } from "../config/config.js";
+import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 import { callGateway } from "../gateway/call.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { resolveAgentConfig } from "./agent-scope.js";
+import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "./defaults.js";
 import { AGENT_LANE_SUBAGENT } from "./lanes.js";
-import { resolveSubagentSpawnModelSelection } from "./model-selection.js";
 import { buildSubagentSystemPrompt } from "./subagent-announce.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import { countActiveRunsForSession, registerSubagentRun } from "./subagent-registry.js";
@@ -268,11 +269,16 @@ export async function spawnSubagentDirect(
   const childDepth = callerDepth + 1;
   const spawnedByKey = requesterInternalKey;
   const targetAgentConfig = resolveAgentConfig(cfg, targetAgentId);
-  const resolvedModel = resolveSubagentSpawnModelSelection({
-    cfg,
-    agentId: targetAgentId,
-    modelOverride,
-  });
+  // Resolve model from explicit override, per-agent config, global defaults,
+  // or the runtime default (CLI agents handle selection but the gateway passes
+  // through a configured model so sessions start with the right context).
+  const resolvedModel =
+    modelOverride?.trim() ||
+    readStringParam(targetAgentConfig?.subagents ?? {}, "model") ||
+    readStringParam(cfg.agents?.defaults?.subagents ?? {}, "model") ||
+    resolveAgentModelPrimaryValue(targetAgentConfig?.model) ||
+    resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model) ||
+    `${DEFAULT_PROVIDER}/${DEFAULT_MODEL}`;
 
   const resolvedThinkingDefaultRaw =
     readStringParam(targetAgentConfig?.subagents ?? {}, "thinking") ??

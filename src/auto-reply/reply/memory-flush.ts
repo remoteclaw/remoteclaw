@@ -1,4 +1,3 @@
-import { lookupContextTokens } from "../../agents/context.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { DEFAULT_PI_COMPACTION_RESERVE_TOKENS_FLOOR } from "../../agents/pi-settings.js";
@@ -105,9 +104,8 @@ export function resolveMemoryFlushContextWindowTokens(params: {
   modelId?: string;
   agentCfgContextTokens?: number;
 }): number {
-  return (
-    lookupContextTokens(params.modelId) ?? params.agentCfgContextTokens ?? DEFAULT_CONTEXT_TOKENS
-  );
+  // Context token lookup from model catalog gutted in RemoteClaw — CLI agents manage their own context.
+  return params.agentCfgContextTokens ?? DEFAULT_CONTEXT_TOKENS;
 }
 
 export function shouldRunMemoryFlush(params: {

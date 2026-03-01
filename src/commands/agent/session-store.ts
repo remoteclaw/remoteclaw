@@ -1,7 +1,6 @@
 import { setCliSessionId } from "../../agents/cli-session.js";
-import { resolveContextTokensForModel } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
-import { isCliProvider } from "../../agents/model-selection.js";
+import { isCliProvider } from "../../agents/provider-utils.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import {
@@ -52,14 +51,7 @@ export async function updateSessionStoreAfterAgentRun(params: {
   const compactionsThisRun = 0;
   const modelUsed = fallbackModel ?? defaultModel;
   const providerUsed = fallbackProvider ?? defaultProvider;
-  const contextTokens =
-    resolveContextTokensForModel({
-      cfg,
-      provider: providerUsed,
-      model: modelUsed,
-      contextTokensOverride: params.contextTokensOverride,
-      fallbackContextTokens: DEFAULT_CONTEXT_TOKENS,
-    }) ?? DEFAULT_CONTEXT_TOKENS;
+  const contextTokens = params.contextTokensOverride ?? DEFAULT_CONTEXT_TOKENS;
 
   const entry = sessionStore[sessionKey] ?? {
     sessionId,

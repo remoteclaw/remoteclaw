@@ -50,18 +50,3 @@ export type ModelProviderConfig = {
   authHeader?: boolean;
   models: ModelDefinitionConfig[];
 };
-
-export type BedrockDiscoveryConfig = {
-  enabled?: boolean;
-  region?: string;
-  providerFilter?: string[];
-  refreshInterval?: number;
-  defaultContextWindow?: number;
-  defaultMaxTokens?: number;
-};
-
-export type ModelsConfig = {
-  mode?: "merge" | "replace";
-  providers?: Record<string, ModelProviderConfig>;
-  bedrockDiscovery?: BedrockDiscoveryConfig;
-};

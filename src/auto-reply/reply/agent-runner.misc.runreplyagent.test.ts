@@ -206,8 +206,8 @@ describe("runReplyAgent onAgentRunStart", () => {
     });
   }
 
-  it("does not emit start callback when fallback fails before run start", async () => {
-    runWithModelFallbackMock.mockRejectedValueOnce(
+  it("always emits start callback before agent run attempt", async () => {
+    channelBridgeHandleMock.mockRejectedValueOnce(
       new Error('No API key found for provider "anthropic".'),
     );
     const onAgentRunStart = vi.fn();
@@ -216,7 +216,10 @@ describe("runReplyAgent onAgentRunStart", () => {
       opts: { runId: "run-no-start", onAgentRunStart },
     });
 
-    expect(onAgentRunStart).not.toHaveBeenCalled();
+    // In RemoteClaw, start is always emitted before the ChannelBridge attempt.
+    // Model fallback is gone — CLI agents handle their own auth/model selection.
+    expect(onAgentRunStart).toHaveBeenCalledTimes(1);
+    expect(onAgentRunStart).toHaveBeenCalledWith("run-no-start");
     expect(result).toMatchObject({
       text: expect.stringContaining('No API key found for provider "anthropic".'),
     });

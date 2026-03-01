@@ -1,4 +1,3 @@
-import { lookupContextTokens } from "../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../agents/defaults.js";
 import { loadConfig } from "../config/config.js";
 import { loadSessionStore, resolveFreshSessionTotalTokens } from "../config/sessions.js";
@@ -91,10 +90,7 @@ export async function sessionsCommand(
   const aggregateAgents = opts.allAgents === true;
   const cfg = loadConfig();
   const displayDefaults = resolveSessionDisplayDefaults(cfg);
-  const configContextTokens =
-    cfg.agents?.defaults?.contextTokens ??
-    lookupContextTokens(displayDefaults.model) ??
-    DEFAULT_CONTEXT_TOKENS;
+  const configContextTokens = cfg.agents?.defaults?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
   let targets: ReturnType<typeof resolveSessionStoreTargets>;
   try {
     targets = resolveSessionStoreTargets(cfg, {
@@ -162,8 +158,7 @@ export async function sessionsCommand(
               totalTokens: resolveFreshSessionTotalTokens(r) ?? null,
               totalTokensFresh:
                 typeof r.totalTokens === "number" ? r.totalTokensFresh !== false : false,
-              contextTokens:
-                r.contextTokens ?? lookupContextTokens(model) ?? configContextTokens ?? null,
+              contextTokens: r.contextTokens ?? configContextTokens ?? null,
               model,
             };
           }),
@@ -207,7 +202,7 @@ export async function sessionsCommand(
 
   for (const row of rows) {
     const model = resolveSessionDisplayModel(cfg, row, displayDefaults);
-    const contextTokens = row.contextTokens ?? lookupContextTokens(model) ?? configContextTokens;
+    const contextTokens = row.contextTokens ?? configContextTokens;
     const total = resolveFreshSessionTotalTokens(row);
 
     const line = [

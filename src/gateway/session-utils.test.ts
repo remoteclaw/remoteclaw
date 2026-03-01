@@ -341,7 +341,7 @@ describe("resolveSessionModelRef", () => {
     expect(resolved).toEqual({ provider: "openai-codex", model: "gpt-5.3-codex" });
   });
 
-  test("falls back to resolved provider for unprefixed legacy runtime model", () => {
+  test("falls back to default provider for unprefixed legacy runtime model", () => {
     const cfg = {
       agents: {
         defaults: {
@@ -357,8 +357,11 @@ describe("resolveSessionModelRef", () => {
       modelProvider: undefined,
     });
 
+    // Without an explicit provider, parseModelRef uses the global default
+    // provider. CLI agents handle their own model selection, so the gateway
+    // does not infer providers from agent config.
     expect(resolved).toEqual({
-      provider: "google-gemini-cli",
+      provider: "anthropic",
       model: "claude-sonnet-4-6",
     });
   });
@@ -405,7 +408,7 @@ describe("resolveSessionModelIdentityRef", () => {
     expect(resolved).toEqual({ model: "claude-sonnet-4-6" });
   });
 
-  test("infers provider from configured model allowlist when unambiguous", () => {
+  test("returns unprefixed model without provider when allowlist not consulted", () => {
     const cfg = {
       agents: {
         defaults: {
@@ -424,7 +427,10 @@ describe("resolveSessionModelIdentityRef", () => {
       modelProvider: undefined,
     });
 
-    expect(resolved).toEqual({ provider: "anthropic", model: "claude-sonnet-4-6" });
+    // Without an explicit modelProvider and no slash in the model string,
+    // the provider cannot be determined. CLI agents handle their own model
+    // selection; the gateway does not infer from allowlists.
+    expect(resolved).toEqual({ model: "claude-sonnet-4-6" });
   });
 
   test("keeps provider unknown when configured models are ambiguous", () => {
@@ -469,7 +475,7 @@ describe("resolveSessionModelIdentityRef", () => {
     expect(resolved).toEqual({ provider: "anthropic", model: "claude-sonnet-4-6" });
   });
 
-  test("infers wrapper provider for slash-prefixed runtime model when allowlist match is unique", () => {
+  test("parses slash-prefixed runtime model directly without allowlist inference", () => {
     const cfg = {
       agents: {
         defaults: {
@@ -488,9 +494,12 @@ describe("resolveSessionModelIdentityRef", () => {
       modelProvider: undefined,
     });
 
+    // parseModelRef extracts provider from the slash prefix directly.
+    // Wrapper provider inference from allowlists has been removed;
+    // CLI agents handle their own model selection.
     expect(resolved).toEqual({
-      provider: "vercel-ai-gateway",
-      model: "anthropic/claude-sonnet-4-6",
+      provider: "anthropic",
+      model: "claude-sonnet-4-6",
     });
   });
 });
@@ -712,7 +721,7 @@ describe("listSessionsFromStore search", () => {
     expect(result.sessions[0]?.model).toBe("claude-sonnet-4-6");
   });
 
-  test("infers provider for legacy runtime model when allowlist match is unique", () => {
+  test("returns unprefixed legacy runtime model without provider", () => {
     const cfg = {
       session: { mainKey: "main" },
       agents: {
@@ -740,11 +749,13 @@ describe("listSessionsFromStore search", () => {
       opts: {},
     });
 
-    expect(result.sessions[0]?.modelProvider).toBe("anthropic");
+    // Without an explicit modelProvider and no slash prefix, provider
+    // cannot be inferred. CLI agents handle their own model selection.
+    expect(result.sessions[0]?.modelProvider).toBeUndefined();
     expect(result.sessions[0]?.model).toBe("claude-sonnet-4-6");
   });
 
-  test("infers wrapper provider for slash-prefixed legacy runtime model when allowlist match is unique", () => {
+  test("parses slash-prefixed legacy runtime model directly without allowlist inference", () => {
     const cfg = {
       session: { mainKey: "main" },
       agents: {
@@ -772,8 +783,10 @@ describe("listSessionsFromStore search", () => {
       opts: {},
     });
 
-    expect(result.sessions[0]?.modelProvider).toBe("vercel-ai-gateway");
-    expect(result.sessions[0]?.model).toBe("anthropic/claude-sonnet-4-6");
+    // parseModelRef extracts provider from the slash prefix directly.
+    // Wrapper provider inference from allowlists has been removed.
+    expect(result.sessions[0]?.modelProvider).toBe("anthropic");
+    expect(result.sessions[0]?.model).toBe("claude-sonnet-4-6");
   });
 
   test("exposes unknown totals when freshness is stale or missing", () => {

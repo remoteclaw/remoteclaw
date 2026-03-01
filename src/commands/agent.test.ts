@@ -1,9 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
-import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import "../cron/isolated-agent.mocks.js";
-import { loadModelCatalog } from "../agents/model-catalog.js";
+import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import type { OpenClawConfig } from "../config/config.js";
 import * as configModule from "../config/config.js";
 import * as sessionsModule from "../config/sessions.js";
@@ -13,6 +12,13 @@ import { setActivePluginRegistry } from "../plugins/runtime.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
 import { agentCommand } from "./agent.js";
+
+// model-catalog.js was deleted; the mock is provided by isolated-agent.mocks.js.
+// Access the mock function via vi.hoisted so we can configure return values per-test.
+const loadModelCatalogMock = vi.fn();
+vi.mock("../agents/model-catalog.js", () => ({
+  loadModelCatalog: loadModelCatalogMock,
+}));
 
 // ── ChannelBridge mock ──────────────────────────────────────────────────
 
@@ -193,7 +199,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   bridgeConstructorCalls.length = 0;
   bridgeHandleMock.mockResolvedValue(defaultBridgeResult());
-  vi.mocked(loadModelCatalog).mockResolvedValue([]);
+  loadModelCatalogMock?.mockResolvedValue([]);
 });
 
 describe("agentCommand", () => {
@@ -316,7 +322,7 @@ describe("agentCommand", () => {
     });
   });
 
-  it("uses provider/model from agents.defaults.model.primary", async () => {
+  it("uses hardcoded default provider when no session override exists", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store, {
@@ -329,53 +335,10 @@ describe("agentCommand", () => {
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
 
-      expect(bridgeConstructorCalls.at(-1)?.provider).toBe("openai");
-    });
-  });
-
-  it("uses default fallback list for session model overrides", async () => {
-    await withTempHome(async (home) => {
-      const store = path.join(home, "sessions.json");
-      writeSessionStoreSeed(store, {
-        "agent:main:subagent:test": {
-          sessionId: "session-subagent",
-          updatedAt: Date.now(),
-          providerOverride: "anthropic",
-          modelOverride: "claude-opus-4-5",
-        },
-      });
-
-      mockConfig(home, store, {
-        model: {
-          primary: "openai/gpt-4.1-mini",
-          fallbacks: ["openai/gpt-5.2"],
-        },
-        models: {
-          "anthropic/claude-opus-4-5": {},
-          "openai/gpt-4.1-mini": {},
-          "openai/gpt-5.2": {},
-        },
-      });
-
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
-        { id: "claude-opus-4-5", name: "Opus", provider: "anthropic" },
-        { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai" },
-        { id: "gpt-5.2", name: "GPT-5.2", provider: "openai" },
-      ]);
-      bridgeHandleMock
-        .mockRejectedValueOnce(Object.assign(new Error("rate limited"), { status: 429 }))
-        .mockResolvedValueOnce(defaultBridgeResult());
-
-      await agentCommand(
-        {
-          message: "hi",
-          sessionKey: "agent:main:subagent:test",
-        },
-        runtime,
-      );
-
-      const attempts = bridgeConstructorCalls.map((c) => c.provider);
-      expect(attempts).toEqual(["anthropic", "openai"]);
+      // agent.ts uses DEFAULT_PROVIDER ("anthropic") from agents/defaults.ts,
+      // not agents.defaults.model.primary from config. Config-driven model
+      // resolution was removed with model-selection.ts.
+      expect(bridgeConstructorCalls.at(-1)?.provider).toBe("anthropic");
     });
   });
 
@@ -396,7 +359,7 @@ describe("agentCommand", () => {
         models: {},
       });
 
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
+      loadModelCatalogMock.mockResolvedValueOnce([
         { id: "claude-opus-4-5", name: "Opus", provider: "anthropic" },
       ]);
 
@@ -541,7 +504,7 @@ describe("agentCommand", () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
-      vi.mocked(loadModelCatalog).mockResolvedValueOnce([
+      loadModelCatalogMock.mockResolvedValueOnce([
         {
           id: "claude-opus-4-5",
           name: "Opus 4.5",

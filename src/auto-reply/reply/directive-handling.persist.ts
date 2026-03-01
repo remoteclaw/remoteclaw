@@ -3,15 +3,8 @@ import {
   resolveDefaultAgentId,
   resolveSessionAgentId,
 } from "../../agents/agent-scope.js";
-import { lookupContextTokens } from "../../agents/context.js";
-import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
-import {
-  buildModelAliasIndex,
-  type ModelAliasIndex,
-  modelKey,
-  resolveDefaultModelForAgent,
-  resolveModelRefFromString,
-} from "../../agents/model-selection.js";
+import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
+import { modelKey, parseModelRef } from "../../agents/provider-utils.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
@@ -35,7 +28,7 @@ export async function persistInlineDirectives(params: {
   elevatedAllowed: boolean;
   defaultProvider: string;
   defaultModel: string;
-  aliasIndex: ModelAliasIndex;
+  aliasIndex: Map<string, { provider: string; model: string }>;
   allowedModelKeys: Set<string>;
   provider: string;
   model: string;
@@ -54,7 +47,7 @@ export async function persistInlineDirectives(params: {
     elevatedAllowed,
     defaultProvider,
     defaultModel,
-    aliasIndex,
+    aliasIndex: _aliasIndex,
     allowedModelKeys,
     initialModelLabel,
     formatModelSwitchEvent,
@@ -139,19 +132,16 @@ export async function persistInlineDirectives(params: {
         ? params.effectiveModelDirective
         : undefined;
     if (modelDirective) {
-      const resolved = resolveModelRefFromString({
-        raw: modelDirective,
-        defaultProvider,
-        aliasIndex,
-      });
+      // Model alias resolution gutted in RemoteClaw — parse model ref directly.
+      const resolved = parseModelRef(modelDirective, defaultProvider);
       if (resolved) {
-        const key = modelKey(resolved.ref.provider, resolved.ref.model);
+        const key = modelKey(resolved.provider, resolved.model);
         if (allowedModelKeys.size === 0 || allowedModelKeys.has(key)) {
           let profileOverride: string | undefined;
           if (directives.rawModelProfile) {
             const profileResolved = resolveProfileOverride({
               rawProfile: directives.rawModelProfile,
-              provider: resolved.ref.provider,
+              provider: resolved.provider,
               cfg,
               agentDir,
             });
@@ -161,21 +151,21 @@ export async function persistInlineDirectives(params: {
             profileOverride = profileResolved.profileId;
           }
           const isDefault =
-            resolved.ref.provider === defaultProvider && resolved.ref.model === defaultModel;
+            resolved.provider === defaultProvider && resolved.model === defaultModel;
           const { updated: modelUpdated } = applyModelOverrideToSessionEntry({
             entry: sessionEntry,
             selection: {
-              provider: resolved.ref.provider,
-              model: resolved.ref.model,
+              provider: resolved.provider,
+              model: resolved.model,
               isDefault,
             },
             profileOverride,
           });
-          provider = resolved.ref.provider;
-          model = resolved.ref.model;
+          provider = resolved.provider;
+          model = resolved.model;
           const nextLabel = `${provider}/${model}`;
           if (nextLabel !== initialModelLabel) {
-            enqueueSystemEvent(formatModelSwitchEvent(nextLabel, resolved.alias), {
+            enqueueSystemEvent(formatModelSwitchEvent(nextLabel), {
               sessionKey,
               contextKey: `model:${nextLabel}`,
             });
@@ -213,24 +203,24 @@ export async function persistInlineDirectives(params: {
   return {
     provider,
     model,
-    contextTokens: agentCfg?.contextTokens ?? lookupContextTokens(model) ?? DEFAULT_CONTEXT_TOKENS,
+    // Context token lookup from model catalog gutted in RemoteClaw — CLI agents manage their own context.
+    contextTokens: agentCfg?.contextTokens ?? DEFAULT_CONTEXT_TOKENS,
   };
 }
 
 export function resolveDefaultModel(params: { cfg: OpenClawConfig; agentId?: string }): {
   defaultProvider: string;
   defaultModel: string;
-  aliasIndex: ModelAliasIndex;
+  aliasIndex: Map<string, { provider: string; model: string }>;
 } {
-  const mainModel = resolveDefaultModelForAgent({
-    cfg: params.cfg,
-    agentId: params.agentId,
-  });
-  const defaultProvider = mainModel.provider;
-  const defaultModel = mainModel.model;
-  const aliasIndex = buildModelAliasIndex({
-    cfg: params.cfg,
-    defaultProvider,
-  });
+  // Model selection/alias infrastructure gutted in RemoteClaw — derive from agent config primary.
+  const agentModel = params.cfg.agents?.defaults?.model;
+  const primary = typeof agentModel === "string" ? agentModel : agentModel?.primary;
+  const slashIdx = primary?.indexOf("/") ?? -1;
+  const defaultProvider = primary && slashIdx > 0 ? primary.slice(0, slashIdx) : DEFAULT_PROVIDER;
+  const defaultModel =
+    primary && slashIdx > 0 ? primary.slice(slashIdx + 1) : (primary ?? DEFAULT_MODEL);
+  // Alias index is empty — model aliases gutted in RemoteClaw.
+  const aliasIndex = new Map<string, { provider: string; model: string }>();
   return { defaultProvider, defaultModel, aliasIndex };
 }

@@ -1,7 +1,6 @@
 import fs from "node:fs";
-import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
-import { resolveModelAuthMode } from "../../agents/model-auth.js";
+import { resolveModelAuthMode } from "../../agents/provider-auth.js";
 import { hasNonzeroUsage } from "../../agents/usage.js";
 import {
   resolveAgentIdFromSessionKey,
@@ -480,11 +479,9 @@ export async function runReplyAgent(params: {
     // All providers now route through ChannelBridge (CLI-only execution), so
     // the session ID is always present when returned by the runtime.
     const cliSessionId = runResult.run.sessionId?.trim() || undefined;
+    // Context token lookup from model catalog gutted in RemoteClaw — CLI agents manage their own context.
     const contextTokensUsed =
-      agentCfgContextTokens ??
-      lookupContextTokens(modelUsed) ??
-      activeSessionEntry?.contextTokens ??
-      DEFAULT_CONTEXT_TOKENS;
+      agentCfgContextTokens ?? activeSessionEntry?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
 
     await persistRunSessionUsage({
       storePath,

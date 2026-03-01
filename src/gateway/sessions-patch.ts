@@ -1,10 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
-import {
-  resolveAllowedModelRef,
-  resolveDefaultModelForAgent,
-  resolveSubagentConfiguredModelSelection,
-} from "../agents/model-selection.js";
+import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
+import { parseModelRef } from "../agents/provider-utils.js";
 import { normalizeGroupActivation } from "../auto-reply/group-activation.js";
 import {
   formatThinkingLevels,
@@ -17,11 +13,7 @@ import {
 } from "../auto-reply/thinking.js";
 import type { OpenClawConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
-import {
-  isSubagentSessionKey,
-  normalizeAgentId,
-  parseAgentSessionKey,
-} from "../routing/session-key.js";
+import { isSubagentSessionKey } from "../routing/session-key.js";
 import { applyVerboseOverride, parseVerboseOverride } from "../sessions/level-overrides.js";
 import { applyModelOverrideToSessionEntry } from "../sessions/model-overrides.js";
 import { normalizeSendPolicy } from "../sessions/send-policy.js";
@@ -67,14 +59,9 @@ export async function applySessionsPatchToStore(params: {
   storeKey: string;
   patch: SessionsPatchParams;
 }): Promise<{ ok: true; entry: SessionEntry } | { ok: false; error: ErrorShape }> {
-  const { cfg, store, storeKey, patch } = params;
+  const { cfg: _cfg, store, storeKey, patch } = params;
   const now = Date.now();
-  const parsedAgent = parseAgentSessionKey(storeKey);
-  const sessionAgentId = normalizeAgentId(parsedAgent?.agentId ?? resolveDefaultAgentId(cfg));
-  const resolvedDefault = resolveDefaultModelForAgent({ cfg, agentId: sessionAgentId });
-  const subagentModelHint = isSubagentSessionKey(storeKey)
-    ? resolveSubagentConfiguredModelSelection({ cfg, agentId: sessionAgentId })
-    : undefined;
+  const resolvedDefault = { provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL };
 
   const existing = store[storeKey];
   const next: SessionEntry = existing
@@ -289,24 +276,17 @@ export async function applySessionsPatchToStore(params: {
       if (!trimmed) {
         return invalid("invalid model: empty");
       }
-      const resolved = resolveAllowedModelRef({
-        cfg,
-        catalog: [],
-        raw: trimmed,
-        defaultProvider: resolvedDefault.provider,
-        defaultModel: subagentModelHint ?? resolvedDefault.model,
-      });
-      if ("error" in resolved) {
-        return invalid(resolved.error);
+      const parsed = parseModelRef(trimmed, resolvedDefault.provider);
+      if (!parsed) {
+        return invalid(`invalid model: "${trimmed}"`);
       }
       const isDefault =
-        resolved.ref.provider === resolvedDefault.provider &&
-        resolved.ref.model === resolvedDefault.model;
+        parsed.provider === resolvedDefault.provider && parsed.model === resolvedDefault.model;
       applyModelOverrideToSessionEntry({
         entry: next,
         selection: {
-          provider: resolved.ref.provider,
-          model: resolved.ref.model,
+          provider: parsed.provider,
+          model: parsed.model,
           isDefault,
         },
       });

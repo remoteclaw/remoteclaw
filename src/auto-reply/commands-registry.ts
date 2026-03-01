@@ -1,5 +1,4 @@
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { resolveConfiguredModelRef } from "../agents/model-selection.js";
 import { isCommandFlagEnabled } from "../config/commands.js";
 import type { OpenClawConfig } from "../config/types.js";
 import { escapeRegExp } from "../utils.js";
@@ -254,15 +253,13 @@ function resolveDefaultCommandContext(cfg?: OpenClawConfig): {
   provider: string;
   model: string;
 } {
-  const resolved = resolveConfiguredModelRef({
-    cfg: cfg ?? ({} as OpenClawConfig),
-    defaultProvider: DEFAULT_PROVIDER,
-    defaultModel: DEFAULT_MODEL,
-  });
-  return {
-    provider: resolved.provider ?? DEFAULT_PROVIDER,
-    model: resolved.model ?? DEFAULT_MODEL,
-  };
+  // Model selection gutted in RemoteClaw — derive from agent config primary.
+  const agentModel = cfg?.agents?.defaults?.model;
+  const primary = typeof agentModel === "string" ? agentModel : agentModel?.primary;
+  const slashIdx = primary?.indexOf("/") ?? -1;
+  const provider = primary && slashIdx > 0 ? primary.slice(0, slashIdx) : DEFAULT_PROVIDER;
+  const model = primary && slashIdx > 0 ? primary.slice(slashIdx + 1) : (primary ?? DEFAULT_MODEL);
+  return { provider, model };
 }
 
 export type ResolvedCommandArgChoice = { value: string; label: string };

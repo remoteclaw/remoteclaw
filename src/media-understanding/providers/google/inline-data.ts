@@ -1,4 +1,4 @@
-import { normalizeGoogleModelId } from "../../../agents/models-config.providers.js";
+import { normalizeGoogleModelId } from "../../../agents/provider-utils.js";
 import { parseGeminiAuth } from "../../../infra/gemini-auth.js";
 import { assertOkOrThrowHttpError, fetchWithTimeoutGuarded, normalizeBaseUrl } from "../shared.js";
 

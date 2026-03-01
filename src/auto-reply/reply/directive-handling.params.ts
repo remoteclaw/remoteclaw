@@ -1,4 +1,3 @@
-import type { ModelAliasIndex } from "../../agents/model-selection.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { MsgContext } from "../templating.js";
@@ -18,11 +17,9 @@ export type HandleDirectiveOnlyCoreParams = {
   messageProviderKey?: string;
   defaultProvider: string;
   defaultModel: string;
-  aliasIndex: ModelAliasIndex;
+  aliasIndex: Map<string, { provider: string; model: string }>;
   allowedModelKeys: Set<string>;
-  allowedModelCatalog: Awaited<
-    ReturnType<typeof import("../../agents/model-catalog.js").loadModelCatalog>
-  >;
+  allowedModelCatalog: Array<{ id: string; provider: string }>;
   resetModelOverride: boolean;
   provider: string;
   model: string;
@@ -47,9 +44,7 @@ export type ApplyInlineDirectivesFastLaneParams = HandleDirectiveOnlyCoreParams 
   modelState: {
     resolveDefaultThinkingLevel: () => Promise<ThinkLevel | undefined>;
     allowedModelKeys: Set<string>;
-    allowedModelCatalog: Awaited<
-      ReturnType<typeof import("../../agents/model-catalog.js").loadModelCatalog>
-    >;
+    allowedModelCatalog: Array<{ id: string; provider: string }>;
     resetModelOverride: boolean;
   };
 };

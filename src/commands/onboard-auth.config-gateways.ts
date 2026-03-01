@@ -1,9 +1,8 @@
 import type { OpenClawConfig } from "../config/config.js";
 import { applyOnboardAuthAgentModelsAndProviders } from "./onboard-auth.config-shared.js";
-import {
-  CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF,
-  VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF,
-} from "./onboard-auth.credentials.js";
+import { VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF } from "./onboard-auth.credentials.js";
+
+const CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF = "cloudflare-ai-gateway/claude-sonnet-4-5";
 
 export function applyVercelAiGatewayProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   const models = { ...cfg.agents?.defaults?.models };

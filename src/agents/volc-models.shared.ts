@@ -1,4 +1,17 @@
-import type { ModelDefinitionConfig } from "../config/types.js";
+/**
+ * Inline model definition shape. Previously imported from config/types.models.js
+ * which was removed as part of the in-process LLM provider gutting.
+ */
+export type ModelDefinitionConfig = {
+  id: string;
+  name: string;
+  api?: string;
+  reasoning: boolean;
+  input: string[];
+  cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
+  contextWindow: number;
+  maxTokens: number;
+};
 
 export type VolcModelCatalogEntry = {
   id: string;

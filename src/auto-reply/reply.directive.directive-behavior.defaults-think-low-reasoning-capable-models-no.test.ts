@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 import { loadSessionStore } from "../config/sessions.js";
 import {
   installDirectiveBehaviorE2EHooks,
-  loadModelCatalog,
   makeAgentTextResult,
   makeWhatsAppDirectiveConfig,
   mockAgentTextResult,
@@ -117,15 +116,6 @@ describe("directive behavior", () => {
     await withTempHome(async (home) => {
       const storePath = sessionStorePath(home);
       mockAgentTextResult("done");
-      vi.mocked(loadModelCatalog).mockResolvedValue([
-        {
-          id: "x-ai/grok-4.1-fast",
-          name: "Grok 4.1 Fast",
-          provider: "openrouter",
-          reasoning: true,
-        },
-      ]);
-
       const config = makeWhatsAppDirectiveConfig(
         home,
         {

@@ -79,8 +79,6 @@ describe("gateway plugin HTTP auth boundary", () => {
       prefix: "openclaw-plugin-http-security-headers-test-",
       run: async () => {
         const withoutHsts = createGatewayHttpServer({
-          canvasHost: null,
-          clients: new Set(),
           controlUiEnabled: false,
           controlUiBasePath: "/__control__",
           openAiChatCompletionsEnabled: false,
@@ -108,8 +106,6 @@ describe("gateway plugin HTTP auth boundary", () => {
         );
 
         const withHsts = createGatewayHttpServer({
-          canvasHost: null,
-          clients: new Set(),
           controlUiEnabled: false,
           controlUiBasePath: "/__control__",
           openAiChatCompletionsEnabled: false,
@@ -164,8 +160,6 @@ describe("gateway plugin HTTP auth boundary", () => {
         });
 
         const server = createGatewayHttpServer({
-          canvasHost: null,
-          clients: new Set(),
           controlUiEnabled: false,
           controlUiBasePath: "/__control__",
           openAiChatCompletionsEnabled: false,

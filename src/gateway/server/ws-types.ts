@@ -7,6 +7,4 @@ export type GatewayWsClient = {
   connId: string;
   presenceKey?: string;
   clientIp?: string;
-  canvasCapability?: string;
-  canvasCapabilityExpiresAtMs?: number;
 };

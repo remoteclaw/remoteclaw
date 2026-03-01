@@ -6,7 +6,6 @@ import type {
   ChannelsStatusSnapshot,
   CronJob,
   CronStatus,
-  SkillStatusReport,
   ToolsCatalogResult,
 } from "../types.ts";
 import {
@@ -14,7 +13,7 @@ import {
   renderAgentChannels,
   renderAgentCron,
 } from "./agents-panels-status-files.ts";
-import { renderAgentTools, renderAgentSkills } from "./agents-panels-tools-skills.ts";
+import { renderAgentTools } from "./agents-panels-tools-skills.ts";
 import {
   agentBadgeText,
   buildAgentContext,
@@ -29,7 +28,7 @@ import {
   resolveModelPrimary,
 } from "./agents-utils.ts";
 
-export type AgentsPanel = "overview" | "files" | "tools" | "skills" | "channels" | "cron";
+export type AgentsPanel = "overview" | "files" | "tools" | "channels" | "cron";
 
 export type AgentsProps = {
   loading: boolean;
@@ -59,14 +58,9 @@ export type AgentsProps = {
   agentIdentityLoading: boolean;
   agentIdentityError: string | null;
   agentIdentityById: Record<string, AgentIdentityResult>;
-  agentSkillsLoading: boolean;
-  agentSkillsReport: SkillStatusReport | null;
-  agentSkillsError: string | null;
-  agentSkillsAgentId: string | null;
   toolsCatalogLoading: boolean;
   toolsCatalogError: string | null;
   toolsCatalogResult: ToolsCatalogResult | null;
-  skillsFilter: string;
   onRefresh: () => void;
   onSelectAgent: (agentId: string) => void;
   onSelectPanel: (panel: AgentsPanel) => void;
@@ -83,11 +77,6 @@ export type AgentsProps = {
   onModelFallbacksChange: (agentId: string, fallbacks: string[]) => void;
   onChannelsRefresh: () => void;
   onCronRefresh: () => void;
-  onSkillsFilterChange: (next: string) => void;
-  onSkillsRefresh: () => void;
-  onAgentSkillToggle: (agentId: string, skillName: string, enabled: boolean) => void;
-  onAgentSkillsClear: (agentId: string) => void;
-  onAgentSkillsDisableAll: (agentId: string) => void;
 };
 
 export type AgentContext = {
@@ -95,7 +84,6 @@ export type AgentContext = {
   model: string;
   identityName: string;
   identityEmoji: string;
-  skillsLabel: string;
   isDefault: boolean;
 };
 
@@ -225,29 +213,6 @@ export function renderAgents(props: AgentsProps) {
                     : nothing
                 }
                 ${
-                  props.activePanel === "skills"
-                    ? renderAgentSkills({
-                        agentId: selectedAgent.id,
-                        report: props.agentSkillsReport,
-                        loading: props.agentSkillsLoading,
-                        error: props.agentSkillsError,
-                        activeAgentId: props.agentSkillsAgentId,
-                        configForm: props.configForm,
-                        configLoading: props.configLoading,
-                        configSaving: props.configSaving,
-                        configDirty: props.configDirty,
-                        filter: props.skillsFilter,
-                        onFilterChange: props.onSkillsFilterChange,
-                        onRefresh: props.onSkillsRefresh,
-                        onToggle: props.onAgentSkillToggle,
-                        onClear: props.onAgentSkillsClear,
-                        onDisableAll: props.onAgentSkillsDisableAll,
-                        onConfigReload: props.onConfigReload,
-                        onConfigSave: props.onConfigSave,
-                      })
-                    : nothing
-                }
-                ${
                   props.activePanel === "channels"
                     ? renderAgentChannels({
                         context: buildAgentContext(
@@ -323,7 +288,6 @@ function renderAgentTabs(active: AgentsPanel, onSelect: (panel: AgentsPanel) => 
     { id: "overview", label: "Overview" },
     { id: "files", label: "Files" },
     { id: "tools", label: "Tools" },
-    { id: "skills", label: "Skills" },
     { id: "channels", label: "Channels" },
     { id: "cron", label: "Cron Jobs" },
   ];
@@ -403,8 +367,6 @@ function renderAgentOverview(params: {
     "-";
   const resolvedEmoji = resolveAgentEmoji(agent, agentIdentity);
   const identityEmoji = resolvedEmoji || "-";
-  const skillFilter = Array.isArray(config.entry?.skills) ? config.entry?.skills : null;
-  const skillCount = skillFilter?.length ?? null;
   const identityStatus = agentIdentityLoading
     ? "Loading…"
     : agentIdentityError
@@ -437,10 +399,6 @@ function renderAgentOverview(params: {
         <div class="agent-kv">
           <div class="label">Identity Emoji</div>
           <div>${identityEmoji}</div>
-        </div>
-        <div class="agent-kv">
-          <div class="label">Skills Filter</div>
-          <div>${skillFilter ? `${skillCount} selected` : "all skills"}</div>
         </div>
       </div>
 

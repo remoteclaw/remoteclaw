@@ -91,7 +91,6 @@ export type SessionsUsageEntry = {
   } | null;
   contextWeight?: {
     systemPrompt: { chars: number; projectContextChars: number; nonProjectContextChars: number };
-    skills: { promptChars: number; entries: Array<{ name: string; blockChars: number }> };
     tools: {
       listChars: number;
       schemaChars: number;

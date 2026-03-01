@@ -2,6 +2,7 @@
 import { spawn } from "node:child_process";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { isRootHelpInvocation, isRootVersionInvocation } from "./cli/argv.js";
 import { applyCliProfileEnv, parseCliProfileArgs } from "./cli/profile.js";
 import { shouldSkipRespawnForArgv } from "./cli/respawn-policy.js";
 import { normalizeWindowsArgv } from "./cli/windows-argv.js";
@@ -100,6 +101,42 @@ if (
     return true;
   }
 
+  function tryHandleRootVersionFastPath(argv: string[]): boolean {
+    if (!isRootVersionInvocation(argv)) {
+      return false;
+    }
+    import("./version.js")
+      .then(({ VERSION }) => {
+        console.log(VERSION);
+      })
+      .catch((error) => {
+        console.error(
+          "[remoteclaw] Failed to resolve version:",
+          error instanceof Error ? (error.stack ?? error.message) : error,
+        );
+        process.exitCode = 1;
+      });
+    return true;
+  }
+
+  function tryHandleRootHelpFastPath(argv: string[]): boolean {
+    if (!isRootHelpInvocation(argv)) {
+      return false;
+    }
+    import("./cli/program.js")
+      .then(({ buildProgram }) => {
+        buildProgram().outputHelp();
+      })
+      .catch((error) => {
+        console.error(
+          "[remoteclaw] Failed to display help:",
+          error instanceof Error ? (error.stack ?? error.message) : error,
+        );
+        process.exitCode = 1;
+      });
+    return true;
+  }
+
   process.argv = normalizeWindowsArgv(process.argv);
 
   if (!ensureExperimentalWarningSuppressed()) {
@@ -116,14 +153,16 @@ if (
       process.argv = parsed.argv;
     }
 
-    import("./cli/run-main.js")
-      .then(({ runCli }) => runCli(process.argv))
-      .catch((error) => {
-        console.error(
-          "[remoteclaw] Failed to start CLI:",
-          error instanceof Error ? (error.stack ?? error.message) : error,
-        );
-        process.exitCode = 1;
-      });
+    if (!tryHandleRootVersionFastPath(process.argv) && !tryHandleRootHelpFastPath(process.argv)) {
+      import("./cli/run-main.js")
+        .then(({ runCli }) => runCli(process.argv))
+        .catch((error) => {
+          console.error(
+            "[remoteclaw] Failed to start CLI:",
+            error instanceof Error ? (error.stack ?? error.message) : error,
+          );
+          process.exitCode = 1;
+        });
+    }
   }
 }

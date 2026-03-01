@@ -24,15 +24,8 @@ import {
 import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
 import { resolveAgentDir } from "../agent-scope.js";
 import { formatUserTime, resolveUserTimeFormat, resolveUserTimezone } from "../date-time.js";
-import { resolveModelAuthLabel } from "../model-auth-label.js";
-import { loadModelCatalog } from "../model-catalog.js";
-import {
-  buildAllowedModelSet,
-  buildModelAliasIndex,
-  modelKey,
-  resolveDefaultModelForAgent,
-  resolveModelRefFromString,
-} from "../model-selection.js";
+import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../defaults.js";
+import { parseModelRef } from "../provider-utils.js";
 import type { AnyAgentTool } from "./common.js";
 import { readStringParam } from "./common.js";
 import {
@@ -131,43 +124,17 @@ async function resolveModelOverride(params: {
     return { kind: "reset" };
   }
 
-  const configDefault = resolveDefaultModelForAgent({
-    cfg: params.cfg,
-    agentId: params.agentId,
-  });
-  const currentProvider = params.sessionEntry?.providerOverride?.trim() || configDefault.provider;
-  const currentModel = params.sessionEntry?.modelOverride?.trim() || configDefault.model;
+  const currentProvider = params.sessionEntry?.providerOverride?.trim() || DEFAULT_PROVIDER;
 
-  const aliasIndex = buildModelAliasIndex({
-    cfg: params.cfg,
-    defaultProvider: currentProvider,
-  });
-  const catalog = await loadModelCatalog({ config: params.cfg });
-  const allowed = buildAllowedModelSet({
-    cfg: params.cfg,
-    catalog,
-    defaultProvider: currentProvider,
-    defaultModel: currentModel,
-  });
-
-  const resolved = resolveModelRefFromString({
-    raw,
-    defaultProvider: currentProvider,
-    aliasIndex,
-  });
-  if (!resolved) {
+  const parsed = parseModelRef(raw, currentProvider);
+  if (!parsed) {
     throw new Error(`Unrecognized model "${raw}".`);
   }
-  const key = modelKey(resolved.ref.provider, resolved.ref.model);
-  if (allowed.allowedKeys.size > 0 && !allowed.allowedKeys.has(key)) {
-    throw new Error(`Model "${key}" is not allowed.`);
-  }
-  const isDefault =
-    resolved.ref.provider === configDefault.provider && resolved.ref.model === configDefault.model;
+  const isDefault = parsed.provider === DEFAULT_PROVIDER && parsed.model === DEFAULT_MODEL;
   return {
     kind: "set",
-    provider: resolved.ref.provider,
-    model: resolved.ref.model,
+    provider: parsed.provider,
+    model: parsed.model,
     isDefault,
   };
 }
@@ -258,7 +225,7 @@ export function createSessionStatusTool(opts?: {
         throw new Error(`Unknown ${kind}: ${requestedKeyRaw}`);
       }
 
-      const configured = resolveDefaultModelForAgent({ cfg, agentId });
+      const configured = { provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL };
       const modelRaw = readStringParam(params, "model");
       let changedModel = false;
       if (typeof modelRaw === "string") {
@@ -365,12 +332,7 @@ export function createSessionStatusTool(opts?: {
         sessionKey: resolved.key,
         sessionStorePath: storePath,
         groupActivation,
-        modelAuth: resolveModelAuthLabel({
-          provider: providerForCard,
-          cfg,
-          sessionEntry: resolved.entry,
-          agentDir,
-        }),
+        modelAuth: undefined,
         usageLine,
         timeLine,
         queue: {

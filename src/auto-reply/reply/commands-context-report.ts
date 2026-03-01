@@ -2,7 +2,6 @@ import {
   resolveBootstrapMaxChars,
   resolveBootstrapTotalMaxChars,
 } from "../../agents/agent-helpers.js";
-import { buildSystemPromptReport } from "../../agents/system-prompt-report.js";
 import type { SessionSystemPromptReport } from "../../config/sessions/types.js";
 import type { ReplyPayload } from "../types.js";
 import { resolveCommandsSystemPromptBundle } from "./commands-system-prompt.js";
@@ -54,7 +53,20 @@ async function resolveContextReport(
   const { systemPrompt, tools, skillsPrompt, bootstrapFiles, injectedFiles, sandboxRuntime } =
     await resolveCommandsSystemPromptBundle(params);
 
-  return buildSystemPromptReport({
+  // buildSystemPromptReport module gutted in RemoteClaw — inline the report construction.
+  const systemPromptChars = systemPrompt.length;
+  const projectContextChars = injectedFiles.reduce(
+    (sum, file) => sum + (file.content?.length ?? 0),
+    0,
+  );
+  const toolSchemaChars = tools.reduce(
+    (sum, tool) => sum + JSON.stringify(tool.parameters ?? {}).length,
+    0,
+  );
+  const toolListChars = tools.reduce((sum, tool) => sum + (tool.name?.length ?? 0) + 2, 0);
+  const skillsPromptChars = skillsPrompt.length;
+
+  return {
     source: "estimate",
     generatedAt: Date.now(),
     sessionId: params.sessionEntry?.sessionId,
@@ -65,12 +77,38 @@ async function resolveContextReport(
     bootstrapMaxChars,
     bootstrapTotalMaxChars,
     sandbox: { mode: sandboxRuntime.mode, sandboxed: sandboxRuntime.sandboxed },
-    systemPrompt,
-    bootstrapFiles,
-    injectedFiles,
-    skillsPrompt,
-    tools,
-  });
+    systemPrompt: {
+      chars: systemPromptChars,
+      projectContextChars,
+      nonProjectContextChars: Math.max(0, systemPromptChars - projectContextChars),
+    },
+    injectedWorkspaceFiles: bootstrapFiles.map((file) => ({
+      name: file.name ?? "unknown",
+      path: file.path ?? "",
+      missing: file.missing ?? false,
+      rawChars: file.content?.length ?? 0,
+      injectedChars: file.content?.length ?? 0,
+      truncated: false,
+    })),
+    skills: {
+      promptChars: skillsPromptChars,
+      entries: [],
+    },
+    tools: {
+      listChars: toolListChars,
+      schemaChars: toolSchemaChars,
+      entries: tools.map((tool) => ({
+        name: tool.name ?? "unknown",
+        summaryChars: tool.description?.length ?? 0,
+        schemaChars: JSON.stringify(tool.parameters ?? {}).length,
+        propertiesCount: tool.parameters
+          ? Object.keys(
+              (tool.parameters as { properties?: Record<string, unknown> }).properties ?? {},
+            ).length
+          : null,
+      })),
+    },
+  };
 }
 
 export async function buildContextReply(params: HandleCommandsParams): Promise<ReplyPayload> {

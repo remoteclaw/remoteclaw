@@ -1,10 +1,6 @@
 import { resolveAuthStorePathForDisplay } from "../../agents/auth-profiles.js";
 import { listProfilesForProvider } from "../../agents/auth-profiles.js";
-import {
-  ensureAuthProfileStore,
-  getCustomProviderApiKey,
-  resolveEnvApiKey,
-} from "../../agents/model-auth.js";
+import { ensureAuthProfileStore, resolveEnvApiKey } from "../../agents/provider-auth.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { shortenHomePath } from "../../utils.js";
 import { maskApiKey } from "../../utils/mask-api-key.js";
@@ -72,13 +68,6 @@ export const resolveAuthLabel = async (
   if (envKey) {
     const label = maskApiKey(envKey.apiKey);
     return { label, source: mode === "verbose" ? envKey.source : "" };
-  }
-  const customKey = getCustomProviderApiKey(cfg, provider);
-  if (customKey) {
-    return {
-      label: maskApiKey(customKey),
-      source: mode === "verbose" ? `models.json: ${formatPath(modelsPath)}` : "",
-    };
   }
   return { label: "missing", source: "missing" };
 };

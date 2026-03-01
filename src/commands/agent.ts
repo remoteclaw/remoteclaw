@@ -1,7 +1,5 @@
 import {
   listAgentIds,
-  resolveAgentDir,
-  resolveEffectiveModelFallbacks,
   resolveSessionAgentId,
   resolveAgentWorkspaceDir,
 } from "../agents/agent-scope.js";
@@ -10,17 +8,7 @@ import { clearSessionAuthProfileOverride } from "../agents/auth-profiles/session
 import { resolveChannelMessageToolHints } from "../agents/channel-tools.js";
 import { getCliSessionId } from "../agents/cli-session.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { loadModelCatalog } from "../agents/model-catalog.js";
-import { runWithModelFallback } from "../agents/model-fallback.js";
-import {
-  buildAllowedModelSet,
-  isCliProvider,
-  modelKey,
-  normalizeModelRef,
-  resolveConfiguredModelRef,
-  resolveDefaultModelForAgent,
-  resolveThinkingDefault,
-} from "../agents/model-selection.js";
+import { normalizeModelRef } from "../agents/provider-utils.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import {
   formatThinkingLevels,
@@ -56,7 +44,6 @@ import type { AgentDeliveryResult, ChannelMessage } from "../middleware/types.js
 import { normalizeAgentId } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { applyVerboseOverride } from "../sessions/level-overrides.js";
-import { applyModelOverrideToSessionEntry } from "../sessions/model-overrides.js";
 import { resolveSendPolicy } from "../sessions/send-policy.js";
 import { resolveMessageChannel } from "../utils/message-channel.js";
 import { deliverAgentCommandResult } from "./agent/delivery.js";
@@ -77,13 +64,6 @@ async function persistSessionEntry(params: PersistSessionEntryParams): Promise<v
   await updateSessionStore(params.storePath, (store) => {
     store[params.sessionKey] = params.entry;
   });
-}
-
-function resolveFallbackRetryPrompt(params: { body: string; isFallbackRetry: boolean }): string {
-  if (!params.isFallbackRetry) {
-    return params.body;
-  }
-  return "Continue where you left off. The previous model attempt failed or timed out.";
 }
 
 // ── ChannelBridge helpers ───────────────────────────────────────────────
@@ -177,12 +157,7 @@ export async function agentCommand(
     }
   }
   const agentCfg = cfg.agents?.defaults;
-  const configuredModel = resolveConfiguredModelRef({
-    cfg,
-    defaultProvider: DEFAULT_PROVIDER,
-    defaultModel: DEFAULT_MODEL,
-  });
-  const thinkingLevelsHint = formatThinkingLevels(configuredModel.provider, configuredModel.model);
+  const thinkingLevelsHint = formatThinkingLevels(DEFAULT_PROVIDER, DEFAULT_MODEL);
 
   const thinkOverride = normalizeThinkLevel(opts.thinking);
   const thinkOnce = normalizeThinkLevel(opts.thinkingOnce);
@@ -230,7 +205,6 @@ export async function agentCommand(
       config: cfg,
     });
   const workspaceDirRaw = resolveAgentWorkspaceDir(cfg, sessionAgentId);
-  const agentDir = resolveAgentDir(cfg, sessionAgentId);
   const workspace = await ensureAgentWorkspace({
     dir: workspaceDirRaw,
     ensureBootstrapFiles: !agentCfg?.skipBootstrap,
@@ -286,81 +260,21 @@ export async function agentCommand(
       sessionEntry = next;
     }
 
-    const configuredDefaultRef = resolveDefaultModelForAgent({
-      cfg,
-      agentId: sessionAgentId,
-    });
     const { provider: defaultProvider, model: defaultModel } = normalizeModelRef(
-      configuredDefaultRef.provider,
-      configuredDefaultRef.model,
+      DEFAULT_PROVIDER,
+      DEFAULT_MODEL,
     );
     let provider = defaultProvider;
     let model = defaultModel;
-    const hasAllowlist = agentCfg?.models && Object.keys(agentCfg.models).length > 0;
-    const hasStoredOverride = Boolean(
-      sessionEntry?.modelOverride || sessionEntry?.providerOverride,
-    );
-    const needsModelCatalog = hasAllowlist || hasStoredOverride;
-    let allowedModelKeys = new Set<string>();
-    let allowedModelCatalog: Awaited<ReturnType<typeof loadModelCatalog>> = [];
-    let modelCatalog: Awaited<ReturnType<typeof loadModelCatalog>> | null = null;
-    let allowAnyModel = false;
 
-    if (needsModelCatalog) {
-      modelCatalog = await loadModelCatalog({ config: cfg });
-      const allowed = buildAllowedModelSet({
-        cfg,
-        catalog: modelCatalog,
-        defaultProvider,
-        defaultModel,
-      });
-      allowedModelKeys = allowed.allowedKeys;
-      allowedModelCatalog = allowed.allowedCatalog;
-      allowAnyModel = allowed.allowAny ?? false;
-    }
-
-    if (sessionEntry && sessionStore && sessionKey && hasStoredOverride) {
-      const entry = sessionEntry;
-      const overrideProvider = sessionEntry.providerOverride?.trim() || defaultProvider;
-      const overrideModel = sessionEntry.modelOverride?.trim();
-      if (overrideModel) {
-        const normalizedOverride = normalizeModelRef(overrideProvider, overrideModel);
-        const key = modelKey(normalizedOverride.provider, normalizedOverride.model);
-        if (
-          !isCliProvider(normalizedOverride.provider, cfg) &&
-          !allowAnyModel &&
-          !allowedModelKeys.has(key)
-        ) {
-          const { updated } = applyModelOverrideToSessionEntry({
-            entry,
-            selection: { provider: defaultProvider, model: defaultModel, isDefault: true },
-          });
-          if (updated) {
-            await persistSessionEntry({
-              sessionStore,
-              sessionKey,
-              storePath,
-              entry,
-            });
-          }
-        }
-      }
-    }
-
+    // Apply stored model overrides from the session entry.
     const storedProviderOverride = sessionEntry?.providerOverride?.trim();
     const storedModelOverride = sessionEntry?.modelOverride?.trim();
     if (storedModelOverride) {
       const candidateProvider = storedProviderOverride || defaultProvider;
       const normalizedStored = normalizeModelRef(candidateProvider, storedModelOverride);
-      const key = modelKey(normalizedStored.provider, normalizedStored.model);
-      if (
-        isCliProvider(normalizedStored.provider, cfg) ||
-        allowAnyModel ||
-        allowedModelKeys.has(key)
-      ) {
-        provider = normalizedStored.provider;
-        model = normalizedStored.model;
-      }
+      provider = normalizedStored.provider;
+      model = normalizedStored.model;
     }
     if (sessionEntry) {
       const authProfileId = sessionEntry.authProfileOverride;
@@ -382,17 +296,7 @@ export async function agentCommand(
     }
 
     if (!resolvedThinkLevel) {
-      let catalogForThinking = modelCatalog ?? allowedModelCatalog;
-      if (!catalogForThinking || catalogForThinking.length === 0) {
-        modelCatalog = await loadModelCatalog({ config: cfg });
-        catalogForThinking = modelCatalog;
-      }
-      resolvedThinkLevel = resolveThinkingDefault({
-        cfg,
-        provider,
-        model,
-        catalog: catalogForThinking,
-      });
+      resolvedThinkLevel = (agentCfg?.thinkingDefault as ThinkLevel | undefined) ?? undefined;
     }
     if (resolvedThinkLevel === "xhigh" && !supportsXHighThinking(provider, model)) {
       const explicitThink = Boolean(thinkOnce || thinkOverride);
@@ -441,82 +345,45 @@ export async function agentCommand(
     const startedAt = Date.now();
 
     let result: AgentDeliveryResult;
-    let fallbackProvider = provider;
-    let fallbackModel = model;
+    const fallbackProvider = provider;
+    const fallbackModel = model;
     try {
       const runContext = resolveAgentRunContext(opts);
       const messageChannel = resolveMessageChannel(
         runContext.messageChannel,
         opts.replyChannel ?? opts.channel,
       );
-      // Keep fallback candidate resolution centralized so session model overrides,
-      // per-agent overrides, and default fallbacks stay consistent across callers.
-      const effectiveFallbacksOverride = resolveEffectiveModelFallbacks({
-        cfg,
-        agentId: sessionAgentId,
-        hasSessionModelOverride: Boolean(storedModelOverride),
+
+      const sessionMap = createSessionMapAdapter({
+        getSessionId: () => getCliSessionId(sessionEntry, provider),
       });
 
-      // Track model fallback attempts so retries on an existing session don't
-      // re-inject the original prompt as a duplicate user message.
-      let fallbackAttemptIndex = 0;
-      const fallbackResult = await runWithModelFallback({
-        cfg,
+      const bridge = new ChannelBridge({
         provider,
-        model,
-        agentDir,
-        fallbacksOverride: effectiveFallbacksOverride,
-        run: async (providerOverride, _modelOverride) => {
-          const isFallbackRetry = fallbackAttemptIndex > 0;
-          fallbackAttemptIndex += 1;
-
-          const sessionMap = createSessionMapAdapter({
-            getSessionId: () => getCliSessionId(sessionEntry, providerOverride),
-          });
-
-          const bridge = new ChannelBridge({
-            provider: providerOverride,
-            sessionMap,
-            gatewayUrl: resolveGatewayUrlFromConfig(cfg),
-            gatewayToken: resolveGatewayTokenFromConfig(cfg),
-            workspaceDir,
-          });
-
-          const effectivePrompt = resolveFallbackRetryPrompt({
-            body,
-            isFallbackRetry,
-          });
-
-          const messageToolHints = resolveChannelMessageToolHints({
-            cfg,
-            channel: messageChannel,
-            accountId: runContext.accountId ?? opts.accountId,
-          });
-
-          const message = buildCliChannelMessage({
-            runId,
-            text: effectivePrompt,
-            accountId: runContext.accountId ?? opts.accountId,
-            channelId: opts.to,
-            messageChannel,
-            threadId: opts.threadId != null ? String(opts.threadId) : undefined,
-            timestamp: Date.now(),
-            messageToolHints,
-          });
-
-          const delivery = await bridge.handle(message, undefined, opts.abortSignal);
-
-          // Complete runtime failure: re-throw so runWithModelFallback can try fallback.
-          if (delivery.error && delivery.payloads.length === 0) {
-            throw new Error(delivery.error);
-          }
-
-          return delivery;
-        },
+        sessionMap,
+        gatewayUrl: resolveGatewayUrlFromConfig(cfg),
+        gatewayToken: resolveGatewayTokenFromConfig(cfg),
+        workspaceDir,
       });
-      result = fallbackResult.result;
-      fallbackProvider = fallbackResult.provider;
-      fallbackModel = fallbackResult.model;
+
+      const messageToolHints = resolveChannelMessageToolHints({
+        cfg,
+        channel: messageChannel,
+        accountId: runContext.accountId ?? opts.accountId,
+      });
+
+      const message = buildCliChannelMessage({
+        runId,
+        text: body,
+        accountId: runContext.accountId ?? opts.accountId,
+        channelId: opts.to,
+        messageChannel,
+        threadId: opts.threadId != null ? String(opts.threadId) : undefined,
+        timestamp: Date.now(),
+        messageToolHints,
+      });
+
+      result = await bridge.handle(message, undefined, opts.abortSignal);
       emitAgentEvent({
         runId,
         stream: "lifecycle",

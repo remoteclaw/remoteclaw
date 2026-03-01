@@ -1,11 +1,5 @@
 import type { Bot } from "grammy";
 import { resolveAgentDir } from "../agents/agent-scope.js";
-import {
-  findModelInCatalog,
-  loadModelCatalog,
-  modelSupportsVision,
-} from "../agents/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
 import { resolveChunkMode } from "../auto-reply/chunk.js";
 import { clearHistoryEntriesIfEnabled } from "../auto-reply/reply/history.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/provider-dispatcher.js";
@@ -45,20 +39,6 @@ const EMPTY_RESPONSE_FALLBACK = "No response generated. Please try again.";
 
 /** Minimum chars before sending first streaming message (improves push notification UX) */
 const DRAFT_MIN_INITIAL_CHARS = 30;
-
-async function resolveStickerVisionSupport(cfg: OpenClawConfig, agentId: string) {
-  try {
-    const catalog = await loadModelCatalog({ config: cfg });
-    const defaultModel = resolveDefaultModelForAgent({ cfg, agentId });
-    const entry = findModelInCatalog(catalog, defaultModel.provider, defaultModel.model);
-    if (!entry) {
-      return false;
-    }
-    return modelSupportsVision(entry);
-  } catch {
-    return false;
-  }
-}
 
 type DispatchTelegramMessageParams = {
   context: TelegramMessageContext;
@@ -289,7 +269,6 @@ export const dispatchTelegramMessage = async ({
   const sticker = ctxPayload.Sticker;
   if (sticker?.fileId && sticker.fileUniqueId && ctxPayload.MediaPath) {
     const agentDir = resolveAgentDir(cfg, route.agentId);
-    const stickerSupportsVision = await resolveStickerVisionSupport(cfg, route.agentId);
     let description = sticker.cachedDescription ?? null;
     if (!description) {
       description = await describeStickerImage({
@@ -307,18 +286,16 @@ export const dispatchTelegramMessage = async ({
       const formattedDesc = `[Sticker${stickerContext ? ` ${stickerContext}` : ""}] ${description}`;
 
       sticker.cachedDescription = description;
-      if (!stickerSupportsVision) {
-        // Update context to use description instead of image
-        ctxPayload.Body = formattedDesc;
-        ctxPayload.BodyForAgent = formattedDesc;
-        // Clear media paths so native vision doesn't process the image again
-        ctxPayload.MediaPath = undefined;
-        ctxPayload.MediaType = undefined;
-        ctxPayload.MediaUrl = undefined;
-        ctxPayload.MediaPaths = undefined;
-        ctxPayload.MediaUrls = undefined;
-        ctxPayload.MediaTypes = undefined;
-      }
+      // Update context to use description instead of image
+      // CLI agent handles media understanding; sticker description replaces the image.
+      ctxPayload.Body = formattedDesc;
+      ctxPayload.BodyForAgent = formattedDesc;
+      ctxPayload.MediaPath = undefined;
+      ctxPayload.MediaType = undefined;
+      ctxPayload.MediaUrl = undefined;
+      ctxPayload.MediaPaths = undefined;
+      ctxPayload.MediaUrls = undefined;
+      ctxPayload.MediaTypes = undefined;
 
       // Cache the description for future encounters
       if (sticker.fileId) {

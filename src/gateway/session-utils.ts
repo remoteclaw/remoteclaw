@@ -1,14 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { lookupContextTokens } from "../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import {
-  inferUniqueProviderFromConfiguredModels,
-  parseModelRef,
-  resolveConfiguredModelRef,
-  resolveDefaultModelForAgent,
-} from "../agents/model-selection.js";
+import { parseModelRef } from "../agents/provider-utils.js";
 import { type OpenClawConfig, loadConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import {
@@ -619,19 +613,10 @@ export function loadCombinedSessionStoreForGateway(cfg: OpenClawConfig): {
 }
 
 export function getSessionDefaults(cfg: OpenClawConfig): GatewaySessionsDefaults {
-  const resolved = resolveConfiguredModelRef({
-    cfg,
-    defaultProvider: DEFAULT_PROVIDER,
-    defaultModel: DEFAULT_MODEL,
-  });
-  const contextTokens =
-    cfg.agents?.defaults?.contextTokens ??
-    lookupContextTokens(resolved.model) ??
-    DEFAULT_CONTEXT_TOKENS;
   return {
-    modelProvider: resolved.provider ?? null,
-    model: resolved.model ?? null,
-    contextTokens: contextTokens ?? null,
+    modelProvider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+    contextTokens: cfg.agents?.defaults?.contextTokens ?? DEFAULT_CONTEXT_TOKENS,
   };
 }
 
@@ -640,20 +625,12 @@ export function resolveSessionModelRef(
   entry?:
     | SessionEntry
     | Pick<SessionEntry, "model" | "modelProvider" | "modelOverride" | "providerOverride">,
-  agentId?: string,
+  _agentId?: string,
 ): { provider: string; model: string } {
-  const resolved = agentId
-    ? resolveDefaultModelForAgent({ cfg, agentId })
-    : resolveConfiguredModelRef({
-        cfg,
-        defaultProvider: DEFAULT_PROVIDER,
-        defaultModel: DEFAULT_MODEL,
-      });
-
   // Prefer the last runtime model recorded on the session entry.
   // This is the actual model used by the latest run and must win over defaults.
-  let provider = resolved.provider;
-  let model = resolved.model;
+  let provider = DEFAULT_PROVIDER;
+  let model = DEFAULT_MODEL;
   const runtimeModel = entry?.model?.trim();
   const runtimeProvider = entry?.modelProvider?.trim();
   if (runtimeModel) {
@@ -705,13 +682,6 @@ export function resolveSessionModelIdentityRef(
   if (runtimeModel) {
     if (runtimeProvider) {
       return { provider: runtimeProvider, model: runtimeModel };
-    }
-    const inferredProvider = inferUniqueProviderFromConfiguredModels({
-      cfg,
-      model: runtimeModel,
-    });
-    if (inferredProvider) {
-      return { provider: inferredProvider, model: runtimeModel };
     }
     if (runtimeModel.includes("/")) {
       const parsedRuntime = parseModelRef(runtimeModel, DEFAULT_PROVIDER);

@@ -1,13 +1,10 @@
-import type { ModelAliasIndex } from "../../agents/model-selection.js";
 // Sandbox infrastructure removed (#68)
 const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
   sandboxed: false as const,
   mode: "off" as const,
   agentId: undefined as string | undefined,
 });
-import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
-import type { ModelCatalogEntry } from "../../agents/model-catalog.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
@@ -44,7 +41,7 @@ export async function createModelSelectionState(params: {
     provider: params.provider,
     model: params.model,
     allowedModelKeys: new Set<string>(),
-    allowedModelCatalog: [] as ModelCatalogEntry[],
+    allowedModelCatalog: [] as Array<{ id: string; provider: string }>,
     resetModelOverride: false,
     resolveDefaultThinkingLevel: async (): Promise<ThinkLevel | undefined> => "off" as ThinkLevel,
     resolveDefaultReasoningLevel: async (): Promise<"on" | "off"> => "off" as const,
@@ -56,9 +53,8 @@ function resolveContextTokens(params: {
   agentCfg: NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]> | undefined;
   model: string;
 }): number {
-  return (
-    params.agentCfg?.contextTokens ?? lookupContextTokens(params.model) ?? DEFAULT_CONTEXT_TOKENS
-  );
+  // Context token lookup from model catalog gutted in RemoteClaw — CLI agents manage their own context.
+  return params.agentCfg?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
 }
 import { formatElevatedUnavailableMessage, resolveElevatedPermissions } from "./reply-elevated.js";
 import { stripInlineStatus } from "./reply-inline.js";
@@ -143,7 +139,7 @@ export async function resolveReplyDirectives(params: {
   commandAuthorized: boolean;
   defaultProvider: string;
   defaultModel: string;
-  aliasIndex: ModelAliasIndex;
+  aliasIndex: Map<string, { provider: string; model: string }>;
   provider: string;
   model: string;
   hasResolvedHeartbeatModelOverride: boolean;

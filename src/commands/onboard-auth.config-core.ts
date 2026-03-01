@@ -1,5 +1,3 @@
-import { SYNTHETIC_DEFAULT_MODEL_REF } from "../agents/synthetic-models.js";
-import { VENICE_DEFAULT_MODEL_REF } from "../agents/venice-models.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { KILOCODE_BASE_URL } from "../providers/kilocode-shared.js";
 import {
@@ -114,10 +112,11 @@ export function applyKimiCodeConfig(cfg: OpenClawConfig): OpenClawConfig {
 }
 
 export function applySyntheticProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+  const syntheticModelRef = "synthetic/hf:MiniMaxAI/MiniMax-M2.1";
   const models = { ...cfg.agents?.defaults?.models };
-  models[SYNTHETIC_DEFAULT_MODEL_REF] = {
-    ...models[SYNTHETIC_DEFAULT_MODEL_REF],
-    alias: models[SYNTHETIC_DEFAULT_MODEL_REF]?.alias ?? "MiniMax M2.1",
+  models[syntheticModelRef] = {
+    ...models[syntheticModelRef],
+    alias: models[syntheticModelRef]?.alias ?? "MiniMax M2.1",
   };
 
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
@@ -146,10 +145,11 @@ export function applyXiaomiConfig(cfg: OpenClawConfig): OpenClawConfig {
  * Registers Venice models and sets up the provider, but preserves existing model selection.
  */
 export function applyVeniceProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+  const veniceModelRef = "venice/llama-3.3-70b";
   const models = { ...cfg.agents?.defaults?.models };
-  models[VENICE_DEFAULT_MODEL_REF] = {
-    ...models[VENICE_DEFAULT_MODEL_REF],
-    alias: models[VENICE_DEFAULT_MODEL_REF]?.alias ?? "Llama 3.3 70B",
+  models[veniceModelRef] = {
+    ...models[veniceModelRef],
+    alias: models[veniceModelRef]?.alias ?? "Llama 3.3 70B",
   };
 
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });

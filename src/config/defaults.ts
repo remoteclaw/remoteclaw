@@ -1,4 +1,4 @@
-import { parseModelRef } from "../agents/model-selection.js";
+import { parseModelRef } from "../agents/provider-utils.js";
 import { DEFAULT_AGENT_MAX_CONCURRENT, DEFAULT_SUBAGENT_MAX_CONCURRENT } from "./agent-limits.js";
 import { resolveAgentModelPrimaryValue } from "./model-input.js";
 import {

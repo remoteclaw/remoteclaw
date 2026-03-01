@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { resolveApiKeyForProvider } from "../agents/model-auth.js";
+import { resolveApiKeyForProvider } from "../agents/provider-auth.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
@@ -9,7 +9,12 @@ import { fetchRemoteMedia } from "../media/fetch.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { clearMediaUnderstandingBinaryCacheForTests } from "./runner.js";
 
-vi.mock("../agents/model-auth.js", () => ({
+vi.mock("../agents/model-catalog.js", () => ({
+  loadModelCatalog: vi.fn().mockResolvedValue([]),
+  findModelInCatalog: vi.fn(),
+}));
+
+vi.mock("../agents/provider-auth.js", () => ({
   resolveApiKeyForProvider: vi.fn(async () => ({
     apiKey: "test-key",
     source: "test",

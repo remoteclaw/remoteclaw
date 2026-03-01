@@ -1,7 +1,17 @@
-import path from "node:path";
-import { type Api, getEnvApiKey, type Model } from "@mariozechner/pi-ai";
+/**
+ * Provider auth resolution extracted from model-auth.ts.
+ *
+ * Resolves API keys for providers via auth profiles, environment variables,
+ * and AWS SDK credential chains. Used by media-understanding, onboarding,
+ * and status display.
+ */
+
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import path, { join } from "node:path";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { OpenClawConfig } from "../config/config.js";
+import type { SessionEntry } from "../config/sessions.js";
 import { getShellEnvAppliedKeys } from "../infra/shell-env.js";
 import {
   normalizeOptionalSecretInput,
@@ -12,9 +22,10 @@ import {
   ensureAuthProfileStore,
   listProfilesForProvider,
   resolveApiKeyForProfile,
+  resolveAuthProfileDisplayLabel,
   resolveAuthStorePathForDisplay,
 } from "./auth-profiles.js";
-import { normalizeProviderId } from "./model-selection.js";
+import { normalizeProviderId } from "./provider-utils.js";
 
 export { ensureAuthProfileStore } from "./auth-profiles.js";
 
@@ -22,25 +33,6 @@ const AWS_BEARER_ENV = "AWS_BEARER_TOKEN_BEDROCK";
 const AWS_ACCESS_KEY_ENV = "AWS_ACCESS_KEY_ID";
 const AWS_SECRET_KEY_ENV = "AWS_SECRET_ACCESS_KEY";
 const AWS_PROFILE_ENV = "AWS_PROFILE";
-
-export function getCustomProviderApiKey(
-  _cfg: OpenClawConfig | undefined,
-  _provider: string,
-): string | undefined {
-  // Models config section has been removed — provider configs are no longer
-  // stored in the config file. CLI agents resolve providers directly.
-  return undefined;
-}
-
-function resolveEnvSourceLabel(params: {
-  applied: Set<string>;
-  envVars: string[];
-  label: string;
-}): string {
-  const shellApplied = params.envVars.some((envVar) => params.applied.has(envVar));
-  const prefix = shellApplied ? "shell env: " : "env: ";
-  return `${prefix}${params.label}`;
-}
 
 export function resolveAwsSdkEnvVarName(env: NodeJS.ProcessEnv = process.env): string | undefined {
   if (env[AWS_BEARER_ENV]?.trim()) {
@@ -53,6 +45,16 @@ export function resolveAwsSdkEnvVarName(env: NodeJS.ProcessEnv = process.env): s
     return AWS_PROFILE_ENV;
   }
   return undefined;
+}
+
+function resolveEnvSourceLabel(params: {
+  applied: Set<string>;
+  envVars: string[];
+  label: string;
+}): string {
+  const shellApplied = params.envVars.some((envVar) => params.applied.has(envVar));
+  const prefix = shellApplied ? "shell env: " : "env: ";
+  return `${prefix}${params.label}`;
 }
 
 function resolveAwsSdkAuthInfo(): { mode: "api-key"; source: string } {
@@ -88,6 +90,14 @@ function resolveAwsSdkAuthInfo(): { mode: "api-key"; source: string } {
     };
   }
   return { mode: "api-key", source: "aws-sdk default chain" };
+}
+
+function hasVertexAdcCredentials(): boolean {
+  const gacPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (gacPath) {
+    return existsSync(gacPath);
+  }
+  return existsSync(join(homedir(), ".config", "gcloud", "application_default_credentials.json"));
 }
 
 export type ResolvedProviderAuth = {
@@ -219,11 +229,13 @@ export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
   }
 
   if (normalized === "google-vertex") {
-    const envKey = getEnvApiKey(normalized);
-    if (!envKey) {
-      return null;
+    const hasCredentials = hasVertexAdcCredentials();
+    const hasProject = !!(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT);
+    const hasLocation = !!process.env.GOOGLE_CLOUD_LOCATION;
+    if (hasCredentials && hasProject && hasLocation) {
+      return { apiKey: "<authenticated>", source: "gcloud adc" };
     }
-    return { apiKey: envKey, source: "gcloud adc" };
+    return null;
   }
 
   if (normalized === "opencode") {
@@ -311,29 +323,7 @@ export function resolveModelAuthMode(
     return "api-key";
   }
 
-  if (getCustomProviderApiKey(cfg, resolved)) {
-    return "api-key";
-  }
-
   return "unknown";
-}
-
-export async function getApiKeyForModel(params: {
-  model: Model<Api>;
-  cfg?: OpenClawConfig;
-  profileId?: string;
-  preferredProfile?: string;
-  store?: AuthProfileStore;
-  agentDir?: string;
-}): Promise<ResolvedProviderAuth> {
-  return resolveApiKeyForProvider({
-    provider: params.model.provider,
-    cfg: params.cfg,
-    profileId: params.profileId,
-    preferredProfile: params.preferredProfile,
-    store: params.store,
-    agentDir: params.agentDir,
-  });
 }
 
 export function requireApiKey(auth: ResolvedProviderAuth, provider: string): string {
@@ -342,4 +332,58 @@ export function requireApiKey(auth: ResolvedProviderAuth, provider: string): str
     return key;
   }
   throw new Error(`No API key resolved for provider "${provider}" (auth mode: ${auth.mode}).`);
+}
+
+function formatApiKeySnippet(apiKey: string): string {
+  const compact = apiKey.replace(/\s+/g, "");
+  if (!compact) {
+    return "unknown";
+  }
+  const edge = compact.length >= 12 ? 6 : 4;
+  const head = compact.slice(0, edge);
+  const tail = compact.slice(-edge);
+  return `${head}…${tail}`;
+}
+
+export function resolveModelAuthLabel(params: {
+  provider?: string;
+  cfg?: OpenClawConfig;
+  sessionEntry?: SessionEntry;
+  agentDir?: string;
+}): string | undefined {
+  const resolvedProvider = params.provider?.trim();
+  if (!resolvedProvider) {
+    return undefined;
+  }
+
+  const providerKey = normalizeProviderId(resolvedProvider);
+  const store = ensureAuthProfileStore(params.agentDir, {
+    allowKeychainPrompt: false,
+  });
+  const profileOverride = params.sessionEntry?.authProfileOverride?.trim();
+  const profiles = listProfilesForProvider(store, providerKey);
+  const candidates = [profileOverride, ...profiles].filter(Boolean) as string[];
+
+  for (const profileId of candidates) {
+    const profile = store.profiles[profileId];
+    if (!profile || normalizeProviderId(profile.provider) !== providerKey) {
+      continue;
+    }
+    const label = resolveAuthProfileDisplayLabel({
+      cfg: params.cfg,
+      store,
+      profileId,
+    });
+    return `api-key ${formatApiKeySnippet(profile.key ?? "")}${label ? ` (${label})` : ""}`;
+  }
+
+  const envKey = resolveEnvApiKey(providerKey);
+  if (envKey?.apiKey) {
+    if (envKey.source.includes("OAUTH_TOKEN")) {
+      return `oauth (${envKey.source})`;
+    }
+    return `api-key ${formatApiKeySnippet(envKey.apiKey)} (${envKey.source})`;
+  }
+
+  return "unknown";
 }

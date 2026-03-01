@@ -1,6 +1,4 @@
-import { resolveContextTokensForModel } from "../agents/context.js";
-import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { resolveConfiguredModelRef } from "../agents/model-selection.js";
+import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL } from "../agents/defaults.js";
 import { loadConfig } from "../config/config.js";
 import {
   loadSessionStore,
@@ -98,20 +96,8 @@ export async function getStatusSummary(
   const mainSessionKey = resolveMainSessionKey(cfg);
   const queuedSystemEvents = peekSystemEvents(mainSessionKey);
 
-  const resolved = resolveConfiguredModelRef({
-    cfg,
-    defaultProvider: DEFAULT_PROVIDER,
-    defaultModel: DEFAULT_MODEL,
-  });
-  const configModel = resolved.model ?? DEFAULT_MODEL;
-  const configContextTokens =
-    resolveContextTokensForModel({
-      cfg,
-      provider: resolved.provider ?? DEFAULT_PROVIDER,
-      model: configModel,
-      contextTokensOverride: cfg.agents?.defaults?.contextTokens,
-      fallbackContextTokens: DEFAULT_CONTEXT_TOKENS,
-    }) ?? DEFAULT_CONTEXT_TOKENS;
+  const configModel = DEFAULT_MODEL;
+  const configContextTokens = cfg.agents?.defaults?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
 
   const now = Date.now();
   const storeCache = new Map<string, Record<string, SessionEntry | undefined>>();
@@ -135,14 +121,7 @@ export async function getStatusSummary(
         const age = updatedAt ? now - updatedAt : null;
         const resolvedModel = resolveSessionModelRef(cfg, entry, opts.agentIdOverride);
         const model = resolvedModel.model ?? configModel ?? null;
-        const contextTokens =
-          resolveContextTokensForModel({
-            cfg,
-            provider: resolvedModel.provider,
-            model,
-            contextTokensOverride: entry?.contextTokens,
-            fallbackContextTokens: configContextTokens ?? undefined,
-          }) ?? null;
+        const contextTokens = entry?.contextTokens ?? configContextTokens ?? null;
         const total = resolveFreshSessionTotalTokens(entry);
         const totalTokensFresh =
           typeof entry?.totalTokens === "number" ? entry?.totalTokensFresh !== false : false;

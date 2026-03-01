@@ -2,7 +2,6 @@ import "./reply.directive.directive-behavior.e2e-mocks.js";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
-import type { ModelDefinitionConfig } from "../config/types.models.js";
 import {
   assertModelSelection,
   installDirectiveBehaviorE2EHooks,
@@ -10,6 +9,16 @@ import {
   withTempHome,
 } from "./reply.directive.directive-behavior.e2e-harness.js";
 import { getReplyFromConfig } from "./reply.js";
+
+type ModelDefinitionConfig = {
+  id: string;
+  name: string;
+  reasoning: boolean;
+  input: string[];
+  cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
+  contextWindow: number;
+  maxTokens: number;
+};
 
 function makeModelDefinition(id: string, name: string): ModelDefinitionConfig {
   return {

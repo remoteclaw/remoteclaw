@@ -1,8 +1,6 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import type { ContextFile } from "../../agents/agent-helpers.js";
-import { resolveSessionAgentIds } from "../../agents/agent-scope.js";
 import { resolveBootstrapContextForRun } from "../../agents/bootstrap-files.js";
-import { resolveDefaultModelForAgent } from "../../agents/model-selection.js";
 import { createOpenClawCodingTools } from "../../agents/pi-tools.js";
 // Sandbox infrastructure removed (#68)
 const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
@@ -10,9 +8,6 @@ const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
   mode: "off" as const,
   agentId: undefined as string | undefined,
 });
-import { buildSystemPromptParams } from "../../agents/system-prompt-params.js";
-import { buildAgentSystemPrompt } from "../../agents/system-prompt.js";
-import { buildToolSummaryMap } from "../../agents/tool-summaries.js";
 import type { WorkspaceBootstrapFile } from "../../agents/workspace.js";
 import { buildTtsSystemPromptHint } from "../../tts/tts.js";
 import type { HandleCommandsParams } from "./commands-types.js";
@@ -61,54 +56,20 @@ export async function resolveCommandsSystemPromptBundle(
       return [];
     }
   })();
-  const toolSummaries = buildToolSummaryMap(tools);
-  const toolNames = tools.map((t) => t.name);
-  const { sessionAgentId } = resolveSessionAgentIds({
-    sessionKey: params.sessionKey,
-    config: params.cfg,
-    agentId: params.agentId,
-  });
-  const defaultModelRef = resolveDefaultModelForAgent({
-    cfg: params.cfg,
-    agentId: sessionAgentId,
-  });
-  const defaultModelLabel = `${defaultModelRef.provider}/${defaultModelRef.model}`;
-  const { runtimeInfo, userTimezone, userTime, userTimeFormat } = buildSystemPromptParams({
-    config: params.cfg,
-    agentId: sessionAgentId,
-    workspaceDir,
-    cwd: process.cwd(),
-    runtime: {
-      host: "unknown",
-      os: "unknown",
-      arch: "unknown",
-      node: process.version,
-      model: `${params.provider}/${params.model}`,
-      defaultModel: defaultModelLabel,
-    },
-  });
+  // System prompt construction modules gutted in RemoteClaw — CLI agents build their own
+  // system prompts. Return a minimal estimate for the /context command report.
   const ttsHint = params.cfg ? buildTtsSystemPromptHint(params.cfg) : undefined;
-
-  const systemPrompt = buildAgentSystemPrompt({
-    workspaceDir,
-    defaultThinkLevel: params.resolvedThinkLevel,
-    reasoningLevel: params.resolvedReasoningLevel,
-    extraSystemPrompt: undefined,
-    ownerNumbers: undefined,
-    reasoningTagHint: false,
-    toolNames,
-    toolSummaries,
-    modelAliasLines: [],
-    userTimezone,
-    userTime,
-    userTimeFormat,
-    contextFiles: injectedFiles,
+  const contextFileContent = injectedFiles
+    .map((file) => `--- ${file.path ?? "file"} ---\n${file.content ?? ""}`)
+    .join("\n\n");
+  const systemPrompt = [
+    `Workspace: ${workspaceDir}`,
+    ttsHint ?? "",
+    contextFileContent,
     skillsPrompt,
-    heartbeatPrompt: undefined,
-    ttsHint,
-    runtimeInfo,
-    memoryCitationsMode: params.cfg?.memory?.citations,
-  });
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   return { systemPrompt, tools, skillsPrompt, bootstrapFiles, injectedFiles, sandboxRuntime };
 }

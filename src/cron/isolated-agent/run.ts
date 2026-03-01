@@ -2,25 +2,15 @@ import crypto from "node:crypto";
 import {
   resolveAgentConfig,
   resolveAgentDir,
-  resolveAgentModelFallbacksOverride,
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
 import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
 import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { getCliSessionId, setCliSessionId } from "../../agents/cli-session.js";
-import { lookupContextTokens } from "../../agents/context.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
-import { loadModelCatalog } from "../../agents/model-catalog.js";
-import { runWithModelFallback } from "../../agents/model-fallback.js";
-import {
-  getModelRefStatus,
-  isCliProvider,
-  resolveAllowedModelRef,
-  resolveConfiguredModelRef,
-  resolveHooksGmailModel,
-} from "../../agents/model-selection.js";
+import { isCliProvider, normalizeModelRef, parseModelRef } from "../../agents/provider-utils.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
@@ -201,59 +191,19 @@ export async function runCronIsolatedAgentTurn(params: {
   });
   const workspaceDir = workspace.dir;
 
-  const resolvedDefault = resolveConfiguredModelRef({
-    cfg: cfgWithAgentDefaults,
-    defaultProvider: DEFAULT_PROVIDER,
-    defaultModel: DEFAULT_MODEL,
-  });
+  const resolvedDefault = normalizeModelRef(DEFAULT_PROVIDER, DEFAULT_MODEL);
   let provider = resolvedDefault.provider;
   let model = resolvedDefault.model;
-  let catalog: Awaited<ReturnType<typeof loadModelCatalog>> | undefined;
-  const loadCatalog = async () => {
-    if (!catalog) {
-      catalog = await loadModelCatalog({ config: cfgWithAgentDefaults });
-    }
-    return catalog;
-  };
-  // Resolve model - prefer hooks.gmail.model for Gmail hooks.
-  const isGmailHook = baseSessionKey.startsWith("hook:gmail:");
-  let hooksGmailModelApplied = false;
-  const hooksGmailModelRef = isGmailHook
-    ? resolveHooksGmailModel({
-        cfg: params.cfg,
-        defaultProvider: DEFAULT_PROVIDER,
-      })
-    : null;
-  if (hooksGmailModelRef) {
-    const status = getModelRefStatus({
-      cfg: params.cfg,
-      catalog: await loadCatalog(),
-      ref: hooksGmailModelRef,
-      defaultProvider: resolvedDefault.provider,
-      defaultModel: resolvedDefault.model,
-    });
-    if (status.allowed) {
-      provider = hooksGmailModelRef.provider;
-      model = hooksGmailModelRef.model;
-      hooksGmailModelApplied = true;
-    }
-  }
   const modelOverrideRaw =
     params.job.payload.kind === "agentTurn" ? params.job.payload.model : undefined;
   const modelOverride = typeof modelOverrideRaw === "string" ? modelOverrideRaw.trim() : undefined;
   if (modelOverride !== undefined && modelOverride.length > 0) {
-    const resolvedOverride = resolveAllowedModelRef({
-      cfg: cfgWithAgentDefaults,
-      catalog: await loadCatalog(),
-      raw: modelOverride,
-      defaultProvider: resolvedDefault.provider,
-      defaultModel: resolvedDefault.model,
-    });
-    if ("error" in resolvedOverride) {
-      return { status: "error", error: resolvedOverride.error };
+    const parsed = parseModelRef(modelOverride, resolvedDefault.provider);
+    if (!parsed) {
+      return { status: "error", error: `Unrecognized model "${modelOverride}".` };
     }
-    provider = resolvedOverride.ref.provider;
-    model = resolvedOverride.ref.model;
+    provider = parsed.provider;
+    model = parsed.model;
   }
   const now = Date.now();
   const cronSession = resolveCronSession({
@@ -301,21 +251,18 @@ export async function runCronIsolatedAgentTurn(params: {
   // Respect session model override — check session.modelOverride before falling
   // back to the default config model. This ensures /model changes are honoured
   // by cron and isolated agent runs.
-  if (!modelOverride && !hooksGmailModelApplied) {
+  if (!modelOverride) {
     const sessionModelOverride = cronSession.sessionEntry.modelOverride?.trim();
     if (sessionModelOverride) {
       const sessionProviderOverride =
         cronSession.sessionEntry.providerOverride?.trim() || resolvedDefault.provider;
-      const resolvedSessionOverride = resolveAllowedModelRef({
-        cfg: cfgWithAgentDefaults,
-        catalog: await loadCatalog(),
-        raw: `${sessionProviderOverride}/${sessionModelOverride}`,
-        defaultProvider: resolvedDefault.provider,
-        defaultModel: resolvedDefault.model,
-      });
-      if (!("error" in resolvedSessionOverride)) {
-        provider = resolvedSessionOverride.ref.provider;
-        model = resolvedSessionOverride.ref.model;
+      const parsed = parseModelRef(
+        `${sessionProviderOverride}/${sessionModelOverride}`,
+        resolvedDefault.provider,
+      );
+      if (parsed) {
+        provider = parsed.provider;
+        model = parsed.model;
       }
     }
   }
@@ -341,6 +288,7 @@ export async function runCronIsolatedAgentTurn(params: {
 
   // SECURITY: Wrap external hook content with security boundaries to prevent prompt injection
   // unless explicitly allowed via a dangerous config override.
+  const isGmailHook = baseSessionKey.startsWith("hook:gmail:");
   const isExternalHook = isExternalHookSession(baseSessionKey);
   const allowUnsafeExternalContent =
     agentPayload?.allowUnsafeExternalContent === true ||
@@ -400,8 +348,8 @@ export async function runCronIsolatedAgentTurn(params: {
   });
 
   let runResult: AgentDeliveryResult;
-  let fallbackProvider = provider;
-  let fallbackModel = model;
+  const fallbackProvider = provider;
+  const fallbackModel = model;
   const runStartedAt = Date.now();
   let runEndedAt = runStartedAt;
   try {
@@ -413,56 +361,38 @@ export async function runCronIsolatedAgentTurn(params: {
       sessionKey: agentSessionKey,
       verboseLevel: resolvedVerboseLevel,
     });
-    const fallbackResult = await runWithModelFallback({
-      cfg: cfgWithAgentDefaults,
-      provider,
-      model,
-      agentDir,
-      fallbacksOverride: resolveAgentModelFallbacksOverride(params.cfg, agentId),
-      run: async (providerOverride, _modelOverride) => {
-        if (abortSignal?.aborted) {
-          throw new Error(abortReason());
-        }
 
-        const sessionMap = createSessionMapAdapter({
-          getSessionId: () => getCliSessionId(cronSession.sessionEntry, providerOverride),
-        });
+    if (abortSignal?.aborted) {
+      throw new Error(abortReason());
+    }
 
-        const bridge = new ChannelBridge({
-          provider: providerOverride,
-          sessionMap,
-          gatewayUrl: resolveGatewayUrlFromConfig(cfgWithAgentDefaults),
-          gatewayToken: resolveGatewayTokenFromConfig(cfgWithAgentDefaults),
-          workspaceDir,
-        });
-
-        const messageToolHints = resolveChannelMessageToolHints({
-          cfg: cfgWithAgentDefaults,
-          channel: resolvedDelivery.channel,
-          accountId: resolvedDelivery.accountId,
-        });
-
-        const message = buildCronChannelMessage({
-          job: params.job,
-          commandBody,
-          resolvedDelivery,
-          timestamp: now,
-          messageToolHints,
-        });
-
-        const delivery = await bridge.handle(message, undefined, abortSignal);
-
-        // Complete runtime failure: re-throw so runWithModelFallback can try fallback.
-        if (delivery.error && delivery.payloads.length === 0) {
-          throw new Error(delivery.error);
-        }
-
-        return delivery;
-      },
+    const sessionMap = createSessionMapAdapter({
+      getSessionId: () => getCliSessionId(cronSession.sessionEntry, provider),
     });
-    runResult = fallbackResult.result;
-    fallbackProvider = fallbackResult.provider;
-    fallbackModel = fallbackResult.model;
+
+    const bridge = new ChannelBridge({
+      provider,
+      sessionMap,
+      gatewayUrl: resolveGatewayUrlFromConfig(cfgWithAgentDefaults),
+      gatewayToken: resolveGatewayTokenFromConfig(cfgWithAgentDefaults),
+      workspaceDir,
+    });
+
+    const messageToolHints = resolveChannelMessageToolHints({
+      cfg: cfgWithAgentDefaults,
+      channel: resolvedDelivery.channel,
+      accountId: resolvedDelivery.accountId,
+    });
+
+    const message = buildCronChannelMessage({
+      job: params.job,
+      commandBody,
+      resolvedDelivery,
+      timestamp: now,
+      messageToolHints,
+    });
+
+    runResult = await bridge.handle(message, undefined, abortSignal);
     runEndedAt = Date.now();
   } catch (err) {
     return withRunSession({ status: "error", error: String(err) });
@@ -490,8 +420,7 @@ export async function runCronIsolatedAgentTurn(params: {
       : undefined;
     const modelUsed = fallbackModel ?? model;
     const providerUsed = fallbackProvider ?? provider;
-    const contextTokens =
-      agentCfg?.contextTokens ?? lookupContextTokens(modelUsed) ?? DEFAULT_CONTEXT_TOKENS;
+    const contextTokens = agentCfg?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
 
     setSessionRuntimeModel(cronSession.sessionEntry, {
       provider: providerUsed,

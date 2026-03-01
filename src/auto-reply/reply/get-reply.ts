@@ -3,7 +3,7 @@ import {
   resolveAgentWorkspaceDir,
   resolveSessionAgentId,
 } from "../../agents/agent-scope.js";
-import { resolveModelRefFromString } from "../../agents/model-selection.js";
+import { parseModelRef } from "../../agents/provider-utils.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
 import { resolveChannelModelOverride } from "../../channels/model-overrides.js";
@@ -52,16 +52,10 @@ export async function getReplyFromConfig(
     // fall back to the global defaults heartbeat model for backward compatibility.
     const heartbeatRaw =
       opts.heartbeatModelOverride?.trim() ?? agentCfg?.heartbeat?.model?.trim() ?? "";
-    const heartbeatRef = heartbeatRaw
-      ? resolveModelRefFromString({
-          raw: heartbeatRaw,
-          defaultProvider,
-          aliasIndex,
-        })
-      : null;
+    const heartbeatRef = heartbeatRaw ? parseModelRef(heartbeatRaw, defaultProvider) : null;
     if (heartbeatRef) {
-      provider = heartbeatRef.ref.provider;
-      model = heartbeatRef.ref.model;
+      provider = heartbeatRef.provider;
+      model = heartbeatRef.model;
       hasResolvedHeartbeatModelOverride = true;
     }
   }
@@ -152,14 +146,10 @@ export async function getReplyFromConfig(
     sessionEntry.modelOverride?.trim() || sessionEntry.providerOverride?.trim(),
   );
   if (!hasResolvedHeartbeatModelOverride && !hasSessionModelOverride && channelModelOverride) {
-    const resolved = resolveModelRefFromString({
-      raw: channelModelOverride.model,
-      defaultProvider,
-      aliasIndex,
-    });
+    const resolved = parseModelRef(channelModelOverride.model, defaultProvider);
     if (resolved) {
-      provider = resolved.ref.provider;
-      model = resolved.ref.model;
+      provider = resolved.provider;
+      model = resolved.model;
     }
   }
 

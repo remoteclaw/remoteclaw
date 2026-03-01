@@ -1,11 +1,9 @@
 import path from "node:path";
 import { afterEach, beforeEach, expect, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
-import { loadModelCatalog } from "../agents/model-catalog.js";
 import { loadSessionStore } from "../config/sessions.js";
 import { runAgent } from "./reply.directive.directive-behavior.e2e-mocks.js";
 
-export { loadModelCatalog } from "../agents/model-catalog.js";
 export { runAgent } from "./reply.directive.directive-behavior.e2e-mocks.js";
 
 export const MAIN_SESSION_KEY = "agent:main:main";
@@ -135,7 +133,6 @@ export function assertElevatedOffStatusReply(text: string | undefined) {
 export function installDirectiveBehaviorE2EHooks() {
   beforeEach(() => {
     vi.mocked(runAgent).mockReset();
-    vi.mocked(loadModelCatalog).mockResolvedValue(DEFAULT_TEST_MODEL_CATALOG);
   });
 
   afterEach(() => {

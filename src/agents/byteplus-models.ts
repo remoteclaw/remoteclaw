@@ -1,6 +1,6 @@
-import type { ModelDefinitionConfig } from "../config/types.js";
 import {
   buildVolcModelDefinition,
+  type ModelDefinitionConfig,
   VOLC_MODEL_GLM_4_7,
   VOLC_MODEL_KIMI_K2_5,
   VOLC_SHARED_CODING_MODEL_CATALOG,

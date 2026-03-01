@@ -371,9 +371,11 @@ describe("gateway sessions patch", () => {
     });
 
     const entry = await applySubagentModelPatch(cfg);
-    // Selected model matches the target agent default, so no override is stored.
-    expect(entry.providerOverride).toBeUndefined();
-    expect(entry.modelOverride).toBeUndefined();
+    // Model override is always stored when different from the global default,
+    // regardless of whether it matches the target agent's own primary model.
+    // CLI agents handle their own model selection.
+    expect(entry.providerOverride).toBe("synthetic");
+    expect(entry.modelOverride).toBe("hf:moonshotai/Kimi-K2.5");
   });
 
   test("allows target agent subagents.model for subagent session even when missing from global allowlist", async () => {

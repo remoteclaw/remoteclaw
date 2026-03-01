@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "../agents/model-selection.js";
+import { normalizeProviderId } from "../agents/provider-utils.js";
 import type { ProviderAuthMethod, ProviderPlugin } from "../plugins/types.js";
 
 export function resolveProviderMatch(

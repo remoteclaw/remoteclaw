@@ -1,12 +1,6 @@
 import fs from "node:fs";
-import { resolveContextTokensForModel } from "../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { resolveModelAuthMode } from "../agents/model-auth.js";
-import {
-  buildModelAliasIndex,
-  resolveConfiguredModelRef,
-  resolveModelRefFromString,
-} from "../agents/model-selection.js";
+import { resolveModelAuthMode } from "../agents/provider-auth.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../agents/usage.js";
 import { resolveChannelModelOverride } from "../channels/model-overrides.js";
 import { isCommandFlagEnabled } from "../config/commands.js";
@@ -371,34 +365,22 @@ const formatVoiceModeLine = (
 export function buildStatusMessage(args: StatusArgs): string {
   const now = args.now ?? Date.now();
   const entry = args.sessionEntry;
-  const selectionConfig = {
-    agents: {
-      defaults: args.agent ?? {},
-    },
-  } as OpenClawConfig;
-  const contextConfig = args.config
-    ? ({
-        ...args.config,
-        agents: {
-          ...args.config.agents,
-          defaults: {
-            ...args.config.agents?.defaults,
-            ...args.agent,
-          },
-        },
-      } as OpenClawConfig)
-    : ({
-        agents: {
-          defaults: args.agent ?? {},
-        },
-      } as OpenClawConfig);
-  const resolved = resolveConfiguredModelRef({
-    cfg: selectionConfig,
-    defaultProvider: DEFAULT_PROVIDER,
-    defaultModel: DEFAULT_MODEL,
-  });
-  const selectedProvider = entry?.providerOverride ?? resolved.provider ?? DEFAULT_PROVIDER;
-  const selectedModel = entry?.modelOverride ?? resolved.model ?? DEFAULT_MODEL;
+  // Model selection gutted in RemoteClaw — derive selected model from agent config primary.
+  const agentModelPrimary =
+    typeof args.agent?.model === "string"
+      ? args.agent.model
+      : (args.agent?.model as { primary?: string } | undefined)?.primary;
+  const parsedPrimary = agentModelPrimary?.includes("/")
+    ? {
+        provider: agentModelPrimary.slice(0, agentModelPrimary.indexOf("/")),
+        model: agentModelPrimary.slice(agentModelPrimary.indexOf("/") + 1),
+      }
+    : undefined;
+  const configuredProvider = parsedPrimary?.provider || DEFAULT_PROVIDER;
+  const configuredModel = parsedPrimary?.model || DEFAULT_MODEL;
+  const contextConfig = args.config ?? ({} as OpenClawConfig);
+  const selectedProvider = entry?.providerOverride ?? configuredProvider;
+  const selectedModel = entry?.modelOverride ?? configuredModel;
   const modelRefs = resolveSelectedAndActiveModel({
     selectedProvider,
     selectedModel,
@@ -406,14 +388,16 @@ export function buildStatusMessage(args: StatusArgs): string {
   });
   let activeProvider = modelRefs.active.provider;
   let activeModel = modelRefs.active.model;
-  let contextTokens =
-    resolveContextTokensForModel({
-      cfg: contextConfig,
-      provider: activeProvider,
-      model: activeModel,
-      contextTokensOverride: entry?.contextTokens ?? args.agent?.contextTokens,
-      fallbackContextTokens: DEFAULT_CONTEXT_TOKENS,
-    }) ?? DEFAULT_CONTEXT_TOKENS;
+  // Context token lookup gutted in RemoteClaw — CLI agents manage their own context windows.
+  let contextTokens = entry?.contextTokens ?? args.agent?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
+  // Check for Anthropic context1m param to override context window size.
+  const activeModelRef = `${configuredProvider}/${configuredModel}`;
+  const modelsMap = contextConfig.agents?.defaults?.models as
+    | Record<string, { params?: { context1m?: boolean } } | undefined>
+    | undefined;
+  if (modelsMap?.[activeModelRef]?.params?.context1m === true) {
+    contextTokens = 1_048_576;
+  }
 
   let inputTokens = entry?.inputTokens;
   let outputTokens = entry?.outputTokens;
@@ -449,14 +433,8 @@ export function buildStatusMessage(args: StatusArgs): string {
           activeModel = logUsage.model;
         }
       }
-      if (!contextTokens && logUsage.model) {
-        contextTokens =
-          resolveContextTokensForModel({
-            cfg: contextConfig,
-            model: logUsage.model,
-            fallbackContextTokens: contextTokens ?? undefined,
-          }) ?? contextTokens;
-      }
+      // Context token lookup from model catalog gutted in RemoteClaw.
+      // contextTokens remains at the config/default value.
       if (!inputTokens || inputTokens === 0) {
         inputTokens = logUsage.input;
       }
@@ -585,22 +563,12 @@ export function buildStatusMessage(args: StatusArgs): string {
     if (!channelOverride) {
       return undefined;
     }
-    const aliasIndex = buildModelAliasIndex({
-      cfg: args.config,
-      defaultProvider: DEFAULT_PROVIDER,
-    });
-    const resolvedOverride = resolveModelRefFromString({
-      raw: channelOverride.model,
-      defaultProvider: DEFAULT_PROVIDER,
-      aliasIndex,
-    });
-    if (!resolvedOverride) {
-      return undefined;
-    }
-    if (
-      resolvedOverride.ref.provider !== selectedProvider ||
-      resolvedOverride.ref.model !== selectedModel
-    ) {
+    // Model alias resolution gutted in RemoteClaw — parse channel override directly.
+    const overrideRaw = channelOverride.model.trim();
+    const slashIdx = overrideRaw.indexOf("/");
+    const overrideProvider = slashIdx > 0 ? overrideRaw.slice(0, slashIdx) : DEFAULT_PROVIDER;
+    const overrideModel = slashIdx > 0 ? overrideRaw.slice(slashIdx + 1) : overrideRaw;
+    if (overrideProvider !== selectedProvider || overrideModel !== selectedModel) {
       return undefined;
     }
     return "channel override";

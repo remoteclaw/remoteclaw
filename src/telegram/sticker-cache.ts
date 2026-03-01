@@ -1,13 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveApiKeyForProvider } from "../agents/model-auth.js";
-import type { ModelCatalogEntry } from "../agents/model-catalog.js";
-import {
-  findModelInCatalog,
-  loadModelCatalog,
-  modelSupportsVision,
-} from "../agents/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { STATE_DIR } from "../config/paths.js";
 import { logVerbose } from "../globals.js";
@@ -142,7 +134,6 @@ export function getCacheStats(): { count: number; oldestAt?: string; newestAt?: 
 
 const STICKER_DESCRIPTION_PROMPT =
   "Describe this sticker image in 1-2 sentences. Focus on what the sticker depicts (character, object, action, emotion). Be concise and objective.";
-const VISION_PROVIDERS = ["openai", "anthropic", "google", "minimax"] as const;
 
 export interface DescribeStickerParams {
   imagePath: string;
@@ -157,80 +148,15 @@ export interface DescribeStickerParams {
  * Returns null if no vision provider is available.
  */
 export async function describeStickerImage(params: DescribeStickerParams): Promise<string | null> {
-  const { imagePath, cfg, agentDir, agentId } = params;
+  const { imagePath, cfg, agentDir } = params;
 
-  const defaultModel = resolveDefaultModelForAgent({ cfg, agentId });
-  let activeModel = undefined as { provider: string; model: string } | undefined;
-  let catalog: ModelCatalogEntry[] = [];
-  try {
-    catalog = await loadModelCatalog({ config: cfg });
-    const entry = findModelInCatalog(catalog, defaultModel.provider, defaultModel.model);
-    const supportsVision = modelSupportsVision(entry);
-    if (supportsVision) {
-      activeModel = { provider: defaultModel.provider, model: defaultModel.model };
-    }
-  } catch {
-    // Ignore catalog failures; fall back to auto selection.
-  }
-
-  const hasProviderKey = async (provider: string) => {
-    try {
-      await resolveApiKeyForProvider({ provider, cfg, agentDir });
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  const selectCatalogModel = (provider: string) => {
-    const entries = catalog.filter(
-      (entry) =>
-        entry.provider.toLowerCase() === provider.toLowerCase() && modelSupportsVision(entry),
-    );
-    if (entries.length === 0) {
-      return undefined;
-    }
-    const defaultId =
-      provider === "openai"
-        ? "gpt-5-mini"
-        : provider === "anthropic"
-          ? "claude-opus-4-6"
-          : provider === "google"
-            ? "gemini-3-flash-preview"
-            : "MiniMax-VL-01";
-    const preferred = entries.find((entry) => entry.id === defaultId);
-    return preferred ?? entries[0];
-  };
-
-  let resolved = null as { provider: string; model?: string } | null;
-  if (
-    activeModel &&
-    VISION_PROVIDERS.includes(activeModel.provider as (typeof VISION_PROVIDERS)[number]) &&
-    (await hasProviderKey(activeModel.provider))
-  ) {
-    resolved = activeModel;
-  }
-
-  if (!resolved) {
-    for (const provider of VISION_PROVIDERS) {
-      if (!(await hasProviderKey(provider))) {
-        continue;
-      }
-      const entry = selectCatalogModel(provider);
-      if (entry) {
-        resolved = { provider, model: entry.id };
-        break;
-      }
-    }
-  }
-
-  if (!resolved) {
-    resolved = await resolveAutoImageModel({
-      cfg,
-      agentDir,
-      activeModel,
-    });
-  }
+  // Model catalog gutted in RemoteClaw — use resolveAutoImageModel directly
+  // to find a vision-capable provider from available API keys.
+  const resolved = await resolveAutoImageModel({
+    cfg,
+    agentDir,
+    activeModel: undefined,
+  });
 
   if (!resolved?.model) {
     logVerbose("telegram: no vision provider available for sticker description");

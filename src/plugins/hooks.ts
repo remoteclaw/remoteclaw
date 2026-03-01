@@ -9,7 +9,11 @@ import type { PluginRegistry } from "./registry.js";
 import type {
   PluginHookAfterToolCallEvent,
   PluginHookAgentContext,
+  PluginHookAgentEndEvent,
+  PluginHookAfterRuntimeExitEvent,
   PluginHookBeforeResetEvent,
+  PluginHookBeforeRuntimeSpawnEvent,
+  PluginHookBeforeRuntimeSpawnResult,
   PluginHookBeforeToolCallEvent,
   PluginHookBeforeToolCallResult,
   PluginHookGatewayContext,
@@ -22,8 +26,10 @@ import type {
   PluginHookMessageSentEvent,
   PluginHookName,
   PluginHookRegistration,
+  PluginHookRuntimeContext,
   PluginHookSessionContext,
   PluginHookSessionEndEvent,
+  PluginHookSessionResumedEvent,
   PluginHookSessionStartEvent,
   PluginHookSubagentContext,
   PluginHookSubagentDeliveryTargetEvent,
@@ -40,7 +46,11 @@ import type {
 // Re-export types for consumers
 export type {
   PluginHookAgentContext,
+  PluginHookAgentEndEvent,
+  PluginHookAfterRuntimeExitEvent,
   PluginHookBeforeResetEvent,
+  PluginHookBeforeRuntimeSpawnEvent,
+  PluginHookBeforeRuntimeSpawnResult,
   PluginHookMessageContext,
   PluginHookMessageReceivedEvent,
   PluginHookMessageSendingEvent,
@@ -52,9 +62,11 @@ export type {
   PluginHookAfterToolCallEvent,
   PluginHookBeforeMessageWriteEvent,
   PluginHookBeforeMessageWriteResult,
+  PluginHookRuntimeContext,
   PluginHookSessionContext,
-  PluginHookSessionStartEvent,
   PluginHookSessionEndEvent,
+  PluginHookSessionResumedEvent,
+  PluginHookSessionStartEvent,
   PluginHookSubagentContext,
   PluginHookSubagentDeliveryTargetEvent,
   PluginHookSubagentDeliveryTargetResult,
@@ -488,6 +500,66 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
   }
 
   // =========================================================================
+  // ChannelBridge Runtime Hooks
+  // =========================================================================
+
+  /**
+   * Run before_runtime_spawn hook.
+   * Fired before the CLI subprocess starts. Extensions can modify env, args, workspaceDir.
+   * Runs sequentially (modifiable).
+   */
+  async function runBeforeRuntimeSpawn(
+    event: PluginHookBeforeRuntimeSpawnEvent,
+    ctx: PluginHookRuntimeContext,
+  ): Promise<PluginHookBeforeRuntimeSpawnResult | undefined> {
+    return runModifyingHook<"before_runtime_spawn", PluginHookBeforeRuntimeSpawnResult>(
+      "before_runtime_spawn",
+      event,
+      ctx,
+      (acc, next) => ({
+        env: next.env ?? acc?.env,
+        workspaceDir: next.workspaceDir ?? acc?.workspaceDir,
+      }),
+    );
+  }
+
+  /**
+   * Run after_runtime_exit hook.
+   * Fired after the CLI subprocess exits. Observe-only.
+   * Runs in parallel (fire-and-forget).
+   */
+  async function runAfterRuntimeExit(
+    event: PluginHookAfterRuntimeExitEvent,
+    ctx: PluginHookRuntimeContext,
+  ): Promise<void> {
+    return runVoidHook("after_runtime_exit", event, ctx);
+  }
+
+  /**
+   * Run session_resumed hook.
+   * Fired when an existing session ID is found for the channel conversation.
+   * Runs in parallel (fire-and-forget).
+   */
+  async function runSessionResumed(
+    event: PluginHookSessionResumedEvent,
+    ctx: PluginHookRuntimeContext,
+  ): Promise<void> {
+    return runVoidHook("session_resumed", event, ctx);
+  }
+
+  /**
+   * Run agent_end hook.
+   * Reconstructed from CLI subprocess exit data. Observe-only.
+   * Runs in parallel (fire-and-forget).
+   */
+  async function runAgentEnd(
+    event: PluginHookAgentEndEvent,
+    ctx: PluginHookRuntimeContext,
+  ): Promise<void> {
+    return runVoidHook("agent_end", event, ctx);
+  }
+
+  // =========================================================================
   // Utility
   // =========================================================================
 
@@ -527,6 +599,11 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
     // Gateway hooks
     runGatewayStart,
     runGatewayStop,
+    // ChannelBridge runtime hooks
+    runBeforeRuntimeSpawn,
+    runAfterRuntimeExit,
+    runSessionResumed,
+    runAgentEnd,
     // Utility
     hasHooks,
     getHookCount,

@@ -1,6 +1,6 @@
-import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { OpenClawConfig } from "../../config/config.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import type { AssistantMessage } from "../pi-types.js";
 import { stableStringify } from "../stable-stringify.js";
 import type { FailoverReason } from "./types.js";
 

@@ -44,7 +44,7 @@ export function createSessionsSendTool(opts?: {
       "Send a message into another session. Use sessionKey or label to identify the target.",
     parameters: SessionsSendToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args;
       const message = readStringParam(params, "message", { required: true });
       const cfg = loadConfig();
       const { mainKey, alias, effectiveRequesterKey, restrictToSpawned } =

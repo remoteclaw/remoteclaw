@@ -1,8 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SessionEntry as PiSessionEntry, SessionHeader } from "@mariozechner/pi-coding-agent";
-import { SessionManager } from "@mariozechner/pi-coding-agent";
 import {
   resolveDefaultSessionStorePath,
   resolveSessionFilePath,
@@ -17,12 +15,31 @@ import type { HandleCommandsParams } from "./commands-types.js";
 // Export HTML templates are bundled with this module
 const EXPORT_HTML_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "export-html");
 
+type JsonlRecord = Record<string, unknown>;
+
 interface SessionData {
-  header: SessionHeader | null;
-  entries: PiSessionEntry[];
+  header: JsonlRecord | null;
+  entries: JsonlRecord[];
   leafId: string | null;
   systemPrompt?: string;
   tools?: Array<{ name: string; description?: string; parameters?: unknown }>;
+}
+
+function readSessionJsonl(filePath: string): {
+  header: JsonlRecord | null;
+  entries: JsonlRecord[];
+} {
+  const raw = fs.readFileSync(filePath, "utf-8");
+  const lines = raw.split("\n").filter((line) => line.trim());
+  if (lines.length === 0) {
+    return { header: null, entries: [] };
+  }
+  const parsed = lines.map((line) => JSON.parse(line) as JsonlRecord);
+  const first = parsed[0];
+  if (first && first.type === "session") {
+    return { header: first, entries: parsed.slice(1) };
+  }
+  return { header: null, entries: parsed };
 }
 
 function loadTemplate(fileName: string): string {
@@ -143,10 +160,8 @@ export async function buildExportSessionReply(params: HandleCommandsParams): Pro
   }
 
   // 2. Load session entries
-  const sessionManager = SessionManager.open(sessionFile);
-  const entries = sessionManager.getEntries();
-  const header = sessionManager.getHeader();
-  const leafId = sessionManager.getLeafId();
+  const { header, entries } = readSessionJsonl(sessionFile);
+  const leafId: string | null = null;
 
   // 3. Build full system prompt
   const { systemPrompt, tools } = await resolveCommandsSystemPromptBundle(params);

@@ -1,8 +1,7 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { AssistantMessage } from "@mariozechner/pi-ai";
 import { extractTextFromChatContent } from "../shared/chat-content.js";
 import { stripReasoningTagsFromText } from "../shared/text/reasoning-tags.js";
 import { sanitizeUserFacingText } from "./agent-helpers.js";
+import type { AgentMessage, AssistantMessage } from "./pi-types.js";
 import { formatToolDetail, resolveToolDisplay } from "./tool-display.js";
 
 export function isAssistantMessage(msg: AgentMessage | undefined): msg is AssistantMessage {

@@ -1,4 +1,3 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import {
   readNumberParam,
@@ -14,6 +13,7 @@ import type {
 } from "../../channels/plugins/types.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
+import type { AgentToolResult } from "../../types/pi-compat.js";
 import {
   isDeliverableMessageChannel,
   normalizeMessageChannel,
@@ -113,7 +113,7 @@ export type MessageActionRunResult =
       to: string;
       handledBy: "plugin" | "core";
       payload: unknown;
-      toolResult?: AgentToolResult<unknown>;
+      toolResult?: AgentToolResult;
       sendResult?: MessageSendResult;
       dryRun: boolean;
     }
@@ -140,7 +140,7 @@ export type MessageActionRunResult =
       to: string;
       handledBy: "plugin" | "core";
       payload: unknown;
-      toolResult?: AgentToolResult<unknown>;
+      toolResult?: AgentToolResult;
       pollResult?: MessagePollResult;
       dryRun: boolean;
     }
@@ -150,13 +150,11 @@ export type MessageActionRunResult =
       action: Exclude<ChannelMessageActionName, "send" | "poll">;
       handledBy: "plugin" | "dry-run";
       payload: unknown;
-      toolResult?: AgentToolResult<unknown>;
+      toolResult?: AgentToolResult;
       dryRun: boolean;
     };
 
-export function getToolResult(
-  result: MessageActionRunResult,
-): AgentToolResult<unknown> | undefined {
+export function getToolResult(result: MessageActionRunResult): AgentToolResult | undefined {
   return "toolResult" in result ? result.toolResult : undefined;
 }
 

@@ -221,7 +221,7 @@ describe("sanitizeChatSendMessageInput", () => {
 });
 
 describe("gateway chat transcript writes (guardrail)", () => {
-  it("routes transcript writes through helper and SessionManager parentId append", () => {
+  it("routes transcript writes through helper with JSONL append", () => {
     const chatTs = fileURLToPath(new URL("./chat.ts", import.meta.url));
     const chatSrc = fs.readFileSync(chatTs, "utf-8");
     const helperTs = fileURLToPath(new URL("./chat-transcript-inject.ts", import.meta.url));
@@ -230,9 +230,8 @@ describe("gateway chat transcript writes (guardrail)", () => {
     expect(chatSrc.includes("fs.appendFileSync(transcriptPath")).toBe(false);
     expect(chatSrc).toContain("appendInjectedAssistantMessageToTranscript(");
 
-    expect(helperSrc.includes("fs.appendFileSync(params.transcriptPath")).toBe(false);
-    expect(helperSrc).toContain("SessionManager.open(params.transcriptPath)");
-    expect(helperSrc).toContain("appendMessage(messageBody)");
+    expect(helperSrc).toContain("fs.appendFileSync(params.transcriptPath");
+    expect(helperSrc).toContain("JSON.stringify(entry)");
   });
 });
 

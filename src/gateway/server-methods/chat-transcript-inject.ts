@@ -1,6 +1,5 @@
-import { SessionManager } from "@mariozechner/pi-coding-agent";
-
-type AppendMessageArg = Parameters<SessionManager["appendMessage"]>[0];
+import crypto from "node:crypto";
+import fs from "node:fs";
 
 export type GatewayInjectedAbortMeta = {
   aborted: true;
@@ -39,15 +38,12 @@ export function appendInjectedAssistantMessageToTranscript(params: {
       total: 0,
     },
   };
-  const messageBody: AppendMessageArg & Record<string, unknown> = {
+  const message: Record<string, unknown> = {
     role: "assistant",
     content: [{ type: "text", text: `${labelPrefix}${params.message}` }],
     timestamp: now,
-    // Pi stopReason is a strict enum; this is not model output, but we still store it as a
-    // normal assistant message so it participates in the session parentId chain.
     stopReason: "stop",
     usage,
-    // Make these explicit so downstream tooling never treats this as model output.
     api: "openai-responses",
     provider: "openclaw",
     model: "gateway-injected",
@@ -62,13 +58,11 @@ export function appendInjectedAssistantMessageToTranscript(params: {
         }
       : {}),
   };
+  const entry = { type: "message", message };
 
   try {
-    // IMPORTANT: Use SessionManager so the entry is attached to the current leaf via parentId.
-    // Raw jsonl appends break the parent chain and can hide compaction summaries from context.
-    const sessionManager = SessionManager.open(params.transcriptPath);
-    const messageId = sessionManager.appendMessage(messageBody);
-    return { ok: true, messageId, message: messageBody };
+    fs.appendFileSync(params.transcriptPath, `${JSON.stringify(entry)}\n`, "utf-8");
+    return { ok: true, messageId: crypto.randomUUID(), message };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }

@@ -1,4 +1,3 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { DiscordActionConfig } from "../../config/config.js";
 import { readDiscordComponentSpec } from "../../discord/components.js";
 import {
@@ -26,6 +25,7 @@ import {
 import type { DiscordSendComponents, DiscordSendEmbeds } from "../../discord/send.shared.js";
 import { resolveDiscordChannelId } from "../../discord/targets.js";
 import { withNormalizedTimestamp } from "../date-time.js";
+import type { AgentToolResult } from "../pi-types.js";
 import {
   type ActionGate,
   jsonResult,
@@ -58,7 +58,7 @@ export async function handleDiscordMessagingAction(
   options?: {
     mediaLocalRoots?: readonly string[];
   },
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult> {
   const resolveChannelId = () =>
     resolveDiscordChannelId(
       readStringParam(params, "channelId", {

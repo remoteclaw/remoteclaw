@@ -1,28 +1,11 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { createEditTool, createReadTool, createWriteTool } from "@mariozechner/pi-coding-agent";
-import { detectMime } from "../media/mime.js";
 import { sniffMimeFromBase64 } from "../media/sniff-mime-from-base64.js";
 import type { ImageSanitizationLimits } from "./image-sanitization.js";
 import type { AnyAgentTool } from "./pi-tools.types.js";
+import type { AgentToolResult } from "./pi-types.js";
 import { sanitizeToolResultImages } from "./tool-images.js";
 
-// Sandbox infrastructure removed (#68); inline the types and helpers that survived the gut.
-type SandboxFsBridge = {
-  readFile(params: { filePath: string; cwd: string }): Promise<Buffer>;
-  writeFile(params: { filePath: string; cwd: string; data: string }): Promise<void>;
-  stat(params: {
-    filePath: string;
-    cwd: string;
-  }): Promise<{ isFile(): boolean; size: number } | null>;
-  mkdirp(params: { filePath: string; cwd: string }): Promise<void>;
-  remove(params: { filePath: string; cwd: string; force: boolean }): Promise<void>;
-  resolvePath(params: { filePath: string; cwd: string }): {
-    hostPath: string;
-    relativePath: string;
-  };
-};
 async function assertSandboxPath(opts: {
   filePath: string;
   cwd: string;
@@ -40,7 +23,7 @@ async function assertSandboxPath(opts: {
 
 // NOTE(steipete): Upstream read now does file-magic MIME detection; we keep the wrapper
 // to normalize payloads and sanitize oversized images before they hit providers.
-type ToolContentBlock = AgentToolResult<unknown>["content"][number];
+type ToolContentBlock = AgentToolResult["content"][number];
 type ImageContentBlock = Extract<ToolContentBlock, { type: "image" }>;
 type TextContentBlock = Extract<ToolContentBlock, { type: "text" }>;
 
@@ -93,7 +76,7 @@ function formatBytes(bytes: number): string {
   return `${bytes}B`;
 }
 
-function getToolResultText(result: AgentToolResult<unknown>): string | undefined {
+function getToolResultText(result: AgentToolResult): string | undefined {
   const content = Array.isArray(result.content) ? result.content : [];
   const textBlocks = content
     .map((block) => {
@@ -114,10 +97,7 @@ function getToolResultText(result: AgentToolResult<unknown>): string | undefined
   return textBlocks.join("\n");
 }
 
-function withToolResultText(
-  result: AgentToolResult<unknown>,
-  text: string,
-): AgentToolResult<unknown> {
+function withToolResultText(result: AgentToolResult, text: string): AgentToolResult {
   const content = Array.isArray(result.content) ? result.content : [];
   let replaced = false;
   const nextContent: ToolContentBlock[] = content.map((block) => {
@@ -138,19 +118,17 @@ function withToolResultText(
   if (replaced) {
     return {
       ...result,
-      content: nextContent as unknown as AgentToolResult<unknown>["content"],
+      content: nextContent as unknown as AgentToolResult["content"],
     };
   }
   const textBlock = { type: "text", text } as unknown as TextContentBlock;
   return {
     ...result,
-    content: [textBlock] as unknown as AgentToolResult<unknown>["content"],
+    content: [textBlock] as unknown as AgentToolResult["content"],
   };
 }
 
-function extractReadTruncationDetails(
-  result: AgentToolResult<unknown>,
-): ReadTruncationDetails | null {
+function extractReadTruncationDetails(result: AgentToolResult): ReadTruncationDetails | null {
   const details = (result as { details?: unknown }).details;
   if (!details || typeof details !== "object") {
     return null;
@@ -179,9 +157,7 @@ function stripReadContinuationNotice(text: string): string {
   return text.replace(READ_CONTINUATION_NOTICE_RE, "");
 }
 
-function stripReadTruncationContentDetails(
-  result: AgentToolResult<unknown>,
-): AgentToolResult<unknown> {
+function stripReadTruncationContentDetails(result: AgentToolResult): AgentToolResult {
   const details = (result as { details?: unknown }).details;
   if (!details || typeof details !== "object") {
     return result;
@@ -214,7 +190,7 @@ async function executeReadWithAdaptivePaging(params: {
   args: Record<string, unknown>;
   signal?: AbortSignal;
   maxBytes: number;
-}): Promise<AgentToolResult<unknown>> {
+}): Promise<AgentToolResult> {
   const userLimit = params.args.limit;
   const hasExplicitLimit =
     typeof userLimit === "number" && Number.isFinite(userLimit) && userLimit > 0;
@@ -227,7 +203,7 @@ async function executeReadWithAdaptivePaging(params: {
     typeof offsetRaw === "number" && Number.isFinite(offsetRaw) && offsetRaw > 0
       ? Math.floor(offsetRaw)
       : 1;
-  let firstResult: AgentToolResult<unknown> | null = null;
+  let firstResult: AgentToolResult | null = null;
   let aggregatedText = "";
   let aggregatedBytes = 0;
   let capped = false;
@@ -295,9 +271,9 @@ function rewriteReadImageHeader(text: string, mimeType: string): string {
 }
 
 async function normalizeReadImageResult(
-  result: AgentToolResult<unknown>,
+  result: AgentToolResult,
   filePath: string,
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult> {
   const content = Array.isArray(result.content) ? result.content : [];
 
   const image = content.find(
@@ -567,9 +543,7 @@ export function wrapToolParamNormalization(
     ...patched,
     execute: async (toolCallId, params, signal, onUpdate) => {
       const normalized = normalizeToolParams(params);
-      const record =
-        normalized ??
-        (params && typeof params === "object" ? (params as Record<string, unknown>) : undefined);
+      const record = normalized ?? (params && typeof params === "object" ? params : undefined);
       if (requiredParamGroups?.length) {
         assertRequiredParams(record, requiredParamGroups, tool.name);
       }
@@ -645,9 +619,7 @@ export function wrapToolWorkspaceRootGuardWithOptions(
     ...tool,
     execute: async (toolCallId, args, signal, onUpdate) => {
       const normalized = normalizeToolParams(args);
-      const record =
-        normalized ??
-        (args && typeof args === "object" ? (args as Record<string, unknown>) : undefined);
+      const record = normalized ?? (args && typeof args === "object" ? args : undefined);
       const filePath = record?.path;
       if (typeof filePath === "string" && filePath.trim()) {
         const sandboxPath = mapContainerPathToWorkspaceRoot({
@@ -662,37 +634,6 @@ export function wrapToolWorkspaceRootGuardWithOptions(
   };
 }
 
-type SandboxToolParams = {
-  root: string;
-  bridge: SandboxFsBridge;
-  modelContextWindowTokens?: number;
-  imageSanitization?: ImageSanitizationLimits;
-};
-
-export function createSandboxedReadTool(params: SandboxToolParams) {
-  const base = createReadTool(params.root, {
-    operations: createSandboxReadOperations(params),
-  }) as unknown as AnyAgentTool;
-  return createOpenClawReadTool(base, {
-    modelContextWindowTokens: params.modelContextWindowTokens,
-    imageSanitization: params.imageSanitization,
-  });
-}
-
-export function createSandboxedWriteTool(params: SandboxToolParams) {
-  const base = createWriteTool(params.root, {
-    operations: createSandboxWriteOperations(params),
-  }) as unknown as AnyAgentTool;
-  return wrapToolParamNormalization(base, CLAUDE_PARAM_GROUPS.write);
-}
-
-export function createSandboxedEditTool(params: SandboxToolParams) {
-  const base = createEditTool(params.root, {
-    operations: createSandboxEditOperations(params),
-  }) as unknown as AnyAgentTool;
-  return wrapToolParamNormalization(base, CLAUDE_PARAM_GROUPS.edit);
-}
-
 export function createOpenClawReadTool(
   base: AnyAgentTool,
   options?: OpenClawReadToolOptions,
@@ -702,14 +643,12 @@ export function createOpenClawReadTool(
     ...patched,
     execute: async (toolCallId, params, signal) => {
       const normalized = normalizeToolParams(params);
-      const record =
-        normalized ??
-        (params && typeof params === "object" ? (params as Record<string, unknown>) : undefined);
+      const record = normalized ?? (params && typeof params === "object" ? params : undefined);
       assertRequiredParams(record, CLAUDE_PARAM_GROUPS.read, base.name);
       const result = await executeReadWithAdaptivePaging({
         base,
         toolCallId,
-        args: (normalized ?? params ?? {}) as Record<string, unknown>,
+        args: normalized ?? params ?? {},
         signal,
         maxBytes: resolveAdaptiveReadMaxBytes(options),
       });
@@ -723,54 +662,4 @@ export function createOpenClawReadTool(
       );
     },
   };
-}
-
-function createSandboxReadOperations(params: SandboxToolParams) {
-  return {
-    readFile: (absolutePath: string) =>
-      params.bridge.readFile({ filePath: absolutePath, cwd: params.root }),
-    access: async (absolutePath: string) => {
-      const stat = await params.bridge.stat({ filePath: absolutePath, cwd: params.root });
-      if (!stat) {
-        throw createFsAccessError("ENOENT", absolutePath);
-      }
-    },
-    detectImageMimeType: async (absolutePath: string) => {
-      const buffer = await params.bridge.readFile({ filePath: absolutePath, cwd: params.root });
-      const mime = await detectMime({ buffer, filePath: absolutePath });
-      return mime && mime.startsWith("image/") ? mime : undefined;
-    },
-  } as const;
-}
-
-function createSandboxWriteOperations(params: SandboxToolParams) {
-  return {
-    mkdir: async (dir: string) => {
-      await params.bridge.mkdirp({ filePath: dir, cwd: params.root });
-    },
-    writeFile: async (absolutePath: string, content: string) => {
-      await params.bridge.writeFile({ filePath: absolutePath, cwd: params.root, data: content });
-    },
-  } as const;
-}
-
-function createSandboxEditOperations(params: SandboxToolParams) {
-  return {
-    readFile: (absolutePath: string) =>
-      params.bridge.readFile({ filePath: absolutePath, cwd: params.root }),
-    writeFile: (absolutePath: string, content: string) =>
-      params.bridge.writeFile({ filePath: absolutePath, cwd: params.root, data: content }),
-    access: async (absolutePath: string) => {
-      const stat = await params.bridge.stat({ filePath: absolutePath, cwd: params.root });
-      if (!stat) {
-        throw createFsAccessError("ENOENT", absolutePath);
-      }
-    },
-  } as const;
-}
-
-function createFsAccessError(code: string, filePath: string): NodeJS.ErrnoException {
-  const error = new Error(`Sandbox FS error (${code}): ${filePath}`) as NodeJS.ErrnoException;
-  error.code = code;
-  return error;
 }

@@ -12,7 +12,9 @@ export type HookContext = {
   loopDetection?: ToolLoopDetectionConfig;
 };
 
-type HookOutcome = { blocked: true; reason: string } | { blocked: false; params: unknown };
+type HookOutcome =
+  | { blocked: true; reason: string }
+  | { blocked: false; params: Record<string, unknown> };
 
 const log = createSubsystemLogger("agents/tools");
 const BEFORE_TOOL_CALL_WRAPPED = Symbol("beforeToolCallWrapped");
@@ -73,7 +75,7 @@ async function recordLoopOutcome(args: {
 
 export async function runBeforeToolCallHook(args: {
   toolName: string;
-  params: unknown;
+  params: Record<string, unknown>;
   toolCallId?: string;
   ctx?: HookContext;
 }): Promise<HookOutcome> {

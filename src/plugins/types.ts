@@ -1,5 +1,4 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Command } from "commander";
 import type { AuthProfileCredential } from "../agents/auth-profiles/types.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
@@ -13,6 +12,7 @@ import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
 import type { InternalHookHandler } from "../hooks/internal-hooks.js";
 import type { HookEntry } from "../hooks/types.js";
 import type { RuntimeEnv } from "../runtime.js";
+import type { AgentMessage } from "../types/pi-compat.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { PluginRuntime } from "./runtime/types.js";
 

@@ -1,4 +1,4 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "../pi-types.js";
 
 function validateTurnsWithConsecutiveMerge<TRole extends "assistant" | "user">(params: {
   messages: AgentMessage[];

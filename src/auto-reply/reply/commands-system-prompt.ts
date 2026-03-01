@@ -1,7 +1,7 @@
-import type { AgentTool } from "@mariozechner/pi-agent-core";
 import type { ContextFile } from "../../agents/agent-helpers.js";
 import { resolveBootstrapContextForRun } from "../../agents/bootstrap-files.js";
 import { createOpenClawCodingTools } from "../../agents/pi-tools.js";
+import type { AgentTool } from "../../types/pi-compat.js";
 // Sandbox infrastructure removed (#68)
 const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
   sandboxed: false as const,

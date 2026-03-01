@@ -1,4 +1,3 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { DiscordActionConfig } from "../../config/config.js";
 import {
   banMemberDiscord,
@@ -6,6 +5,7 @@ import {
   kickMemberDiscord,
   timeoutMemberDiscord,
 } from "../../discord/send.js";
+import type { AgentToolResult } from "../pi-types.js";
 import { type ActionGate, jsonResult, readStringParam } from "./common.js";
 import {
   isDiscordModerationAction,
@@ -38,7 +38,7 @@ export async function handleDiscordModerationAction(
   action: string,
   params: Record<string, unknown>,
   isActionEnabled: ActionGate<DiscordActionConfig>,
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult> {
   if (!isDiscordModerationAction(action)) {
     throw new Error(`Unknown action: ${action}`);
   }

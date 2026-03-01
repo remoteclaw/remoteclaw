@@ -150,7 +150,7 @@ export function createSessionStatusTool(opts?: {
       "Show a /status-equivalent session status card (usage + time + cost when available). Use for model-use questions (📊 session_status). Optional: set per-session model override (model=default resets overrides).",
     parameters: SessionStatusToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args;
       const cfg = opts?.config ?? loadConfig();
       const { mainKey, alias } = resolveMainSessionAlias(cfg);
       const a2aPolicy = createAgentToAgentPolicy(cfg);

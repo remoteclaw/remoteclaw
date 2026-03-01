@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
 import {
   type CameraFacing,
@@ -21,6 +20,7 @@ import type { OpenClawConfig } from "../../config/config.js";
 import { imageMimeFromFormat } from "../../media/mime.js";
 import { resolveSessionAgentId } from "../agent-scope.js";
 import { resolveImageSanitizationLimits } from "../image-sanitization.js";
+import type { AgentToolResult } from "../pi-types.js";
 import { optionalStringEnum, stringEnum } from "../schema/typebox.js";
 import { sanitizeToolResultImages } from "../tool-images.js";
 import { type AnyAgentTool, jsonResult, readStringParam } from "./common.js";
@@ -124,7 +124,7 @@ export function createNodesTool(options?: {
       "Discover and control paired nodes (status/describe/pairing/notify/camera/screen/location/run/invoke).",
     parameters: NodesToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args;
       const action = readStringParam(params, "action", { required: true });
       const gatewayOpts = readGatewayCallOptions(params);
 
@@ -211,7 +211,7 @@ export function createNodesTool(options?: {
                 ? params.deviceId.trim()
                 : undefined;
 
-            const content: AgentToolResult<unknown>["content"] = [];
+            const content: AgentToolResult["content"] = [];
             const details: Array<Record<string, unknown>> = [];
 
             for (const facing of facings) {
@@ -266,7 +266,7 @@ export function createNodesTool(options?: {
               });
             }
 
-            const result: AgentToolResult<unknown> = { content, details };
+            const result: AgentToolResult = { content, details };
             return await sanitizeToolResultImages(result, "nodes:camera_snap", imageSanitization);
           }
           case "camera_list": {

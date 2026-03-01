@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
 import { applyUpdateHunk } from "./apply-patch-update.js";
+import type { AgentTool } from "./pi-types.js";
 
 // Sandbox infrastructure removed (#68); inline the types and helpers that survived the gut.
 type SandboxFsBridge = {

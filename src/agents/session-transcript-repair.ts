@@ -1,4 +1,4 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "./pi-types.js";
 import { extractToolCallsFromAssistant, extractToolResultId } from "./tool-call-id.js";
 
 const TOOL_CALL_NAME_MAX_CHARS = 64;

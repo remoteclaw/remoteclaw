@@ -1,4 +1,3 @@
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { OpenClawConfig } from "../../config/config.js";
 import { createTelegramActionGate } from "../../telegram/accounts.js";
 import type { TelegramButtonStyle, TelegramInlineButtons } from "../../telegram/button-types.js";
@@ -17,6 +16,7 @@ import {
 } from "../../telegram/send.js";
 import { getCacheStats, searchStickers } from "../../telegram/sticker-cache.js";
 import { resolveTelegramToken } from "../../telegram/token.js";
+import type { AgentToolResult } from "../pi-types.js";
 import {
   jsonResult,
   readNumberParam,
@@ -88,7 +88,7 @@ export async function handleTelegramAction(
   options?: {
     mediaLocalRoots?: readonly string[];
   },
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult> {
   const action = readStringParam(params, "action", { required: true });
   const accountId = readStringParam(params, "accountId");
   const isActionEnabled = createTelegramActionGate({ cfg, accountId });

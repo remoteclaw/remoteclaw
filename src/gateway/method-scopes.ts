@@ -92,6 +92,8 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "chat.abort",
     "browser.request",
     "push.test",
+    "hooks.tool.before",
+    "hooks.tool.after",
   ],
   [ADMIN_SCOPE]: [
     "channels.logout",

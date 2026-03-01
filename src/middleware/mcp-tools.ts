@@ -4,6 +4,7 @@ import { registerCronTools } from "./mcp-handlers/cron.js";
 import { registerGatewayTools } from "./mcp-handlers/gateway.js";
 import { registerMessageTools } from "./mcp-handlers/message.js";
 import { callMcpGateway, registerSessionTools } from "./mcp-handlers/session.js";
+import { registerPluginTools } from "./mcp-plugin-tools.js";
 
 /**
  * Wraps an MCP server so every registered tool fires `before_tool_call` /
@@ -71,7 +72,7 @@ function wrapWithToolHooks(server: McpServer, ctx: McpHandlerContext): McpServer
  * All tools are wrapped with before_tool_call / after_tool_call
  * hook firing via gateway RPC.
  */
-export function registerAllTools(server: McpServer, ctx: McpHandlerContext): void {
+export async function registerAllTools(server: McpServer, ctx: McpHandlerContext): Promise<void> {
   const hooked = wrapWithToolHooks(server, ctx);
   registerSessionTools(hooked, ctx);
   registerMessageTools(hooked, ctx);
@@ -79,4 +80,5 @@ export function registerAllTools(server: McpServer, ctx: McpHandlerContext): voi
     registerCronTools(hooked, ctx);
     registerGatewayTools(hooked, ctx);
   }
+  await registerPluginTools(hooked, ctx);
 }

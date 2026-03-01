@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
+import { enableCompileCache } from "node:module";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { isRootHelpInvocation, isRootVersionInvocation } from "./cli/argv.js";
@@ -32,6 +33,13 @@ if (
   process.title = "remoteclaw";
   installProcessWarningFilter();
   normalizeEnv();
+  if (!isTruthyEnvValue(process.env.NODE_DISABLE_COMPILE_CACHE)) {
+    try {
+      enableCompileCache();
+    } catch {
+      // Best-effort only; never block startup.
+    }
+  }
 
   if (process.argv.includes("--no-color")) {
     process.env.NO_COLOR = "1";

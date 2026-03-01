@@ -1,110 +1,54 @@
 import type { Command } from "commander";
-import { loadNodeHostConfig } from "../../node-host/config.js";
-import { runNodeHost } from "../../node-host/runner.js";
-import { formatDocsLink } from "../../terminal/links.js";
-import { theme } from "../../terminal/theme.js";
-import { parsePort } from "../daemon-cli/shared.js";
-import { formatHelpExamples } from "../help-format.js";
-import {
-  runNodeDaemonInstall,
-  runNodeDaemonRestart,
-  runNodeDaemonStatus,
-  runNodeDaemonStop,
-  runNodeDaemonUninstall,
-} from "./daemon.js";
+import { defaultRuntime } from "../../runtime.js";
 
-function parsePortWithFallback(value: unknown, fallback: number): number {
-  const parsed = parsePort(value);
-  return parsed ?? fallback;
+const NOT_AVAILABLE_MESSAGE = "Node host is not available in this version.";
+
+function stubAction(opts: { json?: boolean }) {
+  if (opts.json) {
+    defaultRuntime.log(JSON.stringify({ ok: false, error: NOT_AVAILABLE_MESSAGE }));
+  } else {
+    defaultRuntime.log(NOT_AVAILABLE_MESSAGE);
+  }
+  process.exitCode = 1;
 }
 
 export function registerNodeCli(program: Command) {
   const node = program
     .command("node")
-    .description("Run and manage the headless node host service")
-    .addHelpText(
-      "after",
-      () =>
-        `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          [
-            "openclaw node run --host 127.0.0.1 --port 18789",
-            "Run the node host in the foreground.",
-          ],
-          ["openclaw node status", "Check node host service status."],
-          ["openclaw node install", "Install the node host service."],
-          ["openclaw node restart", "Restart the installed node host service."],
-        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/node", "docs.openclaw.ai/cli/node")}\n`,
-    );
+    .description("Run and manage the headless node host service (not available in this version)");
 
   node
     .command("run")
     .description("Run the headless node host (foreground)")
-    .option("--host <host>", "Gateway host")
-    .option("--port <port>", "Gateway port")
-    .option("--tls", "Use TLS for the gateway connection", false)
-    .option("--tls-fingerprint <sha256>", "Expected TLS certificate fingerprint (sha256)")
-    .option("--node-id <id>", "Override node id (clears pairing token)")
-    .option("--display-name <name>", "Override node display name")
-    .action(async (opts) => {
-      const existing = await loadNodeHostConfig();
-      const host =
-        (opts.host as string | undefined)?.trim() || existing?.gateway?.host || "127.0.0.1";
-      const port = parsePortWithFallback(opts.port, existing?.gateway?.port ?? 18789);
-      await runNodeHost({
-        gatewayHost: host,
-        gatewayPort: port,
-        gatewayTls: Boolean(opts.tls) || Boolean(opts.tlsFingerprint),
-        gatewayTlsFingerprint: opts.tlsFingerprint,
-        nodeId: opts.nodeId,
-        displayName: opts.displayName,
-      });
-    });
+    .action(() => stubAction({}));
 
   node
     .command("status")
     .description("Show node host status")
     .option("--json", "Output JSON", false)
-    .action(async (opts) => {
-      await runNodeDaemonStatus(opts);
-    });
+    .action((opts) => stubAction(opts));
 
   node
     .command("install")
-    .description("Install the node host service (launchd/systemd/schtasks)")
-    .option("--host <host>", "Gateway host")
-    .option("--port <port>", "Gateway port")
-    .option("--tls", "Use TLS for the gateway connection", false)
-    .option("--tls-fingerprint <sha256>", "Expected TLS certificate fingerprint (sha256)")
-    .option("--node-id <id>", "Override node id (clears pairing token)")
-    .option("--display-name <name>", "Override node display name")
-    .option("--runtime <runtime>", "Service runtime (node|bun). Default: node")
-    .option("--force", "Reinstall/overwrite if already installed", false)
+    .description("Install the node host service")
     .option("--json", "Output JSON", false)
-    .action(async (opts) => {
-      await runNodeDaemonInstall(opts);
-    });
+    .action((opts) => stubAction(opts));
 
   node
     .command("uninstall")
-    .description("Uninstall the node host service (launchd/systemd/schtasks)")
+    .description("Uninstall the node host service")
     .option("--json", "Output JSON", false)
-    .action(async (opts) => {
-      await runNodeDaemonUninstall(opts);
-    });
+    .action((opts) => stubAction(opts));
 
   node
     .command("stop")
-    .description("Stop the node host service (launchd/systemd/schtasks)")
+    .description("Stop the node host service")
     .option("--json", "Output JSON", false)
-    .action(async (opts) => {
-      await runNodeDaemonStop(opts);
-    });
+    .action((opts) => stubAction(opts));
 
   node
     .command("restart")
-    .description("Restart the node host service (launchd/systemd/schtasks)")
+    .description("Restart the node host service")
     .option("--json", "Output JSON", false)
-    .action(async (opts) => {
-      await runNodeDaemonRestart(opts);
-    });
+    .action((opts) => stubAction(opts));
 }

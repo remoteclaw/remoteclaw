@@ -2,7 +2,7 @@
  * Session memory hook handler
  *
  * Saves session context to memory when /new or /reset command is triggered
- * Creates a new dated memory file with LLM-generated slug
+ * Creates a new dated memory file with a content-based slug
  */
 
 import fs from "node:fs/promises";
@@ -16,7 +16,7 @@ import { resolveAgentIdFromSessionKey } from "../../../routing/session-key.js";
 import { hasInterSessionUserProvenance } from "../../../sessions/input-provenance.js";
 import { resolveHookConfig } from "../../config.js";
 import type { HookHandler } from "../../hooks.js";
-import { generateSlugViaLLM } from "../../llm-slug-generator.js";
+import { generateSlug } from "../../slug-generator.js";
 
 const log = createSubsystemLogger("hooks/session-memory");
 
@@ -192,7 +192,7 @@ const saveSessionToMemory: HookHandler = async (event) => {
     const now = new Date(event.timestamp);
     const dateStr = now.toISOString().split("T")[0]; // YYYY-MM-DD
 
-    // Generate descriptive slug from session using LLM
+    // Generate descriptive slug from session content
     // Prefer previousSessionEntry (old session before /new) over current (which may be empty)
     const sessionEntry = (context.previousSessionEntry || context.sessionEntry || {}) as Record<
       string,
@@ -250,18 +250,8 @@ const saveSessionToMemory: HookHandler = async (event) => {
         messageCount,
       });
 
-      // Avoid calling the model provider in unit tests; keep hooks fast and deterministic.
-      const isTestEnv =
-        process.env.OPENCLAW_TEST_FAST === "1" ||
-        process.env.VITEST === "true" ||
-        process.env.VITEST === "1" ||
-        process.env.NODE_ENV === "test";
-      const allowLlmSlug = !isTestEnv && hookConfig?.llmSlug !== false;
-
-      if (sessionContent && cfg && allowLlmSlug) {
-        log.debug("Calling generateSlugViaLLM...");
-        // Use LLM to generate a descriptive slug
-        slug = await generateSlugViaLLM({ sessionContent, cfg });
+      if (sessionContent) {
+        slug = generateSlug(sessionContent);
         log.debug("Generated slug", { slug });
       }
     }

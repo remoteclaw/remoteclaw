@@ -33,31 +33,6 @@ export type StatusScanResult = {
   summary: Awaited<ReturnType<typeof getStatusSummary>>;
 };
 
-async function resolveMemoryStatusSnapshot(params: {
-  cfg: ReturnType<typeof loadConfig>;
-  agentStatus: Awaited<ReturnType<typeof getAgentLocalStatuses>>;
-  memoryPlugin: MemoryPluginStatus;
-}): Promise<MemoryStatusSnapshot | null> {
-  const { cfg, agentStatus, memoryPlugin } = params;
-  if (!memoryPlugin.enabled) {
-    return null;
-  }
-  if (memoryPlugin.slot !== "memory-core") {
-    return null;
-  }
-  const agentId = agentStatus.defaultId ?? "main";
-  const { manager } = await getMemorySearchManager({ cfg, agentId, purpose: "status" });
-  if (!manager) {
-    return null;
-  }
-  try {
-    await manager.probeVectorAvailability();
-  } catch {}
-  const status = manager.status();
-  await manager.close?.().catch(() => {});
-  return { agentId, ...status };
-}
-
 async function scanStatusJsonFast(opts: {
   timeoutMs?: number;
   all?: boolean;
@@ -120,9 +95,7 @@ async function scanStatusJsonFast(opts: {
         timeoutMs: Math.min(opts.all ? 5000 : 2500, opts.timeoutMs ?? 10_000),
       }).catch(() => null)
     : Promise.resolve(null);
-  const memoryPlugin = resolveMemoryPluginStatus(cfg);
-  const memoryPromise = resolveMemoryStatusSnapshot({ cfg, agentStatus, memoryPlugin });
-  const [channelsStatus, memory] = await Promise.all([channelsStatusPromise, memoryPromise]);
+  const channelsStatus = await channelsStatusPromise;
   const channelIssues = channelsStatus ? collectChannelStatusIssues(channelsStatus) : [];
 
   return {
@@ -140,10 +113,8 @@ async function scanStatusJsonFast(opts: {
     gatewaySelf,
     channelIssues,
     agentStatus,
-    channels: [],
+    channels: { rows: [], details: [] },
     summary,
-    memory,
-    memoryPlugin,
   };
 }
 
@@ -162,7 +133,7 @@ export async function scanStatus(
     {
       label: "Scanning status…",
       total: 10,
-      enabled: opts.json !== true,
+      enabled: true,
     },
     async (progress) => {
       progress.setLabel("Loading config…");
@@ -232,13 +203,11 @@ export async function scanStatus(
       progress.tick();
 
       progress.setLabel("Summarizing channels…");
-      const channels = opts.json
-        ? []
-        : await buildChannelsTable(cfg, {
-            // Show token previews in regular status; keep `status --all` redacted.
-            // Set `REMOTECLAW_SHOW_SECRETS=0` to force redaction.
-            showSecrets: process.env.REMOTECLAW_SHOW_SECRETS?.trim() !== "0",
-          });
+      const channels = await buildChannelsTable(cfg, {
+        // Show token previews in regular status; keep `status --all` redacted.
+        // Set `REMOTECLAW_SHOW_SECRETS=0` to force redaction.
+        showSecrets: process.env.REMOTECLAW_SHOW_SECRETS?.trim() !== "0",
+      });
       progress.tick();
 
       progress.tick();

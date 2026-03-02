@@ -1,9 +1,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { registerBrowserTools } from "./mcp-handlers/browser.js";
+import { registerCanvasTools } from "./mcp-handlers/canvas.js";
 import type { McpHandlerContext } from "./mcp-handlers/context.js";
 import { registerCronTools } from "./mcp-handlers/cron.js";
 import { registerGatewayTools } from "./mcp-handlers/gateway.js";
 import { registerMessageTools } from "./mcp-handlers/message.js";
+import { registerNodeTools } from "./mcp-handlers/nodes.js";
 import { callMcpGateway, registerSessionTools } from "./mcp-handlers/session.js";
+import { registerTtsTools } from "./mcp-handlers/tts.js";
 import { registerPluginTools } from "./mcp-plugin-tools.js";
 
 /**
@@ -64,10 +68,14 @@ function wrapWithToolHooks(server: McpServer, ctx: McpHandlerContext): McpServer
  * - Channel messaging (10 tools) — always registered
  * - Cron scheduling (7 tools) — owner-only
  * - Gateway admin (5 tools) — owner-only
+ * - Node management (7 tools) — owner-only
+ * - Canvas (7 tools) — owner-only
+ * - Browser proxy (1 tool) — owner-only
+ * - TTS (6 tools) — owner-only
  *
- * Owner-only tools (cron, gateway) are only registered when
- * `ctx.senderIsOwner` is `true`, preventing non-owner channel
- * users from accessing privileged operations.
+ * Owner-only tools are only registered when `ctx.senderIsOwner`
+ * is `true`, preventing non-owner channel users from accessing
+ * privileged operations.
  *
  * All tools are wrapped with before_tool_call / after_tool_call
  * hook firing via gateway RPC.
@@ -79,6 +87,10 @@ export async function registerAllTools(server: McpServer, ctx: McpHandlerContext
   if (ctx.senderIsOwner) {
     registerCronTools(hooked, ctx);
     registerGatewayTools(hooked, ctx);
+    registerNodeTools(hooked, ctx);
+    registerCanvasTools(hooked, ctx);
+    registerBrowserTools(hooked, ctx);
+    registerTtsTools(hooked, ctx);
   }
   await registerPluginTools(hooked, ctx);
 }

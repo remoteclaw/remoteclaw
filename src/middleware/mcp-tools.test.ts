@@ -45,10 +45,10 @@ describe("registerAllTools", () => {
     ctx = createMockContext();
   });
 
-  it("registers exactly 29 core tools", async () => {
+  it("registers exactly 50 core tools", async () => {
     // oxlint-disable-next-line typescript/no-explicit-any
     await registerAllTools(mockServer as any, ctx);
-    expect(mockServer.registerTool).toHaveBeenCalledTimes(29);
+    expect(mockServer.registerTool).toHaveBeenCalledTimes(50);
   });
 
   it("registers all session management tools", async () => {
@@ -170,11 +170,91 @@ describe("registerAllTools", () => {
       expect(names).toContain("message_broadcast");
     });
 
-    it("registers all 29 core tools for owner senders", async () => {
+    it("registers all 50 core tools for owner senders", async () => {
       ctx = createMockContext({ senderIsOwner: true });
       // oxlint-disable-next-line typescript/no-explicit-any
       await registerAllTools(mockServer as any, ctx);
-      expect(mockServer.registerTool).toHaveBeenCalledTimes(29);
+      expect(mockServer.registerTool).toHaveBeenCalledTimes(50);
     });
+
+    it("does NOT register node tools for non-owner senders", async () => {
+      ctx = createMockContext({ senderIsOwner: false });
+      // oxlint-disable-next-line typescript/no-explicit-any
+      await registerAllTools(mockServer as any, ctx);
+      const names = [...mockServer.registeredTools.keys()];
+      expect(names).not.toContain("node_list");
+      expect(names).not.toContain("node_invoke");
+    });
+
+    it("does NOT register canvas tools for non-owner senders", async () => {
+      ctx = createMockContext({ senderIsOwner: false });
+      // oxlint-disable-next-line typescript/no-explicit-any
+      await registerAllTools(mockServer as any, ctx);
+      const names = [...mockServer.registeredTools.keys()];
+      expect(names).not.toContain("canvas_present");
+      expect(names).not.toContain("canvas_snapshot");
+    });
+
+    it("does NOT register browser tools for non-owner senders", async () => {
+      ctx = createMockContext({ senderIsOwner: false });
+      // oxlint-disable-next-line typescript/no-explicit-any
+      await registerAllTools(mockServer as any, ctx);
+      const names = [...mockServer.registeredTools.keys()];
+      expect(names).not.toContain("browser_request");
+    });
+
+    it("does NOT register TTS tools for non-owner senders", async () => {
+      ctx = createMockContext({ senderIsOwner: false });
+      // oxlint-disable-next-line typescript/no-explicit-any
+      await registerAllTools(mockServer as any, ctx);
+      const names = [...mockServer.registeredTools.keys()];
+      expect(names).not.toContain("tts_status");
+      expect(names).not.toContain("tts_convert");
+    });
+  });
+
+  it("registers all node management tools", async () => {
+    // oxlint-disable-next-line typescript/no-explicit-any
+    await registerAllTools(mockServer as any, ctx);
+    const names = [...mockServer.registeredTools.keys()];
+    expect(names).toContain("node_list");
+    expect(names).toContain("node_describe");
+    expect(names).toContain("node_invoke");
+    expect(names).toContain("node_rename");
+    expect(names).toContain("node_pair_list");
+    expect(names).toContain("node_pair_approve");
+    expect(names).toContain("node_pair_reject");
+  });
+
+  it("registers all canvas tools", async () => {
+    // oxlint-disable-next-line typescript/no-explicit-any
+    await registerAllTools(mockServer as any, ctx);
+    const names = [...mockServer.registeredTools.keys()];
+    expect(names).toContain("canvas_present");
+    expect(names).toContain("canvas_hide");
+    expect(names).toContain("canvas_navigate");
+    expect(names).toContain("canvas_eval");
+    expect(names).toContain("canvas_snapshot");
+    expect(names).toContain("canvas_a2ui_push");
+    expect(names).toContain("canvas_a2ui_reset");
+  });
+
+  it("registers browser request tool", async () => {
+    // oxlint-disable-next-line typescript/no-explicit-any
+    await registerAllTools(mockServer as any, ctx);
+    const names = [...mockServer.registeredTools.keys()];
+    expect(names).toContain("browser_request");
+  });
+
+  it("registers all TTS tools", async () => {
+    // oxlint-disable-next-line typescript/no-explicit-any
+    await registerAllTools(mockServer as any, ctx);
+    const names = [...mockServer.registeredTools.keys()];
+    expect(names).toContain("tts_status");
+    expect(names).toContain("tts_convert");
+    expect(names).toContain("tts_providers");
+    expect(names).toContain("tts_set_provider");
+    expect(names).toContain("tts_enable");
+    expect(names).toContain("tts_disable");
   });
 });

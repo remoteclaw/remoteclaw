@@ -30,10 +30,14 @@ type BridgeConstructorOpts = {
   workspaceDir?: string;
 };
 
-const bridgeHandleMock = vi.fn<
-  [ChannelMessage, unknown?, AbortSignal?],
-  Promise<AgentDeliveryResult>
->();
+const bridgeHandleMock =
+  vi.fn<
+    (
+      message: ChannelMessage,
+      callbacks?: unknown,
+      abortSignal?: AbortSignal,
+    ) => Promise<AgentDeliveryResult>
+  >();
 const bridgeConstructorCalls: BridgeConstructorOpts[] = [];
 
 function defaultBridgeResult(): AgentDeliveryResult {

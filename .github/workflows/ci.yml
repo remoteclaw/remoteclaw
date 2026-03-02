@@ -23,6 +23,9 @@ jobs:
         with:
           install-bun: "false"
 
+      - name: Type-check
+        run: pnpm tsgo
+
       - name: Build
         run: pnpm build
 

@@ -36,6 +36,7 @@ vi.mock("../middleware/channel-bridge.js", () => ({
     ): Promise<AgentDeliveryResult> {
       const embeddedParams = {
         prompt: message.text,
+        extraSystemPrompt: message.extraContext,
         provider: this.#provider,
         onBlockReply: callbacks?.onBlockReply,
         onPartialReply: callbacks?.onPartialReply,

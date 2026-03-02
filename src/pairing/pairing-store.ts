@@ -363,6 +363,9 @@ async function readAllowFromStateForPathWithExists(
   if (cachedOrMissing) {
     return cachedOrMissing;
   }
+  if (!stat) {
+    return { entries: [], exists: false };
+  }
 
   const { value, exists } = await readJsonFile<AllowFromStore>(filePath, {
     version: 1,
@@ -371,8 +374,8 @@ async function readAllowFromStateForPathWithExists(
   const entries = normalizeAllowFromList(channel, value);
   setAllowFromReadCache(filePath, {
     exists,
-    mtimeMs: stat!.mtimeMs,
-    size: stat!.size,
+    mtimeMs: stat.mtimeMs,
+    size: stat.size,
     entries,
   });
   return { entries, exists };
@@ -400,6 +403,9 @@ function readAllowFromStateForPathSyncWithExists(
   if (cachedOrMissing) {
     return cachedOrMissing;
   }
+  if (!stat) {
+    return { entries: [], exists: false };
+  }
 
   try {
     const raw = fs.readFileSync(filePath, "utf8");
@@ -407,8 +413,8 @@ function readAllowFromStateForPathSyncWithExists(
     const entries = normalizeAllowFromList(channel, parsed);
     setAllowFromReadCache(filePath, {
       exists: true,
-      mtimeMs: stat!.mtimeMs,
-      size: stat!.size,
+      mtimeMs: stat.mtimeMs,
+      size: stat.size,
       entries,
     });
     return { entries, exists: true };
@@ -416,8 +422,8 @@ function readAllowFromStateForPathSyncWithExists(
     // Keep parity with async reads: malformed JSON still means the file exists.
     setAllowFromReadCache(filePath, {
       exists: true,
-      mtimeMs: stat!.mtimeMs,
-      size: stat!.size,
+      mtimeMs: stat.mtimeMs,
+      size: stat.size,
       entries: [],
     });
     return { entries: [], exists: true };

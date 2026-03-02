@@ -425,9 +425,6 @@ export function registerPluginsCli(program: Command) {
       ) {
         preview.push("load path");
       }
-      if (cfg.plugins?.slots?.memory === pluginId) {
-        preview.push(`memory slot (will reset to "memory-core")`);
-      }
       const deleteTarget = !keepFiles
         ? resolveUninstallDirectoryTarget({
             pluginId,

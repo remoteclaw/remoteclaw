@@ -1,6 +1,5 @@
 import { createRequire } from "node:module";
 import { resolveEffectiveMessagesConfig, resolveHumanDelayConfig } from "../../agents/identity.js";
-import { createMemoryGetTool, createMemorySearchTool } from "../../agents/tools/memory-tool.js";
 import { handleSlackAction } from "../../agents/tools/slack-actions.js";
 import {
   chunkByNewline,
@@ -42,7 +41,6 @@ import { signalMessageActions } from "../../channels/plugins/actions/signal.js";
 import { telegramMessageActions } from "../../channels/plugins/actions/telegram.js";
 import { createWhatsAppLoginTool } from "../../channels/plugins/agent-tools/whatsapp-login.js";
 import { recordInboundSession } from "../../channels/session.js";
-import { registerMemoryCli } from "../../cli/memory-cli.js";
 import { loadConfig, writeConfigFile } from "../../config/config.js";
 import {
   resolveChannelGroupPolicy,
@@ -277,11 +275,7 @@ function createRuntimeMedia(): PluginRuntime["media"] {
 }
 
 function createRuntimeTools(): PluginRuntime["tools"] {
-  return {
-    createMemoryGetTool,
-    createMemorySearchTool,
-    registerMemoryCli,
-  };
+  return {};
 }
 
 function createRuntimeChannel(): PluginRuntime["channel"] {

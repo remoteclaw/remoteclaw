@@ -193,42 +193,6 @@ describe("removePluginFromConfig", () => {
     expect(actions.loadPath).toBe(true);
   });
 
-  it("clears memory slot when uninstalling active memory plugin", () => {
-    const config: OpenClawConfig = {
-      plugins: {
-        entries: {
-          "memory-plugin": { enabled: true },
-        },
-        slots: {
-          memory: "memory-plugin",
-        },
-      },
-    };
-
-    const { config: result, actions } = removePluginFromConfig(config, "memory-plugin");
-
-    expect(result.plugins?.slots?.memory).toBe("memory-core");
-    expect(actions.memorySlot).toBe(true);
-  });
-
-  it("does not modify memory slot when uninstalling non-memory plugin", () => {
-    const config: OpenClawConfig = {
-      plugins: {
-        entries: {
-          "my-plugin": { enabled: true },
-        },
-        slots: {
-          memory: "memory-core",
-        },
-      },
-    };
-
-    const { config: result, actions } = removePluginFromConfig(config, "my-plugin");
-
-    expect(result.plugins?.slots?.memory).toBe("memory-core");
-    expect(actions.memorySlot).toBe(false);
-  });
-
   it("removes plugins object when uninstall leaves only empty slots", () => {
     const config = createSinglePluginWithEmptySlotsConfig();
 

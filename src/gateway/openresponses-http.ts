@@ -9,7 +9,7 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createDefaultDeps } from "../cli/deps.js";
-import { agentCommand } from "../commands/agent.js";
+import { agentCommandFromIngress } from "../commands/agent.js";
 import type { ClientToolDefinition } from "../commands/agent/types.js";
 import type { ImageContent } from "../commands/agent/types.js";
 import type { GatewayHttpResponsesConfig } from "../config/types.gateway.js";
@@ -236,7 +236,7 @@ async function runResponsesAgentCommand(params: {
   messageChannel: string;
   deps: ReturnType<typeof createDefaultDeps>;
 }) {
-  return agentCommand(
+  return agentCommandFromIngress(
     {
       message: params.message,
       images: params.images.length > 0 ? params.images : undefined,
@@ -248,6 +248,8 @@ async function runResponsesAgentCommand(params: {
       deliver: false,
       messageChannel: params.messageChannel,
       bestEffortDeliver: false,
+      // HTTP API callers are authenticated operator clients for this gateway context.
+      senderIsOwner: true,
     },
     defaultRuntime,
     params.deps,

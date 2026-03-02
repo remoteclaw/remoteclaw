@@ -41,7 +41,7 @@ import { deliverAgentCommandResult } from "./agent/delivery.js";
 import { resolveAgentRunContext } from "./agent/run-context.js";
 import { updateSessionStoreAfterAgentRun } from "./agent/session-store.js";
 import { resolveSession } from "./agent/session.js";
-import type { AgentCommandOpts } from "./agent/types.js";
+import type { AgentCommandIngressOpts, AgentCommandOpts } from "./agent/types.js";
 
 type PersistSessionEntryParams = {
   sessionStore: Record<string, SessionEntry>;
@@ -115,8 +115,8 @@ function buildCliChannelMessage(params: {
   };
 }
 
-export async function agentCommand(
-  opts: AgentCommandOpts,
+async function agentCommandInternal(
+  opts: AgentCommandOpts & { senderIsOwner: boolean },
   runtime: RuntimeEnv = defaultRuntime,
   deps: CliDeps = createDefaultDeps(),
 ) {
@@ -369,4 +369,37 @@ export async function agentCommand(
   } finally {
     clearAgentRunContext(runId);
   }
+}
+
+export async function agentCommand(
+  opts: AgentCommandOpts,
+  runtime: RuntimeEnv = defaultRuntime,
+  deps: CliDeps = createDefaultDeps(),
+) {
+  return await agentCommandInternal(
+    {
+      ...opts,
+      senderIsOwner: opts.senderIsOwner ?? true,
+    },
+    runtime,
+    deps,
+  );
+}
+
+export async function agentCommandFromIngress(
+  opts: AgentCommandIngressOpts,
+  runtime: RuntimeEnv = defaultRuntime,
+  deps: CliDeps = createDefaultDeps(),
+) {
+  if (typeof opts.senderIsOwner !== "boolean") {
+    throw new Error("senderIsOwner must be explicitly set for ingress agent runs.");
+  }
+  return await agentCommandInternal(
+    {
+      ...opts,
+      senderIsOwner: opts.senderIsOwner,
+    },
+    runtime,
+    deps,
+  );
 }

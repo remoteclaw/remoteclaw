@@ -66,6 +66,7 @@ import { resolveDiscordPresenceUpdate } from "./presence.js";
 import { resolveDiscordAllowlistConfig } from "./provider.allowlist.js";
 import { runDiscordGatewayLifecycle } from "./provider.lifecycle.js";
 import { resolveDiscordRestFetch } from "./rest-fetch.js";
+import type { DiscordMonitorStatusSink } from "./status.js";
 import { createNoopThreadBindingManager, createThreadBindingManager } from "./thread-bindings.js";
 import { formatThreadBindingDurationLabel } from "./thread-bindings.messages.js";
 
@@ -78,6 +79,7 @@ export type MonitorDiscordOpts = {
   mediaMaxMb?: number;
   historyLimit?: number;
   replyToMode?: ReplyToMode;
+  setStatus?: DiscordMonitorStatusSink;
 };
 
 function summarizeAllowList(list?: string[]) {
@@ -500,8 +502,17 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       threadBindings,
       discordRestFetch,
     });
+    const trackInboundEvent = opts.setStatus
+      ? () => {
+          const at = Date.now();
+          opts.setStatus?.({ lastEventAt: at, lastInboundAt: at });
+        }
+      : undefined;
 
-    registerDiscordListener(client.listeners, new DiscordMessageListener(messageHandler, logger));
+    registerDiscordListener(
+      client.listeners,
+      new DiscordMessageListener(messageHandler, logger, trackInboundEvent),
+    );
     registerDiscordListener(
       client.listeners,
       new DiscordReactionListener({
@@ -518,6 +529,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
         allowNameMatching: isDangerousNameMatchingEnabled(discordCfg),
         guildEntries,
         logger,
+        onEvent: trackInboundEvent,
       }),
     );
     registerDiscordListener(
@@ -536,6 +548,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
         allowNameMatching: isDangerousNameMatchingEnabled(discordCfg),
         guildEntries,
         logger,
+        onEvent: trackInboundEvent,
       }),
     );
 
@@ -555,6 +568,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       client,
       runtime,
       abortSignal: opts.abortSignal,
+      statusSink: opts.setStatus,
       isDisallowedIntentsError: isDiscordDisallowedIntentsError,
       voiceManager,
       voiceManagerRef,

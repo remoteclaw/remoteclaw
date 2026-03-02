@@ -27,6 +27,7 @@ type ReactionRunInput = {
   overrides?: SlackSystemEventTestOverrides;
   event?: Record<string, unknown>;
   body?: unknown;
+  trackEvent?: () => void;
   shouldDropMismatchedSlackEvent?: (body: unknown) => boolean;
 };
 
@@ -46,13 +47,14 @@ function buildReactionEvent(overrides?: { user?: string; channel?: string }) {
 
 function createReactionHandlers(params: {
   overrides?: SlackSystemEventTestOverrides;
+  trackEvent?: () => void;
   shouldDropMismatchedSlackEvent?: (body: unknown) => boolean;
 }) {
   const harness = createSlackSystemEventTestHarness(params.overrides);
   if (params.shouldDropMismatchedSlackEvent) {
     harness.ctx.shouldDropMismatchedSlackEvent = params.shouldDropMismatchedSlackEvent;
   }
-  registerSlackReactionEvents({ ctx: harness.ctx });
+  registerSlackReactionEvents({ ctx: harness.ctx, trackEvent: params.trackEvent });
   return {
     added: harness.getHandler("reaction_added") as ReactionHandler | null,
     removed: harness.getHandler("reaction_removed") as ReactionHandler | null,
@@ -64,6 +66,7 @@ async function executeReactionCase(input: ReactionRunInput = {}) {
   reactionAllowMock.mockReset().mockResolvedValue([]);
   const handlers = createReactionHandlers({
     overrides: input.overrides,
+    trackEvent: input.trackEvent,
     shouldDropMismatchedSlackEvent: input.shouldDropMismatchedSlackEvent,
   });
   const handler = handlers[input.handler ?? "added"];
@@ -75,38 +78,38 @@ async function executeReactionCase(input: ReactionRunInput = {}) {
 }
 
 describe("registerSlackReactionEvents", () => {
-  const cases: Array<{ name: string; args: ReactionRunInput; expectedCalls: number }> = [
+  const cases: Array<{ name: string; input: ReactionRunInput; expectedCalls: number }> = [
     {
       name: "enqueues DM reaction system events when dmPolicy is open",
-      args: { overrides: { dmPolicy: "open" as const } },
+      input: { overrides: { dmPolicy: "open" } },
       expectedCalls: 1,
     },
     {
       name: "blocks DM reaction system events when dmPolicy is disabled",
-      args: { overrides: { dmPolicy: "disabled" as const } },
+      input: { overrides: { dmPolicy: "disabled" } },
       expectedCalls: 0,
     },
     {
       name: "blocks DM reaction system events for unauthorized senders in allowlist mode",
-      args: {
-        overrides: { dmPolicy: "allowlist" as const, allowFrom: ["U2"] },
+      input: {
+        overrides: { dmPolicy: "allowlist", allowFrom: ["U2"] },
         event: buildReactionEvent({ user: "U1" }),
       },
       expectedCalls: 0,
     },
     {
       name: "allows DM reaction system events for authorized senders in allowlist mode",
-      args: {
-        overrides: { dmPolicy: "allowlist" as const, allowFrom: ["U1"] },
+      input: {
+        overrides: { dmPolicy: "allowlist", allowFrom: ["U1"] },
         event: buildReactionEvent({ user: "U1" }),
       },
       expectedCalls: 1,
     },
     {
       name: "enqueues channel reaction events regardless of dmPolicy",
-      args: {
-        handler: "removed" as const,
-        overrides: { dmPolicy: "disabled" as const, channelType: "channel" as const },
+      input: {
+        handler: "removed",
+        overrides: { dmPolicy: "disabled", channelType: "channel" },
         event: {
           ...buildReactionEvent({ channel: "C1" }),
           type: "reaction_removed",
@@ -116,10 +119,10 @@ describe("registerSlackReactionEvents", () => {
     },
     {
       name: "blocks channel reaction events for users outside channel users allowlist",
-      args: {
+      input: {
         overrides: {
-          dmPolicy: "open" as const,
-          channelType: "channel" as const,
+          dmPolicy: "open",
+          channelType: "channel",
           channelUsers: ["U_OWNER"],
         },
         event: buildReactionEvent({ channel: "C1", user: "U_ATTACKER" }),
@@ -128,17 +131,26 @@ describe("registerSlackReactionEvents", () => {
     },
   ];
 
-  it.each(cases)("$name", async ({ args, expectedCalls }) => {
-    await executeReactionCase(args);
+  it.each(cases)("$name", async ({ input, expectedCalls }) => {
+    await executeReactionCase(input);
     expect(reactionQueueMock).toHaveBeenCalledTimes(expectedCalls);
   });
 
-  it("drops mismatched events", async () => {
+  it("does not track mismatched events", async () => {
+    const trackEvent = vi.fn();
     await executeReactionCase({
+      trackEvent,
       shouldDropMismatchedSlackEvent: () => true,
       body: { api_app_id: "A_OTHER" },
     });
 
-    expect(reactionQueueMock).not.toHaveBeenCalled();
+    expect(trackEvent).not.toHaveBeenCalled();
+  });
+
+  it("tracks accepted message reactions", async () => {
+    const trackEvent = vi.fn();
+    await executeReactionCase({ trackEvent });
+
+    expect(trackEvent).toHaveBeenCalledTimes(1);
   });
 });

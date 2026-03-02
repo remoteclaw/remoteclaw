@@ -133,7 +133,6 @@ describe("registerSlackMessageEvents", () => {
       calls: 0,
     },
   ];
-
   it.each(cases)("$name", async ({ input, calls }) => {
     await runMessageCase(input);
     expect(messageQueueMock).toHaveBeenCalledTimes(calls);

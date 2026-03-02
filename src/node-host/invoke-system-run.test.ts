@@ -60,13 +60,18 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
         runViaMacAppExecHost as HandleSystemRunInvokeOptions["runViaMacAppExecHost"],
       sendNodeEvent: (async () => {}) as HandleSystemRunInvokeOptions["sendNodeEvent"],
       buildExecEventPayload: (payload) => payload,
-      sendInvokeResult: sendInvokeResult as HandleSystemRunInvokeOptions["sendInvokeResult"],
-      sendExecFinishedEvent:
-        sendExecFinishedEvent as HandleSystemRunInvokeOptions["sendExecFinishedEvent"],
+      sendInvokeResult,
+      sendExecFinishedEvent,
       preferMacAppExecHost: params.preferMacAppExecHost,
     });
 
-    return { runCommand, runViaMacAppExecHost, sendInvokeResult, sendExecFinishedEvent };
+    return {
+      runCommand,
+      runViaMacAppExecHost,
+      sendInvokeResult,
+      sendNodeEvent,
+      sendExecFinishedEvent,
+    };
   }
 
   it("uses local execution by default when mac app exec host preference is disabled", async () => {

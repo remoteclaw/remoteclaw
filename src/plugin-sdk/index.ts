@@ -105,9 +105,15 @@ export {
 export type { WebhookTargetMatchResult } from "./webhook-targets.js";
 export {
   applyBasicWebhookRequestGuards,
+  beginWebhookRequestPipelineOrReject,
+  createWebhookInFlightLimiter,
   isJsonContentType,
+  readWebhookBodyOrReject,
   readJsonWebhookBodyOrReject,
+  WEBHOOK_BODY_READ_DEFAULTS,
+  WEBHOOK_IN_FLIGHT_DEFAULTS,
 } from "./webhook-request-guards.js";
+export type { WebhookBodyReadProfile, WebhookInFlightLimiter } from "./webhook-request-guards.js";
 export type { AgentMediaPayload } from "./agent-media-payload.js";
 export { buildAgentMediaPayload } from "./agent-media-payload.js";
 export {

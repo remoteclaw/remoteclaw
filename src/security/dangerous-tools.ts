@@ -25,15 +25,10 @@ export const DEFAULT_GATEWAY_HTTP_TOOL_DENY = [
  */
 export const DANGEROUS_ACP_TOOL_NAMES = [
   "exec",
-  "spawn",
-  "shell",
+  "write",
   "sessions_spawn",
   "sessions_send",
   "gateway",
-  "fs_write",
-  "fs_delete",
-  "fs_move",
-  "apply_patch",
 ] as const;
 
 export const DANGEROUS_ACP_TOOLS = new Set<string>(DANGEROUS_ACP_TOOL_NAMES);

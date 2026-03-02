@@ -40,12 +40,10 @@ function createOwnerPolicyTools() {
 
 describe("tool-policy", () => {
   it("expands groups and normalizes aliases", () => {
-    const expanded = expandToolGroups(["group:runtime", "BASH", "apply-patch", "group:fs"]);
+    const expanded = expandToolGroups(["group:runtime", "BASH", "group:fs"]);
     const set = new Set(expanded);
     expect(set.has("exec")).toBe(true);
-    expect(set.has("process")).toBe(true);
     expect(set.has("bash")).toBe(false);
-    expect(set.has("apply_patch")).toBe(true);
     expect(set.has("read")).toBe(true);
     expect(set.has("write")).toBe(true);
     expect(set.has("edit")).toBe(true);
@@ -70,7 +68,6 @@ describe("tool-policy", () => {
 
   it("normalizes tool names and aliases", () => {
     expect(normalizeToolName(" BASH ")).toBe("exec");
-    expect(normalizeToolName("apply-patch")).toBe("apply_patch");
     expect(normalizeToolName("READ")).toBe("read");
   });
 

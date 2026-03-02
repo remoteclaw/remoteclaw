@@ -50,7 +50,7 @@ describe("registerPluginTools", () => {
           agentId: "default",
           tools: [
             {
-              name: "memory_search",
+              name: "vector_search",
               description: "Search vector memory",
               inputSchema: {
                 type: "object",
@@ -85,7 +85,7 @@ describe("registerPluginTools", () => {
 
     expect(server.registerTool).toHaveBeenCalledTimes(2);
     const names = [...server.registeredTools.keys()];
-    expect(names).toContain("memory_search");
+    expect(names).toContain("vector_search");
     expect(names).toContain("voice_call");
   });
 

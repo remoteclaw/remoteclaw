@@ -292,12 +292,12 @@ describe("tool-loop-detection", () => {
 
       recordRepeatedSuccessfulCalls({
         state,
-        toolName: "process",
+        toolName: "command_status",
         toolParams: params,
         result,
         count: 2,
       });
-      const warningResult = detectToolCallLoop(state, "process", params, config);
+      const warningResult = detectToolCallLoop(state, "command_status", params, config);
       expect(warningResult.stuck).toBe(true);
       if (warningResult.stuck) {
         expect(warningResult.level).toBe("warning");
@@ -305,13 +305,13 @@ describe("tool-loop-detection", () => {
 
       recordRepeatedSuccessfulCalls({
         state,
-        toolName: "process",
+        toolName: "command_status",
         toolParams: params,
         result,
         count: 2,
         startIndex: 2,
       });
-      const criticalResult = detectToolCallLoop(state, "process", params, config);
+      const criticalResult = detectToolCallLoop(state, "command_status", params, config);
       expect(criticalResult.stuck).toBe(true);
       if (criticalResult.stuck) {
         expect(criticalResult.level).toBe("critical");
@@ -333,13 +333,13 @@ describe("tool-loop-detection", () => {
 
       recordRepeatedSuccessfulCalls({
         state,
-        toolName: "process",
+        toolName: "command_status",
         toolParams: params,
         result,
         count: CRITICAL_THRESHOLD,
       });
 
-      const loopResult = detectToolCallLoop(state, "process", params, config);
+      const loopResult = detectToolCallLoop(state, "command_status", params, config);
       expect(loopResult.stuck).toBe(false);
     });
 
@@ -348,13 +348,18 @@ describe("tool-loop-detection", () => {
       const { params, result } = createNoProgressPollFixture("sess-1");
       recordRepeatedSuccessfulCalls({
         state,
-        toolName: "process",
+        toolName: "command_status",
         toolParams: params,
         result,
         count: WARNING_THRESHOLD,
       });
 
-      const loopResult = detectToolCallLoop(state, "process", params, enabledLoopDetectionConfig);
+      const loopResult = detectToolCallLoop(
+        state,
+        "command_status",
+        params,
+        enabledLoopDetectionConfig,
+      );
       expect(loopResult.stuck).toBe(true);
       if (loopResult.stuck) {
         expect(loopResult.level).toBe("warning");
@@ -368,13 +373,18 @@ describe("tool-loop-detection", () => {
       const { params, result } = createNoProgressPollFixture("sess-1");
       recordRepeatedSuccessfulCalls({
         state,
-        toolName: "process",
+        toolName: "command_status",
         toolParams: params,
         result,
         count: CRITICAL_THRESHOLD,
       });
 
-      const loopResult = detectToolCallLoop(state, "process", params, enabledLoopDetectionConfig);
+      const loopResult = detectToolCallLoop(
+        state,
+        "command_status",
+        params,
+        enabledLoopDetectionConfig,
+      );
       expect(loopResult.stuck).toBe(true);
       if (loopResult.stuck) {
         expect(loopResult.level).toBe("critical");
@@ -392,10 +402,15 @@ describe("tool-loop-detection", () => {
           content: [{ type: "text", text: `line ${i}` }],
           details: { status: "running", aggregated: `line ${i}` },
         };
-        recordSuccessfulCall(state, "process", params, result, i);
+        recordSuccessfulCall(state, "command_status", params, result, i);
       }
 
-      const loopResult = detectToolCallLoop(state, "process", params, enabledLoopDetectionConfig);
+      const loopResult = detectToolCallLoop(
+        state,
+        "command_status",
+        params,
+        enabledLoopDetectionConfig,
+      );
       expect(loopResult.stuck).toBe(false);
     });
 
@@ -501,9 +516,9 @@ describe("tool-loop-detection", () => {
       const state = createState();
       const params = { action: "log", sessionId: "sess-big" };
       const toolCallId = "log-big";
-      recordToolCall(state, "process", params, toolCallId);
+      recordToolCall(state, "command_status", params, toolCallId);
       recordToolCallOutcome(state, {
-        toolName: "process",
+        toolName: "command_status",
         toolParams: params,
         toolCallId,
         result: {

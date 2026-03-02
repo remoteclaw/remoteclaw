@@ -221,15 +221,6 @@ export const ElevatedAllowFromSchema = z
   .record(z.string(), z.array(z.union([z.string(), z.number()])))
   .optional();
 
-const ToolExecApplyPatchSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    workspaceOnly: z.boolean().optional(),
-    allowModels: z.array(z.string()).optional(),
-  })
-  .strict()
-  .optional();
-
 const ToolExecSafeBinProfileSchema = z
   .object({
     minPositional: z.number().int().nonnegative().optional(),
@@ -253,7 +244,6 @@ const ToolExecBaseShape = {
   cleanupMs: z.number().int().positive().optional(),
   notifyOnExit: z.boolean().optional(),
   notifyOnExitEmptySuccess: z.boolean().optional(),
-  applyPatch: ToolExecApplyPatchSchema,
 } as const;
 
 const AgentToolExecSchema = z

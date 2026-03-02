@@ -36,7 +36,7 @@ function createHandlerArgs(method: string, params: Record<string, unknown> = {})
 describe("plugin:tools:list", () => {
   it("returns tool names, descriptions, and schemas", () => {
     const mockTool = {
-      name: "memory_search",
+      name: "vector_search",
       description: "Search vector memory",
       parameters: {
         type: "object",
@@ -56,7 +56,7 @@ describe("plugin:tools:list", () => {
         agentId: "default",
         tools: [
           {
-            name: "memory_search",
+            name: "vector_search",
             description: "Search vector memory",
             inputSchema: {
               type: "object",
@@ -130,10 +130,10 @@ describe("plugin:tools:invoke", () => {
       content: [{ type: "text", text: "result data" }],
       details: { found: 3 },
     });
-    mockResolvePluginTools.mockReturnValue([{ name: "memory_search", execute: mockExecute }]);
+    mockResolvePluginTools.mockReturnValue([{ name: "vector_search", execute: mockExecute }]);
 
     const { opts, respond } = createHandlerArgs("plugin:tools:invoke", {
-      toolName: "memory_search",
+      toolName: "vector_search",
       params: { query: "test" },
     });
     // oxlint-disable-next-line typescript/no-explicit-any

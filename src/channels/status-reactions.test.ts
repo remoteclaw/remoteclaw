@@ -68,11 +68,6 @@ describe("resolveToolEmoji", () => {
   }> = [
     { name: "returns coding emoji for exec tool", tool: "exec", expected: DEFAULT_EMOJIS.coding },
     {
-      name: "returns coding emoji for process tool",
-      tool: "process",
-      expected: DEFAULT_EMOJIS.coding,
-    },
-    {
       name: "returns web emoji for web_search tool",
       tool: "web_search",
       expected: DEFAULT_EMOJIS.web,

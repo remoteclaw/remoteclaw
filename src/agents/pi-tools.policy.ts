@@ -48,9 +48,6 @@ function makeToolPolicyMatcher(policy: SandboxToolPolicy) {
     if (matchesAnyGlobPattern(normalized, allow)) {
       return true;
     }
-    if (normalized === "apply_patch" && matchesAnyGlobPattern("exec", allow)) {
-      return true;
-    }
     return false;
   };
 }
@@ -68,9 +65,6 @@ const SUBAGENT_TOOL_DENY_ALWAYS = [
   // Status/scheduling - main agent coordinates
   "session_status",
   "cron",
-  // Memory - pass relevant info in spawn prompt instead
-  "memory_search",
-  "memory_get",
   // Direct session sends - subagents communicate through announce chain
   "sessions_send",
 ];

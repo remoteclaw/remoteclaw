@@ -30,11 +30,6 @@
       "title": "Exec",
       "detailKeys": ["command"]
     },
-    "process": {
-      "emoji": "🧰",
-      "title": "Process",
-      "detailKeys": ["sessionId"]
-    },
     "read": {
       "emoji": "📖",
       "title": "Read",
@@ -49,11 +44,6 @@
       "emoji": "📝",
       "title": "Edit",
       "detailKeys": ["path"]
-    },
-    "apply_patch": {
-      "emoji": "🩹",
-      "title": "Apply Patch",
-      "detailKeys": []
     },
     "attach": {
       "emoji": "📎",
@@ -283,16 +273,6 @@
       "emoji": "📊",
       "title": "Session Status",
       "detailKeys": ["sessionKey", "model"]
-    },
-    "memory_search": {
-      "emoji": "🧠",
-      "title": "Memory Search",
-      "detailKeys": ["query"]
-    },
-    "memory_get": {
-      "emoji": "📓",
-      "title": "Memory Get",
-      "detailKeys": ["path", "from", "lines"]
     },
     "web_search": {
       "emoji": "🔎",

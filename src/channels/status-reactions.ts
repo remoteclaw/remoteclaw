@@ -70,7 +70,6 @@ export const DEFAULT_TIMING: Required<StatusReactionTiming> = {
 
 export const CODING_TOOL_TOKENS: string[] = [
   "exec",
-  "process",
   "read",
   "write",
   "edit",

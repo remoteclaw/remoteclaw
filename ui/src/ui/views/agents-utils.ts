@@ -364,9 +364,6 @@ export function isAllowedByPolicy(name: string, policy?: ToolPolicy) {
   if (matchesAny(normalized, allow)) {
     return true;
   }
-  if (normalized === "apply_patch" && matchesAny("exec", allow)) {
-    return true;
-  }
   return false;
 }
 
@@ -377,9 +374,6 @@ export function matchesList(name: string, list?: string[]) {
   const normalized = normalizeToolName(name);
   const patterns = compilePatterns(list);
   if (matchesAny(normalized, patterns)) {
-    return true;
-  }
-  if (normalized === "apply_patch" && matchesAny("exec", patterns)) {
     return true;
   }
   return false;

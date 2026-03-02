@@ -1,5 +1,18 @@
 FROM node:22-bookworm@sha256:cd7bcd2e7a1e6f72052feb023c7f6b722205d3fcab7bbcbd2d1bfdab10b1e935
 
+# OCI base-image metadata for downstream image consumers.
+# If you change these annotations, also update:
+# - docs/install/docker.md ("Base image metadata" section)
+# - https://docs.remoteclaw.com/install/docker
+LABEL org.opencontainers.image.base.name="docker.io/library/node:22-bookworm" \
+  org.opencontainers.image.base.digest="sha256:cd7bcd2e7a1e6f72052feb023c7f6b722205d3fcab7bbcbd2d1bfdab10b1e935" \
+  org.opencontainers.image.source="https://github.com/remoteclaw/remoteclaw" \
+  org.opencontainers.image.url="https://remoteclaw.com" \
+  org.opencontainers.image.documentation="https://docs.remoteclaw.com/install/docker" \
+  org.opencontainers.image.licenses="MIT" \
+  org.opencontainers.image.title="RemoteClaw" \
+  org.opencontainers.image.description="RemoteClaw gateway and CLI runtime container image"
+
 # Install Bun (required for build scripts)
 RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:${PATH}"

@@ -473,6 +473,8 @@ export const ToolsMediaUnderstandingSchema = z
     maxChars: z.number().int().positive().optional(),
     ...MediaUnderstandingRuntimeFields,
     models: z.array(MediaUnderstandingModelSchema).optional(),
+    echoTranscript: z.boolean().optional(),
+    echoFormat: z.string().optional(),
   })
   .strict()
   .optional();

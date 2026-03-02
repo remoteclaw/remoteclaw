@@ -63,7 +63,6 @@ let savedNoProxy: string | undefined;
 let savedNoProxyLower: string | undefined;
 
 const LOOPBACK_ENTRIES = "localhost,127.0.0.1,[::1]";
-let noProxyDidModify = false;
 
 function noProxyAlreadyCoversLocalhost(): boolean {
   const current = process.env.NO_PROXY || process.env.no_proxy || "";
@@ -87,14 +86,13 @@ export async function withNoProxyForLocalhost<T>(fn: () => Promise<T>): Promise<
     const extended = current ? `${current},${LOOPBACK_ENTRIES}` : LOOPBACK_ENTRIES;
     process.env.NO_PROXY = extended;
     process.env.no_proxy = extended;
-    noProxyDidModify = true;
   }
 
   try {
     return await fn();
   } finally {
     noProxyRefCount--;
-    if (noProxyRefCount === 0 && noProxyDidModify) {
+    if (noProxyRefCount === 0) {
       if (savedNoProxy !== undefined) {
         process.env.NO_PROXY = savedNoProxy;
       } else {
@@ -107,7 +105,6 @@ export async function withNoProxyForLocalhost<T>(fn: () => Promise<T>): Promise<
       }
       savedNoProxy = undefined;
       savedNoProxyLower = undefined;
-      noProxyDidModify = false;
     }
   }
 }

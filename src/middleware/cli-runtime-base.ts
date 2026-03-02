@@ -62,6 +62,29 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     const stderrChunks: string[] = [];
     let aborted = false;
 
+    // ── SIGKILL escalation helper ──────────────────────────────────────
+    let escalationTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const killWithEscalation = () => {
+      if (escalationTimer === undefined) {
+        escalationTimer = setTimeout(() => {
+          try {
+            child.kill("SIGKILL");
+          } catch {
+            // Already dead — ignore
+          }
+        }, 1500);
+      }
+      child.kill("SIGTERM");
+    };
+
+    child.on("exit", () => {
+      if (escalationTimer !== undefined) {
+        clearTimeout(escalationTimer);
+        escalationTimer = undefined;
+      }
+    });
+
     // ── Watchdog timer ───────────────────────────────────────────────
     let watchdogTimer: ReturnType<typeof setTimeout> | undefined;
     let watchdogFired = false;
@@ -72,7 +95,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       }
       watchdogTimer = setTimeout(() => {
         watchdogFired = true;
-        child.kill("SIGTERM");
+        killWithEscalation();
       }, this.timeoutMs);
     };
     resetWatchdog();
@@ -145,12 +168,12 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     // ── Abort signal wiring (after event infrastructure is ready) ────
     const onAbort = () => {
       aborted = true;
-      child.kill("SIGTERM");
+      killWithEscalation();
     };
     if (params.abortSignal) {
       if (params.abortSignal.aborted) {
         aborted = true;
-        child.kill("SIGTERM");
+        killWithEscalation();
       } else {
         params.abortSignal.addEventListener("abort", onAbort, { once: true });
       }
@@ -183,6 +206,9 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
 
     // ── Wait for process to fully exit ───────────────────────────────
     await exitPromise;
+    if (escalationTimer !== undefined) {
+      clearTimeout(escalationTimer);
+    }
     const durationMs = Date.now() - startMs;
 
     // ── Emit terminal events ─────────────────────────────────────────

@@ -13,12 +13,28 @@ final class PeekabooBridgeHostCoordinator {
 
     private var host: PeekabooBridgeHost?
     private var services: RemoteClawPeekabooBridgeServices?
+
+    private static let legacySocketDirectoryNames = ["clawdbot", "clawdis", "moltbot"]
+
     private static var remoteclawSocketPath: String {
         let fileManager = FileManager.default
         let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
-        let directory = base.appendingPathComponent("RemoteClaw", isDirectory: true)
-        return directory.appendingPathComponent(PeekabooBridgeConstants.socketName, isDirectory: false).path
+        return Self.makeSocketPath(for: "RemoteClaw", in: base)
+    }
+
+    private static func makeSocketPath(for directoryName: String, in baseDirectory: URL) -> String {
+        baseDirectory
+            .appendingPathComponent(directoryName, isDirectory: true)
+            .appendingPathComponent(PeekabooBridgeConstants.socketName, isDirectory: false)
+            .path
+    }
+
+    private static var legacySocketPaths: [String] {
+        let fileManager = FileManager.default
+        let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
+        return Self.legacySocketDirectoryNames.map { Self.makeSocketPath(for: $0, in: base) }
     }
 
     func setEnabled(_ enabled: Bool) async {
@@ -46,6 +62,8 @@ final class PeekabooBridgeHostCoordinator {
         }
         let allowlistedBundles: Set<String> = []
 
+        self.ensureLegacySocketSymlinks()
+
         let services = RemoteClawPeekabooBridgeServices()
         let server = PeekabooBridgeServer(
             services: services,
@@ -65,6 +83,44 @@ final class PeekabooBridgeHostCoordinator {
         await host.start()
         self.logger
             .info("PeekabooBridge host started at \(Self.remoteclawSocketPath, privacy: .public)")
+    }
+
+    private func ensureLegacySocketSymlinks() {
+        Self.legacySocketPaths.forEach { legacyPath in
+            self.ensureLegacySocketSymlink(at: legacyPath)
+        }
+    }
+
+    private func ensureLegacySocketSymlink(at legacyPath: String) {
+        let fileManager = FileManager.default
+        let legacyDirectory = (legacyPath as NSString).deletingLastPathComponent
+        do {
+            let directoryAttributes: [FileAttributeKey: Any] = [
+                .posixPermissions: 0o700,
+            ]
+            try fileManager.createDirectory(
+                atPath: legacyDirectory,
+                withIntermediateDirectories: true,
+                attributes: directoryAttributes)
+            let linkURL = URL(fileURLWithPath: legacyPath)
+            let linkValues = try? linkURL.resourceValues(forKeys: [.isSymbolicLinkKey])
+            if linkValues?.isSymbolicLink == true {
+                let destination = try FileManager.default.destinationOfSymbolicLink(atPath: legacyPath)
+                let destinationURL = URL(fileURLWithPath: destination, relativeTo: linkURL.deletingLastPathComponent())
+                    .standardizedFileURL
+                if destinationURL.path == URL(fileURLWithPath: Self.remoteclawSocketPath).standardizedFileURL.path {
+                    return
+                }
+                try fileManager.removeItem(atPath: legacyPath)
+            } else if fileManager.fileExists(atPath: legacyPath) {
+                try fileManager.removeItem(atPath: legacyPath)
+            }
+            try fileManager.createSymbolicLink(atPath: legacyPath, withDestinationPath: Self.remoteclawSocketPath)
+        } catch {
+            self.logger.debug(
+                "Failed to create legacy PeekabooBridge socket symlink: \(error.localizedDescription, privacy: .public)"
+            )
+        }
     }
 
     private static func currentTeamID() -> String? {

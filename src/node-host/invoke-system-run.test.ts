@@ -253,7 +253,184 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       fs.rmSync(tmp, { recursive: true, force: true });
     }
   });
-  // Tests for env -S shell payloads and semicolon-chained shell payloads in allowlist mode
-  // are not applicable: the fork gutted exec-approvals infrastructure (evaluateSystemRunPolicy,
-  // analyzeArgvCommand are stubs).  Upstream tests exercised the real allowlist/policy pipeline.
+
+  it.runIf(process.platform !== "win32")(
+    "preserves wrapper argv for approved env shell commands",
+    async () => {
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-approved-wrapper-"));
+      const marker = path.join(tmp, "marker");
+      const attackerScript = path.join(tmp, "sh");
+      fs.writeFileSync(attackerScript, "#!/bin/sh\necho exploited > marker\n");
+      fs.chmodSync(attackerScript, 0o755);
+      const runCommand = vi.fn(async (argv: string[]) => {
+        if (argv[0] === "/bin/sh" && argv[1] === "sh" && argv[2] === "-c") {
+          fs.writeFileSync(marker, "rewritten");
+        }
+        return createLocalRunResult();
+      });
+      const sendInvokeResult = vi.fn(async () => {});
+      try {
+        await runSystemInvoke({
+          preferMacAppExecHost: false,
+          command: ["env", "sh", "-c", "echo SAFE"],
+          cwd: tmp,
+          approved: true,
+          security: "allowlist",
+          ask: "on-miss",
+          runCommand,
+          sendInvokeResult,
+        });
+        const runArgs = vi.mocked(runCommand).mock.calls[0]?.[0] as string[] | undefined;
+        expect(runArgs).toEqual(["env", "sh", "-c", "echo SAFE"]);
+        expect(fs.existsSync(marker)).toBe(false);
+        expectInvokeOk(sendInvokeResult);
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("denies ./sh wrapper spoof in allowlist on-miss mode before execution", async () => {
+    const marker = path.join(os.tmpdir(), `remoteclaw-wrapper-spoof-${process.pid}-${Date.now()}`);
+    const runCommand = vi.fn(async () => {
+      fs.writeFileSync(marker, "executed");
+      return createLocalRunResult();
+    });
+    const sendInvokeResult = vi.fn(async () => {});
+    const sendNodeEvent = vi.fn(async () => {});
+
+    await runSystemInvoke({
+      preferMacAppExecHost: false,
+      command: ["./sh", "-lc", "/bin/echo approved-only"],
+      security: "allowlist",
+      ask: "on-miss",
+      runCommand,
+      sendInvokeResult,
+      sendNodeEvent,
+    });
+
+    expect(runCommand).not.toHaveBeenCalled();
+    expect(fs.existsSync(marker)).toBe(false);
+    expectApprovalRequiredDenied({ sendNodeEvent, sendInvokeResult });
+    try {
+      fs.unlinkSync(marker);
+    } catch {
+      // no-op
+    }
+  });
+
+  it("denies ./skill-bin even when autoAllowSkills trust entry exists", async () => {
+    const runCommand = vi.fn(async () => createLocalRunResult());
+    const sendInvokeResult = vi.fn(async () => {});
+    const sendNodeEvent = vi.fn(async () => {});
+
+    await withTempApprovalsHome({
+      approvals: {
+        version: 1,
+        defaults: {
+          security: "allowlist",
+          ask: "on-miss",
+          askFallback: "deny",
+          autoAllowSkills: true,
+        },
+        agents: {},
+      },
+      run: async ({ tempHome }) => {
+        const skillBinPath = path.join(tempHome, "skill-bin");
+        fs.writeFileSync(skillBinPath, "#!/bin/sh\necho should-not-run\n", { mode: 0o755 });
+        fs.chmodSync(skillBinPath, 0o755);
+        await runSystemInvoke({
+          preferMacAppExecHost: false,
+          command: ["./skill-bin", "--help"],
+          cwd: tempHome,
+          security: "allowlist",
+          ask: "on-miss",
+          skillBinsCurrent: async () => [{ name: "skill-bin", resolvedPath: skillBinPath }],
+          runCommand,
+          sendInvokeResult,
+          sendNodeEvent,
+        });
+      },
+    });
+
+    expect(runCommand).not.toHaveBeenCalled();
+    expectApprovalRequiredDenied({ sendNodeEvent, sendInvokeResult });
+  });
+
+  it("denies env -S shell payloads in allowlist mode", async () => {
+    const { runCommand, sendInvokeResult } = await runSystemInvoke({
+      preferMacAppExecHost: false,
+      security: "allowlist",
+      command: ["env", "-S", 'sh -c "echo pwned"'],
+    });
+    expect(runCommand).not.toHaveBeenCalled();
+    expectInvokeErrorMessage(sendInvokeResult, { message: "allowlist miss" });
+  });
+
+  it("denies semicolon-chained shell payloads in allowlist mode without explicit approval", async () => {
+    const payloads = ["remoteclaw status; id", "remoteclaw status; cat /etc/passwd"];
+    for (const payload of payloads) {
+      const command =
+        process.platform === "win32"
+          ? ["cmd.exe", "/d", "/s", "/c", payload]
+          : ["/bin/sh", "-lc", payload];
+      const { runCommand, sendInvokeResult } = await runSystemInvoke({
+        preferMacAppExecHost: false,
+        security: "allowlist",
+        ask: "on-miss",
+        command,
+      });
+      expect(runCommand, payload).not.toHaveBeenCalled();
+      expectInvokeErrorMessage(sendInvokeResult, {
+        message: "SYSTEM_RUN_DENIED: approval required",
+        exact: true,
+      });
+    }
+  });
+
+  it("denies nested env shell payloads when wrapper depth is exceeded", async () => {
+    if (process.platform === "win32") {
+      return;
+    }
+    const runCommand = vi.fn(async () => {
+      throw new Error("runCommand should not be called for nested env depth overflow");
+    });
+    const sendInvokeResult = vi.fn(async () => {});
+    const sendNodeEvent = vi.fn(async () => {});
+
+    await withTempApprovalsHome({
+      approvals: {
+        version: 1,
+        defaults: {
+          security: "allowlist",
+          ask: "on-miss",
+          askFallback: "deny",
+        },
+        agents: {
+          main: {
+            allowlist: [{ pattern: "/usr/bin/env" }],
+          },
+        },
+      },
+      run: async ({ tempHome }) => {
+        const marker = path.join(tempHome, "pwned.txt");
+        await runSystemInvoke({
+          preferMacAppExecHost: false,
+          command: buildNestedEnvShellCommand({
+            depth: 5,
+            payload: `echo PWNED > ${marker}`,
+          }),
+          security: "allowlist",
+          ask: "on-miss",
+          runCommand,
+          sendInvokeResult,
+          sendNodeEvent,
+        });
+        expect(fs.existsSync(marker)).toBe(false);
+      },
+    });
+
+    expect(runCommand).not.toHaveBeenCalled();
+    expectApprovalRequiredDenied({ sendNodeEvent, sendInvokeResult });
+  });
 });

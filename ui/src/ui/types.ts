@@ -478,12 +478,14 @@ export type CronPayload =
       model?: string;
       thinking?: string;
       timeoutSeconds?: number;
+      lightContext?: boolean;
     };
 
 export type CronDelivery = {
   mode: "none" | "announce" | "webhook";
   channel?: string;
   to?: string;
+  accountId?: string;
   bestEffort?: boolean;
 };
 
@@ -499,6 +501,7 @@ export type CronJobState = {
 export type CronJob = {
   id: string;
   agentId?: string;
+  sessionKey?: string;
   name: string;
   description?: string;
   enabled: boolean;

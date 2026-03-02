@@ -394,6 +394,7 @@ function jobToForm(job: CronJob, prev: CronFormState): CronFormState {
     name: job.name,
     description: job.description ?? "",
     agentId: job.agentId ?? "",
+    sessionKey: job.sessionKey ?? "",
     clearAgent: false,
     enabled: job.enabled,
     deleteAfterRun: job.deleteAfterRun ?? false,
@@ -412,9 +413,12 @@ function jobToForm(job: CronJob, prev: CronFormState): CronFormState {
     payloadText: job.payload.kind === "systemEvent" ? job.payload.text : job.payload.message,
     payloadModel: job.payload.kind === "agentTurn" ? (job.payload.model ?? "") : "",
     payloadThinking: job.payload.kind === "agentTurn" ? (job.payload.thinking ?? "") : "",
+    payloadLightContext:
+      job.payload.kind === "agentTurn" ? job.payload.lightContext === true : false,
     deliveryMode: job.delivery?.mode ?? "none",
     deliveryChannel: job.delivery?.channel ?? CRON_CHANNEL_LAST,
     deliveryTo: job.delivery?.to ?? "",
+    deliveryAccountId: job.delivery?.accountId ?? "",
     deliveryBestEffort: job.delivery?.bestEffort ?? false,
     timeoutSeconds:
       job.payload.kind === "agentTurn" && typeof job.payload.timeoutSeconds === "number"
@@ -494,6 +498,7 @@ export function buildCronPayload(form: CronFormState) {
     model?: string;
     thinking?: string;
     timeoutSeconds?: number;
+    lightContext?: boolean;
   } = { kind: "agentTurn", message };
   const model = form.payloadModel.trim();
   if (model) {
@@ -506,6 +511,9 @@ export function buildCronPayload(form: CronFormState) {
   const timeoutSeconds = toNumber(form.timeoutSeconds, 0);
   if (timeoutSeconds > 0) {
     payload.timeoutSeconds = timeoutSeconds;
+  }
+  if (form.payloadLightContext) {
+    payload.lightContext = true;
   }
   return payload;
 }
@@ -529,6 +537,20 @@ export async function addCronJob(state: CronState) {
 
     const schedule = buildCronSchedule(form);
     const payload = buildCronPayload(form);
+    const editingJob = state.cronEditingJobId
+      ? state.cronJobs.find((job) => job.id === state.cronEditingJobId)
+      : undefined;
+    if (payload.kind === "agentTurn") {
+      const existingLightContext =
+        editingJob?.payload.kind === "agentTurn" ? editingJob.payload.lightContext : undefined;
+      if (
+        !form.payloadLightContext &&
+        state.cronEditingJobId &&
+        existingLightContext !== undefined
+      ) {
+        payload.lightContext = false;
+      }
+    }
     const selectedDeliveryMode = form.deliveryMode;
     const delivery =
       selectedDeliveryMode && selectedDeliveryMode !== "none"
@@ -539,16 +561,21 @@ export async function addCronJob(state: CronState) {
                 ? form.deliveryChannel.trim() || "last"
                 : undefined,
             to: form.deliveryTo.trim() || undefined,
+            accountId:
+              selectedDeliveryMode === "announce" ? form.deliveryAccountId.trim() : undefined,
             bestEffort: form.deliveryBestEffort,
           }
         : selectedDeliveryMode === "none"
           ? ({ mode: "none" } as const)
           : undefined;
     const agentId = form.clearAgent ? null : form.agentId.trim();
+    const sessionKeyRaw = form.sessionKey.trim();
+    const sessionKey = sessionKeyRaw || (editingJob?.sessionKey ? null : undefined);
     const job = {
       name: form.name.trim(),
       description: form.description.trim(),
       agentId: agentId === null ? null : agentId || undefined,
+      sessionKey,
       enabled: form.enabled,
       deleteAfterRun: form.deleteAfterRun,
       schedule,
@@ -596,14 +623,14 @@ export async function toggleCronJob(state: CronState, job: CronJob, enabled: boo
   }
 }
 
-export async function runCronJob(state: CronState, job: CronJob) {
+export async function runCronJob(state: CronState, job: CronJob, mode: "force" | "due" = "force") {
   if (!state.client || !state.connected || state.cronBusy) {
     return;
   }
   state.cronBusy = true;
   state.cronError = null;
   try {
-    await state.client.request("cron.run", { id: job.id, mode: "force" });
+    await state.client.request("cron.run", { id: job.id, mode });
     if (state.cronRunsScope === "all") {
       await loadCronRuns(state, null);
     } else {

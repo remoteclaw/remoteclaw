@@ -372,6 +372,7 @@ async function readAllowFromStateForPathWithExists(
     allowFrom: [],
   });
   const entries = normalizeAllowFromList(channel, value);
+  // stat is guaranteed non-null here: resolveAllowFromReadCacheOrMissing returns early when stat is null.
   setAllowFromReadCache(filePath, {
     exists,
     mtimeMs: stat.mtimeMs,

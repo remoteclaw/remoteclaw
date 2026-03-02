@@ -8,13 +8,24 @@ vi.mock("./mcp-plugin-tools.js", () => ({
   registerPluginTools: vi.fn().mockResolvedValue(undefined),
 }));
 
-// Create a minimal mock McpServer
+// Create a minimal mock McpServer that also captures handler callbacks
 function createMockServer() {
   const registeredTools = new Map<string, { description?: string }>();
+  // oxlint-disable-next-line typescript/no-explicit-any
+  const registeredHandlers = new Map<string, (...args: any[]) => Promise<unknown>>();
   return {
     registeredTools,
-    registerTool: vi.fn((name: string, config: { description?: string }) => {
+    registeredHandlers,
+    // oxlint-disable-next-line typescript/no-explicit-any
+    registerTool: vi.fn((...args: any[]) => {
+      const name = args[0] as string;
+      const config = args[1] as { description?: string };
       registeredTools.set(name, config);
+      // Capture the handler (last argument) if it's a function
+      const last = args[args.length - 1];
+      if (typeof last === "function") {
+        registeredHandlers.set(name, last);
+      }
       return { update: vi.fn(), remove: vi.fn(), disable: vi.fn(), enable: vi.fn() };
     }),
   };
@@ -256,5 +267,38 @@ describe("registerAllTools", () => {
     expect(names).toContain("tts_set_provider");
     expect(names).toContain("tts_enable");
     expect(names).toContain("tts_disable");
+  });
+
+  describe("centralized error handling", () => {
+    it("returns MCP error response instead of throwing when handler fails", async () => {
+      // oxlint-disable-next-line typescript/no-explicit-any
+      await registerAllTools(mockServer as any, ctx);
+
+      // Pick any registered handler and invoke it — the proxy wrapper
+      // calls callMcpGateway which will throw because the gateway mock
+      // isn't wired up. This exercises the catch path.
+      const handler = mockServer.registeredHandlers.get("sessions_list");
+      expect(handler).toBeDefined();
+
+      const result = await handler!({});
+      // Should return an MCP-compliant error instead of throwing
+      expect(result).toMatchObject({
+        isError: true,
+        content: [{ type: "text", text: expect.stringContaining("Tool error (sessions_list):") }],
+      });
+    });
+
+    it("includes error message from Error instances", async () => {
+      // oxlint-disable-next-line typescript/no-explicit-any
+      await registerAllTools(mockServer as any, ctx);
+      const handler = mockServer.registeredHandlers.get("gateway_restart");
+      expect(handler).toBeDefined();
+
+      const result = await handler!({});
+      expect(result).toMatchObject({
+        isError: true,
+        content: [{ type: "text", text: expect.stringMatching(/Tool error \(gateway_restart\):/) }],
+      });
+    });
   });
 });

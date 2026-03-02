@@ -69,6 +69,9 @@ export function resolveStateDir(
     return resolveUserPath(override, env, effectiveHomedir);
   }
   const newDir = newStateDir(effectiveHomedir);
+  if (env.OPENCLAW_TEST_FAST === "1") {
+    return newDir;
+  }
   const legacyDirs = legacyStateDirs(effectiveHomedir);
   const hasNew = fs.existsSync(newDir);
   if (hasNew) {
@@ -133,6 +136,9 @@ export function resolveConfigPathCandidate(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = envHomedir(env),
 ): string {
+  if (env.OPENCLAW_TEST_FAST === "1") {
+    return resolveCanonicalConfigPath(env, resolveStateDir(env, homedir));
+  }
   const candidates = resolveDefaultConfigCandidates(env, homedir);
   const existing = candidates.find((candidate) => {
     try {
@@ -158,6 +164,9 @@ export function resolveConfigPath(
   const override = env.REMOTECLAW_CONFIG_PATH?.trim();
   if (override) {
     return resolveUserPath(override, env, homedir);
+  }
+  if (env.REMOTECLAW_TEST_FAST === "1") {
+    return path.join(stateDir, CONFIG_FILENAME);
   }
   const stateOverride = env.REMOTECLAW_STATE_DIR?.trim();
   const candidates = [

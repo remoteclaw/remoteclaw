@@ -90,3 +90,15 @@ export function findBundledPluginSource(params: {
   }
   return undefined;
 }
+
+export function findBundledPluginByPluginId(params: {
+  pluginId: string;
+  workspaceDir?: string;
+}): BundledPluginSource | undefined {
+  const targetPluginId = params.pluginId.trim();
+  if (!targetPluginId) {
+    return undefined;
+  }
+  const bundled = resolveBundledPluginSources({ workspaceDir: params.workspaceDir });
+  return bundled.get(targetPluginId);
+}

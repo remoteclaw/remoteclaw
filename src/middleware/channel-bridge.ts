@@ -174,7 +174,11 @@ export class ChannelBridge {
       try {
         const captured = captureResult(
           runtime.execute({
-            prompt: systemPrompt + "\n\n" + message.text,
+            prompt:
+              systemPrompt +
+              (message.extraContext ? "\n\n" + message.extraContext : "") +
+              "\n\n" +
+              message.text,
             sessionId: existingSessionId,
             mcpServers,
             abortSignal,

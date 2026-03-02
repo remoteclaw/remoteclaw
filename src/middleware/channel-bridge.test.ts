@@ -176,6 +176,30 @@ describe("ChannelBridge", () => {
       expect(params.prompt).toBe("SYSTEM_PROMPT\n\nWhat is 2+2?");
     });
 
+    it("prepends extraContext between system prompt and user text", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ text: "What is 2+2?", extraContext: "Answer in French" }));
+
+      expect(executeFn).toHaveBeenCalledOnce();
+      const params = executeFn.mock.calls[0][0];
+      expect(params.prompt).toBe("SYSTEM_PROMPT\n\nAnswer in French\n\nWhat is 2+2?");
+    });
+
+    it("omits extraContext section when not provided", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ text: "What is 2+2?" }));
+
+      expect(executeFn).toHaveBeenCalledOnce();
+      const params = executeFn.mock.calls[0][0];
+      expect(params.prompt).toBe("SYSTEM_PROMPT\n\nWhat is 2+2?");
+    });
+
     it("passes workingDirectory to runtime", async () => {
       const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
       mockRuntimeInstance = { execute: executeFn };

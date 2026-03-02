@@ -179,6 +179,8 @@ export type ChannelMessage = {
   mediaUrls?: string[] | undefined;
   /** Channel-specific formatting hints (e.g., LINE directives, Discord component schema). */
   messageToolHints?: string[] | undefined;
+  /** Extra context to prepend between the system prompt and user text (e.g. per-channel instructions). */
+  extraContext?: string | undefined;
   /** Provider-specific metadata. */
   metadata?: Record<string, unknown> | undefined;
   /** Whether the message sender is the bot owner. Defaults to `false`. */

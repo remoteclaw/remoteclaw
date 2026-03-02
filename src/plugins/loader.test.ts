@@ -269,6 +269,23 @@ describe("loadRemoteClawPlugins", () => {
     expect(telegram?.error).toBe("disabled in config");
   });
 
+  it("preserves package.json metadata for bundled memory plugins", () => {
+    const registry = loadBundledMemoryPluginRegistry({
+      packageMeta: {
+        name: "@remoteclaw/memory-core",
+        version: "1.2.3",
+        description: "Memory plugin package",
+      },
+      pluginBody:
+        'module.exports = { id: "memory-core", kind: "memory", name: "Memory (Core)", register() {} };',
+    });
+
+    const memory = registry.plugins.find((entry) => entry.id === "memory-core");
+    expect(memory?.status).toBe("loaded");
+    expect(memory?.origin).toBe("bundled");
+    expect(memory?.name).toBe("Memory (Core)");
+    expect(memory?.version).toBe("1.2.3");
+  });
   it("loads plugins from config paths", () => {
     process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({

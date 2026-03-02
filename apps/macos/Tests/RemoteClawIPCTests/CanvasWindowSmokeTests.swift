@@ -1,6 +1,6 @@
 import AppKit
-import RemoteClawIPC
 import Foundation
+import RemoteClawIPC
 import Testing
 @testable import RemoteClaw
 
@@ -30,7 +30,7 @@ struct CanvasWindowSmokeTests {
         controller.close()
     }
 
-    @Test func windowControllerShowsAndCloses() async throws {
+    @Test func windowControllerShowsAndCloses() throws {
         let root = FileManager().temporaryDirectory
             .appendingPathComponent("remoteclaw-canvas-test-\(UUID().uuidString)")
         try FileManager().createDirectory(at: root, withIntermediateDirectories: true)

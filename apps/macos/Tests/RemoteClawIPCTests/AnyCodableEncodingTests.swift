@@ -1,11 +1,10 @@
-import RemoteClawProtocol
 import Foundation
+import RemoteClawProtocol
 import Testing
-
 @testable import RemoteClaw
 
-struct AnyCodableEncodingTests {
-    @Test func `encodes swift array and dictionary values`() throws {
+@Suite struct AnyCodableEncodingTests {
+    @Test func encodesSwiftArrayAndDictionaryValues() throws {
         let payload: [String: Any] = [
             "tags": ["node", "ios"],
             "meta": ["count": 2],
@@ -20,7 +19,7 @@ struct AnyCodableEncodingTests {
         #expect(obj["null"] is NSNull)
     }
 
-    @Test func `protocol any codable encodes primitive arrays`() throws {
+    @Test func protocolAnyCodableEncodesPrimitiveArrays() throws {
         let payload: [String: Any] = [
             "items": [1, "two", NSNull(), ["ok": true]],
         ]

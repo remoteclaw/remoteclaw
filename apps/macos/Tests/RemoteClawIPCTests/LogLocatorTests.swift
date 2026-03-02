@@ -4,7 +4,7 @@ import Testing
 @testable import RemoteClaw
 
 @Suite struct LogLocatorTests {
-    @Test func launchdGatewayLogPathEnsuresTmpDirExists() throws {
+    @Test func launchdGatewayLogPathEnsuresTmpDirExists() {
         let fm = FileManager()
         let baseDir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
         let logDir = baseDir.appendingPathComponent("remoteclaw-tests-\(UUID().uuidString)")

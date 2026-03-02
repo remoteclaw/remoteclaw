@@ -294,9 +294,32 @@ export function handleControlUiHttpRequest(
       respondNotFound(res);
       return true;
     }
+    // Keep plugin-owned HTTP routes outside the root-mounted Control UI SPA
+    // fallback so untrusted plugins cannot claim arbitrary UI paths.
+    if (pathname === "/plugins" || pathname.startsWith("/plugins/")) {
+      return false;
+    }
+    if (pathname === "/api" || pathname.startsWith("/api/")) {
+      return false;
+    }
+    // Root-mounted SPA: non-GET/HEAD may be destined for plugin HTTP handlers
+    // (e.g. BlueBubbles webhook POST) that run after Control UI in the chain.
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      return false;
+    }
   }
 
   if (basePath) {
+    if (!pathname.startsWith(`${basePath}/`) && pathname !== basePath) {
+      return false;
+    }
+    // Requests under a configured basePath are always Control UI traffic.
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      res.statusCode = 405;
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.end("Method Not Allowed");
+      return true;
+    }
     if (pathname === basePath) {
       applyControlUiSecurityHeaders(res);
       res.statusCode = 302;
@@ -304,22 +327,6 @@ export function handleControlUiHttpRequest(
       res.end();
       return true;
     }
-    if (!pathname.startsWith(`${basePath}/`)) {
-      return false;
-    }
-  }
-
-  // Method guard must run AFTER path checks so that POST requests to non-UI
-  // paths (channel webhooks etc.) fall through to later handlers.  When no
-  // basePath is configured the SPA catch-all would otherwise 405 every POST.
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    if (!basePath) {
-      return false;
-    }
-    res.statusCode = 405;
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.end("Method Not Allowed");
-    return true;
   }
 
   applyControlUiSecurityHeaders(res);

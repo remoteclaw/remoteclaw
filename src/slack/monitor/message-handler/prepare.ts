@@ -73,13 +73,47 @@ function resolveCachedMentionRegexes(
   return built;
 }
 
-export async function prepareSlackMessage(params: {
+type SlackConversationContext = {
+  channelInfo: {
+    name?: string;
+    type?: SlackMessageEvent["channel_type"];
+    topic?: string;
+    purpose?: string;
+  };
+  channelName?: string;
+  resolvedChannelType: ReturnType<typeof normalizeSlackChannelType>;
+  isDirectMessage: boolean;
+  isGroupDm: boolean;
+  isRoom: boolean;
+  isRoomish: boolean;
+  channelConfig: ReturnType<typeof resolveSlackChannelConfig> | null;
+  allowBots: boolean;
+  isBotMessage: boolean;
+};
+
+type SlackAuthorizationContext = {
+  senderId: string;
+  allowFromLower: string[];
+};
+
+type SlackRoutingContext = {
+  route: ReturnType<typeof resolveAgentRoute>;
+  chatType: "direct" | "group" | "channel";
+  replyToMode: ReturnType<typeof resolveSlackReplyToMode>;
+  threadContext: ReturnType<typeof resolveSlackThreadContext>;
+  threadTs: string | undefined;
+  isThreadReply: boolean;
+  threadKeys: ReturnType<typeof resolveThreadSessionKeys>;
+  sessionKey: string;
+  historyKey: string;
+};
+
+async function resolveSlackConversationContext(params: {
   ctx: SlackMonitorContext;
   account: ResolvedSlackAccount;
   message: SlackMessageEvent;
-  opts: { source: "message" | "app_mention"; wasMentioned?: boolean };
-}): Promise<PreparedSlackMessage | null> {
-  const { ctx, account, message, opts } = params;
+}): Promise<SlackConversationContext> {
+  const { ctx, account, message } = params;
   const cfg = ctx.cfg;
 
   let channelInfo: {
@@ -103,7 +137,6 @@ export async function prepareSlackMessage(params: {
   const isGroupDm = resolvedChannelType === "mpim";
   const isRoom = resolvedChannelType === "channel" || resolvedChannelType === "group";
   const isRoomish = isRoom || isGroupDm;
-
   const channelConfig = isRoom
     ? resolveSlackChannelConfig({
         channelId: message.channel,
@@ -113,14 +146,36 @@ export async function prepareSlackMessage(params: {
         defaultRequireMention: ctx.defaultRequireMention,
       })
     : null;
-
   const allowBots =
     channelConfig?.allowBots ??
     account.config?.allowBots ??
     cfg.channels?.slack?.allowBots ??
     false;
 
-  const isBotMessage = Boolean(message.bot_id);
+  return {
+    channelInfo,
+    channelName,
+    resolvedChannelType,
+    isDirectMessage,
+    isGroupDm,
+    isRoom,
+    isRoomish,
+    channelConfig,
+    allowBots,
+    isBotMessage: Boolean(message.bot_id),
+  };
+}
+
+async function authorizeSlackInboundMessage(params: {
+  ctx: SlackMonitorContext;
+  account: ResolvedSlackAccount;
+  message: SlackMessageEvent;
+  conversation: SlackConversationContext;
+}): Promise<SlackAuthorizationContext | null> {
+  const { ctx, account, message, conversation } = params;
+  const { isDirectMessage, channelName, resolvedChannelType, isBotMessage, allowBots } =
+    conversation;
+
   if (isBotMessage) {
     if (message.user && ctx.botUserId && message.user === ctx.botUserId) {
       return null;
@@ -191,8 +246,24 @@ export async function prepareSlackMessage(params: {
     }
   }
 
+  return {
+    senderId,
+    allowFromLower,
+  };
+}
+
+function resolveSlackRoutingContext(params: {
+  ctx: SlackMonitorContext;
+  account: ResolvedSlackAccount;
+  message: SlackMessageEvent;
+  isDirectMessage: boolean;
+  isGroupDm: boolean;
+  isRoom: boolean;
+  isRoomish: boolean;
+}): SlackRoutingContext {
+  const { ctx, account, message, isDirectMessage, isGroupDm, isRoom, isRoomish } = params;
   const route = resolveAgentRoute({
-    cfg,
+    cfg: ctx.cfg,
     channel: "slack",
     accountId: account.accountId,
     teamId: ctx.teamId || undefined,
@@ -202,7 +273,6 @@ export async function prepareSlackMessage(params: {
     },
   });
 
-  const baseSessionKey = route.sessionKey;
   const chatType = isDirectMessage ? "direct" : isGroupDm ? "group" : "channel";
   const replyToMode = resolveSlackReplyToMode(account, chatType);
   const threadContext = resolveSlackThreadContext({ message, replyToMode });
@@ -223,13 +293,75 @@ export async function prepareSlackMessage(params: {
         : threadContext.messageTs;
   const canonicalThreadId = isRoomish ? roomThreadId : isThreadReply ? threadTs : autoThreadId;
   const threadKeys = resolveThreadSessionKeys({
-    baseSessionKey,
+    baseSessionKey: route.sessionKey,
     threadId: canonicalThreadId,
-    parentSessionKey: canonicalThreadId && ctx.threadInheritParent ? baseSessionKey : undefined,
+    parentSessionKey: canonicalThreadId && ctx.threadInheritParent ? route.sessionKey : undefined,
   });
   const sessionKey = threadKeys.sessionKey;
   const historyKey =
     isThreadReply && ctx.threadHistoryScope === "thread" ? sessionKey : message.channel;
+
+  return {
+    route,
+    chatType,
+    replyToMode,
+    threadContext,
+    threadTs,
+    isThreadReply,
+    threadKeys,
+    sessionKey,
+    historyKey,
+  };
+}
+
+export async function prepareSlackMessage(params: {
+  ctx: SlackMonitorContext;
+  account: ResolvedSlackAccount;
+  message: SlackMessageEvent;
+  opts: { source: "message" | "app_mention"; wasMentioned?: boolean };
+}): Promise<PreparedSlackMessage | null> {
+  const { ctx, account, message, opts } = params;
+  const cfg = ctx.cfg;
+  const conversation = await resolveSlackConversationContext({ ctx, account, message });
+  const {
+    channelInfo,
+    channelName,
+    isDirectMessage,
+    isGroupDm,
+    isRoom,
+    isRoomish,
+    channelConfig,
+    isBotMessage,
+  } = conversation;
+  const authorization = await authorizeSlackInboundMessage({
+    ctx,
+    account,
+    message,
+    conversation,
+  });
+  if (!authorization) {
+    return null;
+  }
+  const { senderId, allowFromLower } = authorization;
+  const routing = resolveSlackRoutingContext({
+    ctx,
+    account,
+    message,
+    isDirectMessage,
+    isGroupDm,
+    isRoom,
+    isRoomish,
+  });
+  const {
+    route,
+    replyToMode,
+    threadContext,
+    threadTs,
+    isThreadReply,
+    threadKeys,
+    sessionKey,
+    historyKey,
+  } = routing;
 
   const mentionRegexes = resolveCachedMentionRegexes(ctx, route.agentId);
   const hasAnyMention = /<@[^>]+>/.test(message.text ?? "");

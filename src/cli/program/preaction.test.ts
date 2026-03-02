@@ -156,27 +156,28 @@ describe("registerPreActionHooks", () => {
       commandPath: ["message", "send"],
     });
     expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledTimes(1);
-  });
+    vi.clearAllMocks();
 
-  it("loads plugin registry for configure command", async () => {
     await runPreAction({
       parseArgv: ["configure"],
       processArgv: ["node", "remoteclaw", "configure"],
     });
 
+    expect(ensureConfigReadyMock).toHaveBeenCalledWith({
+      runtime: runtimeMock,
+      commandPath: ["configure"],
+    });
     expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledTimes(1);
   });
 
-  it("skips config guard for doctor command", async () => {
+  it("skips preaction work for doctor and help/version argv", async () => {
     await runPreAction({
       parseArgv: ["doctor"],
       processArgv: ["node", "remoteclaw", "doctor"],
     });
 
     expect(ensureConfigReadyMock).not.toHaveBeenCalled();
-  });
-
-  it("skips preaction work when argv indicates help/version", async () => {
+    vi.clearAllMocks();
     await runPreAction({
       parseArgv: ["status"],
       processArgv: ["node", "remoteclaw", "--version"],

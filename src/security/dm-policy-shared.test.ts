@@ -11,6 +11,12 @@ import {
 } from "./dm-policy-shared.js";
 
 describe("security/dm-policy-shared", () => {
+  const controlCommand = {
+    useAccessGroups: true,
+    allowTextCommands: true,
+    hasControlCommand: true,
+  } as const;
+
   it("normalizes config + store allow entries and counts distinct senders", async () => {
     const state = await resolveDmAllowState({
       provider: "telegram",
@@ -190,11 +196,7 @@ describe("security/dm-policy-shared", () => {
       groupAllowFrom: ["group-owner"],
       storeAllowFrom: ["paired-user"],
       isSenderAllowed: (allowFrom) => allowFrom.includes("paired-user"),
-      command: {
-        useAccessGroups: true,
-        allowTextCommands: true,
-        hasControlCommand: true,
-      },
+      command: controlCommand,
     });
     expect(resolved.decision).toBe("block");
     expect(resolved.reason).toBe("groupPolicy=allowlist (not allowlisted)");
@@ -211,11 +213,7 @@ describe("security/dm-policy-shared", () => {
       groupAllowFrom: [],
       storeAllowFrom: ["paired-user"],
       isSenderAllowed: (allowFrom) => allowFrom.includes("owner"),
-      command: {
-        useAccessGroups: true,
-        allowTextCommands: true,
-        hasControlCommand: true,
-      },
+      command: controlCommand,
     });
     expect(resolved.commandAuthorized).toBe(true);
     expect(resolved.shouldBlockControlCommand).toBe(false);
@@ -230,11 +228,7 @@ describe("security/dm-policy-shared", () => {
       groupAllowFrom: ["group-owner"],
       storeAllowFrom: ["paired-user"],
       isSenderAllowed: (allowFrom) => allowFrom.includes("paired-user"),
-      command: {
-        useAccessGroups: true,
-        allowTextCommands: true,
-        hasControlCommand: true,
-      },
+      command: controlCommand,
     });
     expect(resolved.decision).toBe("allow");
     expect(resolved.commandAuthorized).toBe(true);
@@ -250,11 +244,7 @@ describe("security/dm-policy-shared", () => {
       groupAllowFrom: [],
       storeAllowFrom: [],
       isSenderAllowed: () => false,
-      command: {
-        useAccessGroups: true,
-        allowTextCommands: true,
-        hasControlCommand: true,
-      },
+      command: controlCommand,
     });
     expect(resolved.decision).toBe("allow");
     expect(resolved.commandAuthorized).toBe(false);

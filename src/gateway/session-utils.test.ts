@@ -389,6 +389,17 @@ describe("resolveSessionModelRef", () => {
 });
 
 describe("resolveSessionModelIdentityRef", () => {
+  const resolveLegacyIdentityRef = (
+    cfg: OpenClawConfig,
+    modelProvider: string | undefined = undefined,
+  ) =>
+    resolveSessionModelIdentityRef(cfg, {
+      sessionId: "legacy-session",
+      updatedAt: Date.now(),
+      model: "claude-sonnet-4-6",
+      modelProvider,
+    });
+
   test("does not inherit default provider for unprefixed legacy runtime model", () => {
     const cfg = {
       agents: {
@@ -398,12 +409,7 @@ describe("resolveSessionModelIdentityRef", () => {
       },
     } as RemoteClawConfig;
 
-    const resolved = resolveSessionModelIdentityRef(cfg, {
-      sessionId: "legacy-session",
-      updatedAt: Date.now(),
-      model: "claude-sonnet-4-6",
-      modelProvider: undefined,
-    });
+    const resolved = resolveLegacyIdentityRef(cfg);
 
     expect(resolved).toEqual({ model: "claude-sonnet-4-6" });
   });
@@ -420,12 +426,7 @@ describe("resolveSessionModelIdentityRef", () => {
       },
     } as RemoteClawConfig;
 
-    const resolved = resolveSessionModelIdentityRef(cfg, {
-      sessionId: "legacy-session",
-      updatedAt: Date.now(),
-      model: "claude-sonnet-4-6",
-      modelProvider: undefined,
-    });
+    const resolved = resolveLegacyIdentityRef(cfg);
 
     // Without an explicit modelProvider and no slash in the model string,
     // the provider cannot be determined. CLI agents handle their own model
@@ -446,12 +447,7 @@ describe("resolveSessionModelIdentityRef", () => {
       },
     } as RemoteClawConfig;
 
-    const resolved = resolveSessionModelIdentityRef(cfg, {
-      sessionId: "legacy-session",
-      updatedAt: Date.now(),
-      model: "claude-sonnet-4-6",
-      modelProvider: undefined,
-    });
+    const resolved = resolveLegacyIdentityRef(cfg);
 
     expect(resolved).toEqual({ model: "claude-sonnet-4-6" });
   });

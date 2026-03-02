@@ -75,7 +75,7 @@ async function executeReactionCase(input: ReactionRunInput = {}) {
 }
 
 describe("registerSlackReactionEvents", () => {
-  it.each([
+  const cases: Array<{ name: string; args: ReactionRunInput; expectedCalls: number }> = [
     {
       name: "enqueues DM reaction system events when dmPolicy is open",
       args: { overrides: { dmPolicy: "open" as const } },
@@ -126,7 +126,9 @@ describe("registerSlackReactionEvents", () => {
       },
       expectedCalls: 0,
     },
-  ])("$name", async ({ args, expectedCalls }) => {
+  ];
+
+  it.each(cases)("$name", async ({ args, expectedCalls }) => {
     await executeReactionCase(args);
     expect(reactionQueueMock).toHaveBeenCalledTimes(expectedCalls);
   });

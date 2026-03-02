@@ -72,36 +72,36 @@ async function runPinCase(input: PinCase = {}): Promise<void> {
 }
 
 describe("registerSlackPinEvents", () => {
-  it.each([
-    [
-      "enqueues DM pin system events when dmPolicy is open",
-      { overrides: { dmPolicy: "open" as const } },
-      1,
-    ],
-    [
-      "blocks DM pin system events when dmPolicy is disabled",
-      { overrides: { dmPolicy: "disabled" as const } },
-      0,
-    ],
-    [
-      "blocks DM pin system events for unauthorized senders in allowlist mode",
-      {
-        overrides: { dmPolicy: "allowlist" as const, allowFrom: ["U2"] },
+  const cases: Array<{ name: string; args: PinCase; expectedCalls: number }> = [
+    {
+      name: "enqueues DM pin system events when dmPolicy is open",
+      args: { overrides: { dmPolicy: "open" } },
+      expectedCalls: 1,
+    },
+    {
+      name: "blocks DM pin system events when dmPolicy is disabled",
+      args: { overrides: { dmPolicy: "disabled" } },
+      expectedCalls: 0,
+    },
+    {
+      name: "blocks DM pin system events for unauthorized senders in allowlist mode",
+      args: {
+        overrides: { dmPolicy: "allowlist", allowFrom: ["U2"] },
         event: makePinEvent({ user: "U1" }),
       },
-      0,
-    ],
-    [
-      "allows DM pin system events for authorized senders in allowlist mode",
-      {
-        overrides: { dmPolicy: "allowlist" as const, allowFrom: ["U1"] },
+      expectedCalls: 0,
+    },
+    {
+      name: "allows DM pin system events for authorized senders in allowlist mode",
+      args: {
+        overrides: { dmPolicy: "allowlist", allowFrom: ["U1"] },
         event: makePinEvent({ user: "U1" }),
       },
-      1,
-    ],
-    [
-      "blocks channel pin events for users outside channel users allowlist",
-      {
+      expectedCalls: 1,
+    },
+    {
+      name: "blocks channel pin events for users outside channel users allowlist",
+      args: {
         overrides: {
           dmPolicy: "open" as const,
           channelType: "channel" as const,
@@ -109,9 +109,11 @@ describe("registerSlackPinEvents", () => {
         },
         event: makePinEvent({ channel: "C1", user: "U_ATTACKER" }),
       },
-      0,
-    ],
-  ])("%s", async (_name, args: PinCase, expectedCalls: number) => {
+      expectedCalls: 0,
+    },
+  ];
+
+  it.each(cases)("$name", async ({ args, expectedCalls }) => {
     await runPinCase(args);
     expect(pinEnqueueMock).toHaveBeenCalledTimes(expectedCalls);
   });

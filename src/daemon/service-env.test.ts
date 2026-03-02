@@ -365,6 +365,42 @@ describe("buildNodeServiceEnvironment", () => {
     expect(env.HOME).toBe("/home/user");
   });
 
+  it("passes through REMOTECLAW_GATEWAY_TOKEN for node services", () => {
+    const env = buildNodeServiceEnvironment({
+      env: { HOME: "/home/user", REMOTECLAW_GATEWAY_TOKEN: " node-token " },
+    });
+    expect(env.REMOTECLAW_GATEWAY_TOKEN).toBe("node-token");
+  });
+
+  it("maps legacy CLAWDBOT_GATEWAY_TOKEN to REMOTECLAW_GATEWAY_TOKEN for node services", () => {
+    const env = buildNodeServiceEnvironment({
+      env: { HOME: "/home/user", CLAWDBOT_GATEWAY_TOKEN: " legacy-token " },
+    });
+    expect(env.REMOTECLAW_GATEWAY_TOKEN).toBe("legacy-token");
+  });
+
+  it("prefers REMOTECLAW_GATEWAY_TOKEN over legacy CLAWDBOT_GATEWAY_TOKEN", () => {
+    const env = buildNodeServiceEnvironment({
+      env: {
+        HOME: "/home/user",
+        REMOTECLAW_GATEWAY_TOKEN: "remoteclaw-token",
+        CLAWDBOT_GATEWAY_TOKEN: "legacy-token",
+      },
+    });
+    expect(env.REMOTECLAW_GATEWAY_TOKEN).toBe("remoteclaw-token");
+  });
+
+  it("omits REMOTECLAW_GATEWAY_TOKEN when both token env vars are empty", () => {
+    const env = buildNodeServiceEnvironment({
+      env: {
+        HOME: "/home/user",
+        REMOTECLAW_GATEWAY_TOKEN: "   ",
+        CLAWDBOT_GATEWAY_TOKEN: " ",
+      },
+    });
+    expect(env.REMOTECLAW_GATEWAY_TOKEN).toBeUndefined();
+  });
+
   it("forwards proxy environment variables for node services", () => {
     const env = buildNodeServiceEnvironment({
       env: {

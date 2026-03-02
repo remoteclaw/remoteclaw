@@ -171,8 +171,10 @@ export function createSlackMonitorContext(params: {
 
   const allowFrom = normalizeAllowList(params.allowFrom);
   const groupDmChannels = normalizeAllowList(params.groupDmChannels);
+  const groupDmChannelsLower = normalizeAllowListLower(groupDmChannels);
   const defaultRequireMention = params.defaultRequireMention ?? true;
   const channelsConfigKeys = Object.keys(params.channelsConfig ?? {});
+  const hasChannelAllowlistConfig = channelsConfigKeys.length > 0;
 
   const markMessageSeen = (channelId: string | undefined, ts?: string) => {
     if (!channelId || !ts) {
@@ -310,7 +312,6 @@ export function createSlackMonitorContext(params: {
     }
 
     if (isGroupDm && groupDmChannels.length > 0) {
-      const allowList = normalizeAllowListLower(groupDmChannels);
       const candidates = [
         p.channelId,
         p.channelName ? `#${p.channelName}` : undefined,
@@ -320,7 +321,8 @@ export function createSlackMonitorContext(params: {
         .filter((value): value is string => Boolean(value))
         .map((value) => value.toLowerCase());
       const permitted =
-        allowList.includes("*") || candidates.some((candidate) => allowList.includes(candidate));
+        groupDmChannelsLower.includes("*") ||
+        candidates.some((candidate) => groupDmChannelsLower.includes(candidate));
       if (!permitted) {
         return false;
       }
@@ -336,8 +338,7 @@ export function createSlackMonitorContext(params: {
       });
       const channelMatchMeta = formatAllowlistMatchMeta(channelConfig);
       const channelAllowed = channelConfig?.allowed !== false;
-      const channelAllowlistConfigured =
-        Boolean(params.channelsConfig) && Object.keys(params.channelsConfig ?? {}).length > 0;
+      const channelAllowlistConfigured = hasChannelAllowlistConfig;
       if (
         !isSlackChannelAllowedByPolicy({
           groupPolicy: params.groupPolicy,

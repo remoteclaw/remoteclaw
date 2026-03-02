@@ -41,7 +41,7 @@ From repo root:
 
 This script:
 
-- builds the gateway image locally (or pulls a remote image if `OPENCLAW_IMAGE` is set)
+- builds the gateway image locally (or pulls a remote image if `REMOTECLAW_IMAGE` is set)
 - runs the onboarding wizard
 - prints optional channel setup hints
 - starts the gateway via Docker Compose
@@ -65,8 +65,8 @@ After it finishes:
 For scripts and CI, disable Compose pseudo-TTY allocation with `-T`:
 
 ```bash
-docker compose run -T --rm openclaw-cli gateway probe
-docker compose run -T --rm openclaw-cli devices list --json
+docker compose run -T --rm remoteclaw-cli gateway probe
+docker compose run -T --rm remoteclaw-cli devices list --json
 ```
 
 If your automation exports no Claude session vars, leaving them unset now resolves to
@@ -75,15 +75,15 @@ warnings.
 
 ### Shared-network security note (CLI + gateway)
 
-`openclaw-cli` uses `network_mode: "service:openclaw-gateway"` so CLI commands can
+`remoteclaw-cli` uses `network_mode: "service:remoteclaw-gateway"` so CLI commands can
 reliably reach the gateway over `127.0.0.1` in Docker.
 
 Treat this as a shared trust boundary: loopback binding is not isolation between these two
 containers. If you need stronger separation, run commands from a separate container/host
-network path instead of the bundled `openclaw-cli` service.
+network path instead of the bundled `remoteclaw-cli` service.
 
 To reduce impact if the CLI process is compromised, the compose config drops
-`NET_RAW`/`NET_ADMIN` and enables `no-new-privileges` on `openclaw-cli`.
+`NET_RAW`/`NET_ADMIN` and enables `no-new-privileges` on `remoteclaw-cli`.
 
 It writes config/workspace on the host:
 
@@ -96,9 +96,9 @@ Running on a VPS? See [Hetzner (Docker VPS)](/install/hetzner).
 
 Official pre-built images are published at:
 
-- [GitHub Container Registry package](https://github.com/openclaw/openclaw/pkgs/container/openclaw)
+- [GitHub Container Registry package](https://github.com/remoteclaw/remoteclaw/pkgs/container/openclaw)
 
-Use image name `ghcr.io/openclaw/openclaw` (not similarly named Docker Hub
+Use image name `ghcr.io/remoteclaw/remoteclaw` (not similarly named Docker Hub
 images).
 
 Common tags:
@@ -107,20 +107,45 @@ Common tags:
 - `<version>` — release tag builds (for example `2026.2.26`)
 - `latest` — latest stable release tag
 
+### Base image metadata
+
+The main Docker image currently uses:
+
+- `node:22-bookworm`
+
+The docker image now publishes OCI base-image annotations (sha256 is an example):
+
+- `org.opencontainers.image.base.name=docker.io/library/node:22-bookworm`
+- `org.opencontainers.image.base.digest=sha256:cd7bcd2e7a1e6f72052feb023c7f6b722205d3fcab7bbcbd2d1bfdab10b1e935`
+- `org.opencontainers.image.source=https://github.com/remoteclaw/remoteclaw`
+- `org.opencontainers.image.url=https://remoteclaw.com`
+- `org.opencontainers.image.documentation=https://docs.remoteclaw.com/install/docker`
+- `org.opencontainers.image.licenses=MIT`
+- `org.opencontainers.image.title=RemoteClaw`
+- `org.opencontainers.image.description=RemoteClaw gateway and CLI runtime container image`
+- `org.opencontainers.image.revision=<git-sha>`
+- `org.opencontainers.image.version=<tag-or-main>`
+- `org.opencontainers.image.created=<rfc3339 timestamp>`
+
+Reference: [OCI image annotations](https://github.com/opencontainers/image-spec/blob/main/annotations.md)
+
+Release context: this repository's tagged history already uses Bookworm in
+`v2026.2.22` and earlier 2026 tags (for example `v2026.2.21`, `v2026.2.9`).
+
 By default the setup script builds the image from source. To pull a pre-built
-image instead, set `OPENCLAW_IMAGE` before running the script:
+image instead, set `REMOTECLAW_IMAGE` before running the script:
 
 ```bash
-export OPENCLAW_IMAGE="ghcr.io/openclaw/openclaw:latest"
+export REMOTECLAW_IMAGE="ghcr.io/remoteclaw/remoteclaw:latest"
 ./docker-setup.sh
 ```
 
-The script detects that `OPENCLAW_IMAGE` is not the default `openclaw:local` and
+The script detects that `REMOTECLAW_IMAGE` is not the default `remoteclaw:local` and
 runs `docker pull` instead of `docker build`. Everything else (onboarding,
 gateway start, token generation) works the same way.
 
 `docker-setup.sh` still runs from the repository root because it uses the local
-`docker-compose.yml` and helper files. `OPENCLAW_IMAGE` skips local image build
+`docker-compose.yml` and helper files. `REMOTECLAW_IMAGE` skips local image build
 time; it does not replace the compose/setup workflow.
 
 ### Shell Helpers (optional)
@@ -395,9 +420,9 @@ If you see `Gateway target: ws://172.x.x.x:18789` or repeated `pairing required`
 errors from Docker CLI commands, run:
 
 ```bash
-docker compose run --rm openclaw-cli config set gateway.mode local
-docker compose run --rm openclaw-cli config set gateway.bind lan
-docker compose run --rm openclaw-cli devices list --url ws://127.0.0.1:18789
+docker compose run --rm remoteclaw-cli config set gateway.mode local
+docker compose run --rm remoteclaw-cli config set gateway.bind lan
+docker compose run --rm remoteclaw-cli devices list --url ws://127.0.0.1:18789
 ```
 
 ### Notes

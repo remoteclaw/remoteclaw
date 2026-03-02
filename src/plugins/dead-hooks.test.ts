@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import type { OpenClawConfig } from "../config/config.js";
 import { createPluginRegistry, type PluginRecord } from "./registry.js";
 import type { PluginRuntime } from "./runtime/types.js";
+
+const EMPTY_CONFIG = {} as OpenClawConfig;
 
 function makeRegistryParams() {
   return {
@@ -50,7 +53,7 @@ describe("dead hook guards", () => {
       const record = makeRecord();
       const handler = vi.fn();
 
-      registerHook(record, hookName, handler, { name: "test-hook" }, undefined);
+      registerHook(record, hookName, handler, { name: "test-hook" }, EMPTY_CONFIG);
 
       // Hook should NOT be registered
       expect(registry.hooks).toHaveLength(0);
@@ -70,7 +73,7 @@ describe("dead hook guards", () => {
       const record = makeRecord();
       const handler = vi.fn();
 
-      registerHook(record, "message_received", handler, { name: "test-hook" }, undefined);
+      registerHook(record, "message_received", handler, { name: "test-hook" }, EMPTY_CONFIG);
 
       expect(registry.hooks).toHaveLength(1);
       expect(registry.diagnostics).toHaveLength(0);
@@ -86,7 +89,7 @@ describe("dead hook guards", () => {
         ["llm_input", "message_received", "llm_output"],
         handler,
         { name: "test-hook" },
-        undefined,
+        EMPTY_CONFIG,
       );
 
       // Only the live hook should be registered
@@ -104,7 +107,13 @@ describe("dead hook guards", () => {
       const record = makeRecord();
       const handler = vi.fn();
 
-      registerHook(record, ["llm_input", "llm_output"], handler, { name: "test-hook" }, undefined);
+      registerHook(
+        record,
+        ["llm_input", "llm_output"],
+        handler,
+        { name: "test-hook" },
+        EMPTY_CONFIG,
+      );
 
       expect(registry.hooks).toHaveLength(0);
       expect(registry.diagnostics).toHaveLength(2);
@@ -115,7 +124,7 @@ describe("dead hook guards", () => {
     it("warns and skips dead hook via api.on()", () => {
       const { registry, createApi } = createPluginRegistry(makeRegistryParams());
       const record = makeRecord();
-      const api = createApi(record, { config: undefined });
+      const api = createApi(record, { config: EMPTY_CONFIG });
 
       // Cast to bypass TypeScript — simulates JS extension or old type defs
       (api.on as (name: string, handler: () => void) => void)("llm_input", vi.fn());
@@ -136,7 +145,7 @@ describe("dead hook guards", () => {
     it("allows live hooks through api.on() without warnings", () => {
       const { registry, createApi } = createPluginRegistry(makeRegistryParams());
       const record = makeRecord();
-      const api = createApi(record, { config: undefined });
+      const api = createApi(record, { config: EMPTY_CONFIG });
 
       api.on("message_received", vi.fn());
 

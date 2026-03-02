@@ -3,7 +3,7 @@ export type PluginEntryConfig = {
   config?: Record<string, unknown>;
 };
 
-export type PluginSlotsConfig = Record<string, never>;
+export type PluginSlotsConfig = Record<string, string>;
 
 export type PluginsLoadConfig = {
   /** Additional plugin/extension paths to load. */

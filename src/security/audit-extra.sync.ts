@@ -1,19 +1,31 @@
 import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
 // Sandbox infrastructure removed (#68)
 type SandboxToolPolicy = { allow?: string[]; deny?: string[] };
-const resolveSandboxConfigForAgent = (_cfg: unknown, _agentId?: string) => ({
-  mode: "off" as const,
-  workspaceAccess: undefined,
-  docker: undefined,
-  browser: { enabled: false, network: "", cdpSourceRange: undefined as string | undefined },
-  prune: undefined,
-  scope: undefined,
-});
+const resolveSandboxConfigForAgent = (_cfg: unknown, _agentId?: string) =>
+  ({
+    mode: "off",
+    workspaceAccess: undefined,
+    docker: undefined,
+    browser: { enabled: false, network: "", cdpSourceRange: undefined as string | undefined },
+    prune: undefined,
+    scope: undefined,
+  }) as {
+    mode: "off" | "non-main" | "all";
+    workspaceAccess: unknown;
+    docker: unknown;
+    browser: { enabled: boolean; network: string; cdpSourceRange: string | undefined };
+    prune: unknown;
+    scope: unknown;
+  };
 const resolveSandboxToolPolicyForAgent = (_cfg: unknown, _agentId?: string) =>
   undefined as SandboxToolPolicy | undefined;
 const isDangerousNetworkMode = (_mode: string) => false;
 const normalizeNetworkMode = (_mode?: string) => undefined as string | undefined;
-const getBlockedBindReason = (_bind: string) => undefined as string | undefined;
+const getBlockedBindReason = (_bind: string) =>
+  undefined as
+    | { kind: "non_absolute"; sourcePath: string }
+    | { kind: "covers" | "targets"; blockedPath: string }
+    | undefined;
 function pickSandboxToolPolicy(config?: {
   allow?: string[];
   deny?: string[];
@@ -286,7 +298,9 @@ function resolveToolPolicies(params: {
 
   if (params.sandboxMode === "all") {
     const sandboxPolicy = resolveSandboxToolPolicyForAgent(params.cfg, params.agentId ?? undefined);
-    policies.push(sandboxPolicy);
+    if (sandboxPolicy) {
+      policies.push(sandboxPolicy);
+    }
   }
 
   return policies;
@@ -853,7 +867,7 @@ export function collectSandboxDangerousConfigFindings(cfg: OpenClawConfig): Secu
 
     const network = typeof docker.network === "string" ? docker.network : undefined;
     const normalizedNetwork = normalizeNetworkMode(network);
-    if (isDangerousNetworkMode(network)) {
+    if (network && isDangerousNetworkMode(network)) {
       const modeLabel = normalizedNetwork === "host" ? '"host"' : `"${network}"`;
       const detail =
         normalizedNetwork === "host"

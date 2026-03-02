@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { type MockInstance, vi } from "vitest";
 import type { AgentDeliveryResult, BridgeCallbacks, ChannelMessage } from "../middleware/types.js";
 
 // Hoisted mock for runAgent — the ChannelBridge mock delegates to this
@@ -8,7 +8,8 @@ const hoisted = vi.hoisted(() => ({
 }));
 
 /** Exported so test harnesses can reference the mock directly. */
-export const runAgent = hoisted.runAgent;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- type annotation avoids TS2742 (non-portable inferred type)
+export const runAgent: MockInstance = hoisted.runAgent;
 
 vi.mock("../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(),

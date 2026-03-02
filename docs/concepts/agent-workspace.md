@@ -34,7 +34,10 @@ directory) or override per-agent via `agents.list[].workspace`:
 }
 ```
 
-`remoteclaw setup` creates the workspace directory if it does not exist.
+`remoteclaw onboard`, `remoteclaw configure`, or `remoteclaw setup` will create the
+workspace and seed the bootstrap files if they are missing.
+Sandbox seed copies only accept regular in-workspace files; symlink/hardlink
+aliases that resolve outside the source workspace are ignored.
 
 ## Workspace contents
 

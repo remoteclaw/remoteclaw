@@ -309,15 +309,20 @@ function redactRawText(raw: string, config: unknown, hints?: ConfigUiHints): str
   });
 }
 
-let suppressRestoreWarnings = false;
-
-function withRestoreWarningsSuppressed<T>(fn: () => T): T {
-  const prev = suppressRestoreWarnings;
-  suppressRestoreWarnings = true;
+function shouldFallbackToStructuredRawRedaction(params: {
+  redactedRaw: string;
+  originalConfig: unknown;
+  hints?: ConfigUiHints;
+}): boolean {
   try {
-    return fn();
-  } finally {
-    suppressRestoreWarnings = prev;
+    const parsed = JSON5.parse(params.redactedRaw);
+    const restored = restoreRedactedValues(parsed, params.originalConfig, params.hints);
+    if (!restored.ok) {
+      return true;
+    }
+    return JSON.stringify(restored.result) !== JSON.stringify(params.originalConfig);
+  } catch {
+    return true;
   }
 }
 
@@ -365,17 +370,14 @@ export function redactConfigSnapshot(
   // readConfigFileSnapshot() does when it creates the snapshot.
 
   const redactedConfig = redactObject(snapshot.config, uiHints) as ConfigFileSnapshot["config"];
-  let redactedRaw = snapshot.raw ? redactRawText(snapshot.raw, snapshot.config, uiHints) : null;
   const redactedParsed = snapshot.parsed ? redactObject(snapshot.parsed, uiHints) : snapshot.parsed;
+  let redactedRaw = snapshot.raw ? redactRawText(snapshot.raw, snapshot.config, uiHints) : null;
   if (
     redactedRaw &&
     shouldFallbackToStructuredRawRedaction({
       redactedRaw,
       originalConfig: snapshot.config,
-      restoreParsed: (parsed) =>
-        withRestoreWarningsSuppressed(() =>
-          restoreRedactedValues(parsed, snapshot.config, uiHints),
-        ),
+      hints: uiHints,
     })
   ) {
     redactedRaw = JSON5.stringify(redactedParsed ?? redactedConfig, null, 2);

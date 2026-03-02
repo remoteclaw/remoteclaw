@@ -13,6 +13,7 @@ const mockState = vi.hoisted(() => ({
   finalText: "[[reply_to_current]]",
   triggerAgentRunStart: false,
   agentRunId: "run-agent-1",
+  sessionEntry: {} as Record<string, unknown>,
   lastDispatchCtx: undefined as MsgContext | undefined,
 }));
 
@@ -35,6 +36,7 @@ vi.mock("../session-utils.js", async (importOriginal) => {
       entry: {
         sessionId: mockState.sessionId,
         sessionFile: mockState.transcriptPath,
+        ...mockState.sessionEntry,
       },
       canonicalKey: "main",
     }),
@@ -195,6 +197,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     mockState.finalText = "[[reply_to_current]]";
     mockState.triggerAgentRunStart = false;
     mockState.agentRunId = "run-agent-1";
+    mockState.sessionEntry = {};
     mockState.lastDispatchCtx = undefined;
   });
 
@@ -419,5 +422,72 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     );
     expect(mockState.lastDispatchCtx?.RawBody).toBe("bench update");
     expect(mockState.lastDispatchCtx?.CommandBody).toBe("bench update");
+  });
+
+  it("chat.send inherits originating routing metadata from session delivery context", async () => {
+    createTranscriptFixture("remoteclaw-chat-send-origin-routing-");
+    mockState.finalText = "ok";
+    mockState.sessionEntry = {
+      deliveryContext: {
+        channel: "telegram",
+        to: "telegram:6812765697",
+        accountId: "default",
+        threadId: 42,
+      },
+      lastChannel: "telegram",
+      lastTo: "telegram:6812765697",
+      lastAccountId: "default",
+      lastThreadId: 42,
+    };
+    const respond = vi.fn();
+    const context = createChatContext();
+
+    await runNonStreamingChatSend({
+      context,
+      respond,
+      idempotencyKey: "idem-origin-routing",
+      expectBroadcast: false,
+    });
+
+    expect(mockState.lastDispatchCtx).toEqual(
+      expect.objectContaining({
+        OriginatingChannel: "telegram",
+        OriginatingTo: "telegram:6812765697",
+        AccountId: "default",
+        MessageThreadId: 42,
+      }),
+    );
+  });
+
+  it("chat.send inherits Feishu routing metadata from session delivery context", async () => {
+    createTranscriptFixture("remoteclaw-chat-send-feishu-origin-routing-");
+    mockState.finalText = "ok";
+    mockState.sessionEntry = {
+      deliveryContext: {
+        channel: "feishu",
+        to: "ou_feishu_direct_123",
+        accountId: "default",
+      },
+      lastChannel: "feishu",
+      lastTo: "ou_feishu_direct_123",
+      lastAccountId: "default",
+    };
+    const respond = vi.fn();
+    const context = createChatContext();
+
+    await runNonStreamingChatSend({
+      context,
+      respond,
+      idempotencyKey: "idem-feishu-origin-routing",
+      expectBroadcast: false,
+    });
+
+    expect(mockState.lastDispatchCtx).toEqual(
+      expect.objectContaining({
+        OriginatingChannel: "feishu",
+        OriginatingTo: "ou_feishu_direct_123",
+        AccountId: "default",
+      }),
+    );
   });
 });

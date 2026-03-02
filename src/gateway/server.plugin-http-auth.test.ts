@@ -99,6 +99,10 @@ type RouteVariant = {
 const CANONICAL_UNAUTH_VARIANTS: RouteVariant[] = [
   { label: "case-variant", path: "/API/channels/nostr/default/profile" },
   { label: "encoded-slash", path: "/api/channels%2Fnostr%2Fdefault%2Fprofile" },
+  {
+    label: "encoded-slash-4x",
+    path: "/api%2525252fchannels%2525252fnostr%2525252fdefault%2525252fprofile",
+  },
   { label: "encoded-segment", path: "/api/%63hannels/nostr/default/profile" },
   { label: "dot-traversal-encoded-slash", path: "/api/foo/..%2fchannels/nostr/default/profile" },
   {
@@ -117,6 +121,10 @@ const CANONICAL_UNAUTH_VARIANTS: RouteVariant[] = [
 
 const CANONICAL_AUTH_VARIANTS: RouteVariant[] = [
   { label: "auth-case-variant", path: "/API/channels/nostr/default/profile" },
+  {
+    label: "auth-encoded-slash-4x",
+    path: "/api%2525252fchannels%2525252fnostr%2525252fdefault%2525252fprofile",
+  },
   { label: "auth-encoded-segment", path: "/api/%63hannels/nostr/default/profile" },
   { label: "auth-duplicate-trailing-slash", path: "/api/channels//nostr/default/profile/" },
   {
@@ -139,6 +147,7 @@ function buildChannelPathFuzzCorpus(): RouteVariant[] {
     "/api/channels//nostr/default/profile/",
     "/api/channels%2Fnostr%2Fdefault%2Fprofile",
     "/api/channels%252Fnostr%252Fdefault%252Fprofile",
+    "/api%2525252fchannels%2525252fnostr%2525252fdefault%2525252fprofile",
     "/api//channels/nostr/default/profile",
     "/api/channels%2",
     "/api/channels%zz",
@@ -461,7 +470,176 @@ describe("gateway plugin HTTP auth boundary", () => {
         expect(unauthenticatedPublic.res.statusCode).toBe(200);
         expect(unauthenticatedPublic.getBody()).toContain('"route":"public"');
 
-        expect(handlePluginRequest).toHaveBeenCalledTimes(2);
+        expect(handlePluginRequest).toHaveBeenCalledTimes(1);
+      },
+    });
+  });
+
+  test("keeps wildcard plugin handlers ungated when auth enforcement predicate excludes their paths", async () => {
+    const handlePluginRequest = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+      const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+      if (pathname === "/plugin/routed") {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(JSON.stringify({ ok: true, route: "routed" }));
+        return true;
+      }
+      if (pathname === "/googlechat") {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(JSON.stringify({ ok: true, route: "wildcard-handler" }));
+        return true;
+      }
+      return false;
+    });
+
+    await withGatewayServer({
+      prefix: "remoteclaw-plugin-http-auth-wildcard-handler-test-",
+      resolvedAuth: AUTH_TOKEN,
+      overrides: {
+        handlePluginRequest,
+        shouldEnforcePluginGatewayAuth: (requestPath) =>
+          requestPath.startsWith("/api/channels") || requestPath === "/plugin/routed",
+      },
+      run: async (server) => {
+        const unauthenticatedRouted = await sendRequest(server, { path: "/plugin/routed" });
+        expectUnauthorizedResponse(unauthenticatedRouted);
+
+        const unauthenticatedWildcard = await sendRequest(server, { path: "/googlechat" });
+        expect(unauthenticatedWildcard.res.statusCode).toBe(200);
+        expect(unauthenticatedWildcard.getBody()).toContain('"route":"wildcard-handler"');
+
+        const authenticatedRouted = await sendRequest(server, {
+          path: "/plugin/routed",
+          authorization: "Bearer test-token",
+        });
+        expect(authenticatedRouted.res.statusCode).toBe(200);
+        expect(authenticatedRouted.getBody()).toContain('"route":"routed"');
+      },
+    });
+  });
+
+  test("uses /api/channels auth by default while keeping wildcard handlers ungated with no predicate", async () => {
+    const handlePluginRequest = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+      const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+      if (canonicalizePluginPath(pathname) === "/api/channels/nostr/default/profile") {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(JSON.stringify({ ok: true, route: "channel-default" }));
+        return true;
+      }
+      if (pathname === "/googlechat") {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(JSON.stringify({ ok: true, route: "wildcard-default" }));
+        return true;
+      }
+      return false;
+    });
+
+    await withGatewayServer({
+      prefix: "remoteclaw-plugin-http-auth-wildcard-default-test-",
+      resolvedAuth: AUTH_TOKEN,
+      overrides: { handlePluginRequest },
+      run: async (server) => {
+        const unauthenticated = await sendRequest(server, { path: "/googlechat" });
+        expect(unauthenticated.res.statusCode).toBe(200);
+        expect(unauthenticated.getBody()).toContain('"route":"wildcard-default"');
+
+        const unauthenticatedChannel = await sendRequest(server, {
+          path: "/api/channels/nostr/default/profile",
+        });
+        expectUnauthorizedResponse(unauthenticatedChannel);
+
+        const unauthenticatedDeepEncodedChannel = await sendRequest(server, {
+          path: "/api%2525252fchannels%2525252fnostr%2525252fdefault%2525252fprofile",
+        });
+        expectUnauthorizedResponse(unauthenticatedDeepEncodedChannel);
+
+        const authenticated = await sendRequest(server, {
+          path: "/googlechat",
+          authorization: "Bearer test-token",
+        });
+        expect(authenticated.res.statusCode).toBe(200);
+        expect(authenticated.getBody()).toContain('"route":"wildcard-default"');
+
+        const authenticatedChannel = await sendRequest(server, {
+          path: "/api/channels/nostr/default/profile",
+          authorization: "Bearer test-token",
+        });
+        expect(authenticatedChannel.res.statusCode).toBe(200);
+        expect(authenticatedChannel.getBody()).toContain('"route":"channel-default"');
+
+        const authenticatedDeepEncodedChannel = await sendRequest(server, {
+          path: "/api%2525252fchannels%2525252fnostr%2525252fdefault%2525252fprofile",
+          authorization: "Bearer test-token",
+        });
+        expect(authenticatedDeepEncodedChannel.res.statusCode).toBe(200);
+        expect(authenticatedDeepEncodedChannel.getBody()).toContain('"route":"channel-default"');
+      },
+    });
+  });
+
+  test("serves plugin routes before control ui spa fallback", async () => {
+    const handlePluginRequest = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+      const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+      if (pathname === "/plugins/diffs/view/demo-id/demo-token") {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.end("<!doctype html><title>diff-view</title>");
+        return true;
+      }
+      return false;
+    });
+
+    await withGatewayServer({
+      prefix: "remoteclaw-plugin-http-control-ui-precedence-test-",
+      resolvedAuth: AUTH_NONE,
+      overrides: {
+        controlUiEnabled: true,
+        controlUiBasePath: "",
+        controlUiRoot: { kind: "missing" },
+        handlePluginRequest,
+      },
+      run: async (server) => {
+        const response = await sendRequest(server, {
+          path: "/plugins/diffs/view/demo-id/demo-token",
+        });
+
+        expect(response.res.statusCode).toBe(200);
+        expect(response.getBody()).toContain("diff-view");
+        expect(handlePluginRequest).toHaveBeenCalledTimes(1);
+      },
+    });
+  });
+
+  test("does not let plugin handlers shadow control ui routes", async () => {
+    const handlePluginRequest = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+      const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+      if (pathname === "/chat") {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        res.end("plugin-shadow");
+        return true;
+      }
+      return false;
+    });
+
+    await withGatewayServer({
+      prefix: "remoteclaw-plugin-http-control-ui-shadow-test-",
+      resolvedAuth: AUTH_NONE,
+      overrides: {
+        controlUiEnabled: true,
+        controlUiBasePath: "",
+        controlUiRoot: { kind: "missing" },
+        handlePluginRequest,
+      },
+      run: async (server) => {
+        const response = await sendRequest(server, { path: "/chat" });
+
+        expect(response.res.statusCode).toBe(503);
+        expect(response.getBody()).toContain("Control UI assets not found");
+        expect(handlePluginRequest).not.toHaveBeenCalled();
       },
     });
   });

@@ -56,7 +56,7 @@ vi.mock("./route-reply.js", () => ({
 }));
 
 vi.mock("./session-updates.js", () => ({
-  prependSystemEvents: vi.fn().mockImplementation(async ({ prefixedBodyBase }) => prefixedBodyBase),
+  buildQueuedSystemPrompt: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("./typing-mode.js", () => ({
@@ -65,6 +65,7 @@ vi.mock("./typing-mode.js", () => ({
 
 import { runReplyAgent } from "./agent-runner.js";
 import { routeReply } from "./route-reply.js";
+import { buildQueuedSystemPrompt } from "./session-updates.js";
 import { resolveTypingMode } from "./typing-mode.js";
 
 function baseParams(
@@ -270,5 +271,19 @@ describe("runPreparedReply media-only handling", () => {
       | { suppressTyping?: boolean }
       | undefined;
     expect(call?.suppressTyping).toBe(true);
+  });
+
+  it("routes queued system events to system prompt context, not user prompt text", async () => {
+    vi.mocked(buildQueuedSystemPrompt).mockResolvedValueOnce(
+      "## Runtime System Events (gateway-generated)\n- [t] Model switched.",
+    );
+
+    await runPreparedReply(baseParams());
+
+    const call = vi.mocked(runReplyAgent).mock.calls[0]?.[0];
+    expect(call).toBeTruthy();
+    expect(call?.commandBody).not.toContain("Runtime System Events");
+    expect(call?.followupRun.run.extraSystemPrompt).toContain("Runtime System Events");
+    expect(call?.followupRun.run.extraSystemPrompt).toContain("Model switched.");
   });
 });

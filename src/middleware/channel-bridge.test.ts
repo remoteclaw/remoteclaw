@@ -595,6 +595,108 @@ describe("ChannelBridge", () => {
     });
   });
 
+  describe("system prompt context params forwarding", () => {
+    it("passes userName from ChannelMessage to buildSystemPrompt", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ userName: "Alice" }));
+
+      expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
+      const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
+      expect(params.userName).toBe("Alice");
+    });
+
+    it("passes agentId from ChannelMessage to buildSystemPrompt", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ agentId: "agent-42" }));
+
+      expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
+      const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
+      expect(params.agentId).toBe("agent-42");
+    });
+
+    it("passes timezone from ChannelMessage to buildSystemPrompt", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ timezone: "America/New_York" }));
+
+      expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
+      const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
+      expect(params.timezone).toBe("America/New_York");
+    });
+
+    it("passes authorizedSenders from ChannelMessage to buildSystemPrompt", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ authorizedSenders: ["+15551234567", "+15559876543"] }));
+
+      expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
+      const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
+      expect(params.authorizedSenders).toEqual(["+15551234567", "+15559876543"]);
+    });
+
+    it("passes reactionGuidance from ChannelMessage to buildSystemPrompt", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      await bridge.handle(
+        makeMessage({ reactionGuidance: { level: "minimal", channel: "telegram" } }),
+      );
+
+      expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
+      const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
+      expect(params.reactionGuidance).toEqual({ level: "minimal", channel: "telegram" });
+    });
+
+    it("passes all 8 params when ChannelMessage is fully populated", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      await bridge.handle(
+        makeMessage({
+          provider: "discord",
+          messageToolHints: ["Use discord components."],
+          userName: "Bob",
+          agentId: "agent-7",
+          timezone: "Europe/Berlin",
+          authorizedSenders: ["+1234"],
+          reactionGuidance: { level: "extensive", channel: "discord" },
+        }),
+      );
+
+      expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
+      const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
+      expect(params.channelName).toBe("discord");
+      expect(params.workspaceDir).toBe("/workspace");
+      expect(params.messageToolHints).toEqual(["Use discord components."]);
+      expect(params.userName).toBe("Bob");
+      expect(params.agentId).toBe("agent-7");
+      expect(params.timezone).toBe("Europe/Berlin");
+      expect(params.authorizedSenders).toEqual(["+1234"]);
+      expect(params.reactionGuidance).toEqual({ level: "extensive", channel: "discord" });
+    });
+
+    it("passes undefined for optional params when not set on ChannelMessage", async () => {
+      mockRuntimeInstance = mockRuntime([makeDone()]);
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage());
+
+      expect(mockBuildSystemPrompt).toHaveBeenCalledOnce();
+      const params = mockBuildSystemPrompt.mock.calls[0][0] as Record<string, unknown>;
+      expect(params.userName).toBeUndefined();
+      expect(params.agentId).toBeUndefined();
+      expect(params.timezone).toBeUndefined();
+      expect(params.authorizedSenders).toBeUndefined();
+      expect(params.reactionGuidance).toBeUndefined();
+    });
+  });
+
   describe("error handling", () => {
     it("classifies runtime errors and sets errorSubtype on result", async () => {
       const executeFn = vi.fn((_p: AgentExecuteParams) => failingStream("rate_limit exceeded"));

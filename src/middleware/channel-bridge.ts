@@ -121,6 +121,11 @@ export class ChannelBridge {
       channelName: message.provider,
       workspaceDir: this.#workspaceDir,
       messageToolHints: message.messageToolHints,
+      userName: message.userName,
+      agentId: message.agentId,
+      timezone: message.timezone,
+      authorizedSenders: message.authorizedSenders,
+      reactionGuidance: message.reactionGuidance,
     });
 
     // 3. MCP config: temp dir for side effects file

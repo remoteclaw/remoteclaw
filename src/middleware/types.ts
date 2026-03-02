@@ -187,6 +187,16 @@ export type ChannelMessage = {
   senderIsOwner?: boolean | undefined;
   /** Tool profile controlling which tool categories are available. Defaults to `"full"`. */
   toolProfile?: string | undefined;
+  /** Display name of the user sending the message. */
+  userName?: string | undefined;
+  /** Agent identifier within RemoteClaw. */
+  agentId?: string | undefined;
+  /** IANA timezone string (e.g., "America/New_York"). */
+  timezone?: string | undefined;
+  /** Phone numbers / IDs of authorized senders (owner allowlist). */
+  authorizedSenders?: string[] | undefined;
+  /** Reaction/emoji guidance level for the system prompt. */
+  reactionGuidance?: { level: "minimal" | "extensive"; channel: string } | undefined;
 };
 
 // ── Bridge Callbacks ────────────────────────────────────────────────────

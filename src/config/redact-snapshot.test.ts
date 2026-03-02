@@ -10,6 +10,7 @@ import type { ConfigFileSnapshot } from "./types.remoteclaw.js";
 import { RemoteClawSchema } from "./zod-schema.js";
 
 const { mapSensitivePaths } = __test__;
+const mainSchemaHints = mapSensitivePaths(RemoteClawSchema, "", {});
 
 type TestSnapshot<TConfig extends Record<string, unknown>> = ConfigFileSnapshot & {
   parsed: TConfig;
@@ -725,7 +726,7 @@ describe("redactConfigSnapshot", () => {
   });
 
   it("contract-covers dynamic catchall/record paths for redact+restore", () => {
-    const hints = mapSensitivePaths(RemoteClawSchema, "", {});
+    const hints = mainSchemaHints;
     const snapshot = makeSnapshot({
       env: {
         GROQ_API_KEY: "gsk-contract-123",
@@ -991,7 +992,7 @@ describe("realredactConfigSnapshot_real", () => {
       unrepresentable: "any",
     });
     schema.title = "RemoteClawConfig";
-    const hints = mapSensitivePaths(RemoteClawSchema, "", {});
+    const hints = mainSchemaHints;
 
     const snapshot = makeSnapshot({
       agents: {

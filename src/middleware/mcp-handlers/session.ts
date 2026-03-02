@@ -50,6 +50,7 @@ export function registerSessionTools(server: McpServer, ctx: McpHandlerContext):
     async (args) => {
       const result = await callMcpGateway(ctx, "sessions.list", {
         limit: args.filter !== undefined ? undefined : args.limit,
+        search: args.filter,
         includeGlobal: true,
         includeUnknown: true,
       });

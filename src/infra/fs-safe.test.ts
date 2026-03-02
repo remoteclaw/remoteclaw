@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { withRealpathSymlinkRebindRace } from "../test-utils/symlink-rebind-race.js";
 import { createTrackedTempDirs } from "../test-utils/tracked-temp-dirs.js";
 import { SafeOpenError, openFileWithinRoot, readLocalFileSafely } from "./fs-safe.js";
 
@@ -99,6 +100,243 @@ describe("fs-safe", () => {
       }),
     ).rejects.toMatchObject({ code: "invalid-path" });
   });
+
+  it.runIf(process.platform !== "win32")("blocks hardlink aliases under root", async () => {
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+    const outside = await tempDirs.make("remoteclaw-fs-safe-outside-");
+    const outsideFile = path.join(outside, "outside.txt");
+    const hardlinkPath = path.join(root, "link.txt");
+    await fs.writeFile(outsideFile, "outside");
+    try {
+      try {
+        await fs.link(outsideFile, hardlinkPath);
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === "EXDEV") {
+          return;
+        }
+        throw err;
+      }
+      await expect(
+        openFileWithinRoot({
+          rootDir: root,
+          relativePath: "link.txt",
+        }),
+      ).rejects.toMatchObject({ code: "invalid-path" });
+    } finally {
+      await fs.rm(hardlinkPath, { force: true });
+      await fs.rm(outsideFile, { force: true });
+    }
+  });
+
+  it("writes a file within root safely", async () => {
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+    await writeFileWithinRoot({
+      rootDir: root,
+      relativePath: "nested/out.txt",
+      data: "hello",
+    });
+    await expect(fs.readFile(path.join(root, "nested", "out.txt"), "utf8")).resolves.toBe("hello");
+  });
+
+  it("copies a file within root safely", async () => {
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+    const sourceDir = await tempDirs.make("remoteclaw-fs-safe-source-");
+    const sourcePath = path.join(sourceDir, "in.txt");
+    await fs.writeFile(sourcePath, "copy-ok");
+
+    await copyFileWithinRoot({
+      sourcePath,
+      rootDir: root,
+      relativePath: "nested/copied.txt",
+    });
+
+    await expect(fs.readFile(path.join(root, "nested", "copied.txt"), "utf8")).resolves.toBe(
+      "copy-ok",
+    );
+  });
+
+  it("enforces maxBytes when copying into root", async () => {
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+    const sourceDir = await tempDirs.make("remoteclaw-fs-safe-source-");
+    const sourcePath = path.join(sourceDir, "big.bin");
+    await fs.writeFile(sourcePath, Buffer.alloc(8));
+
+    await expect(
+      copyFileWithinRoot({
+        sourcePath,
+        rootDir: root,
+        relativePath: "nested/big.bin",
+        maxBytes: 4,
+      }),
+    ).rejects.toMatchObject({ code: "too-large" });
+    await expect(fs.stat(path.join(root, "nested", "big.bin"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
+
+  it("writes a file within root from another local source path safely", async () => {
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+    const outside = await tempDirs.make("remoteclaw-fs-safe-src-");
+    const sourcePath = path.join(outside, "source.bin");
+    await fs.writeFile(sourcePath, "hello-from-source");
+    await writeFileFromPathWithinRoot({
+      rootDir: root,
+      relativePath: "nested/from-source.txt",
+      sourcePath,
+    });
+    await expect(fs.readFile(path.join(root, "nested", "from-source.txt"), "utf8")).resolves.toBe(
+      "hello-from-source",
+    );
+  });
+  it("rejects write traversal outside root", async () => {
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+    await expect(
+      writeFileWithinRoot({
+        rootDir: root,
+        relativePath: "../escape.txt",
+        data: "x",
+      }),
+    ).rejects.toMatchObject({ code: "outside-workspace" });
+  });
+
+  it.runIf(process.platform !== "win32")("rejects writing through hardlink aliases", async () => {
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+    const outside = await tempDirs.make("remoteclaw-fs-safe-outside-");
+    const outsideFile = path.join(outside, "outside.txt");
+    const hardlinkPath = path.join(root, "alias.txt");
+    await fs.writeFile(outsideFile, "outside");
+    try {
+      try {
+        await fs.link(outsideFile, hardlinkPath);
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === "EXDEV") {
+          return;
+        }
+        throw err;
+      }
+      await expect(
+        writeFileWithinRoot({
+          rootDir: root,
+          relativePath: "alias.txt",
+          data: "pwned",
+        }),
+      ).rejects.toMatchObject({ code: "invalid-path" });
+      await expect(fs.readFile(outsideFile, "utf8")).resolves.toBe("outside");
+    } finally {
+      await fs.rm(hardlinkPath, { force: true });
+      await fs.rm(outsideFile, { force: true });
+    }
+  });
+
+  it.runIf(process.platform !== "win32")(
+    "does not truncate out-of-root file when symlink retarget races write open",
+    async () => {
+      const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+      const inside = path.join(root, "inside");
+      const outside = await tempDirs.make("remoteclaw-fs-safe-outside-");
+      await fs.mkdir(inside, { recursive: true });
+      const insideTarget = path.join(inside, "target.txt");
+      const outsideTarget = path.join(outside, "target.txt");
+      await fs.writeFile(insideTarget, "inside");
+      await fs.writeFile(outsideTarget, "X".repeat(4096));
+      const slot = path.join(root, "slot");
+      await fs.symlink(inside, slot);
+
+      await withRealpathSymlinkRebindRace({
+        shouldFlip: (realpathInput) => realpathInput.endsWith(path.join("slot", "target.txt")),
+        symlinkPath: slot,
+        symlinkTarget: outside,
+        timing: "before-realpath",
+        run: async () => {
+          await expect(
+            writeFileWithinRoot({
+              rootDir: root,
+              relativePath: path.join("slot", "target.txt"),
+              data: "new-content",
+              mkdir: false,
+            }),
+          ).rejects.toMatchObject({ code: "outside-workspace" });
+        },
+      });
+
+      await expect(fs.readFile(outsideTarget, "utf8")).resolves.toBe("X".repeat(4096));
+    },
+  );
+
+  it.runIf(process.platform !== "win32")(
+    "does not clobber out-of-root file when symlink retarget races write-from-path open",
+    async () => {
+      const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+      const inside = path.join(root, "inside");
+      const outside = await tempDirs.make("remoteclaw-fs-safe-outside-");
+      const sourceDir = await tempDirs.make("remoteclaw-fs-safe-source-");
+      const sourcePath = path.join(sourceDir, "source.txt");
+      await fs.writeFile(sourcePath, "new-content");
+      await fs.mkdir(inside, { recursive: true });
+      const outsideTarget = path.join(outside, "target.txt");
+      await fs.writeFile(outsideTarget, "X".repeat(4096));
+      const slot = path.join(root, "slot");
+      await fs.symlink(inside, slot);
+
+      await withRealpathSymlinkRebindRace({
+        shouldFlip: (realpathInput) => realpathInput.endsWith(path.join("slot", "target.txt")),
+        symlinkPath: slot,
+        symlinkTarget: outside,
+        timing: "before-realpath",
+        run: async () => {
+          await expect(
+            writeFileFromPathWithinRoot({
+              rootDir: root,
+              relativePath: path.join("slot", "target.txt"),
+              sourcePath,
+              mkdir: false,
+            }),
+          ).rejects.toMatchObject({ code: "outside-workspace" });
+        },
+      });
+
+      await expect(fs.readFile(outsideTarget, "utf8")).resolves.toBe("X".repeat(4096));
+    },
+  );
+
+  it.runIf(process.platform !== "win32")(
+    "cleans up created out-of-root file when symlink retarget races create path",
+    async () => {
+      const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+      const inside = path.join(root, "inside");
+      const outside = await tempDirs.make("remoteclaw-fs-safe-outside-");
+      await fs.mkdir(inside, { recursive: true });
+      const outsideTarget = path.join(outside, "target.txt");
+      const slot = path.join(root, "slot");
+      await fs.symlink(inside, slot);
+
+      const realOpen = fs.open.bind(fs);
+      let flipped = false;
+      const openSpy = vi.spyOn(fs, "open").mockImplementation(async (...args) => {
+        const [filePath] = args;
+        if (!flipped && String(filePath).endsWith(path.join("slot", "target.txt"))) {
+          flipped = true;
+          await fs.rm(slot, { recursive: true, force: true });
+          await fs.symlink(outside, slot);
+        }
+        return await realOpen(...args);
+      });
+      try {
+        await expect(
+          writeFileWithinRoot({
+            rootDir: root,
+            relativePath: path.join("slot", "target.txt"),
+            data: "new-content",
+            mkdir: false,
+          }),
+        ).rejects.toMatchObject({ code: "outside-workspace" });
+      } finally {
+        openSpy.mockRestore();
+      }
+
+      await expect(fs.stat(outsideTarget)).rejects.toMatchObject({ code: "ENOENT" });
+    },
+  );
 
   it("returns not-found for missing files", async () => {
     const dir = await tempDirs.make("remoteclaw-fs-safe-");

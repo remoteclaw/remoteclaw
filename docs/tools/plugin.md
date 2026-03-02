@@ -927,7 +927,9 @@ Fields:
 - `slots`: exclusive slot selectors such as `memory` and `contextEngine`
 - `entries.<id>`: per‑plugin toggles + config
 
-Config changes **require a gateway restart**.
+Config changes **require a gateway restart**. If the Gateway is running with config
+watch + in-process restart enabled (the default `openclaw gateway` path), that
+restart is usually performed automatically a moment after the config write lands.
 
 Validation rules (strict):
 

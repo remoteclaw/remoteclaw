@@ -64,11 +64,20 @@ export function registerCronEditCommand(cron: Command) {
       .option("--account <id>", "Channel account id for delivery (multi-account setups)")
       .option("--best-effort-deliver", "Do not fail job if delivery fails")
       .option("--no-best-effort-deliver", "Fail job when delivery fails")
-      .option("--failure-alert-after <n>", "Alert after N consecutive failures")
-      .option("--failure-alert-cooldown <duration>", "Cooldown between failure alerts (e.g. 1h)")
-      .option("--failure-alert-channel <channel>", "Channel for failure alerts")
-      .option("--failure-alert-to <dest>", "Destination for failure alerts")
-      .option("--no-failure-alert", "Disable failure alerts")
+      .option("--failure-alert", "Enable failure alerts for this job")
+      .option("--no-failure-alert", "Disable failure alerts for this job")
+      .option("--failure-alert-after <n>", "Alert after N consecutive job errors")
+      .option(
+        "--failure-alert-channel <channel>",
+        `Failure alert channel (${getCronChannelOptions()})`,
+      )
+      .option("--failure-alert-to <dest>", "Failure alert destination")
+      .option("--failure-alert-cooldown <duration>", "Minimum time between alerts (e.g. 1h, 30m)")
+      .option("--failure-alert-mode <mode>", "Failure alert delivery mode (announce or webhook)")
+      .option(
+        "--failure-alert-account-id <id>",
+        "Account ID for failure alert channel (multi-account setups)",
+      )
       .action(async (id, opts) => {
         try {
           if (opts.session === "main" && opts.message) {
@@ -274,7 +283,25 @@ export function registerCronEditCommand(cron: Command) {
             patch.delivery = delivery;
           }
 
-          if (opts.failureAlert === false) {
+          const hasFailureAlertAfter = typeof opts.failureAlertAfter === "string";
+          const hasFailureAlertChannel = typeof opts.failureAlertChannel === "string";
+          const hasFailureAlertTo = typeof opts.failureAlertTo === "string";
+          const hasFailureAlertCooldown = typeof opts.failureAlertCooldown === "string";
+          const hasFailureAlertMode = typeof opts.failureAlertMode === "string";
+          const hasFailureAlertAccountId = typeof opts.failureAlertAccountId === "string";
+          const hasFailureAlertFields =
+            hasFailureAlertAfter ||
+            hasFailureAlertChannel ||
+            hasFailureAlertTo ||
+            hasFailureAlertCooldown ||
+            hasFailureAlertMode ||
+            hasFailureAlertAccountId;
+          const failureAlertFlag =
+            typeof opts.failureAlert === "boolean" ? opts.failureAlert : undefined;
+          if (failureAlertFlag === false && hasFailureAlertFields) {
+            throw new Error("Use --no-failure-alert alone (without failure-alert-* options).");
+          }
+          if (failureAlertFlag === false) {
             patch.failureAlert = false;
           } else {
             const hasFailureAlertSetting =
@@ -305,6 +332,23 @@ export function registerCronEditCommand(cron: Command) {
                 fa.to = opts.failureAlertTo.trim() || undefined;
               }
               patch.failureAlert = fa;
+            }
+            if (hasFailureAlertMode) {
+              const mode = String(opts.failureAlertMode).trim().toLowerCase();
+              if (mode !== "announce" && mode !== "webhook") {
+                throw new Error("Invalid --failure-alert-mode (must be 'announce' or 'webhook').");
+              }
+              if (typeof patch.failureAlert === "object" && patch.failureAlert) {
+                (patch.failureAlert as Record<string, unknown>).mode = mode;
+              }
+            }
+            if (hasFailureAlertAccountId) {
+              const accountId = String(opts.failureAlertAccountId).trim();
+              if (typeof patch.failureAlert === "object" && patch.failureAlert) {
+                (patch.failureAlert as Record<string, unknown>).accountId = accountId
+                  ? accountId
+                  : undefined;
+              }
             }
           }
 

@@ -3,6 +3,7 @@ import { DEFAULT_CRON_FORM } from "../app-defaults.ts";
 import { toNumber } from "../format.ts";
 import type { GatewayBrowserClient } from "../gateway.ts";
 import type {
+  CronFailureAlert,
   CronJob,
   CronDeliveryStatus,
   CronJobsEnabledFilter,
@@ -389,6 +390,7 @@ function parseStaggerSchedule(
 }
 
 function jobToForm(job: CronJob, prev: CronFormState): CronFormState {
+  const failureAlert = (job as { failureAlert?: CronFailureAlert | false }).failureAlert;
   const next: CronFormState = {
     ...prev,
     name: job.name,
@@ -420,6 +422,33 @@ function jobToForm(job: CronJob, prev: CronFormState): CronFormState {
     deliveryTo: job.delivery?.to ?? "",
     deliveryAccountId: job.delivery?.accountId ?? "",
     deliveryBestEffort: job.delivery?.bestEffort ?? false,
+    failureAlertMode:
+      failureAlert === false
+        ? "disabled"
+        : failureAlert && typeof failureAlert === "object"
+          ? "custom"
+          : "inherit",
+    failureAlertAfter:
+      failureAlert && typeof failureAlert === "object" && typeof failureAlert.after === "number"
+        ? String(failureAlert.after)
+        : DEFAULT_CRON_FORM.failureAlertAfter,
+    failureAlertCooldownSeconds:
+      failureAlert &&
+      typeof failureAlert === "object" &&
+      typeof failureAlert.cooldownMs === "number"
+        ? String(Math.floor(failureAlert.cooldownMs / 1000))
+        : DEFAULT_CRON_FORM.failureAlertCooldownSeconds,
+    failureAlertChannel:
+      failureAlert && typeof failureAlert === "object"
+        ? (failureAlert.channel ?? CRON_CHANNEL_LAST)
+        : CRON_CHANNEL_LAST,
+    failureAlertTo: failureAlert && typeof failureAlert === "object" ? (failureAlert.to ?? "") : "",
+    failureAlertDeliveryMode:
+      failureAlert && typeof failureAlert === "object"
+        ? (failureAlert.mode ?? "announce")
+        : "announce",
+    failureAlertAccountId:
+      failureAlert && typeof failureAlert === "object" ? (failureAlert.accountId ?? "") : "",
     timeoutSeconds:
       job.payload.kind === "agentTurn" && typeof job.payload.timeoutSeconds === "number"
         ? String(job.payload.timeoutSeconds)
@@ -518,6 +547,37 @@ export function buildCronPayload(form: CronFormState) {
   return payload;
 }
 
+function buildFailureAlert(form: CronFormState) {
+  if (form.failureAlertMode === "disabled") {
+    return false as const;
+  }
+  if (form.failureAlertMode !== "custom") {
+    return undefined;
+  }
+  const after = toNumber(form.failureAlertAfter.trim(), 0);
+  const cooldownRaw = form.failureAlertCooldownSeconds.trim();
+  const cooldownSeconds = cooldownRaw.length > 0 ? toNumber(cooldownRaw, 0) : undefined;
+  const cooldownMs =
+    cooldownSeconds !== undefined && Number.isFinite(cooldownSeconds) && cooldownSeconds >= 0
+      ? Math.floor(cooldownSeconds * 1000)
+      : undefined;
+  const deliveryMode = form.failureAlertDeliveryMode;
+  const accountId = form.failureAlertAccountId.trim();
+  const patch: Record<string, unknown> = {
+    after: after > 0 ? Math.floor(after) : undefined,
+    channel: form.failureAlertChannel.trim() || CRON_CHANNEL_LAST,
+    to: form.failureAlertTo.trim() || undefined,
+    ...(cooldownMs !== undefined ? { cooldownMs } : {}),
+  };
+  // Always include mode and accountId so users can switch/clear them
+  if (deliveryMode) {
+    patch.mode = deliveryMode;
+  }
+  // Include accountId if explicitly set, or send undefined to allow clearing
+  patch.accountId = accountId || undefined;
+  return patch;
+}
+
 export async function addCronJob(state: CronState) {
   if (!state.client || !state.connected || state.cronBusy) {
     return;
@@ -583,6 +643,7 @@ export async function addCronJob(state: CronState) {
       wakeMode: form.wakeMode,
       payload,
       delivery,
+      failureAlert: buildFailureAlert(form),
     };
     if (!job.name) {
       throw new Error(t("cron.errors.nameRequiredShort"));

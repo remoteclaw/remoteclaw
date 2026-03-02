@@ -17,6 +17,7 @@ export type {
   ChannelDirectoryAdapter,
   ChannelDirectoryEntry,
   ChannelDirectoryEntryKind,
+  ChannelElevatedAdapter,
   ChannelGatewayAdapter,
   ChannelGatewayContext,
   ChannelGroupAdapter,
@@ -71,10 +72,35 @@ export {
   unbindThreadBindingsBySessionKey,
 } from "../discord/monitor/thread-bindings.js";
 export type {
+  AcpRuntimeCapabilities,
+  AcpRuntimeControl,
+  AcpRuntimeDoctorReport,
+  AcpRuntime,
+  AcpRuntimeEnsureInput,
+  AcpRuntimeEvent,
+  AcpRuntimeHandle,
+  AcpRuntimePromptMode,
+  AcpSessionUpdateTag,
+  AcpRuntimeSessionMode,
+  AcpRuntimeStatus,
+  AcpRuntimeTurnInput,
+} from "../acp/runtime/types.js";
+export type { AcpRuntimeBackend } from "../acp/runtime/registry.js";
+export {
+  getAcpRuntimeBackend,
+  registerAcpRuntimeBackend,
+  requireAcpRuntimeBackend,
+  unregisterAcpRuntimeBackend,
+} from "../acp/runtime/registry.js";
+export { ACP_ERROR_CODES, AcpRuntimeError } from "../acp/runtime/errors.js";
+export type { AcpRuntimeErrorCode } from "../acp/runtime/errors.js";
+export type {
   AnyAgentTool,
+  RemoteClawPluginConfigSchema,
   RemoteClawPluginApi,
   RemoteClawPluginService,
   RemoteClawPluginServiceContext,
+  PluginLogger,
   ProviderAuthContext,
   ProviderAuthResult,
 } from "../plugins/types.js";
@@ -97,28 +123,17 @@ export { acquireFileLock, withFileLock } from "./file-lock.js";
 export { normalizeWebhookPath, resolveWebhookPath } from "./webhook-path.js";
 export {
   registerWebhookTarget,
-  registerWebhookTargetWithPluginRoute,
   rejectNonPostWebhookRequest,
   resolveSingleWebhookTarget,
   resolveSingleWebhookTargetAsync,
   resolveWebhookTargets,
 } from "./webhook-targets.js";
-export type {
-  RegisterWebhookPluginRouteOptions,
-  RegisterWebhookTargetOptions,
-  WebhookTargetMatchResult,
-} from "./webhook-targets.js";
+export type { RegisterWebhookTargetOptions, WebhookTargetMatchResult } from "./webhook-targets.js";
 export {
   applyBasicWebhookRequestGuards,
-  beginWebhookRequestPipelineOrReject,
-  createWebhookInFlightLimiter,
   isJsonContentType,
-  readWebhookBodyOrReject,
   readJsonWebhookBodyOrReject,
-  WEBHOOK_BODY_READ_DEFAULTS,
-  WEBHOOK_IN_FLIGHT_DEFAULTS,
 } from "./webhook-request-guards.js";
-export type { WebhookBodyReadProfile, WebhookInFlightLimiter } from "./webhook-request-guards.js";
 export type { AgentMediaPayload } from "./agent-media-payload.js";
 export { buildAgentMediaPayload } from "./agent-media-payload.js";
 export {
@@ -129,11 +144,7 @@ export {
   collectStatusIssuesFromLastError,
   createDefaultChannelRuntimeState,
 } from "./status-helpers.js";
-export {
-  AllowFromEntrySchema,
-  buildCatchallMultiAccountChannelSchema,
-} from "../channels/plugins/config-schema.js";
-export { createPluginRuntimeStore } from "./runtime-store.js";
+export { buildOauthProviderAuthResult } from "./provider-auth-result.js";
 export { formatResolvedUnresolvedNote } from "./resolution-notes.js";
 export type { ChannelDock } from "../channels/dock.js";
 export { getChatChannelMeta } from "../channels/registry.js";
@@ -251,6 +262,22 @@ export { readBooleanParam } from "./boolean-param.js";
 export { readJsonFileWithFallback, writeJsonFileAtomically } from "./json-store.js";
 export { generatePkceVerifierChallenge, toFormUrlEncoded } from "./oauth-utils.js";
 export { buildRandomTempFilePath, withTempDownloadPath } from "./temp-path.js";
+export {
+  applyWindowsSpawnProgramPolicy,
+  materializeWindowsSpawnProgram,
+  resolveWindowsExecutablePath,
+  resolveWindowsSpawnProgramCandidate,
+  resolveWindowsSpawnProgram,
+} from "./windows-spawn.js";
+export type {
+  ResolveWindowsSpawnProgramCandidateParams,
+  ResolveWindowsSpawnProgramParams,
+  WindowsSpawnCandidateResolution,
+  WindowsSpawnInvocation,
+  WindowsSpawnProgramCandidate,
+  WindowsSpawnProgram,
+  WindowsSpawnResolution,
+} from "./windows-spawn.js";
 export { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 export {
   runPluginCommandWithTimeout,
@@ -268,9 +295,7 @@ export type { ChatType } from "../channels/chat-type.js";
 /** @deprecated Use ChatType instead */
 export type { RoutePeerKind } from "../routing/resolve-route.js";
 export { resolveAckReaction } from "../agents/identity.js";
-export type { AgentToolResult } from "../types/agent-types.js";
 export type { ReplyPayload } from "../auto-reply/types.js";
-export type { OutboundDeliveryResult } from "../infra/outbound/deliver.js";
 export type { ChunkMode } from "../auto-reply/chunk.js";
 export { SILENT_REPLY_TOKEN, isSilentReplyText } from "../auto-reply/tokens.js";
 export { formatInboundFromLabel } from "../auto-reply/envelope.js";
@@ -343,7 +368,7 @@ export type { ScopeTokenProvider } from "./fetch-auth.js";
 export { rawDataToString } from "../infra/ws.js";
 export { isWSLSync, isWSL2Sync, isWSLEnv } from "../infra/wsl.js";
 export { isTruthyEnvValue } from "../infra/env.js";
-export { resolveChannelGroupPolicy, resolveToolsBySender } from "../config/group-policy.js";
+export { resolveToolsBySender } from "../config/group-policy.js";
 export {
   buildPendingHistoryContextFromMap,
   clearHistoryEntries,
@@ -634,24 +659,3 @@ export { loadWebMedia, type WebMediaResult } from "../web/media.js";
 
 // Security utilities
 export { redactSensitiveText } from "../logging/redact.js";
-
-// STT provider types
-export type {
-  AudioTranscriptionRequest,
-  AudioTranscriptionResult,
-  SttProvider,
-} from "../stt/types.js";
-
-// TTS provider types
-export type { TtsProviderImpl, TtsSynthesisRequest, TtsSynthesisResult } from "../tts/types.js";
-
-// Voice credential validation
-export {
-  checkSttCredentials,
-  checkTtsCredentials,
-  validateVoiceCredentials,
-} from "../channels/voice-credentials.js";
-export type {
-  VoiceCredentialReport,
-  VoiceCredentialStatus,
-} from "../channels/voice-credentials.js";

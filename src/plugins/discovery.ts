@@ -4,7 +4,9 @@ import { isPathInsideWithRealpath } from "../security/scan-paths.js";
 import { resolveConfigDir, resolveUserPath } from "../utils.js";
 import { resolveBundledPluginsDir } from "./bundled-dir.js";
 import {
+  DEFAULT_PLUGIN_ENTRY_CANDIDATES,
   getPackageManifestMetadata,
+  resolvePackageExtensionEntries,
   type RemoteClawPackageManifest,
   type PackageManifest,
 } from "./manifest.js";
@@ -256,14 +258,6 @@ function readPackageManifest(dir: string): PackageManifest | null {
   }
 }
 
-function resolvePackageExtensions(manifest: PackageManifest): string[] {
-  const raw = getPackageManifestMetadata(manifest)?.extensions;
-  if (!Array.isArray(raw)) {
-    return [];
-  }
-  return raw.map((entry) => (typeof entry === "string" ? entry.trim() : "")).filter(Boolean);
-}
-
 function deriveIdHint(params: {
   filePath: string;
   packageName?: string;
@@ -404,7 +398,8 @@ function discoverInDirectory(params: {
     }
 
     const manifest = readPackageManifest(fullPath);
-    const extensions = manifest ? resolvePackageExtensions(manifest) : [];
+    const extensionResolution = resolvePackageExtensionEntries(manifest ?? undefined);
+    const extensions = extensionResolution.status === "ok" ? extensionResolution.entries : [];
 
     if (extensions.length > 0) {
       for (const extPath of extensions) {
@@ -438,8 +433,7 @@ function discoverInDirectory(params: {
       continue;
     }
 
-    const indexCandidates = ["index.ts", "index.js", "index.mjs", "index.cjs"];
-    const indexFile = indexCandidates
+    const indexFile = [...DEFAULT_PLUGIN_ENTRY_CANDIDATES]
       .map((candidate) => path.join(fullPath, candidate))
       .find((candidate) => fs.existsSync(candidate));
     if (indexFile && isExtensionFile(indexFile)) {
@@ -505,7 +499,8 @@ function discoverFromPath(params: {
 
   if (stat.isDirectory()) {
     const manifest = readPackageManifest(resolved);
-    const extensions = manifest ? resolvePackageExtensions(manifest) : [];
+    const extensionResolution = resolvePackageExtensionEntries(manifest ?? undefined);
+    const extensions = extensionResolution.status === "ok" ? extensionResolution.entries : [];
 
     if (extensions.length > 0) {
       for (const extPath of extensions) {
@@ -539,8 +534,7 @@ function discoverFromPath(params: {
       return;
     }
 
-    const indexCandidates = ["index.ts", "index.js", "index.mjs", "index.cjs"];
-    const indexFile = indexCandidates
+    const indexFile = [...DEFAULT_PLUGIN_ENTRY_CANDIDATES]
       .map((candidate) => path.join(resolved, candidate))
       .find((candidate) => fs.existsSync(candidate));
 

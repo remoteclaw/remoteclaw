@@ -29,21 +29,20 @@ import {
 import { validateRegistryNpmSpec } from "../infra/npm-registry-spec.js";
 import { extensionUsesSkippedScannerPath, isPathInside } from "../security/scan-paths.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";
-import { loadPluginManifest } from "./manifest.js";
+import {
+  loadPluginManifest,
+  resolvePackageExtensionEntries,
+  type PackageManifest as PluginPackageManifest,
+} from "./manifest.js";
 
 type PluginInstallLogger = {
   info?: (message: string) => void;
   warn?: (message: string) => void;
 };
 
-const MANIFEST_KEY = "remoteclaw" as const;
-
-type ManifestMeta = { extensions?: string[] };
-type PackageManifest = {
-  name?: string;
-  version?: string;
+type PackageManifest = PluginPackageManifest & {
   dependencies?: Record<string, string>;
-} & Partial<Record<typeof MANIFEST_KEY, ManifestMeta>>;
+};
 
 export const PLUGIN_INSTALL_ERROR_CODE = {
   INVALID_NPM_SPEC: "invalid_npm_spec",
@@ -104,16 +103,15 @@ function ensureRemoteClawExtensions(manifest: PackageManifest):
       error: string;
       code: PluginInstallErrorCode;
     } {
-  const extensions = manifest[MANIFEST_KEY]?.extensions;
-  if (!Array.isArray(extensions)) {
+  const resolved = resolvePackageExtensionEntries(manifest);
+  if (resolved.status === "missing") {
     return {
       ok: false,
       error: "package.json missing remoteclaw.extensions",
       code: PLUGIN_INSTALL_ERROR_CODE.MISSING_REMOTECLAW_EXTENSIONS,
     };
   }
-  const list = extensions.map((e) => (typeof e === "string" ? e.trim() : "")).filter(Boolean);
-  if (list.length === 0) {
+  if (resolved.status === "empty") {
     return {
       ok: false,
       error: "package.json remoteclaw.extensions is empty",
@@ -122,7 +120,7 @@ function ensureRemoteClawExtensions(manifest: PackageManifest):
   }
   return {
     ok: true,
-    entries: list,
+    entries: resolved.entries,
   };
 }
 

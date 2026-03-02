@@ -170,6 +170,59 @@ async function runGatewayHttpRequestStages(
   return false;
 }
 
+function buildPluginRequestStages(params: {
+  req: IncomingMessage;
+  res: ServerResponse;
+  requestPath: string;
+  pluginPathContext: PluginRoutePathContext | null;
+  handlePluginRequest?: PluginHttpRequestHandler;
+  shouldEnforcePluginGatewayAuth?: (pathContext: PluginRoutePathContext) => boolean;
+  resolvedAuth: ResolvedGatewayAuth;
+  trustedProxies: string[];
+  allowRealIpFallback: boolean;
+  rateLimiter?: AuthRateLimiter;
+}): GatewayHttpRequestStage[] {
+  if (!params.handlePluginRequest) {
+    return [];
+  }
+  return [
+    {
+      name: "plugin-auth",
+      run: async () => {
+        const pathContext =
+          params.pluginPathContext ?? resolvePluginRoutePathContext(params.requestPath);
+        if (
+          !(params.shouldEnforcePluginGatewayAuth ?? shouldEnforceDefaultPluginGatewayAuth)(
+            pathContext,
+          )
+        ) {
+          return false;
+        }
+        const pluginAuthOk = await enforcePluginRouteGatewayAuth({
+          req: params.req,
+          res: params.res,
+          auth: params.resolvedAuth,
+          trustedProxies: params.trustedProxies,
+          allowRealIpFallback: params.allowRealIpFallback,
+          rateLimiter: params.rateLimiter,
+        });
+        if (!pluginAuthOk) {
+          return true;
+        }
+        return false;
+      },
+    },
+    {
+      name: "plugin-http",
+      run: () => {
+        const pathContext =
+          params.pluginPathContext ?? resolvePluginRoutePathContext(params.requestPath);
+        return params.handlePluginRequest?.(params.req, params.res, pathContext) ?? false;
+      },
+    },
+  ];
+}
+
 export function createHooksRequestHandler(
   opts: {
     getHooksConfig: () => HooksConfigResolved | null;
@@ -534,6 +587,24 @@ export function createGatewayHttpServer(opts: {
           run: () => canvasHost.handleHttpRequest(req, res),
         });
       }
+      // Plugin routes run before the Control UI SPA catch-all so explicitly
+      // registered plugin endpoints stay reachable. Core built-in gateway
+      // routes above still keep precedence on overlapping paths.
+      requestStages.push(
+        ...buildPluginRequestStages({
+          req,
+          res,
+          requestPath,
+          pluginPathContext,
+          handlePluginRequest,
+          shouldEnforcePluginGatewayAuth,
+          resolvedAuth,
+          trustedProxies,
+          allowRealIpFallback,
+          rateLimiter,
+        }),
+      );
+
       if (controlUiEnabled) {
         requestStages.push({
           name: "control-ui-avatar",
@@ -551,42 +622,6 @@ export function createGatewayHttpServer(opts: {
               config: configSnapshot,
               root: controlUiRoot,
             }),
-        });
-      }
-      // Plugins run after built-in gateway routes so core surfaces keep
-      // precedence on overlapping paths.
-      if (handlePluginRequest) {
-        requestStages.push({
-          name: "plugin-auth",
-          run: async () => {
-            const pathContext = pluginPathContext ?? resolvePluginRoutePathContext(requestPath);
-            if (
-              !(shouldEnforcePluginGatewayAuth ?? shouldEnforceDefaultPluginGatewayAuth)(
-                pathContext,
-              )
-            ) {
-              return false;
-            }
-            const pluginAuthOk = await enforcePluginRouteGatewayAuth({
-              req,
-              res,
-              auth: resolvedAuth,
-              trustedProxies,
-              allowRealIpFallback,
-              rateLimiter,
-            });
-            if (!pluginAuthOk) {
-              return true;
-            }
-            return false;
-          },
-        });
-        requestStages.push({
-          name: "plugin-http",
-          run: () => {
-            const pathContext = pluginPathContext ?? resolvePluginRoutePathContext(requestPath);
-            return handlePluginRequest(req, res, pathContext);
-          },
         });
       }
 

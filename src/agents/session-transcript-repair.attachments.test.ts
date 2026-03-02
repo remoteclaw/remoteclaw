@@ -1,5 +1,5 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import { describe, it, expect } from "vitest";
+import type { AgentMessage } from "./agent-types.js";
 import { sanitizeToolCallInputs } from "./session-transcript-repair.js";
 
 function mkSessionsSpawnToolCall(content: string): AgentMessage {

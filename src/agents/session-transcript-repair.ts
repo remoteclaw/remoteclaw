@@ -60,7 +60,7 @@ function hasToolCallName(block: RawToolCallBlock, allowedToolNames: Set<string> 
     return false;
   }
   const trimmed = block.name.trim();
-  if (!trimmed || trimmed !== block.name) {
+  if (!trimmed) {
     return false;
   }
   if (trimmed.length > TOOL_CALL_NAME_MAX_CHARS || !TOOL_CALL_NAME_RE.test(trimmed)) {

@@ -16,6 +16,10 @@ const fetchWithSsrFGuard = vi.fn(
 vi.mock("../infra/net/fetch-guard.js", () => ({
   fetchWithSsrFGuard: (...args: unknown[]) =>
     fetchWithSsrFGuard(...(args as [params: { url: string; init?: RequestInit }])),
+  withTrustedEnvProxyGuardedFetchMode: (params: Record<string, unknown>) => ({
+    ...params,
+    mode: "trusted_env_proxy",
+  }),
 }));
 
 vi.mock("../web/media.js", () => ({
@@ -165,6 +169,7 @@ describe("sendMessageSlack file upload with user IDs", () => {
     expect(fetchWithSsrFGuard).toHaveBeenCalledWith(
       expect.objectContaining({
         url: "https://uploads.slack.test/upload",
+        mode: "trusted_env_proxy",
         auditContext: "slack-upload-file",
       }),
     );

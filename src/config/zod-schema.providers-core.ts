@@ -227,6 +227,7 @@ export const TelegramAccountSchema = TelegramAccountSchemaBase.superRefine((valu
 
 export const TelegramConfigSchema = TelegramAccountSchemaBase.extend({
   accounts: z.record(z.string(), TelegramAccountSchema.optional()).optional(),
+  defaultAccount: z.string().optional(),
 }).superRefine((value, ctx) => {
   normalizeTelegramStreamingConfig(value);
   requireOpenAllowFrom({
@@ -554,6 +555,7 @@ export const DiscordAccountSchema = z
 
 export const DiscordConfigSchema = DiscordAccountSchema.extend({
   accounts: z.record(z.string(), DiscordAccountSchema.optional()).optional(),
+  defaultAccount: z.string().optional(),
 }).superRefine((value, ctx) => {
   const dmPolicy = value.dmPolicy ?? value.dm?.policy ?? "pairing";
   const allowFrom = value.allowFrom ?? value.dm?.allowFrom;
@@ -815,6 +817,7 @@ export const SlackConfigSchema = SlackAccountSchema.safeExtend({
   webhookPath: z.string().optional().default("/slack/events"),
   groupPolicy: GroupPolicySchema.optional().default("allowlist"),
   accounts: z.record(z.string(), SlackAccountSchema.optional()).optional(),
+  defaultAccount: z.string().optional(),
 }).superRefine((value, ctx) => {
   const dmPolicy = value.dmPolicy ?? value.dm?.policy ?? "pairing";
   const allowFrom = value.allowFrom ?? value.dm?.allowFrom;
@@ -943,6 +946,7 @@ export const SignalAccountSchema = SignalAccountSchemaBase;
 
 export const SignalConfigSchema = SignalAccountSchemaBase.extend({
   accounts: z.record(z.string(), SignalAccountSchema.optional()).optional(),
+  defaultAccount: z.string().optional(),
 }).superRefine((value, ctx) => {
   requireOpenAllowFrom({
     policy: value.dmPolicy,
@@ -1090,6 +1094,7 @@ export const IrcAccountSchema = IrcAccountSchemaBase.superRefine((value, ctx) =>
 
 export const IrcConfigSchema = IrcAccountSchemaBase.extend({
   accounts: z.record(z.string(), IrcAccountSchema.optional()).optional(),
+  defaultAccount: z.string().optional(),
 }).superRefine((value, ctx) => {
   refineIrcAllowFromAndNickserv(value, ctx);
   if (!value.accounts) {
@@ -1180,6 +1185,7 @@ export const IMessageAccountSchema = IMessageAccountSchemaBase;
 
 export const IMessageConfigSchema = IMessageAccountSchemaBase.extend({
   accounts: z.record(z.string(), IMessageAccountSchema.optional()).optional(),
+  defaultAccount: z.string().optional(),
 }).superRefine((value, ctx) => {
   requireOpenAllowFrom({
     policy: value.dmPolicy,
@@ -1290,6 +1296,7 @@ export const BlueBubblesAccountSchema = BlueBubblesAccountSchemaBase;
 
 export const BlueBubblesConfigSchema = BlueBubblesAccountSchemaBase.extend({
   accounts: z.record(z.string(), BlueBubblesAccountSchema.optional()).optional(),
+  defaultAccount: z.string().optional(),
   actions: BlueBubblesActionSchema,
 }).superRefine((value, ctx) => {
   requireOpenAllowFrom({

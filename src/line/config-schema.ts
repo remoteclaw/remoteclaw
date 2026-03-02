@@ -34,6 +34,7 @@ const LineAccountConfigSchema = LineCommonConfigSchema.extend({
 
 export const LineConfigSchema = LineCommonConfigSchema.extend({
   accounts: z.record(z.string(), LineAccountConfigSchema.optional()).optional(),
+  defaultAccount: z.string().optional(),
   groups: z.record(z.string(), LineGroupConfigSchema.optional()).optional(),
 }).strict();
 

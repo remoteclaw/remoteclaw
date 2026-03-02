@@ -3,7 +3,12 @@ import type { RemoteClawConfig } from "../config/config.js";
 import type { UpdateChannel } from "../infra/update-channels.js";
 import { resolveUserPath } from "../utils.js";
 import { resolveBundledPluginSources } from "./bundled-sources.js";
-import { installPluginFromNpmSpec, resolvePluginInstallDir } from "./install.js";
+import {
+  installPluginFromNpmSpec,
+  PLUGIN_INSTALL_ERROR_CODE,
+  type InstallPluginResult,
+  resolvePluginInstallDir,
+} from "./install.js";
 import { buildNpmResolutionInstallFields, recordPluginInstall } from "./installs.js";
 
 export type PluginUpdateLogger = {
@@ -50,6 +55,18 @@ export type PluginChannelSyncResult = {
   changed: boolean;
   summary: PluginChannelSyncSummary;
 };
+
+function formatNpmInstallFailure(params: {
+  pluginId: string;
+  spec: string;
+  phase: "check" | "update";
+  result: Extract<InstallPluginResult, { ok: false }>;
+}): string {
+  if (params.result.code === PLUGIN_INSTALL_ERROR_CODE.NPM_PACKAGE_NOT_FOUND) {
+    return `Failed to ${params.phase} ${params.pluginId}: npm package not found for ${params.spec}.`;
+  }
+  return `Failed to ${params.phase} ${params.pluginId}: ${params.result.error}`;
+}
 
 type InstallIntegrityDrift = {
   spec: string;
@@ -237,7 +254,12 @@ export async function updateNpmInstalledPlugins(params: {
         outcomes.push({
           pluginId,
           status: "error",
-          message: `Failed to check ${pluginId}: ${probe.error}`,
+          message: formatNpmInstallFailure({
+            pluginId,
+            spec: record.spec,
+            phase: "check",
+            result: probe,
+          }),
         });
         continue;
       }
@@ -291,7 +313,12 @@ export async function updateNpmInstalledPlugins(params: {
       outcomes.push({
         pluginId,
         status: "error",
-        message: `Failed to update ${pluginId}: ${result.error}`,
+        message: formatNpmInstallFailure({
+          pluginId,
+          spec: record.spec,
+          phase: "update",
+          result: result,
+        }),
       });
       continue;
     }

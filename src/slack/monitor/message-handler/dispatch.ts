@@ -13,6 +13,7 @@ import { resolveAgentOutboundIdentity } from "../../../infra/outbound/identity.j
 import { resolvePinnedMainDmOwnerFromAllowlist } from "../../../security/dm-policy-shared.js";
 import { removeSlackReaction } from "../../actions.js";
 import { createSlackDraftStream } from "../../draft-stream.js";
+import { normalizeSlackOutboundText } from "../../format.js";
 import { recordSlackThreadParticipation } from "../../sent-thread-cache.js";
 import {
   applyAppendOnlyStreamUpdate,
@@ -308,7 +309,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
             token: ctx.botToken,
             channel: draftChannelId,
             ts: draftMessageId,
-            text: finalText.trim(),
+            text: normalizeSlackOutboundText(finalText.trim()),
           });
           return;
         } catch (err) {

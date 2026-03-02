@@ -49,7 +49,15 @@ function wrapWithToolHooks(server: McpServer, ctx: McpHandlerContext): McpServer
                 durationMs: Date.now() - start,
                 error: String(err),
               }).catch(() => {});
-              throw err;
+              return {
+                isError: true,
+                content: [
+                  {
+                    type: "text" as const,
+                    text: `Tool error (${toolName}): ${err instanceof Error ? err.message : String(err)}`,
+                  },
+                ],
+              };
             }
           };
         }

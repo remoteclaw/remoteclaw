@@ -1,22 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { buildConfigSchema } from "./schema.js";
 import { applyDerivedTags, CONFIG_TAGS, deriveTagsForPath } from "./schema.tags.js";
 
 describe("config schema", () => {
-  it("exports schema + hints", () => {
-    const res = buildConfigSchema();
-    const schema = res.schema as { properties?: Record<string, unknown> };
-    expect(schema.properties?.gateway).toBeTruthy();
-    expect(schema.properties?.agents).toBeTruthy();
-    expect(schema.properties?.$schema).toBeUndefined();
-    expect(res.uiHints.gateway?.label).toBe("Gateway");
-    expect(res.uiHints["gateway.auth.token"]?.sensitive).toBe(true);
-    expect(res.version).toBeTruthy();
-    expect(res.generatedAt).toBeTruthy();
-  });
+  type SchemaInput = NonNullable<Parameters<typeof buildConfigSchema>[0]>;
+  let baseSchema: ReturnType<typeof buildConfigSchema>;
+  let pluginUiHintInput: SchemaInput;
+  let tokenHintInput: SchemaInput;
+  let mergedSchemaInput: SchemaInput;
+  let heartbeatChannelInput: SchemaInput;
+  let cachedMergeInput: SchemaInput;
 
-  it("merges plugin ui hints", () => {
-    const res = buildConfigSchema({
+  beforeAll(() => {
+    baseSchema = buildConfigSchema();
+    pluginUiHintInput = {
       plugins: [
         {
           id: "voice-call",
@@ -28,18 +25,8 @@ describe("config schema", () => {
           },
         },
       ],
-    });
-
-    expect(res.uiHints["plugins.entries.voice-call"]?.label).toBe("Voice Call");
-    expect(res.uiHints["plugins.entries.voice-call.config"]?.label).toBe("Voice Call Config");
-    expect(res.uiHints["plugins.entries.voice-call.config.twilio.authToken"]?.label).toBe(
-      "Auth Token",
-    );
-    expect(res.uiHints["plugins.entries.voice-call.config.twilio.authToken"]?.sensitive).toBe(true);
-  });
-
-  it("does not re-mark existing non-sensitive token-like fields", () => {
-    const res = buildConfigSchema({
+    };
+    tokenHintInput = {
       plugins: [
         {
           id: "voice-call",
@@ -48,13 +35,8 @@ describe("config schema", () => {
           },
         },
       ],
-    });
-
-    expect(res.uiHints["plugins.entries.voice-call.config.tokens"]?.sensitive).toBe(false);
-  });
-
-  it("merges plugin + channel schemas", () => {
-    const res = buildConfigSchema({
+    };
+    mergedSchemaInput = {
       plugins: [
         {
           id: "voice-call",
@@ -79,7 +61,65 @@ describe("config schema", () => {
           },
         },
       ],
-    });
+    };
+    heartbeatChannelInput = {
+      channels: [
+        {
+          id: "bluebubbles",
+          label: "BlueBubbles",
+          configSchema: { type: "object" },
+        },
+      ],
+    };
+    cachedMergeInput = {
+      plugins: [
+        {
+          id: "voice-call",
+          name: "Voice Call",
+          configSchema: { type: "object", properties: { provider: { type: "string" } } },
+        },
+      ],
+      channels: [
+        {
+          id: "matrix",
+          label: "Matrix",
+          configSchema: { type: "object", properties: { accessToken: { type: "string" } } },
+        },
+      ],
+    };
+  });
+
+  it("exports schema + hints", () => {
+    const res = baseSchema;
+    const schema = res.schema as { properties?: Record<string, unknown> };
+    expect(schema.properties?.gateway).toBeTruthy();
+    expect(schema.properties?.agents).toBeTruthy();
+    expect(schema.properties?.$schema).toBeUndefined();
+    expect(res.uiHints.gateway?.label).toBe("Gateway");
+    expect(res.uiHints["gateway.auth.token"]?.sensitive).toBe(true);
+    expect(res.version).toBeTruthy();
+    expect(res.generatedAt).toBeTruthy();
+  });
+
+  it("merges plugin ui hints", () => {
+    const res = buildConfigSchema(pluginUiHintInput);
+
+    expect(res.uiHints["plugins.entries.voice-call"]?.label).toBe("Voice Call");
+    expect(res.uiHints["plugins.entries.voice-call.config"]?.label).toBe("Voice Call Config");
+    expect(res.uiHints["plugins.entries.voice-call.config.twilio.authToken"]?.label).toBe(
+      "Auth Token",
+    );
+    expect(res.uiHints["plugins.entries.voice-call.config.twilio.authToken"]?.sensitive).toBe(true);
+  });
+
+  it("does not re-mark existing non-sensitive token-like fields", () => {
+    const res = buildConfigSchema(tokenHintInput);
+
+    expect(res.uiHints["plugins.entries.voice-call.config.tokens"]?.sensitive).toBe(false);
+  });
+
+  it("merges plugin + channel schemas", () => {
+    const res = buildConfigSchema(mergedSchemaInput);
 
     const schema = res.schema as {
       properties?: Record<string, unknown>;
@@ -102,15 +142,7 @@ describe("config schema", () => {
   });
 
   it("adds heartbeat target hints with dynamic channels", () => {
-    const res = buildConfigSchema({
-      channels: [
-        {
-          id: "bluebubbles",
-          label: "BlueBubbles",
-          configSchema: { type: "object" },
-        },
-      ],
-    });
+    const res = buildConfigSchema(heartbeatChannelInput);
 
     const defaultsHint = res.uiHints["agents.defaults.heartbeat.target"];
     const listHint = res.uiHints["agents.list.*.heartbeat.target"];
@@ -120,26 +152,10 @@ describe("config schema", () => {
   });
 
   it("caches merged schemas for identical plugin/channel metadata", () => {
-    const params = {
-      plugins: [
-        {
-          id: "voice-call",
-          name: "Voice Call",
-          configSchema: { type: "object", properties: { provider: { type: "string" } } },
-        },
-      ],
-      channels: [
-        {
-          id: "matrix",
-          label: "Matrix",
-          configSchema: { type: "object", properties: { accessToken: { type: "string" } } },
-        },
-      ],
-    };
-    const first = buildConfigSchema(params);
+    const first = buildConfigSchema(cachedMergeInput);
     const second = buildConfigSchema({
-      plugins: [{ ...params.plugins[0] }],
-      channels: [{ ...params.channels[0] }],
+      plugins: [{ ...cachedMergeInput.plugins![0] }],
+      channels: [{ ...cachedMergeInput.channels![0] }],
     });
     expect(second).toBe(first);
   });

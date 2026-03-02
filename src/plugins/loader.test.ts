@@ -102,6 +102,70 @@ function expectTelegramLoaded(registry: ReturnType<typeof loadRemoteClawPlugins>
   expect(registry.channels.some((entry) => entry.plugin.id === "telegram")).toBe(true);
 }
 
+function useNoBundledPlugins() {
+  process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+}
+
+function loadRegistryFromSinglePlugin(params: {
+  plugin: TempPlugin;
+  pluginConfig?: Record<string, unknown>;
+  includeWorkspaceDir?: boolean;
+  options?: Omit<Parameters<typeof loadRemoteClawPlugins>[0], "cache" | "workspaceDir" | "config">;
+}) {
+  const pluginConfig = params.pluginConfig ?? {};
+  return loadRemoteClawPlugins({
+    cache: false,
+    ...(params.includeWorkspaceDir === false ? {} : { workspaceDir: params.plugin.dir }),
+    ...params.options,
+    config: {
+      plugins: {
+        load: { paths: [params.plugin.file] },
+        ...pluginConfig,
+      },
+    },
+  });
+}
+
+function createWarningLogger(warnings: string[]) {
+  return {
+    info: () => {},
+    warn: (msg: string) => warnings.push(msg),
+    error: () => {},
+  };
+}
+
+function createEscapingEntryFixture(params: { id: string; sourceBody: string }) {
+  const pluginDir = makeTempDir();
+  const outsideDir = makeTempDir();
+  const outsideEntry = path.join(outsideDir, "outside.js");
+  const linkedEntry = path.join(pluginDir, "entry.js");
+  fs.writeFileSync(outsideEntry, params.sourceBody, "utf-8");
+  fs.writeFileSync(
+    path.join(pluginDir, "remoteclaw.plugin.json"),
+    JSON.stringify(
+      {
+        id: params.id,
+        configSchema: EMPTY_PLUGIN_SCHEMA,
+      },
+      null,
+      2,
+    ),
+    "utf-8",
+  );
+  return { pluginDir, outsideEntry, linkedEntry };
+}
+
+function createPluginSdkAliasFixture() {
+  const root = makeTempDir();
+  const srcFile = path.join(root, "src", "plugin-sdk", "index.ts");
+  const distFile = path.join(root, "dist", "plugin-sdk", "index.js");
+  fs.mkdirSync(path.dirname(srcFile), { recursive: true });
+  fs.mkdirSync(path.dirname(distFile), { recursive: true });
+  fs.writeFileSync(srcFile, "export {};\n", "utf-8");
+  fs.writeFileSync(distFile, "export {};\n", "utf-8");
+  return { root, srcFile, distFile };
+}
+
 afterEach(() => {
   if (prevBundledDir === undefined) {
     delete process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR;
@@ -243,7 +307,7 @@ describe("loadRemoteClawPlugins", () => {
   });
 
   it("loads plugins when source and root differ only by realpath alias", () => {
-    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    useNoBundledPlugins();
     const plugin = writePlugin({
       id: "alias-safe",
       body: `export default { id: "alias-safe", register() {} };`,
@@ -253,14 +317,10 @@ describe("loadRemoteClawPlugins", () => {
       return;
     }
 
-    const registry = loadRemoteClawPlugins({
-      cache: false,
-      workspaceDir: plugin.dir,
-      config: {
-        plugins: {
-          load: { paths: [plugin.file] },
-          allow: ["alias-safe"],
-        },
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: {
+        allow: ["alias-safe"],
       },
     });
 
@@ -269,21 +329,17 @@ describe("loadRemoteClawPlugins", () => {
   });
 
   it("denylist disables plugins even if allowed", () => {
-    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    useNoBundledPlugins();
     const plugin = writePlugin({
       id: "blocked",
       body: `export default { id: "blocked", register() {} };`,
     });
 
-    const registry = loadRemoteClawPlugins({
-      cache: false,
-      workspaceDir: plugin.dir,
-      config: {
-        plugins: {
-          load: { paths: [plugin.file] },
-          allow: ["blocked"],
-          deny: ["blocked"],
-        },
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: {
+        allow: ["blocked"],
+        deny: ["blocked"],
       },
     });
 
@@ -292,22 +348,18 @@ describe("loadRemoteClawPlugins", () => {
   });
 
   it("fails fast on invalid plugin config", () => {
-    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    useNoBundledPlugins();
     const plugin = writePlugin({
       id: "configurable",
       body: `export default { id: "configurable", register() {} };`,
     });
 
-    const registry = loadRemoteClawPlugins({
-      cache: false,
-      workspaceDir: plugin.dir,
-      config: {
-        plugins: {
-          load: { paths: [plugin.file] },
-          entries: {
-            configurable: {
-              config: "nope" as unknown as Record<string, unknown>,
-            },
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: {
+        entries: {
+          configurable: {
+            config: "nope" as unknown as Record<string, unknown>,
           },
         },
       },
@@ -319,7 +371,7 @@ describe("loadRemoteClawPlugins", () => {
   });
 
   it("registers channel plugins", () => {
-    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    useNoBundledPlugins();
     const plugin = writePlugin({
       id: "channel-demo",
       body: `export default { id: "channel-demo", register(api) {
@@ -344,14 +396,10 @@ describe("loadRemoteClawPlugins", () => {
 } };`,
     });
 
-    const registry = loadRemoteClawPlugins({
-      cache: false,
-      workspaceDir: plugin.dir,
-      config: {
-        plugins: {
-          load: { paths: [plugin.file] },
-          allow: ["channel-demo"],
-        },
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: {
+        allow: ["channel-demo"],
       },
     });
 
@@ -360,7 +408,7 @@ describe("loadRemoteClawPlugins", () => {
   });
 
   it("registers http handlers", () => {
-    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    useNoBundledPlugins();
     const plugin = writePlugin({
       id: "http-demo",
       body: `export default { id: "http-demo", register(api) {
@@ -368,14 +416,10 @@ describe("loadRemoteClawPlugins", () => {
 } };`,
     });
 
-    const registry = loadRemoteClawPlugins({
-      cache: false,
-      workspaceDir: plugin.dir,
-      config: {
-        plugins: {
-          load: { paths: [plugin.file] },
-          allow: ["http-demo"],
-        },
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: {
+        allow: ["http-demo"],
       },
     });
 
@@ -386,7 +430,7 @@ describe("loadRemoteClawPlugins", () => {
   });
 
   it("registers http routes", () => {
-    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    useNoBundledPlugins();
     const plugin = writePlugin({
       id: "http-route-demo",
       body: `export default { id: "http-route-demo", register(api) {
@@ -394,14 +438,10 @@ describe("loadRemoteClawPlugins", () => {
 } };`,
     });
 
-    const registry = loadRemoteClawPlugins({
-      cache: false,
-      workspaceDir: plugin.dir,
-      config: {
-        plugins: {
-          load: { paths: [plugin.file] },
-          allow: ["http-route-demo"],
-        },
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: {
+        allow: ["http-route-demo"],
       },
     });
 
@@ -512,7 +552,7 @@ describe("loadRemoteClawPlugins", () => {
   });
 
   it("warns when plugins.allow is empty and non-bundled plugins are discoverable", () => {
-    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    useNoBundledPlugins();
     const plugin = writePlugin({
       id: "warn-open-allow",
       body: `export default { id: "warn-open-allow", register() {} };`,
@@ -520,11 +560,7 @@ describe("loadRemoteClawPlugins", () => {
     const warnings: string[] = [];
     loadRemoteClawPlugins({
       cache: false,
-      logger: {
-        info: () => {},
-        warn: (msg) => warnings.push(msg),
-        error: () => {},
-      },
+      logger: createWarningLogger(warnings),
       config: {
         plugins: {
           load: { paths: [plugin.file] },
@@ -537,7 +573,7 @@ describe("loadRemoteClawPlugins", () => {
   });
 
   it("warns when loaded non-bundled plugin has no install/load-path provenance", () => {
-    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    useNoBundledPlugins();
     const stateDir = makeTempDir();
     withEnv({ REMOTECLAW_STATE_DIR: stateDir, CLAWDBOT_STATE_DIR: undefined }, () => {
       const globalDir = path.join(stateDir, "extensions", "rogue");
@@ -552,11 +588,7 @@ describe("loadRemoteClawPlugins", () => {
       const warnings: string[] = [];
       const registry = loadRemoteClawPlugins({
         cache: false,
-        logger: {
-          info: () => {},
-          warn: (msg) => warnings.push(msg),
-          error: () => {},
-        },
+        logger: createWarningLogger(warnings),
         config: {
           plugins: {
             allow: ["rogue"],
@@ -576,28 +608,12 @@ describe("loadRemoteClawPlugins", () => {
   });
 
   it("rejects plugin entry files that escape plugin root via symlink", () => {
-    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
-    const pluginDir = makeTempDir();
-    const outsideDir = makeTempDir();
-    const outsideEntry = path.join(outsideDir, "outside.js");
-    const linkedEntry = path.join(pluginDir, "entry.js");
-    fs.writeFileSync(
-      outsideEntry,
-      'export default { id: "symlinked", register() { throw new Error("should not run"); } };',
-      "utf-8",
-    );
-    fs.writeFileSync(
-      path.join(pluginDir, "remoteclaw.plugin.json"),
-      JSON.stringify(
-        {
-          id: "symlinked",
-          configSchema: EMPTY_PLUGIN_SCHEMA,
-        },
-        null,
-        2,
-      ),
-      "utf-8",
-    );
+    useNoBundledPlugins();
+    const { outsideEntry, linkedEntry } = createEscapingEntryFixture({
+      id: "symlinked",
+      sourceBody:
+        'export default { id: "symlinked", register() { throw new Error("should not run"); } };',
+    });
     try {
       fs.symlinkSync(outsideEntry, linkedEntry);
     } catch {
@@ -617,5 +633,63 @@ describe("loadRemoteClawPlugins", () => {
     const record = registry.plugins.find((entry) => entry.id === "symlinked");
     expect(record?.status).not.toBe("loaded");
     expect(registry.diagnostics.some((entry) => entry.message.includes("escapes"))).toBe(true);
+  });
+
+  it("rejects plugin entry files that escape plugin root via hardlink", () => {
+    if (process.platform === "win32") {
+      return;
+    }
+    useNoBundledPlugins();
+    const { outsideEntry, linkedEntry } = createEscapingEntryFixture({
+      id: "hardlinked",
+      sourceBody:
+        'export default { id: "hardlinked", register() { throw new Error("should not run"); } };',
+    });
+    try {
+      fs.linkSync(outsideEntry, linkedEntry);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "EXDEV") {
+        return;
+      }
+      throw err;
+    }
+
+    const registry = loadRemoteClawPlugins({
+      cache: false,
+      config: {
+        plugins: {
+          load: { paths: [linkedEntry] },
+          allow: ["hardlinked"],
+        },
+      },
+    });
+
+    const record = registry.plugins.find((entry) => entry.id === "hardlinked");
+    expect(record?.status).not.toBe("loaded");
+    expect(registry.diagnostics.some((entry) => entry.message.includes("escapes"))).toBe(true);
+  });
+
+  it("prefers dist plugin-sdk alias when loader runs from dist", () => {
+    const { root, distFile } = createPluginSdkAliasFixture();
+
+    const resolved = __testing.resolvePluginSdkAliasFile({
+      srcFile: "index.ts",
+      distFile: "index.js",
+      modulePath: path.join(root, "dist", "plugins", "loader.js"),
+    });
+    expect(resolved).toBe(distFile);
+  });
+
+  it("prefers src plugin-sdk alias when loader runs from src in non-production", () => {
+    const { root, srcFile } = createPluginSdkAliasFixture();
+
+    const resolved = withEnv({ NODE_ENV: undefined }, () =>
+      __testing.resolvePluginSdkAliasFile({
+        srcFile: "index.ts",
+        distFile: "index.js",
+        modulePath: path.join(root, "src", "plugins", "loader.ts"),
+      }),
+    );
+    expect(resolved).toBe(srcFile);
   });
 });

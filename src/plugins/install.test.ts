@@ -157,6 +157,19 @@ function expectPluginFiles(result: { targetDir: string }, stateDir: string, plug
   expect(fs.existsSync(path.join(result.targetDir, "dist", "index.js"))).toBe(true);
 }
 
+function expectSuccessfulArchiveInstall(params: {
+  result: Awaited<ReturnType<typeof installPluginFromArchive>>;
+  stateDir: string;
+  pluginId: string;
+}) {
+  expect(params.result.ok).toBe(true);
+  if (!params.result.ok) {
+    return;
+  }
+  expect(params.result.pluginId).toBe(params.pluginId);
+  expectPluginFiles(params.result, params.stateDir, params.pluginId);
+}
+
 function setupPluginInstallDirs() {
   const tmpDir = makeTempDir();
   const pluginDir = path.join(tmpDir, "plugin-src");
@@ -184,6 +197,30 @@ function setupInstallPluginFromDirFixture(params?: { devDependencies?: Record<st
   );
   fs.writeFileSync(path.join(pluginDir, "dist", "index.js"), "export {};", "utf-8");
   return { pluginDir, extensionsDir: path.join(stateDir, "extensions") };
+}
+
+function setupManifestInstallFixture(params: { manifestId: string }) {
+  const { pluginDir, extensionsDir } = setupPluginInstallDirs();
+  fs.mkdirSync(path.join(pluginDir, "dist"), { recursive: true });
+  fs.writeFileSync(
+    path.join(pluginDir, "package.json"),
+    JSON.stringify({
+      name: "@remoteclaw/cognee-remoteclaw",
+      version: "0.0.1",
+      remoteclaw: { extensions: ["./dist/index.js"] },
+    }),
+    "utf-8",
+  );
+  fs.writeFileSync(path.join(pluginDir, "dist", "index.js"), "export {};", "utf-8");
+  fs.writeFileSync(
+    path.join(pluginDir, "remoteclaw.plugin.json"),
+    JSON.stringify({
+      id: params.manifestId,
+      configSchema: { type: "object", properties: {} },
+    }),
+    "utf-8",
+  );
+  return { pluginDir, extensionsDir };
 }
 
 async function expectArchiveInstallReservedSegmentRejection(params: {
@@ -267,12 +304,7 @@ describe("installPluginFromArchive", () => {
       archivePath,
       extensionsDir,
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) {
-      return;
-    }
-    expect(result.pluginId).toBe("voice-call");
-    expectPluginFiles(result, stateDir, "voice-call");
+    expectSuccessfulArchiveInstall({ result, stateDir, pluginId: "voice-call" });
   });
 
   it("rejects installing when plugin already exists", async () => {
@@ -310,13 +342,7 @@ describe("installPluginFromArchive", () => {
       archivePath,
       extensionsDir,
     });
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) {
-      return;
-    }
-    expect(result.pluginId).toBe("zipper");
-    expectPluginFiles(result, stateDir, "zipper");
+    expectSuccessfulArchiveInstall({ result, stateDir, pluginId: "zipper" });
   });
 
   it("allows updates when mode is update", async () => {
@@ -431,26 +457,9 @@ describe("installPluginFromDir", () => {
   });
 
   it("uses remoteclaw.plugin.json id as install key when it differs from package name", async () => {
-    const { pluginDir, extensionsDir } = setupPluginInstallDirs();
-    fs.mkdirSync(path.join(pluginDir, "dist"), { recursive: true });
-    fs.writeFileSync(
-      path.join(pluginDir, "package.json"),
-      JSON.stringify({
-        name: "@remoteclaw/cognee-remoteclaw",
-        version: "0.0.1",
-        remoteclaw: { extensions: ["./dist/index.js"] },
-      }),
-      "utf-8",
-    );
-    fs.writeFileSync(path.join(pluginDir, "dist", "index.js"), "export {};", "utf-8");
-    fs.writeFileSync(
-      path.join(pluginDir, "remoteclaw.plugin.json"),
-      JSON.stringify({
-        id: "memory-cognee",
-        configSchema: { type: "object", properties: {} },
-      }),
-      "utf-8",
-    );
+    const { pluginDir, extensionsDir } = setupManifestInstallFixture({
+      manifestId: "memory-cognee",
+    });
 
     const infoMessages: string[] = [];
     const res = await installPluginFromDir({
@@ -475,26 +484,9 @@ describe("installPluginFromDir", () => {
   });
 
   it("normalizes scoped manifest ids to unscoped install keys", async () => {
-    const { pluginDir, extensionsDir } = setupPluginInstallDirs();
-    fs.mkdirSync(path.join(pluginDir, "dist"), { recursive: true });
-    fs.writeFileSync(
-      path.join(pluginDir, "package.json"),
-      JSON.stringify({
-        name: "@remoteclaw/cognee-remoteclaw",
-        version: "0.0.1",
-        remoteclaw: { extensions: ["./dist/index.js"] },
-      }),
-      "utf-8",
-    );
-    fs.writeFileSync(path.join(pluginDir, "dist", "index.js"), "export {};", "utf-8");
-    fs.writeFileSync(
-      path.join(pluginDir, "remoteclaw.plugin.json"),
-      JSON.stringify({
-        id: "@team/memory-cognee",
-        configSchema: { type: "object", properties: {} },
-      }),
-      "utf-8",
-    );
+    const { pluginDir, extensionsDir } = setupManifestInstallFixture({
+      manifestId: "@team/memory-cognee",
+    });
 
     const res = await installPluginFromDir({
       dirPath: pluginDir,

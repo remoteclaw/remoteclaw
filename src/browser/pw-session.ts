@@ -9,6 +9,7 @@ import type {
 import { chromium } from "playwright-core";
 import { formatErrorMessage } from "../infra/errors.js";
 import type { SsrFPolicy } from "../infra/net/ssrf.js";
+import { withNoProxyForLocalhost } from "./cdp-proxy-bypass.js";
 import {
   appendCdpPath,
   fetchJson,
@@ -346,7 +347,10 @@ async function connectBrowser(cdpUrl: string): Promise<ConnectedBrowser> {
         const wsUrl = await getChromeWebSocketUrl(normalized, timeout).catch(() => null);
         const endpoint = wsUrl ?? normalized;
         const headers = getHeadersWithAuth(endpoint);
-        const browser = await chromium.connectOverCDP(endpoint, { timeout, headers });
+        // Bypass proxy for loopback CDP connections (#31219)
+        const browser = await withNoProxyForLocalhost(() =>
+          chromium.connectOverCDP(endpoint, { timeout, headers }),
+        );
         const onDisconnected = () => {
           const current = cachedByCdpUrl.get(normalized);
           if (current?.browser === browser) {

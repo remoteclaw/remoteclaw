@@ -8,6 +8,7 @@ import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-cha
 import { buildDeviceAuthPayload } from "./device-auth.js";
 import { PROTOCOL_VERSION } from "./protocol/index.js";
 import {
+  createGatewaySuiteHarness,
   connectReq,
   getTrackedConnectChallengeNonce,
   getFreePort,
@@ -351,6 +352,7 @@ export {
   connectReq,
   CONTROL_UI_CLIENT,
   createSignedDevice,
+  createGatewaySuiteHarness,
   ensurePairedDeviceTokenForCurrentIdentity,
   expectHelloOkServerVersion,
   getFreePort,

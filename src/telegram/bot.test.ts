@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { escapeRegExp, formatEnvelopeTimestamp } from "../../test/helpers/envelope-timestamp.js";
 import { expectInboundContextContract } from "../../test/helpers/inbound-contract.js";
 import {
@@ -28,8 +28,14 @@ const readChannelAllowFromStore = getReadChannelAllowFromStoreMock();
 
 const ORIGINAL_TZ = process.env.TZ;
 describe("createTelegramBot", () => {
-  beforeEach(() => {
+  beforeAll(() => {
     process.env.TZ = "UTC";
+  });
+  afterAll(() => {
+    process.env.TZ = ORIGINAL_TZ;
+  });
+
+  beforeEach(() => {
     loadConfig.mockReturnValue({
       agents: {
         defaults: {
@@ -42,11 +48,8 @@ describe("createTelegramBot", () => {
       },
     });
   });
-  afterEach(() => {
-    process.env.TZ = ORIGINAL_TZ;
-  });
 
-  it("merges custom commands with native commands", () => {
+  it("merges custom commands with native commands", async () => {
     const config = {
       agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
@@ -61,6 +64,10 @@ describe("createTelegramBot", () => {
     loadConfig.mockReturnValue(config);
 
     createTelegramBot({ token: "tok" });
+
+    await vi.waitFor(() => {
+      expect(setMyCommandsSpy).toHaveBeenCalled();
+    });
 
     const registered = setMyCommandsSpy.mock.calls[0]?.[0] as Array<{
       command: string;
@@ -77,7 +84,7 @@ describe("createTelegramBot", () => {
     ]);
   });
 
-  it("ignores custom commands that collide with native commands", () => {
+  it("ignores custom commands that collide with native commands", async () => {
     const errorSpy = vi.fn();
     const config = {
       agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
@@ -103,6 +110,10 @@ describe("createTelegramBot", () => {
       },
     });
 
+    await vi.waitFor(() => {
+      expect(setMyCommandsSpy).toHaveBeenCalled();
+    });
+
     const registered = setMyCommandsSpy.mock.calls[0]?.[0] as Array<{
       command: string;
       description: string;
@@ -119,7 +130,7 @@ describe("createTelegramBot", () => {
     expect(errorSpy).toHaveBeenCalled();
   });
 
-  it("registers custom commands when native commands are disabled", () => {
+  it("registers custom commands when native commands are disabled", async () => {
     const config = {
       agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: false },
@@ -135,6 +146,10 @@ describe("createTelegramBot", () => {
     loadConfig.mockReturnValue(config);
 
     createTelegramBot({ token: "tok" });
+
+    await vi.waitFor(() => {
+      expect(setMyCommandsSpy).toHaveBeenCalled();
+    });
 
     const registered = setMyCommandsSpy.mock.calls[0]?.[0] as Array<{
       command: string;

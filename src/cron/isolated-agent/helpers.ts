@@ -1,4 +1,6 @@
+import { DEFAULT_HEARTBEAT_ACK_MAX_CHARS } from "../../auto-reply/heartbeat.js";
 import { truncateUtf16Safe } from "../../utils.js";
+import { shouldSkipHeartbeatOnlyDelivery } from "../heartbeat-policy.js";
 
 type DeliveryPayload = {
   text?: string;
@@ -80,4 +82,17 @@ export function pickLastDeliverablePayload(payloads: DeliveryPayload[]) {
     }
   }
   return undefined;
+}
+
+/**
+ * Check if delivery should be skipped because the agent signaled no user-visible update.
+ * Returns true when any payload is a heartbeat ack token and no payload contains media.
+ */
+export function isHeartbeatOnlyResponse(payloads: DeliveryPayload[], ackMaxChars: number) {
+  return shouldSkipHeartbeatOnlyDelivery(payloads, ackMaxChars);
+}
+
+export function resolveHeartbeatAckMaxChars(agentCfg?: { heartbeat?: { ackMaxChars?: number } }) {
+  const raw = agentCfg?.heartbeat?.ackMaxChars ?? DEFAULT_HEARTBEAT_ACK_MAX_CHARS;
+  return Math.max(0, raw);
 }

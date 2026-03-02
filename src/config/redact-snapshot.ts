@@ -1,4 +1,10 @@
+import JSON5 from "json5";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import {
+  replaceSensitiveValuesInRaw,
+  shouldFallbackToStructuredRawRedaction,
+} from "./redact-snapshot.raw.js";
+import { isSecretRefShape, redactSecretRefId } from "./redact-snapshot.secret-ref.js";
 import { isSensitiveConfigPath, type ConfigUiHints } from "./schema.hints.js";
 import type { ConfigFileSnapshot } from "./types.remoteclaw.js";
 
@@ -175,8 +181,18 @@ function redactObjectWithLookup(
             values.push(value);
           } else if (typeof value === "object" && value !== null) {
             if (hints[candidate]?.sensitive === true && !Array.isArray(value)) {
-              collectSensitiveStrings(value, values);
-              result[key] = REDACTED_SENTINEL;
+              const objectValue = value as Record<string, unknown>;
+              if (isSecretRefShape(objectValue)) {
+                result[key] = redactSecretRefId({
+                  value: objectValue,
+                  values,
+                  redactedSentinel: REDACTED_SENTINEL,
+                  isEnvVarPlaceholder,
+                });
+              } else {
+                collectSensitiveStrings(objectValue, values);
+                result[key] = REDACTED_SENTINEL;
+              }
             } else {
               result[key] = redactObjectWithLookup(value, lookup, candidate, values, hints);
             }
@@ -286,12 +302,23 @@ function redactObjectGuessing(
  */
 function redactRawText(raw: string, config: unknown, hints?: ConfigUiHints): string {
   const sensitiveValues = collectSensitiveValues(config, hints);
-  sensitiveValues.sort((a, b) => b.length - a.length);
-  let result = raw;
-  for (const value of sensitiveValues) {
-    result = result.replaceAll(value, REDACTED_SENTINEL);
+  return replaceSensitiveValuesInRaw({
+    raw,
+    sensitiveValues,
+    redactedSentinel: REDACTED_SENTINEL,
+  });
+}
+
+let suppressRestoreWarnings = false;
+
+function withRestoreWarningsSuppressed<T>(fn: () => T): T {
+  const prev = suppressRestoreWarnings;
+  suppressRestoreWarnings = true;
+  try {
+    return fn();
+  } finally {
+    suppressRestoreWarnings = prev;
   }
-  return result;
 }
 
 /**
@@ -338,8 +365,21 @@ export function redactConfigSnapshot(
   // readConfigFileSnapshot() does when it creates the snapshot.
 
   const redactedConfig = redactObject(snapshot.config, uiHints) as ConfigFileSnapshot["config"];
-  const redactedRaw = snapshot.raw ? redactRawText(snapshot.raw, snapshot.config, uiHints) : null;
+  let redactedRaw = snapshot.raw ? redactRawText(snapshot.raw, snapshot.config, uiHints) : null;
   const redactedParsed = snapshot.parsed ? redactObject(snapshot.parsed, uiHints) : snapshot.parsed;
+  if (
+    redactedRaw &&
+    shouldFallbackToStructuredRawRedaction({
+      redactedRaw,
+      originalConfig: snapshot.config,
+      restoreParsed: (parsed) =>
+        withRestoreWarningsSuppressed(() =>
+          restoreRedactedValues(parsed, snapshot.config, uiHints),
+        ),
+    })
+  ) {
+    redactedRaw = JSON5.stringify(redactedParsed ?? redactedConfig, null, 2);
+  }
   // Also redact the resolved config (contains values after ${ENV} substitution)
   const redactedResolved = redactConfigObject(snapshot.resolved, uiHints);
 

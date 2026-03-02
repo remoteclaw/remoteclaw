@@ -6,7 +6,7 @@ import { loadConfig } from "../config/config.js";
 import type { GatewayClient } from "../gateway/client.js";
 import { sameFileIdentity } from "../infra/file-identity.js";
 import { sanitizeSystemRunEnvOverrides } from "../infra/host-env-security.js";
-import type { SystemRunApprovalPlanV2 } from "../infra/system-run-approval-binding.js";
+import { logWarn } from "../logger.js";
 
 // Stub types and functions: exec-approvals, exec-host, exec-safe-bin, system-run-command,
 // and exec-policy infrastructure was gutted.
@@ -24,6 +24,11 @@ type ExecHostResponse = {
   payload: ExecHostRunResult;
 };
 type ExecHostRunResult = Record<string, unknown>;
+
+type ApprovedCwdSnapshot = {
+  cwd: string;
+  stat: fs.Stats;
+};
 
 function resolveSystemRunCommand(opts: {
   command?: unknown;
@@ -134,97 +139,6 @@ function resolveExecApprovalDecision(value?: unknown): string | undefined {
 export function formatSystemRunAllowlistMissMessage(_opts?: Record<string, unknown>): string {
   return "SYSTEM_RUN_DENIED: allowlist miss";
 }
-import type {
-  ExecEventPayload,
-  ExecFinishedEventParams,
-  RunResult,
-  SystemRunParams,
-} from "./invoke-types.js";
-
-type SystemRunInvokeResult = {
-  ok: boolean;
-  payloadJSON?: string | null;
-  error?: { code?: string; message?: string } | null;
-};
-
-type SystemRunDeniedReason =
-  | "security=deny"
-  | "approval-required"
-  | "allowlist-miss"
-  | "execution-plan-miss"
-  | "companion-unavailable"
-  | "permission:screenRecording";
-
-type SystemRunExecutionContext = {
-  sessionKey: string;
-  runId: string;
-  cmdText: string;
-};
-
-type SystemRunAllowlistAnalysis = {
-  analysisOk: boolean;
-  allowlistMatches: ExecAllowlistEntry[];
-  allowlistSatisfied: boolean;
-  segments: ExecCommandSegment[];
-};
-
-type ResolvedExecApprovals = ReturnType<typeof resolveExecApprovals>;
-
-type SystemRunParsePhase = {
-  argv: string[];
-  shellCommand: string | null;
-  cmdText: string;
-  agentId: string | undefined;
-  sessionKey: string;
-  runId: string;
-  execution: SystemRunExecutionContext;
-  approvalDecision: ReturnType<typeof resolveExecApprovalDecision>;
-  envOverrides: Record<string, string> | undefined;
-  env: Record<string, string> | undefined;
-  cwd: string | undefined;
-  timeoutMs: number | undefined;
-  needsScreenRecording: boolean;
-  approved: boolean;
-};
-
-type SystemRunPolicyPhase = SystemRunParsePhase & {
-  approvals: ResolvedExecApprovals;
-  security: ExecSecurity;
-  policy: ReturnType<typeof evaluateSystemRunPolicy>;
-  allowlistMatches: ExecAllowlistEntry[];
-  analysisOk: boolean;
-  allowlistSatisfied: boolean;
-  segments: ExecCommandSegment[];
-  plannedAllowlistArgv: string[] | undefined;
-  isWindows: boolean;
-  approvedCwdStat: fs.Stats | undefined;
-};
-
-const safeBinTrustedDirWarningCache = new Set<string>();
-const APPROVAL_CWD_DRIFT_DENIED_MESSAGE =
-  "SYSTEM_RUN_DENIED: approval cwd changed before execution";
-
-function warnWritableTrustedDirOnce(message: string): void {
-  if (safeBinTrustedDirWarningCache.has(message)) {
-    return;
-  }
-  safeBinTrustedDirWarningCache.add(message);
-  console.warn(message);
-}
-
-function normalizeDeniedReason(reason: string | null | undefined): SystemRunDeniedReason {
-  switch (reason) {
-    case "security=deny":
-    case "approval-required":
-    case "allowlist-miss":
-    case "execution-plan-miss":
-    case "companion-unavailable":
-    case "permission:screenRecording":
-      return reason;
-    default:
-      return "approval-required";
-  }
-}
 
 function normalizeString(value: unknown): string | null {
   if (typeof value !== "string") {
@@ -290,73 +204,97 @@ function hasMutableSymlinkPathComponentSync(targetPath: string): boolean {
   return false;
 }
 
+function resolveCanonicalApprovalCwdSync(
+  rawCwd: string,
+): { ok: true; snapshot: ApprovedCwdSnapshot } | { ok: false; message: string } {
+  const requestedCwd = path.resolve(rawCwd);
+  let cwdLstat: fs.Stats;
+  let cwdStat: fs.Stats;
+  let cwdReal: string;
+  let cwdRealStat: fs.Stats;
+  try {
+    cwdLstat = fs.lstatSync(requestedCwd);
+    cwdStat = fs.statSync(requestedCwd);
+    cwdReal = fs.realpathSync(requestedCwd);
+    cwdRealStat = fs.statSync(cwdReal);
+  } catch {
+    return {
+      ok: false,
+      message: "SYSTEM_RUN_DENIED: approval requires an existing canonical cwd",
+    };
+  }
+  if (!cwdStat.isDirectory()) {
+    return {
+      ok: false,
+      message: "SYSTEM_RUN_DENIED: approval requires cwd to be a directory",
+    };
+  }
+  if (hasMutableSymlinkPathComponentSync(requestedCwd)) {
+    return {
+      ok: false,
+      message: "SYSTEM_RUN_DENIED: approval requires canonical cwd (no symlink path components)",
+    };
+  }
+  if (cwdLstat.isSymbolicLink()) {
+    return {
+      ok: false,
+      message: "SYSTEM_RUN_DENIED: approval requires canonical cwd (no symlink cwd)",
+    };
+  }
+  if (
+    !sameFileIdentity(cwdStat, cwdLstat) ||
+    !sameFileIdentity(cwdStat, cwdRealStat) ||
+    !sameFileIdentity(cwdLstat, cwdRealStat)
+  ) {
+    return {
+      ok: false,
+      message: "SYSTEM_RUN_DENIED: approval cwd identity mismatch",
+    };
+  }
+  return { ok: true, snapshot: { cwd: cwdReal, stat: cwdStat } };
+}
+
 export function hardenApprovedExecutionPaths(params: {
   approvedByAsk: boolean;
   argv: string[];
   shellCommand: string | null;
   cwd: string | undefined;
-}): { ok: true; argv: string[]; cwd: string | undefined } | { ok: false; message: string } {
+}):
+  | {
+      ok: true;
+      argv: string[];
+      cwd: string | undefined;
+      approvedCwdSnapshot: ApprovedCwdSnapshot | undefined;
+    }
+  | { ok: false; message: string } {
   if (!params.approvedByAsk) {
-    return { ok: true, argv: params.argv, cwd: params.cwd };
+    return {
+      ok: true,
+      argv: params.argv,
+      cwd: params.cwd,
+      approvedCwdSnapshot: undefined,
+    };
   }
 
   let hardenedCwd = params.cwd;
+  let approvedCwdSnapshot: ApprovedCwdSnapshot | undefined;
   if (hardenedCwd) {
-    const requestedCwd = path.resolve(hardenedCwd);
-    let cwdLstat: fs.Stats;
-    let cwdStat: fs.Stats;
-    let cwdReal: string;
-    let cwdRealStat: fs.Stats;
-    try {
-      cwdLstat = fs.lstatSync(requestedCwd);
-      cwdStat = fs.statSync(requestedCwd);
-      cwdReal = fs.realpathSync(requestedCwd);
-      cwdRealStat = fs.statSync(cwdReal);
-    } catch {
-      return {
-        ok: false,
-        message: "SYSTEM_RUN_DENIED: approval requires an existing canonical cwd",
-      };
+    const canonicalCwd = resolveCanonicalApprovalCwdSync(hardenedCwd);
+    if (!canonicalCwd.ok) {
+      return canonicalCwd;
     }
-    if (!cwdStat.isDirectory()) {
-      return {
-        ok: false,
-        message: "SYSTEM_RUN_DENIED: approval requires cwd to be a directory",
-      };
-    }
-    if (hasMutableSymlinkPathComponentSync(requestedCwd)) {
-      return {
-        ok: false,
-        message: "SYSTEM_RUN_DENIED: approval requires canonical cwd (no symlink path components)",
-      };
-    }
-    if (cwdLstat.isSymbolicLink()) {
-      return {
-        ok: false,
-        message: "SYSTEM_RUN_DENIED: approval requires canonical cwd (no symlink cwd)",
-      };
-    }
-    if (
-      !sameFileIdentity(cwdStat, cwdLstat) ||
-      !sameFileIdentity(cwdStat, cwdRealStat) ||
-      !sameFileIdentity(cwdLstat, cwdRealStat)
-    ) {
-      return {
-        ok: false,
-        message: "SYSTEM_RUN_DENIED: approval cwd identity mismatch",
-      };
-    }
-    hardenedCwd = cwdReal;
+    hardenedCwd = canonicalCwd.snapshot.cwd;
+    approvedCwdSnapshot = canonicalCwd.snapshot;
   }
 
   if (params.shellCommand !== null || params.argv.length === 0) {
-    return { ok: true, argv: params.argv, cwd: hardenedCwd };
+    return { ok: true, argv: params.argv, cwd: hardenedCwd, approvedCwdSnapshot };
   }
 
   const argv = [...params.argv];
   const rawExecutable = argv[0] ?? "";
   if (!isPathLikeExecutableToken(rawExecutable)) {
-    return { ok: true, argv, cwd: hardenedCwd };
+    return { ok: true, argv, cwd: hardenedCwd, approvedCwdSnapshot };
   }
 
   const base = hardenedCwd ?? process.cwd();
@@ -371,7 +309,7 @@ export function hardenApprovedExecutionPaths(params: {
       message: "SYSTEM_RUN_DENIED: approval requires a stable executable path",
     };
   }
-  return { ok: true, argv, cwd: hardenedCwd };
+  return { ok: true, argv, cwd: hardenedCwd, approvedCwdSnapshot };
 }
 
 export function buildSystemRunApprovalPlanV2(params: {
@@ -414,34 +352,123 @@ export function buildSystemRunApprovalPlanV2(params: {
   };
 }
 
-function revalidateApprovedCwdBeforeExecution(
-  phase: SystemRunPolicyPhase,
-): { ok: true } | { ok: false } {
-  if (!phase.policy.approvedByAsk || !phase.cwd || !phase.approvedCwdStat) {
-    return { ok: true };
-  }
+function revalidateApprovedCwdSnapshot(params: { snapshot: ApprovedCwdSnapshot }): boolean {
+  const { cwd, stat: approvedStat } = params.snapshot;
   const hardened = hardenApprovedExecutionPaths({
     approvedByAsk: true,
     argv: [],
     shellCommand: null,
-    cwd: phase.cwd,
+    cwd,
   });
-  if (!hardened.ok || hardened.cwd !== phase.cwd) {
-    return { ok: false };
+  if (!hardened.ok || hardened.cwd !== cwd) {
+    return false;
   }
   let currentCwdStat: fs.Stats;
   try {
-    currentCwdStat = fs.statSync(phase.cwd);
+    currentCwdStat = fs.statSync(cwd);
   } catch {
-    return { ok: false };
+    return false;
   }
   if (!currentCwdStat.isDirectory()) {
-    return { ok: false };
+    return false;
   }
-  if (!sameFileIdentity(phase.approvedCwdStat, currentCwdStat)) {
-    return { ok: false };
+  if (!sameFileIdentity(approvedStat, currentCwdStat)) {
+    return false;
   }
-  return { ok: true };
+  return true;
+}
+
+import type { SystemRunApprovalPlanV2 } from "../infra/system-run-approval-binding.js";
+import type {
+  ExecEventPayload,
+  ExecFinishedEventParams,
+  RunResult,
+  SystemRunParams,
+} from "./invoke-types.js";
+
+type SystemRunInvokeResult = {
+  ok: boolean;
+  payloadJSON?: string | null;
+  error?: { code?: string; message?: string } | null;
+};
+
+type SystemRunDeniedReason =
+  | "security=deny"
+  | "approval-required"
+  | "allowlist-miss"
+  | "execution-plan-miss"
+  | "companion-unavailable"
+  | "permission:screenRecording";
+
+type SystemRunExecutionContext = {
+  sessionKey: string;
+  runId: string;
+  cmdText: string;
+};
+
+type SystemRunAllowlistAnalysis = {
+  analysisOk: boolean;
+  allowlistMatches: ExecAllowlistEntry[];
+  allowlistSatisfied: boolean;
+  segments: ExecCommandSegment[];
+};
+
+type ResolvedExecApprovals = ReturnType<typeof resolveExecApprovals>;
+
+type SystemRunParsePhase = {
+  argv: string[];
+  shellCommand: string | null;
+  cmdText: string;
+  agentId: string | undefined;
+  sessionKey: string;
+  runId: string;
+  execution: SystemRunExecutionContext;
+  approvalDecision: ReturnType<typeof resolveExecApprovalDecision>;
+  envOverrides: Record<string, string> | undefined;
+  env: Record<string, string> | undefined;
+  cwd: string | undefined;
+  timeoutMs: number | undefined;
+  needsScreenRecording: boolean;
+  approved: boolean;
+};
+
+type SystemRunPolicyPhase = SystemRunParsePhase & {
+  approvals: ResolvedExecApprovals;
+  security: ExecSecurity;
+  policy: ReturnType<typeof evaluateSystemRunPolicy>;
+  allowlistMatches: ExecAllowlistEntry[];
+  analysisOk: boolean;
+  allowlistSatisfied: boolean;
+  segments: ExecCommandSegment[];
+  plannedAllowlistArgv: string[] | undefined;
+  isWindows: boolean;
+  approvedCwdSnapshot: ApprovedCwdSnapshot | undefined;
+};
+
+const safeBinTrustedDirWarningCache = new Set<string>();
+const APPROVAL_CWD_DRIFT_DENIED_MESSAGE =
+  "SYSTEM_RUN_DENIED: approval cwd changed before execution";
+
+function warnWritableTrustedDirOnce(message: string): void {
+  if (safeBinTrustedDirWarningCache.has(message)) {
+    return;
+  }
+  safeBinTrustedDirWarningCache.add(message);
+  logWarn(message);
+}
+
+function normalizeDeniedReason(reason: string | null | undefined): SystemRunDeniedReason {
+  switch (reason) {
+    case "security=deny":
+    case "approval-required":
+    case "allowlist-miss":
+    case "execution-plan-miss":
+    case "companion-unavailable":
+    case "permission:screenRecording":
+      return reason;
+    default:
+      return "approval-required";
+  }
 }
 
 export type HandleSystemRunInvokeOptions = {
@@ -744,24 +771,13 @@ async function evaluateSystemRunPolicyPhase(
     });
     return null;
   }
-  let approvedCwdStat: fs.Stats | undefined;
-  if (policy.approvedByAsk && hardenedPaths.cwd) {
-    try {
-      approvedCwdStat = fs.statSync(hardenedPaths.cwd);
-    } catch {
-      await sendSystemRunDenied(opts, parsed.execution, {
-        reason: "approval-required",
-        message: APPROVAL_CWD_DRIFT_DENIED_MESSAGE,
-      });
-      return null;
-    }
-    if (!approvedCwdStat.isDirectory()) {
-      await sendSystemRunDenied(opts, parsed.execution, {
-        reason: "approval-required",
-        message: APPROVAL_CWD_DRIFT_DENIED_MESSAGE,
-      });
-      return null;
-    }
+  const approvedCwdSnapshot = policy.approvedByAsk ? hardenedPaths.approvedCwdSnapshot : undefined;
+  if (policy.approvedByAsk && hardenedPaths.cwd && !approvedCwdSnapshot) {
+    await sendSystemRunDenied(opts, parsed.execution, {
+      reason: "approval-required",
+      message: APPROVAL_CWD_DRIFT_DENIED_MESSAGE,
+    });
+    return null;
   }
 
   const plannedAllowlistArgv = resolvePlannedAllowlistArgv({
@@ -790,7 +806,7 @@ async function evaluateSystemRunPolicyPhase(
     segments,
     plannedAllowlistArgv: plannedAllowlistArgv ?? undefined,
     isWindows,
-    approvedCwdStat,
+    approvedCwdSnapshot,
   };
 }
 
@@ -798,11 +814,11 @@ async function executeSystemRunPhase(
   opts: HandleSystemRunInvokeOptions,
   phase: SystemRunPolicyPhase,
 ): Promise<void> {
-  const cwdRevalidation = revalidateApprovedCwdBeforeExecution(phase);
-  if (!cwdRevalidation.ok) {
-    console.warn(
-      `[security] system.run approval cwd drift blocked: runId=${phase.runId} cwd=${phase.cwd ?? ""}`,
-    );
+  if (
+    phase.approvedCwdSnapshot &&
+    !revalidateApprovedCwdSnapshot({ snapshot: phase.approvedCwdSnapshot })
+  ) {
+    logWarn(`security: system.run approval cwd drift blocked (runId=${phase.runId})`);
     await sendSystemRunDenied(opts, phase.execution, {
       reason: "approval-required",
       message: APPROVAL_CWD_DRIFT_DENIED_MESSAGE,

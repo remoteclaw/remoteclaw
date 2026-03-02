@@ -152,9 +152,179 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
     });
   });
 
-  // Tests for env wrapper transparency and denial in allowlist mode are not applicable:
-  // the fork gutted exec-approvals infrastructure (analyzeArgvCommand, evaluateExecAllowlist,
-  // evaluateSystemRunPolicy are stubs).  Upstream tests exercised the real allowlist pipeline.
+  const approvedEnvShellWrapperCases = [
+    {
+      name: "preserves wrapper argv for approved env shell commands in local execution",
+      preferMacAppExecHost: false,
+    },
+    {
+      name: "preserves wrapper argv for approved env shell commands in mac app exec host forwarding",
+      preferMacAppExecHost: true,
+    },
+  ] as const;
+
+  for (const testCase of approvedEnvShellWrapperCases) {
+    it.runIf(process.platform !== "win32")(testCase.name, async () => {
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-approved-wrapper-"));
+      const marker = path.join(tmp, "marker");
+      const attackerScript = path.join(tmp, "sh");
+      fs.writeFileSync(attackerScript, "#!/bin/sh\necho exploited > marker\n");
+      fs.chmodSync(attackerScript, 0o755);
+      const runCommand = vi.fn(async (argv: string[]) => {
+        if (argv[0] === "/bin/sh" && argv[1] === "sh" && argv[2] === "-c") {
+          fs.writeFileSync(marker, "rewritten");
+        }
+        return createLocalRunResult();
+      });
+      const sendInvokeResult = vi.fn(async () => {});
+      try {
+        const invoke = await runSystemInvoke({
+          preferMacAppExecHost: testCase.preferMacAppExecHost,
+          command: ["env", "sh", "-c", "echo SAFE"],
+          cwd: tmp,
+          approved: true,
+          security: "allowlist",
+          ask: "on-miss",
+          runCommand,
+          sendInvokeResult,
+          runViaResponse: testCase.preferMacAppExecHost
+            ? {
+                ok: true,
+                payload: {
+                  success: true,
+                  stdout: "app-ok",
+                  stderr: "",
+                  timedOut: false,
+                  exitCode: 0,
+                  error: null,
+                },
+              }
+            : undefined,
+        });
+
+        if (testCase.preferMacAppExecHost) {
+          const canonicalCwd = fs.realpathSync(tmp);
+          expect(invoke.runCommand).not.toHaveBeenCalled();
+          expect(invoke.runViaMacAppExecHost).toHaveBeenCalledWith({
+            approvals: expect.anything(),
+            request: expect.objectContaining({
+              command: ["env", "sh", "-c", "echo SAFE"],
+              rawCommand: "echo SAFE",
+              cwd: canonicalCwd,
+            }),
+          });
+          expectInvokeOk(invoke.sendInvokeResult, { payloadContains: "app-ok" });
+          return;
+        }
+
+        const runArgs = vi.mocked(invoke.runCommand).mock.calls[0]?.[0] as string[] | undefined;
+        expect(runArgs).toEqual(["env", "sh", "-c", "echo SAFE"]);
+        expect(fs.existsSync(marker)).toBe(false);
+        expectInvokeOk(invoke.sendInvokeResult);
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
+    });
+  }
+
+  it("handles transparent env wrappers in allowlist mode", async () => {
+    const { runCommand, sendInvokeResult } = await runSystemInvoke({
+      preferMacAppExecHost: false,
+      security: "allowlist",
+      command: ["env", "tr", "a", "b"],
+    });
+    if (process.platform === "win32") {
+      expect(runCommand).not.toHaveBeenCalled();
+      expectInvokeErrorMessage(sendInvokeResult, { message: "allowlist miss" });
+      return;
+    }
+
+    const runArgs = vi.mocked(runCommand).mock.calls[0]?.[0] as string[] | undefined;
+    expect(runArgs).toBeDefined();
+    expect(runArgs?.[0]).toMatch(/(^|[/\\])tr$/);
+    expect(runArgs?.slice(1)).toEqual(["a", "b"]);
+    expectInvokeOk(sendInvokeResult);
+  });
+
+  it("denies semantic env wrappers in allowlist mode", async () => {
+    const { runCommand, sendInvokeResult } = await runSystemInvoke({
+      preferMacAppExecHost: false,
+      security: "allowlist",
+      command: ["env", "FOO=bar", "tr", "a", "b"],
+    });
+    expect(runCommand).not.toHaveBeenCalled();
+    expectInvokeErrorMessage(sendInvokeResult, { message: "allowlist miss" });
+  });
+
+  it.runIf(process.platform !== "win32")(
+    "pins PATH-token executable to canonical path for approval-based runs",
+    async () => {
+      await withPathTokenCommand({
+        tmpPrefix: "remoteclaw-approval-path-pin-",
+        run: async ({ expected }) => {
+          const { runCommand, sendInvokeResult } = await runSystemInvoke({
+            preferMacAppExecHost: false,
+            command: ["poccmd", "-n", "SAFE"],
+            approved: true,
+            security: "full",
+            ask: "off",
+          });
+          expectCommandPinnedToCanonicalPath({
+            runCommand,
+            expected,
+            commandTail: ["-n", "SAFE"],
+          });
+          expectInvokeOk(sendInvokeResult);
+        },
+      });
+    },
+  );
+
+  it.runIf(process.platform !== "win32")(
+    "pins PATH-token executable to canonical path for allowlist runs",
+    async () => {
+      const runCommand = vi.fn(async () => ({
+        ...createLocalRunResult(),
+      }));
+      const sendInvokeResult = vi.fn(async () => {});
+      await withPathTokenCommand({
+        tmpPrefix: "remoteclaw-allowlist-path-pin-",
+        run: async ({ link, expected }) => {
+          await withTempApprovalsHome({
+            approvals: {
+              version: 1,
+              defaults: {
+                security: "allowlist",
+                ask: "off",
+                askFallback: "deny",
+              },
+              agents: {
+                main: {
+                  allowlist: [{ pattern: link }],
+                },
+              },
+            },
+            run: async () => {
+              await runSystemInvoke({
+                preferMacAppExecHost: false,
+                command: ["poccmd", "-n", "SAFE"],
+                security: "allowlist",
+                ask: "off",
+                runCommand,
+                sendInvokeResult,
+              });
+            },
+          });
+          expectCommandPinnedToCanonicalPath({
+            runCommand,
+            expected,
+            commandTail: ["-n", "SAFE"],
+          });
+          expectInvokeOk(sendInvokeResult);
+        },
+      });
+    },
+  );
 
   it.runIf(process.platform !== "win32")(
     "denies approval-based execution when cwd is a symlink",
@@ -253,42 +423,6 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       fs.rmSync(tmp, { recursive: true, force: true });
     }
   });
-
-  it.runIf(process.platform !== "win32")(
-    "preserves wrapper argv for approved env shell commands",
-    async () => {
-      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-approved-wrapper-"));
-      const marker = path.join(tmp, "marker");
-      const attackerScript = path.join(tmp, "sh");
-      fs.writeFileSync(attackerScript, "#!/bin/sh\necho exploited > marker\n");
-      fs.chmodSync(attackerScript, 0o755);
-      const runCommand = vi.fn(async (argv: string[]) => {
-        if (argv[0] === "/bin/sh" && argv[1] === "sh" && argv[2] === "-c") {
-          fs.writeFileSync(marker, "rewritten");
-        }
-        return createLocalRunResult();
-      });
-      const sendInvokeResult = vi.fn(async () => {});
-      try {
-        await runSystemInvoke({
-          preferMacAppExecHost: false,
-          command: ["env", "sh", "-c", "echo SAFE"],
-          cwd: tmp,
-          approved: true,
-          security: "allowlist",
-          ask: "on-miss",
-          runCommand,
-          sendInvokeResult,
-        });
-        const runArgs = vi.mocked(runCommand).mock.calls[0]?.[0] as string[] | undefined;
-        expect(runArgs).toEqual(["env", "sh", "-c", "echo SAFE"]);
-        expect(fs.existsSync(marker)).toBe(false);
-        expectInvokeOk(sendInvokeResult);
-      } finally {
-        fs.rmSync(tmp, { recursive: true, force: true });
-      }
-    },
-  );
 
   it("denies ./sh wrapper spoof in allowlist on-miss mode before execution", async () => {
     const marker = path.join(os.tmpdir(), `remoteclaw-wrapper-spoof-${process.pid}-${Date.now()}`);

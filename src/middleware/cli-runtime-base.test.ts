@@ -7,7 +7,7 @@ import type { AgentEvent, AgentExecuteParams } from "./types.js";
 // ── Test harness ─────────────────────────────────────────────────────────
 
 /** Minimal mock ChildProcess with controllable stdio streams. */
-function createMockChild() {
+function createMockChild({ exitOnKill = true }: { exitOnKill?: boolean } = {}) {
   const stdout = new PassThrough();
   const stderr = new PassThrough();
   const stdin = new PassThrough();
@@ -22,10 +22,12 @@ function createMockChild() {
   proc.stderr = stderr;
   proc.stdin = stdin;
   proc.pid = 12345;
-  proc.kill = vi.fn(() => {
-    stdout.end();
-    proc.emit("exit", null, "SIGTERM");
-  });
+  proc.kill = exitOnKill
+    ? vi.fn(() => {
+        stdout.end();
+        proc.emit("exit", null, "SIGTERM");
+      })
+    : vi.fn();
   return proc;
 }
 
@@ -249,6 +251,113 @@ describe("CLIRuntimeBase", () => {
       expect(events).toContainEqual(
         expect.objectContaining({ type: "error", code: "WATCHDOG_TIMEOUT" }),
       );
+    });
+  });
+
+  describe("SIGKILL escalation", () => {
+    it("sends SIGKILL after SIGTERM if process does not exit (watchdog)", async () => {
+      const stubbornChild = createMockChild({ exitOnKill: false });
+      spawnMock.mockReturnValue(stubbornChild);
+
+      const runtime = new TestRuntime("test-cli", 1000);
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      // Advance past watchdog timeout → SIGTERM sent.
+      await vi.advanceTimersByTimeAsync(1001);
+      expect(stubbornChild.kill).toHaveBeenCalledWith("SIGTERM");
+      expect(stubbornChild.kill).not.toHaveBeenCalledWith("SIGKILL");
+
+      // Advance past SIGKILL escalation timeout.
+      await vi.advanceTimersByTimeAsync(1500);
+      expect(stubbornChild.kill).toHaveBeenCalledWith("SIGKILL");
+
+      // Clean up: force process exit.
+      stubbornChild.stdout.end();
+      stubbornChild.emit("exit", null, "SIGKILL");
+
+      const events = await promise;
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: "error", code: "WATCHDOG_TIMEOUT" }),
+      );
+    });
+
+    it("cancels SIGKILL timer if process exits after SIGTERM (watchdog)", async () => {
+      const stubbornChild = createMockChild({ exitOnKill: false });
+      spawnMock.mockReturnValue(stubbornChild);
+
+      const runtime = new TestRuntime("test-cli", 1000);
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      // Advance past watchdog → SIGTERM.
+      await vi.advanceTimersByTimeAsync(1001);
+      expect(stubbornChild.kill).toHaveBeenCalledWith("SIGTERM");
+
+      // Process exits gracefully before escalation.
+      stubbornChild.stdout.end();
+      stubbornChild.emit("exit", 0, "SIGTERM");
+
+      // Advance past when SIGKILL would have fired.
+      await vi.advanceTimersByTimeAsync(2000);
+
+      const events = await promise;
+      expect(stubbornChild.kill).not.toHaveBeenCalledWith("SIGKILL");
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: "error", code: "WATCHDOG_TIMEOUT" }),
+      );
+    });
+
+    it("sends SIGKILL after SIGTERM if process does not exit (abort)", async () => {
+      const stubbornChild = createMockChild({ exitOnKill: false });
+      spawnMock.mockReturnValue(stubbornChild);
+
+      const runtime = new TestRuntime("test-cli");
+      const controller = new AbortController();
+
+      const promise = collectEvents(
+        runtime.execute({ ...defaultParams, abortSignal: controller.signal }),
+      );
+
+      // Abort → SIGTERM sent.
+      controller.abort();
+      expect(stubbornChild.kill).toHaveBeenCalledWith("SIGTERM");
+      expect(stubbornChild.kill).not.toHaveBeenCalledWith("SIGKILL");
+
+      // Advance past SIGKILL escalation timeout.
+      await vi.advanceTimersByTimeAsync(1500);
+      expect(stubbornChild.kill).toHaveBeenCalledWith("SIGKILL");
+
+      // Clean up: force process exit.
+      stubbornChild.stdout.end();
+      stubbornChild.emit("exit", null, "SIGKILL");
+
+      const events = await promise;
+      expect(events).toContainEqual(expect.objectContaining({ type: "error", code: "ABORTED" }));
+    });
+
+    it("cancels SIGKILL timer if process exits after SIGTERM (abort)", async () => {
+      const stubbornChild = createMockChild({ exitOnKill: false });
+      spawnMock.mockReturnValue(stubbornChild);
+
+      const runtime = new TestRuntime("test-cli");
+      const controller = new AbortController();
+
+      const promise = collectEvents(
+        runtime.execute({ ...defaultParams, abortSignal: controller.signal }),
+      );
+
+      // Abort → SIGTERM.
+      controller.abort();
+      expect(stubbornChild.kill).toHaveBeenCalledWith("SIGTERM");
+
+      // Process exits gracefully before escalation.
+      stubbornChild.stdout.end();
+      stubbornChild.emit("exit", 0, "SIGTERM");
+
+      // Advance past when SIGKILL would have fired.
+      await vi.advanceTimersByTimeAsync(2000);
+
+      await promise;
+      expect(stubbornChild.kill).not.toHaveBeenCalledWith("SIGKILL");
     });
   });
 

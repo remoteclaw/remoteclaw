@@ -1,5 +1,5 @@
-import RemoteClawKit
 import Foundation
+import RemoteClawKit
 import os
 import Testing
 @testable import RemoteClaw
@@ -69,7 +69,6 @@ struct GatewayProcessManagerTests {
         {
             self.pendingReceiveHandler.withLock { $0 = completionHandler }
         }
-
     }
 
     private final class FakeWebSocketSession: WebSocketSessioning, @unchecked Sendable {
@@ -83,9 +82,9 @@ struct GatewayProcessManagerTests {
         }
     }
 
-    @Test func clearsLastFailureWhenHealthSucceeds() async {
+    @Test func clearsLastFailureWhenHealthSucceeds() async throws {
         let session = FakeWebSocketSession()
-        let url = URL(string: "ws://example.invalid")!
+        let url = try #require(URL(string: "ws://example.invalid"))
         let connection = GatewayConnection(
             configProvider: { (url: url, token: nil, password: nil) },
             sessionBox: WebSocketSessionBox(session: session))

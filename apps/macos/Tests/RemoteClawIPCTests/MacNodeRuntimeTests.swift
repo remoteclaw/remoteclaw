@@ -1,6 +1,6 @@
-import RemoteClawKit
 import CoreLocation
 import Foundation
+import RemoteClawKit
 import Testing
 @testable import RemoteClaw
 
@@ -65,8 +65,14 @@ struct MacNodeRuntimeTests {
                 return (path: url.path, hasAudio: false)
             }
 
-            func locationAuthorizationStatus() -> CLAuthorizationStatus { .authorizedAlways }
-            func locationAccuracyAuthorization() -> CLAccuracyAuthorization { .fullAccuracy }
+            func locationAuthorizationStatus() -> CLAuthorizationStatus {
+                .authorizedAlways
+            }
+
+            func locationAccuracyAuthorization() -> CLAccuracyAuthorization {
+                .fullAccuracy
+            }
+
             func currentLocation(
                 desiredAccuracy: RemoteClawLocationAccuracy,
                 maxAgeMs: Int?,

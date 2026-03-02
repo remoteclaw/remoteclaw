@@ -1,6 +1,6 @@
 import AppKit
-import RemoteClawChatUI
 import Foundation
+import RemoteClawChatUI
 import Testing
 @testable import RemoteClaw
 
@@ -10,7 +10,7 @@ struct WebChatSwiftUISmokeTests {
     private struct TestTransport: RemoteClawChatTransport, Sendable {
         func requestHistory(sessionKey: String) async throws -> RemoteClawChatHistoryPayload {
             let json = """
-            {"sessionKey":"\(sessionKey)","sessionId":null,"messages":[]}
+            {"sessionKey":"\(sessionKey)","sessionId":null,"messages":[],"thinkingLevel":"off"}
             """
             return try JSONDecoder().decode(RemoteClawChatHistoryPayload.self, from: Data(json.utf8))
         }
@@ -28,7 +28,9 @@ struct WebChatSwiftUISmokeTests {
             return try JSONDecoder().decode(RemoteClawChatSendResponse.self, from: Data(json.utf8))
         }
 
-        func requestHealth(timeoutMs _: Int) async throws -> Bool { true }
+        func requestHealth(timeoutMs _: Int) async throws -> Bool {
+            true
+        }
 
         func events() -> AsyncStream<RemoteClawChatTransportEvent> {
             AsyncStream { continuation in

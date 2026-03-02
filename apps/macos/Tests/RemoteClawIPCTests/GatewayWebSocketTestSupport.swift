@@ -1,8 +1,8 @@
-import RemoteClawKit
 import Foundation
+import RemoteClawKit
 
 extension WebSocketTasking {
-    // Keep unit-test doubles resilient to protocol additions.
+    /// Keep unit-test doubles resilient to protocol additions.
     func sendPing(pongReceiveHandler: @escaping @Sendable (Error?) -> Void) {
         pongReceiveHandler(nil)
     }

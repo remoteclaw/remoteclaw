@@ -122,10 +122,10 @@ async function openVerifiedLocalFile(filePath: string): Promise<SafeOpenResult> 
   }
 }
 
-export async function openFileWithinRoot(params: {
+async function resolvePathWithinRoot(params: {
   rootDir: string;
   relativePath: string;
-}): Promise<SafeOpenResult> {
+}): Promise<{ rootReal: string; rootWithSep: string; resolved: string }> {
   let rootReal: string;
   try {
     rootReal = await fs.realpath(params.rootDir);
@@ -141,6 +141,15 @@ export async function openFileWithinRoot(params: {
   if (!isPathInside(rootWithSep, resolved)) {
     throw new SafeOpenError("outside-workspace", "file is outside workspace root");
   }
+  return { rootReal, rootWithSep, resolved };
+}
+
+export async function openFileWithinRoot(params: {
+  rootDir: string;
+  relativePath: string;
+  rejectHardlinks?: boolean;
+}): Promise<SafeOpenResult> {
+  const { rootWithSep, resolved } = await resolvePathWithinRoot(params);
 
   let opened: SafeOpenResult;
   try {

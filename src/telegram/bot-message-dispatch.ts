@@ -129,12 +129,15 @@ export const dispatchTelegramMessage = async ({
   const mediaLocalRoots = getAgentScopedMediaLocalRoots(cfg, route.agentId);
   const archivedAnswerPreviews: ArchivedPreview[] = [];
   const createDraftLane = (laneName: LaneName, enabled: boolean): DraftLaneState => {
+    const useMessagePreviewTransportForDmReasoning =
+      laneName === "reasoning" && threadSpec?.scope === "dm" && canStreamAnswerDraft;
     const stream = enabled
       ? createTelegramDraftStream({
           api: bot.api,
           chatId,
           maxChars: draftMaxChars,
           thread: threadSpec,
+          previewTransport: useMessagePreviewTransportForDmReasoning ? "message" : "auto",
           replyToMessageId: draftReplyToMessageId,
           minInitialChars: draftMinInitialChars,
           renderText: renderDraftPreview,

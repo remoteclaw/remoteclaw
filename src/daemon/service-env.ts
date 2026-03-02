@@ -240,29 +240,20 @@ export function buildServiceEnvironment(params: {
 }): Record<string, string | undefined> {
   const { env, port, token, launchdLabel } = params;
   const platform = params.platform ?? process.platform;
+  const sharedEnv = resolveSharedServiceEnvironmentFields(env, platform);
   const profile = env.REMOTECLAW_PROFILE;
   const resolvedLaunchdLabel =
     launchdLabel || (platform === "darwin" ? resolveGatewayLaunchAgentLabel(profile) : undefined);
   const systemdUnit = `${resolveGatewaySystemdServiceName(profile)}.service`;
-  const stateDir = env.REMOTECLAW_STATE_DIR;
-  const configPath = env.REMOTECLAW_CONFIG_PATH;
-  // Keep a usable temp directory for supervised services even when the host env omits TMPDIR.
-  const tmpDir = env.TMPDIR?.trim() || os.tmpdir();
-  const proxyEnv = readServiceProxyEnvironment(env);
-  // On macOS, launchd services don't inherit the shell environment, so Node's undici/fetch
-  // cannot locate the system CA bundle. Default to /etc/ssl/cert.pem so TLS verification
-  // works correctly when running as a LaunchAgent without extra user configuration.
-  const nodeCaCerts =
-    env.NODE_EXTRA_CA_CERTS ?? (platform === "darwin" ? "/etc/ssl/cert.pem" : undefined);
   return {
     HOME: env.HOME,
-    TMPDIR: tmpDir,
-    PATH: buildMinimalServicePath({ env }),
-    ...proxyEnv,
-    NODE_EXTRA_CA_CERTS: nodeCaCerts,
+    TMPDIR: sharedEnv.tmpDir,
+    PATH: sharedEnv.minimalPath,
+    ...sharedEnv.proxyEnv,
+    NODE_EXTRA_CA_CERTS: sharedEnv.nodeCaCerts,
     REMOTECLAW_PROFILE: profile,
-    REMOTECLAW_STATE_DIR: stateDir,
-    REMOTECLAW_CONFIG_PATH: configPath,
+    REMOTECLAW_STATE_DIR: sharedEnv.stateDir,
+    REMOTECLAW_CONFIG_PATH: sharedEnv.configPath,
     REMOTECLAW_GATEWAY_PORT: String(port),
     REMOTECLAW_GATEWAY_TOKEN: token,
     REMOTECLAW_LAUNCHD_LABEL: resolvedLaunchdLabel,
@@ -279,25 +270,17 @@ export function buildNodeServiceEnvironment(params: {
 }): Record<string, string | undefined> {
   const { env } = params;
   const platform = params.platform ?? process.platform;
+  const sharedEnv = resolveSharedServiceEnvironmentFields(env, platform);
   const gatewayToken =
     env.REMOTECLAW_GATEWAY_TOKEN?.trim() || env.CLAWDBOT_GATEWAY_TOKEN?.trim() || undefined;
-  const stateDir = env.REMOTECLAW_STATE_DIR;
-  const configPath = env.REMOTECLAW_CONFIG_PATH;
-  const tmpDir = env.TMPDIR?.trim() || os.tmpdir();
-  const proxyEnv = readServiceProxyEnvironment(env);
-  // On macOS, launchd services don't inherit the shell environment, so Node's undici/fetch
-  // cannot locate the system CA bundle. Default to /etc/ssl/cert.pem so TLS verification
-  // works correctly when running as a LaunchAgent without extra user configuration.
-  const nodeCaCerts =
-    env.NODE_EXTRA_CA_CERTS ?? (platform === "darwin" ? "/etc/ssl/cert.pem" : undefined);
   return {
     HOME: env.HOME,
-    TMPDIR: tmpDir,
-    PATH: buildMinimalServicePath({ env }),
-    ...proxyEnv,
-    NODE_EXTRA_CA_CERTS: nodeCaCerts,
-    REMOTECLAW_STATE_DIR: stateDir,
-    REMOTECLAW_CONFIG_PATH: configPath,
+    TMPDIR: sharedEnv.tmpDir,
+    PATH: sharedEnv.minimalPath,
+    ...sharedEnv.proxyEnv,
+    NODE_EXTRA_CA_CERTS: sharedEnv.nodeCaCerts,
+    REMOTECLAW_STATE_DIR: sharedEnv.stateDir,
+    REMOTECLAW_CONFIG_PATH: sharedEnv.configPath,
     REMOTECLAW_GATEWAY_TOKEN: gatewayToken,
     REMOTECLAW_LAUNCHD_LABEL: resolveNodeLaunchAgentLabel(),
     REMOTECLAW_SYSTEMD_UNIT: resolveNodeSystemdServiceName(),
@@ -307,5 +290,36 @@ export function buildNodeServiceEnvironment(params: {
     REMOTECLAW_SERVICE_MARKER: NODE_SERVICE_MARKER,
     REMOTECLAW_SERVICE_KIND: NODE_SERVICE_KIND,
     REMOTECLAW_SERVICE_VERSION: VERSION,
+  };
+}
+
+function resolveSharedServiceEnvironmentFields(
+  env: Record<string, string | undefined>,
+  platform: NodeJS.Platform,
+): {
+  stateDir: string | undefined;
+  configPath: string | undefined;
+  tmpDir: string;
+  minimalPath: string;
+  proxyEnv: Record<string, string | undefined>;
+  nodeCaCerts: string | undefined;
+} {
+  const stateDir = env.REMOTECLAW_STATE_DIR;
+  const configPath = env.REMOTECLAW_CONFIG_PATH;
+  // Keep a usable temp directory for supervised services even when the host env omits TMPDIR.
+  const tmpDir = env.TMPDIR?.trim() || os.tmpdir();
+  const proxyEnv = readServiceProxyEnvironment(env);
+  // On macOS, launchd services don't inherit the shell environment, so Node's undici/fetch
+  // cannot locate the system CA bundle. Default to /etc/ssl/cert.pem so TLS verification
+  // works correctly when running as a LaunchAgent without extra user configuration.
+  const nodeCaCerts =
+    env.NODE_EXTRA_CA_CERTS ?? (platform === "darwin" ? "/etc/ssl/cert.pem" : undefined);
+  return {
+    stateDir,
+    configPath,
+    tmpDir,
+    minimalPath: buildMinimalServicePath({ env }),
+    proxyEnv,
+    nodeCaCerts,
   };
 }

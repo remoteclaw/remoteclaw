@@ -1,4 +1,5 @@
 import { clearCommandLane } from "../../../process/command-queue.js";
+import { clearFollowupDrainCallback } from "./drain.js";
 import { clearFollowupQueue } from "./state.js";
 
 export type ClearSessionQueueResult = {
@@ -21,6 +22,7 @@ export function clearSessionQueues(keys: Array<string | undefined>): ClearSessio
     seen.add(cleaned);
     clearedKeys.push(cleaned);
     followupCleared += clearFollowupQueue(cleaned);
+    clearFollowupDrainCallback(cleaned);
     laneCleared += clearCommandLane("default");
   }
 

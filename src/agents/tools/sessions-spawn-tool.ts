@@ -27,6 +27,27 @@ const SessionsSpawnToolSchema = Type.Object({
   thread: Type.Optional(Type.Boolean()),
   mode: optionalStringEnum(SUBAGENT_SPAWN_MODES),
   cleanup: optionalStringEnum(["delete", "keep"] as const),
+
+  // Inline attachments (snapshot-by-value).
+  // NOTE: Attachment contents are redacted from transcript persistence by sanitizeToolCallInputs.
+  attachments: Type.Optional(
+    Type.Array(
+      Type.Object({
+        name: Type.String(),
+        content: Type.String({ maxLength: 6_700_000 }),
+        encoding: Type.Optional(optionalStringEnum(["utf8", "base64"] as const)),
+        mimeType: Type.Optional(Type.String()),
+      }),
+      { maxItems: 50 },
+    ),
+  ),
+  attachAs: Type.Optional(
+    Type.Object({
+      // Where the spawned agent should look for attachments.
+      // Kept as a hint; implementation materializes into the child workspace.
+      mountPath: Type.Optional(Type.String()),
+    }),
+  ),
 });
 
 export function createSessionsSpawnTool(opts?: {
@@ -77,6 +98,14 @@ export function createSessionsSpawnTool(opts?: {
           ? Math.max(0, Math.floor(timeoutSecondsCandidate))
           : undefined;
       const thread = params.thread === true;
+      const attachments = Array.isArray(params.attachments)
+        ? (params.attachments as Array<{
+            name: string;
+            content: string;
+            encoding?: "utf8" | "base64";
+            mimeType?: string;
+          }>)
+        : undefined;
 
       const result = await spawnSubagentDirect(
         {
@@ -89,6 +118,11 @@ export function createSessionsSpawnTool(opts?: {
           mode,
           cleanup,
           expectsCompletionMessage: true,
+          attachments,
+          attachMountPath:
+            params.attachAs && typeof params.attachAs === "object"
+              ? readStringParam(params.attachAs as Record<string, unknown>, "mountPath")
+              : undefined,
         },
         {
           agentSessionKey: opts?.agentSessionKey,

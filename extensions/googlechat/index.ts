@@ -1,7 +1,6 @@
 import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
 import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { googlechatDock, googlechatPlugin } from "./src/channel.js";
-import { handleGoogleChatWebhookRequest } from "./src/monitor.js";
 import { setGoogleChatRuntime } from "./src/runtime.js";
 
 const plugin = {
@@ -12,7 +11,6 @@ const plugin = {
   register(api: RemoteClawPluginApi) {
     setGoogleChatRuntime(api.runtime);
     api.registerChannel({ plugin: googlechatPlugin, dock: googlechatDock });
-    api.registerHttpHandler(handleGoogleChatWebhookRequest);
   },
 };
 

@@ -22,7 +22,6 @@ export const createTestRegistry = (channels: TestChannelRegistration[] = []): Pl
   sttProviders: [],
   ttsProviders: [],
   gatewayHandlers: {},
-  httpHandlers: [],
   httpRoutes: [],
   cliRegistrars: [],
   services: [],

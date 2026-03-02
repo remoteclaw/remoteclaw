@@ -113,6 +113,7 @@ export { buildAgentMediaPayload } from "./agent-media-payload.js";
 export {
   buildBaseAccountStatusSnapshot,
   buildBaseChannelStatusSummary,
+  buildProbeChannelStatusSummary,
   buildTokenChannelStatusSummary,
   collectStatusIssuesFromLastError,
   createDefaultChannelRuntimeState,
@@ -122,6 +123,7 @@ export {
   buildCatchallMultiAccountChannelSchema,
 } from "../channels/plugins/config-schema.js";
 export { createPluginRuntimeStore } from "./runtime-store.js";
+export { formatResolvedUnresolvedNote } from "./resolution-notes.js";
 export type { ChannelDock } from "../channels/dock.js";
 export { getChatChannelMeta } from "../channels/registry.js";
 export type {
@@ -201,6 +203,7 @@ export {
 } from "./group-access.js";
 export { resolveSenderCommandAuthorization } from "./command-auth.js";
 export { createScopedPairingAccess } from "./pairing-access.js";
+export { createInboundEnvelopeBuilder } from "./inbound-envelope.js";
 export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 export { handleSlackMessageAction } from "./slack-message-actions.js";
 export { extractToolSend } from "./tool-send.js";
@@ -220,6 +223,7 @@ export type { MediaPayload, MediaPayloadInput } from "../channels/plugins/media-
 export { createLoggerBackedRuntime } from "./runtime.js";
 export { chunkTextForOutbound } from "./text-chunking.js";
 export { readJsonFileWithFallback, writeJsonFileAtomically } from "./json-store.js";
+export { generatePkceVerifierChallenge, toFormUrlEncoded } from "./oauth-utils.js";
 export { buildRandomTempFilePath, withTempDownloadPath } from "./temp-path.js";
 export { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 export {
@@ -244,6 +248,14 @@ export type { OutboundDeliveryResult } from "../infra/outbound/deliver.js";
 export type { ChunkMode } from "../auto-reply/chunk.js";
 export { SILENT_REPLY_TOKEN, isSilentReplyText } from "../auto-reply/tokens.js";
 export { formatInboundFromLabel } from "../auto-reply/envelope.js";
+export {
+  formatTrimmedAllowFromEntries,
+  formatWhatsAppConfigAllowFromEntries,
+  resolveIMessageConfigAllowFrom,
+  resolveIMessageConfigDefaultTo,
+  resolveWhatsAppConfigAllowFrom,
+  resolveWhatsAppConfigDefaultTo,
+} from "./channel-config-helpers.js";
 export {
   approveDevicePairing,
   listDevicePairing,
@@ -485,6 +497,7 @@ export {
   resolveServicePrefixedAllowTarget,
   resolveServicePrefixedTarget,
 } from "../imessage/target-parsing-helpers.js";
+export type { ParsedChatTarget } from "../imessage/target-parsing-helpers.js";
 
 // Channel: Slack
 export {

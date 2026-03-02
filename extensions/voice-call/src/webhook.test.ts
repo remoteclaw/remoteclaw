@@ -56,6 +56,21 @@ const createManager = (calls: CallRecord[]) => {
   return { manager, endCall, processEvent };
 };
 
+async function postWebhookForm(server: VoiceCallWebhookServer, baseUrl: string, body: string) {
+  const address = (
+    server as unknown as { server?: { address?: () => unknown } }
+  ).server?.address?.();
+  const requestUrl = new URL(baseUrl);
+  if (address && typeof address === "object" && "port" in address && address.port) {
+    requestUrl.port = String(address.port);
+  }
+  return await fetch(requestUrl.toString(), {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body,
+  });
+}
+
 describe("VoiceCallWebhookServer stale call reaper", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -147,18 +162,7 @@ describe("VoiceCallWebhookServer replay handling", () => {
 
     try {
       const baseUrl = await server.start();
-      const address = (
-        server as unknown as { server?: { address?: () => unknown } }
-      ).server?.address?.();
-      const requestUrl = new URL(baseUrl);
-      if (address && typeof address === "object" && "port" in address && address.port) {
-        requestUrl.port = String(address.port);
-      }
-      const response = await fetch(requestUrl.toString(), {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: "CallSid=CA123&SpeechResult=hello",
-      });
+      const response = await postWebhookForm(server, baseUrl, "CallSid=CA123&SpeechResult=hello");
 
       expect(response.status).toBe(200);
       expect(processEvent).not.toHaveBeenCalled();
@@ -194,18 +198,7 @@ describe("VoiceCallWebhookServer replay handling", () => {
 
     try {
       const baseUrl = await server.start();
-      const address = (
-        server as unknown as { server?: { address?: () => unknown } }
-      ).server?.address?.();
-      const requestUrl = new URL(baseUrl);
-      if (address && typeof address === "object" && "port" in address && address.port) {
-        requestUrl.port = String(address.port);
-      }
-      const response = await fetch(requestUrl.toString(), {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: "CallSid=CA123&SpeechResult=hello",
-      });
+      const response = await postWebhookForm(server, baseUrl, "CallSid=CA123&SpeechResult=hello");
 
       expect(response.status).toBe(200);
       expect(parseWebhookEvent).toHaveBeenCalledTimes(1);
@@ -232,18 +225,7 @@ describe("VoiceCallWebhookServer replay handling", () => {
 
     try {
       const baseUrl = await server.start();
-      const address = (
-        server as unknown as { server?: { address?: () => unknown } }
-      ).server?.address?.();
-      const requestUrl = new URL(baseUrl);
-      if (address && typeof address === "object" && "port" in address && address.port) {
-        requestUrl.port = String(address.port);
-      }
-      const response = await fetch(requestUrl.toString(), {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: "CallSid=CA123&SpeechResult=hello",
-      });
+      const response = await postWebhookForm(server, baseUrl, "CallSid=CA123&SpeechResult=hello");
 
       expect(response.status).toBe(401);
       expect(parseWebhookEvent).not.toHaveBeenCalled();

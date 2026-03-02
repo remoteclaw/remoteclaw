@@ -11,6 +11,7 @@ import {
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 import { AGENT_LANE_SUBAGENT } from "./lanes.js";
+import { resolveSandboxRuntimeStatus } from "./sandbox/runtime-status.js";
 import { buildSubagentSystemPrompt } from "./subagent-announce.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import { countActiveRunsForSession, registerSubagentRun } from "./subagent-registry.js";
@@ -264,6 +265,21 @@ export async function spawnSubagentDirect(
     }
   }
   const childSessionKey = `agent:${targetAgentId}:subagent:${crypto.randomUUID()}`;
+  const requesterRuntime = resolveSandboxRuntimeStatus({
+    cfg,
+    sessionKey: requesterInternalKey,
+  });
+  const childRuntime = resolveSandboxRuntimeStatus({
+    cfg,
+    sessionKey: childSessionKey,
+  });
+  if (requesterRuntime.sandboxed && !childRuntime.sandboxed) {
+    return {
+      status: "forbidden",
+      error:
+        "Sandboxed sessions cannot spawn unsandboxed subagents. Set a sandboxed target agent or use the same agent runtime.",
+    };
+  }
   const childDepth = callerDepth + 1;
   const spawnedByKey = requesterInternalKey;
   // Model config gutted — CLIs own model selection. Pass through explicit

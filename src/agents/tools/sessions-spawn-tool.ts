@@ -3,7 +3,18 @@ import type { GatewayMessageChannel } from "../../utils/message-channel.js";
 import { optionalStringEnum } from "../schema/typebox.js";
 import { SUBAGENT_SPAWN_MODES, spawnSubagentDirect } from "../subagent-spawn.js";
 import type { AnyAgentTool } from "./common.js";
-import { jsonResult, readStringParam } from "./common.js";
+import { jsonResult, readStringParam, ToolInputError } from "./common.js";
+
+const UNSUPPORTED_SESSIONS_SPAWN_PARAM_KEYS = [
+  "target",
+  "transport",
+  "channel",
+  "to",
+  "threadId",
+  "thread_id",
+  "replyTo",
+  "reply_to",
+] as const;
 
 const SessionsSpawnToolSchema = Type.Object({
   task: Type.String(),
@@ -39,6 +50,14 @@ export function createSessionsSpawnTool(opts?: {
     parameters: SessionsSpawnToolSchema,
     execute: async (_toolCallId, args) => {
       const params = args;
+      const unsupportedParam = UNSUPPORTED_SESSIONS_SPAWN_PARAM_KEYS.find((key) =>
+        Object.hasOwn(params, key),
+      );
+      if (unsupportedParam) {
+        throw new ToolInputError(
+          `sessions_spawn does not support "${unsupportedParam}". Use "message" or "sessions_send" for channel delivery.`,
+        );
+      }
       const task = readStringParam(params, "task", { required: true });
       const label = typeof params.label === "string" ? params.label.trim() : "";
       const requestedAgentId = readStringParam(params, "agentId");

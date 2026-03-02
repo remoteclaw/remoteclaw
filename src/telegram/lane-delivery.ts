@@ -112,8 +112,10 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
     hadPreviewMessage: boolean;
   }): boolean => {
     const currentPreviewText = args.currentPreviewText;
+    if (currentPreviewText === undefined) {
+      return false;
+    }
     return (
-      currentPreviewText !== undefined &&
       currentPreviewText.startsWith(args.text) &&
       args.text.length < currentPreviewText.length &&
       (args.skipRegressive === "always" || args.hadPreviewMessage)
@@ -170,6 +172,34 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
     previewMessageId: previewMessageIdOverride,
     previewTextSnapshot,
   }: TryUpdatePreviewParams): Promise<boolean> => {
+    const editPreview = (messageId: number, treatEditFailureAsDelivered: boolean) =>
+      tryEditPreviewMessage({
+        laneName,
+        messageId,
+        text,
+        context,
+        previewButtons,
+        updateLaneSnapshot,
+        lane,
+        treatEditFailureAsDelivered,
+      });
+    const finalizePreview = (
+      previewMessageId: number,
+      treatEditFailureAsDelivered: boolean,
+    ): boolean | Promise<boolean> => {
+      const currentPreviewText = previewTextSnapshot ?? getLanePreviewText(lane);
+      const shouldSkipRegressive = shouldSkipRegressivePreviewUpdate({
+        currentPreviewText,
+        text,
+        skipRegressive,
+        hadPreviewMessage,
+      });
+      if (shouldSkipRegressive) {
+        params.markDelivered();
+        return true;
+      }
+      return editPreview(previewMessageId, treatEditFailureAsDelivered);
+    };
     if (!lane.stream) {
       return false;
     }
@@ -186,27 +216,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
       if (typeof previewMessageId !== "number") {
         return false;
       }
-      const currentPreviewText = previewTextSnapshot ?? getLanePreviewText(lane);
-      const shouldSkipRegressive = shouldSkipRegressivePreviewUpdate({
-        currentPreviewText,
-        text,
-        skipRegressive,
-        hadPreviewMessage,
-      });
-      if (shouldSkipRegressive) {
-        params.markDelivered();
-        return true;
-      }
-      return tryEditPreviewMessage({
-        laneName,
-        messageId: previewMessageId,
-        text,
-        context,
-        previewButtons,
-        updateLaneSnapshot,
-        lane,
-        treatEditFailureAsDelivered: true,
-      });
+      return finalizePreview(previewMessageId, true);
     }
     if (stopBeforeEdit) {
       await params.stopDraftLane(lane);
@@ -218,27 +228,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
     if (typeof previewMessageId !== "number") {
       return false;
     }
-    const currentPreviewText = previewTextSnapshot ?? getLanePreviewText(lane);
-    const shouldSkipRegressive = shouldSkipRegressivePreviewUpdate({
-      currentPreviewText,
-      text,
-      skipRegressive,
-      hadPreviewMessage,
-    });
-    if (shouldSkipRegressive) {
-      params.markDelivered();
-      return true;
-    }
-    return tryEditPreviewMessage({
-      laneName,
-      messageId: previewMessageId,
-      text,
-      context,
-      previewButtons,
-      updateLaneSnapshot,
-      lane,
-      treatEditFailureAsDelivered: false,
-    });
+    return finalizePreview(previewMessageId, false);
   };
 
   const consumeArchivedAnswerPreviewForFinal = async ({

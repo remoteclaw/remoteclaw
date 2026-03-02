@@ -15,17 +15,19 @@ Interactive onboarding wizard for gateway, workspace, and agent runtime setup.
 remoteclaw onboard
 remoteclaw onboard --flow quickstart
 remoteclaw onboard --flow manual
-remoteclaw onboard --mode remote --remote-url ws://gateway-host:18789
+remoteclaw onboard --mode remote --remote-url wss://gateway-host:18789
 ```
+
+For plaintext private-network `ws://` targets (trusted networks only), set
+`REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS=1` in the onboarding process environment.
 
 Non-interactive with auth token:
 
-```bash
+````bash
 remoteclaw onboard --non-interactive \
   --runtime claude \
   --auth-token "$CLAUDE_CODE_OAUTH_TOKEN" \
   --accept-risk
-```
 
 Non-interactive custom provider:
 
@@ -37,7 +39,7 @@ remoteclaw onboard --non-interactive \
   --custom-api-key "$CUSTOM_API_KEY" \
   --custom-compatibility openai \
   --accept-risk
-```
+````
 
 ## Options
 

@@ -52,6 +52,7 @@ function makeBrowserState(): BrowserServerState {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.clearAllMocks();
   vi.restoreAllMocks();
 });
 
@@ -87,5 +88,39 @@ describe("browser server-context ensureBrowserAvailable", () => {
     expect(launchRemoteClawChrome).toHaveBeenCalledTimes(1);
     expect(isChromeCdpReady).toHaveBeenCalled();
     expect(chromeModule.stopRemoteClawChrome).not.toHaveBeenCalled();
+  });
+
+  it("stops launched chrome when CDP readiness never arrives", async () => {
+    vi.useFakeTimers();
+
+    const launchRemoteClawChrome = vi.mocked(chromeModule.launchRemoteClawChrome);
+    const stopRemoteClawChrome = vi.mocked(chromeModule.stopRemoteClawChrome);
+    const isChromeReachable = vi.mocked(chromeModule.isChromeReachable);
+    const isChromeCdpReady = vi.mocked(chromeModule.isChromeCdpReady);
+
+    isChromeReachable.mockResolvedValue(false);
+    isChromeCdpReady.mockResolvedValue(false);
+
+    const proc = new EventEmitter() as unknown as ChildProcessWithoutNullStreams;
+    launchRemoteClawChrome.mockResolvedValue({
+      pid: 321,
+      exe: { kind: "chromium", path: "/usr/bin/chromium" },
+      userDataDir: "/tmp/remoteclaw-test",
+      cdpPort: 18800,
+      startedAt: Date.now(),
+      proc,
+    });
+
+    const state = makeBrowserState();
+    const ctx = createBrowserRouteContext({ getState: () => state });
+    const profile = ctx.forProfile("remoteclaw");
+
+    const promise = profile.ensureBrowserAvailable();
+    const rejected = expect(promise).rejects.toThrow("not reachable after start");
+    await vi.advanceTimersByTimeAsync(8100);
+    await rejected;
+
+    expect(launchRemoteClawChrome).toHaveBeenCalledTimes(1);
+    expect(stopRemoteClawChrome).toHaveBeenCalledTimes(1);
   });
 });

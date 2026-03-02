@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw config` (get/set/unset values and config file path)"
+description: "CLI reference for `remoteclaw config` (get/set/unset/file/validate)"
 read_when:
   - You want to read or edit config non-interactively
 title: "config"
@@ -7,8 +7,8 @@ title: "config"
 
 # `remoteclaw config`
 
-Config helpers: get/set/unset values by path and print the active config file.
-Run without a subcommand to open
+Config helpers: get/set/unset/validate values by path and print the active
+config file. Run without a subcommand to open
 the configure wizard (same as `remoteclaw configure`).
 
 ## Examples
@@ -20,6 +20,8 @@ remoteclaw config set browser.executablePath "/usr/bin/google-chrome"
 remoteclaw config set agents.defaults.heartbeat.every "2h"
 remoteclaw config set agents.list[0].tools.exec.node "node-id-or-name"
 remoteclaw config unset tools.web.search.apiKey
+remoteclaw config validate
+remoteclaw config validate --json
 ```
 
 ## Paths
@@ -54,3 +56,13 @@ remoteclaw config set channels.whatsapp.groups '["*"]' --strict-json
 - `config file`: Print the active config file path (resolved from `REMOTECLAW_CONFIG_PATH` or default location).
 
 Restart the gateway after edits.
+
+## Validate
+
+Validate the current config against the active schema without starting the
+gateway.
+
+```bash
+remoteclaw config validate
+remoteclaw config validate --json
+```

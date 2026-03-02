@@ -238,6 +238,7 @@ export const RemoteClawSchema = z
                 driver: z
                   .union([z.literal("remoteclaw"), z.literal("clawd"), z.literal("extension")])
                   .optional(),
+                attachOnly: z.boolean().optional(),
                 color: HexColorSchema,
               })
               .strict()

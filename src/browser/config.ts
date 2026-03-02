@@ -47,6 +47,7 @@ export type ResolvedBrowserProfile = {
   cdpIsLoopback: boolean;
   color: string;
   driver: "remoteclaw" | "extension";
+  attachOnly: boolean;
 };
 
 function normalizeHexColor(raw: string | undefined) {
@@ -358,6 +359,7 @@ export function resolveProfile(
     cdpIsLoopback: isLoopbackHost(cdpHost),
     color: profile.color,
     driver,
+    attachOnly: profile.attachOnly ?? resolved.attachOnly,
   };
 }
 

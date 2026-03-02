@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 const resolvePluginToolsMock = vi.fn((_params: any) => []);
 
 vi.mock("../plugins/tools.js", () => ({
-  resolvePluginTools: (params: unknown) => resolvePluginToolsMock(params),
+  resolvePluginTools: resolvePluginToolsMock,
 }));
 
 import { createRemoteClawTools } from "./remoteclaw-tools.js";

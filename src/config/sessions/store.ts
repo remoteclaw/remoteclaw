@@ -39,9 +39,11 @@ type SessionStoreCacheEntry = {
   loadedAt: number;
   storePath: string;
   mtimeMs?: number;
+  serialized?: string;
 };
 
 const SESSION_STORE_CACHE = new Map<string, SessionStoreCacheEntry>();
+const SESSION_STORE_SERIALIZED_CACHE = new Map<string, string>();
 const DEFAULT_SESSION_STORE_TTL_MS = 45_000; // 45 seconds (between 30-60s)
 
 function isSessionStoreRecord(value: unknown): value is Record<string, SessionEntry> {
@@ -67,6 +69,7 @@ function isSessionStoreCacheValid(entry: SessionStoreCacheEntry): boolean {
 
 function invalidateSessionStoreCache(storePath: string): void {
   SESSION_STORE_CACHE.delete(storePath);
+  SESSION_STORE_SERIALIZED_CACHE.delete(storePath);
 }
 
 function normalizeSessionEntryDelivery(entry: SessionEntry): SessionEntry {
@@ -170,6 +173,7 @@ function normalizeSessionStore(store: Record<string, SessionEntry>): void {
 
 export function clearSessionStoreCacheForTest(): void {
   SESSION_STORE_CACHE.clear();
+  SESSION_STORE_SERIALIZED_CACHE.clear();
   for (const queue of LOCK_QUEUES.values()) {
     for (const task of queue.pending) {
       task.reject(new Error("session store queue cleared for test"));
@@ -220,6 +224,7 @@ export function loadSessionStore(
   // writer to finish.
   let store: Record<string, SessionEntry> = {};
   let mtimeMs = getFileMtimeMs(storePath);
+  let serializedFromDisk: string | undefined;
   const maxReadAttempts = process.platform === "win32" ? 3 : 1;
   const retryBuf = maxReadAttempts > 1 ? new Int32Array(new SharedArrayBuffer(4)) : undefined;
   for (let attempt = 0; attempt < maxReadAttempts; attempt++) {
@@ -233,6 +238,7 @@ export function loadSessionStore(
       const parsed = JSON.parse(raw);
       if (isSessionStoreRecord(parsed)) {
         store = parsed;
+        serializedFromDisk = raw;
       }
       mtimeMs = getFileMtimeMs(storePath) ?? mtimeMs;
       break;
@@ -245,6 +251,11 @@ export function loadSessionStore(
       // Final attempt failed; proceed with an empty store.
     }
   }
+  if (serializedFromDisk !== undefined) {
+    SESSION_STORE_SERIALIZED_CACHE.set(storePath, serializedFromDisk);
+  } else {
+    SESSION_STORE_SERIALIZED_CACHE.delete(storePath);
+  }
 
   // Cache the result if caching is enabled
   if (!opts.skipCache && isSessionStoreCacheEnabled()) {
@@ -253,6 +264,7 @@ export function loadSessionStore(
       loadedAt: Date.now(),
       storePath,
       mtimeMs,
+      serialized: serializedFromDisk,
     });
   }
 
@@ -615,14 +627,31 @@ type SaveSessionStoreOptions = {
   maintenanceOverride?: Partial<ResolvedSessionMaintenanceConfig>;
 };
 
+function updateSessionStoreWriteCaches(params: {
+  storePath: string;
+  store: Record<string, SessionEntry>;
+  serialized: string;
+}): void {
+  const mtimeMs = getFileMtimeMs(params.storePath);
+  SESSION_STORE_SERIALIZED_CACHE.set(params.storePath, params.serialized);
+  if (!isSessionStoreCacheEnabled()) {
+    SESSION_STORE_CACHE.delete(params.storePath);
+    return;
+  }
+  SESSION_STORE_CACHE.set(params.storePath, {
+    store: structuredClone(params.store),
+    loadedAt: Date.now(),
+    storePath: params.storePath,
+    mtimeMs,
+    serialized: params.serialized,
+  });
+}
+
 async function saveSessionStoreUnlocked(
   storePath: string,
   store: Record<string, SessionEntry>,
   opts?: SaveSessionStoreOptions,
 ): Promise<void> {
-  // Invalidate cache on write to ensure consistency
-  invalidateSessionStoreCache(storePath);
-
   normalizeSessionStore(store);
 
   if (!opts?.skipMaintenance) {
@@ -746,12 +775,17 @@ async function saveSessionStoreUnlocked(
 
   await fs.promises.mkdir(path.dirname(storePath), { recursive: true });
   const json = JSON.stringify(store, null, 2);
+  if (SESSION_STORE_SERIALIZED_CACHE.get(storePath) === json) {
+    updateSessionStoreWriteCaches({ storePath, store, serialized: json });
+    return;
+  }
 
   // Windows: keep retry semantics because rename can fail while readers hold locks.
   if (process.platform === "win32") {
     for (let i = 0; i < 5; i++) {
       try {
         await writeTextAtomic(storePath, json, { mode: 0o600 });
+        updateSessionStoreWriteCaches({ storePath, store, serialized: json });
         return;
       } catch (err) {
         const code =
@@ -775,6 +809,7 @@ async function saveSessionStoreUnlocked(
 
   try {
     await writeTextAtomic(storePath, json, { mode: 0o600 });
+    updateSessionStoreWriteCaches({ storePath, store, serialized: json });
   } catch (err) {
     const code =
       err && typeof err === "object" && "code" in err
@@ -786,6 +821,7 @@ async function saveSessionStoreUnlocked(
       // Best-effort: try a direct write (recreating the parent dir), otherwise ignore.
       try {
         await writeTextAtomic(storePath, json, { mode: 0o600 });
+        updateSessionStoreWriteCaches({ storePath, store, serialized: json });
       } catch (err2) {
         const code2 =
           err2 && typeof err2 === "object" && "code" in err2

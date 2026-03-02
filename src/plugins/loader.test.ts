@@ -306,6 +306,36 @@ describe("loadRemoteClawPlugins", () => {
     expect(Object.keys(registry.gatewayHandlers)).toContain("allowed.ping");
   });
 
+  it("re-initializes global hook runner when serving registry from cache", () => {
+    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    const plugin = writePlugin({
+      id: "cache-hook-runner",
+      body: `export default { id: "cache-hook-runner", register() {} };`,
+    });
+
+    const options = {
+      workspaceDir: plugin.dir,
+      config: {
+        plugins: {
+          load: { paths: [plugin.file] },
+          allow: ["cache-hook-runner"],
+        },
+      },
+    };
+
+    const first = loadOpenClawPlugins(options);
+    expect(getGlobalHookRunner()).not.toBeNull();
+
+    resetGlobalHookRunner();
+    expect(getGlobalHookRunner()).toBeNull();
+
+    const second = loadOpenClawPlugins(options);
+    expect(second).toBe(first);
+    expect(getGlobalHookRunner()).not.toBeNull();
+
+    resetGlobalHookRunner();
+  });
+
   it("loads plugins when source and root differ only by realpath alias", () => {
     useNoBundledPlugins();
     const plugin = writePlugin({

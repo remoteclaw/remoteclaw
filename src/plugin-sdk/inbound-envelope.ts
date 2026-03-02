@@ -50,16 +50,17 @@ export function resolveInboundRouteEnvelopeBuilder<
   TConfig,
   TEnvelope,
   TRoute extends RouteLike,
+  TPeer extends RoutePeerLike,
 >(params: {
   cfg: TConfig;
   channel: string;
   accountId: string;
-  peer: RoutePeerLike;
+  peer: TPeer;
   resolveAgentRoute: (params: {
     cfg: TConfig;
     channel: string;
     accountId: string;
-    peer: RoutePeerLike;
+    peer: TPeer;
   }) => TRoute;
   sessionStore?: string;
   resolveStorePath: (store: string | undefined, opts: { agentId: string }) => string;
@@ -95,13 +96,18 @@ export function resolveInboundRouteEnvelopeBuilder<
   return { route, buildEnvelope };
 }
 
-type InboundRouteEnvelopeRuntime<TConfig, TEnvelope, TRoute extends RouteLike> = {
+type InboundRouteEnvelopeRuntime<
+  TConfig,
+  TEnvelope,
+  TRoute extends RouteLike,
+  TPeer extends RoutePeerLike,
+> = {
   routing: {
     resolveAgentRoute: (params: {
       cfg: TConfig;
       channel: string;
       accountId: string;
-      peer: RoutePeerLike;
+      peer: TPeer;
     }) => TRoute;
   };
   session: {
@@ -125,12 +131,13 @@ export function resolveInboundRouteEnvelopeBuilderWithRuntime<
   TConfig,
   TEnvelope,
   TRoute extends RouteLike,
+  TPeer extends RoutePeerLike,
 >(params: {
   cfg: TConfig;
   channel: string;
   accountId: string;
-  peer: RoutePeerLike;
-  runtime: InboundRouteEnvelopeRuntime<TConfig, TEnvelope, TRoute>;
+  peer: TPeer;
+  runtime: InboundRouteEnvelopeRuntime<TConfig, TEnvelope, TRoute, TPeer>;
   sessionStore?: string;
 }): {
   route: TRoute;

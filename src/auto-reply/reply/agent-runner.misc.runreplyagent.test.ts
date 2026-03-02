@@ -871,7 +871,7 @@ describe("runReplyAgent messaging tool suppression", () => {
 });
 
 describe("runReplyAgent reminder commitment guard", () => {
-  function createRun() {
+  function createRun(params?: { sessionKey?: string; omitSessionKey?: boolean }) {
     const typing = createMockTypingController();
     const sessionCtx = {
       Provider: "telegram",
@@ -910,7 +910,7 @@ describe("runReplyAgent reminder commitment guard", () => {
       isActive: false,
       typing,
       sessionCtx,
-      sessionKey: "main",
+      ...(params?.omitSessionKey ? {} : { sessionKey: params?.sessionKey ?? "main" }),
       defaultModel: "anthropic/claude-opus-4-5",
       resolvedVerboseLevel: "off",
       isNewSession: false,

@@ -438,4 +438,4 @@ Planned features:
 ## See Also
 
 - [Routing Configuration](/channels/channel-routing)
-- [Session Management](/concepts/sessions)
+- [Session Management](/concepts/session)

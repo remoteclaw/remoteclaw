@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw config` (get/set/unset config values)"
+description: "CLI reference for `remoteclaw config` (get/set/unset values and config file path)"
 read_when:
   - You want to read or edit config non-interactively
 title: "config"
@@ -7,12 +7,14 @@ title: "config"
 
 # `remoteclaw config`
 
-Config helpers: get/set/unset values by path. Run without a subcommand to open
+Config helpers: get/set/unset values by path and print the active config file.
+Run without a subcommand to open
 the configure wizard (same as `remoteclaw configure`).
 
 ## Examples
 
 ```bash
+remoteclaw config file
 remoteclaw config get browser.executablePath
 remoteclaw config set browser.executablePath "/usr/bin/google-chrome"
 remoteclaw config set agents.defaults.heartbeat.every "2h"
@@ -46,5 +48,9 @@ remoteclaw config set agents.defaults.heartbeat.every "0m"
 remoteclaw config set gateway.port 19001 --strict-json
 remoteclaw config set channels.whatsapp.groups '["*"]' --strict-json
 ```
+
+## Subcommands
+
+- `config file`: Print the active config file path (resolved from `REMOTECLAW_CONFIG_PATH` or default location).
 
 Restart the gateway after edits.

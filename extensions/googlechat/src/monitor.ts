@@ -6,8 +6,9 @@ import {
   GROUP_POLICY_BLOCKED_LABEL,
   createScopedPairingAccess,
   createReplyPrefixOptions,
-  readJsonWebhookBodyOrReject,
-  registerWebhookTarget,
+  readJsonBodyWithLimit,
+  registerWebhookTargetWithPluginRoute,
+  rejectNonPostWebhookRequest,
   isDangerousNameMatchingEnabled,
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
@@ -101,7 +102,26 @@ function warnDeprecatedUsersEmailEntries(
 }
 
 export function registerGoogleChatWebhookTarget(target: WebhookTarget): () => void {
-  return registerWebhookTarget(webhookTargets, target).unregister;
+  return registerWebhookTargetWithPluginRoute({
+    targetsByPath: webhookTargets,
+    target,
+    route: {
+      auth: "plugin",
+      match: "exact",
+      pluginId: "googlechat",
+      source: "googlechat-webhook",
+      accountId: target.account.accountId,
+      log: target.runtime.log,
+      handler: async (req, res) => {
+        const handled = await handleGoogleChatWebhookRequest(req, res);
+        if (!handled && !res.headersSent) {
+          res.statusCode = 404;
+          res.setHeader("Content-Type", "text/plain; charset=utf-8");
+          res.end("Not Found");
+        }
+      },
+    },
+  }).unregister;
 }
 
 function normalizeAudienceType(value?: string | null): GoogleChatAudienceType | undefined {
@@ -1036,7 +1056,9 @@ export function monitorGoogleChatProvider(options: GoogleChatMonitorOptions): ()
     mediaMaxMb,
   });
 
-  return unregister;
+  return () => {
+    unregisterTarget();
+  };
 }
 
 export async function startGoogleChatMonitor(

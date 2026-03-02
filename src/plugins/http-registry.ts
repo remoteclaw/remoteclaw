@@ -12,6 +12,9 @@ export function registerPluginHttpRoute(params: {
   path?: string | null;
   fallbackPath?: string | null;
   handler: PluginHttpRouteHandler;
+  auth: PluginHttpRouteRegistration["auth"];
+  match?: PluginHttpRouteRegistration["match"];
+  replaceExisting?: boolean;
   pluginId?: string;
   source?: string;
   accountId?: string;
@@ -31,6 +34,22 @@ export function registerPluginHttpRoute(params: {
 
   const existingIndex = routes.findIndex((entry) => entry.path === normalizedPath);
   if (existingIndex >= 0) {
+    const existing = routes[existingIndex];
+    if (!existing) {
+      return () => {};
+    }
+    if (!params.replaceExisting) {
+      params.log?.(
+        `plugin: route conflict at ${normalizedPath} (${routeMatch})${suffix}; owned by ${existing.pluginId ?? "unknown-plugin"} (${existing.source ?? "unknown-source"})`,
+      );
+      return () => {};
+    }
+    if (existing.pluginId && params.pluginId && existing.pluginId !== params.pluginId) {
+      params.log?.(
+        `plugin: route replacement denied for ${normalizedPath} (${routeMatch})${suffix}; owned by ${existing.pluginId}`,
+      );
+      return () => {};
+    }
     const pluginHint = params.pluginId ? ` (${params.pluginId})` : "";
     params.log?.(`plugin: replacing stale webhook path ${normalizedPath}${suffix}${pluginHint}`);
     routes.splice(existingIndex, 1);
@@ -39,6 +58,8 @@ export function registerPluginHttpRoute(params: {
   const entry: PluginHttpRouteRegistration = {
     path: normalizedPath,
     handler: params.handler,
+    auth: params.auth,
+    match: routeMatch,
     pluginId: params.pluginId,
     source: params.source,
   };

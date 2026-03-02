@@ -1,5 +1,5 @@
 ---
-description: "Nodes: pairing, capabilities, permissions, and CLI helpers for canvas/camera/screen/system"
+summary: "Nodes: pairing, capabilities, permissions, and CLI helpers for canvas/camera/screen/device/notifications/system"
 read_when:
   - Pairing iOS/Android nodes to a gateway
   - Using node canvas/camera for agent context
@@ -9,7 +9,7 @@ title: "Nodes"
 
 # Nodes
 
-A **node** is a companion device (macOS/iOS/Android/headless) that connects to the Gateway **WebSocket** (same port as operators) with `role: "node"` and exposes a command surface (e.g. `canvas.*`, `camera.*`, `system.*`) via `node.invoke`. Protocol details: [Gateway protocol](/gateway/protocol).
+A **node** is a companion device (macOS/iOS/Android/headless) that connects to the Gateway **WebSocket** (same port as operators) with `role: "node"` and exposes a command surface (e.g. `canvas.*`, `camera.*`, `device.*`, `notifications.*`, `system.*`) via `node.invoke`. Protocol details: [Gateway protocol](/gateway/protocol).
 
 Legacy transport: [Bridge protocol](/gateway/bridge-protocol) (TCP JSONL; deprecated/removed for current nodes).
 
@@ -45,12 +45,12 @@ Notes:
 ## Remote node host (system.run)
 
 Use a **node host** when your Gateway runs on one machine and you want commands
-to execute on another. The CLI agent subprocess still communicates with the **gateway**; the gateway
+to execute on another. The model still talks to the **gateway**; the gateway
 forwards `exec` calls to the **node host** when `host=node` is selected.
 
 ### What runs where
 
-- **Gateway host**: receives messages, spawns the CLI agent subprocess, routes tool calls.
+- **Gateway host**: receives messages, runs the model, routes tool calls.
 - **Node host**: executes `system.run`/`system.which` on the node machine.
 - **Approvals**: enforced on the node host via `~/.remoteclaw/exec-approvals.json`.
 
@@ -96,9 +96,9 @@ remoteclaw node restart
 On the gateway host:
 
 ```bash
-remoteclaw nodes pending
-remoteclaw nodes approve <requestId>
-remoteclaw nodes list
+remoteclaw devices list
+remoteclaw devices approve <requestId>
+remoteclaw nodes status
 ```
 
 Naming options:
@@ -140,6 +140,7 @@ Related:
 
 - [Node host CLI](/cli/node)
 - [Exec tool](/tools/exec)
+- [Exec approvals](/tools/exec-approvals)
 
 ## Invoking commands
 
@@ -213,7 +214,7 @@ Notes:
 
 ## Screen recordings (nodes)
 
-Supported nodes expose `screen.record` (mp4). Example:
+Nodes expose `screen.record` (mp4). Example:
 
 ```bash
 remoteclaw nodes screen record --node <idOrNameOrIp> --duration 10s --fps 10
@@ -222,9 +223,10 @@ remoteclaw nodes screen record --node <idOrNameOrIp> --duration 10s --fps 10 --n
 
 Notes:
 
-- `screen.record` availability depends on node platform.
+- `screen.record` requires the node app to be foregrounded.
+- Android will show the system screen-capture prompt before recording.
 - Screen recordings are clamped to `<= 60s`.
-- `--no-audio` disables microphone capture on supported platforms.
+- `--no-audio` disables microphone capture (supported on iOS/Android; macOS uses system capture audio).
 - Use `--screen <index>` to select a display when multiple screens are available.
 
 ## Location (nodes)
@@ -259,6 +261,33 @@ Notes:
 - The permission prompt must be accepted on the Android device before the capability is advertised.
 - Wi-Fi-only devices without telephony will not advertise `sms.send`.
 
+## Android device + personal data commands
+
+Android nodes can advertise additional command families when the corresponding capabilities are enabled.
+
+Available families:
+
+- `device.status`, `device.info`, `device.permissions`, `device.health`
+- `notifications.list`, `notifications.actions`
+- `photos.latest`
+- `contacts.search`, `contacts.add`
+- `calendar.events`, `calendar.add`
+- `motion.activity`, `motion.pedometer`
+- `app.update`
+
+Example invokes:
+
+```bash
+remoteclaw nodes invoke --node <idOrNameOrIp> --command device.status --params '{}'
+remoteclaw nodes invoke --node <idOrNameOrIp> --command notifications.list --params '{}'
+remoteclaw nodes invoke --node <idOrNameOrIp> --command photos.latest --params '{"limit":1}'
+```
+
+Notes:
+
+- Motion commands are capability-gated by available sensors.
+- `app.update` is permission + policy gated by the node runtime.
+
 ## System commands (node host / mac node)
 
 The macOS node exposes `system.run`, `system.notify`, and `system.execApprovals.get/set`.
@@ -275,6 +304,7 @@ Notes:
 
 - `system.run` returns stdout/stderr/exit code in the payload.
 - `system.notify` respects notification permission state on the macOS app.
+- Unrecognized node `platform` / `deviceFamily` metadata uses a conservative default allowlist that excludes `system.run` and `system.which`. If you intentionally need those commands for an unknown platform, add them explicitly via `gateway.nodes.allowCommands`.
 - `system.run` supports `--cwd`, `--env KEY=VAL`, `--command-timeout`, and `--needs-screen-recording`.
 - For shell wrappers (`bash|sh|zsh ... -c/-lc`), request-scoped `--env` values are reduced to an explicit allowlist (`TERM`, `LANG`, `LC_*`, `COLORTERM`, `NO_COLOR`, `FORCE_COLOR`).
 - For allow-always decisions in allowlist mode, known dispatch wrappers (`env`, `nice`, `nohup`, `stdbuf`, `timeout`) persist inner executable paths instead of wrapper paths. If unwrapping is not safe, no allowlist entry is persisted automatically.
@@ -328,9 +358,10 @@ remoteclaw node run --host <gateway-host> --port 18789
 
 Notes:
 
-- Pairing is still required (the Gateway will show a node approval prompt).
+- Pairing is still required (the Gateway will show a device pairing prompt).
 - The node host stores its node id, token, display name, and gateway connection info in `~/.remoteclaw/node.json`.
-- Exec approvals are enforced locally via `~/.remoteclaw/exec-approvals.json`.
+- Exec approvals are enforced locally via `~/.remoteclaw/exec-approvals.json`
+  (see [Exec approvals](/tools/exec-approvals)).
 - On macOS, the headless node host executes `system.run` locally by default. Set
   `REMOTECLAW_NODE_EXEC_HOST=app` to route `system.run` through the companion app exec host; add
   `REMOTECLAW_NODE_EXEC_FALLBACK=0` to require the app host and fail closed if it is unavailable.

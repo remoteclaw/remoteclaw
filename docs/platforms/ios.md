@@ -1,5 +1,5 @@
 ---
-description: "iOS node app: connect to the Gateway, pairing, canvas, and troubleshooting"
+summary: "iOS node app: connect to the Gateway, pairing, canvas, and troubleshooting"
 read_when:
   - Pairing or reconnecting the iOS node
   - Running the iOS app from source
@@ -38,8 +38,8 @@ remoteclaw gateway --port 18789
 3. Approve the pairing request on the gateway host:
 
 ```bash
-remoteclaw nodes pending
-remoteclaw nodes approve <requestId>
+remoteclaw devices list
+remoteclaw devices approve <requestId>
 ```
 
 4. Verify connection:
@@ -98,11 +98,11 @@ remoteclaw nodes invoke --node "iOS Node" --command canvas.snapshot --params '{"
 
 - `NODE_BACKGROUND_UNAVAILABLE`: bring the iOS app to the foreground (canvas/camera/screen commands require it).
 - `A2UI_HOST_NOT_CONFIGURED`: the Gateway did not advertise a canvas host URL; check `canvasHost` in [Gateway configuration](/gateway/configuration).
-- Pairing prompt never appears: run `remoteclaw nodes pending` and approve manually.
+- Pairing prompt never appears: run `remoteclaw devices list` and approve manually.
 - Reconnect fails after reinstall: the Keychain pairing token was cleared; re-pair the node.
 
 ## Related docs
 
-- [Pairing](/gateway/pairing)
+- [Pairing](/channels/pairing)
 - [Discovery](/gateway/discovery)
 - [Bonjour](/gateway/bonjour)

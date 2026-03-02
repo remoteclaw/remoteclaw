@@ -1,5 +1,5 @@
 ---
-description: "Frequently asked questions about RemoteClaw setup, configuration, and usage"
+summary: "Frequently asked questions about RemoteClaw setup, configuration, and usage"
 read_when:
   - Answering common setup, install, onboarding, or runtime support questions
   - Triaging user-reported issues before deeper debugging
@@ -8,7 +8,7 @@ title: "FAQ"
 
 # FAQ
 
-Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS, multi-agent, CLI runtimes, OAuth/API keys). For runtime diagnostics, see [Troubleshooting](/gateway/troubleshooting). For the full config reference, see [Configuration](/gateway/configuration).
+Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS, multi-agent, OAuth/API keys, model failover). For runtime diagnostics, see [Troubleshooting](/gateway/troubleshooting). For the full config reference, see [Configuration](/gateway/configuration).
 
 ## Table of contents
 
@@ -23,7 +23,7 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   - [It is stuck on "wake up my friend" / onboarding will not hatch. What now?](#it-is-stuck-on-wake-up-my-friend-onboarding-will-not-hatch-what-now)
   - [Can I migrate my setup to a new machine (Mac mini) without redoing onboarding?](#can-i-migrate-my-setup-to-a-new-machine-mac-mini-without-redoing-onboarding)
   - [Where do I see what is new in the latest version?](#where-do-i-see-what-is-new-in-the-latest-version)
-  - [I can't access docs.remoteclaw.org (SSL error). What now?](#i-cant-access-docsremoteclaworg-ssl-error-what-now)
+  - [I can't access docs.remoteclaw.ai (SSL error). What now?](#i-cant-access-docsremoteclawai-ssl-error-what-now)
   - [What's the difference between stable and beta?](#whats-the-difference-between-stable-and-beta)
   - [How do I install the beta version, and what's the difference between beta and dev?](#how-do-i-install-the-beta-version-and-whats-the-difference-between-beta-and-dev)
   - [How do I try the latest bits?](#how-do-i-try-the-latest-bits)
@@ -86,10 +86,11 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   - [How does memory work?](#how-does-memory-work)
   - [Memory keeps forgetting things. How do I make it stick?](#memory-keeps-forgetting-things-how-do-i-make-it-stick)
   - [Does memory persist forever? What are the limits?](#does-memory-persist-forever-what-are-the-limits)
+  - [Does semantic memory search require an OpenAI API key?](#does-semantic-memory-search-require-an-openai-api-key)
 - [Where things live on disk](#where-things-live-on-disk)
   - [Is all data used with RemoteClaw saved locally?](#is-all-data-used-with-remoteclaw-saved-locally)
   - [Where does RemoteClaw store its data?](#where-does-remoteclaw-store-its-data)
-  - [Where should workspace files live?](#where-should-workspace-files-live)
+  - [Where should AGENTS.md / SOUL.md / USER.md / MEMORY.md live?](#where-should-agentsmd-soulmd-usermd-memorymd-live)
   - [What's the recommended backup strategy?](#whats-the-recommended-backup-strategy)
   - [How do I completely uninstall RemoteClaw?](#how-do-i-completely-uninstall-remoteclaw)
   - [Can agents work outside the workspace?](#can-agents-work-outside-the-workspace)
@@ -136,19 +137,30 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   - [Do groups/threads share context with DMs?](#do-groupsthreads-share-context-with-dms)
   - [How many workspaces and agents can I create?](#how-many-workspaces-and-agents-can-i-create)
   - [Can I run multiple bots or chats at the same time (Slack), and how should I set that up?](#can-i-run-multiple-bots-or-chats-at-the-same-time-slack-and-how-should-i-set-that-up)
-- [Models and CLI runtimes](#models-and-cli-runtimes)
+- [Models: defaults, selection, aliases, switching](#models-defaults-selection-aliases-switching)
   - [What is the "default model"?](#what-is-the-default-model)
   - [What model do you recommend?](#what-model-do-you-recommend)
   - [How do I switch models without wiping my config?](#how-do-i-switch-models-without-wiping-my-config)
   - [Can I use self-hosted models (llama.cpp, vLLM, Ollama)?](#can-i-use-selfhosted-models-llamacpp-vllm-ollama)
-  - [What do RemoteClaw, Flawd, and Krill use for runtimes?](#what-do-remoteclaw-flawd-and-krill-use-for-runtimes)
+  - [What do RemoteClaw, Flawd, and Krill use for models?](#what-do-remoteclaw-flawd-and-krill-use-for-models)
   - [How do I switch models on the fly (without restarting)?](#how-do-i-switch-models-on-the-fly-without-restarting)
   - [Can I use GPT 5.2 for daily tasks and Codex 5.3 for coding](#can-i-use-gpt-52-for-daily-tasks-and-codex-53-for-coding)
+  - [Why do I see "Model … is not allowed" and then no reply?](#why-do-i-see-model-is-not-allowed-and-then-no-reply)
   - [Why do I see "Unknown model: minimax/MiniMax-M2.1"?](#why-do-i-see-unknown-model-minimaxminimaxm21)
-  - [Can I use different CLI runtimes for different agents?](#can-i-use-different-cli-runtimes-for-different-agents)
-  - [How do I use different model providers?](#how-do-i-use-different-model-providers)
-- [Model failover](#model-failover)
-- [CLI runtime authentication](#cli-runtime-authentication)
+  - [Can I use MiniMax as my default and OpenAI for complex tasks?](#can-i-use-minimax-as-my-default-and-openai-for-complex-tasks)
+  - [Are opus / sonnet / gpt built-in shortcuts?](#are-opus-sonnet-gpt-builtin-shortcuts)
+  - [How do I define/override model shortcuts (aliases)?](#how-do-i-defineoverride-model-shortcuts-aliases)
+  - [How do I add models from other providers like OpenRouter or Z.AI?](#how-do-i-add-models-from-other-providers-like-openrouter-or-zai)
+- [Model failover and "All models failed"](#model-failover-and-all-models-failed)
+  - [How does failover work?](#how-does-failover-work)
+  - [What does this error mean?](#what-does-this-error-mean)
+  - [Fix checklist for `No credentials found for profile "anthropic:default"`](#fix-checklist-for-no-credentials-found-for-profile-anthropicdefault)
+  - [Why did it also try Google Gemini and fail?](#why-did-it-also-try-google-gemini-and-fail)
+- [Auth profiles: what they are and how to manage them](#auth-profiles-what-they-are-and-how-to-manage-them)
+  - [What is an auth profile?](#what-is-an-auth-profile)
+  - [What are typical profile IDs?](#what-are-typical-profile-ids)
+  - [Can I control which auth profile is tried first?](#can-i-control-which-auth-profile-is-tried-first)
+  - [OAuth vs API key: what's the difference?](#oauth-vs-api-key-whats-the-difference)
 - [Gateway: ports, "already running", and remote mode](#gateway-ports-already-running-and-remote-mode)
   - [What port does the Gateway use?](#what-port-does-the-gateway-use)
   - [Why does `remoteclaw gateway status` say `Runtime: running` but `RPC probe: failed`?](#why-does-remoteclaw-gateway-status-say-runtime-running-but-rpc-probe-failed)
@@ -267,7 +279,7 @@ setup (PATH, services, permissions, auth files). Give them the **full source che
 the hackable (git) install:
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --install-method git
+curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
 This installs RemoteClaw **from a git checkout**, so the agent can read the code + docs and
@@ -306,7 +318,7 @@ Install docs: [Install](/install), [Installer flags](/install/installer), [Updat
 The repo recommends running from source and using the onboarding wizard:
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash
+curl -fsSL https://remoteclaw.ai/install.sh | bash
 remoteclaw onboard --install-daemon
 ```
 
@@ -408,14 +420,14 @@ state) as long as you copy **both** locations:
 
 1. Install RemoteClaw on the new machine.
 2. Copy `$REMOTECLAW_STATE_DIR` (default: `~/.remoteclaw`) from the old machine.
-3. Copy your workspace (path from `agents.defaults.workspace` in your config).
+3. Copy your workspace (default: `~/.remoteclaw/workspace`).
 4. Run `remoteclaw doctor` and restart the Gateway service.
 
 That preserves config, auth profiles, WhatsApp creds, sessions, and memory. If you're in
 remote mode, remember the gateway host owns the session store and workspace.
 
 **Important:** if you only commit/push your workspace to GitHub, you're backing
-up **memory files**, but **not** session history or auth. Those live
+up **memory + bootstrap files**, but **not** session history or auth. Those live
 under `~/.remoteclaw/` (for example `~/.remoteclaw/agents/<agentId>/sessions/`).
 
 Related: [Migrating](/install/migrating), [Where things live on disk](/help/faq#where-does-remoteclaw-store-its-data),
@@ -431,10 +443,10 @@ Newest entries are at the top. If the top section is marked **Unreleased**, the 
 section is the latest shipped version. Entries are grouped by **Highlights**, **Changes**, and
 **Fixes** (plus docs/other sections when needed).
 
-### I can't access docs.remoteclaw.org SSL error What now
+### I can't access docs.remoteclaw.ai SSL error What now
 
-Some Comcast/Xfinity connections incorrectly block `docs.remoteclaw.org` via Xfinity
-Advanced Security. Disable it or allowlist `docs.remoteclaw.org`, then retry. More
+Some Comcast/Xfinity connections incorrectly block `docs.remoteclaw.ai` via Xfinity
+Advanced Security. Disable it or allowlist `docs.remoteclaw.ai`, then retry. More
 detail: [Troubleshooting](/help/troubleshooting#docsremoteclawai-shows-an-ssl-error-comcastxfinity).
 Please help us unblock it by reporting here: [https://spa.xfinity.com/check_url_status](https://spa.xfinity.com/check_url_status).
 
@@ -463,15 +475,15 @@ See what changed:
 One-liners (macOS/Linux):
 
 ```bash
-curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --beta
+curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.ai/install.sh | bash -s -- --beta
 ```
 
 ```bash
-curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --install-method git
+curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
 Windows installer (PowerShell):
-[https://remoteclaw.org/install.ps1](https://remoteclaw.org/install.ps1)
+[https://remoteclaw.ai/install.ps1](https://remoteclaw.ai/install.ps1)
 
 More detail: [Development channels](/install/development-channels) and [Installer flags](/install/installer).
 
@@ -500,7 +512,7 @@ This switches to the `main` branch and updates from source.
 2. **Hackable install (from the installer site):**
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --install-method git
+curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
 That gives you a local repo you can edit, then update via git.
@@ -522,19 +534,19 @@ Docs: [Update](/cli/update), [Development channels](/install/development-channel
 Re-run the installer with **verbose output**:
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --verbose
+curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --verbose
 ```
 
 Beta install with verbose:
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --beta --verbose
+curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --beta --verbose
 ```
 
 For a hackable (git) install:
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --install-method git --verbose
+curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --install-method git --verbose
 ```
 
 Windows (PowerShell) equivalent:
@@ -542,7 +554,7 @@ Windows (PowerShell) equivalent:
 ```powershell
 # install.ps1 has no dedicated -Verbose flag yet.
 Set-PSDebug -Trace 1
-& ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -NoOnboard
+& ([scriptblock]::Create((iwr -useb https://remoteclaw.ai/install.ps1))) -NoOnboard
 Set-PSDebug -Trace 0
 ```
 
@@ -578,7 +590,7 @@ Use the **hackable (git) install** so you have the full source and docs locally,
 your bot (or Claude/Codex) _from that folder_ so it can read the repo and answer precisely.
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --install-method git
+curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --install-method git
 ```
 
 More detail: [Install](/install) and [Installer flags](/install/installer).
@@ -647,8 +659,8 @@ Docs: [Update](/cli/update), [Updating](/install/updating).
 
 `remoteclaw onboard` is the recommended setup path. In **local mode** it walks you through:
 
-- **CLI runtime selection** (choose which CLI agent to spawn: `claude`, `gemini`, `codex`, or `opencode`) and **auth setup** (each CLI runtime manages its own credentials — e.g. Anthropic setup-token for Claude, OAuth for Codex)
-- **Workspace** location
+- **Model/auth setup** (Anthropic **setup-token** recommended for Claude subscriptions, OpenAI Codex OAuth supported, API keys optional, LM Studio local models supported)
+- **Workspace** location + bootstrap files
 - **Gateway settings** (bind/port/auth/tailscale)
 - **Providers** (WhatsApp, Telegram, Discord, Mattermost (plugin), Signal, iMessage)
 - **Daemon install** (LaunchAgent on macOS; systemd user unit on Linux/WSL2)
@@ -662,7 +674,8 @@ No. You can run RemoteClaw with **API keys** (Anthropic/OpenAI/others) or with
 **local-only models** so your data stays on your device. Subscriptions (Claude
 Pro/Max or OpenAI Codex) are optional ways to authenticate those providers.
 
-Docs: [Local models](/gateway/local-models).
+Docs: [Anthropic](/providers/anthropic), [OpenAI](/providers/openai),
+[Local models](/gateway/local-models), [Models](/concepts/models).
 
 ### Can I use Claude Max subscription without an API key
 
@@ -676,7 +689,7 @@ If you want the most explicit, supported path, use an Anthropic API key.
 
 ### How does Anthropic setuptoken auth work
 
-`claude setup-token` generates a **token string** via the Claude Code CLI (it is not available in the web console). You can run it on **any machine**. Choose **Anthropic token (paste setup-token)** in the wizard. The token is stored as an auth profile for the **anthropic** provider and used like an API key (no auto-refresh).
+`claude setup-token` generates a **token string** via the Claude Code CLI (it is not available in the web console). You can run it on **any machine**. Choose **Anthropic token (paste setup-token)** in the wizard or paste it with `remoteclaw models auth paste-token --provider anthropic`. The token is stored as an auth profile for the **anthropic** provider and used like an API key (no auto-refresh). More detail: [OAuth](/concepts/oauth).
 
 ### Where do I find an Anthropic setuptoken
 
@@ -686,11 +699,11 @@ It is **not** in the Anthropic Console. The setup-token is generated by the **Cl
 claude setup-token
 ```
 
-Copy the token it prints, then choose **Anthropic token (paste setup-token)** in the wizard.
+Copy the token it prints, then choose **Anthropic token (paste setup-token)** in the wizard. If you want to run it on the gateway host, use `remoteclaw models auth setup-token --provider anthropic`. If you ran `claude setup-token` elsewhere, paste it on the gateway host with `remoteclaw models auth paste-token --provider anthropic`. See [Anthropic](/providers/anthropic).
 
 ### Do you support Claude subscription auth (Claude Pro or Max)
 
-Yes - via **setup-token**. RemoteClaw no longer reuses Claude Code CLI OAuth tokens; use a setup-token or an Anthropic API key. Generate the token anywhere and paste it on the gateway host.
+Yes - via **setup-token**. RemoteClaw no longer reuses Claude Code CLI OAuth tokens; use a setup-token or an Anthropic API key. Generate the token anywhere and paste it on the gateway host. See [Anthropic](/providers/anthropic) and [OAuth](/concepts/oauth).
 
 Note: Claude subscription access is governed by Anthropic's terms. For production or multi-user workloads, API keys are usually the safer choice.
 
@@ -701,32 +714,49 @@ use a **Claude subscription** (setup-token or Claude Code OAuth), wait for the w
 reset or upgrade your plan. If you use an **Anthropic API key**, check the Anthropic Console
 for usage/billing and raise limits as needed.
 
-Tip: wait for the rate limit to reset, upgrade your plan, or switch to a different CLI runtime.
+If the message is specifically:
+`Extra usage is required for long context requests`, the request is trying to use
+Anthropic's 1M context beta (`context1m: true`). That only works when your
+credential is eligible for long-context billing (API key billing or subscription
+with Extra Usage enabled).
+
+Tip: set a **fallback model** so RemoteClaw can keep replying while a provider is rate-limited.
+See [Models](/cli/models), [OAuth](/concepts/oauth), and
+[/gateway/troubleshooting#anthropic-429-extra-usage-required-for-long-context](/gateway/troubleshooting#anthropic-429-extra-usage-required-for-long-context).
 
 ### Is AWS Bedrock supported
 
-Bedrock support depends on your CLI runtime. If you use the `claude` CLI, configure Bedrock access through the Claude CLI itself (e.g. `ANTHROPIC_BEDROCK_*` environment variables). RemoteClaw does not manage Bedrock connections directly — it spawns the CLI runtime, which handles its own provider configuration. See your CLI runtime's documentation for Bedrock setup details.
+Yes - via pi-ai's **Amazon Bedrock (Converse)** provider with **manual config**. You must supply AWS credentials/region on the gateway host and add a Bedrock provider entry in your models config. See [Amazon Bedrock](/providers/bedrock) and [Model providers](/providers/models). If you prefer a managed key flow, an OpenAI-compatible proxy in front of Bedrock is still a valid option.
 
 ### How does Codex auth work
 
-To use Codex, select the `codex` CLI runtime during onboarding or set `agentRuntime` / `runtime` to `codex` in your config. Authentication is managed by the Codex CLI tool itself (typically via OpenAI OAuth). RemoteClaw spawns the CLI — it does not handle Codex auth directly. See [OpenAI](/providers/openai).
+RemoteClaw supports **OpenAI Code (Codex)** via OAuth (ChatGPT sign-in). The wizard can run the OAuth flow and will set the default model to `openai-codex/gpt-5.3-codex` when appropriate. See [Model providers](/concepts/model-providers) and [Wizard](/start/wizard).
 
 ### Do you support OpenAI subscription auth Codex OAuth
 
 Yes. RemoteClaw fully supports **OpenAI Code (Codex) subscription OAuth**. The onboarding wizard
 can run the OAuth flow for you.
 
+See [OAuth](/concepts/oauth), [Model providers](/concepts/model-providers), and [Wizard](/start/wizard).
+
 ### How do I set up Gemini CLI OAuth
 
-Gemini CLI authentication is the CLI runtime's concern. When using the `gemini` runtime, the Gemini CLI manages its own OAuth flow. Refer to the Gemini CLI documentation for auth setup. RemoteClaw spawns the CLI process — it does not store or manage Gemini OAuth tokens directly.
+Gemini CLI uses a **plugin auth flow**, not a client id or secret in `remoteclaw.json`.
+
+Steps:
+
+1. Enable the plugin: `remoteclaw plugins enable google-gemini-cli-auth`
+2. Login: `remoteclaw models auth login --provider google-gemini-cli --set-default`
+
+This stores OAuth tokens in auth profiles on the gateway host. Details: [Model providers](/concepts/model-providers).
 
 ### Is a local model OK for casual chats
 
-Usually no. RemoteClaw relies on the CLI runtime (claude, gemini, codex, opencode) to communicate with its model. If a CLI runtime supports connecting to a local model endpoint, that is configured through the CLI runtime itself. Smaller or quantized models increase prompt-injection risk — see [Security](/gateway/security).
+Usually no. RemoteClaw needs large context + strong safety; small cards truncate and leak. If you must, run the **largest** MiniMax M2.1 build you can locally (LM Studio) and see [/gateway/local-models](/gateway/local-models). Smaller/quantized models increase prompt-injection risk - see [Security](/gateway/security).
 
 ### How do I keep hosted model traffic in a specific region
 
-Region pinning is configured through your CLI runtime, not RemoteClaw. For example, the Claude CLI supports region-specific endpoints (e.g. AWS Bedrock in a specific region). Consult your CLI runtime's documentation for region configuration options.
+Pick region-pinned endpoints. OpenRouter exposes US-hosted options for MiniMax, Kimi, and GLM; choose the US-hosted variant to keep data in-region. You can still list Anthropic/OpenAI alongside these by using `models.mode: "merge"` so fallbacks stay available while respecting the regioned provider you select.
 
 ### Do I have to buy a Mac Mini to install this
 
@@ -798,7 +828,7 @@ Yes, via **multi-agent routing**. Bind each sender's WhatsApp **DM** (peer `kind
 
 ### Can I run a fast chat agent and an Opus for coding agent
 
-Yes. Use multi-agent routing: give each agent its own default model, then bind inbound routes (provider account or specific peers) to each agent. Example config lives in [Multi-Agent Routing](/concepts/multi-agent). See also [Configuration](/gateway/configuration).
+Yes. Use multi-agent routing: give each agent its own default model, then bind inbound routes (provider account or specific peers) to each agent. Example config lives in [Multi-Agent Routing](/concepts/multi-agent). See also [Models](/concepts/models) and [Configuration](/gateway/configuration).
 
 ### Does Homebrew work on Linux
 
@@ -934,7 +964,7 @@ Highlights:
 - **Open source and hackable:** inspect, extend, and self-host without vendor lock-in.
 
 Docs: [Gateway](/gateway), [Channels](/channels), [Multi-agent](/concepts/multi-agent),
-Memory.
+[Memory](/concepts/memory).
 
 ### I just set it up what should I do first
 
@@ -983,7 +1013,7 @@ Advantages:
 - **Always-on Gateway** (run on a VPS, interact from anywhere)
 - **Nodes** for local browser/screen/camera/exec
 
-Showcase: [https://remoteclaw.org/showcase](https://remoteclaw.org/showcase)
+Showcase: [https://remoteclaw.ai/showcase](https://remoteclaw.ai/showcase)
 
 ## Skills and automation
 
@@ -993,7 +1023,7 @@ Use managed overrides instead of editing the repo copy. Put your changes in `~/.
 
 ### Can I load skills from a custom folder
 
-Yes. Add extra directories via `skills.load.extraDirs` in `~/.remoteclaw/remoteclaw.json` (lowest precedence). Default precedence remains: `<workspace>/skills` → `~/.remoteclaw/skills` → bundled → `skills.load.extraDirs`.
+Yes. Add extra directories via `skills.load.extraDirs` in `~/.remoteclaw/remoteclaw.json` (lowest precedence). Default precedence remains: `<workspace>/skills` → `~/.remoteclaw/skills` → bundled → `skills.load.extraDirs`. `clawhub` installs into `./skills` by default, which RemoteClaw treats as `<workspace>/skills`.
 
 ### How can I use different models for different tasks
 
@@ -1013,7 +1043,8 @@ return a summary, and keep your main chat responsive.
 Ask your bot to "spawn a sub-agent for this task" or use `/subagents`.
 Use `/status` in chat to see what the Gateway is doing right now (and whether it is busy).
 
-Token tip: long tasks and sub-agents both consume tokens. If cost is a concern, configure sub-agents to use a different `runtime` value that connects to a cheaper model.
+Token tip: long tasks and sub-agents both consume tokens. If cost is a concern, set a
+cheaper model for sub-agents via `agents.defaults.subagents.model`.
 
 Docs: [Sub-agents](/tools/subagents).
 
@@ -1059,7 +1090,18 @@ Docs: [Cron jobs](/automation/cron-jobs), [Cron vs Heartbeat](/automation/cron-v
 
 ### How do I install skills on Linux
 
-Drop skills into your workspace skills directory (`<workspace>/skills/<name>/SKILL.md`) or into `~/.remoteclaw/skills/<name>/SKILL.md`. The macOS Skills UI isn't available on Linux.
+Use **ClawHub** (CLI) or drop skills into your workspace. The macOS Skills UI isn't available on Linux.
+Browse skills at [https://clawhub.com](https://clawhub.com).
+
+Install the ClawHub CLI (pick one package manager):
+
+```bash
+npm i -g clawhub
+```
+
+```bash
+pnpm add -g clawhub
+```
 
 ### Can RemoteClaw run tasks on a schedule or continuously in the background
 
@@ -1125,7 +1167,14 @@ If you want to keep context per client (agency workflows), a simple pattern is:
 If you want a native integration, open a feature request or build a skill
 targeting those APIs.
 
-Install skills by dropping them into `~/.remoteclaw/skills/<name>/SKILL.md` or `<workspace>/skills/<name>/SKILL.md`. Some skills expect binaries installed via Homebrew; on Linux that means Linuxbrew (see the Homebrew Linux FAQ entry above).
+Install skills:
+
+```bash
+clawhub install <skill-slug>
+clawhub update --all
+```
+
+ClawHub installs into `./skills` under your current directory (or falls back to your configured RemoteClaw workspace); RemoteClaw treats that as `<workspace>/skills` on the next session. For shared skills across agents, place them in `~/.remoteclaw/skills/<name>/SKILL.md`. Some skills expect binaries installed via Homebrew; on Linux that means Linuxbrew (see the Homebrew Linux FAQ entry above). See [Skills](/tools/skills) and [ClawHub](/tools/clawhub).
 
 ### How do I install the Chrome extension for browser takeover
 
@@ -1148,7 +1197,7 @@ You still need to click the extension button on the tab you want to control (it 
 
 ### Is there a dedicated sandboxing doc
 
-Yes. See Sandboxing. For Docker-specific setup (full gateway in Docker or sandbox images), see [Docker](/install/docker).
+Yes. See [Sandboxing](/gateway/sandboxing). For Docker-specific setup (full gateway in Docker or sandbox images), see [Docker](/install/docker).
 
 ### Docker feels limited How do I enable full features
 
@@ -1175,7 +1224,7 @@ Key config reference: [Gateway configuration](/gateway/configuration#agentsdefau
 
 ### How do I bind a host folder into the sandbox
 
-Set `agents.defaults.sandbox.docker.binds` to `["host:path:mode"]` (e.g., `"/home/user/src:/src:ro"`). Global + per-agent binds merge; per-agent binds are ignored when `scope: "shared"`. Use `:ro` for anything sensitive and remember binds bypass the sandbox filesystem walls. See [Gateway configuration](/gateway/configuration#agentsdefaultssandbox) for examples and safety notes.
+Set `agents.defaults.sandbox.docker.binds` to `["host:path:mode"]` (e.g., `"/home/user/src:/src:ro"`). Global + per-agent binds merge; per-agent binds are ignored when `scope: "shared"`. Use `:ro` for anything sensitive and remember binds bypass the sandbox filesystem walls. See [Sandboxing](/gateway/sandboxing#custom-bind-mounts) and [Sandbox vs Tool Policy vs Elevated](/gateway/sandbox-vs-tool-policy-vs-elevated#bind-mounts-security-quick-check) for examples and safety notes.
 
 ### How does memory work
 
@@ -1186,7 +1235,7 @@ RemoteClaw memory is just Markdown files in the agent workspace:
 
 RemoteClaw also runs a **silent pre-compaction memory flush** to remind the model
 to write durable notes before auto-compaction. This only runs when the workspace
-is writable (read-only sandboxes skip it). See Memory.
+is writable (read-only sandboxes skip it). See [Memory](/concepts/memory).
 
 ### Memory keeps forgetting things How do I make it stick
 
@@ -1197,7 +1246,28 @@ This is still an area we are improving. It helps to remind the model to store me
 it will know what to do. If it keeps forgetting, verify the Gateway is using the same
 workspace on every run.
 
-Docs: Memory, [Agent workspace](/concepts/agent-workspace).
+Docs: [Memory](/concepts/memory), [Agent workspace](/concepts/agent-workspace).
+
+### Does semantic memory search require an OpenAI API key
+
+Only if you use **OpenAI embeddings**. Codex OAuth covers chat/completions and
+does **not** grant embeddings access, so **signing in with Codex (OAuth or the
+Codex CLI login)** does not help for semantic memory search. OpenAI embeddings
+still need a real API key (`OPENAI_API_KEY` or `models.providers.openai.apiKey`).
+
+If you don't set a provider explicitly, RemoteClaw auto-selects a provider when it
+can resolve an API key (auth profiles, `models.providers.*.apiKey`, or env vars).
+It prefers OpenAI if an OpenAI key resolves, otherwise Gemini if a Gemini key
+resolves, then Voyage, then Mistral. If no remote key is available, memory
+search stays disabled until you configure it. If you have a local model path
+configured and present, RemoteClaw
+prefers `local`.
+
+If you'd rather stay local, set `memorySearch.provider = "local"` (and optionally
+`memorySearch.fallback = "none"`). If you want Gemini embeddings, set
+`memorySearch.provider = "gemini"` and provide `GEMINI_API_KEY` (or
+`memorySearch.remote.apiKey`). We support **OpenAI, Gemini, Voyage, Mistral, or local** embedding
+models - see [Memory](/concepts/memory) for the setup details.
 
 ### Does memory persist forever What are the limits
 
@@ -1206,7 +1276,7 @@ storage, not the model. The **session context** is still limited by the model
 context window, so long conversations can compact or truncate. That is why
 memory search exists - it pulls only the relevant parts back into context.
 
-Docs: Memory, [Context](/concepts/context).
+Docs: [Memory](/concepts/memory), [Context](/concepts/context).
 
 ## Where things live on disk
 
@@ -1222,42 +1292,42 @@ No - **RemoteClaw's state is local**, but **external services still see what you
 - **You control the footprint:** using local models keeps prompts on your machine, but channel
   traffic still goes through the channel's servers.
 
-Related: [Agent workspace](/concepts/agent-workspace), Memory.
+Related: [Agent workspace](/concepts/agent-workspace), [Memory](/concepts/memory).
 
 ### Where does RemoteClaw store its data
 
 Everything lives under `$REMOTECLAW_STATE_DIR` (default: `~/.remoteclaw`):
 
-| Path                                                              | Purpose                                                      |
-| ----------------------------------------------------------------- | ------------------------------------------------------------ |
-| `$REMOTECLAW_STATE_DIR/remoteclaw.json`                           | Main config (JSON5)                                          |
-| `$REMOTECLAW_STATE_DIR/credentials/oauth.json`                    | Legacy OAuth import (copied into auth profiles on first use) |
-| `$REMOTECLAW_STATE_DIR/agents/<agentId>/agent/auth-profiles.json` | Auth profiles (OAuth + API keys)                             |
-| `$REMOTECLAW_STATE_DIR/agents/<agentId>/agent/auth.json`          | Runtime auth cache (managed automatically)                   |
-| `$REMOTECLAW_STATE_DIR/credentials/`                              | Provider state (e.g. `whatsapp/<accountId>/creds.json`)      |
-| `$REMOTECLAW_STATE_DIR/agents/`                                   | Per-agent state (agentDir + sessions)                        |
-| `$REMOTECLAW_STATE_DIR/agents/<agentId>/sessions/`                | Conversation history & state (per agent)                     |
-| `$REMOTECLAW_STATE_DIR/agents/<agentId>/sessions/sessions.json`   | Session metadata (per agent)                                 |
+| Path                                                              | Purpose                                                            |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `$REMOTECLAW_STATE_DIR/remoteclaw.json`                           | Main config (JSON5)                                                |
+| `$REMOTECLAW_STATE_DIR/credentials/oauth.json`                    | Legacy OAuth import (copied into auth profiles on first use)       |
+| `$REMOTECLAW_STATE_DIR/agents/<agentId>/agent/auth-profiles.json` | Auth profiles (OAuth, API keys, and optional `keyRef`/`tokenRef`)  |
+| `$REMOTECLAW_STATE_DIR/secrets.json`                              | Optional file-backed secret payload for `file` SecretRef providers |
+| `$REMOTECLAW_STATE_DIR/agents/<agentId>/agent/auth.json`          | Legacy compatibility file (static `api_key` entries scrubbed)      |
+| `$REMOTECLAW_STATE_DIR/credentials/`                              | Provider state (e.g. `whatsapp/<accountId>/creds.json`)            |
+| `$REMOTECLAW_STATE_DIR/agents/`                                   | Per-agent state (agentDir + sessions)                              |
+| `$REMOTECLAW_STATE_DIR/agents/<agentId>/sessions/`                | Conversation history & state (per agent)                           |
+| `$REMOTECLAW_STATE_DIR/agents/<agentId>/sessions/sessions.json`   | Session metadata (per agent)                                       |
 
 Legacy single-agent path: `~/.remoteclaw/agent/*` (migrated by `remoteclaw doctor`).
 
-Your **workspace** is separate and configured via `agents.defaults.workspace` (no built-in default — must be configured).
+Your **workspace** (AGENTS.md, memory files, skills, etc.) is separate and configured via `agents.defaults.workspace` (default: `~/.remoteclaw/workspace`).
 
-### Where should workspace files live
+### Where should AGENTSmd SOULmd USERmd MEMORYmd live
 
-Workspace files live in the **agent workspace**, not `~/.remoteclaw`.
+These files live in the **agent workspace**, not `~/.remoteclaw`.
 
-- **Workspace (per agent)**: `HEARTBEAT.md`,
-  `MEMORY.md` (or `memory.md`), `memory/YYYY-MM-DD.md`, plus native agent config
-  (e.g. `CLAUDE.md` for Claude Code).
+- **Workspace (per agent)**: `AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `USER.md`,
+  `MEMORY.md` (or `memory.md`), `memory/YYYY-MM-DD.md`, optional `HEARTBEAT.md`.
 - **State dir (`~/.remoteclaw`)**: config, credentials, auth profiles, sessions, logs,
   and shared skills (`~/.remoteclaw/skills`).
 
-Configure workspace path via:
+Default workspace is `~/.remoteclaw/workspace`, configurable via:
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/projects" } },
+  agents: { defaults: { workspace: "~/.remoteclaw/workspace" } },
 }
 ```
 
@@ -1268,7 +1338,7 @@ workspace, not your local laptop).
 Tip: if you want a durable behavior or preference, ask the bot to **write it into
 AGENTS.md or MEMORY.md** rather than relying on chat history.
 
-See [Agent workspace](/concepts/agent-workspace) and Memory.
+See [Agent workspace](/concepts/agent-workspace) and [Memory](/concepts/memory).
 
 ### What's the recommended backup strategy
 
@@ -1276,7 +1346,7 @@ Put your **agent workspace** in a **private** git repo and back it up somewhere
 private (for example GitHub private). This captures memory + AGENTS/SOUL/USER
 files, and lets you restore the assistant's "mind" later.
 
-Do **not** commit anything under `~/.remoteclaw` (credentials, sessions, tokens).
+Do **not** commit anything under `~/.remoteclaw` (credentials, sessions, tokens, or encrypted secrets payloads).
 If you need a full restore, back up both the workspace and the state directory
 separately (see the migration question above).
 
@@ -1291,7 +1361,7 @@ See the dedicated guide: [Uninstall](/install/uninstall).
 Yes. The workspace is the **default cwd** and memory anchor, not a hard sandbox.
 Relative paths resolve inside the workspace, but absolute paths can access other
 host locations unless sandboxing is enabled. If you need isolation, use
-`agents.defaults.sandbox` or per-agent sandbox settings. If you
+[`agents.defaults.sandbox`](/gateway/sandboxing) or per-agent sandbox settings. If you
 want a repo to be the default working directory, point that agent's
 `workspace` to the repo root. The RemoteClaw repo is just source code; keep the
 workspace separate unless you intentionally want the agent to work inside it.
@@ -1322,7 +1392,7 @@ RemoteClaw reads an optional **JSON5** config from `$REMOTECLAW_CONFIG_PATH` (de
 $REMOTECLAW_CONFIG_PATH
 ```
 
-If the file is missing, it uses safe-ish defaults. Note that workspace must be explicitly configured via `agents.defaults.workspace` — there is no built-in default path.
+If the file is missing, it uses safe-ish defaults (including a default workspace of `~/.remoteclaw/workspace`).
 
 ### I set gatewaybind lan or tailnet and now nothing listens the UI says unauthorized
 
@@ -1457,8 +1527,8 @@ Typical setup:
 5. Approve the node on the Gateway:
 
    ```bash
-   remoteclaw nodes pending
-   remoteclaw nodes approve <requestId>
+   remoteclaw devices list
+   remoteclaw devices approve <requestId>
    ```
 
 No separate TCP bridge is required; nodes connect over the Gateway WebSocket.
@@ -1627,8 +1697,8 @@ Recommended setup:
 3. **Approve the node** on the gateway:
 
    ```bash
-   remoteclaw nodes pending
-   remoteclaw nodes approve <requestId>
+   remoteclaw devices list
+   remoteclaw devices approve <requestId>
    ```
 
 Docs: [Gateway protocol](/gateway/protocol), [Discovery](/gateway/discovery), [macOS remote mode](/platforms/mac/remote).
@@ -1703,7 +1773,7 @@ remoteclaw models status
 ```
 
 Copilot tokens are read from `COPILOT_GITHUB_TOKEN` (also `GH_TOKEN` / `GITHUB_TOKEN`).
-See [/environment](/help/environment).
+See [/concepts/model-providers](/concepts/model-providers) and [/environment](/help/environment).
 
 ## Sessions and multiple chats
 
@@ -1772,8 +1842,9 @@ remoteclaw onboard --install-daemon
 
 Notes:
 
-- The onboarding wizard also offers **Reset** if it sees an existing config. See Wizard.
+- The onboarding wizard also offers **Reset** if it sees an existing config. See [Wizard](/start/wizard).
 - If you used profiles (`--profile` / `REMOTECLAW_PROFILE`), reset each state dir (defaults are `~/.remoteclaw-<profile>`).
+- Dev reset: `remoteclaw gateway --dev --reset` (dev-only; wipes dev config + credentials + sessions + workspace).
 
 ### Im getting context too large errors how do I reset or compact
 
@@ -1799,7 +1870,7 @@ If it keeps happening:
 - Enable or tune **session pruning** (`agents.defaults.contextPruning`) to trim old tool output.
 - Use a model with a larger context window.
 
-Docs: [Session pruning](/concepts/session-pruning), [Session management](/concepts/session).
+Docs: [Compaction](/concepts/compaction), [Session pruning](/concepts/session-pruning), [Session management](/concepts/session).
 
 ### Why am I seeing "LLM request rejected: messages.content.tool_use.input field required"?
 
@@ -1914,11 +1985,17 @@ Best-practice setup:
 Docs: [Multi-Agent Routing](/concepts/multi-agent), [Slack](/channels/slack),
 [Browser](/tools/browser), [Chrome extension](/tools/chrome-extension), [Nodes](/nodes).
 
-## Models and CLI runtimes
+## Models: defaults, selection, aliases, switching
 
 ### What is the default model
 
-RemoteClaw is middleware — it does not select or manage models directly. Model selection is handled by the **CLI runtime** you configure (e.g. `claude`, `gemini`, `codex`, `opencode`). The `agentRuntime` / `runtime` config key determines which CLI agent process RemoteClaw spawns. Each CLI runtime manages its own model selection, configuration, and switching.
+RemoteClaw's default model is whatever you set as:
+
+```
+agents.defaults.model.primary
+```
+
+Models are referenced as `provider/model` (example: `anthropic/claude-opus-4-6`). If you omit the provider, RemoteClaw currently assumes `anthropic` as a temporary deprecation fallback - but you should still **explicitly** set `provider/model`.
 
 ### What model do you recommend
 
@@ -1927,14 +2004,18 @@ RemoteClaw is middleware — it does not select or manage models directly. Model
 **Reliable (less character):** `openai/gpt-5.2` - nearly as good as Opus, just less personality.
 **Budget:** `zai/glm-4.7`.
 
-See also [Local models](/gateway/local-models).
+MiniMax M2.1 has its own docs: [MiniMax](/providers/minimax) and
+[Local models](/gateway/local-models).
 
 Rule of thumb: use the **best model you can afford** for high-stakes work, and a cheaper
-model for routine chat or summaries. You can configure different CLI runtimes per agent and use sub-agents to
-parallelize long tasks (each sub-agent consumes tokens). See [Sub-agents](/tools/subagents).
+model for routine chat or summaries. You can route models per agent and use sub-agents to
+parallelize long tasks (each sub-agent consumes tokens). See [Models](/concepts/models) and
+[Sub-agents](/tools/subagents).
 
 Strong warning: weaker/over-quantized models are more vulnerable to prompt
 injection and unsafe behavior. See [Security](/gateway/security).
+
+More context: [Models](/concepts/models).
 
 ### Can I use selfhosted models llamacpp vLLM Ollama
 
@@ -1946,31 +2027,94 @@ injection. We strongly recommend **large models** for any bot that can use tools
 If you still want small models, enable sandboxing and strict tool allowlists.
 
 Docs: [Ollama](/providers/ollama), [Local models](/gateway/local-models),
-[Security](/gateway/security), Sandboxing.
+[Model providers](/concepts/model-providers), [Security](/gateway/security),
+[Sandboxing](/gateway/sandboxing).
 
 ### How do I switch models without wiping my config
 
-Model selection is managed by the CLI runtime, not RemoteClaw. To change which model your CLI runtime uses, update the CLI runtime's own configuration. To change which CLI runtime RemoteClaw spawns, edit the `runtime` field in `~/.remoteclaw/remoteclaw.json`.
+Use **model commands** or edit only the **model** fields. Avoid full config replaces.
+
+Safe options:
+
+- `/model` in chat (quick, per-session)
+- `remoteclaw models set ...` (updates just model config)
+- `remoteclaw configure --section model` (interactive)
+- edit `agents.defaults.model` in `~/.remoteclaw/remoteclaw.json`
 
 Avoid `config.apply` with a partial object unless you intend to replace the whole config.
 If you did overwrite config, restore from backup or re-run `remoteclaw doctor` to repair.
 
-Docs: [Configure](/cli/configure), [Config](/cli/config), [Doctor](/gateway/doctor).
+Docs: [Models](/concepts/models), [Configure](/cli/configure), [Config](/cli/config), [Doctor](/gateway/doctor).
 
-### What do RemoteClaw, Flawd, and Krill use for runtimes
+### What do RemoteClaw, Flawd, and Krill use for models
 
-- **RemoteClaw + Flawd:** `claude` CLI runtime (which defaults to Anthropic Opus).
-- **Krill:** configured with a different runtime for MiniMax M2.1.
+- **RemoteClaw + Flawd:** Anthropic Opus (`anthropic/claude-opus-4-6`) - see [Anthropic](/providers/anthropic).
+- **Krill:** MiniMax M2.1 (`minimax/MiniMax-M2.1`) - see [MiniMax](/providers/minimax).
 
 ### How do I switch models on the fly without restarting
 
-Model selection is managed by the CLI runtime, not RemoteClaw directly. To change models, configure the CLI runtime itself. For example, the Claude CLI supports model flags and configuration files; Codex and Gemini have their own model selection mechanisms.
+Use the `/model` command as a standalone message:
 
-To switch between different CLI runtimes entirely, update the `runtime` config key and restart the gateway.
+```
+/model sonnet
+/model haiku
+/model opus
+/model gpt
+/model gpt-mini
+/model gemini
+/model gemini-flash
+```
+
+You can list available models with `/model`, `/model list`, or `/model status`.
+
+`/model` (and `/model list`) shows a compact, numbered picker. Select by number:
+
+```
+/model 3
+```
+
+You can also force a specific auth profile for the provider (per session):
+
+```
+/model opus@anthropic:default
+/model opus@anthropic:work
+```
+
+Tip: `/model status` shows which agent is active, which `auth-profiles.json` file is being used, and which auth profile will be tried next.
+It also shows the configured provider endpoint (`baseUrl`) and API mode (`api`) when available.
+
+**How do I unpin a profile I set with profile**
+
+Re-run `/model` **without** the `@profile` suffix:
+
+```
+/model anthropic/claude-opus-4-6
+```
+
+If you want to return to the default, pick it from `/model` (or send `/model <default provider/model>`).
+Use `/model status` to confirm which auth profile is active.
 
 ### Can I use GPT 5.2 for daily tasks and Codex 5.3 for coding
 
-Yes. Configure different CLI runtimes per agent or use sub-agents with different `runtime` values. For example, one agent can use the `codex` runtime for coding tasks while another uses `claude` for daily tasks. See [Multi-Agent Routing](/concepts/multi-agent).
+Yes. Set one as default and switch as needed:
+
+- **Quick switch (per session):** `/model gpt-5.2` for daily tasks, `/model gpt-5.3-codex` for coding.
+- **Default + switch:** set `agents.defaults.model.primary` to `openai/gpt-5.2`, then switch to `openai-codex/gpt-5.3-codex` when coding (or the other way around).
+- **Sub-agents:** route coding tasks to sub-agents with a different default model.
+
+See [Models](/concepts/models) and [Slash commands](/tools/slash-commands).
+
+### Why do I see Model is not allowed and then no reply
+
+If `agents.defaults.models` is set, it becomes the **allowlist** for `/model` and any
+session overrides. Choosing a model that isn't in that list returns:
+
+```
+Model "provider/model" is not allowed. Use /model to list available models.
+```
+
+That error is returned **instead of** a normal reply. Fix: add the model to
+`agents.defaults.models`, remove the allowlist, or pick a model from `/model list`.
 
 ### Why do I see Unknown model minimaxMiniMaxM21
 
@@ -1993,38 +2137,245 @@ Fix checklist:
 
    and pick from the list (or `/model list` in chat).
 
-See [MiniMax](/providers/minimax).
+See [MiniMax](/providers/minimax) and [Models](/concepts/models).
 
-### Can I use different CLI runtimes for different agents
+### Can I use MiniMax as my default and OpenAI for complex tasks
 
-Yes. You can configure different `runtime` values per agent. For example, one agent can use the `claude` runtime while another uses `codex`. Use **multi-agent routing** to direct messages to the appropriate agent.
+Yes. Use **MiniMax as the default** and switch models **per session** when needed.
+Fallbacks are for **errors**, not "hard tasks," so use `/model` or a separate agent.
 
-Docs: [Multi-Agent Routing](/concepts/multi-agent).
+**Option A: switch per session**
 
-### How do I use different model providers
+```json5
+{
+  env: { MINIMAX_API_KEY: "sk-...", OPENAI_API_KEY: "sk-..." },
+  agents: {
+    defaults: {
+      model: { primary: "minimax/MiniMax-M2.1" },
+      models: {
+        "minimax/MiniMax-M2.1": { alias: "minimax" },
+        "openai/gpt-5.2": { alias: "gpt" },
+      },
+    },
+  },
+}
+```
 
-Model provider configuration is handled by each CLI runtime, not by RemoteClaw. For example:
+Then:
 
-- **Claude CLI**: Supports Anthropic API keys, setup-tokens, and Bedrock. See the Claude CLI docs.
-- **Codex CLI**: Uses OpenAI OAuth or API keys. See the Codex CLI docs.
-- **Gemini CLI**: Uses Google OAuth. See the Gemini CLI docs.
+```
+/model gpt
+```
 
-Configure your CLI runtime's credentials on the gateway host so the spawned CLI process can authenticate. RemoteClaw passes environment variables from `~/.remoteclaw/.env` and the config `env` block to the CLI process.
+**Option B: separate agents**
 
-## Model failover
+- Agent A default: MiniMax
+- Agent B default: OpenAI
+- Route by agent or use `/agent` to switch
 
-Model failover (if supported) is the CLI runtime's concern, not RemoteClaw's. RemoteClaw spawns a CLI agent process — it does not manage LLM provider connections, retry logic, or model fallback chains directly. If you experience model failures, consult your CLI runtime's documentation for failover and retry configuration.
+Docs: [Models](/concepts/models), [Multi-Agent Routing](/concepts/multi-agent), [MiniMax](/providers/minimax), [OpenAI](/providers/openai).
 
-## CLI runtime authentication
+### Are opus sonnet gpt builtin shortcuts
 
-Each CLI runtime (claude, gemini, codex, opencode) manages its own authentication. RemoteClaw does not store or rotate LLM provider credentials directly. For auth setup, consult the documentation for your chosen CLI runtime:
+Yes. RemoteClaw ships a few default shorthands (only applied when the model exists in `agents.defaults.models`):
 
-- **Claude CLI**: Anthropic API keys, setup-tokens, or Bedrock credentials
-- **Codex CLI**: OpenAI API keys or OAuth
-- **Gemini CLI**: Google OAuth
-- **OpenCode CLI**: see OpenCode documentation
+- `opus` → `anthropic/claude-opus-4-6`
+- `sonnet` → `anthropic/claude-sonnet-4-5`
+- `gpt` → `openai/gpt-5.2`
+- `gpt-mini` → `openai/gpt-5-mini`
+- `gemini` → `google/gemini-3-pro-preview`
+- `gemini-flash` → `google/gemini-3-flash-preview`
 
-Ensure the required credentials (environment variables, config files, or OAuth tokens) are available on the **gateway host** where RemoteClaw spawns the CLI process.
+If you set your own alias with the same name, your value wins.
+
+### How do I defineoverride model shortcuts aliases
+
+Aliases come from `agents.defaults.models.<modelId>.alias`. Example:
+
+```json5
+{
+  agents: {
+    defaults: {
+      model: { primary: "anthropic/claude-opus-4-6" },
+      models: {
+        "anthropic/claude-opus-4-6": { alias: "opus" },
+        "anthropic/claude-sonnet-4-5": { alias: "sonnet" },
+        "anthropic/claude-haiku-4-5": { alias: "haiku" },
+      },
+    },
+  },
+}
+```
+
+Then `/model sonnet` (or `/<alias>` when supported) resolves to that model ID.
+
+### How do I add models from other providers like OpenRouter or ZAI
+
+OpenRouter (pay-per-token; many models):
+
+```json5
+{
+  agents: {
+    defaults: {
+      model: { primary: "openrouter/anthropic/claude-sonnet-4-5" },
+      models: { "openrouter/anthropic/claude-sonnet-4-5": {} },
+    },
+  },
+  env: { OPENROUTER_API_KEY: "sk-or-..." },
+}
+```
+
+Z.AI (GLM models):
+
+```json5
+{
+  agents: {
+    defaults: {
+      model: { primary: "zai/glm-4.7" },
+      models: { "zai/glm-4.7": {} },
+    },
+  },
+  env: { ZAI_API_KEY: "..." },
+}
+```
+
+If you reference a provider/model but the required provider key is missing, you'll get a runtime auth error (e.g. `No API key found for provider "zai"`).
+
+**No API key found for provider after adding a new agent**
+
+This usually means the **new agent** has an empty auth store. Auth is per-agent and
+stored in:
+
+```
+~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json
+```
+
+Fix options:
+
+- Run `remoteclaw agents add <id>` and configure auth during the wizard.
+- Or copy `auth-profiles.json` from the main agent's `agentDir` into the new agent's `agentDir`.
+
+Do **not** reuse `agentDir` across agents; it causes auth/session collisions.
+
+## Model failover and "All models failed"
+
+### How does failover work
+
+Failover happens in two stages:
+
+1. **Auth profile rotation** within the same provider.
+2. **Model fallback** to the next model in `agents.defaults.model.fallbacks`.
+
+Cooldowns apply to failing profiles (exponential backoff), so RemoteClaw can keep responding even when a provider is rate-limited or temporarily failing.
+
+### What does this error mean
+
+```
+No credentials found for profile "anthropic:default"
+```
+
+It means the system attempted to use the auth profile ID `anthropic:default`, but could not find credentials for it in the expected auth store.
+
+### Fix checklist for No credentials found for profile anthropicdefault
+
+- **Confirm where auth profiles live** (new vs legacy paths)
+  - Current: `~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json`
+  - Legacy: `~/.remoteclaw/agent/*` (migrated by `remoteclaw doctor`)
+- **Confirm your env var is loaded by the Gateway**
+  - If you set `ANTHROPIC_API_KEY` in your shell but run the Gateway via systemd/launchd, it may not inherit it. Put it in `~/.remoteclaw/.env` or enable `env.shellEnv`.
+- **Make sure you're editing the correct agent**
+  - Multi-agent setups mean there can be multiple `auth-profiles.json` files.
+- **Sanity-check model/auth status**
+  - Use `remoteclaw models status` to see configured models and whether providers are authenticated.
+
+**Fix checklist for No credentials found for profile anthropic**
+
+This means the run is pinned to an Anthropic auth profile, but the Gateway
+can't find it in its auth store.
+
+- **Use a setup-token**
+  - Run `claude setup-token`, then paste it with `remoteclaw models auth setup-token --provider anthropic`.
+  - If the token was created on another machine, use `remoteclaw models auth paste-token --provider anthropic`.
+- **If you want to use an API key instead**
+  - Put `ANTHROPIC_API_KEY` in `~/.remoteclaw/.env` on the **gateway host**.
+  - Clear any pinned order that forces a missing profile:
+
+    ```bash
+    remoteclaw models auth order clear --provider anthropic
+    ```
+
+- **Confirm you're running commands on the gateway host**
+  - In remote mode, auth profiles live on the gateway machine, not your laptop.
+
+### Why did it also try Google Gemini and fail
+
+If your model config includes Google Gemini as a fallback (or you switched to a Gemini shorthand), RemoteClaw will try it during model fallback. If you haven't configured Google credentials, you'll see `No API key found for provider "google"`.
+
+Fix: either provide Google auth, or remove/avoid Google models in `agents.defaults.model.fallbacks` / aliases so fallback doesn't route there.
+
+**LLM request rejected message thinking signature required google antigravity**
+
+Cause: the session history contains **thinking blocks without signatures** (often from
+an aborted/partial stream). Google Antigravity requires signatures for thinking blocks.
+
+Fix: RemoteClaw now strips unsigned thinking blocks for Google Antigravity Claude. If it still appears, start a **new session** or set `/thinking off` for that agent.
+
+## Auth profiles: what they are and how to manage them
+
+Related: [/concepts/oauth](/concepts/oauth) (OAuth flows, token storage, multi-account patterns)
+
+### What is an auth profile
+
+An auth profile is a named credential record (OAuth or API key) tied to a provider. Profiles live in:
+
+```
+~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json
+```
+
+### What are typical profile IDs
+
+RemoteClaw uses provider-prefixed IDs like:
+
+- `anthropic:default` (common when no email identity exists)
+- `anthropic:<email>` for OAuth identities
+- custom IDs you choose (e.g. `anthropic:work`)
+
+### Can I control which auth profile is tried first
+
+Yes. Config supports optional metadata for profiles and an ordering per provider (`auth.order.<provider>`). This does **not** store secrets; it maps IDs to provider/mode and sets rotation order.
+
+RemoteClaw may temporarily skip a profile if it's in a short **cooldown** (rate limits/timeouts/auth failures) or a longer **disabled** state (billing/insufficient credits). To inspect this, run `remoteclaw models status --json` and check `auth.unusableProfiles`. Tuning: `auth.cooldowns.billingBackoffHours*`.
+
+You can also set a **per-agent** order override (stored in that agent's `auth-profiles.json`) via the CLI:
+
+```bash
+# Defaults to the configured default agent (omit --agent)
+remoteclaw models auth order get --provider anthropic
+
+# Lock rotation to a single profile (only try this one)
+remoteclaw models auth order set --provider anthropic anthropic:default
+
+# Or set an explicit order (fallback within provider)
+remoteclaw models auth order set --provider anthropic anthropic:work anthropic:default
+
+# Clear override (fall back to config auth.order / round-robin)
+remoteclaw models auth order clear --provider anthropic
+```
+
+To target a specific agent:
+
+```bash
+remoteclaw models auth order set --provider anthropic --agent main anthropic:default
+```
+
+### OAuth vs API key what's the difference
+
+RemoteClaw supports both:
+
+- **OAuth** often leverages subscription access (where applicable).
+- **API keys** use pay-per-token billing.
+
+The wizard explicitly supports Anthropic setup-token and OpenAI Codex OAuth and can store API keys for you.
 
 ## Gateway: ports, "already running", and remote mode
 
@@ -2133,7 +2484,7 @@ Quick setup (recommended):
 - Set a unique `gateway.port` in each profile config (or pass `--port` for manual runs).
 - Install a per-profile service: `remoteclaw --profile <name> gateway install`.
 
-Profiles also suffix service names (`org.remoteclaw.<profile>`; legacy `com.remoteclaw.*`, `remoteclaw-gateway-<profile>.service`, `RemoteClaw Gateway (<profile>)`).
+Profiles also suffix service names (`ai.remoteclaw.<profile>`; legacy `com.remoteclaw.*`, `remoteclaw-gateway-<profile>.service`, `RemoteClaw Gateway (<profile>)`).
 Full guide: [Multiple gateways](/gateway/multiple-gateways).
 
 ### What does invalid handshake code 1008 mean
@@ -2464,7 +2815,7 @@ If it is still noisy, check the session settings in the Control UI and set verbo
 to **inherit**. Also confirm you are not using a bot profile with `verboseDefault` set
 to `on` in config.
 
-Docs: [Security](/gateway/security#reasoning--verbose-output-in-groups).
+Docs: [Thinking and verbose](/tools/thinking), [Security](/gateway/security#reasoning--verbose-output-in-groups).
 
 ### How do I stopcancel a running task
 
@@ -2547,7 +2898,7 @@ You can add options like `debounce:2s cap:25 drop:summarize` for followup modes.
 
 **Q: "What's the default model for Anthropic with an API key?"**
 
-**A:** RemoteClaw is middleware that spawns CLI runtimes (like the Claude CLI). Model selection is handled by the CLI runtime, not RemoteClaw. If you use the `claude` runtime, ensure `ANTHROPIC_API_KEY` is set in `~/.remoteclaw/.env` on the gateway host so the Claude CLI process can authenticate. The CLI runtime determines which model to use based on its own configuration.
+**A:** In RemoteClaw, credentials and model selection are separate. Setting `ANTHROPIC_API_KEY` (or storing an Anthropic API key in auth profiles) enables authentication, but the actual default model is whatever you configure in `agents.defaults.model.primary` (for example, `anthropic/claude-sonnet-4-5` or `anthropic/claude-opus-4-6`). If you see `No credentials found for profile "anthropic:default"`, it means the Gateway couldn't find Anthropic credentials in the expected `auth-profiles.json` for the agent that's running.
 
 ---
 

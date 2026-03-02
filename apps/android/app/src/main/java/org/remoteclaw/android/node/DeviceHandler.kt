@@ -130,6 +130,19 @@ class DeviceHandler(
   private fun permissionsPayloadJson(): String {
     val canSendSms = appContext.packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
     val notificationAccess = DeviceNotificationListenerService.isAccessEnabled(appContext)
+    val photosGranted =
+      if (Build.VERSION.SDK_INT >= 33) {
+        hasPermission(Manifest.permission.READ_MEDIA_IMAGES)
+      } else {
+        hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
+      }
+    val motionGranted = hasPermission(Manifest.permission.ACTIVITY_RECOGNITION)
+    val notificationsGranted =
+      if (Build.VERSION.SDK_INT >= 33) {
+        hasPermission(Manifest.permission.POST_NOTIFICATIONS)
+      } else {
+        true
+      }
     return buildJsonObject {
       put(
         "permissions",
@@ -158,6 +171,13 @@ class DeviceHandler(
             ),
           )
           put(
+            "backgroundLocation",
+            permissionStateJson(
+              granted = hasPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+              promptableWhenDenied = true,
+            ),
+          )
+          put(
             "sms",
             permissionStateJson(
               granted = hasPermission(Manifest.permission.SEND_SMS) && canSendSms,
@@ -171,8 +191,49 @@ class DeviceHandler(
               promptableWhenDenied = true,
             ),
           )
-
-
+          put(
+            "notifications",
+            permissionStateJson(
+              granted = notificationsGranted,
+              promptableWhenDenied = true,
+            ),
+          )
+          put(
+            "photos",
+            permissionStateJson(
+              granted = photosGranted,
+              promptableWhenDenied = true,
+            ),
+          )
+          put(
+            "contacts",
+            permissionStateJson(
+              granted = hasPermission(Manifest.permission.READ_CONTACTS),
+              promptableWhenDenied = true,
+            ),
+          )
+          put(
+            "calendar",
+            permissionStateJson(
+              granted = hasPermission(Manifest.permission.READ_CALENDAR),
+              promptableWhenDenied = true,
+            ),
+          )
+          put(
+            "motion",
+            permissionStateJson(
+              granted = motionGranted,
+              promptableWhenDenied = true,
+            ),
+          )
+          // Screen capture on Android is interactive per-capture consent, not a sticky app permission.
+          put(
+            "screenCapture",
+            permissionStateJson(
+              granted = false,
+              promptableWhenDenied = true,
+            ),
+          )
         },
       )
     }.toString()

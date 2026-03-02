@@ -471,6 +471,69 @@ describe("security audit", () => {
     expect(res.findings.some((f) => f.checkId === "fs.config.perms_group_readable")).toBe(false);
   });
 
+  it("warns when workspace skill files resolve outside workspace root", async () => {
+    if (isWindows) {
+      return;
+    }
+
+    const tmp = await makeTmpDir("workspace-skill-symlink-escape");
+    const stateDir = path.join(tmp, "state");
+    const workspaceDir = path.join(tmp, "workspace");
+    const outsideDir = path.join(tmp, "outside");
+    await fs.mkdir(stateDir, { recursive: true, mode: 0o700 });
+    await fs.mkdir(path.join(workspaceDir, "skills", "leak"), { recursive: true });
+    await fs.mkdir(outsideDir, { recursive: true });
+
+    const outsideSkillPath = path.join(outsideDir, "SKILL.md");
+    await fs.writeFile(outsideSkillPath, "# outside\n", "utf-8");
+    await fs.symlink(outsideSkillPath, path.join(workspaceDir, "skills", "leak", "SKILL.md"));
+
+    const configPath = path.join(stateDir, "remoteclaw.json");
+    await fs.writeFile(configPath, "{}\n", "utf-8");
+    await fs.chmod(configPath, 0o600);
+
+    const res = await runSecurityAudit({
+      config: { agents: { defaults: { workspace: workspaceDir } } },
+      includeFilesystem: true,
+      includeChannelSecurity: false,
+      stateDir,
+      configPath,
+    });
+
+    const finding = res.findings.find((f) => f.checkId === "skills.workspace.symlink_escape");
+    expect(finding?.severity).toBe("warn");
+    expect(finding?.detail).toContain(outsideSkillPath);
+  });
+
+  it("does not warn for workspace skills that stay inside workspace root", async () => {
+    const tmp = await makeTmpDir("workspace-skill-in-root");
+    const stateDir = path.join(tmp, "state");
+    const workspaceDir = path.join(tmp, "workspace");
+    await fs.mkdir(stateDir, { recursive: true, mode: 0o700 });
+    await fs.mkdir(path.join(workspaceDir, "skills", "safe"), { recursive: true });
+    await fs.writeFile(
+      path.join(workspaceDir, "skills", "safe", "SKILL.md"),
+      "# in workspace\n",
+      "utf-8",
+    );
+
+    const configPath = path.join(stateDir, "remoteclaw.json");
+    await fs.writeFile(configPath, "{}\n", "utf-8");
+    if (!isWindows) {
+      await fs.chmod(configPath, 0o600);
+    }
+
+    const res = await runSecurityAudit({
+      config: { agents: { defaults: { workspace: workspaceDir } } },
+      includeFilesystem: true,
+      includeChannelSecurity: false,
+      stateDir,
+      configPath,
+    });
+
+    expect(res.findings.some((f) => f.checkId === "skills.workspace.symlink_escape")).toBe(false);
+  });
+
   it("does not score small-model risk when model config is absent", async () => {
     // Model selection gutted — collectModels only reads imageModel (which is
     // filtered out of small-param checks), so no small-model finding is expected.

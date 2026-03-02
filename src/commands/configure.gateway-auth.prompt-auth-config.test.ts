@@ -2,12 +2,41 @@ import { describe, expect, it, vi } from "vitest";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 
-vi.mock("../auth/index.js", () => ({
+const mocks = vi.hoisted(() => ({
+  promptAuthChoiceGrouped: vi.fn(),
+  applyAuthChoice: vi.fn(),
+  promptModelAllowlist: vi.fn(),
+  promptDefaultModel: vi.fn(),
+  promptCustomApiConfig: vi.fn(),
+}));
+
+vi.mock("../agents/auth-profiles.js", () => ({
   ensureAuthProfileStore: vi.fn(() => ({
     version: 1,
     profiles: {},
   })),
-  upsertAuthProfile: vi.fn(),
+}));
+
+vi.mock("./auth-choice-prompt.js", () => ({
+  promptAuthChoiceGrouped: mocks.promptAuthChoiceGrouped,
+}));
+
+vi.mock("./auth-choice.js", () => ({
+  applyAuthChoice: mocks.applyAuthChoice,
+  resolvePreferredProviderForAuthChoice: vi.fn(() => undefined),
+}));
+
+vi.mock("./model-picker.js", async (importActual) => {
+  const actual = await importActual<typeof import("./model-picker.js")>();
+  return {
+    ...actual,
+    promptModelAllowlist: mocks.promptModelAllowlist,
+    promptDefaultModel: mocks.promptDefaultModel,
+  };
+});
+
+vi.mock("./onboard-custom.js", () => ({
+  promptCustomApiConfig: mocks.promptCustomApiConfig,
 }));
 
 import { promptAuthConfig } from "./configure.gateway-auth.js";
@@ -20,30 +49,75 @@ function makeRuntime(): RuntimeEnv {
   };
 }
 
-function makePrompter(overrides?: { selectValue?: string; textValue?: string }): WizardPrompter {
+const noopPrompter = {} as WizardPrompter;
+
+function createKilocodeProvider() {
   return {
-    select: vi.fn().mockResolvedValue(overrides?.selectValue ?? "claude"),
-    text: vi.fn().mockResolvedValue(overrides?.textValue ?? ""),
-    confirm: vi.fn().mockResolvedValue(true),
-    password: vi.fn().mockResolvedValue(""),
-    group: vi.fn(),
-    note: vi.fn(),
-  } as unknown as WizardPrompter;
+    baseUrl: "https://api.kilo.ai/api/gateway/",
+    api: "openai-completions",
+    models: [
+      { id: "anthropic/claude-opus-4.6", name: "Claude Opus 4.6" },
+      { id: "minimax/minimax-m2.5:free", name: "MiniMax M2.5 (Free)" },
+    ],
+  };
+}
+
+function createApplyAuthChoiceConfig(includeMinimaxProvider = false) {
+  return {
+    config: {
+      agents: {
+        defaults: {
+          model: { primary: "kilocode/anthropic/claude-opus-4.6" },
+        },
+      },
+      models: {
+        providers: {
+          kilocode: createKilocodeProvider(),
+          ...(includeMinimaxProvider
+            ? {
+                minimax: {
+                  baseUrl: "https://api.minimax.io/anthropic",
+                  api: "anthropic-messages",
+                  models: [{ id: "MiniMax-M2.1", name: "MiniMax M2.1" }],
+                },
+              }
+            : {}),
+        },
+      },
+    },
+  };
+}
+
+async function runPromptAuthConfigWithAllowlist(includeMinimaxProvider = false) {
+  mocks.promptAuthChoiceGrouped.mockResolvedValue("kilocode-api-key");
+  mocks.applyAuthChoice.mockResolvedValue(createApplyAuthChoiceConfig(includeMinimaxProvider));
+  mocks.promptModelAllowlist.mockResolvedValue({
+    models: ["kilocode/anthropic/claude-opus-4.6"],
+  });
+
+  return promptAuthConfig({}, makeRuntime(), noopPrompter);
 }
 
 describe("promptAuthConfig", () => {
-  it("sets selected runtime in agent defaults", async () => {
-    const prompter = makePrompter({ selectValue: "claude" });
-    const result = await promptAuthConfig({}, makeRuntime(), prompter);
-    expect(result.agents?.defaults?.runtime).toBe("claude");
+  it("keeps Kilo provider models while applying allowlist defaults", async () => {
+    const result = await runPromptAuthConfigWithAllowlist();
+    expect(result.models?.providers?.kilocode?.models?.map((model) => model.id)).toEqual([
+      "anthropic/claude-opus-4.6",
+      "minimax/minimax-m2.5:free",
+    ]);
+    expect(Object.keys(result.agents?.defaults?.models ?? {})).toEqual([
+      "kilocode/anthropic/claude-opus-4.6",
+    ]);
   });
 
-  it("does not mutate agent defaults from input config", async () => {
-    const prompter = makePrompter({ selectValue: "gemini" });
-    const inputCfg = { agents: { defaults: { runtime: "claude" as const } } };
-    const result = await promptAuthConfig(inputCfg, makeRuntime(), prompter);
-    expect(result.agents?.defaults?.runtime).toBe("gemini");
-    // Original config unchanged
-    expect(inputCfg.agents.defaults.runtime).toBe("claude");
+  it("does not mutate provider model catalogs when allowlist is set", async () => {
+    const result = await runPromptAuthConfigWithAllowlist(true);
+    expect(result.models?.providers?.kilocode?.models?.map((model) => model.id)).toEqual([
+      "anthropic/claude-opus-4.6",
+      "minimax/minimax-m2.5:free",
+    ]);
+    expect(result.models?.providers?.minimax?.models?.map((model) => model.id)).toEqual([
+      "MiniMax-M2.1",
+    ]);
   });
 });

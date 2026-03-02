@@ -5,11 +5,13 @@ import type {
   RuntimeEnv,
 } from "remoteclaw/plugin-sdk";
 import {
+  createTypingCallbacks,
   createScopedPairingAccess,
   createReplyPrefixOptions,
   resolveOutboundMediaUrls,
   mergeAllowlist,
   resolveDirectDmAuthorizationOutcome,
+  resolveMentionGatingWithBypass,
   resolveOpenProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   resolveInboundRouteEnvelopeBuilderWithRuntime,
@@ -19,7 +21,7 @@ import {
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "remoteclaw/plugin-sdk";
 import { getZalouserRuntime } from "./runtime.js";
-import { sendMessageZalouser } from "./send.js";
+import { sendMessageZalouser, sendTypingZalouser } from "./send.js";
 import type { ResolvedZalouserAccount, ZaloInboundMessage } from "./types.js";
 import { listZaloFriends, listZaloGroups, startZaloListener } from "./zalo-js.js";
 
@@ -91,7 +93,7 @@ function normalizeGroupSlug(raw?: string | null): string {
 function isGroupAllowed(params: {
   groupId: string;
   groupName?: string | null;
-  groups: Record<string, { allow?: boolean; enabled?: boolean }>;
+  groups: Record<string, { allow?: boolean; enabled?: boolean; requireMention?: boolean }>;
 }): boolean {
   const groups = params.groups ?? {};
   const keys = Object.keys(groups);
@@ -116,6 +118,30 @@ function isGroupAllowed(params: {
     return wildcard.allow !== false && wildcard.enabled !== false;
   }
   return false;
+}
+
+function resolveGroupRequireMention(params: {
+  groupId: string;
+  groupName?: string | null;
+  groups: Record<string, { allow?: boolean; enabled?: boolean; requireMention?: boolean }>;
+}): boolean {
+  const groups = params.groups ?? {};
+  const candidates = [
+    params.groupId,
+    `group:${params.groupId}`,
+    params.groupName ?? "",
+    normalizeGroupSlug(params.groupName ?? ""),
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    const entry = groups[candidate];
+    if (typeof entry?.requireMention === "boolean") {
+      return entry.requireMention;
+    }
+  }
+  if (typeof groups["*"]?.requireMention === "boolean") {
+    return groups["*"].requireMention;
+  }
+  return true;
 }
 
 async function processMessage(
@@ -237,11 +263,8 @@ async function processMessage(
     return;
   }
 
-  if (
-    isGroup &&
-    core.channel.commands.isControlCommandMessage(rawBody, config) &&
-    commandAuthorized !== true
-  ) {
+  const hasControlCommand = core.channel.commands.isControlCommandMessage(rawBody, config);
+  if (isGroup && hasControlCommand && commandAuthorized !== true) {
     logVerbose(
       core,
       runtime,
@@ -267,6 +290,42 @@ async function processMessage(
     runtime: core.channel as any,
     sessionStore: config.session?.store,
   });
+
+  const requireMention = isGroup
+    ? resolveGroupRequireMention({
+        groupId: chatId,
+        groupName,
+        groups,
+      })
+    : false;
+  const mentionRegexes = core.channel.mentions.buildMentionRegexes(config, route.agentId);
+  const explicitMention = {
+    hasAnyMention: message.hasAnyMention === true,
+    isExplicitlyMentioned: message.wasExplicitlyMentioned === true,
+    canResolveExplicit: message.canResolveExplicitMention === true,
+  };
+  const wasMentioned = isGroup
+    ? core.channel.mentions.matchesMentionWithExplicit({
+        text: rawBody,
+        mentionRegexes,
+        explicit: explicitMention,
+      })
+    : true;
+  const mentionGate = resolveMentionGatingWithBypass({
+    isGroup,
+    requireMention,
+    canDetectMention: mentionRegexes.length > 0 || explicitMention.canResolveExplicit,
+    wasMentioned,
+    implicitMention: message.implicitMention === true,
+    hasAnyMention: explicitMention.hasAnyMention,
+    allowTextCommands: core.channel.commands.shouldHandleTextCommands(config),
+    hasControlCommand,
+    commandAuthorized: commandAuthorized === true,
+  });
+  if (isGroup && mentionGate.shouldSkip) {
+    logVerbose(core, runtime, `zalouser: skip group ${chatId} (mention required, not mentioned)`);
+    return;
+  }
 
   const fromLabel = isGroup ? groupName || `group:${chatId}` : senderName || `user:${senderId}`;
   const storePath = core.channel.session.resolveStorePath(config.session?.store, {
@@ -299,6 +358,7 @@ async function processMessage(
     ConversationLabel: fromLabel,
     SenderName: senderName || undefined,
     SenderId: senderId,
+    WasMentioned: isGroup ? mentionGate.effectiveWasMentioned : undefined,
     CommandAuthorized: commandAuthorized,
     Provider: "zalouser",
     Surface: "zalouser",
@@ -322,12 +382,24 @@ async function processMessage(
     channel: "zalouser",
     accountId: account.accountId,
   });
+  const typingCallbacks = createTypingCallbacks({
+    start: async () => {
+      await sendTypingZalouser(chatId, {
+        profile: account.profile,
+        isGroup,
+      });
+    },
+    onStartError: (err) => {
+      logVerbose(core, runtime, `zalouser typing failed for ${chatId}: ${String(err)}`);
+    },
+  });
 
   await core.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
     ctx: ctxPayload,
     cfg: config,
     dispatcherOptions: {
       ...prefixOptions,
+      typingCallbacks,
       deliver: async (payload: any) => {
         await deliverZalouserReply({
           payload: payload as { text?: string; mediaUrls?: string[]; mediaUrl?: string },

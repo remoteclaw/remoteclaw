@@ -30,6 +30,8 @@ import {
 import {
   countActiveDescendantRunsFromRuns,
   countActiveRunsForSessionFromRuns,
+  countPendingDescendantRunsExcludingRunFromRuns,
+  countPendingDescendantRunsFromRuns,
   findRunIdsByChildSessionKeyFromRuns,
   listDescendantRunsForRequesterFromRuns,
   listRunsForRequesterFromRuns,
@@ -61,10 +63,15 @@ const MAX_ANNOUNCE_RETRY_DELAY_MS = 8_000;
  */
 const MAX_ANNOUNCE_RETRY_COUNT = 3;
 /**
- * Announce entries older than this are force-expired even if delivery never
- * succeeded. Guards against stale registry entries surviving gateway restarts.
+ * Non-completion announce entries older than this are force-expired even if
+ * delivery never succeeded.
  */
 const ANNOUNCE_EXPIRY_MS = 5 * 60_000; // 5 minutes
+/**
+ * Completion-message flows can wait for descendants to finish, but this hard
+ * cap prevents indefinite pending state when descendants never fully settle.
+ */
+const ANNOUNCE_COMPLETION_HARD_EXPIRY_MS = 30 * 60_000; // 30 minutes
 type SubagentRunOrphanReason = "missing-session-entry" | "missing-session-id";
 
 function resolveAnnounceRetryDelayMs(retryCount: number) {
@@ -369,7 +376,11 @@ function resumeSubagentRun(runId: string) {
     persistSubagentRuns();
     return;
   }
-  if (typeof entry.endedAt === "number" && Date.now() - entry.endedAt > ANNOUNCE_EXPIRY_MS) {
+  if (
+    entry.expectsCompletionMessage !== true &&
+    typeof entry.endedAt === "number" &&
+    Date.now() - entry.endedAt > ANNOUNCE_EXPIRY_MS
+  ) {
     logAnnounceGiveUp(entry, "expiry");
     entry.cleanupCompletedAt = Date.now();
     persistSubagentRuns();
@@ -386,6 +397,7 @@ function resumeSubagentRun(runId: string) {
   ) {
     const waitMs = Math.max(1, earliestRetryAt - now);
     setTimeout(() => {
+      resumedRuns.delete(runId);
       resumeSubagentRun(runId);
     }, waitMs).unref?.();
     resumedRuns.add(runId);
@@ -580,8 +592,10 @@ async function finalizeSubagentCleanup(
   const deferredDecision = resolveDeferredCleanupDecision({
     entry,
     now,
-    activeDescendantRuns: Math.max(0, countActiveDescendantRuns(entry.childSessionKey)),
+    // Defer until descendants are fully settled, including post-end cleanup.
+    activeDescendantRuns: Math.max(0, countPendingDescendantRuns(entry.childSessionKey)),
     announceExpiryMs: ANNOUNCE_EXPIRY_MS,
+    announceCompletionHardExpiryMs: ANNOUNCE_COMPLETION_HARD_EXPIRY_MS,
     maxAnnounceRetryCount: MAX_ANNOUNCE_RETRY_COUNT,
     deferDescendantDelayMs: MIN_ANNOUNCE_RETRY_DELAY_MS,
     resolveAnnounceRetryDelayMs,
@@ -618,6 +632,7 @@ async function finalizeSubagentCleanup(
 
   // Allow retry on the next wake if announce was deferred or failed.
   entry.cleanupHandled = false;
+  // Clear the in-flight resume marker so the scheduled retry can run again.
   resumedRuns.delete(runId);
   persistSubagentRuns();
   if (deferredDecision.resumeDelayMs == null) {
@@ -679,9 +694,10 @@ function retryDeferredCompletedAnnounces(excludeRunId?: string) {
     if (suppressAnnounceForSteerRestart(entry)) {
       continue;
     }
-    // Force-expire announces that have been pending too long (#18264).
+    // Force-expire stale non-completion announces; completion-message flows can
+    // stay pending while descendants run for a long time.
     const endedAgo = now - (entry.endedAt ?? now);
-    if (endedAgo > ANNOUNCE_EXPIRY_MS) {
+    if (entry.expectsCompletionMessage !== true && endedAgo > ANNOUNCE_EXPIRY_MS) {
       logAnnounceGiveUp(entry, "expiry");
       entry.cleanupCompletedAt = now;
       persistSubagentRuns();
@@ -1065,6 +1081,24 @@ export function countActiveDescendantRuns(rootSessionKey: string): number {
   return countActiveDescendantRunsFromRuns(
     getSubagentRunsSnapshotForRead(subagentRuns),
     rootSessionKey,
+  );
+}
+
+export function countPendingDescendantRuns(rootSessionKey: string): number {
+  return countPendingDescendantRunsFromRuns(
+    getSubagentRunsSnapshotForRead(subagentRuns),
+    rootSessionKey,
+  );
+}
+
+export function countPendingDescendantRunsExcludingRun(
+  rootSessionKey: string,
+  excludeRunId: string,
+): number {
+  return countPendingDescendantRunsExcludingRunFromRuns(
+    getSubagentRunsSnapshotForRead(subagentRuns),
+    rootSessionKey,
+    excludeRunId,
   );
 }
 

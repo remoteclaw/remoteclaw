@@ -734,6 +734,7 @@ async function sendSubagentAnnounceDirectly(params: {
   completionRouteMode?: "bound" | "fallback" | "hook";
   spawnMode?: SpawnSubagentMode;
   directIdempotencyKey: string;
+  currentRunId?: string;
   completionDirectOrigin?: DeliveryContext;
   directOrigin?: DeliveryContext;
   requesterIsSubagent: boolean;
@@ -776,19 +777,35 @@ async function sendSubagentAnnounceDirectly(params: {
         (params.completionRouteMode === "bound" || params.completionRouteMode === "hook");
       let shouldSendCompletionDirectly = true;
       if (!forceBoundSessionDirectDelivery) {
-        let activeDescendantRuns = 0;
+        let pendingDescendantRuns = 0;
         try {
-          const { countActiveDescendantRuns } = await import("./subagent-registry.js");
-          activeDescendantRuns = Math.max(
-            0,
-            countActiveDescendantRuns(canonicalRequesterSessionKey),
-          );
+          const {
+            countPendingDescendantRuns,
+            countPendingDescendantRunsExcludingRun,
+            countActiveDescendantRuns,
+          } = await import("./subagent-registry.js");
+          if (params.currentRunId && typeof countPendingDescendantRunsExcludingRun === "function") {
+            pendingDescendantRuns = Math.max(
+              0,
+              countPendingDescendantRunsExcludingRun(
+                canonicalRequesterSessionKey,
+                params.currentRunId,
+              ),
+            );
+          } else {
+            pendingDescendantRuns = Math.max(
+              0,
+              typeof countPendingDescendantRuns === "function"
+                ? countPendingDescendantRuns(canonicalRequesterSessionKey)
+                : countActiveDescendantRuns(canonicalRequesterSessionKey),
+            );
+          }
         } catch {
           // Best-effort only; when unavailable keep historical direct-send behavior.
         }
         // Keep non-bound completion announcements coordinated via requester
-        // session routing while sibling/descendant runs are still active.
-        if (activeDescendantRuns > 0) {
+        // session routing while sibling or descendant runs are still pending.
+        if (pendingDescendantRuns > 0) {
           shouldSendCompletionDirectly = false;
         }
       }
@@ -902,6 +919,7 @@ async function deliverSubagentAnnouncement(params: {
   completionRouteMode?: "bound" | "fallback" | "hook";
   spawnMode?: SpawnSubagentMode;
   directIdempotencyKey: string;
+  currentRunId?: string;
   signal?: AbortSignal;
 }): Promise<SubagentAnnounceDeliveryResult> {
   if (params.signal?.aborted) {
@@ -941,6 +959,7 @@ async function deliverSubagentAnnouncement(params: {
     requesterIsSubagent: params.requesterIsSubagent,
     expectsCompletionMessage: params.expectsCompletionMessage,
     signal: params.signal,
+    currentRunId: params.currentRunId,
     bestEffortDeliver: params.bestEffortDeliver,
   });
   if (direct.delivered || !params.expectsCompletionMessage) {
@@ -1191,16 +1210,23 @@ export async function runSubagentAnnounceFlow(params: {
 
     let requesterDepth = getSubagentDepthFromSessionStore(targetRequesterSessionKey);
 
-    let activeChildDescendantRuns = 0;
+    let pendingChildDescendantRuns = 0;
     try {
-      const { countActiveDescendantRuns } = await import("./subagent-registry.js");
-      activeChildDescendantRuns = Math.max(0, countActiveDescendantRuns(params.childSessionKey));
+      const { countPendingDescendantRuns, countActiveDescendantRuns } =
+        await import("./subagent-registry.js");
+      pendingChildDescendantRuns = Math.max(
+        0,
+        typeof countPendingDescendantRuns === "function"
+          ? countPendingDescendantRuns(params.childSessionKey)
+          : countActiveDescendantRuns(params.childSessionKey),
+      );
     } catch {
       // Best-effort only; fall back to direct announce behavior when unavailable.
     }
-    if (activeChildDescendantRuns > 0) {
-      // The finished run still has active descendant subagents. Defer announcing
-      // this run until descendants settle so we avoid posting in-progress updates.
+    if (pendingChildDescendantRuns > 0) {
+      // The finished run still has pending descendant subagents (either active,
+      // or ended but still finishing their own announce and cleanup flow). Defer
+      // announcing this run until descendants fully settle.
       shouldDeleteChildSession = false;
       return false;
     }
@@ -1359,6 +1385,7 @@ export async function runSubagentAnnounceFlow(params: {
       completionRouteMode: completionResolution.routeMode,
       spawnMode: params.spawnMode,
       directIdempotencyKey,
+      currentRunId: params.childRunId,
       signal: params.signal,
     });
     // Cron delivery state should only be marked as delivered when we have a

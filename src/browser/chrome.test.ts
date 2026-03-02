@@ -243,6 +243,16 @@ describe("browser chrome helpers", () => {
     await expect(isChromeReachable("http://127.0.0.1:12345", 50)).resolves.toBe(false);
   });
 
+  it("probes WebSocket URLs via handshake instead of HTTP", async () => {
+    // For ws:// URLs, isChromeReachable should NOT call fetch at all —
+    // it should attempt a WebSocket handshake instead.
+    const fetchSpy = vi.fn().mockRejectedValue(new Error("should not be called"));
+    vi.stubGlobal("fetch", fetchSpy);
+    // No WS server listening → handshake fails → not reachable
+    await expect(isChromeReachable("ws://127.0.0.1:19999", 50)).resolves.toBe(false);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it("stopRemoteClawChrome no-ops when process is already killed", async () => {
     const proc = makeProc({ killed: true });
     await stopRemoteClawChrome(

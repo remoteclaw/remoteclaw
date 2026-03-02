@@ -25,7 +25,7 @@ describe("runCommandWithTimeout", () => {
           'process.stdout.write((process.env.REMOTECLAW_BASE_ENV ?? "") + "|" + (process.env.REMOTECLAW_TEST_ENV ?? ""))',
         ],
         {
-          timeoutMs: 400,
+          timeoutMs: 120,
           env: { REMOTECLAW_TEST_ENV: "ok" },
         },
       );
@@ -40,7 +40,7 @@ describe("runCommandWithTimeout", () => {
     const result = await runCommandWithTimeout(
       [process.execPath, "-e", "setTimeout(() => {}, 20)"],
       {
-        timeoutMs: 180,
+        timeoutMs: 80,
         noOutputTimeoutMs: 8,
       },
     );
@@ -60,17 +60,17 @@ describe("runCommandWithTimeout", () => {
           "let count = 0;",
           'const ticker = setInterval(() => { process.stdout.write(".");',
           "count += 1;",
-          "if (count === 2) {",
+          "if (count === 3) {",
           "clearInterval(ticker);",
           "process.exit(0);",
           "}",
-          "}, 5);",
+          "}, 6);",
         ].join(" "),
       ],
       {
-        timeoutMs: 400,
+        timeoutMs: 180,
         // Keep a healthy margin above the emit interval while avoiding long idle waits.
-        noOutputTimeoutMs: 60,
+        noOutputTimeoutMs: 120,
       },
     );
 
@@ -84,7 +84,7 @@ describe("runCommandWithTimeout", () => {
     const result = await runCommandWithTimeout(
       [process.execPath, "-e", "setTimeout(() => {}, 12)"],
       {
-        timeoutMs: 8,
+        timeoutMs: 6,
       },
     );
 

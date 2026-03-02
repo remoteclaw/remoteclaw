@@ -53,11 +53,18 @@ export async function ensureConfigReady(params: {
       await runDoctorConfigFlow();
     } else {
       const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+      const originalSuppressNotes = process.env.REMOTECLAW_SUPPRESS_NOTES;
       process.stdout.write = (() => true) as unknown as typeof process.stdout.write;
+      process.env.REMOTECLAW_SUPPRESS_NOTES = "1";
       try {
         await runDoctorConfigFlow();
       } finally {
         process.stdout.write = originalStdoutWrite;
+        if (originalSuppressNotes === undefined) {
+          delete process.env.REMOTECLAW_SUPPRESS_NOTES;
+        } else {
+          process.env.REMOTECLAW_SUPPRESS_NOTES = originalSuppressNotes;
+        }
       }
     }
   }

@@ -1,3 +1,8 @@
+import type {
+  SessionUsageTimePoint as SharedSessionUsageTimePoint,
+  SessionUsageTimeSeries as SharedSessionUsageTimeSeries,
+} from "../../../src/shared/session-usage-timeseries-types.js";
+
 export type SessionsUsageEntry = {
   key: string;
   label?: string;
@@ -197,19 +202,6 @@ export type CostUsageSummary = {
   totals: SessionsUsageTotals;
 };
 
-export type SessionUsageTimePoint = {
-  timestamp: number;
-  input: number;
-  output: number;
-  cacheRead: number;
-  cacheWrite: number;
-  totalTokens: number;
-  cost: number;
-  cumulativeTokens: number;
-  cumulativeCost: number;
-};
+export type SessionUsageTimePoint = SharedSessionUsageTimePoint;
 
-export type SessionUsageTimeSeries = {
-  sessionId?: string;
-  points: SessionUsageTimePoint[];
-};
+export type SessionUsageTimeSeries = SharedSessionUsageTimeSeries;

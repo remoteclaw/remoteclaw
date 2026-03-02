@@ -56,6 +56,8 @@ export type SecurityAuditFinding = {
   remediation?: string;
 };
 
+type CodeSafetySummaryCache = Map<string, Promise<unknown>>;
+
 // --------------------------------------------------------------------------
 // Helpers
 // --------------------------------------------------------------------------
@@ -234,6 +236,41 @@ async function readInstalledPackageVersion(dir: string): Promise<string | undefi
   } catch {
     return undefined;
   }
+}
+
+function buildCodeSafetySummaryCacheKey(params: {
+  dirPath: string;
+  includeFiles?: string[];
+}): string {
+  const includeFiles = (params.includeFiles ?? []).map((entry) => entry.trim()).filter(Boolean);
+  const includeKey = includeFiles.length > 0 ? includeFiles.toSorted().join("\u0000") : "";
+  return `${params.dirPath}\u0000${includeKey}`;
+}
+
+async function getCodeSafetySummary(params: {
+  dirPath: string;
+  includeFiles?: string[];
+  summaryCache?: CodeSafetySummaryCache;
+}): Promise<Awaited<ReturnType<typeof skillScanner.scanDirectoryWithSummary>>> {
+  const cacheKey = buildCodeSafetySummaryCacheKey({
+    dirPath: params.dirPath,
+    includeFiles: params.includeFiles,
+  });
+  const cache = params.summaryCache;
+  if (cache) {
+    const hit = cache.get(cacheKey);
+    if (hit) {
+      return (await hit) as Awaited<ReturnType<typeof skillScanner.scanDirectoryWithSummary>>;
+    }
+    const pending = skillScanner.scanDirectoryWithSummary(params.dirPath, {
+      includeFiles: params.includeFiles,
+    });
+    cache.set(cacheKey, pending);
+    return await pending;
+  }
+  return await skillScanner.scanDirectoryWithSummary(params.dirPath, {
+    includeFiles: params.includeFiles,
+  });
 }
 
 // --------------------------------------------------------------------------
@@ -709,6 +746,7 @@ export async function readConfigSnapshotForAudit(params: {
 
 export async function collectPluginsCodeSafetyFindings(params: {
   stateDir: string;
+  summaryCache?: CodeSafetySummaryCache;
 }): Promise<SecurityAuditFinding[]> {
   const findings: SecurityAuditFinding[] = [];
   const { extensionsDir, pluginDirs } = await listInstalledPluginDirs({
@@ -757,6 +795,50 @@ export async function collectPluginsCodeSafetyFindings(params: {
         detail: `Found extension entries that escape the plugin directory:\n${escapedEntries.map((entry) => `  - ${entry}`).join("\n")}`,
         remediation:
           "Update the plugin manifest so all remoteclaw.extensions entries stay inside the plugin directory.",
+      });
+    }
+
+    const summary = await getCodeSafetySummary({
+      dirPath: pluginPath,
+      includeFiles: forcedScanEntries,
+      summaryCache: params.summaryCache,
+    }).catch((err) => {
+      findings.push({
+        checkId: "plugins.code_safety.scan_failed",
+        severity: "warn",
+        title: `Plugin "${pluginName}" code scan failed`,
+        detail: `Static code scan could not complete: ${String(err)}`,
+        remediation:
+          "Check file permissions and plugin layout, then rerun `remoteclaw security audit --deep`.",
+      });
+      return null;
+    });
+    if (!summary) {
+      continue;
+    }
+
+    if (summary.critical > 0) {
+      const criticalFindings = summary.findings.filter((f) => f.severity === "critical");
+      const details = formatCodeSafetyDetails(criticalFindings, pluginPath);
+
+      findings.push({
+        checkId: "plugins.code_safety",
+        severity: "critical",
+        title: `Plugin "${pluginName}" contains dangerous code patterns`,
+        detail: `Found ${summary.critical} critical issue(s) in ${summary.scannedFiles} scanned file(s):\n${details}`,
+        remediation:
+          "Review the plugin source code carefully before use. If untrusted, remove the plugin from your RemoteClaw extensions state directory.",
+      });
+    } else if (summary.warn > 0) {
+      const warnFindings = summary.findings.filter((f) => f.severity === "warn");
+      const details = formatCodeSafetyDetails(warnFindings, pluginPath);
+
+      findings.push({
+        checkId: "plugins.code_safety",
+        severity: "warn",
+        title: `Plugin "${pluginName}" contains suspicious code patterns`,
+        detail: `Found ${summary.warn} warning(s) in ${summary.scannedFiles} scanned file(s):\n${details}`,
+        remediation: `Review the flagged code to ensure it is intentional and safe.`,
       });
     }
   }

@@ -154,6 +154,7 @@ export async function authorizeSlackSystemEventSender(params: {
       channelId,
       channelName,
       channels: params.ctx.channelsConfig,
+      channelKeys: params.ctx.channelsConfigKeys,
       defaultRequireMention: params.ctx.defaultRequireMention,
     });
     const channelUsersAllowlistConfigured =

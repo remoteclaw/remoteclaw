@@ -1,3 +1,4 @@
+import * as fs from "node:fs/promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { callGateway } = vi.hoisted(() => ({
@@ -32,14 +33,47 @@ async function executeNodes(input: Record<string, unknown>) {
   return getNodesTool().execute("call1", input as never);
 }
 
-function mockNodeList(commands?: string[]) {
+type GatewayMockResult = Record<string, unknown> | null | undefined;
+type GatewayCall = { method: string; params?: Record<string, unknown> };
+
+function mockNodeList(params?: { commands?: string[]; remoteIp?: string }) {
   return {
-    nodes: [{ nodeId: NODE_ID, ...(commands ? { commands } : {}) }],
+    nodes: [
+      {
+        nodeId: NODE_ID,
+        ...(params?.commands ? { commands: params.commands } : {}),
+        ...(params?.remoteIp ? { remoteIp: params.remoteIp } : {}),
+      },
+    ],
   };
+}
+
+function setupNodeInvokeMock(params: {
+  commands?: string[];
+  remoteIp?: string;
+  onInvoke?: (invokeParams: unknown) => GatewayMockResult | Promise<GatewayMockResult>;
+  invokePayload?: unknown;
+}) {
+  callGateway.mockImplementation(async ({ method, params: invokeParams }: GatewayCall) => {
+    if (method === "node.list") {
+      return mockNodeList({ commands: params.commands, remoteIp: params.remoteIp });
+    }
+    if (method === "node.invoke") {
+      if (params.onInvoke) {
+        return await params.onInvoke(invokeParams);
+      }
+      if (params.invokePayload !== undefined) {
+        return { payload: params.invokePayload };
+      }
+      return { payload: {} };
+    }
+    return unexpectedGatewayMethod(method);
+  });
 }
 
 beforeEach(() => {
   callGateway.mockClear();
+  vi.unstubAllGlobals();
 });
 
 describe("nodes camera_snap", () => {
@@ -112,13 +146,123 @@ describe("nodes camera_snap", () => {
       }),
     ).rejects.toThrow(/facing=both is not allowed when deviceId is set/i);
   });
+
+  it("downloads camera_snap url payloads when node remoteIp is available", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("url-image", { status: 200 })),
+    );
+    setupNodeInvokeMock({
+      remoteIp: "198.51.100.42",
+      invokePayload: {
+        format: "jpg",
+        url: "https://198.51.100.42/snap.jpg",
+        width: 1,
+        height: 1,
+      },
+    });
+
+    const result = await executeNodes({
+      action: "camera_snap",
+      node: NODE_ID,
+      facing: "front",
+    });
+
+    expect(result.content?.[0]).toMatchObject({ type: "text" });
+    const mediaPath = String((result.content?.[0] as { text?: string } | undefined)?.text ?? "")
+      .replace(/^MEDIA:/, "")
+      .trim();
+    try {
+      await expect(fs.readFile(mediaPath, "utf8")).resolves.toBe("url-image");
+    } finally {
+      await fs.unlink(mediaPath).catch(() => {});
+    }
+  });
+
+  it("rejects camera_snap url payloads when node remoteIp is missing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("url-image", { status: 200 })),
+    );
+    setupNodeInvokeMock({
+      invokePayload: {
+        format: "jpg",
+        url: "https://198.51.100.42/snap.jpg",
+        width: 1,
+        height: 1,
+      },
+    });
+
+    await expect(
+      executeNodes({
+        action: "camera_snap",
+        node: NODE_ID,
+        facing: "front",
+      }),
+    ).rejects.toThrow(/node remoteip/i);
+  });
+});
+
+describe("nodes camera_clip", () => {
+  it("downloads camera_clip url payloads when node remoteIp is available", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("url-clip", { status: 200 })),
+    );
+    setupNodeInvokeMock({
+      remoteIp: "198.51.100.42",
+      invokePayload: {
+        format: "mp4",
+        url: "https://198.51.100.42/clip.mp4",
+        durationMs: 1200,
+        hasAudio: false,
+      },
+    });
+
+    const result = await executeNodes({
+      action: "camera_clip",
+      node: NODE_ID,
+      facing: "front",
+    });
+    const filePath = String((result.content?.[0] as { text?: string } | undefined)?.text ?? "")
+      .replace(/^FILE:/, "")
+      .trim();
+    try {
+      await expect(fs.readFile(filePath, "utf8")).resolves.toBe("url-clip");
+    } finally {
+      await fs.unlink(filePath).catch(() => {});
+    }
+  });
+
+  it("rejects camera_clip url payloads when node remoteIp is missing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("url-clip", { status: 200 })),
+    );
+    setupNodeInvokeMock({
+      invokePayload: {
+        format: "mp4",
+        url: "https://198.51.100.42/clip.mp4",
+        durationMs: 1200,
+        hasAudio: false,
+      },
+    });
+
+    await expect(
+      executeNodes({
+        action: "camera_clip",
+        node: NODE_ID,
+        facing: "front",
+      }),
+    ).rejects.toThrow(/node remoteip/i);
+  });
 });
 
 describe("nodes notifications_list", () => {
   it("invokes notifications.list and returns payload", async () => {
     callGateway.mockImplementation(async ({ method, params }) => {
       if (method === "node.list") {
-        return mockNodeList(["notifications.list"]);
+        return mockNodeList({ commands: ["notifications.list"] });
       }
       if (method === "node.invoke") {
         expect(params).toMatchObject({
@@ -154,7 +298,7 @@ describe("nodes notifications_action", () => {
   it("invokes notifications.actions dismiss", async () => {
     callGateway.mockImplementation(async ({ method, params }) => {
       if (method === "node.list") {
-        return mockNodeList(["notifications.actions"]);
+        return mockNodeList({ commands: ["notifications.actions"] });
       }
       if (method === "node.invoke") {
         expect(params).toMatchObject({
@@ -188,7 +332,7 @@ describe("nodes device_status and device_info", () => {
   it("invokes device.status and returns payload", async () => {
     callGateway.mockImplementation(async ({ method, params }) => {
       if (method === "node.list") {
-        return mockNodeList(["device.status", "device.info"]);
+        return mockNodeList({ commands: ["device.status", "device.info"] });
       }
       if (method === "node.invoke") {
         expect(params).toMatchObject({
@@ -219,7 +363,7 @@ describe("nodes device_status and device_info", () => {
   it("invokes device.info and returns payload", async () => {
     callGateway.mockImplementation(async ({ method, params }) => {
       if (method === "node.list") {
-        return mockNodeList(["device.status", "device.info"]);
+        return mockNodeList({ commands: ["device.status", "device.info"] });
       }
       if (method === "node.invoke") {
         expect(params).toMatchObject({
@@ -251,7 +395,7 @@ describe("nodes device_status and device_info", () => {
   it("invokes device.permissions and returns payload", async () => {
     callGateway.mockImplementation(async ({ method, params }) => {
       if (method === "node.list") {
-        return mockNodeList(["device.permissions"]);
+        return mockNodeList({ commands: ["device.permissions"] });
       }
       if (method === "node.invoke") {
         expect(params).toMatchObject({
@@ -284,7 +428,7 @@ describe("nodes device_status and device_info", () => {
   it("invokes device.health and returns payload", async () => {
     callGateway.mockImplementation(async ({ method, params }) => {
       if (method === "node.list") {
-        return mockNodeList(["device.health"]);
+        return mockNodeList({ commands: ["device.health"] });
       }
       if (method === "node.invoke") {
         expect(params).toMatchObject({
@@ -318,7 +462,7 @@ describe("nodes run", () => {
   it("passes invoke and command timeouts", async () => {
     callGateway.mockImplementation(async ({ method, params }) => {
       if (method === "node.list") {
-        return mockNodeList(["system.run"]);
+        return mockNodeList({ commands: ["system.run"] });
       }
       if (method === "node.invoke") {
         expect(params).toMatchObject({
@@ -353,7 +497,7 @@ describe("nodes run", () => {
     let approvalId: string | null = null;
     callGateway.mockImplementation(async ({ method, params }) => {
       if (method === "node.list") {
-        return mockNodeList(["system.run"]);
+        return mockNodeList({ commands: ["system.run"] });
       }
       if (method === "node.invoke") {
         invokeCalls += 1;
@@ -396,7 +540,7 @@ describe("nodes run", () => {
   it("fails with user denied when approval decision is deny", async () => {
     callGateway.mockImplementation(async ({ method }) => {
       if (method === "node.list") {
-        return mockNodeList(["system.run"]);
+        return mockNodeList({ commands: ["system.run"] });
       }
       if (method === "node.invoke") {
         throw new Error("SYSTEM_RUN_DENIED: approval required");
@@ -413,7 +557,7 @@ describe("nodes run", () => {
   it("fails closed for timeout and invalid approval decisions", async () => {
     callGateway.mockImplementation(async ({ method }) => {
       if (method === "node.list") {
-        return mockNodeList(["system.run"]);
+        return mockNodeList({ commands: ["system.run"] });
       }
       if (method === "node.invoke") {
         throw new Error("SYSTEM_RUN_DENIED: approval required");
@@ -427,7 +571,7 @@ describe("nodes run", () => {
 
     callGateway.mockImplementation(async ({ method }) => {
       if (method === "node.list") {
-        return mockNodeList(["system.run"]);
+        return mockNodeList({ commands: ["system.run"] });
       }
       if (method === "node.invoke") {
         throw new Error("SYSTEM_RUN_DENIED: approval required");

@@ -9,6 +9,7 @@ import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/se
 import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { getCliSessionId, setCliSessionId } from "../../agents/cli-session.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
+import { resolveUserTimezone } from "../../agents/date-time.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
 import { isCliProvider, normalizeModelRef, parseModelRef } from "../../agents/provider-utils.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
@@ -92,6 +93,9 @@ function buildCronChannelMessage(params: {
   resolvedDelivery: { channel?: string; to?: string; accountId?: string };
   timestamp: number;
   messageToolHints: string[] | undefined;
+  agentId?: string;
+  timezone?: string;
+  authorizedSenders?: string[];
 }): ChannelMessage {
   return {
     id: params.job.id ?? crypto.randomUUID(),
@@ -103,6 +107,9 @@ function buildCronChannelMessage(params: {
     timestamp: params.timestamp,
     messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
     senderIsOwner: false, // Cron agents must not self-modify via owner-only tools
+    agentId: params.agentId || undefined,
+    timezone: params.timezone || undefined,
+    authorizedSenders: params.authorizedSenders?.length ? params.authorizedSenders : undefined,
   };
 }
 
@@ -390,6 +397,8 @@ export async function runCronIsolatedAgentTurn(params: {
       resolvedDelivery,
       timestamp: now,
       messageToolHints,
+      agentId,
+      timezone: resolveUserTimezone(cfgWithAgentDefaults.agents?.defaults?.userTimezone),
     });
 
     runResult = await bridge.handle(message, undefined, abortSignal);

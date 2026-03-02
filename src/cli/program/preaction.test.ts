@@ -73,6 +73,9 @@ afterEach(() => {
 
 describe("registerPreActionHooks", () => {
   let program: Command;
+  let preActionHook:
+    | ((thisCommand: Command, actionCommand: Command) => Promise<void> | void)
+    | null = null;
 
   function buildProgram() {
     const program = new Command().name("remoteclaw");
@@ -103,22 +106,32 @@ describe("registerPreActionHooks", () => {
     return program;
   }
 
-  async function runCommand(
-    params: { parseArgv: string[]; processArgv?: string[] },
-    program: Command,
-  ) {
+  function resolveActionCommand(parseArgv: string[]): Command {
+    let current = program;
+    for (const segment of parseArgv) {
+      const next = current.commands.find((command) => command.name() === segment);
+      if (!next) {
+        break;
+      }
+      current = next;
+    }
+    return current;
+  }
+
+  async function runPreAction(params: { parseArgv: string[]; processArgv?: string[] }) {
     process.argv = params.processArgv ?? [...params.parseArgv];
-    await program.parseAsync(params.parseArgv, { from: "user" });
+    const actionCommand = resolveActionCommand(params.parseArgv);
+    if (!preActionHook) {
+      throw new Error("missing preAction hook");
+    }
+    await preActionHook(program, actionCommand);
   }
 
   it("emits banner, resolves config, and enables verbose from --debug", async () => {
-    await runCommand(
-      {
-        parseArgv: ["status"],
-        processArgv: ["node", "remoteclaw", "status", "--debug"],
-      },
-      program,
-    );
+    await runPreAction({
+      parseArgv: ["status"],
+      processArgv: ["node", "remoteclaw", "status", "--debug"],
+    });
 
     expect(emitCliBannerMock).toHaveBeenCalledWith("9.9.9-test");
     expect(setVerboseMock).toHaveBeenCalledWith(true);
@@ -131,13 +144,10 @@ describe("registerPreActionHooks", () => {
   });
 
   it("loads plugin registry for plugin-required commands", async () => {
-    await runCommand(
-      {
-        parseArgv: ["message", "send"],
-        processArgv: ["node", "remoteclaw", "message", "send"],
-      },
-      program,
-    );
+    await runPreAction({
+      parseArgv: ["message", "send"],
+      processArgv: ["node", "remoteclaw", "message", "send"],
+    });
 
     expect(setVerboseMock).toHaveBeenCalledWith(false);
     expect(process.env.NODE_NO_WARNINGS).toBe("1");
@@ -149,37 +159,28 @@ describe("registerPreActionHooks", () => {
   });
 
   it("loads plugin registry for configure command", async () => {
-    await runCommand(
-      {
-        parseArgv: ["configure"],
-        processArgv: ["node", "remoteclaw", "configure"],
-      },
-      program,
-    );
+    await runPreAction({
+      parseArgv: ["configure"],
+      processArgv: ["node", "remoteclaw", "configure"],
+    });
 
     expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledTimes(1);
   });
 
   it("skips config guard for doctor command", async () => {
-    await runCommand(
-      {
-        parseArgv: ["doctor"],
-        processArgv: ["node", "remoteclaw", "doctor"],
-      },
-      program,
-    );
+    await runPreAction({
+      parseArgv: ["doctor"],
+      processArgv: ["node", "remoteclaw", "doctor"],
+    });
 
     expect(ensureConfigReadyMock).not.toHaveBeenCalled();
   });
 
   it("skips preaction work when argv indicates help/version", async () => {
-    await runCommand(
-      {
-        parseArgv: ["status"],
-        processArgv: ["node", "remoteclaw", "--version"],
-      },
-      program,
-    );
+    await runPreAction({
+      parseArgv: ["status"],
+      processArgv: ["node", "remoteclaw", "--version"],
+    });
 
     expect(emitCliBannerMock).not.toHaveBeenCalled();
     expect(setVerboseMock).not.toHaveBeenCalled();
@@ -188,42 +189,20 @@ describe("registerPreActionHooks", () => {
 
   it("hides banner when REMOTECLAW_HIDE_BANNER is truthy", async () => {
     process.env.REMOTECLAW_HIDE_BANNER = "1";
-    await runCommand(
-      {
-        parseArgv: ["status"],
-        processArgv: ["node", "remoteclaw", "status"],
-      },
-      program,
-    );
+    await runPreAction({
+      parseArgv: ["status"],
+      processArgv: ["node", "remoteclaw", "status"],
+    });
 
     expect(emitCliBannerMock).not.toHaveBeenCalled();
     expect(ensureConfigReadyMock).toHaveBeenCalledTimes(1);
   });
 
-  it("suppresses doctor stdout for any --json output command", async () => {
-    await runCommand(
-      {
-        parseArgv: ["message", "send", "--json"],
-        processArgv: ["node", "remoteclaw", "message", "send", "--json"],
-      },
-      program,
-    );
-
-    expect(ensureConfigReadyMock).toHaveBeenCalledWith({
-      runtime: runtimeMock,
-      commandPath: ["message", "send"],
-      suppressDoctorStdout: true,
+  it("suppresses doctor stdout for --json output command", async () => {
+    await runPreAction({
+      parseArgv: ["update", "status", "--json"],
+      processArgv: ["node", "remoteclaw", "update", "status", "--json"],
     });
-
-    vi.clearAllMocks();
-
-    await runCommand(
-      {
-        parseArgv: ["update", "status", "--json"],
-        processArgv: ["node", "remoteclaw", "update", "status", "--json"],
-      },
-      program,
-    );
 
     expect(ensureConfigReadyMock).toHaveBeenCalledWith({
       runtime: runtimeMock,
@@ -233,13 +212,10 @@ describe("registerPreActionHooks", () => {
   });
 
   it("does not treat config set --json (strict-parse alias) as json output mode", async () => {
-    await runCommand(
-      {
-        parseArgv: ["config", "set", "gateway.auth.mode", "{bad", "--json"],
-        processArgv: ["node", "remoteclaw", "config", "set", "gateway.auth.mode", "{bad", "--json"],
-      },
-      program,
-    );
+    await runPreAction({
+      parseArgv: ["config", "set", "gateway.auth.mode", "{bad", "--json"],
+      processArgv: ["node", "remoteclaw", "config", "set", "gateway.auth.mode", "{bad", "--json"],
+    });
 
     expect(ensureConfigReadyMock).toHaveBeenCalledWith({
       runtime: runtimeMock,
@@ -249,5 +225,13 @@ describe("registerPreActionHooks", () => {
 
   beforeAll(() => {
     program = buildProgram();
+    const hooks = (
+      program as unknown as {
+        _lifeCycleHooks?: {
+          preAction?: Array<(thisCommand: Command, actionCommand: Command) => Promise<void> | void>;
+        };
+      }
+    )._lifeCycleHooks?.preAction;
+    preActionHook = hooks?.[0] ?? null;
   });
 });

@@ -704,6 +704,29 @@ describe("security audit", () => {
     expectFinding(res, "gateway.control_ui.allowed_origins_required", "critical");
   });
 
+  it("flags wildcard Control UI origins by exposure level", async () => {
+    const loopbackCfg: OpenClawConfig = {
+      gateway: {
+        bind: "loopback",
+        controlUi: { allowedOrigins: ["*"] },
+      },
+    };
+    const exposedCfg: OpenClawConfig = {
+      gateway: {
+        bind: "lan",
+        auth: { mode: "token", token: "very-long-browser-token-0123456789" },
+        controlUi: { allowedOrigins: ["*"] },
+      },
+    };
+
+    const loopback = await audit(loopbackCfg);
+    const exposed = await audit(exposedCfg);
+
+    expectFinding(loopback, "gateway.control_ui.allowed_origins_wildcard", "warn");
+    expectFinding(exposed, "gateway.control_ui.allowed_origins_wildcard", "critical");
+    expectNoFinding(exposed, "gateway.control_ui.allowed_origins_required");
+  });
+
   it("flags dangerous host-header origin fallback and suppresses missing allowed-origins finding", async () => {
     const cfg: RemoteClawConfig = {
       gateway: {
@@ -724,7 +747,7 @@ describe("security audit", () => {
     );
   });
 
-  it("warns when Feishu doc tool is enabled because create can grant requester access", async () => {
+  it("warns when Feishu doc tool is enabled because create supports owner_open_id", async () => {
     const cfg: RemoteClawConfig = {
       channels: {
         feishu: {
@@ -738,7 +761,7 @@ describe("security audit", () => {
     expectFinding(res, "channels.feishu.doc_owner_open_id", "warn");
   });
 
-  it("does not warn for Feishu doc grant risk when doc tools are disabled", async () => {
+  it("does not warn for Feishu owner_open_id when doc tools are disabled", async () => {
     const cfg: RemoteClawConfig = {
       channels: {
         feishu: {

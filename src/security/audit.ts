@@ -398,6 +398,18 @@ function collectGatewayConfigFindings(
         "If your deployment intentionally relies on Host-header origin fallback, set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback=true.",
     });
   }
+  if (controlUiAllowedOrigins.includes("*")) {
+    const exposed = bind !== "loopback";
+    findings.push({
+      checkId: "gateway.control_ui.allowed_origins_wildcard",
+      severity: exposed ? "critical" : "warn",
+      title: "Control UI allowed origins contains wildcard",
+      detail:
+        'gateway.controlUi.allowedOrigins includes "*" which effectively disables origin allowlisting for Control UI/WebChat requests.',
+      remediation:
+        "Replace wildcard origins with explicit trusted origins (for example https://control.example.com).",
+    });
+  }
   if (dangerouslyAllowHostHeaderOriginFallback) {
     const exposed = bind !== "loopback";
     findings.push({
@@ -488,11 +500,11 @@ function collectGatewayConfigFindings(
     findings.push({
       checkId: "channels.feishu.doc_owner_open_id",
       severity: "warn",
-      title: "Feishu doc create can grant requester permissions",
+      title: "Feishu doc create can grant owner permissions",
       detail:
-        'channels.feishu tools include "doc"; feishu_doc action "create" can grant document access to the trusted requesting Feishu user.',
+        'channels.feishu tools include "doc"; feishu_doc action "create" accepts owner_open_id and can grant document access to that user.',
       remediation:
-        "Disable channels.feishu.tools.doc when not needed, and restrict tool access for untrusted prompts.",
+        "Disable channels.feishu.tools.doc when not needed, and restrict tool access so untrusted prompts cannot set owner_open_id.",
     });
   }
 

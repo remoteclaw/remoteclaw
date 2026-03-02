@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  findBundledPluginByNpmSpec,
+  findBundledPluginSource,
   findBundledPluginSourceInMap,
   resolveBundledPluginSources,
 } from "./bundled-sources.js";
@@ -91,8 +91,12 @@ describe("bundled plugin sources", () => {
     });
     loadPluginManifestMock.mockReturnValue({ ok: true, manifest: { id: "feishu" } });
 
-    const resolved = findBundledPluginByNpmSpec({ spec: "@remoteclaw/feishu" });
-    const missing = findBundledPluginByNpmSpec({ spec: "@remoteclaw/not-found" });
+    const resolved = findBundledPluginSource({
+      lookup: { kind: "npmSpec", value: "@remoteclaw/feishu" },
+    });
+    const missing = findBundledPluginSource({
+      lookup: { kind: "npmSpec", value: "@remoteclaw/not-found" },
+    });
 
     expect(resolved?.pluginId).toBe("feishu");
     expect(resolved?.localPath).toBe("/app/extensions/feishu");
@@ -127,5 +131,18 @@ describe("bundled plugin sources", () => {
         lookup: { kind: "npmSpec", value: "@remoteclaw/feishu" },
       })?.pluginId,
     ).toBe("feishu");
+
+    loadPluginManifestMock.mockReturnValue({ ok: true, manifest: { id: "diffs" } });
+
+    const resolved = findBundledPluginSource({
+      lookup: { kind: "pluginId", value: "diffs" },
+    });
+    const missing = findBundledPluginSource({
+      lookup: { kind: "pluginId", value: "not-found" },
+    });
+
+    expect(resolved?.pluginId).toBe("diffs");
+    expect(resolved?.localPath).toBe("/app/extensions/diffs");
+    expect(missing).toBeUndefined();
   });
 });

@@ -14,7 +14,6 @@ import {
 import { buildControlUiCspHeader } from "./control-ui-csp.js";
 import {
   isReadHttpMethod,
-  respondMethodNotAllowed,
   respondNotFound as respondControlUiNotFound,
   respondPlainText,
 } from "./control-ui-http-utils.js";
@@ -300,10 +299,6 @@ export function handleControlUiHttpRequest(
   if (route.kind === "not-found") {
     applyControlUiSecurityHeaders(res);
     respondControlUiNotFound(res);
-    return true;
-  }
-  if (route.kind === "method-not-allowed") {
-    respondMethodNotAllowed(res);
     return true;
   }
   if (route.kind === "redirect") {

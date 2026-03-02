@@ -72,6 +72,7 @@ export type SignalEventHandlerDeps = {
   cfg: RemoteClawConfig;
   baseUrl: string;
   account?: string;
+  accountUuid?: string;
   accountId: string;
   blockStreaming?: boolean;
   historyLimit: number;

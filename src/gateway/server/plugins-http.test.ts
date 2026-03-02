@@ -1,8 +1,33 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { describe, expect, it, vi } from "vitest";
+import type { PluginHttpRouteRegistration } from "../../plugins/registry.js";
 import { makeMockHttpResponse } from "../test-http-response.js";
 import { createTestRegistry } from "./__tests__/test-utils.js";
-import { createGatewayPluginRequestHandler } from "./plugins-http.js";
+import {
+  createGatewayPluginRequestHandler,
+  isRegisteredPluginHttpRoutePath,
+  shouldEnforceGatewayAuthForPluginPath,
+} from "./plugins-http.js";
+
+function createRoute(
+  overrides: Partial<PluginHttpRouteRegistration> & { path: string },
+): PluginHttpRouteRegistration {
+  return {
+    handler: async (_req, res) => {
+      res.statusCode = 200;
+      res.end("OK");
+    },
+    ...overrides,
+  };
+}
+
+function buildRepeatedEncodedSlash(depth: number): string {
+  let encodedSlash = "%2f";
+  for (let i = 1; i < depth; i++) {
+    encodedSlash = encodedSlash.replace(/%/g, "%25");
+  }
+  return encodedSlash;
+}
 
 describe("createGatewayPluginRequestHandler", () => {
   it("returns false when no handlers are registered", async () => {
@@ -95,5 +120,39 @@ describe("createGatewayPluginRequestHandler", () => {
     expect(res.statusCode).toBe(500);
     expect(setHeader).toHaveBeenCalledWith("Content-Type", "text/plain; charset=utf-8");
     expect(end).toHaveBeenCalledWith("Internal Server Error");
+  });
+});
+
+describe("plugin HTTP registry helpers", () => {
+  const deeplyEncodedChannelPath =
+    "/api%2525252fchannels%2525252fnostr%2525252fdefault%2525252fprofile";
+  const decodeOverflowPublicPath = `/googlechat${buildRepeatedEncodedSlash(40)}public`;
+
+  it("detects registered route paths", () => {
+    const registry = createTestRegistry({
+      httpRoutes: [createRoute({ path: "/demo" })],
+    });
+    expect(isRegisteredPluginHttpRoutePath(registry, "/demo")).toBe(true);
+    expect(isRegisteredPluginHttpRoutePath(registry, "/missing")).toBe(false);
+  });
+
+  it("matches canonicalized variants of registered route paths", () => {
+    const registry = createTestRegistry({
+      httpRoutes: [createRoute({ path: "/api/demo" })],
+    });
+    expect(isRegisteredPluginHttpRoutePath(registry, "/api//demo")).toBe(true);
+    expect(isRegisteredPluginHttpRoutePath(registry, "/API/demo")).toBe(true);
+    expect(isRegisteredPluginHttpRoutePath(registry, "/api/%2564emo")).toBe(true);
+  });
+
+  it("enforces auth for protected and registered plugin routes", () => {
+    const registry = createTestRegistry({
+      httpRoutes: [createRoute({ path: "/api/demo" })],
+    });
+    expect(shouldEnforceGatewayAuthForPluginPath(registry, "/api//demo")).toBe(true);
+    expect(shouldEnforceGatewayAuthForPluginPath(registry, "/api/channels/status")).toBe(true);
+    expect(shouldEnforceGatewayAuthForPluginPath(registry, deeplyEncodedChannelPath)).toBe(true);
+    expect(shouldEnforceGatewayAuthForPluginPath(registry, decodeOverflowPublicPath)).toBe(true);
+    expect(shouldEnforceGatewayAuthForPluginPath(registry, "/not-plugin")).toBe(false);
   });
 });

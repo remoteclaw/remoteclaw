@@ -134,7 +134,7 @@ function expectNoFinding(res: SecurityAuditReport, checkId: string): void {
 describe("security audit", () => {
   let fixtureRoot = "";
   let caseId = 0;
-  let channelSecurityStateDir = "";
+  let channelSecurityRoot = "";
 
   const makeTmpDir = async (label: string) => {
     const dir = path.join(fixtureRoot, `case-${caseId++}-${label}`);
@@ -143,22 +143,18 @@ describe("security audit", () => {
   };
 
   const withChannelSecurityStateDir = async (fn: (tmp: string) => Promise<void>) => {
+    const channelSecurityStateDir = path.join(channelSecurityRoot, `state-${caseId++}`);
     const credentialsDir = path.join(channelSecurityStateDir, "credentials");
-    await fs.rm(credentialsDir, { recursive: true, force: true });
     await fs.mkdir(credentialsDir, { recursive: true, mode: 0o700 });
-    await withEnvAsync(
-      { REMOTECLAW_STATE_DIR: channelSecurityStateDir },
-      async () => await fn(channelSecurityStateDir),
+    await withEnvAsync({ REMOTECLAW_STATE_DIR: channelSecurityStateDir }, () =>
+      fn(channelSecurityStateDir),
     );
   };
 
   beforeAll(async () => {
     fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-security-audit-"));
-    channelSecurityStateDir = path.join(fixtureRoot, "channel-security");
-    await fs.mkdir(path.join(channelSecurityStateDir, "credentials"), {
-      recursive: true,
-      mode: 0o700,
-    });
+    channelSecurityRoot = path.join(fixtureRoot, "channel-security");
+    await fs.mkdir(channelSecurityRoot, { recursive: true, mode: 0o700 });
   });
 
   afterAll(async () => {

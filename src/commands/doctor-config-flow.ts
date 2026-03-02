@@ -9,15 +9,23 @@ import {
 import { fetchTelegramChatId } from "../channels/telegram/api.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  RemoteClawSchema,
-  CONFIG_PATH,
-  migrateLegacyConfig,
-  readConfigFileSnapshot,
-} from "../config/config.js";
+import { CONFIG_PATH, migrateLegacyConfig, readConfigFileSnapshot } from "../config/config.js";
 import { collectProviderDangerousNameMatchingScopes } from "../config/dangerous-name-matching.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
 import { parseToolsBySenderTypedKey } from "../config/types.tools.js";
+import { RemoteClawSchema } from "../config/zod-schema.js";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- wired by later commits
+import { resolveCommandResolutionFromArgv } from "../infra/exec-command-resolution.js";
+import {
+  listInterpreterLikeSafeBins, // eslint-disable-line @typescript-eslint/no-unused-vars -- wired by later commits
+  resolveMergedSafeBinProfileFixtures, // eslint-disable-line @typescript-eslint/no-unused-vars -- wired by later commits
+} from "../infra/exec-safe-bin-runtime-policy.js";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- wired by later commits
+import {
+  getTrustedSafeBinDirs,
+  isTrustedSafeBinPath,
+  normalizeTrustedSafeBinDirs,
+} from "../infra/exec-safe-bin-trust.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 import {

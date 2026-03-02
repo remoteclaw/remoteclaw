@@ -18,4 +18,3 @@ export {
   validateConfigObjectRawWithPlugins,
   validateConfigObjectWithPlugins,
 } from "./validation.js";
-export { RemoteClawSchema } from "./zod-schema.js";

@@ -11,6 +11,7 @@ import {
   updateSessionStoreEntry,
 } from "../../config/sessions.js";
 import type { TypingMode } from "../../config/types.js";
+import { loadCronStore, resolveCronStorePath } from "../../cron/store.js";
 import { emitAgentEvent } from "../../infra/agent-events.js";
 import { emitDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { generateSecureUuid } from "../../infra/secure-random.js";
@@ -50,6 +51,34 @@ import { createTypingSignaler } from "./typing-mode.js";
 import type { TypingController } from "./typing.js";
 
 const BLOCK_REPLY_SEND_TIMEOUT_MS = 15_000;
+
+/**
+ * Returns true when the cron store has at least one enabled job that shares the
+ * current session key.  Used to suppress the "no reminder scheduled" guard note
+ * when an existing cron (created in a prior turn) already covers the commitment.
+ */
+async function hasSessionRelatedCronJobs(params: {
+  cronStorePath?: string;
+  sessionKey?: string;
+}): Promise<boolean> {
+  try {
+    const storePath = resolveCronStorePath(params.cronStorePath);
+    const store = await loadCronStore(storePath);
+    if (store.jobs.length === 0) {
+      return false;
+    }
+    // If we have a session key, only consider cron jobs from the same session.
+    // This avoids suppressing the note due to unrelated cron jobs.
+    if (params.sessionKey) {
+      return store.jobs.some((job) => job.enabled && job.sessionKey === params.sessionKey);
+    }
+    // Fallback: any enabled cron job counts.
+    return store.jobs.some((job) => job.enabled);
+  } catch {
+    // If we cannot read the cron store, do not suppress the note.
+    return false;
+  }
+}
 
 export async function runReplyAgent(params: {
   commandBody: string;
@@ -496,8 +525,17 @@ export async function runReplyAgent(params: {
         typeof payload.text === "string" &&
         hasUnbackedReminderCommitment(payload.text),
     );
-    const guardedReplyPayloads =
+    // Suppress the guard note when an existing cron job (created in a prior
+    // turn) already covers the commitment — avoids false positives (#32228).
+    const coveredByExistingCron =
       hasReminderCommitment && successfulCronAdds === 0
+        ? await hasSessionRelatedCronJobs({
+            cronStorePath: cfg.cron?.store,
+            sessionKey,
+          })
+        : false;
+    const guardedReplyPayloads =
+      hasReminderCommitment && successfulCronAdds === 0 && !coveredByExistingCron
         ? appendUnscheduledReminderNote(replyPayloads)
         : replyPayloads;
 

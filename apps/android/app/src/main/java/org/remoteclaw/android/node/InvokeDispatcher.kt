@@ -10,7 +10,6 @@ import org.remoteclaw.android.protocol.RemoteClawDeviceCommand
 import org.remoteclaw.android.protocol.RemoteClawLocationCommand
 import org.remoteclaw.android.protocol.RemoteClawMotionCommand
 import org.remoteclaw.android.protocol.RemoteClawNotificationsCommand
-import org.remoteclaw.android.protocol.RemoteClawPhotosCommand
 import org.remoteclaw.android.protocol.RemoteClawScreenCommand
 import org.remoteclaw.android.protocol.RemoteClawSmsCommand
 import org.remoteclaw.android.protocol.RemoteClawSystemCommand
@@ -146,7 +145,9 @@ class InvokeDispatcher(
       RemoteClawSystemCommand.Notify.rawValue -> systemHandler.handleSystemNotify(paramsJson)
 
       // Photos command
-      RemoteClawPhotosCommand.Latest.rawValue -> photosHandler.handlePhotosLatest(paramsJson)
+      org.remoteclaw.android.protocol.RemoteClawPhotosCommand.Latest.rawValue -> photosHandler.handlePhotosLatest(
+        paramsJson,
+      )
 
       // Contacts command
       RemoteClawContactsCommand.Search.rawValue -> contactsHandler.handleContactsSearch(paramsJson)

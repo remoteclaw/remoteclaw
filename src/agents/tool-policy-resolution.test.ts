@@ -1,22 +1,11 @@
-import { Type } from "@sinclair/typebox";
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import type { AgentTool, AgentToolResult } from "./agent-types.js";
+import { createStubTool } from "./test-helpers/pi-tool-stubs.js";
 import {
   filterToolsByPolicy,
   isToolAllowedByPolicyName,
   resolveSubagentToolPolicy,
 } from "./tool-policy-resolution.js";
-
-function createStubTool(name: string): AgentTool {
-  return {
-    name,
-    label: name,
-    description: "",
-    parameters: Type.Object({}),
-    execute: async () => ({}) as AgentToolResult,
-  };
-}
 
 describe("tool-policy-resolution", () => {
   it("treats * in allow as allow-all", () => {

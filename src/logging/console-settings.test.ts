@@ -1,4 +1,9 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  captureConsoleSnapshot,
+  type ConsoleSnapshot,
+  restoreConsoleSnapshot,
+} from "./test-helpers/console-snapshot.js";
 
 vi.mock("./config.js", () => ({
   readLoggingConfig: () => undefined,
@@ -16,15 +21,6 @@ vi.mock("./logger.js", () => ({
 }));
 
 let loadConfigCalls = 0;
-type ConsoleSnapshot = {
-  log: typeof console.log;
-  info: typeof console.info;
-  warn: typeof console.warn;
-  error: typeof console.error;
-  debug: typeof console.debug;
-  trace: typeof console.trace;
-};
-
 let originalIsTty: boolean | undefined;
 let originalRemoteClawTestConsole: string | undefined;
 let snapshot: ConsoleSnapshot;
@@ -38,14 +34,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   loadConfigCalls = 0;
-  snapshot = {
-    log: console.log,
-    info: console.info,
-    warn: console.warn,
-    error: console.error,
-    debug: console.debug,
-    trace: console.trace,
-  };
+  snapshot = captureConsoleSnapshot();
   originalIsTty = process.stdout.isTTY;
   originalRemoteClawTestConsole = process.env.REMOTECLAW_TEST_CONSOLE;
   process.env.REMOTECLAW_TEST_CONSOLE = "1";
@@ -53,12 +42,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  console.log = snapshot.log;
-  console.info = snapshot.info;
-  console.warn = snapshot.warn;
-  console.error = snapshot.error;
-  console.debug = snapshot.debug;
-  console.trace = snapshot.trace;
+  restoreConsoleSnapshot(snapshot);
   if (originalRemoteClawTestConsole === undefined) {
     delete process.env.REMOTECLAW_TEST_CONSOLE;
   } else {

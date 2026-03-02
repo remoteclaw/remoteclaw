@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { normalizeEnvVarKey } from "./host-env-security.js";
+import { normalizeNonEmptyString, normalizeStringArray } from "./system-run-normalize.js";
 
 /** Minimal shape from the gutted exec-approvals module. */
 export type SystemRunApprovalBindingV1 = {
@@ -23,18 +24,6 @@ export type SystemRunApprovalPlanV2 = {
 
 type NormalizedSystemRunEnvEntry = [key: string, value: string];
 
-function normalizeString(value: unknown): string | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-  const trimmed = value.trim();
-  return trimmed ? trimmed : null;
-}
-
-function normalizeStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.map((entry) => String(entry)) : [];
-}
-
 export function normalizeSystemRunApprovalPlanV2(value: unknown): SystemRunApprovalPlanV2 | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
@@ -50,10 +39,10 @@ export function normalizeSystemRunApprovalPlanV2(value: unknown): SystemRunAppro
   return {
     version: 2,
     argv,
-    cwd: normalizeString(candidate.cwd),
-    rawCommand: normalizeString(candidate.rawCommand),
-    agentId: normalizeString(candidate.agentId),
-    sessionKey: normalizeString(candidate.sessionKey),
+    cwd: normalizeNonEmptyString(candidate.cwd),
+    rawCommand: normalizeNonEmptyString(candidate.rawCommand),
+    agentId: normalizeNonEmptyString(candidate.agentId),
+    sessionKey: normalizeNonEmptyString(candidate.sessionKey),
   };
 }
 
@@ -106,9 +95,9 @@ export function buildSystemRunApprovalBindingV1(params: {
     binding: {
       version: 1,
       argv: normalizeStringArray(params.argv),
-      cwd: normalizeString(params.cwd),
-      agentId: normalizeString(params.agentId),
-      sessionKey: normalizeString(params.sessionKey),
+      cwd: normalizeNonEmptyString(params.cwd),
+      agentId: normalizeNonEmptyString(params.agentId),
+      sessionKey: normalizeNonEmptyString(params.sessionKey),
       envHash: envBinding.envHash,
     },
     envKeys: envBinding.envKeys,

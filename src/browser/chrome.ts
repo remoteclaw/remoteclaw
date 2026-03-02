@@ -144,7 +144,7 @@ async function canRunCdpHealthCommand(
       handshakeTimeoutMs: timeoutMs,
     });
     let settled = false;
-    const onMessage = (raw: WebSocket.RawData) => {
+    const onMessage = (raw: Parameters<typeof rawDataToString>[0]) => {
       if (settled) {
         return;
       }

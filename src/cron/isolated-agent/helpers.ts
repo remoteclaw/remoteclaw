@@ -5,6 +5,7 @@ type DeliveryPayload = {
   mediaUrl?: string;
   mediaUrls?: string[];
   channelData?: Record<string, unknown>;
+  isError?: boolean;
 };
 
 export function pickSummaryFromOutput(text: string | undefined) {
@@ -16,7 +17,18 @@ export function pickSummaryFromOutput(text: string | undefined) {
   return clean.length > limit ? `${truncateUtf16Safe(clean, limit)}…` : clean;
 }
 
-export function pickSummaryFromPayloads(payloads: Array<{ text?: string | undefined }>) {
+export function pickSummaryFromPayloads(
+  payloads: Array<{ text?: string | undefined; isError?: boolean }>,
+) {
+  for (let i = payloads.length - 1; i >= 0; i--) {
+    if (payloads[i]?.isError) {
+      continue;
+    }
+    const summary = pickSummaryFromOutput(payloads[i]?.text);
+    if (summary) {
+      return summary;
+    }
+  }
   for (let i = payloads.length - 1; i >= 0; i--) {
     const summary = pickSummaryFromOutput(payloads[i]?.text);
     if (summary) {
@@ -26,7 +38,18 @@ export function pickSummaryFromPayloads(payloads: Array<{ text?: string | undefi
   return undefined;
 }
 
-export function pickLastNonEmptyTextFromPayloads(payloads: Array<{ text?: string | undefined }>) {
+export function pickLastNonEmptyTextFromPayloads(
+  payloads: Array<{ text?: string | undefined; isError?: boolean }>,
+) {
+  for (let i = payloads.length - 1; i >= 0; i--) {
+    if (payloads[i]?.isError) {
+      continue;
+    }
+    const clean = (payloads[i]?.text ?? "").trim();
+    if (clean) {
+      return clean;
+    }
+  }
   for (let i = payloads.length - 1; i >= 0; i--) {
     const clean = (payloads[i]?.text ?? "").trim();
     if (clean) {
@@ -37,13 +60,23 @@ export function pickLastNonEmptyTextFromPayloads(payloads: Array<{ text?: string
 }
 
 export function pickLastDeliverablePayload(payloads: DeliveryPayload[]) {
+  const isDeliverable = (p: DeliveryPayload) => {
+    const text = (p?.text ?? "").trim();
+    const hasMedia = Boolean(p?.mediaUrl) || (p?.mediaUrls?.length ?? 0) > 0;
+    const hasChannelData = Object.keys(p?.channelData ?? {}).length > 0;
+    return text || hasMedia || hasChannelData;
+  };
   for (let i = payloads.length - 1; i >= 0; i--) {
-    const payload = payloads[i];
-    const text = (payload?.text ?? "").trim();
-    const hasMedia = Boolean(payload?.mediaUrl) || (payload?.mediaUrls?.length ?? 0) > 0;
-    const hasChannelData = Object.keys(payload?.channelData ?? {}).length > 0;
-    if (text || hasMedia || hasChannelData) {
-      return payload;
+    if (payloads[i]?.isError) {
+      continue;
+    }
+    if (isDeliverable(payloads[i])) {
+      return payloads[i];
+    }
+  }
+  for (let i = payloads.length - 1; i >= 0; i--) {
+    if (isDeliverable(payloads[i])) {
+      return payloads[i];
     }
   }
   return undefined;

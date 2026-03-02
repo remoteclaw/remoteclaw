@@ -386,7 +386,18 @@ to capture a callback on a local port. In Docker or headless setups that
 callback can show a browser error. Copy the full redirect URL you land on and
 paste it back into the CLI agent's auth flow to finish auth.
 
-### Health check
+### Health checks
+
+Container probe endpoints (no auth required):
+
+```bash
+curl -fsS http://127.0.0.1:18789/healthz
+curl -fsS http://127.0.0.1:18789/readyz
+```
+
+Aliases: `/health` and `/ready`.
+
+Authenticated deep health snapshot (gateway + channels):
 
 ```bash
 docker compose exec remoteclaw-gateway node dist/index.js health --token "$REMOTECLAW_GATEWAY_TOKEN"

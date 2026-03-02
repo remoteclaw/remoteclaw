@@ -13,10 +13,6 @@ vi.mock("./doctor-gateway-health.js", () => ({
   probeGatewayMemoryStatus: vi.fn().mockResolvedValue({ checked: false, ready: false }),
 }));
 
-vi.mock("./doctor-memory-search.js", () => ({
-  noteMemorySearchHealth: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("./doctor-platform-notes.js", () => ({
   noteDeprecatedLegacyEnvVars: vi.fn(),
   noteMacLaunchAgentOverrides: vi.fn().mockResolvedValue(undefined),

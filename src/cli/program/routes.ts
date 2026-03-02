@@ -78,23 +78,6 @@ const routeAgentsList: RouteSpec = {
   },
 };
 
-const routeMemoryStatus: RouteSpec = {
-  match: (path) => path[0] === "memory" && path[1] === "status",
-  run: async (argv) => {
-    const agent = getFlagValue(argv, "--agent");
-    if (agent === null) {
-      return false;
-    }
-    const json = hasFlag(argv, "--json");
-    const deep = hasFlag(argv, "--deep");
-    const index = hasFlag(argv, "--index");
-    const verbose = hasFlag(argv, "--verbose");
-    const { runMemoryStatus } = await import("../memory-cli.js");
-    await runMemoryStatus({ agent, json, deep, index, verbose });
-    return true;
-  },
-};
-
 function getCommandPositionals(argv: string[]): string[] {
   const out: string[] = [];
   const args = argv.slice(2);
@@ -144,7 +127,6 @@ const routes: RouteSpec[] = [
   routeStatus,
   routeSessions,
   routeAgentsList,
-  routeMemoryStatus,
   routeConfigGet,
   routeConfigUnset,
 ];

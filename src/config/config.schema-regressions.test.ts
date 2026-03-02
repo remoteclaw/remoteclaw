@@ -23,34 +23,6 @@ describe("config schema regressions", () => {
     expect(res.ok).toBe(true);
   });
 
-  it('accepts memorySearch fallback "voyage"', () => {
-    const res = validateConfigObject({
-      agents: {
-        defaults: {
-          memorySearch: {
-            fallback: "voyage",
-          },
-        },
-      },
-    });
-
-    expect(res.ok).toBe(true);
-  });
-
-  it('accepts memorySearch provider "mistral"', () => {
-    const res = validateConfigObject({
-      agents: {
-        defaults: {
-          memorySearch: {
-            provider: "mistral",
-          },
-        },
-      },
-    });
-
-    expect(res.ok).toBe(true);
-  });
-
   it("accepts safe iMessage remoteHost", () => {
     const res = validateConfigObject({
       channels: {

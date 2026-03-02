@@ -80,7 +80,7 @@ describe("config plugin validation", () => {
     }
   });
 
-  it("rejects missing plugin ids in allow/deny/slots", async () => {
+  it("rejects missing plugin ids in allow/deny", async () => {
     const home = await createCaseHome();
     const res = validateInHome(home, {
       agents: { list: [{ id: "pi" }] },
@@ -88,7 +88,6 @@ describe("config plugin validation", () => {
         enabled: false,
         allow: ["missing-allow"],
         deny: ["missing-deny"],
-        slots: { memory: "missing-slot" },
       },
     });
     expect(res.ok).toBe(false);
@@ -97,7 +96,6 @@ describe("config plugin validation", () => {
         expect.arrayContaining([
           { path: "plugins.allow", message: "plugin not found: missing-allow" },
           { path: "plugins.deny", message: "plugin not found: missing-deny" },
-          { path: "plugins.slots.memory", message: "plugin not found: missing-slot" },
         ]),
       );
     }
@@ -113,7 +111,6 @@ describe("config plugin validation", () => {
         entries: { [removedId]: { enabled: true } },
         allow: [removedId],
         deny: [removedId],
-        slots: { memory: removedId },
       },
     });
     expect(res.ok).toBe(true);
@@ -132,11 +129,6 @@ describe("config plugin validation", () => {
           },
           {
             path: "plugins.deny",
-            message:
-              "plugin removed: google-antigravity-auth (stale config entry ignored; remove it from plugins config)",
-          },
-          {
-            path: "plugins.slots.memory",
             message:
               "plugin removed: google-antigravity-auth (stale config entry ignored; remove it from plugins config)",
           },

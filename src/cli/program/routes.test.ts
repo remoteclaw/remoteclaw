@@ -49,8 +49,4 @@ describe("program routes", () => {
   it("returns false for config unset route when path argument is missing", async () => {
     await expectRunFalse(["config", "unset"], ["node", "openclaw", "config", "unset"]);
   });
-
-  it("returns false for memory status route when --agent value is missing", async () => {
-    await expectRunFalse(["memory", "status"], ["node", "openclaw", "memory", "status", "--agent"]);
-  });
 });

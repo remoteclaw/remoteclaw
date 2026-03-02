@@ -22,13 +22,12 @@ import {
 import { doctorShellCompletion } from "./doctor-completion.js";
 import { loadAndMaybeMigrateDoctorConfig } from "./doctor-config-flow.js";
 import { maybeRepairGatewayDaemon } from "./doctor-gateway-daemon-flow.js";
-import { checkGatewayHealth, probeGatewayMemoryStatus } from "./doctor-gateway-health.js";
+import { checkGatewayHealth } from "./doctor-gateway-health.js";
 import {
   maybeRepairGatewayServiceConfig,
   maybeScanExtraGatewayServices,
 } from "./doctor-gateway-services.js";
 import { noteSourceInstallIssues } from "./doctor-install.js";
-import { noteMemorySearchHealth } from "./doctor-memory-search.js";
 import {
   noteMacLaunchAgentOverrides,
   noteMacLaunchctlGatewayEnvOverrides,
@@ -45,7 +44,6 @@ import {
 import { maybeRepairUiProtocolFreshness } from "./doctor-ui.js";
 import { maybeOfferUpdateBeforeDoctor } from "./doctor-update.js";
 import { noteWorkspaceStatus } from "./doctor-workspace-status.js";
-import { MEMORY_SYSTEM_PROMPT, shouldSuggestMemorySystem } from "./doctor-workspace.js";
 import { applyWizardMetadata, printWizardHeader, randomToken } from "./onboard-helpers.js";
 import { ensureSystemdUserLingerInteractive } from "./systemd-linger.js";
 
@@ -226,13 +224,6 @@ export async function doctorCommand(
     cfg,
     timeoutMs: options.nonInteractive === true ? 3000 : 10_000,
   });
-  const gatewayMemoryProbe = healthOk
-    ? await probeGatewayMemoryStatus({
-        cfg,
-        timeoutMs: options.nonInteractive === true ? 3000 : 10_000,
-      })
-    : { checked: false, ready: false };
-  await noteMemorySearchHealth(cfg, { gatewayMemoryProbe });
   await maybeRepairGatewayDaemon({
     cfg,
     runtime,
@@ -259,9 +250,6 @@ export async function doctorCommand(
   if (options.workspaceSuggestions !== false) {
     const workspaceDir = resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg));
     noteWorkspaceBackupTip(workspaceDir);
-    if (await shouldSuggestMemorySystem(workspaceDir)) {
-      note(MEMORY_SYSTEM_PROMPT, "Workspace");
-    }
   }
 
   const finalSnapshot = await readConfigFileSnapshot();

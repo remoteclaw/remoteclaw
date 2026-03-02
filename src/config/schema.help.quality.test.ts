@@ -32,71 +32,10 @@ const ROOT_SECTIONS = [
   "canvasHost",
   "talk",
   "gateway",
-  "memory",
   "plugins",
 ] as const;
 
 const TARGET_KEYS = [
-  "memory.citations",
-  "memory.backend",
-  "memory.qmd.searchMode",
-  "memory.qmd.scope",
-  "memory.qmd.includeDefaultMemory",
-  "memory.qmd.mcporter.enabled",
-  "memory.qmd.mcporter.serverName",
-  "memory.qmd.command",
-  "memory.qmd.mcporter",
-  "memory.qmd.mcporter.startDaemon",
-  "memory.qmd.paths",
-  "memory.qmd.paths.path",
-  "memory.qmd.paths.pattern",
-  "memory.qmd.paths.name",
-  "memory.qmd.sessions.enabled",
-  "memory.qmd.sessions.exportDir",
-  "memory.qmd.sessions.retentionDays",
-  "memory.qmd.update.interval",
-  "memory.qmd.update.debounceMs",
-  "memory.qmd.update.onBoot",
-  "memory.qmd.update.waitForBootSync",
-  "memory.qmd.update.embedInterval",
-  "memory.qmd.update.commandTimeoutMs",
-  "memory.qmd.update.updateTimeoutMs",
-  "memory.qmd.update.embedTimeoutMs",
-  "memory.qmd.limits.maxResults",
-  "memory.qmd.limits.maxSnippetChars",
-  "memory.qmd.limits.maxInjectedChars",
-  "memory.qmd.limits.timeoutMs",
-  "agents.defaults.memorySearch.provider",
-  "agents.defaults.memorySearch.fallback",
-  "agents.defaults.memorySearch.sources",
-  "agents.defaults.memorySearch.extraPaths",
-  "agents.defaults.memorySearch.experimental.sessionMemory",
-  "agents.defaults.memorySearch.remote.baseUrl",
-  "agents.defaults.memorySearch.remote.apiKey",
-  "agents.defaults.memorySearch.remote.headers",
-  "agents.defaults.memorySearch.remote.batch.enabled",
-  "agents.defaults.memorySearch.remote.batch.wait",
-  "agents.defaults.memorySearch.remote.batch.concurrency",
-  "agents.defaults.memorySearch.remote.batch.pollIntervalMs",
-  "agents.defaults.memorySearch.remote.batch.timeoutMinutes",
-  "agents.defaults.memorySearch.local.modelPath",
-  "agents.defaults.memorySearch.store.path",
-  "agents.defaults.memorySearch.store.vector.enabled",
-  "agents.defaults.memorySearch.store.vector.extensionPath",
-  "agents.defaults.memorySearch.query.hybrid.enabled",
-  "agents.defaults.memorySearch.query.hybrid.vectorWeight",
-  "agents.defaults.memorySearch.query.hybrid.textWeight",
-  "agents.defaults.memorySearch.query.hybrid.candidateMultiplier",
-  "agents.defaults.memorySearch.query.hybrid.mmr.enabled",
-  "agents.defaults.memorySearch.query.hybrid.mmr.lambda",
-  "agents.defaults.memorySearch.query.hybrid.temporalDecay.enabled",
-  "agents.defaults.memorySearch.query.hybrid.temporalDecay.halfLifeDays",
-  "agents.defaults.memorySearch.cache.enabled",
-  "agents.defaults.memorySearch.cache.maxEntries",
-  "agents.defaults.memorySearch.sync.onSearch",
-  "agents.defaults.memorySearch.sync.watch",
-  "agents.defaults.memorySearch.sync.sessions.deltaBytes",
-  "agents.defaults.memorySearch.sync.sessions.deltaMessages",
   "models.mode",
   "models.providers.*.auth",
   "models.providers.*.authHeader",
@@ -360,17 +299,9 @@ const TARGET_KEYS = [
   "agents.defaults.compaction.keepRecentTokens",
   "agents.defaults.compaction.reserveTokensFloor",
   "agents.defaults.compaction.maxHistoryShare",
-  "agents.defaults.compaction.memoryFlush",
-  "agents.defaults.compaction.memoryFlush.enabled",
-  "agents.defaults.compaction.memoryFlush.softThresholdTokens",
-  "agents.defaults.compaction.memoryFlush.prompt",
-  "agents.defaults.compaction.memoryFlush.systemPrompt",
 ] as const;
 
 const ENUM_EXPECTATIONS: Record<string, string[]> = {
-  "memory.citations": ['"auto"', '"on"', '"off"'],
-  "memory.backend": ['"builtin"', '"qmd"'],
-  "memory.qmd.searchMode": ['"query"', '"search"', '"vsearch"'],
   "models.mode": ['"merge"', '"replace"'],
   "models.providers.*.auth": ['"api-key"', '"token"', '"oauth"', '"aws-sdk"'],
   "gateway.reload.mode": ['"off"', '"restart"', '"hot"', '"hybrid"'],
@@ -479,14 +410,6 @@ const TOOLS_HOOKS_TARGET_KEYS = [
 ] as const;
 
 const CHANNELS_AGENTS_TARGET_KEYS = [
-  "agents.defaults.memorySearch.chunking.overlap",
-  "agents.defaults.memorySearch.chunking.tokens",
-  "agents.defaults.memorySearch.enabled",
-  "agents.defaults.memorySearch.model",
-  "agents.defaults.memorySearch.query.maxResults",
-  "agents.defaults.memorySearch.query.minScore",
-  "agents.defaults.memorySearch.sync.onSessionStart",
-  "agents.defaults.memorySearch.sync.watchDebounceMs",
   "agents.defaults.workspace",
   "agents.list[].tools.alsoAllow",
   "agents.list[].tools.byProvider",
@@ -609,24 +532,6 @@ describe("config help copy quality", () => {
         expect(help.includes(token), `missing option ${token} in ${key}`).toBe(true);
       }
     }
-  });
-
-  it("explains memory citations mode semantics", () => {
-    const help = FIELD_HELP["memory.citations"];
-    expect(help.includes('"auto"')).toBe(true);
-    expect(help.includes('"on"')).toBe(true);
-    expect(help.includes('"off"')).toBe(true);
-    expect(/always|always shows/i.test(help)).toBe(true);
-    expect(/hides|hide/i.test(help)).toBe(true);
-  });
-
-  it("includes concrete examples on path and interval fields", () => {
-    expect(FIELD_HELP["memory.qmd.paths.pattern"].includes("**/*.md")).toBe(true);
-    expect(FIELD_HELP["memory.qmd.update.interval"].includes("5m")).toBe(true);
-    expect(FIELD_HELP["memory.qmd.update.embedInterval"].includes("60m")).toBe(true);
-    expect(FIELD_HELP["agents.defaults.memorySearch.store.path"]).toContain(
-      "~/.openclaw/memory/{agentId}.sqlite",
-    );
   });
 
   it("documents cron deprecation, migration, and retention formats", () => {
@@ -768,15 +673,12 @@ describe("config help copy quality", () => {
     expect(/cooldown|backoff|retry/i.test(authCooldowns)).toBe(true);
   });
 
-  it("documents agent compaction safeguards and memory flush behavior", () => {
+  it("documents agent compaction safeguards", () => {
     const mode = FIELD_HELP["agents.defaults.compaction.mode"];
     expect(mode.includes('"default"')).toBe(true);
     expect(mode.includes('"safeguard"')).toBe(true);
 
     const historyShare = FIELD_HELP["agents.defaults.compaction.maxHistoryShare"];
     expect(/0\\.1-0\\.9|fraction|share/i.test(historyShare)).toBe(true);
-
-    const flush = FIELD_HELP["agents.defaults.compaction.memoryFlush.enabled"];
-    expect(/pre-compaction|memory flush|token/i.test(flush)).toBe(true);
   });
 });

@@ -6,7 +6,6 @@ import type {
   HumanDelayConfig,
   TypingMode,
 } from "./types.base.js";
-import type { MemorySearchConfig } from "./types.tools.js";
 
 export type AgentModelEntryConfig = {
   alias?: string;
@@ -158,8 +157,6 @@ export type AgentDefaultsConfig = {
   contextPruning?: AgentContextPruningConfig;
   /** Compaction tuning and pre-compaction memory flush behavior. */
   compaction?: AgentCompactionConfig;
-  /** Vector memory search configuration (per-agent overrides supported). */
-  memorySearch?: MemorySearchConfig;
   /** Default thinking level when no /think directive is present. */
   thinkingDefault?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
   /** Default verbose level when no /verbose directive is present. */
@@ -271,17 +268,4 @@ export type AgentCompactionConfig = {
   reserveTokensFloor?: number;
   /** Max share of context window for history during safeguard pruning (0.1–0.9, default 0.5). */
   maxHistoryShare?: number;
-  /** Pre-compaction memory flush (agentic turn). Default: enabled. */
-  memoryFlush?: AgentCompactionMemoryFlushConfig;
-};
-
-export type AgentCompactionMemoryFlushConfig = {
-  /** Enable the pre-compaction memory flush (default: true). */
-  enabled?: boolean;
-  /** Run the memory flush when context is within this many tokens of the compaction threshold. */
-  softThresholdTokens?: number;
-  /** User prompt used for the memory flush turn (NO_REPLY is enforced if missing). */
-  prompt?: string;
-  /** System prompt appended for the memory flush turn. */
-  systemPrompt?: string;
 };

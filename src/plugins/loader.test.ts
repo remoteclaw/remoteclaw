@@ -64,56 +64,6 @@ function writePlugin(params: {
   return { dir, file, id: params.id };
 }
 
-function loadBundledMemoryPluginRegistry(options?: {
-  packageMeta?: { name: string; version: string; description?: string };
-  pluginBody?: string;
-  pluginFilename?: string;
-}) {
-  const bundledDir = makeTempDir();
-  let pluginDir = bundledDir;
-  let pluginFilename = options?.pluginFilename ?? "memory-core.js";
-
-  if (options?.packageMeta) {
-    pluginDir = path.join(bundledDir, "memory-core");
-    pluginFilename = "index.js";
-    fs.mkdirSync(pluginDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(pluginDir, "package.json"),
-      JSON.stringify(
-        {
-          name: options.packageMeta.name,
-          version: options.packageMeta.version,
-          description: options.packageMeta.description,
-          openclaw: { extensions: ["./index.js"] },
-        },
-        null,
-        2,
-      ),
-      "utf-8",
-    );
-  }
-
-  writePlugin({
-    id: "memory-core",
-    body:
-      options?.pluginBody ?? `export default { id: "memory-core", kind: "memory", register() {} };`,
-    dir: pluginDir,
-    filename: pluginFilename,
-  });
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
-
-  return loadOpenClawPlugins({
-    cache: false,
-    config: {
-      plugins: {
-        slots: {
-          memory: "memory-core",
-        },
-      },
-    },
-  });
-}
-
 function setupBundledTelegramPlugin() {
   const bundledDir = makeTempDir();
   writePlugin({
@@ -248,30 +198,6 @@ describe("loadOpenClawPlugins", () => {
     expect(telegram?.error).toBe("disabled in config");
   });
 
-  it("enables bundled memory plugin when selected by slot", () => {
-    const registry = loadBundledMemoryPluginRegistry();
-
-    const memory = registry.plugins.find((entry) => entry.id === "memory-core");
-    expect(memory?.status).toBe("loaded");
-  });
-
-  it("preserves package.json metadata for bundled memory plugins", () => {
-    const registry = loadBundledMemoryPluginRegistry({
-      packageMeta: {
-        name: "@openclaw/memory-core",
-        version: "1.2.3",
-        description: "Memory plugin package",
-      },
-      pluginBody:
-        'export default { id: "memory-core", kind: "memory", name: "Memory (Core)", register() {} };',
-    });
-
-    const memory = registry.plugins.find((entry) => entry.id === "memory-core");
-    expect(memory?.status).toBe("loaded");
-    expect(memory?.origin).toBe("bundled");
-    expect(memory?.name).toBe("Memory (Core)");
-    expect(memory?.version).toBe("1.2.3");
-  });
   it("loads plugins from config paths", () => {
     process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
@@ -460,54 +386,6 @@ describe("loadOpenClawPlugins", () => {
 
     const disabled = registry.plugins.find((entry) => entry.id === "config-disable");
     expect(disabled?.status).toBe("disabled");
-  });
-
-  it("enforces memory slot selection", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
-    const memoryA = writePlugin({
-      id: "memory-a",
-      body: `export default { id: "memory-a", kind: "memory", register() {} };`,
-    });
-    const memoryB = writePlugin({
-      id: "memory-b",
-      body: `export default { id: "memory-b", kind: "memory", register() {} };`,
-    });
-
-    const registry = loadOpenClawPlugins({
-      cache: false,
-      config: {
-        plugins: {
-          load: { paths: [memoryA.file, memoryB.file] },
-          slots: { memory: "memory-b" },
-        },
-      },
-    });
-
-    const a = registry.plugins.find((entry) => entry.id === "memory-a");
-    const b = registry.plugins.find((entry) => entry.id === "memory-b");
-    expect(b?.status).toBe("loaded");
-    expect(a?.status).toBe("disabled");
-  });
-
-  it("disables memory plugins when slot is none", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
-    const memory = writePlugin({
-      id: "memory-off",
-      body: `export default { id: "memory-off", kind: "memory", register() {} };`,
-    });
-
-    const registry = loadOpenClawPlugins({
-      cache: false,
-      config: {
-        plugins: {
-          load: { paths: [memory.file] },
-          slots: { memory: "none" },
-        },
-      },
-    });
-
-    const entry = registry.plugins.find((item) => item.id === "memory-off");
-    expect(entry?.status).toBe("disabled");
   });
 
   it("prefers higher-precedence plugins with the same id", () => {

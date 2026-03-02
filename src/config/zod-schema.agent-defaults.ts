@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-  HeartbeatSchema,
-  AgentModelSchema,
-  MemorySearchSchema,
-} from "./zod-schema.agent-runtime.js";
+import { HeartbeatSchema, AgentModelSchema } from "./zod-schema.agent-runtime.js";
 
 // Sandbox infrastructure removed (#68)
 const AgentSandboxSchema = z
@@ -58,7 +54,6 @@ export const AgentDefaultsSchema = z
     envelopeElapsed: z.union([z.literal("on"), z.literal("off")]).optional(),
     contextTokens: z.number().int().positive().optional(),
     cliBackends: z.record(z.string(), CliBackendSchema).optional(),
-    memorySearch: MemorySearchSchema,
     contextPruning: z
       .object({
         mode: z.union([z.literal("off"), z.literal("cache-ttl")]).optional(),
@@ -99,15 +94,6 @@ export const AgentDefaultsSchema = z
         keepRecentTokens: z.number().int().positive().optional(),
         reserveTokensFloor: z.number().int().nonnegative().optional(),
         maxHistoryShare: z.number().min(0.1).max(0.9).optional(),
-        memoryFlush: z
-          .object({
-            enabled: z.boolean().optional(),
-            softThresholdTokens: z.number().int().nonnegative().optional(),
-            prompt: z.string().optional(),
-            systemPrompt: z.string().optional(),
-          })
-          .strict()
-          .optional(),
       })
       .strict()
       .optional(),

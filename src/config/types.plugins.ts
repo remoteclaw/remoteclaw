@@ -3,10 +3,7 @@ export type PluginEntryConfig = {
   config?: Record<string, unknown>;
 };
 
-export type PluginSlotsConfig = {
-  /** Select which plugin owns the memory slot ("none" disables memory plugins). */
-  memory?: string;
-};
+export type PluginSlotsConfig = Record<string, never>;
 
 export type PluginsLoadConfig = {
   /** Additional plugin/extension paths to load. */

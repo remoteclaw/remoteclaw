@@ -14,6 +14,8 @@ import {
 import { withTempHome } from "./test-helpers.js";
 import type { RemoteClawConfig } from "./types.js";
 
+const IS_WINDOWS = process.platform === "win32";
+
 describe("config backup rotation", () => {
   it("keeps a 5-deep backup ring for config writes", async () => {
     await withTempHome(async () => {
@@ -55,7 +57,8 @@ describe("config backup rotation", () => {
     });
   });
 
-  it("hardenBackupPermissions sets 0o600 on all backup files", async () => {
+  // chmod is a no-op on Windows — 0o600 can never be observed there.
+  it.skipIf(IS_WINDOWS)("hardenBackupPermissions sets 0o600 on all backup files", async () => {
     await withTempHome(async () => {
       const configPath = resolveConfigPathFromTempState();
 

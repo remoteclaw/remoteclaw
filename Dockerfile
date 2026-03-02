@@ -88,7 +88,13 @@ USER node
 # Start gateway server with default config.
 # Binds to loopback (127.0.0.1) by default for security.
 #
-# For container platforms requiring external health checks:
-#   1. Set REMOTECLAW_GATEWAY_TOKEN or REMOTECLAW_GATEWAY_PASSWORD env var
-#   2. Override CMD: ["node","remoteclaw.mjs","gateway","--allow-unconfigured","--bind","lan"]
+# IMPORTANT: With Docker bridge networking (-p 18789:18789), loopback bind
+# makes the gateway unreachable from the host. Either:
+#   - Use --network host, OR
+#   - Override --bind to "lan" (0.0.0.0) and set auth credentials
+#
+# Built-in probe endpoints for container health checks:
+#   - GET /healthz (liveness) and GET /readyz (readiness)
+#   - aliases: /health and /ready
+# For external access from host/ingress, override bind to "lan" and set auth.
 CMD ["node", "remoteclaw.mjs", "gateway", "--allow-unconfigured"]

@@ -55,6 +55,9 @@ describe("remoteclaw-tools: subagents (sessions_spawn allowlist)", () => {
     return tool.execute(callId, { task: "do thing", agentId });
   }
 
+  // setResearchUnsandboxedConfig removed: sandbox infrastructure was gutted in the fork,
+  // so no tests reference this helper.
+
   async function expectAllowedSpawn(params: {
     allowAgents: string[];
     agentId: string;

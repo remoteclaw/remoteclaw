@@ -238,16 +238,9 @@ export async function markAuthProfileUsed(params: {
       if (!freshStore.profiles[profileId]) {
         return false;
       }
-      freshStore.usageStats = freshStore.usageStats ?? {};
-      freshStore.usageStats[profileId] = {
-        ...freshStore.usageStats[profileId],
-        lastUsed: Date.now(),
-        errorCount: 0,
-        cooldownUntil: undefined,
-        disabledUntil: undefined,
-        disabledReason: undefined,
-        failureCounts: undefined,
-      };
+      updateUsageStatsEntry(freshStore, profileId, (existing) =>
+        resetUsageStats(existing, { lastUsed: Date.now() }),
+      );
       return true;
     },
   });
@@ -259,16 +252,9 @@ export async function markAuthProfileUsed(params: {
     return;
   }
 
-  store.usageStats = store.usageStats ?? {};
-  store.usageStats[profileId] = {
-    ...store.usageStats[profileId],
-    lastUsed: Date.now(),
-    errorCount: 0,
-    cooldownUntil: undefined,
-    disabledUntil: undefined,
-    disabledReason: undefined,
-    failureCounts: undefined,
-  };
+  updateUsageStatsEntry(store, profileId, (existing) =>
+    resetUsageStats(existing, { lastUsed: Date.now() }),
+  );
   saveAuthProfileStore(store);
 }
 
@@ -357,6 +343,30 @@ export function resolveProfileUnusableUntilForDisplay(
   return resolveProfileUnusableUntil(stats);
 }
 
+function resetUsageStats(
+  existing: ProfileUsageStats | undefined,
+  overrides?: Partial<ProfileUsageStats>,
+): ProfileUsageStats {
+  return {
+    ...existing,
+    errorCount: 0,
+    cooldownUntil: undefined,
+    disabledUntil: undefined,
+    disabledReason: undefined,
+    failureCounts: undefined,
+    ...overrides,
+  };
+}
+
+function updateUsageStatsEntry(
+  store: AuthProfileStore,
+  profileId: string,
+  updater: (existing: ProfileUsageStats | undefined) => ProfileUsageStats,
+): void {
+  store.usageStats = store.usageStats ?? {};
+  store.usageStats[profileId] = updater(store.usageStats[profileId]);
+}
+
 function keepActiveWindowOrRecompute(params: {
   existingUntil: number | undefined;
   now: number;
@@ -442,9 +452,6 @@ export async function markAuthProfileFailure(params: {
       if (!profile || isAuthCooldownBypassedForProvider(profile.provider)) {
         return false;
       }
-      freshStore.usageStats = freshStore.usageStats ?? {};
-      const existing = freshStore.usageStats[profileId] ?? {};
-
       const now = Date.now();
       const providerKey = normalizeProviderId(profile.provider);
       const cfgResolved = resolveAuthCooldownConfig({
@@ -452,12 +459,14 @@ export async function markAuthProfileFailure(params: {
         providerId: providerKey,
       });
 
-      freshStore.usageStats[profileId] = computeNextProfileUsageStats({
-        existing,
-        now,
-        reason,
-        cfgResolved,
-      });
+      updateUsageStatsEntry(freshStore, profileId, (existing) =>
+        computeNextProfileUsageStats({
+          existing: existing ?? {},
+          now,
+          reason,
+          cfgResolved,
+        }),
+      );
       return true;
     },
   });
@@ -469,8 +478,6 @@ export async function markAuthProfileFailure(params: {
     return;
   }
 
-  store.usageStats = store.usageStats ?? {};
-  const existing = store.usageStats[profileId] ?? {};
   const now = Date.now();
   const providerKey = normalizeProviderId(store.profiles[profileId]?.provider ?? "");
   const cfgResolved = resolveAuthCooldownConfig({
@@ -478,12 +485,14 @@ export async function markAuthProfileFailure(params: {
     providerId: providerKey,
   });
 
-  store.usageStats[profileId] = computeNextProfileUsageStats({
-    existing,
-    now,
-    reason,
-    cfgResolved,
-  });
+  updateUsageStatsEntry(store, profileId, (existing) =>
+    computeNextProfileUsageStats({
+      existing: existing ?? {},
+      now,
+      reason,
+      cfgResolved,
+    }),
+  );
   saveAuthProfileStore(store);
 }
 
@@ -518,14 +527,7 @@ export async function clearAuthProfileCooldown(params: {
         return false;
       }
 
-      freshStore.usageStats[profileId] = {
-        ...freshStore.usageStats[profileId],
-        errorCount: 0,
-        cooldownUntil: undefined,
-        disabledUntil: undefined,
-        disabledReason: undefined,
-        failureCounts: undefined,
-      };
+      updateUsageStatsEntry(freshStore, profileId, (existing) => resetUsageStats(existing));
       return true;
     },
   });
@@ -537,13 +539,6 @@ export async function clearAuthProfileCooldown(params: {
     return;
   }
 
-  store.usageStats[profileId] = {
-    ...store.usageStats[profileId],
-    errorCount: 0,
-    cooldownUntil: undefined,
-    disabledUntil: undefined,
-    disabledReason: undefined,
-    failureCounts: undefined,
-  };
+  updateUsageStatsEntry(store, profileId, (existing) => resetUsageStats(existing));
   saveAuthProfileStore(store);
 }

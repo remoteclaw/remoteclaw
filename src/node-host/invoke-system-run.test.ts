@@ -15,6 +15,20 @@ describe("formatSystemRunAllowlistMissMessage", () => {
 });
 
 describe("handleSystemRunInvoke mac app exec host routing", () => {
+  function createMacExecHostSuccess(stdout = "app-ok") {
+    return {
+      ok: true,
+      payload: {
+        success: true,
+        stdout,
+        stderr: "",
+        timedOut: false,
+        exitCode: 0,
+        error: null,
+      },
+    };
+  }
+
   async function runSystemInvoke(params: {
     preferMacAppExecHost: boolean;
     runViaResponse?: Record<string, unknown> | null;
@@ -94,18 +108,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   it("uses mac app exec host when explicitly preferred", async () => {
     const { runCommand, runViaMacAppExecHost, sendInvokeResult } = await runSystemInvoke({
       preferMacAppExecHost: true,
-      runViaResponse: {
-        ok: true,
-        error: { reason: "", message: "" },
-        payload: {
-          success: true,
-          stdout: "app-ok",
-          stderr: "",
-          timedOut: false,
-          exitCode: 0,
-          error: null,
-        },
-      },
+      runViaResponse: createMacExecHostSuccess(),
     });
 
     expect(runViaMacAppExecHost).toHaveBeenCalledWith({
@@ -132,18 +135,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
     const { runViaMacAppExecHost } = await runSystemInvoke({
       preferMacAppExecHost: true,
       command: ["/bin/sh", "-lc", '$0 "$1"', "/usr/bin/touch", "/tmp/marker"],
-      runViaResponse: {
-        ok: true,
-        error: { reason: "", message: "" },
-        payload: {
-          success: true,
-          stdout: "app-ok",
-          stderr: "",
-          timedOut: false,
-          exitCode: 0,
-          error: null,
-        },
-      },
+      runViaResponse: createMacExecHostSuccess(),
     });
 
     expect(runViaMacAppExecHost).toHaveBeenCalledWith({

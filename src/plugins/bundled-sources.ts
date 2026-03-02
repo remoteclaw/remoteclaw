@@ -40,7 +40,7 @@ export function resolveBundledPluginSources(params: {
     if (candidate.origin !== "bundled") {
       continue;
     }
-    const manifest = loadPluginManifest(candidate.rootDir);
+    const manifest = loadPluginManifest(candidate.rootDir, false);
     if (!manifest.ok) {
       continue;
     }

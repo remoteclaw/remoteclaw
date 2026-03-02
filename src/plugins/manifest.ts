@@ -36,7 +36,10 @@ export function resolvePluginManifestPath(rootDir: string): string {
   return path.join(rootDir, PLUGIN_MANIFEST_FILENAME);
 }
 
-export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
+export function loadPluginManifest(
+  rootDir: string,
+  _rejectHardlinks = true,
+): PluginManifestLoadResult {
   const manifestPath = resolvePluginManifestPath(rootDir);
   if (!fs.existsSync(manifestPath)) {
     return { ok: false, error: `plugin manifest not found: ${manifestPath}`, manifestPath };

@@ -239,7 +239,7 @@ function shouldIgnoreScannedDirectory(dirName: string): boolean {
   return false;
 }
 
-function readPackageManifest(dir: string): PackageManifest | null {
+function readPackageManifest(dir: string, _rejectHardlinks = true): PackageManifest | null {
   const manifestPath = path.join(dir, "package.json");
   if (!fs.existsSync(manifestPath)) {
     return null;
@@ -331,6 +331,7 @@ function resolvePackageEntrySource(params: {
   entryPath: string;
   sourceLabel: string;
   diagnostics: PluginDiagnostic[];
+  rejectHardlinks?: boolean;
 }): string | null {
   const source = path.resolve(params.packageDir, params.entryPath);
   if (
@@ -397,7 +398,8 @@ function discoverInDirectory(params: {
       continue;
     }
 
-    const manifest = readPackageManifest(fullPath);
+    const rejectHardlinks = params.origin !== "bundled";
+    const manifest = readPackageManifest(fullPath, rejectHardlinks);
     const extensionResolution = resolvePackageExtensionEntries(manifest ?? undefined);
     const extensions = extensionResolution.status === "ok" ? extensionResolution.entries : [];
 
@@ -408,6 +410,7 @@ function discoverInDirectory(params: {
           entryPath: extPath,
           sourceLabel: fullPath,
           diagnostics: params.diagnostics,
+          rejectHardlinks,
         });
         if (!resolved) {
           continue;
@@ -498,7 +501,8 @@ function discoverFromPath(params: {
   }
 
   if (stat.isDirectory()) {
-    const manifest = readPackageManifest(resolved);
+    const rejectHardlinks = params.origin !== "bundled";
+    const manifest = readPackageManifest(resolved, rejectHardlinks);
     const extensionResolution = resolvePackageExtensionEntries(manifest ?? undefined);
     const extensions = extensionResolution.status === "ok" ? extensionResolution.entries : [];
 
@@ -509,6 +513,7 @@ function discoverFromPath(params: {
           entryPath: extPath,
           sourceLabel: resolved,
           diagnostics: params.diagnostics,
+          rejectHardlinks,
         });
         if (!source) {
           continue;

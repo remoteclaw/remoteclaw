@@ -290,4 +290,27 @@ describe("config cli", () => {
       });
     });
   });
+
+  describe("config file", () => {
+    it("prints the active config file path", async () => {
+      const resolved: RemoteClawConfig = { gateway: { port: 18789 } };
+      setSnapshot(resolved, resolved);
+
+      await runConfigCommand(["config", "file"]);
+
+      expect(mockLog).toHaveBeenCalledWith("/tmp/remoteclaw.json");
+      expect(mockWriteConfigFile).not.toHaveBeenCalled();
+    });
+
+    it("handles config file path with home directory", async () => {
+      const resolved: RemoteClawConfig = { gateway: { port: 18789 } };
+      const snapshot = buildSnapshot({ resolved, config: resolved });
+      snapshot.path = "/home/user/.remoteclaw/remoteclaw.json";
+      mockReadConfigFileSnapshot.mockResolvedValueOnce(snapshot);
+
+      await runConfigCommand(["config", "file"]);
+
+      expect(mockLog).toHaveBeenCalledWith("/home/user/.remoteclaw/remoteclaw.json");
+    });
+  });
 });

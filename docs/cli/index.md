@@ -315,7 +315,7 @@ Interactive configuration wizard (channels, skills, gateway).
 
 ### `config`
 
-Non-interactive config helpers (get/set/unset). Running `remoteclaw config` with no
+Non-interactive config helpers (get/set/unset/file). Running `remoteclaw config` with no
 subcommand launches the wizard.
 
 Subcommands:
@@ -323,6 +323,7 @@ Subcommands:
 - `config get <path>`: print a config value (dot/bracket path).
 - `config set <path> <value>`: set a value (JSON5 or raw string).
 - `config unset <path>`: remove a value.
+- `config file`: print the active config file path.
 
 ### `doctor`
 

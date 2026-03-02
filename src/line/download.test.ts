@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import { resolvePreferredRemoteClawTmpDir } from "remoteclaw/plugin-sdk/infra-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 
 const getMessageContentMock = vi.hoisted(() => vi.fn());
 
@@ -15,7 +15,17 @@ vi.mock("@line/bot-sdk", () => ({
   },
 }));
 
-vi.mock("../globals.js", () => ({
+vi.mock("remoteclaw/plugin-sdk/runtime-env", () => ({
+  createSubsystemLogger: () => {
+    const logger = {
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+      child: () => logger,
+    };
+    return logger;
+  },
   logVerbose: () => {},
 }));
 

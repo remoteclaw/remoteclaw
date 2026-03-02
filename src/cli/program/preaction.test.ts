@@ -205,7 +205,7 @@ describe("registerPreActionHooks", () => {
   it("suppresses doctor stdout for any --json output command", async () => {
     await runCommand({
       parseArgv: ["message", "send", "--json"],
-      processArgv: ["node", "openclaw", "message", "send", "--json"],
+      processArgv: ["node", "remoteclaw", "message", "send", "--json"],
     });
 
     expect(ensureConfigReadyMock).toHaveBeenCalledWith({
@@ -218,7 +218,7 @@ describe("registerPreActionHooks", () => {
 
     await runCommand({
       parseArgv: ["update", "status", "--json"],
-      processArgv: ["node", "openclaw", "update", "status", "--json"],
+      processArgv: ["node", "remoteclaw", "update", "status", "--json"],
     });
 
     expect(ensureConfigReadyMock).toHaveBeenCalledWith({
@@ -231,7 +231,7 @@ describe("registerPreActionHooks", () => {
   it("does not treat config set --json (strict-parse alias) as json output mode", async () => {
     await runCommand({
       parseArgv: ["config", "set", "gateway.auth.mode", "{bad", "--json"],
-      processArgv: ["node", "openclaw", "config", "set", "gateway.auth.mode", "{bad", "--json"],
+      processArgv: ["node", "remoteclaw", "config", "set", "gateway.auth.mode", "{bad", "--json"],
     });
 
     expect(ensureConfigReadyMock).toHaveBeenCalledWith({

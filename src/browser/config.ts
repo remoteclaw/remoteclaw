@@ -280,16 +280,13 @@ export function resolveBrowserConfig(
   );
   const cdpProtocol = cdpInfo.parsed.protocol === "https:" ? "https" : "http";
 
-  // In headless/noSandbox environments (servers), prefer "remoteclaw" profile over "chrome"
-  // because Chrome extension relay requires a GUI browser which isn't available headless.
-  const preferRemoteClawProfile = headless || noSandbox;
   const defaultProfile =
     defaultProfileFromConfig ??
-    (preferRemoteClawProfile && profiles[DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME]
-      ? DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME
-      : profiles[DEFAULT_BROWSER_DEFAULT_PROFILE_NAME]
-        ? DEFAULT_BROWSER_DEFAULT_PROFILE_NAME
-        : DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME);
+    (profiles[DEFAULT_BROWSER_DEFAULT_PROFILE_NAME]
+      ? DEFAULT_BROWSER_DEFAULT_PROFILE_NAME
+      : profiles[DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME]
+        ? DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME
+        : "chrome");
 
   const extraArgs = Array.isArray(cfg?.extraArgs)
     ? cfg.extraArgs.filter((a): a is string => typeof a === "string" && a.trim().length > 0)

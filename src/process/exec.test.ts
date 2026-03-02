@@ -105,13 +105,13 @@ describe("runCommandWithTimeout", () => {
           "clearInterval(ticker);",
           "process.exit(0);",
           "}",
-          "}, 200);",
+          "}, 25);",
         ].join(" "),
       ],
       {
-        timeoutMs: 7_000,
-        // Keep a generous idle budget; CI event-loop stalls can exceed 450ms.
-        noOutputTimeoutMs: 900,
+        timeoutMs: 3_000,
+        // Keep a healthy margin above the emit interval while avoiding a 1s+ test delay.
+        noOutputTimeoutMs: 400,
       },
     );
 

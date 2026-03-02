@@ -344,19 +344,13 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     record.gatewayMethods.push(trimmed);
   };
 
-  const registerHttpHandler = (record: PluginRecord, handler: RemoteClawPluginHttpHandler) => {
-    record.httpHandlers += 1;
-    registry.httpHandlers.push({
-      pluginId: record.id,
-      handler,
-      source: record.source,
-    });
+  const describeHttpRouteOwner = (entry: PluginHttpRouteRegistration): string => {
+    const plugin = entry.pluginId?.trim() || "unknown-plugin";
+    const source = entry.source?.trim() || "unknown-source";
+    return `${plugin} (${source})`;
   };
 
-  const registerHttpRoute = (
-    record: PluginRecord,
-    params: { path: string; handler: RemoteClawPluginHttpRouteHandler },
-  ) => {
+  const registerHttpRoute = (record: PluginRecord, params: RemoteClawPluginHttpRouteParams) => {
     const normalizedPath = normalizePluginHttpPath(params.path);
     if (!normalizedPath) {
       pushDiagnostic({
@@ -367,20 +361,59 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       });
       return;
     }
-    if (registry.httpRoutes.some((entry) => entry.path === normalizedPath)) {
+    if (params.auth !== "gateway" && params.auth !== "plugin") {
       pushDiagnostic({
         level: "error",
         pluginId: record.id,
         source: record.source,
-        message: `http route already registered: ${normalizedPath}`,
+        message: `http route registration missing or invalid auth: ${normalizedPath}`,
       });
       return;
     }
-    record.httpHandlers += 1;
+    const match = params.match ?? "exact";
+    const existingIndex = registry.httpRoutes.findIndex(
+      (entry) => entry.path === normalizedPath && entry.match === match,
+    );
+    if (existingIndex >= 0) {
+      const existing = registry.httpRoutes[existingIndex];
+      if (!existing) {
+        return;
+      }
+      if (!params.replaceExisting) {
+        pushDiagnostic({
+          level: "error",
+          pluginId: record.id,
+          source: record.source,
+          message: `http route already registered: ${normalizedPath} (${match}) by ${describeHttpRouteOwner(existing)}`,
+        });
+        return;
+      }
+      if (existing.pluginId && existing.pluginId !== record.id) {
+        pushDiagnostic({
+          level: "error",
+          pluginId: record.id,
+          source: record.source,
+          message: `http route replacement rejected: ${normalizedPath} (${match}) owned by ${describeHttpRouteOwner(existing)}`,
+        });
+        return;
+      }
+      registry.httpRoutes[existingIndex] = {
+        pluginId: record.id,
+        path: normalizedPath,
+        handler: params.handler,
+        auth: params.auth,
+        match,
+        source: record.source,
+      };
+      return;
+    }
+    record.httpRoutes += 1;
     registry.httpRoutes.push({
       pluginId: record.id,
       path: normalizedPath,
       handler: params.handler,
+      auth: params.auth,
+      match,
       source: record.source,
     });
   };

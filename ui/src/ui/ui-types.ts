@@ -43,5 +43,12 @@ export type CronFormState = {
   deliveryTo: string;
   deliveryAccountId: string;
   deliveryBestEffort: boolean;
+  failureAlertMode: "inherit" | "disabled" | "custom";
+  failureAlertAfter: string;
+  failureAlertCooldownSeconds: string;
+  failureAlertChannel: string;
+  failureAlertTo: string;
+  failureAlertDeliveryMode: "announce" | "webhook";
+  failureAlertAccountId: string;
   timeoutSeconds: string;
 };

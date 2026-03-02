@@ -90,6 +90,14 @@ export type CronServiceDeps = {
     } & CronRunOutcome &
       CronRunTelemetry
   >;
+  sendCronFailureAlert?: (params: {
+    job: CronJob;
+    text: string;
+    channel: CronMessageChannel;
+    to?: string;
+    mode?: "announce" | "webhook";
+    accountId?: string;
+  }) => Promise<void>;
   onEvent?: (evt: CronEvent) => void;
 };
 

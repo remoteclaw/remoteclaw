@@ -279,6 +279,8 @@ export function buildNodeServiceEnvironment(params: {
 }): Record<string, string | undefined> {
   const { env } = params;
   const platform = params.platform ?? process.platform;
+  const gatewayToken =
+    env.REMOTECLAW_GATEWAY_TOKEN?.trim() || env.CLAWDBOT_GATEWAY_TOKEN?.trim() || undefined;
   const stateDir = env.REMOTECLAW_STATE_DIR;
   const configPath = env.REMOTECLAW_CONFIG_PATH;
   const tmpDir = env.TMPDIR?.trim() || os.tmpdir();
@@ -296,6 +298,7 @@ export function buildNodeServiceEnvironment(params: {
     NODE_EXTRA_CA_CERTS: nodeCaCerts,
     REMOTECLAW_STATE_DIR: stateDir,
     REMOTECLAW_CONFIG_PATH: configPath,
+    REMOTECLAW_GATEWAY_TOKEN: gatewayToken,
     REMOTECLAW_LAUNCHD_LABEL: resolveNodeLaunchAgentLabel(),
     REMOTECLAW_SYSTEMD_UNIT: resolveNodeSystemdServiceName(),
     REMOTECLAW_WINDOWS_TASK_NAME: resolveNodeWindowsTaskName(),

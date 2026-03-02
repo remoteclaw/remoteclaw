@@ -411,12 +411,6 @@ export const FIELD_HELP: Record<string, string> = {
     "Include full message payloads in trace output (default: true).",
   "diagnostics.cacheTrace.includePrompt": "Include prompt text in trace output (default: true).",
   "diagnostics.cacheTrace.includeSystem": "Include system prompt in trace output (default: true).",
-  "tools.exec.applyPatch.enabled":
-    "Experimental. Enables apply_patch for OpenAI models when allowed by tool policy.",
-  "tools.exec.applyPatch.workspaceOnly":
-    "Restrict apply_patch paths to the workspace directory (default: true). Set false to allow writing outside the workspace (dangerous).",
-  "tools.exec.applyPatch.allowModels":
-    'Optional allowlist of model ids (e.g. "gpt-5.2" or "openai/gpt-5.2").',
   "tools.loopDetection.enabled":
     "Enable repetitive tool-call loop detection and backoff safety checks (default: false).",
   "tools.loopDetection.historySize": "Tool history window size for loop detection (default: 30).",
@@ -547,7 +541,7 @@ export const FIELD_HELP: Record<string, string> = {
   "approvals.exec.targets[].threadId":
     "Optional thread/topic target for channels that support threaded delivery of forwarded approvals. Use this to keep approval traffic contained in operational threads instead of main channels.",
   "tools.fs.workspaceOnly":
-    "Restrict filesystem tools (read/write/edit/apply_patch) to the workspace directory (default: false).",
+    "Restrict filesystem tools (read/write/edit) to the workspace directory (default: false).",
   "tools.sessions.visibility":
     'Controls which sessions can be targeted by sessions_list/sessions_history/sessions_send. ("tree" default = current session + spawned subagent sessions; "self" = only current; "agent" = any session in the current agent id; "all" = any session; cross-agent still requires tools.agentToAgent).',
   "tools.message.allowCrossContextSend":

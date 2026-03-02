@@ -253,26 +253,11 @@ export type ExecToolConfig = {
    * Default false to reduce context noise.
    */
   notifyOnExitEmptySuccess?: boolean;
-  /** apply_patch subtool configuration (experimental). */
-  applyPatch?: {
-    /** Enable apply_patch for OpenAI models (default: false). */
-    enabled?: boolean;
-    /**
-     * Restrict apply_patch paths to the workspace directory.
-     * Default: true (safer; does not affect read/write/edit).
-     */
-    workspaceOnly?: boolean;
-    /**
-     * Optional allowlist of model ids that can use apply_patch.
-     * Accepts either raw ids (e.g. "gpt-5.2") or full ids (e.g. "openai/gpt-5.2").
-     */
-    allowModels?: string[];
-  };
 };
 
 export type FsToolsConfig = {
   /**
-   * Restrict filesystem tools (read/write/edit/apply_patch) to the agent workspace directory.
+   * Restrict filesystem tools (read/write/edit) to the agent workspace directory.
    * Default: false (unrestricted, matches legacy behavior).
    */
   workspaceOnly?: boolean;

@@ -144,15 +144,8 @@ function stableStringifyFallback(value: unknown): string {
   }
 }
 
-function isKnownPollToolCall(toolName: string, params: unknown): boolean {
-  if (toolName === "command_status") {
-    return true;
-  }
-  if (toolName !== "process" || !isPlainObject(params)) {
-    return false;
-  }
-  const action = params.action;
-  return action === "poll" || action === "log";
+function isKnownPollToolCall(toolName: string, _params: unknown): boolean {
+  return toolName === "command_status";
 }
 
 function extractTextContent(result: unknown): string {
@@ -197,31 +190,6 @@ function hashToolOutcome(
 
   const details = isPlainObject(result.details) ? result.details : {};
   const text = extractTextContent(result);
-  if (isKnownPollToolCall(toolName, params) && toolName === "process" && isPlainObject(params)) {
-    const action = params.action;
-    if (action === "poll") {
-      return digestStable({
-        action,
-        status: details.status,
-        exitCode: details.exitCode ?? null,
-        exitSignal: details.exitSignal ?? null,
-        aggregated: details.aggregated ?? null,
-        text,
-      });
-    }
-    if (action === "log") {
-      return digestStable({
-        action,
-        status: details.status,
-        totalLines: details.totalLines ?? null,
-        totalChars: details.totalChars ?? null,
-        truncated: details.truncated ?? null,
-        exitCode: details.exitCode ?? null,
-        exitSignal: details.exitSignal ?? null,
-        text,
-      });
-    }
-  }
 
   return digestStable({
     details,

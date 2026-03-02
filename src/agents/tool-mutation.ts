@@ -1,10 +1,7 @@
 const MUTATING_TOOL_NAMES = new Set([
   "write",
   "edit",
-  "apply_patch",
   "exec",
-  "bash",
-  "process",
   "message",
   "sessions_send",
   "cron",
@@ -30,8 +27,6 @@ const READ_ONLY_ACTIONS = new Set([
   "check",
   "probe",
 ]);
-
-const PROCESS_MUTATING_ACTIONS = new Set(["write", "send_keys", "submit", "paste", "kill"]);
 
 const MESSAGE_MUTATING_ACTIONS = new Set([
   "send",
@@ -103,13 +98,9 @@ export function isMutatingToolCall(toolName: string, args: unknown): boolean {
   switch (normalized) {
     case "write":
     case "edit":
-    case "apply_patch":
     case "exec":
-    case "bash":
     case "sessions_send":
       return true;
-    case "process":
-      return action != null && PROCESS_MUTATING_ACTIONS.has(action);
     case "message":
       return (
         (action != null && MESSAGE_MUTATING_ACTIONS.has(action)) ||

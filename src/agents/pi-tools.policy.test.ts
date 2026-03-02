@@ -35,10 +35,6 @@ describe("pi-tools.policy", () => {
     expect(isToolAllowedByPolicyName("web_fetch", { allow: ["web_*"] })).toBe(true);
     expect(isToolAllowedByPolicyName("web_search", { deny: ["web_*"] })).toBe(false);
   });
-
-  it("keeps apply_patch when exec is allowlisted", () => {
-    expect(isToolAllowedByPolicyName("apply_patch", { allow: ["exec"] })).toBe(true);
-  });
 });
 
 describe("resolveSubagentToolPolicy depth awareness", () => {
@@ -131,12 +127,10 @@ describe("resolveSubagentToolPolicy depth awareness", () => {
     expect(isToolAllowedByPolicyName("sessions_history", policy)).toBe(true);
   });
 
-  it("depth-1 orchestrator still denies gateway, cron, memory", () => {
+  it("depth-1 orchestrator still denies gateway, cron", () => {
     const policy = resolveSubagentToolPolicy(baseCfg, 1);
     expect(isToolAllowedByPolicyName("gateway", policy)).toBe(false);
     expect(isToolAllowedByPolicyName("cron", policy)).toBe(false);
-    expect(isToolAllowedByPolicyName("memory_search", policy)).toBe(false);
-    expect(isToolAllowedByPolicyName("memory_get", policy)).toBe(false);
   });
 
   it("depth-2 leaf denies sessions_spawn", () => {

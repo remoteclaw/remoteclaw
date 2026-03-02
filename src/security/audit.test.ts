@@ -698,13 +698,6 @@ describe("security audit", () => {
         gmail: { allowUnsafeExternalContent: true },
         mappings: [{ allowUnsafeExternalContent: true }],
       },
-      tools: {
-        exec: {
-          applyPatch: {
-            workspaceOnly: false,
-          },
-        },
-      },
     };
 
     const res = await audit(cfg);
@@ -714,7 +707,6 @@ describe("security audit", () => {
     expect(finding?.severity).toBe("warn");
     expect(finding?.detail).toContain("hooks.gmail.allowUnsafeExternalContent=true");
     expect(finding?.detail).toContain("hooks.mappings[0].allowUnsafeExternalContent=true");
-    expect(finding?.detail).toContain("tools.exec.applyPatch.workspaceOnly=false");
   });
 
   it("flags non-loopback Control UI without allowed origins", async () => {

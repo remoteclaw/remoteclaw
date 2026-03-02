@@ -6,6 +6,22 @@ import { loadHookEntriesFromDir } from "./workspace.js";
 
 const MANIFEST_KEY = "remoteclaw" as const;
 
+function writeHookPackageManifest(pkgDir: string, hooks: string[]): void {
+  fs.writeFileSync(
+    path.join(pkgDir, "package.json"),
+    JSON.stringify(
+      {
+        name: "pkg",
+        [MANIFEST_KEY]: {
+          hooks,
+        },
+      },
+      null,
+      2,
+    ),
+  );
+}
+
 describe("hooks workspace", () => {
   it("ignores package.json hook paths that traverse outside package directory", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-hooks-workspace-"));
@@ -20,19 +36,7 @@ describe("hooks workspace", () => {
     fs.writeFileSync(path.join(outsideHookDir, "HOOK.md"), "---\nname: outside\n---\n");
     fs.writeFileSync(path.join(outsideHookDir, "handler.js"), "export default async () => {};\n");
 
-    fs.writeFileSync(
-      path.join(pkgDir, "package.json"),
-      JSON.stringify(
-        {
-          name: "pkg",
-          [MANIFEST_KEY]: {
-            hooks: ["../outside"],
-          },
-        },
-        null,
-        2,
-      ),
-    );
+    writeHookPackageManifest(pkgDir, ["../outside"]);
 
     const entries = loadHookEntriesFromDir({ dir: hooksRoot, source: "remoteclaw-workspace" });
     expect(entries.some((e) => e.hook.name === "outside")).toBe(false);
@@ -50,19 +54,7 @@ describe("hooks workspace", () => {
     fs.writeFileSync(path.join(nested, "HOOK.md"), "---\nname: nested\n---\n");
     fs.writeFileSync(path.join(nested, "handler.js"), "export default async () => {};\n");
 
-    fs.writeFileSync(
-      path.join(pkgDir, "package.json"),
-      JSON.stringify(
-        {
-          name: "pkg",
-          [MANIFEST_KEY]: {
-            hooks: ["./nested"],
-          },
-        },
-        null,
-        2,
-      ),
-    );
+    writeHookPackageManifest(pkgDir, ["./nested"]);
 
     const entries = loadHookEntriesFromDir({ dir: hooksRoot, source: "remoteclaw-workspace" });
     expect(entries.some((e) => e.hook.name === "nested")).toBe(true);
@@ -86,19 +78,7 @@ describe("hooks workspace", () => {
       return;
     }
 
-    fs.writeFileSync(
-      path.join(pkgDir, "package.json"),
-      JSON.stringify(
-        {
-          name: "pkg",
-          [MANIFEST_KEY]: {
-            hooks: ["./linked"],
-          },
-        },
-        null,
-        2,
-      ),
-    );
+    writeHookPackageManifest(pkgDir, ["./linked"]);
 
     const entries = loadHookEntriesFromDir({ dir: hooksRoot, source: "remoteclaw-workspace" });
     expect(entries.some((e) => e.hook.name === "outside")).toBe(false);

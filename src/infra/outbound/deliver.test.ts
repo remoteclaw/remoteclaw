@@ -631,6 +631,8 @@ describe("deliverOutboundPayloads", () => {
     const { sendWhatsApp } = await runChunkedWhatsAppDelivery({
       mirror: {
         sessionKey: "agent:main:main",
+        isGroup: true,
+        groupId: "whatsapp:group:123",
       },
     });
     expect(sendWhatsApp).toHaveBeenCalledTimes(2);
@@ -647,6 +649,8 @@ describe("deliverOutboundPayloads", () => {
         channelId: "whatsapp",
         conversationId: "+1555",
         messageId: "w2",
+        isGroup: true,
+        groupId: "whatsapp:group:123",
       }),
     );
     expect(internalHookMocks.triggerInternalHook).toHaveBeenCalledTimes(1);

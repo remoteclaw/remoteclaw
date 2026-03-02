@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileExists, readJsonFile, resolveArchiveKind } from "../infra/archive.js";
+import { writeFileFromPathWithinRoot } from "../infra/fs-safe.js";
 import { resolveExistingInstallPath, withExtractedArchiveRoot } from "../infra/install-flow.js";
 import {
   resolveInstallModeOptions,
@@ -378,7 +379,15 @@ export async function installPluginFromFile(params: {
   }
 
   logger.info?.(`Installing to ${targetFile}…`);
-  await fs.copyFile(filePath, targetFile);
+  try {
+    await writeFileFromPathWithinRoot({
+      rootDir: extensionsDir,
+      relativePath: path.basename(targetFile),
+      sourcePath: filePath,
+    });
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
 
   return buildFileInstallResult(pluginId, targetFile);
 }

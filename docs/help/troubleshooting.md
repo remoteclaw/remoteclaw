@@ -34,6 +34,31 @@ Good output in one line:
 - `remoteclaw channels status --probe` → channels report `connected` or `ready`.
 - `remoteclaw logs --follow` → steady activity, no repeating fatal errors.
 
+## Plugin install fails with missing openclaw extensions
+
+If install fails with `package.json missing openclaw.extensions`, the plugin package
+is using an old shape that OpenClaw no longer accepts.
+
+Fix in the plugin package:
+
+1. Add `openclaw.extensions` to `package.json`.
+2. Point entries at built runtime files (usually `./dist/index.js`).
+3. Republish the plugin and run `openclaw plugins install <npm-spec>` again.
+
+Example:
+
+```json
+{
+  "name": "@openclaw/my-plugin",
+  "version": "1.2.3",
+  "openclaw": {
+    "extensions": ["./dist/index.js"]
+  }
+}
+```
+
+Reference: [/tools/plugin#distribution-npm](/tools/plugin#distribution-npm)
+
 ## Decision tree
 
 ```mermaid

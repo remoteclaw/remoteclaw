@@ -2,6 +2,9 @@ import { Cron } from "croner";
 import { parseAbsoluteTimeMs } from "./parse.js";
 import type { CronSchedule } from "./types.js";
 
+const CRON_EVAL_CACHE_MAX = 512;
+const cronEvalCache = new Map<string, Cron>();
+
 function resolveCronTimezone(tz?: string) {
   const trimmed = typeof tz === "string" ? tz.trim() : "";
   if (trimmed) {
@@ -23,6 +26,23 @@ export function coerceFiniteScheduleNumber(value: unknown): number | undefined {
     return Number.isFinite(parsed) ? parsed : undefined;
   }
   return undefined;
+}
+
+function resolveCachedCron(expr: string, timezone: string): Cron {
+  const key = `${timezone}\u0000${expr}`;
+  const cached = cronEvalCache.get(key);
+  if (cached) {
+    return cached;
+  }
+  if (cronEvalCache.size >= CRON_EVAL_CACHE_MAX) {
+    const oldest = cronEvalCache.keys().next().value;
+    if (oldest) {
+      cronEvalCache.delete(oldest);
+    }
+  }
+  const next = new Cron(expr, { timezone, catch: false });
+  cronEvalCache.set(key, next);
+  return next;
 }
 
 export function computeNextRunAtMs(schedule: CronSchedule, nowMs: number): number | undefined {
@@ -65,10 +85,7 @@ export function computeNextRunAtMs(schedule: CronSchedule, nowMs: number): numbe
   if (!expr) {
     return undefined;
   }
-  const cron = new Cron(expr, {
-    timezone: resolveCronTimezone(schedule.tz),
-    catch: false,
-  });
+  const cron = resolveCachedCron(expr, resolveCronTimezone(schedule.tz));
   let next = cron.nextRun(new Date(nowMs));
   if (!next) {
     return undefined;
@@ -104,4 +121,12 @@ export function computeNextRunAtMs(schedule: CronSchedule, nowMs: number): numbe
   }
 
   return nextMs;
+}
+
+export function clearCronScheduleCacheForTest(): void {
+  cronEvalCache.clear();
+}
+
+export function getCronScheduleCacheSizeForTest(): number {
+  return cronEvalCache.size;
 }

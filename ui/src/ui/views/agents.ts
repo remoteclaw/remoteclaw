@@ -13,7 +13,6 @@ import {
   renderAgentChannels,
   renderAgentCron,
 } from "./agents-panels-status-files.ts";
-import { renderAgentTools } from "./agents-panels-tools-skills.ts";
 import {
   agentBadgeText,
   buildAgentContext,
@@ -194,24 +193,7 @@ export function renderAgents(props: AgentsProps) {
                       })
                     : nothing
                 }
-                ${
-                  props.activePanel === "tools"
-                    ? renderAgentTools({
-                        agentId: selectedAgent.id,
-                        configForm: props.configForm,
-                        configLoading: props.configLoading,
-                        configSaving: props.configSaving,
-                        configDirty: props.configDirty,
-                        toolsCatalogLoading: props.toolsCatalogLoading,
-                        toolsCatalogError: props.toolsCatalogError,
-                        toolsCatalogResult: props.toolsCatalogResult,
-                        onProfileChange: props.onToolsProfileChange,
-                        onOverridesChange: props.onToolsOverridesChange,
-                        onConfigReload: props.onConfigReload,
-                        onConfigSave: props.onConfigSave,
-                      })
-                    : nothing
-                }
+                ${nothing /* tools panel removed — skills/tools UI gutted */}
                 ${
                   props.activePanel === "channels"
                     ? renderAgentChannels({

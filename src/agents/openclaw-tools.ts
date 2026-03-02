@@ -2,21 +2,6 @@ import type { OpenClawConfig } from "../config/config.js";
 import { resolvePluginTools } from "../plugins/tools.js";
 import type { GatewayMessageChannel } from "../utils/message-channel.js";
 import { resolveSessionAgentId } from "./agent-scope.js";
-// Sandbox infrastructure removed (#68)
-type SandboxFsBridge = {
-  readFile(params: { filePath: string; cwd: string }): Promise<Buffer>;
-  writeFile(params: { filePath: string; cwd: string; data: string }): Promise<void>;
-  stat(params: {
-    filePath: string;
-    cwd: string;
-  }): Promise<{ isFile(): boolean; size: number } | null>;
-  mkdirp(params: { filePath: string; cwd: string }): Promise<void>;
-  remove(params: { filePath: string; cwd: string; force: boolean }): Promise<void>;
-  resolvePath(params: { filePath: string; cwd: string }): {
-    hostPath: string;
-    relativePath: string;
-  };
-};
 import type { ToolFsPolicy } from "./tool-fs-policy.js";
 import { createAgentsListTool } from "./tools/agents-list-tool.js";
 import { createCanvasTool } from "./tools/canvas-tool.js";
@@ -34,8 +19,6 @@ import { createSubagentsTool } from "./tools/subagents-tool.js";
 import { resolveWorkspaceRoot } from "./workspace-dir.js";
 
 export function createOpenClawTools(options?: {
-  sandboxBrowserBridgeUrl?: string;
-  allowHostBrowserControl?: boolean;
   agentSessionKey?: string;
   agentChannel?: GatewayMessageChannel;
   agentAccountId?: string;
@@ -50,8 +33,6 @@ export function createOpenClawTools(options?: {
   /** Group space label for channel-level tool policy inheritance. */
   agentGroupSpace?: string | null;
   agentDir?: string;
-  sandboxRoot?: string;
-  sandboxFsBridge?: SandboxFsBridge;
   fsPolicy?: ToolFsPolicy;
   workspaceDir?: string;
   sandboxed?: boolean;
@@ -93,7 +74,6 @@ export function createOpenClawTools(options?: {
         currentMessageId: options?.currentMessageId,
         replyToMode: options?.replyToMode,
         hasRepliedRef: options?.hasRepliedRef,
-        sandboxRoot: options?.sandboxRoot,
         requireExplicitTarget: options?.requireExplicitMessageTarget,
         requesterSenderId: options?.requesterSenderId ?? undefined,
       });

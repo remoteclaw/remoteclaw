@@ -4,18 +4,7 @@ import { Type } from "@sinclair/typebox";
 import { applyUpdateHunk } from "./apply-patch-update.js";
 import type { AgentTool } from "./pi-types.js";
 
-// Sandbox infrastructure removed (#68); inline the types and helpers that survived the gut.
-type SandboxFsBridge = {
-  readFile(params: { filePath: string; cwd: string }): Promise<Buffer>;
-  writeFile(params: { filePath: string; cwd: string; data: string }): Promise<void>;
-  remove(params: { filePath: string; cwd: string; force: boolean }): Promise<void>;
-  mkdirp(params: { filePath: string; cwd: string }): Promise<void>;
-  resolvePath(params: { filePath: string; cwd: string }): {
-    hostPath: string;
-    relativePath: string;
-  };
-};
-async function assertSandboxPath(opts: {
+async function assertWorkspacePath(opts: {
   filePath: string;
   cwd: string;
   root: string;
@@ -29,7 +18,7 @@ async function assertSandboxPath(opts: {
   const relative = path.relative(normalizedRoot, resolved);
   return { resolved, relative };
 }
-function resolveSandboxInputPath(filePath: string, cwd: string): string {
+function resolveInputPath(filePath: string, cwd: string): string {
   return path.resolve(cwd, filePath);
 }
 
@@ -85,14 +74,8 @@ export type ApplyPatchToolDetails = {
   summary: ApplyPatchSummary;
 };
 
-type SandboxApplyPatchConfig = {
-  root: string;
-  bridge: SandboxFsBridge;
-};
-
 type ApplyPatchOptions = {
   cwd: string;
-  sandbox?: SandboxApplyPatchConfig;
   /** Restrict patch paths to the workspace root (cwd). Default: true. Set false to opt out. */
   workspaceOnly?: boolean;
   signal?: AbortSignal;
@@ -105,10 +88,9 @@ const applyPatchSchema = Type.Object({
 });
 
 export function createApplyPatchTool(
-  options: { cwd?: string; sandbox?: SandboxApplyPatchConfig; workspaceOnly?: boolean } = {},
+  options: { cwd?: string; workspaceOnly?: boolean } = {},
 ): AgentTool<typeof applyPatchSchema, ApplyPatchToolDetails> {
   const cwd = options.cwd ?? process.cwd();
-  const sandbox = options.sandbox;
   const workspaceOnly = options.workspaceOnly !== false;
 
   return {
@@ -131,7 +113,6 @@ export function createApplyPatchTool(
 
       const result = await applyPatch(input, {
         cwd,
-        sandbox,
         workspaceOnly,
         signal,
       });
@@ -163,7 +144,7 @@ export async function applyPatch(
     modified: new Set<string>(),
     deleted: new Set<string>(),
   };
-  const fileOps = resolvePatchFileOps(options);
+  const fileOps = resolvePatchFileOps();
 
   for (const hunk of parsed.hunks) {
     if (options.signal?.aborted) {
@@ -248,19 +229,7 @@ type PatchFileOps = {
   mkdirp: (dir: string) => Promise<void>;
 };
 
-function resolvePatchFileOps(options: ApplyPatchOptions): PatchFileOps {
-  if (options.sandbox) {
-    const { root, bridge } = options.sandbox;
-    return {
-      readFile: async (filePath) => {
-        const buf = await bridge.readFile({ filePath, cwd: root });
-        return buf.toString("utf8");
-      },
-      writeFile: (filePath, content) => bridge.writeFile({ filePath, cwd: root, data: content }),
-      remove: (filePath) => bridge.remove({ filePath, cwd: root, force: false }),
-      mkdirp: (dir) => bridge.mkdirp({ filePath: dir, cwd: root }),
-    };
-  }
+function resolvePatchFileOps(): PatchFileOps {
   return {
     readFile: (filePath) => fs.readFile(filePath, "utf8"),
     writeFile: (filePath, content) => fs.writeFile(filePath, content, "utf8"),
@@ -282,29 +251,10 @@ async function resolvePatchPath(
   options: ApplyPatchOptions,
   purpose: "readWrite" | "unlink" = "readWrite",
 ): Promise<{ resolved: string; display: string }> {
-  if (options.sandbox) {
-    const resolved = options.sandbox.bridge.resolvePath({
-      filePath,
-      cwd: options.cwd,
-    });
-    if (options.workspaceOnly !== false) {
-      await assertSandboxPath({
-        filePath: resolved.hostPath,
-        cwd: options.cwd,
-        root: options.cwd,
-        allowFinalSymlink: purpose === "unlink",
-      });
-    }
-    return {
-      resolved: resolved.hostPath,
-      display: resolved.relativePath || resolved.hostPath,
-    };
-  }
-
   const workspaceOnly = options.workspaceOnly !== false;
   const resolved = workspaceOnly
     ? (
-        await assertSandboxPath({
+        await assertWorkspacePath({
           filePath,
           cwd: options.cwd,
           root: options.cwd,
@@ -319,7 +269,7 @@ async function resolvePatchPath(
 }
 
 function resolvePathFromCwd(filePath: string, cwd: string): string {
-  return path.normalize(resolveSandboxInputPath(filePath, cwd));
+  return path.normalize(resolveInputPath(filePath, cwd));
 }
 
 function toDisplayPath(resolved: string, cwd: string): string {

@@ -96,6 +96,12 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "hooks.tool.before",
     "hooks.tool.after",
     "plugin:tools:invoke",
+    "message:send",
+    "message:reply",
+    "message:thread-reply",
+    "message:broadcast",
+    "message:sendAttachment",
+    "message:sendWithEffect",
   ],
   [ADMIN_SCOPE]: [
     "channels.logout",
@@ -117,6 +123,10 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "set-heartbeats",
     "system-event",
     "agents.files.set",
+    "message:delete",
+    "message:react",
+    "message:pin",
+    "message:readMessages",
   ],
 };
 

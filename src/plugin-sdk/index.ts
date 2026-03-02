@@ -116,6 +116,7 @@ export {
   isJsonContentType,
   readJsonWebhookBodyOrReject,
 } from "./webhook-request-guards.js";
+export { keepHttpServerTaskAlive, waitUntilAbort } from "./channel-lifecycle.js";
 export type { AgentMediaPayload } from "./agent-media-payload.js";
 export { buildAgentMediaPayload } from "./agent-media-payload.js";
 export {

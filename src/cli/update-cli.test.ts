@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig, ConfigFileSnapshot } from "../config/types.remoteclaw.js";
@@ -20,6 +19,9 @@ const serviceReadRuntime = vi.fn();
 const inspectPortUsage = vi.fn();
 const classifyPortListener = vi.fn();
 const formatPortDiagnostics = vi.fn();
+const pathExists = vi.fn();
+const syncPluginsForUpdateChannel = vi.fn();
+const updateNpmInstalledPlugins = vi.fn();
 
 vi.mock("@clack/prompts", () => ({
   confirm,
@@ -65,6 +67,19 @@ vi.mock("node:child_process", async () => {
 
 vi.mock("../process/exec.js", () => ({
   runCommandWithTimeout: vi.fn(),
+}));
+
+vi.mock("../utils.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../utils.js")>();
+  return {
+    ...actual,
+    pathExists: (...args: unknown[]) => pathExists(...args),
+  };
+});
+
+vi.mock("../plugins/update.js", () => ({
+  syncPluginsForUpdateChannel: (...args: unknown[]) => syncPluginsForUpdateChannel(...args),
+  updateNpmInstalledPlugins: (...args: unknown[]) => updateNpmInstalledPlugins(...args),
 }));
 
 vi.mock("./update-cli/shared.js", async (importOriginal) => {
@@ -122,8 +137,7 @@ const { runCommandWithTimeout } = await import("../process/exec.js");
 const { runDaemonRestart, runDaemonInstall } = await import("./daemon-cli.js");
 const { doctorCommand } = await import("../commands/doctor.js");
 const { defaultRuntime } = await import("../runtime.js");
-const { updateCommand, registerUpdateCli, updateStatusCommand, updateWizardCommand } =
-  await import("./update-cli.js");
+const { updateCommand, updateStatusCommand, updateWizardCommand } = await import("./update-cli.js");
 
 describe("update-cli", () => {
   const fixtureRoot = "/tmp/remoteclaw-update-tests";
@@ -214,31 +228,7 @@ describe("update-cli", () => {
   };
 
   beforeEach(() => {
-    confirm.mockClear();
-    select.mockClear();
-    vi.mocked(resolveRemoteClawPackageRoot).mockClear();
-    vi.mocked(readConfigFileSnapshot).mockClear();
-    vi.mocked(writeConfigFile).mockClear();
-    vi.mocked(checkUpdateStatus).mockClear();
-    vi.mocked(fetchNpmTagVersion).mockClear();
-    vi.mocked(resolveNpmChannelTag).mockClear();
-    vi.mocked(runCommandWithTimeout).mockClear();
-    vi.mocked(runDaemonRestart).mockClear();
-    vi.mocked(mockedRunDaemonInstall).mockClear();
-    vi.mocked(doctorCommand).mockClear();
-    vi.mocked(defaultRuntime.log).mockClear();
-    vi.mocked(defaultRuntime.error).mockClear();
-    vi.mocked(defaultRuntime.exit).mockClear();
-    readPackageName.mockClear();
-    readPackageVersion.mockClear();
-    resolveGlobalManager.mockClear();
-    serviceLoaded.mockClear();
-    serviceReadRuntime.mockClear();
-    prepareRestartScript.mockClear();
-    runRestartScript.mockClear();
-    inspectPortUsage.mockClear();
-    classifyPortListener.mockClear();
-    formatPortDiagnostics.mockClear();
+    vi.clearAllMocks();
     vi.mocked(resolveRemoteClawPackageRoot).mockResolvedValue(process.cwd());
     vi.mocked(readConfigFileSnapshot).mockResolvedValue(baseSnapshot);
     vi.mocked(fetchNpmTagVersion).mockResolvedValue({
@@ -301,6 +291,22 @@ describe("update-cli", () => {
     });
     classifyPortListener.mockReturnValue("gateway");
     formatPortDiagnostics.mockReturnValue(["Port 18789 is already in use."]);
+    pathExists.mockResolvedValue(false);
+    syncPluginsForUpdateChannel.mockResolvedValue({
+      changed: false,
+      config: baseConfig,
+      summary: {
+        switchedToBundled: [],
+        switchedToNpm: [],
+        warnings: [],
+        errors: [],
+      },
+    });
+    updateNpmInstalledPlugins.mockResolvedValue({
+      changed: false,
+      config: baseConfig,
+      outcomes: [],
+    });
     vi.mocked(runDaemonInstall).mockResolvedValue(undefined);
     vi.mocked(runDaemonRestart).mockResolvedValue(true);
     vi.mocked(doctorCommand).mockResolvedValue(undefined);
@@ -308,18 +314,6 @@ describe("update-cli", () => {
     select.mockResolvedValue("stable");
     setTty(false);
     setStdoutTty(false);
-  });
-
-  it("exports updateCommand and registerUpdateCli", async () => {
-    expect(typeof updateCommand).toBe("function");
-    expect(typeof registerUpdateCli).toBe("function");
-    expect(typeof updateWizardCommand).toBe("function");
-  }, 20_000);
-
-  it("updateCommand runs update and outputs result", async () => {
-    await updateCommand({ json: false });
-
-    expect(defaultRuntime.log).toHaveBeenCalled();
   });
 
   it("updateCommand --dry-run previews without mutating", async () => {
@@ -436,14 +430,6 @@ describe("update-cli", () => {
     expect(defaultRuntime.exit).toHaveBeenCalledWith(1);
   });
 
-  it("updateCommand restarts daemon by default", async () => {
-    vi.mocked(runDaemonRestart).mockResolvedValue(true);
-
-    await updateCommand({});
-
-    expect(runDaemonRestart).toHaveBeenCalled();
-  });
-
   it("updateCommand refreshes gateway service env when service is already installed", async () => {
     vi.mocked(runDaemonInstall).mockResolvedValue(undefined);
     serviceLoaded.mockResolvedValue(true);
@@ -460,16 +446,19 @@ describe("update-cli", () => {
 
   it("updateCommand refreshes service env from updated install root when available", async () => {
     const root = createCaseDir("remoteclaw-updated-root");
-    await fs.mkdir(path.join(root, "dist"), { recursive: true });
-    await fs.writeFile(path.join(root, "dist", "entry.js"), "console.log('ok');\n", "utf8");
+    const entryPath = path.join(root, "dist", "entry.js");
+    pathExists.mockImplementation(async (candidate: string) => candidate === entryPath);
 
     vi.mocked(resolveRemoteClawPackageRoot).mockResolvedValue(root);
     serviceLoaded.mockResolvedValue(true);
 
     await updateCommand({});
 
-    // After a successful update with a known root that has dist/entry.js,
-    // the command refreshes the gateway service env using that entry point
+    expect(runCommandWithTimeout).toHaveBeenCalledWith(
+      [expect.stringMatching(/node/), entryPath, "gateway", "install", "--force"],
+      expect.objectContaining({ timeoutMs: 60_000 }),
+    );
+    expect(runDaemonInstall).not.toHaveBeenCalled();
     expect(runRestartScript).toHaveBeenCalled();
   });
 

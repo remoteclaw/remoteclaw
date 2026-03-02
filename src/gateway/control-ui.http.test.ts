@@ -329,6 +329,38 @@ describe("handleControlUiHttpRequest", () => {
     });
   });
 
+  it("does not handle POST to root-mounted paths (plugin webhook passthrough)", async () => {
+    await withControlUiRoot({
+      fn: async (tmp) => {
+        for (const webhookPath of ["/bluebubbles-webhook", "/custom-webhook", "/callback"]) {
+          const { res } = makeMockHttpResponse();
+          const handled = handleControlUiHttpRequest(
+            { url: webhookPath, method: "POST" } as IncomingMessage,
+            res,
+            { root: { kind: "resolved", path: tmp } },
+          );
+          expect(handled, `POST to ${webhookPath} should pass through to plugin handlers`).toBe(
+            false,
+          );
+        }
+      },
+    });
+  });
+
+  it("does not handle POST to paths outside basePath", async () => {
+    await withControlUiRoot({
+      fn: async (tmp) => {
+        const { res } = makeMockHttpResponse();
+        const handled = handleControlUiHttpRequest(
+          { url: "/bluebubbles-webhook", method: "POST" } as IncomingMessage,
+          res,
+          { basePath: "/openclaw", root: { kind: "resolved", path: tmp } },
+        );
+        expect(handled).toBe(false);
+      },
+    });
+  });
+
   it("does not handle /api paths when basePath is empty", async () => {
     await withControlUiRoot({
       fn: async (tmp) => {
@@ -376,15 +408,17 @@ describe("handleControlUiHttpRequest", () => {
   it("returns 405 for POST requests under configured basePath", async () => {
     await withControlUiRoot({
       fn: async (tmp) => {
-        const { handled, res, end } = runControlUiRequest({
-          url: "/remoteclaw/",
-          method: "POST",
-          rootPath: tmp,
-          basePath: "/remoteclaw",
-        });
-        expect(handled).toBe(true);
-        expect(res.statusCode).toBe(405);
-        expect(end).toHaveBeenCalledWith("Method Not Allowed");
+        for (const route of ["/remoteclaw", "/remoteclaw/", "/remoteclaw/some-page"]) {
+          const { handled, res, end } = runControlUiRequest({
+            url: route,
+            method: "POST",
+            rootPath: tmp,
+            basePath: "/remoteclaw",
+          });
+          expect(handled, `expected ${route} to be handled`).toBe(true);
+          expect(res.statusCode, `expected ${route} status`).toBe(405);
+          expect(end, `expected ${route} body`).toHaveBeenCalledWith("Method Not Allowed");
+        }
       },
     });
   });

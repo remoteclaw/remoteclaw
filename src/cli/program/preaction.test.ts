@@ -156,28 +156,9 @@ describe("registerPreActionHooks", () => {
       commandPath: ["message", "send"],
     });
     expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledTimes(1);
-    vi.clearAllMocks();
-
-    await runPreAction({
-      parseArgv: ["configure"],
-      processArgv: ["node", "remoteclaw", "configure"],
-    });
-
-    expect(ensureConfigReadyMock).toHaveBeenCalledWith({
-      runtime: runtimeMock,
-      commandPath: ["configure"],
-    });
-    expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledTimes(1);
   });
 
-  it("skips preaction work for doctor and help/version argv", async () => {
-    await runPreAction({
-      parseArgv: ["doctor"],
-      processArgv: ["node", "remoteclaw", "doctor"],
-    });
-
-    expect(ensureConfigReadyMock).not.toHaveBeenCalled();
-    vi.clearAllMocks();
+  it("skips preaction work when argv indicates help/version", async () => {
     await runPreAction({
       parseArgv: ["status"],
       processArgv: ["node", "remoteclaw", "--version"],

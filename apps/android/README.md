@@ -56,6 +56,40 @@ cd apps/android
 
 `gradlew` auto-detects the Android SDK at `~/Library/Android/sdk` (macOS default) if `ANDROID_SDK_ROOT` / `ANDROID_HOME` are unset.
 
+## Macrobenchmark (Startup + Frame Timing)
+
+```bash
+cd apps/android
+./gradlew :benchmark:connectedDebugAndroidTest
+```
+
+Reports are written under:
+
+- `apps/android/benchmark/build/reports/androidTests/connected/`
+
+## Perf CLI (low-noise)
+
+Deterministic startup measurement + hotspot extraction with compact CLI output:
+
+```bash
+cd apps/android
+./scripts/perf-startup-benchmark.sh
+./scripts/perf-startup-hotspots.sh
+```
+
+Benchmark script behavior:
+
+- Runs only `StartupMacrobenchmark#coldStartup` (10 iterations).
+- Prints median/min/max/COV in one line.
+- Writes timestamped snapshot JSON to `apps/android/benchmark/results/`.
+- Auto-compares with previous local snapshot (or pass explicit baseline: `--baseline <old-benchmarkData.json>`).
+
+Hotspot script behavior:
+
+- Ensures debug app installed, captures startup `simpleperf` data for `.MainActivity`.
+- Prints top DSOs, top symbols, and key app-path clues (Compose/MainActivity/WebView).
+- Writes raw `perf.data` path for deeper follow-up if needed.
+
 ## Run on a Real Android Phone (USB)
 
 1) On phone, enable **Developer options** + **USB debugging**.
@@ -122,8 +156,8 @@ pnpm remoteclaw gateway --port 18789 --verbose
 3) Approve pairing (on the gateway machine):
 
 ```bash
-remoteclaw nodes pending
-remoteclaw nodes approve <requestId>
+remoteclaw devices list
+remoteclaw devices approve <requestId>
 ```
 
 More details: `docs/platforms/android.md`.
@@ -177,7 +211,7 @@ What it does:
 - Reads `node.describe` command list from the selected Android node.
 - Invokes advertised non-interactive commands.
 - Skips `screen.record` in this suite (Android requires interactive per-invocation screen-capture consent).
-- Asserts command contracts (success or expected deterministic error for safe-invalid calls like `sms.send` and `notifications.actions`).
+- Asserts command contracts (success or expected deterministic error for safe-invalid calls like `sms.send`, `notifications.actions`, `app.update`).
 
 Common failure quick-fixes:
 

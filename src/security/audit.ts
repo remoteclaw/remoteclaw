@@ -433,6 +433,18 @@ function collectGatewayConfigFindings(
     });
   }
 
+  if (isFeishuDocToolEnabled(cfg)) {
+    findings.push({
+      checkId: "channels.feishu.doc_owner_open_id",
+      severity: "warn",
+      title: "Feishu doc create can grant requester permissions",
+      detail:
+        'channels.feishu tools include "doc"; feishu_doc action "create" can grant document access to the trusted requesting Feishu user.',
+      remediation:
+        "Disable channels.feishu.tools.doc when not needed, and restrict tool access for untrusted prompts.",
+    });
+  }
+
   const enabledDangerousFlags = collectEnabledInsecureOrDangerousFlags(cfg);
   if (enabledDangerousFlags.length > 0) {
     findings.push({

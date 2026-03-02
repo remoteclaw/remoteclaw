@@ -748,8 +748,7 @@ async function createDoc(
   client: Lark.Client,
   title: string,
   folderToken?: string,
-  ownerOpenId?: string,
-  ownerPermType: "view" | "edit" | "full_access" = "full_access",
+  options?: { grantToRequester?: boolean; requesterOpenId?: string },
 ) {
   const res = await client.docx.document.create({
     data: { title, folder_token: folderToken },
@@ -762,23 +761,32 @@ async function createDoc(
   if (!docToken) {
     throw new Error("Document creation succeeded but no document_id was returned");
   }
-  let ownerPermissionAdded = false;
+  const shouldGrantToRequester = options?.grantToRequester !== false;
+  const requesterOpenId = options?.requesterOpenId?.trim();
+  const requesterPermType: "edit" = "edit";
 
-  // Auto add owner permission if ownerOpenId is provided
-  if (docToken && ownerOpenId) {
-    try {
-      await client.drive.permissionMember.create({
-        path: { token: docToken },
-        params: { type: "docx", need_notification: false },
-        data: {
-          member_type: "openid",
-          member_id: ownerOpenId,
-          perm: ownerPermType,
-        },
-      });
-      ownerPermissionAdded = true;
-    } catch (err) {
-      console.warn("Failed to add owner permission (non-critical):", err);
+  let requesterPermissionAdded = false;
+  let requesterPermissionSkippedReason: string | undefined;
+  let requesterPermissionError: string | undefined;
+
+  if (shouldGrantToRequester) {
+    if (!requesterOpenId) {
+      requesterPermissionSkippedReason = "trusted requester identity unavailable";
+    } else {
+      try {
+        await client.drive.permissionMember.create({
+          path: { token: docToken },
+          params: { type: "docx", need_notification: false },
+          data: {
+            member_type: "openid",
+            member_id: requesterOpenId,
+            perm: requesterPermType,
+          },
+        });
+        requesterPermissionAdded = true;
+      } catch (err) {
+        requesterPermissionError = err instanceof Error ? err.message : String(err);
+      }
     }
   }
 
@@ -786,12 +794,15 @@ async function createDoc(
     document_id: docToken,
     title: doc?.title,
     url: `https://feishu.cn/docx/${docToken}`,
-    ...(ownerOpenId &&
-      ownerPermissionAdded && {
-        owner_permission_added: true,
-        owner_open_id: ownerOpenId,
-        owner_perm_type: ownerPermType,
+    ...(shouldGrantToRequester && {
+      requester_permission_added: requesterPermissionAdded,
+      ...(requesterOpenId && { requester_open_id: requesterOpenId }),
+      requester_perm_type: requesterPermType,
+      ...(requesterPermissionSkippedReason && {
+        requester_permission_skipped_reason: requesterPermissionSkippedReason,
       }),
+      ...(requesterPermissionError && { requester_permission_error: requesterPermissionError }),
+    }),
   };
 }
 
@@ -1234,152 +1245,161 @@ export function registerFeishuDocTools(api: RemoteClawPluginApi) {
   const getClient = () => createFeishuClient(firstAccount);
   const registered: string[] = [];
 
-  // Main document tool with action-based dispatch
+  // Main document tool with action-based dispatch (factory pattern for trusted requester context)
   if (toolsCfg.doc) {
     api.registerTool(
-      {
-        name: "feishu_doc",
-        label: "Feishu Doc",
-        description:
-          "Feishu document operations. Actions: read, write, append, insert, create, list_blocks, get_block, update_block, delete_block, create_table, write_table_cells, create_table_with_values, insert_table_row, insert_table_column, delete_table_rows, delete_table_columns, merge_table_cells, upload_image, upload_file, color_text",
-        parameters: FeishuDocSchema,
-        async execute(_toolCallId, params) {
-          const p = params as FeishuDocParams;
-          try {
-            const client = getClient();
-            switch (p.action) {
-              case "read":
-                return json(await readDoc(client, p.doc_token));
-              case "write":
-                return json(
-                  await writeDoc(client, p.doc_token, p.content, mediaMaxBytes, api.logger),
-                );
-              case "append":
-                return json(
-                  await appendDoc(client, p.doc_token, p.content, mediaMaxBytes, api.logger),
-                );
-              case "insert":
-                return json(
-                  await insertDoc(
-                    client,
-                    p.doc_token,
-                    p.content,
-                    p.after_block_id,
-                    mediaMaxBytes,
-                    api.logger,
-                  ),
-                );
-              case "create":
-                return json(
-                  await createDoc(
-                    client,
-                    p.title,
-                    p.folder_token,
-                    p.owner_open_id,
-                    p.owner_perm_type,
-                  ),
-                );
-              case "list_blocks":
-                return json(await listBlocks(client, p.doc_token));
-              case "get_block":
-                return json(await getBlock(client, p.doc_token, p.block_id));
-              case "update_block":
-                return json(await updateBlock(client, p.doc_token, p.block_id, p.content));
-              case "delete_block":
-                return json(await deleteBlock(client, p.doc_token, p.block_id));
-              case "create_table":
-                return json(
-                  await createTable(
-                    client,
-                    p.doc_token,
-                    p.row_size,
-                    p.column_size,
-                    p.parent_block_id,
-                    p.column_width,
-                  ),
-                );
-              case "write_table_cells":
-                return json(await writeTableCells(client, p.doc_token, p.table_block_id, p.values));
-              case "create_table_with_values":
-                return json(
-                  await createTableWithValues(
-                    client,
-                    p.doc_token,
-                    p.row_size,
-                    p.column_size,
-                    p.values,
-                    p.parent_block_id,
-                    p.column_width,
-                  ),
-                );
-              case "upload_image":
-                return json(
-                  await uploadImageBlock(
-                    client,
-                    p.doc_token,
-                    mediaMaxBytes,
-                    p.url,
-                    p.file_path,
-                    p.parent_block_id,
-                    p.filename,
-                    p.index,
-                    p.image, // data URI or plain base64
-                  ),
-                );
-              case "upload_file":
-                return json(
-                  await uploadFileBlock(
-                    client,
-                    p.doc_token,
-                    mediaMaxBytes,
-                    p.url,
-                    p.file_path,
-                    p.parent_block_id,
-                    p.filename,
-                  ),
-                );
-              case "color_text":
-                return json(await updateColorText(client, p.doc_token, p.block_id, p.content));
-              case "insert_table_row":
-                return json(await insertTableRow(client, p.doc_token, p.block_id, p.row_index));
-              case "insert_table_column":
-                return json(
-                  await insertTableColumn(client, p.doc_token, p.block_id, p.column_index),
-                );
-              case "delete_table_rows":
-                return json(
-                  await deleteTableRows(client, p.doc_token, p.block_id, p.row_start, p.row_count),
-                );
-              case "delete_table_columns":
-                return json(
-                  await deleteTableColumns(
-                    client,
-                    p.doc_token,
-                    p.block_id,
-                    p.column_start,
-                    p.column_count,
-                  ),
-                );
-              case "merge_table_cells":
-                return json(
-                  await mergeTableCells(
-                    client,
-                    p.doc_token,
-                    p.block_id,
-                    p.row_start,
-                    p.row_end,
-                    p.column_start,
-                    p.column_end,
-                  ),
-                );
-              default:
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- exhaustive check fallback
-                return json({ error: `Unknown action: ${(p as any).action}` });
+      (ctx) => {
+        const trustedRequesterOpenId =
+          ctx.messageChannel === "feishu" ? ctx.requesterSenderId?.trim() || undefined : undefined;
+        return {
+          name: "feishu_doc",
+          label: "Feishu Doc",
+          description:
+            "Feishu document operations. Actions: read, write, append, insert, create, list_blocks, get_block, update_block, delete_block, create_table, write_table_cells, create_table_with_values, insert_table_row, insert_table_column, delete_table_rows, delete_table_columns, merge_table_cells, upload_image, upload_file, color_text",
+          parameters: FeishuDocSchema,
+          async execute(_toolCallId, params) {
+            const p = params as FeishuDocParams;
+            try {
+              const client = getClient();
+              switch (p.action) {
+                case "read":
+                  return json(await readDoc(client, p.doc_token));
+                case "write":
+                  return json(
+                    await writeDoc(client, p.doc_token, p.content, mediaMaxBytes, api.logger),
+                  );
+                case "append":
+                  return json(
+                    await appendDoc(client, p.doc_token, p.content, mediaMaxBytes, api.logger),
+                  );
+                case "insert":
+                  return json(
+                    await insertDoc(
+                      client,
+                      p.doc_token,
+                      p.content,
+                      p.after_block_id,
+                      mediaMaxBytes,
+                      api.logger,
+                    ),
+                  );
+                case "create":
+                  return json(
+                    await createDoc(client, p.title, p.folder_token, {
+                      grantToRequester: p.grant_to_requester,
+                      requesterOpenId: trustedRequesterOpenId,
+                    }),
+                  );
+                case "list_blocks":
+                  return json(await listBlocks(client, p.doc_token));
+                case "get_block":
+                  return json(await getBlock(client, p.doc_token, p.block_id));
+                case "update_block":
+                  return json(await updateBlock(client, p.doc_token, p.block_id, p.content));
+                case "delete_block":
+                  return json(await deleteBlock(client, p.doc_token, p.block_id));
+                case "create_table":
+                  return json(
+                    await createTable(
+                      client,
+                      p.doc_token,
+                      p.row_size,
+                      p.column_size,
+                      p.parent_block_id,
+                      p.column_width,
+                    ),
+                  );
+                case "write_table_cells":
+                  return json(
+                    await writeTableCells(client, p.doc_token, p.table_block_id, p.values),
+                  );
+                case "create_table_with_values":
+                  return json(
+                    await createTableWithValues(
+                      client,
+                      p.doc_token,
+                      p.row_size,
+                      p.column_size,
+                      p.values,
+                      p.parent_block_id,
+                      p.column_width,
+                    ),
+                  );
+                case "upload_image":
+                  return json(
+                    await uploadImageBlock(
+                      client,
+                      p.doc_token,
+                      mediaMaxBytes,
+                      p.url,
+                      p.file_path,
+                      p.parent_block_id,
+                      p.filename,
+                      p.index,
+                      p.image, // data URI or plain base64
+                    ),
+                  );
+                case "upload_file":
+                  return json(
+                    await uploadFileBlock(
+                      client,
+                      p.doc_token,
+                      mediaMaxBytes,
+                      p.url,
+                      p.file_path,
+                      p.parent_block_id,
+                      p.filename,
+                    ),
+                  );
+                case "color_text":
+                  return json(await updateColorText(client, p.doc_token, p.block_id, p.content));
+                case "insert_table_row":
+                  return json(await insertTableRow(client, p.doc_token, p.block_id, p.row_index));
+                case "insert_table_column":
+                  return json(
+                    await insertTableColumn(client, p.doc_token, p.block_id, p.column_index),
+                  );
+                case "delete_table_rows":
+                  return json(
+                    await deleteTableRows(
+                      client,
+                      p.doc_token,
+                      p.block_id,
+                      p.row_start,
+                      p.row_count,
+                    ),
+                  );
+                case "delete_table_columns":
+                  return json(
+                    await deleteTableColumns(
+                      client,
+                      p.doc_token,
+                      p.block_id,
+                      p.column_start,
+                      p.column_count,
+                    ),
+                  );
+                case "merge_table_cells":
+                  return json(
+                    await mergeTableCells(
+                      client,
+                      p.doc_token,
+                      p.block_id,
+                      p.row_start,
+                      p.row_end,
+                      p.column_start,
+                      p.column_end,
+                    ),
+                  );
+                default:
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- exhaustive check fallback
+                  return json({ error: `Unknown action: ${(p as any).action}` });
+              }
+            } catch (err) {
+              return json({ error: err instanceof Error ? err.message : String(err) });
             }
-          } catch (err) {
-            return json({ error: err instanceof Error ? err.message : String(err) });
-          }
-        },
+          },
+        };
       },
       { name: "feishu_doc" },
     );

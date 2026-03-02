@@ -5,9 +5,9 @@ services:
       HOME: /home/node
       TERM: xterm-256color
       REMOTECLAW_GATEWAY_TOKEN: ${REMOTECLAW_GATEWAY_TOKEN}
-      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY}
-      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
-      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
+      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
+      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
+      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
     volumes:
       - ${REMOTECLAW_CONFIG_DIR}:/home/node/.remoteclaw
       - ${REMOTECLAW_WORKSPACE_DIR}:/home/node/.remoteclaw/workspace
@@ -29,14 +29,20 @@ services:
 
   remoteclaw-cli:
     image: ${REMOTECLAW_IMAGE:-remoteclaw:local}
+    network_mode: "service:remoteclaw-gateway"
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+    security_opt:
+      - no-new-privileges:true
     environment:
       HOME: /home/node
       TERM: xterm-256color
       REMOTECLAW_GATEWAY_TOKEN: ${REMOTECLAW_GATEWAY_TOKEN}
       BROWSER: echo
-      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY}
-      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
-      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
+      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
+      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
+      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
     volumes:
       - ${REMOTECLAW_CONFIG_DIR}:/home/node/.remoteclaw
       - ${REMOTECLAW_WORKSPACE_DIR}:/home/node/.remoteclaw/workspace
@@ -44,3 +50,5 @@ services:
     tty: true
     init: true
     entrypoint: ["node", "dist/index.js"]
+    depends_on:
+      - remoteclaw-gateway

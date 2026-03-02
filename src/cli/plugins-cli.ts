@@ -340,12 +340,15 @@ async function runPluginInstallCommand(params: {
     logger: createPluginInstallLogger(),
   });
   if (!result.ok) {
-    const bundledFallback =
-      result.code === PLUGIN_INSTALL_ERROR_CODE.NPM_PACKAGE_NOT_FOUND
-        ? findBundledPluginSource({
-            lookup: { kind: "npmSpec", value: raw },
-          })
-        : undefined;
+    const shouldTryBundledFallback =
+      result.code === PLUGIN_INSTALL_ERROR_CODE.NPM_PACKAGE_NOT_FOUND ||
+      result.code === PLUGIN_INSTALL_ERROR_CODE.MISSING_REMOTECLAW_EXTENSIONS ||
+      result.code === PLUGIN_INSTALL_ERROR_CODE.EMPTY_REMOTECLAW_EXTENSIONS;
+    const bundledFallback = shouldTryBundledFallback
+      ? findBundledPluginSource({
+          lookup: { kind: "npmSpec", value: raw },
+        })
+      : undefined;
     if (!bundledFallback) {
       defaultRuntime.error(result.error);
       process.exit(1);

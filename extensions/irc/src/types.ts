@@ -67,6 +67,7 @@ export type IrcAccountConfig = {
 
 export type IrcConfig = IrcAccountConfig & {
   accounts?: Record<string, IrcAccountConfig>;
+  defaultAccount?: string;
 };
 
 export type CoreConfig = RemoteClawConfig & {

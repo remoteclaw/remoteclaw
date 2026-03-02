@@ -1,14 +1,12 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import {
-  beginWebhookRequestPipelineOrReject,
-  createWebhookInFlightLimiter,
   GROUP_POLICY_BLOCKED_LABEL,
   createScopedPairingAccess,
   createReplyPrefixOptions,
   readJsonBodyWithLimit,
-  readJsonWebhookBodyOrReject,
-  registerWebhookTargetWithPluginRoute,
+  registerPluginHttpRoute,
+  registerWebhookTarget,
   rejectNonPostWebhookRequest,
   isDangerousNameMatchingEnabled,
   resolveAllowlistProviderRuntimeGroupPolicy,
@@ -18,6 +16,7 @@ import {
   resolveWebhookPath,
   resolveWebhookTargets,
   warnMissingProviderGroupPolicyFallbackOnce,
+  requestBodyErrorToText,
   resolveMentionGatingWithBypass,
   resolveDmGroupAccessWithLists,
 } from "remoteclaw/plugin-sdk";
@@ -69,7 +68,6 @@ type WebhookTarget = {
 };
 
 const webhookTargets = new Map<string, WebhookTarget[]>();
-const webhookInFlightLimiter = createWebhookInFlightLimiter();
 
 function logVerbose(core: GoogleChatCoreRuntime, runtime: GoogleChatRuntimeEnv, message: string) {
   if (core.logging.shouldLogVerbose()) {
@@ -103,25 +101,23 @@ function warnDeprecatedUsersEmailEntries(
 }
 
 export function registerGoogleChatWebhookTarget(target: WebhookTarget): () => void {
-  return registerWebhookTargetWithPluginRoute({
-    targetsByPath: webhookTargets,
-    target,
-    route: {
-      auth: "plugin",
-      match: "exact",
-      pluginId: "googlechat",
-      source: "googlechat-webhook",
-      accountId: target.account.accountId,
-      log: target.runtime.log,
-      handler: async (req, res) => {
-        const handled = await handleGoogleChatWebhookRequest(req, res);
-        if (!handled && !res.headersSent) {
-          res.statusCode = 404;
-          res.setHeader("Content-Type", "text/plain; charset=utf-8");
-          res.end("Not Found");
-        }
-      },
-    },
+  return registerWebhookTarget(webhookTargets, target, {
+    onFirstPathTarget: ({ path }) =>
+      registerPluginHttpRoute({
+        path,
+        pluginId: "googlechat",
+        source: "googlechat-webhook",
+        accountId: target.account.accountId,
+        log: target.runtime.log,
+        handler: async (req, res) => {
+          const handled = await handleGoogleChatWebhookRequest(req, res);
+          if (!handled && !res.headersSent) {
+            res.statusCode = 404;
+            res.setHeader("Content-Type", "text/plain; charset=utf-8");
+            res.end("Not Found");
+          }
+        },
+      }),
   }).unregister;
 }
 
@@ -140,31 +136,49 @@ function normalizeAudienceType(value?: string | null): GoogleChatAudienceType | 
   return undefined;
 }
 
-function extractBearerToken(header: unknown): string {
-  const authHeader = Array.isArray(header) ? String(header[0] ?? "") : String(header ?? "");
-  return authHeader.toLowerCase().startsWith("bearer ")
-    ? authHeader.slice("bearer ".length).trim()
-    : "";
-}
-
-type ParsedGoogleChatInboundPayload =
-  | { ok: true; event: GoogleChatEvent; addOnBearerToken: string }
-  | { ok: false };
-
-function parseGoogleChatInboundPayload(
-  raw: unknown,
+export async function handleGoogleChatWebhookRequest(
+  req: IncomingMessage,
   res: ServerResponse,
-): ParsedGoogleChatInboundPayload {
+): Promise<boolean> {
+  const resolved = resolveWebhookTargets(req, webhookTargets);
+  if (!resolved) {
+    return false;
+  }
+  const { targets } = resolved;
+
+  if (rejectNonPostWebhookRequest(req, res)) {
+    return true;
+  }
+
+  const authHeader = String(req.headers.authorization ?? "");
+  const bearer = authHeader.toLowerCase().startsWith("bearer ")
+    ? authHeader.slice("bearer ".length)
+    : "";
+
+  const body = await readJsonBodyWithLimit(req, {
+    maxBytes: 1024 * 1024,
+    timeoutMs: 30_000,
+    emptyObjectOnEmpty: false,
+  });
+  if (!body.ok) {
+    res.statusCode =
+      body.code === "PAYLOAD_TOO_LARGE" ? 413 : body.code === "REQUEST_BODY_TIMEOUT" ? 408 : 400;
+    res.end(
+      body.code === "REQUEST_BODY_TIMEOUT"
+        ? requestBodyErrorToText("REQUEST_BODY_TIMEOUT")
+        : body.error,
+    );
+    return true;
+  }
+
+  let raw = body.value;
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     res.statusCode = 400;
     res.end("invalid payload");
-    return { ok: false };
+    return true;
   }
 
-  let eventPayload = raw;
-  let addOnBearerToken = "";
-
-  // Transform Google Workspace Add-on format to standard Chat API format.
+  // Transform Google Workspace Add-on format to standard Chat API format
   const rawObj = raw as {
     commonEventObject?: { hostApp?: string };
     chat?: {
@@ -178,173 +192,84 @@ function parseGoogleChatInboundPayload(
   if (rawObj.commonEventObject?.hostApp === "CHAT" && rawObj.chat?.messagePayload) {
     const chat = rawObj.chat;
     const messagePayload = chat.messagePayload;
-    eventPayload = {
+    raw = {
       type: "MESSAGE",
       space: messagePayload?.space,
       message: messagePayload?.message,
       user: chat.user,
       eventTime: chat.eventTime,
     };
-    addOnBearerToken = String(rawObj.authorizationEventObject?.systemIdToken ?? "").trim();
+
+    // For Add-ons, the bearer token may be in authorizationEventObject.systemIdToken
+    const systemIdToken = rawObj.authorizationEventObject?.systemIdToken;
+    if (!bearer && systemIdToken) {
+      Object.assign(req.headers, { authorization: `Bearer ${systemIdToken}` });
+    }
   }
 
-  const event = eventPayload as GoogleChatEvent;
-  const eventType = event.type ?? (eventPayload as { eventType?: string }).eventType;
+  const event = raw as GoogleChatEvent;
+  const eventType = event.type ?? (raw as { eventType?: string }).eventType;
   if (typeof eventType !== "string") {
     res.statusCode = 400;
     res.end("invalid payload");
-    return { ok: false };
+    return true;
   }
 
   if (!event.space || typeof event.space !== "object" || Array.isArray(event.space)) {
     res.statusCode = 400;
     res.end("invalid payload");
-    return { ok: false };
+    return true;
   }
 
   if (eventType === "MESSAGE") {
     if (!event.message || typeof event.message !== "object" || Array.isArray(event.message)) {
       res.statusCode = 400;
       res.end("invalid payload");
-      return { ok: false };
+      return true;
     }
   }
 
-  return { ok: true, event, addOnBearerToken };
-}
+  // Re-extract bearer in case it was updated from Add-on format
+  const authHeaderNow = String(req.headers.authorization ?? "");
+  const effectiveBearer = authHeaderNow.toLowerCase().startsWith("bearer ")
+    ? authHeaderNow.slice("bearer ".length)
+    : bearer;
 
-async function resolveGoogleChatWebhookTargetByBearer(
-  targets: readonly WebhookTarget[],
-  bearer: string,
-) {
-  return await resolveSingleWebhookTargetAsync(targets, async (target) => {
+  const matchedTarget = await resolveSingleWebhookTargetAsync(targets, async (target) => {
+    const audienceType = target.audienceType;
+    const audience = target.audience;
     const verification = await verifyGoogleChatRequest({
-      bearer,
-      audienceType: target.audienceType,
-      audience: target.audience,
+      bearer: effectiveBearer,
+      audienceType,
+      audience,
     });
     return verification.ok;
   });
-}
 
-export async function handleGoogleChatWebhookRequest(
-  req: IncomingMessage,
-  res: ServerResponse,
-): Promise<boolean> {
-  const resolved = resolveWebhookTargets(req, webhookTargets);
-  if (!resolved) {
-    return false;
+  if (matchedTarget.kind === "none") {
+    res.statusCode = 401;
+    res.end("unauthorized");
+    return true;
   }
-  const { path, targets } = resolved;
 
-  const requestLifecycle = beginWebhookRequestPipelineOrReject({
-    req,
-    res,
-    allowMethods: ["POST"],
-    requireJsonContentType: true,
-    inFlightLimiter: webhookInFlightLimiter,
-    inFlightKey: `${path}:${req.socket?.remoteAddress ?? "unknown"}`,
+  if (matchedTarget.kind === "ambiguous") {
+    res.statusCode = 401;
+    res.end("ambiguous webhook target");
+    return true;
+  }
+
+  const selected = matchedTarget.target;
+  selected.statusSink?.({ lastInboundAt: Date.now() });
+  processGoogleChatEvent(event, selected).catch((err) => {
+    selected?.runtime.error?.(
+      `[${selected.account.accountId}] Google Chat webhook failed: ${String(err)}`,
+    );
   });
-  if (!requestLifecycle.ok) {
-    return true;
-  }
 
-  try {
-    const headerBearer = extractBearerToken(req.headers.authorization);
-    let matchedTarget: Awaited<ReturnType<typeof resolveGoogleChatWebhookTargetByBearer>> | null =
-      null;
-    let parsedEvent: GoogleChatEvent | null = null;
-    let addOnBearerToken = "";
-
-    if (headerBearer) {
-      matchedTarget = await resolveGoogleChatWebhookTargetByBearer(targets, headerBearer);
-      if (matchedTarget.kind === "none") {
-        res.statusCode = 401;
-        res.end("unauthorized");
-        return true;
-      }
-      if (matchedTarget.kind === "ambiguous") {
-        res.statusCode = 401;
-        res.end("ambiguous webhook target");
-        return true;
-      }
-
-      const body = await readJsonWebhookBodyOrReject({
-        req,
-        res,
-        profile: "post-auth",
-        emptyObjectOnEmpty: false,
-        invalidJsonMessage: "invalid payload",
-      });
-      if (!body.ok) {
-        return true;
-      }
-
-      const parsed = parseGoogleChatInboundPayload(body.value, res);
-      if (!parsed.ok) {
-        return true;
-      }
-      parsedEvent = parsed.event;
-      addOnBearerToken = parsed.addOnBearerToken;
-    } else {
-      const body = await readJsonWebhookBodyOrReject({
-        req,
-        res,
-        profile: "pre-auth",
-        emptyObjectOnEmpty: false,
-        invalidJsonMessage: "invalid payload",
-      });
-      if (!body.ok) {
-        return true;
-      }
-
-      const parsed = parseGoogleChatInboundPayload(body.value, res);
-      if (!parsed.ok) {
-        return true;
-      }
-      parsedEvent = parsed.event;
-      addOnBearerToken = parsed.addOnBearerToken;
-
-      if (!addOnBearerToken) {
-        res.statusCode = 401;
-        res.end("unauthorized");
-        return true;
-      }
-
-      matchedTarget = await resolveGoogleChatWebhookTargetByBearer(targets, addOnBearerToken);
-      if (matchedTarget.kind === "none") {
-        res.statusCode = 401;
-        res.end("unauthorized");
-        return true;
-      }
-      if (matchedTarget.kind === "ambiguous") {
-        res.statusCode = 401;
-        res.end("ambiguous webhook target");
-        return true;
-      }
-    }
-
-    if (!matchedTarget || !parsedEvent) {
-      res.statusCode = 401;
-      res.end("unauthorized");
-      return true;
-    }
-
-    const selected = matchedTarget.target;
-    selected.statusSink?.({ lastInboundAt: Date.now() });
-    processGoogleChatEvent(parsedEvent, selected).catch((err) => {
-      selected.runtime.error?.(
-        `[${selected.account.accountId}] Google Chat webhook failed: ${String(err)}`,
-      );
-    });
-
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "application/json");
-    res.end("{}");
-    return true;
-  } finally {
-    requestLifecycle.release();
-  }
+  res.statusCode = 200;
+  res.setHeader("Content-Type", "application/json");
+  res.end("{}");
+  return true;
 }
 
 async function processGoogleChatEvent(event: GoogleChatEvent, target: WebhookTarget) {
@@ -739,8 +664,7 @@ async function processMessageWithPipeline(params: {
       kind: isGroup ? ("group" as const) : ("direct" as const),
       id: spaceId,
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    runtime: core.channel as any,
+    runtime: core.channel,
     sessionStore: config.session?.store,
   });
 
@@ -1057,9 +981,7 @@ export function monitorGoogleChatProvider(options: GoogleChatMonitorOptions): ()
     mediaMaxMb,
   });
 
-  return () => {
-    unregister();
-  };
+  return unregister;
 }
 
 export async function startGoogleChatMonitor(

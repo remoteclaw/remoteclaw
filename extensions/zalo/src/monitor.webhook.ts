@@ -7,9 +7,7 @@ import {
   createWebhookAnomalyTracker,
   readJsonWebhookBodyOrReject,
   applyBasicWebhookRequestGuards,
-  registerWebhookTargetWithPluginRoute,
   type RegisterWebhookTargetOptions,
-  type RegisterWebhookPluginRouteOptions,
   registerWebhookTarget,
   resolveSingleWebhookTarget,
   resolveWebhookTargets,
@@ -111,21 +109,11 @@ function recordWebhookStatus(
 
 export function registerZaloWebhookTarget(
   target: ZaloWebhookTarget,
-  opts?: {
-    route?: RegisterWebhookPluginRouteOptions;
-  } & Pick<
+  opts?: Pick<
     RegisterWebhookTargetOptions<ZaloWebhookTarget>,
     "onFirstPathTarget" | "onLastPathTargetRemoved"
   >,
 ): () => void {
-  if (opts?.route) {
-    return registerWebhookTargetWithPluginRoute({
-      targetsByPath: webhookTargets,
-      target,
-      route: opts.route,
-      onLastPathTargetRemoved: opts.onLastPathTargetRemoved,
-    }).unregister;
-  }
   return registerWebhookTarget(webhookTargets, target, opts).unregister;
 }
 

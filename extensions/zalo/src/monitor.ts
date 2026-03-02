@@ -7,6 +7,7 @@ import type {
 import {
   createScopedPairingAccess,
   createReplyPrefixOptions,
+  registerPluginHttpRoute,
   resolveDirectDmAuthorizationOutcome,
   resolveSenderCommandAuthorizationWithRuntime,
   resolveOutboundMediaUrls,
@@ -80,22 +81,22 @@ function logVerbose(core: ZaloCoreRuntime, runtime: ZaloRuntimeEnv, message: str
 
 export function registerZaloWebhookTarget(target: ZaloWebhookTarget): () => void {
   return registerZaloWebhookTargetInternal(target, {
-    route: {
-      auth: "plugin",
-      match: "exact",
-      pluginId: "zalo",
-      source: "zalo-webhook",
-      accountId: target.account.accountId,
-      log: target.runtime.log,
-      handler: async (req, res) => {
-        const handled = await handleZaloWebhookRequest(req, res);
-        if (!handled && !res.headersSent) {
-          res.statusCode = 404;
-          res.setHeader("Content-Type", "text/plain; charset=utf-8");
-          res.end("Not Found");
-        }
-      },
-    },
+    onFirstPathTarget: ({ path }) =>
+      registerPluginHttpRoute({
+        path,
+        pluginId: "zalo",
+        source: "zalo-webhook",
+        accountId: target.account.accountId,
+        log: target.runtime.log,
+        handler: async (req, res) => {
+          const handled = await handleZaloWebhookRequest(req, res);
+          if (!handled && !res.headersSent) {
+            res.statusCode = 404;
+            res.setHeader("Content-Type", "text/plain; charset=utf-8");
+            res.end("Not Found");
+          }
+        },
+      }),
   });
 }
 
@@ -457,8 +458,7 @@ async function processMessageWithPipeline(params: {
       kind: isGroup ? ("group" as const) : ("direct" as const),
       id: chatId,
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    runtime: core.channel as any,
+    runtime: core.channel,
     sessionStore: config.session?.store,
   });
 

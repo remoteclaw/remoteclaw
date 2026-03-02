@@ -1,5 +1,4 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { registerPluginHttpRoute } from "../plugins/http-registry.js";
 import { normalizeWebhookPath } from "./webhook-path.js";
 
 export type RegisteredWebhookTarget<T> = {
@@ -12,33 +11,8 @@ export type RegisterWebhookTargetOptions<T extends { path: string }> = {
   onLastPathTargetRemoved?: (params: { path: string }) => void;
 };
 
-type RegisterPluginHttpRouteParams = Parameters<typeof registerPluginHttpRoute>[0];
-
-export type RegisterWebhookPluginRouteOptions = Omit<
-  RegisterPluginHttpRouteParams,
-  "path" | "fallbackPath"
->;
-
-export function registerWebhookTargetWithPluginRoute<T extends { path: string }>(params: {
-  targetsByPath: Map<string, T[]>;
-  target: T;
-  route: RegisterWebhookPluginRouteOptions;
-  onLastPathTargetRemoved?: RegisterWebhookTargetOptions<T>["onLastPathTargetRemoved"];
-}): RegisteredWebhookTarget<T> {
-  return registerWebhookTarget(params.targetsByPath, params.target, {
-    onFirstPathTarget: ({ path }) =>
-      registerPluginHttpRoute({
-        ...params.route,
-        path,
-        replaceExisting: params.route.replaceExisting ?? true,
-      }),
-    onLastPathTargetRemoved: params.onLastPathTargetRemoved,
-  });
-}
-
 const pathTeardownByTargetMap = new WeakMap<Map<string, unknown[]>, Map<string, () => void>>();
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- wired by later cherry-pick commits
 function getPathTeardownMap<T>(targetsByPath: Map<string, T[]>): Map<string, () => void> {
   const mapKey = targetsByPath as unknown as Map<string, unknown[]>;
   const existing = pathTeardownByTargetMap.get(mapKey);
@@ -58,27 +32,36 @@ export function registerWebhookTarget<T extends { path: string }>(
   const key = normalizeWebhookPath(target.path);
   const normalizedTarget = { ...target, path: key };
   const existing = targetsByPath.get(key) ?? [];
-  const isFirstForPath = existing.length === 0;
-  targetsByPath.set(key, [...existing, normalizedTarget]);
-  if (isFirstForPath && opts?.onFirstPathTarget) {
-    const teardown = opts.onFirstPathTarget({ path: key, target: normalizedTarget });
-    if (teardown) {
-      getPathTeardownMap(targetsByPath).set(key, teardown);
+
+  if (existing.length === 0) {
+    const onFirstPathResult = opts?.onFirstPathTarget?.({
+      path: key,
+      target: normalizedTarget,
+    });
+    if (typeof onFirstPathResult === "function") {
+      getPathTeardownMap(targetsByPath).set(key, onFirstPathResult);
     }
   }
+
+  targetsByPath.set(key, [...existing, normalizedTarget]);
+
+  let isActive = true;
   const unregister = () => {
+    if (!isActive) {
+      return;
+    }
+    isActive = false;
+
     const updated = (targetsByPath.get(key) ?? []).filter((entry) => entry !== normalizedTarget);
     if (updated.length > 0) {
       targetsByPath.set(key, updated);
       return;
     }
     targetsByPath.delete(key);
-    const teardownMap = pathTeardownByTargetMap.get(
-      targetsByPath as unknown as Map<string, unknown[]>,
-    );
-    const teardown = teardownMap?.get(key);
+
+    const teardown = getPathTeardownMap(targetsByPath).get(key);
     if (teardown) {
-      teardownMap!.delete(key);
+      getPathTeardownMap(targetsByPath).delete(key);
       teardown();
     }
     opts?.onLastPathTargetRemoved?.({ path: key });

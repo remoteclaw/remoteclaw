@@ -98,6 +98,24 @@ function createJsonListFetchMock(entries: JsonListEntry[]) {
   });
 }
 
+function makeManagedTab(id: string, ordinal: number): JsonListEntry {
+  return {
+    id,
+    title: String(ordinal),
+    url: `http://127.0.0.1:300${ordinal}`,
+    webSocketDebuggerUrl: `ws://127.0.0.1/devtools/page/${id}`,
+    type: "page",
+  };
+}
+
+function makeManagedTabsWithNew(params?: { newFirst?: boolean }): JsonListEntry[] {
+  const oldTabs = Array.from({ length: 8 }, (_, index) =>
+    makeManagedTab(`OLD${index + 1}`, index + 1),
+  );
+  const newTab = makeManagedTab("NEW", 9);
+  return params?.newFirst ? [newTab, ...oldTabs] : [...oldTabs, newTab];
+}
+
 describe("browser server-context remote profile tab operations", () => {
   it("uses profile-level attachOnly when global attachOnly is false", async () => {
     const state = makeState("remoteclaw");
@@ -229,7 +247,7 @@ describe("browser server-context remote profile tab operations", () => {
     expect(second.targetId).toBe("A");
   });
 
-  it("rejects stale targetId for remote profiles even when only one tab exists", async () => {
+  it("falls back to the only tab for remote profiles when targetId is stale", async () => {
     const responses = [
       [{ targetId: "T1", title: "Tab 1", url: "https://example.com", type: "page" }],
       [{ targetId: "T1", title: "Tab 1", url: "https://example.com", type: "page" }],
@@ -241,7 +259,8 @@ describe("browser server-context remote profile tab operations", () => {
     } as unknown as Awaited<ReturnType<typeof pwAiModule.getPwAiModule>>);
 
     const { remote } = createRemoteRouteHarness();
-    await expect(remote.ensureTabAvailable("STALE_TARGET")).rejects.toThrow(/tab not found/i);
+    const chosen = await remote.ensureTabAvailable("STALE_TARGET");
+    expect(chosen.targetId).toBe("T1");
   });
 
   it("keeps rejecting stale targetId for remote profiles when multiple tabs exist", async () => {
@@ -320,7 +339,7 @@ describe("browser server-context remote profile tab operations", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("does not enforce managed tab cap for remote openclaw profiles", async () => {
+  it("does not enforce managed tab cap for remote remoteclaw profiles", async () => {
     const listPagesViaPlaywright = vi
       .fn()
       .mockResolvedValueOnce([
@@ -396,71 +415,7 @@ describe("browser server-context tab selection state", () => {
   it("closes excess managed tabs after opening a new tab", async () => {
     vi.spyOn(cdpModule, "createTargetViaCdp").mockResolvedValue({ targetId: "NEW" });
 
-    const existingTabs = [
-      {
-        id: "OLD1",
-        title: "1",
-        url: "http://127.0.0.1:3001",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD1",
-        type: "page",
-      },
-      {
-        id: "OLD2",
-        title: "2",
-        url: "http://127.0.0.1:3002",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD2",
-        type: "page",
-      },
-      {
-        id: "OLD3",
-        title: "3",
-        url: "http://127.0.0.1:3003",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD3",
-        type: "page",
-      },
-      {
-        id: "OLD4",
-        title: "4",
-        url: "http://127.0.0.1:3004",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD4",
-        type: "page",
-      },
-      {
-        id: "OLD5",
-        title: "5",
-        url: "http://127.0.0.1:3005",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD5",
-        type: "page",
-      },
-      {
-        id: "OLD6",
-        title: "6",
-        url: "http://127.0.0.1:3006",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD6",
-        type: "page",
-      },
-      {
-        id: "OLD7",
-        title: "7",
-        url: "http://127.0.0.1:3007",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD7",
-        type: "page",
-      },
-      {
-        id: "OLD8",
-        title: "8",
-        url: "http://127.0.0.1:3008",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD8",
-        type: "page",
-      },
-      {
-        id: "NEW",
-        title: "9",
-        url: "http://127.0.0.1:3009",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/NEW",
-        type: "page",
-      },
-    ];
+    const existingTabs = makeManagedTabsWithNew();
 
     const fetchMock = vi.fn(async (url: unknown) => {
       const value = String(url);
@@ -474,16 +429,16 @@ describe("browser server-context tab selection state", () => {
     });
 
     global.fetch = withFetchPreconnect(fetchMock);
-    const state = makeState("openclaw");
-    (state.profiles as Map<string, unknown>).set("openclaw", {
-      profile: { name: "openclaw" },
+    const state = makeState("remoteclaw");
+    (state.profiles as Map<string, unknown>).set("remoteclaw", {
+      profile: { name: "remoteclaw" },
       running: { pid: 1234, proc: { on: vi.fn() } },
       lastTargetId: null,
     });
     const ctx = createBrowserRouteContext({ getState: () => state });
-    const openclaw = ctx.forProfile("openclaw");
+    const remoteclaw = ctx.forProfile("remoteclaw");
 
-    const opened = await openclaw.openTab("http://127.0.0.1:3009");
+    const opened = await remoteclaw.openTab("http://127.0.0.1:3009");
     expect(opened.targetId).toBe("NEW");
     await vi.waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -491,6 +446,49 @@ describe("browser server-context tab selection state", () => {
         expect.any(Object),
       );
     });
+  });
+
+  it("never closes the just-opened managed tab during cap cleanup", async () => {
+    vi.spyOn(cdpModule, "createTargetViaCdp").mockResolvedValue({ targetId: "NEW" });
+
+    const existingTabs = makeManagedTabsWithNew({ newFirst: true });
+
+    const fetchMock = vi.fn(async (url: unknown) => {
+      const value = String(url);
+      if (value.includes("/json/list")) {
+        return { ok: true, json: async () => existingTabs } as unknown as Response;
+      }
+      if (value.includes("/json/close/OLD1")) {
+        return { ok: true, json: async () => ({}) } as unknown as Response;
+      }
+      if (value.includes("/json/close/NEW")) {
+        throw new Error("cleanup must not close NEW");
+      }
+      throw new Error(`unexpected fetch: ${value}`);
+    });
+
+    global.fetch = withFetchPreconnect(fetchMock);
+    const state = makeState("remoteclaw");
+    (state.profiles as Map<string, unknown>).set("remoteclaw", {
+      profile: { name: "remoteclaw" },
+      running: { pid: 1234, proc: { on: vi.fn() } },
+      lastTargetId: null,
+    });
+    const ctx = createBrowserRouteContext({ getState: () => state });
+    const remoteclaw = ctx.forProfile("remoteclaw");
+
+    const opened = await remoteclaw.openTab("http://127.0.0.1:3009");
+    expect(opened.targetId).toBe("NEW");
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining("/json/close/OLD1"),
+        expect.any(Object),
+      );
+    });
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("/json/close/NEW"),
+      expect.anything(),
+    );
   });
 
   it("does not fail tab open when managed-tab cleanup list fails", async () => {
@@ -521,87 +519,23 @@ describe("browser server-context tab selection state", () => {
     });
 
     global.fetch = withFetchPreconnect(fetchMock);
-    const state = makeState("openclaw");
-    (state.profiles as Map<string, unknown>).set("openclaw", {
-      profile: { name: "openclaw" },
+    const state = makeState("remoteclaw");
+    (state.profiles as Map<string, unknown>).set("remoteclaw", {
+      profile: { name: "remoteclaw" },
       running: { pid: 1234, proc: { on: vi.fn() } },
       lastTargetId: null,
     });
     const ctx = createBrowserRouteContext({ getState: () => state });
-    const openclaw = ctx.forProfile("openclaw");
+    const remoteclaw = ctx.forProfile("remoteclaw");
 
-    const opened = await openclaw.openTab("http://127.0.0.1:3009");
+    const opened = await remoteclaw.openTab("http://127.0.0.1:3009");
     expect(opened.targetId).toBe("NEW");
   });
 
   it("does not run managed tab cleanup in attachOnly mode", async () => {
     vi.spyOn(cdpModule, "createTargetViaCdp").mockResolvedValue({ targetId: "NEW" });
 
-    const existingTabs = [
-      {
-        id: "OLD1",
-        title: "1",
-        url: "http://127.0.0.1:3001",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD1",
-        type: "page",
-      },
-      {
-        id: "OLD2",
-        title: "2",
-        url: "http://127.0.0.1:3002",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD2",
-        type: "page",
-      },
-      {
-        id: "OLD3",
-        title: "3",
-        url: "http://127.0.0.1:3003",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD3",
-        type: "page",
-      },
-      {
-        id: "OLD4",
-        title: "4",
-        url: "http://127.0.0.1:3004",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD4",
-        type: "page",
-      },
-      {
-        id: "OLD5",
-        title: "5",
-        url: "http://127.0.0.1:3005",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD5",
-        type: "page",
-      },
-      {
-        id: "OLD6",
-        title: "6",
-        url: "http://127.0.0.1:3006",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD6",
-        type: "page",
-      },
-      {
-        id: "OLD7",
-        title: "7",
-        url: "http://127.0.0.1:3007",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD7",
-        type: "page",
-      },
-      {
-        id: "OLD8",
-        title: "8",
-        url: "http://127.0.0.1:3008",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD8",
-        type: "page",
-      },
-      {
-        id: "NEW",
-        title: "9",
-        url: "http://127.0.0.1:3009",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/NEW",
-        type: "page",
-      },
-    ];
+    const existingTabs = makeManagedTabsWithNew();
 
     const fetchMock = vi.fn(async (url: unknown) => {
       const value = String(url);
@@ -615,12 +549,12 @@ describe("browser server-context tab selection state", () => {
     });
 
     global.fetch = withFetchPreconnect(fetchMock);
-    const state = makeState("openclaw");
+    const state = makeState("remoteclaw");
     state.resolved.attachOnly = true;
     const ctx = createBrowserRouteContext({ getState: () => state });
-    const openclaw = ctx.forProfile("openclaw");
+    const remoteclaw = ctx.forProfile("remoteclaw");
 
-    const opened = await openclaw.openTab("http://127.0.0.1:3009");
+    const opened = await remoteclaw.openTab("http://127.0.0.1:3009");
     expect(opened.targetId).toBe("NEW");
     expect(fetchMock).not.toHaveBeenCalledWith(
       expect.stringContaining("/json/close/"),
@@ -631,71 +565,7 @@ describe("browser server-context tab selection state", () => {
   it("does not block openTab on slow best-effort cleanup closes", async () => {
     vi.spyOn(cdpModule, "createTargetViaCdp").mockResolvedValue({ targetId: "NEW" });
 
-    const existingTabs = [
-      {
-        id: "OLD1",
-        title: "1",
-        url: "http://127.0.0.1:3001",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD1",
-        type: "page",
-      },
-      {
-        id: "OLD2",
-        title: "2",
-        url: "http://127.0.0.1:3002",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD2",
-        type: "page",
-      },
-      {
-        id: "OLD3",
-        title: "3",
-        url: "http://127.0.0.1:3003",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD3",
-        type: "page",
-      },
-      {
-        id: "OLD4",
-        title: "4",
-        url: "http://127.0.0.1:3004",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD4",
-        type: "page",
-      },
-      {
-        id: "OLD5",
-        title: "5",
-        url: "http://127.0.0.1:3005",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD5",
-        type: "page",
-      },
-      {
-        id: "OLD6",
-        title: "6",
-        url: "http://127.0.0.1:3006",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD6",
-        type: "page",
-      },
-      {
-        id: "OLD7",
-        title: "7",
-        url: "http://127.0.0.1:3007",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD7",
-        type: "page",
-      },
-      {
-        id: "OLD8",
-        title: "8",
-        url: "http://127.0.0.1:3008",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/OLD8",
-        type: "page",
-      },
-      {
-        id: "NEW",
-        title: "9",
-        url: "http://127.0.0.1:3009",
-        webSocketDebuggerUrl: "ws://127.0.0.1/devtools/page/NEW",
-        type: "page",
-      },
-    ];
+    const existingTabs = makeManagedTabsWithNew();
 
     const fetchMock = vi.fn(async (url: unknown) => {
       const value = String(url);
@@ -709,17 +579,17 @@ describe("browser server-context tab selection state", () => {
     });
 
     global.fetch = withFetchPreconnect(fetchMock);
-    const state = makeState("openclaw");
-    (state.profiles as Map<string, unknown>).set("openclaw", {
-      profile: { name: "openclaw" },
+    const state = makeState("remoteclaw");
+    (state.profiles as Map<string, unknown>).set("remoteclaw", {
+      profile: { name: "remoteclaw" },
       running: { pid: 1234, proc: { on: vi.fn() } },
       lastTargetId: null,
     });
     const ctx = createBrowserRouteContext({ getState: () => state });
-    const openclaw = ctx.forProfile("openclaw");
+    const remoteclaw = ctx.forProfile("remoteclaw");
 
     const opened = await Promise.race([
-      openclaw.openTab("http://127.0.0.1:3009"),
+      remoteclaw.openTab("http://127.0.0.1:3009"),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("openTab timed out waiting for cleanup")), 300),
       ),

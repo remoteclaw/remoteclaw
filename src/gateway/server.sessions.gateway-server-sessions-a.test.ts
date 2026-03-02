@@ -94,12 +94,11 @@ installGatewayTestHooks({ scope: "suite" });
 
 let harness: GatewayServerHarness;
 let sharedSessionStoreDir: string;
-let sharedSessionStorePath: string;
+let sessionStoreCaseSeq = 0;
 
 beforeAll(async () => {
   harness = await startGatewayServerHarness();
   sharedSessionStoreDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-sessions-"));
-  sharedSessionStorePath = path.join(sharedSessionStoreDir, "sessions.json");
 });
 
 afterAll(async () => {
@@ -110,10 +109,11 @@ afterAll(async () => {
 const openClient = async (opts?: Parameters<typeof connectOk>[1]) => await harness.openClient(opts);
 
 async function createSessionStoreDir() {
-  await fs.rm(sharedSessionStoreDir, { recursive: true, force: true });
-  await fs.mkdir(sharedSessionStoreDir, { recursive: true });
-  testState.sessionStorePath = sharedSessionStorePath;
-  return { dir: sharedSessionStoreDir, storePath: sharedSessionStorePath };
+  const dir = path.join(sharedSessionStoreDir, `case-${sessionStoreCaseSeq++}`);
+  await fs.mkdir(dir, { recursive: true });
+  const storePath = path.join(dir, "sessions.json");
+  testState.sessionStorePath = storePath;
+  return { dir, storePath };
 }
 
 async function writeSingleLineSession(dir: string, sessionId: string, content: string) {

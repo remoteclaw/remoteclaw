@@ -240,50 +240,6 @@ describe("trigger handling", () => {
         expect(call?.provider).toBe("anthropic");
       }
       {
-        const storePath = join(home, "compact-main.sessions.json");
-        const cfg = makeCfg(home);
-        cfg.session = { ...cfg.session, store: storePath };
-
-        const request = {
-          Body: "/compact focus on decisions",
-          From: "+1003",
-          To: "+2000",
-        };
-
-        const res = await getReplyFromConfig(
-          {
-            ...request,
-            CommandAuthorized: true,
-          },
-          {},
-          cfg,
-        );
-        const text = maybeReplyText(res);
-        // Embedded engine removed (#74) — compaction is unavailable
-        expect(text?.startsWith("\u2699\uFE0F Compaction unavailable")).toBe(true);
-      }
-
-      {
-        const cfg = makeCfg(home);
-        cfg.session = { ...cfg.session, store: join(home, "compact-worker.sessions.json") };
-        const res = await getReplyFromConfig(
-          {
-            Body: "/compact",
-            From: "+1004",
-            To: "+2000",
-            SessionKey: "agent:worker1:telegram:12345",
-            CommandAuthorized: true,
-          },
-          {},
-          cfg,
-        );
-
-        const text = maybeReplyText(res);
-        // Embedded engine removed (#74) — compaction is unavailable
-        expect(text?.startsWith("\u2699\uFE0F Compaction unavailable")).toBe(true);
-      }
-
-      {
         const cfg = makeCfg(home);
         cfg.session = { ...cfg.session, store: join(home, "native-stop.sessions.json") };
         const storePath = cfg.session?.store;

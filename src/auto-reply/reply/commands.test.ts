@@ -13,7 +13,6 @@ import * as internalHooks from "../../hooks/internal-hooks.js";
 import { clearPluginCommands, registerPluginCommand } from "../../plugins/commands.js";
 import { typedCases } from "../../test-utils/typed-cases.js";
 import type { MsgContext } from "../templating.js";
-import { handleCompactCommand } from "./commands-compact.js";
 import { buildCommandsPaginationKeyboard } from "./commands-info.js";
 import { extractMessageText } from "./commands-subagents.js";
 import { buildCommandTestParams } from "./commands.test-harness.js";
@@ -87,20 +86,6 @@ vi.mock("../../gateway/call.js", () => ({
 
 import type { HandleCommandsParams } from "./commands-types.js";
 import { buildCommandContext, handleCommands } from "./commands.js";
-
-// Avoid expensive workspace scans during /context tests.
-vi.mock("./commands-context-report.js", () => ({
-  buildContextReply: async (params: { command: { commandBodyNormalized: string } }) => {
-    const normalized = params.command.commandBodyNormalized;
-    if (normalized === "/context list") {
-      return { text: "Injected workspace files:\n- AGENTS.md" };
-    }
-    if (normalized === "/context detail") {
-      return { text: "Context breakdown (detailed)\nTop tools (schema size):" };
-    }
-    return { text: "/context\n- /context list\nInline shortcut" };
-  },
-}));
 
 let testWorkspaceDir = os.tmpdir();
 
@@ -187,164 +172,6 @@ describe("handleCommands gating", () => {
       expect(result.shouldContinue, testCase.name).toBe(false);
       expect(result.reply?.text, testCase.name).toContain(testCase.expectedText);
     }
-  });
-});
-
-describe("/approve command", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("rejects invalid usage", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
-    const params = buildParams("/approve", cfg);
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Usage: /approve");
-  });
-
-  it("submits approval", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
-    const params = buildParams("/approve abc allow-once", cfg, { SenderId: "123" });
-
-    callGatewayMock.mockResolvedValue({ ok: true });
-
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Exec approval allow-once submitted");
-    expect(callGatewayMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        method: "exec.approval.resolve",
-        params: { id: "abc", decision: "allow-once" },
-      }),
-    );
-  });
-
-  it("rejects gateway clients without approvals scope", async () => {
-    const cfg = {
-      commands: { text: true },
-    } as OpenClawConfig;
-    const params = buildParams("/approve abc allow-once", cfg, {
-      Provider: "webchat",
-      Surface: "webchat",
-      GatewayClientScopes: ["operator.write"],
-    });
-
-    callGatewayMock.mockResolvedValue({ ok: true });
-
-    const result = await handleCommands(params);
-    expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("requires operator.approvals");
-    expect(callGatewayMock).not.toHaveBeenCalled();
-  });
-
-  it("allows gateway clients with approvals or admin scopes", async () => {
-    const cfg = {
-      commands: { text: true },
-    } as OpenClawConfig;
-    const scopeCases = [["operator.approvals"], ["operator.admin"]];
-    for (const scopes of scopeCases) {
-      callGatewayMock.mockResolvedValue({ ok: true });
-      const params = buildParams("/approve abc allow-once", cfg, {
-        Provider: "webchat",
-        Surface: "webchat",
-        GatewayClientScopes: scopes,
-      });
-
-      const result = await handleCommands(params);
-      expect(result.shouldContinue).toBe(false);
-      expect(result.reply?.text).toContain("Exec approval allow-once submitted");
-      expect(callGatewayMock).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          method: "exec.approval.resolve",
-          params: { id: "abc", decision: "allow-once" },
-        }),
-      );
-    }
-  });
-});
-
-describe("/compact command", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("returns null when command is not /compact", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
-    const params = buildParams("/status", cfg);
-
-    const result = await handleCompactCommand(
-      {
-        ...params,
-      },
-      true,
-    );
-
-    expect(result).toBeNull();
-  });
-
-  it("rejects unauthorized /compact commands", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
-    const params = buildParams("/compact", cfg);
-
-    const result = await handleCompactCommand(
-      {
-        ...params,
-        command: {
-          ...params.command,
-          isAuthorizedSender: false,
-          senderId: "unauthorized",
-        },
-      },
-      true,
-    );
-
-    expect(result).toEqual({ shouldContinue: false });
-  });
-
-  it("returns compaction unavailable (embedded engine removed)", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-      session: { store: "/tmp/openclaw-session-store.json" },
-    } as OpenClawConfig;
-    const params = buildParams("/compact: focus on decisions", cfg, {
-      From: "+15550001",
-      To: "+15550002",
-    });
-    const agentDir = "/tmp/openclaw-agent-compact";
-
-    const result = await handleCompactCommand(
-      {
-        ...params,
-        agentDir,
-        sessionEntry: {
-          sessionId: "session-1",
-          updatedAt: Date.now(),
-          groupId: "group-1",
-          groupChannel: "#general",
-          space: "workspace-1",
-          spawnedBy: "agent:main:parent",
-          totalTokens: 12345,
-        },
-      },
-      true,
-    );
-
-    expect(result?.shouldContinue).toBe(false);
-    expect(result?.reply?.text).toContain("Compaction unavailable");
   });
 });
 
@@ -712,37 +539,6 @@ describe("handleCommands hooks", () => {
       }),
     );
     spy.mockRestore();
-  });
-});
-
-describe("handleCommands context", () => {
-  it("returns expected details for /context commands", async () => {
-    const cfg = {
-      commands: { text: true },
-      channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
-    const cases = [
-      {
-        commandBody: "/context",
-        expectedText: ["/context list", "Inline shortcut"],
-      },
-      {
-        commandBody: "/context list",
-        expectedText: ["Injected workspace files:", "AGENTS.md"],
-      },
-      {
-        commandBody: "/context detail",
-        expectedText: ["Context breakdown (detailed)", "Top tools (schema size):"],
-      },
-    ] as const;
-    for (const testCase of cases) {
-      const params = buildParams(testCase.commandBody, cfg);
-      const result = await handleCommands(params);
-      expect(result.shouldContinue).toBe(false);
-      for (const expectedText of testCase.expectedText) {
-        expect(result.reply?.text).toContain(expectedText);
-      }
-    }
   });
 });
 

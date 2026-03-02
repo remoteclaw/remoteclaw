@@ -510,9 +510,9 @@ describe("control command parsing", () => {
         expect(hasControlCommand(`${alias}:`)).toBe(true);
       }
     }
-    expect(hasControlCommand("/compact")).toBe(true);
-    expect(hasControlCommand("/compact:")).toBe(true);
-    expect(hasControlCommand("compact")).toBe(false);
+    expect(hasControlCommand("/remoteclaw")).toBe(true);
+    expect(hasControlCommand("/remoteclaw:")).toBe(true);
+    expect(hasControlCommand("remoteclaw")).toBe(false);
   });
 
   it("respects disabled config/debug commands", () => {
@@ -530,7 +530,7 @@ describe("control command parsing", () => {
 
   it("detects inline command tokens", () => {
     expect(hasInlineCommandTokens("hello /status")).toBe(true);
-    expect(hasInlineCommandTokens("hey /think high")).toBe(true);
+    expect(hasInlineCommandTokens("hey /verbose on")).toBe(true);
     expect(hasInlineCommandTokens("plain text")).toBe(false);
     expect(hasInlineCommandTokens("http://example.com/path")).toBe(false);
     expect(hasInlineCommandTokens("stop")).toBe(false);

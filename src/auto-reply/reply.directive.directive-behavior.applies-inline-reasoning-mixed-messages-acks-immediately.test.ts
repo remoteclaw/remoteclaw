@@ -13,32 +13,6 @@ import {
 } from "./reply.directive.directive-behavior.e2e-harness.js";
 import { getReplyFromConfig } from "./reply.js";
 
-async function runThinkingDirective(home: string, model: string) {
-  const res = await getReplyFromConfig(
-    {
-      Body: "/thinking xhigh",
-      From: "+1004",
-      To: "+2000",
-      CommandAuthorized: true,
-    },
-    {},
-    makeWhatsAppDirectiveConfig(home, { model }, { session: { store: sessionStorePath(home) } }),
-  );
-  return replyTexts(res);
-}
-
-async function runThinkDirectiveAndGetText(home: string): Promise<string | undefined> {
-  const res = await getReplyFromConfig(
-    { Body: "/think", From: "+1222", To: "+1222", CommandAuthorized: true },
-    {},
-    makeWhatsAppDirectiveConfig(home, {
-      model: "anthropic/claude-opus-4-5",
-      thinkingDefault: "high",
-    }),
-  );
-  return replyText(res);
-}
-
 function mockEmbeddedResponse(text: string) {
   vi.mocked(runAgent).mockResolvedValue(makeAgentTextResult(text));
 }
@@ -183,24 +157,6 @@ describe("directive behavior", () => {
         expect(texts).toContain("done");
         expect(runAgent).toHaveBeenCalledOnce();
       }
-    });
-  });
-  it("covers think status and /thinking xhigh support matrix", async () => {
-    await withTempHome(async (home) => {
-      const text = await runThinkDirectiveAndGetText(home);
-      expect(text).toContain("Current thinking level: high");
-      expect(text).toContain("Options: off, minimal, low, medium, high.");
-
-      for (const model of ["openai-codex/gpt-5.2-codex", "openai/gpt-5.2"]) {
-        const texts = await runThinkingDirective(home, model);
-        expect(texts).toContain("Thinking level set to xhigh.");
-      }
-
-      const unsupportedModelTexts = await runThinkingDirective(home, "openai/gpt-4.1-mini");
-      expect(unsupportedModelTexts).toContain(
-        'Thinking level "xhigh" is only supported for openai/gpt-5.2, openai-codex/gpt-5.3-codex, openai-codex/gpt-5.3-codex-spark, openai-codex/gpt-5.2-codex, openai-codex/gpt-5.1-codex, github-copilot/gpt-5.2-codex or github-copilot/gpt-5.2.',
-      );
-      expect(runAgent).not.toHaveBeenCalled();
     });
   });
   it("keeps reserved command aliases from matching after trimming", async () => {

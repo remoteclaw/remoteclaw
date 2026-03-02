@@ -5,6 +5,17 @@ import path from "node:path";
 import { ensurePortAvailable } from "../infra/ports.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { CONFIG_DIR } from "../utils.js";
+import {
+  CHROME_BOOTSTRAP_EXIT_TIMEOUT_MS,
+  CHROME_BOOTSTRAP_PREFS_TIMEOUT_MS,
+  CHROME_LAUNCH_READY_POLL_MS,
+  CHROME_LAUNCH_READY_WINDOW_MS,
+  CHROME_REACHABILITY_TIMEOUT_MS,
+  CHROME_STDERR_HINT_MAX_CHARS,
+  CHROME_STOP_PROBE_TIMEOUT_MS,
+  CHROME_STOP_TIMEOUT_MS,
+  CHROME_WS_READY_TIMEOUT_MS,
+} from "./cdp-timeouts.js";
 import { appendCdpPath, fetchCdpChecked, isWebSocketUrl, openCdpWebSocket } from "./cdp.helpers.js";
 import { normalizeCdpWsUrl } from "./cdp.js";
 import {
@@ -18,7 +29,7 @@ import {
 } from "./chrome.profile-decoration.js";
 import type { ResolvedBrowserConfig, ResolvedBrowserProfile } from "./config.js";
 import {
-  DEFAULT_REMOTECLAW_BROWSER_COLOR,
+  DEFAULT_OPENCLAW_BROWSER_COLOR,
   DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME,
 } from "./constants.js";
 
@@ -68,9 +79,12 @@ function cdpUrlForPort(cdpPort: number) {
   return `http://127.0.0.1:${cdpPort}`;
 }
 
-export async function isChromeReachable(cdpUrl: string, timeoutMs = 500): Promise<boolean> {
+export async function isChromeReachable(
+  cdpUrl: string,
+  timeoutMs = CHROME_REACHABILITY_TIMEOUT_MS,
+): Promise<boolean> {
   if (isWebSocketUrl(cdpUrl)) {
-    // Direct WebSocket endpoint — probe via WS handshake.
+    // Direct WebSocket endpoint (e.g. Browserbase) — probe via WS handshake.
     return await canOpenWebSocket(cdpUrl, timeoutMs);
   }
   const version = await fetchChromeVersion(cdpUrl, timeoutMs);
@@ -83,7 +97,10 @@ type ChromeVersion = {
   "User-Agent"?: string;
 };
 
-async function fetchChromeVersion(cdpUrl: string, timeoutMs = 500): Promise<ChromeVersion | null> {
+async function fetchChromeVersion(
+  cdpUrl: string,
+  timeoutMs = CHROME_REACHABILITY_TIMEOUT_MS,
+): Promise<ChromeVersion | null> {
   const ctrl = new AbortController();
   const t = setTimeout(ctrl.abort.bind(ctrl), timeoutMs);
   try {
@@ -103,7 +120,7 @@ async function fetchChromeVersion(cdpUrl: string, timeoutMs = 500): Promise<Chro
 
 export async function getChromeWebSocketUrl(
   cdpUrl: string,
-  timeoutMs = 500,
+  timeoutMs = CHROME_REACHABILITY_TIMEOUT_MS,
 ): Promise<string | null> {
   if (isWebSocketUrl(cdpUrl)) {
     // Direct WebSocket endpoint — the cdpUrl is already the WebSocket URL.
@@ -117,7 +134,10 @@ export async function getChromeWebSocketUrl(
   return normalizeCdpWsUrl(wsUrl, cdpUrl);
 }
 
-async function canOpenWebSocket(wsUrl: string, timeoutMs = 800): Promise<boolean> {
+async function canOpenWebSocket(
+  wsUrl: string,
+  timeoutMs = CHROME_WS_READY_TIMEOUT_MS,
+): Promise<boolean> {
   return await new Promise<boolean>((resolve) => {
     const ws = openCdpWebSocket(wsUrl, {
       handshakeTimeoutMs: timeoutMs,
@@ -151,8 +171,8 @@ async function canOpenWebSocket(wsUrl: string, timeoutMs = 800): Promise<boolean
 
 export async function isChromeCdpReady(
   cdpUrl: string,
-  timeoutMs = 500,
-  handshakeTimeoutMs = 800,
+  timeoutMs = CHROME_REACHABILITY_TIMEOUT_MS,
+  handshakeTimeoutMs = CHROME_WS_READY_TIMEOUT_MS,
 ): Promise<boolean> {
   const wsUrl = await getChromeWebSocketUrl(cdpUrl, timeoutMs);
   if (!wsUrl) {
@@ -183,7 +203,7 @@ export async function launchRemoteClawChrome(
   const needsDecorate = !isProfileDecorated(
     userDataDir,
     profile.name,
-    (profile.color ?? DEFAULT_REMOTECLAW_BROWSER_COLOR).toUpperCase(),
+    (profile.color ?? DEFAULT_OPENCLAW_BROWSER_COLOR).toUpperCase(),
   );
 
   // First launch to create preference files if missing, then decorate and relaunch.
@@ -246,7 +266,7 @@ export async function launchRemoteClawChrome(
   // Then decorate (if needed) before the "real" run.
   if (needsBootstrap) {
     const bootstrap = spawnOnce();
-    const deadline = Date.now() + 10_000;
+    const deadline = Date.now() + CHROME_BOOTSTRAP_PREFS_TIMEOUT_MS;
     while (Date.now() < deadline) {
       if (exists(localStatePath) && exists(preferencesPath)) {
         break;
@@ -258,7 +278,7 @@ export async function launchRemoteClawChrome(
     } catch {
       // ignore
     }
-    const exitDeadline = Date.now() + 5000;
+    const exitDeadline = Date.now() + CHROME_BOOTSTRAP_EXIT_TIMEOUT_MS;
     while (Date.now() < exitDeadline) {
       if (bootstrap.exitCode != null) {
         break;
@@ -273,7 +293,7 @@ export async function launchRemoteClawChrome(
         name: profile.name,
         color: profile.color,
       });
-      log.info(`🦀 remoteclaw browser profile decorated (${profile.color})`);
+      log.info(`🦞 remoteclaw browser profile decorated (${profile.color})`);
     } catch (err) {
       log.warn(`remoteclaw browser profile decoration failed: ${String(err)}`);
     }
@@ -297,17 +317,19 @@ export async function launchRemoteClawChrome(
   proc.stderr?.on("data", onStderr);
 
   // Wait for CDP to come up.
-  const readyDeadline = Date.now() + 15_000;
+  const readyDeadline = Date.now() + CHROME_LAUNCH_READY_WINDOW_MS;
   while (Date.now() < readyDeadline) {
-    if (await isChromeReachable(profile.cdpUrl, 500)) {
+    if (await isChromeReachable(profile.cdpUrl)) {
       break;
     }
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, CHROME_LAUNCH_READY_POLL_MS));
   }
 
-  if (!(await isChromeReachable(profile.cdpUrl, 500))) {
+  if (!(await isChromeReachable(profile.cdpUrl))) {
     const stderrOutput = Buffer.concat(stderrChunks).toString("utf8").trim();
-    const stderrHint = stderrOutput ? `\nChrome stderr:\n${stderrOutput.slice(0, 2000)}` : "";
+    const stderrHint = stderrOutput
+      ? `\nChrome stderr:\n${stderrOutput.slice(0, CHROME_STDERR_HINT_MAX_CHARS)}`
+      : "";
     const sandboxHint =
       process.platform === "linux" && !resolved.noSandbox
         ? "\nHint: If running in a container or as root, try setting browser.noSandbox: true in config."
@@ -328,7 +350,7 @@ export async function launchRemoteClawChrome(
 
   const pid = proc.pid ?? -1;
   log.info(
-    `🦀 remoteclaw browser started (${exe.kind}) profile "${profile.name}" on 127.0.0.1:${profile.cdpPort} (pid ${pid})`,
+    `🦞 remoteclaw browser started (${exe.kind}) profile "${profile.name}" on 127.0.0.1:${profile.cdpPort} (pid ${pid})`,
   );
 
   return {
@@ -341,7 +363,10 @@ export async function launchRemoteClawChrome(
   };
 }
 
-export async function stopRemoteClawChrome(running: RunningChrome, timeoutMs = 2500) {
+export async function stopRemoteClawChrome(
+  running: RunningChrome,
+  timeoutMs = CHROME_STOP_TIMEOUT_MS,
+) {
   const proc = running.proc;
   if (proc.killed) {
     return;
@@ -357,7 +382,7 @@ export async function stopRemoteClawChrome(running: RunningChrome, timeoutMs = 2
     if (!proc.exitCode && proc.killed) {
       break;
     }
-    if (!(await isChromeReachable(cdpUrlForPort(running.cdpPort), 200))) {
+    if (!(await isChromeReachable(cdpUrlForPort(running.cdpPort), CHROME_STOP_PROBE_TIMEOUT_MS))) {
       return;
     }
     await new Promise((r) => setTimeout(r, 100));

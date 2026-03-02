@@ -65,6 +65,22 @@ describe("fs-safe", () => {
     ).rejects.toMatchObject({ code: "outside-workspace" });
   });
 
+  it("rejects directory path within root without leaking EISDIR (issue #31186)", async () => {
+    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+    await fs.mkdir(path.join(root, "memory"), { recursive: true });
+
+    await expect(
+      openFileWithinRoot({ rootDir: root, relativePath: "memory" }),
+    ).rejects.toMatchObject({ code: expect.stringMatching(/invalid-path|not-file/) });
+
+    const err = await openFileWithinRoot({
+      rootDir: root,
+      relativePath: "memory",
+    }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(SafeOpenError);
+    expect((err as SafeOpenError).message).not.toMatch(/EISDIR/i);
+  });
+
   it.runIf(process.platform !== "win32")("blocks symlink escapes under root", async () => {
     const root = await tempDirs.make("remoteclaw-fs-safe-root-");
     const outside = await tempDirs.make("remoteclaw-fs-safe-outside-");

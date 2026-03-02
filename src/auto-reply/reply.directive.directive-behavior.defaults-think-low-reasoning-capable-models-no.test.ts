@@ -1,28 +1,15 @@
 import "./reply.directive.directive-behavior.e2e-mocks.js";
 import { describe, expect, it, vi } from "vitest";
-import { loadSessionStore } from "../config/sessions.js";
 import {
   installDirectiveBehaviorE2EHooks,
   makeAgentTextResult,
   makeWhatsAppDirectiveConfig,
   mockAgentTextResult,
-  replyText,
   replyTexts,
   runAgent,
-  sessionStorePath,
   withTempHome,
 } from "./reply.directive.directive-behavior.e2e-harness.js";
 import { getReplyFromConfig } from "./reply.js";
-
-function makeDefaultModelConfig(home: string) {
-  return makeWhatsAppDirectiveConfig(home, {
-    model: { primary: "anthropic/claude-opus-4-5" },
-    models: {
-      "anthropic/claude-opus-4-5": {},
-      "openai/gpt-4.1-mini": {},
-    },
-  });
-}
 
 async function runReplyToCurrentCase(home: string, text: string) {
   vi.mocked(runAgent).mockResolvedValue(makeAgentTextResult(text));
@@ -43,33 +30,13 @@ async function runReplyToCurrentCase(home: string, text: string) {
 
 describe("directive behavior", () => {
   installDirectiveBehaviorE2EHooks();
-  it("ignores inline /model and /think directives while still running agent content", async () => {
+  it("ignores inline /verbose directives while still running agent content", async () => {
     await withTempHome(async (home) => {
       mockAgentTextResult("done");
 
-      const inlineModelRes = await getReplyFromConfig(
+      const inlineVerboseRes = await getReplyFromConfig(
         {
-          Body: "please sync /model openai/gpt-4.1-mini now",
-          From: "+1004",
-          To: "+2000",
-        },
-        {},
-        makeDefaultModelConfig(home),
-      );
-
-      const texts = replyTexts(inlineModelRes);
-      expect(texts).toContain("done");
-      expect(runAgent).toHaveBeenCalledOnce();
-      // Provider is forwarded through the bridge mock's constructor;
-      // model is resolved internally and not visible at the bridge level.
-      const call = vi.mocked(runAgent).mock.calls[0]?.[0];
-      expect(call?.provider).toBe("anthropic");
-      vi.mocked(runAgent).mockClear();
-
-      mockAgentTextResult("done");
-      const inlineThinkRes = await getReplyFromConfig(
-        {
-          Body: "please sync /think:high now",
+          Body: "please sync /verbose on now",
           From: "+1004",
           To: "+2000",
         },
@@ -77,93 +44,7 @@ describe("directive behavior", () => {
         makeWhatsAppDirectiveConfig(home, { model: { primary: "anthropic/claude-opus-4-5" } }),
       );
 
-      expect(replyTexts(inlineThinkRes)).toContain("done");
-      expect(runAgent).toHaveBeenCalledOnce();
-    });
-  });
-  it("passes elevated defaults when sender is approved", async () => {
-    await withTempHome(async (home) => {
-      mockAgentTextResult("done");
-
-      await getReplyFromConfig(
-        {
-          Body: "hello",
-          From: "+1004",
-          To: "+2000",
-          Provider: "whatsapp",
-          SenderE164: "+1004",
-        },
-        {},
-        makeWhatsAppDirectiveConfig(
-          home,
-          { model: { primary: "anthropic/claude-opus-4-5" } },
-          {
-            tools: {
-              elevated: {
-                allowFrom: { whatsapp: ["+1004"] },
-              },
-            },
-          },
-        ),
-      );
-
-      // Verify the agent was called (elevated params are resolved internally
-      // by the pipeline and forwarded to the FollowupRun, not visible at the bridge level).
-      expect(runAgent).toHaveBeenCalledOnce();
-    });
-  });
-  it("persists /reasoning off on discord even when model defaults reasoning on", async () => {
-    await withTempHome(async (home) => {
-      const storePath = sessionStorePath(home);
-      mockAgentTextResult("done");
-      const config = makeWhatsAppDirectiveConfig(
-        home,
-        {
-          model: "openrouter/x-ai/grok-4.1-fast",
-        },
-        {
-          channels: {
-            discord: { allowFrom: ["*"] },
-          },
-          session: { store: storePath },
-        },
-      );
-
-      const offRes = await getReplyFromConfig(
-        {
-          Body: "/reasoning off",
-          From: "discord:user:1004",
-          To: "channel:general",
-          Provider: "discord",
-          Surface: "discord",
-          CommandSource: "text",
-          CommandAuthorized: true,
-        },
-        {},
-        config,
-      );
-      expect(replyText(offRes)).toContain("Reasoning visibility disabled.");
-
-      const store = loadSessionStore(storePath);
-      const entry = Object.values(store)[0];
-      expect(entry?.reasoningLevel).toBe("off");
-
-      await getReplyFromConfig(
-        {
-          Body: "hello",
-          From: "discord:user:1004",
-          To: "channel:general",
-          Provider: "discord",
-          Surface: "discord",
-          CommandSource: "text",
-          CommandAuthorized: true,
-        },
-        {},
-        config,
-      );
-
-      // Verify the agent was called (reasoningLevel is resolved internally by the
-      // pipeline and recorded in the session store, not visible at the bridge level).
+      expect(replyTexts(inlineVerboseRes)).toContain("done");
       expect(runAgent).toHaveBeenCalledOnce();
     });
   });

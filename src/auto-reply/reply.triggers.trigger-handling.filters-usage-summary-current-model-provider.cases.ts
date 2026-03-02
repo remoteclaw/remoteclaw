@@ -70,7 +70,7 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
 
           const text = Array.isArray(res) ? res[0]?.text : res?.text;
           expect(text).toContain("Model:");
-          expect(text).toContain("OpenClaw");
+          expect(text).toContain("RemoteClaw");
           expect(normalizeTestText(text ?? "")).toContain("Usage: Claude 80% left");
           expect(usageMocks.loadProviderUsageSummary).toHaveBeenCalledWith(
             expect.objectContaining({ providers: ["anthropic"] }),

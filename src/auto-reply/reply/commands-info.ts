@@ -1,10 +1,13 @@
+import { resolveDefaultSessionStorePath } from "../../config/sessions/paths.js";
+import { loadSessionStore } from "../../config/sessions/store.js";
 import { logVerbose } from "../../globals.js";
+import { resolveCommitHash } from "../../infra/git-commit.js";
+import { VERSION } from "../../version.js";
 import {
   buildCommandsMessage,
   buildCommandsMessagePaginated,
   buildHelpMessage,
 } from "../status.js";
-import { buildContextReply } from "./commands-context-report.js";
 import { buildExportSessionReply } from "./commands-export-session.js";
 import { buildStatusReply } from "./commands-status.js";
 import type { CommandHandler } from "./commands-types.js";
@@ -146,21 +149,50 @@ export const handleStatusCommand: CommandHandler = async (params, allowTextComma
   return { shouldContinue: false, reply };
 };
 
-export const handleContextCommand: CommandHandler = async (params, allowTextCommands) => {
+export const handleRemoteClawCommand: CommandHandler = async (params, allowTextCommands) => {
   if (!allowTextCommands) {
     return null;
   }
-  const normalized = params.command.commandBodyNormalized;
-  if (normalized !== "/context" && !normalized.startsWith("/context ")) {
+  if (params.command.commandBodyNormalized !== "/remoteclaw") {
     return null;
   }
   if (!params.command.isAuthorizedSender) {
     logVerbose(
-      `Ignoring /context from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
+      `Ignoring /remoteclaw from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
     );
     return { shouldContinue: false };
   }
-  return { shouldContinue: false, reply: await buildContextReply(params) };
+
+  const commit = resolveCommitHash();
+  const versionLine = `🦀 RemoteClaw ${VERSION}${commit ? ` (${commit})` : ""}`;
+
+  // CLI runtime type from agent config
+  const runtimeType = params.provider || "unknown";
+
+  // Session info
+  const sessionKey = params.sessionKey ?? "unknown";
+  const channel = params.command.channel;
+
+  // Active session count from session store
+  let activeSessionCount = 0;
+  try {
+    const storePath = resolveDefaultSessionStorePath(params.agentId);
+    const store = loadSessionStore(storePath, { skipCache: true });
+    activeSessionCount = Object.keys(store).length;
+  } catch {
+    // ignore
+  }
+
+  const lines = [
+    versionLine,
+    "",
+    `🤖 Runtime: ${runtimeType}`,
+    `🧵 Session: ${sessionKey}`,
+    `📡 Channel: ${channel}`,
+    `📊 Active sessions: ${activeSessionCount}`,
+  ];
+
+  return { shouldContinue: false, reply: { text: lines.join("\n") } };
 };
 
 export const handleExportSessionCommand: CommandHandler = async (params, allowTextCommands) => {

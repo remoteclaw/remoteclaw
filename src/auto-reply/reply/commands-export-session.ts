@@ -9,7 +9,6 @@ import {
 import { loadSessionStore } from "../../config/sessions/store.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
 import type { ReplyPayload } from "../types.js";
-import { resolveCommandsSystemPromptBundle } from "./commands-system-prompt.js";
 import type { HandleCommandsParams } from "./commands-types.js";
 
 // Export HTML templates are bundled with this module
@@ -21,8 +20,6 @@ interface SessionData {
   header: JsonlRecord | null;
   entries: JsonlRecord[];
   leafId: string | null;
-  systemPrompt?: string;
-  tools?: Array<{ name: string; description?: string; parameters?: unknown }>;
 }
 
 function readSessionJsonl(filePath: string): {
@@ -163,28 +160,20 @@ export async function buildExportSessionReply(params: HandleCommandsParams): Pro
   const { header, entries } = readSessionJsonl(sessionFile);
   const leafId: string | null = null;
 
-  // 3. Build full system prompt
-  const { systemPrompt, tools } = await resolveCommandsSystemPromptBundle(params);
-
-  // 4. Prepare session data
+  // 3. Prepare session data (system prompt and tool metadata dropped — CLI agents
+  //    build their own system prompts; the old metadata was misleading).
   const sessionData: SessionData = {
     header,
     entries,
     leafId,
-    systemPrompt,
-    tools: tools.map((t) => ({
-      name: t.name,
-      description: t.description,
-      parameters: t.parameters,
-    })),
   };
 
-  // 5. Generate HTML
+  // 4. Generate HTML
   const html = generateHtml(sessionData);
 
-  // 6. Determine output path
+  // 5. Determine output path
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  const defaultFileName = `openclaw-session-${entry.sessionId.slice(0, 8)}-${timestamp}.html`;
+  const defaultFileName = `remoteclaw-session-${entry.sessionId.slice(0, 8)}-${timestamp}.html`;
   const outputPath = args.outputPath
     ? path.resolve(
         args.outputPath.startsWith("~")
@@ -199,7 +188,7 @@ export async function buildExportSessionReply(params: HandleCommandsParams): Pro
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  // 7. Write file
+  // 6. Write file
   fs.writeFileSync(outputPath, html, "utf-8");
 
   const relativePath = path.relative(params.workspaceDir, outputPath);
@@ -211,8 +200,6 @@ export async function buildExportSessionReply(params: HandleCommandsParams): Pro
       "",
       `📄 File: ${displayPath}`,
       `📊 Entries: ${entries.length}`,
-      `🧠 System prompt: ${systemPrompt.length.toLocaleString()} chars`,
-      `🔧 Tools: ${tools.length}`,
     ].join("\n"),
   };
 }

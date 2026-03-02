@@ -412,7 +412,7 @@ describe("monitorSlackProvider tool results", () => {
 
     await runSlackMessageOnce(monitorSlackProvider, {
       event: makeSlackMessageEvent({
-        text: "/elevated off",
+        text: "/verbose off",
         channel_type: "channel",
       }),
     });

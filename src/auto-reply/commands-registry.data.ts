@@ -6,7 +6,6 @@ import type {
   CommandCategory,
   CommandScope,
 } from "./commands-registry.types.js";
-import { listThinkingLevels } from "./thinking.js";
 
 type DefineChatCommandInput = {
   key: string;
@@ -145,27 +144,6 @@ function buildChatCommands(): ChatCommandDefinition[] {
       category: "status",
     }),
     defineChatCommand({
-      key: "skill",
-      nativeName: "skill",
-      description: "Run a skill by name.",
-      textAlias: "/skill",
-      category: "tools",
-      args: [
-        {
-          name: "name",
-          description: "Skill name",
-          type: "string",
-          required: true,
-        },
-        {
-          name: "input",
-          description: "Skill input",
-          type: "string",
-          captureRemaining: true,
-        },
-      ],
-    }),
-    defineChatCommand({
       key: "status",
       nativeName: "status",
       description: "Show current status.",
@@ -181,25 +159,9 @@ function buildChatCommands(): ChatCommandDefinition[] {
       category: "management",
     }),
     defineChatCommand({
-      key: "approve",
-      nativeName: "approve",
-      description: "Approve or deny exec requests.",
-      textAlias: "/approve",
-      acceptsArgs: true,
-      category: "management",
-    }),
-    defineChatCommand({
-      key: "context",
-      nativeName: "context",
-      description: "Explain how context is built and used.",
-      textAlias: "/context",
-      acceptsArgs: true,
-      category: "status",
-    }),
-    defineChatCommand({
       key: "export-session",
       nativeName: "export-session",
-      description: "Export current session to HTML file with full system prompt.",
+      description: "Export current session to HTML.",
       textAliases: ["/export-session", "/export"],
       acceptsArgs: true,
       category: "status",
@@ -254,6 +216,13 @@ function buildChatCommands(): ChatCommandDefinition[] {
           "• Audio – Generate TTS from custom text\n" +
           "• Help – Show usage guide",
       },
+    }),
+    defineChatCommand({
+      key: "remoteclaw",
+      nativeName: "remoteclaw",
+      description: "Show RemoteClaw middleware status.",
+      textAlias: "/remoteclaw",
+      category: "status",
     }),
     defineChatCommand({
       key: "whoami",
@@ -510,37 +479,6 @@ function buildChatCommands(): ChatCommandDefinition[] {
       category: "session",
     }),
     defineChatCommand({
-      key: "compact",
-      nativeName: "compact",
-      description: "Compact the session context.",
-      textAlias: "/compact",
-      category: "session",
-      args: [
-        {
-          name: "instructions",
-          description: "Extra compaction instructions",
-          type: "string",
-          captureRemaining: true,
-        },
-      ],
-    }),
-    defineChatCommand({
-      key: "think",
-      nativeName: "think",
-      description: "Set thinking level.",
-      textAlias: "/think",
-      category: "options",
-      args: [
-        {
-          name: "level",
-          description: "off, minimal, low, medium, high, xhigh",
-          type: "string",
-          choices: ({ provider, model }) => listThinkingLevels(provider, model),
-        },
-      ],
-      argsMenu: "auto",
-    }),
-    defineChatCommand({
       key: "verbose",
       nativeName: "verbose",
       description: "Toggle verbose mode.",
@@ -555,95 +493,6 @@ function buildChatCommands(): ChatCommandDefinition[] {
         },
       ],
       argsMenu: "auto",
-    }),
-    defineChatCommand({
-      key: "reasoning",
-      nativeName: "reasoning",
-      description: "Toggle reasoning visibility.",
-      textAlias: "/reasoning",
-      category: "options",
-      args: [
-        {
-          name: "mode",
-          description: "on, off, or stream",
-          type: "string",
-          choices: ["on", "off", "stream"],
-        },
-      ],
-      argsMenu: "auto",
-    }),
-    defineChatCommand({
-      key: "elevated",
-      nativeName: "elevated",
-      description: "Toggle elevated mode.",
-      textAlias: "/elevated",
-      category: "options",
-      args: [
-        {
-          name: "mode",
-          description: "on, off, ask, or full",
-          type: "string",
-          choices: ["on", "off", "ask", "full"],
-        },
-      ],
-      argsMenu: "auto",
-    }),
-    defineChatCommand({
-      key: "exec",
-      nativeName: "exec",
-      description: "Set exec defaults for this session.",
-      textAlias: "/exec",
-      category: "options",
-      args: [
-        {
-          name: "host",
-          description: "sandbox, gateway, or node",
-          type: "string",
-          choices: ["sandbox", "gateway", "node"],
-        },
-        {
-          name: "security",
-          description: "deny, allowlist, or full",
-          type: "string",
-          choices: ["deny", "allowlist", "full"],
-        },
-        {
-          name: "ask",
-          description: "off, on-miss, or always",
-          type: "string",
-          choices: ["off", "on-miss", "always"],
-        },
-        {
-          name: "node",
-          description: "Node id or name",
-          type: "string",
-        },
-      ],
-      argsParsing: "none",
-      formatArgs: COMMAND_ARG_FORMATTERS.exec,
-    }),
-    defineChatCommand({
-      key: "model",
-      nativeName: "model",
-      description: "Show or set the model.",
-      textAlias: "/model",
-      category: "options",
-      args: [
-        {
-          name: "model",
-          description: "Model id (provider/model or id)",
-          type: "string",
-        },
-      ],
-    }),
-    defineChatCommand({
-      key: "models",
-      nativeName: "models",
-      description: "List model providers or provider models.",
-      textAlias: "/models",
-      argsParsing: "none",
-      acceptsArgs: true,
-      category: "options",
     }),
     defineChatCommand({
       key: "queue",
@@ -678,31 +527,13 @@ function buildChatCommands(): ChatCommandDefinition[] {
       argsParsing: "none",
       formatArgs: COMMAND_ARG_FORMATTERS.queue,
     }),
-    defineChatCommand({
-      key: "bash",
-      description: "Run host shell commands (host-only).",
-      textAlias: "/bash",
-      scope: "text",
-      category: "tools",
-      args: [
-        {
-          name: "command",
-          description: "Shell command",
-          type: "string",
-          captureRemaining: true,
-        },
-      ],
-    }),
     ...listChannelDocks()
       .filter((dock) => dock.capabilities.nativeCommands)
       .map((dock) => defineDockCommand(dock)),
   ];
 
   registerAlias(commands, "whoami", "/id");
-  registerAlias(commands, "think", "/thinking", "/t");
   registerAlias(commands, "verbose", "/v");
-  registerAlias(commands, "reasoning", "/reason");
-  registerAlias(commands, "elevated", "/elev");
   registerAlias(commands, "steer", "/tell");
 
   assertCommandRegistry(commands);

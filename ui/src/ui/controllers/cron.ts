@@ -531,20 +531,18 @@ export async function addCronJob(state: CronState) {
     const payload = buildCronPayload(form);
     const selectedDeliveryMode = form.deliveryMode;
     const delivery =
-      selectedDeliveryMode === "none"
-        ? state.cronEditingJobId
-          ? { mode: "none" as const }
-          : undefined
-        : selectedDeliveryMode
-          ? {
-              mode: selectedDeliveryMode,
-              channel:
-                selectedDeliveryMode === "announce"
-                  ? form.deliveryChannel.trim() || "last"
-                  : undefined,
-              to: form.deliveryTo.trim() || undefined,
-              bestEffort: form.deliveryBestEffort,
-            }
+      selectedDeliveryMode && selectedDeliveryMode !== "none"
+        ? {
+            mode: selectedDeliveryMode,
+            channel:
+              selectedDeliveryMode === "announce"
+                ? form.deliveryChannel.trim() || "last"
+                : undefined,
+            to: form.deliveryTo.trim() || undefined,
+            bestEffort: form.deliveryBestEffort,
+          }
+        : selectedDeliveryMode === "none"
+          ? ({ mode: "none" } as const)
           : undefined;
     const agentId = form.clearAgent ? null : form.agentId.trim();
     const job = {

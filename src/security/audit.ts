@@ -18,7 +18,6 @@ import {
   collectHooksHardeningFindings,
   collectIncludeFilePermFindings,
   collectLikelyMultiUserSetupFindings,
-  collectSandboxBrowserHashLabelFindings,
   collectMinimalProfileOverrideFindings,
   collectModelHygieneFindings,
   collectNodeDangerousAllowCommandFindings,
@@ -775,7 +774,6 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
     findings.push(
       ...(await collectStateDeepFilesystemFindings({ cfg, env, stateDir, platform, execIcacls })),
     );
-    findings.push(...(await collectSandboxBrowserHashLabelFindings({})));
     findings.push(...(await collectPluginsTrustFindings({ cfg, stateDir })));
     if (opts.deep === true) {
       findings.push(...(await collectPluginsCodeSafetyFindings({ stateDir })));

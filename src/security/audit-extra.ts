@@ -29,7 +29,6 @@ export {
 
 // Async collectors
 export {
-  collectSandboxBrowserHashLabelFindings,
   collectIncludeFilePermFindings,
   collectPluginsCodeSafetyFindings,
   collectPluginsTrustFindings,

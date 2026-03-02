@@ -30,7 +30,6 @@ import type { OutboundSendDeps } from "./deliver.js";
 import {
   hydrateAttachmentParamsForAction,
   normalizeSandboxMediaList,
-  normalizeSandboxMediaParams,
   parseButtonsParam,
   parseCardParam,
   parseComponentsParam,
@@ -760,11 +759,6 @@ export async function runMessageAction(
   const mediaPolicy = resolveAttachmentMediaPolicy({
     sandboxRoot: input.sandboxRoot,
     mediaLocalRoots,
-  });
-
-  await normalizeSandboxMediaParams({
-    args: params,
-    mediaPolicy,
   });
 
   await hydrateAttachmentParamsForAction({

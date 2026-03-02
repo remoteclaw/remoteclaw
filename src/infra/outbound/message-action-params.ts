@@ -276,13 +276,6 @@ async function hydrateAttachmentPayload(params: {
   }
 }
 
-export async function normalizeSandboxMediaParams(_params: {
-  args: Record<string, unknown>;
-  mediaPolicy: AttachmentMediaPolicy;
-}): Promise<void> {
-  // Sandbox infrastructure has been removed; this is now a no-op.
-}
-
 export async function normalizeSandboxMediaList(params: {
   values: string[];
   sandboxRoot?: string;

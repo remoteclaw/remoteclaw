@@ -55,6 +55,50 @@ Repair/migrate:
 remoteclaw doctor
 ```
 
+## Gateway auto-start before Windows login
+
+For headless setups, ensure the full boot chain runs even when no one logs into
+Windows.
+
+### 1) Keep user services running without login
+
+Inside WSL:
+
+```bash
+sudo loginctl enable-linger "$(whoami)"
+```
+
+### 2) Install the RemoteClaw gateway user service
+
+Inside WSL:
+
+```bash
+remoteclaw gateway install
+```
+
+### 3) Start WSL automatically at Windows boot
+
+In PowerShell as Administrator:
+
+```powershell
+schtasks /create /tn "WSL Boot" /tr "wsl.exe -d Ubuntu --exec /bin/true" /sc onstart /ru SYSTEM
+```
+
+Replace `Ubuntu` with your distro name from:
+
+```powershell
+wsl --list --verbose
+```
+
+### Verify startup chain
+
+After a reboot (before Windows sign-in), check from WSL:
+
+```bash
+systemctl --user is-enabled remoteclaw-gateway
+systemctl --user status remoteclaw-gateway --no-pager
+```
+
 ## Advanced: expose WSL services over LAN (portproxy)
 
 WSL has its own virtual network. If another machine needs to reach a service

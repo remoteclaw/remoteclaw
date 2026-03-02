@@ -1,7 +1,6 @@
 import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
 import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { zaloDock, zaloPlugin } from "./src/channel.js";
-import { handleZaloWebhookRequest } from "./src/monitor.js";
 import { setZaloRuntime } from "./src/runtime.js";
 
 const plugin = {
@@ -12,7 +11,6 @@ const plugin = {
   register(api: RemoteClawPluginApi) {
     setZaloRuntime(api.runtime);
     api.registerChannel({ plugin: zaloPlugin, dock: zaloDock });
-    api.registerHttpHandler(handleZaloWebhookRequest);
   },
 };
 

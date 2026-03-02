@@ -1,7 +1,6 @@
 import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
 import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { bluebubblesPlugin } from "./src/channel.js";
-import { handleBlueBubblesWebhookRequest } from "./src/monitor.js";
 import { setBlueBubblesRuntime } from "./src/runtime.js";
 
 const plugin = {
@@ -12,7 +11,6 @@ const plugin = {
   register(api: RemoteClawPluginApi) {
     setBlueBubblesRuntime(api.runtime);
     api.registerChannel({ plugin: bluebubblesPlugin });
-    api.registerHttpHandler(handleBlueBubblesWebhookRequest);
   },
 };
 

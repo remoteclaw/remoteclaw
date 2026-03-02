@@ -72,7 +72,6 @@ const createRegistry = (channels: PluginRegistry["channels"]): PluginRegistry =>
   sttProviders: [],
   ttsProviders: [],
   gatewayHandlers: {},
-  httpHandlers: [],
   httpRoutes: [],
   cliRegistrars: [],
   services: [],

@@ -39,13 +39,6 @@ const CORE_TOOL_SECTION_ORDER: Array<{ id: string; label: string }> = [
 
 const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
   {
-    id: "write",
-    label: "write",
-    description: "Create or overwrite files",
-    sectionId: "fs",
-    profiles: ["coding"],
-  },
-  {
     id: "edit",
     label: "edit",
     description: "Make precise edits",

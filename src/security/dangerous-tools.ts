@@ -25,7 +25,6 @@ export const DEFAULT_GATEWAY_HTTP_TOOL_DENY = [
  */
 export const DANGEROUS_ACP_TOOL_NAMES = [
   "exec",
-  "write",
   "sessions_spawn",
   "sessions_send",
   "gateway",

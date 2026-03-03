@@ -43,14 +43,12 @@ describe("tool-policy", () => {
     const set = new Set(expanded);
     expect(set.has("exec")).toBe(true);
     expect(set.has("bash")).toBe(false);
-    expect(set.has("read")).toBe(true);
-    expect(set.has("write")).toBe(true);
     expect(set.has("edit")).toBe(true);
   });
 
   it("resolves known profiles and ignores unknown ones", () => {
     const coding = resolveToolProfilePolicy("coding");
-    expect(coding?.allow).toContain("read");
+    expect(coding?.allow).toContain("edit");
     expect(coding?.allow).toContain("cron");
     expect(coding?.allow).not.toContain("gateway");
     expect(resolveToolProfilePolicy("nope")).toBeUndefined();

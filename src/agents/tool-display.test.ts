@@ -52,13 +52,7 @@ describe("tool display details", () => {
     expect(detail).toContain("tools true");
   });
 
-  it("formats write/edit with intent-first file detail", () => {
-    const writeDetail = formatToolDetail(
-      resolveToolDisplay({
-        name: "write",
-        args: { file_path: "/tmp/a.txt", content: "abc" },
-      }),
-    );
+  it("formats edit with intent-first file detail", () => {
     const editDetail = formatToolDetail(
       resolveToolDisplay({
         name: "edit",
@@ -66,7 +60,6 @@ describe("tool display details", () => {
       }),
     );
 
-    expect(writeDetail).toBe("to /tmp/a.txt (3 chars)");
     expect(editDetail).toBe("in /tmp/a.txt (4 chars)");
   });
 

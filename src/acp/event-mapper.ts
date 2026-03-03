@@ -132,7 +132,7 @@ export function inferToolKind(name?: string): ToolKind {
   if (normalized.includes("read")) {
     return "read";
   }
-  if (normalized.includes("write") || normalized.includes("edit")) {
+  if (normalized.includes("edit")) {
     return "edit";
   }
   if (normalized.includes("delete") || normalized.includes("remove")) {

@@ -96,7 +96,7 @@ export const zh_TW: TranslationMap = {
     pairing: {
       hint: "此裝置需要閘道主機的配對批准。",
       mobileHint:
-        "在手機上？從桌面執行 openclaw dashboard --no-open 複製完整 URL（包括 #token=...）。",
+        "在手機上？從桌面執行 remoteclaw dashboard --no-open 複製完整 URL（包括 #token=...）。",
     },
     insecure: {
       hint: "此頁面為 HTTP，因此瀏覽器阻止設備標識。請使用 HTTPS (Tailscale Serve) 或在網關主機上打開 {url}。",

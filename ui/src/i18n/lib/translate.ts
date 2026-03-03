@@ -19,7 +19,7 @@ class I18nManager {
   }
 
   private resolveInitialLocale(): Locale {
-    const saved = localStorage.getItem("openclaw.i18n.locale");
+    const saved = localStorage.getItem("remoteclaw.i18n.locale");
     if (isSupportedLocale(saved)) {
       return saved;
     }
@@ -75,7 +75,7 @@ class I18nManager {
     }
 
     this.locale = locale;
-    localStorage.setItem("openclaw.i18n.locale", locale);
+    localStorage.setItem("remoteclaw.i18n.locale", locale);
     this.notify();
   }
 

@@ -97,7 +97,7 @@ export const en: TranslationMap = {
     pairing: {
       hint: "This device needs pairing approval from the gateway host.",
       mobileHint:
-        "On mobile? Copy the full URL (including #token=...) from openclaw dashboard --no-open on your desktop.",
+        "On mobile? Copy the full URL (including #token=...) from remoteclaw dashboard --no-open on your desktop.",
     },
     insecure: {
       hint: "This page is HTTP, so the browser blocks device identity. Use HTTPS (Tailscale Serve) or open {url} on the gateway host.",

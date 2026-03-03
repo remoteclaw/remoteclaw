@@ -451,9 +451,7 @@ function collectRiskyToolExposureContexts(cfg: OpenClawConfig): {
       agentId: context.agentId ?? null,
     });
     const runtimeTools = ["exec"].filter((tool) => isToolAllowedByPolicies(tool, policies));
-    const fsTools = ["read", "write", "edit"].filter((tool) =>
-      isToolAllowedByPolicies(tool, policies),
-    );
+    const fsTools = ["write", "edit"].filter((tool) => isToolAllowedByPolicies(tool, policies));
     const fsWorkspaceOnly = context.tools?.fs?.workspaceOnly ?? cfg.tools?.fs?.workspaceOnly;
     const runtimeUnguarded = runtimeTools.length > 0 && sandboxMode !== "all";
     const fsUnguarded = fsTools.length > 0 && sandboxMode !== "all" && fsWorkspaceOnly !== true;

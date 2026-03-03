@@ -421,7 +421,7 @@ describe("createStatusReactionController", () => {
 
 describe("constants", () => {
   it("should export CODING_TOOL_TOKENS", () => {
-    for (const token of ["exec", "read", "write"]) {
+    for (const token of ["exec", "write"]) {
       expect(CODING_TOOL_TOKENS).toContain(token);
     }
   });

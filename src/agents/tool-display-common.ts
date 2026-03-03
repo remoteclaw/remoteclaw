@@ -150,43 +150,6 @@ export function resolvePathArg(args: unknown): string | undefined {
   return undefined;
 }
 
-export function resolveReadDetail(args: unknown): string | undefined {
-  const record = asRecord(args);
-  if (!record) {
-    return undefined;
-  }
-
-  const path = resolvePathArg(record);
-  if (!path) {
-    return undefined;
-  }
-
-  const offsetRaw =
-    typeof record.offset === "number" && Number.isFinite(record.offset)
-      ? Math.floor(record.offset)
-      : undefined;
-  const limitRaw =
-    typeof record.limit === "number" && Number.isFinite(record.limit)
-      ? Math.floor(record.limit)
-      : undefined;
-
-  const offset = offsetRaw !== undefined ? Math.max(1, offsetRaw) : undefined;
-  const limit = limitRaw !== undefined ? Math.max(1, limitRaw) : undefined;
-
-  if (offset !== undefined && limit !== undefined) {
-    const unit = limit === 1 ? "line" : "lines";
-    return `${unit} ${offset}-${offset + limit - 1} from ${path}`;
-  }
-  if (offset !== undefined) {
-    return `from line ${offset} in ${path}`;
-  }
-  if (limit !== undefined) {
-    const unit = limit === 1 ? "line" : "lines";
-    return `first ${limit} ${unit} of ${path}`;
-  }
-  return `from ${path}`;
-}
-
 export function resolveWriteDetail(toolKey: string, args: unknown): string | undefined {
   const record = asRecord(args);
   if (!record) {

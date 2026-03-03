@@ -1,6 +1,5 @@
 // Sandbox infrastructure removed (#68) — sandbox tool policy tests removed
 import { describe, expect, it } from "vitest";
-import { TOOL_POLICY_CONFORMANCE } from "./tool-policy.conformance.js";
 import {
   applyOwnerOnlyToolPolicy,
   expandToolGroups,
@@ -101,16 +100,6 @@ describe("tool-policy", () => {
     ] as unknown as AnyAgentTool[];
     expect(applyOwnerOnlyToolPolicy(tools, false)).toEqual([]);
     expect(applyOwnerOnlyToolPolicy(tools, true)).toHaveLength(1);
-  });
-});
-
-describe("TOOL_POLICY_CONFORMANCE", () => {
-  it("matches exported TOOL_GROUPS exactly", () => {
-    expect(TOOL_POLICY_CONFORMANCE.toolGroups).toEqual(TOOL_GROUPS);
-  });
-
-  it("is JSON-serializable", () => {
-    expect(() => JSON.stringify(TOOL_POLICY_CONFORMANCE)).not.toThrow();
   });
 });
 

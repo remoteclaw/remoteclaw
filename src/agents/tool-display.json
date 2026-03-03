@@ -30,11 +30,6 @@
       "title": "Exec",
       "detailKeys": ["command"]
     },
-    "read": {
-      "emoji": "📖",
-      "title": "Read",
-      "detailKeys": ["path"]
-    },
     "write": {
       "emoji": "✍️",
       "title": "Write",

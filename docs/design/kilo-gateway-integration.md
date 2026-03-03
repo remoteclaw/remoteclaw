@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the design for integrating "Kilo Gateway" as a first-class provider in OpenClaw, modeled after the existing OpenRouter implementation. Kilo Gateway uses an OpenAI-compatible completions API with a different base URL.
+This document outlines the design for integrating "Kilo Gateway" as a first-class provider in RemoteClaw, modeled after the existing OpenRouter implementation. Kilo Gateway uses an OpenAI-compatible completions API with a different base URL.
 
 ## Design Decisions
 
@@ -113,7 +113,7 @@ Add new functions:
 ```typescript
 export const KILOCODE_BASE_URL = "https://api.kilo.ai/api/gateway/";
 
-export function applyKilocodeProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyKilocodeProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[KILOCODE_DEFAULT_MODEL_REF] = {
     ...models[KILOCODE_DEFAULT_MODEL_REF],
@@ -152,7 +152,7 @@ export function applyKilocodeProviderConfig(cfg: OpenClawConfig): OpenClawConfig
   };
 }
 
-export function applyKilocodeConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyKilocodeConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const next = applyKilocodeProviderConfig(cfg);
   const existingModel = next.agents?.defaults?.model;
   return {

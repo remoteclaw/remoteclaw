@@ -15,12 +15,12 @@ An **agent** is a fully scoped brain with its own:
 
 - **Workspace** (files, AGENTS.md/SOUL.md/USER.md, local notes, persona rules).
 - **State directory** (`agentDir`) for auth profiles, model registry, and per-agent config.
-- **Session store** (chat history + routing state) under `~/.openclaw/agents/<agentId>/sessions`.
+- **Session store** (chat history + routing state) under `~/.remoteclaw/agents/<agentId>/sessions`.
 
 Auth profiles are **per-agent**. Each agent reads from its own:
 
 ```text
-~/.openclaw/agents/<agentId>/agent/auth-profiles.json
+~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json
 ```
 
 Main agent credentials are **not** shared automatically. Never reuse `agentDir`
@@ -28,7 +28,7 @@ across agents (it causes auth/session collisions). If you want to share creds,
 copy `auth-profiles.json` into the other agent's `agentDir`.
 
 Skills are per-agent via each workspace’s `skills/` folder, with shared skills
-available from `~/.openclaw/skills`.
+available from `~/.remoteclaw/skills`.
 
 The Gateway can host **one agent** (default) or **many agents** side-by-side.
 
@@ -39,27 +39,27 @@ reach other host locations unless sandboxing is enabled. See
 
 ## Paths (quick map)
 
-- Config: `~/.openclaw/openclaw.json` (or `REMOTECLAW_CONFIG_PATH`)
-- State dir: `~/.openclaw` (or `REMOTECLAW_STATE_DIR`)
-- Workspace: `~/.openclaw/workspace` (or `~/.openclaw/workspace-<agentId>`)
-- Agent dir: `~/.openclaw/agents/<agentId>/agent` (or `agents.list[].agentDir`)
-- Sessions: `~/.openclaw/agents/<agentId>/sessions`
+- Config: `~/.remoteclaw/remoteclaw.json` (or `REMOTECLAW_CONFIG_PATH`)
+- State dir: `~/.remoteclaw` (or `REMOTECLAW_STATE_DIR`)
+- Workspace: `~/.remoteclaw/workspace` (or `~/.remoteclaw/workspace-<agentId>`)
+- Agent dir: `~/.remoteclaw/agents/<agentId>/agent` (or `agents.list[].agentDir`)
+- Sessions: `~/.remoteclaw/agents/<agentId>/sessions`
 
 ### Single-agent mode (default)
 
-If you do nothing, OpenClaw runs a single agent:
+If you do nothing, RemoteClaw runs a single agent:
 
 - `agentId` defaults to **`main`**.
 - Sessions are keyed as `agent:main:<mainKey>`.
-- Workspace defaults to `~/.openclaw/workspace` (or `~/.openclaw/workspace-<profile>` when `REMOTECLAW_PROFILE` is set).
-- State defaults to `~/.openclaw/agents/main/agent`.
+- Workspace defaults to `~/.remoteclaw/workspace` (or `~/.remoteclaw/workspace-<profile>` when `REMOTECLAW_PROFILE` is set).
+- State defaults to `~/.remoteclaw/agents/main/agent`.
 
 ## Agent helper
 
 Use the agent wizard to add a new isolated agent:
 
 ```bash
-openclaw agents add work
+remoteclaw agents add work
 ```
 
 Then add `bindings` (or let the wizard do it) to route inbound messages.
@@ -67,7 +67,7 @@ Then add `bindings` (or let the wizard do it) to route inbound messages.
 Verify with:
 
 ```bash
-openclaw agents list --bindings
+remoteclaw agents list --bindings
 ```
 
 ## Quick start
@@ -78,11 +78,11 @@ openclaw agents list --bindings
 Use the wizard or create workspaces manually:
 
 ```bash
-openclaw agents add coding
-openclaw agents add social
+remoteclaw agents add coding
+remoteclaw agents add social
 ```
 
-Each agent gets its own workspace with `SOUL.md`, `AGENTS.md`, and optional `USER.md`, plus a dedicated `agentDir` and session store under `~/.openclaw/agents/<agentId>`.
+Each agent gets its own workspace with `SOUL.md`, `AGENTS.md`, and optional `USER.md`, plus a dedicated `agentDir` and session store under `~/.remoteclaw/agents/<agentId>`.
 
   </Step>
 
@@ -95,7 +95,7 @@ Create one account per agent on your preferred channels:
 - WhatsApp: link each phone number per account.
 
 ```bash
-openclaw channels login --channel whatsapp --account work
+remoteclaw channels login --channel whatsapp --account work
 ```
 
 See channel guides: [Discord](/channels/discord), [Telegram](/channels/telegram), [WhatsApp](/channels/whatsapp).
@@ -111,9 +111,9 @@ Add agents under `agents.list`, channel accounts under `channels.<channel>.accou
   <Step title="Restart and verify">
 
 ```bash
-openclaw gateway restart
-openclaw agents list --bindings
-openclaw channels status --probe
+remoteclaw gateway restart
+remoteclaw agents list --bindings
+remoteclaw channels status --probe
 ```
 
   </Step>
@@ -141,8 +141,8 @@ Example:
 {
   agents: {
     list: [
-      { id: "alex", workspace: "~/.openclaw/workspace-alex" },
-      { id: "mia", workspace: "~/.openclaw/workspace-mia" },
+      { id: "alex", workspace: "~/.remoteclaw/workspace-alex" },
+      { id: "mia", workspace: "~/.remoteclaw/workspace-mia" },
     ],
   },
   bindings: [
@@ -208,8 +208,8 @@ Each Discord bot account maps to a unique `accountId`. Bind each account to an a
 {
   agents: {
     list: [
-      { id: "main", workspace: "~/.openclaw/workspace-main" },
-      { id: "coding", workspace: "~/.openclaw/workspace-coding" },
+      { id: "main", workspace: "~/.remoteclaw/workspace-main" },
+      { id: "coding", workspace: "~/.remoteclaw/workspace-coding" },
     ],
   },
   bindings: [
@@ -257,8 +257,8 @@ Notes:
 {
   agents: {
     list: [
-      { id: "main", workspace: "~/.openclaw/workspace-main" },
-      { id: "alerts", workspace: "~/.openclaw/workspace-alerts" },
+      { id: "main", workspace: "~/.remoteclaw/workspace-main" },
+      { id: "alerts", workspace: "~/.remoteclaw/workspace-alerts" },
     ],
   },
   bindings: [
@@ -293,11 +293,11 @@ Notes:
 Link each account before starting the gateway:
 
 ```bash
-openclaw channels login --channel whatsapp --account personal
-openclaw channels login --channel whatsapp --account biz
+remoteclaw channels login --channel whatsapp --account personal
+remoteclaw channels login --channel whatsapp --account biz
 ```
 
-`~/.openclaw/openclaw.json` (JSON5):
+`~/.remoteclaw/remoteclaw.json` (JSON5):
 
 ```js
 {
@@ -307,14 +307,14 @@ openclaw channels login --channel whatsapp --account biz
         id: "home",
         default: true,
         name: "Home",
-        workspace: "~/.openclaw/workspace-home",
-        agentDir: "~/.openclaw/agents/home/agent",
+        workspace: "~/.remoteclaw/workspace-home",
+        agentDir: "~/.remoteclaw/agents/home/agent",
       },
       {
         id: "work",
         name: "Work",
-        workspace: "~/.openclaw/workspace-work",
-        agentDir: "~/.openclaw/agents/work/agent",
+        workspace: "~/.remoteclaw/workspace-work",
+        agentDir: "~/.remoteclaw/agents/work/agent",
       },
     ],
   },
@@ -347,12 +347,12 @@ openclaw channels login --channel whatsapp --account biz
     whatsapp: {
       accounts: {
         personal: {
-          // Optional override. Default: ~/.openclaw/credentials/whatsapp/personal
-          // authDir: "~/.openclaw/credentials/whatsapp/personal",
+          // Optional override. Default: ~/.remoteclaw/credentials/whatsapp/personal
+          // authDir: "~/.remoteclaw/credentials/whatsapp/personal",
         },
         biz: {
-          // Optional override. Default: ~/.openclaw/credentials/whatsapp/biz
-          // authDir: "~/.openclaw/credentials/whatsapp/biz",
+          // Optional override. Default: ~/.remoteclaw/credentials/whatsapp/biz
+          // authDir: "~/.remoteclaw/credentials/whatsapp/biz",
         },
       },
     },
@@ -371,13 +371,13 @@ Split by channel: route WhatsApp to a fast everyday agent and Telegram to an Opu
       {
         id: "chat",
         name: "Everyday",
-        workspace: "~/.openclaw/workspace-chat",
+        workspace: "~/.remoteclaw/workspace-chat",
         model: "anthropic/claude-sonnet-4-5",
       },
       {
         id: "opus",
         name: "Deep Work",
-        workspace: "~/.openclaw/workspace-opus",
+        workspace: "~/.remoteclaw/workspace-opus",
         model: "anthropic/claude-opus-4-6",
       },
     ],
@@ -405,13 +405,13 @@ Keep WhatsApp on the fast agent, but route one DM to Opus:
       {
         id: "chat",
         name: "Everyday",
-        workspace: "~/.openclaw/workspace-chat",
+        workspace: "~/.remoteclaw/workspace-chat",
         model: "anthropic/claude-sonnet-4-5",
       },
       {
         id: "opus",
         name: "Deep Work",
-        workspace: "~/.openclaw/workspace-opus",
+        workspace: "~/.remoteclaw/workspace-opus",
         model: "anthropic/claude-opus-4-6",
       },
     ],
@@ -440,7 +440,7 @@ and a tighter tool policy:
       {
         id: "family",
         name: "Family",
-        workspace: "~/.openclaw/workspace-family",
+        workspace: "~/.remoteclaw/workspace-family",
         identity: { name: "Family Bot" },
         groupChat: {
           mentionPatterns: ["@family", "@familybot", "@Family Bot"],
@@ -493,7 +493,7 @@ Starting with v2026.1.6, each agent can have its own sandbox and tool restrictio
     list: [
       {
         id: "personal",
-        workspace: "~/.openclaw/workspace-personal",
+        workspace: "~/.remoteclaw/workspace-personal",
         sandbox: {
           mode: "off",  // No sandbox for personal agent
         },
@@ -501,7 +501,7 @@ Starting with v2026.1.6, each agent can have its own sandbox and tool restrictio
       },
       {
         id: "family",
-        workspace: "~/.openclaw/workspace-family",
+        workspace: "~/.remoteclaw/workspace-family",
         sandbox: {
           mode: "all",     // Always sandboxed
           scope: "agent",  // One container per agent

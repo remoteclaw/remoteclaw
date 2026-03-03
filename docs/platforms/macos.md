@@ -1,14 +1,14 @@
 ---
-summary: "OpenClaw macOS companion app (menu bar + gateway broker)"
+summary: "RemoteClaw macOS companion app (menu bar + gateway broker)"
 read_when:
   - Implementing macOS app features
   - Changing gateway lifecycle or node bridging on macOS
 title: "macOS App"
 ---
 
-# OpenClaw macOS Companion (menu bar + gateway broker)
+# RemoteClaw macOS Companion (menu bar + gateway broker)
 
-The macOS app is the **menu‑bar companion** for OpenClaw. It owns permissions,
+The macOS app is the **menu‑bar companion** for RemoteClaw. It owns permissions,
 manages/attaches to the Gateway locally (launchd or manual), and exposes macOS
 capabilities to the agent as a node.
 
@@ -21,12 +21,12 @@ capabilities to the agent as a node.
 - Exposes macOS‑only tools (Canvas, Camera, Screen Recording, `system.run`).
 - Starts the local node host service in **remote** mode (launchd), and stops it in **local** mode.
 - Optionally hosts **PeekabooBridge** for UI automation.
-- Installs the global CLI (`openclaw`) via npm/pnpm on request (bun not recommended for the Gateway runtime).
+- Installs the global CLI (`remoteclaw`) via npm/pnpm on request (bun not recommended for the Gateway runtime).
 
 ## Local vs remote mode
 
 - **Local** (default): the app attaches to a running local Gateway if present;
-  otherwise it enables the launchd service via `openclaw gateway install`.
+  otherwise it enables the launchd service via `remoteclaw gateway install`.
 - **Remote**: the app connects to a Gateway over SSH/Tailscale and never starts
   a local process.
   The app starts the local **node host service** so the remote Gateway can reach this Mac.
@@ -34,18 +34,18 @@ capabilities to the agent as a node.
 
 ## Launchd control
 
-The app manages a per‑user LaunchAgent labeled `ai.openclaw.gateway`
-(or `ai.openclaw.<profile>` when using `--profile`/`REMOTECLAW_PROFILE`; legacy `com.openclaw.*` still unloads).
+The app manages a per‑user LaunchAgent labeled `ai.remoteclaw.gateway`
+(or `ai.remoteclaw.<profile>` when using `--profile`/`REMOTECLAW_PROFILE`; legacy `com.remoteclaw.*` still unloads).
 
 ```bash
-launchctl kickstart -k gui/$UID/ai.openclaw.gateway
-launchctl bootout gui/$UID/ai.openclaw.gateway
+launchctl kickstart -k gui/$UID/ai.remoteclaw.gateway
+launchctl bootout gui/$UID/ai.remoteclaw.gateway
 ```
 
-Replace the label with `ai.openclaw.<profile>` when running a named profile.
+Replace the label with `ai.remoteclaw.<profile>` when running a named profile.
 
 If the LaunchAgent isn’t installed, enable it from the app or run
-`openclaw gateway install`.
+`remoteclaw gateway install`.
 
 ## Node capabilities (mac)
 
@@ -78,7 +78,7 @@ Gateway -> Node Service (WS)
 Security + ask + allowlist are stored locally on the Mac in:
 
 ```
-~/.openclaw/exec-approvals.json
+~/.remoteclaw/exec-approvals.json
 ```
 
 Example:
@@ -111,14 +111,14 @@ Notes:
 
 ## Deep links
 
-The app registers the `openclaw://` URL scheme for local actions.
+The app registers the `remoteclaw://` URL scheme for local actions.
 
-### `openclaw://agent`
+### `remoteclaw://agent`
 
 Triggers a Gateway `agent` request.
 
 ```bash
-open 'openclaw://agent?message=Hello%20from%20deep%20link'
+open 'remoteclaw://agent?message=Hello%20from%20deep%20link'
 ```
 
 Query parameters:
@@ -138,7 +138,7 @@ Safety:
 
 ## Onboarding flow (typical)
 
-1. Install and launch **OpenClaw.app**.
+1. Install and launch **RemoteClaw.app**.
 2. Complete the permissions checklist (TCC prompts).
 3. Ensure **Local** mode is active and the Gateway is running.
 4. Install the CLI if you want terminal access.
@@ -146,7 +146,7 @@ Safety:
 ## Build & dev workflow (native)
 
 - `cd apps/macos && swift build`
-- `swift run OpenClaw` (or Xcode)
+- `swift run RemoteClaw` (or Xcode)
 - Package app: `scripts/package-mac-app.sh`
 
 ## Debug gateway connectivity (macOS CLI)
@@ -156,8 +156,8 @@ logic that the macOS app uses, without launching the app.
 
 ```bash
 cd apps/macos
-swift run openclaw-mac connect --json
-swift run openclaw-mac discover --timeout 3000 --json
+swift run remoteclaw-mac connect --json
+swift run remoteclaw-mac discover --timeout 3000 --json
 ```
 
 Connect options:
@@ -174,7 +174,7 @@ Discovery options:
 - `--timeout <ms>`: overall discovery window (default: `2000`)
 - `--json`: structured output for diffing
 
-Tip: compare against `openclaw gateway discover --json` to see whether the
+Tip: compare against `remoteclaw gateway discover --json` to see whether the
 macOS app’s discovery pipeline (NWBrowser + tailnet DNS‑SD fallback) differs from
 the Node CLI’s `dns-sd` based discovery.
 

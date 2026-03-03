@@ -1,19 +1,19 @@
 ---
-summary: "Move (migrate) a OpenClaw install from one machine to another"
+summary: "Move (migrate) a RemoteClaw install from one machine to another"
 read_when:
-  - You are moving OpenClaw to a new laptop/server
+  - You are moving RemoteClaw to a new laptop/server
   - You want to preserve sessions, auth, and channel logins (WhatsApp, etc.)
 title: "Migration Guide"
 ---
 
-# Migrating OpenClaw to a new machine
+# Migrating RemoteClaw to a new machine
 
-This guide migrates a OpenClaw Gateway from one machine to another **without redoing onboarding**.
+This guide migrates a RemoteClaw Gateway from one machine to another **without redoing onboarding**.
 
 The migration is simple conceptually:
 
-- Copy the **state directory** (`$REMOTECLAW_STATE_DIR`, default: `~/.openclaw/`) — this includes config, auth, sessions, and channel state.
-- Copy your **workspace** (`~/.openclaw/workspace/` by default) — this includes your agent files (memory, prompts, etc.).
+- Copy the **state directory** (`$REMOTECLAW_STATE_DIR`, default: `~/.remoteclaw/`) — this includes config, auth, sessions, and channel state.
+- Copy your **workspace** (`~/.remoteclaw/workspace/` by default) — this includes your agent files (memory, prompts, etc.).
 
 But there are common footguns around **profiles**, **permissions**, and **partial copies**.
 
@@ -23,17 +23,17 @@ But there are common footguns around **profiles**, **permissions**, and **partia
 
 Most installs use the default:
 
-- **State dir:** `~/.openclaw/`
+- **State dir:** `~/.remoteclaw/`
 
 But it may be different if you use:
 
-- `--profile <name>` (often becomes `~/.openclaw-<profile>/`)
+- `--profile <name>` (often becomes `~/.remoteclaw-<profile>/`)
 - `REMOTECLAW_STATE_DIR=/some/path`
 
 If you’re not sure, run on the **old** machine:
 
 ```bash
-openclaw status
+remoteclaw status
 ```
 
 Look for mentions of `REMOTECLAW_STATE_DIR` / profile in the output. If you run multiple gateways, repeat for each profile.
@@ -42,7 +42,7 @@ Look for mentions of `REMOTECLAW_STATE_DIR` / profile in the output. If you run 
 
 Common defaults:
 
-- `~/.openclaw/workspace/` (recommended workspace)
+- `~/.remoteclaw/workspace/` (recommended workspace)
 - a custom folder you created
 
 Your workspace is where files like `MEMORY.md`, `USER.md`, and `memory/*.md` live.
@@ -51,7 +51,7 @@ Your workspace is where files like `MEMORY.md`, `USER.md`, and `memory/*.md` liv
 
 If you copy **both** the state dir and workspace, you keep:
 
-- Gateway configuration (`openclaw.json`)
+- Gateway configuration (`remoteclaw.json`)
 - Auth profiles / API keys / OAuth tokens
 - Session history + agent state
 - Channel state (e.g. WhatsApp login/session)
@@ -72,7 +72,7 @@ Those live under `$REMOTECLAW_STATE_DIR`.
 On the **old** machine, stop the gateway first so files aren’t changing mid-copy:
 
 ```bash
-openclaw gateway stop
+remoteclaw gateway stop
 ```
 
 (Optional but recommended) archive the state dir and workspace:
@@ -80,27 +80,27 @@ openclaw gateway stop
 ```bash
 # Adjust paths if you use a profile or custom locations
 cd ~
-tar -czf openclaw-state.tgz .openclaw
+tar -czf remoteclaw-state.tgz .remoteclaw
 
-tar -czf openclaw-workspace.tgz .openclaw/workspace
+tar -czf remoteclaw-workspace.tgz .remoteclaw/workspace
 ```
 
-If you have multiple profiles/state dirs (e.g. `~/.openclaw-main`, `~/.openclaw-work`), archive each.
+If you have multiple profiles/state dirs (e.g. `~/.remoteclaw-main`, `~/.remoteclaw-work`), archive each.
 
-### Step 1 — Install OpenClaw on the new machine
+### Step 1 — Install RemoteClaw on the new machine
 
 On the **new** machine, install the CLI (and Node if needed):
 
 - See: [Install](/install)
 
-At this stage, it’s OK if onboarding creates a fresh `~/.openclaw/` — you will overwrite it in the next step.
+At this stage, it’s OK if onboarding creates a fresh `~/.remoteclaw/` — you will overwrite it in the next step.
 
 ### Step 2 — Copy the state dir + workspace to the new machine
 
 Copy **both**:
 
-- `$REMOTECLAW_STATE_DIR` (default `~/.openclaw/`)
-- your workspace (default `~/.openclaw/workspace/`)
+- `$REMOTECLAW_STATE_DIR` (default `~/.remoteclaw/`)
+- your workspace (default `~/.remoteclaw/workspace/`)
 
 Common approaches:
 
@@ -110,7 +110,7 @@ Common approaches:
 
 After copying, ensure:
 
-- Hidden directories were included (e.g. `.openclaw/`)
+- Hidden directories were included (e.g. `.remoteclaw/`)
 - File ownership is correct for the user running the gateway
 
 ### Step 3 — Run Doctor (migrations + service repair)
@@ -118,7 +118,7 @@ After copying, ensure:
 On the **new** machine:
 
 ```bash
-openclaw doctor
+remoteclaw doctor
 ```
 
 Doctor is the “safe boring” command. It repairs services, applies config migrations, and warns about mismatches.
@@ -126,8 +126,8 @@ Doctor is the “safe boring” command. It repairs services, applies config mig
 Then:
 
 ```bash
-openclaw gateway restart
-openclaw status
+remoteclaw gateway restart
+remoteclaw status
 ```
 
 ## Common footguns (and how to avoid them)
@@ -143,12 +143,12 @@ If you ran the old gateway with a profile (or `REMOTECLAW_STATE_DIR`), and the n
 Fix: run the gateway/service using the **same** profile/state dir you migrated, then rerun:
 
 ```bash
-openclaw doctor
+remoteclaw doctor
 ```
 
-### Footgun: copying only `openclaw.json`
+### Footgun: copying only `remoteclaw.json`
 
-`openclaw.json` is not enough. Many providers store state under:
+`remoteclaw.json` is not enough. Many providers store state under:
 
 - `$REMOTECLAW_STATE_DIR/credentials/`
 - `$REMOTECLAW_STATE_DIR/agents/<agentId>/...`
@@ -180,7 +180,7 @@ If you’re in remote mode, migrate the **gateway host**.
 
 On the new machine, confirm:
 
-- `openclaw status` shows the gateway running
+- `remoteclaw status` shows the gateway running
 - Your channels are still connected (e.g. WhatsApp doesn’t require re-pair)
 - The dashboard opens and shows existing sessions
 - Your workspace files (memory, configs) are present
@@ -189,4 +189,4 @@ On the new machine, confirm:
 
 - [Doctor](/gateway/doctor)
 - [Gateway troubleshooting](/gateway/troubleshooting)
-- [Where does OpenClaw store its data?](/help/faq#where-does-openclaw-store-its-data)
+- [Where does RemoteClaw store its data?](/help/faq#where-does-remoteclaw-store-its-data)

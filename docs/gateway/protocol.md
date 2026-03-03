@@ -10,7 +10,7 @@ title: "Gateway Protocol"
 # Gateway protocol (WebSocket)
 
 The Gateway WS protocol is the **single control plane + node transport** for
-OpenClaw. All clients (CLI, web UI, macOS app, iOS/Android nodes, headless
+RemoteClaw. All clients (CLI, web UI, macOS app, iOS/Android nodes, headless
 nodes) connect over WebSocket and declare their **role** + **scope** at
 handshake time.
 
@@ -54,7 +54,7 @@ Client → Gateway:
     "permissions": {},
     "auth": { "token": "…" },
     "locale": "en-US",
-    "userAgent": "openclaw-cli/1.2.3",
+    "userAgent": "remoteclaw-cli/1.2.3",
     "device": {
       "id": "device_fingerprint",
       "publicKey": "…",
@@ -112,7 +112,7 @@ When a device token is issued, `hello-ok` also includes:
     "permissions": { "camera.capture": true, "screen.record": false },
     "auth": { "token": "…" },
     "locale": "en-US",
-    "userAgent": "openclaw-ios/1.2.3",
+    "userAgent": "remoteclaw-ios/1.2.3",
     "device": {
       "id": "device_fingerprint",
       "publicKey": "…",

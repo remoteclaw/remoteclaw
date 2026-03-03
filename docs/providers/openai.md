@@ -1,7 +1,7 @@
 ---
-summary: "Use OpenAI via API keys or Codex subscription in OpenClaw"
+summary: "Use OpenAI via API keys or Codex subscription in RemoteClaw"
 read_when:
-  - You want to use OpenAI models in OpenClaw
+  - You want to use OpenAI models in RemoteClaw
   - You want Codex subscription auth instead of API keys
 title: "OpenAI"
 ---
@@ -19,9 +19,9 @@ Get your API key from the OpenAI dashboard.
 ### CLI setup
 
 ```bash
-openclaw onboard --auth-choice openai-api-key
+remoteclaw onboard --auth-choice openai-api-key
 # or non-interactive
-openclaw onboard --openai-api-key "$OPENAI_API_KEY"
+remoteclaw onboard --openai-api-key "$OPENAI_API_KEY"
 ```
 
 ### Config snippet
@@ -42,10 +42,10 @@ Codex cloud requires ChatGPT sign-in, while the Codex CLI supports ChatGPT or AP
 
 ```bash
 # Run Codex OAuth in the wizard
-openclaw onboard --auth-choice openai-codex
+remoteclaw onboard --auth-choice openai-codex
 
 # Or run OAuth directly
-openclaw models auth login --provider openai-codex
+remoteclaw models auth login --provider openai-codex
 ```
 
 ### Config snippet (Codex subscription)

@@ -11,7 +11,7 @@ title: "Tests"
 
 - `pnpm test:force`: Kills any lingering gateway process holding the default control port, then runs the full Vitest suite with an isolated gateway port so server tests don’t collide with a running instance. Use this when a prior gateway run left port 18789 occupied.
 - `pnpm test:coverage`: Runs the unit suite with V8 coverage (via `vitest.unit.config.ts`). Global thresholds are 70% lines/branches/functions/statements. Coverage excludes integration-heavy entrypoints (CLI wiring, gateway/telegram bridges, webchat static server) to keep the target focused on unit-testable logic.
-- `pnpm test` on Node 24+: OpenClaw auto-disables Vitest `vmForks` and uses `forks` to avoid `ERR_VM_MODULE_LINK_FAILURE` / `module is already linked`. You can force behavior with `REMOTECLAW_TEST_VM_FORKS=0|1`.
+- `pnpm test` on Node 24+: RemoteClaw auto-disables Vitest `vmForks` and uses `forks` to avoid `ERR_VM_MODULE_LINK_FAILURE` / `module is already linked`. You can force behavior with `REMOTECLAW_TEST_VM_FORKS=0|1`.
 - `pnpm test:e2e`: Runs gateway end-to-end smoke tests (multi-instance WS/HTTP/node pairing). Defaults to `vmForks` + adaptive workers in `vitest.e2e.config.ts`; tune with `REMOTECLAW_E2E_WORKERS=<n>` and set `REMOTECLAW_E2E_VERBOSE=1` for verbose logs.
 - `pnpm test:live`: Runs provider live tests (minimax/zai). Requires API keys and `LIVE=1` (or provider-specific `*_LIVE_TEST=1`) to unskip.
 
@@ -30,7 +30,7 @@ If `pnpm test` flakes on a loaded host, rerun once before treating it as a regre
 
 ## Model latency bench (local keys)
 
-Script: [`scripts/bench-model.ts`](https://github.com/openclaw/openclaw/blob/main/scripts/bench-model.ts)
+Script: [`scripts/bench-model.ts`](https://github.com/remoteclaw/remoteclaw/blob/main/scripts/bench-model.ts)
 
 Usage:
 
@@ -53,7 +53,7 @@ Full cold-start flow in a clean Linux container:
 scripts/e2e/onboard-docker.sh
 ```
 
-This script drives the interactive wizard via a pseudo-tty, verifies config/workspace/session files, then starts the gateway and runs `openclaw health`.
+This script drives the interactive wizard via a pseudo-tty, verifies config/workspace/session files, then starts the gateway and runs `remoteclaw health`.
 
 ## QR import smoke (Docker)
 

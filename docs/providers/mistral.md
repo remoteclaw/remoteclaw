@@ -1,23 +1,23 @@
 ---
-summary: "Use Mistral models and Voxtral transcription with OpenClaw"
+summary: "Use Mistral models and Voxtral transcription with RemoteClaw"
 read_when:
-  - You want to use Mistral models in OpenClaw
+  - You want to use Mistral models in RemoteClaw
   - You need Mistral API key onboarding and model refs
 title: "Mistral"
 ---
 
 # Mistral
 
-OpenClaw supports Mistral for both text/image model routing (`mistral/...`) and
+RemoteClaw supports Mistral for both text/image model routing (`mistral/...`) and
 audio transcription via Voxtral in media understanding.
 Mistral can also be used for memory embeddings (`memorySearch.provider = "mistral"`).
 
 ## CLI setup
 
 ```bash
-openclaw onboard --auth-choice mistral-api-key
+remoteclaw onboard --auth-choice mistral-api-key
 # or non-interactive
-openclaw onboard --mistral-api-key "$MISTRAL_API_KEY"
+remoteclaw onboard --mistral-api-key "$MISTRAL_API_KEY"
 ```
 
 ## Config snippet (LLM provider)

@@ -1,5 +1,5 @@
 ---
-summary: "Optional Docker-based setup and onboarding for OpenClaw"
+summary: "Optional Docker-based setup and onboarding for RemoteClaw"
 read_when:
   - You want a containerized gateway instead of local installs
   - You are validating the Docker flow
@@ -12,13 +12,13 @@ Docker is **optional**. Use it only if you want a containerized gateway or to va
 
 ## Is Docker right for me?
 
-- **Yes**: you want an isolated, throwaway gateway environment or to run OpenClaw on a host without local installs.
+- **Yes**: you want an isolated, throwaway gateway environment or to run RemoteClaw on a host without local installs.
 - **No**: you’re running on your own machine and just want the fastest dev loop. Use the normal install flow instead.
 - **Sandboxing note**: agent sandboxing uses Docker too, but it does **not** require the full gateway to run in Docker. See [Gateway configuration](/gateway/configuration#agentsdefaultssandbox).
 
 This guide covers:
 
-- Containerized Gateway (full OpenClaw in Docker)
+- Containerized Gateway (full RemoteClaw in Docker)
 - Per-session Agent Sandbox (host gateway + Docker-isolated agent tools)
 
 Sandboxing details: [Gateway configuration](/gateway/configuration#agentsdefaultssandbox)
@@ -56,12 +56,12 @@ After it finishes:
 
 - Open `http://127.0.0.1:18789/` in your browser.
 - Paste the token into the Control UI (Settings → token).
-- Need the URL again? Run `docker compose run --rm openclaw-cli dashboard --no-open`.
+- Need the URL again? Run `docker compose run --rm remoteclaw-cli dashboard --no-open`.
 
 It writes config/workspace on the host:
 
-- `~/.openclaw/`
-- `~/.openclaw/workspace`
+- `~/.remoteclaw/`
+- `~/.remoteclaw/workspace`
 
 Running on a VPS? See [Hetzner (Docker VPS)](/install/hetzner).
 
@@ -70,7 +70,7 @@ Running on a VPS? See [Hetzner (Docker VPS)](/install/hetzner).
 For easier day-to-day Docker management, install `ClawDock`:
 
 ```bash
-mkdir -p ~/.clawdock && curl -sL https://raw.githubusercontent.com/openclaw/openclaw/main/scripts/shell-helpers/clawdock-helpers.sh -o ~/.clawdock/clawdock-helpers.sh
+mkdir -p ~/.clawdock && curl -sL https://raw.githubusercontent.com/remoteclaw/remoteclaw/main/scripts/shell-helpers/clawdock-helpers.sh -o ~/.clawdock/clawdock-helpers.sh
 ```
 
 **Add to your shell config (zsh):**
@@ -81,14 +81,14 @@ echo 'source ~/.clawdock/clawdock-helpers.sh' >> ~/.zshrc && source ~/.zshrc
 
 Then use `clawdock-start`, `clawdock-stop`, `clawdock-dashboard`, etc. Run `clawdock-help` for all commands.
 
-See [`ClawDock` Helper README](https://github.com/openclaw/openclaw/blob/main/scripts/shell-helpers/README.md) for details.
+See [`ClawDock` Helper README](https://github.com/remoteclaw/remoteclaw/blob/main/scripts/shell-helpers/README.md) for details.
 
 ### Manual flow (compose)
 
 ```bash
-docker build -t openclaw:local -f Dockerfile .
-docker compose run --rm openclaw-cli onboard
-docker compose up -d openclaw-gateway
+docker build -t remoteclaw:local -f Dockerfile .
+docker compose run --rm remoteclaw-cli onboard
+docker compose up -d remoteclaw-gateway
 ```
 
 Note: run `docker compose ...` from the repo root. If you enabled
@@ -105,9 +105,9 @@ If you see “unauthorized” or “disconnected (1008): pairing required”, fe
 fresh dashboard link and approve the browser device:
 
 ```bash
-docker compose run --rm openclaw-cli dashboard --no-open
-docker compose run --rm openclaw-cli devices list
-docker compose run --rm openclaw-cli devices approve <requestId>
+docker compose run --rm remoteclaw-cli dashboard --no-open
+docker compose run --rm remoteclaw-cli devices list
+docker compose run --rm remoteclaw-cli devices approve <requestId>
 ```
 
 More detail: [Dashboard](/web/dashboard), [Devices](/cli/devices).
@@ -117,7 +117,7 @@ More detail: [Dashboard](/web/dashboard), [Devices](/cli/devices).
 If you want to mount additional host directories into the containers, set
 `REMOTECLAW_EXTRA_MOUNTS` before running `docker-setup.sh`. This accepts a
 comma-separated list of Docker bind mounts and applies them to both
-`openclaw-gateway` and `openclaw-cli` by generating `docker-compose.extra.yml`.
+`remoteclaw-gateway` and `remoteclaw-cli` by generating `docker-compose.extra.yml`.
 
 Example:
 
@@ -145,14 +145,14 @@ named volume here (not a bind path); for bind mounts, use
 Example:
 
 ```bash
-export REMOTECLAW_HOME_VOLUME="openclaw_home"
+export REMOTECLAW_HOME_VOLUME="remoteclaw_home"
 ./docker-setup.sh
 ```
 
 You can combine this with extra mounts:
 
 ```bash
-export REMOTECLAW_HOME_VOLUME="openclaw_home"
+export REMOTECLAW_HOME_VOLUME="remoteclaw_home"
 export REMOTECLAW_EXTRA_MOUNTS="$HOME/.codex:/home/node/.codex:ro,$HOME/github:/home/node/github:rw"
 ./docker-setup.sh
 ```
@@ -198,7 +198,7 @@ If you want a more full-featured container, use these opt-in knobs:
 1. **Persist `/home/node`** so browser downloads and tool caches survive:
 
 ```bash
-export REMOTECLAW_HOME_VOLUME="openclaw_home"
+export REMOTECLAW_HOME_VOLUME="remoteclaw_home"
 ./docker-setup.sh
 ```
 
@@ -212,7 +212,7 @@ export REMOTECLAW_DOCKER_APT_PACKAGES="git curl jq"
 3. **Install Playwright browsers without `npx`** (avoids npm override conflicts):
 
 ```bash
-docker compose run --rm openclaw-cli \
+docker compose run --rm remoteclaw-cli \
   node /app/node_modules/playwright-core/cli.js install chromium
 ```
 
@@ -229,12 +229,12 @@ If you need Playwright to install system deps, rebuild the image with
 ### Permissions + EACCES
 
 The image runs as `node` (uid 1000). If you see permission errors on
-`/home/node/.openclaw`, make sure your host bind mounts are owned by uid 1000.
+`/home/node/.remoteclaw`, make sure your host bind mounts are owned by uid 1000.
 
 Example (Linux host):
 
 ```bash
-sudo chown -R 1000:1000 /path/to/openclaw-config /path/to/openclaw-workspace
+sudo chown -R 1000:1000 /path/to/remoteclaw-config /path/to/remoteclaw-workspace
 ```
 
 If you choose to run as root for convenience, you accept the security tradeoff.
@@ -279,19 +279,19 @@ Use the CLI container to configure channels, then restart the gateway if needed.
 WhatsApp (QR):
 
 ```bash
-docker compose run --rm openclaw-cli channels login
+docker compose run --rm remoteclaw-cli channels login
 ```
 
 Telegram (bot token):
 
 ```bash
-docker compose run --rm openclaw-cli channels add --channel telegram --token "<token>"
+docker compose run --rm remoteclaw-cli channels add --channel telegram --token "<token>"
 ```
 
 Discord (bot token):
 
 ```bash
-docker compose run --rm openclaw-cli channels add --channel discord --token "<token>"
+docker compose run --rm remoteclaw-cli channels add --channel discord --token "<token>"
 ```
 
 Docs: [WhatsApp](/channels/whatsapp), [Telegram](/channels/telegram), [Discord](/channels/discord)
@@ -306,7 +306,7 @@ URL you land on and paste it back into the wizard to finish auth.
 ### Health check
 
 ```bash
-docker compose exec openclaw-gateway node dist/index.js health --token "$REMOTECLAW_GATEWAY_TOKEN"
+docker compose exec remoteclaw-gateway node dist/index.js health --token "$REMOTECLAW_GATEWAY_TOKEN"
 ```
 
 ### E2E smoke test (Docker)
@@ -325,7 +325,7 @@ pnpm test:docker:qr
 
 - Gateway bind defaults to `lan` for container use.
 - Dockerfile CMD uses `--allow-unconfigured`; mounted config with `gateway.mode` not `local` will still start. Override CMD to enforce the guard.
-- The gateway container is the source of truth for sessions (`~/.openclaw/agents/<agentId>/sessions/`).
+- The gateway container is the source of truth for sessions (`~/.remoteclaw/agents/<agentId>/sessions/`).
 
 ## Agent Sandbox (host gateway + Docker tools)
 
@@ -361,9 +361,9 @@ precedence, and troubleshooting.
 
 ### Default behavior
 
-- Image: `openclaw-sandbox:bookworm-slim`
+- Image: `remoteclaw-sandbox:bookworm-slim`
 - One container per agent
-- Agent workspace access: `workspaceAccess: "none"` (default) uses `~/.openclaw/sandboxes`
+- Agent workspace access: `workspaceAccess: "none"` (default) uses `~/.remoteclaw/sandboxes`
   - `"ro"` keeps the sandbox workspace at `/workspace` and mounts the agent workspace read-only at `/agent` (disables `write`/`edit`/`apply_patch`)
   - `"rw"` mounts the agent workspace read/write at `/workspace`
 - Auto-prune: idle > 24h OR age > 7d
@@ -383,9 +383,9 @@ If you plan to install packages in `setupCommand`, note:
 - Break-glass override: `agents.defaults.sandbox.docker.dangerouslyAllowContainerNamespaceJoin: true`.
 - `readOnlyRoot: true` blocks package installs.
 - `user` must be root for `apt-get` (omit `user` or set `user: "0:0"`).
-  OpenClaw auto-recreates containers when `setupCommand` (or docker config) changes
+  RemoteClaw auto-recreates containers when `setupCommand` (or docker config) changes
   unless the container was **recently used** (within ~5 minutes). Hot containers
-  log a warning with the exact `openclaw sandbox recreate ...` command.
+  log a warning with the exact `remoteclaw sandbox recreate ...` command.
 
 ```json5
 {
@@ -395,9 +395,9 @@ If you plan to install packages in `setupCommand`, note:
         mode: "non-main", // off | non-main | all
         scope: "agent", // session | agent | shared (agent is default)
         workspaceAccess: "none", // none | ro | rw
-        workspaceRoot: "~/.openclaw/sandboxes",
+        workspaceRoot: "~/.remoteclaw/sandboxes",
         docker: {
-          image: "openclaw-sandbox:bookworm-slim",
+          image: "remoteclaw-sandbox:bookworm-slim",
           workdir: "/workspace",
           readOnlyRoot: true,
           tmpfs: ["/tmp", "/var/tmp", "/run"],
@@ -415,7 +415,7 @@ If you plan to install packages in `setupCommand`, note:
             nproc: 256,
           },
           seccompProfile: "/path/to/seccomp.json",
-          apparmorProfile: "openclaw-sandbox",
+          apparmorProfile: "remoteclaw-sandbox",
           dns: ["1.1.1.1", "8.8.8.8"],
           extraHosts: ["internal.service:10.0.0.5"],
         },
@@ -462,7 +462,7 @@ Multi-agent: override `agents.defaults.sandbox.{docker,browser,prune}.*` per age
 scripts/sandbox-setup.sh
 ```
 
-This builds `openclaw-sandbox:bookworm-slim` using `Dockerfile.sandbox`.
+This builds `remoteclaw-sandbox:bookworm-slim` using `Dockerfile.sandbox`.
 
 ### Sandbox common image (optional)
 
@@ -472,13 +472,13 @@ If you want a sandbox image with common build tooling (Node, Go, Rust, etc.), bu
 scripts/sandbox-common-setup.sh
 ```
 
-This builds `openclaw-sandbox-common:bookworm-slim`. To use it:
+This builds `remoteclaw-sandbox-common:bookworm-slim`. To use it:
 
 ```json5
 {
   agents: {
     defaults: {
-      sandbox: { docker: { image: "openclaw-sandbox-common:bookworm-slim" } },
+      sandbox: { docker: { image: "remoteclaw-sandbox-common:bookworm-slim" } },
     },
   },
 }
@@ -492,7 +492,7 @@ To run the browser tool inside the sandbox, build the browser image:
 scripts/sandbox-browser-setup.sh
 ```
 
-This builds `openclaw-sandbox-browser:bookworm-slim` using
+This builds `remoteclaw-sandbox-browser:bookworm-slim` using
 `Dockerfile.sandbox-browser`. The container runs Chromium with CDP enabled and
 an optional noVNC observer (headful via Xvfb).
 
@@ -501,9 +501,9 @@ Notes:
 - Headful (Xvfb) reduces bot blocking vs headless.
 - Headless can still be used by setting `agents.defaults.sandbox.browser.headless=true`.
 - No full desktop environment (GNOME) is needed; Xvfb provides the display.
-- Browser containers default to a dedicated Docker network (`openclaw-sandbox-browser`) instead of global `bridge`.
+- Browser containers default to a dedicated Docker network (`remoteclaw-sandbox-browser`) instead of global `bridge`.
 - Optional `agents.defaults.sandbox.browser.cdpSourceRange` restricts container-edge CDP ingress by CIDR (for example `172.21.0.1/32`).
-- noVNC observer access is password-protected by default; OpenClaw provides a short-lived observer token URL instead of sharing the raw password in the URL.
+- noVNC observer access is password-protected by default; RemoteClaw provides a short-lived observer token URL instead of sharing the raw password in the URL.
 
 Use config:
 
@@ -525,7 +525,7 @@ Custom browser image:
 {
   agents: {
     defaults: {
-      sandbox: { browser: { image: "my-openclaw-browser" } },
+      sandbox: { browser: { image: "my-remoteclaw-browser" } },
     },
   },
 }
@@ -545,14 +545,14 @@ Prune rules (`agents.defaults.sandbox.prune`) apply to browser containers too.
 Build your own image and point config to it:
 
 ```bash
-docker build -t my-openclaw-sbx -f Dockerfile.sandbox .
+docker build -t my-remoteclaw-sbx -f Dockerfile.sandbox .
 ```
 
 ```json5
 {
   agents: {
     defaults: {
-      sandbox: { docker: { image: "my-openclaw-sbx" } },
+      sandbox: { docker: { image: "my-remoteclaw-sbx" } },
     },
   },
 }
@@ -586,11 +586,11 @@ Example:
 
 ## Troubleshooting
 
-- Image missing: build with [`scripts/sandbox-setup.sh`](https://github.com/openclaw/openclaw/blob/main/scripts/sandbox-setup.sh) or set `agents.defaults.sandbox.docker.image`.
+- Image missing: build with [`scripts/sandbox-setup.sh`](https://github.com/remoteclaw/remoteclaw/blob/main/scripts/sandbox-setup.sh) or set `agents.defaults.sandbox.docker.image`.
 - Container not running: it will auto-create per session on demand.
 - Permission errors in sandbox: set `docker.user` to a UID:GID that matches your
   mounted workspace ownership (or chown the workspace folder).
-- Custom tools not found: OpenClaw runs commands with `sh -lc` (login shell), which
+- Custom tools not found: RemoteClaw runs commands with `sh -lc` (login shell), which
   sources `/etc/profile` and may reset PATH. Set `docker.env.PATH` to prepend your
   custom tool paths (e.g., `/custom/bin:/usr/local/share/npm-global/bin`), or add
   a script under `/etc/profile.d/` in your Dockerfile.

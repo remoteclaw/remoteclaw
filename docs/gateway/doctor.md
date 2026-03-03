@@ -8,44 +8,44 @@ title: "Doctor"
 
 # Doctor
 
-`openclaw doctor` is the repair + migration tool for OpenClaw. It fixes stale
+`remoteclaw doctor` is the repair + migration tool for RemoteClaw. It fixes stale
 config/state, checks health, and provides actionable repair steps.
 
 ## Quick start
 
 ```bash
-openclaw doctor
+remoteclaw doctor
 ```
 
 ### Headless / automation
 
 ```bash
-openclaw doctor --yes
+remoteclaw doctor --yes
 ```
 
 Accept defaults without prompting (including restart/service/sandbox repair steps when applicable).
 
 ```bash
-openclaw doctor --repair
+remoteclaw doctor --repair
 ```
 
 Apply recommended repairs without prompting (repairs + restarts where safe).
 
 ```bash
-openclaw doctor --repair --force
+remoteclaw doctor --repair --force
 ```
 
 Apply aggressive repairs too (overwrites custom supervisor configs).
 
 ```bash
-openclaw doctor --non-interactive
+remoteclaw doctor --non-interactive
 ```
 
 Run without prompts and only apply safe migrations (config normalization + on-disk state moves). Skips restart/service/sandbox actions that require human confirmation.
 Legacy state migrations run automatically when detected.
 
 ```bash
-openclaw doctor --deep
+remoteclaw doctor --deep
 ```
 
 Scan system services for extra gateway installs (launchd/systemd/schtasks).
@@ -53,7 +53,7 @@ Scan system services for extra gateway installs (launchd/systemd/schtasks).
 If you want to review changes before writing, open the config file first:
 
 ```bash
-cat ~/.openclaw/openclaw.json
+cat ~/.remoteclaw/remoteclaw.json
 ```
 
 ## What it does (summary)
@@ -68,7 +68,7 @@ cat ~/.openclaw/openclaw.json
 - State integrity and permissions checks (sessions, transcripts, state dir).
 - Config file permission checks (chmod 600) when running locally.
 - Model auth health: checks OAuth expiry, can refresh expiring tokens, and reports auth-profile cooldown/disabled states.
-- Extra workspace dir detection (`~/openclaw`).
+- Extra workspace dir detection (`~/remoteclaw`).
 - Sandbox image repair when sandboxing is enabled.
 - Legacy service migration and extra gateway detection.
 - Gateway runtime checks (service installed but not running; cached launchd label).
@@ -98,13 +98,13 @@ schema.
 ### 2) Legacy config key migrations
 
 When the config contains deprecated keys, other commands refuse to run and ask
-you to run `openclaw doctor`.
+you to run `remoteclaw doctor`.
 
 Doctor will:
 
 - Explain which legacy keys were found.
 - Show the migration it applied.
-- Rewrite `~/.openclaw/openclaw.json` with the updated schema.
+- Rewrite `~/.remoteclaw/remoteclaw.json` with the updated schema.
 
 The Gateway also auto-runs doctor migrations on startup when it detects a
 legacy config format, so stale configs are repaired without manual intervention.
@@ -139,18 +139,18 @@ remove the override and restore per-model API routing + costs.
 Doctor can migrate older on-disk layouts into the current structure:
 
 - Sessions store + transcripts:
-  - from `~/.openclaw/sessions/` to `~/.openclaw/agents/<agentId>/sessions/`
+  - from `~/.remoteclaw/sessions/` to `~/.remoteclaw/agents/<agentId>/sessions/`
 - Agent dir:
-  - from `~/.openclaw/agent/` to `~/.openclaw/agents/<agentId>/agent/`
+  - from `~/.remoteclaw/agent/` to `~/.remoteclaw/agents/<agentId>/agent/`
 - WhatsApp auth state (Baileys):
-  - from legacy `~/.openclaw/credentials/*.json` (except `oauth.json`)
-  - to `~/.openclaw/credentials/whatsapp/<accountId>/...` (default account id: `default`)
+  - from legacy `~/.remoteclaw/credentials/*.json` (except `oauth.json`)
+  - to `~/.remoteclaw/credentials/whatsapp/<accountId>/...` (default account id: `default`)
 
 These migrations are best-effort and idempotent; doctor will emit warnings when
 it leaves any legacy folders behind as backups. The Gateway/CLI also auto-migrates
 the legacy sessions + agent dir on startup so history/auth/models land in the
 per-agent path without a manual doctor run. WhatsApp auth is intentionally only
-migrated via `openclaw doctor`.
+migrated via `remoteclaw doctor`.
 
 ### 4) State integrity checks (session persistence, routing, and safety)
 
@@ -169,12 +169,12 @@ Doctor checks:
   transcript files.
 - **Main session “1-line JSONL”**: flags when the main transcript has only one
   line (history is not accumulating).
-- **Multiple state dirs**: warns when multiple `~/.openclaw` folders exist across
+- **Multiple state dirs**: warns when multiple `~/.remoteclaw` folders exist across
   home directories or when `REMOTECLAW_STATE_DIR` points elsewhere (history can
   split between installs).
 - **Remote mode reminder**: if `gateway.mode=remote`, doctor reminds you to run
   it on the remote host (the state lives there).
-- **Config file permissions**: warns if `~/.openclaw/openclaw.json` is
+- **Config file permissions**: warns if `~/.remoteclaw/remoteclaw.json` is
   group/world readable and offers to tighten to `600`.
 
 ### 5) Model auth health (OAuth expiry)
@@ -203,9 +203,9 @@ switch to legacy names if the current image is missing.
 ### 8) Gateway service migrations and cleanup hints
 
 Doctor detects legacy gateway services (launchd/systemd/schtasks) and
-offers to remove them and install the OpenClaw service using the current gateway
+offers to remove them and install the RemoteClaw service using the current gateway
 port. It can also scan for extra gateway-like services and print cleanup hints.
-Profile-named OpenClaw gateway services are considered first-class and are not
+Profile-named RemoteClaw gateway services are considered first-class and are not
 flagged as "extra."
 
 ### 9) Security warnings
@@ -226,7 +226,7 @@ workspace.
 ### 12) Gateway auth checks (local token)
 
 Doctor warns when `gateway.auth` is missing on a local gateway and offers to
-generate a token. Use `openclaw doctor --generate-gateway-token` to force token
+generate a token. Use `remoteclaw doctor --generate-gateway-token` to force token
 creation in automation.
 
 ### 13) Gateway health check + restart
@@ -248,11 +248,11 @@ rewrite the service file/task to the current defaults.
 
 Notes:
 
-- `openclaw doctor` prompts before rewriting supervisor config.
-- `openclaw doctor --yes` accepts the default repair prompts.
-- `openclaw doctor --repair` applies recommended fixes without prompts.
-- `openclaw doctor --repair --force` overwrites custom supervisor configs.
-- You can always force a full rewrite via `openclaw gateway install --force`.
+- `remoteclaw doctor` prompts before rewriting supervisor config.
+- `remoteclaw doctor --yes` accepts the default repair prompts.
+- `remoteclaw doctor --repair` applies recommended fixes without prompts.
+- `remoteclaw doctor --repair --force` overwrites custom supervisor configs.
+- You can always force a full rewrite via `remoteclaw gateway install --force`.
 
 ### 16) Gateway runtime + port diagnostics
 

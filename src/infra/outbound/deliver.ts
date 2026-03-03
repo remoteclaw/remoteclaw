@@ -91,6 +91,7 @@ type ChannelHandler = {
   chunker: Chunker | null;
   chunkerMode?: "text" | "markdown";
   textChunkLimit?: number;
+  supportsMedia: boolean;
   sendPayload?: (
     payload: ReplyPayload,
     overrides?: {
@@ -163,6 +164,7 @@ function createPluginHandler(
     chunker,
     chunkerMode,
     textChunkLimit: outbound.textChunkLimit,
+    supportsMedia: Boolean(sendMedia),
     sendPayload: outbound.sendPayload
       ? async (payload, overrides) =>
           outbound.sendPayload!({
@@ -720,6 +722,30 @@ async function deliverOutboundPayloadsCore(
         } else {
           await sendTextChunks(payloadSummary.text, sendOverrides);
         }
+        const messageId = results.at(-1)?.messageId;
+        emitMessageSent({
+          success: results.length > beforeCount,
+          content: payloadSummary.text,
+          messageId,
+        });
+        continue;
+      }
+
+      if (!handler.supportsMedia) {
+        log.warn(
+          "Plugin outbound adapter does not implement sendMedia; media URLs will be dropped and text fallback will be used",
+          {
+            channel,
+            to,
+            mediaCount: payloadSummary.mediaUrls.length,
+          },
+        );
+        const fallbackText = payloadSummary.text.trim();
+        if (!fallbackText) {
+          continue;
+        }
+        const beforeCount = results.length;
+        await sendTextChunks(fallbackText, sendOverrides);
         const messageId = results.at(-1)?.messageId;
         emitMessageSent({
           success: results.length > beforeCount,

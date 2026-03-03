@@ -8,8 +8,8 @@ title: "Security & Trust"
 
 ## Documents
 
-- [Threat Model](./THREAT-MODEL-ATLAS.md) - MITRE ATLAS-based threat model for the RemoteClaw ecosystem
-- [Contributing to the Threat Model](./CONTRIBUTING-THREAT-MODEL.md) - How to add threats, mitigations, and attack chains
+- [Threat Model](/security/THREAT-MODEL-ATLAS) - MITRE ATLAS-based threat model for the RemoteClaw ecosystem
+- [Contributing to the Threat Model](/security/CONTRIBUTING-THREAT-MODEL) - How to add threats, mitigations, and attack chains
 
 ## Reporting Vulnerabilities
 

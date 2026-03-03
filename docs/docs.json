@@ -184,14 +184,6 @@
       "destination": "/channels/whatsapp"
     },
     {
-      "source": "/sandbox",
-      "destination": "/cli/sandbox"
-    },
-    {
-      "source": "/sandboxing",
-      "destination": "/gateway/sandboxing"
-    },
-    {
       "source": "/AGENTS.default",
       "destination": "/reference/AGENTS.default"
     },
@@ -278,18 +270,6 @@
     {
       "source": "/start/pairing",
       "destination": "/channels/pairing"
-    },
-    {
-      "source": "/clawhub",
-      "destination": "/tools/clawhub"
-    },
-    {
-      "source": "/clawdhub",
-      "destination": "/tools/clawhub"
-    },
-    {
-      "source": "/tools/clawdhub",
-      "destination": "/tools/clawhub"
     },
     {
       "source": "/configuration",
@@ -472,10 +452,6 @@
       "destination": "/platforms/mac/signing"
     },
     {
-      "source": "/mac/skills",
-      "destination": "/platforms/mac/skills"
-    },
-    {
       "source": "/mac/voice-overlay",
       "destination": "/platforms/mac/voice-overlay"
     },
@@ -500,28 +476,12 @@
       "destination": "/concepts/model-failover"
     },
     {
-      "source": "/model",
-      "destination": "/models"
-    },
-    {
-      "source": "/model/",
-      "destination": "/models"
-    },
-    {
-      "source": "/models",
-      "destination": "/concepts/models"
-    },
-    {
       "source": "/multi-agent",
       "destination": "/concepts/multi-agent"
     },
     {
       "source": "/nix",
       "destination": "/install/nix"
-    },
-    {
-      "source": "/onboarding",
-      "destination": "/start/onboarding"
     },
     {
       "source": "/onboarding-config-protocol",
@@ -572,10 +532,6 @@
       "destination": "/gateway/remote-gateway-readme"
     },
     {
-      "source": "/research/memory",
-      "destination": "/experiments/research/memory"
-    },
-    {
       "source": "/rpc",
       "destination": "/reference/rpc"
     },
@@ -608,14 +564,6 @@
       "destination": "/channels/signal"
     },
     {
-      "source": "/skills",
-      "destination": "/tools/skills"
-    },
-    {
-      "source": "/skills-config",
-      "destination": "/tools/skills-config"
-    },
-    {
       "source": "/slack",
       "destination": "/channels/slack"
     },
@@ -646,10 +594,6 @@
     {
       "source": "/templates/BOOT",
       "destination": "/reference/templates/BOOT"
-    },
-    {
-      "source": "/templates/BOOTSTRAP",
-      "destination": "/reference/templates/BOOTSTRAP"
     },
     {
       "source": "/templates/HEARTBEAT",
@@ -718,22 +662,6 @@
     {
       "source": "/windows",
       "destination": "/platforms/windows"
-    },
-    {
-      "source": "/wizard",
-      "destination": "/start/wizard"
-    },
-    {
-      "source": "/start/wizard-cli-flow",
-      "destination": "/start/wizard-cli-reference"
-    },
-    {
-      "source": "/start/wizard-cli-auth",
-      "destination": "/start/wizard-cli-reference"
-    },
-    {
-      "source": "/start/wizard-cli-outputs",
-      "destination": "/start/wizard-cli-reference"
     },
     {
       "source": "/start/faq",
@@ -826,12 +754,7 @@
               },
               {
                 "group": "First steps",
-                "pages": [
-                  "start/getting-started",
-                  "start/onboarding-overview",
-                  "start/wizard",
-                  "start/onboarding"
-                ]
+                "pages": ["start/getting-started"]
               },
               {
                 "group": "Guides",
@@ -952,7 +875,6 @@
                   "concepts/sessions",
                   "concepts/session-pruning",
                   "concepts/session-tool",
-                  "concepts/memory",
                   "concepts/compaction"
                 ]
               },
@@ -985,7 +907,6 @@
                   "tools/llm-task",
                   "tools/exec",
                   "tools/web",
-                  "tools/apply-patch",
                   "tools/elevated",
                   "tools/thinking",
                   "tools/reactions"
@@ -1002,17 +923,11 @@
               },
               {
                 "group": "Agent coordination",
-                "pages": ["tools/agent-send", "tools/subagents", "tools/multi-agent-sandbox-tools"]
+                "pages": ["tools/agent-send", "tools/subagents"]
               },
               {
-                "group": "Skills",
-                "pages": [
-                  "tools/slash-commands",
-                  "tools/skills",
-                  "tools/skills-config",
-                  "tools/clawhub",
-                  "tools/plugin"
-                ]
+                "group": "Commands and plugins",
+                "pages": ["tools/slash-commands", "tools/plugin"]
               },
               {
                 "group": "Extensions",
@@ -1052,10 +967,6 @@
               {
                 "group": "Overview",
                 "pages": ["providers/index", "providers/models"]
-              },
-              {
-                "group": "Model concepts",
-                "pages": ["concepts/models"]
               },
               {
                 "group": "Configuration",
@@ -1115,7 +1026,6 @@
                   "platforms/mac/release",
                   "platforms/mac/bundled-gateway",
                   "platforms/mac/xpc",
-                  "platforms/mac/skills",
                   "platforms/mac/peekaboo"
                 ]
               }
@@ -1147,12 +1057,8 @@
                     ]
                   },
                   {
-                    "group": "Security and sandboxing",
-                    "pages": [
-                      "gateway/security/index",
-                      "gateway/sandboxing",
-                      "gateway/sandbox-vs-tool-policy-vs-elevated"
-                    ]
+                    "group": "Security",
+                    "pages": ["gateway/security/index"]
                   },
                   {
                     "group": "Protocols and APIs",
@@ -1219,21 +1125,16 @@
                   "cli/health",
                   "cli/hooks",
                   "cli/logs",
-                  "cli/memory",
                   "cli/message",
-                  "cli/models",
                   "cli/node",
                   "cli/nodes",
-                  "cli/onboard",
                   "cli/pairing",
                   "cli/plugins",
                   "cli/qr",
                   "cli/reset",
-                  "cli/sandbox",
                   "cli/security",
                   "cli/sessions",
                   "cli/setup",
-                  "cli/skills",
                   "cli/status",
                   "cli/system",
                   "cli/tui",
@@ -1253,7 +1154,6 @@
                   "reference/AGENTS.default",
                   "reference/templates/AGENTS",
                   "reference/templates/BOOT",
-                  "reference/templates/BOOTSTRAP",
                   "reference/templates/HEARTBEAT",
                   "reference/templates/IDENTITY",
                   "reference/templates/SOUL",
@@ -1263,12 +1163,7 @@
               },
               {
                 "group": "Technical reference",
-                "pages": [
-                  "reference/wizard",
-                  "reference/token-use",
-                  "reference/prompt-caching",
-                  "channels/grammy"
-                ]
+                "pages": ["reference/token-use", "reference/prompt-caching", "channels/grammy"]
               },
               {
                 "group": "Concept internals",
@@ -1292,7 +1187,6 @@
                 "group": "Experiments",
                 "pages": [
                   "experiments/onboarding-config-protocol",
-                  "experiments/research/memory",
                   "experiments/proposals/model-config"
                 ]
               }
@@ -1357,11 +1251,7 @@
               },
               {
                 "group": "第一步",
-                "pages": [
-                  "zh-CN/start/getting-started",
-                  "zh-CN/start/wizard",
-                  "zh-CN/start/onboarding"
-                ]
+                "pages": ["zh-CN/start/getting-started"]
               },
               {
                 "group": "指南",
@@ -1478,7 +1368,6 @@
                   "zh-CN/concepts/sessions",
                   "zh-CN/concepts/session-pruning",
                   "zh-CN/concepts/session-tool",
-                  "zh-CN/concepts/memory",
                   "zh-CN/concepts/compaction"
                 ]
               },
@@ -1511,7 +1400,6 @@
                   "zh-CN/tools/llm-task",
                   "zh-CN/tools/exec",
                   "zh-CN/tools/web",
-                  "zh-CN/tools/apply-patch",
                   "zh-CN/tools/elevated",
                   "zh-CN/tools/thinking",
                   "zh-CN/tools/reactions"
@@ -1528,21 +1416,11 @@
               },
               {
                 "group": "代理协作",
-                "pages": [
-                  "zh-CN/tools/agent-send",
-                  "zh-CN/tools/subagents",
-                  "zh-CN/tools/multi-agent-sandbox-tools"
-                ]
+                "pages": ["zh-CN/tools/agent-send", "zh-CN/tools/subagents"]
               },
               {
-                "group": "技能",
-                "pages": [
-                  "zh-CN/tools/slash-commands",
-                  "zh-CN/tools/skills",
-                  "zh-CN/tools/skills-config",
-                  "zh-CN/tools/clawhub",
-                  "zh-CN/tools/plugin"
-                ]
+                "group": "命令与插件",
+                "pages": ["zh-CN/tools/slash-commands", "zh-CN/tools/plugin"]
               },
               {
                 "group": "扩展",
@@ -1582,10 +1460,6 @@
               {
                 "group": "概览",
                 "pages": ["zh-CN/providers/index", "zh-CN/providers/models"]
-              },
-              {
-                "group": "模型概念",
-                "pages": ["zh-CN/concepts/models"]
               },
               {
                 "group": "配置",
@@ -1643,7 +1517,6 @@
                   "zh-CN/platforms/mac/release",
                   "zh-CN/platforms/mac/bundled-gateway",
                   "zh-CN/platforms/mac/xpc",
-                  "zh-CN/platforms/mac/skills",
                   "zh-CN/platforms/mac/peekaboo"
                 ]
               }
@@ -1673,12 +1546,8 @@
                     ]
                   },
                   {
-                    "group": "安全与沙箱",
-                    "pages": [
-                      "zh-CN/gateway/security/index",
-                      "zh-CN/gateway/sandboxing",
-                      "zh-CN/gateway/sandbox-vs-tool-policy-vs-elevated"
-                    ]
+                    "group": "安全",
+                    "pages": ["zh-CN/gateway/security/index"]
                   },
                   {
                     "group": "协议与 API",
@@ -1749,19 +1618,14 @@
                   "zh-CN/cli/health",
                   "zh-CN/cli/hooks",
                   "zh-CN/cli/logs",
-                  "zh-CN/cli/memory",
                   "zh-CN/cli/message",
-                  "zh-CN/cli/models",
                   "zh-CN/cli/nodes",
-                  "zh-CN/cli/onboard",
                   "zh-CN/cli/pairing",
                   "zh-CN/cli/plugins",
                   "zh-CN/cli/reset",
-                  "zh-CN/cli/sandbox",
                   "zh-CN/cli/security",
                   "zh-CN/cli/sessions",
                   "zh-CN/cli/setup",
-                  "zh-CN/cli/skills",
                   "zh-CN/cli/status",
                   "zh-CN/cli/system",
                   "zh-CN/cli/tui",
@@ -1780,7 +1644,6 @@
                   "zh-CN/reference/AGENTS.default",
                   "zh-CN/reference/templates/AGENTS",
                   "zh-CN/reference/templates/BOOT",
-                  "zh-CN/reference/templates/BOOTSTRAP",
                   "zh-CN/reference/templates/HEARTBEAT",
                   "zh-CN/reference/templates/IDENTITY",
                   "zh-CN/reference/templates/SOUL",
@@ -1790,7 +1653,7 @@
               },
               {
                 "group": "技术参考",
-                "pages": ["zh-CN/reference/wizard", "zh-CN/reference/token-use"]
+                "pages": ["zh-CN/reference/token-use"]
               },
               {
                 "group": "概念内部机制",
@@ -1816,7 +1679,6 @@
                   "zh-CN/experiments/onboarding-config-protocol",
                   "zh-CN/experiments/plans/cron-add-hardening",
                   "zh-CN/experiments/plans/group-policy-hardening",
-                  "zh-CN/experiments/research/memory",
                   "zh-CN/experiments/proposals/model-config"
                 ]
               }
@@ -1874,7 +1736,7 @@
               },
               {
                 "group": "初回セットアップ",
-                "pages": ["ja-JP/start/getting-started", "ja-JP/start/wizard"]
+                "pages": ["ja-JP/start/getting-started"]
               }
             ]
           }

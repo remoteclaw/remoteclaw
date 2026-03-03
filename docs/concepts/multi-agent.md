@@ -28,14 +28,14 @@ across agents (it causes auth/session collisions). If you want to share creds,
 copy `auth-profiles.json` into the other agent's `agentDir`.
 
 Skills are per-agent via each workspace’s `skills/` folder, with shared skills
-available from `~/.openclaw/skills`. See [Skills: per-agent vs shared](/tools/skills#per-agent-vs-shared-skills).
+available from `~/.openclaw/skills`.
 
 The Gateway can host **one agent** (default) or **many agents** side-by-side.
 
 **Workspace note:** each agent’s workspace is the **default cwd**, not a hard
 sandbox. Relative paths resolve inside the workspace, but absolute paths can
 reach other host locations unless sandboxing is enabled. See
-[Sandboxing](/gateway/sandboxing).
+[Gateway configuration](/gateway/configuration#agentsdefaultssandbox).
 
 ## Paths (quick map)
 
@@ -533,4 +533,4 @@ Note: `tools.elevated` is **global** and sender-based; it is not configurable pe
 If you need per-agent boundaries, use `agents.list[].tools` to deny `exec`.
 For group targeting, use `agents.list[].groupChat.mentionPatterns` so @mentions map cleanly to the intended agent.
 
-See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for detailed examples.
+See [Gateway configuration](/gateway/configuration#agentsdefaultssandbox) for detailed examples.

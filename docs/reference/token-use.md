@@ -166,4 +166,4 @@ rejects that combination with HTTP 401.
 - Keep skill descriptions short (skill list is injected into the prompt).
 - Prefer smaller models for verbose, exploratory work.
 
-See [Skills](/tools/skills) for the exact skill list overhead formula.
+Keep skill descriptions short to minimize prompt overhead.

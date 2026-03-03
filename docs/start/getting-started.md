@@ -58,7 +58,7 @@ Check your Node version with `node --version` if you are unsure.
     ```
 
     The wizard configures auth, gateway settings, and optional channels.
-    See [Onboarding Wizard](/start/wizard) for details.
+    See [Setup](/start/setup) for details.
 
   </Step>
   <Step title="Check the Gateway">
@@ -114,11 +114,11 @@ Full environment variable reference: [Environment vars](/help/environment).
 ## Go deeper
 
 <Columns>
-  <Card title="Onboarding Wizard (details)" href="/start/wizard">
-    Full CLI wizard reference and advanced options.
+  <Card title="Setup" href="/start/setup">
+    Full setup reference and advanced options.
   </Card>
-  <Card title="macOS app onboarding" href="/start/onboarding">
-    First run flow for the macOS app.
+  <Card title="Configuration" href="/gateway/configuration">
+    Gateway configuration reference.
   </Card>
 </Columns>
 

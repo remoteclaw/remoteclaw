@@ -866,12 +866,10 @@ Built-in baseline for chat-driven agent turns: non-owner senders cannot use the 
 
 ## Sandboxing (recommended)
 
-Dedicated doc: [Sandboxing](/gateway/sandboxing)
-
 Two complementary approaches:
 
 - **Run the full Gateway in Docker** (container boundary): [Docker](/install/docker)
-- **Tool sandbox** (`agents.defaults.sandbox`, host gateway + Docker-isolated tools): [Sandboxing](/gateway/sandboxing)
+- **Tool sandbox** (`agents.defaults.sandbox`, host gateway + Docker-isolated tools): [Gateway configuration](/gateway/configuration#agentsdefaultssandbox)
 
 Note: to prevent cross-agent access, keep `agents.defaults.sandbox.scope` at `"agent"` (default)
 or `"session"` for stricter per-session isolation. `scope: "shared"` uses a
@@ -930,7 +928,7 @@ Example strict policy:
 
 With multi-agent routing, each agent can have its own sandbox + tool policy:
 use this to give **full access**, **read-only**, or **no access** per agent.
-See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for full details
+See [Multi-Agent Routing](/concepts/multi-agent) for full details
 and precedence rules.
 
 Common use cases:

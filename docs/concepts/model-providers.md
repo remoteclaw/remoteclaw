@@ -9,7 +9,7 @@ title: "Model Providers"
 # Model providers
 
 This page covers **LLM/model providers** (not chat channels like WhatsApp/Telegram).
-For model selection rules, see [/concepts/models](/concepts/models).
+For model failover rules, see [Model failover](/concepts/model-failover).
 
 ## Quick rules
 

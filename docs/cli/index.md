@@ -13,7 +13,6 @@ This page describes the current CLI behavior. If commands change, update this do
 ## Command pages
 
 - [`setup`](/cli/setup)
-- [`onboard`](/cli/onboard)
 - [`configure`](/cli/configure)
 - [`config`](/cli/config)
 - [`completion`](/cli/completion)
@@ -32,14 +31,11 @@ This page describes the current CLI behavior. If commands change, update this do
 - [`gateway`](/cli/gateway)
 - [`logs`](/cli/logs)
 - [`system`](/cli/system)
-- [`models`](/cli/models)
-- [`memory`](/cli/memory)
 - [`directory`](/cli/directory)
 - [`nodes`](/cli/nodes)
 - [`devices`](/cli/devices)
 - [`node`](/cli/node)
 - [`approvals`](/cli/approvals)
-- [`sandbox`](/cli/sandbox)
 - [`tui`](/cli/tui)
 - [`browser`](/cli/browser)
 - [`cron`](/cli/cron)
@@ -52,7 +48,6 @@ This page describes the current CLI behavior. If commands change, update this do
 - [`plugins`](/cli/plugins) (plugin commands)
 - [`channels`](/cli/channels)
 - [`security`](/cli/security)
-- [`skills`](/cli/skills)
 - [`daemon`](/cli/daemon) (legacy alias for gateway service commands)
 - [`clawbot`](/cli/clawbot) (legacy alias namespace)
 - [`voicecall`](/cli/voicecall) (plugin; if installed)
@@ -93,7 +88,6 @@ Palette source of truth: `src/terminal/palette.ts` (aka “lobster seam”).
 ```
 openclaw [--dev] [--profile <name>] <command>
   setup
-  onboard
   configure
   config
     get
@@ -116,10 +110,6 @@ openclaw [--dev] [--profile <name>] <command>
     login
     logout
   directory
-  skills
-    list
-    info
-    check
   plugins
     list
     info
@@ -127,10 +117,6 @@ openclaw [--dev] [--profile <name>] <command>
     enable
     disable
     doctor
-  memory
-    status
-    index
-    search
   message
   agent
   agents
@@ -176,10 +162,6 @@ openclaw [--dev] [--profile <name>] <command>
     scan
     auth add|setup-token|paste-token
     auth order get|set|clear
-  sandbox
-    list
-    recreate
-    explain
   cron
     status
     list
@@ -274,14 +256,6 @@ Manage extensions and their config:
 - `openclaw plugins doctor` — report plugin load errors.
 
 Most plugin changes require a gateway restart. See [/plugin](/tools/plugin).
-
-## Memory
-
-Vector search over `MEMORY.md` + `memory/*.md`:
-
-- `openclaw memory status` — show index stats.
-- `openclaw memory index` — reindex memory files.
-- `openclaw memory search "<query>"` (or `--query "<query>"`) — semantic search over memory.
 
 ## Chat slash commands
 
@@ -459,8 +433,6 @@ Options:
 - `--eligible`: show only ready skills.
 - `--json`: output JSON (no styling).
 - `-v`, `--verbose`: include missing requirements detail.
-
-Tip: use `npx clawhub` to search, install, and sync skills.
 
 ### `pairing`
 
@@ -777,8 +749,6 @@ Tip: when calling `config.set`/`config.apply`/`config.patch` directly, pass `bas
 `config.get` if a config already exists.
 
 ## Models
-
-See [/concepts/models](/concepts/models) for fallback behavior and scanning strategy.
 
 Preferred Anthropic auth (setup-token):
 

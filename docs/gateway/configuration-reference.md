@@ -926,7 +926,7 @@ See [Typing Indicators](/concepts/typing-indicators).
 
 ### `agents.defaults.sandbox`
 
-Optional **Docker sandboxing** for the embedded agent. See [Sandboxing](/gateway/sandboxing) for the full guide.
+Optional **Docker sandboxing** for the embedded agent.
 
 ```json5
 {
@@ -1224,7 +1224,7 @@ Within each tier, the first matching `bindings` entry wins.
 
 </Accordion>
 
-See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for precedence details.
+See [Multi-Agent Routing](/concepts/multi-agent) for precedence details.
 
 ---
 

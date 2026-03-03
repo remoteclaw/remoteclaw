@@ -80,7 +80,7 @@ openclaw setup
 ```
 
 Full workspace layout + backup guide: [Agent workspace](/concepts/agent-workspace)
-Memory workflow: [Memory](/concepts/memory)
+Workspace layout: [Agent workspace](/concepts/agent-workspace)
 
 Optional: choose a different workspace with `agents.defaults.workspace` (supports `~`).
 

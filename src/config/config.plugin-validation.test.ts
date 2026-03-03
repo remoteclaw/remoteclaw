@@ -35,6 +35,7 @@ describe("config plugin validation", () => {
   let fixtureRoot = "";
   let suiteHome = "";
   let badPluginDir = "";
+  let enumPluginDir = "";
   let bluebubblesPluginDir = "";
   const envSnapshot = {
     REMOTECLAW_STATE_DIR: process.env.REMOTECLAW_STATE_DIR,
@@ -48,7 +49,22 @@ describe("config plugin validation", () => {
     suiteHome = path.join(fixtureRoot, "home");
     await fs.mkdir(suiteHome, { recursive: true });
     badPluginDir = path.join(suiteHome, "bad-plugin");
+    enumPluginDir = path.join(suiteHome, "enum-plugin");
     bluebubblesPluginDir = path.join(suiteHome, "bluebubbles-plugin");
+    await writePluginFixture({
+      dir: enumPluginDir,
+      id: "enum-plugin",
+      schema: {
+        type: "object",
+        properties: {
+          fileFormat: {
+            type: "string",
+            enum: ["markdown", "html"],
+          },
+        },
+        required: ["fileFormat"],
+      },
+    });
     process.env.REMOTECLAW_STATE_DIR = path.join(suiteHome, ".remoteclaw");
     process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS = "10000";
     clearPluginManifestRegistryCache();
@@ -174,10 +190,31 @@ describe("config plugin validation", () => {
     if (!res.ok) {
       const hasIssue = res.issues.some(
         (issue) =>
-          issue.path === "plugins.entries.bad-plugin.config" &&
+          issue.path.startsWith("plugins.entries.bad-plugin.config") &&
           issue.message.includes("invalid config"),
       );
       expect(hasIssue).toBe(true);
+    }
+  });
+
+  it("surfaces allowed enum values for plugin config diagnostics", async () => {
+    const res = validateInSuite({
+      agents: { list: [{ id: "pi" }] },
+      plugins: {
+        enabled: true,
+        load: { paths: [enumPluginDir] },
+        entries: { "enum-plugin": { config: { fileFormat: "txt" } } },
+      },
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      const issue = res.issues.find(
+        (entry) => entry.path === "plugins.entries.enum-plugin.config.fileFormat",
+      );
+      expect(issue).toBeDefined();
+      expect(issue?.message).toContain('allowed: "markdown", "html"');
+      expect(issue?.allowedValues).toEqual(["markdown", "html"]);
+      expect(issue?.allowedValuesHiddenCount).toBe(0);
     }
   });
 

@@ -1,7 +1,26 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { findRoutedCommand } from "./routes.js";
 
+const runConfigGetMock = vi.hoisted(() => vi.fn(async () => {}));
+const runConfigUnsetMock = vi.hoisted(() => vi.fn(async () => {}));
+const modelsListCommandMock = vi.hoisted(() => vi.fn(async () => {}));
+const modelsStatusCommandMock = vi.hoisted(() => vi.fn(async () => {}));
+
+vi.mock("../config-cli.js", () => ({
+  runConfigGet: runConfigGetMock,
+  runConfigUnset: runConfigUnsetMock,
+}));
+
+vi.mock("../../commands/models.js", () => ({
+  modelsListCommand: modelsListCommandMock,
+  modelsStatusCommand: modelsStatusCommandMock,
+}));
+
 describe("program routes", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   function expectRoute(path: string[]) {
     const route = findRoutedCommand(path);
     expect(route).not.toBeNull();
@@ -56,5 +75,65 @@ describe("program routes", () => {
 
   it("returns false for config unset route when path argument is missing", async () => {
     await expectRunFalse(["config", "unset"], ["node", "remoteclaw", "config", "unset"]);
+  });
+
+  it("passes config get path correctly when root option values precede command", async () => {
+    const route = expectRoute(["config", "get"]);
+    await expect(
+      route?.run([
+        "node",
+        "remoteclaw",
+        "--log-level",
+        "debug",
+        "config",
+        "get",
+        "update.channel",
+        "--json",
+      ]),
+    ).resolves.toBe(true);
+    expect(runConfigGetMock).toHaveBeenCalledWith({ path: "update.channel", json: true });
+  });
+
+  it("passes config unset path correctly when root option values precede command", async () => {
+    const route = expectRoute(["config", "unset"]);
+    await expect(
+      route?.run(["node", "remoteclaw", "--profile", "work", "config", "unset", "update.channel"]),
+    ).resolves.toBe(true);
+    expect(runConfigUnsetMock).toHaveBeenCalledWith({ path: "update.channel" });
+  });
+
+  it("accepts negative-number probe profile values", async () => {
+    const route = expectRoute(["models", "status"]);
+    await expect(
+      route?.run([
+        "node",
+        "openclaw",
+        "models",
+        "status",
+        "--probe-provider",
+        "openai",
+        "--probe-timeout",
+        "5000",
+        "--probe-concurrency",
+        "2",
+        "--probe-max-tokens",
+        "64",
+        "--probe-profile",
+        "-1",
+        "--agent",
+        "default",
+      ]),
+    ).resolves.toBe(true);
+    expect(modelsStatusCommandMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        probeProvider: "openai",
+        probeTimeout: "5000",
+        probeConcurrency: "2",
+        probeMaxTokens: "64",
+        probeProfile: "-1",
+        agent: "default",
+      }),
+      expect.any(Object),
+    );
   });
 });

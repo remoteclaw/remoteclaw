@@ -18,6 +18,7 @@
 - Keep PRs focused (one thing per PR; do not mix unrelated concerns)
 - Describe what & why
 - Reply to or resolve bot review conversations you addressed before asking for review again
+- **Include screenshots** — one showing the problem/before, one showing the fix/after (for UI or visual changes)
 
 ## Review Conversations Are Author-Owned
 

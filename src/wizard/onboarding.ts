@@ -1,4 +1,5 @@
 import { formatCliCommand } from "../cli/command-format.js";
+import { detectOpenClawInstallation, importCommand } from "../commands/import.js";
 import type {
   AgentRuntime,
   GatewayAuthChoice,
@@ -15,7 +16,7 @@ import {
 } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
-import { resolveUserPath } from "../utils.js";
+import { resolveUserPath, shortenHomePath } from "../utils.js";
 import type { QuickstartGatewayDefaults, WizardFlow } from "./onboarding.types.js";
 import { WizardCancelledError, type WizardPrompter } from "./prompts.js";
 
@@ -278,6 +279,30 @@ export async function runOnboardingWizard(
   onboardHelpers.printWizardHeader(runtime);
   await prompter.intro("RemoteClaw onboarding");
   await requireRiskAcknowledgement({ opts, prompter });
+
+  // Detect existing OpenClaw installation and offer migration before proceeding.
+  const openclawDir = detectOpenClawInstallation();
+  if (openclawDir) {
+    const preCheck = await readConfigFileSnapshot();
+    if (!preCheck.exists) {
+      await prompter.note(
+        [
+          `Existing OpenClaw installation found at ${shortenHomePath(openclawDir)}.`,
+          "",
+          "RemoteClaw can import your config, sessions, and channel settings.",
+        ].join("\n"),
+        "OpenClaw detected",
+      );
+      const shouldImport = await prompter.confirm({
+        message: `Import from ${shortenHomePath(openclawDir)}?`,
+        initialValue: true,
+      });
+      if (shouldImport) {
+        await importCommand({ sourcePath: openclawDir }, runtime);
+        await prompter.note("OpenClaw config imported. Continuing with setup.", "Import complete");
+      }
+    }
+  }
 
   const snapshot = await readConfigFileSnapshot();
   let baseConfig: RemoteClawConfig = snapshot.valid ? snapshot.config : {};

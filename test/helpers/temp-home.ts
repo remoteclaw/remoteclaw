@@ -9,7 +9,7 @@ type EnvSnapshot = {
   userProfile: string | undefined;
   homeDrive: string | undefined;
   homePath: string | undefined;
-  openclawHome: string | undefined;
+  remoteclawHome: string | undefined;
   stateDir: string | undefined;
 };
 
@@ -19,7 +19,7 @@ function snapshotEnv(): EnvSnapshot {
     userProfile: process.env.USERPROFILE,
     homeDrive: process.env.HOMEDRIVE,
     homePath: process.env.HOMEPATH,
-    openclawHome: process.env.REMOTECLAW_HOME,
+    remoteclawHome: process.env.REMOTECLAW_HOME,
     stateDir: process.env.REMOTECLAW_STATE_DIR,
   };
 }

@@ -51,10 +51,10 @@ export function parseTimeoutMsOrExit(timeout?: string): number | undefined | nul
   return timeoutMs;
 }
 
-const REMOTECLAW_REPO_URL = "https://github.com/openclaw/openclaw.git";
+const REMOTECLAW_REPO_URL = "https://github.com/remoteclaw/remoteclaw.git";
 const MAX_LOG_CHARS = 8000;
 
-export const DEFAULT_PACKAGE_NAME = "openclaw";
+export const DEFAULT_PACKAGE_NAME = "remoteclaw";
 const CORE_PACKAGE_NAMES = new Set([DEFAULT_PACKAGE_NAME]);
 
 export function normalizeTag(value?: string | null): string | null {
@@ -65,8 +65,8 @@ export function normalizeTag(value?: string | null): string | null {
   if (!trimmed) {
     return null;
   }
-  if (trimmed.startsWith("openclaw@")) {
-    return trimmed.slice("openclaw@".length);
+  if (trimmed.startsWith("remoteclaw@")) {
+    return trimmed.slice("remoteclaw@".length);
   }
   if (trimmed.startsWith(`${DEFAULT_PACKAGE_NAME}@`)) {
     return trimmed.slice(`${DEFAULT_PACKAGE_NAME}@`.length);
@@ -213,7 +213,7 @@ export async function ensureGitCheckout(params: {
     const empty = await isEmptyDir(params.dir);
     if (!empty) {
       throw new Error(
-        `REMOTECLAW_GIT_DIR points at a non-git directory: ${params.dir}. Set REMOTECLAW_GIT_DIR to an empty folder or an openclaw checkout.`,
+        `REMOTECLAW_GIT_DIR points at a non-git directory: ${params.dir}. Set REMOTECLAW_GIT_DIR to an empty folder or a remoteclaw checkout.`,
       );
     }
 

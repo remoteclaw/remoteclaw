@@ -7,7 +7,8 @@
     "@tloncorp/api": "git+https://github.com/tloncorp/api-beta.git#main",
     "@tloncorp/tlon-skill": "0.1.9",
     "@urbit/aura": "^3.0.0",
-    "@urbit/http-api": "^3.0.0"
+    "@urbit/http-api": "^3.0.0",
+    "zod": "^4.3.6"
   },
   "remoteclaw": {
     "extensions": [

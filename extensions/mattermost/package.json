@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "RemoteClaw Mattermost channel plugin",
   "type": "module",
+  "dependencies": {
+    "ws": "^8.19.0",
+    "zod": "^4.3.6"
+  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"

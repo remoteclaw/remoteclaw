@@ -107,12 +107,20 @@ describe("update-startup", () => {
   });
 
   function mockPackageUpdateStatus(tag = "latest", version = "2.0.0") {
+    mockPackageInstallStatus();
+    mockNpmChannelTag(tag, version);
+  }
+
+  function mockPackageInstallStatus() {
     vi.mocked(resolveRemoteClawPackageRoot).mockResolvedValue("/opt/remoteclaw");
     vi.mocked(checkUpdateStatus).mockResolvedValue({
       root: "/opt/remoteclaw",
       installKind: "package",
       packageManager: "npm",
     } satisfies UpdateCheckResult);
+  }
+
+  function mockNpmChannelTag(tag: string, version: string) {
     vi.mocked(resolveNpmChannelTag).mockResolvedValue({
       tag,
       version,
@@ -144,6 +152,20 @@ describe("update-startup", () => {
     return vi.fn().mockResolvedValue({
       ok: true,
       code: 0,
+    });
+  }
+
+  async function runStableUpdateCheck(params: {
+    onUpdateAvailableChange?: ReturnType<typeof vi.fn>;
+  }) {
+    await runGatewayUpdateCheck({
+      cfg: { update: { channel: "stable" } },
+      log: { info: vi.fn() },
+      isNixMode: false,
+      allowInTests: true,
+      ...(params.onUpdateAvailableChange
+        ? { onUpdateAvailableChange: params.onUpdateAvailableChange }
+        : {}),
     });
   }
 
@@ -206,12 +228,7 @@ describe("update-startup", () => {
   });
 
   it("emits update change callback when update state clears", async () => {
-    vi.mocked(resolveRemoteClawPackageRoot).mockResolvedValue("/opt/remoteclaw");
-    vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: "/opt/remoteclaw",
-      installKind: "package",
-      packageManager: "npm",
-    } satisfies UpdateCheckResult);
+    mockPackageInstallStatus();
     vi.mocked(resolveNpmChannelTag)
       .mockResolvedValueOnce({
         tag: "latest",
@@ -223,21 +240,9 @@ describe("update-startup", () => {
       });
 
     const onUpdateAvailableChange = vi.fn();
-    await runGatewayUpdateCheck({
-      cfg: { update: { channel: "stable" } },
-      log: { info: vi.fn() },
-      isNixMode: false,
-      allowInTests: true,
-      onUpdateAvailableChange,
-    });
+    await runStableUpdateCheck({ onUpdateAvailableChange });
     vi.setSystemTime(new Date("2026-01-18T11:00:00Z"));
-    await runGatewayUpdateCheck({
-      cfg: { update: { channel: "stable" } },
-      log: { info: vi.fn() },
-      isNixMode: false,
-      allowInTests: true,
-      onUpdateAvailableChange,
-    });
+    await runStableUpdateCheck({ onUpdateAvailableChange });
 
     expect(onUpdateAvailableChange).toHaveBeenNthCalledWith(1, {
       currentVersion: "1.0.0",
@@ -359,16 +364,8 @@ describe("update-startup", () => {
   });
 
   it("uses current runtime + entrypoint for default auto-update command execution", async () => {
-    vi.mocked(resolveRemoteClawPackageRoot).mockResolvedValue("/opt/remoteclaw");
-    vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: "/opt/remoteclaw",
-      installKind: "package",
-      packageManager: "npm",
-    } satisfies UpdateCheckResult);
-    vi.mocked(resolveNpmChannelTag).mockResolvedValue({
-      tag: "beta",
-      version: "2.0.0-beta.1",
-    });
+    mockPackageInstallStatus();
+    mockNpmChannelTag("beta", "2.0.0-beta.1");
     vi.mocked(runCommandWithTimeout).mockResolvedValue({
       stdout: "{}",
       stderr: "",

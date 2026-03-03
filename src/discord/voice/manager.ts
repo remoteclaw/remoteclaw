@@ -30,6 +30,7 @@ import type { RuntimeEnv } from "../../runtime.js";
 import { transcribeFirstAudio } from "../../stt/preflight.js";
 import { parseTtsDirectives } from "../../tts/tts-core.js";
 import { resolveTtsConfig, textToSpeech, type ResolvedTtsConfig } from "../../tts/tts.js";
+import { formatMention } from "../mentions.js";
 import { resolveDiscordOwnerAccess } from "../monitor/allow-list.js";
 import { formatDiscordUserTag } from "../monitor/format.js";
 
@@ -353,7 +354,12 @@ export class DiscordVoiceManager {
     const existing = this.sessions.get(guildId);
     if (existing && existing.channelId === channelId) {
       logVoiceVerbose(`join: already connected to guild ${guildId} channel ${channelId}`);
-      return { ok: true, message: `Already connected to <#${channelId}>.`, guildId, channelId };
+      return {
+        ok: true,
+        message: `Already connected to ${formatMention({ channelId })}.`,
+        guildId,
+        channelId,
+      };
     }
     if (existing) {
       logVoiceVerbose(`join: replacing existing session for guild ${guildId}`);
@@ -493,7 +499,7 @@ export class DiscordVoiceManager {
     this.sessions.set(guildId, entry);
     return {
       ok: true,
-      message: `Joined <#${channelId}>.`,
+      message: `Joined ${formatMention({ channelId })}.`,
       guildId,
       channelId,
     };
@@ -514,7 +520,7 @@ export class DiscordVoiceManager {
     logVoiceVerbose(`leave: disconnected from guild ${guildId} channel ${entry.channelId}`);
     return {
       ok: true,
-      message: `Left <#${entry.channelId}>.`,
+      message: `Left ${formatMention({ channelId: entry.channelId })}.`,
       guildId,
       channelId: entry.channelId,
     };

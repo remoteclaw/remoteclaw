@@ -128,7 +128,7 @@ Use this when debugging auth or deciding what to back up:
 
 - **WhatsApp**: `~/.remoteclaw/credentials/whatsapp/<accountId>/creds.json`
 - **Telegram bot token**: config/env or `channels.telegram.tokenFile`
-- **Discord bot token**: config/env (token file not yet supported)
+- **Discord bot token**: config/env or SecretRef (env/file/exec providers)
 - **Slack tokens**: config/env (`channels.slack.*`)
 - **Pairing allowlists**: `~/.remoteclaw/credentials/<channel>-allowFrom.json`
 - **Agent auth profiles**: `~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json`

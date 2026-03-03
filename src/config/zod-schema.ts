@@ -186,6 +186,19 @@ export const RemoteClawSchema = z
       })
       .strict()
       .optional(),
+    cli: z
+      .object({
+        banner: z
+          .object({
+            taglineMode: z
+              .union([z.literal("random"), z.literal("default"), z.literal("off")])
+              .optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
     update: z
       .object({
         channel: z.union([z.literal("stable"), z.literal("beta"), z.literal("next")]).optional(),

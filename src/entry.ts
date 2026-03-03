@@ -11,8 +11,8 @@ import { installProcessWarningFilter } from "./infra/warning-filter.js";
 import { attachChildProcessBridge } from "./process/child-process-bridge.js";
 
 const ENTRY_WRAPPER_PAIRS = [
-  { wrapperBasename: "openclaw.mjs", entryBasename: "entry.js" },
-  { wrapperBasename: "openclaw.js", entryBasename: "entry.js" },
+  { wrapperBasename: "remoteclaw.mjs", entryBasename: "entry.js" },
+  { wrapperBasename: "remoteclaw.js", entryBasename: "entry.js" },
 ] as const;
 
 // Guard: only run entry-point logic when this file is the main module.

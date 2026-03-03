@@ -65,10 +65,10 @@ node --import tsx scripts/repro/tsx-name-repro.ts
 
   ```bash
   pnpm exec tsc --watch --preserveWatchOutput
-  node --watch openclaw.mjs status
+  node --watch remoteclaw.mjs status
   ```
 
-- Confirmed locally: `pnpm exec tsc -p tsconfig.json` + `node openclaw.mjs status` works on Node 25.
+- Confirmed locally: `pnpm exec tsc -p tsconfig.json` + `node remoteclaw.mjs status` works on Node 25.
 - Disable esbuild keepNames in the TS loader if possible (prevents `__name` helper insertion); tsx does not currently expose this.
 - Test Node LTS (22/24) with `tsx` to see if the issue is Node 25–specific.
 

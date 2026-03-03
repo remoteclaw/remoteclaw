@@ -56,14 +56,14 @@ describe("infra parsing", () => {
       ).toBe(true);
     });
 
-    it("returns true for dist/entry.js when launched via openclaw.mjs wrapper", () => {
+    it("returns true for dist/entry.js when launched via remoteclaw.mjs wrapper", () => {
       expect(
         isMainModule({
           currentFile: "/repo/dist/entry.js",
-          argv: ["node", "/repo/openclaw.mjs"],
+          argv: ["node", "/repo/remoteclaw.mjs"],
           cwd: "/repo",
           env: {},
-          wrapperEntryPairs: [{ wrapperBasename: "openclaw.mjs", entryBasename: "entry.js" }],
+          wrapperEntryPairs: [{ wrapperBasename: "remoteclaw.mjs", entryBasename: "entry.js" }],
         }),
       ).toBe(true);
     });
@@ -72,7 +72,7 @@ describe("infra parsing", () => {
       expect(
         isMainModule({
           currentFile: "/repo/dist/entry.js",
-          argv: ["node", "/repo/openclaw.mjs"],
+          argv: ["node", "/repo/remoteclaw.mjs"],
           cwd: "/repo",
           env: {},
         }),
@@ -83,10 +83,10 @@ describe("infra parsing", () => {
       expect(
         isMainModule({
           currentFile: "/repo/dist/index.js",
-          argv: ["node", "/repo/openclaw.mjs"],
+          argv: ["node", "/repo/remoteclaw.mjs"],
           cwd: "/repo",
           env: {},
-          wrapperEntryPairs: [{ wrapperBasename: "openclaw.mjs", entryBasename: "entry.js" }],
+          wrapperEntryPairs: [{ wrapperBasename: "remoteclaw.mjs", entryBasename: "entry.js" }],
         }),
       ).toBe(false);
     });

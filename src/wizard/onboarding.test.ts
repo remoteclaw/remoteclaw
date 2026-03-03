@@ -54,8 +54,6 @@ const finalizeOnboardingWizard = vi.hoisted(() =>
 );
 const listChannelPlugins = vi.hoisted(() => vi.fn(() => []));
 const logConfigUpdated = vi.hoisted(() => vi.fn(() => {}));
-const setupInternalHooks = vi.hoisted(() => vi.fn(async (cfg) => cfg));
-
 const setupChannels = vi.hoisted(() => vi.fn(async (cfg) => cfg));
 const healthCommand = vi.hoisted(() => vi.fn(async () => {}));
 const ensureWorkspaceAndSessions = vi.hoisted(() => vi.fn(async () => {}));
@@ -90,10 +88,6 @@ vi.mock("../agents/auth-profiles.js", () => ({
 
 vi.mock("../commands/health.js", () => ({
   healthCommand,
-}));
-
-vi.mock("../commands/onboard-hooks.js", () => ({
-  setupInternalHooks,
 }));
 
 vi.mock("../config/config.js", () => ({

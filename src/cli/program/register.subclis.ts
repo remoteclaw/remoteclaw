@@ -137,15 +137,6 @@ const entries: SubCliEntry[] = [
     },
   },
   {
-    name: "docs",
-    description: "Search the live OpenClaw docs",
-    hasSubcommands: false,
-    register: async (program) => {
-      const mod = await import("../docs-cli.js");
-      mod.registerDocsCli(program);
-    },
-  },
-  {
     name: "hooks",
     description: "Manage internal agent hooks",
     hasSubcommands: true,
@@ -170,15 +161,6 @@ const entries: SubCliEntry[] = [
     register: async (program) => {
       const mod = await import("../qr-cli.js");
       mod.registerQrCli(program);
-    },
-  },
-  {
-    name: "clawbot",
-    description: "Legacy clawbot command aliases",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../clawbot-cli.js");
-      mod.registerClawbotCli(program);
     },
   },
   {

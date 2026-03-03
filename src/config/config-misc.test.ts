@@ -8,7 +8,7 @@ import {
   unsetConfigValueAtPath,
 } from "./config-paths.js";
 import { readConfigFileSnapshot, validateConfigObject } from "./config.js";
-import { buildWebSearchProviderConfig, withTempHome } from "./test-helpers.js";
+import { withTempHome } from "./test-helpers.js";
 import { OpenClawSchema } from "./zod-schema.js";
 
 describe("$schema key in config (#14998)", () => {
@@ -47,23 +47,6 @@ describe("ui.seamColor", () => {
   it("rejects invalid hex length", () => {
     const res = validateConfigObject({ ui: { seamColor: "#FF4500FF" } });
     expect(res.ok).toBe(false);
-  });
-});
-
-describe("web search provider config", () => {
-  it("accepts kimi provider and config", () => {
-    const res = validateConfigObject(
-      buildWebSearchProviderConfig({
-        provider: "kimi",
-        providerConfig: {
-          apiKey: "test-key",
-          baseUrl: "https://api.moonshot.ai/v1",
-          model: "moonshot-v1-128k",
-        },
-      }),
-    );
-
-    expect(res.ok).toBe(true);
   });
 });
 

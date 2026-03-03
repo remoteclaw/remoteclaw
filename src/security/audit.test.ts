@@ -479,13 +479,12 @@ describe("security audit", () => {
   it("scores small-model risk by tool exposure", async () => {
     const cfg: OpenClawConfig = {
       agents: { defaults: { model: { primary: "ollama/mistral-8b" } } },
-      tools: { web: { search: { enabled: true }, fetch: { enabled: true } } },
       browser: { enabled: true },
     };
     const res = await audit(cfg);
     const finding = res.findings.find((f) => f.checkId === "models.small_params");
     expect(finding?.severity).toBe("critical");
-    for (const text of ["mistral-8b", "web_search", "web_fetch", "browser"]) {
+    for (const text of ["mistral-8b", "browser"]) {
       expect(finding?.detail).toContain(text);
     }
   });

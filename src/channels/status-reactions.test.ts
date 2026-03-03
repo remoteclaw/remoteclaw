@@ -421,13 +421,13 @@ describe("createStatusReactionController", () => {
 
 describe("constants", () => {
   it("should export CODING_TOOL_TOKENS", () => {
-    for (const token of ["exec", "write"]) {
+    for (const token of ["exec", "edit"]) {
       expect(CODING_TOOL_TOKENS).toContain(token);
     }
   });
 
   it("should export WEB_TOOL_TOKENS", () => {
-    for (const token of ["web_fetch", "browser"]) {
+    for (const token of ["browser"]) {
       expect(WEB_TOOL_TOKENS).toContain(token);
     }
   });

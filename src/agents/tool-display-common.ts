@@ -166,7 +166,7 @@ export function resolveWriteDetail(toolKey: string, args: unknown): string | und
     return `from ${path}`;
   }
 
-  const destinationPrefix = toolKey === "edit" ? "in" : "to";
+  const destinationPrefix = "in";
   const content =
     typeof record.content === "string"
       ? record.content

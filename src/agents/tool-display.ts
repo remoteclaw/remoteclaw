@@ -79,7 +79,7 @@ export function resolveToolDisplay(params: {
   if (key === "exec") {
     detail = resolveExecDetail(params.args);
   }
-  if (!detail && (key === "write" || key === "edit" || key === "attach")) {
+  if (!detail && (key === "edit" || key === "attach")) {
     detail = resolveWriteDetail(key, params.args);
   }
 

@@ -35,11 +35,6 @@
       "title": "Process",
       "detailKeys": ["sessionId"]
     },
-    "read": {
-      "icon": "fileText",
-      "title": "Read",
-      "detailKeys": ["path"]
-    },
     "write": {
       "icon": "edit",
       "title": "Write",

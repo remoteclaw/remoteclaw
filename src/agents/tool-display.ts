@@ -8,7 +8,6 @@ import {
   resolveActionSpec,
   resolveDetailFromKeys,
   resolveExecDetail,
-  resolveReadDetail,
   resolveWebSearchDetail,
   resolveWriteDetail,
   type ToolDisplaySpec as ToolDisplaySpecBase,
@@ -80,9 +79,6 @@ export function resolveToolDisplay(params: {
   let detail: string | undefined;
   if (key === "exec") {
     detail = resolveExecDetail(params.args);
-  }
-  if (!detail && key === "read") {
-    detail = resolveReadDetail(params.args);
   }
   if (!detail && (key === "write" || key === "edit" || key === "attach")) {
     detail = resolveWriteDetail(key, params.args);

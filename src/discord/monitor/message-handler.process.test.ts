@@ -116,6 +116,19 @@ const { processDiscordMessage } = await import("./message-handler.process.js");
 
 const createBaseContext = createBaseDiscordMessageContext;
 
+function mockDispatchSingleBlockReply(payload: { text: string; isReasoning?: boolean }) {
+  dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
+    await params?.dispatcher.sendBlockReply(payload);
+    return { queuedFinal: false, counts: { final: 0, tool: 0, block: 1 } };
+  });
+}
+
+async function processStreamOffDiscordMessage() {
+  const ctx = await createBaseContext({ discordConfig: { streamMode: "off" } });
+  // oxlint-disable-next-line typescript/no-explicit-any
+  await processDiscordMessage(ctx as any);
+}
+
 beforeEach(() => {
   vi.useRealTimers();
   sendMocks.reactMessageDiscord.mockClear();
@@ -459,15 +472,8 @@ describe("processDiscordMessage draft streaming", () => {
   });
 
   it("suppresses reasoning payload delivery to Discord", async () => {
-    dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
-      await params?.dispatcher.sendBlockReply({ text: "thinking...", isReasoning: true });
-      return { queuedFinal: false, counts: { final: 0, tool: 0, block: 1 } };
-    });
-
-    const ctx = await createBaseContext({ discordConfig: { streamMode: "off" } });
-
-    // oxlint-disable-next-line typescript/no-explicit-any
-    await processDiscordMessage(ctx as any);
+    mockDispatchSingleBlockReply({ text: "thinking...", isReasoning: true });
+    await processStreamOffDiscordMessage();
 
     expect(deliverDiscordReply).not.toHaveBeenCalled();
   });
@@ -491,15 +497,8 @@ describe("processDiscordMessage draft streaming", () => {
   });
 
   it("delivers non-reasoning block payloads to Discord", async () => {
-    dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
-      await params?.dispatcher.sendBlockReply({ text: "hello from block stream" });
-      return { queuedFinal: false, counts: { final: 0, tool: 0, block: 1 } };
-    });
-
-    const ctx = await createBaseContext({ discordConfig: { streamMode: "off" } });
-
-    // oxlint-disable-next-line typescript/no-explicit-any
-    await processDiscordMessage(ctx as any);
+    mockDispatchSingleBlockReply({ text: "hello from block stream" });
+    await processStreamOffDiscordMessage();
 
     expect(deliverDiscordReply).toHaveBeenCalledTimes(1);
   });

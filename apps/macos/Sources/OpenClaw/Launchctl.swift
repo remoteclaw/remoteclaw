@@ -59,8 +59,8 @@ enum LaunchAgentPlist {
             .trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
         let port = Self.extractFlagInt(programArguments, flag: "--port")
         let bind = Self.extractFlagString(programArguments, flag: "--bind")?.lowercased()
-        let token = env["OPENCLAW_GATEWAY_TOKEN"]?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
-        let password = env["OPENCLAW_GATEWAY_PASSWORD"]?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
+        let token = env["REMOTECLAW_GATEWAY_TOKEN"]?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
+        let password = env["REMOTECLAW_GATEWAY_PASSWORD"]?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
         return LaunchAgentPlistSnapshot(
             programArguments: programArguments,
             environment: env,

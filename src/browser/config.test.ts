@@ -25,8 +25,8 @@ describe("browser config", () => {
     expect(resolved.remoteCdpHandshakeTimeoutMs).toBe(3000);
   });
 
-  it("derives default ports from OPENCLAW_GATEWAY_PORT when unset", () => {
-    withEnv({ OPENCLAW_GATEWAY_PORT: "19001" }, () => {
+  it("derives default ports from REMOTECLAW_GATEWAY_PORT when unset", () => {
+    withEnv({ REMOTECLAW_GATEWAY_PORT: "19001" }, () => {
       const resolved = resolveBrowserConfig(undefined);
       expect(resolved.controlPort).toBe(19003);
       const chrome = resolveProfile(resolved, "chrome");
@@ -41,7 +41,7 @@ describe("browser config", () => {
   });
 
   it("derives default ports from gateway.port when env is unset", () => {
-    withEnv({ OPENCLAW_GATEWAY_PORT: undefined }, () => {
+    withEnv({ REMOTECLAW_GATEWAY_PORT: undefined }, () => {
       const resolved = resolveBrowserConfig(undefined, { gateway: { port: 19011 } });
       expect(resolved.controlPort).toBe(19013);
       const chrome = resolveProfile(resolved, "chrome");

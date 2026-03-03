@@ -14,13 +14,13 @@ export function mountApp(pathname: string) {
 
 export function registerAppMountHooks() {
   beforeEach(() => {
-    window.__OPENCLAW_CONTROL_UI_BASE_PATH__ = undefined;
+    window.__REMOTECLAW_CONTROL_UI_BASE_PATH__ = undefined;
     localStorage.clear();
     document.body.innerHTML = "";
   });
 
   afterEach(() => {
-    window.__OPENCLAW_CONTROL_UI_BASE_PATH__ = undefined;
+    window.__REMOTECLAW_CONTROL_UI_BASE_PATH__ = undefined;
     localStorage.clear();
     document.body.innerHTML = "";
   });

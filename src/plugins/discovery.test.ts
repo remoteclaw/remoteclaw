@@ -18,9 +18,9 @@ function makeTempDir() {
 async function withStateDir<T>(stateDir: string, fn: () => Promise<T>) {
   return await withEnvAsync(
     {
-      OPENCLAW_STATE_DIR: stateDir,
+      REMOTECLAW_STATE_DIR: stateDir,
       CLAWDBOT_STATE_DIR: undefined,
-      OPENCLAW_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
+      REMOTECLAW_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
     },
     fn,
   );

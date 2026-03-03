@@ -468,7 +468,7 @@ Neither file overrides existing env vars. You can also set inline env vars in co
 }
 ```
 
-Env var equivalent: `OPENCLAW_LOAD_SHELL_ENV=1`
+Env var equivalent: `REMOTECLAW_LOAD_SHELL_ENV=1`
 </Accordion>
 
 <Accordion title="Env var substitution in config values">
@@ -476,7 +476,7 @@ Env var equivalent: `OPENCLAW_LOAD_SHELL_ENV=1`
 
 ```json5
 {
-  gateway: { auth: { token: "${OPENCLAW_GATEWAY_TOKEN}" } },
+  gateway: { auth: { token: "${REMOTECLAW_GATEWAY_TOKEN}" } },
   models: { providers: { custom: { apiKey: "${CUSTOM_API_KEY}" } } },
 }
 ```

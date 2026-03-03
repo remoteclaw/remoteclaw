@@ -262,7 +262,7 @@ describe("resolveToolsBySender", () => {
     expect(warningSpy).toHaveBeenCalledTimes(1);
     expect(String(warningSpy.mock.calls[0]?.[0])).toContain(`toolsBySender key "${legacyKey}"`);
     expect(warningSpy.mock.calls[0]?.[1]).toMatchObject({
-      code: "OPENCLAW_TOOLS_BY_SENDER_UNTYPED_KEY",
+      code: "REMOTECLAW_TOOLS_BY_SENDER_UNTYPED_KEY",
     });
   });
 });

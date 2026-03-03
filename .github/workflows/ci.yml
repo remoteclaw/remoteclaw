@@ -48,5 +48,5 @@ jobs:
       - name: Test
         run: pnpm test
         env:
-          OPENCLAW_TEST_WORKERS: 2
-          OPENCLAW_TEST_MAX_OLD_SPACE_SIZE_MB: 4096
+          REMOTECLAW_TEST_WORKERS: 2
+          REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB: 4096

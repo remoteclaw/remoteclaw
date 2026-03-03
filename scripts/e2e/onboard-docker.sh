@@ -15,15 +15,15 @@ docker run --rm -t "$IMAGE_NAME" bash -lc '
 	  ONBOARD_FLAGS="--flow quickstart --auth-choice skip --skip-channels --skip-skills --skip-daemon --skip-ui"
 	  # tsdown may emit dist/index.js or dist/index.mjs depending on runtime/bundler.
 	  if [ -f dist/index.mjs ]; then
-	    OPENCLAW_ENTRY="dist/index.mjs"
+	    REMOTECLAW_ENTRY="dist/index.mjs"
 	  elif [ -f dist/index.js ]; then
-	    OPENCLAW_ENTRY="dist/index.js"
+	    REMOTECLAW_ENTRY="dist/index.js"
 	  else
 	    echo "Missing dist/index.(m)js (build output):"
 	    ls -la dist || true
 	    exit 1
 	  fi
-	  export OPENCLAW_ENTRY
+	  export REMOTECLAW_ENTRY
 
   # Provide a minimal trash shim to avoid noisy "missing trash" logs in containers.
   export PATH="/tmp/openclaw-bin:$PATH"
@@ -106,7 +106,7 @@ TRASH
   }
 
 	  start_gateway() {
-	    node "$OPENCLAW_ENTRY" gateway --port 18789 --bind loopback --allow-unconfigured > /tmp/gateway-e2e.log 2>&1 &
+	    node "$REMOTECLAW_ENTRY" gateway --port 18789 --bind loopback --allow-unconfigured > /tmp/gateway-e2e.log 2>&1 &
 	    GATEWAY_PID="$!"
 	  }
 
@@ -208,7 +208,7 @@ TRASH
     local validate_fn="${4:-}"
 
 	    # Default onboarding command wrapper.
-	    run_wizard_cmd "$case_name" "$home_dir" "node \"$OPENCLAW_ENTRY\" onboard $ONBOARD_FLAGS" "$send_fn" true "$validate_fn"
+	    run_wizard_cmd "$case_name" "$home_dir" "node \"$REMOTECLAW_ENTRY\" onboard $ONBOARD_FLAGS" "$send_fn" true "$validate_fn"
 	  }
 
   make_home() {
@@ -287,7 +287,7 @@ TRASH
 	    home_dir="$(make_home local-basic)"
 	    export HOME="$home_dir"
 	    mkdir -p "$HOME"
-	    node "$OPENCLAW_ENTRY" onboard \
+	    node "$REMOTECLAW_ENTRY" onboard \
 	      --non-interactive \
 	      --accept-risk \
       --flow quickstart \
@@ -364,7 +364,7 @@ NODE
     export HOME="$home_dir"
 	    mkdir -p "$HOME"
 	    # Smoke test non-interactive remote config write.
-	    node "$OPENCLAW_ENTRY" onboard --non-interactive --accept-risk \
+	    node "$REMOTECLAW_ENTRY" onboard --non-interactive --accept-risk \
 	      --mode remote \
 	      --remote-url ws://gateway.local:18789 \
       --remote-token remote-token \
@@ -417,7 +417,7 @@ NODE
 }
 JSON
 
-	    node "$OPENCLAW_ENTRY" onboard \
+	    node "$REMOTECLAW_ENTRY" onboard \
 	      --non-interactive \
 	      --accept-risk \
       --flow quickstart \
@@ -460,7 +460,7 @@ NODE
 	    local home_dir
 	    home_dir="$(make_home channels)"
 	    # Channels-only configure flow.
-	    run_wizard_cmd channels "$home_dir" "node \"$OPENCLAW_ENTRY\" configure --section channels" send_channels_flow
+	    run_wizard_cmd channels "$home_dir" "node \"$REMOTECLAW_ENTRY\" configure --section channels" send_channels_flow
 
     config_path="$HOME/.openclaw/openclaw.json"
     assert_file "$config_path"
@@ -511,7 +511,7 @@ NODE
 }
 JSON
 
-	    run_wizard_cmd skills "$home_dir" "node \"$OPENCLAW_ENTRY\" configure --section skills" send_skills_flow
+	    run_wizard_cmd skills "$home_dir" "node \"$REMOTECLAW_ENTRY\" configure --section skills" send_skills_flow
 
     config_path="$HOME/.openclaw/openclaw.json"
     assert_file "$config_path"

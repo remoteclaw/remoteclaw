@@ -154,7 +154,7 @@ describe("sessions.usage", () => {
     const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-usage-test-"));
 
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ REMOTECLAW_STATE_DIR: stateDir }, async () => {
         const agentSessionsDir = path.join(stateDir, "agents", "opus", "sessions");
         fs.mkdirSync(agentSessionsDir, { recursive: true });
         const sessionFile = path.join(agentSessionsDir, "s-opus.jsonl");

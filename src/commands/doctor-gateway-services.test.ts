@@ -94,7 +94,7 @@ function setupGatewayTokenRepairScenario(expectedToken: string) {
   mocks.readCommand.mockResolvedValue({
     programArguments: gatewayProgramArguments,
     environment: {
-      OPENCLAW_GATEWAY_TOKEN: "stale-token",
+      REMOTECLAW_GATEWAY_TOKEN: "stale-token",
     },
   });
   mocks.auditGatewayServiceConfig.mockResolvedValue({
@@ -102,7 +102,7 @@ function setupGatewayTokenRepairScenario(expectedToken: string) {
     issues: [
       {
         code: "gateway-token-mismatch",
-        message: "Gateway service OPENCLAW_GATEWAY_TOKEN does not match gateway.auth.token",
+        message: "Gateway service REMOTECLAW_GATEWAY_TOKEN does not match gateway.auth.token",
         level: "recommended",
       },
     ],
@@ -111,7 +111,7 @@ function setupGatewayTokenRepairScenario(expectedToken: string) {
     programArguments: gatewayProgramArguments,
     workingDirectory: "/tmp",
     environment: {
-      OPENCLAW_GATEWAY_TOKEN: expectedToken,
+      REMOTECLAW_GATEWAY_TOKEN: expectedToken,
     },
   });
   mocks.install.mockResolvedValue(undefined);
@@ -149,8 +149,8 @@ describe("maybeRepairGatewayServiceConfig", () => {
     expect(mocks.install).toHaveBeenCalledTimes(1);
   });
 
-  it("uses OPENCLAW_GATEWAY_TOKEN when config token is missing", async () => {
-    await withEnvAsync({ OPENCLAW_GATEWAY_TOKEN: "env-token" }, async () => {
+  it("uses REMOTECLAW_GATEWAY_TOKEN when config token is missing", async () => {
+    await withEnvAsync({ REMOTECLAW_GATEWAY_TOKEN: "env-token" }, async () => {
       setupGatewayTokenRepairScenario("env-token");
 
       const cfg: OpenClawConfig = {

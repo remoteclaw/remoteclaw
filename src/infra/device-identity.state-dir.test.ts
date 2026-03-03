@@ -5,7 +5,7 @@ import { withStateDirEnv } from "../test-helpers/state-dir-env.js";
 import { loadOrCreateDeviceIdentity } from "./device-identity.js";
 
 describe("device identity state dir defaults", () => {
-  it("writes the default identity file under OPENCLAW_STATE_DIR", async () => {
+  it("writes the default identity file under REMOTECLAW_STATE_DIR", async () => {
     await withStateDirEnv("openclaw-identity-state-", async ({ stateDir }) => {
       const identity = loadOrCreateDeviceIdentity();
       const identityPath = path.join(stateDir, "identity", "device.json");

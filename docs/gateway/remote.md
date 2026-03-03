@@ -79,7 +79,7 @@ With the tunnel up:
 - `openclaw health` and `openclaw status --deep` now reach the remote gateway via `ws://127.0.0.1:18789`.
 - `openclaw gateway {status,health,send,agent,call}` can also target the forwarded URL via `--url` when needed.
 
-Note: replace `18789` with your configured `gateway.port` (or `--port`/`OPENCLAW_GATEWAY_PORT`).
+Note: replace `18789` with your configured `gateway.port` (or `--port`/`REMOTECLAW_GATEWAY_PORT`).
 Note: when you pass `--url`, the CLI does not fall back to config or environment credentials.
 Include `--token` or `--password` explicitly. Missing explicit credentials is an error.
 
@@ -107,13 +107,13 @@ Gateway call/probe credential resolution now follows one shared contract:
 
 - Explicit credentials (`--token`, `--password`, or tool `gatewayToken`) always win.
 - Local mode defaults:
-  - token: `OPENCLAW_GATEWAY_TOKEN` -> `gateway.auth.token`
-  - password: `OPENCLAW_GATEWAY_PASSWORD` -> `gateway.auth.password`
+  - token: `REMOTECLAW_GATEWAY_TOKEN` -> `gateway.auth.token`
+  - password: `REMOTECLAW_GATEWAY_PASSWORD` -> `gateway.auth.password`
 - Remote mode defaults:
-  - token: `gateway.remote.token` -> `OPENCLAW_GATEWAY_TOKEN` -> `gateway.auth.token`
-  - password: `OPENCLAW_GATEWAY_PASSWORD` -> `gateway.remote.password` -> `gateway.auth.password`
+  - token: `gateway.remote.token` -> `REMOTECLAW_GATEWAY_TOKEN` -> `gateway.auth.token`
+  - password: `REMOTECLAW_GATEWAY_PASSWORD` -> `gateway.remote.password` -> `gateway.auth.password`
 - Remote probe/status token checks are strict by default: they use `gateway.remote.token` only (no local token fallback) when targeting remote mode.
-- Legacy `CLAWDBOT_GATEWAY_*` env vars are only used by compatibility call paths; probe/status/auth resolution uses `OPENCLAW_GATEWAY_*` only.
+- Legacy `CLAWDBOT_GATEWAY_*` env vars are only used by compatibility call paths; probe/status/auth resolution uses `REMOTECLAW_GATEWAY_*` only.
 
 ## Chat UI over SSH
 

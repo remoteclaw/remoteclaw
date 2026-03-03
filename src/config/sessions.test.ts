@@ -35,7 +35,7 @@ describe("sessions", () => {
   });
 
   const withStateDir = <T>(stateDir: string, fn: () => T): T =>
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, fn);
+    withEnv({ REMOTECLAW_STATE_DIR: stateDir }, fn);
 
   async function createSessionStoreFixture(params: {
     prefix: string;
@@ -499,9 +499,9 @@ describe("sessions", () => {
     expect(entry.lastProvider).toBeUndefined();
   });
 
-  it("derives session transcripts dir from OPENCLAW_STATE_DIR", () => {
+  it("derives session transcripts dir from REMOTECLAW_STATE_DIR", () => {
     const dir = resolveSessionTranscriptsDir(
-      { OPENCLAW_STATE_DIR: "/custom/state" } as NodeJS.ProcessEnv,
+      { REMOTECLAW_STATE_DIR: "/custom/state" } as NodeJS.ProcessEnv,
       () => "/home/ignored",
     );
     expect(dir).toBe(path.join(path.resolve("/custom/state"), "agents", "main", "sessions"));
@@ -547,7 +547,7 @@ describe("sessions", () => {
     });
   });
 
-  it("resolves cross-agent paths when OPENCLAW_STATE_DIR differs from stored paths", () => {
+  it("resolves cross-agent paths when REMOTECLAW_STATE_DIR differs from stored paths", () => {
     withStateDir(path.resolve("/different/state"), () => {
       const originalBase = path.resolve("/original/state");
       const bot2Session = path.join(originalBase, "agents", "bot2", "sessions", "sess-1.jsonl");

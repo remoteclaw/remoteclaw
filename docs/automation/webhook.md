@@ -108,7 +108,7 @@ Recommended config:
 {
   hooks: {
     enabled: true,
-    token: "${OPENCLAW_HOOKS_TOKEN}",
+    token: "${REMOTECLAW_HOOKS_TOKEN}",
     defaultSessionKey: "hook:ingress",
     allowRequestSessionKey: false,
     allowedSessionKeyPrefixes: ["hook:"],
@@ -122,7 +122,7 @@ Compatibility config (legacy behavior):
 {
   hooks: {
     enabled: true,
-    token: "${OPENCLAW_HOOKS_TOKEN}",
+    token: "${REMOTECLAW_HOOKS_TOKEN}",
     allowRequestSessionKey: true,
     allowedSessionKeyPrefixes: ["hook:"], // strongly recommended
   },

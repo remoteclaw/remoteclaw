@@ -166,7 +166,7 @@ function hasPairingPolicy(value: unknown): boolean {
 }
 
 function shouldRequireOAuthDir(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): boolean {
-  if (env.OPENCLAW_OAUTH_DIR?.trim()) {
+  if (env.REMOTECLAW_OAUTH_DIR?.trim()) {
     return true;
   }
   const channels = cfg.channels;

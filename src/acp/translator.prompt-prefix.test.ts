@@ -10,9 +10,9 @@ import { createAcpConnection, createAcpGateway } from "./translator.test-helpers
 describe("acp prompt cwd prefix", () => {
   async function runPromptWithCwd(cwd: string) {
     const pinnedHome = os.homedir();
-    const previousOpenClawHome = process.env.OPENCLAW_HOME;
+    const previousOpenClawHome = process.env.REMOTECLAW_HOME;
     const previousHome = process.env.HOME;
-    delete process.env.OPENCLAW_HOME;
+    delete process.env.REMOTECLAW_HOME;
     process.env.HOME = pinnedHome;
 
     const sessionStore = createInMemorySessionStore();
@@ -48,9 +48,9 @@ describe("acp prompt cwd prefix", () => {
       return requestSpy;
     } finally {
       if (previousOpenClawHome === undefined) {
-        delete process.env.OPENCLAW_HOME;
+        delete process.env.REMOTECLAW_HOME;
       } else {
-        process.env.OPENCLAW_HOME = previousOpenClawHome;
+        process.env.REMOTECLAW_HOME = previousOpenClawHome;
       }
       if (previousHome === undefined) {
         delete process.env.HOME;

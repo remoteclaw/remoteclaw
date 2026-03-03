@@ -58,16 +58,16 @@ describe("runCommandWithTimeout", () => {
   });
 
   it("merges custom env with process.env", async () => {
-    await withEnvAsync({ OPENCLAW_BASE_ENV: "base" }, async () => {
+    await withEnvAsync({ REMOTECLAW_BASE_ENV: "base" }, async () => {
       const result = await runCommandWithTimeout(
         [
           process.execPath,
           "-e",
-          'process.stdout.write((process.env.OPENCLAW_BASE_ENV ?? "") + "|" + (process.env.OPENCLAW_TEST_ENV ?? ""))',
+          'process.stdout.write((process.env.REMOTECLAW_BASE_ENV ?? "") + "|" + (process.env.REMOTECLAW_TEST_ENV ?? ""))',
         ],
         {
           timeoutMs: 5_000,
-          env: { OPENCLAW_TEST_ENV: "ok" },
+          env: { REMOTECLAW_TEST_ENV: "ok" },
         },
       );
 

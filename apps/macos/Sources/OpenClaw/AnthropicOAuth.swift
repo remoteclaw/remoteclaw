@@ -197,7 +197,7 @@ enum AnthropicOAuth {
 enum OpenClawOAuthStore {
     static let oauthFilename = "oauth.json"
     private static let providerKey = "anthropic"
-    private static let openclawOAuthDirEnv = "OPENCLAW_OAUTH_DIR"
+    private static let openclawOAuthDirEnv = "REMOTECLAW_OAUTH_DIR"
     private static let legacyPiDirEnv = "PI_CODING_AGENT_DIR"
 
     enum AnthropicOAuthStatus: Equatable {

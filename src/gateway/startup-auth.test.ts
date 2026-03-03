@@ -196,7 +196,7 @@ describe("ensureGatewayStartupAuth", () => {
           },
         },
         env: {
-          OPENCLAW_GATEWAY_TOKEN: "shared-gateway-token-1234567890",
+          REMOTECLAW_GATEWAY_TOKEN: "shared-gateway-token-1234567890",
         } as NodeJS.ProcessEnv,
       }),
     ).rejects.toThrow(/hooks\.token must not match gateway auth token/i);

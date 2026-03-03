@@ -18,9 +18,9 @@ describe("noteSessionLockHealth", () => {
 
   beforeEach(async () => {
     note.mockClear();
-    envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
+    envSnapshot = captureEnv(["REMOTECLAW_STATE_DIR"]);
     root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-doctor-locks-"));
-    process.env.OPENCLAW_STATE_DIR = root;
+    process.env.REMOTECLAW_STATE_DIR = root;
   });
 
   afterEach(async () => {

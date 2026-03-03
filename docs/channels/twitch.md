@@ -36,7 +36,7 @@ Details: [Plugins](/tools/plugin)
    - Copy the **Client ID** and **Access Token**
 3. Find your Twitch user ID: [https://www.streamweasels.com/tools/convert-twitch-username-to-user-id/](https://www.streamweasels.com/tools/convert-twitch-username-to-user-id/)
 4. Configure the token:
-   - Env: `OPENCLAW_TWITCH_ACCESS_TOKEN=...` (default account only)
+   - Env: `REMOTECLAW_TWITCH_ACCESS_TOKEN=...` (default account only)
    - Or config: `channels.twitch.accessToken`
    - If both are set, config takes precedence (env fallback is default-account only).
 5. Start the gateway.
@@ -51,7 +51,7 @@ Minimal config:
     twitch: {
       enabled: true,
       username: "openclaw", // Bot's Twitch account
-      accessToken: "oauth:abc123...", // OAuth Access Token (or use OPENCLAW_TWITCH_ACCESS_TOKEN env var)
+      accessToken: "oauth:abc123...", // OAuth Access Token (or use REMOTECLAW_TWITCH_ACCESS_TOKEN env var)
       clientId: "xyz789...", // Client ID from Token Generator
       channel: "vevisk", // Which Twitch channel's chat to join (required)
       allowFrom: ["123456789"], // (recommended) Your Twitch user ID only - get it from https://www.streamweasels.com/tools/convert-twitch-username-to-user-id/
@@ -84,7 +84,7 @@ No manual app registration needed. Tokens expire after several hours.
 **Env var (default account only):**
 
 ```bash
-OPENCLAW_TWITCH_ACCESS_TOKEN=oauth:abc123...
+REMOTECLAW_TWITCH_ACCESS_TOKEN=oauth:abc123...
 ```
 
 **Or config:**

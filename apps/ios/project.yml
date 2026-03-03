@@ -76,10 +76,10 @@ targets:
       base:
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_ENTITLEMENTS: Sources/OpenClaw.entitlements
-        CODE_SIGN_STYLE: "$(OPENCLAW_CODE_SIGN_STYLE)"
-        DEVELOPMENT_TEAM: "$(OPENCLAW_DEVELOPMENT_TEAM)"
-        PRODUCT_BUNDLE_IDENTIFIER: "$(OPENCLAW_APP_BUNDLE_ID)"
-        PROVISIONING_PROFILE_SPECIFIER: "$(OPENCLAW_APP_PROFILE)"
+        CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
+        DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
+        PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_APP_BUNDLE_ID)"
+        PROVISIONING_PROFILE_SPECIFIER: "$(REMOTECLAW_APP_PROFILE)"
         SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: complete
         ENABLE_APPINTENTS_METADATA: NO
@@ -136,10 +136,10 @@ targets:
     settings:
       base:
         CODE_SIGN_IDENTITY: "Apple Development"
-        CODE_SIGN_STYLE: "$(OPENCLAW_CODE_SIGN_STYLE)"
-        DEVELOPMENT_TEAM: "$(OPENCLAW_DEVELOPMENT_TEAM)"
-        PRODUCT_BUNDLE_IDENTIFIER: "$(OPENCLAW_SHARE_BUNDLE_ID)"
-        PROVISIONING_PROFILE_SPECIFIER: "$(OPENCLAW_SHARE_PROFILE)"
+        CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
+        DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
+        PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_SHARE_BUNDLE_ID)"
+        PROVISIONING_PROFILE_SPECIFIER: "$(REMOTECLAW_SHARE_PROFILE)"
         SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: complete
     info:
@@ -171,14 +171,14 @@ targets:
       Release: Config/Signing.xcconfig
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: "$(OPENCLAW_WATCH_APP_BUNDLE_ID)"
+        PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_WATCH_APP_BUNDLE_ID)"
     info:
       path: WatchApp/Info.plist
       properties:
         CFBundleDisplayName: OpenClaw
         CFBundleShortVersionString: "2026.2.23"
         CFBundleVersion: "20260223"
-        WKCompanionAppBundleIdentifier: "$(OPENCLAW_APP_BUNDLE_ID)"
+        WKCompanionAppBundleIdentifier: "$(REMOTECLAW_APP_BUNDLE_ID)"
         WKWatchKitApp: true
 
   OpenClawWatchExtension:
@@ -195,7 +195,7 @@ targets:
       Release: Config/Signing.xcconfig
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: "$(OPENCLAW_WATCH_EXTENSION_BUNDLE_ID)"
+        PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID)"
     info:
       path: WatchExtension/Info.plist
       properties:
@@ -204,7 +204,7 @@ targets:
         CFBundleVersion: "20260223"
         NSExtension:
           NSExtensionAttributes:
-            WKAppBundleIdentifier: "$(OPENCLAW_WATCH_APP_BUNDLE_ID)"
+            WKAppBundleIdentifier: "$(REMOTECLAW_WATCH_APP_BUNDLE_ID)"
           NSExtensionPointIdentifier: com.apple.watchkit
 
   OpenClawTests:
@@ -223,8 +223,8 @@ targets:
     settings:
       base:
         CODE_SIGN_IDENTITY: "Apple Development"
-        CODE_SIGN_STYLE: "$(OPENCLAW_CODE_SIGN_STYLE)"
-        DEVELOPMENT_TEAM: "$(OPENCLAW_DEVELOPMENT_TEAM)"
+        CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
+        DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
         PRODUCT_BUNDLE_IDENTIFIER: ai.openclaw.ios.tests
         SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: complete

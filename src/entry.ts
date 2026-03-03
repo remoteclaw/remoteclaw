@@ -56,10 +56,10 @@ if (
     if (shouldSkipRespawnForArgv(process.argv)) {
       return false;
     }
-    if (isTruthyEnvValue(process.env.OPENCLAW_NO_RESPAWN)) {
+    if (isTruthyEnvValue(process.env.REMOTECLAW_NO_RESPAWN)) {
       return false;
     }
-    if (isTruthyEnvValue(process.env.OPENCLAW_NODE_OPTIONS_READY)) {
+    if (isTruthyEnvValue(process.env.REMOTECLAW_NODE_OPTIONS_READY)) {
       return false;
     }
     if (hasExperimentalWarningSuppressed()) {
@@ -67,7 +67,7 @@ if (
     }
 
     // Respawn guard (and keep recursion bounded if something goes wrong).
-    process.env.OPENCLAW_NODE_OPTIONS_READY = "1";
+    process.env.REMOTECLAW_NODE_OPTIONS_READY = "1";
     // Pass flag as a Node CLI option, not via NODE_OPTIONS (--disable-warning is disallowed in NODE_OPTIONS).
     const child = spawn(
       process.execPath,

@@ -46,8 +46,8 @@ When the operator says “release”, immediately do this preflight (no extra qu
 - [ ] `pnpm check`
 - [ ] `pnpm test` (or `pnpm test:coverage` if you need coverage output)
 - [ ] `pnpm release:check` (verifies npm pack contents)
-- [ ] `OPENCLAW_INSTALL_SMOKE_SKIP_NONROOT=1 pnpm test:install:smoke` (Docker install smoke test, fast path; required before release)
-  - If the immediate previous npm release is known broken, set `OPENCLAW_INSTALL_SMOKE_PREVIOUS=<last-good-version>` or `OPENCLAW_INSTALL_SMOKE_SKIP_PREVIOUS=1` for the preinstall step.
+- [ ] `REMOTECLAW_INSTALL_SMOKE_SKIP_NONROOT=1 pnpm test:install:smoke` (Docker install smoke test, fast path; required before release)
+  - If the immediate previous npm release is known broken, set `REMOTECLAW_INSTALL_SMOKE_PREVIOUS=<last-good-version>` or `REMOTECLAW_INSTALL_SMOKE_SKIP_PREVIOUS=1` for the preinstall step.
 - [ ] (Optional) Full installer smoke (adds non-root + CLI coverage): `pnpm test:install:smoke`
 - [ ] (Optional) Installer E2E (Docker, runs `curl -fsSL https://openclaw.ai/install.sh | bash`, onboards, then runs real tool calls):
   - `pnpm test:install:e2e:openai` (requires `OPENAI_API_KEY`)

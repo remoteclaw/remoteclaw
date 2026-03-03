@@ -6,7 +6,7 @@ import { withStateDirEnv } from "../test-helpers/state-dir-env.js";
 import { createCanvasHostHandler } from "./server.js";
 
 describe("canvas host state dir defaults", () => {
-  it("uses OPENCLAW_STATE_DIR for the default canvas root", async () => {
+  it("uses REMOTECLAW_STATE_DIR for the default canvas root", async () => {
     await withStateDirEnv("openclaw-canvas-state-", async ({ stateDir }) => {
       const handler = await createCanvasHostHandler({
         runtime: defaultRuntime,

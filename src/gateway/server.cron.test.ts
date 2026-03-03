@@ -86,10 +86,10 @@ async function cleanupCronTestRun(params: {
   }
   testState.cronEnabled = undefined;
   if (params.prevSkipCron === undefined) {
-    delete process.env.OPENCLAW_SKIP_CRON;
+    delete process.env.REMOTECLAW_SKIP_CRON;
     return;
   }
-  process.env.OPENCLAW_SKIP_CRON = params.prevSkipCron;
+  process.env.REMOTECLAW_SKIP_CRON = params.prevSkipCron;
 }
 
 async function setupCronTestRun(params: {
@@ -98,8 +98,8 @@ async function setupCronTestRun(params: {
   sessionConfig?: { mainKey: string };
   jobs?: unknown[];
 }): Promise<{ prevSkipCron: string | undefined; dir: string }> {
-  const prevSkipCron = process.env.OPENCLAW_SKIP_CRON;
-  process.env.OPENCLAW_SKIP_CRON = "0";
+  const prevSkipCron = process.env.REMOTECLAW_SKIP_CRON;
+  process.env.REMOTECLAW_SKIP_CRON = "0";
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), params.tempPrefix));
   testState.cronStorePath = path.join(dir, "cron", "jobs.json");
   testState.sessionConfig = params.sessionConfig;
@@ -519,7 +519,7 @@ describe("gateway server cron", () => {
       jobs: [legacyNotifyJob],
     });
 
-    const configPath = process.env.OPENCLAW_CONFIG_PATH;
+    const configPath = process.env.REMOTECLAW_CONFIG_PATH;
     expect(typeof configPath).toBe("string");
     await fs.mkdir(path.dirname(configPath as string), { recursive: true });
     await fs.writeFile(

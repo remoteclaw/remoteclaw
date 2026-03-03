@@ -66,7 +66,7 @@ beforeEach(() => {
   state.channelBridgeHandleMock.mockClear();
   state.runAgentMock.mockClear();
   vi.mocked(enqueueFollowupRun).mockClear();
-  vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+  vi.stubEnv("REMOTECLAW_TEST_FAST", "1");
 });
 
 // ── Helpers ──────────────────────────────────────────────────────────────

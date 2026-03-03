@@ -87,7 +87,7 @@ export async function runDaemonInstall(opts: DaemonInstallOptions) {
   let token: string | undefined =
     opts.token ||
     cfg.gateway?.auth?.token ||
-    process.env.OPENCLAW_GATEWAY_TOKEN ||
+    process.env.REMOTECLAW_GATEWAY_TOKEN ||
     process.env.CLAWDBOT_GATEWAY_TOKEN;
 
   if (!token && needsToken) {

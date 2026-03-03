@@ -66,8 +66,8 @@ describe("Integration: saveSessionStore with pruning", () => {
   beforeEach(async () => {
     testDir = await createCaseDir("pruning-integ");
     storePath = path.join(testDir, "sessions.json");
-    savedCacheTtl = process.env.OPENCLAW_SESSION_CACHE_TTL_MS;
-    process.env.OPENCLAW_SESSION_CACHE_TTL_MS = "0";
+    savedCacheTtl = process.env.REMOTECLAW_SESSION_CACHE_TTL_MS;
+    process.env.REMOTECLAW_SESSION_CACHE_TTL_MS = "0";
     clearSessionStoreCacheForTest();
     mockLoadConfig.mockClear();
   });
@@ -76,9 +76,9 @@ describe("Integration: saveSessionStore with pruning", () => {
     vi.restoreAllMocks();
     clearSessionStoreCacheForTest();
     if (savedCacheTtl === undefined) {
-      delete process.env.OPENCLAW_SESSION_CACHE_TTL_MS;
+      delete process.env.REMOTECLAW_SESSION_CACHE_TTL_MS;
     } else {
-      process.env.OPENCLAW_SESSION_CACHE_TTL_MS = savedCacheTtl;
+      process.env.REMOTECLAW_SESSION_CACHE_TTL_MS = savedCacheTtl;
     }
   });
 

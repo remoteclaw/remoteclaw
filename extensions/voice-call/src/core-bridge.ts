@@ -103,7 +103,7 @@ function resolveOpenClawRoot(): string {
   if (coreRootCache) {
     return coreRootCache;
   }
-  const override = process.env.OPENCLAW_ROOT?.trim();
+  const override = process.env.REMOTECLAW_ROOT?.trim();
   if (override) {
     coreRootCache = override;
     return override;
@@ -131,7 +131,7 @@ function resolveOpenClawRoot(): string {
     }
   }
 
-  throw new Error("Unable to resolve core root. Set OPENCLAW_ROOT to the package root.");
+  throw new Error("Unable to resolve core root. Set REMOTECLAW_ROOT to the package root.");
 }
 
 async function importCoreExtensionAPI(): Promise<{

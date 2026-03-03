@@ -2,7 +2,7 @@ import Foundation
 
 enum LogLocator {
     private static var logDir: URL {
-        if let override = ProcessInfo.processInfo.environment["OPENCLAW_LOG_DIR"],
+        if let override = ProcessInfo.processInfo.environment["REMOTECLAW_LOG_DIR"],
            !override.isEmpty
         {
             return URL(fileURLWithPath: override)

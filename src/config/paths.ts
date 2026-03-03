@@ -5,14 +5,14 @@ import { expandHomePrefix, resolveRequiredHomeDir } from "../infra/home-dir.js";
 import type { OpenClawConfig } from "./types.js";
 
 /**
- * Nix mode detection: When OPENCLAW_NIX_MODE=1, the gateway is running under Nix.
+ * Nix mode detection: When REMOTECLAW_NIX_MODE=1, the gateway is running under Nix.
  * In this mode:
  * - No auto-install flows should be attempted
  * - Missing dependencies should produce actionable Nix-specific error messages
  * - Config is managed externally (read-only from Nix perspective)
  */
 export function resolveIsNixMode(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.OPENCLAW_NIX_MODE === "1";
+  return env.REMOTECLAW_NIX_MODE === "1";
 }
 
 export const isNixMode = resolveIsNixMode();
@@ -27,7 +27,7 @@ function resolveDefaultHomeDir(): string {
   return resolveRequiredHomeDir(process.env, os.homedir);
 }
 
-/** Build a homedir thunk that respects OPENCLAW_HOME for the given env. */
+/** Build a homedir thunk that respects REMOTECLAW_HOME for the given env. */
 function envHomedir(env: NodeJS.ProcessEnv): () => string {
   return () => resolveRequiredHomeDir(env, os.homedir);
 }
@@ -54,7 +54,7 @@ export function resolveNewStateDir(homedir: () => string = resolveDefaultHomeDir
 
 /**
  * State directory for mutable data (sessions, logs, caches).
- * Can be overridden via OPENCLAW_STATE_DIR.
+ * Can be overridden via REMOTECLAW_STATE_DIR.
  * Default: ~/.openclaw
  */
 export function resolveStateDir(
@@ -62,7 +62,7 @@ export function resolveStateDir(
   homedir: () => string = envHomedir(env),
 ): string {
   const effectiveHomedir = () => resolveRequiredHomeDir(env, homedir);
-  const override = env.OPENCLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
+  const override = env.REMOTECLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
   if (override) {
     return resolveUserPath(override, env, effectiveHomedir);
   }
@@ -109,14 +109,14 @@ export const STATE_DIR = resolveStateDir();
 
 /**
  * Config file path (JSON5).
- * Can be overridden via OPENCLAW_CONFIG_PATH.
- * Default: ~/.openclaw/openclaw.json (or $OPENCLAW_STATE_DIR/openclaw.json)
+ * Can be overridden via REMOTECLAW_CONFIG_PATH.
+ * Default: ~/.openclaw/openclaw.json (or $REMOTECLAW_STATE_DIR/openclaw.json)
  */
 export function resolveCanonicalConfigPath(
   env: NodeJS.ProcessEnv = process.env,
   stateDir: string = resolveStateDir(env, envHomedir(env)),
 ): string {
-  const override = env.OPENCLAW_CONFIG_PATH?.trim() || env.CLAWDBOT_CONFIG_PATH?.trim();
+  const override = env.REMOTECLAW_CONFIG_PATH?.trim() || env.CLAWDBOT_CONFIG_PATH?.trim();
   if (override) {
     return resolveUserPath(override, env, envHomedir(env));
   }
@@ -153,11 +153,11 @@ export function resolveConfigPath(
   stateDir: string = resolveStateDir(env, envHomedir(env)),
   homedir: () => string = envHomedir(env),
 ): string {
-  const override = env.OPENCLAW_CONFIG_PATH?.trim();
+  const override = env.REMOTECLAW_CONFIG_PATH?.trim();
   if (override) {
     return resolveUserPath(override, env, homedir);
   }
-  const stateOverride = env.OPENCLAW_STATE_DIR?.trim();
+  const stateOverride = env.REMOTECLAW_STATE_DIR?.trim();
   const candidates = [
     path.join(stateDir, CONFIG_FILENAME),
     ...LEGACY_CONFIG_FILENAMES.map((name) => path.join(stateDir, name)),
@@ -193,13 +193,13 @@ export function resolveDefaultConfigCandidates(
   homedir: () => string = envHomedir(env),
 ): string[] {
   const effectiveHomedir = () => resolveRequiredHomeDir(env, homedir);
-  const explicit = env.OPENCLAW_CONFIG_PATH?.trim() || env.CLAWDBOT_CONFIG_PATH?.trim();
+  const explicit = env.REMOTECLAW_CONFIG_PATH?.trim() || env.CLAWDBOT_CONFIG_PATH?.trim();
   if (explicit) {
     return [resolveUserPath(explicit, env, effectiveHomedir)];
   }
 
   const candidates: string[] = [];
-  const openclawStateDir = env.OPENCLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
+  const openclawStateDir = env.REMOTECLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
   if (openclawStateDir) {
     const resolved = resolveUserPath(openclawStateDir, env, effectiveHomedir);
     candidates.push(path.join(resolved, CONFIG_FILENAME));
@@ -233,14 +233,14 @@ const OAUTH_FILENAME = "oauth.json";
  * OAuth credentials storage directory.
  *
  * Precedence:
- * - `OPENCLAW_OAUTH_DIR` (explicit override)
+ * - `REMOTECLAW_OAUTH_DIR` (explicit override)
  * - `$*_STATE_DIR/credentials` (canonical server/default)
  */
 export function resolveOAuthDir(
   env: NodeJS.ProcessEnv = process.env,
   stateDir: string = resolveStateDir(env, envHomedir(env)),
 ): string {
-  const override = env.OPENCLAW_OAUTH_DIR?.trim();
+  const override = env.REMOTECLAW_OAUTH_DIR?.trim();
   if (override) {
     return resolveUserPath(override, env, envHomedir(env));
   }
@@ -258,7 +258,7 @@ export function resolveGatewayPort(
   cfg?: OpenClawConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): number {
-  const envRaw = env.OPENCLAW_GATEWAY_PORT?.trim() || env.CLAWDBOT_GATEWAY_PORT?.trim();
+  const envRaw = env.REMOTECLAW_GATEWAY_PORT?.trim() || env.CLAWDBOT_GATEWAY_PORT?.trim();
   if (envRaw) {
     const parsed = Number.parseInt(envRaw, 10);
     if (Number.isFinite(parsed) && parsed > 0) {

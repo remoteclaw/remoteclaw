@@ -63,7 +63,7 @@ export function resolveAccount(cfg: any, accountId?: string | null): ResolvedSyn
   const envNasHost = process.env.SYNOLOGY_NAS_HOST ?? "localhost";
   const envAllowedUserIds = process.env.SYNOLOGY_ALLOWED_USER_IDS ?? "";
   const envRateLimit = process.env.SYNOLOGY_RATE_LIMIT;
-  const envBotName = process.env.OPENCLAW_BOT_NAME ?? "OpenClaw";
+  const envBotName = process.env.REMOTECLAW_BOT_NAME ?? "OpenClaw";
 
   // Merge: account override > base channel config > env var
   return {

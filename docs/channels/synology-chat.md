@@ -64,7 +64,7 @@ For the default account, you can use env vars:
 - `SYNOLOGY_NAS_HOST`
 - `SYNOLOGY_ALLOWED_USER_IDS` (comma-separated)
 - `SYNOLOGY_RATE_LIMIT`
-- `OPENCLAW_BOT_NAME`
+- `REMOTECLAW_BOT_NAME`
 
 Config values override env vars.
 

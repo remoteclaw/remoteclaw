@@ -34,7 +34,7 @@ import Testing
     @Test func gatewayPortDefaultsAndRespectsOverride() async {
         let configPath = TestIsolation.tempConfigPath()
         await TestIsolation.withIsolatedState(
-            env: ["OPENCLAW_CONFIG_PATH": configPath],
+            env: ["REMOTECLAW_CONFIG_PATH": configPath],
             defaults: ["gatewayPort": nil])
         {
             let defaultPort = GatewayEnvironment.gatewayPort()

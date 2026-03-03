@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { startBrowserBridgeServer, stopBrowserBridgeServer } from "./bridge-server.js";
 import type { ResolvedBrowserConfig } from "./config.js";
 import {
-  DEFAULT_OPENCLAW_BROWSER_COLOR,
-  DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME,
+  DEFAULT_REMOTECLAW_BROWSER_COLOR,
+  DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME,
 } from "./constants.js";
 
 function buildResolvedConfig(): ResolvedBrowserConfig {
@@ -17,16 +17,16 @@ function buildResolvedConfig(): ResolvedBrowserConfig {
     remoteCdpTimeoutMs: 1500,
     remoteCdpHandshakeTimeoutMs: 3000,
     extraArgs: [],
-    color: DEFAULT_OPENCLAW_BROWSER_COLOR,
+    color: DEFAULT_REMOTECLAW_BROWSER_COLOR,
     executablePath: undefined,
     headless: true,
     noSandbox: false,
     attachOnly: true,
-    defaultProfile: DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME,
+    defaultProfile: DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME,
     profiles: {
-      [DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME]: {
+      [DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME]: {
         cdpPort: 1,
-        color: DEFAULT_OPENCLAW_BROWSER_COLOR,
+        color: DEFAULT_REMOTECLAW_BROWSER_COLOR,
       },
     },
   } as unknown as ResolvedBrowserConfig;

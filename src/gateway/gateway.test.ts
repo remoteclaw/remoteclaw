@@ -26,27 +26,27 @@ describe("gateway e2e", () => {
     async () => {
       const envSnapshot = captureEnv([
         "HOME",
-        "OPENCLAW_STATE_DIR",
-        "OPENCLAW_CONFIG_PATH",
-        "OPENCLAW_GATEWAY_TOKEN",
-        "OPENCLAW_SKIP_CHANNELS",
-        "OPENCLAW_SKIP_GMAIL_WATCHER",
-        "OPENCLAW_SKIP_CRON",
-        "OPENCLAW_SKIP_CANVAS_HOST",
-        "OPENCLAW_SKIP_BROWSER_CONTROL_SERVER",
+        "REMOTECLAW_STATE_DIR",
+        "REMOTECLAW_CONFIG_PATH",
+        "REMOTECLAW_GATEWAY_TOKEN",
+        "REMOTECLAW_SKIP_CHANNELS",
+        "REMOTECLAW_SKIP_GMAIL_WATCHER",
+        "REMOTECLAW_SKIP_CRON",
+        "REMOTECLAW_SKIP_CANVAS_HOST",
+        "REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER",
       ]);
 
-      process.env.OPENCLAW_SKIP_CHANNELS = "1";
-      process.env.OPENCLAW_SKIP_GMAIL_WATCHER = "1";
-      process.env.OPENCLAW_SKIP_CRON = "1";
-      process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
-      process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
-      delete process.env.OPENCLAW_GATEWAY_TOKEN;
+      process.env.REMOTECLAW_SKIP_CHANNELS = "1";
+      process.env.REMOTECLAW_SKIP_GMAIL_WATCHER = "1";
+      process.env.REMOTECLAW_SKIP_CRON = "1";
+      process.env.REMOTECLAW_SKIP_CANVAS_HOST = "1";
+      process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
+      delete process.env.REMOTECLAW_GATEWAY_TOKEN;
 
       const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-wizard-home-"));
       process.env.HOME = tempHome;
-      delete process.env.OPENCLAW_STATE_DIR;
-      delete process.env.OPENCLAW_CONFIG_PATH;
+      delete process.env.REMOTECLAW_STATE_DIR;
+      delete process.env.REMOTECLAW_CONFIG_PATH;
 
       const wizardToken = `wiz-${randomUUID()}`;
       const port = await getFreeGatewayPort();

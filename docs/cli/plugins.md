@@ -72,7 +72,7 @@ the plugin allowlist, and linked `plugins.load.paths` entries when applicable.
 For active memory plugins, the memory slot resets to `memory-core`.
 
 By default, uninstall also removes the plugin install directory under the active
-state dir extensions root (`$OPENCLAW_STATE_DIR/extensions/<id>`). Use
+state dir extensions root (`$REMOTECLAW_STATE_DIR/extensions/<id>`). Use
 `--keep-files` to keep files on disk.
 
 `--keep-config` is supported as a deprecated alias for `--keep-files`.

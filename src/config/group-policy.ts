@@ -110,7 +110,7 @@ function warnLegacyToolsBySenderKey(rawKey: string) {
     `toolsBySender key "${trimmed}" is deprecated. Use explicit prefixes (id:, e164:, username:, name:). Legacy unprefixed keys are matched as id only.`,
     {
       type: "DeprecationWarning",
-      code: "OPENCLAW_TOOLS_BY_SENDER_UNTYPED_KEY",
+      code: "REMOTECLAW_TOOLS_BY_SENDER_UNTYPED_KEY",
     },
   );
 }

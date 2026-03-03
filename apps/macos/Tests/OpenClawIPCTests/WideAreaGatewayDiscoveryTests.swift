@@ -5,7 +5,7 @@ import Testing
 @Suite
 struct WideAreaGatewayDiscoveryTests {
     @Test func discoversBeaconFromTailnetDnsSdFallback() {
-        setenv("OPENCLAW_WIDE_AREA_DOMAIN", "openclaw.internal", 1)
+        setenv("REMOTECLAW_WIDE_AREA_DOMAIN", "openclaw.internal", 1)
         let statusJson = """
         {
           "Self": { "TailscaleIPs": ["100.69.232.64"] },

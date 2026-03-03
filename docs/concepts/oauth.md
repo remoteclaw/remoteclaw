@@ -47,7 +47,7 @@ Legacy import-only file (still supported, but not the main store):
 
 - `~/.openclaw/credentials/oauth.json` (imported into `auth-profiles.json` on first use)
 
-All of the above also respect `$OPENCLAW_STATE_DIR` (state dir override). Full reference: [/gateway/configuration](/gateway/configuration#auth-storage-oauth--api-keys)
+All of the above also respect `$REMOTECLAW_STATE_DIR` (state dir override). Full reference: [/gateway/configuration](/gateway/configuration#auth-storage-oauth--api-keys)
 
 ## Anthropic setup-token (subscription auth)
 

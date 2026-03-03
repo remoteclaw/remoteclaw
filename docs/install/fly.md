@@ -56,8 +56,8 @@ primary_region = "iad"
 
 [env]
   NODE_ENV = "production"
-  OPENCLAW_PREFER_PNPM = "1"
-  OPENCLAW_STATE_DIR = "/data"
+  REMOTECLAW_PREFER_PNPM = "1"
+  REMOTECLAW_STATE_DIR = "/data"
   NODE_OPTIONS = "--max-old-space-size=1536"
 
 [processes]
@@ -82,19 +82,19 @@ primary_region = "iad"
 
 **Key settings:**
 
-| Setting                        | Why                                                                         |
-| ------------------------------ | --------------------------------------------------------------------------- |
-| `--bind lan`                   | Binds to `0.0.0.0` so Fly's proxy can reach the gateway                     |
-| `--allow-unconfigured`         | Starts without a config file (you'll create one after)                      |
-| `internal_port = 3000`         | Must match `--port 3000` (or `OPENCLAW_GATEWAY_PORT`) for Fly health checks |
-| `memory = "2048mb"`            | 512MB is too small; 2GB recommended                                         |
-| `OPENCLAW_STATE_DIR = "/data"` | Persists state on the volume                                                |
+| Setting                          | Why                                                                           |
+| -------------------------------- | ----------------------------------------------------------------------------- |
+| `--bind lan`                     | Binds to `0.0.0.0` so Fly's proxy can reach the gateway                       |
+| `--allow-unconfigured`           | Starts without a config file (you'll create one after)                        |
+| `internal_port = 3000`           | Must match `--port 3000` (or `REMOTECLAW_GATEWAY_PORT`) for Fly health checks |
+| `memory = "2048mb"`              | 512MB is too small; 2GB recommended                                           |
+| `REMOTECLAW_STATE_DIR = "/data"` | Persists state on the volume                                                  |
 
 ## 3) Set secrets
 
 ```bash
 # Required: Gateway token (for non-loopback binding)
-fly secrets set OPENCLAW_GATEWAY_TOKEN=$(openssl rand -hex 32)
+fly secrets set REMOTECLAW_GATEWAY_TOKEN=$(openssl rand -hex 32)
 
 # Model provider API keys
 fly secrets set ANTHROPIC_API_KEY=sk-ant-...
@@ -109,7 +109,7 @@ fly secrets set DISCORD_BOT_TOKEN=MTQ...
 
 **Notes:**
 
-- Non-loopback binds (`--bind lan`) require `OPENCLAW_GATEWAY_TOKEN` for security.
+- Non-loopback binds (`--bind lan`) require `REMOTECLAW_GATEWAY_TOKEN` for security.
 - Treat these tokens like passwords.
 - **Prefer env vars over config file** for all API keys and tokens. This keeps secrets out of `openclaw.json` where they could be accidentally exposed or logged.
 
@@ -199,7 +199,7 @@ cat > /data/openclaw.json << 'EOF'
 EOF
 ```
 
-**Note:** With `OPENCLAW_STATE_DIR=/data`, the config path is `/data/openclaw.json`.
+**Note:** With `REMOTECLAW_STATE_DIR=/data`, the config path is `/data/openclaw.json`.
 
 **Note:** The Discord token can come from either:
 
@@ -227,7 +227,7 @@ fly open
 
 Or visit `https://my-openclaw.fly.dev/`
 
-Paste your gateway token (the one from `OPENCLAW_GATEWAY_TOKEN`) to authenticate.
+Paste your gateway token (the one from `REMOTECLAW_GATEWAY_TOKEN`) to authenticate.
 
 ### Logs
 
@@ -254,7 +254,7 @@ The gateway is binding to `127.0.0.1` instead of `0.0.0.0`.
 
 Fly can't reach the gateway on the configured port.
 
-**Fix:** Ensure `internal_port` matches the gateway port (set `--port 3000` or `OPENCLAW_GATEWAY_PORT=3000`).
+**Fix:** Ensure `internal_port` matches the gateway port (set `--port 3000` or `REMOTECLAW_GATEWAY_PORT=3000`).
 
 ### OOM / Memory Issues
 
@@ -323,7 +323,7 @@ fly ssh console --command "rm /data/openclaw.json"
 
 If you lose credentials or sessions after a restart, the state dir is writing to the container filesystem.
 
-**Fix:** Ensure `OPENCLAW_STATE_DIR=/data` is set in `fly.toml` and redeploy.
+**Fix:** Ensure `REMOTECLAW_STATE_DIR=/data` is set in `fly.toml` and redeploy.
 
 ## Updates
 

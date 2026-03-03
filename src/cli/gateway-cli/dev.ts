@@ -32,7 +32,7 @@ async function loadDevTemplate(name: string, fallback: string): Promise<string> 
 
 const resolveDevWorkspaceDir = (env: NodeJS.ProcessEnv = process.env): string => {
   const baseDir = resolveDefaultAgentWorkspaceDir(env, os.homedir);
-  const profile = env.OPENCLAW_PROFILE?.trim().toLowerCase();
+  const profile = env.REMOTECLAW_PROFILE?.trim().toLowerCase();
   if (profile === "dev") {
     return baseDir;
   }

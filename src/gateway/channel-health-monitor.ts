@@ -10,12 +10,23 @@ const DEFAULT_COOLDOWN_CYCLES = 2;
 const DEFAULT_MAX_RESTARTS_PER_HOUR = 10;
 const ONE_HOUR_MS = 60 * 60_000;
 
+/**
+ * How long a connected channel can go without receiving any event before
+ * the health monitor treats it as a "stale socket" and triggers a restart.
+ * This catches the half-dead WebSocket scenario where the connection appears
+ * alive (health checks pass) but Slack silently stops delivering events.
+ */
+const DEFAULT_STALE_EVENT_THRESHOLD_MS = 30 * 60_000;
+const DEFAULT_CHANNEL_STARTUP_GRACE_MS = 120_000;
+
 export type ChannelHealthMonitorDeps = {
   channelManager: ChannelManager;
   checkIntervalMs?: number;
   startupGraceMs?: number;
   cooldownCycles?: number;
   maxRestartsPerHour?: number;
+  staleEventThresholdMs?: number;
+  channelStartupGraceMs?: number;
   abortSignal?: AbortSignal;
 };
 
@@ -32,17 +43,28 @@ function isManagedAccount(snapshot: { enabled?: boolean; configured?: boolean })
   return snapshot.enabled !== false && snapshot.configured !== false;
 }
 
-function isChannelHealthy(snapshot: {
-  running?: boolean;
-  connected?: boolean;
-  enabled?: boolean;
-  configured?: boolean;
-}): boolean {
+function isChannelHealthy(
+  snapshot: {
+    running?: boolean;
+    connected?: boolean;
+    enabled?: boolean;
+    configured?: boolean;
+    lastEventAt?: number | null;
+    lastStartAt?: number | null;
+  },
+  opts: { now: number; staleEventThresholdMs: number; channelStartupGraceMs: number },
+): boolean {
   if (!isManagedAccount(snapshot)) {
     return true;
   }
   if (!snapshot.running) {
     return false;
+  }
+  if (snapshot.lastStartAt != null) {
+    const upDuration = opts.now - snapshot.lastStartAt;
+    if (upDuration < opts.channelStartupGraceMs) {
+      return true;
+    }
   }
   if (snapshot.connected === false) {
     return false;
@@ -57,6 +79,8 @@ export function startChannelHealthMonitor(deps: ChannelHealthMonitorDeps): Chann
     startupGraceMs = DEFAULT_STARTUP_GRACE_MS,
     cooldownCycles = DEFAULT_COOLDOWN_CYCLES,
     maxRestartsPerHour = DEFAULT_MAX_RESTARTS_PER_HOUR,
+    staleEventThresholdMs = DEFAULT_STALE_EVENT_THRESHOLD_MS,
+    channelStartupGraceMs = DEFAULT_CHANNEL_STARTUP_GRACE_MS,
     abortSignal,
   } = deps;
 
@@ -101,7 +125,7 @@ export function startChannelHealthMonitor(deps: ChannelHealthMonitorDeps): Chann
           if (channelManager.isManuallyStopped(channelId as ChannelId, accountId)) {
             continue;
           }
-          if (isChannelHealthy(status)) {
+          if (isChannelHealthy(status, { now, staleEventThresholdMs, channelStartupGraceMs })) {
             continue;
           }
 

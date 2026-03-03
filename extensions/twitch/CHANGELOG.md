@@ -35,5 +35,5 @@
 ### Improvements
 
 - Added proper configuration schema with Zod validation
-- Added plugin descriptor (openclaw.plugin.json)
+- Added plugin descriptor (remoteclaw.plugin.json)
 - Added comprehensive README and documentation

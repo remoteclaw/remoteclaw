@@ -115,7 +115,7 @@ export function createSynologyChatPlugin() {
           allowFrom: account.allowedUserIds ?? [],
           policyPath: `${basePath}dmPolicy`,
           allowFromPath: basePath,
-          approveHint: "openclaw pairing approve synology-chat <code>",
+          approveHint: "remoteclaw pairing approve synology-chat <code>",
           normalizeEntry: (raw: string) => raw.toLowerCase().trim(),
         };
       },

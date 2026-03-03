@@ -1,9 +1,9 @@
 {
-  "name": "@openclaw/nextcloud-talk",
+  "name": "@remoteclaw/nextcloud-talk",
   "version": "2026.2.25",
   "description": "RemoteClaw Nextcloud Talk channel plugin",
   "type": "module",
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
@@ -22,7 +22,7 @@
       "quickstartAllowFrom": true
     },
     "install": {
-      "npmSpec": "@openclaw/nextcloud-talk",
+      "npmSpec": "@remoteclaw/nextcloud-talk",
       "localPath": "extensions/nextcloud-talk",
       "defaultChoice": "npm"
     }

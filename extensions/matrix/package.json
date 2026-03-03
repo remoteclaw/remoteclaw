@@ -1,5 +1,5 @@
 {
-  "name": "@openclaw/matrix",
+  "name": "@remoteclaw/matrix",
   "version": "2026.2.25",
   "description": "RemoteClaw Matrix channel plugin",
   "type": "module",
@@ -10,7 +10,7 @@
     "music-metadata": "^11.12.1",
     "zod": "^4.3.6"
   },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
@@ -25,7 +25,7 @@
       "quickstartAllowFrom": true
     },
     "install": {
-      "npmSpec": "@openclaw/matrix",
+      "npmSpec": "@remoteclaw/matrix",
       "localPath": "extensions/matrix",
       "defaultChoice": "npm"
     }

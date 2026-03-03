@@ -159,7 +159,7 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
         allowFrom: account.config.allowFrom ?? [],
         policyPath: `${basePath}dmPolicy`,
         allowFromPath: basePath,
-        approveHint: "openclaw pairing approve line <code>",
+        approveHint: "remoteclaw pairing approve line <code>",
         normalizeEntry: (raw) => raw.replace(/^line:(?:user:)?/i, ""),
       };
     },

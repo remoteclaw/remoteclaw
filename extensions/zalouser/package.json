@@ -1,12 +1,12 @@
 {
-  "name": "@openclaw/zalouser",
+  "name": "@remoteclaw/zalouser",
   "version": "2026.2.25",
   "description": "RemoteClaw Zalo Personal Account plugin via zca-cli",
   "type": "module",
   "dependencies": {
     "@sinclair/typebox": "0.34.48"
   },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
@@ -24,7 +24,7 @@
       "quickstartAllowFrom": true
     },
     "install": {
-      "npmSpec": "@openclaw/zalouser",
+      "npmSpec": "@remoteclaw/zalouser",
       "localPath": "extensions/zalouser",
       "defaultChoice": "npm"
     }

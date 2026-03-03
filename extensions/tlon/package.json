@@ -1,12 +1,12 @@
 {
-  "name": "@openclaw/tlon",
+  "name": "@remoteclaw/tlon",
   "version": "2026.2.25",
   "description": "RemoteClaw Tlon/Urbit channel plugin",
   "type": "module",
   "dependencies": {
     "@urbit/aura": "^3.0.0"
   },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
@@ -21,7 +21,7 @@
       "quickstartAllowFrom": true
     },
     "install": {
-      "npmSpec": "@openclaw/tlon",
+      "npmSpec": "@remoteclaw/tlon",
       "localPath": "extensions/tlon",
       "defaultChoice": "npm"
     }

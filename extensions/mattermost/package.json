@@ -1,9 +1,9 @@
 {
-  "name": "@openclaw/mattermost",
+  "name": "@remoteclaw/mattermost",
   "version": "2026.2.25",
   "description": "RemoteClaw Mattermost channel plugin",
   "type": "module",
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
@@ -17,7 +17,7 @@
       "order": 65
     },
     "install": {
-      "npmSpec": "@openclaw/mattermost",
+      "npmSpec": "@remoteclaw/mattermost",
       "localPath": "extensions/mattermost",
       "defaultChoice": "npm"
     }

@@ -13,7 +13,7 @@ describe("msteams conversation store (fs)", () => {
   });
 
   it("filters and prunes expired entries (but keeps legacy ones)", async () => {
-    const stateDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "openclaw-msteams-store-"));
+    const stateDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "remoteclaw-msteams-store-"));
 
     const env: NodeJS.ProcessEnv = {
       ...process.env,

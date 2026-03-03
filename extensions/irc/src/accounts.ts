@@ -201,7 +201,7 @@ export function resolveIrcAccount(params: {
       merged.username?.trim() ||
       (accountId === DEFAULT_ACCOUNT_ID ? process.env.IRC_USERNAME?.trim() : "") ||
       nick ||
-      "openclaw"
+      "remoteclaw"
     ).trim();
     const realname = (
       merged.realname?.trim() ||

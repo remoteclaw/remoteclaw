@@ -50,7 +50,7 @@ function writePlugin(params: {
   const file = path.join(dir, filename);
   fs.writeFileSync(file, params.body, "utf-8");
   fs.writeFileSync(
-    path.join(dir, "openclaw.plugin.json"),
+    path.join(dir, "remoteclaw.plugin.json"),
     JSON.stringify(
       {
         id: params.id,
@@ -497,7 +497,7 @@ describe("loadRemoteClawPlugins", () => {
       "utf-8",
     );
     fs.writeFileSync(
-      path.join(pluginDir, "openclaw.plugin.json"),
+      path.join(pluginDir, "remoteclaw.plugin.json"),
       JSON.stringify(
         {
           id: "symlinked",

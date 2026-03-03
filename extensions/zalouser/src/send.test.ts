@@ -136,10 +136,12 @@ describe("zalouser send helpers", () => {
     process.env.ZCA_PROFILE = "env-profile";
     mockRunZca.mockResolvedValueOnce(okResult("abc123"));
 
-    const result = await sendLinkZalouser("thread-5", " https://openclaw.ai ", { isGroup: true });
+    const result = await sendLinkZalouser("thread-5", " https://remoteclaw.com ", {
+      isGroup: true,
+    });
 
     expect(mockRunZca).toHaveBeenCalledWith(
-      ["msg", "link", "thread-5", "https://openclaw.ai", "-g"],
+      ["msg", "link", "thread-5", "https://remoteclaw.com", "-g"],
       { profile: "env-profile" },
     );
     expect(result).toEqual({ ok: true, messageId: "abc123" });
@@ -148,7 +150,7 @@ describe("zalouser send helpers", () => {
   it("returns caught command errors", async () => {
     mockRunZca.mockRejectedValueOnce(new Error("zca unavailable"));
 
-    await expect(sendLinkZalouser("thread-6", "https://openclaw.ai")).resolves.toEqual({
+    await expect(sendLinkZalouser("thread-6", "https://remoteclaw.com")).resolves.toEqual({
       ok: false,
       error: "zca unavailable",
     });

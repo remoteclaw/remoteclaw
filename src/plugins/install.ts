@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { MANIFEST_KEY } from "../compat/legacy-names.js";
+import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
 import { fileExists, readJsonFile, resolveArchiveKind } from "../infra/archive.js";
 import { resolveExistingInstallPath, withExtractedArchiveRoot } from "../infra/install-flow.js";
 import {
@@ -32,11 +32,12 @@ type PluginInstallLogger = {
   warn?: (message: string) => void;
 };
 
+type ManifestMeta = { extensions?: string[] };
 type PackageManifest = {
   name?: string;
   version?: string;
   dependencies?: Record<string, string>;
-} & Partial<Record<typeof MANIFEST_KEY, { extensions?: string[] }>>;
+} & Partial<Record<typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number], ManifestMeta>>;
 
 export type InstallPluginResult =
   | {
@@ -77,13 +78,22 @@ function validatePluginId(pluginId: string): string | null {
 }
 
 async function ensureRemoteClawExtensions(manifest: PackageManifest) {
-  const extensions = manifest[MANIFEST_KEY]?.extensions;
+  let extensions = manifest[MANIFEST_KEY]?.extensions;
   if (!Array.isArray(extensions)) {
-    throw new Error("package.json missing openclaw.extensions");
+    for (const key of LEGACY_MANIFEST_KEYS) {
+      const legacy = manifest[key]?.extensions;
+      if (Array.isArray(legacy)) {
+        extensions = legacy;
+        break;
+      }
+    }
+  }
+  if (!Array.isArray(extensions)) {
+    throw new Error("package.json missing remoteclaw.extensions");
   }
   const list = extensions.map((e) => (typeof e === "string" ? e.trim() : "")).filter(Boolean);
   if (list.length === 0) {
-    throw new Error("package.json openclaw.extensions is empty");
+    throw new Error("package.json remoteclaw.extensions is empty");
   }
   return list;
 }
@@ -151,9 +161,9 @@ async function installPluginFromPackageDir(params: {
   const pkgName = typeof manifest.name === "string" ? manifest.name : "";
   const npmPluginId = pkgName ? unscopedPackageName(pkgName) : "plugin";
 
-  // Prefer the canonical `id` from openclaw.plugin.json over the npm package name.
+  // Prefer the canonical `id` from remoteclaw.plugin.json over the npm package name.
   // This avoids a latent key-mismatch bug: if the manifest id (e.g. "memory-cognee")
-  // differs from the npm package name (e.g. "cognee-openclaw"), the plugin registry
+  // differs from the npm package name (e.g. "cognee-remoteclaw"), the plugin registry
   // uses the manifest id as the authoritative key, so the config entry must match it.
   const ocManifestResult = loadPluginManifest(params.packageDir);
   const manifestPluginId =
@@ -286,7 +296,7 @@ export async function installPluginFromArchive(params: {
 
   return await withExtractedArchiveRoot({
     archivePath,
-    tempDirPrefix: "openclaw-plugin-",
+    tempDirPrefix: "remoteclaw-plugin-",
     timeoutMs,
     logger,
     onExtracted: async (packageDir) =>
@@ -393,7 +403,7 @@ export async function installPluginFromNpmSpec(params: {
 
   logger.info?.(`Downloading ${spec}…`);
   const flowResult = await installFromNpmSpecArchiveWithInstaller({
-    tempDirPrefix: "openclaw-npm-pack-",
+    tempDirPrefix: "remoteclaw-npm-pack-",
     spec,
     timeoutMs,
     expectedIntegrity: params.expectedIntegrity,

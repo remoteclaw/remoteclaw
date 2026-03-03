@@ -379,7 +379,7 @@ export const ircOnboardingAdapter: ChannelOnboardingAdapter = {
       const username = String(
         await prompter.text({
           message: "IRC username",
-          initialValue: resolved.config.username || nick || "openclaw",
+          initialValue: resolved.config.username || nick || "remoteclaw",
           validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
         }),
       ).trim();
@@ -394,7 +394,7 @@ export const ircOnboardingAdapter: ChannelOnboardingAdapter = {
 
       const channelsRaw = await prompter.text({
         message: "Auto-join IRC channels (optional, comma-separated)",
-        placeholder: "#openclaw, #ops",
+        placeholder: "#remoteclaw, #ops",
         initialValue: (resolved.config.channels ?? []).join(", "),
       });
       const channels = [
@@ -424,7 +424,7 @@ export const ircOnboardingAdapter: ChannelOnboardingAdapter = {
       label: "IRC channels",
       currentPolicy: afterConfig.config.groupPolicy ?? "allowlist",
       currentEntries: Object.keys(afterConfig.config.groups ?? {}),
-      placeholder: "#openclaw, #ops, *",
+      placeholder: "#remoteclaw, #ops, *",
       updatePrompt: Boolean(afterConfig.config.groups),
     });
     if (accessConfig) {
@@ -457,7 +457,7 @@ export const ircOnboardingAdapter: ChannelOnboardingAdapter = {
     await prompter.note(
       [
         "Next: restart gateway and verify status.",
-        "Command: openclaw channels status --probe",
+        "Command: remoteclaw channels status --probe",
         `Docs: ${formatDocsLink("/channels/irc", "channels/irc")}`,
       ].join("\n"),
       "IRC next steps",

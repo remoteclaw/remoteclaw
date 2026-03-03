@@ -30,7 +30,7 @@ If you’re looking for **how to use BlueBubbles as an agent/tool user**, see:
 - BlueBubbles posts JSON to the gateway HTTP server.
 - Normalize sender/chat IDs defensively (payloads vary by version).
 - Skip messages marked as from self.
-- Route into core reply pipeline via the plugin runtime (`api.runtime`) and `openclaw/plugin-sdk` helpers.
+- Route into core reply pipeline via the plugin runtime (`api.runtime`) and `remoteclaw/plugin-sdk` helpers.
 - For attachments/stickers, use `<media:...>` placeholders when text is empty and attach media paths via `MediaUrl(s)` in the inbound context.
 
 ## Config (core)

@@ -1,10 +1,10 @@
 {
-  "name": "@openclaw/telegram",
+  "name": "@remoteclaw/telegram",
   "version": "2026.2.25",
   "private": true,
   "description": "RemoteClaw Telegram channel plugin",
   "type": "module",
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ]

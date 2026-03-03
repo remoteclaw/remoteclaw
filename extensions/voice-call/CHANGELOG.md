@@ -31,7 +31,7 @@
 
 ### Highlights
 
-- First public release of the @openclaw/voice-call plugin.
+- First public release of the @remoteclaw/voice-call plugin.
 
 ### Features
 
@@ -44,6 +44,6 @@
 - Speech: OpenAI TTS (model/voice/instructions) with Twilio `<Say>` fallback.
 - Tooling: `voice_call` tool actions for initiate/continue/speak/end/status.
 - Gateway RPC: `voicecall.initiate|continue|speak|end|status` (+ legacy `voicecall.start`).
-- CLI: `openclaw voicecall` commands (call/start/continue/speak/end/status/tail/expose).
+- CLI: `remoteclaw voicecall` commands (call/start/continue/speak/end/status/tail/expose).
 - Observability: JSONL call logs and `voicecall tail` for live inspection.
 - Response controls: `responseModel`, `responseSystemPrompt`, and `responseTimeoutMs` for auto‑responses.

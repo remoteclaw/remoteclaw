@@ -1,5 +1,5 @@
 {
-  "name": "@openclaw/diagnostics-otel",
+  "name": "@remoteclaw/diagnostics-otel",
   "version": "2026.2.25",
   "description": "RemoteClaw diagnostics OpenTelemetry exporter",
   "type": "module",
@@ -16,7 +16,7 @@
     "@opentelemetry/sdk-trace-base": "^2.5.1",
     "@opentelemetry/semantic-conventions": "^1.39.0"
   },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ]

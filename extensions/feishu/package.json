@@ -1,5 +1,5 @@
 {
-  "name": "@openclaw/feishu",
+  "name": "@remoteclaw/feishu",
   "version": "2026.2.25",
   "description": "RemoteClaw Feishu/Lark channel plugin (community maintained by @m1heng)",
   "type": "module",
@@ -8,7 +8,7 @@
     "@sinclair/typebox": "0.34.48",
     "zod": "^4.3.6"
   },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
@@ -26,7 +26,7 @@
       "quickstartAllowFrom": true
     },
     "install": {
-      "npmSpec": "@openclaw/feishu",
+      "npmSpec": "@remoteclaw/feishu",
       "localPath": "extensions/feishu",
       "defaultChoice": "npm"
     }

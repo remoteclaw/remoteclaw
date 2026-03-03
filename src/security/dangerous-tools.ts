@@ -23,11 +23,6 @@ export const DEFAULT_GATEWAY_HTTP_TOOL_DENY = [
  * ACP tools that should always require explicit user approval.
  * ACP is an automation surface; we never want "silent yes" for mutating/execution tools.
  */
-export const DANGEROUS_ACP_TOOL_NAMES = [
-  "write",
-  "sessions_spawn",
-  "sessions_send",
-  "gateway",
-] as const;
+export const DANGEROUS_ACP_TOOL_NAMES = ["sessions_spawn", "sessions_send", "gateway"] as const;
 
 export const DANGEROUS_ACP_TOOLS = new Set<string>(DANGEROUS_ACP_TOOL_NAMES);

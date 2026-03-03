@@ -634,8 +634,6 @@
         }
         return `[read: ${display}]`;
       }
-      case "write":
-        return `[write: ${shortenPath(String(args.path || args.file_path || ""))}]`;
       case "edit":
         return `[edit: ${shortenPath(String(args.path || args.file_path || ""))}]`;
       case "bash": {
@@ -1101,33 +1099,6 @@
           const lang = filePath ? getLanguageFromPath(filePath) : null;
           if (output) {
             html += formatExpandableOutput(output, 10, lang);
-          }
-        }
-        break;
-      }
-      case "write": {
-        const filePath = str(args.file_path ?? args.path);
-        const content = str(args.content);
-
-        html += `<div class="tool-header"><span class="tool-name">write</span> <span class="tool-path">${filePath === null ? invalidArg : escapeHtml(shortenPath(filePath || ""))}</span>`;
-        if (content !== null && content) {
-          const lines = content.split("\n");
-          if (lines.length > 10) {
-            html += ` <span class="line-count">(${lines.length} lines)</span>`;
-          }
-        }
-        html += "</div>";
-
-        if (content === null) {
-          html += `<div class="tool-error">[invalid content arg - expected string]</div>`;
-        } else if (content) {
-          const lang = filePath ? getLanguageFromPath(filePath) : null;
-          html += formatExpandableOutput(content, 10, lang);
-        }
-        if (result) {
-          const output = getResultText().trim();
-          if (output) {
-            html += `<div class="tool-output"><div>${escapeHtml(output)}</div></div>`;
           }
         }
         break;

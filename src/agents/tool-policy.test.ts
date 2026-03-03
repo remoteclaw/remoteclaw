@@ -42,13 +42,12 @@ describe("tool-policy", () => {
     const expanded = expandToolGroups(["BASH", "group:fs"]);
     const set = new Set(expanded);
     expect(set.has("bash")).toBe(true);
-    expect(set.has("write")).toBe(true);
     expect(set.has("edit")).toBe(true);
   });
 
   it("resolves known profiles and ignores unknown ones", () => {
     const coding = resolveToolProfilePolicy("coding");
-    expect(coding?.allow).toContain("read");
+    expect(coding?.allow).toContain("edit");
     expect(coding?.allow).toContain("cron");
     expect(coding?.allow).not.toContain("gateway");
     expect(resolveToolProfilePolicy("nope")).toBeUndefined();

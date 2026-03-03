@@ -81,7 +81,7 @@ If you're unsure about the risk level, just describe the impact and we'll assess
 - [ATLAS Website](https://atlas.mitre.org/)
 - [ATLAS Techniques](https://atlas.mitre.org/techniques/)
 - [ATLAS Case Studies](https://atlas.mitre.org/studies/)
-- [RemoteClaw Threat Model](./THREAT-MODEL-ATLAS.md)
+- [RemoteClaw Threat Model](/security/THREAT-MODEL-ATLAS)
 
 ## Contact
 

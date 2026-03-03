@@ -11,7 +11,7 @@ function makePermissionRequest(
     sessionId: "session-1",
     toolCall: {
       toolCallId: "tool-1",
-      title: "read: src/index.ts",
+      title: "search: foo",
       status: "pending",
     },
     options: [
@@ -49,7 +49,7 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
   });
 
-  it("prompts for non-read/search tools (write)", async () => {
+  it("prompts for non-search tools (write)", async () => {
     const prompt = vi.fn(async () => true);
     const res = await resolvePermissionRequest(
       makePermissionRequest({
@@ -74,98 +74,16 @@ describe("resolvePermissionRequest", () => {
     expect(prompt).not.toHaveBeenCalled();
   });
 
-  it("prompts for read outside cwd scope", async () => {
+  it("prompts for read tool (no longer auto-approved)", async () => {
     const prompt = vi.fn(async () => false);
     const res = await resolvePermissionRequest(
       makePermissionRequest({
-        toolCall: { toolCallId: "tool-r", title: "read: ~/.ssh/id_rsa", status: "pending" },
+        toolCall: { toolCallId: "tool-r", title: "read: src/index.ts", status: "pending" },
       }),
       { prompt, log: () => {} },
     );
     expect(prompt).toHaveBeenCalledTimes(1);
-    expect(prompt).toHaveBeenCalledWith("read", "read: ~/.ssh/id_rsa");
-    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
-  });
-
-  it("auto-approves read when rawInput path resolves inside cwd", async () => {
-    const prompt = vi.fn(async () => true);
-    const res = await resolvePermissionRequest(
-      makePermissionRequest({
-        toolCall: {
-          toolCallId: "tool-read-inside-cwd",
-          title: "read: ignored-by-raw-input",
-          status: "pending",
-          rawInput: { path: "docs/security.md" },
-        },
-      }),
-      { prompt, log: () => {}, cwd: "/tmp/openclaw-acp-cwd" },
-    );
-    expect(prompt).not.toHaveBeenCalled();
-    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
-  });
-
-  it("auto-approves read when rawInput file URL resolves inside cwd", async () => {
-    const prompt = vi.fn(async () => true);
-    const res = await resolvePermissionRequest(
-      makePermissionRequest({
-        toolCall: {
-          toolCallId: "tool-read-inside-cwd-file-url",
-          title: "read: ignored-by-raw-input",
-          status: "pending",
-          rawInput: { path: "file:///tmp/openclaw-acp-cwd/docs/security.md" },
-        },
-      }),
-      { prompt, log: () => {}, cwd: "/tmp/openclaw-acp-cwd" },
-    );
-    expect(prompt).not.toHaveBeenCalled();
-    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
-  });
-
-  it("prompts for read when rawInput path escapes cwd via traversal", async () => {
-    const prompt = vi.fn(async () => false);
-    const res = await resolvePermissionRequest(
-      makePermissionRequest({
-        toolCall: {
-          toolCallId: "tool-read-escape-cwd",
-          title: "read: ignored-by-raw-input",
-          status: "pending",
-          rawInput: { path: "../.ssh/id_rsa" },
-        },
-      }),
-      { prompt, log: () => {}, cwd: "/tmp/openclaw-acp-cwd/workspace" },
-    );
-    expect(prompt).toHaveBeenCalledTimes(1);
-    expect(prompt).toHaveBeenCalledWith("read", "read: ignored-by-raw-input");
-    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
-  });
-
-  it("prompts for read when scoped path is missing", async () => {
-    const prompt = vi.fn(async () => false);
-    const res = await resolvePermissionRequest(
-      makePermissionRequest({
-        toolCall: {
-          toolCallId: "tool-read-no-path",
-          title: "read",
-          status: "pending",
-        },
-      }),
-      { prompt, log: () => {} },
-    );
-    expect(prompt).toHaveBeenCalledTimes(1);
-    expect(prompt).toHaveBeenCalledWith("read", "read");
-    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
-  });
-
-  it("prompts for non-core read-like tool names", async () => {
-    const prompt = vi.fn(async () => false);
-    const res = await resolvePermissionRequest(
-      makePermissionRequest({
-        toolCall: { toolCallId: "tool-fr", title: "fs_read: ~/.ssh/id_rsa", status: "pending" },
-      }),
-      { prompt, log: () => {} },
-    );
-    expect(prompt).toHaveBeenCalledTimes(1);
-    expect(prompt).toHaveBeenCalledWith("fs_read", "fs_read: ~/.ssh/id_rsa");
+    expect(prompt).toHaveBeenCalledWith("read", "read: src/index.ts");
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
   });
 

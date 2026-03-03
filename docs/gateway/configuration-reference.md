@@ -395,6 +395,13 @@ Mattermost ships as a plugin: `remoteclaw plugins install @remoteclaw/mattermost
       dmPolicy: "pairing",
       chatmode: "oncall", // oncall | onmessage | onchar
       oncharPrefixes: [">", "!"],
+      commands: {
+        native: true, // opt-in
+        nativeSkills: true,
+        callbackPath: "/api/channels/mattermost/command",
+        // Optional explicit URL for reverse-proxy/public deployments
+        callbackUrl: "https://gateway.example.com/api/channels/mattermost/command",
+      },
       textChunkLimit: 4000,
       chunkMode: "length",
     },
@@ -404,6 +411,13 @@ Mattermost ships as a plugin: `remoteclaw plugins install @remoteclaw/mattermost
 
 Chat modes: `oncall` (respond on @-mention, default), `onmessage` (every message), `onchar` (messages starting with trigger prefix).
 
+When Mattermost native commands are enabled:
+
+- `commands.callbackPath` must be a path (for example `/api/channels/mattermost/command`), not a full URL.
+- `commands.callbackUrl` must resolve to the RemoteClaw gateway endpoint and be reachable from the Mattermost server.
+- For private/tailnet/internal callback hosts, Mattermost may require
+  `ServiceSettings.AllowedUntrustedInternalConnections` to include the callback host/domain.
+  Use host/domain values, not full URLs.
 - Optional `channels.mattermost.defaultAccount` overrides default account selection when it matches a configured account id.
 
 ### Signal

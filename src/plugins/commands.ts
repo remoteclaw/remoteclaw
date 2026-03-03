@@ -61,7 +61,6 @@ const RESERVED_COMMANDS = new Set([
   "send",
   // Execution
   "bash",
-  "exec",
   // Mode toggles
   "think",
   "verbose",

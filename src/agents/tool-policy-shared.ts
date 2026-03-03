@@ -9,9 +9,7 @@ type ToolProfilePolicy = {
   deny?: string[];
 };
 
-const TOOL_NAME_ALIASES: Record<string, string> = {
-  bash: "exec",
-};
+const TOOL_NAME_ALIASES: Record<string, string> = {};
 
 export const TOOL_GROUPS: Record<string, string[]> = { ...CORE_TOOL_GROUPS };
 

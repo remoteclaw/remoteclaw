@@ -46,7 +46,7 @@ export const pt_BR: TranslationMap = {
     cron: "Agendar despertares e execuções recorrentes de agentes.",
     nodes: "Dispositivos pareados, capacidades e exposição de comandos.",
     chat: "Sessão de chat direta com o gateway para intervenções rápidas.",
-    config: "Editar ~/.openclaw/openclaw.json com segurança.",
+    config: "Editar ~/.remoteclaw/remoteclaw.json com segurança.",
     debug: "Snapshots do gateway, eventos e chamadas RPC manuais.",
     logs: "Acompanhamento ao vivo dos logs de arquivo do gateway.",
   },

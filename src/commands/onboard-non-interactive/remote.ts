@@ -47,7 +47,7 @@ export async function runNonInteractiveOnboardingRemote(params: {
     runtime.log(`Remote gateway: ${remoteUrl}`);
     runtime.log(`Auth: ${payload.auth}`);
     runtime.log(
-      `Tip: run \`${formatCliCommand("openclaw configure")}\` to customize your setup. Docs: https://docs.openclaw.ai`,
+      `Tip: run \`${formatCliCommand("remoteclaw configure")}\` to customize your setup. Docs: https://docs.openclaw.ai`,
     );
   }
 }

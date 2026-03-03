@@ -44,7 +44,7 @@ describe("resolveAgentConfig", () => {
             id: "main",
             name: "Main Agent",
             workspace: "~/openclaw",
-            agentDir: "~/.openclaw/agents/main",
+            agentDir: "~/.remoteclaw/agents/main",
             model: "anthropic/claude-opus-4",
           },
         ],
@@ -54,7 +54,7 @@ describe("resolveAgentConfig", () => {
     expect(result).toEqual({
       name: "Main Agent",
       workspace: "~/openclaw",
-      agentDir: "~/.openclaw/agents/main",
+      agentDir: "~/.remoteclaw/agents/main",
       model: "anthropic/claude-opus-4",
       identity: undefined,
       groupChat: undefined,
@@ -415,7 +415,7 @@ describe("resolveAgentConfig", () => {
     vi.stubEnv("REMOTECLAW_HOME", home);
 
     const workspace = resolveAgentWorkspaceDir({} as RemoteClawConfig, "main");
-    expect(workspace).toBe(path.join(path.resolve(home), ".openclaw", "workspace"));
+    expect(workspace).toBe(path.join(path.resolve(home), ".remoteclaw", "workspace"));
   });
 
   it("uses REMOTECLAW_HOME for default agentDir", () => {
@@ -425,6 +425,6 @@ describe("resolveAgentConfig", () => {
     vi.stubEnv("REMOTECLAW_STATE_DIR", "");
 
     const agentDir = resolveAgentDir({} as RemoteClawConfig, "main");
-    expect(agentDir).toBe(path.join(path.resolve(home), ".openclaw", "agents", "main", "agent"));
+    expect(agentDir).toBe(path.join(path.resolve(home), ".remoteclaw", "agents", "main", "agent"));
   });
 });

@@ -37,7 +37,7 @@ describe("resolveSessionStoreTargets", () => {
 
     const targets = resolveSessionStoreTargets(
       {
-        session: { store: "~/.openclaw/agents/{agentId}/sessions/sessions.json" },
+        session: { store: "~/.remoteclaw/agents/{agentId}/sessions/sessions.json" },
       },
       { allAgents: true },
     );

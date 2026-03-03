@@ -109,7 +109,7 @@ async function promptChannelMode(runtime: RuntimeEnv): Promise<ChannelsWizardMod
         {
           value: "remove",
           label: "Remove channel config",
-          hint: "Delete channel tokens/settings from openclaw.json",
+          hint: "Delete channel tokens/settings from remoteclaw.json",
         },
       ],
       initialValue: "configure",

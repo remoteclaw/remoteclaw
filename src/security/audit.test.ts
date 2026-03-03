@@ -369,7 +369,7 @@ describe("security audit", () => {
     const tmp = await makeTmpDir("win");
     const stateDir = path.join(tmp, "state");
     await fs.mkdir(stateDir, { recursive: true });
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "remoteclaw.json");
     await fs.writeFile(configPath, "{}\n", "utf-8");
 
     const user = "DESKTOP-TEST\\Tester";
@@ -406,7 +406,7 @@ describe("security audit", () => {
     const tmp = await makeTmpDir("win-open");
     const stateDir = path.join(tmp, "state");
     await fs.mkdir(stateDir, { recursive: true });
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "remoteclaw.json");
     await fs.writeFile(configPath, "{}\n", "utf-8");
 
     const user = "DESKTOP-TEST\\Tester";
@@ -453,11 +453,11 @@ describe("security audit", () => {
     const stateDir = path.join(tmp, "state");
     await fs.mkdir(stateDir, { recursive: true, mode: 0o700 });
 
-    const targetConfigPath = path.join(tmp, "managed-openclaw.json");
+    const targetConfigPath = path.join(tmp, "managed-remoteclaw.json");
     await fs.writeFile(targetConfigPath, "{}\n", "utf-8");
     await fs.chmod(targetConfigPath, 0o444);
 
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "remoteclaw.json");
     await fs.symlink(targetConfigPath, configPath);
 
     const res = await runSecurityAudit({
@@ -1130,7 +1130,7 @@ describe("security audit", () => {
         "channels.discord.guilds.123.channels.general.users:security-team",
       );
       expect(finding?.detail).toContain(
-        "~/.openclaw/credentials/discord-allowFrom.json:team.owner",
+        "~/.remoteclaw/credentials/discord-allowFrom.json:team.owner",
       );
       expect(finding?.detail).not.toContain("<@123456789012345678>");
     });
@@ -1702,8 +1702,8 @@ describe("security audit", () => {
     const cfg: RemoteClawConfig = {};
 
     const res = await audit(cfg, {
-      stateDir: "/Users/test/Dropbox/.openclaw",
-      configPath: "/Users/test/Dropbox/.openclaw/openclaw.json",
+      stateDir: "/Users/test/Dropbox/.remoteclaw",
+      configPath: "/Users/test/Dropbox/.remoteclaw/remoteclaw.json",
     });
 
     expectFinding(res, "fs.synced_dir", "warn");
@@ -1724,7 +1724,7 @@ describe("security audit", () => {
       await fs.chmod(includePath, 0o644);
     }
 
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "remoteclaw.json");
     await fs.writeFile(configPath, `{ "$include": "./extra.json5" }\n`, "utf-8");
     await fs.chmod(configPath, 0o600);
 
@@ -1797,7 +1797,7 @@ describe("security audit", () => {
         includeFilesystem: true,
         includeChannelSecurity: false,
         stateDir,
-        configPath: path.join(stateDir, "openclaw.json"),
+        configPath: path.join(stateDir, "remoteclaw.json"),
       });
 
       expect(res.findings).toEqual(
@@ -1860,7 +1860,7 @@ describe("security audit", () => {
       includeFilesystem: true,
       includeChannelSecurity: false,
       stateDir,
-      configPath: path.join(stateDir, "openclaw.json"),
+      configPath: path.join(stateDir, "remoteclaw.json"),
     });
 
     expect(hasFinding(res, "plugins.installs_unpinned_npm_specs", "warn")).toBe(true);
@@ -1902,7 +1902,7 @@ describe("security audit", () => {
       includeFilesystem: true,
       includeChannelSecurity: false,
       stateDir,
-      configPath: path.join(stateDir, "openclaw.json"),
+      configPath: path.join(stateDir, "remoteclaw.json"),
     });
 
     expect(hasFinding(res, "plugins.installs_unpinned_npm_specs")).toBe(false);
@@ -1959,7 +1959,7 @@ describe("security audit", () => {
       includeFilesystem: true,
       includeChannelSecurity: false,
       stateDir,
-      configPath: path.join(stateDir, "openclaw.json"),
+      configPath: path.join(stateDir, "remoteclaw.json"),
     });
 
     expect(hasFinding(res, "plugins.installs_version_drift", "warn")).toBe(true);
@@ -1982,7 +1982,7 @@ describe("security audit", () => {
       includeFilesystem: true,
       includeChannelSecurity: false,
       stateDir,
-      configPath: path.join(stateDir, "openclaw.json"),
+      configPath: path.join(stateDir, "remoteclaw.json"),
     });
 
     expect(res.findings).toEqual(
@@ -2012,7 +2012,7 @@ describe("security audit", () => {
       includeFilesystem: true,
       includeChannelSecurity: false,
       stateDir,
-      configPath: path.join(stateDir, "openclaw.json"),
+      configPath: path.join(stateDir, "remoteclaw.json"),
     });
 
     expect(

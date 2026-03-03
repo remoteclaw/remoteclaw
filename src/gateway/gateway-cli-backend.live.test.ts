@@ -255,7 +255,7 @@ describeLive("gateway live (cli backend)", () => {
         },
       },
     };
-    const tempConfigPath = path.join(tempDir, "openclaw.json");
+    const tempConfigPath = path.join(tempDir, "remoteclaw.json");
     await fs.writeFile(tempConfigPath, `${JSON.stringify(nextCfg, null, 2)}\n`);
     process.env.REMOTECLAW_CONFIG_PATH = tempConfigPath;
 

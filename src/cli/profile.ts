@@ -94,7 +94,10 @@ function resolveProfileStateDir(
   homedir: () => string,
 ): string {
   const suffix = profile.toLowerCase() === "default" ? "" : `-${profile}`;
-  return path.join(resolveRequiredHomeDir(env as NodeJS.ProcessEnv, homedir), `.openclaw${suffix}`);
+  return path.join(
+    resolveRequiredHomeDir(env as NodeJS.ProcessEnv, homedir),
+    `.remoteclaw${suffix}`,
+  );
 }
 
 export function applyCliProfileEnv(params: {
@@ -119,7 +122,7 @@ export function applyCliProfileEnv(params: {
   }
 
   if (!env.REMOTECLAW_CONFIG_PATH?.trim()) {
-    env.REMOTECLAW_CONFIG_PATH = path.join(stateDir, "openclaw.json");
+    env.REMOTECLAW_CONFIG_PATH = path.join(stateDir, "remoteclaw.json");
   }
 
   if (profile === "dev" && !env.REMOTECLAW_GATEWAY_PORT?.trim()) {

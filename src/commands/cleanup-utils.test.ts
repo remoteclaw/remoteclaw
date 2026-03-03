@@ -20,7 +20,7 @@ describe("buildCleanupPlan", () => {
     const plan = buildCleanupPlan({
       cfg: cfg as unknown as RemoteClawConfig,
       stateDir: path.join(tmpRoot, "openclaw-state"),
-      configPath: path.join(tmpRoot, "openclaw-state", "openclaw.json"),
+      configPath: path.join(tmpRoot, "openclaw-state", "remoteclaw.json"),
       oauthDir: path.join(tmpRoot, "openclaw-oauth"),
     });
 
@@ -52,7 +52,7 @@ describe("cleanup path removals", () => {
     await removeStateAndLinkedPaths(
       {
         stateDir: path.join(tmpRoot, "state"),
-        configPath: path.join(tmpRoot, "state", "openclaw.json"),
+        configPath: path.join(tmpRoot, "state", "remoteclaw.json"),
         oauthDir: path.join(tmpRoot, "oauth"),
         configInsideState: true,
         oauthInsideState: false,
@@ -66,7 +66,7 @@ describe("cleanup path removals", () => {
       .join("\n");
     expect(joinedLogs).toContain("/tmp/openclaw-cleanup/state");
     expect(joinedLogs).toContain("/tmp/openclaw-cleanup/oauth");
-    expect(joinedLogs).not.toContain("openclaw.json");
+    expect(joinedLogs).not.toContain("remoteclaw.json");
   });
 
   it("removes every workspace directory", async () => {

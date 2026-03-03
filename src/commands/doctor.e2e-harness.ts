@@ -41,7 +41,7 @@ function createCommandWithTimeoutResult() {
 
 function createLegacyConfigSnapshot() {
   return {
-    path: "/tmp/openclaw.json",
+    path: "/tmp/remoteclaw.json",
     exists: false,
     raw: null,
     parsed: {},
@@ -157,7 +157,7 @@ export const runLegacyStateMigrations = vi.fn().mockResolvedValue({
 }) as unknown as MockFn;
 
 const DEFAULT_CONFIG_SNAPSHOT = {
-  path: "/tmp/openclaw.json",
+  path: "/tmp/remoteclaw.json",
   exists: true,
   raw: "{}",
   parsed: {},
@@ -183,7 +183,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../config/config.js")>();
   return {
     ...actual,
-    CONFIG_PATH: "/tmp/openclaw.json",
+    CONFIG_PATH: "/tmp/remoteclaw.json",
     createConfigIO,
     readConfigFileSnapshot,
     writeConfigFile,

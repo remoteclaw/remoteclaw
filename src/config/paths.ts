@@ -18,9 +18,11 @@ export function resolveIsNixMode(env: NodeJS.ProcessEnv = process.env): boolean 
 export const isNixMode = resolveIsNixMode();
 
 // Support historical (and occasionally misspelled) legacy state dirs.
+// Note: .openclaw is intentionally NOT included — RemoteClaw does not silently
+// fall back to reading OpenClaw config. Migration is explicit via `remoteclaw import`.
 const LEGACY_STATE_DIRNAMES = [".clawdbot", ".moldbot", ".moltbot"] as const;
-const NEW_STATE_DIRNAME = ".openclaw";
-const CONFIG_FILENAME = "openclaw.json";
+const NEW_STATE_DIRNAME = ".remoteclaw";
+const CONFIG_FILENAME = "remoteclaw.json";
 const LEGACY_CONFIG_FILENAMES = ["clawdbot.json", "moldbot.json", "moltbot.json"] as const;
 
 function resolveDefaultHomeDir(): string {
@@ -55,7 +57,7 @@ export function resolveNewStateDir(homedir: () => string = resolveDefaultHomeDir
 /**
  * State directory for mutable data (sessions, logs, caches).
  * Can be overridden via REMOTECLAW_STATE_DIR.
- * Default: ~/.openclaw
+ * Default: ~/.remoteclaw
  */
 export function resolveStateDir(
   env: NodeJS.ProcessEnv = process.env,
@@ -110,7 +112,7 @@ export const STATE_DIR = resolveStateDir();
 /**
  * Config file path (JSON5).
  * Can be overridden via REMOTECLAW_CONFIG_PATH.
- * Default: ~/.openclaw/openclaw.json (or $REMOTECLAW_STATE_DIR/openclaw.json)
+ * Default: ~/.remoteclaw/remoteclaw.json (or $REMOTECLAW_STATE_DIR/remoteclaw.json)
  */
 export function resolveCanonicalConfigPath(
   env: NodeJS.ProcessEnv = process.env,
@@ -218,12 +220,12 @@ export const DEFAULT_GATEWAY_PORT = 18789;
 
 /**
  * Gateway lock directory (ephemeral).
- * Default: os.tmpdir()/openclaw-<uid> (uid suffix when available).
+ * Default: os.tmpdir()/remoteclaw-<uid> (uid suffix when available).
  */
 export function resolveGatewayLockDir(tmpdir: () => string = os.tmpdir): string {
   const base = tmpdir();
   const uid = typeof process.getuid === "function" ? process.getuid() : undefined;
-  const suffix = uid != null ? `openclaw-${uid}` : "openclaw";
+  const suffix = uid != null ? `remoteclaw-${uid}` : "remoteclaw";
   return path.join(base, suffix);
 }
 

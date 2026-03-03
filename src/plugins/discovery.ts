@@ -585,7 +585,7 @@ export function discoverRemoteClawPlugins(params: {
   }
   if (workspaceDir) {
     const workspaceRoot = resolveUserPath(workspaceDir);
-    const workspaceExtDirs = [path.join(workspaceRoot, ".openclaw", "extensions")];
+    const workspaceExtDirs = [path.join(workspaceRoot, ".remoteclaw", "extensions")];
     for (const dir of workspaceExtDirs) {
       discoverInDirectory({
         dir,

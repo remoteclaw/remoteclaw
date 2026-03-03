@@ -8,7 +8,6 @@ import {
   ToolsLinksSchema,
   ToolsMediaSchema,
 } from "./zod-schema.core.js";
-import { sensitive } from "./zod-schema.sensitive.js";
 
 export const HeartbeatSchema = z
   .object({
@@ -105,78 +104,6 @@ export const ToolPolicySchema = ToolPolicyBaseSchema.superRefine((value, ctx) =>
     });
   }
 }).optional();
-
-export const ToolsWebSearchSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    provider: z
-      .union([
-        z.literal("brave"),
-        z.literal("perplexity"),
-        z.literal("grok"),
-        z.literal("gemini"),
-        z.literal("kimi"),
-      ])
-      .optional(),
-    apiKey: z.string().optional().register(sensitive),
-    maxResults: z.number().int().positive().optional(),
-    timeoutSeconds: z.number().int().positive().optional(),
-    cacheTtlMinutes: z.number().nonnegative().optional(),
-    perplexity: z
-      .object({
-        apiKey: z.string().optional().register(sensitive),
-        baseUrl: z.string().optional(),
-        model: z.string().optional(),
-      })
-      .strict()
-      .optional(),
-    grok: z
-      .object({
-        apiKey: z.string().optional().register(sensitive),
-        model: z.string().optional(),
-        inlineCitations: z.boolean().optional(),
-      })
-      .strict()
-      .optional(),
-    gemini: z
-      .object({
-        apiKey: z.string().optional().register(sensitive),
-        model: z.string().optional(),
-      })
-      .strict()
-      .optional(),
-    kimi: z
-      .object({
-        apiKey: z.string().optional().register(sensitive),
-        baseUrl: z.string().optional(),
-        model: z.string().optional(),
-      })
-      .strict()
-      .optional(),
-  })
-  .strict()
-  .optional();
-
-export const ToolsWebFetchSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    maxChars: z.number().int().positive().optional(),
-    maxCharsCap: z.number().int().positive().optional(),
-    timeoutSeconds: z.number().int().positive().optional(),
-    cacheTtlMinutes: z.number().nonnegative().optional(),
-    maxRedirects: z.number().int().nonnegative().optional(),
-    userAgent: z.string().optional(),
-  })
-  .strict()
-  .optional();
-
-export const ToolsWebSchema = z
-  .object({
-    search: ToolsWebSearchSchema,
-    fetch: ToolsWebFetchSchema,
-  })
-  .strict()
-  .optional();
 
 export const ToolProfileSchema = z
   .union([z.literal("minimal"), z.literal("coding"), z.literal("messaging"), z.literal("full")])
@@ -380,7 +307,6 @@ export const AgentEntrySchema = z
 export const ToolsSchema = z
   .object({
     ...CommonToolPolicyFields,
-    web: ToolsWebSchema,
     media: ToolsMediaSchema,
     links: ToolsLinksSchema,
     sessions: z

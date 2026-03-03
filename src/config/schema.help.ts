@@ -233,8 +233,6 @@ export const FIELD_HELP: Record<string, string> = {
     "Absolute tool allowlist that replaces profile-derived defaults for strict environments. Use this only when you intentionally run a tightly curated subset of tool capabilities.",
   "tools.deny":
     "Global tool denylist that blocks listed tools even when profile or provider rules would allow them. Use deny rules for emergency lockouts and long-term defense-in-depth.",
-  "tools.web":
-    "Web-tool policy grouping for search/fetch providers, limits, and fallback behavior tuning. Keep enabled settings aligned with API key availability and outbound networking policy.",
   "tools.exec":
     "Exec-tool policy grouping for shell execution host, security mode, approval behavior, and runtime bindings. Keep conservative defaults in production and tighten elevated execution paths.",
   "tools.exec.host":
@@ -557,48 +555,6 @@ export const FIELD_HELP: Record<string, string> = {
   "tools.message.crossContext.marker.suffix":
     'Text suffix for cross-context markers (supports "{channel}").',
   "tools.message.broadcast.enabled": "Enable broadcast action (default: true).",
-  "tools.web.search.enabled": "Enable the web_search tool (requires a provider API key).",
-  "tools.web.search.provider":
-    'Search provider ("brave", "perplexity", "grok", "gemini", or "kimi"). Auto-detected from available API keys if omitted.',
-  "tools.web.search.apiKey": "Brave Search API key (fallback: BRAVE_API_KEY env var).",
-  "tools.web.search.maxResults": "Default number of results to return (1-10).",
-  "tools.web.search.timeoutSeconds": "Timeout in seconds for web_search requests.",
-  "tools.web.search.cacheTtlMinutes": "Cache TTL in minutes for web_search results.",
-  "tools.web.search.gemini.apiKey":
-    "Gemini API key for Google Search grounding (fallback: GEMINI_API_KEY env var).",
-  "tools.web.search.gemini.model": 'Gemini model override (default: "gemini-2.5-flash").',
-  "tools.web.search.grok.apiKey": "Grok (xAI) API key (fallback: XAI_API_KEY env var).",
-  "tools.web.search.grok.model": 'Grok model override (default: "grok-4-1-fast").',
-  "tools.web.search.kimi.apiKey":
-    "Moonshot/Kimi API key (fallback: KIMI_API_KEY or MOONSHOT_API_KEY env var).",
-  "tools.web.search.kimi.baseUrl":
-    'Kimi base URL override (default: "https://api.moonshot.ai/v1").',
-  "tools.web.search.kimi.model": 'Kimi model override (default: "moonshot-v1-128k").',
-  "tools.web.search.perplexity.apiKey":
-    "Perplexity or OpenRouter API key (fallback: PERPLEXITY_API_KEY or OPENROUTER_API_KEY env var).",
-  "tools.web.search.perplexity.baseUrl":
-    "Perplexity base URL override (default: https://openrouter.ai/api/v1 or https://api.perplexity.ai).",
-  "tools.web.search.perplexity.model":
-    'Perplexity model override (default: "perplexity/sonar-pro").',
-  "tools.web.fetch.enabled": "Enable the web_fetch tool (lightweight HTTP fetch).",
-  "tools.web.fetch.maxChars": "Max characters returned by web_fetch (truncated).",
-  "tools.web.fetch.maxCharsCap":
-    "Hard cap for web_fetch maxChars (applies to config and tool calls).",
-  "tools.web.fetch.timeoutSeconds": "Timeout in seconds for web_fetch requests.",
-  "tools.web.fetch.cacheTtlMinutes": "Cache TTL in minutes for web_fetch results.",
-  "tools.web.fetch.maxRedirects": "Maximum redirects allowed for web_fetch (default: 3).",
-  "tools.web.fetch.userAgent": "Override User-Agent header for web_fetch requests.",
-  "tools.web.fetch.readability":
-    "Use Readability to extract main content from HTML (fallbacks to basic HTML cleanup).",
-  "tools.web.fetch.firecrawl.enabled": "Enable Firecrawl fallback for web_fetch (if configured).",
-  "tools.web.fetch.firecrawl.apiKey": "Firecrawl API key (fallback: FIRECRAWL_API_KEY env var).",
-  "tools.web.fetch.firecrawl.baseUrl":
-    "Firecrawl base URL (e.g. https://api.firecrawl.dev or custom endpoint).",
-  "tools.web.fetch.firecrawl.onlyMainContent":
-    "When true, Firecrawl returns only the main content (default: true).",
-  "tools.web.fetch.firecrawl.maxAgeMs":
-    "Firecrawl maxAge (ms) for cached results when supported by the API.",
-  "tools.web.fetch.firecrawl.timeoutSeconds": "Timeout in seconds for Firecrawl requests.",
   models:
     "Model catalog root for provider definitions, merge/replace behavior, and optional Bedrock discovery integration. Keep provider definitions explicit and validated before relying on production failover paths.",
   "models.mode":

@@ -310,16 +310,3 @@ export function getHookType(sessionKey: string): ExternalContentSource {
   }
   return "unknown";
 }
-
-/**
- * Wraps web search/fetch content with security markers.
- * This is a simpler wrapper for web tools that just need content wrapped.
- */
-export function wrapWebContent(
-  content: string,
-  source: "web_search" | "web_fetch" = "web_search",
-): string {
-  const includeWarning = source === "web_fetch";
-  // Marker sanitization happens in wrapExternalContent
-  return wrapExternalContent(content, { source, includeWarning });
-}

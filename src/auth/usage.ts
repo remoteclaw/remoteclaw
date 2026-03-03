@@ -36,7 +36,11 @@ export function resolveProfileUnusableUntil(
 /**
  * Check if a profile is currently in cooldown (due to rate limiting or errors).
  */
-export function isProfileInCooldown(store: AuthProfileStore, profileId: string): boolean {
+export function isProfileInCooldown(
+  store: AuthProfileStore,
+  profileId: string,
+  now?: number,
+): boolean {
   if (isAuthCooldownBypassedForProvider(store.profiles[profileId]?.provider)) {
     return false;
   }
@@ -45,7 +49,8 @@ export function isProfileInCooldown(store: AuthProfileStore, profileId: string):
     return false;
   }
   const unusableUntil = resolveProfileUnusableUntil(stats);
-  return unusableUntil ? Date.now() < unusableUntil : false;
+  const ts = now ?? Date.now();
+  return unusableUntil ? ts < unusableUntil : false;
 }
 
 function isActiveUnusableWindow(until: number | undefined, now: number): boolean {

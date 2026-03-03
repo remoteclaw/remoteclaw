@@ -68,7 +68,7 @@ describe("extension-relay-auth", () => {
           res.end("not found");
           return;
         }
-        const header = req.headers["x-openclaw-relay-token"];
+        const header = req.headers["x-remoteclaw-relay-token"];
         seenToken = Array.isArray(header) ? header[0] : header;
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ Browser: "RemoteClaw/extension-relay" }));
@@ -77,7 +77,7 @@ describe("extension-relay-auth", () => {
         const token = resolveRelayAuthTokenForPort(port);
         const ok = await probeAuthenticatedRemoteClawRelay({
           baseUrl: `http://127.0.0.1:${port}`,
-          relayAuthHeader: "x-openclaw-relay-token",
+          relayAuthHeader: "x-remoteclaw-relay-token",
           relayAuthToken: token,
         });
         expect(ok).toBe(true);
@@ -100,7 +100,7 @@ describe("extension-relay-auth", () => {
       async ({ port }) => {
         const ok = await probeAuthenticatedRemoteClawRelay({
           baseUrl: `http://127.0.0.1:${port}`,
-          relayAuthHeader: "x-openclaw-relay-token",
+          relayAuthHeader: "x-remoteclaw-relay-token",
           relayAuthToken: "irrelevant",
         });
         expect(ok).toBe(false);
@@ -122,7 +122,7 @@ describe("extension-relay-auth", () => {
       async ({ port }) => {
         const ok = await probeAuthenticatedRemoteClawRelay({
           baseUrl: `http://127.0.0.1:${port}`,
-          relayAuthHeader: "x-openclaw-relay-token",
+          relayAuthHeader: "x-remoteclaw-relay-token",
           relayAuthToken: "irrelevant",
         });
         expect(ok).toBe(false);

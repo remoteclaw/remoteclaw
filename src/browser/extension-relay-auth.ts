@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import { loadConfig } from "../config/config.js";
 
-const RELAY_TOKEN_CONTEXT = "openclaw-extension-relay-v1";
+const RELAY_TOKEN_CONTEXT = "remoteclaw-extension-relay-v1";
 const DEFAULT_RELAY_PROBE_TIMEOUT_MS = 500;
 const REMOTECLAW_RELAY_BROWSER = "RemoteClaw/extension-relay";
 

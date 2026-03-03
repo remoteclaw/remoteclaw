@@ -2,7 +2,21 @@
   "name": "remoteclaw",
   "version": "2026.2.25",
   "description": "Multi-channel AI gateway with extensible messaging integrations",
-  "keywords": [],
+  "keywords": [
+    "agent",
+    "ai",
+    "claude",
+    "codex",
+    "discord",
+    "gateway",
+    "gemini",
+    "messaging",
+    "middleware",
+    "remoteclaw",
+    "slack",
+    "telegram",
+    "whatsapp"
+  ],
   "homepage": "https://github.com/remoteclaw/remoteclaw#readme",
   "bugs": {
     "url": "https://github.com/remoteclaw/remoteclaw/issues"

@@ -191,8 +191,8 @@ describe("chrome extension relay server", () => {
     await ensureChromeExtensionRelayServer({ cdpUrl });
 
     const headers = getChromeExtensionRelayAuthHeaders(cdpUrl);
-    expect(Object.keys(headers)).toContain("x-openclaw-relay-token");
-    expect(headers["x-openclaw-relay-token"]).not.toBe(TEST_GATEWAY_TOKEN);
+    expect(Object.keys(headers)).toContain("x-remoteclaw-relay-token");
+    expect(headers["x-remoteclaw-relay-token"]).not.toBe(TEST_GATEWAY_TOKEN);
   });
 
   it("rejects CDP access without relay auth token", async () => {
@@ -268,7 +268,7 @@ describe("chrome extension relay server", () => {
     cdpUrl = `http://127.0.0.1:${port}`;
     await ensureChromeExtensionRelayServer({ cdpUrl });
 
-    const token = relayAuthHeaders(`ws://127.0.0.1:${port}/extension`)["x-openclaw-relay-token"];
+    const token = relayAuthHeaders(`ws://127.0.0.1:${port}/extension`)["x-remoteclaw-relay-token"];
     expect(token).toBeTruthy();
     const ext = new WebSocket(
       `ws://127.0.0.1:${port}/extension?token=${encodeURIComponent(String(token))}`,
@@ -283,7 +283,7 @@ describe("chrome extension relay server", () => {
     await ensureChromeExtensionRelayServer({ cdpUrl });
 
     const versionRes = await fetch(`${cdpUrl}/json/version`, {
-      headers: { "x-openclaw-relay-token": TEST_GATEWAY_TOKEN },
+      headers: { "x-remoteclaw-relay-token": TEST_GATEWAY_TOKEN },
     });
     expect(versionRes.status).toBe(200);
 
@@ -480,7 +480,7 @@ describe("chrome extension relay server", () => {
     let probeToken: string | undefined;
     const fakeRelay = createServer((req, res) => {
       if (req.url?.startsWith("/json/version")) {
-        const header = req.headers["x-openclaw-relay-token"];
+        const header = req.headers["x-remoteclaw-relay-token"];
         probeToken = Array.isArray(header) ? header[0] : header;
         if (!probeToken) {
           res.writeHead(401);

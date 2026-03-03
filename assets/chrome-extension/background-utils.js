@@ -23,7 +23,7 @@ export async function deriveRelayToken(gatewayToken, port) {
   const sig = await crypto.subtle.sign(
     "HMAC",
     key,
-    enc.encode(`openclaw-extension-relay-v1:${port}`),
+    enc.encode(`remoteclaw-extension-relay-v1:${port}`),
   );
   return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }

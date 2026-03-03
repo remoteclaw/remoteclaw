@@ -33,7 +33,7 @@ async function checkRelayReachable(port, token) {
   try {
     const relayToken = await deriveRelayToken(trimmedToken, port)
     // Delegate the fetch to the background service worker to bypass
-    // CORS preflight on the custom x-openclaw-relay-token header.
+    // CORS preflight on the custom x-remoteclaw-relay-token header.
     const res = await chrome.runtime.sendMessage({
       type: 'relayCheck',
       url,

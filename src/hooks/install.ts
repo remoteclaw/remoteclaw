@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { MANIFEST_KEY } from "../compat/legacy-names.js";
+import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
 import { fileExists, readJsonFile, resolveArchiveKind } from "../infra/archive.js";
 import { resolveExistingInstallPath, withExtractedArchiveRoot } from "../infra/install-flow.js";
 import {
@@ -32,7 +32,9 @@ type HookPackageManifest = {
   name?: string;
   version?: string;
   dependencies?: Record<string, string>;
-} & Partial<Record<typeof MANIFEST_KEY, { hooks?: string[] }>>;
+} & Partial<
+  Record<typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number], { hooks?: string[] }>
+>;
 
 export type InstallHooksResult =
   | {
@@ -86,13 +88,22 @@ export function resolveHookInstallDir(hookId: string, hooksDir?: string): string
 }
 
 async function ensureRemoteClawHooks(manifest: HookPackageManifest) {
-  const hooks = manifest[MANIFEST_KEY]?.hooks;
+  let hooks = manifest[MANIFEST_KEY]?.hooks;
   if (!Array.isArray(hooks)) {
-    throw new Error("package.json missing openclaw.hooks");
+    for (const key of LEGACY_MANIFEST_KEYS) {
+      const legacy = manifest[key]?.hooks;
+      if (Array.isArray(legacy)) {
+        hooks = legacy;
+        break;
+      }
+    }
+  }
+  if (!Array.isArray(hooks)) {
+    throw new Error("package.json missing remoteclaw.hooks");
   }
   const list = hooks.map((e) => (typeof e === "string" ? e.trim() : "")).filter(Boolean);
   if (list.length === 0) {
-    throw new Error("package.json openclaw.hooks is empty");
+    throw new Error("package.json remoteclaw.hooks is empty");
   }
   return list;
 }
@@ -199,7 +210,7 @@ async function installHookPackageFromDir(params: {
     if (!isPathInside(params.packageDir, hookDir)) {
       return {
         ok: false,
-        error: `openclaw.hooks entry escapes package directory: ${entry}`,
+        error: `remoteclaw.hooks entry escapes package directory: ${entry}`,
       };
     }
     await validateHookDir(hookDir);
@@ -210,7 +221,7 @@ async function installHookPackageFromDir(params: {
     ) {
       return {
         ok: false,
-        error: `openclaw.hooks entry resolves outside package directory: ${entry}`,
+        error: `remoteclaw.hooks entry resolves outside package directory: ${entry}`,
       };
     }
     const hookName = await resolveHookNameFromDir(hookDir);
@@ -332,7 +343,7 @@ export async function installHooksFromArchive(params: {
 
   return await withExtractedArchiveRoot({
     archivePath,
-    tempDirPrefix: "openclaw-hook-",
+    tempDirPrefix: "remoteclaw-hook-",
     timeoutMs,
     logger,
     onExtracted: async (rootDir) => {
@@ -382,7 +393,7 @@ export async function installHooksFromNpmSpec(params: {
 
   logger.info?.(`Downloading ${spec}…`);
   const flowResult = await installFromNpmSpecArchiveWithInstaller({
-    tempDirPrefix: "openclaw-hook-pack-",
+    tempDirPrefix: "remoteclaw-hook-pack-",
     spec,
     timeoutMs,
     expectedIntegrity: params.expectedIntegrity,

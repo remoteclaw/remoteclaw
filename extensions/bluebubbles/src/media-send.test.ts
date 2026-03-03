@@ -65,7 +65,7 @@ function createConfig(overrides?: Record<string, unknown>): RemoteClawConfig {
 }
 
 async function makeTempDir(): Promise<string> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-bb-media-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-bb-media-"));
   tempDirs.push(dir);
   return dir;
 }

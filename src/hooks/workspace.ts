@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { MANIFEST_KEY } from "../compat/legacy-names.js";
+import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { isPathInsideWithRealpath } from "../security/scan-paths.js";
@@ -23,7 +23,9 @@ import type {
 
 type HookPackageManifest = {
   name?: string;
-} & Partial<Record<typeof MANIFEST_KEY, { hooks?: string[] }>>;
+} & Partial<
+  Record<typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number], { hooks?: string[] }>
+>;
 const log = createSubsystemLogger("hooks/workspace");
 
 function filterHookEntries(
@@ -48,7 +50,16 @@ function readHookPackageManifest(dir: string): HookPackageManifest | null {
 }
 
 function resolvePackageHooks(manifest: HookPackageManifest): string[] {
-  const raw = manifest[MANIFEST_KEY]?.hooks;
+  let raw = manifest[MANIFEST_KEY]?.hooks;
+  if (!Array.isArray(raw)) {
+    for (const key of LEGACY_MANIFEST_KEYS) {
+      const legacy = manifest[key]?.hooks;
+      if (Array.isArray(legacy)) {
+        raw = legacy;
+        break;
+      }
+    }
+  }
   if (!Array.isArray(raw)) {
     return [];
   }

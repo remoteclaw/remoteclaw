@@ -24,7 +24,7 @@ let installPluginFromNpmSpec: typeof import("./install.js").installPluginFromNpm
 let runCommandWithTimeout: typeof import("../process/exec.js").runCommandWithTimeout;
 
 function makeTempDir() {
-  const dir = path.join(os.tmpdir(), `openclaw-plugin-install-${randomUUID()}`);
+  const dir = path.join(os.tmpdir(), `remoteclaw-plugin-install-${randomUUID()}`);
   fs.mkdirSync(dir, { recursive: true });
   tempDirs.push(dir);
   return dir;
@@ -65,7 +65,7 @@ function writePluginPackage(params: {
       {
         name: params.name,
         version: params.version,
-        openclaw: { extensions: params.extensions },
+        remoteclaw: { extensions: params.extensions },
       },
       null,
       2,
@@ -83,7 +83,7 @@ async function createVoiceCallArchive(params: {
   const pkgDir = path.join(params.workDir, "package");
   writePluginPackage({
     pkgDir,
-    name: "@openclaw/voice-call",
+    name: "@remoteclaw/voice-call",
     version: params.version,
     extensions: ["./dist/index.js"],
   });
@@ -117,9 +117,9 @@ async function createZipperArchiveBuffer(): Promise<Buffer> {
   zip.file(
     "package/package.json",
     JSON.stringify({
-      name: "@openclaw/zipper",
+      name: "@remoteclaw/zipper",
       version: "0.0.1",
-      openclaw: { extensions: ["./dist/index.js"] },
+      remoteclaw: { extensions: ["./dist/index.js"] },
     }),
   );
   zip.file("package/dist/index.js", "export {};");
@@ -174,9 +174,9 @@ function setupInstallPluginFromDirFixture(params?: { devDependencies?: Record<st
   fs.writeFileSync(
     path.join(pluginDir, "package.json"),
     JSON.stringify({
-      name: "@openclaw/test-plugin",
+      name: "@remoteclaw/test-plugin",
       version: "0.0.1",
-      openclaw: { extensions: ["./dist/index.js"] },
+      remoteclaw: { extensions: ["./dist/index.js"] },
       dependencies: { "left-pad": "1.3.0" },
       ...(params?.devDependencies ? { devDependencies: params.devDependencies } : {}),
     }),
@@ -194,7 +194,7 @@ async function expectArchiveInstallReservedSegmentRejection(params: {
     packageJson: {
       name: params.packageName,
       version: "0.0.1",
-      openclaw: { extensions: ["./dist/index.js"] },
+      remoteclaw: { extensions: ["./dist/index.js"] },
     },
     outName: params.outName,
     withDistIndex: true,
@@ -366,16 +366,16 @@ describe("installPluginFromArchive", () => {
     });
   });
 
-  it("rejects packages without openclaw.extensions", async () => {
+  it("rejects packages without remoteclaw.extensions", async () => {
     const result = await installArchivePackageAndReturnResult({
-      packageJson: { name: "@openclaw/nope", version: "0.0.1" },
+      packageJson: { name: "@remoteclaw/nope", version: "0.0.1" },
       outName: "bad.tgz",
     });
     expect(result.ok).toBe(false);
     if (result.ok) {
       return;
     }
-    expect(result.error).toContain("openclaw.extensions");
+    expect(result.error).toContain("remoteclaw.extensions");
   });
 });
 
@@ -397,7 +397,7 @@ describe("installPluginFromDir", () => {
   it("strips workspace devDependencies before npm install", async () => {
     const { pluginDir, extensionsDir } = setupInstallPluginFromDirFixture({
       devDependencies: {
-        openclaw: "workspace:*",
+        remoteclaw: "workspace:*",
         vitest: "^3.0.0",
       },
     });
@@ -430,21 +430,21 @@ describe("installPluginFromDir", () => {
     expect(manifest.devDependencies?.vitest).toBe("^3.0.0");
   });
 
-  it("uses openclaw.plugin.json id as install key when it differs from package name", async () => {
+  it("uses remoteclaw.plugin.json id as install key when it differs from package name", async () => {
     const { pluginDir, extensionsDir } = setupPluginInstallDirs();
     fs.mkdirSync(path.join(pluginDir, "dist"), { recursive: true });
     fs.writeFileSync(
       path.join(pluginDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/cognee-openclaw",
+        name: "@remoteclaw/cognee-remoteclaw",
         version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
+        remoteclaw: { extensions: ["./dist/index.js"] },
       }),
       "utf-8",
     );
     fs.writeFileSync(path.join(pluginDir, "dist", "index.js"), "export {};", "utf-8");
     fs.writeFileSync(
-      path.join(pluginDir, "openclaw.plugin.json"),
+      path.join(pluginDir, "remoteclaw.plugin.json"),
       JSON.stringify({
         id: "memory-cognee",
         configSchema: { type: "object", properties: {} },
@@ -468,7 +468,7 @@ describe("installPluginFromDir", () => {
     expect(
       infoMessages.some((msg) =>
         msg.includes(
-          'Plugin manifest id "memory-cognee" differs from npm package name "cognee-openclaw"',
+          'Plugin manifest id "memory-cognee" differs from npm package name "cognee-remoteclaw"',
         ),
       ),
     ).toBe(true);
@@ -480,15 +480,15 @@ describe("installPluginFromDir", () => {
     fs.writeFileSync(
       path.join(pluginDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/cognee-openclaw",
+        name: "@remoteclaw/cognee-remoteclaw",
         version: "0.0.1",
-        openclaw: { extensions: ["./dist/index.js"] },
+        remoteclaw: { extensions: ["./dist/index.js"] },
       }),
       "utf-8",
     );
     fs.writeFileSync(path.join(pluginDir, "dist", "index.js"), "export {};", "utf-8");
     fs.writeFileSync(
-      path.join(pluginDir, "openclaw.plugin.json"),
+      path.join(pluginDir, "remoteclaw.plugin.json"),
       JSON.stringify({
         id: "@team/memory-cognee",
         configSchema: { type: "object", properties: {} },
@@ -532,8 +532,8 @@ describe("installPluginFromNpmSpec", () => {
           code: 0,
           stdout: JSON.stringify([
             {
-              id: "@openclaw/voice-call@0.0.1",
-              name: "@openclaw/voice-call",
+              id: "@remoteclaw/voice-call@0.0.1",
+              name: "@remoteclaw/voice-call",
               version: "0.0.1",
               filename: packedName,
               integrity: "sha512-plugin-test",
@@ -550,7 +550,7 @@ describe("installPluginFromNpmSpec", () => {
     });
 
     const result = await installPluginFromNpmSpec({
-      spec: "@openclaw/voice-call@0.0.1",
+      spec: "@remoteclaw/voice-call@0.0.1",
       extensionsDir,
       logger: { info: () => {}, warn: () => {} },
     });
@@ -558,12 +558,12 @@ describe("installPluginFromNpmSpec", () => {
     if (!result.ok) {
       return;
     }
-    expect(result.npmResolution?.resolvedSpec).toBe("@openclaw/voice-call@0.0.1");
+    expect(result.npmResolution?.resolvedSpec).toBe("@remoteclaw/voice-call@0.0.1");
     expect(result.npmResolution?.integrity).toBe("sha512-plugin-test");
 
     expectSingleNpmPackIgnoreScriptsCall({
       calls: run.mock.calls,
-      expectedSpec: "@openclaw/voice-call@0.0.1",
+      expectedSpec: "@remoteclaw/voice-call@0.0.1",
     });
 
     expect(packTmpDir).not.toBe("");
@@ -577,8 +577,8 @@ describe("installPluginFromNpmSpec", () => {
   it("aborts when integrity drift callback rejects the fetched artifact", async () => {
     const run = vi.mocked(runCommandWithTimeout);
     mockNpmPackMetadataResult(run, {
-      id: "@openclaw/voice-call@0.0.1",
-      name: "@openclaw/voice-call",
+      id: "@remoteclaw/voice-call@0.0.1",
+      name: "@remoteclaw/voice-call",
       version: "0.0.1",
       filename: "voice-call-0.0.1.tgz",
       integrity: "sha512-new",
@@ -587,7 +587,7 @@ describe("installPluginFromNpmSpec", () => {
 
     const onIntegrityDrift = vi.fn(async () => false);
     const result = await installPluginFromNpmSpec({
-      spec: "@openclaw/voice-call@0.0.1",
+      spec: "@remoteclaw/voice-call@0.0.1",
       expectedIntegrity: "sha512-old",
       onIntegrityDrift,
     });

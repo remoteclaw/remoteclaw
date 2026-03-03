@@ -42,7 +42,7 @@ export interface SendMessageResult {
  * const result = await sendMessageTwitchInternal(
  *   "#mychannel",
  *   "Hello Twitch!",
- *   openclawConfig,
+ *   remoteclawConfig,
  *   "default",
  *   true,
  *   console,

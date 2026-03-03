@@ -1,9 +1,9 @@
 {
-  "name": "@openclaw/bluebubbles",
+  "name": "@remoteclaw/bluebubbles",
   "version": "2026.2.25",
   "description": "RemoteClaw BlueBubbles channel plugin",
   "type": "module",
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
@@ -25,7 +25,7 @@
       "order": 75
     },
     "install": {
-      "npmSpec": "@openclaw/bluebubbles",
+      "npmSpec": "@remoteclaw/bluebubbles",
       "localPath": "extensions/bluebubbles",
       "defaultChoice": "npm"
     }

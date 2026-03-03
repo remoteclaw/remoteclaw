@@ -1,4 +1,4 @@
-# @openclaw/nostr
+# @remoteclaw/nostr
 
 Nostr DM channel plugin for RemoteClaw using NIP-04 encrypted direct messages.
 
@@ -13,7 +13,7 @@ This extension adds Nostr as a messaging channel to RemoteClaw. It enables your 
 ## Installation
 
 ```bash
-openclaw plugins install @openclaw/nostr
+remoteclaw plugins install @remoteclaw/nostr
 ```
 
 ## Quick Setup
@@ -90,7 +90,7 @@ openclaw plugins install @openclaw/nostr
 # Using strfry
 docker run -p 7777:7777 ghcr.io/hoytech/strfry
 
-# Configure openclaw to use local relay
+# Configure remoteclaw to use local relay
 "relays": ["ws://localhost:7777"]
 ```
 

@@ -1,10 +1,10 @@
 {
-  "name": "@openclaw/slack",
+  "name": "@remoteclaw/slack",
   "version": "2026.2.25",
   "private": true,
   "description": "RemoteClaw Slack channel plugin",
   "type": "module",
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ]

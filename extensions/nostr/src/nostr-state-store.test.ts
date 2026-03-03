@@ -12,7 +12,7 @@ import { setNostrRuntime } from "./runtime.js";
 
 async function withTempStateDir<T>(fn: (dir: string) => Promise<T>) {
   const previous = process.env.REMOTECLAW_STATE_DIR;
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-nostr-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-nostr-"));
   process.env.REMOTECLAW_STATE_DIR = dir;
   setNostrRuntime({
     state: {
@@ -24,7 +24,7 @@ async function withTempStateDir<T>(fn: (dir: string) => Promise<T>) {
           return override;
         }
         const resolveHome = homedir ?? os.homedir;
-        return path.join(resolveHome(), ".openclaw");
+        return path.join(resolveHome(), ".remoteclaw");
       },
     },
   } as PluginRuntime);

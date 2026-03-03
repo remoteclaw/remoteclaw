@@ -1,4 +1,4 @@
-# @openclaw/voice-call
+# @remoteclaw/voice-call
 
 Official Voice Call plugin for **RemoteClaw**.
 
@@ -9,15 +9,15 @@ Providers:
 - **Plivo** (Voice API + XML transfer + GetInput speech)
 - **Mock** (dev/no network)
 
-Docs: `https://docs.openclaw.ai/plugins/voice-call`
-Plugin system: `https://docs.openclaw.ai/plugin`
+Docs: `https://docs.remoteclaw.com/plugins/voice-call`
+Plugin system: `https://docs.remoteclaw.com/plugin`
 
 ## Install (local dev)
 
 ### Option A: install via RemoteClaw (recommended)
 
 ```bash
-openclaw plugins install @openclaw/voice-call
+remoteclaw plugins install @remoteclaw/voice-call
 ```
 
 Restart the Gateway afterwards.
@@ -25,9 +25,9 @@ Restart the Gateway afterwards.
 ### Option B: copy into your global extensions folder (dev)
 
 ```bash
-mkdir -p ~/.openclaw/extensions
-cp -R extensions/voice-call ~/.openclaw/extensions/voice-call
-cd ~/.openclaw/extensions/voice-call && pnpm install
+mkdir -p ~/.remoteclaw/extensions
+cp -R extensions/voice-call ~/.remoteclaw/extensions/voice-call
+cd ~/.remoteclaw/extensions/voice-call && pnpm install
 ```
 
 ## Config
@@ -143,13 +143,13 @@ Notes:
 ## CLI
 
 ```bash
-openclaw voicecall call --to "+15555550123" --message "Hello from RemoteClaw"
-openclaw voicecall continue --call-id <id> --message "Any questions?"
-openclaw voicecall speak --call-id <id> --message "One moment"
-openclaw voicecall end --call-id <id>
-openclaw voicecall status --call-id <id>
-openclaw voicecall tail
-openclaw voicecall expose --mode funnel
+remoteclaw voicecall call --to "+15555550123" --message "Hello from RemoteClaw"
+remoteclaw voicecall continue --call-id <id> --message "Any questions?"
+remoteclaw voicecall speak --call-id <id> --message "One moment"
+remoteclaw voicecall end --call-id <id>
+remoteclaw voicecall status --call-id <id>
+remoteclaw voicecall tail
+remoteclaw voicecall expose --mode funnel
 ```
 
 ## Tool

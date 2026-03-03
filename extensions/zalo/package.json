@@ -1,12 +1,12 @@
 {
-  "name": "@openclaw/zalo",
+  "name": "@remoteclaw/zalo",
   "version": "2026.2.25",
   "description": "RemoteClaw Zalo channel plugin",
   "type": "module",
   "dependencies": {
     "undici": "7.22.0"
   },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
@@ -24,7 +24,7 @@
       "quickstartAllowFrom": true
     },
     "install": {
-      "npmSpec": "@openclaw/zalo",
+      "npmSpec": "@remoteclaw/zalo",
       "localPath": "extensions/zalo",
       "defaultChoice": "npm"
     }

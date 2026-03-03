@@ -10,7 +10,7 @@ export const msteamsRuntimeStub = {
         return override;
       }
       const resolvedHome = homedir ? homedir() : os.homedir();
-      return path.join(resolvedHome, ".openclaw");
+      return path.join(resolvedHome, ".remoteclaw");
     },
   },
 } as unknown as PluginRuntime;

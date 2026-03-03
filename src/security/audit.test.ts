@@ -153,7 +153,7 @@ describe("security audit", () => {
   };
 
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-security-audit-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-security-audit-"));
     channelSecurityStateDir = path.join(fixtureRoot, "channel-security");
     await fs.mkdir(path.join(channelSecurityStateDir, "credentials"), {
       recursive: true,
@@ -1839,7 +1839,7 @@ describe("security audit", () => {
         installs: {
           "voice-call": {
             source: "npm",
-            spec: "@openclaw/voice-call",
+            spec: "@remoteclaw/voice-call",
           },
         },
       },
@@ -1848,7 +1848,7 @@ describe("security audit", () => {
           installs: {
             "test-hooks": {
               source: "npm",
-              spec: "@openclaw/test-hooks",
+              spec: "@remoteclaw/test-hooks",
             },
           },
         },
@@ -1879,7 +1879,7 @@ describe("security audit", () => {
         installs: {
           "voice-call": {
             source: "npm",
-            spec: "@openclaw/voice-call@1.2.3",
+            spec: "@remoteclaw/voice-call@1.2.3",
             integrity: "sha512-plugin",
           },
         },
@@ -1889,7 +1889,7 @@ describe("security audit", () => {
           installs: {
             "test-hooks": {
               source: "npm",
-              spec: "@openclaw/test-hooks@1.2.3",
+              spec: "@remoteclaw/test-hooks@1.2.3",
               integrity: "sha512-hook",
             },
           },
@@ -1920,12 +1920,12 @@ describe("security audit", () => {
     await fs.mkdir(hookDir, { recursive: true });
     await fs.writeFile(
       path.join(pluginDir, "package.json"),
-      JSON.stringify({ name: "@openclaw/voice-call", version: "9.9.9" }),
+      JSON.stringify({ name: "@remoteclaw/voice-call", version: "9.9.9" }),
       "utf-8",
     );
     await fs.writeFile(
       path.join(hookDir, "package.json"),
-      JSON.stringify({ name: "@openclaw/test-hooks", version: "8.8.8" }),
+      JSON.stringify({ name: "@remoteclaw/test-hooks", version: "8.8.8" }),
       "utf-8",
     );
 
@@ -1934,7 +1934,7 @@ describe("security audit", () => {
         installs: {
           "voice-call": {
             source: "npm",
-            spec: "@openclaw/voice-call@1.2.3",
+            spec: "@remoteclaw/voice-call@1.2.3",
             integrity: "sha512-plugin",
             resolvedVersion: "1.2.3",
           },
@@ -1945,7 +1945,7 @@ describe("security audit", () => {
           installs: {
             "test-hooks": {
               source: "npm",
-              spec: "@openclaw/test-hooks@1.2.3",
+              spec: "@remoteclaw/test-hooks@1.2.3",
               integrity: "sha512-hook",
               resolvedVersion: "1.2.3",
             },
@@ -2028,7 +2028,7 @@ describe("security audit", () => {
       path.join(pluginDir, "package.json"),
       JSON.stringify({
         name: "evil-plugin",
-        openclaw: { extensions: [".hidden/index.js"] },
+        remoteclaw: { extensions: [".hidden/index.js"] },
       }),
     );
     await fs.writeFile(
@@ -2055,7 +2055,7 @@ describe("security audit", () => {
       path.join(pluginDir, "package.json"),
       JSON.stringify({
         name: "escape-plugin",
-        openclaw: { extensions: ["../outside.js"] },
+        remoteclaw: { extensions: ["../outside.js"] },
       }),
     );
     await fs.writeFile(path.join(pluginDir, "index.js"), "export {};");

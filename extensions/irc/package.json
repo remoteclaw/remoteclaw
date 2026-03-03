@@ -1,9 +1,9 @@
 {
-  "name": "@openclaw/irc",
+  "name": "@remoteclaw/irc",
   "version": "2026.2.25",
   "description": "RemoteClaw IRC channel plugin",
   "type": "module",
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ]

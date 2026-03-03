@@ -1,10 +1,10 @@
 {
-  "name": "@openclaw/line",
+  "name": "@remoteclaw/line",
   "version": "2026.2.25",
   "private": true,
   "description": "RemoteClaw LINE channel plugin",
   "type": "module",
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ],
@@ -19,7 +19,7 @@
       "quickstartAllowFrom": true
     },
     "install": {
-      "npmSpec": "@openclaw/line",
+      "npmSpec": "@remoteclaw/line",
       "localPath": "extensions/line",
       "defaultChoice": "npm"
     }

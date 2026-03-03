@@ -1,5 +1,5 @@
 {
-  "name": "@openclaw/twitch",
+  "name": "@remoteclaw/twitch",
   "version": "2026.2.25",
   "description": "RemoteClaw Twitch channel plugin",
   "type": "module",
@@ -9,7 +9,7 @@
     "@twurple/chat": "^8.0.3",
     "zod": "^4.3.6"
   },
-  "openclaw": {
+  "remoteclaw": {
     "extensions": [
       "./index.ts"
     ]

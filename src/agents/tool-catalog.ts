@@ -60,14 +60,6 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     profiles: ["coding"],
   },
   {
-    id: "web_search",
-    label: "web_search",
-    description: "Search the web",
-    sectionId: "web",
-    profiles: [],
-    includeInOpenClawGroup: true,
-  },
-  {
     id: "sessions_list",
     label: "sessions_list",
     description: "List sessions",

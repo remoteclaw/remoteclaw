@@ -50,6 +50,7 @@ type DiscordReactionListenerParams = {
 } & DiscordReactionRoutingParams;
 
 type DiscordReactionRoutingParams = {
+  accountId: string;
   botUserId?: string;
   dmEnabled: boolean;
   groupDmEnabled: boolean;

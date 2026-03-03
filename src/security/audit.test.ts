@@ -135,6 +135,7 @@ describe("security audit", () => {
   let fixtureRoot = "";
   let caseId = 0;
   let channelSecurityRoot = "";
+  let sharedChannelSecurityStateDir = "";
 
   const makeTmpDir = async (label: string) => {
     const dir = path.join(fixtureRoot, `case-${caseId++}-${label}`);
@@ -143,11 +144,11 @@ describe("security audit", () => {
   };
 
   const withChannelSecurityStateDir = async (fn: (tmp: string) => Promise<void>) => {
-    const channelSecurityStateDir = path.join(channelSecurityRoot, `state-${caseId++}`);
-    const credentialsDir = path.join(channelSecurityStateDir, "credentials");
+    const credentialsDir = path.join(sharedChannelSecurityStateDir, "credentials");
+    await fs.rm(credentialsDir, { recursive: true, force: true }).catch(() => undefined);
     await fs.mkdir(credentialsDir, { recursive: true, mode: 0o700 });
-    await withEnvAsync({ REMOTECLAW_STATE_DIR: channelSecurityStateDir }, () =>
-      fn(channelSecurityStateDir),
+    await withEnvAsync({ REMOTECLAW_STATE_DIR: sharedChannelSecurityStateDir }, () =>
+      fn(sharedChannelSecurityStateDir),
     );
   };
 
@@ -155,6 +156,11 @@ describe("security audit", () => {
     fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-security-audit-"));
     channelSecurityRoot = path.join(fixtureRoot, "channel-security");
     await fs.mkdir(channelSecurityRoot, { recursive: true, mode: 0o700 });
+    sharedChannelSecurityStateDir = path.join(channelSecurityRoot, "state-shared");
+    await fs.mkdir(path.join(sharedChannelSecurityStateDir, "credentials"), {
+      recursive: true,
+      mode: 0o700,
+    });
   });
 
   afterAll(async () => {

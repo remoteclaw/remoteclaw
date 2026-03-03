@@ -269,11 +269,6 @@
       "title": "Session Status",
       "detailKeys": ["sessionKey", "model"]
     },
-    "web_fetch": {
-      "emoji": "📄",
-      "title": "Web Fetch",
-      "detailKeys": ["url", "extractMode", "maxChars"]
-    },
     "whatsapp_login": {
       "emoji": "🟢",
       "title": "WhatsApp Login",

@@ -85,7 +85,6 @@ export type ExternalContentSource =
   | "api"
   | "browser"
   | "channel_metadata"
-  | "web_fetch"
   | "unknown";
 
 const EXTERNAL_SOURCE_LABELS: Record<ExternalContentSource, string> = {
@@ -94,7 +93,6 @@ const EXTERNAL_SOURCE_LABELS: Record<ExternalContentSource, string> = {
   api: "API",
   browser: "Browser",
   channel_metadata: "Channel metadata",
-  web_fetch: "Web Fetch",
   unknown: "External",
 };
 

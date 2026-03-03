@@ -8,7 +8,6 @@ import {
   resolveActionSpec,
   resolveDetailFromKeys,
   resolveExecDetail,
-  resolveWebFetchDetail,
   resolveWriteDetail,
   type ToolDisplaySpec as ToolDisplaySpecBase,
 } from "./tool-display-common.js";
@@ -73,7 +72,7 @@ export function resolveToolDisplay(params: {
       : undefined;
   const action = typeof actionRaw === "string" ? actionRaw.trim() : undefined;
   const actionSpec = resolveActionSpec(spec, action);
-  const fallbackVerb = key === "web_fetch" ? "fetch" : key.replace(/_/g, " ").replace(/\./g, " ");
+  const fallbackVerb = key.replace(/_/g, " ").replace(/\./g, " ");
   const verb = normalizeVerb(actionSpec?.label ?? action ?? fallbackVerb);
 
   let detail: string | undefined;
@@ -82,10 +81,6 @@ export function resolveToolDisplay(params: {
   }
   if (!detail && (key === "write" || key === "edit" || key === "attach")) {
     detail = resolveWriteDetail(key, params.args);
-  }
-
-  if (!detail && key === "web_fetch") {
-    detail = resolveWebFetchDetail(params.args);
   }
 
   const detailKeys = actionSpec?.detailKeys ?? spec?.detailKeys ?? FALLBACK.detailKeys ?? [];

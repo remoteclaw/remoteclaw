@@ -67,11 +67,6 @@ describe("resolveToolEmoji", () => {
     expected: string;
   }> = [
     { name: "returns coding emoji for exec tool", tool: "exec", expected: DEFAULT_EMOJIS.coding },
-    {
-      name: "returns web emoji for web_search tool",
-      tool: "web_search",
-      expected: DEFAULT_EMOJIS.web,
-    },
     { name: "returns web emoji for browser tool", tool: "browser", expected: DEFAULT_EMOJIS.web },
     {
       name: "returns tool emoji for unknown tool",
@@ -214,7 +209,7 @@ describe("createStatusReactionController", () => {
     void controller.setThinking();
     await vi.advanceTimersByTimeAsync(100);
 
-    void controller.setTool("web_search");
+    void controller.setTool("web_fetch");
     await vi.advanceTimersByTimeAsync(100);
 
     void controller.setTool("exec");
@@ -432,7 +427,7 @@ describe("constants", () => {
   });
 
   it("should export WEB_TOOL_TOKENS", () => {
-    for (const token of ["web_search", "browser"]) {
+    for (const token of ["web_fetch", "browser"]) {
       expect(WEB_TOOL_TOKENS).toContain(token);
     }
   });

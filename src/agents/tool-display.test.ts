@@ -77,17 +77,6 @@ describe("tool display details", () => {
     expect(editDetail).toBe("in /tmp/a.txt (4 chars)");
   });
 
-  it("formats web_search query with quotes", () => {
-    const detail = formatToolDetail(
-      resolveToolDisplay({
-        name: "web_search",
-        args: { query: "OpenClaw docs", count: 3 },
-      }),
-    );
-
-    expect(detail).toBe('for "OpenClaw docs" (top 3)');
-  });
-
   it("summarizes exec commands with context", () => {
     const detail = formatToolDetail(
       resolveToolDisplay({

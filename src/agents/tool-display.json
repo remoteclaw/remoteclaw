@@ -274,11 +274,6 @@
       "title": "Session Status",
       "detailKeys": ["sessionKey", "model"]
     },
-    "web_search": {
-      "emoji": "🔎",
-      "title": "Web Search",
-      "detailKeys": ["query", "count"]
-    },
     "web_fetch": {
       "emoji": "📄",
       "title": "Web Fetch",

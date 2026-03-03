@@ -220,25 +220,6 @@ export function resolveWriteDetail(toolKey: string, args: unknown): string | und
   return `${destinationPrefix} ${path}`;
 }
 
-export function resolveWebSearchDetail(args: unknown): string | undefined {
-  const record = asRecord(args);
-  if (!record) {
-    return undefined;
-  }
-
-  const query = typeof record.query === "string" ? record.query.trim() : undefined;
-  const count =
-    typeof record.count === "number" && Number.isFinite(record.count) && record.count > 0
-      ? Math.floor(record.count)
-      : undefined;
-
-  if (!query) {
-    return undefined;
-  }
-
-  return count !== undefined ? `for "${query}" (top ${count})` : `for "${query}"`;
-}
-
 export function resolveWebFetchDetail(args: unknown): string | undefined {
   const record = asRecord(args);
   if (!record) {

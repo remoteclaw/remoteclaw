@@ -4,7 +4,6 @@ import {
   normalizeVerb,
   resolveActionSpec,
   resolveDetailFromKeys,
-  resolveExecDetail,
   resolveWriteDetail,
   type ToolDisplaySpec as ToolDisplaySpecBase,
 } from "../../../src/agents/tool-display-common.js";
@@ -76,10 +75,7 @@ export function resolveToolDisplay(params: {
   const verb = normalizeVerb(actionSpec?.label ?? action ?? fallbackVerb);
 
   let detail: string | undefined;
-  if (key === "exec") {
-    detail = resolveExecDetail(params.args);
-  }
-  if (!detail && (key === "write" || key === "edit" || key === "attach")) {
+  if (key === "write" || key === "edit" || key === "attach") {
     detail = resolveWriteDetail(key, params.args);
   }
 

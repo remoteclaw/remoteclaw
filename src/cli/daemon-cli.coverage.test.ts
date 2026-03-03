@@ -138,7 +138,7 @@ describe("daemon-cli coverage", () => {
         REMOTECLAW_CONFIG_PATH: "/tmp/remoteclaw-daemon-state/remoteclaw.json",
         REMOTECLAW_GATEWAY_PORT: "19001",
       },
-      sourcePath: "/tmp/ai.openclaw.gateway.plist",
+      sourcePath: "/tmp/ai.remoteclaw.gateway.plist",
     });
 
     await runDaemonCommand(["daemon", "status", "--json"]);

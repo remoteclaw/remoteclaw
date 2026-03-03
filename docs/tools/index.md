@@ -327,6 +327,12 @@ Notes:
 - Requires a configured image model (see agent configuration).
 - Image analysis runs independently of the main chat model.
 
+### `pdf`
+
+Analyze one or more PDF documents.
+
+For full behavior, limits, config, and examples, see [PDF tool](/tools/pdf).
+
 ### `message`
 
 Send messages and channel actions across Discord/Google Chat/Slack/Telegram/WhatsApp/Signal/iMessage/MS Teams.

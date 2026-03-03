@@ -101,6 +101,7 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [OpenProse](/prose)
 - [CLI reference](/cli)
 - [Exec tool](/tools/exec)
+- [PDF tool](/tools/pdf)
 - [Cron jobs](/automation/cron-jobs)
 - [Cron vs Heartbeat](/automation/cron-vs-heartbeat)
 - [Sub-agents](/tools/subagents)

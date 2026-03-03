@@ -73,6 +73,7 @@ describe("preflightDiscordMessage", () => {
 
   it("drops bound-thread bot system messages to prevent ACP self-loop", async () => {
     const threadBinding = createThreadBinding({
+      targetKind: "session",
       targetSessionKey: "agent:main:acp:discord-thread-1",
     });
     const threadId = "thread-system-1";
@@ -159,6 +160,7 @@ describe("preflightDiscordMessage", () => {
 
   it("keeps bound-thread regular bot messages flowing when allowBots=true", async () => {
     const threadBinding = createThreadBinding({
+      targetKind: "session",
       targetSessionKey: "agent:main:acp:discord-thread-1",
     });
     const threadId = "thread-bot-regular-1";

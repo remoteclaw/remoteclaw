@@ -138,10 +138,10 @@ describe("jidToE164", () => {
 });
 
 describe("resolveConfigDir", () => {
-  it("prefers ~/.openclaw when legacy dir is missing", async () => {
-    const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), "openclaw-config-dir-"));
+  it("prefers ~/.remoteclaw when legacy dir is missing", async () => {
+    const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), "remoteclaw-config-dir-"));
     try {
-      const newDir = path.join(root, ".openclaw");
+      const newDir = path.join(root, ".remoteclaw");
       await fs.promises.mkdir(newDir, { recursive: true });
       const resolved = resolveConfigDir({} as NodeJS.ProcessEnv, () => root);
       expect(resolved).toBe(newDir);
@@ -167,9 +167,9 @@ describe("shortenHomePath", () => {
     vi.stubEnv("REMOTECLAW_HOME", "/srv/openclaw-home");
     vi.stubEnv("HOME", "/home/other");
 
-    expect(shortenHomePath(`${path.resolve("/srv/openclaw-home")}/.openclaw/openclaw.json`)).toBe(
-      "$REMOTECLAW_HOME/.openclaw/openclaw.json",
-    );
+    expect(
+      shortenHomePath(`${path.resolve("/srv/openclaw-home")}/.remoteclaw/remoteclaw.json`),
+    ).toBe("$REMOTECLAW_HOME/.remoteclaw/remoteclaw.json");
 
     vi.unstubAllEnvs();
   });
@@ -181,8 +181,10 @@ describe("shortenHomeInString", () => {
     vi.stubEnv("HOME", "/home/other");
 
     expect(
-      shortenHomeInString(`config: ${path.resolve("/srv/openclaw-home")}/.openclaw/openclaw.json`),
-    ).toBe("config: $REMOTECLAW_HOME/.openclaw/openclaw.json");
+      shortenHomeInString(
+        `config: ${path.resolve("/srv/openclaw-home")}/.remoteclaw/remoteclaw.json`,
+      ),
+    ).toBe("config: $REMOTECLAW_HOME/.remoteclaw/remoteclaw.json");
 
     vi.unstubAllEnvs();
   });

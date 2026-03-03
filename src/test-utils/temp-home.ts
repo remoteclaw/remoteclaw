@@ -18,12 +18,12 @@ export type TempHomeEnv = {
 
 export async function createTempHomeEnv(prefix: string): Promise<TempHomeEnv> {
   const home = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
-  await fs.mkdir(path.join(home, ".openclaw"), { recursive: true });
+  await fs.mkdir(path.join(home, ".remoteclaw"), { recursive: true });
 
   const snapshot = captureEnv([...HOME_ENV_KEYS]);
   process.env.HOME = home;
   process.env.USERPROFILE = home;
-  process.env.REMOTECLAW_STATE_DIR = path.join(home, ".openclaw");
+  process.env.REMOTECLAW_STATE_DIR = path.join(home, ".remoteclaw");
 
   if (process.platform === "win32") {
     const match = home.match(/^([A-Za-z]:)(.*)$/);

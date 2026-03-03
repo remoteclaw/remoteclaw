@@ -55,10 +55,10 @@ export async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise
     },
     {
       env: {
-        REMOTECLAW_AGENT_DIR: (home) => path.join(home, ".openclaw", "agent"),
-        PI_CODING_AGENT_DIR: (home) => path.join(home, ".openclaw", "agent"),
+        REMOTECLAW_AGENT_DIR: (home) => path.join(home, ".remoteclaw", "agent"),
+        PI_CODING_AGENT_DIR: (home) => path.join(home, ".remoteclaw", "agent"),
       },
-      prefix: "openclaw-reply-",
+      prefix: "remoteclaw-reply-",
     },
   );
 }

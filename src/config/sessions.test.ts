@@ -534,7 +534,7 @@ describe("sessions", () => {
   });
 
   it("resolves cross-agent absolute sessionFile paths", () => {
-    const stateDir = path.resolve("/home/user/.openclaw");
+    const stateDir = path.resolve("/home/user/.remoteclaw");
     withStateDir(stateDir, () => {
       const bot2Session = path.join(stateDir, "agents", "bot2", "sessions", "sess-1.jsonl");
       // Agent bot1 resolves a sessionFile that belongs to agent bot2
@@ -599,7 +599,7 @@ describe("sessions", () => {
   });
 
   it("falls back to derived transcript path when sessionFile is outside agent sessions directories", () => {
-    withStateDir(path.resolve("/home/user/.openclaw"), () => {
+    withStateDir(path.resolve("/home/user/.remoteclaw"), () => {
       const sessionFile = resolveSessionFilePath(
         "sess-1",
         { sessionFile: path.resolve("/etc/passwd") },
@@ -607,7 +607,7 @@ describe("sessions", () => {
       );
       expect(sessionFile).toBe(
         path.join(
-          path.resolve("/home/user/.openclaw"),
+          path.resolve("/home/user/.remoteclaw"),
           "agents",
           "bot1",
           "sessions",

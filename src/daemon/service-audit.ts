@@ -219,7 +219,7 @@ function auditGatewayToken(
   issues.push({
     code: SERVICE_AUDIT_CODES.gatewayTokenMismatch,
     message:
-      "Gateway service REMOTECLAW_GATEWAY_TOKEN does not match gateway.auth.token in openclaw.json",
+      "Gateway service REMOTECLAW_GATEWAY_TOKEN does not match gateway.auth.token in remoteclaw.json",
     detail: serviceToken ? "service token is stale" : "service token is missing",
     level: "recommended",
   });

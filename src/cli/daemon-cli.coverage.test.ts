@@ -102,8 +102,8 @@ describe("daemon-cli coverage", () => {
       "REMOTECLAW_GATEWAY_PORT",
       "REMOTECLAW_PROFILE",
     ]);
-    process.env.REMOTECLAW_STATE_DIR = "/tmp/openclaw-cli-state";
-    process.env.REMOTECLAW_CONFIG_PATH = "/tmp/openclaw-cli-state/openclaw.json";
+    process.env.REMOTECLAW_STATE_DIR = "/tmp/remoteclaw-cli-state";
+    process.env.REMOTECLAW_CONFIG_PATH = "/tmp/remoteclaw-cli-state/remoteclaw.json";
     delete process.env.REMOTECLAW_GATEWAY_PORT;
     delete process.env.REMOTECLAW_PROFILE;
     serviceReadCommand.mockResolvedValue(null);
@@ -134,8 +134,8 @@ describe("daemon-cli coverage", () => {
       programArguments: ["/bin/node", "cli", "gateway", "--port", "19001"],
       environment: {
         REMOTECLAW_PROFILE: "dev",
-        REMOTECLAW_STATE_DIR: "/tmp/openclaw-daemon-state",
-        REMOTECLAW_CONFIG_PATH: "/tmp/openclaw-daemon-state/openclaw.json",
+        REMOTECLAW_STATE_DIR: "/tmp/remoteclaw-daemon-state",
+        REMOTECLAW_CONFIG_PATH: "/tmp/remoteclaw-daemon-state/remoteclaw.json",
         REMOTECLAW_GATEWAY_PORT: "19001",
       },
       sourcePath: "/tmp/ai.openclaw.gateway.plist",

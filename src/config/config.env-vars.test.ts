@@ -89,7 +89,7 @@ describe("config env vars", () => {
     });
   });
 
-  it("loads ${VAR} substitutions from ~/.openclaw/.env on repeated runtime loads", async () => {
+  it("loads ${VAR} substitutions from ~/.remoteclaw/.env on repeated runtime loads", async () => {
     await withTempHome(async (_home) => {
       await withEnvOverride({ OPENROUTER_API_KEY: undefined }, async () => {
         const stateDir = process.env.REMOTECLAW_STATE_DIR?.trim();

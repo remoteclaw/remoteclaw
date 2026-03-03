@@ -174,7 +174,7 @@ function restoreTempHomeEnv(snapshot: TempHomeEnvSnapshot): void {
   restoreKey("USERPROFILE", snapshot.userProfile);
   restoreKey("HOMEDRIVE", snapshot.homeDrive);
   restoreKey("HOMEPATH", snapshot.homePath);
-  restoreKey("REMOTECLAW_HOME", snapshot.openclawHome);
+  restoreKey("REMOTECLAW_HOME", snapshot.remoteclawHome);
   restoreKey("REMOTECLAW_STATE_DIR", snapshot.stateDir);
 }
 
@@ -182,7 +182,7 @@ function setTempHomeEnv(home: string): void {
   process.env.HOME = home;
   process.env.USERPROFILE = home;
   delete process.env.REMOTECLAW_HOME;
-  process.env.REMOTECLAW_STATE_DIR = join(home, ".openclaw");
+  process.env.REMOTECLAW_STATE_DIR = join(home, ".remoteclaw");
 
   if (process.platform !== "win32") {
     return;
@@ -196,7 +196,7 @@ function setTempHomeEnv(home: string): void {
 }
 
 beforeAll(async () => {
-  suiteTempHomeRoot = await fs.mkdtemp(join(os.tmpdir(), "openclaw-triggers-suite-"));
+  suiteTempHomeRoot = await fs.mkdtemp(join(os.tmpdir(), "remoteclaw-triggers-suite-"));
 });
 
 afterAll(async () => {
@@ -211,7 +211,7 @@ afterAll(async () => {
 export async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
   const home = join(suiteTempHomeRoot, `case-${++suiteTempHomeId}`);
   const snapshot = snapshotTempHomeEnv();
-  await fs.mkdir(join(home, ".openclaw", "agents", "main", "sessions"), { recursive: true });
+  await fs.mkdir(join(home, ".remoteclaw", "agents", "main", "sessions"), { recursive: true });
   setTempHomeEnv(home);
 
   try {

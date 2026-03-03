@@ -39,7 +39,7 @@ function buildSnapshot(params: {
   config: RemoteClawConfig;
 }): ConfigFileSnapshot {
   return {
-    path: "/tmp/openclaw.json",
+    path: "/tmp/remoteclaw.json",
     exists: true,
     raw: JSON.stringify(params.resolved),
     parsed: params.resolved,

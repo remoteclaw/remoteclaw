@@ -13,7 +13,7 @@ async function expectLoadRejectionPreservesField(params: {
   expectedValue: unknown;
 }) {
   await withTempHome(async (home) => {
-    const configPath = path.join(home, ".openclaw", "openclaw.json");
+    const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
     await fs.mkdir(path.dirname(configPath), { recursive: true });
     await fs.writeFile(configPath, JSON.stringify(params.config, null, 2), "utf-8");
 
@@ -34,7 +34,7 @@ async function withSnapshotForConfig(
   run: (params: { snapshot: ConfigSnapshot; parsed: unknown; configPath: string }) => Promise<void>,
 ) {
   await withTempHome(async (home) => {
-    const configPath = path.join(home, ".openclaw", "openclaw.json");
+    const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
     await fs.mkdir(path.dirname(configPath), { recursive: true });
     await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
     const snapshot = await readConfigFileSnapshot();
@@ -280,7 +280,7 @@ describe("legacy config detection", () => {
   });
   it("does not auto-migrate claude-cli auth profile mode on load", async () => {
     await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(
         configPath,

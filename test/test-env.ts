@@ -122,7 +122,7 @@ export function installTestEnv(): { cleanup: () => void; tempHome: string } {
 
   // Windows: prefer the default state dir so auth/profile tests match real paths.
   if (process.platform === "win32") {
-    process.env.REMOTECLAW_STATE_DIR = path.join(tempHome, ".openclaw");
+    process.env.REMOTECLAW_STATE_DIR = path.join(tempHome, ".remoteclaw");
   }
 
   process.env.XDG_CONFIG_HOME = path.join(tempHome, ".config");

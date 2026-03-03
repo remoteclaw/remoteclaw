@@ -53,8 +53,10 @@ describe("Nix integration (U3, U5, U9)", () => {
   });
 
   describe("U5: CONFIG_PATH and STATE_DIR env var overrides", () => {
-    it("STATE_DIR defaults to ~/.openclaw when env not set", () => {
-      expect(resolveStateDir(envWith({ REMOTECLAW_STATE_DIR: undefined }))).toMatch(/\.openclaw$/);
+    it("STATE_DIR defaults to ~/.remoteclaw when env not set", () => {
+      expect(resolveStateDir(envWith({ REMOTECLAW_STATE_DIR: undefined }))).toMatch(
+        /\.remoteclaw$/,
+      );
     });
 
     it("STATE_DIR respects REMOTECLAW_STATE_DIR override", () => {
@@ -67,10 +69,10 @@ describe("Nix integration (U3, U5, U9)", () => {
       const customHome = path.join(path.sep, "custom", "home");
       expect(
         resolveStateDir(envWith({ REMOTECLAW_HOME: customHome, REMOTECLAW_STATE_DIR: undefined })),
-      ).toBe(path.join(path.resolve(customHome), ".openclaw"));
+      ).toBe(path.join(path.resolve(customHome), ".remoteclaw"));
     });
 
-    it("CONFIG_PATH defaults to REMOTECLAW_HOME/.openclaw/openclaw.json", () => {
+    it("CONFIG_PATH defaults to REMOTECLAW_HOME/.remoteclaw/remoteclaw.json", () => {
       const customHome = path.join(path.sep, "custom", "home");
       expect(
         resolveConfigPathCandidate(
@@ -80,39 +82,39 @@ describe("Nix integration (U3, U5, U9)", () => {
             REMOTECLAW_STATE_DIR: undefined,
           }),
         ),
-      ).toBe(path.join(path.resolve(customHome), ".openclaw", "openclaw.json"));
+      ).toBe(path.join(path.resolve(customHome), ".remoteclaw", "remoteclaw.json"));
     });
 
-    it("CONFIG_PATH defaults to ~/.openclaw/openclaw.json when env not set", () => {
+    it("CONFIG_PATH defaults to ~/.remoteclaw/remoteclaw.json when env not set", () => {
       expect(
         resolveConfigPathCandidate(
           envWith({ REMOTECLAW_CONFIG_PATH: undefined, REMOTECLAW_STATE_DIR: undefined }),
         ),
-      ).toMatch(/\.openclaw[\\/]openclaw\.json$/);
+      ).toMatch(/\.remoteclaw[\\/]remoteclaw\.json$/);
     });
 
     it("CONFIG_PATH respects REMOTECLAW_CONFIG_PATH override", () => {
       expect(
         resolveConfigPathCandidate(
-          envWith({ REMOTECLAW_CONFIG_PATH: "/nix/store/abc/openclaw.json" }),
+          envWith({ REMOTECLAW_CONFIG_PATH: "/nix/store/abc/remoteclaw.json" }),
         ),
-      ).toBe(path.resolve("/nix/store/abc/openclaw.json"));
+      ).toBe(path.resolve("/nix/store/abc/remoteclaw.json"));
     });
 
     it("CONFIG_PATH expands ~ in REMOTECLAW_CONFIG_PATH override", async () => {
       await withTempHome(async (home) => {
         expect(
           resolveConfigPathCandidate(
-            envWith({ REMOTECLAW_HOME: home, REMOTECLAW_CONFIG_PATH: "~/.openclaw/custom.json" }),
+            envWith({ REMOTECLAW_HOME: home, REMOTECLAW_CONFIG_PATH: "~/.remoteclaw/custom.json" }),
             () => home,
           ),
-        ).toBe(path.join(home, ".openclaw", "custom.json"));
+        ).toBe(path.join(home, ".remoteclaw", "custom.json"));
       });
     });
 
     it("CONFIG_PATH uses STATE_DIR when only state dir is overridden", () => {
       expect(resolveConfigPathCandidate(envWith({ REMOTECLAW_STATE_DIR: "/custom/state" }))).toBe(
-        path.join(path.resolve("/custom/state"), "openclaw.json"),
+        path.join(path.resolve("/custom/state"), "remoteclaw.json"),
       );
     });
   });
@@ -120,7 +122,7 @@ describe("Nix integration (U3, U5, U9)", () => {
   describe("U5b: tilde expansion for config paths", () => {
     it("expands ~ in common path-ish config fields", async () => {
       await withTempHome(async (home) => {
-        const configDir = path.join(home, ".openclaw");
+        const configDir = path.join(home, ".remoteclaw");
         await fs.mkdir(configDir, { recursive: true });
         const pluginDir = path.join(home, "plugins", "demo-plugin");
         await fs.mkdir(pluginDir, { recursive: true });
@@ -142,7 +144,7 @@ describe("Nix integration (U3, U5, U9)", () => {
           "utf-8",
         );
         await fs.writeFile(
-          path.join(configDir, "openclaw.json"),
+          path.join(configDir, "remoteclaw.json"),
           JSON.stringify(
             {
               plugins: {
@@ -156,7 +158,7 @@ describe("Nix integration (U3, U5, U9)", () => {
                   {
                     id: "main",
                     workspace: "~/ws-agent",
-                    agentDir: "~/.openclaw/agents/main",
+                    agentDir: "~/.remoteclaw/agents/main",
                   },
                 ],
               },
@@ -164,7 +166,7 @@ describe("Nix integration (U3, U5, U9)", () => {
                 whatsapp: {
                   accounts: {
                     personal: {
-                      authDir: "~/.openclaw/credentials/wa-personal",
+                      authDir: "~/.remoteclaw/credentials/wa-personal",
                     },
                   },
                 },
@@ -182,10 +184,10 @@ describe("Nix integration (U3, U5, U9)", () => {
         expect(cfg.agents?.defaults?.workspace).toBe(path.join(home, "ws-default"));
         expect(cfg.agents?.list?.[0]?.workspace).toBe(path.join(home, "ws-agent"));
         expect(cfg.agents?.list?.[0]?.agentDir).toBe(
-          path.join(home, ".openclaw", "agents", "main"),
+          path.join(home, ".remoteclaw", "agents", "main"),
         );
         expect(cfg.channels?.whatsapp?.accounts?.personal?.authDir).toBe(
-          path.join(home, ".openclaw", "credentials", "wa-personal"),
+          path.join(home, ".remoteclaw", "credentials", "wa-personal"),
         );
       });
     });

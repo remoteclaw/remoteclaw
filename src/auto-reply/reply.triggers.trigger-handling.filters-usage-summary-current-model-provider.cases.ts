@@ -156,7 +156,7 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
           runAgentMock.mockClear();
           const cfg = makeCfg(home);
           cfg.session = { ...cfg.session, store: join(home, "auth-profile-status.sessions.json") };
-          const agentDir = join(home, ".openclaw", "agents", "main", "agent");
+          const agentDir = join(home, ".remoteclaw", "agents", "main", "agent");
           await mkdir(agentDir, { recursive: true });
           await writeFile(
             join(agentDir, "auth-profiles.json"),

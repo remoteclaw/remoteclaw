@@ -12,6 +12,31 @@ function json(data: unknown) {
   };
 }
 
+type LarkResponse<T = unknown> = { code?: number; msg?: string; data?: T };
+
+export class LarkApiError extends Error {
+  readonly code: number;
+  readonly api: string;
+  readonly context?: Record<string, unknown>;
+  constructor(code: number, message: string, api: string, context?: Record<string, unknown>) {
+    super(`[${api}] code=${code} message=${message}`);
+    this.name = "LarkApiError";
+    this.code = code;
+    this.api = api;
+    this.context = context;
+  }
+}
+
+function ensureLarkSuccess<T>(
+  res: LarkResponse<T>,
+  api: string,
+  context?: Record<string, unknown>,
+): asserts res is LarkResponse<T> & { code: 0 } {
+  if (res.code !== 0) {
+    throw new LarkApiError(res.code ?? -1, res.msg ?? "unknown error", api, context);
+  }
+}
+
 /** Field type ID to human-readable name */
 const FIELD_TYPE_NAMES: Record<number, string> = {
   1: "Text",
@@ -71,9 +96,7 @@ async function getAppTokenFromWiki(
   const res = await client.wiki.space.getNode({
     params: { token: nodeToken },
   });
-  if (res.code !== 0) {
-    throw new Error(res.msg);
-  }
+  ensureLarkSuccess(res, "wiki.space.getNode", { nodeToken });
 
   const node = res.data?.node;
   if (!node) {
@@ -104,9 +127,7 @@ async function getBitableMeta(client: ReturnType<typeof createFeishuClient>, url
   const res = await client.bitable.app.get({
     path: { app_token: appToken },
   });
-  if (res.code !== 0) {
-    throw new Error(res.msg);
-  }
+  ensureLarkSuccess(res, "bitable.app.get", { appToken });
 
   // List tables if no table_id specified
   let tables: { table_id: string; name: string }[] = [];
@@ -142,9 +163,7 @@ async function listFields(
   const res = await client.bitable.appTableField.list({
     path: { app_token: appToken, table_id: tableId },
   });
-  if (res.code !== 0) {
-    throw new Error(res.msg);
-  }
+  ensureLarkSuccess(res, "bitable.appTableField.list", { appToken, tableId });
 
   const fields = res.data?.items ?? [];
   return {
@@ -174,9 +193,7 @@ async function listRecords(
       ...(pageToken && { page_token: pageToken }),
     },
   });
-  if (res.code !== 0) {
-    throw new Error(res.msg);
-  }
+  ensureLarkSuccess(res, "bitable.appTableRecord.list", { appToken, tableId, pageSize });
 
   return {
     records: res.data?.items ?? [],
@@ -195,9 +212,7 @@ async function getRecord(
   const res = await client.bitable.appTableRecord.get({
     path: { app_token: appToken, table_id: tableId, record_id: recordId },
   });
-  if (res.code !== 0) {
-    throw new Error(res.msg);
-  }
+  ensureLarkSuccess(res, "bitable.appTableRecord.get", { appToken, tableId, recordId });
 
   return {
     record: res.data?.record,
@@ -215,9 +230,7 @@ async function createRecord(
     // oxlint-disable-next-line typescript/no-explicit-any
     data: { fields: fields as any },
   });
-  if (res.code !== 0) {
-    throw new Error(res.msg);
-  }
+  ensureLarkSuccess(res, "bitable.appTableRecord.create", { appToken, tableId });
 
   return {
     record: res.data?.record,
@@ -345,9 +358,7 @@ async function createApp(
       ...(folderToken && { folder_token: folderToken }),
     },
   });
-  if (res.code !== 0) {
-    throw new Error(res.msg);
-  }
+  ensureLarkSuccess(res, "bitable.app.create", { name, folderToken });
 
   const appToken = res.data?.app?.app_token;
   if (!appToken) {
@@ -404,9 +415,12 @@ async function createField(
       ...(property && { property }),
     },
   });
-  if (res.code !== 0) {
-    throw new Error(res.msg);
-  }
+  ensureLarkSuccess(res, "bitable.appTableField.create", {
+    appToken,
+    tableId,
+    fieldName,
+    fieldType,
+  });
 
   return {
     field_id: res.data?.field?.field_id,
@@ -428,9 +442,7 @@ async function updateRecord(
     // oxlint-disable-next-line typescript/no-explicit-any
     data: { fields: fields as any },
   });
-  if (res.code !== 0) {
-    throw new Error(res.msg);
-  }
+  ensureLarkSuccess(res, "bitable.appTableRecord.update", { appToken, tableId, recordId });
 
   return {
     record: res.data?.record,

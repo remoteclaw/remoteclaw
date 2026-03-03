@@ -1607,6 +1607,8 @@ final class TalkModeManager: NSObject {
 }
 
 private struct IncrementalSpeechBuffer {
+    private static let softBoundaryMinChars = 72
+
     private(set) var latestText: String = ""
     private(set) var directive: TalkDirective?
     private var spokenOffset: Int = 0
@@ -1699,8 +1701,9 @@ private struct IncrementalSpeechBuffer {
             }
 
             if !inCodeBlock {
-                buffer.append(chars[idx])
-                if Self.isBoundary(chars[idx]) {
+                let currentChar = chars[idx]
+                buffer.append(currentChar)
+                if Self.isBoundary(currentChar) || Self.isSoftBoundary(currentChar, bufferedChars: buffer.count) {
                     lastBoundary = idx + 1
                     bufferAtBoundary = buffer
                     inCodeBlockAtBoundary = inCodeBlock
@@ -1726,6 +1729,10 @@ private struct IncrementalSpeechBuffer {
 
     private static func isBoundary(_ ch: Character) -> Bool {
         ch == "." || ch == "!" || ch == "?" || ch == "\n"
+    }
+
+    private static func isSoftBoundary(_ ch: Character, bufferedChars: Int) -> Bool {
+        bufferedChars >= Self.softBoundaryMinChars && ch.isWhitespace
     }
 }
 

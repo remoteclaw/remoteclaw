@@ -8,6 +8,7 @@ const ROOT_SECTIONS = [
   "wizard",
   "diagnostics",
   "logging",
+  "cli",
   "update",
   "browser",
   "ui",
@@ -342,6 +343,7 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   ],
   "logging.consoleStyle": ['"pretty"', '"compact"', '"json"'],
   "logging.redactSensitive": ['"off"', '"tools"'],
+  "cli.banner.taglineMode": ['"random"', '"default"', '"off"'],
   "update.channel": ['"stable"', '"beta"', '"next"'],
 };
 

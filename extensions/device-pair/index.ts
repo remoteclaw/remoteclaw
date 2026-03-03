@@ -8,6 +8,12 @@ import {
   runPluginCommandWithTimeout,
   resolveTailnetHostWithRunner,
 } from "remoteclaw/plugin-sdk";
+import {
+  armPairNotifyOnce,
+  formatPendingRequests,
+  handleNotifyCommand,
+  registerPairingNotifierService,
+} from "./notify.js";
 
 function renderQrAscii(data: string): Promise<string> {
   return new Promise((resolve) => {
@@ -314,36 +320,9 @@ function formatSetupInstructions(): string {
   ].join("\n");
 }
 
-type PendingPairingRequest = {
-  requestId: string;
-  deviceId: string;
-  displayName?: string;
-  platform?: string;
-  remoteIp?: string;
-  ts?: number;
-};
-
-function formatPendingRequests(pending: PendingPairingRequest[]): string {
-  if (pending.length === 0) {
-    return "No pending device pairing requests.";
-  }
-  const lines: string[] = ["Pending device pairing requests:"];
-  for (const req of pending) {
-    const label = req.displayName?.trim() || req.deviceId;
-    const platform = req.platform?.trim();
-    const ip = req.remoteIp?.trim();
-    const parts = [
-      `- ${req.requestId}`,
-      label ? `name=${label}` : null,
-      platform ? `platform=${platform}` : null,
-      ip ? `ip=${ip}` : null,
-    ].filter(Boolean);
-    lines.push(parts.join(" · "));
-  }
-  return lines.join("\n");
-}
-
 export default function register(api: RemoteClawPluginApi) {
+  registerPairingNotifierService(api);
+
   api.registerCommand({
     name: "pair",
     description: "Generate setup codes and approve device pairing requests.",
@@ -361,6 +340,15 @@ export default function register(api: RemoteClawPluginApi) {
       if (action === "status" || action === "pending") {
         const list = await listDevicePairing();
         return { text: formatPendingRequests(list.pending) };
+      }
+
+      if (action === "notify") {
+        const notifyAction = tokens[1]?.trim().toLowerCase() ?? "status";
+        return await handleNotifyCommand({
+          api,
+          ctx,
+          action: notifyAction,
+        });
       }
 
       if (action === "approve") {
@@ -425,6 +413,19 @@ export default function register(api: RemoteClawPluginApi) {
 
         const channel = ctx.channel;
         const target = ctx.senderId?.trim() || ctx.from?.trim() || ctx.to?.trim() || "";
+        let autoNotifyArmed = false;
+
+        if (channel === "telegram" && target) {
+          try {
+            autoNotifyArmed = await armPairNotifyOnce({ api, ctx });
+          } catch (err) {
+            api.logger.warn?.(
+              `device-pair: failed to arm one-shot pairing notify (${String(
+                (err as Error)?.message ?? err,
+              )})`,
+            );
+          }
+        }
 
         if (channel === "telegram" && target) {
           try {
@@ -445,7 +446,15 @@ export default function register(api: RemoteClawPluginApi) {
                   `Gateway: ${payload.url}`,
                   `Auth: ${authLabel}`,
                   "",
-                  "After scanning, come back here and run `/pair approve` to complete pairing.",
+                  autoNotifyArmed
+                    ? "After scanning, wait here for the pairing request ping."
+                    : "After scanning, come back here and run `/pair approve` to complete pairing.",
+                  ...(autoNotifyArmed
+                    ? [
+                        "I’ll auto-ping here when the pairing request arrives, then auto-disable.",
+                        "If the ping does not arrive, run `/pair approve latest` manually.",
+                      ]
+                    : []),
                 ].join("\n"),
               };
             }
@@ -464,7 +473,15 @@ export default function register(api: RemoteClawPluginApi) {
           `Gateway: ${payload.url}`,
           `Auth: ${authLabel}`,
           "",
-          "After scanning, run `/pair approve` to complete pairing.",
+          autoNotifyArmed
+            ? "After scanning, wait here for the pairing request ping."
+            : "After scanning, run `/pair approve` to complete pairing.",
+          ...(autoNotifyArmed
+            ? [
+                "I’ll auto-ping here when the pairing request arrives, then auto-disable.",
+                "If the ping does not arrive, run `/pair approve latest` manually.",
+              ]
+            : []),
         ];
 
         // WebUI + CLI/TUI: ASCII QR

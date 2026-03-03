@@ -75,7 +75,7 @@ export function resolveToolDisplay(params: {
   const verb = normalizeVerb(actionSpec?.label ?? action ?? fallbackVerb);
 
   let detail: string | undefined;
-  if (key === "edit" || key === "attach") {
+  if (key === "attach") {
     detail = resolveWriteDetail(key, params.args);
   }
 

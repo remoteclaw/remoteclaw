@@ -40,11 +40,6 @@
       "title": "Write",
       "detailKeys": ["path"]
     },
-    "edit": {
-      "icon": "penLine",
-      "title": "Edit",
-      "detailKeys": ["path"]
-    },
     "attach": {
       "icon": "paperclip",
       "title": "Attach",

@@ -353,7 +353,7 @@ describe("resolveAgentConfig", () => {
             workspace: "~/openclaw-restricted",
             tools: {
               allow: ["read"],
-              deny: ["exec", "write", "edit"],
+              deny: ["exec", "write"],
               elevated: {
                 enabled: false,
                 allowFrom: { whatsapp: ["+15555550123"] },
@@ -366,7 +366,7 @@ describe("resolveAgentConfig", () => {
     const result = resolveAgentConfig(cfg, "restricted");
     expect(result?.tools).toEqual({
       allow: ["read"],
-      deny: ["exec", "write", "edit"],
+      deny: ["exec", "write"],
       elevated: {
         enabled: false,
         allowFrom: { whatsapp: ["+15555550123"] },

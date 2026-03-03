@@ -25,11 +25,6 @@
     ]
   },
   "tools": {
-    "edit": {
-      "emoji": "📝",
-      "title": "Edit",
-      "detailKeys": ["path"]
-    },
     "attach": {
       "emoji": "📎",
       "title": "Attach",

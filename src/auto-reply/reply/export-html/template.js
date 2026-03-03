@@ -634,8 +634,6 @@
         }
         return `[read: ${display}]`;
       }
-      case "edit":
-        return `[edit: ${shortenPath(String(args.path || args.file_path || ""))}]`;
       case "bash": {
         const rawCmd = String(args.command || "");
         const cmd = rawCmd
@@ -1099,30 +1097,6 @@
           const lang = filePath ? getLanguageFromPath(filePath) : null;
           if (output) {
             html += formatExpandableOutput(output, 10, lang);
-          }
-        }
-        break;
-      }
-      case "edit": {
-        const filePath = str(args.file_path ?? args.path);
-        html += `<div class="tool-header"><span class="tool-name">edit</span> <span class="tool-path">${filePath === null ? invalidArg : escapeHtml(shortenPath(filePath || ""))}</span></div>`;
-
-        if (result?.details?.diff) {
-          const diffLines = result.details.diff.split("\n");
-          html += '<div class="tool-diff">';
-          for (const line of diffLines) {
-            const cls = line.match(/^\+/)
-              ? "diff-added"
-              : line.match(/^-/)
-                ? "diff-removed"
-                : "diff-context";
-            html += `<div class="${cls}">${escapeHtml(replaceTabs(line))}</div>`;
-          }
-          html += "</div>";
-        } else if (result) {
-          const output = getResultText().trim();
-          if (output) {
-            html += `<div class="tool-output"><pre>${escapeHtml(output)}</pre></div>`;
           }
         }
         break;

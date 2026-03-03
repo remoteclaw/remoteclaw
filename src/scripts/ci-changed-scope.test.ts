@@ -1,5 +1,19 @@
-import { describe, expect, it } from "vitest";
-import { detectChangedScope } from "../../scripts/ci-changed-scope.mjs";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import { detectChangedScope, listChangedPaths } from "../../scripts/ci-changed-scope.mjs";
+
+const markerPaths: string[] = [];
+
+afterEach(() => {
+  for (const markerPath of markerPaths) {
+    try {
+      fs.unlinkSync(markerPath);
+    } catch {}
+  }
+  markerPaths.length = 0;
+});
 
 describe("detectChangedScope", () => {
   it("fails safe when no paths are provided", () => {
@@ -78,5 +92,21 @@ describe("detectChangedScope", () => {
       runAndroid: false,
       runWindows: false,
     });
+  });
+
+  it("treats base and head as literal git args", () => {
+    const markerPath = path.join(
+      os.tmpdir(),
+      `openclaw-ci-changed-scope-${Date.now()}-${Math.random().toString(16).slice(2)}.tmp`,
+    );
+    markerPaths.push(markerPath);
+
+    const injectedBase =
+      process.platform === "win32"
+        ? `HEAD & echo injected > "${markerPath}" & rem`
+        : `HEAD; touch "${markerPath}" #`;
+
+    expect(() => listChangedPaths(injectedBase, "HEAD")).toThrow();
+    expect(fs.existsSync(markerPath)).toBe(false);
   });
 });

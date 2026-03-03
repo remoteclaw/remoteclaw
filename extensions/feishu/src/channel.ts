@@ -72,6 +72,9 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
   groups: {
     resolveToolPolicy: resolveFeishuGroupToolPolicy,
   },
+  mentions: {
+    stripPatterns: () => ['<at user_id="[^"]*">[^<]*</at>'],
+  },
   reload: { configPrefixes: ["channels.feishu"] },
   configSchema: {
     schema: {

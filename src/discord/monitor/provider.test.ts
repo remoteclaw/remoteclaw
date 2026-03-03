@@ -6,6 +6,7 @@ import type { RuntimeEnv } from "../../runtime.js";
 const {
   clientFetchUserMock,
   clientGetPluginMock,
+  createDiscordAutoPresenceControllerMock,
   createDiscordNativeCommandMock,
   createNoopThreadBindingManagerMock,
   createThreadBindingManagerMock,
@@ -18,6 +19,13 @@ const {
 } = vi.hoisted(() => {
   const createdBindingManagers: Array<{ stop: ReturnType<typeof vi.fn> }> = [];
   return {
+    createDiscordAutoPresenceControllerMock: vi.fn(() => ({
+      enabled: false,
+      start: vi.fn(),
+      stop: vi.fn(),
+      refresh: vi.fn(),
+      runNow: vi.fn(),
+    })),
     clientFetchUserMock: vi.fn(async (_target?: string) => ({ id: "bot-1" })),
     clientGetPluginMock: vi.fn((_name?: string): unknown => undefined),
     createDiscordNativeCommandMock: vi.fn(() => ({ name: "mock-command" })),
@@ -198,6 +206,10 @@ vi.mock("./presence.js", () => ({
   resolveDiscordPresenceUpdate: () => undefined,
 }));
 
+vi.mock("./auto-presence.js", () => ({
+  createDiscordAutoPresenceController: createDiscordAutoPresenceControllerMock,
+}));
+
 vi.mock("./provider.allowlist.js", () => ({
   resolveDiscordAllowlistConfig: resolveDiscordAllowlistConfigMock,
 }));
@@ -236,6 +248,13 @@ describe("monitorDiscordProvider", () => {
     }) as RemoteClawConfig;
 
   beforeEach(() => {
+    createDiscordAutoPresenceControllerMock.mockClear().mockImplementation(() => ({
+      enabled: false,
+      start: vi.fn(),
+      stop: vi.fn(),
+      refresh: vi.fn(),
+      runNow: vi.fn(),
+    }));
     clientFetchUserMock.mockClear().mockResolvedValue({ id: "bot-1" });
     clientGetPluginMock.mockClear().mockReturnValue(undefined);
     createDiscordNativeCommandMock.mockClear().mockReturnValue({ name: "mock-command" });
@@ -307,5 +326,25 @@ describe("monitorDiscordProvider", () => {
     };
     expect(lifecycleArgs.pendingGatewayErrors).toHaveLength(1);
     expect(String(lifecycleArgs.pendingGatewayErrors?.[0])).toContain("4014");
+  });
+
+  it("reports connected status on startup and shutdown", async () => {
+    const { monitorDiscordProvider } = await import("./provider.js");
+    const setStatus = vi.fn();
+    clientGetPluginMock.mockImplementation((name: string) =>
+      name === "gateway" ? { isConnected: true } : undefined,
+    );
+
+    await monitorDiscordProvider({
+      config: baseConfig(),
+      runtime: baseRuntime(),
+      setStatus,
+    });
+
+    const connectedTrue = setStatus.mock.calls.find((call) => call[0]?.connected === true);
+    const connectedFalse = setStatus.mock.calls.find((call) => call[0]?.connected === false);
+
+    expect(connectedTrue).toBeDefined();
+    expect(connectedFalse).toBeDefined();
   });
 });

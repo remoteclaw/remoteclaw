@@ -68,7 +68,7 @@ export const DEFAULT_TIMING: Required<StatusReactionTiming> = {
   errorHoldMs: 2500,
 };
 
-export const CODING_TOOL_TOKENS: string[] = ["edit", "session_status", "bash"];
+export const CODING_TOOL_TOKENS: string[] = ["session_status", "bash"];
 
 export const WEB_TOOL_TOKENS: string[] = ["browser"];
 

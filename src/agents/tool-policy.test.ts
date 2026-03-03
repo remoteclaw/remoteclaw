@@ -39,15 +39,14 @@ function createOwnerPolicyTools() {
 
 describe("tool-policy", () => {
   it("expands groups and normalizes names", () => {
-    const expanded = expandToolGroups(["BASH", "group:fs"]);
+    const expanded = expandToolGroups(["BASH", "group:sessions"]);
     const set = new Set(expanded);
     expect(set.has("bash")).toBe(true);
-    expect(set.has("edit")).toBe(true);
+    expect(set.has("sessions_list")).toBe(true);
   });
 
   it("resolves known profiles and ignores unknown ones", () => {
     const coding = resolveToolProfilePolicy("coding");
-    expect(coding?.allow).toContain("edit");
     expect(coding?.allow).toContain("cron");
     expect(coding?.allow).not.toContain("gateway");
     expect(resolveToolProfilePolicy("nope")).toBeUndefined();

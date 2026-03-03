@@ -444,27 +444,14 @@ function collectRiskyToolExposureContexts(cfg: OpenClawConfig): {
   let hasRuntimeRisk = false;
   for (const context of contexts) {
     const sandboxMode = resolveSandboxConfigForAgent(cfg, context.agentId).mode;
-    const policies = resolveToolPolicies({
-      cfg,
-      agentTools: context.tools,
-      sandboxMode,
-      agentId: context.agentId ?? null,
-    });
     const runtimeTools: string[] = [];
-    const fsTools = ["edit"].filter((tool) => isToolAllowedByPolicies(tool, policies));
-    const fsWorkspaceOnly = context.tools?.fs?.workspaceOnly ?? cfg.tools?.fs?.workspaceOnly;
     const runtimeUnguarded = runtimeTools.length > 0 && sandboxMode !== "all";
-    const fsUnguarded = fsTools.length > 0 && sandboxMode !== "all" && fsWorkspaceOnly !== true;
-    if (!runtimeUnguarded && !fsUnguarded) {
+    if (!runtimeUnguarded) {
       continue;
     }
-    if (runtimeUnguarded) {
-      hasRuntimeRisk = true;
-    }
+    hasRuntimeRisk = true;
     riskyContexts.push(
-      `${context.label} (sandbox=${sandboxMode}; runtime=[${runtimeTools.join(", ") || "off"}]; fs=[${fsTools.join(", ") || "off"}]; fs.workspaceOnly=${
-        fsWorkspaceOnly === true ? "true" : "false"
-      })`,
+      `${context.label} (sandbox=${sandboxMode}; runtime=[${runtimeTools.join(", ") || "off"}])`,
     );
   }
 

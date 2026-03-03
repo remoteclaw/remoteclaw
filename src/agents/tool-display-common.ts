@@ -166,21 +166,7 @@ export function resolveWriteDetail(toolKey: string, args: unknown): string | und
     return `from ${path}`;
   }
 
-  const destinationPrefix = "in";
-  const content =
-    typeof record.content === "string"
-      ? record.content
-      : typeof record.newText === "string"
-        ? record.newText
-        : typeof record.new_string === "string"
-          ? record.new_string
-          : undefined;
-
-  if (content && content.length > 0) {
-    return `${destinationPrefix} ${path} (${content.length} chars)`;
-  }
-
-  return `${destinationPrefix} ${path}`;
+  return undefined;
 }
 
 export function resolveActionSpec(

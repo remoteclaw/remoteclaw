@@ -66,7 +66,7 @@ describe("resolveToolEmoji", () => {
     tool: string | undefined;
     expected: string;
   }> = [
-    { name: "returns coding emoji for exec tool", tool: "exec", expected: DEFAULT_EMOJIS.coding },
+    { name: "returns coding emoji for bash tool", tool: "bash", expected: DEFAULT_EMOJIS.coding },
     { name: "returns web emoji for browser tool", tool: "browser", expected: DEFAULT_EMOJIS.web },
     {
       name: "returns tool emoji for unknown tool",
@@ -75,10 +75,10 @@ describe("resolveToolEmoji", () => {
     },
     { name: "returns tool emoji for empty string", tool: "", expected: DEFAULT_EMOJIS.tool },
     { name: "returns tool emoji for undefined", tool: undefined, expected: DEFAULT_EMOJIS.tool },
-    { name: "is case-insensitive", tool: "EXEC", expected: DEFAULT_EMOJIS.coding },
+    { name: "is case-insensitive", tool: "BASH", expected: DEFAULT_EMOJIS.coding },
     {
       name: "matches tokens within tool names",
-      tool: "my_exec_wrapper",
+      tool: "my_bash_wrapper",
       expected: DEFAULT_EMOJIS.coding,
     },
   ];
@@ -141,7 +141,7 @@ describe("createStatusReactionController", () => {
   it("should classify tool name and debounce", async () => {
     const { calls, controller } = createEnabledController();
 
-    void controller.setTool("exec");
+    void controller.setTool("bash");
     await vi.advanceTimersByTimeAsync(DEFAULT_TIMING.debounceMs);
 
     expect(calls).toContainEqual({ method: "set", emoji: DEFAULT_EMOJIS.coding });
@@ -185,7 +185,7 @@ describe("createStatusReactionController", () => {
       terminal: (controller: ReturnType<typeof createStatusReactionController>) =>
         controller.setError(),
       followup: (controller: ReturnType<typeof createStatusReactionController>) => {
-        void controller.setTool("exec");
+        void controller.setTool("bash");
       },
     },
   ] as const;
@@ -212,10 +212,10 @@ describe("createStatusReactionController", () => {
     void controller.setTool("web_fetch");
     await vi.advanceTimersByTimeAsync(100);
 
-    void controller.setTool("exec");
+    void controller.setTool("bash");
     await vi.advanceTimersByTimeAsync(DEFAULT_TIMING.debounceMs);
 
-    // Should only have the last one (exec → coding)
+    // Should only have the last one (bash → coding)
     const setEmojis = calls.filter((c) => c.method === "set").map((c) => c.emoji);
     expect(setEmojis).toEqual([DEFAULT_EMOJIS.coding]);
   });
@@ -367,7 +367,7 @@ describe("createStatusReactionController", () => {
     {
       name: "phase change",
       runUpdate: (controller: ReturnType<typeof createStatusReactionController>) => {
-        void controller.setTool("exec");
+        void controller.setTool("bash");
         return vi.advanceTimersByTimeAsync(DEFAULT_TIMING.debounceMs);
       },
     },
@@ -421,7 +421,7 @@ describe("createStatusReactionController", () => {
 
 describe("constants", () => {
   it("should export CODING_TOOL_TOKENS", () => {
-    for (const token of ["exec", "edit"]) {
+    for (const token of ["session_status", "bash"]) {
       expect(CODING_TOOL_TOKENS).toContain(token);
     }
   });

@@ -51,15 +51,4 @@ describe("tool display details", () => {
     expect(detail).toContain("limit 20");
     expect(detail).toContain("tools true");
   });
-
-  it("formats edit with intent-first file detail", () => {
-    const editDetail = formatToolDetail(
-      resolveToolDisplay({
-        name: "edit",
-        args: { path: "/tmp/a.txt", newText: "abcd" },
-      }),
-    );
-
-    expect(editDetail).toBe("in /tmp/a.txt (4 chars)");
-  });
 });

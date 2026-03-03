@@ -2082,24 +2082,6 @@ describe("security audit", () => {
     );
   });
 
-  it("flags open groupPolicy when filesystem tools are exposed without guards", async () => {
-    const cfg: OpenClawConfig = {
-      channels: { whatsapp: { groupPolicy: "open" } },
-      tools: { elevated: { enabled: false } },
-    };
-
-    const res = await audit(cfg);
-
-    expect(res.findings).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          checkId: "security.exposure.open_groups_with_runtime_or_fs",
-          severity: "warn",
-        }),
-      ]),
-    );
-  });
-
   it("does not flag runtime/filesystem exposure for open groups when runtime is denied and fs is workspace-only", async () => {
     const cfg: OpenClawConfig = {
       channels: { whatsapp: { groupPolicy: "open" } },

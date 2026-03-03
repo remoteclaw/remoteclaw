@@ -2,6 +2,11 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { clearBootstrapSnapshot } from "../../agents/bootstrap-cache.js";
+import {
+  listSubagentRunsForRequester,
+  markSubagentRunTerminated,
+} from "../../agents/subagent-registry.js";
+import { spawnSubagentDirect } from "../../agents/subagent-spawn.js";
 import { stopSubagentsForRequester } from "../../auto-reply/reply/abort.js";
 import { clearSessionQueues } from "../../auto-reply/reply/queue.js";
 import { loadConfig } from "../../config/config.js";
@@ -569,6 +574,75 @@ export const sessionsHandlers: GatewayRequestHandlers = {
         kept: keptLines.length,
       },
       undefined,
+    );
+  },
+  "sessions.spawn": async ({ params, respond }) => {
+    const task = typeof params.task === "string" ? params.task.trim() : "";
+    if (!task) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "task is required"));
+      return;
+    }
+    const agentId =
+      typeof params.agentId === "string" ? params.agentId.trim() || undefined : undefined;
+    const label = typeof params.label === "string" ? params.label.trim() || undefined : undefined;
+    const sessionKey =
+      typeof params.sessionKey === "string" ? params.sessionKey.trim() || undefined : undefined;
+
+    try {
+      const result = await spawnSubagentDirect(
+        { task, agentId, label },
+        { agentSessionKey: sessionKey },
+      );
+      respond(true, result, undefined);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, message));
+    }
+  },
+  "sessions.subagents": ({ params, respond }) => {
+    const action = typeof params.action === "string" ? params.action.trim() : "list";
+    const sessionKey = typeof params.sessionKey === "string" ? params.sessionKey.trim() : "";
+    if (!sessionKey) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "sessionKey is required"));
+      return;
+    }
+
+    if (action === "list") {
+      const runs = listSubagentRunsForRequester(sessionKey);
+      respond(true, { status: "ok", action: "list", runs }, undefined);
+      return;
+    }
+
+    if (action === "status") {
+      const runId = typeof params.runId === "string" ? params.runId.trim() : "";
+      const runs = listSubagentRunsForRequester(sessionKey);
+      if (runId) {
+        const run = runs.find((r) => r.runId === runId);
+        respond(true, { status: "ok", action: "status", run: run ?? null }, undefined);
+      } else {
+        respond(true, { status: "ok", action: "status", runs }, undefined);
+      }
+      return;
+    }
+
+    if (action === "cancel") {
+      const runId = typeof params.runId === "string" ? params.runId.trim() : "";
+      const childSessionKey =
+        typeof params.childSessionKey === "string" ? params.childSessionKey.trim() : "";
+      const reason = typeof params.reason === "string" ? params.reason.trim() : "cancelled";
+      const terminated = markSubagentRunTerminated({
+        runId: runId || undefined,
+        childSessionKey: childSessionKey || undefined,
+        reason,
+      });
+      respond(true, { status: "ok", action: "cancel", terminated }, undefined);
+      return;
+    }
+
+    respond(
+      false,
+      undefined,
+      errorShape(ErrorCodes.INVALID_REQUEST, `unsupported action: ${action}`),
     );
   },
 };

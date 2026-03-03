@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, test } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
 import {
   capArrayByJsonBytes,
@@ -31,13 +31,13 @@ function createSymlinkOrSkip(targetPath: string, linkPath: string): boolean {
   }
 }
 
-function createSingleAgentAvatarConfig(workspace: string): OpenClawConfig {
+function createSingleAgentAvatarConfig(workspace: string): RemoteClawConfig {
   return {
     session: { mainKey: "main" },
     agents: {
       list: [{ id: "main", default: true, workspace, identity: { avatar: "avatar-link.png" } }],
     },
-  } as OpenClawConfig;
+  } as RemoteClawConfig;
 }
 
 describe("gateway session utils", () => {
@@ -73,7 +73,7 @@ describe("gateway session utils", () => {
     const cfg = {
       session: { mainKey: "work" },
       agents: { list: [{ id: "ops", default: true }] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "main" })).toBe("agent:ops:work");
     expect(resolveSessionStoreKey({ cfg, sessionKey: "work" })).toBe("agent:ops:work");
     expect(resolveSessionStoreKey({ cfg, sessionKey: "agent:ops:main" })).toBe("agent:ops:work");
@@ -86,7 +86,7 @@ describe("gateway session utils", () => {
     const cfg = {
       session: { mainKey: "main" },
       agents: { list: [{ id: "ops", default: true }] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "discord:group:123" })).toBe(
       "agent:ops:discord:group:123",
     );
@@ -99,7 +99,7 @@ describe("gateway session utils", () => {
     const cfg = {
       session: { mainKey: "main" },
       agents: { list: [{ id: "ops" }, { id: "review" }] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "main" })).toBe("agent:ops:main");
     expect(resolveSessionStoreKey({ cfg, sessionKey: "discord:group:123" })).toBe(
       "agent:ops:discord:group:123",
@@ -109,7 +109,7 @@ describe("gateway session utils", () => {
   test("resolveSessionStoreKey falls back to main when agents.list is missing", () => {
     const cfg = {
       session: { mainKey: "work" },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "main" })).toBe("agent:main:work");
     expect(resolveSessionStoreKey({ cfg, sessionKey: "thread-1" })).toBe("agent:main:thread-1");
   });
@@ -118,7 +118,7 @@ describe("gateway session utils", () => {
     const cfg = {
       session: { mainKey: "main" },
       agents: { list: [{ id: "ops", default: true }] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     // Bare keys with different casing must resolve to the same canonical key
     expect(resolveSessionStoreKey({ cfg, sessionKey: "CoP" })).toBe(
       resolveSessionStoreKey({ cfg, sessionKey: "cop" }),
@@ -135,7 +135,7 @@ describe("gateway session utils", () => {
     const cfg = {
       session: { scope: "global", mainKey: "work" },
       agents: { list: [{ id: "ops", default: true }] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "main" })).toBe("global");
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "main" });
     expect(target.canonicalKey).toBe("global");
@@ -152,7 +152,7 @@ describe("gateway session utils", () => {
     const cfg = {
       session: { mainKey: "main", store: storeTemplate },
       agents: { list: [{ id: "ops", default: true }] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "main" });
     expect(target.canonicalKey).toBe("agent:ops:main");
     expect(target.storeKeys).toEqual(expect.arrayContaining(["agent:ops:main", "main"]));
@@ -171,7 +171,7 @@ describe("gateway session utils", () => {
     const cfg = {
       session: { mainKey: "main", store: storePath },
       agents: { list: [{ id: "ops", default: true }] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     // Client passes the lowercased canonical key (as returned by sessions.list)
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:mysession" });
     expect(target.canonicalKey).toBe("agent:ops:mysession");
@@ -200,7 +200,7 @@ describe("gateway session utils", () => {
     const cfg = {
       session: { mainKey: "main", store: storePath },
       agents: { list: [{ id: "ops", default: true }] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:mysession" });
     // storeKeys must include BOTH variants so delete/reset/patch can clean up all duplicates
     expect(target.storeKeys).toEqual(
@@ -220,7 +220,7 @@ describe("gateway session utils", () => {
     const cfg = {
       session: { mainKey: "work", store: storePath },
       agents: { list: [{ id: "ops", default: true }] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:main" });
     expect(target.canonicalKey).toBe("agent:ops:work");
     // storeKeys must include the legacy mixed-case alias key
@@ -287,7 +287,7 @@ describe("resolveSessionModelRef", () => {
           model: { primary: "anthropic/claude-opus-4-6" },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const resolved = resolveSessionModelRef(cfg, {
       sessionId: "s1",
@@ -308,7 +308,7 @@ describe("resolveSessionModelRef", () => {
           model: { primary: "openrouter/minimax/minimax-m2.5" },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const resolved = resolveSessionModelRef(cfg, {
       sessionId: "s-or",
@@ -330,7 +330,7 @@ describe("resolveSessionModelRef", () => {
           model: { primary: "anthropic/claude-opus-4-6" },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const resolved = resolveSessionModelRef(cfg, {
       sessionId: "s2",
@@ -348,7 +348,7 @@ describe("resolveSessionModelRef", () => {
           model: { primary: "google-gemini-cli/gemini-3-pro-preview" },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const resolved = resolveSessionModelRef(cfg, {
       sessionId: "legacy-session",
@@ -375,7 +375,7 @@ describe("resolveSessionModelRef", () => {
           model: { primary: "google-gemini-cli/gemini-3-pro-preview" },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const resolved = resolveSessionModelRef(cfg, {
       sessionId: "slash-model",
@@ -396,7 +396,7 @@ describe("resolveSessionModelIdentityRef", () => {
           model: { primary: "google-gemini-cli/gemini-3-pro-preview" },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const resolved = resolveSessionModelIdentityRef(cfg, {
       sessionId: "legacy-session",
@@ -418,7 +418,7 @@ describe("resolveSessionModelIdentityRef", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const resolved = resolveSessionModelIdentityRef(cfg, {
       sessionId: "legacy-session",
@@ -444,7 +444,7 @@ describe("resolveSessionModelIdentityRef", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const resolved = resolveSessionModelIdentityRef(cfg, {
       sessionId: "legacy-session",
@@ -463,7 +463,7 @@ describe("resolveSessionModelIdentityRef", () => {
           model: { primary: "google-gemini-cli/gemini-3-pro-preview" },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const resolved = resolveSessionModelIdentityRef(cfg, {
       sessionId: "slash-model",
@@ -485,7 +485,7 @@ describe("resolveSessionModelIdentityRef", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const resolved = resolveSessionModelIdentityRef(cfg, {
       sessionId: "slash-model",
@@ -603,7 +603,7 @@ describe("listSessionsFromStore search", () => {
   const baseCfg = {
     session: { mainKey: "main" },
     agents: { list: [{ id: "main", default: true }] },
-  } as OpenClawConfig;
+  } as RemoteClawConfig;
 
   const makeStore = (): Record<string, SessionEntry> => ({
     "agent:main:work-project": {
@@ -700,7 +700,7 @@ describe("listSessionsFromStore search", () => {
           model: { primary: "google-gemini-cli/gemini-3-pro-preview" },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const now = Date.now();
     const store: Record<string, SessionEntry> = {
       "agent:main:main": {
@@ -732,7 +732,7 @@ describe("listSessionsFromStore search", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const now = Date.now();
     const store: Record<string, SessionEntry> = {
       "agent:main:main": {
@@ -766,7 +766,7 @@ describe("listSessionsFromStore search", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const now = Date.now();
     const store: Record<string, SessionEntry> = {
       "agent:main:main": {

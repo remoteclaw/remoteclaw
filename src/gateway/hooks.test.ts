@@ -1,6 +1,6 @@
 import type { IncomingMessage } from "node:http";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createMSTeamsTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
 import { createIMessageTestPlugin } from "../test-utils/imessage-test-plugin.js";
@@ -15,7 +15,7 @@ import {
 } from "./hooks.js";
 
 describe("gateway hooks helpers", () => {
-  const resolveHooksConfigOrThrow = (cfg: OpenClawConfig) => {
+  const resolveHooksConfigOrThrow = (cfg: RemoteClawConfig) => {
     const resolved = resolveHooksConfig(cfg);
     expect(resolved).not.toBeNull();
     if (!resolved) {
@@ -34,7 +34,7 @@ describe("gateway hooks helpers", () => {
       agents: {
         list: [{ id: "main", default: true }, { id: "hooks" }],
       },
-    }) as OpenClawConfig;
+    }) as RemoteClawConfig;
 
   beforeEach(() => {
     setActivePluginRegistry(emptyRegistry);
@@ -50,7 +50,7 @@ describe("gateway hooks helpers", () => {
         token: "secret",
         path: "hooks///",
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const resolved = resolveHooksConfig(base);
     expect(resolved?.basePath).toBe("/hooks");
     expect(resolved?.token).toBe("secret");
@@ -60,7 +60,7 @@ describe("gateway hooks helpers", () => {
   test("resolveHooksConfig rejects root path", () => {
     const cfg = {
       hooks: { enabled: true, token: "x", path: "/" },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     expect(() => resolveHooksConfig(cfg)).toThrow("hooks.path may not be '/'");
   });
 
@@ -163,7 +163,7 @@ describe("gateway hooks helpers", () => {
       agents: {
         list: [{ id: "main", default: true }, { id: "hooks" }],
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const resolved = resolveHooksConfig(cfg);
     expect(resolved).not.toBeNull();
     if (!resolved) {
@@ -198,7 +198,7 @@ describe("gateway hooks helpers", () => {
   test("resolveHookSessionKey disables request sessionKey by default", () => {
     const cfg = {
       hooks: { enabled: true, token: "secret" },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const resolved = resolveHooksConfig(cfg);
     expect(resolved).not.toBeNull();
     if (!resolved) {
@@ -215,7 +215,7 @@ describe("gateway hooks helpers", () => {
   test("resolveHookSessionKey allows request sessionKey when explicitly enabled", () => {
     const cfg = {
       hooks: { enabled: true, token: "secret", allowRequestSessionKey: true },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const resolved = resolveHooksConfig(cfg);
     expect(resolved).not.toBeNull();
     if (!resolved) {
@@ -237,7 +237,7 @@ describe("gateway hooks helpers", () => {
         allowRequestSessionKey: true,
         allowedSessionKeyPrefixes: ["hook:"],
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const resolved = resolveHooksConfig(cfg);
     expect(resolved).not.toBeNull();
     if (!resolved) {
@@ -266,7 +266,7 @@ describe("gateway hooks helpers", () => {
         token: "secret",
         defaultSessionKey: "hook:ingress",
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const resolved = resolveHooksConfig(cfg);
     expect(resolved).not.toBeNull();
     if (!resolved) {
@@ -289,7 +289,7 @@ describe("gateway hooks helpers", () => {
           defaultSessionKey: "agent:main:main",
           allowedSessionKeyPrefixes: ["hook:"],
         },
-      } as OpenClawConfig),
+      } as RemoteClawConfig),
     ).toThrow("hooks.defaultSessionKey must match hooks.allowedSessionKeyPrefixes");
 
     expect(() =>
@@ -299,7 +299,7 @@ describe("gateway hooks helpers", () => {
           token: "secret",
           allowedSessionKeyPrefixes: ["agent:"],
         },
-      } as OpenClawConfig),
+      } as RemoteClawConfig),
     ).toThrow(
       "hooks.allowedSessionKeyPrefixes must include 'hook:' when hooks.defaultSessionKey is unset",
     );

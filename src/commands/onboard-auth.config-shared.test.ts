@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 import { applyOnboardAuthAgentModelsAndProviders } from "./onboard-auth.config-shared.js";
 
 describe("applyOnboardAuthAgentModelsAndProviders", () => {
   it("sets agent default models from provided map", () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     const agentModels = {
       "custom/model-a": {},
     };
@@ -14,7 +14,7 @@ describe("applyOnboardAuthAgentModelsAndProviders", () => {
   });
 
   it("preserves existing config fields while setting agent models", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
           model: { primary: "some/model" },

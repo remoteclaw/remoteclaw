@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import {
   type AuthProfileCredential,
   type AuthProfileStore,
@@ -71,7 +71,7 @@ function buildProfileHealth(params: {
   profileId: string;
   credential: AuthProfileCredential;
   store: AuthProfileStore;
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
 }): AuthProfileHealth {
   const { profileId, credential, store, cfg } = params;
   const label = resolveAuthProfileDisplayLabel({ cfg, store, profileId });
@@ -89,7 +89,7 @@ function buildProfileHealth(params: {
 
 export function buildAuthHealthSummary(params: {
   store: AuthProfileStore;
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   warnAfterMs?: number;
   providers?: string[];
 }): AuthHealthSummary {

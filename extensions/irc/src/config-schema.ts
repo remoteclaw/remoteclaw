@@ -7,7 +7,7 @@ import {
   ReplyRuntimeConfigSchemaShape,
   ToolPolicySchema,
   requireOpenAllowFrom,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import { z } from "zod";
 
 const IrcGroupSchema = z

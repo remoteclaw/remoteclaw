@@ -1,4 +1,4 @@
-import { buildChannelKeyCandidates, resolveChannelEntryMatch } from "openclaw/plugin-sdk";
+import { buildChannelKeyCandidates, resolveChannelEntryMatch } from "remoteclaw/plugin-sdk";
 import type { MatrixRoomConfig } from "../../types.js";
 
 export type MatrixRoomConfigResolved = {

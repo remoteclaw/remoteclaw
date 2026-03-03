@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 import type { SessionEntry } from "../../../config/sessions.js";
 import type { OriginatingChannelType } from "../../templating.js";
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../directives.js";
@@ -56,7 +56,7 @@ export type FollowupRun = {
     senderIsOwner?: boolean;
     sessionFile: string;
     workspaceDir: string;
-    config: OpenClawConfig;
+    config: RemoteClawConfig;
     provider: string;
     model: string;
     authProfileId?: string;
@@ -81,7 +81,7 @@ export type FollowupRun = {
 };
 
 export type ResolveQueueSettingsParams = {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channel?: string;
   sessionEntry?: SessionEntry;
   inlineMode?: QueueMode;

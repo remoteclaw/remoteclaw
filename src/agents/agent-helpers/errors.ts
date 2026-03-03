@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import type { AssistantMessage } from "../pi-types.js";
 import { stableStringify } from "../stable-stringify.js";
@@ -460,7 +460,7 @@ export function formatRawAssistantErrorForUi(raw?: string): string {
 
 export function formatAssistantErrorText(
   msg: AssistantMessage,
-  opts?: { cfg?: OpenClawConfig; sessionKey?: string; provider?: string; model?: string },
+  opts?: { cfg?: RemoteClawConfig; sessionKey?: string; provider?: string; model?: string },
 ): string | undefined {
   // Also format errors if errorMessage is present, even if stopReason isn't "error"
   const raw = (msg.errorMessage ?? "").trim();
@@ -827,7 +827,7 @@ export function isModelNotFoundErrorMessage(raw: string): boolean {
   }
   const lower = raw.toLowerCase();
 
-  // Direct pattern matches from OpenClaw internals and common providers.
+  // Direct pattern matches from RemoteClaw internals and common providers.
   if (
     lower.includes("unknown model") ||
     lower.includes("model not found") ||

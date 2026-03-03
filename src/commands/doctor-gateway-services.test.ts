@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { withEnvAsync } from "../test-utils/env.js";
 
 const mocks = vi.hoisted(() => ({
@@ -78,7 +78,7 @@ function makeDoctorPrompts() {
   };
 }
 
-async function runRepair(cfg: OpenClawConfig) {
+async function runRepair(cfg: RemoteClawConfig) {
   await maybeRepairGatewayServiceConfig(cfg, "local", makeDoctorIo(), makeDoctorPrompts());
 }
 
@@ -125,7 +125,7 @@ describe("maybeRepairGatewayServiceConfig", () => {
   it("treats gateway.auth.token as source of truth for service token repairs", async () => {
     setupGatewayTokenRepairScenario("config-token");
 
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       gateway: {
         auth: {
           mode: "token",
@@ -153,7 +153,7 @@ describe("maybeRepairGatewayServiceConfig", () => {
     await withEnvAsync({ REMOTECLAW_GATEWAY_TOKEN: "env-token" }, async () => {
       setupGatewayTokenRepairScenario("env-token");
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         gateway: {},
       };
 
@@ -224,7 +224,7 @@ describe("maybeScanExtraGatewayServices", () => {
       "Legacy gateway removed",
     );
     expect(runtime.log).toHaveBeenCalledWith(
-      "Legacy gateway services removed. Installing OpenClaw gateway next.",
+      "Legacy gateway services removed. Installing RemoteClaw gateway next.",
     );
   });
 });

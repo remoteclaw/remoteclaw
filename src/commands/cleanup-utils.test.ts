@@ -1,6 +1,6 @@
 import path from "node:path";
 import { describe, expect, it, test, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import {
   buildCleanupPlan,
@@ -18,7 +18,7 @@ describe("buildCleanupPlan", () => {
       },
     };
     const plan = buildCleanupPlan({
-      cfg: cfg as unknown as OpenClawConfig,
+      cfg: cfg as unknown as RemoteClawConfig,
       stateDir: path.join(tmpRoot, "openclaw-state"),
       configPath: path.join(tmpRoot, "openclaw-state", "openclaw.json"),
       oauthDir: path.join(tmpRoot, "openclaw-oauth"),

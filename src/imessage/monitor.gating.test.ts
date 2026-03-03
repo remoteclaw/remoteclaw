@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import {
   buildIMessageInboundContext,
   resolveIMessageInboundDecision,
@@ -7,7 +7,7 @@ import {
 import { parseIMessageNotification } from "./monitor/parse-notification.js";
 import type { IMessagePayload } from "./monitor/types.js";
 
-function baseCfg(): OpenClawConfig {
+function baseCfg(): RemoteClawConfig {
   return {
     channels: {
       imessage: {
@@ -21,11 +21,11 @@ function baseCfg(): OpenClawConfig {
     messages: {
       groupChat: { mentionPatterns: ["@openclaw"] },
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as RemoteClawConfig;
 }
 
 function resolve(params: {
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   message: IMessagePayload;
   storeAllowFrom?: string[];
 }) {
@@ -49,7 +49,7 @@ function resolve(params: {
 }
 
 function resolveDispatchDecision(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   message: IMessagePayload;
   groupHistories?: Parameters<typeof resolveIMessageInboundDecision>[0]["groupHistories"];
 }) {
@@ -76,7 +76,7 @@ function resolveDispatchDecision(params: {
   return { decision, groupHistories };
 }
 
-function buildDispatchContextPayload(params: { cfg: OpenClawConfig; message: IMessagePayload }) {
+function buildDispatchContextPayload(params: { cfg: RemoteClawConfig; message: IMessagePayload }) {
   const { cfg, message } = params;
   const { decision, groupHistories } = resolveDispatchDecision({ cfg, message });
 

@@ -1,6 +1,6 @@
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { isCommandFlagEnabled } from "../config/commands.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { RemoteClawConfig } from "../config/types.js";
 import { escapeRegExp } from "../utils.js";
 import { getChatCommands, getNativeCommandSurfaces } from "./commands-registry.data.js";
 import type {
@@ -72,7 +72,7 @@ export function listChatCommands(): ChatCommandDefinition[] {
   return getChatCommands();
 }
 
-export function isCommandEnabled(cfg: OpenClawConfig, commandKey: string): boolean {
+export function isCommandEnabled(cfg: RemoteClawConfig, commandKey: string): boolean {
   if (commandKey === "config") {
     return isCommandFlagEnabled(cfg, "config");
   }
@@ -85,7 +85,7 @@ export function isCommandEnabled(cfg: OpenClawConfig, commandKey: string): boole
   return true;
 }
 
-export function listChatCommandsForConfig(cfg: OpenClawConfig): ChatCommandDefinition[] {
+export function listChatCommandsForConfig(cfg: RemoteClawConfig): ChatCommandDefinition[] {
   return getChatCommands().filter((command) => isCommandEnabled(cfg, command.key));
 }
 
@@ -131,7 +131,7 @@ export function listNativeCommandSpecs(params?: { provider?: string }): NativeCo
 }
 
 export function listNativeCommandSpecsForConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   params?: { provider?: string },
 ): NativeCommandSpec[] {
   return listNativeSpecsFromCommands(listChatCommandsForConfig(cfg), params?.provider);
@@ -249,7 +249,7 @@ export function buildCommandTextFromArgs(
   return buildCommandText(commandName, serializeCommandArgs(command, args));
 }
 
-function resolveDefaultCommandContext(cfg?: OpenClawConfig): {
+function resolveDefaultCommandContext(cfg?: RemoteClawConfig): {
   provider: string;
   model: string;
 } {
@@ -267,7 +267,7 @@ export type ResolvedCommandArgChoice = { value: string; label: string };
 export function resolveCommandArgChoices(params: {
   command: ChatCommandDefinition;
   arg: CommandArgDefinition;
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   provider?: string;
   model?: string;
 }): ResolvedCommandArgChoice[] {
@@ -297,7 +297,7 @@ export function resolveCommandArgChoices(params: {
 export function resolveCommandArgMenu(params: {
   command: ChatCommandDefinition;
   args?: CommandArgs;
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
 }): { arg: CommandArgDefinition; choices: ResolvedCommandArgChoice[]; title?: string } | null {
   const { command, args, cfg } = params;
   if (!command.args || !command.argsMenu) {
@@ -388,7 +388,7 @@ export function isCommandMessage(raw: string): boolean {
   return trimmed.startsWith("/");
 }
 
-export function getCommandDetection(_cfg?: OpenClawConfig): CommandDetection {
+export function getCommandDetection(_cfg?: RemoteClawConfig): CommandDetection {
   const commands = getChatCommands();
   if (cachedDetection && cachedDetectionCommands === commands) {
     return cachedDetection;
@@ -421,7 +421,7 @@ export function getCommandDetection(_cfg?: OpenClawConfig): CommandDetection {
   return cachedDetection;
 }
 
-export function maybeResolveTextAlias(raw: string, cfg?: OpenClawConfig) {
+export function maybeResolveTextAlias(raw: string, cfg?: RemoteClawConfig) {
   const trimmed = normalizeCommandBody(raw).trim();
   if (!trimmed.startsWith("/")) {
     return null;
@@ -444,7 +444,7 @@ export function maybeResolveTextAlias(raw: string, cfg?: OpenClawConfig) {
 
 export function resolveTextCommand(
   raw: string,
-  cfg?: OpenClawConfig,
+  cfg?: RemoteClawConfig,
 ): {
   command: ChatCommandDefinition;
   args?: string;

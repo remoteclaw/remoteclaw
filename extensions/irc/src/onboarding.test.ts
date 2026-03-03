@@ -1,4 +1,4 @@
-import type { RuntimeEnv, WizardPrompter } from "openclaw/plugin-sdk";
+import type { RuntimeEnv, WizardPrompter } from "remoteclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { ircOnboardingAdapter } from "./onboarding.js";
 import type { CoreConfig } from "./types.js";
@@ -33,7 +33,7 @@ describe("irc onboarding", () => {
           return "openclaw";
         }
         if (message === "IRC real name") {
-          return "OpenClaw Bot";
+          return "RemoteClaw Bot";
         }
         if (message.startsWith("Auto-join IRC channels")) {
           return "#openclaw, #ops";

@@ -21,7 +21,7 @@ function configPath(...parts: string[]) {
   return path.join(CONFIG_DIR, ...parts);
 }
 
-function etcOpenClawPath(...parts: string[]) {
+function etcRemoteClawPath(...parts: string[]) {
   return path.join(ETC_REMOTECLAW_DIR, ...parts);
 }
 
@@ -82,7 +82,7 @@ describe("resolveConfigIncludes", () => {
   });
 
   it("rejects absolute path outside config directory (CWE-22)", () => {
-    const absolute = etcOpenClawPath("agents.json");
+    const absolute = etcRemoteClawPath("agents.json");
     const files = { [absolute]: { list: [{ id: "main" }] } };
     const obj = { agents: { $include: absolute } };
     expectResolveIncludeError(() => resolve(obj, files), /escapes config directory/);

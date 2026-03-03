@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "./config.js";
+import type { RemoteClawConfig } from "./config.js";
 import { resolveChannelGroupPolicy, resolveToolsBySender } from "./group-policy.js";
 
 describe("resolveChannelGroupPolicy", () => {
@@ -10,7 +10,7 @@ describe("resolveChannelGroupPolicy", () => {
           groupPolicy: "allowlist",
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,
@@ -32,7 +32,7 @@ describe("resolveChannelGroupPolicy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,
@@ -54,7 +54,7 @@ describe("resolveChannelGroupPolicy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,
@@ -77,7 +77,7 @@ describe("resolveChannelGroupPolicy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,
@@ -97,7 +97,7 @@ describe("resolveChannelGroupPolicy", () => {
           groupPolicy: "allowlist",
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,
@@ -117,7 +117,7 @@ describe("resolveChannelGroupPolicy", () => {
           groupPolicy: "allowlist",
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,

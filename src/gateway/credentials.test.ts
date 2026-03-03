@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import {
   resolveGatewayCredentialsFromConfig,
   resolveGatewayCredentialsFromValues,
 } from "./credentials.js";
 
-function cfg(input: Partial<OpenClawConfig>): OpenClawConfig {
-  return input as OpenClawConfig;
+function cfg(input: Partial<RemoteClawConfig>): RemoteClawConfig {
+  return input as RemoteClawConfig;
 }
 
 type ResolveFromConfigInput = Parameters<typeof resolveGatewayCredentialsFromConfig>[0];
-type GatewayConfig = NonNullable<OpenClawConfig["gateway"]>;
+type GatewayConfig = NonNullable<RemoteClawConfig["gateway"]>;
 
 const DEFAULT_GATEWAY_AUTH = { token: "config-token", password: "config-password" };
 const DEFAULT_REMOTE_AUTH = { token: "remote-token", password: "remote-password" };

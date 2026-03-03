@@ -2,7 +2,7 @@ import { beforeEach, vi } from "vitest";
 import { resetInboundDedupe } from "../auto-reply/reply/inbound-dedupe.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { GetReplyOptions, ReplyPayload } from "../auto-reply/types.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { MockFn } from "../test-utils/vitest-mock-fn.js";
 
 type AnyMock = MockFn<(...args: unknown[]) => unknown>;
@@ -177,7 +177,7 @@ export const replySpy: MockFn<
   (
     ctx: MsgContext,
     opts?: GetReplyOptions,
-    configOverride?: OpenClawConfig,
+    configOverride?: RemoteClawConfig,
   ) => Promise<ReplyPayload | ReplyPayload[] | undefined>
 > = vi.fn(async (_ctx, opts) => {
   await opts?.onReplyStart?.();

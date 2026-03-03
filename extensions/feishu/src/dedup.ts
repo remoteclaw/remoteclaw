@@ -1,6 +1,6 @@
 import os from "node:os";
 import path from "node:path";
-import { createDedupeCache, createPersistentDedupe } from "openclaw/plugin-sdk";
+import { createDedupeCache, createPersistentDedupe } from "remoteclaw/plugin-sdk";
 
 // Persistent TTL: 24 hours — survives restarts & WebSocket reconnects.
 const DEDUP_TTL_MS = 24 * 60 * 60 * 1000;

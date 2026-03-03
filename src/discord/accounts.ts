@@ -1,6 +1,6 @@
 import { createAccountActionGate } from "../channels/plugins/account-action-gate.js";
 import { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { DiscordAccountConfig, DiscordActionConfig } from "../config/types.js";
 import { resolveAccountEntry } from "../routing/account-lookup.js";
 import { normalizeAccountId } from "../routing/session-key.js";
@@ -20,13 +20,13 @@ export const listDiscordAccountIds = listAccountIds;
 export const resolveDefaultDiscordAccountId = resolveDefaultAccountId;
 
 function resolveAccountConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   accountId: string,
 ): DiscordAccountConfig | undefined {
   return resolveAccountEntry(cfg.channels?.discord?.accounts, accountId);
 }
 
-function mergeDiscordAccountConfig(cfg: OpenClawConfig, accountId: string): DiscordAccountConfig {
+function mergeDiscordAccountConfig(cfg: RemoteClawConfig, accountId: string): DiscordAccountConfig {
   const { accounts: _ignored, ...base } = (cfg.channels?.discord ?? {}) as DiscordAccountConfig & {
     accounts?: unknown;
   };
@@ -35,7 +35,7 @@ function mergeDiscordAccountConfig(cfg: OpenClawConfig, accountId: string): Disc
 }
 
 export function createDiscordActionGate(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string | null;
 }): (key: keyof DiscordActionConfig, defaultValue?: boolean) => boolean {
   const accountId = normalizeAccountId(params.accountId);
@@ -46,7 +46,7 @@ export function createDiscordActionGate(params: {
 }
 
 export function resolveDiscordAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string | null;
 }): ResolvedDiscordAccount {
   const accountId = normalizeAccountId(params.accountId);
@@ -65,7 +65,7 @@ export function resolveDiscordAccount(params: {
   };
 }
 
-export function listEnabledDiscordAccounts(cfg: OpenClawConfig): ResolvedDiscordAccount[] {
+export function listEnabledDiscordAccounts(cfg: RemoteClawConfig): ResolvedDiscordAccount[] {
   return listDiscordAccountIds(cfg)
     .map((accountId) => resolveDiscordAccount({ cfg, accountId }))
     .filter((account) => account.enabled);

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { AgentDeliveryResult, BridgeCallbacks, ChannelMessage } from "../middleware/types.js";
 import { createTempHomeHarness, makeReplyConfig } from "./reply.test-harness.js";
 
@@ -108,7 +108,7 @@ describe("RawBody directive parsing", () => {
       const res = await getReplyFromConfig(
         groupMessageCtx,
         {},
-        makeReplyConfig(home) as OpenClawConfig,
+        makeReplyConfig(home) as RemoteClawConfig,
       );
 
       const text = Array.isArray(res) ? res[0]?.text : res?.text;

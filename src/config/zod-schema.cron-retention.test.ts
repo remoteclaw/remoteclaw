@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { OpenClawSchema } from "./zod-schema.js";
+import { RemoteClawSchema } from "./zod-schema.js";
 
-describe("OpenClawSchema cron retention and run-log validation", () => {
+describe("RemoteClawSchema cron retention and run-log validation", () => {
   it("accepts valid cron.sessionRetention and runLog values", () => {
     expect(() =>
-      OpenClawSchema.parse({
+      RemoteClawSchema.parse({
         cron: {
           sessionRetention: "1h30m",
           runLog: {
@@ -18,7 +18,7 @@ describe("OpenClawSchema cron retention and run-log validation", () => {
 
   it("rejects invalid cron.sessionRetention", () => {
     expect(() =>
-      OpenClawSchema.parse({
+      RemoteClawSchema.parse({
         cron: {
           sessionRetention: "abc",
         },
@@ -28,7 +28,7 @@ describe("OpenClawSchema cron retention and run-log validation", () => {
 
   it("rejects invalid cron.runLog.maxBytes", () => {
     expect(() =>
-      OpenClawSchema.parse({
+      RemoteClawSchema.parse({
         cron: {
           runLog: {
             maxBytes: "wat",

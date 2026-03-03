@@ -7,7 +7,7 @@ import {
 } from "../channels/telegram/allow-from.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolveNativeCommandsEnabled } from "../config/commands.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
 import { normalizeStringEntries } from "../shared/string-normalization.js";
@@ -78,7 +78,7 @@ function dedupeFindings(findings: SecurityAuditFinding[]): SecurityAuditFinding[
 }
 
 function hasExplicitProviderAccountConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   provider: string,
   accountId: string,
 ): boolean {
@@ -94,7 +94,7 @@ function hasExplicitProviderAccountConfig(
 }
 
 export async function collectChannelSecurityFindings(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   plugins: ReturnType<typeof listChannelPlugins>;
 }): Promise<SecurityAuditFinding[]> {
   const findings: SecurityAuditFinding[] = [];

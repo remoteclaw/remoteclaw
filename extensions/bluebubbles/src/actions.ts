@@ -9,7 +9,7 @@ import {
   readStringParam,
   type ChannelMessageActionAdapter,
   type ChannelMessageActionName,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import { resolveBlueBubblesAccount } from "./accounts.js";
 import { sendBlueBubblesAttachment } from "./attachments.js";
 import {

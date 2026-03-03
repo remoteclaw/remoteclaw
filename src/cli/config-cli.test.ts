@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.js";
+import type { ConfigFileSnapshot, RemoteClawConfig } from "../config/types.js";
 
 /**
  * Test for issue #6070:
@@ -10,12 +10,12 @@ import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.js";
 
 const mockReadConfigFileSnapshot = vi.fn<() => Promise<ConfigFileSnapshot>>();
 const mockWriteConfigFile = vi.fn<
-  (cfg: OpenClawConfig, options?: { unsetPaths?: string[][] }) => Promise<void>
+  (cfg: RemoteClawConfig, options?: { unsetPaths?: string[][] }) => Promise<void>
 >(async () => {});
 
 vi.mock("../config/config.js", () => ({
   readConfigFileSnapshot: () => mockReadConfigFileSnapshot(),
-  writeConfigFile: (cfg: OpenClawConfig, options?: { unsetPaths?: string[][] }) =>
+  writeConfigFile: (cfg: RemoteClawConfig, options?: { unsetPaths?: string[][] }) =>
     mockWriteConfigFile(cfg, options),
 }));
 
@@ -35,8 +35,8 @@ vi.mock("../runtime.js", () => ({
 }));
 
 function buildSnapshot(params: {
-  resolved: OpenClawConfig;
-  config: OpenClawConfig;
+  resolved: RemoteClawConfig;
+  config: RemoteClawConfig;
 }): ConfigFileSnapshot {
   return {
     path: "/tmp/openclaw.json",
@@ -52,7 +52,7 @@ function buildSnapshot(params: {
   };
 }
 
-function setSnapshot(resolved: OpenClawConfig, config: OpenClawConfig) {
+function setSnapshot(resolved: RemoteClawConfig, config: RemoteClawConfig) {
   mockReadConfigFileSnapshot.mockResolvedValueOnce(buildSnapshot({ resolved, config }));
 }
 
@@ -80,7 +80,7 @@ describe("config cli", () => {
 
   describe("config set - issue #6070", () => {
     it("preserves existing config keys when setting a new value", async () => {
-      const resolved: OpenClawConfig = {
+      const resolved: RemoteClawConfig = {
         agents: {
           list: [{ id: "main" }, { id: "oracle", workspace: "~/oracle-workspace" }],
         },
@@ -88,7 +88,7 @@ describe("config cli", () => {
         tools: { allow: ["group:fs"] },
         logging: { level: "debug" },
       };
-      const runtimeMerged: OpenClawConfig = {
+      const runtimeMerged: RemoteClawConfig = {
         ...resolved,
         agents: {
           ...resolved.agents,
@@ -112,7 +112,7 @@ describe("config cli", () => {
     });
 
     it("does not inject runtime defaults into the written config", async () => {
-      const resolved: OpenClawConfig = {
+      const resolved: RemoteClawConfig = {
         gateway: { port: 18789 },
       };
       const runtimeMerged = {
@@ -126,7 +126,7 @@ describe("config cli", () => {
         } as never,
         messages: { ackReaction: "✅" } as never,
         sessions: { persistence: { enabled: true } } as never,
-      } as unknown as OpenClawConfig;
+      } as unknown as RemoteClawConfig;
       setSnapshot(resolved, runtimeMerged);
 
       await runConfigCommand(["config", "set", "gateway.auth.mode", "token"]);
@@ -145,7 +145,7 @@ describe("config cli", () => {
 
   describe("config get", () => {
     it("redacts sensitive values", async () => {
-      const resolved: OpenClawConfig = {
+      const resolved: RemoteClawConfig = {
         gateway: {
           auth: {
             token: "super-secret-token",
@@ -162,7 +162,7 @@ describe("config cli", () => {
 
   describe("config set parsing flags", () => {
     it("falls back to raw string when parsing fails and strict mode is off", async () => {
-      const resolved: OpenClawConfig = { gateway: { port: 18789 } };
+      const resolved: RemoteClawConfig = { gateway: { port: 18789 } };
       setSnapshot(resolved, resolved);
 
       await runConfigCommand(["config", "set", "gateway.auth.mode", "{bad"]);
@@ -235,7 +235,7 @@ describe("config cli", () => {
 
   describe("config unset - issue #6070", () => {
     it("preserves existing config keys when unsetting a value", async () => {
-      const resolved: OpenClawConfig = {
+      const resolved: RemoteClawConfig = {
         agents: { list: [{ id: "main" }] },
         gateway: { port: 18789 },
         tools: {
@@ -244,7 +244,7 @@ describe("config cli", () => {
         },
         logging: { level: "debug" },
       };
-      const runtimeMerged: OpenClawConfig = {
+      const runtimeMerged: RemoteClawConfig = {
         ...resolved,
         agents: {
           ...resolved.agents,

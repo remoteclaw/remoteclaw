@@ -19,11 +19,11 @@ vi.mock("./trash.js", () => ({
 }));
 
 vi.mock("./chrome.js", () => ({
-  resolveOpenClawUserDataDir: vi.fn(() => "/tmp/openclaw-test/openclaw/user-data"),
+  resolveRemoteClawUserDataDir: vi.fn(() => "/tmp/openclaw-test/openclaw/user-data"),
 }));
 
 import { loadConfig, writeConfigFile } from "../config/config.js";
-import { resolveOpenClawUserDataDir } from "./chrome.js";
+import { resolveRemoteClawUserDataDir } from "./chrome.js";
 import { movePathToTrash } from "./trash.js";
 
 function createCtx(resolved: BrowserServerState["resolved"]) {
@@ -136,7 +136,7 @@ describe("BrowserProfilesService", () => {
     const tempDir = fs.mkdtempSync(path.join("/tmp", "openclaw-profile-"));
     const userDataDir = path.join(tempDir, "work", "user-data");
     fs.mkdirSync(path.dirname(userDataDir), { recursive: true });
-    vi.mocked(resolveOpenClawUserDataDir).mockReturnValue(userDataDir);
+    vi.mocked(resolveRemoteClawUserDataDir).mockReturnValue(userDataDir);
 
     const service = createBrowserProfilesService(ctx);
     const result = await service.deleteProfile("work");

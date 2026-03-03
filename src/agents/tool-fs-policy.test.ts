@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveEffectiveToolFsWorkspaceOnly } from "./tool-fs-policy.js";
 
 describe("resolveEffectiveToolFsWorkspaceOnly", () => {
@@ -8,14 +8,14 @@ describe("resolveEffectiveToolFsWorkspaceOnly", () => {
   });
 
   it("uses global tools.fs.workspaceOnly when no agent override exists", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: { fs: { workspaceOnly: true } },
     };
     expect(resolveEffectiveToolFsWorkspaceOnly({ cfg, agentId: "main" })).toBe(true);
   });
 
   it("prefers agent-specific tools.fs.workspaceOnly override over global setting", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: { fs: { workspaceOnly: true } },
       agents: {
         list: [
@@ -32,7 +32,7 @@ describe("resolveEffectiveToolFsWorkspaceOnly", () => {
   });
 
   it("supports agent-specific enablement when global workspaceOnly is off", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: { fs: { workspaceOnly: false } },
       agents: {
         list: [

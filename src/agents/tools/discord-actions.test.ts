@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { DiscordActionConfig, OpenClawConfig } from "../../config/config.js";
+import type { DiscordActionConfig, RemoteClawConfig } from "../../config/config.js";
 import { handleDiscordGuildAction } from "./discord-actions-guild.js";
 import { handleDiscordMessagingAction } from "./discord-actions-messaging.js";
 import { handleDiscordModerationAction } from "./discord-actions-moderation.js";
@@ -601,7 +601,7 @@ describe("handleDiscordAction per-account gating", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     await handleDiscordAction(
       { action: "timeout", guildId: "G1", userId: "U1", durationMinutes: 5, accountId: "ops" },
@@ -622,7 +622,7 @@ describe("handleDiscordAction per-account gating", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     await expect(
       handleDiscordAction(
@@ -643,7 +643,7 @@ describe("handleDiscordAction per-account gating", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     await handleDiscordAction(
       { action: "kick", guildId: "G1", userId: "U1", accountId: "ops" },
@@ -662,7 +662,7 @@ describe("handleDiscordAction per-account gating", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     await expect(
       handleDiscordAction(
@@ -685,7 +685,7 @@ describe("handleDiscordAction per-account gating", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     await handleDiscordAction(
       { action: "channelCreate", guildId: "G1", name: "alerts", accountId: "ops" },

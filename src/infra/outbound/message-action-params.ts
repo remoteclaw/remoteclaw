@@ -7,7 +7,7 @@ import type {
   ChannelMessageActionName,
   ChannelThreadingToolContext,
 } from "../../channels/plugins/types.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { extensionForMime } from "../../media/mime.js";
 import { parseSlackTarget } from "../../slack/targets.js";
 import { parseTelegramTarget } from "../../telegram/targets.js";
@@ -88,7 +88,7 @@ export function resolveTelegramAutoThreadId(params: {
 }
 
 function resolveAttachmentMaxBytes(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channel: ChannelId;
   accountId?: string | null;
 }): number | undefined {
@@ -222,7 +222,7 @@ function buildAttachmentMediaLoadOptions(params: {
 }
 
 async function hydrateAttachmentPayload(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channel: ChannelId;
   accountId?: string | null;
   args: Record<string, unknown>;
@@ -297,7 +297,7 @@ export async function normalizeSandboxMediaList(params: {
 }
 
 async function hydrateAttachmentActionPayload(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channel: ChannelId;
   accountId?: string | null;
   args: Record<string, unknown>;
@@ -335,7 +335,7 @@ async function hydrateAttachmentActionPayload(params: {
 }
 
 export async function hydrateAttachmentParamsForAction(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channel: ChannelId;
   accountId?: string | null;
   args: Record<string, unknown>;

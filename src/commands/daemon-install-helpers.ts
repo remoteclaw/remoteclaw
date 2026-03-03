@@ -1,6 +1,6 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import { collectConfigServiceEnvVars } from "../config/env-vars.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { RemoteClawConfig } from "../config/types.js";
 import { resolveGatewayLaunchAgentLabel } from "../daemon/constants.js";
 import { resolveGatewayProgramArguments } from "../daemon/program-args.js";
 import { resolvePreferredNodePath } from "../daemon/runtime-paths.js";
@@ -32,7 +32,7 @@ export async function buildGatewayInstallPlan(params: {
   nodePath?: string;
   warn?: DaemonInstallWarnFn;
   /** Full config to extract env vars from (env vars + inline env keys). */
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
 }): Promise<GatewayInstallPlan> {
   const devMode = params.devMode ?? resolveGatewayDevMode();
   const nodePath =

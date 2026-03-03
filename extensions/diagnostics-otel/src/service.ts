@@ -9,8 +9,12 @@ import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { ParentBasedSampler, TraceIdRatioBasedSampler } from "@opentelemetry/sdk-trace-base";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
-import type { DiagnosticEventPayload, OpenClawPluginService } from "openclaw/plugin-sdk";
-import { onDiagnosticEvent, redactSensitiveText, registerLogTransport } from "openclaw/plugin-sdk";
+import type { DiagnosticEventPayload, RemoteClawPluginService } from "remoteclaw/plugin-sdk";
+import {
+  onDiagnosticEvent,
+  redactSensitiveText,
+  registerLogTransport,
+} from "remoteclaw/plugin-sdk";
 
 const DEFAULT_SERVICE_NAME = "openclaw";
 
@@ -62,7 +66,7 @@ function redactOtelAttributes(attributes: Record<string, string | number | boole
   return redactedAttributes;
 }
 
-export function createDiagnosticsOtelService(): OpenClawPluginService {
+export function createDiagnosticsOtelService(): RemoteClawPluginService {
   let sdk: NodeSDK | null = null;
   let logProvider: LoggerProvider | null = null;
   let stopLogTransport: (() => void) | null = null;
@@ -674,5 +678,5 @@ export function createDiagnosticsOtelService(): OpenClawPluginService {
         sdk = null;
       }
     },
-  } satisfies OpenClawPluginService;
+  } satisfies RemoteClawPluginService;
 }

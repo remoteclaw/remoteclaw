@@ -1,5 +1,5 @@
 import { modelKey } from "../agents/provider-utils.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { ModelProviderConfig } from "../config/types.models.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { fetchWithTimeout } from "../utils/fetch-timeout.js";
@@ -56,14 +56,14 @@ function transformAzureUrl(baseUrl: string, modelId: string): string {
 export type CustomApiCompatibility = "openai" | "anthropic";
 type CustomApiCompatibilityChoice = CustomApiCompatibility | "unknown";
 export type CustomApiResult = {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   providerId?: string;
   modelId?: string;
   providerIdRenamedFrom?: string;
 };
 
 export type ApplyCustomApiConfigParams = {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   baseUrl: string;
   modelId: string;
   compatibility: CustomApiCompatibility;
@@ -107,7 +107,7 @@ export class CustomApiError extends Error {
 }
 
 export type ResolveCustomProviderIdParams = {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   baseUrl: string;
   providerId?: string;
 };
@@ -180,7 +180,7 @@ function resolveUniqueEndpointId(params: {
 
 function resolveAliasError(params: {
   raw: string;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   modelRef: string;
 }): string | undefined {
   const trimmed = params.raw.trim();
@@ -522,7 +522,7 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
     throw new CustomApiError("invalid_alias", aliasError);
   }
 
-  let config: OpenClawConfig = { ...params.config };
+  let config: RemoteClawConfig = { ...params.config };
 
   if (alias) {
     config = {
@@ -556,7 +556,7 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
 export async function promptCustomApiConfig(params: {
   prompter: WizardPrompter;
   runtime: RuntimeEnv;
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
 }): Promise<CustomApiResult> {
   const { prompter, runtime, config } = params;
 

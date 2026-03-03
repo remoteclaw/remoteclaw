@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveGatewayProbeAuth as resolveStatusGatewayProbeAuth } from "../commands/status.gateway-probe.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveGatewayAuth } from "./auth.js";
 import { resolveGatewayCredentialsFromConfig } from "./credentials.js";
 import { resolveGatewayProbeAuth } from "./probe-auth.js";
@@ -14,7 +14,7 @@ type ExpectedCredentialSet = {
 
 type TestCase = {
   name: string;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   env: NodeJS.ProcessEnv;
   expected: ExpectedCredentialSet;
 };
@@ -24,7 +24,7 @@ const gatewayEnv = {
   REMOTECLAW_GATEWAY_PASSWORD: "env-password",
 } as NodeJS.ProcessEnv;
 
-function makeRemoteGatewayConfig(remote: { token?: string; password?: string }): OpenClawConfig {
+function makeRemoteGatewayConfig(remote: { token?: string; password?: string }): RemoteClawConfig {
   return {
     gateway: {
       mode: "remote",
@@ -34,7 +34,7 @@ function makeRemoteGatewayConfig(remote: { token?: string; password?: string }):
         password: "local-password",
       },
     },
-  } as OpenClawConfig;
+  } as RemoteClawConfig;
 }
 
 function withGatewayAuthEnv<T>(env: NodeJS.ProcessEnv, fn: () => T): T {
@@ -80,7 +80,7 @@ describe("gateway credential precedence parity", () => {
             password: "config-password",
           },
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       env: {
         REMOTECLAW_GATEWAY_TOKEN: "env-token",
         REMOTECLAW_GATEWAY_PASSWORD: "env-password",
@@ -126,7 +126,7 @@ describe("gateway credential precedence parity", () => {
           mode: "local",
           auth: {},
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       env: {
         CLAWDBOT_GATEWAY_TOKEN: "legacy-token",
         CLAWDBOT_GATEWAY_PASSWORD: "legacy-password",

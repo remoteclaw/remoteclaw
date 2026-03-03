@@ -4,13 +4,13 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
-  decorateOpenClawProfile,
+  decorateRemoteClawProfile,
   ensureProfileCleanExit,
   findChromeExecutableMac,
   findChromeExecutableWindows,
   isChromeReachable,
   resolveBrowserExecutableForPlatform,
-  stopOpenClawChrome,
+  stopRemoteClawChrome,
 } from "./chrome.js";
 import {
   DEFAULT_REMOTECLAW_BROWSER_COLOR,
@@ -58,7 +58,7 @@ describe("browser chrome profile decoration", () => {
 
   it("writes expected name + signed ARGB seed to Chrome prefs", async () => {
     const userDataDir = await createUserDataDir();
-    decorateOpenClawProfile(userDataDir, { color: DEFAULT_REMOTECLAW_BROWSER_COLOR });
+    decorateRemoteClawProfile(userDataDir, { color: DEFAULT_REMOTECLAW_BROWSER_COLOR });
 
     const expectedSignedArgb = ((0xff << 24) | 0xff4500) >> 0;
 
@@ -89,7 +89,7 @@ describe("browser chrome profile decoration", () => {
 
   it("best-effort writes name when color is invalid", async () => {
     const userDataDir = await createUserDataDir();
-    decorateOpenClawProfile(userDataDir, { color: "lobster-orange" });
+    decorateRemoteClawProfile(userDataDir, { color: "lobster-orange" });
     const def = await readDefaultProfileFromLocalState(userDataDir);
 
     expect(def.name).toBe(DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME);
@@ -106,7 +106,7 @@ describe("browser chrome profile decoration", () => {
       "utf-8",
     );
 
-    decorateOpenClawProfile(userDataDir, { color: DEFAULT_REMOTECLAW_BROWSER_COLOR });
+    decorateRemoteClawProfile(userDataDir, { color: DEFAULT_REMOTECLAW_BROWSER_COLOR });
 
     const localState = await readJson(path.join(userDataDir, "Local State"));
     expect(typeof localState.profile).toBe("object");
@@ -125,8 +125,8 @@ describe("browser chrome profile decoration", () => {
 
   it("is idempotent when rerun on an existing profile", async () => {
     const userDataDir = await createUserDataDir();
-    decorateOpenClawProfile(userDataDir, { color: DEFAULT_REMOTECLAW_BROWSER_COLOR });
-    decorateOpenClawProfile(userDataDir, { color: DEFAULT_REMOTECLAW_BROWSER_COLOR });
+    decorateRemoteClawProfile(userDataDir, { color: DEFAULT_REMOTECLAW_BROWSER_COLOR });
+    decorateRemoteClawProfile(userDataDir, { color: DEFAULT_REMOTECLAW_BROWSER_COLOR });
 
     const prefs = await readJson(path.join(userDataDir, "Default", "Preferences"));
     const profile = prefs.profile as Record<string, unknown>;
@@ -243,32 +243,32 @@ describe("browser chrome helpers", () => {
     await expect(isChromeReachable("http://127.0.0.1:12345", 50)).resolves.toBe(false);
   });
 
-  it("stopOpenClawChrome no-ops when process is already killed", async () => {
+  it("stopRemoteClawChrome no-ops when process is already killed", async () => {
     const proc = makeProc({ killed: true });
-    await stopOpenClawChrome(
+    await stopRemoteClawChrome(
       {
         proc,
         cdpPort: 12345,
-      } as unknown as Parameters<typeof stopOpenClawChrome>[0],
+      } as unknown as Parameters<typeof stopRemoteClawChrome>[0],
       10,
     );
     expect(proc.kill).not.toHaveBeenCalled();
   });
 
-  it("stopOpenClawChrome sends SIGTERM and returns once CDP is down", async () => {
+  it("stopRemoteClawChrome sends SIGTERM and returns once CDP is down", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
     const proc = makeProc();
-    await stopOpenClawChrome(
+    await stopRemoteClawChrome(
       {
         proc,
         cdpPort: 12345,
-      } as unknown as Parameters<typeof stopOpenClawChrome>[0],
+      } as unknown as Parameters<typeof stopRemoteClawChrome>[0],
       10,
     );
     expect(proc.kill).toHaveBeenCalledWith("SIGTERM");
   });
 
-  it("stopOpenClawChrome escalates to SIGKILL when CDP stays reachable", async () => {
+  it("stopRemoteClawChrome escalates to SIGKILL when CDP stays reachable", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -277,11 +277,11 @@ describe("browser chrome helpers", () => {
       } as unknown as Response),
     );
     const proc = makeProc();
-    await stopOpenClawChrome(
+    await stopRemoteClawChrome(
       {
         proc,
         cdpPort: 12345,
-      } as unknown as Parameters<typeof stopOpenClawChrome>[0],
+      } as unknown as Parameters<typeof stopRemoteClawChrome>[0],
       1,
     );
     expect(proc.kill).toHaveBeenNthCalledWith(1, "SIGTERM");

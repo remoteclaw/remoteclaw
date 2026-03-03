@@ -13,7 +13,7 @@ import {
   resolveBrowserExecutableForPlatform,
 } from "./chrome.executables.js";
 import {
-  decorateOpenClawProfile,
+  decorateRemoteClawProfile,
   ensureProfileCleanExit,
   isProfileDecorated,
 } from "./chrome.profile-decoration.js";
@@ -33,7 +33,7 @@ export {
   resolveBrowserExecutableForPlatform,
 } from "./chrome.executables.js";
 export {
-  decorateOpenClawProfile,
+  decorateRemoteClawProfile,
   ensureProfileCleanExit,
   isProfileDecorated,
 } from "./chrome.profile-decoration.js";
@@ -59,7 +59,9 @@ function resolveBrowserExecutable(resolved: ResolvedBrowserConfig): BrowserExecu
   return resolveBrowserExecutableForPlatform(resolved, process.platform);
 }
 
-export function resolveOpenClawUserDataDir(profileName = DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME) {
+export function resolveRemoteClawUserDataDir(
+  profileName = DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME,
+) {
   return path.join(CONFIG_DIR, "browser", profileName, "user-data");
 }
 
@@ -160,7 +162,7 @@ export async function isChromeCdpReady(
   return await canOpenWebSocket(wsUrl, handshakeTimeoutMs);
 }
 
-export async function launchOpenClawChrome(
+export async function launchRemoteClawChrome(
   resolved: ResolvedBrowserConfig,
   profile: ResolvedBrowserProfile,
 ): Promise<RunningChrome> {
@@ -176,7 +178,7 @@ export async function launchOpenClawChrome(
     );
   }
 
-  const userDataDir = resolveOpenClawUserDataDir(profile.name);
+  const userDataDir = resolveRemoteClawUserDataDir(profile.name);
   fs.mkdirSync(userDataDir, { recursive: true });
 
   const needsDecorate = !isProfileDecorated(
@@ -268,7 +270,7 @@ export async function launchOpenClawChrome(
 
   if (needsDecorate) {
     try {
-      decorateOpenClawProfile(userDataDir, {
+      decorateRemoteClawProfile(userDataDir, {
         name: profile.name,
         color: profile.color,
       });
@@ -320,7 +322,7 @@ export async function launchOpenClawChrome(
   };
 }
 
-export async function stopOpenClawChrome(running: RunningChrome, timeoutMs = 2500) {
+export async function stopRemoteClawChrome(running: RunningChrome, timeoutMs = 2500) {
   const proc = running.proc;
   if (proc.killed) {
     return;

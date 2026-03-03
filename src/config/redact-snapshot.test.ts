@@ -7,7 +7,7 @@ import {
 import { __test__ } from "./schema.hints.js";
 import type { ConfigUiHints } from "./schema.js";
 import type { ConfigFileSnapshot } from "./types.openclaw.js";
-import { OpenClawSchema } from "./zod-schema.js";
+import { RemoteClawSchema } from "./zod-schema.js";
 
 const { mapSensitivePaths } = __test__;
 
@@ -687,7 +687,7 @@ describe("redactConfigSnapshot", () => {
   });
 
   it("contract-covers dynamic catchall/record paths for redact+restore", () => {
-    const hints = mapSensitivePaths(OpenClawSchema, "", {});
+    const hints = mapSensitivePaths(RemoteClawSchema, "", {});
     const snapshot = makeSnapshot({
       env: {
         GROQ_API_KEY: "gsk-contract-123",
@@ -960,12 +960,12 @@ describe("restoreRedactedValues", () => {
 
 describe("realredactConfigSnapshot_real", () => {
   it("main schema redact works (samples)", () => {
-    const schema = OpenClawSchema.toJSONSchema({
+    const schema = RemoteClawSchema.toJSONSchema({
       target: "draft-07",
       unrepresentable: "any",
     });
-    schema.title = "OpenClawConfig";
-    const hints = mapSensitivePaths(OpenClawSchema, "", {});
+    schema.title = "RemoteClawConfig";
+    const hints = mapSensitivePaths(RemoteClawSchema, "", {});
 
     const snapshot = makeSnapshot({
       agents: {

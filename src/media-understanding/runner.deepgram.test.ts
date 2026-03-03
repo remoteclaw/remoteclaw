@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { buildProviderRegistry, runCapability } from "./runner.js";
 import { withAudioFixture } from "./runner.test-utils.js";
@@ -57,7 +57,7 @@ describe("runCapability deepgram provider options", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig;
+        } as unknown as RemoteClawConfig;
 
         const result = await runCapability({
           capability: "audio",

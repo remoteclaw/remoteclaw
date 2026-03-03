@@ -1,6 +1,6 @@
 # @openclaw/zalouser
 
-OpenClaw extension for Zalo Personal Account messaging via [zca-cli](https://zca-cli.dev).
+RemoteClaw extension for Zalo Personal Account messaging via [zca-cli](https://zca-cli.dev).
 
 > **Warning:** Using Zalo automation may result in account suspension or ban. Use at your own risk. This is an unofficial integration.
 
@@ -92,7 +92,7 @@ openclaw channels login --channel zalouser
 ### Send a Message
 
 ```bash
-openclaw message send --channel zalouser --target <threadId> --message "Hello from OpenClaw!"
+openclaw message send --channel zalouser --target <threadId> --message "Hello from RemoteClaw!"
 ```
 
 ## Configuration

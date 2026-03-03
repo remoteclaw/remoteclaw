@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { isSecureWebSocketUrl } from "../gateway/net.js";
 import type { GatewayBonjourBeacon } from "../infra/bonjour-discovery.js";
 import { discoverGatewayBeacons } from "../infra/bonjour-discovery.js";
@@ -42,9 +42,9 @@ function validateGatewayWebSocketUrl(value: string): string | undefined {
 }
 
 export async function promptRemoteGatewayConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   prompter: WizardPrompter,
-): Promise<OpenClawConfig> {
+): Promise<RemoteClawConfig> {
   let selectedBeacon: GatewayBonjourBeacon | null = null;
   let suggestedUrl = cfg.gateway?.remote?.url ?? DEFAULT_GATEWAY_URL;
 

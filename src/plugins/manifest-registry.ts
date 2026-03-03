@@ -1,8 +1,8 @@
 import fs from "node:fs";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveUserPath } from "../utils.js";
 import { normalizePluginsConfig, type NormalizedPluginsConfig } from "./config-state.js";
-import { discoverOpenClawPlugins, type PluginCandidate } from "./discovery.js";
+import { discoverRemoteClawPlugins, type PluginCandidate } from "./discovery.js";
 import { loadPluginManifest, type PluginManifest } from "./manifest.js";
 import { safeRealpathSync } from "./path-safety.js";
 import type { PluginConfigUiHint, PluginDiagnostic, PluginKind, PluginOrigin } from "./types.js";
@@ -132,7 +132,7 @@ function buildRecord(params: {
 }
 
 export function loadPluginManifestRegistry(params: {
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   workspaceDir?: string;
   cache?: boolean;
   env?: NodeJS.ProcessEnv;
@@ -156,7 +156,7 @@ export function loadPluginManifestRegistry(params: {
         candidates: params.candidates,
         diagnostics: params.diagnostics ?? [],
       }
-    : discoverOpenClawPlugins({
+    : discoverRemoteClawPlugins({
         workspaceDir: params.workspaceDir,
         extraPaths: normalized.loadPaths,
       });

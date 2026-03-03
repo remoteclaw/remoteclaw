@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { AVATAR_MAX_BYTES } from "../shared/avatar-policy.js";
 import { resolveAgentAvatar } from "./identity-avatar.js";
 
@@ -12,7 +12,7 @@ async function writeFile(filePath: string, contents = "avatar") {
 }
 
 async function expectLocalAvatarPath(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   workspace: string,
   expectedRelativePath: string,
 ) {
@@ -48,7 +48,7 @@ describe("resolveAgentAvatar", () => {
     const avatarPath = path.join(workspace, "avatars", "main.png");
     await writeFile(avatarPath);
 
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
         list: [
           {
@@ -70,7 +70,7 @@ describe("resolveAgentAvatar", () => {
     const outsidePath = path.join(root, "outside.png");
     await writeFile(outsidePath);
 
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
         list: [
           {
@@ -101,7 +101,7 @@ describe("resolveAgentAvatar", () => {
       "utf-8",
     );
 
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
         list: [{ id: "main", workspace }],
       },
@@ -115,7 +115,7 @@ describe("resolveAgentAvatar", () => {
     const workspace = path.join(root, "work");
     await fs.mkdir(workspace, { recursive: true });
 
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
         list: [{ id: "main", workspace, identity: { avatar: "avatars/missing.png" } }],
       },
@@ -135,7 +135,7 @@ describe("resolveAgentAvatar", () => {
     await fs.mkdir(path.dirname(avatarPath), { recursive: true });
     await fs.writeFile(avatarPath, Buffer.alloc(AVATAR_MAX_BYTES + 1));
 
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
         list: [{ id: "main", workspace, identity: { avatar: "avatars/too-big.png" } }],
       },
@@ -149,7 +149,7 @@ describe("resolveAgentAvatar", () => {
   });
 
   it("accepts remote and data avatars", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
         list: [
           { id: "main", identity: { avatar: "https://example.com/avatar.png" } },

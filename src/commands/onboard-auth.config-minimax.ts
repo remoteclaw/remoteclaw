@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { toAgentModelListLike } from "../config/model-input.js";
 import { applyOnboardAuthAgentModelsAndProviders } from "./onboard-auth.config-shared.js";
 import {
@@ -7,7 +7,7 @@ import {
   MINIMAX_HOSTED_MODEL_REF,
 } from "./onboard-auth.models.js";
 
-export function applyMinimaxProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyMinimaxProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models["anthropic/claude-opus-4-6"] = {
     ...models["anthropic/claude-opus-4-6"],
@@ -22,9 +22,9 @@ export function applyMinimaxProviderConfig(cfg: OpenClawConfig): OpenClawConfig 
 }
 
 export function applyMinimaxHostedProviderConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   _params?: { baseUrl?: string },
-): OpenClawConfig {
+): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[MINIMAX_HOSTED_MODEL_REF] = {
     ...models[MINIMAX_HOSTED_MODEL_REF],
@@ -34,14 +34,14 @@ export function applyMinimaxHostedProviderConfig(
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applyMinimaxConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyMinimaxConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyMinimaxProviderConfig(cfg);
 }
 
 export function applyMinimaxHostedConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   params?: { baseUrl?: string },
-): OpenClawConfig {
+): RemoteClawConfig {
   const next = applyMinimaxHostedProviderConfig(cfg, params);
   return {
     ...next,
@@ -60,9 +60,9 @@ export function applyMinimaxHostedConfig(
 
 // MiniMax Anthropic-compatible API (platform.minimax.io/anthropic)
 export function applyMinimaxApiProviderConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   modelId: string = "MiniMax-M2.5",
-): OpenClawConfig {
+): RemoteClawConfig {
   return applyMinimaxApiProviderConfigWithBaseUrl(cfg, {
     providerId: "minimax",
     modelId,
@@ -71,9 +71,9 @@ export function applyMinimaxApiProviderConfig(
 }
 
 export function applyMinimaxApiConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   modelId: string = "MiniMax-M2.5",
-): OpenClawConfig {
+): RemoteClawConfig {
   return applyMinimaxApiConfigWithBaseUrl(cfg, {
     providerId: "minimax",
     modelId,
@@ -83,9 +83,9 @@ export function applyMinimaxApiConfig(
 
 // MiniMax China API (api.minimaxi.com)
 export function applyMinimaxApiProviderConfigCn(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   modelId: string = "MiniMax-M2.5",
-): OpenClawConfig {
+): RemoteClawConfig {
   return applyMinimaxApiProviderConfigWithBaseUrl(cfg, {
     providerId: "minimax-cn",
     modelId,
@@ -94,9 +94,9 @@ export function applyMinimaxApiProviderConfigCn(
 }
 
 export function applyMinimaxApiConfigCn(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   modelId: string = "MiniMax-M2.5",
-): OpenClawConfig {
+): RemoteClawConfig {
   return applyMinimaxApiConfigWithBaseUrl(cfg, {
     providerId: "minimax-cn",
     modelId,
@@ -111,9 +111,9 @@ type MinimaxApiProviderConfigParams = {
 };
 
 function applyMinimaxApiProviderConfigWithBaseUrl(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   params: MinimaxApiProviderConfigParams,
-): OpenClawConfig {
+): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   const modelRef = `${params.providerId}/${params.modelId}`;
   models[modelRef] = {
@@ -125,8 +125,8 @@ function applyMinimaxApiProviderConfigWithBaseUrl(
 }
 
 function applyMinimaxApiConfigWithBaseUrl(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   params: MinimaxApiProviderConfigParams,
-): OpenClawConfig {
+): RemoteClawConfig {
   return applyMinimaxApiProviderConfigWithBaseUrl(cfg, params);
 }

@@ -58,12 +58,12 @@ describe("resolveGatewayWindowsTaskName", () => {
   it("returns default task name when no profile is set", () => {
     const result = resolveGatewayWindowsTaskName();
     expect(result).toBe(GATEWAY_WINDOWS_TASK_NAME);
-    expect(result).toBe("OpenClaw Gateway");
+    expect(result).toBe("RemoteClaw Gateway");
   });
 
   it("returns profile-specific task name when profile is set", () => {
     const result = resolveGatewayWindowsTaskName("dev");
-    expect(result).toBe("OpenClaw Gateway (dev)");
+    expect(result).toBe("RemoteClaw Gateway (dev)");
   });
 });
 
@@ -88,24 +88,24 @@ describe("resolveGatewayProfileSuffix", () => {
 
 describe("formatGatewayServiceDescription", () => {
   it("returns default description when no profile/version", () => {
-    expect(formatGatewayServiceDescription()).toBe("OpenClaw Gateway");
+    expect(formatGatewayServiceDescription()).toBe("RemoteClaw Gateway");
   });
 
   it("includes profile when set", () => {
     expect(formatGatewayServiceDescription({ profile: "work" })).toBe(
-      "OpenClaw Gateway (profile: work)",
+      "RemoteClaw Gateway (profile: work)",
     );
   });
 
   it("includes version when set", () => {
     expect(formatGatewayServiceDescription({ version: "2026.1.10" })).toBe(
-      "OpenClaw Gateway (v2026.1.10)",
+      "RemoteClaw Gateway (v2026.1.10)",
     );
   });
 
   it("includes profile and version when set", () => {
     expect(formatGatewayServiceDescription({ profile: "dev", version: "1.2.3" })).toBe(
-      "OpenClaw Gateway (profile: dev, v1.2.3)",
+      "RemoteClaw Gateway (profile: dev, v1.2.3)",
     );
   });
 });
@@ -126,7 +126,7 @@ describe("resolveGatewayServiceDescription", () => {
         env: { REMOTECLAW_PROFILE: "work", REMOTECLAW_SERVICE_VERSION: "local" },
         environment: { REMOTECLAW_SERVICE_VERSION: "remote" },
       }),
-    ).toBe("OpenClaw Gateway (profile: work, vremote)");
+    ).toBe("RemoteClaw Gateway (profile: work, vremote)");
   });
 });
 

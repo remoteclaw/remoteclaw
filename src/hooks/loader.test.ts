@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { captureEnv } from "../test-utils/env.js";
 import {
   clearInternalHooks,
@@ -44,7 +44,7 @@ describe("loader", () => {
 
   function createEnabledHooksConfig(
     handlers?: Array<{ event: string; module: string; export?: string }>,
-  ): OpenClawConfig {
+  ): RemoteClawConfig {
     return {
       hooks: {
         internal: handlers ? { enabled: true, handlers } : { enabled: true },
@@ -66,7 +66,7 @@ describe("loader", () => {
 
   describe("loadInternalHooks", () => {
     it("should return 0 when hooks are not enabled", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         hooks: {
           internal: {
             enabled: false,
@@ -79,7 +79,7 @@ describe("loader", () => {
     });
 
     it("should return 0 when hooks config is missing", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: RemoteClawConfig = {};
       const count = await loadInternalHooks(cfg, tmpDir);
       expect(count).toBe(0);
     });

@@ -7,7 +7,7 @@ import { Mock, vi } from "vitest";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { GetReplyOptions, ReplyPayload } from "../auto-reply/types.js";
 import type { ChannelPlugin, ChannelOutboundAdapter } from "../channels/plugins/types.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
 import type { AgentBinding } from "../config/types.agents.js";
 import type { HooksConfig } from "../config/types.hooks.js";
@@ -25,7 +25,7 @@ type StubChannelOptions = {
 type GetReplyFromConfigFn = (
   ctx: MsgContext,
   opts?: GetReplyOptions,
-  configOverride?: OpenClawConfig,
+  configOverride?: RemoteClawConfig,
 ) => Promise<ReplyPayload | ReplyPayload[] | undefined>;
 
 const createStubOutboundAdapter = (channelId: ChannelPlugin["id"]): ChannelOutboundAdapter => ({
@@ -556,7 +556,7 @@ vi.mock("../plugins/loader.js", async () => {
     await vi.importActual<typeof import("../plugins/loader.js")>("../plugins/loader.js");
   return {
     ...actual,
-    loadOpenClawPlugins: () => pluginRegistryState.registry,
+    loadRemoteClawPlugins: () => pluginRegistryState.registry,
   };
 });
 

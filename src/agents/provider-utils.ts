@@ -6,7 +6,7 @@
  * needed by auth-profiles, config, plugin-auto-enable, and similar infrastructure.
  */
 
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 
 export type ModelRef = {
   provider: string;
@@ -70,7 +70,7 @@ export function findNormalizedProviderKey(
   return Object.keys(entries).find((key) => normalizeProviderId(key) === providerKey);
 }
 
-export function isCliProvider(provider: string, cfg?: OpenClawConfig): boolean {
+export function isCliProvider(provider: string, cfg?: RemoteClawConfig): boolean {
   const normalized = normalizeProviderId(provider);
   if (normalized === "claude-cli") {
     return true;

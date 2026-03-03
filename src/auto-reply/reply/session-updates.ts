@@ -1,5 +1,5 @@
 import { resolveUserTimezone } from "../../agents/date-time.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 import { buildChannelSummary } from "../../infra/channel-summary.js";
 import {
@@ -10,7 +10,7 @@ import {
 import { drainSystemEventEntries } from "../../infra/system-events.js";
 
 export async function prependSystemEvents(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   sessionKey: string;
   isMainSession: boolean;
   isNewSession: boolean;
@@ -40,7 +40,7 @@ export async function prependSystemEvents(params: {
     return trimmed;
   };
 
-  const resolveSystemEventTimezone = (cfg: OpenClawConfig) => {
+  const resolveSystemEventTimezone = (cfg: RemoteClawConfig) => {
     const raw = cfg.agents?.defaults?.envelopeTimezone?.trim();
     if (!raw) {
       return { mode: "local" as const };
@@ -62,7 +62,7 @@ export async function prependSystemEvents(params: {
     return explicit ? { mode: "iana" as const, timeZone: explicit } : { mode: "local" as const };
   };
 
-  const formatSystemEventTimestamp = (ts: number, cfg: OpenClawConfig) => {
+  const formatSystemEventTimestamp = (ts: number, cfg: RemoteClawConfig) => {
     const date = new Date(ts);
     if (Number.isNaN(date.getTime())) {
       return "unknown-time";

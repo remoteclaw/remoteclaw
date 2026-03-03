@@ -11,7 +11,7 @@ type RegisteredRoute = {
 const registerPluginHttpRouteMock = vi.fn<(params: RegisteredRoute) => () => void>(() => vi.fn());
 const dispatchReplyWithBufferedBlockDispatcher = vi.fn().mockResolvedValue({ counts: {} });
 
-vi.mock("openclaw/plugin-sdk", () => ({
+vi.mock("remoteclaw/plugin-sdk", () => ({
   DEFAULT_ACCOUNT_ID: "default",
   setAccountEnabledInConfigSection: vi.fn((_opts: any) => ({})),
   registerPluginHttpRoute: registerPluginHttpRouteMock,

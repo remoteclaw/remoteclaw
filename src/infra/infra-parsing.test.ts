@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { isDiagnosticFlagEnabled, resolveDiagnosticFlags } from "./diagnostic-flags.js";
 import { isMainModule } from "./is-main.js";
 import { buildNodeShellCommand } from "./node-shell.js";
@@ -10,7 +10,7 @@ describe("infra parsing", () => {
     it("merges config + env flags", () => {
       const cfg = {
         diagnostics: { flags: ["telegram.http", "cache.*"] },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
       const env = {
         REMOTECLAW_DIAGNOSTICS: "foo,bar",
       } as NodeJS.ProcessEnv;

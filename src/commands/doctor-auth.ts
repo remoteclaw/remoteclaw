@@ -6,22 +6,22 @@ import {
 } from "../agents/auth-profiles.js";
 import { updateAuthProfileStoreWithLock } from "../agents/auth-profiles/store.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { note } from "../terminal/note.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 
 export async function maybeRepairAnthropicOAuthProfileId(
-  _cfg: OpenClawConfig,
+  _cfg: RemoteClawConfig,
   _prompter: DoctorPrompter,
-): Promise<OpenClawConfig> {
+): Promise<RemoteClawConfig> {
   // OAuth profile repair removed — only API keys are supported now.
   return _cfg;
 }
 
 function pruneAuthProfiles(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   profileIds: Set<string>,
-): { next: OpenClawConfig; changed: boolean } {
+): { next: RemoteClawConfig; changed: boolean } {
   const profiles = cfg.auth?.profiles;
   const nextProfiles = profiles ? { ...profiles } : undefined;
   let changed = false;
@@ -56,9 +56,9 @@ function pruneAuthProfiles(
 }
 
 export async function maybeRemoveDeprecatedCliAuthProfiles(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   prompter: DoctorPrompter,
-): Promise<OpenClawConfig> {
+): Promise<RemoteClawConfig> {
   const store = ensureAuthProfileStore(undefined, { allowKeychainPrompt: false });
   const deprecated = new Set<string>();
   if (store.profiles[CLAUDE_CLI_PROFILE_ID] || cfg.auth?.profiles?.[CLAUDE_CLI_PROFILE_ID]) {
@@ -140,7 +140,7 @@ function formatAuthIssueLine(issue: AuthIssue): string {
 }
 
 export async function noteAuthProfileHealth(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   prompter: DoctorPrompter;
   allowKeychainPrompt: boolean;
 }): Promise<void> {

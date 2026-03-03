@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { KILOCODE_BASE_URL } from "../providers/kilocode-shared.js";
 import {
   HUGGINGFACE_DEFAULT_MODEL_REF,
@@ -30,9 +30,9 @@ import {
 } from "./onboard-auth.models.js";
 
 export function applyZaiProviderConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   params?: { endpoint?: string; modelId?: string },
-): OpenClawConfig {
+): RemoteClawConfig {
   const modelId = params?.modelId?.trim() || ZAI_DEFAULT_MODEL_ID;
   const modelRef = `zai/${modelId}`;
 
@@ -46,13 +46,13 @@ export function applyZaiProviderConfig(
 }
 
 export function applyZaiConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   params?: { endpoint?: string; modelId?: string },
-): OpenClawConfig {
+): RemoteClawConfig {
   return applyZaiProviderConfig(cfg, params);
 }
 
-export function applyOpenrouterProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyOpenrouterProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[OPENROUTER_DEFAULT_MODEL_REF] = {
     ...models[OPENROUTER_DEFAULT_MODEL_REF],
@@ -71,11 +71,11 @@ export function applyOpenrouterProviderConfig(cfg: OpenClawConfig): OpenClawConf
   };
 }
 
-export function applyOpenrouterConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyOpenrouterConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyOpenrouterProviderConfig(cfg);
 }
 
-export function applyMoonshotProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyMoonshotProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[MOONSHOT_DEFAULT_MODEL_REF] = {
     ...models[MOONSHOT_DEFAULT_MODEL_REF],
@@ -85,19 +85,19 @@ export function applyMoonshotProviderConfig(cfg: OpenClawConfig): OpenClawConfig
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applyMoonshotProviderConfigCn(cfg: OpenClawConfig): OpenClawConfig {
+export function applyMoonshotProviderConfigCn(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyMoonshotProviderConfig(cfg);
 }
 
-export function applyMoonshotConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyMoonshotConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyMoonshotProviderConfig(cfg);
 }
 
-export function applyMoonshotConfigCn(cfg: OpenClawConfig): OpenClawConfig {
+export function applyMoonshotConfigCn(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyMoonshotProviderConfigCn(cfg);
 }
 
-export function applyKimiCodeProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyKimiCodeProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[KIMI_CODING_MODEL_REF] = {
     ...models[KIMI_CODING_MODEL_REF],
@@ -107,11 +107,11 @@ export function applyKimiCodeProviderConfig(cfg: OpenClawConfig): OpenClawConfig
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applyKimiCodeConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyKimiCodeConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyKimiCodeProviderConfig(cfg);
 }
 
-export function applySyntheticProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applySyntheticProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const syntheticModelRef = "synthetic/hf:MiniMaxAI/MiniMax-M2.1";
   const models = { ...cfg.agents?.defaults?.models };
   models[syntheticModelRef] = {
@@ -122,11 +122,11 @@ export function applySyntheticProviderConfig(cfg: OpenClawConfig): OpenClawConfi
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applySyntheticConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applySyntheticConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applySyntheticProviderConfig(cfg);
 }
 
-export function applyXiaomiProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyXiaomiProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[XIAOMI_DEFAULT_MODEL_REF] = {
     ...models[XIAOMI_DEFAULT_MODEL_REF],
@@ -136,7 +136,7 @@ export function applyXiaomiProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applyXiaomiConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyXiaomiConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyXiaomiProviderConfig(cfg);
 }
 
@@ -144,7 +144,7 @@ export function applyXiaomiConfig(cfg: OpenClawConfig): OpenClawConfig {
  * Apply Venice provider configuration without changing the default model.
  * Registers Venice models and sets up the provider, but preserves existing model selection.
  */
-export function applyVeniceProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyVeniceProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const veniceModelRef = "venice/llama-3.3-70b";
   const models = { ...cfg.agents?.defaults?.models };
   models[veniceModelRef] = {
@@ -155,7 +155,7 @@ export function applyVeniceProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applyVeniceConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyVeniceConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyVeniceProviderConfig(cfg);
 }
 
@@ -163,7 +163,7 @@ export function applyVeniceConfig(cfg: OpenClawConfig): OpenClawConfig {
  * Apply Together provider configuration without changing the default model.
  * Registers Together models and sets up the provider, but preserves existing model selection.
  */
-export function applyTogetherProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyTogetherProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[TOGETHER_DEFAULT_MODEL_REF] = {
     ...models[TOGETHER_DEFAULT_MODEL_REF],
@@ -173,14 +173,14 @@ export function applyTogetherProviderConfig(cfg: OpenClawConfig): OpenClawConfig
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applyTogetherConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyTogetherConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyTogetherProviderConfig(cfg);
 }
 
 /**
  * Apply Hugging Face (Inference Providers) provider configuration without changing the default model.
  */
-export function applyHuggingfaceProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyHuggingfaceProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[HUGGINGFACE_DEFAULT_MODEL_REF] = {
     ...models[HUGGINGFACE_DEFAULT_MODEL_REF],
@@ -190,11 +190,11 @@ export function applyHuggingfaceProviderConfig(cfg: OpenClawConfig): OpenClawCon
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applyHuggingfaceConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyHuggingfaceConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyHuggingfaceProviderConfig(cfg);
 }
 
-export function applyXaiProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyXaiProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[XAI_DEFAULT_MODEL_REF] = {
     ...models[XAI_DEFAULT_MODEL_REF],
@@ -204,11 +204,11 @@ export function applyXaiProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applyXaiConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyXaiConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyXaiProviderConfig(cfg);
 }
 
-export function applyMistralProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyMistralProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[MISTRAL_DEFAULT_MODEL_REF] = {
     ...models[MISTRAL_DEFAULT_MODEL_REF],
@@ -218,7 +218,7 @@ export function applyMistralProviderConfig(cfg: OpenClawConfig): OpenClawConfig 
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applyMistralConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyMistralConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyMistralProviderConfig(cfg);
 }
 
@@ -228,7 +228,7 @@ export { KILOCODE_BASE_URL };
  * Apply Kilo Gateway provider configuration without changing the default model.
  * Registers Kilo Gateway and sets up the provider, but preserves existing model selection.
  */
-export function applyKilocodeProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyKilocodeProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[KILOCODE_DEFAULT_MODEL_REF] = {
     ...models[KILOCODE_DEFAULT_MODEL_REF],
@@ -238,12 +238,12 @@ export function applyKilocodeProviderConfig(cfg: OpenClawConfig): OpenClawConfig
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applyKilocodeConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyKilocodeConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyKilocodeProviderConfig(cfg);
 }
 
 export function applyAuthProfileConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   params: {
     profileId: string;
     provider: string;
@@ -251,7 +251,7 @@ export function applyAuthProfileConfig(
     email?: string;
     preferProfileFirst?: boolean;
   },
-): OpenClawConfig {
+): RemoteClawConfig {
   const normalizedProvider = params.provider.toLowerCase();
   const profiles = {
     ...cfg.auth?.profiles,
@@ -314,7 +314,7 @@ export function applyAuthProfileConfig(
   };
 }
 
-export function applyQianfanProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyQianfanProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[QIANFAN_DEFAULT_MODEL_REF] = {
     ...models[QIANFAN_DEFAULT_MODEL_REF],
@@ -324,6 +324,6 @@ export function applyQianfanProviderConfig(cfg: OpenClawConfig): OpenClawConfig 
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applyQianfanConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyQianfanConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyQianfanProviderConfig(cfg);
 }

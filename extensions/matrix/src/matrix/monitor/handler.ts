@@ -9,7 +9,7 @@ import {
   type PluginRuntime,
   type RuntimeEnv,
   type RuntimeLogger,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import type { CoreConfig, MatrixRoomConfig, ReplyToMode } from "../../types.js";
 import { fetchEventSummary } from "../actions/summary.js";
 import {
@@ -247,7 +247,7 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
                   await sendMessageMatrix(
                     `room:${roomId}`,
                     [
-                      "OpenClaw: access not configured.",
+                      "RemoteClaw: access not configured.",
                       "",
                       `Pairing code: ${code}`,
                       "",

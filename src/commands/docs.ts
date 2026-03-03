@@ -5,7 +5,7 @@ import { hasBinary } from "../shared/config-eval.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { isRich, theme } from "../terminal/theme.js";
 
-const SEARCH_TOOL = "https://docs.openclaw.ai/mcp.SearchOpenClaw";
+const SEARCH_TOOL = "https://docs.openclaw.ai/mcp.SearchRemoteClaw";
 const SEARCH_TIMEOUT_MS = 30_000;
 const DEFAULT_SNIPPET_MAX = 220;
 

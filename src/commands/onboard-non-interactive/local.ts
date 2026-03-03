@@ -1,5 +1,5 @@
 import { formatCliCommand } from "../../cli/command-format.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveGatewayPort, writeConfigFile } from "../../config/config.js";
 import { logConfigUpdated } from "../../config/logging.js";
 import type { RuntimeEnv } from "../../runtime.js";
@@ -41,10 +41,10 @@ function inferRuntimeFromFlags(opts: OnboardOptions): AgentRuntime | undefined {
 }
 
 async function applyNonInteractiveRuntimeAuth(params: {
-  nextConfig: OpenClawConfig;
+  nextConfig: RemoteClawConfig;
   runtime: AgentRuntime;
   opts: OnboardOptions;
-}): Promise<OpenClawConfig> {
+}): Promise<RemoteClawConfig> {
   const { runtime, opts } = params;
   let config = {
     ...params.nextConfig,
@@ -105,7 +105,7 @@ async function applyNonInteractiveRuntimeAuth(params: {
 export async function runNonInteractiveOnboardingLocal(params: {
   opts: OnboardOptions;
   runtime: RuntimeEnv;
-  baseConfig: OpenClawConfig;
+  baseConfig: RemoteClawConfig;
 }) {
   const { opts, runtime, baseConfig } = params;
   const mode = "local" as const;
@@ -116,7 +116,7 @@ export async function runNonInteractiveOnboardingLocal(params: {
     defaultWorkspaceDir: DEFAULT_WORKSPACE,
   });
 
-  let nextConfig: OpenClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
+  let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
 
   const selectedRuntime = inferRuntimeFromFlags(opts);
   if (selectedRuntime) {

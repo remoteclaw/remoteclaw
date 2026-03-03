@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   parseFrontmatter,
-  resolveOpenClawMetadata,
+  resolveRemoteClawMetadata,
   resolveHookInvocationPolicy,
 } from "./frontmatter.js";
 
@@ -148,7 +148,7 @@ description: 'single-quoted'
   });
 });
 
-describe("resolveOpenClawMetadata", () => {
+describe("resolveRemoteClawMetadata", () => {
   it("extracts openclaw metadata from parsed frontmatter", () => {
     const frontmatter = {
       name: "test-hook",
@@ -164,7 +164,7 @@ describe("resolveOpenClawMetadata", () => {
       }),
     };
 
-    const result = resolveOpenClawMetadata(frontmatter);
+    const result = resolveRemoteClawMetadata(frontmatter);
     expect(result).toBeDefined();
     expect(result?.emoji).toBe("🔥");
     expect(result?.events).toEqual(["command:new", "command:reset"]);
@@ -174,7 +174,7 @@ describe("resolveOpenClawMetadata", () => {
 
   it("returns undefined when metadata is missing", () => {
     const frontmatter = { name: "no-metadata" };
-    const result = resolveOpenClawMetadata(frontmatter);
+    const result = resolveRemoteClawMetadata(frontmatter);
     expect(result).toBeUndefined();
   });
 
@@ -182,7 +182,7 @@ describe("resolveOpenClawMetadata", () => {
     const frontmatter = {
       metadata: JSON.stringify({ other: "data" }),
     };
-    const result = resolveOpenClawMetadata(frontmatter);
+    const result = resolveRemoteClawMetadata(frontmatter);
     expect(result).toBeUndefined();
   });
 
@@ -190,7 +190,7 @@ describe("resolveOpenClawMetadata", () => {
     const frontmatter = {
       metadata: "not valid json {",
     };
-    const result = resolveOpenClawMetadata(frontmatter);
+    const result = resolveRemoteClawMetadata(frontmatter);
     expect(result).toBeUndefined();
   });
 
@@ -200,14 +200,14 @@ describe("resolveOpenClawMetadata", () => {
         openclaw: {
           events: ["command"],
           install: [
-            { id: "bundled", kind: "bundled", label: "Bundled with OpenClaw" },
+            { id: "bundled", kind: "bundled", label: "Bundled with RemoteClaw" },
             { id: "npm", kind: "npm", package: "@openclaw/hook" },
           ],
         },
       }),
     };
 
-    const result = resolveOpenClawMetadata(frontmatter);
+    const result = resolveRemoteClawMetadata(frontmatter);
     expect(result?.install).toHaveLength(2);
     expect(result?.install?.[0].kind).toBe("bundled");
     expect(result?.install?.[1].kind).toBe("npm");
@@ -224,7 +224,7 @@ describe("resolveOpenClawMetadata", () => {
       }),
     };
 
-    const result = resolveOpenClawMetadata(frontmatter);
+    const result = resolveRemoteClawMetadata(frontmatter);
     expect(result?.os).toEqual(["darwin", "linux"]);
   });
 
@@ -241,7 +241,7 @@ metadata:
         "emoji": "💾",
         "events": ["command:new", "command:reset"],
         "requires": { "config": ["workspace.dir"] },
-        "install": [{ "id": "bundled", "kind": "bundled", "label": "Bundled with OpenClaw" }],
+        "install": [{ "id": "bundled", "kind": "bundled", "label": "Bundled with RemoteClaw" }],
       },
   }
 ---
@@ -253,7 +253,7 @@ metadata:
     expect(frontmatter.name).toBe("session-memory");
     expect(frontmatter.metadata).toBeDefined();
 
-    const openclaw = resolveOpenClawMetadata(frontmatter);
+    const openclaw = resolveRemoteClawMetadata(frontmatter);
     expect(openclaw).toBeDefined();
     expect(openclaw?.emoji).toBe("💾");
     expect(openclaw?.events).toEqual(["command:new", "command:reset"]);
@@ -272,7 +272,7 @@ metadata:
 ---
 `;
     const frontmatter = parseFrontmatter(content);
-    const openclaw = resolveOpenClawMetadata(frontmatter);
+    const openclaw = resolveRemoteClawMetadata(frontmatter);
     expect(openclaw?.emoji).toBe("disk");
     expect(openclaw?.events).toEqual(["command:new"]);
   });

@@ -20,7 +20,7 @@ import { loadDotEnv } from "./infra/dotenv.js";
 import { normalizeEnv } from "./infra/env.js";
 import { formatUncaughtError } from "./infra/errors.js";
 import { isMainModule } from "./infra/is-main.js";
-import { ensureOpenClawCliOnPath } from "./infra/path-env.js";
+import { ensureRemoteClawCliOnPath } from "./infra/path-env.js";
 import {
   describePortOwner,
   ensurePortAvailable,
@@ -35,7 +35,7 @@ import { assertWebChannel, normalizeE164, toWhatsappJid } from "./utils.js";
 
 loadDotEnv({ quiet: true });
 normalizeEnv();
-ensureOpenClawCliOnPath();
+ensureRemoteClawCliOnPath();
 
 // Capture all console output into structured logs while keeping stdout/stderr behavior.
 enableConsoleCapture();

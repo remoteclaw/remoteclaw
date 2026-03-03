@@ -1,5 +1,5 @@
 /**
- * Synology Chat Channel Plugin for OpenClaw.
+ * Synology Chat Channel Plugin for RemoteClaw.
  *
  * Implements the ChannelPlugin interface following the LINE pattern.
  */
@@ -9,7 +9,7 @@ import {
   setAccountEnabledInConfigSection,
   registerPluginHttpRoute,
   buildChannelConfigSchema,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import { z } from "zod";
 import { listAccountIds, resolveAccount } from "./accounts.js";
 import { sendMessage, sendFileUrl } from "./client.js";
@@ -32,7 +32,7 @@ export function createSynologyChatPlugin() {
       selectionLabel: "Synology Chat (Webhook)",
       detailLabel: "Synology Chat (Webhook)",
       docsPath: "/channels/synology-chat",
-      blurb: "Connect your Synology NAS Chat to OpenClaw",
+      blurb: "Connect your Synology NAS Chat to RemoteClaw",
       order: 90,
     },
 
@@ -87,7 +87,7 @@ export function createSynologyChatPlugin() {
         if (!account.incomingUrl) return;
         await sendMessage(
           account.incomingUrl,
-          "OpenClaw: your access has been approved.",
+          "RemoteClaw: your access has been approved.",
           id,
           account.allowInsecureSsl,
         );

@@ -1,12 +1,12 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { AgentModelEntryConfig } from "../config/types.agent-defaults.js";
 
 export function applyOnboardAuthAgentModelsAndProviders(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   params: {
     agentModels: Record<string, AgentModelEntryConfig>;
   },
-): OpenClawConfig {
+): RemoteClawConfig {
   return {
     ...cfg,
     agents: {

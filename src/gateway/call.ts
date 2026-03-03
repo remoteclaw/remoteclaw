@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import {
   loadConfig,
   resolveConfigPath,
@@ -29,7 +29,7 @@ type CallGatewayBaseOptions = {
   token?: string;
   password?: string;
   tlsFingerprint?: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   method: string;
   params?: unknown;
   expectFinal?: boolean;
@@ -107,7 +107,7 @@ export function ensureExplicitGatewayAuth(params: {
 }
 
 export function buildGatewayConnectionDetails(
-  options: { config?: OpenClawConfig; url?: string; configPath?: string } = {},
+  options: { config?: RemoteClawConfig; url?: string; configPath?: string } = {},
 ): GatewayConnectionDetails {
   const config = options.config ?? loadConfig();
   const configPath =
@@ -187,7 +187,7 @@ type GatewayRemoteSettings = {
 };
 
 type ResolvedGatewayCallContext = {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   configPath: string;
   isRemoteMode: boolean;
   remote?: GatewayRemoteSettings;

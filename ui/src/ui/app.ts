@@ -106,7 +106,7 @@ function resolveOnboardingMode(): boolean {
 }
 
 @customElement("openclaw-app")
-export class OpenClawApp extends LitElement {
+export class RemoteClawApp extends LitElement {
   private i18nController = new I18nController(this);
   clientInstanceId = generateUUID();
   @state() settings: UiSettings = loadSettings();

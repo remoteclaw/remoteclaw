@@ -21,7 +21,7 @@ type CoreToolDefinition = {
   description: string;
   sectionId: string;
   profiles: ToolProfileId[];
-  includeInOpenClawGroup?: boolean;
+  includeInRemoteClawGroup?: boolean;
 };
 
 const CORE_TOOL_SECTION_ORDER: Array<{ id: string; label: string }> = [
@@ -42,7 +42,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "List sessions",
     sectionId: "sessions",
     profiles: ["coding", "messaging"],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "sessions_history",
@@ -50,7 +50,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "Session history",
     sectionId: "sessions",
     profiles: ["coding", "messaging"],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "sessions_send",
@@ -58,7 +58,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "Send to session",
     sectionId: "sessions",
     profiles: ["coding", "messaging"],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "sessions_spawn",
@@ -66,7 +66,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "Spawn sub-agent",
     sectionId: "sessions",
     profiles: ["coding"],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "subagents",
@@ -74,7 +74,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "Manage sub-agents",
     sectionId: "sessions",
     profiles: ["coding"],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "session_status",
@@ -82,7 +82,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "Session status",
     sectionId: "sessions",
     profiles: ["minimal", "coding", "messaging"],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "browser",
@@ -90,7 +90,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "Control web browser",
     sectionId: "ui",
     profiles: [],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "canvas",
@@ -98,7 +98,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "Control canvases",
     sectionId: "ui",
     profiles: [],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "message",
@@ -106,7 +106,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "Send messages",
     sectionId: "messaging",
     profiles: ["messaging"],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "cron",
@@ -114,7 +114,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "Schedule tasks",
     sectionId: "automation",
     profiles: ["coding"],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "gateway",
@@ -122,7 +122,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "Gateway control",
     sectionId: "automation",
     profiles: [],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "nodes",
@@ -130,7 +130,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "Nodes + devices",
     sectionId: "nodes",
     profiles: [],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "agents_list",
@@ -138,7 +138,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "List agents",
     sectionId: "agents",
     profiles: [],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
   {
     id: "tts",
@@ -146,7 +146,7 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     description: "Text-to-speech conversion",
     sectionId: "media",
     profiles: [],
-    includeInOpenClawGroup: true,
+    includeInRemoteClawGroup: true,
   },
 ];
 
@@ -181,7 +181,7 @@ function buildCoreToolGroupMap() {
     list.push(tool.id);
     sectionToolMap.set(groupId, list);
   }
-  const openclawTools = CORE_TOOL_DEFINITIONS.filter((tool) => tool.includeInOpenClawGroup).map(
+  const openclawTools = CORE_TOOL_DEFINITIONS.filter((tool) => tool.includeInRemoteClawGroup).map(
     (tool) => tool.id,
   );
   return {

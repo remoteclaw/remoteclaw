@@ -1,5 +1,5 @@
 import { upsertAuthProfile } from "../agents/auth-profiles.js";
-import type { OpenClawConfig, GatewayAuthConfig } from "../config/config.js";
+import type { RemoteClawConfig, GatewayAuthConfig } from "../config/config.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { randomToken } from "./onboard-helpers.js";
 import type { AgentRuntime } from "./onboard-types.js";
@@ -54,10 +54,10 @@ export function buildGatewayAuthConfig(params: {
 }
 
 export async function promptAuthConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   _runtime: unknown,
   prompter: WizardPrompter,
-): Promise<OpenClawConfig> {
+): Promise<RemoteClawConfig> {
   const selectedRuntime: AgentRuntime = await prompter.select({
     message: "Which agent runtime?",
     options: [

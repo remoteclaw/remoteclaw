@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SubagentRunRecord } from "../../agents/subagent-registry.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import {
   getAbortMemory,
   getAbortMemorySizeForTest,
@@ -63,7 +63,7 @@ describe("abort detection", () => {
       ...(typeof params?.commandsTextEnabled === "boolean"
         ? { commands: { text: params.commandsTextEnabled } }
         : {}),
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     if (params?.sessionIdsByKey) {
       await writeSessionStore(storePath, params.sessionIdsByKey, params.nowMs);
     }
@@ -71,7 +71,7 @@ describe("abort detection", () => {
   }
 
   async function runStopCommand(params: {
-    cfg: OpenClawConfig;
+    cfg: RemoteClawConfig;
     sessionKey: string;
     from: string;
     to: string;
@@ -98,7 +98,7 @@ describe("abort detection", () => {
   it("triggerBodyNormalized extracts /stop from RawBody for abort detection", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-abort-"));
     const storePath = path.join(root, "sessions.json");
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     const groupMessageCtx = {
       Body: `[Context]\nJake: /stop\n[from: Jake]`,

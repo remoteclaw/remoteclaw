@@ -7,13 +7,13 @@ import {
 import { requireApiKey, resolveApiKeyForProvider } from "../agents/provider-auth.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import { applyTemplate } from "../auto-reply/templating.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type {
   MediaUnderstandingConfig,
   MediaUnderstandingModelConfig,
 } from "../config/types.tools.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-openclaw-dir.js";
 import { runExec } from "../process/exec.js";
 import { MediaAttachmentCache } from "./attachments.js";
 import {
@@ -278,7 +278,7 @@ export function buildModelDecision(params: {
 function resolveEntryRunOptions(params: {
   capability: MediaUnderstandingCapability;
   entry: MediaUnderstandingModelConfig;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   config?: MediaUnderstandingConfig;
 }): { maxBytes: number; maxChars?: number; timeoutMs: number; prompt: string } {
   const { capability, entry, cfg } = params;
@@ -300,7 +300,7 @@ function resolveEntryRunOptions(params: {
 
 async function resolveProviderExecutionAuth(params: {
   providerId: string;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   entry: MediaUnderstandingModelConfig;
   agentDir?: string;
 }) {
@@ -321,7 +321,7 @@ async function resolveProviderExecutionAuth(params: {
 
 async function resolveProviderExecutionContext(params: {
   providerId: string;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   entry: MediaUnderstandingModelConfig;
   config?: MediaUnderstandingConfig;
   agentDir?: string;
@@ -363,7 +363,7 @@ export function formatDecisionSummary(decision: MediaUnderstandingDecision): str
 export async function runProviderEntry(params: {
   capability: MediaUnderstandingCapability;
   entry: MediaUnderstandingModelConfig;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   ctx: MsgContext;
   attachmentIndex: number;
   cache: MediaAttachmentCache;
@@ -541,7 +541,7 @@ export async function runProviderEntry(params: {
 export async function runCliEntry(params: {
   capability: MediaUnderstandingCapability;
   entry: MediaUnderstandingModelConfig;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   ctx: MsgContext;
   attachmentIndex: number;
   cache: MediaAttachmentCache;
@@ -565,7 +565,7 @@ export async function runCliEntry(params: {
     timeoutMs,
   });
   const outputDir = await fs.mkdtemp(
-    path.join(resolvePreferredOpenClawTmpDir(), "openclaw-media-cli-"),
+    path.join(resolvePreferredRemoteClawTmpDir(), "openclaw-media-cli-"),
   );
   const mediaPath = pathResult.path;
   const outputBase = path.join(outputDir, path.parse(mediaPath).name);

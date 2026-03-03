@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolvePluginTools } from "../plugins/tools.js";
 import type { GatewayMessageChannel } from "../utils/message-channel.js";
 import { resolveSessionAgentId } from "./agent-scope.js";
@@ -18,7 +18,7 @@ import { createSessionsSpawnTool } from "./tools/sessions-spawn-tool.js";
 import { createSubagentsTool } from "./tools/subagents-tool.js";
 import { resolveWorkspaceRoot } from "./workspace-dir.js";
 
-export function createOpenClawTools(options?: {
+export function createRemoteClawTools(options?: {
   agentSessionKey?: string;
   agentChannel?: GatewayMessageChannel;
   agentAccountId?: string;
@@ -36,7 +36,7 @@ export function createOpenClawTools(options?: {
   fsPolicy?: ToolFsPolicy;
   workspaceDir?: string;
   sandboxed?: boolean;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   pluginToolAllowlist?: string[];
   /** Current channel ID for auto-threading (Slack). */
   currentChannelId?: string;

@@ -1,10 +1,10 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { applyOnboardAuthAgentModelsAndProviders } from "./onboard-auth.config-shared.js";
 import { VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF } from "./onboard-auth.credentials.js";
 
 const CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF = "cloudflare-ai-gateway/claude-sonnet-4-5";
 
-export function applyVercelAiGatewayProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyVercelAiGatewayProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF] = {
     ...models[VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF],
@@ -15,9 +15,9 @@ export function applyVercelAiGatewayProviderConfig(cfg: OpenClawConfig): OpenCla
 }
 
 export function applyCloudflareAiGatewayProviderConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   _params?: { accountId?: string; gatewayId?: string },
-): OpenClawConfig {
+): RemoteClawConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF] = {
     ...models[CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF],
@@ -27,13 +27,13 @@ export function applyCloudflareAiGatewayProviderConfig(
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
-export function applyVercelAiGatewayConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyVercelAiGatewayConfig(cfg: RemoteClawConfig): RemoteClawConfig {
   return applyVercelAiGatewayProviderConfig(cfg);
 }
 
 export function applyCloudflareAiGatewayConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   params?: { accountId?: string; gatewayId?: string },
-): OpenClawConfig {
+): RemoteClawConfig {
   return applyCloudflareAiGatewayProviderConfig(cfg, params);
 }

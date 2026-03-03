@@ -26,7 +26,7 @@ import { createReplyReferencePlanner } from "../../auto-reply/reply/reply-refere
 import { resolveCommandAuthorizedFromAuthorizers } from "../../channels/command-gating.js";
 import { createReplyPrefixOptions } from "../../channels/reply-prefix.js";
 import { recordInboundSession } from "../../channels/session.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { isDangerousNameMatchingEnabled } from "../../config/dangerous-name-matching.js";
 import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../../config/sessions.js";
@@ -376,7 +376,7 @@ async function ensureAgentComponentInteractionAllowed(params: {
 }
 
 export type AgentComponentContext = {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId: string;
   discordConfig?: DiscordAccountConfig;
   runtime?: RuntimeEnv;
@@ -1578,7 +1578,7 @@ class DiscordComponentChannelSelect extends ChannelSelectMenu {
 }
 
 class DiscordComponentModal extends Modal {
-  title = "OpenClaw form";
+  title = "RemoteClaw form";
   customId = "*";
   components = [];
   customIdParser = parseDiscordModalCustomIdForCarbon;

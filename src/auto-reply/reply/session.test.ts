@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { saveSessionStore } from "../../config/sessions.js";
 import { formatZonedTimestamp } from "../../infra/format-time/format-datetime.ts";
 import { enqueueSystemEvent, resetSystemEventsForTest } from "../../infra/system-events.js";
@@ -89,7 +89,7 @@ describe("initSessionState thread forking", () => {
 
     const cfg = {
       session: { store: storePath },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const threadSessionKey = "agent:main:slack:channel:c1:thread:123";
     const threadLabel = "Slack thread #general: starter";
@@ -172,7 +172,7 @@ describe("initSessionState thread forking", () => {
 
     const cfg = {
       session: { store: storePath },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const first = await initSessionState({
       ctx: {
@@ -208,7 +208,7 @@ describe("initSessionState thread forking", () => {
 
     const cfg = {
       session: { store: storePath },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -232,7 +232,7 @@ describe("initSessionState RawBody", () => {
   it("uses RawBody for command extraction and reset triggers when Body contains wrapped context", async () => {
     const root = await makeCaseDir("openclaw-rawbody-");
     const storePath = path.join(root, "sessions.json");
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     const statusResult = await initSessionState({
       ctx: {
@@ -269,7 +269,7 @@ describe("initSessionState RawBody", () => {
         store: storePath,
         resetTriggers: ["/new"],
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const ctx = {
       RawBody: "/NEW KeepThisCase",
@@ -308,7 +308,7 @@ describe("initSessionState RawBody", () => {
         },
       });
 
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as RemoteClawConfig;
       const result = await initSessionState({
         ctx: {
           Body: "hello",
@@ -353,7 +353,7 @@ describe("initSessionState reset policy", () => {
       },
     });
 
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
     const result = await initSessionState({
       ctx: { Body: "hello", SessionKey: sessionKey },
       cfg,
@@ -378,7 +378,7 @@ describe("initSessionState reset policy", () => {
       },
     });
 
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
     const result = await initSessionState({
       ctx: { Body: "hello", SessionKey: sessionKey },
       cfg,
@@ -408,7 +408,7 @@ describe("initSessionState reset policy", () => {
         store: storePath,
         reset: { mode: "daily", atHour: 4, idleMinutes: 30 },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const result = await initSessionState({
       ctx: { Body: "hello", SessionKey: sessionKey },
       cfg,
@@ -439,7 +439,7 @@ describe("initSessionState reset policy", () => {
         reset: { mode: "daily", atHour: 4 },
         resetByType: { thread: { mode: "idle", idleMinutes: 180 } },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const result = await initSessionState({
       ctx: { Body: "reply", SessionKey: sessionKey, ThreadLabel: "Slack thread" },
       cfg,
@@ -469,7 +469,7 @@ describe("initSessionState reset policy", () => {
         store: storePath,
         resetByType: { thread: { mode: "idle", idleMinutes: 180 } },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const result = await initSessionState({
       ctx: { Body: "reply", SessionKey: sessionKey, ThreadLabel: "Discord thread" },
       cfg,
@@ -499,7 +499,7 @@ describe("initSessionState reset policy", () => {
         store: storePath,
         resetByType: { thread: { mode: "idle", idleMinutes: 60 } },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const result = await initSessionState({
       ctx: { Body: "hello", SessionKey: sessionKey },
       cfg,
@@ -529,7 +529,7 @@ describe("initSessionState reset policy", () => {
         store: storePath,
         idleMinutes: 240,
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const result = await initSessionState({
       ctx: { Body: "hello", SessionKey: sessionKey },
       cfg,
@@ -563,7 +563,7 @@ describe("initSessionState channel reset overrides", () => {
         resetByType: { direct: { mode: "idle", idleMinutes: 10 } },
         resetByChannel: { discord: { mode: "idle", idleMinutes: 10080 } },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -594,7 +594,7 @@ describe("initSessionState reset triggers in WhatsApp groups", () => {
     });
   }
 
-  function makeCfg(params: { storePath: string; allowFrom: string[] }): OpenClawConfig {
+  function makeCfg(params: { storePath: string; allowFrom: string[] }): RemoteClawConfig {
     return {
       session: { store: params.storePath, idleMinutes: 999 },
       channels: {
@@ -603,7 +603,7 @@ describe("initSessionState reset triggers in WhatsApp groups", () => {
           groupPolicy: "open",
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
   }
 
   it("applies WhatsApp group reset authorization across sender variants", async () => {
@@ -699,7 +699,7 @@ describe("initSessionState reset triggers in Slack channels", () => {
     });
     const cfg = {
       session: { store: storePath, idleMinutes: 999 },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -775,7 +775,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
 
       const cfg = {
         session: { store: storePath, idleMinutes: 999 },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
 
       const result = await initSessionState({
         ctx: {
@@ -815,7 +815,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
 
     const cfg = {
       session: { store: storePath, idleMinutes: 999 },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -851,7 +851,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
 
     const cfg = {
       session: { store: storePath, idleMinutes: 0 },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -887,7 +887,7 @@ describe("prependSystemEvents", () => {
       enqueueSystemEvent("Model switched.", { sessionKey: "agent:main:main" });
 
       const result = await prependSystemEvents({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as RemoteClawConfig,
         sessionKey: "agent:main:main",
         isMainSession: false,
         isNewSession: false,
@@ -1042,7 +1042,7 @@ describe("persistSessionUsageUpdate", () => {
 describe("initSessionState stale threadId fallback", () => {
   it("does not inherit lastThreadId from a previous thread interaction in non-thread sessions", async () => {
     const storePath = await createStorePath("stale-thread-");
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     // First interaction: inside a DM topic (thread session)
     const threadResult = await initSessionState({
@@ -1072,7 +1072,7 @@ describe("initSessionState stale threadId fallback", () => {
 
   it("preserves lastThreadId within the same thread session", async () => {
     const storePath = await createStorePath("preserve-thread-");
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     // First message in thread
     await initSessionState({
@@ -1115,7 +1115,7 @@ describe("initSessionState internal channel routing preservation", () => {
         },
       },
     });
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -1134,7 +1134,7 @@ describe("initSessionState internal channel routing preservation", () => {
   it("uses session key channel hint when first turn is internal webchat", async () => {
     const storePath = await createStorePath("session-key-channel-hint-");
     const sessionKey = "agent:main:telegram:group:98765";
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -1152,7 +1152,7 @@ describe("initSessionState internal channel routing preservation", () => {
 
   it("keeps webchat channel for webchat/main sessions", async () => {
     const storePath = await createStorePath("preserve-webchat-main-");
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {

@@ -5,7 +5,7 @@ const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
   agentId: undefined as string | undefined,
 });
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
@@ -23,8 +23,8 @@ import { CURRENT_MESSAGE_MARKER, stripMentions, stripStructuralPrefixes } from "
 // Stub `createModelSelectionState` returns defaults so the downstream pipeline
 // still receives the expected shape without loading model catalogs.
 export async function createModelSelectionState(params: {
-  cfg: OpenClawConfig;
-  agentCfg: NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]> | undefined;
+  cfg: RemoteClawConfig;
+  agentCfg: NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]> | undefined;
   sessionEntry?: SessionEntry;
   sessionStore?: Record<string, SessionEntry>;
   sessionKey?: string;
@@ -50,7 +50,7 @@ export async function createModelSelectionState(params: {
 }
 
 function resolveContextTokens(params: {
-  agentCfg: NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]> | undefined;
+  agentCfg: NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]> | undefined;
   model: string;
 }): number {
   // Context token lookup from model catalog gutted in RemoteClaw — CLI agents manage their own context.
@@ -60,7 +60,7 @@ import { formatElevatedUnavailableMessage, resolveElevatedPermissions } from "./
 import { stripInlineStatus } from "./reply-inline.js";
 import type { TypingController } from "./typing.js";
 
-type AgentDefaults = NonNullable<OpenClawConfig["agents"]>["defaults"];
+type AgentDefaults = NonNullable<RemoteClawConfig["agents"]>["defaults"];
 // Exec tool infrastructure removed (#70) — inline type for remaining directive plumbing
 type ExecOverrides = { host?: string; security?: string; ask?: string; node?: string | boolean };
 
@@ -122,7 +122,7 @@ export type ReplyDirectiveResult =
 
 export async function resolveReplyDirectives(params: {
   ctx: MsgContext;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   agentId: string;
   agentDir: string;
   workspaceDir: string;

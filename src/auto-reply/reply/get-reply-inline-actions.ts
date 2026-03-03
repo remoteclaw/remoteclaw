@@ -1,5 +1,5 @@
 import { getChannelDock } from "../../channels/dock.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
@@ -23,7 +23,7 @@ export type InlineActionResult =
 export async function handleInlineActions(params: {
   ctx: MsgContext;
   sessionCtx: TemplateContext;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   agentId: string;
   agentDir?: string;
   sessionEntry?: SessionEntry;

@@ -1,7 +1,7 @@
 import { resolveAuthStorePathForDisplay } from "../../agents/auth-profiles.js";
 import { listProfilesForProvider } from "../../agents/auth-profiles.js";
 import { ensureAuthProfileStore, resolveEnvApiKey } from "../../agents/provider-auth.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { shortenHomePath } from "../../utils.js";
 import { maskApiKey } from "../../utils/mask-api-key.js";
 
@@ -9,7 +9,7 @@ export type ModelAuthDetailMode = "compact" | "verbose";
 
 export const resolveAuthLabel = async (
   provider: string,
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   modelsPath: string,
   agentDir?: string,
   mode: ModelAuthDetailMode = "compact",
@@ -82,7 +82,7 @@ export const formatAuthLabel = (auth: { label: string; source: string }) => {
 export const resolveProfileOverride = (params: {
   rawProfile?: string;
   provider: string;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   agentDir?: string;
 }): { profileId?: string; error?: string } => {
   const raw = params.rawProfile?.trim();

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { createTempHomeHarness, makeReplyConfig } from "./reply.test-harness.js";
 
 const runAgentMock = vi.fn();
@@ -40,7 +40,7 @@ describe("getReplyFromConfig typing (heartbeat)", () => {
       await getReplyFromConfig(
         { Body: "hi", From: "+1000", To: "+2000", Provider: "whatsapp" },
         { onReplyStart, isHeartbeat },
-        makeReplyConfig(home) as unknown as OpenClawConfig,
+        makeReplyConfig(home) as unknown as RemoteClawConfig,
       );
     });
     return onReplyStart;

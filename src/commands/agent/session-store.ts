@@ -2,7 +2,7 @@ import { setCliSessionId } from "../../agents/cli-session.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { isCliProvider } from "../../agents/provider-utils.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import {
   setSessionRuntimeModel,
   type SessionEntry,
@@ -11,7 +11,7 @@ import {
 import type { AgentDeliveryResult } from "../../middleware/types.js";
 
 export async function updateSessionStoreAfterAgentRun(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   contextTokensOverride?: number;
   sessionId: string;
   sessionKey: string;

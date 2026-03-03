@@ -7,9 +7,9 @@ import {
 } from "../channels/telegram/allow-from.js";
 import { fetchTelegramChatId } from "../channels/telegram/api.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import {
-  OpenClawSchema,
+  RemoteClawSchema,
   CONFIG_PATH,
   migrateLegacyConfig,
   readConfigFileSnapshot,
@@ -85,11 +85,11 @@ function resolvePathTarget(root: unknown, path: Array<string | number>): unknown
   return current;
 }
 
-function stripUnknownConfigKeys(config: OpenClawConfig): {
-  config: OpenClawConfig;
+function stripUnknownConfigKeys(config: RemoteClawConfig): {
+  config: RemoteClawConfig;
   removed: string[];
 } {
-  const parsed = OpenClawSchema.safeParse(config);
+  const parsed = RemoteClawSchema.safeParse(config);
   if (parsed.success) {
     return { config, removed: [] };
   }
@@ -121,8 +121,8 @@ function stripUnknownConfigKeys(config: OpenClawConfig): {
   return { config: next, removed };
 }
 
-function noteOpencodeProviderOverrides(_cfg: OpenClawConfig) {
-  // models.providers no longer exists on OpenClawConfig; nothing to check.
+function noteOpencodeProviderOverrides(_cfg: RemoteClawConfig) {
+  // models.providers no longer exists on RemoteClawConfig; nothing to check.
 }
 
 function noteIncludeConfinementWarning(snapshot: {
@@ -165,7 +165,7 @@ function asObjectRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function collectTelegramAccountScopes(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
 ): Array<{ prefix: string; account: Record<string, unknown> }> {
   const scopes: Array<{ prefix: string; account: Record<string, unknown> }> = [];
   const telegram = asObjectRecord(cfg.channels?.telegram);
@@ -231,7 +231,9 @@ function collectTelegramAllowFromLists(
   return refs;
 }
 
-function scanTelegramAllowFromUsernameEntries(cfg: OpenClawConfig): TelegramAllowFromUsernameHit[] {
+function scanTelegramAllowFromUsernameEntries(
+  cfg: RemoteClawConfig,
+): TelegramAllowFromUsernameHit[] {
   const hits: TelegramAllowFromUsernameHit[] = [];
 
   const scanList = (pathLabel: string, list: unknown) => {
@@ -259,8 +261,8 @@ function scanTelegramAllowFromUsernameEntries(cfg: OpenClawConfig): TelegramAllo
   return hits;
 }
 
-async function maybeRepairTelegramAllowFromUsernames(cfg: OpenClawConfig): Promise<{
-  config: OpenClawConfig;
+async function maybeRepairTelegramAllowFromUsernames(cfg: RemoteClawConfig): Promise<{
+  config: RemoteClawConfig;
   changes: string[];
 }> {
   const hits = scanTelegramAllowFromUsernameEntries(cfg);
@@ -401,7 +403,7 @@ type DiscordIdListRef = {
 };
 
 function collectDiscordAccountScopes(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
 ): Array<{ prefix: string; account: Record<string, unknown> }> {
   const scopes: Array<{ prefix: string; account: Record<string, unknown> }> = [];
   const discord = asObjectRecord(cfg.channels?.discord);
@@ -481,7 +483,7 @@ function collectDiscordIdLists(
   return refs;
 }
 
-function scanDiscordNumericIdEntries(cfg: OpenClawConfig): DiscordNumericIdHit[] {
+function scanDiscordNumericIdEntries(cfg: RemoteClawConfig): DiscordNumericIdHit[] {
   const hits: DiscordNumericIdHit[] = [];
   const scanList = (pathLabel: string, list: unknown) => {
     if (!Array.isArray(list)) {
@@ -504,8 +506,8 @@ function scanDiscordNumericIdEntries(cfg: OpenClawConfig): DiscordNumericIdHit[]
   return hits;
 }
 
-function maybeRepairDiscordNumericIds(cfg: OpenClawConfig): {
-  config: OpenClawConfig;
+function maybeRepairDiscordNumericIds(cfg: RemoteClawConfig): {
+  config: RemoteClawConfig;
   changes: string[];
 } {
   const hits = scanDiscordNumericIdEntries(cfg);
@@ -585,7 +587,7 @@ function addMutableAllowlistHits(params: {
   }
 }
 
-function scanMutableAllowlistEntries(cfg: OpenClawConfig): MutableAllowlistHit[] {
+function scanMutableAllowlistEntries(cfg: RemoteClawConfig): MutableAllowlistHit[] {
   const hits: MutableAllowlistHit[] = [];
 
   for (const scope of collectProviderDangerousNameMatchingScopes(cfg, "discord")) {
@@ -828,8 +830,8 @@ function scanMutableAllowlistEntries(cfg: OpenClawConfig): MutableAllowlistHit[]
  * users (or integrations) set dmPolicy to "open" without realising that an explicit
  * allowFrom wildcard is also required.
  */
-function maybeRepairOpenPolicyAllowFrom(cfg: OpenClawConfig): {
-  config: OpenClawConfig;
+function maybeRepairOpenPolicyAllowFrom(cfg: RemoteClawConfig): {
+  config: RemoteClawConfig;
   changes: string[];
 } {
   const channels = cfg.channels;
@@ -1002,14 +1004,14 @@ function collectLegacyToolsBySenderKeyHits(
   }
 }
 
-function scanLegacyToolsBySenderKeys(cfg: OpenClawConfig): LegacyToolsBySenderKeyHit[] {
+function scanLegacyToolsBySenderKeys(cfg: RemoteClawConfig): LegacyToolsBySenderKeyHit[] {
   const hits: LegacyToolsBySenderKeyHit[] = [];
   collectLegacyToolsBySenderKeyHits(cfg, [], hits);
   return hits;
 }
 
-function maybeRepairLegacyToolsBySenderKeys(cfg: OpenClawConfig): {
-  config: OpenClawConfig;
+function maybeRepairLegacyToolsBySenderKeys(cfg: RemoteClawConfig): {
+  config: RemoteClawConfig;
   changes: string[];
 } {
   const next = structuredClone(cfg);
@@ -1134,7 +1136,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
 
   let snapshot = await readConfigFileSnapshot();
   const baseCfg = snapshot.config ?? {};
-  let cfg: OpenClawConfig = baseCfg;
+  let cfg: RemoteClawConfig = baseCfg;
   let candidate = structuredClone(baseCfg);
   let pendingChanges = false;
   let shouldWriteConfig = false;

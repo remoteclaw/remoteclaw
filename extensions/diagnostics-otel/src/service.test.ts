@@ -98,16 +98,17 @@ vi.mock("@opentelemetry/semantic-conventions", () => ({
   ATTR_SERVICE_NAME: "service.name",
 }));
 
-vi.mock("openclaw/plugin-sdk", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk")>("openclaw/plugin-sdk");
+vi.mock("remoteclaw/plugin-sdk", async () => {
+  const actual =
+    await vi.importActual<typeof import("remoteclaw/plugin-sdk")>("remoteclaw/plugin-sdk");
   return {
     ...actual,
     registerLogTransport: registerLogTransportMock,
   };
 });
 
-import type { OpenClawPluginServiceContext } from "openclaw/plugin-sdk";
-import { emitDiagnosticEvent } from "openclaw/plugin-sdk";
+import type { RemoteClawPluginServiceContext } from "remoteclaw/plugin-sdk";
+import { emitDiagnosticEvent } from "remoteclaw/plugin-sdk";
 import { createDiagnosticsOtelService } from "./service.js";
 
 const OTEL_TEST_STATE_DIR = "/tmp/openclaw-diagnostics-otel-test";
@@ -131,7 +132,7 @@ type OtelContextFlags = {
 function createOtelContext(
   endpoint: string,
   { traces = false, metrics = false, logs = false }: OtelContextFlags = {},
-): OpenClawPluginServiceContext {
+): RemoteClawPluginServiceContext {
   return {
     config: {
       diagnostics: {
@@ -151,7 +152,7 @@ function createOtelContext(
   };
 }
 
-function createTraceOnlyContext(endpoint: string): OpenClawPluginServiceContext {
+function createTraceOnlyContext(endpoint: string): RemoteClawPluginServiceContext {
   return createOtelContext(endpoint, { traces: true });
 }
 

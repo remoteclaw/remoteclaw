@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { bluebubblesMessageActions } from "./actions.js";
 import { getCachedBlueBubblesPrivateApiStatus } from "./probe.js";
@@ -47,7 +47,7 @@ describe("bluebubblesMessageActions", () => {
   const handleAction = bluebubblesMessageActions.handleAction!;
   const callHandleAction = (ctx: Omit<Parameters<typeof handleAction>[0], "channel">) =>
     handleAction({ channel: "bluebubbles", ...ctx });
-  const blueBubblesConfig = (): OpenClawConfig => ({
+  const blueBubblesConfig = (): RemoteClawConfig => ({
     channels: {
       bluebubbles: {
         serverUrl: "http://localhost:1234",
@@ -71,7 +71,7 @@ describe("bluebubblesMessageActions", () => {
 
   describe("listActions", () => {
     it("returns empty array when account is not enabled", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: { bluebubbles: { enabled: false } },
       };
       const actions = listActions({ cfg });
@@ -79,7 +79,7 @@ describe("bluebubblesMessageActions", () => {
     });
 
     it("returns empty array when account is not configured", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: { bluebubbles: { enabled: true } },
       };
       const actions = listActions({ cfg });
@@ -87,7 +87,7 @@ describe("bluebubblesMessageActions", () => {
     });
 
     it("returns react action when enabled and configured", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             enabled: true,
@@ -101,7 +101,7 @@ describe("bluebubblesMessageActions", () => {
     });
 
     it("excludes react action when reactions are gated off", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             enabled: true,
@@ -120,7 +120,7 @@ describe("bluebubblesMessageActions", () => {
 
     it("hides private-api actions when private API is disabled", () => {
       vi.mocked(getCachedBlueBubblesPrivateApiStatus).mockReturnValueOnce(false);
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             enabled: true,
@@ -200,7 +200,7 @@ describe("bluebubblesMessageActions", () => {
 
   describe("handleAction", () => {
     it("throws for unsupported actions", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -219,7 +219,7 @@ describe("bluebubblesMessageActions", () => {
     });
 
     it("throws when emoji is missing for react action", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -239,7 +239,7 @@ describe("bluebubblesMessageActions", () => {
 
     it("throws a private-api error for private-only actions when disabled", async () => {
       vi.mocked(getCachedBlueBubblesPrivateApiStatus).mockReturnValueOnce(false);
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -258,7 +258,7 @@ describe("bluebubblesMessageActions", () => {
     });
 
     it("throws when messageId is missing", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -280,7 +280,7 @@ describe("bluebubblesMessageActions", () => {
       const { resolveChatGuidForTarget } = await import("./send.js");
       vi.mocked(resolveChatGuidForTarget).mockResolvedValueOnce(null);
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -346,7 +346,7 @@ describe("bluebubblesMessageActions", () => {
       const { resolveChatGuidForTarget } = await import("./send.js");
       vi.mocked(resolveChatGuidForTarget).mockResolvedValueOnce("iMessage;-;+15559876543");
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -376,7 +376,7 @@ describe("bluebubblesMessageActions", () => {
     it("passes partIndex when provided", async () => {
       const { sendBlueBubblesReaction } = await import("./reactions.js");
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -408,7 +408,7 @@ describe("bluebubblesMessageActions", () => {
       const { resolveChatGuidForTarget } = await import("./send.js");
       vi.mocked(resolveChatGuidForTarget).mockResolvedValueOnce("iMessage;-;+15550001111");
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -446,7 +446,7 @@ describe("bluebubblesMessageActions", () => {
       const { sendBlueBubblesReaction } = await import("./reactions.js");
       vi.mocked(resolveBlueBubblesMessageId).mockReturnValueOnce("resolved-uuid");
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -480,7 +480,7 @@ describe("bluebubblesMessageActions", () => {
         throw new Error("short id expired");
       });
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -506,7 +506,7 @@ describe("bluebubblesMessageActions", () => {
     it("accepts message param for edit action", async () => {
       const { editBlueBubblesMessage } = await import("./chat.js");
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -532,7 +532,7 @@ describe("bluebubblesMessageActions", () => {
     it("accepts message/target aliases for sendWithEffect", async () => {
       const { sendMessageBlueBubbles } = await import("./send.js");
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -565,7 +565,7 @@ describe("bluebubblesMessageActions", () => {
     it("passes asVoice through sendAttachment", async () => {
       const { sendBlueBubblesAttachment } = await import("./attachments.js");
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -599,7 +599,7 @@ describe("bluebubblesMessageActions", () => {
     });
 
     it("throws when buffer is missing for setGroupIcon", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -621,7 +621,7 @@ describe("bluebubblesMessageActions", () => {
     it("sets group icon successfully with chatGuid and buffer", async () => {
       const { setGroupIconBlueBubbles } = await import("./chat.js");
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",
@@ -660,7 +660,7 @@ describe("bluebubblesMessageActions", () => {
     it("uses default filename when not provided for setGroupIcon", async () => {
       const { setGroupIconBlueBubbles } = await import("./chat.js");
 
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           bluebubbles: {
             serverUrl: "http://localhost:1234",

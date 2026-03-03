@@ -1,5 +1,5 @@
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { readConfigFileSnapshot, resolveGatewayPort, writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
 import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
@@ -38,7 +38,7 @@ import { promptRemoteGatewayConfig } from "./onboard-remote.js";
 type ConfigureSectionChoice = WizardSection | "__continue";
 
 async function runGatewayHealthCheck(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   runtime: RuntimeEnv;
   port: number;
 }): Promise<void> {
@@ -124,11 +124,11 @@ export async function runConfigureWizard(
 ) {
   try {
     printWizardHeader(runtime);
-    intro(opts.command === "update" ? "OpenClaw update wizard" : "OpenClaw configure");
+    intro(opts.command === "update" ? "RemoteClaw update wizard" : "RemoteClaw configure");
     const prompter = createClackPrompter();
 
     const snapshot = await readConfigFileSnapshot();
-    const baseConfig: OpenClawConfig = snapshot.valid ? snapshot.config : {};
+    const baseConfig: RemoteClawConfig = snapshot.valid ? snapshot.config : {};
 
     if (snapshot.exists) {
       const title = snapshot.valid ? "Existing config detected" : "Invalid config";

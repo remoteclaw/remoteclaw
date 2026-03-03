@@ -105,10 +105,10 @@ describe("preflightDiscordMessage", () => {
           mainKey: "main",
           scope: "per-sender",
         },
-      } as import("../../config/config.js").OpenClawConfig,
+      } as import("../../config/config.js").RemoteClawConfig,
       discordConfig: {
         allowBots: true,
-      } as NonNullable<import("../../config/config.js").OpenClawConfig["channels"]>["discord"],
+      } as NonNullable<import("../../config/config.js").RemoteClawConfig["channels"]>["discord"],
       accountId: "default",
       token: "token",
       runtime: {} as import("../../runtime.js").RuntimeEnv,

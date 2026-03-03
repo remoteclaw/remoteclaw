@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { withTempHome as withTempHomeHarness } from "../config/home-env.test-harness.js";
 import type {
   AgentDeliveryResult,
@@ -110,7 +110,7 @@ function createTelegramMessage(messageSid: string) {
   } as const;
 }
 
-function createReplyConfig(home: string, streamMode?: "block"): OpenClawConfig {
+function createReplyConfig(home: string, streamMode?: "block"): RemoteClawConfig {
   return {
     agents: {
       defaults: {

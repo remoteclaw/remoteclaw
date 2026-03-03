@@ -5,7 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 const TEST_GATEWAY_TOKEN = "test-gateway-token-1234567890";
 
 let cfg: Record<string, unknown> = {};
-let lastCreateOpenClawToolsContext: Record<string, unknown> | undefined;
+let lastCreateRemoteClawToolsContext: Record<string, unknown> | undefined;
 
 // Perf: keep this suite pure unit. Mock heavyweight config/session modules.
 vi.mock("../config/config.js", () => ({
@@ -82,8 +82,8 @@ vi.mock("../agents/openclaw-tools.js", () => {
       execute: async () => ({
         ok: true,
         route: {
-          agentTo: lastCreateOpenClawToolsContext?.agentTo,
-          agentThreadId: lastCreateOpenClawToolsContext?.agentThreadId,
+          agentTo: lastCreateRemoteClawToolsContext?.agentTo,
+          agentThreadId: lastCreateRemoteClawToolsContext?.agentThreadId,
         },
       }),
     },
@@ -126,8 +126,8 @@ vi.mock("../agents/openclaw-tools.js", () => {
   ];
 
   return {
-    createOpenClawTools: (ctx: Record<string, unknown>) => {
-      lastCreateOpenClawToolsContext = ctx;
+    createRemoteClawTools: (ctx: Record<string, unknown>) => {
+      lastCreateRemoteClawToolsContext = ctx;
       return tools;
     },
   };
@@ -186,7 +186,7 @@ beforeEach(() => {
   delete process.env.REMOTECLAW_GATEWAY_PASSWORD;
   pluginHttpHandlers = [];
   cfg = {};
-  lastCreateOpenClawToolsContext = undefined;
+  lastCreateRemoteClawToolsContext = undefined;
 });
 
 const resolveGatewayToken = (): string => TEST_GATEWAY_TOKEN;

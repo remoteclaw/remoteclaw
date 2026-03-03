@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  probeAuthenticatedOpenClawRelay,
+  probeAuthenticatedRemoteClawRelay,
   resolveRelayAcceptedTokensForPort,
   resolveRelayAuthTokenForPort,
 } from "./extension-relay-auth.js";
@@ -71,11 +71,11 @@ describe("extension-relay-auth", () => {
         const header = req.headers["x-openclaw-relay-token"];
         seenToken = Array.isArray(header) ? header[0] : header;
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ Browser: "OpenClaw/extension-relay" }));
+        res.end(JSON.stringify({ Browser: "RemoteClaw/extension-relay" }));
       },
       async ({ port }) => {
         const token = resolveRelayAuthTokenForPort(port);
-        const ok = await probeAuthenticatedOpenClawRelay({
+        const ok = await probeAuthenticatedRemoteClawRelay({
           baseUrl: `http://127.0.0.1:${port}`,
           relayAuthHeader: "x-openclaw-relay-token",
           relayAuthToken: token,
@@ -98,7 +98,7 @@ describe("extension-relay-auth", () => {
         res.end("Unauthorized");
       },
       async ({ port }) => {
-        const ok = await probeAuthenticatedOpenClawRelay({
+        const ok = await probeAuthenticatedRemoteClawRelay({
           baseUrl: `http://127.0.0.1:${port}`,
           relayAuthHeader: "x-openclaw-relay-token",
           relayAuthToken: "irrelevant",
@@ -120,7 +120,7 @@ describe("extension-relay-auth", () => {
         res.end(JSON.stringify({ Browser: "FakeRelay" }));
       },
       async ({ port }) => {
-        const ok = await probeAuthenticatedOpenClawRelay({
+        const ok = await probeAuthenticatedRemoteClawRelay({
           baseUrl: `http://127.0.0.1:${port}`,
           relayAuthHeader: "x-openclaw-relay-token",
           relayAuthToken: "irrelevant",

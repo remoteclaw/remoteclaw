@@ -5,7 +5,7 @@ import { vi } from "vitest";
 import { telegramPlugin } from "../../extensions/telegram/src/channel.js";
 import { setTelegramRuntime } from "../../extensions/telegram/src/runtime.js";
 import * as replyModule from "../auto-reply/reply.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveMainSessionKey } from "../config/sessions.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createPluginRuntime } from "../plugins/runtime/index.js";
@@ -38,7 +38,7 @@ export async function seedSessionStore(
 
 export async function seedMainSessionStore(
   storePath: string,
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   session: HeartbeatSessionSeed,
 ): Promise<string> {
   const sessionKey = resolveMainSessionKey(cfg);

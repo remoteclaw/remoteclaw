@@ -3,8 +3,8 @@ import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveApiKeyForProvider } from "../agents/provider-auth.js";
 import type { MsgContext } from "../auto-reply/templating.js";
-import type { OpenClawConfig } from "../config/config.js";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import type { RemoteClawConfig } from "../config/config.js";
+import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-openclaw-dir.js";
 import { fetchRemoteMedia } from "../media/fetch.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { clearMediaUnderstandingBinaryCacheForTests } from "./runner.js";
@@ -52,7 +52,7 @@ async function createTempMediaDir() {
   return dir;
 }
 
-function createGroqAudioConfig(): OpenClawConfig {
+function createGroqAudioConfig(): RemoteClawConfig {
   return {
     tools: {
       media: {
@@ -88,7 +88,7 @@ function expectTranscriptApplied(params: {
   expect(params.ctx.BodyForCommands).toBe(params.commandBody);
 }
 
-function createMediaDisabledConfig(): OpenClawConfig {
+function createMediaDisabledConfig(): RemoteClawConfig {
   return {
     tools: {
       media: {
@@ -100,7 +100,7 @@ function createMediaDisabledConfig(): OpenClawConfig {
   };
 }
 
-function createMediaDisabledConfigWithAllowedMimes(allowedMimes: string[]): OpenClawConfig {
+function createMediaDisabledConfigWithAllowedMimes(allowedMimes: string[]): RemoteClawConfig {
   return {
     ...createMediaDisabledConfig(),
     gateway: {
@@ -167,14 +167,14 @@ async function createAudioCtx(params?: {
 
 async function setupAudioAutoDetectCase(stdout: string): Promise<{
   ctx: MsgContext;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
 }> {
   const ctx = await createAudioCtx({
     fileName: "sample.wav",
     mediaType: "audio/wav",
     content: "audio",
   });
-  const cfg: OpenClawConfig = { tools: { media: { audio: {} } } };
+  const cfg: RemoteClawConfig = { tools: { media: { audio: {} } } };
   const execModule = await import("../process/exec.js");
   vi.mocked(execModule.runExec).mockResolvedValueOnce({
     stdout,
@@ -187,7 +187,7 @@ async function applyWithDisabledMedia(params: {
   body: string;
   mediaPath: string;
   mediaType?: string;
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
 }) {
   const ctx: MsgContext = {
     Body: params.body,
@@ -216,7 +216,7 @@ describe("applyMediaUnderstanding", () => {
   const mockedFetchRemoteMedia = vi.mocked(fetchRemoteMedia);
 
   beforeAll(async () => {
-    const baseDir = resolvePreferredOpenClawTmpDir();
+    const baseDir = resolvePreferredRemoteClawTmpDir();
     await fs.mkdir(baseDir, { recursive: true });
     suiteTempMediaRootDir = await fs.mkdtemp(path.join(baseDir, TEMP_MEDIA_PREFIX));
     ({ applyMediaUnderstanding } = await import("./apply.js"));
@@ -303,7 +303,7 @@ describe("applyMediaUnderstanding", () => {
       MediaType: "audio/ogg",
       ChatType: "direct",
     };
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: {
         media: {
           audio: {
@@ -342,7 +342,7 @@ describe("applyMediaUnderstanding", () => {
       content: Buffer.from([0, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
     });
     const transcribeAudio = vi.fn(async () => ({ text: "should-not-run" }));
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: {
         media: {
           audio: {
@@ -367,7 +367,7 @@ describe("applyMediaUnderstanding", () => {
 
   it("falls back to CLI model when provider fails", async () => {
     const ctx = await createAudioCtx();
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: {
         media: {
           audio: {
@@ -479,7 +479,7 @@ describe("applyMediaUnderstanding", () => {
       mediaType: "audio/wav",
       content: "audio",
     });
-    const cfg: OpenClawConfig = { tools: { media: { audio: {} } } };
+    const cfg: RemoteClawConfig = { tools: { media: { audio: {} } } };
 
     const execModule = await import("../process/exec.js");
     const mockedRunExec = vi.mocked(execModule.runExec);
@@ -513,7 +513,7 @@ describe("applyMediaUnderstanding", () => {
       MediaPath: imagePath,
       MediaType: "image/jpeg",
     };
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: {
         media: {
           image: {
@@ -560,7 +560,7 @@ describe("applyMediaUnderstanding", () => {
       MediaPath: imagePath,
       MediaType: "image/jpeg",
     };
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: {
         media: {
           models: [
@@ -601,7 +601,7 @@ describe("applyMediaUnderstanding", () => {
       MediaPath: audioPath,
       MediaType: "audio/ogg",
     };
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: {
         media: {
           audio: {
@@ -640,7 +640,7 @@ describe("applyMediaUnderstanding", () => {
       MediaPaths: [audioPathA, audioPathB],
       MediaTypes: ["audio/ogg", "audio/ogg"],
     };
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: {
         media: {
           audio: {
@@ -684,7 +684,7 @@ describe("applyMediaUnderstanding", () => {
       MediaPaths: [imagePath, audioPath, videoPath],
       MediaTypes: ["image/jpeg", "audio/ogg", "video/mp4"],
     };
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       tools: {
         media: {
           image: { enabled: true, models: [{ provider: "openai", model: "gpt-5.2" }] },

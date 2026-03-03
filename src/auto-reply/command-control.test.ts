@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
 import { resolveCommandAuthorization } from "./command-auth.js";
@@ -35,7 +35,7 @@ describe("resolveCommandAuthorization", () => {
   }) {
     const cfg = {
       channels: { whatsapp: { allowFrom: params.allowFrom } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const ctx = {
       Provider: "whatsapp",
       Surface: "whatsapp",
@@ -107,7 +107,7 @@ describe("resolveCommandAuthorization", () => {
     const cfg = {
       commands: { ownerAllowFrom: ["whatsapp:+15551234567"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const ownerCtx = {
       Provider: "whatsapp",
@@ -153,7 +153,7 @@ describe("resolveCommandAuthorization", () => {
     );
     const cfg = {
       channels: { discord: {} },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const ctx = {
       Provider: "discord",
@@ -176,7 +176,7 @@ describe("resolveCommandAuthorization", () => {
   it("does not infer a provider from channel allowlists for webchat command contexts", () => {
     const cfg = {
       channels: { whatsapp: { allowFrom: ["+15551234567"] } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const ctx = {
       Provider: "webchat",
@@ -203,7 +203,7 @@ describe("resolveCommandAuthorization", () => {
         },
       },
       channels: { whatsapp: { allowFrom: ["+different"] } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     function makeWhatsAppContext(senderId: string): MsgContext {
       return {
@@ -260,7 +260,7 @@ describe("resolveCommandAuthorization", () => {
           },
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
 
       // User in global list but not in whatsapp-specific list
       const globalUserCtx = {
@@ -299,7 +299,7 @@ describe("resolveCommandAuthorization", () => {
     it("falls back to channel allowFrom when commands.allowFrom not set", () => {
       const cfg = {
         channels: { whatsapp: { allowFrom: ["+15551234567"] } },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
 
       const authorizedCtx = {
         Provider: "whatsapp",
@@ -325,7 +325,7 @@ describe("resolveCommandAuthorization", () => {
           },
         },
         channels: { whatsapp: { allowFrom: ["+specific"] } },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
 
       const anyUserCtx = {
         Provider: "whatsapp",
@@ -350,7 +350,7 @@ describe("resolveCommandAuthorization", () => {
             discord: ["channel:123456789012345678"],
           },
         },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
 
       const auth = resolveCommandAuthorization({
         ctx: {
@@ -374,7 +374,7 @@ describe("resolveCommandAuthorization", () => {
             discord: ["123456789012345678"],
           },
         },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
 
       const auth = resolveCommandAuthorization({
         ctx: {
@@ -399,7 +399,7 @@ describe("resolveCommandAuthorization", () => {
             "*": ["120363411111111111@g.us"],
           },
         },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
 
       const auth = resolveCommandAuthorization({
         ctx: {
@@ -423,7 +423,7 @@ describe("resolveCommandAuthorization", () => {
             discord: ["user:123", "<@!456>", "pk:member-1"],
           },
         },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
 
       const userAuth = resolveCommandAuthorization({
         ctx: makeDiscordContext("123"),

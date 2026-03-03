@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { createDiscordActionGate } from "../../discord/accounts.js";
 import type { AgentToolResult } from "../pi-types.js";
 import { readStringParam } from "./common.js";
@@ -57,7 +57,7 @@ const presenceActions = new Set(["setPresence"]);
 
 export async function handleDiscordAction(
   params: Record<string, unknown>,
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   options?: {
     mediaLocalRoots?: readonly string[];
   },

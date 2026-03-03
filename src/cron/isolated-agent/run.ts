@@ -17,7 +17,7 @@ import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
 import { normalizeVerboseLevel } from "../../auto-reply/thinking.js";
 import type { CliDeps } from "../../cli/outbound-send-deps.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveGatewayPort } from "../../config/paths.js";
 import { setSessionRuntimeModel, updateSessionStore } from "../../config/sessions.js";
 import type { AgentDefaultsConfig } from "../../config/types.js";
@@ -76,13 +76,13 @@ function createSessionMapAdapter(params: { getSessionId: () => string | undefine
 }
 
 /** Resolve gateway URL from config for local gateway. */
-function resolveGatewayUrlFromConfig(cfg: OpenClawConfig): string {
+function resolveGatewayUrlFromConfig(cfg: RemoteClawConfig): string {
   const port = resolveGatewayPort(cfg);
   return `ws://127.0.0.1:${port}`;
 }
 
 /** Resolve gateway auth token from config. */
-function resolveGatewayTokenFromConfig(cfg: OpenClawConfig): string {
+function resolveGatewayTokenFromConfig(cfg: RemoteClawConfig): string {
   return resolveGatewayCredentialsFromConfig({ cfg, env: process.env }).token ?? "";
 }
 
@@ -130,7 +130,7 @@ export type RunCronAgentTurnResult = {
   CronRunTelemetry;
 
 export async function runCronIsolatedAgentTurn(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   deps: CliDeps;
   job: CronJob;
   message: string;
@@ -179,7 +179,7 @@ export async function runCronIsolatedAgentTurn(params: {
   } else if (overrideModel) {
     agentCfg.model = { ...existingModel, ...overrideModel };
   }
-  const cfgWithAgentDefaults: OpenClawConfig = {
+  const cfgWithAgentDefaults: RemoteClawConfig = {
     ...params.cfg,
     agents: Object.assign({}, params.cfg.agents, { defaults: agentCfg }),
   };

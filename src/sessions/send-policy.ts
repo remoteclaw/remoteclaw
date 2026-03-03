@@ -1,5 +1,5 @@
 import { normalizeChatType } from "../channels/chat-type.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionChatType, SessionEntry } from "../config/sessions.js";
 import { deriveSessionChatType } from "./session-key-utils.js";
 
@@ -51,7 +51,7 @@ function deriveChatTypeFromKey(key?: string): SessionChatType | undefined {
 }
 
 export function resolveSendPolicy(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   entry?: SessionEntry;
   sessionKey?: string;
   channel?: string;

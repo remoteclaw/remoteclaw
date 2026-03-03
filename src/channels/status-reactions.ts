@@ -70,13 +70,7 @@ export const DEFAULT_TIMING: Required<StatusReactionTiming> = {
 
 export const CODING_TOOL_TOKENS: string[] = ["exec", "write", "edit", "session_status", "bash"];
 
-export const WEB_TOOL_TOKENS: string[] = [
-  "web_search",
-  "web-search",
-  "web_fetch",
-  "web-fetch",
-  "browser",
-];
+export const WEB_TOOL_TOKENS: string[] = ["web_fetch", "web-fetch", "browser"];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Functions

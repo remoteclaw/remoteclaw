@@ -156,7 +156,9 @@ describe("update-startup", () => {
   }
 
   async function runStableUpdateCheck(params: {
-    onUpdateAvailableChange?: (updateAvailable: unknown) => void;
+    onUpdateAvailableChange?: Parameters<
+      typeof runGatewayUpdateCheck
+    >[0]["onUpdateAvailableChange"];
   }) {
     await runGatewayUpdateCheck({
       cfg: { update: { channel: "stable" } },

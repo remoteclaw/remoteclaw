@@ -24,7 +24,6 @@ export const DEFAULT_GATEWAY_HTTP_TOOL_DENY = [
  * ACP is an automation surface; we never want "silent yes" for mutating/execution tools.
  */
 export const DANGEROUS_ACP_TOOL_NAMES = [
-  "exec",
   "write",
   "sessions_spawn",
   "sessions_send",

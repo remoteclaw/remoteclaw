@@ -38,12 +38,10 @@ function createOwnerPolicyTools() {
 }
 
 describe("tool-policy", () => {
-  it("expands groups and normalizes aliases", () => {
-    const expanded = expandToolGroups(["group:runtime", "BASH", "group:fs"]);
+  it("expands groups and normalizes names", () => {
+    const expanded = expandToolGroups(["BASH", "group:fs"]);
     const set = new Set(expanded);
-    expect(set.has("exec")).toBe(true);
-    expect(set.has("bash")).toBe(false);
-    expect(set.has("read")).toBe(true);
+    expect(set.has("bash")).toBe(true);
     expect(set.has("write")).toBe(true);
     expect(set.has("edit")).toBe(true);
   });
@@ -65,8 +63,8 @@ describe("tool-policy", () => {
     expect(group).toContain("tts");
   });
 
-  it("normalizes tool names and aliases", () => {
-    expect(normalizeToolName(" BASH ")).toBe("exec");
+  it("normalizes tool names", () => {
+    expect(normalizeToolName(" BASH ")).toBe("bash");
     expect(normalizeToolName("READ")).toBe("read");
   });
 

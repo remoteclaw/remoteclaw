@@ -26,7 +26,6 @@ type CoreToolDefinition = {
 
 const CORE_TOOL_SECTION_ORDER: Array<{ id: string; label: string }> = [
   { id: "fs", label: "Files" },
-  { id: "runtime", label: "Runtime" },
   { id: "web", label: "Web" },
   { id: "sessions", label: "Sessions" },
   { id: "ui", label: "UI" },
@@ -50,13 +49,6 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     label: "edit",
     description: "Make precise edits",
     sectionId: "fs",
-    profiles: ["coding"],
-  },
-  {
-    id: "exec",
-    label: "exec",
-    description: "Run shell commands",
-    sectionId: "runtime",
     profiles: ["coding"],
   },
   {

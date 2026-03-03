@@ -2082,7 +2082,7 @@ describe("security audit", () => {
     );
   });
 
-  it("flags open groupPolicy when runtime/filesystem tools are exposed without guards", async () => {
+  it("flags open groupPolicy when filesystem tools are exposed without guards", async () => {
     const cfg: OpenClawConfig = {
       channels: { whatsapp: { groupPolicy: "open" } },
       tools: { elevated: { enabled: false } },
@@ -2094,7 +2094,7 @@ describe("security audit", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "security.exposure.open_groups_with_runtime_or_fs",
-          severity: "critical",
+          severity: "warn",
         }),
       ]),
     );

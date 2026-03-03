@@ -144,7 +144,7 @@ export function inferToolKind(name?: string): ToolKind {
   if (normalized.includes("search") || normalized.includes("find")) {
     return "search";
   }
-  if (normalized.includes("exec") || normalized.includes("run") || normalized.includes("bash")) {
+  if (normalized.includes("run") || normalized.includes("bash")) {
     return "execute";
   }
   if (normalized.includes("fetch") || normalized.includes("http")) {

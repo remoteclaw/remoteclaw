@@ -75,14 +75,6 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     includeInOpenClawGroup: true,
   },
   {
-    id: "web_fetch",
-    label: "web_fetch",
-    description: "Fetch web content",
-    sectionId: "web",
-    profiles: [],
-    includeInOpenClawGroup: true,
-  },
-  {
     id: "sessions_list",
     label: "sessions_list",
     description: "List sessions",

@@ -9,7 +9,6 @@ import {
   resolveDetailFromKeys,
   resolveExecDetail,
   resolveReadDetail,
-  resolveWebFetchDetail,
   resolveWebSearchDetail,
   resolveWriteDetail,
   type ToolDisplaySpec as ToolDisplaySpecBase,
@@ -75,12 +74,7 @@ export function resolveToolDisplay(params: {
       : undefined;
   const action = typeof actionRaw === "string" ? actionRaw.trim() : undefined;
   const actionSpec = resolveActionSpec(spec, action);
-  const fallbackVerb =
-    key === "web_search"
-      ? "search"
-      : key === "web_fetch"
-        ? "fetch"
-        : key.replace(/_/g, " ").replace(/\./g, " ");
+  const fallbackVerb = key === "web_search" ? "search" : key.replace(/_/g, " ").replace(/\./g, " ");
   const verb = normalizeVerb(actionSpec?.label ?? action ?? fallbackVerb);
 
   let detail: string | undefined;
@@ -96,10 +90,6 @@ export function resolveToolDisplay(params: {
 
   if (!detail && key === "web_search") {
     detail = resolveWebSearchDetail(params.args);
-  }
-
-  if (!detail && key === "web_fetch") {
-    detail = resolveWebFetchDetail(params.args);
   }
 
   const detailKeys = actionSpec?.detailKeys ?? spec?.detailKeys ?? FALLBACK.detailKeys ?? [];

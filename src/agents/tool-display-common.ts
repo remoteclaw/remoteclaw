@@ -239,33 +239,6 @@ export function resolveWebSearchDetail(args: unknown): string | undefined {
   return count !== undefined ? `for "${query}" (top ${count})` : `for "${query}"`;
 }
 
-export function resolveWebFetchDetail(args: unknown): string | undefined {
-  const record = asRecord(args);
-  if (!record) {
-    return undefined;
-  }
-
-  const url = typeof record.url === "string" ? record.url.trim() : undefined;
-  if (!url) {
-    return undefined;
-  }
-
-  const mode = typeof record.extractMode === "string" ? record.extractMode.trim() : undefined;
-  const maxChars =
-    typeof record.maxChars === "number" && Number.isFinite(record.maxChars) && record.maxChars > 0
-      ? Math.floor(record.maxChars)
-      : undefined;
-
-  const suffix = [
-    mode ? `mode ${mode}` : undefined,
-    maxChars !== undefined ? `max ${maxChars} chars` : undefined,
-  ]
-    .filter((value): value is string => Boolean(value))
-    .join(", ");
-
-  return suffix ? `from ${url} (${suffix})` : `from ${url}`;
-}
-
 function stripOuterQuotes(value: string | undefined): string | undefined {
   if (!value) {
     return value;

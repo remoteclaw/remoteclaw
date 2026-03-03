@@ -77,13 +77,7 @@ export const CODING_TOOL_TOKENS: string[] = [
   "bash",
 ];
 
-export const WEB_TOOL_TOKENS: string[] = [
-  "web_search",
-  "web-search",
-  "web_fetch",
-  "web-fetch",
-  "browser",
-];
+export const WEB_TOOL_TOKENS: string[] = ["web_search", "web-search", "browser"];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Functions

@@ -880,7 +880,7 @@ async function whenReady(fn) {
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type !== 'relayCheck') return false
   const { url, token } = msg
-  const headers = token ? { 'x-openclaw-relay-token': token } : {}
+  const headers = token ? { 'x-remoteclaw-relay-token': token } : {}
   fetch(url, { method: 'GET', headers, signal: AbortSignal.timeout(2000) })
     .then(async (res) => {
       const contentType = String(res.headers.get('content-type') || '')

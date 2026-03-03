@@ -169,7 +169,7 @@ describe("cdp.helpers", () => {
 
   it("does not add relay header for unknown loopback ports", () => {
     const headers = getHeadersWithAuth("http://127.0.0.1:19444/json/version");
-    expect(headers["x-openclaw-relay-token"]).toBeUndefined();
+    expect(headers["x-remoteclaw-relay-token"]).toBeUndefined();
   });
 
   it("adds relay header for known relay ports", async () => {
@@ -180,8 +180,8 @@ describe("cdp.helpers", () => {
     try {
       await ensureChromeExtensionRelayServer({ cdpUrl });
       const headers = getHeadersWithAuth(`${cdpUrl}/json/version`);
-      expect(headers["x-openclaw-relay-token"]).toBeTruthy();
-      expect(headers["x-openclaw-relay-token"]).not.toBe("test-gateway-token");
+      expect(headers["x-remoteclaw-relay-token"]).toBeTruthy();
+      expect(headers["x-remoteclaw-relay-token"]).not.toBe("test-gateway-token");
     } finally {
       await stopChromeExtensionRelayServer({ cdpUrl }).catch(() => {});
       if (prev === undefined) {

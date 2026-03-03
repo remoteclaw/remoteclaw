@@ -14,7 +14,7 @@ Quick start is now part of [Getting Started](/start/getting-started).
 
 <Columns>
   <Card title="Getting Started" href="/start/getting-started">
-    Install OpenClaw and run your first chat in minutes.
+    Install RemoteClaw and run your first chat in minutes.
   </Card>
   <Card title="Setup" href="/start/setup">
     Full setup reference and advanced options.

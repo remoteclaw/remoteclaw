@@ -1,6 +1,6 @@
 ---
 title: CI Pipeline
-description: How the OpenClaw CI pipeline works
+description: How the RemoteClaw CI pipeline works
 summary: "CI job graph, scope gates, and local command equivalents"
 read_when:
   - You need to understand why a CI job did or did not run

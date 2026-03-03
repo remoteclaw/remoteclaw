@@ -30,7 +30,7 @@ Prefer localhost, Tailscale Serve, or an SSH tunnel.
 ## Fast path (recommended)
 
 - After onboarding, the CLI auto-opens the dashboard and prints a clean (non-tokenized) link.
-- Re-open anytime: `openclaw dashboard` (copies link, opens browser if possible, shows SSH hint if headless).
+- Re-open anytime: `remoteclaw dashboard` (copies link, opens browser if possible, shows SSH hint if headless).
 - If the UI prompts for auth, paste the token from `gateway.auth.token` (or `REMOTECLAW_GATEWAY_TOKEN`) into Control UI settings.
 
 ## Token basics (local vs remote)
@@ -41,6 +41,6 @@ Prefer localhost, Tailscale Serve, or an SSH tunnel.
 
 ## If you see “unauthorized” / 1008
 
-- Ensure the gateway is reachable (local: `openclaw status`; remote: SSH tunnel `ssh -N -L 18789:127.0.0.1:18789 user@host` then open `http://127.0.0.1:18789/`).
-- Retrieve the token from the gateway host: `openclaw config get gateway.auth.token` (or generate one: `openclaw doctor --generate-gateway-token`).
+- Ensure the gateway is reachable (local: `remoteclaw status`; remote: SSH tunnel `ssh -N -L 18789:127.0.0.1:18789 user@host` then open `http://127.0.0.1:18789/`).
+- Retrieve the token from the gateway host: `remoteclaw config get gateway.auth.token` (or generate one: `remoteclaw doctor --generate-gateway-token`).
 - In the dashboard settings, paste the token into the auth field, then connect.

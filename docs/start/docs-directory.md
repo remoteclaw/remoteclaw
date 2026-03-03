@@ -1,5 +1,5 @@
 ---
-summary: "Curated links to the most used OpenClaw docs."
+summary: "Curated links to the most used RemoteClaw docs."
 read_when:
   - You want quick access to key docs pages
 title: "Docs directory"
@@ -21,7 +21,7 @@ For a complete map of the docs, see [Docs hubs](/start/hubs).
 - [Updating and rollback](/install/updating)
 - [Pairing (DM and nodes)](/channels/pairing)
 - [Nix mode](/install/nix)
-- [OpenClaw assistant setup](/start/openclaw)
+- [RemoteClaw assistant setup](/start/remoteclaw)
 - [Plugins](/tools/plugin)
 - [Workspace templates](/reference/templates/AGENTS)
 - [RPC adapters](/reference/rpc)

@@ -3,7 +3,7 @@ summary: "Production plan for reliable interactive process supervision (PTY + no
 read_when:
   - Working on exec/process lifecycle ownership and cleanup
   - Debugging PTY and non-PTY supervision behavior
-owner: "openclaw"
+owner: "remoteclaw"
 status: "in-progress"
 last_updated: "2026-02-15"
 title: "PTY and Process Supervision Plan"

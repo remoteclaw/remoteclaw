@@ -3,7 +3,7 @@ summary: "Plan: isolate browser act:evaluate from Playwright queue using CDP, wi
 read_when:
   - Working on browser `act:evaluate` timeout, abort, or queue blocking issues
   - Planning CDP based isolation for evaluate execution
-owner: "openclaw"
+owner: "remoteclaw"
 status: "draft"
 last_updated: "2026-02-10"
 title: "Browser Evaluate CDP Refactor"

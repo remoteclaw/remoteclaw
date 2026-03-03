@@ -1,24 +1,24 @@
 ---
-summary: "CLI reference for `openclaw completion` (generate/install shell completion scripts)"
+summary: "CLI reference for `remoteclaw completion` (generate/install shell completion scripts)"
 read_when:
   - You want shell completions for zsh/bash/fish/PowerShell
-  - You need to cache completion scripts under OpenClaw state
+  - You need to cache completion scripts under RemoteClaw state
 title: "completion"
 ---
 
-# `openclaw completion`
+# `remoteclaw completion`
 
 Generate shell completion scripts and optionally install them into your shell profile.
 
 ## Usage
 
 ```bash
-openclaw completion
-openclaw completion --shell zsh
-openclaw completion --install
-openclaw completion --shell fish --install
-openclaw completion --write-state
-openclaw completion --shell bash --write-state
+remoteclaw completion
+remoteclaw completion --shell zsh
+remoteclaw completion --install
+remoteclaw completion --shell fish --install
+remoteclaw completion --write-state
+remoteclaw completion --shell bash --write-state
 ```
 
 ## Options
@@ -30,6 +30,6 @@ openclaw completion --shell bash --write-state
 
 ## Notes
 
-- `--install` writes a small "OpenClaw Completion" block into your shell profile and points it at the cached script.
+- `--install` writes a small "RemoteClaw Completion" block into your shell profile and points it at the cached script.
 - Without `--install` or `--write-state`, the command prints the script to stdout.
 - Completion generation eagerly loads command trees so nested subcommands are included.

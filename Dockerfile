@@ -61,5 +61,5 @@ USER node
 #
 # For container platforms requiring external health checks:
 #   1. Set REMOTECLAW_GATEWAY_TOKEN or REMOTECLAW_GATEWAY_PASSWORD env var
-#   2. Override CMD: ["node","openclaw.mjs","gateway","--allow-unconfigured","--bind","lan"]
-CMD ["node", "openclaw.mjs", "gateway", "--allow-unconfigured"]
+#   2. Override CMD: ["node","remoteclaw.mjs","gateway","--allow-unconfigured","--bind","lan"]
+CMD ["node", "remoteclaw.mjs", "gateway", "--allow-unconfigured"]

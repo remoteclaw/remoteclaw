@@ -93,7 +93,7 @@ LOGINCTL
 	  else
 	    git_entry="/app/dist/index.js"
 	  fi
-	  git_cli="/app/openclaw.mjs"
+	  git_cli="/app/remoteclaw.mjs"
 
   assert_entrypoint() {
     local unit_path="$1"

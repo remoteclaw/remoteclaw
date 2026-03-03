@@ -161,7 +161,7 @@ openclaw health
 
 Notes:
 
-- `pnpm build` matters when you run the packaged `openclaw` binary ([`openclaw.mjs`](https://github.com/openclaw/openclaw/blob/main/openclaw.mjs)) or use Node to run `dist/`.
+- `pnpm build` matters when you run the packaged `remoteclaw` binary ([`remoteclaw.mjs`](https://github.com/remoteclaw/remoteclaw/blob/main/remoteclaw.mjs)) or use Node to run `dist/`.
 - If you run from a repo checkout without a global install, use `pnpm openclaw ...` for CLI commands.
 - If you run directly from TypeScript (`pnpm openclaw ...`), a rebuild is usually unnecessary, but **config migrations still apply** → run doctor.
 - Switching between global and git installs is easy: install the other flavor, then run `openclaw doctor` so the gateway service entrypoint is rewritten to the current install.

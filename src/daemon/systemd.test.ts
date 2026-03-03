@@ -65,12 +65,12 @@ describe("resolveSystemdUserUnitPath", () => {
     {
       name: "uses default service name when REMOTECLAW_PROFILE is unset",
       env: { HOME: "/home/test" },
-      expected: "/home/test/.config/systemd/user/openclaw-gateway.service",
+      expected: "/home/test/.config/systemd/user/remoteclaw-gateway.service",
     },
     {
       name: "uses profile-specific service name when REMOTECLAW_PROFILE is set to a custom value",
       env: { HOME: "/home/test", REMOTECLAW_PROFILE: "jbphoenix" },
-      expected: "/home/test/.config/systemd/user/openclaw-gateway-jbphoenix.service",
+      expected: "/home/test/.config/systemd/user/remoteclaw-gateway-jbphoenix.service",
     },
     {
       name: "prefers REMOTECLAW_SYSTEMD_UNIT over REMOTECLAW_PROFILE",
@@ -158,7 +158,7 @@ describe("systemd service control", () => {
     execFileMock
       .mockImplementationOnce((_cmd, _args, _opts, cb) => cb(null, "", ""))
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
-        expect(args).toEqual(["--user", "stop", "openclaw-gateway.service"]);
+        expect(args).toEqual(["--user", "stop", "remoteclaw-gateway.service"]);
         cb(null, "", "");
       });
     const write = vi.fn();
@@ -174,7 +174,7 @@ describe("systemd service control", () => {
     execFileMock
       .mockImplementationOnce((_cmd, _args, _opts, cb) => cb(null, "", ""))
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
-        expect(args).toEqual(["--user", "restart", "openclaw-gateway-work.service"]);
+        expect(args).toEqual(["--user", "restart", "remoteclaw-gateway-work.service"]);
         cb(null, "", "");
       });
     const write = vi.fn();

@@ -24,7 +24,7 @@ inside a sandbox workspace under `~/.openclaw/sandboxes`, not your host workspac
 ## Default location
 
 - Default: `~/.openclaw/workspace`
-- If `OPENCLAW_PROFILE` is set and not `"default"`, the default becomes
+- If `REMOTECLAW_PROFILE` is set and not `"default"`, the default becomes
   `~/.openclaw/workspace-<profile>`.
 - Override in `~/.openclaw/openclaw.json`:
 

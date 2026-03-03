@@ -60,7 +60,7 @@ OpenClaw ships with a built-in browser profile named `chrome` that targets the e
 Before first attach, open extension Options and set:
 
 - `Port` (default `18792`)
-- `Gateway token` (must match `gateway.auth.token` / `OPENCLAW_GATEWAY_TOKEN`)
+- `Gateway token` (must match `gateway.auth.token` / `REMOTECLAW_GATEWAY_TOKEN`)
 
 Use it:
 

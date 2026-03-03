@@ -74,7 +74,7 @@ enum GatewayEnvironment {
     private static let supportedBindModes: Set<String> = ["loopback", "tailnet", "lan", "auto"]
 
     static func gatewayPort() -> Int {
-        if let raw = ProcessInfo.processInfo.environment["OPENCLAW_GATEWAY_PORT"] {
+        if let raw = ProcessInfo.processInfo.environment["REMOTECLAW_GATEWAY_PORT"] {
             let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             if let parsed = Int(trimmed), parsed > 0 { return parsed }
         }
@@ -212,7 +212,7 @@ enum GatewayEnvironment {
         if CommandResolver.connectionModeIsRemote() {
             return nil
         }
-        if let env = ProcessInfo.processInfo.environment["OPENCLAW_GATEWAY_BIND"] {
+        if let env = ProcessInfo.processInfo.environment["REMOTECLAW_GATEWAY_BIND"] {
             let trimmed = env.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
             if self.supportedBindModes.contains(trimmed) {
                 return trimmed

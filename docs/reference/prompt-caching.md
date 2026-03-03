@@ -153,18 +153,18 @@ diagnostics:
 
 Defaults:
 
-- `filePath`: `$OPENCLAW_STATE_DIR/logs/cache-trace.jsonl`
+- `filePath`: `$REMOTECLAW_STATE_DIR/logs/cache-trace.jsonl`
 - `includeMessages`: `true`
 - `includePrompt`: `true`
 - `includeSystem`: `true`
 
 ### Env toggles (one-off debugging)
 
-- `OPENCLAW_CACHE_TRACE=1` enables cache tracing.
-- `OPENCLAW_CACHE_TRACE_FILE=/path/to/cache-trace.jsonl` overrides output path.
-- `OPENCLAW_CACHE_TRACE_MESSAGES=0|1` toggles full message payload capture.
-- `OPENCLAW_CACHE_TRACE_PROMPT=0|1` toggles prompt text capture.
-- `OPENCLAW_CACHE_TRACE_SYSTEM=0|1` toggles system prompt capture.
+- `REMOTECLAW_CACHE_TRACE=1` enables cache tracing.
+- `REMOTECLAW_CACHE_TRACE_FILE=/path/to/cache-trace.jsonl` overrides output path.
+- `REMOTECLAW_CACHE_TRACE_MESSAGES=0|1` toggles full message payload capture.
+- `REMOTECLAW_CACHE_TRACE_PROMPT=0|1` toggles prompt text capture.
+- `REMOTECLAW_CACHE_TRACE_SYSTEM=0|1` toggles system prompt capture.
 
 ### What to inspect
 

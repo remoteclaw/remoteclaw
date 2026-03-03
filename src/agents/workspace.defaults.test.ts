@@ -7,9 +7,9 @@ afterEach(() => {
 });
 
 describe("DEFAULT_AGENT_WORKSPACE_DIR", () => {
-  it("uses OPENCLAW_HOME when resolving the default workspace dir", () => {
+  it("uses REMOTECLAW_HOME when resolving the default workspace dir", () => {
     const home = path.join(path.sep, "srv", "openclaw-home");
-    vi.stubEnv("OPENCLAW_HOME", home);
+    vi.stubEnv("REMOTECLAW_HOME", home);
     vi.stubEnv("HOME", path.join(path.sep, "home", "other"));
 
     expect(resolveDefaultAgentWorkspaceDir()).toBe(

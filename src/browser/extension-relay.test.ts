@@ -132,8 +132,8 @@ describe("chrome extension relay server", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeEach(() => {
-    envSnapshot = captureEnv(["OPENCLAW_GATEWAY_TOKEN"]);
-    process.env.OPENCLAW_GATEWAY_TOKEN = TEST_GATEWAY_TOKEN;
+    envSnapshot = captureEnv(["REMOTECLAW_GATEWAY_TOKEN"]);
+    process.env.REMOTECLAW_GATEWAY_TOKEN = TEST_GATEWAY_TOKEN;
   });
 
   afterEach(async () => {

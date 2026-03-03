@@ -10,7 +10,7 @@ type TempPlugin = { dir: string; file: string; id: string };
 
 const fixtureRoot = path.join(os.tmpdir(), `openclaw-plugin-${randomUUID()}`);
 let tempDirIndex = 0;
-const prevBundledDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+const prevBundledDir = process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR;
 const EMPTY_PLUGIN_SCHEMA = { type: "object", additionalProperties: false, properties: {} };
 const BUNDLED_TELEGRAM_PLUGIN_BODY = `export default { id: "telegram", register(api) {
   api.registerChannel({
@@ -72,7 +72,7 @@ function setupBundledTelegramPlugin() {
     dir: bundledDir,
     filename: "telegram.js",
   });
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+  process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 }
 
 function expectTelegramLoaded(registry: ReturnType<typeof loadOpenClawPlugins>) {
@@ -83,9 +83,9 @@ function expectTelegramLoaded(registry: ReturnType<typeof loadOpenClawPlugins>) 
 
 afterEach(() => {
   if (prevBundledDir === undefined) {
-    delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+    delete process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR;
   } else {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = prevBundledDir;
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = prevBundledDir;
   }
 });
 
@@ -106,7 +106,7 @@ describe("loadOpenClawPlugins", () => {
       dir: bundledDir,
       filename: "bundled.js",
     });
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
     const registry = loadOpenClawPlugins({
       cache: false,
@@ -199,7 +199,7 @@ describe("loadOpenClawPlugins", () => {
   });
 
   it("loads plugins from config paths", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "allowed",
       body: `export default { id: "allowed", register(api) { api.registerGatewayMethod("allowed.ping", ({ respond }) => respond(true, { ok: true })); } };`,
@@ -222,7 +222,7 @@ describe("loadOpenClawPlugins", () => {
   });
 
   it("denylist disables plugins even if allowed", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "blocked",
       body: `export default { id: "blocked", register() {} };`,
@@ -245,7 +245,7 @@ describe("loadOpenClawPlugins", () => {
   });
 
   it("fails fast on invalid plugin config", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "configurable",
       body: `export default { id: "configurable", register() {} };`,
@@ -272,7 +272,7 @@ describe("loadOpenClawPlugins", () => {
   });
 
   it("registers channel plugins", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "channel-demo",
       body: `export default { id: "channel-demo", register(api) {
@@ -313,7 +313,7 @@ describe("loadOpenClawPlugins", () => {
   });
 
   it("registers http handlers", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "http-demo",
       body: `export default { id: "http-demo", register(api) {
@@ -339,7 +339,7 @@ describe("loadOpenClawPlugins", () => {
   });
 
   it("registers http routes", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "http-route-demo",
       body: `export default { id: "http-route-demo", register(api) {
@@ -366,7 +366,7 @@ describe("loadOpenClawPlugins", () => {
   });
 
   it("respects explicit disable in config", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "config-disable",
       body: `export default { id: "config-disable", register() {} };`,
@@ -396,7 +396,7 @@ describe("loadOpenClawPlugins", () => {
       dir: bundledDir,
       filename: "shadow.js",
     });
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
     const override = writePlugin({
       id: "shadow",
@@ -422,7 +422,7 @@ describe("loadOpenClawPlugins", () => {
     expect(overridden?.origin).toBe("bundled");
   });
   it("warns when plugins.allow is empty and non-bundled plugins are discoverable", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "warn-open-allow",
       body: `export default { id: "warn-open-allow", register() {} };`,
@@ -447,9 +447,9 @@ describe("loadOpenClawPlugins", () => {
   });
 
   it("warns when loaded non-bundled plugin has no install/load-path provenance", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const stateDir = makeTempDir();
-    withEnv({ OPENCLAW_STATE_DIR: stateDir, CLAWDBOT_STATE_DIR: undefined }, () => {
+    withEnv({ REMOTECLAW_STATE_DIR: stateDir, CLAWDBOT_STATE_DIR: undefined }, () => {
       const globalDir = path.join(stateDir, "extensions", "rogue");
       fs.mkdirSync(globalDir, { recursive: true });
       writePlugin({
@@ -486,7 +486,7 @@ describe("loadOpenClawPlugins", () => {
   });
 
   it("rejects plugin entry files that escape plugin root via symlink", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const pluginDir = makeTempDir();
     const outsideDir = makeTempDir();
     const outsideEntry = path.join(outsideDir, "outside.js");

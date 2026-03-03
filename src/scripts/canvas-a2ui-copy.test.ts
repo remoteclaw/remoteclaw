@@ -22,19 +22,19 @@ describe("canvas a2ui copy", () => {
     });
   });
 
-  it("skips missing assets when OPENCLAW_A2UI_SKIP_MISSING=1", async () => {
+  it("skips missing assets when REMOTECLAW_A2UI_SKIP_MISSING=1", async () => {
     await withA2uiFixture(async (dir) => {
-      const previous = process.env.OPENCLAW_A2UI_SKIP_MISSING;
-      process.env.OPENCLAW_A2UI_SKIP_MISSING = "1";
+      const previous = process.env.REMOTECLAW_A2UI_SKIP_MISSING;
+      process.env.REMOTECLAW_A2UI_SKIP_MISSING = "1";
       try {
         await expect(
           copyA2uiAssets({ srcDir: dir, outDir: path.join(dir, "out") }),
         ).resolves.toBeUndefined();
       } finally {
         if (previous === undefined) {
-          delete process.env.OPENCLAW_A2UI_SKIP_MISSING;
+          delete process.env.REMOTECLAW_A2UI_SKIP_MISSING;
         } else {
-          process.env.OPENCLAW_A2UI_SKIP_MISSING = previous;
+          process.env.REMOTECLAW_A2UI_SKIP_MISSING = previous;
         }
       }
     });

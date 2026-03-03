@@ -25,7 +25,7 @@ describe("installScheduledTask", () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-schtasks-install-"));
     const env = {
       USERPROFILE: tmpDir,
-      OPENCLAW_PROFILE: "default",
+      REMOTECLAW_PROFILE: "default",
     };
     try {
       await run(tmpDir, env);

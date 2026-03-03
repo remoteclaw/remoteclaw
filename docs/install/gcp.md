@@ -215,13 +215,13 @@ mkdir -p ~/.openclaw/workspace
 Create `.env` in the repository root.
 
 ```bash
-OPENCLAW_IMAGE=openclaw:latest
-OPENCLAW_GATEWAY_TOKEN=change-me-now
-OPENCLAW_GATEWAY_BIND=lan
-OPENCLAW_GATEWAY_PORT=18789
+REMOTECLAW_IMAGE=openclaw:latest
+REMOTECLAW_GATEWAY_TOKEN=change-me-now
+REMOTECLAW_GATEWAY_BIND=lan
+REMOTECLAW_GATEWAY_PORT=18789
 
-OPENCLAW_CONFIG_DIR=/home/$USER/.openclaw
-OPENCLAW_WORKSPACE_DIR=/home/$USER/.openclaw/workspace
+REMOTECLAW_CONFIG_DIR=/home/$USER/.openclaw
+REMOTECLAW_WORKSPACE_DIR=/home/$USER/.openclaw/workspace
 
 GOG_KEYRING_PASSWORD=change-me-now
 XDG_CONFIG_HOME=/home/node/.openclaw
@@ -244,7 +244,7 @@ Create or update `docker-compose.yml`.
 ```yaml
 services:
   openclaw-gateway:
-    image: ${OPENCLAW_IMAGE}
+    image: ${REMOTECLAW_IMAGE}
     build: .
     restart: unless-stopped
     env_file:
@@ -253,28 +253,28 @@ services:
       - HOME=/home/node
       - NODE_ENV=production
       - TERM=xterm-256color
-      - OPENCLAW_GATEWAY_BIND=${OPENCLAW_GATEWAY_BIND}
-      - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT}
-      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - REMOTECLAW_GATEWAY_BIND=${REMOTECLAW_GATEWAY_BIND}
+      - REMOTECLAW_GATEWAY_PORT=${REMOTECLAW_GATEWAY_PORT}
+      - REMOTECLAW_GATEWAY_TOKEN=${REMOTECLAW_GATEWAY_TOKEN}
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
       - XDG_CONFIG_HOME=${XDG_CONFIG_HOME}
       - PATH=/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     volumes:
-      - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
-      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      - ${REMOTECLAW_CONFIG_DIR}:/home/node/.openclaw
+      - ${REMOTECLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
     ports:
       # Recommended: keep the Gateway loopback-only on the VM; access via SSH tunnel.
       # To expose it publicly, remove the `127.0.0.1:` prefix and firewall accordingly.
-      - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:18789"
+      - "127.0.0.1:${REMOTECLAW_GATEWAY_PORT}:18789"
     command:
       [
         "node",
         "dist/index.js",
         "gateway",
         "--bind",
-        "${OPENCLAW_GATEWAY_BIND}",
+        "${REMOTECLAW_GATEWAY_BIND}",
         "--port",
-        "${OPENCLAW_GATEWAY_PORT}",
+        "${REMOTECLAW_GATEWAY_PORT}",
       ]
 ```
 

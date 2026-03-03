@@ -14,7 +14,7 @@ import {
 
 describe("session cost usage", () => {
   const withStateDir = async <T>(stateDir: string, fn: () => Promise<T>): Promise<T> =>
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, fn);
+    await withEnvAsync({ REMOTECLAW_STATE_DIR: stateDir }, fn);
 
   it("aggregates daily totals with log cost and pricing fallback", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cost-"));

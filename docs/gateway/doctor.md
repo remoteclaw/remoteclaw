@@ -170,7 +170,7 @@ Doctor checks:
 - **Main session “1-line JSONL”**: flags when the main transcript has only one
   line (history is not accumulating).
 - **Multiple state dirs**: warns when multiple `~/.openclaw` folders exist across
-  home directories or when `OPENCLAW_STATE_DIR` points elsewhere (history can
+  home directories or when `REMOTECLAW_STATE_DIR` points elsewhere (history can
   split between installs).
 - **Remote mode reminder**: if `gateway.mode=remote`, doctor reminds you to run
   it on the remote host (the state lives there).

@@ -25,7 +25,7 @@ Example hook config (enable Gmail preset mapping):
 {
   hooks: {
     enabled: true,
-    token: "OPENCLAW_HOOK_TOKEN",
+    token: "REMOTECLAW_HOOK_TOKEN",
     path: "/hooks",
     presets: ["gmail"],
   },
@@ -39,7 +39,7 @@ that sets `deliver` + optional `channel`/`to`:
 {
   hooks: {
     enabled: true,
-    token: "OPENCLAW_HOOK_TOKEN",
+    token: "REMOTECLAW_HOOK_TOKEN",
     presets: ["gmail"],
     mappings: [
       {
@@ -122,7 +122,7 @@ Gateway auto-start (recommended):
 
 - When `hooks.enabled=true` and `hooks.gmail.account` is set, the Gateway starts
   `gog gmail watch serve` on boot and auto-renews the watch.
-- Set `OPENCLAW_SKIP_GMAIL_WATCHER=1` to opt out (useful if you run the daemon yourself).
+- Set `REMOTECLAW_SKIP_GMAIL_WATCHER=1` to opt out (useful if you run the daemon yourself).
 - Do not run the manual daemon at the same time, or you will hit
   `listen tcp 127.0.0.1:8788: bind: address already in use`.
 
@@ -186,7 +186,7 @@ gog gmail watch serve \
   --path /gmail-pubsub \
   --token <shared> \
   --hook-url http://127.0.0.1:18789/hooks/gmail \
-  --hook-token OPENCLAW_HOOK_TOKEN \
+  --hook-token REMOTECLAW_HOOK_TOKEN \
   --include-body \
   --max-bytes 20000
 ```

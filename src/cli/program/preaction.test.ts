@@ -51,9 +51,9 @@ beforeEach(() => {
   originalProcessArgv = [...process.argv];
   originalProcessTitle = process.title;
   originalNodeNoWarnings = process.env.NODE_NO_WARNINGS;
-  originalHideBanner = process.env.OPENCLAW_HIDE_BANNER;
+  originalHideBanner = process.env.REMOTECLAW_HIDE_BANNER;
   delete process.env.NODE_NO_WARNINGS;
-  delete process.env.OPENCLAW_HIDE_BANNER;
+  delete process.env.REMOTECLAW_HIDE_BANNER;
 });
 
 afterEach(() => {
@@ -65,9 +65,9 @@ afterEach(() => {
     process.env.NODE_NO_WARNINGS = originalNodeNoWarnings;
   }
   if (originalHideBanner === undefined) {
-    delete process.env.OPENCLAW_HIDE_BANNER;
+    delete process.env.REMOTECLAW_HIDE_BANNER;
   } else {
-    process.env.OPENCLAW_HIDE_BANNER = originalHideBanner;
+    process.env.REMOTECLAW_HIDE_BANNER = originalHideBanner;
   }
 });
 
@@ -169,8 +169,8 @@ describe("registerPreActionHooks", () => {
     expect(ensureConfigReadyMock).not.toHaveBeenCalled();
   });
 
-  it("hides banner when OPENCLAW_HIDE_BANNER is truthy", async () => {
-    process.env.OPENCLAW_HIDE_BANNER = "1";
+  it("hides banner when REMOTECLAW_HIDE_BANNER is truthy", async () => {
+    process.env.REMOTECLAW_HIDE_BANNER = "1";
     await runCommand({
       parseArgv: ["status"],
       processArgv: ["node", "openclaw", "status"],

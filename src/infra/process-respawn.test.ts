@@ -29,8 +29,8 @@ function clearSupervisorHints() {
 }
 
 describe("restartGatewayProcessWithFreshPid", () => {
-  it("returns disabled when OPENCLAW_NO_RESPAWN is set", () => {
-    process.env.OPENCLAW_NO_RESPAWN = "1";
+  it("returns disabled when REMOTECLAW_NO_RESPAWN is set", () => {
+    process.env.REMOTECLAW_NO_RESPAWN = "1";
     const result = restartGatewayProcessWithFreshPid();
     expect(result.mode).toBe("disabled");
     expect(spawnMock).not.toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe("restartGatewayProcessWithFreshPid", () => {
   });
 
   it("spawns detached child with current exec argv", () => {
-    delete process.env.OPENCLAW_NO_RESPAWN;
+    delete process.env.REMOTECLAW_NO_RESPAWN;
     clearSupervisorHints();
     process.execArgv = ["--import", "tsx"];
     process.argv = ["/usr/local/bin/node", "/repo/dist/index.js", "gateway", "run"];
@@ -64,7 +64,7 @@ describe("restartGatewayProcessWithFreshPid", () => {
   });
 
   it("returns failed when spawn throws", () => {
-    delete process.env.OPENCLAW_NO_RESPAWN;
+    delete process.env.REMOTECLAW_NO_RESPAWN;
     clearSupervisorHints();
 
     spawnMock.mockImplementation(() => {

@@ -26,8 +26,8 @@ describe("security fix", () => {
 
   const createFixEnv = (stateDir: string, configPath: string) => ({
     ...process.env,
-    OPENCLAW_STATE_DIR: stateDir,
-    OPENCLAW_CONFIG_PATH: configPath,
+    REMOTECLAW_STATE_DIR: stateDir,
+    REMOTECLAW_CONFIG_PATH: configPath,
   });
 
   const writeJsonConfig = async (configPath: string, config: Record<string, unknown>) => {
@@ -228,8 +228,8 @@ describe("security fix", () => {
 
     const env = {
       ...process.env,
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_CONFIG_PATH: configPath,
+      REMOTECLAW_STATE_DIR: stateDir,
+      REMOTECLAW_CONFIG_PATH: configPath,
     };
 
     const res = await fixSecurityFootguns({ env, stateDir, configPath });

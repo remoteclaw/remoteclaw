@@ -257,8 +257,8 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    previousFastTestEnv = process.env.OPENCLAW_TEST_FAST;
-    delete process.env.OPENCLAW_TEST_FAST;
+    previousFastTestEnv = process.env.REMOTECLAW_TEST_FAST;
+    delete process.env.REMOTECLAW_TEST_FAST;
     resolveCronSessionMock.mockReturnValue(makeFreshSession());
 
     // Default: ChannelBridge.handle() returns a successful delivery
@@ -267,10 +267,10 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
 
   afterEach(() => {
     if (previousFastTestEnv == null) {
-      delete process.env.OPENCLAW_TEST_FAST;
+      delete process.env.REMOTECLAW_TEST_FAST;
       return;
     }
-    process.env.OPENCLAW_TEST_FAST = previousFastTestEnv;
+    process.env.REMOTECLAW_TEST_FAST = previousFastTestEnv;
   });
 
   it("routes cron message through ChannelBridge.handle()", async () => {

@@ -410,7 +410,7 @@ describe("callGateway url override auth requirements", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeEach(() => {
-    envSnapshot = captureEnv(["OPENCLAW_GATEWAY_TOKEN", "OPENCLAW_GATEWAY_PASSWORD"]);
+    envSnapshot = captureEnv(["REMOTECLAW_GATEWAY_TOKEN", "REMOTECLAW_GATEWAY_PASSWORD"]);
     resetGatewayCallMocks();
     setGatewayNetworkDefaults(18789);
   });
@@ -420,8 +420,8 @@ describe("callGateway url override auth requirements", () => {
   });
 
   it("throws when url override is set without explicit credentials", async () => {
-    process.env.OPENCLAW_GATEWAY_TOKEN = "env-token";
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "env-password";
+    process.env.REMOTECLAW_GATEWAY_TOKEN = "env-token";
+    process.env.REMOTECLAW_GATEWAY_PASSWORD = "env-password";
     loadConfig.mockReturnValue({
       gateway: {
         mode: "local",
@@ -441,7 +441,7 @@ describe("callGateway password resolution", () => {
     {
       label: "password",
       authKey: "password",
-      envKey: "OPENCLAW_GATEWAY_PASSWORD",
+      envKey: "REMOTECLAW_GATEWAY_PASSWORD",
       envValue: "from-env",
       configValue: "from-config",
       explicitValue: "explicit-password",
@@ -449,7 +449,7 @@ describe("callGateway password resolution", () => {
     {
       label: "token",
       authKey: "token",
-      envKey: "OPENCLAW_GATEWAY_TOKEN",
+      envKey: "REMOTECLAW_GATEWAY_TOKEN",
       envValue: "env-token",
       configValue: "local-token",
       explicitValue: "explicit-token",
@@ -457,10 +457,10 @@ describe("callGateway password resolution", () => {
   ] as const;
 
   beforeEach(() => {
-    envSnapshot = captureEnv(["OPENCLAW_GATEWAY_PASSWORD", "OPENCLAW_GATEWAY_TOKEN"]);
+    envSnapshot = captureEnv(["REMOTECLAW_GATEWAY_PASSWORD", "REMOTECLAW_GATEWAY_TOKEN"]);
     resetGatewayCallMocks();
-    delete process.env.OPENCLAW_GATEWAY_PASSWORD;
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
+    delete process.env.REMOTECLAW_GATEWAY_PASSWORD;
+    delete process.env.REMOTECLAW_GATEWAY_TOKEN;
     setGatewayNetworkDefaults(18789);
   });
 
@@ -507,7 +507,7 @@ describe("callGateway password resolution", () => {
     },
   ])("$label", async ({ envPassword, config, expectedPassword }) => {
     if (envPassword !== undefined) {
-      process.env.OPENCLAW_GATEWAY_PASSWORD = envPassword;
+      process.env.REMOTECLAW_GATEWAY_PASSWORD = envPassword;
     }
     loadConfig.mockReturnValue(config);
 

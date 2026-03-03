@@ -109,7 +109,7 @@ Some providers support retrying a request with alternative keys when an API call
 hits a provider rate limit.
 
 - Priority order:
-  - `OPENCLAW_LIVE_<PROVIDER>_KEY` (single override)
+  - `REMOTECLAW_LIVE_<PROVIDER>_KEY` (single override)
   - `<PROVIDER>_API_KEYS`
   - `<PROVIDER>_API_KEY`
   - `<PROVIDER>_API_KEY_*`

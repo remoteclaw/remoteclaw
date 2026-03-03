@@ -38,9 +38,9 @@ enum CommandResolver {
 
     static func errorCommand(with message: String) -> [String] {
         let script = """
-        cat <<'__OPENCLAW_ERR__' >&2
+        cat <<'__REMOTECLAW_ERR__' >&2
         \(message)
-        __OPENCLAW_ERR__
+        __REMOTECLAW_ERR__
         exit 1
         """
         return ["/bin/sh", "-c", script]

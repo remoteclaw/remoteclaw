@@ -13,7 +13,7 @@ import Testing
     @Test func resolveGatewayTokenPrefersEnvAndFallsBackToLaunchd() {
         let snapshot = LaunchAgentPlistSnapshot(
             programArguments: [],
-            environment: ["OPENCLAW_GATEWAY_TOKEN": "launchd-token"],
+            environment: ["REMOTECLAW_GATEWAY_TOKEN": "launchd-token"],
             stdoutPath: nil,
             stderrPath: nil,
             port: nil,
@@ -24,7 +24,7 @@ import Testing
         let envToken = GatewayEndpointStore._testResolveGatewayToken(
             isRemote: false,
             root: [:],
-            env: ["OPENCLAW_GATEWAY_TOKEN": "env-token"],
+            env: ["REMOTECLAW_GATEWAY_TOKEN": "env-token"],
             launchdSnapshot: snapshot)
         #expect(envToken == "env-token")
 
@@ -39,7 +39,7 @@ import Testing
     @Test func resolveGatewayTokenIgnoresLaunchdInRemoteMode() {
         let snapshot = LaunchAgentPlistSnapshot(
             programArguments: [],
-            environment: ["OPENCLAW_GATEWAY_TOKEN": "launchd-token"],
+            environment: ["REMOTECLAW_GATEWAY_TOKEN": "launchd-token"],
             stdoutPath: nil,
             stderrPath: nil,
             port: nil,
@@ -58,7 +58,7 @@ import Testing
     @Test func resolveGatewayPasswordFallsBackToLaunchd() {
         let snapshot = LaunchAgentPlistSnapshot(
             programArguments: [],
-            environment: ["OPENCLAW_GATEWAY_PASSWORD": "launchd-pass"],
+            environment: ["REMOTECLAW_GATEWAY_PASSWORD": "launchd-pass"],
             stdoutPath: nil,
             stderrPath: nil,
             port: nil,

@@ -35,13 +35,13 @@ describe("createGlobalCommandRunner", () => {
     const result = await runCommand(["npm", "root", "-g"], {
       timeoutMs: 1200,
       cwd: "/tmp/openclaw",
-      env: { OPENCLAW_TEST: "1" },
+      env: { REMOTECLAW_TEST: "1" },
     });
 
     expect(runCommandWithTimeout).toHaveBeenCalledWith(["npm", "root", "-g"], {
       timeoutMs: 1200,
       cwd: "/tmp/openclaw",
-      env: { OPENCLAW_TEST: "1" },
+      env: { REMOTECLAW_TEST: "1" },
     });
     expect(result).toEqual({
       stdout: "out",

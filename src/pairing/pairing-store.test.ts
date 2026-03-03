@@ -31,7 +31,7 @@ afterAll(async () => {
 async function withTempStateDir<T>(fn: (stateDir: string) => Promise<T>) {
   const dir = path.join(fixtureRoot, `case-${caseId++}`);
   await fs.mkdir(dir, { recursive: true });
-  return await withEnvAsync({ OPENCLAW_STATE_DIR: dir }, async () => await fn(dir));
+  return await withEnvAsync({ REMOTECLAW_STATE_DIR: dir }, async () => await fn(dir));
 }
 
 async function writeJsonFixture(filePath: string, value: unknown) {

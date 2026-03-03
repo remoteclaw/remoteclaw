@@ -272,7 +272,7 @@ async function runAutoUpdateCommand(params: {
     const res = await runCommandWithTimeout(argv, {
       timeoutMs: params.timeoutMs,
       env: {
-        OPENCLAW_AUTO_UPDATE: "1",
+        REMOTECLAW_AUTO_UPDATE: "1",
       },
     });
     return {

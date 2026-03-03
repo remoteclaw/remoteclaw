@@ -20,7 +20,7 @@ function enableAdvertiserUnitMode(hostname = "test-host") {
   delete process.env.VITEST;
   process.env.NODE_ENV = "development";
   vi.spyOn(os, "hostname").mockReturnValue(hostname);
-  process.env.OPENCLAW_MDNS_HOSTNAME = hostname;
+  process.env.REMOTECLAW_MDNS_HOSTNAME = hostname;
 }
 
 function mockCiaoService(params?: {

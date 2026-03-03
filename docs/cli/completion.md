@@ -25,7 +25,7 @@ openclaw completion --shell bash --write-state
 
 - `-s, --shell <shell>`: shell target (`zsh`, `bash`, `powershell`, `fish`; default: `zsh`)
 - `-i, --install`: install completion by adding a source line to your shell profile
-- `--write-state`: write completion script(s) to `$OPENCLAW_STATE_DIR/completions` without printing to stdout
+- `--write-state`: write completion script(s) to `$REMOTECLAW_STATE_DIR/completions` without printing to stdout
 - `-y, --yes`: skip install confirmation prompts
 
 ## Notes

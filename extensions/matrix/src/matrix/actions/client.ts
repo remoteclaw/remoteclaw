@@ -25,7 +25,7 @@ export async function resolveActionClient(
   if (active) {
     return { client: active, stopOnDone: false };
   }
-  const shouldShareClient = Boolean(process.env.OPENCLAW_GATEWAY_PORT);
+  const shouldShareClient = Boolean(process.env.REMOTECLAW_GATEWAY_PORT);
   if (shouldShareClient) {
     const client = await resolveSharedMatrixClient({
       cfg: getMatrixRuntime().config.loadConfig() as CoreConfig,

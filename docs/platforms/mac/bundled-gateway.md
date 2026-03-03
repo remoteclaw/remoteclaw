@@ -61,8 +61,8 @@ incompatible, update the global CLI to match the app version.
 ```bash
 openclaw --version
 
-OPENCLAW_SKIP_CHANNELS=1 \
-OPENCLAW_SKIP_CANVAS_HOST=1 \
+REMOTECLAW_SKIP_CHANNELS=1 \
+REMOTECLAW_SKIP_CANVAS_HOST=1 \
 openclaw gateway --port 18999 --bind loopback
 ```
 

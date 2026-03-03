@@ -12,7 +12,7 @@ This guide migrates a OpenClaw Gateway from one machine to another **without red
 
 The migration is simple conceptually:
 
-- Copy the **state directory** (`$OPENCLAW_STATE_DIR`, default: `~/.openclaw/`) — this includes config, auth, sessions, and channel state.
+- Copy the **state directory** (`$REMOTECLAW_STATE_DIR`, default: `~/.openclaw/`) — this includes config, auth, sessions, and channel state.
 - Copy your **workspace** (`~/.openclaw/workspace/` by default) — this includes your agent files (memory, prompts, etc.).
 
 But there are common footguns around **profiles**, **permissions**, and **partial copies**.
@@ -28,7 +28,7 @@ Most installs use the default:
 But it may be different if you use:
 
 - `--profile <name>` (often becomes `~/.openclaw-<profile>/`)
-- `OPENCLAW_STATE_DIR=/some/path`
+- `REMOTECLAW_STATE_DIR=/some/path`
 
 If you’re not sure, run on the **old** machine:
 
@@ -36,7 +36,7 @@ If you’re not sure, run on the **old** machine:
 openclaw status
 ```
 
-Look for mentions of `OPENCLAW_STATE_DIR` / profile in the output. If you run multiple gateways, repeat for each profile.
+Look for mentions of `REMOTECLAW_STATE_DIR` / profile in the output. If you run multiple gateways, repeat for each profile.
 
 ### 2) Identify your workspace
 
@@ -63,7 +63,7 @@ If you copy **only** the workspace (e.g., via Git), you do **not** preserve:
 - credentials
 - channel logins
 
-Those live under `$OPENCLAW_STATE_DIR`.
+Those live under `$REMOTECLAW_STATE_DIR`.
 
 ## Migration steps (recommended)
 
@@ -99,7 +99,7 @@ At this stage, it’s OK if onboarding creates a fresh `~/.openclaw/` — you wi
 
 Copy **both**:
 
-- `$OPENCLAW_STATE_DIR` (default `~/.openclaw/`)
+- `$REMOTECLAW_STATE_DIR` (default `~/.openclaw/`)
 - your workspace (default `~/.openclaw/workspace/`)
 
 Common approaches:
@@ -134,7 +134,7 @@ openclaw status
 
 ### Footgun: profile / state-dir mismatch
 
-If you ran the old gateway with a profile (or `OPENCLAW_STATE_DIR`), and the new gateway uses a different one, you’ll see symptoms like:
+If you ran the old gateway with a profile (or `REMOTECLAW_STATE_DIR`), and the new gateway uses a different one, you’ll see symptoms like:
 
 - config changes not taking effect
 - channels missing / logged out
@@ -150,10 +150,10 @@ openclaw doctor
 
 `openclaw.json` is not enough. Many providers store state under:
 
-- `$OPENCLAW_STATE_DIR/credentials/`
-- `$OPENCLAW_STATE_DIR/agents/<agentId>/...`
+- `$REMOTECLAW_STATE_DIR/credentials/`
+- `$REMOTECLAW_STATE_DIR/agents/<agentId>/...`
 
-Always migrate the entire `$OPENCLAW_STATE_DIR` folder.
+Always migrate the entire `$REMOTECLAW_STATE_DIR` folder.
 
 ### Footgun: permissions / ownership
 
@@ -170,7 +170,7 @@ If you’re in remote mode, migrate the **gateway host**.
 
 ### Footgun: secrets in backups
 
-`$OPENCLAW_STATE_DIR` contains secrets (API keys, OAuth tokens, WhatsApp creds). Treat backups like production secrets:
+`$REMOTECLAW_STATE_DIR` contains secrets (API keys, OAuth tokens, WhatsApp creds). Treat backups like production secrets:
 
 - store encrypted
 - avoid sharing over insecure channels

@@ -204,7 +204,7 @@ Credential and profile paths:
 
 <Note>
 Headless and server tip: complete OAuth on a machine with a browser, then copy
-`~/.openclaw/credentials/oauth.json` (or `$OPENCLAW_STATE_DIR/credentials/oauth.json`)
+`~/.openclaw/credentials/oauth.json` (or `$REMOTECLAW_STATE_DIR/credentials/oauth.json`)
 to the gateway host.
 </Note>
 

@@ -45,10 +45,10 @@ openclaw gateway uninstall
 3. Delete state + config:
 
 ```bash
-rm -rf "${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
+rm -rf "${REMOTECLAW_STATE_DIR:-$HOME/.openclaw}"
 ```
 
-If you set `OPENCLAW_CONFIG_PATH` to a custom location outside the state dir, delete that file too.
+If you set `REMOTECLAW_CONFIG_PATH` to a custom location outside the state dir, delete that file too.
 
 4. Delete your workspace (optional, removes agent files):
 
@@ -72,7 +72,7 @@ rm -rf /Applications/OpenClaw.app
 
 Notes:
 
-- If you used profiles (`--profile` / `OPENCLAW_PROFILE`), repeat step 3 for each state dir (defaults are `~/.openclaw-<profile>`).
+- If you used profiles (`--profile` / `REMOTECLAW_PROFILE`), repeat step 3 for each state dir (defaults are `~/.openclaw-<profile>`).
 - In remote mode, the state dir lives on the **gateway host**, so run steps 1-4 there too.
 
 ## Manual service removal (CLI not installed)

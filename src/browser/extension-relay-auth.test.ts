@@ -31,15 +31,15 @@ describe("extension-relay-auth", () => {
   let prevGatewayToken: string | undefined;
 
   beforeEach(() => {
-    prevGatewayToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    process.env.OPENCLAW_GATEWAY_TOKEN = TEST_GATEWAY_TOKEN;
+    prevGatewayToken = process.env.REMOTECLAW_GATEWAY_TOKEN;
+    process.env.REMOTECLAW_GATEWAY_TOKEN = TEST_GATEWAY_TOKEN;
   });
 
   afterEach(() => {
     if (prevGatewayToken === undefined) {
-      delete process.env.OPENCLAW_GATEWAY_TOKEN;
+      delete process.env.REMOTECLAW_GATEWAY_TOKEN;
     } else {
-      process.env.OPENCLAW_GATEWAY_TOKEN = prevGatewayToken;
+      process.env.REMOTECLAW_GATEWAY_TOKEN = prevGatewayToken;
     }
   });
 

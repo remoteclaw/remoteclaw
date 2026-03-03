@@ -11,7 +11,7 @@ struct OpenClawConfigFileTests {
             .appendingPathComponent("openclaw.json")
             .path
 
-        await TestIsolation.withEnvValues(["OPENCLAW_CONFIG_PATH": override]) {
+        await TestIsolation.withEnvValues(["REMOTECLAW_CONFIG_PATH": override]) {
             #expect(OpenClawConfigFile.url().path == override)
         }
     }
@@ -24,7 +24,7 @@ struct OpenClawConfigFileTests {
             .appendingPathComponent("openclaw.json")
             .path
 
-        await TestIsolation.withEnvValues(["OPENCLAW_CONFIG_PATH": override]) {
+        await TestIsolation.withEnvValues(["REMOTECLAW_CONFIG_PATH": override]) {
             OpenClawConfigFile.saveDict([
                 "gateway": [
                     "remote": [
@@ -47,7 +47,7 @@ struct OpenClawConfigFileTests {
             .appendingPathComponent("openclaw.json")
             .path
 
-        await TestIsolation.withEnvValues(["OPENCLAW_CONFIG_PATH": override]) {
+        await TestIsolation.withEnvValues(["REMOTECLAW_CONFIG_PATH": override]) {
             OpenClawConfigFile.saveDict([
                 "gateway": [
                     "remote": [
@@ -70,7 +70,7 @@ struct OpenClawConfigFileTests {
             .appendingPathComponent("openclaw.json")
             .path
 
-        await TestIsolation.withEnvValues(["OPENCLAW_CONFIG_PATH": override]) {
+        await TestIsolation.withEnvValues(["REMOTECLAW_CONFIG_PATH": override]) {
             OpenClawConfigFile.saveDict([
                 "gateway": [
                     "remote": [
@@ -94,8 +94,8 @@ struct OpenClawConfigFileTests {
             .path
 
         await TestIsolation.withEnvValues([
-            "OPENCLAW_CONFIG_PATH": nil,
-            "OPENCLAW_STATE_DIR": dir,
+            "REMOTECLAW_CONFIG_PATH": nil,
+            "REMOTECLAW_STATE_DIR": dir,
         ]) {
             #expect(OpenClawConfigFile.stateDirURL().path == dir)
             #expect(OpenClawConfigFile.url().path == "\(dir)/openclaw.json")
@@ -113,8 +113,8 @@ struct OpenClawConfigFileTests {
         defer { try? FileManager().removeItem(at: stateDir) }
 
         try await TestIsolation.withEnvValues([
-            "OPENCLAW_STATE_DIR": stateDir.path,
-            "OPENCLAW_CONFIG_PATH": configPath.path,
+            "REMOTECLAW_STATE_DIR": stateDir.path,
+            "REMOTECLAW_CONFIG_PATH": configPath.path,
         ]) {
             OpenClawConfigFile.saveDict([
                 "gateway": ["mode": "local"],

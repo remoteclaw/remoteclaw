@@ -84,7 +84,7 @@ actor GatewayEndpointStore {
         env: [String: String],
         launchdSnapshot: LaunchAgentPlistSnapshot?) -> String?
     {
-        let raw = env["OPENCLAW_GATEWAY_PASSWORD"] ?? ""
+        let raw = env["REMOTECLAW_GATEWAY_PASSWORD"] ?? ""
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             if let configPassword = self.resolveConfigPassword(isRemote: isRemote, root: root),
@@ -92,7 +92,7 @@ actor GatewayEndpointStore {
             {
                 self.warnEnvOverrideOnce(
                     kind: .password,
-                    envVar: "OPENCLAW_GATEWAY_PASSWORD",
+                    envVar: "REMOTECLAW_GATEWAY_PASSWORD",
                     configKey: isRemote ? "gateway.remote.password" : "gateway.auth.password")
             }
             return trimmed
@@ -152,7 +152,7 @@ actor GatewayEndpointStore {
         env: [String: String],
         launchdSnapshot: LaunchAgentPlistSnapshot?) -> String?
     {
-        let raw = env["OPENCLAW_GATEWAY_TOKEN"] ?? ""
+        let raw = env["REMOTECLAW_GATEWAY_TOKEN"] ?? ""
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             if let configToken = self.resolveConfigToken(isRemote: isRemote, root: root),
@@ -161,7 +161,7 @@ actor GatewayEndpointStore {
             {
                 self.warnEnvOverrideOnce(
                     kind: .token,
-                    envVar: "OPENCLAW_GATEWAY_TOKEN",
+                    envVar: "REMOTECLAW_GATEWAY_TOKEN",
                     configKey: isRemote ? "gateway.remote.token" : "gateway.auth.token")
             }
             return trimmed
@@ -555,7 +555,7 @@ actor GatewayEndpointStore {
         root: [String: Any],
         env: [String: String]) -> String?
     {
-        if let envBind = env["OPENCLAW_GATEWAY_BIND"] {
+        if let envBind = env["REMOTECLAW_GATEWAY_BIND"] {
             let trimmed = envBind.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
             if self.supportedBindModes.contains(trimmed) {
                 return trimmed
@@ -586,7 +586,7 @@ actor GatewayEndpointStore {
         root: [String: Any],
         env: [String: String]) -> String
     {
-        if let envValue = env["OPENCLAW_GATEWAY_TLS"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+        if let envValue = env["REMOTECLAW_GATEWAY_TLS"]?.trimmingCharacters(in: .whitespacesAndNewlines),
            !envValue.isEmpty
         {
             return (envValue == "1" || envValue.lowercased() == "true") ? "wss" : "ws"

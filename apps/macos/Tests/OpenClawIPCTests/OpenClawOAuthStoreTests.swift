@@ -14,7 +14,7 @@ struct OpenClawOAuthStoreTests {
 
     @Test
     func usesEnvOverrideForOpenClawOAuthDir() throws {
-        let key = "OPENCLAW_OAUTH_DIR"
+        let key = "REMOTECLAW_OAUTH_DIR"
         let previous = ProcessInfo.processInfo.environment[key]
         defer {
             if let previous {

@@ -6,7 +6,7 @@ public enum OpenClawBonjour {
     public static let gatewayServiceDomain = "local."
     public static var wideAreaGatewayServiceDomain: String? {
         let env = ProcessInfo.processInfo.environment
-        return resolveWideAreaDomain(env["OPENCLAW_WIDE_AREA_DOMAIN"])
+        return resolveWideAreaDomain(env["REMOTECLAW_WIDE_AREA_DOMAIN"])
     }
 
     public static var gatewayServiceDomains: [String] {

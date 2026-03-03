@@ -17,7 +17,7 @@ describe("msteams conversation store (fs)", () => {
 
     const env: NodeJS.ProcessEnv = {
       ...process.env,
-      OPENCLAW_STATE_DIR: stateDir,
+      REMOTECLAW_STATE_DIR: stateDir,
     };
 
     const store = createMSTeamsConversationStoreFs({ env, ttlMs: 1_000 });

@@ -19,7 +19,7 @@ If you need tighter coupling to the UI, run the Gateway manually in a terminal.
 ## Default behavior (launchd)
 
 - The app installs a per‑user LaunchAgent labeled `ai.openclaw.gateway`
-  (or `ai.openclaw.<profile>` when using `--profile`/`OPENCLAW_PROFILE`; legacy `com.openclaw.*` is supported).
+  (or `ai.openclaw.<profile>` when using `--profile`/`REMOTECLAW_PROFILE`; legacy `com.openclaw.*` is supported).
 - When Local mode is enabled, the app ensures the LaunchAgent is loaded and
   starts the Gateway if needed.
 - Logs are written to the launchd gateway log path (visible in Debug Settings).

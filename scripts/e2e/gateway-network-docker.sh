@@ -25,11 +25,11 @@ echo "Starting gateway container..."
 docker run -d \
   --name "$GW_NAME" \
   --network "$NET_NAME" \
-  -e "OPENCLAW_GATEWAY_TOKEN=$TOKEN" \
-  -e "OPENCLAW_SKIP_CHANNELS=1" \
-  -e "OPENCLAW_SKIP_GMAIL_WATCHER=1" \
-  -e "OPENCLAW_SKIP_CRON=1" \
-  -e "OPENCLAW_SKIP_CANVAS_HOST=1" \
+  -e "REMOTECLAW_GATEWAY_TOKEN=$TOKEN" \
+  -e "REMOTECLAW_SKIP_CHANNELS=1" \
+  -e "REMOTECLAW_SKIP_GMAIL_WATCHER=1" \
+  -e "REMOTECLAW_SKIP_CRON=1" \
+  -e "REMOTECLAW_SKIP_CANVAS_HOST=1" \
   "$IMAGE_NAME" \
   bash -lc "set -euo pipefail; entry=dist/index.mjs; [ -f \"\$entry\" ] || entry=dist/index.js; node \"\$entry\" config set gateway.controlUi.enabled false >/dev/null; node \"\$entry\" gateway --port $PORT --bind lan --allow-unconfigured > /tmp/gateway-net-e2e.log 2>&1"
 

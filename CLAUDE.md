@@ -90,7 +90,7 @@ must run before tests (CI does this automatically).
 - **Configs**: `vitest.config.ts` (base), `vitest.unit.config.ts`,
   `vitest.e2e.config.ts`, `vitest.extensions.config.ts`,
   `vitest.gateway.config.ts`, `vitest.live.config.ts`
-- **CI env vars**: `OPENCLAW_TEST_WORKERS=2`, `OPENCLAW_TEST_MAX_OLD_SPACE_SIZE_MB=4096`
+- **CI env vars**: `REMOTECLAW_TEST_WORKERS=2`, `REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB=4096`
 
 ## CI
 

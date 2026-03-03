@@ -178,7 +178,7 @@ Learn more about session keys at [/concepts/session](/concepts/session).
 Security note:
 
 - `--token` and `--password` can be visible in local process listings on some systems.
-- Prefer `--token-file`/`--password-file` or environment variables (`OPENCLAW_GATEWAY_TOKEN`, `OPENCLAW_GATEWAY_PASSWORD`).
+- Prefer `--token-file`/`--password-file` or environment variables (`REMOTECLAW_GATEWAY_TOKEN`, `REMOTECLAW_GATEWAY_PASSWORD`).
 
 ### `acp client` options
 

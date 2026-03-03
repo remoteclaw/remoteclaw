@@ -114,6 +114,9 @@ describe("shouldEnsureCliPath", () => {
 
   it("skips path bootstrap for read-only fast paths", () => {
     expect(shouldEnsureCliPath(["node", "remoteclaw", "status"])).toBe(false);
+    expect(shouldEnsureCliPath(["node", "remoteclaw", "--log-level", "debug", "status"])).toBe(
+      false,
+    );
     expect(shouldEnsureCliPath(["node", "remoteclaw", "sessions", "--json"])).toBe(false);
     expect(shouldEnsureCliPath(["node", "remoteclaw", "config", "get", "update"])).toBe(false);
     expect(shouldEnsureCliPath(["node", "remoteclaw", "models", "status", "--json"])).toBe(false);

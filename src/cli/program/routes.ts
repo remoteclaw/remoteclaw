@@ -1,3 +1,4 @@
+import { consumeRootOptionToken } from "../../infra/cli-root-options.js";
 import { defaultRuntime } from "../../runtime.js";
 import { getFlagValue, getPositiveIntFlagValue, getVerboseFlag, hasFlag } from "../argv.js";
 
@@ -85,13 +86,23 @@ const routeAgentsList: RouteSpec = {
 function getCommandPositionals(argv: string[]): string[] {
   const out: string[] = [];
   const args = argv.slice(2);
-  for (const arg of args) {
+  let commandStarted = false;
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
     if (!arg || arg === "--") {
       break;
+    }
+    if (!commandStarted) {
+      const consumed = consumeRootOptionToken(args, i);
+      if (consumed > 0) {
+        i += consumed - 1;
+        continue;
+      }
     }
     if (arg.startsWith("-")) {
       continue;
     }
+    commandStarted = true;
     out.push(arg);
   }
   return out;

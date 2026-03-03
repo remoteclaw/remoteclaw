@@ -208,13 +208,28 @@ async function maybeApplyCrossContextMarker(params: {
   });
 }
 
-async function resolveChannel(cfg: RemoteClawConfig, params: Record<string, unknown>) {
+async function resolveChannel(
+  cfg: RemoteClawConfig,
+  params: Record<string, unknown>,
+  toolContext?: { currentChannelProvider?: string },
+) {
   const channelHint = readStringParam(params, "channel");
-  const selection = await resolveMessageChannelSelection({
-    cfg,
-    channel: channelHint,
-  });
-  return selection.channel;
+  try {
+    const selection = await resolveMessageChannelSelection({
+      cfg,
+      channel: channelHint,
+    });
+    return selection.channel;
+  } catch (error) {
+    if (channelHint && toolContext?.currentChannelProvider) {
+      const fallback = normalizeMessageChannel(toolContext.currentChannelProvider);
+      if (fallback && isDeliverableMessageChannel(fallback)) {
+        params.channel = fallback;
+        return fallback;
+      }
+    }
+    throw error;
+  }
 }
 
 async function resolveActionTarget(params: {
@@ -308,7 +323,7 @@ async function handleBroadcastAction(
   }
   const targetChannels =
     channelHint && channelHint.trim().toLowerCase() !== "all"
-      ? [await resolveChannel(input.cfg, { channel: channelHint })]
+      ? [await resolveChannel(input.cfg, { channel: channelHint }, input.toolContext)]
       : configured;
   const results: Array<{
     channel: ChannelId;
@@ -706,7 +721,7 @@ export async function runMessageAction(
     toolContext: input.toolContext,
   });
 
-  const channel = await resolveChannel(cfg, params);
+  const channel = await resolveChannel(cfg, params, input.toolContext);
   let accountId = readStringParam(params, "accountId") ?? input.defaultAccountId;
   if (!accountId && resolvedAgentId) {
     const byAgent = buildChannelAccountBindings(cfg).get(channel);

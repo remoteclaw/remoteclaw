@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { createEmptyPluginRegistry } from "../plugins/registry.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
@@ -80,7 +80,7 @@ describe("setupChannels", () => {
 
     const runtime = createExitThrowingRuntime();
 
-    await setupChannels({} as OpenClawConfig, runtime, prompter, {
+    await setupChannels({} as RemoteClawConfig, runtime, prompter, {
       skipConfirm: true,
       quickstartDefaults: true,
       forceAllowFromChannels: ["whatsapp"],
@@ -115,7 +115,7 @@ describe("setupChannels", () => {
 
     const runtime = createExitThrowingRuntime();
 
-    await setupChannels({} as OpenClawConfig, runtime, prompter, {
+    await setupChannels({} as RemoteClawConfig, runtime, prompter, {
       skipConfirm: true,
       quickstartDefaults: true,
     });
@@ -145,7 +145,7 @@ describe("setupChannels", () => {
 
     const runtime = createExitThrowingRuntime();
 
-    await setupChannels({} as OpenClawConfig, runtime, prompter, {
+    await setupChannels({} as RemoteClawConfig, runtime, prompter, {
       skipConfirm: true,
     });
 
@@ -185,7 +185,7 @@ describe("setupChannels", () => {
             botToken: "token",
           },
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       runtime,
       prompter,
       {
@@ -238,7 +238,7 @@ describe("setupChannels", () => {
             enabled: false,
           },
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       runtime,
       prompter,
       {

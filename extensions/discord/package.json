@@ -1,7 +1,7 @@
 {
   "name": "@openclaw/discord",
   "version": "2026.2.25",
-  "description": "OpenClaw Discord channel plugin",
+  "description": "RemoteClaw Discord channel plugin",
   "type": "module",
   "openclaw": {
     "extensions": [

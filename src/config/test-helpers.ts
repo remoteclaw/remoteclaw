@@ -6,7 +6,7 @@ export async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise
   return withTempHomeBase(fn, { prefix: "openclaw-config-" });
 }
 
-export async function writeOpenClawConfig(home: string, config: unknown): Promise<string> {
+export async function writeRemoteClawConfig(home: string, config: unknown): Promise<string> {
   const configPath = path.join(home, ".openclaw", "openclaw.json");
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
@@ -18,7 +18,7 @@ export async function withTempHomeConfig<T>(
   fn: (params: { home: string; configPath: string }) => Promise<T>,
 ): Promise<T> {
   return withTempHome(async (home) => {
-    const configPath = await writeOpenClawConfig(home, config);
+    const configPath = await writeRemoteClawConfig(home, config);
     return fn({ home, configPath });
   });
 }

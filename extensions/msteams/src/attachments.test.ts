@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "openclaw/plugin-sdk";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildMSTeamsAttachmentPlaceholder,
@@ -9,8 +9,8 @@ import {
 } from "./attachments.js";
 import { setMSTeamsRuntime } from "./runtime.js";
 
-vi.mock("openclaw/plugin-sdk", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk")>();
+vi.mock("remoteclaw/plugin-sdk", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk")>();
   return {
     ...actual,
     isPrivateIpAddress: () => false,

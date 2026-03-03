@@ -21,7 +21,7 @@ import {
 } from "../auto-reply/thinking.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { type CliDeps, createDefaultDeps } from "../cli/deps.js";
-import { type OpenClawConfig, loadConfig } from "../config/config.js";
+import { type RemoteClawConfig, loadConfig } from "../config/config.js";
 import { resolveGatewayPort } from "../config/paths.js";
 import {
   parseSessionThreadInfo,
@@ -90,13 +90,13 @@ function createSessionMapAdapter(params: { getSessionId: () => string | undefine
 }
 
 /** Resolve gateway URL from config for local gateway. */
-function resolveGatewayUrlFromConfig(cfg: OpenClawConfig): string {
+function resolveGatewayUrlFromConfig(cfg: RemoteClawConfig): string {
   const port = resolveGatewayPort(cfg);
   return `ws://127.0.0.1:${port}`;
 }
 
 /** Resolve gateway auth token from config. */
-function resolveGatewayTokenFromConfig(cfg: OpenClawConfig): string {
+function resolveGatewayTokenFromConfig(cfg: RemoteClawConfig): string {
   return resolveGatewayCredentialsFromConfig({ cfg, env: process.env }).token ?? "";
 }
 

@@ -1,10 +1,10 @@
 import type {
   ChannelGatewayContext,
   ChannelAccountSnapshot,
-  OpenClawConfig,
+  RemoteClawConfig,
   PluginRuntime,
   ResolvedLineAccount,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 import { linePlugin } from "./channel.js";
@@ -54,7 +54,7 @@ function createStartAccountCtx(params: {
       tokenSource: "config" as const,
       config: {} as ResolvedLineAccount["config"],
     },
-    cfg: {} as OpenClawConfig,
+    cfg: {} as RemoteClawConfig,
     runtime: params.runtime,
     abortSignal: new AbortController().signal,
     log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },

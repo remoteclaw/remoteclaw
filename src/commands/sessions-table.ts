@@ -1,6 +1,6 @@
 import { DEFAULT_MODEL } from "../agents/defaults.js";
 import type { SessionEntry } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { RemoteClawConfig } from "../config/types.openclaw.js";
 import { resolveSessionModelRef } from "../gateway/session-utils.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { parseAgentSessionKey } from "../routing/session-key.js";
@@ -69,14 +69,14 @@ export function toSessionDisplayRows(store: Record<string, SessionEntry>): Sessi
     .toSorted((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
 }
 
-export function resolveSessionDisplayDefaults(_cfg: OpenClawConfig): SessionDisplayDefaults {
+export function resolveSessionDisplayDefaults(_cfg: RemoteClawConfig): SessionDisplayDefaults {
   return {
     model: DEFAULT_MODEL,
   };
 }
 
 export function resolveSessionDisplayModel(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   row: Pick<
     SessionDisplayRow,
     "key" | "model" | "modelProvider" | "modelOverride" | "providerOverride"

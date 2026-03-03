@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runPluginCommandWithTimeout, type RuntimeEnv } from "openclaw/plugin-sdk";
+import { runPluginCommandWithTimeout, type RuntimeEnv } from "remoteclaw/plugin-sdk";
 
 const MATRIX_SDK_PACKAGE = "@vector-im/matrix-bot-sdk";
 

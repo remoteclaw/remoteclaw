@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import {
   createDedupeCache,
   readJsonBodyWithLimit,
@@ -9,7 +9,7 @@ import {
   requestBodyErrorToText,
   resolveSingleWebhookTarget,
   resolveWebhookTargets,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import type { ResolvedZaloAccount } from "./accounts.js";
 import type { ZaloFetch, ZaloUpdate } from "./api.js";
 import type { ZaloRuntimeEnv } from "./monitor.js";
@@ -24,7 +24,7 @@ const ZALO_WEBHOOK_COUNTER_LOG_EVERY = 25;
 export type ZaloWebhookTarget = {
   token: string;
   account: ResolvedZaloAccount;
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   runtime: ZaloRuntimeEnv;
   core: unknown;
   secret: string;

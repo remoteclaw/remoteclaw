@@ -1,8 +1,8 @@
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import type { AuthProfileStore } from "./types.js";
 
 function isProfileConfigCompatible(params: {
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   profileId: string;
   provider: string;
 }): boolean {
@@ -22,7 +22,7 @@ function buildApiKeyProfileResult(params: { apiKey: string; provider: string; em
 }
 
 type ResolveApiKeyForProfileParams = {
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   store: AuthProfileStore;
   profileId: string;
   agentDir?: string;

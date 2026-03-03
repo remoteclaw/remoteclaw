@@ -89,8 +89,8 @@ describe("restart-helper", () => {
       });
       expect(scriptPath.endsWith(".bat")).toBe(true);
       expect(content).toContain("@echo off");
-      expect(content).toContain('schtasks /End /TN "OpenClaw Gateway"');
-      expect(content).toContain('schtasks /Run /TN "OpenClaw Gateway"');
+      expect(content).toContain('schtasks /End /TN "RemoteClaw Gateway"');
+      expect(content).toContain('schtasks /Run /TN "RemoteClaw Gateway"');
       // Batch self-cleanup
       expect(content).toContain('del "%~f0"');
       await cleanupScript(scriptPath);
@@ -101,10 +101,10 @@ describe("restart-helper", () => {
 
       const { scriptPath, content } = await prepareAndReadScript({
         REMOTECLAW_PROFILE: "default",
-        REMOTECLAW_WINDOWS_TASK_NAME: "OpenClaw Gateway (custom)",
+        REMOTECLAW_WINDOWS_TASK_NAME: "RemoteClaw Gateway (custom)",
       });
-      expect(content).toContain('schtasks /End /TN "OpenClaw Gateway (custom)"');
-      expect(content).toContain('schtasks /Run /TN "OpenClaw Gateway (custom)"');
+      expect(content).toContain('schtasks /End /TN "RemoteClaw Gateway (custom)"');
+      expect(content).toContain('schtasks /Run /TN "RemoteClaw Gateway (custom)"');
       await cleanupScript(scriptPath);
     });
 
@@ -134,7 +134,7 @@ describe("restart-helper", () => {
       const { scriptPath, content } = await prepareAndReadScript({
         REMOTECLAW_PROFILE: "production",
       });
-      expect(content).toContain('schtasks /End /TN "OpenClaw Gateway (production)"');
+      expect(content).toContain('schtasks /End /TN "RemoteClaw Gateway (production)"');
       await cleanupScript(scriptPath);
     });
 

@@ -77,7 +77,7 @@ vi.mock("../infra/provider-usage.js", () => ({
 }));
 
 import "./test-helpers/fast-core-tools.js";
-import { createOpenClawTools } from "./openclaw-tools.js";
+import { createRemoteClawTools } from "./openclaw-tools.js";
 
 function resetSessionStore(store: Record<string, unknown>) {
   loadSessionStoreMock.mockClear();
@@ -86,7 +86,7 @@ function resetSessionStore(store: Record<string, unknown>) {
 }
 
 function getSessionStatusTool(agentSessionKey = "main") {
-  const tool = createOpenClawTools({ agentSessionKey }).find(
+  const tool = createRemoteClawTools({ agentSessionKey }).find(
     (candidate) => candidate.name === "session_status",
   );
   expect(tool).toBeDefined();

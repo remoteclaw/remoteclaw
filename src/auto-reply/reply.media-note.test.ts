@@ -1,7 +1,7 @@
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { runAgent } from "./reply.directive.directive-behavior.e2e-mocks.js";
 import { getReplyFromConfig } from "./reply.js";
 
@@ -40,7 +40,7 @@ function makeCfg(home: string) {
     },
     channels: { whatsapp: { allowFrom: ["*"] } },
     session: { store: path.join(home, "sessions.json") },
-  } as unknown as OpenClawConfig;
+  } as unknown as RemoteClawConfig;
 }
 
 describe("getReplyFromConfig media note plumbing", () => {

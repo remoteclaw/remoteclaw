@@ -1,12 +1,12 @@
 import { describe, expect, test } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
 import { applySessionsPatchToStore } from "./sessions-patch.js";
 
 const SUBAGENT_MODEL = "synthetic/hf:moonshotai/Kimi-K2.5";
 const KIMI_SUBAGENT_KEY = "agent:kimi:subagent:child";
 
-async function applySubagentModelPatch(cfg: OpenClawConfig) {
+async function applySubagentModelPatch(cfg: RemoteClawConfig) {
   const res = await applySessionsPatchToStore({
     cfg,
     store: {},
@@ -27,7 +27,7 @@ function makeKimiSubagentCfg(params: {
   agentPrimaryModel: string;
   agentSubagentModel?: string;
   defaultsSubagentModel?: string;
-}): OpenClawConfig {
+}): RemoteClawConfig {
   return {
     agents: {
       defaults: {
@@ -47,14 +47,14 @@ function makeKimiSubagentCfg(params: {
         },
       ],
     },
-  } as OpenClawConfig;
+  } as RemoteClawConfig;
 }
 
 describe("gateway sessions patch", () => {
   test("persists thinkingLevel=off (does not clear)", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", thinkingLevel: "off" },
@@ -71,7 +71,7 @@ describe("gateway sessions patch", () => {
       "agent:main:main": { thinkingLevel: "low" } as SessionEntry,
     };
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", thinkingLevel: null },
@@ -86,7 +86,7 @@ describe("gateway sessions patch", () => {
   test("persists reasoningLevel=off (does not clear)", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", reasoningLevel: "off" },
@@ -103,7 +103,7 @@ describe("gateway sessions patch", () => {
       "agent:main:main": { reasoningLevel: "stream" } as SessionEntry,
     };
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", reasoningLevel: null },
@@ -118,7 +118,7 @@ describe("gateway sessions patch", () => {
   test("persists elevatedLevel=off (does not clear)", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", elevatedLevel: "off" },
@@ -133,7 +133,7 @@ describe("gateway sessions patch", () => {
   test("persists elevatedLevel=on", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", elevatedLevel: "on" },
@@ -150,7 +150,7 @@ describe("gateway sessions patch", () => {
       "agent:main:main": { elevatedLevel: "off" } as SessionEntry,
     };
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", elevatedLevel: null },
@@ -165,7 +165,7 @@ describe("gateway sessions patch", () => {
   test("rejects invalid elevatedLevel values", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", elevatedLevel: "maybe" },
@@ -190,7 +190,7 @@ describe("gateway sessions patch", () => {
       } as SessionEntry,
     };
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", model: "openai/gpt-5.2" },
@@ -217,7 +217,7 @@ describe("gateway sessions patch", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const res = await applySessionsPatchToStore({
       cfg,
@@ -245,7 +245,7 @@ describe("gateway sessions patch", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const res = await applySessionsPatchToStore({
       cfg,
@@ -265,7 +265,7 @@ describe("gateway sessions patch", () => {
   test("sets spawnDepth for subagent sessions", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:subagent:child",
       patch: { key: "agent:main:subagent:child", spawnDepth: 2 },
@@ -280,7 +280,7 @@ describe("gateway sessions patch", () => {
   test("rejects spawnDepth on non-subagent sessions", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", spawnDepth: 1 },
@@ -295,7 +295,7 @@ describe("gateway sessions patch", () => {
   test("normalizes exec/send/group patches", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: {
@@ -323,7 +323,7 @@ describe("gateway sessions patch", () => {
   test("rejects invalid execHost values", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", execHost: "edge" },
@@ -338,7 +338,7 @@ describe("gateway sessions patch", () => {
   test("rejects invalid sendPolicy values", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", sendPolicy: "ask" as unknown as "allow" },
@@ -353,7 +353,7 @@ describe("gateway sessions patch", () => {
   test("rejects invalid groupActivation values", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", groupActivation: "never" as unknown as "mention" },

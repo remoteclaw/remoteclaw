@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolvePluginInstallDir } from "./install.js";
 import {
   removePluginFromConfig,
@@ -17,7 +17,7 @@ async function createInstalledNpmPluginFixture(params: {
   pluginId: string;
   extensionsDir: string;
   pluginDir: string;
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
 }> {
   const pluginId = params.pluginId ?? "my-plugin";
   const extensionsDir = path.join(params.baseDir, "extensions");
@@ -70,7 +70,7 @@ function createSinglePluginEntries(pluginId = "my-plugin") {
   };
 }
 
-function createSinglePluginWithEmptySlotsConfig(): OpenClawConfig {
+function createSinglePluginWithEmptySlotsConfig(): RemoteClawConfig {
   return {
     plugins: {
       entries: createSinglePluginEntries(),
@@ -79,7 +79,7 @@ function createSinglePluginWithEmptySlotsConfig(): OpenClawConfig {
   };
 }
 
-function createSingleNpmInstallConfig(installPath: string): OpenClawConfig {
+function createSingleNpmInstallConfig(installPath: string): RemoteClawConfig {
   return {
     plugins: {
       entries: createSinglePluginEntries(),
@@ -103,7 +103,7 @@ async function createPluginDirFixture(baseDir: string, pluginId = "my-plugin") {
 
 describe("removePluginFromConfig", () => {
   it("removes plugin from entries", () => {
-    const config: OpenClawConfig = {
+    const config: RemoteClawConfig = {
       plugins: {
         entries: {
           "my-plugin": { enabled: true },
@@ -119,7 +119,7 @@ describe("removePluginFromConfig", () => {
   });
 
   it("removes plugin from installs", () => {
-    const config: OpenClawConfig = {
+    const config: RemoteClawConfig = {
       plugins: {
         installs: {
           "my-plugin": { source: "npm", spec: "my-plugin@1.0.0" },
@@ -137,7 +137,7 @@ describe("removePluginFromConfig", () => {
   });
 
   it("removes plugin from allowlist", () => {
-    const config: OpenClawConfig = {
+    const config: RemoteClawConfig = {
       plugins: {
         allow: ["my-plugin", "other-plugin"],
       },
@@ -150,7 +150,7 @@ describe("removePluginFromConfig", () => {
   });
 
   it("removes linked path from load.paths", () => {
-    const config: OpenClawConfig = {
+    const config: RemoteClawConfig = {
       plugins: {
         installs: {
           "my-plugin": {
@@ -172,7 +172,7 @@ describe("removePluginFromConfig", () => {
   });
 
   it("cleans up load when removing the only linked path", () => {
-    const config: OpenClawConfig = {
+    const config: RemoteClawConfig = {
       plugins: {
         installs: {
           "my-plugin": {
@@ -210,7 +210,7 @@ describe("removePluginFromConfig", () => {
   });
 
   it("handles plugin that only exists in entries", () => {
-    const config: OpenClawConfig = {
+    const config: RemoteClawConfig = {
       plugins: {
         entries: {
           "my-plugin": { enabled: true },
@@ -226,7 +226,7 @@ describe("removePluginFromConfig", () => {
   });
 
   it("handles plugin that only exists in installs", () => {
-    const config: OpenClawConfig = {
+    const config: RemoteClawConfig = {
       plugins: {
         installs: {
           "my-plugin": { source: "npm", spec: "my-plugin@1.0.0" },
@@ -242,7 +242,7 @@ describe("removePluginFromConfig", () => {
   });
 
   it("cleans up empty plugins object", () => {
-    const config: OpenClawConfig = {
+    const config: RemoteClawConfig = {
       plugins: {
         entries: {
           "my-plugin": { enabled: true },
@@ -257,7 +257,7 @@ describe("removePluginFromConfig", () => {
   });
 
   it("preserves other config values", () => {
-    const config: OpenClawConfig = {
+    const config: RemoteClawConfig = {
       plugins: {
         enabled: true,
         deny: ["denied-plugin"],
@@ -286,7 +286,7 @@ describe("uninstallPlugin", () => {
   });
 
   it("returns error when plugin not found", async () => {
-    const config: OpenClawConfig = {};
+    const config: RemoteClawConfig = {};
 
     const result = await uninstallPlugin({
       config,
@@ -300,7 +300,7 @@ describe("uninstallPlugin", () => {
   });
 
   it("removes config entries", async () => {
-    const config: OpenClawConfig = {
+    const config: RemoteClawConfig = {
       plugins: {
         entries: {
           "my-plugin": { enabled: true },
@@ -343,7 +343,7 @@ describe("uninstallPlugin", () => {
   it("preserves directory for linked plugins", async () => {
     const pluginDir = await createPluginDirFixture(tempDir);
 
-    const config: OpenClawConfig = {
+    const config: RemoteClawConfig = {
       plugins: {
         entries: createSinglePluginEntries(),
         installs: {

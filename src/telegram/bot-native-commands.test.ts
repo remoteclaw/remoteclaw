@@ -1,6 +1,6 @@
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { STATE_DIR } from "../config/paths.js";
 import { TELEGRAM_COMMAND_NAME_PATTERN } from "../config/telegram-custom-commands.js";
 import type { TelegramAccountConfig } from "../config/types.js";
@@ -52,7 +52,7 @@ describe("registerTelegramNativeCommands", () => {
     deliveryMocks.deliverReplies.mockResolvedValue({ delivered: true });
   });
 
-  const buildParams = (cfg: OpenClawConfig, accountId = "default") =>
+  const buildParams = (cfg: RemoteClawConfig, accountId = "default") =>
     createNativeCommandTestParams({
       bot: {
         api: {
@@ -68,7 +68,7 @@ describe("registerTelegramNativeCommands", () => {
     });
 
   it("truncates Telegram command registration to 100 commands", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       commands: { native: false },
     };
     const customCommands = Array.from({ length: 120 }, (_, index) => ({
@@ -170,7 +170,7 @@ describe("registerTelegramNativeCommands", () => {
   it("passes agent-scoped media roots for plugin command replies with media", async () => {
     const commandHandlers = new Map<string, (ctx: unknown) => Promise<void>>();
     const sendMessage = vi.fn().mockResolvedValue(undefined);
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       agents: {
         list: [{ id: "main", default: true }, { id: "work" }],
       },

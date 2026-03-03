@@ -1,8 +1,8 @@
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { POSIX_REMOTECLAW_TMP_DIR, resolvePreferredOpenClawTmpDir } from "./tmp-openclaw-dir.js";
+import { POSIX_REMOTECLAW_TMP_DIR, resolvePreferredRemoteClawTmpDir } from "./tmp-openclaw-dir.js";
 
-type TmpDirOptions = NonNullable<Parameters<typeof resolvePreferredOpenClawTmpDir>[0]>;
+type TmpDirOptions = NonNullable<Parameters<typeof resolvePreferredRemoteClawTmpDir>[0]>;
 
 function fallbackTmp(uid = 501) {
   return path.join("/var/fallback", `openclaw-${uid}`);
@@ -18,7 +18,7 @@ function resolveWithMocks(params: {
   const mkdirSync = vi.fn();
   const getuid = vi.fn(() => params.uid ?? 501);
   const tmpdir = vi.fn(() => params.tmpdirPath ?? "/var/fallback");
-  const resolved = resolvePreferredOpenClawTmpDir({
+  const resolved = resolvePreferredRemoteClawTmpDir({
     accessSync,
     lstatSync: params.lstatSync,
     mkdirSync,
@@ -28,7 +28,7 @@ function resolveWithMocks(params: {
   return { resolved, accessSync, lstatSync: params.lstatSync, mkdirSync, tmpdir };
 }
 
-describe("resolvePreferredOpenClawTmpDir", () => {
+describe("resolvePreferredRemoteClawTmpDir", () => {
   it("prefers /tmp/openclaw when it already exists and is writable", () => {
     const lstatSync: NonNullable<TmpDirOptions["lstatSync"]> = vi.fn(() => ({
       isDirectory: () => true,

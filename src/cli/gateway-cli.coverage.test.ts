@@ -128,7 +128,7 @@ describe("gateway-cli coverage", () => {
     discoverGatewayBeacons.mockClear();
     discoverGatewayBeacons.mockResolvedValueOnce([
       {
-        instanceName: "Studio (OpenClaw)",
+        instanceName: "Studio (RemoteClaw)",
         displayName: "Studio",
         domain: "openclaw.internal.",
         host: "studio.openclaw.internal",

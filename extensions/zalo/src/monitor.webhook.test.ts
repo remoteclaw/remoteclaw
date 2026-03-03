@@ -1,6 +1,6 @@
 import { createServer, type RequestListener } from "node:http";
 import type { AddressInfo } from "node:net";
-import type { OpenClawConfig, PluginRuntime } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { handleZaloWebhookRequest, registerZaloWebhookTarget } from "./monitor.js";
 import type { ResolvedZaloAccount } from "./types.js";
@@ -45,7 +45,7 @@ function registerTarget(params: {
   return registerZaloWebhookTarget({
     token: "tok",
     account: DEFAULT_ACCOUNT,
-    config: {} as OpenClawConfig,
+    config: {} as RemoteClawConfig,
     runtime: {},
     core: {} as PluginRuntime,
     secret: params.secret ?? "secret",

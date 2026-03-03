@@ -4,7 +4,7 @@ import { resolveModelAuthMode } from "../agents/provider-auth.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../agents/usage.js";
 import { resolveChannelModelOverride } from "../channels/model-overrides.js";
 import { isCommandFlagEnabled } from "../config/commands.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import {
   resolveSessionFilePath,
   resolveSessionFilePathOptions,
@@ -41,7 +41,7 @@ import { resolveActiveFallbackState } from "./fallback-state.js";
 import { formatProviderModelRef, resolveSelectedAndActiveModel } from "./model-runtime.js";
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "./thinking.js";
 
-type AgentDefaults = NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]>;
+type AgentDefaults = NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>;
 type AgentConfig = Partial<AgentDefaults> & {
   model?: AgentDefaults["model"] | string;
 };
@@ -58,7 +58,7 @@ type QueueStatus = {
 };
 
 type StatusArgs = {
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   agent: AgentConfig;
   agentId?: string;
   sessionEntry?: SessionEntry;
@@ -340,7 +340,7 @@ const formatMediaUnderstandingLine = (decisions?: ReadonlyArray<MediaUnderstandi
 };
 
 const formatVoiceModeLine = (
-  config?: OpenClawConfig,
+  config?: RemoteClawConfig,
   sessionEntry?: SessionEntry,
 ): string | null => {
   if (!config) {
@@ -378,7 +378,7 @@ export function buildStatusMessage(args: StatusArgs): string {
     : undefined;
   const configuredProvider = parsedPrimary?.provider || DEFAULT_PROVIDER;
   const configuredModel = parsedPrimary?.model || DEFAULT_MODEL;
-  const contextConfig = args.config ?? ({} as OpenClawConfig);
+  const contextConfig = args.config ?? ({} as RemoteClawConfig);
   const selectedProvider = entry?.providerOverride ?? configuredProvider;
   const selectedModel = entry?.modelOverride ?? configuredModel;
   const modelRefs = resolveSelectedAndActiveModel({
@@ -647,7 +647,7 @@ function groupCommandsByCategory(
   return grouped;
 }
 
-export function buildHelpMessage(cfg?: OpenClawConfig): string {
+export function buildHelpMessage(cfg?: RemoteClawConfig): string {
   const lines = ["ℹ️ Help", ""];
 
   lines.push("Session");
@@ -764,7 +764,7 @@ function formatCommandList(items: CommandsListItem[]): string {
 }
 
 export function buildCommandsMessage(
-  cfg?: OpenClawConfig,
+  cfg?: RemoteClawConfig,
   options?: CommandsMessageOptions,
 ): string {
   const result = buildCommandsMessagePaginated(cfg, options);
@@ -772,7 +772,7 @@ export function buildCommandsMessage(
 }
 
 export function buildCommandsMessagePaginated(
-  cfg?: OpenClawConfig,
+  cfg?: RemoteClawConfig,
   options?: CommandsMessageOptions,
 ): CommandsMessageResult {
   const page = Math.max(1, options?.page ?? 1);

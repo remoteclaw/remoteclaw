@@ -1,5 +1,5 @@
 import type { NormalizedUsage } from "../agents/usage.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 
 export type ModelCostConfig = {
   input: number;
@@ -46,7 +46,7 @@ export function formatUsd(value?: number): string | undefined {
 export function resolveModelCostConfig(_params: {
   provider?: string;
   model?: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
 }): ModelCostConfig | undefined {
   // Models config section has been removed — cost data is no longer available
   // from config. CLI agents resolve model costs directly.

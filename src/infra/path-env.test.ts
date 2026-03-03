@@ -33,9 +33,9 @@ vi.mock("node:fs", async (importOriginal) => {
   return { ...wrapped, default: wrapped };
 });
 
-let ensureOpenClawCliOnPath: typeof import("./path-env.js").ensureOpenClawCliOnPath;
+let ensureRemoteClawCliOnPath: typeof import("./path-env.js").ensureRemoteClawCliOnPath;
 
-describe("ensureOpenClawCliOnPath", () => {
+describe("ensureRemoteClawCliOnPath", () => {
   const envKeys = [
     "PATH",
     "REMOTECLAW_PATH_BOOTSTRAPPED",
@@ -48,7 +48,7 @@ describe("ensureOpenClawCliOnPath", () => {
   let envSnapshot: Record<(typeof envKeys)[number], string | undefined>;
 
   beforeAll(async () => {
-    ({ ensureOpenClawCliOnPath } = await import("./path-env.js"));
+    ({ ensureRemoteClawCliOnPath } = await import("./path-env.js"));
   });
 
   beforeEach(() => {
@@ -83,7 +83,7 @@ describe("ensureOpenClawCliOnPath", () => {
     process.env.PATH = "/usr/bin";
     delete process.env.REMOTECLAW_PATH_BOOTSTRAPPED;
 
-    ensureOpenClawCliOnPath({
+    ensureRemoteClawCliOnPath({
       execPath: cliPath,
       cwd: tmp,
       homeDir: tmp,
@@ -97,7 +97,7 @@ describe("ensureOpenClawCliOnPath", () => {
   it("is idempotent", () => {
     process.env.PATH = "/bin";
     process.env.REMOTECLAW_PATH_BOOTSTRAPPED = "1";
-    ensureOpenClawCliOnPath({
+    ensureRemoteClawCliOnPath({
       execPath: "/tmp/does-not-matter",
       cwd: "/tmp",
       homeDir: "/tmp",
@@ -123,7 +123,7 @@ describe("ensureOpenClawCliOnPath", () => {
     process.env.PATH = "/usr/bin";
     delete process.env.REMOTECLAW_PATH_BOOTSTRAPPED;
 
-    ensureOpenClawCliOnPath({
+    ensureRemoteClawCliOnPath({
       execPath: appCli,
       cwd: tmp,
       homeDir: tmp,
@@ -155,7 +155,7 @@ describe("ensureOpenClawCliOnPath", () => {
     process.env.PATH = "/usr/bin";
     delete process.env.REMOTECLAW_PATH_BOOTSTRAPPED;
 
-    ensureOpenClawCliOnPath({
+    ensureRemoteClawCliOnPath({
       execPath: appCli,
       cwd: tmp,
       homeDir: tmp,
@@ -167,7 +167,7 @@ describe("ensureOpenClawCliOnPath", () => {
     process.env.PATH = "/usr/bin";
     delete process.env.REMOTECLAW_PATH_BOOTSTRAPPED;
 
-    ensureOpenClawCliOnPath({
+    ensureRemoteClawCliOnPath({
       execPath: appCli,
       cwd: tmp,
       homeDir: tmp,
@@ -200,7 +200,7 @@ describe("ensureOpenClawCliOnPath", () => {
     delete process.env.HOMEBREW_BREW_FILE;
     delete process.env.XDG_BIN_HOME;
 
-    ensureOpenClawCliOnPath({
+    ensureRemoteClawCliOnPath({
       execPath: path.join(execDir, "node"),
       cwd: tmp,
       homeDir: tmp,

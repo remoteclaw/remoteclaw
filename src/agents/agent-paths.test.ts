@@ -3,9 +3,9 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { withEnv } from "../test-utils/env.js";
-import { resolveOpenClawAgentDir } from "./agent-paths.js";
+import { resolveRemoteClawAgentDir } from "./agent-paths.js";
 
-describe("resolveOpenClawAgentDir", () => {
+describe("resolveRemoteClawAgentDir", () => {
   const withTempStateDir = async (run: (stateDir: string) => void) => {
     const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-agent-"));
     try {
@@ -24,7 +24,7 @@ describe("resolveOpenClawAgentDir", () => {
           PI_CODING_AGENT_DIR: undefined,
         },
         () => {
-          const resolved = resolveOpenClawAgentDir();
+          const resolved = resolveRemoteClawAgentDir();
           expect(resolved).toBe(path.join(stateDir, "agents", "main", "agent"));
         },
       );
@@ -41,7 +41,7 @@ describe("resolveOpenClawAgentDir", () => {
           PI_CODING_AGENT_DIR: undefined,
         },
         () => {
-          const resolved = resolveOpenClawAgentDir();
+          const resolved = resolveRemoteClawAgentDir();
           expect(resolved).toBe(path.resolve(override));
         },
       );
@@ -58,7 +58,7 @@ describe("resolveOpenClawAgentDir", () => {
           PI_CODING_AGENT_DIR: override,
         },
         () => {
-          const resolved = resolveOpenClawAgentDir();
+          const resolved = resolveRemoteClawAgentDir();
           expect(resolved).toBe(path.resolve(override));
         },
       );
@@ -76,7 +76,7 @@ describe("resolveOpenClawAgentDir", () => {
           PI_CODING_AGENT_DIR: fallbackOverride,
         },
         () => {
-          const resolved = resolveOpenClawAgentDir();
+          const resolved = resolveRemoteClawAgentDir();
           expect(resolved).toBe(path.resolve(primaryOverride));
         },
       );

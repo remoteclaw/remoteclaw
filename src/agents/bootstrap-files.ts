@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { ContextFile } from "./agent-helpers.js";
 import {
   buildBootstrapContextFiles,
@@ -43,7 +43,7 @@ function sanitizeBootstrapFiles(
 
 export async function resolveBootstrapFilesForRun(params: {
   workspaceDir: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   sessionKey?: string;
   sessionId?: string;
   agentId?: string;
@@ -71,7 +71,7 @@ export async function resolveBootstrapFilesForRun(params: {
 
 export async function resolveBootstrapContextForRun(params: {
   workspaceDir: string;
-  config?: OpenClawConfig;
+  config?: RemoteClawConfig;
   sessionKey?: string;
   sessionId?: string;
   agentId?: string;

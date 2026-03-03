@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { readConfigFileSnapshotForWrite, writeConfigFile } from "../config/config.js";
 import { loadCronStore, resolveCronStorePath, saveCronStore } from "../cron/store.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
@@ -91,7 +91,7 @@ function rewriteTargetIfMatch(params: {
 }
 
 function replaceTelegramDefaultToTargets(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   matchKey: string;
   resolvedTarget: string;
 }): boolean {
@@ -130,7 +130,7 @@ function replaceTelegramDefaultToTargets(params: {
 }
 
 export async function maybePersistResolvedTelegramTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   rawTarget: string;
   resolvedChatId: string;
   verbose?: boolean;

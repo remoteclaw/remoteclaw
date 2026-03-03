@@ -4,7 +4,7 @@ import {
   readNumberParam,
   readReactionParams,
   readStringParam,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import type { AgentToolResult } from "../../../src/types/pi-compat.js";
 import {
   deleteMatrixMessage,

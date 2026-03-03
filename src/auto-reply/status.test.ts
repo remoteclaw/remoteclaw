@@ -3,7 +3,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { normalizeTestText } from "../../test/helpers/normalize-text.js";
 import { withTempHome } from "../../test/helpers/temp-home.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { createSuccessfulImageMediaDecision } from "./media-understanding.test-fixtures.js";
 import {
   buildCommandsMessage,
@@ -29,7 +29,7 @@ afterEach(() => {
 describe("buildStatusMessage", () => {
   it("summarizes agent readiness and context usage", () => {
     const text = buildStatusMessage({
-      config: {} as unknown as OpenClawConfig,
+      config: {} as unknown as RemoteClawConfig,
       agent: {
         model: "anthropic/pi:opus",
         contextTokens: 32_000,
@@ -81,7 +81,7 @@ describe("buildStatusMessage", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as RemoteClawConfig,
       agent: {
         model: "openai/gpt-4.1",
       },
@@ -114,7 +114,7 @@ describe("buildStatusMessage", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as RemoteClawConfig,
       agent: {
         model: "anthropic/claude-opus-4-6",
       },
@@ -381,7 +381,7 @@ describe("buildStatusMessage", () => {
 
   it("hides cost when not using an API key", () => {
     const text = buildStatusMessage({
-      config: {} as unknown as OpenClawConfig,
+      config: {} as unknown as RemoteClawConfig,
       agent: { model: "anthropic/claude-opus-4-5" },
       sessionEntry: { sessionId: "c1", updatedAt: 0, inputTokens: 10 },
       sessionKey: "agent:main:main",
@@ -558,7 +558,7 @@ describe("buildCommandsMessage", () => {
   it("lists commands with aliases and hints", () => {
     const text = buildCommandsMessage({
       commands: { config: false, debug: false },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
     expect(text).toContain("ℹ️ Slash commands");
     expect(text).toContain("Status");
     expect(text).toContain("/commands - List all slash commands.");
@@ -572,7 +572,7 @@ describe("buildHelpMessage", () => {
   it("hides config/debug when disabled", () => {
     const text = buildHelpMessage({
       commands: { config: false, debug: false },
-    } as unknown as OpenClawConfig);
+    } as unknown as RemoteClawConfig);
     expect(text).not.toContain("/config");
     expect(text).not.toContain("/debug");
   });
@@ -583,7 +583,7 @@ describe("buildCommandsMessagePaginated", () => {
     const result = buildCommandsMessagePaginated(
       {
         commands: { config: false, debug: false },
-      } as unknown as OpenClawConfig,
+      } as unknown as RemoteClawConfig,
       { surface: "telegram", page: 1 },
     );
     expect(result.text).toContain("ℹ️ Commands (1/");
@@ -598,7 +598,7 @@ describe("buildCommandsMessagePaginated", () => {
     const result = buildCommandsMessagePaginated(
       {
         commands: { config: false, debug: false },
-      } as unknown as OpenClawConfig,
+      } as unknown as RemoteClawConfig,
       { surface: "telegram", page: 99 },
     );
     expect(result.text).toContain("Plugins");

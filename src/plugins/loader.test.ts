@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { withEnv } from "../test-utils/env.js";
-import { loadOpenClawPlugins } from "./loader.js";
+import { loadRemoteClawPlugins } from "./loader.js";
 
 type TempPlugin = { dir: string; file: string; id: string };
 
@@ -75,7 +75,7 @@ function setupBundledTelegramPlugin() {
   process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 }
 
-function expectTelegramLoaded(registry: ReturnType<typeof loadOpenClawPlugins>) {
+function expectTelegramLoaded(registry: ReturnType<typeof loadRemoteClawPlugins>) {
   const telegram = registry.plugins.find((entry) => entry.id === "telegram");
   expect(telegram?.status).toBe("loaded");
   expect(registry.channels.some((entry) => entry.plugin.id === "telegram")).toBe(true);
@@ -97,7 +97,7 @@ afterAll(() => {
   }
 });
 
-describe("loadOpenClawPlugins", () => {
+describe("loadRemoteClawPlugins", () => {
   it("disables bundled plugins by default", () => {
     const bundledDir = makeTempDir();
     writePlugin({
@@ -108,7 +108,7 @@ describe("loadOpenClawPlugins", () => {
     });
     process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -120,7 +120,7 @@ describe("loadOpenClawPlugins", () => {
     const bundled = registry.plugins.find((entry) => entry.id === "bundled");
     expect(bundled?.status).toBe("disabled");
 
-    const enabledRegistry = loadOpenClawPlugins({
+    const enabledRegistry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -139,7 +139,7 @@ describe("loadOpenClawPlugins", () => {
   it("loads bundled telegram plugin when enabled", () => {
     setupBundledTelegramPlugin();
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -157,7 +157,7 @@ describe("loadOpenClawPlugins", () => {
   it("loads bundled channel plugins when channels.<id>.enabled=true", () => {
     setupBundledTelegramPlugin();
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         channels: {
@@ -177,7 +177,7 @@ describe("loadOpenClawPlugins", () => {
   it("still respects explicit disable via plugins.entries for bundled channels", () => {
     setupBundledTelegramPlugin();
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         channels: {
@@ -205,7 +205,7 @@ describe("loadOpenClawPlugins", () => {
       body: `export default { id: "allowed", register(api) { api.registerGatewayMethod("allowed.ping", ({ respond }) => respond(true, { ok: true })); } };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: plugin.dir,
       config: {
@@ -228,7 +228,7 @@ describe("loadOpenClawPlugins", () => {
       body: `export default { id: "blocked", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: plugin.dir,
       config: {
@@ -251,7 +251,7 @@ describe("loadOpenClawPlugins", () => {
       body: `export default { id: "configurable", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: plugin.dir,
       config: {
@@ -297,7 +297,7 @@ describe("loadOpenClawPlugins", () => {
 } };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: plugin.dir,
       config: {
@@ -321,7 +321,7 @@ describe("loadOpenClawPlugins", () => {
 } };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: plugin.dir,
       config: {
@@ -347,7 +347,7 @@ describe("loadOpenClawPlugins", () => {
 } };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: plugin.dir,
       config: {
@@ -372,7 +372,7 @@ describe("loadOpenClawPlugins", () => {
       body: `export default { id: "config-disable", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -403,7 +403,7 @@ describe("loadOpenClawPlugins", () => {
       body: `export default { id: "shadow", register() {} };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {
@@ -428,7 +428,7 @@ describe("loadOpenClawPlugins", () => {
       body: `export default { id: "warn-open-allow", register() {} };`,
     });
     const warnings: string[] = [];
-    loadOpenClawPlugins({
+    loadRemoteClawPlugins({
       cache: false,
       logger: {
         info: () => {},
@@ -460,7 +460,7 @@ describe("loadOpenClawPlugins", () => {
       });
 
       const warnings: string[] = [];
-      const registry = loadOpenClawPlugins({
+      const registry = loadRemoteClawPlugins({
         cache: false,
         logger: {
           info: () => {},
@@ -514,7 +514,7 @@ describe("loadOpenClawPlugins", () => {
       return;
     }
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {

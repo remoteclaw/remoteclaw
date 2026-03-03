@@ -1,5 +1,5 @@
 import { normalizeChatChannelId } from "../channels/registry.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { PluginRecord } from "./registry.js";
 
 export type NormalizedPluginsConfig = {
@@ -47,7 +47,7 @@ const normalizePluginEntries = (entries: unknown): NormalizedPluginsConfig["entr
 };
 
 export const normalizePluginsConfig = (
-  config?: OpenClawConfig["plugins"],
+  config?: RemoteClawConfig["plugins"],
 ): NormalizedPluginsConfig => {
   return {
     enabled: config?.enabled !== false,
@@ -59,7 +59,7 @@ export const normalizePluginsConfig = (
   };
 };
 
-const hasExplicitPluginConfig = (plugins?: OpenClawConfig["plugins"]) => {
+const hasExplicitPluginConfig = (plugins?: RemoteClawConfig["plugins"]) => {
   if (!plugins) {
     return false;
   }
@@ -85,9 +85,9 @@ const hasExplicitPluginConfig = (plugins?: OpenClawConfig["plugins"]) => {
 };
 
 export function applyTestPluginDefaults(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   env: NodeJS.ProcessEnv = process.env,
-): OpenClawConfig {
+): RemoteClawConfig {
   if (!env.VITEST) {
     return cfg;
   }
@@ -137,7 +137,7 @@ export function resolveEnableState(
 }
 
 export function isBundledChannelEnabledByChannelConfig(
-  cfg: OpenClawConfig | undefined,
+  cfg: RemoteClawConfig | undefined,
   pluginId: string,
 ): boolean {
   if (!cfg) {
@@ -159,7 +159,7 @@ export function resolveEffectiveEnableState(params: {
   id: string;
   origin: PluginRecord["origin"];
   config: NormalizedPluginsConfig;
-  rootConfig?: OpenClawConfig;
+  rootConfig?: RemoteClawConfig;
 }): { enabled: boolean; reason?: string } {
   const base = resolveEnableState(params.id, params.origin, params.config);
   if (

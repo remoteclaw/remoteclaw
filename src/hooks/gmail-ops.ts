@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { formatCliCommand } from "../cli/command-format.js";
 import {
-  type OpenClawConfig,
+  type RemoteClawConfig,
   CONFIG_PATH,
   loadConfig,
   readConfigFileSnapshot,
@@ -197,7 +197,7 @@ export async function runGmailSetup(opts: GmailSetupOptions) {
     true,
   );
 
-  const nextConfig: OpenClawConfig = {
+  const nextConfig: RemoteClawConfig = {
     ...baseConfig,
     hooks: {
       ...baseConfig.hooks,

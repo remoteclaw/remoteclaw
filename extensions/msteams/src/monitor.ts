@@ -3,9 +3,9 @@ import {
   DEFAULT_WEBHOOK_MAX_BODY_BYTES,
   mergeAllowlist,
   summarizeMapping,
-  type OpenClawConfig,
+  type RemoteClawConfig,
   type RuntimeEnv,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import { createMSTeamsConversationStoreFs } from "./conversation-store-fs.js";
 import type { MSTeamsConversationStore } from "./conversation-store.js";
 import { formatUnknownError } from "./errors.js";
@@ -21,7 +21,7 @@ import { createMSTeamsAdapter, loadMSTeamsSdkWithAuth } from "./sdk.js";
 import { resolveMSTeamsCredentials } from "./token.js";
 
 export type MonitorMSTeamsOpts = {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   runtime?: RuntimeEnv;
   abortSignal?: AbortSignal;
   conversationStore?: MSTeamsConversationStore;

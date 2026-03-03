@@ -46,7 +46,7 @@ describe("state + config path candidates", () => {
     }
   }
 
-  function expectOpenClawHomeDefaults(env: NodeJS.ProcessEnv): void {
+  function expectRemoteClawHomeDefaults(env: NodeJS.ProcessEnv): void {
     const configuredHome = env.REMOTECLAW_HOME;
     if (!configuredHome) {
       throw new Error("REMOTECLAW_HOME must be set for this assertion helper");
@@ -70,7 +70,7 @@ describe("state + config path candidates", () => {
     const env = {
       REMOTECLAW_HOME: "/srv/openclaw-home",
     } as NodeJS.ProcessEnv;
-    expectOpenClawHomeDefaults(env);
+    expectRemoteClawHomeDefaults(env);
   });
 
   it("prefers REMOTECLAW_HOME over HOME for default state/config locations", () => {
@@ -78,7 +78,7 @@ describe("state + config path candidates", () => {
       REMOTECLAW_HOME: "/srv/openclaw-home",
       HOME: "/home/other",
     } as NodeJS.ProcessEnv;
-    expectOpenClawHomeDefaults(env);
+    expectRemoteClawHomeDefaults(env);
   });
 
   it("orders default config candidates in a stable order", () => {

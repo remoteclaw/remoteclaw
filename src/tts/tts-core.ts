@@ -1,6 +1,6 @@
 import { rmSync } from "node:fs";
 import { EdgeTTS } from "node-edge-tts";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type {
   ResolvedTtsConfig,
   ResolvedTtsModelOverrides,
@@ -385,7 +385,7 @@ type SummarizeResult = {
 export async function summarizeText(_params: {
   text: string;
   targetLength: number;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   config: ResolvedTtsConfig;
   timeoutMs: number;
 }): Promise<SummarizeResult> {

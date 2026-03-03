@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "./config.js";
+import type { RemoteClawConfig } from "./config.js";
 import { migrateLegacyConfig, validateConfigObject } from "./config.js";
 
 function getLegacyRouting(config: unknown) {
@@ -491,7 +491,7 @@ describe("legacy config detection", () => {
             },
           },
         },
-        assert: (config: NonNullable<OpenClawConfig>) => {
+        assert: (config: NonNullable<RemoteClawConfig>) => {
           expect(config.channels?.discord?.accounts?.work?.streaming).toBe("partial");
           expect(config.channels?.discord?.accounts?.work?.streamMode).toBeUndefined();
         },
@@ -505,7 +505,7 @@ describe("legacy config detection", () => {
             },
           },
         },
-        assert: (config: NonNullable<OpenClawConfig>) => {
+        assert: (config: NonNullable<RemoteClawConfig>) => {
           expect(config.channels?.slack?.streaming).toBe("progress");
           expect(config.channels?.slack?.streamMode).toBeUndefined();
           expect(config.channels?.slack?.nativeStreaming).toBe(true);
@@ -520,7 +520,7 @@ describe("legacy config detection", () => {
             },
           },
         },
-        assert: (config: NonNullable<OpenClawConfig>) => {
+        assert: (config: NonNullable<RemoteClawConfig>) => {
           expect(config.channels?.slack?.streaming).toBe("partial");
           expect(config.channels?.slack?.nativeStreaming).toBe(false);
         },

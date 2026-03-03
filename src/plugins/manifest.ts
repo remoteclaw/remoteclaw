@@ -68,7 +68,7 @@ export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
     return { ok: false, error: "plugin manifest requires configSchema", manifestPath };
   }
 
-  const kind = typeof raw.kind === "string" ? (raw.kind as PluginKind) : undefined;
+  const kind = typeof raw.kind === "string" ? raw.kind : undefined;
   const name = typeof raw.name === "string" ? raw.name.trim() : undefined;
   const description = typeof raw.description === "string" ? raw.description.trim() : undefined;
   const version = typeof raw.version === "string" ? raw.version.trim() : undefined;
@@ -127,7 +127,7 @@ export type PluginPackageInstall = {
   defaultChoice?: "npm" | "local";
 };
 
-export type OpenClawPackageManifest = {
+export type RemoteClawPackageManifest = {
   extensions?: string[];
   channel?: PluginPackageChannel;
   install?: PluginPackageInstall;
@@ -139,11 +139,11 @@ export type PackageManifest = {
   name?: string;
   version?: string;
   description?: string;
-} & Partial<Record<ManifestKey, OpenClawPackageManifest>>;
+} & Partial<Record<ManifestKey, RemoteClawPackageManifest>>;
 
 export function getPackageManifestMetadata(
   manifest: PackageManifest | undefined,
-): OpenClawPackageManifest | undefined {
+): RemoteClawPackageManifest | undefined {
   if (!manifest) {
     return undefined;
   }

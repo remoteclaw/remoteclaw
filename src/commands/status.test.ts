@@ -216,7 +216,7 @@ vi.mock("../gateway/session-utils.js", async (importOriginal) => {
   };
 });
 vi.mock("../infra/openclaw-root.js", () => ({
-  resolveOpenClawPackageRoot: vi.fn().mockResolvedValue("/tmp/openclaw"),
+  resolveRemoteClawPackageRoot: vi.fn().mockResolvedValue("/tmp/openclaw"),
 }));
 vi.mock("../infra/os-summary.js", () => ({
   resolveOsSummary: () => ({
@@ -344,7 +344,7 @@ describe("statusCommand", () => {
     runtimeLogMock.mockClear();
     await statusCommand({}, runtime as never);
     const logs = runtimeLogMock.mock.calls.map((c: unknown[]) => String(c[0]));
-    expect(logs.some((l: string) => l.includes("OpenClaw status"))).toBe(true);
+    expect(logs.some((l: string) => l.includes("RemoteClaw status"))).toBe(true);
     expect(logs.some((l: string) => l.includes("Overview"))).toBe(true);
     expect(logs.some((l: string) => l.includes("Security audit"))).toBe(true);
     expect(logs.some((l: string) => l.includes("Summary:"))).toBe(true);

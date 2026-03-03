@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { withEnvAsync } from "../test-utils/env.js";
-import { discoverOpenClawPlugins } from "./discovery.js";
+import { discoverRemoteClawPlugins } from "./discovery.js";
 
 const tempDirs: string[] = [];
 
@@ -36,7 +36,7 @@ afterEach(() => {
   }
 });
 
-describe("discoverOpenClawPlugins", () => {
+describe("discoverRemoteClawPlugins", () => {
   it("discovers global and workspace extensions", async () => {
     const stateDir = makeTempDir();
     const workspaceDir = path.join(stateDir, "workspace");
@@ -50,7 +50,7 @@ describe("discoverOpenClawPlugins", () => {
     fs.writeFileSync(path.join(workspaceExt, "beta.ts"), "export default function () {}", "utf-8");
 
     const { candidates } = await withStateDir(stateDir, async () => {
-      return discoverOpenClawPlugins({ workspaceDir });
+      return discoverRemoteClawPlugins({ workspaceDir });
     });
 
     const ids = candidates.map((c) => c.idHint);
@@ -80,7 +80,7 @@ describe("discoverOpenClawPlugins", () => {
     fs.writeFileSync(path.join(liveDir, "index.ts"), "export default function () {}", "utf-8");
 
     const { candidates } = await withStateDir(stateDir, async () => {
-      return discoverOpenClawPlugins({});
+      return discoverRemoteClawPlugins({});
     });
 
     const ids = candidates.map((candidate) => candidate.idHint);
@@ -115,7 +115,7 @@ describe("discoverOpenClawPlugins", () => {
     );
 
     const { candidates } = await withStateDir(stateDir, async () => {
-      return discoverOpenClawPlugins({});
+      return discoverRemoteClawPlugins({});
     });
 
     const ids = candidates.map((c) => c.idHint);
@@ -143,7 +143,7 @@ describe("discoverOpenClawPlugins", () => {
     );
 
     const { candidates } = await withStateDir(stateDir, async () => {
-      return discoverOpenClawPlugins({});
+      return discoverRemoteClawPlugins({});
     });
 
     const ids = candidates.map((c) => c.idHint);
@@ -166,7 +166,7 @@ describe("discoverOpenClawPlugins", () => {
     fs.writeFileSync(path.join(packDir, "index.js"), "module.exports = {}", "utf-8");
 
     const { candidates } = await withStateDir(stateDir, async () => {
-      return discoverOpenClawPlugins({ extraPaths: [packDir] });
+      return discoverRemoteClawPlugins({ extraPaths: [packDir] });
     });
 
     const ids = candidates.map((c) => c.idHint);
@@ -189,7 +189,7 @@ describe("discoverOpenClawPlugins", () => {
     fs.writeFileSync(outside, "export default function () {}", "utf-8");
 
     const result = await withStateDir(stateDir, async () => {
-      return discoverOpenClawPlugins({});
+      return discoverRemoteClawPlugins({});
     });
 
     expect(result.candidates).toHaveLength(0);
@@ -222,7 +222,7 @@ describe("discoverOpenClawPlugins", () => {
     );
 
     const { candidates, diagnostics } = await withStateDir(stateDir, async () => {
-      return discoverOpenClawPlugins({});
+      return discoverRemoteClawPlugins({});
     });
 
     expect(candidates.some((candidate) => candidate.idHint === "pack")).toBe(false);
@@ -240,7 +240,7 @@ describe("discoverOpenClawPlugins", () => {
     fs.chmodSync(pluginPath, 0o777);
 
     const result = await withStateDir(stateDir, async () => {
-      return discoverOpenClawPlugins({});
+      return discoverRemoteClawPlugins({});
     });
 
     expect(result.candidates).toHaveLength(0);
@@ -263,7 +263,7 @@ describe("discoverOpenClawPlugins", () => {
 
       const actualUid = (process as NodeJS.Process & { getuid: () => number }).getuid();
       const result = await withStateDir(stateDir, async () => {
-        return discoverOpenClawPlugins({ ownershipUid: actualUid + 1 });
+        return discoverRemoteClawPlugins({ ownershipUid: actualUid + 1 });
       });
       expect(result.candidates).toHaveLength(0);
       expect(result.diagnostics.some((diag) => diag.message.includes("suspicious ownership"))).toBe(

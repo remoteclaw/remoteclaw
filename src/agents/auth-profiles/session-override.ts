@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { updateSessionStore, type SessionEntry } from "../../config/sessions.js";
 import { normalizeProviderId } from "../provider-utils.js";
 import { listProfilesForProvider } from "./profiles.js";
@@ -36,7 +36,7 @@ export async function clearSessionAuthProfileOverride(params: {
 }
 
 export async function resolveSessionAuthProfileOverride(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   provider: string;
   agentDir: string;
   sessionEntry?: SessionEntry;

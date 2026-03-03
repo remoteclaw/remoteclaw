@@ -44,7 +44,7 @@ vi.mock("../agents/openclaw-tools.js", () => {
     },
   ];
   return {
-    createOpenClawTools: () => tools,
+    createRemoteClawTools: () => tools,
   };
 });
 

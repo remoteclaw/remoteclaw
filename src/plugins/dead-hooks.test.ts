@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { createPluginRegistry, type PluginRecord } from "./registry.js";
 import type { PluginRuntime } from "./runtime/types.js";
 
-const EMPTY_CONFIG = {} as OpenClawConfig;
+const EMPTY_CONFIG = {} as RemoteClawConfig;
 
 function makeRegistryParams() {
   return {

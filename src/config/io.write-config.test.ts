@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { withTempHome } from "./home-env.test-harness.js";
 import { createConfigIO } from "./io.js";
-import type { OpenClawConfig } from "./types.js";
+import type { RemoteClawConfig } from "./types.js";
 
 describe("config io write", () => {
   const silentLogger = {
@@ -134,14 +134,14 @@ describe("config io write", () => {
         logger: silentLogger,
       });
 
-      const invalidConfig: OpenClawConfig = {
+      const invalidConfig: RemoteClawConfig = {
         channels: {
           telegram: {
             dmPolicy: "open",
             allowFrom: [],
           },
         },
-      } satisfies OpenClawConfig;
+      } satisfies RemoteClawConfig;
 
       await expect(io.writeConfigFile(invalidConfig)).rejects.toThrow(
         "openclaw config set channels.telegram.allowFrom '[\"*\"]'",

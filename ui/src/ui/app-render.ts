@@ -127,7 +127,7 @@ function resolveAssistantAvatarUrl(state: AppViewState): string | undefined {
 }
 
 export function renderApp(state: AppViewState) {
-  const openClawVersion =
+  const remoteClawVersion =
     (typeof state.hello?.server?.version === "string" && state.hello.server.version.trim()) ||
     state.updateAvailable?.currentVersion ||
     t("common.na");
@@ -226,7 +226,7 @@ export function renderApp(state: AppViewState) {
               <img src=${basePath ? `${basePath}/favicon.svg` : "/favicon.svg"} alt="RemoteClaw" />
             </div>
             <div class="brand-text">
-              <div class="brand-title">OPENCLAW</div>
+              <div class="brand-title">REMOTECLAW</div>
               <div class="brand-sub">Gateway Dashboard</div>
             </div>
           </div>
@@ -235,7 +235,7 @@ export function renderApp(state: AppViewState) {
           <div class="pill">
             <span class="statusDot ${versionStatusClass}"></span>
             <span>${t("common.version")}</span>
-            <span class="mono">${openClawVersion}</span>
+            <span class="mono">${remoteClawVersion}</span>
           </div>
           <div class="pill">
             <span class="statusDot ${state.connected ? "ok" : ""}"></span>
@@ -279,7 +279,7 @@ export function renderApp(state: AppViewState) {
           <div class="nav-group__items">
             <a
               class="nav-item nav-item--external"
-              href="https://docs.openclaw.ai"
+              href="https://docs.remoteclaw.ai"
               target=${EXTERNAL_LINK_TARGET}
               rel=${buildExternalLinkRel()}
               title="${t("common.docs")} (opens in new tab)"

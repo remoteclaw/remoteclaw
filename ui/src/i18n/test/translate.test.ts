@@ -42,7 +42,7 @@ describe("i18n", () => {
   });
 
   it("loads saved non-English locale on startup", async () => {
-    localStorage.setItem("openclaw.i18n.locale", "zh-CN");
+    localStorage.setItem("remoteclaw.i18n.locale", "zh-CN");
     vi.resetModules();
     const fresh = await import("../lib/translate.ts");
 

@@ -99,7 +99,7 @@ export const pt_BR: TranslationMap = {
     pairing: {
       hint: "Este dispositivo precisa de aprovação de pareamento do host do gateway.",
       mobileHint:
-        "No celular? Copie a URL completa (incluindo #token=...) executando openclaw dashboard --no-open no desktop.",
+        "No celular? Copie a URL completa (incluindo #token=...) executando remoteclaw dashboard --no-open no desktop.",
     },
     insecure: {
       hint: "Esta página é HTTP, então o navegador bloqueia a identidade do dispositivo. Use HTTPS (Tailscale Serve) ou abra {url} no host do gateway.",

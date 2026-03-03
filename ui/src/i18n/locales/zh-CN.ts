@@ -96,7 +96,7 @@ export const zh_CN: TranslationMap = {
     pairing: {
       hint: "此设备需要网关主机的配对批准。",
       mobileHint:
-        "在手机上？从桌面运行 openclaw dashboard --no-open 复制完整 URL（包括 #token=...）。",
+        "在手机上？从桌面运行 remoteclaw dashboard --no-open 复制完整 URL（包括 #token=...）。",
     },
     insecure: {
       hint: "此页面为 HTTP，因此浏览器阻止设备标识。请使用 HTTPS (Tailscale Serve) 或在网关主机上打开 {url}。",

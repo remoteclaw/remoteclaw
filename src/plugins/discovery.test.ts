@@ -343,9 +343,10 @@ describe("discoverRemoteClawPlugins", () => {
       const result = await withStateDir(stateDir, async () => {
         return discoverRemoteClawPlugins({ ownershipUid: actualUid + 1 });
       });
-      expect(result.candidates).toHaveLength(0);
+      const shouldBlockForMismatch = actualUid !== 0;
+      expect(result.candidates).toHaveLength(shouldBlockForMismatch ? 0 : 1);
       expect(result.diagnostics.some((diag) => diag.message.includes("suspicious ownership"))).toBe(
-        true,
+        shouldBlockForMismatch,
       );
     },
   );

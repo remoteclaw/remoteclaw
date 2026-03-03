@@ -41,6 +41,19 @@ const coreEntries: CoreCliEntry[] = [
   {
     commands: [
       {
+        name: "import",
+        description: "Import an existing OpenClaw installation into RemoteClaw",
+        hasSubcommands: false,
+      },
+    ],
+    register: async ({ program }) => {
+      const mod = await import("./register.import.js");
+      mod.registerImportCommand(program);
+    },
+  },
+  {
+    commands: [
+      {
         name: "setup",
         description: "Initialize local config and agent workspace",
         hasSubcommands: false,

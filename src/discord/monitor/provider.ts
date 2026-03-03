@@ -11,6 +11,7 @@ import { GatewayCloseCodes, type GatewayPlugin } from "@buape/carbon/gateway";
 import { VoicePlugin } from "@buape/carbon/voice";
 import { Routes } from "discord-api-types/v10";
 import { resolveTextChunkLimit } from "../../auto-reply/chunk.js";
+import type { NativeCommandSpec } from "../../auto-reply/commands-registry.js";
 import { listNativeCommandSpecsForConfig } from "../../auto-reply/commands-registry.js";
 import type { HistoryEntry } from "../../auto-reply/reply/history.js";
 import {
@@ -35,6 +36,7 @@ import { danger, logVerbose, shouldLogVerbose, warn } from "../../globals.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { createDiscordRetryRunner } from "../../infra/retry-policy.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { getPluginCommandSpecs } from "../../plugins/commands.js";
 import { createNonExitingRuntime, type RuntimeEnv } from "../../runtime.js";
 import { resolveDiscordAccount } from "../accounts.js";
 import { fetchDiscordApplicationId } from "../probe.js";
@@ -110,6 +112,37 @@ function summarizeGuilds(entries?: Record<string, unknown>) {
 function formatThreadBindingDurationForConfigLabel(durationMs: number): string {
   const label = formatThreadBindingDurationLabel(durationMs);
   return label === "disabled" ? "off" : label;
+}
+
+function appendPluginCommandSpecs(params: {
+  commandSpecs: NativeCommandSpec[];
+  runtime: RuntimeEnv;
+}): NativeCommandSpec[] {
+  const merged = [...params.commandSpecs];
+  const existingNames = new Set(
+    merged.map((spec) => spec.name.trim().toLowerCase()).filter(Boolean),
+  );
+  for (const pluginCommand of getPluginCommandSpecs()) {
+    const normalizedName = pluginCommand.name.trim().toLowerCase();
+    if (!normalizedName) {
+      continue;
+    }
+    if (existingNames.has(normalizedName)) {
+      params.runtime.error?.(
+        danger(
+          `discord: plugin command "/${normalizedName}" duplicates an existing native command. Skipping.`,
+        ),
+      );
+      continue;
+    }
+    existingNames.add(normalizedName);
+    merged.push({
+      name: pluginCommand.name,
+      description: pluginCommand.description,
+      acceptsArgs: pluginCommand.acceptsArgs,
+    });
+  }
+  return merged;
 }
 
 async function deployDiscordCommands(params: {
@@ -275,9 +308,12 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
   }
 
   const maxDiscordCommands = 100;
-  const commandSpecs = nativeEnabled
+  let commandSpecs = nativeEnabled
     ? listNativeCommandSpecsForConfig(cfg, { provider: "discord" })
     : [];
+  if (nativeEnabled) {
+    commandSpecs = appendPluginCommandSpecs({ commandSpecs, runtime });
+  }
   if (nativeEnabled && commandSpecs.length > maxDiscordCommands) {
     runtime.log?.(
       warn(

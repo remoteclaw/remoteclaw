@@ -33,7 +33,7 @@ You’ll see:
 - `/status` showing `🧹 Compactions: <count>`
 
 Before compaction, OpenClaw can run a **silent memory flush** turn to store
-durable notes to disk. See [Memory](/concepts/memory) for details and config.
+durable notes to disk.
 
 ## Manual compaction
 

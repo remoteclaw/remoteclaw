@@ -13,7 +13,7 @@ Initialize `~/.openclaw/openclaw.json` and the agent workspace.
 Related:
 
 - Getting started: [Getting started](/start/getting-started)
-- Wizard: [Onboarding](/start/onboarding)
+- Configuration: [Configuration](/gateway/configuration)
 
 ## Examples
 

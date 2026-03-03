@@ -183,8 +183,7 @@ This does **not** rewrite JSONL history. See [/concepts/session-pruning](/concep
 
 When a session nears auto-compaction, OpenClaw can run a **silent memory flush**
 turn that reminds the model to write durable notes to disk. This only runs when
-the workspace is writable. See [Memory](/concepts/memory) and
-[Compaction](/concepts/compaction).
+the workspace is writable. See [Compaction](/concepts/compaction).
 
 ## Mapping transports → session keys
 

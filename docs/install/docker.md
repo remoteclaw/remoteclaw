@@ -14,14 +14,14 @@ Docker is **optional**. Use it only if you want a containerized gateway or to va
 
 - **Yes**: you want an isolated, throwaway gateway environment or to run OpenClaw on a host without local installs.
 - **No**: you’re running on your own machine and just want the fastest dev loop. Use the normal install flow instead.
-- **Sandboxing note**: agent sandboxing uses Docker too, but it does **not** require the full gateway to run in Docker. See [Sandboxing](/gateway/sandboxing).
+- **Sandboxing note**: agent sandboxing uses Docker too, but it does **not** require the full gateway to run in Docker. See [Gateway configuration](/gateway/configuration#agentsdefaultssandbox).
 
 This guide covers:
 
 - Containerized Gateway (full OpenClaw in Docker)
 - Per-session Agent Sandbox (host gateway + Docker-isolated agent tools)
 
-Sandboxing details: [Sandboxing](/gateway/sandboxing)
+Sandboxing details: [Gateway configuration](/gateway/configuration#agentsdefaultssandbox)
 
 ## Requirements
 
@@ -329,7 +329,7 @@ pnpm test:docker:qr
 
 ## Agent Sandbox (host gateway + Docker tools)
 
-Deep dive: [Sandboxing](/gateway/sandboxing)
+Deep dive: [Gateway configuration](/gateway/configuration#agentsdefaultssandbox)
 
 ### What it does
 
@@ -356,7 +356,7 @@ mixed access levels in one gateway:
 - Read-only tools + read-only workspace (family/work agent)
 - No filesystem/shell tools (public agent)
 
-See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for examples,
+See [Multi-Agent Routing](/concepts/multi-agent) for examples,
 precedence, and troubleshooting.
 
 ### Default behavior

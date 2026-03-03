@@ -17,7 +17,7 @@ sessions.
 **Important:** the workspace is the **default cwd**, not a hard sandbox. Tools
 resolve relative paths against the workspace, but absolute paths can still reach
 elsewhere on the host unless sandboxing is enabled. If you need isolation, use
-[`agents.defaults.sandbox`](/gateway/sandboxing) (and/or per‑agent sandbox config).
+`agents.defaults.sandbox` (and/or per‑agent sandbox config).
 When sandboxing is enabled and `workspaceAccess` is not `"rw"`, tools operate
 inside a sandbox workspace under `~/.openclaw/sandboxes`, not your host workspace.
 
@@ -105,7 +105,7 @@ These are the standard files OpenClaw expects inside the workspace:
   - Curated long-term memory.
   - Only load in the main, private session (not shared/group contexts).
 
-See [Memory](/concepts/memory) for the workflow and automatic memory flush.
+Memory files are managed automatically by the agent runtime.
 
 - `skills/` (optional)
   - Workspace-specific skills.

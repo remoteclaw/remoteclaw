@@ -72,7 +72,7 @@ Semantic memory search uses **embedding APIs** when configured for remote provid
 
 You can keep it local with `memorySearch.provider = "local"` (no API usage).
 
-See [Memory](/concepts/memory).
+See [Agent workspace](/concepts/agent-workspace).
 
 ### 4) Web search tool (Brave / Perplexity via OpenRouter)
 
@@ -107,7 +107,7 @@ These are typically low-volume calls but still hit provider APIs:
 - `openclaw status --usage`
 - `openclaw models status --json`
 
-See [Models CLI](/cli/models).
+See [Model providers](/concepts/model-providers).
 
 ### 7) Compaction safeguard summarization
 
@@ -121,7 +121,7 @@ See [Session management + compaction](/reference/session-management-compaction).
 `openclaw models scan` can probe OpenRouter models and uses `OPENROUTER_API_KEY` when
 probing is enabled.
 
-See [Models CLI](/cli/models).
+See [Model providers](/concepts/model-providers).
 
 ### 9) Talk (speech)
 
@@ -136,4 +136,4 @@ See [Talk mode](/nodes/talk).
 Skills can store `apiKey` in `skills.entries.<name>.apiKey`. If a skill uses that key for external
 APIs, it can incur costs according to the skill’s provider.
 
-See [Skills](/tools/skills).
+Skills can store API keys in `skills.entries.<name>.apiKey`.

@@ -117,8 +117,7 @@ Want “groups can only see folder X” instead of “no host access”? Keep `w
 Related:
 
 - Configuration keys and defaults: [Gateway configuration](/gateway/configuration#agentsdefaultssandbox)
-- Debugging why a tool is blocked: [Sandbox vs Tool Policy vs Elevated](/gateway/sandbox-vs-tool-policy-vs-elevated)
-- Bind mounts details: [Sandboxing](/gateway/sandboxing#custom-bind-mounts)
+- Debugging why a tool is blocked: [Exec approvals](/tools/exec-approvals)
 
 ## Display labels
 

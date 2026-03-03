@@ -110,4 +110,4 @@ When set, `REMOTECLAW_HOME` replaces the system home directory (`$HOME` / `os.ho
 
 - [Gateway configuration](/gateway/configuration)
 - [FAQ: env vars and .env loading](/help/faq#env-vars-and-env-loading)
-- [Models overview](/concepts/models)
+- [Model providers](/concepts/model-providers)

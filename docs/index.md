@@ -33,8 +33,8 @@ title: "OpenClaw"
   <Card title="Get Started" href="/start/getting-started" icon="rocket">
     Install OpenClaw and bring up the Gateway in minutes.
   </Card>
-  <Card title="Run the Wizard" href="/start/wizard" icon="sparkles">
-    Guided setup with `openclaw onboard` and pairing flows.
+  <Card title="Setup" href="/start/setup" icon="sparkles">
+    Configure auth, gateway settings, and optional channels.
   </Card>
   <Card title="Open the Control UI" href="/web/control-ui" icon="layout-dashboard">
     Launch the browser dashboard for chat, config, and sessions.

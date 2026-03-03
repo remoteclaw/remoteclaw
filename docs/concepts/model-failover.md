@@ -146,4 +146,4 @@ See [Gateway configuration](/gateway/configuration) for:
 - `agents.defaults.model.primary` / `agents.defaults.model.fallbacks`
 - `agents.defaults.imageModel` routing
 
-See [Models](/concepts/models) for the broader model selection and fallback overview.
+See [Model providers](/concepts/model-providers) for the broader model selection and fallback overview.

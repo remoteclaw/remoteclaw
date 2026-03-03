@@ -675,7 +675,7 @@ No. You can run OpenClaw with **API keys** (Anthropic/OpenAI/others) or with
 Pro/Max or OpenAI Codex) are optional ways to authenticate those providers.
 
 Docs: [Anthropic](/providers/anthropic), [OpenAI](/providers/openai),
-[Local models](/gateway/local-models), [Models](/concepts/models).
+[Local models](/gateway/local-models), [Model providers](/concepts/model-providers).
 
 ### Can I use Claude Max subscription without an API key
 
@@ -715,7 +715,7 @@ reset or upgrade your plan. If you use an **Anthropic API key**, check the Anthr
 for usage/billing and raise limits as needed.
 
 Tip: set a **fallback model** so OpenClaw can keep replying while a provider is rate-limited.
-See [Models](/cli/models) and [OAuth](/concepts/oauth).
+See [OAuth](/concepts/oauth).
 
 ### Is AWS Bedrock supported
 
@@ -723,14 +723,14 @@ Yes - via pi-ai's **Amazon Bedrock (Converse)** provider with **manual config**.
 
 ### How does Codex auth work
 
-OpenClaw supports **OpenAI Code (Codex)** via OAuth (ChatGPT sign-in). The wizard can run the OAuth flow and will set the default model to `openai-codex/gpt-5.3-codex` when appropriate. See [Model providers](/concepts/model-providers) and [Wizard](/start/wizard).
+OpenClaw supports **OpenAI Code (Codex)** via OAuth (ChatGPT sign-in). The wizard can run the OAuth flow and will set the default model to `openai-codex/gpt-5.3-codex` when appropriate. See [Model providers](/concepts/model-providers) and Wizard.
 
 ### Do you support OpenAI subscription auth Codex OAuth
 
 Yes. OpenClaw fully supports **OpenAI Code (Codex) subscription OAuth**. The onboarding wizard
 can run the OAuth flow for you.
 
-See [OAuth](/concepts/oauth), [Model providers](/concepts/model-providers), and [Wizard](/start/wizard).
+See [OAuth](/concepts/oauth), [Model providers](/concepts/model-providers), and Wizard.
 
 ### How do I set up Gemini CLI OAuth
 
@@ -821,7 +821,7 @@ Yes, via **multi-agent routing**. Bind each sender's WhatsApp **DM** (peer `kind
 
 ### Can I run a fast chat agent and an Opus for coding agent
 
-Yes. Use multi-agent routing: give each agent its own default model, then bind inbound routes (provider account or specific peers) to each agent. Example config lives in [Multi-Agent Routing](/concepts/multi-agent). See also [Models](/concepts/models) and [Configuration](/gateway/configuration).
+Yes. Use multi-agent routing: give each agent its own default model, then bind inbound routes (provider account or specific peers) to each agent. Example config lives in [Multi-Agent Routing](/concepts/multi-agent). See also [Model providers](/concepts/model-providers) and [Configuration](/gateway/configuration).
 
 ### Does Homebrew work on Linux
 
@@ -957,7 +957,7 @@ Highlights:
 - **Open source and hackable:** inspect, extend, and self-host without vendor lock-in.
 
 Docs: [Gateway](/gateway), [Channels](/channels), [Multi-agent](/concepts/multi-agent),
-[Memory](/concepts/memory).
+Memory.
 
 ### I just set it up what should I do first
 
@@ -1084,7 +1084,7 @@ Docs: [Cron jobs](/automation/cron-jobs), [Cron vs Heartbeat](/automation/cron-v
 ### How do I install skills on Linux
 
 Use **ClawHub** (CLI) or drop skills into your workspace. The macOS Skills UI isn't available on Linux.
-Browse skills at [https://clawhub.com](https://clawhub.com).
+Browse skills at clawhub.com.
 
 Install the ClawHub CLI (pick one package manager):
 
@@ -1160,14 +1160,7 @@ If you want to keep context per client (agency workflows), a simple pattern is:
 If you want a native integration, open a feature request or build a skill
 targeting those APIs.
 
-Install skills:
-
-```bash
-clawhub install <skill-slug>
-clawhub update --all
-```
-
-ClawHub installs into `./skills` under your current directory (or falls back to your configured OpenClaw workspace); OpenClaw treats that as `<workspace>/skills` on the next session. For shared skills across agents, place them in `~/.openclaw/skills/<name>/SKILL.md`. Some skills expect binaries installed via Homebrew; on Linux that means Linuxbrew (see the Homebrew Linux FAQ entry above). See [Skills](/tools/skills) and [ClawHub](/tools/clawhub).
+Install skills via `clawhub install <skill-slug>` or drop them into `~/.openclaw/skills/<name>/SKILL.md`. Some skills expect binaries installed via Homebrew; on Linux that means Linuxbrew (see the Homebrew Linux FAQ entry above).
 
 ### How do I install the Chrome extension for browser takeover
 
@@ -1190,7 +1183,7 @@ You still need to click the extension button on the tab you want to control (it 
 
 ### Is there a dedicated sandboxing doc
 
-Yes. See [Sandboxing](/gateway/sandboxing). For Docker-specific setup (full gateway in Docker or sandbox images), see [Docker](/install/docker).
+Yes. See Sandboxing. For Docker-specific setup (full gateway in Docker or sandbox images), see [Docker](/install/docker).
 
 ### Docker feels limited How do I enable full features
 
@@ -1217,7 +1210,7 @@ Key config reference: [Gateway configuration](/gateway/configuration#agentsdefau
 
 ### How do I bind a host folder into the sandbox
 
-Set `agents.defaults.sandbox.docker.binds` to `["host:path:mode"]` (e.g., `"/home/user/src:/src:ro"`). Global + per-agent binds merge; per-agent binds are ignored when `scope: "shared"`. Use `:ro` for anything sensitive and remember binds bypass the sandbox filesystem walls. See [Sandboxing](/gateway/sandboxing#custom-bind-mounts) and [Sandbox vs Tool Policy vs Elevated](/gateway/sandbox-vs-tool-policy-vs-elevated#bind-mounts-security-quick-check) for examples and safety notes.
+Set `agents.defaults.sandbox.docker.binds` to `["host:path:mode"]` (e.g., `"/home/user/src:/src:ro"`). Global + per-agent binds merge; per-agent binds are ignored when `scope: "shared"`. Use `:ro` for anything sensitive and remember binds bypass the sandbox filesystem walls. See [Gateway configuration](/gateway/configuration#agentsdefaultssandbox) for examples and safety notes.
 
 ### How does memory work
 
@@ -1228,7 +1221,7 @@ OpenClaw memory is just Markdown files in the agent workspace:
 
 OpenClaw also runs a **silent pre-compaction memory flush** to remind the model
 to write durable notes before auto-compaction. This only runs when the workspace
-is writable (read-only sandboxes skip it). See [Memory](/concepts/memory).
+is writable (read-only sandboxes skip it). See Memory.
 
 ### Memory keeps forgetting things How do I make it stick
 
@@ -1239,7 +1232,7 @@ This is still an area we are improving. It helps to remind the model to store me
 it will know what to do. If it keeps forgetting, verify the Gateway is using the same
 workspace on every run.
 
-Docs: [Memory](/concepts/memory), [Agent workspace](/concepts/agent-workspace).
+Docs: Memory, [Agent workspace](/concepts/agent-workspace).
 
 ### Does semantic memory search require an OpenAI API key
 
@@ -1260,7 +1253,7 @@ If you'd rather stay local, set `memorySearch.provider = "local"` (and optionall
 `memorySearch.fallback = "none"`). If you want Gemini embeddings, set
 `memorySearch.provider = "gemini"` and provide `GEMINI_API_KEY` (or
 `memorySearch.remote.apiKey`). We support **OpenAI, Gemini, Voyage, Mistral, or local** embedding
-models - see [Memory](/concepts/memory) for the setup details.
+models - see Memory for the setup details.
 
 ### Does memory persist forever What are the limits
 
@@ -1269,7 +1262,7 @@ storage, not the model. The **session context** is still limited by the model
 context window, so long conversations can compact or truncate. That is why
 memory search exists - it pulls only the relevant parts back into context.
 
-Docs: [Memory](/concepts/memory), [Context](/concepts/context).
+Docs: Memory, [Context](/concepts/context).
 
 ## Where things live on disk
 
@@ -1285,7 +1278,7 @@ No - **OpenClaw's state is local**, but **external services still see what you s
 - **You control the footprint:** using local models keeps prompts on your machine, but channel
   traffic still goes through the channel's servers.
 
-Related: [Agent workspace](/concepts/agent-workspace), [Memory](/concepts/memory).
+Related: [Agent workspace](/concepts/agent-workspace), Memory.
 
 ### Where does OpenClaw store its data
 
@@ -1330,7 +1323,7 @@ workspace, not your local laptop).
 Tip: if you want a durable behavior or preference, ask the bot to **write it into
 AGENTS.md or MEMORY.md** rather than relying on chat history.
 
-See [Agent workspace](/concepts/agent-workspace) and [Memory](/concepts/memory).
+See [Agent workspace](/concepts/agent-workspace) and Memory.
 
 ### What's the recommended backup strategy
 
@@ -1353,7 +1346,7 @@ See the dedicated guide: [Uninstall](/install/uninstall).
 Yes. The workspace is the **default cwd** and memory anchor, not a hard sandbox.
 Relative paths resolve inside the workspace, but absolute paths can access other
 host locations unless sandboxing is enabled. If you need isolation, use
-[`agents.defaults.sandbox`](/gateway/sandboxing) or per-agent sandbox settings. If you
+`agents.defaults.sandbox` or per-agent sandbox settings. If you
 want a repo to be the default working directory, point that agent's
 `workspace` to the repo root. The OpenClaw repo is just source code; keep the
 workspace separate unless you intentionally want the agent to work inside it.
@@ -1833,7 +1826,7 @@ openclaw onboard --install-daemon
 
 Notes:
 
-- The onboarding wizard also offers **Reset** if it sees an existing config. See [Wizard](/start/wizard).
+- The onboarding wizard also offers **Reset** if it sees an existing config. See Wizard.
 - If you used profiles (`--profile` / `REMOTECLAW_PROFILE`), reset each state dir (defaults are `~/.openclaw-<profile>`).
 - Dev reset: `openclaw gateway --dev --reset` (dev-only; wipes dev config + credentials + sessions + workspace).
 
@@ -2000,13 +1993,13 @@ MiniMax M2.1 has its own docs: [MiniMax](/providers/minimax) and
 
 Rule of thumb: use the **best model you can afford** for high-stakes work, and a cheaper
 model for routine chat or summaries. You can route models per agent and use sub-agents to
-parallelize long tasks (each sub-agent consumes tokens). See [Models](/concepts/models) and
+parallelize long tasks (each sub-agent consumes tokens). See [Model providers](/concepts/model-providers) and
 [Sub-agents](/tools/subagents).
 
 Strong warning: weaker/over-quantized models are more vulnerable to prompt
 injection and unsafe behavior. See [Security](/gateway/security).
 
-More context: [Models](/concepts/models).
+More context: [Model providers](/concepts/model-providers).
 
 ### Can I use selfhosted models llamacpp vLLM Ollama
 
@@ -2019,7 +2012,7 @@ If you still want small models, enable sandboxing and strict tool allowlists.
 
 Docs: [Ollama](/providers/ollama), [Local models](/gateway/local-models),
 [Model providers](/concepts/model-providers), [Security](/gateway/security),
-[Sandboxing](/gateway/sandboxing).
+Sandboxing.
 
 ### How do I switch models without wiping my config
 
@@ -2035,7 +2028,7 @@ Safe options:
 Avoid `config.apply` with a partial object unless you intend to replace the whole config.
 If you did overwrite config, restore from backup or re-run `openclaw doctor` to repair.
 
-Docs: [Models](/concepts/models), [Configure](/cli/configure), [Config](/cli/config), [Doctor](/gateway/doctor).
+Docs: [Model providers](/concepts/model-providers), [Configure](/cli/configure), [Config](/cli/config), [Doctor](/gateway/doctor).
 
 ### What do OpenClaw, Flawd, and Krill use for models
 
@@ -2093,7 +2086,7 @@ Yes. Set one as default and switch as needed:
 - **Default + switch:** set `agents.defaults.model.primary` to `openai/gpt-5.2`, then switch to `openai-codex/gpt-5.3-codex` when coding (or the other way around).
 - **Sub-agents:** route coding tasks to sub-agents with a different default model.
 
-See [Models](/concepts/models) and [Slash commands](/tools/slash-commands).
+See [Model providers](/concepts/model-providers) and [Slash commands](/tools/slash-commands).
 
 ### Why do I see Model is not allowed and then no reply
 
@@ -2128,7 +2121,7 @@ Fix checklist:
 
    and pick from the list (or `/model list` in chat).
 
-See [MiniMax](/providers/minimax) and [Models](/concepts/models).
+See [MiniMax](/providers/minimax) and [Model providers](/concepts/model-providers).
 
 ### Can I use MiniMax as my default and OpenAI for complex tasks
 
@@ -2164,7 +2157,7 @@ Then:
 - Agent B default: OpenAI
 - Route by agent or use `/agent` to switch
 
-Docs: [Models](/concepts/models), [Multi-Agent Routing](/concepts/multi-agent), [MiniMax](/providers/minimax), [OpenAI](/providers/openai).
+Docs: [Model providers](/concepts/model-providers), [Multi-Agent Routing](/concepts/multi-agent), [MiniMax](/providers/minimax), [OpenAI](/providers/openai).
 
 ### Are opus sonnet gpt builtin shortcuts
 

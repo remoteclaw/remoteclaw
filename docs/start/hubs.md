@@ -18,8 +18,6 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Index](/)
 - [Getting Started](/start/getting-started)
 - [Quick start](/start/quickstart)
-- [Onboarding](/start/onboarding)
-- [Wizard](/start/wizard)
 - [Setup](/start/setup)
 - [Dashboard (local Gateway)](http://127.0.0.1:18789/)
 - [Help](/help)
@@ -44,7 +42,6 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Network hub](/network)
 - [Agent runtime](/concepts/agent)
 - [Agent workspace](/concepts/agent-workspace)
-- [Memory](/concepts/memory)
 - [Agent loop](/concepts/agent-loop)
 - [Streaming + chunking](/concepts/streaming)
 - [Multi-agent routing](/concepts/multi-agent)
@@ -96,7 +93,6 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Heartbeat](/gateway/heartbeat)
 - [Doctor](/gateway/doctor)
 - [Logging](/gateway/logging)
-- [Sandboxing](/gateway/sandboxing)
 - [Dashboard](/web/dashboard)
 - [Control UI](/web/control-ui)
 - [Remote access](/gateway/remote)
@@ -115,7 +111,6 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Cron jobs](/automation/cron-jobs)
 - [Cron vs Heartbeat](/automation/cron-vs-heartbeat)
 - [Thinking + verbose](/tools/thinking)
-- [Models](/concepts/models)
 - [Sub-agents](/tools/subagents)
 - [Agent send CLI](/tools/agent-send)
 - [Terminal UI](/web/tui)
@@ -161,17 +156,12 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [macOS release](/platforms/mac/release)
 - [macOS gateway (launchd)](/platforms/mac/bundled-gateway)
 - [macOS XPC](/platforms/mac/xpc)
-- [macOS skills](/platforms/mac/skills)
 - [macOS Peekaboo](/platforms/mac/peekaboo)
 
 ## Workspace + templates
 
-- [Skills](/tools/skills)
-- [ClawHub](/tools/clawhub)
-- [Skills config](/tools/skills-config)
 - [Default AGENTS](/reference/AGENTS.default)
 - [Templates: AGENTS](/reference/templates/AGENTS)
-- [Templates: BOOTSTRAP](/reference/templates/BOOTSTRAP)
 - [Templates: HEARTBEAT](/reference/templates/HEARTBEAT)
 - [Templates: IDENTITY](/reference/templates/IDENTITY)
 - [Templates: SOUL](/reference/templates/SOUL)
@@ -181,7 +171,6 @@ Use these hubs to discover every page, including deep dives and reference docs t
 ## Experiments (exploratory)
 
 - [Onboarding config protocol](/experiments/onboarding-config-protocol)
-- [Research: memory](/experiments/research/memory)
 - [Model config exploration](/experiments/proposals/model-config)
 
 ## Project

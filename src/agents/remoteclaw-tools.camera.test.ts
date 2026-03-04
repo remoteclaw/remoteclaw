@@ -30,10 +30,18 @@ function unexpectedGatewayMethod(method: unknown): never {
   throw new Error(`unexpected method: ${String(method)}`);
 }
 
-function getNodesTool(options?: { modelHasVision?: boolean }) {
-  const tool = createRemoteClawTools(
-    options?.modelHasVision !== undefined ? { modelHasVision: options.modelHasVision } : {},
-  ).find((candidate) => candidate.name === "nodes");
+function getNodesTool(options?: { modelHasVision?: boolean; allowMediaInvokeCommands?: boolean }) {
+  const toolOptions: {
+    modelHasVision?: boolean;
+    allowMediaInvokeCommands?: boolean;
+  } = {};
+  if (options?.modelHasVision !== undefined) {
+    toolOptions.modelHasVision = options.modelHasVision;
+  }
+  if (options?.allowMediaInvokeCommands !== undefined) {
+    toolOptions.allowMediaInvokeCommands = options.allowMediaInvokeCommands;
+  }
+  const tool = createRemoteClawTools(toolOptions).find((candidate) => candidate.name === "nodes");
   if (!tool) {
     throw new Error("missing nodes tool");
   }
@@ -42,7 +50,7 @@ function getNodesTool(options?: { modelHasVision?: boolean }) {
 
 async function executeNodes(
   input: Record<string, unknown>,
-  options?: { modelHasVision?: boolean },
+  options?: { modelHasVision?: boolean; allowMediaInvokeCommands?: boolean },
 ) {
   return getNodesTool(options).execute("call1", input as never);
 }
@@ -807,5 +815,37 @@ describe("nodes invoke", () => {
         invokeParamsJson: '{"limit":1}',
       }),
     ).rejects.toThrow(/use action="photos_latest"/i);
+  });
+
+  it("allows media invoke commands when explicitly enabled", async () => {
+    setupNodeInvokeMock({
+      onInvoke: (invokeParams) => {
+        expect(invokeParams).toMatchObject({
+          command: "photos.latest",
+          params: { limit: 1 },
+        });
+        return {
+          payload: {
+            photos: [{ format: "jpg", base64: "aGVsbG8=", width: 1, height: 1 }],
+          },
+        };
+      },
+    });
+
+    const result = await executeNodes(
+      {
+        action: "invoke",
+        node: NODE_ID,
+        invokeCommand: "photos.latest",
+        invokeParamsJson: '{"limit":1}',
+      },
+      { allowMediaInvokeCommands: true },
+    );
+
+    expect(result.details).toMatchObject({
+      payload: {
+        photos: [{ format: "jpg", base64: "aGVsbG8=", width: 1, height: 1 }],
+      },
+    });
   });
 });

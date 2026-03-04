@@ -18,7 +18,7 @@ const testAuthPrivateKey = generateKeyPairSync("ec", { namedCurve: "prime256v1" 
   .toString();
 
 async function makeTempDir(): Promise<string> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-push-apns-test-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-push-apns-test-"));
   tempDirs.push(dir);
   return dir;
 }

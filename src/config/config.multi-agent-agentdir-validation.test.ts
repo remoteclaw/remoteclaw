@@ -6,7 +6,7 @@ import { withTempHomeConfig } from "./test-helpers.js";
 
 describe("multi-agent agentDir validation", () => {
   it("rejects shared agents.list agentDir", async () => {
-    const shared = path.join(tmpdir(), "openclaw-shared-agentdir");
+    const shared = path.join(tmpdir(), "remoteclaw-shared-agentdir");
     const res = validateConfigObject({
       agents: {
         list: [

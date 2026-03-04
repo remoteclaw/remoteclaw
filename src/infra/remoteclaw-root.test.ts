@@ -4,7 +4,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 type FakeFsEntry = { kind: "file"; content: string } | { kind: "dir" };
 
-const VITEST_FS_BASE = path.join(path.parse(process.cwd()).root, "__openclaw_vitest__");
+const VITEST_FS_BASE = path.join(path.parse(process.cwd()).root, "__remoteclaw_vitest__");
 const FIXTURE_BASE = path.join(VITEST_FS_BASE, "remoteclaw-root");
 
 const state = vi.hoisted(() => ({
@@ -141,9 +141,9 @@ describe("resolveRemoteClawPackageRoot", () => {
     expect(resolveRemoteClawPackageRootSync({ moduleUrl })).toBe(pkgRoot);
   });
 
-  it("returns null for non-openclaw package roots", async () => {
-    const pkgRoot = fx("not-openclaw");
-    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "not-openclaw" }));
+  it("returns null for non-remoteclaw package roots", async () => {
+    const pkgRoot = fx("not-remoteclaw");
+    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "not-remoteclaw" }));
 
     expect(resolveRemoteClawPackageRootSync({ cwd: pkgRoot })).toBeNull();
   });

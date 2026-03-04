@@ -131,7 +131,7 @@ describe("discoverRemoteClawPlugins", () => {
     fs.writeFileSync(
       path.join(globalExt, "package.json"),
       JSON.stringify({
-        name: "@openclaw/voice-call",
+        name: "@remoteclaw/voice-call",
         openclaw: { extensions: ["./src/index.ts"] },
       }),
       "utf-8",
@@ -158,7 +158,7 @@ describe("discoverRemoteClawPlugins", () => {
     fs.writeFileSync(
       path.join(packDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/demo-plugin-dir",
+        name: "@remoteclaw/demo-plugin-dir",
         openclaw: { extensions: ["./index.js"] },
       }),
       "utf-8",
@@ -181,7 +181,7 @@ describe("discoverRemoteClawPlugins", () => {
     fs.writeFileSync(
       path.join(globalExt, "package.json"),
       JSON.stringify({
-        name: "@openclaw/escape-pack",
+        name: "@remoteclaw/escape-pack",
         openclaw: { extensions: ["../../outside.js"] },
       }),
       "utf-8",
@@ -215,7 +215,7 @@ describe("discoverRemoteClawPlugins", () => {
     fs.writeFileSync(
       path.join(globalExt, "package.json"),
       JSON.stringify({
-        name: "@openclaw/pack",
+        name: "@remoteclaw/pack",
         openclaw: { extensions: ["./linked/escape.ts"] },
       }),
       "utf-8",

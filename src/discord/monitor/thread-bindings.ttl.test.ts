@@ -481,7 +481,7 @@ describe("thread binding ttl", () => {
 
   it("persists unbinds even when no manager is active", () => {
     const previousStateDir = process.env.REMOTECLAW_STATE_DIR;
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-thread-bindings-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-thread-bindings-"));
     process.env.REMOTECLAW_STATE_DIR = stateDir;
     try {
       __testing.resetThreadBindingsForTests();

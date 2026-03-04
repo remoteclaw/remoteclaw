@@ -20,11 +20,11 @@ import {
 describe("resolveDefaultAgentWorkspaceDir", () => {
   it("uses REMOTECLAW_HOME for default workspace resolution", () => {
     const dir = resolveDefaultAgentWorkspaceDir({
-      REMOTECLAW_HOME: "/srv/openclaw-home",
+      REMOTECLAW_HOME: "/srv/remoteclaw-home",
       HOME: "/home/other",
     } as NodeJS.ProcessEnv);
 
-    expect(dir).toBe(path.join(path.resolve("/srv/openclaw-home"), ".remoteclaw", "workspace"));
+    expect(dir).toBe(path.join(path.resolve("/srv/remoteclaw-home"), ".remoteclaw", "workspace"));
   });
 });
 

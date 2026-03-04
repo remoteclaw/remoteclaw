@@ -86,7 +86,7 @@ function registerAndResolveStatusHandler(cfg: RemoteClawConfig): TelegramCommand
 describe("registerTelegramNativeCommands — session metadata", () => {
   beforeEach(() => {
     sessionMocks.recordSessionMetaFromInbound.mockClear().mockResolvedValue(undefined);
-    sessionMocks.resolveStorePath.mockClear().mockReturnValue("/tmp/openclaw-sessions.json");
+    sessionMocks.resolveStorePath.mockClear().mockReturnValue("/tmp/remoteclaw-sessions.json");
     replyMocks.dispatchReplyWithBufferedBlockDispatcher.mockClear().mockResolvedValue(undefined);
   });
 

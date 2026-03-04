@@ -39,7 +39,7 @@ describe("buildImportUrl", () => {
   });
 
   it("appends mtime-based cache buster for plugin hooks", () => {
-    const url = buildImportUrl(tmpFile, "openclaw-plugin");
+    const url = buildImportUrl(tmpFile, "remoteclaw-plugin");
     expect(url).toMatch(/\?t=[\d.]+&s=\d+/);
   });
 

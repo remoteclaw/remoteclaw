@@ -104,7 +104,7 @@ describe("configureProgramHelp", () => {
     const help = captureHelpOutput(program);
     expect(help).toContain("BANNER-LINE");
     expect(help).toContain("Examples:");
-    expect(help).toContain("https://docs.openclaw.ai/cli");
+    expect(help).toContain("https://docs.remoteclaw.ai/cli");
   });
 
   it("prints version and exits immediately when version flags are present", () => {

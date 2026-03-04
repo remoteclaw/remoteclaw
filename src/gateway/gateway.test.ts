@@ -43,7 +43,7 @@ describe("gateway e2e", () => {
       process.env.REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
       delete process.env.REMOTECLAW_GATEWAY_TOKEN;
 
-      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-wizard-home-"));
+      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-wizard-home-"));
       process.env.HOME = tempHome;
       delete process.env.REMOTECLAW_STATE_DIR;
       delete process.env.REMOTECLAW_CONFIG_PATH;

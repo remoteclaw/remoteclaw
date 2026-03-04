@@ -33,7 +33,7 @@ const BASE_CFG: Config = {
       workspace: "/tmp/openclaw",
     },
   },
-  session: { store: "/tmp/openclaw-sessions.json" },
+  session: { store: "/tmp/remoteclaw-sessions.json" },
 };
 
 const CATEGORY_GUILD_CFG = {

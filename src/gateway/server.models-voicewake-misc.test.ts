@@ -82,7 +82,7 @@ const emptyRegistry = createRegistry([]);
 
 describe("gateway server voicewake", () => {
   const withTempHome = async <T>(fn: (homeDir: string) => Promise<T>): Promise<T> => {
-    const tempHome = await createTempHomeEnv("openclaw-home-");
+    const tempHome = await createTempHomeEnv("remoteclaw-home-");
     try {
       return await fn(tempHome.home);
     } finally {

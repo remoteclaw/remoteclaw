@@ -35,7 +35,7 @@ vi.mock("../commands/agent.js", () => ({
 }));
 vi.mock("../config/config.js", () => ({
   loadConfig: vi.fn(() => ({ session: { mainKey: "agent:main:main" } })),
-  STATE_DIR: "/tmp/openclaw-state",
+  STATE_DIR: "/tmp/remoteclaw-state",
 }));
 vi.mock("../config/sessions.js", () => ({
   updateSessionStore: vi.fn(),

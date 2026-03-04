@@ -138,7 +138,7 @@ function createDefaultThreadConfig(): LoadedConfig {
         workspace: "/tmp/openclaw",
       },
     },
-    session: { store: "/tmp/openclaw-sessions.json" },
+    session: { store: "/tmp/remoteclaw-sessions.json" },
     messages: { responsePrefix: "PFX" },
     channels: {
       discord: {
@@ -162,7 +162,7 @@ function createMentionRequiredGuildConfig(
         workspace: "/tmp/openclaw",
       },
     },
-    session: { store: "/tmp/openclaw-sessions.json" },
+    session: { store: "/tmp/remoteclaw-sessions.json" },
     channels: {
       discord: {
         dm: { enabled: true, policy: "open" },
@@ -316,7 +316,7 @@ describe("discord tool result dispatch", () => {
             workspace: "/tmp/openclaw",
           },
         },
-        session: { store: "/tmp/openclaw-sessions.json" },
+        session: { store: "/tmp/remoteclaw-sessions.json" },
         channels: {
           discord: { dm: { enabled: true, policy: "open" } },
         },
@@ -462,7 +462,7 @@ describe("discord tool result dispatch", () => {
 
     const cfg = {
       agent: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/openclaw" },
-      session: { store: "/tmp/openclaw-sessions.json" },
+      session: { store: "/tmp/remoteclaw-sessions.json" },
       channels: {
         discord: {
           dm: { enabled: true, policy: "open" },

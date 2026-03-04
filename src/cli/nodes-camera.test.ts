@@ -13,7 +13,7 @@ import {
 import { parseScreenRecordPayload, screenRecordTempPath } from "./nodes-screen.js";
 
 async function withCameraTempDir<T>(run: (dir: string) => Promise<T>): Promise<T> {
-  return await withTempDir("openclaw-test-", run);
+  return await withTempDir("remoteclaw-test-", run);
 }
 
 describe("nodes camera helpers", () => {

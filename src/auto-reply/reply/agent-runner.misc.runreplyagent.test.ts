@@ -385,7 +385,7 @@ describe("runReplyAgent auto-compaction token update", () => {
   }
 
   it("persists usage from bridge result", async () => {
-    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-compact-tokens-"));
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-compact-tokens-"));
     const storePath = path.join(tmp, "sessions.json");
     const sessionKey = "main";
     const sessionEntry = {
@@ -445,7 +445,7 @@ describe("runReplyAgent auto-compaction token update", () => {
   });
 
   it("persists usage tokens from bridge result without compaction", async () => {
-    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-usage-last-"));
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-usage-last-"));
     const storePath = path.join(tmp, "sessions.json");
     const sessionKey = "main";
     const sessionEntry = {
@@ -900,7 +900,7 @@ describe("runReplyAgent messaging tool suppression", () => {
 
   it("persists usage fields even when replies are suppressed", async () => {
     const storePath = path.join(
-      await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-store-")),
+      await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")),
       "sessions.json",
     );
     const sessionKey = "main";
@@ -931,7 +931,7 @@ describe("runReplyAgent messaging tool suppression", () => {
 
   it("persists usage when bridge provides token data", async () => {
     const storePath = path.join(
-      await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-store-")),
+      await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")),
       "sessions.json",
     );
     const sessionKey = "main";
@@ -960,7 +960,7 @@ describe("runReplyAgent messaging tool suppression", () => {
 
   it("preserves existing token data when bridge omits usage", async () => {
     const storePath = path.join(
-      await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-store-")),
+      await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")),
       "sessions.json",
     );
     const sessionKey = "main";

@@ -654,13 +654,13 @@ describe("resolveSessionTranscriptCandidates", () => {
   });
 
   test("fallback candidate uses REMOTECLAW_HOME instead of os.homedir()", () => {
-    vi.stubEnv("REMOTECLAW_HOME", "/srv/openclaw-home");
+    vi.stubEnv("REMOTECLAW_HOME", "/srv/remoteclaw-home");
     vi.stubEnv("HOME", "/home/other");
 
     const candidates = resolveSessionTranscriptCandidates("sess-1", undefined);
     const fallback = candidates[candidates.length - 1];
     expect(fallback).toBe(
-      path.join(path.resolve("/srv/openclaw-home"), ".remoteclaw", "sessions", "sess-1.jsonl"),
+      path.join(path.resolve("/srv/remoteclaw-home"), ".remoteclaw", "sessions", "sess-1.jsonl"),
     );
   });
 });

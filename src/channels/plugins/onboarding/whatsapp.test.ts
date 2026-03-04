@@ -10,7 +10,7 @@ const listWhatsAppAccountIdsMock = vi.hoisted(() => vi.fn(() => [] as string[]))
 const resolveDefaultWhatsAppAccountIdMock = vi.hoisted(() => vi.fn(() => DEFAULT_ACCOUNT_ID));
 const resolveWhatsAppAuthDirMock = vi.hoisted(() =>
   vi.fn(() => ({
-    authDir: "/tmp/openclaw-whatsapp-test",
+    authDir: "/tmp/remoteclaw-whatsapp-test",
   })),
 );
 
@@ -127,7 +127,7 @@ describe("whatsappOnboardingAdapter.configure", () => {
     pathExistsMock.mockResolvedValue(false);
     listWhatsAppAccountIdsMock.mockReturnValue([]);
     resolveDefaultWhatsAppAccountIdMock.mockReturnValue(DEFAULT_ACCOUNT_ID);
-    resolveWhatsAppAuthDirMock.mockReturnValue({ authDir: "/tmp/openclaw-whatsapp-test" });
+    resolveWhatsAppAuthDirMock.mockReturnValue({ authDir: "/tmp/remoteclaw-whatsapp-test" });
   });
 
   it("applies owner allowlist when forceAllowFrom is enabled", async () => {

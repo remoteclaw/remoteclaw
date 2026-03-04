@@ -29,7 +29,7 @@ describe("resolveAgentConfig", () => {
   it("should return undefined when agent id does not exist", () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/openclaw" }],
+        list: [{ id: "main", workspace: "~/remoteclaw" }],
       },
     };
     const result = resolveAgentConfig(cfg, "nonexistent");
@@ -43,7 +43,7 @@ describe("resolveAgentConfig", () => {
           {
             id: "main",
             name: "Main Agent",
-            workspace: "~/openclaw",
+            workspace: "~/remoteclaw",
             agentDir: "~/.remoteclaw/agents/main",
             model: "anthropic/claude-opus-4",
           },
@@ -53,7 +53,7 @@ describe("resolveAgentConfig", () => {
     const result = resolveAgentConfig(cfg, "main");
     expect(result).toEqual({
       name: "Main Agent",
-      workspace: "~/openclaw",
+      workspace: "~/remoteclaw",
       agentDir: "~/.remoteclaw/agents/main",
       model: "anthropic/claude-opus-4",
       identity: undefined,
@@ -322,7 +322,7 @@ describe("resolveAgentConfig", () => {
         list: [
           {
             id: "work",
-            workspace: "~/openclaw-work",
+            workspace: "~/remoteclaw-work",
             sandbox: {
               mode: "all",
               scope: "agent",
@@ -401,13 +401,13 @@ describe("resolveAgentConfig", () => {
   it("should normalize agent id", () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/openclaw" }],
+        list: [{ id: "main", workspace: "~/remoteclaw" }],
       },
     };
     // Should normalize to "main" (default)
     const result = resolveAgentConfig(cfg, "");
     expect(result).toBeDefined();
-    expect(result?.workspace).toBe("~/openclaw");
+    expect(result?.workspace).toBe("~/remoteclaw");
   });
 
   it("uses REMOTECLAW_HOME for default agent workspace", () => {

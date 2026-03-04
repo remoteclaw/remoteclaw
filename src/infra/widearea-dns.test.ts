@@ -4,7 +4,7 @@ import { renderWideAreaGatewayZoneText } from "./widearea-dns.js";
 describe("wide-area DNS-SD zone rendering", () => {
   it("renders a zone with gateway PTR/SRV/TXT records", () => {
     const txt = renderWideAreaGatewayZoneText({
-      domain: "openclaw.internal.",
+      domain: "remoteclaw.internal.",
       serial: 2025121701,
       gatewayPort: 18789,
       displayName: "Mac Studio (RemoteClaw)",
@@ -16,7 +16,7 @@ describe("wide-area DNS-SD zone rendering", () => {
       cliPath: "/opt/homebrew/bin/openclaw",
     });
 
-    expect(txt).toContain(`$ORIGIN openclaw.internal.`);
+    expect(txt).toContain(`$ORIGIN remoteclaw.internal.`);
     expect(txt).toContain(`studio-london IN A 100.123.224.76`);
     expect(txt).toContain(`studio-london IN AAAA fd7a:115c:a1e0::8801:e04c`);
     expect(txt).toContain(`_openclaw-gw._tcp IN PTR studio-london._openclaw-gw._tcp`);
@@ -29,7 +29,7 @@ describe("wide-area DNS-SD zone rendering", () => {
 
   it("includes tailnetDns when provided", () => {
     const txt = renderWideAreaGatewayZoneText({
-      domain: "openclaw.internal.",
+      domain: "remoteclaw.internal.",
       serial: 2025121701,
       gatewayPort: 18789,
       displayName: "Mac Studio (RemoteClaw)",

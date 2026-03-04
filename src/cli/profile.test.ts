@@ -83,7 +83,7 @@ describe("applyCliProfileEnv", () => {
 
   it("uses REMOTECLAW_HOME when deriving profile state dir", () => {
     const env: Record<string, string | undefined> = {
-      REMOTECLAW_HOME: "/srv/openclaw-home",
+      REMOTECLAW_HOME: "/srv/remoteclaw-home",
       HOME: "/home/other",
     };
     applyCliProfileEnv({
@@ -92,7 +92,7 @@ describe("applyCliProfileEnv", () => {
       homedir: () => "/home/fallback",
     });
 
-    const resolvedHome = path.resolve("/srv/openclaw-home");
+    const resolvedHome = path.resolve("/srv/remoteclaw-home");
     expect(env.REMOTECLAW_STATE_DIR).toBe(path.join(resolvedHome, ".remoteclaw-work"));
     expect(env.REMOTECLAW_CONFIG_PATH).toBe(
       path.join(resolvedHome, ".remoteclaw-work", "remoteclaw.json"),

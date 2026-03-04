@@ -10,7 +10,7 @@ describe("resolveExistingInstallPath", () => {
   let fixtureRoot = "";
 
   beforeEach(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-install-flow-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-install-flow-"));
   });
 
   afterEach(async () => {
@@ -51,7 +51,7 @@ describe("withExtractedArchiveRoot", () => {
   });
 
   it("extracts archive and passes root directory to callback", async () => {
-    const tmpRoot = path.join(path.sep, "tmp", "openclaw-install-flow");
+    const tmpRoot = path.join(path.sep, "tmp", "remoteclaw-install-flow");
     const archivePath = path.join(path.sep, "tmp", "plugin.tgz");
     const extractDir = path.join(tmpRoot, "extract");
     const packageRoot = path.join(extractDir, "package");
@@ -64,12 +64,12 @@ describe("withExtractedArchiveRoot", () => {
     const onExtracted = vi.fn(async (rootDir: string) => ({ ok: true as const, rootDir }));
     const result = await withExtractedArchiveRoot({
       archivePath,
-      tempDirPrefix: "openclaw-plugin-",
+      tempDirPrefix: "remoteclaw-plugin-",
       timeoutMs: 1000,
       onExtracted,
     });
 
-    expect(withTempDirSpy).toHaveBeenCalledWith("openclaw-plugin-", expect.any(Function));
+    expect(withTempDirSpy).toHaveBeenCalledWith("remoteclaw-plugin-", expect.any(Function));
     expect(extractSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         archivePath,
@@ -85,13 +85,13 @@ describe("withExtractedArchiveRoot", () => {
 
   it("returns extract failure when extraction throws", async () => {
     vi.spyOn(installSource, "withTempDir").mockImplementation(
-      async (_prefix, fn) => await fn("/tmp/openclaw-install-flow"),
+      async (_prefix, fn) => await fn("/tmp/remoteclaw-install-flow"),
     );
     vi.spyOn(archive, "extractArchive").mockRejectedValue(new Error("boom"));
 
     const result = await withExtractedArchiveRoot({
       archivePath: "/tmp/plugin.tgz",
-      tempDirPrefix: "openclaw-plugin-",
+      tempDirPrefix: "remoteclaw-plugin-",
       timeoutMs: 1000,
       onExtracted: async () => ({ ok: true as const }),
     });
@@ -104,14 +104,14 @@ describe("withExtractedArchiveRoot", () => {
 
   it("returns root-resolution failure when archive layout is invalid", async () => {
     vi.spyOn(installSource, "withTempDir").mockImplementation(
-      async (_prefix, fn) => await fn("/tmp/openclaw-install-flow"),
+      async (_prefix, fn) => await fn("/tmp/remoteclaw-install-flow"),
     );
     vi.spyOn(archive, "extractArchive").mockResolvedValue(undefined);
     vi.spyOn(archive, "resolvePackedRootDir").mockRejectedValue(new Error("invalid layout"));
 
     const result = await withExtractedArchiveRoot({
       archivePath: "/tmp/plugin.tgz",
-      tempDirPrefix: "openclaw-plugin-",
+      tempDirPrefix: "remoteclaw-plugin-",
       timeoutMs: 1000,
       onExtracted: async () => ({ ok: true as const }),
     });

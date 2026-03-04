@@ -9,7 +9,9 @@ type ChromeUserDataDirRef = {
 
 export function installChromeUserDataDirHooks(chromeUserDataDir: ChromeUserDataDirRef): void {
   beforeAll(async () => {
-    chromeUserDataDir.dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-chrome-user-data-"));
+    chromeUserDataDir.dir = await fs.mkdtemp(
+      path.join(os.tmpdir(), "remoteclaw-chrome-user-data-"),
+    );
   });
 
   afterAll(async () => {

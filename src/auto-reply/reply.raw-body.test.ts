@@ -65,7 +65,7 @@ vi.mock("../gateway/credentials.js", () => ({
 
 import { getReplyFromConfig } from "./reply.js";
 
-const { withTempHome } = createTempHomeHarness({ prefix: "openclaw-rawbody-" });
+const { withTempHome } = createTempHomeHarness({ prefix: "remoteclaw-rawbody-" });
 
 describe("RawBody directive parsing", () => {
   beforeEach(() => {

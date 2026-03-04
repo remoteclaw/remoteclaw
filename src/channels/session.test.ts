@@ -26,7 +26,7 @@ describe("recordInboundSession", () => {
     const { recordInboundSession } = await import("./session.js");
 
     await recordInboundSession({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/remoteclaw-session-store.json",
       sessionKey: "agent:main:telegram:1234:thread:42",
       ctx,
       updateLastRoute: {
@@ -53,7 +53,7 @@ describe("recordInboundSession", () => {
     const { recordInboundSession } = await import("./session.js");
 
     await recordInboundSession({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/remoteclaw-session-store.json",
       sessionKey: "agent:main:telegram:1234:thread:42",
       ctx,
       updateLastRoute: {
@@ -80,7 +80,7 @@ describe("recordInboundSession", () => {
     const { recordInboundSession } = await import("./session.js");
 
     await recordInboundSession({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/remoteclaw-session-store.json",
       sessionKey: "Agent:Main:Telegram:1234:Thread:42",
       ctx,
       updateLastRoute: {

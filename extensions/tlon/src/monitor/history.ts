@@ -1,4 +1,4 @@
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/compat";
 import { extractMessageText } from "./utils.js";
 
 /**

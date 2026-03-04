@@ -1,4 +1,4 @@
-import type { LookupFn, SsrFPolicy } from "remoteclaw/plugin-sdk";
+import type { LookupFn, SsrFPolicy } from "remoteclaw/plugin-sdk/compat";
 import { UrbitAuthError } from "./errors.js";
 import { urbitFetch } from "./fetch.js";
 

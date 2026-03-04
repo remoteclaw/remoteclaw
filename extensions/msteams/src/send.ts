@@ -1,5 +1,5 @@
-import type { OpenClawConfig } from "remoteclaw/plugin-sdk/compat";
-import { loadOutboundMediaFromUrl } from "remoteclaw/plugin-sdk/compat";
+import type { OpenClawConfig } from "remoteclaw/plugin-sdk/msteams";
+import { loadOutboundMediaFromUrl } from "remoteclaw/plugin-sdk/msteams";
 import { createMSTeamsConversationStoreFs } from "./conversation-store-fs.js";
 import {
   classifyMSTeamsSendError,

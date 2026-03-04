@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "remoteclaw/plugin-sdk";
+import type { BaseProbeResult } from "remoteclaw/plugin-sdk/compat";
 import type {
   BlockStreamingCoalesceConfig,
   DmConfig,
@@ -7,8 +7,8 @@ import type {
   GroupToolPolicyBySenderConfig,
   GroupToolPolicyConfig,
   MarkdownConfig,
-  RemoteClawConfig,
-} from "remoteclaw/plugin-sdk";
+  OpenClawConfig,
+} from "remoteclaw/plugin-sdk/compat";
 
 export type IrcChannelConfig = {
   requireMention?: boolean;

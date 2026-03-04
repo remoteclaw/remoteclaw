@@ -1,4 +1,4 @@
-import type { RuntimeEnv, WizardPrompter } from "remoteclaw/plugin-sdk";
+import type { RuntimeEnv, WizardPrompter } from "remoteclaw/plugin-sdk/compat";
 import { describe, expect, it, vi } from "vitest";
 import { ircOnboardingAdapter } from "./onboarding.js";
 import type { CoreConfig } from "./types.js";

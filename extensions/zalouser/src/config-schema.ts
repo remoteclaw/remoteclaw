@@ -1,9 +1,4 @@
-import {
-  AllowFromEntrySchema,
-  buildCatchallMultiAccountChannelSchema,
-  MarkdownConfigSchema,
-  ToolPolicySchema,
-} from "remoteclaw/plugin-sdk";
+import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk/compat";
 import { z } from "zod";
 
 const groupConfigSchema = z.object({

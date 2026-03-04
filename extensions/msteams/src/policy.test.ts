@@ -1,4 +1,4 @@
-import type { MSTeamsConfig } from "remoteclaw/plugin-sdk";
+import type { MSTeamsConfig } from "remoteclaw/plugin-sdk/compat";
 import { describe, expect, it } from "vitest";
 import {
   isMSTeamsGroupAllowed,

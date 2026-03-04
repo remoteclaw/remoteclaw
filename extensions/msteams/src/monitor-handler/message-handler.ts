@@ -15,7 +15,7 @@ import {
   resolveEffectiveAllowFromLists,
   resolveDmGroupAccessWithLists,
   type HistoryEntry,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import {
   buildMSTeamsAttachmentPlaceholder,
   buildMSTeamsMediaPayload,

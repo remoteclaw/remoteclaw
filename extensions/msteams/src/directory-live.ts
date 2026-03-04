@@ -1,4 +1,4 @@
-import type { ChannelDirectoryEntry } from "remoteclaw/plugin-sdk";
+import type { ChannelDirectoryEntry } from "remoteclaw/plugin-sdk/compat";
 import { searchGraphUsers } from "./graph-users.js";
 import {
   type GraphChannel,

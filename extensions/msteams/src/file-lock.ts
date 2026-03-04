@@ -1,1 +1,1 @@
-export { withFileLock } from "remoteclaw/plugin-sdk";
+export { withFileLock } from "remoteclaw/plugin-sdk/compat";

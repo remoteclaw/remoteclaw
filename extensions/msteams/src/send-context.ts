@@ -2,7 +2,7 @@ import {
   resolveChannelMediaMaxBytes,
   type RemoteClawConfig,
   type PluginRuntime,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import type { MSTeamsAccessTokenProvider } from "./attachments/types.js";
 import { createMSTeamsConversationStoreFs } from "./conversation-store-fs.js";
 import type {

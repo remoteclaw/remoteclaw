@@ -1,4 +1,4 @@
-import { MarkdownConfigSchema } from "remoteclaw/plugin-sdk/compat";
+import { MarkdownConfigSchema } from "remoteclaw/plugin-sdk/zalo";
 import { z } from "zod";
 
 const zaloAccountSchema = z.object({

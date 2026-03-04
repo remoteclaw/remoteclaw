@@ -1,4 +1,4 @@
-import { buildChannelKeyCandidates, resolveChannelEntryMatch } from "remoteclaw/plugin-sdk";
+import { buildChannelKeyCandidates, resolveChannelEntryMatch } from "remoteclaw/plugin-sdk/compat";
 import type { MatrixRoomConfig } from "../../types.js";
 
 export type MatrixRoomConfigResolved = {

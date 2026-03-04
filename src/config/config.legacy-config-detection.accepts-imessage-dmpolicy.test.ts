@@ -186,6 +186,15 @@ describe("legacy config detection", () => {
     const res = validateConfigObject(config);
     expect(res.ok).toBe(true);
   });
+  it("flags top-level heartbeat as legacy in snapshot", async () => {
+    await withSnapshotForConfig(
+      { heartbeat: { model: "anthropic/claude-3-5-haiku-20241022", every: "30m" } },
+      async (ctx) => {
+        expect(ctx.snapshot.valid).toBe(false);
+        expect(ctx.snapshot.legacyIssues.some((issue) => issue.path === "heartbeat")).toBe(true);
+      },
+    );
+  });
   it("rejects bindings[].match.provider on load", async () => {
     await expectLoadRejectionPreservesField({
       config: {

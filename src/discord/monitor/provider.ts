@@ -333,6 +333,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     : createNoopThreadBindingManager(account.accountId);
   let lifecycleStarted = false;
   let releaseEarlyGatewayErrorGuard = () => {};
+  let deactivateMessageHandler: (() => void) | undefined;
   let autoPresenceController: ReturnType<typeof createDiscordAutoPresenceController> | null = null;
   try {
     const commands: BaseCommand[] = commandSpecs.map((spec) =>
@@ -497,6 +498,8 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       accountId: account.accountId,
       token,
       runtime,
+      setStatus: opts.setStatus,
+      abortSignal: opts.abortSignal,
       botUserId,
       guildHistories,
       historyLimit,
@@ -511,6 +514,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       threadBindings,
       discordRestFetch,
     });
+    deactivateMessageHandler = messageHandler.deactivate;
     const trackInboundEvent = opts.setStatus
       ? () => {
           const at = Date.now();
@@ -580,6 +584,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       releaseEarlyGatewayErrorGuard,
     });
   } finally {
+    deactivateMessageHandler?.();
     autoPresenceController?.stop();
     opts.setStatus?.({ connected: false });
     releaseEarlyGatewayErrorGuard();

@@ -769,22 +769,8 @@ actor SkillBinsCache {
     }
 
     func refresh() async {
-        do {
-            let report = try await GatewayConnection.shared.skillsStatus()
-            var next = Set<String>()
-            for skill in report.skills {
-                for bin in skill.requirements.bins {
-                    let trimmed = bin.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmed.isEmpty { next.insert(trimmed) }
-                }
-            }
-            self.bins = next
-            self.lastRefresh = Date()
-        } catch {
-            if self.lastRefresh == nil {
-                self.bins = []
-            }
-        }
+        self.bins = []
+        self.lastRefresh = Date()
     }
 
     private func isStale() -> Bool {

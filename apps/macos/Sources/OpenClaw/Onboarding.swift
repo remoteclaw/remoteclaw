@@ -91,9 +91,7 @@ struct OnboardingView: View {
     @State var preferredGatewayID: String?
     @State var gatewayDiscovery: GatewayDiscoveryModel
     @State var onboardingChatModel: OpenClawChatViewModel
-    @State var onboardingSkillsModel = SkillsSettingsModel()
     @State var onboardingWizard = OnboardingWizardModel()
-    @State var didLoadOnboardingSkills = false
     @State var localGatewayProbe: LocalGatewayProbe?
     @Bindable var state: AppState
     var permissionMonitor: PermissionMonitor

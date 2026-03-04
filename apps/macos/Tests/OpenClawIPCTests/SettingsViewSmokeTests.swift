@@ -158,8 +158,4 @@ struct SettingsViewSmokeTests {
         _ = view.body
     }
 
-    @Test func skillsSettingsBuildsBody() {
-        let view = SkillsSettings(state: .preview)
-        _ = view.body
-    }
 }

@@ -10,6 +10,11 @@
   "peerDependencies": {
     "remoteclaw": "workspace:*"
   },
+  "peerDependenciesMeta": {
+    "remoteclaw": {
+      "optional": true
+    }
+  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"

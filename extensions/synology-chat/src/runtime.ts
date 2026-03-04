@@ -1,6 +1,10 @@
-import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk";
-import type { PluginRuntime } from "remoteclaw/plugin-sdk";
-import type { PluginRuntime } from "remoteclaw/plugin-sdk/compat";
+/**
+ * Plugin runtime singleton.
+ * Stores the PluginRuntime from api.runtime (set during register()).
+ * Used by channel.ts to access dispatch functions.
+ */
+
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/synology-chat";
 
 let runtime: PluginRuntime | null = null;
 

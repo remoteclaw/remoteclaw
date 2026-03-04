@@ -15,7 +15,7 @@ import {
   type OutboundReplyPayload,
   type RemoteClawConfig,
   type RuntimeEnv,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import type { ResolvedIrcAccount } from "./accounts.js";
 import { normalizeIrcAllowlist, resolveIrcAllowlistMatch } from "./normalize.js";
 import {

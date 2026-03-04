@@ -40,7 +40,7 @@ APP_VERSION=0.1.0 \
 APP_BUILD="$(git rev-list --count HEAD)" \
 BUILD_CONFIG=release \
 SIGN_IDENTITY="Developer ID Application: <Developer Name> (<TEAMID>)" \
-scripts/package-mac-app.sh
+scripts/package-mac-dist.sh
 
 # `package-mac-dist.sh` already creates the zip + DMG.
 # If you used `package-mac-app.sh` directly instead, create them manually:

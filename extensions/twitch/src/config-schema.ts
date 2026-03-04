@@ -1,4 +1,4 @@
-import { MarkdownConfigSchema } from "remoteclaw/plugin-sdk";
+import { MarkdownConfigSchema } from "remoteclaw/plugin-sdk/compat";
 import { z } from "zod";
 
 /**

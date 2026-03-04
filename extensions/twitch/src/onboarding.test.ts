@@ -11,7 +11,7 @@
  * - setTwitchAccount config updates
  */
 
-import type { WizardPrompter } from "remoteclaw/plugin-sdk";
+import type { WizardPrompter } from "remoteclaw/plugin-sdk/compat";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TwitchAccountConfig } from "./types.js";
 

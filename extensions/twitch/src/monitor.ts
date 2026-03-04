@@ -5,8 +5,8 @@
  * resolves agent routes, and handles replies.
  */
 
-import type { ReplyPayload, RemoteClawConfig } from "remoteclaw/plugin-sdk";
-import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk";
+import type { ReplyPayload, OpenClawConfig } from "remoteclaw/plugin-sdk/compat";
+import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk/compat";
 import { checkTwitchAccessControl } from "./access-control.js";
 import { getOrCreateClientManager } from "./client-manager-registry.js";
 import { getTwitchRuntime } from "./runtime.js";

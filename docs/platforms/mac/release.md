@@ -42,10 +42,12 @@ BUILD_CONFIG=release \
 SIGN_IDENTITY="Developer ID Application: <Developer Name> (<TEAMID>)" \
 scripts/package-mac-app.sh
 
-# Zip for distribution (includes resource forks for Sparkle delta support)
+# `package-mac-dist.sh` already creates the zip + DMG.
+# If you used `package-mac-app.sh` directly instead, create them manually:
+# If you want notarization/stapling in this step, use the NOTARIZE command below.
 ditto -c -k --sequesterRsrc --keepParent dist/RemoteClaw.app dist/RemoteClaw-0.1.0.zip
 
-# Optional: also build a styled DMG for humans (drag to /Applications)
+# Optional: build a styled DMG for humans (drag to /Applications)
 scripts/create-dmg.sh dist/RemoteClaw.app dist/RemoteClaw-0.1.0.dmg
 
 # Recommended: build + notarize/staple zip + DMG

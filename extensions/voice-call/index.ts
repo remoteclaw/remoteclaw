@@ -1,5 +1,8 @@
 import { Type } from "@sinclair/typebox";
-import type { GatewayRequestHandlerOptions, RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
+import type {
+  GatewayRequestHandlerOptions,
+  OpenClawPluginApi,
+} from "remoteclaw/plugin-sdk/voice-call";
 import { registerVoiceCallCli } from "./src/cli.js";
 import {
   VoiceCallConfigSchema,

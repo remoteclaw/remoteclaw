@@ -1,3 +1,5 @@
+import type { SecretInput } from "remoteclaw/plugin-sdk/compat";
+
 export type ZaloAccountConfig = {
   /** Optional display name for this account (used in CLI/UI lists). */
   name?: string;

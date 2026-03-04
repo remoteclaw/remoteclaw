@@ -1,9 +1,9 @@
-import type { GroupPolicy, SenderGroupAccessDecision } from "remoteclaw/plugin-sdk";
+import type { GroupPolicy, SenderGroupAccessDecision } from "remoteclaw/plugin-sdk/compat";
 import {
   evaluateSenderGroupAccess,
   isNormalizedSenderAllowed,
   resolveOpenProviderRuntimeGroupPolicy,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 
 const ZALO_ALLOW_FROM_PREFIX_RE = /^(zalo|zl):/i;
 

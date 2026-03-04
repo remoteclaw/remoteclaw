@@ -1,3 +1,3 @@
-import type { GoogleChatAccountConfig, GoogleChatConfig } from "remoteclaw/plugin-sdk/compat";
+import type { GoogleChatAccountConfig, GoogleChatConfig } from "remoteclaw/plugin-sdk/googlechat";
 
 export type { GoogleChatAccountConfig, GoogleChatConfig };

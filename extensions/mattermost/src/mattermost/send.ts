@@ -1,4 +1,4 @@
-import { loadOutboundMediaFromUrl } from "remoteclaw/plugin-sdk";
+import { loadOutboundMediaFromUrl, type OpenClawConfig } from "remoteclaw/plugin-sdk/compat";
 import { getMattermostRuntime } from "../runtime.js";
 import { resolveMattermostAccount } from "./accounts.js";
 import {

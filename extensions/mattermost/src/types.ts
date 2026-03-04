@@ -1,4 +1,9 @@
-import type { BlockStreamingCoalesceConfig, DmPolicy, GroupPolicy } from "remoteclaw/plugin-sdk";
+import type {
+  BlockStreamingCoalesceConfig,
+  DmPolicy,
+  GroupPolicy,
+  SecretInput,
+} from "remoteclaw/plugin-sdk/compat";
 
 export type MattermostChatMode = "oncall" | "onmessage" | "onchar";
 

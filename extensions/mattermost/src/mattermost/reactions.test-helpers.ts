@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
+import type { OpenClawConfig } from "remoteclaw/plugin-sdk/compat";
 import { expect, vi } from "vitest";
 
 export function createMattermostTestConfig(): RemoteClawConfig {

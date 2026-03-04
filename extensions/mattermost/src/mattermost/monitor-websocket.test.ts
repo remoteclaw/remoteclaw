@@ -1,4 +1,4 @@
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/compat";
 import { describe, expect, it, vi } from "vitest";
 import {
   createMattermostConnectOnce,

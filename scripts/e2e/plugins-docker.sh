@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-IMAGE_NAME="openclaw-plugins-e2e"
+IMAGE_NAME="remoteclaw-plugins-e2e"
 
 echo "Building Docker image..."
 docker build -t "$IMAGE_NAME" -f "$ROOT_DIR/scripts/e2e/Dockerfile" "$ROOT_DIR"
@@ -21,11 +21,11 @@ echo "Running plugins Docker E2E..."
 	  fi
 	  export REMOTECLAW_ENTRY
 
-	  home_dir=$(mktemp -d "/tmp/openclaw-plugins-e2e.XXXXXX")
+	  home_dir=$(mktemp -d "/tmp/remoteclaw-plugins-e2e.XXXXXX")
 	  export HOME="$home_dir"
-  mkdir -p "$HOME/.openclaw/extensions/demo-plugin"
+  mkdir -p "$HOME/.remoteclaw/extensions/demo-plugin"
 
-  cat > "$HOME/.openclaw/extensions/demo-plugin/index.js" <<'"'"'JS'"'"'
+  cat > "$HOME/.remoteclaw/extensions/demo-plugin/index.js" <<'"'"'JS'"'"'
 module.exports = {
   id: "demo-plugin",
   name: "Demo Plugin",
@@ -38,7 +38,7 @@ module.exports = {
   },
 };
 JS
-  cat > "$HOME/.openclaw/extensions/demo-plugin/openclaw.plugin.json" <<'"'"'JSON'"'"'
+  cat > "$HOME/.remoteclaw/extensions/demo-plugin/remoteclaw.plugin.json" <<'"'"'JSON'"'"'
 {
   "id": "demo-plugin",
   "configSchema": {
@@ -80,13 +80,13 @@ console.log("ok");
 NODE
 
   echo "Testing tgz install flow..."
-  pack_dir="$(mktemp -d "/tmp/openclaw-plugin-pack.XXXXXX")"
+  pack_dir="$(mktemp -d "/tmp/remoteclaw-plugin-pack.XXXXXX")"
   mkdir -p "$pack_dir/package"
   cat > "$pack_dir/package/package.json" <<'"'"'JSON'"'"'
 {
-  "name": "@openclaw/demo-plugin-tgz",
+  "name": "@remoteclaw/demo-plugin-tgz",
   "version": "0.0.1",
-  "openclaw": { "extensions": ["./index.js"] }
+  "remoteclaw": { "extensions": ["./index.js"] }
 }
 JSON
   cat > "$pack_dir/package/index.js" <<'"'"'JS'"'"'
@@ -98,7 +98,7 @@ module.exports = {
   },
 };
 JS
-  cat > "$pack_dir/package/openclaw.plugin.json" <<'"'"'JSON'"'"'
+  cat > "$pack_dir/package/remoteclaw.plugin.json" <<'"'"'JSON'"'"'
 {
   "id": "demo-plugin-tgz",
   "configSchema": {
@@ -128,12 +128,12 @@ console.log("ok");
 NODE
 
   echo "Testing install from local folder (plugins.load.paths)..."
-  dir_plugin="$(mktemp -d "/tmp/openclaw-plugin-dir.XXXXXX")"
+  dir_plugin="$(mktemp -d "/tmp/remoteclaw-plugin-dir.XXXXXX")"
   cat > "$dir_plugin/package.json" <<'"'"'JSON'"'"'
 {
-  "name": "@openclaw/demo-plugin-dir",
+  "name": "@remoteclaw/demo-plugin-dir",
   "version": "0.0.1",
-  "openclaw": { "extensions": ["./index.js"] }
+  "remoteclaw": { "extensions": ["./index.js"] }
 }
 JSON
   cat > "$dir_plugin/index.js" <<'"'"'JS'"'"'
@@ -145,7 +145,7 @@ module.exports = {
   },
 };
 JS
-  cat > "$dir_plugin/openclaw.plugin.json" <<'"'"'JSON'"'"'
+  cat > "$dir_plugin/remoteclaw.plugin.json" <<'"'"'JSON'"'"'
 {
   "id": "demo-plugin-dir",
   "configSchema": {
@@ -174,13 +174,13 @@ console.log("ok");
 NODE
 
   echo "Testing install from npm spec (file:)..."
-  file_pack_dir="$(mktemp -d "/tmp/openclaw-plugin-filepack.XXXXXX")"
+  file_pack_dir="$(mktemp -d "/tmp/remoteclaw-plugin-filepack.XXXXXX")"
   mkdir -p "$file_pack_dir/package"
   cat > "$file_pack_dir/package/package.json" <<'"'"'JSON'"'"'
 {
-  "name": "@openclaw/demo-plugin-file",
+  "name": "@remoteclaw/demo-plugin-file",
   "version": "0.0.1",
-  "openclaw": { "extensions": ["./index.js"] }
+  "remoteclaw": { "extensions": ["./index.js"] }
 }
 JSON
   cat > "$file_pack_dir/package/index.js" <<'"'"'JS'"'"'
@@ -192,7 +192,7 @@ module.exports = {
   },
 };
 JS
-  cat > "$file_pack_dir/package/openclaw.plugin.json" <<'"'"'JSON'"'"'
+  cat > "$file_pack_dir/package/remoteclaw.plugin.json" <<'"'"'JSON'"'"'
 {
   "id": "demo-plugin-file",
   "configSchema": {

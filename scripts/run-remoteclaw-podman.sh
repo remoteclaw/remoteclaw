@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# Rootless OpenClaw in Podman: run after one-time setup.
+# Rootless RemoteClaw in Podman: run after one-time setup.
 #
 # One-time setup (from repo root): ./setup-podman.sh
 # Then:
-#   ./scripts/run-openclaw-podman.sh launch           # Start gateway
-#   ./scripts/run-openclaw-podman.sh launch setup      # Onboarding wizard
+#   ./scripts/run-remoteclaw-podman.sh launch           # Start gateway
+#   ./scripts/run-remoteclaw-podman.sh launch setup      # Onboarding wizard
 #
-# As the openclaw user (no repo needed):
-#   sudo -u openclaw /home/openclaw/run-openclaw-podman.sh
-#   sudo -u openclaw /home/openclaw/run-openclaw-podman.sh setup
+# As the remoteclaw user (no repo needed):
+#   sudo -u remoteclaw /home/remoteclaw/run-remoteclaw-podman.sh
+#   sudo -u remoteclaw /home/remoteclaw/run-remoteclaw-podman.sh setup
 #
 # Legacy: "setup-host" delegates to ../setup-podman.sh
 
 set -euo pipefail
 
-REMOTECLAW_USER="${REMOTECLAW_PODMAN_USER:-openclaw}"
+REMOTECLAW_USER="${REMOTECLAW_PODMAN_USER:-remoteclaw}"
 
 resolve_user_home() {
   local user="$1"
@@ -33,7 +33,7 @@ resolve_user_home() {
 
 REMOTECLAW_HOME="$(resolve_user_home "$REMOTECLAW_USER")"
 REMOTECLAW_UID="$(id -u "$REMOTECLAW_USER" 2>/dev/null || true)"
-LAUNCH_SCRIPT="$REMOTECLAW_HOME/run-openclaw-podman.sh"
+LAUNCH_SCRIPT="$REMOTECLAW_HOME/run-remoteclaw-podman.sh"
 
 # Legacy: setup-host → run setup-podman.sh
 if [[ "${1:-}" == "setup-host" ]]; then
@@ -47,18 +47,18 @@ if [[ "${1:-}" == "setup-host" ]]; then
   exit 1
 fi
 
-# --- Step 2: launch (from repo: re-exec as openclaw in safe cwd; from openclaw home: run container) ---
+# --- Step 2: launch (from repo: re-exec as remoteclaw in safe cwd; from remoteclaw home: run container) ---
 if [[ "${1:-}" == "launch" ]]; then
   shift
   if [[ -n "${REMOTECLAW_UID:-}" && "$(id -u)" -ne "$REMOTECLAW_UID" ]]; then
-    # Exec as openclaw with cwd=/tmp so a nologin user never inherits an invalid cwd.
+    # Exec as remoteclaw with cwd=/tmp so a nologin user never inherits an invalid cwd.
     exec sudo -u "$REMOTECLAW_USER" env HOME="$REMOTECLAW_HOME" PATH="$PATH" TERM="${TERM:-}" \
       bash -c 'cd /tmp && exec '"$LAUNCH_SCRIPT"' "$@"' _ "$@"
   fi
-  # Already openclaw; fall through to container run (with remaining args, e.g. "setup")
+  # Already remoteclaw; fall through to container run (with remaining args, e.g. "setup")
 fi
 
-# --- Container run (script in openclaw home, run as openclaw) ---
+# --- Container run (script in remoteclaw home, run as remoteclaw) ---
 EFFECTIVE_HOME="${HOME:-}"
 if [[ -n "${REMOTECLAW_UID:-}" && "$(id -u)" -eq "$REMOTECLAW_UID" ]]; then
   EFFECTIVE_HOME="$REMOTECLAW_HOME"
@@ -67,17 +67,17 @@ fi
 if [[ -z "${EFFECTIVE_HOME:-}" ]]; then
   EFFECTIVE_HOME="${REMOTECLAW_HOME:-/tmp}"
 fi
-CONFIG_DIR="${REMOTECLAW_CONFIG_DIR:-$EFFECTIVE_HOME/.openclaw}"
+CONFIG_DIR="${REMOTECLAW_CONFIG_DIR:-$EFFECTIVE_HOME/.remoteclaw}"
 ENV_FILE="${REMOTECLAW_PODMAN_ENV:-$CONFIG_DIR/.env}"
 WORKSPACE_DIR="${REMOTECLAW_WORKSPACE_DIR:-$CONFIG_DIR/workspace}"
-CONTAINER_NAME="${REMOTECLAW_PODMAN_CONTAINER:-openclaw}"
-REMOTECLAW_IMAGE="${REMOTECLAW_PODMAN_IMAGE:-openclaw:local}"
+CONTAINER_NAME="${REMOTECLAW_PODMAN_CONTAINER:-remoteclaw}"
+REMOTECLAW_IMAGE="${REMOTECLAW_PODMAN_IMAGE:-remoteclaw:local}"
 PODMAN_PULL="${REMOTECLAW_PODMAN_PULL:-never}"
 HOST_GATEWAY_PORT="${REMOTECLAW_PODMAN_GATEWAY_HOST_PORT:-${REMOTECLAW_GATEWAY_PORT:-18789}}"
 HOST_BRIDGE_PORT="${REMOTECLAW_PODMAN_BRIDGE_HOST_PORT:-${REMOTECLAW_BRIDGE_PORT:-18790}}"
 GATEWAY_BIND="${REMOTECLAW_GATEWAY_BIND:-lan}"
 
-# Safe cwd for podman (openclaw is nologin; avoid inherited cwd from sudo)
+# Safe cwd for podman (remoteclaw is nologin; avoid inherited cwd from sudo)
 cd "$EFFECTIVE_HOME" 2>/dev/null || cd /tmp 2>/dev/null || true
 
 RUN_SETUP=false
@@ -147,7 +147,7 @@ fi
 
 # The gateway refuses to start unless gateway.mode=local is set in config.
 # Keep this minimal; users can run the wizard later to configure channels/providers.
-CONFIG_JSON="$CONFIG_DIR/openclaw.json"
+CONFIG_JSON="$CONFIG_DIR/remoteclaw.json"
 if [[ ! -f "$CONFIG_JSON" ]]; then
   echo '{ gateway: { mode: "local" } }' >"$CONFIG_JSON"
   chmod 600 "$CONFIG_JSON" 2>/dev/null || true
@@ -185,8 +185,8 @@ if [[ "$RUN_SETUP" == true ]]; then
     "${USERNS_ARGS[@]}" "${RUN_USER_ARGS[@]}" \
     -e HOME=/home/node -e TERM=xterm-256color -e BROWSER=echo \
     -e REMOTECLAW_GATEWAY_TOKEN="$REMOTECLAW_GATEWAY_TOKEN" \
-    -v "$CONFIG_DIR:/home/node/.openclaw:rw" \
-    -v "$WORKSPACE_DIR:/home/node/.openclaw/workspace:rw" \
+    -v "$CONFIG_DIR:/home/node/.remoteclaw:rw" \
+    -v "$WORKSPACE_DIR:/home/node/.remoteclaw/workspace:rw" \
     "${ENV_FILE_ARGS[@]}" \
     "$REMOTECLAW_IMAGE" \
     node dist/index.js onboard "$@"
@@ -199,8 +199,8 @@ podman run --pull="$PODMAN_PULL" -d --replace \
   -e HOME=/home/node -e TERM=xterm-256color \
   -e REMOTECLAW_GATEWAY_TOKEN="$REMOTECLAW_GATEWAY_TOKEN" \
   "${ENV_FILE_ARGS[@]}" \
-  -v "$CONFIG_DIR:/home/node/.openclaw:rw" \
-  -v "$WORKSPACE_DIR:/home/node/.openclaw/workspace:rw" \
+  -v "$CONFIG_DIR:/home/node/.remoteclaw:rw" \
+  -v "$WORKSPACE_DIR:/home/node/.remoteclaw/workspace:rw" \
   -p "${HOST_GATEWAY_PORT}:18789" \
   -p "${HOST_BRIDGE_PORT}:18790" \
   "$REMOTECLAW_IMAGE" \

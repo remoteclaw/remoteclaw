@@ -28,7 +28,7 @@ function killGatewayListeners(port: number): PortProcess[] {
 function runTests() {
   const isolatedLock =
     process.env.REMOTECLAW_GATEWAY_LOCK ??
-    path.join(os.tmpdir(), `openclaw-gateway.lock.test.${Date.now()}`);
+    path.join(os.tmpdir(), `remoteclaw-gateway.lock.test.${Date.now()}`);
   const result = spawnSync("pnpm", ["vitest", "run"], {
     stdio: "inherit",
     env: {

@@ -352,7 +352,7 @@ importers:
   extensions/tlon:
     dependencies:
       '@tloncorp/api':
-        specifier: github:tloncorp/api-beta#main
+        specifier: git+https://github.com/tloncorp/api-beta.git#main
         version: https://codeload.github.com/tloncorp/api-beta/tar.gz/c121deb82d97970418508691585aea4f71abcf9c
       '@tloncorp/tlon-skill':
         specifier: 0.1.9

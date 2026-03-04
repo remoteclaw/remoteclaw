@@ -3,14 +3,14 @@ import type {
   ChannelGroupContext,
   GroupPolicy,
   GroupToolPolicyConfig,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/nextcloud-talk";
 import {
   buildChannelKeyCandidates,
   normalizeChannelSlug,
   resolveChannelEntryMatchWithFallback,
   resolveMentionGatingWithBypass,
   resolveNestedAllowlistDecision,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/nextcloud-talk";
 import type { NextcloudTalkRoomConfig } from "./types.js";
 
 function normalizeAllowEntry(raw: string): string {

@@ -24,6 +24,7 @@ import type {
 type HookPackageManifest = {
   name?: string;
 } & Partial<
+  // oxlint-disable-next-line typescript-eslint/no-redundant-type-constituents -- legacy keys empty during rebrand
   Record<typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number], { hooks?: string[] }>
 >;
 const log = createSubsystemLogger("hooks/workspace");

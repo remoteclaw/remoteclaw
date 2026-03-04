@@ -37,7 +37,7 @@ type PackageManifest = {
   name?: string;
   version?: string;
   dependencies?: Record<string, string>;
-} & Partial<Record<typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number], ManifestMeta>>;
+} & Partial<Record<typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number], ManifestMeta>>; // oxlint-disable-line typescript-eslint/no-redundant-type-constituents -- legacy keys empty during rebrand
 
 export type InstallPluginResult =
   | {

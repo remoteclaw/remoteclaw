@@ -147,7 +147,7 @@ export type PackageManifest = {
   name?: string;
   version?: string;
   description?: string;
-} & Partial<Record<ManifestKey | LegacyManifestKey, RemoteClawPackageManifest>>;
+} & Partial<Record<ManifestKey | LegacyManifestKey, RemoteClawPackageManifest>>; // oxlint-disable-line typescript-eslint/no-redundant-type-constituents -- legacy keys empty during rebrand
 
 export function getPackageManifestMetadata(
   manifest: PackageManifest | undefined,

@@ -3,7 +3,7 @@ import type {
   RemoteClawConfig,
   OutboundReplyPayload,
   RuntimeEnv,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/zalouser";
 import {
   createTypingCallbacks,
   createScopedPairingAccess,
@@ -19,7 +19,7 @@ import {
   sendMediaWithLeadingCaption,
   summarizeMapping,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/zalouser";
 import {
   buildZalouserGroupCandidates,
   findZalouserGroupEntry,

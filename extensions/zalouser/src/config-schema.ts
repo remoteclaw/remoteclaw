@@ -1,4 +1,4 @@
-import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk/compat";
+import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk/zalouser";
 import { z } from "zod";
 
 const groupConfigSchema = z.object({

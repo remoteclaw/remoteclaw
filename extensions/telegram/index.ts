@@ -1,5 +1,5 @@
-import type { ChannelPlugin, RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/core";
+import type { ChannelPlugin, OpenClawPluginApi } from "remoteclaw/plugin-sdk/telegram";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/telegram";
 import { telegramPlugin } from "./src/channel.js";
 import { setTelegramRuntime } from "./src/runtime.js";
 

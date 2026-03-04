@@ -54,6 +54,8 @@
 	<string>RemoteClaw needs microphone access for voice wake.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>RemoteClaw uses on-device speech recognition for voice wake.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

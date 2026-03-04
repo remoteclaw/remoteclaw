@@ -63,3 +63,7 @@ Sources/Voice/VoiceWakePreferences.swift
 ../../Swabble/Sources/SwabbleKit/WakeWordGate.swift
 Sources/Voice/TalkModeManager.swift
 Sources/Voice/TalkOrbOverlay.swift
+Sources/LiveActivity/RemoteClawActivityAttributes.swift
+Sources/LiveActivity/LiveActivityManager.swift
+ActivityWidget/RemoteClawActivityWidgetBundle.swift
+ActivityWidget/RemoteClawLiveActivity.swift

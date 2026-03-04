@@ -1,6 +1,6 @@
 import * as crypto from "crypto";
 import * as Lark from "@larksuiteoapi/node-sdk";
-import type { ClawdbotConfig, RuntimeEnv, HistoryEntry } from "remoteclaw/plugin-sdk/compat";
+import type { ClawdbotConfig, RuntimeEnv, HistoryEntry } from "remoteclaw/plugin-sdk/feishu";
 import { resolveFeishuAccount } from "./accounts.js";
 import { raceWithTimeoutAndAbort } from "./async.js";
 import {

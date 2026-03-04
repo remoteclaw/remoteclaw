@@ -4,7 +4,7 @@ import {
   applyBasicWebhookRequestGuards,
   type RuntimeEnv,
   installRequestBodyLimitGuard,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/feishu";
 import { createFeishuWSClient } from "./client.js";
 import {
   botOpenIds,

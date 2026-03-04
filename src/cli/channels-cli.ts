@@ -85,7 +85,7 @@ export function registerChannelsCli(program: Command) {
           ["remoteclaw channels login --channel whatsapp", "Link a WhatsApp Web account."],
         ])}\n\n${theme.muted("Docs:")} ${formatDocsLink(
           "/cli/channels",
-          "docs.remoteclaw.ai/cli/channels",
+          "docs.remoteclaw.org/cli/channels",
         )}\n`,
     );
 

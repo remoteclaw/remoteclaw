@@ -99,7 +99,7 @@ export function registerGatewayCli(program: Command) {
             ["remoteclaw gateway status", "Show service status and probe reachability."],
             ["remoteclaw gateway discover", "Find local and wide-area gateway beacons."],
             ["remoteclaw gateway call health", "Call a gateway RPC method directly."],
-          ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/gateway", "docs.remoteclaw.ai/cli/gateway")}\n`,
+          ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/gateway", "docs.remoteclaw.org/cli/gateway")}\n`,
       ),
   );
 

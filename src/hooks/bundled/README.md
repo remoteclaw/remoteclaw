@@ -15,7 +15,7 @@ Automatically saves session context to memory when you issue `/new` or `/reset`.
 **Enable**:
 
 ```bash
-openclaw hooks enable session-memory
+remoteclaw hooks enable session-memory
 ```
 
 ### 📎 bootstrap-extra-files
@@ -29,7 +29,7 @@ Injects extra bootstrap files (for example monorepo `AGENTS.md`/`TOOLS.md`) duri
 **Enable**:
 
 ```bash
-openclaw hooks enable bootstrap-extra-files
+remoteclaw hooks enable bootstrap-extra-files
 ```
 
 ### 📝 command-logger
@@ -43,7 +43,7 @@ Logs all command events to a centralized audit file.
 **Enable**:
 
 ```bash
-openclaw hooks enable command-logger
+remoteclaw hooks enable command-logger
 ```
 
 ### 🚀 boot-md
@@ -57,7 +57,7 @@ Runs `BOOT.md` whenever the gateway starts (after channels start).
 **Enable**:
 
 ```bash
-openclaw hooks enable boot-md
+remoteclaw hooks enable boot-md
 ```
 
 ## Hook Structure
@@ -81,9 +81,9 @@ session-memory/
 ---
 name: my-hook
 description: "Short description"
-homepage: https://docs.openclaw.ai/automation/hooks#my-hook
+homepage: https://docs.remoteclaw.org/automation/hooks#my-hook
 metadata:
-  { "openclaw": { "emoji": "🔗", "events": ["command:new"], "requires": { "bins": ["node"] } } }
+  { "remoteclaw": { "emoji": "🔗", "events": ["command:new"], "requires": { "bins": ["node"] } } }
 ---
 # Hook Title
 
@@ -116,26 +116,26 @@ Custom hooks follow the same structure as bundled hooks.
 List all hooks:
 
 ```bash
-openclaw hooks list
+remoteclaw hooks list
 ```
 
 Show hook details:
 
 ```bash
-openclaw hooks info session-memory
+remoteclaw hooks info session-memory
 ```
 
 Check hook status:
 
 ```bash
-openclaw hooks check
+remoteclaw hooks check
 ```
 
 Enable/disable:
 
 ```bash
-openclaw hooks enable session-memory
-openclaw hooks disable command-logger
+remoteclaw hooks enable session-memory
+remoteclaw hooks disable command-logger
 ```
 
 ## Configuration
@@ -213,11 +213,11 @@ export default myHandler;
 Test your hooks by:
 
 1. Place hook in workspace hooks directory
-2. Restart gateway: `pkill -9 -f 'openclaw.*gateway' && pnpm openclaw gateway`
-3. Enable the hook: `openclaw hooks enable my-hook`
+2. Restart gateway: `pkill -9 -f 'remoteclaw.*gateway' && pnpm remoteclaw gateway`
+3. Enable the hook: `remoteclaw hooks enable my-hook`
 4. Trigger the event (e.g., send `/new` command)
 5. Check gateway logs for hook execution
 
 ## Documentation
 
-Full documentation: https://docs.openclaw.ai/automation/hooks
+Full documentation: https://docs.remoteclaw.org/automation/hooks

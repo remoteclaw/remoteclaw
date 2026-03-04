@@ -1,4 +1,4 @@
-# OpenClaw PR Submission Status
+# RemoteClaw PR Submission Status
 
 > Auto-maintained by agent team. Last updated: 2026-02-22
 

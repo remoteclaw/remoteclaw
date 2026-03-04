@@ -195,7 +195,7 @@ export async function runNonInteractiveOnboardingLocal(params: {
 
   if (!opts.json) {
     runtime.log(
-      `Tip: run \`${formatCliCommand("remoteclaw configure")}\` to customize your setup. Docs: https://docs.remoteclaw.ai`,
+      `Tip: run \`${formatCliCommand("remoteclaw configure")}\` to customize your setup. Docs: https://docs.remoteclaw.org`,
     );
   }
 }

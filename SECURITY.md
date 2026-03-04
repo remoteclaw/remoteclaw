@@ -13,9 +13,9 @@ Report vulnerabilities directly to the repository where the issue lives:
 - **ClawHub** — [remoteclaw/clawhub](https://github.com/remoteclaw/clawhub)
 - **Trust and threat model** — [remoteclaw/trust](https://github.com/remoteclaw/trust)
 
-For issues that don't fit a specific repo, or if you're unsure, email **[security@remoteclaw.ai](mailto:security@remoteclaw.ai)** and we'll route it.
+For issues that don't fit a specific repo, or if you're unsure, email **[security@remoteclaw.org](mailto:security@remoteclaw.org)** and we'll route it.
 
-For full reporting instructions see our [Trust page](https://trust.remoteclaw.ai).
+For full reporting instructions see our [Trust page](https://trust.remoteclaw.org).
 
 ### Required in Reports
 
@@ -190,7 +190,7 @@ Security boundary notes:
 
 For threat model + hardening guidance (including `remoteclaw security audit --deep` and `--fix`), see:
 
-- `https://docs.remoteclaw.ai/gateway/security`
+- `https://docs.remoteclaw.org/gateway/security`
 
 ### Tool filesystem hardening
 

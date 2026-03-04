@@ -21,7 +21,7 @@ export function registerTuiCli(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/tui", "docs.remoteclaw.ai/cli/tui")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/tui", "docs.remoteclaw.org/cli/tui")}\n`,
     )
     .action(async (opts) => {
       try {

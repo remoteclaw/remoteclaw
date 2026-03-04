@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "remoteclaw/plugin-sdk/compat";
+import type { OpenClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
 import { resolveBlueBubblesServerAccount } from "./account-resolve.js";
 import { blueBubblesFetchWithTimeout, buildBlueBubblesApiUrl } from "./types.js";
 

@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "remoteclaw/plugin-sdk/compat";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/bluebubbles";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./test-mocks.js";
 import { getCachedBlueBubblesPrivateApiStatus } from "./probe.js";

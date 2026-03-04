@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import type { OpenClawConfig } from "remoteclaw/plugin-sdk/compat";
-import { stripMarkdown } from "remoteclaw/plugin-sdk/compat";
+import type { OpenClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
+import { stripMarkdown } from "remoteclaw/plugin-sdk/bluebubbles";
 import { resolveBlueBubblesAccount } from "./accounts.js";
 import {
   getCachedBlueBubblesPrivateApiStatus,

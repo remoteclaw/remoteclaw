@@ -1,5 +1,5 @@
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/core";
+import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/bluebubbles";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/bluebubbles";
 import { bluebubblesPlugin } from "./src/channel.js";
 import { setBlueBubblesRuntime } from "./src/runtime.js";
 

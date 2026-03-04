@@ -3,7 +3,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveChannelMediaMaxBytes, type OpenClawConfig } from "remoteclaw/plugin-sdk/compat";
+import {
+  resolveChannelMediaMaxBytes,
+  type OpenClawConfig,
+} from "remoteclaw/plugin-sdk/bluebubbles";
 import { resolveBlueBubblesAccount } from "./accounts.js";
 import { sendBlueBubblesAttachment } from "./attachments.js";
 import { resolveBlueBubblesMessageId } from "./monitor.js";

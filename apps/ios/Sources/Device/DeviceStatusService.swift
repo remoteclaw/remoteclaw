@@ -1,5 +1,5 @@
 import Foundation
-import OpenClawKit
+import RemoteClawKit
 import UIKit
 
 final class DeviceStatusService: DeviceStatusServicing {
@@ -9,14 +9,14 @@ final class DeviceStatusService: DeviceStatusServicing {
         self.networkStatus = networkStatus
     }
 
-    func status() async throws -> OpenClawDeviceStatusPayload {
+    func status() async throws -> RemoteClawDeviceStatusPayload {
         let battery = self.batteryStatus()
         let thermal = self.thermalStatus()
         let storage = self.storageStatus()
         let network = await self.networkStatus.currentStatus()
         let uptime = ProcessInfo.processInfo.systemUptime
 
-        return OpenClawDeviceStatusPayload(
+        return RemoteClawDeviceStatusPayload(
             battery: battery,
             thermal: thermal,
             storage: storage,
@@ -24,12 +24,12 @@ final class DeviceStatusService: DeviceStatusServicing {
             uptimeSeconds: uptime)
     }
 
-    func info() -> OpenClawDeviceInfoPayload {
+    func info() -> RemoteClawDeviceInfoPayload {
         let device = UIDevice.current
         let appVersion = DeviceInfoHelper.appVersion()
         let appBuild = DeviceStatusService.fallbackAppBuild(DeviceInfoHelper.appBuild())
         let locale = Locale.preferredLanguages.first ?? Locale.current.identifier
-        return OpenClawDeviceInfoPayload(
+        return RemoteClawDeviceInfoPayload(
             deviceName: device.name,
             modelIdentifier: DeviceInfoHelper.modelIdentifier(),
             systemName: device.systemName,
@@ -39,40 +39,40 @@ final class DeviceStatusService: DeviceStatusServicing {
             locale: locale)
     }
 
-    private func batteryStatus() -> OpenClawBatteryStatusPayload {
+    private func batteryStatus() -> RemoteClawBatteryStatusPayload {
         let device = UIDevice.current
         device.isBatteryMonitoringEnabled = true
         let level = device.batteryLevel >= 0 ? Double(device.batteryLevel) : nil
-        let state: OpenClawBatteryState = switch device.batteryState {
+        let state: RemoteClawBatteryState = switch device.batteryState {
         case .charging: .charging
         case .full: .full
         case .unplugged: .unplugged
         case .unknown: .unknown
         @unknown default: .unknown
         }
-        return OpenClawBatteryStatusPayload(
+        return RemoteClawBatteryStatusPayload(
             level: level,
             state: state,
             lowPowerModeEnabled: ProcessInfo.processInfo.isLowPowerModeEnabled)
     }
 
-    private func thermalStatus() -> OpenClawThermalStatusPayload {
-        let state: OpenClawThermalState = switch ProcessInfo.processInfo.thermalState {
+    private func thermalStatus() -> RemoteClawThermalStatusPayload {
+        let state: RemoteClawThermalState = switch ProcessInfo.processInfo.thermalState {
         case .nominal: .nominal
         case .fair: .fair
         case .serious: .serious
         case .critical: .critical
         @unknown default: .nominal
         }
-        return OpenClawThermalStatusPayload(state: state)
+        return RemoteClawThermalStatusPayload(state: state)
     }
 
-    private func storageStatus() -> OpenClawStorageStatusPayload {
+    private func storageStatus() -> RemoteClawStorageStatusPayload {
         let attrs = (try? FileManager.default.attributesOfFileSystem(forPath: NSHomeDirectory())) ?? [:]
         let total = (attrs[.systemSize] as? NSNumber)?.int64Value ?? 0
         let free = (attrs[.systemFreeSize] as? NSNumber)?.int64Value ?? 0
         let used = max(0, total - free)
-        return OpenClawStorageStatusPayload(totalBytes: total, freeBytes: free, usedBytes: used)
+        return RemoteClawStorageStatusPayload(totalBytes: total, freeBytes: free, usedBytes: used)
     }
 
     /// Fallback for payloads that require a non-empty build (e.g. "0").

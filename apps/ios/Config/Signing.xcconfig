@@ -1,9 +1,9 @@
 // Shared iOS signing defaults for local development + CI.
 REMOTECLAW_IOS_DEFAULT_TEAM = Y5PE65HELJ
 REMOTECLAW_IOS_SELECTED_TEAM = $(REMOTECLAW_IOS_DEFAULT_TEAM)
-REMOTECLAW_APP_BUNDLE_ID = ai.openclaw.ios
-REMOTECLAW_WATCH_APP_BUNDLE_ID = ai.openclaw.ios.watchkitapp
-REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID = ai.openclaw.ios.watchkitapp.extension
+REMOTECLAW_APP_BUNDLE_ID = ai.remoteclaw.ios
+REMOTECLAW_WATCH_APP_BUNDLE_ID = ai.remoteclaw.ios.watchkitapp
+REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID = ai.remoteclaw.ios.watchkitapp.extension
 
 // Local contributors can override this by running scripts/ios-configure-signing.sh.
 // Keep include after defaults: xcconfig is evaluated top-to-bottom.

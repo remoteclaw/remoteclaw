@@ -55,7 +55,7 @@ final class ScreenRecordService: @unchecked Sendable {
             outPath: outPath)
 
         let state = CaptureState()
-        let recordQueue = DispatchQueue(label: "ai.openclaw.screenrecord")
+        let recordQueue = DispatchQueue(label: "ai.remoteclaw.screenrecord")
 
         try await self.startCapture(state: state, config: config, recordQueue: recordQueue)
         try await Task.sleep(nanoseconds: UInt64(config.durationMs) * 1_000_000)
@@ -105,7 +105,7 @@ final class ScreenRecordService: @unchecked Sendable {
             return URL(fileURLWithPath: outPath)
         }
         return FileManager().temporaryDirectory
-            .appendingPathComponent("openclaw-screen-record-\(UUID().uuidString).mp4")
+            .appendingPathComponent("remoteclaw-screen-record-\(UUID().uuidString).mp4")
     }
 
     private func startCapture(

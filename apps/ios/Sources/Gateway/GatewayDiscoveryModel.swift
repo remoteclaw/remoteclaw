@@ -1,4 +1,4 @@
-import OpenClawKit
+import RemoteClawKit
 import Foundation
 import Network
 import Observation
@@ -52,11 +52,11 @@ final class GatewayDiscoveryModel {
         if !self.browsers.isEmpty { return }
         self.appendDebugLog("start()")
 
-        for domain in OpenClawBonjour.gatewayServiceDomains {
+        for domain in RemoteClawBonjour.gatewayServiceDomains {
             let params = NWParameters.tcp
             params.includePeerToPeer = true
             let browser = NWBrowser(
-                for: .bonjour(type: OpenClawBonjour.gatewayServiceType, domain: domain),
+                for: .bonjour(type: RemoteClawBonjour.gatewayServiceType, domain: domain),
                 using: params)
 
             browser.stateUpdateHandler = { [weak self] state in
@@ -104,7 +104,7 @@ final class GatewayDiscoveryModel {
             }
 
             self.browsers[domain] = browser
-            browser.start(queue: DispatchQueue(label: "ai.openclaw.ios.gateway-discovery.\(domain)"))
+            browser.start(queue: DispatchQueue(label: "ai.remoteclaw.ios.gateway-discovery.\(domain)"))
         }
     }
 
@@ -168,7 +168,7 @@ final class GatewayDiscoveryModel {
 
     private static func prettifyInstanceName(_ decodedName: String) -> String {
         let normalized = decodedName.split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        let stripped = normalized.replacingOccurrences(of: " (OpenClaw)", with: "")
+        let stripped = normalized.replacingOccurrences(of: " (RemoteClaw)", with: "")
             .replacingOccurrences(of: #"\s+\(\d+\)$"#, with: "", options: .regularExpression)
         return stripped.trimmingCharacters(in: .whitespacesAndNewlines)
     }

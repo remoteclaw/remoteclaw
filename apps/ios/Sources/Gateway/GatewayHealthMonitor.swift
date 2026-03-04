@@ -1,5 +1,5 @@
 import Foundation
-import OpenClawKit
+import RemoteClawKit
 
 @MainActor
 final class GatewayHealthMonitor {

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk";
+import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/compat";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/compat";
 import type { ResolvedNextcloudTalkAccount } from "./accounts.js";
 
 const ROOM_CACHE_TTL_MS = 5 * 60 * 1000;

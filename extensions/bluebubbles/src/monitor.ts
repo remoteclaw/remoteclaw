@@ -10,12 +10,9 @@ import {
   requestBodyErrorToText,
   resolveSingleWebhookTarget,
   resolveWebhookTargets,
-} from "remoteclaw/plugin-sdk";
-import {
-  normalizeWebhookMessage,
-  normalizeWebhookReaction,
-  type NormalizedWebhookMessage,
-} from "./monitor-normalize.js";
+} from "remoteclaw/plugin-sdk/compat";
+import { createBlueBubblesDebounceRegistry } from "./monitor-debounce.js";
+import { normalizeWebhookMessage, normalizeWebhookReaction } from "./monitor-normalize.js";
 import { logVerbose, processMessage, processReaction } from "./monitor-processing.js";
 import {
   _resetBlueBubblesShortIdState,

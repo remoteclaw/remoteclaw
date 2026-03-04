@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { RemoteClawPluginApi, RemoteClawPluginService } from "remoteclaw/plugin-sdk/core";
+import type { OpenClawPluginApi, OpenClawPluginService } from "remoteclaw/plugin-sdk/phone-control";
 
 type ArmGroup = "camera" | "screen" | "writes" | "all";
 

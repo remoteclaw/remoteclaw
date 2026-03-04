@@ -238,7 +238,7 @@ describe("gatewayInstallErrorHint", () => {
   it("returns platform-specific hints", () => {
     expect(gatewayInstallErrorHint("win32")).toContain("Run as administrator");
     expect(gatewayInstallErrorHint("linux")).toMatch(
-      /(?:remoteclaw|remoteclaw)( --profile isolated)? gateway install/,
+      /remoteclaw( --profile isolated)? gateway install/,
     );
   });
 });

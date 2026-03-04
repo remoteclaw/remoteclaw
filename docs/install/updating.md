@@ -254,4 +254,4 @@ git pull
 
 - Run `remoteclaw doctor` again and read the output carefully (it often tells you the fix).
 - Check: [Troubleshooting](/gateway/troubleshooting)
-- Ask in Discord: [https://discord.gg/clawd](https://discord.gg/clawd)
+- Open a [GitHub Discussion](https://github.com/remoteclaw/remoteclaw/discussions)

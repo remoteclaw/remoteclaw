@@ -1016,7 +1016,7 @@ Use managed overrides instead of editing the repo copy. Put your changes in `~/.
 
 ### Can I load skills from a custom folder
 
-Yes. Add extra directories via `skills.load.extraDirs` in `~/.remoteclaw/remoteclaw.json` (lowest precedence). Default precedence remains: `<workspace>/skills` → `~/.remoteclaw/skills` → bundled → `skills.load.extraDirs`. `clawhub` installs into `./skills` by default, which RemoteClaw treats as `<workspace>/skills`.
+Yes. Add extra directories via `skills.load.extraDirs` in `~/.remoteclaw/remoteclaw.json` (lowest precedence). Default precedence remains: `<workspace>/skills` → `~/.remoteclaw/skills` → bundled → `skills.load.extraDirs`.
 
 ### How can I use different models for different tasks
 
@@ -1083,18 +1083,7 @@ Docs: [Cron jobs](/automation/cron-jobs), [Cron vs Heartbeat](/automation/cron-v
 
 ### How do I install skills on Linux
 
-Use **ClawHub** (CLI) or drop skills into your workspace. The macOS Skills UI isn't available on Linux.
-Browse skills at clawhub.com.
-
-Install the ClawHub CLI (pick one package manager):
-
-```bash
-npm i -g clawhub
-```
-
-```bash
-pnpm add -g clawhub
-```
+Drop skills into your workspace skills directory (`<workspace>/skills/<name>/SKILL.md`) or into `~/.remoteclaw/skills/<name>/SKILL.md`. The macOS Skills UI isn't available on Linux.
 
 ### Can RemoteClaw run tasks on a schedule or continuously in the background
 
@@ -1160,7 +1149,7 @@ If you want to keep context per client (agency workflows), a simple pattern is:
 If you want a native integration, open a feature request or build a skill
 targeting those APIs.
 
-Install skills via `clawhub install <skill-slug>` or drop them into `~/.remoteclaw/skills/<name>/SKILL.md`. Some skills expect binaries installed via Homebrew; on Linux that means Linuxbrew (see the Homebrew Linux FAQ entry above).
+Install skills by dropping them into `~/.remoteclaw/skills/<name>/SKILL.md` or `<workspace>/skills/<name>/SKILL.md`. Some skills expect binaries installed via Homebrew; on Linux that means Linuxbrew (see the Homebrew Linux FAQ entry above).
 
 ### How do I install the Chrome extension for browser takeover
 

@@ -209,9 +209,9 @@ Compaction is **persistent** (unlike session pruning). See [/concepts/session-pr
 
 ---
 
-## When auto-compaction happens (Pi runtime)
+## When auto-compaction happens (agent runtime)
 
-In the embedded Pi agent, auto-compaction triggers in two cases:
+In the embedded agent runtime, auto-compaction triggers in two cases:
 
 1. **Overflow recovery**: the model returns a context overflow error → compact → retry.
 2. **Threshold maintenance**: after a successful turn, when:
@@ -223,13 +223,13 @@ Where:
 - `contextWindow` is the model’s context window
 - `reserveTokens` is headroom reserved for prompts + the next model output
 
-These are Pi runtime semantics (RemoteClaw consumes the events, but Pi decides when to compact).
+These are agent runtime semantics (RemoteClaw consumes the events, but the runtime decides when to compact).
 
 ---
 
 ## Compaction settings (`reserveTokens`, `keepRecentTokens`)
 
-Pi’s compaction settings live in Pi settings:
+Compaction settings live in the agent runtime settings:
 
 ```json5
 {

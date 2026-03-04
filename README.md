@@ -1,4 +1,4 @@
-# 🦞 RemoteClaw — Personal AI Assistant
+# RemoteClaw — Multi-Channel AI Gateway
 
 <p align="center">
     <picture>
@@ -8,22 +8,16 @@
 </p>
 
 <p align="center">
-  <strong>EXFOLIATE! EXFOLIATE!</strong>
-</p>
-
-<p align="center">
   <a href="https://github.com/remoteclaw/remoteclaw/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/remoteclaw/remoteclaw/ci.yml?branch=main&style=for-the-badge" alt="CI status"></a>
   <a href="https://github.com/remoteclaw/remoteclaw/releases"><img src="https://img.shields.io/github/v/release/remoteclaw/remoteclaw?include_prereleases&style=for-the-badge" alt="GitHub release"></a>
-  <a href="https://discord.gg/clawd"><img src="https://img.shields.io/discord/1456350064065904867?label=Discord&logo=discord&logoColor=white&color=5865F2&style=for-the-badge" alt="Discord"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
 </p>
 
-**RemoteClaw** is a _personal AI assistant_ you run on your own devices.
-It answers you on the channels you already use (WhatsApp, Telegram, Slack, Discord, Google Chat, Signal, iMessage, Microsoft Teams, WebChat), plus extension channels like BlueBubbles, Matrix, Zalo, and Zalo Personal. It can speak and listen on macOS/iOS/Android, and can render a live Canvas you control. The Gateway is just the control plane — the product is the assistant.
+**RemoteClaw** is AI agent middleware that connects agent CLIs (Claude, Gemini, Codex, OpenCode) to messaging channels you already use — WhatsApp, Telegram, Slack, Discord, Google Chat, Signal, iMessage, Microsoft Teams, WebChat, plus extension channels like BlueBubbles, Matrix, Zalo, and Zalo Personal. It includes voice support on macOS/iOS/Android and a live Canvas workspace.
 
-If you want a personal, single-user assistant that feels local, fast, and always-on, this is it.
+RemoteClaw is middleware, not a platform. It connects agent CLIs to messaging channels without reinventing the agentic loop.
 
-[Website](https://remoteclaw.org) · [Docs](https://docs.remoteclaw.org) · [Vision](VISION.md) · [DeepWiki](https://deepwiki.com/remoteclaw/remoteclaw) · [Getting Started](https://docs.remoteclaw.org/start/getting-started) · [Updating](https://docs.remoteclaw.org/install/updating) · [Showcase](https://docs.remoteclaw.org/start/showcase) · [FAQ](https://docs.remoteclaw.org/help/faq) · [Wizard](https://docs.remoteclaw.org/start/wizard) · [Nix](https://github.com/remoteclaw/nix-remoteclaw) · [Docker](https://docs.remoteclaw.org/install/docker) · [Discord](https://discord.gg/clawd)
+[Website](https://remoteclaw.org) · [Docs](https://docs.remoteclaw.org) · [Vision](VISION.md) · [DeepWiki](https://deepwiki.com/remoteclaw/remoteclaw) · [Getting Started](https://docs.remoteclaw.org/start/getting-started) · [Updating](https://docs.remoteclaw.org/install/updating) · [Showcase](https://docs.remoteclaw.org/start/showcase) · [FAQ](https://docs.remoteclaw.org/help/faq) · [Wizard](https://docs.remoteclaw.org/start/wizard) · [Nix](https://github.com/remoteclaw/nix-remoteclaw) · [Docker](https://docs.remoteclaw.org/install/docker)
 
 Preferred setup: run the onboarding wizard (`remoteclaw onboard`) in your terminal.
 The wizard guides you step by step through setting up the gateway, workspace, channels, and skills. The CLI wizard is the recommended path and works on **macOS, Linux, and Windows (via WSL2; strongly recommended)**.
@@ -144,7 +138,7 @@ Run `remoteclaw doctor` to surface risky/misconfigured DM policies.
 
 - [Gateway WS control plane](https://docs.remoteclaw.org/gateway) with sessions, presence, config, cron, webhooks, [Control UI](https://docs.remoteclaw.org/web), and [Canvas host](https://docs.remoteclaw.org/platforms/mac/canvas#canvas-a2ui).
 - [CLI surface](https://docs.remoteclaw.org/tools/agent-send): gateway, agent, send, [wizard](https://docs.remoteclaw.org/start/wizard), and [doctor](https://docs.remoteclaw.org/gateway/doctor).
-- [Pi agent runtime](https://docs.remoteclaw.org/concepts/agent) in RPC mode with tool streaming and block streaming.
+- [Agent runtime](https://docs.remoteclaw.org/concepts/agent) in RPC mode with tool streaming and block streaming.
 - [Session model](https://docs.remoteclaw.org/concepts/session): `main` for direct chats, group isolation, activation modes, queue modes, reply-back. Group rules: [Groups](https://docs.remoteclaw.org/channels/groups).
 - [Media pipeline](https://docs.remoteclaw.org/nodes/images): images/audio/video, transcription hooks, size caps, temp file lifecycle. Audio details: [Audio](https://docs.remoteclaw.org/nodes/audio).
 
@@ -194,7 +188,7 @@ WhatsApp / Telegram / Slack / Discord / Google Chat / Signal / iMessage / BlueBu
 │     ws://127.0.0.1:18789      │
 └──────────────┬────────────────┘
                │
-               ├─ Pi agent (RPC)
+               ├─ Agent runtime (RPC)
                ├─ CLI (remoteclaw …)
                ├─ WebChat UI
                ├─ macOS app
@@ -260,12 +254,6 @@ Details: [Nodes](https://docs.remoteclaw.org/nodes) · [macOS app](https://docs.
 - `sessions_send` — message another session; optional reply‑back ping‑pong + announce step (`REPLY_SKIP`, `ANNOUNCE_SKIP`).
 
 Details: [Session tools](https://docs.remoteclaw.org/concepts/session-tool)
-
-## Skills registry (ClawHub)
-
-ClawHub is a minimal skill registry. With ClawHub enabled, the agent can search for skills automatically and pull in new ones as needed.
-
-[ClawHub](https://clawhub.com)
 
 ## Chat commands
 
@@ -480,26 +468,12 @@ Use these when you’re past the onboarding flow and want the deeper reference.
 
 - [docs.remoteclaw.org/gmail-pubsub](https://docs.remoteclaw.org/automation/gmail-pubsub)
 
-## Molty
-
-RemoteClaw was built for **Molty**, a space lobster AI assistant. 🦞
-by Peter Steinberger and the community.
-
-- [remoteclaw.org](https://remoteclaw.org)
-- [soul.md](https://soul.md)
-- [steipete.me](https://steipete.me)
-- [@remoteclaw](https://x.com/remoteclaw)
-
 ## Community
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines, maintainers, and how to submit PRs.
-AI/vibe-coded PRs welcome! 🤖
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines and how to submit PRs.
+AI/vibe-coded PRs welcome!
 
-Special thanks to [Mario Zechner](https://mariozechner.at/) for his support and for
-[pi-mono](https://github.com/badlogic/pi-mono).
-Special thanks to Adam Doppelt for lobster.bot.
-
-Thanks to all clawtributors:
+Forked from [OpenClaw](https://github.com/openclaw/openclaw). Thanks to all upstream contributors:
 
 <p align="left">
   <a href="https://github.com/steipete"><img src="https://avatars.githubusercontent.com/u/58493?v=4&s=48" width="48" height="48" alt="steipete" title="steipete"/></a> <a href="https://github.com/sktbrd"><img src="https://avatars.githubusercontent.com/u/116202536?v=4&s=48" width="48" height="48" alt="sktbrd" title="sktbrd"/></a> <a href="https://github.com/cpojer"><img src="https://avatars.githubusercontent.com/u/13352?v=4&s=48" width="48" height="48" alt="cpojer" title="cpojer"/></a> <a href="https://github.com/joshp123"><img src="https://avatars.githubusercontent.com/u/1497361?v=4&s=48" width="48" height="48" alt="joshp123" title="joshp123"/></a> <a href="https://github.com/mbelinky"><img src="https://avatars.githubusercontent.com/u/132747814?v=4&s=48" width="48" height="48" alt="Mariano Belinky" title="Mariano Belinky"/></a> <a href="https://github.com/Takhoffman"><img src="https://avatars.githubusercontent.com/u/781889?v=4&s=48" width="48" height="48" alt="Takhoffman" title="Takhoffman"/></a> <a href="https://github.com/sebslight"><img src="https://avatars.githubusercontent.com/u/19554889?v=4&s=48" width="48" height="48" alt="sebslight" title="sebslight"/></a> <a href="https://github.com/tyler6204"><img src="https://avatars.githubusercontent.com/u/64381258?v=4&s=48" width="48" height="48" alt="tyler6204" title="tyler6204"/></a> <a href="https://github.com/quotentiroler"><img src="https://avatars.githubusercontent.com/u/40643627?v=4&s=48" width="48" height="48" alt="quotentiroler" title="quotentiroler"/></a> <a href="https://github.com/VeriteIgiraneza"><img src="https://avatars.githubusercontent.com/u/69280208?v=4&s=48" width="48" height="48" alt="Verite Igiraneza" title="Verite Igiraneza"/></a>

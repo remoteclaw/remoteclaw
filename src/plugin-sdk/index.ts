@@ -208,7 +208,7 @@ export { createLoggerBackedRuntime } from "./runtime.js";
 export { chunkTextForOutbound } from "./text-chunking.js";
 export { readJsonFileWithFallback, writeJsonFileAtomically } from "./json-store.js";
 export { buildRandomTempFilePath, withTempDownloadPath } from "./temp-path.js";
-export { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+export { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 export {
   runPluginCommandWithTimeout,
   type PluginCommandRunOptions,

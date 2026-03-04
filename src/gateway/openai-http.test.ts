@@ -193,7 +193,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           { model: "openclaw", messages: [{ role: "user", content: "hi" }] },
           {
             "x-openclaw-agent-id": "beta",
-            "x-openclaw-session-key": "agent:beta:openai:custom",
+            "x-remoteclaw-session-key": "agent:beta:openai:custom",
           },
         );
         expect(res.status).toBe(200);

@@ -34,7 +34,7 @@ vi.mock("../infra/update-runner.js", () => ({
   runGatewayUpdate: vi.fn(),
 }));
 
-vi.mock("../infra/openclaw-root.js", () => ({
+vi.mock("../infra/remoteclaw-root.js", () => ({
   resolveRemoteClawPackageRoot: vi.fn(),
 }));
 
@@ -121,7 +121,7 @@ vi.mock("../runtime.js", () => ({
 }));
 
 const { runGatewayUpdate } = await import("../infra/update-runner.js");
-const { resolveRemoteClawPackageRoot } = await import("../infra/openclaw-root.js");
+const { resolveRemoteClawPackageRoot } = await import("../infra/remoteclaw-root.js");
 const { readConfigFileSnapshot, writeConfigFile } = await import("../config/config.js");
 const { checkUpdateStatus, fetchNpmTagVersion, resolveNpmChannelTag } =
   await import("../infra/update-check.js");

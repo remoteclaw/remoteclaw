@@ -22,7 +22,7 @@ import type {
   TtsModelOverrideConfig,
 } from "../config/types.tts.js";
 import { logVerbose } from "../globals.js";
-import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 import { stripMarkdown } from "../line/markdown-to-line.js";
 import { isVoiceCompatibleAudio } from "../media/audio.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";

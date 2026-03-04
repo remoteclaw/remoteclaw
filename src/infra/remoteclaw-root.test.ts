@@ -5,7 +5,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 type FakeFsEntry = { kind: "file"; content: string } | { kind: "dir" };
 
 const VITEST_FS_BASE = path.join(path.parse(process.cwd()).root, "__openclaw_vitest__");
-const FIXTURE_BASE = path.join(VITEST_FS_BASE, "openclaw-root");
+const FIXTURE_BASE = path.join(VITEST_FS_BASE, "remoteclaw-root");
 
 const state = vi.hoisted(() => ({
   entries: new Map<string, FakeFsEntry>(),
@@ -90,12 +90,12 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 });
 
 describe("resolveRemoteClawPackageRoot", () => {
-  let resolveRemoteClawPackageRoot: typeof import("./openclaw-root.js").resolveRemoteClawPackageRoot;
-  let resolveRemoteClawPackageRootSync: typeof import("./openclaw-root.js").resolveRemoteClawPackageRootSync;
+  let resolveRemoteClawPackageRoot: typeof import("./remoteclaw-root.js").resolveRemoteClawPackageRoot;
+  let resolveRemoteClawPackageRootSync: typeof import("./remoteclaw-root.js").resolveRemoteClawPackageRootSync;
 
   beforeAll(async () => {
     ({ resolveRemoteClawPackageRoot, resolveRemoteClawPackageRootSync } =
-      await import("./openclaw-root.js"));
+      await import("./remoteclaw-root.js"));
   });
 
   beforeEach(() => {

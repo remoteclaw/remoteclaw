@@ -1,6 +1,6 @@
 import { loadConfig } from "../../config/config.js";
 import { extractDeliveryInfo } from "../../config/sessions.js";
-import { resolveRemoteClawPackageRoot } from "../../infra/openclaw-root.js";
+import { resolveRemoteClawPackageRoot } from "../../infra/remoteclaw-root.js";
 import {
   formatDoctorNonInteractiveHint,
   type RestartSentinelPayload,

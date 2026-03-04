@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 
 export function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};

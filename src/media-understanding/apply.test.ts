@@ -4,7 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { resolveApiKeyForProvider } from "../agents/provider-auth.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 import { fetchRemoteMedia } from "../media/fetch.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { clearMediaUnderstandingBinaryCacheForTests } from "./runner.js";

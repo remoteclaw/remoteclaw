@@ -4,7 +4,7 @@ import {
   resolveControlUiDistIndexHealth,
   resolveControlUiDistIndexPathForRoot,
 } from "../infra/control-ui-assets.js";
-import { resolveRemoteClawPackageRoot } from "../infra/openclaw-root.js";
+import { resolveRemoteClawPackageRoot } from "../infra/remoteclaw-root.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";

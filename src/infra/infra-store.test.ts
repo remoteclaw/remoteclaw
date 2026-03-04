@@ -23,7 +23,7 @@ import {
 describe("infra store", () => {
   describe("state migrations fs", () => {
     it("treats array session stores as invalid", async () => {
-      await withTempDir("openclaw-session-store-", async (dir) => {
+      await withTempDir("remoteclaw-session-store-", async (dir) => {
         const storePath = path.join(dir, "sessions.json");
         await fs.writeFile(storePath, "[]", "utf-8");
 
@@ -34,7 +34,7 @@ describe("infra store", () => {
     });
 
     it("parses JSON5 object session stores", async () => {
-      await withTempDir("openclaw-session-store-", async (dir) => {
+      await withTempDir("remoteclaw-session-store-", async (dir) => {
         const storePath = path.join(dir, "sessions.json");
         await fs.writeFile(
           storePath,
@@ -52,7 +52,7 @@ describe("infra store", () => {
 
   describe("voicewake store", () => {
     it("returns defaults when missing", async () => {
-      await withTempDir("openclaw-voicewake-", async (baseDir) => {
+      await withTempDir("remoteclaw-voicewake-", async (baseDir) => {
         const cfg = await loadVoiceWakeConfig(baseDir);
         expect(cfg.triggers).toEqual(defaultVoiceWakeTriggers());
         expect(cfg.updatedAtMs).toBe(0);
@@ -60,7 +60,7 @@ describe("infra store", () => {
     });
 
     it("sanitizes and persists triggers", async () => {
-      await withTempDir("openclaw-voicewake-", async (baseDir) => {
+      await withTempDir("remoteclaw-voicewake-", async (baseDir) => {
         const saved = await setVoiceWakeTriggers(["  hi  ", "", "  there "], baseDir);
         expect(saved.triggers).toEqual(["hi", "there"]);
         expect(saved.updatedAtMs).toBeGreaterThan(0);
@@ -72,14 +72,14 @@ describe("infra store", () => {
     });
 
     it("falls back to defaults when triggers empty", async () => {
-      await withTempDir("openclaw-voicewake-", async (baseDir) => {
+      await withTempDir("remoteclaw-voicewake-", async (baseDir) => {
         const saved = await setVoiceWakeTriggers(["", "   "], baseDir);
         expect(saved.triggers).toEqual(defaultVoiceWakeTriggers());
       });
     });
 
     it("sanitizes malformed persisted config values", async () => {
-      await withTempDir("openclaw-voicewake-", async (baseDir) => {
+      await withTempDir("remoteclaw-voicewake-", async (baseDir) => {
         await fs.mkdir(path.join(baseDir, "settings"), { recursive: true });
         await fs.writeFile(
           path.join(baseDir, "settings", "voicewake.json"),

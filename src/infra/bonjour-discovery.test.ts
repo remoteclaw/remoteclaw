@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { runCommandWithTimeout } from "../process/exec.js";
 import { discoverGatewayBeacons } from "./bonjour-discovery.js";
 
-const WIDE_AREA_DOMAIN = "openclaw.internal.";
+const WIDE_AREA_DOMAIN = "remoteclaw.internal.";
 
 describe("bonjour-discovery", () => {
   it("discovers beacons on darwin across local + wide-area domains", async () => {
@@ -289,12 +289,12 @@ describe("bonjour-discovery", () => {
     await discoverGatewayBeacons({
       platform: "darwin",
       timeoutMs: 1,
-      domains: ["local", "openclaw.internal"],
+      domains: ["local", "remoteclaw.internal"],
       run: run as unknown as typeof runCommandWithTimeout,
     });
 
     expect(calls.filter((c) => c[1] === "-B").map((c) => c[3])).toEqual(
-      expect.arrayContaining(["local.", "openclaw.internal."]),
+      expect.arrayContaining(["local.", "remoteclaw.internal."]),
     );
 
     calls.length = 0;

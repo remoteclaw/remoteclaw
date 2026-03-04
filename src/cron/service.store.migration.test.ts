@@ -7,7 +7,7 @@ import { DEFAULT_TOP_OF_HOUR_STAGGER_MS } from "./stagger.js";
 import { loadCronStore } from "./store.js";
 
 const noopLogger = createNoopLogger();
-const { makeStorePath } = createCronStoreHarness({ prefix: "openclaw-cron-migrate-" });
+const { makeStorePath } = createCronStoreHarness({ prefix: "remoteclaw-cron-migrate-" });
 
 async function writeLegacyStore(storePath: string, legacyJob: Record<string, unknown>) {
   await fs.mkdir(path.dirname(storePath), { recursive: true });

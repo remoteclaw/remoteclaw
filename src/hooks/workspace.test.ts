@@ -7,7 +7,7 @@ import { loadHookEntriesFromDir } from "./workspace.js";
 
 describe("hooks workspace", () => {
   it("ignores package.json hook paths that traverse outside package directory", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-workspace-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-hooks-workspace-"));
     const hooksRoot = path.join(root, "hooks");
     fs.mkdirSync(hooksRoot, { recursive: true });
 
@@ -38,7 +38,7 @@ describe("hooks workspace", () => {
   });
 
   it("accepts package.json hook paths within package directory", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-workspace-ok-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-hooks-workspace-ok-"));
     const hooksRoot = path.join(root, "hooks");
     fs.mkdirSync(hooksRoot, { recursive: true });
 
@@ -68,7 +68,7 @@ describe("hooks workspace", () => {
   });
 
   it("ignores package.json hook paths that escape via symlink", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-workspace-link-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-hooks-workspace-link-"));
     const hooksRoot = path.join(root, "hooks");
     fs.mkdirSync(hooksRoot, { recursive: true });
 

@@ -119,7 +119,7 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
   it("writes gateway token auth into config", async () => {
     await withStateDir("state-noninteractive-", async (stateDir) => {
       const token = "tok_test_123";
-      const workspace = path.join(stateDir, "openclaw");
+      const workspace = path.join(stateDir, "remoteclaw");
 
       await runNonInteractiveOnboarding(
         {
@@ -190,7 +190,7 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
       process.env.REMOTECLAW_CONFIG_PATH = path.join(stateDir, "remoteclaw.json");
 
       const port = getPseudoPort(40_000);
-      const workspace = path.join(stateDir, "openclaw");
+      const workspace = path.join(stateDir, "remoteclaw");
 
       await runNonInteractiveOnboarding(
         {

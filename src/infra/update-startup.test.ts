@@ -56,7 +56,7 @@ describe("update-startup", () => {
   let loaded = false;
 
   beforeAll(async () => {
-    suiteRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-check-suite-"));
+    suiteRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-update-check-suite-"));
   });
 
   beforeEach(async () => {
@@ -107,9 +107,9 @@ describe("update-startup", () => {
   });
 
   function mockPackageUpdateStatus(tag = "latest", version = "2.0.0") {
-    vi.mocked(resolveRemoteClawPackageRoot).mockResolvedValue("/opt/openclaw");
+    vi.mocked(resolveRemoteClawPackageRoot).mockResolvedValue("/opt/remoteclaw");
     vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: "/opt/openclaw",
+      root: "/opt/remoteclaw",
       installKind: "package",
       packageManager: "npm",
     } satisfies UpdateCheckResult);
@@ -206,9 +206,9 @@ describe("update-startup", () => {
   });
 
   it("emits update change callback when update state clears", async () => {
-    vi.mocked(resolveRemoteClawPackageRoot).mockResolvedValue("/opt/openclaw");
+    vi.mocked(resolveRemoteClawPackageRoot).mockResolvedValue("/opt/remoteclaw");
     vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: "/opt/openclaw",
+      root: "/opt/remoteclaw",
       installKind: "package",
       packageManager: "npm",
     } satisfies UpdateCheckResult);
@@ -302,7 +302,7 @@ describe("update-startup", () => {
     expect(runAutoUpdate).toHaveBeenCalledWith({
       channel: "stable",
       timeoutMs: 45 * 60 * 1000,
-      root: "/opt/openclaw",
+      root: "/opt/remoteclaw",
     });
   });
 
@@ -330,7 +330,7 @@ describe("update-startup", () => {
     expect(runAutoUpdate).toHaveBeenCalledWith({
       channel: "beta",
       timeoutMs: 45 * 60 * 1000,
-      root: "/opt/openclaw",
+      root: "/opt/remoteclaw",
     });
   });
 
@@ -359,9 +359,9 @@ describe("update-startup", () => {
   });
 
   it("uses current runtime + entrypoint for default auto-update command execution", async () => {
-    vi.mocked(resolveRemoteClawPackageRoot).mockResolvedValue("/opt/openclaw");
+    vi.mocked(resolveRemoteClawPackageRoot).mockResolvedValue("/opt/remoteclaw");
     vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: "/opt/openclaw",
+      root: "/opt/remoteclaw",
       installKind: "package",
       packageManager: "npm",
     } satisfies UpdateCheckResult);
@@ -379,7 +379,7 @@ describe("update-startup", () => {
     });
 
     const originalArgv = process.argv.slice();
-    process.argv = [process.execPath, "/opt/openclaw/dist/entry.js"];
+    process.argv = [process.execPath, "/opt/remoteclaw/dist/entry.js"];
     try {
       await runGatewayUpdateCheck({
         cfg: {
@@ -402,7 +402,7 @@ describe("update-startup", () => {
     expect(runCommandWithTimeout).toHaveBeenCalledWith(
       [
         process.execPath,
-        "/opt/openclaw/dist/entry.js",
+        "/opt/remoteclaw/dist/entry.js",
         "update",
         "--yes",
         "--channel",

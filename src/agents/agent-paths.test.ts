@@ -7,7 +7,7 @@ import { resolveRemoteClawAgentDir } from "./agent-paths.js";
 
 describe("resolveRemoteClawAgentDir", () => {
   const withTempStateDir = async (run: (stateDir: string) => void) => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-agent-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-agent-"));
     try {
       run(stateDir);
     } finally {

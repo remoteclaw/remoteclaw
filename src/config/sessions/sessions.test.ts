@@ -72,7 +72,7 @@ describe("session path safety", () => {
     if (process.platform === "win32") {
       return;
     }
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-symlink-session-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-symlink-session-"));
     const realRoot = path.join(tmpDir, "real-state");
     const aliasRoot = path.join(tmpDir, "alias-state");
     try {
@@ -94,7 +94,7 @@ describe("session path safety", () => {
     if (process.platform === "win32") {
       return;
     }
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-symlink-escape-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-symlink-escape-"));
     const sessionsDir = path.join(tmpDir, "agents", "main", "sessions");
     const outsideDir = path.join(tmpDir, "outside");
     try {
@@ -156,7 +156,7 @@ describe("session store lock (Promise chain mutex)", () => {
   }
 
   beforeAll(async () => {
-    lockFixtureRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), "openclaw-lock-test-"));
+    lockFixtureRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), "remoteclaw-lock-test-"));
   });
 
   afterAll(async () => {

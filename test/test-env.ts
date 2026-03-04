@@ -91,7 +91,7 @@ export function installTestEnv(): { cleanup: () => void; tempHome: string } {
     { key: "NODE_OPTIONS", value: process.env.NODE_OPTIONS },
   ];
 
-  const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-test-home-"));
+  const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-test-home-"));
 
   process.env.HOME = tempHome;
   process.env.USERPROFILE = tempHome;

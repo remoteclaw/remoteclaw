@@ -256,7 +256,7 @@ async function requireRiskAcknowledgement(params: {
       "remoteclaw security audit --deep",
       "remoteclaw security audit --fix",
       "",
-      "Must read: https://docs.openclaw.ai/gateway/security",
+      "Must read: https://docs.remoteclaw.ai/gateway/security",
     ].join("\n"),
     "Security",
   );
@@ -287,7 +287,7 @@ export async function runOnboardingWizard(
     if (!preCheck.exists) {
       await prompter.note(
         [
-          `Existing OpenClaw installation found at ${shortenHomePath(openclawDir)}.`,
+          `Existing RemoteClaw installation found at ${shortenHomePath(openclawDir)}.`,
           "",
           "RemoteClaw can import your config, sessions, and channel settings.",
         ].join("\n"),
@@ -314,7 +314,7 @@ export async function runOnboardingWizard(
         [
           ...snapshot.issues.map((iss) => `- ${iss.path}: ${iss.message}`),
           "",
-          "Docs: https://docs.openclaw.ai/gateway/configuration",
+          "Docs: https://docs.remoteclaw.ai/gateway/configuration",
         ].join("\n"),
         "Config issues",
       );

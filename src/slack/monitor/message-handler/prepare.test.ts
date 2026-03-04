@@ -28,7 +28,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
   }
 
   beforeAll(() => {
-    fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-slack-thread-"));
+    fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-slack-thread-"));
   });
 
   afterAll(() => {

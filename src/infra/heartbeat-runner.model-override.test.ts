@@ -40,7 +40,7 @@ async function withHeartbeatFixture(
       };
       return run({ tmpDir, storePath, seedSession });
     },
-    { prefix: "openclaw-hb-model-" },
+    { prefix: "remoteclaw-hb-model-" },
   );
 }
 

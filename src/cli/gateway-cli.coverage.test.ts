@@ -130,7 +130,7 @@ describe("gateway-cli coverage", () => {
       {
         instanceName: "Studio (RemoteClaw)",
         displayName: "Studio",
-        domain: "openclaw.internal.",
+        domain: "remoteclaw.internal.",
         host: "studio.openclaw.internal",
         lanHost: "studio.local",
         tailnetDns: "studio.tailnet.ts.net",

@@ -13,7 +13,7 @@ import { loadInternalHooks } from "./loader.js";
 const tempDirs: string[] = [];
 
 async function makeTempDir() {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-hooks-e2e-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-hooks-e2e-"));
   tempDirs.push(dir);
   return dir;
 }

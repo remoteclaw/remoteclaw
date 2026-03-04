@@ -68,14 +68,14 @@ describe("state + config path candidates", () => {
 
   it("uses REMOTECLAW_HOME for default state/config locations", () => {
     const env = {
-      REMOTECLAW_HOME: "/srv/openclaw-home",
+      REMOTECLAW_HOME: "/srv/remoteclaw-home",
     } as NodeJS.ProcessEnv;
     expectRemoteClawHomeDefaults(env);
   });
 
   it("prefers REMOTECLAW_HOME over HOME for default state/config locations", () => {
     const env = {
-      REMOTECLAW_HOME: "/srv/openclaw-home",
+      REMOTECLAW_HOME: "/srv/remoteclaw-home",
       HOME: "/home/other",
     } as NodeJS.ProcessEnv;
     expectRemoteClawHomeDefaults(env);

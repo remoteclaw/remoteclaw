@@ -592,15 +592,15 @@ describe("discord group DM gating", () => {
   it("matches group DM allowlist", () => {
     expect(
       resolveGroupDmAllow({
-        channels: ["openclaw-dm"],
+        channels: ["remoteclaw-dm"],
         channelId: "1",
         channelName: "RemoteClaw DM",
-        channelSlug: "openclaw-dm",
+        channelSlug: "remoteclaw-dm",
       }),
     ).toBe(true);
     expect(
       resolveGroupDmAllow({
-        channels: ["openclaw-dm"],
+        channels: ["remoteclaw-dm"],
         channelId: "1",
         channelName: "Other",
         channelSlug: "other",

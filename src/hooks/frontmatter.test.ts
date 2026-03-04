@@ -201,7 +201,7 @@ describe("resolveRemoteClawMetadata", () => {
           events: ["command"],
           install: [
             { id: "bundled", kind: "bundled", label: "Bundled with RemoteClaw" },
-            { id: "npm", kind: "npm", package: "@openclaw/hook" },
+            { id: "npm", kind: "npm", package: "@remoteclaw/hook" },
           ],
         },
       }),
@@ -211,7 +211,7 @@ describe("resolveRemoteClawMetadata", () => {
     expect(result?.install).toHaveLength(2);
     expect(result?.install?.[0].kind).toBe("bundled");
     expect(result?.install?.[1].kind).toBe("npm");
-    expect(result?.install?.[1].package).toBe("@openclaw/hook");
+    expect(result?.install?.[1].package).toBe("@remoteclaw/hook");
   });
 
   it("handles os restrictions", () => {
@@ -233,7 +233,7 @@ describe("resolveRemoteClawMetadata", () => {
     const content = `---
 name: session-memory
 description: "Save session context to memory when /new or /reset command is issued"
-homepage: https://docs.openclaw.ai/automation/hooks#session-memory
+homepage: https://docs.remoteclaw.ai/automation/hooks#session-memory
 metadata:
   {
     "openclaw":

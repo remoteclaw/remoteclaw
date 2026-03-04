@@ -126,7 +126,7 @@ describe("pw-tools-core", () => {
     expect(res.path).toBe(targetPath);
   });
   it("uses preferred tmp dir when waiting for download without explicit path", async () => {
-    tmpDirMocks.resolvePreferredRemoteClawTmpDir.mockReturnValue("/tmp/openclaw-preferred");
+    tmpDirMocks.resolvePreferredRemoteClawTmpDir.mockReturnValue("/tmp/remoteclaw-preferred");
     const { res, outPath } = await waitForImplicitDownloadOutput({
       downloadUrl: "https://example.com/file.bin",
       suggestedFilename: "file.bin",
@@ -135,10 +135,10 @@ describe("pw-tools-core", () => {
     const expectedRootedDownloadsDir = path.join(
       path.sep,
       "tmp",
-      "openclaw-preferred",
+      "remoteclaw-preferred",
       "downloads",
     );
-    const expectedDownloadsTail = `${path.join("tmp", "openclaw-preferred", "downloads")}${path.sep}`;
+    const expectedDownloadsTail = `${path.join("tmp", "remoteclaw-preferred", "downloads")}${path.sep}`;
     expect(path.dirname(String(outPath))).toBe(expectedRootedDownloadsDir);
     expect(path.basename(String(outPath))).toMatch(/-file\.bin$/);
     expect(path.normalize(res.path)).toContain(path.normalize(expectedDownloadsTail));
@@ -146,18 +146,18 @@ describe("pw-tools-core", () => {
   });
 
   it("sanitizes suggested download filenames to prevent traversal escapes", async () => {
-    tmpDirMocks.resolvePreferredRemoteClawTmpDir.mockReturnValue("/tmp/openclaw-preferred");
+    tmpDirMocks.resolvePreferredRemoteClawTmpDir.mockReturnValue("/tmp/remoteclaw-preferred");
     const { res, outPath } = await waitForImplicitDownloadOutput({
       downloadUrl: "https://example.com/evil",
       suggestedFilename: "../../../../etc/passwd",
     });
     expect(typeof outPath).toBe("string");
     expect(path.dirname(String(outPath))).toBe(
-      path.join(path.sep, "tmp", "openclaw-preferred", "downloads"),
+      path.join(path.sep, "tmp", "remoteclaw-preferred", "downloads"),
     );
     expect(path.basename(String(outPath))).toMatch(/-passwd$/);
     expect(path.normalize(res.path)).toContain(
-      path.normalize(`${path.join("tmp", "openclaw-preferred", "downloads")}${path.sep}`),
+      path.normalize(`${path.join("tmp", "remoteclaw-preferred", "downloads")}${path.sep}`),
     );
   });
   it("waits for a matching response and returns its body", async () => {

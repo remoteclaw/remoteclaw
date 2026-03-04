@@ -73,7 +73,7 @@ afterEach(() => {
 
 describe("registerPreActionHooks", () => {
   function buildProgram() {
-    const program = new Command().name("openclaw");
+    const program = new Command().name("remoteclaw");
     program.command("status").action(async () => {});
     program.command("doctor").action(async () => {});
     program.command("completion").action(async () => {});

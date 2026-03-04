@@ -21,7 +21,7 @@ const runGatewayLoop = vi.fn(async ({ start }: { start: () => Promise<unknown> }
 const { defaultRuntime, resetRuntimeCapture } = createCliRuntimeCapture();
 
 vi.mock("../../config/config.js", () => ({
-  getConfigPath: () => "/tmp/openclaw-test-missing-config.json",
+  getConfigPath: () => "/tmp/remoteclaw-test-missing-config.json",
   loadConfig: () => ({}),
   readConfigFileSnapshot: async () => ({ exists: false }),
   resolveStateDir: () => "/tmp",

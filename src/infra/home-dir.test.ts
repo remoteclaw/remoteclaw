@@ -5,13 +5,13 @@ import { expandHomePrefix, resolveEffectiveHomeDir, resolveRequiredHomeDir } fro
 describe("resolveEffectiveHomeDir", () => {
   it("prefers REMOTECLAW_HOME over HOME and USERPROFILE", () => {
     const env = {
-      REMOTECLAW_HOME: "/srv/openclaw-home",
+      REMOTECLAW_HOME: "/srv/remoteclaw-home",
       HOME: "/home/other",
       USERPROFILE: "C:/Users/other",
     } as NodeJS.ProcessEnv;
 
     expect(resolveEffectiveHomeDir(env, () => "/fallback")).toBe(
-      path.resolve("/srv/openclaw-home"),
+      path.resolve("/srv/remoteclaw-home"),
     );
   });
 
@@ -66,9 +66,9 @@ describe("resolveRequiredHomeDir", () => {
 describe("expandHomePrefix", () => {
   it("expands tilde using effective home", () => {
     const value = expandHomePrefix("~/x", {
-      env: { REMOTECLAW_HOME: "/srv/openclaw-home" } as NodeJS.ProcessEnv,
+      env: { REMOTECLAW_HOME: "/srv/remoteclaw-home" } as NodeJS.ProcessEnv,
     });
-    expect(value).toBe(`${path.resolve("/srv/openclaw-home")}/x`);
+    expect(value).toBe(`${path.resolve("/srv/remoteclaw-home")}/x`);
   });
 
   it("keeps non-tilde values unchanged", () => {

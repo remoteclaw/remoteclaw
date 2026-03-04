@@ -1074,7 +1074,7 @@ describe("gateway server auth/connect", () => {
       await import("../infra/device-identity.js");
     const { getPairedDevice, listDevicePairing } = await import("../infra/device-pairing.js");
     const { server, ws, port, prevToken } = await startServerWithClient("secret");
-    const identityDir = await mkdtemp(join(tmpdir(), "openclaw-device-scope-"));
+    const identityDir = await mkdtemp(join(tmpdir(), "remoteclaw-device-scope-"));
     const identity = loadOrCreateDeviceIdentity(join(identityDir, "device.json"));
     const client = {
       id: GATEWAY_CLIENT_NAMES.TEST,
@@ -1143,7 +1143,7 @@ describe("gateway server auth/connect", () => {
     const { approveDevicePairing, getPairedDevice, listDevicePairing, requestDevicePairing } =
       await import("../infra/device-pairing.js");
     const { server, ws, port, prevToken } = await startServerWithClient("secret");
-    const identityDir = await mkdtemp(join(tmpdir(), "openclaw-device-token-scope-"));
+    const identityDir = await mkdtemp(join(tmpdir(), "remoteclaw-device-token-scope-"));
     const identity = loadOrCreateDeviceIdentity(join(identityDir, "device.json"));
     const devicePublicKey = publicKeyRawBase64UrlFromPem(identity.publicKeyPem);
     const buildDevice = (scopes: string[], nonce: string) => {
@@ -1209,7 +1209,7 @@ describe("gateway server auth/connect", () => {
       await import("../infra/device-pairing.js");
     const { server, ws, port, prevToken } = await startServerWithClient("secret");
     ws.close();
-    const identityDir = await mkdtemp(join(tmpdir(), "openclaw-device-scope-"));
+    const identityDir = await mkdtemp(join(tmpdir(), "remoteclaw-device-scope-"));
     const identity = loadOrCreateDeviceIdentity(join(identityDir, "device.json"));
     const client = {
       id: GATEWAY_CLIENT_NAMES.TEST,
@@ -1304,7 +1304,7 @@ describe("gateway server auth/connect", () => {
       await import("../infra/device-identity.js");
     const { listDevicePairing } = await import("../infra/device-pairing.js");
     const { server, ws, port, prevToken } = await startServerWithClient("secret");
-    const identityDir = await mkdtemp(join(tmpdir(), "openclaw-device-scope-"));
+    const identityDir = await mkdtemp(join(tmpdir(), "remoteclaw-device-scope-"));
     const identity = loadOrCreateDeviceIdentity(join(identityDir, "device.json"));
     const client = {
       id: GATEWAY_CLIENT_NAMES.TEST,
@@ -1375,7 +1375,7 @@ describe("gateway server auth/connect", () => {
     const { writeJsonAtomic } = await import("../infra/json-files.js");
     const { approveDevicePairing, getPairedDevice, listDevicePairing, requestDevicePairing } =
       await import("../infra/device-pairing.js");
-    const identityDir = await mkdtemp(join(tmpdir(), "openclaw-device-legacy-meta-"));
+    const identityDir = await mkdtemp(join(tmpdir(), "remoteclaw-device-legacy-meta-"));
     const identity = loadOrCreateDeviceIdentity(join(identityDir, "device.json"));
     const deviceId = identity.deviceId;
     const publicKey = publicKeyRawBase64UrlFromPem(identity.publicKeyPem);
@@ -1463,7 +1463,7 @@ describe("gateway server auth/connect", () => {
       await import("../infra/device-pairing.js");
     const { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } =
       await import("../utils/message-channel.js");
-    const identityDir = await mkdtemp(join(tmpdir(), "openclaw-device-legacy-"));
+    const identityDir = await mkdtemp(join(tmpdir(), "remoteclaw-device-legacy-"));
     const identity = loadOrCreateDeviceIdentity(join(identityDir, "device.json"));
     const devicePublicKey = publicKeyRawBase64UrlFromPem(identity.publicKeyPem);
     const seeded = await requestDevicePairing({

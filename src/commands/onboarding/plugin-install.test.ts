@@ -34,7 +34,7 @@ const baseEntry: ChannelPluginCatalogEntry = {
     blurb: "Test",
   },
   install: {
-    npmSpec: "@openclaw/zalo",
+    npmSpec: "@remoteclaw/zalo",
     localPath: "extensions/zalo",
   },
 };
@@ -102,10 +102,10 @@ describe("ensureOnboardingPluginInstalled", () => {
     expect(result.cfg.plugins?.entries?.zalo?.enabled).toBe(true);
     expect(result.cfg.plugins?.allow).toContain("zalo");
     expect(result.cfg.plugins?.installs?.zalo?.source).toBe("npm");
-    expect(result.cfg.plugins?.installs?.zalo?.spec).toBe("@openclaw/zalo");
+    expect(result.cfg.plugins?.installs?.zalo?.spec).toBe("@remoteclaw/zalo");
     expect(result.cfg.plugins?.installs?.zalo?.installPath).toBe("/tmp/zalo");
     expect(installPluginFromNpmSpec).toHaveBeenCalledWith(
-      expect.objectContaining({ spec: "@openclaw/zalo" }),
+      expect.objectContaining({ spec: "@remoteclaw/zalo" }),
     );
   });
 

@@ -17,7 +17,7 @@ const report: HookStatusReport = {
       handlerPath: "/tmp/hooks/session-memory/handler.js",
       hookKey: "session-memory",
       emoji: "💾",
-      homepage: "https://docs.openclaw.ai/automation/hooks#session-memory",
+      homepage: "https://docs.remoteclaw.ai/automation/hooks#session-memory",
       events: ["command:new"],
       always: false,
       disabled: false,
@@ -48,7 +48,7 @@ describe("hooks cli formatting", () => {
         {
           name: "plugin-hook",
           description: "Hook from plugin",
-          source: "openclaw-plugin",
+          source: "remoteclaw-plugin",
           pluginId: "voice-call",
           filePath: "/tmp/hooks/plugin-hook/HOOK.md",
           baseDir: "/tmp/hooks/plugin-hook",

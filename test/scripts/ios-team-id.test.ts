@@ -47,7 +47,7 @@ function runScript(
 
 describe("scripts/ios-team-id.sh", () => {
   it("falls back to Xcode-managed provisioning profiles when preference teams are empty", async () => {
-    const homeDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-ios-team-id-"));
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "remoteclaw-ios-team-id-"));
     const binDir = path.join(homeDir, "bin");
     await mkdir(binDir, { recursive: true });
     await mkdir(path.join(homeDir, "Library", "Preferences"), { recursive: true });
@@ -101,7 +101,7 @@ exit 0`,
   });
 
   it("prints actionable guidance when Xcode account exists but no Team ID is resolvable", async () => {
-    const homeDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-ios-team-id-"));
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "remoteclaw-ios-team-id-"));
     const binDir = path.join(homeDir, "bin");
     await mkdir(binDir, { recursive: true });
     await mkdir(path.join(homeDir, "Library", "Preferences"), { recursive: true });
@@ -135,7 +135,7 @@ exit 1`,
   });
 
   it("honors IOS_PREFERRED_TEAM_ID when multiple profile teams are available", async () => {
-    const homeDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-ios-team-id-"));
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "remoteclaw-ios-team-id-"));
     const binDir = path.join(homeDir, "bin");
     await mkdir(binDir, { recursive: true });
     await mkdir(path.join(homeDir, "Library", "Preferences"), { recursive: true });
@@ -194,7 +194,7 @@ exit 0`,
   });
 
   it("matches preferred team IDs even when parser output uses CRLF line endings", async () => {
-    const homeDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-ios-team-id-"));
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "remoteclaw-ios-team-id-"));
     const binDir = path.join(homeDir, "bin");
     await mkdir(binDir, { recursive: true });
     await mkdir(path.join(homeDir, "Library", "Preferences"), { recursive: true });

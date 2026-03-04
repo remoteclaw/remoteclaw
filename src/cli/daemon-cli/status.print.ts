@@ -306,5 +306,5 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
   }
 
   defaultRuntime.log(`${label("Troubles:")} run ${formatCliCommand("openclaw status")}`);
-  defaultRuntime.log(`${label("Troubleshooting:")} https://docs.openclaw.ai/troubleshooting`);
+  defaultRuntime.log(`${label("Troubleshooting:")} https://docs.remoteclaw.ai/troubleshooting`);
 }

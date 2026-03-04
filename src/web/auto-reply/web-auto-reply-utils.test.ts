@@ -100,7 +100,7 @@ describe("isBotMentionedFromTargets", () => {
 
 describe("resolveMentionTargets with @lid mapping", () => {
   it("uses @lid reverse mapping for mentions and self identity", async () => {
-    await withTempDir("openclaw-lid-mapping-", async (authDir) => {
+    await withTempDir("remoteclaw-lid-mapping-", async (authDir) => {
       await fs.writeFile(
         path.join(authDir, "lid-mapping-777_reverse.json"),
         JSON.stringify("+1777"),
@@ -134,7 +134,7 @@ describe("getSessionSnapshot", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 0, 18, 5, 0, 0));
     try {
-      await withTempDir("openclaw-snapshot-", async (root) => {
+      await withTempDir("remoteclaw-snapshot-", async (root) => {
         const storePath = path.join(root, "sessions.json");
         const sessionKey = "agent:main:whatsapp:dm:s1";
 

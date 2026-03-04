@@ -513,7 +513,7 @@ export function registerHooksCli(program: Command): void {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/hooks", "docs.openclaw.ai/cli/hooks")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/hooks", "docs.remoteclaw.ai/cli/hooks")}\n`,
     );
 
   hooks

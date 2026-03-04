@@ -238,7 +238,7 @@ describe("legacy config detection", () => {
         list: [
           {
             id: "work",
-            workspace: "~/openclaw-work",
+            workspace: "~/remoteclaw-work",
             tools: {
               elevated: {
                 enabled: false,

@@ -133,7 +133,7 @@ const { updateCommand, registerUpdateCli, updateStatusCommand, updateWizardComma
   await import("./update-cli.js");
 
 describe("update-cli", () => {
-  const fixtureRoot = "/tmp/openclaw-update-tests";
+  const fixtureRoot = "/tmp/remoteclaw-update-tests";
   let fixtureCount = 0;
 
   const createCaseDir = (prefix: string) => {
@@ -144,7 +144,7 @@ describe("update-cli", () => {
 
   const baseConfig = {} as RemoteClawConfig;
   const baseSnapshot: ConfigFileSnapshot = {
-    path: "/tmp/openclaw-config.json",
+    path: "/tmp/remoteclaw-config.json",
     exists: true,
     raw: "{}",
     parsed: {},
@@ -221,7 +221,7 @@ describe("update-cli", () => {
   };
 
   const setupNonInteractiveDowngrade = async () => {
-    const tempDir = createCaseDir("openclaw-update");
+    const tempDir = createCaseDir("remoteclaw-update");
     setTty(false);
     readPackageVersion.mockResolvedValue("2.0.0");
 
@@ -312,7 +312,7 @@ describe("update-cli", () => {
       killed: false,
       termination: "exit",
     });
-    readPackageName.mockResolvedValue("openclaw");
+    readPackageName.mockResolvedValue("remoteclaw");
     readPackageVersion.mockResolvedValue("1.0.0");
     resolveGlobalManager.mockResolvedValue("npm");
     serviceLoaded.mockResolvedValue(false);
@@ -321,7 +321,7 @@ describe("update-cli", () => {
       pid: 4242,
       state: "running",
     });
-    prepareRestartScript.mockResolvedValue("/tmp/openclaw-restart-test.sh");
+    prepareRestartScript.mockResolvedValue("/tmp/remoteclaw-restart-test.sh");
     runRestartScript.mockResolvedValue(undefined);
     inspectPortUsage.mockResolvedValue({
       port: 18789,
@@ -421,7 +421,7 @@ describe("update-cli", () => {
       mode: "npm" as const,
       options: { yes: true },
       prepare: async () => {
-        const tempDir = createCaseDir("openclaw-update");
+        const tempDir = createCaseDir("remoteclaw-update");
         mockPackageInstallStatus(tempDir);
       },
       expectedChannel: "stable" as const,
@@ -453,7 +453,7 @@ describe("update-cli", () => {
   });
 
   it("falls back to latest when beta tag is older than release", async () => {
-    const tempDir = createCaseDir("openclaw-update");
+    const tempDir = createCaseDir("remoteclaw-update");
 
     mockPackageInstallStatus(tempDir);
     vi.mocked(readConfigFileSnapshot).mockResolvedValue({
@@ -477,7 +477,7 @@ describe("update-cli", () => {
   });
 
   it("honors --tag override", async () => {
-    const tempDir = createCaseDir("openclaw-update");
+    const tempDir = createCaseDir("remoteclaw-update");
 
     vi.mocked(resolveRemoteClawPackageRoot).mockResolvedValue(tempDir);
     vi.mocked(runGatewayUpdate).mockResolvedValue(
@@ -559,7 +559,7 @@ describe("update-cli", () => {
   });
 
   it("updateCommand refreshes service env from updated install root when available", async () => {
-    const root = createCaseDir("openclaw-updated-root");
+    const root = createCaseDir("remoteclaw-updated-root");
     await fs.mkdir(path.join(root, "dist"), { recursive: true });
     await fs.writeFile(path.join(root, "dist", "entry.js"), "console.log('ok');\n", "utf8");
 
@@ -737,7 +737,7 @@ describe("update-cli", () => {
   });
 
   it("updateWizardCommand offers dev checkout and forwards selections", async () => {
-    const tempDir = createCaseDir("openclaw-update-wizard");
+    const tempDir = createCaseDir("remoteclaw-update-wizard");
     await withEnvAsync({ REMOTECLAW_GIT_DIR: tempDir }, async () => {
       setTty(true);
 

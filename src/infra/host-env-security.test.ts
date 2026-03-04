@@ -160,7 +160,7 @@ describe("shell wrapper exploit regression", () => {
     if (process.platform === "win32" || !fs.existsSync(bashPath)) {
       return;
     }
-    const marker = path.join(os.tmpdir(), `openclaw-ps4-marker-${process.pid}-${Date.now()}`);
+    const marker = path.join(os.tmpdir(), `remoteclaw-ps4-marker-${process.pid}-${Date.now()}`);
     try {
       fs.unlinkSync(marker);
     } catch {

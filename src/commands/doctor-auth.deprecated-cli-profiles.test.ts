@@ -24,7 +24,7 @@ function makePrompter(confirmValue: boolean): DoctorPrompter {
 
 beforeEach(() => {
   envSnapshot = captureEnv(["REMOTECLAW_AGENT_DIR", "PI_CODING_AGENT_DIR"]);
-  tempAgentDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-auth-"));
+  tempAgentDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-auth-"));
   process.env.REMOTECLAW_AGENT_DIR = tempAgentDir;
   process.env.PI_CODING_AGENT_DIR = tempAgentDir;
 });

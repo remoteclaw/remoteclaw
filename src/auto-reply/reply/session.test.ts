@@ -26,7 +26,7 @@ let suiteRoot = "";
 let suiteCase = 0;
 
 beforeAll(async () => {
-  suiteRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-suite-"));
+  suiteRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-suite-"));
 });
 
 afterAll(async () => {

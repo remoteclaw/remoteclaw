@@ -12,7 +12,7 @@ import {
 
 const ROOT_DIR = path.parse(process.cwd()).root;
 const CONFIG_DIR = path.join(ROOT_DIR, "config");
-const ETC_REMOTECLAW_DIR = path.join(ROOT_DIR, "etc", "openclaw");
+const ETC_REMOTECLAW_DIR = path.join(ROOT_DIR, "etc", "remoteclaw");
 const SHARED_DIR = path.join(ROOT_DIR, "shared");
 
 const DEFAULT_BASE_PATH = path.join(CONFIG_DIR, "remoteclaw.json");
@@ -619,7 +619,7 @@ describe("security: path traversal protection (CWE-22)", () => {
     });
 
     it("allows include files when the config root path is a symlink", async () => {
-      const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-includes-symlink-"));
+      const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-includes-symlink-"));
       try {
         const realRoot = path.join(tempRoot, "real");
         const linkRoot = path.join(tempRoot, "link");

@@ -12,7 +12,7 @@ describe("media store", () => {
   let tempHome: TempHomeEnv;
 
   beforeAll(async () => {
-    tempHome = await createTempHomeEnv("openclaw-test-home-");
+    tempHome = await createTempHomeEnv("remoteclaw-test-home-");
     home = tempHome.home;
     store = await import("./store.js");
   });

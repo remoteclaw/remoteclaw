@@ -9,7 +9,7 @@ describe("createTempHomeEnv", () => {
     const previousUserProfile = process.env.USERPROFILE;
     const previousStateDir = process.env.REMOTECLAW_STATE_DIR;
 
-    const tempHome = await createTempHomeEnv("openclaw-temp-home-");
+    const tempHome = await createTempHomeEnv("remoteclaw-temp-home-");
     expect(process.env.HOME).toBe(tempHome.home);
     expect(process.env.USERPROFILE).toBe(tempHome.home);
     expect(process.env.REMOTECLAW_STATE_DIR).toBe(path.join(tempHome.home, ".remoteclaw"));

@@ -104,7 +104,7 @@ describe("subagent registry persistence", () => {
     persisted: Record<string, unknown>,
     opts?: { seedChildSessions?: boolean },
   ) => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-subagent-"));
+    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-subagent-"));
     process.env.REMOTECLAW_STATE_DIR = tempStateDir;
     const registryPath = path.join(tempStateDir, "subagents", "runs.json");
     await fs.mkdir(path.dirname(registryPath), { recursive: true });
@@ -162,7 +162,7 @@ describe("subagent registry persistence", () => {
   });
 
   it("persists runs to disk and resumes after restart", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-subagent-"));
+    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-subagent-"));
     process.env.REMOTECLAW_STATE_DIR = tempStateDir;
 
     registerSubagentRun({
@@ -227,7 +227,7 @@ describe("subagent registry persistence", () => {
   });
 
   it("skips cleanup when cleanupHandled was persisted", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-subagent-"));
+    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-subagent-"));
     process.env.REMOTECLAW_STATE_DIR = tempStateDir;
 
     const registryPath = path.join(tempStateDir, "subagents", "runs.json");
@@ -382,7 +382,7 @@ describe("subagent registry persistence", () => {
   });
 
   it("resume guard prunes orphan runs before announce retry", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-subagent-"));
+    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-subagent-"));
     process.env.REMOTECLAW_STATE_DIR = tempStateDir;
     const runId = "run-orphan-resume-guard";
     const childSessionKey = "agent:main:subagent:ghost-resume";

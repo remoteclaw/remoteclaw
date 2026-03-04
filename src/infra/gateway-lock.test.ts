@@ -139,7 +139,7 @@ async function writeRecentLockFile(env: NodeJS.ProcessEnv, startTime = 111) {
 
 describe("gateway lock", () => {
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gateway-lock-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-gateway-lock-"));
   });
 
   beforeEach(() => {

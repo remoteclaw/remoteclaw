@@ -1,4 +1,5 @@
 import type { DiscordActionConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { readDiscordComponentSpec } from "../../discord/components.js";
 import {
   createThreadDiscord,
@@ -58,6 +59,7 @@ export async function handleDiscordMessagingAction(
   options?: {
     mediaLocalRoots?: readonly string[];
   },
+  cfg?: RemoteClawConfig,
 ): Promise<AgentToolResult> {
   const resolveChannelId = () =>
     resolveDiscordChannelId(
@@ -66,6 +68,7 @@ export async function handleDiscordMessagingAction(
       }),
     );
   const accountId = readStringParam(params, "accountId");
+  const cfgOptions = cfg ? { cfg } : {};
   const normalizeMessage = (message: unknown) => {
     if (!message || typeof message !== "object") {
       return message;
@@ -89,22 +92,28 @@ export async function handleDiscordMessagingAction(
       });
       if (remove) {
         if (accountId) {
-          await removeReactionDiscord(channelId, messageId, emoji, { accountId });
+          await removeReactionDiscord(channelId, messageId, emoji, {
+            ...cfgOptions,
+            accountId,
+          });
         } else {
-          await removeReactionDiscord(channelId, messageId, emoji);
+          await removeReactionDiscord(channelId, messageId, emoji, cfgOptions);
         }
         return jsonResult({ ok: true, removed: emoji });
       }
       if (isEmpty) {
         const removed = accountId
-          ? await removeOwnReactionsDiscord(channelId, messageId, { accountId })
-          : await removeOwnReactionsDiscord(channelId, messageId);
+          ? await removeOwnReactionsDiscord(channelId, messageId, { ...cfgOptions, accountId })
+          : await removeOwnReactionsDiscord(channelId, messageId, cfgOptions);
         return jsonResult({ ok: true, removed: removed.removed });
       }
       if (accountId) {
-        await reactMessageDiscord(channelId, messageId, emoji, { accountId });
+        await reactMessageDiscord(channelId, messageId, emoji, {
+          ...cfgOptions,
+          accountId,
+        });
       } else {
-        await reactMessageDiscord(channelId, messageId, emoji);
+        await reactMessageDiscord(channelId, messageId, emoji, cfgOptions);
       }
       return jsonResult({ ok: true, added: emoji });
     }
@@ -120,6 +129,7 @@ export async function handleDiscordMessagingAction(
       const limit =
         typeof limitRaw === "number" && Number.isFinite(limitRaw) ? limitRaw : undefined;
       const reactions = await fetchReactionsDiscord(channelId, messageId, {
+        ...cfgOptions,
         ...(accountId ? { accountId } : {}),
         limit,
       });
@@ -136,6 +146,7 @@ export async function handleDiscordMessagingAction(
         label: "stickerIds",
       });
       await sendStickerDiscord(to, stickerIds, {
+        ...cfgOptions,
         ...(accountId ? { accountId } : {}),
         content,
       });
@@ -164,7 +175,7 @@ export async function handleDiscordMessagingAction(
       await sendPollDiscord(
         to,
         { question, options: answers, maxSelections, durationHours },
-        { ...(accountId ? { accountId } : {}), content },
+        { ...cfgOptions, ...(accountId ? { accountId } : {}), content },
       );
       return jsonResult({ ok: true });
     }
@@ -275,6 +286,7 @@ export async function handleDiscordMessagingAction(
           ? componentSpec
           : { ...componentSpec, text: normalizedContent };
         const result = await sendDiscordComponentMessage(to, payload, {
+          ...cfgOptions,
           ...(accountId ? { accountId } : {}),
           silent,
           replyTo: replyTo ?? undefined,
@@ -299,6 +311,7 @@ export async function handleDiscordMessagingAction(
           );
         }
         const result = await sendVoiceMessageDiscord(to, mediaUrl, {
+          ...cfgOptions,
           ...(accountId ? { accountId } : {}),
           replyTo,
           silent,
@@ -307,6 +320,7 @@ export async function handleDiscordMessagingAction(
       }
 
       const result = await sendMessageDiscord(to, content ?? "", {
+        ...cfgOptions,
         ...(accountId ? { accountId } : {}),
         mediaUrl,
         mediaLocalRoots: options?.mediaLocalRoots,
@@ -416,6 +430,7 @@ export async function handleDiscordMessagingAction(
       const mediaUrl = readStringParam(params, "mediaUrl");
       const replyTo = readStringParam(params, "replyTo");
       const result = await sendMessageDiscord(`channel:${channelId}`, content, {
+        ...cfgOptions,
         ...(accountId ? { accountId } : {}),
         mediaUrl,
         mediaLocalRoots: options?.mediaLocalRoots,

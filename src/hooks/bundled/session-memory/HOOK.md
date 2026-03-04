@@ -1,10 +1,10 @@
 ---
 name: session-memory
 description: "Save session context to memory when /new or /reset command is issued"
-homepage: https://docs.openclaw.ai/automation/hooks#session-memory
+homepage: https://docs.remoteclaw.org/automation/hooks#session-memory
 metadata:
   {
-    "openclaw":
+    "remoteclaw":
       {
         "emoji": "💾",
         "events": ["command:new", "command:reset"],
@@ -91,7 +91,7 @@ The hook automatically:
 To disable this hook:
 
 ```bash
-openclaw hooks disable session-memory
+remoteclaw hooks disable session-memory
 ```
 
 Or remove it from your config:

@@ -22,6 +22,6 @@ export const TAILSCALE_MISSING_BIN_NOTE_LINES = [
 
 export const TAILSCALE_DOCS_LINES = [
   "Docs:",
-  "https://docs.remoteclaw.ai/gateway/tailscale",
-  "https://docs.remoteclaw.ai/web",
+  "https://docs.remoteclaw.org/gateway/tailscale",
+  "https://docs.remoteclaw.org/web",
 ] as const;

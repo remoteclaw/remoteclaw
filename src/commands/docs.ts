@@ -5,7 +5,7 @@ import { hasBinary } from "../shared/config-eval.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { isRich, theme } from "../terminal/theme.js";
 
-const SEARCH_TOOL = "https://docs.remoteclaw.ai/mcp.SearchRemoteClaw";
+const SEARCH_TOOL = "https://docs.remoteclaw.org/mcp.SearchRemoteClaw";
 const SEARCH_TIMEOUT_MS = 30_000;
 const DEFAULT_SNIPPET_MAX = 220;
 
@@ -160,12 +160,12 @@ async function renderMarkdown(markdown: string, runtime: RuntimeEnv) {
 export async function docsSearchCommand(queryParts: string[], runtime: RuntimeEnv) {
   const query = queryParts.join(" ").trim();
   if (!query) {
-    const docs = formatDocsLink("/", "docs.remoteclaw.ai");
+    const docs = formatDocsLink("/", "docs.remoteclaw.org");
     if (isRich()) {
       runtime.log(`${theme.muted("Docs:")} ${docs}`);
       runtime.log(`${theme.muted("Search:")} ${formatCliCommand('remoteclaw docs "your query"')}`);
     } else {
-      runtime.log("Docs: https://docs.remoteclaw.ai/");
+      runtime.log("Docs: https://docs.remoteclaw.org/");
       runtime.log(`Search: ${formatCliCommand('remoteclaw docs "your query"')}`);
     }
     return;

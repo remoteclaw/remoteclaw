@@ -1,6 +1,6 @@
 import { formatTerminalLink } from "../utils.js";
 
-export const DOCS_ROOT = "https://docs.remoteclaw.ai";
+export const DOCS_ROOT = "https://docs.remoteclaw.org";
 
 export function formatDocsLink(
   path: string,

@@ -30,7 +30,7 @@ export function registerBrowserCli(program: Command) {
           true,
         )}\n\n${theme.muted("Docs:")} ${formatDocsLink(
           "/cli/browser",
-          "docs.remoteclaw.ai/cli/browser",
+          "docs.remoteclaw.org/cli/browser",
         )}\n`,
     )
     .action(() => {

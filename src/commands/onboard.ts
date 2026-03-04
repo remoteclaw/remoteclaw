@@ -18,7 +18,7 @@ export async function onboardCommand(opts: OnboardOptions, runtime: RuntimeEnv =
     runtime.error(
       [
         "Non-interactive onboarding requires explicit risk acknowledgement.",
-        "Read: https://docs.remoteclaw.ai/security",
+        "Read: https://docs.remoteclaw.org/security",
         `Re-run with: ${formatCliCommand("remoteclaw onboard --non-interactive --accept-risk ...")}`,
       ].join("\n"),
     );
@@ -40,7 +40,7 @@ export async function onboardCommand(opts: OnboardOptions, runtime: RuntimeEnv =
         "Windows detected — RemoteClaw runs great on WSL2!",
         "Native Windows might be trickier.",
         "Quick setup: wsl --install (one command, one reboot)",
-        "Guide: https://docs.remoteclaw.ai/windows",
+        "Guide: https://docs.remoteclaw.org/windows",
       ].join("\n"),
     );
   }

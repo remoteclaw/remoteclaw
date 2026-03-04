@@ -77,7 +77,7 @@ vi.mock("../../terminal/health-style.js", () => ({
 }));
 
 vi.mock("../../terminal/links.js", () => ({
-  formatDocsLink: () => "docs.remoteclaw.ai/cli/gateway",
+  formatDocsLink: () => "docs.remoteclaw.org/cli/gateway",
 }));
 
 vi.mock("../../terminal/theme.js", () => ({

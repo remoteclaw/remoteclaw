@@ -181,11 +181,11 @@ function buildCoreToolGroupMap() {
     list.push(tool.id);
     sectionToolMap.set(groupId, list);
   }
-  const openclawTools = CORE_TOOL_DEFINITIONS.filter((tool) => tool.includeInRemoteClawGroup).map(
+  const remoteclawTools = CORE_TOOL_DEFINITIONS.filter((tool) => tool.includeInRemoteClawGroup).map(
     (tool) => tool.id,
   );
   return {
-    "group:openclaw": openclawTools,
+    "group:remoteclaw": remoteclawTools,
     ...Object.fromEntries(sectionToolMap.entries()),
   };
 }

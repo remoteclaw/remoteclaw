@@ -423,6 +423,6 @@ describe("subagent registry persistence", () => {
     vi.resetModules();
     const { resolveSubagentRegistryPath } = await import("./subagent-registry.store.js");
     const registryPath = resolveSubagentRegistryPath();
-    expect(registryPath).toContain(path.join(os.tmpdir(), "openclaw-test-state"));
+    expect(registryPath).toContain(path.join(os.tmpdir(), "remoteclaw-test-state"));
   });
 });

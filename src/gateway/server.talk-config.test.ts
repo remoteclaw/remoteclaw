@@ -20,7 +20,7 @@ installGatewayTestHooks({ scope: "suite" });
 type GatewaySocket = Parameters<Parameters<typeof withServer>[0]>[0];
 const TALK_CONFIG_DEVICE_PATH = path.join(
   os.tmpdir(),
-  `openclaw-talk-config-device-${process.pid}.json`,
+  `remoteclaw-talk-config-device-${process.pid}.json`,
 );
 const TALK_CONFIG_DEVICE = loadOrCreateDeviceIdentity(TALK_CONFIG_DEVICE_PATH);
 

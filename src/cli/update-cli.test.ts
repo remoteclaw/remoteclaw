@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { RemoteClawConfig, ConfigFileSnapshot } from "../config/types.openclaw.js";
+import type { RemoteClawConfig, ConfigFileSnapshot } from "../config/types.remoteclaw.js";
 import type { UpdateRunResult } from "../infra/update-runner.js";
 import { withEnvAsync } from "../test-utils/env.js";
 

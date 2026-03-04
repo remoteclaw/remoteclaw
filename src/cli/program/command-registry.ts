@@ -42,7 +42,7 @@ const coreEntries: CoreCliEntry[] = [
     commands: [
       {
         name: "import",
-        description: "Import an existing OpenClaw installation into RemoteClaw",
+        description: "Import an existing RemoteClaw installation into RemoteClaw",
         hasSubcommands: false,
       },
     ],

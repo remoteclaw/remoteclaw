@@ -37,9 +37,9 @@ describe("resolveTaskScriptPath", () => {
       env: {
         USERPROFILE: "C:\\Users\\test",
         REMOTECLAW_PROFILE: "rescue",
-        REMOTECLAW_STATE_DIR: "C:\\State\\openclaw",
+        REMOTECLAW_STATE_DIR: "C:\\State\\remoteclaw",
       },
-      expected: path.join("C:\\State\\openclaw", "gateway.cmd"),
+      expected: path.join("C:\\State\\remoteclaw", "gateway.cmd"),
     },
     {
       name: "falls back to HOME when USERPROFILE is not set",
@@ -118,7 +118,7 @@ describe("readScheduledTaskCommand", () => {
         scriptLines: [
           "@echo off",
           "rem RemoteClaw Gateway",
-          "cd /d C:\\Projects\\openclaw",
+          "cd /d C:\\Projects\\remoteclaw",
           "set NODE_ENV=production",
           "set REMOTECLAW_PORT=18789",
           "node gateway.js --verbose",
@@ -128,7 +128,7 @@ describe("readScheduledTaskCommand", () => {
         const result = await readScheduledTaskCommand(env);
         expect(result).toEqual({
           programArguments: ["node", "gateway.js", "--verbose"],
-          workingDirectory: "C:\\Projects\\openclaw",
+          workingDirectory: "C:\\Projects\\remoteclaw",
           environment: {
             NODE_ENV: "production",
             REMOTECLAW_PORT: "18789",
@@ -143,7 +143,7 @@ describe("readScheduledTaskCommand", () => {
       {
         scriptLines: [
           "@echo off",
-          '"C:\\Program Files\\nodejs\\node.exe" C:\\Users\\test\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js gateway --port 18789',
+          '"C:\\Program Files\\nodejs\\node.exe" C:\\Users\\test\\AppData\\Roaming\\npm\\node_modules\\remoteclaw\\dist\\index.js gateway --port 18789',
         ],
       },
       async (env) => {
@@ -151,7 +151,7 @@ describe("readScheduledTaskCommand", () => {
         expect(result).toEqual({
           programArguments: [
             "C:\\Program Files\\nodejs\\node.exe",
-            "C:\\Users\\test\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js",
+            "C:\\Users\\test\\AppData\\Roaming\\npm\\node_modules\\remoteclaw\\dist\\index.js",
             "gateway",
             "--port",
             "18789",

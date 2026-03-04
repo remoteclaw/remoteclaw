@@ -351,17 +351,17 @@ describe("resolveGatewayStateDir", () => {
   });
 
   it("uses REMOTECLAW_STATE_DIR when provided", () => {
-    const env = { HOME: "/Users/test", REMOTECLAW_STATE_DIR: "/var/lib/openclaw" };
-    expect(resolveGatewayStateDir(env)).toBe(path.resolve("/var/lib/openclaw"));
+    const env = { HOME: "/Users/test", REMOTECLAW_STATE_DIR: "/var/lib/remoteclaw" };
+    expect(resolveGatewayStateDir(env)).toBe(path.resolve("/var/lib/remoteclaw"));
   });
 
   it("expands ~ in REMOTECLAW_STATE_DIR", () => {
-    const env = { HOME: "/Users/test", REMOTECLAW_STATE_DIR: "~/openclaw-state" };
-    expect(resolveGatewayStateDir(env)).toBe(path.resolve("/Users/test/openclaw-state"));
+    const env = { HOME: "/Users/test", REMOTECLAW_STATE_DIR: "~/remoteclaw-state" };
+    expect(resolveGatewayStateDir(env)).toBe(path.resolve("/Users/test/remoteclaw-state"));
   });
 
   it("preserves Windows absolute paths without HOME", () => {
-    const env = { REMOTECLAW_STATE_DIR: "C:\\State\\openclaw" };
-    expect(resolveGatewayStateDir(env)).toBe("C:\\State\\openclaw");
+    const env = { REMOTECLAW_STATE_DIR: "C:\\State\\remoteclaw" };
+    expect(resolveGatewayStateDir(env)).toBe("C:\\State\\remoteclaw");
   });
 });

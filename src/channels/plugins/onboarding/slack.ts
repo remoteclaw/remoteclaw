@@ -44,7 +44,7 @@ function buildSlackManifest(botName: string) {
       },
       slash_commands: [
         {
-          command: "/openclaw",
+          command: "/remoteclaw",
           description: "Send a message to RemoteClaw",
           should_escape: false,
         },

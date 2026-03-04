@@ -144,10 +144,10 @@ describe("config io write", () => {
       } satisfies RemoteClawConfig;
 
       await expect(io.writeConfigFile(invalidConfig)).rejects.toThrow(
-        "openclaw config set channels.telegram.allowFrom '[\"*\"]'",
+        "remoteclaw config set channels.telegram.allowFrom '[\"*\"]'",
       );
       await expect(io.writeConfigFile(invalidConfig)).rejects.toThrow(
-        'openclaw config set channels.telegram.dmPolicy "pairing"',
+        'remoteclaw config set channels.telegram.dmPolicy "pairing"',
       );
     });
   });

@@ -34,7 +34,7 @@ async function runAutoAudioCase(params: {
   cfgExtra?: Partial<RemoteClawConfig>;
 }) {
   let runResult: Awaited<ReturnType<typeof runCapability>> | undefined;
-  await withAudioFixture("openclaw-auto-audio", async ({ ctx, media, cache }) => {
+  await withAudioFixture("remoteclaw-auto-audio", async ({ ctx, media, cache }) => {
     const providerRegistry = createOpenAiAudioProvider(params.transcribeAudio);
     const cfg = createOpenAiAudioCfg(params.cfgExtra);
     runResult = await runCapability({
@@ -123,7 +123,7 @@ describe("runCapability auto audio entries", () => {
     process.env.MISTRAL_API_KEY = "mistral-test-key";
     let runResult: Awaited<ReturnType<typeof runCapability>> | undefined;
     try {
-      await withAudioFixture("openclaw-auto-audio-mistral", async ({ ctx, media, cache }) => {
+      await withAudioFixture("remoteclaw-auto-audio-mistral", async ({ ctx, media, cache }) => {
         const providerRegistry = buildProviderRegistry({
           openai: {
             id: "openai",

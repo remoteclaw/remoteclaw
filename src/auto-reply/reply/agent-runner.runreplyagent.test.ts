@@ -332,7 +332,7 @@ describe("runReplyAgent heartbeat followup guard", () => {
 describe("runReplyAgent typing (heartbeat)", () => {
   async function withTempStateDir<T>(fn: (stateDir: string) => Promise<T>): Promise<T> {
     return await withStateDirEnv(
-      "openclaw-typing-heartbeat-",
+      "remoteclaw-typing-heartbeat-",
       async ({ stateDir }) => await fn(stateDir),
     );
   }

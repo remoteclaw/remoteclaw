@@ -105,7 +105,7 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
     delete process.env.REMOTECLAW_GATEWAY_TOKEN;
     delete process.env.REMOTECLAW_GATEWAY_PASSWORD;
 
-    tempHome = await makeTempWorkspace("openclaw-onboard-");
+    tempHome = await makeTempWorkspace("remoteclaw-onboard-");
     process.env.HOME = tempHome;
   });
 

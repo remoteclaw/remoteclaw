@@ -448,7 +448,7 @@ describe("gateway server auth/connect", () => {
         scopes: [],
         clientId: GATEWAY_CLIENT_NAMES.TEST,
         clientMode: GATEWAY_CLIENT_MODES.TEST,
-        identityPath: path.join(os.tmpdir(), `openclaw-test-device-${randomUUID()}.json`),
+        identityPath: path.join(os.tmpdir(), `remoteclaw-test-device-${randomUUID()}.json`),
         nonce,
       });
 
@@ -868,7 +868,7 @@ describe("gateway server auth/connect", () => {
           scopes,
           clientId: GATEWAY_CLIENT_NAMES.CONTROL_UI,
           clientMode: GATEWAY_CLIENT_MODES.WEBCHAT,
-          identityPath: path.join(os.tmpdir(), `openclaw-controlui-device-${randomUUID()}.json`),
+          identityPath: path.join(os.tmpdir(), `remoteclaw-controlui-device-${randomUUID()}.json`),
           nonce: String(nonce),
         });
         const res = await connectReq(ws, {

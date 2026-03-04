@@ -6,7 +6,7 @@ import type { SlackMonitorContext } from "../context.js";
 import { escapeSlackMrkdwn } from "../mrkdwn.js";
 
 // Prefix for RemoteClaw-generated action IDs to scope our handler
-const REMOTECLAW_ACTION_PREFIX = "openclaw:";
+const REMOTECLAW_ACTION_PREFIX = "remoteclaw:";
 
 type InteractionMessageBlock = {
   type?: string;

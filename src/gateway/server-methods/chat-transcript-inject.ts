@@ -45,12 +45,12 @@ export function appendInjectedAssistantMessageToTranscript(params: {
     stopReason: "stop",
     usage,
     api: "openai-responses",
-    provider: "openclaw",
+    provider: "remoteclaw",
     model: "gateway-injected",
     ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
     ...(params.abortMeta
       ? {
-          openclawAbort: {
+          remoteclawAbort: {
             aborted: true,
             origin: params.abortMeta.origin,
             runId: params.abortMeta.runId,

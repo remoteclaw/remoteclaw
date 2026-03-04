@@ -14,7 +14,7 @@ export type ExtraGatewayService = {
   label: string;
   detail: string;
   scope: "user" | "system";
-  marker?: "remoteclaw" | "openclaw" | "clawdbot" | "moltbot";
+  marker?: "remoteclaw" | "clawdbot" | "moltbot";
   legacy?: boolean;
 };
 
@@ -22,7 +22,7 @@ export type FindExtraGatewayServicesOptions = {
   deep?: boolean;
 };
 
-const EXTRA_MARKERS = ["remoteclaw", "openclaw", "clawdbot", "moltbot"] as const;
+const EXTRA_MARKERS = ["remoteclaw", "remoteclaw", "clawdbot", "moltbot"] as const;
 
 export function renderGatewayServiceCleanupHints(
   env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,

@@ -6,7 +6,7 @@ import { runCommandWithRuntime } from "../cli-utils.js";
 export function registerImportCommand(program: Command) {
   program
     .command("import <path>")
-    .description("Import an existing OpenClaw installation into RemoteClaw")
+    .description("Import an existing RemoteClaw installation into RemoteClaw")
     .option("--yes", "Skip confirmation prompts", false)
     .option("--dry-run", "Preview import without writing files", false)
     .option("--non-interactive", "Run without prompts (requires --yes if target exists)", false)

@@ -354,7 +354,7 @@ describe("resolveAgentRoute", () => {
   test("defaultAgentId is used when no binding matches", () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "home", default: true, workspace: "~/openclaw-home" }],
+        list: [{ id: "home", default: true, workspace: "~/remoteclaw-home" }],
       },
     };
     const route = resolveAgentRoute({

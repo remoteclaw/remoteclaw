@@ -565,7 +565,7 @@ export async function runCliEntry(params: {
     timeoutMs,
   });
   const outputDir = await fs.mkdtemp(
-    path.join(resolvePreferredRemoteClawTmpDir(), "openclaw-media-cli-"),
+    path.join(resolvePreferredRemoteClawTmpDir(), "remoteclaw-media-cli-"),
   );
   const mediaPath = pathResult.path;
   const outputBase = path.join(outputDir, path.parse(mediaPath).name);

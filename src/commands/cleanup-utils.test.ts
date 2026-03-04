@@ -13,23 +13,23 @@ describe("buildCleanupPlan", () => {
     const tmpRoot = path.join(path.parse(process.cwd()).root, "tmp");
     const cfg = {
       agents: {
-        defaults: { workspace: path.join(tmpRoot, "openclaw-workspace-1") },
-        list: [{ workspace: path.join(tmpRoot, "openclaw-workspace-2") }],
+        defaults: { workspace: path.join(tmpRoot, "remoteclaw-workspace-1") },
+        list: [{ workspace: path.join(tmpRoot, "remoteclaw-workspace-2") }],
       },
     };
     const plan = buildCleanupPlan({
       cfg: cfg as unknown as RemoteClawConfig,
-      stateDir: path.join(tmpRoot, "openclaw-state"),
-      configPath: path.join(tmpRoot, "openclaw-state", "remoteclaw.json"),
-      oauthDir: path.join(tmpRoot, "openclaw-oauth"),
+      stateDir: path.join(tmpRoot, "remoteclaw-state"),
+      configPath: path.join(tmpRoot, "remoteclaw-state", "remoteclaw.json"),
+      oauthDir: path.join(tmpRoot, "remoteclaw-oauth"),
     });
 
     expect(plan.configInsideState).toBe(true);
     expect(plan.oauthInsideState).toBe(false);
     expect(new Set(plan.workspaceDirs)).toEqual(
       new Set([
-        path.join(tmpRoot, "openclaw-workspace-1"),
-        path.join(tmpRoot, "openclaw-workspace-2"),
+        path.join(tmpRoot, "remoteclaw-workspace-1"),
+        path.join(tmpRoot, "remoteclaw-workspace-2"),
       ]),
     );
   });

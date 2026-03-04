@@ -216,7 +216,7 @@ vi.mock("../gateway/session-utils.js", async (importOriginal) => {
   };
 });
 vi.mock("../infra/remoteclaw-root.js", () => ({
-  resolveRemoteClawPackageRoot: vi.fn().mockResolvedValue("/tmp/openclaw"),
+  resolveRemoteClawPackageRoot: vi.fn().mockResolvedValue("/tmp/remoteclaw"),
 }));
 vi.mock("../infra/os-summary.js", () => ({
   resolveOsSummary: () => ({
@@ -228,11 +228,11 @@ vi.mock("../infra/os-summary.js", () => ({
 }));
 vi.mock("../infra/update-check.js", () => ({
   checkUpdateStatus: vi.fn().mockResolvedValue({
-    root: "/tmp/openclaw",
+    root: "/tmp/remoteclaw",
     installKind: "git",
     packageManager: "pnpm",
     git: {
-      root: "/tmp/openclaw",
+      root: "/tmp/remoteclaw",
       branch: "main",
       upstream: "origin/main",
       dirty: false,
@@ -243,8 +243,8 @@ vi.mock("../infra/update-check.js", () => ({
     deps: {
       manager: "pnpm",
       status: "ok",
-      lockfilePath: "/tmp/openclaw/pnpm-lock.yaml",
-      markerPath: "/tmp/openclaw/node_modules/.modules.yaml",
+      lockfilePath: "/tmp/remoteclaw/pnpm-lock.yaml",
+      markerPath: "/tmp/remoteclaw/node_modules/.modules.yaml",
     },
     registry: { latestVersion: "0.0.0" },
   }),
@@ -365,10 +365,10 @@ describe("statusCommand", () => {
     expect(
       logs.some(
         (l: string) =>
-          l.includes("openclaw status --all") ||
-          l.includes("openclaw --profile isolated status --all") ||
-          l.includes("openclaw status --all") ||
-          l.includes("openclaw --profile isolated status --all"),
+          l.includes("remoteclaw status --all") ||
+          l.includes("remoteclaw --profile isolated status --all") ||
+          l.includes("remoteclaw status --all") ||
+          l.includes("remoteclaw --profile isolated status --all"),
       ),
     ).toBe(true);
   });

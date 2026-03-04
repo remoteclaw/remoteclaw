@@ -88,7 +88,7 @@ const baseParams = () => ({
   replyToMode: "off" as const,
   slashCommand: {
     enabled: false,
-    name: "openclaw",
+    name: "remoteclaw",
     sessionPrefix: "slack:slash",
     ephemeral: true,
   },

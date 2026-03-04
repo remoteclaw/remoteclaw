@@ -75,9 +75,9 @@ describe("restart-helper", () => {
 
       const { scriptPath, content } = await prepareAndReadScript({
         REMOTECLAW_PROFILE: "default",
-        REMOTECLAW_LAUNCHD_LABEL: "com.custom.openclaw",
+        REMOTECLAW_LAUNCHD_LABEL: "com.custom.remoteclaw",
       });
-      expect(content).toContain("launchctl kickstart -k 'gui/501/com.custom.openclaw'");
+      expect(content).toContain("launchctl kickstart -k 'gui/501/com.custom.remoteclaw'");
       await cleanupScript(scriptPath);
     });
 

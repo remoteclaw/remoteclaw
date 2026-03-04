@@ -28,7 +28,7 @@ export type AcpServerOptions = {
 };
 
 export const ACP_AGENT_INFO = {
-  name: "openclaw-acp",
+  name: "remoteclaw-acp",
   title: "RemoteClaw ACP Gateway",
   version: VERSION,
 };

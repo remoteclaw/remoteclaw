@@ -8,7 +8,7 @@ import type { SessionEntry } from "./types.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const fixtureSuite = createFixtureSuite("openclaw-pruning-suite-");
+const fixtureSuite = createFixtureSuite("remoteclaw-pruning-suite-");
 
 beforeAll(async () => {
   await fixtureSuite.setup();

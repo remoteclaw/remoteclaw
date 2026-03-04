@@ -25,7 +25,7 @@ vi.mock("../banner.js", () => ({
 }));
 
 vi.mock("../cli-name.js", () => ({
-  resolveCliName: () => "openclaw",
+  resolveCliName: () => "remoteclaw",
 }));
 
 vi.mock("./config-guard.js", () => ({
@@ -99,7 +99,7 @@ describe("registerPreActionHooks", () => {
   it("emits banner, resolves config, and enables verbose from --debug", async () => {
     await runCommand({
       parseArgv: ["status"],
-      processArgv: ["node", "openclaw", "status", "--debug"],
+      processArgv: ["node", "remoteclaw", "status", "--debug"],
     });
 
     expect(emitCliBannerMock).toHaveBeenCalledWith("9.9.9-test");
@@ -109,13 +109,13 @@ describe("registerPreActionHooks", () => {
       commandPath: ["status"],
     });
     expect(ensurePluginRegistryLoadedMock).not.toHaveBeenCalled();
-    expect(process.title).toBe("openclaw-status");
+    expect(process.title).toBe("remoteclaw-status");
   });
 
   it("loads plugin registry for plugin-required commands", async () => {
     await runCommand({
       parseArgv: ["message", "send"],
-      processArgv: ["node", "openclaw", "message", "send"],
+      processArgv: ["node", "remoteclaw", "message", "send"],
     });
 
     expect(setVerboseMock).toHaveBeenCalledWith(false);
@@ -130,7 +130,7 @@ describe("registerPreActionHooks", () => {
   it("loads plugin registry for configure command", async () => {
     await runCommand({
       parseArgv: ["configure"],
-      processArgv: ["node", "openclaw", "configure"],
+      processArgv: ["node", "remoteclaw", "configure"],
     });
 
     expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledTimes(1);
@@ -139,7 +139,7 @@ describe("registerPreActionHooks", () => {
   it("loads plugin registry for onboard command", async () => {
     await runCommand({
       parseArgv: ["onboard"],
-      processArgv: ["node", "openclaw", "onboard"],
+      processArgv: ["node", "remoteclaw", "onboard"],
     });
 
     expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledTimes(1);
@@ -148,11 +148,11 @@ describe("registerPreActionHooks", () => {
   it("skips config guard for doctor and completion commands", async () => {
     await runCommand({
       parseArgv: ["doctor"],
-      processArgv: ["node", "openclaw", "doctor"],
+      processArgv: ["node", "remoteclaw", "doctor"],
     });
     await runCommand({
       parseArgv: ["completion"],
-      processArgv: ["node", "openclaw", "completion"],
+      processArgv: ["node", "remoteclaw", "completion"],
     });
 
     expect(ensureConfigReadyMock).not.toHaveBeenCalled();
@@ -161,7 +161,7 @@ describe("registerPreActionHooks", () => {
   it("skips preaction work when argv indicates help/version", async () => {
     await runCommand({
       parseArgv: ["status"],
-      processArgv: ["node", "openclaw", "--version"],
+      processArgv: ["node", "remoteclaw", "--version"],
     });
 
     expect(emitCliBannerMock).not.toHaveBeenCalled();
@@ -173,7 +173,7 @@ describe("registerPreActionHooks", () => {
     process.env.REMOTECLAW_HIDE_BANNER = "1";
     await runCommand({
       parseArgv: ["status"],
-      processArgv: ["node", "openclaw", "status"],
+      processArgv: ["node", "remoteclaw", "status"],
     });
 
     expect(emitCliBannerMock).not.toHaveBeenCalled();

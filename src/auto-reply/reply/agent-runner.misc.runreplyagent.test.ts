@@ -278,7 +278,7 @@ describe("runReplyAgent authProfileId fallback scoping", () => {
         config: {},
         provider: "anthropic",
         model: "claude-opus",
-        authProfileId: "anthropic:openclaw",
+        authProfileId: "anthropic:remoteclaw",
         authProfileIdSource: "manual",
         thinkLevel: "low",
         verboseLevel: "off",

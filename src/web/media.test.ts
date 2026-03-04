@@ -56,7 +56,7 @@ function cloneStatWithDev<T extends { dev: number | bigint }>(stat: T, dev: numb
 
 beforeAll(async () => {
   fixtureRoot = await fs.mkdtemp(
-    path.join(resolvePreferredRemoteClawTmpDir(), "openclaw-media-test-"),
+    path.join(resolvePreferredRemoteClawTmpDir(), "remoteclaw-media-test-"),
   );
   largeJpegBuffer = await sharp({
     create: {
@@ -121,7 +121,7 @@ describe("web media loading", () => {
       path.parse(os.tmpdir()).root,
       "var",
       "lib",
-      "openclaw-media-state-test",
+      "remoteclaw-media-state-test",
     );
   });
 

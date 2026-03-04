@@ -7,7 +7,7 @@ import { createPinnedLookup } from "../infra/net/ssrf.js";
 import { captureEnv } from "../test-utils/env.js";
 import { saveMediaSource, setMediaStoreNetworkDepsForTest } from "./store.js";
 
-const HOME = path.join(os.tmpdir(), "openclaw-home-redirect");
+const HOME = path.join(os.tmpdir(), "remoteclaw-home-redirect");
 const mockRequest = vi.fn();
 
 function createMockHttpExchange() {

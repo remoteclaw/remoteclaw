@@ -73,7 +73,7 @@ describe("config identity defaults", () => {
                 theme: "space lobster",
                 emoji: "🦞",
               },
-              groupChat: { mentionPatterns: ["@openclaw"] },
+              groupChat: { mentionPatterns: ["@remoteclaw"] },
             },
           ],
         },
@@ -83,7 +83,7 @@ describe("config identity defaults", () => {
       });
 
       expect(cfg.messages?.responsePrefix).toBe("✅");
-      expect(cfg.agents?.list?.[0]?.groupChat?.mentionPatterns).toEqual(["@openclaw"]);
+      expect(cfg.agents?.list?.[0]?.groupChat?.mentionPatterns).toEqual(["@remoteclaw"]);
     });
   });
 
@@ -91,7 +91,7 @@ describe("config identity defaults", () => {
     await withTempHome("remoteclaw-config-identity-", async (home) => {
       const cfg = await writeAndLoadConfig(home, {
         messages: {
-          messagePrefix: "[openclaw]",
+          messagePrefix: "[remoteclaw]",
           responsePrefix: "🦞",
         },
         channels: {

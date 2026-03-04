@@ -18,8 +18,8 @@ export function resolveIsNixMode(env: NodeJS.ProcessEnv = process.env): boolean 
 export const isNixMode = resolveIsNixMode();
 
 // Support historical (and occasionally misspelled) legacy state dirs.
-// Note: .openclaw is intentionally NOT included — RemoteClaw does not silently
-// fall back to reading OpenClaw config. Migration is explicit via `remoteclaw import`.
+// Note: .remoteclaw is intentionally NOT included — RemoteClaw does not silently
+// fall back to reading RemoteClaw config. Migration is explicit via `remoteclaw import`.
 const LEGACY_STATE_DIRNAMES = [".clawdbot", ".moldbot", ".moltbot"] as const;
 const NEW_STATE_DIRNAME = ".remoteclaw";
 const CONFIG_FILENAME = "remoteclaw.json";
@@ -201,9 +201,9 @@ export function resolveDefaultConfigCandidates(
   }
 
   const candidates: string[] = [];
-  const openclawStateDir = env.REMOTECLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
-  if (openclawStateDir) {
-    const resolved = resolveUserPath(openclawStateDir, env, effectiveHomedir);
+  const remoteclawStateDir = env.REMOTECLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
+  if (remoteclawStateDir) {
+    const resolved = resolveUserPath(remoteclawStateDir, env, effectiveHomedir);
     candidates.push(path.join(resolved, CONFIG_FILENAME));
     candidates.push(...LEGACY_CONFIG_FILENAMES.map((name) => path.join(resolved, name)));
   }

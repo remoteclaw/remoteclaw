@@ -10,7 +10,7 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/compat";
+import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/mattermost";
 import type { ResolvedMattermostAccount } from "./accounts.js";
 import { resolveSlashCommandConfig, type MattermostRegisteredCommand } from "./slash-commands.js";
 import { createSlashCommandHttpHandler } from "./slash-http.js";
@@ -86,8 +86,8 @@ export function activateSlashCommands(params: {
   registeredCommands: MattermostRegisteredCommand[];
   triggerMap?: Map<string, string>;
   api: {
-    cfg: import("remoteclaw/plugin-sdk/compat").OpenClawConfig;
-    runtime: import("remoteclaw/plugin-sdk/compat").RuntimeEnv;
+    cfg: import("remoteclaw/plugin-sdk/mattermost").OpenClawConfig;
+    runtime: import("remoteclaw/plugin-sdk/mattermost").RuntimeEnv;
   };
   log?: (msg: string) => void;
 }) {

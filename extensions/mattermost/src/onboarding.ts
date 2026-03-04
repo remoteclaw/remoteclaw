@@ -6,7 +6,7 @@ import {
   type OpenClawConfig,
   type SecretInput,
   type WizardPrompter,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/mattermost";
 import {
   listMattermostAccountIds,
   resolveDefaultMattermostAccountId,

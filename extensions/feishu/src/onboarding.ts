@@ -4,8 +4,14 @@ import type {
   ClawdbotConfig,
   DmPolicy,
   WizardPrompter,
-} from "remoteclaw/plugin-sdk";
-import { addWildcardAllowFrom, DEFAULT_ACCOUNT_ID, formatDocsLink } from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
+import {
+  addWildcardAllowFrom,
+  DEFAULT_ACCOUNT_ID,
+  formatDocsLink,
+  hasConfiguredSecretInput,
+  promptSingleChannelSecretInput,
+} from "remoteclaw/plugin-sdk/compat";
 import { resolveFeishuCredentials } from "./accounts.js";
 import { probeFeishu } from "./probe.js";
 import type { FeishuConfig } from "./types.js";

@@ -1,4 +1,4 @@
-import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
+import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/compat";
 import { listEnabledFeishuAccounts, resolveFeishuAccount } from "./accounts.js";
 import {
   monitorSingleAccount,

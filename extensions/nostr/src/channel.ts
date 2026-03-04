@@ -5,7 +5,7 @@ import {
   DEFAULT_ACCOUNT_ID,
   formatPairingApproveHint,
   type ChannelPlugin,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import type { NostrProfile } from "./config-schema.js";
 import { NostrConfigSchema } from "./config-schema.js";
 import type { MetricEvent, MetricsSnapshot } from "./metrics.js";

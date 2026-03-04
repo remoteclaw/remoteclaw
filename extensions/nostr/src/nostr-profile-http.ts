@@ -13,7 +13,7 @@ import {
   isBlockedHostnameOrIp,
   readJsonBodyWithLimit,
   requestBodyErrorToText,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import { z } from "zod";
 import { publishNostrProfile, getNostrProfileState } from "./channel.js";
 import { NostrProfileSchema, type NostrProfile } from "./config-schema.js";

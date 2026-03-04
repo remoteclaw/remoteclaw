@@ -418,7 +418,6 @@ export async function finalizeOnboardingWizard(
       : (process.env.BRAVE_API_KEY ?? "").trim();
   const hasWebSearchKey = Boolean(webSearchKey || webSearchEnv);
   await prompter.note(
-    'What now: https://remoteclaw.org/showcase ("What People Are Building").',
     hasWebSearchKey
       ? [
           "Web search is enabled, so your agent can look things up online when needed.",

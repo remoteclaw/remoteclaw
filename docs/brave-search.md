@@ -8,8 +8,7 @@ title: "Brave Search"
 
 # Brave Search API
 
-Brave Search can be configured as the web search provider when using RemoteClaw's built-in `web_search` tool.
-OpenClaw supports Brave Search as a web search provider for `web_search`.
+RemoteClaw supports Brave Search as a web search provider for `web_search`.
 
 ## Get an API key
 

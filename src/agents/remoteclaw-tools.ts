@@ -84,6 +84,7 @@ export function createRemoteClawTools(options?: {
     createNodesTool({
       agentSessionKey: options?.agentSessionKey,
       config: options?.config,
+      modelHasVision: options?.modelHasVision,
     }),
     createCronTool({
       agentSessionKey: options?.agentSessionKey,

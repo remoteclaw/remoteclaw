@@ -4,8 +4,10 @@ import {
   GroupChatSchema,
   HumanDelaySchema,
   IdentitySchema,
+  SecretInputSchema,
   ToolsMediaSchema,
 } from "./zod-schema.core.js";
+import { sensitive } from "./zod-schema.sensitive.js";
 
 /** Auth profile ref: `false` (skip), single string, or string array (rotation). */
 export const AuthFieldSchema = z

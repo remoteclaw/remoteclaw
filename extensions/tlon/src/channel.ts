@@ -5,12 +5,12 @@ import type {
   ChannelPlugin,
   ChannelSetupInput,
   OpenClawConfig,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/tlon";
 import {
   applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/tlon";
 import { buildTlonAccountFields } from "./account-fields.js";
 import { tlonChannelConfigSchema } from "./config-schema.js";
 import { monitorTlonProvider } from "./monitor/index.js";
@@ -497,7 +497,7 @@ export const tlonPlugin: ChannelPlugin = {
         lastError: runtime?.lastError ?? null,
         probe,
       };
-      return snapshot as import("remoteclaw/plugin-sdk/compat").ChannelAccountSnapshot;
+      return snapshot as import("remoteclaw/plugin-sdk/tlon").ChannelAccountSnapshot;
     },
   },
   gateway: {
@@ -507,7 +507,7 @@ export const tlonPlugin: ChannelPlugin = {
         accountId: account.accountId,
         ship: account.ship,
         url: account.url,
-      } as import("remoteclaw/plugin-sdk/compat").ChannelAccountSnapshot);
+      } as import("remoteclaw/plugin-sdk/tlon").ChannelAccountSnapshot);
       ctx.log?.info(`[${account.accountId}] starting Tlon provider for ${account.ship ?? "tlon"}`);
       return monitorTlonProvider({
         runtime: ctx.runtime,

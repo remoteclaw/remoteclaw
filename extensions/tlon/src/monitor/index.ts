@@ -1,5 +1,5 @@
-import type { RuntimeEnv, ReplyPayload, OpenClawConfig } from "remoteclaw/plugin-sdk/compat";
-import { createLoggerBackedRuntime, createReplyPrefixOptions } from "remoteclaw/plugin-sdk/compat";
+import type { RuntimeEnv, ReplyPayload, OpenClawConfig } from "remoteclaw/plugin-sdk/tlon";
+import { createLoggerBackedRuntime, createReplyPrefixOptions } from "remoteclaw/plugin-sdk/tlon";
 import { getTlonRuntime } from "../runtime.js";
 import { createSettingsManager, type TlonSettingsStore } from "../settings.js";
 import { normalizeShip, parseChannelNest } from "../targets.js";

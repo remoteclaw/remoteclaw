@@ -1,4 +1,4 @@
-import type { SsrFPolicy } from "remoteclaw/plugin-sdk/compat";
+import type { SsrFPolicy } from "remoteclaw/plugin-sdk/tlon";
 import { validateUrbitBaseUrl } from "./base-url.js";
 import { UrbitUrlError } from "./errors.js";
 

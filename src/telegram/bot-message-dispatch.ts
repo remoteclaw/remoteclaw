@@ -147,6 +147,7 @@ export const dispatchTelegramMessage = async ({
                   archivedAnswerPreviews.push({
                     messageId: preview.messageId,
                     textSnapshot: preview.textSnapshot,
+                    deleteIfUnused: true,
                   });
                 }
               : undefined,
@@ -169,21 +170,30 @@ export const dispatchTelegramMessage = async ({
     reasoning: false,
   };
   const answerLane = lanes.answer;
+  let draftLaneEventQueue = Promise.resolve();
+  const enqueueDraftLaneEvent = (task: () => Promise<void>): Promise<void> => {
+    const next = draftLaneEventQueue.then(task);
+    draftLaneEventQueue = next.catch((err) => {
+      logVerbose(`telegram: draft lane callback failed: ${String(err)}`);
+    });
+    return draftLaneEventQueue;
+  };
   const resetDraftLaneState = (lane: DraftLaneState) => {
     lane.lastPartialText = "";
     lane.hasStreamedMessage = false;
   };
-  const rotateAnswerLaneForNewAssistantMessage = () => {
+  const rotateAnswerLaneForNewAssistantMessage = async () => {
     let didForceNewMessage = false;
     if (answerLane.hasStreamedMessage) {
-      const previewMessageId = answerLane.stream?.messageId();
-      // Only archive previews that still need a matching final text update.
-      // Once a preview has already been finalized, archiving it here causes
-      // cleanup to delete a user-visible final message on later media-only turns.
+      // Materialize the current streamed draft into a permanent message
+      // so it remains visible across tool boundaries.
+      const materializedId = await answerLane.stream?.materialize?.();
+      const previewMessageId = materializedId ?? answerLane.stream?.messageId();
       if (typeof previewMessageId === "number" && !finalizedPreviewByLane.answer) {
         archivedAnswerPreviews.push({
           messageId: previewMessageId,
           textSnapshot: answerLane.lastPartialText,
+          deleteIfUnused: false,
         });
       }
       answerLane.stream?.forceNewMessage();
@@ -388,6 +398,11 @@ export const dispatchTelegramMessage = async ({
         ...prefixOptions,
         typingCallbacks,
         deliver: async (payload, info) => {
+          if (info.kind === "final") {
+            // Assistant callbacks are fire-and-forget; ensure queued boundary
+            // rotations/partials are applied before final delivery mapping.
+            await enqueueDraftLaneEvent(async () => {});
+          }
           const previewButtons = (
             payload.channelData?.telegram as { buttons?: TelegramInlineButtons } | undefined
           )?.buttons;
@@ -427,17 +442,21 @@ export const dispatchTelegramMessage = async ({
       replyOptions: {
         disableBlockStreaming,
         onPartialReply: answerLane.stream
-          ? (payload) => updateDraftFromPartial(answerLane, payload.text)
+          ? (payload) =>
+              enqueueDraftLaneEvent(async () => {
+                updateDraftFromPartial(answerLane, payload.text);
+              })
           : undefined,
         onAssistantMessageStart: answerLane.stream
-          ? async () => {
-              rotateAnswerLaneForNewAssistantMessage();
-              // Message-start is an explicit assistant-message boundary.
-              // Even when no forceNewMessage happened (e.g. prior answer had no
-              // streamed partials), the next partial belongs to a fresh lifecycle
-              // and must not trigger late pre-rotation mid-message.
-              finalizedPreviewByLane.answer = false;
-            }
+          ? () =>
+              enqueueDraftLaneEvent(async () => {
+                await rotateAnswerLaneForNewAssistantMessage();
+                // Message-start is an explicit assistant-message boundary.
+                // Even when no forceNewMessage happened (e.g. prior answer had no
+                // streamed partials), the next partial belongs to a fresh lifecycle
+                // and must not trigger late pre-rotation mid-message.
+                finalizedPreviewByLane.answer = false;
+              })
           : undefined,
         onToolStart: statusReactionController
           ? async (payload) => {
@@ -448,14 +467,50 @@ export const dispatchTelegramMessage = async ({
       },
     }));
   } finally {
-    const answerStream = answerLane.stream;
-    if (answerStream) {
-      await answerStream.stop();
-      if (!finalizedPreviewByLane.answer) {
-        await answerStream.clear();
+    // Upstream assistant callbacks are fire-and-forget; drain queued lane work
+    // before stream cleanup so boundary rotations/materialization complete first.
+    await draftLaneEventQueue;
+    // Must stop() first to flush debounced content before clear() wipes state.
+    const streamCleanupStates = new Map<
+      NonNullable<DraftLaneState["stream"]>,
+      { shouldClear: boolean }
+    >();
+    const lanesToCleanup: Array<{ laneName: LaneName; lane: DraftLaneState }> = [
+      { laneName: "answer", lane: answerLane },
+    ];
+    for (const laneState of lanesToCleanup) {
+      const stream = laneState.lane.stream;
+      if (!stream) {
+        continue;
+      }
+      // Don't clear (delete) the stream if: (a) it was finalized, or
+      // (b) the active stream message is itself a boundary-finalized archive.
+      const activePreviewMessageId = stream.messageId();
+      const hasBoundaryFinalizedActivePreview =
+        laneState.laneName === "answer" &&
+        typeof activePreviewMessageId === "number" &&
+        archivedAnswerPreviews.some(
+          (p) => p.deleteIfUnused === false && p.messageId === activePreviewMessageId,
+        );
+      const shouldClear =
+        !finalizedPreviewByLane[laneState.laneName] && !hasBoundaryFinalizedActivePreview;
+      const existing = streamCleanupStates.get(stream);
+      if (!existing) {
+        streamCleanupStates.set(stream, { shouldClear });
+        continue;
+      }
+      existing.shouldClear = existing.shouldClear && shouldClear;
+    }
+    for (const [stream, cleanupState] of streamCleanupStates) {
+      await stream.stop();
+      if (cleanupState.shouldClear) {
+        await stream.clear();
       }
     }
     for (const archivedPreview of archivedAnswerPreviews) {
+      if (archivedPreview.deleteIfUnused === false) {
+        continue;
+      }
       try {
         await bot.api.deleteMessage(chatId, archivedPreview.messageId);
       } catch (err) {

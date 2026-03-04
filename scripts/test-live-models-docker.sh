@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-IMAGE_NAME="${REMOTECLAW_IMAGE:-${CLAWDBOT_IMAGE:-openclaw:local}}"
-CONFIG_DIR="${REMOTECLAW_CONFIG_DIR:-${CLAWDBOT_CONFIG_DIR:-$HOME/.openclaw}}"
-WORKSPACE_DIR="${REMOTECLAW_WORKSPACE_DIR:-${CLAWDBOT_WORKSPACE_DIR:-$HOME/.openclaw/workspace}}"
+IMAGE_NAME="${REMOTECLAW_IMAGE:-${CLAWDBOT_IMAGE:-remoteclaw:local}}"
+CONFIG_DIR="${REMOTECLAW_CONFIG_DIR:-${CLAWDBOT_CONFIG_DIR:-$HOME/.remoteclaw}}"
+WORKSPACE_DIR="${REMOTECLAW_WORKSPACE_DIR:-${CLAWDBOT_WORKSPACE_DIR:-$HOME/.remoteclaw/workspace}}"
 PROFILE_FILE="${REMOTECLAW_PROFILE_FILE:-${CLAWDBOT_PROFILE_FILE:-$HOME/.profile}}"
 
 PROFILE_MOUNT=()
@@ -27,8 +27,8 @@ docker run --rm -t \
   -e REMOTECLAW_LIVE_MAX_MODELS="${REMOTECLAW_LIVE_MAX_MODELS:-${CLAWDBOT_LIVE_MAX_MODELS:-48}}" \
   -e REMOTECLAW_LIVE_MODEL_TIMEOUT_MS="${REMOTECLAW_LIVE_MODEL_TIMEOUT_MS:-${CLAWDBOT_LIVE_MODEL_TIMEOUT_MS:-}}" \
   -e REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS="${REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS:-${CLAWDBOT_LIVE_REQUIRE_PROFILE_KEYS:-}}" \
-  -v "$CONFIG_DIR":/home/node/.openclaw \
-  -v "$WORKSPACE_DIR":/home/node/.openclaw/workspace \
+  -v "$CONFIG_DIR":/home/node/.remoteclaw \
+  -v "$WORKSPACE_DIR":/home/node/.remoteclaw/workspace \
   "${PROFILE_MOUNT[@]}" \
   "$IMAGE_NAME" \
   -lc "set -euo pipefail; [ -f \"$HOME/.profile\" ] && source \"$HOME/.profile\" || true; cd /app && pnpm test:live"

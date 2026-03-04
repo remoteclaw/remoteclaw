@@ -1,16 +1,16 @@
-# OpenClaw gateway — Podman Quadlet (rootless)
-# Installed by setup-podman.sh into openclaw's ~/.config/containers/systemd/
+# RemoteClaw gateway — Podman Quadlet (rootless)
+# Installed by setup-podman.sh into remoteclaw's ~/.config/containers/systemd/
 # {{REMOTECLAW_HOME}} is replaced at install time.
 
 [Unit]
-Description=OpenClaw gateway (rootless Podman)
+Description=RemoteClaw gateway (rootless Podman)
 
 [Container]
-Image=openclaw:local
-ContainerName=openclaw
+Image=remoteclaw:local
+ContainerName=remoteclaw
 UserNS=keep-id
-Volume={{REMOTECLAW_HOME}}/.openclaw:/home/node/.openclaw
-EnvironmentFile={{REMOTECLAW_HOME}}/.openclaw/.env
+Volume={{REMOTECLAW_HOME}}/.remoteclaw:/home/node/.remoteclaw
+EnvironmentFile={{REMOTECLAW_HOME}}/.remoteclaw/.env
 Environment=HOME=/home/node
 Environment=TERM=xterm-256color
 PublishPort=18789:18789

@@ -106,7 +106,7 @@ export function registerDnsCli(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/dns", "docs.remoteclaw.ai/cli/dns")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/dns", "docs.remoteclaw.org/cli/dns")}\n`,
     );
 
   dns

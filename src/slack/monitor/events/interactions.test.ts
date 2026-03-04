@@ -860,13 +860,13 @@ describe("registerSlackInteractionEvents", () => {
               email_block: {
                 email_input: {
                   type: "email_text_input",
-                  value: "team@remoteclaw.ai",
+                  value: "team@remoteclaw.org",
                 },
               },
               url_block: {
                 url_input: {
                   type: "url_text_input",
-                  value: "https://docs.remoteclaw.ai",
+                  value: "https://docs.remoteclaw.org",
                 },
               },
               richtext_block: {
@@ -957,12 +957,12 @@ describe("registerSlackInteractionEvents", () => {
         expect.objectContaining({
           actionId: "email_input",
           inputKind: "email",
-          inputEmail: "team@remoteclaw.ai",
+          inputEmail: "team@remoteclaw.org",
         }),
         expect.objectContaining({
           actionId: "url_input",
           inputKind: "url",
-          inputUrl: "https://docs.remoteclaw.ai/",
+          inputUrl: "https://docs.remoteclaw.org/",
         }),
         expect.objectContaining({
           actionId: "richtext_input",

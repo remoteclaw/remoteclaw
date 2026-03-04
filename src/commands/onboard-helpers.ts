@@ -218,8 +218,8 @@ export function formatControlUiSshHint(params: {
     localUrl,
     authedUrl,
     "Docs:",
-    "https://docs.remoteclaw.ai/gateway/remote",
-    "https://docs.remoteclaw.ai/web/control-ui",
+    "https://docs.remoteclaw.org/gateway/remote",
+    "https://docs.remoteclaw.org/web/control-ui",
   ]
     .filter(Boolean)
     .join("\n");

@@ -233,7 +233,7 @@ describe("resolveRemoteClawMetadata", () => {
     const content = `---
 name: session-memory
 description: "Save session context to memory when /new or /reset command is issued"
-homepage: https://docs.remoteclaw.ai/automation/hooks#session-memory
+homepage: https://docs.remoteclaw.org/automation/hooks#session-memory
 metadata:
   {
     "remoteclaw":

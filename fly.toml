@@ -1,4 +1,4 @@
-# OpenClaw Fly.io deployment configuration
+# RemoteClaw Fly.io deployment configuration
 # See https://fly.io/docs/reference/configuration/
 
 app = "remoteclaw"

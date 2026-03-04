@@ -14,11 +14,11 @@ import { RemoteClawSchema } from "./zod-schema.js";
 describe("$schema key in config (#14998)", () => {
   it("accepts config with $schema string", () => {
     const result = RemoteClawSchema.safeParse({
-      $schema: "https://remoteclaw.ai/config.json",
+      $schema: "https://remoteclaw.org/config.json",
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.$schema).toBe("https://remoteclaw.ai/config.json");
+      expect(result.data.$schema).toBe("https://remoteclaw.org/config.json");
     }
   });
 

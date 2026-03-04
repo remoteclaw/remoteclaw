@@ -49,7 +49,7 @@ export function registerAcpCli(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/acp", "docs.remoteclaw.ai/cli/acp")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/acp", "docs.remoteclaw.org/cli/acp")}\n`,
     )
     .action(async (opts) => {
       try {

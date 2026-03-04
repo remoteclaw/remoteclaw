@@ -5,7 +5,7 @@ read_when:
 title: "RemoteClaw"
 ---
 
-# RemoteClaw 🦞
+# RemoteClaw
 
 <p align="center">
     <img
@@ -21,8 +21,6 @@ title: "RemoteClaw"
         class="hidden dark:block"
     />
 </p>
-
-> _"EXFOLIATE! EXFOLIATE!"_ — A space lobster, probably
 
 <p align="center">
   <strong>Any OS gateway for AI agents across WhatsApp, Telegram, Discord, iMessage, and more.</strong><br />
@@ -43,9 +41,9 @@ title: "RemoteClaw"
 
 ## What is RemoteClaw?
 
-RemoteClaw is a **self-hosted gateway** that connects your favorite chat apps — WhatsApp, Telegram, Discord, iMessage, and more — to AI coding agents like Pi. You run a single Gateway process on your own machine (or a server), and it becomes the bridge between your messaging apps and an always-available AI assistant.
+RemoteClaw is **AI agent middleware** that connects agent CLIs (Claude, Gemini, Codex, OpenCode) to messaging channels — WhatsApp, Telegram, Discord, iMessage, and more. You run a single Gateway process on your own machine (or a server), and it becomes the bridge between your messaging apps and your agent CLIs.
 
-**Who is it for?** Developers and power users who want a personal AI assistant they can message from anywhere — without giving up control of their data or relying on a hosted service.
+**Who is it for?** Developers and power users who want to run agent CLIs remotely via messaging channels — without giving up control of their data or relying on a hosted service.
 
 **What makes it different?**
 
@@ -61,7 +59,7 @@ RemoteClaw is a **self-hosted gateway** that connects your favorite chat apps �
 ```mermaid
 flowchart LR
   A["Chat apps + plugins"] --> B["Gateway"]
-  B --> C["Pi agent"]
+  B --> C["Agent runtime"]
   B --> D["CLI"]
   B --> E["Web Control UI"]
   B --> F["macOS app"]

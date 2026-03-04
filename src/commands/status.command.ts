@@ -599,8 +599,8 @@ export async function statusCommand(
   }
 
   runtime.log("");
-  runtime.log("FAQ: https://docs.remoteclaw.ai/faq");
-  runtime.log("Troubleshooting: https://docs.remoteclaw.ai/troubleshooting");
+  runtime.log("FAQ: https://docs.remoteclaw.org/faq");
+  runtime.log("Troubleshooting: https://docs.remoteclaw.org/troubleshooting");
   runtime.log("");
   const updateHint = formatUpdateAvailableHint(update);
   if (updateHint) {

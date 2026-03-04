@@ -306,5 +306,5 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
   }
 
   defaultRuntime.log(`${label("Troubles:")} run ${formatCliCommand("remoteclaw status")}`);
-  defaultRuntime.log(`${label("Troubleshooting:")} https://docs.remoteclaw.ai/troubleshooting`);
+  defaultRuntime.log(`${label("Troubleshooting:")} https://docs.remoteclaw.org/troubleshooting`);
 }

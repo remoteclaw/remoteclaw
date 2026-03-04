@@ -64,8 +64,8 @@ Config sample:
         id: "main",
         identity: {
           name: "RemoteClaw",
-          theme: "space lobster",
-          emoji: "🦞",
+          theme: "crab",
+          emoji: "🦀",
           avatar: "avatars/remoteclaw.png",
         },
       },

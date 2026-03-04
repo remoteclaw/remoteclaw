@@ -21,7 +21,7 @@ export const CHANNEL_IDS = [...CHAT_CHANNEL_ORDER] as const;
 
 export type ChatChannelMeta = ChannelMeta;
 
-const WEBSITE_URL = "https://remoteclaw.ai";
+const WEBSITE_URL = "https://remoteclaw.org";
 
 const CHAT_CHANNEL_META: Record<ChatChannelId, ChannelMeta> = {
   telegram: {

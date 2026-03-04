@@ -67,8 +67,8 @@ async function runGatewayHealthCheck(params: {
     note(
       [
         "Docs:",
-        "https://docs.remoteclaw.ai/gateway/health",
-        "https://docs.remoteclaw.ai/gateway/troubleshooting",
+        "https://docs.remoteclaw.org/gateway/health",
+        "https://docs.remoteclaw.org/gateway/troubleshooting",
       ].join("\n"),
       "Health check help",
     );
@@ -138,7 +138,7 @@ export async function runConfigureWizard(
           [
             ...snapshot.issues.map((iss) => `- ${iss.path}: ${iss.message}`),
             "",
-            "Docs: https://docs.remoteclaw.ai/gateway/configuration",
+            "Docs: https://docs.remoteclaw.org/gateway/configuration",
           ].join("\n"),
           "Config issues",
         );
@@ -425,7 +425,7 @@ export async function runConfigureWizard(
         `Web UI: ${links.httpUrl}`,
         `Gateway WS: ${links.wsUrl}`,
         gatewayStatusLine,
-        "Docs: https://docs.remoteclaw.ai/web/control-ui",
+        "Docs: https://docs.remoteclaw.org/web/control-ui",
       ].join("\n"),
       "Control UI",
     );

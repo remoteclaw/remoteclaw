@@ -46,7 +46,7 @@ ${formatHelpExamples([
   ],
 ])}
 
-${theme.muted("Docs:")} ${formatDocsLink("/cli/message", "docs.remoteclaw.ai/cli/message")}`,
+${theme.muted("Docs:")} ${formatDocsLink("/cli/message", "docs.remoteclaw.org/cli/message")}`,
     )
     .action(() => {
       message.help({ error: true });

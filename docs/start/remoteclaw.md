@@ -36,7 +36,7 @@ You want this:
 ```mermaid
 flowchart TB
     A["<b>Your Phone (personal)<br></b><br>Your WhatsApp<br>+1-555-YOU"] -- message --> B["<b>Second Phone (assistant)<br></b><br>Assistant WA<br>+1-555-ASSIST"]
-    B -- linked via QR --> C["<b>Your Mac (remoteclaw)<br></b><br>Pi agent"]
+    B -- linked via QR --> C["<b>Your Mac (remoteclaw)<br></b><br>Agent runtime"]
 ```
 
 If you link your personal WhatsApp to RemoteClaw, every message to you becomes “agent input”. That’s rarely what you want.

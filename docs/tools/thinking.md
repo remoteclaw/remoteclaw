@@ -37,7 +37,7 @@ title: "Thinking Levels"
 
 ## Application by agent
 
-- **Embedded Pi**: the resolved level is passed to the in-process Pi agent runtime.
+- **Embedded agent**: the resolved level is passed to the in-process agent runtime.
 
 ## Verbose directives (/verbose or /v)
 

@@ -1,4 +1,4 @@
-import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/compat";
+import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/feishu";
 import { resolveFeishuAccount } from "./accounts.js";
 import { handleFeishuMessage, type FeishuMessageEvent } from "./bot.js";
 

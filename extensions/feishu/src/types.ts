@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "remoteclaw/plugin-sdk/compat";
+import type { BaseProbeResult } from "remoteclaw/plugin-sdk/feishu";
 import type {
   FeishuConfigSchema,
   FeishuGroupSchema,

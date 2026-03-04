@@ -5,7 +5,7 @@ JSON5 allows comments and trailing commas, making configuration more readable.
 
 ## Runtime Selection
 
-The `runtime` key selects which agent CLI powers RemoteClaw.
+The `agents.defaults.runtime` key selects which agent CLI powers RemoteClaw.
 Claude is the default.
 
 | Value      | CLI          | Notes           |
@@ -15,15 +15,18 @@ Claude is the default.
 | `codex`    | Codex CLI    |                 |
 | `opencode` | OpenCode CLI |                 |
 
-Set `runtime` at the top level of your config:
+Set `runtime` under `agents.defaults`:
 
 ```json5
 {
-  runtime: "claude",
+  agents: {
+    defaults: {
+      runtime: "claude",
+    },
+  },
 }
 ```
 
-`runtime` is a shorthand that sets `agents.defaults.runtime`.
 Per-agent overrides are possible via `agents.list[].runtime`.
 
 ## API Key Configuration

@@ -3,7 +3,10 @@
  */
 
 import * as crypto from "node:crypto";
-import { createFixedWindowRateLimiter, type FixedWindowRateLimiter } from "remoteclaw/plugin-sdk";
+import {
+  createFixedWindowRateLimiter,
+  type FixedWindowRateLimiter,
+} from "remoteclaw/plugin-sdk/compat";
 
 export type DmAuthorizationResult =
   | { allowed: true }

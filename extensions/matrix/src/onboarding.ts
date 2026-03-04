@@ -1,4 +1,4 @@
-import type { DmPolicy } from "remoteclaw/plugin-sdk/compat";
+import type { DmPolicy } from "remoteclaw/plugin-sdk/matrix";
 import {
   addWildcardAllowFrom,
   formatResolvedUnresolvedNote,
@@ -8,7 +8,7 @@ import {
   type ChannelOnboardingAdapter,
   type ChannelOnboardingDmPolicy,
   type WizardPrompter,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/matrix";
 import { listMatrixDirectoryGroupsLive } from "./directory-live.js";
 import { resolveMatrixAccount } from "./matrix/accounts.js";
 import { ensureMatrixSdkInstalled, isMatrixSdkAvailable } from "./matrix/deps.js";

@@ -1,5 +1,5 @@
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/compat";
+import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/matrix";
 import { getMatrixRuntime } from "../../runtime.js";
 import type { CoreConfig } from "../../types.js";
 import { loadMatrixSdk } from "../sdk-runtime.js";

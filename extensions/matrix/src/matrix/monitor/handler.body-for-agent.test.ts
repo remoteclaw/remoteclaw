@@ -1,5 +1,5 @@
 import type { MatrixClient } from "@vector-im/matrix-bot-sdk";
-import type { PluginRuntime, RuntimeEnv, RuntimeLogger } from "remoteclaw/plugin-sdk/compat";
+import type { PluginRuntime, RuntimeEnv, RuntimeLogger } from "remoteclaw/plugin-sdk/matrix";
 import { describe, expect, it, vi } from "vitest";
 import { createMatrixRoomMessageHandler } from "./handler.js";
 import { EventType, type MatrixRawEvent } from "./types.js";

@@ -1,4 +1,4 @@
-import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk/compat";
+import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk/matrix";
 import { z } from "zod";
 
 const allowFromEntry = z.union([z.string(), z.number()]);

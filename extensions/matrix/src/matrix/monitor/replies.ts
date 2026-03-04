@@ -1,5 +1,5 @@
 import type { MatrixClient } from "@vector-im/matrix-bot-sdk";
-import type { MarkdownTableMode, ReplyPayload, RuntimeEnv } from "remoteclaw/plugin-sdk/compat";
+import type { MarkdownTableMode, ReplyPayload, RuntimeEnv } from "remoteclaw/plugin-sdk/matrix";
 import { getMatrixRuntime } from "../../runtime.js";
 import { sendMessageMatrix } from "../send.js";
 

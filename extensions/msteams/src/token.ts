@@ -1,4 +1,9 @@
-import type { MSTeamsConfig } from "remoteclaw/plugin-sdk";
+import type { MSTeamsConfig } from "remoteclaw/plugin-sdk/compat";
+import {
+  hasConfiguredSecretInput,
+  normalizeResolvedSecretInputString,
+  normalizeSecretInputString,
+} from "./secret-input.js";
 
 export type MSTeamsCredentials = {
   appId: string;

@@ -1,4 +1,4 @@
-import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk";
+import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/compat";
 import { createMSTeamsPollStoreFs } from "./polls.js";
 import { getMSTeamsRuntime } from "./runtime.js";
 import { sendMessageMSTeams, sendPollMSTeams } from "./send.js";

@@ -1,4 +1,4 @@
-import type { MSTeamsConfig } from "remoteclaw/plugin-sdk";
+import type { MSTeamsConfig } from "remoteclaw/plugin-sdk/compat";
 import { GRAPH_ROOT } from "./attachments/shared.js";
 import { loadMSTeamsSdkWithAuth } from "./sdk.js";
 import { readAccessToken } from "./token-response.js";

@@ -6,7 +6,7 @@ import {
   type RemoteClawConfig,
   type MSTeamsReplyStyle,
   type RuntimeEnv,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import type { MSTeamsAccessTokenProvider } from "./attachments/types.js";
 import type { StoredConversationReference } from "./conversation-store.js";
 import {

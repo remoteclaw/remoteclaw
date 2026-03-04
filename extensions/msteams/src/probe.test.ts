@@ -1,4 +1,4 @@
-import type { MSTeamsConfig } from "remoteclaw/plugin-sdk";
+import type { MSTeamsConfig } from "remoteclaw/plugin-sdk/compat";
 import { describe, expect, it, vi } from "vitest";
 
 const hostMockState = vi.hoisted(() => ({

@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
+import type { OpenClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/compat";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MSTeamsConversationStore } from "./conversation-store.js";
 import type { MSTeamsPollStore } from "./polls.js";

@@ -1,7 +1,10 @@
+import type { SecretRef } from "../config/types.secrets.js";
+
 export type ApiKeyCredential = {
   type: "api_key";
   provider: string;
   key?: string;
+  keyRef?: SecretRef;
   email?: string;
   /** Optional provider-specific metadata (e.g., account IDs, gateway IDs). */
   metadata?: Record<string, string>;
@@ -14,7 +17,8 @@ export type TokenCredential = {
    */
   type: "token";
   provider: string;
-  token: string;
+  token?: string;
+  tokenRef?: SecretRef;
   /** Optional expiry timestamp (ms since epoch). */
   expires?: number;
   email?: string;

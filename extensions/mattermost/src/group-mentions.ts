@@ -1,4 +1,4 @@
-import type { ChannelGroupContext } from "remoteclaw/plugin-sdk";
+import type { ChannelGroupContext } from "remoteclaw/plugin-sdk/compat";
 import { resolveMattermostAccount } from "./mattermost/accounts.js";
 
 export function resolveMattermostGroupRequireMention(

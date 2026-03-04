@@ -4,7 +4,7 @@ import {
   GroupPolicySchema,
   MarkdownConfigSchema,
   requireOpenAllowFrom,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import { z } from "zod";
 
 const MattermostSlashCommandsSchema = z

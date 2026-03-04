@@ -1,4 +1,7 @@
-import { resolveAllowlistMatchSimple, resolveEffectiveAllowFromLists } from "remoteclaw/plugin-sdk";
+import {
+  resolveAllowlistMatchSimple,
+  resolveEffectiveAllowFromLists,
+} from "remoteclaw/plugin-sdk/compat";
 
 export function normalizeMattermostAllowEntry(entry: string): string {
   const trimmed = entry.trim();

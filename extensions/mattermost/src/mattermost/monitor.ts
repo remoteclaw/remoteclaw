@@ -4,7 +4,7 @@ import type {
   RemoteClawConfig,
   ReplyPayload,
   RuntimeEnv,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import {
   buildAgentMediaPayload,
   DM_GROUP_ACCESS_REASON,
@@ -26,7 +26,7 @@ import {
   resolveChannelMediaMaxBytes,
   warnMissingProviderGroupPolicyFallbackOnce,
   type HistoryEntry,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import { getMattermostRuntime } from "../runtime.js";
 import { resolveMattermostAccount } from "./accounts.js";
 import {

@@ -1,5 +1,5 @@
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/core";
+import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/matrix";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/matrix";
 import { matrixPlugin } from "./src/channel.js";
 import { ensureMatrixCryptoRuntime } from "./src/matrix/deps.js";
 import { setMatrixRuntime } from "./src/runtime.js";

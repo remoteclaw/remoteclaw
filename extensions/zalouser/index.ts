@@ -1,5 +1,5 @@
-import type { AnyAgentTool, RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/core";
+import type { AnyAgentTool, OpenClawPluginApi } from "remoteclaw/plugin-sdk/zalouser";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/zalouser";
 import { zalouserDock, zalouserPlugin } from "./src/channel.js";
 import { setZalouserRuntime } from "./src/runtime.js";
 import { ZalouserToolSchema, executeZalouserTool } from "./src/tool.js";

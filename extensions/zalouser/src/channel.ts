@@ -9,7 +9,7 @@ import type {
   ChannelPlugin,
   RemoteClawConfig,
   GroupToolPolicyConfig,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/zalouser";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,
@@ -23,7 +23,7 @@ import {
   resolvePreferredRemoteClawTmpDir,
   resolveChannelAccountConfigBasePath,
   setAccountEnabledInConfigSection,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/zalouser";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,

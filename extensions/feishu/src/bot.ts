@@ -1,4 +1,4 @@
-import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
+import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/compat";
 import {
   buildAgentMediaPayload,
   buildPendingHistoryContextFromMap,
@@ -11,7 +11,7 @@ import {
   resolveOpenProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import { resolveFeishuAccount } from "./accounts.js";
 import { createFeishuClient } from "./client.js";
 import { tryRecordMessagePersistent } from "./dedup.js";

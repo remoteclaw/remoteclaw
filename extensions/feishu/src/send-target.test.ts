@@ -1,4 +1,4 @@
-import type { ClawdbotConfig } from "remoteclaw/plugin-sdk";
+import type { ClawdbotConfig } from "remoteclaw/plugin-sdk/compat";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveFeishuSendTarget } from "./send-target.js";
 

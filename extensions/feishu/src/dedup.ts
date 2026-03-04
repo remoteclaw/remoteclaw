@@ -4,7 +4,7 @@ import {
   createDedupeCache,
   createPersistentDedupe,
   readJsonFileWithFallback,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 
 // Persistent TTL: 24 hours — survives restarts & WebSocket reconnects.
 const DEDUP_TTL_MS = 24 * 60 * 60 * 1000;

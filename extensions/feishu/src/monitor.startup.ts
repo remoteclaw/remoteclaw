@@ -1,4 +1,4 @@
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/compat";
 import { probeFeishu } from "./probe.js";
 import type { ResolvedFeishuAccount } from "./types.js";
 

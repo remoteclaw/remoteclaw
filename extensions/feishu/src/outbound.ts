@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
-import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk";
+import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/compat";
+import { resolveFeishuAccount } from "./accounts.js";
 import { sendMediaFeishu } from "./media.js";
 import { getFeishuRuntime } from "./runtime.js";
 import { sendMessageFeishu } from "./send.js";

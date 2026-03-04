@@ -102,23 +102,33 @@ Notes:
 
 ## Plugin SDK import paths
 
-Use SDK subpaths instead of the monolithic `openclaw/plugin-sdk` import when
+Use SDK subpaths instead of the monolithic `remoteclaw/plugin-sdk` import when
 authoring plugins:
 
-- `openclaw/plugin-sdk/core` for generic plugin APIs, provider auth types, and shared helpers.
-- `openclaw/plugin-sdk/telegram` for Telegram channel plugins.
-- `openclaw/plugin-sdk/discord` for Discord channel plugins.
-- `openclaw/plugin-sdk/slack` for Slack channel plugins.
-- `openclaw/plugin-sdk/signal` for Signal channel plugins.
-- `openclaw/plugin-sdk/imessage` for iMessage channel plugins.
-- `openclaw/plugin-sdk/whatsapp` for WhatsApp channel plugins.
-- `openclaw/plugin-sdk/line` for LINE channel plugins.
+- `remoteclaw/plugin-sdk/core` for generic plugin APIs, provider auth types, and shared helpers.
+- `remoteclaw/plugin-sdk/compat` for bundled/internal plugin code that needs broader shared runtime helpers than `core`.
+- `remoteclaw/plugin-sdk/telegram` for Telegram channel plugins.
+- `remoteclaw/plugin-sdk/discord` for Discord channel plugins.
+- `remoteclaw/plugin-sdk/slack` for Slack channel plugins.
+- `remoteclaw/plugin-sdk/signal` for Signal channel plugins.
+- `remoteclaw/plugin-sdk/imessage` for iMessage channel plugins.
+- `remoteclaw/plugin-sdk/whatsapp` for WhatsApp channel plugins.
+- `remoteclaw/plugin-sdk/line` for LINE channel plugins.
 
 Compatibility note:
 
-- `openclaw/plugin-sdk` remains supported for existing external plugins.
-- New and migrated bundled plugins should use channel subpaths (or `core`) to
-  keep startup imports scoped.
+- `remoteclaw/plugin-sdk` remains supported for existing external plugins.
+- New and migrated bundled plugins should use channel subpaths and `core`; use
+  `compat` only when broader shared helpers are required.
+
+Performance note:
+
+- Plugin discovery and manifest metadata use short in-process caches to reduce
+  bursty startup/reload work.
+- Set `OPENCLAW_DISABLE_PLUGIN_DISCOVERY_CACHE=1` or
+  `OPENCLAW_DISABLE_PLUGIN_MANIFEST_CACHE=1` to disable these caches.
+- Tune cache windows with `OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS` and
+  `OPENCLAW_PLUGIN_MANIFEST_CACHE_MS`.
 
 ## Discovery & precedence
 

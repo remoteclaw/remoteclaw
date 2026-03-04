@@ -85,7 +85,7 @@ const resolvePluginSdkAliasFile = (params: {
 };
 
 const resolvePluginSdkAlias = (): string | null =>
-  resolvePluginSdkAliasFile({ srcFile: "index.ts", distFile: "index.js" });
+  resolvePluginSdkAliasFile({ srcFile: "root-alias.cjs", distFile: "root-alias.cjs" });
 
 const resolvePluginSdkAccountIdAlias = (): string | null => {
   return resolvePluginSdkAliasFile({ srcFile: "account-id.ts", distFile: "account-id.js" });
@@ -93,6 +93,10 @@ const resolvePluginSdkAccountIdAlias = (): string | null => {
 
 const resolvePluginSdkCoreAlias = (): string | null => {
   return resolvePluginSdkAliasFile({ srcFile: "core.ts", distFile: "core.js" });
+};
+
+const resolvePluginSdkCompatAlias = (): string | null => {
+  return resolvePluginSdkAliasFile({ srcFile: "compat.ts", distFile: "compat.js" });
 };
 
 const resolvePluginSdkTelegramAlias = (): string | null => {
@@ -469,6 +473,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   const discovery = discoverRemoteClawPlugins({
     workspaceDir: options.workspaceDir,
     extraPaths: normalized.loadPaths,
+    cache: options.cache,
   });
   const manifestRegistry = loadPluginManifestRegistry({
     config: cfg,
@@ -502,6 +507,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     const pluginSdkAlias = resolvePluginSdkAlias();
     const pluginSdkAccountIdAlias = resolvePluginSdkAccountIdAlias();
     const pluginSdkCoreAlias = resolvePluginSdkCoreAlias();
+    const pluginSdkCompatAlias = resolvePluginSdkCompatAlias();
     const pluginSdkTelegramAlias = resolvePluginSdkTelegramAlias();
     const pluginSdkDiscordAlias = resolvePluginSdkDiscordAlias();
     const pluginSdkSlackAlias = resolvePluginSdkSlackAlias();
@@ -512,6 +518,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     const aliasMap = {
       ...(pluginSdkAlias ? { "remoteclaw/plugin-sdk": pluginSdkAlias } : {}),
       ...(pluginSdkCoreAlias ? { "remoteclaw/plugin-sdk/core": pluginSdkCoreAlias } : {}),
+      ...(pluginSdkCompatAlias ? { "remoteclaw/plugin-sdk/compat": pluginSdkCompatAlias } : {}),
       ...(pluginSdkTelegramAlias
         ? { "remoteclaw/plugin-sdk/telegram": pluginSdkTelegramAlias }
         : {}),
@@ -612,6 +619,25 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       registry.plugins.push(record);
       seenIds.set(pluginId, candidate.origin);
       continue;
+    }
+
+    // Fast-path bundled memory plugins that are guaranteed disabled by slot policy.
+    // This avoids opening/importing heavy memory plugin modules that will never register.
+    if (candidate.origin === "bundled" && manifestRecord.kind === "memory") {
+      const earlyMemoryDecision = resolveMemorySlotDecision({
+        id: record.id,
+        kind: "memory",
+        slot: memorySlot,
+        selectedId: selectedMemoryPluginId,
+      });
+      if (!earlyMemoryDecision.enabled) {
+        record.enabled = false;
+        record.status = "disabled";
+        record.error = earlyMemoryDecision.reason;
+        registry.plugins.push(record);
+        seenIds.set(pluginId, candidate.origin);
+        continue;
+      }
     }
 
     if (!manifestRecord.configSchema) {

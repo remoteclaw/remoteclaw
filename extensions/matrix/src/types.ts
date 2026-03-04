@@ -1,4 +1,4 @@
-import type { DmPolicy, GroupPolicy } from "remoteclaw/plugin-sdk";
+import type { DmPolicy, GroupPolicy, SecretInput } from "remoteclaw/plugin-sdk/compat";
 export type { DmPolicy, GroupPolicy };
 
 export type ReplyToMode = "off" | "first" | "all";

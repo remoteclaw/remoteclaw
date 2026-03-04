@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "remoteclaw/plugin-sdk";
+import type { BaseProbeResult } from "remoteclaw/plugin-sdk/compat";
 import { getMe, ZaloApiError, type ZaloBotInfo, type ZaloFetch } from "./api.js";
 
 export type ZaloProbeResult = BaseProbeResult<string> & {

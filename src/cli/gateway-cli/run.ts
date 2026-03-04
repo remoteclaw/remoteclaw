@@ -22,7 +22,6 @@ import { defaultRuntime } from "../../runtime.js";
 import { formatCliCommand } from "../command-format.js";
 import { inheritOptionFromParent } from "../command-options.js";
 import { forceFreePortAndWait } from "../ports.js";
-import { ensureDevGatewayConfig } from "./dev.js";
 import { runGatewayLoop } from "./run-loop.js";
 import {
   describeUnknownError,
@@ -48,8 +47,6 @@ type GatewayRunOpts = {
   compact?: boolean;
   rawStream?: boolean;
   rawStreamPath?: unknown;
-  dev?: boolean;
-  reset?: boolean;
 };
 
 const gatewayLog = createSubsystemLogger("gateway");
@@ -68,8 +65,6 @@ const GATEWAY_RUN_VALUE_KEYS = [
 const GATEWAY_RUN_BOOLEAN_KEYS = [
   "tailscaleResetOnExit",
   "allowUnconfigured",
-  "dev",
-  "reset",
   "force",
   "verbose",
   "claudeCliLogs",
@@ -99,14 +94,6 @@ function resolveGatewayRunOptions(opts: GatewayRunOpts, command?: Command): Gate
 }
 
 async function runGatewayCommand(opts: GatewayRunOpts) {
-  const isDevProfile = process.env.REMOTECLAW_PROFILE?.trim().toLowerCase() === "dev";
-  const devMode = Boolean(opts.dev) || isDevProfile;
-  if (opts.reset && !devMode) {
-    defaultRuntime.error("Use --reset with --dev.");
-    defaultRuntime.exit(1);
-    return;
-  }
-
   setConsoleTimestampPrefix(true);
   setVerbose(Boolean(opts.verbose));
   if (opts.claudeCliLogs) {
@@ -133,10 +120,6 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
   const rawStreamPath = toOptionString(opts.rawStreamPath);
   if (rawStreamPath) {
     process.env.REMOTECLAW_RAW_STREAM_PATH = rawStreamPath;
-  }
-
-  if (devMode) {
-    await ensureDevGatewayConfig({ reset: Boolean(opts.reset) });
   }
 
   const cfg = loadConfig();
@@ -375,12 +358,6 @@ export function addGatewayRunCommand(cmd: Command): Command {
     .option(
       "--allow-unconfigured",
       "Allow gateway start without gateway.mode=local in config",
-      false,
-    )
-    .option("--dev", "Create a dev config + workspace if missing (no BOOTSTRAP.md)", false)
-    .option(
-      "--reset",
-      "Reset dev config + credentials + sessions + workspace (requires --dev)",
       false,
     )
     .option("--force", "Kill any existing listener on the target port before starting", false)

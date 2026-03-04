@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { Page } from "playwright-core";
-import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 import {
   ensurePageState,
   getPageForTargetId,

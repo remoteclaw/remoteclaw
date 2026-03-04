@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveRemoteClawPackageRoot } from "../infra/openclaw-root.js";
+import { resolveRemoteClawPackageRoot } from "../infra/remoteclaw-root.js";
 import { pathExists } from "../utils.js";
 
 const FALLBACK_TEMPLATE_DIR = path.resolve(

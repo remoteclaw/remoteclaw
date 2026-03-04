@@ -68,7 +68,7 @@ vi.mock("node:fs", async (importOriginal) => {
   return { ...wrapped, default: wrapped };
 });
 
-vi.mock("./openclaw-root.js", () => ({
+vi.mock("./remoteclaw-root.js", () => ({
   resolveRemoteClawPackageRoot: vi.fn(async () => null),
   resolveRemoteClawPackageRootSync: vi.fn(() => null),
 }));
@@ -78,7 +78,7 @@ let resolveControlUiDistIndexPath: typeof import("./control-ui-assets.js").resol
 let resolveControlUiDistIndexHealth: typeof import("./control-ui-assets.js").resolveControlUiDistIndexHealth;
 let resolveControlUiRootOverrideSync: typeof import("./control-ui-assets.js").resolveControlUiRootOverrideSync;
 let resolveControlUiRootSync: typeof import("./control-ui-assets.js").resolveControlUiRootSync;
-let openclawRoot: typeof import("./openclaw-root.js");
+let openclawRoot: typeof import("./remoteclaw-root.js");
 
 describe("control UI assets helpers (fs-mocked)", () => {
   beforeAll(async () => {
@@ -89,7 +89,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
       resolveControlUiRootOverrideSync,
       resolveControlUiRootSync,
     } = await import("./control-ui-assets.js"));
-    openclawRoot = await import("./openclaw-root.js");
+    openclawRoot = await import("./remoteclaw-root.js");
   });
 
   beforeEach(() => {

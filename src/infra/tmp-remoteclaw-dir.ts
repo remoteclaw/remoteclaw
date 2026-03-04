@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-export const POSIX_REMOTECLAW_TMP_DIR = "/tmp/openclaw";
+export const POSIX_REMOTECLAW_TMP_DIR = "/tmp/remoteclaw";
 
 type ResolvePreferredRemoteClawTmpDirOptions = {
   accessSync?: (path: string, mode?: number) => void;
@@ -62,7 +62,7 @@ export function resolvePreferredRemoteClawTmpDir(
 
   const fallback = (): string => {
     const base = tmpdir();
-    const suffix = uid === undefined ? "openclaw" : `openclaw-${uid}`;
+    const suffix = uid === undefined ? "remoteclaw" : `remoteclaw-${uid}`;
     return path.join(base, suffix);
   };
 

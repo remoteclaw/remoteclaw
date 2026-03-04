@@ -3,7 +3,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
-import { resolveRemoteClawPackageRoot, resolveRemoteClawPackageRootSync } from "./openclaw-root.js";
+import {
+  resolveRemoteClawPackageRoot,
+  resolveRemoteClawPackageRootSync,
+} from "./remoteclaw-root.js";
 
 const CONTROL_UI_DIST_PATH_SEGMENTS = ["dist", "control-ui", "index.html"] as const;
 

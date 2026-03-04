@@ -68,7 +68,7 @@ export function resolveSessionKey(params: {
   user?: string | undefined;
   prefix: string;
 }): string {
-  const explicit = getHeader(params.req, "x-openclaw-session-key")?.trim();
+  const explicit = getHeader(params.req, "x-remoteclaw-session-key")?.trim();
   if (explicit) {
     return explicit;
   }

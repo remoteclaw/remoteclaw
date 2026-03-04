@@ -17,7 +17,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import type { RequestClient } from "@buape/carbon";
 import type { RetryRunner } from "../infra/retry-policy.js";
-import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 
 const execFileAsync = promisify(execFile);
 

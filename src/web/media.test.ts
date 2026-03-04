@@ -5,7 +5,7 @@ import sharp from "sharp";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { resolveStateDir } from "../config/paths.js";
 import { sendVoiceMessageDiscord } from "../discord/send.js";
-import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 import { optimizeImageToPng } from "../media/image-ops.js";
 import { mockPinnedHostnameResolution } from "../test-helpers/ssrf.js";
 import { captureEnv } from "../test-utils/env.js";

@@ -12,7 +12,7 @@ const sessionMocks = getPwToolsCoreSessionMocks();
 const tmpDirMocks = vi.hoisted(() => ({
   resolvePreferredRemoteClawTmpDir: vi.fn(() => "/tmp/openclaw"),
 }));
-vi.mock("../infra/tmp-openclaw-dir.js", () => tmpDirMocks);
+vi.mock("../infra/tmp-remoteclaw-dir.js", () => tmpDirMocks);
 const mod = await import("./pw-tools-core.js");
 
 describe("pw-tools-core", () => {

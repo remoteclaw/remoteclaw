@@ -1,5 +1,7 @@
 import type { RemoteClawConfig } from "../config/config.js";
+import { evaluateStoredCredentialEligibility } from "./credential-state.js";
 import {
+  type AuthCredentialReasonCode,
   type AuthProfileCredential,
   type AuthProfileStore,
   resolveAuthProfileDisplayLabel,
@@ -7,13 +9,16 @@ import {
 
 export type AuthProfileSource = "store";
 
-export type AuthProfileHealthStatus = "ok" | "missing" | "static";
+export type AuthProfileHealthStatus = "ok" | "missing" | "static" | "expired";
 
 export type AuthProfileHealth = {
   profileId: string;
   provider: string;
   type: "api_key" | "token";
   status: AuthProfileHealthStatus;
+  reasonCode?: AuthCredentialReasonCode;
+  expiresAt?: number;
+  remainingMs?: number;
   source: AuthProfileSource;
   label: string;
 };
@@ -76,6 +81,47 @@ function buildProfileHealth(params: {
   const { profileId, credential, store, cfg } = params;
   const label = resolveAuthProfileDisplayLabel({ cfg, store, profileId });
   const source = resolveAuthProfileSource(profileId);
+
+  const now = Date.now();
+
+  if (credential.type === "api_key") {
+    return {
+      profileId,
+      provider: credential.provider,
+      type: "api_key",
+      status: "static",
+      source,
+      label,
+    };
+  }
+
+  if (credential.type === "token") {
+    const eligibility = evaluateStoredCredentialEligibility({
+      credential,
+      now,
+    });
+    if (!eligibility.eligible) {
+      const status: AuthProfileHealthStatus =
+        eligibility.reasonCode === "expired" ? "expired" : "missing";
+      return {
+        profileId,
+        provider: credential.provider,
+        type: "token",
+        status,
+        reasonCode: eligibility.reasonCode,
+        source,
+        label,
+      };
+    }
+    return {
+      profileId,
+      provider: credential.provider,
+      type: "token",
+      status: "static",
+      source,
+      label,
+    };
+  }
 
   return {
     profileId,

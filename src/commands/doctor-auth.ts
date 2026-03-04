@@ -1,5 +1,6 @@
 import { buildAuthHealthSummary } from "../auth/auth-health.js";
 import {
+  type AuthCredentialReasonCode,
   CLAUDE_CLI_PROFILE_ID,
   CODEX_CLI_PROFILE_ID,
   ensureAuthProfileStore,
@@ -122,9 +123,13 @@ type AuthIssue = {
   profileId: string;
   provider: string;
   status: string;
+  reasonCode?: AuthCredentialReasonCode;
 };
 
 function formatAuthIssueHint(issue: AuthIssue): string | null {
+  if (issue.reasonCode === "invalid_expires") {
+    return "Invalid token expires metadata. Set a future Unix ms timestamp or remove expires.";
+  }
   if (issue.provider === "anthropic" && issue.profileId === CLAUDE_CLI_PROFILE_ID) {
     return `Deprecated profile. Use ${formatCliCommand("remoteclaw configure")}.`;
   }
@@ -136,7 +141,8 @@ function formatAuthIssueHint(issue: AuthIssue): string | null {
 
 function formatAuthIssueLine(issue: AuthIssue): string {
   const hint = formatAuthIssueHint(issue);
-  return `- ${issue.profileId}: ${issue.status}${hint ? ` — ${hint}` : ""}`;
+  const reason = issue.reasonCode ? ` [${issue.reasonCode}]` : "";
+  return `- ${issue.profileId}: ${issue.status}${reason}${hint ? ` — ${hint}` : ""}`;
 }
 
 export async function noteAuthProfileHealth(params: {
@@ -164,6 +170,7 @@ export async function noteAuthProfileHealth(params: {
           profileId: issue.profileId,
           provider: issue.provider,
           status: issue.status,
+          reasonCode: issue.reasonCode,
         }),
       )
       .join("\n"),

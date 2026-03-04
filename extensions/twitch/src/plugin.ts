@@ -5,8 +5,8 @@
  * This is the primary entry point for the Twitch channel integration.
  */
 
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
-import { buildChannelConfigSchema } from "remoteclaw/plugin-sdk";
+import type { OpenClawConfig } from "remoteclaw/plugin-sdk/compat";
+import { buildChannelConfigSchema } from "remoteclaw/plugin-sdk/compat";
 import { twitchMessageActions } from "./actions.js";
 import { removeClientManager } from "./client-manager-registry.js";
 import { TwitchConfigSchema } from "./config-schema.js";

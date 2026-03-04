@@ -7,17 +7,17 @@ plugins {
 }
 
 android {
-  namespace = "ai.openclaw.android"
+  namespace = "ai.remoteclaw.android"
   compileSdk = 36
 
   sourceSets {
     getByName("main") {
-      assets.directories.add("../../shared/OpenClawKit/Sources/OpenClawKit/Resources")
+      assets.directories.add("../../shared/RemoteClawKit/Sources/RemoteClawKit/Resources")
     }
   }
 
   defaultConfig {
-    applicationId = "ai.openclaw.android"
+    applicationId = "ai.remoteclaw.android"
     minSdk = 31
     targetSdk = 36
     versionCode = 202602250
@@ -83,7 +83,7 @@ androidComponents {
         val versionName = output.versionName.orNull ?: "0"
         val buildType = variant.buildType
 
-        val outputFileName = "openclaw-${versionName}-${buildType}.apk"
+        val outputFileName = "remoteclaw-${versionName}-${buildType}.apk"
         output.outputFileName = outputFileName
       }
   }

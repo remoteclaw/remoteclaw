@@ -1,4 +1,4 @@
-## OpenClaw Android App
+## RemoteClaw Android App
 
 Status: **extremely alpha**. The app is actively being rebuilt from the ground up.
 
@@ -60,7 +60,7 @@ Use `adb reverse` so Android `localhost:18789` tunnels to your laptop `localhost
 Terminal A (gateway):
 
 ```bash
-pnpm openclaw gateway --port 18789 --verbose
+pnpm remoteclaw gateway --port 18789 --verbose
 ```
 
 Terminal B (USB tunnel):
@@ -82,14 +82,14 @@ This app is native Kotlin + Jetpack Compose.
 - For Compose UI edits: use Android Studio **Live Edit** on a debug build (works on physical devices; project `minSdk=31` already meets API requirement).
 - For many non-structural code/resource changes: use Android Studio **Apply Changes**.
 - For structural/native/manifest/Gradle changes: do full reinstall (`pnpm android:run`).
-- Canvas web content already supports live reload when loaded from Gateway `__openclaw__/canvas/` (see `docs/platforms/android.md`).
+- Canvas web content already supports live reload when loaded from Gateway `__remoteclaw__/canvas/` (see `docs/platforms/android.md`).
 
 ## Connect / Pair
 
 1) Start the gateway (on your main machine):
 
 ```bash
-pnpm openclaw gateway --port 18789 --verbose
+pnpm remoteclaw gateway --port 18789 --verbose
 ```
 
 2) In the Android app:
@@ -100,8 +100,8 @@ pnpm openclaw gateway --port 18789 --verbose
 3) Approve pairing (on the gateway machine):
 
 ```bash
-openclaw nodes pending
-openclaw nodes approve <requestId>
+remoteclaw nodes pending
+remoteclaw nodes approve <requestId>
 ```
 
 More details: `docs/platforms/android.md`.

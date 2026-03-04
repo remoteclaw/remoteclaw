@@ -5,11 +5,11 @@
 REMOTECLAW_CODE_SIGN_STYLE = Manual
 REMOTECLAW_DEVELOPMENT_TEAM = Y5PE65HELJ
 
-REMOTECLAW_APP_BUNDLE_ID = ai.openclaw.ios
-REMOTECLAW_SHARE_BUNDLE_ID = ai.openclaw.ios.share
+REMOTECLAW_APP_BUNDLE_ID = ai.remoteclaw.ios
+REMOTECLAW_SHARE_BUNDLE_ID = ai.remoteclaw.ios.share
 
-REMOTECLAW_APP_PROFILE = ai.openclaw.ios Development
-REMOTECLAW_SHARE_PROFILE = ai.openclaw.ios.share Development
+REMOTECLAW_APP_PROFILE = ai.remoteclaw.ios Development
+REMOTECLAW_SHARE_PROFILE = ai.remoteclaw.ios.share Development
 
 // Keep local includes after defaults: xcconfig is evaluated top-to-bottom,
 // so later assignments in local files override the defaults above.

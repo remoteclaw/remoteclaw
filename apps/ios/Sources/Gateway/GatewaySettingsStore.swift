@@ -2,9 +2,9 @@ import Foundation
 import os
 
 enum GatewaySettingsStore {
-    private static let gatewayService = "ai.openclaw.gateway"
-    private static let nodeService = "ai.openclaw.node"
-    private static let talkService = "ai.openclaw.talk"
+    private static let gatewayService = "ai.remoteclaw.gateway"
+    private static let nodeService = "ai.remoteclaw.node"
+    private static let talkService = "ai.remoteclaw.talk"
 
     private static let instanceIdDefaultsKey = "node.instanceId"
     private static let preferredGatewayStableIDDefaultsKey = "gateway.preferredStableID"
@@ -350,15 +350,15 @@ enum GatewaySettingsStore {
 }
 
 enum GatewayDiagnostics {
-    private static let logger = Logger(subsystem: "ai.openclaw.ios", category: "GatewayDiag")
-    private static let queue = DispatchQueue(label: "ai.openclaw.gateway.diagnostics")
+    private static let logger = Logger(subsystem: "ai.remoteclaw.ios", category: "GatewayDiag")
+    private static let queue = DispatchQueue(label: "ai.remoteclaw.gateway.diagnostics")
     private static let maxLogBytes: Int64 = 512 * 1024
     private static let keepLogBytes: Int64 = 256 * 1024
     private static let logSizeCheckEveryWrites = 50
     nonisolated(unsafe) private static var logWritesSinceCheck = 0
     private static var fileURL: URL? {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("openclaw-gateway.log")
+            .appendingPathComponent("remoteclaw-gateway.log")
     }
 
     private static func truncateLogIfNeeded(url: URL) {

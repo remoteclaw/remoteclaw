@@ -4,10 +4,10 @@
 REMOTECLAW_CODE_SIGN_STYLE = Automatic
 REMOTECLAW_DEVELOPMENT_TEAM = P5Z8X89DJL
 
-REMOTECLAW_APP_BUNDLE_ID = ai.openclaw.ios.test.mariano
-REMOTECLAW_SHARE_BUNDLE_ID = ai.openclaw.ios.test.mariano.share
-REMOTECLAW_WATCH_APP_BUNDLE_ID = ai.openclaw.ios.test.mariano.watchkitapp
-REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID = ai.openclaw.ios.test.mariano.watchkitapp.extension
+REMOTECLAW_APP_BUNDLE_ID = ai.remoteclaw.ios.test.mariano
+REMOTECLAW_SHARE_BUNDLE_ID = ai.remoteclaw.ios.test.mariano.share
+REMOTECLAW_WATCH_APP_BUNDLE_ID = ai.remoteclaw.ios.test.mariano.watchkitapp
+REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID = ai.remoteclaw.ios.test.mariano.watchkitapp.extension
 
 // Leave empty with automatic signing.
 REMOTECLAW_APP_PROFILE =

@@ -1,6 +1,6 @@
 import Testing
 import WebKit
-@testable import OpenClaw
+@testable import RemoteClaw
 
 @MainActor
 private func mountScreen(_ screen: ScreenController) throws -> (ScreenWebViewCoordinator, WKWebView) {
@@ -69,7 +69,7 @@ private func mountScreen(_ screen: ScreenController) throws -> (ScreenWebViewCoo
     @Test @MainActor func localNetworkCanvasURLsAreAllowed() {
         let screen = ScreenController()
         #expect(screen.isLocalNetworkCanvasURL(URL(string: "http://localhost:18789/")!) == true)
-        #expect(screen.isLocalNetworkCanvasURL(URL(string: "http://openclaw.local:18789/")!) == true)
+        #expect(screen.isLocalNetworkCanvasURL(URL(string: "http://remoteclaw.local:18789/")!) == true)
         #expect(screen.isLocalNetworkCanvasURL(URL(string: "http://peters-mac-studio-1:18789/")!) == true)
         #expect(screen.isLocalNetworkCanvasURL(URL(string: "https://peters-mac-studio-1.ts.net:18789/")!) == true)
         #expect(screen.isLocalNetworkCanvasURL(URL(string: "http://192.168.0.10:18789/")!) == true)

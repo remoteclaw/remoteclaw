@@ -612,8 +612,8 @@ prepare_validate_commit() {
   local subject
   subject=$(git log -1 --pretty=%s)
 
-  echo "$subject" | rg -q "openclaw#$pr_number" || {
-    echo "ERROR: commit subject missing openclaw#$pr_number"
+  echo "$subject" | rg -q "remoteclaw#$pr_number" || {
+    echo "ERROR: commit subject missing remoteclaw#$pr_number"
     exit 1
   }
 
@@ -641,7 +641,7 @@ validate_changelog_entry_for_pr() {
   fi
 
   local pr_pattern
-  pr_pattern="(#$pr|openclaw#$pr)"
+  pr_pattern="(#$pr|remoteclaw#$pr)"
 
   local with_pr
   with_pr=$(printf '%s\n' "$added_lines" | rg -in "$pr_pattern" || true)

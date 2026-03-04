@@ -33,7 +33,7 @@ describe("hooks workspace", () => {
       ),
     );
 
-    const entries = loadHookEntriesFromDir({ dir: hooksRoot, source: "openclaw-workspace" });
+    const entries = loadHookEntriesFromDir({ dir: hooksRoot, source: "remoteclaw-workspace" });
     expect(entries.some((e) => e.hook.name === "outside")).toBe(false);
   });
 
@@ -63,7 +63,7 @@ describe("hooks workspace", () => {
       ),
     );
 
-    const entries = loadHookEntriesFromDir({ dir: hooksRoot, source: "openclaw-workspace" });
+    const entries = loadHookEntriesFromDir({ dir: hooksRoot, source: "remoteclaw-workspace" });
     expect(entries.some((e) => e.hook.name === "nested")).toBe(true);
   });
 
@@ -99,7 +99,7 @@ describe("hooks workspace", () => {
       ),
     );
 
-    const entries = loadHookEntriesFromDir({ dir: hooksRoot, source: "openclaw-workspace" });
+    const entries = loadHookEntriesFromDir({ dir: hooksRoot, source: "remoteclaw-workspace" });
     expect(entries.some((e) => e.hook.name === "outside")).toBe(false);
   });
 });

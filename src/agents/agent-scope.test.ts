@@ -350,7 +350,7 @@ describe("resolveAgentConfig", () => {
         list: [
           {
             id: "restricted",
-            workspace: "~/openclaw-restricted",
+            workspace: "~/remoteclaw-restricted",
             tools: {
               allow: ["read"],
               deny: ["exec", "write"],
@@ -380,7 +380,7 @@ describe("resolveAgentConfig", () => {
         list: [
           {
             id: "family",
-            workspace: "~/openclaw-family",
+            workspace: "~/remoteclaw-family",
             sandbox: {
               mode: "all",
               scope: "agent",
@@ -411,7 +411,7 @@ describe("resolveAgentConfig", () => {
   });
 
   it("uses REMOTECLAW_HOME for default agent workspace", () => {
-    const home = path.join(path.sep, "srv", "openclaw-home");
+    const home = path.join(path.sep, "srv", "remoteclaw-home");
     vi.stubEnv("REMOTECLAW_HOME", home);
 
     const workspace = resolveAgentWorkspaceDir({} as RemoteClawConfig, "main");
@@ -419,7 +419,7 @@ describe("resolveAgentConfig", () => {
   });
 
   it("uses REMOTECLAW_HOME for default agentDir", () => {
-    const home = path.join(path.sep, "srv", "openclaw-home");
+    const home = path.join(path.sep, "srv", "remoteclaw-home");
     vi.stubEnv("REMOTECLAW_HOME", home);
     // Clear state dir so it falls back to REMOTECLAW_HOME
     vi.stubEnv("REMOTECLAW_STATE_DIR", "");

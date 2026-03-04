@@ -84,7 +84,7 @@ async function runRepair(cfg: RemoteClawConfig) {
 
 const gatewayProgramArguments = [
   "/usr/bin/node",
-  "/usr/local/bin/openclaw",
+  "/usr/local/bin/remoteclaw",
   "gateway",
   "--port",
   "18789",

@@ -17,8 +17,8 @@ describe("bonjour-discovery", () => {
         if (domain === "local.") {
           return {
             stdout: [
-              "Add 2 3 local. _openclaw-gw._tcp. Peter\\226\\128\\153s Mac Studio Gateway",
-              "Add 2 3 local. _openclaw-gw._tcp. Laptop Gateway",
+              "Add 2 3 local. _remoteclaw-gw._tcp. Peter\\226\\128\\153s Mac Studio Gateway",
+              "Add 2 3 local. _remoteclaw-gw._tcp. Laptop Gateway",
               "",
             ].join("\n"),
             stderr: "",
@@ -29,7 +29,7 @@ describe("bonjour-discovery", () => {
         }
         if (domain === WIDE_AREA_DOMAIN) {
           return {
-            stdout: [`Add 2 3 ${WIDE_AREA_DOMAIN} _openclaw-gw._tcp. Tailnet Gateway`, ""].join(
+            stdout: [`Add 2 3 ${WIDE_AREA_DOMAIN} _remoteclaw-gw._tcp. Tailnet Gateway`, ""].join(
               "\n",
             ),
             stderr: "",
@@ -64,7 +64,7 @@ describe("bonjour-discovery", () => {
 
         return {
           stdout: [
-            `${instance}._openclaw-gw._tcp. can be reached at ${host}:18789`,
+            `${instance}._remoteclaw-gw._tcp. can be reached at ${host}:18789`,
             txtParts.join(" "),
             "",
           ].join("\n"),
@@ -114,7 +114,7 @@ describe("bonjour-discovery", () => {
       const domain = argv[3] ?? "";
       if (argv[0] === "dns-sd" && argv[1] === "-B" && domain === "local.") {
         return {
-          stdout: ["Add 2 3 local. _openclaw-gw._tcp. Studio Gateway", ""].join("\n"),
+          stdout: ["Add 2 3 local. _remoteclaw-gw._tcp. Studio Gateway", ""].join("\n"),
           stderr: "",
           code: 0,
           signal: null,
@@ -125,7 +125,7 @@ describe("bonjour-discovery", () => {
       if (argv[0] === "dns-sd" && argv[1] === "-L") {
         return {
           stdout: [
-            "Studio Gateway._openclaw-gw._tcp. can be reached at studio.local:18789",
+            "Studio Gateway._remoteclaw-gw._tcp. can be reached at studio.local:18789",
             "txtvers=1 displayName=Peter\\226\\128\\153s\\032Mac\\032Studio lanHost=studio.local gatewayPort=18789 sshPort=22",
             "",
           ].join("\n"),
@@ -167,7 +167,7 @@ describe("bonjour-discovery", () => {
   it("falls back to tailnet DNS probing for wide-area when split DNS is not configured", async () => {
     const calls: Array<{ argv: string[]; timeoutMs: number }> = [];
     const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
-    const serviceBase = `_openclaw-gw._tcp.${zone}`;
+    const serviceBase = `_remoteclaw-gw._tcp.${zone}`;
     const studioService = `studio-gateway.${serviceBase}`;
 
     const run = vi.fn(async (argv: string[], options: { timeoutMs: number }) => {
@@ -233,7 +233,7 @@ describe("bonjour-discovery", () => {
               `"transport=gateway"`,
               `"sshPort=22"`,
               `"tailnetDns=peters-mac-studio-1.sheep-coho.ts.net"`,
-              `"cliPath=/opt/homebrew/bin/openclaw"`,
+              `"cliPath=/opt/homebrew/bin/remoteclaw"`,
               "",
             ].join(" "),
             stderr: "",
@@ -265,7 +265,7 @@ describe("bonjour-discovery", () => {
         tailnetDns: "peters-mac-studio-1.sheep-coho.ts.net",
         gatewayPort: 18789,
         sshPort: 22,
-        cliPath: "/opt/homebrew/bin/openclaw",
+        cliPath: "/opt/homebrew/bin/remoteclaw",
       }),
     ]);
 

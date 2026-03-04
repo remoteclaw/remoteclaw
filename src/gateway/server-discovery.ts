@@ -16,7 +16,7 @@ export function formatBonjourInstanceName(displayName: string) {
   if (!trimmed) {
     return "RemoteClaw";
   }
-  if (/openclaw/i.test(trimmed)) {
+  if (/remoteclaw/i.test(trimmed)) {
     return trimmed;
   }
   return `${trimmed} (RemoteClaw)`;
@@ -40,7 +40,7 @@ export function resolveBonjourCliPath(opts: ResolveBonjourCliPathOptions = {}): 
 
   const execPath = opts.execPath ?? process.execPath;
   const execDir = path.dirname(execPath);
-  const siblingCli = path.join(execDir, "openclaw");
+  const siblingCli = path.join(execDir, "remoteclaw");
   if (isFile(siblingCli)) {
     return siblingCli;
   }
@@ -56,7 +56,7 @@ export function resolveBonjourCliPath(opts: ResolveBonjourCliPathOptions = {}): 
   if (isFile(distCli)) {
     return distCli;
   }
-  const binCli = path.join(cwd, "bin", "openclaw");
+  const binCli = path.join(cwd, "bin", "remoteclaw");
   if (isFile(binCli)) {
     return binCli;
   }

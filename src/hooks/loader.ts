@@ -161,7 +161,7 @@ export async function loadInternalHooks(
       }
 
       // Legacy handlers are always workspace-relative, so use mtime-based cache busting
-      const importUrl = buildImportUrl(modulePath, "openclaw-workspace");
+      const importUrl = buildImportUrl(modulePath, "remoteclaw-workspace");
       const mod = (await import(importUrl)) as Record<string, unknown>;
 
       // Get the handler function

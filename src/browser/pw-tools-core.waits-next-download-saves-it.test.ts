@@ -10,7 +10,7 @@ import {
 installPwToolsCoreTestHooks();
 const sessionMocks = getPwToolsCoreSessionMocks();
 const tmpDirMocks = vi.hoisted(() => ({
-  resolvePreferredRemoteClawTmpDir: vi.fn(() => "/tmp/openclaw"),
+  resolvePreferredRemoteClawTmpDir: vi.fn(() => "/tmp/remoteclaw"),
 }));
 vi.mock("../infra/tmp-remoteclaw-dir.js", () => tmpDirMocks);
 const mod = await import("./pw-tools-core.js");
@@ -20,7 +20,7 @@ describe("pw-tools-core", () => {
     for (const fn of Object.values(tmpDirMocks)) {
       fn.mockClear();
     }
-    tmpDirMocks.resolvePreferredRemoteClawTmpDir.mockReturnValue("/tmp/openclaw");
+    tmpDirMocks.resolvePreferredRemoteClawTmpDir.mockReturnValue("/tmp/remoteclaw");
   });
 
   async function waitForImplicitDownloadOutput(params: {

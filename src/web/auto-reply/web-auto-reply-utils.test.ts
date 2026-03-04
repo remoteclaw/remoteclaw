@@ -30,7 +30,7 @@ const makeMsg = (overrides: Partial<WebInboundMsg>): WebInboundMsg =>
   }) as WebInboundMsg;
 
 describe("isBotMentionedFromTargets", () => {
-  const mentionCfg = { mentionRegexes: [/\bopenclaw\b/i] };
+  const mentionCfg = { mentionRegexes: [/\bremoteclaw\b/i] };
 
   function expectMentioned(
     msg: WebInboundMsg,
@@ -63,7 +63,7 @@ describe("isBotMentionedFromTargets", () => {
 
   it("falls back to regex when no mentions are present", () => {
     const msg = makeMsg({
-      body: "openclaw can you help?",
+      body: "remoteclaw can you help?",
       selfE164: "+15551234567",
       selfJid: "15551234567@s.whatsapp.net",
     });
@@ -71,7 +71,7 @@ describe("isBotMentionedFromTargets", () => {
   });
 
   it("ignores JID mentions in self-chat mode", () => {
-    const cfg = { mentionRegexes: [/\bopenclaw\b/i], allowFrom: ["+999"] };
+    const cfg = { mentionRegexes: [/\bremoteclaw\b/i], allowFrom: ["+999"] };
     const msg = makeMsg({
       body: "@owner ping",
       mentionedJids: ["999@s.whatsapp.net"],
@@ -81,7 +81,7 @@ describe("isBotMentionedFromTargets", () => {
     expectMentioned(msg, cfg, false);
 
     const msgTextMention = makeMsg({
-      body: "openclaw ping",
+      body: "remoteclaw ping",
       selfE164: "+999",
       selfJid: "999@s.whatsapp.net",
     });
@@ -176,13 +176,13 @@ describe("web auto-reply util", () => {
     it("returns normalized debug fields and mention outcome", () => {
       const msg = makeMsg({
         from: "777@lid",
-        body: "openclaw ping",
+        body: "remoteclaw ping",
         selfE164: "+15551234567",
         selfJid: "15551234567@s.whatsapp.net",
       });
-      const result = debugMention(msg, { mentionRegexes: [/\bopenclaw\b/i] });
+      const result = debugMention(msg, { mentionRegexes: [/\bremoteclaw\b/i] });
       expect(result.wasMentioned).toBe(true);
-      expect(result.details.bodyClean).toBe("openclaw ping");
+      expect(result.details.bodyClean).toBe("remoteclaw ping");
       expect(result.details.normalizedMentionedJids).toBeNull();
     });
 

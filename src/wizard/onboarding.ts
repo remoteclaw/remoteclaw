@@ -280,14 +280,14 @@ export async function runOnboardingWizard(
   await prompter.intro("RemoteClaw onboarding");
   await requireRiskAcknowledgement({ opts, prompter });
 
-  // Detect existing OpenClaw installation and offer migration before proceeding.
+  // Detect existing RemoteClaw installation and offer migration before proceeding.
   const openclawDir = detectOpenClawInstallation();
   if (openclawDir) {
     const preCheck = await readConfigFileSnapshot();
     if (!preCheck.exists) {
       await prompter.note(
         [
-          `Existing RemoteClaw installation found at ${shortenHomePath(openclawDir)}.`,
+          `Existing OpenClaw installation found at ${shortenHomePath(openclawDir)}.`,
           "",
           "RemoteClaw can import your config, sessions, and channel settings.",
         ].join("\n"),

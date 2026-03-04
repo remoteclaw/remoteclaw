@@ -66,9 +66,9 @@ describe("shared/frontmatter", () => {
     expect(parseFrontmatterBool(undefined, true)).toBe(true);
   });
 
-  test("resolveRemoteClawManifestBlock parses JSON5 metadata and picks openclaw block", () => {
+  test("resolveRemoteClawManifestBlock parses JSON5 metadata and picks remoteclaw block", () => {
     const frontmatter = {
-      metadata: "{ openclaw: { foo: 1, bar: 'baz' } }",
+      metadata: "{ remoteclaw: { foo: 1, bar: 'baz' } }",
     };
     expect(resolveRemoteClawManifestBlock({ frontmatter })).toEqual({ foo: 1, bar: "baz" });
   });

@@ -228,7 +228,7 @@ async function loadValidConfig(runtime: RuntimeEnv = defaultRuntime) {
   for (const issue of snapshot.issues) {
     runtime.error(`- ${issue.path || "<root>"}: ${issue.message}`);
   }
-  runtime.error(`Run \`${formatCliCommand("openclaw doctor")}\` to repair, then retry.`);
+  runtime.error(`Run \`${formatCliCommand("remoteclaw doctor")}\` to repair, then retry.`);
   runtime.exit(1);
   return snapshot;
 }

@@ -158,7 +158,10 @@ ${formatHelpExamples([
     'remoteclaw agents set-identity --agent main --name "RemoteClaw" --emoji "🦞"',
     "Set name + emoji.",
   ],
-  ["remoteclaw agents set-identity --agent main --avatar avatars/openclaw.png", "Set avatar path."],
+  [
+    "remoteclaw agents set-identity --agent main --avatar avatars/remoteclaw.png",
+    "Set avatar path.",
+  ],
   [
     "remoteclaw agents set-identity --workspace ~/.remoteclaw/workspace --from-identity",
     "Load from IDENTITY.md.",

@@ -1,6 +1,6 @@
 services:
-  openclaw-gateway:
-    image: ${REMOTECLAW_IMAGE:-openclaw:local}
+  remoteclaw-gateway:
+    image: ${REMOTECLAW_IMAGE:-remoteclaw:local}
     environment:
       HOME: /home/node
       TERM: xterm-256color
@@ -9,8 +9,8 @@ services:
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
     volumes:
-      - ${REMOTECLAW_CONFIG_DIR}:/home/node/.openclaw
-      - ${REMOTECLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      - ${REMOTECLAW_CONFIG_DIR}:/home/node/.remoteclaw
+      - ${REMOTECLAW_WORKSPACE_DIR}:/home/node/.remoteclaw/workspace
     ports:
       - "${REMOTECLAW_GATEWAY_PORT:-18789}:18789"
       - "${REMOTECLAW_BRIDGE_PORT:-18790}:18790"
@@ -27,8 +27,8 @@ services:
         "18789",
       ]
 
-  openclaw-cli:
-    image: ${REMOTECLAW_IMAGE:-openclaw:local}
+  remoteclaw-cli:
+    image: ${REMOTECLAW_IMAGE:-remoteclaw:local}
     environment:
       HOME: /home/node
       TERM: xterm-256color
@@ -38,8 +38,8 @@ services:
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
     volumes:
-      - ${REMOTECLAW_CONFIG_DIR}:/home/node/.openclaw
-      - ${REMOTECLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      - ${REMOTECLAW_CONFIG_DIR}:/home/node/.remoteclaw
+      - ${REMOTECLAW_WORKSPACE_DIR}:/home/node/.remoteclaw/workspace
     stdin_open: true
     tty: true
     init: true

@@ -68,7 +68,7 @@ export function shouldIncludeHook(params: {
   const { entry, config, eligibility } = params;
   const hookKey = resolveHookKey(entry.hook.name, entry);
   const hookConfig = resolveHookConfig(config, hookKey);
-  const pluginManaged = entry.hook.source === "openclaw-plugin";
+  const pluginManaged = entry.hook.source === "remoteclaw-plugin";
 
   // Check if explicitly disabled
   if (!pluginManaged && hookConfig?.enabled === false) {

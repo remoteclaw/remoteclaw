@@ -66,11 +66,11 @@ export function shouldEnsureCliPath(argv: string[]): boolean {
 }
 
 /**
- * Detect an existing OpenClaw installation and display a one-time migration notice.
- * Only triggers when ~/.remoteclaw is absent but ~/.openclaw exists.
+ * Detect an existing RemoteClaw installation and display a one-time migration notice.
+ * Only triggers when ~/.remoteclaw is absent but ~/.remoteclaw exists.
  * Does not block startup — purely informational.
  */
-export function checkOpenClawMigration(env: NodeJS.ProcessEnv = process.env): void {
+export function checkRemoteClawMigration(env: NodeJS.ProcessEnv = process.env): void {
   // Skip if state dir is explicitly overridden — the user knows what they're doing.
   if (env.REMOTECLAW_STATE_DIR?.trim()) {
     return;
@@ -79,11 +79,11 @@ export function checkOpenClawMigration(env: NodeJS.ProcessEnv = process.env): vo
   try {
     const home = resolveRequiredHomeDir(env, os.homedir);
     const newDir = path.join(home, ".remoteclaw");
-    const oldDir = path.join(home, ".openclaw");
+    const oldDir = path.join(home, ".remoteclaw");
 
     if (!fs.existsSync(newDir) && fs.existsSync(oldDir)) {
       console.warn(
-        "Existing OpenClaw installation detected. Run `remoteclaw import ~/.openclaw` to migrate.",
+        "Existing RemoteClaw installation detected. Run `remoteclaw import ~/.remoteclaw` to migrate.",
       );
     }
   } catch {
@@ -102,8 +102,8 @@ export async function runCli(argv: string[] = process.argv) {
   // Enforce the minimum supported runtime before doing any work.
   assertSupportedRuntime();
 
-  // Detect existing OpenClaw installation and suggest migration.
-  checkOpenClawMigration();
+  // Detect existing RemoteClaw installation and suggest migration.
+  checkRemoteClawMigration();
 
   if (await tryRouteCli(normalizedArgv)) {
     return;
@@ -120,7 +120,7 @@ export async function runCli(argv: string[] = process.argv) {
   installUnhandledRejectionHandler();
 
   process.on("uncaughtException", (error) => {
-    console.error("[openclaw] Uncaught exception:", formatUncaughtError(error));
+    console.error("[remoteclaw] Uncaught exception:", formatUncaughtError(error));
     process.exit(1);
   });
 

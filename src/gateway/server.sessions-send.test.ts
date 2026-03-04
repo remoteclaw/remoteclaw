@@ -12,7 +12,7 @@ import {
   testState,
 } from "./test-helpers.js";
 
-const { createRemoteClawTools } = await import("../agents/openclaw-tools.js");
+const { createRemoteClawTools } = await import("../agents/remoteclaw-tools.js");
 
 installGatewayTestHooks({ scope: "suite" });
 
@@ -88,7 +88,7 @@ beforeAll(async () => {
   const pending = await requestDevicePairing({
     deviceId: identity.deviceId,
     publicKey: publicKeyRawBase64UrlFromPem(identity.publicKeyPem),
-    clientId: "openclaw-cli",
+    clientId: "remoteclaw-cli",
     clientMode: "cli",
     role: "operator",
     scopes: ["operator.admin", "operator.read", "operator.write", "operator.approvals"],

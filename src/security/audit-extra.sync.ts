@@ -563,7 +563,7 @@ export function collectHooksHardeningFindings(
     tailscaleMode: cfg.gateway?.tailscale?.mode ?? "off",
     env,
   });
-  const openclawGatewayToken =
+  const remoteclawGatewayToken =
     typeof env.REMOTECLAW_GATEWAY_TOKEN === "string" && env.REMOTECLAW_GATEWAY_TOKEN.trim()
       ? env.REMOTECLAW_GATEWAY_TOKEN.trim()
       : null;
@@ -572,8 +572,8 @@ export function collectHooksHardeningFindings(
     typeof gatewayAuth.token === "string" &&
     gatewayAuth.token.trim()
       ? gatewayAuth.token.trim()
-      : openclawGatewayToken
-        ? openclawGatewayToken
+      : remoteclawGatewayToken
+        ? remoteclawGatewayToken
         : null;
   if (token && gatewayToken && token === gatewayToken) {
     findings.push({

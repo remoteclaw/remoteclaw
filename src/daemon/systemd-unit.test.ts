@@ -5,18 +5,18 @@ describe("buildSystemdUnit", () => {
   it("quotes arguments with whitespace", () => {
     const unit = buildSystemdUnit({
       description: "RemoteClaw Gateway",
-      programArguments: ["/usr/bin/openclaw", "gateway", "--name", "My Bot"],
+      programArguments: ["/usr/bin/remoteclaw", "gateway", "--name", "My Bot"],
       environment: {},
     });
     const execStart = unit.split("\n").find((line) => line.startsWith("ExecStart="));
-    expect(execStart).toBe('ExecStart=/usr/bin/openclaw gateway --name "My Bot"');
+    expect(execStart).toBe('ExecStart=/usr/bin/remoteclaw gateway --name "My Bot"');
   });
 
   it("rejects environment values with line breaks", () => {
     expect(() =>
       buildSystemdUnit({
         description: "RemoteClaw Gateway",
-        programArguments: ["/usr/bin/openclaw", "gateway", "start"],
+        programArguments: ["/usr/bin/remoteclaw", "gateway", "start"],
         environment: {
           INJECT: "ok\nExecStartPre=/bin/touch /tmp/oc15789_rce",
         },

@@ -104,7 +104,7 @@ describe("writeOAuthCredentials", () => {
   });
 
   it("writes auth-profiles.json under REMOTECLAW_AGENT_DIR when set", async () => {
-    const env = await setupAuthTestEnv("openclaw-oauth-");
+    const env = await setupAuthTestEnv("remoteclaw-oauth-");
     lifecycle.setStateDir(env.stateDir);
 
     const creds = {
@@ -253,7 +253,7 @@ describe("setMinimaxApiKey", () => {
   });
 
   it("writes to REMOTECLAW_AGENT_DIR when set", async () => {
-    const env = await setupAuthTestEnv("openclaw-minimax-", { agentSubdir: "custom-agent" });
+    const env = await setupAuthTestEnv("remoteclaw-minimax-", { agentSubdir: "custom-agent" });
     lifecycle.setStateDir(env.stateDir);
 
     await setMinimaxApiKey("sk-minimax-test");

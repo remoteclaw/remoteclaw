@@ -92,7 +92,7 @@ describe("resolveTelegramToken", () => {
 
 describe("telegram update offset store", () => {
   it("persists and reloads the last update id", async () => {
-    await withStateDirEnv("openclaw-telegram-", async () => {
+    await withStateDirEnv("remoteclaw-telegram-", async () => {
       expect(await readTelegramUpdateOffset({ accountId: "primary" })).toBeNull();
 
       await writeTelegramUpdateOffset({

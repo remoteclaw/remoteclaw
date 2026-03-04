@@ -100,7 +100,7 @@ async function runNonInteractiveOnboardingWithDefaults(
 
 describe("onboard (non-interactive): runtime auth", () => {
   it("stores runtime selection in config when --runtime is provided", async () => {
-    await withOnboardEnv("openclaw-onboard-runtime-claude-", async ({ configPath, runtime }) => {
+    await withOnboardEnv("remoteclaw-onboard-runtime-claude-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         runtime: "claude",
         skipSkills: true,
@@ -111,7 +111,7 @@ describe("onboard (non-interactive): runtime auth", () => {
   });
 
   it("infers claude runtime from --anthropic-api-key", async () => {
-    await withOnboardEnv("openclaw-onboard-infer-claude-", async ({ configPath, runtime }) => {
+    await withOnboardEnv("remoteclaw-onboard-infer-claude-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         anthropicApiKey: "sk-ant-test-key",
         skipSkills: true,
@@ -122,7 +122,7 @@ describe("onboard (non-interactive): runtime auth", () => {
   });
 
   it("infers gemini runtime from --gemini-api-key", async () => {
-    await withOnboardEnv("openclaw-onboard-infer-gemini-", async ({ configPath, runtime }) => {
+    await withOnboardEnv("remoteclaw-onboard-infer-gemini-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         geminiApiKey: "gemini-test-key",
         skipSkills: true,
@@ -133,7 +133,7 @@ describe("onboard (non-interactive): runtime auth", () => {
   });
 
   it("infers codex runtime from --codex-api-key", async () => {
-    await withOnboardEnv("openclaw-onboard-infer-codex-", async ({ configPath, runtime }) => {
+    await withOnboardEnv("remoteclaw-onboard-infer-codex-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         codexApiKey: "codex-test-key",
         skipSkills: true,
@@ -144,7 +144,7 @@ describe("onboard (non-interactive): runtime auth", () => {
   });
 
   it("infers opencode runtime from --openai-api-key", async () => {
-    await withOnboardEnv("openclaw-onboard-infer-opencode-", async ({ configPath, runtime }) => {
+    await withOnboardEnv("remoteclaw-onboard-infer-opencode-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         openaiApiKey: "sk-openai-test-key",
         skipSkills: true,
@@ -155,7 +155,7 @@ describe("onboard (non-interactive): runtime auth", () => {
   });
 
   it("infers claude runtime from --auth-token", async () => {
-    await withOnboardEnv("openclaw-onboard-auth-token-", async ({ configPath, runtime }) => {
+    await withOnboardEnv("remoteclaw-onboard-auth-token-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         authToken: "my-oauth-token",
         skipSkills: true,
@@ -166,7 +166,7 @@ describe("onboard (non-interactive): runtime auth", () => {
   });
 
   it("completes without error when no runtime or key is provided (skip mode)", async () => {
-    await withOnboardEnv("openclaw-onboard-no-runtime-", async ({ configPath, runtime }) => {
+    await withOnboardEnv("remoteclaw-onboard-no-runtime-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         skipSkills: true,
       });

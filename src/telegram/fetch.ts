@@ -39,7 +39,7 @@ function applyTelegramNetworkWorkarounds(network?: TelegramNetworkConfig): void 
   // effect on it. Replace the global dispatcher with one that carries the
   // current autoSelectFamily setting so subsequent globalThis.fetch calls
   // inherit the same decision.
-  // See: https://github.com/openclaw/openclaw/issues/25676
+  // See: https://github.com/remoteclaw/remoteclaw/issues/25676
   if (
     autoSelectDecision.value !== null &&
     autoSelectDecision.value !== appliedGlobalDispatcherAutoSelectFamily
@@ -62,7 +62,7 @@ function applyTelegramNetworkWorkarounds(network?: TelegramNetworkConfig): void 
 
   // Apply DNS result order workaround for IPv4/IPv6 issues.
   // Some APIs (including Telegram) may fail with IPv6 on certain networks.
-  // See: https://github.com/openclaw/openclaw/issues/5311
+  // See: https://github.com/remoteclaw/remoteclaw/issues/5311
   const dnsDecision = resolveTelegramDnsResultOrderDecision({ network });
   if (dnsDecision.value !== null && dnsDecision.value !== appliedDnsResultOrder) {
     if (typeof dns.setDefaultResultOrder === "function") {

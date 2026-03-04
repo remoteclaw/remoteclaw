@@ -77,7 +77,7 @@ vi.mock("../infra/provider-usage.js", () => ({
 }));
 
 import "./test-helpers/fast-core-tools.js";
-import { createRemoteClawTools } from "./openclaw-tools.js";
+import { createRemoteClawTools } from "./remoteclaw-tools.js";
 
 function resetSessionStore(store: Record<string, unknown>) {
   loadSessionStoreMock.mockClear();

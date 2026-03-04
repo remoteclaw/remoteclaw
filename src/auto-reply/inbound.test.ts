@@ -330,22 +330,22 @@ describe("mention helpers", () => {
   it("builds regexes and skips invalid patterns", () => {
     const regexes = buildMentionRegexes({
       messages: {
-        groupChat: { mentionPatterns: ["\\bopenclaw\\b", "(invalid"] },
+        groupChat: { mentionPatterns: ["\\bremoteclaw\\b", "(invalid"] },
       },
     });
     expect(regexes).toHaveLength(1);
-    expect(regexes[0]?.test("openclaw")).toBe(true);
+    expect(regexes[0]?.test("remoteclaw")).toBe(true);
   });
 
   it("normalizes zero-width characters", () => {
-    expect(normalizeMentionText("open\u200bclaw")).toBe("openclaw");
+    expect(normalizeMentionText("remote\u200bclaw")).toBe("remoteclaw");
   });
 
   it("matches patterns case-insensitively", () => {
     const regexes = buildMentionRegexes({
-      messages: { groupChat: { mentionPatterns: ["\\bopenclaw\\b"] } },
+      messages: { groupChat: { mentionPatterns: ["\\bremoteclaw\\b"] } },
     });
-    expect(matchesMentionPatterns("OPENCLAW: hi", regexes)).toBe(true);
+    expect(matchesMentionPatterns("REMOTECLAW: hi", regexes)).toBe(true);
   });
 
   it("uses per-agent mention patterns when configured", () => {

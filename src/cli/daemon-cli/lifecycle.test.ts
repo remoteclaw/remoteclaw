@@ -68,7 +68,7 @@ describe("runDaemonRestart health checks", () => {
     loadConfig.mockClear();
 
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "--port", "18789"],
+      programArguments: ["remoteclaw", "gateway", "--port", "18789"],
       environment: {},
     });
 
@@ -126,7 +126,7 @@ describe("runDaemonRestart health checks", () => {
 
     await expect(runDaemonRestart({ json: true })).rejects.toMatchObject({
       message: "Gateway restart timed out after 60s waiting for health checks.",
-      hints: ["openclaw gateway status --deep", "openclaw doctor"],
+      hints: ["remoteclaw gateway status --deep", "remoteclaw doctor"],
     });
     expect(terminateStaleGatewayPids).not.toHaveBeenCalled();
     expect(renderRestartDiagnostics).toHaveBeenCalledTimes(1);

@@ -11,7 +11,7 @@ vi.mock("../media/image-ops.js", () => ({
 }));
 
 import "./test-helpers/fast-core-tools.js";
-import { createRemoteClawTools } from "./openclaw-tools.js";
+import { createRemoteClawTools } from "./remoteclaw-tools.js";
 
 const NODE_ID = "mac-1";
 const BASE_RUN_INPUT = { action: "run", node: NODE_ID, command: ["echo", "hi"] } as const;

@@ -7,7 +7,7 @@ import { createTranscriptFixtureSync } from "./chat.test-helpers.js";
 describe("gateway chat.inject transcript writes", () => {
   it("appends a valid JSONL message entry", async () => {
     const { dir, transcriptPath } = createTranscriptFixtureSync({
-      prefix: "openclaw-chat-inject-",
+      prefix: "remoteclaw-chat-inject-",
       sessionId: "sess-1",
     });
 

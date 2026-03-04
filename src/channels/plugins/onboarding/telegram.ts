@@ -41,7 +41,7 @@ async function noteTelegramTokenHelp(prompter: WizardPrompter): Promise<void> {
 async function noteTelegramUserIdHelp(prompter: WizardPrompter): Promise<void> {
   await prompter.note(
     [
-      `1) DM your bot, then read from.id in \`${formatCliCommand("openclaw logs --follow")}\` (safest)`,
+      `1) DM your bot, then read from.id in \`${formatCliCommand("remoteclaw logs --follow")}\` (safest)`,
       "2) Or call https://api.telegram.org/bot<bot_token>/getUpdates and read message.from.id",
       "3) Third-party: DM @userinfobot or @getidsbot",
       `Docs: ${formatDocsLink("/telegram")}`,

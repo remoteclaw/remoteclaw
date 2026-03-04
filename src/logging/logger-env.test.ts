@@ -9,7 +9,7 @@ import {
 } from "../logging.js";
 import { loggingState } from "./state.js";
 
-const testLogPath = path.join(os.tmpdir(), "openclaw-test-env-log-level.log");
+const testLogPath = path.join(os.tmpdir(), "remoteclaw-test-env-log-level.log");
 const defaultMaxFileBytes = 500 * 1024 * 1024;
 
 describe("REMOTECLAW_LOG_LEVEL", () => {

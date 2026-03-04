@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { withEnvAsync } from "../test-utils/env.js";
 import "./test-helpers/fast-core-tools.js";
-import { createRemoteClawTools } from "./openclaw-tools.js";
+import { createRemoteClawTools } from "./remoteclaw-tools.js";
 
 vi.mock("./tools/gateway.js", () => ({
   callGatewayTool: vi.fn(async (method: string) => {
@@ -85,7 +85,7 @@ describe("gateway tool", () => {
           };
           expect(parsed.payload?.kind).toBe("restart");
           expect(parsed.payload?.doctorHint).toBe(
-            "Run: openclaw --profile isolated doctor --non-interactive",
+            "Run: remoteclaw --profile isolated doctor --non-interactive",
           );
 
           expect(kill).not.toHaveBeenCalled();

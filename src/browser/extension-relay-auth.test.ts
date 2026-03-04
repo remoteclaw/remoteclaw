@@ -59,7 +59,7 @@ describe("extension-relay-auth", () => {
     expect(tokens[0]).toBe(resolveRelayAuthTokenForPort(18790));
   });
 
-  it("accepts authenticated openclaw relay probe responses", async () => {
+  it("accepts authenticated remoteclaw relay probe responses", async () => {
     let seenToken: string | undefined;
     await withRelayServer(
       (req, res) => {

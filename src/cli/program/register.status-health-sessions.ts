@@ -55,15 +55,15 @@ export function registerStatusHealthSessionsCommands(program: Command) {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["openclaw status", "Show channel health + session summary."],
-          ["openclaw status --all", "Full diagnosis (read-only)."],
-          ["openclaw status --json", "Machine-readable output."],
-          ["openclaw status --usage", "Show model provider usage/quota snapshots."],
+          ["remoteclaw status", "Show channel health + session summary."],
+          ["remoteclaw status --all", "Full diagnosis (read-only)."],
+          ["remoteclaw status --json", "Machine-readable output."],
+          ["remoteclaw status --usage", "Show model provider usage/quota snapshots."],
           [
-            "openclaw status --deep",
+            "remoteclaw status --deep",
             "Run channel probes (WA + Telegram + Discord + Slack + Signal).",
           ],
-          ["openclaw status --deep --timeout 5000", "Tighten probe timeout."],
+          ["remoteclaw status --deep --timeout 5000", "Tighten probe timeout."],
         ])}`,
     )
     .addHelpText(
@@ -125,12 +125,12 @@ export function registerStatusHealthSessionsCommands(program: Command) {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["openclaw sessions", "List all sessions."],
-          ["openclaw sessions --agent work", "List sessions for one agent."],
-          ["openclaw sessions --all-agents", "Aggregate sessions across agents."],
-          ["openclaw sessions --active 120", "Only last 2 hours."],
-          ["openclaw sessions --json", "Machine-readable output."],
-          ["openclaw sessions --store ./tmp/sessions.json", "Use a specific session store."],
+          ["remoteclaw sessions", "List all sessions."],
+          ["remoteclaw sessions --agent work", "List sessions for one agent."],
+          ["remoteclaw sessions --all-agents", "Aggregate sessions across agents."],
+          ["remoteclaw sessions --active 120", "Only last 2 hours."],
+          ["remoteclaw sessions --json", "Machine-readable output."],
+          ["remoteclaw sessions --store ./tmp/sessions.json", "Use a specific session store."],
         ])}\n\n${theme.muted(
           "Shows token usage per session when the agent reports it; set agents.defaults.contextTokens to cap the window and show %.",
         )}`,
@@ -169,12 +169,12 @@ export function registerStatusHealthSessionsCommands(program: Command) {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["openclaw sessions cleanup --dry-run", "Preview stale/cap cleanup."],
-          ["openclaw sessions cleanup --enforce", "Apply maintenance now."],
-          ["openclaw sessions cleanup --agent work --dry-run", "Preview one agent store."],
-          ["openclaw sessions cleanup --all-agents --dry-run", "Preview all agent stores."],
+          ["remoteclaw sessions cleanup --dry-run", "Preview stale/cap cleanup."],
+          ["remoteclaw sessions cleanup --enforce", "Apply maintenance now."],
+          ["remoteclaw sessions cleanup --agent work --dry-run", "Preview one agent store."],
+          ["remoteclaw sessions cleanup --all-agents --dry-run", "Preview all agent stores."],
           [
-            "openclaw sessions cleanup --enforce --store ./tmp/sessions.json",
+            "remoteclaw sessions cleanup --enforce --store ./tmp/sessions.json",
             "Use a specific store.",
           ],
         ])}`,

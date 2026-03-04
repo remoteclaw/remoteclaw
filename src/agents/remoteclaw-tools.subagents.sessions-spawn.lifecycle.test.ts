@@ -7,7 +7,7 @@ import {
   resetSessionsSpawnConfigOverride,
   setupSessionsSpawnGatewayMock,
   setSessionsSpawnConfigOverride,
-} from "./openclaw-tools.subagents.sessions-spawn.test-harness.js";
+} from "./remoteclaw-tools.subagents.sessions-spawn.test-harness.js";
 import { resetSubagentRegistryForTests } from "./subagent-registry.js";
 
 const fastModeEnv = vi.hoisted(() => {
@@ -95,7 +95,7 @@ async function emitLifecycleEndAndFlush(params: {
   }
 }
 
-describe("openclaw-tools: subagents (sessions_spawn lifecycle)", () => {
+describe("remoteclaw-tools: subagents (sessions_spawn lifecycle)", () => {
   beforeEach(() => {
     resetSessionsSpawnConfigOverride();
     setSessionsSpawnConfigOverride({

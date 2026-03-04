@@ -153,7 +153,7 @@ export async function main() {
     console.error(`- ${violation}`);
   }
   console.error(
-    "Use resolvePreferredOpenClawTmpDir() or plugin-sdk temp helpers instead of host tmp defaults.",
+    "Use resolvePreferredRemoteClawTmpDir() or plugin-sdk temp helpers instead of host tmp defaults.",
   );
   process.exit(1);
 }

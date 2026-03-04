@@ -119,7 +119,7 @@ export function registerBrowserExtensionCommands(
         defaultRuntime.error(
           danger(
             [
-              `Chrome extension is not installed. Run: "${formatCliCommand("openclaw browser extension install")}"`,
+              `Chrome extension is not installed. Run: "${formatCliCommand("remoteclaw browser extension install")}"`,
               `Docs: ${formatDocsLink("/tools/chrome-extension", "docs.remoteclaw.ai/tools/chrome-extension")}`,
             ].join("\n"),
           ),

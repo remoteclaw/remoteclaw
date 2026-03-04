@@ -129,7 +129,7 @@ export async function resetCommand(runtime: RuntimeEnv, opts: ResetOptions) {
     for (const dir of sessionDirs) {
       await removePath(dir, runtime, { dryRun, label: dir });
     }
-    runtime.log(`Next: ${formatCliCommand("openclaw onboard --install-daemon")}`);
+    runtime.log(`Next: ${formatCliCommand("remoteclaw onboard --install-daemon")}`);
     return;
   }
 
@@ -140,7 +140,7 @@ export async function resetCommand(runtime: RuntimeEnv, opts: ResetOptions) {
       { dryRun },
     );
     await removeWorkspaceDirs(workspaceDirs, runtime, { dryRun });
-    runtime.log(`Next: ${formatCliCommand("openclaw onboard --install-daemon")}`);
+    runtime.log(`Next: ${formatCliCommand("remoteclaw onboard --install-daemon")}`);
     return;
   }
 }

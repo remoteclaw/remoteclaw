@@ -135,7 +135,7 @@ describe("push APNs send semantics", () => {
         alert: { title: "Wake", body: "Ping" },
         sound: "default",
       },
-      openclaw: {
+      remoteclaw: {
         kind: "push.test",
         nodeId: "ios-node-alert",
       },
@@ -177,7 +177,7 @@ describe("push APNs send semantics", () => {
       aps: {
         "content-available": 1,
       },
-      openclaw: {
+      remoteclaw: {
         kind: "node.wake",
         reason: "node.invoke",
         nodeId: "ios-node-wake",
@@ -217,7 +217,7 @@ describe("push APNs send semantics", () => {
 
     const sent = send.mock.calls[0]?.[0];
     expect(sent?.payload).toMatchObject({
-      openclaw: {
+      remoteclaw: {
         kind: "node.wake",
         reason: "node.invoke",
         nodeId: "ios-node-wake-default-reason",

@@ -154,7 +154,7 @@ export function buildGatewayConnectionDetails(
         "Safe remote access defaults:",
         "- keep gateway.bind=loopback and use an SSH tunnel (ssh -N -L 18789:127.0.0.1:18789 user@gateway-host)",
         "- or use Tailscale Serve/Funnel for HTTPS remote access",
-        "Doctor: openclaw doctor --fix",
+        "Doctor: remoteclaw doctor --fix",
         "Docs: https://docs.remoteclaw.ai/gateway/remote",
       ].join("\n"),
     );

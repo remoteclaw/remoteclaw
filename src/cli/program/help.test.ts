@@ -27,7 +27,7 @@ vi.mock("../banner.js", () => ({
 }));
 
 vi.mock("../cli-name.js", () => ({
-  resolveCliName: () => "openclaw",
+  resolveCliName: () => "remoteclaw",
   replaceCliName: (cmd: string) => cmd,
 }));
 
@@ -85,7 +85,7 @@ describe("configureProgramHelp", () => {
   }
 
   it("adds root help hint and marks commands with subcommands", () => {
-    process.argv = ["node", "openclaw", "--help"];
+    process.argv = ["node", "remoteclaw", "--help"];
     const program = makeProgramWithCommands();
     configureProgramHelp(program, testProgramContext);
 
@@ -97,7 +97,7 @@ describe("configureProgramHelp", () => {
   });
 
   it("includes banner and docs/examples in root help output", () => {
-    process.argv = ["node", "openclaw", "--help"];
+    process.argv = ["node", "remoteclaw", "--help"];
     const program = makeProgramWithCommands();
     configureProgramHelp(program, testProgramContext);
 
@@ -108,7 +108,7 @@ describe("configureProgramHelp", () => {
   });
 
   it("prints version and exits immediately when version flags are present", () => {
-    process.argv = ["node", "openclaw", "--version"];
+    process.argv = ["node", "remoteclaw", "--version"];
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
       throw new Error(`exit:${code ?? ""}`);

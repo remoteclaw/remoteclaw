@@ -9,19 +9,19 @@ import {
 } from "./state-dir-env.js";
 
 type EnvSnapshot = {
-  openclaw?: string;
+  remoteclaw?: string;
   legacy?: string;
 };
 
 function snapshotCurrentStateDirVars(): EnvSnapshot {
   return {
-    openclaw: process.env.REMOTECLAW_STATE_DIR,
+    remoteclaw: process.env.REMOTECLAW_STATE_DIR,
     legacy: process.env.CLAWDBOT_STATE_DIR,
   };
 }
 
 function expectStateDirVars(snapshot: EnvSnapshot) {
-  expect(process.env.REMOTECLAW_STATE_DIR).toBe(snapshot.openclaw);
+  expect(process.env.REMOTECLAW_STATE_DIR).toBe(snapshot.remoteclaw);
   expect(process.env.CLAWDBOT_STATE_DIR).toBe(snapshot.legacy);
 }
 
@@ -57,7 +57,7 @@ describe("state-dir-env helpers", () => {
 
     let capturedTempRoot = "";
     let capturedStateDir = "";
-    await withStateDirEnv("openclaw-state-dir-env-", async ({ tempRoot, stateDir }) => {
+    await withStateDirEnv("remoteclaw-state-dir-env-", async ({ tempRoot, stateDir }) => {
       capturedTempRoot = tempRoot;
       capturedStateDir = stateDir;
       expect(process.env.REMOTECLAW_STATE_DIR).toBe(stateDir);
@@ -74,7 +74,7 @@ describe("state-dir-env helpers", () => {
     let capturedTempRoot = "";
     let capturedStateDir = "";
     await expect(
-      withStateDirEnv("openclaw-state-dir-env-", async ({ tempRoot, stateDir }) => {
+      withStateDirEnv("remoteclaw-state-dir-env-", async ({ tempRoot, stateDir }) => {
         capturedTempRoot = tempRoot;
         capturedStateDir = stateDir;
         throw new Error("boom");
@@ -86,14 +86,14 @@ describe("state-dir-env helpers", () => {
 
   it("withStateDirEnv restores both env vars when legacy var was previously set", async () => {
     const testSnapshot = snapshotStateDirEnv();
-    process.env.REMOTECLAW_STATE_DIR = "/tmp/original-openclaw";
+    process.env.REMOTECLAW_STATE_DIR = "/tmp/original-remoteclaw";
     process.env.CLAWDBOT_STATE_DIR = "/tmp/original-legacy";
     const prev = snapshotCurrentStateDirVars();
 
     let capturedTempRoot = "";
     let capturedStateDir = "";
     try {
-      await withStateDirEnv("openclaw-state-dir-env-", async ({ tempRoot, stateDir }) => {
+      await withStateDirEnv("remoteclaw-state-dir-env-", async ({ tempRoot, stateDir }) => {
         capturedTempRoot = tempRoot;
         capturedStateDir = stateDir;
         expect(process.env.REMOTECLAW_STATE_DIR).toBe(stateDir);

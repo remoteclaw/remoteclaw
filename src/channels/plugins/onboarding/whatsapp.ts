@@ -337,7 +337,7 @@ export const whatsappOnboardingAdapter: ChannelOnboardingAdapter = {
       }
     } else if (!linked) {
       await prompter.note(
-        `Run \`${formatCliCommand("openclaw channels login")}\` later to link WhatsApp.`,
+        `Run \`${formatCliCommand("remoteclaw channels login")}\` later to link WhatsApp.`,
         "WhatsApp",
       );
     }

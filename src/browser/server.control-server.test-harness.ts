@@ -121,7 +121,7 @@ export function getPwMocks(): Record<string, MockFn> {
   return pwMocks as unknown as Record<string, MockFn>;
 }
 
-const chromeUserDataDir = vi.hoisted(() => ({ dir: "/tmp/openclaw" }));
+const chromeUserDataDir = vi.hoisted(() => ({ dir: "/tmp/remoteclaw" }));
 installChromeUserDataDirHooks(chromeUserDataDir);
 
 function makeProc(pid = 123) {
@@ -158,9 +158,9 @@ vi.mock("../config/config.js", async (importOriginal) => {
         color: "#FF4500",
         attachOnly: state.cfgAttachOnly,
         headless: true,
-        defaultProfile: "openclaw",
+        defaultProfile: "remoteclaw",
         profiles: {
-          openclaw: { cdpPort: state.testPort + 1, color: "#FF4500" },
+          remoteclaw: { cdpPort: state.testPort + 1, color: "#FF4500" },
         },
       },
     }),

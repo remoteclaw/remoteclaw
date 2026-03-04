@@ -239,7 +239,7 @@ describe("loader", () => {
           "---",
           "name: symlink-hook",
           "description: symlink test",
-          'metadata: {"openclaw":{"events":["command:new"]}}',
+          'metadata: {"remoteclaw":{"events":["command:new"]}}',
           "---",
           "",
           "# Symlink Hook",

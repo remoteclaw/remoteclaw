@@ -1,6 +1,6 @@
 import { DEFAULT_MODEL } from "../agents/defaults.js";
 import type { SessionEntry } from "../config/sessions.js";
-import type { RemoteClawConfig } from "../config/types.openclaw.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { resolveSessionModelRef } from "../gateway/session-utils.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { parseAgentSessionKey } from "../routing/session-key.js";

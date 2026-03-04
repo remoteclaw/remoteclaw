@@ -18,7 +18,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
 });
 
 import "./test-helpers/fast-core-tools.js";
-import { createRemoteClawTools } from "./openclaw-tools.js";
+import { createRemoteClawTools } from "./remoteclaw-tools.js";
 
 function getSessionsHistoryTool(options?: { sandboxed?: boolean }) {
   const tool = createRemoteClawTools({

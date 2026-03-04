@@ -144,7 +144,7 @@ describe("doctor state integrity oauth dir checks", () => {
     expect(files.some((name) => name.startsWith("orphan-session.jsonl.deleted."))).toBe(true);
   });
 
-  it("prints openclaw-only verification hints when recent sessions are missing transcripts", async () => {
+  it("prints remoteclaw-only verification hints when recent sessions are missing transcripts", async () => {
     const cfg: RemoteClawConfig = {};
     setupSessionState(cfg, process.env, process.env.HOME ?? "");
     const storePath = resolveStorePath(cfg.session?.store, { agentId: "main" });
@@ -166,8 +166,8 @@ describe("doctor state integrity oauth dir checks", () => {
 
     const text = stateIntegrityText();
     expect(text).toContain("recent sessions are missing transcripts");
-    expect(text).toMatch(/openclaw sessions --store ".*sessions\.json"/);
-    expect(text).toMatch(/openclaw sessions cleanup --store ".*sessions\.json" --dry-run/);
+    expect(text).toMatch(/remoteclaw sessions --store ".*sessions\.json"/);
+    expect(text).toMatch(/remoteclaw sessions cleanup --store ".*sessions\.json" --dry-run/);
     expect(text).not.toContain("--active");
     expect(text).not.toContain(" ls ");
   });

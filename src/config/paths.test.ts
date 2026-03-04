@@ -107,7 +107,7 @@ describe("state + config path candidates", () => {
   });
 
   it("prefers ~/.remoteclaw when it exists and legacy dir is missing", async () => {
-    await withTempRoot("openclaw-state-", async (root) => {
+    await withTempRoot("remoteclaw-state-", async (root) => {
       const newDir = path.join(root, ".remoteclaw");
       await fs.mkdir(newDir, { recursive: true });
       const resolved = resolveStateDir({} as NodeJS.ProcessEnv, () => root);
@@ -116,7 +116,7 @@ describe("state + config path candidates", () => {
   });
 
   it("falls back to existing legacy state dir when ~/.remoteclaw is missing", async () => {
-    await withTempRoot("openclaw-state-legacy-", async (root) => {
+    await withTempRoot("remoteclaw-state-legacy-", async (root) => {
       const legacyDir = path.join(root, ".clawdbot");
       await fs.mkdir(legacyDir, { recursive: true });
       const resolved = resolveStateDir({} as NodeJS.ProcessEnv, () => root);
@@ -125,7 +125,7 @@ describe("state + config path candidates", () => {
   });
 
   it("CONFIG_PATH prefers existing config when present", async () => {
-    await withTempRoot("openclaw-config-", async (root) => {
+    await withTempRoot("remoteclaw-config-", async (root) => {
       const legacyDir = path.join(root, ".remoteclaw");
       await fs.mkdir(legacyDir, { recursive: true });
       const legacyPath = path.join(legacyDir, "remoteclaw.json");
@@ -137,7 +137,7 @@ describe("state + config path candidates", () => {
   });
 
   it("respects state dir overrides when config is missing", async () => {
-    await withTempRoot("openclaw-config-override-", async (root) => {
+    await withTempRoot("remoteclaw-config-override-", async (root) => {
       const legacyDir = path.join(root, ".remoteclaw");
       await fs.mkdir(legacyDir, { recursive: true });
       const legacyConfig = path.join(legacyDir, "remoteclaw.json");

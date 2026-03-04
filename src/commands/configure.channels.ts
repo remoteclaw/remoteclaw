@@ -25,7 +25,7 @@ export async function removeChannelConfigWizard(
       note(
         [
           "No channel config found in remoteclaw.json.",
-          `Tip: \`${formatCliCommand("openclaw channels status")}\` shows what is configured and enabled.`,
+          `Tip: \`${formatCliCommand("remoteclaw channels status")}\` shows what is configured and enabled.`,
         ].join("\n"),
         "Remove channel",
       );

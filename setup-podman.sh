@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time host setup for rootless OpenClaw in Podman: creates the openclaw
+# One-time host setup for rootless RemoteClaw in Podman: creates the remoteclaw
 # user, builds the image, loads it into that user's Podman store, and installs
 # the launch script. Run from repo root with sudo capability.
 #
@@ -9,16 +9,16 @@
 #   Or set REMOTECLAW_PODMAN_QUADLET=1 (or 0) to choose without a flag.
 #
 # After this, start the gateway manually:
-#   ./scripts/run-openclaw-podman.sh launch
-#   ./scripts/run-openclaw-podman.sh launch setup   # onboarding wizard
-# Or as the openclaw user: sudo -u openclaw /home/openclaw/run-openclaw-podman.sh
-# If you used --quadlet, you can also: sudo systemctl --machine openclaw@ --user start openclaw.service
+#   ./scripts/run-remoteclaw-podman.sh launch
+#   ./scripts/run-remoteclaw-podman.sh launch setup   # onboarding wizard
+# Or as the remoteclaw user: sudo -u remoteclaw /home/remoteclaw/run-remoteclaw-podman.sh
+# If you used --quadlet, you can also: sudo systemctl --machine remoteclaw@ --user start remoteclaw.service
 set -euo pipefail
 
-REMOTECLAW_USER="${REMOTECLAW_PODMAN_USER:-openclaw}"
+REMOTECLAW_USER="${REMOTECLAW_PODMAN_USER:-remoteclaw}"
 REPO_PATH="${REMOTECLAW_REPO_PATH:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
-RUN_SCRIPT_SRC="$REPO_PATH/scripts/run-openclaw-podman.sh"
-QUADLET_TEMPLATE="$REPO_PATH/scripts/podman/openclaw.container.in"
+RUN_SCRIPT_SRC="$REPO_PATH/scripts/run-remoteclaw-podman.sh"
+QUADLET_TEMPLATE="$REPO_PATH/scripts/podman/remoteclaw.container.in"
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -50,7 +50,7 @@ run_as_user() {
   fi
 }
 
-run_as_openclaw() {
+run_as_remoteclaw() {
   # Avoid root writes into $REMOTECLAW_HOME (symlink/hardlink/TOCTOU footguns).
   # Anything under the target user's home should be created/modified as that user.
   run_as_user "$REMOTECLAW_USER" env HOME="$REMOTECLAW_HOME" "$@"
@@ -138,7 +138,7 @@ resolve_nologin_shell() {
   printf '%s' "/usr/sbin/nologin"
 }
 
-# Create openclaw user (non-login, with home) if missing
+# Create remoteclaw user (non-login, with home) if missing
 if ! user_exists "$REMOTECLAW_USER"; then
   NOLOGIN_SHELL="$(resolve_nologin_shell)"
   echo "Creating user $REMOTECLAW_USER ($NOLOGIN_SHELL, with home)..."
@@ -157,8 +157,8 @@ fi
 
 REMOTECLAW_HOME="$(resolve_user_home "$REMOTECLAW_USER")"
 REMOTECLAW_UID="$(id -u "$REMOTECLAW_USER" 2>/dev/null || true)"
-REMOTECLAW_CONFIG="$REMOTECLAW_HOME/.openclaw"
-LAUNCH_SCRIPT_DST="$REMOTECLAW_HOME/run-openclaw-podman.sh"
+REMOTECLAW_CONFIG="$REMOTECLAW_HOME/.remoteclaw"
+LAUNCH_SCRIPT_DST="$REMOTECLAW_HOME/run-remoteclaw-podman.sh"
 
 # Prefer systemd user services (Quadlet) for production. Enable lingering early so rootless Podman can run
 # without an interactive login.
@@ -176,62 +176,62 @@ if ! grep -q "^${REMOTECLAW_USER}:" /etc/subuid 2>/dev/null; then
 fi
 
 echo "Creating $REMOTECLAW_CONFIG and workspace..."
-run_as_openclaw mkdir -p "$REMOTECLAW_CONFIG/workspace"
-run_as_openclaw chmod 700 "$REMOTECLAW_CONFIG" "$REMOTECLAW_CONFIG/workspace" 2>/dev/null || true
+run_as_remoteclaw mkdir -p "$REMOTECLAW_CONFIG/workspace"
+run_as_remoteclaw chmod 700 "$REMOTECLAW_CONFIG" "$REMOTECLAW_CONFIG/workspace" 2>/dev/null || true
 
 ENV_FILE="$REMOTECLAW_CONFIG/.env"
-if run_as_openclaw test -f "$ENV_FILE"; then
-  if ! run_as_openclaw grep -q '^REMOTECLAW_GATEWAY_TOKEN=' "$ENV_FILE" 2>/dev/null; then
+if run_as_remoteclaw test -f "$ENV_FILE"; then
+  if ! run_as_remoteclaw grep -q '^REMOTECLAW_GATEWAY_TOKEN=' "$ENV_FILE" 2>/dev/null; then
     TOKEN="$(generate_token_hex_32)"
-    printf 'REMOTECLAW_GATEWAY_TOKEN=%s\n' "$TOKEN" | run_as_openclaw tee -a "$ENV_FILE" >/dev/null
+    printf 'REMOTECLAW_GATEWAY_TOKEN=%s\n' "$TOKEN" | run_as_remoteclaw tee -a "$ENV_FILE" >/dev/null
     echo "Added REMOTECLAW_GATEWAY_TOKEN to $ENV_FILE."
   fi
-  run_as_openclaw chmod 600 "$ENV_FILE" 2>/dev/null || true
+  run_as_remoteclaw chmod 600 "$ENV_FILE" 2>/dev/null || true
 else
   TOKEN="$(generate_token_hex_32)"
-  printf 'REMOTECLAW_GATEWAY_TOKEN=%s\n' "$TOKEN" | run_as_openclaw tee "$ENV_FILE" >/dev/null
-  run_as_openclaw chmod 600 "$ENV_FILE" 2>/dev/null || true
+  printf 'REMOTECLAW_GATEWAY_TOKEN=%s\n' "$TOKEN" | run_as_remoteclaw tee "$ENV_FILE" >/dev/null
+  run_as_remoteclaw chmod 600 "$ENV_FILE" 2>/dev/null || true
   echo "Created $ENV_FILE with new token."
 fi
 
 # The gateway refuses to start unless gateway.mode=local is set in config.
 # Make first-run non-interactive; users can run the wizard later to configure channels/providers.
-REMOTECLAW_JSON="$REMOTECLAW_CONFIG/openclaw.json"
-if ! run_as_openclaw test -f "$REMOTECLAW_JSON"; then
-  printf '%s\n' '{ gateway: { mode: "local" } }' | run_as_openclaw tee "$REMOTECLAW_JSON" >/dev/null
-  run_as_openclaw chmod 600 "$REMOTECLAW_JSON" 2>/dev/null || true
+REMOTECLAW_JSON="$REMOTECLAW_CONFIG/remoteclaw.json"
+if ! run_as_remoteclaw test -f "$REMOTECLAW_JSON"; then
+  printf '%s\n' '{ gateway: { mode: "local" } }' | run_as_remoteclaw tee "$REMOTECLAW_JSON" >/dev/null
+  run_as_remoteclaw chmod 600 "$REMOTECLAW_JSON" 2>/dev/null || true
   echo "Created $REMOTECLAW_JSON (minimal gateway.mode=local)."
 fi
 
 echo "Building image from $REPO_PATH..."
-podman build -t openclaw:local -f "$REPO_PATH/Dockerfile" "$REPO_PATH"
+podman build -t remoteclaw:local -f "$REPO_PATH/Dockerfile" "$REPO_PATH"
 
 echo "Loading image into $REMOTECLAW_USER's Podman store..."
-TMP_IMAGE="$(mktemp -p /tmp openclaw-image.XXXXXX.tar)"
+TMP_IMAGE="$(mktemp -p /tmp remoteclaw-image.XXXXXX.tar)"
 trap 'rm -f "$TMP_IMAGE"' EXIT
-podman save openclaw:local -o "$TMP_IMAGE"
+podman save remoteclaw:local -o "$TMP_IMAGE"
 chmod 644 "$TMP_IMAGE"
 (cd /tmp && run_as_user "$REMOTECLAW_USER" env HOME="$REMOTECLAW_HOME" podman load -i "$TMP_IMAGE")
 rm -f "$TMP_IMAGE"
 trap - EXIT
 
 echo "Copying launch script to $LAUNCH_SCRIPT_DST..."
-run_root cat "$RUN_SCRIPT_SRC" | run_as_openclaw tee "$LAUNCH_SCRIPT_DST" >/dev/null
-run_as_openclaw chmod 755 "$LAUNCH_SCRIPT_DST"
+run_root cat "$RUN_SCRIPT_SRC" | run_as_remoteclaw tee "$LAUNCH_SCRIPT_DST" >/dev/null
+run_as_remoteclaw chmod 755 "$LAUNCH_SCRIPT_DST"
 
-# Optionally install systemd quadlet for openclaw user (rootless Podman + systemd)
+# Optionally install systemd quadlet for remoteclaw user (rootless Podman + systemd)
 QUADLET_DIR="$REMOTECLAW_HOME/.config/containers/systemd"
 if [[ "$INSTALL_QUADLET" == true && -f "$QUADLET_TEMPLATE" ]]; then
   echo "Installing systemd quadlet for $REMOTECLAW_USER..."
-  run_as_openclaw mkdir -p "$QUADLET_DIR"
+  run_as_remoteclaw mkdir -p "$QUADLET_DIR"
   REMOTECLAW_HOME_SED="$(printf '%s' "$REMOTECLAW_HOME" | sed -e 's/[\\/&|]/\\\\&/g')"
-  sed "s|{{REMOTECLAW_HOME}}|$REMOTECLAW_HOME_SED|g" "$QUADLET_TEMPLATE" | run_as_openclaw tee "$QUADLET_DIR/openclaw.container" >/dev/null
-  run_as_openclaw chmod 700 "$REMOTECLAW_HOME/.config" "$REMOTECLAW_HOME/.config/containers" "$QUADLET_DIR" 2>/dev/null || true
-  run_as_openclaw chmod 600 "$QUADLET_DIR/openclaw.container" 2>/dev/null || true
+  sed "s|{{REMOTECLAW_HOME}}|$REMOTECLAW_HOME_SED|g" "$QUADLET_TEMPLATE" | run_as_remoteclaw tee "$QUADLET_DIR/remoteclaw.container" >/dev/null
+  run_as_remoteclaw chmod 700 "$REMOTECLAW_HOME/.config" "$REMOTECLAW_HOME/.config/containers" "$QUADLET_DIR" 2>/dev/null || true
+  run_as_remoteclaw chmod 600 "$QUADLET_DIR/remoteclaw.container" 2>/dev/null || true
   if command -v systemctl &>/dev/null; then
     run_root systemctl --machine "${REMOTECLAW_USER}@" --user daemon-reload 2>/dev/null || true
-    run_root systemctl --machine "${REMOTECLAW_USER}@" --user enable openclaw.service 2>/dev/null || true
-    run_root systemctl --machine "${REMOTECLAW_USER}@" --user start openclaw.service 2>/dev/null || true
+    run_root systemctl --machine "${REMOTECLAW_USER}@" --user enable remoteclaw.service 2>/dev/null || true
+    run_root systemctl --machine "${REMOTECLAW_USER}@" --user start remoteclaw.service 2>/dev/null || true
   fi
 fi
 
@@ -244,8 +244,8 @@ echo "  sudo -u $REMOTECLAW_USER $LAUNCH_SCRIPT_DST"
 echo "  sudo -u $REMOTECLAW_USER $LAUNCH_SCRIPT_DST setup"
 if [[ "$INSTALL_QUADLET" == true ]]; then
   echo "Or use systemd (quadlet):"
-  echo "  sudo systemctl --machine ${REMOTECLAW_USER}@ --user start openclaw.service"
-  echo "  sudo systemctl --machine ${REMOTECLAW_USER}@ --user status openclaw.service"
+  echo "  sudo systemctl --machine ${REMOTECLAW_USER}@ --user start remoteclaw.service"
+  echo "  sudo systemctl --machine ${REMOTECLAW_USER}@ --user status remoteclaw.service"
 else
   echo "To install systemd quadlet later: $0 --quadlet"
 fi

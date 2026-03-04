@@ -73,7 +73,7 @@ describe("doctor command", () => {
       findLegacyGatewayServices.mockResolvedValueOnce([
         {
           platform: "darwin",
-          label: "com.steipete.openclaw.gateway",
+          label: "com.steipete.remoteclaw.gateway",
           detail: "loaded",
         },
       ]);
@@ -90,7 +90,7 @@ describe("doctor command", () => {
   it("offers to update first for git checkouts", async () => {
     delete process.env.REMOTECLAW_UPDATE_IN_PROGRESS;
 
-    const root = "/tmp/openclaw";
+    const root = "/tmp/remoteclaw";
     resolveRemoteClawPackageRoot.mockResolvedValueOnce(root);
     runCommandWithTimeout.mockResolvedValueOnce({
       stdout: `${root}\n`,

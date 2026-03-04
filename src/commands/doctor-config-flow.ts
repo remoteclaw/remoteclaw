@@ -1171,7 +1171,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
       }
     } else {
       fixHints.push(
-        `Run "${formatCliCommand("openclaw doctor --fix")}" to apply legacy migrations.`,
+        `Run "${formatCliCommand("remoteclaw doctor --fix")}" to apply legacy migrations.`,
       );
     }
   }
@@ -1184,7 +1184,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
     if (shouldRepair) {
       cfg = normalized.config;
     } else {
-      fixHints.push(`Run "${formatCliCommand("openclaw doctor --fix")}" to apply these changes.`);
+      fixHints.push(`Run "${formatCliCommand("remoteclaw doctor --fix")}" to apply these changes.`);
     }
   }
 
@@ -1196,7 +1196,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
     if (shouldRepair) {
       cfg = autoEnable.config;
     } else {
-      fixHints.push(`Run "${formatCliCommand("openclaw doctor --fix")}" to apply these changes.`);
+      fixHints.push(`Run "${formatCliCommand("remoteclaw doctor --fix")}" to apply these changes.`);
     }
   }
 
@@ -1238,7 +1238,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
       note(
         [
           `- Telegram allowFrom contains ${hits.length} non-numeric entries (e.g. ${hits[0]?.entry ?? "@"}); Telegram authorization requires numeric sender IDs.`,
-          `- Run "${formatCliCommand("openclaw doctor --fix")}" to auto-resolve @username entries to numeric IDs (requires a Telegram bot token).`,
+          `- Run "${formatCliCommand("remoteclaw doctor --fix")}" to auto-resolve @username entries to numeric IDs (requires a Telegram bot token).`,
         ].join("\n"),
         "Doctor warnings",
       );
@@ -1249,7 +1249,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
       note(
         [
           `- Discord allowlists contain ${discordHits.length} numeric entries (e.g. ${discordHits[0]?.path}=${discordHits[0]?.entry}).`,
-          `- Discord IDs must be strings; run "${formatCliCommand("openclaw doctor --fix")}" to convert numeric IDs to quoted strings.`,
+          `- Discord IDs must be strings; run "${formatCliCommand("remoteclaw doctor --fix")}" to convert numeric IDs to quoted strings.`,
         ].join("\n"),
         "Doctor warnings",
       );
@@ -1260,7 +1260,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
       note(
         [
           ...allowFromScan.changes,
-          `- Run "${formatCliCommand("openclaw doctor --fix")}" to add missing allowFrom wildcards.`,
+          `- Run "${formatCliCommand("remoteclaw doctor --fix")}" to add missing allowFrom wildcards.`,
         ].join("\n"),
         "Doctor warnings",
       );
@@ -1274,7 +1274,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
         [
           `- Found ${toolsBySenderHits.length} legacy untyped toolsBySender key${toolsBySenderHits.length === 1 ? "" : "s"} (for example ${sampleLabel}).`,
           "- Untyped sender keys are deprecated; use explicit prefixes (id:, e164:, username:, name:).",
-          `- Run "${formatCliCommand("openclaw doctor --fix")}" to migrate legacy keys to typed id: entries.`,
+          `- Run "${formatCliCommand("remoteclaw doctor --fix")}" to migrate legacy keys to typed id: entries.`,
         ].join("\n"),
         "Doctor warnings",
       );
@@ -1319,7 +1319,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
       note(lines, "Doctor changes");
     } else {
       note(lines, "Unknown config keys");
-      fixHints.push('Run "openclaw doctor --fix" to remove these keys.');
+      fixHints.push('Run "remoteclaw doctor --fix" to remove these keys.');
     }
   }
 

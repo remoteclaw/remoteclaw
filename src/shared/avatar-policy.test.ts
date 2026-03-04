@@ -11,7 +11,7 @@ import {
 describe("avatar policy", () => {
   it("accepts workspace-relative avatar paths and rejects URI schemes", () => {
     expect(isWorkspaceRelativeAvatarPath("avatars/remoteclaw.png")).toBe(true);
-    expect(isWorkspaceRelativeAvatarPath("C:\\\\avatars\\\\openclaw.png")).toBe(true);
+    expect(isWorkspaceRelativeAvatarPath("C:\\\\avatars\\\\remoteclaw.png")).toBe(true);
     expect(isWorkspaceRelativeAvatarPath("https://example.com/avatar.png")).toBe(false);
     expect(isWorkspaceRelativeAvatarPath("data:image/png;base64,AAAA")).toBe(false);
     expect(isWorkspaceRelativeAvatarPath("~/avatar.png")).toBe(false);

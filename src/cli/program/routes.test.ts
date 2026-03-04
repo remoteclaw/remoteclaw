@@ -19,19 +19,19 @@ describe("program routes", () => {
   });
 
   it("returns false when status timeout flag value is missing", async () => {
-    await expectRunFalse(["status"], ["node", "openclaw", "status", "--timeout"]);
+    await expectRunFalse(["status"], ["node", "remoteclaw", "status", "--timeout"]);
   });
 
   it("returns false for sessions route when --store value is missing", async () => {
-    await expectRunFalse(["sessions"], ["node", "openclaw", "sessions", "--store"]);
+    await expectRunFalse(["sessions"], ["node", "remoteclaw", "sessions", "--store"]);
   });
 
   it("returns false for sessions route when --active value is missing", async () => {
-    await expectRunFalse(["sessions"], ["node", "openclaw", "sessions", "--active"]);
+    await expectRunFalse(["sessions"], ["node", "remoteclaw", "sessions", "--active"]);
   });
 
   it("returns false for sessions route when --agent value is missing", async () => {
-    await expectRunFalse(["sessions"], ["node", "openclaw", "sessions", "--agent"]);
+    await expectRunFalse(["sessions"], ["node", "remoteclaw", "sessions", "--agent"]);
   });
 
   it("does not fast-route sessions subcommands", () => {
@@ -43,10 +43,10 @@ describe("program routes", () => {
   });
 
   it("returns false for config get route when path argument is missing", async () => {
-    await expectRunFalse(["config", "get"], ["node", "openclaw", "config", "get", "--json"]);
+    await expectRunFalse(["config", "get"], ["node", "remoteclaw", "config", "get", "--json"]);
   });
 
   it("returns false for config unset route when path argument is missing", async () => {
-    await expectRunFalse(["config", "unset"], ["node", "openclaw", "config", "unset"]);
+    await expectRunFalse(["config", "unset"], ["node", "remoteclaw", "config", "unset"]);
   });
 });

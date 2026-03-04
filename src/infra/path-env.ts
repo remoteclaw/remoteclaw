@@ -58,10 +58,10 @@ function candidateBinDirs(opts: EnsureRemoteClawPathOpts): { prepend: string[]; 
   const prepend: string[] = [];
   const append: string[] = [];
 
-  // Bundled macOS app: `openclaw` lives next to the executable (process.execPath).
+  // Bundled macOS app: `remoteclaw` lives next to the executable (process.execPath).
   try {
     const execDir = path.dirname(execPath);
-    const siblingCli = path.join(execDir, "openclaw");
+    const siblingCli = path.join(execDir, "remoteclaw");
     if (isExecutable(siblingCli)) {
       prepend.push(execDir);
     }
@@ -76,7 +76,7 @@ function candidateBinDirs(opts: EnsureRemoteClawPathOpts): { prepend: string[]; 
     isTruthyEnvValue(process.env.REMOTECLAW_ALLOW_PROJECT_LOCAL_BIN);
   if (allowProjectLocalBin) {
     const localBinDir = path.join(cwd, "node_modules", ".bin");
-    if (isExecutable(path.join(localBinDir, "openclaw"))) {
+    if (isExecutable(path.join(localBinDir, "remoteclaw"))) {
       append.push(localBinDir);
     }
   }
@@ -106,7 +106,7 @@ function candidateBinDirs(opts: EnsureRemoteClawPathOpts): { prepend: string[]; 
 }
 
 /**
- * Best-effort PATH bootstrap so skills that require the `openclaw` CLI can run
+ * Best-effort PATH bootstrap so skills that require the `remoteclaw` CLI can run
  * under launchd/minimal environments (and inside the macOS app bundle).
  */
 export function ensureRemoteClawCliOnPath(opts: EnsureRemoteClawPathOpts = {}) {

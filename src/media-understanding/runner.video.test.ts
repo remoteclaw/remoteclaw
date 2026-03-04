@@ -29,7 +29,7 @@ describe("runCapability video provider wiring", () => {
     let seenHeaders: Record<string, string> | undefined;
 
     await withEnvAsync({ MOONSHOT_API_KEY: "provider-key" }, async () => {
-      await withVideoFixture("openclaw-video-merge", async ({ ctx, media, cache }) => {
+      await withVideoFixture("remoteclaw-video-merge", async ({ ctx, media, cache }) => {
         const cfg = {
           tools: {
             media: {
@@ -91,7 +91,7 @@ describe("runCapability video provider wiring", () => {
         MOONSHOT_API_KEY: "moonshot-key",
       },
       async () => {
-        await withVideoFixture("openclaw-video-auto-moonshot", async ({ ctx, media, cache }) => {
+        await withVideoFixture("remoteclaw-video-auto-moonshot", async ({ ctx, media, cache }) => {
           const cfg = {
             tools: {
               media: {

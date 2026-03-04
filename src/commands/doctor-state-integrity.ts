@@ -425,8 +425,8 @@ export async function noteStateIntegrity(
       warnings.push(
         [
           `- ${missing.length}/${recent.length} recent sessions are missing transcripts.`,
-          `  Verify sessions in store: ${formatCliCommand(`openclaw sessions --store "${absoluteStorePath}"`)}`,
-          `  Preview cleanup impact: ${formatCliCommand(`openclaw sessions cleanup --store "${absoluteStorePath}" --dry-run`)}`,
+          `  Verify sessions in store: ${formatCliCommand(`remoteclaw sessions --store "${absoluteStorePath}"`)}`,
+          `  Preview cleanup impact: ${formatCliCommand(`remoteclaw sessions cleanup --store "${absoluteStorePath}" --dry-run`)}`,
         ].join("\n"),
       );
     }

@@ -19,7 +19,7 @@ vi.mock("./trash.js", () => ({
 }));
 
 vi.mock("./chrome.js", () => ({
-  resolveRemoteClawUserDataDir: vi.fn(() => "/tmp/remoteclaw-test/openclaw/user-data"),
+  resolveRemoteClawUserDataDir: vi.fn(() => "/tmp/remoteclaw-test/remoteclaw/user-data"),
 }));
 
 import { loadConfig, writeConfigFile } from "../config/config.js";
@@ -99,9 +99,9 @@ describe("BrowserProfilesService", () => {
 
     vi.mocked(loadConfig).mockReturnValue({
       browser: {
-        defaultProfile: "openclaw",
+        defaultProfile: "remoteclaw",
         profiles: {
-          openclaw: { cdpPort: 18800, color: "#FF4500" },
+          remoteclaw: { cdpPort: 18800, color: "#FF4500" },
           remote: { cdpUrl: "http://10.0.0.42:9222", color: "#0066CC" },
         },
       },
@@ -125,9 +125,9 @@ describe("BrowserProfilesService", () => {
 
     vi.mocked(loadConfig).mockReturnValue({
       browser: {
-        defaultProfile: "openclaw",
+        defaultProfile: "remoteclaw",
         profiles: {
-          openclaw: { cdpPort: 18800, color: "#FF4500" },
+          remoteclaw: { cdpPort: 18800, color: "#FF4500" },
           work: { cdpPort: 18801, color: "#0066CC" },
         },
       },

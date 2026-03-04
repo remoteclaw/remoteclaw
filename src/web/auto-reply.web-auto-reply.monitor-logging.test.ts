@@ -16,7 +16,7 @@ describe("web auto-reply monitor logging", () => {
 
   it("emits heartbeat logs with connection metadata", async () => {
     vi.useFakeTimers();
-    const logPath = `/tmp/openclaw-heartbeat-${crypto.randomUUID()}.log`;
+    const logPath = `/tmp/remoteclaw-heartbeat-${crypto.randomUUID()}.log`;
     setLoggerOverride({ level: "trace", file: logPath });
 
     const runtime = {
@@ -58,7 +58,7 @@ describe("web auto-reply monitor logging", () => {
   });
 
   it("logs outbound replies to file", async () => {
-    const logPath = `/tmp/openclaw-log-test-${crypto.randomUUID()}.log`;
+    const logPath = `/tmp/remoteclaw-log-test-${crypto.randomUUID()}.log`;
     setLoggerOverride({ level: "trace", file: logPath });
 
     const capture = createWebListenerFactoryCapture();

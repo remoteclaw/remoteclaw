@@ -9,7 +9,7 @@ import { discoverRemoteClawPlugins } from "./discovery.js";
 const tempDirs: string[] = [];
 
 function makeTempDir() {
-  const dir = path.join(os.tmpdir(), `openclaw-plugins-${randomUUID()}`);
+  const dir = path.join(os.tmpdir(), `remoteclaw-plugins-${randomUUID()}`);
   fs.mkdirSync(dir, { recursive: true });
   tempDirs.push(dir);
   return dir;
@@ -99,7 +99,7 @@ describe("discoverRemoteClawPlugins", () => {
       path.join(globalExt, "package.json"),
       JSON.stringify({
         name: "pack",
-        openclaw: { extensions: ["./src/one.ts", "./src/two.ts"] },
+        remoteclaw: { extensions: ["./src/one.ts", "./src/two.ts"] },
       }),
       "utf-8",
     );
@@ -132,7 +132,7 @@ describe("discoverRemoteClawPlugins", () => {
       path.join(globalExt, "package.json"),
       JSON.stringify({
         name: "@remoteclaw/voice-call",
-        openclaw: { extensions: ["./src/index.ts"] },
+        remoteclaw: { extensions: ["./src/index.ts"] },
       }),
       "utf-8",
     );
@@ -159,7 +159,7 @@ describe("discoverRemoteClawPlugins", () => {
       path.join(packDir, "package.json"),
       JSON.stringify({
         name: "@remoteclaw/demo-plugin-dir",
-        openclaw: { extensions: ["./index.js"] },
+        remoteclaw: { extensions: ["./index.js"] },
       }),
       "utf-8",
     );
@@ -182,7 +182,7 @@ describe("discoverRemoteClawPlugins", () => {
       path.join(globalExt, "package.json"),
       JSON.stringify({
         name: "@remoteclaw/escape-pack",
-        openclaw: { extensions: ["../../outside.js"] },
+        remoteclaw: { extensions: ["../../outside.js"] },
       }),
       "utf-8",
     );
@@ -216,7 +216,7 @@ describe("discoverRemoteClawPlugins", () => {
       path.join(globalExt, "package.json"),
       JSON.stringify({
         name: "@remoteclaw/pack",
-        openclaw: { extensions: ["./linked/escape.ts"] },
+        remoteclaw: { extensions: ["./linked/escape.ts"] },
       }),
       "utf-8",
     );

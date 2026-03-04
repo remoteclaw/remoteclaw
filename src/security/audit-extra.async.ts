@@ -293,7 +293,7 @@ export async function collectPluginsTrustFindings(params: {
           sandboxMode,
           agentId: context.agentId,
         });
-        const broadPolicy = isToolAllowedByPolicies("__openclaw_plugin_probe__", policies);
+        const broadPolicy = isToolAllowedByPolicies("__remoteclaw_plugin_probe__", policies);
         const explicitPluginAllow =
           !restrictiveProfile &&
           (hasExplicitPluginAllow({
@@ -391,7 +391,7 @@ export async function collectPluginsTrustFindings(params: {
         title: "Plugin install records drift from installed package versions",
         detail: `Detected plugin install metadata drift:\n${pluginVersionDrift.map((entry) => `- ${entry}`).join("\n")}`,
         remediation:
-          "Run `openclaw plugins update --all` (or reinstall affected plugins) to refresh install metadata.",
+          "Run `remoteclaw plugins update --all` (or reinstall affected plugins) to refresh install metadata.",
       });
     }
   }
@@ -454,7 +454,7 @@ export async function collectPluginsTrustFindings(params: {
         title: "Hook install records drift from installed package versions",
         detail: `Detected hook install metadata drift:\n${hookVersionDrift.map((entry) => `- ${entry}`).join("\n")}`,
         remediation:
-          "Run `openclaw hooks update --all` (or reinstall affected hooks) to refresh install metadata.",
+          "Run `remoteclaw hooks update --all` (or reinstall affected hooks) to refresh install metadata.",
       });
     }
   }
@@ -719,7 +719,7 @@ export async function collectPluginsCodeSafetyFindings(params: {
         title: "Plugin extensions directory scan failed",
         detail: `Static code scan could not list extensions directory: ${String(err)}`,
         remediation:
-          "Check file permissions and plugin layout, then rerun `openclaw security audit --deep`.",
+          "Check file permissions and plugin layout, then rerun `remoteclaw security audit --deep`.",
       });
     },
   });
@@ -755,7 +755,7 @@ export async function collectPluginsCodeSafetyFindings(params: {
         title: `Plugin "${pluginName}" has extension entry path traversal`,
         detail: `Found extension entries that escape the plugin directory:\n${escapedEntries.map((entry) => `  - ${entry}`).join("\n")}`,
         remediation:
-          "Update the plugin manifest so all openclaw.extensions entries stay inside the plugin directory.",
+          "Update the plugin manifest so all remoteclaw.extensions entries stay inside the plugin directory.",
       });
     }
   }

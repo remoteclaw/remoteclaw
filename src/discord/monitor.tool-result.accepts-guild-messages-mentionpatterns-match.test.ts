@@ -135,7 +135,7 @@ function createDefaultThreadConfig(): LoadedConfig {
     agents: {
       defaults: {
         model: "anthropic/claude-opus-4-5",
-        workspace: "/tmp/openclaw",
+        workspace: "/tmp/remoteclaw",
       },
     },
     session: { store: "/tmp/remoteclaw-sessions.json" },
@@ -159,7 +159,7 @@ function createMentionRequiredGuildConfig(
     agents: {
       defaults: {
         model: "anthropic/claude-opus-4-5",
-        workspace: "/tmp/openclaw",
+        workspace: "/tmp/remoteclaw",
       },
     },
     session: { store: "/tmp/remoteclaw-sessions.json" },
@@ -286,7 +286,7 @@ describe("discord tool result dispatch", () => {
       const cfg = createMentionRequiredGuildConfig({
         messages: {
           responsePrefix: "PFX",
-          groupChat: { mentionPatterns: ["\\bopenclaw\\b"] },
+          groupChat: { mentionPatterns: ["\\bremoteclaw\\b"] },
         },
       });
 
@@ -294,7 +294,7 @@ describe("discord tool result dispatch", () => {
       const client = createGuildTextClient();
 
       await handler(
-        createGuildMessageEvent({ messageId: "m2", content: "openclaw: hello" }),
+        createGuildMessageEvent({ messageId: "m2", content: "remoteclaw: hello" }),
         client,
       );
 
@@ -313,7 +313,7 @@ describe("discord tool result dispatch", () => {
           defaults: {
             model: "anthropic/claude-opus-4-5",
             humanDelay: { mode: "off" },
-            workspace: "/tmp/openclaw",
+            workspace: "/tmp/remoteclaw",
           },
         },
         session: { store: "/tmp/remoteclaw-sessions.json" },
@@ -461,7 +461,7 @@ describe("discord tool result dispatch", () => {
     }>();
 
     const cfg = {
-      agent: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/openclaw" },
+      agent: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/remoteclaw" },
       session: { store: "/tmp/remoteclaw-sessions.json" },
       channels: {
         discord: {

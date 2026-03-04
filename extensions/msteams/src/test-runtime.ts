@@ -1,6 +1,6 @@
 import os from "node:os";
 import path from "node:path";
-import type { PluginRuntime } from "remoteclaw/plugin-sdk/compat";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/msteams";
 
 export const msteamsRuntimeStub = {
   state: {

@@ -208,6 +208,8 @@ export async function handleToolsInvokeHttpRequest(
     agentAccountId: accountId,
     agentTo,
     agentThreadId,
+    // HTTP callers consume tool output directly; preserve raw media invoke payloads.
+    allowMediaInvokeCommands: true,
     config: cfg,
     pluginToolAllowlist: collectExplicitAllowlist([
       profilePolicy,

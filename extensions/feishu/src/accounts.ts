@@ -108,16 +108,43 @@ export function resolveFeishuCredentials(cfg?: FeishuConfig): {
   verificationToken?: string;
   domain: FeishuDomain;
 } | null {
-  const appId = cfg?.appId?.trim();
-  const appSecret = cfg?.appSecret?.trim();
+  const normalizeString = (value: unknown): string | undefined => {
+    if (typeof value !== "string") {
+      return undefined;
+    }
+    const trimmed = value.trim();
+    return trimmed ? trimmed : undefined;
+  };
+
+  const resolveSecretLike = (value: unknown): string | undefined => {
+    const asString = normalizeString(value);
+    if (asString) {
+      return asString;
+    }
+
+    // Support SecretRef-style env credentials: { source: "env", id: "VAR_NAME" }
+    if (typeof value === "object" && value !== null) {
+      const rec = value as Record<string, unknown>;
+      const source = normalizeString(rec.source)?.toLowerCase();
+      const id = normalizeString(rec.id);
+      if (source === "env" && id) {
+        return normalizeString(process.env[id]);
+      }
+    }
+
+    return undefined;
+  };
+
+  const appId = resolveSecretLike(cfg?.appId);
+  const appSecret = resolveSecretLike(cfg?.appSecret);
   if (!appId || !appSecret) {
     return null;
   }
   return {
     appId,
     appSecret,
-    encryptKey: cfg?.encryptKey?.trim() || undefined,
-    verificationToken: cfg?.verificationToken?.trim() || undefined,
+    encryptKey: normalizeString(cfg?.encryptKey),
+    verificationToken: resolveSecretLike(cfg?.verificationToken),
     domain: cfg?.domain ?? "feishu",
   };
 }
@@ -154,13 +181,14 @@ export function resolveFeishuAccount(params: {
 
   // Resolve credentials from merged config
   const creds = resolveFeishuCredentials(merged);
+  const accountName = (merged as FeishuAccountConfig).name;
 
   return {
     accountId,
     selectionSource,
     enabled,
     configured: Boolean(creds),
-    name: (merged as FeishuAccountConfig).name?.trim() || undefined,
+    name: typeof accountName === "string" ? accountName.trim() || undefined : undefined,
     appId: creds?.appId,
     appSecret: creds?.appSecret,
     encryptKey: creds?.encryptKey,

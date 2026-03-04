@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock external dependencies
-vi.mock("remoteclaw/plugin-sdk/compat", () => ({
+vi.mock("remoteclaw/plugin-sdk/synology-chat", () => ({
   DEFAULT_ACCOUNT_ID: "default",
   setAccountEnabledInConfigSection: vi.fn((_opts: any) => ({})),
   registerPluginHttpRoute: vi.fn(() => vi.fn()),
@@ -44,7 +44,7 @@ vi.mock("zod", () => ({
 }));
 
 const { createSynologyChatPlugin } = await import("./channel.js");
-const { registerPluginHttpRoute } = await import("remoteclaw/plugin-sdk/compat");
+const { registerPluginHttpRoute } = await import("remoteclaw/plugin-sdk/synology-chat");
 
 describe("createSynologyChatPlugin", () => {
   it("returns a plugin object with all required sections", () => {

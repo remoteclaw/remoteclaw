@@ -1,4 +1,4 @@
-import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/compat";
+import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/voice-call";
 
 type GuardedJsonApiRequestParams = {
   url: string;

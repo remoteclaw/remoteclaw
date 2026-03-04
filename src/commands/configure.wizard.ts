@@ -21,7 +21,14 @@ import type {
   ConfigureWizardParams,
   WizardSection,
 } from "./configure.shared.js";
-import { CONFIGURE_SECTION_OPTIONS, intro, outro, select, text } from "./configure.shared.js";
+import {
+  CONFIGURE_SECTION_OPTIONS,
+  confirm,
+  intro,
+  outro,
+  select,
+  text,
+} from "./configure.shared.js";
 import { formatHealthCheckFailure } from "./health-format.js";
 import { healthCommand } from "./health.js";
 import { noteChannelStatus, setupChannels } from "./onboard-channels.js";
@@ -118,6 +125,145 @@ async function promptChannelMode(runtime: RuntimeEnv): Promise<ChannelsWizardMod
     }),
     runtime,
   ) as ChannelsWizardMode;
+}
+
+async function promptWebToolsConfig(
+  nextConfig: RemoteClawConfig,
+  runtime: RuntimeEnv,
+): Promise<RemoteClawConfig> {
+  const existingSearch = nextConfig.tools?.web?.search;
+  const existingFetch = nextConfig.tools?.web?.fetch;
+  const existingProvider = existingSearch?.provider ?? "brave";
+  const hasPerplexityKey = Boolean(
+    existingSearch?.perplexity?.apiKey || process.env.PERPLEXITY_API_KEY,
+  );
+  const hasBraveKey = Boolean(existingSearch?.apiKey || process.env.BRAVE_API_KEY);
+  const hasSearchKey = existingProvider === "perplexity" ? hasPerplexityKey : hasBraveKey;
+
+  note(
+    [
+      "Web search lets your agent look things up online using the `web_search` tool.",
+      "Choose a provider: Perplexity Search (recommended) or Brave Search.",
+      "Both return structured results (title, URL, snippet) for fast research.",
+      "Docs: https://docs.remoteclaw.org/tools/web",
+    ].join("\n"),
+    "Web search",
+  );
+
+  const enableSearch = guardCancel(
+    await confirm({
+      message: "Enable web_search?",
+      initialValue: existingSearch?.enabled ?? hasSearchKey,
+    }),
+    runtime,
+  );
+
+  let nextSearch = {
+    ...existingSearch,
+    enabled: enableSearch,
+  };
+
+  if (enableSearch) {
+    const providerChoice = guardCancel(
+      await select({
+        message: "Choose web search provider",
+        options: [
+          {
+            value: "perplexity",
+            label: "Perplexity Search",
+          },
+          {
+            value: "brave",
+            label: "Brave Search",
+          },
+        ],
+        initialValue: existingProvider,
+      }),
+      runtime,
+    );
+
+    nextSearch = { ...nextSearch, provider: providerChoice };
+
+    if (providerChoice === "perplexity") {
+      const hasKey = Boolean(existingSearch?.perplexity?.apiKey);
+      const keyInput = guardCancel(
+        await text({
+          message: hasKey
+            ? "Perplexity API key (leave blank to keep current or use PERPLEXITY_API_KEY)"
+            : "Perplexity API key (paste it here; leave blank to use PERPLEXITY_API_KEY)",
+          placeholder: hasKey ? "Leave blank to keep current" : "pplx-...",
+        }),
+        runtime,
+      );
+      const key = String(keyInput ?? "").trim();
+      if (key) {
+        nextSearch = {
+          ...nextSearch,
+          perplexity: { ...existingSearch?.perplexity, apiKey: key },
+        };
+      } else if (!hasKey && !process.env.PERPLEXITY_API_KEY) {
+        note(
+          [
+            "No key stored yet, so web_search will stay unavailable.",
+            "Store a key here or set PERPLEXITY_API_KEY in the Gateway environment.",
+            "Get your API key at: https://www.perplexity.ai/settings/api",
+            "Docs: https://docs.remoteclaw.org/tools/web",
+          ].join("\n"),
+          "Web search",
+        );
+      }
+    } else {
+      const hasKey = Boolean(existingSearch?.apiKey);
+      const keyInput = guardCancel(
+        await text({
+          message: hasKey
+            ? "Brave Search API key (leave blank to keep current or use BRAVE_API_KEY)"
+            : "Brave Search API key (paste it here; leave blank to use BRAVE_API_KEY)",
+          placeholder: hasKey ? "Leave blank to keep current" : "BSA...",
+        }),
+        runtime,
+      );
+      const key = String(keyInput ?? "").trim();
+      if (key) {
+        nextSearch = { ...nextSearch, apiKey: key };
+      } else if (!hasKey && !process.env.BRAVE_API_KEY) {
+        note(
+          [
+            "No key stored yet, so web_search will stay unavailable.",
+            "Store a key here or set BRAVE_API_KEY in the Gateway environment.",
+            "Get your API key at: https://brave.com/search/api/",
+            "Docs: https://docs.remoteclaw.org/tools/web",
+          ].join("\n"),
+          "Web search",
+        );
+      }
+    }
+  }
+
+  const enableFetch = guardCancel(
+    await confirm({
+      message: "Enable web_fetch (keyless HTTP fetch)?",
+      initialValue: existingFetch?.enabled ?? true,
+    }),
+    runtime,
+  );
+
+  const nextFetch = {
+    ...existingFetch,
+    enabled: enableFetch,
+  };
+
+  return {
+    ...nextConfig,
+    tools: {
+      ...nextConfig.tools,
+      web: {
+        ...nextConfig.tools?.web,
+        search: nextSearch,
+        fetch: nextFetch,
+      },
+    },
+  };
 }
 
 export async function runConfigureWizard(
@@ -331,6 +477,10 @@ export async function runConfigureWizard(
         nextConfig = await promptAuthConfig(nextConfig, runtime, prompter);
       }
 
+      if (selected.includes("web")) {
+        nextConfig = await promptWebToolsConfig(nextConfig, runtime);
+      }
+
       if (selected.includes("gateway")) {
         const gateway = await promptGatewayConfig(nextConfig, runtime);
         nextConfig = gateway.config;
@@ -373,6 +523,11 @@ export async function runConfigureWizard(
 
         if (choice === "model") {
           nextConfig = await promptAuthConfig(nextConfig, runtime, prompter);
+          await persistConfig();
+        }
+
+        if (choice === "web") {
+          nextConfig = await promptWebToolsConfig(nextConfig, runtime);
           await persistConfig();
         }
 

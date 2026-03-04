@@ -1,0 +1,72 @@
+---
+summary: "Decision guide for choosing between OpenClaw and RemoteClaw"
+read_when:
+  - You are evaluating whether to use OpenClaw or RemoteClaw
+  - You want to understand the trade-offs between the two projects
+title: "OpenClaw or RemoteClaw?"
+---
+
+# OpenClaw or RemoteClaw?
+
+RemoteClaw is a fork of OpenClaw that replaced the embedded AI execution engine with a middleware architecture. Both projects are actively maintained but serve different use cases.
+
+## Quick decision
+
+**Already using Claude Code, Gemini CLI, Codex CLI, or OpenCode?**
+Use **RemoteClaw**. It connects your existing agent to messaging channels without adding another LLM layer.
+
+**Want a self-contained platform with built-in model providers and a skills marketplace?**
+Use **OpenClaw**. It includes everything in one process.
+
+## Decision tree
+
+| If you want…                                                                               | Choose         |
+| ------------------------------------------------------------------------------------------ | -------------- |
+| Connect an existing CLI agent (Claude, Gemini, Codex, OpenCode) to WhatsApp/Telegram/Slack | **RemoteClaw** |
+| Switch between multiple agent runtimes via config                                          | **RemoteClaw** |
+| Middleware-only architecture (no embedded LLM overhead)                                    | **RemoteClaw** |
+| MCP-first tool system (50 tools via MCP server)                                            | **RemoteClaw** |
+| Subprocess isolation (agent crashes don't crash the gateway)                               | **RemoteClaw** |
+| Consumer onboarding wizard with 30+ LLM provider picker                                    | **OpenClaw**   |
+| Built-in skills marketplace (ClawHub)                                                      | **OpenClaw**   |
+| In-process model catalog (switch between OpenAI, Anthropic, Google, etc.)                  | **OpenClaw**   |
+| Docker sandbox for code execution                                                          | **OpenClaw**   |
+| Centralized OAuth for all providers                                                        | **OpenClaw**   |
+
+## Architecture comparison
+
+<Tabs>
+  <Tab title="RemoteClaw">
+    ```
+    RemoteClaw (middleware)
+    ├── ChannelBridge (message routing + session tracking)
+    ├── CLI subprocess (claude, gemini, codex, or opencode)
+    │   ├── LLM interaction (handled by the CLI)
+    │   ├── Tool execution (handled by the CLI)
+    │   └── Conversation management (handled by the CLI)
+    └── MCP server (injected into subprocess for gateway access)
+    ```
+
+    The CLI agent owns the agentic loop. RemoteClaw handles session persistence, message delivery, and MCP tool bridging.
+
+  </Tab>
+  <Tab title="OpenClaw">
+    ```
+    OpenClaw (single process)
+    ├── Pi execution engine (in-process LLM orchestration)
+    ├── Model provider ecosystem (OpenAI, Anthropic, Google, etc.)
+    ├── Tool execution (in-process)
+    ├── Skills marketplace (ClawHub)
+    └── Session management
+    ```
+
+    Everything runs in one process. OpenClaw manages the model, tools, and conversation directly.
+
+  </Tab>
+</Tabs>
+
+For a deeper architectural comparison, see [Middleware Architecture — How This Differs from OpenClaw](/concepts/middleware-architecture#how-this-differs-from-openclaw).
+
+## Switching from OpenClaw
+
+If you decide to switch, see [Migrate from OpenClaw](/install/from-openclaw) for step-by-step instructions and [Breaking changes](/install/breaking-changes-from-openclaw) for what to expect.

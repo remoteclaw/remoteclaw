@@ -19,8 +19,8 @@ import {
   type ChannelPlugin,
   type ChannelStatusIssue,
   type OpenClawConfig,
-} from "remoteclaw/plugin-sdk/compat";
-import { GoogleChatConfigSchema } from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/googlechat";
+import { GoogleChatConfigSchema } from "remoteclaw/plugin-sdk/googlechat";
 import {
   listGoogleChatAccountIds,
   resolveDefaultGoogleChatAccountId,

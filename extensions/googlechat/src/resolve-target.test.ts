@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { installCommonResolveTargetErrorCases } from "../../shared/resolve-target-test-helpers.js";
 
-vi.mock("remoteclaw/plugin-sdk", () => ({
+const runtimeMocks = vi.hoisted(() => ({
+  chunkMarkdownText: vi.fn((text: string) => [text]),
+  fetchRemoteMedia: vi.fn(),
+}));
+
+vi.mock("remoteclaw/plugin-sdk/googlechat", () => ({
   getChatChannelMeta: () => ({ id: "googlechat", label: "Google Chat" }),
   missingTargetError: (provider: string, hint: string) =>
     new Error(`Delivering to ${provider} requires target ${hint}`),
@@ -66,6 +71,9 @@ vi.mock("./targets.js", () => ({
   resolveGoogleChatOutboundSpace: vi.fn(),
 }));
 
+import { resolveChannelMediaMaxBytes } from "remoteclaw/plugin-sdk/googlechat";
+import { resolveGoogleChatAccount } from "./accounts.js";
+import { sendGoogleChatMessage, uploadGoogleChatAttachment } from "./api.js";
 import { googlechatPlugin } from "./channel.js";
 
 const resolveTarget = googlechatPlugin.outbound!.resolveTarget!;

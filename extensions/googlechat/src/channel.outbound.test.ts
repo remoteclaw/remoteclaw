@@ -1,4 +1,4 @@
-import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk/core";
+import type { OpenClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk/googlechat";
 import { describe, expect, it, vi } from "vitest";
 
 const uploadGoogleChatAttachmentMock = vi.hoisted(() => vi.fn());

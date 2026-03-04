@@ -173,10 +173,10 @@ const logRunner = (message, deps) => {
   if (deps.env.REMOTECLAW_RUNNER_LOG === "0") {
     return;
   }
-  deps.stderr.write(`[openclaw] ${message}\n`);
+  deps.stderr.write(`[remoteclaw] ${message}\n`);
 };
 
-const runOpenClaw = async (deps) => {
+const runRemoteClaw = async (deps) => {
   const nodeProcess = deps.spawn(deps.execPath, ["remoteclaw.mjs", ...deps.args], {
     cwd: deps.cwd,
     env: deps.env,
@@ -227,7 +227,7 @@ export async function runNodeMain(params = {}) {
   deps.configFiles = [path.join(deps.cwd, "tsconfig.json"), path.join(deps.cwd, "package.json")];
 
   if (!shouldBuild(deps)) {
-    return await runOpenClaw(deps);
+    return await runRemoteClaw(deps);
   }
 
   logRunner("Building TypeScript (dist is stale).", deps);
@@ -250,7 +250,7 @@ export async function runNodeMain(params = {}) {
     return buildRes.exitCode;
   }
   writeBuildStamp(deps);
-  return await runOpenClaw(deps);
+  return await runRemoteClaw(deps);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {

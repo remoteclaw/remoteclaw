@@ -10,7 +10,7 @@ import {
   requestBodyErrorToText,
   resolveSingleWebhookTarget,
   resolveWebhookTargets,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/bluebubbles";
 import { createBlueBubblesDebounceRegistry } from "./monitor-debounce.js";
 import { normalizeWebhookMessage, normalizeWebhookReaction } from "./monitor-normalize.js";
 import { logVerbose, processMessage, processReaction } from "./monitor-processing.js";

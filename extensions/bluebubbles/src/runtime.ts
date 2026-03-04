@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "remoteclaw/plugin-sdk/compat";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/bluebubbles";
 
 const runtimeStore = createPluginRuntimeStore<PluginRuntime>("BlueBubbles runtime not initialized");
 type LegacyRuntimeLogShape = { log?: (message: string) => void };

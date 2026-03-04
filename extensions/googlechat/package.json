@@ -8,7 +8,7 @@
     "google-auth-library": "^10.6.1"
   },
   "peerDependencies": {
-    "remoteclaw": ">=2026.1.26"
+    "remoteclaw": "workspace:*"
   },
   "remoteclaw": {
     "extensions": [

@@ -203,7 +203,7 @@ On Windows, add the output of `npm prefix -g` to your PATH.
 Then open a new terminal (or `rehash` in zsh / `hash -r` in bash).
 </Accordion>
 
-## Update / uninstall
+## Update / migrate / uninstall
 
 <CardGroup cols={3}>
   <Card title="Updating" href="/install/updating" icon="refresh-cw">
@@ -211,6 +211,12 @@ Then open a new terminal (or `rehash` in zsh / `hash -r` in bash).
   </Card>
   <Card title="Migrating" href="/install/migrating" icon="arrow-right">
     Move to a new machine.
+  </Card>
+  <Card title="From OpenClaw" href="/install/from-openclaw" icon="arrow-right-left">
+    Migrate an OpenClaw installation to RemoteClaw.
+  </Card>
+  <Card title="Breaking changes" href="/install/breaking-changes-from-openclaw" icon="triangle-alert">
+    What changed from OpenClaw.
   </Card>
   <Card title="Uninstall" href="/install/uninstall" icon="trash-2">
     Remove RemoteClaw completely.

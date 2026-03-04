@@ -758,7 +758,7 @@
               },
               {
                 "group": "Guides",
-                "pages": ["start/remoteclaw"]
+                "pages": ["start/remoteclaw", "start/openclaw-or-remoteclaw"]
               }
             ]
           },
@@ -781,7 +781,13 @@
               },
               {
                 "group": "Maintenance",
-                "pages": ["install/updating", "install/migrating", "install/uninstall"]
+                "pages": [
+                  "install/updating",
+                  "install/migrating",
+                  "install/from-openclaw",
+                  "install/breaking-changes-from-openclaw",
+                  "install/uninstall"
+                ]
               },
               {
                 "group": "Hosting and deployment",

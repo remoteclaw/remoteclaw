@@ -1,0 +1,189 @@
+---
+summary: "Migrate an existing OpenClaw installation to RemoteClaw"
+read_when:
+  - You are running OpenClaw and want to switch to RemoteClaw
+  - You need to understand what the import command does
+  - You want to know what migrates and what does not
+title: "Migrate from OpenClaw"
+---
+
+# Migrate from OpenClaw
+
+RemoteClaw can import your existing OpenClaw config, session history, cron jobs, and channel settings. This guide walks through the full migration.
+
+<Note>
+RemoteClaw does **not** silently fall back to reading `~/.openclaw`. Migration is explicit — you run `remoteclaw import` once, then everything lives under `~/.remoteclaw`.
+</Note>
+
+## Before you start
+
+Read [Breaking changes from OpenClaw](/install/breaking-changes-from-openclaw) to understand what features no longer exist in RemoteClaw. If you rely heavily on the skills marketplace, embedded model catalog, or Docker sandbox, RemoteClaw may not be the right fit — see [OpenClaw or RemoteClaw?](/start/openclaw-or-remoteclaw) for a decision guide.
+
+## Migration steps
+
+<Steps>
+  <Step title="Back up your OpenClaw config">
+    Copy your existing OpenClaw state directory before making changes:
+
+    ```bash
+    cp -r ~/.openclaw ~/.openclaw-backup
+    ```
+
+  </Step>
+
+  <Step title="Install RemoteClaw">
+    Install RemoteClaw globally. If you already have Node 22+:
+
+    ```bash
+    npm install -g remoteclaw@latest
+    ```
+
+    Or use the installer script, which handles Node detection automatically:
+
+    ```bash
+    curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --no-onboard
+    ```
+
+    Pass `--no-onboard` since you'll import your existing config instead of running the onboarding wizard from scratch.
+
+    See [Install](/install/index) for all install methods.
+
+  </Step>
+
+  <Step title="Run the import command">
+    Import your OpenClaw config into RemoteClaw:
+
+    ```bash
+    remoteclaw import ~/.openclaw
+    ```
+
+    This command:
+
+    - Copies all files from `~/.openclaw` into `~/.remoteclaw`
+    - Renames `openclaw.json` config files to `remoteclaw.json`
+    - Rewrites `${OPENCLAW_*}` template variables to `${REMOTECLAW_*}` in JSON and JSON5 files
+    - Rewrites `OPENCLAW_*` string values (e.g. env var references) to `REMOTECLAW_*`
+    - Rewrites `/.openclaw/` path strings to `/.remoteclaw/`
+
+    <Tip>
+    Preview what will happen without writing any files:
+
+    ```bash
+    remoteclaw import ~/.openclaw --dry-run
+    ```
+
+    For CI or scripted migrations, use `--non-interactive --yes` to suppress all prompts and auto-confirm:
+
+    ```bash
+    remoteclaw import ~/.openclaw --non-interactive --yes
+    ```
+    </Tip>
+
+    <Note>
+    Only JSON and JSON5 files are transformed. Other file types (credentials, session files, binary data) are copied as-is.
+    </Note>
+
+  </Step>
+
+  <Step title="Update environment variables">
+    The import command transforms config files but does **not** touch your shell profile. If you have `OPENCLAW_*` env vars in your `~/.zshrc`, `~/.bashrc`, or `.env` files, rename them manually:
+
+    | Old variable | New variable |
+    | --- | --- |
+    | `OPENCLAW_GATEWAY_TOKEN` | `REMOTECLAW_GATEWAY_TOKEN` |
+    | `OPENCLAW_HOME` | `REMOTECLAW_HOME` |
+    | `OPENCLAW_STATE_DIR` | `REMOTECLAW_STATE_DIR` |
+    | `OPENCLAW_CONFIG_PATH` | `REMOTECLAW_CONFIG_PATH` |
+
+    After editing, reload your shell (`source ~/.zshrc` or open a new terminal).
+
+  </Step>
+
+  <Step title="Configure an agent runtime">
+    OpenClaw used an embedded execution engine (Pi) with a built-in model catalog. RemoteClaw does not — it launches a CLI agent as a subprocess instead.
+
+    You need one of these CLI agents installed and configured:
+
+    | Runtime | CLI | API key env var |
+    | --- | --- | --- |
+    | `claude` (default) | [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview) | `ANTHROPIC_API_KEY` |
+    | `gemini` | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `GEMINI_API_KEY` or `GOOGLE_API_KEY` |
+    | `codex` | [Codex CLI](https://github.com/openai/codex) | `OPENAI_API_KEY` |
+    | `opencode` | [OpenCode](https://github.com/opencode-ai/opencode) | Provider-specific |
+
+    Set the runtime in your config:
+
+    ```json5
+    // ~/.remoteclaw/remoteclaw.json
+    {
+      "agentRuntime": "claude"  // or "gemini", "codex", "opencode"
+    }
+    ```
+
+    See [Configuration](/configuration) for all runtime options.
+
+  </Step>
+
+  <Step title="Verify the migration">
+    Run the doctor command to check for issues:
+
+    ```bash
+    remoteclaw doctor
+    ```
+
+    Then start the gateway and send a test message through one of your channels:
+
+    ```bash
+    remoteclaw start
+    ```
+
+  </Step>
+
+  <Step title="Uninstall OpenClaw (optional)">
+    Once you've confirmed RemoteClaw is working:
+
+    ```bash
+    npm uninstall -g openclaw
+    ```
+
+    You can remove `~/.openclaw` once you're confident the migration is complete (keep `~/.openclaw-backup` a bit longer just in case).
+
+  </Step>
+</Steps>
+
+## What gets migrated
+
+| Category                       | Migrated? | Notes                                                                      |
+| ------------------------------ | --------- | -------------------------------------------------------------------------- |
+| Config files (`openclaw.json`) | Yes       | Renamed to `remoteclaw.json`, env vars rewritten                           |
+| Session history                | Yes       | Copied as-is                                                               |
+| Cron job definitions           | Yes       | Copied as-is                                                               |
+| Channel settings               | Yes       | Copied as-is                                                               |
+| Custom extensions              | Yes       | Copied as-is, but extensions using Pi APIs need manual updates (see below) |
+
+## What does NOT migrate
+
+These OpenClaw features have been removed in RemoteClaw. Config referencing them is still copied but will have no effect.
+
+- **Skills system and ClawHub marketplace** — agents bring their own capabilities (via MCP or built-in tools)
+- **Model catalog and 30+ LLM provider configs** — one CLI agent = one provider; no in-process model switching
+- **Embedded Pi execution engine** — replaced by subprocess CLI agents
+- **Docker sandbox** — agents manage their own sandboxing
+- **Centralized OAuth** — agents use their own API keys via env vars
+- **Wizard onboarding** — replaced with direct config file editing (or `remoteclaw onboard`)
+
+See [Breaking changes from OpenClaw](/install/breaking-changes-from-openclaw) for the full list of what's removed and what's new.
+
+## Edge cases
+
+### Custom extensions using Pi APIs
+
+If you wrote custom extensions that called OpenClaw's Pi execution engine directly, those calls will fail in RemoteClaw. You'll need to update them to work with the subprocess-based agent runtime or use MCP tools instead. See [Middleware Architecture](/concepts/middleware-architecture) for how the new architecture works.
+
+### Multiple OpenClaw installations
+
+The import command takes a single source path. If you have multiple OpenClaw installations (e.g. different machines synced to the same host), import the primary one first, verify, then manually merge any unique config from the others.
+
+### Existing `~/.remoteclaw` directory
+
+If `~/.remoteclaw` already exists, the import command will prompt before merging. Use `--yes` to skip the prompt, `--dry-run` to preview the merge first, or `--non-interactive --yes` for unattended runs.

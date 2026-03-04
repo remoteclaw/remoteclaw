@@ -1,5 +1,5 @@
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/core";
+import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/twitch";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/twitch";
 import { twitchPlugin } from "./src/plugin.js";
 import { setTwitchRuntime } from "./src/runtime.js";
 

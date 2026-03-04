@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "remoteclaw/plugin-sdk/compat";
+import type { OpenClawConfig } from "remoteclaw/plugin-sdk/twitch";
 import type { TwitchAccountConfig } from "./types.js";
 
 /**

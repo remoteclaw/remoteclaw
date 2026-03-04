@@ -11,7 +11,7 @@ import {
   type ChannelPlugin,
   type RemoteClawConfig,
   type ChannelSetupInput,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import { waitForAbortSignal } from "../../../src/infra/abort-signal.js";
 import {
   listNextcloudTalkAccountIds,

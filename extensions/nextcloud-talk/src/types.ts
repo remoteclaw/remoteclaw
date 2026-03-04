@@ -3,7 +3,8 @@ import type {
   DmConfig,
   DmPolicy,
   GroupPolicy,
-} from "remoteclaw/plugin-sdk";
+  SecretInput,
+} from "remoteclaw/plugin-sdk/compat";
 
 export type { DmPolicy, GroupPolicy };
 

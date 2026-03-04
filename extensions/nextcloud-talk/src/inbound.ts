@@ -14,7 +14,7 @@ import {
   type OutboundReplyPayload,
   type RemoteClawConfig,
   type RuntimeEnv,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import type { ResolvedNextcloudTalkAccount } from "./accounts.js";
 import {
   normalizeNextcloudTalkAllowlist,

@@ -1,4 +1,4 @@
-import type { ChannelAccountSnapshot, RuntimeEnv } from "remoteclaw/plugin-sdk/compat";
+import type { ChannelAccountSnapshot, RuntimeEnv } from "remoteclaw/plugin-sdk/mattermost";
 import WebSocket from "ws";
 import type { MattermostPost } from "./client.js";
 import { rawDataToString } from "./monitor-helpers.js";

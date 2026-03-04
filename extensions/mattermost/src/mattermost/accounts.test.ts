@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "remoteclaw/plugin-sdk/compat";
+import type { OpenClawConfig } from "remoteclaw/plugin-sdk/mattermost";
 import { describe, expect, it } from "vitest";
 import { resolveDefaultMattermostAccountId } from "./accounts.js";
 

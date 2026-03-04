@@ -1,5 +1,5 @@
-import type { OpenClawConfig } from "remoteclaw/plugin-sdk/compat";
-import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk/compat";
+import type { OpenClawConfig } from "remoteclaw/plugin-sdk/mattermost";
+import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk/mattermost";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const { sendMessageMattermostMock } = vi.hoisted(() => ({
   sendMessageMattermostMock: vi.fn(),

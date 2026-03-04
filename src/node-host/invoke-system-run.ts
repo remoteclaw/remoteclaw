@@ -263,6 +263,7 @@ export function hardenApprovedExecutionPaths(params: {
   | {
       ok: true;
       argv: string[];
+      argvChanged: boolean;
       cwd: string | undefined;
       approvedCwdSnapshot: ApprovedCwdSnapshot | undefined;
     }
@@ -271,6 +272,7 @@ export function hardenApprovedExecutionPaths(params: {
     return {
       ok: true,
       argv: params.argv,
+      argvChanged: false,
       cwd: params.cwd,
       approvedCwdSnapshot: undefined,
     };
@@ -288,28 +290,62 @@ export function hardenApprovedExecutionPaths(params: {
   }
 
   if (params.shellCommand !== null || params.argv.length === 0) {
-    return { ok: true, argv: params.argv, cwd: hardenedCwd, approvedCwdSnapshot };
+    return {
+      ok: true,
+      argv: params.argv,
+      argvChanged: false,
+      cwd: hardenedCwd,
+      approvedCwdSnapshot,
+    };
   }
 
   const argv = [...params.argv];
   const rawExecutable = argv[0] ?? "";
   if (!isPathLikeExecutableToken(rawExecutable)) {
-    return { ok: true, argv, cwd: hardenedCwd, approvedCwdSnapshot };
+    return { ok: true, argv, argvChanged: false, cwd: hardenedCwd, approvedCwdSnapshot };
   }
 
   const base = hardenedCwd ?? process.cwd();
   const candidate = path.isAbsolute(rawExecutable)
     ? rawExecutable
     : path.resolve(base, rawExecutable);
+  let pinnedExecutable: string;
   try {
-    argv[0] = fs.realpathSync(candidate);
+    pinnedExecutable = fs.realpathSync(candidate);
   } catch {
     return {
       ok: false,
       message: "SYSTEM_RUN_DENIED: approval requires a stable executable path",
     };
   }
-  return { ok: true, argv, cwd: hardenedCwd, approvedCwdSnapshot };
+
+  if (pinnedExecutable === params.argv[0]) {
+    return {
+      ok: true,
+      argv: params.argv,
+      argvChanged: false,
+      cwd: hardenedCwd,
+      approvedCwdSnapshot,
+    };
+  }
+
+  argv[0] = pinnedExecutable;
+  return { ok: true, argv, argvChanged: true, cwd: hardenedCwd, approvedCwdSnapshot };
+}
+
+export function formatExecCommand(argv: string[]): string {
+  return argv
+    .map((arg) => {
+      if (arg.length === 0) {
+        return '""';
+      }
+      const needsQuotes = /\s|"/.test(arg);
+      if (!needsQuotes) {
+        return arg;
+      }
+      return `"${arg.replace(/"/g, '\\"')}"`;
+    })
+    .join(" ");
 }
 
 export function buildSystemRunApprovalPlanV2(params: {
@@ -338,13 +374,16 @@ export function buildSystemRunApprovalPlanV2(params: {
   if (!hardening.ok) {
     return { ok: false, message: hardening.message };
   }
+  const rawCommand = hardening.argvChanged
+    ? formatExecCommand(hardening.argv) || null
+    : command.cmdText.trim() || null;
   return {
     ok: true,
     plan: {
       version: 2,
       argv: hardening.argv,
       cwd: hardening.cwd ?? null,
-      rawCommand: command.cmdText.trim() || null,
+      rawCommand,
       agentId: normalizeString(params.agentId),
       sessionKey: normalizeString(params.sessionKey),
     },

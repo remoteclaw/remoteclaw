@@ -8,55 +8,58 @@ const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
 const isWindows = process.platform === "win32";
 const localWorkers = Math.max(4, Math.min(16, os.cpus().length));
 const ciWorkers = isWindows ? 2 : 3;
+const pluginSdkSubpaths = [
+  "account-id",
+  "core",
+  "compat",
+  "telegram",
+  "discord",
+  "slack",
+  "signal",
+  "imessage",
+  "whatsapp",
+  "line",
+  "msteams",
+  "acpx",
+  "bluebubbles",
+  "copilot-proxy",
+  "device-pair",
+  "diagnostics-otel",
+  "diffs",
+  "feishu",
+  "google-gemini-cli-auth",
+  "googlechat",
+  "irc",
+  "llm-task",
+  "lobster",
+  "matrix",
+  "mattermost",
+  "minimax-portal-auth",
+  "nextcloud-talk",
+  "nostr",
+  "open-prose",
+  "phone-control",
+  "qwen-portal-auth",
+  "synology-chat",
+  "talk-voice",
+  "test-utils",
+  "thread-ownership",
+  "tlon",
+  "twitch",
+  "voice-call",
+  "zalo",
+  "zalouser",
+  "keyed-async-queue",
+] as const;
 
 export default defineConfig({
   resolve: {
     // Keep this ordered: the base `remoteclaw/plugin-sdk` alias is a prefix match.
     alias: [
-      {
-        find: "remoteclaw/plugin-sdk/account-id",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "account-id.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/core",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "core.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/compat",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "compat.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/telegram",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "telegram.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/discord",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "discord.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/slack",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "slack.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/signal",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "signal.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/imessage",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "imessage.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/whatsapp",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "whatsapp.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/line",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "line.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/keyed-async-queue",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "keyed-async-queue.ts"),
-      },
+      ...pluginSdkSubpaths.map((subpath) => ({
+        find: `remoteclaw/plugin-sdk/${subpath}`,
+        replacement: path.join(repoRoot, "src", "plugin-sdk", `${subpath}.ts`),
+      })),
       {
         find: "remoteclaw/plugin-sdk",
         replacement: path.join(repoRoot, "src", "plugin-sdk", "index.ts"),

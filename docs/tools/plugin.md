@@ -114,12 +114,31 @@ authoring plugins:
 - `remoteclaw/plugin-sdk/imessage` for iMessage channel plugins.
 - `remoteclaw/plugin-sdk/whatsapp` for WhatsApp channel plugins.
 - `remoteclaw/plugin-sdk/line` for LINE channel plugins.
+- `remoteclaw/plugin-sdk/msteams` for the bundled Microsoft Teams plugin surface.
+- Bundled extension-specific subpaths are also available:
+  `remoteclaw/plugin-sdk/acpx`, `remoteclaw/plugin-sdk/bluebubbles`,
+  `remoteclaw/plugin-sdk/copilot-proxy`, `remoteclaw/plugin-sdk/device-pair`,
+  `remoteclaw/plugin-sdk/diagnostics-otel`, `remoteclaw/plugin-sdk/diffs`,
+  `remoteclaw/plugin-sdk/feishu`,
+  `remoteclaw/plugin-sdk/google-gemini-cli-auth`, `remoteclaw/plugin-sdk/googlechat`,
+  `remoteclaw/plugin-sdk/irc`, `remoteclaw/plugin-sdk/llm-task`,
+  `remoteclaw/plugin-sdk/lobster`, `remoteclaw/plugin-sdk/matrix`,
+  `remoteclaw/plugin-sdk/mattermost`,
+  `remoteclaw/plugin-sdk/minimax-portal-auth`,
+  `remoteclaw/plugin-sdk/nextcloud-talk`, `remoteclaw/plugin-sdk/nostr`,
+  `remoteclaw/plugin-sdk/open-prose`, `remoteclaw/plugin-sdk/phone-control`,
+  `remoteclaw/plugin-sdk/qwen-portal-auth`, `remoteclaw/plugin-sdk/synology-chat`,
+  `remoteclaw/plugin-sdk/talk-voice`, `remoteclaw/plugin-sdk/test-utils`,
+  `remoteclaw/plugin-sdk/thread-ownership`, `remoteclaw/plugin-sdk/tlon`,
+  `remoteclaw/plugin-sdk/twitch`, `remoteclaw/plugin-sdk/voice-call`,
+  `remoteclaw/plugin-sdk/zalo`, and `remoteclaw/plugin-sdk/zalouser`.
 
 Compatibility note:
 
 - `remoteclaw/plugin-sdk` remains supported for existing external plugins.
-- New and migrated bundled plugins should use channel subpaths and `core`; use
-  `compat` only when broader shared helpers are required.
+- New and migrated bundled plugins should use channel or extension-specific
+  subpaths; use `core` for generic surfaces and `compat` only when broader
+  shared helpers are required.
 
 Performance note:
 
@@ -148,13 +167,20 @@ RemoteClaw scans, in order:
 - `~/.remoteclaw/extensions/*.ts`
 - `~/.remoteclaw/extensions/*/index.ts`
 
-4. Bundled extensions (shipped with RemoteClaw, **disabled by default**)
+4. Bundled extensions (shipped with RemoteClaw, mostly disabled by default)
 
 - `<remoteclaw>/extensions/*`
 
-Bundled plugins must be enabled explicitly via `plugins.entries.<id>.enabled`
-or `remoteclaw plugins enable <id>`. Installed plugins are enabled by default,
-but can be disabled the same way.
+Most bundled plugins must be enabled explicitly via
+`plugins.entries.<id>.enabled` or `remoteclaw plugins enable <id>`.
+
+Default-on bundled plugin exceptions:
+
+- `device-pair`
+- `phone-control`
+- `talk-voice`
+
+Installed plugins are enabled by default, but can be disabled the same way.
 
 Hardening notes:
 

@@ -1,4 +1,4 @@
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk/compat";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/tlon";
 import type { Foreigns } from "../urbit/foreigns.js";
 import { formatChangesDate } from "./utils.js";
 

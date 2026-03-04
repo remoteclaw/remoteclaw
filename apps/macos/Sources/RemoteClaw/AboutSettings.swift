@@ -51,8 +51,8 @@ struct AboutSettings: View {
                     title: "GitHub",
                     url: "https://github.com/remoteclaw/remoteclaw")
                 AboutLinkRow(icon: "globe", title: "Website", url: "https://remoteclaw.com")
-                AboutLinkRow(icon: "bird", title: "Twitter", url: "https://twitter.com/steipete")
-                AboutLinkRow(icon: "envelope", title: "Email", url: "mailto:peter@steipete.me")
+                AboutLinkRow(icon: "bubble.left.and.bubble.right", title: "Discussions", url: "https://github.com/remoteclaw/remoteclaw/discussions")
+                AboutLinkRow(icon: "exclamationmark.triangle", title: "Issues", url: "https://github.com/remoteclaw/remoteclaw/issues")
             }
             .frame(maxWidth: .infinity)
             .multilineTextAlignment(.center)

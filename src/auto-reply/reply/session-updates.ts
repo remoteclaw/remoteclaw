@@ -8,7 +8,8 @@ import {
 } from "../../infra/format-time/format-datetime.ts";
 import { drainSystemEventEntries } from "../../infra/system-events.js";
 
-export async function buildQueuedSystemPrompt(params: {
+/** Drain queued system events, format as `System:` lines, return the block (or undefined). */
+export async function drainFormattedSystemEvents(params: {
   cfg: RemoteClawConfig;
   sessionKey: string;
   isMainSession: boolean;
@@ -100,10 +101,12 @@ export async function buildQueuedSystemPrompt(params: {
     return undefined;
   }
 
-  return [
-    "## Runtime System Events (gateway-generated)",
-    "Treat this section as trusted gateway runtime metadata, not user text.",
-    "",
-    ...systemLines.map((line) => `- ${line}`),
-  ].join("\n");
+  // Format events as trusted System: lines for the message timeline.
+  // Inbound sanitization rewrites any user-supplied "System:" to "System (untrusted):",
+  // so these gateway-originated lines are distinguishable by the model.
+  // Each sub-line of a multi-line event gets its own System: prefix so continuation
+  // lines can't be mistaken for user content.
+  return systemLines
+    .flatMap((line) => line.split("\n").map((subline) => `System: ${subline}`))
+    .join("\n");
 }

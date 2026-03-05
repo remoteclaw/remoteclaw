@@ -26,7 +26,7 @@ import { resolveOriginMessageProvider } from "./origin-routing.js";
 import { resolveQueueSettings } from "./queue.js";
 import { routeReply } from "./route-reply.js";
 import { buildBareSessionResetPrompt } from "./session-reset-prompt.js";
-import { buildQueuedSystemPrompt } from "./session-updates.js";
+import { drainFormattedSystemEvents } from "./session-updates.js";
 import { resolveTypingMode } from "./typing-mode.js";
 import { resolveRunTypingPolicy } from "./typing-policy.js";
 import type { TypingController } from "./typing.js";
@@ -295,15 +295,19 @@ export async function runPreparedReply(
   });
   const isGroupSession = sessionEntry?.chatType === "group" || sessionEntry?.chatType === "channel";
   const isMainSession = !isGroupSession && sessionKey === normalizeMainKey(sessionCfg?.mainKey);
-  const queuedSystemPrompt = await buildQueuedSystemPrompt({
+  // Drain system events once, then prepend to each path's body independently.
+  // The queue/steer path uses effectiveBaseBody (unstripped, no session hints) to match
+  // main's pre-PR behavior; the immediate-run path uses prefixedBodyBase (post-hints,
+  // post-think-hint-strip) so the run sees the cleaned-up body.
+  const eventsBlock = await drainFormattedSystemEvents({
     cfg,
     sessionKey,
     isMainSession,
     isNewSession,
   });
-  if (queuedSystemPrompt) {
-    extraSystemPromptParts.push(queuedSystemPrompt);
-  }
+  const prependEvents = (body: string) => (eventsBlock ? `${eventsBlock}\n\n${body}` : body);
+  const bodyWithEvents = prependEvents(effectiveBaseBody);
+  prefixedBodyBase = prependEvents(prefixedBodyBase);
   prefixedBodyBase = appendUntrustedContext(prefixedBodyBase, sessionCtx.UntrustedContext);
   const threadStarterBody = ctx.ThreadStarterBody?.trim();
   const threadHistoryBody = ctx.ThreadHistoryBody?.trim();
@@ -340,8 +344,8 @@ export async function runPreparedReply(
     resolveSessionFilePathOptions({ agentId, storePath }),
   );
   const queuedBody = mediaNote
-    ? [mediaNote, mediaReplyHint, effectiveBaseBody].filter(Boolean).join("\n").trim()
-    : effectiveBaseBody;
+    ? [mediaNote, mediaReplyHint, bodyWithEvents].filter(Boolean).join("\n").trim()
+    : bodyWithEvents;
   const resolvedQueue = resolveQueueSettings({
     cfg,
     channel: sessionCtx.Provider,

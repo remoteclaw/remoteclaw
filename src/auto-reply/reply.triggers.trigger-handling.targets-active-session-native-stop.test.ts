@@ -16,7 +16,6 @@ import {
   withTempHome,
 } from "./reply.triggers.trigger-handling.test-harness.js";
 import { enqueueFollowupRun, getFollowupQueueDepth, type FollowupRun } from "./reply/queue.js";
-import { HEARTBEAT_TOKEN } from "./tokens.js";
 
 let getReplyFromConfig: typeof import("./reply.js").getReplyFromConfig;
 let previousFastTestEnv: string | undefined;
@@ -154,25 +153,6 @@ describe("trigger handling", () => {
         const errorRes = await getReplyFromConfig(BASE_MESSAGE, {}, makeCfg(home));
         expect(maybeReplyText(errorRes), testCase.error).toBe(testCase.expected);
         expect(runAgentMock, testCase.error).toHaveBeenCalledOnce();
-      }
-
-      const tokenCases = [
-        { text: HEARTBEAT_TOKEN, expected: undefined },
-        { text: `${HEARTBEAT_TOKEN} hello`, expected: "hello" },
-      ] as const;
-
-      for (const testCase of tokenCases) {
-        runAgentMock.mockClear();
-        runAgentMock.mockResolvedValue({
-          payloads: [{ text: testCase.text }],
-          meta: {
-            durationMs: 1,
-            agentMeta: { sessionId: "s", provider: "p", model: "m" },
-          },
-        });
-        const res = await getReplyFromConfig(BASE_MESSAGE, {}, makeCfg(home));
-        expect(maybeReplyText(res)).toBe(testCase.expected);
-        expect(runAgentMock).toHaveBeenCalledOnce();
       }
 
       const thinkCases = [

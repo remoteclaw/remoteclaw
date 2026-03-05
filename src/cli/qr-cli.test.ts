@@ -129,6 +129,167 @@ describe("registerQrCli", () => {
     expect(runtime.log).toHaveBeenCalledWith(expected);
   });
 
+  it("skips local password SecretRef resolution when --token override is provided", async () => {
+    loadConfig.mockReturnValue({
+      secrets: {
+        providers: {
+          default: { source: "env" },
+        },
+      },
+      gateway: {
+        bind: "custom",
+        customBindHost: "gateway.local",
+        auth: {
+          mode: "password",
+          password: { source: "env", provider: "default", id: "MISSING_LOCAL_GATEWAY_PASSWORD" },
+        },
+      },
+    });
+
+    await runQr(["--setup-code-only", "--token", "override-token"]);
+
+    const expected = encodePairingSetupCode({
+      url: "ws://gateway.local:18789",
+      token: "override-token",
+    });
+    expect(runtime.log).toHaveBeenCalledWith(expected);
+  });
+
+  it("resolves local gateway auth password SecretRefs before setup code generation", async () => {
+    vi.stubEnv("QR_LOCAL_GATEWAY_PASSWORD", "local-password-secret");
+    loadConfig.mockReturnValue({
+      secrets: {
+        providers: {
+          default: { source: "env" },
+        },
+      },
+      gateway: {
+        bind: "custom",
+        customBindHost: "gateway.local",
+        auth: {
+          mode: "password",
+          password: { source: "env", provider: "default", id: "QR_LOCAL_GATEWAY_PASSWORD" },
+        },
+      },
+    });
+
+    await runQr(["--setup-code-only"]);
+
+    const expected = encodePairingSetupCode({
+      url: "ws://gateway.local:18789",
+      password: "local-password-secret",
+    });
+    expect(runtime.log).toHaveBeenCalledWith(expected);
+    expect(resolveCommandSecretRefsViaGateway).not.toHaveBeenCalled();
+  });
+
+  it("uses OPENCLAW_GATEWAY_PASSWORD without resolving local password SecretRef", async () => {
+    vi.stubEnv("OPENCLAW_GATEWAY_PASSWORD", "password-from-env");
+    loadConfig.mockReturnValue({
+      secrets: {
+        providers: {
+          default: { source: "env" },
+        },
+      },
+      gateway: {
+        bind: "custom",
+        customBindHost: "gateway.local",
+        auth: {
+          mode: "password",
+          password: { source: "env", provider: "default", id: "MISSING_LOCAL_GATEWAY_PASSWORD" },
+        },
+      },
+    });
+
+    await runQr(["--setup-code-only"]);
+
+    const expected = encodePairingSetupCode({
+      url: "ws://gateway.local:18789",
+      password: "password-from-env",
+    });
+    expect(runtime.log).toHaveBeenCalledWith(expected);
+    expect(resolveCommandSecretRefsViaGateway).not.toHaveBeenCalled();
+  });
+
+  it("does not resolve local password SecretRef when auth mode is token", async () => {
+    loadConfig.mockReturnValue({
+      secrets: {
+        providers: {
+          default: { source: "env" },
+        },
+      },
+      gateway: {
+        bind: "custom",
+        customBindHost: "gateway.local",
+        auth: {
+          mode: "token",
+          token: "token-123",
+          password: { source: "env", provider: "default", id: "MISSING_LOCAL_GATEWAY_PASSWORD" },
+        },
+      },
+    });
+
+    await runQr(["--setup-code-only"]);
+
+    const expected = encodePairingSetupCode({
+      url: "ws://gateway.local:18789",
+      token: "token-123",
+    });
+    expect(runtime.log).toHaveBeenCalledWith(expected);
+    expect(resolveCommandSecretRefsViaGateway).not.toHaveBeenCalled();
+  });
+
+  it("resolves local password SecretRef when auth mode is inferred", async () => {
+    vi.stubEnv("QR_INFERRED_GATEWAY_PASSWORD", "inferred-password");
+    loadConfig.mockReturnValue({
+      secrets: {
+        providers: {
+          default: { source: "env" },
+        },
+      },
+      gateway: {
+        bind: "custom",
+        customBindHost: "gateway.local",
+        auth: {
+          password: { source: "env", provider: "default", id: "QR_INFERRED_GATEWAY_PASSWORD" },
+        },
+      },
+    });
+
+    await runQr(["--setup-code-only"]);
+
+    const expected = encodePairingSetupCode({
+      url: "ws://gateway.local:18789",
+      password: "inferred-password",
+    });
+    expect(runtime.log).toHaveBeenCalledWith(expected);
+    expect(resolveCommandSecretRefsViaGateway).not.toHaveBeenCalled();
+  });
+
+  it("fails when token and password SecretRefs are both configured with inferred mode", async () => {
+    vi.stubEnv("QR_INFERRED_GATEWAY_TOKEN", "inferred-token");
+    loadConfig.mockReturnValue({
+      secrets: {
+        providers: {
+          default: { source: "env" },
+        },
+      },
+      gateway: {
+        bind: "custom",
+        customBindHost: "gateway.local",
+        auth: {
+          token: { source: "env", provider: "default", id: "QR_INFERRED_GATEWAY_TOKEN" },
+          password: { source: "env", provider: "default", id: "MISSING_LOCAL_GATEWAY_PASSWORD" },
+        },
+      },
+    });
+
+    await expectQrExit(["--setup-code-only"]);
+    const output = runtime.error.mock.calls.map((call) => String(call[0] ?? "")).join("\n");
+    expect(output).toContain("gateway.auth.mode is unset");
+    expect(resolveCommandSecretRefsViaGateway).not.toHaveBeenCalled();
+  });
+
   it("exits with error when gateway config is not pairable", async () => {
     loadConfig.mockReturnValue({
       gateway: {

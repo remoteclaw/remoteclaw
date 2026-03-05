@@ -509,8 +509,8 @@ export const RemoteClawSchema = z
                 z.literal("trusted-proxy"),
               ])
               .optional(),
-            token: z.string().optional().register(sensitive),
-            password: z.string().optional().register(sensitive),
+            token: SecretInputSchema.optional().register(sensitive),
+            password: SecretInputSchema.optional().register(sensitive),
             allowTailscale: z.boolean().optional(),
             rateLimit: z
               .object({

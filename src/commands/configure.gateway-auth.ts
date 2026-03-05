@@ -1,5 +1,5 @@
-import { upsertAuthProfile } from "../auth/index.js";
-import type { RemoteClawConfig, GatewayAuthConfig } from "../config/config.js";
+import type { GatewayAuthConfig } from "../config/config.js";
+import { isSecretRef, type SecretInput } from "../config/types.secrets.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { randomToken } from "./onboard-helpers.js";
 import type { AgentRuntime } from "./onboard-types.js";
@@ -7,7 +7,7 @@ import type { AgentRuntime } from "./onboard-types.js";
 type GatewayAuthChoice = "token" | "password" | "trusted-proxy";
 
 /** Reject undefined, empty, and common JS string-coercion artifacts for token auth. */
-function sanitizeTokenValue(value: string | undefined): string | undefined {
+function sanitizeTokenValue(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -21,7 +21,7 @@ function sanitizeTokenValue(value: string | undefined): string | undefined {
 export function buildGatewayAuthConfig(params: {
   existing?: GatewayAuthConfig;
   mode: GatewayAuthChoice;
-  token?: string;
+  token?: SecretInput;
   password?: string;
   trustedProxy?: {
     userHeader: string;
@@ -36,6 +36,9 @@ export function buildGatewayAuthConfig(params: {
   }
 
   if (params.mode === "token") {
+    if (isSecretRef(params.token)) {
+      return { ...base, mode: "token", token: params.token };
+    }
     // Keep token mode always valid: treat empty/undefined/"undefined"/"null" as missing and generate a token.
     const token = sanitizeTokenValue(params.token) ?? randomToken();
     return { ...base, mode: "token", token };

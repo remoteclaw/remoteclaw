@@ -43,16 +43,16 @@ async function launchctlGetenv(name: string): Promise<string | undefined> {
   }
 }
 
-function hasConfigGatewayCreds(cfg: RemoteClawConfig): boolean {
-  const localToken =
-    typeof cfg.gateway?.auth?.token === "string" ? cfg.gateway?.auth?.token.trim() : "";
-  const localPassword =
-    typeof cfg.gateway?.auth?.password === "string" ? cfg.gateway?.auth?.password.trim() : "";
-  const remoteToken =
-    typeof cfg.gateway?.remote?.token === "string" ? cfg.gateway?.remote?.token.trim() : "";
-  const remotePassword =
-    typeof cfg.gateway?.remote?.password === "string" ? cfg.gateway?.remote?.password.trim() : "";
-  return Boolean(localToken || localPassword || remoteToken || remotePassword);
+function hasConfigGatewayCreds(cfg: OpenClawConfig): boolean {
+  const localPassword = cfg.gateway?.auth?.password;
+  const remoteToken = cfg.gateway?.remote?.token;
+  const remotePassword = cfg.gateway?.remote?.password;
+  return Boolean(
+    hasConfiguredSecretInput(cfg.gateway?.auth?.token, cfg.secrets?.defaults) ||
+    hasConfiguredSecretInput(localPassword, cfg.secrets?.defaults) ||
+    hasConfiguredSecretInput(remoteToken, cfg.secrets?.defaults) ||
+    hasConfiguredSecretInput(remotePassword, cfg.secrets?.defaults),
+  );
 }
 
 export async function noteMacLaunchctlGatewayEnvOverrides(

@@ -22,7 +22,6 @@ import {
   formatTokensCompact,
   shortenText,
 } from "./status.format.js";
-import { resolveGatewayProbeAuth } from "./status.gateway-probe.js";
 import { scanStatus } from "./status.scan.js";
 import {
   formatUpdateAvailableHint,
@@ -110,6 +109,8 @@ export async function statusCommand(
     gatewayConnection,
     remoteUrlMissing,
     gatewayMode,
+    gatewayProbeAuth,
+    gatewayProbeAuthWarning,
     gatewayProbe,
     gatewayReachable,
     gatewaySelf,
@@ -180,6 +181,7 @@ export async function statusCommand(
             connectLatencyMs: gatewayProbe?.connectLatencyMs ?? null,
             self: gatewaySelf,
             error: gatewayProbe?.error ?? null,
+            authWarning: gatewayProbeAuthWarning ?? null,
           },
           gatewayService: daemon,
           nodeService: nodeDaemon,
@@ -235,7 +237,7 @@ export async function statusCommand(
         : warn(gatewayProbe?.error ? `unreachable (${gatewayProbe.error})` : "unreachable");
     const auth =
       gatewayReachable && !remoteUrlMissing
-        ? ` · auth ${formatGatewayAuthUsed(resolveGatewayProbeAuth(cfg))}`
+        ? ` · auth ${formatGatewayAuthUsed(gatewayProbeAuth)}`
         : "";
     const self =
       gatewaySelf?.host || gatewaySelf?.version || gatewaySelf?.platform
@@ -345,6 +347,9 @@ export async function statusCommand(
       Value: updateAvailability.available ? warn(`available · ${updateLine}`) : updateLine,
     },
     { Item: "Gateway", Value: gatewayValue },
+    ...(gatewayProbeAuthWarning
+      ? [{ Item: "Gateway auth warning", Value: warn(gatewayProbeAuthWarning) }]
+      : []),
     { Item: "Gateway service", Value: daemonValue },
     { Item: "Node service", Value: nodeDaemonValue },
     { Item: "Agents", Value: agentsValue },

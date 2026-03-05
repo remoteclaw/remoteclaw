@@ -296,6 +296,32 @@ export const AgentToolsSchema = z
   })
   .optional();
 
+const AgentRuntimeAcpSchema = z
+  .object({
+    agent: z.string().optional(),
+    backend: z.string().optional(),
+    mode: z.enum(["persistent", "oneshot"]).optional(),
+    cwd: z.string().optional(),
+  })
+  .strict()
+  .optional();
+
+const AgentRuntimeSchema = z
+  .union([
+    z
+      .object({
+        type: z.literal("embedded"),
+      })
+      .strict(),
+    z
+      .object({
+        type: z.literal("acp"),
+        acp: AgentRuntimeAcpSchema,
+      })
+      .strict(),
+  ])
+  .optional();
+
 export const AgentEntrySchema = z
   .object({
     id: z.string(),

@@ -4,6 +4,7 @@ import {
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../agents/agent-scope.js";
+import { listRouteBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { IdentityConfig } from "../config/types.js";
 import { normalizeAgentId } from "../routing/session-key.js";
@@ -54,7 +55,7 @@ export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
       ? configuredAgents.map((agent) => normalizeAgentId(agent.id))
       : [defaultAgentId];
   const bindingCounts = new Map<string, number>();
-  for (const binding of cfg.bindings ?? []) {
+  for (const binding of listRouteBindings(cfg)) {
     const agentId = normalizeAgentId(binding.agentId);
     bindingCounts.set(agentId, (bindingCounts.get(agentId) ?? 0) + 1);
   }

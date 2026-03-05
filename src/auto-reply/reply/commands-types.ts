@@ -25,6 +25,7 @@ export type CommandContext = {
 
 export type HandleCommandsParams = {
   ctx: MsgContext;
+  rootCtx?: MsgContext;
   cfg: RemoteClawConfig;
   command: CommandContext;
   agentId?: string;

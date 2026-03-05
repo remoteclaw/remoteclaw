@@ -802,7 +802,6 @@ Periodic heartbeat runs.
         to: "+15555550123",
         target: "none", // default: none | options: last | whatsapp | telegram | discord | ...
         prompt: "Read HEARTBEAT.md if it exists...",
-        ackMaxChars: 300,
         suppressToolErrorWarnings: false,
       },
     },

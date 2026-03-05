@@ -8,10 +8,6 @@ vi.mock("../../agents/subagent-spawn.js", () => ({
   spawnSubagentDirect: (...args: unknown[]) => spawnSubagentDirectMock(...args),
 }));
 
-vi.mock("../../agents/bootstrap-cache.js", () => ({
-  clearBootstrapSnapshot: vi.fn(),
-}));
-
 vi.mock("../../auto-reply/reply/abort.js", () => ({
   stopSubagentsForRequester: vi.fn(),
 }));

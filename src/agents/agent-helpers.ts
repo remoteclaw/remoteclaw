@@ -1,12 +1,4 @@
-export {
-  buildBootstrapContextFiles,
-  DEFAULT_BOOTSTRAP_MAX_CHARS,
-  DEFAULT_BOOTSTRAP_TOTAL_MAX_CHARS,
-  ensureSessionHeader,
-  resolveBootstrapMaxChars,
-  resolveBootstrapTotalMaxChars,
-  stripThoughtSignatures,
-} from "./agent-helpers/bootstrap.js";
+export { stripThoughtSignatures } from "./agent-helpers/bootstrap.js";
 export {
   BILLING_ERROR_USER_MESSAGE,
   formatBillingErrorMessage,
@@ -59,7 +51,7 @@ export {
   validateAnthropicTurns,
   validateGeminiTurns,
 } from "./agent-helpers/turns.js";
-export type { ContextFile, FailoverReason } from "./agent-helpers/types.js";
+export type { FailoverReason } from "./agent-helpers/types.js";
 
 export type { ToolCallIdMode } from "./tool-call-id.js";
 export { isValidCloudCodeAssistToolId, sanitizeToolCallId } from "./tool-call-id.js";

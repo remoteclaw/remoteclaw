@@ -5,27 +5,11 @@
  * like command processing, session lifecycle, etc.
  */
 
-import type { WorkspaceBootstrapFile } from "../agents/workspace.js";
 import type { CliDeps } from "../cli/deps.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 
 export type InternalHookEventType = "command" | "session" | "agent" | "gateway" | "message";
-
-export type AgentBootstrapHookContext = {
-  workspaceDir: string;
-  bootstrapFiles: WorkspaceBootstrapFile[];
-  cfg?: RemoteClawConfig;
-  sessionKey?: string;
-  sessionId?: string;
-  agentId?: string;
-};
-
-export type AgentBootstrapHookEvent = InternalHookEvent & {
-  type: "agent";
-  action: "bootstrap";
-  context: AgentBootstrapHookContext;
-};
 
 export type GatewayStartupHookContext = {
   cfg?: RemoteClawConfig;
@@ -231,20 +215,6 @@ export function createInternalHookEvent(
     timestamp: new Date(),
     messages: [],
   };
-}
-
-export function isAgentBootstrapEvent(event: InternalHookEvent): event is AgentBootstrapHookEvent {
-  if (event.type !== "agent" || event.action !== "bootstrap") {
-    return false;
-  }
-  const context = event.context as Partial<AgentBootstrapHookContext> | null;
-  if (!context || typeof context !== "object") {
-    return false;
-  }
-  if (typeof context.workspaceDir !== "string") {
-    return false;
-  }
-  return Array.isArray(context.bootstrapFiles);
 }
 
 export function isGatewayStartupEvent(event: InternalHookEvent): event is GatewayStartupHookEvent {

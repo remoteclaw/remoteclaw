@@ -26,73 +26,7 @@ export const DEFAULT_USER_FILENAME = "USER.md";
 export const DEFAULT_BOOTSTRAP_FILENAME = "BOOTSTRAP.md";
 export const DEFAULT_MEMORY_FILENAME = "MEMORY.md";
 export const DEFAULT_MEMORY_ALT_FILENAME = "memory.md";
-const WORKSPACE_STATE_DIRNAME = ".remoteclaw";
-const WORKSPACE_STATE_FILENAME = "workspace-state.json";
-const WORKSPACE_STATE_VERSION = 1;
-
 let gitAvailabilityPromise: Promise<boolean> | null = null;
-
-type WorkspaceOnboardingState = {
-  version: typeof WORKSPACE_STATE_VERSION;
-  bootstrapSeededAt?: string;
-  onboardingCompletedAt?: string;
-};
-
-function resolveWorkspaceStatePath(dir: string): string {
-  return path.join(dir, WORKSPACE_STATE_DIRNAME, WORKSPACE_STATE_FILENAME);
-}
-
-function parseWorkspaceOnboardingState(raw: string): WorkspaceOnboardingState | null {
-  try {
-    const parsed = JSON.parse(raw) as {
-      bootstrapSeededAt?: unknown;
-      onboardingCompletedAt?: unknown;
-    };
-    if (!parsed || typeof parsed !== "object") {
-      return null;
-    }
-    return {
-      version: WORKSPACE_STATE_VERSION,
-      bootstrapSeededAt:
-        typeof parsed.bootstrapSeededAt === "string" ? parsed.bootstrapSeededAt : undefined,
-      onboardingCompletedAt:
-        typeof parsed.onboardingCompletedAt === "string" ? parsed.onboardingCompletedAt : undefined,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function readWorkspaceOnboardingState(statePath: string): Promise<WorkspaceOnboardingState> {
-  try {
-    const raw = await fs.readFile(statePath, "utf-8");
-    return (
-      parseWorkspaceOnboardingState(raw) ?? {
-        version: WORKSPACE_STATE_VERSION,
-      }
-    );
-  } catch (err) {
-    const anyErr = err as { code?: string };
-    if (anyErr.code !== "ENOENT") {
-      throw err;
-    }
-    return {
-      version: WORKSPACE_STATE_VERSION,
-    };
-  }
-}
-
-async function readWorkspaceOnboardingStateForDir(dir: string): Promise<WorkspaceOnboardingState> {
-  const statePath = resolveWorkspaceStatePath(resolveUserPath(dir));
-  return await readWorkspaceOnboardingState(statePath);
-}
-
-export async function isWorkspaceOnboardingCompleted(dir: string): Promise<boolean> {
-  const state = await readWorkspaceOnboardingStateForDir(dir);
-  return (
-    typeof state.onboardingCompletedAt === "string" && state.onboardingCompletedAt.trim().length > 0
-  );
-}
 
 async function hasGitRepo(dir: string): Promise<boolean> {
   try {

@@ -47,6 +47,38 @@ describe("ui.seamColor", () => {
   });
 });
 
+describe("plugins.entries.*.hooks.allowPromptInjection", () => {
+  it("accepts boolean values", () => {
+    const result = RemoteClawSchema.safeParse({
+      plugins: {
+        entries: {
+          "voice-call": {
+            hooks: {
+              allowPromptInjection: false,
+            },
+          },
+        },
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects non-boolean values", () => {
+    const result = RemoteClawSchema.safeParse({
+      plugins: {
+        entries: {
+          "voice-call": {
+            hooks: {
+              allowPromptInjection: "no",
+            },
+          },
+        },
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
 describe("talk.voiceAliases", () => {
   it("accepts a string map of voice aliases", () => {
     const res = validateConfigObject({

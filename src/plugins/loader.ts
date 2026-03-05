@@ -754,6 +754,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     const api = createApi(record, {
       config: cfg,
       pluginConfig: validatedConfig.value,
+      hookPolicy: entry?.hooks,
     });
 
     try {

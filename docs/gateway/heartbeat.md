@@ -69,7 +69,7 @@ stats” or “verify gateway health”), set `agents.defaults.heartbeat.prompt`
 - If nothing needs attention, reply with **`HEARTBEAT_OK`**.
 - During heartbeat runs, RemoteClaw treats `HEARTBEAT_OK` as an ack when it appears
   at the **start or end** of the reply. The token is stripped and the reply is
-  dropped if the remaining content is **≤ `ackMaxChars`** (default: 300).
+  dropped.
 - If `HEARTBEAT_OK` appears in the **middle** of a reply, it is not treated
   specially.
 - For alerts, **do not** include `HEARTBEAT_OK`; return only the alert text.
@@ -91,7 +91,6 @@ and logged; a message that is only `HEARTBEAT_OK` is dropped.
         to: "+15551234567", // optional channel-specific override
         accountId: "ops-bot", // optional multi-account channel id
         prompt: "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK.",
-        ackMaxChars: 300, // max chars allowed after HEARTBEAT_OK
       },
     },
   },
@@ -219,7 +218,6 @@ Use `accountId` to target a specific account on multi-account channels like Tele
 - `to`: optional recipient override (channel-specific id, e.g. E.164 for WhatsApp or a Telegram chat id). For Telegram topics/threads, use `<chatId>:topic:<messageThreadId>`.
 - `accountId`: optional account id for multi-account channels. When `target: "last"`, the account id applies to the resolved last channel if it supports accounts; otherwise it is ignored. If the account id does not match a configured account for the resolved channel, delivery is skipped.
 - `prompt`: overrides the default prompt body (not merged).
-- `ackMaxChars`: max chars allowed after `HEARTBEAT_OK` before delivery.
 - `suppressToolErrorWarnings`: when true, suppresses tool error warning payloads during heartbeat runs.
 - `activeHours`: restricts heartbeat runs to a time window. Object with `start` (HH:MM, inclusive; use `00:00` for start-of-day), `end` (HH:MM exclusive; `24:00` allowed for end-of-day), and optional `timezone`.
   - Omitted or `"user"`: uses your `agents.defaults.userTimezone` if set, otherwise falls back to the host system timezone.

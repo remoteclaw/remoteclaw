@@ -18,20 +18,6 @@ Automatically saves session context to memory when you issue `/new` or `/reset`.
 remoteclaw hooks enable session-memory
 ```
 
-### 📎 bootstrap-extra-files
-
-Injects extra bootstrap files (for example monorepo `AGENTS.md`/`TOOLS.md`) during prompt assembly.
-
-**Events**: `agent:bootstrap`
-**What it does**: Expands configured workspace glob/path patterns and appends matching bootstrap files to injected context.
-**Output**: No files written; context is modified in-memory only.
-
-**Enable**:
-
-```bash
-remoteclaw hooks enable bootstrap-extra-files
-```
-
 ### 📝 command-logger
 
 Logs all command events to a centralized audit file.
@@ -168,7 +154,6 @@ Currently supported events:
 - **command:new**: `/new` command specifically
 - **command:reset**: `/reset` command
 - **command:stop**: `/stop` command
-- **agent:bootstrap**: Before workspace bootstrap files are injected
 - **gateway:startup**: Gateway startup (after channels start)
 
 More event types coming soon (session lifecycle, agent errors, etc.).

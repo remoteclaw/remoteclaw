@@ -3,14 +3,12 @@ import {
   clearInternalHooks,
   createInternalHookEvent,
   getRegisteredEventKeys,
-  isAgentBootstrapEvent,
   isGatewayStartupEvent,
   isMessageReceivedEvent,
   isMessageSentEvent,
   registerInternalHook,
   triggerInternalHook,
   unregisterInternalHook,
-  type AgentBootstrapHookContext,
   type GatewayStartupHookContext,
   type MessageReceivedHookContext,
   type MessageSentHookContext,
@@ -162,34 +160,6 @@ describe("hooks", () => {
 
       expect(event.context).toEqual({});
     });
-  });
-
-  describe("isAgentBootstrapEvent", () => {
-    const cases: Array<{
-      name: string;
-      event: ReturnType<typeof createInternalHookEvent>;
-      expected: boolean;
-    }> = [
-      {
-        name: "returns true for agent:bootstrap events with expected context",
-        event: createInternalHookEvent("agent", "bootstrap", "test-session", {
-          workspaceDir: "/tmp",
-          bootstrapFiles: [],
-        } satisfies AgentBootstrapHookContext),
-        expected: true,
-      },
-      {
-        name: "returns false for non-bootstrap events",
-        event: createInternalHookEvent("command", "new", "test-session"),
-        expected: false,
-      },
-    ];
-
-    for (const testCase of cases) {
-      it(testCase.name, () => {
-        expect(isAgentBootstrapEvent(testCase.event)).toBe(testCase.expected);
-      });
-    }
   });
 
   describe("isGatewayStartupEvent", () => {

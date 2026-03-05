@@ -1,5 +1,3 @@
-export type ContextFile = { path: string; content: string };
-
 export type FailoverReason =
   | "auth"
   | "format"

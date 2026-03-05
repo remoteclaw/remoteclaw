@@ -5,17 +5,7 @@ import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
 } from "../../agents/agent-scope.js";
-import {
-  DEFAULT_AGENTS_FILENAME,
-  DEFAULT_BOOTSTRAP_FILENAME,
-  DEFAULT_IDENTITY_FILENAME,
-  DEFAULT_MEMORY_ALT_FILENAME,
-  DEFAULT_MEMORY_FILENAME,
-  DEFAULT_SOUL_FILENAME,
-  DEFAULT_TOOLS_FILENAME,
-  DEFAULT_USER_FILENAME,
-  ensureAgentWorkspace,
-} from "../../agents/workspace.js";
+import { ensureAgentWorkspace } from "../../agents/workspace.js";
 import { movePathToTrash } from "../../browser/trash.js";
 import {
   applyAgentConfig,
@@ -24,6 +14,7 @@ import {
   pruneAgentConfig,
 } from "../../commands/agents.config.js";
 import { loadConfig, writeConfigFile } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveSessionTranscriptsDirForAgent } from "../../config/sessions/paths.js";
 import { DEFAULT_AGENT_ID, normalizeAgentId } from "../../routing/session-key.js";
 import { resolveUserPath } from "../../utils.js";
@@ -40,49 +31,35 @@ import {
   validateAgentsUpdateParams,
 } from "../protocol/index.js";
 import { listAgentsForGateway } from "../session-utils.js";
-import type { GatewayRequestHandlers, RespondFn } from "./types.js";
+import type { GatewayRequestHandlers } from "./types.js";
 
-const BOOTSTRAP_FILE_NAMES = [
-  DEFAULT_AGENTS_FILENAME,
-  DEFAULT_SOUL_FILENAME,
-  DEFAULT_TOOLS_FILENAME,
-  DEFAULT_IDENTITY_FILENAME,
-  DEFAULT_USER_FILENAME,
-  DEFAULT_BOOTSTRAP_FILENAME,
-] as const;
-const MEMORY_FILE_NAMES = [DEFAULT_MEMORY_FILENAME, DEFAULT_MEMORY_ALT_FILENAME] as const;
+const IDENTITY_FILENAME = "IDENTITY.md";
 
-const ALLOWED_FILE_NAMES = new Set<string>([...BOOTSTRAP_FILE_NAMES, ...MEMORY_FILE_NAMES]);
-
-function resolveAgentWorkspaceFileOrRespondError(
-  params: Record<string, unknown>,
-  respond: RespondFn,
-): {
-  cfg: ReturnType<typeof loadConfig>;
-  agentId: string;
-  workspaceDir: string;
-  name: string;
-} | null {
-  const cfg = loadConfig();
-  const rawAgentId = params.agentId;
-  const agentId = resolveAgentIdOrError(
-    typeof rawAgentId === "string" || typeof rawAgentId === "number" ? String(rawAgentId) : "",
-    cfg,
+/**
+ * Resolve the editableFiles glob list for a given agent.
+ * Per-agent editableFiles override the defaults; if neither is set, returns [].
+ */
+function resolveEditableFiles(cfg: RemoteClawConfig, agentId: string): string[] {
+  const agentEntry = (cfg.agents?.list ?? []).find(
+    (e) => normalizeAgentId(e.id) === normalizeAgentId(agentId),
   );
-  if (!agentId) {
-    respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "unknown agent id"));
-    return null;
+  if (agentEntry?.editableFiles) {
+    return agentEntry.editableFiles;
   }
-  const rawName = params.name;
-  const name = (
-    typeof rawName === "string" || typeof rawName === "number" ? String(rawName) : ""
-  ).trim();
-  if (!ALLOWED_FILE_NAMES.has(name)) {
-    respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `unsupported file "${name}"`));
-    return null;
+  return cfg.agents?.defaults?.editableFiles ?? [];
+}
+
+/** Reject glob patterns with path traversal or absolute paths. */
+function isUnsafePattern(pattern: string): boolean {
+  return pattern.includes("..") || path.isAbsolute(pattern);
+}
+
+/** Check if a workspace-relative filename matches any of the allowed glob patterns. */
+function matchesEditableGlobs(name: string, globs: string[]): boolean {
+  if (globs.length === 0) {
+    return false;
   }
-  const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
-  return { cfg, agentId, workspaceDir, name };
+  return globs.some((glob) => path.matchesGlob(name, glob));
 }
 
 type FileMeta = {
@@ -105,54 +82,77 @@ async function statFile(filePath: string): Promise<FileMeta | null> {
   }
 }
 
-async function listAgentFiles(workspaceDir: string) {
+/**
+ * Recursively list all files under `dir`, returning workspace-relative paths.
+ * Limits depth to avoid unbounded traversal.
+ */
+async function walkDir(dir: string, base: string, maxDepth: number, depth = 0): Promise<string[]> {
+  if (depth > maxDepth) {
+    return [];
+  }
+  let entries: Array<{ name: string; isFile(): boolean; isDirectory(): boolean }>;
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const result: string[] = [];
+  for (const entry of entries) {
+    const name = String(entry.name);
+    const relPath = base ? `${base}/${name}` : name;
+    if (entry.isFile()) {
+      result.push(relPath);
+    } else if (entry.isDirectory() && !name.startsWith(".")) {
+      const sub = await walkDir(path.join(dir, name), relPath, maxDepth, depth + 1);
+      result.push(...sub);
+    }
+  }
+  return result;
+}
+
+/** Compute the max directory depth implied by glob patterns. */
+function maxGlobDepth(globs: string[]): number {
+  let max = 0;
+  for (const g of globs) {
+    if (g.includes("**")) {
+      return 10; // cap for safety
+    }
+    const depth = g.split("/").length - 1;
+    if (depth > max) {
+      max = depth;
+    }
+  }
+  return Math.max(max, 0);
+}
+
+async function listAgentFiles(workspaceDir: string, globs: string[]) {
   const files: Array<{
     name: string;
     path: string;
-    missing: boolean;
-    size?: number;
-    updatedAtMs?: number;
+    size: number;
+    updatedAtMs: number;
   }> = [];
 
-  for (const name of BOOTSTRAP_FILE_NAMES) {
-    const filePath = path.join(workspaceDir, name);
+  if (globs.length === 0) {
+    return files;
+  }
+
+  const depth = maxGlobDepth(globs);
+  const allFiles = await walkDir(workspaceDir, "", depth);
+
+  for (const relPath of allFiles) {
+    if (!matchesEditableGlobs(relPath, globs)) {
+      continue;
+    }
+    const filePath = path.join(workspaceDir, relPath);
     const meta = await statFile(filePath);
     if (meta) {
       files.push({
-        name,
+        name: relPath,
         path: filePath,
-        missing: false,
         size: meta.size,
         updatedAtMs: meta.updatedAtMs,
       });
-    } else {
-      files.push({ name, path: filePath, missing: true });
-    }
-  }
-
-  const primaryMemoryPath = path.join(workspaceDir, DEFAULT_MEMORY_FILENAME);
-  const primaryMeta = await statFile(primaryMemoryPath);
-  if (primaryMeta) {
-    files.push({
-      name: DEFAULT_MEMORY_FILENAME,
-      path: primaryMemoryPath,
-      missing: false,
-      size: primaryMeta.size,
-      updatedAtMs: primaryMeta.updatedAtMs,
-    });
-  } else {
-    const altMemoryPath = path.join(workspaceDir, DEFAULT_MEMORY_ALT_FILENAME);
-    const altMeta = await statFile(altMemoryPath);
-    if (altMeta) {
-      files.push({
-        name: DEFAULT_MEMORY_ALT_FILENAME,
-        path: altMemoryPath,
-        missing: false,
-        size: altMeta.size,
-        updatedAtMs: altMeta.updatedAtMs,
-      });
-    } else {
-      files.push({ name: DEFAULT_MEMORY_FILENAME, path: primaryMemoryPath, missing: true });
     }
   }
 
@@ -270,7 +270,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
     const safeName = sanitizeIdentityLine(rawName);
     const emoji = resolveOptionalStringParam(params.emoji);
     const avatar = resolveOptionalStringParam(params.avatar);
-    const identityPath = path.join(workspaceDir, DEFAULT_IDENTITY_FILENAME);
+    const identityPath = path.join(workspaceDir, IDENTITY_FILENAME);
     const lines = [
       "",
       `- Name: ${safeName}`,
@@ -335,7 +335,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
     if (avatar) {
       const workspace = workspaceDir ?? resolveAgentWorkspaceDir(nextConfig, agentId);
       await fs.mkdir(workspace, { recursive: true });
-      const identityPath = path.join(workspace, DEFAULT_IDENTITY_FILENAME);
+      const identityPath = path.join(workspace, IDENTITY_FILENAME);
       await fs.appendFile(identityPath, `\n- Avatar: ${sanitizeIdentityLine(avatar)}\n`, "utf-8");
     }
 
@@ -414,8 +414,34 @@ export const agentsHandlers: GatewayRequestHandlers = {
       return;
     }
     const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
-    const files = await listAgentFiles(workspaceDir);
-    respond(true, { agentId, workspace: workspaceDir, files }, undefined);
+    const globs = resolveEditableFiles(cfg, agentId);
+    const unsafeGlob = globs.find(isUnsafePattern);
+    if (unsafeGlob) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `editableFiles pattern "${unsafeGlob}" is unsafe (no ".." or absolute paths)`,
+        ),
+      );
+      return;
+    }
+    const files = await listAgentFiles(workspaceDir, globs);
+    respond(
+      true,
+      {
+        agentId,
+        workspace: workspaceDir,
+        files,
+        ...(globs.length === 0
+          ? {
+              hint: "configure agents.defaults.editableFiles or per-agent editableFiles to manage workspace files here",
+            }
+          : {}),
+      },
+      undefined,
+    );
   },
   "agents.files.get": async ({ params, respond }) => {
     if (!validateAgentsFilesGetParams(params)) {
@@ -431,11 +457,42 @@ export const agentsHandlers: GatewayRequestHandlers = {
       );
       return;
     }
-    const resolved = resolveAgentWorkspaceFileOrRespondError(params, respond);
-    if (!resolved) {
+    const cfg = loadConfig();
+    const rawAgentId = params.agentId;
+    const agentId = resolveAgentIdOrError(
+      typeof rawAgentId === "string" || typeof rawAgentId === "number" ? String(rawAgentId) : "",
+      cfg,
+    );
+    if (!agentId) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "unknown agent id"));
       return;
     }
-    const { agentId, workspaceDir, name } = resolved;
+    const rawName = params.name;
+    const name = (
+      typeof rawName === "string" || typeof rawName === "number" ? String(rawName) : ""
+    ).trim();
+    if (!name) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "file name is required"));
+      return;
+    }
+    if (isUnsafePattern(name)) {
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, `unsafe file name "${name}"`),
+      );
+      return;
+    }
+    const globs = resolveEditableFiles(cfg, agentId);
+    if (!matchesEditableGlobs(name, globs)) {
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, `file "${name}" is not in editableFiles`),
+      );
+      return;
+    }
+    const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
     const filePath = path.join(workspaceDir, name);
     const meta = await statFile(filePath);
     if (!meta) {
@@ -482,13 +539,48 @@ export const agentsHandlers: GatewayRequestHandlers = {
       );
       return;
     }
-    const resolved = resolveAgentWorkspaceFileOrRespondError(params, respond);
-    if (!resolved) {
+    const cfg = loadConfig();
+    const rawAgentId = params.agentId;
+    const agentId = resolveAgentIdOrError(
+      typeof rawAgentId === "string" || typeof rawAgentId === "number" ? String(rawAgentId) : "",
+      cfg,
+    );
+    if (!agentId) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "unknown agent id"));
       return;
     }
-    const { agentId, workspaceDir, name } = resolved;
+    const rawName = params.name;
+    const name = (
+      typeof rawName === "string" || typeof rawName === "number" ? String(rawName) : ""
+    ).trim();
+    if (!name) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "file name is required"));
+      return;
+    }
+    if (isUnsafePattern(name)) {
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, `unsafe file name "${name}"`),
+      );
+      return;
+    }
+    const globs = resolveEditableFiles(cfg, agentId);
+    if (!matchesEditableGlobs(name, globs)) {
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, `file "${name}" is not in editableFiles`),
+      );
+      return;
+    }
+    const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
     await fs.mkdir(workspaceDir, { recursive: true });
     const filePath = path.join(workspaceDir, name);
+    const parentDir = path.dirname(filePath);
+    if (parentDir !== workspaceDir) {
+      await fs.mkdir(parentDir, { recursive: true });
+    }
     const content = String(params.content ?? "");
     await fs.writeFile(filePath, content, "utf-8");
     const meta = await statFile(filePath);

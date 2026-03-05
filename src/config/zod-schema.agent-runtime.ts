@@ -262,6 +262,7 @@ export const AgentEntrySchema = z
       })
       .strict()
       .optional(),
+    editableFiles: z.array(z.string()).optional(),
     tools: AgentToolsSchema,
   })
   .strict();

@@ -3,7 +3,7 @@ import type { ImageSanitizationLimits } from "../image-sanitization.js";
 import type { ToolCallIdMode } from "../tool-call-id.js";
 import { sanitizeToolCallIdsForCloudCodeAssist } from "../tool-call-id.js";
 import { sanitizeContentBlocksImages } from "../tool-images.js";
-import { stripThoughtSignatures } from "./bootstrap.js";
+import { stripThoughtSignatures } from "./message-sanitization.js";
 
 type ContentBlock = AgentToolResult["content"][number];
 

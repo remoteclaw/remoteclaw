@@ -38,11 +38,20 @@ vi.mock("../../channels/plugins/whatsapp-heartbeat.js", () => ({
 }));
 
 vi.mock("../../config/config.js", () => ({
-  loadConfig: () => ({ agents: { defaults: {} }, session: {} }),
+  loadConfig: () => ({
+    agents: { defaults: { heartbeat: { prompt: "default heartbeat prompt" } } },
+    session: {},
+  }),
 }));
 
 vi.mock("../../routing/session-key.js", () => ({
   normalizeMainKey: () => null,
+  DEFAULT_AGENT_ID: "default",
+}));
+
+vi.mock("../../agents/agent-scope.js", () => ({
+  resolveAgentWorkspaceDir: () => "/tmp/workspace",
+  resolveDefaultAgentId: () => "default",
 }));
 
 vi.mock("../../infra/heartbeat-visibility.js", () => ({
@@ -101,7 +110,10 @@ describe("runWebHeartbeatOnce", () => {
 
   const getModules = async () => await import("./heartbeat-runner.js");
   const buildRunArgs = (overrides: Record<string, unknown> = {}) => ({
-    cfg: { agents: { defaults: {} }, session: {} } as never,
+    cfg: {
+      agents: { defaults: { heartbeat: { prompt: "default heartbeat prompt" } } },
+      session: {},
+    } as never,
     to: "+123",
     sender,
     replyResolver,

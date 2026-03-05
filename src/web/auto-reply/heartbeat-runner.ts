@@ -1,3 +1,4 @@
+import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { appendCronStyleCurrentTimeLine } from "../../agents/current-time.js";
 import { resolveHeartbeatReplyPayload } from "../../auto-reply/heartbeat-reply-payload.js";
 import {
@@ -162,13 +163,27 @@ export async function runWebHeartbeatOnce(opts: {
       return;
     }
 
+    const defaults = cfg.agents?.defaults?.heartbeat;
+    const workspaceDir = resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg));
+    const heartbeatPrompt = await resolveHeartbeatPrompt({
+      prompt: defaults?.prompt,
+      file: defaults?.file,
+      workspaceDir,
+    });
+    if (!heartbeatPrompt) {
+      heartbeatLogger.info({ to: redactedTo, reason: "no-prompt" }, "heartbeat skipped");
+      emitHeartbeatEvent({
+        status: "skipped",
+        to,
+        reason: "no-prompt",
+        channel: "whatsapp",
+      });
+      return;
+    }
+
     const replyResult = await replyResolver(
       {
-        Body: appendCronStyleCurrentTimeLine(
-          resolveHeartbeatPrompt(cfg.agents?.defaults?.heartbeat?.prompt),
-          cfg,
-          Date.now(),
-        ),
+        Body: appendCronStyleCurrentTimeLine(heartbeatPrompt, cfg, Date.now()),
         From: to,
         To: to,
         MessageSid: sessionId ?? sessionSnapshot.entry?.sessionId,

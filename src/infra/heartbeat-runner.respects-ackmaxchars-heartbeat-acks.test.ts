@@ -29,7 +29,7 @@ describe("runHeartbeatOnce ack handling", () => {
       agents: {
         defaults: {
           workspace: params.tmpDir,
-          heartbeat: params.heartbeat as never,
+          heartbeat: { prompt: "Check status", ...params.heartbeat } as never,
         },
       },
       channels: params.channels as never,

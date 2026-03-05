@@ -46,6 +46,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
           heartbeat: {
             every: "5m",
             target: params.target ?? "telegram",
+            prompt: "Check status",
           },
         },
       },

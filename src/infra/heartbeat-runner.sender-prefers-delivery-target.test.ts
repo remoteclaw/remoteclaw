@@ -21,6 +21,7 @@ describe("runHeartbeatOnce", () => {
                 every: "5m",
                 target: "slack",
                 to: "C0A9P2N8QHY",
+                prompt: "Check status",
               },
             },
           },

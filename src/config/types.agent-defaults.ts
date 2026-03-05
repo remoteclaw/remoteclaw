@@ -214,8 +214,10 @@ export type AgentDefaultsConfig = {
     to?: string;
     /** Optional account id for multi-account channels. */
     accountId?: string;
-    /** Override the heartbeat prompt body (default: "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK."). */
+    /** Override the heartbeat prompt body. When neither prompt nor file is set, heartbeat is skipped. */
     prompt?: string;
+    /** Path to a file containing the heartbeat prompt (relative to workspace, read at runtime). prompt takes precedence if both set. */
+    file?: string;
     /** Max chars allowed after HEARTBEAT_OK before delivery (default: 30). */
     ackMaxChars?: number;
     /** Suppress tool error warning payloads during heartbeat runs. */

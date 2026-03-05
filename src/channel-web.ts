@@ -2,7 +2,6 @@
 // module keeps responsibilities small and testable.
 export {
   DEFAULT_WEB_MEDIA_BYTES,
-  HEARTBEAT_PROMPT,
   HEARTBEAT_TOKEN,
   monitorWebChannel,
   resolveHeartbeatRecipients,

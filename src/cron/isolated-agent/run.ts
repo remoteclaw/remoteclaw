@@ -43,12 +43,10 @@ import {
 } from "./delivery-dispatch.js";
 import { resolveDeliveryTarget } from "./delivery-target.js";
 import {
-  isHeartbeatOnlyResponse,
   pickLastDeliverablePayload,
   pickLastNonEmptyTextFromPayloads,
   pickSummaryFromOutput,
   pickSummaryFromPayloads,
-  resolveHeartbeatAckMaxChars,
 } from "./helpers.js";
 import { resolveCronSession } from "./session.js";
 
@@ -514,9 +512,11 @@ export async function runCronIsolatedAgentTurn(params: {
       ...telemetry,
     });
 
-  // Skip delivery for heartbeat-only responses (HEARTBEAT_OK with no real content).
-  const ackMaxChars = resolveHeartbeatAckMaxChars(agentCfg);
-  const skipHeartbeatDelivery = deliveryRequested && isHeartbeatOnlyResponse(payloads, ackMaxChars);
+  // Skip delivery when heartbeat_report says nothing was done.
+  const skipHeartbeatDelivery =
+    deliveryRequested &&
+    runResult.mcp.heartbeatReport != null &&
+    !runResult.mcp.heartbeatReport.anythingDone;
   const didSendViaMessagingTool =
     runResult.mcp.sentTexts.length > 0 || runResult.mcp.sentMediaUrls.length > 0;
   const skipMessagingToolDelivery =

@@ -48,7 +48,6 @@ export type ReplyDispatcherOptions = {
   /** Dynamic context provider for response prefix template interpolation.
    * Called at normalization time, after model selection is complete. */
   responsePrefixContextProvider?: () => ResponsePrefixContext;
-  onHeartbeatStrip?: () => void;
   onIdle?: () => void;
   onError?: ReplyDispatchErrorHandler;
   // AIDEV-NOTE: onSkip lets channels detect silent/empty drops (e.g. Telegram empty-response fallback).
@@ -82,7 +81,7 @@ export type ReplyDispatcher = {
 
 type NormalizeReplyPayloadInternalOptions = Pick<
   ReplyDispatcherOptions,
-  "responsePrefix" | "responsePrefixContext" | "responsePrefixContextProvider" | "onHeartbeatStrip"
+  "responsePrefix" | "responsePrefixContext" | "responsePrefixContextProvider"
 > & {
   onSkip?: (reason: NormalizeReplySkipReason) => void;
 };
@@ -97,7 +96,6 @@ function normalizeReplyPayloadInternal(
   return normalizeReplyPayload(payload, {
     responsePrefix: opts.responsePrefix,
     responsePrefixContext: prefixContext,
-    onHeartbeatStrip: opts.onHeartbeatStrip,
     onSkip: opts.onSkip,
   });
 }
@@ -129,7 +127,6 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
       responsePrefix: options.responsePrefix,
       responsePrefixContext: options.responsePrefixContext,
       responsePrefixContextProvider: options.responsePrefixContextProvider,
-      onHeartbeatStrip: options.onHeartbeatStrip,
       onSkip: (reason) => options.onSkip?.(payload, { kind, reason }),
     });
     if (!normalized) {

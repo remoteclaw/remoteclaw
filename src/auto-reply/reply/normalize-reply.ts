@@ -1,6 +1,5 @@
 import { sanitizeUserFacingText } from "../../agents/agent-helpers.js";
-import { stripHeartbeatToken } from "../heartbeat.js";
-import { HEARTBEAT_TOKEN, isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
+import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { ReplyPayload } from "../types.js";
 import { hasLineDirectives, parseLineDirectives } from "./line-directives.js";
 import {
@@ -8,14 +7,12 @@ import {
   type ResponsePrefixContext,
 } from "./response-prefix-template.js";
 
-export type NormalizeReplySkipReason = "empty" | "silent" | "heartbeat";
+export type NormalizeReplySkipReason = "empty" | "silent";
 
 export type NormalizeReplyOptions = {
   responsePrefix?: string;
   /** Context for template variable interpolation in responsePrefix */
   responsePrefixContext?: ResponsePrefixContext;
-  onHeartbeatStrip?: () => void;
-  stripHeartbeat?: boolean;
   silentToken?: string;
   onSkip?: (reason: NormalizeReplySkipReason) => void;
 };
@@ -48,19 +45,6 @@ export function normalizeReplyPayload(
     text = "";
   }
 
-  const shouldStripHeartbeat = opts.stripHeartbeat ?? true;
-  if (shouldStripHeartbeat && text?.includes(HEARTBEAT_TOKEN)) {
-    const stripped = stripHeartbeatToken(text, { mode: "message" });
-    if (stripped.didStrip) {
-      opts.onHeartbeatStrip?.();
-    }
-    if (stripped.shouldSkip && !hasMedia && !hasChannelData) {
-      opts.onSkip?.("heartbeat");
-      return null;
-    }
-    text = stripped.text;
-  }
-
   if (text) {
     text = sanitizeUserFacingText(text, { errorContext: Boolean(payload.isError) });
   }
@@ -81,12 +65,7 @@ export function normalizeReplyPayload(
     ? resolveResponsePrefixTemplate(opts.responsePrefix, opts.responsePrefixContext)
     : opts.responsePrefix;
 
-  if (
-    effectivePrefix &&
-    text &&
-    text.trim() !== HEARTBEAT_TOKEN &&
-    !text.startsWith(effectivePrefix)
-  ) {
+  if (effectivePrefix && text && !text.startsWith(effectivePrefix)) {
     text = `${effectivePrefix} ${text}`;
   }
 

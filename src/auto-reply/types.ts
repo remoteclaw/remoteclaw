@@ -55,6 +55,12 @@ export type GetReplyOptions = {
   timeoutOverrideSeconds?: number;
 };
 
+/** Structured heartbeat report attached to a reply payload by the agent runner. */
+export type ReplyHeartbeatReport = {
+  anythingDone: boolean;
+  summary?: string | null;
+};
+
 export type ReplyPayload = {
   text?: string;
   mediaUrl?: string;
@@ -71,4 +77,6 @@ export type ReplyPayload = {
   isReasoning?: boolean;
   /** Channel-specific payload data (per-channel envelope). */
   channelData?: Record<string, unknown>;
+  /** Heartbeat report from the heartbeat_report MCP tool (set by agent runner on heartbeat runs). */
+  heartbeatReport?: ReplyHeartbeatReport;
 };

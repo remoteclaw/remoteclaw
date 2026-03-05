@@ -8,6 +8,7 @@ import {
 } from "../channels/telegram/allow-from.js";
 import { fetchTelegramChatId } from "../channels/telegram/api.js";
 import { formatCliCommand } from "../cli/command-format.js";
+import { listRouteBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { CONFIG_PATH, migrateLegacyConfig, readConfigFileSnapshot } from "../config/config.js";
 import { collectProviderDangerousNameMatchingScopes } from "../config/dangerous-name-matching.js";
@@ -222,7 +223,7 @@ function collectChannelsMissingDefaultAccount(
 }
 
 export function collectMissingDefaultAccountBindingWarnings(cfg: RemoteClawConfig): string[] {
-  const bindings = Array.isArray(cfg.bindings) ? cfg.bindings : [];
+  const bindings = listRouteBindings(cfg);
   const warnings: string[] = [];
 
   for (const { channelKey, normalizedAccountIds } of collectChannelsMissingDefaultAccount(cfg)) {

@@ -380,6 +380,32 @@ export async function dispatchReplyFromConfig(params: {
       cfg,
     );
 
+    if (ctx.AcpDispatchTailAfterReset === true) {
+      // Command handling prepared a trailing prompt after ACP in-place reset.
+      // Route that tail through ACP now (same turn) instead of embedded dispatch.
+      ctx.AcpDispatchTailAfterReset = false;
+      const acpTailDispatch = await tryDispatchAcpReply({
+        ctx,
+        cfg,
+        dispatcher,
+        sessionKey: acpDispatchSessionKey,
+        inboundAudio,
+        sessionTtsAuto,
+        ttsChannel,
+        shouldRouteToOriginating,
+        originatingChannel,
+        originatingTo,
+        shouldSendToolSummaries,
+        bypassForCommand: false,
+        onReplyStart: params.replyOptions?.onReplyStart,
+        recordProcessed,
+        markIdle,
+      });
+      if (acpTailDispatch) {
+        return acpTailDispatch;
+      }
+    }
+
     const replies = replyResult ? (Array.isArray(replyResult) ? replyResult : [replyResult]) : [];
 
     let queuedFinal = false;

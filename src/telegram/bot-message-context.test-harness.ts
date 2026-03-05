@@ -19,6 +19,7 @@ type BuildTelegramMessageContextForTestParams = {
   allMedia?: TelegramMediaRef[];
   options?: BuildTelegramMessageContextParams["options"];
   cfg?: Record<string, unknown>;
+  accountId?: string;
   resolveGroupActivation?: BuildTelegramMessageContextParams["resolveGroupActivation"];
   resolveGroupRequireMention?: BuildTelegramMessageContextParams["resolveGroupRequireMention"];
   resolveTelegramGroupConfig?: BuildTelegramMessageContextParams["resolveTelegramGroupConfig"];
@@ -48,7 +49,7 @@ export async function buildTelegramMessageContextForTest(
       },
     } as never,
     cfg: (params.cfg ?? baseTelegramMessageContextConfig) as never,
-    account: { accountId: "default" } as never,
+    account: { accountId: params.accountId ?? "default" } as never,
     historyLimit: 0,
     groupHistories: new Map(),
     dmPolicy: "open",

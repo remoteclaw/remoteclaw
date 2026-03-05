@@ -323,7 +323,22 @@ export type DiscordAccountConfig = {
   activityType?: 0 | 1 | 2 | 3 | 4 | 5;
   /** Streaming URL (Twitch/YouTube). Required when activityType=1. */
   activityUrl?: string;
-  /** Carbon EventQueue configuration for this Discord account. */
+  /**
+   * In-process worker settings for queued inbound Discord runs.
+   * This is separate from Carbon's eventQueue listener budget.
+   */
+  inboundWorker?: {
+    /**
+     * Max time (ms) a queued inbound run may execute before RemoteClaw aborts it.
+     * Defaults to 1800000 (30 minutes). Set 0 to disable the worker-owned timeout.
+     */
+    runTimeoutMs?: number;
+  };
+  /**
+   * Carbon EventQueue configuration. Controls how Discord gateway events are processed.
+   * `listenerTimeout` only covers gateway listener work such as normalization and enqueue.
+   * It does not control the lifetime of queued inbound agent turns.
+   */
   eventQueue?: {
     /** Max time (ms) a single listener can run before being killed. Default: 120000. */
     listenerTimeout?: number;

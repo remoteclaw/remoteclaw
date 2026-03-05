@@ -226,6 +226,13 @@ export type AgentDefaultsConfig = {
      */
     includeReasoning?: boolean;
   };
+  /** Boot prompt configuration (runs on gateway startup). */
+  boot?: {
+    /** Inline boot prompt text. Takes precedence over `file` if both are set. */
+    prompt?: string;
+    /** Path to a boot prompt file (relative to workspace directory). */
+    file?: string;
+  };
   /** Max concurrent agent runs across all conversations. Default: 1 (sequential). */
   maxConcurrent?: number;
   /** Sub-agent defaults (spawned via sessions_spawn). */

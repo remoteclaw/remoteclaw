@@ -88,8 +88,9 @@ These are the standard files RemoteClaw expects inside the workspace:
   - Optional tiny checklist for heartbeat runs.
   - Keep it short to avoid token burn.
 
-- `BOOT.md`
-  - Optional startup checklist executed on gateway restart when internal hooks are enabled.
+- Boot prompt file (configurable path via `agents.defaults.boot.file`)
+  - Optional startup prompt executed on gateway restart when internal hooks are enabled.
+  - Configure via `agents.defaults.boot` or per-agent `agents.list[].boot`.
   - Keep it short; use the message tool for outbound sends.
 
 - `BOOTSTRAP.md`

@@ -46,7 +46,7 @@ RemoteClaw ships with four bundled hooks that are automatically discovered:
 - **💾 session-memory**: Saves session context to your agent workspace (default `~/.remoteclaw/workspace/memory/`) when you issue `/new`
 - **📎 bootstrap-extra-files**: Injects additional workspace bootstrap files from configured glob/path patterns during `agent:bootstrap`
 - **📝 command-logger**: Logs all command events to `~/.remoteclaw/logs/commands.log`
-- **🚀 boot-md**: Runs `BOOT.md` when the gateway starts (requires internal hooks enabled)
+- **🚀 boot**: Runs the configured boot prompt when the gateway starts (requires internal hooks enabled)
 
 List available hooks:
 
@@ -645,25 +645,29 @@ grep '"action":"new"' ~/.remoteclaw/logs/commands.log | jq .
 remoteclaw hooks enable command-logger
 ```
 
-### boot-md
+### boot
 
-Runs `BOOT.md` when the gateway starts (after channels start).
+Runs the configured boot prompt when the gateway starts (after channels start).
 Internal hooks must be enabled for this to run.
 
 **Events**: `gateway:startup`
 
-**Requirements**: `workspace.dir` must be configured
-
 **What it does**:
 
-1. Reads `BOOT.md` from your workspace
-2. Runs the instructions via the agent runner
+1. Resolves the boot prompt from config (`agents.defaults.boot` or per-agent `agents.list[].boot`)
+2. Runs the prompt via the agent runner
 3. Sends any requested outbound messages via the message tool
+
+Boot prompt is configured via:
+
+- `boot.prompt`: inline prompt text (takes precedence)
+- `boot.file`: path to a prompt file (relative to agent workspace directory)
+- Neither set: boot is skipped for that agent
 
 **Enable**:
 
 ```bash
-remoteclaw hooks enable boot-md
+remoteclaw hooks enable boot
 ```
 
 ## Best Practices
@@ -739,7 +743,7 @@ The gateway logs hook loading at startup:
 Registered hook: session-memory -> command:new
 Registered hook: bootstrap-extra-files -> agent:bootstrap
 Registered hook: command-logger -> command
-Registered hook: boot-md -> gateway:startup
+Registered hook: boot -> gateway:startup
 ```
 
 ### Check Discovery

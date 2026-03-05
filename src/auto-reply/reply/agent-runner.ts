@@ -15,7 +15,6 @@ import type { TypingMode } from "../../config/types.js";
 import { emitAgentEvent } from "../../infra/agent-events.js";
 import { emitDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { generateSecureUuid } from "../../infra/secure-random.js";
-import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { defaultRuntime } from "../../runtime.js";
 import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
 import {
@@ -40,13 +39,6 @@ import { createAudioAsVoiceBuffer, createBlockReplyPipeline } from "./block-repl
 import { resolveBlockStreamingCoalescing } from "./block-streaming.js";
 import { createFollowupRunner } from "./followup-runner.js";
 import { resolveOriginMessageProvider, resolveOriginMessageTo } from "./origin-routing.js";
-import {
-  auditPostCompactionReads,
-  extractReadPaths,
-  formatAuditWarning,
-  readSessionMessages,
-} from "./post-compaction-audit.js";
-import { readPostCompactionContext } from "./post-compaction-context.js";
 import { resolveActiveRunQueueAction } from "./queue-policy.js";
 import { enqueueFollowupRun, type FollowupRun, type QueueSettings } from "./queue.js";
 import { createReplyToModeFilterForChannel, resolveReplyToMode } from "./reply-threading.js";
@@ -90,9 +82,6 @@ function appendUnscheduledReminderNote(payloads: ReplyPayload[]): ReplyPayload[]
     };
   });
 }
-
-// Track sessions pending post-compaction read audit (Layer 3)
-const pendingPostCompactionAudits = new Map<string, boolean>();
 
 export async function runReplyAgent(params: {
   commandBody: string;
@@ -508,10 +497,28 @@ export async function runReplyAgent(params: {
       }),
       accountId: sessionCtx.AccountId,
     });
-    const { replyPayloads } = payloadResult;
+    let { replyPayloads } = payloadResult;
     didLogHeartbeatStrip = payloadResult.didLogHeartbeatStrip;
 
+    // Tag the primary payload with heartbeat report data from MCP side effects.
+    if (isHeartbeat && runResult.mcp.heartbeatReport && replyPayloads.length > 0) {
+      const report = runResult.mcp.heartbeatReport;
+      replyPayloads = replyPayloads.map((payload, i) =>
+        i === 0 ? { ...payload, heartbeatReport: report } : payload,
+      );
+    }
+
     if (replyPayloads.length === 0) {
+      // If heartbeat_report was called with anything_done: false and no payloads,
+      // return a tagged empty payload so the heartbeat runner can detect the tool call.
+      if (isHeartbeat && runResult.mcp.heartbeatReport) {
+        const report = runResult.mcp.heartbeatReport;
+        return finalizeWithFollowup(
+          { text: report.summary ?? "", heartbeatReport: report },
+          queueKey,
+          runFollowupTurn,
+        );
+      }
       return finalizeWithFollowup(undefined, queueKey, runFollowupTurn);
     }
 
@@ -666,23 +673,6 @@ export async function runReplyAgent(params: {
         contextTokensUsed,
       });
 
-      // Inject post-compaction workspace context for the next agent turn
-      if (sessionKey) {
-        const workspaceDir = process.cwd();
-        readPostCompactionContext(workspaceDir)
-          .then((contextContent) => {
-            if (contextContent) {
-              enqueueSystemEvent(contextContent, { sessionKey });
-            }
-          })
-          .catch(() => {
-            // Silent failure — post-compaction context is best-effort
-          });
-
-        // Set pending audit flag for Layer 3 (post-compaction read audit)
-        pendingPostCompactionAudits.set(sessionKey, true);
-      }
-
       if (verboseEnabled) {
         const suffix = typeof count === "number" ? ` (count ${count})` : "";
         verboseNotices.push({ text: `🧹 Auto-compaction complete${suffix}.` });
@@ -693,25 +683,6 @@ export async function runReplyAgent(params: {
     }
     if (responseUsageLine) {
       finalPayloads = appendUsageLine(finalPayloads, responseUsageLine);
-    }
-
-    // Post-compaction read audit (Layer 3)
-    if (sessionKey && pendingPostCompactionAudits.get(sessionKey)) {
-      pendingPostCompactionAudits.delete(sessionKey); // Delete FIRST — one-shot only
-      try {
-        const sessionFile = activeSessionEntry?.sessionFile;
-        if (sessionFile) {
-          const messages = readSessionMessages(sessionFile);
-          const readPaths = extractReadPaths(messages);
-          const workspaceDir = process.cwd();
-          const audit = auditPostCompactionReads(readPaths, workspaceDir);
-          if (!audit.passed) {
-            enqueueSystemEvent(formatAuditWarning(audit.missingPatterns), { sessionKey });
-          }
-        }
-      } catch {
-        // Silent failure — audit is best-effort
-      }
     }
 
     return finalizeWithFollowup(

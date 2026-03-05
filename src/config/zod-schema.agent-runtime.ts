@@ -9,6 +9,14 @@ import {
   ToolsMediaSchema,
 } from "./zod-schema.core.js";
 
+export const BootSchema = z
+  .object({
+    prompt: z.string().optional(),
+    file: z.string().optional(),
+  })
+  .strict()
+  .optional();
+
 export const HeartbeatSchema = z
   .object({
     every: z.string().optional(),
@@ -28,7 +36,6 @@ export const HeartbeatSchema = z
     accountId: z.string().optional(),
     prompt: z.string().optional(),
     file: z.string().optional(),
-    ackMaxChars: z.number().int().nonnegative().optional(),
     suppressToolErrorWarnings: z.boolean().optional(),
   })
   .strict()
@@ -234,6 +241,7 @@ export const AgentEntrySchema = z
     skills: z.array(z.string()).optional(),
     humanDelay: HumanDelaySchema.optional(),
     heartbeat: HeartbeatSchema,
+    boot: BootSchema,
     identity: IdentitySchema,
     groupChat: GroupChatSchema,
     subagents: z

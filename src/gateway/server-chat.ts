@@ -1,79 +1,9 @@
-import { DEFAULT_HEARTBEAT_ACK_MAX_CHARS, stripHeartbeatToken } from "../auto-reply/heartbeat.js";
 import { normalizeVerboseLevel } from "../auto-reply/thinking.js";
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
-import { loadConfig } from "../config/config.js";
 import { type AgentEventPayload, getAgentRunContext } from "../infra/agent-events.js";
-import { resolveHeartbeatVisibility } from "../infra/heartbeat-visibility.js";
 import { stripInlineDirectiveTagsForDisplay } from "../utils/directive-tags.js";
 import { loadSessionEntry } from "./session-utils.js";
 import { formatForLog } from "./ws-log.js";
-
-function resolveHeartbeatAckMaxChars(): number {
-  try {
-    const cfg = loadConfig();
-    return Math.max(
-      0,
-      cfg.agents?.defaults?.heartbeat?.ackMaxChars ?? DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
-    );
-  } catch {
-    return DEFAULT_HEARTBEAT_ACK_MAX_CHARS;
-  }
-}
-
-function resolveHeartbeatContext(runId: string, sourceRunId?: string) {
-  const primary = getAgentRunContext(runId);
-  if (primary?.isHeartbeat) {
-    return primary;
-  }
-  if (sourceRunId && sourceRunId !== runId) {
-    const source = getAgentRunContext(sourceRunId);
-    if (source?.isHeartbeat) {
-      return source;
-    }
-  }
-  return primary;
-}
-
-/**
- * Check if heartbeat ACK/noise should be hidden from interactive chat surfaces.
- */
-function shouldHideHeartbeatChatOutput(runId: string, sourceRunId?: string): boolean {
-  const runContext = resolveHeartbeatContext(runId, sourceRunId);
-  if (!runContext?.isHeartbeat) {
-    return false;
-  }
-
-  try {
-    const cfg = loadConfig();
-    const visibility = resolveHeartbeatVisibility({ cfg, channel: "webchat" });
-    return !visibility.showOk;
-  } catch {
-    // Default to suppressing if we can't load config
-    return true;
-  }
-}
-
-function normalizeHeartbeatChatFinalText(params: {
-  runId: string;
-  sourceRunId?: string;
-  text: string;
-}): { suppress: boolean; text: string } {
-  if (!shouldHideHeartbeatChatOutput(params.runId, params.sourceRunId)) {
-    return { suppress: false, text: params.text };
-  }
-
-  const stripped = stripHeartbeatToken(params.text, {
-    mode: "heartbeat",
-    maxAckChars: resolveHeartbeatAckMaxChars(),
-  });
-  if (!stripped.didStrip) {
-    return { suppress: false, text: params.text };
-  }
-  if (stripped.shouldSkip) {
-    return { suppress: true, text: "" };
-  }
-  return { suppress: false, text: stripped.text };
-}
 
 export type ChatRunEntry = {
   sessionKey: string;
@@ -292,9 +222,6 @@ export function createAgentEventHandler({
       return;
     }
     chatRunState.buffers.set(clientRunId, cleaned);
-    if (shouldHideHeartbeatChatOutput(clientRunId, sourceRunId)) {
-      return;
-    }
     const now = Date.now();
     const last = chatRunState.deltaSentAt.get(clientRunId) ?? 0;
     if (now - last < 150) {
@@ -324,17 +251,10 @@ export function createAgentEventHandler({
     jobState: "done" | "error",
     error?: unknown,
   ) => {
-    const bufferedText = stripInlineDirectiveTagsForDisplay(
+    const text = stripInlineDirectiveTagsForDisplay(
       chatRunState.buffers.get(clientRunId) ?? "",
     ).text.trim();
-    const normalizedHeartbeatText = normalizeHeartbeatChatFinalText({
-      runId: clientRunId,
-      sourceRunId,
-      text: bufferedText,
-    });
-    const text = normalizedHeartbeatText.text.trim();
-    const shouldSuppressSilent =
-      normalizedHeartbeatText.suppress || isSilentReplyText(text, SILENT_REPLY_TOKEN);
+    const shouldSuppressSilent = isSilentReplyText(text, SILENT_REPLY_TOKEN);
     chatRunState.buffers.delete(clientRunId);
     chatRunState.deltaSentAt.delete(clientRunId);
     if (jobState === "done") {

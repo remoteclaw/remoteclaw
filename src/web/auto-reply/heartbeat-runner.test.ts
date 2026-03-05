@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { getReplyFromConfig } from "../../auto-reply/reply.js";
-import { HEARTBEAT_TOKEN } from "../../auto-reply/tokens.js";
 import { redactIdentifier } from "../../logging/redact-identifier.js";
 import type { sendMessageWhatsApp } from "../outbound.js";
 
@@ -150,12 +149,13 @@ describe("runWebHeartbeatOnce", () => {
     expect(state.events).toHaveLength(0);
   });
 
-  it("sends HEARTBEAT_OK when reply is empty and showOk is enabled", async () => {
+  it("emits ok-empty when reply is empty", async () => {
     const { runWebHeartbeatOnce } = await getModules();
     await runWebHeartbeatOnce(buildRunArgs());
-    expect(senderMock).toHaveBeenCalledWith("+123", HEARTBEAT_TOKEN, { verbose: false });
+    // No summary text to send, so sender should not be called
+    expect(senderMock).not.toHaveBeenCalled();
     expect(state.events).toEqual(
-      expect.arrayContaining([expect.objectContaining({ status: "ok-empty", silent: false })]),
+      expect.arrayContaining([expect.objectContaining({ status: "ok-empty" })]),
     );
   });
 
@@ -173,12 +173,16 @@ describe("runWebHeartbeatOnce", () => {
     expect(ctx?.Body).toContain("Current time: 2026-02-15T00:00:00Z (mock)");
   });
 
-  it("treats heartbeat token-only replies as ok-token and preserves session updatedAt", async () => {
-    replyResolverMock.mockResolvedValue({ text: HEARTBEAT_TOKEN });
+  it("treats heartbeat report with anythingDone=false as ok-token and preserves session updatedAt", async () => {
+    replyResolverMock.mockResolvedValue({
+      text: "All clear",
+      heartbeatReport: { anythingDone: false, summary: "All clear" },
+    });
     const { runWebHeartbeatOnce } = await getModules();
     await runWebHeartbeatOnce(buildRunArgs());
     expect(state.store.k?.updatedAt).toBe(123);
-    expect(senderMock).toHaveBeenCalledWith("+123", HEARTBEAT_TOKEN, { verbose: false });
+    // showOk is true, so summary should be sent
+    expect(senderMock).toHaveBeenCalledWith("+123", "All clear", { verbose: false });
     expect(state.events).toEqual(
       expect.arrayContaining([expect.objectContaining({ status: "ok-token", silent: false })]),
     );

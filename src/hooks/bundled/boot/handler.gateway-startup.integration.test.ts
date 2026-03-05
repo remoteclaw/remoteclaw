@@ -17,7 +17,7 @@ const { default: runBootChecklist } = await import("./handler.js");
 const { clearInternalHooks, createInternalHookEvent, registerInternalHook, triggerInternalHook } =
   await import("../../internal-hooks.js");
 
-describe("boot-md startup hook integration", () => {
+describe("boot startup hook integration", () => {
   beforeEach(() => {
     runBootOnce.mockClear();
     clearInternalHooks();
@@ -27,10 +27,12 @@ describe("boot-md startup hook integration", () => {
     clearInternalHooks();
   });
 
-  it("dispatches gateway:startup through internal hooks and runs BOOT for each configured agent scope", async () => {
+  it("dispatches gateway:startup through internal hooks and runs boot for each configured agent scope", async () => {
+    const bootConfig = { prompt: "Check inbox and summarize" };
     const cfg = {
       hooks: { internal: { enabled: true } },
       agents: {
+        defaults: { boot: bootConfig },
         list: [
           { id: "main", default: true, workspace: "/ws/main" },
           { id: "ops", workspace: "/ws/ops" },
@@ -50,11 +52,23 @@ describe("boot-md startup hook integration", () => {
     expect(runBootOnce).toHaveBeenCalledTimes(2);
     expect(runBootOnce).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ cfg, deps, workspaceDir: mainWorkspaceDir, agentId: "main" }),
+      expect.objectContaining({
+        cfg,
+        deps,
+        boot: bootConfig,
+        workspaceDir: mainWorkspaceDir,
+        agentId: "main",
+      }),
     );
     expect(runBootOnce).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ cfg, deps, workspaceDir: opsWorkspaceDir, agentId: "ops" }),
+      expect.objectContaining({
+        cfg,
+        deps,
+        boot: bootConfig,
+        workspaceDir: opsWorkspaceDir,
+        agentId: "ops",
+      }),
     );
   });
 });

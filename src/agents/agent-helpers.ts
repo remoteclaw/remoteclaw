@@ -1,4 +1,4 @@
-export { stripThoughtSignatures } from "./agent-helpers/bootstrap.js";
+export { stripThoughtSignatures } from "./agent-helpers/message-sanitization.js";
 export {
   BILLING_ERROR_USER_MESSAGE,
   formatBillingErrorMessage,

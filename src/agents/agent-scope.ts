@@ -31,6 +31,7 @@ type ResolvedAgentConfig = {
   skills?: AgentEntry["skills"];
   humanDelay?: AgentEntry["humanDelay"];
   heartbeat?: AgentEntry["heartbeat"];
+  boot?: AgentEntry["boot"];
   identity?: AgentEntry["identity"];
   groupChat?: AgentEntry["groupChat"];
   subagents?: AgentEntry["subagents"];
@@ -132,6 +133,7 @@ export function resolveAgentConfig(
     skills: Array.isArray(entry.skills) ? entry.skills : undefined,
     humanDelay: entry.humanDelay,
     heartbeat: entry.heartbeat,
+    boot: entry.boot,
     identity: entry.identity,
     groupChat: entry.groupChat,
     subagents: typeof entry.subagents === "object" && entry.subagents ? entry.subagents : undefined,

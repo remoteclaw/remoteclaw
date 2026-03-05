@@ -19,7 +19,14 @@ type CronAddedRecord = {
   ts: number;
 };
 
-type SideEffectRecord = MessageSentRecord | CronAddedRecord;
+type HeartbeatReportRecord = {
+  type: "heartbeat_report";
+  anythingDone: boolean;
+  summary?: string | null;
+  ts: number;
+};
+
+type SideEffectRecord = MessageSentRecord | CronAddedRecord | HeartbeatReportRecord;
 
 export class McpSideEffectsWriter {
   constructor(private readonly filePath: string) {}
@@ -49,6 +56,19 @@ export class McpSideEffectsWriter {
     const record: CronAddedRecord = {
       type: "cron_added",
       ...(jobId ? { jobId } : {}),
+      ts: Date.now(),
+    };
+    await this.appendRecord(record);
+  }
+
+  async recordHeartbeatReport(params: {
+    anythingDone: boolean;
+    summary?: string | null;
+  }): Promise<void> {
+    const record: HeartbeatReportRecord = {
+      type: "heartbeat_report",
+      anythingDone: params.anythingDone,
+      ...(params.summary != null ? { summary: params.summary } : {}),
       ts: Date.now(),
     };
     await this.appendRecord(record);
@@ -97,6 +117,12 @@ export async function readMcpSideEffects(filePath: string): Promise<McpSideEffec
       result.sentTargets.push(target);
     } else if (record.type === "cron_added") {
       result.cronAdds += 1;
+    } else if (record.type === "heartbeat_report") {
+      // Last heartbeat_report wins if called multiple times.
+      result.heartbeatReport = {
+        anythingDone: record.anythingDone,
+        summary: record.summary,
+      };
     }
   }
 

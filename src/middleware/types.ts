@@ -126,6 +126,14 @@ export type McpMessageTarget = {
   to?: string | undefined;
 };
 
+/** Structured heartbeat report from the heartbeat_report MCP tool. */
+export type McpHeartbeatReport = {
+  /** Whether any actions were performed during the heartbeat run. */
+  anythingDone: boolean;
+  /** Optional summary text. */
+  summary?: string | null;
+};
+
 /** Gateway-side MCP server tracking of side effects during agent execution. */
 export type McpSideEffects = {
   /** Texts sent via MCP messaging tools. */
@@ -136,6 +144,8 @@ export type McpSideEffects = {
   sentTargets: McpMessageTarget[];
   /** Number of cron jobs added via MCP tools. */
   cronAdds: number;
+  /** Heartbeat report from the heartbeat_report tool (if called). */
+  heartbeatReport?: McpHeartbeatReport | undefined;
 };
 
 // ── Agent Delivery Result ───────────────────────────────────────────────

@@ -4,6 +4,7 @@ import type { InternalHookEvent } from "../../internal-hooks.js";
 
 const runBootOnce = vi.fn();
 const listAgentIds = vi.fn();
+const resolveAgentConfig = vi.fn();
 const resolveAgentWorkspaceDir = vi.fn();
 const logWarn = vi.fn();
 const logDebug = vi.fn();
@@ -13,6 +14,7 @@ const OPS_WORKSPACE_DIR = path.join(path.sep, "ws", "ops");
 vi.mock("../../../gateway/boot.js", () => ({ runBootOnce }));
 vi.mock("../../../agents/agent-scope.js", () => ({
   listAgentIds,
+  resolveAgentConfig,
   resolveAgentWorkspaceDir,
 }));
 vi.mock("../../../logging/subsystem.js", () => ({
@@ -36,10 +38,16 @@ function makeEvent(overrides?: Partial<InternalHookEvent>): InternalHookEvent {
   };
 }
 
-describe("boot-md handler", () => {
+describe("boot handler", () => {
   function setupTwoAgentBootConfig() {
-    const cfg = { agents: { list: [{ id: "main" }, { id: "ops" }] } };
+    const cfg = {
+      agents: {
+        defaults: { boot: { prompt: "Default boot" } },
+        list: [{ id: "main" }, { id: "ops" }],
+      },
+    };
     listAgentIds.mockReturnValue(["main", "ops"]);
+    resolveAgentConfig.mockReturnValue(undefined);
     resolveAgentWorkspaceDir.mockImplementation((_cfg: unknown, id: string) =>
       id === "main" ? MAIN_WORKSPACE_DIR : OPS_WORKSPACE_DIR,
     );
@@ -48,6 +56,7 @@ describe("boot-md handler", () => {
 
   function setupSingleMainAgentBootConfig(cfg: unknown) {
     listAgentIds.mockReturnValue(["main"]);
+    resolveAgentConfig.mockReturnValue(undefined);
     resolveAgentWorkspaceDir.mockReturnValue(MAIN_WORKSPACE_DIR);
     return cfg;
   }
@@ -80,16 +89,58 @@ describe("boot-md handler", () => {
     expect(listAgentIds).toHaveBeenCalledWith(cfg);
     expect(runBootOnce).toHaveBeenCalledTimes(2);
     expect(runBootOnce).toHaveBeenCalledWith(
-      expect.objectContaining({ cfg, workspaceDir: MAIN_WORKSPACE_DIR, agentId: "main" }),
+      expect.objectContaining({
+        cfg,
+        boot: { prompt: "Default boot" },
+        workspaceDir: MAIN_WORKSPACE_DIR,
+        agentId: "main",
+      }),
     );
     expect(runBootOnce).toHaveBeenCalledWith(
-      expect.objectContaining({ cfg, workspaceDir: OPS_WORKSPACE_DIR, agentId: "ops" }),
+      expect.objectContaining({
+        cfg,
+        boot: { prompt: "Default boot" },
+        workspaceDir: OPS_WORKSPACE_DIR,
+        agentId: "ops",
+      }),
+    );
+  });
+
+  it("uses per-agent boot config when available", async () => {
+    const cfg = {
+      agents: {
+        defaults: { boot: { prompt: "Default boot" } },
+        list: [{ id: "main" }, { id: "ops", boot: { prompt: "Ops-specific boot" } }],
+      },
+    };
+    listAgentIds.mockReturnValue(["main", "ops"]);
+    resolveAgentConfig.mockImplementation((_cfg: unknown, id: string) =>
+      id === "ops" ? { boot: { prompt: "Ops-specific boot" } } : undefined,
+    );
+    resolveAgentWorkspaceDir.mockImplementation((_cfg: unknown, id: string) =>
+      id === "main" ? MAIN_WORKSPACE_DIR : OPS_WORKSPACE_DIR,
+    );
+    runBootOnce.mockResolvedValue({ status: "ran" });
+
+    await runBootChecklist(makeEvent({ context: { cfg } }));
+
+    expect(runBootOnce).toHaveBeenCalledWith(
+      expect.objectContaining({
+        boot: { prompt: "Default boot" },
+        agentId: "main",
+      }),
+    );
+    expect(runBootOnce).toHaveBeenCalledWith(
+      expect.objectContaining({
+        boot: { prompt: "Ops-specific boot" },
+        agentId: "ops",
+      }),
     );
   });
 
   it("runs boot for single default agent when no agents configured", async () => {
     const cfg = setupSingleMainAgentBootConfig({});
-    runBootOnce.mockResolvedValue({ status: "skipped", reason: "missing" });
+    runBootOnce.mockResolvedValue({ status: "skipped", reason: "not-configured" });
 
     await runBootChecklist(makeEvent({ context: { cfg } }));
 
@@ -108,7 +159,7 @@ describe("boot-md handler", () => {
     await runBootChecklist(makeEvent({ context: { cfg } }));
 
     expect(logWarn).toHaveBeenCalledTimes(1);
-    expect(logWarn).toHaveBeenCalledWith("boot-md failed for agent startup run", {
+    expect(logWarn).toHaveBeenCalledWith("boot failed for agent startup run", {
       agentId: "ops",
       workspaceDir: OPS_WORKSPACE_DIR,
       reason: "agent failed",
@@ -117,14 +168,14 @@ describe("boot-md handler", () => {
 
   it("logs debug details when a per-agent boot run is skipped", async () => {
     const cfg = setupSingleMainAgentBootConfig({ agents: { list: [{ id: "main" }] } });
-    runBootOnce.mockResolvedValue({ status: "skipped", reason: "missing" });
+    runBootOnce.mockResolvedValue({ status: "skipped", reason: "not-configured" });
 
     await runBootChecklist(makeEvent({ context: { cfg } }));
 
-    expect(logDebug).toHaveBeenCalledWith("boot-md skipped for agent startup run", {
+    expect(logDebug).toHaveBeenCalledWith("boot skipped for agent startup run", {
       agentId: "main",
       workspaceDir: MAIN_WORKSPACE_DIR,
-      reason: "missing",
+      reason: "not-configured",
     });
   });
 });

@@ -32,18 +32,18 @@ Logs all command events to a centralized audit file.
 remoteclaw hooks enable command-logger
 ```
 
-### 🚀 boot-md
+### 🚀 boot
 
-Runs `BOOT.md` whenever the gateway starts (after channels start).
+Runs the configured boot prompt whenever the gateway starts (after channels start).
 
 **Events**: `gateway:startup`
-**What it does**: Executes BOOT.md instructions via the agent runner.
+**What it does**: Resolves the boot prompt from config (`agents.defaults.boot` or per-agent `agents.list[].boot`) and executes it via the agent runner.
 **Output**: Whatever the instructions request (for example, outbound messages).
 
 **Enable**:
 
 ```bash
-remoteclaw hooks enable boot-md
+remoteclaw hooks enable boot
 ```
 
 ## Hook Structure

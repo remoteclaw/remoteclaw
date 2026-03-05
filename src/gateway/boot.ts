@@ -13,6 +13,7 @@ import {
 import { resolveStorePath } from "../config/sessions/paths.js";
 import { loadSessionStore, updateSessionStore } from "../config/sessions/store.js";
 import type { SessionEntry } from "../config/sessions/types.js";
+import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { type RuntimeEnv, defaultRuntime } from "../runtime.js";
 
@@ -32,45 +33,64 @@ type SessionMappingSnapshot = {
 };
 
 const log = createSubsystemLogger("gateway/boot");
-const BOOT_FILENAME = "BOOT.md";
+
+export type BootConfig = NonNullable<AgentDefaultsConfig["boot"]>;
 
 export type BootRunResult =
-  | { status: "skipped"; reason: "missing" | "empty" }
+  | { status: "skipped"; reason: "not-configured" | "empty" }
   | { status: "ran" }
   | { status: "failed"; reason: string };
 
 function buildBootPrompt(content: string) {
   return [
-    "You are running a boot check. Follow BOOT.md instructions exactly.",
+    "You are running a boot check. Follow the boot instructions exactly.",
     "",
-    "BOOT.md:",
+    "Boot instructions:",
     content,
     "",
-    "If BOOT.md asks you to send a message, use the message tool (action=send with channel + target).",
+    "If the instructions ask you to send a message, use the message tool (action=send with channel + target).",
     "Use the `target` field (not `to`) for message tool destinations.",
     `After sending with the message tool, reply with ONLY: ${SILENT_REPLY_TOKEN}.`,
     `If nothing needs attention, reply with ONLY: ${SILENT_REPLY_TOKEN}.`,
   ].join("\n");
 }
 
-async function loadBootFile(
+export async function resolveBootPrompt(
+  boot: BootConfig | undefined,
   workspaceDir: string,
-): Promise<{ content?: string; status: "ok" | "missing" | "empty" }> {
-  const bootPath = path.join(workspaceDir, BOOT_FILENAME);
-  try {
-    const content = await fs.readFile(bootPath, "utf-8");
-    const trimmed = content.trim();
+): Promise<{
+  content?: string;
+  status: "ok" | "not-configured" | "empty" | "read-error";
+  error?: string;
+}> {
+  if (!boot) {
+    return { status: "not-configured" };
+  }
+
+  if (boot.prompt !== undefined) {
+    const trimmed = boot.prompt.trim();
     if (!trimmed) {
       return { status: "empty" };
     }
     return { status: "ok", content: trimmed };
-  } catch (err) {
-    const anyErr = err as { code?: string };
-    if (anyErr.code === "ENOENT") {
-      return { status: "missing" };
-    }
-    throw err;
   }
+
+  if (boot.file !== undefined) {
+    const filePath = path.isAbsolute(boot.file) ? boot.file : path.join(workspaceDir, boot.file);
+    try {
+      const content = await fs.readFile(filePath, "utf-8");
+      const trimmed = content.trim();
+      if (!trimmed) {
+        return { status: "empty" };
+      }
+      return { status: "ok", content: trimmed };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { status: "read-error", error: message };
+    }
+  }
+
+  return { status: "not-configured" };
 }
 
 function snapshotMainSessionMapping(params: {
@@ -138,6 +158,7 @@ async function restoreMainSessionMapping(
 export async function runBootOnce(params: {
   cfg: RemoteClawConfig;
   deps: CliDeps;
+  boot: BootConfig | undefined;
   workspaceDir: string;
   agentId?: string;
 }): Promise<BootRunResult> {
@@ -146,23 +167,24 @@ export async function runBootOnce(params: {
     error: (message) => log.error(String(message)),
     exit: defaultRuntime.exit,
   };
-  let result: Awaited<ReturnType<typeof loadBootFile>>;
-  try {
-    result = await loadBootFile(params.workspaceDir);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    log.error(`boot: failed to read ${BOOT_FILENAME}: ${message}`);
-    return { status: "failed", reason: message };
-  }
 
-  if (result.status === "missing" || result.status === "empty") {
-    return { status: "skipped", reason: result.status };
+  const resolved = await resolveBootPrompt(params.boot, params.workspaceDir);
+
+  if (resolved.status === "not-configured") {
+    return { status: "skipped", reason: "not-configured" };
+  }
+  if (resolved.status === "empty") {
+    return { status: "skipped", reason: "empty" };
+  }
+  if (resolved.status === "read-error") {
+    log.error(`boot: failed to read boot file: ${resolved.error}`);
+    return { status: "failed", reason: resolved.error ?? "read error" };
   }
 
   const sessionKey = params.agentId
     ? resolveAgentMainSessionKey({ cfg: params.cfg, agentId: params.agentId })
     : resolveMainSessionKey(params.cfg);
-  const message = buildBootPrompt(result.content ?? "");
+  const message = buildBootPrompt(resolved.content ?? "");
   const sessionId = generateBootSessionId();
   const mappingSnapshot = snapshotMainSessionMapping({
     cfg: params.cfg,

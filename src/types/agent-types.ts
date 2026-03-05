@@ -1,4 +1,4 @@
-// Re-export pi-types for files outside src/agents/ to avoid deep relative paths.
+// Re-export agent types for files outside src/agents/ to avoid deep relative paths.
 export type {
   AgentMessage,
   AgentTool,
@@ -9,4 +9,4 @@ export type {
   TextContent,
   ToolResultMessage,
   UserMessage,
-} from "../agents/pi-types.js";
+} from "../agents/agent-types.js";

@@ -3,7 +3,7 @@ import type { ChannelId, ChannelThreadingToolContext } from "../../channels/plug
 import type { RemoteClawConfig } from "../../config/config.js";
 import { appendAssistantMessageToSessionTranscript } from "../../config/sessions.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
-import type { AgentToolResult } from "../../types/pi-compat.js";
+import type { AgentToolResult } from "../../types/agent-types.js";
 import type { GatewayClientMode, GatewayClientName } from "../../utils/message-channel.js";
 import { throwIfAborted } from "./abort.js";
 import type { OutboundSendDeps } from "./deliver.js";

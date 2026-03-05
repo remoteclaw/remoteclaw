@@ -24,8 +24,8 @@ import {
 } from "../../discord/send.js";
 import type { DiscordSendComponents, DiscordSendEmbeds } from "../../discord/send.shared.js";
 import { resolveDiscordChannelId } from "../../discord/targets.js";
+import type { AgentToolResult } from "../agent-types.js";
 import { withNormalizedTimestamp } from "../date-time.js";
-import type { AgentToolResult } from "../pi-types.js";
 import {
   type ActionGate,
   jsonResult,

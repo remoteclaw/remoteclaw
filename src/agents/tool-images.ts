@@ -6,12 +6,12 @@ import {
   IMAGE_REDUCE_QUALITY_STEPS,
   resizeToJpeg,
 } from "../media/image-ops.js";
+import type { AgentToolResult, ImageContent } from "./agent-types.js";
 import {
   DEFAULT_IMAGE_MAX_BYTES,
   DEFAULT_IMAGE_MAX_DIMENSION_PX,
   type ImageSanitizationLimits,
 } from "./image-sanitization.js";
-import type { AgentToolResult, ImageContent } from "./pi-types.js";
 
 type ToolContentBlock = AgentToolResult["content"][number];
 type ImageContentBlock = Extract<ToolContentBlock, { type: "image" }>;

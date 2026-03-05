@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
+import type { AssistantMessage } from "./agent-types.js";
 import {
   extractAssistantText,
   formatReasoningMessage,
   stripDowngradedToolCallText,
 } from "./agent-utils.js";
-import type { AssistantMessage } from "./pi-types.js";
 
 function makeAssistantMessage(
   message: Omit<AssistantMessage, "api" | "provider" | "model" | "usage" | "stopReason"> &

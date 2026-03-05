@@ -2,7 +2,7 @@ import type { TSchema } from "@sinclair/typebox";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { PollInput } from "../../polls.js";
-import type { AgentTool, AgentToolResult } from "../../types/pi-compat.js";
+import type { AgentTool, AgentToolResult } from "../../types/agent-types.js";
 import type { GatewayClientMode, GatewayClientName } from "../../utils/message-channel.js";
 import type { ChatType } from "../chat-type.js";
 import type { ChatChannelId } from "../registry.js";

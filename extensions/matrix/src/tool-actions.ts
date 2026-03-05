@@ -5,7 +5,7 @@ import {
   readReactionParams,
   readStringParam,
 } from "remoteclaw/plugin-sdk";
-import type { AgentToolResult } from "../../../src/types/pi-compat.js";
+import type { AgentToolResult } from "../../../src/types/agent-types.js";
 import {
   deleteMatrixMessage,
   editMatrixMessage,

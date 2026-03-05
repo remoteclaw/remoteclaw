@@ -6,14 +6,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
+import { isToolAllowedByPolicies } from "../agents/tool-policy-resolution.js";
 // Sandbox infrastructure removed (#68)
 const resolveSandboxConfigForAgent = (_cfg: unknown, _agentId?: string) => ({
   mode: "off" as const,
 });
-const resolveSandboxToolPolicyForAgent = (_cfg: unknown, _agentId?: string) =>
-  undefined as SandboxToolPolicy | undefined;
-type SandboxToolPolicy = { allow?: string[]; deny?: string[] };
+const resolveToolPolicyForAgent = (_cfg: unknown, _agentId?: string) =>
+  undefined as ToolPolicy | undefined;
+type ToolPolicy = { allow?: string[]; deny?: string[] };
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import type { RemoteClawConfig, ConfigFileSnapshot } from "../config/config.js";
@@ -30,10 +30,10 @@ import {
   safeStat,
 } from "./audit-fs.js";
 // Sandbox infrastructure removed (#68)
-function pickSandboxToolPolicy(config?: {
+function normalizeToolPolicy(config?: {
   allow?: string[];
   deny?: string[];
-}): SandboxToolPolicy | undefined {
+}): ToolPolicy | undefined {
   if (!config) {
     return undefined;
   }
@@ -118,16 +118,16 @@ function resolveToolPolicies(params: {
   agentTools?: AgentToolsConfig;
   sandboxMode?: "off" | "non-main" | "all";
   agentId?: string | null;
-}): Array<SandboxToolPolicy | undefined> {
+}): Array<ToolPolicy | undefined> {
   const profile = params.agentTools?.profile ?? params.cfg.tools?.profile;
   const profilePolicy = resolveToolProfilePolicy(profile);
-  const policies: Array<SandboxToolPolicy | undefined> = [
+  const policies: Array<ToolPolicy | undefined> = [
     profilePolicy,
-    pickSandboxToolPolicy(params.cfg.tools ?? undefined),
-    pickSandboxToolPolicy(params.agentTools),
+    normalizeToolPolicy(params.cfg.tools ?? undefined),
+    normalizeToolPolicy(params.agentTools),
   ];
   if (params.sandboxMode === "all") {
-    policies.push(resolveSandboxToolPolicyForAgent(params.cfg, params.agentId ?? undefined));
+    policies.push(resolveToolPolicyForAgent(params.cfg, params.agentId ?? undefined));
   }
   return policies;
 }

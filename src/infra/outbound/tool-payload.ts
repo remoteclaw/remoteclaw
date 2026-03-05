@@ -1,4 +1,4 @@
-import type { AgentToolResult } from "../../types/pi-compat.js";
+import type { AgentToolResult } from "../../types/agent-types.js";
 
 export function extractToolPayload(result: AgentToolResult): unknown {
   if (result.details !== undefined) {

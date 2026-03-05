@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { AgentMessage } from "./pi-types.js";
+import type { AgentMessage } from "./agent-types.js";
 
 export type ToolCallIdMode = "strict" | "strict9";
 

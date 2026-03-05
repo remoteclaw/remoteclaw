@@ -9,7 +9,7 @@ import {
   readDiscordModerationCommand,
 } from "../../../../agents/tools/discord-actions-moderation-shared.js";
 import { handleDiscordAction } from "../../../../agents/tools/discord-actions.js";
-import type { AgentToolResult } from "../../../../types/pi-compat.js";
+import type { AgentToolResult } from "../../../../types/agent-types.js";
 import type { ChannelMessageActionContext } from "../../types.js";
 
 type Ctx = Pick<

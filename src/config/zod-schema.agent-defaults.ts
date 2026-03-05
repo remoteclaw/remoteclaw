@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { HeartbeatSchema, AgentModelSchema } from "./zod-schema.agent-runtime.js";
+import { BootSchema, HeartbeatSchema, AgentModelSchema } from "./zod-schema.agent-runtime.js";
 import {
   BlockStreamingChunkSchema,
   BlockStreamingCoalesceSchema,
@@ -106,6 +106,7 @@ export const AgentDefaultsSchema = z
     typingIntervalSeconds: z.number().int().positive().optional(),
     typingMode: TypingModeSchema.optional(),
     heartbeat: HeartbeatSchema,
+    boot: BootSchema,
     maxConcurrent: z.number().int().positive().optional(),
     subagents: z
       .object({

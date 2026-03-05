@@ -4,20 +4,6 @@ This directory contains hooks that ship with RemoteClaw. These hooks are automat
 
 ## Available Hooks
 
-### 💾 session-memory
-
-Automatically saves session context to memory when you issue `/new` or `/reset`.
-
-**Events**: `command:new`, `command:reset`
-**What it does**: Creates a dated memory file with LLM-generated slug based on conversation content.
-**Output**: `<workspace>/memory/YYYY-MM-DD-slug.md` (defaults to `~/.remoteclaw/workspace`)
-
-**Enable**:
-
-```bash
-remoteclaw hooks enable session-memory
-```
-
 ### 📝 command-logger
 
 Logs all command events to a centralized audit file.
@@ -32,18 +18,18 @@ Logs all command events to a centralized audit file.
 remoteclaw hooks enable command-logger
 ```
 
-### 🚀 boot-md
+### 🚀 boot
 
-Runs `BOOT.md` whenever the gateway starts (after channels start).
+Runs the configured boot prompt whenever the gateway starts (after channels start).
 
 **Events**: `gateway:startup`
-**What it does**: Executes BOOT.md instructions via the agent runner.
+**What it does**: Resolves the boot prompt from config (`agents.defaults.boot` or per-agent `agents.list[].boot`) and executes it via the agent runner.
 **Output**: Whatever the instructions request (for example, outbound messages).
 
 **Enable**:
 
 ```bash
-remoteclaw hooks enable boot-md
+remoteclaw hooks enable boot
 ```
 
 ## Hook Structure
@@ -56,7 +42,7 @@ Each hook is a directory containing:
 Example structure:
 
 ```
-session-memory/
+command-logger/
 ├── HOOK.md          # Metadata + docs
 └── handler.ts       # Handler implementation
 ```
@@ -108,7 +94,7 @@ remoteclaw hooks list
 Show hook details:
 
 ```bash
-remoteclaw hooks info session-memory
+remoteclaw hooks info command-logger
 ```
 
 Check hook status:
@@ -120,8 +106,8 @@ remoteclaw hooks check
 Enable/disable:
 
 ```bash
-remoteclaw hooks enable session-memory
-remoteclaw hooks disable command-logger
+remoteclaw hooks enable command-logger
+remoteclaw hooks disable boot-md
 ```
 
 ## Configuration
@@ -134,10 +120,10 @@ Hooks can be configured in `~/.remoteclaw/remoteclaw.json`:
     "internal": {
       "enabled": true,
       "entries": {
-        "session-memory": {
+        "command-logger": {
           "enabled": true
         },
-        "command-logger": {
+        "boot-md": {
           "enabled": false
         }
       }

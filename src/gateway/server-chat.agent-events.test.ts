@@ -440,45 +440,7 @@ describe("agent event handler", () => {
     resetAgentRunContextForTest();
   });
 
-  it("suppresses heartbeat ack-like chat output when showOk is false", () => {
-    const { broadcast, nodeSendToSession, chatRunState, handler } = createHarness({
-      now: 2_000,
-    });
-    chatRunState.registry.add("run-heartbeat", {
-      sessionKey: "session-heartbeat",
-      clientRunId: "client-heartbeat",
-    });
-    registerAgentRunContext("run-heartbeat", {
-      sessionKey: "session-heartbeat",
-      isHeartbeat: true,
-      verboseLevel: "off",
-    });
-
-    handler({
-      runId: "run-heartbeat",
-      seq: 1,
-      stream: "assistant",
-      ts: Date.now(),
-      data: {
-        text: "HEARTBEAT_OK Read HEARTBEAT.md if it exists (workspace context). Follow it strictly.",
-      },
-    });
-
-    expect(chatBroadcastCalls(broadcast)).toHaveLength(0);
-    expect(sessionChatCalls(nodeSendToSession)).toHaveLength(0);
-
-    emitLifecycleEnd(handler, "run-heartbeat");
-
-    const finalPayload = expectSingleFinalChatPayload(broadcast) as { message?: unknown };
-    expect(finalPayload.message).toBeUndefined();
-    expect(sessionChatCalls(nodeSendToSession)).toHaveLength(1);
-  });
-
-  it("keeps heartbeat alert text in final chat output when remainder exceeds ackMaxChars", () => {
-    vi.mocked(loadConfig).mockReturnValue({
-      agents: { defaults: { heartbeat: { ackMaxChars: 10 } } },
-    });
-
+  it("passes heartbeat text through to chat output without filtering", () => {
     const { broadcast, chatRunState, handler } = createHarness({ now: 3_000 });
     chatRunState.registry.add("run-heartbeat-alert", {
       sessionKey: "session-heartbeat-alert",
@@ -496,13 +458,20 @@ describe("agent event handler", () => {
       stream: "assistant",
       ts: Date.now(),
       data: {
-        text: "HEARTBEAT_OK Disk usage crossed 95 percent on /data and needs cleanup now.",
+        text: "Disk usage crossed 95 percent on /data and needs cleanup now.",
       },
     });
 
     emitLifecycleEnd(handler, "run-heartbeat-alert");
 
-    const payload = expectSingleFinalChatPayload(broadcast) as {
+    // Both delta and final are broadcast (heartbeat filtering moved to agent runner)
+    const chatCalls = chatBroadcastCalls(broadcast);
+    expect(chatCalls.length).toBeGreaterThanOrEqual(1);
+    const finalCalls = chatCalls.filter(
+      (call) => (call[1] as { state?: string })?.state === "final",
+    );
+    expect(finalCalls).toHaveLength(1);
+    const payload = finalCalls[0]?.[1] as {
       message?: { content?: Array<{ text?: string }> };
     };
     expect(payload.message?.content?.[0]?.text).toBe(

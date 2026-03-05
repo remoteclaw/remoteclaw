@@ -26,7 +26,6 @@ import type {
   ChannelMessage,
 } from "../../middleware/types.js";
 import { defaultRuntime } from "../../runtime.js";
-import { stripHeartbeatToken } from "../heartbeat.js";
 import type { TemplateContext } from "../templating.js";
 import type { VerboseLevel } from "../thinking.js";
 import { isSilentReplyPrefixText, isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
@@ -214,20 +213,7 @@ export async function runAgentTurnWithFallback(params: {
   while (true) {
     try {
       const normalizeStreamingText = (payload: ReplyPayload): { text?: string; skip: boolean } => {
-        let text = payload.text;
-        if (!params.isHeartbeat && text?.includes("HEARTBEAT_OK")) {
-          const stripped = stripHeartbeatToken(text, {
-            mode: "message",
-          });
-          if (stripped.didStrip && !didLogHeartbeatStrip) {
-            didLogHeartbeatStrip = true;
-            logVerbose("Stripped stray HEARTBEAT_OK token from reply");
-          }
-          if (stripped.shouldSkip && (payload.mediaUrls?.length ?? 0) === 0) {
-            return { skip: true };
-          }
-          text = stripped.text;
-        }
+        const text = payload.text;
         if (isSilentReplyText(text, SILENT_REPLY_TOKEN)) {
           return { skip: true };
         }

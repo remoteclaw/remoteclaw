@@ -1,11 +1,25 @@
-import { listAgentIds, resolveAgentWorkspaceDir } from "../../../agents/agent-scope.js";
+import {
+  listAgentIds,
+  resolveAgentConfig,
+  resolveAgentWorkspaceDir,
+} from "../../../agents/agent-scope.js";
 import { createDefaultDeps } from "../../../cli/deps.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
+import type { BootConfig } from "../../../gateway/boot.js";
 import { runBootOnce } from "../../../gateway/boot.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
 import type { HookHandler } from "../../hooks.js";
 import { isGatewayStartupEvent } from "../../internal-hooks.js";
 
-const log = createSubsystemLogger("hooks/boot-md");
+const log = createSubsystemLogger("hooks/boot");
+
+function resolveBootConfig(cfg: RemoteClawConfig, agentId: string): BootConfig | undefined {
+  const agentCfg = resolveAgentConfig(cfg, agentId);
+  if (agentCfg?.boot) {
+    return agentCfg.boot;
+  }
+  return cfg.agents?.defaults?.boot;
+}
 
 const runBootChecklist: HookHandler = async (event) => {
   if (!isGatewayStartupEvent(event)) {
@@ -22,9 +36,10 @@ const runBootChecklist: HookHandler = async (event) => {
 
   for (const agentId of agentIds) {
     const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
-    const result = await runBootOnce({ cfg, deps, workspaceDir, agentId });
+    const boot = resolveBootConfig(cfg, agentId);
+    const result = await runBootOnce({ cfg, deps, boot, workspaceDir, agentId });
     if (result.status === "failed") {
-      log.warn("boot-md failed for agent startup run", {
+      log.warn("boot failed for agent startup run", {
         agentId,
         workspaceDir,
         reason: result.reason,
@@ -32,7 +47,7 @@ const runBootChecklist: HookHandler = async (event) => {
       continue;
     }
     if (result.status === "skipped") {
-      log.debug("boot-md skipped for agent startup run", {
+      log.debug("boot skipped for agent startup run", {
         agentId,
         workspaceDir,
         reason: result.reason,

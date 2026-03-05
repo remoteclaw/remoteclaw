@@ -35,7 +35,7 @@ List all discovered hooks from workspace, managed, and bundled directories.
 Hooks (4/4 ready)
 
 Ready:
-  🚀 boot-md ✓ - Run BOOT.md on gateway startup
+  🚀 boot ✓ - Run boot prompt on gateway startup
   📎 bootstrap-extra-files ✓ - Inject extra workspace bootstrap files during agent bootstrap
   📝 command-logger ✓ - Log all command events to a centralized audit file
   💾 session-memory ✓ - Save session context to memory when /new command is issued
@@ -298,16 +298,16 @@ grep '"action":"new"' ~/.remoteclaw/logs/commands.log | jq .
 
 **See:** [command-logger documentation](/automation/hooks#command-logger)
 
-### boot-md
+### boot
 
-Runs `BOOT.md` when the gateway starts (after channels start).
+Runs the configured boot prompt when the gateway starts (after channels start).
 
 **Events**: `gateway:startup`
 
 **Enable**:
 
 ```bash
-remoteclaw hooks enable boot-md
+remoteclaw hooks enable boot
 ```
 
-**See:** [boot-md documentation](/automation/hooks#boot-md)
+**See:** [boot documentation](/automation/hooks#boot)

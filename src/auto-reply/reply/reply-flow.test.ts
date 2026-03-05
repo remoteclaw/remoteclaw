@@ -3,7 +3,7 @@ import { expectInboundContextContract } from "../../../test/helpers/inbound-cont
 import type { RemoteClawConfig } from "../../config/config.js";
 import { defaultRuntime } from "../../runtime.js";
 import type { MsgContext } from "../templating.js";
-import { HEARTBEAT_TOKEN, SILENT_REPLY_TOKEN } from "../tokens.js";
+import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import { finalizeInboundContext } from "./inbound-context.js";
 import { normalizeInboundTextNewlines } from "./inbound-text.js";
 import { parseLineDirectives, hasLineDirectives } from "./line-directives.js";
@@ -1113,25 +1113,7 @@ describe("createReplyDispatcher", () => {
     expect(deliver).not.toHaveBeenCalled();
   });
 
-  it("strips heartbeat tokens and applies responsePrefix", async () => {
-    const deliver = vi.fn().mockResolvedValue(undefined);
-    const onHeartbeatStrip = vi.fn();
-    const dispatcher = createReplyDispatcher({
-      deliver,
-      responsePrefix: "PFX",
-      onHeartbeatStrip,
-    });
-
-    expect(dispatcher.sendFinalReply({ text: HEARTBEAT_TOKEN })).toBe(false);
-    expect(dispatcher.sendToolResult({ text: `${HEARTBEAT_TOKEN} hello` })).toBe(true);
-    await dispatcher.waitForIdle();
-
-    expect(deliver).toHaveBeenCalledTimes(1);
-    expect(deliver.mock.calls[0][0].text).toBe("PFX hello");
-    expect(onHeartbeatStrip).toHaveBeenCalledTimes(2);
-  });
-
-  it("avoids double-prefixing and keeps media when heartbeat is the only text", async () => {
+  it("avoids double-prefixing and keeps media with silent token text", async () => {
     const deliver = vi.fn().mockResolvedValue(undefined);
     const dispatcher = createReplyDispatcher({
       deliver,
@@ -1146,12 +1128,6 @@ describe("createReplyDispatcher", () => {
     ).toBe(true);
     expect(
       dispatcher.sendFinalReply({
-        text: HEARTBEAT_TOKEN,
-        mediaUrl: "file:///tmp/photo.jpg",
-      }),
-    ).toBe(true);
-    expect(
-      dispatcher.sendFinalReply({
         text: `${SILENT_REPLY_TOKEN} -- explanation`,
         mediaUrl: "file:///tmp/photo.jpg",
       }),
@@ -1159,10 +1135,9 @@ describe("createReplyDispatcher", () => {
 
     await dispatcher.waitForIdle();
 
-    expect(deliver).toHaveBeenCalledTimes(3);
+    expect(deliver).toHaveBeenCalledTimes(2);
     expect(deliver.mock.calls[0][0].text).toBe("PFX already");
     expect(deliver.mock.calls[1][0].text).toBe("");
-    expect(deliver.mock.calls[2][0].text).toBe("");
   });
 
   it("preserves ordering across tool, block, and final replies", async () => {

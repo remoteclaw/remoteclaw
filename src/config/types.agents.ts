@@ -18,6 +18,8 @@ export type AgentConfig = {
   humanDelay?: HumanDelayConfig;
   /** Optional per-agent heartbeat overrides. */
   heartbeat?: AgentDefaultsConfig["heartbeat"];
+  /** Optional per-agent boot prompt overrides. */
+  boot?: AgentDefaultsConfig["boot"];
   identity?: IdentityConfig;
   groupChat?: GroupChatConfig;
   subagents?: {

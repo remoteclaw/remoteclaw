@@ -605,6 +605,16 @@ export const FIELD_HELP: Record<string, string> = {
   "auth.cooldowns.failureWindowHours": "Failure window (hours) for backoff counters (default: 24).",
   "agents.defaults.workspace":
     "Default workspace path exposed to agent runtime tools for filesystem context and repo-aware behavior. Set this explicitly when running from wrappers so path resolution stays deterministic.",
+  "agents.defaults.boot":
+    "Boot prompt configuration for gateway startup runs. Set `prompt` for an inline prompt or `file` for a path relative to the workspace directory. If neither is set, boot is skipped.",
+  "agents.defaults.boot.prompt":
+    "Inline boot prompt text. Takes precedence over `file` if both are set.",
+  "agents.defaults.boot.file":
+    "Path to a boot prompt file (relative to workspace directory). Read at runtime on each gateway startup.",
+  "agents.list[].boot": "Per-agent boot prompt override. Same shape as `agents.defaults.boot`.",
+  "agents.list[].boot.prompt": "Per-agent inline boot prompt text.",
+  "agents.list[].boot.file":
+    "Per-agent boot prompt file path (relative to agent workspace directory).",
   "agents.defaults.bootstrapMaxChars":
     "Max characters of each workspace bootstrap file injected into the system prompt before truncation (default: 20000).",
   "agents.defaults.bootstrapTotalMaxChars":

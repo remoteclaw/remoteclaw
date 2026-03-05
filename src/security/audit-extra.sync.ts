@@ -1,6 +1,6 @@
-import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
+import { isToolAllowedByPolicies } from "../agents/tool-policy-resolution.js";
 // Sandbox infrastructure removed (#68)
-type SandboxToolPolicy = { allow?: string[]; deny?: string[] };
+type ToolPolicy = { allow?: string[]; deny?: string[] };
 const resolveSandboxConfigForAgent = (_cfg: unknown, _agentId?: string) =>
   ({
     mode: "off",
@@ -17,8 +17,8 @@ const resolveSandboxConfigForAgent = (_cfg: unknown, _agentId?: string) =>
     prune: unknown;
     scope: unknown;
   };
-const resolveSandboxToolPolicyForAgent = (_cfg: unknown, _agentId?: string) =>
-  undefined as SandboxToolPolicy | undefined;
+const resolveToolPolicyForAgent = (_cfg: unknown, _agentId?: string) =>
+  undefined as ToolPolicy | undefined;
 const isDangerousNetworkMode = (_mode: string) => false;
 const normalizeNetworkMode = (_mode?: string) => undefined as string | undefined;
 const getBlockedBindReason = (_bind: string) =>
@@ -26,10 +26,10 @@ const getBlockedBindReason = (_bind: string) =>
     | { kind: "non_absolute"; sourcePath: string }
     | { kind: "covers" | "targets"; blockedPath: string }
     | undefined;
-function pickSandboxToolPolicy(config?: {
+function normalizeToolPolicy(config?: {
   allow?: string[];
   deny?: string[];
-}): SandboxToolPolicy | undefined {
+}): ToolPolicy | undefined {
   if (!config) {
     return undefined;
   }
@@ -278,26 +278,26 @@ function resolveToolPolicies(params: {
   agentTools?: AgentToolsConfig;
   sandboxMode?: "off" | "non-main" | "all";
   agentId?: string | null;
-}): SandboxToolPolicy[] {
-  const policies: SandboxToolPolicy[] = [];
+}): ToolPolicy[] {
+  const policies: ToolPolicy[] = [];
   const profile = params.agentTools?.profile ?? params.cfg.tools?.profile;
   const profilePolicy = resolveToolProfilePolicy(profile);
   if (profilePolicy) {
     policies.push(profilePolicy);
   }
 
-  const globalPolicy = pickSandboxToolPolicy(params.cfg.tools ?? undefined);
+  const globalPolicy = normalizeToolPolicy(params.cfg.tools ?? undefined);
   if (globalPolicy) {
     policies.push(globalPolicy);
   }
 
-  const agentPolicy = pickSandboxToolPolicy(params.agentTools);
+  const agentPolicy = normalizeToolPolicy(params.agentTools);
   if (agentPolicy) {
     policies.push(agentPolicy);
   }
 
   if (params.sandboxMode === "all") {
-    const sandboxPolicy = resolveSandboxToolPolicyForAgent(params.cfg, params.agentId ?? undefined);
+    const sandboxPolicy = resolveToolPolicyForAgent(params.cfg, params.agentId ?? undefined);
     if (sandboxPolicy) {
       policies.push(sandboxPolicy);
     }

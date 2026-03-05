@@ -17,8 +17,8 @@ import {
 } from "../../slack/actions.js";
 import { parseSlackBlocksInput } from "../../slack/blocks-input.js";
 import { parseSlackTarget, resolveSlackChannelId } from "../../slack/targets.js";
+import type { AgentToolResult } from "../agent-types.js";
 import { withNormalizedTimestamp } from "../date-time.js";
-import type { AgentToolResult } from "../pi-types.js";
 import {
   createActionGate,
   jsonResult,

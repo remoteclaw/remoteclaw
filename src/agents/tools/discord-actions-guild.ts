@@ -20,7 +20,7 @@ import {
   uploadEmojiDiscord,
   uploadStickerDiscord,
 } from "../../discord/send.js";
-import type { AgentToolResult } from "../pi-types.js";
+import type { AgentToolResult } from "../agent-types.js";
 import {
   type ActionGate,
   jsonResult,

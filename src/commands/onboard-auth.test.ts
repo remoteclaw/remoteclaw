@@ -7,7 +7,7 @@ import {
   resolveAgentModelFallbackValues,
   resolveAgentModelPrimaryValue,
 } from "../config/model-input.js";
-import type { OAuthCredentials } from "../types/pi-compat.js";
+import type { OAuthCredentials } from "../types/agent-types.js";
 import {
   applyAuthProfileConfig,
   applyLitellmProviderConfig,

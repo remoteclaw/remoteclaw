@@ -12,14 +12,3 @@ export function resolveRemoteClawAgentDir(): string {
   const defaultAgentDir = path.join(resolveStateDir(), "agents", DEFAULT_AGENT_ID, "agent");
   return resolveUserPath(defaultAgentDir);
 }
-
-export function ensureRemoteClawAgentEnv(): string {
-  const dir = resolveRemoteClawAgentDir();
-  if (!process.env.REMOTECLAW_AGENT_DIR) {
-    process.env.REMOTECLAW_AGENT_DIR = dir;
-  }
-  if (!process.env.PI_CODING_AGENT_DIR) {
-    process.env.PI_CODING_AGENT_DIR = dir;
-  }
-  return dir;
-}

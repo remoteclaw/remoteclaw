@@ -1,5 +1,5 @@
-// Local structural type stubs replacing @mariozechner/pi-agent-core and @mariozechner/pi-ai types.
-// These match the shapes actually consumed by live code after the Pi execution engine removal.
+// Agent message and tool type definitions.
+// These define the shapes consumed by agent runtime, channels, and tool infrastructure.
 
 export interface TextContent {
   type: "text";

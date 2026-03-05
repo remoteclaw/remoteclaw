@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { truncateUtf16Safe } from "../../utils.js";
-import type { AgentMessage } from "../pi-types.js";
+import type { AgentMessage } from "../agent-types.js";
 import type { WorkspaceBootstrapFile } from "../workspace.js";
 import type { ContextFile } from "./types.js";
 

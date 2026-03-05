@@ -13,7 +13,7 @@ import type {
 } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
-import type { AgentToolResult } from "../../types/pi-compat.js";
+import type { AgentToolResult } from "../../types/agent-types.js";
 import {
   isDeliverableMessageChannel,
   normalizeMessageChannel,

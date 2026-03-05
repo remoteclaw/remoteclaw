@@ -1,12 +1,12 @@
 import { Type } from "@sinclair/typebox";
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
+import type { AgentTool, AgentToolResult } from "./agent-types.js";
 import {
   filterToolsByPolicy,
   isToolAllowedByPolicyName,
   resolveSubagentToolPolicy,
-} from "./pi-tools.policy.js";
-import type { AgentTool, AgentToolResult } from "./pi-types.js";
+} from "./tool-policy-resolution.js";
 
 function createStubTool(name: string): AgentTool {
   return {
@@ -18,7 +18,7 @@ function createStubTool(name: string): AgentTool {
   };
 }
 
-describe("pi-tools.policy", () => {
+describe("tool-policy-resolution", () => {
   it("treats * in allow as allow-all", () => {
     const tools = [createStubTool("read"), createStubTool("exec")];
     const filtered = filterToolsByPolicy(tools, { allow: ["*"] });

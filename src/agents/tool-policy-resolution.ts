@@ -6,17 +6,17 @@ import { normalizeAgentId } from "../routing/session-key.js";
 import { resolveThreadParentSessionKey } from "../sessions/session-key-utils.js";
 import { normalizeMessageChannel } from "../utils/message-channel.js";
 import { resolveAgentConfig, resolveAgentIdFromSessionKey } from "./agent-scope.js";
+import type { AnyAgentTool } from "./agent-tool-types.js";
 import { compileGlobPatterns, matchesAnyGlobPattern } from "./glob-pattern.js";
-import type { AnyAgentTool } from "./pi-tools.types.js";
 import { expandToolGroups, normalizeToolName } from "./tool-policy.js";
 
-// Sandbox infrastructure removed (#68); inline the types and helpers that survived the gut.
-type SandboxToolPolicy = { allow?: string[]; deny?: string[] };
+// Tool policy types and helpers for allow/deny resolution.
+type ToolPolicy = { allow?: string[]; deny?: string[] };
 
-function pickSandboxToolPolicy(config?: {
+function normalizeToolPolicy(config?: {
   allow?: string[];
   deny?: string[];
-}): SandboxToolPolicy | undefined {
+}): ToolPolicy | undefined {
   if (!config) {
     return undefined;
   }
@@ -28,7 +28,7 @@ function pickSandboxToolPolicy(config?: {
   return { allow, deny };
 }
 
-function makeToolPolicyMatcher(policy: SandboxToolPolicy) {
+function makeToolPolicyMatcher(policy: ToolPolicy) {
   const deny = compileGlobPatterns({
     raw: expandToolGroups(policy.deny ?? []),
     normalize: normalizeToolName,
@@ -93,10 +93,7 @@ function resolveSubagentDenyList(depth: number, maxSpawnDepth: number): string[]
   return [...SUBAGENT_TOOL_DENY_ALWAYS];
 }
 
-export function resolveSubagentToolPolicy(
-  cfg?: RemoteClawConfig,
-  depth?: number,
-): SandboxToolPolicy {
+export function resolveSubagentToolPolicy(cfg?: RemoteClawConfig, depth?: number): ToolPolicy {
   const configured = cfg?.tools?.subagents?.tools;
   const maxSpawnDepth =
     cfg?.agents?.defaults?.subagents?.maxSpawnDepth ?? DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH;
@@ -115,27 +112,20 @@ export function resolveSubagentToolPolicy(
   return { allow: mergedAllow, deny };
 }
 
-export function isToolAllowedByPolicyName(name: string, policy?: SandboxToolPolicy): boolean {
+export function isToolAllowedByPolicyName(name: string, policy?: ToolPolicy): boolean {
   if (!policy) {
     return true;
   }
   return makeToolPolicyMatcher(policy)(name);
 }
 
-export function filterToolsByPolicy(tools: AnyAgentTool[], policy?: SandboxToolPolicy) {
+export function filterToolsByPolicy(tools: AnyAgentTool[], policy?: ToolPolicy) {
   if (!policy) {
     return tools;
   }
   const matcher = makeToolPolicyMatcher(policy);
   return tools.filter((tool) => matcher(tool.name));
 }
-
-type ToolPolicyConfig = {
-  allow?: string[];
-  alsoAllow?: string[];
-  deny?: string[];
-  profile?: string;
-};
 
 function normalizeProviderKey(value: string): string {
   return value.trim().toLowerCase();
@@ -169,11 +159,18 @@ function resolveGroupContextFromSessionKey(sessionKey?: string | null): {
   return { channel: channel.trim().toLowerCase(), groupId };
 }
 
+type ProviderToolPolicyConfig = {
+  allow?: string[];
+  alsoAllow?: string[];
+  deny?: string[];
+  profile?: string;
+};
+
 function resolveProviderToolPolicy(params: {
-  byProvider?: Record<string, ToolPolicyConfig>;
+  byProvider?: Record<string, ProviderToolPolicyConfig>;
   modelProvider?: string;
   modelId?: string;
-}): ToolPolicyConfig | undefined {
+}): ProviderToolPolicyConfig | undefined {
   const provider = params.modelProvider?.trim();
   if (!provider || !params.byProvider) {
     return undefined;
@@ -184,7 +181,7 @@ function resolveProviderToolPolicy(params: {
     return undefined;
   }
 
-  const lookup = new Map<string, ToolPolicyConfig>();
+  const lookup = new Map<string, ProviderToolPolicyConfig>();
   for (const [key, value] of entries) {
     const normalized = normalizeProviderKey(key);
     if (!normalized) {
@@ -241,10 +238,10 @@ export function resolveEffectiveToolPolicy(params: {
   });
   return {
     agentId,
-    globalPolicy: pickSandboxToolPolicy(globalTools),
-    globalProviderPolicy: pickSandboxToolPolicy(providerPolicy),
-    agentPolicy: pickSandboxToolPolicy(agentTools),
-    agentProviderPolicy: pickSandboxToolPolicy(agentProviderPolicy),
+    globalPolicy: normalizeToolPolicy(globalTools),
+    globalProviderPolicy: normalizeToolPolicy(providerPolicy),
+    agentPolicy: normalizeToolPolicy(agentTools),
+    agentProviderPolicy: normalizeToolPolicy(agentProviderPolicy),
     profile,
     providerProfile: agentProviderPolicy?.profile ?? providerPolicy?.profile,
     // alsoAllow is applied at the profile stage (to avoid being filtered out early).
@@ -274,7 +271,7 @@ export function resolveGroupToolPolicy(params: {
   senderName?: string | null;
   senderUsername?: string | null;
   senderE164?: string | null;
-}): SandboxToolPolicy | undefined {
+}): ToolPolicy | undefined {
   if (!params.config) {
     return undefined;
   }
@@ -317,12 +314,9 @@ export function resolveGroupToolPolicy(params: {
       senderUsername: params.senderUsername,
       senderE164: params.senderE164,
     });
-  return pickSandboxToolPolicy(toolsConfig);
+  return normalizeToolPolicy(toolsConfig);
 }
 
-export function isToolAllowedByPolicies(
-  name: string,
-  policies: Array<SandboxToolPolicy | undefined>,
-) {
+export function isToolAllowedByPolicies(name: string, policies: Array<ToolPolicy | undefined>) {
   return policies.every((policy) => isToolAllowedByPolicyName(name, policy));
 }

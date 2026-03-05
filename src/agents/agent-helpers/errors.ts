@@ -1,6 +1,6 @@
 import type { RemoteClawConfig } from "../../config/config.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
-import type { AssistantMessage } from "../pi-types.js";
+import type { AssistantMessage } from "../agent-types.js";
 import { stableStringify } from "../stable-stringify.js";
 import type { FailoverReason } from "./types.js";
 

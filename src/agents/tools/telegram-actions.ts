@@ -16,7 +16,7 @@ import {
 } from "../../telegram/send.js";
 import { getCacheStats, searchStickers } from "../../telegram/sticker-cache.js";
 import { resolveTelegramToken } from "../../telegram/token.js";
-import type { AgentToolResult } from "../pi-types.js";
+import type { AgentToolResult } from "../agent-types.js";
 import {
   jsonResult,
   readNumberParam,

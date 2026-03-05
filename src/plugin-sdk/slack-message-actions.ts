@@ -1,7 +1,7 @@
 import { readNumberParam, readStringParam } from "../agents/tools/common.js";
 import type { ChannelMessageActionContext } from "../channels/plugins/types.js";
 import { parseSlackBlocksInput } from "../slack/blocks-input.js";
-import type { AgentToolResult } from "../types/pi-compat.js";
+import type { AgentToolResult } from "../types/agent-types.js";
 
 type SlackActionInvoke = (
   action: Record<string, unknown>,

@@ -1,5 +1,5 @@
+import type { AgentMessage, AgentToolResult } from "../agent-types.js";
 import type { ImageSanitizationLimits } from "../image-sanitization.js";
-import type { AgentMessage, AgentToolResult } from "../pi-types.js";
 import type { ToolCallIdMode } from "../tool-call-id.js";
 import { sanitizeToolCallIdsForCloudCodeAssist } from "../tool-call-id.js";
 import { sanitizeContentBlocksImages } from "../tool-images.js";

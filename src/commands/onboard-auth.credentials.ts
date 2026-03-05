@@ -4,7 +4,7 @@ import { resolveRemoteClawAgentDir } from "../agents/agent-paths.js";
 import { upsertAuthProfile } from "../agents/auth-profiles.js";
 import { resolveStateDir } from "../config/paths.js";
 import { KILOCODE_DEFAULT_MODEL_REF } from "../providers/kilocode-shared.js";
-import type { OAuthCredentials } from "../types/pi-compat.js";
+import type { OAuthCredentials } from "../types/agent-types.js";
 export { MISTRAL_DEFAULT_MODEL_REF, XAI_DEFAULT_MODEL_REF } from "./onboard-auth.models.js";
 export { KILOCODE_DEFAULT_MODEL_REF };
 

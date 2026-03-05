@@ -1,5 +1,5 @@
 import type { RemoteClawConfig } from "../../config/config.js";
-import type { AgentToolResult } from "../../types/pi-compat.js";
+import type { AgentToolResult } from "../../types/agent-types.js";
 import { getChannelPlugin, listChannelPlugins } from "./index.js";
 import type { ChannelMessageActionContext, ChannelMessageActionName } from "./types.js";
 

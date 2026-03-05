@@ -1,4 +1,4 @@
-import type { ImageContent } from "../types/pi-compat.js";
+import type { ImageContent } from "../types/agent-types.js";
 import type { TypingController } from "./reply/typing.js";
 
 export type BlockReplyContext = {

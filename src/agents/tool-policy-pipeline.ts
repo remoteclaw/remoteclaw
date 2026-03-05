@@ -1,5 +1,5 @@
-import { filterToolsByPolicy } from "./pi-tools.policy.js";
-import type { AnyAgentTool } from "./pi-tools.types.js";
+import type { AnyAgentTool } from "./agent-tool-types.js";
+import { filterToolsByPolicy } from "./tool-policy-resolution.js";
 import {
   buildPluginToolGroups,
   expandPolicyWithPluginGroups,

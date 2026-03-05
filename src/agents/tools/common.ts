@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { detectMime } from "../../media/mime.js";
+import type { AgentTool, AgentToolResult } from "../agent-types.js";
 import type { ImageSanitizationLimits } from "../image-sanitization.js";
-import type { AgentTool, AgentToolResult } from "../pi-types.js";
 import { sanitizeToolResultImages } from "../tool-images.js";
 
 export type AnyAgentTool = AgentTool & {

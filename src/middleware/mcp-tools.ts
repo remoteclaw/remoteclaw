@@ -4,6 +4,7 @@ import { registerCanvasTools } from "./mcp-handlers/canvas.js";
 import type { McpHandlerContext } from "./mcp-handlers/context.js";
 import { registerCronTools } from "./mcp-handlers/cron.js";
 import { registerGatewayTools } from "./mcp-handlers/gateway.js";
+import { registerHeartbeatTools } from "./mcp-handlers/heartbeat.js";
 import { registerMessageTools } from "./mcp-handlers/message.js";
 import { registerNodeTools } from "./mcp-handlers/nodes.js";
 import { callMcpGateway, registerSessionTools } from "./mcp-handlers/session.js";
@@ -74,6 +75,7 @@ function wrapWithToolHooks(server: McpServer, ctx: McpHandlerContext): McpServer
  * Tool categories:
  * - Session management (7 tools) — always registered
  * - Channel messaging (10 tools) — always registered
+ * - Heartbeat (1 tool) — always registered
  * - Cron scheduling (7 tools) — owner-only
  * - Gateway admin (5 tools) — owner-only
  * - Node management (7 tools) — owner-only
@@ -92,6 +94,7 @@ export async function registerAllTools(server: McpServer, ctx: McpHandlerContext
   const hooked = wrapWithToolHooks(server, ctx);
   registerSessionTools(hooked, ctx);
   registerMessageTools(hooked, ctx);
+  registerHeartbeatTools(hooked, ctx);
   if (ctx.senderIsOwner) {
     registerCronTools(hooked, ctx);
     registerGatewayTools(hooked, ctx);

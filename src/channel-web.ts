@@ -3,7 +3,6 @@
 export {
   DEFAULT_WEB_MEDIA_BYTES,
   HEARTBEAT_PROMPT,
-  HEARTBEAT_TOKEN,
   monitorWebChannel,
   resolveHeartbeatRecipients,
   runWebHeartbeatOnce,

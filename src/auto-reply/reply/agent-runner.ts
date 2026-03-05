@@ -508,10 +508,28 @@ export async function runReplyAgent(params: {
       }),
       accountId: sessionCtx.AccountId,
     });
-    const { replyPayloads } = payloadResult;
+    let { replyPayloads } = payloadResult;
     didLogHeartbeatStrip = payloadResult.didLogHeartbeatStrip;
 
+    // Tag the primary payload with heartbeat report data from MCP side effects.
+    if (isHeartbeat && runResult.mcp.heartbeatReport && replyPayloads.length > 0) {
+      const report = runResult.mcp.heartbeatReport;
+      replyPayloads = replyPayloads.map((payload, i) =>
+        i === 0 ? { ...payload, heartbeatReport: report } : payload,
+      );
+    }
+
     if (replyPayloads.length === 0) {
+      // If heartbeat_report was called with anything_done: false and no payloads,
+      // return a tagged empty payload so the heartbeat runner can detect the tool call.
+      if (isHeartbeat && runResult.mcp.heartbeatReport) {
+        const report = runResult.mcp.heartbeatReport;
+        return finalizeWithFollowup(
+          { text: report.summary ?? "", heartbeatReport: report },
+          queueKey,
+          runFollowupTurn,
+        );
+      }
       return finalizeWithFollowup(undefined, queueKey, runFollowupTurn);
     }
 

@@ -158,12 +158,10 @@ vi.mock("./delivery-target.js", () => ({
 }));
 
 vi.mock("./helpers.js", () => ({
-  isHeartbeatOnlyResponse: vi.fn().mockReturnValue(false),
   pickLastDeliverablePayload: vi.fn().mockReturnValue(undefined),
   pickLastNonEmptyTextFromPayloads: vi.fn().mockReturnValue("test output"),
   pickSummaryFromOutput: vi.fn().mockReturnValue("summary"),
   pickSummaryFromPayloads: vi.fn().mockReturnValue("summary"),
-  resolveHeartbeatAckMaxChars: vi.fn().mockReturnValue(100),
 }));
 
 vi.mock("./delivery-dispatch.js", () => ({

@@ -119,34 +119,6 @@ function createEnoentError() {
   return err;
 }
 
-function createErrnoError(code: string) {
-  const err = new Error(code) as NodeJS.ErrnoException;
-  err.code = code;
-  return err;
-}
-
-function mockWorkspaceStateRead(params: {
-  onboardingCompletedAt?: string;
-  errorCode?: string;
-  rawContent?: string;
-}) {
-  mocks.fsReadFile.mockImplementation(async (...args: unknown[]) => {
-    const filePath = args[0];
-    if (String(filePath).endsWith("workspace-state.json")) {
-      if (params.errorCode) {
-        throw createErrnoError(params.errorCode);
-      }
-      if (typeof params.rawContent === "string") {
-        return params.rawContent;
-      }
-      return JSON.stringify({
-        onboardingCompletedAt: params.onboardingCompletedAt ?? "2026-02-15T14:00:00.000Z",
-      });
-    }
-    throw createEnoentError();
-  });
-}
-
 async function listAgentFileNames(agentId = "main") {
   const { respond, promise } = makeCall("agents.files.list", { agentId });
   await promise;
@@ -433,28 +405,7 @@ describe("agents.files.list", () => {
     mocks.loadConfigReturn = {};
   });
 
-  it("includes BOOTSTRAP.md when onboarding has not completed", async () => {
-    const names = await listAgentFileNames();
-    expect(names).toContain("BOOTSTRAP.md");
-  });
-
-  it("hides BOOTSTRAP.md when workspace onboarding is complete", async () => {
-    mockWorkspaceStateRead({ onboardingCompletedAt: "2026-02-15T14:00:00.000Z" });
-
-    const names = await listAgentFileNames();
-    expect(names).not.toContain("BOOTSTRAP.md");
-  });
-
-  it("falls back to showing BOOTSTRAP.md when workspace state cannot be read", async () => {
-    mockWorkspaceStateRead({ errorCode: "EACCES" });
-
-    const names = await listAgentFileNames();
-    expect(names).toContain("BOOTSTRAP.md");
-  });
-
-  it("falls back to showing BOOTSTRAP.md when workspace state is malformed JSON", async () => {
-    mockWorkspaceStateRead({ rawContent: "{" });
-
+  it("always includes BOOTSTRAP.md in the file list", async () => {
     const names = await listAgentFileNames();
     expect(names).toContain("BOOTSTRAP.md");
   });

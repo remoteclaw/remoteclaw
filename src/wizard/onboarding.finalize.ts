@@ -1,6 +1,3 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import { DEFAULT_BOOTSTRAP_FILENAME } from "../agents/workspace.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import {
   buildGatewayInstallPlan,
@@ -28,7 +25,6 @@ import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { restoreTerminalState } from "../terminal/restore.js";
 import { runTui } from "../tui/tui.js";
-import { resolveUserPath } from "../utils.js";
 import { setupOnboardingShellCompletion } from "./onboarding.completion.js";
 import type { GatewayWizardSettings, WizardFlow } from "./onboarding.types.js";
 import type { WizardPrompter } from "./prompts.js";
@@ -262,15 +258,6 @@ export async function finalizeOnboardingWizard(
   const gatewayStatusLine = gatewayProbe.ok
     ? "Gateway: reachable"
     : `Gateway: not detected${gatewayProbe.detail ? ` (${gatewayProbe.detail})` : ""}`;
-  const bootstrapPath = path.join(
-    resolveUserPath(options.workspaceDir),
-    DEFAULT_BOOTSTRAP_FILENAME,
-  );
-  const hasBootstrap = await fs
-    .access(bootstrapPath)
-    .then(() => true)
-    .catch(() => false);
-
   await prompter.note(
     [
       `Web UI: ${links.httpUrl}`,
@@ -293,18 +280,6 @@ export async function finalizeOnboardingWizard(
   let launchedTui = false;
 
   if (!opts.skipUi && gatewayProbe.ok) {
-    if (hasBootstrap) {
-      await prompter.note(
-        [
-          "This is the defining action that makes your agent you.",
-          "Please take your time.",
-          "The more you tell it, the better the experience will be.",
-          'We will send: "Wake up, my friend!"',
-        ].join("\n"),
-        "Start TUI (best option!)",
-      );
-    }
-
     await prompter.note(
       [
         "Gateway token: shared auth for the Gateway + Control UI.",
@@ -336,7 +311,7 @@ export async function finalizeOnboardingWizard(
         password: settings.authMode === "password" ? nextConfig.gateway?.auth?.password : "",
         // Safety: onboarding TUI should not auto-deliver to lastProvider/lastTo.
         deliver: false,
-        message: hasBootstrap ? "Wake up, my friend!" : undefined,
+        message: undefined,
       });
       launchedTui = true;
     } else if (hatchChoice === "web") {

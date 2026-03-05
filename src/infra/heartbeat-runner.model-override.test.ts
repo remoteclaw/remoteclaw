@@ -75,6 +75,7 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
               target: "whatsapp",
               model: params.model,
               suppressToolErrorWarnings: params.suppressToolErrorWarnings,
+              prompt: "Check status",
             },
           },
         },
@@ -129,6 +130,7 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
             heartbeat: {
               every: "30m",
               model: "openai/gpt-4o-mini",
+              prompt: "Check status",
             },
           },
           list: [
@@ -140,6 +142,7 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
                 every: "5m",
                 target: "whatsapp",
                 model: "ollama/llama3.2:1b",
+                prompt: "Check status",
               },
             },
           ],

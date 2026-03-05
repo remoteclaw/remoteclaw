@@ -1,75 +1,91 @@
-import { describe, expect, it } from "vitest";
-import { isHeartbeatContentEffectivelyEmpty } from "./heartbeat.js";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { resolveHeartbeatPrompt } from "./heartbeat.js";
 
-describe("isHeartbeatContentEffectivelyEmpty", () => {
-  it("returns false for undefined/null (missing file should not skip)", () => {
-    expect(isHeartbeatContentEffectivelyEmpty(undefined)).toBe(false);
-    expect(isHeartbeatContentEffectivelyEmpty(null)).toBe(false);
+let fixtureRoot = "";
+
+beforeAll(async () => {
+  fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-heartbeat-test-"));
+});
+
+afterAll(async () => {
+  if (fixtureRoot) {
+    await fs.rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+describe("resolveHeartbeatPrompt", () => {
+  it("returns empty string when neither prompt nor file is set", async () => {
+    expect(await resolveHeartbeatPrompt({})).toBe("");
+    expect(await resolveHeartbeatPrompt({ prompt: "", file: "" })).toBe("");
+    expect(await resolveHeartbeatPrompt({ prompt: "   " })).toBe("");
   });
 
-  it("returns true for empty string", () => {
-    expect(isHeartbeatContentEffectivelyEmpty("")).toBe(true);
+  it("returns trimmed prompt when set", async () => {
+    expect(await resolveHeartbeatPrompt({ prompt: "  ping  " })).toBe("ping");
+    expect(await resolveHeartbeatPrompt({ prompt: "Check health" })).toBe("Check health");
   });
 
-  it("returns true for whitespace only", () => {
-    expect(isHeartbeatContentEffectivelyEmpty("   ")).toBe(true);
-    expect(isHeartbeatContentEffectivelyEmpty("\n\n\n")).toBe(true);
-    expect(isHeartbeatContentEffectivelyEmpty("  \n  \n  ")).toBe(true);
-    expect(isHeartbeatContentEffectivelyEmpty("\t\t")).toBe(true);
+  it("prompt takes precedence over file", async () => {
+    const dir = path.join(fixtureRoot, "precedence");
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, "hb.md"), "File content", "utf-8");
+
+    expect(
+      await resolveHeartbeatPrompt({
+        prompt: "Config prompt",
+        file: "hb.md",
+        workspaceDir: dir,
+      }),
+    ).toBe("Config prompt");
   });
 
-  it("returns true for header-only content", () => {
-    expect(isHeartbeatContentEffectivelyEmpty("# HEARTBEAT.md")).toBe(true);
-    expect(isHeartbeatContentEffectivelyEmpty("# HEARTBEAT.md\n")).toBe(true);
-    expect(isHeartbeatContentEffectivelyEmpty("# HEARTBEAT.md\n\n")).toBe(true);
+  it("reads file relative to workspaceDir", async () => {
+    const dir = path.join(fixtureRoot, "file-read");
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, "HEARTBEAT.md"), "- Check server\n- Review PRs\n", "utf-8");
+
+    expect(
+      await resolveHeartbeatPrompt({
+        file: "HEARTBEAT.md",
+        workspaceDir: dir,
+      }),
+    ).toBe("- Check server\n- Review PRs");
   });
 
-  it("returns true for comments only", () => {
-    expect(isHeartbeatContentEffectivelyEmpty("# Header\n# Another comment")).toBe(true);
-    expect(isHeartbeatContentEffectivelyEmpty("## Subheader\n### Another")).toBe(true);
+  it("reads file with absolute path", async () => {
+    const dir = path.join(fixtureRoot, "abs-path");
+    await fs.mkdir(dir, { recursive: true });
+    const absPath = path.join(dir, "custom.md");
+    await fs.writeFile(absPath, "Absolute file content", "utf-8");
+
+    expect(await resolveHeartbeatPrompt({ file: absPath })).toBe("Absolute file content");
   });
 
-  it("returns true for default template content (header + comment)", () => {
-    const defaultTemplate = `# HEARTBEAT.md
+  it("returns empty string when file is missing", async () => {
+    const dir = path.join(fixtureRoot, "missing-file");
+    await fs.mkdir(dir, { recursive: true });
 
-Keep this file empty unless you want a tiny checklist. Keep it small.
-`;
-    // Note: The template has actual text content, so it's NOT effectively empty
-    expect(isHeartbeatContentEffectivelyEmpty(defaultTemplate)).toBe(false);
+    expect(
+      await resolveHeartbeatPrompt({
+        file: "nonexistent.md",
+        workspaceDir: dir,
+      }),
+    ).toBe("");
   });
 
-  it("returns true for header with only empty lines", () => {
-    expect(isHeartbeatContentEffectivelyEmpty("# HEARTBEAT.md\n\n\n")).toBe(true);
-  });
+  it("returns empty string when file is empty", async () => {
+    const dir = path.join(fixtureRoot, "empty-file");
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, "empty.md"), "   \n\n  ", "utf-8");
 
-  it("returns false when actionable content exists", () => {
-    expect(isHeartbeatContentEffectivelyEmpty("- Check email")).toBe(false);
-    expect(isHeartbeatContentEffectivelyEmpty("# HEARTBEAT.md\n- Task 1")).toBe(false);
-    expect(isHeartbeatContentEffectivelyEmpty("Remind me to call mom")).toBe(false);
-  });
-
-  it("returns false for content with tasks after header", () => {
-    const content = `# HEARTBEAT.md
-
-- Task 1
-- Task 2
-`;
-    expect(isHeartbeatContentEffectivelyEmpty(content)).toBe(false);
-  });
-
-  it("returns false for mixed content with non-comment text", () => {
-    const content = `# HEARTBEAT.md
-## Tasks
-Check the server logs
-`;
-    expect(isHeartbeatContentEffectivelyEmpty(content)).toBe(false);
-  });
-
-  it("treats markdown headers as comments (effectively empty)", () => {
-    const content = `# HEARTBEAT.md
-## Section 1
-### Subsection
-`;
-    expect(isHeartbeatContentEffectivelyEmpty(content)).toBe(true);
+    expect(
+      await resolveHeartbeatPrompt({
+        file: "empty.md",
+        workspaceDir: dir,
+      }),
+    ).toBe("");
   });
 });

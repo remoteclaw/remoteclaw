@@ -35,6 +35,7 @@ export const HeartbeatSchema = z
     to: z.string().optional(),
     accountId: z.string().optional(),
     prompt: z.string().optional(),
+    file: z.string().optional(),
     suppressToolErrorWarnings: z.boolean().optional(),
   })
   .strict()

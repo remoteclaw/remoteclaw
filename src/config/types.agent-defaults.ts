@@ -216,6 +216,8 @@ export type AgentDefaultsConfig = {
     accountId?: string;
     /** Override the heartbeat prompt body (default: "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats."). */
     prompt?: string;
+    /** Path to a file containing the heartbeat prompt (relative to workspace, read at runtime). prompt takes precedence if both set. */
+    file?: string;
     /** Suppress tool error warning payloads during heartbeat runs. */
     suppressToolErrorWarnings?: boolean;
     /**

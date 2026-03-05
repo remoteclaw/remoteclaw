@@ -7,12 +7,10 @@ import {
 } from "../agents/agent-scope.js";
 import { appendCronStyleCurrentTimeLine } from "../agents/current-time.js";
 import { resolveEffectiveMessagesConfig } from "../agents/identity.js";
-import { DEFAULT_HEARTBEAT_FILENAME } from "../agents/workspace.js";
 import { resolveHeartbeatReplyPayload } from "../auto-reply/heartbeat-reply-payload.js";
 import {
   DEFAULT_HEARTBEAT_EVERY,
-  isHeartbeatContentEffectivelyEmpty,
-  resolveHeartbeatPrompt as resolveHeartbeatPromptText,
+  resolveHeartbeatPrompt as resolveHeartbeatPromptFromConfig,
 } from "../auto-reply/heartbeat.js";
 import { getReplyFromConfig } from "../auto-reply/reply.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
@@ -37,7 +35,7 @@ import { getQueueSize } from "../process/command-queue.js";
 import { CommandLane } from "../process/lanes.js";
 import { normalizeAgentId, toAgentStoreSessionKey } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
-import { formatErrorMessage, hasErrnoCode } from "./errors.js";
+import { formatErrorMessage } from "./errors.js";
 import { isWithinActiveHours } from "./heartbeat-active-hours.js";
 import {
   buildExecEventPrompt,
@@ -152,7 +150,7 @@ export function resolveHeartbeatSummaryForAgent(
       enabled: false,
       every: "disabled",
       everyMs: null,
-      prompt: resolveHeartbeatPromptText(defaults?.prompt),
+      prompt: defaults?.prompt?.trim() || (defaults?.file ? `[file: ${defaults.file}]` : ""),
       target: defaults?.target ?? DEFAULT_HEARTBEAT_TARGET,
       model: defaults?.model,
     };
@@ -161,9 +159,9 @@ export function resolveHeartbeatSummaryForAgent(
   const merged = defaults || overrides ? { ...defaults, ...overrides } : undefined;
   const every = merged?.every ?? defaults?.every ?? overrides?.every ?? DEFAULT_HEARTBEAT_EVERY;
   const everyMs = resolveHeartbeatIntervalMs(cfg, undefined, merged);
-  const prompt = resolveHeartbeatPromptText(
-    merged?.prompt ?? defaults?.prompt ?? overrides?.prompt,
-  );
+  const rawPrompt = merged?.prompt ?? defaults?.prompt ?? overrides?.prompt;
+  const rawFile = merged?.file ?? defaults?.file ?? overrides?.file;
+  const prompt = rawPrompt?.trim() || (rawFile ? `[file: ${rawFile}]` : "");
   const target =
     merged?.target ?? defaults?.target ?? overrides?.target ?? DEFAULT_HEARTBEAT_TARGET;
   const model = merged?.model ?? defaults?.model ?? overrides?.model;
@@ -222,8 +220,17 @@ export function resolveHeartbeatIntervalMs(
   return ms;
 }
 
-export function resolveHeartbeatPrompt(cfg: RemoteClawConfig, heartbeat?: HeartbeatConfig) {
-  return resolveHeartbeatPromptText(heartbeat?.prompt ?? cfg.agents?.defaults?.heartbeat?.prompt);
+export async function resolveHeartbeatPrompt(
+  cfg: RemoteClawConfig,
+  heartbeat?: HeartbeatConfig,
+  agentId?: string,
+): Promise<string> {
+  const defaults = cfg.agents?.defaults?.heartbeat;
+  const prompt = heartbeat?.prompt ?? defaults?.prompt;
+  const file = heartbeat?.file ?? defaults?.file;
+  const resolvedAgentId = agentId ?? resolveDefaultAgentId(cfg);
+  const workspaceDir = resolveAgentWorkspaceDir(cfg, resolvedAgentId);
+  return resolveHeartbeatPromptFromConfig({ prompt, file, workspaceDir });
 }
 
 function resolveHeartbeatSession(
@@ -445,14 +452,11 @@ type HeartbeatReasonFlags = {
   isWakeReason: boolean;
 };
 
-type HeartbeatSkipReason = "empty-heartbeat-file";
-
 type HeartbeatPreflight = HeartbeatReasonFlags & {
   session: ReturnType<typeof resolveHeartbeatSession>;
   pendingEventEntries: ReturnType<typeof peekSystemEventEntries>;
   hasTaggedCronEvents: boolean;
   shouldInspectPendingEvents: boolean;
-  skipReason?: HeartbeatSkipReason;
 };
 
 function resolveHeartbeatReasonFlags(reason?: string): HeartbeatReasonFlags {
@@ -484,44 +488,13 @@ async function resolveHeartbeatPreflight(params: {
   );
   const shouldInspectPendingEvents =
     reasonFlags.isExecEventReason || reasonFlags.isCronEventReason || hasTaggedCronEvents;
-  const shouldBypassFileGates =
-    reasonFlags.isExecEventReason ||
-    reasonFlags.isCronEventReason ||
-    reasonFlags.isWakeReason ||
-    hasTaggedCronEvents;
-  const basePreflight = {
+  return {
     ...reasonFlags,
     session,
     pendingEventEntries,
     hasTaggedCronEvents,
     shouldInspectPendingEvents,
-  } satisfies Omit<HeartbeatPreflight, "skipReason">;
-
-  if (shouldBypassFileGates) {
-    return basePreflight;
-  }
-
-  const workspaceDir = resolveAgentWorkspaceDir(params.cfg, params.agentId);
-  const heartbeatFilePath = path.join(workspaceDir, DEFAULT_HEARTBEAT_FILENAME);
-  try {
-    const heartbeatFileContent = await fs.readFile(heartbeatFilePath, "utf-8");
-    if (isHeartbeatContentEffectivelyEmpty(heartbeatFileContent)) {
-      return {
-        ...basePreflight,
-        skipReason: "empty-heartbeat-file",
-      };
-    }
-  } catch (err: unknown) {
-    if (hasErrnoCode(err, "ENOENT")) {
-      // Missing HEARTBEAT.md is intentional in some setups (for example, when
-      // heartbeat instructions live outside the file), so keep the run active.
-      // The heartbeat prompt already says "if it exists".
-      return basePreflight;
-    }
-    // For other read errors, proceed with heartbeat as before.
-  }
-
-  return basePreflight;
+  } satisfies HeartbeatPreflight;
 }
 
 type HeartbeatPromptResolution = {
@@ -530,12 +503,13 @@ type HeartbeatPromptResolution = {
   hasCronEvents: boolean;
 };
 
-function resolveHeartbeatRunPrompt(params: {
+async function resolveHeartbeatRunPrompt(params: {
   cfg: RemoteClawConfig;
+  agentId?: string;
   heartbeat?: HeartbeatConfig;
   preflight: HeartbeatPreflight;
   canRelayToUser: boolean;
-}): HeartbeatPromptResolution {
+}): Promise<HeartbeatPromptResolution> {
   const pendingEventEntries = params.preflight.pendingEventEntries;
   const pendingEvents = params.preflight.shouldInspectPendingEvents
     ? pendingEventEntries.map((event) => event.text)
@@ -553,7 +527,7 @@ function resolveHeartbeatRunPrompt(params: {
     ? buildExecEventPrompt({ deliverToUser: params.canRelayToUser })
     : hasCronEvents
       ? buildCronEventPrompt(cronEvents, { deliverToUser: params.canRelayToUser })
-      : resolveHeartbeatPrompt(params.cfg, params.heartbeat);
+      : await resolveHeartbeatPrompt(params.cfg, params.heartbeat, params.agentId);
 
   return { prompt, hasExecCompletion, hasCronEvents };
 }
@@ -589,7 +563,7 @@ export async function runHeartbeatOnce(opts: {
     return { status: "skipped", reason: "requests-in-flight" };
   }
 
-  // Preflight centralizes trigger classification, event inspection, and HEARTBEAT.md gating.
+  // Preflight centralizes trigger classification and event inspection.
   const preflight = await resolveHeartbeatPreflight({
     cfg,
     agentId,
@@ -597,14 +571,6 @@ export async function runHeartbeatOnce(opts: {
     forcedSessionKey: opts.sessionKey,
     reason: opts.reason,
   });
-  if (preflight.skipReason) {
-    emitHeartbeatEvent({
-      status: "skipped",
-      reason: preflight.skipReason,
-      durationMs: Date.now() - startedAt,
-    });
-    return { status: "skipped", reason: preflight.skipReason };
-  }
   const { entry, sessionKey, storePath } = preflight.session;
   const previousUpdatedAt = entry?.updatedAt;
   const delivery = resolveHeartbeatDeliveryTarget({ cfg, entry, heartbeat });
@@ -638,12 +604,23 @@ export async function runHeartbeatOnce(opts: {
   const canRelayToUser = Boolean(
     delivery.channel !== "none" && delivery.to && visibility.showAlerts,
   );
-  const { prompt, hasExecCompletion, hasCronEvents } = resolveHeartbeatRunPrompt({
+  const { prompt, hasExecCompletion, hasCronEvents } = await resolveHeartbeatRunPrompt({
     cfg,
+    agentId,
     heartbeat,
     preflight,
     canRelayToUser,
   });
+
+  // When neither prompt nor file is configured, skip the heartbeat entirely.
+  if (!prompt) {
+    emitHeartbeatEvent({
+      status: "skipped",
+      reason: "no-prompt",
+      durationMs: Date.now() - startedAt,
+    });
+    return { status: "skipped", reason: "no-prompt" };
+  }
   const ctx = {
     Body: appendCronStyleCurrentTimeLine(prompt, cfg, startedAt),
     From: sender,

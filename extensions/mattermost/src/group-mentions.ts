@@ -1,15 +1,22 @@
-import type { ChannelGroupContext } from "remoteclaw/plugin-sdk";
+import { resolveChannelGroupRequireMention, type ChannelGroupContext } from "remoteclaw/plugin-sdk";
 import { resolveMattermostAccount } from "./mattermost/accounts.js";
 
 export function resolveMattermostGroupRequireMention(
-  params: ChannelGroupContext,
+  params: ChannelGroupContext & { requireMentionOverride?: boolean },
 ): boolean | undefined {
   const account = resolveMattermostAccount({
     cfg: params.cfg,
     accountId: params.accountId,
   });
-  if (typeof account.requireMention === "boolean") {
-    return account.requireMention;
-  }
-  return true;
+  const requireMentionOverride =
+    typeof params.requireMentionOverride === "boolean"
+      ? params.requireMentionOverride
+      : account.requireMention;
+  return resolveChannelGroupRequireMention({
+    cfg: params.cfg,
+    channel: "mattermost",
+    groupId: params.groupId,
+    accountId: params.accountId,
+    requireMentionOverride,
+  });
 }

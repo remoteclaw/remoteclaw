@@ -57,6 +57,7 @@ export type TtsConfig = {
   /** OpenAI configuration. */
   openai?: {
     apiKey?: string;
+    baseUrl?: string;
     model?: string;
     voice?: string;
   };

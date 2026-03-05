@@ -32,6 +32,7 @@ import {
   getTtsProvider as lookupTtsProvider,
 } from "./providers/index.js";
 import {
+  DEFAULT_OPENAI_BASE_URL,
   edgeTTS,
   elevenLabsTTS,
   inferEdgeExtension,
@@ -117,6 +118,7 @@ export type ResolvedTtsConfig = {
   };
   openai: {
     apiKey?: string;
+    baseUrl: string;
     model: string;
     voice: string;
   };
@@ -292,6 +294,12 @@ export function resolveTtsConfig(cfg: RemoteClawConfig): ResolvedTtsConfig {
     },
     openai: {
       apiKey: raw.openai?.apiKey,
+      // Config > env var > default; strip trailing slashes for consistency.
+      baseUrl: (
+        raw.openai?.baseUrl?.trim() ||
+        process.env.OPENAI_TTS_BASE_URL?.trim() ||
+        DEFAULT_OPENAI_BASE_URL
+      ).replace(/\/+$/, ""),
       model: raw.openai?.model ?? DEFAULT_OPENAI_MODEL,
       voice: raw.openai?.voice ?? DEFAULT_OPENAI_VOICE,
     },
@@ -698,6 +706,7 @@ export async function textToSpeech(params: {
           audioBuffer = await openaiTTS({
             text: params.text,
             apiKey,
+            baseUrl: config.openai.baseUrl,
             model: openaiModelOverride ?? config.openai.model,
             voice: openaiVoiceOverride ?? config.openai.voice,
             responseFormat: output.openai,
@@ -933,7 +942,7 @@ export async function maybeApplyTtsToPayload(params: {
   }
 
   const text = params.payload.text ?? "";
-  const directives = parseTtsDirectives(text, config.modelOverrides);
+  const directives = parseTtsDirectives(text, config.modelOverrides, config.openai.baseUrl);
   if (directives.warnings.length > 0) {
     logVerbose(`TTS: ignored directive overrides (${directives.warnings.join("; ")})`);
   }

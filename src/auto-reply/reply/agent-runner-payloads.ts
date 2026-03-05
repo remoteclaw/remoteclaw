@@ -1,6 +1,4 @@
 import type { ReplyToMode } from "../../config/types.js";
-import { logVerbose } from "../../globals.js";
-import { stripHeartbeatToken } from "../heartbeat.js";
 import type { OriginatingChannelType } from "../templating.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { ReplyPayload } from "../types.js";
@@ -41,30 +39,14 @@ export function buildReplyPayloads(params: {
   originatingTo?: string;
   accountId?: string;
 }): { replyPayloads: ReplyPayload[]; didLogHeartbeatStrip: boolean } {
-  let didLogHeartbeatStrip = params.didLogHeartbeatStrip;
-  const sanitizedPayloads = params.isHeartbeat
-    ? params.payloads
-    : params.payloads.flatMap((payload) => {
-        let text = payload.text;
-
-        if (payload.isError && text && isBunFetchSocketError(text)) {
-          text = formatBunFetchSocketError(text);
-        }
-
-        if (!text || !text.includes("HEARTBEAT_OK")) {
-          return [{ ...payload, text }];
-        }
-        const stripped = stripHeartbeatToken(text, { mode: "message" });
-        if (stripped.didStrip && !didLogHeartbeatStrip) {
-          didLogHeartbeatStrip = true;
-          logVerbose("Stripped stray HEARTBEAT_OK token from reply");
-        }
-        const hasMedia = Boolean(payload.mediaUrl) || (payload.mediaUrls?.length ?? 0) > 0;
-        if (stripped.shouldSkip && !hasMedia) {
-          return [];
-        }
-        return [{ ...payload, text: stripped.text }];
-      });
+  const didLogHeartbeatStrip = params.didLogHeartbeatStrip;
+  const sanitizedPayloads = params.payloads.map((payload) => {
+    let text = payload.text;
+    if (payload.isError && text && isBunFetchSocketError(text)) {
+      text = formatBunFetchSocketError(text);
+    }
+    return { ...payload, text };
+  });
 
   const replyTaggedPayloads: ReplyPayload[] = applyReplyThreading({
     payloads: sanitizedPayloads,

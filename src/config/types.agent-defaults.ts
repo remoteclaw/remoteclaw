@@ -256,6 +256,8 @@ export type AgentDefaultsConfig = {
     /** Gateway timeout in ms for sub-agent announce delivery calls (default: 60000). */
     announceTimeoutMs?: number;
   };
+  /** Glob patterns for files exposed via agents.files.list/get/set (default: []). */
+  editableFiles?: string[];
   /** Optional sandbox settings for non-main sessions. */
   sandbox?: AgentSandboxConfig;
   /** Selected agent runtime (claude, gemini, codex, opencode). */

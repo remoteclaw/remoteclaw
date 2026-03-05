@@ -137,6 +137,7 @@ export const AgentDefaultsSchema = z
       })
       .strict()
       .optional(),
+    editableFiles: z.array(z.string()).optional(),
     sandbox: z.unknown().optional(),
     runtime: z
       .union([z.literal("claude"), z.literal("gemini"), z.literal("codex"), z.literal("opencode")])

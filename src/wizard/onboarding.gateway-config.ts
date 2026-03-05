@@ -4,7 +4,12 @@ import {
   validateGatewayPasswordInput,
 } from "../commands/onboard-helpers.js";
 import type { GatewayAuthChoice } from "../commands/onboard-types.js";
-import type { GatewayBindMode, GatewayTailscaleMode, RemoteClawConfig } from "../config/config.js";
+import type { GatewayBindMode, GatewayTailscaleMode } from "../config/config.js";
+import {
+  normalizeSecretInputString,
+  resolveSecretInputRef,
+  type SecretInput,
+} from "../config/types.secrets.js";
 import {
   TAILSCALE_DOCS_LINES,
   TAILSCALE_EXPOSURE_OPTIONS,
@@ -14,6 +19,7 @@ import { DEFAULT_DANGEROUS_NODE_COMMANDS } from "../gateway/node-command-policy.
 import { findTailscaleBinary } from "../infra/tailscale.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { validateIPv4AddressInput } from "../shared/net/ipv4.js";
+import { resolveOnboardingSecretInputString } from "./onboarding.secret-input.js";
 import type {
   GatewayWizardSettings,
   QuickstartGatewayDefaults,
@@ -157,22 +163,68 @@ export async function configureGatewayForOnboarding(
   }
 
   let gatewayToken: string | undefined;
+  let gatewayTokenInput: SecretInput | undefined;
   if (authMode === "token") {
-    if (flow === "quickstart") {
+    const quickstartTokenString = normalizeSecretInputString(quickstartGateway.token);
+    const quickstartTokenRef = resolveSecretInputRef({
+      value: quickstartGateway.token,
+      defaults: nextConfig.secrets?.defaults,
+    }).ref;
+    const tokenMode =
+      flow === "quickstart" && opts.secretInputMode !== "ref"
+        ? quickstartTokenRef
+          ? "ref"
+          : "plaintext"
+        : await resolveSecretInputModeForEnvSelection({
+            prompter,
+            explicitMode: opts.secretInputMode,
+            copy: {
+              modeMessage: "How do you want to provide the gateway token?",
+              plaintextLabel: "Generate/store plaintext token",
+              plaintextHint: "Default",
+              refLabel: "Use SecretRef",
+              refHint: "Store a reference instead of plaintext",
+            },
+          });
+    if (tokenMode === "ref") {
+      if (flow === "quickstart" && quickstartTokenRef) {
+        gatewayTokenInput = quickstartTokenRef;
+        gatewayToken = await resolveOnboardingSecretInputString({
+          config: nextConfig,
+          value: quickstartTokenRef,
+          path: "gateway.auth.token",
+          env: process.env,
+        });
+      } else {
+        const resolved = await promptSecretRefForOnboarding({
+          provider: "gateway-auth-token",
+          config: nextConfig,
+          prompter,
+          preferredEnvVar: "OPENCLAW_GATEWAY_TOKEN",
+          copy: {
+            sourceMessage: "Where is this gateway token stored?",
+            envVarPlaceholder: "OPENCLAW_GATEWAY_TOKEN",
+          },
+        });
+        gatewayTokenInput = resolved.ref;
+        gatewayToken = resolved.resolvedValue;
+      }
+    } else if (flow === "quickstart") {
       gatewayToken =
-        (quickstartGateway.token ??
-          normalizeGatewayTokenInput(process.env.REMOTECLAW_GATEWAY_TOKEN)) ||
+        (quickstartTokenString ?? normalizeGatewayTokenInput(process.env.OPENCLAW_GATEWAY_TOKEN)) ||
         randomToken();
+      gatewayTokenInput = gatewayToken;
     } else {
       const tokenInput = await prompter.text({
         message: "Gateway token (blank to generate)",
         placeholder: "Needed for multi-machine or non-loopback access",
         initialValue:
-          quickstartGateway.token ??
-          normalizeGatewayTokenInput(process.env.REMOTECLAW_GATEWAY_TOKEN) ??
+          quickstartTokenString ??
+          normalizeGatewayTokenInput(process.env.OPENCLAW_GATEWAY_TOKEN) ??
           "",
       });
       gatewayToken = normalizeGatewayTokenInput(tokenInput) || randomToken();
+      gatewayTokenInput = gatewayToken;
     }
   }
 
@@ -203,7 +255,7 @@ export async function configureGatewayForOnboarding(
         auth: {
           ...nextConfig.gateway?.auth,
           mode: "token",
-          token: gatewayToken,
+          token: gatewayTokenInput,
         },
       },
     };

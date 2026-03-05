@@ -80,7 +80,11 @@ import {
   refreshGatewayHealthSnapshot,
 } from "./server/health-state.js";
 import { loadGatewayTlsRuntime } from "./server/tls.js";
-import { ensureGatewayStartupAuth } from "./startup-auth.js";
+import {
+  ensureGatewayStartupAuth,
+  mergeGatewayAuthConfig,
+  mergeGatewayTailscaleConfig,
+} from "./startup-auth.js";
 
 ensureRemoteClawCliOnPath();
 
@@ -112,6 +116,52 @@ function createGatewayAuthRateLimiters(rateLimitConfig: AuthRateLimitConfig | un
     exemptLoopback: false,
   });
   return { rateLimiter, browserRateLimiter };
+}
+
+function logGatewayAuthSurfaceDiagnostics(prepared: {
+  sourceConfig: OpenClawConfig;
+  warnings: Array<{ code: string; path: string; message: string }>;
+}): void {
+  const states = evaluateGatewayAuthSurfaceStates({
+    config: prepared.sourceConfig,
+    defaults: prepared.sourceConfig.secrets?.defaults,
+    env: process.env,
+  });
+  const inactiveWarnings = new Map<string, string>();
+  for (const warning of prepared.warnings) {
+    if (warning.code !== "SECRETS_REF_IGNORED_INACTIVE_SURFACE") {
+      continue;
+    }
+    inactiveWarnings.set(warning.path, warning.message);
+  }
+  for (const path of GATEWAY_AUTH_SURFACE_PATHS) {
+    const state = states[path];
+    if (!state.hasSecretRef) {
+      continue;
+    }
+    const stateLabel = state.active ? "active" : "inactive";
+    const inactiveDetails =
+      !state.active && inactiveWarnings.get(path) ? inactiveWarnings.get(path) : undefined;
+    const details = inactiveDetails ?? state.reason;
+    logSecrets.info(`[SECRETS_GATEWAY_AUTH_SURFACE] ${path} is ${stateLabel}. ${details}`);
+  }
+}
+
+function applyGatewayAuthOverridesForStartupPreflight(
+  config: OpenClawConfig,
+  overrides: Pick<GatewayServerOptions, "auth" | "tailscale">,
+): OpenClawConfig {
+  if (!overrides.auth && !overrides.tailscale) {
+    return config;
+  }
+  return {
+    ...config,
+    gateway: {
+      ...config.gateway,
+      auth: mergeGatewayAuthConfig(config.gateway?.auth, overrides.auth),
+      tailscale: mergeGatewayTailscaleConfig(config.gateway?.tailscale, overrides.tailscale),
+    },
+  };
 }
 
 export type GatewayServer = {
@@ -236,7 +286,97 @@ export async function startGatewayServer(
     }
   }
 
-  let cfgAtStart = loadConfig();
+  let secretsDegraded = false;
+  const emitSecretsStateEvent = (
+    code: "SECRETS_RELOADER_DEGRADED" | "SECRETS_RELOADER_RECOVERED",
+    message: string,
+    cfg: OpenClawConfig,
+  ) => {
+    enqueueSystemEvent(`[${code}] ${message}`, {
+      sessionKey: resolveMainSessionKey(cfg),
+      contextKey: code,
+    });
+  };
+  let secretsActivationTail: Promise<void> = Promise.resolve();
+  const runWithSecretsActivationLock = async <T>(operation: () => Promise<T>): Promise<T> => {
+    const run = secretsActivationTail.then(operation, operation);
+    secretsActivationTail = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return await run;
+  };
+  const activateRuntimeSecrets = async (
+    config: OpenClawConfig,
+    params: { reason: "startup" | "reload" | "restart-check"; activate: boolean },
+  ) =>
+    await runWithSecretsActivationLock(async () => {
+      try {
+        const prepared = await prepareSecretsRuntimeSnapshot({ config });
+        if (params.activate) {
+          activateSecretsRuntimeSnapshot(prepared);
+          logGatewayAuthSurfaceDiagnostics(prepared);
+        }
+        for (const warning of prepared.warnings) {
+          logSecrets.warn(`[${warning.code}] ${warning.message}`);
+        }
+        if (secretsDegraded) {
+          const recoveredMessage =
+            "Secret resolution recovered; runtime remained on last-known-good during the outage.";
+          logSecrets.info(`[SECRETS_RELOADER_RECOVERED] ${recoveredMessage}`);
+          emitSecretsStateEvent("SECRETS_RELOADER_RECOVERED", recoveredMessage, prepared.config);
+        }
+        secretsDegraded = false;
+        return prepared;
+      } catch (err) {
+        const details = String(err);
+        if (!secretsDegraded) {
+          logSecrets.error(`[SECRETS_RELOADER_DEGRADED] ${details}`);
+          if (params.reason !== "startup") {
+            emitSecretsStateEvent(
+              "SECRETS_RELOADER_DEGRADED",
+              `Secret resolution failed; runtime remains on last-known-good snapshot. ${details}`,
+              config,
+            );
+          }
+        } else {
+          logSecrets.warn(`[SECRETS_RELOADER_DEGRADED] ${details}`);
+        }
+        secretsDegraded = true;
+        if (params.reason === "startup") {
+          throw new Error(`Startup failed: required secrets are unavailable. ${details}`, {
+            cause: err,
+          });
+        }
+        throw err;
+      }
+    });
+
+  // Fail fast before startup if required refs are unresolved.
+  let cfgAtStart: OpenClawConfig;
+  {
+    const freshSnapshot = await readConfigFileSnapshot();
+    if (!freshSnapshot.valid) {
+      const issues =
+        freshSnapshot.issues.length > 0
+          ? formatConfigIssueLines(freshSnapshot.issues, "", { normalizeRoot: true }).join("\n")
+          : "Unknown validation issue.";
+      throw new Error(`Invalid config at ${freshSnapshot.path}.\n${issues}`);
+    }
+    const startupPreflightConfig = applyGatewayAuthOverridesForStartupPreflight(
+      freshSnapshot.config,
+      {
+        auth: opts.auth,
+        tailscale: opts.tailscale,
+      },
+    );
+    await activateRuntimeSecrets(startupPreflightConfig, {
+      reason: "startup",
+      activate: false,
+    });
+  }
+
+  cfgAtStart = loadConfig();
   const authBootstrap = await ensureGatewayStartupAuth({
     cfg: cfgAtStart,
     env: process.env,

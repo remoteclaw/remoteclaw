@@ -14,6 +14,7 @@ import {
   type GatewayClientMode,
   type GatewayClientName,
 } from "../utils/message-channel.js";
+import { VERSION } from "../version.js";
 import { GatewayClient } from "./client.js";
 import { resolveGatewayCredentialsFromConfig } from "./credentials.js";
 import {
@@ -390,7 +391,7 @@ async function executeGatewayRequestWithScopes<T>(params: {
       instanceId: opts.instanceId ?? randomUUID(),
       clientName: opts.clientName ?? GATEWAY_CLIENT_NAMES.CLI,
       clientDisplayName: opts.clientDisplayName,
-      clientVersion: opts.clientVersion ?? "dev",
+      clientVersion: opts.clientVersion ?? VERSION,
       platform: opts.platform,
       mode: opts.mode ?? GATEWAY_CLIENT_MODES.CLI,
       role: "operator",

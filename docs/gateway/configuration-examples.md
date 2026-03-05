@@ -275,7 +275,6 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
         target: "last",
         to: "+15555550123",
         prompt: "HEARTBEAT",
-        ackMaxChars: 300,
       },
       memorySearch: {
         provider: "gemini",

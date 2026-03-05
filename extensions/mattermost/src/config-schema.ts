@@ -49,6 +49,11 @@ const MattermostAccountSchemaBase = z
       })
       .optional(),
     commands: MattermostSlashCommandsSchema,
+    interactions: z
+      .object({
+        callbackBaseUrl: z.string().optional(),
+      })
+      .optional(),
   })
   .strict();
 

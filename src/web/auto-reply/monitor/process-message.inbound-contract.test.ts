@@ -30,11 +30,11 @@ function makeProcessMessageArgs(params: {
   rememberSentText?: (text: string | undefined, opts: unknown) => void;
 }) {
   return {
-    // oxlint-disable-next-line typescript/no-explicit-any
     cfg: (params.cfg ?? {
       agents: { defaults: { workspace: "/tmp/test-workspace" } },
       messages: {},
       session: { store: sessionStorePath },
+      // oxlint-disable-next-line typescript/no-explicit-any
     }) as any,
     // oxlint-disable-next-line typescript/no-explicit-any
     msg: params.msg as any,

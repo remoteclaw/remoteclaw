@@ -665,6 +665,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Additional plugin files or directories scanned by the loader beyond built-in defaults. Use dedicated extension directories and avoid broad paths with unrelated executable content.",
   "plugins.slots":
     "Selects which plugins own exclusive runtime slots so only one plugin provides a given capability. Use explicit slot ownership to avoid overlapping providers with conflicting behavior.",
+  "plugins.slots.contextEngine":
+    "Selects the active context engine plugin by id so one plugin provides context orchestration behavior.",
   "plugins.entries":
     "Per-plugin settings keyed by plugin ID including enablement and plugin-specific runtime configuration payloads. Use this for scoped plugin tuning without changing global loader policy.",
   "plugins.entries.*.enabled":

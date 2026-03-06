@@ -61,10 +61,6 @@ Files that RemoteClaw may read or write in the workspace:
 - `HEARTBEAT.md` — optional checklist for heartbeat runs
 - `MEMORY.md` and/or `memory.md` — long-term memory (when present)
 
-> **Note:** `memory/*.md` daily files are accessed on demand via the
-> `memory_search` and `memory_get` tools, so they do not count against the
-> context window unless the model explicitly reads them.
-
 To inspect how much each injected file contributes (raw vs injected, truncation, plus tool schema overhead), use `/context list` or `/context detail`. See [Context](/concepts/context).
 
 ## Time handling

@@ -50,7 +50,7 @@ RemoteClaw is **AI agent middleware** that connects agent CLIs (Claude, Gemini, 
 - **Self-hosted**: runs on your hardware, your rules
 - **Multi-channel**: one Gateway serves WhatsApp, Telegram, Discord, and more simultaneously
 - **Agent-native**: built for coding agents with tool use, sessions, memory, and multi-agent routing
-- **Open source**: MIT licensed, community-driven
+- **Open source**: AGPL-3.0 licensed, community-driven
 
 **What do you need?** Node 22+, an API key (Anthropic recommended), and 5 minutes.
 
@@ -125,7 +125,7 @@ Open the browser Control UI after the Gateway starts.
 
 Config lives at `~/.remoteclaw/remoteclaw.json`.
 
-- If you **do nothing**, RemoteClaw uses the bundled Pi binary in RPC mode with per-sender sessions.
+- If you **do nothing**, RemoteClaw uses the default CLI agent runtime with per-sender sessions.
 - If you want to lock it down, start with `channels.whatsapp.allowFrom` and (for groups) mention rules.
 
 Example:

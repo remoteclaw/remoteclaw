@@ -7,13 +7,14 @@ title: "Agent Loop"
 
 # Agent Loop (RemoteClaw)
 
-An agentic loop is the full “real” run of an agent: intake → context assembly → model inference →
-tool execution → streaming replies → persistence. It’s the authoritative path that turns a message
-into actions and a final reply, while keeping session state consistent.
+An agentic loop is the full run of an agent: intake, context assembly, CLI
+runtime execution, streaming replies, and persistence. It is the authoritative
+path that turns a message into actions and a final reply while keeping session
+state consistent.
 
-In RemoteClaw, a loop is a single, serialized run per session that emits lifecycle and stream events
-as the model thinks, calls tools, and streams output. This doc explains how that authentic loop is
-wired end-to-end.
+In RemoteClaw, a loop is a single, serialized run per session that emits
+lifecycle and stream events as the CLI runtime thinks, calls tools, and streams
+output. This doc explains how that loop is wired end-to-end.
 
 ## Entry points
 
@@ -26,15 +27,14 @@ wired end-to-end.
 2. `agentCommand` runs the agent:
    - resolves model + thinking/verbose defaults
    - loads skills snapshot
-   - calls `runEmbeddedPiAgent` (pi-agent-core runtime)
-   - emits **lifecycle end/error** if the embedded loop does not emit one
-3. `runEmbeddedPiAgent`:
+   - launches the CLI runtime (Claude, Gemini, Codex, OpenCode) as a subprocess
+   - emits **lifecycle end/error** if the runtime does not emit one
+3. The CLI runtime subprocess:
    - serializes runs via per-session + global queues
-   - resolves model + auth profile and builds the pi session
-   - subscribes to pi events and streams assistant/tool deltas
-   - enforces timeout -> aborts run if exceeded
+   - streams assistant and tool deltas over NDJSON
+   - enforces timeout; aborts run if exceeded
    - returns payloads + usage metadata
-4. `subscribeEmbeddedPiSession` bridges pi-agent-core events to RemoteClaw `agent` stream:
+4. The ChannelBridge adapter bridges CLI runtime events to RemoteClaw `agent` stream:
    - tool events => `stream: "tool"`
    - assistant deltas => `stream: "assistant"`
    - lifecycle events => `stream: "lifecycle"` (`phase: "start" | "end" | "error"`)
@@ -58,7 +58,7 @@ wired end-to-end.
 
 ## Prompt assembly + system prompt
 
-- System prompt is built from RemoteClaw’s base prompt, skills prompt, bootstrap context, and per-run overrides.
+- System prompt is built from RemoteClaw's base prompt, skills prompt, bootstrap context, and per-run overrides.
 - Model-specific limits and compaction reserve tokens are enforced.
 - See [System prompt](/concepts/system-prompt) for what the model sees.
 
@@ -96,7 +96,7 @@ See [Plugins](/tools/plugin#plugin-hooks) for the hook API and registration deta
 
 ## Streaming + partial replies
 
-- Assistant deltas are streamed from pi-agent-core and emitted as `assistant` events.
+- Assistant deltas are streamed from the CLI runtime and emitted as `assistant` events.
 - Block streaming can emit partial replies either on `text_end` or `message_end`.
 - Reasoning streaming can be emitted as a separate stream or as block replies.
 - See [Streaming](/concepts/streaming) for chunking and block reply behavior.
@@ -124,11 +124,11 @@ See [Plugins](/tools/plugin#plugin-hooks) for the hook API and registration deta
 - On retry, in-memory buffers and tool summaries are reset to avoid duplicate output.
 - See [Compaction](/concepts/compaction) for the compaction pipeline.
 
-## Event streams (today)
+## Event streams
 
-- `lifecycle`: emitted by `subscribeEmbeddedPiSession` (and as a fallback by `agentCommand`)
-- `assistant`: streamed deltas from pi-agent-core
-- `tool`: streamed tool events from pi-agent-core
+- `lifecycle`: emitted by the ChannelBridge adapter (and as a fallback by `agentCommand`)
+- `assistant`: streamed deltas from the CLI runtime
+- `tool`: streamed tool events from the CLI runtime
 
 ## Chat channel handling
 
@@ -138,7 +138,7 @@ See [Plugins](/tools/plugin#plugin-hooks) for the hook API and registration deta
 ## Timeouts
 
 - `agent.wait` default: 30s (just the wait). `timeoutMs` param overrides.
-- Agent runtime: `agents.defaults.timeoutSeconds` default 600s; enforced in `runEmbeddedPiAgent` abort timer.
+- Agent runtime: `agents.defaults.timeoutSeconds` default 600s; enforced by the runtime abort timer.
 
 ## Where things can end early
 

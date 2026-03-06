@@ -276,14 +276,6 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
         to: "+15555550123",
         prompt: "HEARTBEAT",
       },
-      memorySearch: {
-        provider: "gemini",
-        model: "gemini-embedding-001",
-        remote: {
-          apiKey: "${GEMINI_API_KEY}",
-        },
-        extraPaths: ["../team-docs", "/srv/shared-notes"],
-      },
       sandbox: {
         mode: "non-main",
         perSession: true,
@@ -304,7 +296,7 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
   },
 
   tools: {
-    allow: ["exec", "process", "read", "write", "edit", "apply_patch"],
+    allow: ["exec", "process", "read", "write", "edit"],
     deny: ["browser", "canvas"],
     exec: {
       backgroundMs: 10000,

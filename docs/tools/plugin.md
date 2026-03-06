@@ -42,8 +42,6 @@ Looking for third-party listings? See [Community plugins](/plugins/community).
 ## Available plugins (official)
 
 - Microsoft Teams is plugin-only as of 2026.1.15; install `@remoteclaw/msteams` if you use Teams.
-- Memory (Core) — bundled memory search plugin (enabled by default via `plugins.slots.memory`)
-- Memory (LanceDB) — bundled long-term memory plugin (auto-recall/capture; set `plugins.slots.memory = "memory-lancedb"`)
 - [Voice Call](/plugins/voice-call) — `@remoteclaw/voice-call`
 - [Zalo Personal](/plugins/zalouser) — `@remoteclaw/zalouser`
 - [Matrix](/channels/matrix) — `@remoteclaw/matrix`
@@ -255,13 +253,13 @@ Some plugin categories are **exclusive** (only one active at a time). Use
 {
   plugins: {
     slots: {
-      memory: "memory-core", // or "none" to disable memory plugins
+      "<category>": "<plugin-id>", // or "none" to disable the slot
     },
   },
 }
 ```
 
-If multiple plugins declare `kind: "memory"`, only the selected one loads. Others
+If multiple plugins declare the same `kind`, only the selected one loads. Others
 are disabled with diagnostics.
 
 ## Control UI (schema + labels)

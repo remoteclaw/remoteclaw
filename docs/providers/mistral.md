@@ -10,7 +10,6 @@ title: "Mistral"
 
 RemoteClaw supports Mistral for both text/image model routing (`mistral/...`) and
 audio transcription via Voxtral in media understanding.
-Mistral can also be used for memory embeddings (`memorySearch.provider = "mistral"`).
 
 ## CLI setup
 

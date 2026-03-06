@@ -1,5 +1,5 @@
 ---
-summary: "Agent runtime (embedded pi-mono), workspace contract, and session bootstrap"
+summary: "Agent runtime, workspace contract, and session bootstrap"
 read_when:
   - Changing agent runtime, workspace bootstrap, or session behavior
 title: "Agent Runtime"
@@ -7,7 +7,7 @@ title: "Agent Runtime"
 
 # Agent Runtime 🤖
 
-RemoteClaw runs a single embedded agent runtime derived from **pi-mono**.
+RemoteClaw runs agent CLIs (Claude, Gemini, Codex, OpenCode) as subprocess runtimes.
 
 ## Workspace (required)
 
@@ -40,8 +40,7 @@ See [Agent workspace](/concepts/agent-workspace) for the full layout.
 ## Built-in tools
 
 Core tools (read/exec/edit/write and related system tools) are always available,
-subject to tool policy. `apply_patch` is optional and gated by
-`tools.exec.applyPatch`.
+subject to tool policy.
 
 ## Skills
 
@@ -52,13 +51,6 @@ RemoteClaw loads skills from three locations (workspace wins on name conflict):
 - Workspace: `<workspace>/skills`
 
 Skills can be gated by config/env (see `skills` in [Gateway configuration](/gateway/configuration)).
-
-## pi-mono integration
-
-RemoteClaw reuses pieces of the pi-mono codebase (models/tools), but **session management, discovery, and tool wiring are RemoteClaw-owned**.
-
-- No pi-coding agent runtime.
-- No `~/.pi/agent` or `<workspace>/.pi` settings are consulted.
 
 ## Sessions
 

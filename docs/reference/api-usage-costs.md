@@ -38,7 +38,7 @@ RemoteClaw can pick up credentials from:
 - **Auth profiles** (per-agent, stored in `auth-profiles.json`).
 - **Environment variables** (e.g. `OPENAI_API_KEY`, `BRAVE_API_KEY`, `FIRECRAWL_API_KEY`).
 - **Config** (`models.providers.*.apiKey`, `tools.web.search.*`, `tools.web.fetch.firecrawl.*`,
-  `memorySearch.*`, `talk.apiKey`).
+  `talk.apiKey`).
 - **Skills** (`skills.entries.<name>.apiKey`) which may export keys to the skill process env.
 
 ## Features that can spend keys
@@ -60,21 +60,7 @@ Inbound media can be summarized/transcribed before the reply runs. This uses mod
 
 See [Media understanding](/nodes/media-understanding).
 
-### 3) Memory embeddings + semantic search
-
-Semantic memory search uses **embedding APIs** when configured for remote providers:
-
-- `memorySearch.provider = "openai"` → OpenAI embeddings
-- `memorySearch.provider = "gemini"` → Gemini embeddings
-- `memorySearch.provider = "voyage"` → Voyage embeddings
-- `memorySearch.provider = "mistral"` → Mistral embeddings
-- Optional fallback to a remote provider if local embeddings fail
-
-You can keep it local with `memorySearch.provider = "local"` (no API usage).
-
-See [Agent workspace](/concepts/agent-workspace).
-
-### 4) Web search tool (Brave / Perplexity via OpenRouter)
+### 3) Web search tool (Brave / Perplexity via OpenRouter)
 
 `web_search` uses API keys and may incur usage charges:
 
@@ -89,7 +75,7 @@ See [Agent workspace](/concepts/agent-workspace).
 
 See [Web tools](/tools/web).
 
-### 5) Web fetch tool (Firecrawl)
+### 4) Web fetch tool (Firecrawl)
 
 `web_fetch` can call **Firecrawl** when an API key is present:
 
@@ -99,7 +85,7 @@ If Firecrawl isn’t configured, the tool falls back to direct fetch + readabili
 
 See [Web tools](/tools/web).
 
-### 6) Provider usage snapshots (status/health)
+### 5) Provider usage snapshots (status/health)
 
 Some status commands call **provider usage endpoints** to display quota windows or auth health.
 These are typically low-volume calls but still hit provider APIs:
@@ -109,21 +95,21 @@ These are typically low-volume calls but still hit provider APIs:
 
 See [Model providers](/concepts/model-providers).
 
-### 7) Compaction safeguard summarization
+### 6) Compaction safeguard summarization
 
 The compaction safeguard can summarize session history using the **current model**, which
 invokes provider APIs when it runs.
 
 See [Session management + compaction](/reference/session-management-compaction).
 
-### 8) Model scan / probe
+### 7) Model scan / probe
 
 `remoteclaw models scan` can probe OpenRouter models and uses `OPENROUTER_API_KEY` when
 probing is enabled.
 
 See [Model providers](/concepts/model-providers).
 
-### 9) Talk (speech)
+### 8) Talk (speech)
 
 Talk mode can invoke **ElevenLabs** when configured:
 
@@ -131,7 +117,7 @@ Talk mode can invoke **ElevenLabs** when configured:
 
 See [Talk mode](/nodes/talk).
 
-### 10) Skills (third-party APIs)
+### 9) Skills (third-party APIs)
 
 Skills can store `apiKey` in `skills.entries.<name>.apiKey`. If a skill uses that key for external
 APIs, it can incur costs according to the skill’s provider.

@@ -148,7 +148,7 @@ describe("checkRemoteClawMigration", () => {
     checkRemoteClawMigration({ HOME: "/mock-home" });
 
     expect(warnSpy).toHaveBeenCalledOnce();
-    expect(warnSpy.mock.calls[0][0]).toContain("remoteclaw import");
+    expect(warnSpy.mock.calls[0][0]).toContain("remoteclaw import ~/.openclaw");
   });
 
   it("does not warn when ~/.remoteclaw already exists", () => {

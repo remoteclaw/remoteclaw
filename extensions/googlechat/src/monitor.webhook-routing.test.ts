@@ -1,8 +1,7 @@
 import { EventEmitter } from "node:events";
-import type { IncomingMessage } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
-import { createMockServerResponse } from "../../../src/test-utils/mock-http-response.js";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import { verifyGoogleChatRequest } from "./auth.js";
 import { handleGoogleChatWebhookRequest, registerGoogleChatWebhookTarget } from "./monitor.js";
@@ -10,6 +9,30 @@ import { handleGoogleChatWebhookRequest, registerGoogleChatWebhookTarget } from 
 vi.mock("./auth.js", () => ({
   verifyGoogleChatRequest: vi.fn(),
 }));
+
+function createMockServerResponse(): ServerResponse & { body?: string } {
+  const headers: Record<string, string> = {};
+  const res: {
+    headersSent: boolean;
+    statusCode: number;
+    body?: string;
+    setHeader: (key: string, value: string) => unknown;
+    end: (body?: string) => unknown;
+  } = {
+    headersSent: false,
+    statusCode: 200,
+    setHeader: (key: string, value: string) => {
+      headers[key.toLowerCase()] = value;
+      return res;
+    },
+    end: (body?: string) => {
+      res.headersSent = true;
+      res.body = body;
+      return res;
+    },
+  };
+  return res as unknown as ServerResponse & { body?: string };
+}
 
 function createWebhookRequest(params: {
   authorization?: string;

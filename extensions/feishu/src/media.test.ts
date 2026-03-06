@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { resolvePreferredRemoteClawTmpDir } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resolvePreferredRemoteClawTmpDir } from "../../../src/infra/tmp-remoteclaw-dir.js";
 
 const createFeishuClientMock = vi.hoisted(() => vi.fn());
 const resolveFeishuAccountMock = vi.hoisted(() => vi.fn());

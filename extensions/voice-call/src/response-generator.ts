@@ -64,7 +64,7 @@ export async function generateVoiceResponse(
   // Resolve workspace
   const agentId = "main";
   const workspaceDir = deps.resolveAgentWorkspaceDir(cfg, agentId);
-  await deps.ensureAgentWorkspace({ dir: workspaceDir });
+  await deps.ensureAgentWorkspace(workspaceDir);
 
   // Load or create session entry (legacy store for backward compatibility)
   const normalizedPhone = from.replace(/\D/g, "");

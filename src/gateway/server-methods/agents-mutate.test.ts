@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   applyAgentConfig: vi.fn((_cfg: unknown, _opts: unknown) => ({})),
   pruneAgentConfig: vi.fn(() => ({ config: {}, removedBindings: 0 })),
   writeConfigFile: vi.fn(async () => {}),
-  ensureAgentWorkspace: vi.fn(async () => {}),
+  ensureAgentWorkspace: vi.fn(async (dir: string) => dir),
   resolveAgentDir: vi.fn(() => "/agents/test-agent"),
   resolveAgentWorkspaceDir: vi.fn(() => "/workspace/test-agent"),
   resolveSessionTranscriptsDirForAgent: vi.fn(() => "/transcripts/test-agent"),
@@ -177,8 +177,9 @@ describe("agents.create", () => {
 
   it("ensures workspace is set up before writing config", async () => {
     const callOrder: string[] = [];
-    mocks.ensureAgentWorkspace.mockImplementation(async () => {
+    mocks.ensureAgentWorkspace.mockImplementation(async (dir: string) => {
       callOrder.push("ensureAgentWorkspace");
+      return dir;
     });
     mocks.writeConfigFile.mockImplementation(async () => {
       callOrder.push("writeConfigFile");

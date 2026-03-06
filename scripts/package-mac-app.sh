@@ -207,15 +207,6 @@ echo "📦 Copying device model resources"
 rm -rf "$APP_ROOT/Contents/Resources/DeviceModels"
 cp -R "$ROOT_DIR/apps/macos/Sources/RemoteClaw/Resources/DeviceModels" "$APP_ROOT/Contents/Resources/DeviceModels"
 
-echo "📦 Copying model catalog"
-MODEL_CATALOG_SRC="$ROOT_DIR/node_modules/@mariozechner/pi-ai/dist/models.generated.js"
-MODEL_CATALOG_DEST="$APP_ROOT/Contents/Resources/models.generated.js"
-if [ -f "$MODEL_CATALOG_SRC" ]; then
-  cp "$MODEL_CATALOG_SRC" "$MODEL_CATALOG_DEST"
-else
-  echo "WARN: model catalog missing at $MODEL_CATALOG_SRC (continuing)" >&2
-fi
-
 echo "📦 Copying RemoteClawKit resources"
 REMOTECLAWKIT_BUNDLE="$(build_path_for_arch "$PRIMARY_ARCH")/$BUILD_CONFIG/RemoteClawKit_RemoteClawKit.bundle"
 if [ -d "$REMOTECLAWKIT_BUNDLE" ]; then

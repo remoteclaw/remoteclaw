@@ -38,7 +38,9 @@ describe("registerPluginCliCommands", () => {
     program.command("memory");
 
     // oxlint-disable-next-line typescript/no-explicit-any
-    registerPluginCliCommands(program, {} as any);
+    registerPluginCliCommands(program, {
+      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+    } as any);
 
     expect(mocks.memoryRegister).not.toHaveBeenCalled();
     expect(mocks.otherRegister).toHaveBeenCalledTimes(1);

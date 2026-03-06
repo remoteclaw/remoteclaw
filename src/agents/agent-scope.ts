@@ -10,7 +10,6 @@ import {
   resolveAgentIdFromSessionKey,
 } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
-import { resolveDefaultAgentWorkspaceDir } from "./workspace.js";
 const log = createSubsystemLogger("agent-scope");
 
 /** Strip null bytes from paths to prevent ENOTDIR errors. */
@@ -247,22 +246,20 @@ export function resolveEffectiveModelFallbacks(params: {
   return agentFallbacksOverride ?? defaultFallbacks;
 }
 
-export function resolveAgentWorkspaceDir(cfg: RemoteClawConfig, agentId: string) {
+export function resolveAgentWorkspaceDir(cfg: RemoteClawConfig, agentId: string): string {
   const id = normalizeAgentId(agentId);
   const configured = resolveAgentConfig(cfg, id)?.workspace?.trim();
   if (configured) {
     return stripNullBytes(resolveUserPath(configured));
   }
-  const defaultAgentId = resolveDefaultAgentId(cfg);
-  if (id === defaultAgentId) {
-    const fallback = cfg.agents?.defaults?.workspace?.trim();
-    if (fallback) {
-      return stripNullBytes(resolveUserPath(fallback));
-    }
-    return stripNullBytes(resolveDefaultAgentWorkspaceDir(process.env));
+  // Fall back to shared defaults.workspace (explicit user config, not a hardcoded path).
+  const defaultsWorkspace = cfg.agents?.defaults?.workspace?.trim();
+  if (defaultsWorkspace) {
+    return stripNullBytes(resolveUserPath(defaultsWorkspace));
   }
-  const stateDir = resolveStateDir(process.env);
-  return stripNullBytes(path.join(stateDir, `workspace-${id}`));
+  throw new Error(
+    `agent '${id}' has no workspace configured — set agents.list[].workspace in remoteclaw.json`,
+  );
 }
 
 export function resolveAgentDir(cfg: RemoteClawConfig, agentId: string) {

@@ -11,6 +11,11 @@ const DEFAULT_CONFIG = {
       allowFrom: ["*"],
     },
   },
+  agents: {
+    defaults: {
+      workspace: "/tmp/test-workspace",
+    },
+  },
   messages: {
     messagePrefix: undefined,
     responsePrefix: undefined,

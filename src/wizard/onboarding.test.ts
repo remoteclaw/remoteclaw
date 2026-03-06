@@ -66,7 +66,7 @@ const readConfigFileSnapshot = vi.hoisted(() =>
     parsed: {},
     resolved: {},
     valid: true,
-    config: {},
+    config: { agents: { defaults: { workspace: "/tmp/test-workspace" } } },
     issues: [] as Array<{ path: string; message: string }>,
     warnings: [] as Array<{ path: string; message: string }>,
     legacyIssues: [] as Array<{ path: string; message: string }>,
@@ -98,7 +98,6 @@ vi.mock("../config/config.js", () => ({
 }));
 
 vi.mock("../commands/onboard-helpers.js", () => ({
-  DEFAULT_WORKSPACE: "/tmp/remoteclaw-workspace",
   applyWizardMetadata: (cfg: unknown) => cfg,
   summarizeExistingConfig: () => "summary",
   handleReset: async () => {},
@@ -204,7 +203,7 @@ describe("runOnboardingWizard", () => {
       parsed: {},
       resolved: {},
       valid: false,
-      config: {},
+      config: { agents: { defaults: { workspace: "/tmp/test-workspace" } } },
       issues: [{ path: "routing.allowFrom", message: "Legacy key" }],
       warnings: [],
       legacyIssues: [{ path: "routing.allowFrom", message: "Legacy key" }],

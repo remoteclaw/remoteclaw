@@ -52,7 +52,7 @@ describe("config plugin validation", () => {
     const home = await createCaseHome();
     const missingPath = path.join(home, "missing-plugin");
     const res = validateInHome(home, {
-      agents: { list: [{ id: "pi" }] },
+      agents: { defaults: { workspace: "/tmp/test-workspace" }, list: [{ id: "pi" }] },
       plugins: { enabled: false, load: { paths: [missingPath] } },
     });
     expect(res.ok).toBe(false);
@@ -68,7 +68,7 @@ describe("config plugin validation", () => {
   it("rejects missing plugin ids in entries", async () => {
     const home = await createCaseHome();
     const res = validateInHome(home, {
-      agents: { list: [{ id: "pi" }] },
+      agents: { defaults: { workspace: "/tmp/test-workspace" }, list: [{ id: "pi" }] },
       plugins: { enabled: false, entries: { "missing-plugin": { enabled: true } } },
     });
     expect(res.ok).toBe(false);
@@ -83,7 +83,7 @@ describe("config plugin validation", () => {
   it("rejects missing plugin ids in allow/deny", async () => {
     const home = await createCaseHome();
     const res = validateInHome(home, {
-      agents: { list: [{ id: "pi" }] },
+      agents: { defaults: { workspace: "/tmp/test-workspace" }, list: [{ id: "pi" }] },
       plugins: {
         enabled: false,
         allow: ["missing-allow"],
@@ -105,7 +105,7 @@ describe("config plugin validation", () => {
     const home = await createCaseHome();
     const removedId = "google-antigravity-auth";
     const res = validateInHome(home, {
-      agents: { list: [{ id: "pi" }] },
+      agents: { defaults: { workspace: "/tmp/test-workspace" }, list: [{ id: "pi" }] },
       plugins: {
         enabled: false,
         entries: { [removedId]: { enabled: true } },
@@ -154,7 +154,7 @@ describe("config plugin validation", () => {
     });
 
     const res = validateInHome(home, {
-      agents: { list: [{ id: "pi" }] },
+      agents: { defaults: { workspace: "/tmp/test-workspace" }, list: [{ id: "pi" }] },
       plugins: {
         enabled: true,
         load: { paths: [pluginDir] },
@@ -175,7 +175,7 @@ describe("config plugin validation", () => {
   it("accepts known plugin ids", async () => {
     const home = await createCaseHome();
     const res = validateInHome(home, {
-      agents: { list: [{ id: "pi" }] },
+      agents: { defaults: { workspace: "/tmp/test-workspace" }, list: [{ id: "pi" }] },
       plugins: { enabled: false, entries: { discord: { enabled: true } } },
     });
     expect(res.ok).toBe(true);
@@ -184,7 +184,7 @@ describe("config plugin validation", () => {
   it("accepts channels.modelByChannel", async () => {
     const home = await createCaseHome();
     const res = validateInHome(home, {
-      agents: { list: [{ id: "pi" }] },
+      agents: { defaults: { workspace: "/tmp/test-workspace" }, list: [{ id: "pi" }] },
       channels: {
         modelByChannel: {
           openai: {
@@ -207,7 +207,10 @@ describe("config plugin validation", () => {
     });
 
     const res = validateInHome(home, {
-      agents: { defaults: { heartbeat: { target: "bluebubbles" } }, list: [{ id: "pi" }] },
+      agents: {
+        defaults: { workspace: "/tmp/test-workspace", heartbeat: { target: "bluebubbles" } },
+        list: [{ id: "pi" }],
+      },
       plugins: { enabled: false, load: { paths: [pluginDir] } },
     });
     expect(res.ok).toBe(true);
@@ -216,7 +219,10 @@ describe("config plugin validation", () => {
   it("rejects unknown heartbeat targets", async () => {
     const home = await createCaseHome();
     const res = validateInHome(home, {
-      agents: { defaults: { heartbeat: { target: "not-a-channel" } }, list: [{ id: "pi" }] },
+      agents: {
+        defaults: { workspace: "/tmp/test-workspace", heartbeat: { target: "not-a-channel" } },
+        list: [{ id: "pi" }],
+      },
     });
     expect(res.ok).toBe(false);
     if (!res.ok) {

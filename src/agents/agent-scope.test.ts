@@ -410,12 +410,30 @@ describe("resolveAgentConfig", () => {
     expect(result?.workspace).toBe("~/remoteclaw");
   });
 
-  it("uses REMOTECLAW_HOME for default agent workspace", () => {
-    const home = path.join(path.sep, "srv", "remoteclaw-home");
-    vi.stubEnv("REMOTECLAW_HOME", home);
+  it("throws when no workspace is configured for agent", () => {
+    expect(() => resolveAgentWorkspaceDir({} as RemoteClawConfig, "main")).toThrow(
+      "agent 'main' has no workspace configured",
+    );
+  });
 
-    const workspace = resolveAgentWorkspaceDir({} as RemoteClawConfig, "main");
-    expect(workspace).toBe(path.join(path.resolve(home), ".remoteclaw", "workspace"));
+  it("returns configured workspace from agents.list", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main", workspace: "~/my-workspace" }],
+      },
+    };
+    const workspace = resolveAgentWorkspaceDir(cfg, "main");
+    expect(workspace).toContain("my-workspace");
+  });
+
+  it("falls back to agents.defaults.workspace when per-agent workspace is missing", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { workspace: "~/shared-workspace" },
+      },
+    };
+    const workspace = resolveAgentWorkspaceDir(cfg, "main");
+    expect(workspace).toContain("shared-workspace");
   });
 
   it("uses REMOTECLAW_HOME for default agentDir", () => {

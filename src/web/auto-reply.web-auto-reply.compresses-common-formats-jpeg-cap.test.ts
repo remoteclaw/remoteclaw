@@ -1,3 +1,4 @@
+import "./test-helpers.js";
 import crypto from "node:crypto";
 import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
@@ -73,7 +74,9 @@ describe("web auto-reply", () => {
   }
 
   async function withMediaCap<T>(mediaMaxMb: number, run: () => Promise<T>): Promise<T> {
-    setLoadConfigMock(() => ({ agents: { defaults: { mediaMaxMb } } }));
+    setLoadConfigMock(() => ({
+      agents: { defaults: { mediaMaxMb, workspace: "/tmp/test-workspace" } },
+    }));
     try {
       return await run();
     } finally {

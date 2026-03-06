@@ -80,11 +80,16 @@ describe("setupChannels", () => {
 
     const runtime = createExitThrowingRuntime();
 
-    await setupChannels({} as RemoteClawConfig, runtime, prompter, {
-      skipConfirm: true,
-      quickstartDefaults: true,
-      forceAllowFromChannels: ["whatsapp"],
-    });
+    await setupChannels(
+      { agents: { defaults: { workspace: "/tmp/test-workspace" } } } as RemoteClawConfig,
+      runtime,
+      prompter,
+      {
+        skipConfirm: true,
+        quickstartDefaults: true,
+        forceAllowFromChannels: ["whatsapp"],
+      },
+    );
 
     expect(select).toHaveBeenCalledWith(
       expect.objectContaining({ message: "Select channel (QuickStart)" }),
@@ -115,10 +120,15 @@ describe("setupChannels", () => {
 
     const runtime = createExitThrowingRuntime();
 
-    await setupChannels({} as RemoteClawConfig, runtime, prompter, {
-      skipConfirm: true,
-      quickstartDefaults: true,
-    });
+    await setupChannels(
+      { agents: { defaults: { workspace: "/tmp/test-workspace" } } } as RemoteClawConfig,
+      runtime,
+      prompter,
+      {
+        skipConfirm: true,
+        quickstartDefaults: true,
+      },
+    );
 
     // The new flow should not stop setup with a hard "plugin not available" note.
     const sawHardStop = note.mock.calls.some((call) => {
@@ -145,9 +155,14 @@ describe("setupChannels", () => {
 
     const runtime = createExitThrowingRuntime();
 
-    await setupChannels({} as RemoteClawConfig, runtime, prompter, {
-      skipConfirm: true,
-    });
+    await setupChannels(
+      { agents: { defaults: { workspace: "/tmp/test-workspace" } } } as RemoteClawConfig,
+      runtime,
+      prompter,
+      {
+        skipConfirm: true,
+      },
+    );
 
     const sawPrimer = note.mock.calls.some(
       ([message, title]) =>
@@ -180,6 +195,7 @@ describe("setupChannels", () => {
 
     await setupChannels(
       {
+        agents: { defaults: { workspace: "/tmp/test-workspace" } },
         channels: {
           telegram: {
             botToken: "token",
@@ -232,6 +248,7 @@ describe("setupChannels", () => {
 
     await setupChannels(
       {
+        agents: { defaults: { workspace: "/tmp/test-workspace" } },
         channels: {
           telegram: {
             botToken: "token",

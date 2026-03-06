@@ -14,6 +14,7 @@ describe("doctor command", () => {
         exists: true,
         raw: "{}",
         parsed: {
+          agents: { defaults: { workspace: "/tmp/test-workspace" } },
           channels: {
             slack: { dm: { enabled: true, policy: "open", allowFrom: ["*"] } },
             discord: {
@@ -23,6 +24,7 @@ describe("doctor command", () => {
         },
         valid: true,
         config: {
+          agents: { defaults: { workspace: "/tmp/test-workspace" } },
           channels: {
             slack: { dm: { enabled: true, policy: "open", allowFrom: ["*"] } },
             discord: { dm: { enabled: true, policy: "allowlist", allowFrom: ["123"] } },

@@ -25,7 +25,7 @@ vi.mock("../web/media.js", () => ({
 }));
 
 const { loadConfig } = vi.hoisted((): { loadConfig: AnyMock } => ({
-  loadConfig: vi.fn(() => ({})),
+  loadConfig: vi.fn(() => ({ agents: { defaults: { workspace: "/tmp/test-workspace" } } })),
 }));
 
 export function getLoadConfigMock(): AnyMock {
@@ -254,6 +254,7 @@ beforeEach(() => {
     agents: {
       defaults: {
         envelopeTimezone: "utc",
+        workspace: "/tmp/test-workspace",
       },
     },
     channels: {

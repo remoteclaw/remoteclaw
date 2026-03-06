@@ -202,6 +202,7 @@ describe("routeReply", () => {
     mocks.sendMessageSlack.mockClear();
     const cfg = {
       agents: {
+        defaults: { workspace: "/tmp/test-workspace" },
         list: [
           {
             id: "rich",

@@ -378,8 +378,7 @@ export async function runOnboardingWizard(
     });
 
     if (action === "reset") {
-      const workspaceDefault =
-        baseConfig.agents?.defaults?.workspace ?? onboardHelpers.DEFAULT_WORKSPACE;
+      const workspaceDefault = baseConfig.agents?.defaults?.workspace;
       const resetScope = (await prompter.select({
         message: "Reset scope",
         options: [
@@ -388,13 +387,21 @@ export async function runOnboardingWizard(
             value: "config+creds+sessions",
             label: "Config + creds + sessions",
           },
-          {
-            value: "full",
-            label: "Full reset (config + creds + sessions + workspace)",
-          },
+          ...(workspaceDefault
+            ? [
+                {
+                  value: "full" as const,
+                  label: "Full reset (config + creds + sessions + workspace)",
+                },
+              ]
+            : []),
         ],
       })) as ResetScope;
-      await onboardHelpers.handleReset(resetScope, resolveUserPath(workspaceDefault), runtime);
+      if (workspaceDefault) {
+        await onboardHelpers.handleReset(resetScope, resolveUserPath(workspaceDefault), runtime);
+      } else {
+        await onboardHelpers.handleReset(resetScope, "", runtime);
+      }
       baseConfig = {};
     }
   }
@@ -555,16 +562,22 @@ export async function runOnboardingWizard(
     return;
   }
 
+  const existingWorkspace = baseConfig.agents?.defaults?.workspace;
   const workspaceInput =
     opts.workspace ??
-    (flow === "quickstart"
-      ? (baseConfig.agents?.defaults?.workspace ?? onboardHelpers.DEFAULT_WORKSPACE)
-      : await prompter.text({
-          message: "Workspace directory",
-          initialValue: baseConfig.agents?.defaults?.workspace ?? onboardHelpers.DEFAULT_WORKSPACE,
-        }));
+    existingWorkspace ??
+    (await prompter.text({
+      message: "Workspace directory",
+      initialValue: "~/remoteclaw-workspace",
+    }));
 
-  const workspaceDir = resolveUserPath(workspaceInput.trim() || onboardHelpers.DEFAULT_WORKSPACE);
+  const trimmedWorkspace = workspaceInput.trim();
+  if (!trimmedWorkspace) {
+    await prompter.outro("Workspace directory is required.");
+    runtime.exit(1);
+    return;
+  }
+  const workspaceDir = resolveUserPath(trimmedWorkspace);
 
   const { applyOnboardingLocalWorkspaceConfig } = await import("../commands/onboard-config.js");
   let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);

@@ -69,7 +69,9 @@ beforeEach(() => {
   });
   readAllowFromStoreMock.mockClear().mockResolvedValue([]);
   upsertPairingRequestMock.mockClear().mockResolvedValue({ code: "PAIRCODE", created: true });
-  loadConfigMock.mockClear().mockReturnValue({});
+  loadConfigMock
+    .mockClear()
+    .mockReturnValue({ agents: { defaults: { workspace: "/tmp/test-workspace" } } });
   __resetDiscordChannelInfoCacheForTest();
 });
 
@@ -461,7 +463,7 @@ describe("discord tool result dispatch", () => {
     }>();
 
     const cfg = {
-      agent: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/remoteclaw" },
+      agents: { defaults: { workspace: "/tmp/remoteclaw" } },
       session: { store: "/tmp/remoteclaw-sessions.json" },
       channels: {
         discord: {

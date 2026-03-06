@@ -390,6 +390,8 @@ Core actions:
 
 Notes:
 
+- `config.schema.lookup` expects a targeted config path such as `gateway.auth` or `agents.list.*.heartbeat`.
+- Paths may include slash-delimited plugin ids when addressing `plugins.entries.<id>`, for example `plugins.entries.pack/one.config`.
 - Use `delayMs` (defaults to 2000) to avoid interrupting an in-flight reply.
 - `restart` is enabled by default; set `commands.restart: false` to disable it.
 

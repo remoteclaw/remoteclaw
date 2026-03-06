@@ -190,11 +190,7 @@ export async function runCronIsolatedAgentTurn(params: {
 
   const workspaceDirRaw = resolveAgentWorkspaceDir(params.cfg, agentId);
   const agentDir = resolveAgentDir(params.cfg, agentId);
-  const workspace = await ensureAgentWorkspace({
-    dir: workspaceDirRaw,
-    ensureBootstrapFiles: !agentCfg?.skipBootstrap && !isFastTestEnv,
-  });
-  const workspaceDir = workspace.dir;
+  const workspaceDir = await ensureAgentWorkspace(workspaceDirRaw);
 
   const resolvedDefault = normalizeModelRef(DEFAULT_PROVIDER, DEFAULT_MODEL);
   let provider = resolvedDefault.provider;

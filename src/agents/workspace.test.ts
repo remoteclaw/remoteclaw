@@ -15,8 +15,8 @@ describe("ensureAgentWorkspace", () => {
 
   it("creates workspace directory when given a valid dir", async () => {
     tmpDir = path.join(os.tmpdir(), `workspace-test-${Date.now()}`);
-    const result = await ensureAgentWorkspace({ dir: tmpDir });
-    expect(result.dir).toBe(tmpDir);
+    const result = await ensureAgentWorkspace(tmpDir);
+    expect(result).toBe(tmpDir);
     const stat = await fs.stat(tmpDir);
     expect(stat.isDirectory()).toBe(true);
   });

@@ -21,7 +21,7 @@ vi.mock("../../agents/timeout.js", () => ({
   resolveAgentTimeoutMs: vi.fn(() => 60000),
 }));
 vi.mock("../../agents/workspace.js", () => ({
-  ensureAgentWorkspace: vi.fn(async () => ({ dir: "/tmp/workspace" })),
+  ensureAgentWorkspace: vi.fn(async () => "/tmp/workspace"),
 }));
 vi.mock("../../channels/model-overrides.js", () => ({
   resolveChannelModelOverride: vi.fn(() => undefined),

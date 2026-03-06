@@ -17,7 +17,6 @@ import {
 import { GatewayClient } from "./client.js";
 import { buildDeviceAuthPayload } from "./device-auth.js";
 import { PROTOCOL_VERSION } from "./protocol/index.js";
-import { startGatewayServer } from "./server.js";
 
 export async function getFreeGatewayPort(): Promise<number> {
   return await getDeterministicFreePortBlock({ offsets: [0, 1, 2, 3, 4] });
@@ -211,6 +210,7 @@ export async function startGatewayWithClient(params: {
   process.env.REMOTECLAW_CONFIG_PATH = params.configPath;
 
   const port = await getFreeGatewayPort();
+  const { startGatewayServer } = await import("./server.js");
   const server = await startGatewayServer(port, {
     bind: "loopback",
     auth: { mode: "token", token: params.token },

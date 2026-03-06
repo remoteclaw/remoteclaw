@@ -86,30 +86,9 @@ export type VideoDescriptionResult = {
   model?: string;
 };
 
-export type ImageDescriptionRequest = {
-  buffer: Buffer;
-  fileName: string;
-  mime?: string;
-  model: string;
-  provider: string;
-  prompt?: string;
-  maxTokens?: number;
-  timeoutMs: number;
-  profile?: string;
-  preferredProfile?: string;
-  agentDir: string;
-  cfg: import("../config/config.js").RemoteClawConfig;
-};
-
-export type ImageDescriptionResult = {
-  text: string;
-  model?: string;
-};
-
 export type MediaUnderstandingProvider = {
   id: string;
   capabilities?: MediaUnderstandingCapability[];
   transcribeAudio?: (req: AudioTranscriptionRequest) => Promise<AudioTranscriptionResult>;
   describeVideo?: (req: VideoDescriptionRequest) => Promise<VideoDescriptionResult>;
-  describeImage?: (req: ImageDescriptionRequest) => Promise<ImageDescriptionResult>;
 };

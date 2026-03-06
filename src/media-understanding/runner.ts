@@ -5,10 +5,6 @@ import path from "node:path";
 import { resolveApiKeyForProvider } from "../agents/provider-auth.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  resolveAgentModelFallbackValues,
-  resolveAgentModelPrimaryValue,
-} from "../config/model-input.js";
 import type {
   MediaUnderstandingConfig,
   MediaUnderstandingModelConfig,
@@ -26,12 +22,7 @@ import {
   normalizeAttachments,
   selectAttachments,
 } from "./attachments.js";
-import {
-  AUTO_AUDIO_KEY_PROVIDERS,
-  AUTO_IMAGE_KEY_PROVIDERS,
-  AUTO_VIDEO_KEY_PROVIDERS,
-  DEFAULT_IMAGE_MODELS,
-} from "./defaults.js";
+import { AUTO_AUDIO_KEY_PROVIDERS, AUTO_VIDEO_KEY_PROVIDERS } from "./defaults.js";
 import { isMediaUnderstandingSkipError } from "./errors.js";
 import { fileExists } from "./fs.js";
 import { extractGeminiResponse } from "./output-extract.js";
@@ -351,9 +342,6 @@ async function resolveKeyEntry(params: {
     if (capability === "audio" && !provider.transcribeAudio) {
       return null;
     }
-    if (capability === "image" && !provider.describeImage) {
-      return null;
-    }
     if (capability === "video" && !provider.describeVideo) {
       return null;
     }
@@ -364,24 +352,6 @@ async function resolveKeyEntry(params: {
       return null;
     }
   };
-
-  if (capability === "image") {
-    const activeProvider = params.activeModel?.provider?.trim();
-    if (activeProvider) {
-      const activeEntry = await checkProvider(activeProvider, params.activeModel?.model);
-      if (activeEntry) {
-        return activeEntry;
-      }
-    }
-    for (const providerId of AUTO_IMAGE_KEY_PROVIDERS) {
-      const model = DEFAULT_IMAGE_MODELS[providerId];
-      const entry = await checkProvider(providerId, model);
-      if (entry) {
-        return entry;
-      }
-    }
-    return null;
-  }
 
   if (capability === "video") {
     const activeProvider = params.activeModel?.provider?.trim();
@@ -416,37 +386,6 @@ async function resolveKeyEntry(params: {
   return null;
 }
 
-function resolveImageModelFromAgentDefaults(
-  cfg: RemoteClawConfig,
-): MediaUnderstandingModelConfig[] {
-  const refs: string[] = [];
-  const primary = resolveAgentModelPrimaryValue(cfg.agents?.defaults?.imageModel);
-  if (primary?.trim()) {
-    refs.push(primary.trim());
-  }
-  for (const fb of resolveAgentModelFallbackValues(cfg.agents?.defaults?.imageModel)) {
-    if (fb?.trim()) {
-      refs.push(fb.trim());
-    }
-  }
-  if (refs.length === 0) {
-    return [];
-  }
-  const entries: MediaUnderstandingModelConfig[] = [];
-  for (const ref of refs) {
-    const slashIdx = ref.indexOf("/");
-    if (slashIdx <= 0 || slashIdx >= ref.length - 1) {
-      continue;
-    }
-    entries.push({
-      type: "provider",
-      provider: ref.slice(0, slashIdx),
-      model: ref.slice(slashIdx + 1),
-    });
-  }
-  return entries;
-}
-
 async function resolveAutoEntries(params: {
   cfg: RemoteClawConfig;
   agentDir?: string;
@@ -464,12 +403,6 @@ async function resolveAutoEntries(params: {
       return [localAudio];
     }
   }
-  if (params.capability === "image") {
-    const imageModelEntries = resolveImageModelFromAgentDefaults(params.cfg);
-    if (imageModelEntries.length > 0) {
-      return imageModelEntries;
-    }
-  }
   const gemini = await resolveGeminiCliEntry(params.capability);
   if (gemini) {
     return [gemini];
@@ -479,47 +412,6 @@ async function resolveAutoEntries(params: {
     return [keys];
   }
   return [];
-}
-
-export async function resolveAutoImageModel(params: {
-  cfg: RemoteClawConfig;
-  agentDir?: string;
-  activeModel?: ActiveMediaModel;
-}): Promise<ActiveMediaModel | null> {
-  const providerRegistry = buildProviderRegistry();
-  const toActive = (entry: MediaUnderstandingModelConfig | null): ActiveMediaModel | null => {
-    if (!entry || entry.type === "cli") {
-      return null;
-    }
-    const provider = entry.provider;
-    if (!provider) {
-      return null;
-    }
-    const model = entry.model ?? DEFAULT_IMAGE_MODELS[provider];
-    if (!model) {
-      return null;
-    }
-    return { provider, model };
-  };
-  const activeEntry = await resolveActiveModelEntry({
-    cfg: params.cfg,
-    agentDir: params.agentDir,
-    providerRegistry,
-    capability: "image",
-    activeModel: params.activeModel,
-  });
-  const resolvedActive = toActive(activeEntry);
-  if (resolvedActive) {
-    return resolvedActive;
-  }
-  const keyEntry = await resolveKeyEntry({
-    cfg: params.cfg,
-    agentDir: params.agentDir,
-    providerRegistry,
-    capability: "image",
-    activeModel: params.activeModel,
-  });
-  return toActive(keyEntry);
 }
 
 async function resolveActiveModelEntry(params: {
@@ -542,9 +434,6 @@ async function resolveActiveModelEntry(params: {
     return null;
   }
   if (params.capability === "audio" && !provider.transcribeAudio) {
-    return null;
-  }
-  if (params.capability === "image" && !provider.describeImage) {
     return null;
   }
   if (params.capability === "video" && !provider.describeVideo) {

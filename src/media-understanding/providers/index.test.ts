@@ -22,6 +22,6 @@ describe("media-understanding provider registry", () => {
     const provider = getMediaUnderstandingProvider("moonshot", registry);
 
     expect(provider?.id).toBe("moonshot");
-    expect(provider?.capabilities).toEqual(["image", "video"]);
+    expect(provider?.capabilities).toEqual(["video"]);
   });
 });

@@ -670,24 +670,21 @@ describe("applyMediaUnderstanding", () => {
     );
   });
 
-  it("orders mixed media outputs as image, audio, video", async () => {
+  it("orders mixed media outputs as audio, video", async () => {
     const dir = await createTempMediaDir();
-    const imagePath = path.join(dir, "photo.jpg");
     const audioPath = path.join(dir, "note.ogg");
     const videoPath = path.join(dir, "clip.mp4");
-    await fs.writeFile(imagePath, "image-bytes");
     await fs.writeFile(audioPath, Buffer.from([200, 201, 202, 203, 204, 205, 206, 207, 208]));
     await fs.writeFile(videoPath, "video-bytes");
 
     const ctx: MsgContext = {
       Body: "<media:mixed>",
-      MediaPaths: [imagePath, audioPath, videoPath],
-      MediaTypes: ["image/jpeg", "audio/ogg", "video/mp4"],
+      MediaPaths: [audioPath, videoPath],
+      MediaTypes: ["audio/ogg", "video/mp4"],
     };
     const cfg: RemoteClawConfig = {
       tools: {
         media: {
-          image: { enabled: true, models: [{ provider: "openai", model: "gpt-5.2" }] },
           audio: { enabled: true, models: [{ provider: "groq" }] },
           video: { enabled: true, models: [{ provider: "google", model: "gemini-3" }] },
         },
@@ -699,10 +696,6 @@ describe("applyMediaUnderstanding", () => {
       cfg,
       agentDir: dir,
       providers: {
-        openai: {
-          id: "openai",
-          describeImage: async () => ({ text: "image ok" }),
-        },
         groq: {
           id: "groq",
           transcribeAudio: async () => ({ text: "audio ok" }),
@@ -714,15 +707,10 @@ describe("applyMediaUnderstanding", () => {
       },
     });
 
-    expect(result.appliedImage).toBe(true);
     expect(result.appliedAudio).toBe(true);
     expect(result.appliedVideo).toBe(true);
     expect(ctx.Body).toBe(
-      [
-        "[Image]\nDescription:\nimage ok",
-        "[Audio]\nTranscript:\naudio ok",
-        "[Video]\nDescription:\nvideo ok",
-      ].join("\n\n"),
+      ["[Audio]\nTranscript:\naudio ok", "[Video]\nDescription:\nvideo ok"].join("\n\n"),
     );
     expect(ctx.Transcript).toBe("audio ok");
     expect(ctx.CommandBody).toBe("audio ok");

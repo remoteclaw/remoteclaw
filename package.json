@@ -192,7 +192,6 @@
     "playwright-core": "1.58.2",
     "qrcode-terminal": "^0.12.0",
     "sharp": "^0.34.5",
-    "sqlite-vec": "0.1.7-alpha.2",
     "tar": "7.5.9",
     "tslog": "^4.10.2",
     "undici": "^7.22.0",
@@ -222,8 +221,7 @@
     "vitest": "^4.0.18"
   },
   "peerDependencies": {
-    "@napi-rs/canvas": "^0.1.89",
-    "node-llama-cpp": "3.15.1"
+    "@napi-rs/canvas": "^0.1.89"
   },
   "optionalDependencies": {
     "@discordjs/opus": "^0.10.0"
@@ -253,7 +251,6 @@
       "authenticate-pam",
       "esbuild",
       "koffi",
-      "node-llama-cpp",
       "protobufjs",
       "sharp"
     ]

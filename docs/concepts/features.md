@@ -35,7 +35,7 @@ title: "Features"
 - Discord bot support (channels.discord.js)
 - Mattermost bot support (plugin)
 - iMessage integration via local imsg CLI (macOS)
-- Agent bridge for Pi in RPC mode with tool streaming
+- CLI agent runtimes (Claude, Gemini, Codex, OpenCode) via ChannelBridge
 - Streaming and chunking for long responses
 - Multi-agent routing for isolated sessions per workspace or sender
 - Subscription auth for Anthropic and OpenAI via OAuth
@@ -48,6 +48,6 @@ title: "Features"
 - Android node with pairing, Canvas, chat, and camera
 
 <Note>
-Legacy Claude, Codex, Gemini, and Opencode paths have been removed. Pi is the only
-coding agent path.
+RemoteClaw supports four CLI agent runtimes: Claude, Gemini, Codex, and OpenCode.
+Each runs as a subprocess managed by the ChannelBridge.
 </Note>

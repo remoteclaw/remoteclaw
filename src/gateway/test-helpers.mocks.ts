@@ -392,11 +392,13 @@ vi.mock("../config/config.js", async () => {
       const rawList = (testState.agentsConfig?.list ?? fileAgents.list) as
         | Array<Record<string, unknown>>
         | undefined;
-      const list = Array.isArray(rawList)
-        ? rawList.map((entry) =>
-            typeof entry.workspace === "string" ? entry : { workspace: testWorkspace, ...entry },
-          )
-        : [{ id: "main", workspace: testWorkspace }];
+      const list = (
+        Array.isArray(rawList)
+          ? rawList.map((entry) =>
+              typeof entry.workspace === "string" ? entry : { workspace: testWorkspace, ...entry },
+            )
+          : [{ id: "main", workspace: testWorkspace }]
+      ) as Array<{ id: string; workspace: string; [k: string]: unknown }>;
       const agents = testState.agentsConfig
         ? { ...fileAgents, ...testState.agentsConfig, defaults, list }
         : { ...fileAgents, defaults, list };

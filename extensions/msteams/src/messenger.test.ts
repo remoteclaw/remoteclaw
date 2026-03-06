@@ -16,7 +16,7 @@ vi.mock("./graph-upload.js", async () => {
   };
 });
 
-import { resolvePreferredRemoteClawTmpDir } from "../../../src/infra/tmp-remoteclaw-dir.js";
+import { resolvePreferredRemoteClawTmpDir } from "remoteclaw/plugin-sdk";
 import {
   type MSTeamsAdapter,
   renderReplyPayloadsToMessages,

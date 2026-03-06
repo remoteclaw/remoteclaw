@@ -1,5 +1,5 @@
+import { resolveChannelGroupPolicy } from "remoteclaw/plugin-sdk";
 import { describe, expect, it } from "vitest";
-import { resolveChannelGroupPolicy } from "../../../src/config/group-policy.js";
 import {
   resolveIrcGroupAccessGate,
   resolveIrcGroupMatch,

@@ -162,7 +162,7 @@ const DEFAULT_CONFIG_SNAPSHOT = {
   raw: "{}",
   parsed: {},
   valid: true,
-  config: {},
+  config: { agents: { defaults: { workspace: "/tmp/test-workspace" } } },
   issues: [],
   legacyIssues: [],
 } as const;
@@ -283,7 +283,6 @@ vi.mock("./health.js", () => ({
 
 vi.mock("./onboard-helpers.js", () => ({
   applyWizardMetadata: (cfg: Record<string, unknown>) => cfg,
-  DEFAULT_WORKSPACE: "/tmp",
   guardCancel: (value: unknown) => value,
   printWizardHeader: vi.fn(),
   randomToken: vi.fn(() => "test-gateway-token"),

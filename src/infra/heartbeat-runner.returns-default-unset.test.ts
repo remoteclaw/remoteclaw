@@ -167,10 +167,16 @@ describe("resolveHeartbeatIntervalMs", () => {
 
 describe("resolveHeartbeatPrompt", () => {
   it("returns empty when unconfigured, trimmed prompt when set", async () => {
-    expect(await resolveHeartbeatPrompt({} as RemoteClawConfig)).toBe("");
     expect(
       await resolveHeartbeatPrompt({
-        agents: { defaults: { heartbeat: { prompt: "  ping  " } } },
+        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      } as RemoteClawConfig),
+    ).toBe("");
+    expect(
+      await resolveHeartbeatPrompt({
+        agents: {
+          defaults: { workspace: "/tmp/test-workspace", heartbeat: { prompt: "  ping  " } },
+        },
       } as RemoteClawConfig),
     ).toBe("ping");
   });

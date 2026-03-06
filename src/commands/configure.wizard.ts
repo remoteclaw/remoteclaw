@@ -24,7 +24,6 @@ import { healthCommand } from "./health.js";
 import { noteChannelStatus, setupChannels } from "./onboard-channels.js";
 import {
   applyWizardMetadata,
-  DEFAULT_WORKSPACE,
   ensureWorkspaceAndSessions,
   guardCancel,
   printWizardHeader,
@@ -216,9 +215,7 @@ export async function runConfigureWizard(
       didSetGatewayMode = true;
     }
     let workspaceDir =
-      nextConfig.agents?.defaults?.workspace ??
-      baseConfig.agents?.defaults?.workspace ??
-      DEFAULT_WORKSPACE;
+      nextConfig.agents?.defaults?.workspace ?? baseConfig.agents?.defaults?.workspace ?? "";
     let gatewayPort = resolveGatewayPort(baseConfig);
     let gatewayToken: string | undefined =
       nextConfig.gateway?.auth?.token ??
@@ -242,7 +239,12 @@ export async function runConfigureWizard(
         }),
         runtime,
       );
-      workspaceDir = resolveUserPath(String(workspaceInput ?? "").trim() || DEFAULT_WORKSPACE);
+      const rawInput = String(workspaceInput ?? "").trim();
+      if (!rawInput) {
+        runtime.error("Workspace directory is required.");
+        return;
+      }
+      workspaceDir = resolveUserPath(rawInput);
       nextConfig = {
         ...nextConfig,
         agents: {

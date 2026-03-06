@@ -295,6 +295,7 @@ describe("web auto-reply", () => {
           agents: {
             defaults: {
               envelopeTimezone: "utc",
+              workspace: "/tmp/test-workspace",
             },
           },
           session: { store: store.storePath },

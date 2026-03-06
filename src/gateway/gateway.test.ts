@@ -48,6 +48,10 @@ describe("gateway e2e", () => {
       delete process.env.REMOTECLAW_STATE_DIR;
       delete process.env.REMOTECLAW_CONFIG_PATH;
 
+      // Provide a workspace config so resolveAgentWorkspaceDir doesn't throw
+      const tempWorkspace = path.join(tempHome, "workspace");
+      await writeConfigFile({ agents: { defaults: { workspace: tempWorkspace } } });
+
       const wizardToken = `wiz-${randomUUID()}`;
       const port = await getFreeGatewayPort();
       const server = await startGatewayServer(port, {
@@ -59,6 +63,7 @@ describe("gateway e2e", () => {
           await prompter.note("write token");
           const token = await prompter.text({ message: "token" });
           await writeConfigFile({
+            agents: { defaults: { workspace: tempWorkspace } },
             gateway: { auth: { mode: "token", token: String(token) } },
           });
           await prompter.outro("ok");

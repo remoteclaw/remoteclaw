@@ -1,9 +1,7 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolveStateDir } from "../config/paths.js";
 import { resolveRunWorkspaceDir } from "./workspace-run.js";
-import { resolveDefaultAgentWorkspaceDir } from "./workspace.js";
 
 describe("resolveRunWorkspaceDir", () => {
   it("resolves explicit workspace values without fallback", () => {
@@ -40,11 +38,11 @@ describe("resolveRunWorkspaceDir", () => {
     expect(result.workspaceDir).toBe(path.resolve(researchWorkspace));
   });
 
-  it("falls back to default workspace for blank strings", () => {
-    const defaultWorkspace = path.join(process.cwd(), "tmp", "workspace-default-main");
+  it("falls back to per-agent workspace for blank strings", () => {
+    const mainWorkspace = path.join(process.cwd(), "tmp", "workspace-default-main");
     const cfg = {
       agents: {
-        defaults: { workspace: defaultWorkspace },
+        list: [{ id: "main", workspace: mainWorkspace }],
       },
     } satisfies RemoteClawConfig;
 
@@ -57,20 +55,17 @@ describe("resolveRunWorkspaceDir", () => {
     expect(result.usedFallback).toBe(true);
     expect(result.fallbackReason).toBe("blank");
     expect(result.agentId).toBe("main");
-    expect(result.workspaceDir).toBe(path.resolve(defaultWorkspace));
+    expect(result.workspaceDir).toBe(path.resolve(mainWorkspace));
   });
 
-  it("falls back to built-in main workspace when config is unavailable", () => {
-    const result = resolveRunWorkspaceDir({
-      workspaceDir: null,
-      sessionKey: "agent:main:subagent:test",
-      config: undefined,
-    });
-
-    expect(result.usedFallback).toBe(true);
-    expect(result.fallbackReason).toBe("missing");
-    expect(result.agentId).toBe("main");
-    expect(result.workspaceDir).toBe(path.resolve(resolveDefaultAgentWorkspaceDir(process.env)));
+  it("throws when config has no workspace for the resolved agent", () => {
+    expect(() =>
+      resolveRunWorkspaceDir({
+        workspaceDir: null,
+        sessionKey: "agent:main:subagent:test",
+        config: undefined,
+      }),
+    ).toThrow("agent 'main' has no workspace configured");
   });
 
   it("throws for malformed agent session keys", () => {
@@ -83,19 +78,15 @@ describe("resolveRunWorkspaceDir", () => {
     ).toThrow("Malformed agent session key");
   });
 
-  it("uses explicit agent id for per-agent fallback when config is unavailable", () => {
-    const result = resolveRunWorkspaceDir({
-      workspaceDir: undefined,
-      sessionKey: "definitely-not-a-valid-session-key",
-      agentId: "research",
-      config: undefined,
-    });
-
-    expect(result.agentId).toBe("research");
-    expect(result.agentIdSource).toBe("explicit");
-    expect(result.workspaceDir).toBe(
-      path.resolve(resolveStateDir(process.env), "workspace-research"),
-    );
+  it("throws when explicit agent id has no configured workspace", () => {
+    expect(() =>
+      resolveRunWorkspaceDir({
+        workspaceDir: undefined,
+        sessionKey: "definitely-not-a-valid-session-key",
+        agentId: "research",
+        config: undefined,
+      }),
+    ).toThrow("agent 'research' has no workspace configured");
   });
 
   it("throws for malformed agent session keys even when config has a default agent", () => {
@@ -124,7 +115,7 @@ describe("resolveRunWorkspaceDir", () => {
     const fallbackWorkspace = path.join(process.cwd(), "tmp", "workspace-default-legacy");
     const cfg = {
       agents: {
-        defaults: { workspace: fallbackWorkspace },
+        list: [{ id: "main", workspace: fallbackWorkspace }],
       },
     } satisfies RemoteClawConfig;
 

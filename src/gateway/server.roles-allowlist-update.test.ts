@@ -3,7 +3,6 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, test, vi } from "vitest";
 import { WebSocket } from "ws";
-import { CONFIG_PATH } from "../config/config.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import type { GatewayClient } from "./client.js";
 
@@ -159,6 +158,7 @@ describe("gateway update.run", () => {
     process.on("SIGUSR1", sigusr1);
 
     try {
+      const { CONFIG_PATH } = await import("../config/config.js");
       await fs.mkdir(path.dirname(CONFIG_PATH), { recursive: true });
       await fs.writeFile(CONFIG_PATH, JSON.stringify({ update: { channel: "beta" } }, null, 2));
       const updateMock = vi.mocked(runGatewayUpdate);

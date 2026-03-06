@@ -22,7 +22,7 @@ describe("broadcast groups", () => {
     setLoadConfigMock({
       channels: { whatsapp: { allowFrom: ["*"] } },
       agents: {
-        defaults: { maxConcurrent: 10 },
+        defaults: { maxConcurrent: 10, workspace: "/tmp/test-workspace" },
         list: [{ id: "alfred" }, { id: "baerbel" }],
       },
       broadcast: {
@@ -42,7 +42,7 @@ describe("broadcast groups", () => {
     setLoadConfigMock({
       channels: { whatsapp: { allowFrom: ["*"] } },
       agents: {
-        defaults: { maxConcurrent: 10 },
+        defaults: { maxConcurrent: 10, workspace: "/tmp/test-workspace" },
         list: [{ id: "alfred" }, { id: "baerbel" }],
       },
       broadcast: {
@@ -122,7 +122,7 @@ describe("broadcast groups", () => {
     setLoadConfigMock({
       channels: { whatsapp: { allowFrom: ["*"] } },
       agents: {
-        defaults: { maxConcurrent: 10 },
+        defaults: { maxConcurrent: 10, workspace: "/tmp/test-workspace" },
         list: [{ id: "alfred" }, { id: "baerbel" }],
       },
       broadcast: {

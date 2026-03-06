@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveDefaultAgentWorkspaceDir } from "../agents/workspace.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { resolveHomeDir, resolveUserPath, shortenHomeInString } from "../utils.js";
@@ -30,9 +29,6 @@ export function collectWorkspaceDirs(cfg: RemoteClawConfig | undefined): string[
     if (typeof workspace === "string" && workspace.trim()) {
       dirs.add(resolveUserPath(workspace));
     }
-  }
-  if (dirs.size === 0) {
-    dirs.add(resolveDefaultAgentWorkspaceDir());
   }
   return [...dirs];
 }

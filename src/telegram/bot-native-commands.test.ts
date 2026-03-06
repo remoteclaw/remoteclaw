@@ -1,7 +1,6 @@
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import { STATE_DIR } from "../config/paths.js";
 import { TELEGRAM_COMMAND_NAME_PATTERN } from "../config/telegram-custom-commands.js";
 import type { TelegramAccountConfig } from "../config/types.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -69,6 +68,7 @@ describe("registerTelegramNativeCommands", () => {
 
   it("truncates Telegram command registration to 100 commands", () => {
     const cfg: RemoteClawConfig = {
+      agents: { defaults: { workspace: "/tmp/test-workspace" } },
       commands: { native: false },
     };
     const customCommands = Array.from({ length: 120 }, (_, index) => ({
@@ -108,7 +108,7 @@ describe("registerTelegramNativeCommands", () => {
     const command = vi.fn();
 
     registerTelegramNativeCommands({
-      ...buildParams({}),
+      ...buildParams({ agents: { defaults: { workspace: "/tmp/test-workspace" } } }),
       bot: {
         api: {
           setMyCommands,
@@ -136,7 +136,7 @@ describe("registerTelegramNativeCommands", () => {
     ] as never);
 
     registerTelegramNativeCommands({
-      ...buildParams({}),
+      ...buildParams({ agents: { defaults: { workspace: "/tmp/test-workspace" } } }),
       bot: {
         api: {
           setMyCommands,
@@ -172,6 +172,7 @@ describe("registerTelegramNativeCommands", () => {
     const sendMessage = vi.fn().mockResolvedValue(undefined);
     const cfg: RemoteClawConfig = {
       agents: {
+        defaults: { workspace: "/tmp/test-workspace" },
         list: [{ id: "main", default: true }, { id: "work" }],
       },
       bindings: [{ agentId: "work", match: { channel: "telegram", accountId: "default" } }],
@@ -219,7 +220,7 @@ describe("registerTelegramNativeCommands", () => {
 
     expect(deliveryMocks.deliverReplies).toHaveBeenCalledWith(
       expect.objectContaining({
-        mediaLocalRoots: expect.arrayContaining([path.join(STATE_DIR, "workspace-work")]),
+        mediaLocalRoots: expect.arrayContaining([path.resolve("/tmp/test-workspace")]),
       }),
     );
     expect(sendMessage).not.toHaveBeenCalledWith(123, "Command not found.");

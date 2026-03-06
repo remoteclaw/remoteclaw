@@ -22,7 +22,7 @@ export function createNativeCommandTestParams(params: {
 }): RegisterTelegramNativeCommandParams {
   return {
     bot: params.bot,
-    cfg: params.cfg ?? {},
+    cfg: params.cfg ?? { agents: { defaults: { workspace: "/tmp/test-workspace" } } },
     runtime: params.runtime ?? ({} as RuntimeEnv),
     accountId: params.accountId ?? "default",
     telegramCfg: params.telegramCfg ?? ({} as TelegramAccountConfig),

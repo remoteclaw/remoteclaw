@@ -7,7 +7,6 @@ import { DEFAULT_GATEWAY_DAEMON_RUNTIME } from "../daemon-runtime.js";
 import { applyOnboardingLocalWorkspaceConfig } from "../onboard-config.js";
 import {
   applyWizardMetadata,
-  DEFAULT_WORKSPACE,
   ensureWorkspaceAndSessions,
   resolveControlUiLinks,
   waitForGatewayReachable,
@@ -110,10 +109,18 @@ export async function runNonInteractiveOnboardingLocal(params: {
   const { opts, runtime, baseConfig } = params;
   const mode = "local" as const;
 
+  const workspaceRaw = opts.workspace ?? baseConfig.agents?.defaults?.workspace;
+  if (!workspaceRaw?.trim()) {
+    runtime.error(
+      "No workspace path provided. Pass --workspace or set agents.defaults.workspace in remoteclaw.json.",
+    );
+    runtime.exit(1);
+    return;
+  }
   const workspaceDir = resolveNonInteractiveWorkspaceDir({
     opts,
     baseConfig,
-    defaultWorkspaceDir: DEFAULT_WORKSPACE,
+    defaultWorkspaceDir: workspaceRaw,
   });
 
   let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);

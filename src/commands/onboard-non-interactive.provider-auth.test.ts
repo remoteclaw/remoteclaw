@@ -32,6 +32,7 @@ const NON_INTERACTIVE_DEFAULT_OPTIONS = {
   skipHealth: true,
   skipChannels: true,
   json: true,
+  workspace: "/tmp/test-workspace",
 } as const;
 
 async function removeDirWithRetry(dir: string): Promise<void> {

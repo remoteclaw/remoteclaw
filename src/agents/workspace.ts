@@ -1,23 +1,11 @@
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
-import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { resolveUserPath } from "../utils.js";
 
-export function resolveDefaultAgentWorkspaceDir(
-  env: NodeJS.ProcessEnv = process.env,
-  homedir: () => string = os.homedir,
-): string {
-  const home = resolveRequiredHomeDir(env, homedir);
-  const profile = env.REMOTECLAW_PROFILE?.trim();
-  if (profile && profile.toLowerCase() !== "default") {
-    return path.join(home, ".remoteclaw", `workspace-${profile}`);
-  }
-  return path.join(home, ".remoteclaw", "workspace");
-}
-
-export const DEFAULT_AGENT_WORKSPACE_DIR = resolveDefaultAgentWorkspaceDir();
+export const DEFAULT_AGENTS_FILENAME = "AGENTS.md";
+export const DEFAULT_SOUL_FILENAME = "SOUL.md";
+export const DEFAULT_TOOLS_FILENAME = "TOOLS.md";
 export const DEFAULT_IDENTITY_FILENAME = "IDENTITY.md";
 export const DEFAULT_BOOTSTRAP_FILENAME = "BOOTSTRAP.md";
 let gitAvailabilityPromise: Promise<boolean> | null = null;
@@ -62,14 +50,13 @@ async function ensureGitRepo(dir: string) {
   }
 }
 
-export async function ensureAgentWorkspace(params?: {
-  dir?: string;
+export async function ensureAgentWorkspace(params: {
+  dir: string;
   ensureBootstrapFiles?: boolean;
 }): Promise<{
   dir: string;
 }> {
-  const rawDir = params?.dir?.trim() ? params.dir.trim() : DEFAULT_AGENT_WORKSPACE_DIR;
-  const dir = resolveUserPath(rawDir);
+  const dir = resolveUserPath(params.dir.trim());
   await fs.mkdir(dir, { recursive: true });
 
   if (params?.ensureBootstrapFiles) {

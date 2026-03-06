@@ -1,8 +1,6 @@
-import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolveStateDir } from "../config/paths.js";
 import {
   applyAgentBindings,
   applyAgentConfig,
@@ -44,9 +42,7 @@ describe("agents helpers", () => {
     const work = summaries.find((summary) => summary.id === "work");
 
     expect(main).toBeTruthy();
-    expect(main?.workspace).toBe(
-      path.join(resolveStateDir(process.env, os.homedir), "workspace-main"),
-    );
+    expect(main?.workspace).toBe(path.resolve("/main-ws"));
     expect(main?.bindings).toBe(1);
     expect(main?.model).toBe("anthropic/claude");
     expect(main?.agentDir.endsWith(path.join("agents", "main", "agent"))).toBe(true);
@@ -62,6 +58,7 @@ describe("agents helpers", () => {
   it("applyAgentConfig merges updates", () => {
     const cfg: RemoteClawConfig = {
       agents: {
+        defaults: { workspace: "/tmp/test-workspace" },
         list: [{ id: "work", workspace: "/old-ws", model: "anthropic/claude" }],
       },
     };
@@ -82,6 +79,7 @@ describe("agents helpers", () => {
 
   it("applyAgentBindings skips duplicates and reports conflicts", () => {
     const cfg: RemoteClawConfig = {
+      agents: { defaults: { workspace: "/tmp/test-workspace" } },
       bindings: [
         {
           agentId: "main",
@@ -114,6 +112,7 @@ describe("agents helpers", () => {
   it("pruneAgentConfig removes agent, bindings, and allowlist entries", () => {
     const cfg: RemoteClawConfig = {
       agents: {
+        defaults: { workspace: "/tmp/test-workspace" },
         list: [
           { id: "work", default: true, workspace: "/work-ws" },
           { id: "home", workspace: "/home-ws" },

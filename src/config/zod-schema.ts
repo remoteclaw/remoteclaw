@@ -678,6 +678,7 @@ export const RemoteClawSchema = z
         slots: z
           .object({
             memory: z.string().optional(),
+            contextEngine: z.string().optional(),
           })
           .strict()
           .optional(),

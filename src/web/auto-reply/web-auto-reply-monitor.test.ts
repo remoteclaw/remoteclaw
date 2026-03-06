@@ -96,7 +96,7 @@ function makeOwnerGroupConfig() {
 
 function makeInboundCfg(messagePrefix = "") {
   return {
-    agents: { defaults: { workspace: "/tmp/remoteclaw" } },
+    agents: { list: [{ id: "main", workspace: "/tmp/remoteclaw" }] },
     channels: { whatsapp: { messagePrefix } },
   } as never;
 }

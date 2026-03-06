@@ -91,7 +91,9 @@ describe("registerTelegramNativeCommands — session metadata", () => {
   });
 
   it("calls recordSessionMetaFromInbound after a native slash command", async () => {
-    const cfg: RemoteClawConfig = { agents: { defaults: { workspace: "/tmp/test-workspace" } } };
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+    };
     const handler = registerAndResolveStatusHandler(cfg);
     await handler(buildStatusCommandContext());
 
@@ -110,7 +112,9 @@ describe("registerTelegramNativeCommands — session metadata", () => {
     const deferred = createDeferred<void>();
     sessionMocks.recordSessionMetaFromInbound.mockReturnValue(deferred.promise);
 
-    const cfg: RemoteClawConfig = { agents: { defaults: { workspace: "/tmp/test-workspace" } } };
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+    };
     const handler = registerAndResolveStatusHandler(cfg);
     const runPromise = handler(buildStatusCommandContext());
 

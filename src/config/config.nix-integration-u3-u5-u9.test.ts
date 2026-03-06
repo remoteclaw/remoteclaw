@@ -153,7 +153,6 @@ describe("Nix integration (U3, U5, U9)", () => {
                 },
               },
               agents: {
-                defaults: { workspace: "~/ws-default" },
                 list: [
                   {
                     id: "main",
@@ -181,7 +180,6 @@ describe("Nix integration (U3, U5, U9)", () => {
         const cfg = loadConfigForHome(home);
 
         expect(cfg.plugins?.load?.paths?.[0]).toBe(path.join(home, "plugins", "demo-plugin"));
-        expect(cfg.agents?.defaults?.workspace).toBe(path.join(home, "ws-default"));
         expect(cfg.agents?.list?.[0]?.workspace).toBe(path.join(home, "ws-agent"));
         expect(cfg.agents?.list?.[0]?.agentDir).toBe(
           path.join(home, ".remoteclaw", "agents", "main"),

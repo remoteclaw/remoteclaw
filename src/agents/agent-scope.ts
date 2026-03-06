@@ -252,11 +252,6 @@ export function resolveAgentWorkspaceDir(cfg: RemoteClawConfig, agentId: string)
   if (configured) {
     return stripNullBytes(resolveUserPath(configured));
   }
-  // Fall back to shared defaults.workspace (explicit user config, not a hardcoded path).
-  const defaultsWorkspace = cfg.agents?.defaults?.workspace?.trim();
-  if (defaultsWorkspace) {
-    return stripNullBytes(resolveUserPath(defaultsWorkspace));
-  }
   throw new Error(
     `agent '${id}' has no workspace configured — set agents.list[].workspace in remoteclaw.json`,
   );

@@ -13,8 +13,10 @@ describe("buildCleanupPlan", () => {
     const tmpRoot = path.join(path.parse(process.cwd()).root, "tmp");
     const cfg = {
       agents: {
-        defaults: { workspace: path.join(tmpRoot, "remoteclaw-workspace-1") },
-        list: [{ workspace: path.join(tmpRoot, "remoteclaw-workspace-2") }],
+        list: [
+          { id: "main", workspace: path.join(tmpRoot, "remoteclaw-workspace-1") },
+          { workspace: path.join(tmpRoot, "remoteclaw-workspace-2") },
+        ],
       },
     };
     const plan = buildCleanupPlan({

@@ -95,7 +95,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
   return {
     ...actual,
     loadConfig: () => ({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: { telegram: { dmPolicy: "open", allowFrom: ["*"] } },
     }),
   };

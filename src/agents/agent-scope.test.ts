@@ -426,16 +426,6 @@ describe("resolveAgentConfig", () => {
     expect(workspace).toContain("my-workspace");
   });
 
-  it("falls back to agents.defaults.workspace when per-agent workspace is missing", () => {
-    const cfg: RemoteClawConfig = {
-      agents: {
-        defaults: { workspace: "~/shared-workspace" },
-      },
-    };
-    const workspace = resolveAgentWorkspaceDir(cfg, "main");
-    expect(workspace).toContain("shared-workspace");
-  });
-
   it("uses REMOTECLAW_HOME for default agentDir", () => {
     const home = path.join(path.sep, "srv", "remoteclaw-home");
     vi.stubEnv("REMOTECLAW_HOME", home);

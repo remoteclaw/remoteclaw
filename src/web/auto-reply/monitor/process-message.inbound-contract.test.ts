@@ -31,7 +31,7 @@ function makeProcessMessageArgs(params: {
 }) {
   return {
     cfg: (params.cfg ?? {
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       messages: {},
       session: { store: sessionStorePath },
       // oxlint-disable-next-line typescript/no-explicit-any
@@ -174,11 +174,11 @@ describe("web processMessage inbound contract", () => {
         groupHistoryKey: "+1555",
         cfg: {
           agents: {
-            defaults: { workspace: "/tmp/test-workspace" },
             list: [
               {
                 id: "main",
                 default: true,
+                workspace: "/tmp/test-workspace",
                 identity: { name: "Mainbot", emoji: "🦞", theme: "space lobster" },
               },
             ],
@@ -222,7 +222,7 @@ describe("web processMessage inbound contract", () => {
         groupHistoryKey: "whatsapp:default:group:123@g.us",
         groupHistories,
         cfg: {
-          agents: { defaults: { workspace: "/tmp/test-workspace" } },
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           messages: {},
           session: { store: sessionStorePath },
         } as unknown as ReturnType<typeof import("../../../config/config.js").loadConfig>,
@@ -255,7 +255,7 @@ describe("web processMessage inbound contract", () => {
         groupHistoryKey: "+1555",
         rememberSentText,
         cfg: {
-          agents: { defaults: { workspace: "/tmp/test-workspace" } },
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: { whatsapp: { blockStreaming: true } },
           messages: {},
           session: { store: sessionStorePath },
@@ -292,7 +292,7 @@ describe("web processMessage inbound contract", () => {
         routeSessionKey: "agent:main:whatsapp:direct:+1555",
         groupHistoryKey: "+1555",
         cfg: {
-          agents: { defaults: { workspace: "/tmp/test-workspace" } },
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: { whatsapp: { blockStreaming: true } },
           messages: {},
           session: { store: sessionStorePath },

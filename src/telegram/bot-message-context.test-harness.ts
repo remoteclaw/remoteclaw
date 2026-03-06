@@ -6,7 +6,10 @@ import {
 } from "./bot-message-context.js";
 
 export const baseTelegramMessageContextConfig = {
-  agents: { defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/remoteclaw" } },
+  agents: {
+    defaults: { model: "anthropic/claude-opus-4-5" },
+    list: [{ id: "main", workspace: "/tmp/remoteclaw" }],
+  },
   channels: { telegram: {} },
   messages: { groupChat: { mentionPatterns: [] } },
 } as never;

@@ -33,7 +33,7 @@ vi.mock("../../config/sessions.js", async () => {
 import { runMessageAction } from "./message-action-runner.js";
 
 const slackConfig = {
-  agents: { defaults: { workspace: "/tmp/test-workspace" } },
+  agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
   channels: {
     slack: {
       botToken: "xoxb-test",
@@ -43,7 +43,7 @@ const slackConfig = {
 } as RemoteClawConfig;
 
 const telegramConfig = {
-  agents: { defaults: { workspace: "/tmp/test-workspace" } },
+  agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
   channels: {
     telegram: {
       botToken: "telegram-test",

@@ -69,7 +69,6 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
       const cfg: RemoteClawConfig = {
         agents: {
           defaults: {
-            workspace: tmpDir,
             heartbeat: {
               every: "5m",
               target: "whatsapp",
@@ -78,6 +77,7 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
               prompt: "Check status",
             },
           },
+          list: [{ id: "main", workspace: tmpDir }],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storePath },

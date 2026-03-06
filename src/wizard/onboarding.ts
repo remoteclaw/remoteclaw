@@ -378,7 +378,10 @@ export async function runOnboardingWizard(
     });
 
     if (action === "reset") {
-      const workspaceDefault = baseConfig.agents?.defaults?.workspace;
+      const agentWorkspaces = (baseConfig.agents?.list ?? [])
+        .map((a) => (typeof a?.workspace === "string" ? a.workspace.trim() : ""))
+        .filter(Boolean);
+      const hasWorkspace = agentWorkspaces.length > 0;
       const resetScope = (await prompter.select({
         message: "Reset scope",
         options: [
@@ -387,7 +390,7 @@ export async function runOnboardingWizard(
             value: "config+creds+sessions",
             label: "Config + creds + sessions",
           },
-          ...(workspaceDefault
+          ...(hasWorkspace
             ? [
                 {
                   value: "full" as const,
@@ -397,8 +400,8 @@ export async function runOnboardingWizard(
             : []),
         ],
       })) as ResetScope;
-      if (workspaceDefault) {
-        await onboardHelpers.handleReset(resetScope, resolveUserPath(workspaceDefault), runtime);
+      if (hasWorkspace) {
+        await onboardHelpers.handleReset(resetScope, resolveUserPath(agentWorkspaces[0]), runtime);
       } else {
         await onboardHelpers.handleReset(resetScope, "", runtime);
       }
@@ -562,7 +565,9 @@ export async function runOnboardingWizard(
     return;
   }
 
-  const existingWorkspace = baseConfig.agents?.defaults?.workspace;
+  const existingWorkspace = (baseConfig.agents?.list ?? [])
+    .map((a) => (typeof a?.workspace === "string" ? a.workspace.trim() : ""))
+    .find(Boolean);
   const workspaceInput =
     opts.workspace ??
     existingWorkspace ??

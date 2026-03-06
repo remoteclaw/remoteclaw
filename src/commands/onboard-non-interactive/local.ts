@@ -109,17 +109,16 @@ export async function runNonInteractiveOnboardingLocal(params: {
   const { opts, runtime, baseConfig } = params;
   const mode = "local" as const;
 
-  const workspaceRaw = opts.workspace ?? baseConfig.agents?.defaults?.workspace;
+  const workspaceRaw = opts.workspace;
   if (!workspaceRaw?.trim()) {
     runtime.error(
-      "No workspace path provided. Pass --workspace or set agents.defaults.workspace in remoteclaw.json.",
+      "No workspace path provided. Pass --workspace to specify the agent workspace directory.",
     );
     runtime.exit(1);
     return;
   }
   const workspaceDir = resolveNonInteractiveWorkspaceDir({
     opts,
-    baseConfig,
     defaultWorkspaceDir: workspaceRaw,
   });
 

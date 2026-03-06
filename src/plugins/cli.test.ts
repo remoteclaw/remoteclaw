@@ -40,7 +40,7 @@ describe("registerPluginCliCommands", () => {
     registerPluginCliCommands(
       program,
       // oxlint-disable-next-line typescript/no-explicit-any
-      { agents: { defaults: { workspace: "/tmp/test-workspace" } } } as any,
+      { agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } } as any,
     );
 
     expect(mocks.memoryRegister).not.toHaveBeenCalled();

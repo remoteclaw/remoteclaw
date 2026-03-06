@@ -75,9 +75,9 @@ export function makeWhatsAppDirectiveConfig(
   return {
     agents: {
       defaults: {
-        workspace: path.join(home, "remoteclaw"),
         ...defaults,
       },
+      list: [{ id: "main", workspace: path.join(home, "remoteclaw") }],
     },
     channels: { whatsapp: { allowFrom: ["*"] } },
     session: { store: sessionStorePath(home) },
@@ -145,11 +145,11 @@ export function makeRestrictedElevatedDisabledConfig(home: string) {
     agents: {
       defaults: {
         model: "anthropic/claude-opus-4-5",
-        workspace: path.join(home, "remoteclaw"),
       },
       list: [
         {
           id: "restricted",
+          workspace: path.join(home, "remoteclaw"),
           tools: {
             elevated: { enabled: false },
           },

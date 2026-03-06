@@ -12,7 +12,7 @@ describe("applyOnboardingLocalWorkspaceConfig", () => {
 
     expect(result.session?.dmScope).toBe(ONBOARDING_DEFAULT_DM_SCOPE);
     expect(result.gateway?.mode).toBe("local");
-    expect(result.agents?.defaults?.workspace).toBe("/tmp/workspace");
+    expect(result.agents?.defaults?.workspace).toBeUndefined();
   });
 
   it("preserves existing dmScope when already configured", () => {

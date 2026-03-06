@@ -214,8 +214,7 @@ export async function runConfigureWizard(
       };
       didSetGatewayMode = true;
     }
-    let workspaceDir =
-      nextConfig.agents?.defaults?.workspace ?? baseConfig.agents?.defaults?.workspace ?? "";
+    let workspaceDir = "";
     let gatewayPort = resolveGatewayPort(baseConfig);
     let gatewayToken: string | undefined =
       nextConfig.gateway?.auth?.token ??
@@ -245,16 +244,6 @@ export async function runConfigureWizard(
         return;
       }
       workspaceDir = resolveUserPath(rawInput);
-      nextConfig = {
-        ...nextConfig,
-        agents: {
-          ...nextConfig.agents,
-          defaults: {
-            ...nextConfig.agents?.defaults,
-            workspace: workspaceDir,
-          },
-        },
-      };
       await ensureWorkspaceAndSessions(workspaceDir, runtime);
     };
 

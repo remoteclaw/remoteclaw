@@ -85,7 +85,7 @@ describe("createTelegramBot", () => {
   });
   it("applies global and per-account timeoutSeconds", () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", allowFrom: ["*"], timeoutSeconds: 60 },
       },
@@ -100,7 +100,7 @@ describe("createTelegramBot", () => {
     botCtorSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           dmPolicy: "open",
@@ -304,7 +304,7 @@ describe("createTelegramBot", () => {
       sendMessageSpy.mockClear();
       replySpy.mockClear();
       loadConfig.mockReturnValue({
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: { telegram: { dmPolicy: "pairing" } },
       });
       readChannelAllowFromStore.mockResolvedValue([]);
@@ -346,7 +346,7 @@ describe("createTelegramBot", () => {
   });
   it("blocks unauthorized DM media before download and sends pairing reply", async () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: { telegram: { dmPolicy: "pairing" } },
     });
     readChannelAllowFromStore.mockResolvedValue([]);
@@ -390,7 +390,7 @@ describe("createTelegramBot", () => {
   });
   it("blocks DM media downloads completely when dmPolicy is disabled", async () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: { telegram: { dmPolicy: "disabled" } },
     });
     sendMessageSpy.mockClear();
@@ -431,7 +431,7 @@ describe("createTelegramBot", () => {
   });
   it("blocks unauthorized DM media groups before any photo download", async () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: { telegram: { dmPolicy: "pairing" } },
     });
     readChannelAllowFromStore.mockResolvedValue([]);
@@ -488,7 +488,7 @@ describe("createTelegramBot", () => {
 
   it("dedupes duplicate updates for callback_query, message, and channel_post", async () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           dmPolicy: "open",
@@ -612,7 +612,7 @@ describe("createTelegramBot", () => {
 
     const onUpdateId = vi.fn();
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: { telegram: { dmPolicy: "open", allowFrom: ["*"] } },
     });
 
@@ -681,7 +681,7 @@ describe("createTelegramBot", () => {
   });
   it("allows distinct callback_query ids without update_id", async () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", allowFrom: ["*"] },
       },
@@ -734,7 +734,7 @@ describe("createTelegramBot", () => {
     {
       name: "blocks all group messages when groupPolicy is 'disabled'",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "disabled",
@@ -753,7 +753,7 @@ describe("createTelegramBot", () => {
     {
       name: "blocks group messages from senders not in allowFrom when groupPolicy is 'allowlist'",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "allowlist",
@@ -772,7 +772,7 @@ describe("createTelegramBot", () => {
     {
       name: "allows group messages from senders in allowFrom (by ID) when groupPolicy is 'allowlist'",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "allowlist",
@@ -792,7 +792,7 @@ describe("createTelegramBot", () => {
     {
       name: "blocks group messages when allowFrom is configured with @username entries (numeric IDs required)",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "allowlist",
@@ -812,7 +812,7 @@ describe("createTelegramBot", () => {
     {
       name: "allows group messages from tg:-prefixed allowFrom entries case-insensitively",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "allowlist",
@@ -832,7 +832,7 @@ describe("createTelegramBot", () => {
     {
       name: "blocks group messages when per-group allowFrom override is explicitly empty",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "open",
@@ -856,7 +856,7 @@ describe("createTelegramBot", () => {
     {
       name: "allows all group messages when groupPolicy is 'open'",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "open",
@@ -891,7 +891,12 @@ describe("createTelegramBot", () => {
 
   it("routes DMs by telegram accountId binding", async () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: {
+        list: [
+          { id: "main", workspace: "/tmp/test-workspace" },
+          { id: "opie", workspace: "/tmp/test-workspace" },
+        ],
+      },
       channels: {
         telegram: {
           accounts: {
@@ -938,7 +943,7 @@ describe("createTelegramBot", () => {
     }> = [
       {
         config: {
-          agents: { defaults: { workspace: "/tmp/test-workspace" } },
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               groupPolicy: "open",
@@ -957,7 +962,7 @@ describe("createTelegramBot", () => {
       },
       {
         config: {
-          agents: { defaults: { workspace: "/tmp/test-workspace" } },
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               groupPolicy: "open",
@@ -987,7 +992,7 @@ describe("createTelegramBot", () => {
       },
       {
         config: {
-          agents: { defaults: { workspace: "/tmp/test-workspace" } },
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               groupPolicy: "open",
@@ -1003,7 +1008,7 @@ describe("createTelegramBot", () => {
       },
       {
         config: {
-          agents: { defaults: { workspace: "/tmp/test-workspace" } },
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               groupPolicy: "open",
@@ -1046,8 +1051,7 @@ describe("createTelegramBot", () => {
             },
           },
           agents: {
-            defaults: { workspace: "/tmp/test-workspace" },
-            list: [{ id: "forum-agent" }],
+            list: [{ id: "forum-agent", workspace: "/tmp/test-workspace" }],
           },
           bindings: [
             {
@@ -1071,8 +1075,10 @@ describe("createTelegramBot", () => {
             },
           },
           agents: {
-            defaults: { workspace: "/tmp/test-workspace" },
-            list: [{ id: "topic-agent" }, { id: "group-agent" }],
+            list: [
+              { id: "topic-agent", workspace: "/tmp/test-workspace" },
+              { id: "group-agent", workspace: "/tmp/test-workspace" },
+            ],
           },
           bindings: [
             {
@@ -1211,8 +1217,8 @@ describe("createTelegramBot", () => {
         agents: {
           defaults: {
             envelopeTimezone: "utc",
-            workspace: "/tmp/test-workspace",
           },
+          list: [{ id: "main", workspace: "/tmp/test-workspace" }],
         },
         identity: { name: "Bert" },
         messages: { groupChat: { mentionPatterns: ["\\bbert\\b"] } },
@@ -1249,8 +1255,8 @@ describe("createTelegramBot", () => {
       agents: {
         defaults: {
           envelopeTimezone: "utc",
-          workspace: "/tmp/test-workspace",
         },
+        list: [{ id: "main", workspace: "/tmp/test-workspace" }],
       },
       channels: {
         telegram: {
@@ -1290,7 +1296,7 @@ describe("createTelegramBot", () => {
     resetHarnessSpies();
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       messages: {
         ackReaction: "👀",
         ackReactionScope: "group-mentions",
@@ -1319,7 +1325,7 @@ describe("createTelegramBot", () => {
   it("clears native commands when disabled", () => {
     resetHarnessSpies();
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: false },
     });
 
@@ -1348,7 +1354,7 @@ describe("createTelegramBot", () => {
     for (const [index, testCase] of cases.entries()) {
       resetHarnessSpies();
       loadConfig.mockReturnValue({
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         ...testCase.config,
         channels: {
           telegram: {
@@ -1406,7 +1412,7 @@ describe("createTelegramBot", () => {
       {
         name: "allowlist policy with no groupAllowFrom",
         config: {
-          agents: { defaults: { workspace: "/tmp/test-workspace" } },
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               groupPolicy: "allowlist",
@@ -1424,7 +1430,7 @@ describe("createTelegramBot", () => {
       {
         name: "groups map without wildcard",
         config: {
-          agents: { defaults: { workspace: "/tmp/test-workspace" } },
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               groups: {
@@ -1450,7 +1456,7 @@ describe("createTelegramBot", () => {
   });
   it("allows control commands with TG-prefixed groupAllowFrom entries", async () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "allowlist",
@@ -1496,7 +1502,7 @@ describe("createTelegramBot", () => {
       resetHarnessSpies();
       sendChatActionSpy.mockClear();
       loadConfig.mockReturnValue({
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "open",
@@ -1531,7 +1537,7 @@ describe("createTelegramBot", () => {
       resetHarnessSpies();
       replySpy.mockResolvedValue({ text: "response" });
       loadConfig.mockReturnValue({
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "open",
@@ -1562,7 +1568,7 @@ describe("createTelegramBot", () => {
     {
       name: "allows direct messages regardless of groupPolicy",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "disabled",
@@ -1581,7 +1587,7 @@ describe("createTelegramBot", () => {
     {
       name: "allows direct messages with tg/Telegram-prefixed allowFrom entries",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             allowFrom: ["  TG:123456789  "],
@@ -1599,7 +1605,7 @@ describe("createTelegramBot", () => {
     {
       name: "matches direct message allowFrom against sender user id when chat id differs",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             allowFrom: ["123456789"],
@@ -1617,7 +1623,7 @@ describe("createTelegramBot", () => {
     {
       name: "falls back to direct message chat id when sender user id is missing",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             allowFrom: ["123456789"],
@@ -1634,7 +1640,7 @@ describe("createTelegramBot", () => {
     {
       name: "allows group messages with wildcard in allowFrom when groupPolicy is 'allowlist'",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "allowlist",
@@ -1654,7 +1660,7 @@ describe("createTelegramBot", () => {
     {
       name: "blocks group messages with no sender ID when groupPolicy is 'allowlist'",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             groupPolicy: "allowlist",
@@ -1711,7 +1717,7 @@ describe("createTelegramBot", () => {
   it("prefixes final replies with responsePrefix", async () => {
     replySpy.mockResolvedValue({ text: "final reply" });
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", allowFrom: ["*"] },
       },
@@ -1778,7 +1784,12 @@ describe("createTelegramBot", () => {
       "utf-8",
     );
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: {
+        list: [
+          { id: "main", workspace: "/tmp/test-workspace" },
+          { id: "ops", workspace: "/tmp/test-workspace" },
+        ],
+      },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -1815,7 +1826,7 @@ describe("createTelegramBot", () => {
 
   it("applies topic skill filters and system prompts", async () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -1852,7 +1863,7 @@ describe("createTelegramBot", () => {
     replySpy.mockResolvedValue({ text: "response" });
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -1886,7 +1897,7 @@ describe("createTelegramBot", () => {
     });
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -1920,7 +1931,7 @@ describe("createTelegramBot", () => {
   });
   it("buffers channel_post media groups and processes them together", async () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -2004,7 +2015,7 @@ describe("createTelegramBot", () => {
   });
   it("coalesces channel_post near-limit text fragments into one message", async () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -2063,7 +2074,7 @@ describe("createTelegramBot", () => {
   });
   it("drops oversized channel_post media instead of dispatching a placeholder message", async () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -2104,7 +2115,7 @@ describe("createTelegramBot", () => {
   });
   it("notifies users when media download fails for direct messages", async () => {
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", allowFrom: ["*"] },
       },
@@ -2148,7 +2159,7 @@ describe("createTelegramBot", () => {
     replySpy.mockReset();
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -2239,7 +2250,7 @@ describe("createTelegramBot", () => {
     replySpy.mockReset();
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "open",
@@ -2323,7 +2334,7 @@ describe("createTelegramBot", () => {
     replySpy.mockReset();
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", allowFrom: ["*"] },
       },

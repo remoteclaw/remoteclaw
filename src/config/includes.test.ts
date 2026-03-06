@@ -115,13 +115,13 @@ describe("resolveConfigIncludes", () => {
       {
         name: "array include overlapping keys",
         files: {
-          [configPath("a.json")]: { agents: { defaults: { workspace: "~/a" } } },
+          [configPath("a.json")]: { agents: { defaults: { model: "~/a" } } },
           [configPath("b.json")]: { agents: { list: [{ id: "main" }] } },
         },
         obj: { $include: ["./a.json", "./b.json"] },
         expected: {
           agents: {
-            defaults: { workspace: "~/a" },
+            defaults: { model: "~/a" },
             list: [{ id: "main" }],
           },
         },

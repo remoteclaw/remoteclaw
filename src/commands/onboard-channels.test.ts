@@ -81,7 +81,7 @@ describe("setupChannels", () => {
     const runtime = createExitThrowingRuntime();
 
     await setupChannels(
-      { agents: { defaults: { workspace: "/tmp/test-workspace" } } } as RemoteClawConfig,
+      { agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } } as RemoteClawConfig,
       runtime,
       prompter,
       {
@@ -121,7 +121,7 @@ describe("setupChannels", () => {
     const runtime = createExitThrowingRuntime();
 
     await setupChannels(
-      { agents: { defaults: { workspace: "/tmp/test-workspace" } } } as RemoteClawConfig,
+      { agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } } as RemoteClawConfig,
       runtime,
       prompter,
       {
@@ -156,7 +156,7 @@ describe("setupChannels", () => {
     const runtime = createExitThrowingRuntime();
 
     await setupChannels(
-      { agents: { defaults: { workspace: "/tmp/test-workspace" } } } as RemoteClawConfig,
+      { agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } } as RemoteClawConfig,
       runtime,
       prompter,
       {
@@ -195,7 +195,7 @@ describe("setupChannels", () => {
 
     await setupChannels(
       {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             botToken: "token",
@@ -248,7 +248,7 @@ describe("setupChannels", () => {
 
     await setupChannels(
       {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             botToken: "token",

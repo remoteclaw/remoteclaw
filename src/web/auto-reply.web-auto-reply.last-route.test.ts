@@ -11,7 +11,7 @@ import { createWebOnMessageHandler } from "./auto-reply/monitor/on-message.js";
 function makeCfg(storePath: string): RemoteClawConfig {
   return {
     channels: { whatsapp: { allowFrom: ["*"] } },
-    agents: { defaults: { workspace: "/tmp/test-workspace" } },
+    agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
     session: { store: storePath },
   };
 }

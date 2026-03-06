@@ -410,7 +410,6 @@ const TOOLS_HOOKS_TARGET_KEYS = [
 ] as const;
 
 const CHANNELS_AGENTS_TARGET_KEYS = [
-  "agents.defaults.workspace",
   "agents.list[].tools.alsoAllow",
   "agents.list[].tools.byProvider",
   "agents.list[].tools.profile",

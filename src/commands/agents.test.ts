@@ -13,11 +13,10 @@ describe("agents helpers", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
-          workspace: "/main-ws",
           model: { primary: "anthropic/claude" },
         },
         list: [
-          { id: "main" },
+          { id: "main", workspace: "/main-ws" },
           {
             id: "work",
             default: true,
@@ -58,7 +57,6 @@ describe("agents helpers", () => {
   it("applyAgentConfig merges updates", () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        defaults: { workspace: "/tmp/test-workspace" },
         list: [{ id: "work", workspace: "/old-ws", model: "anthropic/claude" }],
       },
     };
@@ -79,7 +77,7 @@ describe("agents helpers", () => {
 
   it("applyAgentBindings skips duplicates and reports conflicts", () => {
     const cfg: RemoteClawConfig = {
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       bindings: [
         {
           agentId: "main",
@@ -112,7 +110,6 @@ describe("agents helpers", () => {
   it("pruneAgentConfig removes agent, bindings, and allowlist entries", () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        defaults: { workspace: "/tmp/test-workspace" },
         list: [
           { id: "work", default: true, workspace: "/work-ws" },
           { id: "home", workspace: "/home-ws" },

@@ -413,6 +413,7 @@ export function createAgentEventHandler({
     const chatLink = chatRunState.registry.peek(evt.runId);
     const eventSessionKey =
       typeof evt.sessionKey === "string" && evt.sessionKey.trim() ? evt.sessionKey : undefined;
+    const isControlUiVisible = getAgentRunContext(evt.runId)?.isControlUiVisible ?? true;
     const sessionKey =
       chatLink?.sessionKey ?? eventSessionKey ?? resolveSessionKeyForRun(evt.runId);
     const clientRunId = chatLink?.clientRunId ?? evt.runId;
@@ -475,7 +476,7 @@ export function createAgentEventHandler({
     const lifecyclePhase =
       evt.stream === "lifecycle" && typeof evt.data?.phase === "string" ? evt.data.phase : null;
 
-    if (sessionKey) {
+    if (isControlUiVisible && sessionKey) {
       // Thinking events are for interactive WS clients only — never sent to
       // node/channel subscribers. Tool events only when verbose is enabled.
       if (!isThinkingEvent && (!isToolEvent || toolVerbose !== "off")) {

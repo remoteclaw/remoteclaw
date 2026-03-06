@@ -45,6 +45,35 @@ export function resolveAwsSdkEnvVarName(env: NodeJS.ProcessEnv = process.env): s
   return undefined;
 }
 
+function resolveSyntheticLocalProviderAuth(params: {
+  cfg: RemoteClawConfig | undefined;
+  provider: string;
+}): ResolvedProviderAuth | null {
+  const normalizedProvider = normalizeProviderId(params.provider);
+  if (normalizedProvider !== "ollama") {
+    return null;
+  }
+
+  const providerConfig = resolveProviderConfig(params.cfg, params.provider);
+  if (!providerConfig) {
+    return null;
+  }
+
+  const hasApiConfig =
+    Boolean(providerConfig.api?.trim()) ||
+    Boolean(providerConfig.baseUrl?.trim()) ||
+    (Array.isArray(providerConfig.models) && providerConfig.models.length > 0);
+  if (!hasApiConfig) {
+    return null;
+  }
+
+  return {
+    apiKey: "ollama-local",
+    source: "models.providers.ollama (synthetic local key)",
+    mode: "api-key",
+  };
+}
+
 function resolveEnvSourceLabel(params: {
   applied: Set<string>;
   envVars: string[];
@@ -165,6 +194,11 @@ export async function resolveApiKeyForProvider(params: {
       source: envResolved.source,
       mode: "api-key",
     };
+  }
+
+  const syntheticLocalAuth = resolveSyntheticLocalProviderAuth({ cfg, provider });
+  if (syntheticLocalAuth) {
+    return syntheticLocalAuth;
   }
 
   const normalized = normalizeProviderId(provider);

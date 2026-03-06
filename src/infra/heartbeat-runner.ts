@@ -7,6 +7,7 @@ import {
 } from "../agents/agent-scope.js";
 import { appendCronStyleCurrentTimeLine } from "../agents/current-time.js";
 import { resolveEffectiveMessagesConfig } from "../agents/identity.js";
+import { DEFAULT_HEARTBEAT_FILENAME } from "../agents/workspace.js";
 import { resolveHeartbeatReplyPayload } from "../auto-reply/heartbeat-reply-payload.js";
 import {
   DEFAULT_HEARTBEAT_EVERY,
@@ -494,12 +495,25 @@ type HeartbeatPromptResolution = {
   hasCronEvents: boolean;
 };
 
+function appendHeartbeatWorkspacePathHint(prompt: string, workspaceDir: string): string {
+  if (!/heartbeat\.md/i.test(prompt)) {
+    return prompt;
+  }
+  const heartbeatFilePath = path.join(workspaceDir, DEFAULT_HEARTBEAT_FILENAME).replace(/\\/g, "/");
+  const hint = `When reading HEARTBEAT.md, use workspace file ${heartbeatFilePath} (exact case). Do not read docs/heartbeat.md.`;
+  if (prompt.includes(hint)) {
+    return prompt;
+  }
+  return `${prompt}\n${hint}`;
+}
+
 async function resolveHeartbeatRunPrompt(params: {
   cfg: RemoteClawConfig;
   agentId?: string;
   heartbeat?: HeartbeatConfig;
   preflight: HeartbeatPreflight;
   canRelayToUser: boolean;
+  workspaceDir: string;
 }): Promise<HeartbeatPromptResolution> {
   const pendingEventEntries = params.preflight.pendingEventEntries;
   const pendingEvents = params.preflight.shouldInspectPendingEvents
@@ -514,11 +528,12 @@ async function resolveHeartbeatRunPrompt(params: {
     .map((event) => event.text);
   const hasExecCompletion = pendingEvents.some(isExecCompletionEvent);
   const hasCronEvents = cronEvents.length > 0;
-  const prompt = hasExecCompletion
+  const basePrompt = hasExecCompletion
     ? buildExecEventPrompt({ deliverToUser: params.canRelayToUser })
     : hasCronEvents
       ? buildCronEventPrompt(cronEvents, { deliverToUser: params.canRelayToUser })
       : await resolveHeartbeatPrompt(params.cfg, params.heartbeat, params.agentId);
+  const prompt = appendHeartbeatWorkspacePathHint(basePrompt, params.workspaceDir);
 
   return { prompt, hasExecCompletion, hasCronEvents };
 }
@@ -595,12 +610,14 @@ export async function runHeartbeatOnce(opts: {
   const canRelayToUser = Boolean(
     delivery.channel !== "none" && delivery.to && visibility.showAlerts,
   );
+  const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
   const { prompt, hasExecCompletion, hasCronEvents } = await resolveHeartbeatRunPrompt({
     cfg,
     agentId,
     heartbeat,
     preflight,
     canRelayToUser,
+    workspaceDir,
   });
 
   // When neither prompt nor file is configured, skip the heartbeat entirely.

@@ -72,3 +72,43 @@ jobs:
         env:
           REMOTECLAW_TEST_WORKERS: 2
           REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB: 4096
+
+  publish-next:
+    if: github.event_name == 'push'
+    needs: [lint, build, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Configure npm registry
+        uses: actions/setup-node@v4
+        with:
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Build
+        run: pnpm build
+
+      - name: Publish next
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          NEXT_VERSION="${PKG_VERSION}-next.${SHORT_SHA}"
+
+          if npm view "remoteclaw@${NEXT_VERSION}" version &>/dev/null; then
+            echo "Version ${NEXT_VERSION} already published, skipping"
+            exit 0
+          fi
+
+          npm version "$NEXT_VERSION" --no-git-tag-version
+          npm publish --tag next --provenance --access public || true

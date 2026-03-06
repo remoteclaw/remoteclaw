@@ -13,6 +13,10 @@ import { resolveCronStyleNow } from "../../agents/current-time.js";
 import { resolveUserTimezone } from "../../agents/date-time.js";
 // Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { isCliProvider, normalizeModelRef, parseModelRef } from "../../agents/provider-utils.js";
+import {
+  countActiveDescendantRuns,
+  listDescendantRunsForRequester,
+} from "../../agents/subagent-registry.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
@@ -51,6 +55,7 @@ import {
 } from "./helpers.js";
 import { resolveCronAgentSessionKey } from "./session-key.js";
 import { resolveCronSession } from "./session.js";
+import { isLikelyInterimCronMessage } from "./subagent-followup.js";
 
 // ── ChannelBridge helpers ───────────────────────────────────────────────
 
@@ -445,6 +450,55 @@ export async function runCronIsolatedAgentTurn(params: {
 
     runResult = await bridge.handle(message, undefined, abortSignal);
     runEndedAt = Date.now();
+
+    // Guardrail for cron jobs: if the first turn is only an interim ack
+    // (e.g. "on it") and no descendants are active, run one focused follow-up
+    // turn so the cron run returns an actual completion.
+    if (!isAborted()) {
+      const interimPayloads = runResult.payloads ?? [];
+      const interimDeliveryPayload = pickLastDeliverablePayload(interimPayloads);
+      const interimPayloadHasStructuredContent =
+        Boolean(interimDeliveryPayload?.mediaUrl) ||
+        (interimDeliveryPayload?.mediaUrls?.length ?? 0) > 0 ||
+        Object.keys(interimDeliveryPayload?.channelData ?? {}).length > 0;
+      const interimText = pickLastNonEmptyTextFromPayloads(interimPayloads)?.trim() ?? "";
+      const hasDescendantsSinceRunStart = listDescendantRunsForRequester(agentSessionKey).some(
+        (entry) => {
+          const descendantStartedAt =
+            typeof entry.startedAt === "number" ? entry.startedAt : entry.createdAt;
+          return typeof descendantStartedAt === "number" && descendantStartedAt >= runStartedAt;
+        },
+      );
+      const didSendViaMessagingToolInterim =
+        runResult.mcp.sentTexts.length > 0 || runResult.mcp.sentMediaUrls.length > 0;
+      const shouldRetryInterimAck =
+        !runResult.error &&
+        !didSendViaMessagingToolInterim &&
+        !interimPayloadHasStructuredContent &&
+        !interimPayloads.some((payload) => payload?.isError === true) &&
+        countActiveDescendantRuns(agentSessionKey) === 0 &&
+        !hasDescendantsSinceRunStart &&
+        isLikelyInterimCronMessage(interimText);
+
+      if (shouldRetryInterimAck) {
+        const continuationMessage = buildCronChannelMessage({
+          job: params.job,
+          commandBody: [
+            "Your previous response was only an acknowledgement and did not complete this cron task.",
+            "Complete the original task now.",
+            "Do not send a status update like 'on it'.",
+            "Use tools when needed, including sessions_spawn for parallel subtasks, wait for spawned subagents to finish, then return only the final summary.",
+          ].join(" "),
+          resolvedDelivery,
+          timestamp: Date.now(),
+          messageToolHints,
+          agentId,
+          timezone: resolveUserTimezone(cfgWithAgentDefaults.agents?.defaults?.userTimezone),
+        });
+        runResult = await bridge.handle(continuationMessage, undefined, abortSignal);
+        runEndedAt = Date.now();
+      }
+    }
   } catch (err) {
     return withRunSession({ status: "error", error: String(err) });
   }
@@ -452,8 +506,11 @@ export async function runCronIsolatedAgentTurn(params: {
   if (isAborted()) {
     return withRunSession({ status: "error", error: abortReason() });
   }
-
-  const payloads = runResult.payloads ?? [];
+  if (!runResult) {
+    return withRunSession({ status: "error", error: "cron isolated run returned no result" });
+  }
+  const finalRunResult = runResult;
+  const payloads = finalRunResult.payloads ?? [];
 
   // Update token+model fields in the session store.
   // Also collect best-effort telemetry for the cron run log.

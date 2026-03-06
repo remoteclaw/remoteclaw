@@ -287,7 +287,7 @@ export async function processMessage(params: {
   const responsePrefix =
     prefixOptions.responsePrefix ??
     (configuredResponsePrefix === undefined && isSelfChat
-      ? (resolveIdentityNamePrefix(params.cfg, params.route.agentId) ?? "[remoteclaw]")
+      ? resolveIdentityNamePrefix(params.cfg, params.route.agentId)
       : undefined);
 
   const inboundHistory =

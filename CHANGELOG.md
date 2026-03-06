@@ -203,6 +203,7 @@ Docs: https://docs.openclaw.ai
 - Sessions/bootstrap cache rollover invalidation: clear cached workspace bootstrap snapshots whenever an existing `sessionKey` rolls to a new `sessionId` across auto-reply, command, and isolated cron session resolvers, so `AGENTS.md`/`MEMORY.md`/`USER.md` updates are reloaded after daily, idle, or forced session resets instead of staying stale until gateway restart. (#38494) Thanks @LivingInDrm.
 - Gateway/Windows restart supervision: relaunch task-managed gateways through Scheduled Task with quoted helper-script command paths, distinguish restart-capable supervisors per platform, and stop orphaned Windows gateway children during self-restart. (#38825) Thanks @obviyus.
 - iOS/Quick Setup presentation: skip automatic Quick Setup when a gateway is already configured (active connect config, last-known connection, preferred gateway, or manual host), so reconnecting installs no longer get prompted to connect again. (#38964) Thanks @ngutman.
+- Feishu/media downloads: drop invalid timeout fields from SDK method calls now that client-level `httpTimeoutMs` applies to requests. (#38267) Thanks @ant1eicher and @thewilloftheshadow.
 
 ## 2026.3.2
 

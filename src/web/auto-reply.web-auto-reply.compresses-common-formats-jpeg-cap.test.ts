@@ -75,9 +75,11 @@ describe("web auto-reply", () => {
 
   async function withMediaCap<T>(mediaMaxMb: number, run: () => Promise<T>): Promise<T> {
     setLoadConfigMock(() => ({
-      agents: {
-        defaults: { mediaMaxMb },
-        list: [{ id: "main", workspace: "/tmp/test-workspace" }],
+      channels: {
+        whatsapp: {
+          allowFrom: ["*"],
+          mediaMaxMb,
+        },
       },
     }));
     try {
@@ -221,7 +223,7 @@ describe("web auto-reply", () => {
     });
   });
 
-  it("honors mediaMaxMb from config", async () => {
+  it("honors channels.whatsapp.mediaMaxMb for outbound auto-replies", async () => {
     const bigPng = await sharp({
       create: {
         width: 256,
@@ -240,6 +242,53 @@ describe("web auto-reply", () => {
       messageId: "msg1",
       mediaMaxMb: SMALL_MEDIA_CAP_MB,
     });
+  });
+
+  it("prefers per-account WhatsApp media caps for outbound auto-replies", async () => {
+    const bigPng = await sharp({
+      create: {
+        width: 256,
+        height: 256,
+        channels: 3,
+        background: { r: 255, g: 0, b: 0 },
+      },
+    })
+      .png({ compressionLevel: 0 })
+      .toBuffer();
+    expect(bigPng.length).toBeGreaterThan(SMALL_MEDIA_CAP_BYTES);
+
+    setLoadConfigMock(() => ({
+      channels: {
+        whatsapp: {
+          allowFrom: ["*"],
+          mediaMaxMb: 1,
+          accounts: {
+            work: {
+              mediaMaxMb: SMALL_MEDIA_CAP_MB,
+            },
+          },
+        },
+      },
+    }));
+
+    try {
+      const sendMedia = vi.fn();
+      const { reply, dispatch } = await setupSingleInboundMessage({
+        resolverValue: { text: "hi", mediaUrl: "https://example.com/account-big.png" },
+        sendMedia,
+      });
+      const fetchMock = mockFetchMediaBuffer(bigPng, "image/png");
+
+      await dispatch("msg-account-cap", { accountId: "work" });
+
+      const payload = getSingleImagePayload(sendMedia);
+      expect(payload.image.length).toBeLessThanOrEqual(SMALL_MEDIA_CAP_BYTES);
+      expect(payload.mimetype).toBe("image/jpeg");
+      expect(reply).not.toHaveBeenCalled();
+      fetchMock.mockRestore();
+    } finally {
+      resetLoadConfigMock();
+    }
   });
   it("falls back to text when media is unsupported", async () => {
     const sendMedia = vi.fn();

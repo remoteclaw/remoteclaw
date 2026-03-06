@@ -25,8 +25,7 @@ export async function prependSystemEvents(params: {
     if (lower.includes("reason periodic")) {
       return null;
     }
-    // Filter out the actual heartbeat prompt, but not cron jobs that mention "heartbeat"
-    // The heartbeat prompt starts with "Read HEARTBEAT.md" - cron payloads won't match this
+    // Filter out legacy heartbeat prompts that started with "Read HEARTBEAT.md"
     if (lower.startsWith("read heartbeat.md")) {
       return null;
     }

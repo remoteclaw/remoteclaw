@@ -1,4 +1,3 @@
-export { HEARTBEAT_PROMPT } from "../auto-reply/heartbeat.js";
 export { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 
 export { DEFAULT_WEB_MEDIA_BYTES } from "./auto-reply/constants.js";

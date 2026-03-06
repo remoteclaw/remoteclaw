@@ -225,7 +225,9 @@ export type { ChatType } from "../channels/chat-type.js";
 /** @deprecated Use ChatType instead */
 export type { RoutePeerKind } from "../routing/resolve-route.js";
 export { resolveAckReaction } from "../agents/identity.js";
+export type { AgentToolResult } from "../types/agent-types.js";
 export type { ReplyPayload } from "../auto-reply/types.js";
+export type { OutboundDeliveryResult } from "../infra/outbound/deliver.js";
 export type { ChunkMode } from "../auto-reply/chunk.js";
 export { SILENT_REPLY_TOKEN, isSilentReplyText } from "../auto-reply/tokens.js";
 export { formatInboundFromLabel } from "../auto-reply/envelope.js";
@@ -265,7 +267,7 @@ export type { LookupFn, SsrFPolicy } from "../infra/net/ssrf.js";
 export { rawDataToString } from "../infra/ws.js";
 export { isWSLSync, isWSL2Sync, isWSLEnv } from "../infra/wsl.js";
 export { isTruthyEnvValue } from "../infra/env.js";
-export { resolveToolsBySender } from "../config/group-policy.js";
+export { resolveChannelGroupPolicy, resolveToolsBySender } from "../config/group-policy.js";
 export {
   buildPendingHistoryContextFromMap,
   clearHistoryEntries,

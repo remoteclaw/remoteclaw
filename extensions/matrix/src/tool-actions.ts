@@ -4,8 +4,8 @@ import {
   readNumberParam,
   readReactionParams,
   readStringParam,
+  type AgentToolResult,
 } from "remoteclaw/plugin-sdk";
-import type { AgentToolResult } from "../../../src/types/agent-types.js";
 import {
   deleteMatrixMessage,
   editMatrixMessage,

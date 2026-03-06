@@ -3,7 +3,6 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createWizardPrompter as buildWizardPrompter } from "../../test/helpers/wizard-prompter.js";
-import { DEFAULT_BOOTSTRAP_FILENAME } from "../agents/workspace.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { runOnboardingWizard } from "./onboarding.js";
 import type { WizardPrompter, WizardSelectParams } from "./prompts.js";
@@ -42,7 +41,7 @@ const finalizeOnboardingWizard = vi.hoisted(() =>
 
     let message: string | undefined;
     try {
-      await fs.stat(path.join(options.workspaceDir, DEFAULT_BOOTSTRAP_FILENAME));
+      await fs.stat(path.join(options.workspaceDir, "BOOTSTRAP.md"));
       message = "Wake up, my friend!";
     } catch {
       message = undefined;
@@ -281,7 +280,7 @@ describe("runOnboardingWizard", () => {
 
     const workspaceDir = await makeCaseDir("workspace-");
     if (params.writeBootstrapFile) {
-      await fs.writeFile(path.join(workspaceDir, DEFAULT_BOOTSTRAP_FILENAME), "{}");
+      await fs.writeFile(path.join(workspaceDir, "BOOTSTRAP.md"), "{}");
     }
 
     const select = vi.fn(async (opts: WizardSelectParams<unknown>) => {

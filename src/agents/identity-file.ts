@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import { DEFAULT_IDENTITY_FILENAME } from "./workspace.js";
 
 export type AgentIdentityFile = {
   name?: string;
@@ -102,6 +101,6 @@ export function loadIdentityFromFile(identityPath: string): AgentIdentityFile | 
 }
 
 export function loadAgentIdentityFromWorkspace(workspace: string): AgentIdentityFile | null {
-  const identityPath = path.join(workspace, DEFAULT_IDENTITY_FILENAME);
+  const identityPath = path.join(workspace, "IDENTITY.md");
   return loadIdentityFromFile(identityPath);
 }

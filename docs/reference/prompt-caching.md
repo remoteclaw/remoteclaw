@@ -137,7 +137,7 @@ agents:
 
 ## Cache diagnostics
 
-RemoteClaw exposes dedicated cache-trace diagnostics for embedded agent runs.
+RemoteClaw exposes dedicated cache-trace diagnostics for agent runs.
 
 ### `diagnostics.cacheTrace` config
 

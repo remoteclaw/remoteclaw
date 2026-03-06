@@ -69,7 +69,7 @@ remoteclaw plugins uninstall <id> --keep-files
 
 `uninstall` removes plugin records from `plugins.entries`, `plugins.installs`,
 the plugin allowlist, and linked `plugins.load.paths` entries when applicable.
-For active memory plugins, the memory slot resets to `memory-core`.
+For plugins that use exclusive slots, the slot resets to its default.
 
 By default, uninstall also removes the plugin install directory under the active
 state dir extensions root (`$REMOTECLAW_STATE_DIR/extensions/<id>`). Use

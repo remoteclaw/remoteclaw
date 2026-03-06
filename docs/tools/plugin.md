@@ -61,6 +61,7 @@ Plugins can register:
 - Agent tools
 - CLI commands
 - Background services
+- Context engines
 - Optional config validation
 - **Auto-reply commands** (execute without invoking the AI agent)
 
@@ -330,6 +331,7 @@ Fields:
 - `allow`: allowlist (optional)
 - `deny`: denylist (optional; deny wins)
 - `load.paths`: extra plugin files/dirs
+- `slots`: exclusive slot selectors such as `memory` and `contextEngine`
 - `entries.<id>`: per‑plugin toggles + config
 
 Config changes **require a gateway restart**.

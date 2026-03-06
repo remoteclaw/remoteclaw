@@ -66,16 +66,35 @@ stats” or “verify gateway health”), set `agents.defaults.heartbeat.prompt`
 
 ## Response contract
 
-- If nothing needs attention, reply with **`HEARTBEAT_OK`**.
-- During heartbeat runs, RemoteClaw treats `HEARTBEAT_OK` as an ack when it appears
-  at the **start or end** of the reply. The token is stripped and the reply is
-  dropped.
-- If `HEARTBEAT_OK` appears in the **middle** of a reply, it is not treated
-  specially.
-- For alerts, **do not** include `HEARTBEAT_OK`; return only the alert text.
+The agent reports heartbeat results using the `heartbeat_report` MCP tool.
+RemoteClaw automatically appends an instruction to the heartbeat prompt asking
+the agent to call this tool.
 
-Outside heartbeats, stray `HEARTBEAT_OK` at the start/end of a message is stripped
-and logged; a message that is only `HEARTBEAT_OK` is dropped.
+### `heartbeat_report` tool
+
+Always available (unconditionally registered). Parameters:
+
+| Parameter       | Type                        | Description                                                                                                                                   |
+| --------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `anything_done` | `boolean` (required)        | `true` if actions were performed or alerts need attention; `false` if nothing needs follow-up.                                                |
+| `summary`       | `string \| null` (optional) | Summary of what was done/observed. When `anything_done` is `true`, delivered to the channel. When `false`, only shown if `showOk` is enabled. |
+
+**Behavior:**
+
+- `anything_done: true` — the summary (or a default message) is delivered to the configured channel.
+- `anything_done: false` — delivery is suppressed (the heartbeat is treated as a no-op acknowledgment).
+- Called outside a heartbeat context: returns "Not in heartbeat mode" (no side effects).
+
+### Legacy `HEARTBEAT_OK` text protocol
+
+If the agent does not call `heartbeat_report`, RemoteClaw falls back to the
+legacy text-based protocol:
+
+- `HEARTBEAT_OK` at the **start or end** of the reply is treated as an ack.
+  The token is stripped and the reply is dropped.
+- `HEARTBEAT_OK` in the **middle** of a reply is not treated specially.
+- Outside heartbeats, stray `HEARTBEAT_OK` is stripped and logged; a message
+  that is only `HEARTBEAT_OK` is dropped.
 
 ## Config
 
@@ -90,7 +109,10 @@ and logged; a message that is only `HEARTBEAT_OK` is dropped.
         target: "last", // default: none | options: last | none | <channel id> (core or plugin, e.g. "bluebubbles")
         to: "+15551234567", // optional channel-specific override
         accountId: "ops-bot", // optional multi-account channel id
-        prompt: "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK.",
+        // Heartbeat prompt: use `prompt` (inline) or `file` (path resolved from workspace).
+        // If both are set, `prompt` wins. If neither is set, the built-in default is used.
+        prompt: "Read HEARTBEAT.md if it exists. Follow it strictly. If nothing needs attention, call heartbeat_report(false).",
+        // file: "heartbeat-prompt.md", // alternative: read prompt from a file in the workspace
       },
     },
   },

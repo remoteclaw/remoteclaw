@@ -23,35 +23,25 @@ per-session workspaces under `agents.defaults.sandbox.workspaceRoot` (see
 
 ## Bootstrap files (injected)
 
-Inside `agents.defaults.workspace`, RemoteClaw expects these user-editable files:
+The workspace is a plain working directory. Agents bring their own configuration
+(e.g. `CLAUDE.md` for Claude Code, `.gemini/` for Gemini CLI). RemoteClaw does
+not seed or manage template files in the workspace.
 
-- `AGENTS.md` — operating instructions + “memory”
-- `SOUL.md` — persona, boundaries, tone
-- `TOOLS.md` — user-maintained tool notes (e.g. `imsg`, `sag`, conventions)
-- `BOOTSTRAP.md` — one-time first-run ritual (deleted after completion)
-- `IDENTITY.md` — agent name/vibe/emoji
-- `USER.md` — user profile + preferred address
+Files that RemoteClaw may read or write:
 
-On the first turn of a new session, RemoteClaw injects the contents of these files directly into the agent context.
+- `IDENTITY.md` — agent name/vibe/emoji (managed via control UI or RPC)
+- `HEARTBEAT.md` — optional tiny checklist for heartbeat runs
+- Boot prompt file — configurable path via `agents.defaults.boot.file`
+- `memory/YYYY-MM-DD.md` — daily memory log
+- `MEMORY.md` — optional curated long-term memory
 
-Blank files are skipped. Large files are trimmed and truncated with a marker so prompts stay lean (read the file for full content).
-
-If a file is missing, RemoteClaw injects a single “missing file” marker line (and `remoteclaw setup` will create a safe default template).
-
-`BOOTSTRAP.md` is only created for a **brand new workspace** (no other bootstrap files present). If you delete it after completing the ritual, it should not be recreated on later restarts.
-
-To disable bootstrap file creation entirely (for pre-seeded workspaces), set:
-
-```json5
-{ agent: { skipBootstrap: true } }
-```
+See [Agent workspace](/concepts/agent-workspace) for the full layout.
 
 ## Built-in tools
 
 Core tools (read/exec/edit/write and related system tools) are always available,
 subject to tool policy. `apply_patch` is optional and gated by
-`tools.exec.applyPatch`. `TOOLS.md` does **not** control which tools exist; it’s
-guidance for how _you_ want them used.
+`tools.exec.applyPatch`.
 
 ## Skills
 

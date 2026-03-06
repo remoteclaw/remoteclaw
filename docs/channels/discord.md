@@ -240,7 +240,7 @@ Once DMs are working, you can set up your Discord server as a full workspace whe
         > "When I ask questions in Discord channels, use memory_search or memory_get if you need long-term context from MEMORY.md."
       </Tab>
       <Tab title="Manual">
-        If you need shared context in every channel, put the stable instructions in `AGENTS.md` or `USER.md` (they are injected for every session). Keep long-term notes in `MEMORY.md` and access them on demand with memory tools.
+        If you need shared context in every channel, put the stable instructions in native agent config (e.g. `CLAUDE.md` for Claude Code). Keep long-term notes in `MEMORY.md` and access them on demand with memory tools.
       </Tab>
     </Tabs>
 

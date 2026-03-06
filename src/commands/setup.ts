@@ -70,11 +70,8 @@ export async function setupCommand(
     runtime.log(`Config OK: ${formatConfigPath(configPath)}`);
   }
 
-  const ws = await ensureAgentWorkspace({
-    dir: workspace,
-    ensureBootstrapFiles: !next.agents?.defaults?.skipBootstrap,
-  });
-  runtime.log(`Workspace OK: ${shortenHomePath(ws.dir)}`);
+  const ws = await ensureAgentWorkspace(workspace);
+  runtime.log(`Workspace OK: ${shortenHomePath(ws)}`);
 
   const sessionsDir = resolveSessionTranscriptsDir();
   await fs.mkdir(sessionsDir, { recursive: true });

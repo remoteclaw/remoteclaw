@@ -107,7 +107,7 @@ Enable/disable:
 
 ```bash
 remoteclaw hooks enable command-logger
-remoteclaw hooks disable boot-md
+remoteclaw hooks disable boot
 ```
 
 ## Configuration
@@ -123,7 +123,7 @@ Hooks can be configured in `~/.remoteclaw/remoteclaw.json`:
         "command-logger": {
           "enabled": true
         },
-        "boot-md": {
+        "boot": {
           "enabled": false
         }
       }

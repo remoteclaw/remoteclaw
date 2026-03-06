@@ -105,7 +105,7 @@ vi.mock("../agents/workspace.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../agents/workspace.js")>();
   return {
     ...actual,
-    ensureAgentWorkspace: vi.fn(async ({ dir }: { dir: string }) => ({ dir })),
+    ensureAgentWorkspace: vi.fn(async (dir: string) => dir),
   };
 });
 

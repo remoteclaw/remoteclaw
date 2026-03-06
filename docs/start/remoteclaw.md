@@ -67,20 +67,23 @@ Now message the assistant number from your allowlisted phone.
 
 When onboarding finishes, we auto-open the dashboard and print a clean (non-tokenized) link. If it prompts for auth, paste the token from `gateway.auth.token` into Control UI settings. To reopen later: `remoteclaw dashboard`.
 
-## Give the agent a workspace (AGENTS)
+## Give the agent a workspace
 
-RemoteClaw reads operating instructions and “memory” from its workspace directory.
+The workspace is the agent’s working directory. Agents bring their own
+configuration (e.g. `CLAUDE.md` for Claude Code, `.gemini/` for Gemini CLI).
+RemoteClaw does not seed or manage template files in the workspace.
 
-By default, RemoteClaw uses `~/.remoteclaw/workspace` as the agent workspace, and will create it (plus starter `AGENTS.md`, `SOUL.md`, `TOOLS.md`, `IDENTITY.md`, `USER.md`, `HEARTBEAT.md`) automatically on setup/first agent run. `BOOTSTRAP.md` is only created when the workspace is brand new (it should not come back after you delete it). `MEMORY.md` is optional (not auto-created); when present, it is loaded for normal sessions. Subagent sessions only inject `AGENTS.md` and `TOOLS.md`.
-
-Tip: treat this folder like RemoteClaw’s “memory” and make it a git repo (ideally private) so your `AGENTS.md` + memory files are backed up. If git is installed, brand-new workspaces are auto-initialized.
+There is no built-in workspace path — you must configure one explicitly via
+`agents.defaults.workspace` or per-agent `agents.list[].workspace`.
 
 ```bash
 remoteclaw setup
 ```
 
+Tip: treat this folder like the agent’s “memory” and make it a private git repo
+so memory files are backed up.
+
 Full workspace layout + backup guide: [Agent workspace](/concepts/agent-workspace)
-Workspace layout: [Agent workspace](/concepts/agent-workspace)
 
 Optional: choose a different workspace with `agents.defaults.workspace` (supports `~`).
 
@@ -106,7 +109,7 @@ If you already ship your own workspace files from a repo, you can disable bootst
 
 RemoteClaw defaults to a good assistant setup, but you’ll usually want to tune:
 
-- persona/instructions in `SOUL.md`
+- persona/instructions via native agent config (e.g. `CLAUDE.md`)
 - thinking defaults (if desired)
 - heartbeats (once you trust it)
 

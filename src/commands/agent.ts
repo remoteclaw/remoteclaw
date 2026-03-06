@@ -205,11 +205,7 @@ export async function agentCommand(
       config: cfg,
     });
   const workspaceDirRaw = resolveAgentWorkspaceDir(cfg, sessionAgentId);
-  const workspace = await ensureAgentWorkspace({
-    dir: workspaceDirRaw,
-    ensureBootstrapFiles: !agentCfg?.skipBootstrap,
-  });
-  const workspaceDir = workspace.dir;
+  const workspaceDir = await ensureAgentWorkspace(workspaceDirRaw);
   let sessionEntry = resolvedSessionEntry;
   const runId = opts.runId?.trim() || sessionId;
 

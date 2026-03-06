@@ -260,8 +260,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
 
     // Ensure workspace & transcripts exist BEFORE writing config so a failure
     // here does not leave a broken config entry behind.
-    const skipBootstrap = Boolean(nextConfig.agents?.defaults?.skipBootstrap);
-    await ensureAgentWorkspace({ dir: workspaceDir, ensureBootstrapFiles: !skipBootstrap });
+    await ensureAgentWorkspace(workspaceDir);
     await fs.mkdir(resolveSessionTranscriptsDirForAgent(agentId), { recursive: true });
 
     await writeConfigFile(nextConfig);
@@ -328,8 +327,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
     await writeConfigFile(nextConfig);
 
     if (workspaceDir) {
-      const skipBootstrap = Boolean(nextConfig.agents?.defaults?.skipBootstrap);
-      await ensureAgentWorkspace({ dir: workspaceDir, ensureBootstrapFiles: !skipBootstrap });
+      await ensureAgentWorkspace(workspaceDir);
     }
 
     if (avatar) {

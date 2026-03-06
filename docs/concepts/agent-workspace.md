@@ -21,68 +21,35 @@ elsewhere on the host unless sandboxing is enabled. If you need isolation, use
 When sandboxing is enabled and `workspaceAccess` is not `"rw"`, tools operate
 inside a sandbox workspace under `~/.remoteclaw/sandboxes`, not your host workspace.
 
-## Default location
+## Configuration
 
-- Default: `~/.remoteclaw/workspace`
-- If `REMOTECLAW_PROFILE` is set and not `"default"`, the default becomes
-  `~/.remoteclaw/workspace-<profile>`.
-- Override in `~/.remoteclaw/remoteclaw.json`:
+There is no built-in workspace path — you must explicitly configure one.
+Set a shared default via `agents.defaults.workspace` or override per-agent
+via `agents.list[].workspace`:
 
 ```json5
 {
-  agent: {
-    workspace: "~/.remoteclaw/workspace",
+  agents: {
+    defaults: {
+      workspace: "~/projects",
+    },
   },
 }
 ```
 
-`remoteclaw onboard`, `remoteclaw configure`, or `remoteclaw setup` will create the
-workspace and seed the bootstrap files if they are missing.
+`remoteclaw setup` creates the workspace directory if it does not exist.
 
-If you already manage the workspace files yourself, you can disable bootstrap
-file creation:
+## Workspace contents
 
-```json5
-{ agent: { skipBootstrap: true } }
-```
+The workspace is a plain working directory. Agents bring their own
+configuration (e.g., `CLAUDE.md` for Claude Code, `.gemini/` for Gemini CLI).
+RemoteClaw does not seed or manage template files in the workspace.
 
-## Extra workspace folders
-
-Older installs may have created `~/remoteclaw`. Keeping multiple workspace
-directories around can cause confusing auth or state drift, because only one
-workspace is active at a time.
-
-**Recommendation:** keep a single active workspace. If you no longer use the
-extra folders, archive or move them to Trash (for example `trash ~/remoteclaw`).
-If you intentionally keep multiple workspaces, make sure
-`agents.defaults.workspace` points to the active one.
-
-`remoteclaw doctor` warns when it detects extra workspace directories.
-
-## Workspace file map (what each file means)
-
-These are the standard files RemoteClaw expects inside the workspace:
-
-- `AGENTS.md`
-  - Operating instructions for the agent and how it should use memory.
-  - Loaded at the start of every session.
-  - Good place for rules, priorities, and "how to behave" details.
-
-- `SOUL.md`
-  - Persona, tone, and boundaries.
-  - Loaded every session.
-
-- `USER.md`
-  - Who the user is and how to address them.
-  - Loaded every session.
+Files that RemoteClaw may read or write:
 
 - `IDENTITY.md`
   - The agent's name, vibe, and emoji.
-  - Created/updated during the bootstrap ritual.
-
-- `TOOLS.md`
-  - Notes about your local tools and conventions.
-  - Does not control tool availability; it is only guidance.
+  - Managed via the control UI or `agents.create`/`agents.update` RPC.
 
 - `HEARTBEAT.md`
   - Optional tiny checklist for heartbeat runs.
@@ -93,11 +60,6 @@ These are the standard files RemoteClaw expects inside the workspace:
   - Configure via `agents.defaults.boot` or per-agent `agents.list[].boot`.
   - Keep it short; use the message tool for outbound sends.
 
-- `BOOTSTRAP.md`
-  - One-time first-run ritual.
-  - Only created for a brand-new workspace.
-  - Delete it after the ritual is complete.
-
 - `memory/YYYY-MM-DD.md`
   - Daily memory log (one file per day).
   - Recommended to read today + yesterday on session start.
@@ -106,8 +68,6 @@ These are the standard files RemoteClaw expects inside the workspace:
   - Curated long-term memory.
   - Only load in the main, private session (not shared/group contexts).
 
-Memory files are managed automatically by the agent runtime.
-
 - `skills/` (optional)
   - Workspace-specific skills.
   - Overrides managed/bundled skills when names collide.
@@ -115,12 +75,21 @@ Memory files are managed automatically by the agent runtime.
 - `canvas/` (optional)
   - Canvas UI files for node displays (for example `canvas/index.html`).
 
-If any bootstrap file is missing, RemoteClaw injects a "missing file" marker into
-the session and continues. Large bootstrap files are truncated when injected;
-adjust limits with `agents.defaults.bootstrapMaxChars` (default: 20000) and
-`agents.defaults.bootstrapTotalMaxChars` (default: 150000).
-`remoteclaw setup` can recreate missing defaults without overwriting existing
-files.
+### Editable files via gateway
+
+The gateway file editor exposes workspace files matching configurable glob
+patterns. Set `agents.defaults.editableFiles` (or per-agent
+`agents.list[].editableFiles`) to an array of globs:
+
+```json5
+{
+  agents: {
+    defaults: {
+      editableFiles: ["IDENTITY.md", "HEARTBEAT.md", "memory/**/*.md"],
+    },
+  },
+}
+```
 
 ## What is NOT in the workspace
 
@@ -144,13 +113,10 @@ workspace lives).
 
 ### 1) Initialize the repo
 
-If git is installed, brand-new workspaces are initialized automatically. If this
-workspace is not already a repo, run:
-
 ```bash
-cd ~/.remoteclaw/workspace
+cd ~/projects  # your workspace path
 git init
-git add AGENTS.md SOUL.md TOOLS.md IDENTITY.md USER.md HEARTBEAT.md memory/
+git add IDENTITY.md HEARTBEAT.md memory/
 git commit -m "Add agent workspace"
 ```
 
@@ -221,9 +187,10 @@ Suggested `.gitignore` starter:
 
 ## Moving the workspace to a new machine
 
-1. Clone the repo to the desired path (default `~/.remoteclaw/workspace`).
-2. Set `agents.defaults.workspace` to that path in `~/.remoteclaw/remoteclaw.json`.
-3. Run `remoteclaw setup --workspace <path>` to seed any missing files.
+1. Clone the repo to the desired path on the new machine.
+2. Set `agents.defaults.workspace` (or per-agent `agents.list[].workspace`)
+   to that path in `~/.remoteclaw/remoteclaw.json`.
+3. Run `remoteclaw setup` to create the workspace directory if needed.
 4. If you need sessions, copy `~/.remoteclaw/agents/<agentId>/sessions/` from the
    old machine separately.
 

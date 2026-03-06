@@ -48,38 +48,22 @@ RemoteClaw can render smaller system prompts for sub-agents. The runtime sets a
 When `promptMode=minimal`, extra injected prompts are labeled **Subagent
 Context** instead of **Group Chat Context**.
 
-## Workspace bootstrap injection
+## Workspace context
 
-Bootstrap files are trimmed and appended under **Project Context** so the model sees identity and profile context without needing explicit reads:
+The workspace is a plain working directory. Agents bring their own configuration
+(e.g. `CLAUDE.md` for Claude Code, `.gemini/` for Gemini CLI). RemoteClaw does
+not inject workspace files into the context window — the agent CLI handles its
+own context loading.
 
-- `AGENTS.md`
-- `SOUL.md`
-- `TOOLS.md`
-- `IDENTITY.md`
-- `USER.md`
-- `HEARTBEAT.md`
-- `BOOTSTRAP.md` (only on brand-new workspaces)
-- `MEMORY.md` and/or `memory.md` (when present in the workspace; either or both may be injected)
+Files that RemoteClaw may read or write in the workspace:
 
-All of these files are **injected into the context window** on every turn, which
-means they consume tokens. Keep them concise — especially `MEMORY.md`, which can
-grow over time and lead to unexpectedly high context usage and more frequent
-compaction.
+- `IDENTITY.md` — agent name/vibe/emoji
+- `HEARTBEAT.md` — optional checklist for heartbeat runs
+- `MEMORY.md` and/or `memory.md` — long-term memory (when present)
 
-> **Note:** `memory/*.md` daily files are **not** injected automatically. They
-> are accessed on demand via the `memory_search` and `memory_get` tools, so they
-> do not count against the context window unless the model explicitly reads them.
-
-Large files are truncated with a marker. The max per-file size is controlled by
-`agents.defaults.bootstrapMaxChars` (default: 20000). Total injected bootstrap
-content across files is capped by `agents.defaults.bootstrapTotalMaxChars`
-(default: 150000). Missing files inject a short missing-file marker.
-
-Sub-agent sessions only inject `AGENTS.md` and `TOOLS.md` (other bootstrap files
-are filtered out to keep the sub-agent context small).
-
-Internal hooks can intercept this step via `agent:bootstrap` to mutate or replace
-the injected bootstrap files (for example swapping `SOUL.md` for an alternate persona).
+> **Note:** `memory/*.md` daily files are accessed on demand via the
+> `memory_search` and `memory_get` tools, so they do not count against the
+> context window unless the model explicitly reads them.
 
 To inspect how much each injected file contributes (raw vs injected, truncation, plus tool schema overhead), use `/context list` or `/context detail`. See [Context](/concepts/context).
 

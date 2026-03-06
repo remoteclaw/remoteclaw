@@ -90,7 +90,7 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
 - [Where things live on disk](#where-things-live-on-disk)
   - [Is all data used with RemoteClaw saved locally?](#is-all-data-used-with-remoteclaw-saved-locally)
   - [Where does RemoteClaw store its data?](#where-does-remoteclaw-store-its-data)
-  - [Where should AGENTS.md / SOUL.md / USER.md / MEMORY.md live?](#where-should-agentsmd-soulmd-usermd-memorymd-live)
+  - [Where should workspace files live?](#where-should-workspace-files-live)
   - [What's the recommended backup strategy?](#whats-the-recommended-backup-strategy)
   - [How do I completely uninstall RemoteClaw?](#how-do-i-completely-uninstall-remoteclaw)
   - [Can agents work outside the workspace?](#can-agents-work-outside-the-workspace)
@@ -420,7 +420,7 @@ state) as long as you copy **both** locations:
 
 1. Install RemoteClaw on the new machine.
 2. Copy `$REMOTECLAW_STATE_DIR` (default: `~/.remoteclaw`) from the old machine.
-3. Copy your workspace (default: `~/.remoteclaw/workspace`).
+3. Copy your workspace (path from `agents.defaults.workspace` in your config).
 4. Run `remoteclaw doctor` and restart the Gateway service.
 
 That preserves config, auth profiles, WhatsApp creds, sessions, and memory. If you're in
@@ -1286,22 +1286,23 @@ Everything lives under `$REMOTECLAW_STATE_DIR` (default: `~/.remoteclaw`):
 
 Legacy single-agent path: `~/.remoteclaw/agent/*` (migrated by `remoteclaw doctor`).
 
-Your **workspace** (AGENTS.md, memory files, skills, etc.) is separate and configured via `agents.defaults.workspace` (default: `~/.remoteclaw/workspace`).
+Your **workspace** is separate and configured via `agents.defaults.workspace` (no built-in default — must be configured).
 
-### Where should AGENTSmd SOULmd USERmd MEMORYmd live
+### Where should workspace files live
 
-These files live in the **agent workspace**, not `~/.remoteclaw`.
+Workspace files live in the **agent workspace**, not `~/.remoteclaw`.
 
-- **Workspace (per agent)**: `AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `USER.md`,
-  `MEMORY.md` (or `memory.md`), `memory/YYYY-MM-DD.md`, optional `HEARTBEAT.md`.
+- **Workspace (per agent)**: `IDENTITY.md`, `HEARTBEAT.md`,
+  `MEMORY.md` (or `memory.md`), `memory/YYYY-MM-DD.md`, plus native agent config
+  (e.g. `CLAUDE.md` for Claude Code).
 - **State dir (`~/.remoteclaw`)**: config, credentials, auth profiles, sessions, logs,
   and shared skills (`~/.remoteclaw/skills`).
 
-Default workspace is `~/.remoteclaw/workspace`, configurable via:
+Configure workspace path via:
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.remoteclaw/workspace" } },
+  agents: { defaults: { workspace: "~/projects" } },
 }
 ```
 
@@ -1366,7 +1367,7 @@ RemoteClaw reads an optional **JSON5** config from `$REMOTECLAW_CONFIG_PATH` (de
 $REMOTECLAW_CONFIG_PATH
 ```
 
-If the file is missing, it uses safe-ish defaults (including a default workspace of `~/.remoteclaw/workspace`).
+If the file is missing, it uses safe-ish defaults. Note that workspace must be explicitly configured via `agents.defaults.workspace` — there is no built-in default path.
 
 ### I set gatewaybind lan or tailnet and now nothing listens the UI says unauthorized
 

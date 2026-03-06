@@ -32,13 +32,11 @@ List all discovered hooks from workspace, managed, and bundled directories.
 **Example output:**
 
 ```
-Hooks (4/4 ready)
+Hooks (2/2 ready)
 
 Ready:
   🚀 boot ✓ - Run boot prompt on gateway startup
-  📎 bootstrap-extra-files ✓ - Inject extra workspace bootstrap files during agent bootstrap
   📝 command-logger ✓ - Log all command events to a centralized audit file
-  💾 session-memory ✓ - Save session context to memory when /new command is issued
 ```
 
 **Example (verbose):**
@@ -67,7 +65,7 @@ Show detailed information about a specific hook.
 
 **Arguments:**
 
-- `<name>`: Hook name (e.g., `session-memory`)
+- `<name>`: Hook name (e.g., `command-logger`)
 
 **Options:**
 
@@ -76,25 +74,22 @@ Show detailed information about a specific hook.
 **Example:**
 
 ```bash
-remoteclaw hooks info session-memory
+remoteclaw hooks info command-logger
 ```
 
 **Output:**
 
 ```
-💾 session-memory ✓ Ready
+📝 command-logger ✓ Ready
 
-Save session context to memory when /new command is issued
+Log all command events to a centralized audit file
 
 Details:
   Source: remoteclaw-bundled
-  Path: /path/to/remoteclaw/hooks/bundled/session-memory/HOOK.md
-  Handler: /path/to/remoteclaw/hooks/bundled/session-memory/handler.ts
-  Homepage: https://docs.remoteclaw.org/automation/hooks#session-memory
-  Events: command:new
-
-Requirements:
-  Config: ✓ workspace.dir
+  Path: /path/to/remoteclaw/hooks/bundled/command-logger/HOOK.md
+  Handler: /path/to/remoteclaw/hooks/bundled/command-logger/handler.ts
+  Homepage: https://docs.remoteclaw.org/automation/hooks#command-logger
+  Events: command
 ```
 
 ## Check Hooks Eligibility
@@ -132,18 +127,18 @@ can’t be enabled/disabled here. Enable/disable the plugin instead.
 
 **Arguments:**
 
-- `<name>`: Hook name (e.g., `session-memory`)
+- `<name>`: Hook name (e.g., `command-logger`)
 
 **Example:**
 
 ```bash
-remoteclaw hooks enable session-memory
+remoteclaw hooks enable command-logger
 ```
 
 **Output:**
 
 ```
-✓ Enabled hook: 💾 session-memory
+✓ Enabled hook: 📝 command-logger
 ```
 
 **What it does:**
@@ -245,31 +240,13 @@ global `--yes` to bypass prompts in CI/non-interactive runs.
 
 ## Bundled Hooks
 
-### session-memory
+### ~~session-memory~~ (removed)
 
-Saves session context to memory when you issue `/new`.
+The session-memory hook has been removed.
 
-**Enable:**
+### ~~bootstrap-extra-files~~ (removed)
 
-```bash
-remoteclaw hooks enable session-memory
-```
-
-**Output:** `~/.remoteclaw/workspace/memory/YYYY-MM-DD-slug.md`
-
-**See:** [session-memory documentation](/automation/hooks#session-memory)
-
-### bootstrap-extra-files
-
-Injects additional bootstrap files (for example monorepo-local `AGENTS.md` / `TOOLS.md`) during `agent:bootstrap`.
-
-**Enable:**
-
-```bash
-remoteclaw hooks enable bootstrap-extra-files
-```
-
-**See:** [bootstrap-extra-files documentation](/automation/hooks#bootstrap-extra-files)
+The bootstrap-extra-files hook has been removed.
 
 ### command-logger
 

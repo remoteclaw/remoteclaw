@@ -39,7 +39,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
 }));
 
 vi.mock("../../agents/workspace.js", () => ({
-  ensureAgentWorkspace: vi.fn().mockResolvedValue({ dir: "/tmp/workspace" }),
+  ensureAgentWorkspace: vi.fn().mockResolvedValue("/tmp/workspace"),
 }));
 
 vi.mock("../../agents/model-catalog.js", () => ({

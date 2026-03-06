@@ -612,11 +612,11 @@ Include your own number in `allowFrom` to enable self-chat mode (ignores native 
 
 ### `agents.defaults.workspace`
 
-Default: `~/.remoteclaw/workspace`.
+No built-in default — must be configured. Per-agent override: `agents.list[].workspace`.
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.remoteclaw/workspace" } },
+  agents: { defaults: { workspace: "~/projects" } },
 }
 ```
 
@@ -632,7 +632,7 @@ Optional repository root shown in the system prompt's Runtime line. If unset, Re
 
 ### `agents.defaults.skipBootstrap`
 
-Disables automatic creation of workspace bootstrap files (`AGENTS.md`, `SOUL.md`, `TOOLS.md`, `IDENTITY.md`, `USER.md`, `HEARTBEAT.md`, `BOOTSTRAP.md`).
+Legacy option (no-op). Workspace template seeding has been removed.
 
 ```json5
 {
@@ -640,23 +640,14 @@ Disables automatic creation of workspace bootstrap files (`AGENTS.md`, `SOUL.md`
 }
 ```
 
-### `agents.defaults.bootstrapMaxChars`
+### `agents.defaults.editableFiles`
 
-Max characters per workspace bootstrap file before truncation. Default: `20000`.
-
-```json5
-{
-  agents: { defaults: { bootstrapMaxChars: 20000 } },
-}
-```
-
-### `agents.defaults.bootstrapTotalMaxChars`
-
-Max total characters injected across all workspace bootstrap files. Default: `150000`.
+Glob patterns for workspace files exposed by the gateway file editor.
+Per-agent override: `agents.list[].editableFiles`.
 
 ```json5
 {
-  agents: { defaults: { bootstrapTotalMaxChars: 150000 } },
+  agents: { defaults: { editableFiles: ["IDENTITY.md", "HEARTBEAT.md", "memory/**/*.md"] } },
 }
 ```
 

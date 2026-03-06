@@ -288,11 +288,8 @@ export async function ensureWorkspaceAndSessions(
   runtime: RuntimeEnv,
   options?: { skipBootstrap?: boolean; agentId?: string },
 ) {
-  const ws = await ensureAgentWorkspace({
-    dir: workspaceDir,
-    ensureBootstrapFiles: !options?.skipBootstrap,
-  });
-  runtime.log(`Workspace OK: ${shortenHomePath(ws.dir)}`);
+  const ws = await ensureAgentWorkspace(workspaceDir);
+  runtime.log(`Workspace OK: ${shortenHomePath(ws)}`);
   const sessionsDir = resolveSessionTranscriptsDirForAgent(options?.agentId);
   await fs.mkdir(sessionsDir, { recursive: true });
   runtime.log(`Sessions OK: ${shortenHomePath(sessionsDir)}`);

@@ -13,7 +13,7 @@ Goal: multiple _isolated_ agents (separate workspace + `agentDir` + sessions), p
 
 An **agent** is a fully scoped brain with its own:
 
-- **Workspace** (files, AGENTS.md/SOUL.md/USER.md, local notes, persona rules).
+- **Workspace** (working directory, agent config, local notes, memory).
 - **State directory** (`agentDir`) for auth profiles, model registry, and per-agent config.
 - **Session store** (chat history + routing state) under `~/.remoteclaw/agents/<agentId>/sessions`.
 
@@ -41,7 +41,7 @@ reach other host locations unless sandboxing is enabled. See
 
 - Config: `~/.remoteclaw/remoteclaw.json` (or `REMOTECLAW_CONFIG_PATH`)
 - State dir: `~/.remoteclaw` (or `REMOTECLAW_STATE_DIR`)
-- Workspace: `~/.remoteclaw/workspace` (or `~/.remoteclaw/workspace-<agentId>`)
+- Workspace: configured via `agents.defaults.workspace` (or per-agent `agents.list[].workspace`)
 - Agent dir: `~/.remoteclaw/agents/<agentId>/agent` (or `agents.list[].agentDir`)
 - Sessions: `~/.remoteclaw/agents/<agentId>/sessions`
 
@@ -51,7 +51,7 @@ If you do nothing, RemoteClaw runs a single agent:
 
 - `agentId` defaults to **`main`**.
 - Sessions are keyed as `agent:main:<mainKey>`.
-- Workspace defaults to `~/.remoteclaw/workspace` (or `~/.remoteclaw/workspace-<profile>` when `REMOTECLAW_PROFILE` is set).
+- Workspace must be configured via `agents.defaults.workspace` (no built-in default).
 - State defaults to `~/.remoteclaw/agents/main/agent`.
 
 ## Agent helper
@@ -82,7 +82,7 @@ remoteclaw agents add coding
 remoteclaw agents add social
 ```
 
-Each agent gets its own workspace with `SOUL.md`, `AGENTS.md`, and optional `USER.md`, plus a dedicated `agentDir` and session store under `~/.remoteclaw/agents/<agentId>`.
+Each agent gets its own workspace, plus a dedicated `agentDir` and session store under `~/.remoteclaw/agents/<agentId>`.
 
   </Step>
 
@@ -124,7 +124,7 @@ remoteclaw channels status --probe
 With **multiple agents**, each `agentId` becomes a **fully isolated persona**:
 
 - **Different phone numbers/accounts** (per channel `accountId`).
-- **Different personalities** (per-agent workspace files like `AGENTS.md` and `SOUL.md`).
+- **Different personalities** (per-agent workspace with native agent config).
 - **Separate auth + sessions** (no cross-talk unless explicitly enabled).
 
 This lets **multiple people** share one Gateway server while keeping their AI “brains” and data isolated.

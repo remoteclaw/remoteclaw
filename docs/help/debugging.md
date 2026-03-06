@@ -54,7 +54,7 @@ debugging. There are **two** `--dev` flags:
 - **Global `--dev` (profile):** isolates state under `~/.remoteclaw-dev` and
   defaults the gateway port to `19001` (derived ports shift with it).
 - **`gateway --dev`: tells the Gateway to auto-create a default config +
-  workspace** when missing (and skip BOOTSTRAP.md).
+  workspace** when missing.
 
 Recommended flow (dev profile + dev bootstrap):
 
@@ -76,9 +76,7 @@ What this does:
 2. **Dev bootstrap** (`gateway --dev`)
    - Writes a minimal config if missing (`gateway.mode=local`, bind loopback).
    - Sets `agent.workspace` to the dev workspace.
-   - Sets `agent.skipBootstrap=true` (no BOOTSTRAP.md).
-   - Seeds the workspace files if missing:
-     `AGENTS.md`, `SOUL.md`, `TOOLS.md`, `IDENTITY.md`, `USER.md`, `HEARTBEAT.md`.
+   - Creates the workspace directory if missing.
    - Default identity: **C3‑PO** (protocol droid).
    - Skips channel providers in dev mode (`REMOTECLAW_SKIP_CHANNELS=1`).
 

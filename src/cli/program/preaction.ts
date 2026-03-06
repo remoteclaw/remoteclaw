@@ -33,6 +33,8 @@ const PLUGIN_REQUIRED_COMMANDS = new Set([
   "agents",
   "configure",
   "onboard",
+  "status",
+  "health",
 ]);
 const JSON_PARSE_ONLY_COMMANDS = new Set(["config set"]);
 let configGuardModulePromise: Promise<typeof import("./config-guard.js")> | undefined;

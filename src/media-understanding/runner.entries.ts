@@ -24,7 +24,6 @@ import {
 import { MediaUnderstandingSkipError } from "./errors.js";
 import { fileExists } from "./fs.js";
 import { extractGeminiResponse } from "./output-extract.js";
-import { describeImageWithModel } from "./providers/image.js";
 import { getMediaUnderstandingProvider, normalizeMediaProviderId } from "./providers/index.js";
 import { resolveMaxBytes, resolveMaxChars, resolvePrompt, resolveTimeoutMs } from "./resolve.js";
 import type {
@@ -383,56 +382,6 @@ export async function runProviderEntry(params: {
     cfg,
     config: params.config,
   });
-
-  if (capability === "image") {
-    if (!params.agentDir) {
-      throw new Error("Image understanding requires agentDir");
-    }
-    const modelId = entry.model?.trim();
-    if (!modelId) {
-      throw new Error("Image understanding requires model id");
-    }
-    const media = await params.cache.getBuffer({
-      attachmentIndex: params.attachmentIndex,
-      maxBytes,
-      timeoutMs,
-    });
-    const provider = getMediaUnderstandingProvider(providerId, params.providerRegistry);
-    const result = provider?.describeImage
-      ? await provider.describeImage({
-          buffer: media.buffer,
-          fileName: media.fileName,
-          mime: media.mime,
-          model: modelId,
-          provider: providerId,
-          prompt,
-          timeoutMs,
-          profile: entry.profile,
-          preferredProfile: entry.preferredProfile,
-          agentDir: params.agentDir,
-          cfg: params.cfg,
-        })
-      : await describeImageWithModel({
-          buffer: media.buffer,
-          fileName: media.fileName,
-          mime: media.mime,
-          model: modelId,
-          provider: providerId,
-          prompt,
-          timeoutMs,
-          profile: entry.profile,
-          preferredProfile: entry.preferredProfile,
-          agentDir: params.agentDir,
-          cfg: params.cfg,
-        });
-    return {
-      kind: "image.description",
-      attachmentIndex: params.attachmentIndex,
-      text: trimOutput(result.text, maxChars),
-      provider: providerId,
-      model: result.model ?? modelId,
-    };
-  }
 
   const provider = getMediaUnderstandingProvider(providerId, params.providerRegistry);
   if (!provider) {

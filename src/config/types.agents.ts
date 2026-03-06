@@ -32,6 +32,8 @@ export type AgentConfig = {
   sandbox?: AgentSandboxConfig;
   /** Optional per-agent stream params (e.g. cacheRetention, temperature). */
   params?: Record<string, unknown>;
+  /** Glob patterns for files exposed via agents.files.list/get/set. Per-agent overrides defaults. */
+  editableFiles?: string[];
   tools?: AgentToolsConfig;
 };
 

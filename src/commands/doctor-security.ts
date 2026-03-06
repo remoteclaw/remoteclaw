@@ -2,15 +2,56 @@ import { listChannelPlugins } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig, GatewayBindMode } from "../config/config.js";
+import type { AgentConfig } from "../config/types.agents.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
 import { isLoopbackHost, resolveGatewayBindHost } from "../gateway/net.js";
 import { resolveDmAllowState } from "../security/dm-policy-shared.js";
 import { note } from "../terminal/note.js";
 import { resolveDefaultChannelAccountContext } from "./channel-account-context.js";
 
+function collectImplicitHeartbeatDirectPolicyWarnings(cfg: RemoteClawConfig): string[] {
+  const warnings: string[] = [];
+
+  const maybeWarn = (params: {
+    label: string;
+    heartbeat: AgentConfig["heartbeat"] | undefined;
+    pathHint: string;
+  }) => {
+    const heartbeat = params.heartbeat;
+    if (!heartbeat || heartbeat.target === undefined || heartbeat.target === "none") {
+      return;
+    }
+    if (heartbeat.directPolicy !== undefined) {
+      return;
+    }
+    warnings.push(
+      `- ${params.label}: heartbeat delivery is configured while ${params.pathHint} is unset.`,
+      '  Heartbeat now allows direct/DM targets by default. Set it explicitly to "allow" or "block" to pin upgrade behavior.',
+    );
+  };
+
+  maybeWarn({
+    label: "Heartbeat defaults",
+    heartbeat: cfg.agents?.defaults?.heartbeat,
+    pathHint: "agents.defaults.heartbeat.directPolicy",
+  });
+
+  for (const agent of cfg.agents?.list ?? []) {
+    maybeWarn({
+      label: `Heartbeat agent "${agent.id}"`,
+      heartbeat: agent.heartbeat,
+      pathHint: `heartbeat.directPolicy for agent "${agent.id}"`,
+    });
+  }
+
+  return warnings;
+}
+
 export async function noteSecurityWarnings(cfg: RemoteClawConfig) {
   const warnings: string[] = [];
   const auditHint = `- Run: ${formatCliCommand("remoteclaw security audit --deep")}`;
+
+  warnings.push(...collectImplicitHeartbeatDirectPolicyWarnings(cfg));
 
   // ===========================================
   // GATEWAY NETWORK EXPOSURE CHECK

@@ -9,8 +9,8 @@ import Testing
     }
 
     @Test func resolvesKnownToolFromConfig() {
-        let summary = ToolDisplayRegistry.resolve(name: "bash", args: nil)
-        #expect(summary.emoji == "🛠️")
-        #expect(summary.title == "Bash")
+        let summary = ToolDisplayRegistry.resolve(name: "read", args: nil)
+        #expect(summary.emoji == "📖")
+        #expect(summary.title == "Read")
     }
 }

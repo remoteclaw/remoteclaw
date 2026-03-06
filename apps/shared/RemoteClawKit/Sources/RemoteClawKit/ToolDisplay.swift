@@ -131,12 +131,6 @@ public enum ToolDisplayRegistry {
                 ],
                 actions: nil),
             tools: [
-                "bash": ToolDisplaySpec(
-                    emoji: "🛠️",
-                    title: "Bash",
-                    label: nil,
-                    detailKeys: ["command"],
-                    actions: nil),
                 "read": ToolDisplaySpec(
                     emoji: "📖",
                     title: "Read",
@@ -160,12 +154,6 @@ public enum ToolDisplayRegistry {
                     title: "Attach",
                     label: nil,
                     detailKeys: ["path", "url", "fileName"],
-                    actions: nil),
-                "process": ToolDisplaySpec(
-                    emoji: "🧰",
-                    title: "Process",
-                    label: nil,
-                    detailKeys: ["sessionId"],
                     actions: nil),
             ])
     }

@@ -25,16 +25,6 @@
     ]
   },
   "tools": {
-    "bash": {
-      "emoji": "🛠️",
-      "title": "Bash",
-      "detailKeys": ["command"]
-    },
-    "process": {
-      "emoji": "🧰",
-      "title": "Process",
-      "detailKeys": ["sessionId"]
-    },
     "read": {
       "emoji": "📖",
       "title": "Read",

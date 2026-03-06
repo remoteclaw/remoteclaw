@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
+import fs from "node:fs";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  checkRemoteClawMigration,
   rewriteUpdateFlagArgv,
   shouldEnsureCliPath,
   shouldRegisterPrimarySubcommand,
@@ -123,5 +125,57 @@ describe("shouldEnsureCliPath", () => {
     expect(shouldEnsureCliPath(["node", "remoteclaw", "message", "send"])).toBe(true);
     expect(shouldEnsureCliPath(["node", "remoteclaw", "voicecall", "status"])).toBe(true);
     expect(shouldEnsureCliPath(["node", "remoteclaw", "acp", "-v"])).toBe(true);
+  });
+});
+
+describe("checkRemoteClawMigration", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("warns when ~/.openclaw exists but ~/.remoteclaw does not", () => {
+    vi.spyOn(fs, "existsSync").mockImplementation((p) => {
+      if (String(p).endsWith("/.remoteclaw")) {
+        return false;
+      }
+      if (String(p).endsWith("/.openclaw")) {
+        return true;
+      }
+      return false;
+    });
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    checkRemoteClawMigration({ HOME: "/mock-home" });
+
+    expect(warnSpy).toHaveBeenCalledOnce();
+    expect(warnSpy.mock.calls[0][0]).toContain("remoteclaw import");
+  });
+
+  it("does not warn when ~/.remoteclaw already exists", () => {
+    vi.spyOn(fs, "existsSync").mockReturnValue(true);
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    checkRemoteClawMigration({ HOME: "/mock-home" });
+
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not warn when neither directory exists", () => {
+    vi.spyOn(fs, "existsSync").mockReturnValue(false);
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    checkRemoteClawMigration({ HOME: "/mock-home" });
+
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it("skips migration check when REMOTECLAW_STATE_DIR is set", () => {
+    const existsSpy = vi.spyOn(fs, "existsSync");
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    checkRemoteClawMigration({ HOME: "/mock-home", REMOTECLAW_STATE_DIR: "/custom/state" });
+
+    expect(existsSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 });

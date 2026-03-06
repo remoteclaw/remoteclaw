@@ -111,7 +111,62 @@ describe("promptRemoteGatewayConfig", () => {
       return "";
     }) as WizardPrompter["text"];
 
-    const select = createSelectPrompter({ "Gateway auth": "off" });
+    const { next } = await runRemotePrompt({
+      text,
+      confirm: false,
+      selectResponses: { "Gateway auth": "off" },
+    });
+
+    expect(next.gateway?.mode).toBe("remote");
+    expect(next.gateway?.remote?.url).toBe("wss://remote.example.com:18789");
+    expect(next.gateway?.remote?.token).toBeUndefined();
+  });
+
+  it("allows ws:// hostname remote URLs when REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS=1", async () => {
+    process.env.REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS = "1";
+    const text: WizardPrompter["text"] = vi.fn(async (params) => {
+      if (params.message === "Gateway WebSocket URL") {
+        expect(params.validate?.("ws://remoteclaw-gateway.ai:18789")).toBeUndefined();
+        expect(params.validate?.("ws://1.1.1.1:18789")).toContain("Use wss://");
+        return "ws://remoteclaw-gateway.ai:18789";
+      }
+      return "";
+    }) as WizardPrompter["text"];
+
+    const { next } = await runRemotePrompt({
+      text,
+      confirm: false,
+      selectResponses: { "Gateway auth": "off" },
+    });
+
+    expect(next.gateway?.mode).toBe("remote");
+    expect(next.gateway?.remote?.url).toBe("ws://remoteclaw-gateway.ai:18789");
+  });
+
+  it("supports storing remote auth as an external env secret ref", async () => {
+    process.env.REMOTECLAW_GATEWAY_TOKEN = "remote-token-value";
+    const text: WizardPrompter["text"] = vi.fn(async (params) => {
+      if (params.message === "Gateway WebSocket URL") {
+        return "wss://remote.example.com:18789";
+      }
+      if (params.message === "Environment variable name") {
+        return "REMOTECLAW_GATEWAY_TOKEN";
+      }
+      return "";
+    }) as WizardPrompter["text"];
+
+    const select: WizardPrompter["select"] = vi.fn(async (params) => {
+      if (params.message === "Gateway auth") {
+        return "token" as never;
+      }
+      if (params.message === "How do you want to provide this gateway token?") {
+        return "ref" as never;
+      }
+      if (params.message === "Where is this gateway token stored?") {
+        return "env" as never;
+      }
+      return (params.options[0]?.value ?? "") as never;
+    });
 
     const cfg = {} as RemoteClawConfig;
     const prompter = createPrompter({

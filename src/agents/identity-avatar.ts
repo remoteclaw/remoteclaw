@@ -10,7 +10,6 @@ import {
 } from "../shared/avatar-policy.js";
 import { resolveUserPath } from "../utils.js";
 import { resolveAgentWorkspaceDir } from "./agent-scope.js";
-import { loadAgentIdentityFromWorkspace } from "./identity-file.js";
 import { resolveAgentIdentity } from "./identity.js";
 
 export type AgentAvatarResolution =
@@ -25,13 +24,7 @@ function normalizeAvatarValue(value: string | undefined | null): string | null {
 }
 
 function resolveAvatarSource(cfg: RemoteClawConfig, agentId: string): string | null {
-  const fromConfig = normalizeAvatarValue(resolveAgentIdentity(cfg, agentId)?.avatar);
-  if (fromConfig) {
-    return fromConfig;
-  }
-  const workspace = resolveAgentWorkspaceDir(cfg, agentId);
-  const fromIdentity = normalizeAvatarValue(loadAgentIdentityFromWorkspace(workspace)?.avatar);
-  return fromIdentity;
+  return normalizeAvatarValue(resolveAgentIdentity(cfg, agentId)?.avatar);
 }
 
 function resolveExistingPath(value: string): string {

@@ -12,9 +12,7 @@ describe("resolveAssistantIdentity avatar normalization", () => {
       },
     };
 
-    expect(resolveAssistantIdentity({ cfg, workspaceDir: "" }).avatar).toBe(
-      DEFAULT_ASSISTANT_IDENTITY.avatar,
-    );
+    expect(resolveAssistantIdentity({ cfg }).avatar).toBe(DEFAULT_ASSISTANT_IDENTITY.avatar);
   });
 
   it("keeps short text avatars", () => {
@@ -26,7 +24,7 @@ describe("resolveAssistantIdentity avatar normalization", () => {
       },
     };
 
-    expect(resolveAssistantIdentity({ cfg, workspaceDir: "" }).avatar).toBe("PS");
+    expect(resolveAssistantIdentity({ cfg }).avatar).toBe("PS");
   });
 
   it("keeps path avatars", () => {
@@ -38,8 +36,6 @@ describe("resolveAssistantIdentity avatar normalization", () => {
       },
     };
 
-    expect(resolveAssistantIdentity({ cfg, workspaceDir: "" }).avatar).toBe(
-      "avatars/remoteclaw.png",
-    );
+    expect(resolveAssistantIdentity({ cfg }).avatar).toBe("avatars/remoteclaw.png");
   });
 });

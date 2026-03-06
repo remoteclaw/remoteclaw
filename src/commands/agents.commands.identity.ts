@@ -1,7 +1,5 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { identityHasValues, parseIdentityMarkdown } from "../agents/identity-file.js";
 import { writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
 import type { IdentityConfig } from "../config/types.js";
@@ -10,22 +8,15 @@ import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
 import { requireValidConfig } from "./agents.command-shared.js";
-import {
-  type AgentIdentity,
-  findAgentEntryIndex,
-  listAgentEntries,
-  loadAgentIdentity,
-} from "./agents.config.js";
+import { findAgentEntryIndex, listAgentEntries } from "./agents.config.js";
 
 type AgentsSetIdentityOptions = {
   agent?: string;
   workspace?: string;
-  identityFile?: string;
   name?: string;
   emoji?: string;
   theme?: string;
   avatar?: string;
-  fromIdentity?: boolean;
   json?: boolean;
 };
 
@@ -35,19 +26,6 @@ const coerceTrimmed = (value?: string) => {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
 };
-
-async function loadIdentityFromFile(filePath: string): Promise<AgentIdentity | null> {
-  try {
-    const content = await fs.readFile(filePath, "utf-8");
-    const parsed = parseIdentityMarkdown(content);
-    if (!identityHasValues(parsed)) {
-      return null;
-    }
-    return parsed;
-  } catch {
-    return null;
-  }
-}
 
 function resolveAgentIdByWorkspace(
   cfg: Parameters<typeof resolveAgentWorkspaceDir>[0],
@@ -78,21 +56,14 @@ export async function agentsSetIdentityCommand(
   const emojiRaw = coerceTrimmed(opts.emoji);
   const themeRaw = coerceTrimmed(opts.theme);
   const avatarRaw = coerceTrimmed(opts.avatar);
-  const hasExplicitIdentity = Boolean(nameRaw || emojiRaw || themeRaw || avatarRaw);
 
-  const identityFileRaw = coerceTrimmed(opts.identityFile);
   const workspaceRaw = coerceTrimmed(opts.workspace);
-  const wantsIdentityFile = Boolean(opts.fromIdentity || identityFileRaw || !hasExplicitIdentity);
 
-  let identityFilePath: string | undefined;
   let workspaceDir: string | undefined;
 
-  if (identityFileRaw) {
-    identityFilePath = normalizeWorkspacePath(identityFileRaw);
-    workspaceDir = path.dirname(identityFilePath);
-  } else if (workspaceRaw) {
+  if (workspaceRaw) {
     workspaceDir = normalizeWorkspacePath(workspaceRaw);
-  } else if (wantsIdentityFile || !agentRaw) {
+  } else if (!agentRaw) {
     workspaceDir = path.resolve(process.cwd());
   }
 
@@ -121,31 +92,11 @@ export async function agentsSetIdentityCommand(
     agentId = matches[0];
   }
 
-  let identityFromFile: AgentIdentity | null = null;
-  if (wantsIdentityFile) {
-    if (identityFilePath) {
-      identityFromFile = await loadIdentityFromFile(identityFilePath);
-    } else if (workspaceDir) {
-      identityFromFile = loadAgentIdentity(workspaceDir);
-    }
-    if (!identityFromFile) {
-      const targetPath =
-        identityFilePath ?? (workspaceDir ? path.join(workspaceDir, "IDENTITY.md") : "IDENTITY.md");
-      runtime.error(`No identity data found in ${shortenHomePath(targetPath)}.`);
-      runtime.exit(1);
-      return;
-    }
-  }
-
-  const fileTheme =
-    identityFromFile?.theme ?? identityFromFile?.creature ?? identityFromFile?.vibe ?? undefined;
   const incomingIdentity: IdentityConfig = {
-    ...(nameRaw || identityFromFile?.name ? { name: nameRaw ?? identityFromFile?.name } : {}),
-    ...(emojiRaw || identityFromFile?.emoji ? { emoji: emojiRaw ?? identityFromFile?.emoji } : {}),
-    ...(themeRaw || fileTheme ? { theme: themeRaw ?? fileTheme } : {}),
-    ...(avatarRaw || identityFromFile?.avatar
-      ? { avatar: avatarRaw ?? identityFromFile?.avatar }
-      : {}),
+    ...(nameRaw ? { name: nameRaw } : {}),
+    ...(emojiRaw ? { emoji: emojiRaw } : {}),
+    ...(themeRaw ? { theme: themeRaw } : {}),
+    ...(avatarRaw ? { avatar: avatarRaw } : {}),
   };
 
   if (
@@ -154,9 +105,7 @@ export async function agentsSetIdentityCommand(
     !incomingIdentity.theme &&
     !incomingIdentity.avatar
   ) {
-    runtime.error(
-      "No identity fields provided. Use --name/--emoji/--theme/--avatar or --from-identity.",
-    );
+    runtime.error("No identity fields provided. Use --name/--emoji/--theme/--avatar.");
     runtime.exit(1);
     return;
   }
@@ -202,7 +151,6 @@ export async function agentsSetIdentityCommand(
           agentId,
           identity: nextIdentity,
           workspace: workspaceDir ?? null,
-          identityFile: identityFilePath ?? null,
         },
         null,
         2,

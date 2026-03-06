@@ -1,6 +1,5 @@
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { resolveAgentIdentity } from "../agents/identity.js";
-import { loadAgentIdentity } from "../commands/agents.config.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import {
@@ -94,26 +93,20 @@ function normalizeEmojiValue(value: string | undefined): string | undefined {
 export function resolveAssistantIdentity(params: {
   cfg: RemoteClawConfig;
   agentId?: string | null;
-  workspaceDir?: string | null;
 }): AssistantIdentity {
   const agentId = normalizeAgentId(params.agentId ?? resolveDefaultAgentId(params.cfg));
-  const workspaceDir = params.workspaceDir ?? resolveAgentWorkspaceDir(params.cfg, agentId);
   const configAssistant = params.cfg.ui?.assistant;
   const agentIdentity = resolveAgentIdentity(params.cfg, agentId);
-  const fileIdentity = workspaceDir ? loadAgentIdentity(workspaceDir) : null;
 
   const name =
     coerceIdentityValue(configAssistant?.name, MAX_ASSISTANT_NAME) ??
     coerceIdentityValue(agentIdentity?.name, MAX_ASSISTANT_NAME) ??
-    coerceIdentityValue(fileIdentity?.name, MAX_ASSISTANT_NAME) ??
     DEFAULT_ASSISTANT_IDENTITY.name;
 
   const avatarCandidates = [
     coerceIdentityValue(configAssistant?.avatar, MAX_ASSISTANT_AVATAR),
     coerceIdentityValue(agentIdentity?.avatar, MAX_ASSISTANT_AVATAR),
     coerceIdentityValue(agentIdentity?.emoji, MAX_ASSISTANT_AVATAR),
-    coerceIdentityValue(fileIdentity?.avatar, MAX_ASSISTANT_AVATAR),
-    coerceIdentityValue(fileIdentity?.emoji, MAX_ASSISTANT_AVATAR),
   ];
   const avatar =
     avatarCandidates.map((candidate) => normalizeAvatarValue(candidate)).find(Boolean) ??
@@ -121,9 +114,7 @@ export function resolveAssistantIdentity(params: {
 
   const emojiCandidates = [
     coerceIdentityValue(agentIdentity?.emoji, MAX_ASSISTANT_EMOJI),
-    coerceIdentityValue(fileIdentity?.emoji, MAX_ASSISTANT_EMOJI),
     coerceIdentityValue(agentIdentity?.avatar, MAX_ASSISTANT_EMOJI),
-    coerceIdentityValue(fileIdentity?.avatar, MAX_ASSISTANT_EMOJI),
   ];
   const emoji = emojiCandidates.map((candidate) => normalizeEmojiValue(candidate)).find(Boolean);
 

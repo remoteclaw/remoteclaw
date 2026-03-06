@@ -34,16 +34,10 @@ function formatSummary(summary: AgentSummary) {
     identityParts.push(summary.identityName);
   }
   const identityLine = identityParts.length > 0 ? identityParts.join(" ") : null;
-  const identitySource =
-    summary.identitySource === "identity"
-      ? "IDENTITY.md"
-      : summary.identitySource === "config"
-        ? "config"
-        : null;
 
   const lines = [`- ${header}`];
   if (identityLine) {
-    lines.push(`  Identity: ${identityLine}${identitySource ? ` (${identitySource})` : ""}`);
+    lines.push(`  Identity: ${identityLine}`);
   }
   lines.push(`  Workspace: ${shortenHomePath(summary.workspace)}`);
   lines.push(`  Agent dir: ${shortenHomePath(summary.agentDir)}`);

@@ -65,7 +65,7 @@ type CoreAgentDeps = {
     cfg: CoreConfig,
     agentId: string,
   ) => { name?: string | null } | null | undefined;
-  ensureAgentWorkspace: (params?: { dir: string }) => Promise<void>;
+  ensureAgentWorkspace: (dir: string) => Promise<string>;
   resolveStorePath: (store?: string, opts?: { agentId?: string }) => string;
   loadSessionStore: (storePath: string) => Record<string, unknown>;
   saveSessionStore: (storePath: string, store: Record<string, unknown>) => Promise<void>;

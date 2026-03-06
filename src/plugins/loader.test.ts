@@ -135,6 +135,15 @@ function createWarningLogger(warnings: string[]) {
   };
 }
 
+function createErrorLogger(errors: string[]) {
+  return {
+    info: () => {},
+    warn: () => {},
+    error: (msg: string) => errors.push(msg),
+    debug: () => {},
+  };
+}
+
 function createEscapingEntryFixture(params: { id: string; sourceBody: string }) {
   const pluginDir = makeTempDir();
   const outsideDir = makeTempDir();
@@ -455,6 +464,65 @@ describe("loadRemoteClawPlugins", () => {
     expect(route?.path).toBe("/webhook");
     const httpPlugin = registry.plugins.find((entry) => entry.id === "http-demo");
     expect(httpPlugin?.httpRoutes).toBe(1);
+  });
+
+  it("rewrites removed registerHttpHandler failures into migration diagnostics", () => {
+    useNoBundledPlugins();
+    const plugin = writePlugin({
+      id: "http-handler-legacy",
+      filename: "http-handler-legacy.cjs",
+      body: `module.exports = { id: "http-handler-legacy", register(api) {
+  api.registerHttpHandler({ path: "/legacy", handler: async () => true });
+} };`,
+    });
+
+    const errors: string[] = [];
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: {
+        allow: ["http-handler-legacy"],
+      },
+      options: {
+        logger: createErrorLogger(errors),
+      },
+    });
+
+    const loaded = registry.plugins.find((entry) => entry.id === "http-handler-legacy");
+    expect(loaded?.status).toBe("error");
+    expect(loaded?.error).toContain("api.registerHttpHandler(...) was removed");
+    expect(loaded?.error).toContain("api.registerHttpRoute(...)");
+    expect(loaded?.error).toContain("registerPluginHttpRoute(...)");
+    expect(
+      registry.diagnostics.some((diag) =>
+        String(diag.message).includes("api.registerHttpHandler(...) was removed"),
+      ),
+    ).toBe(true);
+    expect(errors.some((entry) => entry.includes("api.registerHttpHandler(...) was removed"))).toBe(
+      true,
+    );
+  });
+
+  it("does not rewrite unrelated registerHttpHandler helper failures", () => {
+    useNoBundledPlugins();
+    const plugin = writePlugin({
+      id: "http-handler-local-helper",
+      filename: "http-handler-local-helper.cjs",
+      body: `module.exports = { id: "http-handler-local-helper", register() {
+  const registerHttpHandler = undefined;
+  registerHttpHandler();
+} };`,
+    });
+
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: {
+        allow: ["http-handler-local-helper"],
+      },
+    });
+
+    const loaded = registry.plugins.find((entry) => entry.id === "http-handler-local-helper");
+    expect(loaded?.status).toBe("error");
+    expect(loaded?.error).not.toContain("api.registerHttpHandler(...) was removed");
   });
 
   it("rejects http routes missing explicit auth", () => {

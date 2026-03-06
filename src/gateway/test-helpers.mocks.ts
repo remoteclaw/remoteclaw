@@ -382,15 +382,24 @@ vi.mock("../config/config.js", async () => {
         !Array.isArray(fileAgents.defaults)
           ? (fileAgents.defaults as Record<string, unknown>)
           : {};
+      const testWorkspace = path.join(os.tmpdir(), "remoteclaw-gateway-test");
       const defaults = {
         model: { primary: "anthropic/claude-opus-4-6" },
-        workspace: path.join(os.tmpdir(), "remoteclaw-gateway-test"),
         ...fileDefaults,
         ...testState.agentConfig,
       };
+      // Ensure every agent list entry has a workspace (per-agent only, no shared default)
+      const rawList = (testState.agentsConfig?.list ?? fileAgents.list) as
+        | Array<Record<string, unknown>>
+        | undefined;
+      const list = Array.isArray(rawList)
+        ? rawList.map((entry) =>
+            typeof entry.workspace === "string" ? entry : { workspace: testWorkspace, ...entry },
+          )
+        : [{ id: "main", workspace: testWorkspace }];
       const agents = testState.agentsConfig
-        ? { ...fileAgents, ...testState.agentsConfig, defaults }
-        : { ...fileAgents, defaults };
+        ? { ...fileAgents, ...testState.agentsConfig, defaults, list }
+        : { ...fileAgents, defaults, list };
 
       const fileBindings = Array.isArray(fileConfig.bindings)
         ? (fileConfig.bindings as AgentBinding[])

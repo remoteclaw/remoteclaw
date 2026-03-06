@@ -89,6 +89,7 @@ export type ChannelChoice = ChannelId;
 export type ProviderChoice = ChannelChoice;
 
 export type AgentRuntime = "claude" | "gemini" | "codex" | "opencode";
+export type SecretInputMode = "ref" | "plaintext";
 
 export type OnboardOptions = {
   mode?: OnboardMode;
@@ -139,8 +140,10 @@ export type OnboardOptions = {
   installDaemon?: boolean;
   daemonRuntime?: GatewayDaemonRuntime;
   skipChannels?: boolean;
+  skipSearch?: boolean;
   skipHealth?: boolean;
   skipUi?: boolean;
+  secretInputMode?: SecretInputMode;
   remoteUrl?: string;
   remoteToken?: string;
   json?: boolean;

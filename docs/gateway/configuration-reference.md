@@ -779,6 +779,7 @@ Periodic heartbeat runs.
       compaction: {
         mode: "safeguard", // default | safeguard
         reserveTokensFloor: 24000,
+        postCompactionSections: ["Session Startup", "Red Lines"], // [] disables reinjection
         memoryFlush: {
           enabled: true,
           softThresholdTokens: 6000,
@@ -792,6 +793,7 @@ Periodic heartbeat runs.
 ```
 
 - `mode`: `default` or `safeguard` (chunked summarization for long histories). See [Session management — compaction](/reference/session-management-compaction).
+- `postCompactionSections`: optional AGENTS.md H2/H3 section names to re-inject after compaction. Defaults to `["Session Startup", "Red Lines"]`; set `[]` to disable reinjection. When unset or explicitly set to that default pair, older `Every Session`/`Safety` headings are also accepted as a legacy fallback.
 - `memoryFlush`: silent agentic turn before auto-compaction to store durable memories. Skipped when workspace is read-only.
 
 ### `agents.defaults.contextPruning`

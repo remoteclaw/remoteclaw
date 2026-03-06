@@ -1,11 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-// Default heartbeat prompt (used when config.agents.defaults.heartbeat.prompt is unset).
-// Keep it tight and avoid encouraging the model to invent/rehash "open loops" from prior chat context.
-export const HEARTBEAT_PROMPT =
-  "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats.";
-
 /** Non-configurable suffix appended by the middleware to every heartbeat prompt. */
 export const HEARTBEAT_TOOL_SUFFIX = " Report the result using the heartbeat_report tool.";
 

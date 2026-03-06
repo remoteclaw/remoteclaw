@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/nostr",
-  "version": "2026.2.25",
+  "version": "0.1.0",
   "description": "RemoteClaw Nostr channel plugin for NIP-04 encrypted DMs",
   "type": "module",
   "dependencies": {

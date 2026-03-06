@@ -13,6 +13,8 @@ import type {
 } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
+import { hasPollCreationParams, resolveTelegramPollVisibility } from "../../poll-params.js";
+import { resolvePollMaxSelections } from "../../polls.js";
 import { buildChannelAccountBindings } from "../../routing/bindings.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import type { AgentToolResult } from "../../types/agent-types.js";
@@ -317,7 +319,7 @@ async function handleBroadcastAction(
   if (!broadcastEnabled) {
     throw new Error("Broadcast is disabled. Set tools.message.broadcast.enabled to true.");
   }
-  const rawTargets = readStringArrayParam(params, "targets", { required: true }) ?? [];
+  const rawTargets = readStringArrayParam(params, "targets", { required: true });
   if (rawTargets.length === 0) {
     throw new Error("Broadcast requires at least one target in --targets.");
   }
@@ -581,7 +583,7 @@ async function handlePollAction(ctx: ResolvedActionContext): Promise<MessageActi
   const question = readStringParam(params, "pollQuestion", {
     required: true,
   });
-  const options = readStringArrayParam(params, "pollOption", { required: true }) ?? [];
+  const options = readStringArrayParam(params, "pollOption", { required: true });
   if (options.length < 2) {
     throw new Error("pollOption requires at least two values");
   }
@@ -589,17 +591,16 @@ async function handlePollAction(ctx: ResolvedActionContext): Promise<MessageActi
   const allowMultiselect = readBooleanParam(params, "pollMulti") ?? false;
   const pollAnonymous = readBooleanParam(params, "pollAnonymous");
   const pollPublic = readBooleanParam(params, "pollPublic");
-  if (pollAnonymous && pollPublic) {
-    throw new Error("pollAnonymous and pollPublic are mutually exclusive");
-  }
-  const isAnonymous = pollAnonymous ? true : pollPublic ? false : undefined;
+  const isAnonymous = resolveTelegramPollVisibility({ pollAnonymous, pollPublic });
   const durationHours = readNumberParam(params, "pollDurationHours", {
     integer: true,
+    strict: true,
   });
   const durationSeconds = readNumberParam(params, "pollDurationSeconds", {
     integer: true,
+    strict: true,
   });
-  const maxSelections = allowMultiselect ? Math.max(2, options.length) : 1;
+  const maxSelections = resolvePollMaxSelections(options.length, allowMultiselect);
 
   if (durationSeconds !== undefined && channel !== "telegram") {
     throw new Error("pollDurationSeconds is only supported for Telegram polls");
@@ -770,6 +771,10 @@ export async function runMessageAction(
     toolContext: input.toolContext,
     cfg,
   });
+
+  if (action === "send" && hasPollCreationParams(params)) {
+    throw new Error('Poll fields require action "poll"; use action "poll" instead of "send".');
+  }
 
   const gateway = resolveGateway(input);
 

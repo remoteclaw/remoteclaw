@@ -38,7 +38,6 @@ import {
   openaiTTS,
   parseTtsDirectives,
   scheduleCleanup,
-  summarizeText,
 } from "./tts-core.js";
 export { OPENAI_TTS_MODELS, OPENAI_TTS_VOICES } from "./tts-core.js";
 
@@ -345,31 +344,6 @@ export function resolveTtsAutoMode(params: {
     return prefsAuto;
   }
   return params.config.auto;
-}
-
-export function buildTtsSystemPromptHint(cfg: RemoteClawConfig): string | undefined {
-  const config = resolveTtsConfig(cfg);
-  const prefsPath = resolveTtsPrefsPath(config);
-  const autoMode = resolveTtsAutoMode({ config, prefsPath });
-  if (autoMode === "off") {
-    return undefined;
-  }
-  const maxLength = getTtsMaxLength(prefsPath);
-  const summarize = isSummarizationEnabled(prefsPath) ? "on" : "off";
-  const autoHint =
-    autoMode === "inbound"
-      ? "Only use TTS when the user's last message includes audio/voice."
-      : autoMode === "tagged"
-        ? "Only use TTS when you include [[tts]] or [[tts:text]] tags."
-        : undefined;
-  return [
-    "Voice (TTS) is enabled.",
-    autoHint,
-    `Keep spoken text ≤${maxLength} chars to avoid auto-summary (summary ${summarize}).`,
-    "Use [[tts:...]] and optional [[tts:text]]...[[/tts:text]] to control voice/expressiveness.",
-  ]
-    .filter(Boolean)
-    .join("\n");
 }
 
 function readPrefs(prefsPath: string): TtsUserPrefs {
@@ -853,37 +827,10 @@ export async function maybeApplyTtsToPayload(params: {
 
   const maxLength = getTtsMaxLength(prefsPath);
   let textForAudio = ttsText.trim();
-  let wasSummarized = false;
 
   if (textForAudio.length > maxLength) {
-    if (!isSummarizationEnabled(prefsPath)) {
-      logVerbose(
-        `TTS: truncating long text (${textForAudio.length} > ${maxLength}), summarization disabled.`,
-      );
-      textForAudio = `${textForAudio.slice(0, maxLength - 3)}...`;
-    } else {
-      try {
-        const summary = await summarizeText({
-          text: textForAudio,
-          targetLength: maxLength,
-          cfg: params.cfg,
-          config,
-          timeoutMs: config.timeoutMs,
-        });
-        textForAudio = summary.summary;
-        wasSummarized = true;
-        if (textForAudio.length > config.maxTextLength) {
-          logVerbose(
-            `TTS: summary exceeded hard limit (${textForAudio.length} > ${config.maxTextLength}); truncating.`,
-          );
-          textForAudio = `${textForAudio.slice(0, config.maxTextLength - 3)}...`;
-        }
-      } catch (err) {
-        const error = err as Error;
-        logVerbose(`TTS: summarization failed, truncating instead: ${error.message}`);
-        textForAudio = `${textForAudio.slice(0, maxLength - 3)}...`;
-      }
-    }
+    logVerbose(`TTS: truncating long text (${textForAudio.length} > ${maxLength}).`);
+    textForAudio = `${textForAudio.slice(0, maxLength - 3)}...`;
   }
 
   textForAudio = stripMarkdown(textForAudio).trim(); // strip markdown for TTS (### → "hashtag" etc.)
@@ -905,7 +852,7 @@ export async function maybeApplyTtsToPayload(params: {
       timestamp: Date.now(),
       success: true,
       textLength: text.length,
-      summarized: wasSummarized,
+      summarized: false,
       provider: result.provider,
       latencyMs: result.latencyMs,
     };
@@ -924,7 +871,7 @@ export async function maybeApplyTtsToPayload(params: {
     timestamp: Date.now(),
     success: false,
     textLength: text.length,
-    summarized: wasSummarized,
+    summarized: false,
     error: result.error,
   };
 
@@ -941,7 +888,6 @@ export const _test = {
   OPENAI_TTS_VOICES,
   parseTtsDirectives,
   resolveModelOverridePolicy,
-  summarizeText,
   resolveOutputFormat,
   resolveEdgeOutputFormat,
 };

@@ -1,6 +1,5 @@
 import { rmSync } from "node:fs";
 import { EdgeTTS } from "node-edge-tts";
-import type { RemoteClawConfig } from "../config/config.js";
 import type {
   ResolvedTtsConfig,
   ResolvedTtsModelOverrides,
@@ -368,28 +367,6 @@ export function isValidOpenAIVoice(voice: string): voice is OpenAiTtsVoice {
     return true;
   }
   return OPENAI_TTS_VOICES.includes(voice as OpenAiTtsVoice);
-}
-
-type SummarizeResult = {
-  summary: string;
-  latencyMs: number;
-  inputLength: number;
-  outputLength: number;
-};
-
-/**
- * Stub: embedded model resolver was removed (#74).
- * TTS summarisation requires `completeSimple` from pi-ai with a resolved
- * model object, which is no longer available.
- */
-export async function summarizeText(_params: {
-  text: string;
-  targetLength: number;
-  cfg: RemoteClawConfig;
-  config: ResolvedTtsConfig;
-  timeoutMs: number;
-}): Promise<SummarizeResult> {
-  throw new Error("TTS summarisation unavailable: embedded model resolver removed (#74).");
 }
 
 export function scheduleCleanup(

@@ -1,16 +1,7 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { withEnv } from "../test-utils/env.js";
 import * as tts from "./tts.js";
-
-vi.mock("../agents/model-auth.js", () => ({
-  getApiKeyForModel: vi.fn(async () => ({
-    apiKey: "test-api-key",
-    source: "test",
-    mode: "api-key",
-  })),
-  requireApiKey: vi.fn((auth: { apiKey?: string }) => auth.apiKey ?? ""),
-}));
 
 const { _test, resolveTtsConfig, maybeApplyTtsToPayload, getTtsProvider } = tts;
 
@@ -22,16 +13,11 @@ const {
   OPENAI_TTS_VOICES,
   parseTtsDirectives,
   resolveModelOverridePolicy,
-  summarizeText,
   resolveOutputFormat,
   resolveEdgeOutputFormat,
 } = _test;
 
 describe("tts", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe("isValidVoiceId", () => {
     it("validates ElevenLabs voice ID length and character rules", () => {
       const cases = [
@@ -203,26 +189,6 @@ describe("tts", () => {
 
       expect(result.cleanedText).toBe(input);
       expect(result.overrides.provider).toBeUndefined();
-    });
-  });
-
-  describe("summarizeText", () => {
-    const baseCfg: RemoteClawConfig = {
-      agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
-      messages: { tts: {} },
-    };
-    const baseConfig = resolveTtsConfig(baseCfg);
-
-    it("throws because embedded model resolver was removed", async () => {
-      await expect(
-        summarizeText({
-          text: "A".repeat(2000),
-          targetLength: 1500,
-          cfg: baseCfg,
-          config: baseConfig,
-          timeoutMs: 30_000,
-        }),
-      ).rejects.toThrow("TTS summarisation unavailable: embedded model resolver removed (#74).");
     });
   });
 

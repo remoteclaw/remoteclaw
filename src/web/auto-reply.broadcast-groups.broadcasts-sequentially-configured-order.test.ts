@@ -22,8 +22,11 @@ describe("broadcast groups", () => {
     setLoadConfigMock({
       channels: { whatsapp: { allowFrom: ["*"] } },
       agents: {
-        defaults: { maxConcurrent: 10, workspace: "/tmp/test-workspace" },
-        list: [{ id: "alfred" }, { id: "baerbel" }],
+        defaults: { maxConcurrent: 10 },
+        list: [
+          { id: "alfred", workspace: "/tmp/test-workspace" },
+          { id: "baerbel", workspace: "/tmp/test-workspace" },
+        ],
       },
       broadcast: {
         strategy: "sequential",
@@ -42,8 +45,11 @@ describe("broadcast groups", () => {
     setLoadConfigMock({
       channels: { whatsapp: { allowFrom: ["*"] } },
       agents: {
-        defaults: { maxConcurrent: 10, workspace: "/tmp/test-workspace" },
-        list: [{ id: "alfred" }, { id: "baerbel" }],
+        defaults: { maxConcurrent: 10 },
+        list: [
+          { id: "alfred", workspace: "/tmp/test-workspace" },
+          { id: "baerbel", workspace: "/tmp/test-workspace" },
+        ],
       },
       broadcast: {
         strategy: "sequential",
@@ -122,8 +128,11 @@ describe("broadcast groups", () => {
     setLoadConfigMock({
       channels: { whatsapp: { allowFrom: ["*"] } },
       agents: {
-        defaults: { maxConcurrent: 10, workspace: "/tmp/test-workspace" },
-        list: [{ id: "alfred" }, { id: "baerbel" }],
+        defaults: { maxConcurrent: 10 },
+        list: [
+          { id: "alfred", workspace: "/tmp/test-workspace" },
+          { id: "baerbel", workspace: "/tmp/test-workspace" },
+        ],
       },
       broadcast: {
         strategy: "parallel",

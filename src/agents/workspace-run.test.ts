@@ -21,8 +21,10 @@ describe("resolveRunWorkspaceDir", () => {
     const researchWorkspace = path.join(process.cwd(), "tmp", "workspace-research");
     const cfg = {
       agents: {
-        defaults: { workspace: defaultWorkspace },
-        list: [{ id: "research", workspace: researchWorkspace }],
+        list: [
+          { id: "main", workspace: defaultWorkspace },
+          { id: "research", workspace: researchWorkspace },
+        ],
       },
     } satisfies RemoteClawConfig;
 
@@ -94,7 +96,6 @@ describe("resolveRunWorkspaceDir", () => {
     const researchWorkspace = path.join(process.cwd(), "tmp", "workspace-research-default");
     const cfg = {
       agents: {
-        defaults: { workspace: mainWorkspace },
         list: [
           { id: "main", workspace: mainWorkspace },
           { id: "research", workspace: researchWorkspace, default: true },

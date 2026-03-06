@@ -18,8 +18,8 @@ describe("broadcast groups", () => {
     setLoadConfigMock({
       channels: { whatsapp: { allowFrom: ["*"] } },
       agents: {
-        defaults: { maxConcurrent: 10, workspace: "/tmp/test-workspace" },
-        list: [{ id: "alfred" }],
+        defaults: { maxConcurrent: 10 },
+        list: [{ id: "alfred", workspace: "/tmp/test-workspace" }],
       },
       broadcast: {
         "+1000": ["alfred", "missing"],

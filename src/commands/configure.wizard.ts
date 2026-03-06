@@ -9,6 +9,7 @@ import { note } from "../terminal/note.js";
 import { resolveUserPath } from "../utils.js";
 import { createClackPrompter } from "../wizard/clack-prompter.js";
 import { WizardCancelledError } from "../wizard/prompts.js";
+import { collectWorkspaceDirs } from "./cleanup-utils.js";
 import { removeChannelConfigWizard } from "./configure.channels.js";
 import { maybeInstallDaemon } from "./configure.daemon.js";
 import { promptAuthConfig } from "./configure.gateway-auth.js";
@@ -215,7 +216,7 @@ export async function runConfigureWizard(
       didSetGatewayMode = true;
     }
     let workspaceDir =
-      nextConfig.agents?.defaults?.workspace ?? baseConfig.agents?.defaults?.workspace ?? "";
+      collectWorkspaceDirs(nextConfig)[0] ?? collectWorkspaceDirs(baseConfig)[0] ?? "";
     let gatewayPort = resolveGatewayPort(baseConfig);
     let gatewayToken: string | undefined =
       nextConfig.gateway?.auth?.token ??
@@ -245,14 +246,16 @@ export async function runConfigureWizard(
         return;
       }
       workspaceDir = resolveUserPath(rawInput);
+      const existingList = nextConfig.agents?.list ?? [];
+      const mainEntry = existingList.find((a) => a.id === "main");
+      const updatedList = mainEntry
+        ? existingList.map((a) => (a.id === "main" ? { ...a, workspace: workspaceDir } : a))
+        : [{ id: "main", workspace: workspaceDir }, ...existingList];
       nextConfig = {
         ...nextConfig,
         agents: {
           ...nextConfig.agents,
-          defaults: {
-            ...nextConfig.agents?.defaults,
-            workspace: workspaceDir,
-          },
+          list: updatedList,
         },
       };
       await ensureWorkspaceAndSessions(workspaceDir, runtime);

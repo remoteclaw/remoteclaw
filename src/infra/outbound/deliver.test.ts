@@ -55,7 +55,12 @@ vi.mock("./delivery-queue.js", () => ({
 const { deliverOutboundPayloads, normalizeOutboundPayloads } = await import("./deliver.js");
 
 const telegramChunkConfig: RemoteClawConfig = {
-  agents: { defaults: { workspace: "/tmp/test-workspace" } },
+  agents: {
+    list: [
+      { id: "main", workspace: "/tmp/test-workspace" },
+      { id: "work", workspace: "/tmp/test-workspace" },
+    ],
+  },
   channels: { telegram: { botToken: "tok-1", textChunkLimit: 2 } },
 };
 

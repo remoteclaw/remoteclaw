@@ -162,7 +162,7 @@ const DEFAULT_CONFIG_SNAPSHOT = {
   raw: "{}",
   parsed: {},
   valid: true,
-  config: { agents: { defaults: { workspace: "/tmp/test-workspace" } } },
+  config: { agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } },
   issues: [],
   legacyIssues: [],
 } as const;

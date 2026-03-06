@@ -42,13 +42,13 @@ describe("Ghost reminder bug (issue #13317)", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
-          workspace: params.tmpDir,
           heartbeat: {
             every: "5m",
             target: params.target ?? "telegram",
             prompt: "Check status",
           },
         },
+        list: [{ id: "main", workspace: params.tmpDir }],
       },
       channels: { telegram: { allowFrom: ["*"] } },
       session: { store: params.storePath },

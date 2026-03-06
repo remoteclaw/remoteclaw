@@ -9,7 +9,7 @@ import type { GetReplyOptions, ReplyPayload } from "../auto-reply/types.js";
 import type { ChannelPlugin, ChannelOutboundAdapter } from "../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
-import type { AgentBinding } from "../config/types.agents.js";
+import type { AgentBinding, AgentConfig } from "../config/types.agents.js";
 import type { HooksConfig } from "../config/types.hooks.js";
 import type { TailscaleWhoisIdentity } from "../infra/tailscale.js";
 import type { PluginRegistry } from "../plugins/registry.js";
@@ -384,13 +384,27 @@ vi.mock("../config/config.js", async () => {
           : {};
       const defaults = {
         model: { primary: "anthropic/claude-opus-4-6" },
-        workspace: path.join(os.tmpdir(), "remoteclaw-gateway-test"),
         ...fileDefaults,
         ...testState.agentConfig,
       };
+      const gatewayTestWorkspace = path.join(os.tmpdir(), "remoteclaw-gateway-test");
+      const agentsConfigList =
+        testState.agentsConfig && Array.isArray(testState.agentsConfig.list)
+          ? (testState.agentsConfig.list as Array<Record<string, unknown>>)
+          : [];
+      const fileList = Array.isArray(fileAgents.list)
+        ? (fileAgents.list as Array<Record<string, unknown>>)
+        : [];
+      const resolvedList = (
+        agentsConfigList.length > 0
+          ? agentsConfigList.map((a) => ({ workspace: gatewayTestWorkspace, ...a }))
+          : fileList.length > 0
+            ? fileList
+            : [{ id: "main", workspace: gatewayTestWorkspace }]
+      ) as AgentConfig[];
       const agents = testState.agentsConfig
-        ? { ...fileAgents, ...testState.agentsConfig, defaults }
-        : { ...fileAgents, defaults };
+        ? { ...fileAgents, ...testState.agentsConfig, defaults, list: resolvedList }
+        : { ...fileAgents, defaults, list: resolvedList };
 
       const fileBindings = Array.isArray(fileConfig.bindings)
         ? (fileConfig.bindings as AgentBinding[])

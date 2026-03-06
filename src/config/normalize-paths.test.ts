@@ -27,7 +27,6 @@ describe("normalizeConfigPaths", () => {
           },
         },
         agents: {
-          defaults: { workspace: "~/ws-default" },
           list: [
             {
               id: "main",
@@ -53,7 +52,6 @@ describe("normalizeConfigPaths", () => {
       expect(cfg.channels?.imessage?.accounts?.personal?.dbPath).toBe(
         path.join(home, "Library", "Messages", "chat.db"),
       );
-      expect(cfg.agents?.defaults?.workspace).toBe(path.join(home, "ws-default"));
       expect(cfg.agents?.list?.[0]?.workspace).toBe(path.join(home, "ws-agent"));
       expect(cfg.agents?.list?.[0]?.agentDir).toBe(
         path.join(home, ".remoteclaw", "agents", "main"),

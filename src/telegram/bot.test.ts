@@ -32,9 +32,9 @@ describe("createTelegramBot", () => {
     loadConfig.mockReturnValue({
       agents: {
         defaults: {
-          workspace: "/tmp/test-workspace",
           envelopeTimezone: "utc",
         },
+        list: [{ id: "main", workspace: "/tmp/test-workspace" }],
       },
       channels: {
         telegram: { dmPolicy: "open", allowFrom: ["*"] },
@@ -47,7 +47,7 @@ describe("createTelegramBot", () => {
 
   it("merges custom commands with native commands", () => {
     const config = {
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           customCommands: [
@@ -79,7 +79,7 @@ describe("createTelegramBot", () => {
   it("ignores custom commands that collide with native commands", () => {
     const errorSpy = vi.fn();
     const config = {
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           customCommands: [
@@ -120,7 +120,7 @@ describe("createTelegramBot", () => {
 
   it("registers custom commands when native commands are disabled", () => {
     const config = {
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: false },
       channels: {
         telegram: {
@@ -154,7 +154,7 @@ describe("createTelegramBot", () => {
     createTelegramBot({
       token: "tok",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             dmPolicy: "pairing",
@@ -231,7 +231,7 @@ describe("createTelegramBot", () => {
     createTelegramBot({
       token: "tok",
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
           telegram: {
             dmPolicy: "pairing",
@@ -272,9 +272,9 @@ describe("createTelegramBot", () => {
     loadConfig.mockReturnValue({
       agents: {
         defaults: {
-          workspace: "/tmp/test-workspace",
           envelopeTimezone: "utc",
         },
+        list: [{ id: "main", workspace: "/tmp/test-workspace" }],
       },
       channels: {
         telegram: {
@@ -471,7 +471,7 @@ describe("createTelegramBot", () => {
     onSpy.mockClear();
     replySpy.mockClear();
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { groups: { "*": { requireMention: true } } },
       },
@@ -504,7 +504,7 @@ describe("createTelegramBot", () => {
     onSpy.mockClear();
     replySpy.mockClear();
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "allowlist",
@@ -548,7 +548,7 @@ describe("createTelegramBot", () => {
     onSpy.mockClear();
     replySpy.mockClear();
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "allowlist",
@@ -591,7 +591,7 @@ describe("createTelegramBot", () => {
     onSpy.mockClear();
     replySpy.mockClear();
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "allowlist",
@@ -627,7 +627,7 @@ describe("createTelegramBot", () => {
     onSpy.mockClear();
     replySpy.mockClear();
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: {
           groupPolicy: "allowlist",
@@ -666,7 +666,7 @@ describe("createTelegramBot", () => {
     replySpy.mockResolvedValue({ text: "response" });
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -709,7 +709,7 @@ describe("createTelegramBot", () => {
     replySpy.mockResolvedValue({ text: "response" });
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -753,7 +753,7 @@ describe("createTelegramBot", () => {
     replySpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -801,7 +801,7 @@ describe("createTelegramBot", () => {
     enqueueSystemEventSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -839,7 +839,7 @@ describe("createTelegramBot", () => {
     wasSentByBot.mockReturnValue(true);
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "off" },
       },
@@ -871,7 +871,7 @@ describe("createTelegramBot", () => {
     wasSentByBot.mockReturnValue(true);
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open" },
       },
@@ -903,7 +903,7 @@ describe("createTelegramBot", () => {
     wasSentByBot.mockReturnValue(false);
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -939,7 +939,7 @@ describe("createTelegramBot", () => {
     wasSentByBot.mockReturnValue(false);
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "own" },
       },
@@ -971,7 +971,7 @@ describe("createTelegramBot", () => {
     wasSentByBot.mockReturnValue(true);
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "own" },
       },
@@ -1003,7 +1003,7 @@ describe("createTelegramBot", () => {
     wasSentByBot.mockReturnValue(true);
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -1034,7 +1034,7 @@ describe("createTelegramBot", () => {
     enqueueSystemEventSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -1065,7 +1065,7 @@ describe("createTelegramBot", () => {
     enqueueSystemEventSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -1104,7 +1104,7 @@ describe("createTelegramBot", () => {
     enqueueSystemEventSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -1144,7 +1144,7 @@ describe("createTelegramBot", () => {
     enqueueSystemEventSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },
@@ -1183,7 +1183,7 @@ describe("createTelegramBot", () => {
     enqueueSystemEventSpy.mockClear();
 
     loadConfig.mockReturnValue({
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
         telegram: { dmPolicy: "open", reactionNotifications: "all" },
       },

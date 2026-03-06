@@ -5,17 +5,9 @@ export const ONBOARDING_DEFAULT_DM_SCOPE: DmScope = "per-channel-peer";
 
 export function applyOnboardingLocalWorkspaceConfig(
   baseConfig: RemoteClawConfig,
-  workspaceDir: string,
 ): RemoteClawConfig {
   return {
     ...baseConfig,
-    agents: {
-      ...baseConfig.agents,
-      defaults: {
-        ...baseConfig.agents?.defaults,
-        workspace: workspaceDir,
-      },
-    },
     gateway: {
       ...baseConfig.gateway,
       mode: "local",

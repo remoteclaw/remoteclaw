@@ -45,7 +45,9 @@ describe("registerTelegramNativeCommands (plugin auth)", () => {
 
     registerTelegramNativeCommands({
       bot: bot as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
-      cfg: { agents: { defaults: { workspace: "/tmp/test-workspace" } } } as RemoteClawConfig,
+      cfg: {
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+      } as RemoteClawConfig,
       runtime: { log } as unknown as RuntimeEnv,
       accountId: "default",
       telegramCfg: {} as TelegramAccountConfig,
@@ -98,7 +100,9 @@ describe("registerTelegramNativeCommands (plugin auth)", () => {
       },
     } as const;
 
-    const cfg = { agents: { defaults: { workspace: "/tmp/test-workspace" } } } as RemoteClawConfig;
+    const cfg = {
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+    } as RemoteClawConfig;
     const telegramCfg = {} as TelegramAccountConfig;
     const resolveGroupPolicy = () =>
       ({

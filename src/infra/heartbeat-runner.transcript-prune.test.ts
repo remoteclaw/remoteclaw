@@ -62,7 +62,7 @@ describe("heartbeat transcript pruning", () => {
         replySpy.mockResolvedValueOnce(params.reply);
 
         const cfg = {
-          agents: { defaults: { workspace: tmpDir } },
+          agents: { list: [{ id: "main", workspace: tmpDir }] },
           session: { store: storePath },
           channels: { telegram: {} },
         } as unknown as RemoteClawConfig;

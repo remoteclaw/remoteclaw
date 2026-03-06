@@ -6,7 +6,7 @@ import { isCronSystemEvent } from "./heartbeat-runner.js";
 import { enqueueSystemEvent, peekSystemEvents, resetSystemEventsForTest } from "./system-events.js";
 
 const cfg = {
-  agents: { defaults: { workspace: "/tmp/test-workspace" } },
+  agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
 } as unknown as RemoteClawConfig;
 const mainKey = resolveMainSessionKey(cfg);
 

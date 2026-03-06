@@ -26,7 +26,6 @@ export const AgentDefaultsSchema = z
           .strict(),
       )
       .optional(),
-    workspace: z.string().optional(),
     repoRoot: z.string().optional(),
     skipBootstrap: z.boolean().optional(),
     bootstrapMaxChars: z.number().int().positive().optional(),

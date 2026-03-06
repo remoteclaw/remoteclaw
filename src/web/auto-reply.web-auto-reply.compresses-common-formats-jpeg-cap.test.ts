@@ -75,7 +75,10 @@ describe("web auto-reply", () => {
 
   async function withMediaCap<T>(mediaMaxMb: number, run: () => Promise<T>): Promise<T> {
     setLoadConfigMock(() => ({
-      agents: { defaults: { mediaMaxMb, workspace: "/tmp/test-workspace" } },
+      agents: {
+        defaults: { mediaMaxMb },
+        list: [{ id: "main", workspace: "/tmp/test-workspace" }],
+      },
     }));
     try {
       return await run();

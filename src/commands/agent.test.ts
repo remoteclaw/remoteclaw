@@ -128,17 +128,18 @@ function mockConfig(
   storePath: string,
   agentOverrides?: Partial<NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>>,
   telegramOverrides?: Partial<NonNullable<NonNullable<RemoteClawConfig["channels"]>["telegram"]>>,
-  agentsList?: Array<{ id: string; default?: boolean }>,
+  agentsList?: Array<{ id: string; default?: boolean; workspace?: string }>,
 ) {
   configSpy.mockReturnValue({
     agents: {
       defaults: {
         model: { primary: "anthropic/claude-opus-4-5" },
         models: { "anthropic/claude-opus-4-5": {} },
-        workspace: path.join(home, "remoteclaw"),
         ...agentOverrides,
       },
-      list: agentsList,
+      list: agentsList
+        ? agentsList.map((a) => ({ ...a, workspace: a.workspace ?? path.join(home, "remoteclaw") }))
+        : [{ id: "main", workspace: path.join(home, "remoteclaw") }],
     },
     session: { store: storePath, mainKey: "main" },
     channels: {

@@ -1,5 +1,4 @@
 import { formatCliCommand } from "../cli/command-format.js";
-import { readConfigFileSnapshot } from "../config/config.js";
 import { assertSupportedRuntime } from "../infra/runtime-guard.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
@@ -27,9 +26,7 @@ export async function onboardCommand(opts: OnboardOptions, runtime: RuntimeEnv =
   }
 
   if (normalizedOpts.reset) {
-    const snapshot = await readConfigFileSnapshot();
-    const baseConfig = snapshot.valid ? snapshot.config : {};
-    const workspaceDefault = normalizedOpts.workspace ?? baseConfig.agents?.defaults?.workspace;
+    const workspaceDefault = normalizedOpts.workspace;
     if (workspaceDefault) {
       await handleReset("full", resolveUserPath(workspaceDefault), runtime);
     } else {

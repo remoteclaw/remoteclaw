@@ -105,7 +105,7 @@ describe("gateway tool", () => {
     const sessionKey = "agent:main:whatsapp:dm:+15555550123";
     const tool = requireGatewayTool(sessionKey);
 
-    const raw = '{\n  agents: { defaults: { workspace: "~/remoteclaw" } }\n}\n';
+    const raw = '{\n  agents: { list: [{ id: "main", workspace: "~/remoteclaw" }] }\n}\n';
     await tool.execute("call2", {
       action: "config.apply",
       raw,

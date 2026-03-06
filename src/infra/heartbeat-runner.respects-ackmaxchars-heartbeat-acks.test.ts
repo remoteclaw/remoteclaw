@@ -22,9 +22,9 @@ describe("runHeartbeatOnce heartbeat_report handling", () => {
     return {
       agents: {
         defaults: {
-          workspace: params.tmpDir,
           heartbeat: { prompt: "Check status", ...params.heartbeat } as never,
         },
+        list: [{ id: "main", workspace: params.tmpDir }],
       },
       channels: params.channels as never,
       ...(params.messages ? { messages: params.messages as never } : {}),

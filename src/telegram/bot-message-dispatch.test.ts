@@ -164,7 +164,15 @@ describe("dispatchTelegramMessage draft streaming", () => {
     await dispatchTelegramMessage({
       context: params.context,
       bot,
-      cfg: { agents: { defaults: { workspace: "/tmp/test-workspace" } } },
+      cfg: {
+        agents: {
+          list: [
+            { id: "main", workspace: "/tmp/test-workspace" },
+            { id: "default", workspace: "/tmp/test-workspace" },
+            { id: "work", workspace: "/tmp/test-workspace" },
+          ],
+        },
+      },
       runtime: createRuntime(),
       replyToMode: "first",
       streamMode: params.streamMode ?? "partial",

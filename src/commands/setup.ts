@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import JSON5 from "json5";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import { type RemoteClawConfig, createConfigIO, writeConfigFile } from "../config/config.js";
-import { formatConfigPath, logConfigUpdated } from "../config/logging.js";
+import { formatConfigPath } from "../config/logging.js";
 import { resolveSessionTranscriptsDir } from "../config/sessions.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
@@ -37,41 +37,18 @@ export async function setupCommand(
   const configPath = io.configPath;
   const existingRaw = await readConfigFileRaw(configPath);
   const cfg = existingRaw.parsed;
-  const defaults = cfg.agents?.defaults ?? {};
 
-  const workspace = desiredWorkspace ?? defaults.workspace;
-  if (!workspace) {
-    runtime.error(
-      "No workspace path provided. Pass --workspace or set agents.defaults.workspace in remoteclaw.json.",
-    );
-    runtime.exit(1);
-    return;
-  }
-
-  const next: RemoteClawConfig = {
-    ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...defaults,
-        workspace,
-      },
-    },
-  };
-
-  if (!existingRaw.exists || defaults.workspace !== workspace) {
-    await writeConfigFile(next);
-    if (!existingRaw.exists) {
-      runtime.log(`Wrote ${formatConfigPath(configPath)}`);
-    } else {
-      logConfigUpdated(runtime, { path: configPath, suffix: "(set agents.defaults.workspace)" });
-    }
+  if (!existingRaw.exists) {
+    await writeConfigFile(cfg);
+    runtime.log(`Wrote ${formatConfigPath(configPath)}`);
   } else {
     runtime.log(`Config OK: ${formatConfigPath(configPath)}`);
   }
 
-  const ws = await ensureAgentWorkspace(workspace);
-  runtime.log(`Workspace OK: ${shortenHomePath(ws)}`);
+  if (desiredWorkspace) {
+    const ws = await ensureAgentWorkspace(desiredWorkspace);
+    runtime.log(`Workspace OK: ${shortenHomePath(ws)}`);
+  }
 
   const sessionsDir = resolveSessionTranscriptsDir();
   await fs.mkdir(sessionsDir, { recursive: true });

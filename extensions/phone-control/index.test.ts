@@ -1,20 +1,20 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it, vi } from "vitest";
 import type {
-  RemoteClawPluginApi,
-  RemoteClawPluginCommandDefinition,
+  OpenClawPluginApi,
+  OpenClawPluginCommandDefinition,
   PluginCommandContext,
-} from "../../src/plugins/types.js";
+} from "openclaw/plugin-sdk/phone-control";
+import { describe, expect, it, vi } from "vitest";
 import registerPhoneControl from "./index.js";
 
 function createApi(params: {
   stateDir: string;
   getConfig: () => Record<string, unknown>;
   writeConfig: (next: Record<string, unknown>) => Promise<void>;
-  registerCommand: (command: RemoteClawPluginCommandDefinition) => void;
-}): RemoteClawPluginApi {
+  registerCommand: (command: OpenClawPluginCommandDefinition) => void;
+}): OpenClawPluginApi {
   return {
     id: "phone-control",
     name: "phone-control",
@@ -29,7 +29,7 @@ function createApi(params: {
         loadConfig: () => params.getConfig(),
         writeConfigFile: (next: Record<string, unknown>) => params.writeConfig(next),
       },
-    } as RemoteClawPluginApi["runtime"],
+    } as OpenClawPluginApi["runtime"],
     logger: { info() {}, warn() {}, error() {} },
     registerTool() {},
     registerHook() {},
@@ -38,8 +38,8 @@ function createApi(params: {
     registerGatewayMethod() {},
     registerCli() {},
     registerService() {},
-    registerSttProvider() {},
-    registerTtsProvider() {},
+    registerProvider() {},
+    registerContextEngine() {},
     registerCommand: params.registerCommand,
     resolvePath(input: string) {
       return input;
@@ -60,7 +60,7 @@ function createCommandContext(args: string): PluginCommandContext {
 
 describe("phone-control plugin", () => {
   it("arms sms.send as part of the writes group", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-phone-control-test-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-phone-control-test-"));
     try {
       let config: Record<string, unknown> = {
         gateway: {
@@ -74,7 +74,7 @@ describe("phone-control plugin", () => {
         config = next;
       });
 
-      let command: RemoteClawPluginCommandDefinition | undefined;
+      let command: OpenClawPluginCommandDefinition | undefined;
       registerPhoneControl(
         createApi({
           stateDir,

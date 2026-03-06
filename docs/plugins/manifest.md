@@ -35,7 +35,7 @@ Required keys:
 
 Optional keys:
 
-- `kind` (string): plugin kind (example: `"memory"`).
+- `kind` (string): plugin kind (examples: `"memory"`, `"context-engine"`).
 - `channels` (array): channel ids registered by this plugin (example: `["matrix"]`).
 - `name` (string): display name for the plugin.
 - `description` (string): short plugin summary.

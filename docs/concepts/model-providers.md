@@ -31,9 +31,9 @@ For model failover rules, see [Model failover](/concepts/model-failover).
 - Non-rate-limit failures fail immediately; no key rotation is attempted.
 - When all candidate keys fail, the final error is returned from the last attempt.
 
-## Built-in providers (pi-ai catalog)
+## Built-in providers
 
-RemoteClaw ships with the pi‑ai catalog. These providers require **no**
+RemoteClaw ships with built-in provider definitions. These providers require **no**
 `models.providers` config; just set auth + pick a model.
 
 ### OpenAI

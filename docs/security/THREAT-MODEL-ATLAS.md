@@ -91,8 +91,8 @@ Nothing is explicitly out of scope for this threat model.
 ┌─────────────────────────────────────────────────────────────────┐
 │                 TRUST BOUNDARY 3: Tool Execution                 │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │                  EXECUTION SANDBOX                        │   │
-│  │  • Docker sandbox OR Host (exec-approvals)                │   │
+│  │                  TOOL EXECUTION                            │   │
+│  │  • Host execution with exec-approvals                     │   │
 │  │  • Node remote execution                                  │   │
 │  │  • SSRF protection (DNS pinning + IP blocking)            │   │
 │  └──────────────────────────────────────────────────────────┘   │
@@ -265,8 +265,8 @@ Nothing is explicitly out of scope for this threat model.
 | **Attack Vector**       | Social engineering user to drop malicious skill files into workspace |
 | **Affected Components** | Skill loading, agent execution                                       |
 | **Current Mitigations** | File permissions                                                     |
-| **Residual Risk**       | Critical - No sandboxing, limited review                             |
-| **Recommendations**     | Skill sandboxing, community review                                   |
+| **Residual Risk**       | Critical - Skills are prompt text with no integrity checks           |
+| **Recommendations**     | Skill integrity verification, community review                       |
 
 #### T-PERSIST-002: Agent Configuration Tampering
 
@@ -376,9 +376,9 @@ Nothing is explicitly out of scope for this threat model.
 | **Description**         | Attacker executes arbitrary commands on user system |
 | **Attack Vector**       | Prompt injection combined with exec approval bypass |
 | **Affected Components** | Bash tool, command execution                        |
-| **Current Mitigations** | Exec approvals, Docker sandbox option               |
-| **Residual Risk**       | Critical - Host execution without sandbox           |
-| **Recommendations**     | Default to sandbox, improve approval UX             |
+| **Current Mitigations** | Exec approvals, command allowlist                   |
+| **Residual Risk**       | Critical - Host execution relies on approval UX     |
+| **Recommendations**     | Strengthen exec-approval defaults, improve UX       |
 
 #### T-IMPACT-002: Resource Exhaustion (DoS)
 
@@ -456,7 +456,7 @@ T-EXEC-002 → T-EXFIL-001 → External exfiltration
 
 | ID    | Recommendation                              | Addresses                  |
 | ----- | ------------------------------------------- | -------------------------- |
-| R-001 | Implement skill sandboxing                  | T-PERSIST-001, T-EXFIL-003 |
+| R-001 | Implement skill review and integrity checks | T-PERSIST-001, T-EXFIL-003 |
 | R-002 | Add output validation for sensitive actions | T-EXEC-001, T-EXEC-002     |
 
 ### 5.2 Short-term (P1)
@@ -501,7 +501,7 @@ T-EXEC-002 → T-EXFIL-001 → External exfiltration
 | `src/web/inbound/access-control.ts` | Channel access control      | **Critical** |
 | `src/infra/net/ssrf.ts`             | SSRF protection             | **Critical** |
 | `src/security/external-content.ts`  | Prompt injection mitigation | **Critical** |
-| `src/agents/sandbox/tool-policy.ts` | Tool policy enforcement     | **Critical** |
+| `src/agents/tool-policy.ts`         | Tool policy enforcement     | **Critical** |
 | `src/routing/resolve-route.ts`      | Session isolation           | **Medium**   |
 
 ### 6.3 Glossary

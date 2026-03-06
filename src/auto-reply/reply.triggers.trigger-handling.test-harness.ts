@@ -228,12 +228,12 @@ export function makeCfg(home: string): RemoteClawConfig {
     agents: {
       defaults: {
         model: { primary: "anthropic/claude-opus-4-5" },
-        workspace: join(home, "remoteclaw"),
         // Test harness: avoid 1s coalescer idle sleeps that dominate trigger suites.
         blockStreamingCoalesce: { idleMs: 1 },
         // Trigger tests assert routing/authorization behavior, not delivery pacing.
         humanDelay: { mode: "off" },
       },
+      list: [{ id: "main", workspace: join(home, "remoteclaw") }],
     },
     channels: {
       whatsapp: {

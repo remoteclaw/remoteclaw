@@ -38,7 +38,7 @@ describe("typing controller idle", () => {
 
     const mockConfig: RemoteClawConfig = {
       channels: { whatsapp: { allowFrom: ["*"] } },
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
     };
 
     setLoadConfigMock(mockConfig);

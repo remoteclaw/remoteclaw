@@ -1,4 +1,5 @@
 import { formatCliCommand } from "../cli/command-format.js";
+import { collectWorkspaceDirs } from "../commands/cleanup-utils.js";
 import { detectOpenClawInstallation, importCommand } from "../commands/import.js";
 import type {
   AgentRuntime,
@@ -378,7 +379,8 @@ export async function runOnboardingWizard(
     });
 
     if (action === "reset") {
-      const workspaceDefault = baseConfig.agents?.defaults?.workspace;
+      const workspaceDirs = collectWorkspaceDirs(baseConfig);
+      const hasWorkspaces = workspaceDirs.length > 0;
       const resetScope = (await prompter.select({
         message: "Reset scope",
         options: [
@@ -387,7 +389,7 @@ export async function runOnboardingWizard(
             value: "config+creds+sessions",
             label: "Config + creds + sessions",
           },
-          ...(workspaceDefault
+          ...(hasWorkspaces
             ? [
                 {
                   value: "full" as const,
@@ -397,8 +399,8 @@ export async function runOnboardingWizard(
             : []),
         ],
       })) as ResetScope;
-      if (workspaceDefault) {
-        await onboardHelpers.handleReset(resetScope, resolveUserPath(workspaceDefault), runtime);
+      if (hasWorkspaces) {
+        await onboardHelpers.handleReset(resetScope, workspaceDirs[0], runtime);
       } else {
         await onboardHelpers.handleReset(resetScope, "", runtime);
       }
@@ -562,10 +564,10 @@ export async function runOnboardingWizard(
     return;
   }
 
-  const existingWorkspace = baseConfig.agents?.defaults?.workspace;
+  const existingWorkspaceDirs = collectWorkspaceDirs(baseConfig);
   const workspaceInput =
     opts.workspace ??
-    existingWorkspace ??
+    existingWorkspaceDirs[0] ??
     (await prompter.text({
       message: "Workspace directory",
       initialValue: "~/remoteclaw-workspace",
@@ -580,7 +582,7 @@ export async function runOnboardingWizard(
   const workspaceDir = resolveUserPath(trimmedWorkspace);
 
   const { applyOnboardingLocalWorkspaceConfig } = await import("../commands/onboard-config.js");
-  let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
+  let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig);
 
   const { upsertAuthProfile } = await import("../agents/auth-profiles.js");
 

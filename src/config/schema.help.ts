@@ -603,8 +603,6 @@ export const FIELD_HELP: Record<string, string> = {
     "Optional per-provider overrides for billing backoff (hours).",
   "auth.cooldowns.billingMaxHours": "Cap (hours) for billing backoff (default: 24).",
   "auth.cooldowns.failureWindowHours": "Failure window (hours) for backoff counters (default: 24).",
-  "agents.defaults.workspace":
-    "Default workspace path exposed to agent runtime tools for filesystem context and repo-aware behavior. Set this explicitly when running from wrappers so path resolution stays deterministic.",
   "agents.defaults.boot":
     "Boot prompt configuration for gateway startup runs. Set `prompt` for an inline prompt or `file` for a path relative to the workspace directory. If neither is set, boot is skipped.",
   "agents.defaults.boot.prompt":

@@ -40,9 +40,6 @@ export function guardCancel<T>(value: T | symbol, runtime: RuntimeEnv): T {
 export function summarizeExistingConfig(config: RemoteClawConfig): string {
   const rows: string[] = [];
   const defaults = config.agents?.defaults;
-  if (defaults?.workspace) {
-    rows.push(shortenHomeInString(`workspace: ${defaults.workspace}`));
-  }
   if (defaults?.model) {
     const model = resolveAgentModelPrimaryValue(defaults.model);
     if (model) {

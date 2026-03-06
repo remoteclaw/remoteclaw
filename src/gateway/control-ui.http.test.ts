@@ -135,7 +135,7 @@ describe("handleControlUiHttpRequest", () => {
           {
             root: { kind: "resolved", path: tmp },
             config: {
-              agents: { defaults: { workspace: tmp } },
+              agents: { list: [{ id: "main", workspace: tmp }] },
               ui: { assistant: { name: "</script><script>alert(1)//", avatar: "evil.png" } },
             },
           },
@@ -156,7 +156,7 @@ describe("handleControlUiHttpRequest", () => {
           {
             root: { kind: "resolved", path: tmp },
             config: {
-              agents: { defaults: { workspace: tmp } },
+              agents: { list: [{ id: "main", workspace: tmp }] },
               ui: { assistant: { name: "</script><script>alert(1)//", avatar: "</script>.png" } },
             },
           },
@@ -185,7 +185,7 @@ describe("handleControlUiHttpRequest", () => {
             basePath: "/remoteclaw",
             root: { kind: "resolved", path: tmp },
             config: {
-              agents: { defaults: { workspace: tmp } },
+              agents: { list: [{ id: "main", workspace: tmp }] },
               ui: { assistant: { name: "Ops", avatar: "ops.png" } },
             },
           },

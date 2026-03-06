@@ -68,7 +68,7 @@ describe("registerTelegramNativeCommands", () => {
 
   it("truncates Telegram command registration to 100 commands", () => {
     const cfg: RemoteClawConfig = {
-      agents: { defaults: { workspace: "/tmp/test-workspace" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       commands: { native: false },
     };
     const customCommands = Array.from({ length: 120 }, (_, index) => ({
@@ -108,7 +108,7 @@ describe("registerTelegramNativeCommands", () => {
     const command = vi.fn();
 
     registerTelegramNativeCommands({
-      ...buildParams({ agents: { defaults: { workspace: "/tmp/test-workspace" } } }),
+      ...buildParams({ agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } }),
       bot: {
         api: {
           setMyCommands,
@@ -136,7 +136,7 @@ describe("registerTelegramNativeCommands", () => {
     ] as never);
 
     registerTelegramNativeCommands({
-      ...buildParams({ agents: { defaults: { workspace: "/tmp/test-workspace" } } }),
+      ...buildParams({ agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } }),
       bot: {
         api: {
           setMyCommands,
@@ -172,8 +172,10 @@ describe("registerTelegramNativeCommands", () => {
     const sendMessage = vi.fn().mockResolvedValue(undefined);
     const cfg: RemoteClawConfig = {
       agents: {
-        defaults: { workspace: "/tmp/test-workspace" },
-        list: [{ id: "main", default: true }, { id: "work" }],
+        list: [
+          { id: "main", default: true, workspace: "/tmp/test-workspace" },
+          { id: "work", workspace: "/tmp/test-workspace" },
+        ],
       },
       bindings: [{ agentId: "work", match: { channel: "telegram", accountId: "default" } }],
     };

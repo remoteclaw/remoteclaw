@@ -12,9 +12,7 @@ const DEFAULT_CONFIG = {
     },
   },
   agents: {
-    defaults: {
-      workspace: "/tmp/test-workspace",
-    },
+    list: [{ id: "main", workspace: "/tmp/test-workspace" }],
   },
   messages: {
     messagePrefix: undefined,

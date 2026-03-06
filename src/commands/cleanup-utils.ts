@@ -19,10 +19,6 @@ export type CleanupResolvedPaths = {
 
 export function collectWorkspaceDirs(cfg: RemoteClawConfig | undefined): string[] {
   const dirs = new Set<string>();
-  const defaults = cfg?.agents?.defaults;
-  if (typeof defaults?.workspace === "string" && defaults.workspace.trim()) {
-    dirs.add(resolveUserPath(defaults.workspace));
-  }
   const list = Array.isArray(cfg?.agents?.list) ? cfg?.agents?.list : [];
   for (const agent of list) {
     const workspace = (agent as { workspace?: unknown }).workspace;

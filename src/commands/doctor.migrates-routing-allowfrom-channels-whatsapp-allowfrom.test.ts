@@ -23,12 +23,12 @@ describe("doctor command", () => {
   it("does not add a new gateway auth token while fixing legacy issues on invalid config", async () => {
     mockDoctorConfigSnapshot({
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         routing: { allowFrom: ["+15555550123"] },
         gateway: { remote: { token: "legacy-remote-token" } },
       },
       parsed: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         routing: { allowFrom: ["+15555550123"] },
         gateway: { remote: { token: "legacy-remote-token" } },
       },
@@ -41,7 +41,7 @@ describe("doctor command", () => {
 
     migrateLegacyConfig.mockReturnValue({
       config: {
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: { whatsapp: { allowFrom: ["+15555550123"] } },
         gateway: { remote: { token: "legacy-remote-token" } },
       },

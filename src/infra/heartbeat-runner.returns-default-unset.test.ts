@@ -169,13 +169,14 @@ describe("resolveHeartbeatPrompt", () => {
   it("returns empty when unconfigured, trimmed prompt when set", async () => {
     expect(
       await resolveHeartbeatPrompt({
-        agents: { defaults: { workspace: "/tmp/test-workspace" } },
+        agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       } as RemoteClawConfig),
     ).toBe("");
     expect(
       await resolveHeartbeatPrompt({
         agents: {
-          defaults: { workspace: "/tmp/test-workspace", heartbeat: { prompt: "  ping  " } },
+          defaults: { heartbeat: { prompt: "  ping  " } },
+          list: [{ id: "main", workspace: "/tmp/test-workspace" }],
         },
       } as RemoteClawConfig),
     ).toBe("ping");
@@ -188,9 +189,9 @@ describe("resolveHeartbeatPrompt", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
-          workspace: dir,
           heartbeat: { file: "heartbeat-tasks.md" },
         },
+        list: [{ id: "main", workspace: dir }],
       },
     };
     expect(await resolveHeartbeatPrompt(cfg)).toBe("- Check status");
@@ -203,9 +204,9 @@ describe("resolveHeartbeatPrompt", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
-          workspace: dir,
           heartbeat: { prompt: "Config prompt", file: "hb.md" },
         },
+        list: [{ id: "main", workspace: dir }],
       },
     };
     expect(await resolveHeartbeatPrompt(cfg)).toBe("Config prompt");
@@ -530,9 +531,9 @@ describe("runHeartbeatOnce", () => {
       const cfg: RemoteClawConfig = {
         agents: {
           defaults: {
-            workspace: tmpDir,
             heartbeat: { every: "5m", target: "whatsapp", prompt: "Check health" },
           },
+          list: [{ id: "main", workspace: tmpDir }],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storePath },
@@ -579,9 +580,9 @@ describe("runHeartbeatOnce", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
-          workspace: tmpDir,
           heartbeat: { every: "5m", target: "whatsapp" },
         },
+        list: [{ id: "main", workspace: tmpDir }],
       },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },
@@ -798,13 +799,13 @@ describe("runHeartbeatOnce", () => {
         const cfg: RemoteClawConfig = {
           agents: {
             defaults: {
-              workspace: tmpDir,
               heartbeat: {
                 every: "5m",
                 target: "last",
                 prompt: "Check health",
               },
             },
+            list: [{ id: "main", workspace: tmpDir }],
           },
           channels: { whatsapp: { allowFrom: ["*"] } },
           session: { store: storePath },
@@ -879,9 +880,9 @@ describe("runHeartbeatOnce", () => {
       const cfg: RemoteClawConfig = {
         agents: {
           defaults: {
-            workspace: tmpDir,
             heartbeat: { every: "5m", target: "whatsapp", prompt: "Check health" },
           },
+          list: [{ id: "main", workspace: tmpDir }],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storePath },
@@ -947,7 +948,6 @@ describe("runHeartbeatOnce", () => {
         const cfg: RemoteClawConfig = {
           agents: {
             defaults: {
-              workspace: tmpDir,
               heartbeat: {
                 every: "5m",
                 target: "whatsapp",
@@ -955,6 +955,7 @@ describe("runHeartbeatOnce", () => {
                 includeReasoning: true,
               },
             },
+            list: [{ id: "main", workspace: tmpDir }],
           },
           channels: { whatsapp: { allowFrom: ["*"] } },
           session: { store: storePath },
@@ -1008,10 +1009,9 @@ describe("runHeartbeatOnce", () => {
       const cfg: RemoteClawConfig = {
         agents: {
           defaults: {
-            workspace: tmpDir,
             heartbeat: { every: "5m", target: "whatsapp", prompt: "Check health" },
           },
-          list: [{ id: "work", default: true }],
+          list: [{ id: "work", default: true, workspace: tmpDir }],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storeTemplate },
@@ -1068,13 +1068,13 @@ describe("runHeartbeatOnce", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
-          workspace: tmpDir,
           heartbeat: {
             every: "5m",
             target: "whatsapp",
             file: "heartbeat-tasks.md",
           },
         },
+        list: [{ id: "main", workspace: tmpDir }],
       },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },
@@ -1118,9 +1118,9 @@ describe("runHeartbeatOnce", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
-          workspace: tmpDir,
           heartbeat: { every: "5m", target: "whatsapp", file: "nonexistent.md" },
         },
+        list: [{ id: "main", workspace: tmpDir }],
       },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },
@@ -1153,9 +1153,9 @@ describe("runHeartbeatOnce", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
-          workspace: tmpDir,
           heartbeat: { every: "5m", target: "none" },
         },
+        list: [{ id: "main", workspace: tmpDir }],
       },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },
@@ -1206,9 +1206,9 @@ describe("runHeartbeatOnce", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: {
-          workspace: tmpDir,
           heartbeat: { every: "5m", target: "none" },
         },
+        list: [{ id: "main", workspace: tmpDir }],
       },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },

@@ -50,7 +50,7 @@ describe("gateway e2e", () => {
 
       // Provide a workspace config so resolveAgentWorkspaceDir doesn't throw
       const tempWorkspace = path.join(tempHome, "workspace");
-      await writeConfigFile({ agents: { defaults: { workspace: tempWorkspace } } });
+      await writeConfigFile({ agents: { list: [{ id: "main", workspace: tempWorkspace }] } });
 
       const wizardToken = `wiz-${randomUUID()}`;
       const port = await getFreeGatewayPort();
@@ -63,7 +63,7 @@ describe("gateway e2e", () => {
           await prompter.note("write token");
           const token = await prompter.text({ message: "token" });
           await writeConfigFile({
-            agents: { defaults: { workspace: tempWorkspace } },
+            agents: { list: [{ id: "main", workspace: tempWorkspace }] },
             gateway: { auth: { mode: "token", token: String(token) } },
           });
           await prompter.outro("ok");

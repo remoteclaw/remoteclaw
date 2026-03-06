@@ -16,7 +16,6 @@ describe("runHeartbeatOnce", () => {
         const cfg: RemoteClawConfig = {
           agents: {
             defaults: {
-              workspace: tmpDir,
               heartbeat: {
                 every: "5m",
                 target: "slack",
@@ -24,6 +23,7 @@ describe("runHeartbeatOnce", () => {
                 prompt: "Check status",
               },
             },
+            list: [{ id: "main", workspace: tmpDir }],
           },
           session: { store: storePath },
         };

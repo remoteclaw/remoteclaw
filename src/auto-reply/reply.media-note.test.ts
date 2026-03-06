@@ -35,8 +35,8 @@ function makeCfg(home: string) {
     agents: {
       defaults: {
         model: "anthropic/claude-opus-4-5",
-        workspace: path.join(home, "remoteclaw"),
       },
+      list: [{ id: "main", workspace: path.join(home, "remoteclaw") }],
     },
     channels: { whatsapp: { allowFrom: ["*"] } },
     session: { store: path.join(home, "sessions.json") },

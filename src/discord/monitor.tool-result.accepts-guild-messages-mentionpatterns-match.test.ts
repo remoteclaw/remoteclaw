@@ -71,7 +71,7 @@ beforeEach(() => {
   upsertPairingRequestMock.mockClear().mockResolvedValue({ code: "PAIRCODE", created: true });
   loadConfigMock
     .mockClear()
-    .mockReturnValue({ agents: { defaults: { workspace: "/tmp/test-workspace" } } });
+    .mockReturnValue({ agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } });
   __resetDiscordChannelInfoCacheForTest();
 });
 
@@ -137,8 +137,8 @@ function createDefaultThreadConfig(): LoadedConfig {
     agents: {
       defaults: {
         model: "anthropic/claude-opus-4-5",
-        workspace: "/tmp/remoteclaw",
       },
+      list: [{ id: "main", workspace: "/tmp/remoteclaw" }],
     },
     session: { store: "/tmp/remoteclaw-sessions.json" },
     messages: { responsePrefix: "PFX" },
@@ -161,8 +161,8 @@ function createMentionRequiredGuildConfig(
     agents: {
       defaults: {
         model: "anthropic/claude-opus-4-5",
-        workspace: "/tmp/remoteclaw",
       },
+      list: [{ id: "main", workspace: "/tmp/remoteclaw" }],
     },
     session: { store: "/tmp/remoteclaw-sessions.json" },
     channels: {
@@ -315,8 +315,8 @@ describe("discord tool result dispatch", () => {
           defaults: {
             model: "anthropic/claude-opus-4-5",
             humanDelay: { mode: "off" },
-            workspace: "/tmp/remoteclaw",
           },
+          list: [{ id: "main", workspace: "/tmp/remoteclaw" }],
         },
         session: { store: "/tmp/remoteclaw-sessions.json" },
         channels: {
@@ -463,7 +463,7 @@ describe("discord tool result dispatch", () => {
     }>();
 
     const cfg = {
-      agents: { defaults: { workspace: "/tmp/remoteclaw" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/remoteclaw" }] },
       session: { store: "/tmp/remoteclaw-sessions.json" },
       channels: {
         discord: {
@@ -510,8 +510,13 @@ describe("discord tool result dispatch", () => {
       ParentSessionKey?: string;
     }>();
 
+    const baseCfg = createDefaultThreadConfig();
     const cfg = {
-      ...createDefaultThreadConfig(),
+      ...baseCfg,
+      agents: {
+        ...baseCfg.agents,
+        list: [...(baseCfg.agents?.list ?? []), { id: "support", workspace: "/tmp/remoteclaw" }],
+      },
       bindings: [{ agentId: "support", match: { channel: "discord", guildId: "g1" } }],
     } as LoadedConfig;
     loadConfigMock.mockReturnValue(cfg);

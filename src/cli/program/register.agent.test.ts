@@ -167,9 +167,6 @@ describe("registerAgentCommands", () => {
       "main",
       "--workspace",
       "/tmp/ws",
-      "--identity-file",
-      "/tmp/ws/IDENTITY.md",
-      "--from-identity",
       "--name",
       "RemoteClaw",
       "--theme",
@@ -184,8 +181,6 @@ describe("registerAgentCommands", () => {
       {
         agent: "main",
         workspace: "/tmp/ws",
-        identityFile: "/tmp/ws/IDENTITY.md",
-        fromIdentity: true,
         name: "RemoteClaw",
         theme: "ops",
         emoji: ":lobster:",

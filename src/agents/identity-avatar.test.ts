@@ -89,17 +89,10 @@ describe("resolveAgentAvatar", () => {
     }
   });
 
-  it("falls back to IDENTITY.md when config has no avatar", async () => {
+  it("returns none when config has no avatar", async () => {
     const root = await createTempAvatarRoot();
     const workspace = path.join(root, "work");
-    const avatarPath = path.join(workspace, "avatars", "fallback.png");
-    await writeFile(avatarPath);
     await fs.mkdir(workspace, { recursive: true });
-    await fs.writeFile(
-      path.join(workspace, "IDENTITY.md"),
-      "- Avatar: avatars/fallback.png\n",
-      "utf-8",
-    );
 
     const cfg: RemoteClawConfig = {
       agents: {
@@ -107,7 +100,11 @@ describe("resolveAgentAvatar", () => {
       },
     };
 
-    await expectLocalAvatarPath(cfg, workspace, path.join("avatars", "fallback.png"));
+    const resolved = resolveAgentAvatar(cfg, "main");
+    expect(resolved.kind).toBe("none");
+    if (resolved.kind === "none") {
+      expect(resolved.reason).toBe("missing");
+    }
   });
 
   it("returns missing for non-existent local avatar files", async () => {

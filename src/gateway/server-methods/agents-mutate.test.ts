@@ -240,21 +240,34 @@ describe("agents.create", () => {
     );
   });
 
-  it("always writes Name to IDENTITY.md even without emoji/avatar", async () => {
+  it("writes identity to config when creating agent with name only", async () => {
+    mocks.applyAgentConfig.mockImplementation((_cfg, opts) => ({
+      agents: {
+        list: [{ id: "plain-agent", identity: (opts as { identity?: unknown }).identity }],
+      },
+    }));
+
     const { promise } = makeCall("agents.create", {
       name: "Plain Agent",
       workspace: "/tmp/ws",
     });
     await promise;
 
-    expect(mocks.fsAppendFile).toHaveBeenCalledWith(
-      expect.stringContaining("IDENTITY.md"),
-      expect.stringContaining("- Name: Plain Agent"),
-      "utf-8",
+    expect(mocks.applyAgentConfig).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        identity: expect.objectContaining({ name: "Plain Agent" }),
+      }),
     );
   });
 
-  it("writes emoji and avatar to IDENTITY.md when provided", async () => {
+  it("writes identity with emoji and avatar to config when provided", async () => {
+    mocks.applyAgentConfig.mockImplementation((_cfg, opts) => ({
+      agents: {
+        list: [{ id: "fancy-agent", identity: (opts as { identity?: unknown }).identity }],
+      },
+    }));
+
     const { promise } = makeCall("agents.create", {
       name: "Fancy Agent",
       workspace: "/tmp/ws",
@@ -263,10 +276,15 @@ describe("agents.create", () => {
     });
     await promise;
 
-    expect(mocks.fsAppendFile).toHaveBeenCalledWith(
-      expect.stringContaining("IDENTITY.md"),
-      expect.stringMatching(/- Name: Fancy Agent[\s\S]*- Emoji: 🤖[\s\S]*- Avatar:/),
-      "utf-8",
+    expect(mocks.applyAgentConfig).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        identity: expect.objectContaining({
+          name: "Fancy Agent",
+          emoji: "🤖",
+          avatar: "https://example.com/avatar.png",
+        }),
+      }),
     );
   });
 });

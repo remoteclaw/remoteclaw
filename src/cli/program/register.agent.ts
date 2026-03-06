@@ -140,9 +140,7 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "docs.remoteclaw.org/cli/
     .command("set-identity")
     .description("Update an agent identity (name/theme/emoji/avatar)")
     .option("--agent <id>", "Agent id to update")
-    .option("--workspace <dir>", "Workspace directory used to locate the agent + IDENTITY.md")
-    .option("--identity-file <path>", "Explicit IDENTITY.md path to read")
-    .option("--from-identity", "Read values from IDENTITY.md", false)
+    .option("--workspace <dir>", "Workspace directory used to locate the agent")
     .option("--name <name>", "Identity name")
     .option("--theme <theme>", "Identity theme")
     .option("--emoji <emoji>", "Identity emoji")
@@ -162,14 +160,6 @@ ${formatHelpExamples([
     "remoteclaw agents set-identity --agent main --avatar avatars/remoteclaw.png",
     "Set avatar path.",
   ],
-  [
-    "remoteclaw agents set-identity --workspace ~/.remoteclaw/workspace --from-identity",
-    "Load from IDENTITY.md.",
-  ],
-  [
-    "remoteclaw agents set-identity --identity-file ~/.remoteclaw/workspace/IDENTITY.md --agent main",
-    "Use a specific IDENTITY.md.",
-  ],
 ])}
 `,
     )
@@ -179,8 +169,6 @@ ${formatHelpExamples([
           {
             agent: opts.agent as string | undefined,
             workspace: opts.workspace as string | undefined,
-            identityFile: opts.identityFile as string | undefined,
-            fromIdentity: Boolean(opts.fromIdentity),
             name: opts.name as string | undefined,
             theme: opts.theme as string | undefined,
             emoji: opts.emoji as string | undefined,

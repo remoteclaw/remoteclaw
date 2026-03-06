@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeTempWorkspace } from "../test-helpers/workspace.js";
@@ -25,27 +24,12 @@ type ConfigWritePayload = {
 async function createIdentityWorkspace(subdir = "work") {
   const root = await makeTempWorkspace("remoteclaw-identity-");
   const workspace = path.join(root, subdir);
-  await fs.mkdir(workspace, { recursive: true });
   return { root, workspace };
-}
-
-async function writeIdentityFile(workspace: string, lines: string[]) {
-  const identityPath = path.join(workspace, "IDENTITY.md");
-  await fs.writeFile(identityPath, `${lines.join("\n")}\n`, "utf-8");
-  return identityPath;
 }
 
 function getWrittenMainIdentity() {
   const written = configMocks.writeConfigFile.mock.calls[0]?.[0] as ConfigWritePayload;
   return written.agents?.list?.find((entry) => entry.id === "main")?.identity;
-}
-
-async function runIdentityCommandFromWorkspace(workspace: string, fromIdentity = true) {
-  configMocks.readConfigFileSnapshot.mockResolvedValue({
-    ...baseConfigSnapshot,
-    config: { agents: { list: [{ id: "main", workspace }] } },
-  });
-  await agentsSetIdentityCommand({ workspace, fromIdentity }, runtime);
 }
 
 describe("agents set-identity command", () => {
@@ -57,42 +41,34 @@ describe("agents set-identity command", () => {
     runtime.exit.mockClear();
   });
 
-  it("sets identity from workspace IDENTITY.md", async () => {
-    const { root, workspace } = await createIdentityWorkspace();
-    await writeIdentityFile(workspace, [
-      "- Name: RemoteClaw",
-      "- Creature: helpful sloth",
-      "- Emoji: :)",
-      "- Avatar: avatars/remoteclaw.png",
-      "",
-    ]);
-
+  it("sets identity via explicit flags", async () => {
     configMocks.readConfigFileSnapshot.mockResolvedValue({
       ...baseConfigSnapshot,
-      config: {
-        agents: {
-          list: [
-            { id: "main", workspace },
-            { id: "ops", workspace: path.join(root, "ops") },
-          ],
-        },
-      },
+      config: { agents: { list: [{ id: "main" }] } },
     });
 
-    await agentsSetIdentityCommand({ workspace }, runtime);
+    await agentsSetIdentityCommand(
+      {
+        agent: "main",
+        name: "RemoteClaw",
+        emoji: "🦞",
+        theme: "space lobster",
+        avatar: "avatars/remoteclaw.png",
+      },
+      runtime,
+    );
 
     expect(configMocks.writeConfigFile).toHaveBeenCalledTimes(1);
     expect(getWrittenMainIdentity()).toEqual({
       name: "RemoteClaw",
-      theme: "helpful sloth",
-      emoji: ":)",
+      theme: "space lobster",
+      emoji: "🦞",
       avatar: "avatars/remoteclaw.png",
     });
   });
 
   it("errors when multiple agents match the same workspace", async () => {
     const { workspace } = await createIdentityWorkspace("shared");
-    await writeIdentityFile(workspace, ["- Name: Echo"]);
 
     configMocks.readConfigFileSnapshot.mockResolvedValue({
       ...baseConfigSnapshot,
@@ -106,81 +82,11 @@ describe("agents set-identity command", () => {
       },
     });
 
-    await agentsSetIdentityCommand({ workspace }, runtime);
+    await agentsSetIdentityCommand({ workspace, name: "Echo" }, runtime);
 
     expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("Multiple agents match"));
     expect(runtime.exit).toHaveBeenCalledWith(1);
     expect(configMocks.writeConfigFile).not.toHaveBeenCalled();
-  });
-
-  it("overrides identity file values with explicit flags", async () => {
-    const { workspace } = await createIdentityWorkspace();
-    await writeIdentityFile(workspace, [
-      "- Name: RemoteClaw",
-      "- Theme: space lobster",
-      "- Emoji: :)",
-      "- Avatar: avatars/remoteclaw.png",
-      "",
-    ]);
-
-    configMocks.readConfigFileSnapshot.mockResolvedValue({
-      ...baseConfigSnapshot,
-      config: { agents: { list: [{ id: "main", workspace }] } },
-    });
-
-    await agentsSetIdentityCommand(
-      {
-        workspace,
-        fromIdentity: true,
-        name: "Nova",
-        emoji: "🦞",
-        avatar: "https://example.com/override.png",
-      },
-      runtime,
-    );
-
-    expect(getWrittenMainIdentity()).toEqual({
-      name: "Nova",
-      theme: "space lobster",
-      emoji: "🦞",
-      avatar: "https://example.com/override.png",
-    });
-  });
-
-  it("reads identity from an explicit IDENTITY.md path", async () => {
-    const { workspace } = await createIdentityWorkspace();
-    const identityPath = await writeIdentityFile(workspace, [
-      "- **Name:** C-3PO",
-      "- **Creature:** Flustered Protocol Droid",
-      "- **Emoji:** 🤖",
-      "- **Avatar:** avatars/c3po.png",
-      "",
-    ]);
-
-    configMocks.readConfigFileSnapshot.mockResolvedValue({
-      ...baseConfigSnapshot,
-      config: { agents: { list: [{ id: "main" }] } },
-    });
-
-    await agentsSetIdentityCommand({ agent: "main", identityFile: identityPath }, runtime);
-
-    expect(getWrittenMainIdentity()).toEqual({
-      name: "C-3PO",
-      theme: "Flustered Protocol Droid",
-      emoji: "🤖",
-      avatar: "avatars/c3po.png",
-    });
-  });
-
-  it("accepts avatar-only identity from IDENTITY.md", async () => {
-    const { workspace } = await createIdentityWorkspace();
-    await writeIdentityFile(workspace, ["- Avatar: avatars/only.png"]);
-
-    await runIdentityCommandFromWorkspace(workspace);
-
-    expect(getWrittenMainIdentity()).toEqual({
-      avatar: "avatars/only.png",
-    });
   });
 
   it("accepts avatar-only updates via flags", async () => {
@@ -199,12 +105,17 @@ describe("agents set-identity command", () => {
     });
   });
 
-  it("errors when identity data is missing", async () => {
-    const { workspace } = await createIdentityWorkspace();
+  it("errors when no identity fields provided", async () => {
+    configMocks.readConfigFileSnapshot.mockResolvedValue({
+      ...baseConfigSnapshot,
+      config: { agents: { list: [{ id: "main" }] } },
+    });
 
-    await runIdentityCommandFromWorkspace(workspace);
+    await agentsSetIdentityCommand({ agent: "main" }, runtime);
 
-    expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("No identity data found"));
+    expect(runtime.error).toHaveBeenCalledWith(
+      expect.stringContaining("No identity fields provided"),
+    );
     expect(runtime.exit).toHaveBeenCalledWith(1);
     expect(configMocks.writeConfigFile).not.toHaveBeenCalled();
   });

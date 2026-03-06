@@ -4,13 +4,8 @@ import {
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../agents/agent-scope.js";
-import type { AgentIdentityFile } from "../agents/identity-file.js";
-import {
-  identityHasValues,
-  loadAgentIdentityFromWorkspace,
-  parseIdentityMarkdown as parseIdentityMarkdownFile,
-} from "../agents/identity-file.js";
 import type { RemoteClawConfig } from "../config/config.js";
+import type { IdentityConfig } from "../config/types.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 
 export type AgentSummary = {
@@ -18,7 +13,6 @@ export type AgentSummary = {
   name?: string;
   identityName?: string;
   identityEmoji?: string;
-  identitySource?: "identity" | "config";
   workspace: string;
   agentDir: string;
   model?: string;
@@ -31,7 +25,6 @@ export type AgentSummary = {
 
 type AgentEntry = NonNullable<NonNullable<RemoteClawConfig["agents"]>["list"]>[number];
 
-export type AgentIdentity = AgentIdentityFile;
 export { listAgentEntries };
 
 export function findAgentEntryIndex(list: AgentEntry[], agentId: string): number {
@@ -68,18 +61,6 @@ function resolveAgentModel(cfg: RemoteClawConfig, agentId: string) {
   return raw?.primary?.trim() || undefined;
 }
 
-export function parseIdentityMarkdown(content: string): AgentIdentity {
-  return parseIdentityMarkdownFile(content);
-}
-
-export function loadAgentIdentity(workspace: string): AgentIdentity | null {
-  const parsed = loadAgentIdentityFromWorkspace(workspace);
-  if (!parsed) {
-    return null;
-  }
-  return identityHasValues(parsed) ? parsed : null;
-}
-
 export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
   const defaultAgentId = normalizeAgentId(resolveDefaultAgentId(cfg));
   const configuredAgents = listAgentEntries(cfg);
@@ -97,23 +78,16 @@ export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
 
   return ordered.map((id) => {
     const workspace = resolveAgentWorkspaceDir(cfg, id);
-    const identity = loadAgentIdentity(workspace);
     const configIdentity = configuredAgents.find(
       (agent) => normalizeAgentId(agent.id) === id,
     )?.identity;
-    const identityName = identity?.name ?? configIdentity?.name?.trim();
-    const identityEmoji = identity?.emoji ?? configIdentity?.emoji?.trim();
-    const identitySource = identity
-      ? "identity"
-      : configIdentity && (identityName || identityEmoji)
-        ? "config"
-        : undefined;
+    const identityName = configIdentity?.name?.trim();
+    const identityEmoji = configIdentity?.emoji?.trim();
     return {
       id,
       name: resolveAgentName(cfg, id),
       identityName,
       identityEmoji,
-      identitySource,
       workspace,
       agentDir: resolveAgentDir(cfg, id),
       model: resolveAgentModel(cfg, id),
@@ -131,6 +105,7 @@ export function applyAgentConfig(
     workspace?: string;
     agentDir?: string;
     model?: string;
+    identity?: IdentityConfig;
   },
 ): RemoteClawConfig {
   const agentId = normalizeAgentId(params.agentId);
@@ -138,12 +113,14 @@ export function applyAgentConfig(
   const list = listAgentEntries(cfg);
   const index = findAgentEntryIndex(list, agentId);
   const base = index >= 0 ? list[index] : { id: agentId };
+  const nextIdentity = params.identity ? { ...base.identity, ...params.identity } : base.identity;
   const nextEntry: AgentEntry = {
     ...base,
     ...(name ? { name } : {}),
     ...(params.workspace ? { workspace: params.workspace } : {}),
     ...(params.agentDir ? { agentDir: params.agentDir } : {}),
     ...(params.model ? { model: params.model } : {}),
+    ...(nextIdentity ? { identity: nextIdentity } : {}),
   };
   const nextList = [...list];
   if (index >= 0) {

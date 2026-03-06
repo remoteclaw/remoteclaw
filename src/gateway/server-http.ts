@@ -636,6 +636,7 @@ export function createGatewayHttpServer(opts: {
   controlUiBasePath: string;
   controlUiRoot?: ControlUiRootState;
   openAiChatCompletionsEnabled: boolean;
+  openAiChatCompletionsConfig?: import("../config/types.gateway.js").GatewayHttpChatCompletionsConfig;
   openResponsesEnabled: boolean;
   openResponsesConfig?: import("../config/types.gateway.js").GatewayHttpResponsesConfig;
   strictTransportSecurityHeader?: string;
@@ -654,6 +655,7 @@ export function createGatewayHttpServer(opts: {
     controlUiBasePath,
     controlUiRoot,
     openAiChatCompletionsEnabled,
+    openAiChatCompletionsConfig,
     openResponsesEnabled,
     openResponsesConfig,
     strictTransportSecurityHeader,
@@ -727,6 +729,7 @@ export function createGatewayHttpServer(opts: {
         if (
           await handleOpenAiHttpRequest(req, res, {
             auth: resolvedAuth,
+            config: openAiChatCompletionsConfig,
             trustedProxies,
             allowRealIpFallback,
             rateLimiter,

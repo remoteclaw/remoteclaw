@@ -7,8 +7,11 @@ import {
 import { coreGatewayHandlers } from "./server-methods.js";
 
 describe("method scope resolution", () => {
-  it("classifies sessions.resolve as read and poll as write", () => {
+  it("classifies sessions.resolve + config.schema.lookup as read and poll as write", () => {
     expect(resolveLeastPrivilegeOperatorScopesForMethod("sessions.resolve")).toEqual([
+      "operator.read",
+    ]);
+    expect(resolveLeastPrivilegeOperatorScopesForMethod("config.schema.lookup")).toEqual([
       "operator.read",
     ]);
     expect(resolveLeastPrivilegeOperatorScopesForMethod("poll")).toEqual(["operator.write"]);
@@ -29,6 +32,9 @@ describe("operator scope authorization", () => {
       allowed: true,
     });
     expect(authorizeOperatorScopesForMethod("health", ["operator.write"])).toEqual({
+      allowed: true,
+    });
+    expect(authorizeOperatorScopesForMethod("config.schema.lookup", ["operator.read"])).toEqual({
       allowed: true,
     });
   });

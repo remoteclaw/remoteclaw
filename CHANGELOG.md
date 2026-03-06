@@ -17,6 +17,7 @@ Docs: https://docs.openclaw.ai
 
 ### Fixes
 
+- Gateway/remote WS break-glass hostname support: honor `REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS=1` for `ws://` hostname URLs (not only private IP literals) across onboarding validation and runtime gateway connection checks, while still rejecting public IP literals and non-unicast IPv6 endpoints. (#36930) Thanks @manju-rn.
 - Browser/session cleanup: track browser tabs opened by session-scoped browser tool runs and close tracked tabs during `sessions.reset`/`sessions.delete` runtime cleanup, preventing orphaned tabs and unbounded browser memory growth after session teardown. (#36666) Thanks @Harnoor6693.
 - Gateway/Control UI version reporting: align runtime and browser client version metadata to avoid `dev` placeholders, wait for bootstrap version before first UI websocket connect, and only forward bootstrap `serverVersion` to same-origin gateway targets to prevent cross-target version leakage. (from #35230, #30928, #33928) Thanks @Sid-Qin, @joelnishanth, and @MoerAI.
 - Security/dependency audit: patch transitive Hono vulnerabilities by pinning `hono` to `4.12.5` and `@hono/node-server` to `1.19.10` in production resolution paths. Thanks @shakkernerd.

@@ -67,7 +67,7 @@ export function shouldEnsureCliPath(argv: string[]): boolean {
 
 /**
  * Detect an existing RemoteClaw installation and display a one-time migration notice.
- * Only triggers when ~/.remoteclaw is absent but ~/.remoteclaw exists.
+ * Only triggers when ~/.remoteclaw is absent but ~/.openclaw exists.
  * Does not block startup — purely informational.
  */
 export function checkRemoteClawMigration(env: NodeJS.ProcessEnv = process.env): void {
@@ -79,7 +79,7 @@ export function checkRemoteClawMigration(env: NodeJS.ProcessEnv = process.env): 
   try {
     const home = resolveRequiredHomeDir(env, os.homedir);
     const newDir = path.join(home, ".remoteclaw");
-    const oldDir = path.join(home, ".remoteclaw");
+    const oldDir = path.join(home, ".openclaw");
 
     if (!fs.existsSync(newDir) && fs.existsSync(oldDir)) {
       console.warn(

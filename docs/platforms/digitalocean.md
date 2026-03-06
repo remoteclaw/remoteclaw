@@ -199,7 +199,7 @@ htop
 All state lives in:
 
 - `~/.remoteclaw/` — config, credentials, session data
-- `~/.remoteclaw/workspace/` — workspace (SOUL.md, memory, etc.)
+- `<configured workspace>` — workspace (IDENTITY.md, memory, etc.)
 
 These survive reboots. Back them up periodically:
 

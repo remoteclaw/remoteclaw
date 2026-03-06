@@ -339,7 +339,7 @@ These run `pnpm test:live` inside the repo Docker image, mounting your local con
 Useful env vars:
 
 - `REMOTECLAW_CONFIG_DIR=...` (default: `~/.remoteclaw`) mounted to `/home/node/.remoteclaw`
-- `REMOTECLAW_WORKSPACE_DIR=...` (default: `~/.remoteclaw/workspace`) mounted to `/home/node/.remoteclaw/workspace`
+- `REMOTECLAW_WORKSPACE_DIR=...` (no built-in default — must be set) mounted to `/home/node/.remoteclaw/workspace`
 - `REMOTECLAW_PROFILE_FILE=...` (default: `~/.profile`) mounted to `/home/node/.profile` and sourced before running tests
 - `REMOTECLAW_LIVE_GATEWAY_MODELS=...` / `REMOTECLAW_LIVE_MODELS=...` to narrow the run
 - `REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS=1` to ensure creds come from the profile store (not env)

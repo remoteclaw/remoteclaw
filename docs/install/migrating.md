@@ -40,12 +40,15 @@ Look for mentions of `REMOTECLAW_STATE_DIR` / profile in the output. If you run 
 
 ### 2) Identify your workspace
 
-Common defaults:
+There is no built-in default workspace path — check your `agents.defaults.workspace`
+(or per-agent `agents.list[].workspace`) in `remoteclaw.json`.
 
-- `~/.remoteclaw/workspace/` (recommended workspace)
-- a custom folder you created
+Your workspace is where files like `MEMORY.md`, `IDENTITY.md`, and `memory/*.md` live.
 
-Your workspace is where files like `MEMORY.md`, `USER.md`, and `memory/*.md` live.
+> **Note:** RemoteClaw no longer seeds template files (`SOUL.md`, `AGENTS.md`,
+> `USER.md`, `TOOLS.md`, `BOOTSTRAP.md`) in the workspace. Agents bring their
+> own config (e.g. `CLAUDE.md` for Claude Code). If you're migrating from an
+> older install, these files can be safely removed.
 
 ### 3) Understand what you will preserve
 
@@ -100,7 +103,7 @@ At this stage, it’s OK if onboarding creates a fresh `~/.remoteclaw/` — you 
 Copy **both**:
 
 - `$REMOTECLAW_STATE_DIR` (default `~/.remoteclaw/`)
-- your workspace (default `~/.remoteclaw/workspace/`)
+- your workspace (configured via `agents.defaults.workspace` — no built-in default)
 
 Common approaches:
 

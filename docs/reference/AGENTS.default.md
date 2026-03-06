@@ -10,7 +10,7 @@ read_when:
 
 ## First run (recommended)
 
-RemoteClaw uses a dedicated workspace directory for the agent. Default: `~/.remoteclaw/workspace` (configurable via `agents.defaults.workspace`).
+RemoteClaw uses a dedicated workspace directory for the agent. Configure it via `agents.defaults.workspace` (no built-in default).
 
 1. Create the workspace (if it doesn’t already exist):
 
@@ -18,27 +18,18 @@ RemoteClaw uses a dedicated workspace directory for the agent. Default: `~/.remo
 mkdir -p ~/.remoteclaw/workspace
 ```
 
-2. Copy the default workspace templates into the workspace:
-
-```bash
-cp docs/reference/templates/AGENTS.md ~/.remoteclaw/workspace/AGENTS.md
-cp docs/reference/templates/SOUL.md ~/.remoteclaw/workspace/SOUL.md
-cp docs/reference/templates/TOOLS.md ~/.remoteclaw/workspace/TOOLS.md
-```
-
-3. Optional: if you want the personal assistant skill roster, replace AGENTS.md with this file:
-
-```bash
-cp docs/reference/AGENTS.default.md ~/.remoteclaw/workspace/AGENTS.md
-```
-
-4. Optional: choose a different workspace by setting `agents.defaults.workspace` (supports `~`):
+2. Configure the workspace path:
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.remoteclaw/workspace" } },
+  agents: { defaults: { workspace: "~/projects" } },
 }
 ```
+
+3. Run `remoteclaw setup` to create the workspace directory.
+
+> **Note:** RemoteClaw no longer seeds template files in the workspace.
+> Agents bring their own config (e.g. `CLAUDE.md` for Claude Code).
 
 ## Safety defaults
 
@@ -48,13 +39,8 @@ cp docs/reference/AGENTS.default.md ~/.remoteclaw/workspace/AGENTS.md
 
 ## Session start (required)
 
-- Read `SOUL.md`, `USER.md`, `memory.md`, and today+yesterday in `memory/`.
+- Read `memory.md` and today+yesterday in `memory/` if present.
 - Do it before responding.
-
-## Soul (required)
-
-- `SOUL.md` defines identity, tone, and boundaries. Keep it current.
-- If you change `SOUL.md`, tell the user.
 - You are a fresh instance each session; continuity lives in these files.
 
 ## Shared spaces (recommended)
@@ -73,7 +59,7 @@ cp docs/reference/AGENTS.default.md ~/.remoteclaw/workspace/AGENTS.md
 ## Tools & skills
 
 - Tools live in skills; follow each skill’s `SKILL.md` when you need it.
-- Keep environment-specific notes in `TOOLS.md` (Notes for Skills).
+- Keep environment-specific notes in native agent config.
 
 ## Backup tip (recommended)
 

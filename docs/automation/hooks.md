@@ -41,10 +41,8 @@ The hooks system allows you to:
 
 ### Bundled Hooks
 
-RemoteClaw ships with four bundled hooks that are automatically discovered:
+RemoteClaw ships with two bundled hooks that are automatically discovered:
 
-- **💾 session-memory**: Saves session context to your agent workspace (default `~/.remoteclaw/workspace/memory/`) when you issue `/new`
-- **📎 bootstrap-extra-files**: Injects additional workspace bootstrap files from configured glob/path patterns during `agent:bootstrap`
 - **📝 command-logger**: Logs all command events to `~/.remoteclaw/logs/commands.log`
 - **🚀 boot**: Runs the configured boot prompt when the gateway starts (requires internal hooks enabled)
 
@@ -57,7 +55,7 @@ remoteclaw hooks list
 Enable a hook:
 
 ```bash
-remoteclaw hooks enable session-memory
+remoteclaw hooks enable command-logger
 ```
 
 Check hook status:
@@ -69,7 +67,7 @@ remoteclaw hooks check
 Get detailed information:
 
 ```bash
-remoteclaw hooks info session-memory
+remoteclaw hooks info command-logger
 ```
 
 ### Onboarding
@@ -401,8 +399,8 @@ remoteclaw hooks enable my-hook
     "internal": {
       "enabled": true,
       "entries": {
-        "session-memory": { "enabled": true },
-        "command-logger": { "enabled": false }
+        "command-logger": { "enabled": true },
+        "boot": { "enabled": true }
       }
     }
   }
@@ -495,10 +493,10 @@ remoteclaw hooks list --json
 
 ```bash
 # Show detailed info about a hook
-remoteclaw hooks info session-memory
+remoteclaw hooks info command-logger
 
 # JSON output
-remoteclaw hooks info session-memory --json
+remoteclaw hooks info command-logger --json
 ```
 
 ### Check Eligibility
@@ -515,93 +513,23 @@ remoteclaw hooks check --json
 
 ```bash
 # Enable a hook
-remoteclaw hooks enable session-memory
+remoteclaw hooks enable command-logger
 
 # Disable a hook
-remoteclaw hooks disable command-logger
+remoteclaw hooks disable boot
 ```
 
 ## Bundled hook reference
 
-### session-memory
+### ~~session-memory~~ (removed)
 
-Saves session context to memory when you issue `/new`.
+The session-memory hook has been removed. Session context saving is no longer
+handled via hooks.
 
-**Events**: `command:new`
+### ~~bootstrap-extra-files~~ (removed)
 
-**Requirements**: `workspace.dir` must be configured
-
-**Output**: `<workspace>/memory/YYYY-MM-DD-slug.md` (defaults to `~/.remoteclaw/workspace`)
-
-**What it does**:
-
-1. Uses the pre-reset session entry to locate the correct transcript
-2. Extracts the last 15 lines of conversation
-3. Uses LLM to generate a descriptive filename slug
-4. Saves session metadata to a dated memory file
-
-**Example output**:
-
-```markdown
-# Session: 2026-01-16 14:30:00 UTC
-
-- **Session Key**: agent:main:main
-- **Session ID**: abc123def456
-- **Source**: telegram
-```
-
-**Filename examples**:
-
-- `2026-01-16-vendor-pitch.md`
-- `2026-01-16-api-design.md`
-- `2026-01-16-1430.md` (fallback timestamp if slug generation fails)
-
-**Enable**:
-
-```bash
-remoteclaw hooks enable session-memory
-```
-
-### bootstrap-extra-files
-
-Injects additional bootstrap files (for example monorepo-local `AGENTS.md` / `TOOLS.md`) during `agent:bootstrap`.
-
-**Events**: `agent:bootstrap`
-
-**Requirements**: `workspace.dir` must be configured
-
-**Output**: No files written; bootstrap context is modified in-memory only.
-
-**Config**:
-
-```json
-{
-  "hooks": {
-    "internal": {
-      "enabled": true,
-      "entries": {
-        "bootstrap-extra-files": {
-          "enabled": true,
-          "paths": ["packages/*/AGENTS.md", "packages/*/TOOLS.md"]
-        }
-      }
-    }
-  }
-}
-```
-
-**Notes**:
-
-- Paths are resolved relative to workspace.
-- Files must stay inside workspace (realpath-checked).
-- Only recognized bootstrap basenames are loaded.
-- Subagent allowlist is preserved (`AGENTS.md` and `TOOLS.md` only).
-
-**Enable**:
-
-```bash
-remoteclaw hooks enable bootstrap-extra-files
-```
+The bootstrap-extra-files hook has been removed. Workspace template injection
+has been removed — agents bring their own configuration.
 
 ### command-logger
 
@@ -740,8 +668,6 @@ metadata: { "remoteclaw": { "events": ["command"] } } # General - more overhead
 The gateway logs hook loading at startup:
 
 ```
-Registered hook: session-memory -> command:new
-Registered hook: bootstrap-extra-files -> agent:bootstrap
 Registered hook: command-logger -> command
 Registered hook: boot -> gateway:startup
 ```

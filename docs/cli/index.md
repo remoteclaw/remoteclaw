@@ -275,7 +275,7 @@ Initialize config + workspace.
 
 Options:
 
-- `--workspace <dir>`: agent workspace path (default `~/.remoteclaw/workspace`).
+- `--workspace <dir>`: agent workspace path (must be configured, no built-in default).
 - `--wizard`: run the onboarding wizard.
 - `--non-interactive`: run wizard without prompts.
 - `--mode <local|remote>`: wizard mode.

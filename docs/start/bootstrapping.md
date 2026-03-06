@@ -16,13 +16,10 @@ for the first time.
 
 ## What bootstrapping does
 
-On the first agent run, RemoteClaw bootstraps the workspace (default
-`~/.remoteclaw/workspace`):
-
-- Seeds `AGENTS.md`, `BOOTSTRAP.md`, `IDENTITY.md`, `USER.md`.
-- Runs a short Q&A ritual (one question at a time).
-- Writes identity + preferences to `IDENTITY.md`, `USER.md`, `SOUL.md`.
-- Removes `BOOTSTRAP.md` when finished so it only runs once.
+On `remoteclaw setup`, RemoteClaw creates the configured workspace directory
+if it does not already exist. Agents bring their own configuration (e.g.
+`CLAUDE.md` for Claude Code, `.gemini/` for Gemini CLI). RemoteClaw no longer
+seeds template files in the workspace.
 
 ## Where it runs
 

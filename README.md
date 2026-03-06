@@ -312,9 +312,9 @@ Runbook: [iOS connect](https://docs.remoteclaw.org/platforms/ios).
 
 ## Agent workspace + skills
 
-- Workspace root: `~/.remoteclaw/workspace` (configurable via `agents.defaults.workspace`).
-- Injected prompt files: `AGENTS.md`, `SOUL.md`, `TOOLS.md`.
-- Skills: `~/.remoteclaw/workspace/skills/<skill>/SKILL.md`.
+- Workspace root: set via `agents.defaults.workspace` (no built-in default — must be configured).
+- Agents bring their own config (e.g. `CLAUDE.md` for Claude Code, `.gemini/` for Gemini CLI).
+- Skills: `<workspace>/skills/<skill>/SKILL.md`.
 
 ## Configuration
 
@@ -458,14 +458,8 @@ Use these when you’re past the onboarding flow and want the deeper reference.
 
 ## Workspace & skills
 
+- [Agent workspace](https://docs.remoteclaw.org/concepts/agent-workspace)
 - [Skills config](https://docs.remoteclaw.org/tools/skills-config)
-- [Default AGENTS](https://docs.remoteclaw.org/reference/AGENTS.default)
-- [Templates: AGENTS](https://docs.remoteclaw.org/reference/templates/AGENTS)
-- [Templates: BOOTSTRAP](https://docs.remoteclaw.org/reference/templates/BOOTSTRAP)
-- [Templates: IDENTITY](https://docs.remoteclaw.org/reference/templates/IDENTITY)
-- [Templates: SOUL](https://docs.remoteclaw.org/reference/templates/SOUL)
-- [Templates: TOOLS](https://docs.remoteclaw.org/reference/templates/TOOLS)
-- [Templates: USER](https://docs.remoteclaw.org/reference/templates/USER)
 
 ## Platform internals
 

@@ -308,23 +308,25 @@ const maxOldSpaceSizeMb = (() => {
 
 function resolveReportDir() {
   const raw = process.env.REMOTECLAW_VITEST_REPORT_DIR?.trim();
-  if (!raw) {
-    return null;
+  if (raw) {
+    try {
+      fs.mkdirSync(raw, { recursive: true });
+      return raw;
+    } catch {
+      // fall through to integrity fallback
+    }
   }
+  // Always produce a report dir so we can validate lane integrity (detect OOM crashes).
+  const fallback = path.join(process.cwd(), ".tmp", "vitest-integrity");
   try {
-    fs.mkdirSync(raw, { recursive: true });
+    fs.mkdirSync(fallback, { recursive: true });
   } catch {
     return null;
   }
-  return raw;
+  return fallback;
 }
 
-function buildReporterArgs(entry, extraArgs) {
-  const reportDir = resolveReportDir();
-  if (!reportDir) {
-    return [];
-  }
-
+function resolveShardSuffix(extraArgs) {
   // Vitest supports both `--shard 1/2` and `--shard=1/2`. We use it in the
   // split-arg form, so we need to read the next arg to avoid overwriting reports.
   const shardIndex = extraArgs.findIndex((arg) => arg === "--shard");
@@ -337,18 +339,59 @@ function buildReporterArgs(entry, extraArgs) {
       : typeof inlineShardArg === "string"
         ? inlineShardArg.slice("--shard=".length)
         : "";
-  const shardSuffix = shardValue
-    ? `-shard${String(shardValue).replaceAll("/", "of").replaceAll(" ", "")}`
-    : "";
+  return shardValue ? `-shard${String(shardValue).replaceAll("/", "of").replaceAll(" ", "")}` : "";
+}
 
-  const outputFile = path.join(reportDir, `vitest-${entry.name}${shardSuffix}.json`);
+function resolveReportPath(entry, extraArgs) {
+  const reportDir = resolveReportDir();
+  if (!reportDir) {
+    return null;
+  }
+  const shardSuffix = resolveShardSuffix(extraArgs);
+  return path.join(reportDir, `vitest-${entry.name}${shardSuffix}.json`);
+}
+
+function buildReporterArgs(entry, extraArgs) {
+  const outputFile = resolveReportPath(entry, extraArgs);
+  if (!outputFile) {
+    return [];
+  }
   return ["--reporter=default", "--reporter=json", "--outputFile", outputFile];
+}
+
+function validateReport(reportPath, entryName) {
+  if (!reportPath) {
+    return true;
+  }
+  try {
+    const raw = fs.readFileSync(reportPath, "utf-8");
+    const report = JSON.parse(raw);
+    if (report.numFailedTests > 0 || report.numFailedTestSuites > 0) {
+      console.error(
+        `[test-parallel] ${entryName}: JSON report shows ${report.numFailedTests} failed test(s) in ${report.numFailedTestSuites} suite(s) despite exit code 0`,
+      );
+      return false;
+    }
+    return true;
+  } catch {
+    console.error(
+      `[test-parallel] ${entryName}: integrity report missing or invalid — lane may have crashed (OOM?)`,
+    );
+    return false;
+  }
 }
 
 const runOnce = (entry, extraArgs = []) =>
   new Promise((resolve) => {
     const maxWorkers = maxWorkersForRun(entry.name);
     const reporterArgs = buildReporterArgs(entry, extraArgs);
+    const reportPath = resolveReportPath(entry, extraArgs);
+    // Delete stale report from a previous run to avoid false-positive validation.
+    if (reportPath) {
+      try {
+        fs.unlinkSync(reportPath);
+      } catch {}
+    }
     // vmForks with a single worker has shown cross-file leakage in extension suites.
     // Fall back to process forks when we intentionally clamp that lane to one worker.
     const entryArgs =
@@ -396,7 +439,12 @@ const runOnce = (entry, extraArgs = []) =>
     });
     child.on("exit", (code, signal) => {
       children.delete(child);
-      resolve(code ?? (signal ? 1 : 0));
+      const exitCode = code ?? (signal ? 1 : 0);
+      if (exitCode === 0 && !validateReport(reportPath, entry.name)) {
+        resolve(1);
+        return;
+      }
+      resolve(exitCode);
     });
   });
 

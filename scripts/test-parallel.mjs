@@ -392,10 +392,10 @@ const runOnce = (entry, extraArgs = []) =>
         fs.unlinkSync(reportPath);
       } catch {}
     }
-    // vmForks with a single worker has shown cross-file leakage in extension suites.
-    // Fall back to process forks when we intentionally clamp that lane to one worker.
+    // vmForks with a single worker can hang or exhibit cross-file leakage.
+    // Fall back to process forks when clamped to one worker.
     const entryArgs =
-      entry.name === "extensions" && maxWorkers === 1 && entry.args.includes("--pool=vmForks")
+      maxWorkers === 1 && entry.args.includes("--pool=vmForks")
         ? entry.args.map((arg) => (arg === "--pool=vmForks" ? "--pool=forks" : arg))
         : entry.args;
     const args = maxWorkers

@@ -56,10 +56,10 @@ describe("registerAllTools", () => {
     ctx = createMockContext();
   });
 
-  it("registers exactly 50 core tools", async () => {
+  it("registers exactly 51 core tools", async () => {
     // oxlint-disable-next-line typescript/no-explicit-any
     await registerAllTools(mockServer as any, ctx);
-    expect(mockServer.registerTool).toHaveBeenCalledTimes(50);
+    expect(mockServer.registerTool).toHaveBeenCalledTimes(51);
   });
 
   it("registers all session management tools", async () => {
@@ -132,12 +132,12 @@ describe("registerAllTools", () => {
   });
 
   describe("owner-only tool gating", () => {
-    it("registers only 17 tools for non-owner senders", async () => {
+    it("registers only 18 tools for non-owner senders", async () => {
       ctx = createMockContext({ senderIsOwner: false });
       // oxlint-disable-next-line typescript/no-explicit-any
       await registerAllTools(mockServer as any, ctx);
-      // 7 session + 10 message = 17 (no cron or gateway)
-      expect(mockServer.registerTool).toHaveBeenCalledTimes(17);
+      // 7 session + 10 message + 1 heartbeat = 18 (no cron or gateway)
+      expect(mockServer.registerTool).toHaveBeenCalledTimes(18);
     });
 
     it("does NOT register cron tools for non-owner senders", async () => {
@@ -181,11 +181,11 @@ describe("registerAllTools", () => {
       expect(names).toContain("message_broadcast");
     });
 
-    it("registers all 50 core tools for owner senders", async () => {
+    it("registers all 51 core tools for owner senders", async () => {
       ctx = createMockContext({ senderIsOwner: true });
       // oxlint-disable-next-line typescript/no-explicit-any
       await registerAllTools(mockServer as any, ctx);
-      expect(mockServer.registerTool).toHaveBeenCalledTimes(50);
+      expect(mockServer.registerTool).toHaveBeenCalledTimes(51);
     });
 
     it("does NOT register node tools for non-owner senders", async () => {

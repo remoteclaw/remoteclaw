@@ -73,7 +73,6 @@ describe("Ghost reminder bug (issue #13317)", () => {
     expect(calledCtx?.Provider).toBe("cron-event");
     expect(calledCtx?.Body).toContain("scheduled reminder has been triggered");
     expect(calledCtx?.Body).toContain(reminderText);
-    expect(calledCtx?.Body).not.toContain("HEARTBEAT_OK");
     expect(calledCtx?.Body).not.toContain("heartbeat poll");
   };
 
@@ -137,7 +136,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
     );
   };
 
-  it("does not use CRON_EVENT_PROMPT when only a HEARTBEAT_OK event is present", async () => {
+  it("uses CRON_EVENT_PROMPT when only a HEARTBEAT_OK event is present (no longer filtered as noise)", async () => {
     const { result, sendTelegram, calledCtx, replyCallCount } = await runHeartbeatCase({
       tmpPrefix: "remoteclaw-ghost-",
       replyText: "Heartbeat check-in",
@@ -148,9 +147,9 @@ describe("Ghost reminder bug (issue #13317)", () => {
     });
     expect(result.status).toBe("ran");
     expect(replyCallCount).toBe(1);
-    expect(calledCtx?.Provider).toBe("heartbeat");
-    expect(calledCtx?.Body).not.toContain("scheduled reminder has been triggered");
-    expect(calledCtx?.Body).not.toContain("relay this reminder");
+    expect(calledCtx?.Provider).toBe("cron-event");
+    expect(calledCtx?.Body).toContain("scheduled reminder has been triggered");
+    expect(calledCtx?.Body).toContain("HEARTBEAT_OK");
     expect(sendTelegram).toHaveBeenCalled();
   });
 

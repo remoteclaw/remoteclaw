@@ -3,6 +3,7 @@ import {
   buildBaseChannelStatusSummary,
   createDefaultChannelRuntimeState,
   DEFAULT_ACCOUNT_ID,
+  formatAllowFromLowercase,
   PAIRING_APPROVED_MESSAGE,
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
@@ -225,11 +226,7 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
       const account = resolveFeishuAccount({ cfg, accountId });
       return (account.config?.allowFrom ?? []).map((entry) => String(entry));
     },
-    formatAllowFrom: ({ allowFrom }) =>
-      allowFrom
-        .map((entry) => String(entry).trim())
-        .filter(Boolean)
-        .map((entry) => entry.toLowerCase()),
+    formatAllowFrom: ({ allowFrom }) => formatAllowFromLowercase({ allowFrom }),
   },
   security: {
     collectWarnings: ({ cfg, accountId }) => {

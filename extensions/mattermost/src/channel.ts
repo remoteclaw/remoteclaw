@@ -4,6 +4,7 @@ import {
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
+  formatNormalizedAllowFromEntries,
   formatPairingApproveHint,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
@@ -275,7 +276,10 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
         String(entry),
       ),
     formatAllowFrom: ({ allowFrom }) =>
-      allowFrom.map((entry) => formatAllowEntry(String(entry))).filter(Boolean),
+      formatNormalizedAllowFromEntries({
+        allowFrom,
+        normalizeEntry: formatAllowEntry,
+      }),
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {

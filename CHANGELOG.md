@@ -227,6 +227,7 @@ Docs: https://docs.openclaw.ai
 - Gateway/chat delta ordering: flush buffered assistant deltas before emitting tool `start` events so pre-tool text is delivered to Control UI before tool cards, avoiding transient text/tool ordering artifacts in streaming. (#39128) Thanks @0xtangping.
 - Gateway/session bootstrap cache invalidation ordering: clear bootstrap snapshots only after active embedded-run shutdown wait completes, preventing dying runs from repopulating stale cache between `/new`/`sessions.reset` turns. (#38873) Thanks @MumuTW.
 - Config/env substitution degraded mode: convert missing `${VAR}` resolution in config reads from hard-fail to warning-backed degraded behavior, while preventing unresolved placeholders from being accepted as gateway credentials. (#39050) Thanks @akz142857.
+- Gateway/webchat route safety: block webchat/control-ui clients from inheriting stored external delivery routes on channel-scoped sessions (while preserving route inheritance for UI/TUI clients), preventing cross-channel leakage from scoped chats. (#39175) Thanks @widingmarcus-cyber.
 
 ## 2026.3.2
 

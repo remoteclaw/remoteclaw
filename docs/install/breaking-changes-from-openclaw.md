@@ -1,12 +1,12 @@
 ---
-description: "What OpenClaw users lose and gain when switching to RemoteClaw"
+description: "Complete list of RemoteClaw breaking changes from OpenClaw: removed features, new capabilities, renamed config, and what stays the same."
 read_when:
   - You are switching from OpenClaw to RemoteClaw
   - You want to know what features were removed or replaced
-title: "Breaking Changes from OpenClaw"
+title: "RemoteClaw Breaking Changes from OpenClaw — What's Removed, Added, and Changed"
 ---
 
-# Breaking Changes from OpenClaw
+# What Are the Breaking Changes from OpenClaw to RemoteClaw?
 
 RemoteClaw is a fork of OpenClaw that replaced the embedded Pi execution engine with a middleware architecture. This page lists everything that changed, was removed, or was added.
 

@@ -1,5 +1,6 @@
 import type { RemoteClawConfig, PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "./monitor.send-mocks.js";
 import { __testing } from "./monitor.js";
 import {
   sendDeliveredZalouserMock,

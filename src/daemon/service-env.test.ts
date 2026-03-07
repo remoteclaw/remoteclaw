@@ -278,6 +278,7 @@ describe("buildServiceEnvironment", () => {
     expect(env.REMOTECLAW_SERVICE_KIND).toBe("gateway");
     expect(typeof env.REMOTECLAW_SERVICE_VERSION).toBe("string");
     expect(env.REMOTECLAW_SYSTEMD_UNIT).toBe("remoteclaw-gateway.service");
+    expect(env.REMOTECLAW_WINDOWS_TASK_NAME).toBe("RemoteClaw Gateway");
     if (process.platform === "darwin") {
       expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("org.remoteclaw.gateway");
     }
@@ -305,6 +306,7 @@ describe("buildServiceEnvironment", () => {
       port: 18789,
     });
     expect(env.REMOTECLAW_SYSTEMD_UNIT).toBe("remoteclaw-gateway-work.service");
+    expect(env.REMOTECLAW_WINDOWS_TASK_NAME).toBe("RemoteClaw Gateway (work)");
     if (process.platform === "darwin") {
       expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("org.remoteclaw.work");
     }

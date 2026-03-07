@@ -79,7 +79,18 @@ must run before tests (CI does this automatically).
 
 ### Commit Messages
 
-- Concise, action-oriented (e.g., `CLI: add verbose flag to send`)
+Follow **Conventional Commits** with optional scope:
+
+```
+type(scope): imperative description (#issue)
+```
+
+- **Types**: `feat`, `fix`, `refactor`, `docs`, `test`, `ci`, `chore`, `perf`
+- **Project-specific types**: `rebrand` (openclaw→remoteclaw renaming), `gut` (removing dead upstream subsystems)
+- **Scope**: optional, lowercase — e.g., `middleware`, `cron`, `app:macos`
+- **Subject**: imperative mood, lowercase start, no trailing period
+- **Rationale clause**: use em-dash for context when helpful — e.g., `fix(middleware): close stdin on spawn — prevents CLI hang`
+- **Issue refs**: append `(#N)` when a GitHub issue exists
 - Group related changes; avoid bundling unrelated refactors
 
 ## Testing

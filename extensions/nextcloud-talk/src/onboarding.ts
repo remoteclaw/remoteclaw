@@ -1,10 +1,10 @@
 import {
-  addWildcardAllowFrom,
   formatDocsLink,
   mergeAllowFromEntries,
   resolveAccountIdForConfigure,
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
+  setTopLevelChannelDmPolicyWithAllowFrom,
   type ChannelOnboardingAdapter,
   type ChannelOnboardingDmPolicy,
   type RemoteClawConfig,
@@ -20,24 +20,13 @@ import type { CoreConfig, DmPolicy } from "./types.js";
 const channel = "nextcloud-talk" as const;
 
 function setNextcloudTalkDmPolicy(cfg: CoreConfig, dmPolicy: DmPolicy): CoreConfig {
-  const existingConfig = cfg.channels?.["nextcloud-talk"];
-  const existingAllowFrom: string[] = (existingConfig?.allowFrom ?? []).map((x) => String(x));
-  const allowFrom: string[] =
-    dmPolicy === "open" ? (addWildcardAllowFrom(existingAllowFrom) as string[]) : existingAllowFrom;
-
-  const newNextcloudTalkConfig = {
-    ...existingConfig,
+  return setTopLevelChannelDmPolicyWithAllowFrom({
+    cfg,
+    channel: "nextcloud-talk",
     dmPolicy,
-    allowFrom,
-  };
-
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      "nextcloud-talk": newNextcloudTalkConfig,
-    },
-  } as CoreConfig;
+    getAllowFrom: (inputCfg) =>
+      (inputCfg.channels?.["nextcloud-talk"]?.allowFrom ?? []).map((entry) => String(entry)),
+  }) as CoreConfig;
 }
 
 async function noteNextcloudTalkSecretHelp(prompter: WizardPrompter): Promise<void> {

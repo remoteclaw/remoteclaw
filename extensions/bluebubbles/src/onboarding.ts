@@ -7,11 +7,11 @@ import type {
 } from "remoteclaw/plugin-sdk";
 import {
   DEFAULT_ACCOUNT_ID,
-  addWildcardAllowFrom,
   formatDocsLink,
   mergeAllowFromEntries,
   normalizeAccountId,
   resolveAccountIdForConfigure,
+  setTopLevelChannelDmPolicyWithAllowFrom,
 } from "remoteclaw/plugin-sdk";
 import {
   listBlueBubblesAccountIds,
@@ -24,19 +24,11 @@ import { normalizeBlueBubblesServerUrl } from "./types.js";
 const channel = "bluebubbles" as const;
 
 function setBlueBubblesDmPolicy(cfg: RemoteClawConfig, dmPolicy: DmPolicy): RemoteClawConfig {
-  const allowFrom =
-    dmPolicy === "open" ? addWildcardAllowFrom(cfg.channels?.bluebubbles?.allowFrom) : undefined;
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      bluebubbles: {
-        ...cfg.channels?.bluebubbles,
-        dmPolicy,
-        ...(allowFrom ? { allowFrom } : {}),
-      },
-    },
-  };
+  return setTopLevelChannelDmPolicyWithAllowFrom({
+    cfg,
+    channel: "bluebubbles",
+    dmPolicy,
+  });
 }
 
 function setBlueBubblesAllowFrom(

@@ -7,11 +7,13 @@ import type {
   MSTeamsTeamConfig,
 } from "remoteclaw/plugin-sdk";
 import {
-  addWildcardAllowFrom,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
   mergeAllowFromEntries,
   promptChannelAccessConfig,
+  setTopLevelChannelAllowFrom,
+  setTopLevelChannelDmPolicyWithAllowFrom,
+  setTopLevelChannelGroupPolicy,
 } from "remoteclaw/plugin-sdk";
 import {
   parseMSTeamsTeamEntry,
@@ -23,34 +25,19 @@ import { resolveMSTeamsCredentials } from "./token.js";
 const channel = "msteams" as const;
 
 function setMSTeamsDmPolicy(cfg: RemoteClawConfig, dmPolicy: DmPolicy) {
-  const allowFrom =
-    dmPolicy === "open"
-      ? addWildcardAllowFrom(cfg.channels?.msteams?.allowFrom)?.map((entry) => String(entry))
-      : undefined;
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      msteams: {
-        ...cfg.channels?.msteams,
-        dmPolicy,
-        ...(allowFrom ? { allowFrom } : {}),
-      },
-    },
-  };
+  return setTopLevelChannelDmPolicyWithAllowFrom({
+    cfg,
+    channel: "msteams",
+    dmPolicy,
+  });
 }
 
 function setMSTeamsAllowFrom(cfg: RemoteClawConfig, allowFrom: string[]): RemoteClawConfig {
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      msteams: {
-        ...cfg.channels?.msteams,
-        allowFrom,
-      },
-    },
-  };
+  return setTopLevelChannelAllowFrom({
+    cfg,
+    channel: "msteams",
+    allowFrom,
+  });
 }
 
 function parseAllowFromInput(raw: string): string[] {
@@ -170,17 +157,12 @@ function setMSTeamsGroupPolicy(
   cfg: RemoteClawConfig,
   groupPolicy: "open" | "allowlist" | "disabled",
 ): RemoteClawConfig {
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      msteams: {
-        ...cfg.channels?.msteams,
-        enabled: true,
-        groupPolicy,
-      },
-    },
-  };
+  return setTopLevelChannelGroupPolicy({
+    cfg,
+    channel: "msteams",
+    groupPolicy,
+    enabled: true,
+  });
 }
 
 function setMSTeamsTeamsAllowlist(

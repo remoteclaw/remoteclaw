@@ -282,16 +282,26 @@ const WARNING_SUPPRESSION_FLAGS = [
   "--disable-warning=MaxListenersExceededWarning",
 ];
 
-const DEFAULT_CI_MAX_OLD_SPACE_SIZE_MB = 4096;
 const maxOldSpaceSizeMb = (() => {
-  // CI can hit Node heap limits (especially on large suites). Allow override, default to 4GB.
+  // Allow explicit override via env var.
   const raw = process.env.REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB ?? "";
   const parsed = Number.parseInt(raw, 10);
   if (Number.isFinite(parsed) && parsed > 0) {
     return parsed;
   }
   if (isCI && !isWindows) {
-    return DEFAULT_CI_MAX_OLD_SPACE_SIZE_MB;
+    // Compute memory-aware heap limit from host memory, parallel suite count,
+    // and per-suite worker count to avoid OOM on memory-constrained CI runners.
+    // ubuntu-latest has ~7 GiB RAM; the previous 4096 MB default let 6 workers
+    // claim 24 GB of V8 heap in theory, triggering intermittent OOM crashes.
+    const totalWorkers = parallelRuns.reduce((sum, entry) => {
+      return sum + (maxWorkersForRun(entry.name) ?? 2);
+    }, 0);
+    // Reserve ~25% for OS, Node orchestrator, and Vitest parent processes.
+    const availableMb = hostMemoryGiB * 1024 * 0.75;
+    const computed = Math.floor(availableMb / Math.max(1, totalWorkers));
+    // Clamp to [512, 2048] — avoid starving workers or wasting headroom.
+    return Math.max(512, Math.min(2048, computed));
   }
   return null;
 })();

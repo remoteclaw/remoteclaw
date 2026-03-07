@@ -1,7 +1,8 @@
 import {
+  buildAccountScopedDmSecurityPolicy,
   buildOpenGroupPolicyConfigureRouteAllowlistWarning,
   buildOpenGroupPolicyWarning,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
   buildComputedAccountStatusSnapshot,
@@ -14,7 +15,6 @@ import {
   discordOnboardingAdapter,
   DiscordConfigSchema,
   formatAllowFromLowercase,
-  formatPairingApproveHint,
   getChatChannelMeta,
   mapAllowFromEntries,
   listDiscordAccountIds,
@@ -120,18 +120,16 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
-      const resolvedAccountId = accountId ?? account.accountId ?? DEFAULT_ACCOUNT_ID;
-      const useAccountPath = Boolean(cfg.channels?.discord?.accounts?.[resolvedAccountId]);
-      const allowFromPath = useAccountPath
-        ? `channels.discord.accounts.${resolvedAccountId}.dm.`
-        : "channels.discord.dm.";
-      return {
-        policy: account.config.dm?.policy ?? "pairing",
+      return buildAccountScopedDmSecurityPolicy({
+        cfg,
+        channelKey: "discord",
+        accountId,
+        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
+        policy: account.config.dm?.policy,
         allowFrom: account.config.dm?.allowFrom ?? [],
-        allowFromPath,
-        approveHint: formatPairingApproveHint("discord"),
+        allowFromPathSuffix: "dm.",
         normalizeEntry: (raw) => raw.replace(/^(discord|user):/i, "").replace(/^<@!?(\d+)>$/, "$1"),
-      };
+      });
     },
     collectWarnings: ({ account, cfg }) => {
       const warnings: string[] = [];

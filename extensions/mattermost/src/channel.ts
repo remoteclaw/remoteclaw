@@ -1,4 +1,7 @@
-import { buildOpenGroupPolicyRestrictSendersWarning } from "openclaw/plugin-sdk";
+import {
+  buildAccountScopedDmSecurityPolicy,
+  buildOpenGroupPolicyRestrictSendersWarning,
+} from "remoteclaw/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
@@ -7,7 +10,6 @@ import {
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   formatNormalizedAllowFromEntries,
-  formatPairingApproveHint,
   mapAllowFromEntries,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
@@ -284,19 +286,16 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
-      const resolvedAccountId = accountId ?? account.accountId ?? DEFAULT_ACCOUNT_ID;
-      const useAccountPath = Boolean(cfg.channels?.mattermost?.accounts?.[resolvedAccountId]);
-      const basePath = useAccountPath
-        ? `channels.mattermost.accounts.${resolvedAccountId}.`
-        : "channels.mattermost.";
-      return {
-        policy: account.config.dmPolicy ?? "pairing",
+      return buildAccountScopedDmSecurityPolicy({
+        cfg,
+        channelKey: "mattermost",
+        accountId,
+        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
+        policy: account.config.dmPolicy,
         allowFrom: account.config.allowFrom ?? [],
-        policyPath: `${basePath}dmPolicy`,
-        allowFromPath: basePath,
-        approveHint: formatPairingApproveHint("mattermost"),
+        policyPathSuffix: "dmPolicy",
         normalizeEntry: (raw) => normalizeAllowEntry(raw),
-      };
+      });
     },
     collectWarnings: ({ account, cfg }) => {
       const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);

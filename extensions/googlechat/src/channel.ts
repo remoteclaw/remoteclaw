@@ -1,4 +1,7 @@
-import { buildOpenGroupPolicyConfigureRouteAllowlistWarning } from "openclaw/plugin-sdk";
+import {
+  buildAccountScopedDmSecurityPolicy,
+  buildOpenGroupPolicyConfigureRouteAllowlistWarning,
+} from "remoteclaw/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
@@ -7,7 +10,6 @@ import {
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   formatNormalizedAllowFromEntries,
-  formatPairingApproveHint,
   getChatChannelMeta,
   listDirectoryGroupEntriesFromMapKeys,
   listDirectoryUserEntriesFromAllowFrom,
@@ -191,18 +193,16 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
-      const resolvedAccountId = accountId ?? account.accountId ?? DEFAULT_ACCOUNT_ID;
-      const useAccountPath = Boolean(cfg.channels?.["googlechat"]?.accounts?.[resolvedAccountId]);
-      const allowFromPath = useAccountPath
-        ? `channels.googlechat.accounts.${resolvedAccountId}.dm.`
-        : "channels.googlechat.dm.";
-      return {
-        policy: account.config.dm?.policy ?? "pairing",
+      return buildAccountScopedDmSecurityPolicy({
+        cfg,
+        channelKey: "googlechat",
+        accountId,
+        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
+        policy: account.config.dm?.policy,
         allowFrom: account.config.dm?.allowFrom ?? [],
-        allowFromPath,
-        approveHint: formatPairingApproveHint("googlechat"),
+        allowFromPathSuffix: "dm.",
         normalizeEntry: (raw) => formatAllowFromEntry(raw),
-      };
+      });
     },
     collectWarnings: ({ account, cfg }) => {
       const warnings: string[] = [];

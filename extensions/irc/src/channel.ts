@@ -1,4 +1,7 @@
-import { buildOpenGroupPolicyWarning } from "openclaw/plugin-sdk";
+import {
+  buildAccountScopedDmSecurityPolicy,
+  buildOpenGroupPolicyWarning,
+} from "remoteclaw/plugin-sdk";
 import {
   buildBaseAccountStatusSnapshot,
   buildBaseChannelStatusSummary,
@@ -6,7 +9,6 @@ import {
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   formatNormalizedAllowFromEntries,
-  formatPairingApproveHint,
   getChatChannelMeta,
   mapAllowFromEntries,
   PAIRING_APPROVED_MESSAGE,
@@ -130,19 +132,16 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
-      const resolvedAccountId = accountId ?? account.accountId ?? DEFAULT_ACCOUNT_ID;
-      const useAccountPath = Boolean(cfg.channels?.irc?.accounts?.[resolvedAccountId]);
-      const basePath = useAccountPath
-        ? `channels.irc.accounts.${resolvedAccountId}.`
-        : "channels.irc.";
-      return {
-        policy: account.config.dmPolicy ?? "pairing",
+      return buildAccountScopedDmSecurityPolicy({
+        cfg,
+        channelKey: "irc",
+        accountId,
+        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
+        policy: account.config.dmPolicy,
         allowFrom: account.config.allowFrom ?? [],
-        policyPath: `${basePath}dmPolicy`,
-        allowFromPath: `${basePath}allowFrom`,
-        approveHint: formatPairingApproveHint("irc"),
+        policyPathSuffix: "dmPolicy",
         normalizeEntry: (raw) => normalizeIrcAllowEntry(raw),
-      };
+      });
     },
     collectWarnings: ({ account, cfg }) => {
       const warnings: string[] = [];

@@ -26,6 +26,8 @@
     "assets/",
     "dist/",
     "docs/_layouts/",
+    "docs/src/",
+    "docs/tsconfig.json",
     "extensions/",
     "node_modules/",
     "patches/",

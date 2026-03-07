@@ -1,5 +1,6 @@
 import {
   applyAccountNameToChannelSection,
+  applySetupAccountConfigPatch,
   buildComputedAccountStatusSnapshot,
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
@@ -347,37 +348,12 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
         ...(webhookPath ? { webhookPath } : {}),
         ...(webhookUrl ? { webhookUrl } : {}),
       };
-      if (accountId === DEFAULT_ACCOUNT_ID) {
-        return {
-          ...next,
-          channels: {
-            ...next.channels,
-            googlechat: {
-              ...next.channels?.["googlechat"],
-              enabled: true,
-              ...configPatch,
-            },
-          },
-        } as RemoteClawConfig;
-      }
-      return {
-        ...next,
-        channels: {
-          ...next.channels,
-          googlechat: {
-            ...next.channels?.["googlechat"],
-            enabled: true,
-            accounts: {
-              ...next.channels?.["googlechat"]?.accounts,
-              [accountId]: {
-                ...next.channels?.["googlechat"]?.accounts?.[accountId],
-                enabled: true,
-                ...configPatch,
-              },
-            },
-          },
-        },
-      } as RemoteClawConfig;
+      return applySetupAccountConfigPatch({
+        cfg: next,
+        channelKey: "googlechat",
+        accountId,
+        patch: configPatch,
+      });
     },
   },
   outbound: {

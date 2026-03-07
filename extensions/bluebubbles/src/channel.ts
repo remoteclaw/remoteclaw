@@ -253,41 +253,16 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
               channelKey: "bluebubbles",
             })
           : namedConfig;
-      if (accountId === DEFAULT_ACCOUNT_ID) {
-        return {
-          ...next,
-          channels: {
-            ...next.channels,
-            bluebubbles: {
-              ...next.channels?.bluebubbles,
-              enabled: true,
-              ...(input.httpUrl ? { serverUrl: input.httpUrl } : {}),
-              ...(input.password ? { password: input.password } : {}),
-              ...(input.webhookPath ? { webhookPath: input.webhookPath } : {}),
-            },
-          },
-        } as RemoteClawConfig;
-      }
-      return {
-        ...next,
-        channels: {
-          ...next.channels,
-          bluebubbles: {
-            ...next.channels?.bluebubbles,
-            enabled: true,
-            accounts: {
-              ...next.channels?.bluebubbles?.accounts,
-              [accountId]: {
-                ...next.channels?.bluebubbles?.accounts?.[accountId],
-                enabled: true,
-                ...(input.httpUrl ? { serverUrl: input.httpUrl } : {}),
-                ...(input.password ? { password: input.password } : {}),
-                ...(input.webhookPath ? { webhookPath: input.webhookPath } : {}),
-              },
-            },
-          },
+      return applyBlueBubblesConnectionConfig({
+        cfg: next,
+        accountId,
+        patch: {
+          serverUrl: input.httpUrl,
+          password: input.password,
+          webhookPath: input.webhookPath,
         },
-      } as RemoteClawConfig;
+        onlyDefinedFields: true,
+      });
     },
   },
   pairing: {

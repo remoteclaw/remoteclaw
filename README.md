@@ -10,7 +10,7 @@
 <p align="center">
   <a href="https://github.com/remoteclaw/remoteclaw/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/remoteclaw/remoteclaw/ci.yml?branch=main&style=for-the-badge" alt="CI status"></a>
   <a href="https://github.com/remoteclaw/remoteclaw/releases"><img src="https://img.shields.io/github/v/release/remoteclaw/remoteclaw?include_prereleases&style=for-the-badge" alt="GitHub release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg?style=for-the-badge" alt="AGPL-3.0-only License"></a>
 </p>
 
 **RemoteClaw** is AI agent middleware that connects agent CLIs (Claude, Gemini, Codex, OpenCode) to messaging channels you already use — WhatsApp, Telegram, Slack, Discord, Google Chat, Signal, iMessage, Microsoft Teams, WebChat, plus extension channels like BlueBubbles, Matrix, Zalo, and Zalo Personal. It includes voice support on macOS/iOS/Android and a live Canvas workspace.
@@ -474,6 +474,12 @@ Use these when you’re past the onboarding flow and want the deeper reference.
 ## Email hooks (Gmail)
 
 - [docs.remoteclaw.org/gmail-pubsub](https://docs.remoteclaw.org/automation/gmail-pubsub)
+
+## License
+
+RemoteClaw is licensed under [AGPL-3.0-only](LICENSE).
+
+This project incorporates code from [OpenClaw](https://github.com/openclaw/openclaw), originally licensed under the [MIT License](LICENSES/MIT.txt). If you prefer the MIT-licensed version, see the [upstream repository](https://github.com/openclaw/openclaw).
 
 ## Community
 

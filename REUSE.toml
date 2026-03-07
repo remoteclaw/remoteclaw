@@ -1,0 +1,14 @@
+version = 1
+
+[[annotations]]
+path = ["src/**", "extensions/**", "ui/**", "apps/**"]
+SPDX-FileCopyrightText = [
+  "2025 Peter Steinberger and OpenClaw contributors",
+  "2026 RemoteClaw contributors",
+]
+SPDX-License-Identifier = "AGPL-3.0-only"
+
+[[annotations]]
+path = ["LICENSES/MIT.txt"]
+SPDX-FileCopyrightText = "2025 Peter Steinberger"
+SPDX-License-Identifier = "MIT"

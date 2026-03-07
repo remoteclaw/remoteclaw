@@ -23,7 +23,12 @@ import {
   upsertChannelPairingRequest,
 } from "../pairing/pairing-store.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { firstDefined, isSenderAllowed, normalizeAllowFromWithStore } from "./bot-access.js";
+import {
+  firstDefined,
+  isSenderAllowed,
+  normalizeAllowFromWithStore,
+  type NormalizedAllowFrom,
+} from "./bot-access.js";
 import {
   getLineSourceInfo,
   buildLineMessageContext,
@@ -349,17 +354,15 @@ async function shouldProcessLineEvent(
         return denied;
       }
     }
-    const allowForCommands = effectiveGroupAllow;
-    const senderAllowedForCommands = isSenderAllowed({ allow: allowForCommands, senderId });
-    const useAccessGroups = cfg.commands?.useAccessGroups !== false;
-    const rawText = resolveEventRawText(event);
-    const commandGate = resolveControlCommandGate({
-      useAccessGroups,
-      authorizers: [{ configured: allowForCommands.hasEntries, allowed: senderAllowedForCommands }],
-      allowTextCommands: true,
-      hasControlCommand: hasControlCommand(rawText, cfg),
-    });
-    return { allowed: true, commandAuthorized: commandGate.commandAuthorized };
+    return {
+      allowed: true,
+      commandAuthorized: resolveLineCommandAuthorized({
+        cfg,
+        event,
+        senderId,
+        allow: effectiveGroupAllow,
+      }),
+    };
   }
 
   if (dmPolicy === "disabled") {
@@ -385,17 +388,15 @@ async function shouldProcessLineEvent(
     return denied;
   }
 
-  const allowForCommands = effectiveDmAllow;
-  const senderAllowedForCommands = isSenderAllowed({ allow: allowForCommands, senderId });
-  const useAccessGroups = cfg.commands?.useAccessGroups !== false;
-  const rawText = resolveEventRawText(event);
-  const commandGate = resolveControlCommandGate({
-    useAccessGroups,
-    authorizers: [{ configured: allowForCommands.hasEntries, allowed: senderAllowedForCommands }],
-    allowTextCommands: true,
-    hasControlCommand: hasControlCommand(rawText, cfg),
-  });
-  return { allowed: true, commandAuthorized: commandGate.commandAuthorized };
+  return {
+    allowed: true,
+    commandAuthorized: resolveLineCommandAuthorized({
+      cfg,
+      event,
+      senderId,
+      allow: effectiveDmAllow,
+    }),
+  };
 }
 
 function resolveEventRawText(event: MessageEvent | PostbackEvent): string {
@@ -410,6 +411,27 @@ function resolveEventRawText(event: MessageEvent | PostbackEvent): string {
     return event.postback?.data?.trim() ?? "";
   }
   return "";
+}
+
+function resolveLineCommandAuthorized(params: {
+  cfg: OpenClawConfig;
+  event: MessageEvent | PostbackEvent;
+  senderId?: string;
+  allow: NormalizedAllowFrom;
+}): boolean {
+  const senderAllowedForCommands = isSenderAllowed({
+    allow: params.allow,
+    senderId: params.senderId,
+  });
+  const useAccessGroups = params.cfg.commands?.useAccessGroups !== false;
+  const rawText = resolveEventRawText(params.event);
+  const commandGate = resolveControlCommandGate({
+    useAccessGroups,
+    authorizers: [{ configured: params.allow.hasEntries, allowed: senderAllowedForCommands }],
+    allowTextCommands: true,
+    hasControlCommand: hasControlCommand(rawText, params.cfg),
+  });
+  return commandGate.commandAuthorized;
 }
 
 async function handleMessageEvent(event: MessageEvent, context: LineHandlerContext): Promise<void> {

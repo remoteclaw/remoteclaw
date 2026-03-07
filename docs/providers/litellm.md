@@ -151,4 +151,3 @@ curl "http://localhost:4000/spend/logs" \
 ## See also
 
 - [LiteLLM Docs](https://docs.litellm.ai)
-- [Model Providers](/concepts/model-providers)

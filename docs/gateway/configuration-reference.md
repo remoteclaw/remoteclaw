@@ -2397,7 +2397,7 @@ Reference env vars in any config string with `${VAR_NAME}`:
 
 - Per-agent auth profiles stored at `<agentDir>/auth-profiles.json`.
 - Legacy OAuth imports from `~/.remoteclaw/credentials/oauth.json`.
-- See [OAuth](/concepts/oauth).
+- See [Model failover](/concepts/model-failover).
 
 ---
 

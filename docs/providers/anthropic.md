@@ -153,17 +153,7 @@ Setup-tokens are created by the **Claude Code CLI**, not the Anthropic Console. 
 claude setup-token
 ```
 
-Paste the token into RemoteClaw (wizard: **Anthropic token (paste setup-token)**), or run it on the gateway host:
-
-```bash
-remoteclaw models auth setup-token --provider anthropic
-```
-
-If you generated the token on a different machine, paste it:
-
-```bash
-remoteclaw models auth paste-token --provider anthropic
-```
+Paste the token into RemoteClaw (wizard: **Anthropic token (paste setup-token)**).
 
 ### CLI setup (setup-token)
 
@@ -182,33 +172,27 @@ remoteclaw onboard --auth-choice setup-token
 
 ## Notes
 
-- Generate the setup-token with `claude setup-token` and paste it, or run `remoteclaw models auth setup-token` on the gateway host.
+- Generate the setup-token with `claude setup-token` and paste it during onboarding.
 - If you see “OAuth token refresh failed …” on a Claude subscription, re-auth with a setup-token. See [/gateway/troubleshooting#oauth-token-refresh-failed-anthropic-claude-subscription](/gateway/troubleshooting#oauth-token-refresh-failed-anthropic-claude-subscription).
-- Auth details + reuse rules are in [/concepts/oauth](/concepts/oauth).
 
 ## Troubleshooting
 
 **401 errors / token suddenly invalid**
 
 - Claude subscription auth can expire or be revoked. Re-run `claude setup-token`
-  and paste it into the **gateway host**.
-- If the Claude CLI login lives on a different machine, use
-  `remoteclaw models auth paste-token --provider anthropic` on the gateway host.
+  and paste it into the **gateway host** via onboarding.
 
 **No API key found for provider "anthropic"**
 
 - Auth is **per agent**. New agents don’t inherit the main agent’s keys.
-- Re-run onboarding for that agent, or paste a setup-token / API key on the
-  gateway host, then verify with `remoteclaw models status`.
+- Re-run onboarding for that agent.
 
 **No credentials found for profile `anthropic:default`**
 
-- Run `remoteclaw models status` to see which auth profile is active.
 - Re-run onboarding, or paste a setup-token / API key for that profile.
 
 **No available auth profile (all in cooldown/unavailable)**
 
-- Check `remoteclaw models status --json` for `auth.unusableProfiles`.
 - Add another Anthropic profile or wait for cooldown.
 
 More: [/gateway/troubleshooting](/gateway/troubleshooting) and [/help/faq](/help/faq).

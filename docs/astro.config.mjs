@@ -84,7 +84,7 @@ const redirects = {
   "/multi-agent": "/concepts/multi-agent",
   "/nix": "/install/nix",
   "/northflank": "/install/northflank",
-  "/oauth": "/concepts/oauth",
+  "/oauth": "/concepts/model-failover",
   "/onboarding-config-protocol": "/experiments/onboarding-config-protocol",
   "/openai": "/providers/openai",
   "/opencode": "/providers/opencode",
@@ -301,7 +301,6 @@ export default defineConfig({
                 { slug: "concepts/system-prompt" },
                 { slug: "concepts/context" },
                 { slug: "concepts/agent-workspace" },
-                { slug: "concepts/oauth" },
               ],
             },
             {
@@ -410,7 +409,7 @@ export default defineConfig({
             },
             {
               label: "Configuration",
-              items: [{ slug: "concepts/model-providers" }, { slug: "concepts/model-failover" }],
+              items: [{ slug: "concepts/model-failover" }],
             },
             {
               label: "Providers",

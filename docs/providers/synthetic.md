@@ -37,33 +37,8 @@ synthetic/hf:MiniMaxAI/MiniMax-M2.1
       models: { "synthetic/hf:MiniMaxAI/MiniMax-M2.1": { alias: "MiniMax M2.1" } },
     },
   },
-  models: {
-    mode: "merge",
-    providers: {
-      synthetic: {
-        baseUrl: "https://api.synthetic.new/anthropic",
-        apiKey: "${SYNTHETIC_API_KEY}",
-        api: "anthropic-messages",
-        models: [
-          {
-            id: "hf:MiniMaxAI/MiniMax-M2.1",
-            name: "MiniMax M2.1",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 192000,
-            maxTokens: 65536,
-          },
-        ],
-      },
-    },
-  },
 }
 ```
-
-Note: RemoteClaw's Anthropic client appends `/v1` to the base URL, so use
-`https://api.synthetic.new/anthropic` (not `/anthropic/v1`). If Synthetic changes
-its base URL, override `models.providers.synthetic.baseUrl`.
 
 ## Model catalog
 
@@ -96,4 +71,3 @@ All models below use cost `0` (input/output/cache).
 - Model refs use `synthetic/<modelId>`.
 - If you enable a model allowlist (`agents.defaults.models`), add every model you
   plan to use.
-- See [Model providers](/concepts/model-providers) for provider rules.

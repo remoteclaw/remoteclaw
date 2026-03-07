@@ -12,29 +12,18 @@ NVIDIA provides an OpenAI-compatible API at `https://integrate.api.nvidia.com/v1
 
 ## CLI setup
 
-Export the key once, then run onboarding and set an NVIDIA model:
+Export the key once, then run onboarding:
 
 ```bash
 export NVIDIA_API_KEY="nvapi-..."
 remoteclaw onboard --auth-choice skip
-remoteclaw models set nvidia/nvidia/llama-3.1-nemotron-70b-instruct
 ```
-
-If you still pass `--token`, remember it lands in shell history and `ps` output; prefer the env var when possible.
 
 ## Config snippet
 
 ```json5
 {
   env: { NVIDIA_API_KEY: "nvapi-..." },
-  models: {
-    providers: {
-      nvidia: {
-        baseUrl: "https://integrate.api.nvidia.com/v1",
-        api: "openai-completions",
-      },
-    },
-  },
   agents: {
     defaults: {
       model: { primary: "nvidia/nvidia/llama-3.1-nemotron-70b-instruct" },

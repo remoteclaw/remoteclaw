@@ -23,8 +23,6 @@ RemoteClaw uses **auth profiles** for both API keys and OAuth tokens.
 - Config `auth.profiles` / `auth.order` are **metadata + routing only** (no secrets).
 - Legacy import-only OAuth file: `~/.remoteclaw/credentials/oauth.json` (imported into `auth-profiles.json` on first use).
 
-More detail: [/concepts/oauth](/concepts/oauth)
-
 Credential types:
 
 - `type: "api_key"` → `{ provider, key }`
@@ -62,20 +60,14 @@ It does **not** rotate on every request. The pinned profile is reused until:
 - a compaction completes (compaction count increments)
 - the profile is in cooldown/disabled
 
-Manual selection via `/model …@<profileId>` sets a **user override** for that session
-and is not auto‑rotated until a new session starts.
-
 Auto‑pinned profiles (selected by the session router) are treated as a **preference**:
 they are tried first, but RemoteClaw may rotate to another profile on rate limits/timeouts.
-User‑pinned profiles stay locked to that profile; if it fails and model fallbacks
-are configured, RemoteClaw moves to the next model instead of switching profiles.
 
 ### Why OAuth can “look lost”
 
 If you have both an OAuth profile and an API key profile for the same provider, round‑robin can switch between them across messages unless pinned. To force a single profile:
 
-- Pin with `auth.order[provider] = ["provider:profileId"]`, or
-- Use a per-session override via `/model …` with a profile override (when supported by your UI/chat surface).
+- Pin with `auth.order[provider] = [“provider:profileId”]`.
 
 ## Cooldowns
 
@@ -145,5 +137,3 @@ See [Gateway configuration](/gateway/configuration) for:
 - `auth.cooldowns.billingMaxHours` / `auth.cooldowns.failureWindowHours`
 - `agents.defaults.model.primary` / `agents.defaults.model.fallbacks`
 - `agents.defaults.imageModel` routing
-
-See [Model providers](/concepts/model-providers) for the broader model selection and fallback overview.

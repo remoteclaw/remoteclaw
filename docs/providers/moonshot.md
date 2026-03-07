@@ -55,65 +55,6 @@ Note: Moonshot and Kimi Coding are separate providers. Keys are not interchangea
       },
     },
   },
-  models: {
-    mode: "merge",
-    providers: {
-      moonshot: {
-        baseUrl: "https://api.moonshot.ai/v1",
-        apiKey: "${MOONSHOT_API_KEY}",
-        api: "openai-completions",
-        models: [
-          // moonshot-kimi-k2-models:start
-          {
-            id: "kimi-k2.5",
-            name: "Kimi K2.5",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 256000,
-            maxTokens: 8192,
-          },
-          {
-            id: "kimi-k2-0905-preview",
-            name: "Kimi K2 0905 Preview",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 256000,
-            maxTokens: 8192,
-          },
-          {
-            id: "kimi-k2-turbo-preview",
-            name: "Kimi K2 Turbo",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 256000,
-            maxTokens: 8192,
-          },
-          {
-            id: "kimi-k2-thinking",
-            name: "Kimi K2 Thinking",
-            reasoning: true,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 256000,
-            maxTokens: 8192,
-          },
-          {
-            id: "kimi-k2-thinking-turbo",
-            name: "Kimi K2 Thinking Turbo",
-            reasoning: true,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 256000,
-            maxTokens: 8192,
-          },
-          // moonshot-kimi-k2-models:end
-        ],
-      },
-    },
-  },
 }
 ```
 
@@ -136,7 +77,4 @@ Note: Moonshot and Kimi Coding are separate providers. Keys are not interchangea
 ## Notes
 
 - Moonshot model refs use `moonshot/<modelId>`. Kimi Coding model refs use `kimi-coding/<modelId>`.
-- Override pricing and context metadata in `models.providers` if needed.
-- If Moonshot publishes different context limits for a model, adjust
-  `contextWindow` accordingly.
 - Use `https://api.moonshot.ai/v1` for the international endpoint, and `https://api.moonshot.cn/v1` for the China endpoint.

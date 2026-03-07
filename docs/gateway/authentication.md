@@ -12,8 +12,8 @@ RemoteClaw supports OAuth and API keys for model providers. For Anthropic
 accounts, we recommend using an **API key**. For Claude subscription access,
 use the long‑lived token created by `claude setup-token`.
 
-See [/concepts/oauth](/concepts/oauth) for the full OAuth flow and storage
-layout.
+See [Model failover](/concepts/model-failover) for auth profile rotation and
+storage layout.
 
 ## Recommended Anthropic setup (API key)
 

@@ -23,6 +23,10 @@ const sessionCleanupMocks = vi.hoisted(() => ({
   stopSubagentsForRequester: vi.fn(() => ({ stopped: 0 })),
 }));
 
+const bootstrapCacheMocks = vi.hoisted(() => ({
+  clearBootstrapSnapshot: vi.fn(),
+}));
+
 const sessionHookMocks = vi.hoisted(() => ({
   triggerInternalHook: vi.fn(async () => {}),
 }));
@@ -59,6 +63,14 @@ vi.mock("../auto-reply/reply/abort.js", async () => {
   return {
     ...actual,
     stopSubagentsForRequester: sessionCleanupMocks.stopSubagentsForRequester,
+  };
+});
+
+vi.mock("../agents/bootstrap-cache.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../agents/bootstrap-cache.js")>();
+  return {
+    ...actual,
+    clearBootstrapSnapshot: bootstrapCacheMocks.clearBootstrapSnapshot,
   };
 });
 
@@ -177,6 +189,7 @@ describe("gateway server sessions", () => {
   beforeEach(() => {
     sessionCleanupMocks.clearSessionQueues.mockClear();
     sessionCleanupMocks.stopSubagentsForRequester.mockClear();
+    bootstrapCacheMocks.clearBootstrapSnapshot.mockReset();
     sessionHookMocks.triggerInternalHook.mockClear();
     subagentLifecycleHookMocks.runSubagentEnded.mockClear();
     subagentLifecycleHookState.hasSubagentEndedHook = true;
@@ -803,6 +816,10 @@ describe("gateway server sessions", () => {
 
   test("sessions.reset aborts active runs and clears queues", async () => {
     await seedActiveMainSession();
+    const waitCallCountAtSnapshotClear: number[] = [];
+    bootstrapCacheMocks.clearBootstrapSnapshot.mockImplementation(() => {
+      waitCallCountAtSnapshotClear.push(embeddedRunMock.waitCalls.length);
+    });
 
     const { ws } = await openClient();
 

@@ -225,6 +225,7 @@ Docs: https://docs.openclaw.ai
 - Telegram/polling offset safety: confirm persisted offsets before polling startup while validating stored `lastUpdateId` values as non-negative safe integers (with overflow guards) so malformed offset state cannot cause update skipping/dropping. (#39111) Thanks @MumuTW.
 - Telegram/status SecretRef read-only resolution: resolve env-backed bot-token SecretRefs in config-only/status inspection while respecting provider source/defaults and env allowlists, so status no longer crashes or reports false-ready tokens for disallowed providers. (#39130) Thanks @neocody.
 - Gateway/chat delta ordering: flush buffered assistant deltas before emitting tool `start` events so pre-tool text is delivered to Control UI before tool cards, avoiding transient text/tool ordering artifacts in streaming. (#39128) Thanks @0xtangping.
+- Gateway/session bootstrap cache invalidation ordering: clear bootstrap snapshots only after active embedded-run shutdown wait completes, preventing dying runs from repopulating stale cache between `/new`/`sessions.reset` turns. (#38873) Thanks @MumuTW.
 
 ## 2026.3.2
 

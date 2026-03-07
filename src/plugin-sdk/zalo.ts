@@ -19,6 +19,7 @@ export {
   mergeAllowFromEntries,
   promptAccountId,
   promptSingleChannelToken,
+  resolveAccountIdForConfigure,
 } from "../channels/plugins/onboarding/helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
 export {

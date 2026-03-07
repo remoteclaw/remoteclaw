@@ -1,1 +1,1 @@
-export { promptAccountId } from "remoteclaw/plugin-sdk";
+export { promptAccountId, resolveAccountIdForConfigure } from "remoteclaw/plugin-sdk";

@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-  namespace = "ai.remoteclaw.android"
+  namespace = "org.remoteclaw.android"
   compileSdk = 36
 
   sourceSets {
@@ -17,7 +17,7 @@ android {
   }
 
   defaultConfig {
-    applicationId = "ai.remoteclaw.android"
+    applicationId = "org.remoteclaw.android"
     minSdk = 31
     targetSdk = 36
     versionCode = 1

@@ -21,7 +21,7 @@ normalize_bundle_id() {
   raw="$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]')"
   raw="$(printf '%s' "$raw" | sed -E 's/[^a-z0-9.-]+/-/g; s/\.+/./g; s/^-+//; s/[.-]+$//')"
   if [[ -z "$raw" ]]; then
-    raw="ai.remoteclaw.ios.test.local"
+    raw="org.remoteclaw.ios.test.local"
   fi
   printf '%s\n' "$raw"
 }
@@ -58,7 +58,7 @@ bundle_suffix="$(sanitize_identifier_segment "${identity_source}")"
 
 bundle_base="${REMOTECLAW_IOS_APP_BUNDLE_ID:-${REMOTECLAW_IOS_BUNDLE_ID_BASE:-}}"
 if [[ -z "${bundle_base}" ]]; then
-  bundle_base="ai.remoteclaw.ios.test.${bundle_suffix}"
+  bundle_base="org.remoteclaw.ios.test.${bundle_suffix}"
 fi
 bundle_base="$(normalize_bundle_id "${bundle_base}")"
 

@@ -3,7 +3,7 @@ import RemoteClawKit
 import OSLog
 import WebKit
 
-private let canvasLogger = Logger(subsystem: "ai.remoteclaw", category: "Canvas")
+private let canvasLogger = Logger(subsystem: "org.remoteclaw", category: "Canvas")
 
 final class CanvasSchemeHandler: NSObject, WKURLSchemeHandler {
     private let root: URL

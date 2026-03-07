@@ -81,14 +81,14 @@ Use this if the gateway service keeps running but `remoteclaw` is missing.
 
 ### macOS (launchd)
 
-Default label is `ai.remoteclaw.gateway` (or `ai.remoteclaw.<profile>`; legacy `com.remoteclaw.*` may still exist):
+Default label is `org.remoteclaw.gateway` (or `org.remoteclaw.<profile>`; legacy `com.remoteclaw.*` may still exist):
 
 ```bash
-launchctl bootout gui/$UID/ai.remoteclaw.gateway
-rm -f ~/Library/LaunchAgents/ai.remoteclaw.gateway.plist
+launchctl bootout gui/$UID/org.remoteclaw.gateway
+rm -f ~/Library/LaunchAgents/org.remoteclaw.gateway.plist
 ```
 
-If you used a profile, replace the label and plist name with `ai.remoteclaw.<profile>`. Remove any legacy `com.remoteclaw.*` plists if present.
+If you used a profile, replace the label and plist name with `org.remoteclaw.<profile>`. Remove any legacy `com.remoteclaw.*` plists if present.
 
 ### Linux (systemd user unit)
 

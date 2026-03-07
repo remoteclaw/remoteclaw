@@ -1,4 +1,4 @@
-app_identifier("ai.remoteclaw.ios")
+app_identifier("org.remoteclaw.ios")
 
 # Auth is expected via App Store Connect API key.
 # Provide either:

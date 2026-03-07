@@ -22,7 +22,7 @@ enum NodePairingReconcilePolicy {
 final class NodePairingApprovalPrompter {
     static let shared = NodePairingApprovalPrompter()
 
-    private let logger = Logger(subsystem: "ai.remoteclaw", category: "node-pairing")
+    private let logger = Logger(subsystem: "org.remoteclaw", category: "node-pairing")
     private var task: Task<Void, Never>?
     private var reconcileTask: Task<Void, Never>?
     private var reconcileOnceTask: Task<Void, Never>?

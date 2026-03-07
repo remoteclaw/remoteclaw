@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Configuration
-SUBSYSTEM="ai.remoteclaw"
+SUBSYSTEM="org.remoteclaw"
 DEFAULT_LEVEL="info"
 
 # Colors for output
@@ -58,7 +58,7 @@ DESCRIPTION:
     Requires sudo access configured for /usr/bin/log command.
 
 LOG FLOW ARCHITECTURE:
-    RemoteClaw logs flow through the macOS unified log (subsystem: ai.remoteclaw).
+    RemoteClaw logs flow through the macOS unified log (subsystem: org.remoteclaw).
 
 LOG CATEGORIES (examples):
     • voicewake           - Voice wake detection/test harness

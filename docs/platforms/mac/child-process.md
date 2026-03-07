@@ -18,8 +18,8 @@ If you need tighter coupling to the UI, run the Gateway manually in a terminal.
 
 ## Default behavior (launchd)
 
-- The app installs a per‑user LaunchAgent labeled `ai.remoteclaw.gateway`
-  (or `ai.remoteclaw.<profile>` when using `--profile`/`REMOTECLAW_PROFILE`; legacy `com.remoteclaw.*` is supported).
+- The app installs a per‑user LaunchAgent labeled `org.remoteclaw.gateway`
+  (or `org.remoteclaw.<profile>` when using `--profile`/`REMOTECLAW_PROFILE`; legacy `com.remoteclaw.*` is supported).
 - When Local mode is enabled, the app ensures the LaunchAgent is loaded and
   starts the Gateway if needed.
 - Logs are written to the launchd gateway log path (visible in Debug Settings).
@@ -27,11 +27,11 @@ If you need tighter coupling to the UI, run the Gateway manually in a terminal.
 Common commands:
 
 ```bash
-launchctl kickstart -k gui/$UID/ai.remoteclaw.gateway
-launchctl bootout gui/$UID/ai.remoteclaw.gateway
+launchctl kickstart -k gui/$UID/org.remoteclaw.gateway
+launchctl bootout gui/$UID/org.remoteclaw.gateway
 ```
 
-Replace the label with `ai.remoteclaw.<profile>` when running a named profile.
+Replace the label with `org.remoteclaw.<profile>` when running a named profile.
 
 ## Unsigned dev builds
 

@@ -26,7 +26,7 @@ public struct ShareGatewayRelayConfig: Codable, Sendable, Equatable {
 }
 
 public enum ShareGatewayRelaySettings {
-    private static let suiteName = "group.ai.remoteclaw.shared"
+    private static let suiteName = "group.org.remoteclaw.shared"
     private static let relayConfigKey = "share.gatewayRelay.config.v1"
     private static let lastEventKey = "share.gatewayRelay.event.v1"
 

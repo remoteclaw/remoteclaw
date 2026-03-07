@@ -8,7 +8,7 @@ import SwiftUI
 final class VoiceWakeOverlayController {
     static let shared = VoiceWakeOverlayController()
 
-    let logger = Logger(subsystem: "ai.remoteclaw", category: "voicewake.overlay")
+    let logger = Logger(subsystem: "org.remoteclaw", category: "voicewake.overlay")
     let enableUI: Bool
 
     /// Keep the voice wake overlay above any other RemoteClaw windows, but below the system’s pop-up menus.

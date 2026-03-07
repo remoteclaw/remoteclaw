@@ -72,7 +72,7 @@ enum HealthState: Equatable {
 final class HealthStore {
     static let shared = HealthStore()
 
-    private static let logger = Logger(subsystem: "ai.remoteclaw", category: "health")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "health")
 
     private(set) var snapshot: HealthSnapshot?
     private(set) var lastSuccess: Date?

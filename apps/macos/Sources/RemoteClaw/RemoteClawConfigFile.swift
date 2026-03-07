@@ -2,7 +2,7 @@ import Foundation
 import RemoteClawProtocol
 
 enum RemoteClawConfigFile {
-    private static let logger = Logger(subsystem: "ai.remoteclaw", category: "config")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "config")
     private static let configAuditFileName = "config-audit.jsonl"
 
     static func url() -> URL {

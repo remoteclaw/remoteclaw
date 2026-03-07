@@ -5,7 +5,7 @@ import UIKit
 #endif
 
 public enum InstanceIdentity {
-    private static let suiteName = "ai.remoteclaw.shared"
+    private static let suiteName = "org.remoteclaw.shared"
     private static let instanceIdKey = "instanceId"
 
     private static var defaults: UserDefaults {

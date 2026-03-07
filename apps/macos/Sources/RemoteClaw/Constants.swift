@@ -2,8 +2,8 @@ import Foundation
 
 // Stable identifier used for both the macOS LaunchAgent label and Nix-managed defaults suite.
 // nix-remoteclaw writes app defaults into this suite to survive app bundle identifier churn.
-let launchdLabel = "ai.remoteclaw.mac"
-let gatewayLaunchdLabel = "ai.remoteclaw.gateway"
+let launchdLabel = "org.remoteclaw.mac"
+let gatewayLaunchdLabel = "org.remoteclaw.gateway"
 let onboardingVersionKey = "remoteclaw.onboardingVersion"
 let onboardingSeenKey = "remoteclaw.onboardingSeen"
 let currentOnboardingVersion = 7

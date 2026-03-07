@@ -10,7 +10,7 @@ import AppKit
 import UIKit
 #endif
 
-private let chatUILogger = Logger(subsystem: "ai.remoteclaw", category: "RemoteClawChatUI")
+private let chatUILogger = Logger(subsystem: "org.remoteclaw", category: "RemoteClawChatUI")
 
 @MainActor
 @Observable

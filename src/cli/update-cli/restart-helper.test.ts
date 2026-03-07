@@ -64,7 +64,7 @@ describe("restart-helper", () => {
       });
       expect(scriptPath.endsWith(".sh")).toBe(true);
       expect(content).toContain("#!/bin/sh");
-      expect(content).toContain("launchctl kickstart -k 'gui/501/ai.remoteclaw.gateway'");
+      expect(content).toContain("launchctl kickstart -k 'gui/501/org.remoteclaw.gateway'");
       expect(content).toContain('rm -f "$0"');
       await cleanupScript(scriptPath);
     });
@@ -124,7 +124,7 @@ describe("restart-helper", () => {
       const { scriptPath, content } = await prepareAndReadScript({
         REMOTECLAW_PROFILE: "staging",
       });
-      expect(content).toContain("gui/502/ai.remoteclaw.staging");
+      expect(content).toContain("gui/502/org.remoteclaw.staging");
       await cleanupScript(scriptPath);
     });
 

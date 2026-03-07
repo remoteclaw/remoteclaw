@@ -70,7 +70,7 @@ struct GatewayCommandResolution {
 }
 
 enum GatewayEnvironment {
-    private static let logger = Logger(subsystem: "ai.remoteclaw", category: "gateway.env")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "gateway.env")
     private static let supportedBindModes: Set<String> = ["loopback", "tailnet", "lan", "auto"]
 
     static func gatewayPort() -> Int {

@@ -54,10 +54,10 @@ final class NodeAppModel {
         let request: AgentDeepLink
     }
 
-    private let deepLinkLogger = Logger(subsystem: "ai.remoteclaw.ios", category: "DeepLink")
-    private let pushWakeLogger = Logger(subsystem: "ai.remoteclaw.ios", category: "PushWake")
-    private let locationWakeLogger = Logger(subsystem: "ai.remoteclaw.ios", category: "LocationWake")
-    private let watchReplyLogger = Logger(subsystem: "ai.remoteclaw.ios", category: "WatchReply")
+    private let deepLinkLogger = Logger(subsystem: "org.remoteclaw.ios", category: "DeepLink")
+    private let pushWakeLogger = Logger(subsystem: "org.remoteclaw.ios", category: "PushWake")
+    private let locationWakeLogger = Logger(subsystem: "org.remoteclaw.ios", category: "LocationWake")
+    private let watchReplyLogger = Logger(subsystem: "org.remoteclaw.ios", category: "WatchReply")
     enum CameraHUDKind {
         case photo
         case recording

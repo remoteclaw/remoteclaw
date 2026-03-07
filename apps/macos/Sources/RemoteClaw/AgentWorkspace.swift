@@ -2,7 +2,7 @@ import Foundation
 import OSLog
 
 enum AgentWorkspace {
-    private static let logger = Logger(subsystem: "ai.remoteclaw", category: "workspace")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "workspace")
     static let agentsFilename = "AGENTS.md"
     static let soulFilename = "SOUL.md"
     static let identityFilename = "IDENTITY.md"

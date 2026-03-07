@@ -133,7 +133,7 @@ Automatic wake/reconnect hardening:
 5. If network path is unclear:
    - switch to manual host/port + TLS in Gateway Advanced settings
 6. In Xcode console, filter for subsystem/category signals:
-   - `ai.remoteclaw.ios`
+   - `org.remoteclaw.ios`
    - `GatewayDiag`
    - `APNs registration failed`
 7. Validate background expectations:

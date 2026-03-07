@@ -136,7 +136,7 @@ private let defaultOperatorConnectScopes: [String] = [
 ]
 
 public actor GatewayChannelActor {
-    private let logger = Logger(subsystem: "ai.remoteclaw", category: "gateway")
+    private let logger = Logger(subsystem: "org.remoteclaw", category: "gateway")
     private var task: WebSocketTaskBox?
     private var pending: [String: CheckedContinuation<GatewayFrame, Error>] = [:]
     private var connected = false

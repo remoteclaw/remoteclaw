@@ -2435,7 +2435,7 @@ Quick setup (recommended):
 - Set a unique `gateway.port` in each profile config (or pass `--port` for manual runs).
 - Install a per-profile service: `remoteclaw --profile <name> gateway install`.
 
-Profiles also suffix service names (`ai.remoteclaw.<profile>`; legacy `com.remoteclaw.*`, `remoteclaw-gateway-<profile>.service`, `RemoteClaw Gateway (<profile>)`).
+Profiles also suffix service names (`org.remoteclaw.<profile>`; legacy `com.remoteclaw.*`, `remoteclaw-gateway-<profile>.service`, `RemoteClaw Gateway (<profile>)`).
 Full guide: [Multiple gateways](/gateway/multiple-gateways).
 
 ### What does invalid handshake code 1008 mean

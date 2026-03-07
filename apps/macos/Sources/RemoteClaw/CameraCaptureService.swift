@@ -36,7 +36,7 @@ actor CameraCaptureService {
         }
     }
 
-    private let logger = Logger(subsystem: "ai.remoteclaw", category: "camera")
+    private let logger = Logger(subsystem: "org.remoteclaw", category: "camera")
 
     func listDevices() -> [CameraDeviceInfo] {
         Self.availableCameras().map { device in

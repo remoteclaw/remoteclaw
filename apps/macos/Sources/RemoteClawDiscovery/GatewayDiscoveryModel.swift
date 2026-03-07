@@ -76,7 +76,7 @@ public final class GatewayDiscoveryModel {
     private var pendingServiceResolvers: [String: GatewayServiceResolver] = [:]
     private var wideAreaFallbackTask: Task<Void, Never>?
     private var wideAreaFallbackGateways: [DiscoveredGateway] = []
-    private let logger = Logger(subsystem: "ai.remoteclaw", category: "gateway-discovery")
+    private let logger = Logger(subsystem: "org.remoteclaw", category: "gateway-discovery")
 
     public init(
         localDisplayName: String? = nil,
@@ -116,7 +116,7 @@ public final class GatewayDiscoveryModel {
             }
 
             self.browsers[domain] = browser
-            browser.start(queue: DispatchQueue(label: "ai.remoteclaw.macos.gateway-discovery.\(domain)"))
+            browser.start(queue: DispatchQueue(label: "org.remoteclaw.macos.gateway-discovery.\(domain)"))
         }
 
         self.scheduleWideAreaFallback()

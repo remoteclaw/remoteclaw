@@ -24,7 +24,7 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>ai.remoteclaw.ios</string>
+			<string>org.remoteclaw.ios</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>remoteclaw</string>
@@ -66,7 +66,7 @@
 	</array>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>ai.remoteclaw.ios.bgrefresh</string>
+		<string>org.remoteclaw.ios.bgrefresh</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>

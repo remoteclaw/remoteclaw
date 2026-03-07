@@ -49,5 +49,5 @@ Use one of these (all supported):
 
 The service target depends on OS:
 
-- macOS: LaunchAgent (`ai.remoteclaw.gateway` or `ai.remoteclaw.<profile>`; legacy `com.remoteclaw.*`)
+- macOS: LaunchAgent (`org.remoteclaw.gateway` or `org.remoteclaw.<profile>`; legacy `com.remoteclaw.*`)
 - Linux/WSL2: systemd user service (`remoteclaw-gateway[-<profile>].service`)

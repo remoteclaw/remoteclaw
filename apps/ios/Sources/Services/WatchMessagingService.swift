@@ -21,7 +21,7 @@ enum WatchMessagingError: LocalizedError {
 }
 
 final class WatchMessagingService: NSObject, WatchMessagingServicing, @unchecked Sendable {
-    private static let logger = Logger(subsystem: "ai.remoteclaw", category: "watch.messaging")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "watch.messaging")
     private let session: WCSession?
     private let replyHandlerLock = NSLock()
     private var replyHandler: (@Sendable (WatchQuickReplyEvent) -> Void)?

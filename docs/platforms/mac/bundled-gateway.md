@@ -28,12 +28,12 @@ The macOS app’s **Install CLI** button runs the same flow via npm/pnpm (bun no
 
 Label:
 
-- `ai.remoteclaw.gateway` (or `ai.remoteclaw.<profile>`; legacy `com.remoteclaw.*` may remain)
+- `org.remoteclaw.gateway` (or `org.remoteclaw.<profile>`; legacy `com.remoteclaw.*` may remain)
 
 Plist location (per‑user):
 
-- `~/Library/LaunchAgents/ai.remoteclaw.gateway.plist`
-  (or `~/Library/LaunchAgents/ai.remoteclaw.<profile>.plist`)
+- `~/Library/LaunchAgents/org.remoteclaw.gateway.plist`
+  (or `~/Library/LaunchAgents/org.remoteclaw.<profile>.plist`)
 
 Manager:
 

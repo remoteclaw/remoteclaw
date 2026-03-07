@@ -373,7 +373,7 @@ final class LocationPermissionRequester: NSObject, CLLocationManagerDelegate {
 }
 
 enum AppleScriptPermission {
-    private static let logger = Logger(subsystem: "ai.remoteclaw", category: "AppleScriptPermission")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "AppleScriptPermission")
 
     /// Sends a benign AppleScript to Terminal to verify Automation permission.
     @MainActor

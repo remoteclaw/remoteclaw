@@ -76,7 +76,7 @@ enum RemoteClawLogging {
 
     static func parseLabel(_ label: String) -> (String, String) {
         guard let range = label.range(of: labelSeparator) else {
-            return ("ai.remoteclaw", label)
+            return ("org.remoteclaw", label)
         }
         let subsystem = String(label[..<range.lowerBound])
         let category = String(label[range.upperBound...])

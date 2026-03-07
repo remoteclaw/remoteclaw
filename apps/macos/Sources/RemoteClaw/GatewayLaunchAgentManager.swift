@@ -1,7 +1,7 @@
 import Foundation
 
 enum GatewayLaunchAgentManager {
-    private static let logger = Logger(subsystem: "ai.remoteclaw", category: "gateway.launchd")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "gateway.launchd")
     private static let disableLaunchAgentMarker = ".remoteclaw/disable-launchagent"
 
     private static var disableLaunchAgentMarkerURL: URL {

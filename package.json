@@ -63,7 +63,7 @@
   "scripts": {
     "android:assemble": "cd apps/android && ./gradlew :app:assembleDebug",
     "android:install": "cd apps/android && ./gradlew :app:installDebug",
-    "android:run": "cd apps/android && ./gradlew :app:installDebug && adb shell am start -n ai.remoteclaw.android/.MainActivity",
+    "android:run": "cd apps/android && ./gradlew :app:installDebug && adb shell am start -n org.remoteclaw.android/.MainActivity",
     "android:test": "cd apps/android && ./gradlew :app:testDebugUnitTest",
     "build": "pnpm canvas:a2ui:bundle && tsdown && pnpm build:plugin-sdk:dts && node --import tsx scripts/write-plugin-sdk-entry-dts.ts && node --import tsx scripts/canvas-a2ui-copy.ts && node --import tsx scripts/copy-hook-metadata.ts && node --import tsx scripts/copy-export-html-templates.ts && node --import tsx scripts/write-build-info.ts && node --import tsx scripts/write-cli-compat.ts",
     "build:plugin-sdk:dts": "tsc -p tsconfig.plugin-sdk.dts.json",
@@ -100,7 +100,7 @@
     "ios:build": "bash -lc './scripts/ios-configure-signing.sh && cd apps/ios && xcodegen generate && xcodebuild -project RemoteClaw.xcodeproj -scheme RemoteClaw -destination \"${IOS_DEST:-platform=iOS Simulator,name=iPhone 17}\" -configuration Debug build'",
     "ios:gen": "bash -lc './scripts/ios-configure-signing.sh && cd apps/ios && xcodegen generate'",
     "ios:open": "bash -lc './scripts/ios-configure-signing.sh && cd apps/ios && xcodegen generate && open RemoteClaw.xcodeproj'",
-    "ios:run": "bash -lc './scripts/ios-configure-signing.sh && cd apps/ios && xcodegen generate && xcodebuild -project RemoteClaw.xcodeproj -scheme RemoteClaw -destination \"${IOS_DEST:-platform=iOS Simulator,name=iPhone 17}\" -configuration Debug build && xcrun simctl boot \"${IOS_SIM:-iPhone 17}\" || true && xcrun simctl launch booted ai.remoteclaw.ios'",
+    "ios:run": "bash -lc './scripts/ios-configure-signing.sh && cd apps/ios && xcodegen generate && xcodebuild -project RemoteClaw.xcodeproj -scheme RemoteClaw -destination \"${IOS_DEST:-platform=iOS Simulator,name=iPhone 17}\" -configuration Debug build && xcrun simctl boot \"${IOS_SIM:-iPhone 17}\" || true && xcrun simctl launch booted org.remoteclaw.ios'",
     "lint": "oxlint --type-aware",
     "lint:all": "pnpm lint && pnpm lint:swift",
     "lint:docs": "pnpm dlx markdownlint-cli2",

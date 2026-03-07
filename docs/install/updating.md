@@ -196,7 +196,7 @@ remoteclaw logs --follow
 
 If you’re supervised:
 
-- macOS launchd (app-bundled LaunchAgent): `launchctl kickstart -k gui/$UID/ai.remoteclaw.gateway` (use `ai.remoteclaw.<profile>`; legacy `com.remoteclaw.*` still works)
+- macOS launchd (app-bundled LaunchAgent): `launchctl kickstart -k gui/$UID/org.remoteclaw.gateway` (use `org.remoteclaw.<profile>`; legacy `com.remoteclaw.*` still works)
 - Linux systemd user service: `systemctl --user restart remoteclaw-gateway[-<profile>].service`
 - Windows (WSL2): `systemctl --user restart remoteclaw-gateway[-<profile>].service`
   - `launchctl`/`systemctl` only work if the service is installed; otherwise run `remoteclaw gateway install`.

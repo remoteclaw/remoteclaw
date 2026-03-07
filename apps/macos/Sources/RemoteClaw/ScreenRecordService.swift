@@ -25,7 +25,7 @@ final class ScreenRecordService {
         }
     }
 
-    private let logger = Logger(subsystem: "ai.remoteclaw", category: "screenRecord")
+    private let logger = Logger(subsystem: "org.remoteclaw", category: "screenRecord")
 
     func record(
         screenIndex: Int?,
@@ -110,7 +110,7 @@ final class ScreenRecordService {
 }
 
 private final class StreamRecorder: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
-    let queue = DispatchQueue(label: "ai.remoteclaw.screenRecord.writer")
+    let queue = DispatchQueue(label: "org.remoteclaw.screenRecord.writer")
 
     private let logger: Logger
     private let writer: AVAssetWriter

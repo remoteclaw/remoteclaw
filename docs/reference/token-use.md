@@ -18,7 +18,7 @@ RemoteClaw assembles its own system prompt on every run. It includes:
 - Tool list + short descriptions
 - Skills list (only metadata; instructions are loaded on demand with `read`)
 - Self-update instructions
-- Workspace context files (`IDENTITY.md`, `HEARTBEAT.md`, `MEMORY.md` when present). Agent CLIs load their own config files (e.g. `CLAUDE.md`). `memory/*.md` files are on-demand via memory tools and are not auto-injected.
+- Workspace context files (`HEARTBEAT.md`, `MEMORY.md` when present). Agent CLIs load their own config files (e.g. `CLAUDE.md`). `memory/*.md` files are on-demand via memory tools and are not auto-injected.
 - Time (UTC + user timezone)
 - Reply tags + heartbeat behavior
 - Runtime metadata (host/OS/model/thinking)

@@ -46,17 +46,15 @@ node --watch-path src --watch-path tsconfig.json --watch-path package.json --wat
 Add any gateway CLI flags after `gateway:watch` and they will be passed through
 on each restart.
 
-## Dev profile + dev gateway (--dev)
+## Dev profile
 
 Use the dev profile to isolate state and spin up a safe, disposable setup for
-debugging. There are **two** `--dev` flags:
+debugging:
 
 - **Global `--dev` (profile):** isolates state under `~/.remoteclaw-dev` and
   defaults the gateway port to `19001` (derived ports shift with it).
-- **`gateway --dev`: tells the Gateway to auto-create a default config +
-  workspace** when missing.
 
-Recommended flow (dev profile + dev bootstrap):
+Recommended flow:
 
 ```bash
 pnpm gateway:dev
@@ -73,11 +71,8 @@ What this does:
    - `REMOTECLAW_CONFIG_PATH=~/.remoteclaw-dev/remoteclaw.json`
    - `REMOTECLAW_GATEWAY_PORT=19001` (browser/canvas shift accordingly)
 
-2. **Dev bootstrap** (`gateway --dev`)
-   - Writes a minimal config if missing (`gateway.mode=local`, bind loopback).
-   - Sets `agent.workspace` to the dev workspace.
+2. **Workspace setup**
    - Creates the workspace directory if missing.
-   - Default identity: **C3‑PO** (protocol droid).
    - Skips channel providers in dev mode (`REMOTECLAW_SKIP_CHANNELS=1`).
 
 Reset flow (fresh start):
@@ -90,7 +85,7 @@ Note: `--dev` is a **global** profile flag and gets eaten by some runners.
 If you need to spell it out, use the env var form:
 
 ```bash
-REMOTECLAW_PROFILE=dev remoteclaw gateway --dev --reset
+REMOTECLAW_PROFILE=dev remoteclaw gateway --reset
 ```
 
 `--reset` wipes config, credentials, sessions, and the dev workspace (using

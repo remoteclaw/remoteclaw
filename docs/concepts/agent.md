@@ -29,7 +29,6 @@ not seed or manage template files in the workspace.
 
 Files that RemoteClaw may read or write:
 
-- `IDENTITY.md` — agent name/vibe/emoji (managed via control UI or RPC)
 - `HEARTBEAT.md` — optional tiny checklist for heartbeat runs
 - Boot prompt file — configurable path via `agents.defaults.boot.file`
 - `memory/YYYY-MM-DD.md` — daily memory log

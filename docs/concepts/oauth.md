@@ -71,7 +71,7 @@ remoteclaw models status
 
 ## OAuth exchange (how login works)
 
-RemoteClaw’s interactive login flows are implemented in `@mariozechner/pi-ai` and wired into the wizards/commands.
+RemoteClaw’s interactive login flows are implemented in the auth module and wired into the wizards/commands.
 
 ### Anthropic (Claude Pro/Max) setup-token
 

@@ -19,19 +19,9 @@ Related:
 ```bash
 remoteclaw agents list
 remoteclaw agents add work --workspace ~/.remoteclaw/workspace-work
-remoteclaw agents set-identity --workspace ~/.remoteclaw/workspace --from-identity
 remoteclaw agents set-identity --agent main --avatar avatars/remoteclaw.png
 remoteclaw agents delete work
 ```
-
-## Identity files
-
-Each agent workspace can include an `IDENTITY.md` at the workspace root:
-
-- Example path: `~/.remoteclaw/workspace/IDENTITY.md`
-- `set-identity --from-identity` reads from the workspace root (or an explicit `--identity-file`)
-
-Avatar paths resolve relative to the workspace root.
 
 ## Set identity
 
@@ -41,12 +31,6 @@ Avatar paths resolve relative to the workspace root.
 - `theme`
 - `emoji`
 - `avatar` (workspace-relative path, http(s) URL, or data URI)
-
-Load from `IDENTITY.md`:
-
-```bash
-remoteclaw agents set-identity --workspace ~/.remoteclaw/workspace --from-identity
-```
 
 Override fields explicitly:
 

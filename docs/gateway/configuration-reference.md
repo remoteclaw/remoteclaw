@@ -649,7 +649,7 @@ Per-agent override: `agents.list[].editableFiles`.
 
 ```json5
 {
-  agents: { defaults: { editableFiles: ["IDENTITY.md", "HEARTBEAT.md", "memory/**/*.md"] } },
+  agents: { defaults: { editableFiles: ["HEARTBEAT.md", "memory/**/*.md"] } },
 }
 ```
 
@@ -1704,7 +1704,7 @@ Notes:
 
 ## Custom providers and base URLs
 
-RemoteClaw uses the pi-coding-agent model catalog. Add custom providers via `models.providers` in config or `~/.remoteclaw/agents/<agentId>/agent/models.json`.
+RemoteClaw uses the OpenCode Zen model catalog. Add custom providers via `models.providers` in config or `~/.remoteclaw/agents/<agentId>/agent/models.json`.
 
 ```json5
 {

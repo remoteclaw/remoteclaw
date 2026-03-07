@@ -2,13 +2,13 @@
 description: "What the RemoteClaw system prompt contains and how it is assembled"
 read_when:
   - Editing system prompt text, tools list, or time/heartbeat sections
-  - Changing workspace bootstrap or skills injection behavior
+  - Changing workspace context or skills injection behavior
 title: "System Prompt"
 ---
 
 # System Prompt
 
-RemoteClaw builds a custom system prompt for every agent run. The prompt is **RemoteClaw-owned** and does not use the pi-coding-agent default prompt.
+RemoteClaw builds a custom system prompt for every agent run. The prompt is **RemoteClaw-owned**.
 
 The prompt is assembled by RemoteClaw and injected into each agent run.
 
@@ -22,7 +22,7 @@ The prompt is intentionally compact and uses fixed sections:
 - **RemoteClaw Self-Update**: how to run `config.apply` and `update.run`.
 - **Workspace**: working directory (`agents.defaults.workspace`).
 - **Documentation**: local path to RemoteClaw docs (repo or npm package) and when to read them.
-- **Workspace Files (injected)**: indicates bootstrap files are included below.
+- **Workspace Files (injected)**: indicates workspace context files are included below.
 - **Sandbox** (when enabled): indicates sandboxed runtime, sandbox paths, and whether elevated exec is available.
 - **Current Date & Time**: user-local time, timezone, and time format.
 - **Reply Tags**: optional reply tag syntax for supported providers.
@@ -57,7 +57,6 @@ own context loading.
 
 Files that RemoteClaw may read or write in the workspace:
 
-- `IDENTITY.md` — agent name/vibe/emoji
 - `HEARTBEAT.md` — optional checklist for heartbeat runs
 - `MEMORY.md` and/or `memory.md` — long-term memory (when present)
 

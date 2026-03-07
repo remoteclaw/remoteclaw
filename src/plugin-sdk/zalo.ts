@@ -44,6 +44,7 @@ export {
 export type { GroupPolicy, MarkdownTableMode } from "../config/types.js";
 export type { SecretInput } from "../config/types.secrets.js";
 export { normalizeSecretInputString } from "../config/types.secrets.js";
+export { buildSecretInputSchema } from "./secret-input-schema.js";
 export { MarkdownConfigSchema } from "../config/zod-schema.core.js";
 export { createDedupeCache } from "../infra/dedupe.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";

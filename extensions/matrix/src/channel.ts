@@ -1,6 +1,7 @@
 import {
   buildAccountScopedDmSecurityPolicy,
   buildOpenGroupPolicyWarning,
+  collectAllowlistProviderGroupPolicyWarnings,
   createScopedAccountConfigAccessors,
 } from "remoteclaw/plugin-sdk";
 import {
@@ -13,8 +14,6 @@ import {
   mapAllowFromEntries,
   normalizeAccountId,
   PAIRING_APPROVED_MESSAGE,
-  resolveAllowlistProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
 } from "remoteclaw/plugin-sdk";
@@ -178,23 +177,22 @@ export const matrixPlugin: ChannelPlugin<ResolvedMatrixAccount> = {
       });
     },
     collectWarnings: ({ account, cfg }) => {
-      const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg as CoreConfig);
-      const { groupPolicy } = resolveAllowlistProviderRuntimeGroupPolicy({
+      return collectAllowlistProviderGroupPolicyWarnings({
+        cfg: cfg as CoreConfig,
         providerConfigPresent: (cfg as CoreConfig).channels?.matrix !== undefined,
-        groupPolicy: account.config.groupPolicy,
-        defaultGroupPolicy,
+        configuredGroupPolicy: account.config.groupPolicy,
+        collect: (groupPolicy) =>
+          groupPolicy === "open"
+            ? [
+                buildOpenGroupPolicyWarning({
+                  surface: "Matrix rooms",
+                  openBehavior: "allows any room to trigger (mention-gated)",
+                  remediation:
+                    'Set channels.matrix.groupPolicy="allowlist" + channels.matrix.groups (and optionally channels.matrix.groupAllowFrom) to restrict rooms',
+                }),
+              ]
+            : [],
       });
-      if (groupPolicy !== "open") {
-        return [];
-      }
-      return [
-        buildOpenGroupPolicyWarning({
-          surface: "Matrix rooms",
-          openBehavior: "allows any room to trigger (mention-gated)",
-          remediation:
-            'Set channels.matrix.groupPolicy="allowlist" + channels.matrix.groups (and optionally channels.matrix.groupAllowFrom) to restrict rooms',
-        }),
-      ];
     },
   },
   groups: {

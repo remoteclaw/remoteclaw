@@ -122,7 +122,10 @@ export async function runNonInteractiveOnboardingLocal(params: {
     defaultWorkspaceDir: workspaceRaw,
   });
 
-  let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig);
+  let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(
+    baseConfig,
+    workspaceRaw.trim(),
+  );
 
   const selectedRuntime = inferRuntimeFromFlags(opts);
   if (selectedRuntime) {

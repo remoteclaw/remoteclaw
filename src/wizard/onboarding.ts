@@ -573,7 +573,10 @@ export async function runOnboardingWizard(
   const workspaceDir = resolveUserPath(trimmedWorkspace);
 
   const { applyOnboardingLocalWorkspaceConfig } = await import("../commands/onboard-config.js");
-  let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig);
+  let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(
+    baseConfig,
+    trimmedWorkspace,
+  );
 
   const { upsertAuthProfile } = await import("../agents/auth-profiles.js");
 

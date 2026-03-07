@@ -65,7 +65,7 @@ const readConfigFileSnapshot = vi.hoisted(() =>
     parsed: {},
     resolved: {},
     valid: true,
-    config: { agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } },
+    config: {},
     issues: [] as Array<{ path: string; message: string }>,
     warnings: [] as Array<{ path: string; message: string }>,
     legacyIssues: [] as Array<{ path: string; message: string }>,
@@ -202,7 +202,7 @@ describe("runOnboardingWizard", () => {
       parsed: {},
       resolved: {},
       valid: false,
-      config: { agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } },
+      config: {},
       issues: [{ path: "routing.allowFrom", message: "Legacy key" }],
       warnings: [],
       legacyIssues: [{ path: "routing.allowFrom", message: "Legacy key" }],
@@ -252,11 +252,13 @@ describe("runOnboardingWizard", () => {
     const prompter = buildWizardPrompter({ select, multiselect });
     const runtime = createRuntime({ throwsOnExit: true });
 
+    const workspaceDir = await makeCaseDir("workspace-");
     await runOnboardingWizard(
       {
         acceptRisk: true,
         flow: "quickstart",
         runtime: "claude",
+        workspace: workspaceDir,
         installDaemon: false,
         skipProviders: true,
         skipSkills: true,
@@ -270,6 +272,51 @@ describe("runOnboardingWizard", () => {
     expect(setupChannels).not.toHaveBeenCalled();
     expect(healthCommand).not.toHaveBeenCalled();
     expect(runTui).not.toHaveBeenCalled();
+  });
+
+  it("writes workspace to agents.list in config", async () => {
+    writeConfigFile.mockClear();
+
+    const workspaceDir = await makeCaseDir("workspace-");
+
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      if (
+        params.message === "Authentication for Claude Code" ||
+        params.message === "Authentication for Gemini CLI" ||
+        params.message === "Authentication for Codex CLI" ||
+        params.message === "Authentication for OpenCode"
+      ) {
+        return "skip";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const prompter = buildWizardPrompter({ select });
+    const runtime = createRuntime({ throwsOnExit: true });
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        runtime: "claude",
+        workspace: workspaceDir,
+        installDaemon: false,
+        skipProviders: true,
+        skipSkills: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    type WrittenConfig = { agents?: { list?: Array<{ id?: string; workspace?: string }> } };
+    const writtenConfigs = writeConfigFile.mock.calls.map(
+      (call) => (call as unknown[])[0] as WrittenConfig,
+    );
+    const hasWorkspaceInList = writtenConfigs.some((cfg) =>
+      cfg.agents?.list?.some((entry) => entry.workspace === workspaceDir),
+    );
+    expect(hasWorkspaceInList).toBe(true);
   });
 
   async function runTuiHatchTest(params: {
@@ -338,6 +385,7 @@ describe("runOnboardingWizard", () => {
     delete process.env.BRAVE_API_KEY;
 
     try {
+      const workspaceDir = await makeCaseDir("workspace-");
       const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
         if (
           params.message === "Authentication for Claude Code" ||
@@ -358,6 +406,7 @@ describe("runOnboardingWizard", () => {
           acceptRisk: true,
           flow: "quickstart",
           runtime: "claude",
+          workspace: workspaceDir,
           installDaemon: false,
           skipProviders: true,
           skipSkills: true,

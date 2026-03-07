@@ -166,7 +166,9 @@ export function resolveGatewayCredentialsFromConfig(params: {
   const localToken = trimToUndefined(params.cfg.gateway?.auth?.token);
   const localPassword = trimToUndefined(params.cfg.gateway?.auth?.password);
 
-  const localTokenPrecedence = params.localTokenPrecedence ?? "env-first";
+  const localTokenPrecedence =
+    params.localTokenPrecedence ??
+    (env.OPENCLAW_SERVICE_KIND === "gateway" ? "config-first" : "env-first");
   const localPasswordPrecedence = params.localPasswordPrecedence ?? "env-first";
 
   if (mode === "local") {

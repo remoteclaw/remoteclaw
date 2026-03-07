@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluateGroupRouteAccessForPolicy,
+  evaluateMatchedGroupAccessForPolicy,
   evaluateSenderGroupAccess,
   evaluateSenderGroupAccessForPolicy,
   resolveSenderScopedGroupPolicy,
@@ -120,6 +121,79 @@ describe("evaluateGroupRouteAccessForPolicy", () => {
   });
 });
 
+describe("evaluateMatchedGroupAccessForPolicy", () => {
+  it("blocks disabled policy", () => {
+    expect(
+      evaluateMatchedGroupAccessForPolicy({
+        groupPolicy: "disabled",
+        allowlistConfigured: true,
+        allowlistMatched: true,
+      }),
+    ).toEqual({
+      allowed: false,
+      groupPolicy: "disabled",
+      reason: "disabled",
+    });
+  });
+
+  it("blocks allowlist without configured entries", () => {
+    expect(
+      evaluateMatchedGroupAccessForPolicy({
+        groupPolicy: "allowlist",
+        allowlistConfigured: false,
+        allowlistMatched: false,
+      }),
+    ).toEqual({
+      allowed: false,
+      groupPolicy: "allowlist",
+      reason: "empty_allowlist",
+    });
+  });
+
+  it("blocks allowlist when required match input is missing", () => {
+    expect(
+      evaluateMatchedGroupAccessForPolicy({
+        groupPolicy: "allowlist",
+        requireMatchInput: true,
+        hasMatchInput: false,
+        allowlistConfigured: true,
+        allowlistMatched: false,
+      }),
+    ).toEqual({
+      allowed: false,
+      groupPolicy: "allowlist",
+      reason: "missing_match_input",
+    });
+  });
+
+  it("blocks unmatched allowlist sender", () => {
+    expect(
+      evaluateMatchedGroupAccessForPolicy({
+        groupPolicy: "allowlist",
+        allowlistConfigured: true,
+        allowlistMatched: false,
+      }),
+    ).toEqual({
+      allowed: false,
+      groupPolicy: "allowlist",
+      reason: "not_allowlisted",
+    });
+  });
+
+  it("allows open policy", () => {
+    expect(
+      evaluateMatchedGroupAccessForPolicy({
+        groupPolicy: "open",
+        allowlistConfigured: false,
+        allowlistMatched: false,
+      }),
+    ).toEqual({
+      allowed: true,
+      groupPolicy: "open",
+      reason: "allowed",
+    });
+  });
+});
 describe("evaluateSenderGroupAccess", () => {
   it("defaults missing provider config to allowlist", () => {
     const decision = evaluateSenderGroupAccess({

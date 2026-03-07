@@ -6,6 +6,7 @@ import {
   deleteAccountFromConfigSection,
   formatNormalizedAllowFromEntries,
   formatPairingApproveHint,
+  mapAllowFromEntries,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   resolveAllowlistProviderRuntimeGroupPolicy,
@@ -272,9 +273,7 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
       baseUrl: account.baseUrl,
     }),
     resolveAllowFrom: ({ cfg, accountId }) =>
-      (resolveMattermostAccount({ cfg, accountId }).config.allowFrom ?? []).map((entry) =>
-        String(entry),
-      ),
+      mapAllowFromEntries(resolveMattermostAccount({ cfg, accountId }).config.allowFrom),
     formatAllowFrom: ({ allowFrom }) =>
       formatNormalizedAllowFromEntries({
         allowFrom,

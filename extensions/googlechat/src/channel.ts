@@ -7,6 +7,7 @@ import {
   formatNormalizedAllowFromEntries,
   formatPairingApproveHint,
   getChatChannelMeta,
+  mapAllowFromEntries,
   migrateBaseNameToDefaultAccount,
   missingTargetError,
   normalizeAccountId,
@@ -15,6 +16,7 @@ import {
   resolveGoogleChatGroupRequireMention,
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
+  resolveOptionalConfigString,
   setAccountEnabledInConfigSection,
   type ChannelDock,
   type ChannelMessageActionAdapter,
@@ -63,9 +65,7 @@ export const googlechatDock: ChannelDock = {
   outbound: { textChunkLimit: 4000 },
   config: {
     resolveAllowFrom: ({ cfg, accountId }) =>
-      (resolveGoogleChatAccount({ cfg: cfg, accountId }).config.dm?.allowFrom ?? []).map((entry) =>
-        String(entry),
-      ),
+      mapAllowFromEntries(resolveGoogleChatAccount({ cfg: cfg, accountId }).config.dm?.allowFrom),
     formatAllowFrom: ({ allowFrom }) =>
       formatNormalizedAllowFromEntries({
         allowFrom,
@@ -171,19 +171,19 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
       credentialSource: account.credentialSource,
     }),
     resolveAllowFrom: ({ cfg, accountId }) =>
-      (
+      mapAllowFromEntries(
         resolveGoogleChatAccount({
           cfg: cfg,
           accountId,
-        }).config.dm?.allowFrom ?? []
-      ).map((entry) => String(entry)),
+        }).config.dm?.allowFrom,
+      ),
     formatAllowFrom: ({ allowFrom }) =>
       formatNormalizedAllowFromEntries({
         allowFrom,
         normalizeEntry: formatAllowFromEntry,
       }),
     resolveDefaultTo: ({ cfg, accountId }) =>
-      resolveGoogleChatAccount({ cfg, accountId }).config.defaultTo?.trim() || undefined,
+      resolveOptionalConfigString(resolveGoogleChatAccount({ cfg, accountId }).config.defaultTo),
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {

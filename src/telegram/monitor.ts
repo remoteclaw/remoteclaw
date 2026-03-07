@@ -100,19 +100,30 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
     const proxyFetch =
       opts.proxyFetch ?? (account.config.proxy ? makeProxyFetch(account.config.proxy) : undefined);
 
-    let lastUpdateId = await readTelegramUpdateOffset({
+    const persistedOffsetRaw = await readTelegramUpdateOffset({
       accountId: account.accountId,
       botToken: token,
     });
+    let lastUpdateId = normalizePersistedUpdateId(persistedOffsetRaw);
+    if (persistedOffsetRaw !== null && lastUpdateId === null) {
+      log(
+        `[telegram] Ignoring invalid persisted update offset (${String(persistedOffsetRaw)}); starting without offset confirmation.`,
+      );
+    }
     const persistUpdateId = async (updateId: number) => {
-      if (lastUpdateId !== null && updateId <= lastUpdateId) {
+      const normalizedUpdateId = normalizePersistedUpdateId(updateId);
+      if (normalizedUpdateId === null) {
+        log(`[telegram] Ignoring invalid update_id value: ${String(updateId)}`);
         return;
       }
-      lastUpdateId = updateId;
+      if (lastUpdateId !== null && normalizedUpdateId <= lastUpdateId) {
+        return;
+      }
+      lastUpdateId = normalizedUpdateId;
       try {
         await writeTelegramUpdateOffset({
           accountId: account.accountId,
-          updateId,
+          updateId: normalizedUpdateId,
           botToken: token,
         });
       } catch (err) {

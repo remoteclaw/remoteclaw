@@ -938,7 +938,7 @@ describe("runHeartbeatOnce", () => {
           name: "reasoning + HEARTBEAT_OK",
           caseDir: "hb-reasoning-heartbeat-ok",
           replies: [{ text: "Reasoning:\n_Because it helps_" }, { text: "HEARTBEAT_OK" }],
-          expectedTexts: ["Reasoning:\n_Because it helps_"],
+          expectedTexts: ["Reasoning:\n_Because it helps_", "HEARTBEAT_OK"],
         },
       ]);
 

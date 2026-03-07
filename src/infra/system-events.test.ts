@@ -56,12 +56,12 @@ describe("isCronSystemEvent", () => {
     expect(isCronSystemEvent("   ")).toBe(false);
   });
 
-  it("returns false for heartbeat ack markers", () => {
-    expect(isCronSystemEvent("HEARTBEAT_OK")).toBe(false);
-    expect(isCronSystemEvent("HEARTBEAT_OK 🦀")).toBe(false);
-    expect(isCronSystemEvent("heartbeat_ok")).toBe(false);
-    expect(isCronSystemEvent("HEARTBEAT_OK:")).toBe(false);
-    expect(isCronSystemEvent("HEARTBEAT_OK, continue")).toBe(false);
+  it("returns true for heartbeat ack markers (no longer filtered as noise)", () => {
+    expect(isCronSystemEvent("HEARTBEAT_OK")).toBe(true);
+    expect(isCronSystemEvent("HEARTBEAT_OK 🦀")).toBe(true);
+    expect(isCronSystemEvent("heartbeat_ok")).toBe(true);
+    expect(isCronSystemEvent("HEARTBEAT_OK:")).toBe(true);
+    expect(isCronSystemEvent("HEARTBEAT_OK, continue")).toBe(true);
   });
 
   it("returns false for heartbeat poll and wake noise", () => {

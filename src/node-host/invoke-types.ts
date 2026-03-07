@@ -1,6 +1,9 @@
+import type { SystemRunApprovalPlanV2 as SystemRunApprovalPlan } from "../infra/system-run-approval-binding.js";
+
 export type SystemRunParams = {
   command: string[];
   rawCommand?: string | null;
+  systemRunPlan?: SystemRunApprovalPlan | null;
   cwd?: string | null;
   env?: Record<string, string>;
   timeoutMs?: number | null;

@@ -6,4 +6,5 @@
 export {
   buildSystemRunApprovalPlanV2 as buildSystemRunApprovalPlan,
   hardenApprovedExecutionPaths,
+  revalidateApprovedMutableFileOperand,
 } from "./invoke-system-run.js";

@@ -13,6 +13,13 @@ export type SystemRunApprovalBindingV1 = {
 };
 
 /** Minimal shape from the gutted exec-approvals module. */
+export type SystemRunApprovalFileOperand = {
+  argvIndex: number;
+  path: string;
+  sha256: string;
+};
+
+/** Minimal shape from the gutted exec-approvals module. */
 export type SystemRunApprovalPlanV2 = {
   version: 2;
   argv: string[];
@@ -20,9 +27,38 @@ export type SystemRunApprovalPlanV2 = {
   rawCommand: string | null;
   agentId: string | null;
   sessionKey: string | null;
+  mutableFileOperand?: SystemRunApprovalFileOperand;
 };
 
 type NormalizedSystemRunEnvEntry = [key: string, value: string];
+
+function normalizeSystemRunApprovalFileOperand(
+  value: unknown,
+): SystemRunApprovalFileOperand | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  const candidate = value as Record<string, unknown>;
+  const argvIndex =
+    typeof candidate.argvIndex === "number" &&
+    Number.isInteger(candidate.argvIndex) &&
+    candidate.argvIndex >= 0
+      ? candidate.argvIndex
+      : null;
+  const filePath = normalizeNonEmptyString(candidate.path);
+  const sha256 = normalizeNonEmptyString(candidate.sha256);
+  if (argvIndex === null || !filePath || !sha256) {
+    return null;
+  }
+  return {
+    argvIndex,
+    path: filePath,
+    sha256,
+  };
+}
 
 export function normalizeSystemRunApprovalPlanV2(value: unknown): SystemRunApprovalPlanV2 | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -36,6 +72,10 @@ export function normalizeSystemRunApprovalPlanV2(value: unknown): SystemRunAppro
   if (argv.length === 0) {
     return null;
   }
+  const mutableFileOperand = normalizeSystemRunApprovalFileOperand(candidate.mutableFileOperand);
+  if (candidate.mutableFileOperand !== undefined && mutableFileOperand === null) {
+    return null;
+  }
   return {
     version: 2,
     argv,
@@ -43,6 +83,7 @@ export function normalizeSystemRunApprovalPlanV2(value: unknown): SystemRunAppro
     rawCommand: normalizeNonEmptyString(candidate.rawCommand),
     agentId: normalizeNonEmptyString(candidate.agentId),
     sessionKey: normalizeNonEmptyString(candidate.sessionKey),
+    mutableFileOperand: mutableFileOperand ?? undefined,
   };
 }
 

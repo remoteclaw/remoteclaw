@@ -6,6 +6,7 @@ import { loadConfig } from "../config/config.js";
 import type { GatewayClient } from "../gateway/client.js";
 import { sameFileIdentity } from "../infra/file-identity.js";
 import { sanitizeSystemRunEnvOverrides } from "../infra/host-env-security.js";
+import { normalizeSystemRunApprovalPlanV2 as normalizeSystemRunApprovalPlan } from "../infra/system-run-approval-binding.js";
 import { logWarn } from "../logger.js";
 
 // Stub types and functions: exec-approvals, exec-host, exec-safe-bin, system-run-command,
@@ -417,7 +418,40 @@ function revalidateApprovedCwdSnapshot(params: { snapshot: ApprovedCwdSnapshot }
   return true;
 }
 
-import type { SystemRunApprovalPlanV2 } from "../infra/system-run-approval-binding.js";
+function hashFileContentsSync(filePath: string): string {
+  return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
+}
+
+export function revalidateApprovedMutableFileOperand(params: {
+  snapshot: SystemRunApprovalFileOperand;
+  argv: string[];
+  cwd: string | undefined;
+}): boolean {
+  const operand = params.argv[params.snapshot.argvIndex]?.trim();
+  if (!operand) {
+    return false;
+  }
+  const resolvedPath = path.resolve(params.cwd ?? process.cwd(), operand);
+  let realPath: string;
+  try {
+    realPath = fs.realpathSync(resolvedPath);
+  } catch {
+    return false;
+  }
+  if (realPath !== params.snapshot.path) {
+    return false;
+  }
+  try {
+    return hashFileContentsSync(realPath) === params.snapshot.sha256;
+  } catch {
+    return false;
+  }
+}
+
+import type {
+  SystemRunApprovalFileOperand,
+  SystemRunApprovalPlanV2,
+} from "../infra/system-run-approval-binding.js";
 import type {
   ExecEventPayload,
   ExecFinishedEventParams,
@@ -458,6 +492,7 @@ type SystemRunParsePhase = {
   argv: string[];
   shellCommand: string | null;
   cmdText: string;
+  approvalPlan: SystemRunApprovalPlanV2 | null;
   agentId: string | undefined;
   sessionKey: string;
   runId: string;
@@ -487,6 +522,8 @@ type SystemRunPolicyPhase = SystemRunParsePhase & {
 const safeBinTrustedDirWarningCache = new Set<string>();
 const APPROVAL_CWD_DRIFT_DENIED_MESSAGE =
   "SYSTEM_RUN_DENIED: approval cwd changed before execution";
+const APPROVAL_SCRIPT_OPERAND_DRIFT_DENIED_MESSAGE =
+  "SYSTEM_RUN_DENIED: approval script operand changed before execution";
 
 function warnWritableTrustedDirOnce(message: string): void {
   if (safeBinTrustedDirWarningCache.has(message)) {
@@ -704,6 +741,17 @@ async function parseSystemRunPhase(
 
   const shellCommand = command.shellCommand;
   const cmdText = command.cmdText;
+  const approvalPlan =
+    opts.params.systemRunPlan === undefined
+      ? null
+      : normalizeSystemRunApprovalPlan(opts.params.systemRunPlan);
+  if (opts.params.systemRunPlan !== undefined && !approvalPlan) {
+    await opts.sendInvokeResult({
+      ok: false,
+      error: { code: "INVALID_REQUEST", message: "systemRunPlan invalid" },
+    });
+    return null;
+  }
   const agentId = opts.params.agentId?.trim() || undefined;
   const sessionKey = opts.params.sessionKey?.trim() || "node";
   const runId = opts.params.runId?.trim() || crypto.randomUUID();
@@ -715,6 +763,7 @@ async function parseSystemRunPhase(
     argv: command.argv,
     shellCommand,
     cmdText,
+    approvalPlan,
     agentId,
     sessionKey,
     runId,
@@ -861,6 +910,21 @@ async function executeSystemRunPhase(
     await sendSystemRunDenied(opts, phase.execution, {
       reason: "approval-required",
       message: APPROVAL_CWD_DRIFT_DENIED_MESSAGE,
+    });
+    return;
+  }
+  if (
+    phase.approvalPlan?.mutableFileOperand &&
+    !revalidateApprovedMutableFileOperand({
+      snapshot: phase.approvalPlan.mutableFileOperand,
+      argv: phase.argv,
+      cwd: phase.cwd,
+    })
+  ) {
+    logWarn(`security: system.run approval script drift blocked (runId=${phase.runId})`);
+    await sendSystemRunDenied(opts, phase.execution, {
+      reason: "approval-required",
+      message: APPROVAL_SCRIPT_OPERAND_DRIFT_DENIED_MESSAGE,
     });
     return;
   }

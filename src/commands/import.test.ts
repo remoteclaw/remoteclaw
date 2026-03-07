@@ -7,6 +7,7 @@ import type { RuntimeEnv } from "../runtime.js";
 import {
   detectOpenClawInstallation,
   importCommand,
+  materializeWorkspaceDefaults,
   resolveTargetFilename,
   transformConfigContent,
 } from "./import.js";
@@ -83,6 +84,114 @@ describe("transformConfigContent", () => {
     const { content, renames } = transformConfigContent(input);
     expect(content).toBe(input);
     expect(renames).toHaveLength(0);
+  });
+});
+
+describe("materializeWorkspaceDefaults", () => {
+  it("sets workspace on default agent when missing", () => {
+    const input = JSON.stringify({
+      agents: { list: [{ id: "main" }] },
+    });
+    const result = JSON.parse(materializeWorkspaceDefaults(input));
+    expect(result.agents.list[0].workspace).toBe("~/.remoteclaw/workspace");
+  });
+
+  it("sets workspace on non-default agent using id suffix", () => {
+    const input = JSON.stringify({
+      agents: {
+        list: [{ id: "main", default: true, workspace: "~/ws" }, { id: "helper" }],
+      },
+    });
+    const result = JSON.parse(materializeWorkspaceDefaults(input));
+    expect(result.agents.list[0].workspace).toBe("~/ws");
+    expect(result.agents.list[1].workspace).toBe("~/.remoteclaw/workspace-helper");
+  });
+
+  it("uses agents.defaults.workspace as fallback", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { workspace: "~/custom-ws", model: "x" },
+        list: [{ id: "main" }, { id: "helper" }],
+      },
+    });
+    const result = JSON.parse(materializeWorkspaceDefaults(input));
+    expect(result.agents.list[0].workspace).toBe("~/custom-ws");
+    expect(result.agents.list[1].workspace).toBe("~/custom-ws");
+  });
+
+  it("removes agents.defaults.workspace after consuming", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { workspace: "~/custom-ws", model: "x" },
+        list: [{ id: "main" }],
+      },
+    });
+    const result = JSON.parse(materializeWorkspaceDefaults(input));
+    expect(result.agents.defaults.workspace).toBeUndefined();
+    expect(result.agents.defaults.model).toBe("x");
+  });
+
+  it("removes agents.defaults entirely when workspace was the only key", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { workspace: "~/custom-ws" },
+        list: [{ id: "main" }],
+      },
+    });
+    const result = JSON.parse(materializeWorkspaceDefaults(input));
+    expect(result.agents.defaults).toBeUndefined();
+  });
+
+  it("creates default agent when agents.list is empty but config has substantive content", () => {
+    const input = JSON.stringify({
+      gateway: { port: 18789 },
+      channels: { whatsapp: {} },
+    });
+    const result = JSON.parse(materializeWorkspaceDefaults(input));
+    expect(result.agents.list).toHaveLength(1);
+    expect(result.agents.list[0].id).toBe("main");
+    expect(result.agents.list[0].workspace).toBe("~/.remoteclaw/workspace");
+  });
+
+  it("creates default agent when agents key is missing but config has substantive content", () => {
+    const input = JSON.stringify({
+      plugins: { entries: {} },
+    });
+    const result = JSON.parse(materializeWorkspaceDefaults(input));
+    expect(result.agents.list[0].id).toBe("main");
+    expect(result.agents.list[0].workspace).toBe("~/.remoteclaw/workspace");
+  });
+
+  it("does not create agent entry for non-substantive config", () => {
+    const input = JSON.stringify({
+      env: { vars: { FOO: "bar" } },
+    });
+    const output = materializeWorkspaceDefaults(input);
+    expect(output).toBe(input);
+  });
+
+  it("preserves existing workspace values", () => {
+    const input = JSON.stringify({
+      agents: {
+        list: [{ id: "main", workspace: "~/my-workspace" }],
+      },
+    });
+    const output = materializeWorkspaceDefaults(input);
+    // No mutation needed — return original
+    expect(output).toBe(input);
+  });
+
+  it("returns non-JSON content unchanged", () => {
+    const input = "not valid json {{{";
+    expect(materializeWorkspaceDefaults(input)).toBe(input);
+  });
+
+  it("handles sole agent without explicit default flag as default", () => {
+    const input = JSON.stringify({
+      agents: { list: [{ id: "worker" }] },
+    });
+    const result = JSON.parse(materializeWorkspaceDefaults(input));
+    expect(result.agents.list[0].workspace).toBe("~/.remoteclaw/workspace");
   });
 });
 
@@ -261,6 +370,25 @@ describe("importCommand", () => {
 
     expect(result.copiedFiles).toHaveLength(1);
     expect(fs.existsSync(path.join(targetDir, "data.bin"))).toBe(true);
+  });
+
+  it("materializes workspace defaults in main config during import", async () => {
+    const configContent = JSON.stringify({
+      gateway: { port: 18789 },
+      channels: { whatsapp: {} },
+      agents: { list: [{ id: "main" }] },
+    });
+    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    const written = await fsp.readFile(path.join(targetDir, "remoteclaw.json"), "utf-8");
+    const parsed = JSON.parse(written);
+    expect(parsed.agents.list[0].workspace).toBe("~/.remoteclaw/workspace");
+    expect(result.transformedFiles).toHaveLength(1);
   });
 
   it("handles nested directory structures with mixed file types", async () => {

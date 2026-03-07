@@ -21,6 +21,31 @@ const ENV_VAR_PREFIX_NEW = "REMOTECLAW_";
 const OPENCLAW_CONFIG_FILENAME = "openclaw.json";
 const REMOTECLAW_CONFIG_FILENAME = "remoteclaw.json";
 
+/**
+ * Default agent id used by OpenClaw when no explicit id is set.
+ */
+const DEFAULT_AGENT_ID = "main";
+
+/**
+ * Default workspace path for the default agent.
+ */
+const DEFAULT_WORKSPACE = "~/.remoteclaw/workspace";
+
+/**
+ * Keys whose presence indicates the config has substantive content
+ * (i.e. it's a real config, not an empty/skeleton file).
+ */
+const SUBSTANTIVE_CONFIG_KEYS = new Set([
+  "channels",
+  "plugins",
+  "gateway",
+  "bindings",
+  "broadcast",
+  "cron",
+  "hooks",
+  "discovery",
+]);
+
 export type ImportOptions = {
   sourcePath: string;
   yes?: boolean;
@@ -89,6 +114,95 @@ export function transformConfigContent(content: string): {
 }
 
 /**
+ * Materialize implicit OpenClaw workspace defaults into the main config JSON.
+ *
+ * OpenClaw had a three-tier workspace resolution chain that was removed in
+ * #278 and #298. After import, configs that relied on those implicit defaults
+ * fail validation. This function makes those defaults explicit:
+ *
+ * 1. For each agent in agents.list[] without workspace:
+ *    - Use agents.defaults.workspace if set
+ *    - Else default agent → ~/.remoteclaw/workspace
+ *    - Else non-default → ~/.remoteclaw/workspace-{id}
+ * 2. If agents.list is empty/missing but config has substantive content,
+ *    create a default agent entry.
+ * 3. Remove agents.defaults.workspace after consuming it.
+ */
+export function materializeWorkspaceDefaults(jsonContent: string): string {
+  let config: Record<string, unknown>;
+  try {
+    config = JSON.parse(jsonContent);
+  } catch {
+    // Not valid JSON — return as-is (don't break non-JSON configs)
+    return jsonContent;
+  }
+
+  if (typeof config !== "object" || config === null || Array.isArray(config)) {
+    return jsonContent;
+  }
+
+  const agents = config.agents as Record<string, unknown> | undefined;
+  const agentsList = (agents?.list ?? []) as Record<string, unknown>[];
+  const defaultsWorkspace =
+    typeof (agents?.defaults as Record<string, unknown> | undefined)?.workspace === "string"
+      ? ((agents!.defaults as Record<string, unknown>).workspace as string)
+      : undefined;
+
+  const hasSubstantiveContent = Object.keys(config).some((key) => SUBSTANTIVE_CONFIG_KEYS.has(key));
+
+  let mutated = false;
+
+  if (agentsList.length === 0 && hasSubstantiveContent) {
+    // Step 2: Create default agent entry when config has real content
+    const newAgents = agents ?? {};
+    newAgents.list = [{ id: DEFAULT_AGENT_ID, workspace: DEFAULT_WORKSPACE }];
+    config.agents = newAgents;
+    mutated = true;
+  } else {
+    // Step 1: Materialize workspace on existing agents
+    for (const entry of agentsList) {
+      if (typeof entry.workspace === "string" && entry.workspace.trim()) {
+        continue;
+      }
+      if (defaultsWorkspace) {
+        entry.workspace = defaultsWorkspace;
+      } else {
+        const id = typeof entry.id === "string" ? entry.id.trim() : "";
+        const isDefault =
+          entry.default === true || id === DEFAULT_AGENT_ID || agentsList.length === 1;
+        entry.workspace = isDefault
+          ? DEFAULT_WORKSPACE
+          : `~/.remoteclaw/workspace-${id || DEFAULT_AGENT_ID}`;
+      }
+      mutated = true;
+    }
+  }
+
+  // Step 3: Remove agents.defaults.workspace after consuming
+  if (defaultsWorkspace && config.agents) {
+    const defaults = (config.agents as Record<string, unknown>).defaults as
+      | Record<string, unknown>
+      | undefined;
+    if (defaults) {
+      delete defaults.workspace;
+      if (Object.keys(defaults).length === 0) {
+        delete (config.agents as Record<string, unknown>).defaults;
+      }
+      mutated = true;
+    }
+  }
+
+  if (!mutated) {
+    return jsonContent;
+  }
+
+  // Preserve original indentation style
+  const indentMatch = jsonContent.match(/^(\s+)"/m);
+  const indent = indentMatch?.[1] ?? "  ";
+  return JSON.stringify(config, null, indent) + "\n";
+}
+
+/**
  * Determine the target filename for a source file.
  * Renames openclaw.json -> remoteclaw.json at any directory level.
  */
@@ -139,12 +253,15 @@ async function copyDirectory(params: {
       if (isConfigFile(entry.name)) {
         const content = await fsp.readFile(sourcePath, "utf-8");
         const { content: transformed, renames } = transformConfigContent(content);
-        if (renames.length > 0) {
+        // Apply structural config transform to the main config file
+        const isMainConfig = entry.name === OPENCLAW_CONFIG_FILENAME;
+        const final = isMainConfig ? materializeWorkspaceDefaults(transformed) : transformed;
+        if (renames.length > 0 || final !== transformed) {
           result.transformedFiles.push(targetPath);
           result.envVarRenames.push(...renames);
         }
         if (!dryRun) {
-          await fsp.writeFile(targetPath, transformed, "utf-8");
+          await fsp.writeFile(targetPath, final, "utf-8");
         }
         result.copiedFiles.push(targetPath);
       } else {

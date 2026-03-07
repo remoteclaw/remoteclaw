@@ -29,6 +29,7 @@ export {
 } from "../channels/plugins/onboarding/helpers.js";
 export {
   applyAccountNameToChannelSection,
+  applySetupAccountConfigPatch,
   migrateBaseNameToDefaultAccount,
 } from "../channels/plugins/setup-helpers.js";
 export { buildComputedAccountStatusSnapshot } from "./status-helpers.js";

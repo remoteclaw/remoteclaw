@@ -12,6 +12,7 @@ import type {
 } from "remoteclaw/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
+  applySetupAccountConfigPatch,
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
   chunkTextForOutbound,
@@ -352,35 +353,12 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
               channelKey: "zalouser",
             })
           : namedConfig;
-      if (accountId === DEFAULT_ACCOUNT_ID) {
-        return {
-          ...next,
-          channels: {
-            ...next.channels,
-            zalouser: {
-              ...next.channels?.zalouser,
-              enabled: true,
-            },
-          },
-        } as RemoteClawConfig;
-      }
-      return {
-        ...next,
-        channels: {
-          ...next.channels,
-          zalouser: {
-            ...next.channels?.zalouser,
-            enabled: true,
-            accounts: {
-              ...next.channels?.zalouser?.accounts,
-              [accountId]: {
-                ...next.channels?.zalouser?.accounts?.[accountId],
-                enabled: true,
-              },
-            },
-          },
-        },
-      } as RemoteClawConfig;
+      return applySetupAccountConfigPatch({
+        cfg: next,
+        channelKey: "zalouser",
+        accountId,
+        patch: {},
+      });
     },
   },
   messaging: {

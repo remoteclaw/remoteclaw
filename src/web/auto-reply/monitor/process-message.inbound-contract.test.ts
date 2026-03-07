@@ -132,6 +132,32 @@ describe("web processMessage inbound contract", () => {
     }
   });
 
+  async function processSelfDirectMessage(cfg: unknown) {
+    capturedDispatchParams = undefined;
+    await processMessage(
+      makeProcessMessageArgs({
+        routeSessionKey: "agent:main:whatsapp:direct:+1555",
+        groupHistoryKey: "+1555",
+        cfg,
+        msg: {
+          id: "msg1",
+          from: "+1555",
+          to: "+1555",
+          selfE164: "+1555",
+          chatType: "direct",
+          body: "hi",
+        },
+      }),
+    );
+  }
+
+  function getDispatcherResponsePrefix() {
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const dispatcherOptions = (capturedDispatchParams as any)?.dispatcherOptions;
+    // oxlint-disable-next-line typescript/no-explicit-any
+    return dispatcherOptions?.responsePrefix as string | undefined;
+  }
+
   it("passes a finalized MsgContext to the dispatcher", async () => {
     await processMessage(
       makeProcessMessageArgs({
@@ -189,67 +215,31 @@ describe("web processMessage inbound contract", () => {
   });
 
   it("defaults responsePrefix to identity name in self-chats when unset", async () => {
-    capturedDispatchParams = undefined;
-
-    await processMessage(
-      makeProcessMessageArgs({
-        routeSessionKey: "agent:main:whatsapp:direct:+1555",
-        groupHistoryKey: "+1555",
-        cfg: {
-          agents: {
-            list: [
-              {
-                id: "main",
-                default: true,
-                workspace: "/tmp/test-workspace",
-                identity: { name: "Mainbot", emoji: "🦀", theme: "space crab" },
-              },
-            ],
+    await processSelfDirectMessage({
+      agents: {
+        list: [
+          {
+            id: "main",
+            default: true,
+            workspace: "/tmp/test-workspace",
+            identity: { name: "Mainbot", emoji: "🦀", theme: "space crab" },
           },
-          messages: {},
-          session: { store: sessionStorePath },
-        } as unknown as ReturnType<typeof import("../../../config/config.js").loadConfig>,
-        msg: {
-          id: "msg1",
-          from: "+1555",
-          to: "+1555",
-          selfE164: "+1555",
-          chatType: "direct",
-          body: "hi",
-        },
-      }),
-    );
+        ],
+      },
+      messages: {},
+      session: { store: sessionStorePath },
+    } as unknown as ReturnType<typeof import("../../../config/config.js").loadConfig>);
 
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const dispatcherOptions = (capturedDispatchParams as any)?.dispatcherOptions;
-    expect(dispatcherOptions?.responsePrefix).toBe("[Mainbot]");
+    expect(getDispatcherResponsePrefix()).toBe("[Mainbot]");
   });
 
-  it("does not force an [openclaw] response prefix in self-chats when identity is unset", async () => {
-    capturedDispatchParams = undefined;
+  it("does not force an [remoteclaw] response prefix in self-chats when identity is unset", async () => {
+    await processSelfDirectMessage({
+      messages: {},
+      session: { store: sessionStorePath },
+    } as unknown as ReturnType<typeof import("../../../config/config.js").loadConfig>);
 
-    await processMessage(
-      makeProcessMessageArgs({
-        routeSessionKey: "agent:main:whatsapp:direct:+1555",
-        groupHistoryKey: "+1555",
-        cfg: {
-          messages: {},
-          session: { store: sessionStorePath },
-        } as unknown as ReturnType<typeof import("../../../config/config.js").loadConfig>,
-        msg: {
-          id: "msg1",
-          from: "+1555",
-          to: "+1555",
-          selfE164: "+1555",
-          chatType: "direct",
-          body: "hi",
-        },
-      }),
-    );
-
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const dispatcherOptions = (capturedDispatchParams as any)?.dispatcherOptions;
-    expect(dispatcherOptions?.responsePrefix).toBeUndefined();
+    expect(getDispatcherResponsePrefix()).toBeUndefined();
   });
 
   it("clears pending group history when the dispatcher does not queue a final reply", async () => {

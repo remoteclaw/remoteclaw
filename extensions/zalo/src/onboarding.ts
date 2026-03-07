@@ -5,11 +5,11 @@ import type {
   WizardPrompter,
 } from "remoteclaw/plugin-sdk";
 import {
-  addWildcardAllowFrom,
   DEFAULT_ACCOUNT_ID,
   mergeAllowFromEntries,
   normalizeAccountId,
   resolveAccountIdForConfigure,
+  setTopLevelChannelDmPolicyWithAllowFrom,
 } from "remoteclaw/plugin-sdk";
 import { listZaloAccountIds, resolveDefaultZaloAccountId, resolveZaloAccount } from "./accounts.js";
 
@@ -21,19 +21,11 @@ function setZaloDmPolicy(
   cfg: RemoteClawConfig,
   dmPolicy: "pairing" | "allowlist" | "open" | "disabled",
 ) {
-  const allowFrom =
-    dmPolicy === "open" ? addWildcardAllowFrom(cfg.channels?.zalo?.allowFrom) : undefined;
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      zalo: {
-        ...cfg.channels?.zalo,
-        dmPolicy,
-        ...(allowFrom ? { allowFrom } : {}),
-      },
-    },
-  } as RemoteClawConfig;
+  return setTopLevelChannelDmPolicyWithAllowFrom({
+    cfg,
+    channel: "zalo",
+    dmPolicy,
+  }) as RemoteClawConfig;
 }
 
 function setZaloUpdateMode(

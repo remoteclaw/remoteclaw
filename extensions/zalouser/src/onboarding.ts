@@ -5,13 +5,13 @@ import type {
   WizardPrompter,
 } from "remoteclaw/plugin-sdk";
 import {
-  addWildcardAllowFrom,
   DEFAULT_ACCOUNT_ID,
   formatResolvedUnresolvedNote,
   mergeAllowFromEntries,
   normalizeAccountId,
   promptChannelAccessConfig,
   resolveAccountIdForConfigure,
+  setTopLevelChannelDmPolicyWithAllowFrom,
 } from "remoteclaw/plugin-sdk";
 import {
   listZalouserAccountIds,
@@ -73,19 +73,11 @@ function setZalouserDmPolicy(
   cfg: RemoteClawConfig,
   dmPolicy: "pairing" | "allowlist" | "open" | "disabled",
 ): RemoteClawConfig {
-  const allowFrom =
-    dmPolicy === "open" ? addWildcardAllowFrom(cfg.channels?.zalouser?.allowFrom) : undefined;
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      zalouser: {
-        ...cfg.channels?.zalouser,
-        dmPolicy,
-        ...(allowFrom ? { allowFrom } : {}),
-      },
-    },
-  } as RemoteClawConfig;
+  return setTopLevelChannelDmPolicyWithAllowFrom({
+    cfg,
+    channel: "zalouser",
+    dmPolicy,
+  }) as RemoteClawConfig;
 }
 
 async function noteZalouserHelp(prompter: WizardPrompter): Promise<void> {

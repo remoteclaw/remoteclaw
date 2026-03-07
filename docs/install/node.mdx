@@ -116,21 +116,25 @@ This almost always means npm's global bin directory isn't on your PATH.
 
 3.  **Add it to your shell startup file**
 
-    <Tabs>
-  <TabItem label="macOS / Linux">
-    Add to `~/.zshrc` or `~/.bashrc`:
+                <Tabs>
 
-        ```bash
-        export PATH="$(npm prefix -g)/bin:$PATH"
-        ```
+              <TabItem label="macOS / Linux">
+            Add to `~/.zshrc` or `~/.bashrc`:
 
-        Then open a new terminal (or run `rehash` in zsh / `hash -r` in bash).
+                    ```bash
+                    export PATH="$(npm prefix -g)/bin:$PATH"
+                    ```
 
-      </TabItem>
-  <TabItem label="Windows">
-    Add the output of `npm prefix -g` to your system PATH via Settings → System → Environment Variables.
-  </TabItem>
-</Tabs>
+                    Then open a new terminal (or run `rehash` in zsh / `hash -r` in bash).
+
+                  </TabItem>
+
+              <TabItem label="Windows">
+            Add the output of `npm prefix -g` to your system PATH via Settings → System → Environment Variables.
+
+          </TabItem>
+
+    </Tabs>
 
 </Steps>
 

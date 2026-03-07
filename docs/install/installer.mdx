@@ -108,19 +108,24 @@ The script exits with code `2` for invalid method selection or invalid `--instal
 
 <Tabs>
   <TabItem label="Default">
-    ```bash curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash ```
+    ```bash
+    curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash
+    ```
   </TabItem>
   <TabItem label="Skip onboarding">
-    ```bash curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s --
-    --no-onboard ```
+    ```bash
+    curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --no-onboard
+    ```
   </TabItem>
   <TabItem label="Git install">
-    ```bash curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s --
-    --install-method git ```
+    ```bash
+    curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --install-method git
+    ```
   </TabItem>
   <TabItem label="Dry run">
-    ```bash curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s --
-    --dry-run ```
+    ```bash
+    curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --dry-run
+    ```
   </TabItem>
 </Tabs>
 
@@ -194,19 +199,24 @@ Designed for environments where you want everything under a local prefix (defaul
 
 <Tabs>
   <TabItem label="Default">
-    ```bash curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash ```
+    ```bash
+    curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash
+    ```
   </TabItem>
   <TabItem label="Custom prefix + version">
-    ```bash curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s --
-    --prefix /opt/remoteclaw --version latest ```
+    ```bash
+    curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s -- --prefix /opt/remoteclaw --version latest
+    ```
   </TabItem>
   <TabItem label="Automation JSON output">
-    ```bash curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s --
-    --json --prefix /opt/remoteclaw ```
+    ```bash
+    curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s -- --json --prefix /opt/remoteclaw
+    ```
   </TabItem>
   <TabItem label="Run onboarding">
-    ```bash curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s --
-    --onboard ```
+    ```bash
+    curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s -- --onboard
+    ```
   </TabItem>
 </Tabs>
 
@@ -271,24 +281,32 @@ Designed for environments where you want everything under a local prefix (defaul
 
 <Tabs>
   <TabItem label="Default">
-    ```powershell iwr -useb https://remoteclaw.org/install.ps1 | iex ```
+    ```powershell
+    iwr -useb https://remoteclaw.org/install.ps1 | iex
+    ```
   </TabItem>
   <TabItem label="Git install">
-    ```powershell & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1)))
-    -InstallMethod git ```
+    ```powershell
+    & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -InstallMethod git
+    ```
   </TabItem>
   <TabItem label="Custom git directory">
-    ```powershell & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1)))
-    -InstallMethod git -GitDir "C:\remoteclaw" ```
+    ```powershell
+    & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -InstallMethod git -GitDir "C:\remoteclaw"
+    ```
   </TabItem>
   <TabItem label="Dry run">
-    ```powershell & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -DryRun
+    ```powershell
+    & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -DryRun
     ```
   </TabItem>
   <TabItem label="Debug trace">
-    ```powershell # install.ps1 has no dedicated -Verbose flag yet. Set-PSDebug -Trace 1 &
-    ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -NoOnboard Set-PSDebug
-    -Trace 0 ```
+    ```powershell
+    # install.ps1 has no dedicated -Verbose flag yet.
+    Set-PSDebug -Trace 1
+    & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -NoOnboard
+    Set-PSDebug -Trace 0
+    ```
   </TabItem>
 </Tabs>
 
@@ -331,20 +349,25 @@ Use non-interactive flags/env vars for predictable runs.
 
 <Tabs>
   <TabItem label="install.sh (non-interactive npm)">
-    ```bash curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s --
-    --no-prompt --no-onboard ```
+    ```bash
+    curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --no-prompt --no-onboard
+    ```
   </TabItem>
   <TabItem label="install.sh (non-interactive git)">
-    ```bash REMOTECLAW_INSTALL_METHOD=git REMOTECLAW_NO_PROMPT=1 \ curl -fsSL --proto '=https'
-    --tlsv1.2 https://remoteclaw.org/install.sh | bash ```
+    ```bash
+    REMOTECLAW_INSTALL_METHOD=git REMOTECLAW_NO_PROMPT=1 \
+      curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash
+    ```
   </TabItem>
   <TabItem label="install-cli.sh (JSON)">
-    ```bash curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s --
-    --json --prefix /opt/remoteclaw ```
+    ```bash
+    curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s -- --json --prefix /opt/remoteclaw
+    ```
   </TabItem>
   <TabItem label="install.ps1 (skip onboarding)">
-    ```powershell & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1)))
-    -NoOnboard ```
+    ```powershell
+    & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -NoOnboard
+    ```
   </TabItem>
 </Tabs>
 

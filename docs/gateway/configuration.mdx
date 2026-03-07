@@ -39,11 +39,17 @@ See the [full reference](/gateway/configuration-reference) for every available f
 
 <Tabs>
   <TabItem label="Interactive wizard">
-    ```bash remoteclaw onboard # full setup wizard remoteclaw configure # config wizard ```
+    ```bash
+    remoteclaw onboard       # full setup wizard
+    remoteclaw configure     # config wizard
+    ```
   </TabItem>
   <TabItem label="CLI (one-liners)">
-    ```bash remoteclaw config get agents.defaults.workspace remoteclaw config set
-    agents.defaults.heartbeat.every "2h" remoteclaw config unset tools.web.search.apiKey ```
+    ```bash
+    remoteclaw config get agents.defaults.workspace
+    remoteclaw config set agents.defaults.heartbeat.every "2h"
+    remoteclaw config unset tools.web.search.apiKey
+    ```
   </TabItem>
   <TabItem label="Control UI">
     Open [http://127.0.0.1:18789](http://127.0.0.1:18789) and use the **Config** tab. The Control UI

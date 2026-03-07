@@ -73,6 +73,7 @@ jobs:
         run: pnpm test
         env:
           REMOTECLAW_TEST_WORKERS: 1
+          REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB: 1536
 
   publish-next:
     if: github.event_name == 'push'

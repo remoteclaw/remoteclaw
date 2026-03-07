@@ -206,6 +206,7 @@ export const agentHandlers: GatewayRequestHandlers = {
       label?: string;
       spawnedBy?: string;
       inputProvenance?: InputProvenance;
+      workspaceDir?: string;
     };
     const cfg = loadConfig();
     const idem = request.idempotencyKey;
@@ -652,6 +653,8 @@ export const agentHandlers: GatewayRequestHandlers = {
         lane: request.lane,
         extraSystemPrompt: request.extraSystemPrompt,
         inputProvenance,
+        // Internal-only: allow workspace override for spawned subagent runs.
+        workspaceDir: spawnedByValue ? request.workspaceDir : undefined,
         senderIsOwner: true,
       },
       defaultRuntime,

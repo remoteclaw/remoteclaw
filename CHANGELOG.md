@@ -238,6 +238,7 @@ Docs: https://docs.openclaw.ai
 - Outbound delivery replay safety: use two-phase delivery ACK markers (`.json` -> `.delivered` -> unlink) and startup marker cleanup so crash windows between send and cleanup do not replay already-delivered messages. (#38668) Thanks @Gundam98.
 - Nodes/system.run PowerShell wrapper parsing: treat `pwsh`/`powershell` `-EncodedCommand` forms as shell-wrapper payloads so allowlist mode still requires approval instead of falling back to plain argv analysis. Thanks @tdjackey for reporting.
 - Nodes/system.run allow-always persistence: honor shell comment semantics during allowlist analysis so `#`-tailed payloads that never execute are not persisted as trusted follow-up commands. Thanks @tdjackey for reporting.
+- Nodes/system.run dispatch-wrapper boundary: keep shell-wrapper approval classification active at the depth boundary so `env` wrapper stacks cannot reach `/bin/sh -c` execution without the expected approval gate. Thanks @tdjackey for reporting.
 
 ## 2026.3.2
 

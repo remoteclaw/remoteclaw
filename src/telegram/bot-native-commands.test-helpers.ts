@@ -18,6 +18,7 @@ export function createNativeCommandTestParams(params: {
   useAccessGroups?: boolean;
   nativeEnabled?: boolean;
   nativeDisabledExplicit?: boolean;
+  resolveTelegramGroupConfig?: RegisterTelegramNativeCommandParams["resolveTelegramGroupConfig"];
   opts?: RegisterTelegramNativeCommandParams["opts"];
 }): RegisterTelegramNativeCommandParams {
   return {
@@ -34,10 +35,12 @@ export function createNativeCommandTestParams(params: {
     nativeEnabled: params.nativeEnabled ?? true,
     nativeDisabledExplicit: params.nativeDisabledExplicit ?? false,
     resolveGroupPolicy: () => ({ allowlistEnabled: false, allowed: true }),
-    resolveTelegramGroupConfig: () => ({
-      groupConfig: undefined,
-      topicConfig: undefined,
-    }),
+    resolveTelegramGroupConfig:
+      params.resolveTelegramGroupConfig ??
+      (() => ({
+        groupConfig: undefined,
+        topicConfig: undefined,
+      })),
     shouldSkipUpdate: () => false,
     opts: params.opts ?? { token: "token" },
   };

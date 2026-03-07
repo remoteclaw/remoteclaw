@@ -262,6 +262,8 @@ export type AgentDefaultsConfig = {
   sandbox?: AgentSandboxConfig;
   /** Selected agent runtime (claude, gemini, codex, opencode). */
   runtime?: "claude" | "gemini" | "codex" | "opencode";
+  /** Extra CLI arguments appended to every runtime invocation. */
+  runtimeArgs?: string[];
 };
 
 export type AgentCompactionMode = "default" | "safeguard";

@@ -142,6 +142,7 @@ export const AgentDefaultsSchema = z
     runtime: z
       .union([z.literal("claude"), z.literal("gemini"), z.literal("codex"), z.literal("opencode")])
       .optional(),
+    runtimeArgs: z.array(z.string()).optional(),
   })
   .strict()
   .optional();

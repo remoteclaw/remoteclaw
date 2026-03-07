@@ -36,6 +36,8 @@ export type ChannelBridgeOptions = {
   chunkLimit?: number | undefined;
   /** MCP server entry point path. */
   mcpServerPath?: string | undefined;
+  /** Extra CLI arguments appended to every runtime invocation. */
+  runtimeArgs?: string[] | undefined;
 };
 
 const DEFAULT_WORKSPACE_DIR = ".";
@@ -71,6 +73,7 @@ export class ChannelBridge {
   readonly #workspaceDir: string;
   readonly #chunkLimit: number | undefined;
   readonly #mcpServerPath: string;
+  readonly #runtimeArgs: string[] | undefined;
 
   constructor(options: ChannelBridgeOptions) {
     this.#provider = options.provider;
@@ -80,6 +83,7 @@ export class ChannelBridge {
     this.#workspaceDir = options.workspaceDir ?? DEFAULT_WORKSPACE_DIR;
     this.#chunkLimit = options.chunkLimit;
     this.#mcpServerPath = options.mcpServerPath ?? DEFAULT_MCP_SERVER_PATH;
+    this.#runtimeArgs = options.runtimeArgs;
   }
 
   /**
@@ -189,6 +193,7 @@ export class ChannelBridge {
             abortSignal,
             workingDirectory: workspaceDir,
             env: extraEnv,
+            extraArgs: this.#runtimeArgs,
           }),
         );
         payloads = await adapter.process(captured.events, callbacks);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createCliRuntime,
+  resolveCliRuntimeArgs,
   resolveCliRuntimeProvider,
   SUPPORTED_PROVIDERS,
 } from "./runtime-factory.js";
@@ -123,5 +124,37 @@ describe("resolveCliRuntimeProvider", () => {
 
   it("falls back to 'claude' when config is undefined", () => {
     expect(resolveCliRuntimeProvider(undefined)).toBe("claude");
+  });
+});
+
+// ── resolveCliRuntimeArgs ───────────────────────────────────────────────
+
+describe("resolveCliRuntimeArgs", () => {
+  it("returns agents.defaults.runtimeArgs when set", () => {
+    expect(
+      resolveCliRuntimeArgs({
+        agents: { defaults: { runtimeArgs: ["--dangerously-skip-permissions"] } },
+      }),
+    ).toEqual(["--dangerously-skip-permissions"]);
+  });
+
+  it("returns undefined when runtimeArgs is not set", () => {
+    expect(resolveCliRuntimeArgs({ agents: { defaults: {} } })).toBeUndefined();
+  });
+
+  it("returns undefined when defaults is undefined", () => {
+    expect(resolveCliRuntimeArgs({ agents: {} })).toBeUndefined();
+  });
+
+  it("returns undefined when agents is undefined", () => {
+    expect(resolveCliRuntimeArgs({})).toBeUndefined();
+  });
+
+  it("returns undefined when config is undefined", () => {
+    expect(resolveCliRuntimeArgs(undefined)).toBeUndefined();
+  });
+
+  it("returns empty array when set to empty array", () => {
+    expect(resolveCliRuntimeArgs({ agents: { defaults: { runtimeArgs: [] } } })).toEqual([]);
   });
 });

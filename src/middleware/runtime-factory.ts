@@ -23,6 +23,18 @@ export function resolveCliRuntimeProvider(cfg?: {
   return cfg?.agents?.defaults?.runtime ?? DEFAULT_CLI_RUNTIME;
 }
 
+/**
+ * Resolve extra CLI runtime args from config.
+ *
+ * Reads `agents.defaults.runtimeArgs` — extra CLI flags appended to every
+ * runtime invocation (e.g. `["--dangerously-skip-permissions"]`).
+ */
+export function resolveCliRuntimeArgs(cfg?: {
+  agents?: { defaults?: { runtimeArgs?: string[] } };
+}): string[] | undefined {
+  return cfg?.agents?.defaults?.runtimeArgs;
+}
+
 export function createCliRuntime(provider: string): AgentRuntime {
   const normalized = provider.trim().toLowerCase();
 

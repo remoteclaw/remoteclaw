@@ -25,7 +25,10 @@ import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.j
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { logWarn } from "../../logger.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
-import { resolveCliRuntimeProvider } from "../../middleware/runtime-factory.js";
+import {
+  resolveCliRuntimeArgs,
+  resolveCliRuntimeProvider,
+} from "../../middleware/runtime-factory.js";
 import type { SessionMap } from "../../middleware/session-map.js";
 import type { AgentDeliveryResult, ChannelMessage } from "../../middleware/types.js";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../../routing/session-key.js";
@@ -378,6 +381,7 @@ export async function runCronIsolatedAgentTurn(params: {
       gatewayUrl: resolveGatewayUrlFromConfig(cfgWithAgentDefaults),
       gatewayToken: resolveGatewayTokenFromConfig(cfgWithAgentDefaults),
       workspaceDir,
+      runtimeArgs: resolveCliRuntimeArgs(cfgWithAgentDefaults),
     });
 
     const messageToolHints = resolveChannelMessageToolHints({

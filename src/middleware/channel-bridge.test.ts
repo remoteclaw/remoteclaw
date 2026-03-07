@@ -806,6 +806,39 @@ describe("ChannelBridge", () => {
       const mcpArgs = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.args!;
       expect(mcpArgs[0]).toContain("mcp-server.js");
     });
+
+    it("passes runtimeArgs as extraArgs to runtime.execute()", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = new ChannelBridge({
+        provider: "claude",
+        sessionMap,
+        gatewayUrl: "wss://gw.test.com",
+        gatewayToken: "tok",
+        runtimeArgs: ["--dangerously-skip-permissions"],
+      });
+      await bridge.handle(makeMessage());
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.extraArgs).toEqual(["--dangerously-skip-permissions"]);
+    });
+
+    it("leaves extraArgs undefined when runtimeArgs is not specified", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = new ChannelBridge({
+        provider: "claude",
+        sessionMap,
+        gatewayUrl: "wss://gw.test.com",
+        gatewayToken: "tok",
+      });
+      await bridge.handle(makeMessage());
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.extraArgs).toBeUndefined();
+    });
   });
 });
 

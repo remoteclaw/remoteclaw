@@ -51,6 +51,9 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
 
   async *execute(params: AgentExecuteParams): AsyncIterable<AgentEvent> {
     const args = this.buildArgs(params);
+    if (params.extraArgs && params.extraArgs.length > 0) {
+      args.push(...params.extraArgs);
+    }
     const env = { ...process.env, ...this.buildEnv(params), ...params.env };
     const child = spawn(this.command, args, {
       cwd: params.workingDirectory,

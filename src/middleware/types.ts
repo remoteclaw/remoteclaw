@@ -21,6 +21,8 @@ export type AgentExecuteParams = {
   workingDirectory?: string | undefined;
   /** Additional environment variables for the CLI subprocess. */
   env?: Record<string, string> | undefined;
+  /** Extra CLI arguments appended after the runtime's own args. */
+  extraArgs?: string[] | undefined;
 };
 
 /** MCP server configuration passed to agent CLI subprocesses. */

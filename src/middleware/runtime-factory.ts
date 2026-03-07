@@ -70,6 +70,18 @@ export function resolveCliRuntimeArgs(cfg?: {
   return cfg?.agents?.defaults?.runtimeArgs;
 }
 
+/**
+ * Resolve extra CLI runtime env vars from config.
+ *
+ * Reads `agents.defaults.runtimeEnv` — environment variables injected into
+ * every runtime invocation (e.g. `{ "ANTHROPIC_API_KEY": "sk-ant-..." }`).
+ */
+export function resolveCliRuntimeEnv(cfg?: {
+  agents?: { defaults?: { runtimeEnv?: Record<string, string> } };
+}): Record<string, string> | undefined {
+  return cfg?.agents?.defaults?.runtimeEnv;
+}
+
 export function createCliRuntime(provider: string): AgentRuntime {
   const normalized = provider.trim().toLowerCase();
 

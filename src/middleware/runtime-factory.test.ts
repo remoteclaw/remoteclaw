@@ -4,6 +4,7 @@ import {
   _resetValidationCache,
   createCliRuntime,
   resolveCliRuntimeArgs,
+  resolveCliRuntimeEnv,
   resolveCliRuntimeProvider,
   SUPPORTED_PROVIDERS,
 } from "./runtime-factory.js";
@@ -229,5 +230,37 @@ describe("resolveCliRuntimeArgs", () => {
 
   it("returns empty array when set to empty array", () => {
     expect(resolveCliRuntimeArgs({ agents: { defaults: { runtimeArgs: [] } } })).toEqual([]);
+  });
+});
+
+// ── resolveCliRuntimeEnv ────────────────────────────────────────────────
+
+describe("resolveCliRuntimeEnv", () => {
+  it("returns agents.defaults.runtimeEnv when set", () => {
+    expect(
+      resolveCliRuntimeEnv({
+        agents: { defaults: { runtimeEnv: { ANTHROPIC_API_KEY: "sk-ant-test" } } },
+      }),
+    ).toEqual({ ANTHROPIC_API_KEY: "sk-ant-test" });
+  });
+
+  it("returns undefined when runtimeEnv is not set", () => {
+    expect(resolveCliRuntimeEnv({ agents: { defaults: {} } })).toBeUndefined();
+  });
+
+  it("returns undefined when defaults is undefined", () => {
+    expect(resolveCliRuntimeEnv({ agents: {} })).toBeUndefined();
+  });
+
+  it("returns undefined when agents is undefined", () => {
+    expect(resolveCliRuntimeEnv({})).toBeUndefined();
+  });
+
+  it("returns undefined when config is undefined", () => {
+    expect(resolveCliRuntimeEnv(undefined)).toBeUndefined();
+  });
+
+  it("returns empty object when set to empty object", () => {
+    expect(resolveCliRuntimeEnv({ agents: { defaults: { runtimeEnv: {} } } })).toEqual({});
   });
 });

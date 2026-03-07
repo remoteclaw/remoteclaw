@@ -839,6 +839,39 @@ describe("ChannelBridge", () => {
       const params = executeFn.mock.calls[0][0];
       expect(params.extraArgs).toBeUndefined();
     });
+
+    it("passes runtimeEnv as env to runtime.execute()", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = new ChannelBridge({
+        provider: "claude",
+        sessionMap,
+        gatewayUrl: "wss://gw.test.com",
+        gatewayToken: "tok",
+        runtimeEnv: { ANTHROPIC_API_KEY: "sk-ant-test" },
+      });
+      await bridge.handle(makeMessage());
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.env).toEqual({ ANTHROPIC_API_KEY: "sk-ant-test" });
+    });
+
+    it("leaves env undefined when runtimeEnv is not specified", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = new ChannelBridge({
+        provider: "claude",
+        sessionMap,
+        gatewayUrl: "wss://gw.test.com",
+        gatewayToken: "tok",
+      });
+      await bridge.handle(makeMessage());
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.env).toBeUndefined();
+    });
   });
 });
 

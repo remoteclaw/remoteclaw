@@ -21,6 +21,7 @@ import { emitAgentEvent, registerAgentRunContext } from "../../infra/agent-event
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
 import {
   resolveCliRuntimeArgs,
+  resolveCliRuntimeEnv,
   resolveCliRuntimeProvider,
 } from "../../middleware/runtime-factory.js";
 import type { SessionMap } from "../../middleware/session-map.js";
@@ -289,6 +290,7 @@ export async function runAgentTurnWithFallback(params: {
           gatewayToken: resolveGatewayTokenFromConfig(cfg),
           workspaceDir: params.followupRun.run.workspaceDir,
           runtimeArgs: resolveCliRuntimeArgs(cfg),
+          runtimeEnv: resolveCliRuntimeEnv(cfg),
         });
 
         const messageToolHints = resolveChannelMessageToolHints({

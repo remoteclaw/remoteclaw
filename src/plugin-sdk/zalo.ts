@@ -95,5 +95,7 @@ export type { RegisterWebhookTargetOptions } from "./webhook-targets.js";
 export {
   registerWebhookTarget,
   resolveSingleWebhookTarget,
+  resolveWebhookTargetWithAuthOrRejectSync,
   resolveWebhookTargets,
+  withResolvedWebhookRequestPipeline,
 } from "./webhook-targets.js";

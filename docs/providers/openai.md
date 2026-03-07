@@ -41,11 +41,7 @@ Codex cloud requires ChatGPT sign-in, while the Codex CLI supports ChatGPT or AP
 ### CLI setup (Codex OAuth)
 
 ```bash
-# Run Codex OAuth in the wizard
 remoteclaw onboard --auth-choice openai-codex
-
-# Or run OAuth directly
-remoteclaw models auth login --provider openai-codex
 ```
 
 ### Config snippet (Codex subscription)
@@ -58,5 +54,5 @@ remoteclaw models auth login --provider openai-codex
 
 ## Notes
 
-- Model refs always use `provider/model` (see [Model providers](/concepts/model-providers)).
-- Auth details + reuse rules are in [/concepts/oauth](/concepts/oauth).
+- Model refs always use `provider/model`.
+- See [Model failover](/concepts/model-failover) for auth rotation and fallback behavior.

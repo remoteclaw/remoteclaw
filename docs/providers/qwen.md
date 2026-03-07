@@ -22,32 +22,21 @@ Restart the Gateway after enabling.
 ## Authenticate
 
 ```bash
-remoteclaw models auth login --provider qwen-portal --set-default
+remoteclaw onboard --auth-choice qwen-portal
 ```
 
-This runs the Qwen device-code OAuth flow and writes a provider entry to your
-`models.json` (plus a `qwen` alias for quick switching).
+This runs the Qwen device-code OAuth flow and configures the provider.
 
 ## Model IDs
 
 - `qwen-portal/coder-model`
 - `qwen-portal/vision-model`
 
-Switch models with:
-
-```bash
-remoteclaw models set qwen-portal/coder-model
-```
-
 ## Reuse Qwen Code CLI login
 
 If you already logged in with the Qwen Code CLI, RemoteClaw will sync credentials
-from `~/.qwen/oauth_creds.json` when it loads the auth store. You still need a
-`models.providers.qwen-portal` entry (use the login command above to create one).
+from `~/.qwen/oauth_creds.json` when it loads the auth store.
 
 ## Notes
 
-- Tokens auto-refresh; re-run the login command if refresh fails or access is revoked.
-- Default base URL: `https://portal.qwen.ai/v1` (override with
-  `models.providers.qwen-portal.baseUrl` if Qwen provides a different endpoint).
-- See [Model providers](/concepts/model-providers) for provider-wide rules.
+- Tokens auto-refresh; re-run onboarding if refresh fails or access is revoked.

@@ -70,27 +70,6 @@ Configure via CLI:
 {
   env: { MINIMAX_API_KEY: "sk-..." },
   agents: { defaults: { model: { primary: "minimax/MiniMax-M2.1" } } },
-  models: {
-    mode: "merge",
-    providers: {
-      minimax: {
-        baseUrl: "https://api.minimax.io/anthropic",
-        apiKey: "${MINIMAX_API_KEY}",
-        api: "anthropic-messages",
-        models: [
-          {
-            id: "MiniMax-M2.1",
-            name: "MiniMax M2.1",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 },
-            contextWindow: 200000,
-            maxTokens: 8192,
-          },
-        ],
-      },
-    },
-  },
 }
 ```
 
@@ -132,27 +111,6 @@ Configure manually via `remoteclaw.json`:
       models: { "lmstudio/minimax-m2.1-gs32": { alias: "Minimax" } },
     },
   },
-  models: {
-    mode: "merge",
-    providers: {
-      lmstudio: {
-        baseUrl: "http://127.0.0.1:1234/v1",
-        apiKey: "lmstudio",
-        api: "openai-responses",
-        models: [
-          {
-            id: "minimax-m2.1-gs32",
-            name: "MiniMax M2.1 GS32",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 196608,
-            maxTokens: 8192,
-          },
-        ],
-      },
-    },
-  },
 }
 ```
 
@@ -167,21 +125,13 @@ Use the interactive config wizard to set MiniMax without editing JSON:
 
 ## Configuration options
 
-- `models.providers.minimax.baseUrl`: prefer `https://api.minimax.io/anthropic` (Anthropic-compatible); `https://api.minimax.io/v1` is optional for OpenAI-compatible payloads.
-- `models.providers.minimax.api`: prefer `anthropic-messages`; `openai-completions` is optional for OpenAI-compatible payloads.
-- `models.providers.minimax.apiKey`: MiniMax API key (`MINIMAX_API_KEY`).
-- `models.providers.minimax.models`: define `id`, `name`, `reasoning`, `contextWindow`, `maxTokens`, `cost`.
 - `agents.defaults.models`: alias models you want in the allowlist.
-- `models.mode`: keep `merge` if you want to add MiniMax alongside built-ins.
 
 ## Notes
 
 - Model refs are `minimax/<model>`.
 - Coding Plan usage API: `https://api.minimaxi.com/v1/api/openplatform/coding_plan/remains` (requires a coding plan key).
-- Update pricing values in `models.json` if you need exact cost tracking.
 - Referral link for MiniMax Coding Plan (10% off): [https://platform.minimax.io/subscribe/coding-plan?code=DbXJTRClnb&source=link](https://platform.minimax.io/subscribe/coding-plan?code=DbXJTRClnb&source=link)
-- See [/concepts/model-providers](/concepts/model-providers) for provider rules.
-- Use `remoteclaw models list` and `remoteclaw models set minimax/MiniMax-M2.1` to switch.
 
 ## Troubleshooting
 
@@ -193,7 +143,6 @@ and no MiniMax auth profile/env key found). A fix for this detection is in
 
 - Upgrading to **2026.1.12** (or run from source `main`), then restarting the gateway.
 - Running `remoteclaw configure` and selecting **MiniMax M2.1**, or
-- Adding the `models.providers.minimax` block manually, or
 - Setting `MINIMAX_API_KEY` (or a MiniMax auth profile) so the provider can be injected.
 
 Make sure the model id is **case‑sensitive**:
@@ -204,5 +153,5 @@ Make sure the model id is **case‑sensitive**:
 Then recheck with:
 
 ```bash
-remoteclaw models list
+remoteclaw doctor
 ```

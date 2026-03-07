@@ -62,7 +62,6 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Groups](/channels/groups)
 - [Group messages](/channels/group-messages)
 - [Model failover](/concepts/model-failover)
-- [OAuth](/concepts/oauth)
 
 ## Providers + ingress
 

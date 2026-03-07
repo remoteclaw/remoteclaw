@@ -61,5 +61,4 @@ The built-in Kilo Gateway catalog currently surfaces these model refs:
 - Model refs are `kilocode/<provider>/<model>` (e.g., `kilocode/anthropic/claude-opus-4.6`).
 - Default model: `kilocode/anthropic/claude-opus-4.6`
 - Base URL: `https://api.kilo.ai/api/gateway/`
-- For more model/provider options, see [/concepts/model-providers](/concepts/model-providers).
 - Kilo Gateway uses a Bearer token with your API key under the hood.

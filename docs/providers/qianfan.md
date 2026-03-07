@@ -33,6 +33,5 @@ remoteclaw onboard --auth-choice qianfan-api-key
 ## Related Documentation
 
 - [RemoteClaw Configuration](/gateway/configuration)
-- [Model Providers](/concepts/model-providers)
 - [Agent Setup](/concepts/agent)
 - [Qianfan API Documentation](https://cloud.baidu.com/doc/qianfan-api/s/3m7of64lb)

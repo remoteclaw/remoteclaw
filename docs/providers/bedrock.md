@@ -158,8 +158,8 @@ echo 'export AWS_PROFILE=default' >> ~/.bashrc
 echo 'export AWS_REGION=us-east-1' >> ~/.bashrc
 source ~/.bashrc
 
-# 5. Verify models are discovered
-remoteclaw models list
+# 5. Verify discovery works
+remoteclaw doctor
 ```
 
 ## Notes

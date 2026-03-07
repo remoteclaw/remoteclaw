@@ -93,7 +93,7 @@ These are typically low-volume calls but still hit provider APIs:
 - `remoteclaw status --usage`
 - `remoteclaw models status --json`
 
-See [Model providers](/concepts/model-providers).
+See [Model failover](/concepts/model-failover).
 
 ### 6) Compaction safeguard summarization
 
@@ -107,7 +107,7 @@ See [Session management + compaction](/reference/session-management-compaction).
 `remoteclaw models scan` can probe OpenRouter models and uses `OPENROUTER_API_KEY` when
 probing is enabled.
 
-See [Model providers](/concepts/model-providers).
+See [Model failover](/concepts/model-failover).
 
 ### 8) Talk (speech)
 

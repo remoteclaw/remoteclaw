@@ -91,17 +91,12 @@ After setup, RemoteClaw shows all available Venice models. Pick based on your ne
 - **Privacy**: Choose "private" models for fully private inference.
 - **Capability**: Choose "anonymized" models to access Claude, GPT, Gemini via Venice's proxy.
 
-Change your default model anytime:
+Change your default model in config:
 
-```bash
-remoteclaw models set venice/claude-opus-45
-remoteclaw models set venice/llama-3.3-70b
-```
-
-List all available models:
-
-```bash
-remoteclaw models list | grep venice
+```json5
+{
+  agents: { defaults: { model: { primary: "venice/llama-3.3-70b" } } },
+}
 ```
 
 ## Configure via `remoteclaw configure`
@@ -216,14 +211,13 @@ remoteclaw agent --model venice/qwen3-coder-480b-a35b-instruct --message "Refact
 
 ```bash
 echo $VENICE_API_KEY
-remoteclaw models list | grep venice
 ```
 
 Ensure the key starts with `vapi_`.
 
 ### Model not available
 
-The Venice model catalog updates dynamically. Run `remoteclaw models list` to see currently available models. Some models may be temporarily offline.
+The Venice model catalog updates dynamically. Some models may be temporarily offline.
 
 ### Connection issues
 
@@ -235,27 +229,6 @@ Venice API is at `https://api.venice.ai/api/v1`. Ensure your network allows HTTP
 {
   env: { VENICE_API_KEY: "vapi_..." },
   agents: { defaults: { model: { primary: "venice/llama-3.3-70b" } } },
-  models: {
-    mode: "merge",
-    providers: {
-      venice: {
-        baseUrl: "https://api.venice.ai/api/v1",
-        apiKey: "${VENICE_API_KEY}",
-        api: "openai-completions",
-        models: [
-          {
-            id: "llama-3.3-70b",
-            name: "Llama 3.3 70B",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 131072,
-            maxTokens: 8192,
-          },
-        ],
-      },
-    },
-  },
 }
 ```
 

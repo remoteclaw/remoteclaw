@@ -8,7 +8,7 @@ title: "Ollama"
 
 # Ollama
 
-Ollama is a local LLM runtime that makes it easy to run open-source models on your machine. RemoteClaw integrates with Ollama's native API (`/api/chat`), supporting streaming and tool calling, and can **auto-discover tool-capable models** when you opt in with `OLLAMA_API_KEY` (or an auth profile) and do not define an explicit `models.providers.ollama` entry.
+Ollama is a local LLM runtime that makes it easy to run open-source models on your machine. RemoteClaw integrates with Ollama's native API (`/api/chat`), supporting streaming and tool calling, and can **auto-discover tool-capable models** when you opt in with `OLLAMA_API_KEY` (or an auth profile).
 
 ## Quick start
 
@@ -29,11 +29,7 @@ ollama pull deepseek-r1:32b
 3. Enable Ollama for RemoteClaw (any value works; Ollama doesn't require a real key):
 
 ```bash
-# Set environment variable
 export OLLAMA_API_KEY="ollama-local"
-
-# Or configure in your config file
-remoteclaw config set models.providers.ollama.apiKey "ollama-local"
 ```
 
 4. Use Ollama models:
@@ -50,7 +46,7 @@ remoteclaw config set models.providers.ollama.apiKey "ollama-local"
 
 ## Model discovery (implicit provider)
 
-When you set `OLLAMA_API_KEY` (or an auth profile) and **do not** define `models.providers.ollama`, RemoteClaw discovers models from the local Ollama instance at `http://127.0.0.1:11434`:
+When you set `OLLAMA_API_KEY` (or an auth profile), RemoteClaw discovers models from the local Ollama instance at `http://127.0.0.1:11434`:
 
 - Queries `/api/tags` and `/api/show`
 - Keeps only models that report `tools` capability
@@ -65,7 +61,6 @@ To see what models are available:
 
 ```bash
 ollama list
-remoteclaw models list
 ```
 
 To add a new model, simply pull it with Ollama:
@@ -76,69 +71,7 @@ ollama pull mistral
 
 The new model will be automatically discovered and available to use.
 
-If you set `models.providers.ollama` explicitly, auto-discovery is skipped and you must define models manually (see below).
-
 ## Configuration
-
-### Basic setup (implicit discovery)
-
-The simplest way to enable Ollama is via environment variable:
-
-```bash
-export OLLAMA_API_KEY="ollama-local"
-```
-
-### Explicit setup (manual models)
-
-Use explicit config when:
-
-- Ollama runs on another host/port.
-- You want to force specific context windows or model lists.
-- You want to include models that do not report tool support.
-
-```json5
-{
-  models: {
-    providers: {
-      ollama: {
-        baseUrl: "http://ollama-host:11434",
-        apiKey: "ollama-local",
-        api: "ollama",
-        models: [
-          {
-            id: "gpt-oss:20b",
-            name: "GPT-OSS 20B",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 8192,
-            maxTokens: 8192 * 10
-          }
-        ]
-      }
-    }
-  }
-}
-```
-
-If `OLLAMA_API_KEY` is set, you can omit `apiKey` in the provider entry and RemoteClaw will fill it for availability checks.
-
-### Custom base URL (explicit config)
-
-If Ollama is running on a different host or port (explicit config disables auto-discovery, so define models manually):
-
-```json5
-{
-  models: {
-    providers: {
-      ollama: {
-        apiKey: "ollama-local",
-        baseUrl: "http://ollama-host:11434",
-      },
-    },
-  },
-}
-```
 
 ### Model selection
 
@@ -175,36 +108,15 @@ Ollama is free and runs locally, so all model costs are set to $0.
 
 RemoteClaw's Ollama integration uses the **native Ollama API** (`/api/chat`) by default, which fully supports streaming and tool calling simultaneously. No special configuration is needed.
 
-#### Legacy OpenAI-Compatible Mode
-
-If you need to use the OpenAI-compatible endpoint instead (e.g., behind a proxy that only supports OpenAI format), set `api: "openai-completions"` explicitly:
-
-```json5
-{
-  models: {
-    providers: {
-      ollama: {
-        baseUrl: "http://ollama-host:11434/v1",
-        api: "openai-completions",
-        apiKey: "ollama-local",
-        models: [...]
-      }
-    }
-  }
-}
-```
-
-Note: The OpenAI-compatible endpoint may not support streaming + tool calling simultaneously. You may need to disable streaming with `params: { streaming: false }` in model config.
-
 ### Context windows
 
-For auto-discovered models, RemoteClaw uses the context window reported by Ollama when available, otherwise it defaults to `8192`. You can override `contextWindow` and `maxTokens` in explicit provider config.
+For auto-discovered models, RemoteClaw uses the context window reported by Ollama when available, otherwise it defaults to `8192`.
 
 ## Troubleshooting
 
 ### Ollama not detected
 
-Make sure Ollama is running and that you set `OLLAMA_API_KEY` (or an auth profile), and that you did **not** define an explicit `models.providers.ollama` entry:
+Make sure Ollama is running and that you set `OLLAMA_API_KEY` (or an auth profile):
 
 ```bash
 ollama serve
@@ -220,8 +132,7 @@ curl http://localhost:11434/api/tags
 
 RemoteClaw only auto-discovers models that report tool support. If your model isn't listed, either:
 
-- Pull a tool-capable model, or
-- Define the model explicitly in `models.providers.ollama`.
+- Pull a tool-capable model.
 
 To add models:
 
@@ -245,6 +156,4 @@ ollama serve
 
 ## See Also
 
-- [Model Providers](/concepts/model-providers) - Overview of all providers
-- [Model Providers](/concepts/model-providers) - How to choose models
 - [Configuration](/gateway/configuration) - Full config reference

@@ -49,5 +49,4 @@ See [Venice AI](/providers/venice).
 - [Amazon Bedrock](/providers/bedrock)
 - [Qianfan](/providers/qianfan)
 
-For the full provider catalog (xAI, Groq, Mistral, etc.) and advanced configuration,
-see [Model providers](/concepts/model-providers).
+For auth rotation and fallback behavior, see [Model failover](/concepts/model-failover).

@@ -406,7 +406,7 @@ Common options:
 - `--lines <n>` (default `200`)
 - `--json`
 
-More detail: [/concepts/oauth](/concepts/oauth)
+More detail: [Model failover](/concepts/model-failover)
 
 Examples:
 

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveAgentWorkspaceDirOrNull, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { CHANNEL_IDS, normalizeChatChannelId } from "../channels/registry.js";
 import { normalizePluginsConfig, resolveEffectiveEnableState } from "../plugins/config-state.js";
 import { loadPluginManifestRegistry } from "../plugins/manifest-registry.js";
@@ -62,11 +62,11 @@ function validateIdentityAvatar(config: RemoteClawConfig): ConfigValidationIssue
       });
       continue;
     }
-    const workspaceDir = resolveAgentWorkspaceDir(
+    const workspaceDir = resolveAgentWorkspaceDirOrNull(
       config,
       entry.id ?? resolveDefaultAgentId(config),
     );
-    if (!isWorkspaceAvatarPath(avatar, workspaceDir)) {
+    if (workspaceDir != null && !isWorkspaceAvatarPath(avatar, workspaceDir)) {
       issues.push({
         path: `agents.list.${index}.identity.avatar`,
         message: "identity.avatar must stay within the agent workspace.",
@@ -204,7 +204,7 @@ function validateConfigObjectWithPluginsBase(
       return registryInfo;
     }
 
-    const workspaceDir = resolveAgentWorkspaceDir(config, resolveDefaultAgentId(config));
+    const workspaceDir = resolveAgentWorkspaceDirOrNull(config, resolveDefaultAgentId(config));
     const registry = loadPluginManifestRegistry({
       config,
       workspaceDir: workspaceDir ?? undefined,

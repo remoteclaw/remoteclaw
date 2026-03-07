@@ -33,19 +33,31 @@ async function runAutoAudioCase(params: {
   transcribeAudio: (req: { model?: string }) => Promise<{ text: string; model: string }>;
   cfgExtra?: Partial<RemoteClawConfig>;
 }) {
+  // resolveApiKeyForProvider checks env vars (not cfg.models.providers.*.apiKey),
+  // so we must set OPENAI_API_KEY for auto-discovery to find the provider.
+  const priorKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = "test-key";
   let runResult: Awaited<ReturnType<typeof runCapability>> | undefined;
-  await withAudioFixture("remoteclaw-auto-audio", async ({ ctx, media, cache }) => {
-    const providerRegistry = createOpenAiAudioProvider(params.transcribeAudio);
-    const cfg = createOpenAiAudioCfg(params.cfgExtra);
-    runResult = await runCapability({
-      capability: "audio",
-      cfg,
-      ctx,
-      attachments: cache,
-      media,
-      providerRegistry,
+  try {
+    await withAudioFixture("remoteclaw-auto-audio", async ({ ctx, media, cache }) => {
+      const providerRegistry = createOpenAiAudioProvider(params.transcribeAudio);
+      const cfg = createOpenAiAudioCfg(params.cfgExtra);
+      runResult = await runCapability({
+        capability: "audio",
+        cfg,
+        ctx,
+        attachments: cache,
+        media,
+        providerRegistry,
+      });
     });
-  });
+  } finally {
+    if (priorKey === undefined) {
+      delete process.env.OPENAI_API_KEY;
+    } else {
+      process.env.OPENAI_API_KEY = priorKey;
+    }
+  }
   if (!runResult) {
     throw new Error("Expected auto audio case result");
   }

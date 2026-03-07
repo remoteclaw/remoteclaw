@@ -63,6 +63,7 @@ fi
 bundle_base="$(normalize_bundle_id "${bundle_base}")"
 
 share_bundle_id="${REMOTECLAW_IOS_SHARE_BUNDLE_ID:-${bundle_base}.share}"
+activity_widget_bundle_id="${REMOTECLAW_IOS_ACTIVITY_WIDGET_BUNDLE_ID:-${bundle_base}.activitywidget}"
 watch_app_bundle_id="${REMOTECLAW_IOS_WATCH_APP_BUNDLE_ID:-${bundle_base}.watchkitapp}"
 watch_extension_bundle_id="${REMOTECLAW_IOS_WATCH_EXTENSION_BUNDLE_ID:-${watch_app_bundle_id}.extension}"
 
@@ -76,7 +77,8 @@ cat >"${tmp_file}" <<EOF
 // This file is local-only and should not be committed.
 // Override values with env vars if needed:
 // REMOTECLAW_IOS_APP_BUNDLE_ID / REMOTECLAW_IOS_BUNDLE_ID_BASE
-// REMOTECLAW_IOS_SHARE_BUNDLE_ID / REMOTECLAW_IOS_WATCH_APP_BUNDLE_ID / REMOTECLAW_IOS_WATCH_EXTENSION_BUNDLE_ID
+// REMOTECLAW_IOS_SHARE_BUNDLE_ID / REMOTECLAW_IOS_ACTIVITY_WIDGET_BUNDLE_ID
+// REMOTECLAW_IOS_WATCH_APP_BUNDLE_ID / REMOTECLAW_IOS_WATCH_EXTENSION_BUNDLE_ID
 // REMOTECLAW_IOS_CODE_SIGN_STYLE / REMOTECLAW_IOS_APP_PROFILE / REMOTECLAW_IOS_SHARE_PROFILE
 REMOTECLAW_CODE_SIGN_STYLE = ${code_sign_style}
 REMOTECLAW_DEVELOPMENT_TEAM = ${team_id}
@@ -84,6 +86,7 @@ REMOTECLAW_DEVELOPMENT_TEAM = ${team_id}
 REMOTECLAW_IOS_SELECTED_TEAM = ${team_id}
 REMOTECLAW_APP_BUNDLE_ID = ${bundle_base}
 REMOTECLAW_SHARE_BUNDLE_ID = ${share_bundle_id}
+REMOTECLAW_ACTIVITY_WIDGET_BUNDLE_ID = ${activity_widget_bundle_id}
 REMOTECLAW_WATCH_APP_BUNDLE_ID = ${watch_app_bundle_id}
 REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID = ${watch_extension_bundle_id}
 REMOTECLAW_APP_PROFILE = ${app_profile}

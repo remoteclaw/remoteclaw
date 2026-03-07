@@ -1,0 +1,1 @@
+RemoteClaw iOS client for gateway-connected workflows. Reviewers can follow the standard onboarding and pairing flow in-app.

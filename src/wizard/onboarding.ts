@@ -586,7 +586,7 @@ export async function runOnboardingWizard(
     (await prompter.select({
       message: "Which agent runtime?",
       options: [
-        { value: "claude", label: "Claude Code (claude --print)" },
+        { value: "claude", label: "Claude Code (claude)" },
         { value: "gemini", label: "Gemini CLI (gemini)" },
         { value: "codex", label: "Codex CLI (codex exec)" },
         { value: "opencode", label: "OpenCode (opencode)" },

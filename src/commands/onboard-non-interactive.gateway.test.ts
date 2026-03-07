@@ -142,7 +142,7 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
         tools?: { profile?: string };
       }>(configPath);
 
-      expect(cfg?.tools?.profile).toBe("messaging");
+      expect(cfg?.tools?.profile).toBe("coding");
       expect(cfg?.gateway?.auth?.mode).toBe("token");
       expect(cfg?.gateway?.auth?.token).toBe(token);
     });

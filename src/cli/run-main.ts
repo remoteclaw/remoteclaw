@@ -83,7 +83,7 @@ export function checkRemoteClawMigration(env: NodeJS.ProcessEnv = process.env): 
 
     if (!fs.existsSync(newDir) && fs.existsSync(oldDir)) {
       console.warn(
-        "Existing RemoteClaw installation detected. Run `remoteclaw import ~/.openclaw` to migrate.",
+        "Existing OpenClaw configuration detected. Run `remoteclaw import ~/.openclaw` to migrate.",
       );
     }
   } catch {

@@ -91,6 +91,8 @@ export type AgentCommandOpts = {
   streamParams?: AgentStreamParams;
   /** Whether the sender is the owner of the agent (defaults to true for CLI). */
   senderIsOwner?: boolean;
+  /** Explicit workspace directory override (for subagents to inherit parent workspace). */
+  workspaceDir?: string;
 };
 
 export type AgentCommandIngressOpts = Omit<AgentCommandOpts, "senderIsOwner"> & {

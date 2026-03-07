@@ -168,7 +168,7 @@ describe("runReplyAgent onAgentRunStart", () => {
         messageProvider: "webchat",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: {},
+        config: { agents: { defaults: { runtime: "claude" } } },
         provider,
         model,
         thinkLevel: "low",
@@ -275,7 +275,7 @@ describe("runReplyAgent authProfileId fallback scoping", () => {
         messageProvider: "telegram",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: {},
+        config: { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude-opus",
         authProfileId: "anthropic:remoteclaw",
@@ -370,7 +370,7 @@ describe("runReplyAgent auto-compaction token update", () => {
         messageProvider: "whatsapp",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: params.config ?? {},
+        config: params.config ?? { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude",
         thinkLevel: "low",
@@ -408,7 +408,7 @@ describe("runReplyAgent auto-compaction token update", () => {
 
     // Disable memory flush so we isolate the usage persistence path
     const config = {
-      agents: { defaults: { compaction: { memoryFlush: { enabled: false } } } },
+      agents: { defaults: { runtime: "claude", compaction: { memoryFlush: { enabled: false } } } },
     };
     const { typing, sessionCtx, resolvedQueue, followupRun } = createBaseRun({
       storePath,
@@ -529,6 +529,7 @@ describe("runReplyAgent block streaming", () => {
         config: {
           agents: {
             defaults: {
+              runtime: "claude",
               blockStreamingCoalesce: {
                 minChars: 1,
                 maxChars: 200,
@@ -626,6 +627,7 @@ describe("runReplyAgent block streaming", () => {
         config: {
           agents: {
             defaults: {
+              runtime: "claude",
               blockStreamingCoalesce: {
                 minChars: 1,
                 maxChars: 200,
@@ -701,7 +703,7 @@ describe("runReplyAgent claude-cli routing", () => {
         messageProvider: "webchat",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: {},
+        config: { agents: { defaults: { runtime: "claude" } } },
         provider: "claude-cli",
         model: "opus-4.5",
         thinkLevel: "low",
@@ -790,7 +792,7 @@ describe("runReplyAgent messaging tool suppression", () => {
         messageProvider,
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: {},
+        config: { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude",
         thinkLevel: "low",
@@ -1012,7 +1014,7 @@ describe("runReplyAgent reminder commitment guard", () => {
         messageProvider: "telegram",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: {},
+        config: { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude",
         thinkLevel: "low",
@@ -1104,7 +1106,7 @@ describe("runReplyAgent fallback provider routing", () => {
         messageProvider: "whatsapp",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: {},
+        config: { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude",
         thinkLevel: "low",
@@ -1212,7 +1214,7 @@ describe("runReplyAgent response usage footer", () => {
         messageProvider: "whatsapp",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: {},
+        config: { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude",
         thinkLevel: "low",
@@ -1307,7 +1309,7 @@ describe("runReplyAgent transient HTTP retry", () => {
         messageProvider: "telegram",
         sessionFile: "/tmp/session.jsonl",
         workspaceDir: "/tmp",
-        config: {},
+        config: { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude",
         thinkLevel: "low",

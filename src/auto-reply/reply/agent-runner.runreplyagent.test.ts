@@ -146,7 +146,7 @@ function createMinimalRun(params?: {
       messageProvider: "whatsapp",
       sessionFile: "/tmp/session.jsonl",
       workspaceDir: "/tmp",
-      config: {},
+      config: { agents: { defaults: { runtime: "claude" } } },
       provider: "anthropic",
       model: "claude",
       thinkLevel: "low",
@@ -233,7 +233,7 @@ function createBaseRun(params: {
       messageProvider: "whatsapp",
       sessionFile: "/tmp/session.jsonl",
       workspaceDir: "/tmp",
-      config: params.config ?? {},
+      config: params.config ?? { agents: { defaults: { runtime: "claude" } } },
       provider: "anthropic",
       model: "claude",
       thinkLevel: "low",
@@ -1170,7 +1170,11 @@ describe("runReplyAgent memory flush", () => {
       const baseRun = createBaseRun({
         storePath,
         sessionEntry,
-        config: { agents: { defaults: { compaction: { memoryFlush: { enabled: false } } } } },
+        config: {
+          agents: {
+            defaults: { runtime: "claude", compaction: { memoryFlush: { enabled: false } } },
+          },
+        },
       });
 
       await runReplyAgentWithBase({

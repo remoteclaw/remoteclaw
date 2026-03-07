@@ -110,20 +110,26 @@ describe("resolveCliRuntimeProvider", () => {
     );
   });
 
-  it("falls back to 'claude' when runtime is undefined", () => {
-    expect(resolveCliRuntimeProvider({ agents: { defaults: {} } })).toBe("claude");
+  it("throws when runtime is undefined", () => {
+    expect(() => resolveCliRuntimeProvider({ agents: { defaults: {} } })).toThrow(
+      "No runtime configured",
+    );
   });
 
-  it("falls back to 'claude' when defaults is undefined", () => {
-    expect(resolveCliRuntimeProvider({ agents: {} })).toBe("claude");
+  it("throws when defaults is undefined", () => {
+    expect(() => resolveCliRuntimeProvider({ agents: {} })).toThrow("No runtime configured");
   });
 
-  it("falls back to 'claude' when agents is undefined", () => {
-    expect(resolveCliRuntimeProvider({})).toBe("claude");
+  it("throws when agents is undefined", () => {
+    expect(() => resolveCliRuntimeProvider({})).toThrow("No runtime configured");
   });
 
-  it("falls back to 'claude' when config is undefined", () => {
-    expect(resolveCliRuntimeProvider(undefined)).toBe("claude");
+  it("throws when config is undefined", () => {
+    expect(() => resolveCliRuntimeProvider(undefined)).toThrow("No runtime configured");
+  });
+
+  it("includes supported providers in error message", () => {
+    expect(() => resolveCliRuntimeProvider({})).toThrow("claude, gemini, codex, opencode");
   });
 });
 

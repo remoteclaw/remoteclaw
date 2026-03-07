@@ -34,6 +34,7 @@ function makeCfg(home: string) {
   return {
     agents: {
       defaults: {
+        runtime: "claude",
         model: "anthropic/claude-opus-4-5",
       },
       list: [{ id: "main", workspace: path.join(home, "remoteclaw") }],

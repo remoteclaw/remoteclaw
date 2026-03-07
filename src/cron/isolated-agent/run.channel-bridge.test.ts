@@ -199,7 +199,7 @@ function makeJob(overrides?: Record<string, unknown>) {
 
 function makeParams(overrides?: Record<string, unknown>) {
   return {
-    cfg: {},
+    cfg: { agents: { defaults: { runtime: "claude" as const } } },
     deps: {} as never,
     job: makeJob(),
     message: "generate daily summary",

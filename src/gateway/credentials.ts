@@ -1,4 +1,5 @@
 import type { RemoteClawConfig } from "../config/config.js";
+import { containsEnvVarReference } from "../config/env-substitution.js";
 
 export type ExplicitGatewayAuth = {
   token?: string;
@@ -21,6 +22,21 @@ export function trimToUndefined(value: unknown): string | undefined {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/**
+ * Like trimToUndefined but also rejects unresolved env var placeholders (e.g. `${VAR}`).
+ * This prevents literal placeholder strings like `${OPENCLAW_GATEWAY_TOKEN}` from being
+ * accepted as valid credentials when the referenced env var is missing.
+ * Note: legitimate credential values containing literal `${UPPER_CASE}` patterns will
+ * also be rejected, but this is an extremely unlikely edge case.
+ */
+export function trimCredentialToUndefined(value: unknown): string | undefined {
+  const trimmed = trimToUndefined(value);
+  if (trimmed && containsEnvVarReference(trimmed)) {
+    return undefined;
+  }
+  return trimmed;
 }
 
 function firstDefined(values: Array<string | undefined>): string | undefined {
@@ -86,8 +102,8 @@ export function resolveGatewayCredentialsFromValues(params: {
   const includeLegacyEnv = params.includeLegacyEnv ?? true;
   const envToken = readGatewayTokenEnv(env, includeLegacyEnv);
   const envPassword = readGatewayPasswordEnv(env, includeLegacyEnv);
-  const configToken = trimToUndefined(params.configToken);
-  const configPassword = trimToUndefined(params.configPassword);
+  const configToken = trimCredentialToUndefined(params.configToken);
+  const configPassword = trimCredentialToUndefined(params.configPassword);
   const tokenPrecedence = params.tokenPrecedence ?? "env-first";
   const passwordPrecedence = params.passwordPrecedence ?? "env-first";
 

@@ -16,7 +16,7 @@ import {
 } from "../utils/message-channel.js";
 import { VERSION } from "../version.js";
 import { GatewayClient } from "./client.js";
-import { resolveGatewayCredentialsFromConfig } from "./credentials.js";
+import { resolveGatewayCredentialsFromConfig, trimToUndefined } from "./credentials.js";
 import {
   CLI_DEFAULT_OPERATOR_SCOPES,
   resolveLeastPrivilegeOperatorScopesForMethod,
@@ -231,14 +231,6 @@ type ResolvedGatewayCallContext = {
   remoteUrl?: string;
   explicitAuth: ExplicitGatewayAuth;
 };
-
-function trimToUndefined(value: unknown): string | undefined {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
 
 function resolveGatewayCallTimeout(timeoutValue: unknown): {
   timeoutMs: number;

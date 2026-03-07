@@ -65,17 +65,34 @@ function makeSlackPlugin(params?: { botToken?: string; appToken?: string }): Cha
   };
 }
 
-function makeTokenPlugin(): ChannelPlugin {
+function makeDirectPlugin(params: {
+  id: string;
+  label: string;
+  docsPath: string;
+  config: ChannelPlugin["config"];
+}): ChannelPlugin {
   return {
-    id: "token-only",
+    id: params.id,
     meta: {
-      id: "token-only",
-      label: "TokenOnly",
-      selectionLabel: "TokenOnly",
-      docsPath: "/channels/token-only",
+      id: params.id,
+      label: params.label,
+      selectionLabel: params.label,
+      docsPath: params.docsPath,
       blurb: "test",
     },
     capabilities: { chatTypes: ["direct"] },
+    config: params.config,
+    actions: {
+      listActions: () => ["send"],
+    },
+  };
+}
+
+function makeTokenPlugin(): ChannelPlugin {
+  return makeDirectPlugin({
+    id: "token-only",
+    label: "TokenOnly",
+    docsPath: "/channels/token-only",
     config: {
       listAccountIds: () => ["primary"],
       defaultAccountId: () => "primary",
@@ -87,10 +104,7 @@ function makeTokenPlugin(): ChannelPlugin {
       isConfigured: () => true,
       isEnabled: () => true,
     },
-    actions: {
-      listActions: () => ["send"],
-    },
-  };
+  });
 }
 
 describe("buildChannelsTable - mattermost token summary", () => {

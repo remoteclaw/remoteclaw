@@ -9,6 +9,18 @@ vi.mock(
   async () => await import("../test-utils/model-fallback.mock.js"),
 );
 
+vi.mock("../middleware/channel-bridge.js", () => ({
+  ChannelBridge: class MockChannelBridge {
+    async handle() {
+      return {
+        payloads: [{ text: "ok" }],
+        run: { text: "ok", durationMs: 10 },
+        mcp: { sentTexts: [], sentMediaUrls: [], sentTargets: [], cronAdds: 0 },
+      };
+    }
+  },
+}));
+
 const webMocks = vi.hoisted(() => ({
   webAuthExists: vi.fn().mockResolvedValue(true),
   getWebAuthAgeMs: vi.fn().mockReturnValue(120_000),

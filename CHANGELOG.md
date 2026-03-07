@@ -225,6 +225,7 @@ Docs: https://docs.openclaw.ai
 - Telegram/status SecretRef read-only resolution: resolve env-backed bot-token SecretRefs in config-only/status inspection while respecting provider source/defaults and env allowlists, so status no longer crashes or reports false-ready tokens for disallowed providers. (#39130) Thanks @neocody.
 - Voice-call plugin schema parity: add missing manifest `configSchema` fields (`webhookSecurity`, `streaming.preStartTimeoutMs|maxPendingConnections|maxPendingConnectionsPerIp|maxConnections`, `staleCallReaperSeconds`) so gateway AJV validation accepts already-supported runtime config instead of failing with `additionalProperties` errors. (#38892) Thanks @giumex.
 - Models/default alias refresh: bump `gpt` to `openai/gpt-5.4` and Gemini defaults to `gemini-3.1` preview aliases (including normalization/default wiring) to track current model IDs. (#38638) Thanks @ademczuk.
+- Discord/plugin native command aliases: let plugins declare provider-specific slash names so native Discord registration can avoid built-in command collisions; the bundled Talk voice plugin now uses `/talkvoice` natively on Discord while keeping text `/voice`.
 
 ## 2026.3.2
 

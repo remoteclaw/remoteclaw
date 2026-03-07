@@ -1,6 +1,6 @@
 import {
   buildAccountScopedDmSecurityPolicy,
-  buildOpenGroupPolicyRestrictSendersWarning,
+  collectOpenGroupPolicyRestrictSendersWarnings,
 } from "remoteclaw/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
@@ -304,17 +304,13 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
         groupPolicy: account.config.groupPolicy,
         defaultGroupPolicy,
       });
-      if (groupPolicy !== "open") {
-        return [];
-      }
-      return [
-        buildOpenGroupPolicyRestrictSendersWarning({
-          surface: "Mattermost channels",
-          openScope: "any member",
-          groupPolicyPath: "channels.mattermost.groupPolicy",
-          groupAllowFromPath: "channels.mattermost.groupAllowFrom",
-        }),
-      ];
+      return collectOpenGroupPolicyRestrictSendersWarnings({
+        groupPolicy,
+        surface: "Mattermost channels",
+        openScope: "any member",
+        groupPolicyPath: "channels.mattermost.groupPolicy",
+        groupAllowFromPath: "channels.mattermost.groupAllowFrom",
+      });
     },
   },
   groups: {

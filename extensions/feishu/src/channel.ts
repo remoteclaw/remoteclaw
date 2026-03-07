@@ -1,4 +1,4 @@
-import { buildOpenGroupPolicyRestrictSendersWarning } from "openclaw/plugin-sdk";
+import { collectOpenGroupPolicyRestrictSendersWarnings } from "openclaw/plugin-sdk";
 import type { ChannelMeta, ChannelPlugin, ClawdbotConfig } from "remoteclaw/plugin-sdk";
 import {
   buildBaseChannelStatusSummary,
@@ -240,15 +240,13 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
         groupPolicy: feishuCfg?.groupPolicy,
         defaultGroupPolicy,
       });
-      if (groupPolicy !== "open") return [];
-      return [
-        buildOpenGroupPolicyRestrictSendersWarning({
-          surface: `Feishu[${account.accountId}] groups`,
-          openScope: "any member",
-          groupPolicyPath: "channels.feishu.groupPolicy",
-          groupAllowFromPath: "channels.feishu.groupAllowFrom",
-        }),
-      ];
+      return collectOpenGroupPolicyRestrictSendersWarnings({
+        groupPolicy,
+        surface: `Feishu[${account.accountId}] groups`,
+        openScope: "any member",
+        groupPolicyPath: "channels.feishu.groupPolicy",
+        groupAllowFromPath: "channels.feishu.groupAllowFrom",
+      });
     },
   },
   setup: {

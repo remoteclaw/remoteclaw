@@ -1,6 +1,7 @@
 import type { DmPolicy } from "remoteclaw/plugin-sdk";
 import {
   addWildcardAllowFrom,
+  buildSingleChannelSecretPromptState,
   formatResolvedUnresolvedNote,
   formatDocsLink,
   mergeAllowFromEntries,

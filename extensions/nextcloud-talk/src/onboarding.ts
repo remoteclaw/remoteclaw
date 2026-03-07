@@ -1,4 +1,5 @@
 import {
+  buildSingleChannelSecretPromptState,
   formatDocsLink,
   mergeAllowFromEntries,
   resolveAccountIdForConfigure,
@@ -197,10 +198,16 @@ export const nextcloudTalkOnboardingAdapter: ChannelOnboardingAdapter = {
     });
     const accountConfigured = Boolean(resolvedAccount.secret && resolvedAccount.baseUrl);
     const allowEnv = accountId === DEFAULT_ACCOUNT_ID;
-    const canUseEnv = allowEnv && Boolean(process.env.NEXTCLOUD_TALK_BOT_SECRET?.trim());
     const hasConfigSecret = Boolean(
       resolvedAccount.config.botSecret || resolvedAccount.config.botSecretFile,
     );
+    const secretPromptState = buildSingleChannelSecretPromptState({
+      accountConfigured,
+      hasConfigToken: hasConfigSecret,
+      allowEnv,
+      envValue: process.env.NEXTCLOUD_TALK_BOT_SECRET,
+    });
+    const canUseEnv = secretPromptState.canUseEnv;
 
     let baseUrl = resolvedAccount.baseUrl;
     if (!baseUrl) {

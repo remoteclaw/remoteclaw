@@ -12,6 +12,7 @@ import { fetchTelegramChatId } from "../../telegram/api.js";
 import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../onboarding-types.js";
 import {
   applySingleTokenPromptResult,
+  buildSingleChannelSecretPromptState,
   patchChannelConfigForAccount,
   promptSingleChannelToken,
   promptResolvedAllowFrom,
@@ -184,25 +185,25 @@ export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
       cfg: next,
       accountId: telegramAccountId,
     });
-    const accountConfigured = Boolean(resolvedAccount.token);
+    const hasConfigToken =
+      Boolean(resolvedAccount.config.botToken) || Boolean(resolvedAccount.config.tokenFile?.trim());
     const allowEnv = telegramAccountId === DEFAULT_ACCOUNT_ID;
-    const canUseEnv =
-      allowEnv &&
-      !resolvedAccount.config.botToken &&
-      Boolean(process.env.TELEGRAM_BOT_TOKEN?.trim());
-    const hasConfigToken = Boolean(
-      resolvedAccount.config.botToken || resolvedAccount.config.tokenFile,
-    );
+    const tokenPromptState = buildSingleChannelSecretPromptState({
+      accountConfigured: Boolean(resolvedAccount.token) || hasConfigToken,
+      hasConfigToken,
+      allowEnv,
+      envValue: process.env.TELEGRAM_BOT_TOKEN,
+    });
 
-    if (!accountConfigured) {
+    if (!tokenPromptState.accountConfigured) {
       await noteTelegramTokenHelp(prompter);
     }
 
     const tokenResult = await promptSingleChannelToken({
       prompter,
-      accountConfigured,
-      canUseEnv,
-      hasConfigToken,
+      accountConfigured: tokenPromptState.accountConfigured,
+      canUseEnv: tokenPromptState.canUseEnv,
+      hasConfigToken: tokenPromptState.hasConfigToken,
       envPrompt: "TELEGRAM_BOT_TOKEN detected. Use env var?",
       keepPrompt: "Telegram token already configured. Keep it?",
       inputPrompt: "Enter Telegram bot token",

@@ -1,9 +1,9 @@
 ---
-description: "Agent bootstrapping ritual that seeds the workspace and identity files"
+description: "Agent bootstrapping: workspace setup on first run"
 read_when:
   - Understanding what happens on the first agent run
-  - Explaining where bootstrapping files live
-  - Debugging onboarding identity setup
+  - Explaining where workspace files live
+  - Debugging onboarding workspace setup
 title: "Agent Bootstrapping"
 
 sidebar:
@@ -12,9 +12,8 @@ sidebar:
 
 # Agent Bootstrapping
 
-Bootstrapping is the **first‑run** ritual that prepares an agent workspace and
-collects identity details. It happens after onboarding, when the agent starts
-for the first time.
+Bootstrapping is the **first‑run** ritual that prepares an agent workspace. It
+happens after onboarding, when the agent starts for the first time.
 
 ## What bootstrapping does
 
@@ -26,7 +25,7 @@ seeds template files in the workspace.
 ## Where it runs
 
 Bootstrapping always runs on the **gateway host**. If the macOS app connects to
-a remote Gateway, the workspace and bootstrapping files live on that remote
+a remote Gateway, the workspace files live on that remote
 machine.
 
 :::note

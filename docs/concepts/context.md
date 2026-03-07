@@ -43,7 +43,6 @@ Sandbox: mode=non-main sandboxed=false
 System prompt (run): 38,412 chars (~9,603 tok) (Project Context 23,901 chars (~5,976 tok))
 
 Workspace files:
-- IDENTITY.md: OK | raw 211 chars (~53 tok) | injected 211 chars (~53 tok)
 - HEARTBEAT.md: MISSING | raw 0 | injected 0
 
 Skills list (system prompt text): 2,184 chars (~546 tok) (12 skills)
@@ -91,13 +90,13 @@ The system prompt is **RemoteClaw-owned** and rebuilt each run. It includes:
 - Workspace location.
 - Time (UTC + converted user time if configured).
 - Runtime metadata (host/OS/model/thinking).
-- Workspace context files (`IDENTITY.md`, `HEARTBEAT.md`).
+- Workspace context files (`HEARTBEAT.md`).
 
 Full breakdown: [System Prompt](/concepts/system-prompt).
 
 ## Workspace files
 
-RemoteClaw reads workspace files (`IDENTITY.md`, `HEARTBEAT.md`) when present.
+RemoteClaw reads workspace files (`HEARTBEAT.md`) when present.
 Agent CLIs load their own config files (e.g. `CLAUDE.md` for Claude Code).
 See [Agent workspace](/concepts/agent-workspace) for the full layout.
 

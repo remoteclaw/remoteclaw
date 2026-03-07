@@ -175,11 +175,11 @@ If you omit `capabilities`, the entry is eligible for the list it appears in.
 
 ## Provider support matrix (RemoteClaw integrations)
 
-| Capability | Provider integration                             | Notes                                                     |
-| ---------- | ------------------------------------------------ | --------------------------------------------------------- |
-| Image      | OpenAI / Anthropic / Google / others via `pi-ai` | Any image-capable model in the registry works.            |
-| Audio      | OpenAI, Groq, Deepgram, Google, Mistral          | Provider transcription (Whisper/Deepgram/Gemini/Voxtral). |
-| Video      | Google (Gemini API)                              | Provider video understanding.                             |
+| Capability | Provider integration                                                 | Notes                                                     |
+| ---------- | -------------------------------------------------------------------- | --------------------------------------------------------- |
+| Image      | OpenAI / Anthropic / Google / others via RemoteClaw's model registry | Any image-capable model in the registry works.            |
+| Audio      | OpenAI, Groq, Deepgram, Google, Mistral                              | Provider transcription (Whisper/Deepgram/Gemini/Voxtral). |
+| Video      | Google (Gemini API)                                                  | Provider video understanding.                             |
 
 ## Recommended providers
 

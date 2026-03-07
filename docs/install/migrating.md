@@ -43,7 +43,7 @@ Look for mentions of `REMOTECLAW_STATE_DIR` / profile in the output. If you run 
 There is no built-in default workspace path — check your `agents.defaults.workspace`
 (or per-agent `agents.list[].workspace`) in `remoteclaw.json`.
 
-Your workspace is where files like `MEMORY.md`, `IDENTITY.md`, and `memory/*.md` live.
+Your workspace is where files like `MEMORY.md` and `memory/*.md` live.
 
 > **Note:** RemoteClaw no longer seeds template files (`SOUL.md`, `AGENTS.md`,
 > `USER.md`, `TOOLS.md`, `BOOTSTRAP.md`) in the workspace. Agents bring their

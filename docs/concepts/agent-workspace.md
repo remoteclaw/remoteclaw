@@ -24,8 +24,8 @@ inside a sandbox workspace under `~/.remoteclaw/sandboxes`, not your host worksp
 ## Configuration
 
 There is no built-in workspace path — you must explicitly configure one.
-Set a shared default via `agents.defaults.workspace` or override per-agent
-via `agents.list[].workspace`:
+Set a default via `agents.defaults.workspace` (applied per-agent, not a shared
+directory) or override per-agent via `agents.list[].workspace`:
 
 ```json5
 {
@@ -46,10 +46,6 @@ configuration (e.g., `CLAUDE.md` for Claude Code, `.gemini/` for Gemini CLI).
 RemoteClaw does not seed or manage template files in the workspace.
 
 Files that RemoteClaw may read or write:
-
-- `IDENTITY.md`
-  - The agent's name, vibe, and emoji.
-  - Managed via the control UI or `agents.create`/`agents.update` RPC.
 
 - `HEARTBEAT.md`
   - Optional tiny checklist for heartbeat runs.
@@ -85,7 +81,7 @@ patterns. Set `agents.defaults.editableFiles` (or per-agent
 {
   agents: {
     defaults: {
-      editableFiles: ["IDENTITY.md", "HEARTBEAT.md", "memory/**/*.md"],
+      editableFiles: ["HEARTBEAT.md", "memory/**/*.md"],
     },
   },
 }
@@ -116,7 +112,7 @@ workspace lives).
 ```bash
 cd ~/projects  # your workspace path
 git init
-git add IDENTITY.md HEARTBEAT.md memory/
+git add HEARTBEAT.md memory/
 git commit -m "Add agent workspace"
 ```
 

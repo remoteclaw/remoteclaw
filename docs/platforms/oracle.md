@@ -284,7 +284,7 @@ Most npm packages work fine. For binaries, look for `linux-arm64` or `aarch64` r
 All state lives in:
 
 - `~/.remoteclaw/` — config, credentials, session data
-- `<configured workspace>` — workspace (IDENTITY.md, memory, artifacts)
+- `<configured workspace>` — workspace (memory, artifacts)
 
 Back up periodically:
 

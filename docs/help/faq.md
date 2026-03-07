@@ -718,7 +718,7 @@ See [OAuth](/concepts/oauth).
 
 ### Is AWS Bedrock supported
 
-Yes - via pi-ai's **Amazon Bedrock (Converse)** provider with **manual config**. You must supply AWS credentials/region on the gateway host and add a Bedrock provider entry in your models config. See [Amazon Bedrock](/providers/bedrock) and [Model providers](/providers/models). If you prefer a managed key flow, an OpenAI-compatible proxy in front of Bedrock is still a valid option.
+Yes - via RemoteClaw's **Amazon Bedrock (Converse)** provider with **manual config**. You must supply AWS credentials/region on the gateway host and add a Bedrock provider entry in your models config. See [Amazon Bedrock](/providers/bedrock) and [Model providers](/providers/models). If you prefer a managed key flow, an OpenAI-compatible proxy in front of Bedrock is still a valid option.
 
 ### How does Codex auth work
 
@@ -1270,7 +1270,7 @@ Your **workspace** is separate and configured via `agents.defaults.workspace` (n
 
 Workspace files live in the **agent workspace**, not `~/.remoteclaw`.
 
-- **Workspace (per agent)**: `IDENTITY.md`, `HEARTBEAT.md`,
+- **Workspace (per agent)**: `HEARTBEAT.md`,
   `MEMORY.md` (or `memory.md`), `memory/YYYY-MM-DD.md`, plus native agent config
   (e.g. `CLAUDE.md` for Claude Code).
 - **State dir (`~/.remoteclaw`)**: config, credentials, auth profiles, sessions, logs,

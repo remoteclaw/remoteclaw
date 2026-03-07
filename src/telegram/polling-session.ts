@@ -13,6 +13,12 @@ const TELEGRAM_POLL_RESTART_POLICY = {
   jitter: 0.25,
 };
 
+// Polling stall detection: if no getUpdates call is seen for this long,
+// assume the runner is stuck and force-restart it.
+// Default fetch timeout is 30s, so 3x gives ample margin for slow responses.
+const POLL_STALL_THRESHOLD_MS = 90_000;
+const POLL_WATCHDOG_INTERVAL_MS = 30_000;
+
 type TelegramBot = ReturnType<typeof createTelegramBot>;
 
 type TelegramPollingSessionOpts = {
@@ -145,11 +151,37 @@ export class TelegramPollingSession {
     }
   }
 
+  async #confirmPersistedOffset(bot: TelegramBot): Promise<void> {
+    const lastUpdateId = this.opts.getLastUpdateId();
+    if (lastUpdateId === null || lastUpdateId >= Number.MAX_SAFE_INTEGER) {
+      return;
+    }
+    try {
+      await bot.api.getUpdates({ offset: lastUpdateId + 1, limit: 1, timeout: 0 });
+    } catch {
+      // Non-fatal: runner middleware still skips duplicates via shouldSkipUpdate.
+    }
+  }
+
   async #runPollingCycle(bot: TelegramBot): Promise<"continue" | "exit"> {
+    // Confirm the persisted offset with Telegram so the runner (which starts
+    // at offset 0) does not re-fetch already-processed updates on restart.
+    await this.#confirmPersistedOffset(bot);
+
+    // Track getUpdates calls to detect polling stalls.
+    let lastGetUpdatesAt = Date.now();
+    bot.api.config.use((prev, method, payload, signal) => {
+      if (method === "getUpdates") {
+        lastGetUpdatesAt = Date.now();
+      }
+      return prev(method, payload, signal);
+    });
+
     const runner = run(bot, this.opts.runnerOptions);
     this.#activeRunner = runner;
     const fetchAbortController = this.#activeFetchAbort;
     let stopPromise: Promise<void> | undefined;
+    let stalledRestart = false;
     const stopRunner = () => {
       fetchAbortController?.abort();
       stopPromise ??= Promise.resolve(runner.stop())
@@ -165,15 +197,32 @@ export class TelegramPollingSession {
       }
     };
 
+    // Watchdog: detect when getUpdates calls have stalled and force-restart.
+    const watchdog = setInterval(() => {
+      if (this.opts.abortSignal?.aborted) {
+        return;
+      }
+      const elapsed = Date.now() - lastGetUpdatesAt;
+      if (elapsed > POLL_STALL_THRESHOLD_MS && runner.isRunning()) {
+        stalledRestart = true;
+        this.opts.log(
+          `[telegram] Polling stall detected (no getUpdates for ${formatDurationPrecise(elapsed)}); forcing restart.`,
+        );
+        void stopRunner();
+      }
+    }, POLL_WATCHDOG_INTERVAL_MS);
+
     this.opts.abortSignal?.addEventListener("abort", stopOnAbort, { once: true });
     try {
       await runner.task();
       if (this.opts.abortSignal?.aborted) {
         return "exit";
       }
-      const reason = this.#forceRestarted
-        ? "unhandled network error"
-        : "runner stopped (maxRetryTime exceeded or graceful stop)";
+      const reason = stalledRestart
+        ? "polling stall detected"
+        : this.#forceRestarted
+          ? "unhandled network error"
+          : "runner stopped (maxRetryTime exceeded or graceful stop)";
       this.#forceRestarted = false;
       const shouldRestart = await this.#waitBeforeRestart(
         (delay) => `Telegram polling runner stopped (${reason}); restarting in ${delay}.`,
@@ -196,6 +245,7 @@ export class TelegramPollingSession {
       );
       return shouldRestart ? "continue" : "exit";
     } finally {
+      clearInterval(watchdog);
       this.opts.abortSignal?.removeEventListener("abort", stopOnAbort);
       await stopRunner();
       await Promise.resolve(bot.stop())

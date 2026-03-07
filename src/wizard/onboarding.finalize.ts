@@ -163,7 +163,6 @@ export async function finalizeOnboardingWizard(
         const { programArguments, workingDirectory, environment } = await buildGatewayInstallPlan({
           env: process.env,
           port: settings.port,
-          token: settings.gatewayToken,
           runtime: daemonRuntime,
           warn: (message, title) => prompter.note(message, title),
           config: nextConfig,

@@ -12,9 +12,8 @@ export async function installGatewayDaemonNonInteractive(params: {
   opts: OnboardOptions;
   runtime: RuntimeEnv;
   port: number;
-  gatewayToken?: string;
 }) {
-  const { opts, runtime, port, gatewayToken } = params;
+  const { opts, runtime, port } = params;
   if (!opts.installDaemon) {
     return;
   }
@@ -37,7 +36,6 @@ export async function installGatewayDaemonNonInteractive(params: {
   const { programArguments, workingDirectory, environment } = await buildGatewayInstallPlan({
     env: process.env,
     port,
-    token: gatewayToken,
     runtime: daemonRuntimeRaw,
     warn: (message) => runtime.log(message),
     config: params.nextConfig,

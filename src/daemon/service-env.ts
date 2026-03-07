@@ -245,11 +245,10 @@ export function buildMinimalServicePath(options: BuildServicePathOptions = {}): 
 export function buildServiceEnvironment(params: {
   env: Record<string, string | undefined>;
   port: number;
-  token?: string;
   launchdLabel?: string;
   platform?: NodeJS.Platform;
 }): Record<string, string | undefined> {
-  const { env, port, token, launchdLabel } = params;
+  const { env, port, launchdLabel } = params;
   const platform = params.platform ?? process.platform;
   const sharedEnv = resolveSharedServiceEnvironmentFields(env, platform);
   const profile = env.REMOTECLAW_PROFILE;
@@ -260,7 +259,6 @@ export function buildServiceEnvironment(params: {
     ...buildCommonServiceEnvironment(env, sharedEnv),
     REMOTECLAW_PROFILE: profile,
     REMOTECLAW_GATEWAY_PORT: String(port),
-    REMOTECLAW_GATEWAY_TOKEN: token,
     REMOTECLAW_LAUNCHD_LABEL: resolvedLaunchdLabel,
     REMOTECLAW_SYSTEMD_UNIT: systemdUnit,
     REMOTECLAW_WINDOWS_TASK_NAME: resolveGatewayWindowsTaskName(profile),

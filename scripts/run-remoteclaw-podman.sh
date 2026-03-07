@@ -75,9 +75,6 @@ REMOTECLAW_IMAGE="${REMOTECLAW_PODMAN_IMAGE:-remoteclaw:local}"
 PODMAN_PULL="${REMOTECLAW_PODMAN_PULL:-never}"
 HOST_GATEWAY_PORT="${REMOTECLAW_PODMAN_GATEWAY_HOST_PORT:-${REMOTECLAW_GATEWAY_PORT:-18789}}"
 HOST_BRIDGE_PORT="${REMOTECLAW_PODMAN_BRIDGE_HOST_PORT:-${REMOTECLAW_BRIDGE_PORT:-18790}}"
-# Keep Podman default local-only unless explicitly overridden.
-# Non-loopback binds require gateway.controlUi.allowedOrigins (security hardening).
-GATEWAY_BIND="${REMOTECLAW_GATEWAY_BIND:-loopback}"
 
 # Safe cwd for podman (remoteclaw is nologin; avoid inherited cwd from sudo)
 cd "$EFFECTIVE_HOME" 2>/dev/null || cd /tmp 2>/dev/null || true
@@ -99,6 +96,11 @@ if [[ -f "$ENV_FILE" ]]; then
   source "$ENV_FILE" 2>/dev/null || true
   set +a
 fi
+
+# Keep Podman default local-only unless explicitly overridden.
+# Non-loopback binds require gateway.controlUi.allowedOrigins (security hardening).
+# NOTE: must be evaluated after sourcing ENV_FILE so REMOTECLAW_GATEWAY_BIND set in .env takes effect.
+GATEWAY_BIND="${REMOTECLAW_GATEWAY_BIND:-loopback}"
 
 upsert_env_var() {
   local file="$1"

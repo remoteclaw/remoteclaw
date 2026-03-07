@@ -77,6 +77,7 @@ jobs:
     if: github.event_name == 'push'
     needs: [lint, build, test]
     runs-on: ubuntu-latest
+    environment: npm-publish
     permissions:
       contents: read
       id-token: write
@@ -90,6 +91,11 @@ jobs:
         uses: ./.github/actions/setup-node-env
         with:
           install-bun: "false"
+
+      - name: Configure npm registry
+        uses: actions/setup-node@v4
+        with:
+          registry-url: "https://registry.npmjs.org"
 
       - name: Build
         run: pnpm build

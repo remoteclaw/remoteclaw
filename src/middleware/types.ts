@@ -86,6 +86,8 @@ export type AgentRunResult = {
   usage: AgentUsage | undefined;
   /** Whether the run was aborted via the abort signal. */
   aborted: boolean;
+  /** Captured stderr output from the CLI subprocess (if any). */
+  stderr?: string | undefined;
   /** Estimated total cost in USD (if reported by the CLI). */
   totalCostUsd?: number | undefined;
   /** Duration spent in API calls in milliseconds (if reported). */

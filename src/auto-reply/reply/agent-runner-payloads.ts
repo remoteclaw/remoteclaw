@@ -18,7 +18,7 @@ import {
   shouldSuppressMessagingToolReplies,
 } from "./reply-payloads.js";
 
-export function buildReplyPayloads(params: {
+export async function buildReplyPayloads(params: {
   payloads: ReplyPayload[];
   isHeartbeat: boolean;
   didLogHeartbeatStrip: boolean;
@@ -38,7 +38,8 @@ export function buildReplyPayloads(params: {
   originatingChannel?: OriginatingChannelType;
   originatingTo?: string;
   accountId?: string;
-}): { replyPayloads: ReplyPayload[]; didLogHeartbeatStrip: boolean } {
+  normalizeMediaPaths?: (payload: ReplyPayload) => Promise<ReplyPayload>;
+}): Promise<{ replyPayloads: ReplyPayload[]; didLogHeartbeatStrip: boolean }> {
   const didLogHeartbeatStrip = params.didLogHeartbeatStrip;
   const sanitizedPayloads = params.payloads.map((payload) => {
     let text = payload.text;
@@ -48,22 +49,24 @@ export function buildReplyPayloads(params: {
     return { ...payload, text };
   });
 
-  const replyTaggedPayloads: ReplyPayload[] = applyReplyThreading({
-    payloads: sanitizedPayloads,
-    replyToMode: params.replyToMode,
-    replyToChannel: params.replyToChannel,
-    currentMessageId: params.currentMessageId,
-  })
-    .map(
-      (payload) =>
-        normalizeReplyPayloadDirectives({
+  const replyTaggedPayloads = (
+    await Promise.all(
+      applyReplyThreading({
+        payloads: sanitizedPayloads,
+        replyToMode: params.replyToMode,
+        replyToChannel: params.replyToChannel,
+        currentMessageId: params.currentMessageId,
+      }).map(async (payload) => {
+        const parsed = normalizeReplyPayloadDirectives({
           payload,
           currentMessageId: params.currentMessageId,
           silentToken: SILENT_REPLY_TOKEN,
           parseMode: "always",
-        }).payload,
+        }).payload;
+        return params.normalizeMediaPaths ? await params.normalizeMediaPaths(parsed) : parsed;
+      }),
     )
-    .filter(isRenderablePayload);
+  ).filter(isRenderablePayload);
 
   // Drop final payloads only when block streaming succeeded end-to-end.
   // If streaming aborted (e.g., timeout), fall back to final payloads.

@@ -162,6 +162,31 @@ const runs = [
     ],
   },
 ];
+// In CI on Linux, shard unit-fast into parallel lanes to halve wall time.
+// Configurable via REMOTECLAW_TEST_UNIT_FAST_SHARDS; defaults to 2 in Linux CI.
+const unitFastShardCount = (() => {
+  const raw = process.env.REMOTECLAW_TEST_UNIT_FAST_SHARDS;
+  if (raw) {
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+  if (isCI && !isWindows && !isMacOS) {
+    return 2;
+  }
+  return 1;
+})();
+const expandedRuns = runs.flatMap((entry) => {
+  if (entry.name !== "unit-fast" || unitFastShardCount <= 1) {
+    return [entry];
+  }
+  return Array.from({ length: unitFastShardCount }, (_, i) => ({
+    ...entry,
+    args: [...entry.args, "--shard", `${i + 1}/${unitFastShardCount}`],
+  }));
+});
+
 const shardOverride = Number.parseInt(process.env.REMOTECLAW_TEST_SHARDS ?? "", 10);
 const shardCount = isWindowsCi
   ? Number.isFinite(shardOverride) && shardOverride > 1
@@ -193,8 +218,12 @@ const keepGatewaySerial =
   process.env.REMOTECLAW_TEST_SERIAL_GATEWAY === "1" ||
   testProfile === "serial" ||
   !parallelGatewayEnabled;
-const parallelRuns = keepGatewaySerial ? runs.filter((entry) => entry.name !== "gateway") : runs;
-const serialRuns = keepGatewaySerial ? runs.filter((entry) => entry.name === "gateway") : [];
+const parallelRuns = keepGatewaySerial
+  ? expandedRuns.filter((entry) => entry.name !== "gateway")
+  : expandedRuns;
+const serialRuns = keepGatewaySerial
+  ? expandedRuns.filter((entry) => entry.name === "gateway")
+  : [];
 const baseLocalWorkers = Math.max(4, Math.min(16, hostCpuCount));
 const loadAwareDisabledRaw = process.env.REMOTECLAW_TEST_LOAD_AWARE?.trim().toLowerCase();
 const loadAwareDisabled = loadAwareDisabledRaw === "0" || loadAwareDisabledRaw === "false";
@@ -347,7 +376,7 @@ function resolveReportPath(entry, extraArgs) {
   if (!reportDir) {
     return null;
   }
-  const shardSuffix = resolveShardSuffix(extraArgs);
+  const shardSuffix = resolveShardSuffix([...entry.args, ...extraArgs]);
   return path.join(reportDir, `vitest-${entry.name}${shardSuffix}.json`);
 }
 

@@ -241,6 +241,7 @@ Docs: https://docs.openclaw.ai
 - Nodes/system.run allow-always persistence: honor shell comment semantics during allowlist analysis so `#`-tailed payloads that never execute are not persisted as trusted follow-up commands. Thanks @tdjackey for reporting.
 - Nodes/system.run dispatch-wrapper boundary: keep shell-wrapper approval classification active at the depth boundary so `env` wrapper stacks cannot reach `/bin/sh -c` execution without the expected approval gate. Thanks @tdjackey for reporting.
 - Podman/.env gateway bind precedence: evaluate `REMOTECLAW_GATEWAY_BIND` after sourcing `.env` in `run-remoteclaw-podman.sh` so env-file overrides are honored. (#38785) Thanks @majinyu666.
+- Control UI/auth error reporting: map generic browser `Fetch failed` websocket close errors back to actionable gateway auth messages (`gateway token mismatch`, `authentication failed`, `retry later`) so dashboard disconnects stop hiding credential problems. Landed from contributor PR #28608 by @KimGLee. Thanks @KimGLee.
 
 ## 2026.3.2
 

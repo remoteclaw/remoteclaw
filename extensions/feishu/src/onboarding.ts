@@ -9,9 +9,11 @@ import {
   buildSingleChannelSecretPromptState,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
+  mergeAllowFromEntries,
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
   setTopLevelChannelGroupPolicy,
+  splitOnboardingEntries,
 } from "remoteclaw/plugin-sdk";
 import { resolveFeishuCredentials } from "./accounts.js";
 import { probeFeishu } from "./probe.js";
@@ -43,13 +45,6 @@ function setFeishuAllowFrom(cfg: ClawdbotConfig, allowFrom: string[]): ClawdbotC
   }) as ClawdbotConfig;
 }
 
-function parseAllowFromInput(raw: string): string[] {
-  return raw
-    .split(/[\n,;]+/g)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-}
-
 async function promptFeishuAllowFrom(params: {
   cfg: ClawdbotConfig;
   prompter: WizardPrompter;
@@ -73,18 +68,13 @@ async function promptFeishuAllowFrom(params: {
       initialValue: existing[0] ? String(existing[0]) : undefined,
       validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
     });
-    const parts = parseAllowFromInput(String(entry));
+    const parts = splitOnboardingEntries(String(entry));
     if (parts.length === 0) {
       await params.prompter.note("Enter at least one user.", "Feishu allowlist");
       continue;
     }
 
-    const unique = [
-      ...new Set([
-        ...existing.map((v: string | number) => String(v).trim()).filter(Boolean),
-        ...parts,
-      ]),
-    ];
+    const unique = mergeAllowFromEntries(existing, parts);
     return setFeishuAllowFrom(params.cfg, unique);
   }
 }
@@ -324,7 +314,7 @@ export const feishuOnboardingAdapter: ChannelOnboardingAdapter = {
         initialValue: existing.length > 0 ? existing.map(String).join(", ") : undefined,
       });
       if (entry) {
-        const parts = parseAllowFromInput(String(entry));
+        const parts = splitOnboardingEntries(String(entry));
         if (parts.length > 0) {
           next = setFeishuGroupAllowFrom(next, parts);
         }

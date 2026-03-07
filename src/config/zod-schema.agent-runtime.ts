@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { parseDurationMs } from "../cli/parse-duration.js";
-import { AgentModelSchema } from "./zod-schema.agent-model.js";
 import {
   GroupChatSchema,
   HumanDelaySchema,
@@ -229,7 +228,6 @@ export const AgentToolsSchema = z
   })
   .optional();
 
-export { AgentModelSchema };
 export const AgentEntrySchema = z
   .object({
     id: z.string(),
@@ -237,7 +235,7 @@ export const AgentEntrySchema = z
     name: z.string().optional(),
     workspace: z.string().optional(),
     agentDir: z.string().optional(),
-    model: AgentModelSchema.optional(),
+    model: z.unknown().optional(),
     skills: z.array(z.string()).optional(),
     humanDelay: HumanDelaySchema.optional(),
     heartbeat: HeartbeatSchema,
@@ -247,17 +245,7 @@ export const AgentEntrySchema = z
     subagents: z
       .object({
         allowAgents: z.array(z.string()).optional(),
-        model: z
-          .union([
-            z.string(),
-            z
-              .object({
-                primary: z.string().optional(),
-                fallbacks: z.array(z.string()).optional(),
-              })
-              .strict(),
-          ])
-          .optional(),
+        model: z.unknown().optional(),
         thinking: z.string().optional(),
       })
       .strict()

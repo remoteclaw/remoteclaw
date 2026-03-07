@@ -1,6 +1,5 @@
 import path from "node:path";
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolveAgentModelFallbackValues } from "../config/model-input.js";
 import { resolveStateDir } from "../config/paths.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
@@ -223,13 +222,22 @@ export function resolveRunModelFallbacksOverride(params: {
   );
 }
 
+function resolveModelFallbackValues(model: unknown): string[] {
+  if (!model || typeof model !== "object") {
+    return [];
+  }
+  return Array.isArray((model as { fallbacks?: unknown }).fallbacks)
+    ? (model as { fallbacks: string[] }).fallbacks
+    : [];
+}
+
 export function hasConfiguredModelFallbacks(params: {
   cfg: RemoteClawConfig | undefined;
   agentId?: string | null;
   sessionKey?: string | null;
 }): boolean {
   const fallbacksOverride = resolveRunModelFallbacksOverride(params);
-  const defaultFallbacks = resolveAgentModelFallbackValues(params.cfg?.agents?.defaults?.model);
+  const defaultFallbacks = resolveModelFallbackValues(params.cfg?.agents?.defaults?.model);
   return (fallbacksOverride ?? defaultFallbacks).length > 0;
 }
 
@@ -242,7 +250,7 @@ export function resolveEffectiveModelFallbacks(params: {
   if (!params.hasSessionModelOverride) {
     return agentFallbacksOverride;
   }
-  const defaultFallbacks = resolveAgentModelFallbackValues(params.cfg.agents?.defaults?.model);
+  const defaultFallbacks = resolveModelFallbackValues(params.cfg.agents?.defaults?.model);
   return agentFallbacksOverride ?? defaultFallbacks;
 }
 

@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { resolveModelAuthMode } from "../agents/provider-auth.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../agents/usage.js";
 import { resolveChannelModelOverride } from "../channels/model-overrides.js";
@@ -37,14 +36,10 @@ import {
   type ChatCommandDefinition,
 } from "./commands-registry.js";
 import type { CommandCategory } from "./commands-registry.types.js";
-import { resolveActiveFallbackState } from "./fallback-state.js";
-import { formatProviderModelRef, resolveSelectedAndActiveModel } from "./model-runtime.js";
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "./thinking.js";
 
 type AgentDefaults = NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>;
-type AgentConfig = Partial<AgentDefaults> & {
-  model?: AgentDefaults["model"] | string;
-};
+type AgentConfig = Partial<AgentDefaults>;
 
 export const formatTokenCount = formatTokenCountShared;
 
@@ -365,39 +360,13 @@ const formatVoiceModeLine = (
 export function buildStatusMessage(args: StatusArgs): string {
   const now = args.now ?? Date.now();
   const entry = args.sessionEntry;
-  // Model selection gutted in RemoteClaw — derive selected model from agent config primary.
-  const agentModelPrimary =
-    typeof args.agent?.model === "string"
-      ? args.agent.model
-      : (args.agent?.model as { primary?: string } | undefined)?.primary;
-  const parsedPrimary = agentModelPrimary?.includes("/")
-    ? {
-        provider: agentModelPrimary.slice(0, agentModelPrimary.indexOf("/")),
-        model: agentModelPrimary.slice(agentModelPrimary.indexOf("/") + 1),
-      }
-    : undefined;
-  const configuredProvider = parsedPrimary?.provider || DEFAULT_PROVIDER;
-  const configuredModel = parsedPrimary?.model || DEFAULT_MODEL;
-  const contextConfig = args.config ?? ({} as RemoteClawConfig);
-  const selectedProvider = entry?.providerOverride ?? configuredProvider;
-  const selectedModel = entry?.modelOverride ?? configuredModel;
-  const modelRefs = resolveSelectedAndActiveModel({
-    selectedProvider,
-    selectedModel,
-    sessionEntry: entry,
-  });
-  let activeProvider = modelRefs.active.provider;
-  let activeModel = modelRefs.active.model;
+  // Model selection gutted in RemoteClaw — CLI runtimes own model selection.
+  const selectedProvider = entry?.providerOverride ?? "unknown";
+  const selectedModel = entry?.modelOverride ?? "unknown";
+  let activeProvider = entry?.modelProvider ?? selectedProvider;
+  let activeModel = entry?.model ?? selectedModel;
   // Context token lookup gutted in RemoteClaw — CLI agents manage their own context windows.
-  let contextTokens = entry?.contextTokens ?? args.agent?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
-  // Check for Anthropic context1m param to override context window size.
-  const activeModelRef = `${configuredProvider}/${configuredModel}`;
-  const modelsMap = contextConfig.agents?.defaults?.models as
-    | Record<string, { params?: { context1m?: boolean } } | undefined>
-    | undefined;
-  if (modelsMap?.[activeModelRef]?.params?.context1m === true) {
-    contextTokens = 1_048_576;
-  }
+  let contextTokens = entry?.contextTokens ?? args.agent?.contextTokens ?? 200_000;
 
   let inputTokens = entry?.inputTokens;
   let outputTokens = entry?.outputTokens;
@@ -513,14 +482,27 @@ export function buildStatusMessage(args: StatusArgs): string {
   const activeAuthLabelValue =
     args.activeModelAuth ??
     (activeAuthMode && activeAuthMode !== "unknown" ? activeAuthMode : undefined);
-  const selectedModelLabel = modelRefs.selected.label || "unknown";
-  const activeModelLabel = formatProviderModelRef(activeProvider, activeModel) || "unknown";
-  const fallbackState = resolveActiveFallbackState({
-    selectedModelRef: selectedModelLabel,
-    activeModelRef: activeModelLabel,
-    state: entry,
-  });
-  const effectiveCostAuthMode = fallbackState.active
+  const selectedModelLabel =
+    selectedProvider !== "unknown" || selectedModel !== "unknown"
+      ? `${selectedProvider}/${selectedModel}`
+      : "unknown";
+  const activeModelLabel =
+    activeProvider !== "unknown" || activeModel !== "unknown"
+      ? `${activeProvider}/${activeModel}`
+      : "unknown";
+  // Show fallback line only when selected and active models differ AND the
+  // recorded fallback notice matches the current selected model (prevents
+  // showing stale fallback state from a prior model switch).
+  const isFallbackActive =
+    selectedModelLabel !== "unknown" &&
+    activeModelLabel !== "unknown" &&
+    selectedModelLabel !== activeModelLabel &&
+    (!entry?.fallbackNoticeSelectedModel ||
+      entry.fallbackNoticeSelectedModel === selectedModelLabel);
+  const fallbackReason = isFallbackActive
+    ? (entry?.fallbackNoticeReason ?? "selected model unavailable")
+    : undefined;
+  const effectiveCostAuthMode = isFallbackActive
     ? activeAuthMode
     : (selectedAuthMode ?? activeAuthMode);
   const showCost = effectiveCostAuthMode === "api-key" || effectiveCostAuthMode === "mixed";
@@ -566,9 +548,13 @@ export function buildStatusMessage(args: StatusArgs): string {
     // Model alias resolution gutted in RemoteClaw — parse channel override directly.
     const overrideRaw = channelOverride.model.trim();
     const slashIdx = overrideRaw.indexOf("/");
-    const overrideProvider = slashIdx > 0 ? overrideRaw.slice(0, slashIdx) : DEFAULT_PROVIDER;
+    const overrideProvider = slashIdx > 0 ? overrideRaw.slice(0, slashIdx) : "unknown";
     const overrideModel = slashIdx > 0 ? overrideRaw.slice(slashIdx + 1) : overrideRaw;
-    if (overrideProvider !== selectedProvider || overrideModel !== selectedModel) {
+    // Compare against active model (runtime-observed) since the selected model
+    // may be "unknown" when no explicit session override is set.
+    const compareProvider = selectedProvider !== "unknown" ? selectedProvider : activeProvider;
+    const compareModel = selectedModel !== "unknown" ? selectedModel : activeModel;
+    if (overrideProvider !== compareProvider || overrideModel !== compareModel) {
       return undefined;
     }
     return "channel override";
@@ -576,10 +562,10 @@ export function buildStatusMessage(args: StatusArgs): string {
   const modelNote = channelModelNote ? ` · ${channelModelNote}` : "";
   const modelLine = `🧠 Model: ${selectedModelLabel}${selectedAuthLabel}${modelNote}`;
   const showFallbackAuth = activeAuthLabelValue && activeAuthLabelValue !== selectedAuthLabelValue;
-  const fallbackLine = fallbackState.active
+  const fallbackLine = isFallbackActive
     ? `↪️ Fallback: ${activeModelLabel}${
         showFallbackAuth ? ` · 🔑 ${activeAuthLabelValue}` : ""
-      } (${fallbackState.reason ?? "selected model unavailable"})`
+      } (${fallbackReason})`
     : null;
   const commit = resolveCommitHash();
   const versionLine = `🦀 RemoteClaw ${VERSION}${commit ? ` (${commit})` : ""}`;

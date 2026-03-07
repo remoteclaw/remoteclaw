@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "./defaults.js";
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
+const DEFAULT_PROVIDER = "unknown";
+const DEFAULT_MODEL = "unknown";
 import "./test-helpers/fast-core-tools.js";
 import {
   getCallGatewayMock,

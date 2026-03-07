@@ -4,8 +4,24 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { resolveApiKeyForProvider, resolveEnvApiKey } from "../agents/provider-auth.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 import { captureEnv } from "../test-utils/env.js";
+
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
+function resolveAgentModelPrimaryValue(model: unknown): string | undefined {
+  if (typeof model === "string") {
+    const trimmed = model.trim();
+    return trimmed || undefined;
+  }
+  if (!model || typeof model !== "object") {
+    return undefined;
+  }
+  const primary = (model as { primary?: unknown }).primary;
+  if (typeof primary !== "string") {
+    return undefined;
+  }
+  const trimmed = primary.trim();
+  return trimmed || undefined;
+}
 import {
   applyKilocodeProviderConfig,
   applyKilocodeConfig,

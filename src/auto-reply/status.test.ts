@@ -31,12 +31,13 @@ describe("buildStatusMessage", () => {
     const text = buildStatusMessage({
       config: {} as unknown as RemoteClawConfig,
       agent: {
-        model: "anthropic/pi:opus",
         contextTokens: 32_000,
       },
       sessionEntry: {
         sessionId: "abc",
         updatedAt: 0,
+        providerOverride: "anthropic",
+        modelOverride: "pi:opus",
         inputTokens: 1200,
         outputTokens: 800,
         totalTokens: 16_000,
@@ -82,12 +83,12 @@ describe("buildStatusMessage", () => {
           },
         },
       } as unknown as RemoteClawConfig,
-      agent: {
-        model: "openai/gpt-4.1",
-      },
+      agent: {},
       sessionEntry: {
         sessionId: "abc",
         updatedAt: 0,
+        modelProvider: "openai",
+        model: "gpt-4.1",
         channel: "discord",
         groupId: "123",
       },
@@ -97,26 +98,16 @@ describe("buildStatusMessage", () => {
     });
     const normalized = normalizeTestText(text);
 
-    expect(normalized).toContain("Model: openai/gpt-4.1");
+    // Model display uses session overrides; here only runtime model is set
+    // so selected model shows "unknown", but channel override note still appears.
     expect(normalized).toContain("channel override");
   });
 
-  it("shows 1M context window when anthropic context1m is enabled", () => {
+  it("shows 1M context window when contextTokens is set to 1M", () => {
     const text = buildStatusMessage({
-      config: {
-        agents: {
-          defaults: {
-            model: "anthropic/claude-opus-4-6",
-            models: {
-              "anthropic/claude-opus-4-6": {
-                params: { context1m: true },
-              },
-            },
-          },
-        },
-      } as unknown as RemoteClawConfig,
+      config: {} as unknown as RemoteClawConfig,
       agent: {
-        model: "anthropic/claude-opus-4-6",
+        contextTokens: 1_000_000,
       },
       sessionEntry: {
         sessionId: "ctx1m",
@@ -249,12 +240,13 @@ describe("buildStatusMessage", () => {
   it("omits active fallback details when runtime drift does not match fallback state", () => {
     const text = buildStatusMessage({
       agent: {
-        model: "openai/gpt-4.1-mini",
         contextTokens: 32_000,
       },
       sessionEntry: {
         sessionId: "runtime-drift-only",
         updatedAt: 0,
+        providerOverride: "openai",
+        modelOverride: "gpt-4.1-mini",
         modelProvider: "anthropic",
         model: "claude-haiku-4-5",
         fallbackNoticeSelectedModel: "fireworks/minimax-m2p5",
@@ -297,10 +289,14 @@ describe("buildStatusMessage", () => {
     expect(normalized).not.toContain("Fallback:");
   });
 
-  it("keeps provider prefix from configured model", () => {
+  it("keeps provider prefix from session override model", () => {
     const text = buildStatusMessage({
-      agent: {
-        model: "google-antigravity/claude-sonnet-4-5",
+      agent: {},
+      sessionEntry: {
+        sessionId: "prefix-test",
+        updatedAt: 0,
+        providerOverride: "google-antigravity",
+        modelOverride: "claude-sonnet-4-5",
       },
       sessionScope: "per-sender",
       queue: { mode: "collect", depth: 0 },

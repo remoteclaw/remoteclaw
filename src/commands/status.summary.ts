@@ -1,4 +1,4 @@
-import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL } from "../agents/defaults.js";
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { loadConfig } from "../config/config.js";
 import {
   loadSessionStore,
@@ -96,8 +96,8 @@ export async function getStatusSummary(
   const mainSessionKey = resolveMainSessionKey(cfg);
   const queuedSystemEvents = peekSystemEvents(mainSessionKey);
 
-  const configModel = DEFAULT_MODEL;
-  const configContextTokens = cfg.agents?.defaults?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
+  const configModel = "unknown";
+  const configContextTokens = cfg.agents?.defaults?.contextTokens ?? 200_000;
 
   const now = Date.now();
   const storeCache = new Map<string, Record<string, SessionEntry | undefined>>();

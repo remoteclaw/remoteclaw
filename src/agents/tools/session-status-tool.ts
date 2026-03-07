@@ -21,10 +21,10 @@ import {
   DEFAULT_AGENT_ID,
   resolveAgentIdFromSessionKey,
 } from "../../routing/session-key.js";
-import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
+// Model override infrastructure gutted in RemoteClaw — inline override logic.
 import { resolveAgentDir } from "../agent-scope.js";
 import { formatUserTime, resolveUserTimeFormat, resolveUserTimezone } from "../date-time.js";
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../defaults.js";
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { parseModelRef } from "../provider-utils.js";
 import type { AnyAgentTool } from "./common.js";
 import { readStringParam } from "./common.js";
@@ -124,13 +124,13 @@ async function resolveModelOverride(params: {
     return { kind: "reset" };
   }
 
-  const currentProvider = params.sessionEntry?.providerOverride?.trim() || DEFAULT_PROVIDER;
+  const currentProvider = params.sessionEntry?.providerOverride?.trim() || "unknown";
 
   const parsed = parseModelRef(raw, currentProvider);
   if (!parsed) {
     throw new Error(`Unrecognized model "${raw}".`);
   }
-  const isDefault = parsed.provider === DEFAULT_PROVIDER && parsed.model === DEFAULT_MODEL;
+  const isDefault = parsed.provider === "unknown" && parsed.model === "unknown";
   return {
     kind: "set",
     provider: parsed.provider,
@@ -225,7 +225,7 @@ export function createSessionStatusTool(opts?: {
         throw new Error(`Unknown ${kind}: ${requestedKeyRaw}`);
       }
 
-      const configured = { provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL };
+      const configured = { provider: "unknown", model: "unknown" };
       const modelRaw = readStringParam(params, "model");
       let changedModel = false;
       if (typeof modelRaw === "string") {
@@ -236,22 +236,38 @@ export function createSessionStatusTool(opts?: {
           agentId,
         });
         const nextEntry: SessionEntry = { ...resolved.entry };
-        const applied = applyModelOverrideToSessionEntry({
-          entry: nextEntry,
-          selection:
-            selection.kind === "reset"
-              ? {
-                  provider: configured.provider,
-                  model: configured.model,
-                  isDefault: true,
-                }
-              : {
-                  provider: selection.provider,
-                  model: selection.model,
-                  isDefault: selection.isDefault,
-                },
-        });
-        if (applied.updated) {
+        const overrideSelection =
+          selection.kind === "reset"
+            ? {
+                provider: configured.provider,
+                model: configured.model,
+                isDefault: true,
+              }
+            : {
+                provider: selection.provider,
+                model: selection.model,
+                isDefault: selection.isDefault,
+              };
+        const prevProvider = nextEntry.providerOverride;
+        const prevModel = nextEntry.modelOverride;
+        if (overrideSelection.isDefault) {
+          delete nextEntry.providerOverride;
+          delete nextEntry.modelOverride;
+          // Reset auth profile override when returning to defaults.
+          delete nextEntry.authProfileOverride;
+          delete nextEntry.authProfileOverrideSource;
+          delete nextEntry.authProfileOverrideCompactionCount;
+        } else {
+          nextEntry.providerOverride = overrideSelection.provider;
+          nextEntry.modelOverride = overrideSelection.model;
+        }
+        const overrideUpdated =
+          nextEntry.providerOverride !== prevProvider || nextEntry.modelOverride !== prevModel;
+        if (overrideUpdated) {
+          // Clear stale fallback notice when the user explicitly switches models.
+          delete nextEntry.fallbackNoticeSelectedModel;
+          delete nextEntry.fallbackNoticeActiveModel;
+          delete nextEntry.fallbackNoticeReason;
           store[resolved.key] = nextEntry;
           await updateSessionStore(storePath, (nextStore) => {
             nextStore[resolved.key] = nextEntry;
@@ -317,9 +333,10 @@ export function createSessionStatusTool(opts?: {
 
       const agentDefaults = cfg.agents?.defaults ?? {};
       const defaultLabel = `${configured.provider}/${configured.model}`;
+      const rawModel = agentDefaults.model as { primary?: string } | undefined;
       const agentModel =
-        typeof agentDefaults.model === "object" && agentDefaults.model
-          ? { ...agentDefaults.model, primary: defaultLabel }
+        typeof rawModel === "object" && rawModel
+          ? { ...rawModel, primary: defaultLabel }
           : { primary: defaultLabel };
       const statusText = buildStatusMessage({
         config: cfg,

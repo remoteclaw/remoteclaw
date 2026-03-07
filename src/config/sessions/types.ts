@@ -155,20 +155,6 @@ export function normalizeSessionRuntimeModelFields(entry: SessionEntry): Session
   return next;
 }
 
-export function setSessionRuntimeModel(
-  entry: SessionEntry,
-  runtime: { provider: string; model: string },
-): boolean {
-  const provider = runtime.provider.trim();
-  const model = runtime.model.trim();
-  if (!provider || !model) {
-    return false;
-  }
-  entry.modelProvider = provider;
-  entry.model = model;
-  return true;
-}
-
 export function mergeSessionEntry(
   existing: SessionEntry | undefined,
   patch: Partial<SessionEntry>,

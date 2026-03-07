@@ -6,7 +6,6 @@ import { cancel, isCancel } from "@clack/prompts";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { CONFIG_PATH } from "../config/config.js";
-import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
 import { callGateway } from "../gateway/call.js";
 import { normalizeControlUiBasePath } from "../gateway/control-ui-shared.js";
@@ -41,7 +40,11 @@ export function summarizeExistingConfig(config: RemoteClawConfig): string {
   const rows: string[] = [];
   const defaults = config.agents?.defaults;
   if (defaults?.model) {
-    const model = resolveAgentModelPrimaryValue(defaults.model);
+    const rawModel = defaults.model;
+    const model =
+      typeof rawModel === "string"
+        ? rawModel.trim() || undefined
+        : (rawModel as { primary?: string } | undefined)?.primary?.trim() || undefined;
     if (model) {
       rows.push(shortenHomeInString(`model: ${model}`));
     }

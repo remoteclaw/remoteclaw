@@ -1,4 +1,3 @@
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { isCommandFlagEnabled } from "../config/commands.js";
 import type { RemoteClawConfig } from "../config/types.js";
 import { escapeRegExp } from "../utils.js";
@@ -255,10 +254,11 @@ function resolveDefaultCommandContext(cfg?: RemoteClawConfig): {
 } {
   // Model selection gutted in RemoteClaw — derive from agent config primary.
   const agentModel = cfg?.agents?.defaults?.model;
-  const primary = typeof agentModel === "string" ? agentModel : agentModel?.primary;
+  const primary =
+    typeof agentModel === "string" ? agentModel : (agentModel as { primary?: string })?.primary;
   const slashIdx = primary?.indexOf("/") ?? -1;
-  const provider = primary && slashIdx > 0 ? primary.slice(0, slashIdx) : DEFAULT_PROVIDER;
-  const model = primary && slashIdx > 0 ? primary.slice(slashIdx + 1) : (primary ?? DEFAULT_MODEL);
+  const provider = primary && slashIdx > 0 ? primary.slice(0, slashIdx) : "unknown";
+  const model = primary && slashIdx > 0 ? primary.slice(slashIdx + 1) : (primary ?? "unknown");
   return { provider, model };
 }
 

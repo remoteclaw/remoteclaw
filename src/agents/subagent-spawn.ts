@@ -2,13 +2,13 @@ import crypto from "node:crypto";
 import { formatThinkingLevels, normalizeThinkLevel } from "../auto-reply/thinking.js";
 import { DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH } from "../config/agent-limits.js";
 import { loadConfig } from "../config/config.js";
-import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
+// Model input infrastructure gutted in RemoteClaw — inline primary resolution.
 import { callGateway } from "../gateway/call.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { resolveAgentConfig } from "./agent-scope.js";
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "./defaults.js";
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { AGENT_LANE_SUBAGENT } from "./lanes.js";
 import { buildSubagentSystemPrompt } from "./subagent-announce.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
@@ -19,6 +19,21 @@ import {
   resolveInternalSessionKey,
   resolveMainSessionAlias,
 } from "./tools/sessions-helpers.js";
+
+function resolveModelPrimaryValue(model: unknown): string | undefined {
+  if (typeof model === "string") {
+    const trimmed = model.trim();
+    return trimmed || undefined;
+  }
+  if (model && typeof model === "object") {
+    const primary = (model as { primary?: unknown }).primary;
+    if (typeof primary === "string") {
+      const trimmed = primary.trim();
+      return trimmed || undefined;
+    }
+  }
+  return undefined;
+}
 
 export const SUBAGENT_SPAWN_MODES = ["run", "session"] as const;
 export type SpawnSubagentMode = (typeof SUBAGENT_SPAWN_MODES)[number];
@@ -276,9 +291,9 @@ export async function spawnSubagentDirect(
     modelOverride?.trim() ||
     readStringParam(targetAgentConfig?.subagents ?? {}, "model") ||
     readStringParam(cfg.agents?.defaults?.subagents ?? {}, "model") ||
-    resolveAgentModelPrimaryValue(targetAgentConfig?.model) ||
-    resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model) ||
-    `${DEFAULT_PROVIDER}/${DEFAULT_MODEL}`;
+    resolveModelPrimaryValue(targetAgentConfig?.model) ||
+    resolveModelPrimaryValue(cfg.agents?.defaults?.model) ||
+    "unknown/unknown";
 
   const resolvedThinkingDefaultRaw =
     readStringParam(targetAgentConfig?.subagents ?? {}, "thinking") ??

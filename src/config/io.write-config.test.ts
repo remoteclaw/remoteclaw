@@ -382,14 +382,17 @@ describe("config io write", () => {
       expect(snapshot.valid).toBe(true);
 
       const next = structuredClone(snapshot.config);
-      const codexBackend = next.agents?.defaults?.cliBackends?.codex;
-      const args = Array.isArray(codexBackend?.args) ? codexBackend?.args : [];
+      const backends = next.agents?.defaults?.cliBackends as
+        | Record<string, Record<string, unknown>>
+        | undefined;
+      const codexBackend = backends?.codex;
+      const args = Array.isArray(codexBackend?.args) ? (codexBackend?.args as string[]) : [];
       next.agents = {
         ...next.agents,
         defaults: {
           ...next.agents?.defaults,
           cliBackends: {
-            ...next.agents?.defaults?.cliBackends,
+            ...backends,
             codex: {
               ...codexBackend,
               command: typeof codexBackend?.command === "string" ? codexBackend.command : "codex",

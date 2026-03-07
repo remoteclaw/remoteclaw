@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { parseModelRef } from "../agents/provider-utils.js";
 import { type RemoteClawConfig, loadConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
@@ -614,9 +614,9 @@ export function loadCombinedSessionStoreForGateway(cfg: RemoteClawConfig): {
 
 export function getSessionDefaults(cfg: RemoteClawConfig): GatewaySessionsDefaults {
   return {
-    modelProvider: DEFAULT_PROVIDER,
-    model: DEFAULT_MODEL,
-    contextTokens: cfg.agents?.defaults?.contextTokens ?? DEFAULT_CONTEXT_TOKENS,
+    modelProvider: "unknown",
+    model: "unknown",
+    contextTokens: cfg.agents?.defaults?.contextTokens ?? 200_000,
   };
 }
 
@@ -629,8 +629,8 @@ export function resolveSessionModelRef(
 ): { provider: string; model: string } {
   // Prefer the last runtime model recorded on the session entry.
   // This is the actual model used by the latest run and must win over defaults.
-  let provider = DEFAULT_PROVIDER;
-  let model = DEFAULT_MODEL;
+  let provider = "unknown";
+  let model = "unknown";
   const runtimeModel = entry?.model?.trim();
   const runtimeProvider = entry?.modelProvider?.trim();
   if (runtimeModel) {
@@ -643,7 +643,7 @@ export function resolveSessionModelRef(
       // provider the user has no credentials for.
       return { provider: runtimeProvider, model: runtimeModel };
     }
-    const parsedRuntime = parseModelRef(runtimeModel, provider || DEFAULT_PROVIDER);
+    const parsedRuntime = parseModelRef(runtimeModel, provider || "unknown");
     if (parsedRuntime) {
       provider = parsedRuntime.provider;
       model = parsedRuntime.model;
@@ -657,7 +657,7 @@ export function resolveSessionModelRef(
   // then finally to configured defaults.
   const storedModelOverride = entry?.modelOverride?.trim();
   if (storedModelOverride) {
-    const overrideProvider = entry?.providerOverride?.trim() || provider || DEFAULT_PROVIDER;
+    const overrideProvider = entry?.providerOverride?.trim() || provider || "unknown";
     const parsedOverride = parseModelRef(storedModelOverride, overrideProvider);
     if (parsedOverride) {
       provider = parsedOverride.provider;
@@ -684,7 +684,7 @@ export function resolveSessionModelIdentityRef(
       return { provider: runtimeProvider, model: runtimeModel };
     }
     if (runtimeModel.includes("/")) {
-      const parsedRuntime = parseModelRef(runtimeModel, DEFAULT_PROVIDER);
+      const parsedRuntime = parseModelRef(runtimeModel, "unknown");
       if (parsedRuntime) {
         return { provider: parsedRuntime.provider, model: parsedRuntime.model };
       }
@@ -788,7 +788,7 @@ export function listSessionsFromStore(params: {
       const sessionAgentId = normalizeAgentId(parsedAgent?.agentId ?? resolveDefaultAgentId(cfg));
       const resolvedModel = resolveSessionModelIdentityRef(cfg, entry, sessionAgentId);
       const modelProvider = resolvedModel.provider;
-      const model = resolvedModel.model ?? DEFAULT_MODEL;
+      const model = resolvedModel.model ?? "unknown";
       return {
         key,
         entry,

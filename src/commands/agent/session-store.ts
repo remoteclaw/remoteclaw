@@ -1,13 +1,9 @@
 import { setCliSessionId } from "../../agents/cli-session.js";
-import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { isCliProvider } from "../../agents/provider-utils.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import {
-  setSessionRuntimeModel,
-  type SessionEntry,
-  updateSessionStore,
-} from "../../config/sessions.js";
+import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 import type { AgentDeliveryResult } from "../../middleware/types.js";
 
 export async function updateSessionStoreAfterAgentRun(params: {
@@ -51,7 +47,7 @@ export async function updateSessionStoreAfterAgentRun(params: {
   const compactionsThisRun = 0;
   const modelUsed = fallbackModel ?? defaultModel;
   const providerUsed = fallbackProvider ?? defaultProvider;
-  const contextTokens = params.contextTokensOverride ?? DEFAULT_CONTEXT_TOKENS;
+  const contextTokens = params.contextTokensOverride ?? 200_000;
 
   const entry = sessionStore[sessionKey] ?? {
     sessionId,
@@ -63,10 +59,8 @@ export async function updateSessionStoreAfterAgentRun(params: {
     updatedAt: Date.now(),
     contextTokens,
   };
-  setSessionRuntimeModel(next, {
-    provider: providerUsed,
-    model: modelUsed,
-  });
+  next.modelProvider = providerUsed;
+  next.model = modelUsed;
   if (isCliProvider(providerUsed, cfg)) {
     const cliSessionId = result.run.sessionId?.trim();
     if (cliSessionId) {

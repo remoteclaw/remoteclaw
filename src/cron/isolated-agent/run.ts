@@ -10,7 +10,7 @@ import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { getCliSessionId, setCliSessionId } from "../../agents/cli-session.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
 import { resolveUserTimezone } from "../../agents/date-time.js";
-import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { isCliProvider, normalizeModelRef, parseModelRef } from "../../agents/provider-utils.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
@@ -19,7 +19,7 @@ import { normalizeVerboseLevel } from "../../auto-reply/thinking.js";
 import type { CliDeps } from "../../cli/outbound-send-deps.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveGatewayPort } from "../../config/paths.js";
-import { setSessionRuntimeModel, updateSessionStore } from "../../config/sessions.js";
+import { updateSessionStore } from "../../config/sessions.js";
 import type { AgentDefaultsConfig } from "../../config/types.js";
 import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
@@ -193,7 +193,7 @@ export async function runCronIsolatedAgentTurn(params: {
   const agentDir = resolveAgentDir(params.cfg, agentId);
   const workspaceDir = await ensureAgentWorkspace(workspaceDirRaw);
 
-  const resolvedDefault = normalizeModelRef(DEFAULT_PROVIDER, DEFAULT_MODEL);
+  const resolvedDefault = normalizeModelRef("unknown", "unknown");
   let provider = resolvedDefault.provider;
   let model = resolvedDefault.model;
   const modelOverrideRaw =
@@ -424,12 +424,10 @@ export async function runCronIsolatedAgentTurn(params: {
       : undefined;
     const modelUsed = fallbackModel ?? model;
     const providerUsed = fallbackProvider ?? provider;
-    const contextTokens = agentCfg?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
+    const contextTokens = agentCfg?.contextTokens ?? 200_000;
 
-    setSessionRuntimeModel(cronSession.sessionEntry, {
-      provider: providerUsed,
-      model: modelUsed,
-    });
+    cronSession.sessionEntry.modelProvider = providerUsed;
+    cronSession.sessionEntry.model = modelUsed;
     cronSession.sessionEntry.contextTokens = contextTokens;
     if (isCliProvider(providerUsed, cfgWithAgentDefaults)) {
       const cliSessionId = runResult.run.sessionId?.trim();

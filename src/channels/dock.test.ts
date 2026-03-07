@@ -99,4 +99,26 @@ describe("channels dock", () => {
 
     expect(formatted).toEqual(["user", "foo", "plain"]);
   });
+
+  it("dock config readers coerce numeric allowFrom/defaultTo entries through shared helpers", () => {
+    const telegramDock = getChannelDock("telegram");
+    const signalDock = getChannelDock("signal");
+    const cfg = {
+      channels: {
+        telegram: {
+          allowFrom: [12345],
+          defaultTo: 67890,
+        },
+        signal: {
+          allowFrom: [14155550100],
+          defaultTo: 42,
+        },
+      },
+    } as unknown as RemoteClawConfig;
+
+    expect(telegramDock?.config?.resolveAllowFrom?.({ cfg })).toEqual(["12345"]);
+    expect(telegramDock?.config?.resolveDefaultTo?.({ cfg })).toBe("67890");
+    expect(signalDock?.config?.resolveAllowFrom?.({ cfg })).toEqual(["14155550100"]);
+    expect(signalDock?.config?.resolveDefaultTo?.({ cfg })).toBe("42");
+  });
 });

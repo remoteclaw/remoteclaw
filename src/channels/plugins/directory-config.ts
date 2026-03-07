@@ -1,5 +1,6 @@
 import type { RemoteClawConfig } from "../../config/types.js";
 import { resolveDiscordAccount } from "../../discord/accounts.js";
+import { mapAllowFromEntries } from "../../plugin-sdk/channel-config-helpers.js";
 import { resolveSlackAccount } from "../../slack/accounts.js";
 import { resolveTelegramAccount } from "../../telegram/accounts.js";
 import { resolveWhatsAppAccount } from "../../web/accounts.js";
@@ -161,7 +162,7 @@ export async function listTelegramDirectoryPeersFromConfig(
 ): Promise<ChannelDirectoryEntry[]> {
   const account = resolveTelegramAccount({ cfg: params.cfg, accountId: params.accountId });
   const raw = [
-    ...(account.config.allowFrom ?? []).map((entry) => String(entry)),
+    ...mapAllowFromEntries(account.config.allowFrom),
     ...Object.keys(account.config.dms ?? {}),
   ];
   const ids = Array.from(

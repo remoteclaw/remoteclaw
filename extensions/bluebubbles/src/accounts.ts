@@ -1,9 +1,5 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
-import {
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  normalizeOptionalAccountId,
-} from "remoteclaw/plugin-sdk/account-id";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
 import { normalizeBlueBubblesServerUrl, type BlueBubblesAccountConfig } from "./types.js";
 
 export type ResolvedBlueBubblesAccount = {
@@ -15,36 +11,11 @@ export type ResolvedBlueBubblesAccount = {
   baseUrl?: string;
 };
 
-function listConfiguredAccountIds(cfg: RemoteClawConfig): string[] {
-  const accounts = cfg.channels?.bluebubbles?.accounts;
-  if (!accounts || typeof accounts !== "object") {
-    return [];
-  }
-  return Object.keys(accounts).filter(Boolean);
-}
-
-export function listBlueBubblesAccountIds(cfg: RemoteClawConfig): string[] {
-  const ids = listConfiguredAccountIds(cfg);
-  if (ids.length === 0) {
-    return [DEFAULT_ACCOUNT_ID];
-  }
-  return ids.toSorted((a, b) => a.localeCompare(b));
-}
-
-export function resolveDefaultBlueBubblesAccountId(cfg: RemoteClawConfig): string {
-  const preferred = normalizeOptionalAccountId(cfg.channels?.bluebubbles?.defaultAccount);
-  if (
-    preferred &&
-    listBlueBubblesAccountIds(cfg).some((accountId) => normalizeAccountId(accountId) === preferred)
-  ) {
-    return preferred;
-  }
-  const ids = listBlueBubblesAccountIds(cfg);
-  if (ids.includes(DEFAULT_ACCOUNT_ID)) {
-    return DEFAULT_ACCOUNT_ID;
-  }
-  return ids[0] ?? DEFAULT_ACCOUNT_ID;
-}
+const {
+  listAccountIds: listBlueBubblesAccountIds,
+  resolveDefaultAccountId: resolveDefaultBlueBubblesAccountId,
+} = createAccountListHelpers("bluebubbles");
+export { listBlueBubblesAccountIds, resolveDefaultBlueBubblesAccountId };
 
 function resolveAccountConfig(
   cfg: RemoteClawConfig,

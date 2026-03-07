@@ -30,6 +30,7 @@ export {
   applyAccountNameToChannelSection,
   migrateBaseNameToDefaultAccount,
 } from "../channels/plugins/setup-helpers.js";
+export { buildComputedAccountStatusSnapshot } from "./status-helpers.js";
 export { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
 export type {
   BaseProbeResult,

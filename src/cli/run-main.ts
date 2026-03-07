@@ -1,12 +1,8 @@
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { loadDotEnv } from "../infra/dotenv.js";
 import { normalizeEnv } from "../infra/env.js";
 import { formatUncaughtError } from "../infra/errors.js";
-import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { isMainModule } from "../infra/is-main.js";
 import { ensureRemoteClawCliOnPath } from "../infra/path-env.js";
 import { assertSupportedRuntime } from "../infra/runtime-guard.js";
@@ -65,32 +61,6 @@ export function shouldEnsureCliPath(argv: string[]): boolean {
   return true;
 }
 
-/**
- * Detect an existing RemoteClaw installation and display a one-time migration notice.
- * Only triggers when ~/.remoteclaw is absent but ~/.openclaw exists.
- * Does not block startup — purely informational.
- */
-export function checkRemoteClawMigration(env: NodeJS.ProcessEnv = process.env): void {
-  // Skip if state dir is explicitly overridden — the user knows what they're doing.
-  if (env.REMOTECLAW_STATE_DIR?.trim()) {
-    return;
-  }
-
-  try {
-    const home = resolveRequiredHomeDir(env, os.homedir);
-    const newDir = path.join(home, ".remoteclaw");
-    const oldDir = path.join(home, ".openclaw");
-
-    if (!fs.existsSync(newDir) && fs.existsSync(oldDir)) {
-      console.warn(
-        "Existing OpenClaw configuration detected. Run `remoteclaw import ~/.openclaw` to migrate.",
-      );
-    }
-  } catch {
-    // Swallow errors — migration detection must never block startup.
-  }
-}
-
 export async function runCli(argv: string[] = process.argv) {
   const normalizedArgv = normalizeWindowsArgv(argv);
   loadDotEnv({ quiet: true });
@@ -101,9 +71,6 @@ export async function runCli(argv: string[] = process.argv) {
 
   // Enforce the minimum supported runtime before doing any work.
   assertSupportedRuntime();
-
-  // Detect existing RemoteClaw installation and suggest migration.
-  checkRemoteClawMigration();
 
   if (await tryRouteCli(normalizedArgv)) {
     return;

@@ -7,6 +7,9 @@ REMOTECLAW_DEVELOPMENT_TEAM = Y5PE65HELJ
 
 REMOTECLAW_APP_BUNDLE_ID = org.remoteclaw.ios
 REMOTECLAW_SHARE_BUNDLE_ID = org.remoteclaw.ios.share
+REMOTECLAW_WATCH_APP_BUNDLE_ID = org.remoteclaw.ios.watchkitapp
+REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID = org.remoteclaw.ios.watchkitapp.extension
+REMOTECLAW_ACTIVITY_WIDGET_BUNDLE_ID = org.remoteclaw.ios.activitywidget
 
 REMOTECLAW_APP_PROFILE = org.remoteclaw.ios Development
 REMOTECLAW_SHARE_PROFILE = org.remoteclaw.ios.share Development

@@ -327,7 +327,7 @@ describe("agentCommand", () => {
     });
   });
 
-  it("uses hardcoded default provider when no session override exists", async () => {
+  it("uses CLI runtime from config for bridge provider", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store, {
@@ -340,10 +340,9 @@ describe("agentCommand", () => {
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
 
-      // agent.ts uses DEFAULT_PROVIDER ("anthropic") from agents/defaults.ts,
-      // not agents.defaults.model.primary from config. Config-driven model
-      // resolution was removed with model-selection.ts.
-      expect(bridgeConstructorCalls.at(-1)?.provider).toBe("anthropic");
+      // ChannelBridge receives the CLI runtime from agents.defaults.runtime
+      // (falling back to "claude"), NOT the model API provider.
+      expect(bridgeConstructorCalls.at(-1)?.provider).toBe("claude");
     });
   });
 
@@ -376,8 +375,9 @@ describe("agentCommand", () => {
         runtime,
       );
 
-      // ChannelBridge constructed with the stored override provider.
-      expect(bridgeConstructorCalls.at(-1)?.provider).toBe("openai");
+      // ChannelBridge receives the CLI runtime (from config, defaulting to
+      // "claude"), not the model API provider override.
+      expect(bridgeConstructorCalls.at(-1)?.provider).toBe("claude");
 
       const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
         string,

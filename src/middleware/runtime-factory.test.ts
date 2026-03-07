@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createCliRuntime, SUPPORTED_PROVIDERS } from "./runtime-factory.js";
+import {
+  createCliRuntime,
+  resolveCliRuntimeProvider,
+  SUPPORTED_PROVIDERS,
+} from "./runtime-factory.js";
 import { ClaudeCliRuntime } from "./runtimes/claude.js";
 import { CodexCliRuntime } from "./runtimes/codex.js";
 import { GeminiCliRuntime } from "./runtimes/gemini.js";
@@ -93,5 +97,31 @@ describe("createCliRuntime", () => {
     it("contains exactly the four supported provider names", () => {
       expect([...SUPPORTED_PROVIDERS]).toEqual(["claude", "gemini", "codex", "opencode"]);
     });
+  });
+});
+
+// ── resolveCliRuntimeProvider ─────────────────────────────────────────────
+
+describe("resolveCliRuntimeProvider", () => {
+  it("returns agents.defaults.runtime when set", () => {
+    expect(resolveCliRuntimeProvider({ agents: { defaults: { runtime: "gemini" } } })).toBe(
+      "gemini",
+    );
+  });
+
+  it("falls back to 'claude' when runtime is undefined", () => {
+    expect(resolveCliRuntimeProvider({ agents: { defaults: {} } })).toBe("claude");
+  });
+
+  it("falls back to 'claude' when defaults is undefined", () => {
+    expect(resolveCliRuntimeProvider({ agents: {} })).toBe("claude");
+  });
+
+  it("falls back to 'claude' when agents is undefined", () => {
+    expect(resolveCliRuntimeProvider({})).toBe("claude");
+  });
+
+  it("falls back to 'claude' when config is undefined", () => {
+    expect(resolveCliRuntimeProvider(undefined)).toBe("claude");
   });
 });

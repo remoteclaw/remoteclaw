@@ -78,7 +78,7 @@ describe("config io paths", () => {
     });
   });
 
-  it("logs invalid config path details and returns empty config", async () => {
+  it("logs invalid config path details and throws on invalid config", async () => {
     await withTempHome(async (home) => {
       const configDir = path.join(home, ".remoteclaw");
       await fs.mkdir(configDir, { recursive: true });
@@ -99,7 +99,7 @@ describe("config io paths", () => {
         logger,
       });
 
-      expect(io.loadConfig()).toEqual({});
+      expect(() => io.loadConfig()).toThrow("Invalid config");
       expect(logger.error).toHaveBeenCalledWith(
         expect.stringContaining(`Invalid config at ${configPath}:\\n`),
       );

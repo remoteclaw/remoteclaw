@@ -246,10 +246,9 @@ export function resolveGatewayConnection(opts: GatewayConnectionOptions) {
         ? typeof remote?.token === "string" && remote.token.trim().length > 0
           ? remote.token.trim()
           : undefined
-        : process.env.REMOTECLAW_GATEWAY_TOKEN?.trim() ||
-          (typeof authToken === "string" && authToken.trim().length > 0
+        : (typeof authToken === "string" && authToken.trim().length > 0
             ? authToken.trim()
-            : undefined)
+            : undefined) || process.env.REMOTECLAW_GATEWAY_TOKEN?.trim()
       : undefined);
 
   const password =

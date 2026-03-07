@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import type { RemoteClawConfig } from "../config/config.js";
+import { writeConfigFile, type RemoteClawConfig } from "../config/config.js";
 import { resolveGatewayPort, resolveIsNixMode } from "../config/paths.js";
 import {
   findExtraGatewayServices,
@@ -246,10 +246,9 @@ export async function maybeRepairGatewayServiceConfig(
 
   const port = resolveGatewayPort(cfg, process.env);
   const runtimeChoice = detectGatewayRuntime(command.programArguments);
-  const { programArguments, workingDirectory, environment } = await buildGatewayInstallPlan({
+  const { programArguments } = await buildGatewayInstallPlan({
     env: process.env,
     port,
-    token: expectedGatewayToken,
     runtime: needsNodeRuntime && systemNodePath ? "node" : runtimeChoice,
     nodePath: systemNodePath ?? undefined,
     warn: (message, title) => note(message, title),
@@ -305,13 +304,56 @@ export async function maybeRepairGatewayServiceConfig(
   if (!repair) {
     return;
   }
+  const serviceEmbeddedToken = command.environment?.REMOTECLAW_GATEWAY_TOKEN?.trim() || undefined;
+  const gatewayTokenForRepair = expectedGatewayToken ?? serviceEmbeddedToken;
+  const configuredGatewayToken =
+    typeof cfg.gateway?.auth?.token === "string"
+      ? cfg.gateway.auth.token.trim() || undefined
+      : undefined;
+  let cfgForServiceInstall = cfg;
+  if (!configuredGatewayToken && gatewayTokenForRepair) {
+    const nextCfg: RemoteClawConfig = {
+      ...cfg,
+      gateway: {
+        ...cfg.gateway,
+        auth: {
+          ...cfg.gateway?.auth,
+          mode: cfg.gateway?.auth?.mode ?? "token",
+          token: gatewayTokenForRepair,
+        },
+      },
+    };
+    try {
+      await writeConfigFile(nextCfg);
+      cfgForServiceInstall = nextCfg;
+      note(
+        expectedGatewayToken
+          ? "Persisted gateway.auth.token from environment before reinstalling service."
+          : "Persisted gateway.auth.token from existing service definition before reinstalling service.",
+        "Gateway",
+      );
+    } catch (err) {
+      runtime.error(`Failed to persist gateway.auth.token before service repair: ${String(err)}`);
+      return;
+    }
+  }
+
+  const updatedPort = resolveGatewayPort(cfgForServiceInstall, process.env);
+  const updatedPlan = await buildGatewayInstallPlan({
+    env: process.env,
+    port: updatedPort,
+    runtime: needsNodeRuntime && systemNodePath ? "node" : runtimeChoice,
+    nodePath: systemNodePath ?? undefined,
+    warn: (message, title) => note(message, title),
+    config: cfgForServiceInstall,
+  });
   try {
     await service.install({
       env: process.env,
       stdout: process.stdout,
-      programArguments,
-      workingDirectory,
-      environment,
+      programArguments: updatedPlan.programArguments,
+      workingDirectory: updatedPlan.workingDirectory,
+      environment: updatedPlan.environment,
     });
   } catch (err) {
     runtime.error(`Gateway service update failed: ${String(err)}`);

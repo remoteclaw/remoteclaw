@@ -11,7 +11,7 @@ import {
   formatDocsLink,
   mergeAllowFromEntries,
   normalizeAccountId,
-  promptAccountId,
+  resolveAccountIdForConfigure,
 } from "remoteclaw/plugin-sdk";
 import {
   listBlueBubblesAccountIds,
@@ -158,21 +158,16 @@ export const blueBubblesOnboardingAdapter: ChannelOnboardingAdapter = {
     };
   },
   configure: async ({ cfg, prompter, accountOverrides, shouldPromptAccountIds }) => {
-    const blueBubblesOverride = accountOverrides.bluebubbles?.trim();
     const defaultAccountId = resolveDefaultBlueBubblesAccountId(cfg);
-    let accountId = blueBubblesOverride
-      ? normalizeAccountId(blueBubblesOverride)
-      : defaultAccountId;
-    if (shouldPromptAccountIds && !blueBubblesOverride) {
-      accountId = await promptAccountId({
-        cfg,
-        prompter,
-        label: "BlueBubbles",
-        currentId: accountId,
-        listAccountIds: listBlueBubblesAccountIds,
-        defaultAccountId,
-      });
-    }
+    const accountId = await resolveAccountIdForConfigure({
+      cfg,
+      prompter,
+      label: "BlueBubbles",
+      accountOverride: accountOverrides.bluebubbles,
+      shouldPromptAccountIds,
+      listAccountIds: listBlueBubblesAccountIds,
+      defaultAccountId,
+    });
 
     let next = cfg;
     const resolvedAccount = resolveBlueBubblesAccount({ cfg: next, accountId });

@@ -83,6 +83,48 @@ export function evaluateGroupRouteAccessForPolicy(params: {
   };
 }
 
+export function evaluateSenderGroupAccessForPolicy(params: {
+  groupPolicy: GroupPolicy;
+  providerMissingFallbackApplied?: boolean;
+  groupAllowFrom: string[];
+  senderId: string;
+  isSenderAllowed: (senderId: string, allowFrom: string[]) => boolean;
+}): SenderGroupAccessDecision {
+  if (params.groupPolicy === "disabled") {
+    return {
+      allowed: false,
+      groupPolicy: params.groupPolicy,
+      providerMissingFallbackApplied: Boolean(params.providerMissingFallbackApplied),
+      reason: "disabled",
+    };
+  }
+  if (params.groupPolicy === "allowlist") {
+    if (params.groupAllowFrom.length === 0) {
+      return {
+        allowed: false,
+        groupPolicy: params.groupPolicy,
+        providerMissingFallbackApplied: Boolean(params.providerMissingFallbackApplied),
+        reason: "empty_allowlist",
+      };
+    }
+    if (!params.isSenderAllowed(params.senderId, params.groupAllowFrom)) {
+      return {
+        allowed: false,
+        groupPolicy: params.groupPolicy,
+        providerMissingFallbackApplied: Boolean(params.providerMissingFallbackApplied),
+        reason: "sender_not_allowlisted",
+      };
+    }
+  }
+
+  return {
+    allowed: true,
+    groupPolicy: params.groupPolicy,
+    providerMissingFallbackApplied: Boolean(params.providerMissingFallbackApplied),
+    reason: "allowed",
+  };
+}
+
 export function evaluateSenderGroupAccess(params: {
   providerConfigPresent: boolean;
   configuredGroupPolicy?: GroupPolicy;
@@ -97,37 +139,11 @@ export function evaluateSenderGroupAccess(params: {
     defaultGroupPolicy: params.defaultGroupPolicy,
   });
 
-  if (groupPolicy === "disabled") {
-    return {
-      allowed: false,
-      groupPolicy,
-      providerMissingFallbackApplied,
-      reason: "disabled",
-    };
-  }
-  if (groupPolicy === "allowlist") {
-    if (params.groupAllowFrom.length === 0) {
-      return {
-        allowed: false,
-        groupPolicy,
-        providerMissingFallbackApplied,
-        reason: "empty_allowlist",
-      };
-    }
-    if (!params.isSenderAllowed(params.senderId, params.groupAllowFrom)) {
-      return {
-        allowed: false,
-        groupPolicy,
-        providerMissingFallbackApplied,
-        reason: "sender_not_allowlisted",
-      };
-    }
-  }
-
-  return {
-    allowed: true,
+  return evaluateSenderGroupAccessForPolicy({
     groupPolicy,
     providerMissingFallbackApplied,
-    reason: "allowed",
-  };
+    groupAllowFrom: params.groupAllowFrom,
+    senderId: params.senderId,
+    isSenderAllowed: params.isSenderAllowed,
+  });
 }

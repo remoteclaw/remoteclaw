@@ -214,6 +214,7 @@ Docs: https://docs.openclaw.ai
 - Security/Nostr: harden profile mutation/import loopback guards by failing closed on non-loopback forwarded client headers (`x-forwarded-for` / `x-real-ip`) and rejecting `sec-fetch-site: cross-site`; adds regression coverage for proxy-forwarded and browser cross-site mutation attempts.
 - Models/default provider fallback: when the hardcoded default provider is removed from `models.providers`, resolve defaults from configured providers instead of reporting stale removed-provider defaults in status output. (#38947) Thanks @davidemanuelDEV.
 - Gateway/loopback announce URLs: treat `http://` and `https://` aliases with the same loopback/private-network policy as websocket URLs so loopback cron announce delivery no longer fails secure URL validation. (#39064) Thanks @Narcooo.
+- Agents/cache-trace stability: guard stable stringify against circular references in trace payloads so near-limit payloads no longer crash with `Maximum call stack size exceeded`; adds regression coverage. (#38935) Thanks @MumuTW.
 
 ## 2026.3.2
 

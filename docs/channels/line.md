@@ -1,5 +1,5 @@
 ---
-summary: "LINE Messaging API plugin setup, config, and usage"
+description: "LINE Messaging API plugin setup, config, and usage"
 read_when:
   - You want to connect RemoteClaw to LINE
   - You need LINE webhook + credential setup

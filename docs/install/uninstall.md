@@ -1,5 +1,5 @@
 ---
-summary: "Uninstall RemoteClaw completely (CLI, service, state, workspace)"
+description: "Uninstall RemoteClaw completely (CLI, service, state, workspace)"
 read_when:
   - You want to remove RemoteClaw from a machine
   - The gateway service is still running after uninstall

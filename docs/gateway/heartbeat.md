@@ -1,5 +1,5 @@
 ---
-summary: "Heartbeat polling messages and notification rules"
+description: "Heartbeat polling messages and notification rules"
 read_when:
   - Adjusting heartbeat cadence or messaging
   - Deciding between heartbeat and cron for scheduled tasks

@@ -1,5 +1,5 @@
 ---
-summary: "Bonjour/mDNS discovery + debugging (Gateway beacons, clients, and common failure modes)"
+description: "Bonjour/mDNS discovery + debugging (Gateway beacons, clients, and common failure modes)"
 read_when:
   - Debugging Bonjour discovery issues on macOS/iOS
   - Changing mDNS service types, TXT records, or discovery UX

@@ -1,5 +1,5 @@
 ---
-summary: "Signal support via signal-cli (JSON-RPC + SSE), setup paths, and number model"
+description: "Signal support via signal-cli (JSON-RPC + SSE), setup paths, and number model"
 read_when:
   - Setting up Signal support
   - Debugging Signal send/receive

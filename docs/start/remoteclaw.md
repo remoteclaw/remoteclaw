@@ -1,5 +1,5 @@
 ---
-summary: "End-to-end guide for running RemoteClaw as a personal assistant with safety cautions"
+description: "End-to-end guide for running RemoteClaw as a personal assistant with safety cautions"
 read_when:
   - Onboarding a new assistant instance
   - Reviewing safety/permission implications

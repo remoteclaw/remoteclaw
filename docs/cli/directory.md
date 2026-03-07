@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw directory` (self, peers, groups)"
+description: "CLI reference for `remoteclaw directory` (self, peers, groups)"
 read_when:
   - You want to look up contacts/groups/self ids for a channel
   - You are developing a channel directory adapter

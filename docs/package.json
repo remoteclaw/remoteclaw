@@ -1,0 +1,15 @@
+{
+  "name": "@remoteclaw/docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "astro build",
+    "dev": "astro dev",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.37.7",
+    "astro": "^5.7.0",
+    "sharp": "^0.33.0"
+  }
+}

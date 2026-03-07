@@ -1,5 +1,5 @@
 ---
-summary: "Clawnet refactor: unify network protocol, roles, auth, approvals, identity"
+description: "Clawnet refactor: unify network protocol, roles, auth, approvals, identity"
 read_when:
   - Planning a unified network protocol for nodes + operator clients
   - Reworking approvals, pairing, TLS, and presence across devices

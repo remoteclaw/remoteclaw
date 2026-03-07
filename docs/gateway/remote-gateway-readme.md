@@ -1,5 +1,5 @@
 ---
-summary: "SSH tunnel setup for RemoteClaw.app connecting to a remote gateway"
+description: "SSH tunnel setup for RemoteClaw.app connecting to a remote gateway"
 read_when: "Connecting the macOS app to a remote gateway over SSH"
 title: "Remote Gateway Setup"
 ---

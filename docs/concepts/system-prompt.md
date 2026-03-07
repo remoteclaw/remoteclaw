@@ -1,5 +1,5 @@
 ---
-summary: "What the RemoteClaw system prompt contains and how it is assembled"
+description: "What the RemoteClaw system prompt contains and how it is assembled"
 read_when:
   - Editing system prompt text, tools list, or time/heartbeat sections
   - Changing workspace bootstrap or skills injection behavior

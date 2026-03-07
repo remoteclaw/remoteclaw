@@ -1,5 +1,5 @@
 ---
-summary: "Move (migrate) a RemoteClaw install from one machine to another"
+description: "Move (migrate) a RemoteClaw install from one machine to another"
 read_when:
   - You are moving RemoteClaw to a new laptop/server
   - You want to preserve sessions, auth, and channel logins (WhatsApp, etc.)

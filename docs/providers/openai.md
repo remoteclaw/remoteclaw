@@ -1,5 +1,5 @@
 ---
-summary: "Use OpenAI via API keys or Codex subscription in RemoteClaw"
+description: "Use OpenAI via API keys or Codex subscription in RemoteClaw"
 read_when:
   - You want to use OpenAI models in RemoteClaw
   - You want Codex subscription auth instead of API keys

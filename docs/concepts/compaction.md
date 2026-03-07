@@ -1,5 +1,5 @@
 ---
-summary: "Context window + compaction: how RemoteClaw keeps sessions under model limits"
+description: "Context window + compaction: how RemoteClaw keeps sessions under model limits"
 read_when:
   - You want to understand auto-compaction and /compact
   - You are debugging long sessions hitting context limits

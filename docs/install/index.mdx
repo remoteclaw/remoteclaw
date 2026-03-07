@@ -1,11 +1,13 @@
 ---
-summary: "Install RemoteClaw — installer script, npm/pnpm, from source, Docker, and more"
+description: "Install RemoteClaw — installer script, npm/pnpm, from source, Docker, and more"
 read_when:
   - You need an install method other than the Getting Started quickstart
   - You want to deploy to a cloud platform
   - You need to update, migrate, or uninstall
 title: "Install"
 ---
+
+import { Card, CardGrid, Steps, TabItem, Tabs } from "@astrojs/starlight/components";
 
 # Install
 
@@ -17,35 +19,36 @@ Already followed [Getting Started](/start/getting-started)? You're all set — t
 - macOS, Linux, or Windows
 - `pnpm` only if you build from source
 
-<Note>
+:::note
 On Windows, we strongly recommend running RemoteClaw under [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install).
-</Note>
+:::
 
 ## Install methods
 
-<Tip>
+:::tip
 The **installer script** is the recommended way to install RemoteClaw. It handles Node detection, installation, and onboarding in one step.
-</Tip>
+:::
 
-<Warning>
+:::caution
 For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possible. Prefer a clean base OS image (for example Ubuntu LTS), then install RemoteClaw yourself with the installer script.
-</Warning>
+:::
 
-<AccordionGroup>
-  <Accordion title="Installer script" icon="rocket" defaultOpen>
+  <details>
+<summary>Installer script</summary>
+
     Downloads the CLI, installs it globally via npm, and launches the onboarding wizard.
 
     <Tabs>
-      <Tab title="macOS / Linux / WSL2">
+      <TabItem label="macOS / Linux / WSL2">
         ```bash
         curl -fsSL https://remoteclaw.org/install.sh | bash
         ```
-      </Tab>
-      <Tab title="Windows (PowerShell)">
+      </TabItem>
+      <TabItem label="Windows (PowerShell)">
         ```powershell
         iwr -useb https://remoteclaw.org/install.ps1 | iex
         ```
-      </Tab>
+      </TabItem>
     </Tabs>
 
     That's it — the script handles Node detection, installation, and onboarding.
@@ -53,33 +56,38 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
     To skip onboarding and just install the binary:
 
     <Tabs>
-      <Tab title="macOS / Linux / WSL2">
+      <TabItem label="macOS / Linux / WSL2">
         ```bash
         curl -fsSL https://remoteclaw.org/install.sh | bash -s -- --no-onboard
         ```
-      </Tab>
-      <Tab title="Windows (PowerShell)">
+      </TabItem>
+      <TabItem label="Windows (PowerShell)">
         ```powershell
         & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -NoOnboard
         ```
-      </Tab>
+      </TabItem>
     </Tabs>
 
     For all flags, env vars, and CI/automation options, see [Installer internals](/install/installer).
 
-  </Accordion>
+</details>
 
-  <Accordion title="npm / pnpm" icon="package">
+  <details>
+<summary>npm / pnpm</summary>
+
     If you already have Node 22+ and prefer to manage the install yourself:
 
     <Tabs>
-      <Tab title="npm">
+      <TabItem label="npm">
         ```bash
         npm install -g remoteclaw@latest
         remoteclaw onboard --install-daemon
         ```
 
-        <Accordion title="sharp build errors?">
+        <details>
+
+<summary>sharp build errors?</summary>
+
           If you have libvips installed globally (common on macOS via Homebrew) and `sharp` fails, force prebuilt binaries:
 
           ```bash
@@ -87,78 +95,102 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
           ```
 
           If you see `sharp: Please add node-gyp to your dependencies`, either install build tooling (macOS: Xcode CLT + `npm install -g node-gyp`) or use the env var above.
-        </Accordion>
-      </Tab>
-      <Tab title="pnpm">
+
+
+</details>
+      </TabItem>
+      <TabItem label="pnpm">
         ```bash
         pnpm add -g remoteclaw@latest
         pnpm approve-builds -g        # approve remoteclaw, sharp, etc.
         remoteclaw onboard --install-daemon
         ```
 
-        <Note>
+        :::note
         pnpm requires explicit approval for packages with build scripts. After the first install shows the "Ignored build scripts" warning, run `pnpm approve-builds -g` and select the listed packages.
-        </Note>
-      </Tab>
-    </Tabs>
 
-  </Accordion>
 
-  <Accordion title="From source" icon="github">
+:::
+</TabItem>
+</Tabs>
+
+</details>
+
+  <details>
+<summary>From source</summary>
+
     For contributors or anyone who wants to run from a local checkout.
 
     <Steps>
-      <Step title="Clone and build">
-        Clone the [RemoteClaw repo](https://github.com/remoteclaw/remoteclaw) and build:
 
-        ```bash
-        git clone https://github.com/remoteclaw/remoteclaw.git
-        cd remoteclaw
-        pnpm install
-        pnpm ui:build
-        pnpm build
-        ```
-      </Step>
-      <Step title="Link the CLI">
-        Make the `remoteclaw` command available globally:
+1. **Clone and build**
 
-        ```bash
-        pnpm link --global
-        ```
+   Clone the [RemoteClaw repo](https://github.com/remoteclaw/remoteclaw) and build:
 
-        Alternatively, skip the link and run commands via `pnpm remoteclaw ...` from inside the repo.
-      </Step>
-      <Step title="Run onboarding">
-        ```bash
-        remoteclaw onboard --install-daemon
-        ```
-      </Step>
-    </Steps>
+   ```bash
+   git clone https://github.com/remoteclaw/remoteclaw.git
+   cd remoteclaw
+   pnpm install
+   pnpm ui:build
+   pnpm build
+   ```
+
+2. **Link the CLI**
+
+   Make the `remoteclaw` command available globally:
+
+   ```bash
+   pnpm link --global
+   ```
+
+   Alternatively, skip the link and run commands via `pnpm remoteclaw ...` from inside the repo.
+
+3. **Run onboarding**
+
+   ```bash
+   remoteclaw onboard --install-daemon
+   ```
+
+</Steps>
 
     For deeper development workflows, see [Setup](/start/setup).
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Other install methods
 
-<CardGroup cols={2}>
-  <Card title="Docker" href="/install/docker" icon="container">
-    Containerized or headless deployments.
+<CardGrid>
+  <Card title="Docker">
+
+[Docker](/install/docker) —
+Containerized or headless deployments.
+
   </Card>
-  <Card title="Podman" href="/install/podman" icon="container">
-    Rootless container: run `setup-podman.sh` once, then the launch script.
+  <Card title="Podman">
+
+[Podman](/install/podman) —
+Rootless container: run `setup-podman.sh` once, then the launch script.
+
   </Card>
-  <Card title="Nix" href="/install/nix" icon="snowflake">
-    Declarative install via Nix.
+  <Card title="Nix">
+
+[Nix](/install/nix) —
+Declarative install via Nix.
+
   </Card>
-  <Card title="Ansible" href="/install/ansible" icon="server">
-    Automated fleet provisioning.
+  <Card title="Ansible">
+
+[Ansible](/install/ansible) —
+Automated fleet provisioning.
+
   </Card>
-  <Card title="Bun" href="/install/bun" icon="zap">
-    CLI-only usage via the Bun runtime.
+  <Card title="Bun">
+
+[Bun](/install/bun) —
+CLI-only usage via the Bun runtime.
+
   </Card>
-</CardGroup>
+</CardGrid>
 
 ## After install
 
@@ -180,8 +212,10 @@ See [Environment vars](/help/environment) for precedence and full details.
 
 ## Troubleshooting: `remoteclaw` not found
 
-<Accordion title="PATH diagnosis and fix">
-  Quick diagnosis:
+<details>
+<summary>PATH diagnosis and fix</summary>
+
+Quick diagnosis:
 
 ```bash
 node -v
@@ -201,24 +235,40 @@ export PATH="$(npm prefix -g)/bin:$PATH"
 On Windows, add the output of `npm prefix -g` to your PATH.
 
 Then open a new terminal (or `rehash` in zsh / `hash -r` in bash).
-</Accordion>
+
+</details>
 
 ## Update / migrate / uninstall
 
-<CardGroup cols={3}>
-  <Card title="Updating" href="/install/updating" icon="refresh-cw">
-    Keep RemoteClaw up to date.
+<CardGrid>
+  <Card title="Updating">
+
+[Updating](/install/updating) —
+Keep RemoteClaw up to date.
+
   </Card>
-  <Card title="Migrating" href="/install/migrating" icon="arrow-right">
-    Move to a new machine.
+  <Card title="Migrating">
+
+[Migrating](/install/migrating) —
+Move to a new machine.
+
   </Card>
-  <Card title="From OpenClaw" href="/install/from-openclaw" icon="arrow-right-left">
-    Migrate an OpenClaw installation to RemoteClaw.
+  <Card title="From OpenClaw">
+
+[From OpenClaw](/install/from-openclaw) —
+Migrate an OpenClaw installation to RemoteClaw.
+
   </Card>
-  <Card title="Breaking changes" href="/install/breaking-changes-from-openclaw" icon="triangle-alert">
-    What changed from OpenClaw.
+  <Card title="Breaking changes">
+
+[Breaking changes](/install/breaking-changes-from-openclaw) —
+What changed from OpenClaw.
+
   </Card>
-  <Card title="Uninstall" href="/install/uninstall" icon="trash-2">
-    Remove RemoteClaw completely.
+  <Card title="Uninstall">
+
+[Uninstall](/install/uninstall) —
+Remove RemoteClaw completely.
+
   </Card>
-</CardGroup>
+</CardGrid>

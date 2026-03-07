@@ -1,5 +1,5 @@
 ---
-summary: "Troubleshoot node pairing, foreground requirements, permissions, and tool failures"
+description: "Troubleshoot node pairing, foreground requirements, permissions, and tool failures"
 read_when:
   - Node is connected but camera/canvas/screen/exec tools fail
   - You need the node pairing versus approvals mental model

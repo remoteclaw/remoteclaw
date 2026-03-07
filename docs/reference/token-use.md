@@ -1,5 +1,5 @@
 ---
-summary: "How RemoteClaw builds prompt context and reports token usage + costs"
+description: "How RemoteClaw builds prompt context and reports token usage + costs"
 read_when:
   - Explaining token usage, costs, or context windows
   - Debugging context growth or compaction behavior

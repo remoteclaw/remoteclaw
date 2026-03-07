@@ -1,5 +1,5 @@
 ---
-summary: "Configuration overview: common tasks, quick setup, and links to the full reference"
+description: "Configuration overview: common tasks, quick setup, and links to the full reference"
 read_when:
   - Setting up RemoteClaw for the first time
   - Looking for common configuration patterns
@@ -7,9 +7,11 @@ read_when:
 title: "Configuration"
 ---
 
+import { TabItem, Tabs } from "@astrojs/starlight/components";
+
 # Configuration
 
-RemoteClaw reads an optional <Tooltip tip="JSON5 supports comments and trailing commas">**JSON5**</Tooltip> config from `~/.remoteclaw/remoteclaw.json`.
+RemoteClaw reads an optional <abbr title="JSON5 supports comments and trailing commas">**JSON5**</abbr> config from `~/.remoteclaw/remoteclaw.json`.
 
 If the file is missing, RemoteClaw uses safe defaults. Common reasons to add a config:
 
@@ -19,9 +21,9 @@ If the file is missing, RemoteClaw uses safe defaults. Common reasons to add a c
 
 See the [full reference](/gateway/configuration-reference) for every available field.
 
-<Tip>
+:::tip
 **New to configuration?** Start with `remoteclaw onboard` for interactive setup, or check out the [Configuration Examples](/gateway/configuration-examples) guide for complete copy-paste configs.
-</Tip>
+:::
 
 ## Minimal config
 
@@ -36,33 +38,28 @@ See the [full reference](/gateway/configuration-reference) for every available f
 ## Editing config
 
 <Tabs>
-  <Tab title="Interactive wizard">
-    ```bash
-    remoteclaw onboard       # full setup wizard
-    remoteclaw configure     # config wizard
-    ```
-  </Tab>
-  <Tab title="CLI (one-liners)">
-    ```bash
-    remoteclaw config get agents.defaults.workspace
-    remoteclaw config set agents.defaults.heartbeat.every "2h"
-    remoteclaw config unset tools.web.search.apiKey
-    ```
-  </Tab>
-  <Tab title="Control UI">
-    Open [http://127.0.0.1:18789](http://127.0.0.1:18789) and use the **Config** tab.
-    The Control UI renders a form from the config schema, with a **Raw JSON** editor as an escape hatch.
-  </Tab>
-  <Tab title="Direct edit">
-    Edit `~/.remoteclaw/remoteclaw.json` directly. The Gateway watches the file and applies changes automatically (see [hot reload](#config-hot-reload)).
-  </Tab>
+  <TabItem label="Interactive wizard">
+    ```bash remoteclaw onboard # full setup wizard remoteclaw configure # config wizard ```
+  </TabItem>
+  <TabItem label="CLI (one-liners)">
+    ```bash remoteclaw config get agents.defaults.workspace remoteclaw config set
+    agents.defaults.heartbeat.every "2h" remoteclaw config unset tools.web.search.apiKey ```
+  </TabItem>
+  <TabItem label="Control UI">
+    Open [http://127.0.0.1:18789](http://127.0.0.1:18789) and use the **Config** tab. The Control UI
+    renders a form from the config schema, with a **Raw JSON** editor as an escape hatch.
+  </TabItem>
+  <TabItem label="Direct edit">
+    Edit `~/.remoteclaw/remoteclaw.json` directly. The Gateway watches the file and applies changes
+    automatically (see [hot reload](#config-hot-reload)).
+  </TabItem>
 </Tabs>
 
 ## Strict validation
 
-<Warning>
+:::caution
 RemoteClaw only accepts configurations that fully match the schema. Unknown keys, malformed types, or invalid values cause the Gateway to **refuse to start**. The only root-level exception is `$schema` (string), so editors can attach JSON Schema metadata.
-</Warning>
+:::
 
 When validation fails:
 
@@ -73,8 +70,9 @@ When validation fails:
 
 ## Common tasks
 
-<AccordionGroup>
-  <Accordion title="Set up a channel (WhatsApp, Telegram, Discord, etc.)">
+  <details>
+<summary>Set up a channel (WhatsApp, Telegram, Discord, etc.)</summary>
+
     Each channel has its own config section under `channels.<provider>`. See the dedicated channel page for setup steps:
 
     - [WhatsApp](/channels/whatsapp) — `channels.whatsapp`
@@ -102,9 +100,11 @@ When validation fails:
     }
     ```
 
-  </Accordion>
+</details>
 
-  <Accordion title="Choose and configure models">
+  <details>
+<summary>Choose and configure models</summary>
+
     Set the primary model and optional fallbacks:
 
     ```json5
@@ -130,9 +130,11 @@ When validation fails:
     - See [Model providers](/concepts/model-providers) for switching models in chat and [Model Failover](/concepts/model-failover) for auth rotation and fallback behavior.
     - For custom/self-hosted providers, see [Custom providers](/gateway/configuration-reference#custom-providers-and-base-urls) in the reference.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Control who can message the bot">
+  <details>
+<summary>Control who can message the bot</summary>
+
     DM access is controlled per channel via `dmPolicy`:
 
     - `"pairing"` (default): unknown senders get a one-time pairing code to approve
@@ -144,9 +146,11 @@ When validation fails:
 
     See the [full reference](/gateway/configuration-reference#dm-and-group-access) for per-channel details.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Set up group chat mention gating">
+  <details>
+<summary>Set up group chat mention gating</summary>
+
     Group messages default to **require mention**. Configure patterns per agent:
 
     ```json5
@@ -173,9 +177,11 @@ When validation fails:
     - **Text patterns**: regex patterns in `mentionPatterns`
     - See [full reference](/gateway/configuration-reference#group-chat-mention-gating) for per-channel overrides and self-chat mode.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Configure sessions and resets">
+  <details>
+<summary>Configure sessions and resets</summary>
+
     Sessions control conversation continuity and isolation:
 
     ```json5
@@ -200,9 +206,11 @@ When validation fails:
     - See [Session Management](/concepts/session) for scoping, identity links, and send policy.
     - See [full reference](/gateway/configuration-reference#session) for all fields.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Enable sandboxing">
+  <details>
+<summary>Enable sandboxing</summary>
+
     Run agent sessions in isolated Docker containers:
 
     ```json5
@@ -222,9 +230,11 @@ When validation fails:
 
     See [full reference](/gateway/configuration-reference#sandbox) for all options.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Set up heartbeat (periodic check-ins)">
+  <details>
+<summary>Set up heartbeat (periodic check-ins)</summary>
+
     ```json5
     {
       agents: {
@@ -242,9 +252,11 @@ When validation fails:
     - `target`: `last` | `whatsapp` | `telegram` | `discord` | `none` (DM-style `user:<id>` heartbeat delivery is blocked)
     - See [Heartbeat](/gateway/heartbeat) for the full guide.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Configure cron jobs">
+  <details>
+<summary>Configure cron jobs</summary>
+
     ```json5
     {
       cron: {
@@ -263,9 +275,11 @@ When validation fails:
     - `runLog`: prune `cron/runs/<jobId>.jsonl` by size and retained lines.
     - See [Cron jobs](/automation/cron-jobs) for feature overview and CLI examples.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Set up webhooks (hooks)">
+  <details>
+<summary>Set up webhooks (hooks)</summary>
+
     Enable HTTP webhook endpoints on the Gateway:
 
     ```json5
@@ -291,9 +305,11 @@ When validation fails:
 
     See [full reference](/gateway/configuration-reference#hooks) for all mapping options and Gmail integration.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Configure multi-agent routing">
+  <details>
+<summary>Configure multi-agent routing</summary>
+
     Run multiple isolated agents with separate workspaces and sessions:
 
     ```json5
@@ -313,9 +329,11 @@ When validation fails:
 
     See [Multi-Agent](/concepts/multi-agent) and [full reference](/gateway/configuration-reference#multi-agent-routing) for binding rules and per-agent access profiles.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Split config into multiple files ($include)">
+  <details>
+<summary>Split config into multiple files ($include)</summary>
+
     Use `$include` to organize large configs:
 
     ```json5
@@ -336,8 +354,7 @@ When validation fails:
     - **Relative paths**: resolved relative to the including file
     - **Error handling**: clear errors for missing files, parse errors, and circular includes
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Config hot reload
 
@@ -375,23 +392,25 @@ Most fields hot-apply without downtime. In `hybrid` mode, restart-required chang
 | Gateway server      | `gateway.*` (port, bind, auth, tailscale, TLS, HTTP)                 | **Yes**         |
 | Infrastructure      | `discovery`, `canvasHost`, `plugins`                                 | **Yes**         |
 
-<Note>
+:::note
 `gateway.reload` and `gateway.remote` are exceptions — changing them does **not** trigger a restart.
-</Note>
+:::
 
 ## Config RPC (programmatic updates)
 
-<Note>
+:::note
 Control-plane write RPCs (`config.apply`, `config.patch`, `update.run`) are rate-limited to **3 requests per 60 seconds** per `deviceId+clientIp`. When limited, the RPC returns `UNAVAILABLE` with `retryAfterMs`.
-</Note>
+:::
 
-<AccordionGroup>
-  <Accordion title="config.apply (full replace)">
+  <details>
+<summary>config.apply (full replace)</summary>
+
     Validates + writes the full config and restarts the Gateway in one step.
 
-    <Warning>
+    :::caution
     `config.apply` replaces the **entire config**. Use `config.patch` for partial updates, or `remoteclaw config set` for single keys.
-    </Warning>
+
+:::
 
     Params:
 
@@ -412,9 +431,11 @@ Control-plane write RPCs (`config.apply`, `config.patch`, `update.run`) are rate
     }'
     ```
 
-  </Accordion>
+</details>
 
-  <Accordion title="config.patch (partial update)">
+  <details>
+<summary>config.patch (partial update)</summary>
+
     Merges a partial update into the existing config (JSON merge patch semantics):
 
     - Objects merge recursively
@@ -436,8 +457,7 @@ Control-plane write RPCs (`config.apply`, `config.patch`, `update.run`) are rate
     }'
     ```
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Environment variables
 
@@ -457,8 +477,10 @@ Neither file overrides existing env vars. You can also set inline env vars in co
 }
 ```
 
-<Accordion title="Shell env import (optional)">
-  If enabled and expected keys aren't set, RemoteClaw runs your login shell and imports only the missing keys:
+<details>
+<summary>Shell env import (optional)</summary>
+
+If enabled and expected keys aren't set, RemoteClaw runs your login shell and imports only the missing keys:
 
 ```json5
 {
@@ -469,10 +491,13 @@ Neither file overrides existing env vars. You can also set inline env vars in co
 ```
 
 Env var equivalent: `REMOTECLAW_LOAD_SHELL_ENV=1`
-</Accordion>
 
-<Accordion title="Env var substitution in config values">
-  Reference env vars in any config string value with `${VAR_NAME}`:
+</details>
+
+<details>
+<summary>Env var substitution in config values</summary>
+
+Reference env vars in any config string value with `${VAR_NAME}`:
 
 ```json5
 {
@@ -489,7 +514,7 @@ Rules:
 - Works inside `$include` files
 - Inline substitution: `"${BASE}/v1"` → `"https://api.example.com/v1"`
 
-</Accordion>
+</details>
 
 See [Environment](/help/environment) for full precedence and sources.
 

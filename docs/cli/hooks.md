@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw hooks` (agent hooks)"
+description: "CLI reference for `remoteclaw hooks` (agent hooks)"
 read_when:
   - You want to manage agent hooks
   - You want to install or update hooks

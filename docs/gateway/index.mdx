@@ -1,63 +1,67 @@
 ---
-summary: "Runbook for the Gateway service, lifecycle, and operations"
+description: "Runbook for the Gateway service, lifecycle, and operations"
 read_when:
   - Running or debugging the gateway process
 title: "Gateway Runbook"
 ---
 
+import { Card, CardGrid, Steps, TabItem, Tabs } from "@astrojs/starlight/components";
+
 # Gateway runbook
 
 Use this page for day-1 startup and day-2 operations of the Gateway service.
 
-<CardGroup cols={2}>
-  <Card title="Deep troubleshooting" icon="siren" href="/gateway/troubleshooting">
-    Symptom-first diagnostics with exact command ladders and log signatures.
+<CardGrid>
+  <Card title="Deep troubleshooting">
+
+[Deep troubleshooting](/gateway/troubleshooting) —
+Symptom-first diagnostics with exact command ladders and log signatures.
+
   </Card>
-  <Card title="Configuration" icon="sliders" href="/gateway/configuration">
-    Task-oriented setup guide + full configuration reference.
+  <Card title="Configuration">
+
+[Configuration](/gateway/configuration) —
+Task-oriented setup guide + full configuration reference.
+
   </Card>
-</CardGroup>
+</CardGrid>
 
 ## 5-minute local startup
 
 <Steps>
-  <Step title="Start the Gateway">
 
-```bash
-remoteclaw gateway --port 18789
-# debug/trace mirrored to stdio
-remoteclaw gateway --port 18789 --verbose
-# force-kill listener on selected port, then start
-remoteclaw gateway --force
-```
+1. **Start the Gateway**
 
-  </Step>
+   ```bash
+   remoteclaw gateway --port 18789
+   # debug/trace mirrored to stdio
+   remoteclaw gateway --port 18789 --verbose
+   # force-kill listener on selected port, then start
+   remoteclaw gateway --force
+   ```
 
-  <Step title="Verify service health">
+2. **Verify service health**
 
-```bash
-remoteclaw gateway status
-remoteclaw status
-remoteclaw logs --follow
-```
+   ```bash
+   remoteclaw gateway status
+   remoteclaw status
+   remoteclaw logs --follow
+   ```
 
-Healthy baseline: `Runtime: running` and `RPC probe: ok`.
+   Healthy baseline: `Runtime: running` and `RPC probe: ok`.
 
-  </Step>
+3. **Validate channel readiness**
 
-  <Step title="Validate channel readiness">
+   ```bash
+   remoteclaw channels status --probe
+   ```
 
-```bash
-remoteclaw channels status --probe
-```
-
-  </Step>
 </Steps>
 
-<Note>
+:::note
 Gateway config reload watches the active config file path (resolved from profile/state defaults, or `REMOTECLAW_CONFIG_PATH` when set).
 Default mode is `gateway.reload.mode="hybrid"`.
-</Note>
+:::
 
 ## Runtime model
 
@@ -109,9 +113,9 @@ ssh -N -L 18789:127.0.0.1:18789 user@host
 
 Then connect clients to `ws://127.0.0.1:18789` locally.
 
-<Warning>
+:::caution
 If gateway auth is configured, clients still must send auth (`token`/`password`) even over SSH tunnels.
-</Warning>
+:::
 
 See: [Remote Gateway](/gateway/remote), [Authentication](/gateway/authentication), [Tailscale](/gateway/tailscale).
 
@@ -120,7 +124,7 @@ See: [Remote Gateway](/gateway/remote), [Authentication](/gateway/authentication
 Use supervised runs for production-like reliability.
 
 <Tabs>
-  <Tab title="macOS (launchd)">
+  <TabItem label="macOS (launchd)">
 
 ```bash
 remoteclaw gateway install
@@ -131,9 +135,9 @@ remoteclaw gateway stop
 
 LaunchAgent labels are `ai.remoteclaw.gateway` (default) or `ai.remoteclaw.<profile>` (named profile). `remoteclaw doctor` audits and repairs service config drift.
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="Linux (systemd user)">
+  <TabItem label="Linux (systemd user)">
 
 ```bash
 remoteclaw gateway install
@@ -147,9 +151,9 @@ For persistence after logout, enable lingering:
 sudo loginctl enable-linger <user>
 ```
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="Linux (system service)">
+  <TabItem label="Linux (system service)">
 
 Use a system unit for multi-user/always-on hosts.
 
@@ -158,7 +162,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now remoteclaw-gateway[-<profile>].service
 ```
 
-  </Tab>
+  </TabItem>
 </Tabs>
 
 ## Multiple gateways on one host

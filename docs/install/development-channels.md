@@ -1,5 +1,5 @@
 ---
-summary: "Stable, beta, and dev channels: semantics, switching, and tagging"
+description: "Stable, beta, and dev channels: semantics, switching, and tagging"
 read_when:
   - You want to switch between stable/beta/dev
   - You are tagging or publishing prereleases

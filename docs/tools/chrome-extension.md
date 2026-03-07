@@ -1,5 +1,5 @@
 ---
-summary: "Chrome extension: let RemoteClaw drive your existing Chrome tab"
+description: "Chrome extension: let RemoteClaw drive your existing Chrome tab"
 read_when:
   - You want the agent to drive an existing Chrome tab (toolbar button)
   - You need remote Gateway + local browser automation via Tailscale

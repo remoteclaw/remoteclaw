@@ -1,5 +1,5 @@
 ---
-summary: "Schema-accurate configuration examples for common RemoteClaw setups"
+description: "Schema-accurate configuration examples for common RemoteClaw setups"
 read_when:
   - Learning how to configure RemoteClaw
   - Looking for configuration examples

@@ -1,5 +1,5 @@
 ---
-summary: "Loopback WebChat static host and Gateway WS usage for chat UI"
+description: "Loopback WebChat static host and Gateway WS usage for chat UI"
 read_when:
   - Debugging or configuring WebChat access
 title: "WebChat"

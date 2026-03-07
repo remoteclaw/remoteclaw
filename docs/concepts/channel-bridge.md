@@ -1,3 +1,7 @@
+---
+title: "ChannelBridge"
+---
+
 # ChannelBridge
 
 The ChannelBridge is the central orchestrator of RemoteClaw's middleware

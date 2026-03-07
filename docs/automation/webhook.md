@@ -1,5 +1,5 @@
 ---
-summary: "Webhook ingress for wake and isolated agent runs"
+description: "Webhook ingress for wake and isolated agent runs"
 read_when:
   - Adding or changing webhook endpoints
   - Wiring external systems into RemoteClaw

@@ -1,5 +1,5 @@
 ---
-summary: "Synology Chat webhook setup and RemoteClaw config"
+description: "Synology Chat webhook setup and RemoteClaw config"
 read_when:
   - Setting up Synology Chat with RemoteClaw
   - Debugging Synology Chat webhook routing

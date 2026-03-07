@@ -1,5 +1,5 @@
 ---
-summary: "Agent-controlled Canvas panel embedded via WKWebView + custom URL scheme"
+description: "Agent-controlled Canvas panel embedded via WKWebView + custom URL scheme"
 read_when:
   - Implementing the macOS Canvas panel
   - Adding agent controls for visual workspace

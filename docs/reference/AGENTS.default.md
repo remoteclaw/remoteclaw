@@ -1,6 +1,6 @@
 ---
 title: "Default AGENTS.md"
-summary: "Default RemoteClaw agent instructions and skills roster for the personal assistant setup"
+description: "Default RemoteClaw agent instructions and skills roster for the personal assistant setup"
 read_when:
   - Starting a new RemoteClaw agent session
   - Enabling or auditing default skills

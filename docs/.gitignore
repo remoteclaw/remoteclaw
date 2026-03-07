@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.astro/
+.tmp/
+
+# Override root gitignore: docs needs its lockfile for CI
+!package-lock.json

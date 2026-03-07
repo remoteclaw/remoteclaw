@@ -1,5 +1,5 @@
 ---
-summary: "Browser-based control UI for the Gateway (chat, nodes, config)"
+description: "Browser-based control UI for the Gateway (chat, nodes, config)"
 read_when:
   - You want to operate the Gateway from a browser
   - You want Tailnet access without SSH tunnels

@@ -1,5 +1,5 @@
 ---
-summary: "Optional Docker-based setup and onboarding for RemoteClaw"
+description: "Optional Docker-based setup and onboarding for RemoteClaw"
 read_when:
   - You want a containerized gateway instead of local installs
   - You are validating the Docker flow

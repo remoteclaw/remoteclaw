@@ -1,5 +1,5 @@
 ---
-summary: "Use Anthropic Claude via API keys or setup-token in RemoteClaw"
+description: "Use Anthropic Claude via API keys or setup-token in RemoteClaw"
 read_when:
   - You want to use Anthropic models in RemoteClaw
   - You want setup-token instead of API keys

@@ -1,5 +1,5 @@
 ---
-summary: "Use Qianfan's unified API to access many models in RemoteClaw"
+description: "Use Qianfan's unified API to access many models in RemoteClaw"
 read_when:
   - You want a single API key for many LLMs
   - You need Baidu Qianfan setup guidance

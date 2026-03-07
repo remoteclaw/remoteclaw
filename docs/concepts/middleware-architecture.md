@@ -1,3 +1,7 @@
+---
+title: "Middleware Architecture"
+---
+
 # Middleware Architecture
 
 RemoteClaw is **middleware**, not an AI runtime. It connects CLI-based AI

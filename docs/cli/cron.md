@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw cron` (schedule and run background jobs)"
+description: "CLI reference for `remoteclaw cron` (schedule and run background jobs)"
 read_when:
   - You want scheduled jobs and wakeups
   - You’re debugging cron execution and logs

@@ -1,6 +1,6 @@
 ---
 title: "Release Checklist"
-summary: "Step-by-step release checklist for npm + macOS app"
+description: "Step-by-step release checklist for npm + macOS app"
 read_when:
   - Cutting a new npm release
   - Cutting a new macOS app release

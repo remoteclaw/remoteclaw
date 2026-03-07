@@ -1,5 +1,5 @@
 ---
-summary: "CLI backends: text-only fallback via local AI CLIs"
+description: "CLI backends: text-only fallback via local AI CLIs"
 read_when:
   - You want a reliable fallback when API providers fail
   - You are running Claude Code CLI or other local AI CLIs and want to reuse them

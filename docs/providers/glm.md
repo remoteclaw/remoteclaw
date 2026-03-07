@@ -1,5 +1,5 @@
 ---
-summary: "GLM model family overview + how to use it in RemoteClaw"
+description: "GLM model family overview + how to use it in RemoteClaw"
 read_when:
   - You want GLM models in RemoteClaw
   - You need the model naming convention and setup

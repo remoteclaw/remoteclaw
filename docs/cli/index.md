@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw CLI reference for `remoteclaw` commands, subcommands, and options"
+description: "RemoteClaw CLI reference for `remoteclaw` commands, subcommands, and options"
 read_when:
   - Adding or modifying CLI commands or options
   - Documenting new command surfaces

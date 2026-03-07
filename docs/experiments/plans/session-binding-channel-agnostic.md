@@ -1,5 +1,5 @@
 ---
-summary: "Channel agnostic session binding architecture and iteration 1 delivery scope"
+description: "Channel agnostic session binding architecture and iteration 1 delivery scope"
 read_when:
   - Refactoring channel-agnostic session routing and bindings
   - Investigating duplicate, stale, or missing session delivery across channels

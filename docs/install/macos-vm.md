@@ -1,5 +1,5 @@
 ---
-summary: "Run RemoteClaw in a sandboxed macOS VM (local or hosted) when you need isolation or iMessage"
+description: "Run RemoteClaw in a sandboxed macOS VM (local or hosted) when you need isolation or iMessage"
 read_when:
   - You want RemoteClaw isolated from your main macOS environment
   - You want iMessage integration (BlueBubbles) in a sandbox

@@ -1,5 +1,5 @@
 ---
-summary: "Use Venice AI privacy-focused models in RemoteClaw"
+description: "Use Venice AI privacy-focused models in RemoteClaw"
 read_when:
   - You want privacy-focused inference in RemoteClaw
   - You want Venice AI setup guidance

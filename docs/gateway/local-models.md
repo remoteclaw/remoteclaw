@@ -1,5 +1,5 @@
 ---
-summary: "Run RemoteClaw on local LLMs (LM Studio, vLLM, LiteLLM, custom OpenAI endpoints)"
+description: "Run RemoteClaw on local LLMs (LM Studio, vLLM, LiteLLM, custom OpenAI endpoints)"
 read_when:
   - You want to serve models from your own GPU box
   - You are wiring LM Studio or an OpenAI-compatible proxy

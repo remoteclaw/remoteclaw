@@ -1,5 +1,5 @@
 ---
-summary: "Agent tool surface for RemoteClaw (browser, canvas, nodes, message, cron) replacing legacy `remoteclaw-*` skills"
+description: "Agent tool surface for RemoteClaw (browser, canvas, nodes, message, cron) replacing legacy `remoteclaw-*` skills"
 read_when:
   - Adding or modifying agent tools
   - Retiring or changing `remoteclaw-*` skills

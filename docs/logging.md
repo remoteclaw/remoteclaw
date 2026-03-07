@@ -1,5 +1,5 @@
 ---
-summary: "Logging overview: file logs, console output, CLI tailing, and the Control UI"
+description: "Logging overview: file logs, console output, CLI tailing, and the Control UI"
 read_when:
   - You need a beginner-friendly overview of logging
   - You want to configure log levels or formats

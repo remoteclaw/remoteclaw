@@ -1,5 +1,5 @@
 ---
-summary: "Telegram Bot API integration via grammY with setup notes"
+description: "Telegram Bot API integration via grammY with setup notes"
 read_when:
   - Working on Telegram or grammY pathways
 title: grammY

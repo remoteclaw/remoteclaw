@@ -1,5 +1,5 @@
 ---
-summary: "Frequently asked questions about RemoteClaw setup, configuration, and usage"
+description: "Frequently asked questions about RemoteClaw setup, configuration, and usage"
 read_when:
   - Answering common setup, install, onboarding, or runtime support questions
   - Triaging user-reported issues before deeper debugging

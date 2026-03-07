@@ -1,5 +1,5 @@
 ---
-summary: "What OpenClaw users lose and gain when switching to RemoteClaw"
+description: "What OpenClaw users lose and gain when switching to RemoteClaw"
 read_when:
   - You are switching from OpenClaw to RemoteClaw
   - You want to know what features were removed or replaced

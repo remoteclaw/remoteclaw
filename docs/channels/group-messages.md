@@ -1,5 +1,5 @@
 ---
-summary: "Behavior and config for WhatsApp group message handling (mentionPatterns are shared across surfaces)"
+description: "Behavior and config for WhatsApp group message handling (mentionPatterns are shared across surfaces)"
 read_when:
   - Changing group message rules or mentions
 title: "Group Messages"

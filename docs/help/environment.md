@@ -1,5 +1,5 @@
 ---
-summary: "Where RemoteClaw loads environment variables and the precedence order"
+description: "Where RemoteClaw loads environment variables and the precedence order"
 read_when:
   - You need to know which env vars are loaded, and in what order
   - You are debugging missing API keys in the Gateway

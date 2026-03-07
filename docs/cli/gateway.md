@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw Gateway CLI (`remoteclaw gateway`) — run, query, and discover gateways"
+description: "RemoteClaw Gateway CLI (`remoteclaw gateway`) — run, query, and discover gateways"
 read_when:
   - Running the Gateway from the CLI (dev or servers)
   - Debugging Gateway auth, bind modes, and connectivity

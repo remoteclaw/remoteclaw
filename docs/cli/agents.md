@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw agents` (list/add/delete/set identity)"
+description: "CLI reference for `remoteclaw agents` (list/add/delete/set identity)"
 read_when:
   - You want multiple isolated agents (workspaces + routing + auth)
 title: "agents"

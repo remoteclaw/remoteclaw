@@ -1,14 +1,14 @@
 ---
-summary: "Curated links to the most used RemoteClaw docs."
+description: "Curated links to the most used RemoteClaw docs."
 read_when:
   - You want quick access to key docs pages
 title: "Docs directory"
 ---
 
-<Note>
+:::note
 This page is a curated index. If you are new, start with [Getting Started](/start/getting-started).
 For a complete map of the docs, see [Docs hubs](/start/hubs).
-</Note>
+:::
 
 ## Start here
 

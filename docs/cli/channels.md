@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw channels` (accounts, status, login/logout, logs)"
+description: "CLI reference for `remoteclaw channels` (accounts, status, login/logout, logs)"
 read_when:
   - You want to add/remove channel accounts (WhatsApp/Telegram/Discord/Google Chat/Slack/Mattermost (plugin)/Signal/iMessage)
   - You want to check channel status or tail channel logs

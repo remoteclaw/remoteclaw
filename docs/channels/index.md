@@ -1,5 +1,5 @@
 ---
-summary: "Messaging platforms RemoteClaw can connect to"
+description: "Messaging platforms RemoteClaw can connect to"
 read_when:
   - You want to choose a chat channel for RemoteClaw
   - You need a quick overview of supported messaging platforms

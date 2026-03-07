@@ -1,5 +1,5 @@
 ---
-summary: "Run RemoteClaw Gateway on exe.dev (VM + HTTPS proxy) for remote access"
+description: "Run RemoteClaw Gateway on exe.dev (VM + HTTPS proxy) for remote access"
 read_when:
   - You want a cheap always-on Linux host for the Gateway
   - You want remote Control UI access without running your own VPS

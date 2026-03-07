@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw macOS companion app (menu bar + gateway broker)"
+description: "RemoteClaw macOS companion app (menu bar + gateway broker)"
 read_when:
   - Implementing macOS app features
   - Changing gateway lifecycle or node bridging on macOS

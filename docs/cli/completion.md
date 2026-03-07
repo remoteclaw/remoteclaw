@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw completion` (generate/install shell completion scripts)"
+description: "CLI reference for `remoteclaw completion` (generate/install shell completion scripts)"
 read_when:
   - You want shell completions for zsh/bash/fish/PowerShell
   - You need to cache completion scripts under RemoteClaw state

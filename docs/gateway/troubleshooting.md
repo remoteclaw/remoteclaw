@@ -1,5 +1,5 @@
 ---
-summary: "Deep troubleshooting runbook for gateway, channels, automation, nodes, and browser"
+description: "Deep troubleshooting runbook for gateway, channels, automation, nodes, and browser"
 read_when:
   - The troubleshooting hub pointed you here for deeper diagnosis
   - You need stable symptom based runbook sections with exact commands

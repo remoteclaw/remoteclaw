@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw agent` (send one agent turn via the Gateway)"
+description: "CLI reference for `remoteclaw agent` (send one agent turn via the Gateway)"
 read_when:
   - You want to run one agent turn from scripts (optionally deliver reply)
 title: "agent"

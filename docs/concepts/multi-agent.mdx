@@ -1,9 +1,11 @@
 ---
-summary: "Multi-agent routing: isolated agents, channel accounts, and bindings"
+description: "Multi-agent routing: isolated agents, channel accounts, and bindings"
 title: Multi-Agent Routing
 read_when: "You want multiple isolated agents (workspaces + auth) in one gateway process."
 status: active
 ---
+
+import { Steps } from "@astrojs/starlight/components";
 
 # Multi-Agent Routing
 
@@ -73,50 +75,43 @@ remoteclaw agents list --bindings
 ## Quick start
 
 <Steps>
-  <Step title="Create each agent workspace">
 
-Use the wizard or create workspaces manually:
+1. **Create each agent workspace**
 
-```bash
-remoteclaw agents add coding
-remoteclaw agents add social
-```
+   Use the wizard or create workspaces manually:
 
-Each agent gets its own workspace, plus a dedicated `agentDir` and session store under `~/.remoteclaw/agents/<agentId>`.
+   ```bash
+   remoteclaw agents add coding
+   remoteclaw agents add social
+   ```
 
-  </Step>
+   Each agent gets its own workspace, plus a dedicated `agentDir` and session store under `~/.remoteclaw/agents/<agentId>`.
 
-  <Step title="Create channel accounts">
+2. **Create channel accounts**
 
-Create one account per agent on your preferred channels:
+   Create one account per agent on your preferred channels:
+   - Discord: one bot per agent, enable Message Content Intent, copy each token.
+   - Telegram: one bot per agent via BotFather, copy each token.
+   - WhatsApp: link each phone number per account.
 
-- Discord: one bot per agent, enable Message Content Intent, copy each token.
-- Telegram: one bot per agent via BotFather, copy each token.
-- WhatsApp: link each phone number per account.
+   ```bash
+   remoteclaw channels login --channel whatsapp --account work
+   ```
 
-```bash
-remoteclaw channels login --channel whatsapp --account work
-```
+   See channel guides: [Discord](/channels/discord), [Telegram](/channels/telegram), [WhatsApp](/channels/whatsapp).
 
-See channel guides: [Discord](/channels/discord), [Telegram](/channels/telegram), [WhatsApp](/channels/whatsapp).
+3. **Add agents, accounts, and bindings**
 
-  </Step>
+   Add agents under `agents.list`, channel accounts under `channels.<channel>.accounts`, and connect them with `bindings` (examples below).
 
-  <Step title="Add agents, accounts, and bindings">
+4. **Restart and verify**
 
-Add agents under `agents.list`, channel accounts under `channels.<channel>.accounts`, and connect them with `bindings` (examples below).
+   ```bash
+   remoteclaw gateway restart
+   remoteclaw agents list --bindings
+   remoteclaw channels status --probe
+   ```
 
-  </Step>
-
-  <Step title="Restart and verify">
-
-```bash
-remoteclaw gateway restart
-remoteclaw agents list --bindings
-remoteclaw channels status --probe
-```
-
-  </Step>
 </Steps>
 
 ## Multiple agents = multiple people, multiple personalities

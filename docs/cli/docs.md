@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw docs` (search the live docs index)"
+description: "CLI reference for `remoteclaw docs` (search the live docs index)"
 read_when:
   - You want to search the live RemoteClaw docs from the terminal
 title: "docs"

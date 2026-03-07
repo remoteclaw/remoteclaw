@@ -1,5 +1,5 @@
 ---
-summary: "Broadcast a WhatsApp message to multiple agents"
+description: "Broadcast a WhatsApp message to multiple agents"
 read_when:
   - Configuring broadcast groups
   - Debugging multi-agent replies in WhatsApp

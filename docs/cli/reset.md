@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw reset` (reset local state/config)"
+description: "CLI reference for `remoteclaw reset` (reset local state/config)"
 read_when:
   - You want to wipe local state while keeping the CLI installed
   - You want a dry-run of what would be removed

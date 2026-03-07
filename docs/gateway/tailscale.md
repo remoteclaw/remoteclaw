@@ -1,5 +1,5 @@
 ---
-summary: "Integrated Tailscale Serve/Funnel for the Gateway dashboard"
+description: "Integrated Tailscale Serve/Funnel for the Gateway dashboard"
 read_when:
   - Exposing the Gateway Control UI outside localhost
   - Automating tailnet or public dashboard access

@@ -1,5 +1,5 @@
 ---
-summary: "Platform support overview (Gateway + companion apps)"
+description: "Platform support overview (Gateway + companion apps)"
 read_when:
   - Looking for OS support or install paths
   - Deciding where to run the Gateway

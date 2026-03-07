@@ -1,3 +1,7 @@
+---
+title: "Contributing to the Threat Model"
+---
+
 # Contributing to the RemoteClaw Threat Model
 
 Thanks for helping make RemoteClaw more secure. This threat model is a living document and we welcome contributions from anyone - you don't need to be a security expert.

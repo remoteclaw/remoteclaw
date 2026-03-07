@@ -1,3 +1,7 @@
+---
+title: "Configuration Reference"
+---
+
 # Configuration Reference
 
 RemoteClaw is configured via a JSON5 file at `~/.remoteclaw/remoteclaw.json`.

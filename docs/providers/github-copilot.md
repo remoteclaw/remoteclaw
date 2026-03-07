@@ -1,5 +1,5 @@
 ---
-summary: "Sign in to GitHub Copilot from RemoteClaw using the device flow"
+description: "Sign in to GitHub Copilot from RemoteClaw using the device flow"
 read_when:
   - You want to use GitHub Copilot as a model provider
   - You need the `remoteclaw models auth login-github-copilot` flow

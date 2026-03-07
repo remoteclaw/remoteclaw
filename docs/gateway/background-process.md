@@ -1,5 +1,5 @@
 ---
-summary: "Background exec execution and process management"
+description: "Background exec execution and process management"
 read_when:
   - Adding or modifying background exec behavior
   - Debugging long-running exec tasks

@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw daemon` (legacy alias for gateway service management)"
+description: "CLI reference for `remoteclaw daemon` (legacy alias for gateway service management)"
 read_when:
   - You still use `remoteclaw daemon ...` in scripts
   - You need service lifecycle commands (install/start/stop/restart/status)

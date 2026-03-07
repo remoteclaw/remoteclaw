@@ -1,5 +1,5 @@
 ---
-summary: "Use Z.AI (GLM models) with RemoteClaw"
+description: "Use Z.AI (GLM models) with RemoteClaw"
 read_when:
   - You want Z.AI / GLM models in RemoteClaw
   - You need a simple ZAI_API_KEY setup

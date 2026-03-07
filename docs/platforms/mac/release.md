@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw macOS release checklist (Sparkle feed, packaging, signing)"
+description: "RemoteClaw macOS release checklist (Sparkle feed, packaging, signing)"
 read_when:
   - Cutting or validating a RemoteClaw macOS release
   - Updating the Sparkle appcast or feed assets

@@ -1,5 +1,5 @@
 ---
-summary: "Timezone handling for agents, envelopes, and prompts"
+description: "Timezone handling for agents, envelopes, and prompts"
 read_when:
   - You need to understand how timestamps are normalized for the model
   - Configuring the user timezone for system prompts

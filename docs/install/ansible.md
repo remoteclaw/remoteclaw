@@ -1,5 +1,5 @@
 ---
-summary: "Automated, hardened RemoteClaw installation with Ansible, Tailscale VPN, and firewall isolation"
+description: "Automated, hardened RemoteClaw installation with Ansible, Tailscale VPN, and firewall isolation"
 read_when:
   - You want automated server deployment with security hardening
   - You need firewall-isolated setup with VPN access

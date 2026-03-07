@@ -1,5 +1,5 @@
 ---
-summary: "Agent runtime, workspace contract, and session bootstrap"
+description: "Agent runtime, workspace contract, and session bootstrap"
 read_when:
   - Changing agent runtime, workspace bootstrap, or session behavior
 title: "Agent Runtime"

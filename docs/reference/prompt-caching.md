@@ -1,6 +1,6 @@
 ---
 title: "Prompt Caching"
-summary: "Prompt caching knobs, merge order, provider behavior, and tuning patterns"
+description: "Prompt caching knobs, merge order, provider behavior, and tuning patterns"
 read_when:
   - You want to reduce prompt token costs with cache retention
   - You need per-agent cache behavior in multi-agent setups

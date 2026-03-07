@@ -1,5 +1,5 @@
 ---
-summary: "Run RemoteClaw in a rootless Podman container"
+description: "Run RemoteClaw in a rootless Podman container"
 read_when:
   - You want a containerized gateway with Podman instead of Docker
 title: "Podman"

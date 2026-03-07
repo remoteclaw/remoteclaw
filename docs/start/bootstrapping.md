@@ -1,11 +1,13 @@
 ---
-summary: "Agent bootstrapping ritual that seeds the workspace and identity files"
+description: "Agent bootstrapping ritual that seeds the workspace and identity files"
 read_when:
   - Understanding what happens on the first agent run
   - Explaining where bootstrapping files live
   - Debugging onboarding identity setup
 title: "Agent Bootstrapping"
-sidebarTitle: "Bootstrapping"
+
+sidebar:
+  label: "Bootstrapping"
 ---
 
 # Agent Bootstrapping
@@ -27,10 +29,10 @@ Bootstrapping always runs on the **gateway host**. If the macOS app connects to
 a remote Gateway, the workspace and bootstrapping files live on that remote
 machine.
 
-<Note>
+:::note
 When the Gateway runs on another machine, edit workspace files on the gateway
 host (for example, `user@gateway-host:~/.remoteclaw/workspace`).
-</Note>
+:::
 
 ## Related docs
 

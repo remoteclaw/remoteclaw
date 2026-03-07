@@ -1,5 +1,5 @@
 ---
-summary: "Complete reference for all 50 MCP tools across 8 handler groups"
+description: "Complete reference for all 50 MCP tools across 8 handler groups"
 read_when:
   - Implementing or debugging MCP tool calls
   - Understanding which tools are available to agents

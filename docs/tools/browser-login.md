@@ -1,5 +1,5 @@
 ---
-summary: "Manual logins for browser automation + X/Twitter posting"
+description: "Manual logins for browser automation + X/Twitter posting"
 read_when:
   - You need to log into sites for browser automation
   - You want to post updates to X/Twitter

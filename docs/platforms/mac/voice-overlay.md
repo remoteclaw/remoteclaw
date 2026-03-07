@@ -1,5 +1,5 @@
 ---
-summary: "Voice overlay lifecycle when wake-word and push-to-talk overlap"
+description: "Voice overlay lifecycle when wake-word and push-to-talk overlap"
 read_when:
   - Adjusting voice overlay behavior
 title: "Voice Overlay"

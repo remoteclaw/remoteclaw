@@ -73,12 +73,20 @@ function findVoice(voices: ElevenLabsVoice[], query: string): ElevenLabsVoice | 
   return partial ?? null;
 }
 
+function resolveCommandLabel(channel: string): string {
+  return channel === "discord" ? "/talkvoice" : "/voice";
+}
+
 export default function register(api: RemoteClawPluginApi) {
   api.registerCommand({
     name: "voice",
+    nativeNames: {
+      discord: "talkvoice",
+    },
     description: "List/set ElevenLabs Talk voice (affects iOS Talk playback).",
     acceptsArgs: true,
     handler: async (ctx) => {
+      const commandLabel = resolveCommandLabel(ctx.channel);
       const args = ctx.args?.trim() ?? "";
       const tokens = args.split(/\s+/).filter(Boolean);
       const action = (tokens[0] ?? "status").toLowerCase();
@@ -116,13 +124,13 @@ export default function register(api: RemoteClawPluginApi) {
       if (action === "set") {
         const query = tokens.slice(1).join(" ").trim();
         if (!query) {
-          return { text: "Usage: /voice set <voiceId|name>" };
+          return { text: `Usage: ${commandLabel} set <voiceId|name>` };
         }
         const voices = await listVoices(apiKey);
         const chosen = findVoice(voices, query);
         if (!chosen) {
           const hint = isLikelyVoiceId(query) ? query : `"${query}"`;
-          return { text: `No voice found for ${hint}. Try: /voice list` };
+          return { text: `No voice found for ${hint}. Try: ${commandLabel} list` };
         }
 
         const nextConfig = {
@@ -142,9 +150,9 @@ export default function register(api: RemoteClawPluginApi) {
         text: [
           "Voice commands:",
           "",
-          "/voice status",
-          "/voice list [limit]",
-          "/voice set <voiceId|name>",
+          `${commandLabel} status`,
+          `${commandLabel} list [limit]`,
+          `${commandLabel} set <voiceId|name>`,
         ].join("\n"),
       };
     },

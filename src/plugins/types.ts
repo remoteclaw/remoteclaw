@@ -187,6 +187,12 @@ export type PluginCommandHandler = (
 export type RemoteClawPluginCommandDefinition = {
   /** Command name without leading slash (e.g., "tts") */
   name: string;
+  /**
+   * Optional native-command aliases for slash/menu surfaces.
+   * `default` applies to all native providers unless a provider-specific
+   * override exists (for example `{ default: "talkvoice", discord: "voice2" }`).
+   */
+  nativeNames?: Partial<Record<string, string>> & { default?: string };
   /** Description shown in /help and command menus */
   description: string;
   /** Whether this command accepts arguments */

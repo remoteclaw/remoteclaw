@@ -8,6 +8,7 @@ import {
   deleteAccountFromConfigSection,
   formatAllowFromLowercase,
   formatPairingApproveHint,
+  mapAllowFromEntries,
   normalizeAccountId,
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
@@ -106,9 +107,9 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
       baseUrl: account.baseUrl ? "[set]" : "[missing]",
     }),
     resolveAllowFrom: ({ cfg, accountId }) =>
-      (
-        resolveNextcloudTalkAccount({ cfg: cfg as CoreConfig, accountId }).config.allowFrom ?? []
-      ).map((entry) => String(entry).toLowerCase()),
+      mapAllowFromEntries(
+        resolveNextcloudTalkAccount({ cfg: cfg as CoreConfig, accountId }).config.allowFrom,
+      ).map((entry) => entry.toLowerCase()),
     formatAllowFrom: ({ allowFrom }) =>
       formatAllowFromLowercase({
         allowFrom,

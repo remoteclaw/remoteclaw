@@ -227,6 +227,7 @@ export function makeCfg(home: string): RemoteClawConfig {
   return {
     agents: {
       defaults: {
+        runtime: "claude",
         model: { primary: "anthropic/claude-opus-4-5" },
         // Test harness: avoid 1s coalescer idle sleeps that dominate trigger suites.
         blockStreamingCoalesce: { idleMs: 1 },

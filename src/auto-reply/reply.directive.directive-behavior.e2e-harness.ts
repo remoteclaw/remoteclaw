@@ -75,6 +75,7 @@ export function makeWhatsAppDirectiveConfig(
   return {
     agents: {
       defaults: {
+        runtime: "claude" as const,
         ...defaults,
       },
       list: [{ id: "main", workspace: path.join(home, "remoteclaw") }],

@@ -133,6 +133,7 @@ function mockConfig(
   configSpy.mockReturnValue({
     agents: {
       defaults: {
+        runtime: "claude",
         model: { primary: "anthropic/claude-opus-4-5" },
         models: { "anthropic/claude-opus-4-5": {} },
         ...agentOverrides,
@@ -340,8 +341,8 @@ describe("agentCommand", () => {
 
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
 
-      // ChannelBridge receives the CLI runtime from agents.defaults.runtime
-      // (falling back to "claude"), NOT the model API provider.
+      // ChannelBridge receives the CLI runtime from agents.defaults.runtime,
+      // NOT the model API provider.
       expect(bridgeConstructorCalls.at(-1)?.provider).toBe("claude");
     });
   });

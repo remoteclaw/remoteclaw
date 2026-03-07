@@ -114,6 +114,7 @@ function createReplyConfig(home: string, streamMode?: "block"): RemoteClawConfig
   return {
     agents: {
       defaults: {
+        runtime: "claude",
         model: { primary: "anthropic/claude-opus-4-5" },
       },
       list: [{ id: "main", workspace: path.join(home, "remoteclaw") }],

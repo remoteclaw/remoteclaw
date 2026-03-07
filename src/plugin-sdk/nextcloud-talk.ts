@@ -47,6 +47,7 @@ export type {
 } from "../config/types.js";
 export type { SecretInput } from "../config/types.secrets.js";
 export { normalizeSecretInputString } from "../config/types.secrets.js";
+export { buildSecretInputSchema } from "./secret-input-schema.js";
 export { ToolPolicySchema } from "../config/zod-schema.agent-runtime.js";
 export {
   BlockStreamingCoalesceSchema,

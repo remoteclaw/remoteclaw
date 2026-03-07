@@ -10,6 +10,7 @@ import {
   collectBlueBubblesStatusIssues,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
+  formatNormalizedAllowFromEntries,
   formatPairingApproveHint,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
@@ -113,11 +114,10 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
         String(entry),
       ),
     formatAllowFrom: ({ allowFrom }) =>
-      allowFrom
-        .map((entry) => String(entry).trim())
-        .filter(Boolean)
-        .map((entry) => entry.replace(/^bluebubbles:/i, ""))
-        .map((entry) => normalizeBlueBubblesHandle(entry)),
+      formatNormalizedAllowFromEntries({
+        allowFrom,
+        normalizeEntry: (entry) => normalizeBlueBubblesHandle(entry.replace(/^bluebubbles:/i, "")),
+      }),
   },
   actions: bluebubblesMessageActions,
   security: {

@@ -4,6 +4,7 @@ import {
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
+  formatNormalizedAllowFromEntries,
   formatPairingApproveHint,
   getChatChannelMeta,
   PAIRING_APPROVED_MESSAGE,
@@ -115,7 +116,10 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
         (entry) => String(entry),
       ),
     formatAllowFrom: ({ allowFrom }) =>
-      allowFrom.map((entry) => normalizeIrcAllowEntry(String(entry))).filter(Boolean),
+      formatNormalizedAllowFromEntries({
+        allowFrom,
+        normalizeEntry: normalizeIrcAllowEntry,
+      }),
     resolveDefaultTo: ({ cfg, accountId }) =>
       resolveIrcAccount({ cfg: cfg as CoreConfig, accountId }).config.defaultTo?.trim() ||
       undefined,

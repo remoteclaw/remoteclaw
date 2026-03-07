@@ -5,6 +5,7 @@ import {
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   extractSlackToolSend,
+  formatAllowFromLowercase,
   formatPairingApproveHint,
   getChatChannelMeta,
   handleSlackMessageAction,
@@ -159,11 +160,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
     }),
     resolveAllowFrom: ({ cfg, accountId }) =>
       (resolveSlackAccount({ cfg, accountId }).dm?.allowFrom ?? []).map((entry) => String(entry)),
-    formatAllowFrom: ({ allowFrom }) =>
-      allowFrom
-        .map((entry) => String(entry).trim())
-        .filter(Boolean)
-        .map((entry) => entry.toLowerCase()),
+    formatAllowFrom: ({ allowFrom }) => formatAllowFromLowercase({ allowFrom }),
     resolveDefaultTo: ({ cfg, accountId }) =>
       resolveSlackAccount({ cfg, accountId }).config.defaultTo?.trim() || undefined,
   },

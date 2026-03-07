@@ -1304,7 +1304,7 @@ See [Multi-Agent Routing](/concepts/multi-agent) for precedence details.
 ```json5
 {
   messages: {
-    responsePrefix: "🦞", // or "auto"
+    responsePrefix: "🦀", // or "auto"
     ackReaction: "👀",
     ackReactionScope: "group-mentions", // group-mentions | group-all | direct | all
     removeAckAfterReply: false,

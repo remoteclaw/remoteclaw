@@ -153,7 +153,7 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "docs.remoteclaw.org/cli/
 ${theme.heading("Examples:")}
 ${formatHelpExamples([
   [
-    'remoteclaw agents set-identity --agent main --name "RemoteClaw" --emoji "🦞"',
+    'remoteclaw agents set-identity --agent main --name "RemoteClaw" --emoji "🦀"',
     "Set name + emoji.",
   ],
   [

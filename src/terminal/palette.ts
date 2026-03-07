@@ -1,7 +1,7 @@
-// Lobster palette tokens for CLI/UI theming. "lobster seam" == use this palette.
+// RemoteClaw brand palette tokens for CLI/UI theming.
 // Keep in sync with docs/cli/index.md (CLI palette section).
-export const LOBSTER_PALETTE = {
-  accent: "#FF5A2D",
+export const PALETTE = {
+  accent: "#FF5A36",
   accentBright: "#FF7A3D",
   accentDim: "#D14A22",
   info: "#FF8A5B",

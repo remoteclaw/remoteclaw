@@ -179,7 +179,7 @@ describe("web processMessage inbound contract", () => {
                 id: "main",
                 default: true,
                 workspace: "/tmp/test-workspace",
-                identity: { name: "Mainbot", emoji: "🦞", theme: "space lobster" },
+                identity: { name: "Mainbot", emoji: "🦀", theme: "space crab" },
               },
             ],
           },

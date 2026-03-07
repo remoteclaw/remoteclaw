@@ -238,32 +238,23 @@ async function requireRiskAcknowledgement(params: {
 
   await params.prompter.note(
     [
-      "Security warning — please read.",
+      "Security notice",
       "",
-      "RemoteClaw is a hobby project and still in beta. Expect sharp edges.",
-      "This bot can read files and run actions if tools are enabled.",
-      "A bad prompt can trick it into doing unsafe things.",
+      "RemoteClaw connects AI agent CLIs to messaging channels.",
+      "Agents can read messages, run tools, and take actions on your behalf.",
       "",
-      "If you’re not comfortable with basic security and access control, don’t run RemoteClaw.",
-      "Ask someone experienced to help before enabling tools or exposing it to the internet.",
-      "",
-      "Recommended baseline:",
-      "- Pairing/allowlists + mention gating.",
-      "- Sandbox + least-privilege tools.",
+      "Before exposing to the internet:",
+      "- Configure allowlists to control who can interact.",
+      "- Enable mention gating for group channels.",
       "- Keep secrets out of the agent’s reachable filesystem.",
-      "- Use the strongest available model for any bot with tools or untrusted inboxes.",
       "",
-      "Run regularly:",
-      "remoteclaw security audit --deep",
-      "remoteclaw security audit --fix",
-      "",
-      "Must read: https://docs.remoteclaw.org/gateway/security",
+      "Docs: https://docs.remoteclaw.org/gateway/security",
     ].join("\n"),
     "Security",
   );
 
   const ok = await params.prompter.confirm({
-    message: "I understand this is powerful and inherently risky. Continue?",
+    message: "I understand the security implications. Continue?",
     initialValue: false,
   });
   if (!ok) {

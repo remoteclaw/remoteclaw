@@ -51,8 +51,8 @@ describe("agents set-identity command", () => {
       {
         agent: "main",
         name: "RemoteClaw",
-        emoji: "🦞",
-        theme: "space lobster",
+        emoji: "🦀",
+        theme: "space crab",
         avatar: "avatars/remoteclaw.png",
       },
       runtime,
@@ -61,8 +61,8 @@ describe("agents set-identity command", () => {
     expect(configMocks.writeConfigFile).toHaveBeenCalledTimes(1);
     expect(getWrittenMainIdentity()).toEqual({
       name: "RemoteClaw",
-      theme: "space lobster",
-      emoji: "🦞",
+      theme: "space crab",
+      emoji: "🦀",
       avatar: "avatars/remoteclaw.png",
     });
   });

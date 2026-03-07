@@ -58,7 +58,7 @@ describe("isCronSystemEvent", () => {
 
   it("returns false for heartbeat ack markers", () => {
     expect(isCronSystemEvent("HEARTBEAT_OK")).toBe(false);
-    expect(isCronSystemEvent("HEARTBEAT_OK 🦞")).toBe(false);
+    expect(isCronSystemEvent("HEARTBEAT_OK 🦀")).toBe(false);
     expect(isCronSystemEvent("heartbeat_ok")).toBe(false);
     expect(isCronSystemEvent("HEARTBEAT_OK:")).toBe(false);
     expect(isCronSystemEvent("HEARTBEAT_OK, continue")).toBe(false);

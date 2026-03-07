@@ -340,7 +340,6 @@ export default defineConfig({
             {
               label: "Built-in tools",
               items: [
-                { slug: "tools/lobster" },
                 { slug: "tools/llm-task" },
                 { slug: "tools/exec" },
                 { slug: "tools/web" },

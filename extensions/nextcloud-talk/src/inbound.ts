@@ -4,6 +4,7 @@ import {
   createNormalizedOutboundDeliverer,
   createReplyPrefixOptions,
   formatTextWithAttachmentLinks,
+  issuePairingChallenge,
   logInboundDrop,
   readStoreAllowFromForDmPolicy,
   resolveDmGroupAccessWithCommandGate,
@@ -177,26 +178,20 @@ export async function handleNextcloudTalkInbound(params: {
   } else {
     if (access.decision !== "allow") {
       if (access.decision === "pairing") {
-        const { code, created } = await pairing.upsertPairingRequest({
-          id: senderId,
+        await issuePairingChallenge({
+          channel: CHANNEL_ID,
+          senderId,
+          senderIdLine: `Your Nextcloud user id: ${senderId}`,
           meta: { name: senderName || undefined },
-        });
-        if (created) {
-          try {
-            await sendMessageNextcloudTalk(
-              roomToken,
-              core.channel.pairing.buildPairingReply({
-                channel: CHANNEL_ID,
-                idLine: `Your Nextcloud user id: ${senderId}`,
-                code,
-              }),
-              { accountId: account.accountId },
-            );
+          upsertPairingRequest: pairing.upsertPairingRequest,
+          sendPairingReply: async (text) => {
+            await sendMessageNextcloudTalk(roomToken, text, { accountId: account.accountId });
             statusSink?.({ lastOutboundAt: Date.now() });
-          } catch (err) {
+          },
+          onReplyError: (err) => {
             runtime.error?.(`nextcloud-talk: pairing reply failed for ${senderId}: ${String(err)}`);
-          }
-        }
+          },
+        });
       }
       runtime.log?.(`nextcloud-talk: drop DM sender ${senderId} (reason=${access.reason})`);
       return;

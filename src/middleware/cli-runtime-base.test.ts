@@ -444,6 +444,51 @@ describe("CLIRuntimeBase", () => {
       );
     });
 
+    it("appends extraArgs after buildArgs output", async () => {
+      const runtime = new TestRuntime("my-cli");
+
+      const promise = collectEvents(
+        runtime.execute({ ...defaultParams, extraArgs: ["--extra-flag", "--another"] }),
+      );
+
+      mockChild.stdout.end();
+      mockChild.emit("exit", 0, null);
+
+      await promise;
+
+      expect(spawnMock).toHaveBeenCalledWith(
+        "my-cli",
+        ["--test", "--extra-flag", "--another"],
+        expect.any(Object),
+      );
+    });
+
+    it("does not modify args when extraArgs is undefined", async () => {
+      const runtime = new TestRuntime("my-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      mockChild.stdout.end();
+      mockChild.emit("exit", 0, null);
+
+      await promise;
+
+      expect(spawnMock).toHaveBeenCalledWith("my-cli", ["--test"], expect.any(Object));
+    });
+
+    it("does not modify args when extraArgs is empty", async () => {
+      const runtime = new TestRuntime("my-cli");
+
+      const promise = collectEvents(runtime.execute({ ...defaultParams, extraArgs: [] }));
+
+      mockChild.stdout.end();
+      mockChild.emit("exit", 0, null);
+
+      await promise;
+
+      expect(spawnMock).toHaveBeenCalledWith("my-cli", ["--test"], expect.any(Object));
+    });
+
     it("merges buildEnv and params.env into spawn environment", async () => {
       const runtime = new TestRuntime("my-cli");
 

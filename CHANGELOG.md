@@ -203,6 +203,7 @@ Docs: https://docs.openclaw.ai
 - Feishu/reply delivery reliability: disable block streaming in Feishu reply options so plain-text auto-render replies are no longer silently dropped before final delivery. (#38258) Thanks @xinhuagu.
 - Agents/reply MEDIA delivery: normalize local assistant `MEDIA:` paths before block/final delivery, keep media dedupe aligned with message-tool sends, and contain malformed media normalization failures so generated files send reliably instead of falling back to empty responses. (#38572) Thanks @obviyus.
 - Markdown/assistant image hardening: flatten remote markdown images to plain text across the Control UI, exported HTML, and shared Swift chat while keeping inline `data:image/...` markdown renderable, so model output no longer triggers automatic remote image fetches. (#38895) Thanks @obviyus.
+- Models/auth token prompts: guard cancelled manual token prompts so `Symbol(clack:cancel)` values cannot be persisted into auth profiles; adds regression coverage for cancelled `models auth paste-token`. (#38951) Thanks @MumuTW.
 
 ## 2026.3.2
 

@@ -6,6 +6,7 @@ import {
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   formatPairingApproveHint,
+  mapAllowFromEntries,
   normalizeAccountId,
   PAIRING_APPROVED_MESSAGE,
   resolveAllowlistProviderRuntimeGroupPolicy,
@@ -152,7 +153,7 @@ export const matrixPlugin: ChannelPlugin<ResolvedMatrixAccount> = {
     }),
     resolveAllowFrom: ({ cfg, accountId }) => {
       const matrixConfig = resolveMatrixAccountConfig({ cfg: cfg as CoreConfig, accountId });
-      return (matrixConfig.dm?.allowFrom ?? []).map((entry: string | number) => String(entry));
+      return mapAllowFromEntries(matrixConfig.dm?.allowFrom);
     },
     formatAllowFrom: ({ allowFrom }) => normalizeMatrixAllowList(allowFrom),
   },

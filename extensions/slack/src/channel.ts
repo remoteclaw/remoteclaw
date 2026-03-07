@@ -14,6 +14,7 @@ import {
   listSlackDirectoryGroupsFromConfig,
   listSlackDirectoryPeersFromConfig,
   looksLikeSlackTargetId,
+  mapAllowFromEntries,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   normalizeSlackMessagingTarget,
@@ -23,6 +24,7 @@ import {
   resolveSlackReplyToMode,
   resolveOpenProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
+  resolveOptionalConfigString,
   resolveSlackGroupRequireMention,
   resolveSlackGroupToolPolicy,
   buildSlackThreadingToolContext,
@@ -159,10 +161,10 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
       appTokenSource: account.appTokenSource,
     }),
     resolveAllowFrom: ({ cfg, accountId }) =>
-      (resolveSlackAccount({ cfg, accountId }).dm?.allowFrom ?? []).map((entry) => String(entry)),
+      mapAllowFromEntries(resolveSlackAccount({ cfg, accountId }).dm?.allowFrom),
     formatAllowFrom: ({ allowFrom }) => formatAllowFromLowercase({ allowFrom }),
     resolveDefaultTo: ({ cfg, accountId }) =>
-      resolveSlackAccount({ cfg, accountId }).config.defaultTo?.trim() || undefined,
+      resolveOptionalConfigString(resolveSlackAccount({ cfg, accountId }).config.defaultTo),
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {

@@ -13,6 +13,7 @@ import {
   resolveAgentModelPrimary,
   resolveRunModelFallbacksOverride,
   resolveAgentWorkspaceDir,
+  resolveAgentWorkspaceDirOrNull,
 } from "./agent-scope.js";
 
 afterEach(() => {
@@ -423,6 +424,20 @@ describe("resolveAgentConfig", () => {
       },
     };
     const workspace = resolveAgentWorkspaceDir(cfg, "main");
+    expect(workspace).toContain("my-workspace");
+  });
+
+  it("resolveAgentWorkspaceDirOrNull returns null when no workspace is configured", () => {
+    expect(resolveAgentWorkspaceDirOrNull({} as RemoteClawConfig, "main")).toBeNull();
+  });
+
+  it("resolveAgentWorkspaceDirOrNull returns workspace when configured", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main", workspace: "~/my-workspace" }],
+      },
+    };
+    const workspace = resolveAgentWorkspaceDirOrNull(cfg, "main");
     expect(workspace).toContain("my-workspace");
   });
 

@@ -257,6 +257,18 @@ export function resolveAgentWorkspaceDir(cfg: RemoteClawConfig, agentId: string)
   );
 }
 
+export function resolveAgentWorkspaceDirOrNull(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): string | null {
+  const id = normalizeAgentId(agentId);
+  const configured = resolveAgentConfig(cfg, id)?.workspace?.trim();
+  if (configured) {
+    return stripNullBytes(resolveUserPath(configured));
+  }
+  return null;
+}
+
 export function resolveAgentDir(cfg: RemoteClawConfig, agentId: string) {
   const id = normalizeAgentId(agentId);
   const configured = resolveAgentConfig(cfg, id)?.agentDir?.trim();

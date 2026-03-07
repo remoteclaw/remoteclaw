@@ -5,6 +5,7 @@ import type {
   WizardPrompter,
 } from "remoteclaw/plugin-sdk";
 import {
+  buildSingleChannelSecretPromptState,
   DEFAULT_ACCOUNT_ID,
   mergeAllowFromEntries,
   normalizeAccountId,
@@ -235,10 +236,16 @@ export const zaloOnboardingAdapter: ChannelOnboardingAdapter = {
     const resolvedAccount = resolveZaloAccount({ cfg: next, accountId: zaloAccountId });
     const accountConfigured = Boolean(resolvedAccount.token);
     const allowEnv = zaloAccountId === DEFAULT_ACCOUNT_ID;
-    const canUseEnv = allowEnv && Boolean(process.env.ZALO_BOT_TOKEN?.trim());
     const hasConfigToken = Boolean(
       resolvedAccount.config.botToken || resolvedAccount.config.tokenFile,
     );
+    const tokenPromptState = buildSingleChannelSecretPromptState({
+      accountConfigured,
+      hasConfigToken,
+      allowEnv,
+      envValue: process.env.ZALO_BOT_TOKEN,
+    });
+    const canUseEnv = tokenPromptState.canUseEnv;
 
     let token: string | null = null;
     if (!accountConfigured) {

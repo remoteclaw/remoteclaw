@@ -17,6 +17,7 @@ import type { WizardPrompter } from "../../../wizard/prompts.js";
 import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../onboarding-types.js";
 import { configureChannelAccessWithAllowlist } from "./channel-access-configure.js";
 import {
+  buildSingleChannelSecretPromptState,
   parseMentionOrPrefixedId,
   noteChannelLookupFailure,
   noteChannelLookupSummary,

@@ -6,6 +6,7 @@ import type {
   WizardPrompter,
 } from "remoteclaw/plugin-sdk";
 import {
+  buildSingleChannelSecretPromptState,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
   setTopLevelChannelAllowFrom,

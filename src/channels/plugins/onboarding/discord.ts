@@ -18,6 +18,7 @@ import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../onb
 import { configureChannelAccessWithAllowlist } from "./channel-access-configure.js";
 import {
   applySingleTokenPromptResult,
+  buildSingleChannelSecretPromptState,
   parseMentionOrPrefixedId,
   noteChannelLookupFailure,
   noteChannelLookupSummary,
@@ -174,21 +175,23 @@ export const discordOnboardingAdapter: ChannelOnboardingAdapter = {
       cfg: next,
       accountId: discordAccountId,
     });
-    const accountConfigured = Boolean(resolvedAccount.token);
     const allowEnv = discordAccountId === DEFAULT_ACCOUNT_ID;
-    const canUseEnv =
-      allowEnv && !resolvedAccount.config.token && Boolean(process.env.DISCORD_BOT_TOKEN?.trim());
-    const hasConfigToken = Boolean(resolvedAccount.config.token);
+    const tokenPromptState = buildSingleChannelSecretPromptState({
+      accountConfigured: Boolean(resolvedAccount.token),
+      hasConfigToken: Boolean(resolvedAccount.config.token),
+      allowEnv,
+      envValue: process.env.DISCORD_BOT_TOKEN,
+    });
 
-    if (!accountConfigured) {
+    if (!tokenPromptState.accountConfigured) {
       await noteDiscordTokenHelp(prompter);
     }
 
     const tokenResult = await promptSingleChannelToken({
       prompter,
-      accountConfigured,
-      canUseEnv,
-      hasConfigToken,
+      accountConfigured: tokenPromptState.accountConfigured,
+      canUseEnv: tokenPromptState.canUseEnv,
+      hasConfigToken: tokenPromptState.hasConfigToken,
       envPrompt: "DISCORD_BOT_TOKEN detected. Use env var?",
       keepPrompt: "Discord token already configured. Keep it?",
       inputPrompt: "Enter Discord bot token",

@@ -108,7 +108,6 @@ Current npm plugin list (update as needed):
 - @remoteclaw/diagnostics-otel
 - @remoteclaw/discord
 - @remoteclaw/feishu
-- @remoteclaw/lobster
 - @remoteclaw/matrix
 - @remoteclaw/msteams
 - @remoteclaw/nextcloud-talk

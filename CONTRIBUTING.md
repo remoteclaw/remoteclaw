@@ -56,6 +56,64 @@ We are currently prioritizing:
 
 Check the [GitHub Issues](https://github.com/remoteclaw/remoteclaw/issues) for "good first issue" labels!
 
+## Creating a Release
+
+Releases are created manually via `gh release create`. Creating a release triggers the npm publish workflow.
+
+### Stable Release
+
+```bash
+# 1. Ensure package.json version is updated and merged to main
+# 2. Create the release (creates the tag AND triggers publish)
+gh release create v2026.3.7 \
+  --title "RemoteClaw v2026.3.7" \
+  --generate-notes \
+  --latest
+```
+
+To scope release notes from a specific prior tag:
+
+```bash
+gh release create v2026.3.7 \
+  --title "RemoteClaw v2026.3.7" \
+  --generate-notes \
+  --notes-start-tag v2026.2.26 \
+  --latest
+```
+
+### Prerelease
+
+```bash
+gh release create v2026.3.7-beta.1 \
+  --title "RemoteClaw v2026.3.7-beta.1" \
+  --generate-notes \
+  --prerelease
+```
+
+### Release Body
+
+After creation, edit the release to include an install section:
+
+````markdown
+## Install
+
+```bash
+npm install -g remoteclaw@2026.3.7
+```
+````
+
+### Release Notes Categorization
+
+PR labels are used to categorize auto-generated release notes (configured in `.github/release.yml`):
+
+| Label             | Category         |
+| ----------------- | ---------------- |
+| `breaking-change` | Breaking Changes |
+| `enhancement`     | New Features     |
+| `bug`             | Bug Fixes        |
+| `documentation`   | Documentation    |
+| _(other)_         | Other Changes    |
+
 ## Report a Vulnerability
 
 We take security reports seriously. See [`SECURITY.md`](SECURITY.md) for full reporting instructions.

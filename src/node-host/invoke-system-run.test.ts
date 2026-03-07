@@ -428,8 +428,8 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   // Tests for env -S shell payloads, semicolon-chained shell payloads, wrapper spoofs,
-  // skill-bin denial, PowerShell encoded commands, and nested env depth in allowlist mode
-  // are not applicable: the fork gutted exec-approvals infrastructure
-  // (evaluateSystemRunPolicy, analyzeArgvCommand are stubs).
+  // skill-bin denial, PowerShell encoded commands, dispatch-wrapper boundary drift, and
+  // nested env depth in allowlist mode are not applicable: the fork gutted exec-approvals
+  // infrastructure (evaluateSystemRunPolicy, analyzeArgvCommand are stubs).
   // Upstream tests exercised the real allowlist/policy pipeline.
 });

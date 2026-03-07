@@ -898,6 +898,7 @@ export function renderApp(state: AppViewState) {
                 messages: state.chatMessages,
                 toolMessages: state.chatToolMessages,
                 thinkingStream: showThinking ? state.chatThinkingStream : null,
+                streamSegments: state.chatStreamSegments,
                 stream: state.chatStream,
                 streamStartedAt: state.chatStreamStartedAt,
                 draft: state.chatMessage,

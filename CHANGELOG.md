@@ -218,6 +218,7 @@ Docs: https://docs.openclaw.ai
 - Agents/cache-trace stability: guard stable stringify against circular references in trace payloads so near-limit payloads no longer crash with `Maximum call stack size exceeded`; adds regression coverage. (#38935) Thanks @MumuTW.
 - Agents/OpenAI WS compat store flag: omit `store` from `response.create` payloads when model compat sets `supportsStore: false`, preventing strict OpenAI-compatible providers from rejecting websocket requests with unknown-field errors. (#39113) Thanks @scoootscooob.
 - CLI/bootstrap Node version hint maintenance: replace hardcoded nvm `22` instructions in `remoteclaw.mjs` with `MIN_NODE_MAJOR` interpolation so future minimum-Node bumps keep startup guidance in sync automatically. (#39056) Thanks @onstash.
+- UI/Control chat tool streaming: render tool events live in webchat without requiring refresh by enabling `tool-events` capability, fixing stream/event correlation, and resetting/reloading stream state around tool results and terminal events. (#39104) Thanks @jakepresent.
 
 ## 2026.3.2
 

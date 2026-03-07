@@ -125,6 +125,7 @@ export function createRemoteClawTools(options?: {
       agentGroupSpace: options?.agentGroupSpace,
       sandboxed: options?.sandboxed,
       requesterAgentIdOverride: options?.requesterAgentIdOverride,
+      workspaceDir,
     }),
     createSubagentsTool({
       agentSessionKey: options?.agentSessionKey,

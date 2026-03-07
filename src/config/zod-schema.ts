@@ -331,6 +331,12 @@ export const RemoteClawSchema = z
     media: z
       .object({
         preserveFilenames: z.boolean().optional(),
+        ttlHours: z
+          .number()
+          .int()
+          .min(1)
+          .max(24 * 7)
+          .optional(),
       })
       .strict()
       .optional(),

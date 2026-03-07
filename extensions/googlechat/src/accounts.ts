@@ -1,9 +1,5 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
-import {
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  normalizeOptionalAccountId,
-} from "remoteclaw/plugin-sdk/account-id";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/googlechat";
 import type { GoogleChatAccountConfig } from "./types.config.js";
 
 export type GoogleChatCredentialSource = "file" | "inline" | "env" | "none";
@@ -21,37 +17,11 @@ export type ResolvedGoogleChatAccount = {
 const ENV_SERVICE_ACCOUNT = "GOOGLE_CHAT_SERVICE_ACCOUNT";
 const ENV_SERVICE_ACCOUNT_FILE = "GOOGLE_CHAT_SERVICE_ACCOUNT_FILE";
 
-function listConfiguredAccountIds(cfg: RemoteClawConfig): string[] {
-  const accounts = cfg.channels?.["googlechat"]?.accounts;
-  if (!accounts || typeof accounts !== "object") {
-    return [];
-  }
-  return Object.keys(accounts).filter(Boolean);
-}
-
-export function listGoogleChatAccountIds(cfg: RemoteClawConfig): string[] {
-  const ids = listConfiguredAccountIds(cfg);
-  if (ids.length === 0) {
-    return [DEFAULT_ACCOUNT_ID];
-  }
-  return ids.toSorted((a, b) => a.localeCompare(b));
-}
-
-export function resolveDefaultGoogleChatAccountId(cfg: RemoteClawConfig): string {
-  const channel = cfg.channels?.["googlechat"];
-  const preferred = normalizeOptionalAccountId(channel?.defaultAccount);
-  if (
-    preferred &&
-    listGoogleChatAccountIds(cfg).some((accountId) => normalizeAccountId(accountId) === preferred)
-  ) {
-    return preferred;
-  }
-  const ids = listGoogleChatAccountIds(cfg);
-  if (ids.includes(DEFAULT_ACCOUNT_ID)) {
-    return DEFAULT_ACCOUNT_ID;
-  }
-  return ids[0] ?? DEFAULT_ACCOUNT_ID;
-}
+const {
+  listAccountIds: listGoogleChatAccountIds,
+  resolveDefaultAccountId: resolveDefaultGoogleChatAccountId,
+} = createAccountListHelpers("googlechat");
+export { listGoogleChatAccountIds, resolveDefaultGoogleChatAccountId };
 
 function resolveAccountConfig(
   cfg: RemoteClawConfig,

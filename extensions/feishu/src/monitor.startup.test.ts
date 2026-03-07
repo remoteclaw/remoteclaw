@@ -3,6 +3,26 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { monitorFeishuProvider, stopFeishuMonitor } from "./monitor.js";
 
 const probeFeishuMock = vi.hoisted(() => vi.fn());
+const feishuClientMockModule = vi.hoisted(() => ({
+  createFeishuWSClient: vi.fn(() => ({ start: vi.fn() })),
+  createEventDispatcher: vi.fn(() => ({ register: vi.fn() })),
+}));
+const feishuRuntimeMockModule = vi.hoisted(() => ({
+  getFeishuRuntime: () => ({
+    channel: {
+      debounce: {
+        resolveInboundDebounceMs: () => 0,
+        createInboundDebouncer: () => ({
+          enqueue: async () => {},
+          flushKey: async () => {},
+        }),
+      },
+      text: {
+        hasControlCommand: () => false,
+      },
+    },
+  }),
+}));
 
 vi.mock("./probe.js", () => ({
   probeFeishu: probeFeishuMock,

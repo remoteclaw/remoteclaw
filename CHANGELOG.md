@@ -231,6 +231,7 @@ Docs: https://docs.openclaw.ai
 - Config/env substitution degraded mode: convert missing `${VAR}` resolution in config reads from hard-fail to warning-backed degraded behavior, while preventing unresolved placeholders from being accepted as gateway credentials. (#39050) Thanks @akz142857.
 - Gateway/webchat route safety: block webchat/control-ui clients from inheriting stored external delivery routes on channel-scoped sessions (while preserving route inheritance for UI/TUI clients), preventing cross-channel leakage from scoped chats. (#39175) Thanks @widingmarcus-cyber.
 - Gateway/password auth startup diagnostics: detect unresolved provider-reference objects in `gateway.auth.password` and fail with a specific bootstrap-secrets error message instead of generic misconfiguration output. (#39230) Thanks @ademczuk.
+- Nodes/system.run approval binding: carry prepared approval plans through gateway forwarding and bind interpreter-style script operands across approval to execution, so post-approval script rewrites are denied while unchanged approved script runs keep working. Thanks @tdjackey for reporting.
 
 ## 2026.3.2
 

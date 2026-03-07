@@ -357,11 +357,11 @@ describe("resolveSessionModelRef", () => {
       modelProvider: undefined,
     });
 
-    // Without an explicit provider, parseModelRef uses the global default
-    // provider. CLI agents handle their own model selection, so the gateway
-    // does not infer providers from agent config.
+    // Without an explicit provider, parseModelRef uses "unknown" as the
+    // default provider. CLI agents handle their own model selection, so the
+    // gateway does not infer providers from agent config.
     expect(resolved).toEqual({
-      provider: "anthropic",
+      provider: "unknown",
       model: "claude-sonnet-4-6",
     });
   });

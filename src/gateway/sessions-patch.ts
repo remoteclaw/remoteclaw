@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { parseModelRef } from "../agents/provider-utils.js";
 import { normalizeGroupActivation } from "../auto-reply/group-activation.js";
 import {
@@ -15,7 +14,6 @@ import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
 import { isSubagentSessionKey } from "../routing/session-key.js";
 import { applyVerboseOverride, parseVerboseOverride } from "../sessions/level-overrides.js";
-import { applyModelOverrideToSessionEntry } from "../sessions/model-overrides.js";
 import { normalizeSendPolicy } from "../sessions/send-policy.js";
 import { parseSessionLabel } from "../sessions/session-label.js";
 import {
@@ -61,7 +59,7 @@ export async function applySessionsPatchToStore(params: {
 }): Promise<{ ok: true; entry: SessionEntry } | { ok: false; error: ErrorShape }> {
   const { cfg: _cfg, store, storeKey, patch } = params;
   const now = Date.now();
-  const resolvedDefault = { provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL };
+  const resolvedDefault = { provider: "unknown", model: "unknown" };
 
   const existing = store[storeKey];
   const next: SessionEntry = existing
@@ -262,15 +260,12 @@ export async function applySessionsPatchToStore(params: {
 
   if ("model" in patch) {
     const raw = patch.model;
+    const prevProvider = next.providerOverride;
+    const prevModel = next.modelOverride;
     if (raw === null) {
-      applyModelOverrideToSessionEntry({
-        entry: next,
-        selection: {
-          provider: resolvedDefault.provider,
-          model: resolvedDefault.model,
-          isDefault: true,
-        },
-      });
+      // Reset to default — clear overrides.
+      delete next.providerOverride;
+      delete next.modelOverride;
     } else if (raw !== undefined) {
       const trimmed = String(raw).trim();
       if (!trimmed) {
@@ -282,14 +277,22 @@ export async function applySessionsPatchToStore(params: {
       }
       const isDefault =
         parsed.provider === resolvedDefault.provider && parsed.model === resolvedDefault.model;
-      applyModelOverrideToSessionEntry({
-        entry: next,
-        selection: {
-          provider: parsed.provider,
-          model: parsed.model,
-          isDefault,
-        },
-      });
+      if (isDefault) {
+        delete next.providerOverride;
+        delete next.modelOverride;
+      } else {
+        next.providerOverride = parsed.provider;
+        next.modelOverride = parsed.model;
+      }
+    }
+    // Clear auth profile and stale fallback notice when model overrides change.
+    if (next.providerOverride !== prevProvider || next.modelOverride !== prevModel) {
+      delete next.authProfileOverride;
+      delete next.authProfileOverrideSource;
+      delete next.authProfileOverrideCompactionCount;
+      delete next.fallbackNoticeSelectedModel;
+      delete next.fallbackNoticeActiveModel;
+      delete next.fallbackNoticeReason;
     }
   }
 

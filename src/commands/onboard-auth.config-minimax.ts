@@ -1,5 +1,4 @@
 import type { RemoteClawConfig } from "../config/config.js";
-import { toAgentModelListLike } from "../config/model-input.js";
 import { applyOnboardAuthAgentModelsAndProviders } from "./onboard-auth.config-shared.js";
 import {
   MINIMAX_API_BASE_URL,
@@ -50,7 +49,11 @@ export function applyMinimaxHostedConfig(
       defaults: {
         ...next.agents?.defaults,
         model: {
-          ...toAgentModelListLike(next.agents?.defaults?.model),
+          ...(typeof next.agents?.defaults?.model === "string"
+            ? { primary: next.agents.defaults.model }
+            : typeof next.agents?.defaults?.model === "object" && next.agents.defaults.model
+              ? next.agents.defaults.model
+              : {}),
           primary: MINIMAX_HOSTED_MODEL_REF,
         },
       },

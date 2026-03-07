@@ -3,11 +3,34 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  resolveAgentModelFallbackValues,
-  resolveAgentModelPrimaryValue,
-} from "../config/model-input.js";
 import type { OAuthCredentials } from "../types/agent-types.js";
+
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
+// Inline helpers replacing deleted src/config/model-input.ts exports.
+function resolveAgentModelPrimaryValue(model: unknown): string | undefined {
+  if (typeof model === "string") {
+    const trimmed = model.trim();
+    return trimmed || undefined;
+  }
+  if (!model || typeof model !== "object") {
+    return undefined;
+  }
+  const primary = (model as { primary?: unknown }).primary;
+  if (typeof primary !== "string") {
+    return undefined;
+  }
+  const trimmed = primary.trim();
+  return trimmed || undefined;
+}
+
+function resolveAgentModelFallbackValues(model: unknown): string[] {
+  if (!model || typeof model !== "object") {
+    return [];
+  }
+  return Array.isArray((model as { fallbacks?: unknown }).fallbacks)
+    ? (model as { fallbacks: string[] }).fallbacks
+    : [];
+}
 import {
   applyAuthProfileConfig,
   applyLitellmProviderConfig,

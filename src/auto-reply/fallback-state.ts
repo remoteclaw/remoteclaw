@@ -1,5 +1,4 @@
 import type { SessionEntry } from "../config/sessions.js";
-import { formatProviderModelRef } from "./model-runtime.js";
 import type { RuntimeFallbackAttempt } from "./reply/agent-runner-execution.js";
 
 const FALLBACK_REASON_PART_MAX = 80;
@@ -8,6 +7,25 @@ export type FallbackNoticeState = Pick<
   SessionEntry,
   "fallbackNoticeSelectedModel" | "fallbackNoticeActiveModel" | "fallbackNoticeReason"
 >;
+
+function formatProviderModelRef(providerRaw: string, modelRaw: string): string {
+  const provider = String(providerRaw ?? "").trim();
+  const model = String(modelRaw ?? "").trim();
+  if (!provider) {
+    return model;
+  }
+  if (!model) {
+    return provider;
+  }
+  const prefix = `${provider}/`;
+  if (model.toLowerCase().startsWith(prefix.toLowerCase())) {
+    const normalizedModel = model.slice(prefix.length).trim();
+    if (normalizedModel) {
+      return `${provider}/${normalizedModel}`;
+    }
+  }
+  return `${provider}/${model}`;
+}
 
 export function normalizeFallbackModelRef(value?: string): string | undefined {
   const trimmed = String(value ?? "").trim();
@@ -21,7 +39,7 @@ function truncateFallbackReasonPart(value: string, max = FALLBACK_REASON_PART_MA
   if (text.length <= max) {
     return text;
   }
-  return `${text.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
+  return `${text.slice(0, Math.max(0, max - 1)).trimEnd()}\u2026`;
 }
 
 export function formatFallbackAttemptReason(attempt: RuntimeFallbackAttempt): string {
@@ -71,7 +89,7 @@ export function buildFallbackNotice(params: {
     return null;
   }
   const reasonSummary = buildFallbackReasonSummary(params.attempts);
-  return `↪️ Model Fallback: ${active} (selected ${selected}; ${reasonSummary})`;
+  return `\u21AA\uFE0F Model Fallback: ${active} (selected ${selected}; ${reasonSummary})`;
 }
 
 export function buildFallbackClearedNotice(params: {
@@ -82,9 +100,9 @@ export function buildFallbackClearedNotice(params: {
   const selected = formatProviderModelRef(params.selectedProvider, params.selectedModel);
   const previous = normalizeFallbackModelRef(params.previousActiveModel);
   if (previous && previous !== selected) {
-    return `↪️ Model Fallback cleared: ${selected} (was ${previous})`;
+    return `\u21AA\uFE0F Model Fallback cleared: ${selected} (was ${previous})`;
   }
-  return `↪️ Model Fallback cleared: ${selected}`;
+  return `\u21AA\uFE0F Model Fallback cleared: ${selected}`;
 }
 
 export function resolveActiveFallbackState(params: {

@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { resolveModelAuthMode } from "../../agents/provider-auth.js";
 import { hasNonzeroUsage } from "../../agents/usage.js";
 import {
@@ -453,8 +452,7 @@ export async function runReplyAgent(params: {
     // the session ID is always present when returned by the runtime.
     const cliSessionId = runResult.run.sessionId?.trim() || undefined;
     // Context token lookup from model catalog gutted in RemoteClaw — CLI agents manage their own context.
-    const contextTokensUsed =
-      agentCfgContextTokens ?? activeSessionEntry?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
+    const contextTokensUsed = agentCfgContextTokens ?? activeSessionEntry?.contextTokens ?? 200_000;
 
     await persistRunSessionUsage({
       storePath,

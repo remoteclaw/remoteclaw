@@ -7,17 +7,15 @@ import type {
   TypingMode,
 } from "./types.base.js";
 
+/**
+ * Per-model entry in the `agents.defaults.models` map.
+ * Kept as a named type for legacy config compat; model management
+ * infrastructure has been removed — CLIs own model selection.
+ */
 export type AgentModelEntryConfig = {
   alias?: string;
-  /** Provider-specific API parameters (e.g., GLM-4.7 thinking mode). */
   params?: Record<string, unknown>;
-  /** Enable streaming for this model (default: true, false for Ollama to avoid SDK issue #1205). */
   streaming?: boolean;
-};
-
-export type AgentModelListConfig = {
-  primary?: string;
-  fallbacks?: string[];
 };
 
 export type AgentContextPruningConfig = {
@@ -43,85 +41,16 @@ export type AgentContextPruningConfig = {
   };
 };
 
-export type CliBackendConfig = {
-  /** CLI command to execute (absolute path or on PATH). */
-  command: string;
-  /** Base args applied to every invocation. */
-  args?: string[];
-  /** Output parsing mode (default: json). */
-  output?: "json" | "text" | "jsonl";
-  /** Output parsing mode when resuming a CLI session. */
-  resumeOutput?: "json" | "text" | "jsonl";
-  /** Prompt input mode (default: arg). */
-  input?: "arg" | "stdin";
-  /** Max prompt length for arg mode (if exceeded, stdin is used). */
-  maxPromptArgChars?: number;
-  /** Extra env vars injected for this CLI. */
-  env?: Record<string, string>;
-  /** Env vars to remove before launching this CLI. */
-  clearEnv?: string[];
-  /** Flag used to pass model id (e.g. --model). */
-  modelArg?: string;
-  /** Model aliases mapping (config model id → CLI model id). */
-  modelAliases?: Record<string, string>;
-  /** Flag used to pass session id (e.g. --session-id). */
-  sessionArg?: string;
-  /** Extra args used when resuming a session (use {sessionId} placeholder). */
-  sessionArgs?: string[];
-  /** Alternate args to use when resuming a session (use {sessionId} placeholder). */
-  resumeArgs?: string[];
-  /** When to pass session ids. */
-  sessionMode?: "always" | "existing" | "none";
-  /** JSON fields to read session id from (in order). */
-  sessionIdFields?: string[];
-  /** Flag used to pass system prompt. */
-  systemPromptArg?: string;
-  /** System prompt behavior (append vs replace). */
-  systemPromptMode?: "append" | "replace";
-  /** When to send system prompt. */
-  systemPromptWhen?: "first" | "always" | "never";
-  /** Flag used to pass image paths. */
-  imageArg?: string;
-  /** How to pass multiple images. */
-  imageMode?: "repeat" | "list";
-  /** Serialize runs for this CLI. */
-  serialize?: boolean;
-  /** Runtime reliability tuning for this backend's process lifecycle. */
-  reliability?: {
-    /** No-output watchdog tuning (fresh vs resumed runs). */
-    watchdog?: {
-      /** Fresh/new sessions (non-resume). */
-      fresh?: {
-        /** Fixed watchdog timeout in ms (overrides ratio when set). */
-        noOutputTimeoutMs?: number;
-        /** Fraction of overall timeout used when fixed timeout is not set. */
-        noOutputTimeoutRatio?: number;
-        /** Lower bound for computed watchdog timeout. */
-        minMs?: number;
-        /** Upper bound for computed watchdog timeout. */
-        maxMs?: number;
-      };
-      /** Resume sessions. */
-      resume?: {
-        /** Fixed watchdog timeout in ms (overrides ratio when set). */
-        noOutputTimeoutMs?: number;
-        /** Fraction of overall timeout used when fixed timeout is not set. */
-        noOutputTimeoutRatio?: number;
-        /** Lower bound for computed watchdog timeout. */
-        minMs?: number;
-        /** Upper bound for computed watchdog timeout. */
-        maxMs?: number;
-      };
-    };
-  };
-};
-
 export type AgentDefaultsConfig = {
-  /** Primary model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
+  /**
+   * Legacy model config fields — accepted by the Zod schema as `unknown`
+   * for backwards compat but no longer used by the runtime.
+   * CLIs own model selection; RemoteClaw is middleware.
+   */
   model?: AgentModelConfig;
-  /** Optional image-capable model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
-  imageModel?: AgentModelConfig;
-  /** Model catalog with optional aliases (full provider/model keys). */
+  /** Legacy image-model override (kept for config compat). */
+  imageModel?: unknown;
+  /** Legacy per-model settings map (kept for config compat). */
   models?: Record<string, AgentModelEntryConfig>;
   /** Agent working directory (preferred). Used as the default cwd for agent runs. */
   workspace?: string;
@@ -151,8 +80,8 @@ export type AgentDefaultsConfig = {
   envelopeElapsed?: "on" | "off";
   /** Optional context window cap (used for runtime estimates + status %). */
   contextTokens?: number;
-  /** Optional CLI backends for text-only fallback (claude-cli, etc.). */
-  cliBackends?: Record<string, CliBackendConfig>;
+  /** Legacy CLI-backends config (kept for config compat). */
+  cliBackends?: unknown;
   /** Opt-in: prune old tool results from the LLM context to reduce token usage. */
   contextPruning?: AgentContextPruningConfig;
   /** Compaction tuning and pre-compaction memory flush behavior. */
@@ -247,8 +176,8 @@ export type AgentDefaultsConfig = {
     maxChildrenPerAgent?: number;
     /** Auto-archive sub-agent sessions after N minutes (default: 60). */
     archiveAfterMinutes?: number;
-    /** Default model selection for spawned sub-agents (string or {primary,fallbacks}). */
-    model?: AgentModelConfig;
+    /** Legacy sub-agent model override (kept for config compat). */
+    model?: unknown;
     /** Default thinking level for spawned sub-agents (e.g. "off", "low", "medium", "high"). */
     thinking?: string;
     /** Default run timeout in seconds for spawned sub-agents (0 = no timeout). */

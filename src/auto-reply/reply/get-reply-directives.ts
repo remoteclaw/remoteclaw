@@ -4,7 +4,6 @@ const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
   mode: "off" as const,
   agentId: undefined as string | undefined,
 });
-import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
@@ -54,7 +53,7 @@ function resolveContextTokens(params: {
   model: string;
 }): number {
   // Context token lookup from model catalog gutted in RemoteClaw — CLI agents manage their own context.
-  return params.agentCfg?.contextTokens ?? DEFAULT_CONTEXT_TOKENS;
+  return params.agentCfg?.contextTokens ?? 200_000;
 }
 import { formatElevatedUnavailableMessage, resolveElevatedPermissions } from "./reply-elevated.js";
 import { stripInlineStatus } from "./reply-inline.js";

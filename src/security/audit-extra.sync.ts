@@ -49,10 +49,6 @@ import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
 import { resolveBrowserConfig } from "../browser/config.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  resolveAgentModelFallbackValues,
-  resolveAgentModelPrimaryValue,
-} from "../config/model-input.js";
 import type { AgentToolsConfig } from "../config/types.tools.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
 import {
@@ -142,22 +138,49 @@ function addModel(models: ModelRef[], raw: unknown, source: string) {
   models.push({ id, source });
 }
 
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
+// Inline helpers replacing deleted src/config/model-input.ts exports.
+function resolveModelPrimaryValue(model: unknown): string | undefined {
+  if (typeof model === "string") {
+    const trimmed = model.trim();
+    return trimmed || undefined;
+  }
+  if (!model || typeof model !== "object") {
+    return undefined;
+  }
+  const primary = (model as { primary?: unknown }).primary;
+  if (typeof primary !== "string") {
+    return undefined;
+  }
+  const trimmed = primary.trim();
+  return trimmed || undefined;
+}
+
+function resolveModelFallbackValues(model: unknown): string[] {
+  if (!model || typeof model !== "object") {
+    return [];
+  }
+  return Array.isArray((model as { fallbacks?: unknown }).fallbacks)
+    ? (model as { fallbacks: string[] }).fallbacks
+    : [];
+}
+
 function collectModels(cfg: RemoteClawConfig): ModelRef[] {
   const out: ModelRef[] = [];
   addModel(
     out,
-    resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model),
+    resolveModelPrimaryValue(cfg.agents?.defaults?.model),
     "agents.defaults.model.primary",
   );
-  for (const f of resolveAgentModelFallbackValues(cfg.agents?.defaults?.model)) {
+  for (const f of resolveModelFallbackValues(cfg.agents?.defaults?.model)) {
     addModel(out, f, "agents.defaults.model.fallbacks");
   }
   addModel(
     out,
-    resolveAgentModelPrimaryValue(cfg.agents?.defaults?.imageModel),
+    resolveModelPrimaryValue(cfg.agents?.defaults?.imageModel),
     "agents.defaults.imageModel.primary",
   );
-  for (const f of resolveAgentModelFallbackValues(cfg.agents?.defaults?.imageModel)) {
+  for (const f of resolveModelFallbackValues(cfg.agents?.defaults?.imageModel)) {
     addModel(out, f, "agents.defaults.imageModel.fallbacks");
   }
 

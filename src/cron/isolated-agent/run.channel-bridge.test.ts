@@ -103,7 +103,6 @@ vi.mock("../../cli/outbound-send-deps.js", () => ({
 
 vi.mock("../../config/sessions.js", () => ({
   resolveAgentMainSessionKey: vi.fn().mockReturnValue("main:default"),
-  setSessionRuntimeModel: vi.fn(),
   updateSessionStore: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -179,11 +178,8 @@ vi.mock("./session.js", () => ({
   resolveCronSession: resolveCronSessionMock,
 }));
 
-vi.mock("../../agents/defaults.js", () => ({
-  DEFAULT_CONTEXT_TOKENS: 128000,
-  DEFAULT_MODEL: "claude-sonnet-4-5",
-  DEFAULT_PROVIDER: "claude",
-}));
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
+// No longer need to mock ../../agents/defaults.js — constants are inlined.
 
 const { runCronIsolatedAgentTurn } = await import("./run.js");
 
@@ -407,8 +403,9 @@ describe("runCronIsolatedAgentTurn — ChannelBridge wiring", () => {
     const result = await runCronIsolatedAgentTurn(makeParams());
 
     expect(result.status).toBe("ok");
-    // Telemetry is derived from the mapped EmbeddedPiRunResult
-    expect(result.model).toBe("claude-sonnet-4-5");
-    expect(result.provider).toBe("claude");
+    // Model management gutted — cron runs default to "unknown" unless
+    // an explicit model override is provided in the job payload.
+    expect(result.model).toBe("unknown");
+    expect(result.provider).toBe("unknown");
   });
 });

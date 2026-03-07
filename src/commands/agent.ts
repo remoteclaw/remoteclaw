@@ -7,7 +7,7 @@ import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
 import { clearSessionAuthProfileOverride } from "../agents/auth-profiles/session-override.js";
 import { resolveChannelMessageToolHints } from "../agents/channel-tools.js";
 import { getCliSessionId } from "../agents/cli-session.js";
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { normalizeModelRef } from "../agents/provider-utils.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import {
@@ -158,7 +158,7 @@ export async function agentCommand(
     }
   }
   const agentCfg = cfg.agents?.defaults;
-  const thinkingLevelsHint = formatThinkingLevels(DEFAULT_PROVIDER, DEFAULT_MODEL);
+  const thinkingLevelsHint = formatThinkingLevels("unknown", "unknown");
 
   const thinkOverride = normalizeThinkLevel(opts.thinking);
   const thinkOnce = normalizeThinkLevel(opts.thinkingOnce);
@@ -258,8 +258,8 @@ export async function agentCommand(
     }
 
     const { provider: defaultProvider, model: defaultModel } = normalizeModelRef(
-      DEFAULT_PROVIDER,
-      DEFAULT_MODEL,
+      "unknown",
+      "unknown",
     );
     let provider = defaultProvider;
     let model = defaultModel;

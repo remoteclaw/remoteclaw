@@ -1,4 +1,4 @@
-import { DEFAULT_MODEL } from "../agents/defaults.js";
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import type { SessionEntry } from "../config/sessions.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { resolveSessionModelRef } from "../gateway/session-utils.js";
@@ -71,7 +71,7 @@ export function toSessionDisplayRows(store: Record<string, SessionEntry>): Sessi
 
 export function resolveSessionDisplayDefaults(_cfg: RemoteClawConfig): SessionDisplayDefaults {
   return {
-    model: DEFAULT_MODEL,
+    model: "unknown",
   };
 }
 

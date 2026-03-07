@@ -1,7 +1,33 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { resolveAgentModelFallbackValues, resolveAgentModelPrimaryValue } from "./model-input.js";
+
+// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
+// Inline helpers replacing deleted src/config/model-input.ts exports.
+function resolveAgentModelPrimaryValue(model: unknown): string | undefined {
+  if (typeof model === "string") {
+    const trimmed = model.trim();
+    return trimmed || undefined;
+  }
+  if (!model || typeof model !== "object") {
+    return undefined;
+  }
+  const primary = (model as { primary?: unknown }).primary;
+  if (typeof primary !== "string") {
+    return undefined;
+  }
+  const trimmed = primary.trim();
+  return trimmed || undefined;
+}
+
+function resolveAgentModelFallbackValues(model: unknown): string[] {
+  if (!model || typeof model !== "object") {
+    return [];
+  }
+  return Array.isArray((model as { fallbacks?: unknown }).fallbacks)
+    ? (model as { fallbacks: string[] }).fallbacks
+    : [];
+}
 
 const { loadConfig, migrateLegacyConfig, readConfigFileSnapshot, validateConfigObject } =
   await vi.importActual<typeof import("./config.js")>("./config.js");

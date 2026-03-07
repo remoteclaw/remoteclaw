@@ -10,7 +10,6 @@ import {
   resolveMainSessionAlias,
 } from "../../agents/tools/sessions-helpers.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { toAgentModelListLike } from "../../config/model-input.js";
 import type { SessionEntry, SessionScope } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import {
@@ -20,7 +19,6 @@ import {
 } from "../../infra/provider-usage.js";
 import type { MediaUnderstandingDecision } from "../../media-understanding/types.js";
 import { normalizeGroupActivation } from "../group-activation.js";
-import { resolveSelectedAndActiveModel } from "../model-runtime.js";
 import { buildStatusMessage } from "../status.js";
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";
@@ -140,20 +138,19 @@ export async function buildStatusReply(params: {
   const groupActivation = isGroup
     ? (normalizeGroupActivation(sessionEntry?.groupActivation) ?? defaultGroupActivation())
     : undefined;
-  const modelRefs = resolveSelectedAndActiveModel({
-    selectedProvider: provider,
-    selectedModel: model,
-    sessionEntry,
-  });
   const selectedModelAuth = resolveModelAuthLabel({
     provider,
     cfg,
     sessionEntry,
     agentDir: statusAgentDir,
   });
-  const activeModelAuth = modelRefs.activeDiffers
+  // Resolve active model from session fallback notice fields.
+  const activeProvider = sessionEntry?.modelProvider?.trim() || provider;
+  const activeModel = sessionEntry?.model?.trim() || model;
+  const activeDiffers = activeProvider !== provider || activeModel !== model;
+  const activeModelAuth = activeDiffers
     ? resolveModelAuthLabel({
-        provider: modelRefs.active.provider,
+        provider: activeProvider,
         cfg,
         sessionEntry,
         agentDir: statusAgentDir,
@@ -164,10 +161,6 @@ export async function buildStatusReply(params: {
     config: cfg,
     agent: {
       ...agentDefaults,
-      model: {
-        ...toAgentModelListLike(agentDefaults.model),
-        primary: `${provider}/${model}`,
-      },
       contextTokens,
       thinkingDefault: agentDefaults.thinkingDefault,
       verboseDefault: agentDefaults.verboseDefault,

@@ -3,13 +3,11 @@ import {
   resolveDefaultAgentId,
   resolveSessionAgentId,
 } from "../../agents/agent-scope.js";
-import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
 import { modelKey, parseModelRef } from "../../agents/provider-utils.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { applyVerboseOverride } from "../../sessions/level-overrides.js";
-import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
 import { resolveProfileOverride } from "./directive-handling.auth.js";
 import type { InlineDirectives } from "./directive-handling.parse.js";
 import { enqueueModeSwitchEvents } from "./directive-handling.shared.js";
@@ -152,15 +150,28 @@ export async function persistInlineDirectives(params: {
           }
           const isDefault =
             resolved.provider === defaultProvider && resolved.model === defaultModel;
-          const { updated: modelUpdated } = applyModelOverrideToSessionEntry({
-            entry: sessionEntry,
-            selection: {
-              provider: resolved.provider,
-              model: resolved.model,
-              isDefault,
-            },
-            profileOverride,
-          });
+          let modelUpdated = false;
+          if (isDefault) {
+            if (sessionEntry.providerOverride || sessionEntry.modelOverride) {
+              delete sessionEntry.providerOverride;
+              delete sessionEntry.modelOverride;
+              modelUpdated = true;
+            }
+          } else {
+            if (
+              sessionEntry.providerOverride !== resolved.provider ||
+              sessionEntry.modelOverride !== resolved.model
+            ) {
+              sessionEntry.providerOverride = resolved.provider;
+              sessionEntry.modelOverride = resolved.model;
+              modelUpdated = true;
+            }
+          }
+          if (profileOverride !== undefined) {
+            sessionEntry.authProfileOverride = profileOverride;
+            sessionEntry.authProfileOverrideSource = "user";
+            modelUpdated = true;
+          }
           provider = resolved.provider;
           model = resolved.model;
           const nextLabel = `${provider}/${model}`;
@@ -204,7 +215,7 @@ export async function persistInlineDirectives(params: {
     provider,
     model,
     // Context token lookup from model catalog gutted in RemoteClaw — CLI agents manage their own context.
-    contextTokens: agentCfg?.contextTokens ?? DEFAULT_CONTEXT_TOKENS,
+    contextTokens: agentCfg?.contextTokens ?? 200_000,
   };
 }
 
@@ -215,11 +226,12 @@ export function resolveDefaultModel(params: { cfg: RemoteClawConfig; agentId?: s
 } {
   // Model selection/alias infrastructure gutted in RemoteClaw — derive from agent config primary.
   const agentModel = params.cfg.agents?.defaults?.model;
-  const primary = typeof agentModel === "string" ? agentModel : agentModel?.primary;
+  const primary =
+    typeof agentModel === "string" ? agentModel : (agentModel as { primary?: string })?.primary;
   const slashIdx = primary?.indexOf("/") ?? -1;
-  const defaultProvider = primary && slashIdx > 0 ? primary.slice(0, slashIdx) : DEFAULT_PROVIDER;
+  const defaultProvider = primary && slashIdx > 0 ? primary.slice(0, slashIdx) : "unknown";
   const defaultModel =
-    primary && slashIdx > 0 ? primary.slice(slashIdx + 1) : (primary ?? DEFAULT_MODEL);
+    primary && slashIdx > 0 ? primary.slice(slashIdx + 1) : (primary ?? "unknown");
   // Alias index is empty — model aliases gutted in RemoteClaw.
   const aliasIndex = new Map<string, { provider: string; model: string }>();
   return { defaultProvider, defaultModel, aliasIndex };

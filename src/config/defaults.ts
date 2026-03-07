@@ -1,6 +1,5 @@
 import { parseModelRef } from "../agents/provider-utils.js";
 import { DEFAULT_AGENT_MAX_CONCURRENT, DEFAULT_SUBAGENT_MAX_CONCURRENT } from "./agent-limits.js";
-import { resolveAgentModelPrimaryValue } from "./model-input.js";
 import {
   DEFAULT_TALK_PROVIDER,
   normalizeTalkConfig,
@@ -331,9 +330,10 @@ export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawCo
       modelsMutated = true;
     }
 
-    const primary = resolvePrimaryModelRef(
-      resolveAgentModelPrimaryValue(defaults.model) ?? undefined,
-    );
+    const rawModel = defaults.model;
+    const rawPrimary =
+      typeof rawModel === "string" ? rawModel : (rawModel as { primary?: string })?.primary;
+    const primary = resolvePrimaryModelRef(typeof rawPrimary === "string" ? rawPrimary : undefined);
     if (primary) {
       const parsedPrimary = parseModelRef(primary, "anthropic");
       if (isAnthropicCacheRetentionTarget(parsedPrimary)) {

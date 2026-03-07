@@ -1,31 +1,17 @@
 import { z } from "zod";
-import { BootSchema, HeartbeatSchema, AgentModelSchema } from "./zod-schema.agent-runtime.js";
+import { BootSchema, HeartbeatSchema } from "./zod-schema.agent-runtime.js";
 import {
   BlockStreamingChunkSchema,
   BlockStreamingCoalesceSchema,
-  CliBackendSchema,
   HumanDelaySchema,
   TypingModeSchema,
 } from "./zod-schema.core.js";
 
 export const AgentDefaultsSchema = z
   .object({
-    model: AgentModelSchema.optional(),
-    imageModel: AgentModelSchema.optional(),
-    models: z
-      .record(
-        z.string(),
-        z
-          .object({
-            alias: z.string().optional(),
-            /** Provider-specific API parameters (e.g., GLM-4.7 thinking mode). */
-            params: z.record(z.string(), z.unknown()).optional(),
-            /** Enable streaming for this model (default: true, false for Ollama to avoid SDK issue #1205). */
-            streaming: z.boolean().optional(),
-          })
-          .strict(),
-      )
-      .optional(),
+    model: z.unknown().optional(),
+    imageModel: z.unknown().optional(),
+    models: z.unknown().optional(),
     workspace: z.string().optional(),
     repoRoot: z.string().optional(),
     skipBootstrap: z.boolean().optional(),
@@ -37,7 +23,7 @@ export const AgentDefaultsSchema = z
     envelopeTimestamp: z.union([z.literal("on"), z.literal("off")]).optional(),
     envelopeElapsed: z.union([z.literal("on"), z.literal("off")]).optional(),
     contextTokens: z.number().int().positive().optional(),
-    cliBackends: z.record(z.string(), CliBackendSchema).optional(),
+    cliBackends: z.unknown().optional(),
     contextPruning: z
       .object({
         mode: z.union([z.literal("off"), z.literal("cache-ttl")]).optional(),
@@ -130,7 +116,7 @@ export const AgentDefaultsSchema = z
             "Maximum number of active children a single agent session can spawn (default: 5).",
           ),
         archiveAfterMinutes: z.number().int().positive().optional(),
-        model: AgentModelSchema.optional(),
+        model: z.unknown().optional(),
         thinking: z.string().optional(),
         runTimeoutSeconds: z.number().int().min(0).optional(),
         announceTimeoutMs: z.number().int().positive().optional(),

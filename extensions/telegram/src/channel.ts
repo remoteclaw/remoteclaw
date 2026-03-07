@@ -6,6 +6,7 @@ import {
   collectTelegramStatusIssues,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
+  formatAllowFromLowercase,
   formatPairingApproveHint,
   getChatChannelMeta,
   listTelegramAccountIds,
@@ -172,11 +173,7 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
         String(entry),
       ),
     formatAllowFrom: ({ allowFrom }) =>
-      allowFrom
-        .map((entry) => String(entry).trim())
-        .filter(Boolean)
-        .map((entry) => entry.replace(/^(telegram|tg):/i, ""))
-        .map((entry) => entry.toLowerCase()),
+      formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(telegram|tg):/i }),
     resolveDefaultTo: ({ cfg, accountId }) => {
       const val = resolveTelegramAccount({ cfg, accountId }).config.defaultTo;
       return val != null ? String(val) : undefined;

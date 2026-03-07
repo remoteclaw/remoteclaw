@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw system` (system events, heartbeat, presence)"
+description: "CLI reference for `remoteclaw system` (system events, heartbeat, presence)"
 read_when:
   - You want to enqueue a system event without creating a cron job
   - You need to enable or disable heartbeats

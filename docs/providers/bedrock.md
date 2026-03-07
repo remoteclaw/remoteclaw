@@ -1,5 +1,5 @@
 ---
-summary: "Use Amazon Bedrock (Converse API) models with RemoteClaw"
+description: "Use Amazon Bedrock (Converse API) models with RemoteClaw"
 read_when:
   - You want to use Amazon Bedrock models with RemoteClaw
   - You need AWS credential/region setup for model calls

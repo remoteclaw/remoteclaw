@@ -1,5 +1,6 @@
 ---
-summary: "Run RemoteClaw through LiteLLM Proxy for unified model access and cost tracking"
+title: "LiteLLM"
+description: "Run RemoteClaw through LiteLLM Proxy for unified model access and cost tracking"
 read_when:
   - You want to route RemoteClaw through a LiteLLM proxy
   - You need cost tracking, logging, or model routing through LiteLLM

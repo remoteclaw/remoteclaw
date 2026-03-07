@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw security` (audit and fix common security footguns)"
+description: "CLI reference for `remoteclaw security` (audit and fix common security footguns)"
 read_when:
   - You want to run a quick security audit on config/state
   - You want to apply safe “fix” suggestions (chmod, tighten defaults)

@@ -1,5 +1,5 @@
 ---
-summary: "Network hub: gateway surfaces, pairing, discovery, and security"
+description: "Network hub: gateway surfaces, pairing, discovery, and security"
 read_when:
   - You need the network architecture + security overview
   - You are debugging local vs tailnet access or pairing

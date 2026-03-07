@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw origin and project context"
+description: "RemoteClaw origin and project context"
 read_when:
   - Writing docs or UX copy that reference project history
 title: "About RemoteClaw"

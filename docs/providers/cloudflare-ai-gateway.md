@@ -1,6 +1,6 @@
 ---
 title: "Cloudflare AI Gateway"
-summary: "Cloudflare AI Gateway setup (auth + model selection)"
+description: "Cloudflare AI Gateway setup (auth + model selection)"
 read_when:
   - You want to use Cloudflare AI Gateway with RemoteClaw
   - You need the account ID, gateway ID, or API key env var

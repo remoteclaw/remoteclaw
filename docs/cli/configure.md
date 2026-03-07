@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw configure` (interactive configuration prompts)"
+description: "CLI reference for `remoteclaw configure` (interactive configuration prompts)"
 read_when:
   - You want to tweak credentials, devices, or agent defaults interactively
 title: "configure"

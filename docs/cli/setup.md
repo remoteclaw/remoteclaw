@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw setup` (initialize config + workspace)"
+description: "CLI reference for `remoteclaw setup` (initialize config + workspace)"
 read_when:
   - You’re doing first-run setup without the full onboarding wizard
   - You want to set the default workspace path

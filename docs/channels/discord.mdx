@@ -1,68 +1,76 @@
 ---
-summary: "Discord bot support status, capabilities, and configuration"
+description: "Discord bot support status, capabilities, and configuration"
 read_when:
   - Working on Discord channel features
 title: "Discord"
 ---
 
+import { Card, CardGrid, Steps, TabItem, Tabs } from "@astrojs/starlight/components";
+
 # Discord (Bot API)
 
 Status: ready for DMs and guild channels via the official Discord gateway.
 
-<CardGroup cols={3}>
-  <Card title="Pairing" icon="link" href="/channels/pairing">
-    Discord DMs default to pairing mode.
+<CardGrid>
+  <Card title="Pairing">
+
+[Pairing](/channels/pairing) —
+Discord DMs default to pairing mode.
+
   </Card>
-  <Card title="Slash commands" icon="terminal" href="/tools/slash-commands">
-    Native command behavior and command catalog.
+  <Card title="Slash commands">
+
+[Slash commands](/tools/slash-commands) —
+Native command behavior and command catalog.
+
   </Card>
-  <Card title="Channel troubleshooting" icon="wrench" href="/channels/troubleshooting">
-    Cross-channel diagnostics and repair flow.
+  <Card title="Channel troubleshooting">
+
+[Channel troubleshooting](/channels/troubleshooting) —
+Cross-channel diagnostics and repair flow.
+
   </Card>
-</CardGroup>
+</CardGrid>
 
 ## Quick setup
 
 You will need to create a new application with a bot, add the bot to your server, and pair it to RemoteClaw. We recommend adding your bot to your own private server. If you don't have one yet, [create one first](https://support.discord.com/hc/en-us/articles/204849977-How-do-I-create-a-server) (choose **Create My Own > For me and my friends**).
 
 <Steps>
-  <Step title="Create a Discord application and bot">
+
+1.  **Create a Discord application and bot**
+
     Go to the [Discord Developer Portal](https://discord.com/developers/applications) and click **New Application**. Name it something like "RemoteClaw".
 
     Click **Bot** on the sidebar. Set the **Username** to whatever you call your RemoteClaw agent.
 
-  </Step>
+2.  **Enable privileged intents**
 
-  <Step title="Enable privileged intents">
     Still on the **Bot** page, scroll down to **Privileged Gateway Intents** and enable:
-
     - **Message Content Intent** (required)
     - **Server Members Intent** (recommended; required for role allowlists and name-to-ID matching)
     - **Presence Intent** (optional; only needed for presence updates)
 
-  </Step>
+3.  **Copy your bot token**
 
-  <Step title="Copy your bot token">
-    Scroll back up on the **Bot** page and click **Reset Token**.
+        Scroll back up on the **Bot** page and click **Reset Token**.
 
-    <Note>
-    Despite the name, this generates your first token — nothing is being "reset."
-    </Note>
+        :::note
+        Despite the name, this generates your first token — nothing is being "reset."
 
-    Copy the token and save it somewhere. This is your **Bot Token** and you will need it shortly.
+    :::
 
-  </Step>
+        Copy the token and save it somewhere. This is your **Bot Token** and you will need it shortly.
 
-  <Step title="Generate an invite URL and add the bot to your server">
+4.  **Generate an invite URL and add the bot to your server**
+
     Click **OAuth2** on the sidebar. You'll generate an invite URL with the right permissions to add the bot to your server.
 
     Scroll down to **OAuth2 URL Generator** and enable:
-
     - `bot`
     - `applications.commands`
 
     A **Bot Permissions** section will appear below. Enable:
-
     - View Channels
     - Send Messages
     - Read Message History
@@ -72,172 +80,163 @@ You will need to create a new application with a bot, add the bot to your server
 
     Copy the generated URL at the bottom, paste it into your browser, select your server, and click **Continue** to connect. You should now see your bot in the Discord server.
 
-  </Step>
+5.  **Enable Developer Mode and collect your IDs**
 
-  <Step title="Enable Developer Mode and collect your IDs">
     Back in the Discord app, you need to enable Developer Mode so you can copy internal IDs.
-
     1. Click **User Settings** (gear icon next to your avatar) → **Advanced** → toggle on **Developer Mode**
     2. Right-click your **server icon** in the sidebar → **Copy Server ID**
     3. Right-click your **own avatar** → **Copy User ID**
 
     Save your **Server ID** and **User ID** alongside your Bot Token — you'll send all three to RemoteClaw in the next step.
 
-  </Step>
+6.  **Allow DMs from server members**
 
-  <Step title="Allow DMs from server members">
     For pairing to work, Discord needs to allow your bot to DM you. Right-click your **server icon** → **Privacy Settings** → toggle on **Direct Messages**.
 
     This lets server members (including bots) send you DMs. Keep this enabled if you want to use Discord DMs with RemoteClaw. If you only plan to use guild channels, you can disable DMs after pairing.
 
-  </Step>
+7.  **Step 0: Set your bot token securely (do not send it in chat)**
 
-  <Step title="Step 0: Set your bot token securely (do not send it in chat)">
-    Your Discord bot token is a secret (like a password). Set it on the machine running RemoteClaw before messaging your agent.
+        Your Discord bot token is a secret (like a password). Set it on the machine running RemoteClaw before messaging your agent.
 
-```bash
-remoteclaw config set channels.discord.token '"YOUR_BOT_TOKEN"' --json
-remoteclaw config set channels.discord.enabled true --json
-remoteclaw gateway
-```
+    ```bash
+    remoteclaw config set channels.discord.token '"YOUR_BOT_TOKEN"' --json
+    remoteclaw config set channels.discord.enabled true --json
+    remoteclaw gateway
+    ```
 
-    If RemoteClaw is already running as a background service, use `remoteclaw gateway restart` instead.
+        If RemoteClaw is already running as a background service, use `remoteclaw gateway restart` instead.
 
-  </Step>
+8.  **Configure RemoteClaw and pair**
 
-  <Step title="Configure RemoteClaw and pair">
+        <Tabs>
+          <TabItem label="Ask your agent">
+            Chat with your RemoteClaw agent on any existing channel (e.g. Telegram) and tell it. If Discord is your first channel, use the CLI / config tab instead.
 
-    <Tabs>
-      <Tab title="Ask your agent">
-        Chat with your RemoteClaw agent on any existing channel (e.g. Telegram) and tell it. If Discord is your first channel, use the CLI / config tab instead.
+            > "I already set my Discord bot token in config. Please finish Discord setup with User ID `<user_id>` and Server ID `<server_id>`."
+          </TabItem>
+          <TabItem label="CLI / config">
+            If you prefer file-based config, set:
 
-        > "I already set my Discord bot token in config. Please finish Discord setup with User ID `<user_id>` and Server ID `<server_id>`."
-      </Tab>
-      <Tab title="CLI / config">
-        If you prefer file-based config, set:
+    ```json5
+    {
+      channels: {
+        discord: {
+          enabled: true,
+          token: "YOUR_BOT_TOKEN",
+        },
+      },
+    }
+    ```
 
-```json5
-{
-  channels: {
-    discord: {
-      enabled: true,
-      token: "YOUR_BOT_TOKEN",
-    },
-  },
-}
-```
+            Env fallback for the default account:
 
-        Env fallback for the default account:
+    ```bash
+    DISCORD_BOT_TOKEN=...
+    ```
 
-```bash
-DISCORD_BOT_TOKEN=...
-```
+          </TabItem>
+        </Tabs>
 
-      </Tab>
-    </Tabs>
+9.  **Approve first DM pairing**
 
-  </Step>
+        Wait until the gateway is running, then DM your bot in Discord. It will respond with a pairing code.
 
-  <Step title="Approve first DM pairing">
-    Wait until the gateway is running, then DM your bot in Discord. It will respond with a pairing code.
+        <Tabs>
+          <TabItem label="Ask your agent">
+            Send the pairing code to your agent on your existing channel:
 
-    <Tabs>
-      <Tab title="Ask your agent">
-        Send the pairing code to your agent on your existing channel:
+            > "Approve this Discord pairing code: `<CODE>`"
+          </TabItem>
+          <TabItem label="CLI">
 
-        > "Approve this Discord pairing code: `<CODE>`"
-      </Tab>
-      <Tab title="CLI">
+    ```bash
+    remoteclaw pairing list discord
+    remoteclaw pairing approve discord <CODE>
+    ```
 
-```bash
-remoteclaw pairing list discord
-remoteclaw pairing approve discord <CODE>
-```
+          </TabItem>
+        </Tabs>
 
-      </Tab>
-    </Tabs>
+        Pairing codes expire after 1 hour.
 
-    Pairing codes expire after 1 hour.
+        You should now be able to chat with your agent in Discord via DM.
 
-    You should now be able to chat with your agent in Discord via DM.
-
-  </Step>
 </Steps>
 
-<Note>
+:::note
 Token resolution is account-aware. Config token values win over env fallback. `DISCORD_BOT_TOKEN` is only used for the default account.
-</Note>
+:::
 
 ## Recommended: Set up a guild workspace
 
 Once DMs are working, you can set up your Discord server as a full workspace where each channel gets its own agent session with its own context. This is recommended for private servers where it's just you and your bot.
 
 <Steps>
-  <Step title="Add your server to the guild allowlist">
-    This enables your agent to respond in any channel on your server, not just DMs.
 
-    <Tabs>
-      <Tab title="Ask your agent">
-        > "Add my Discord Server ID `<server_id>` to the guild allowlist"
-      </Tab>
-      <Tab title="Config">
+1.  **Add your server to the guild allowlist**
 
-```json5
-{
-  channels: {
-    discord: {
-      groupPolicy: "allowlist",
-      guilds: {
-        YOUR_SERVER_ID: {
-          requireMention: true,
-          users: ["YOUR_USER_ID"],
+        This enables your agent to respond in any channel on your server, not just DMs.
+
+        <Tabs>
+          <TabItem label="Ask your agent">
+            > "Add my Discord Server ID `<server_id>` to the guild allowlist"
+          </TabItem>
+          <TabItem label="Config">
+
+    ```json5
+    {
+      channels: {
+        discord: {
+          groupPolicy: "allowlist",
+          guilds: {
+            YOUR_SERVER_ID: {
+              requireMention: true,
+              users: ["YOUR_USER_ID"],
+            },
+          },
         },
       },
-    },
-  },
-}
-```
+    }
+    ```
 
-      </Tab>
-    </Tabs>
+          </TabItem>
+        </Tabs>
 
-  </Step>
+2.  **Allow responses without @mention**
 
-  <Step title="Allow responses without @mention">
-    By default, your agent only responds in guild channels when @mentioned. For a private server, you probably want it to respond to every message.
+        By default, your agent only responds in guild channels when @mentioned. For a private server, you probably want it to respond to every message.
 
-    <Tabs>
-      <Tab title="Ask your agent">
-        > "Allow my agent to respond on this server without having to be @mentioned"
-      </Tab>
-      <Tab title="Config">
-        Set `requireMention: false` in your guild config:
+        <Tabs>
+          <TabItem label="Ask your agent">
+            > "Allow my agent to respond on this server without having to be @mentioned"
+          </TabItem>
+          <TabItem label="Config">
+            Set `requireMention: false` in your guild config:
 
-```json5
-{
-  channels: {
-    discord: {
-      guilds: {
-        YOUR_SERVER_ID: {
-          requireMention: false,
+    ```json5
+    {
+      channels: {
+        discord: {
+          guilds: {
+            YOUR_SERVER_ID: {
+              requireMention: false,
+            },
+          },
         },
       },
-    },
-  },
-}
-```
+    }
+    ```
 
-      </Tab>
-    </Tabs>
+          </TabItem>
+        </Tabs>
 
-  </Step>
+3.  **Plan for memory in guild channels**
 
-  <Step title="Plan for memory in guild channels">
     By default, long-term memory (MEMORY.md) only loads in DM sessions. Guild channels do not auto-load MEMORY.md.
 
     If you need shared context in every channel, put the stable instructions in native agent config (e.g. `CLAUDE.md` for Claude Code). Keep long-term notes in `MEMORY.md`.
 
-  </Step>
 </Steps>
 
 Now create some channels on your Discord server and start chatting. Your agent can see the channel name, and each channel gets its own isolated session — so you can set up `#coding`, `#home`, `#research`, or whatever fits your workflow.
@@ -359,7 +358,7 @@ Example:
 ## Access control and routing
 
 <Tabs>
-  <Tab title="DM policy">
+  <TabItem label="DM policy">
     `channels.discord.dmPolicy` controls DM access (legacy: `channels.discord.dm.policy`):
 
     - `pairing` (default)
@@ -376,9 +375,9 @@ Example:
 
     Bare numeric IDs are ambiguous and rejected unless an explicit user/channel target kind is provided.
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="Guild policy">
+  <TabItem label="Guild policy">
     Guild handling is controlled by `channels.discord.groupPolicy`:
 
     - `open`
@@ -421,9 +420,9 @@ Example:
 
     If you only set `DISCORD_BOT_TOKEN` and do not create a `channels.discord` block, runtime fallback is `groupPolicy="allowlist"` (with a warning in logs), even if `channels.defaults.groupPolicy` is `open`.
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="Mentions and group DMs">
+  <TabItem label="Mentions and group DMs">
     Guild messages are mention-gated by default.
 
     Mention detection includes:
@@ -439,7 +438,7 @@ Example:
     - default: ignored (`dm.groupEnabled=false`)
     - optional allowlist via `dm.groupChannels` (channel IDs or slugs)
 
-  </Tab>
+  </TabItem>
 </Tabs>
 
 ### Role-based agent routing
@@ -470,16 +469,18 @@ Use `bindings[].match.roles` to route Discord guild members to different agents 
 
 ## Developer Portal setup
 
-<AccordionGroup>
-  <Accordion title="Create app and bot">
+  <details>
+<summary>Create app and bot</summary>
 
     1. Discord Developer Portal -> **Applications** -> **New Application**
     2. **Bot** -> **Add Bot**
     3. Copy bot token
 
-  </Accordion>
+</details>
 
-  <Accordion title="Privileged intents">
+  <details>
+<summary>Privileged intents</summary>
+
     In **Bot -> Privileged Gateway Intents**, enable:
 
     - Message Content Intent
@@ -487,9 +488,11 @@ Use `bindings[].match.roles` to route Discord guild members to different agents 
 
     Presence intent is optional and only required if you want to receive presence updates. Setting bot presence (`setPresence`) does not require enabling presence updates for members.
 
-  </Accordion>
+</details>
 
-  <Accordion title="OAuth scopes and baseline permissions">
+  <details>
+<summary>OAuth scopes and baseline permissions</summary>
+
     OAuth URL generator:
 
     - scopes: `bot`, `applications.commands`
@@ -505,9 +508,11 @@ Use `bindings[].match.roles` to route Discord guild members to different agents 
 
     Avoid `Administrator` unless explicitly needed.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Copy IDs">
+  <details>
+<summary>Copy IDs</summary>
+
     Enable Discord Developer Mode, then copy:
 
     - server ID
@@ -516,8 +521,7 @@ Use `bindings[].match.roles` to route Discord guild members to different agents 
 
     Prefer numeric IDs in RemoteClaw config for reliable audits and probes.
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Native commands and command auth
 
@@ -535,8 +539,9 @@ Default slash command settings:
 
 ## Feature details
 
-<AccordionGroup>
-  <Accordion title="Reply tags and native replies">
+  <details>
+<summary>Reply tags and native replies</summary>
+
     Discord supports reply tags in agent output:
 
     - `[[reply_to_current]]`
@@ -552,9 +557,11 @@ Default slash command settings:
 
     Message IDs are surfaced in context/history so agents can target specific messages.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Live stream preview">
+  <details>
+<summary>Live stream preview</summary>
+
     RemoteClaw can stream draft replies by sending a temporary message and editing it as text arrives.
 
     - `channels.discord.streaming` controls preview streaming (`off` | `partial` | `block` | `progress`, default: `off`).
@@ -597,9 +604,11 @@ Default slash command settings:
     Note: preview streaming is separate from block streaming. When block streaming is explicitly
     enabled for Discord, RemoteClaw skips the preview stream to avoid double streaming.
 
-  </Accordion>
+</details>
 
-  <Accordion title="History, context, and thread behavior">
+  <details>
+<summary>History, context, and thread behavior</summary>
+
     Guild history context:
 
     - `channels.discord.historyLimit` default `20`
@@ -619,9 +628,11 @@ Default slash command settings:
 
     Channel topics are injected as **untrusted** context (not as system prompt).
 
-  </Accordion>
+</details>
 
-  <Accordion title="Thread-bound sessions for subagents">
+  <details>
+<summary>Thread-bound sessions for subagents</summary>
+
     Discord can bind a thread to a session target so follow-up messages in that thread keep routing to the same session (including subagent sessions).
 
     Commands:
@@ -662,9 +673,11 @@ Default slash command settings:
 
     See [Sub-agents](/tools/subagents) and [Configuration Reference](/gateway/configuration-reference).
 
-  </Accordion>
+</details>
 
-  <Accordion title="Reaction notifications">
+  <details>
+<summary>Reaction notifications</summary>
+
     Per-guild reaction notification mode:
 
     - `off`
@@ -674,9 +687,11 @@ Default slash command settings:
 
     Reaction events are turned into system events and attached to the routed Discord session.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Ack reactions">
+  <details>
+<summary>Ack reactions</summary>
+
     `ackReaction` sends an acknowledgement emoji while RemoteClaw is processing an inbound message.
 
     Resolution order:
@@ -691,9 +706,11 @@ Default slash command settings:
     - Discord accepts unicode emoji or custom emoji names.
     - Use `""` to disable the reaction for a channel or account.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Config writes">
+  <details>
+<summary>Config writes</summary>
+
     Channel-initiated config writes are enabled by default.
 
     This affects `/config set|unset` flows (when command features are enabled).
@@ -710,9 +727,11 @@ Default slash command settings:
 }
 ```
 
-  </Accordion>
+</details>
 
-  <Accordion title="Gateway proxy">
+  <details>
+<summary>Gateway proxy</summary>
+
     Route Discord gateway WebSocket traffic and startup REST lookups (application ID + allowlist resolution) through an HTTP(S) proxy with `channels.discord.proxy`.
 
 ```json5
@@ -741,9 +760,11 @@ Default slash command settings:
 }
 ```
 
-  </Accordion>
+</details>
 
-  <Accordion title="PluralKit support">
+  <details>
+<summary>PluralKit support</summary>
+
     Enable PluralKit resolution to map proxied messages to system member identity:
 
 ```json5
@@ -766,9 +787,11 @@ Default slash command settings:
     - lookups use original message ID and are time-window constrained
     - if lookup fails, proxied messages are treated as bot messages and dropped unless `allowBots=true`
 
-  </Accordion>
+</details>
 
-  <Accordion title="Presence configuration">
+  <details>
+<summary>Presence configuration</summary>
+
     Presence updates are applied only when you set a status or activity field.
 
     Status only example:
@@ -819,9 +842,11 @@ Default slash command settings:
     - 4: Custom (uses the activity text as the status state; emoji is optional)
     - 5: Competing
 
-  </Accordion>
+</details>
 
-  <Accordion title="Exec approvals in Discord">
+  <details>
+<summary>Exec approvals in Discord</summary>
+
     Discord supports button-based exec approvals in DMs and can optionally post approval prompts in the originating channel.
 
     Config path:
@@ -837,8 +862,7 @@ Default slash command settings:
 
     Related docs: [Exec approvals](/tools/exec-approvals)
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Tools and action gates
 
@@ -951,16 +975,17 @@ message(action="send", channel="discord", target="channel:123", path="/path/to/a
 
 ## Troubleshooting
 
-<AccordionGroup>
-  <Accordion title="Used disallowed intents or bot sees no guild messages">
+  <details>
+<summary>Used disallowed intents or bot sees no guild messages</summary>
 
     - enable Message Content Intent
     - enable Server Members Intent when you depend on user/member resolution
     - restart gateway after changing intents
 
-  </Accordion>
+</details>
 
-  <Accordion title="Guild messages blocked unexpectedly">
+  <details>
+<summary>Guild messages blocked unexpectedly</summary>
 
     - verify `groupPolicy`
     - verify guild allowlist under `channels.discord.guilds`
@@ -975,40 +1000,48 @@ remoteclaw channels status --probe
 remoteclaw logs --follow
 ```
 
-  </Accordion>
+</details>
 
-  <Accordion title="Require mention false but still blocked">
+  <details>
+<summary>Require mention false but still blocked</summary>
+
     Common causes:
 
     - `groupPolicy="allowlist"` without matching guild/channel allowlist
     - `requireMention` configured in the wrong place (must be under `channels.discord.guilds` or channel entry)
     - sender blocked by guild/channel `users` allowlist
 
-  </Accordion>
+</details>
 
-  <Accordion title="Permissions audit mismatches">
+  <details>
+<summary>Permissions audit mismatches</summary>
+
     `channels status --probe` permission checks only work for numeric channel IDs.
 
     If you use slug keys, runtime matching can still work, but probe cannot fully verify permissions.
 
-  </Accordion>
+</details>
 
-  <Accordion title="DM and pairing issues">
+  <details>
+<summary>DM and pairing issues</summary>
 
     - DM disabled: `channels.discord.dm.enabled=false`
     - DM policy disabled: `channels.discord.dmPolicy="disabled"` (legacy: `channels.discord.dm.policy`)
     - awaiting pairing approval in `pairing` mode
 
-  </Accordion>
+</details>
 
-  <Accordion title="Bot to bot loops">
+  <details>
+<summary>Bot to bot loops</summary>
+
     By default bot-authored messages are ignored.
 
     If you set `channels.discord.allowBots=true`, use strict mention and allowlist rules to avoid loop behavior.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Voice STT drops with DecryptionFailed(...)">
+  <details>
+<summary>Voice STT drops with DecryptionFailed(...)</summary>
 
     - keep RemoteClaw current (`remoteclaw update`) so the Discord voice receive recovery logic is present
     - confirm `channels.discord.voice.daveEncryption=true` (default)
@@ -1018,8 +1051,7 @@ remoteclaw logs --follow
       - `discord voice: repeated decrypt failures; attempting rejoin`
     - if failures continue after automatic rejoin, collect logs and compare against [discord.js #11419](https://github.com/discordjs/discord.js/issues/11419)
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Configuration reference pointers
 

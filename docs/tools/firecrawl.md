@@ -1,5 +1,5 @@
 ---
-summary: "Firecrawl fallback for web_fetch (anti-bot + cached extraction)"
+description: "Firecrawl fallback for web_fetch (anti-bot + cached extraction)"
 read_when:
   - You want Firecrawl-backed web extraction
   - You need a Firecrawl API key

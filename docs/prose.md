@@ -1,5 +1,5 @@
 ---
-summary: "OpenProse: .prose workflows, slash commands, and state in RemoteClaw"
+description: "OpenProse: .prose workflows, slash commands, and state in RemoteClaw"
 read_when:
   - You want to run or write .prose workflows
   - You want to enable the OpenProse plugin

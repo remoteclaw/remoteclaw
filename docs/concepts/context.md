@@ -1,5 +1,5 @@
 ---
-summary: "Context: what the model sees, how it is built, and how to inspect it"
+description: "Context: what the model sees, how it is built, and how to inspect it"
 read_when:
   - You want to understand what “context” means in RemoteClaw
   - You are debugging why the model “knows” something (or forgot it)

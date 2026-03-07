@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw sessions` (list stored sessions + usage)"
+description: "CLI reference for `remoteclaw sessions` (list stored sessions + usage)"
 read_when:
   - You want to list stored sessions and see recent activity
 title: "sessions"

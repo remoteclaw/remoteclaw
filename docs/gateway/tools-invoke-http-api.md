@@ -1,5 +1,5 @@
 ---
-summary: "Invoke a single tool directly via the Gateway HTTP endpoint"
+description: "Invoke a single tool directly via the Gateway HTTP endpoint"
 read_when:
   - Calling tools without running a full agent turn
   - Building automations that need tool policy enforcement

@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw logging: rolling diagnostics file log + unified log privacy flags"
+description: "RemoteClaw logging: rolling diagnostics file log + unified log privacy flags"
 read_when:
   - Capturing macOS logs or investigating private data logging
   - Debugging voice wake/session lifecycle issues

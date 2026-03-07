@@ -1,5 +1,5 @@
 ---
-summary: "Use Xiaomi MiMo (mimo-v2-flash) with RemoteClaw"
+description: "Use Xiaomi MiMo (mimo-v2-flash) with RemoteClaw"
 read_when:
   - You want Xiaomi MiMo models in RemoteClaw
   - You need XIAOMI_API_KEY setup

@@ -1,5 +1,5 @@
 ---
-summary: "Hubs that link to every RemoteClaw doc"
+description: "Hubs that link to every RemoteClaw doc"
 read_when:
   - You want a complete map of the documentation
 title: "Docs Hubs"
@@ -7,9 +7,9 @@ title: "Docs Hubs"
 
 # Docs hubs
 
-<Note>
+:::note
 If you are new to RemoteClaw, start with [Getting Started](/start/getting-started).
-</Note>
+:::
 
 Use these hubs to discover every page, including deep dives and reference docs that don’t appear in the left nav.
 

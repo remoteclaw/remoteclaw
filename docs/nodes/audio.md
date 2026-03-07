@@ -1,5 +1,5 @@
 ---
-summary: "How inbound audio/voice notes are downloaded, transcribed, and injected into replies"
+description: "How inbound audio/voice notes are downloaded, transcribed, and injected into replies"
 read_when:
   - Changing audio transcription or media handling
 title: "Audio and Voice Notes"

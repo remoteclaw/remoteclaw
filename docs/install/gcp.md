@@ -1,5 +1,5 @@
 ---
-summary: "Run RemoteClaw Gateway 24/7 on a GCP Compute Engine VM (Docker) with durable state"
+description: "Run RemoteClaw Gateway 24/7 on a GCP Compute Engine VM (Docker) with durable state"
 read_when:
   - You want RemoteClaw running 24/7 on GCP
   - You want a production-grade, always-on Gateway on your own VM

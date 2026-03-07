@@ -1,5 +1,5 @@
 ---
-summary: "macOS IPC architecture for RemoteClaw app, gateway node transport, and PeekabooBridge"
+description: "macOS IPC architecture for RemoteClaw app, gateway node transport, and PeekabooBridge"
 read_when:
   - Editing IPC contracts or menu bar app IPC
 title: "macOS IPC"

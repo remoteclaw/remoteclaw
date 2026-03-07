@@ -1,11 +1,13 @@
 ---
-summary: "How the installer scripts work (install.sh, install-cli.sh, install.ps1), flags, and automation"
+description: "How the installer scripts work (install.sh, install-cli.sh, install.ps1), flags, and automation"
 read_when:
   - You want to understand `remoteclaw.org/install.sh`
   - You want to automate installs (CI / headless)
   - You want to install from a GitHub checkout
 title: "Installer Internals"
 ---
+
+import { Steps, TabItem, Tabs } from "@astrojs/starlight/components";
 
 # Installer internals
 
@@ -20,7 +22,7 @@ RemoteClaw ships three installer scripts, served from `remoteclaw.org`.
 ## Quick commands
 
 <Tabs>
-  <Tab title="install.sh">
+  <TabItem label="install.sh">
     ```bash
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash
     ```
@@ -29,8 +31,8 @@ RemoteClaw ships three installer scripts, served from `remoteclaw.org`.
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --help
     ```
 
-  </Tab>
-  <Tab title="install-cli.sh">
+  </TabItem>
+  <TabItem label="install-cli.sh">
     ```bash
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash
     ```
@@ -39,8 +41,8 @@ RemoteClaw ships three installer scripts, served from `remoteclaw.org`.
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s -- --help
     ```
 
-  </Tab>
-  <Tab title="install.ps1">
+  </TabItem>
+  <TabItem label="install.ps1">
     ```powershell
     iwr -useb https://remoteclaw.org/install.ps1 | iex
     ```
@@ -49,42 +51,46 @@ RemoteClaw ships three installer scripts, served from `remoteclaw.org`.
     & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -Tag beta -NoOnboard -DryRun
     ```
 
-  </Tab>
+  </TabItem>
 </Tabs>
 
-<Note>
+:::note
 If install succeeds but `remoteclaw` is not found in a new terminal, see [Node.js troubleshooting](/install/node#troubleshooting).
-</Note>
+:::
 
 ---
 
 ## install.sh
 
-<Tip>
+:::tip
 Recommended for most interactive installs on macOS/Linux/WSL.
-</Tip>
+:::
 
 ### Flow (install.sh)
 
 <Steps>
-  <Step title="Detect OS">
-    Supports macOS and Linux (including WSL). If macOS is detected, installs Homebrew if missing.
-  </Step>
-  <Step title="Ensure Node.js 22+">
-    Checks Node version and installs Node 22 if needed (Homebrew on macOS, NodeSource setup scripts on Linux apt/dnf/yum).
-  </Step>
-  <Step title="Ensure Git">
-    Installs Git if missing.
-  </Step>
-  <Step title="Install RemoteClaw">
-    - `npm` method (default): global npm install
-    - `git` method: clone/update repo, install deps with pnpm, build, then install wrapper at `~/.local/bin/remoteclaw`
-  </Step>
-  <Step title="Post-install tasks">
-    - Runs `remoteclaw doctor --non-interactive` on upgrades and git installs (best effort)
-    - Attempts onboarding when appropriate (TTY available, onboarding not disabled, and bootstrap/config checks pass)
-    - Defaults `SHARP_IGNORE_GLOBAL_LIBVIPS=1`
-  </Step>
+
+1. **Detect OS**
+
+   Supports macOS and Linux (including WSL). If macOS is detected, installs Homebrew if missing.
+
+2. **Ensure Node.js 22+**
+
+   Checks Node version and installs Node 22 if needed (Homebrew on macOS, NodeSource setup scripts on Linux apt/dnf/yum).
+
+3. **Ensure Git**
+
+   Installs Git if missing.
+
+4. **Install RemoteClaw**
+   - `npm` method (default): global npm install
+   - `git` method: clone/update repo, install deps with pnpm, build, then install wrapper at `~/.local/bin/remoteclaw`
+
+5. **Post-install tasks**
+   - Runs `remoteclaw doctor --non-interactive` on upgrades and git installs (best effort)
+   - Attempts onboarding when appropriate (TTY available, onboarding not disabled, and bootstrap/config checks pass)
+   - Defaults `SHARP_IGNORE_GLOBAL_LIBVIPS=1`
+
 </Steps>
 
 ### Source checkout detection
@@ -101,30 +107,30 @@ The script exits with code `2` for invalid method selection or invalid `--instal
 ### Examples (install.sh)
 
 <Tabs>
-  <Tab title="Default">
+  <TabItem label="Default">
     ```bash
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash
     ```
-  </Tab>
-  <Tab title="Skip onboarding">
+  </TabItem>
+  <TabItem label="Skip onboarding">
     ```bash
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --no-onboard
     ```
-  </Tab>
-  <Tab title="Git install">
+  </TabItem>
+  <TabItem label="Git install">
     ```bash
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --install-method git
     ```
-  </Tab>
-  <Tab title="Dry run">
+  </TabItem>
+  <TabItem label="Dry run">
     ```bash
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --dry-run
     ```
-  </Tab>
+  </TabItem>
 </Tabs>
 
-<AccordionGroup>
-  <Accordion title="Flags reference">
+  <details>
+<summary>Flags reference</summary>
 
 | Flag                            | Description                                                  |
 | ------------------------------- | ------------------------------------------------------------ |
@@ -142,9 +148,10 @@ The script exits with code `2` for invalid method selection or invalid `--instal
 | `--verbose`                     | Enable debug output (`set -x`, npm notice-level logs)        |
 | `--help`                        | Show usage (`-h`)                                            |
 
-  </Accordion>
+</details>
 
-  <Accordion title="Environment variables reference">
+  <details>
+<summary>Environment variables reference</summary>
 
 | Variable                                      | Description                                   |
 | --------------------------------------------- | --------------------------------------------- |
@@ -160,58 +167,61 @@ The script exits with code `2` for invalid method selection or invalid `--instal
 | `REMOTECLAW_NPM_LOGLEVEL=error\|warn\|notice` | npm log level                                 |
 | `SHARP_IGNORE_GLOBAL_LIBVIPS=0\|1`            | Control sharp/libvips behavior (default: `1`) |
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ---
 
 ## install-cli.sh
 
-<Info>
+:::note
 Designed for environments where you want everything under a local prefix (default `~/.remoteclaw`) and no system Node dependency.
-</Info>
+:::
 
 ### Flow (install-cli.sh)
 
 <Steps>
-  <Step title="Install local Node runtime">
-    Downloads Node tarball (default `22.22.0`) to `<prefix>/tools/node-v<version>` and verifies SHA-256.
-  </Step>
-  <Step title="Ensure Git">
-    If Git is missing, attempts install via apt/dnf/yum on Linux or Homebrew on macOS.
-  </Step>
-  <Step title="Install RemoteClaw under prefix">
-    Installs with npm using `--prefix <prefix>`, then writes wrapper to `<prefix>/bin/remoteclaw`.
-  </Step>
+
+1. **Install local Node runtime**
+
+   Downloads Node tarball (default `22.22.0`) to `<prefix>/tools/node-v<version>` and verifies SHA-256.
+
+2. **Ensure Git**
+
+   If Git is missing, attempts install via apt/dnf/yum on Linux or Homebrew on macOS.
+
+3. **Install RemoteClaw under prefix**
+
+   Installs with npm using `--prefix <prefix>`, then writes wrapper to `<prefix>/bin/remoteclaw`.
+
 </Steps>
 
 ### Examples (install-cli.sh)
 
 <Tabs>
-  <Tab title="Default">
+  <TabItem label="Default">
     ```bash
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash
     ```
-  </Tab>
-  <Tab title="Custom prefix + version">
+  </TabItem>
+  <TabItem label="Custom prefix + version">
     ```bash
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s -- --prefix /opt/remoteclaw --version latest
     ```
-  </Tab>
-  <Tab title="Automation JSON output">
+  </TabItem>
+  <TabItem label="Automation JSON output">
     ```bash
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s -- --json --prefix /opt/remoteclaw
     ```
-  </Tab>
-  <Tab title="Run onboarding">
+  </TabItem>
+  <TabItem label="Run onboarding">
     ```bash
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s -- --onboard
     ```
-  </Tab>
+  </TabItem>
 </Tabs>
 
-<AccordionGroup>
-  <Accordion title="Flags reference">
+  <details>
+<summary>Flags reference</summary>
 
 | Flag                   | Description                                                                     |
 | ---------------------- | ------------------------------------------------------------------------------- |
@@ -224,9 +234,10 @@ Designed for environments where you want everything under a local prefix (defaul
 | `--set-npm-prefix`     | On Linux, force npm prefix to `~/.npm-global` if current prefix is not writable |
 | `--help`               | Show usage (`-h`)                                                               |
 
-  </Accordion>
+</details>
 
-  <Accordion title="Environment variables reference">
+  <details>
+<summary>Environment variables reference</summary>
 
 | Variable                                      | Description                                                                       |
 | --------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -238,8 +249,7 @@ Designed for environments where you want everything under a local prefix (defaul
 | `REMOTECLAW_GIT_DIR=<path>`                   | Legacy cleanup lookup path (used when removing old `Peekaboo` submodule checkout) |
 | `SHARP_IGNORE_GLOBAL_LIBVIPS=0\|1`            | Control sharp/libvips behavior (default: `1`)                                     |
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ---
 
@@ -248,56 +258,60 @@ Designed for environments where you want everything under a local prefix (defaul
 ### Flow (install.ps1)
 
 <Steps>
-  <Step title="Ensure PowerShell + Windows environment">
-    Requires PowerShell 5+.
-  </Step>
-  <Step title="Ensure Node.js 22+">
-    If missing, attempts install via winget, then Chocolatey, then Scoop.
-  </Step>
-  <Step title="Install RemoteClaw">
-    - `npm` method (default): global npm install using selected `-Tag`
-    - `git` method: clone/update repo, install/build with pnpm, and install wrapper at `%USERPROFILE%\.local\bin\remoteclaw.cmd`
-  </Step>
-  <Step title="Post-install tasks">
-    Adds needed bin directory to user PATH when possible, then runs `remoteclaw doctor --non-interactive` on upgrades and git installs (best effort).
-  </Step>
+
+1. **Ensure PowerShell + Windows environment**
+
+   Requires PowerShell 5+.
+
+2. **Ensure Node.js 22+**
+
+   If missing, attempts install via winget, then Chocolatey, then Scoop.
+
+3. **Install RemoteClaw**
+   - `npm` method (default): global npm install using selected `-Tag`
+   - `git` method: clone/update repo, install/build with pnpm, and install wrapper at `%USERPROFILE%\.local\bin\remoteclaw.cmd`
+
+4. **Post-install tasks**
+
+   Adds needed bin directory to user PATH when possible, then runs `remoteclaw doctor --non-interactive` on upgrades and git installs (best effort).
+
 </Steps>
 
 ### Examples (install.ps1)
 
 <Tabs>
-  <Tab title="Default">
+  <TabItem label="Default">
     ```powershell
     iwr -useb https://remoteclaw.org/install.ps1 | iex
     ```
-  </Tab>
-  <Tab title="Git install">
+  </TabItem>
+  <TabItem label="Git install">
     ```powershell
     & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -InstallMethod git
     ```
-  </Tab>
-  <Tab title="Custom git directory">
+  </TabItem>
+  <TabItem label="Custom git directory">
     ```powershell
     & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -InstallMethod git -GitDir "C:\remoteclaw"
     ```
-  </Tab>
-  <Tab title="Dry run">
+  </TabItem>
+  <TabItem label="Dry run">
     ```powershell
     & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -DryRun
     ```
-  </Tab>
-  <Tab title="Debug trace">
+  </TabItem>
+  <TabItem label="Debug trace">
     ```powershell
     # install.ps1 has no dedicated -Verbose flag yet.
     Set-PSDebug -Trace 1
     & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -NoOnboard
     Set-PSDebug -Trace 0
     ```
-  </Tab>
+  </TabItem>
 </Tabs>
 
-<AccordionGroup>
-  <Accordion title="Flags reference">
+  <details>
+<summary>Flags reference</summary>
 
 | Flag                      | Description                                              |
 | ------------------------- | -------------------------------------------------------- |
@@ -308,9 +322,10 @@ Designed for environments where you want everything under a local prefix (defaul
 | `-NoGitUpdate`            | Skip `git pull`                                          |
 | `-DryRun`                 | Print actions only                                       |
 
-  </Accordion>
+</details>
 
-  <Accordion title="Environment variables reference">
+  <details>
+<summary>Environment variables reference</summary>
 
 | Variable                             | Description        |
 | ------------------------------------ | ------------------ |
@@ -320,12 +335,11 @@ Designed for environments where you want everything under a local prefix (defaul
 | `REMOTECLAW_GIT_UPDATE=0`            | Disable git pull   |
 | `REMOTECLAW_DRY_RUN=1`               | Dry run mode       |
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
-<Note>
+:::note
 If `-InstallMethod git` is used and Git is missing, the script exits and prints the Git for Windows link.
-</Note>
+:::
 
 ---
 
@@ -334,60 +348,75 @@ If `-InstallMethod git` is used and Git is missing, the script exits and prints 
 Use non-interactive flags/env vars for predictable runs.
 
 <Tabs>
-  <Tab title="install.sh (non-interactive npm)">
+  <TabItem label="install.sh (non-interactive npm)">
     ```bash
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash -s -- --no-prompt --no-onboard
     ```
-  </Tab>
-  <Tab title="install.sh (non-interactive git)">
+  </TabItem>
+  <TabItem label="install.sh (non-interactive git)">
     ```bash
     REMOTECLAW_INSTALL_METHOD=git REMOTECLAW_NO_PROMPT=1 \
       curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash
     ```
-  </Tab>
-  <Tab title="install-cli.sh (JSON)">
+  </TabItem>
+  <TabItem label="install-cli.sh (JSON)">
     ```bash
     curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install-cli.sh | bash -s -- --json --prefix /opt/remoteclaw
     ```
-  </Tab>
-  <Tab title="install.ps1 (skip onboarding)">
+  </TabItem>
+  <TabItem label="install.ps1 (skip onboarding)">
     ```powershell
     & ([scriptblock]::Create((iwr -useb https://remoteclaw.org/install.ps1))) -NoOnboard
     ```
-  </Tab>
+  </TabItem>
 </Tabs>
 
 ---
 
 ## Troubleshooting
 
-<AccordionGroup>
-  <Accordion title="Why is Git required?">
+  <details>
+<summary>Why is Git required?</summary>
+
     Git is required for `git` install method. For `npm` installs, Git is still checked/installed to avoid `spawn git ENOENT` failures when dependencies use git URLs.
-  </Accordion>
 
-  <Accordion title="Why does npm hit EACCES on Linux?">
+</details>
+
+  <details>
+<summary>Why does npm hit EACCES on Linux?</summary>
+
     Some Linux setups point npm global prefix to root-owned paths. `install.sh` can switch prefix to `~/.npm-global` and append PATH exports to shell rc files (when those files exist).
-  </Accordion>
 
-  <Accordion title="sharp/libvips issues">
+</details>
+
+  <details>
+<summary>sharp/libvips issues</summary>
+
     The scripts default `SHARP_IGNORE_GLOBAL_LIBVIPS=1` to avoid sharp building against system libvips. To override:
 
     ```bash
     SHARP_IGNORE_GLOBAL_LIBVIPS=0 curl -fsSL --proto '=https' --tlsv1.2 https://remoteclaw.org/install.sh | bash
     ```
 
-  </Accordion>
+</details>
 
-  <Accordion title='Windows: "npm error spawn git / ENOENT"'>
+  <details>
+<summary>Windows: </summary>
+
     Install Git for Windows, reopen PowerShell, rerun installer.
-  </Accordion>
 
-  <Accordion title='Windows: "remoteclaw is not recognized"'>
+</details>
+
+  <details>
+<summary>Windows: </summary>
+
     Run `npm config get prefix`, append `\bin`, add that directory to user PATH, then reopen PowerShell.
-  </Accordion>
 
-  <Accordion title="Windows: how to get verbose installer output">
+</details>
+
+  <details>
+<summary>Windows: how to get verbose installer output</summary>
+
     `install.ps1` does not currently expose a `-Verbose` switch.
     Use PowerShell tracing for script-level diagnostics:
 
@@ -397,9 +426,11 @@ Use non-interactive flags/env vars for predictable runs.
     Set-PSDebug -Trace 0
     ```
 
-  </Accordion>
+</details>
 
-  <Accordion title="remoteclaw not found after install">
+  <details>
+<summary>remoteclaw not found after install</summary>
+
     Usually a PATH issue. See [Node.js troubleshooting](/install/node#troubleshooting).
-  </Accordion>
-</AccordionGroup>
+
+</details>

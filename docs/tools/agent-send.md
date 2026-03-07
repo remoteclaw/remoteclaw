@@ -1,5 +1,5 @@
 ---
-summary: "Direct `remoteclaw agent` CLI runs (with optional delivery)"
+description: "Direct `remoteclaw agent` CLI runs (with optional delivery)"
 read_when:
   - Adding or modifying the agent CLI entrypoint
 title: "Agent Send"

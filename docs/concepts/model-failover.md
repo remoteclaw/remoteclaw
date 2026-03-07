@@ -1,5 +1,5 @@
 ---
-summary: "How RemoteClaw rotates auth profiles and falls back across models"
+description: "How RemoteClaw rotates auth profiles and falls back across models"
 read_when:
   - Diagnosing auth profile rotation, cooldowns, or model fallback behavior
   - Updating failover rules for auth profiles or models

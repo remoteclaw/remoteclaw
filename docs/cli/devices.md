@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw devices` (device pairing + token rotation/revocation)"
+description: "CLI reference for `remoteclaw devices` (device pairing + token rotation/revocation)"
 read_when:
   - You are approving device pairing requests
   - You need to rotate or revoke device tokens

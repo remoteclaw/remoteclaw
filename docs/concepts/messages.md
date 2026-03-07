@@ -1,5 +1,5 @@
 ---
-summary: "Message flow, sessions, queueing, and reasoning visibility"
+description: "Message flow, sessions, queueing, and reasoning visibility"
 read_when:
   - Explaining how inbound messages become replies
   - Clarifying sessions, queueing modes, or streaming behavior

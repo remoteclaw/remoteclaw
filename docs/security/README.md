@@ -1,3 +1,7 @@
+---
+title: "Security & Trust"
+---
+
 # RemoteClaw Security & Trust
 
 **Live:** [trust.remoteclaw.org](https://trust.remoteclaw.org)

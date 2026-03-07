@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw uninstall` (remove gateway service + local data)"
+description: "CLI reference for `remoteclaw uninstall` (remove gateway service + local data)"
 read_when:
   - You want to remove the gateway service and/or local state
   - You want a dry-run first

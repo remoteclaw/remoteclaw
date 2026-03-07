@@ -1,32 +1,22 @@
 ---
-summary: "RemoteClaw capabilities across channels, routing, media, and UX."
+description: "RemoteClaw capabilities across channels, routing, media, and UX."
 read_when:
   - You want a full list of what RemoteClaw supports
 title: "Features"
 ---
 
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
 ## Highlights
 
-<Columns>
-  <Card title="Channels" icon="message-square">
-    WhatsApp, Telegram, Discord, and iMessage with a single Gateway.
-  </Card>
-  <Card title="Plugins" icon="plug">
-    Add Mattermost and more with extensions.
-  </Card>
-  <Card title="Routing" icon="route">
-    Multi-agent routing with isolated sessions.
-  </Card>
-  <Card title="Media" icon="image">
-    Images, audio, and documents in and out.
-  </Card>
-  <Card title="Apps and UI" icon="monitor">
-    Web Control UI and macOS companion app.
-  </Card>
-  <Card title="Mobile nodes" icon="smartphone">
-    iOS and Android nodes with Canvas support.
-  </Card>
-</Columns>
+<CardGrid>
+  <Card title="Channels">WhatsApp, Telegram, Discord, and iMessage with a single Gateway.</Card>
+  <Card title="Plugins">Add Mattermost and more with extensions.</Card>
+  <Card title="Routing">Multi-agent routing with isolated sessions.</Card>
+  <Card title="Media">Images, audio, and documents in and out.</Card>
+  <Card title="Apps and UI">Web Control UI and macOS companion app.</Card>
+  <Card title="Mobile nodes">iOS and Android nodes with Canvas support.</Card>
+</CardGrid>
 
 ## Full list
 
@@ -47,7 +37,7 @@ title: "Features"
 - iOS node with pairing and Canvas surface
 - Android node with pairing, Canvas, chat, and camera
 
-<Note>
+:::note
 RemoteClaw supports four CLI agent runtimes: Claude, Gemini, Codex, and OpenCode.
 Each runs as a subprocess managed by the ChannelBridge.
-</Note>
+:::

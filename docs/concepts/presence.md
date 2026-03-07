@@ -1,5 +1,5 @@
 ---
-summary: "How RemoteClaw presence entries are produced, merged, and displayed"
+description: "How RemoteClaw presence entries are produced, merged, and displayed"
 read_when:
   - Debugging the Instances tab
   - Investigating duplicate or stale instance rows

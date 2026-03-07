@@ -1,5 +1,5 @@
 ---
-summary: "Advanced setup and development workflows for RemoteClaw"
+description: "Advanced setup and development workflows for RemoteClaw"
 read_when:
   - Setting up a new machine
   - You want “latest + greatest” without breaking your personal setup
@@ -8,10 +8,10 @@ title: "Setup"
 
 # Setup
 
-<Note>
+:::note
 If you are setting up for the first time, start with [Getting Started](/start/getting-started).
 For configuration details, see [Configuration](/gateway/configuration).
-</Note>
+:::
 
 Last updated: 2026-01-01
 

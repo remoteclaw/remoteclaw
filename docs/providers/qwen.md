@@ -1,5 +1,5 @@
 ---
-summary: "Use Qwen OAuth (free tier) in RemoteClaw"
+description: "Use Qwen OAuth (free tier) in RemoteClaw"
 read_when:
   - You want to use Qwen with RemoteClaw
   - You want free-tier OAuth access to Qwen Coder

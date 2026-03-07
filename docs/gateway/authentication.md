@@ -1,5 +1,5 @@
 ---
-summary: "Model authentication: OAuth, API keys, and setup-token"
+description: "Model authentication: OAuth, API keys, and setup-token"
 read_when:
   - Debugging model auth or OAuth expiry
   - Documenting authentication or credential storage

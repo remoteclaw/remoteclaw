@@ -1,6 +1,6 @@
 ---
 title: Formal Verification (Security Models)
-summary: Machine-checked security models for RemoteClaw’s highest-risk paths.
+description: Machine-checked security models for RemoteClaw’s highest-risk paths.
 read_when:
   - Reviewing formal security model guarantees or limits
   - Reproducing or updating TLA+/TLC security model checks

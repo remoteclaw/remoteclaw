@@ -1,5 +1,5 @@
 ---
-summary: "Plugin manifest + JSON schema requirements (strict config validation)"
+description: "Plugin manifest + JSON schema requirements (strict config validation)"
 read_when:
   - You are building a RemoteClaw plugin
   - You need to ship a plugin config schema or debug plugin validation errors

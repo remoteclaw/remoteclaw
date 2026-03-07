@@ -1,5 +1,5 @@
 ---
-summary: "Mattermost bot setup and RemoteClaw config"
+description: "Mattermost bot setup and RemoteClaw config"
 read_when:
   - Setting up Mattermost
   - Debugging Mattermost routing

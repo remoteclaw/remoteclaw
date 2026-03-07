@@ -1,5 +1,5 @@
 ---
-summary: "macOS permission persistence (TCC) and signing requirements"
+description: "macOS permission persistence (TCC) and signing requirements"
 read_when:
   - Debugging missing or stuck macOS permission prompts
   - Packaging or signing the macOS app

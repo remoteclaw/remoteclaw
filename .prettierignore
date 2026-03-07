@@ -1,0 +1,5 @@
+# MDX files with code blocks inside JSX components (Tabs/TabItem)
+# oxfmt collapses multi-line code fences inside JSX to single lines,
+# which breaks MDX parsing
+docs/gateway/configuration.mdx
+docs/install/installer.mdx

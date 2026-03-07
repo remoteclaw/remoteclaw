@@ -1,5 +1,5 @@
 ---
-summary: "Hugging Face Inference setup (auth + model selection)"
+description: "Hugging Face Inference setup (auth + model selection)"
 read_when:
   - You want to use Hugging Face Inference with RemoteClaw
   - You need the HF token env var or CLI auth choice

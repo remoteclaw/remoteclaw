@@ -1,85 +1,91 @@
 ---
-summary: "Legacy iMessage support via imsg (JSON-RPC over stdio). New setups should use BlueBubbles."
+description: "Legacy iMessage support via imsg (JSON-RPC over stdio). New setups should use BlueBubbles."
 read_when:
   - Setting up iMessage support
   - Debugging iMessage send/receive
 title: "iMessage"
 ---
 
+import { Card, CardGrid, Steps, TabItem, Tabs } from "@astrojs/starlight/components";
+
 # iMessage (legacy: imsg)
 
-<Warning>
+:::caution
 For new iMessage deployments, use <a href="/channels/bluebubbles">BlueBubbles</a>.
 
 The `imsg` integration is legacy and may be removed in a future release.
-</Warning>
+:::
 
 Status: legacy external CLI integration. Gateway spawns `imsg rpc` and communicates over JSON-RPC on stdio (no separate daemon/port).
 
-<CardGroup cols={3}>
-  <Card title="BlueBubbles (recommended)" icon="message-circle" href="/channels/bluebubbles">
-    Preferred iMessage path for new setups.
+<CardGrid>
+  <Card title="BlueBubbles (recommended)">
+
+[BlueBubbles (recommended)](/channels/bluebubbles) —
+Preferred iMessage path for new setups.
+
   </Card>
-  <Card title="Pairing" icon="link" href="/channels/pairing">
-    iMessage DMs default to pairing mode.
+  <Card title="Pairing">
+
+[Pairing](/channels/pairing) —
+iMessage DMs default to pairing mode.
+
   </Card>
-  <Card title="Configuration reference" icon="settings" href="/gateway/configuration-reference#imessage">
-    Full iMessage field reference.
+  <Card title="Configuration reference">
+
+[Configuration reference](/gateway/configuration-reference#imessage) —
+Full iMessage field reference.
+
   </Card>
-</CardGroup>
+</CardGrid>
 
 ## Quick setup
 
 <Tabs>
-  <Tab title="Local Mac (fast path)">
+  <TabItem label="Local Mac (fast path)">
     <Steps>
-      <Step title="Install and verify imsg">
 
-```bash
-brew install steipete/tap/imsg
-imsg rpc --help
-```
+1.  **Install and verify imsg**
 
-      </Step>
+    ```bash
+    brew install steipete/tap/imsg
+    imsg rpc --help
+    ```
 
-      <Step title="Configure RemoteClaw">
+2.  **Configure RemoteClaw**
 
-```json5
-{
-  channels: {
-    imessage: {
-      enabled: true,
-      cliPath: "/usr/local/bin/imsg",
-      dbPath: "/Users/<you>/Library/Messages/chat.db",
-    },
-  },
-}
-```
+    ```json5
+    {
+      channels: {
+        imessage: {
+          enabled: true,
+          cliPath: "/usr/local/bin/imsg",
+          dbPath: "/Users/<you>/Library/Messages/chat.db",
+        },
+      },
+    }
+    ```
 
-      </Step>
+3.  **Start gateway**
 
-      <Step title="Start gateway">
+    ```bash
+    remoteclaw gateway
+    ```
 
-```bash
-remoteclaw gateway
-```
+4.  **Approve first DM pairing (default dmPolicy)**
 
-      </Step>
+    ```bash
+    remoteclaw pairing list imessage
+    remoteclaw pairing approve imessage <CODE>
+    ```
 
-      <Step title="Approve first DM pairing (default dmPolicy)">
+            Pairing requests expire after 1 hour.
 
-```bash
-remoteclaw pairing list imessage
-remoteclaw pairing approve imessage <CODE>
-```
+</Steps>
 
-        Pairing requests expire after 1 hour.
-      </Step>
-    </Steps>
+  </TabItem>
 
-  </Tab>
-
-  <Tab title="Remote Mac over SSH">
+  <TabItem label="Remote Mac over SSH">
     RemoteClaw only requires a stdio-compatible `cliPath`, so you can point `cliPath` at a wrapper script that SSHes to a remote Mac and runs `imsg`.
 
 ```bash
@@ -111,7 +117,7 @@ exec ssh -T gateway-host imsg "$@"
     RemoteClaw uses strict host-key checking for SCP, so the relay host key must already exist in `~/.ssh/known_hosts`.
     Attachment paths are validated against allowed roots (`attachmentRoots` / `remoteAttachmentRoots`).
 
-  </Tab>
+  </TabItem>
 </Tabs>
 
 ## Requirements and permissions (macOS)
@@ -120,7 +126,7 @@ exec ssh -T gateway-host imsg "$@"
 - Full Disk Access is required for the process context running RemoteClaw/`imsg` (Messages DB access).
 - Automation permission is required to send messages through Messages.app.
 
-<Tip>
+:::tip
 Permissions are granted per process context. If gateway runs headless (LaunchAgent/SSH), run a one-time interactive command in that same context to trigger prompts:
 
 ```bash
@@ -129,12 +135,12 @@ imsg chats --limit 1
 imsg send <handle> "test"
 ```
 
-</Tip>
+:::
 
 ## Access control and routing
 
 <Tabs>
-  <Tab title="DM policy">
+  <TabItem label="DM policy">
     `channels.imessage.dmPolicy` controls direct messages:
 
     - `pairing` (default)
@@ -146,9 +152,9 @@ imsg send <handle> "test"
 
     Allowlist entries can be handles or chat targets (`chat_id:*`, `chat_guid:*`, `chat_identifier:*`).
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="Group policy + mentions">
+  <TabItem label="Group policy + mentions">
     `channels.imessage.groupPolicy` controls group handling:
 
     - `allowlist` (default when configured)
@@ -168,9 +174,9 @@ imsg send <handle> "test"
 
     Control commands from authorized senders can bypass mention gating in groups.
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="Sessions and deterministic replies">
+  <TabItem label="Sessions and deterministic replies">
     - DMs use direct routing; groups use group routing.
     - With default `session.dmScope=main`, iMessage DMs collapse into the agent main session.
     - Group sessions are isolated (`agent:<agentId>:imessage:group:<chat_id>`).
@@ -181,13 +187,14 @@ imsg send <handle> "test"
     Some multi-participant iMessage threads can arrive with `is_group=false`.
     If that `chat_id` is explicitly configured under `channels.imessage.groups`, RemoteClaw treats it as group traffic (group gating + group session isolation).
 
-  </Tab>
+  </TabItem>
 </Tabs>
 
 ## Deployment patterns
 
-<AccordionGroup>
-  <Accordion title="Dedicated bot macOS user (separate iMessage identity)">
+  <details>
+<summary>Dedicated bot macOS user (separate iMessage identity)</summary>
+
     Use a dedicated Apple ID and macOS user so bot traffic is isolated from your personal Messages profile.
 
     Typical flow:
@@ -200,9 +207,11 @@ imsg send <handle> "test"
 
     First run may require GUI approvals (Automation + Full Disk Access) in that bot user session.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Remote Mac over Tailscale (example)">
+  <details>
+<summary>Remote Mac over Tailscale (example)</summary>
+
     Common topology:
 
     - gateway runs on Linux/VM
@@ -234,20 +243,22 @@ exec ssh -T bot@mac-mini.tailnet-1234.ts.net imsg "$@"
     Use SSH keys so both SSH and SCP are non-interactive.
     Ensure the host key is trusted first (for example `ssh bot@mac-mini.tailnet-1234.ts.net`) so `known_hosts` is populated.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Multi-account pattern">
+  <details>
+<summary>Multi-account pattern</summary>
+
     iMessage supports per-account config under `channels.imessage.accounts`.
 
     Each account can override fields such as `cliPath`, `dbPath`, `allowFrom`, `groupPolicy`, `mediaMaxMb`, history settings, and attachment root allowlists.
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Media, chunking, and delivery targets
 
-<AccordionGroup>
-  <Accordion title="Attachments and media">
+  <details>
+<summary>Attachments and media</summary>
+
     - inbound attachment ingestion is optional: `channels.imessage.includeAttachments`
     - remote attachment paths can be fetched via SCP when `remoteHost` is set
     - attachment paths must match allowed roots:
@@ -256,16 +267,22 @@ exec ssh -T bot@mac-mini.tailnet-1234.ts.net imsg "$@"
       - default root pattern: `/Users/*/Library/Messages/Attachments`
     - SCP uses strict host-key checking (`StrictHostKeyChecking=yes`)
     - outbound media size uses `channels.imessage.mediaMaxMb` (default 16 MB)
-  </Accordion>
 
-  <Accordion title="Outbound chunking">
+</details>
+
+  <details>
+<summary>Outbound chunking</summary>
+
     - text chunk limit: `channels.imessage.textChunkLimit` (default 4000)
     - chunk mode: `channels.imessage.chunkMode`
       - `length` (default)
       - `newline` (paragraph-first splitting)
-  </Accordion>
 
-  <Accordion title="Addressing formats">
+</details>
+
+  <details>
+<summary>Addressing formats</summary>
+
     Preferred explicit targets:
 
     - `chat_id:123` (recommended for stable routing)
@@ -282,8 +299,7 @@ exec ssh -T bot@mac-mini.tailnet-1234.ts.net imsg "$@"
 imsg chats --limit 20
 ```
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Config writes
 
@@ -303,8 +319,9 @@ Disable:
 
 ## Troubleshooting
 
-<AccordionGroup>
-  <Accordion title="imsg not found or RPC unsupported">
+  <details>
+<summary>imsg not found or RPC unsupported</summary>
+
     Validate the binary and RPC support:
 
 ```bash
@@ -314,18 +331,22 @@ remoteclaw channels status --probe
 
     If probe reports RPC unsupported, update `imsg`.
 
-  </Accordion>
+</details>
 
-  <Accordion title="DMs are ignored">
+  <details>
+<summary>DMs are ignored</summary>
+
     Check:
 
     - `channels.imessage.dmPolicy`
     - `channels.imessage.allowFrom`
     - pairing approvals (`remoteclaw pairing list imessage`)
 
-  </Accordion>
+</details>
 
-  <Accordion title="Group messages are ignored">
+  <details>
+<summary>Group messages are ignored</summary>
+
     Check:
 
     - `channels.imessage.groupPolicy`
@@ -333,9 +354,11 @@ remoteclaw channels status --probe
     - `channels.imessage.groups` allowlist behavior
     - mention pattern configuration (`agents.list[].groupChat.mentionPatterns`)
 
-  </Accordion>
+</details>
 
-  <Accordion title="Remote attachments fail">
+  <details>
+<summary>Remote attachments fail</summary>
+
     Check:
 
     - `channels.imessage.remoteHost`
@@ -344,9 +367,11 @@ remoteclaw channels status --probe
     - host key exists in `~/.ssh/known_hosts` on the gateway host
     - remote path readability on the Mac running Messages
 
-  </Accordion>
+</details>
 
-  <Accordion title="macOS permission prompts were missed">
+  <details>
+<summary>macOS permission prompts were missed</summary>
+
     Re-run in an interactive GUI terminal in the same user/session context and approve prompts:
 
 ```bash
@@ -356,8 +381,7 @@ imsg send <handle> "test"
 
     Confirm Full Disk Access + Automation are granted for the process context that runs RemoteClaw/`imsg`.
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Configuration reference pointers
 

@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw message` (send + channel actions)"
+description: "CLI reference for `remoteclaw message` (send + channel actions)"
 read_when:
   - Adding or modifying message CLI actions
   - Changing outbound channel behavior

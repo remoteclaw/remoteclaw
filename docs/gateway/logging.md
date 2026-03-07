@@ -1,5 +1,5 @@
 ---
-summary: "Logging surfaces, file logs, WS log styles, and console formatting"
+description: "Logging surfaces, file logs, WS log styles, and console formatting"
 read_when:
   - Changing logging output or formats
   - Debugging CLI or gateway output

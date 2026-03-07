@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw webhooks` (webhook helpers + Gmail Pub/Sub)"
+description: "CLI reference for `remoteclaw webhooks` (webhook helpers + Gmail Pub/Sub)"
 read_when:
   - You want to wire Gmail Pub/Sub events into RemoteClaw
   - You want webhook helper commands

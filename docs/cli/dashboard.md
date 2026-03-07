@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw dashboard` (open the Control UI)"
+description: "CLI reference for `remoteclaw dashboard` (open the Control UI)"
 read_when:
   - You want to open the Control UI with your current token
   - You want to print the URL without launching a browser

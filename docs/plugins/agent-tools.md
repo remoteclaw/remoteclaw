@@ -1,5 +1,5 @@
 ---
-summary: "Write agent tools in a plugin (schemas, optional tools, allowlists)"
+description: "Write agent tools in a plugin (schemas, optional tools, allowlists)"
 read_when:
   - You want to add a new agent tool in a plugin
   - You need to make a tool opt-in via allowlists

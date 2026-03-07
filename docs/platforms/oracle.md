@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw on Oracle Cloud (Always Free ARM)"
+description: "RemoteClaw on Oracle Cloud (Always Free ARM)"
 read_when:
   - Setting up RemoteClaw on Oracle Cloud
   - Looking for low-cost VPS hosting for RemoteClaw

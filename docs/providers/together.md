@@ -1,5 +1,6 @@
 ---
-summary: "Together AI setup (auth + model selection)"
+title: "Together AI"
+description: "Together AI setup (auth + model selection)"
 read_when:
   - You want to use Together AI with RemoteClaw
   - You need the API key env var or CLI auth choice

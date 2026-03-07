@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw qr` (generate iOS pairing QR + setup code)"
+description: "CLI reference for `remoteclaw qr` (generate iOS pairing QR + setup code)"
 read_when:
   - You want to pair the iOS app with a gateway quickly
   - You need setup-code output for remote/manual sharing

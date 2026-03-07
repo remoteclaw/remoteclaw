@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw node` (headless node host)"
+description: "CLI reference for `remoteclaw node` (headless node host)"
 read_when:
   - Running the headless node host
   - Pairing a non-macOS node for system.run

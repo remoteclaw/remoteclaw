@@ -1,5 +1,5 @@
 ---
-summary: "Gmail Pub/Sub push wired into RemoteClaw webhooks via gogcli"
+description: "Gmail Pub/Sub push wired into RemoteClaw webhooks via gogcli"
 read_when:
   - Wiring Gmail inbox triggers to RemoteClaw
   - Setting up Pub/Sub push for agent wake

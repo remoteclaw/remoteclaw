@@ -1,5 +1,5 @@
 ---
-summary: "Gateway runtime on macOS (external launchd service)"
+description: "Gateway runtime on macOS (external launchd service)"
 read_when:
   - Packaging RemoteClaw.app
   - Debugging the macOS gateway launchd service

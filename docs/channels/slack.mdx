@@ -1,123 +1,127 @@
 ---
-summary: "Slack setup and runtime behavior (Socket Mode + HTTP Events API)"
+description: "Slack setup and runtime behavior (Socket Mode + HTTP Events API)"
 read_when:
   - Setting up Slack or debugging Slack socket/HTTP mode
 title: "Slack"
 ---
 
+import { Card, CardGrid, Steps, TabItem, Tabs } from "@astrojs/starlight/components";
+
 # Slack
 
 Status: production-ready for DMs + channels via Slack app integrations. Default mode is Socket Mode; HTTP Events API mode is also supported.
 
-<CardGroup cols={3}>
-  <Card title="Pairing" icon="link" href="/channels/pairing">
-    Slack DMs default to pairing mode.
+<CardGrid>
+  <Card title="Pairing">
+
+[Pairing](/channels/pairing) —
+Slack DMs default to pairing mode.
+
   </Card>
-  <Card title="Slash commands" icon="terminal" href="/tools/slash-commands">
-    Native command behavior and command catalog.
+  <Card title="Slash commands">
+
+[Slash commands](/tools/slash-commands) —
+Native command behavior and command catalog.
+
   </Card>
-  <Card title="Channel troubleshooting" icon="wrench" href="/channels/troubleshooting">
-    Cross-channel diagnostics and repair playbooks.
+  <Card title="Channel troubleshooting">
+
+[Channel troubleshooting](/channels/troubleshooting) —
+Cross-channel diagnostics and repair playbooks.
+
   </Card>
-</CardGroup>
+</CardGrid>
 
 ## Quick setup
 
 <Tabs>
-  <Tab title="Socket Mode (default)">
+  <TabItem label="Socket Mode (default)">
     <Steps>
-      <Step title="Create Slack app and tokens">
-        In Slack app settings:
 
-        - enable **Socket Mode**
-        - create **App Token** (`xapp-...`) with `connections:write`
-        - install app and copy **Bot Token** (`xoxb-...`)
-      </Step>
+1.  **Create Slack app and tokens**
 
-      <Step title="Configure RemoteClaw">
+    In Slack app settings:
+    - enable **Socket Mode**
+    - create **App Token** (`xapp-...`) with `connections:write`
+    - install app and copy **Bot Token** (`xoxb-...`)
 
-```json5
-{
-  channels: {
-    slack: {
-      enabled: true,
-      mode: "socket",
-      appToken: "xapp-...",
-      botToken: "xoxb-...",
-    },
-  },
-}
-```
+2.  **Configure RemoteClaw**
 
-        Env fallback (default account only):
+    ```json5
+    {
+      channels: {
+        slack: {
+          enabled: true,
+          mode: "socket",
+          appToken: "xapp-...",
+          botToken: "xoxb-...",
+        },
+      },
+    }
+    ```
 
-```bash
-SLACK_APP_TOKEN=xapp-...
-SLACK_BOT_TOKEN=xoxb-...
-```
+            Env fallback (default account only):
 
-      </Step>
+    ```bash
+    SLACK_APP_TOKEN=xapp-...
+    SLACK_BOT_TOKEN=xoxb-...
+    ```
 
-      <Step title="Subscribe app events">
-        Subscribe bot events for:
+3.  **Subscribe app events**
 
-        - `app_mention`
-        - `message.channels`, `message.groups`, `message.im`, `message.mpim`
-        - `reaction_added`, `reaction_removed`
-        - `member_joined_channel`, `member_left_channel`
-        - `channel_rename`
-        - `pin_added`, `pin_removed`
+    Subscribe bot events for:
+    - `app_mention`
+    - `message.channels`, `message.groups`, `message.im`, `message.mpim`
+    - `reaction_added`, `reaction_removed`
+    - `member_joined_channel`, `member_left_channel`
+    - `channel_rename`
+    - `pin_added`, `pin_removed`
 
-        Also enable App Home **Messages Tab** for DMs.
-      </Step>
+    Also enable App Home **Messages Tab** for DMs.
 
-      <Step title="Start gateway">
+4.  **Start gateway**
 
-```bash
-remoteclaw gateway
-```
+    ```bash
+    remoteclaw gateway
+    ```
 
-      </Step>
-    </Steps>
+</Steps>
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="HTTP Events API mode">
+  <TabItem label="HTTP Events API mode">
     <Steps>
-      <Step title="Configure Slack app for HTTP">
 
-        - set mode to HTTP (`channels.slack.mode="http"`)
-        - copy Slack **Signing Secret**
-        - set Event Subscriptions + Interactivity + Slash command Request URL to the same webhook path (default `/slack/events`)
+1. **Configure Slack app for HTTP**
+   - set mode to HTTP (`channels.slack.mode="http"`)
+   - copy Slack **Signing Secret**
+   - set Event Subscriptions + Interactivity + Slash command Request URL to the same webhook path (default `/slack/events`)
 
-      </Step>
+2. **Configure RemoteClaw HTTP mode**
 
-      <Step title="Configure RemoteClaw HTTP mode">
+   ```json5
+   {
+     channels: {
+       slack: {
+         enabled: true,
+         mode: "http",
+         botToken: "xoxb-...",
+         signingSecret: "your-signing-secret",
+         webhookPath: "/slack/events",
+       },
+     },
+   }
+   ```
 
-```json5
-{
-  channels: {
-    slack: {
-      enabled: true,
-      mode: "http",
-      botToken: "xoxb-...",
-      signingSecret: "your-signing-secret",
-      webhookPath: "/slack/events",
-    },
-  },
-}
-```
+3. **Use unique webhook paths for multi-account HTTP**
 
-      </Step>
+   Per-account HTTP mode is supported.
 
-      <Step title="Use unique webhook paths for multi-account HTTP">
-        Per-account HTTP mode is supported.
+   Give each account a distinct `webhookPath` so registrations do not collide.
 
-        Give each account a distinct `webhookPath` so registrations do not collide.
-      </Step>
-    </Steps>
+</Steps>
 
-  </Tab>
+  </TabItem>
 </Tabs>
 
 ## Token model
@@ -129,14 +133,14 @@ remoteclaw gateway
 - `userToken` (`xoxp-...`) is config-only (no env fallback) and defaults to read-only behavior (`userTokenReadOnly: true`).
 - Optional: add `chat:write.customize` if you want outgoing messages to use the active agent identity (custom `username` and icon). `icon_emoji` uses `:emoji_name:` syntax.
 
-<Tip>
+:::tip
 For actions/directory reads, user token can be preferred when configured. For writes, bot token remains preferred; user-token writes are only allowed when `userTokenReadOnly: false` and bot token is unavailable.
-</Tip>
+:::
 
 ## Access control and routing
 
 <Tabs>
-  <Tab title="DM policy">
+  <TabItem label="DM policy">
     `channels.slack.dmPolicy` controls DM access (legacy: `channels.slack.dm.policy`):
 
     - `pairing` (default)
@@ -154,9 +158,9 @@ For actions/directory reads, user token can be preferred when configured. For wr
 
     Pairing in DMs uses `remoteclaw pairing approve slack <code>`.
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="Channel policy">
+  <TabItem label="Channel policy">
     `channels.slack.groupPolicy` controls channel handling:
 
     - `open`
@@ -173,9 +177,9 @@ For actions/directory reads, user token can be preferred when configured. For wr
     - unresolved entries are kept as configured
     - inbound authorization matching is ID-first by default; direct username/slug matching requires `channels.slack.dangerouslyAllowNameMatching: true`
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="Mentions and channel users">
+  <TabItem label="Mentions and channel users">
     Channel messages are mention-gated by default.
 
     Mention sources:
@@ -195,7 +199,7 @@ For actions/directory reads, user token can be preferred when configured. For wr
     - `toolsBySender` key format: `id:`, `e164:`, `username:`, `name:`, or `"*"` wildcard
       (legacy unprefixed keys still map to `id:` only)
 
-  </Tab>
+  </TabItem>
 </Tabs>
 
 ## Commands and slash behavior
@@ -248,22 +252,28 @@ Note: `replyToMode="off"` disables **all** reply threading in Slack, including e
 
 ## Media, chunking, and delivery
 
-<AccordionGroup>
-  <Accordion title="Inbound attachments">
+  <details>
+<summary>Inbound attachments</summary>
+
     Slack file attachments are downloaded from Slack-hosted private URLs (token-authenticated request flow) and written to the media store when fetch succeeds and size limits permit.
 
     Runtime inbound size cap defaults to `20MB` unless overridden by `channels.slack.mediaMaxMb`.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Outbound text and files">
+  <details>
+<summary>Outbound text and files</summary>
+
     - text chunks use `channels.slack.textChunkLimit` (default 4000)
     - `channels.slack.chunkMode="newline"` enables paragraph-first splitting
     - file sends use Slack upload APIs and can include thread replies (`thread_ts`)
     - outbound media cap follows `channels.slack.mediaMaxMb` when configured; otherwise channel sends use MIME-kind defaults from media pipeline
-  </Accordion>
 
-  <Accordion title="Delivery targets">
+</details>
+
+  <details>
+<summary>Delivery targets</summary>
+
     Preferred explicit targets:
 
     - `user:<id>` for DMs
@@ -271,8 +281,7 @@ Note: `replyToMode="off"` disables **all** reply threading in Slack, including e
 
     Slack DMs are opened via Slack conversation APIs when sending to user targets.
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Actions and gates
 
@@ -318,8 +327,8 @@ Notes:
 
 ## Manifest and scope checklist
 
-<AccordionGroup>
-  <Accordion title="Slack app manifest example">
+  <details>
+<summary>Slack app manifest example</summary>
 
 ```json
 {
@@ -389,9 +398,11 @@ Notes:
 }
 ```
 
-  </Accordion>
+</details>
 
-  <Accordion title="Optional user-token scopes (read operations)">
+  <details>
+<summary>Optional user-token scopes (read operations)</summary>
+
     If you configure `channels.slack.userToken`, typical read scopes are:
 
     - `channels:history`, `groups:history`, `im:history`, `mpim:history`
@@ -402,13 +413,13 @@ Notes:
     - `emoji:read`
     - `search:read` (if you depend on Slack search reads)
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Troubleshooting
 
-<AccordionGroup>
-  <Accordion title="No replies in channels">
+  <details>
+<summary>No replies in channels</summary>
+
     Check, in order:
 
     - `groupPolicy`
@@ -424,9 +435,11 @@ remoteclaw logs --follow
 remoteclaw doctor
 ```
 
-  </Accordion>
+</details>
 
-  <Accordion title="DM messages ignored">
+  <details>
+<summary>DM messages ignored</summary>
+
     Check:
 
     - `channels.slack.dm.enabled`
@@ -437,13 +450,18 @@ remoteclaw doctor
 remoteclaw pairing list slack
 ```
 
-  </Accordion>
+</details>
 
-  <Accordion title="Socket mode not connecting">
+  <details>
+<summary>Socket mode not connecting</summary>
+
     Validate bot + app tokens and Socket Mode enablement in Slack app settings.
-  </Accordion>
 
-  <Accordion title="HTTP mode not receiving events">
+</details>
+
+  <details>
+<summary>HTTP mode not receiving events</summary>
+
     Validate:
 
     - signing secret
@@ -451,9 +469,11 @@ remoteclaw pairing list slack
     - Slack Request URLs (Events + Interactivity + Slash Commands)
     - unique `webhookPath` per HTTP account
 
-  </Accordion>
+</details>
 
-  <Accordion title="Native/slash commands not firing">
+  <details>
+<summary>Native/slash commands not firing</summary>
+
     Verify whether you intended:
 
     - native command mode (`channels.slack.commands.native: true`) with matching slash commands registered in Slack
@@ -461,8 +481,7 @@ remoteclaw pairing list slack
 
     Also check `commands.useAccessGroups` and channel/user allowlists.
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Text streaming
 

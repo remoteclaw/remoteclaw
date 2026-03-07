@@ -1,5 +1,5 @@
 ---
-summary: "Gateway lifecycle on macOS (launchd)"
+description: "Gateway lifecycle on macOS (launchd)"
 read_when:
   - Integrating the mac app with the gateway lifecycle
 title: "Gateway Lifecycle"

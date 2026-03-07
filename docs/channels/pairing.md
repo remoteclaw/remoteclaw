@@ -1,5 +1,5 @@
 ---
-summary: "Pairing overview: approve who can DM you + which nodes can join"
+description: "Pairing overview: approve who can DM you + which nodes can join"
 read_when:
   - Setting up DM access control
   - Pairing a new iOS/Android node

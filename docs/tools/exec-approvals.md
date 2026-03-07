@@ -1,5 +1,5 @@
 ---
-summary: "Exec approvals, allowlists, and sandbox escape prompts"
+description: "Exec approvals, allowlists, and sandbox escape prompts"
 read_when:
   - Configuring exec approvals or allowlists
   - Implementing exec approval UX in the macOS app

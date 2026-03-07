@@ -1,5 +1,5 @@
 ---
-summary: "Android app (node): connection runbook + Canvas/Chat/Camera"
+description: "Android app (node): connection runbook + Canvas/Chat/Camera"
 read_when:
   - Pairing or reconnecting the Android node
   - Debugging Android gateway discovery or auth

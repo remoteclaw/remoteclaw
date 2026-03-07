@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw clawbot` (legacy alias namespace)"
+description: "CLI reference for `remoteclaw clawbot` (legacy alias namespace)"
 read_when:
   - You maintain older scripts using `remoteclaw clawbot ...`
   - You need migration guidance to current commands

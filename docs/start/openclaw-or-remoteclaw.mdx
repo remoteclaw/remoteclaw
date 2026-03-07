@@ -1,10 +1,12 @@
 ---
-summary: "Decision guide for choosing between OpenClaw and RemoteClaw"
+description: "Decision guide for choosing between OpenClaw and RemoteClaw"
 read_when:
   - You are evaluating whether to use OpenClaw or RemoteClaw
   - You want to understand the trade-offs between the two projects
 title: "OpenClaw or RemoteClaw?"
 ---
+
+import { TabItem, Tabs } from "@astrojs/starlight/components";
 
 # OpenClaw or RemoteClaw?
 
@@ -36,7 +38,7 @@ Use **OpenClaw**. It includes everything in one process.
 ## Architecture comparison
 
 <Tabs>
-  <Tab title="RemoteClaw">
+  <TabItem label="RemoteClaw">
     ```
     RemoteClaw (middleware)
     ├── ChannelBridge (message routing + session tracking)
@@ -49,8 +51,8 @@ Use **OpenClaw**. It includes everything in one process.
 
     The CLI agent owns the agentic loop. RemoteClaw handles session persistence, message delivery, and MCP tool bridging.
 
-  </Tab>
-  <Tab title="OpenClaw">
+  </TabItem>
+  <TabItem label="OpenClaw">
     ```
     OpenClaw (single process)
     ├── Pi execution engine (in-process LLM orchestration)
@@ -62,7 +64,7 @@ Use **OpenClaw**. It includes everything in one process.
 
     Everything runs in one process. OpenClaw manages the model, tools, and conversation directly.
 
-  </Tab>
+  </TabItem>
 </Tabs>
 
 For a deeper architectural comparison, see [Middleware Architecture — How This Differs from OpenClaw](/concepts/middleware-architecture#how-this-differs-from-openclaw).

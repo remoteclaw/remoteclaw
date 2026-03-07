@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw plugins` (list, install, uninstall, enable/disable, doctor)"
+description: "CLI reference for `remoteclaw plugins` (list, install, uninstall, enable/disable, doctor)"
 read_when:
   - You want to install or manage in-process Gateway plugins
   - You want to debug plugin load failures

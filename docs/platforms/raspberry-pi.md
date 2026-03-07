@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw on Raspberry Pi (budget self-hosted setup)"
+description: "RemoteClaw on Raspberry Pi (budget self-hosted setup)"
 read_when:
   - Setting up RemoteClaw on a Raspberry Pi
   - Running RemoteClaw on ARM devices

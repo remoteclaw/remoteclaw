@@ -1,5 +1,5 @@
 ---
-summary: "Session management rules, keys, and persistence for chats"
+description: "Session management rules, keys, and persistence for chats"
 read_when:
   - Modifying session handling or storage
 title: "Session Management"

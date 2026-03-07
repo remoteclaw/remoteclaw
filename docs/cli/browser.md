@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw browser` (profiles, tabs, actions, extension relay)"
+description: "CLI reference for `remoteclaw browser` (profiles, tabs, actions, extension relay)"
 read_when:
   - You use `remoteclaw browser` and want examples for common tasks
   - You want to control a browser running on another machine via a node host

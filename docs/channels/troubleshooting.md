@@ -1,5 +1,5 @@
 ---
-summary: "Fast channel level troubleshooting with per channel failure signatures and fixes"
+description: "Fast channel level troubleshooting with per channel failure signatures and fixes"
 read_when:
   - Channel transport says connected but replies fail
   - You need channel specific checks before deep provider docs

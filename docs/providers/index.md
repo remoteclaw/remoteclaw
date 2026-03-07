@@ -1,5 +1,5 @@
 ---
-summary: "Model providers (LLMs) supported by RemoteClaw"
+description: "Model providers (LLMs) supported by RemoteClaw"
 read_when:
   - You want to choose a model provider
   - You need a quick overview of supported LLM backends

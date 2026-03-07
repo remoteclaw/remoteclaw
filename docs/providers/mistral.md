@@ -1,5 +1,5 @@
 ---
-summary: "Use Mistral models and Voxtral transcription with RemoteClaw"
+description: "Use Mistral models and Voxtral transcription with RemoteClaw"
 read_when:
   - You want to use Mistral models in RemoteClaw
   - You need Mistral API key onboarding and model refs

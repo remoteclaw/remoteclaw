@@ -1,5 +1,5 @@
 ---
-summary: "TypeBox schemas as the single source of truth for the gateway protocol"
+description: "TypeBox schemas as the single source of truth for the gateway protocol"
 read_when:
   - Updating protocol schemas or codegen
 title: "TypeBox"

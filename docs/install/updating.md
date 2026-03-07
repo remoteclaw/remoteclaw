@@ -1,5 +1,5 @@
 ---
-summary: "Updating RemoteClaw safely (global install or source), plus rollback strategy"
+description: "Updating RemoteClaw safely (global install or source), plus rollback strategy"
 read_when:
   - Updating RemoteClaw
   - Something breaks after an update

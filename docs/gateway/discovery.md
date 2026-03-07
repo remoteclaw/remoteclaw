@@ -1,5 +1,5 @@
 ---
-summary: "Node discovery and transports (Bonjour, Tailscale, SSH) for finding the gateway"
+description: "Node discovery and transports (Bonjour, Tailscale, SSH) for finding the gateway"
 read_when:
   - Implementing or changing Bonjour discovery/advertising
   - Adjusting remote connection modes (direct vs SSH)

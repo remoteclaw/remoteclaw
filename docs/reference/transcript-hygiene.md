@@ -1,5 +1,5 @@
 ---
-summary: "Reference: provider-specific transcript sanitization and repair rules"
+description: "Reference: provider-specific transcript sanitization and repair rules"
 read_when:
   - You are debugging provider request rejections tied to transcript shape
   - You are changing transcript sanitization or tool-call repair logic

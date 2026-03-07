@@ -1,7 +1,6 @@
 ---
 title: IRC
 description: Connect RemoteClaw to IRC channels and direct messages.
-summary: "IRC plugin setup, access controls, and troubleshooting"
 read_when:
   - You want to connect RemoteClaw to IRC channels or DMs
   - You are configuring IRC allowlists, group policy, or mention gating

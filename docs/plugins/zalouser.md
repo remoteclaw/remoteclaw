@@ -1,5 +1,5 @@
 ---
-summary: "Zalo Personal plugin: QR login + messaging via zca-cli (plugin install + channel config + CLI + tool)"
+description: "Zalo Personal plugin: QR login + messaging via zca-cli (plugin install + channel config + CLI + tool)"
 read_when:
   - You want Zalo Personal (unofficial) support in RemoteClaw
   - You are configuring or developing the zalouser plugin

@@ -1,5 +1,5 @@
 ---
-summary: "When RemoteClaw shows typing indicators and how to tune them"
+description: "When RemoteClaw shows typing indicators and how to tune them"
 read_when:
   - Changing typing indicator behavior or defaults
 title: "Typing Indicators"

@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw doctor` (health checks + guided repairs)"
+description: "CLI reference for `remoteclaw doctor` (health checks + guided repairs)"
 read_when:
   - You have connectivity/auth issues and want guided fixes
   - You updated and want a sanity check

@@ -1,88 +1,94 @@
 ---
-summary: "WhatsApp channel support, access controls, delivery behavior, and operations"
+description: "WhatsApp channel support, access controls, delivery behavior, and operations"
 read_when:
   - Working on WhatsApp/web channel behavior or inbox routing
 title: "WhatsApp"
 ---
 
+import { Card, CardGrid, Steps, TabItem, Tabs } from "@astrojs/starlight/components";
+
 # WhatsApp (Web channel)
 
 Status: production-ready via WhatsApp Web (Baileys). Gateway owns linked session(s).
 
-<CardGroup cols={3}>
-  <Card title="Pairing" icon="link" href="/channels/pairing">
-    Default DM policy is pairing for unknown senders.
+<CardGrid>
+  <Card title="Pairing">
+
+[Pairing](/channels/pairing) —
+Default DM policy is pairing for unknown senders.
+
   </Card>
-  <Card title="Channel troubleshooting" icon="wrench" href="/channels/troubleshooting">
-    Cross-channel diagnostics and repair playbooks.
+  <Card title="Channel troubleshooting">
+
+[Channel troubleshooting](/channels/troubleshooting) —
+Cross-channel diagnostics and repair playbooks.
+
   </Card>
-  <Card title="Gateway configuration" icon="settings" href="/gateway/configuration">
-    Full channel config patterns and examples.
+  <Card title="Gateway configuration">
+
+[Gateway configuration](/gateway/configuration) —
+Full channel config patterns and examples.
+
   </Card>
-</CardGroup>
+</CardGrid>
 
 ## Quick setup
 
 <Steps>
-  <Step title="Configure WhatsApp access policy">
 
-```json5
-{
-  channels: {
-    whatsapp: {
-      dmPolicy: "pairing",
-      allowFrom: ["+15551234567"],
-      groupPolicy: "allowlist",
-      groupAllowFrom: ["+15551234567"],
-    },
-  },
-}
-```
+1.  **Configure WhatsApp access policy**
 
-  </Step>
+    ```json5
+    {
+      channels: {
+        whatsapp: {
+          dmPolicy: "pairing",
+          allowFrom: ["+15551234567"],
+          groupPolicy: "allowlist",
+          groupAllowFrom: ["+15551234567"],
+        },
+      },
+    }
+    ```
 
-  <Step title="Link WhatsApp (QR)">
+2.  **Link WhatsApp (QR)**
 
-```bash
-remoteclaw channels login --channel whatsapp
-```
+    ```bash
+    remoteclaw channels login --channel whatsapp
+    ```
 
-    For a specific account:
+        For a specific account:
 
-```bash
-remoteclaw channels login --channel whatsapp --account work
-```
+    ```bash
+    remoteclaw channels login --channel whatsapp --account work
+    ```
 
-  </Step>
+3.  **Start the gateway**
 
-  <Step title="Start the gateway">
+    ```bash
+    remoteclaw gateway
+    ```
 
-```bash
-remoteclaw gateway
-```
+4.  **Approve first pairing request (if using pairing mode)**
 
-  </Step>
+    ```bash
+    remoteclaw pairing list whatsapp
+    remoteclaw pairing approve whatsapp <CODE>
+    ```
 
-  <Step title="Approve first pairing request (if using pairing mode)">
+        Pairing requests expire after 1 hour. Pending requests are capped at 3 per channel.
 
-```bash
-remoteclaw pairing list whatsapp
-remoteclaw pairing approve whatsapp <CODE>
-```
-
-    Pairing requests expire after 1 hour. Pending requests are capped at 3 per channel.
-
-  </Step>
 </Steps>
 
-<Note>
+:::note
 RemoteClaw recommends running WhatsApp on a separate number when possible. (The channel metadata and onboarding flow are optimized for that setup, but personal-number setups are also supported.)
-</Note>
+:::
 
 ## Deployment patterns
 
-<AccordionGroup>
-  <Accordion title="Dedicated number (recommended)">
+  <details>
+<summary>Dedicated number (recommended)</summary>
+
     This is the cleanest operational mode:
 
     - separate WhatsApp identity for RemoteClaw
@@ -102,9 +108,11 @@ RemoteClaw recommends running WhatsApp on a separate number when possible. (The 
     }
     ```
 
-  </Accordion>
+</details>
 
-  <Accordion title="Personal-number fallback">
+  <details>
+<summary>Personal-number fallback</summary>
+
     Onboarding supports personal-number mode and writes a self-chat-friendly baseline:
 
     - `dmPolicy: "allowlist"`
@@ -113,15 +121,16 @@ RemoteClaw recommends running WhatsApp on a separate number when possible. (The 
 
     In runtime, self-chat protections key off the linked self number and `allowFrom`.
 
-  </Accordion>
+</details>
 
-  <Accordion title="WhatsApp Web-only channel scope">
+  <details>
+<summary>WhatsApp Web-only channel scope</summary>
+
     The messaging platform channel is WhatsApp Web-based (`Baileys`) in current RemoteClaw channel architecture.
 
     There is no separate Twilio WhatsApp messaging channel in the built-in chat-channel registry.
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Runtime model
 
@@ -134,7 +143,7 @@ RemoteClaw recommends running WhatsApp on a separate number when possible. (The 
 ## Access control and activation
 
 <Tabs>
-  <Tab title="DM policy">
+  <TabItem label="DM policy">
     `channels.whatsapp.dmPolicy` controls direct chat access:
 
     - `pairing` (default)
@@ -152,9 +161,9 @@ RemoteClaw recommends running WhatsApp on a separate number when possible. (The 
     - if no allowlist is configured, the linked self number is allowed by default
     - outbound `fromMe` DMs are never auto-paired
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="Group policy + allowlists">
+  <TabItem label="Group policy + allowlists">
     Group access has two layers:
 
     1. **Group membership allowlist** (`channels.whatsapp.groups`)
@@ -173,9 +182,9 @@ RemoteClaw recommends running WhatsApp on a separate number when possible. (The 
 
     Note: if no `channels.whatsapp` block exists at all, runtime group-policy fallback is `allowlist` (with a warning log), even if `channels.defaults.groupPolicy` is set.
 
-  </Tab>
+  </TabItem>
 
-  <Tab title="Mentions + /activation">
+  <TabItem label="Mentions + /activation">
     Group replies require mention by default.
 
     Mention detection includes:
@@ -196,7 +205,7 @@ RemoteClaw recommends running WhatsApp on a separate number when possible. (The 
 
     `activation` updates session state (not global config). It is owner-gated.
 
-  </Tab>
+  </TabItem>
 </Tabs>
 
 ## Personal-number and self-chat behavior
@@ -209,8 +218,9 @@ When the linked self number is also present in `allowFrom`, WhatsApp self-chat s
 
 ## Message normalization and context
 
-<AccordionGroup>
-  <Accordion title="Inbound envelope + reply context">
+  <details>
+<summary>Inbound envelope + reply context</summary>
+
     Incoming WhatsApp messages are wrapped in the shared inbound envelope.
 
     If a quoted reply exists, context is appended in this form:
@@ -223,9 +233,11 @@ When the linked self number is also present in `allowFrom`, WhatsApp self-chat s
 
     Reply metadata fields are also populated when available (`ReplyToId`, `ReplyToBody`, `ReplyToSender`, sender JID/E.164).
 
-  </Accordion>
+</details>
 
-  <Accordion title="Media placeholders and location/contact extraction">
+  <details>
+<summary>Media placeholders and location/contact extraction</summary>
+
     Media-only inbound messages are normalized with placeholders such as:
 
     - `<media:image>`
@@ -236,9 +248,11 @@ When the linked self number is also present in `allowFrom`, WhatsApp self-chat s
 
     Location and contact payloads are normalized into textual context before routing.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Pending group history injection">
+  <details>
+<summary>Pending group history injection</summary>
+
     For groups, unprocessed messages can be buffered and injected as context when the bot is finally triggered.
 
     - default limit: `50`
@@ -251,9 +265,11 @@ When the linked self number is also present in `allowFrom`, WhatsApp self-chat s
     - `[Chat messages since your last reply - for context]`
     - `[Current message - respond to this]`
 
-  </Accordion>
+</details>
 
-  <Accordion title="Read receipts">
+  <details>
+<summary>Read receipts</summary>
+
     Read receipts are enabled by default for accepted inbound WhatsApp messages.
 
     Disable globally:
@@ -286,33 +302,39 @@ When the linked self number is also present in `allowFrom`, WhatsApp self-chat s
 
     Self-chat turns skip read receipts even when globally enabled.
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Delivery, chunking, and media
 
-<AccordionGroup>
-  <Accordion title="Text chunking">
+  <details>
+<summary>Text chunking</summary>
+
     - default chunk limit: `channels.whatsapp.textChunkLimit = 4000`
     - `channels.whatsapp.chunkMode = "length" | "newline"`
     - `newline` mode prefers paragraph boundaries (blank lines), then falls back to length-safe chunking
-  </Accordion>
 
-  <Accordion title="Outbound media behavior">
+</details>
+
+  <details>
+<summary>Outbound media behavior</summary>
+
     - supports image, video, audio (PTT voice-note), and document payloads
     - `audio/ogg` is rewritten to `audio/ogg; codecs=opus` for voice-note compatibility
     - animated GIF playback is supported via `gifPlayback: true` on video sends
     - captions are applied to the first media item when sending multi-media reply payloads
     - media source can be HTTP(S), `file://`, or local paths
-  </Accordion>
 
-  <Accordion title="Media size limits and fallback behavior">
+</details>
+
+  <details>
+<summary>Media size limits and fallback behavior</summary>
+
     - inbound media save cap: `channels.whatsapp.mediaMaxMb` (default `50`)
     - outbound media cap for auto-replies: `agents.defaults.mediaMaxMb` (default `5MB`)
     - images are auto-optimized (resize/quality sweep) to fit limits
     - on media send failure, first-item fallback sends text warning instead of dropping the response silently
-  </Accordion>
-</AccordionGroup>
+
+</details>
 
 ## Acknowledgment reactions
 
@@ -341,26 +363,32 @@ Behavior notes:
 
 ## Multi-account and credentials
 
-<AccordionGroup>
-  <Accordion title="Account selection and defaults">
+  <details>
+<summary>Account selection and defaults</summary>
+
     - account ids come from `channels.whatsapp.accounts`
     - default account selection: `default` if present, otherwise first configured account id (sorted)
     - account ids are normalized internally for lookup
-  </Accordion>
 
-  <Accordion title="Credential paths and legacy compatibility">
+</details>
+
+  <details>
+<summary>Credential paths and legacy compatibility</summary>
+
     - current auth path: `~/.remoteclaw/credentials/whatsapp/<accountId>/creds.json`
     - backup file: `creds.json.bak`
     - legacy default auth in `~/.remoteclaw/credentials/` is still recognized/migrated for default-account flows
-  </Accordion>
 
-  <Accordion title="Logout behavior">
+</details>
+
+  <details>
+<summary>Logout behavior</summary>
+
     `remoteclaw channels logout --channel whatsapp [--account <id>]` clears WhatsApp auth state for that account.
 
     In legacy auth directories, `oauth.json` is preserved while Baileys auth files are removed.
 
-  </Accordion>
-</AccordionGroup>
+</details>
 
 ## Tools, actions, and config writes
 
@@ -372,8 +400,9 @@ Behavior notes:
 
 ## Troubleshooting
 
-<AccordionGroup>
-  <Accordion title="Not linked (QR required)">
+  <details>
+<summary>Not linked (QR required)</summary>
+
     Symptom: channel status reports not linked.
 
     Fix:
@@ -383,9 +412,11 @@ Behavior notes:
     remoteclaw channels status
     ```
 
-  </Accordion>
+</details>
 
-  <Accordion title="Linked but disconnected / reconnect loop">
+  <details>
+<summary>Linked but disconnected / reconnect loop</summary>
+
     Symptom: linked account with repeated disconnects or reconnect attempts.
 
     Fix:
@@ -397,16 +428,20 @@ Behavior notes:
 
     If needed, re-link with `channels login`.
 
-  </Accordion>
+</details>
 
-  <Accordion title="No active listener when sending">
+  <details>
+<summary>No active listener when sending</summary>
+
     Outbound sends fail fast when no active gateway listener exists for the target account.
 
     Make sure gateway is running and the account is linked.
 
-  </Accordion>
+</details>
 
-  <Accordion title="Group messages unexpectedly ignored">
+  <details>
+<summary>Group messages unexpectedly ignored</summary>
+
     Check in this order:
 
     - `groupPolicy`
@@ -415,12 +450,14 @@ Behavior notes:
     - mention gating (`requireMention` + mention patterns)
     - duplicate keys in `remoteclaw.json` (JSON5): later entries override earlier ones, so keep a single `groupPolicy` per scope
 
-  </Accordion>
+</details>
 
-  <Accordion title="Bun runtime warning">
+  <details>
+<summary>Bun runtime warning</summary>
+
     WhatsApp gateway runtime should use Node. Bun is flagged as incompatible for stable WhatsApp/Telegram gateway operation.
-  </Accordion>
-</AccordionGroup>
+
+</details>
 
 ## Configuration reference pointers
 

@@ -1,5 +1,5 @@
 ---
-summary: "Use MiniMax M2.1 in RemoteClaw"
+description: "Use MiniMax M2.1 in RemoteClaw"
 read_when:
   - You want MiniMax models in RemoteClaw
   - You need MiniMax setup guidance

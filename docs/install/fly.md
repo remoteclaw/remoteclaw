@@ -1,7 +1,6 @@
 ---
 title: Fly.io
 description: Deploy RemoteClaw on Fly.io
-summary: "Step-by-step Fly.io deployment for RemoteClaw with persistent storage and HTTPS"
 read_when:
   - Deploying RemoteClaw on Fly.io
   - Setting up Fly volumes, secrets, and first-run config

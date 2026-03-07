@@ -1,5 +1,5 @@
 ---
-summary: "Hooks: event-driven automation for commands and lifecycle events"
+description: "Hooks: event-driven automation for commands and lifecycle events"
 read_when:
   - You want event-driven automation for /new, /reset, /stop, and agent lifecycle events
   - You want to build, install, or debug hooks

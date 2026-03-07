@@ -1,5 +1,5 @@
 ---
-summary: "Integrated browser control service + action commands"
+description: "Integrated browser control service + action commands"
 read_when:
   - Adding agent-controlled browser automation
   - Debugging why remoteclaw is interfering with your own Chrome

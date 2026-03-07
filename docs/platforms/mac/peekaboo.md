@@ -1,5 +1,5 @@
 ---
-summary: "PeekabooBridge integration for macOS UI automation"
+description: "PeekabooBridge integration for macOS UI automation"
 read_when:
   - Hosting PeekabooBridge in RemoteClaw.app
   - Integrating Peekaboo via Swift Package Manager

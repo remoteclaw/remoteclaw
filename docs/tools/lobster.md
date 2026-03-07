@@ -1,6 +1,5 @@
 ---
 title: Lobster
-summary: "Typed workflow runtime for RemoteClaw with resumable approval gates."
 description: Typed workflow runtime for RemoteClaw — composable pipelines with approval gates.
 read_when:
   - You want deterministic multi-step workflows with explicit approvals

@@ -1,5 +1,5 @@
 ---
-summary: "Troubleshoot cron and heartbeat scheduling and delivery"
+description: "Troubleshoot cron and heartbeat scheduling and delivery"
 read_when:
   - Cron did not run
   - Cron ran but no message was delivered

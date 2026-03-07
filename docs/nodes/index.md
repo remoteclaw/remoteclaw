@@ -1,5 +1,5 @@
 ---
-summary: "Nodes: pairing, capabilities, permissions, and CLI helpers for canvas/camera/screen/system"
+description: "Nodes: pairing, capabilities, permissions, and CLI helpers for canvas/camera/screen/system"
 read_when:
   - Pairing iOS/Android nodes to a gateway
   - Using node canvas/camera for agent context

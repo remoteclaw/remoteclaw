@@ -1,5 +1,5 @@
 ---
-summary: "OAuth in RemoteClaw: token exchange, storage, and multi-account patterns"
+description: "OAuth in RemoteClaw: token exchange, storage, and multi-account patterns"
 read_when:
   - You want to understand RemoteClaw OAuth end-to-end
   - You hit token invalidation / logout issues

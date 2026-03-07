@@ -1,5 +1,5 @@
 ---
-summary: "Plan: one clean plugin SDK + runtime for all messaging connectors"
+description: "Plan: one clean plugin SDK + runtime for all messaging connectors"
 read_when:
   - Defining or refactoring the plugin architecture
   - Migrating channel connectors to the plugin SDK/runtime

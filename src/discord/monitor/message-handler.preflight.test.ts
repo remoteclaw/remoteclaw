@@ -18,6 +18,19 @@ import {
   createThreadBindingManager,
 } from "./thread-bindings.js";
 
+type DiscordConfig = NonNullable<
+  import("../../config/config.js").RemoteClawConfig["channels"]
+>["discord"];
+type DiscordMessageEvent = import("./listeners.js").DiscordMessageEvent;
+type DiscordClient = import("@buape/carbon").Client;
+
+const DEFAULT_CFG = {
+  session: {
+    mainKey: "main",
+    scope: "per-sender",
+  },
+} as import("../../config/config.js").RemoteClawConfig;
+
 function createThreadBinding(
   overrides?: Partial<import("./thread-bindings.js").ThreadBindingRecord>,
 ) {
@@ -35,6 +48,113 @@ function createThreadBinding(
     webhookToken: "tok-1",
     ...overrides,
   } satisfies import("./thread-bindings.js").ThreadBindingRecord;
+}
+
+function createPreflightArgs(params: {
+  cfg: import("../../config/config.js").RemoteClawConfig;
+  discordConfig: DiscordConfig;
+  data: DiscordMessageEvent;
+  client: DiscordClient;
+}): Parameters<typeof preflightDiscordMessage>[0] {
+  return {
+    cfg: params.cfg,
+    discordConfig: params.discordConfig,
+    accountId: "default",
+    token: "token",
+    runtime: {} as import("../../runtime.js").RuntimeEnv,
+    botUserId: "remoteclaw-bot",
+    guildHistories: new Map(),
+    historyLimit: 0,
+    mediaMaxBytes: 1_000_000,
+    textLimit: 2_000,
+    replyToMode: "all",
+    dmEnabled: true,
+    groupDmEnabled: true,
+    ackReactionScope: "direct",
+    groupPolicy: "open",
+    threadBindings: createNoopThreadBindingManager("default"),
+    data: params.data,
+    client: params.client,
+  };
+}
+
+function createGuildTextClient(channelId: string): DiscordClient {
+  return {
+    fetchChannel: async (id: string) => {
+      if (id === channelId) {
+        return {
+          id: channelId,
+          type: ChannelType.GuildText,
+          name: "general",
+        };
+      }
+      return null;
+    },
+  } as unknown as DiscordClient;
+}
+
+function createThreadClient(params: { threadId: string; parentId: string }): DiscordClient {
+  return {
+    fetchChannel: async (channelId: string) => {
+      if (channelId === params.threadId) {
+        return {
+          id: params.threadId,
+          type: ChannelType.PublicThread,
+          name: "focus",
+          parentId: params.parentId,
+          ownerId: "owner-1",
+        };
+      }
+      if (channelId === params.parentId) {
+        return {
+          id: params.parentId,
+          type: ChannelType.GuildText,
+          name: "general",
+        };
+      }
+      return null;
+    },
+  } as unknown as DiscordClient;
+}
+
+function createGuildEvent(params: {
+  channelId: string;
+  guildId: string;
+  author: import("@buape/carbon").Message["author"];
+  message: import("@buape/carbon").Message;
+}): DiscordMessageEvent {
+  return {
+    channel_id: params.channelId,
+    guild_id: params.guildId,
+    guild: {
+      id: params.guildId,
+      name: "Guild One",
+    },
+    author: params.author,
+    message: params.message,
+  } as unknown as DiscordMessageEvent;
+}
+
+function createMessage(params: {
+  id: string;
+  channelId: string;
+  content: string;
+  author: import("@buape/carbon").Message["author"];
+  mentionedUsers?: Array<{ id: string }>;
+  mentionedEveryone?: boolean;
+  attachments?: import("@buape/carbon").Message["attachments"];
+}): import("@buape/carbon").Message {
+  return {
+    id: params.id,
+    content: params.content,
+    timestamp: new Date().toISOString(),
+    channelId: params.channelId,
+    attachments: params.attachments ?? [],
+    mentionedUsers: params.mentionedUsers ?? [],
+    mentionedRoles: [],
+    mentionedEveryone: params.mentionedEveryone ?? false,
+    author: params.author,
+  } as unknown as import("@buape/carbon").Message;
 }
 
 describe("resolvePreflightMentionRequirement", () => {
@@ -79,81 +199,36 @@ describe("preflightDiscordMessage", () => {
     });
     const threadId = "thread-system-1";
     const parentId = "channel-parent-1";
-    const client = {
-      fetchChannel: async (channelId: string) => {
-        if (channelId === threadId) {
-          return {
-            id: threadId,
-            type: ChannelType.PublicThread,
-            name: "focus",
-            parentId,
-            ownerId: "owner-1",
-          };
-        }
-        if (channelId === parentId) {
-          return {
-            id: parentId,
-            type: ChannelType.GuildText,
-            name: "general",
-          };
-        }
-        return null;
-      },
-    } as unknown as import("@buape/carbon").Client;
-    const message = {
+    const client = createThreadClient({ threadId, parentId });
+    const message = createMessage({
       id: "m-system-1",
+      channelId: threadId,
       content:
         "⚙️ codex-acp session active (auto-unfocus in 24h). Messages here go directly to this session.",
-      timestamp: new Date().toISOString(),
-      channelId: threadId,
-      attachments: [],
-      mentionedUsers: [],
-      mentionedRoles: [],
-      mentionedEveryone: false,
       author: {
         id: "relay-bot-1",
         bot: true,
         username: "OpenClaw",
       },
-    } as unknown as import("@buape/carbon").Message;
+    });
 
     const result = await preflightDiscordMessage({
-      cfg: {
-        session: {
-          mainKey: "main",
-          scope: "per-sender",
-        },
-      } as import("../../config/config.js").RemoteClawConfig,
-      discordConfig: {
-        allowBots: true,
-      } as NonNullable<import("../../config/config.js").RemoteClawConfig["channels"]>["discord"],
-      accountId: "default",
-      token: "token",
-      runtime: {} as import("../../runtime.js").RuntimeEnv,
-      botUserId: "openclaw-bot",
-      guildHistories: new Map(),
-      historyLimit: 0,
-      mediaMaxBytes: 1_000_000,
-      textLimit: 2_000,
-      replyToMode: "all",
-      dmEnabled: true,
-      groupDmEnabled: true,
-      ackReactionScope: "direct",
-      groupPolicy: "open",
+      ...createPreflightArgs({
+        cfg: DEFAULT_CFG,
+        discordConfig: {
+          allowBots: true,
+        } as DiscordConfig,
+        data: createGuildEvent({
+          channelId: threadId,
+          guildId: "guild-1",
+          author: message.author,
+          message,
+        }),
+        client,
+      }),
       threadBindings: {
         getByThreadId: (id: string) => (id === threadId ? threadBinding : undefined),
       } as import("./thread-bindings.js").ThreadBindingManager,
-      data: {
-        channel_id: threadId,
-        guild_id: "guild-1",
-        guild: {
-          id: "guild-1",
-          name: "Guild One",
-        },
-        author: message.author,
-        message,
-      } as unknown as import("./listeners.js").DiscordMessageEvent,
-      client,
     });
 
     expect(result).toBeNull();
@@ -166,42 +241,17 @@ describe("preflightDiscordMessage", () => {
     });
     const threadId = "thread-bot-regular-1";
     const parentId = "channel-parent-regular-1";
-    const client = {
-      fetchChannel: async (channelId: string) => {
-        if (channelId === threadId) {
-          return {
-            id: threadId,
-            type: ChannelType.PublicThread,
-            name: "focus",
-            parentId,
-            ownerId: "owner-1",
-          };
-        }
-        if (channelId === parentId) {
-          return {
-            id: parentId,
-            type: ChannelType.GuildText,
-            name: "general",
-          };
-        }
-        return null;
-      },
-    } as unknown as import("@buape/carbon").Client;
-    const message = {
+    const client = createThreadClient({ threadId, parentId });
+    const message = createMessage({
       id: "m-bot-regular-1",
-      content: "here is tool output chunk",
-      timestamp: new Date().toISOString(),
       channelId: threadId,
-      attachments: [],
-      mentionedUsers: [],
-      mentionedRoles: [],
-      mentionedEveryone: false,
+      content: "here is tool output chunk",
       author: {
         id: "relay-bot-1",
         bot: true,
         username: "Relay",
       },
-    } as unknown as import("@buape/carbon").Message;
+    });
 
     registerSessionBindingAdapter({
       channel: "discord",
@@ -214,42 +264,22 @@ describe("preflightDiscordMessage", () => {
     });
 
     const result = await preflightDiscordMessage({
-      cfg: {
-        session: {
-          mainKey: "main",
-          scope: "per-sender",
-        },
-      } as import("../../config/config.js").RemoteClawConfig,
-      discordConfig: {
-        allowBots: true,
-      } as NonNullable<import("../../config/config.js").RemoteClawConfig["channels"]>["discord"],
-      accountId: "default",
-      token: "token",
-      runtime: {} as import("../../runtime.js").RuntimeEnv,
-      botUserId: "openclaw-bot",
-      guildHistories: new Map(),
-      historyLimit: 0,
-      mediaMaxBytes: 1_000_000,
-      textLimit: 2_000,
-      replyToMode: "all",
-      dmEnabled: true,
-      groupDmEnabled: true,
-      ackReactionScope: "direct",
-      groupPolicy: "open",
+      ...createPreflightArgs({
+        cfg: DEFAULT_CFG,
+        discordConfig: {
+          allowBots: true,
+        } as DiscordConfig,
+        data: createGuildEvent({
+          channelId: threadId,
+          guildId: "guild-1",
+          author: message.author,
+          message,
+        }),
+        client,
+      }),
       threadBindings: {
         getByThreadId: (id: string) => (id === threadId ? threadBinding : undefined),
       } as import("./thread-bindings.js").ThreadBindingManager,
-      data: {
-        channel_id: threadId,
-        guild_id: "guild-1",
-        guild: {
-          id: "guild-1",
-          name: "Guild One",
-        },
-        author: message.author,
-        message,
-      } as unknown as import("./listeners.js").DiscordMessageEvent,
-      client,
     });
 
     expect(result).not.toBeNull();
@@ -260,81 +290,35 @@ describe("preflightDiscordMessage", () => {
     const threadBinding = createThreadBinding();
     const threadId = "thread-bot-focus";
     const parentId = "channel-parent-focus";
-    const client = {
-      fetchChannel: async (channelId: string) => {
-        if (channelId === threadId) {
-          return {
-            id: threadId,
-            type: ChannelType.PublicThread,
-            name: "focus",
-            parentId,
-            ownerId: "owner-1",
-          };
-        }
-        if (channelId === parentId) {
-          return {
-            id: parentId,
-            type: ChannelType.GuildText,
-            name: "general",
-          };
-        }
-        return null;
-      },
-    } as unknown as import("@buape/carbon").Client;
-    const message = {
+    const client = createThreadClient({ threadId, parentId });
+    const message = createMessage({
       id: "m-bot-1",
-      content: "relay message without mention",
-      timestamp: new Date().toISOString(),
       channelId: threadId,
-      attachments: [],
-      mentionedUsers: [],
-      mentionedRoles: [],
-      mentionedEveryone: false,
+      content: "relay message without mention",
       author: {
         id: "relay-bot-1",
         bot: true,
         username: "Relay",
       },
-    } as unknown as import("@buape/carbon").Message;
-
-    const result = await preflightDiscordMessage({
-      cfg: {
-        session: {
-          mainKey: "main",
-          scope: "per-sender",
-        },
-      } as import("../../config/config.js").RemoteClawConfig,
-      discordConfig: {
-        allowBots: true,
-      } as NonNullable<import("../../config/config.js").RemoteClawConfig["channels"]>["discord"],
-      accountId: "default",
-      token: "token",
-      runtime: {} as import("../../runtime.js").RuntimeEnv,
-      botUserId: "remoteclaw-bot",
-      guildHistories: new Map(),
-      historyLimit: 0,
-      mediaMaxBytes: 1_000_000,
-      textLimit: 2_000,
-      replyToMode: "all",
-      dmEnabled: true,
-      groupDmEnabled: true,
-      ackReactionScope: "direct",
-      groupPolicy: "open",
-      threadBindings: {
-        getByThreadId: (id: string) => (id === threadId ? threadBinding : undefined),
-      } as import("./thread-bindings.js").ThreadBindingManager,
-      data: {
-        channel_id: threadId,
-        guild_id: "guild-1",
-        guild: {
-          id: "guild-1",
-          name: "Guild One",
-        },
-        author: message.author,
-        message,
-      } as unknown as import("./listeners.js").DiscordMessageEvent,
-      client,
     });
+
+    const result = await preflightDiscordMessage(
+      createPreflightArgs({
+        cfg: {
+          ...DEFAULT_CFG,
+        } as import("../../config/config.js").RemoteClawConfig,
+        discordConfig: {
+          allowBots: true,
+        } as DiscordConfig,
+        data: createGuildEvent({
+          channelId: threadId,
+          guildId: "guild-1",
+          author: message.author,
+          message,
+        }),
+        client,
+      }),
+    );
 
     expect(result).not.toBeNull();
     expect(result?.boundSessionKey).toBe(threadBinding.targetSessionKey);
@@ -344,69 +328,32 @@ describe("preflightDiscordMessage", () => {
   it("drops bot messages without mention when allowBots=mentions", async () => {
     const channelId = "channel-bot-mentions-off";
     const guildId = "guild-bot-mentions-off";
-    const client = {
-      fetchChannel: async (id: string) => {
-        if (id === channelId) {
-          return {
-            id: channelId,
-            type: ChannelType.GuildText,
-            name: "general",
-          };
-        }
-        return null;
-      },
-    } as unknown as import("@buape/carbon").Client;
-    const message = {
+    const client = createGuildTextClient(channelId);
+    const message = createMessage({
       id: "m-bot-mentions-off",
-      content: "relay chatter",
-      timestamp: new Date().toISOString(),
       channelId,
-      attachments: [],
-      mentionedUsers: [],
-      mentionedRoles: [],
-      mentionedEveryone: false,
+      content: "relay chatter",
       author: {
         id: "relay-bot-1",
         bot: true,
         username: "Relay",
       },
-    } as unknown as import("@buape/carbon").Message;
+    });
 
     const result = await preflightDiscordMessage({
-      cfg: {
-        session: {
-          mainKey: "main",
-          scope: "per-sender",
-        },
-      } as import("../../config/config.js").RemoteClawConfig,
-      discordConfig: {
-        allowBots: "mentions",
-      } as NonNullable<import("../../config/config.js").RemoteClawConfig["channels"]>["discord"],
-      accountId: "default",
-      token: "token",
-      runtime: {} as import("../../runtime.js").RuntimeEnv,
-      botUserId: "openclaw-bot",
-      guildHistories: new Map(),
-      historyLimit: 0,
-      mediaMaxBytes: 1_000_000,
-      textLimit: 2_000,
-      replyToMode: "all",
-      dmEnabled: true,
-      groupDmEnabled: true,
-      ackReactionScope: "direct",
-      groupPolicy: "open",
-      threadBindings: createNoopThreadBindingManager("default"),
-      data: {
-        channel_id: channelId,
-        guild_id: guildId,
-        guild: {
-          id: guildId,
-          name: "Guild One",
-        },
-        author: message.author,
-        message,
-      } as unknown as import("./listeners.js").DiscordMessageEvent,
-      client,
+      ...createPreflightArgs({
+        cfg: DEFAULT_CFG,
+        discordConfig: {
+          allowBots: "mentions",
+        } as DiscordConfig,
+        data: createGuildEvent({
+          channelId,
+          guildId,
+          author: message.author,
+          message,
+        }),
+        client,
+      }),
     });
 
     expect(result).toBeNull();
@@ -415,69 +362,33 @@ describe("preflightDiscordMessage", () => {
   it("allows bot messages with explicit mention when allowBots=mentions", async () => {
     const channelId = "channel-bot-mentions-on";
     const guildId = "guild-bot-mentions-on";
-    const client = {
-      fetchChannel: async (id: string) => {
-        if (id === channelId) {
-          return {
-            id: channelId,
-            type: ChannelType.GuildText,
-            name: "general",
-          };
-        }
-        return null;
-      },
-    } as unknown as import("@buape/carbon").Client;
-    const message = {
+    const client = createGuildTextClient(channelId);
+    const message = createMessage({
       id: "m-bot-mentions-on",
-      content: "hi <@openclaw-bot>",
-      timestamp: new Date().toISOString(),
       channelId,
-      attachments: [],
+      content: "hi <@openclaw-bot>",
       mentionedUsers: [{ id: "openclaw-bot" }],
-      mentionedRoles: [],
-      mentionedEveryone: false,
       author: {
         id: "relay-bot-1",
         bot: true,
         username: "Relay",
       },
-    } as unknown as import("@buape/carbon").Message;
+    });
 
     const result = await preflightDiscordMessage({
-      cfg: {
-        session: {
-          mainKey: "main",
-          scope: "per-sender",
-        },
-      } as import("../../config/config.js").RemoteClawConfig,
-      discordConfig: {
-        allowBots: "mentions",
-      } as NonNullable<import("../../config/config.js").RemoteClawConfig["channels"]>["discord"],
-      accountId: "default",
-      token: "token",
-      runtime: {} as import("../../runtime.js").RuntimeEnv,
-      botUserId: "openclaw-bot",
-      guildHistories: new Map(),
-      historyLimit: 0,
-      mediaMaxBytes: 1_000_000,
-      textLimit: 2_000,
-      replyToMode: "all",
-      dmEnabled: true,
-      groupDmEnabled: true,
-      ackReactionScope: "direct",
-      groupPolicy: "open",
-      threadBindings: createNoopThreadBindingManager("default"),
-      data: {
-        channel_id: channelId,
-        guild_id: guildId,
-        guild: {
-          id: guildId,
-          name: "Guild One",
-        },
-        author: message.author,
-        message,
-      } as unknown as import("./listeners.js").DiscordMessageEvent,
-      client,
+      ...createPreflightArgs({
+        cfg: DEFAULT_CFG,
+        discordConfig: {
+          allowBots: "mentions",
+        } as DiscordConfig,
+        data: createGuildEvent({
+          channelId,
+          guildId,
+          author: message.author,
+          message,
+        }),
+        client,
+      }),
     });
 
     expect(result).not.toBeNull();
@@ -486,75 +397,37 @@ describe("preflightDiscordMessage", () => {
   it("drops guild messages that mention another user when ignoreOtherMentions=true", async () => {
     const channelId = "channel-other-mention-1";
     const guildId = "guild-other-mention-1";
-    const client = {
-      fetchChannel: async (id: string) => {
-        if (id === channelId) {
-          return {
-            id: channelId,
-            type: ChannelType.GuildText,
-            name: "general",
-          };
-        }
-        return null;
-      },
-    } as unknown as import("@buape/carbon").Client;
-    const message = {
+    const client = createGuildTextClient(channelId);
+    const message = createMessage({
       id: "m-other-mention-1",
-      content: "hello <@999>",
-      timestamp: new Date().toISOString(),
       channelId,
-      attachments: [],
+      content: "hello <@999>",
       mentionedUsers: [{ id: "999" }],
-      mentionedRoles: [],
-      mentionedEveryone: false,
       author: {
         id: "user-1",
         bot: false,
         username: "Alice",
       },
-    } as unknown as import("@buape/carbon").Message;
+    });
 
     const result = await preflightDiscordMessage({
-      cfg: {
-        session: {
-          mainKey: "main",
-          scope: "per-sender",
-        },
-      } as import("../../config/config.js").RemoteClawConfig,
-      discordConfig: {} as NonNullable<
-        import("../../config/config.js").RemoteClawConfig["channels"]
-      >["discord"],
-      accountId: "default",
-      token: "token",
-      runtime: {} as import("../../runtime.js").RuntimeEnv,
-      botUserId: "openclaw-bot",
-      guildHistories: new Map(),
-      historyLimit: 0,
-      mediaMaxBytes: 1_000_000,
-      textLimit: 2_000,
-      replyToMode: "all",
-      dmEnabled: true,
-      groupDmEnabled: true,
-      ackReactionScope: "direct",
-      groupPolicy: "open",
-      threadBindings: createNoopThreadBindingManager("default"),
+      ...createPreflightArgs({
+        cfg: DEFAULT_CFG,
+        discordConfig: {} as DiscordConfig,
+        data: createGuildEvent({
+          channelId,
+          guildId,
+          author: message.author,
+          message,
+        }),
+        client,
+      }),
       guildEntries: {
         [guildId]: {
           requireMention: false,
           ignoreOtherMentions: true,
         },
       },
-      data: {
-        channel_id: channelId,
-        guild_id: guildId,
-        guild: {
-          id: guildId,
-          name: "Guild One",
-        },
-        author: message.author,
-        message,
-      } as unknown as import("./listeners.js").DiscordMessageEvent,
-      client,
     });
 
     expect(result).toBeNull();
@@ -563,75 +436,37 @@ describe("preflightDiscordMessage", () => {
   it("does not drop @everyone messages when ignoreOtherMentions=true", async () => {
     const channelId = "channel-other-mention-everyone";
     const guildId = "guild-other-mention-everyone";
-    const client = {
-      fetchChannel: async (id: string) => {
-        if (id === channelId) {
-          return {
-            id: channelId,
-            type: ChannelType.GuildText,
-            name: "general",
-          };
-        }
-        return null;
-      },
-    } as unknown as import("@buape/carbon").Client;
-    const message = {
+    const client = createGuildTextClient(channelId);
+    const message = createMessage({
       id: "m-other-mention-everyone",
-      content: "@everyone heads up",
-      timestamp: new Date().toISOString(),
       channelId,
-      attachments: [],
-      mentionedUsers: [],
-      mentionedRoles: [],
+      content: "@everyone heads up",
       mentionedEveryone: true,
       author: {
         id: "user-1",
         bot: false,
         username: "Alice",
       },
-    } as unknown as import("@buape/carbon").Message;
+    });
 
     const result = await preflightDiscordMessage({
-      cfg: {
-        session: {
-          mainKey: "main",
-          scope: "per-sender",
-        },
-      } as import("../../config/config.js").RemoteClawConfig,
-      discordConfig: {} as NonNullable<
-        import("../../config/config.js").RemoteClawConfig["channels"]
-      >["discord"],
-      accountId: "default",
-      token: "token",
-      runtime: {} as import("../../runtime.js").RuntimeEnv,
-      botUserId: "openclaw-bot",
-      guildHistories: new Map(),
-      historyLimit: 0,
-      mediaMaxBytes: 1_000_000,
-      textLimit: 2_000,
-      replyToMode: "all",
-      dmEnabled: true,
-      groupDmEnabled: true,
-      ackReactionScope: "direct",
-      groupPolicy: "open",
-      threadBindings: createNoopThreadBindingManager("default"),
+      ...createPreflightArgs({
+        cfg: DEFAULT_CFG,
+        discordConfig: {} as DiscordConfig,
+        data: createGuildEvent({
+          channelId,
+          guildId,
+          author: message.author,
+          message,
+        }),
+        client,
+      }),
       guildEntries: {
         [guildId]: {
           requireMention: false,
           ignoreOtherMentions: true,
         },
       },
-      data: {
-        channel_id: channelId,
-        guild_id: guildId,
-        guild: {
-          id: guildId,
-          name: "Guild One",
-        },
-        author: message.author,
-        message,
-      } as unknown as import("./listeners.js").DiscordMessageEvent,
-      client,
     });
 
     expect(result).not.toBeNull();
@@ -641,74 +476,38 @@ describe("preflightDiscordMessage", () => {
   it("ignores bot-sent @everyone mentions for detection", async () => {
     const channelId = "channel-everyone-1";
     const guildId = "guild-everyone-1";
-    const client = {
-      fetchChannel: async (id: string) => {
-        if (id === channelId) {
-          return {
-            id: channelId,
-            type: ChannelType.GuildText,
-            name: "general",
-          };
-        }
-        return null;
-      },
-    } as unknown as import("@buape/carbon").Client;
-    const message = {
+    const client = createGuildTextClient(channelId);
+    const message = createMessage({
       id: "m-everyone-1",
-      content: "@everyone heads up",
-      timestamp: new Date().toISOString(),
       channelId,
-      attachments: [],
-      mentionedUsers: [],
-      mentionedRoles: [],
+      content: "@everyone heads up",
       mentionedEveryone: true,
       author: {
         id: "relay-bot-1",
         bot: true,
         username: "Relay",
       },
-    } as unknown as import("@buape/carbon").Message;
+    });
 
     const result = await preflightDiscordMessage({
-      cfg: {
-        session: {
-          mainKey: "main",
-          scope: "per-sender",
-        },
-      } as import("../../config/config.js").RemoteClawConfig,
-      discordConfig: {
-        allowBots: true,
-      } as NonNullable<import("../../config/config.js").RemoteClawConfig["channels"]>["discord"],
-      accountId: "default",
-      token: "token",
-      runtime: {} as import("../../runtime.js").RuntimeEnv,
-      botUserId: "openclaw-bot",
-      guildHistories: new Map(),
-      historyLimit: 0,
-      mediaMaxBytes: 1_000_000,
-      textLimit: 2_000,
-      replyToMode: "all",
-      dmEnabled: true,
-      groupDmEnabled: true,
-      ackReactionScope: "direct",
-      groupPolicy: "open",
-      threadBindings: createNoopThreadBindingManager("default"),
+      ...createPreflightArgs({
+        cfg: DEFAULT_CFG,
+        discordConfig: {
+          allowBots: true,
+        } as DiscordConfig,
+        data: createGuildEvent({
+          channelId,
+          guildId,
+          author: message.author,
+          message,
+        }),
+        client,
+      }),
       guildEntries: {
         [guildId]: {
           requireMention: false,
         },
       },
-      data: {
-        channel_id: channelId,
-        guild_id: guildId,
-        guild: {
-          id: guildId,
-          name: "Guild One",
-        },
-        author: message.author,
-        message,
-      } as unknown as import("./listeners.js").DiscordMessageEvent,
-      client,
     });
 
     expect(result).not.toBeNull();
@@ -716,27 +515,15 @@ describe("preflightDiscordMessage", () => {
   });
 
   it("uses attachment content_type for guild audio preflight mention detection", async () => {
-    transcribeFirstAudioMock.mockResolvedValue("hey openclaw");
+    transcribeFirstAudioMock.mockResolvedValue("hey remoteclaw");
 
     const channelId = "channel-audio-1";
-    const client = {
-      fetchChannel: async (id: string) => {
-        if (id === channelId) {
-          return {
-            id: channelId,
-            type: ChannelType.GuildText,
-            name: "general",
-          };
-        }
-        return null;
-      },
-    } as unknown as import("@buape/carbon").Client;
+    const client = createGuildTextClient(channelId);
 
-    const message = {
+    const message = createMessage({
       id: "m-audio-1",
-      content: "",
-      timestamp: new Date().toISOString(),
       channelId,
+      content: "",
       attachments: [
         {
           id: "att-1",
@@ -745,57 +532,33 @@ describe("preflightDiscordMessage", () => {
           filename: "voice.ogg",
         },
       ],
-      mentionedUsers: [],
-      mentionedRoles: [],
-      mentionedEveryone: false,
       author: {
         id: "user-1",
         bot: false,
         username: "Alice",
       },
-    } as unknown as import("@buape/carbon").Message;
-
-    const result = await preflightDiscordMessage({
-      cfg: {
-        session: {
-          mainKey: "main",
-          scope: "per-sender",
-        },
-        messages: {
-          groupChat: {
-            mentionPatterns: ["remoteclaw"],
-          },
-        },
-      } as import("../../config/config.js").RemoteClawConfig,
-      discordConfig: {} as NonNullable<
-        import("../../config/config.js").RemoteClawConfig["channels"]
-      >["discord"],
-      accountId: "default",
-      token: "token",
-      runtime: {} as import("../../runtime.js").RuntimeEnv,
-      botUserId: "remoteclaw-bot",
-      guildHistories: new Map(),
-      historyLimit: 0,
-      mediaMaxBytes: 1_000_000,
-      textLimit: 2_000,
-      replyToMode: "all",
-      dmEnabled: true,
-      groupDmEnabled: true,
-      ackReactionScope: "direct",
-      groupPolicy: "open",
-      threadBindings: createNoopThreadBindingManager("default"),
-      data: {
-        channel_id: channelId,
-        guild_id: "guild-1",
-        guild: {
-          id: "guild-1",
-          name: "Guild One",
-        },
-        author: message.author,
-        message,
-      } as unknown as import("./listeners.js").DiscordMessageEvent,
-      client,
     });
+
+    const result = await preflightDiscordMessage(
+      createPreflightArgs({
+        cfg: {
+          ...DEFAULT_CFG,
+          messages: {
+            groupChat: {
+              mentionPatterns: ["remoteclaw"],
+            },
+          },
+        } as import("../../config/config.js").RemoteClawConfig,
+        discordConfig: {} as DiscordConfig,
+        data: createGuildEvent({
+          channelId,
+          guildId: "guild-1",
+          author: message.author,
+          message,
+        }),
+        client,
+      }),
+    );
 
     expect(transcribeFirstAudioMock).toHaveBeenCalledTimes(1);
     expect(transcribeFirstAudioMock).toHaveBeenCalledWith(

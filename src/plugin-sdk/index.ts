@@ -226,6 +226,7 @@ export {
 export {
   evaluateSenderGroupAccess,
   evaluateSenderGroupAccessForPolicy,
+  resolveSenderScopedGroupPolicy,
   type SenderGroupAccessDecision,
   type SenderGroupAccessReason,
 } from "./group-access.js";

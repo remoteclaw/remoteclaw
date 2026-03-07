@@ -93,6 +93,14 @@ To add quadlet **after** an initial setup that did not use it, re-run: `./setup-
 - **Gateway bind:** By default, `run-remoteclaw-podman.sh` starts the gateway with `--bind loopback` for safe local access. To expose on LAN, set `REMOTECLAW_GATEWAY_BIND=lan` and configure `gateway.controlUi.allowedOrigins` (or explicitly enable host-header fallback) in `remoteclaw.json`.
 - **Paths:** Host config and workspace default to `~remoteclaw/.remoteclaw` and `~remoteclaw/.remoteclaw/workspace`. Override the host paths used by the launch script with `REMOTECLAW_CONFIG_DIR` and `REMOTECLAW_WORKSPACE_DIR`.
 
+## Storage model
+
+- **Persistent host data:** `OPENCLAW_CONFIG_DIR` and `OPENCLAW_WORKSPACE_DIR` are bind-mounted into the container and retain state on the host.
+- **Ephemeral sandbox tmpfs:** if you enable `agents.defaults.sandbox`, the tool sandbox containers mount `tmpfs` at `/tmp`, `/var/tmp`, and `/run`. Those paths are memory-backed and disappear with the sandbox container; the top-level Podman container setup does not add its own tmpfs mounts.
+- **Disk growth hotspots:** the main paths to watch are `media/`, `agents/<agentId>/sessions/sessions.json`, transcript JSONL files, `cron/runs/*.jsonl`, and rolling file logs under `/tmp/openclaw/` (or your configured `logging.file`).
+
+`setup-podman.sh` now stages the image tar in a private temp directory and prints the chosen base dir during setup. For non-root runs it accepts `TMPDIR` only when that base is safe to use; otherwise it falls back to `/var/tmp`, then `/tmp`. The saved tar stays owner-only and is streamed into the target user’s `podman load`, so private caller temp dirs do not block setup.
+
 ## Useful commands
 
 - **Logs:** With quadlet: `sudo journalctl --machine remoteclaw@ --user -u remoteclaw.service -f`. With script: `sudo -u remoteclaw podman logs -f remoteclaw`

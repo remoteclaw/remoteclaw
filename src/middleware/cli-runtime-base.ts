@@ -64,6 +64,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     const startMs = Date.now();
     const stderrChunks: string[] = [];
     let aborted = false;
+    let yieldedEvents = false;
 
     // ── SIGKILL escalation helper ──────────────────────────────────────
     let escalationTimer: ReturnType<typeof setTimeout> | undefined;
@@ -197,6 +198,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
             // Sentinel or empty — stdout closed.
             break;
           }
+          yieldedEvents = true;
           yield event;
         }
       }
@@ -208,11 +210,21 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     }
 
     // ── Wait for process to fully exit ───────────────────────────────
-    await exitPromise;
+    const { code: exitCode } = await exitPromise;
     if (escalationTimer !== undefined) {
       clearTimeout(escalationTimer);
     }
     const durationMs = Date.now() - startMs;
+
+    // ── Surface stderr when CLI exits with error ─────────────────────
+    const stderr = stderrChunks.join("");
+    if (stderr && (exitCode !== 0 || !yieldedEvents)) {
+      yield {
+        type: "error",
+        message: stderr.trim(),
+        code: "CLI_STDERR",
+      } satisfies AgentErrorEvent;
+    }
 
     // ── Emit terminal events ─────────────────────────────────────────
     if (watchdogFired) {
@@ -237,6 +249,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       durationMs,
       usage: undefined,
       aborted,
+      stderr: stderr || undefined,
     };
 
     yield { type: "done", result } satisfies AgentDoneEvent;

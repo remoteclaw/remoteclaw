@@ -505,7 +505,7 @@ describe("CLIRuntimeBase", () => {
   });
 
   describe("stderr capture", () => {
-    it("captures stderr without failing", async () => {
+    it("captures stderr without error event on success exit with output", async () => {
       const runtime = new TestRuntime("test-cli");
 
       const promise = collectEvents(runtime.execute(defaultParams));
@@ -518,10 +518,86 @@ describe("CLIRuntimeBase", () => {
 
       const events = await promise;
 
-      // Stderr should not produce error events — it's just captured.
+      // Stderr should not produce error events when exit 0 + events yielded.
       const errorEvents = events.filter((e) => e.type === "error");
       expect(errorEvents).toHaveLength(0);
       expect(events[0]).toEqual({ type: "text", text: "ok" });
+    });
+
+    it("includes stderr in done result when present", async () => {
+      const runtime = new TestRuntime("test-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      mockChild.stderr.write("some warning\n");
+      mockChild.stdout.write('{"type":"text","text":"ok"}\n');
+      mockChild.stdout.end();
+      mockChild.emit("exit", 0, null);
+
+      const events = await promise;
+      const done = events.find((e) => e.type === "done");
+
+      expect(done).toBeDefined();
+      expect(done!.type === "done" && done!.result.stderr).toBe("some warning\n");
+    });
+
+    it("emits error event when CLI exits non-zero with stderr", async () => {
+      const runtime = new TestRuntime("test-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      mockChild.stderr.write("Not logged in · Please run /login\n");
+      mockChild.stdout.end();
+      mockChild.emit("exit", 1, null);
+
+      const events = await promise;
+
+      const errorEvents = events.filter((e) => e.type === "error");
+      expect(errorEvents).toContainEqual({
+        type: "error",
+        message: "Not logged in · Please run /login",
+        code: "CLI_STDERR",
+      });
+
+      const done = events.find((e) => e.type === "done");
+      expect(done!.type === "done" && done!.result.stderr).toBe(
+        "Not logged in · Please run /login\n",
+      );
+    });
+
+    it("emits error event when CLI exits zero with stderr but no NDJSON output", async () => {
+      const runtime = new TestRuntime("test-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      mockChild.stderr.write("Unexpected error occurred\n");
+      mockChild.stdout.end();
+      mockChild.emit("exit", 0, null);
+
+      const events = await promise;
+
+      const errorEvents = events.filter((e) => e.type === "error");
+      expect(errorEvents).toContainEqual({
+        type: "error",
+        message: "Unexpected error occurred",
+        code: "CLI_STDERR",
+      });
+    });
+
+    it("does not emit CLI_STDERR error when no stderr content on non-zero exit", async () => {
+      const runtime = new TestRuntime("test-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      mockChild.stdout.end();
+      mockChild.emit("exit", 1, null);
+
+      const events = await promise;
+
+      const stderrErrors = events.filter(
+        (e) => e.type === "error" && "code" in e && e.code === "CLI_STDERR",
+      );
+      expect(stderrErrors).toHaveLength(0);
     });
   });
 

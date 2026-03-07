@@ -612,7 +612,7 @@ Include your own number in `allowFrom` to enable self-chat mode (ignores native 
 - `native: "auto"` turns on native commands for Discord/Telegram, leaves Slack off.
 - Override per channel: `channels.discord.commands.native` (bool or `"auto"`). `false` clears previously registered commands.
 - `channels.telegram.customCommands` adds extra Telegram bot menu entries.
-- `config: true` enables `/config` (reads/writes `remoteclaw.json`).
+- `config: true` enables `/config` (reads/writes `remoteclaw.json`). For gateway `chat.send` clients, persistent `/config set|unset` writes also require `operator.admin`; read-only `/config show` stays available to normal write-scoped operator clients.
 - `channels.<provider>.configWrites` gates config mutations per channel (default: true).
 - `allowFrom` is per-provider. When set, it is the **only** authorization source (channel allowlists/pairing and `useAccessGroups` are ignored).
 - `useAccessGroups: false` allows commands to bypass access-group policies when `allowFrom` is not set.

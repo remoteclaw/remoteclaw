@@ -39,6 +39,7 @@ import {
   registerAgentRunContext,
 } from "../infra/agent-events.js";
 import { ChannelBridge } from "../middleware/channel-bridge.js";
+import { resolveCliRuntimeProvider } from "../middleware/runtime-factory.js";
 import type { SessionMap } from "../middleware/session-map.js";
 import type { AgentDeliveryResult, ChannelMessage } from "../middleware/types.js";
 import { normalizeAgentId } from "../routing/session-key.js";
@@ -355,7 +356,7 @@ export async function agentCommand(
       });
 
       const bridge = new ChannelBridge({
-        provider,
+        provider: resolveCliRuntimeProvider(cfg),
         sessionMap,
         gatewayUrl: resolveGatewayUrlFromConfig(cfg),
         gatewayToken: resolveGatewayTokenFromConfig(cfg),

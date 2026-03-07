@@ -19,6 +19,7 @@ import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.j
 import { logVerbose } from "../../globals.js";
 import { emitAgentEvent, registerAgentRunContext } from "../../infra/agent-events.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
+import { resolveCliRuntimeProvider } from "../../middleware/runtime-factory.js";
 import type { SessionMap } from "../../middleware/session-map.js";
 import type {
   AgentDeliveryResult,
@@ -279,7 +280,7 @@ export async function runAgentTurnWithFallback(params: {
 
         const cfg = params.followupRun.run.config;
         const bridge = new ChannelBridge({
-          provider,
+          provider: resolveCliRuntimeProvider(cfg),
           sessionMap,
           gatewayUrl: resolveGatewayUrlFromConfig(cfg),
           gatewayToken: resolveGatewayTokenFromConfig(cfg),

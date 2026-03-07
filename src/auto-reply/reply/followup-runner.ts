@@ -6,6 +6,7 @@ import type { TypingMode } from "../../config/types.js";
 import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.js";
 import { logVerbose } from "../../globals.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
+import { resolveCliRuntimeProvider } from "../../middleware/runtime-factory.js";
 import type { SessionMap } from "../../middleware/session-map.js";
 import type { BridgeCallbacks, ChannelMessage } from "../../middleware/types.js";
 import type { GetReplyOptions } from "../types.js";
@@ -61,7 +62,7 @@ export function createFollowupRunner(params: {
         : "";
 
       const bridge = new ChannelBridge({
-        provider,
+        provider: resolveCliRuntimeProvider(cfg),
         sessionMap,
         gatewayUrl,
         gatewayToken,

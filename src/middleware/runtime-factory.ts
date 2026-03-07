@@ -8,6 +8,21 @@ export const SUPPORTED_PROVIDERS = ["claude", "gemini", "codex", "opencode"] as 
 
 export type SupportedProvider = (typeof SUPPORTED_PROVIDERS)[number];
 
+const DEFAULT_CLI_RUNTIME: SupportedProvider = "claude";
+
+/**
+ * Resolve the CLI runtime provider from config.
+ *
+ * Reads `agents.defaults.runtime` (set during onboarding) and falls back to
+ * "claude" when unset.  This is the **CLI runtime** (which binary to spawn),
+ * NOT the model-API provider (e.g. "anthropic").
+ */
+export function resolveCliRuntimeProvider(cfg?: {
+  agents?: { defaults?: { runtime?: string } };
+}): string {
+  return cfg?.agents?.defaults?.runtime ?? DEFAULT_CLI_RUNTIME;
+}
+
 export function createCliRuntime(provider: string): AgentRuntime {
   const normalized = provider.trim().toLowerCase();
 

@@ -217,7 +217,8 @@ describe("trigger handling", () => {
         await getReplyFromConfig(BASE_MESSAGE, { isHeartbeat: true }, cfg);
 
         const call = runAgentMock.mock.calls[0]?.[0];
-        expect(call?.provider).toBe("anthropic");
+        // ChannelBridge receives the CLI runtime name, not the model API provider.
+        expect(call?.provider).toBe("claude");
       }
       {
         const cfg = makeCfg(home);

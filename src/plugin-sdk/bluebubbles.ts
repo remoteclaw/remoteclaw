@@ -82,6 +82,7 @@ export type { WizardPrompter } from "../wizard/prompts.js";
 export { isAllowedParsedChatSender } from "./allow-from.js";
 export { readBooleanParam } from "./boolean-param.js";
 export { createScopedPairingAccess } from "./pairing-access.js";
+export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 export { resolveRequestUrl } from "./request-url.js";
 export {
   buildComputedAccountStatusSnapshot,

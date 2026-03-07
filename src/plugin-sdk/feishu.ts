@@ -53,6 +53,7 @@ export type { WizardPrompter } from "../wizard/prompts.js";
 export { buildAgentMediaPayload } from "./agent-media-payload.js";
 export { readJsonFileWithFallback } from "./json-store.js";
 export { createScopedPairingAccess } from "./pairing-access.js";
+export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 export { createPersistentDedupe } from "./persistent-dedupe.js";
 export {
   buildBaseChannelStatusSummary,

@@ -232,7 +232,6 @@ public struct RemoteClawChatHistoryPayload: Codable, Sendable {
     public let sessionKey: String
     public let sessionId: String?
     public let messages: [AnyCodable]?
-    public let thinkingLevel: String?
 }
 
 public struct RemoteClawSessionPreviewItem: Codable, Hashable, Sendable {

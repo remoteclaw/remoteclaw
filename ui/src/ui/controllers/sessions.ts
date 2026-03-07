@@ -62,9 +62,7 @@ export async function patchSession(
   key: string,
   patch: {
     label?: string | null;
-    thinkingLevel?: string | null;
     verboseLevel?: string | null;
-    reasoningLevel?: string | null;
   },
 ) {
   if (!state.client || !state.connected) {
@@ -74,14 +72,8 @@ export async function patchSession(
   if ("label" in patch) {
     params.label = patch.label;
   }
-  if ("thinkingLevel" in patch) {
-    params.thinkingLevel = patch.thinkingLevel;
-  }
   if ("verboseLevel" in patch) {
     params.verboseLevel = patch.verboseLevel;
-  }
-  if ("reasoningLevel" in patch) {
-    params.reasoningLevel = patch.reasoningLevel;
   }
   try {
     await state.client.request("sessions.patch", params);

@@ -148,22 +148,13 @@ export async function applyInlineDirectiveOverrides(params: {
       typing.cleanup();
       return { kind: "reply", reply: undefined };
     }
-    const {
-      currentThinkLevel: resolvedDefaultThinkLevel,
-      currentVerboseLevel,
-      currentReasoningLevel,
-      currentElevatedLevel,
-    } = await resolveCurrentDirectiveLevels({
+    const { currentVerboseLevel, currentElevatedLevel } = await resolveCurrentDirectiveLevels({
       sessionEntry,
       agentCfg,
-      resolveDefaultThinkingLevel: () => modelState.resolveDefaultThinkingLevel(),
     });
-    const currentThinkLevel = resolvedDefaultThinkLevel;
     const directiveReply = await handleDirectiveOnly({
       ...createDirectiveHandlingBase(),
-      currentThinkLevel,
       currentVerboseLevel,
-      currentReasoningLevel,
       currentElevatedLevel,
       surface: ctx.Surface,
     });
@@ -179,11 +170,8 @@ export async function applyInlineDirectiveOverrides(params: {
         provider,
         model,
         contextTokens,
-        resolvedThinkLevel: resolvedDefaultThinkLevel,
         resolvedVerboseLevel: currentVerboseLevel ?? "off",
-        resolvedReasoningLevel: currentReasoningLevel ?? "off",
         resolvedElevatedLevel,
-        resolveDefaultThinkingLevel: async () => resolvedDefaultThinkLevel,
         isGroup,
         defaultGroupActivation: defaultActivation,
         mediaDecisions: ctx.MediaUnderstandingDecisions,
@@ -235,7 +223,6 @@ export async function applyInlineDirectiveOverrides(params: {
       formatModelSwitchEvent,
       agentCfg,
       modelState: {
-        resolveDefaultThinkingLevel: modelState.resolveDefaultThinkingLevel,
         ...directiveModelState,
       },
     });

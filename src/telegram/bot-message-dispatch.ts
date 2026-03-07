@@ -9,7 +9,6 @@ import { logAckFailure, logTypingFailure } from "../channels/logging.js";
 import { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 import { createTypingCallbacks } from "../channels/typing.js";
 import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
-import { loadSessionStore, resolveStorePath } from "../config/sessions.js";
 import type { RemoteClawConfig, ReplyToMode, TelegramAccountConfig } from "../config/types.js";
 import { danger, logVerbose } from "../globals.js";
 import { getAgentScopedMediaLocalRoots } from "../media/local-roots.js";
@@ -28,10 +27,6 @@ import {
   type DraftLaneState,
   type LaneName,
 } from "./lane-delivery.js";
-import {
-  createTelegramReasoningStepState,
-  splitTelegramReasoningText,
-} from "./reasoning-lane-coordinator.js";
 import { editMessageTelegram } from "./send.js";
 import { cacheSticker, describeStickerImage } from "./sticker-cache.js";
 
@@ -51,31 +46,6 @@ type DispatchTelegramMessageParams = {
   telegramCfg: TelegramAccountConfig;
   opts: Pick<TelegramBotOptions, "token">;
 };
-
-type TelegramReasoningLevel = "off" | "on" | "stream";
-
-function resolveTelegramReasoningLevel(params: {
-  cfg: RemoteClawConfig;
-  sessionKey?: string;
-  agentId: string;
-}): TelegramReasoningLevel {
-  const { cfg, sessionKey, agentId } = params;
-  if (!sessionKey) {
-    return "off";
-  }
-  try {
-    const storePath = resolveStorePath(cfg.session?.store, { agentId });
-    const store = loadSessionStore(storePath, { skipCache: true });
-    const entry = store[sessionKey.toLowerCase()] ?? store[sessionKey];
-    const level = entry?.reasoningLevel;
-    if (level === "on" || level === "stream") {
-      return level;
-    }
-  } catch {
-    // Fall through to default.
-  }
-  return "off";
-}
 
 export const dispatchTelegramMessage = async ({
   context,
@@ -121,23 +91,13 @@ export const dispatchTelegramMessage = async ({
     typeof telegramCfg.blockStreaming === "boolean"
       ? telegramCfg.blockStreaming
       : cfg.agents?.defaults?.blockStreamingDefault === "on";
-  const resolvedReasoningLevel = resolveTelegramReasoningLevel({
-    cfg,
-    sessionKey: ctxPayload.SessionKey,
-    agentId: route.agentId,
-  });
-  const forceBlockStreamingForReasoning = resolvedReasoningLevel === "on";
-  const streamReasoningDraft = resolvedReasoningLevel === "stream";
   const previewStreamingEnabled = streamMode !== "off";
-  const canStreamAnswerDraft =
-    previewStreamingEnabled && !accountBlockStreamingEnabled && !forceBlockStreamingForReasoning;
-  const canStreamReasoningDraft = canStreamAnswerDraft || streamReasoningDraft;
+  const canStreamAnswerDraft = previewStreamingEnabled && !accountBlockStreamingEnabled;
   const draftReplyToMessageId =
     replyToMode !== "off" && typeof msg.message_id === "number" ? msg.message_id : undefined;
   const draftMinInitialChars = DRAFT_MIN_INITIAL_CHARS;
   const mediaLocalRoots = getAgentScopedMediaLocalRoots(cfg, route.agentId);
   const archivedAnswerPreviews: ArchivedPreview[] = [];
-  const archivedReasoningPreviewIds: number[] = [];
   const createDraftLane = (laneName: LaneName, enabled: boolean): DraftLaneState => {
     const stream = enabled
       ? createTelegramDraftStream({
@@ -149,14 +109,8 @@ export const dispatchTelegramMessage = async ({
           minInitialChars: draftMinInitialChars,
           renderText: renderDraftPreview,
           onSupersededPreview:
-            laneName === "answer" || laneName === "reasoning"
+            laneName === "answer"
               ? (preview) => {
-                  if (laneName === "reasoning") {
-                    if (!archivedReasoningPreviewIds.includes(preview.messageId)) {
-                      archivedReasoningPreviewIds.push(preview.messageId);
-                    }
-                    return;
-                  }
                   archivedAnswerPreviews.push({
                     messageId: preview.messageId,
                     textSnapshot: preview.textSnapshot,
@@ -175,33 +129,9 @@ export const dispatchTelegramMessage = async ({
   };
   const lanes: Record<LaneName, DraftLaneState> = {
     answer: createDraftLane("answer", canStreamAnswerDraft),
-    reasoning: createDraftLane("reasoning", canStreamReasoningDraft),
+    reasoning: { stream: undefined, lastPartialText: "", hasStreamedMessage: false },
   };
   const answerLane = lanes.answer;
-  const reasoningLane = lanes.reasoning;
-  let splitReasoningOnNextStream = false;
-  const reasoningStepState = createTelegramReasoningStepState();
-  type SplitLaneSegment = { lane: LaneName; text: string };
-  type SplitLaneSegmentsResult = {
-    segments: SplitLaneSegment[];
-    suppressedReasoningOnly: boolean;
-  };
-  const splitTextIntoLaneSegments = (text?: string): SplitLaneSegmentsResult => {
-    const split = splitTelegramReasoningText(text);
-    const segments: SplitLaneSegment[] = [];
-    const suppressReasoning = resolvedReasoningLevel === "off";
-    if (split.reasoningText && !suppressReasoning) {
-      segments.push({ lane: "reasoning", text: split.reasoningText });
-    }
-    if (split.answerText) {
-      segments.push({ lane: "answer", text: split.answerText });
-    }
-    return {
-      segments,
-      suppressedReasoningOnly:
-        Boolean(split.reasoningText) && suppressReasoning && !split.answerText,
-    };
-  };
   const resetDraftLaneState = (lane: DraftLaneState) => {
     lane.lastPartialText = "";
     lane.hasStreamedMessage = false;
@@ -229,16 +159,6 @@ export const dispatchTelegramMessage = async ({
     lane.lastPartialText = text;
     laneStream.update(text);
   };
-  const ingestDraftLaneSegments = (text: string | undefined) => {
-    const split = splitTextIntoLaneSegments(text);
-    for (const segment of split.segments) {
-      if (segment.lane === "reasoning") {
-        reasoningStepState.noteReasoningHint();
-        reasoningStepState.noteReasoningDelivered();
-      }
-      updateDraftFromPartial(lanes[segment.lane], segment.text);
-    }
-  };
   const flushDraftLane = async (lane: DraftLaneState) => {
     if (!lane.stream) {
       return;
@@ -248,13 +168,11 @@ export const dispatchTelegramMessage = async ({
 
   const disableBlockStreaming = !previewStreamingEnabled
     ? true
-    : forceBlockStreamingForReasoning
-      ? false
-      : typeof telegramCfg.blockStreaming === "boolean"
-        ? !telegramCfg.blockStreaming
-        : canStreamAnswerDraft
-          ? true
-          : undefined;
+    : typeof telegramCfg.blockStreaming === "boolean"
+      ? !telegramCfg.blockStreaming
+      : canStreamAnswerDraft
+        ? true
+        : undefined;
 
   const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
     cfg,
@@ -418,96 +336,28 @@ export const dispatchTelegramMessage = async ({
           const previewButtons = (
             payload.channelData?.telegram as { buttons?: TelegramInlineButtons } | undefined
           )?.buttons;
-          const split = splitTextIntoLaneSegments(payload.text);
-          const segments = split.segments;
           const hasMedia = Boolean(payload.mediaUrl) || (payload.mediaUrls?.length ?? 0) > 0;
+          const text = payload.text;
 
-          const flushBufferedFinalAnswer = async () => {
-            const buffered = reasoningStepState.takeBufferedFinalAnswer();
-            if (!buffered) {
-              return;
-            }
-            const bufferedButtons = (
-              buffered.payload.channelData?.telegram as
-                | { buttons?: TelegramInlineButtons }
-                | undefined
-            )?.buttons;
+          if (typeof text === "string" && text.length > 0) {
             await deliverLaneText({
               laneName: "answer",
-              text: buffered.text,
-              payload: buffered.payload,
-              infoKind: "final",
-              previewButtons: bufferedButtons,
-            });
-            reasoningStepState.resetForNextStep();
-          };
-
-          for (const segment of segments) {
-            if (
-              segment.lane === "answer" &&
-              info.kind === "final" &&
-              reasoningStepState.shouldBufferFinalAnswer()
-            ) {
-              reasoningStepState.bufferFinalAnswer({ payload, text: segment.text });
-              continue;
-            }
-            if (segment.lane === "reasoning") {
-              reasoningStepState.noteReasoningHint();
-            }
-            const result = await deliverLaneText({
-              laneName: segment.lane,
-              text: segment.text,
+              text,
               payload,
               infoKind: info.kind,
               previewButtons,
-              allowPreviewUpdateForNonFinal: segment.lane === "reasoning",
             });
-            if (segment.lane === "reasoning") {
-              if (result !== "skipped") {
-                reasoningStepState.noteReasoningDelivered();
-                await flushBufferedFinalAnswer();
-              }
-              continue;
-            }
-            if (info.kind === "final") {
-              if (reasoningLane.hasStreamedMessage) {
-                finalizedPreviewByLane.reasoning = true;
-              }
-              reasoningStepState.resetForNextStep();
-            }
-          }
-          if (segments.length > 0) {
-            return;
-          }
-          if (split.suppressedReasoningOnly) {
-            if (hasMedia) {
-              const payloadWithoutSuppressedReasoning =
-                typeof payload.text === "string" ? { ...payload, text: "" } : payload;
-              await sendPayload(payloadWithoutSuppressedReasoning);
-            }
-            if (info.kind === "final") {
-              await flushBufferedFinalAnswer();
-            }
             return;
           }
 
           if (info.kind === "final") {
             await answerLane.stream?.stop();
-            await reasoningLane.stream?.stop();
-            reasoningStepState.resetForNextStep();
           }
-          const canSendAsIs =
-            hasMedia || typeof payload.text !== "string" || payload.text.length > 0;
+          const canSendAsIs = hasMedia || typeof text !== "string" || text.length > 0;
           if (!canSendAsIs) {
-            if (info.kind === "final") {
-              await flushBufferedFinalAnswer();
-            }
             return;
           }
           await sendPayload(payload);
-          if (info.kind === "final") {
-            await flushBufferedFinalAnswer();
-          }
         },
         onSkip: (_payload, info) => {
           if (info.reason !== "silent") {
@@ -522,26 +372,11 @@ export const dispatchTelegramMessage = async ({
       replyOptions: {
         skillFilter,
         disableBlockStreaming,
-        onPartialReply:
-          answerLane.stream || reasoningLane.stream
-            ? (payload) => ingestDraftLaneSegments(payload.text)
-            : undefined,
-        onReasoningStream: reasoningLane.stream
-          ? (payload) => {
-              // Split between reasoning blocks only when the next reasoning
-              // stream starts. Splitting at reasoning-end can orphan the active
-              // preview and cause duplicate reasoning sends on reasoning final.
-              if (splitReasoningOnNextStream) {
-                reasoningLane.stream?.forceNewMessage();
-                resetDraftLaneState(reasoningLane);
-                splitReasoningOnNextStream = false;
-              }
-              ingestDraftLaneSegments(payload.text);
-            }
+        onPartialReply: answerLane.stream
+          ? (payload) => updateDraftFromPartial(answerLane, payload.text)
           : undefined,
         onAssistantMessageStart: answerLane.stream
           ? async () => {
-              reasoningStepState.resetForNextStep();
               if (answerLane.hasStreamedMessage) {
                 const previewMessageId = answerLane.stream?.messageId();
                 if (typeof previewMessageId === "number") {
@@ -555,12 +390,6 @@ export const dispatchTelegramMessage = async ({
               resetDraftLaneState(answerLane);
             }
           : undefined,
-        onReasoningEnd: reasoningLane.stream
-          ? () => {
-              // Split when/if a later reasoning block begins.
-              splitReasoningOnNextStream = reasoningLane.hasStreamedMessage;
-            }
-          : undefined,
         onToolStart: statusReactionController
           ? async (payload) => {
               await statusReactionController.setTool(payload.name);
@@ -570,32 +399,11 @@ export const dispatchTelegramMessage = async ({
       },
     }));
   } finally {
-    // Must stop() first to flush debounced content before clear() wipes state.
-    const streamCleanupStates = new Map<
-      NonNullable<DraftLaneState["stream"]>,
-      { shouldClear: boolean }
-    >();
-    const lanesToCleanup: Array<{ laneName: LaneName; lane: DraftLaneState }> = [
-      { laneName: "answer", lane: answerLane },
-      { laneName: "reasoning", lane: reasoningLane },
-    ];
-    for (const laneState of lanesToCleanup) {
-      const stream = laneState.lane.stream;
-      if (!stream) {
-        continue;
-      }
-      const shouldClear = !finalizedPreviewByLane[laneState.laneName];
-      const existing = streamCleanupStates.get(stream);
-      if (!existing) {
-        streamCleanupStates.set(stream, { shouldClear });
-        continue;
-      }
-      existing.shouldClear = existing.shouldClear && shouldClear;
-    }
-    for (const [stream, cleanupState] of streamCleanupStates) {
-      await stream.stop();
-      if (cleanupState.shouldClear) {
-        await stream.clear();
+    const answerStream = answerLane.stream;
+    if (answerStream) {
+      await answerStream.stop();
+      if (!finalizedPreviewByLane.answer) {
+        await answerStream.clear();
       }
     }
     for (const archivedPreview of archivedAnswerPreviews) {
@@ -604,15 +412,6 @@ export const dispatchTelegramMessage = async ({
       } catch (err) {
         logVerbose(
           `telegram: archived answer preview cleanup failed (${archivedPreview.messageId}): ${String(err)}`,
-        );
-      }
-    }
-    for (const messageId of archivedReasoningPreviewIds) {
-      try {
-        await bot.api.deleteMessage(chatId, messageId);
-      } catch (err) {
-        logVerbose(
-          `telegram: archived reasoning preview cleanup failed (${messageId}): ${String(err)}`,
         );
       }
     }

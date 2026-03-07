@@ -34,13 +34,11 @@ struct SessionDataTests {
             space: nil,
             updatedAt: Date(),
             sessionId: nil,
-            thinkingLevel: "high",
             verboseLevel: "debug",
             systemSent: true,
             abortedLastRun: true,
             tokens: SessionTokenStats(input: 1, output: 2, total: 3, contextTokens: 10),
             model: nil)
-        #expect(row.flagLabels.contains("think high"))
         #expect(row.flagLabels.contains("verbose debug"))
         #expect(row.flagLabels.contains("system sent"))
         #expect(row.flagLabels.contains("aborted"))

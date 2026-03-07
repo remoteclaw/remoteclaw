@@ -61,7 +61,6 @@ fun ChatSheetContent(viewModel: MainViewModel) {
   val healthOk by viewModel.chatHealthOk.collectAsState()
   val sessionKey by viewModel.chatSessionKey.collectAsState()
   val mainSessionKey by viewModel.mainSessionKey.collectAsState()
-  val thinkingLevel by viewModel.chatThinkingLevel.collectAsState()
   val streamingAssistantText by viewModel.chatStreamingAssistantText.collectAsState()
   val pendingToolCalls by viewModel.chatPendingToolCalls.collectAsState()
   val sessions by viewModel.chatSessions.collectAsState()
@@ -126,12 +125,10 @@ fun ChatSheetContent(viewModel: MainViewModel) {
     Row(modifier = Modifier.fillMaxWidth().imePadding()) {
       ChatComposer(
         healthOk = healthOk,
-        thinkingLevel = thinkingLevel,
         pendingRunCount = pendingRunCount,
         attachments = attachments,
         onPickImages = { pickImages.launch("image/*") },
         onRemoveAttachment = { id -> attachments.removeAll { it.id == id } },
-        onSetThinkingLevel = { level -> viewModel.setChatThinkingLevel(level) },
         onRefresh = {
           viewModel.refreshChat()
           viewModel.refreshChatSessions(limit = 200)
@@ -147,7 +144,7 @@ fun ChatSheetContent(viewModel: MainViewModel) {
                 base64 = att.base64,
               )
             }
-          viewModel.sendChat(message = text, thinking = thinkingLevel, attachments = outgoing)
+          viewModel.sendChat(message = text, attachments = outgoing)
           attachments.clear()
         },
       )

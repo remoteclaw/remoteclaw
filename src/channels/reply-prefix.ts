@@ -36,7 +36,6 @@ export function createReplyPrefixContext(params: {
     prefixContext.provider = ctx.provider;
     prefixContext.model = extractShortModelName(ctx.model);
     prefixContext.modelFull = `${ctx.provider}/${ctx.model}`;
-    prefixContext.thinkingLevel = ctx.thinkLevel ?? "off";
   };
 
   return {

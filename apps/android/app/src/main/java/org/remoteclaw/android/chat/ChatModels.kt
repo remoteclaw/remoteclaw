@@ -32,7 +32,6 @@ data class ChatSessionEntry(
 data class ChatHistory(
   val sessionKey: String,
   val sessionId: String?,
-  val thinkingLevel: String?,
   val messages: List<ChatMessage>,
 )
 

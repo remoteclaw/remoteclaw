@@ -36,7 +36,7 @@ import {
   type ChatCommandDefinition,
 } from "./commands-registry.js";
 import type { CommandCategory } from "./commands-registry.types.js";
-import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "./thinking.js";
+import type { ElevatedLevel, VerboseLevel } from "./thinking.js";
 
 type AgentDefaults = NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>;
 type AgentConfig = Partial<AgentDefaults>;
@@ -62,9 +62,7 @@ type StatusArgs = {
   sessionScope?: SessionScope;
   sessionStorePath?: string;
   groupActivation?: "mention" | "always";
-  resolvedThink?: ThinkLevel;
   resolvedVerbose?: VerboseLevel;
-  resolvedReasoning?: ReasoningLevel;
   resolvedElevated?: ElevatedLevel;
   modelAuth?: string;
   activeModelAuth?: string;
@@ -413,9 +411,7 @@ export function buildStatusMessage(args: StatusArgs): string {
     }
   }
 
-  const thinkLevel = args.resolvedThink ?? args.agent?.thinkingDefault ?? "off";
   const verboseLevel = args.resolvedVerbose ?? args.agent?.verboseDefault ?? "off";
-  const reasoningLevel = args.resolvedReasoning ?? "off";
   const elevatedLevel =
     args.resolvedElevated ??
     args.sessionEntry?.elevatedLevel ??
@@ -453,13 +449,7 @@ export function buildStatusMessage(args: StatusArgs): string {
         ? "elevated"
         : `elevated:${elevatedLevel}`
       : null;
-  const optionParts = [
-    `Runtime: ${runtime.label}`,
-    `Think: ${thinkLevel}`,
-    verboseLabel,
-    reasoningLevel !== "off" ? `Reasoning: ${reasoningLevel}` : null,
-    elevatedLabel,
-  ];
+  const optionParts = [`Runtime: ${runtime.label}`, verboseLabel, elevatedLabel];
   const optionsLine = optionParts.filter(Boolean).join(" · ");
   const activationParts = [
     groupActivationValue ? `👥 Activation: ${groupActivationValue}` : null,

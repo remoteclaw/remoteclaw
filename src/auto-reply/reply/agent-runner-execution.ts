@@ -259,7 +259,6 @@ export async function runAgentTurnWithFallback(params: {
       params.opts?.onModelSelected?.({
         provider,
         model,
-        thinkLevel: params.followupRun.run.thinkLevel,
       });
 
       const startedAt = Date.now();

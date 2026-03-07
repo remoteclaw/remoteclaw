@@ -11,7 +11,7 @@ import { applyVerboseOverride } from "../../sessions/level-overrides.js";
 import { resolveProfileOverride } from "./directive-handling.auth.js";
 import type { InlineDirectives } from "./directive-handling.parse.js";
 import { enqueueModeSwitchEvents } from "./directive-handling.shared.js";
-import type { ElevatedLevel, ReasoningLevel } from "./directives.js";
+import type { ElevatedLevel } from "./directives.js";
 
 export async function persistInlineDirectives(params: {
   directives: InlineDirectives;
@@ -62,35 +62,15 @@ export async function persistInlineDirectives(params: {
       (sessionEntry.elevatedLevel as ElevatedLevel | undefined) ??
       (agentCfg?.elevatedDefault as ElevatedLevel | undefined) ??
       (elevatedAllowed ? ("on" as ElevatedLevel) : ("off" as ElevatedLevel));
-    const prevReasoningLevel = (sessionEntry.reasoningLevel as ReasoningLevel | undefined) ?? "off";
     let elevatedChanged =
       directives.hasElevatedDirective &&
       directives.elevatedLevel !== undefined &&
       elevatedEnabled &&
       elevatedAllowed;
-    let reasoningChanged =
-      directives.hasReasoningDirective && directives.reasoningLevel !== undefined;
     let updated = false;
 
-    if (directives.hasThinkDirective && directives.thinkLevel) {
-      sessionEntry.thinkingLevel = directives.thinkLevel;
-      updated = true;
-    }
     if (directives.hasVerboseDirective && directives.verboseLevel) {
       applyVerboseOverride(sessionEntry, directives.verboseLevel);
-      updated = true;
-    }
-    if (directives.hasReasoningDirective && directives.reasoningLevel) {
-      if (directives.reasoningLevel === "off") {
-        // Persist explicit off so it overrides model-capability defaults.
-        sessionEntry.reasoningLevel = "off";
-      } else {
-        sessionEntry.reasoningLevel = directives.reasoningLevel;
-      }
-      reasoningChanged =
-        reasoningChanged ||
-        (directives.reasoningLevel !== prevReasoningLevel &&
-          directives.reasoningLevel !== undefined);
       updated = true;
     }
     if (
@@ -206,7 +186,6 @@ export async function persistInlineDirectives(params: {
         sessionEntry,
         sessionKey,
         elevatedChanged,
-        reasoningChanged,
       });
     }
   }

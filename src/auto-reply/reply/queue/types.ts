@@ -1,7 +1,7 @@
 import type { RemoteClawConfig } from "../../../config/config.js";
 import type { SessionEntry } from "../../../config/sessions.js";
 import type { OriginatingChannelType } from "../../templating.js";
-import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../directives.js";
+import type { ElevatedLevel, VerboseLevel } from "../directives.js";
 
 export type QueueMode = "steer" | "followup" | "collect" | "steer-backlog" | "interrupt" | "queue";
 
@@ -61,9 +61,7 @@ export type FollowupRun = {
     model: string;
     authProfileId?: string;
     authProfileIdSource?: "auto" | "user";
-    thinkLevel?: ThinkLevel;
     verboseLevel?: VerboseLevel;
-    reasoningLevel?: ReasoningLevel;
     elevatedLevel?: ElevatedLevel;
     // Exec tool infrastructure removed (#70) — inline type for remaining directive plumbing
     execOverrides?: { host?: string; security?: string; ask?: string; node?: string | boolean };

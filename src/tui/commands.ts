@@ -1,10 +1,8 @@
 import type { SlashCommand } from "@mariozechner/pi-tui";
 import { listChatCommands, listChatCommandsForConfig } from "../auto-reply/commands-registry.js";
-import { formatThinkingLevels, listThinkingLevelLabels } from "../auto-reply/thinking.js";
 import type { RemoteClawConfig } from "../config/types.js";
 
 const VERBOSE_LEVELS = ["on", "off"];
-const REASONING_LEVELS = ["on", "off"];
 const ELEVATED_LEVELS = ["on", "off", "ask", "full"];
 const ACTIVATION_LEVELS = ["mention", "always"];
 const USAGE_FOOTER_LEVELS = ["off", "tokens", "full"];
@@ -50,9 +48,7 @@ export function parseCommand(input: string): ParsedCommand {
 }
 
 export function getSlashCommands(options: SlashCommandOptions = {}): SlashCommand[] {
-  const thinkLevels = listThinkingLevelLabels(options.provider, options.model);
   const verboseCompletions = createLevelCompletion(VERBOSE_LEVELS);
-  const reasoningCompletions = createLevelCompletion(REASONING_LEVELS);
   const usageCompletions = createLevelCompletion(USAGE_FOOTER_LEVELS);
   const elevatedCompletions = createLevelCompletion(ELEVATED_LEVELS);
   const activationCompletions = createLevelCompletion(ACTIVATION_LEVELS);
@@ -69,22 +65,9 @@ export function getSlashCommands(options: SlashCommandOptions = {}): SlashComman
     },
     { name: "models", description: "Open model picker" },
     {
-      name: "think",
-      description: "Set thinking level",
-      getArgumentCompletions: (prefix) =>
-        thinkLevels
-          .filter((v) => v.startsWith(prefix.toLowerCase()))
-          .map((value) => ({ value, label: value })),
-    },
-    {
       name: "verbose",
       description: "Set verbose on/off",
       getArgumentCompletions: verboseCompletions,
-    },
-    {
-      name: "reasoning",
-      description: "Set reasoning on/off",
-      getArgumentCompletions: reasoningCompletions,
     },
     {
       name: "usage",
@@ -131,8 +114,7 @@ export function getSlashCommands(options: SlashCommandOptions = {}): SlashComman
   return commands;
 }
 
-export function helpText(options: SlashCommandOptions = {}): string {
-  const thinkLevels = formatThinkingLevels(options.provider, options.model, "|");
+export function helpText(_options: SlashCommandOptions = {}): string {
   return [
     "Slash commands:",
     "/help",
@@ -141,9 +123,7 @@ export function helpText(options: SlashCommandOptions = {}): string {
     "/agent <id> (or /agents)",
     "/session <key> (or /sessions)",
     "/model <provider/model> (or /models)",
-    `/think <${thinkLevels}>`,
     "/verbose <on|off>",
-    "/reasoning <on|off>",
     "/usage <off|tokens|full>",
     "/elevated <on|off|ask|full>",
     "/elev <on|off|ask|full>",

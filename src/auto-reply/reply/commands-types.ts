@@ -2,7 +2,7 @@ import type { ChannelId } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry, SessionScope } from "../../config/sessions.js";
 import type { MsgContext } from "../templating.js";
-import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
+import type { ElevatedLevel, VerboseLevel } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";
 import type { InlineDirectives } from "./directive-handling.js";
 
@@ -43,11 +43,8 @@ export type HandleCommandsParams = {
   sessionScope?: SessionScope;
   workspaceDir: string;
   defaultGroupActivation: () => "always" | "mention";
-  resolvedThinkLevel?: ThinkLevel;
   resolvedVerboseLevel: VerboseLevel;
-  resolvedReasoningLevel: ReasoningLevel;
   resolvedElevatedLevel?: ElevatedLevel;
-  resolveDefaultThinkingLevel: () => Promise<ThinkLevel | undefined>;
   provider: string;
   model: string;
   contextTokens: number;

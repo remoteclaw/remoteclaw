@@ -566,14 +566,11 @@ export const chatHandlers: GatewayRequestHandlers = {
         `chat.history omitted oversized payloads placeholders=${placeholderCount} total=${chatHistoryPlaceholderEmitCount}`,
       );
     }
-    const thinkingLevel =
-      entry?.thinkingLevel ?? cfg.agents?.defaults?.thinkingDefault ?? undefined;
     const verboseLevel = entry?.verboseLevel ?? cfg.agents?.defaults?.verboseDefault;
     respond(true, {
       sessionKey,
       sessionId,
       messages: bounded.messages,
-      thinkingLevel,
       verboseLevel,
     });
   },

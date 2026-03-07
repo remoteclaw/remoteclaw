@@ -39,9 +39,6 @@ class ChatController(
   private val _healthOk = MutableStateFlow(false)
   val healthOk: StateFlow<Boolean> = _healthOk.asStateFlow()
 
-  private val _thinkingLevel = MutableStateFlow("off")
-  val thinkingLevel: StateFlow<String> = _thinkingLevel.asStateFlow()
-
   private val _pendingRunCount = MutableStateFlow(0)
   val pendingRunCount: StateFlow<Int> = _pendingRunCount.asStateFlow()
 
@@ -95,12 +92,6 @@ class ChatController(
     scope.launch { fetchSessions(limit = limit) }
   }
 
-  fun setThinkingLevel(thinkingLevel: String) {
-    val normalized = normalizeThinking(thinkingLevel)
-    if (normalized == _thinkingLevel.value) return
-    _thinkingLevel.value = normalized
-  }
-
   fun switchSession(sessionKey: String) {
     val key = sessionKey.trim()
     if (key.isEmpty()) return
@@ -111,7 +102,6 @@ class ChatController(
 
   fun sendMessage(
     message: String,
-    thinkingLevel: String,
     attachments: List<OutgoingAttachment>,
   ) {
     val trimmed = message.trim()
@@ -124,7 +114,6 @@ class ChatController(
     val runId = UUID.randomUUID().toString()
     val text = if (trimmed.isEmpty() && attachments.isNotEmpty()) "See attached." else trimmed
     val sessionKey = _sessionKey.value
-    val thinking = normalizeThinking(thinkingLevel)
 
     // Optimistic user message.
     val userContent =
@@ -167,7 +156,6 @@ class ChatController(
           buildJsonObject {
             put("sessionKey", JsonPrimitive(sessionKey))
             put("message", JsonPrimitive(text))
-            put("thinking", JsonPrimitive(thinking))
             put("timeoutMs", JsonPrimitive(30_000))
             put("idempotencyKey", JsonPrimitive(runId))
             if (attachments.isNotEmpty()) {
@@ -268,7 +256,6 @@ class ChatController(
       val history = parseHistory(historyJson, sessionKey = key)
       _messages.value = history.messages
       _sessionId.value = history.sessionId
-      history.thinkingLevel?.trim()?.takeIf { it.isNotEmpty() }?.let { _thinkingLevel.value = it }
 
       pollHealthIfNeeded(force = forceHealth)
       fetchSessions(limit = 50)
@@ -342,7 +329,6 @@ class ChatController(
             val history = parseHistory(historyJson, sessionKey = _sessionKey.value)
             _messages.value = history.messages
             _sessionId.value = history.sessionId
-            history.thinkingLevel?.trim()?.takeIf { it.isNotEmpty() }?.let { _thinkingLevel.value = it }
           } catch (_: Throwable) {
             // best-effort
           }
@@ -454,9 +440,8 @@ class ChatController(
   }
 
   private fun parseHistory(historyJson: String, sessionKey: String): ChatHistory {
-    val root = json.parseToJsonElement(historyJson).asObjectOrNull() ?: return ChatHistory(sessionKey, null, null, emptyList())
+    val root = json.parseToJsonElement(historyJson).asObjectOrNull() ?: return ChatHistory(sessionKey, null, emptyList())
     val sid = root["sessionId"].asStringOrNull()
-    val thinkingLevel = root["thinkingLevel"].asStringOrNull()
     val array = root["messages"].asArrayOrNull() ?: JsonArray(emptyList())
 
     val messages =
@@ -473,7 +458,7 @@ class ChatController(
         )
       }
 
-    return ChatHistory(sessionKey = sessionKey, sessionId = sid, thinkingLevel = thinkingLevel, messages = messages)
+    return ChatHistory(sessionKey = sessionKey, sessionId = sid, messages = messages)
   }
 
   private fun parseMessageContent(el: JsonElement): ChatMessageContent? {
@@ -512,14 +497,6 @@ class ChatController(
     }
   }
 
-  private fun normalizeThinking(raw: String): String {
-    return when (raw.trim().lowercase()) {
-      "low" -> "low"
-      "medium" -> "medium"
-      "high" -> "high"
-      else -> "off"
-    }
-  }
 }
 
 private fun JsonElement?.asObjectOrNull(): JsonObject? = this as? JsonObject

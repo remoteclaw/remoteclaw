@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AssistantMessage } from "./agent-types.js";
-import {
-  extractAssistantText,
-  formatReasoningMessage,
-  stripDowngradedToolCallText,
-} from "./agent-utils.js";
+import { extractAssistantText, stripDowngradedToolCallText } from "./agent-utils.js";
 
 function makeAssistantMessage(
   message: Omit<AssistantMessage, "api" | "provider" | "model" | "usage" | "stopReason"> &
@@ -474,40 +470,6 @@ File contents here`,
   });
 });
 
-describe("formatReasoningMessage", () => {
-  it("returns empty string for whitespace-only input", () => {
-    expect(formatReasoningMessage("   \n  \t  ")).toBe("");
-  });
-
-  it("wraps single line in italics", () => {
-    expect(formatReasoningMessage("Single line of reasoning")).toBe(
-      "Reasoning:\n_Single line of reasoning_",
-    );
-  });
-
-  it("wraps each line separately for multiline text (Telegram fix)", () => {
-    expect(formatReasoningMessage("Line one\nLine two\nLine three")).toBe(
-      "Reasoning:\n_Line one_\n_Line two_\n_Line three_",
-    );
-  });
-
-  it("preserves empty lines between reasoning text", () => {
-    expect(formatReasoningMessage("First block\n\nSecond block")).toBe(
-      "Reasoning:\n_First block_\n\n_Second block_",
-    );
-  });
-
-  it("handles mixed empty and non-empty lines", () => {
-    expect(formatReasoningMessage("A\n\nB\nC")).toBe("Reasoning:\n_A_\n\n_B_\n_C_");
-  });
-
-  it("trims leading/trailing whitespace", () => {
-    expect(formatReasoningMessage("  \n  Reasoning here  \n  ")).toBe(
-      "Reasoning:\n_Reasoning here_",
-    );
-  });
-});
-
 describe("stripDowngradedToolCallText", () => {
   it("strips downgraded marker blocks while preserving surrounding user-facing text", () => {
     const cases = [
@@ -551,7 +513,7 @@ describe("stripDowngradedToolCallText", () => {
 
 describe("empty input handling", () => {
   it("returns empty string", () => {
-    const helpers = [formatReasoningMessage, stripDowngradedToolCallText];
+    const helpers = [stripDowngradedToolCallText];
     for (const helper of helpers) {
       expect(helper("")).toBe("");
     }

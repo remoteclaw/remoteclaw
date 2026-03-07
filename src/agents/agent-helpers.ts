@@ -44,8 +44,6 @@ export {
   normalizeTextForComparison,
 } from "./agent-helpers/messaging-dedupe.js";
 
-export { pickFallbackThinkingLevel } from "./agent-helpers/thinking.js";
-
 export {
   mergeConsecutiveUserTurns,
   validateAnthropicTurns,

@@ -509,7 +509,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
 
     const { run } = createMinimalRun({
       opts: { onPartialReply },
-      runOverrides: { reasoningLevel: "stream" },
+      runOverrides: {},
     });
     await run();
 

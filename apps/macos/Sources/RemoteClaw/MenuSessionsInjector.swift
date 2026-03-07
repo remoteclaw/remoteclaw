@@ -780,10 +780,6 @@ extension MenuSessionsInjector {
 
         menu.addItem(NSMenuItem.separator())
 
-        let thinking = NSMenuItem(title: "Thinking", action: nil, keyEquivalent: "")
-        thinking.submenu = self.buildThinkingMenu(for: row)
-        menu.addItem(thinking)
-
         let verbose = NSMenuItem(title: "Verbose", action: nil, keyEquivalent: "")
         verbose.submenu = self.buildVerboseMenu(for: row)
         menu.addItem(verbose)
@@ -830,26 +826,6 @@ extension MenuSessionsInjector {
             menu.addItem(del)
         }
 
-        return menu
-    }
-
-    private func buildThinkingMenu(for row: SessionRow) -> NSMenu {
-        let menu = NSMenu()
-        menu.autoenablesItems = false
-        menu.showsStateColumn = true
-        let levels: [String] = ["off", "minimal", "low", "medium", "high"]
-        let current = levels.contains(row.thinkingLevel ?? "") ? row.thinkingLevel ?? "off" : "off"
-        for level in levels {
-            let title = level.capitalized
-            let item = NSMenuItem(title: title, action: #selector(self.patchThinking(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = [
-                "key": row.key,
-                "value": level as Any,
-            ]
-            item.state = (current == level) ? .on : .off
-            menu.addItem(item)
-        }
         return menu
     }
 
@@ -976,24 +952,6 @@ extension MenuSessionsInjector {
             return "v\(trimmed)"
         }
         return trimmed
-    }
-
-    @objc
-    private func patchThinking(_ sender: NSMenuItem) {
-        guard let dict = sender.representedObject as? [String: Any],
-              let key = dict["key"] as? String
-        else { return }
-        let value = dict["value"] as? String
-        Task {
-            do {
-                try await SessionActions.patchSession(key: key, thinking: .some(value))
-                await self.refreshCache(force: true)
-            } catch {
-                await MainActor.run {
-                    SessionActions.presentError(title: "Update thinking failed", error: error)
-                }
-            }
-        }
     }
 
     @objc

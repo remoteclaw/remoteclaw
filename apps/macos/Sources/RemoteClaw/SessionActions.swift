@@ -4,14 +4,10 @@ import Foundation
 enum SessionActions {
     static func patchSession(
         key: String,
-        thinking: String?? = nil,
         verbose: String?? = nil) async throws
     {
         var params: [String: AnyHashable] = ["key": AnyHashable(key)]
 
-        if let thinking {
-            params["thinkingLevel"] = thinking.map(AnyHashable.init) ?? AnyHashable(NSNull())
-        }
         if let verbose {
             params["verboseLevel"] = verbose.map(AnyHashable.init) ?? AnyHashable(NSNull())
         }

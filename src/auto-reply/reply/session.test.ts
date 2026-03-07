@@ -750,8 +750,6 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     const existingSessionId = "existing-session-overrides";
     const overrides = {
       verboseLevel: "on",
-      thinkingLevel: "high",
-      reasoningLevel: "low",
       label: "telegram-priority",
     } as const;
     const cases = [
@@ -872,7 +870,6 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     expect(result.isNewSession).toBe(true);
     expect(result.resetTriggered).toBe(false);
     expect(result.sessionEntry.verboseLevel).toBeUndefined();
-    expect(result.sessionEntry.thinkingLevel).toBeUndefined();
   });
 });
 

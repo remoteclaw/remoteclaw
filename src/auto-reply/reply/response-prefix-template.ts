@@ -1,7 +1,7 @@
 /**
  * Template interpolation for response prefix.
  *
- * Supports variables like `{model}`, `{provider}`, `{thinkingLevel}`, etc.
+ * Supports variables like `{model}`, `{provider}`, etc.
  * Variables are case-insensitive and unresolved ones remain as literal text.
  */
 
@@ -12,8 +12,6 @@ export type ResponsePrefixContext = {
   modelFull?: string;
   /** Provider name (e.g., "openai-codex", "anthropic") */
   provider?: string;
-  /** Current thinking level (e.g., "high", "low", "off") */
-  thinkingLevel?: string;
   /** Agent identity name */
   identityName?: string;
 };
@@ -29,11 +27,11 @@ const TEMPLATE_VAR_PATTERN = /\{([a-zA-Z][a-zA-Z0-9.]*)\}/g;
  * @returns The interpolated string, or undefined if template is undefined
  *
  * @example
- * resolveResponsePrefixTemplate("[{model} | think:{thinkingLevel}]", {
+ * resolveResponsePrefixTemplate("[{model} | {provider}]", {
  *   model: "gpt-5.2",
- *   thinkingLevel: "high"
+ *   provider: "openai-codex"
  * })
- * // Returns: "[gpt-5.2 | think:high]"
+ * // Returns: "[gpt-5.2 | openai-codex]"
  */
 export function resolveResponsePrefixTemplate(
   template: string | undefined,
@@ -53,9 +51,6 @@ export function resolveResponsePrefixTemplate(
         return context.modelFull ?? match;
       case "provider":
         return context.provider ?? match;
-      case "thinkinglevel":
-      case "think":
-        return context.thinkingLevel ?? match;
       case "identity.name":
       case "identityname":
         return context.identityName ?? match;

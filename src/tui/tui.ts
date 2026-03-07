@@ -700,18 +700,12 @@ export async function runTui(opts: TuiOptions) {
         : sessionInfo.model
       : "unknown";
     const tokens = formatTokens(sessionInfo.totalTokens ?? null, sessionInfo.contextTokens ?? null);
-    const think = sessionInfo.thinkingLevel ?? "off";
     const verbose = sessionInfo.verboseLevel ?? "off";
-    const reasoning = sessionInfo.reasoningLevel ?? "off";
-    const reasoningLabel =
-      reasoning === "on" ? "reasoning" : reasoning === "stream" ? "reasoning:stream" : null;
     const footerParts = [
       `agent ${agentLabel}`,
       `session ${sessionLabel}`,
       modelLabel,
-      think !== "off" ? `think ${think}` : null,
       verbose !== "off" ? `verbose ${verbose}` : null,
-      reasoningLabel,
       tokens,
     ].filter(Boolean);
     footer.setText(theme.dim(footerParts.join(" | ")));
@@ -860,11 +854,6 @@ export async function runTui(opts: TuiOptions) {
   editor.onCtrlP = () => {
     void openSessionSelector();
   };
-  editor.onCtrlT = () => {
-    showThinking = !showThinking;
-    void loadHistory();
-  };
-
   client.onEvent = (evt) => {
     if (evt.event === "chat") {
       handleChatEvent(evt.payload);

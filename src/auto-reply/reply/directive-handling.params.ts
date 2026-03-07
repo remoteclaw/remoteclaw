@@ -2,7 +2,7 @@ import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { MsgContext } from "../templating.js";
 import type { InlineDirectives } from "./directive-handling.parse.js";
-import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "./directives.js";
+import type { ElevatedLevel, VerboseLevel } from "./directives.js";
 
 export type HandleDirectiveOnlyCoreParams = {
   cfg: RemoteClawConfig;
@@ -28,9 +28,7 @@ export type HandleDirectiveOnlyCoreParams = {
 };
 
 export type HandleDirectiveOnlyParams = HandleDirectiveOnlyCoreParams & {
-  currentThinkLevel?: ThinkLevel;
   currentVerboseLevel?: VerboseLevel;
-  currentReasoningLevel?: ReasoningLevel;
   currentElevatedLevel?: ElevatedLevel;
   surface?: string;
 };
@@ -42,7 +40,6 @@ export type ApplyInlineDirectivesFastLaneParams = HandleDirectiveOnlyCoreParams 
   isGroup: boolean;
   agentCfg?: NonNullable<RemoteClawConfig["agents"]>["defaults"];
   modelState: {
-    resolveDefaultThinkingLevel: () => Promise<ThinkLevel | undefined>;
     allowedModelKeys: Set<string>;
     allowedModelCatalog: Array<{ id: string; provider: string }>;
     resetModelOverride: boolean;

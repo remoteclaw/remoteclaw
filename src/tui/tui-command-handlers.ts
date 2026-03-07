@@ -1,10 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Component, SelectItem, TUI } from "@mariozechner/pi-tui";
-import {
-  formatThinkingLevels,
-  normalizeUsageDisplay,
-  resolveResponseUsageMode,
-} from "../auto-reply/thinking.js";
+import { normalizeUsageDisplay, resolveResponseUsageMode } from "../auto-reply/thinking.js";
 import type { SessionsPatchResult } from "../gateway/protocol/index.js";
 import { formatRelativeTimestamp } from "../infra/format-time/format-relative.ts";
 import { normalizeAgentId } from "../routing/session-key.js";
@@ -203,12 +199,6 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         currentValue: state.toolsExpanded ? "expanded" : "collapsed",
         values: ["collapsed", "expanded"],
       },
-      {
-        id: "thinking",
-        label: "Show thinking",
-        currentValue: state.showThinking ? "on" : "off",
-        values: ["off", "on"],
-      },
     ];
     const settings = createSettingsList(
       items,
@@ -216,10 +206,6 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         if (id === "tools") {
           state.toolsExpanded = value === "expanded";
           chatLog.setToolsExpanded(state.toolsExpanded);
-        }
-        if (id === "thinking") {
-          state.showThinking = value === "on";
-          void loadHistory();
         }
         tui.requestRender();
       },
@@ -305,28 +291,6 @@ export function createCommandHandlers(context: CommandHandlerContext) {
       case "models":
         await openModelSelector();
         break;
-      case "think":
-        if (!args) {
-          const levels = formatThinkingLevels(
-            state.sessionInfo.modelProvider,
-            state.sessionInfo.model,
-            "|",
-          );
-          chatLog.addSystem(`usage: /think <${levels}>`);
-          break;
-        }
-        try {
-          const result = await client.patchSession({
-            key: state.currentSessionKey,
-            thinkingLevel: args,
-          });
-          chatLog.addSystem(`thinking set to ${args}`);
-          applySessionInfoFromPatch(result);
-          await refreshSessionInfo();
-        } catch (err) {
-          chatLog.addSystem(`think failed: ${String(err)}`);
-        }
-        break;
       case "verbose":
         if (!args) {
           chatLog.addSystem("usage: /verbose <on|off>");
@@ -342,23 +306,6 @@ export function createCommandHandlers(context: CommandHandlerContext) {
           await loadHistory();
         } catch (err) {
           chatLog.addSystem(`verbose failed: ${String(err)}`);
-        }
-        break;
-      case "reasoning":
-        if (!args) {
-          chatLog.addSystem("usage: /reasoning <on|off>");
-          break;
-        }
-        try {
-          const result = await client.patchSession({
-            key: state.currentSessionKey,
-            reasoningLevel: args,
-          });
-          chatLog.addSystem(`reasoning set to ${args}`);
-          applySessionInfoFromPatch(result);
-          await refreshSessionInfo();
-        } catch (err) {
-          chatLog.addSystem(`reasoning failed: ${String(err)}`);
         }
         break;
       case "usage": {

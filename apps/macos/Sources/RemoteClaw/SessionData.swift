@@ -17,7 +17,6 @@ struct GatewaySessionEntryRecord: Codable {
     let sessionId: String?
     let systemSent: Bool?
     let abortedLastRun: Bool?
-    let thinkingLevel: String?
     let verboseLevel: String?
     let inputTokens: Int?
     let outputTokens: Int?
@@ -77,7 +76,6 @@ struct SessionRow: Identifiable {
     let space: String?
     let updatedAt: Date?
     let sessionId: String?
-    let thinkingLevel: String?
     let verboseLevel: String?
     let systemSent: Bool
     let abortedLastRun: Bool
@@ -94,7 +92,6 @@ struct SessionRow: Identifiable {
 
     var flagLabels: [String] {
         var flags: [String] = []
-        if let thinkingLevel { flags.append("think \(thinkingLevel)") }
         if let verboseLevel { flags.append("verbose \(verboseLevel)") }
         if self.systemSent { flags.append("system sent") }
         if self.abortedLastRun { flags.append("aborted") }
@@ -152,7 +149,6 @@ extension SessionRow {
                 space: nil,
                 updatedAt: Date().addingTimeInterval(-90),
                 sessionId: "sess-direct-1234",
-                thinkingLevel: "low",
                 verboseLevel: "info",
                 systemSent: false,
                 abortedLastRun: false,
@@ -169,7 +165,6 @@ extension SessionRow {
                 space: nil,
                 updatedAt: Date().addingTimeInterval(-3600),
                 sessionId: "sess-group-4321",
-                thinkingLevel: "medium",
                 verboseLevel: nil,
                 systemSent: true,
                 abortedLastRun: true,
@@ -186,7 +181,6 @@ extension SessionRow {
                 space: nil,
                 updatedAt: Date().addingTimeInterval(-86400),
                 sessionId: nil,
-                thinkingLevel: nil,
                 verboseLevel: nil,
                 systemSent: false,
                 abortedLastRun: false,
@@ -309,7 +303,6 @@ enum SessionLoader {
                 space: entry.space,
                 updatedAt: updated,
                 sessionId: entry.sessionId,
-                thinkingLevel: entry.thinkingLevel,
                 verboseLevel: entry.verboseLevel,
                 systemSent: entry.systemSent ?? false,
                 abortedLastRun: entry.abortedLastRun ?? false,

@@ -863,7 +863,6 @@ export function renderApp(state: AppViewState) {
                   void loadChatHistory(state);
                   void refreshChatAvatar(state);
                 },
-                thinkingLevel: state.chatThinkingLevel,
                 showThinking,
                 loading: state.chatLoading,
                 sending: state.chatSending,

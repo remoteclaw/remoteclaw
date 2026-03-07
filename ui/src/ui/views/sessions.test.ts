@@ -63,7 +63,7 @@ describe("sessions view", () => {
             key: "agent:main:main",
             kind: "direct",
             updatedAt: Date.now(),
-            reasoningLevel: "custom-mode",
+            elevatedLevel: "custom-mode",
           }),
         ),
       ),
@@ -72,10 +72,10 @@ describe("sessions view", () => {
     await Promise.resolve();
 
     const selects = container.querySelectorAll("select");
-    const reasoning = selects[2] as HTMLSelectElement | undefined;
-    expect(reasoning?.value).toBe("custom-mode");
+    const elevated = selects[2] as HTMLSelectElement | undefined;
+    expect(elevated?.value).toBe("custom-mode");
     expect(
-      Array.from(reasoning?.options ?? []).some((option) => option.value === "custom-mode"),
+      Array.from(elevated?.options ?? []).some((option) => option.value === "custom-mode"),
     ).toBe(true);
   });
 });

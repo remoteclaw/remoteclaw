@@ -29,7 +29,7 @@ export async function applyInlineDirectivesFastLane(
     allowedModelCatalog,
     resetModelOverride,
     formatModelSwitchEvent,
-    modelState,
+    modelState: _modelState,
   } = params;
 
   let { provider, model } = params;
@@ -48,12 +48,10 @@ export async function applyInlineDirectivesFastLane(
   }
 
   const agentCfg = params.agentCfg;
-  const { currentThinkLevel, currentVerboseLevel, currentReasoningLevel, currentElevatedLevel } =
-    await resolveCurrentDirectiveLevels({
-      sessionEntry,
-      agentCfg,
-      resolveDefaultThinkingLevel: () => modelState.resolveDefaultThinkingLevel(),
-    });
+  const { currentVerboseLevel, currentElevatedLevel } = await resolveCurrentDirectiveLevels({
+    sessionEntry,
+    agentCfg,
+  });
 
   const directiveAck = await handleDirectiveOnly({
     cfg,
@@ -76,9 +74,7 @@ export async function applyInlineDirectivesFastLane(
     model,
     initialModelLabel: params.initialModelLabel,
     formatModelSwitchEvent,
-    currentThinkLevel,
     currentVerboseLevel,
-    currentReasoningLevel,
     currentElevatedLevel,
   });
 

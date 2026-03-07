@@ -40,8 +40,6 @@ export function buildCommandTestParams(
     workspaceDir: options?.workspaceDir ?? "/tmp",
     defaultGroupActivation: () => "mention",
     resolvedVerboseLevel: "off",
-    resolvedReasoningLevel: "off",
-    resolveDefaultThinkingLevel: async () => undefined,
     provider: "whatsapp",
     model: "test-model",
     contextTokens: 0,

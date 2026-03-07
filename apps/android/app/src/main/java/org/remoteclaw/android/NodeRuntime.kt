@@ -65,7 +65,6 @@ class NodeRuntime(context: Context) {
             buildJsonObject {
               put("message", JsonPrimitive(command))
               put("sessionKey", JsonPrimitive(resolveMainSessionKey()))
-              put("thinking", JsonPrimitive(chatThinkingLevel.value))
               put("deliver", JsonPrimitive(false))
             }.toString(),
         )
@@ -385,7 +384,6 @@ class NodeRuntime(context: Context) {
             buildJsonObject {
               put("message", JsonPrimitive(prompt))
               put("sessionKey", JsonPrimitive(sessionKey))
-              put("thinking", JsonPrimitive("low"))
               put("deliver", JsonPrimitive(false))
             }.toString(),
         )
@@ -439,7 +437,6 @@ class NodeRuntime(context: Context) {
   val chatMessages: StateFlow<List<ChatMessage>> = chat.messages
   val chatError: StateFlow<String?> = chat.errorText
   val chatHealthOk: StateFlow<Boolean> = chat.healthOk
-  val chatThinkingLevel: StateFlow<String> = chat.thinkingLevel
   val chatStreamingAssistantText: StateFlow<String?> = chat.streamingAssistantText
   val chatPendingToolCalls: StateFlow<List<ChatPendingToolCall>> = chat.pendingToolCalls
   val chatSessions: StateFlow<List<ChatSessionEntry>> = chat.sessions
@@ -741,7 +738,6 @@ class NodeRuntime(context: Context) {
               buildJsonObject {
                 put("message", JsonPrimitive(message))
                 put("sessionKey", JsonPrimitive(sessionKey))
-                put("thinking", JsonPrimitive("low"))
                 put("deliver", JsonPrimitive(false))
                 put("key", JsonPrimitive(actionId))
               }.toString(),
@@ -780,10 +776,6 @@ class NodeRuntime(context: Context) {
     chat.refreshSessions(limit = limit)
   }
 
-  fun setChatThinkingLevel(level: String) {
-    chat.setThinkingLevel(level)
-  }
-
   fun switchChatSession(sessionKey: String) {
     chat.switchSession(sessionKey)
   }
@@ -792,8 +784,8 @@ class NodeRuntime(context: Context) {
     chat.abort()
   }
 
-  fun sendChat(message: String, thinking: String, attachments: List<OutgoingAttachment>) {
-    chat.sendMessage(message = message, thinkingLevel = thinking, attachments = attachments)
+  fun sendChat(message: String, attachments: List<OutgoingAttachment>) {
+    chat.sendMessage(message = message, attachments = attachments)
   }
 
   private fun handleGatewayEvent(event: String, payloadJson: String?) {

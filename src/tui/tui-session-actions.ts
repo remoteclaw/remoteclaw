@@ -167,14 +167,8 @@ export function createSessionActions(context: SessionActionContext) {
     }
 
     const next = { ...state.sessionInfo };
-    if (entry?.thinkingLevel !== undefined) {
-      next.thinkingLevel = entry.thinkingLevel;
-    }
     if (entry?.verboseLevel !== undefined) {
       next.verboseLevel = entry.verboseLevel;
-    }
-    if (entry?.reasoningLevel !== undefined) {
-      next.reasoningLevel = entry.reasoningLevel;
     }
     if (entry?.responseUsage !== undefined) {
       next.responseUsage = entry.responseUsage;
@@ -290,11 +284,9 @@ export function createSessionActions(context: SessionActionContext) {
       const record = history as {
         messages?: unknown[];
         sessionId?: string;
-        thinkingLevel?: string;
         verboseLevel?: string;
       };
       state.currentSessionId = typeof record.sessionId === "string" ? record.sessionId : null;
-      state.sessionInfo.thinkingLevel = record.thinkingLevel ?? state.sessionInfo.thinkingLevel;
       state.sessionInfo.verboseLevel = record.verboseLevel ?? state.sessionInfo.verboseLevel;
       const showTools = (state.sessionInfo.verboseLevel ?? "off") !== "off";
       chatLog.clearAll();

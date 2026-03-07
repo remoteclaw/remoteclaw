@@ -315,18 +315,6 @@ describe("resolveResponsePrefixTemplate", () => {
         expected: "[anthropic]",
       },
       {
-        name: "thinkingLevel",
-        template: "think:{thinkingLevel}",
-        values: { thinkingLevel: "high" },
-        expected: "think:high",
-      },
-      {
-        name: "think alias",
-        template: "think:{think}",
-        values: { thinkingLevel: "low" },
-        expected: "think:low",
-      },
-      {
         name: "identity.name",
         template: "[{identity.name}]",
         values: { identityName: "RemoteClaw" },
@@ -340,20 +328,19 @@ describe("resolveResponsePrefixTemplate", () => {
       },
       {
         name: "case-insensitive variables",
-        template: "[{MODEL} | {ThinkingLevel}]",
-        values: { model: "gpt-5.2", thinkingLevel: "low" },
-        expected: "[gpt-5.2 | low]",
+        template: "[{MODEL} | {Provider}]",
+        values: { model: "gpt-5.2", provider: "openai" },
+        expected: "[gpt-5.2 | openai]",
       },
       {
         name: "all variables",
-        template: "[{identity.name}] {provider}/{model} (think:{thinkingLevel})",
+        template: "[{identity.name}] {provider}/{model}",
         values: {
           identityName: "RemoteClaw",
           provider: "anthropic",
           model: "claude-opus-4-5",
-          thinkingLevel: "high",
         },
-        expected: "[RemoteClaw] anthropic/claude-opus-4-5 (think:high)",
+        expected: "[RemoteClaw] anthropic/claude-opus-4-5",
       },
     ] as const;
     for (const testCase of cases) {

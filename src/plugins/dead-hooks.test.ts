@@ -41,8 +41,6 @@ const DEAD_HOOK_NAMES = [
   "before_agent_start",
   "llm_input",
   "llm_output",
-  "before_compaction",
-  "after_compaction",
   "tool_result_persist",
 ] as const;
 

@@ -374,9 +374,6 @@
           typeof entry.content === "string" ? entry.content : extractContent(entry.content),
         );
         break;
-      case "compaction":
-        parts.push("compaction");
-        break;
       case "branch_summary":
         parts.push("branch summary", entry.summary);
         break;
@@ -756,11 +753,6 @@
         }
         return labelHtml + `<span class="tree-muted">[${escapeHtml(msg.role)}]</span>`;
       }
-      case "compaction":
-        return (
-          labelHtml +
-          `<span class="tree-compaction">[compaction: ${Math.round(entry.tokensBefore / 1000)}k tokens]</span>`
-        );
       case "branch_summary": {
         const summary = truncate(normalize(entry.summary || ""));
         return (
@@ -1351,14 +1343,6 @@
       return `<div class="model-change" id="${entryId}">${tsHtml}Switched to model: <span class="model-name">${escapeHtml(entry.provider)}/${escapeHtml(entry.modelId)}</span></div>`;
     }
 
-    if (entry.type === "compaction") {
-      return `<div class="compaction" id="${entryId}" onclick="this.classList.toggle('expanded')">
-            <div class="compaction-label">[compaction]</div>
-            <div class="compaction-collapsed">Compacted from ${entry.tokensBefore.toLocaleString()} tokens</div>
-            <div class="compaction-content"><strong>Compacted from ${entry.tokensBefore.toLocaleString()} tokens</strong>\n\n${escapeHtml(entry.summary)}</div>
-          </div>`;
-    }
-
     if (entry.type === "branch_summary") {
       return `<div class="branch-summary" id="${entryId}">${tsHtml}
             <div class="branch-summary-header">Branch Summary</div>
@@ -1385,7 +1369,6 @@
       assistantMessages = 0,
       toolResults = 0;
     let customMessages = 0,
-      compactions = 0,
       branchSummaries = 0,
       toolCalls = 0;
     const tokens = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
@@ -1420,8 +1403,6 @@
         if (msg.role === "toolResult") {
           toolResults++;
         }
-      } else if (entry.type === "compaction") {
-        compactions++;
       } else if (entry.type === "branch_summary") {
         branchSummaries++;
       } else if (entry.type === "custom_message") {
@@ -1434,7 +1415,6 @@
       assistantMessages,
       toolResults,
       customMessages,
-      compactions,
       branchSummaries,
       toolCalls,
       tokens,
@@ -1478,9 +1458,6 @@
     }
     if (globalStats.customMessages) {
       msgParts.push(`${globalStats.customMessages} custom`);
-    }
-    if (globalStats.compactions) {
-      msgParts.push(`${globalStats.compactions} compactions`);
     }
     if (globalStats.branchSummaries) {
       msgParts.push(`${globalStats.branchSummaries} branch summaries`);
@@ -1757,9 +1734,6 @@
   const toggleToolOutputs = () => {
     toolOutputsExpanded = !toolOutputsExpanded;
     document.querySelectorAll(".tool-output.expandable").forEach((el) => {
-      el.classList.toggle("expanded", toolOutputsExpanded);
-    });
-    document.querySelectorAll(".compaction").forEach((el) => {
       el.classList.toggle("expanded", toolOutputsExpanded);
     });
   };

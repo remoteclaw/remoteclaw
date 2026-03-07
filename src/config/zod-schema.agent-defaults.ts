@@ -57,16 +57,6 @@ export const AgentDefaultsSchema = z
       })
       .strict()
       .optional(),
-    compaction: z
-      .object({
-        mode: z.union([z.literal("default"), z.literal("safeguard")]).optional(),
-        reserveTokens: z.number().int().nonnegative().optional(),
-        keepRecentTokens: z.number().int().positive().optional(),
-        reserveTokensFloor: z.number().int().nonnegative().optional(),
-        maxHistoryShare: z.number().min(0.1).max(0.9).optional(),
-      })
-      .strict()
-      .optional(),
     thinkingDefault: z
       .union([
         z.literal("off"),

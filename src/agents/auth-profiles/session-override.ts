@@ -25,7 +25,6 @@ export async function clearSessionAuthProfileOverride(params: {
   const { sessionEntry, sessionStore, sessionKey, storePath } = params;
   delete sessionEntry.authProfileOverride;
   delete sessionEntry.authProfileOverrideSource;
-  delete sessionEntry.authProfileOverrideCompactionCount;
   sessionEntry.updatedAt = Date.now();
   sessionStore[sessionKey] = sessionEntry;
   if (storePath) {

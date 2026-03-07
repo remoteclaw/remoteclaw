@@ -84,8 +84,6 @@ export type AgentDefaultsConfig = {
   cliBackends?: unknown;
   /** Opt-in: prune old tool results from the LLM context to reduce token usage. */
   contextPruning?: AgentContextPruningConfig;
-  /** Compaction tuning and pre-compaction memory flush behavior. */
-  compaction?: AgentCompactionConfig;
   /** Default thinking level when no /think directive is present. */
   thinkingDefault?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
   /** Default verbose level when no /verbose directive is present. */
@@ -193,19 +191,4 @@ export type AgentDefaultsConfig = {
   runtime?: "claude" | "gemini" | "codex" | "opencode";
   /** Extra CLI arguments appended to every runtime invocation. */
   runtimeArgs?: string[];
-};
-
-export type AgentCompactionMode = "default" | "safeguard";
-
-export type AgentCompactionConfig = {
-  /** Compaction summarization mode. */
-  mode?: AgentCompactionMode;
-  /** Pi reserve tokens target before floor enforcement. */
-  reserveTokens?: number;
-  /** Pi keepRecentTokens budget used for cut-point selection. */
-  keepRecentTokens?: number;
-  /** Minimum reserve tokens enforced for Pi compaction (0 disables the floor). */
-  reserveTokensFloor?: number;
-  /** Max share of context window for history during safeguard pruning (0.1–0.9, default 0.5). */
-  maxHistoryShare?: number;
 };

@@ -298,7 +298,6 @@ describe("runReplyAgent authProfileId fallback scoping", () => {
       sessionId: "session",
       updatedAt: Date.now(),
       totalTokens: 1,
-      compactionCount: 0,
     };
 
     await runReplyAgent({
@@ -331,7 +330,7 @@ describe("runReplyAgent authProfileId fallback scoping", () => {
   });
 });
 
-describe("runReplyAgent auto-compaction token update", () => {
+describe("runReplyAgent token update", () => {
   async function seedSessionStore(params: {
     storePath: string;
     sessionKey: string;
@@ -392,7 +391,6 @@ describe("runReplyAgent auto-compaction token update", () => {
       sessionId: "session",
       updatedAt: Date.now(),
       totalTokens: 181_000,
-      compactionCount: 0,
     };
 
     await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
@@ -406,14 +404,9 @@ describe("runReplyAgent auto-compaction token update", () => {
       }),
     );
 
-    // Disable memory flush so we isolate the usage persistence path
-    const config = {
-      agents: { defaults: { runtime: "claude", compaction: { memoryFlush: { enabled: false } } } },
-    };
     const { typing, sessionCtx, resolvedQueue, followupRun } = createBaseRun({
       storePath,
       sessionEntry,
-      config,
     });
 
     await runReplyAgent({
@@ -444,7 +437,7 @@ describe("runReplyAgent auto-compaction token update", () => {
     expect(stored[sessionKey].outputTokens).toBe(3_000);
   });
 
-  it("persists usage tokens from bridge result without compaction", async () => {
+  it("persists usage tokens from bridge result", async () => {
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-usage-last-"));
     const storePath = path.join(tmp, "sessions.json");
     const sessionKey = "main";
@@ -1176,7 +1169,6 @@ describe("runReplyAgent fallback provider routing", () => {
         sessionId: "session",
         updatedAt: Date.now(),
         totalTokens: 1_000_000,
-        compactionCount: 0,
       },
     });
 

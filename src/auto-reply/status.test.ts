@@ -44,7 +44,6 @@ describe("buildStatusMessage", () => {
         contextTokens: 32_000,
         thinkingLevel: "low",
         verboseLevel: "on",
-        compactionCount: 2,
       },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
@@ -62,7 +61,6 @@ describe("buildStatusMessage", () => {
     expect(normalized).toContain("Tokens: 1.2k in / 800 out");
     // Cost assertion removed: resolveModelCostConfig is now a no-op
     expect(normalized).toContain("Context: 16k/32k (50%)");
-    expect(normalized).toContain("Compactions: 2");
     expect(normalized).toContain("Session: agent:main:main");
     expect(normalized).toContain("updated 10m ago");
     expect(normalized).toContain("Runtime: direct");

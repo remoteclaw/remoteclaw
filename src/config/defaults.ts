@@ -370,31 +370,6 @@ export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawCo
   };
 }
 
-export function applyCompactionDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
-  const defaults = cfg.agents?.defaults;
-  if (!defaults) {
-    return cfg;
-  }
-  const compaction = defaults?.compaction;
-  if (compaction?.mode) {
-    return cfg;
-  }
-
-  return {
-    ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...defaults,
-        compaction: {
-          ...compaction,
-          mode: "safeguard",
-        },
-      },
-    },
-  };
-}
-
 export function resetSessionDefaultsWarningForTests() {
   defaultWarnState = { warned: false };
 }

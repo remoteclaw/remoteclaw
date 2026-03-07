@@ -186,7 +186,6 @@ describe("gateway sessions patch", () => {
         modelOverride: "claude-opus-4-5",
         authProfileOverride: "anthropic:default",
         authProfileOverrideSource: "user",
-        authProfileOverrideCompactionCount: 3,
       } as SessionEntry,
     };
     const res = await applySessionsPatchToStore({
@@ -203,7 +202,6 @@ describe("gateway sessions patch", () => {
     expect(res.entry.modelOverride).toBe("gpt-5.2");
     expect(res.entry.authProfileOverride).toBeUndefined();
     expect(res.entry.authProfileOverrideSource).toBeUndefined();
-    expect(res.entry.authProfileOverrideCompactionCount).toBeUndefined();
   });
 
   test("accepts explicit allowlisted provider/model refs from sessions.patch", async () => {

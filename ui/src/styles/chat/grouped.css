@@ -54,7 +54,7 @@
   opacity: 0.7;
 }
 
-/* Chat divider (e.g., compaction marker) */
+/* Chat divider */
 .chat-divider {
   display: flex;
   align-items: center;

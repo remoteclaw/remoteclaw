@@ -256,7 +256,6 @@ export function createSessionStatusTool(opts?: {
           // Reset auth profile override when returning to defaults.
           delete nextEntry.authProfileOverride;
           delete nextEntry.authProfileOverrideSource;
-          delete nextEntry.authProfileOverrideCompactionCount;
         } else {
           nextEntry.providerOverride = overrideSelection.provider;
           nextEntry.modelOverride = overrideSelection.model;

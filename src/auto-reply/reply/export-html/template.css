@@ -196,10 +196,6 @@ body {
   color: var(--error);
 }
 
-.tree-compaction {
-  color: var(--borderAccent);
-}
-
 .tree-branch-summary {
   color: var(--warning);
 }
@@ -563,38 +559,6 @@ body {
 .model-name {
   color: var(--borderAccent);
   font-weight: bold;
-}
-
-/* Compaction / Branch Summary - matches customMessage colors from TUI */
-.compaction {
-  background: var(--customMessageBg);
-  border-radius: 4px;
-  padding: var(--line-height);
-  cursor: pointer;
-}
-
-.compaction-label {
-  color: var(--customMessageLabel);
-  font-weight: bold;
-}
-
-.compaction-collapsed {
-  color: var(--customMessageText);
-}
-
-.compaction-content {
-  display: none;
-  color: var(--customMessageText);
-  white-space: pre-wrap;
-  margin-top: var(--line-height);
-}
-
-.compaction.expanded .compaction-collapsed {
-  display: none;
-}
-
-.compaction.expanded .compaction-content {
-  display: block;
 }
 
 /* System prompt */

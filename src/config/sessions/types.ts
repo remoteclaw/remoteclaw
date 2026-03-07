@@ -55,7 +55,6 @@ export type SessionEntry = {
   modelOverride?: string;
   authProfileOverride?: string;
   authProfileOverrideSource?: "auto" | "user";
-  authProfileOverrideCompactionCount?: number;
   groupActivation?: "mention" | "always";
   groupActivationNeedsSystemIntro?: boolean;
   sendPolicy?: "allow" | "deny";
@@ -91,7 +90,6 @@ export type SessionEntry = {
   fallbackNoticeActiveModel?: string;
   fallbackNoticeReason?: string;
   contextTokens?: number;
-  compactionCount?: number;
   cliSessionIds?: Record<string, string>;
   claudeCliSessionId?: string;
   label?: string;

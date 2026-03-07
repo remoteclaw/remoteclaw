@@ -43,8 +43,6 @@ export async function updateSessionStoreAfterAgentRun(params: {
         cacheWrite: runUsage.cacheWriteTokens,
       }
     : undefined;
-  // compactionCount and promptTokens are not available in AgentRunResult.
-  const compactionsThisRun = 0;
   const modelUsed = fallbackModel ?? defaultModel;
   const providerUsed = fallbackProvider ?? defaultProvider;
   const contextTokens = params.contextTokensOverride ?? 200_000;
@@ -82,9 +80,6 @@ export async function updateSessionStoreAfterAgentRun(params: {
     next.totalTokensFresh = true;
     next.cacheRead = usage.cacheRead ?? 0;
     next.cacheWrite = usage.cacheWrite ?? 0;
-  }
-  if (compactionsThisRun > 0) {
-    next.compactionCount = (entry.compactionCount ?? 0) + compactionsThisRun;
   }
   sessionStore[sessionKey] = next;
   await updateSessionStore(storePath, (store) => {

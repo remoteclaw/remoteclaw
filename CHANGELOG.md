@@ -235,6 +235,7 @@ Docs: https://docs.openclaw.ai
 - Nodes/system.run approval binding: carry prepared approval plans through gateway forwarding and bind interpreter-style script operands across approval to execution, so post-approval script rewrites are denied while unchanged approved script runs keep working. Thanks @tdjackey for reporting.
 - Subagents/workspace inheritance: propagate parent workspace directory to spawned subagent runs so child sessions reliably inherit workspace-scoped instructions (`AGENTS.md`, `SOUL.md`, etc.) without exposing workspace override through tool-call arguments. (#39247) Thanks @jasonQin6.
 - Heartbeat/requests-in-flight scheduling: stop advancing `nextDueMs` and avoid immediate `scheduleNext()` timer overrides on requests-in-flight skips, so wake-layer retry cooldowns are honored and heartbeat cadence no longer drifts under sustained contention. (#39182) Thanks @MumuTW.
+- Outbound delivery replay safety: use two-phase delivery ACK markers (`.json` -> `.delivered` -> unlink) and startup marker cleanup so crash windows between send and cleanup do not replay already-delivered messages. (#38668) Thanks @Gundam98.
 
 ## 2026.3.2
 

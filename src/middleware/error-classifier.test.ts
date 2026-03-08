@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type ErrorCategory, classifyError } from "./error-classifier.js";
+import { type ErrorCategory, classifyError, isAuthRotatableError } from "./error-classifier.js";
 
 describe("classifyError", () => {
   describe("retryable classification", () => {
@@ -172,6 +172,87 @@ describe("classifyError", () => {
         expect(result).not.toBe("timeout");
         expect(result).not.toBe("aborted");
       }
+    });
+  });
+});
+
+describe("isAuthRotatableError", () => {
+  describe("rate-limit patterns", () => {
+    it.each([
+      ["rate limit", "rate limit exceeded"],
+      ["rate_limit", "rate_limit exceeded"],
+      ["Rate Limit", "Rate Limit Error"],
+      ["ratelimit", "ratelimit hit"],
+    ])("detects rate-limit variant %s", (_label, message) => {
+      expect(isAuthRotatableError(message)).toBe(true);
+    });
+
+    it("detects HTTP 429", () => {
+      expect(isAuthRotatableError("HTTP 429 Too Many Requests")).toBe(true);
+    });
+
+    it("does not match 429 embedded in other numbers", () => {
+      expect(isAuthRotatableError("error code 14291")).toBe(false);
+    });
+
+    it.each([
+      ["quota exceeded", "quota exceeded for today"],
+      ["quota_exceeded", "quota_exceeded: try again later"],
+    ])("detects quota pattern %s", (_label, message) => {
+      expect(isAuthRotatableError(message)).toBe(true);
+    });
+
+    it.each([
+      ["resource exhausted", "resource exhausted: billing limit"],
+      ["resource_exhausted", "resource_exhausted error"],
+    ])("detects resource exhausted pattern %s", (_label, message) => {
+      expect(isAuthRotatableError(message)).toBe(true);
+    });
+
+    it("detects too many requests", () => {
+      expect(isAuthRotatableError("too many requests")).toBe(true);
+    });
+  });
+
+  describe("auth failure patterns", () => {
+    it("detects HTTP 401", () => {
+      expect(isAuthRotatableError("HTTP 401 Unauthorized")).toBe(true);
+    });
+
+    it("does not match 401 embedded in other numbers", () => {
+      expect(isAuthRotatableError("error code 14011")).toBe(false);
+    });
+
+    it.each([
+      ["unauthorized", "unauthorized access denied"],
+      ["Unauthorized", "Unauthorized request"],
+    ])("detects %s", (_label, message) => {
+      expect(isAuthRotatableError(message)).toBe(true);
+    });
+
+    it.each([
+      ["invalid key", "invalid key provided"],
+      ["invalid_key", "invalid_key: check your API key"],
+    ])("detects %s", (_label, message) => {
+      expect(isAuthRotatableError(message)).toBe(true);
+    });
+  });
+
+  describe("non-rotatable errors", () => {
+    it("does not match generic errors", () => {
+      expect(isAuthRotatableError("something went wrong")).toBe(false);
+    });
+
+    it("does not match context overflow", () => {
+      expect(isAuthRotatableError("context length exceeded")).toBe(false);
+    });
+
+    it("does not match network errors", () => {
+      expect(isAuthRotatableError("ECONNRESET")).toBe(false);
+    });
+
+    it("does not match empty string", () => {
+      expect(isAuthRotatableError("")).toBe(false);
     });
   });
 });

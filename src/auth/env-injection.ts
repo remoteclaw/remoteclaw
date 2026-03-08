@@ -85,6 +85,24 @@ function pickRoundRobin(agentId: string, profiles: string[]): string | undefined
 }
 
 /**
+ * Return the number of auth profiles configured for an agent.
+ *
+ * - `auth: false` or `undefined` → 0
+ * - `auth: "profile-id"` → 1
+ * - `auth: ["id1", "id2"]` → N
+ */
+export function resolveAuthProfileCount(cfg: RemoteClawConfig, agentId: string): number {
+  const auth = resolveAgentAuth(cfg, agentId);
+  if (auth === false || auth === undefined) {
+    return 0;
+  }
+  if (typeof auth === "string") {
+    return 1;
+  }
+  return auth.length;
+}
+
+/**
  * Resolve per-agent auth profile(s) to env vars for CLI subprocess injection.
  *
  * - `auth: false` → no injection (returns `undefined`)

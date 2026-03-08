@@ -3,6 +3,7 @@ import type { RemoteClawConfig } from "../config/config.js";
 import {
   _resetRoundRobinState,
   resolveAuthEnv,
+  resolveAuthProfileCount,
   resolveProviderEnvVarName,
 } from "./env-injection.js";
 import type { AuthProfileStore } from "./types.js";
@@ -228,5 +229,53 @@ describe("resolveAuthEnv", () => {
       const result = await resolveAuthEnv({ cfg, agentId: "main", store });
       expect(result).toBeUndefined();
     });
+  });
+});
+
+describe("resolveAuthProfileCount", () => {
+  it("returns 0 when auth is undefined (no config)", () => {
+    expect(resolveAuthProfileCount({}, "main")).toBe(0);
+  });
+
+  it("returns 0 when auth is false", () => {
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "main", workspace: "~/w", auth: false }] },
+    };
+    expect(resolveAuthProfileCount(cfg, "main")).toBe(0);
+  });
+
+  it("returns 1 for single string profile", () => {
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "main", workspace: "~/w", auth: "anthropic:default" }] },
+    };
+    expect(resolveAuthProfileCount(cfg, "main")).toBe(1);
+  });
+
+  it("returns array length for multiple profiles", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [
+          { id: "main", workspace: "~/w", auth: ["anthropic:k1", "anthropic:k2", "anthropic:k3"] },
+        ],
+      },
+    };
+    expect(resolveAuthProfileCount(cfg, "main")).toBe(3);
+  });
+
+  it("returns 0 for empty array", () => {
+    const cfg: RemoteClawConfig = {
+      agents: { list: [{ id: "main", workspace: "~/w", auth: [] }] },
+    };
+    expect(resolveAuthProfileCount(cfg, "main")).toBe(0);
+  });
+
+  it("resolves from defaults when agent has no auth", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { auth: ["anthropic:d1", "anthropic:d2"] },
+        list: [{ id: "main", workspace: "~/w" }],
+      },
+    };
+    expect(resolveAuthProfileCount(cfg, "main")).toBe(2);
   });
 });

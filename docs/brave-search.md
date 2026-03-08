@@ -13,7 +13,7 @@ Brave Search can be configured as the web search provider when using RemoteClaw'
 ## Get an API key
 
 1. Create a Brave Search API account at [https://brave.com/search/api/](https://brave.com/search/api/)
-2. In the dashboard, choose the **Data for Search** plan and generate an API key.
+2. In the dashboard, choose the **Search** plan and generate an API key.
 3. Set `BRAVE_API_KEY` in the Gateway environment, or configure it in `tools.web.search`.
 
 ## Config example
@@ -37,7 +37,9 @@ Brave Search can be configured as the web search provider when using RemoteClaw'
 
 ## Notes
 
-- The Data for AI plan is **not** compatible with `web_search`.
-- Brave provides a free tier plus paid plans; check the Brave API portal for current limits.
+- RemoteClaw uses the Brave **Search** plan. If you have a legacy subscription (e.g. the original Free plan with 2,000 queries/month), it remains valid but does not include newer features like LLM Context or higher rate limits.
+- Each Brave plan includes **$5/month in free credit** (renewing). The Search plan costs $5 per 1,000 requests, so the credit covers 1,000 queries/month. Set your usage limit in the Brave dashboard to avoid unexpected charges. See the [Brave API portal](https://brave.com/search/api/) for current plans.
+- The Search plan includes the LLM Context endpoint and AI inference rights. Storing results to train or tune models requires a plan with explicit storage rights. See the Brave [Terms of Service](https://api-dashboard.search.brave.com/terms-of-service).
+- Results are cached for 15 minutes by default (configurable via `cacheTtlMinutes`).
 
 See [Web tools](/tools/web) for the full web_search configuration.

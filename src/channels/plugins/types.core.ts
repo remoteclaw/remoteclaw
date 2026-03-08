@@ -170,6 +170,7 @@ export type ChannelGroupContext = {
 
 export type ChannelCapabilities = {
   chatTypes: Array<ChatType | "thread">;
+  voiceOnly?: boolean;
   polls?: boolean;
   reactions?: boolean;
   edit?: boolean;

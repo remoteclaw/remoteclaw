@@ -81,6 +81,9 @@ function formatSupport(capabilities?: ChannelCapabilities) {
   if (capabilities.chatTypes?.length) {
     bits.push(`chatTypes=${capabilities.chatTypes.join(",")}`);
   }
+  if (capabilities.voiceOnly) {
+    bits.push("voiceOnly");
+  }
   if (capabilities.polls) {
     bits.push("polls");
   }

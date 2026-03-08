@@ -552,3 +552,14 @@ export { loadWebMedia, type WebMediaResult } from "../web/media.js";
 
 // Security utilities
 export { redactSensitiveText } from "../logging/redact.js";
+
+// Voice credential validation
+export {
+  checkSttCredentials,
+  checkTtsCredentials,
+  validateVoiceCredentials,
+} from "../channels/voice-credentials.js";
+export type {
+  VoiceCredentialReport,
+  VoiceCredentialStatus,
+} from "../channels/voice-credentials.js";

@@ -2,6 +2,7 @@ import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/ag
 import { listChannelPluginCatalogEntries } from "../../channels/plugins/catalog.js";
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import type { ChannelId, ChannelSetupInput } from "../../channels/plugins/types.js";
+import { validateVoiceCredentials } from "../../channels/voice-credentials.js";
 import { writeConfigFile, type RemoteClawConfig } from "../../config/config.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../../runtime.js";
@@ -233,4 +234,23 @@ export async function channelsAddCommand(
 
   await writeConfigFile(nextConfig);
   runtime.log(`Added ${channelLabel(channel)} account "${accountId}".`);
+
+  const addedPlugin = getChannelPlugin(channel);
+  if (addedPlugin?.capabilities.voiceOnly) {
+    const report = await validateVoiceCredentials(nextConfig);
+    const warnings: string[] = [];
+    if (!report.stt.available) {
+      warnings.push(
+        "Warning: no STT credentials found. Voice channels require a speech-to-text provider.",
+      );
+    }
+    if (!report.tts.available) {
+      warnings.push(
+        "Warning: no TTS credentials found. Voice channels require a text-to-speech provider.",
+      );
+    }
+    for (const warning of warnings) {
+      runtime.log(warning);
+    }
+  }
 }

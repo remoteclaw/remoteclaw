@@ -231,10 +231,16 @@ describeLive("gateway live (cli backend)", () => {
 
     const cfg = loadConfig();
     const existingBackends = cfg.agents?.defaults?.cliBackends ?? {};
+    const workspaceDir = path.join(tempDir, "workspace");
+    await fs.mkdir(workspaceDir, { recursive: true });
     const nextCfg = {
       ...cfg,
       agents: {
         ...cfg.agents,
+        list: [
+          { id: "main", workspace: workspaceDir },
+          { id: "dev", workspace: workspaceDir },
+        ],
         defaults: {
           ...cfg.agents?.defaults,
           model: { primary: modelKey },

@@ -20,33 +20,20 @@ For Anthropic pricing details, see:
 
 ## Primary knobs
 
-### `cacheRetention` (model and per-agent)
+### `cacheRetention` (per-agent)
 
-Set cache retention on model params:
-
-```yaml
-agents:
-  defaults:
-    models:
-      "anthropic/claude-opus-4-6":
-        params:
-          cacheRetention: "short" # none | short | long
-```
-
-Per-agent override:
+Set cache retention in per-agent params:
 
 ```yaml
 agents:
   list:
+    - id: "research"
+      params:
+        cacheRetention: "short" # none | short | long
     - id: "alerts"
       params:
         cacheRetention: "none"
 ```
-
-Config merge order:
-
-1. `agents.defaults.models["provider/model"].params`
-2. `agents.list[].params` (matching agent id; overrides by key)
 
 ### Legacy `cacheControlTtl`
 
@@ -89,20 +76,20 @@ Per-agent heartbeat is supported at `agents.list[].heartbeat`.
 ### Anthropic (direct API)
 
 - `cacheRetention` is supported.
-- With Anthropic API-key auth profiles, RemoteClaw seeds `cacheRetention: "short"` for Anthropic model refs when unset.
+- When no explicit `cacheRetention` is set for an Anthropic model ref, RemoteClaw defaults to `"short"`.
 
 ### Amazon Bedrock
 
-- Anthropic Claude model refs (`amazon-bedrock/*anthropic.claude*`) support explicit `cacheRetention` pass-through.
-- Non-Anthropic Bedrock models are forced to `cacheRetention: "none"` at runtime.
+- Anthropic Claude model refs on Bedrock support `cacheRetention` — the CLI agent passes the value through to the Bedrock API.
+- Non-Anthropic Bedrock models do not support prompt caching; `cacheRetention` has no effect on them.
 
 ### OpenRouter Anthropic models
 
-For `openrouter/anthropic/*` model refs, RemoteClaw injects Anthropic `cache_control` on system/developer prompt blocks to improve prompt-cache reuse.
+For `openrouter/anthropic/*` model refs, the CLI agent handles Anthropic `cache_control` headers on system/developer prompt blocks to improve prompt-cache reuse.
 
 ### Other providers
 
-If the provider does not support this cache mode, `cacheRetention` has no effect.
+Whether `cacheRetention` has any effect depends on the CLI agent and the underlying model API. For providers without prompt-caching support, the setting is silently ignored.
 
 ## Tuning patterns
 
@@ -112,16 +99,11 @@ Keep a long-lived baseline on your main agent, disable caching on bursty notifie
 
 ```yaml
 agents:
-  defaults:
-    model:
-      primary: "anthropic/claude-opus-4-6"
-    models:
-      "anthropic/claude-opus-4-6":
-        params:
-          cacheRetention: "long"
   list:
     - id: "research"
       default: true
+      params:
+        cacheRetention: "long"
       heartbeat:
         every: "55m"
     - id: "alerts"
@@ -173,9 +155,9 @@ Defaults:
 
 ## Quick troubleshooting
 
-- High `cacheWrite` on most turns: check for volatile system-prompt inputs and verify model/provider supports your cache settings.
-- No effect from `cacheRetention`: confirm model key matches `agents.defaults.models["provider/model"]`.
-- Bedrock Nova/Mistral requests with cache settings: expected runtime force to `none`.
+- High `cacheWrite` on most turns: check for volatile system-prompt inputs and verify that your model/provider supports prompt caching.
+- No effect from `cacheRetention`: confirm the setting is present in the agent's `params` block and that the CLI agent and provider support it.
+- Non-Anthropic Bedrock models ignore `cacheRetention` — this is expected.
 
 Related docs:
 

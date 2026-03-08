@@ -3,7 +3,7 @@ description: "Where RemoteClaw loads environment variables and the precedence or
 read_when:
   - You need to know which env vars are loaded, and in what order
   - You are debugging missing API keys in the Gateway
-  - You are documenting provider auth or deployment environments
+  - You are configuring env vars for a headless deployment
 title: "Environment Variables"
 ---
 
@@ -28,9 +28,9 @@ Two equivalent ways to set inline env vars (both are non-overriding):
 ```json5
 {
   env: {
-    OPENROUTER_API_KEY: "sk-or-...",
+    WHATSAPP_API_KEY: "your-whatsapp-key",
     vars: {
-      GROQ_API_KEY: "gsk-...",
+      TELEGRAM_BOT_TOKEN: "your-telegram-token",
     },
   },
 }
@@ -62,11 +62,9 @@ You can reference env vars directly in config string values using `${VAR_NAME}` 
 
 ```json5
 {
-  models: {
-    providers: {
-      "vercel-gateway": {
-        apiKey: "${VERCEL_GATEWAY_API_KEY}",
-      },
+  channels: {
+    telegram: {
+      botToken: "${TELEGRAM_BOT_TOKEN}",
     },
   },
 }

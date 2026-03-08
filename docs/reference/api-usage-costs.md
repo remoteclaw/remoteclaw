@@ -12,22 +12,18 @@ title: "API Usage and Costs"
 This doc lists **features that can invoke API keys** and where their costs show up. It focuses on
 RemoteClaw features that can generate provider usage or paid API calls.
 
-## Where costs show up (chat + CLI)
+## Where costs show up
 
 **Per-session cost snapshot**
 
-- `/status` shows the current session model, context usage, and last response tokens.
-- If the model uses **API-key auth**, `/status` also shows **estimated cost** for the last reply.
+- `/status` shows session info reported by the CLI agent (tokens, context usage).
+- Cost visibility depends on the CLI agent's own reporting — RemoteClaw surfaces what the agent
+  exposes but does not independently track model costs.
 
 **Per-message cost footer**
 
-- `/usage full` appends a usage footer to every reply, including **estimated cost** (API-key only).
-- `/usage tokens` shows tokens only; OAuth flows hide dollar cost.
-
-**CLI usage windows (provider quotas)**
-
-- `remoteclaw status --usage` and `remoteclaw channels list` show provider **usage windows**
-  (quota snapshots, not per-message costs).
+- `/usage full` appends a usage footer to every reply.
+- `/usage tokens` shows tokens only.
 
 See [Token use & costs](/reference/token-use) for details and examples.
 
@@ -37,26 +33,25 @@ RemoteClaw can pick up credentials from:
 
 - **Auth profiles** (per-agent, stored in `auth-profiles.json`).
 - **Environment variables** (e.g. `OPENAI_API_KEY`, `BRAVE_API_KEY`, `FIRECRAWL_API_KEY`).
-- **Config** (`models.providers.*.apiKey`, `tools.web.search.*`, `tools.web.fetch.firecrawl.*`,
+- **Config** (`tools.web.search.*`, `tools.web.fetch.firecrawl.*`,
   `talk.apiKey`).
 - **Skills** (`skills.entries.<name>.apiKey`) which may export keys to the skill process env.
 
 ## Features that can spend keys
 
-### 1) Core model responses (chat + tools)
+### 1) CLI agent model responses
 
-Every reply or tool call uses the **current model provider** (OpenAI, Anthropic, etc). This is the
-primary source of usage and cost.
-
-See [Token use & costs](/reference/token-use) for display.
+The cost of model responses (chat, tool calls) is the CLI agent's concern. RemoteClaw delegates
+model interaction to the spawned CLI agent (claude, gemini, codex, opencode), and usage shows up
+in the CLI agent's own usage reporting, not in RemoteClaw.
 
 ### 2) Media understanding (audio/image/video)
 
-Inbound media can be summarized/transcribed before the reply runs. This uses model/provider APIs.
+Inbound media may be preprocessed (transcribed, summarized) by RemoteClaw before forwarding to
+the CLI agent. This preprocessing can use paid APIs:
 
-- Audio: OpenAI / Groq / Deepgram (now **auto-enabled** when keys exist).
-- Image: OpenAI / Anthropic / Google.
-- Video: Google.
+- Audio: OpenAI / Groq / Deepgram (auto-enabled when keys exist).
+- Image/Video: may use provider APIs for transcription or summarization.
 
 See [Media understanding](/nodes/media-understanding).
 
@@ -85,31 +80,14 @@ If Firecrawl isn’t configured, the tool falls back to direct fetch + readabili
 
 See [Web tools](/tools/web).
 
-### 5) Provider usage snapshots (status/health)
+### 5) Compaction safeguard summarization
 
-Some status commands call **provider usage endpoints** to display quota windows or auth health.
-These are typically low-volume calls but still hit provider APIs:
-
-- `remoteclaw status --usage`
-- `remoteclaw models status --json`
-
-See [Model failover](/concepts/model-failover).
-
-### 6) Compaction safeguard summarization
-
-The compaction safeguard can summarize session history using the **current model**, which
-invokes provider APIs when it runs.
+The compaction safeguard can summarize session history by delegating to the CLI agent subprocess.
+The cost of this summarization is part of the CLI agent's usage.
 
 See [Session management + compaction](/reference/session-management-compaction).
 
-### 7) Model scan / probe
-
-`remoteclaw models scan` can probe OpenRouter models and uses `OPENROUTER_API_KEY` when
-probing is enabled.
-
-See [Model failover](/concepts/model-failover).
-
-### 8) Talk (speech)
+### 6) Talk (speech)
 
 Talk mode can invoke **ElevenLabs** when configured:
 
@@ -117,7 +95,7 @@ Talk mode can invoke **ElevenLabs** when configured:
 
 See [Talk mode](/nodes/talk).
 
-### 9) Skills (third-party APIs)
+### 7) Skills (third-party APIs)
 
 Skills can store `apiKey` in `skills.entries.<name>.apiKey`. If a skill uses that key for external
 APIs, it can incur costs according to the skill’s provider.

@@ -144,8 +144,10 @@ Key fields (not exhaustive):
 - Toggles:
   - `verboseLevel`, `elevatedLevel`
   - `sendPolicy` (per-session override)
-- Model selection:
-  - `providerOverride`, `modelOverride`, `authProfileOverride`
+- Model selection (per-session overrides for provider routing and CLI runtime flags):
+  - `modelOverride`: model to pass to the CLI runtime (e.g. `--model` flag)
+  - `providerOverride`: which provider to route to (e.g. `anthropic`, `openai`)
+  - `authProfileOverride`: which auth profile to use for the selected provider
 - Token counters (best-effort / provider-dependent):
   - `inputTokens`, `outputTokens`, `totalTokens`, `contextTokens`
 
@@ -183,7 +185,7 @@ Two different concepts matter:
 
 If you’re tuning limits:
 
-- The context window comes from the model catalog (and can be overridden via config).
+- The context window is determined by the CLI runtime (e.g., the model the CLI agent is using) and can be overridden via config.
 - `contextTokens` in the store is a runtime estimate/reporting value; don’t treat it as a strict guarantee.
 
 For more, see [/token-use](/reference/token-use).

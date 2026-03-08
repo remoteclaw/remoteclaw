@@ -50,9 +50,9 @@ When the operator says “release”, immediately do this preflight (no extra qu
   - If the immediate previous npm release is known broken, set `REMOTECLAW_INSTALL_SMOKE_PREVIOUS=<last-good-version>` or `REMOTECLAW_INSTALL_SMOKE_SKIP_PREVIOUS=1` for the preinstall step.
 - [ ] (Optional) Full installer smoke (adds non-root + CLI coverage): `pnpm test:install:smoke`
 - [ ] (Optional) Installer E2E (Docker, runs `curl -fsSL https://remoteclaw.org/install.sh | bash`, onboards, then runs real tool calls):
-  - `pnpm test:install:e2e:openai` (requires `OPENAI_API_KEY`)
-  - `pnpm test:install:e2e:anthropic` (requires `ANTHROPIC_API_KEY`)
-  - `pnpm test:install:e2e` (requires both keys; runs both providers)
+  - `pnpm test:install:e2e:openai` (requires `OPENAI_API_KEY`, tests OpenAI runtime)
+  - `pnpm test:install:e2e:anthropic` (requires `ANTHROPIC_API_KEY`, tests Claude runtime)
+  - `pnpm test:install:e2e` (requires both keys; runs both runtimes)
 - [ ] (Optional) Spot-check the web gateway if your changes affect send/receive paths.
 
 5. **macOS app (Sparkle)**

@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { findBundledPluginByNpmSpec, resolveBundledPluginSources } from "./bundled-sources.js";
+import {
+  findBundledPluginByNpmSpec,
+  findBundledPluginSourceInMap,
+  resolveBundledPluginSources,
+} from "./bundled-sources.js";
 
 const discoverRemoteClawPluginsMock = vi.fn();
 const loadPluginManifestMock = vi.fn();
@@ -93,5 +97,35 @@ describe("bundled plugin sources", () => {
     expect(resolved?.pluginId).toBe("feishu");
     expect(resolved?.localPath).toBe("/app/extensions/feishu");
     expect(missing).toBeUndefined();
+  });
+
+  it("reuses a pre-resolved bundled map for repeated lookups", () => {
+    const bundled = new Map([
+      [
+        "feishu",
+        {
+          pluginId: "feishu",
+          localPath: "/app/extensions/feishu",
+          npmSpec: "@remoteclaw/feishu",
+        },
+      ],
+    ]);
+
+    expect(
+      findBundledPluginSourceInMap({
+        bundled,
+        lookup: { kind: "pluginId", value: "feishu" },
+      }),
+    ).toEqual({
+      pluginId: "feishu",
+      localPath: "/app/extensions/feishu",
+      npmSpec: "@remoteclaw/feishu",
+    });
+    expect(
+      findBundledPluginSourceInMap({
+        bundled,
+        lookup: { kind: "npmSpec", value: "@remoteclaw/feishu" },
+      })?.pluginId,
+    ).toBe("feishu");
   });
 });

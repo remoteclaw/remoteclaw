@@ -15,7 +15,7 @@ and the agent should rely on them directly.
 ## Disabling tools
 
 You can globally allow/deny tools via `tools.allow` / `tools.deny` in `remoteclaw.json`
-(deny wins). This prevents disallowed tools from being sent to model providers.
+(deny wins). This prevents disallowed tools from being presented to the agent.
 
 ```json5
 {
@@ -73,62 +73,6 @@ Example (global coding profile, messaging-only support agent):
       {
         id: "support",
         tools: { profile: "messaging", allow: ["slack"] },
-      },
-    ],
-  },
-}
-```
-
-## Provider-specific tool policy
-
-Use `tools.byProvider` to **further restrict** tools for specific providers
-(or a single `provider/model`) without changing your global defaults.
-Per-agent override: `agents.list[].tools.byProvider`.
-
-This is applied **after** the base tool profile and **before** allow/deny lists,
-so it can only narrow the tool set.
-Provider keys accept either `provider` (e.g. `google-antigravity`) or
-`provider/model` (e.g. `openai/gpt-5.2`).
-
-Example (keep global coding profile, but minimal tools for Google Antigravity):
-
-```json5
-{
-  tools: {
-    profile: "coding",
-    byProvider: {
-      "google-antigravity": { profile: "minimal" },
-    },
-  },
-}
-```
-
-Example (provider/model-specific allowlist for a flaky endpoint):
-
-```json5
-{
-  tools: {
-    allow: ["group:fs", "group:runtime", "sessions_list"],
-    byProvider: {
-      "openai/gpt-5.2": { allow: ["group:fs", "sessions_list"] },
-    },
-  },
-}
-```
-
-Example (agent-specific override for a single provider):
-
-```json5
-{
-  agents: {
-    list: [
-      {
-        id: "support",
-        tools: {
-          byProvider: {
-            "google-antigravity": { allow: ["message", "sessions_list"] },
-          },
-        },
       },
     ],
   },
@@ -382,8 +326,8 @@ Core parameters:
 
 Notes:
 
-- Only available when `agents.defaults.imageModel` is configured (primary or fallbacks), or when an implicit image model can be inferred from your default model + configured auth (best-effort pairing).
-- Uses the image model directly (independent of the main chat model).
+- Requires a configured image model (see agent configuration).
+- Image analysis runs independently of the main chat model.
 
 ### `message`
 
@@ -454,8 +398,8 @@ Core parameters:
 - `sessions_list`: `kinds?`, `limit?`, `activeMinutes?`, `messageLimit?` (0 = none)
 - `sessions_history`: `sessionKey` (or `sessionId`), `limit?`, `includeTools?`
 - `sessions_send`: `sessionKey` (or `sessionId`), `message`, `timeoutSeconds?` (0 = fire-and-forget)
-- `sessions_spawn`: `task`, `label?`, `agentId?`, `model?`, `thinking?`, `runTimeoutSeconds?`, `thread?`, `mode?`, `cleanup?`
-- `session_status`: `sessionKey?` (default current; accepts `sessionId`), `model?` (`default` clears override)
+- `sessions_spawn`: `task`, `label?`, `agentId?`, `model?` (passed through to CLI agent), `thinking?` (passed through to CLI agent), `runTimeoutSeconds?`, `thread?`, `mode?`, `cleanup?`
+- `session_status`: `sessionKey?` (default current; accepts `sessionId`)
 
 Notes:
 
@@ -536,7 +480,7 @@ Node targeting:
 Tools are exposed in two parallel channels:
 
 1. **System prompt text**: a human-readable list + guidance.
-2. **Tool schema**: the structured function definitions sent to the model API.
+2. **Tool schema**: the structured function definitions forwarded to the CLI agent.
 
 That means the agent sees both “what tools exist” and “how to call them.” If a tool
 doesn’t appear in the system prompt or the schema, the model cannot call it.

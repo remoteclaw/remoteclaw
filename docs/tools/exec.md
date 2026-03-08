@@ -130,8 +130,9 @@ allowlisted or a safe bin. Chaining (`;`, `&&`, `||`) and redirections are rejec
 allowlist mode unless every top-level segment satisfies the allowlist (including safe bins).
 Redirections remain unsupported.
 
-`autoAllowSkills` is a separate convenience path in exec approvals. It is not the same as
-manual path allowlist entries. For strict explicit trust, keep `autoAllowSkills` disabled.
+`autoAllowSkills` is a separate convenience path in exec approvals that auto-allows
+executables from locally-installed workspace skills. It is not the same as manual path
+allowlist entries. For strict explicit trust, keep `autoAllowSkills` disabled.
 
 Use the two controls for different jobs:
 
@@ -189,7 +190,7 @@ Enable it explicitly:
 {
   tools: {
     exec: {
-      applyPatch: { enabled: true, workspaceOnly: true, allowModels: ["gpt-5.2"] },
+      applyPatch: { enabled: true, workspaceOnly: true },
     },
   },
 }
@@ -197,7 +198,8 @@ Enable it explicitly:
 
 Notes:
 
-- Only available for OpenAI/OpenAI Codex models.
+- Only relevant when using the `codex` runtime (OpenCode/Codex CLI), which natively
+  supports `apply_patch` as a subtool.
 - Tool policy still applies; `allow: ["exec"]` implicitly allows `apply_patch`.
 - Config lives under `tools.exec.applyPatch`.
 - `tools.exec.applyPatch.workspaceOnly` defaults to `true` (workspace-contained). Set it to `false` only if you intentionally want `apply_patch` to write/delete outside the workspace directory.

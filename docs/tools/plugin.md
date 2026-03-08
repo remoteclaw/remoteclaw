@@ -48,10 +48,7 @@ Looking for third-party listings? See [Community plugins](/plugins/community).
 - [Nostr](/channels/nostr) — `@remoteclaw/nostr`
 - [Zalo](/channels/zalo) — `@remoteclaw/zalo`
 - [Microsoft Teams](/channels/msteams) — `@remoteclaw/msteams`
-- Google Antigravity OAuth (provider auth) — bundled as `google-antigravity-auth` (disabled by default)
-- Gemini CLI OAuth (provider auth) — bundled as `google-gemini-cli-auth` (disabled by default)
-- Qwen OAuth (provider auth) — bundled as `qwen-portal-auth` (disabled by default)
-- Copilot Proxy (provider auth) — local VS Code Copilot Proxy bridge; distinct from built-in `github-copilot` device login (bundled, disabled by default)
+- Gemini CLI OAuth (CLI authentication) — bundled as `google-gemini-cli-auth` (disabled by default)
 
 RemoteClaw plugins are **TypeScript modules** loaded at runtime via jiti. **Config
 validation does not execute plugin code**; it uses the plugin manifest and JSON
@@ -65,7 +62,6 @@ Plugins can register:
 - CLI commands
 - Background services
 - Optional config validation
-- **Skills** (by listing `skills` directories in the plugin manifest)
 - **Auto-reply commands** (execute without invoking the AI agent)
 
 Plugins run **in‑process** with the Gateway, so treat them as trusted code.
@@ -401,8 +397,7 @@ Notes:
 
 ### Write a new messaging channel (step‑by‑step)
 
-Use this when you want a **new chat surface** (a "messaging channel"), not a model provider.
-Model provider docs live under `/providers/*`.
+Use this when you want a **new chat surface** (a "messaging channel").
 
 1. Pick an id + config shape
 
@@ -590,12 +585,6 @@ export default function (api) {
 - Gateway methods: `pluginId.action` (example: `voicecall.status`)
 - Tools: `snake_case` (example: `voice_call`)
 - CLI commands: kebab or camel, but avoid clashing with core commands
-
-## Skills
-
-Plugins can ship a skill in the repo (`skills/<name>/SKILL.md`).
-Enable it with `plugins.entries.<id>.enabled` (or other config gates) and ensure
-it’s present in your workspace/managed skills locations.
 
 ## Distribution (npm)
 

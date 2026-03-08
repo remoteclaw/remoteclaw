@@ -8,8 +8,8 @@ title: "Agent Send"
 # `remoteclaw agent` (direct agent runs)
 
 `remoteclaw agent` runs a single agent turn without needing an inbound chat message.
-By default it goes **through the Gateway**; add `--local` to force the embedded
-runtime on the current machine.
+By default it goes **through the Gateway**; add `--local` to run a local CLI
+agent subprocess on the current machine.
 
 ## Behavior
 
@@ -18,7 +18,7 @@ runtime on the current machine.
   - `--to <dest>` derives the session key (group/channel targets preserve isolation; direct chats collapse to `main`), **or**
   - `--session-id <id>` reuses an existing session by id, **or**
   - `--agent <id>` targets a configured agent directly (uses that agent's `main` session key)
-- Runs the same embedded agent runtime as normal inbound replies.
+- Runs the same CLI agent subprocess as normal inbound replies.
 - Thinking/verbose flags persist into the session store.
 - Output:
   - default: prints reply text (plus `MEDIA:<url>` lines)
@@ -26,7 +26,7 @@ runtime on the current machine.
 - Optional delivery back to a channel with `--deliver` + `--channel` (target formats match `remoteclaw message --target`).
 - Use `--reply-channel`/`--reply-to`/`--reply-account` to override delivery without changing the session.
 
-If the Gateway is unreachable, the CLI **falls back** to the embedded local run.
+If the Gateway is unreachable, the CLI **falls back** to a local CLI agent subprocess.
 
 ## Examples
 
@@ -47,7 +47,7 @@ remoteclaw agent --agent ops --message "Generate report" --deliver --reply-chann
 - `--reply-to`: delivery target override
 - `--reply-channel`: delivery channel override
 - `--reply-account`: delivery account id override
-- `--thinking <off|minimal|low|medium|high|xhigh>`: persist thinking level (GPT-5.2 + Codex models only)
+- `--thinking <off|minimal|low|medium|high|xhigh>`: persist thinking level (passed through to the CLI agent)
 - `--verbose <on|full|off>`: persist verbose level
 - `--timeout <seconds>`: override agent timeout
 - `--json`: output structured JSON

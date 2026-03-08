@@ -21,7 +21,7 @@ Use `/subagents` to inspect or control sub-agent runs for the **current session*
 - `/subagents info <id|#>`
 - `/subagents send <id|#> <message>`
 - `/subagents steer <id|#> <message>`
-- `/subagents spawn <agentId> <task> [--model <model>] [--thinking <level>]`
+- `/subagents spawn <agentId> <task> [--model <model>] [--thinking <level>]` (flags are passed through to the CLI agent)
 
 Thread binding controls:
 
@@ -48,7 +48,7 @@ These commands work on channels that support persistent thread bindings. See **T
   - `Result` (`assistant` reply text, or latest `toolResult` if the assistant reply is empty)
   - `Status` (`completed successfully` / `failed` / `timed out`)
   - compact runtime/token stats
-- `--model` and `--thinking` override defaults for that specific run.
+- `--model` and `--thinking` are passed through to the CLI agent subprocess for that specific run.
 - Use `info`/`log` to inspect details and output after completion.
 - `/subagents spawn` is one-shot mode (`mode: "run"`). For persistent thread-bound sessions, use `sessions_spawn` with `thread: true` and `mode: "session"`.
 
@@ -59,9 +59,9 @@ Primary goals:
 - Keep the tool surface hard to misuse: sub-agents do **not** get session tools by default.
 - Support configurable nesting depth for orchestrator patterns.
 
-Cost note: each sub-agent has its **own** context and token usage. For heavy or repetitive
-tasks, set a cheaper model for sub-agents and keep your main agent on a higher-quality model.
-You can configure this via `agents.defaults.subagents.model` or per-agent overrides.
+Cost note: each sub-agent has its **own** context and token usage. The `model` and
+`thinking` flags are passed through to the CLI agent subprocess — model selection is the
+CLI agent's responsibility, not RemoteClaw's.
 
 ## Tool
 
@@ -69,8 +69,8 @@ Use `sessions_spawn`:
 
 - Starts a sub-agent run (`deliver: false`, global lane: `subagent`)
 - Then runs an announce step and posts the announce reply to the requester chat channel
-- Default model: inherits the caller unless you set `agents.defaults.subagents.model` (or per-agent `agents.list[].subagents.model`); an explicit `sessions_spawn.model` still wins.
-- Default thinking: inherits the caller unless you set `agents.defaults.subagents.thinking` (or per-agent `agents.list[].subagents.thinking`); an explicit `sessions_spawn.thinking` still wins.
+- Default model: inherits the caller; an explicit `sessions_spawn.model` is passed through to the CLI agent subprocess.
+- Default thinking: inherits the caller; an explicit `sessions_spawn.thinking` is passed through to the CLI agent subprocess.
 - Default run timeout: if `sessions_spawn.runTimeoutSeconds` is omitted, RemoteClaw uses `agents.defaults.subagents.runTimeoutSeconds` when set; otherwise it falls back to `0` (no timeout).
 
 Tool params:
@@ -78,8 +78,8 @@ Tool params:
 - `task` (required)
 - `label?` (optional)
 - `agentId?` (optional; spawn under another agent id if allowed)
-- `model?` (optional; overrides the sub-agent model; invalid values are skipped and the sub-agent runs on the default model with a warning in the tool result)
-- `thinking?` (optional; overrides thinking level for the sub-agent run)
+- `model?` (optional; passed through to the CLI agent subprocess)
+- `thinking?` (optional; passed through to the CLI agent subprocess)
 - `runTimeoutSeconds?` (defaults to `agents.defaults.subagents.runTimeoutSeconds` when set, otherwise `0`; when set, the sub-agent run is aborted after N seconds)
 - `thread?` (default `false`; when `true`, requests channel thread binding for this sub-agent session)
 - `mode?` (`run|session`)
@@ -220,7 +220,7 @@ Announce payloads include a stats line at the end (even when wrapped):
 
 - Runtime (e.g., `runtime 5m12s`)
 - Token usage (input/output/total)
-- Estimated cost when model pricing is configured (`models.providers.*.models[].cost`)
+- Estimated cost (when available from the CLI agent)
 - `sessionKey`, `sessionId`, and transcript path (so the main agent can fetch history via `sessions_history` or inspect the file on disk)
 
 ## Tool Policy (sub-agent tools)

@@ -52,10 +52,7 @@ workflow.
       "llm-task": {
         "enabled": true,
         "config": {
-          "defaultProvider": "openai-codex",
           "defaultModel": "gpt-5.2",
-          "defaultAuthProfileId": "main",
-          "allowedModels": ["openai-codex/gpt-5.3-codex"],
           "maxTokens": 800,
           "timeoutMs": 30000
         }
@@ -65,17 +62,12 @@ workflow.
 }
 ```
 
-`allowedModels` is an allowlist of `provider/model` strings. If set, any request
-outside the list is rejected.
-
 ## Tool parameters
 
 - `prompt` (string, required)
 - `input` (any, optional)
 - `schema` (object, optional JSON Schema)
-- `provider` (string, optional)
 - `model` (string, optional)
-- `authProfileId` (string, optional)
 - `temperature` (number, optional)
 - `maxTokens` (number, optional)
 - `timeoutMs` (number, optional)

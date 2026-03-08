@@ -14,6 +14,7 @@ import {
   materializeWorkspaceDefaults,
   resolveTargetFilename,
   stampImportedConfigVersion,
+  stripSchemaField,
   stripUnrecognizedConfigKeys,
   transformConfigContent,
 } from "./import.js";
@@ -344,6 +345,40 @@ describe("clearWizardSection", () => {
     const result = JSON.parse(clearWizardSection(input));
     expect(result.wizard).toBeUndefined();
     expect(result.gateway.port).toBe(18789);
+  });
+});
+
+describe("stripSchemaField", () => {
+  it("strips $schema field from config JSON", () => {
+    const input = JSON.stringify({
+      $schema: "https://openclaw.org/config.json",
+      gateway: { port: 18789 },
+    });
+    const result = JSON.parse(stripSchemaField(input));
+    expect(result.$schema).toBeUndefined();
+    expect(result.gateway.port).toBe(18789);
+  });
+
+  it("returns content unchanged when no $schema field exists", () => {
+    const input = JSON.stringify({
+      gateway: { port: 18789 },
+    });
+    expect(stripSchemaField(input)).toBe(input);
+  });
+
+  it("returns non-JSON content unchanged", () => {
+    const input = "not valid json {{{";
+    expect(stripSchemaField(input)).toBe(input);
+  });
+
+  it("strips $schema regardless of URL value", () => {
+    const input = JSON.stringify({
+      $schema: "https://example.com/any-schema.json",
+      agents: { list: [] },
+    });
+    const result = JSON.parse(stripSchemaField(input));
+    expect(result.$schema).toBeUndefined();
+    expect(result.agents.list).toEqual([]);
   });
 });
 
@@ -1017,6 +1052,25 @@ describe("importCommand", () => {
     expect(parsed.meta.lastTouchedVersion).not.toBe("2026.2.6-3");
     expect(parsed.meta.lastTouchedVersion).toEqual(expect.any(String));
     expect(parsed.meta.lastTouchedAt).not.toBe("2025-01-01T00:00:00.000Z");
+  });
+
+  it("strips $schema field from main config during import", async () => {
+    const configContent = JSON.stringify({
+      $schema: "https://openclaw.org/config.json",
+      gateway: { port: 18789 },
+      agents: { list: [{ id: "main", workspace: "~/ws" }] },
+    });
+    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    const written = await fsp.readFile(path.join(targetDir, "remoteclaw.json"), "utf-8");
+    const parsed = JSON.parse(written);
+    expect(parsed.$schema).toBeUndefined();
+    expect(parsed.gateway.port).toBe(18789);
   });
 
   it("handles nested directory structures with mixed file types", async () => {

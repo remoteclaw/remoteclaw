@@ -85,6 +85,12 @@ export class DeliveryAdapter {
           }
           break;
         }
+        case "thinking": {
+          if (event.text) {
+            callbacks?.onThinking?.({ text: event.text });
+          }
+          break;
+        }
         case "tool_use":
           break;
         case "tool_result": {

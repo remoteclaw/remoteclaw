@@ -324,7 +324,9 @@ export function createAgentEventHandler({
     const agentPayload = sessionKey ? { ...eventForClients, sessionKey } : eventForClients;
     const last = agentRunSeq.get(evt.runId) ?? 0;
     const isToolEvent = evt.stream === "tool";
-    const toolVerbose = isToolEvent ? resolveToolVerboseLevel(evt.runId, sessionKey) : "off";
+    const isThinkingEvent = evt.stream === "thinking";
+    const toolVerbose =
+      isToolEvent || isThinkingEvent ? resolveToolVerboseLevel(evt.runId, sessionKey) : "off";
     // Build tool payload: strip result/partialResult unless verbose=full
     const toolPayload =
       isToolEvent && toolVerbose !== "full"
@@ -360,6 +362,12 @@ export function createAgentEventHandler({
       if (recipients && recipients.size > 0) {
         broadcastToConnIds("agent", toolPayload, recipients);
       }
+    } else if (isThinkingEvent) {
+      // Thinking events: broadcast to WS clients only when verbose is enabled.
+      // Never sent to node/channel subscribers (thinking is for interactive clients only).
+      if (toolVerbose !== "off") {
+        broadcast("agent", agentPayload);
+      }
     } else {
       broadcast("agent", agentPayload);
     }
@@ -368,9 +376,9 @@ export function createAgentEventHandler({
       evt.stream === "lifecycle" && typeof evt.data?.phase === "string" ? evt.data.phase : null;
 
     if (sessionKey) {
-      // Send tool events to node/channel subscribers only when verbose is enabled;
-      // WS clients already received the event above via broadcastToConnIds.
-      if (!isToolEvent || toolVerbose !== "off") {
+      // Thinking events are for interactive WS clients only — never sent to
+      // node/channel subscribers. Tool events only when verbose is enabled.
+      if (!isThinkingEvent && (!isToolEvent || toolVerbose !== "off")) {
         nodeSendToSession(sessionKey, "agent", isToolEvent ? toolPayload : agentPayload);
       }
       if (!isAborted && evt.stream === "assistant" && typeof evt.data?.text === "string") {

@@ -265,4 +265,6 @@ export type BridgeCallbacks = {
   onBlockReply?: ((payload: ReplyPayload) => Promise<void> | void) | undefined;
   /** Called when a tool result is available. */
   onToolResult?: ((payload: ReplyPayload) => Promise<void> | void) | undefined;
+  /** Called when the agent emits thinking content. */
+  onThinking?: ((payload: { text: string }) => void) | undefined;
 };

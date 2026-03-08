@@ -210,6 +210,38 @@ describe("DeliveryAdapter", () => {
   });
 
   describe("event types", () => {
+    it("thinking events invoke onThinking callback", async () => {
+      const onThinking = vi.fn();
+      const adapter = new DeliveryAdapter();
+      const events = eventStream([
+        { type: "thinking", text: "Let me consider..." },
+        { type: "text", text: "Here is my answer." },
+        makeDone(),
+      ]);
+      const payloads = await adapter.process(events, { onThinking });
+      expect(onThinking).toHaveBeenCalledWith({ text: "Let me consider..." });
+      // Thinking events should NOT produce delivery payloads
+      expect(payloads).toEqual([{ text: "Here is my answer." }]);
+    });
+
+    it("thinking events with empty text are skipped", async () => {
+      const onThinking = vi.fn();
+      const adapter = new DeliveryAdapter();
+      const events = eventStream([{ type: "thinking", text: "" }, makeDone()]);
+      await adapter.process(events, { onThinking });
+      expect(onThinking).not.toHaveBeenCalled();
+    });
+
+    it("thinking events do not error when onThinking callback is omitted", async () => {
+      const adapter = new DeliveryAdapter();
+      const events = eventStream([
+        { type: "thinking", text: "Thinking without a listener" },
+        makeDone(),
+      ]);
+      const payloads = await adapter.process(events);
+      expect(payloads).toEqual([]);
+    });
+
     it("tool_use events produce no output", async () => {
       const adapter = new DeliveryAdapter();
       const events = eventStream([

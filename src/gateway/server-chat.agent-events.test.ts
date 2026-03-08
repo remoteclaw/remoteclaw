@@ -440,6 +440,83 @@ describe("agent event handler", () => {
     resetAgentRunContextForTest();
   });
 
+  it("broadcasts thinking events to WS clients when verbose is on", () => {
+    const { broadcast, nodeSendToSession, handler } = createHarness({
+      resolveSessionKeyForRun: () => "session-1",
+    });
+
+    registerAgentRunContext("run-thinking", { sessionKey: "session-1", verboseLevel: "on" });
+
+    handler({
+      runId: "run-thinking",
+      seq: 1,
+      stream: "thinking",
+      ts: Date.now(),
+      data: { text: "Let me think about this..." },
+    });
+
+    // Thinking events should be broadcast to WS clients
+    const agentCalls = broadcast.mock.calls.filter(([event]) => event === "agent");
+    expect(agentCalls).toHaveLength(1);
+    const payload = agentCalls[0]?.[1] as { stream?: string; data?: Record<string, unknown> };
+    expect(payload.stream).toBe("thinking");
+    expect(payload.data?.text).toBe("Let me think about this...");
+
+    // Thinking events should NOT be sent to node/channel subscribers
+    const nodeCalls = nodeSendToSession.mock.calls.filter(([, event]) => event === "agent");
+    expect(nodeCalls).toHaveLength(0);
+    resetAgentRunContextForTest();
+  });
+
+  it("suppresses thinking events when verbose is off", () => {
+    const { broadcast, nodeSendToSession, handler } = createHarness({
+      resolveSessionKeyForRun: () => "session-1",
+    });
+
+    registerAgentRunContext("run-thinking-off", { sessionKey: "session-1", verboseLevel: "off" });
+
+    handler({
+      runId: "run-thinking-off",
+      seq: 1,
+      stream: "thinking",
+      ts: Date.now(),
+      data: { text: "Secret thoughts..." },
+    });
+
+    // Should NOT broadcast to WS clients when verbose is off
+    const agentCalls = broadcast.mock.calls.filter(([event]) => event === "agent");
+    expect(agentCalls).toHaveLength(0);
+
+    // Should NOT be sent to node/channel subscribers
+    const nodeCalls = nodeSendToSession.mock.calls.filter(([, event]) => event === "agent");
+    expect(nodeCalls).toHaveLength(0);
+    resetAgentRunContextForTest();
+  });
+
+  it("broadcasts thinking events when verbose is full", () => {
+    const { broadcast, nodeSendToSession, handler } = createHarness({
+      resolveSessionKeyForRun: () => "session-1",
+    });
+
+    registerAgentRunContext("run-thinking-full", { sessionKey: "session-1", verboseLevel: "full" });
+
+    handler({
+      runId: "run-thinking-full",
+      seq: 1,
+      stream: "thinking",
+      ts: Date.now(),
+      data: { text: "Deep thinking..." },
+    });
+
+    const agentCalls = broadcast.mock.calls.filter(([event]) => event === "agent");
+    expect(agentCalls).toHaveLength(1);
+
+    // Even at full verbose, thinking events should NOT go to node/channel
+    const nodeCalls = nodeSendToSession.mock.calls.filter(([, event]) => event === "agent");
+    expect(nodeCalls).toHaveLength(0);
+    resetAgentRunContextForTest();
+  });
+
   it("passes heartbeat text through to chat output without filtering", () => {
     const { broadcast, chatRunState, handler } = createHarness({ now: 3_000 });
     chatRunState.registry.add("run-heartbeat-alert", {

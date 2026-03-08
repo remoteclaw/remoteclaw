@@ -328,6 +328,13 @@ export async function runAgentTurnWithFallback(params: {
                 directlySentBlockKeys,
               })
             : undefined,
+          onThinking: (payload) => {
+            emitAgentEvent({
+              runId,
+              stream: "thinking",
+              data: { text: payload.text },
+            });
+          },
           onToolResult: onToolResult
             ? (() => {
                 // Serialize tool result delivery to preserve message ordering.

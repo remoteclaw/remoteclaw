@@ -419,6 +419,177 @@ describe("parseSystemdExecStart", () => {
   });
 });
 
+describe("readSystemdServiceExecStart", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("loads REMOTECLAW_GATEWAY_TOKEN from EnvironmentFile", async () => {
+    const readFileSpy = vi.spyOn(fs, "readFile").mockImplementation(async (pathname) => {
+      const pathValue = pathLikeToString(pathname);
+      if (pathValue.endsWith("/remoteclaw-gateway.service")) {
+        return [
+          "[Service]",
+          "ExecStart=/usr/bin/remoteclaw gateway run",
+          "EnvironmentFile=%h/.remoteclaw/.env",
+        ].join("\n");
+      }
+      if (pathValue === "/home/test/.remoteclaw/.env") {
+        return "REMOTECLAW_GATEWAY_TOKEN=env-file-token\n";
+      }
+      throw new Error(`unexpected readFile path: ${pathValue}`);
+    });
+
+    const command = await readSystemdServiceExecStart({ HOME: "/home/test" });
+    expect(command?.environment?.REMOTECLAW_GATEWAY_TOKEN).toBe("env-file-token");
+    expect(readFileSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("lets EnvironmentFile override inline Environment values", async () => {
+    vi.spyOn(fs, "readFile").mockImplementation(async (pathname) => {
+      const pathValue = pathLikeToString(pathname);
+      if (pathValue.endsWith("/remoteclaw-gateway.service")) {
+        return [
+          "[Service]",
+          "ExecStart=/usr/bin/remoteclaw gateway run",
+          "EnvironmentFile=%h/.remoteclaw/.env",
+          'Environment="REMOTECLAW_GATEWAY_TOKEN=inline-token"',
+        ].join("\n");
+      }
+      if (pathValue === "/home/test/.remoteclaw/.env") {
+        return "REMOTECLAW_GATEWAY_TOKEN=env-file-token\n";
+      }
+      throw new Error(`unexpected readFile path: ${pathValue}`);
+    });
+
+    const command = await readSystemdServiceExecStart({ HOME: "/home/test" });
+    expect(command?.environment?.REMOTECLAW_GATEWAY_TOKEN).toBe("env-file-token");
+    expect(command?.environmentValueSources?.REMOTECLAW_GATEWAY_TOKEN).toBe("file");
+  });
+
+  it("ignores missing optional EnvironmentFile entries", async () => {
+    vi.spyOn(fs, "readFile").mockImplementation(async (pathname) => {
+      const pathValue = pathLikeToString(pathname);
+      if (pathValue.endsWith("/remoteclaw-gateway.service")) {
+        return [
+          "[Service]",
+          "ExecStart=/usr/bin/remoteclaw gateway run",
+          "EnvironmentFile=-%h/.remoteclaw/missing.env",
+        ].join("\n");
+      }
+      throw new Error(`missing: ${pathValue}`);
+    });
+
+    const command = await readSystemdServiceExecStart({ HOME: "/home/test" });
+    expect(command?.programArguments).toEqual(["/usr/bin/remoteclaw", "gateway", "run"]);
+    expect(command?.environment).toBeUndefined();
+  });
+
+  it("keeps parsing when non-optional EnvironmentFile entries are missing", async () => {
+    vi.spyOn(fs, "readFile").mockImplementation(async (pathname) => {
+      const pathValue = pathLikeToString(pathname);
+      if (pathValue.endsWith("/remoteclaw-gateway.service")) {
+        return [
+          "[Service]",
+          "ExecStart=/usr/bin/remoteclaw gateway run",
+          "EnvironmentFile=%h/.remoteclaw/missing.env",
+        ].join("\n");
+      }
+      throw new Error(`missing: ${pathValue}`);
+    });
+
+    const command = await readSystemdServiceExecStart({ HOME: "/home/test" });
+    expect(command?.programArguments).toEqual(["/usr/bin/remoteclaw", "gateway", "run"]);
+    expect(command?.environment).toBeUndefined();
+  });
+
+  it("supports multiple EnvironmentFile entries and quoted paths", async () => {
+    vi.spyOn(fs, "readFile").mockImplementation(async (pathname) => {
+      const pathValue = pathLikeToString(pathname);
+      if (pathValue.endsWith("/remoteclaw-gateway.service")) {
+        return [
+          "[Service]",
+          "ExecStart=/usr/bin/remoteclaw gateway run",
+          'EnvironmentFile=%h/.remoteclaw/first.env "%h/.remoteclaw/second env.env"',
+        ].join("\n");
+      }
+      if (pathValue === "/home/test/.remoteclaw/first.env") {
+        return "REMOTECLAW_GATEWAY_TOKEN=first-token\n"; // pragma: allowlist secret
+      }
+      if (pathValue === "/home/test/.remoteclaw/second env.env") {
+        return 'REMOTECLAW_GATEWAY_PASSWORD="second password"\n'; // pragma: allowlist secret
+      }
+      throw new Error(`unexpected readFile path: ${pathValue}`);
+    });
+
+    const command = await readSystemdServiceExecStart({ HOME: "/home/test" });
+    expect(command?.environment).toEqual({
+      REMOTECLAW_GATEWAY_TOKEN: "first-token",
+      REMOTECLAW_GATEWAY_PASSWORD: "second password", // pragma: allowlist secret
+    });
+  });
+
+  it("resolves relative EnvironmentFile paths from the unit directory", async () => {
+    vi.spyOn(fs, "readFile").mockImplementation(async (pathname) => {
+      const pathValue = pathLikeToString(pathname);
+      if (pathValue.endsWith("/remoteclaw-gateway.service")) {
+        return [
+          "[Service]",
+          "ExecStart=/usr/bin/remoteclaw gateway run",
+          "EnvironmentFile=./gateway.env ./override.env",
+        ].join("\n");
+      }
+      if (pathValue.endsWith("/.config/systemd/user/gateway.env")) {
+        return [
+          "REMOTECLAW_GATEWAY_TOKEN=relative-token", // pragma: allowlist secret
+          "REMOTECLAW_GATEWAY_PASSWORD=relative-password", // pragma: allowlist secret
+        ].join("\n");
+      }
+      if (pathValue.endsWith("/.config/systemd/user/override.env")) {
+        return "REMOTECLAW_GATEWAY_TOKEN=override-token\n"; // pragma: allowlist secret
+      }
+      throw new Error(`unexpected readFile path: ${pathValue}`);
+    });
+
+    const command = await readSystemdServiceExecStart({ HOME: "/home/test" });
+    expect(command?.environment).toEqual({
+      REMOTECLAW_GATEWAY_TOKEN: "override-token",
+      REMOTECLAW_GATEWAY_PASSWORD: "relative-password", // pragma: allowlist secret
+    });
+  });
+
+  it("parses EnvironmentFile content with comments and quoted values", async () => {
+    vi.spyOn(fs, "readFile").mockImplementation(async (pathname) => {
+      const pathValue = pathLikeToString(pathname);
+      if (pathValue.endsWith("/remoteclaw-gateway.service")) {
+        return [
+          "[Service]",
+          "ExecStart=/usr/bin/remoteclaw gateway run",
+          "EnvironmentFile=%h/.remoteclaw/gateway.env",
+        ].join("\n");
+      }
+      if (pathValue === "/home/test/.remoteclaw/gateway.env") {
+        return [
+          "# comment",
+          "; another comment",
+          'REMOTECLAW_GATEWAY_TOKEN="quoted token"', // pragma: allowlist secret
+          "REMOTECLAW_GATEWAY_PASSWORD=quoted-password", // pragma: allowlist secret
+        ].join("\n");
+      }
+      throw new Error(`unexpected readFile path: ${pathValue}`);
+    });
+
+    const command = await readSystemdServiceExecStart({ HOME: "/home/test" });
+    expect(command?.environment).toEqual({
+      REMOTECLAW_GATEWAY_TOKEN: "quoted token",
+      REMOTECLAW_GATEWAY_PASSWORD: "quoted-password", // pragma: allowlist secret
+    });
+    expect(command?.environmentValueSources).toEqual({
+      REMOTECLAW_GATEWAY_TOKEN: "file",
+      REMOTECLAW_GATEWAY_PASSWORD: "file",
+    });
+  });
+});
 describe("systemd service control", () => {
   const assertMachineRestartArgs = (args: string[]) => {
     expect(args).toEqual([

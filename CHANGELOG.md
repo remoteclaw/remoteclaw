@@ -257,6 +257,7 @@ Docs: https://docs.openclaw.ai
 - Agents/OpenAI-responses compatibility: strip unsupported `store` payload fields when `supportsStore=false` (including OpenAI-compatible non-OpenAI providers) while preserving server-compaction payload behavior. (#39219) Thanks @ademczuk.
 - Telegram/send retry safety: retry non-idempotent send paths only for pre-connect failures and make custom retry predicates strict, preventing ambiguous reconnect retries from sending duplicate messages. Landed from contributor PR #34238 by @hal-crackbot. Thanks @hal-crackbot.
 - Exec approvals/gateway-node policy: honor explicit `ask=off` from `exec-approvals.json` even when runtime defaults are stricter, so trusted full/off setups stop re-prompting on gateway and node exec paths. Landed from contributor PR #26789 by @pandego. Thanks @pandego.
+- Exec approvals/config fallback: inherit `ask` from `exec-approvals.json` when `tools.exec.ask` is unset, so local full/off defaults no longer fall back to `on-miss` for exec tool and `nodes run`. Landed from contributor PR #29187 by @Bartok9. Thanks @Bartok9.
 
 ## 2026.3.2
 

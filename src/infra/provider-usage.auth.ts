@@ -27,10 +27,13 @@ function resolveZaiApiKey(): string | undefined {
   const apiProfile = [
     ...listProfilesForProvider(store, "zai"),
     ...listProfilesForProvider(store, "z-ai"),
-  ].find((id) => store.profiles[id]?.type === "api_key");
+  ].find((id) => {
+    const t = store.profiles[id]?.type;
+    return t === "api_key" || t === "token";
+  });
   if (apiProfile) {
     const cred = store.profiles[apiProfile];
-    if (cred?.type === "api_key" && normalizeSecretInput(cred.key)) {
+    if ((cred?.type === "api_key" || cred?.type === "token") && normalizeSecretInput(cred.key)) {
       return normalizeSecretInput(cred.key);
     }
   }
@@ -82,8 +85,8 @@ function resolveProviderApiKeyFromConfigAndStore(params: {
   const cred = listProfilesForProvider(store, params.providerId)
     .map((id) => store.profiles[id])
     .find(
-      (profile): profile is { type: "api_key"; provider: string; key: string } =>
-        profile?.type === "api_key",
+      (profile): profile is { type: "api_key" | "token"; provider: string; key: string } =>
+        profile?.type === "api_key" || profile?.type === "token",
     );
   if (!cred) {
     return undefined;

@@ -157,5 +157,14 @@ export async function resolveAuthEnv(params: {
     return undefined;
   }
 
-  return { [envVarName]: resolved.apiKey };
+  // Token credentials for anthropic must be injected as CLAUDE_CODE_OAUTH_TOKEN,
+  // not ANTHROPIC_API_KEY — the SDK treats them as different auth mechanisms
+  // (Bearer token vs x-api-key header).
+  const credType = store.profiles[profileId]?.type;
+  const effectiveEnvVar =
+    envVarName === "ANTHROPIC_API_KEY" && credType === "token"
+      ? "CLAUDE_CODE_OAUTH_TOKEN"
+      : envVarName;
+
+  return { [effectiveEnvVar]: resolved.apiKey };
 }

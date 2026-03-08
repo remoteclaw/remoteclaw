@@ -12,7 +12,7 @@ export type AuthProfileHealthStatus = "ok" | "missing" | "static";
 export type AuthProfileHealth = {
   profileId: string;
   provider: string;
-  type: "api_key";
+  type: "api_key" | "token";
   status: AuthProfileHealthStatus;
   source: AuthProfileSource;
   label: string;
@@ -80,7 +80,7 @@ function buildProfileHealth(params: {
   return {
     profileId,
     provider: credential.provider,
-    type: "api_key",
+    type: credential.type,
     status: "static",
     source,
     label,

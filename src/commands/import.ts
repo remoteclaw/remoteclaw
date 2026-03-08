@@ -515,7 +515,8 @@ function collectLegacyStore(filePath: string, out: DiscoveredAuthProfile[]): voi
       if (
         value &&
         typeof value === "object" &&
-        (value as Record<string, unknown>).type === "api_key"
+        ((value as Record<string, unknown>).type === "api_key" ||
+          (value as Record<string, unknown>).type === "token")
       ) {
         out.push({
           id: `${key}:default`,

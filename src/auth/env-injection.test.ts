@@ -73,6 +73,48 @@ describe("resolveAuthEnv", () => {
     expect(result).toBeUndefined();
   });
 
+  it("injects CLAUDE_CODE_OAUTH_TOKEN for anthropic token credential", async () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main", workspace: "~/w", auth: "claude:oauth-token" }],
+      },
+    };
+    const store: AuthProfileStore = {
+      version: 1,
+      profiles: {
+        "claude:oauth-token": {
+          type: "token",
+          provider: "anthropic",
+          key: "sk-ant-oat01-test-oauth-token",
+        },
+      },
+    };
+
+    const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+    expect(result).toEqual({ CLAUDE_CODE_OAUTH_TOKEN: "sk-ant-oat01-test-oauth-token" });
+  });
+
+  it("injects ANTHROPIC_API_KEY for anthropic api_key credential", async () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main", workspace: "~/w", auth: "anthropic:default" }],
+      },
+    };
+    const store: AuthProfileStore = {
+      version: 1,
+      profiles: {
+        "anthropic:default": {
+          type: "api_key",
+          provider: "anthropic",
+          key: "sk-ant-api03-regular-api-key",
+        },
+      },
+    };
+
+    const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+    expect(result).toEqual({ ANTHROPIC_API_KEY: "sk-ant-api03-regular-api-key" });
+  });
+
   it("injects correct env var for single anthropic profile", async () => {
     const cfg: RemoteClawConfig = {
       agents: {

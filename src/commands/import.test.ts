@@ -9,6 +9,7 @@ import {
   detectOpenClawInstallation,
   discoverSourceAuthProfileIds,
   importCommand,
+  isImportableRootEntry,
   materializeAuthDefaults,
   materializeWorkspaceDefaults,
   resolveTargetFilename,
@@ -576,6 +577,44 @@ describe("materializeAuthDefaults", () => {
   });
 });
 
+describe("isImportableRootEntry", () => {
+  it("accepts known config files", () => {
+    expect(isImportableRootEntry("openclaw.json")).toBe(true);
+    expect(isImportableRootEntry("remoteclaw.json")).toBe(true);
+    expect(isImportableRootEntry(".env")).toBe(true);
+  });
+
+  it("accepts known directories", () => {
+    expect(isImportableRootEntry("agents")).toBe(true);
+    expect(isImportableRootEntry("agent")).toBe(true);
+    expect(isImportableRootEntry("sessions")).toBe(true);
+    expect(isImportableRootEntry("credentials")).toBe(true);
+    expect(isImportableRootEntry("extensions")).toBe(true);
+    expect(isImportableRootEntry("hooks")).toBe(true);
+    expect(isImportableRootEntry("includes")).toBe(true);
+    expect(isImportableRootEntry("telegram")).toBe(true);
+    expect(isImportableRootEntry("media")).toBe(true);
+    expect(isImportableRootEntry("workspace")).toBe(true);
+  });
+
+  it("accepts workspace-{agentId} directories", () => {
+    expect(isImportableRootEntry("workspace-helper")).toBe(true);
+    expect(isImportableRootEntry("workspace-ops")).toBe(true);
+  });
+
+  it("rejects generated caches and runtime state", () => {
+    expect(isImportableRootEntry("completions")).toBe(false);
+    expect(isImportableRootEntry("restart-sentinel.json")).toBe(false);
+    expect(isImportableRootEntry("delivery-queue")).toBe(false);
+    expect(isImportableRootEntry("sandbox")).toBe(false);
+    expect(isImportableRootEntry("identity")).toBe(false);
+    expect(isImportableRootEntry("logs")).toBe(false);
+    expect(isImportableRootEntry("packs")).toBe(false);
+    expect(isImportableRootEntry("browser")).toBe(false);
+    expect(isImportableRootEntry("canvas")).toBe(false);
+  });
+});
+
 describe("resolveTargetFilename", () => {
   it("renames openclaw.json to remoteclaw.json", () => {
     expect(resolveTargetFilename("openclaw.json")).toBe("remoteclaw.json");
@@ -637,10 +676,10 @@ describe("importCommand", () => {
     await fsp.rm(tmpDir, { recursive: true, force: true });
   });
 
-  it("copies files from source to target directory", async () => {
-    await fsp.writeFile(path.join(sourceDir, "data.bin"), "binary data");
-    await fsp.mkdir(path.join(sourceDir, "subdir"));
-    await fsp.writeFile(path.join(sourceDir, "subdir", "nested.txt"), "nested");
+  it("copies known entries from source to target directory", async () => {
+    await fsp.writeFile(path.join(sourceDir, ".env"), "KEY=value");
+    await fsp.mkdir(path.join(sourceDir, "credentials"));
+    await fsp.writeFile(path.join(sourceDir, "credentials", "oauth.json"), '{"token":"fake"}');
 
     // Mock resolveNewStateDir to use our temp target
     const pathsMod = await import("../config/paths.js");
@@ -649,9 +688,58 @@ describe("importCommand", () => {
     const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
 
     expect(result.copiedFiles).toHaveLength(2);
-    expect(fs.existsSync(path.join(targetDir, "data.bin"))).toBe(true);
-    expect(fs.existsSync(path.join(targetDir, "subdir", "nested.txt"))).toBe(true);
-    expect(await fsp.readFile(path.join(targetDir, "data.bin"), "utf-8")).toBe("binary data");
+    expect(fs.existsSync(path.join(targetDir, ".env"))).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, "credentials", "oauth.json"))).toBe(true);
+    expect(await fsp.readFile(path.join(targetDir, ".env"), "utf-8")).toBe("KEY=value");
+  });
+
+  it("skips non-importable root-level entries", async () => {
+    await fsp.mkdir(path.join(sourceDir, "completions"));
+    await fsp.writeFile(path.join(sourceDir, "completions", "openclaw.zsh"), "# completions");
+    await fsp.writeFile(path.join(sourceDir, "restart-sentinel.json"), "{}");
+    await fsp.writeFile(path.join(sourceDir, ".env"), "KEY=value");
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    expect(result.copiedFiles).toHaveLength(1);
+    expect(fs.existsSync(path.join(targetDir, ".env"))).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, "completions"))).toBe(false);
+    expect(fs.existsSync(path.join(targetDir, "restart-sentinel.json"))).toBe(false);
+    expect(result.skippedEntries).toContain("completions");
+    expect(result.skippedEntries).toContain("restart-sentinel.json");
+  });
+
+  it("copies all contents within allowed directories without filtering", async () => {
+    await fsp.mkdir(path.join(sourceDir, "agents", "main", "agent"), { recursive: true });
+    await fsp.writeFile(path.join(sourceDir, "agents", "main", "agent", "custom-data.bin"), "bin");
+    await fsp.writeFile(path.join(sourceDir, "agents", "main", "agent", "notes.txt"), "notes");
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    expect(result.copiedFiles).toHaveLength(2);
+    expect(fs.existsSync(path.join(targetDir, "agents", "main", "agent", "custom-data.bin"))).toBe(
+      true,
+    );
+    expect(fs.existsSync(path.join(targetDir, "agents", "main", "agent", "notes.txt"))).toBe(true);
+  });
+
+  it("imports workspace-{agentId} directories", async () => {
+    await fsp.mkdir(path.join(sourceDir, "workspace-helper"), { recursive: true });
+    await fsp.writeFile(path.join(sourceDir, "workspace-helper", "project.json"), "{}");
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    expect(result.copiedFiles).toHaveLength(1);
+    expect(fs.existsSync(path.join(targetDir, "workspace-helper", "project.json"))).toBe(true);
   });
 
   it("transforms config files during copy", async () => {
@@ -686,7 +774,7 @@ describe("importCommand", () => {
   });
 
   it("dry-run does not write files", async () => {
-    await fsp.writeFile(path.join(sourceDir, "config.json"), '{"key": "value"}');
+    await fsp.writeFile(path.join(sourceDir, ".env"), "KEY=value");
 
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
@@ -727,7 +815,7 @@ describe("importCommand", () => {
   });
 
   it("warns and exits in non-interactive mode when target exists without --yes", async () => {
-    await fsp.writeFile(path.join(sourceDir, "data.bin"), "data");
+    await fsp.writeFile(path.join(sourceDir, ".env"), "KEY=value");
     await fsp.mkdir(targetDir, { recursive: true });
 
     const pathsMod = await import("../config/paths.js");
@@ -741,7 +829,7 @@ describe("importCommand", () => {
   });
 
   it("proceeds when target exists and --yes is provided", async () => {
-    await fsp.writeFile(path.join(sourceDir, "data.bin"), "data");
+    await fsp.writeFile(path.join(sourceDir, ".env"), "KEY=value");
     await fsp.mkdir(targetDir, { recursive: true });
 
     const pathsMod = await import("../config/paths.js");
@@ -750,7 +838,7 @@ describe("importCommand", () => {
     const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
 
     expect(result.copiedFiles).toHaveLength(1);
-    expect(fs.existsSync(path.join(targetDir, "data.bin"))).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, ".env"))).toBe(true);
   });
 
   it("materializes workspace defaults in main config during import", async () => {

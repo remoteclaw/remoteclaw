@@ -76,6 +76,7 @@ export type ImportResult = {
   copiedFiles: string[];
   transformedFiles: string[];
   envVarRenames: string[];
+  skippedEntries: string[];
   targetDir: string;
 };
 
@@ -548,6 +549,60 @@ export function resolveTargetFilename(filename: string): string {
 }
 
 /**
+ * Top-level entries in the OpenClaw state directory that should be imported.
+ *
+ * Only entries in this set (plus the `workspace-*` pattern) are copied from
+ * the source root. Everything else — generated caches (`completions/`),
+ * runtime state (`delivery-queue/`, `sandbox/`, `restart-sentinel.json`),
+ * device-specific data (`identity/`), and removed subsystems (`packs/`) —
+ * is intentionally skipped.
+ *
+ * Sub-directories within importable entries are copied recursively without
+ * further filtering.
+ */
+const IMPORTABLE_ROOT_ENTRIES = new Set([
+  // Config files
+  OPENCLAW_CONFIG_FILENAME, // openclaw.json → remoteclaw.json
+  REMOTECLAW_CONFIG_FILENAME, // remoteclaw.json (partially migrated source)
+  ".env",
+
+  // Agent state
+  "agents",
+  "agent", // Legacy root-level agent dir (pre-migration layout)
+  "sessions", // Legacy sessions dir
+
+  // Credentials and auth
+  "credentials",
+
+  // User customizations
+  "extensions",
+  "hooks",
+  "includes",
+
+  // Channel state
+  "telegram",
+
+  // Media and workspaces
+  "media",
+  "workspace",
+]);
+
+/**
+ * Check whether a root-level entry name should be imported.
+ * Matches the static allowlist plus `workspace-{agentId}` directories.
+ */
+export function isImportableRootEntry(name: string): boolean {
+  if (IMPORTABLE_ROOT_ENTRIES.has(name)) {
+    return true;
+  }
+  // Dynamic workspace directories: workspace-{agentId}
+  if (name.startsWith("workspace-") && name.length > "workspace-".length) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Check whether a file is a JSON/JSON5 config file that should be transformed.
  */
 function isConfigFile(filename: string): boolean {
@@ -556,15 +611,20 @@ function isConfigFile(filename: string): boolean {
 
 /**
  * Recursively copy a directory, transforming config files along the way.
+ *
+ * When `filterRoot` is true (used for the top-level source directory),
+ * only entries matching the importable allowlist are processed.
+ * Sub-directories are always copied in full without filtering.
  */
 async function copyDirectory(params: {
   sourceDir: string;
   targetDir: string;
   dryRun: boolean;
+  filterRoot: boolean;
   result: ImportResult;
   discoveredAuthProfileIds: string[];
 }): Promise<void> {
-  const { sourceDir, targetDir, dryRun, result } = params;
+  const { sourceDir, targetDir, dryRun, filterRoot, result } = params;
 
   const entries = await fsp.readdir(sourceDir, { withFileTypes: true });
 
@@ -573,6 +633,11 @@ async function copyDirectory(params: {
   }
 
   for (const entry of entries) {
+    if (filterRoot && !isImportableRootEntry(entry.name)) {
+      result.skippedEntries.push(entry.name);
+      continue;
+    }
+
     const sourcePath = path.join(sourceDir, entry.name);
     const targetFilename = resolveTargetFilename(entry.name);
     const targetPath = path.join(targetDir, targetFilename);
@@ -582,6 +647,7 @@ async function copyDirectory(params: {
         sourceDir: sourcePath,
         targetDir: targetPath,
         dryRun,
+        filterRoot: false,
         result,
         discoveredAuthProfileIds: params.discoveredAuthProfileIds,
       });
@@ -669,6 +735,7 @@ export async function importCommand(
     copiedFiles: [],
     transformedFiles: [],
     envVarRenames: [],
+    skippedEntries: [],
     targetDir,
   };
 
@@ -686,6 +753,7 @@ export async function importCommand(
     sourceDir: sourcePath,
     targetDir,
     dryRun: Boolean(opts.dryRun),
+    filterRoot: true,
     result,
     discoveredAuthProfileIds,
   });
@@ -705,6 +773,13 @@ export async function importCommand(
     runtime.log(`\nEnv var renames:`);
     for (const rename of result.envVarRenames) {
       runtime.log(`  ${rename}`);
+    }
+  }
+
+  if (result.skippedEntries.length > 0) {
+    runtime.log(`\nSkipped ${result.skippedEntries.length} non-importable entry(s):`);
+    for (const entry of result.skippedEntries) {
+      runtime.log(`  ${entry}`);
     }
   }
 

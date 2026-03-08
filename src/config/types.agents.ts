@@ -35,6 +35,14 @@ export type AgentConfig = {
   /** Glob patterns for files exposed via agents.files.list/get/set. Per-agent overrides defaults. */
   editableFiles?: string[];
   tools?: AgentToolsConfig;
+  /**
+   * Auth profile(s) for credential injection.
+   * - `false` — skip auth profile injection (rely on CLI-native auth / runtimeEnv / process.env)
+   * - `"provider:profile"` — single profile, resolve key and inject as env var
+   * - `["provider:key1", "provider:key2"]` — round-robin rotation across invocations
+   * - `undefined` — inherit from `agents.defaults.auth`
+   */
+  auth?: false | string | string[];
 };
 
 export type AgentsConfig = {

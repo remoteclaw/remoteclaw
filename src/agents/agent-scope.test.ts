@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
   hasConfiguredModelFallbacks,
+  resolveAgentAuth,
   resolveAgentConfig,
   resolveAgentDir,
   resolveAgentEffectiveModelPrimary,
@@ -449,5 +450,120 @@ describe("resolveAgentConfig", () => {
 
     const agentDir = resolveAgentDir({} as RemoteClawConfig, "main");
     expect(agentDir).toBe(path.join(path.resolve(home), ".remoteclaw", "agents", "main", "agent"));
+  });
+
+  it("should include auth in resolved agent config", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main", workspace: "~/remoteclaw", auth: "anthropic:default" }],
+      },
+    };
+    const result = resolveAgentConfig(cfg, "main");
+    expect(result?.auth).toBe("anthropic:default");
+  });
+
+  it("should include auth: false in resolved agent config", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main", workspace: "~/remoteclaw", auth: false }],
+      },
+    };
+    const result = resolveAgentConfig(cfg, "main");
+    expect(result?.auth).toBe(false);
+  });
+
+  it("should include auth array in resolved agent config", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [
+          { id: "main", workspace: "~/remoteclaw", auth: ["anthropic:key1", "anthropic:key2"] },
+        ],
+      },
+    };
+    const result = resolveAgentConfig(cfg, "main");
+    expect(result?.auth).toEqual(["anthropic:key1", "anthropic:key2"]);
+  });
+});
+
+describe("resolveAgentAuth", () => {
+  it("returns undefined when no agents config exists", () => {
+    expect(resolveAgentAuth({}, "main")).toBeUndefined();
+  });
+
+  it("returns undefined when agent has no auth and no defaults", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main", workspace: "~/remoteclaw" }],
+      },
+    };
+    expect(resolveAgentAuth(cfg, "main")).toBeUndefined();
+  });
+
+  it("inherits auth from defaults when agent entry has no auth", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { auth: "anthropic:default" },
+        list: [{ id: "main", workspace: "~/remoteclaw" }],
+      },
+    };
+    expect(resolveAgentAuth(cfg, "main")).toBe("anthropic:default");
+  });
+
+  it("agent entry auth overrides defaults auth", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { auth: "anthropic:default" },
+        list: [{ id: "main", workspace: "~/remoteclaw", auth: "anthropic:custom" }],
+      },
+    };
+    expect(resolveAgentAuth(cfg, "main")).toBe("anthropic:custom");
+  });
+
+  it("explicit auth: false on entry overrides defaults", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { auth: "anthropic:default" },
+        list: [{ id: "main", workspace: "~/remoteclaw", auth: false }],
+      },
+    };
+    expect(resolveAgentAuth(cfg, "main")).toBe(false);
+  });
+
+  it("inherits auth array from defaults", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { auth: ["anthropic:key1", "anthropic:key2"] },
+        list: [{ id: "main", workspace: "~/remoteclaw" }],
+      },
+    };
+    expect(resolveAgentAuth(cfg, "main")).toEqual(["anthropic:key1", "anthropic:key2"]);
+  });
+
+  it("agent entry auth array overrides defaults string", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { auth: "anthropic:default" },
+        list: [
+          {
+            id: "main",
+            workspace: "~/remoteclaw",
+            auth: ["anthropic:key1", "anthropic:key2"],
+          },
+        ],
+      },
+    };
+    expect(resolveAgentAuth(cfg, "main")).toEqual(["anthropic:key1", "anthropic:key2"]);
+  });
+
+  it("returns defaults auth: false when no agent entry exists", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { auth: false },
+        list: [{ id: "other", workspace: "~/remoteclaw" }],
+      },
+    };
+    // Agent "main" doesn't exist in list, so resolveAgentEntry returns undefined.
+    // Falls through to defaults.auth.
+    expect(resolveAgentAuth(cfg, "main")).toBe(false);
   });
 });

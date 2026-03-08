@@ -182,4 +182,11 @@ export type AgentDefaultsConfig = {
   runtimeArgs?: string[];
   /** Extra environment variables injected into every runtime invocation. */
   runtimeEnv?: Record<string, string>;
+  /**
+   * Default auth profile(s) for all agents. Per-agent `auth` overrides this.
+   * - `false` — skip auth profile injection (default)
+   * - `"provider:profile"` — single profile
+   * - `["provider:key1", "provider:key2"]` — round-robin rotation
+   */
+  auth?: false | string | string[];
 };

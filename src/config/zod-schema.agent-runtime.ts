@@ -8,6 +8,11 @@ import {
   ToolsMediaSchema,
 } from "./zod-schema.core.js";
 
+/** Auth profile ref: `false` (skip), single string, or string array (rotation). */
+export const AuthFieldSchema = z
+  .union([z.literal(false), z.string(), z.array(z.string())])
+  .optional();
+
 export const BootSchema = z
   .object({
     prompt: z.string().optional(),
@@ -250,6 +255,7 @@ export const AgentEntrySchema = z
       .optional(),
     editableFiles: z.array(z.string()).optional(),
     tools: AgentToolsSchema,
+    auth: AuthFieldSchema,
   })
   .strict();
 

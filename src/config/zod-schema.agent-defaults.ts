@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BootSchema, HeartbeatSchema } from "./zod-schema.agent-runtime.js";
+import { AuthFieldSchema, BootSchema, HeartbeatSchema } from "./zod-schema.agent-runtime.js";
 import {
   BlockStreamingChunkSchema,
   BlockStreamingCoalesceSchema,
@@ -109,6 +109,7 @@ export const AgentDefaultsSchema = z
       .optional(),
     runtimeArgs: z.array(z.string()).optional(),
     runtimeEnv: z.record(z.string(), z.string()).optional(),
+    auth: AuthFieldSchema,
   })
   .strict()
   .optional();

@@ -35,6 +35,7 @@ type ResolvedAgentConfig = {
   subagents?: AgentEntry["subagents"];
   sandbox?: AgentEntry["sandbox"];
   tools?: AgentEntry["tools"];
+  auth?: AgentEntry["auth"];
 };
 
 let defaultAgentWarned = false;
@@ -137,7 +138,30 @@ export function resolveAgentConfig(
     subagents: typeof entry.subagents === "object" && entry.subagents ? entry.subagents : undefined,
     sandbox: entry.sandbox,
     tools: entry.tools,
+    auth: entry.auth,
   };
+}
+
+/**
+ * Resolve the effective auth setting for an agent.
+ *
+ * Resolution: agent entry `auth` overrides `agents.defaults.auth`.
+ * - Explicit `auth: false` on the entry is an opt-out (not the same as undefined).
+ * - `undefined` (missing) on the entry inherits from defaults.
+ * - Returns `undefined` when neither the entry nor defaults define auth.
+ */
+export function resolveAgentAuth(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): false | string | string[] | undefined {
+  const entry = resolveAgentEntry(cfg, normalizeAgentId(agentId));
+  // Explicit per-agent auth (including `false`) overrides defaults.
+  if (entry && entry.auth !== undefined) {
+    return entry.auth;
+  }
+  // Fall back to defaults.auth.
+  const defaultsAuth = cfg.agents?.defaults?.auth;
+  return defaultsAuth !== undefined ? defaultsAuth : undefined;
 }
 
 function resolveModelPrimary(raw: unknown): string | undefined {

@@ -32,6 +32,7 @@ type ToolStreamHost = {
   toolStreamOrder: string[];
   chatToolMessages: Record<string, unknown>[];
   toolStreamSyncTimer: number | null;
+  chatThinkingStream: string | null;
 };
 
 function toTrimmedString(value: unknown): string | null {
@@ -208,6 +209,12 @@ function syncToolStreamMessages(host: ToolStreamHost) {
     .filter((msg): msg is Record<string, unknown> => Boolean(msg));
 }
 
+export function consumeThinkingStream(host: ToolStreamHost): string | null {
+  const text = host.chatThinkingStream;
+  host.chatThinkingStream = null;
+  return text;
+}
+
 export function flushToolStreamSync(host: ToolStreamHost) {
   if (host.toolStreamSyncTimer != null) {
     clearTimeout(host.toolStreamSyncTimer);
@@ -234,6 +241,7 @@ export function resetToolStream(host: ToolStreamHost) {
   host.toolStreamById.clear();
   host.toolStreamOrder = [];
   host.chatToolMessages = [];
+  host.chatThinkingStream = null;
   flushToolStreamSync(host);
 }
 
@@ -382,6 +390,20 @@ function handleLifecycleFallbackEvent(host: CompactionHost, payload: AgentEventP
   }, FALLBACK_TOAST_DURATION_MS);
 }
 
+function handleThinkingEvent(host: ToolStreamHost, payload: AgentEventPayload) {
+  const accepted = resolveAcceptedSession(host, payload);
+  if (!accepted.accepted) {
+    return;
+  }
+  const data = payload.data ?? {};
+  const text = typeof data.text === "string" ? data.text : "";
+  if (!text) {
+    return;
+  }
+  const current = host.chatThinkingStream ?? "";
+  host.chatThinkingStream = current ? `${current}\n${text}` : text;
+}
+
 export function handleAgentEvent(host: ToolStreamHost, payload?: AgentEventPayload) {
   if (!payload) {
     return;
@@ -395,6 +417,11 @@ export function handleAgentEvent(host: ToolStreamHost, payload?: AgentEventPaylo
 
   if (payload.stream === "lifecycle" || payload.stream === "fallback") {
     handleLifecycleFallbackEvent(host as CompactionHost, payload);
+    return;
+  }
+
+  if (payload.stream === "thinking") {
+    handleThinkingEvent(host, payload);
     return;
   }
 

@@ -4,7 +4,7 @@
 
 .chat-thinking {
   margin-bottom: 10px;
-  padding: 10px 12px;
+  padding: 0;
   border-radius: 10px;
   border: 1px dashed rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.04);
@@ -16,6 +16,27 @@
 :root[data-theme="light"] .chat-thinking {
   border-color: rgba(16, 24, 40, 0.25);
   background: rgba(16, 24, 40, 0.04);
+}
+
+.chat-thinking__summary {
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.chat-thinking__summary:hover {
+  opacity: 1;
+}
+
+.chat-thinking__content {
+  padding: 0 12px 10px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .chat-text {

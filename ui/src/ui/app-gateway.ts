@@ -10,7 +10,12 @@ import {
   refreshActiveTab,
   setLastActiveSessionKey,
 } from "./app-settings.ts";
-import { handleAgentEvent, resetToolStream, type AgentEventPayload } from "./app-tool-stream.ts";
+import {
+  consumeThinkingStream,
+  handleAgentEvent,
+  resetToolStream,
+  type AgentEventPayload,
+} from "./app-tool-stream.ts";
 import type { RemoteClawApp } from "./app.ts";
 import { shouldReloadHistoryForFinalEvent } from "./chat-event-reload.ts";
 import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
@@ -228,6 +233,25 @@ function handleTerminalChatEvent(
 ) {
   if (state !== "final" && state !== "error" && state !== "aborted") {
     return;
+  }
+  // Inject accumulated thinking into the last assistant message before resetting.
+  const thinkingText = consumeThinkingStream(
+    host as unknown as Parameters<typeof consumeThinkingStream>[0],
+  );
+  if (thinkingText && state === "final") {
+    const app = host as unknown as RemoteClawApp;
+    const messages = app.chatMessages;
+    if (messages.length > 0) {
+      const last = messages[messages.length - 1] as Record<string, unknown>;
+      if (typeof last.role === "string" && last.role.toLowerCase() === "assistant") {
+        const content = Array.isArray(last.content) ? last.content : [];
+        const enriched = {
+          ...last,
+          content: [{ type: "thinking", thinking: thinkingText }, ...content],
+        };
+        app.chatMessages = [...messages.slice(0, -1), enriched];
+      }
+    }
   }
   resetToolStream(host as unknown as Parameters<typeof resetToolStream>[0]);
   void flushChatQueueForEvent(host as unknown as Parameters<typeof flushChatQueueForEvent>[0]);

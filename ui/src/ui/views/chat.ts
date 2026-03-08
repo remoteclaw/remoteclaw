@@ -42,6 +42,7 @@ export type ChatProps = {
   fallbackStatus?: FallbackIndicatorStatus | null;
   messages: unknown[];
   toolMessages: unknown[];
+  thinkingStream: string | null;
   stream: string | null;
   streamStartedAt: number | null;
   assistantAvatarUrl?: string | null;
@@ -292,13 +293,14 @@ export function renderChat(props: ChatProps) {
               item.startedAt,
               props.onOpenSidebar,
               assistantIdentity,
+              props.thinkingStream,
             );
           }
 
           if (item.kind === "group") {
             return renderMessageGroup(item, {
               onOpenSidebar: props.onOpenSidebar,
-              showReasoning: false,
+              showReasoning: props.showThinking,
               assistantName: props.assistantName,
               assistantAvatar: assistantIdentity.avatar,
             });

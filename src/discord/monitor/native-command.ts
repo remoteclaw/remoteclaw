@@ -61,6 +61,7 @@ import { resolveDiscordDmCommandAccess } from "./dm-command-auth.js";
 import { handleDiscordDmCommandDecision } from "./dm-command-decision.js";
 import { resolveDiscordChannelInfo } from "./message-utils.js";
 import { buildDiscordNativeCommandContext } from "./native-command-context.js";
+import { resolveDiscordNativeCommandSessionTargets } from "./native-command-session-targets.js";
 import {
   buildDiscordRoutePeer,
   resolveDiscordConversationRoute,
@@ -925,11 +926,17 @@ async function dispatchDiscordCommandInteraction(params: {
     configuredRoute,
     matchedBy: configuredBinding ? "binding.channel" : undefined,
   });
+  const { sessionKey, commandTargetSessionKey } = resolveDiscordNativeCommandSessionTargets({
+    boundSessionKey,
+    effectiveRoute,
+    sessionPrefix,
+    userId: user.id,
+  });
   const ctxPayload = buildDiscordNativeCommandContext({
     prompt,
     commandArgs,
-    sessionKey: boundSessionKey ?? `agent:${effectiveRoute.agentId}:${sessionPrefix}:${user.id}`,
-    commandTargetSessionKey: boundSessionKey ?? effectiveRoute.sessionKey,
+    sessionKey,
+    commandTargetSessionKey,
     accountId: effectiveRoute.accountId,
     interactionId,
     channelId,

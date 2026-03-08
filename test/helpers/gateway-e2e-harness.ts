@@ -107,7 +107,10 @@ export async function spawnGatewayInstance(name: string): Promise<GatewayInstanc
   await fs.mkdir(configDir, { recursive: true });
   const configPath = path.join(configDir, "remoteclaw.json");
   const stateDir = path.join(configDir, "state");
+  const workspaceDir = path.join(homeDir, "workspace");
+  await fs.mkdir(workspaceDir, { recursive: true });
   const config = {
+    agents: { list: [{ id: "main", workspace: workspaceDir }] },
     gateway: {
       port,
       auth: { mode: "token", token: gatewayToken },

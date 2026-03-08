@@ -12,6 +12,7 @@ import {
 } from "../../config/config.js";
 import { resolveIsNixMode } from "../../config/paths.js";
 import { resolveGatewayService } from "../../daemon/service.js";
+import { isNonFatalSystemdInstallProbeError } from "../../daemon/systemd.js";
 import { resolveGatewayAuth } from "../../gateway/auth.js";
 import { defaultRuntime } from "../../runtime.js";
 import { formatCliCommand } from "../command-format.js";
@@ -54,8 +55,12 @@ export async function runDaemonInstall(opts: DaemonInstallOptions) {
   try {
     loaded = await service.isLoaded({ env: process.env });
   } catch (err) {
-    fail(`Gateway service check failed: ${String(err)}`);
-    return;
+    if (isNonFatalSystemdInstallProbeError(err)) {
+      loaded = false;
+    } else {
+      fail(`Gateway service check failed: ${String(err)}`);
+      return;
+    }
   }
   if (loaded) {
     if (!opts.force) {

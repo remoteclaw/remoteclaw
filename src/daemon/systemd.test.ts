@@ -10,6 +10,7 @@ vi.mock("node:child_process", () => ({
 import { splitArgsPreservingQuotes } from "./arg-split.js";
 import { parseSystemdExecStart } from "./systemd-unit.js";
 import {
+  isNonFatalSystemdInstallProbeError,
   isSystemdUserServiceAvailable,
   parseSystemdShow,
   restartSystemdService,
@@ -150,6 +151,101 @@ describe("isSystemdServiceEnabled", () => {
     expect(result).toBe(false);
   });
 
+  it("returns false for the WSL2 Ubuntu 24.04 wrapper-only is-enabled failure", async () => {
+    const { isSystemdServiceEnabled } = await import("./systemd.js");
+    mockManagedUnitPresent();
+    execFileMock.mockImplementationOnce((_cmd, args, _opts, cb) => {
+      expect(args).toEqual(["--user", "is-enabled", "remoteclaw-gateway.service"]);
+      const err = new Error(
+        "Command failed: systemctl --user is-enabled remoteclaw-gateway.service",
+      ) as Error & { code?: number };
+      err.code = 1;
+      cb(err, "", "");
+    });
+
+    await expect(
+      isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } }),
+    ).rejects.toThrow(
+      "systemctl is-enabled unavailable: Command failed: systemctl --user is-enabled remoteclaw-gateway.service",
+    );
+  });
+
+  it("returns false when is-enabled cannot connect to the user bus without machine fallback", async () => {
+    const { isSystemdServiceEnabled } = await import("./systemd.js");
+    mockManagedUnitPresent();
+    vi.spyOn(os, "userInfo").mockImplementationOnce(() => {
+      throw new Error("no user info");
+    });
+    execFileMock.mockImplementationOnce((_cmd, args, _opts, cb) => {
+      expect(args).toEqual(["--user", "is-enabled", "remoteclaw-gateway.service"]);
+      cb(
+        createExecFileError("Failed to connect to bus", { stderr: "Failed to connect to bus" }),
+        "",
+        "",
+      );
+    });
+
+    await expect(
+      isSystemdServiceEnabled({
+        env: { HOME: "/tmp/openclaw-test-home", USER: "", LOGNAME: "" },
+      }),
+    ).rejects.toThrow("systemctl is-enabled unavailable: Failed to connect to bus");
+  });
+
+  it("returns false when both direct and machine-scope is-enabled checks report bus unavailability", async () => {
+    const { isSystemdServiceEnabled } = await import("./systemd.js");
+    mockManagedUnitPresent();
+    execFileMock
+      .mockImplementationOnce((_cmd, args, _opts, cb) => {
+        expect(args).toEqual(["--user", "is-enabled", "remoteclaw-gateway.service"]);
+        cb(
+          createExecFileError("Failed to connect to bus", { stderr: "Failed to connect to bus" }),
+          "",
+          "",
+        );
+      })
+      .mockImplementationOnce((_cmd, args, _opts, cb) => {
+        expect(args).toEqual([
+          "--machine",
+          "debian@",
+          "--user",
+          "is-enabled",
+          "remoteclaw-gateway.service",
+        ]);
+        cb(
+          createExecFileError("Failed to connect to user scope bus via local transport", {
+            stderr:
+              "Failed to connect to user scope bus via local transport: $DBUS_SESSION_BUS_ADDRESS and $XDG_RUNTIME_DIR not defined",
+          }),
+          "",
+          "",
+        );
+      });
+
+    await expect(
+      isSystemdServiceEnabled({
+        env: { HOME: "/tmp/openclaw-test-home", USER: "debian" },
+      }),
+    ).rejects.toThrow("systemctl is-enabled unavailable: Failed to connect to user scope bus");
+  });
+
+  it("throws when generic wrapper errors report infrastructure failures", async () => {
+    const { isSystemdServiceEnabled } = await import("./systemd.js");
+    mockManagedUnitPresent();
+    execFileMock.mockImplementationOnce((_cmd, args, _opts, cb) => {
+      expect(args).toEqual(["--user", "is-enabled", "remoteclaw-gateway.service"]);
+      const err = new Error(
+        "Command failed: systemctl --user is-enabled remoteclaw-gateway.service",
+      ) as Error & { code?: number };
+      err.code = 1;
+      cb(err, "", "read-only file system");
+    });
+
+    await expect(
+      isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } }),
+    ).rejects.toThrow("systemctl is-enabled unavailable: read-only file system");
+  });
+
   it("throws when systemctl is-enabled fails for non-state errors", async () => {
     const { isSystemdServiceEnabled } = await import("./systemd.js");
     mockManagedUnitPresent();
@@ -187,6 +283,32 @@ describe("isSystemdServiceEnabled", () => {
     });
     const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } });
     expect(result).toBe(false);
+  });
+});
+
+describe("isNonFatalSystemdInstallProbeError", () => {
+  it("matches wrapper-only WSL install probe failures", () => {
+    expect(
+      isNonFatalSystemdInstallProbeError(
+        new Error("Command failed: systemctl --user is-enabled openclaw-gateway.service"),
+      ),
+    ).toBe(true);
+  });
+
+  it("matches bus-unavailable install probe failures", () => {
+    expect(
+      isNonFatalSystemdInstallProbeError(
+        new Error("systemctl is-enabled unavailable: Failed to connect to bus"),
+      ),
+    ).toBe(true);
+  });
+
+  it("does not match real infrastructure failures", () => {
+    expect(
+      isNonFatalSystemdInstallProbeError(
+        new Error("systemctl is-enabled unavailable: read-only file system"),
+      ),
+    ).toBe(false);
   });
 });
 

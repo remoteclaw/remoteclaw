@@ -179,6 +179,46 @@ function isSystemdUnitNotEnabled(detail: string): boolean {
   );
 }
 
+function isSystemctlBusUnavailable(detail: string): boolean {
+  if (!detail) {
+    return false;
+  }
+  const normalized = detail.toLowerCase();
+  return (
+    normalized.includes("failed to connect to bus") ||
+    normalized.includes("failed to connect to user scope bus") ||
+    normalized.includes("dbus_session_bus_address") ||
+    normalized.includes("xdg_runtime_dir") ||
+    normalized.includes("no medium found")
+  );
+}
+
+function isGenericSystemctlIsEnabledFailure(detail: string): boolean {
+  if (!detail) {
+    return false;
+  }
+  const normalized = detail.toLowerCase().trim();
+  return (
+    normalized.startsWith("command failed: systemctl") &&
+    normalized.includes(" is-enabled ") &&
+    !normalized.includes("permission denied") &&
+    !normalized.includes("access denied") &&
+    !normalized.includes("no space left") &&
+    !normalized.includes("read-only file system") &&
+    !normalized.includes("out of memory") &&
+    !normalized.includes("cannot allocate memory")
+  );
+}
+
+export function isNonFatalSystemdInstallProbeError(error: unknown): boolean {
+  const detail = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  if (!detail) {
+    return false;
+  }
+  const normalized = detail.toLowerCase();
+  return isSystemctlBusUnavailable(normalized) || isGenericSystemctlIsEnabledFailure(normalized);
+}
+
 function resolveSystemctlDirectUserScopeArgs(): string[] {
   return ["--user"];
 }

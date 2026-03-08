@@ -31,6 +31,33 @@ const fatalAuthPatterns: readonly RegExp[] = [
 ];
 
 /**
+ * Rate-limit and auth failure patterns that may benefit from key rotation.
+ *
+ * Includes rate-limit indicators (429, quota) and auth failures
+ * (401, invalid key) — a different API key might succeed in either case.
+ */
+const authRotatablePatterns: readonly RegExp[] = [
+  // Rate-limit patterns
+  /rate.?limit/i,
+  /\b429\b/,
+  /quota.?exceeded/i,
+  /resource.?exhausted/i,
+  /too many requests/i,
+  // Auth failure patterns (a different key might work)
+  /\b401\b/,
+  /unauthorized/i,
+  /invalid.?key/i,
+];
+
+/**
+ * Test whether an error message indicates a rate-limit or auth failure
+ * that could be resolved by rotating to a different API key.
+ */
+export function isAuthRotatableError(message: string): boolean {
+  return authRotatablePatterns.some((pattern) => pattern.test(message));
+}
+
+/**
  * Classify an error message string into an actionable category.
  *
  * Uses first-match-wins semantics across ordered pattern arrays:

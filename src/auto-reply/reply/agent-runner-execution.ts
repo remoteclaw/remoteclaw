@@ -9,7 +9,6 @@ import {
 } from "../../agents/agent-helpers.js";
 import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { resolveUserTimezone } from "../../agents/date-time.js";
-import { resolveAuthEnv } from "../../auth/env-injection.js";
 import { resolveGatewayPort } from "../../config/paths.js";
 import {
   resolveSessionTranscriptPath,
@@ -19,6 +18,7 @@ import {
 import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.js";
 import { logVerbose } from "../../globals.js";
 import { emitAgentEvent, registerAgentRunContext } from "../../infra/agent-events.js";
+import { withAuthKeyRetry } from "../../middleware/auth-key-retry.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
 import {
   resolveCliRuntimeArgs,
@@ -284,25 +284,6 @@ export async function runAgentTurnWithFallback(params: {
         const cfg = params.followupRun.run.config;
         const baseRuntimeEnv = resolveCliRuntimeEnv(cfg);
 
-        // Resolve auth profile → env vars for credential injection.
-        // Auth profile takes priority over runtimeEnv (highest precedence).
-        const authEnv = await resolveAuthEnv({
-          cfg,
-          agentId: params.followupRun.run.agentId,
-          agentDir: params.followupRun.run.agentDir,
-        });
-        const runtimeEnv = authEnv ? { ...baseRuntimeEnv, ...authEnv } : baseRuntimeEnv;
-
-        const bridge = new ChannelBridge({
-          provider: resolveCliRuntimeProvider(cfg),
-          sessionMap,
-          gatewayUrl: resolveGatewayUrlFromConfig(cfg),
-          gatewayToken: resolveGatewayTokenFromConfig(cfg),
-          workspaceDir: params.followupRun.run.workspaceDir,
-          runtimeArgs: resolveCliRuntimeArgs(cfg),
-          runtimeEnv,
-        });
-
         const messageToolHints = resolveChannelMessageToolHints({
           cfg,
           channel: params.sessionCtx.Provider?.trim(),
@@ -380,12 +361,36 @@ export async function runAgentTurnWithFallback(params: {
             : undefined,
         };
 
-        const delivery = await bridge.handle(message, callbacks, params.opts?.abortSignal);
+        // Execute with auth key retry — rotates to next profile on rate-limit/auth errors.
+        const delivery = await withAuthKeyRetry<AgentDeliveryResult>(
+          {
+            cfg,
+            agentId: params.followupRun.run.agentId,
+            agentDir: params.followupRun.run.agentDir,
+            baseEnv: baseRuntimeEnv,
+          },
+          async (runtimeEnv) => {
+            const bridge = new ChannelBridge({
+              provider: resolveCliRuntimeProvider(cfg),
+              sessionMap,
+              gatewayUrl: resolveGatewayUrlFromConfig(cfg),
+              gatewayToken: resolveGatewayTokenFromConfig(cfg),
+              workspaceDir: params.followupRun.run.workspaceDir,
+              runtimeArgs: resolveCliRuntimeArgs(cfg),
+              runtimeEnv,
+            });
 
-        // Complete runtime failure: throw so the catch block can handle it.
-        if (delivery.error && delivery.payloads.length === 0) {
-          throw new Error(delivery.error);
-        }
+            const result = await bridge.handle(message, callbacks, params.opts?.abortSignal);
+
+            // Complete runtime failure: re-throw for retry or outer catch handling.
+            if (result.error && result.payloads.length === 0) {
+              throw new Error(result.error);
+            }
+
+            return result;
+          },
+          (result) => result.error,
+        );
 
         // Emit assistant text event for TUI/WebSocket clients (CLI backends don't
         // stream assistant events, so we emit one with the final text).

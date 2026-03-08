@@ -93,7 +93,7 @@ The request follows the OpenResponses API with item-based input. Current support
 - `tools`: client tool definitions (function tools).
 - `tool_choice`: filter or require client tools.
 - `stream`: enables SSE streaming.
-- `max_output_tokens`: best-effort output limit (provider dependent).
+- `max_output_tokens`: best-effort output limit (CLI runtime dependent).
 - `user`: stable session routing.
 
 Accepted but **currently ignored**:
@@ -287,7 +287,7 @@ Event types currently emitted:
 
 ## Usage
 
-`usage` is populated when the underlying provider reports token counts.
+`usage` is populated when the CLI agent reports token counts.
 
 ## Errors
 

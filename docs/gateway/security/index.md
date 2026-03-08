@@ -190,7 +190,6 @@ If more than one person can DM your bot:
 - **Plugins** (extensions exist without an explicit allowlist).
 - **Policy drift/misconfig** (sandbox docker settings configured but sandbox mode off; ineffective `gateway.nodes.denyCommands` patterns; dangerous `gateway.nodes.allowCommands` entries; global `tools.profile="minimal"` overridden by per-agent profiles; extension plugin tools reachable under permissive tool policy).
 - **Runtime expectation drift** (for example `tools.exec.host="sandbox"` while sandbox mode is off, which runs directly on the gateway host).
-- **Model hygiene** (warn when configured models look legacy; not a hard block).
 
 If you run `--deep`, RemoteClaw also attempts a best-effort live Gateway probe.
 
@@ -203,8 +202,6 @@ Use this when auditing access or deciding what to back up:
 - **Discord bot token**: config/env (token file not yet supported)
 - **Slack tokens**: config/env (`channels.slack.*`)
 - **Pairing allowlists**: `~/.remoteclaw/credentials/<channel>-allowFrom.json`
-- **Model auth profiles**: `~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json`
-- **Legacy OAuth import**: `~/.remoteclaw/credentials/oauth.json`
 
 ## Security Audit Checklist
 
@@ -215,7 +212,6 @@ When the audit prints findings, treat this as a priority order:
 3. **Browser control remote exposure**: treat it like operator access (tailnet-only, pair nodes deliberately, avoid public exposure).
 4. **Permissions**: make sure state/config/credentials/auth are not group/world-readable.
 5. **Plugins/extensions**: only load what you explicitly trust.
-6. **Model choice**: prefer modern, instruction-hardened models for any bot with tools.
 
 ## Security audit glossary
 
@@ -253,7 +249,6 @@ High-signal `checkId` values you will most likely see in real deployments (not e
 | `security.trust_model.multi_user_heuristic`        | warn          | Config looks multi-user while gateway trust model is personal-assistant            | split trust boundaries, or shared-user hardening (`sandbox.mode`, tool deny/workspace scoping)    | no       |
 | `tools.profile_minimal_overridden`                 | warn          | Agent overrides bypass global minimal profile                                      | `agents.list[].tools.profile`                                                                     | no       |
 | `plugins.tools_reachable_permissive_policy`        | warn          | Extension tools reachable in permissive contexts                                   | `tools.profile` + tool allow/deny                                                                 | no       |
-| `models.small_params`                              | critical/info | Small models + unsafe tool surfaces raise injection risk                           | model choice + sandbox/tool policy                                                                | no       |
 
 ## Control UI over HTTP
 
@@ -512,7 +507,7 @@ Even with strong system prompts, **prompt injection is not solved**. System prom
 - Run sensitive tool execution in a sandbox; keep secrets out of the agent’s reachable filesystem.
 - Note: sandboxing is opt-in. If sandbox mode is off, exec runs on the gateway host even though tools.exec.host defaults to sandbox, and host exec does not require approvals unless you set host=gateway and configure exec approvals.
 - Limit high-risk tools (`exec`, `browser`, `web_fetch`, `web_search`) to trusted agents or explicit allowlists.
-- **Model choice matters:** older/legacy models can be less robust against prompt injection and tool misuse. Prefer modern, instruction-hardened models for any bot with tools. We recommend Anthropic Opus 4.6 (or the latest Opus) because it’s strong at recognizing prompt injections (see [“A step forward on safety”](https://www.anthropic.com/news/claude-opus-4-5)).
+- **Model choice matters:** when configuring your CLI agent, prefer a modern, instruction-hardened model. For Claude, this means Opus-class models (see [“A step forward on safety”](https://www.anthropic.com/news/claude-opus-4-5)). Model selection is managed by your CLI agent, not RemoteClaw.
 
 Red flags to treat as untrusted:
 
@@ -757,8 +752,7 @@ Avoid:
 Assume anything under `~/.remoteclaw/` (or `$REMOTECLAW_STATE_DIR/`) may contain secrets or private data:
 
 - `remoteclaw.json`: config may include tokens (gateway, remote gateway), provider settings, and allowlists.
-- `credentials/**`: channel credentials (example: WhatsApp creds), pairing allowlists, legacy OAuth imports.
-- `agents/<agentId>/agent/auth-profiles.json`: API keys + OAuth tokens (imported from legacy `credentials/oauth.json`).
+- `credentials/**`: channel credentials (example: WhatsApp creds), pairing allowlists.
 - `agents/<agentId>/sessions/**`: session transcripts (`*.jsonl`) + routing metadata (`sessions.json`) that can contain private messages and tool output.
 - `extensions/**`: installed plugins (plus their `node_modules/`).
 - `sandboxes/**`: tool sandbox workspaces; can accumulate copies of files you read/write inside the sandbox.
@@ -1055,7 +1049,7 @@ If your AI does something bad:
 
 1. Rotate Gateway auth (`gateway.auth.token` / `REMOTECLAW_GATEWAY_PASSWORD`) and restart.
 2. Rotate remote client secrets (`gateway.remote.token` / `.password`) on any machine that can call the Gateway.
-3. Rotate provider/API credentials (WhatsApp creds, Slack/Discord tokens, model/API keys in `auth-profiles.json`).
+3. Rotate channel credentials (WhatsApp creds, Slack/Discord tokens).
 
 ### Audit
 

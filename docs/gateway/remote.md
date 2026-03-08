@@ -19,7 +19,7 @@ This repo supports “remote over SSH” by keeping a single Gateway (the master
 
 ## Common VPN/tailnet setups (where the agent lives)
 
-Think of the **Gateway host** as “where the agent lives.” It owns sessions, auth profiles, channels, and state.
+Think of the **Gateway host** as “where the agent lives.” It owns sessions, channels, and state.
 Your laptop/desktop (and nodes) connect to that host.
 
 ### 1) Always-on Gateway in your tailnet (VPS or home server)

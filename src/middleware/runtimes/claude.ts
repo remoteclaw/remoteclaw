@@ -4,6 +4,7 @@ import type {
   AgentEvent,
   AgentExecuteParams,
   AgentTextEvent,
+  AgentThinkingEvent,
   AgentToolUseEvent,
   AgentUsage,
 } from "../types.js";
@@ -157,7 +158,11 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
       return null;
     }
 
-    // thinking_delta and other delta types are skipped
+    if (delta.type === "thinking_delta" && typeof delta.thinking === "string") {
+      return { type: "thinking", text: delta.thinking } satisfies AgentThinkingEvent;
+    }
+
+    // other delta types are skipped
     return null;
   }
 

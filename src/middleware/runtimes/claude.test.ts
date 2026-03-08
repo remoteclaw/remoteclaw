@@ -265,7 +265,7 @@ describe("ClaudeCliRuntime", () => {
       expect(event).toBeNull(); // message_delta is consumed as state, not emitted
     });
 
-    it("skips thinking_delta", () => {
+    it("maps thinking_delta to AgentThinkingEvent", () => {
       const event = runtime.testExtractEvent(
         streamEventLine({
           type: "content_block_delta",
@@ -273,7 +273,7 @@ describe("ClaudeCliRuntime", () => {
           delta: { type: "thinking_delta", thinking: "Let me think..." },
         }),
       );
-      expect(event).toBeNull();
+      expect(event).toEqual({ type: "thinking", text: "Let me think..." });
     });
 
     it("stores result line data and returns null for successful results", () => {

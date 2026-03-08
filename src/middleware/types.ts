@@ -66,6 +66,7 @@ export type McpServerConfig = {
 export type AgentEvent =
   | AgentTextEvent
   | AgentMediaEvent
+  | AgentThinkingEvent
   | AgentToolUseEvent
   | AgentToolResultEvent
   | AgentErrorEvent
@@ -79,6 +80,11 @@ export type AgentTextEvent = {
 export type AgentMediaEvent = {
   type: "media";
   media: MediaAttachment;
+};
+
+export type AgentThinkingEvent = {
+  type: "thinking";
+  text: string;
 };
 
 export type AgentToolUseEvent = {

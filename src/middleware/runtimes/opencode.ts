@@ -7,6 +7,7 @@ import type {
   AgentEvent,
   AgentExecuteParams,
   AgentTextEvent,
+  AgentThinkingEvent,
   AgentToolResultEvent,
   AgentToolUseEvent,
   AgentUsage,
@@ -104,7 +105,7 @@ export class OpenCodeCliRuntime extends CLIRuntimeBase {
       case "step_finish":
         return this.handleStepFinish(data);
       case "reasoning":
-        return null;
+        return this.handleReasoning(data);
       case "error":
         return this.handleError(data);
       default:
@@ -165,6 +166,19 @@ export class OpenCodeCliRuntime extends CLIRuntimeBase {
       type: "error",
       message: typeof parsed.message === "string" ? parsed.message : "Unknown error",
     } satisfies AgentErrorEvent;
+  }
+
+  private handleReasoning(parsed: Record<string, unknown>): AgentEvent | null {
+    const content =
+      typeof parsed.text === "string"
+        ? parsed.text
+        : typeof parsed.content === "string"
+          ? parsed.content
+          : "";
+    if (!content) {
+      return null;
+    }
+    return { type: "thinking", text: content } satisfies AgentThinkingEvent;
   }
 
   // ── Done event enrichment ─────────────────────────────────────────────

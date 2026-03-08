@@ -46,6 +46,8 @@ export class DeliveryAdapter {
   ): Promise<ReplyPayload[]> {
     let textBuffer = "";
     const payloads: ReplyPayload[] = [];
+    /** Track media delivered via streaming events to avoid duplicates from result.media. */
+    const deliveredMediaKeys = new Set<string>();
 
     for await (const event of events) {
       switch (event.type) {
@@ -60,6 +62,23 @@ export class DeliveryAdapter {
             const payload: ReplyPayload = { text: chunk };
             payloads.push(payload);
             await callbacks?.onPartialReply?.(payload);
+          }
+          break;
+        }
+        case "media": {
+          const mediaUrl = event.media.filePath ?? event.media.sourceUrl;
+          if (mediaUrl) {
+            // Flush any buffered text before the media so ordering is preserved.
+            if (textBuffer.length > 0) {
+              const textPayload: ReplyPayload = { text: textBuffer };
+              payloads.push(textPayload);
+              await callbacks?.onBlockReply?.(textPayload);
+              textBuffer = "";
+            }
+            deliveredMediaKeys.add(mediaUrl);
+            const payload: ReplyPayload = { mediaUrl };
+            payloads.push(payload);
+            await callbacks?.onBlockReply?.(payload);
           }
           break;
         }
@@ -84,6 +103,17 @@ export class DeliveryAdapter {
             payloads.push(payload);
             await callbacks?.onBlockReply?.(payload);
             textBuffer = "";
+          }
+          // Deliver result media not already delivered via streaming events.
+          if (event.result.media?.length) {
+            for (const media of event.result.media) {
+              const url = media.filePath ?? media.sourceUrl;
+              if (url && !deliveredMediaKeys.has(url)) {
+                const payload: ReplyPayload = { mediaUrl: url };
+                payloads.push(payload);
+                await callbacks?.onBlockReply?.(payload);
+              }
+            }
           }
           break;
         }

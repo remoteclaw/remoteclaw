@@ -290,6 +290,148 @@ describe("DeliveryAdapter", () => {
     });
   });
 
+  describe("media events", () => {
+    it("media event with filePath produces mediaUrl payload", async () => {
+      const adapter = new DeliveryAdapter();
+      const events = eventStream([
+        {
+          type: "media" as const,
+          media: { mimeType: "image/png", filePath: "/tmp/screenshot.png" },
+        },
+        makeDone(),
+      ]);
+      const payloads = await adapter.process(events);
+      expect(payloads).toEqual([{ mediaUrl: "/tmp/screenshot.png" }]);
+    });
+
+    it("media event with sourceUrl produces mediaUrl payload when no filePath", async () => {
+      const adapter = new DeliveryAdapter();
+      const events = eventStream([
+        {
+          type: "media" as const,
+          media: { mimeType: "image/jpeg", sourceUrl: "https://example.com/photo.jpg" },
+        },
+        makeDone(),
+      ]);
+      const payloads = await adapter.process(events);
+      expect(payloads).toEqual([{ mediaUrl: "https://example.com/photo.jpg" }]);
+    });
+
+    it("media event prefers filePath over sourceUrl", async () => {
+      const adapter = new DeliveryAdapter();
+      const events = eventStream([
+        {
+          type: "media" as const,
+          media: {
+            mimeType: "image/png",
+            filePath: "/tmp/local.png",
+            sourceUrl: "https://example.com/remote.png",
+          },
+        },
+        makeDone(),
+      ]);
+      const payloads = await adapter.process(events);
+      expect(payloads).toEqual([{ mediaUrl: "/tmp/local.png" }]);
+    });
+
+    it("media event with neither filePath nor sourceUrl is skipped", async () => {
+      const adapter = new DeliveryAdapter();
+      const events = eventStream([
+        {
+          type: "media" as const,
+          media: { mimeType: "image/png", base64: "aW1hZ2VkYXRh" },
+        },
+        makeDone(),
+      ]);
+      const payloads = await adapter.process(events);
+      expect(payloads).toEqual([]);
+    });
+
+    it("media event invokes onBlockReply callback", async () => {
+      const onBlockReply = vi.fn();
+      const adapter = new DeliveryAdapter();
+      const events = eventStream([
+        {
+          type: "media" as const,
+          media: { mimeType: "audio/ogg", filePath: "/tmp/voice.ogg" },
+        },
+        makeDone(),
+      ]);
+      await adapter.process(events, { onBlockReply });
+      expect(onBlockReply).toHaveBeenCalledWith({ mediaUrl: "/tmp/voice.ogg" });
+    });
+
+    it("interleaves text and media payloads in order", async () => {
+      const adapter = new DeliveryAdapter();
+      const events = eventStream([
+        { type: "text", text: "Here is the file:" },
+        {
+          type: "media" as const,
+          media: { mimeType: "image/png", filePath: "/tmp/chart.png" },
+        },
+        makeDone(),
+      ]);
+      const payloads = await adapter.process(events);
+      expect(payloads).toEqual([{ text: "Here is the file:" }, { mediaUrl: "/tmp/chart.png" }]);
+    });
+
+    it("delivers result.media from done event when not already streamed", async () => {
+      const adapter = new DeliveryAdapter();
+      const doneEvent: AgentEvent = {
+        type: "done",
+        result: {
+          text: "Done",
+          sessionId: undefined,
+          durationMs: 100,
+          usage: undefined,
+          aborted: false,
+          media: [
+            { mimeType: "image/png", filePath: "/tmp/result.png" },
+            { mimeType: "audio/mp3", sourceUrl: "https://example.com/audio.mp3" },
+          ],
+        },
+      };
+      const events = eventStream([{ type: "text", text: "Done" }, doneEvent]);
+      const payloads = await adapter.process(events);
+      expect(payloads).toEqual([
+        { text: "Done" },
+        { mediaUrl: "/tmp/result.png" },
+        { mediaUrl: "https://example.com/audio.mp3" },
+      ]);
+    });
+
+    it("deduplicates streamed media vs result.media", async () => {
+      const adapter = new DeliveryAdapter();
+      const doneEvent: AgentEvent = {
+        type: "done",
+        result: {
+          text: "",
+          sessionId: undefined,
+          durationMs: 100,
+          usage: undefined,
+          aborted: false,
+          media: [
+            { mimeType: "image/png", filePath: "/tmp/already-sent.png" },
+            { mimeType: "image/jpeg", filePath: "/tmp/new.jpg" },
+          ],
+        },
+      };
+      const events = eventStream([
+        {
+          type: "media" as const,
+          media: { mimeType: "image/png", filePath: "/tmp/already-sent.png" },
+        },
+        doneEvent,
+      ]);
+      const payloads = await adapter.process(events);
+      // /tmp/already-sent.png should appear only once (from streaming), /tmp/new.jpg from result
+      expect(payloads).toEqual([
+        { mediaUrl: "/tmp/already-sent.png" },
+        { mediaUrl: "/tmp/new.jpg" },
+      ]);
+    });
+  });
+
   describe("code fence preservation", () => {
     it("does not split inside a code fence when text before fence exists", async () => {
       const adapter = new DeliveryAdapter({ chunkLimit: 30 });

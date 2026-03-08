@@ -96,6 +96,12 @@ vi.mock("./mcp-side-effects.js", () => ({
   McpSideEffectsWriter: vi.fn(),
 }));
 
+// Mock media-resolver to return controllable attachments
+const mockResolveMediaAttachments = vi.fn().mockResolvedValue([]);
+vi.mock("./media-resolver.js", () => ({
+  resolveMediaAttachments: (...args: unknown[]) => mockResolveMediaAttachments(...args),
+}));
+
 // ── Session Map (real-ish, file-backed in temp dir) ─────────────────────
 
 let sessionDir: string;
@@ -117,6 +123,8 @@ beforeEach(async () => {
     sentTargets: [],
     cronAdds: 0,
   });
+  mockResolveMediaAttachments.mockClear();
+  mockResolveMediaAttachments.mockResolvedValue([]);
 });
 
 afterEach(async () => {
@@ -752,6 +760,128 @@ describe("ChannelBridge", () => {
       await bridge.handle(makeMessage());
 
       expect(mockReadSideEffects).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe("inbound media forwarding", () => {
+    it("resolves mediaUrls and passes media to runtime.execute()", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+      mockResolveMediaAttachments.mockResolvedValue([
+        {
+          mimeType: "image/jpeg",
+          filePath: "/tmp/photo.jpg",
+          sourceUrl: "https://cdn.example.com/photo.jpg",
+        },
+      ]);
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ mediaUrls: ["https://cdn.example.com/photo.jpg"] }));
+
+      expect(mockResolveMediaAttachments).toHaveBeenCalledOnce();
+      expect(mockResolveMediaAttachments.mock.calls[0][0]).toEqual([
+        "https://cdn.example.com/photo.jpg",
+      ]);
+      const params = executeFn.mock.calls[0][0];
+      expect(params.media).toEqual([
+        {
+          mimeType: "image/jpeg",
+          filePath: "/tmp/photo.jpg",
+          sourceUrl: "https://cdn.example.com/photo.jpg",
+        },
+      ]);
+    });
+
+    it("does not resolve media when mediaUrls is empty", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ mediaUrls: [] }));
+
+      expect(mockResolveMediaAttachments).not.toHaveBeenCalled();
+      const params = executeFn.mock.calls[0][0];
+      expect(params.media).toBeUndefined();
+    });
+
+    it("does not resolve media when mediaUrls is undefined", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage());
+
+      expect(mockResolveMediaAttachments).not.toHaveBeenCalled();
+      const params = executeFn.mock.calls[0][0];
+      expect(params.media).toBeUndefined();
+    });
+
+    it("passes undefined media when resolver returns empty array", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+      mockResolveMediaAttachments.mockResolvedValue([]);
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ mediaUrls: ["https://cdn.example.com/bad"] }));
+
+      expect(mockResolveMediaAttachments).toHaveBeenCalledOnce();
+      const params = executeFn.mock.calls[0][0];
+      expect(params.media).toBeUndefined();
+    });
+
+    it("passes multiple resolved media attachments", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+      mockResolveMediaAttachments.mockResolvedValue([
+        { mimeType: "image/jpeg", filePath: "/tmp/a.jpg" },
+        { mimeType: "audio/ogg", filePath: "/tmp/b.ogg" },
+      ]);
+
+      const bridge = createBridge();
+      await bridge.handle(
+        makeMessage({
+          mediaUrls: ["https://cdn.example.com/a.jpg", "https://cdn.example.com/b.ogg"],
+        }),
+      );
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.media).toHaveLength(2);
+    });
+  });
+
+  describe("outbound media delivery", () => {
+    it("delivers media events as ReplyPayload with mediaUrl", async () => {
+      mockRuntimeInstance = mockRuntime([
+        {
+          type: "media" as const,
+          media: { mimeType: "image/png", filePath: "/workspace/output.png" },
+        },
+        makeDone(),
+      ]);
+
+      const bridge = createBridge();
+      const result = await bridge.handle(makeMessage());
+
+      expect(result.payloads).toEqual([{ mediaUrl: "/workspace/output.png" }]);
+    });
+
+    it("delivers interleaved text and media payloads", async () => {
+      mockRuntimeInstance = mockRuntime([
+        { type: "text", text: "Here is the chart:" },
+        {
+          type: "media" as const,
+          media: { mimeType: "image/png", filePath: "/workspace/chart.png" },
+        },
+        makeDone({ text: "Here is the chart:" }),
+      ]);
+
+      const bridge = createBridge();
+      const result = await bridge.handle(makeMessage());
+
+      expect(result.payloads).toEqual([
+        { text: "Here is the chart:" },
+        { mediaUrl: "/workspace/chart.png" },
+      ]);
     });
   });
 

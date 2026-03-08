@@ -7,6 +7,7 @@ import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { DeliveryAdapter } from "./delivery-adapter.js";
 import { classifyError } from "./error-classifier.js";
 import { readMcpSideEffects } from "./mcp-side-effects.js";
+import { resolveMediaAttachments } from "./media-resolver.js";
 import { createCliRuntime } from "./runtime-factory.js";
 import type { SessionKey, SessionMap } from "./session-map.js";
 import { buildSystemPrompt } from "./system-prompt.js";
@@ -175,7 +176,12 @@ export class ChannelBridge {
         }
       }
 
-      // 5-6. Execute + stream events through DeliveryAdapter
+      // 5. Resolve inbound media attachments (download remote URLs to temp files)
+      const media = message.mediaUrls?.length
+        ? await resolveMediaAttachments(message.mediaUrls, invocationDir)
+        : undefined;
+
+      // 6-7. Execute + stream events through DeliveryAdapter
       const adapter = new DeliveryAdapter(
         this.#chunkLimit !== undefined ? { chunkLimit: this.#chunkLimit } : undefined,
       );
@@ -192,6 +198,7 @@ export class ChannelBridge {
               (message.extraContext ? "\n\n" + message.extraContext : "") +
               "\n\n" +
               message.text,
+            media: media?.length ? media : undefined,
             sessionId: existingSessionId,
             mcpServers,
             abortSignal,

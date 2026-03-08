@@ -179,7 +179,6 @@ Defaults:
 
 Related docs:
 
-- [Anthropic](/providers/anthropic)
 - [Token Use and Costs](/reference/token-use)
 - [Session Pruning](/concepts/session-pruning)
 - [Gateway Configuration Reference](/gateway/configuration-reference)

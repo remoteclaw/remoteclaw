@@ -45,4 +45,3 @@ Text is supported everywhere; media and reactions vary by channel.
 - DM pairing and allowlists are enforced for safety; see [Security](/gateway/security).
 - Telegram internals: [grammY notes](/channels/grammy).
 - Troubleshooting: [Channel troubleshooting](/channels/troubleshooting).
-- Model providers are documented separately; see [Model Providers](/providers/models).

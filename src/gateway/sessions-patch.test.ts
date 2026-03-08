@@ -113,15 +113,16 @@ describe("gateway sessions patch", () => {
     expect(res.error.message).toContain("invalid elevatedLevel");
   });
 
-  test("clears auth overrides when model patch changes", async () => {
+  test("clears fallback notice when model patch changes", async () => {
     const store: Record<string, SessionEntry> = {
       "agent:main:main": {
         sessionId: "sess",
         updatedAt: 1,
         providerOverride: "anthropic",
         modelOverride: "claude-opus-4-5",
-        authProfileOverride: "anthropic:default",
-        authProfileOverrideSource: "user",
+        fallbackNoticeSelectedModel: "anthropic/claude-opus-4-5",
+        fallbackNoticeActiveModel: "openai/gpt-5.2",
+        fallbackNoticeReason: "rate-limited",
       } as SessionEntry,
     };
     const res = await applySessionsPatchToStore({
@@ -136,8 +137,9 @@ describe("gateway sessions patch", () => {
     }
     expect(res.entry.providerOverride).toBe("openai");
     expect(res.entry.modelOverride).toBe("gpt-5.2");
-    expect(res.entry.authProfileOverride).toBeUndefined();
-    expect(res.entry.authProfileOverrideSource).toBeUndefined();
+    expect(res.entry.fallbackNoticeSelectedModel).toBeUndefined();
+    expect(res.entry.fallbackNoticeActiveModel).toBeUndefined();
+    expect(res.entry.fallbackNoticeReason).toBeUndefined();
   });
 
   test("accepts explicit allowlisted provider/model refs from sessions.patch", async () => {

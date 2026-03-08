@@ -4,7 +4,6 @@ import {
   resolveInternalSessionKey,
   resolveMainSessionAlias,
 } from "../../agents/tools/sessions-helpers.js";
-import { resolveModelAuthLabel } from "../../auth/provider-auth.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry, SessionScope } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
@@ -48,7 +47,7 @@ export async function buildStatusReply(params: {
     sessionScope,
     storePath,
     provider,
-    model,
+    model: _model,
     contextTokens,
     resolvedVerboseLevel,
     resolvedElevatedLevel,
@@ -126,22 +125,6 @@ export async function buildStatusReply(params: {
   const groupActivation = isGroup
     ? (normalizeGroupActivation(sessionEntry?.groupActivation) ?? defaultGroupActivation())
     : undefined;
-  const selectedModelAuth = resolveModelAuthLabel({
-    provider,
-    cfg,
-    sessionEntry,
-  });
-  // Resolve active model from session fallback notice fields.
-  const activeProvider = sessionEntry?.modelProvider?.trim() || provider;
-  const activeModel = sessionEntry?.model?.trim() || model;
-  const activeDiffers = activeProvider !== provider || activeModel !== model;
-  const activeModelAuth = activeDiffers
-    ? resolveModelAuthLabel({
-        provider: activeProvider,
-        cfg,
-        sessionEntry,
-      })
-    : selectedModelAuth;
   const agentDefaults = cfg.agents?.defaults ?? {};
   const statusText = await buildStatusMessage({
     config: cfg,
@@ -160,8 +143,6 @@ export async function buildStatusReply(params: {
     groupActivation,
     resolvedVerbose: resolvedVerboseLevel,
     resolvedElevated: resolvedElevatedLevel,
-    modelAuth: selectedModelAuth,
-    activeModelAuth,
     usageLine: usageLine ?? undefined,
     queue: {
       mode: queueSettings.mode,

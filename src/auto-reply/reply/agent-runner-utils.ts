@@ -164,7 +164,6 @@ export function buildEmbeddedRunBaseParams(params: {
   provider: string;
   model: string;
   runId: string;
-  authProfile: ReturnType<typeof resolveProviderScopedAuthProfile>;
 }) {
   return {
     sessionFile: params.run.sessionFile,
@@ -176,7 +175,6 @@ export function buildEmbeddedRunBaseParams(params: {
     enforceFinalTag: resolveEnforceFinalTag(params.run, params.provider),
     provider: params.provider,
     model: params.model,
-    ...params.authProfile,
     verboseLevel: params.run.verboseLevel,
     execOverrides: params.run.execOverrides,
     bashElevated: params.run.bashElevated,
@@ -222,15 +220,6 @@ export function buildTemplateSenderContext(sessionCtx: TemplateContext) {
   };
 }
 
-export function resolveRunAuthProfile(run: FollowupRun["run"], provider: string) {
-  return resolveProviderScopedAuthProfile({
-    provider,
-    primaryProvider: run.provider,
-    authProfileId: run.authProfileId,
-    authProfileIdSource: run.authProfileIdSource,
-  });
-}
-
 export function buildEmbeddedRunContexts(params: {
   run: FollowupRun["run"];
   sessionCtx: TemplateContext;
@@ -238,26 +227,11 @@ export function buildEmbeddedRunContexts(params: {
   provider: string;
 }) {
   return {
-    authProfile: resolveRunAuthProfile(params.run, params.provider),
     embeddedContext: buildEmbeddedContextFromTemplate({
       run: params.run,
       sessionCtx: params.sessionCtx,
       hasRepliedRef: params.hasRepliedRef,
     }),
     senderContext: buildTemplateSenderContext(params.sessionCtx),
-  };
-}
-
-export function resolveProviderScopedAuthProfile(params: {
-  provider: string;
-  primaryProvider: string;
-  authProfileId?: string;
-  authProfileIdSource?: "auto" | "user";
-}): { authProfileId?: string; authProfileIdSource?: "auto" | "user" } {
-  const authProfileId =
-    params.provider === params.primaryProvider ? params.authProfileId : undefined;
-  return {
-    authProfileId,
-    authProfileIdSource: authProfileId ? params.authProfileIdSource : undefined,
   };
 }

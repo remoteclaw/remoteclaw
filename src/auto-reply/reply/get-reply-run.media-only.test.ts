@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runPreparedReply } from "./get-reply-run.js";
 
-vi.mock("../../auth/session-override.js", () => ({
-  resolveSessionAuthProfileOverride: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("../../config/sessions.js", () => ({
   resolveGroupSessionKey: vi.fn().mockReturnValue(undefined),
   resolveSessionFilePath: vi.fn().mockReturnValue("/tmp/session.jsonl"),

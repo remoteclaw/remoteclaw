@@ -3,7 +3,6 @@ import type { RemoteClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { applyVerboseOverride } from "../../sessions/level-overrides.js";
-import { resolveProfileOverride } from "./directive-handling.auth.js";
 import type { InlineDirectives } from "./directive-handling.parse.js";
 import { enqueueModeSwitchEvents } from "./directive-handling.shared.js";
 import type { ElevatedLevel } from "./directives.js";
@@ -30,7 +29,7 @@ export async function persistInlineDirectives(params: {
 }): Promise<{ provider: string; model: string; contextTokens: number }> {
   const {
     directives,
-    cfg,
+    cfg: _cfg,
     sessionEntry,
     sessionStore,
     sessionKey,
@@ -104,18 +103,6 @@ export async function persistInlineDirectives(params: {
       if (resolved) {
         const key = modelKey(resolved.provider, resolved.model);
         if (allowedModelKeys.size === 0 || allowedModelKeys.has(key)) {
-          let profileOverride: string | undefined;
-          if (directives.rawModelProfile) {
-            const profileResolved = resolveProfileOverride({
-              rawProfile: directives.rawModelProfile,
-              provider: resolved.provider,
-              cfg,
-            });
-            if (profileResolved.error) {
-              throw new Error(profileResolved.error);
-            }
-            profileOverride = profileResolved.profileId;
-          }
           const isDefault =
             resolved.provider === defaultProvider && resolved.model === defaultModel;
           let modelUpdated = false;
@@ -134,11 +121,6 @@ export async function persistInlineDirectives(params: {
               sessionEntry.modelOverride = resolved.model;
               modelUpdated = true;
             }
-          }
-          if (profileOverride !== undefined) {
-            sessionEntry.authProfileOverride = profileOverride;
-            sessionEntry.authProfileOverrideSource = "user";
-            modelUpdated = true;
           }
           provider = resolved.provider;
           model = resolved.model;

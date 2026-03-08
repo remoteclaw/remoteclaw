@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import { resolveSessionAuthProfileOverride } from "../../auth/session-override.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   resolveGroupSessionKey,
@@ -359,16 +358,6 @@ export async function runPreparedReply(
     resolvedQueue.mode === "followup" ||
     resolvedQueue.mode === "collect" ||
     resolvedQueue.mode === "steer-backlog";
-  const authProfileId = await resolveSessionAuthProfileOverride({
-    cfg,
-    provider,
-    sessionEntry,
-    sessionStore,
-    sessionKey,
-    storePath,
-    isNewSession,
-  });
-  const authProfileIdSource = sessionEntry?.authProfileOverrideSource;
   const followupRun = {
     prompt: queuedBody,
     messageId: sessionCtx.MessageSidFull ?? sessionCtx.MessageSid,
@@ -403,8 +392,6 @@ export async function runPreparedReply(
       config: cfg,
       provider,
       model,
-      authProfileId,
-      authProfileIdSource,
       verboseLevel: resolvedVerboseLevel,
       elevatedLevel: resolvedElevatedLevel,
       execOverrides,

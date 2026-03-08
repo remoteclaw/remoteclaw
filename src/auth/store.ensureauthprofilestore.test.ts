@@ -2,8 +2,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { ensureAuthProfileStore } from "./auth-profiles.js";
-import { AUTH_STORE_VERSION } from "./auth-profiles/constants.js";
+import { AUTH_STORE_VERSION } from "./constants.js";
+import { ensureAuthProfileStore } from "./index.js";
 
 describe("ensureAuthProfileStore", () => {
   it("migrates legacy auth.json and deletes it (PR #368)", () => {

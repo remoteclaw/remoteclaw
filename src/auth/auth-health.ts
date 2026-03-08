@@ -3,7 +3,7 @@ import {
   type AuthProfileCredential,
   type AuthProfileStore,
   resolveAuthProfileDisplayLabel,
-} from "./auth-profiles.js";
+} from "./index.js";
 
 export type AuthProfileSource = "store";
 

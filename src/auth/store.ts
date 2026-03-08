@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import { withFileLock } from "../../infra/file-lock.js";
-import { loadJsonFile, saveJsonFile } from "../../infra/json-file.js";
+import { withFileLock } from "../infra/file-lock.js";
+import { loadJsonFile, saveJsonFile } from "../infra/json-file.js";
 import { AUTH_STORE_LOCK_OPTIONS, AUTH_STORE_VERSION, log } from "./constants.js";
 import { ensureAuthStoreFile, resolveAuthStorePath, resolveLegacyAuthStorePath } from "./paths.js";
 import type { AuthProfileCredential, AuthProfileStore } from "./types.js";

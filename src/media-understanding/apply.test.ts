@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { resolveApiKeyForProvider } from "../agents/provider-auth.js";
+import { resolveApiKeyForProvider } from "../auth/provider-auth.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
@@ -14,7 +14,7 @@ vi.mock("../agents/model-catalog.js", () => ({
   findModelInCatalog: vi.fn(),
 }));
 
-vi.mock("../agents/provider-auth.js", () => ({
+vi.mock("../auth/provider-auth.js", () => ({
   resolveApiKeyForProvider: vi.fn(async () => ({
     apiKey: "test-key",
     source: "test",

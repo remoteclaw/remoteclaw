@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { resolveRemoteClawAgentDir } from "../agents/agent-paths.js";
-import { upsertAuthProfile } from "../agents/auth-profiles.js";
+import { upsertAuthProfile } from "../auth/index.js";
 import { resolveStateDir } from "../config/paths.js";
 import { KILOCODE_DEFAULT_MODEL_REF } from "../providers/kilocode-shared.js";
 import type { OAuthCredentials } from "../types/agent-types.js";

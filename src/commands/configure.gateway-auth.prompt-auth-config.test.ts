@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 
-vi.mock("../agents/auth-profiles.js", () => ({
+vi.mock("../auth/index.js", () => ({
   ensureAuthProfileStore: vi.fn(() => ({
     version: 1,
     profiles: {},

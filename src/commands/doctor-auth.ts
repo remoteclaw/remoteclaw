@@ -1,10 +1,10 @@
-import { buildAuthHealthSummary } from "../agents/auth-health.js";
+import { buildAuthHealthSummary } from "../auth/auth-health.js";
 import {
   CLAUDE_CLI_PROFILE_ID,
   CODEX_CLI_PROFILE_ID,
   ensureAuthProfileStore,
-} from "../agents/auth-profiles.js";
-import { updateAuthProfileStoreWithLock } from "../agents/auth-profiles/store.js";
+} from "../auth/index.js";
+import { updateAuthProfileStoreWithLock } from "../auth/store.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { note } from "../terminal/note.js";

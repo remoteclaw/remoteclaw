@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import { resolveModelAuthMode } from "../../agents/provider-auth.js";
 import { hasNonzeroUsage } from "../../agents/usage.js";
+import { resolveModelAuthMode } from "../../auth/provider-auth.js";
 import {
   resolveAgentIdFromSessionKey,
   resolveSessionFilePath,

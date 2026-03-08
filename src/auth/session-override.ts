@@ -1,6 +1,6 @@
-import type { RemoteClawConfig } from "../../config/config.js";
-import { updateSessionStore, type SessionEntry } from "../../config/sessions.js";
-import { normalizeProviderId } from "../provider-utils.js";
+import { normalizeProviderId } from "../agents/provider-utils.js";
+import type { RemoteClawConfig } from "../config/config.js";
+import { updateSessionStore, type SessionEntry } from "../config/sessions.js";
 import { listProfilesForProvider } from "./profiles.js";
 import { ensureAuthProfileStore } from "./store.js";
 

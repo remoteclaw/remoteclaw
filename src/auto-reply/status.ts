@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import { resolveModelAuthMode } from "../agents/provider-auth.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../agents/usage.js";
+import { resolveModelAuthMode } from "../auth/provider-auth.js";
 import { resolveChannelModelOverride } from "../channels/model-overrides.js";
 import { isCommandFlagEnabled } from "../config/commands.js";
 import type { RemoteClawConfig } from "../config/config.js";

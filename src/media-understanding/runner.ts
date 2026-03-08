@@ -2,7 +2,7 @@ import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveApiKeyForProvider } from "../agents/provider-auth.js";
+import { resolveApiKeyForProvider } from "../auth/provider-auth.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type {

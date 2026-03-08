@@ -56,7 +56,7 @@ async function applyNonInteractiveRuntimeAuth(params: {
     },
   };
 
-  const { upsertAuthProfile } = await import("../../agents/auth-profiles.js");
+  const { upsertAuthProfile } = await import("../../auth/index.js");
 
   if (runtime === "claude") {
     if (opts.authToken) {

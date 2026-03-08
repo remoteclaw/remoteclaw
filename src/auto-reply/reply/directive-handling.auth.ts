@@ -1,6 +1,6 @@
-import { resolveAuthStorePathForDisplay } from "../../agents/auth-profiles.js";
-import { listProfilesForProvider } from "../../agents/auth-profiles.js";
-import { ensureAuthProfileStore, resolveEnvApiKey } from "../../agents/provider-auth.js";
+import { resolveAuthStorePathForDisplay } from "../../auth/index.js";
+import { listProfilesForProvider } from "../../auth/index.js";
+import { ensureAuthProfileStore, resolveEnvApiKey } from "../../auth/provider-auth.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { shortenHomePath } from "../../utils.js";
 import { maskApiKey } from "../../utils/mask-api-key.js";

@@ -93,8 +93,8 @@ vi.mock("../gateway/credentials.js", () => ({
 
 // ── Existing mocks ──────────────────────────────────────────────────────
 
-vi.mock("../agents/auth-profiles.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../agents/auth-profiles.js")>();
+vi.mock("../auth/index.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../auth/index.js")>();
   return {
     ...actual,
     ensureAuthProfileStore: vi.fn(() => ({ version: 1, profiles: {} })),

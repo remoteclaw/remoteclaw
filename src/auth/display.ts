@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { AuthProfileStore } from "./types.js";
 
 export function resolveAuthProfileDisplayLabel(params: {

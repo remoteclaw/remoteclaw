@@ -81,7 +81,7 @@ vi.mock("../commands/onboard-channels.js", () => ({
   setupChannels,
 }));
 
-vi.mock("../agents/auth-profiles.js", () => ({
+vi.mock("../auth/index.js", () => ({
   upsertAuthProfile,
 }));
 

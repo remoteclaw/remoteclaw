@@ -578,7 +578,7 @@ export async function runOnboardingWizard(
     trimmedWorkspace,
   );
 
-  const { upsertAuthProfile } = await import("../agents/auth-profiles.js");
+  const { upsertAuthProfile } = await import("../auth/index.js");
 
   // Step 1: Runtime selection
   const selectedRuntime: AgentRuntime =

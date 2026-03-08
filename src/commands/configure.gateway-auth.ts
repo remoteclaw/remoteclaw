@@ -1,4 +1,4 @@
-import { upsertAuthProfile } from "../agents/auth-profiles.js";
+import { upsertAuthProfile } from "../auth/index.js";
 import type { RemoteClawConfig, GatewayAuthConfig } from "../config/config.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { randomToken } from "./onboard-helpers.js";

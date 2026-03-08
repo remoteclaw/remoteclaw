@@ -63,8 +63,7 @@ import { resolveDiscordChannelInfo } from "./message-utils.js";
 import { buildDiscordNativeCommandContext } from "./native-command-context.js";
 import { resolveDiscordNativeCommandSessionTargets } from "./native-command-session-targets.js";
 import {
-  buildDiscordRoutePeer,
-  resolveDiscordConversationRoute,
+  resolveDiscordBoundConversationRoute,
   resolveDiscordEffectiveRoute,
 } from "./route-resolution.js";
 import { resolveDiscordSenderIdentity } from "./sender-identity.js";
@@ -879,18 +878,18 @@ async function dispatchDiscordCommandInteraction(params: {
   const isGuild = Boolean(interaction.guild);
   const channelId = rawChannelId || "unknown";
   const interactionId = interaction.rawData.id;
-  const route = resolveDiscordConversationRoute({
+  const route = resolveDiscordBoundConversationRoute({
     cfg,
     accountId,
     guildId: interaction.guild?.id ?? undefined,
     memberRoleIds,
-    peer: buildDiscordRoutePeer({
-      isDirectMessage,
-      isGroupDm,
-      directUserId: user.id,
-      conversationId: channelId,
-    }),
+    isDirectMessage,
+    isGroupDm,
+    directUserId: user.id,
+    conversationId: channelId,
     parentConversationId: threadParentId,
+    // Configured ACP routes apply after raw route resolution, so do not pass
+    // bound/configured overrides here.
   });
   const threadBinding = isThreadChannel ? threadBindings.getByThreadId(rawChannelId) : undefined;
   const configuredRoute =

@@ -698,8 +698,8 @@ export function resolveTargetFilename(filename: string): string {
  * Only entries in this set (plus the `workspace-*` pattern) are copied from
  * the source root. Everything else — generated caches (`completions/`),
  * runtime state (`delivery-queue/`, `sandbox/`, `restart-sentinel.json`),
- * device-specific data (`identity/`), and removed subsystems (`packs/`) —
- * is intentionally skipped.
+ * identity data (`identity/`), and removed subsystems (`packs/`) — is
+ * intentionally skipped.
  *
  * Sub-directories within importable entries are copied recursively without
  * further filtering.
@@ -729,6 +729,15 @@ const IMPORTABLE_ROOT_ENTRIES = new Set([
   // Media and workspaces
   "media",
   "workspace",
+
+  // Scheduled jobs
+  "cron",
+
+  // Paired device registry
+  "devices",
+
+  // User-authored canvas content
+  "canvas",
 ]);
 
 /**

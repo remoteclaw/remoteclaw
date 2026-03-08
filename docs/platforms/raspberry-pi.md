@@ -136,9 +136,8 @@ remoteclaw onboard --install-daemon
 Follow the wizard:
 
 1. **Gateway mode:** Local
-2. **Auth:** API keys recommended (OAuth can be finicky on headless Pi)
-3. **Channels:** Telegram is easiest to start with
-4. **Daemon:** Yes (systemd)
+2. **Channels:** Telegram is easiest to start with
+3. **Daemon:** Yes (systemd)
 
 ## 8) Verify Installation
 
@@ -231,7 +230,7 @@ Most RemoteClaw features work on ARM64, but some external binaries may need ARM 
 | gog (Gmail CLI)    | ⚠️           | Check for ARM release               |
 | Chromium (browser) | ✅           | `sudo apt install chromium-browser` |
 
-If a skill fails, check if its binary has an ARM build. Many Go/Rust tools do; some don't.
+If a tool fails, check if its binary has an ARM build. Many Go/Rust tools do; some don't.
 
 ### 32-bit vs 64-bit
 
@@ -244,24 +243,19 @@ uname -m
 
 ---
 
-## Recommended Model Setup
+## Recommended Setup
 
-Since the Pi is just the Gateway (models run in the cloud), use API-based models:
+Since the Pi is just the Gateway (the CLI agent handles model interaction in the cloud), configure your CLI agent's credentials:
 
-```json
-{
-  "agents": {
-    "defaults": {
-      "model": {
-        "primary": "anthropic/claude-sonnet-4-20250514",
-        "fallbacks": ["openai/gpt-4o-mini"]
-      }
-    }
-  }
-}
+```bash
+# For Claude CLI
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# For Gemini CLI
+export GOOGLE_API_KEY=...
 ```
 
-**Don't try to run local LLMs on a Pi** — even small models are too slow. Let Claude/GPT do the heavy lifting.
+**Don't try to run local LLMs on a Pi** — even small models are too slow. Use a cloud-backed CLI agent runtime.
 
 ---
 
@@ -314,7 +308,7 @@ sudo systemctl restart remoteclaw
 
 ### ARM Binary Issues
 
-If a skill fails with "exec format error":
+If a tool fails with "exec format error":
 
 1. Check if the binary has an ARM64 build
 2. Try building from source

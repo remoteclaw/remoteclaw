@@ -9,7 +9,7 @@ title: "OpenProse"
 
 # OpenProse
 
-OpenProse is a portable, markdown-first workflow format for orchestrating AI sessions. In RemoteClaw it ships as a plugin that installs an OpenProse skill pack plus a `/prose` slash command. Programs live in `.prose` files and can spawn multiple sub-agents with explicit control flow.
+OpenProse is a portable, markdown-first workflow format for orchestrating AI sessions. In RemoteClaw it ships as a plugin that installs an OpenProse command set plus a `/prose` slash command. Programs live in `.prose` files and can spawn multiple sub-agents with explicit control flow.
 
 Official site: [https://www.prose.md](https://www.prose.md)
 
@@ -57,11 +57,11 @@ Common commands:
 input topic: "What should we research?"
 
 agent researcher:
-  model: sonnet
+  runtime: claude
   prompt: "You research thoroughly and cite sources."
 
 agent writer:
-  model: opus
+  runtime: claude
   prompt: "You write a concise summary."
 
 parallel:

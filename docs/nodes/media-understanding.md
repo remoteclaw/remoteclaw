@@ -72,21 +72,6 @@ Each `models[]` entry can be **provider** or **CLI**:
 
 ```json5
 {
-  type: "provider", // default if omitted
-  provider: "openai",
-  model: "gpt-5.2",
-  prompt: "Describe the image in <= 500 chars.",
-  maxChars: 500,
-  maxBytes: 10485760,
-  timeoutSeconds: 60,
-  capabilities: ["image"], // optional, used for multi‑modal entries
-  profile: "vision-profile",
-  preferredProfile: "vision-fallback",
-}
-```
-
-```json5
-{
   type: "cli",
   command: "gemini",
   args: [
@@ -125,8 +110,8 @@ Rules:
 - If media exceeds `maxBytes`, that model is skipped and the **next model is tried**.
 - If the model returns more than `maxChars`, output is trimmed.
 - `prompt` defaults to simple “Describe the {media}.” plus the `maxChars` guidance (image/video only).
-- If `<capability>.enabled: true` but no models are configured, RemoteClaw tries the
-  **active reply model** when its provider supports the capability.
+- If `<capability>.enabled: true` but no models are configured, RemoteClaw auto-detects
+  available providers and CLIs (see auto-detect section below).
 
 ### Auto-detect media understanding (default)
 
@@ -175,11 +160,11 @@ If you omit `capabilities`, the entry is eligible for the list it appears in.
 
 ## Provider support matrix (RemoteClaw integrations)
 
-| Capability | Provider integration                                                 | Notes                                                     |
-| ---------- | -------------------------------------------------------------------- | --------------------------------------------------------- |
-| Image      | OpenAI / Anthropic / Google / others via RemoteClaw's model registry | Any image-capable model in the registry works.            |
-| Audio      | OpenAI, Groq, Deepgram, Google, Mistral                              | Provider transcription (Whisper/Deepgram/Gemini/Voxtral). |
-| Video      | Google (Gemini API)                                                  | Provider video understanding.                             |
+| Capability | Provider integration                    | Notes                                                     |
+| ---------- | --------------------------------------- | --------------------------------------------------------- |
+| Image      | OpenAI / Anthropic / Google / MiniMax   | Any image-capable provider integration works.             |
+| Audio      | OpenAI, Groq, Deepgram, Google, Mistral | Provider transcription (Whisper/Deepgram/Gemini/Voxtral). |
+| Video      | Google (Gemini API)                     | Provider video understanding.                             |
 
 ## Recommended providers
 

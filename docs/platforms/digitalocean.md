@@ -85,7 +85,6 @@ remoteclaw onboard --install-daemon
 
 The wizard will walk you through:
 
-- Model auth (API keys or OAuth)
 - Channel setup (Telegram, WhatsApp, Discord, etc.)
 - Gateway token (auto-generated)
 - Daemon installation (systemd)
@@ -178,12 +177,12 @@ swapon /swapfile
 echo '/swapfile none swap sw 0 0' >> /etc/fstab
 ```
 
-### Use a lighter model
+### Reduce resource usage
 
 If you're hitting OOMs, consider:
 
-- Using API-based models (Claude, GPT) instead of local models
-- Setting `agents.defaults.model.primary` to a smaller model
+- Reducing the number of concurrent sessions
+- Choosing a lighter CLI agent runtime
 
 ### Monitor memory
 

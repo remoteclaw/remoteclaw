@@ -188,7 +188,7 @@ Per-group configuration:
 
 ### Command gating
 
-- Control commands (e.g., `/config`, `/model`) require authorization.
+- Control commands (e.g., `/config`) require authorization.
 - Uses `allowFrom` and `groupAllowFrom` to determine command authorization.
 - Authorized senders can run control commands even without mentioning in groups.
 
@@ -289,7 +289,7 @@ Control whether responses are sent as a single message or streamed in blocks:
 
 Full configuration: [Configuration](/gateway/configuration)
 
-Provider options:
+Channel options:
 
 - `channels.bluebubbles.enabled`: Enable/disable the channel.
 - `channels.bluebubbles.serverUrl`: BlueBubbles REST API base URL.

@@ -131,8 +131,7 @@ Use this when debugging auth or deciding what to back up:
 - **Discord bot token**: config/env (token file not yet supported)
 - **Slack tokens**: config/env (`channels.slack.*`)
 - **Pairing allowlists**: `~/.remoteclaw/credentials/<channel>-allowFrom.json`
-- **Model auth profiles**: `~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json`
-- **Legacy OAuth import**: `~/.remoteclaw/credentials/oauth.json`
+- **Agent auth profiles**: `~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json`
   More detail: [Security](/gateway/security#credential-storage-map).
 
 ## Updating (without wrecking your setup)

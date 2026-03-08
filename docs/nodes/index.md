@@ -45,12 +45,12 @@ Notes:
 ## Remote node host (system.run)
 
 Use a **node host** when your Gateway runs on one machine and you want commands
-to execute on another. The model still talks to the **gateway**; the gateway
+to execute on another. The CLI agent subprocess still communicates with the **gateway**; the gateway
 forwards `exec` calls to the **node host** when `host=node` is selected.
 
 ### What runs where
 
-- **Gateway host**: receives messages, runs the model, routes tool calls.
+- **Gateway host**: receives messages, spawns the CLI agent subprocess, routes tool calls.
 - **Node host**: executes `system.run`/`system.which` on the node machine.
 - **Approvals**: enforced on the node host via `~/.remoteclaw/exec-approvals.json`.
 

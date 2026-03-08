@@ -37,7 +37,7 @@ Use `--password` if your Gateway uses password auth.
 - Header: connection URL, current agent, current session.
 - Chat log: user messages, assistant replies, system notices, tool cards.
 - Status line: connection/run state (connecting, running, streaming, idle, error).
-- Footer: connection state + agent + session + model + think/verbose/reasoning + token counts + deliver.
+- Footer: connection state + agent + session + runtime + think/verbose/reasoning + token counts + deliver.
 - Input: text editor with autocomplete.
 
 ## Mental model: agents + sessions
@@ -62,7 +62,7 @@ Use `--password` if your Gateway uses password auth.
 
 ## Pickers + overlays
 
-- Model picker: list available models and set the session override.
+- Runtime picker: choose the CLI agent runtime.
 - Agent picker: choose a different agent.
 - Session picker: shows only sessions for the current agent.
 - Settings: toggle deliver, tool output expansion, and thinking visibility.
@@ -87,7 +87,7 @@ Core:
 - `/status`
 - `/agent <id>` (or `/agents`)
 - `/session <key>` (or `/sessions`)
-- `/model <provider/model>` (or `/models`)
+- `/model <hint>` (forward a model hint to the CLI agent)
 
 Session controls:
 
@@ -151,7 +151,7 @@ No output after sending a message:
 
 - Run `/status` in the TUI to confirm the Gateway is connected and idle/busy.
 - Check the Gateway logs: `remoteclaw logs --follow`.
-- Confirm the agent can run: `remoteclaw status` and `remoteclaw models status`.
+- Confirm the agent can run: `remoteclaw status`.
 - If you expect messages in a chat channel, enable delivery (`/deliver on` or `--deliver`).
 - `--history-limit <n>`: History entries to load (default 200)
 

@@ -1,4 +1,5 @@
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
+import type { OpenClawConfig } from "../config/config.js";
 import { loadConfig } from "../config/config.js";
 import { loadSessionStore, resolveStorePath } from "../config/sessions.js";
 import { listAgentsForGateway } from "../gateway/session-utils.js";
@@ -13,12 +14,11 @@ export type AgentLocalStatus = {
   lastActiveAgeMs: number | null;
 };
 
-export async function getAgentLocalStatuses(): Promise<{
+export async function getAgentLocalStatuses(cfg: OpenClawConfig = loadConfig()): Promise<{
   defaultId: string;
   agents: AgentLocalStatus[];
   totalSessions: number;
 }> {
-  const cfg = loadConfig();
   const agentList = listAgentsForGateway(cfg);
   const now = Date.now();
 

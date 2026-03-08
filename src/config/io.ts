@@ -1363,6 +1363,11 @@ export function loadConfig(): RemoteClawConfig {
   return config;
 }
 
+export async function readBestEffortConfig(): Promise<OpenClawConfig> {
+  const snapshot = await readConfigFileSnapshot();
+  return snapshot.valid ? loadConfig() : snapshot.config;
+}
+
 export async function readConfigFileSnapshot(): Promise<ConfigFileSnapshot> {
   return await createConfigIO().readConfigFileSnapshot();
 }

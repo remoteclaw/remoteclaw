@@ -183,7 +183,7 @@ This does **not** rewrite JSONL history. See [/concepts/session-pruning](/concep
 
 When a session nears auto-compaction, RemoteClaw can run a **silent memory flush**
 turn that reminds the model to write durable notes to disk. This only runs when
-the workspace is writable. See [Compaction](/concepts/compaction).
+the workspace is writable. See [Session management — compaction](/reference/session-management-compaction).
 
 ## Mapping transports → session keys
 
@@ -283,7 +283,7 @@ Runtime override (owner only):
 - Send `/status` as a standalone message in chat to see whether the agent is reachable, how much of the session context is used, current thinking/verbose toggles, and when your WhatsApp web creds were last refreshed (helps spot relink needs).
 - Send `/context list` or `/context detail` to see what’s in the system prompt and injected workspace files (and the biggest context contributors).
 - Send `/stop` (or standalone abort phrases like `stop`, `stop action`, `stop run`, `stop remoteclaw`) to abort the current run, clear queued followups for that session, and stop any sub-agent runs spawned from it (the reply includes the stopped count).
-- Send `/compact` (optional instructions) as a standalone message to summarize older context and free up window space. See [/concepts/compaction](/concepts/compaction).
+- Send `/compact` (optional instructions) as a standalone message to summarize older context and free up window space. See [Session management — compaction](/reference/session-management-compaction).
 - JSONL transcripts can be opened directly to review full turns.
 
 ## Tips

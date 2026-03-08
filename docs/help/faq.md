@@ -1821,7 +1821,7 @@ If it keeps happening:
 - Enable or tune **session pruning** (`agents.defaults.contextPruning`) to trim old tool output.
 - Use a model with a larger context window.
 
-Docs: [Compaction](/concepts/compaction), [Session pruning](/concepts/session-pruning), [Session management](/concepts/session).
+Docs: [Session pruning](/concepts/session-pruning), [Session management](/concepts/session).
 
 ### Why am I seeing "LLM request rejected: messages.content.tool_use.input field required"?
 

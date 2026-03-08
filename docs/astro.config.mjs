@@ -20,7 +20,7 @@ const redirects = {
   "/bun": "/install/bun",
   "/camera": "/nodes/camera",
   "/clawd": "/start/remoteclaw",
-  "/compaction": "/concepts/compaction",
+  "/compaction": "/concepts/sessions",
   "/concepts/provider-routing": "/channels/channel-routing",
   "/context": "/concepts/context",
   "/control-ui": "/web/control-ui",
@@ -314,7 +314,6 @@ export default defineConfig({
                 { slug: "concepts/sessions" },
                 { slug: "concepts/session-pruning" },
                 { slug: "concepts/session-tool" },
-                { slug: "concepts/compaction" },
               ],
             },
             {

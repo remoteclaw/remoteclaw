@@ -829,7 +829,7 @@ Periodic heartbeat runs.
 }
 ```
 
-- `mode`: `default` or `safeguard` (chunked summarization for long histories). See [Compaction](/concepts/compaction).
+- `mode`: `default` or `safeguard` (chunked summarization for long histories). See [Session management — compaction](/reference/session-management-compaction).
 - `memoryFlush`: silent agentic turn before auto-compaction to store durable memories. Skipped when workspace is read-only.
 
 ### `agents.defaults.contextPruning`

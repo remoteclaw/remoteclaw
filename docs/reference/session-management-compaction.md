@@ -1,9 +1,9 @@
 ---
-description: “Deep dive: session store + transcripts, lifecycle, and silent housekeeping”
+description: "Deep dive: session store + transcripts, lifecycle, and silent housekeeping"
 read_when:
   - You need to debug session ids, transcript JSONL, or sessions.json fields
   - You want to implement silent system turns
-title: “Session Management Deep Dive”
+title: "Session Management Deep Dive"
 ---
 
 # Session Management (Deep Dive)
@@ -20,7 +20,6 @@ This document explains how RemoteClaw manages sessions end-to-end:
 If you want a higher-level overview first, start with:
 
 - [/concepts/session](/concepts/session)
-- [/concepts/compaction](/concepts/compaction)
 - [/concepts/session-pruning](/concepts/session-pruning)
 - [/reference/transcript-hygiene](/reference/transcript-hygiene)
 
@@ -31,7 +30,7 @@ If you want a higher-level overview first, start with:
 RemoteClaw is designed around a single **Gateway process** that owns session state.
 
 - UIs (macOS app, web Control UI, TUI) should query the Gateway for session lists and token counts.
-- In remote mode, session files are on the remote host; “checking your local Mac files” won’t reflect what the Gateway is using.
+- In remote mode, session files are on the remote host; "checking your local Mac files" won’t reflect what the Gateway is using.
 
 ---
 
@@ -171,7 +170,7 @@ Notable entry types:
 - `compaction`: persisted compaction summary with `firstKeptEntryId` and `tokensBefore`
 - `branch_summary`: persisted summary when navigating a tree branch
 
-RemoteClaw intentionally does **not** “fix up” transcripts; the Gateway uses `SessionManager` to read/write them.
+RemoteClaw intentionally does **not** "fix up" transcripts; the Gateway uses `SessionManager` to read/write them.
 
 ---
 
@@ -193,11 +192,11 @@ For more, see [/token-use](/reference/token-use).
 
 ## Silent housekeeping (`NO_REPLY`)
 
-RemoteClaw supports “silent” turns for background tasks where the user should not see intermediate output.
+RemoteClaw supports "silent" turns for background tasks where the user should not see intermediate output.
 
 Convention:
 
-- The assistant starts its output with `NO_REPLY` to indicate “do not deliver a reply to the user”.
+- The assistant starts its output with `NO_REPLY` to indicate "do not deliver a reply to the user".
 - RemoteClaw strips/suppresses this in the delivery layer.
 
 As of `2026.1.10`, RemoteClaw also suppresses **draft/typing streaming** when a partial chunk begins with `NO_REPLY`, so silent operations don’t leak partial output mid-turn.

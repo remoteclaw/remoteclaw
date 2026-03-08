@@ -27,7 +27,7 @@ Context is _not the same thing_ as “memory”: memory can be stored on disk an
 - `/usage tokens` → append per-reply usage footer to normal replies.
 - `/compact` → summarize older history into a compact entry to free window space.
 
-See also: [Slash commands](/tools/slash-commands), [Token use & costs](/reference/token-use), [Compaction](/concepts/compaction).
+See also: [Slash commands](/tools/slash-commands), [Token use & costs](/reference/token-use).
 
 ## Example output
 
@@ -135,7 +135,7 @@ What persists across messages depends on the mechanism:
 - **Compaction** persists a summary into the transcript and keeps recent messages intact.
 - **Pruning** removes old tool results from the _in-memory_ prompt for a run, but does not rewrite the transcript.
 
-Docs: [Session](/concepts/session), [Compaction](/concepts/compaction), [Session pruning](/concepts/session-pruning).
+Docs: [Session](/concepts/session), [Session pruning](/concepts/session-pruning).
 
 ## What `/context` actually reports
 

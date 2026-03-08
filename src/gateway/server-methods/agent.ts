@@ -532,6 +532,8 @@ export const agentHandlers: GatewayRequestHandlers = {
       const configured = await listConfiguredMessageChannels(cfgResolved);
       if (!configured.includes(resolvedChannel)) {
         resolvedChannel = INTERNAL_MESSAGE_CHANNEL;
+        resolvedTo = undefined;
+        resolvedAccountId = undefined;
       }
     }
 

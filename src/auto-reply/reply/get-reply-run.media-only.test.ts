@@ -107,22 +107,14 @@ function baseParams(
     } as never,
     commandSource: "",
     allowTextCommands: true,
-    directives: {
-      hasThinkDirective: false,
-      thinkLevel: undefined,
-    } as never,
+    directives: {} as never,
     defaultActivation: "always",
-    resolvedThinkLevel: "high",
     resolvedVerboseLevel: "off",
-    resolvedReasoningLevel: "off",
     resolvedElevatedLevel: "off",
     elevatedEnabled: false,
     elevatedAllowed: false,
     blockStreamingEnabled: false,
     resolvedBlockStreamingBreak: "message_end",
-    modelState: {
-      resolveDefaultThinkingLevel: async () => "medium",
-    } as never,
     provider: "anthropic",
     model: "claude-opus-4-1",
     typing: {

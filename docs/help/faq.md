@@ -2766,7 +2766,7 @@ If it is still noisy, check the session settings in the Control UI and set verbo
 to **inherit**. Also confirm you are not using a bot profile with `verboseDefault` set
 to `on` in config.
 
-Docs: [Thinking and verbose](/tools/thinking), [Security](/gateway/security#reasoning--verbose-output-in-groups).
+Docs: [Security](/gateway/security#reasoning--verbose-output-in-groups).
 
 ### How do I stopcancel a running task
 

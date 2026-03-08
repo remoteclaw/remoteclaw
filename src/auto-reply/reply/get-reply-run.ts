@@ -6,7 +6,6 @@ import {
   resolveSessionFilePath,
   resolveSessionFilePathOptions,
   type SessionEntry,
-  updateSessionStore,
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { clearCommandLane, getQueueSize } from "../../process/command-queue.js";
@@ -15,22 +14,13 @@ import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { hasControlCommand } from "../command-detection.js";
 import { buildInboundMediaNote } from "../media-note.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
-import {
-  type ElevatedLevel,
-  formatXHighModelHint,
-  normalizeThinkLevel,
-  type ReasoningLevel,
-  supportsXHighThinking,
-  type ThinkLevel,
-  type VerboseLevel,
-} from "../thinking.js";
+import { type ElevatedLevel, type VerboseLevel } from "../thinking.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { runReplyAgent } from "./agent-runner.js";
 import { applySessionHints } from "./body.js";
 import type { buildCommandContext } from "./commands.js";
 import type { InlineDirectives } from "./directive-handling.js";
-import type { createModelSelectionState } from "./get-reply-directives.js";
 import { buildGroupChatContext, buildGroupIntro } from "./groups.js";
 import { buildInboundMetaSystemPrompt, buildInboundUserContextPrefix } from "./inbound-meta.js";
 import { resolveOriginMessageProvider } from "./origin-routing.js";
@@ -130,9 +120,7 @@ type RunPreparedReplyParams = {
   allowTextCommands: boolean;
   directives: InlineDirectives;
   defaultActivation: Parameters<typeof buildGroupIntro>[0]["defaultActivation"];
-  resolvedThinkLevel: ThinkLevel | undefined;
   resolvedVerboseLevel: VerboseLevel | undefined;
-  resolvedReasoningLevel: ReasoningLevel;
   resolvedElevatedLevel: ElevatedLevel;
   execOverrides?: ExecOverrides;
   elevatedEnabled: boolean;
@@ -145,7 +133,6 @@ type RunPreparedReplyParams = {
     flushOnParagraph?: boolean;
   };
   resolvedBlockStreamingBreak: "text_end" | "message_end";
-  modelState: Awaited<ReturnType<typeof createModelSelectionState>>;
   provider: string;
   model: string;
   perMessageQueueMode?: InlineDirectives["queueMode"];
@@ -186,14 +173,13 @@ export async function runPreparedReply(
     command,
     commandSource,
     allowTextCommands,
-    directives,
+    directives: _directives,
     defaultActivation,
     elevatedEnabled,
     elevatedAllowed,
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
-    modelState,
     provider,
     model,
     perMessageQueueMode,
@@ -212,15 +198,8 @@ export async function runPreparedReply(
     workspaceDir,
     sessionStore,
   } = params;
-  let {
-    sessionEntry,
-    resolvedThinkLevel,
-    resolvedVerboseLevel,
-    resolvedReasoningLevel,
-    resolvedElevatedLevel,
-    execOverrides,
-    abortedLastRun,
-  } = params;
+  let { sessionEntry, resolvedVerboseLevel, resolvedElevatedLevel, execOverrides, abortedLastRun } =
+    params;
   const currentSystemSent = systemSent;
 
   const isFirstTurnInSession = isNewSession || !currentSystemSent;
@@ -334,40 +313,9 @@ export async function runPreparedReply(
   const mediaReplyHint = mediaNote
     ? "To send an image back, prefer the message tool (media/path/filePath). If you must inline, use MEDIA:https://example.com/image.jpg (spaces ok, quote if needed) or a safe relative path like MEDIA:./image.jpg. Avoid absolute paths (MEDIA:/...) and ~ paths — they are blocked for security. Keep caption in the text body."
     : undefined;
-  let prefixedCommandBody = mediaNote
+  const prefixedCommandBody = mediaNote
     ? [mediaNote, mediaReplyHint, prefixedBody ?? ""].filter(Boolean).join("\n").trim()
     : prefixedBody;
-  if (!resolvedThinkLevel && prefixedCommandBody) {
-    const parts = prefixedCommandBody.split(/\s+/);
-    const maybeLevel = normalizeThinkLevel(parts[0]);
-    if (maybeLevel && (maybeLevel !== "xhigh" || supportsXHighThinking(provider, model))) {
-      resolvedThinkLevel = maybeLevel;
-      prefixedCommandBody = parts.slice(1).join(" ").trim();
-    }
-  }
-  if (!resolvedThinkLevel) {
-    resolvedThinkLevel = await modelState.resolveDefaultThinkingLevel();
-  }
-  if (resolvedThinkLevel === "xhigh" && !supportsXHighThinking(provider, model)) {
-    const explicitThink = directives.hasThinkDirective && directives.thinkLevel !== undefined;
-    if (explicitThink) {
-      typing.cleanup();
-      return {
-        text: `Thinking level "xhigh" is only supported for ${formatXHighModelHint()}. Use /think high or switch to one of those models.`,
-      };
-    }
-    resolvedThinkLevel = "high";
-    if (sessionEntry && sessionStore && sessionKey && sessionEntry.thinkingLevel === "xhigh") {
-      sessionEntry.thinkingLevel = "high";
-      sessionEntry.updatedAt = Date.now();
-      sessionStore[sessionKey] = sessionEntry;
-      if (storePath) {
-        await updateSessionStore(storePath, (store) => {
-          store[sessionKey] = sessionEntry;
-        });
-      }
-    }
-  }
   if (resetTriggered && command.isAuthorizedSender) {
     await sendResetSessionNotice({
       ctx,
@@ -458,9 +406,7 @@ export async function runPreparedReply(
       model,
       authProfileId,
       authProfileIdSource,
-      thinkLevel: resolvedThinkLevel,
       verboseLevel: resolvedVerboseLevel,
-      reasoningLevel: resolvedReasoningLevel,
       elevatedLevel: resolvedElevatedLevel,
       execOverrides,
       bashElevated: {

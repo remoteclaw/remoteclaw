@@ -17,7 +17,6 @@ type SessionEntry = {
   customType?: string;
   provider?: string;
   modelId?: string;
-  thinkingLevel?: string;
 };
 
 type SessionData = {
@@ -162,13 +161,6 @@ describe("export html security hardening", () => {
         id: "5",
         parentId: "4",
         timestamp: now(),
-        type: "thinking_level_change",
-        thinkingLevel: attack,
-      },
-      {
-        id: "6",
-        parentId: "5",
-        timestamp: now(),
         type: attack,
       },
     ];
@@ -176,7 +168,7 @@ describe("export html security hardening", () => {
     const headerSession: SessionData = {
       header: { id: "session-2", timestamp: now() },
       entries: baseEntries,
-      leafId: "6",
+      leafId: "5",
       systemPrompt: "",
       tools: [],
     };
@@ -204,18 +196,6 @@ describe("export html security hardening", () => {
       "&lt;img src=x onerror=alert(9)&gt;",
     );
 
-    const thinkingLeafSession: SessionData = {
-      header: { id: "session-2-thinking", timestamp: now() },
-      entries: baseEntries,
-      leafId: "5",
-      systemPrompt: "",
-      tools: [],
-    };
-    const thinkingLeaf = renderTemplate(thinkingLeafSession).document;
-    expect(thinkingLeaf.getElementById("tree-container")?.querySelector("img[onerror]")).toBeNull();
-    expect(thinkingLeaf.getElementById("tree-container")?.innerHTML).toContain(
-      "&lt;img src=x onerror=alert(9)&gt;",
-    );
   });
 
   it("sanitizes image MIME types used in data URLs", () => {

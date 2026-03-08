@@ -2,13 +2,12 @@ import { getChannelDock } from "../../channels/dock.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
-import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
+import type { ElevatedLevel, VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { getAbortMemory } from "./abort.js";
 import { buildStatusReply, handleCommands } from "./commands.js";
 import type { InlineDirectives } from "./directive-handling.js";
 import { isDirectiveOnly } from "./directive-handling.js";
-import type { createModelSelectionState } from "./get-reply-directives.js";
 import { extractInlineSimpleCommand } from "./reply-inline.js";
 import type { TypingController } from "./typing.js";
 
@@ -45,13 +44,8 @@ export async function handleInlineActions(params: {
   elevatedAllowed: boolean;
   elevatedFailures: Array<{ gate: string; key: string }>;
   defaultActivation: Parameters<typeof buildStatusReply>[0]["defaultGroupActivation"];
-  resolvedThinkLevel: ThinkLevel | undefined;
   resolvedVerboseLevel: VerboseLevel | undefined;
-  resolvedReasoningLevel: ReasoningLevel;
   resolvedElevatedLevel: ElevatedLevel;
-  resolveDefaultThinkingLevel: Awaited<
-    ReturnType<typeof createModelSelectionState>
-  >["resolveDefaultThinkingLevel"];
   provider: string;
   model: string;
   contextTokens: number;
@@ -83,11 +77,8 @@ export async function handleInlineActions(params: {
     elevatedAllowed,
     elevatedFailures,
     defaultActivation,
-    resolvedThinkLevel,
     resolvedVerboseLevel,
-    resolvedReasoningLevel,
     resolvedElevatedLevel,
-    resolveDefaultThinkingLevel,
     provider,
     model,
     contextTokens,
@@ -139,11 +130,8 @@ export async function handleInlineActions(params: {
       provider,
       model,
       contextTokens,
-      resolvedThinkLevel,
       resolvedVerboseLevel: resolvedVerboseLevel ?? "off",
-      resolvedReasoningLevel,
       resolvedElevatedLevel,
-      resolveDefaultThinkingLevel,
       isGroup,
       defaultGroupActivation: defaultActivation,
       mediaDecisions: ctx.MediaUnderstandingDecisions,
@@ -173,11 +161,8 @@ export async function handleInlineActions(params: {
       sessionScope,
       workspaceDir,
       defaultGroupActivation: defaultActivation,
-      resolvedThinkLevel,
       resolvedVerboseLevel: resolvedVerboseLevel ?? "off",
-      resolvedReasoningLevel,
       resolvedElevatedLevel,
-      resolveDefaultThinkingLevel,
       provider,
       model,
       contextTokens,

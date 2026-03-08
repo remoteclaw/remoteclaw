@@ -72,7 +72,6 @@ export async function handleDirectiveOnly(
     sessionEntry,
     sessionKey,
     elevatedChanged: false,
-    reasoningChanged: false,
   });
 
   const parts: string[] = [];

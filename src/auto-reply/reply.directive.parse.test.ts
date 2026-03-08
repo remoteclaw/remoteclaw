@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   extractElevatedDirective,
   extractQueueDirective,
-  extractReasoningDirective,
   extractReplyToTag,
-  extractThinkDirective,
   extractVerboseDirective,
 } from "./reply.js";
 import { extractStatusDirective } from "./reply/directives.js";
@@ -24,28 +22,10 @@ describe("directive parsing", () => {
     expect(res.cleaned).toBe(body.trim());
   });
 
-  it("ignores think directive inside URL", () => {
-    const body = "see https://example.com/path/thinkstuff";
-    const res = extractThinkDirective(body);
-    expect(res.hasDirective).toBe(false);
-  });
-
   it("matches verbose with leading space", () => {
     const res = extractVerboseDirective(" please /verbose on now");
     expect(res.hasDirective).toBe(true);
     expect(res.verboseLevel).toBe("on");
-  });
-
-  it("matches reasoning directive", () => {
-    const res = extractReasoningDirective("/reasoning on please");
-    expect(res.hasDirective).toBe(true);
-    expect(res.reasoningLevel).toBe("on");
-  });
-
-  it("matches reasoning stream directive", () => {
-    const res = extractReasoningDirective("/reasoning stream please");
-    expect(res.hasDirective).toBe(true);
-    expect(res.reasoningLevel).toBe("stream");
   });
 
   it("matches elevated with leading space", () => {
@@ -64,51 +44,10 @@ describe("directive parsing", () => {
     expect(res.elevatedLevel).toBe("full");
   });
 
-  it("matches think at start of line", () => {
-    const res = extractThinkDirective("/think:high run slow");
-    expect(res.hasDirective).toBe(true);
-    expect(res.thinkLevel).toBe("high");
-  });
-
-  it("does not match /think followed by extra letters", () => {
-    // e.g. someone typing "/think" + extra letter "hink"
-    const res = extractThinkDirective("/thinkstuff");
-    expect(res.hasDirective).toBe(false);
-  });
-
-  it("matches /think with no argument", () => {
-    const res = extractThinkDirective("/think");
-    expect(res.hasDirective).toBe(true);
-    expect(res.thinkLevel).toBeUndefined();
-    expect(res.rawLevel).toBeUndefined();
-  });
-
-  it("matches /t with no argument", () => {
-    const res = extractThinkDirective("/t");
-    expect(res.hasDirective).toBe(true);
-    expect(res.thinkLevel).toBeUndefined();
-  });
-
-  it("matches think with no argument and consumes colon", () => {
-    const res = extractThinkDirective("/think:");
-    expect(res.hasDirective).toBe(true);
-    expect(res.thinkLevel).toBeUndefined();
-    expect(res.rawLevel).toBeUndefined();
-    expect(res.cleaned).toBe("");
-  });
-
   it("matches verbose with no argument", () => {
     const res = extractVerboseDirective("/verbose:");
     expect(res.hasDirective).toBe(true);
     expect(res.verboseLevel).toBeUndefined();
-    expect(res.rawLevel).toBeUndefined();
-    expect(res.cleaned).toBe("");
-  });
-
-  it("matches reasoning with no argument", () => {
-    const res = extractReasoningDirective("/reasoning:");
-    expect(res.hasDirective).toBe(true);
-    expect(res.reasoningLevel).toBeUndefined();
     expect(res.rawLevel).toBeUndefined();
     expect(res.cleaned).toBe("");
   });
@@ -129,20 +68,8 @@ describe("directive parsing", () => {
     expect(res.cleaned).toBe("please now");
   });
 
-  it("preserves spacing when stripping think directives before paths", () => {
-    const res = extractThinkDirective("thats not /think high/tmp/hello");
-    expect(res.hasDirective).toBe(true);
-    expect(res.cleaned).toBe("thats not /tmp/hello");
-  });
-
   it("preserves spacing when stripping verbose directives before paths", () => {
     const res = extractVerboseDirective("thats not /verbose on/tmp/hello");
-    expect(res.hasDirective).toBe(true);
-    expect(res.cleaned).toBe("thats not /tmp/hello");
-  });
-
-  it("preserves spacing when stripping reasoning directives before paths", () => {
-    const res = extractReasoningDirective("thats not /reasoning on/tmp/hello");
     expect(res.hasDirective).toBe(true);
     expect(res.cleaned).toBe("thats not /tmp/hello");
   });

@@ -10,23 +10,17 @@ export async function handleSubagentsSpawnAction(
 
   const taskParts: string[] = [];
   let model: string | undefined;
-  let thinking: string | undefined;
   for (let i = 1; i < restTokens.length; i++) {
     if (restTokens[i] === "--model" && i + 1 < restTokens.length) {
       i += 1;
       model = restTokens[i];
-    } else if (restTokens[i] === "--thinking" && i + 1 < restTokens.length) {
-      i += 1;
-      thinking = restTokens[i];
     } else {
       taskParts.push(restTokens[i]);
     }
   }
   const task = taskParts.join(" ").trim();
   if (!agentId || !task) {
-    return stopWithText(
-      "Usage: /subagents spawn <agentId> <task> [--model <model>] [--thinking <level>]",
-    );
+    return stopWithText("Usage: /subagents spawn <agentId> <task> [--model <model>]");
   }
 
   const commandTo = typeof params.command.to === "string" ? params.command.to.trim() : "";
@@ -40,7 +34,6 @@ export async function handleSubagentsSpawnAction(
       task,
       agentId,
       model,
-      thinking,
       mode: "run",
       cleanup: "keep",
       expectsCompletionMessage: true,

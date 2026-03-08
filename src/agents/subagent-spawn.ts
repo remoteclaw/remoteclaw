@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import { formatThinkingLevels, normalizeThinkLevel } from "../auto-reply/thinking.js";
 import { DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH } from "../config/agent-limits.js";
 import { loadConfig } from "../config/config.js";
 // Model input infrastructure gutted in RemoteClaw — inline primary resolution.
@@ -43,7 +42,6 @@ export type SpawnSubagentParams = {
   label?: string;
   agentId?: string;
   model?: string;
-  thinking?: string;
   runTimeoutSeconds?: number;
   thread?: boolean;
   mode?: SpawnSubagentMode;
@@ -183,7 +181,6 @@ export async function spawnSubagentDirect(
   const label = params.label?.trim() || "";
   const requestedAgentId = params.agentId;
   const modelOverride = params.model;
-  const thinkingOverrideRaw = params.thinking;
   const requestThreadBinding = params.thread === true;
   const spawnMode = resolveSpawnMode({
     requestedMode: params.mode,
@@ -295,24 +292,6 @@ export async function spawnSubagentDirect(
     resolveModelPrimaryValue(cfg.agents?.defaults?.model) ||
     "unknown/unknown";
 
-  const resolvedThinkingDefaultRaw =
-    readStringParam(targetAgentConfig?.subagents ?? {}, "thinking") ??
-    readStringParam(cfg.agents?.defaults?.subagents ?? {}, "thinking");
-
-  let thinkingOverride: string | undefined;
-  const thinkingCandidateRaw = thinkingOverrideRaw || resolvedThinkingDefaultRaw;
-  if (thinkingCandidateRaw) {
-    const normalized = normalizeThinkLevel(thinkingCandidateRaw);
-    if (!normalized) {
-      const { provider, model } = splitModelRef(resolvedModel);
-      const hint = formatThinkingLevels(provider, model);
-      return {
-        status: "error",
-        error: `Invalid thinking level "${thinkingCandidateRaw}". Use one of: ${hint}.`,
-      };
-    }
-    thinkingOverride = normalized;
-  }
   try {
     await callGateway({
       method: "sessions.patch",
@@ -337,26 +316,6 @@ export async function spawnSubagentDirect(
         timeoutMs: 10_000,
       });
       modelApplied = true;
-    } catch (err) {
-      const messageText =
-        err instanceof Error ? err.message : typeof err === "string" ? err : "error";
-      return {
-        status: "error",
-        error: messageText,
-        childSessionKey,
-      };
-    }
-  }
-  if (thinkingOverride !== undefined) {
-    try {
-      await callGateway({
-        method: "sessions.patch",
-        params: {
-          key: childSessionKey,
-          thinkingLevel: thinkingOverride === "off" ? null : thinkingOverride,
-        },
-        timeoutMs: 10_000,
-      });
     } catch (err) {
       const messageText =
         err instanceof Error ? err.message : typeof err === "string" ? err : "error";
@@ -435,7 +394,6 @@ export async function spawnSubagentDirect(
         deliver: false,
         lane: AGENT_LANE_SUBAGENT,
         extraSystemPrompt: childSystemPrompt,
-        thinking: thinkingOverride,
         timeout: runTimeoutSeconds,
         label: label || undefined,
         spawnedBy: spawnedByKey,

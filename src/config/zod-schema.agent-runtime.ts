@@ -29,7 +29,6 @@ export const HeartbeatSchema = z
       .optional(),
     model: z.string().optional(),
     session: z.string().optional(),
-    includeReasoning: z.boolean().optional(),
     target: z.string().optional(),
     to: z.string().optional(),
     accountId: z.string().optional(),
@@ -246,7 +245,6 @@ export const AgentEntrySchema = z
       .object({
         allowAgents: z.array(z.string()).optional(),
         model: z.unknown().optional(),
-        thinking: z.string().optional(),
       })
       .strict()
       .optional(),

@@ -171,7 +171,7 @@ describe("runReplyAgent onAgentRunStart", () => {
         config: { agents: { defaults: { runtime: "claude" } } },
         provider,
         model,
-        thinkLevel: "low",
+
         verboseLevel: "off",
         elevatedLevel: "off",
         bashElevated: {
@@ -280,7 +280,7 @@ describe("runReplyAgent authProfileId fallback scoping", () => {
         model: "claude-opus",
         authProfileId: "anthropic:remoteclaw",
         authProfileIdSource: "manual",
-        thinkLevel: "low",
+
         verboseLevel: "off",
         elevatedLevel: "off",
         bashElevated: {
@@ -372,7 +372,7 @@ describe("runReplyAgent token update", () => {
         config: params.config ?? { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude",
-        thinkLevel: "low",
+
         verboseLevel: "off",
         elevatedLevel: "off",
         bashElevated: { enabled: false, allowed: false, defaultLevel: "off" },
@@ -533,7 +533,7 @@ describe("runReplyAgent block streaming", () => {
         },
         provider: "anthropic",
         model: "claude",
-        thinkLevel: "low",
+
         verboseLevel: "off",
         elevatedLevel: "off",
         bashElevated: {
@@ -631,7 +631,7 @@ describe("runReplyAgent block streaming", () => {
         },
         provider: "anthropic",
         model: "claude",
-        thinkLevel: "low",
+
         verboseLevel: "off",
         elevatedLevel: "off",
         bashElevated: {
@@ -699,7 +699,7 @@ describe("runReplyAgent claude-cli routing", () => {
         config: { agents: { defaults: { runtime: "claude" } } },
         provider: "claude-cli",
         model: "opus-4.5",
-        thinkLevel: "low",
+
         verboseLevel: "off",
         elevatedLevel: "off",
         bashElevated: {
@@ -788,7 +788,7 @@ describe("runReplyAgent messaging tool suppression", () => {
         config: { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude",
-        thinkLevel: "low",
+
         verboseLevel: "off",
         elevatedLevel: "off",
         bashElevated: {
@@ -1010,7 +1010,7 @@ describe("runReplyAgent reminder commitment guard", () => {
         config: { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude",
-        thinkLevel: "low",
+
         verboseLevel: "off",
         elevatedLevel: "off",
         bashElevated: {
@@ -1102,7 +1102,7 @@ describe("runReplyAgent fallback provider routing", () => {
         config: { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude",
-        thinkLevel: "low",
+
         verboseLevel: "off",
         elevatedLevel: "off",
         bashElevated: {
@@ -1209,7 +1209,7 @@ describe("runReplyAgent response usage footer", () => {
         config: { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude",
-        thinkLevel: "low",
+
         verboseLevel: "off",
         elevatedLevel: "off",
         bashElevated: {
@@ -1304,7 +1304,7 @@ describe("runReplyAgent transient HTTP retry", () => {
         config: { agents: { defaults: { runtime: "claude" } } },
         provider: "anthropic",
         model: "claude",
-        thinkLevel: "low",
+
         verboseLevel: "off",
         elevatedLevel: "off",
         bashElevated: {

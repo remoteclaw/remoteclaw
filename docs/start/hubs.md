@@ -108,7 +108,6 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Elevated mode](/tools/elevated)
 - [Cron jobs](/automation/cron-jobs)
 - [Cron vs Heartbeat](/automation/cron-vs-heartbeat)
-- [Thinking + verbose](/tools/thinking)
 - [Sub-agents](/tools/subagents)
 - [Agent send CLI](/tools/agent-send)
 - [Terminal UI](/web/tui)

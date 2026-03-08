@@ -17,7 +17,6 @@ function createDefaultSessionStoreEntry() {
   return {
     updatedAt: Date.now() - 60_000,
     verboseLevel: "on",
-    thinkingLevel: "low",
     inputTokens: 2_000,
     outputTokens: 3_000,
     cacheRead: 2_000,

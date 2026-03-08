@@ -24,52 +24,18 @@ export type SessionsProps = {
     key: string,
     patch: {
       label?: string | null;
-      thinkingLevel?: string | null;
       verboseLevel?: string | null;
-      reasoningLevel?: string | null;
     },
   ) => void;
   onDelete: (key: string) => void;
 };
 
-const THINK_LEVELS = ["", "off", "minimal", "low", "medium", "high", "xhigh"] as const;
-const BINARY_THINK_LEVELS = ["", "off", "on"] as const;
 const VERBOSE_LEVELS = [
   { value: "", label: "inherit" },
   { value: "off", label: "off (explicit)" },
   { value: "on", label: "on" },
   { value: "full", label: "full" },
 ] as const;
-const REASONING_LEVELS = ["", "off", "on", "stream"] as const;
-
-function normalizeProviderId(provider?: string | null): string {
-  if (!provider) {
-    return "";
-  }
-  const normalized = provider.trim().toLowerCase();
-  if (normalized === "z.ai" || normalized === "z-ai") {
-    return "zai";
-  }
-  return normalized;
-}
-
-function isBinaryThinkingProvider(provider?: string | null): boolean {
-  return normalizeProviderId(provider) === "zai";
-}
-
-function resolveThinkLevelOptions(provider?: string | null): readonly string[] {
-  return isBinaryThinkingProvider(provider) ? BINARY_THINK_LEVELS : THINK_LEVELS;
-}
-
-function withCurrentOption(options: readonly string[], current: string): string[] {
-  if (!current) {
-    return [...options];
-  }
-  if (options.includes(current)) {
-    return [...options];
-  }
-  return [...options, current];
-}
 
 function withCurrentLabeledOption(
   options: readonly { value: string; label: string }[],
@@ -84,29 +50,6 @@ function withCurrentLabeledOption(
   return [...options, { value: current, label: `${current} (custom)` }];
 }
 
-function resolveThinkLevelDisplay(value: string, isBinary: boolean): string {
-  if (!isBinary) {
-    return value;
-  }
-  if (!value || value === "off") {
-    return value;
-  }
-  return "on";
-}
-
-function resolveThinkLevelPatchValue(value: string, isBinary: boolean): string | null {
-  if (!value) {
-    return null;
-  }
-  if (!isBinary) {
-    return value;
-  }
-  if (value === "on") {
-    return "low";
-  }
-  return value;
-}
-
 export function renderSessions(props: SessionsProps) {
   const rows = props.result?.sessions ?? [];
   return html`
@@ -117,7 +60,7 @@ export function renderSessions(props: SessionsProps) {
           <div class="card-sub">Active session keys and per-session overrides.</div>
         </div>
         <button class="btn" ?disabled=${props.loading} @click=${props.onRefresh}>
-          ${props.loading ? "Loading…" : "Refresh"}
+          ${props.loading ? "Loading\u2026" : "Refresh"}
         </button>
       </div>
 
@@ -195,9 +138,7 @@ export function renderSessions(props: SessionsProps) {
           <div>Kind</div>
           <div>Updated</div>
           <div>Tokens</div>
-          <div>Thinking</div>
           <div>Verbose</div>
-          <div>Reasoning</div>
           <div>Actions</div>
         </div>
         ${
@@ -222,14 +163,8 @@ function renderRow(
   disabled: boolean,
 ) {
   const updated = row.updatedAt ? formatRelativeTimestamp(row.updatedAt) : "n/a";
-  const rawThinking = row.thinkingLevel ?? "";
-  const isBinaryThinking = isBinaryThinkingProvider(row.modelProvider);
-  const thinking = resolveThinkLevelDisplay(rawThinking, isBinaryThinking);
-  const thinkLevels = withCurrentOption(resolveThinkLevelOptions(row.modelProvider), thinking);
   const verbose = row.verboseLevel ?? "";
   const verboseLevels = withCurrentLabeledOption(VERBOSE_LEVELS, verbose);
-  const reasoning = row.reasoningLevel ?? "";
-  const reasoningLevels = withCurrentOption(REASONING_LEVELS, reasoning);
   const displayName =
     typeof row.displayName === "string" && row.displayName.trim().length > 0
       ? row.displayName.trim()
@@ -266,24 +201,6 @@ function renderRow(
           ?disabled=${disabled}
           @change=${(e: Event) => {
             const value = (e.target as HTMLSelectElement).value;
-            onPatch(row.key, {
-              thinkingLevel: resolveThinkLevelPatchValue(value, isBinaryThinking),
-            });
-          }}
-        >
-          ${thinkLevels.map(
-            (level) =>
-              html`<option value=${level} ?selected=${thinking === level}>
-                ${level || "inherit"}
-              </option>`,
-          )}
-        </select>
-      </div>
-      <div>
-        <select
-          ?disabled=${disabled}
-          @change=${(e: Event) => {
-            const value = (e.target as HTMLSelectElement).value;
             onPatch(row.key, { verboseLevel: value || null });
           }}
         >
@@ -291,22 +208,6 @@ function renderRow(
             (level) =>
               html`<option value=${level.value} ?selected=${verbose === level.value}>
                 ${level.label}
-              </option>`,
-          )}
-        </select>
-      </div>
-      <div>
-        <select
-          ?disabled=${disabled}
-          @change=${(e: Event) => {
-            const value = (e.target as HTMLSelectElement).value;
-            onPatch(row.key, { reasoningLevel: value || null });
-          }}
-        >
-          ${reasoningLevels.map(
-            (level) =>
-              html`<option value=${level} ?selected=${reasoning === level}>
-                ${level || "inherit"}
               </option>`,
           )}
         </select>

@@ -1,13 +1,10 @@
 import { escapeRegExp } from "../../utils.js";
-import type { NoticeLevel, ReasoningLevel } from "../thinking.js";
+import type { NoticeLevel } from "../thinking.js";
 import {
   type ElevatedLevel,
   normalizeElevatedLevel,
   normalizeNoticeLevel,
-  normalizeReasoningLevel,
-  normalizeThinkLevel,
   normalizeVerboseLevel,
-  type ThinkLevel,
   type VerboseLevel,
 } from "../thinking.js";
 
@@ -88,24 +85,6 @@ const extractSimpleDirective = (
   };
 };
 
-export function extractThinkDirective(body?: string): {
-  cleaned: string;
-  thinkLevel?: ThinkLevel;
-  rawLevel?: string;
-  hasDirective: boolean;
-} {
-  if (!body) {
-    return { cleaned: "", hasDirective: false };
-  }
-  const extracted = extractLevelDirective(body, ["thinking", "think", "t"], normalizeThinkLevel);
-  return {
-    cleaned: extracted.cleaned,
-    thinkLevel: extracted.level,
-    rawLevel: extracted.rawLevel,
-    hasDirective: extracted.hasDirective,
-  };
-}
-
 export function extractVerboseDirective(body?: string): {
   cleaned: string;
   verboseLevel?: VerboseLevel;
@@ -160,24 +139,6 @@ export function extractElevatedDirective(body?: string): {
   };
 }
 
-export function extractReasoningDirective(body?: string): {
-  cleaned: string;
-  reasoningLevel?: ReasoningLevel;
-  rawLevel?: string;
-  hasDirective: boolean;
-} {
-  if (!body) {
-    return { cleaned: "", hasDirective: false };
-  }
-  const extracted = extractLevelDirective(body, ["reasoning", "reason"], normalizeReasoningLevel);
-  return {
-    cleaned: extracted.cleaned,
-    reasoningLevel: extracted.level,
-    rawLevel: extracted.rawLevel,
-    hasDirective: extracted.hasDirective,
-  };
-}
-
 export function extractStatusDirective(body?: string): {
   cleaned: string;
   hasDirective: boolean;
@@ -188,7 +149,7 @@ export function extractStatusDirective(body?: string): {
   return extractSimpleDirective(body, ["status"]);
 }
 
-export type { ElevatedLevel, NoticeLevel, ReasoningLevel, ThinkLevel, VerboseLevel };
+export type { ElevatedLevel, NoticeLevel, VerboseLevel };
 
 /**
  * Stub: exec directive parsing was removed as part of gutting bash/exec

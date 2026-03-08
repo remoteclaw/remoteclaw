@@ -7,13 +7,11 @@ type ExecAsk = "off" | "on-miss" | "always";
 
 import { extractModelDirective } from "../model.js";
 import type { MsgContext } from "../templating.js";
-import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "./directives.js";
+import type { ElevatedLevel, VerboseLevel } from "./directives.js";
 import {
   extractElevatedDirective,
   extractExecDirective,
-  extractReasoningDirective,
   extractStatusDirective,
-  extractThinkDirective,
   extractVerboseDirective,
 } from "./directives.js";
 import { stripMentions, stripStructuralPrefixes } from "./mentions.js";
@@ -22,15 +20,9 @@ import { extractQueueDirective } from "./queue.js";
 
 export type InlineDirectives = {
   cleaned: string;
-  hasThinkDirective: boolean;
-  thinkLevel?: ThinkLevel;
-  rawThinkLevel?: string;
   hasVerboseDirective: boolean;
   verboseLevel?: VerboseLevel;
   rawVerboseLevel?: string;
-  hasReasoningDirective: boolean;
-  reasoningLevel?: ReasoningLevel;
-  rawReasoningLevel?: string;
   hasElevatedDirective: boolean;
   elevatedLevel?: ElevatedLevel;
   rawElevatedLevel?: string;
@@ -74,23 +66,11 @@ export function parseInlineDirectives(
   },
 ): InlineDirectives {
   const {
-    cleaned: thinkCleaned,
-    thinkLevel,
-    rawLevel: rawThinkLevel,
-    hasDirective: hasThinkDirective,
-  } = extractThinkDirective(body);
-  const {
     cleaned: verboseCleaned,
     verboseLevel,
     rawLevel: rawVerboseLevel,
     hasDirective: hasVerboseDirective,
-  } = extractVerboseDirective(thinkCleaned);
-  const {
-    cleaned: reasoningCleaned,
-    reasoningLevel,
-    rawLevel: rawReasoningLevel,
-    hasDirective: hasReasoningDirective,
-  } = extractReasoningDirective(verboseCleaned);
+  } = extractVerboseDirective(body);
   const {
     cleaned: elevatedCleaned,
     elevatedLevel,
@@ -98,12 +78,12 @@ export function parseInlineDirectives(
     hasDirective: hasElevatedDirective,
   } = options?.disableElevated
     ? {
-        cleaned: reasoningCleaned,
+        cleaned: verboseCleaned,
         elevatedLevel: undefined,
         rawLevel: undefined,
         hasDirective: false,
       }
-    : extractElevatedDirective(reasoningCleaned);
+    : extractElevatedDirective(verboseCleaned);
   const {
     cleaned: execCleaned,
     execHost,
@@ -150,15 +130,9 @@ export function parseInlineDirectives(
 
   return {
     cleaned: queueCleaned,
-    hasThinkDirective,
-    thinkLevel,
-    rawThinkLevel,
     hasVerboseDirective,
     verboseLevel,
     rawVerboseLevel,
-    hasReasoningDirective,
-    reasoningLevel,
-    rawReasoningLevel,
     hasElevatedDirective,
     elevatedLevel,
     rawElevatedLevel,
@@ -204,9 +178,7 @@ export function isDirectiveOnly(params: {
 }): boolean {
   const { directives, cleanedBody, ctx, cfg, agentId, isGroup } = params;
   if (
-    !directives.hasThinkDirective &&
     !directives.hasVerboseDirective &&
-    !directives.hasReasoningDirective &&
     !directives.hasElevatedDirective &&
     !directives.hasExecDirective &&
     !directives.hasModelDirective &&

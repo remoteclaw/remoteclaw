@@ -42,12 +42,11 @@ describe("buildStatusMessage", () => {
         outputTokens: 800,
         totalTokens: 16_000,
         contextTokens: 32_000,
-        thinkingLevel: "low",
         verboseLevel: "on",
       },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
-      resolvedThink: "medium",
+
       resolvedVerbose: "off",
       queue: { mode: "collect", depth: 0 },
       modelAuth: "api-key",
@@ -64,7 +63,7 @@ describe("buildStatusMessage", () => {
     expect(normalized).toContain("Session: agent:main:main");
     expect(normalized).toContain("updated 10m ago");
     expect(normalized).toContain("Runtime: direct");
-    expect(normalized).toContain("Think: medium");
+    expect(normalized).not.toContain("Think:");
     expect(normalized).not.toContain("verbose");
     expect(normalized).toContain("elevated");
     expect(normalized).toContain("Queue: collect");
@@ -126,7 +125,7 @@ describe("buildStatusMessage", () => {
       sessionEntry: { sessionId: "v1", updatedAt: 0 },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
-      resolvedThink: "low",
+
       resolvedVerbose: "on",
       resolvedElevated: "on",
       queue: { mode: "collect", depth: 0 },
@@ -191,7 +190,7 @@ describe("buildStatusMessage", () => {
       sessionEntry: { sessionId: "v1", updatedAt: 0, elevatedLevel: "off" },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
-      resolvedThink: "low",
+
       resolvedVerbose: "off",
       queue: { mode: "collect", depth: 0 },
     });

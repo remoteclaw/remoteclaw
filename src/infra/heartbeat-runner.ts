@@ -315,16 +315,6 @@ function resolveHeartbeatSession(
   return { sessionKey: mainSessionKey, storePath, store, entry: mainEntry };
 }
 
-function resolveHeartbeatReasoningPayloads(
-  replyResult: ReplyPayload | ReplyPayload[] | undefined,
-): ReplyPayload[] {
-  const payloads = Array.isArray(replyResult) ? replyResult : replyResult ? [replyResult] : [];
-  return payloads.filter((payload) => {
-    const text = typeof payload.text === "string" ? payload.text : "";
-    return text.trimStart().startsWith("Reasoning:");
-  });
-}
-
 async function restoreHeartbeatUpdatedAt(params: {
   storePath: string;
   sessionKey: string;
@@ -687,10 +677,6 @@ export async function runHeartbeatOnce(opts: {
       : { isHeartbeat: true, suppressToolErrorWarnings };
     const replyResult = await getReplyFromConfig(ctx, replyOpts, cfg);
     const replyPayload = resolveHeartbeatReplyPayload(replyResult);
-    const includeReasoning = heartbeat?.includeReasoning === true;
-    const reasoningPayloads = includeReasoning
-      ? resolveHeartbeatReasoningPayloads(replyResult).filter((payload) => payload !== replyPayload)
-      : [];
 
     if (
       !replyPayload ||
@@ -725,7 +711,7 @@ export async function runHeartbeatOnce(opts: {
       normalized.shouldSkip = false;
     }
     const shouldSkipMain = normalized.shouldSkip && !normalized.hasMedia && !hasExecCompletion;
-    if (shouldSkipMain && reasoningPayloads.length === 0) {
+    if (shouldSkipMain) {
       await restoreHeartbeatUpdatedAt({
         storePath,
         sessionKey,
@@ -783,13 +769,7 @@ export async function runHeartbeatOnce(opts: {
       return { status: "ran", durationMs: Date.now() - startedAt };
     }
 
-    // Reasoning payloads are text-only; any attachments stay on the main reply.
-    const previewText = shouldSkipMain
-      ? reasoningPayloads
-          .map((payload) => payload.text)
-          .filter((text): text is string => Boolean(text?.trim()))
-          .join("\n")
-      : normalized.text;
+    const previewText = normalized.text;
 
     if (delivery.channel === "none" || !delivery.to) {
       emitHeartbeatEvent({
@@ -856,15 +836,10 @@ export async function runHeartbeatOnce(opts: {
       agentId,
       threadId: delivery.threadId,
       payloads: [
-        ...reasoningPayloads,
-        ...(shouldSkipMain
-          ? []
-          : [
-              {
-                text: normalized.text,
-                mediaUrls,
-              },
-            ]),
+        {
+          text: normalized.text,
+          mediaUrls,
+        },
       ],
       deps: opts.deps,
     });

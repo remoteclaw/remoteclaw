@@ -34,7 +34,6 @@ export type FallbackIndicatorStatus = {
 export type ChatProps = {
   sessionKey: string;
   onSessionKeyChange: (next: string) => void;
-  thinkingLevel: string | null;
   showThinking: boolean;
   loading: boolean;
   sending: boolean;
@@ -241,9 +240,6 @@ export function renderChat(props: ChatProps) {
   const canCompose = props.connected;
   const isBusy = props.sending || props.stream !== null;
   const canAbort = Boolean(props.canAbort && props.onAbort);
-  const activeSession = props.sessions?.sessions?.find((row) => row.key === props.sessionKey);
-  const reasoningLevel = activeSession?.reasoningLevel ?? "off";
-  const showReasoning = props.showThinking && reasoningLevel !== "off";
   const assistantIdentity = {
     name: props.assistantName,
     avatar: props.assistantAvatar ?? props.assistantAvatarUrl ?? null,
@@ -302,7 +298,7 @@ export function renderChat(props: ChatProps) {
           if (item.kind === "group") {
             return renderMessageGroup(item, {
               onOpenSidebar: props.onOpenSidebar,
-              showReasoning,
+              showReasoning: false,
               assistantName: props.assistantName,
               assistantAvatar: assistantIdentity.avatar,
             });

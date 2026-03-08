@@ -10,7 +10,7 @@ struct WebChatSwiftUISmokeTests {
     private struct TestTransport: RemoteClawChatTransport, Sendable {
         func requestHistory(sessionKey: String) async throws -> RemoteClawChatHistoryPayload {
             let json = """
-            {"sessionKey":"\(sessionKey)","sessionId":null,"messages":[],"thinkingLevel":"off"}
+            {"sessionKey":"\(sessionKey)","sessionId":null,"messages":[]}
             """
             return try JSONDecoder().decode(RemoteClawChatHistoryPayload.self, from: Data(json.utf8))
         }

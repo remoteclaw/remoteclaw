@@ -1,15 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { parseModelRef } from "../agents/provider-utils.js";
 import { normalizeGroupActivation } from "../auto-reply/group-activation.js";
-import {
-  formatThinkingLevels,
-  formatXHighModelHint,
-  normalizeElevatedLevel,
-  normalizeReasoningLevel,
-  normalizeThinkLevel,
-  normalizeUsageDisplay,
-  supportsXHighThinking,
-} from "../auto-reply/thinking.js";
+import { normalizeElevatedLevel, normalizeUsageDisplay } from "../auto-reply/thinking.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
 import { isSubagentSessionKey } from "../routing/session-key.js";
@@ -133,24 +125,6 @@ export async function applySessionsPatchToStore(params: {
     }
   }
 
-  if ("thinkingLevel" in patch) {
-    const raw = patch.thinkingLevel;
-    if (raw === null) {
-      // Clear the override and fall back to model default
-      delete next.thinkingLevel;
-    } else if (raw !== undefined) {
-      const normalized = normalizeThinkLevel(String(raw));
-      if (!normalized) {
-        const hintProvider = existing?.providerOverride?.trim() || resolvedDefault.provider;
-        const hintModel = existing?.modelOverride?.trim() || resolvedDefault.model;
-        return invalid(
-          `invalid thinkingLevel (use ${formatThinkingLevels(hintProvider, hintModel, "|")})`,
-        );
-      }
-      next.thinkingLevel = normalized;
-    }
-  }
-
   if ("verboseLevel" in patch) {
     const raw = patch.verboseLevel;
     const parsed = parseVerboseOverride(raw);
@@ -158,21 +132,6 @@ export async function applySessionsPatchToStore(params: {
       return invalid(parsed.error);
     }
     applyVerboseOverride(next, parsed.value);
-  }
-
-  if ("reasoningLevel" in patch) {
-    const raw = patch.reasoningLevel;
-    if (raw === null) {
-      delete next.reasoningLevel;
-    } else if (raw !== undefined) {
-      const normalized = normalizeReasoningLevel(String(raw));
-      if (!normalized) {
-        return invalid('invalid reasoningLevel (use "on"|"off"|"stream")');
-      }
-      // Persist "off" explicitly so that resolveDefaultReasoningLevel()
-      // does not re-enable reasoning for capable models (#24406).
-      next.reasoningLevel = normalized;
-    }
   }
 
   if ("responseUsage" in patch) {
@@ -292,17 +251,6 @@ export async function applySessionsPatchToStore(params: {
       delete next.fallbackNoticeSelectedModel;
       delete next.fallbackNoticeActiveModel;
       delete next.fallbackNoticeReason;
-    }
-  }
-
-  if (next.thinkingLevel === "xhigh") {
-    const effectiveProvider = next.providerOverride ?? resolvedDefault.provider;
-    const effectiveModel = next.modelOverride ?? resolvedDefault.model;
-    if (!supportsXHighThinking(effectiveProvider, effectiveModel)) {
-      if ("thinkingLevel" in patch) {
-        return invalid(`thinkingLevel "xhigh" is only supported for ${formatXHighModelHint()}`);
-      }
-      next.thinkingLevel = "high";
     }
   }
 

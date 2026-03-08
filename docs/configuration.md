@@ -313,7 +313,6 @@ Configure agent defaults and define multiple agents:
       runtime: "claude",
       workspace: "~/projects",
       contextTokens: 200000,
-      thinkingDefault: "medium",
     },
     list: [
       {
@@ -333,17 +332,16 @@ Configure agent defaults and define multiple agents:
 
 Key agent default options:
 
-| Key                               | Type          | Description                                                        |
-| --------------------------------- | ------------- | ------------------------------------------------------------------ |
-| `agents.defaults.runtime`         | string        | Default agent CLI (`claude`, `gemini`, `codex`, `opencode`)        |
-| `agents.defaults.model`           | string/object | Default model                                                      |
-| `agents.defaults.workspace`       | string        | Workspace root directory                                           |
-| `agents.defaults.contextTokens`   | number        | Context window size                                                |
-| `agents.defaults.thinkingDefault` | string        | Thinking depth: `off`, `minimal`, `low`, `medium`, `high`, `xhigh` |
-| `agents.defaults.timeoutSeconds`  | number        | Agent response timeout                                             |
-| `agents.defaults.maxConcurrent`   | number        | Max concurrent sessions                                            |
-| `agents.defaults.typingMode`      | string        | Typing indicator: `never`, `instant`, `thinking`, `message`        |
-| `agents.defaults.humanDelay.mode` | string        | Simulated delay: `off`, `natural`, `custom`                        |
+| Key                               | Type          | Description                                                 |
+| --------------------------------- | ------------- | ----------------------------------------------------------- |
+| `agents.defaults.runtime`         | string        | Default agent CLI (`claude`, `gemini`, `codex`, `opencode`) |
+| `agents.defaults.model`           | string/object | Default model                                               |
+| `agents.defaults.workspace`       | string        | Workspace root directory                                    |
+| `agents.defaults.contextTokens`   | number        | Context window size                                         |
+| `agents.defaults.timeoutSeconds`  | number        | Agent response timeout                                      |
+| `agents.defaults.maxConcurrent`   | number        | Max concurrent sessions                                     |
+| `agents.defaults.typingMode`      | string        | Typing indicator: `never`, `instant`, `thinking`, `message` |
+| `agents.defaults.humanDelay.mode` | string        | Simulated delay: `off`, `natural`, `custom`                 |
 
 ## Gateway
 

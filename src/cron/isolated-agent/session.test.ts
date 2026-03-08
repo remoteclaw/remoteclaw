@@ -48,14 +48,12 @@ describe("resolveCronSession", () => {
         updatedAt: 1000,
         modelOverride: "deepseek-v3-4bit-mlx",
         providerOverride: "inferencer",
-        thinkingLevel: "high",
         model: "k2p5",
       },
     });
 
     expect(result.sessionEntry.modelOverride).toBe("deepseek-v3-4bit-mlx");
     expect(result.sessionEntry.providerOverride).toBe("inferencer");
-    expect(result.sessionEntry.thinkingLevel).toBe("high");
     // The model field (last-used model) should also be preserved
     expect(result.sessionEntry.model).toBe("k2p5");
   });

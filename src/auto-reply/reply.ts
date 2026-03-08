@@ -1,8 +1,6 @@
 export {
   extractElevatedDirective,
   extractExecDirective,
-  extractReasoningDirective,
-  extractThinkDirective,
   extractVerboseDirective,
 } from "./reply/directives.js";
 export { getReplyFromConfig } from "./reply/get-reply.js";

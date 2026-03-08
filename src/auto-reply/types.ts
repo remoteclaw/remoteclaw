@@ -10,7 +10,6 @@ export type BlockReplyContext = {
 export type ModelSelectedContext = {
   provider: string;
   model: string;
-  thinkLevel: string | undefined;
 };
 
 export type GetReplyOptions = {
@@ -42,7 +41,7 @@ export type GetReplyOptions = {
   /** Called when a tool phase starts/updates, before summary payloads are emitted. */
   onToolStart?: (payload: { name?: string; phase?: string }) => Promise<void> | void;
   /** Called when the actual model is selected (including after fallback).
-   * Use this to get model/provider/thinkLevel for responsePrefix template interpolation. */
+   * Use this to get model/provider for responsePrefix template interpolation. */
   onModelSelected?: (ctx: ModelSelectedContext) => void;
   disableBlockStreaming?: boolean;
   /** Timeout for block reply delivery (ms). */

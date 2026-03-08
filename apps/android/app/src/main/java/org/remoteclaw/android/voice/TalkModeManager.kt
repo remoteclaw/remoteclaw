@@ -414,7 +414,6 @@ class TalkModeManager(
       buildJsonObject {
         put("sessionKey", JsonPrimitive(mainSessionKey.ifBlank { "main" }))
         put("message", JsonPrimitive(message))
-        put("thinking", JsonPrimitive("low"))
         put("timeoutMs", JsonPrimitive(30_000))
         put("idempotencyKey", JsonPrimitive(runId))
       }

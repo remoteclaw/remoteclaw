@@ -8,7 +8,7 @@ import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
-import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
+import type { ElevatedLevel, VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { resolveBlockStreamingChunking } from "./block-streaming.js";
 import { buildCommandContext } from "./commands.js";
@@ -42,8 +42,6 @@ export async function createModelSelectionState(params: {
     allowedModelKeys: new Set<string>(),
     allowedModelCatalog: [] as Array<{ id: string; provider: string }>,
     resetModelOverride: false,
-    resolveDefaultThinkingLevel: async (): Promise<ThinkLevel | undefined> => "off" as ThinkLevel,
-    resolveDefaultReasoningLevel: async (): Promise<"on" | "off"> => "off" as const,
     needsModelCatalog: false,
   };
 }
@@ -74,9 +72,7 @@ export type ReplyDirectiveContinuation = {
   elevatedAllowed: boolean;
   elevatedFailures: Array<{ gate: string; key: string }>;
   defaultActivation: ReturnType<typeof defaultGroupActivation>;
-  resolvedThinkLevel: ThinkLevel | undefined;
   resolvedVerboseLevel: VerboseLevel | undefined;
-  resolvedReasoningLevel: ReasoningLevel;
   resolvedElevatedLevel: ElevatedLevel;
   execOverrides?: ExecOverrides;
   blockStreamingEnabled: boolean;
@@ -245,9 +241,7 @@ export async function resolveReplyDirectives(params: {
     }
   }
   const hasInlineDirective =
-    parsedDirectives.hasThinkDirective ||
     parsedDirectives.hasVerboseDirective ||
-    parsedDirectives.hasReasoningDirective ||
     parsedDirectives.hasElevatedDirective ||
     parsedDirectives.hasExecDirective ||
     parsedDirectives.hasModelDirective ||
@@ -275,9 +269,7 @@ export async function resolveReplyDirectives(params: {
     ? parsedDirectives
     : {
         ...parsedDirectives,
-        hasThinkDirective: false,
         hasVerboseDirective: false,
-        hasReasoningDirective: false,
         hasStatusDirective: false,
         hasModelDirective: false,
         hasQueueDirective: false,
@@ -355,19 +347,10 @@ export async function resolveReplyDirectives(params: {
     groupResolution,
   });
   const defaultActivation = defaultGroupActivation(requireMention);
-  const resolvedThinkLevel =
-    directives.thinkLevel ??
-    (sessionEntry?.thinkingLevel as ThinkLevel | undefined) ??
-    (agentCfg?.thinkingDefault as ThinkLevel | undefined);
-
   const resolvedVerboseLevel =
     directives.verboseLevel ??
     (sessionEntry?.verboseLevel as VerboseLevel | undefined) ??
     (agentCfg?.verboseDefault as VerboseLevel | undefined);
-  let resolvedReasoningLevel: ReasoningLevel =
-    directives.reasoningLevel ??
-    (sessionEntry?.reasoningLevel as ReasoningLevel | undefined) ??
-    "off";
   const resolvedElevatedLevel = elevatedAllowed
     ? (directives.elevatedLevel ??
       (sessionEntry?.elevatedLevel as ElevatedLevel | undefined) ??
@@ -407,20 +390,6 @@ export async function resolveReplyDirectives(params: {
   });
   provider = modelState.provider;
   model = modelState.model;
-
-  // When neither directive nor session set reasoning, default to model capability
-  // (e.g. OpenRouter with reasoning: true). Skip auto-enabling when thinking is
-  // active, including model-inferred defaults, or internal thinking blocks can
-  // be emitted as visible "Reasoning:" messages.
-  const reasoningExplicitlySet =
-    directives.reasoningLevel !== undefined ||
-    (sessionEntry?.reasoningLevel !== undefined && sessionEntry?.reasoningLevel !== null);
-  const effectiveThinkingForReasoning =
-    resolvedThinkLevel ?? (await modelState.resolveDefaultThinkingLevel());
-  const thinkingActive = effectiveThinkingForReasoning !== "off";
-  if (!reasoningExplicitlySet && resolvedReasoningLevel === "off" && !thinkingActive) {
-    resolvedReasoningLevel = await modelState.resolveDefaultReasoningLevel();
-  }
 
   let contextTokens = resolveContextTokens({
     agentCfg,
@@ -493,9 +462,7 @@ export async function resolveReplyDirectives(params: {
       elevatedAllowed,
       elevatedFailures,
       defaultActivation,
-      resolvedThinkLevel,
       resolvedVerboseLevel,
-      resolvedReasoningLevel,
       resolvedElevatedLevel,
       execOverrides,
       blockStreamingEnabled,

@@ -20,7 +20,7 @@ import {
 import type { MediaUnderstandingDecision } from "../../media-understanding/types.js";
 import { normalizeGroupActivation } from "../group-activation.js";
 import { buildStatusMessage } from "../status.js";
-import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
+import type { ElevatedLevel, VerboseLevel } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";
 import type { CommandContext } from "./commands-types.js";
 import { getFollowupQueueDepth, resolveQueueSettings } from "./queue.js";
@@ -37,11 +37,8 @@ export async function buildStatusReply(params: {
   provider: string;
   model: string;
   contextTokens: number;
-  resolvedThinkLevel?: ThinkLevel;
   resolvedVerboseLevel: VerboseLevel;
-  resolvedReasoningLevel: ReasoningLevel;
   resolvedElevatedLevel?: ElevatedLevel;
-  resolveDefaultThinkingLevel: () => Promise<ThinkLevel | undefined>;
   isGroup: boolean;
   defaultGroupActivation: () => "always" | "mention";
   mediaDecisions?: MediaUnderstandingDecision[];
@@ -57,11 +54,8 @@ export async function buildStatusReply(params: {
     provider,
     model,
     contextTokens,
-    resolvedThinkLevel,
     resolvedVerboseLevel,
-    resolvedReasoningLevel,
     resolvedElevatedLevel,
-    resolveDefaultThinkingLevel,
     isGroup,
     defaultGroupActivation,
   } = params;
@@ -162,7 +156,6 @@ export async function buildStatusReply(params: {
     agent: {
       ...agentDefaults,
       contextTokens,
-      thinkingDefault: agentDefaults.thinkingDefault,
       verboseDefault: agentDefaults.verboseDefault,
       elevatedDefault: agentDefaults.elevatedDefault,
     },
@@ -173,9 +166,7 @@ export async function buildStatusReply(params: {
     sessionScope,
     sessionStorePath: storePath,
     groupActivation,
-    resolvedThink: resolvedThinkLevel ?? (await resolveDefaultThinkingLevel()),
     resolvedVerbose: resolvedVerboseLevel,
-    resolvedReasoning: resolvedReasoningLevel,
     resolvedElevated: resolvedElevatedLevel,
     modelAuth: selectedModelAuth,
     activeModelAuth,

@@ -27,9 +27,7 @@ export type AgentEvent = {
 export type ResponseUsageMode = "on" | "off" | "tokens" | "full";
 
 export type SessionInfo = {
-  thinkingLevel?: string;
   verboseLevel?: string;
-  reasoningLevel?: string;
   model?: string;
   modelProvider?: string;
   contextTokens?: number | null;

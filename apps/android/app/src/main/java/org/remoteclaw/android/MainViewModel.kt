@@ -66,7 +66,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
   val chatMessages = runtime.chatMessages
   val chatError: StateFlow<String?> = runtime.chatError
   val chatHealthOk: StateFlow<Boolean> = runtime.chatHealthOk
-  val chatThinkingLevel: StateFlow<String> = runtime.chatThinkingLevel
   val chatStreamingAssistantText: StateFlow<String?> = runtime.chatStreamingAssistantText
   val chatPendingToolCalls = runtime.chatPendingToolCalls
   val chatSessions = runtime.chatSessions
@@ -192,10 +191,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     runtime.refreshChatSessions(limit = limit)
   }
 
-  fun setChatThinkingLevel(level: String) {
-    runtime.setChatThinkingLevel(level)
-  }
-
   fun switchChatSession(sessionKey: String) {
     runtime.switchChatSession(sessionKey)
   }
@@ -204,7 +199,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     runtime.abortChat()
   }
 
-  fun sendChat(message: String, thinking: String, attachments: List<OutgoingAttachment>) {
-    runtime.sendChat(message = message, thinking = thinking, attachments = attachments)
+  fun sendChat(message: String, attachments: List<OutgoingAttachment>) {
+    runtime.sendChat(message = message, attachments = attachments)
   }
 }

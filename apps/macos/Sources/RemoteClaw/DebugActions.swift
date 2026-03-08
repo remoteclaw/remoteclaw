@@ -206,7 +206,7 @@ enum DebugActions {
         return path
     }
 
-    // MARK: - Sessions (thinking / verbose)
+    // MARK: - Sessions (verbose)
 
     static func recentSessions(limit: Int = sessionMenuLimit) async -> [SessionRow] {
         guard let snapshot = try? await SessionLoader.loadSnapshot(limit: limit) else { return [] }
@@ -215,11 +215,9 @@ enum DebugActions {
 
     static func updateSession(
         key: String,
-        thinking: String?,
         verbose: String?) async throws
     {
         var params: [String: AnyHashable] = ["key": AnyHashable(key)]
-        params["thinkingLevel"] = thinking.map(AnyHashable.init) ?? AnyHashable(NSNull())
         params["verboseLevel"] = verbose.map(AnyHashable.init) ?? AnyHashable(NSNull())
         _ = try await ControlChannel.shared.request(method: "sessions.patch", params: params)
     }

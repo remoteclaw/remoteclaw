@@ -145,16 +145,16 @@ describe("gateway server sessions", () => {
 
     const patched = await rpcReq<{ ok: true; key: string }>(requireWs(), "sessions.patch", {
       key: "main",
-      thinkingLevel: "medium",
+      verboseLevel: "on",
     });
     expect(patched.ok).toBe(true);
     expect(patched.payload?.key).toBe("agent:ops:work");
 
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
       string,
-      { thinkingLevel?: string }
+      { verboseLevel?: string }
     >;
-    expect(stored["agent:ops:work"]?.thinkingLevel).toBe("medium");
+    expect(stored["agent:ops:work"]?.verboseLevel).toBe("on");
     expect(stored.main).toBeUndefined();
   });
 });

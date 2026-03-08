@@ -5,12 +5,40 @@ import type { ReplyPayload } from "../auto-reply/types.js";
 /** Core interface that all CLI runtime implementations (Claude, Gemini, Codex, OpenCode) implement. */
 export interface AgentRuntime {
   execute(params: AgentExecuteParams): AsyncIterable<AgentEvent>;
+
+  /** Declare which media types this runtime can handle natively. */
+  readonly mediaCapabilities?: {
+    /** MIME type prefixes accepted as inbound media (e.g., ["image/", "audio/", "video/"]). */
+    acceptsInbound?: string[];
+    /** Whether the runtime can emit media in responses. */
+    emitsOutbound?: boolean;
+  };
 }
+
+// ── Media Attachments ─────────────────────────────────────────────────
+
+/** A media attachment included with a prompt or produced by an agent. */
+export type MediaAttachment = {
+  /** MIME type (e.g., "image/jpeg", "audio/ogg", "video/mp4"). */
+  mimeType: string;
+  /** Local file path to the media (preferred for CLI runtimes that accept file paths). */
+  filePath?: string | undefined;
+  /** Base64-encoded content (for runtimes that accept inline data). */
+  base64?: string | undefined;
+  /** Original URL (for reference/logging; runtimes should prefer filePath or base64). */
+  sourceUrl?: string | undefined;
+  /** Original filename (for display/logging). */
+  fileName?: string | undefined;
+};
+
+// ── Agent Execute Params ──────────────────────────────────────────────
 
 /** Input to {@link AgentRuntime.execute}. */
 export type AgentExecuteParams = {
   /** The user prompt to send to the agent. */
   prompt: string;
+  /** Media attachments to include with the prompt. */
+  media?: MediaAttachment[] | undefined;
   /** Resume an existing session (CLI-specific session identifier). */
   sessionId?: string | undefined;
   /** MCP server configurations to expose to the agent. */
@@ -37,6 +65,7 @@ export type McpServerConfig = {
 /** Discriminated union of events emitted during CLI subprocess execution. */
 export type AgentEvent =
   | AgentTextEvent
+  | AgentMediaEvent
   | AgentToolUseEvent
   | AgentToolResultEvent
   | AgentErrorEvent
@@ -45,6 +74,11 @@ export type AgentEvent =
 export type AgentTextEvent = {
   type: "text";
   text: string;
+};
+
+export type AgentMediaEvent = {
+  type: "media";
+  media: MediaAttachment;
 };
 
 export type AgentToolUseEvent = {
@@ -78,6 +112,8 @@ export type AgentDoneEvent = {
 export type AgentRunResult = {
   /** Accumulated text output from the agent. */
   text: string;
+  /** Media attachments produced by the agent (non-MCP path). */
+  media?: MediaAttachment[] | undefined;
   /** CLI-specific session identifier for resumption. */
   sessionId: string | undefined;
   /** Wall-clock duration of the entire run in milliseconds. */

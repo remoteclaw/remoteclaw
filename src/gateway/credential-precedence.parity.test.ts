@@ -146,20 +146,20 @@ describe("gateway credential precedence parity", () => {
           mode: "local",
           auth: {
             token: "config-token",
-            password: "config-password",
+            password: "config-password", // pragma: allowlist secret
           },
         },
       } as RemoteClawConfig,
       env: {
         REMOTECLAW_GATEWAY_TOKEN: "env-token",
-        REMOTECLAW_GATEWAY_PASSWORD: "env-password",
+        REMOTECLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
         REMOTECLAW_SERVICE_KIND: "gateway",
       } as NodeJS.ProcessEnv,
       expected: {
-        call: { token: "config-token", password: "env-password" },
-        probe: { token: "config-token", password: "env-password" },
-        status: { token: "config-token", password: "env-password" },
-        auth: { token: "config-token", password: "config-password" },
+        call: { token: "config-token", password: "env-password" }, // pragma: allowlist secret
+        probe: { token: "config-token", password: "env-password" }, // pragma: allowlist secret
+        status: { token: "config-token", password: "env-password" }, // pragma: allowlist secret
+        auth: { token: "config-token", password: "config-password" }, // pragma: allowlist secret
       },
     },
   ];

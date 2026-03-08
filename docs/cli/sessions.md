@@ -39,8 +39,8 @@ JSON examples:
   "count": 2,
   "activeMinutes": null,
   "sessions": [
-    { "agentId": "main", "key": "agent:main:main", "model": "gpt-5" },
-    { "agentId": "work", "key": "agent:work:main", "model": "claude-opus-4-5" }
+    { "agentId": "main", "key": "agent:main:main", "runtime": "claude" },
+    { "agentId": "work", "key": "agent:work:main", "runtime": "claude" }
   ]
 }
 ```

@@ -71,8 +71,6 @@ Payload:
   "deliver": true,
   "channel": "last",
   "to": "+15551234567",
-  "model": "openai/gpt-5.2-mini",
-  "thinking": "low",
   "timeoutSeconds": 120
 }
 ```
@@ -85,8 +83,6 @@ Payload:
 - `deliver` optional (boolean): If `true`, the agent's response will be sent to the messaging channel. Defaults to `true`. Responses that are only heartbeat acknowledgments are automatically skipped.
 - `channel` optional (string): The messaging channel for delivery. One of: `last`, `whatsapp`, `telegram`, `discord`, `slack`, `mattermost` (plugin), `signal`, `imessage`, `msteams`. Defaults to `last`.
 - `to` optional (string): The recipient identifier for the channel (e.g., phone number for WhatsApp/Signal, chat ID for Telegram, channel ID for Discord/Slack/Mattermost (plugin), conversation ID for MS Teams). Defaults to the last recipient in the main session.
-- `model` optional (string): Model override (e.g., `anthropic/claude-3-5-sonnet` or an alias). Must be in the allowed model list if restricted.
-- `thinking` optional (string): Thinking level override (e.g., `low`, `medium`, `high`).
 - `timeoutSeconds` optional (number): Maximum duration for the agent run in seconds.
 
 Effect:
@@ -180,19 +176,6 @@ curl -X POST http://127.0.0.1:18789/hooks/agent \
   -H 'Content-Type: application/json' \
   -d '{"message":"Summarize inbox","name":"Email","wakeMode":"next-heartbeat"}'
 ```
-
-### Use a different model
-
-Add `model` to the agent payload (or mapping) to override the model for that run:
-
-```bash
-curl -X POST http://127.0.0.1:18789/hooks/agent \
-  -H 'x-remoteclaw-token: SECRET' \
-  -H 'Content-Type: application/json' \
-  -d '{"message":"Summarize inbox","name":"Email","model":"openai/gpt-5.2-mini"}'
-```
-
-If you enforce `agents.defaults.models`, make sure the override model is included there.
 
 ```bash
 curl -X POST http://127.0.0.1:18789/hooks/gmail \

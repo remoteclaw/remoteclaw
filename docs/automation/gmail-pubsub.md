@@ -49,7 +49,6 @@ that sets `deliver` + optional `channel`/`to`:
         name: "Gmail",
         sessionKey: "hook:gmail:{{messages[0].id}}",
         messageTemplate: "New email from {{messages[0].from}}\nSubject: {{messages[0].subject}}\n{{messages[0].snippet}}\n{{messages[0].body}}",
-        model: "openai/gpt-5.2-mini",
         deliver: true,
         channel: "last",
         // to: "+15551234567"
@@ -62,28 +61,8 @@ that sets `deliver` + optional `channel`/`to`:
 If you want a fixed channel, set `channel` + `to`. Otherwise `channel: "last"`
 uses the last delivery route (falls back to WhatsApp).
 
-To force a cheaper model for Gmail runs, set `model` in the mapping
-(`provider/model` or alias). If you enforce `agents.defaults.models`, include it there.
-
-To set a default model and thinking level specifically for Gmail hooks, add
-`hooks.gmail.model` / `hooks.gmail.thinking` in your config:
-
-```json5
-{
-  hooks: {
-    gmail: {
-      model: "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-      thinking: "off",
-    },
-  },
-}
-```
-
 Notes:
 
-- Per-hook `model`/`thinking` in the mapping still overrides these defaults.
-- Fallback order: `hooks.gmail.model` → `agents.defaults.model.fallbacks` → primary (auth/rate-limit/timeouts).
-- If `agents.defaults.models` is set, the Gmail model must be in the allowlist.
 - Gmail hook content is wrapped with external-content safety boundaries by default.
   To disable (dangerous), set `hooks.gmail.allowUnsafeExternalContent: true`.
 

@@ -18,7 +18,7 @@ Both heartbeats and cron jobs let you run tasks on a schedule. This guide helps 
 | Check inbox every 30 min             | Heartbeat           | Batches with other checks, context-aware |
 | Send daily report at 9am sharp       | Cron (isolated)     | Exact timing needed                      |
 | Monitor calendar for upcoming events | Heartbeat           | Natural fit for periodic awareness       |
-| Run weekly deep analysis             | Cron (isolated)     | Standalone task, can use different model |
+| Run weekly deep analysis             | Cron (isolated)     | Standalone task, isolated session        |
 | Remind me in 20 minutes              | Cron (main, `--at`) | One-shot with precise timing             |
 | Background project health check      | Heartbeat           | Piggybacks on existing cycle             |
 
@@ -82,7 +82,7 @@ per-job offset in a 0-5 minute window.
 
 - **Exact timing required**: "Send this at 9:00 AM every Monday" (not "sometime around 9").
 - **Standalone tasks**: Tasks that don't need conversational context.
-- **Different model/thinking**: Heavy analysis that warrants a more powerful model.
+- **Heavy analysis**: Standalone tasks that benefit from isolated sessions.
 - **One-shot reminders**: "Remind me in 20 minutes" with `--at`.
 - **Noisy/frequent tasks**: Tasks that would clutter main session history.
 - **External triggers**: Tasks that should run independently of whether the agent is otherwise active.
@@ -93,7 +93,6 @@ per-job offset in a 0-5 minute window.
 - **Built-in load spreading**: recurring top-of-hour schedules are staggered by up to 5 minutes by default.
 - **Per-job control**: override stagger with `--stagger <duration>` or force exact timing with `--exact`.
 - **Session isolation**: Runs in `cron:<jobId>` without polluting main history.
-- **Model overrides**: Use a cheaper or more powerful model per job.
 - **Delivery control**: Isolated jobs default to `announce` (summary); choose `none` as needed.
 - **Immediate delivery**: Announce mode posts directly without waiting for heartbeat.
 - **No agent context needed**: Runs even if main session is idle or compacted.
@@ -108,13 +107,12 @@ remoteclaw cron add \
   --tz "America/New_York" \
   --session isolated \
   --message "Generate today's briefing: weather, calendar, top emails, news summary." \
-  --model opus \
   --announce \
   --channel whatsapp \
   --to "+15551234567"
 ```
 
-This runs at exactly 7:00 AM New York time, uses Opus for quality, and announces a summary directly to WhatsApp.
+This runs at exactly 7:00 AM New York time and announces a summary directly to WhatsApp.
 
 ### Cron example: One-shot reminder
 
@@ -149,8 +147,8 @@ Is this a one-shot reminder?
   YES -> Use cron with --at
   NO  -> Continue...
 
-Does it need a different model or thinking level?
-  YES -> Use cron (isolated) with --model/--thinking
+Does it need an isolated session?
+  YES -> Use cron (isolated)
   NO  -> Use heartbeat
 ```
 
@@ -181,7 +179,7 @@ The most efficient setup uses **both**:
 remoteclaw cron add --name "Morning brief" --cron "0 7 * * *" --session isolated --message "..." --announce
 
 # Weekly project review on Mondays at 9am
-remoteclaw cron add --name "Weekly review" --cron "0 9 * * 1" --session isolated --message "..." --model opus
+remoteclaw cron add --name "Weekly review" --cron "0 9 * * 1" --session isolated --message "..."
 
 # One-shot reminder
 remoteclaw cron add --name "Call back" --at "2h" --session main --system-event "Call back the client" --wake now
@@ -196,7 +194,7 @@ Both heartbeat and cron can interact with the main session, but differently:
 | Session | Main                            | Main (via system event)  | `cron:<jobId>`             |
 | History | Shared                          | Shared                   | Fresh each run             |
 | Context | Full                            | Full                     | None (starts clean)        |
-| Model   | Main session model              | Main session model       | Can override               |
+| Model   | CLI agent default               | CLI agent default        | CLI agent default          |
 | Output  | Delivered if not `HEARTBEAT_OK` | Heartbeat prompt + event | Announce summary (default) |
 
 ### When to use main session cron
@@ -221,7 +219,6 @@ remoteclaw cron add \
 Use `--session isolated` when you want:
 
 - A clean slate without prior context
-- Different model or thinking settings
 - Announce summaries directly to a channel
 - History that doesn't clutter main session
 
@@ -231,8 +228,6 @@ remoteclaw cron add \
   --cron "0 6 * * 0" \
   --session isolated \
   --message "Weekly codebase analysis..." \
-  --model opus \
-  --thinking high \
   --announce
 ```
 
@@ -242,14 +237,14 @@ remoteclaw cron add \
 | --------------- | ------------------------------------------------------- |
 | Heartbeat       | One turn every N minutes; scales with HEARTBEAT.md size |
 | Cron (main)     | Adds event to next heartbeat (no isolated turn)         |
-| Cron (isolated) | Full agent turn per job; can use cheaper model          |
+| Cron (isolated) | Full agent turn per job                                 |
 
 **Tips**:
 
 - Keep `HEARTBEAT.md` small to minimize token overhead.
 - Batch similar checks into heartbeat instead of multiple cron jobs.
 - Use `target: "none"` on heartbeat if you only want internal processing.
-- Use isolated cron with a cheaper model for routine tasks.
+- Use isolated cron for routine tasks that don't need main session context.
 
 ## Related
 

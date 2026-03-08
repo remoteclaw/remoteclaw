@@ -46,7 +46,6 @@ remoteclaw channels logout --channel whatsapp
 
 - Run `remoteclaw status --deep` for a broad probe.
 - Use `remoteclaw doctor` for guided fixes.
-- `remoteclaw channels list` prints `Claude: HTTP 403 ... user:profile` → usage snapshot needs the `user:profile` scope. Use `--no-usage`, or provide a claude.ai session key (`CLAUDE_WEB_SESSION_KEY` / `CLAUDE_WEB_COOKIE`), or re-auth via Claude Code CLI.
 
 ## Capabilities probe
 

@@ -29,8 +29,8 @@ remoteclaw plugins update <id>
 remoteclaw plugins update --all
 ```
 
-Bundled plugins ship with RemoteClaw but start disabled. Use `plugins enable` to
-activate them.
+Bundled plugins ship with RemoteClaw. Use `plugins enable` / `plugins disable` to
+toggle them.
 
 All plugins must ship a `remoteclaw.plugin.json` file with an inline JSON Schema
 (`configSchema`, even if empty). Missing/invalid manifests or schemas prevent

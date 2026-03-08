@@ -9,11 +9,13 @@ title: "Transcript Hygiene"
 
 # Transcript Hygiene (Provider Fixups)
 
-This document describes **provider-specific fixes** applied to transcripts before a run
-(building model context). These are **in-memory** adjustments used to satisfy strict
-provider requirements. These hygiene steps do **not** rewrite the stored JSONL transcript
-on disk; however, a separate session-file repair pass may rewrite malformed JSONL files
-by dropping invalid lines before the session is loaded. When a repair occurs, the original
+This document describes **provider-specific fixes** applied to transcripts before they
+are forwarded to a CLI agent. These are **in-memory** adjustments used to satisfy strict
+provider requirements — RemoteClaw sanitizes transcripts in its middleware layer so that
+the CLI agent receiving the session history does not encounter provider-specific rejection
+errors. These hygiene steps do **not** rewrite the stored JSONL transcript on disk;
+however, a separate session-file repair pass may rewrite malformed JSONL files by
+dropping invalid lines before the session is loaded. When a repair occurs, the original
 file is backed up alongside the session file.
 
 Scope includes:
@@ -34,17 +36,19 @@ If you need transcript storage details, see:
 
 ## Where this runs
 
-All transcript hygiene is centralized in the embedded runner:
+Transcript hygiene is split across several middleware modules:
 
-- Policy selection: `src/agents/transcript-policy.ts`
-- Sanitization/repair application: `sanitizeSessionHistory` in `src/agents/pi-embedded-runner/google.ts`
+- **Image sanitization**: `sanitizeSessionMessagesImages` in `src/agents/agent-helpers/images.ts`
+- **Tool-call ID sanitization**: `sanitizeToolCallId` / `sanitizeToolCallIdsForCloudCodeAssist` in `src/agents/tool-call-id.ts`
+- **Malformed tool-call input cleanup**: `sanitizeToolCallInputs` in `src/agents/session-transcript-repair.ts`
+- **Turn ordering / thought-signature cleanup**: `src/agents/agent-helpers/message-sanitization.ts`
+- **Tool-result image sanitization**: `sanitizeContentBlocksImages` in `src/agents/tool-images.ts`
 
-The policy uses `provider`, `modelApi`, and `modelId` to decide what to apply.
+The runtime name (e.g., `google`, `anthropic`, `openai`) determines which fixups to apply.
 
 Separate from transcript hygiene, session files are repaired (if needed) before load:
 
 - `repairSessionFileIfNeeded` in `src/agents/session-file-repair.ts`
-- Called from `run/attempt.ts` and `compact.ts` (embedded runner)
 
 ---
 
@@ -58,7 +62,7 @@ Lower max dimensions generally reduce token usage; higher dimensions preserve de
 
 Implementation:
 
-- `sanitizeSessionMessagesImages` in `src/agents/pi-embedded-helpers/images.ts`
+- `sanitizeSessionMessagesImages` in `src/agents/agent-helpers/images.ts`
 - `sanitizeContentBlocksImages` in `src/agents/tool-images.ts`
 - Max image side is configurable via `agents.defaults.imageMaxDimensionPx` (default: `1200`).
 
@@ -73,7 +77,6 @@ persisted tool calls (for example, after a rate limit failure).
 Implementation:
 
 - `sanitizeToolCallInputs` in `src/agents/session-transcript-repair.ts`
-- Applied in `sanitizeSessionHistory` in `src/agents/pi-embedded-runner/google.ts`
 
 ---
 
@@ -94,7 +97,7 @@ external end-user instructions.
 
 ---
 
-## Provider matrix (current behavior)
+## Provider matrix (transcript sanitization before forwarding)
 
 **OpenAI / OpenAI Codex**
 
@@ -140,7 +143,7 @@ Before the 2026.1.22 release, RemoteClaw applied multiple layers of transcript h
 - A **transcript-sanitize extension** ran on every context build and could:
   - Repair tool use/result pairing.
   - Sanitize tool call ids (including a non-strict mode that preserved `_`/`-`).
-- The runner also performed provider-specific sanitization, which duplicated work.
+- The CLI agent subprocess also performed provider-specific sanitization, which duplicated work.
 - Additional mutations occurred outside the provider policy, including:
   - Stripping `<final>` tags from assistant text before persistence.
   - Dropping empty assistant error turns.
@@ -148,4 +151,5 @@ Before the 2026.1.22 release, RemoteClaw applied multiple layers of transcript h
 
 This complexity caused cross-provider regressions (notably `openai-responses`
 `call_id|fc_id` pairing). The 2026.1.22 cleanup removed the extension, centralized
-logic in the runner, and made OpenAI **no-touch** beyond image sanitization.
+logic in the middleware sanitization modules, and made OpenAI **no-touch** beyond image
+sanitization.

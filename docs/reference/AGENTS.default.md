@@ -75,11 +75,11 @@ git commit -m "Add Clawd workspace"
 
 ## What RemoteClaw Does
 
-- Runs WhatsApp gateway + Pi coding agent so the assistant can read/write chats, fetch context, and run skills via the host Mac.
+- Runs the WhatsApp gateway and bridges messages to a CLI agent subprocess (claude, gemini, codex, opencode) so the assistant can read/write chats, fetch context, and run skills via the host Mac.
 - macOS app manages permissions (screen recording, notifications, microphone) and exposes the `remoteclaw` CLI via its bundled binary.
 - Direct chats collapse into the agent's `main` session by default; groups stay isolated as `agent:<agentId>:<channel>:group:<id>` (rooms/channels: `agent:<agentId>:<channel>:channel:<id>`); heartbeats keep background tasks alive.
 
-## Core Skills (enable in Settings → Skills)
+## Core Skills
 
 - **mcporter** — Tool server runtime/CLI for managing external skill backends.
 - **Peekaboo** — Fast macOS screenshots with optional AI vision analysis.
@@ -102,7 +102,7 @@ git commit -m "Add Clawd workspace"
 ## Usage Notes
 
 - Prefer the `remoteclaw` CLI for scripting; mac app handles permissions.
-- Run installs from the Skills tab; it hides the button if a binary is already present.
+- Install skills by dropping them into `~/.remoteclaw/skills/<name>/SKILL.md` or `<workspace>/skills/<name>/SKILL.md`.
 - Keep heartbeats enabled so the assistant can schedule reminders, monitor inboxes, and trigger camera captures.
 - Canvas UI runs full-screen with native overlays. Avoid placing critical controls in the top-left/top-right/bottom edges; add explicit gutters in the layout and don’t rely on safe-area insets.
 - For browser-driven verification, use `remoteclaw browser` (tabs/status/screenshot) with the RemoteClaw-managed Chrome profile.

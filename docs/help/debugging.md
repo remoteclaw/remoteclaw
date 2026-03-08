@@ -1,7 +1,7 @@
 ---
-description: "Debugging tools: watch mode, raw model streams, and tracing reasoning leakage"
+description: "Debugging tools: watch mode, raw agent output streams, and tracing reasoning leakage"
 read_when:
-  - You need to inspect raw model output for reasoning leakage
+  - You need to inspect raw CLI agent output for reasoning leakage
   - You want to run the Gateway in watch mode while iterating
   - You need a repeatable debugging workflow
 title: "Debugging"
@@ -10,7 +10,7 @@ title: "Debugging"
 # Debugging
 
 This page covers debugging helpers for streaming output, especially when a
-provider mixes reasoning into normal text.
+CLI agent runtime mixes reasoning into normal text output.
 
 ## Runtime debug overrides
 

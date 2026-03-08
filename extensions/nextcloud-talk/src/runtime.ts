@@ -1,14 +1,6 @@
+import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk";
 import type { PluginRuntime } from "remoteclaw/plugin-sdk";
 
-let runtime: PluginRuntime | null = null;
-
-export function setNextcloudTalkRuntime(next: PluginRuntime) {
-  runtime = next;
-}
-
-export function getNextcloudTalkRuntime(): PluginRuntime {
-  if (!runtime) {
-    throw new Error("Nextcloud Talk runtime not initialized");
-  }
-  return runtime;
-}
+const { setRuntime: setNextcloudTalkRuntime, getRuntime: getNextcloudTalkRuntime } =
+  createPluginRuntimeStore<PluginRuntime>("Nextcloud Talk runtime not initialized");
+export { getNextcloudTalkRuntime, setNextcloudTalkRuntime };

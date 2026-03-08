@@ -47,6 +47,24 @@ const SUBSTANTIVE_CONFIG_KEYS = new Set([
   "discovery",
 ]);
 
+/**
+ * Auth profile filenames used for discovery during import.
+ */
+const AUTH_PROFILES_FILENAME = "auth-profiles.json";
+const LEGACY_AUTH_FILENAME = "auth.json";
+
+/**
+ * Runtime-to-provider mapping for auto-detecting auth profiles.
+ * Profile IDs use `{provider}:{name}` format; the provider prefix is matched
+ * against these lists.
+ */
+const RUNTIME_AUTH_PROVIDERS: Record<string, string[]> = {
+  claude: ["anthropic", "claude"],
+  gemini: ["google"],
+  codex: ["codex", "openai", "openai-codex"],
+  opencode: ["openai", "anthropic", "opencode"],
+};
+
 export type ImportOptions = {
   sourcePath: string;
   yes?: boolean;
@@ -351,6 +369,143 @@ export function materializeWorkspaceDefaults(jsonContent: string): string {
 }
 
 /**
+ * Discover auth profile IDs from auth store files in the source directory.
+ *
+ * Walks the directory tree looking for `auth-profiles.json` (v1 format)
+ * and legacy `auth.json` files. Returns deduplicated profile IDs.
+ */
+export function discoverSourceAuthProfileIds(sourceDir: string): string[] {
+  const profileIds: string[] = [];
+
+  const walk = (dir: string) => {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(fullPath);
+      } else if (entry.isFile()) {
+        if (entry.name === AUTH_PROFILES_FILENAME) {
+          collectModernStore(fullPath, profileIds);
+        } else if (entry.name === LEGACY_AUTH_FILENAME) {
+          collectLegacyStore(fullPath, profileIds);
+        }
+      }
+    }
+  };
+
+  walk(sourceDir);
+  return [...new Set(profileIds)];
+}
+
+function collectModernStore(filePath: string, out: string[]): void {
+  try {
+    const raw = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    if (raw?.profiles && typeof raw.profiles === "object") {
+      out.push(...Object.keys(raw.profiles));
+    }
+  } catch {
+    /* ignore unreadable/malformed files */
+  }
+}
+
+function collectLegacyStore(filePath: string, out: string[]): void {
+  try {
+    const raw = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    if (typeof raw !== "object" || raw === null || "profiles" in raw) {
+      return;
+    }
+    for (const [key, value] of Object.entries(raw)) {
+      if (
+        value &&
+        typeof value === "object" &&
+        (value as Record<string, unknown>).type === "api_key"
+      ) {
+        out.push(`${key}:default`);
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Materialize the `agents.defaults.auth` field from discovered auth profiles.
+ *
+ * OpenClaw configs don't have the `auth` field. After import, auth profiles
+ * exist on disk but nothing in the config points to them. This function
+ * detects the configured runtime and sets `agents.defaults.auth` to the
+ * first profile whose provider matches the runtime.
+ */
+export function materializeAuthDefaults(
+  jsonContent: string,
+  discoveredProfileIds: string[],
+): string {
+  if (discoveredProfileIds.length === 0) {
+    return jsonContent;
+  }
+
+  let config: Record<string, unknown>;
+  try {
+    config = JSON.parse(jsonContent);
+  } catch {
+    return jsonContent;
+  }
+
+  if (typeof config !== "object" || config === null || Array.isArray(config)) {
+    return jsonContent;
+  }
+
+  const agents = config.agents as Record<string, unknown> | undefined;
+  const defaults = agents?.defaults as Record<string, unknown> | undefined;
+
+  // Skip if auth is already configured
+  if (defaults?.auth !== undefined) {
+    return jsonContent;
+  }
+
+  // Need a runtime to determine which provider to match
+  const runtime = typeof defaults?.runtime === "string" ? defaults.runtime : undefined;
+  if (!runtime) {
+    return jsonContent;
+  }
+
+  const providers = RUNTIME_AUTH_PROVIDERS[runtime];
+  if (!providers) {
+    return jsonContent;
+  }
+
+  // Find first profile whose provider prefix matches the runtime
+  const matchingProfileId = discoveredProfileIds.find((id) => {
+    const colonIdx = id.indexOf(":");
+    const provider = (colonIdx > 0 ? id.slice(0, colonIdx) : id).toLowerCase();
+    return providers.includes(provider);
+  });
+
+  if (!matchingProfileId) {
+    return jsonContent;
+  }
+
+  // Set agents.defaults.auth
+  if (!config.agents) {
+    config.agents = {};
+  }
+  const agentsObj = config.agents as Record<string, unknown>;
+  if (!agentsObj.defaults) {
+    agentsObj.defaults = {};
+  }
+  (agentsObj.defaults as Record<string, unknown>).auth = matchingProfileId;
+
+  const indentMatch = jsonContent.match(/^(\s+)"/m);
+  const indent = indentMatch?.[1] ?? "  ";
+  return JSON.stringify(config, null, indent) + "\n";
+}
+
+/**
  * Determine the target filename for a source file.
  * Renames openclaw.json -> remoteclaw.json at any directory level.
  */
@@ -376,6 +531,7 @@ async function copyDirectory(params: {
   targetDir: string;
   dryRun: boolean;
   result: ImportResult;
+  discoveredAuthProfileIds: string[];
 }): Promise<void> {
   const { sourceDir, targetDir, dryRun, result } = params;
 
@@ -396,6 +552,7 @@ async function copyDirectory(params: {
         targetDir: targetPath,
         dryRun,
         result,
+        discoveredAuthProfileIds: params.discoveredAuthProfileIds,
       });
     } else if (entry.isFile()) {
       if (isConfigFile(entry.name)) {
@@ -404,7 +561,10 @@ async function copyDirectory(params: {
         // Apply structural config transforms to the main config file
         const isMainConfig = entry.name === OPENCLAW_CONFIG_FILENAME;
         const final = isMainConfig
-          ? materializeWorkspaceDefaults(stripUnrecognizedConfigKeys(transformed))
+          ? materializeAuthDefaults(
+              materializeWorkspaceDefaults(stripUnrecognizedConfigKeys(transformed)),
+              params.discoveredAuthProfileIds,
+            )
           : transformed;
         if (renames.length > 0 || final !== transformed) {
           result.transformedFiles.push(targetPath);
@@ -487,11 +647,14 @@ export async function importCommand(
     `Importing from ${shortenHomePath(sourcePath)} to ${shortenHomePath(targetDir)}...\n`,
   );
 
+  const discoveredAuthProfileIds = discoverSourceAuthProfileIds(sourcePath);
+
   await copyDirectory({
     sourceDir: sourcePath,
     targetDir,
     dryRun: Boolean(opts.dryRun),
     result,
+    discoveredAuthProfileIds,
   });
 
   // Deduplicate env var renames for reporting

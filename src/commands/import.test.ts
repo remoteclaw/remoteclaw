@@ -6,7 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RuntimeEnv } from "../runtime.js";
 import {
   detectOpenClawInstallation,
+  discoverSourceAuthProfileIds,
   importCommand,
+  materializeAuthDefaults,
   materializeWorkspaceDefaults,
   resolveTargetFilename,
   stripUnrecognizedConfigKeys,
@@ -302,6 +304,237 @@ describe("stripUnrecognizedConfigKeys", () => {
   });
 });
 
+describe("discoverSourceAuthProfileIds", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "auth-discover-test-"));
+  });
+
+  afterEach(async () => {
+    await fsp.rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("discovers profiles from modern auth-profiles.json", async () => {
+    const agentDir = path.join(tmpDir, "agents", "main", "agent");
+    await fsp.mkdir(agentDir, { recursive: true });
+    await fsp.writeFile(
+      path.join(agentDir, "auth-profiles.json"),
+      JSON.stringify({
+        version: 1,
+        profiles: {
+          "anthropic:default": { type: "api_key", provider: "anthropic", key: "fake-key" },
+          "google:my-key": { type: "api_key", provider: "google", key: "fake-key" },
+        },
+      }),
+    );
+
+    const ids = discoverSourceAuthProfileIds(tmpDir);
+    expect(ids).toContain("anthropic:default");
+    expect(ids).toContain("google:my-key");
+    expect(ids).toHaveLength(2);
+  });
+
+  it("discovers profiles from legacy auth.json", async () => {
+    const agentDir = path.join(tmpDir, "agents", "main", "agent");
+    await fsp.mkdir(agentDir, { recursive: true });
+    await fsp.writeFile(
+      path.join(agentDir, "auth.json"),
+      JSON.stringify({
+        anthropic: { type: "api_key", provider: "anthropic", key: "fake-key" },
+        google: { type: "api_key", provider: "google", key: "fake-key" },
+      }),
+    );
+
+    const ids = discoverSourceAuthProfileIds(tmpDir);
+    expect(ids).toContain("anthropic:default");
+    expect(ids).toContain("google:default");
+    expect(ids).toHaveLength(2);
+  });
+
+  it("returns empty array when no auth files exist", () => {
+    expect(discoverSourceAuthProfileIds(tmpDir)).toEqual([]);
+  });
+
+  it("returns empty array for malformed auth files", async () => {
+    const agentDir = path.join(tmpDir, "agents", "main", "agent");
+    await fsp.mkdir(agentDir, { recursive: true });
+    await fsp.writeFile(path.join(agentDir, "auth-profiles.json"), "not valid json {{{");
+
+    expect(discoverSourceAuthProfileIds(tmpDir)).toEqual([]);
+  });
+
+  it("deduplicates profile IDs across multiple auth files", async () => {
+    const agent1 = path.join(tmpDir, "agents", "main", "agent");
+    const agent2 = path.join(tmpDir, "agents", "helper", "agent");
+    await fsp.mkdir(agent1, { recursive: true });
+    await fsp.mkdir(agent2, { recursive: true });
+
+    const store = JSON.stringify({
+      version: 1,
+      profiles: { "anthropic:default": { type: "api_key", provider: "anthropic" } },
+    });
+    await fsp.writeFile(path.join(agent1, "auth-profiles.json"), store);
+    await fsp.writeFile(path.join(agent2, "auth-profiles.json"), store);
+
+    const ids = discoverSourceAuthProfileIds(tmpDir);
+    expect(ids).toEqual(["anthropic:default"]);
+  });
+
+  it("skips legacy auth.json that has profiles key (modern format)", async () => {
+    const agentDir = path.join(tmpDir, "agents", "main", "agent");
+    await fsp.mkdir(agentDir, { recursive: true });
+    // A file named auth.json but with modern format should not produce legacy-style IDs
+    await fsp.writeFile(
+      path.join(agentDir, "auth.json"),
+      JSON.stringify({
+        version: 1,
+        profiles: { "anthropic:default": { type: "api_key", provider: "anthropic" } },
+      }),
+    );
+
+    // auth.json with "profiles" key is treated as modern and skipped by legacy collector,
+    // and it's not named auth-profiles.json so modern collector also skips it
+    expect(discoverSourceAuthProfileIds(tmpDir)).toEqual([]);
+  });
+});
+
+describe("materializeAuthDefaults", () => {
+  it("sets auth for claude runtime with anthropic profile", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { runtime: "claude" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    const result = JSON.parse(materializeAuthDefaults(input, ["anthropic:default"]));
+    expect(result.agents.defaults.auth).toBe("anthropic:default");
+  });
+
+  it("sets auth for gemini runtime with google profile", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { runtime: "gemini" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    const result = JSON.parse(materializeAuthDefaults(input, ["google:my-key"]));
+    expect(result.agents.defaults.auth).toBe("google:my-key");
+  });
+
+  it("sets auth for codex runtime with openai-codex profile", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { runtime: "codex" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    const result = JSON.parse(materializeAuthDefaults(input, ["openai-codex:codex-cli"]));
+    expect(result.agents.defaults.auth).toBe("openai-codex:codex-cli");
+  });
+
+  it("sets auth for opencode runtime with anthropic profile", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { runtime: "opencode" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    const result = JSON.parse(materializeAuthDefaults(input, ["anthropic:default"]));
+    expect(result.agents.defaults.auth).toBe("anthropic:default");
+  });
+
+  it("selects first matching profile when multiple exist", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { runtime: "claude" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    const result = JSON.parse(
+      materializeAuthDefaults(input, ["google:key", "anthropic:first", "anthropic:second"]),
+    );
+    expect(result.agents.defaults.auth).toBe("anthropic:first");
+  });
+
+  it("does not set auth when no runtime configured", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { workspace: "~/ws" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    const output = materializeAuthDefaults(input, ["anthropic:default"]);
+    expect(output).toBe(input);
+  });
+
+  it("does not set auth when auth already configured", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { runtime: "claude", auth: "existing:profile" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    const output = materializeAuthDefaults(input, ["anthropic:default"]);
+    expect(output).toBe(input);
+  });
+
+  it("does not set auth when auth is explicitly false", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { runtime: "claude", auth: false },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    const output = materializeAuthDefaults(input, ["anthropic:default"]);
+    expect(output).toBe(input);
+  });
+
+  it("does not set auth when no matching profile exists", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { runtime: "claude" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    const output = materializeAuthDefaults(input, ["google:key"]);
+    expect(output).toBe(input);
+  });
+
+  it("returns unchanged for empty profile IDs", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { runtime: "claude" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    const output = materializeAuthDefaults(input, []);
+    expect(output).toBe(input);
+  });
+
+  it("returns non-JSON content unchanged", () => {
+    const input = "not valid json {{{";
+    expect(materializeAuthDefaults(input, ["anthropic:default"])).toBe(input);
+  });
+
+  it("handles config without agents key", () => {
+    const input = JSON.stringify({ gateway: { port: 18789 } });
+    const output = materializeAuthDefaults(input, ["anthropic:default"]);
+    expect(output).toBe(input);
+  });
+
+  it("matches claude provider prefix for claude runtime", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { runtime: "claude" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    const result = JSON.parse(materializeAuthDefaults(input, ["claude:custom-profile"]));
+    expect(result.agents.defaults.auth).toBe("claude:custom-profile");
+  });
+});
+
 describe("resolveTargetFilename", () => {
   it("renames openclaw.json to remoteclaw.json", () => {
     expect(resolveTargetFilename("openclaw.json")).toBe("remoteclaw.json");
@@ -496,6 +729,87 @@ describe("importCommand", () => {
     const parsed = JSON.parse(written);
     expect(parsed.agents.list[0].workspace).toBe("~/.remoteclaw/workspace");
     expect(result.transformedFiles).toHaveLength(1);
+  });
+
+  it("materializes auth defaults when auth profiles and runtime exist", async () => {
+    const configContent = JSON.stringify({
+      agents: {
+        defaults: { runtime: "claude" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+
+    // Create auth profiles in the source
+    const agentDir = path.join(sourceDir, "agents", "main", "agent");
+    await fsp.mkdir(agentDir, { recursive: true });
+    await fsp.writeFile(
+      path.join(agentDir, "auth-profiles.json"),
+      JSON.stringify({
+        version: 1,
+        profiles: {
+          "anthropic:default": { type: "api_key", provider: "anthropic", key: "fake-key" },
+        },
+      }),
+    );
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    const written = await fsp.readFile(path.join(targetDir, "remoteclaw.json"), "utf-8");
+    const parsed = JSON.parse(written);
+    expect(parsed.agents.defaults.auth).toBe("anthropic:default");
+  });
+
+  it("does not set auth when no auth profiles exist in source", async () => {
+    const configContent = JSON.stringify({
+      agents: {
+        defaults: { runtime: "claude" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    const written = await fsp.readFile(path.join(targetDir, "remoteclaw.json"), "utf-8");
+    const parsed = JSON.parse(written);
+    expect(parsed.agents.defaults.auth).toBeUndefined();
+  });
+
+  it("does not set auth when no runtime is configured", async () => {
+    const configContent = JSON.stringify({
+      agents: {
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+
+    const agentDir = path.join(sourceDir, "agents", "main", "agent");
+    await fsp.mkdir(agentDir, { recursive: true });
+    await fsp.writeFile(
+      path.join(agentDir, "auth-profiles.json"),
+      JSON.stringify({
+        version: 1,
+        profiles: {
+          "anthropic:default": { type: "api_key", provider: "anthropic", key: "fake-key" },
+        },
+      }),
+    );
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    const written = await fsp.readFile(path.join(targetDir, "remoteclaw.json"), "utf-8");
+    const parsed = JSON.parse(written);
+    expect(parsed.agents.defaults).toBeUndefined();
   });
 
   it("handles nested directory structures with mixed file types", async () => {

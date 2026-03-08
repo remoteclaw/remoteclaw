@@ -310,7 +310,7 @@ export const buildTelegramMessageContext = async ({
 
   if (needsPreflightTranscription) {
     try {
-      const { transcribeFirstAudio } = await import("../media-understanding/audio-preflight.js");
+      const { transcribeFirstAudio } = await import("../stt/preflight.js");
       // Build a minimal context for transcription
       const tempCtx: MsgContext = {
         MediaPaths: allMedia.length > 0 ? allMedia.map((m) => m.path) : undefined,

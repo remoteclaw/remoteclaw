@@ -48,25 +48,13 @@ export type MediaUnderstandingDecision = {
   attachments: MediaUnderstandingAttachmentDecision[];
 };
 
-export type AudioTranscriptionRequest = {
-  buffer: Buffer;
-  fileName: string;
-  mime?: string;
-  apiKey: string;
-  baseUrl?: string;
-  headers?: Record<string, string>;
-  model?: string;
-  language?: string;
-  prompt?: string;
-  query?: Record<string, string | number | boolean>;
-  timeoutMs: number;
-  fetchFn?: typeof fetch;
-};
+import type {
+  AudioTranscriptionRequest as _AudioTranscriptionRequest,
+  AudioTranscriptionResult as _AudioTranscriptionResult,
+} from "../stt/types.js";
 
-export type AudioTranscriptionResult = {
-  text: string;
-  model?: string;
-};
+export type AudioTranscriptionRequest = _AudioTranscriptionRequest;
+export type AudioTranscriptionResult = _AudioTranscriptionResult;
 
 export type VideoDescriptionRequest = {
   buffer: Buffer;

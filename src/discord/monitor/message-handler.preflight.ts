@@ -503,7 +503,7 @@ export async function preflightDiscordMessage(
 
   if (needsPreflightTranscription) {
     try {
-      const { transcribeFirstAudio } = await import("../../media-understanding/audio-preflight.js");
+      const { transcribeFirstAudio } = await import("../../stt/preflight.js");
       const audioPaths =
         message.attachments
           ?.filter((att: { contentType?: string; url: string }) =>

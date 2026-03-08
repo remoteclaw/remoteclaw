@@ -90,14 +90,6 @@ export type GatewayAgentsList = {
   }>;
 };
 
-export type GatewayModelChoice = {
-  id: string;
-  name: string;
-  provider: string;
-  contextWindow?: number;
-  reasoning?: boolean;
-};
-
 export class GatewayChatClient {
   private client: GatewayClient;
   private readyPromise: Promise<void>;
@@ -224,11 +216,6 @@ export class GatewayChatClient {
 
   async getStatus() {
     return await this.client.request("status");
-  }
-
-  async listModels(): Promise<GatewayModelChoice[]> {
-    const res = await this.client.request<{ models?: GatewayModelChoice[] }>("models.list");
-    return Array.isArray(res?.models) ? res.models : [];
   }
 }
 

@@ -163,30 +163,9 @@ export async function loadCronStatus(state: CronState) {
   }
 }
 
-export async function loadCronModelSuggestions(state: CronModelSuggestionsState) {
-  if (!state.client || !state.connected) {
-    return;
-  }
-  try {
-    const res = await state.client.request("models.list", {});
-    const models = (res as { models?: unknown[] } | null)?.models;
-    if (!Array.isArray(models)) {
-      state.cronModelSuggestions = [];
-      return;
-    }
-    const ids = models
-      .map((entry) => {
-        if (!entry || typeof entry !== "object") {
-          return "";
-        }
-        const id = (entry as { id?: unknown }).id;
-        return typeof id === "string" ? id.trim() : "";
-      })
-      .filter(Boolean);
-    state.cronModelSuggestions = Array.from(new Set(ids)).toSorted((a, b) => a.localeCompare(b));
-  } catch {
-    state.cronModelSuggestions = [];
-  }
+export function loadCronModelSuggestions(state: CronModelSuggestionsState) {
+  // models.list gateway method was removed — no provider-sourced suggestions available.
+  state.cronModelSuggestions = [];
 }
 
 export async function loadCronJobs(state: CronState) {

@@ -172,7 +172,7 @@ describe("update.run restart scheduling", () => {
   it("skips restart when update fails", async () => {
     runGatewayUpdateMock.mockResolvedValueOnce({
       status: "error",
-      mode: "git",
+      mode: "npm",
       reason: "build-failed",
       steps: [],
       durationMs: 100,

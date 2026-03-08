@@ -104,7 +104,7 @@ function resolveCheckIntervalMs(cfg: ReturnType<typeof loadConfig>): number {
   if (!auto.enabled) {
     return UPDATE_CHECK_INTERVAL_MS;
   }
-  if (channel === "beta") {
+  if (channel === "beta" || channel === "next") {
     return Math.max(ONE_HOUR_MS / 4, Math.floor(auto.betaCheckIntervalHours * ONE_HOUR_MS));
   }
   if (channel === "stable") {
@@ -229,7 +229,7 @@ function resolveStableAutoApplyAtMs(params: {
 }
 
 async function runAutoUpdateCommand(params: {
-  channel: "stable" | "beta";
+  channel: "stable" | "beta" | "next";
   timeoutMs: number;
   root?: string;
 }): Promise<AutoUpdateRunResult> {
@@ -304,7 +304,7 @@ export async function runGatewayUpdateCheck(params: {
   allowInTests?: boolean;
   onUpdateAvailableChange?: (updateAvailable: UpdateAvailable | null) => void;
   runAutoUpdate?: (params: {
-    channel: "stable" | "beta";
+    channel: "stable" | "beta" | "next";
     timeoutMs: number;
     root?: string;
   }) => Promise<AutoUpdateRunResult>;
@@ -406,10 +406,10 @@ export async function runGatewayUpdateCheck(params: {
       nextState.lastNotifiedTag = tag;
     }
 
-    if (auto.enabled && (channel === "stable" || channel === "beta")) {
+    if (auto.enabled && (channel === "stable" || channel === "beta" || channel === "next")) {
       const runAuto = params.runAutoUpdate ?? runAutoUpdateCommand;
       const attemptIntervalMs =
-        channel === "beta"
+        channel === "beta" || channel === "next"
           ? Math.max(ONE_HOUR_MS / 4, Math.floor(auto.betaCheckIntervalHours * ONE_HOUR_MS))
           : ONE_HOUR_MS;
       const lastAttemptAt = state.autoLastAttemptAt ? Date.parse(state.autoLastAttemptAt) : null;
@@ -419,7 +419,7 @@ export async function runGatewayUpdateCheck(params: {
         Number.isFinite(lastAttemptAt) &&
         now - lastAttemptAt < attemptIntervalMs;
 
-      let dueNow = channel === "beta";
+      let dueNow = channel === "beta" || channel === "next";
       let applyAfterMs: number | null = null;
       if (channel === "stable") {
         applyAfterMs = resolveStableAutoApplyAtMs({

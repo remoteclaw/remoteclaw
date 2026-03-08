@@ -5,26 +5,17 @@ import {
   normalizeUpdateChannel,
   resolveEffectiveUpdateChannel,
 } from "../../infra/update-channels.js";
-import { checkUpdateStatus } from "../../infra/update-check.js";
 import { defaultRuntime } from "../../runtime.js";
 import { selectStyled } from "../../terminal/prompt-select-styled.js";
 import { stylePromptMessage } from "../../terminal/prompt-style.js";
 import { theme } from "../../terminal/theme.js";
-import { pathExists } from "../../utils.js";
-import {
-  isEmptyDir,
-  isGitCheckout,
-  parseTimeoutMsOrExit,
-  resolveGitInstallDir,
-  resolveUpdateRoot,
-  type UpdateWizardOptions,
-} from "./shared.js";
+import { parseTimeoutMsOrExit, type UpdateWizardOptions } from "./shared.js";
 import { updateCommand } from "./update-command.js";
 
 export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promise<void> {
   if (!process.stdin.isTTY) {
     defaultRuntime.error(
-      "Update wizard requires a TTY. Use `remoteclaw update --channel <stable|beta|dev>` instead.",
+      "Update wizard requires a TTY. Use `remoteclaw update --channel <stable|beta|next>` instead.",
     );
     defaultRuntime.exit(1);
     return;
@@ -35,32 +26,17 @@ export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promi
     return;
   }
 
-  const root = await resolveUpdateRoot();
-  const [updateStatus, configSnapshot] = await Promise.all([
-    checkUpdateStatus({
-      root,
-      timeoutMs: timeoutMs ?? 3500,
-      fetchGit: false,
-      includeRegistry: false,
-    }),
-    readConfigFileSnapshot(),
-  ]);
+  const configSnapshot = await readConfigFileSnapshot();
 
   const configChannel = configSnapshot.valid
     ? normalizeUpdateChannel(configSnapshot.config.update?.channel)
     : null;
   const channelInfo = resolveEffectiveUpdateChannel({
     configChannel,
-    installKind: updateStatus.installKind,
-    git: updateStatus.git
-      ? { tag: updateStatus.git.tag, branch: updateStatus.git.branch }
-      : undefined,
   });
   const channelLabel = formatUpdateChannelLabel({
     channel: channelInfo.channel,
     source: channelInfo.source,
-    gitTag: updateStatus.git?.tag ?? null,
-    gitBranch: updateStatus.git?.branch ?? null,
   });
 
   const pickedChannel = await selectStyled({
@@ -82,9 +58,9 @@ export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promi
         hint: "Prereleases (npm beta)",
       },
       {
-        value: "dev",
-        label: "Dev",
-        hint: "Git main",
+        value: "next",
+        label: "Next",
+        hint: "Latest from main (npm next)",
       },
     ],
     initialValue: "keep",
@@ -97,36 +73,6 @@ export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promi
   }
 
   const requestedChannel = pickedChannel === "keep" ? null : pickedChannel;
-
-  if (requestedChannel === "dev" && updateStatus.installKind !== "git") {
-    const gitDir = resolveGitInstallDir();
-    const hasGit = await isGitCheckout(gitDir);
-    if (!hasGit) {
-      const dirExists = await pathExists(gitDir);
-      if (dirExists) {
-        const empty = await isEmptyDir(gitDir);
-        if (!empty) {
-          defaultRuntime.error(
-            `REMOTECLAW_GIT_DIR points at a non-git directory: ${gitDir}. Set REMOTECLAW_GIT_DIR to an empty folder or a remoteclaw checkout.`,
-          );
-          defaultRuntime.exit(1);
-          return;
-        }
-      }
-
-      const ok = await confirm({
-        message: stylePromptMessage(
-          `Create a git checkout at ${gitDir}? (override via REMOTECLAW_GIT_DIR)`,
-        ),
-        initialValue: true,
-      });
-      if (isCancel(ok) || !ok) {
-        defaultRuntime.log(theme.muted("Update cancelled."));
-        defaultRuntime.exit(0);
-        return;
-      }
-    }
-  }
 
   const restart = await confirm({
     message: stylePromptMessage("Restart the gateway service after update?"),

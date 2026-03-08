@@ -14,22 +14,6 @@ import { renderTable } from "../../terminal/table.js";
 import { theme } from "../../terminal/theme.js";
 import { parseTimeoutMsOrExit, resolveUpdateRoot, type UpdateStatusOptions } from "./shared.js";
 
-function formatGitStatusLine(params: {
-  branch: string | null;
-  tag: string | null;
-  sha: string | null;
-}): string {
-  const shortSha = params.sha ? params.sha.slice(0, 8) : null;
-  const branch = params.branch && params.branch !== "HEAD" ? params.branch : null;
-  const tag = params.tag;
-  const parts = [
-    branch ?? (tag ? "detached" : "git"),
-    tag ? `tag ${tag}` : null,
-    shortSha ? `@ ${shortSha}` : null,
-  ].filter(Boolean);
-  return parts.join(" · ");
-}
-
 export async function updateStatusCommand(opts: UpdateStatusOptions): Promise<void> {
   const timeoutMs = parseTimeoutMsOrExit(opts.timeout);
   if (timeoutMs === null) {
@@ -45,26 +29,14 @@ export async function updateStatusCommand(opts: UpdateStatusOptions): Promise<vo
   const update = await checkUpdateStatus({
     root,
     timeoutMs: timeoutMs ?? 3500,
-    fetchGit: true,
+    fetchGit: false,
     includeRegistry: true,
   });
 
   const channelInfo = resolveUpdateChannelDisplay({
     configChannel,
-    installKind: update.installKind,
-    gitTag: update.git?.tag ?? null,
-    gitBranch: update.git?.branch ?? null,
   });
   const channelLabel = channelInfo.label;
-
-  const gitLabel =
-    update.installKind === "git"
-      ? formatGitStatusLine({
-          branch: update.git?.branch ?? null,
-          tag: update.git?.tag ?? null,
-          sha: update.git?.sha ?? null,
-        })
-      : null;
 
   const updateAvailability = resolveUpdateAvailability(update);
   const updateLine = formatUpdateOneLiner(update).replace(/^Update:\s*/i, "");
@@ -90,17 +62,11 @@ export async function updateStatusCommand(opts: UpdateStatusOptions): Promise<vo
   }
 
   const tableWidth = Math.max(60, (process.stdout.columns ?? 120) - 1);
-  const installLabel =
-    update.installKind === "git"
-      ? `git (${update.root ?? "unknown"})`
-      : update.installKind === "package"
-        ? update.packageManager
-        : "unknown";
+  const installLabel = update.packageManager ?? "unknown";
 
   const rows = [
     { Item: "Install", Value: installLabel },
     { Item: "Channel", Value: channelLabel },
-    ...(gitLabel ? [{ Item: "Git", Value: gitLabel }] : []),
     {
       Item: "Update",
       Value: updateAvailability.available ? theme.warn(`available · ${updateLine}`) : updateLine,

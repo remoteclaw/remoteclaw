@@ -56,8 +56,8 @@ export type RemoteClawConfig = {
   diagnostics?: DiagnosticsConfig;
   logging?: LoggingConfig;
   update?: {
-    /** Update channel for git + npm installs ("stable", "beta", or "dev"). */
-    channel?: "stable" | "beta" | "dev";
+    /** Update channel ("stable", "beta", or "next"). */
+    channel?: "stable" | "beta" | "next";
     /** Check for updates on gateway start (npm installs only). */
     checkOnStart?: boolean;
     /** Core auto-update policy for package installs. */

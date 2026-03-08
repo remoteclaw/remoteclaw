@@ -110,7 +110,7 @@ function resolveInstallDefaultChoice(params: {
 }): InstallChoice {
   const { cfg, entry, localPath } = params;
   const updateChannel = cfg.update?.channel;
-  if (updateChannel === "dev") {
+  if (updateChannel === "next") {
     return localPath ? "local" : "npm";
   }
   if (updateChannel === "stable" || updateChannel === "beta") {

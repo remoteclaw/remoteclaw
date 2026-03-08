@@ -1,8 +1,5 @@
 import { spawnSync } from "node:child_process";
-import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
-import { resolveStateDir } from "../../config/paths.js";
 import { readPackageName, readPackageVersion } from "../../infra/package-json.js";
 import { resolveRemoteClawPackageRoot } from "../../infra/remoteclaw-root.js";
 import { trimLogTail } from "../../infra/restart-sentinel.js";
@@ -51,11 +48,9 @@ export function parseTimeoutMsOrExit(timeout?: string): number | undefined | nul
   return timeoutMs;
 }
 
-const REMOTECLAW_REPO_URL = "https://github.com/remoteclaw/remoteclaw.git";
 const MAX_LOG_CHARS = 8000;
 
 export const DEFAULT_PACKAGE_NAME = "remoteclaw";
-const CORE_PACKAGE_NAMES = new Set([DEFAULT_PACKAGE_NAME]);
 
 export function normalizeTag(value?: string | null): string | null {
   if (!value) {
@@ -95,41 +90,6 @@ export async function resolveTargetVersion(
   }
   const res = await fetchNpmTagVersion({ tag, timeoutMs });
   return res.version ?? null;
-}
-
-export async function isGitCheckout(root: string): Promise<boolean> {
-  try {
-    await fs.stat(path.join(root, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export async function isCorePackage(root: string): Promise<boolean> {
-  const name = await readPackageName(root);
-  return Boolean(name && CORE_PACKAGE_NAMES.has(name));
-}
-
-export async function isEmptyDir(targetPath: string): Promise<boolean> {
-  try {
-    const entries = await fs.readdir(targetPath);
-    return entries.length === 0;
-  } catch {
-    return false;
-  }
-}
-
-export function resolveGitInstallDir(): string {
-  const override = process.env.REMOTECLAW_GIT_DIR?.trim();
-  if (override) {
-    return path.resolve(override);
-  }
-  return resolveDefaultGitDir();
-}
-
-function resolveDefaultGitDir(): string {
-  return resolveStateDir(process.env, os.homedir);
 }
 
 export function resolveNodeRunner(): string {
@@ -194,61 +154,19 @@ export async function runUpdateStep(params: {
   };
 }
 
-export async function ensureGitCheckout(params: {
-  dir: string;
-  timeoutMs: number;
-  progress?: UpdateStepProgress;
-}): Promise<UpdateStepResult | null> {
-  const dirExists = await pathExists(params.dir);
-  if (!dirExists) {
-    return await runUpdateStep({
-      name: "git clone",
-      argv: ["git", "clone", REMOTECLAW_REPO_URL, params.dir],
-      timeoutMs: params.timeoutMs,
-      progress: params.progress,
-    });
-  }
-
-  if (!(await isGitCheckout(params.dir))) {
-    const empty = await isEmptyDir(params.dir);
-    if (!empty) {
-      throw new Error(
-        `REMOTECLAW_GIT_DIR points at a non-git directory: ${params.dir}. Set REMOTECLAW_GIT_DIR to an empty folder or a remoteclaw checkout.`,
-      );
-    }
-
-    return await runUpdateStep({
-      name: "git clone",
-      argv: ["git", "clone", REMOTECLAW_REPO_URL, params.dir],
-      cwd: params.dir,
-      timeoutMs: params.timeoutMs,
-      progress: params.progress,
-    });
-  }
-
-  if (!(await isCorePackage(params.dir))) {
-    throw new Error(`REMOTECLAW_GIT_DIR does not look like a core checkout: ${params.dir}.`);
-  }
-
-  return null;
-}
-
 export async function resolveGlobalManager(params: {
   root: string;
-  installKind: "git" | "package" | "unknown";
   timeoutMs: number;
 }): Promise<GlobalInstallManager> {
   const runCommand = createGlobalCommandRunner();
 
-  if (params.installKind === "package") {
-    const detected = await detectGlobalInstallManagerForRoot(
-      runCommand,
-      params.root,
-      params.timeoutMs,
-    );
-    if (detected) {
-      return detected;
-    }
+  const detected = await detectGlobalInstallManagerForRoot(
+    runCommand,
+    params.root,
+    params.timeoutMs,
+  );
+  if (detected) {
+    return detected;
   }
 
   const byPresence = await detectGlobalInstallManagerByPresence(runCommand, params.timeoutMs);

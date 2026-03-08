@@ -144,7 +144,7 @@ export const RemoteClawSchema = z
       .optional(),
     update: z
       .object({
-        channel: z.union([z.literal("stable"), z.literal("beta"), z.literal("dev")]).optional(),
+        channel: z.union([z.literal("stable"), z.literal("beta"), z.literal("next")]).optional(),
         checkOnStart: z.boolean().optional(),
         auto: z
           .object({

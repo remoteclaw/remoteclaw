@@ -394,7 +394,7 @@ export async function syncPluginsForUpdateChannel(params: {
   const installs = next.plugins?.installs ?? {};
   let changed = false;
 
-  if (params.channel === "dev") {
+  if (params.channel === "next") {
     for (const [pluginId, record] of Object.entries(installs)) {
       const bundledInfo = bundled.get(pluginId);
       if (!bundledInfo) {

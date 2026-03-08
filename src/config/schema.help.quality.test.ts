@@ -337,7 +337,7 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   ],
   "logging.consoleStyle": ['"pretty"', '"compact"', '"json"'],
   "logging.redactSensitive": ['"off"', '"tools"'],
-  "update.channel": ['"stable"', '"beta"', '"dev"'],
+  "update.channel": ['"stable"', '"beta"', '"next"'],
 };
 
 const TOOLS_HOOKS_TARGET_KEYS = [

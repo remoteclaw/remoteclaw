@@ -123,13 +123,11 @@ export function printResult(result: UpdateRunResult, opts: PrintResultOptions): 
     defaultRuntime.log(`  Reason: ${theme.muted(result.reason)}`);
   }
 
-  if (result.before?.version || result.before?.sha) {
-    const before = result.before.version ?? result.before.sha?.slice(0, 8) ?? "";
-    defaultRuntime.log(`  Before: ${theme.muted(before)}`);
+  if (result.before?.version) {
+    defaultRuntime.log(`  Before: ${theme.muted(result.before.version)}`);
   }
-  if (result.after?.version || result.after?.sha) {
-    const after = result.after.version ?? result.after.sha?.slice(0, 8) ?? "";
-    defaultRuntime.log(`  After: ${theme.muted(after)}`);
+  if (result.after?.version) {
+    defaultRuntime.log(`  After: ${theme.muted(result.after.version)}`);
   }
 
   if (!opts.hideSteps && result.steps.length > 0) {

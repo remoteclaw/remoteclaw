@@ -38,15 +38,16 @@ export function registerUpdateCli(program: Command) {
     .option("--json", "Output result as JSON", false)
     .option("--no-restart", "Skip restarting the gateway service after a successful update")
     .option("--dry-run", "Preview update actions without making changes", false)
-    .option("--channel <stable|beta|dev>", "Persist update channel (git + npm)")
+    .option("--channel <stable|beta|next>", "Persist update channel")
     .option("--tag <dist-tag|version>", "Override npm dist-tag or version for this update")
     .option("--timeout <seconds>", "Timeout for each update step in seconds (default: 1200)")
     .option("--yes", "Skip confirmation prompts (non-interactive)", false)
     .addHelpText("after", () => {
       const examples = [
-        ["remoteclaw update", "Update a source checkout (git)"],
-        ["remoteclaw update --channel beta", "Switch to beta channel (git + npm)"],
-        ["remoteclaw update --channel dev", "Switch to dev channel (git + npm)"],
+        ["remoteclaw update", "Update to latest on current channel"],
+        ["remoteclaw update --channel next", "Switch to next channel (latest from main)"],
+        ["remoteclaw update --channel beta", "Switch to beta channel"],
+        ["remoteclaw update --channel stable", "Switch to stable channel"],
         ["remoteclaw update --tag beta", "One-off update to a dist-tag or version"],
         ["remoteclaw update --dry-run", "Preview actions without changing anything"],
         ["remoteclaw update --no-restart", "Update without restarting the service"],
@@ -60,13 +61,12 @@ export function registerUpdateCli(program: Command) {
         .join("\n");
       return `
 ${theme.heading("What this does:")}
-  - Git checkouts: fetches, rebases, installs deps, builds, and runs doctor
-  - npm installs: updates via detected package manager
+  - Updates via detected global package manager (npm, pnpm, bun)
 
 ${theme.heading("Switch channels:")}
-  - Use --channel stable|beta|dev to persist the update channel in config
+  - Use --channel stable|beta|next to persist the update channel in config
   - Run remoteclaw update status to see the active channel and source
-  - Use --tag <dist-tag|version> for a one-off npm update without persisting
+  - Use --tag <dist-tag|version> for a one-off update without persisting
 
 ${theme.heading("Non-interactive:")}
   - Use --yes to accept downgrade prompts
@@ -77,10 +77,9 @@ ${theme.heading("Examples:")}
 ${fmtExamples}
 
 ${theme.heading("Notes:")}
-  - Switch channels with --channel stable|beta|dev
-  - For global installs: auto-updates via detected package manager when possible (see docs/install/updating.md)
+  - Switch channels with --channel stable|beta|next
+  - Auto-updates via detected package manager when possible (see docs/install/updating.md)
   - Downgrades require confirmation (can break configuration)
-  - Skips update if the working directory has uncommitted changes
 
 ${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.remoteclaw.org/cli/update")}`;
     })
@@ -133,8 +132,8 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.remoteclaw.org/cli
           ["remoteclaw update status --json", "JSON output."],
           ["remoteclaw update status --timeout 10", "Custom timeout."],
         ])}\n\n${theme.heading("Notes:")}\n${theme.muted(
-          "- Shows current update channel (stable/beta/dev) and source",
-        )}\n${theme.muted("- Includes git tag/branch/SHA for source checkouts")}\n\n${theme.muted(
+          "- Shows current update channel (stable/beta/next) and source",
+        )}\n\n${theme.muted(
           "Docs:",
         )} ${formatDocsLink("/cli/update", "docs.remoteclaw.org/cli/update")}`,
     )

@@ -16,7 +16,7 @@ import { resolveRemoteClawPackageRoot } from "../infra/remoteclaw-root.js";
 import { readRestartSentinel } from "../infra/restart-sentinel.js";
 import { readTailscaleStatusJson } from "../infra/tailscale.js";
 import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../infra/update-channels.js";
-import { checkUpdateStatus, formatGitInstallLabel } from "../infra/update-check.js";
+import { checkUpdateStatus } from "../infra/update-check.js";
 import { runExec } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { VERSION } from "../version.js";
@@ -85,18 +85,14 @@ export async function statusAllCommand(
     const update = await checkUpdateStatus({
       root,
       timeoutMs: 6500,
-      fetchGit: true,
+      fetchGit: false,
       includeRegistry: true,
     });
     const configChannel = normalizeUpdateChannel(cfg.update?.channel);
     const channelInfo = resolveUpdateChannelDisplay({
       configChannel,
-      installKind: update.installKind,
-      gitTag: update.git?.tag ?? null,
-      gitBranch: update.git?.branch ?? null,
     });
     const channelLabel = channelInfo.label;
-    const gitLabel = formatGitInstallLabel(update);
     progress.tick();
 
     progress.setLabel("Probing gateway…");
@@ -261,7 +257,6 @@ export async function statusAllCommand(
               : `${tailscaleMode} · ${tailscale.backendState ?? "unknown"} · magicdns unknown`,
       },
       { Item: "Channel", Value: channelLabel },
-      ...(gitLabel ? [{ Item: "Git", Value: gitLabel }] : []),
       { Item: "Update", Value: updateLine },
       {
         Item: "Gateway",

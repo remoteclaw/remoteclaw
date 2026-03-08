@@ -13,21 +13,16 @@ import {
 import { resolveGatewayService } from "../../daemon/service.js";
 import {
   channelToNpmTag,
-  DEFAULT_GIT_CHANNEL,
   DEFAULT_PACKAGE_CHANNEL,
   normalizeUpdateChannel,
 } from "../../infra/update-channels.js";
-import {
-  compareSemverStrings,
-  resolveNpmChannelTag,
-  checkUpdateStatus,
-} from "../../infra/update-check.js";
+import { compareSemverStrings, resolveNpmChannelTag } from "../../infra/update-check.js";
 import {
   cleanupGlobalRenameDirs,
   globalInstallArgs,
   resolveGlobalPackageRoot,
 } from "../../infra/update-global.js";
-import { runGatewayUpdate, type UpdateRunResult } from "../../infra/update-runner.js";
+import type { UpdateRunResult } from "../../infra/update-runner.js";
 import { syncPluginsForUpdateChannel, updateNpmInstalledPlugins } from "../../plugins/update.js";
 import { runCommandWithTimeout } from "../../process/exec.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -48,12 +43,10 @@ import { prepareRestartScript, runRestartScript } from "./restart-helper.js";
 import {
   DEFAULT_PACKAGE_NAME,
   createGlobalCommandRunner,
-  ensureGitCheckout,
   normalizeTag,
   parseTimeoutMsOrExit,
   readPackageName,
   readPackageVersion,
-  resolveGitInstallDir,
   resolveGlobalManager,
   resolveNodeRunner,
   resolveTargetVersion,
@@ -117,15 +110,11 @@ function formatCommandFailure(stdout: string, stderr: string): string {
 type UpdateDryRunPreview = {
   dryRun: true;
   root: string;
-  installKind: "git" | "package" | "unknown";
   mode: UpdateRunResult["mode"];
-  updateInstallKind: "git" | "package" | "unknown";
-  switchToGit: boolean;
-  switchToPackage: boolean;
   restart: boolean;
-  requestedChannel: "stable" | "beta" | "dev" | null;
-  storedChannel: "stable" | "beta" | "dev" | null;
-  effectiveChannel: "stable" | "beta" | "dev";
+  requestedChannel: "stable" | "beta" | "next" | null;
+  storedChannel: "stable" | "beta" | "next" | null;
+  effectiveChannel: "stable" | "beta" | "next";
   tag: string;
   currentVersion: string | null;
   targetVersion: string | null;
@@ -144,7 +133,6 @@ function printDryRunPreview(preview: UpdateDryRunPreview, jsonMode: boolean): vo
   defaultRuntime.log(theme.muted("No changes were applied."));
   defaultRuntime.log("");
   defaultRuntime.log(`  Root: ${theme.muted(preview.root)}`);
-  defaultRuntime.log(`  Install kind: ${theme.muted(preview.installKind)}`);
   defaultRuntime.log(`  Mode: ${theme.muted(preview.mode)}`);
   defaultRuntime.log(`  Channel: ${theme.muted(preview.effectiveChannel)}`);
   defaultRuntime.log(`  Tag/spec: ${theme.muted(preview.tag)}`);
@@ -257,7 +245,6 @@ async function tryInstallShellCompletion(opts: {
 
 async function runPackageInstallUpdate(params: {
   root: string;
-  installKind: "git" | "package" | "unknown";
   tag: string;
   timeoutMs: number;
   startedAt: number;
@@ -265,7 +252,6 @@ async function runPackageInstallUpdate(params: {
 }): Promise<UpdateRunResult> {
   const manager = await resolveGlobalManager({
     root: params.root,
-    installKind: params.installKind,
     timeoutMs: params.timeoutMs,
   });
   const runCommand = createGlobalCommandRunner();
@@ -320,89 +306,9 @@ async function runPackageInstallUpdate(params: {
   };
 }
 
-async function runGitUpdate(params: {
-  root: string;
-  switchToGit: boolean;
-  installKind: "git" | "package" | "unknown";
-  timeoutMs: number | undefined;
-  startedAt: number;
-  progress: ReturnType<typeof createUpdateProgress>["progress"];
-  channel: "stable" | "beta" | "dev";
-  tag: string;
-  showProgress: boolean;
-  opts: UpdateCommandOptions;
-  stop: () => void;
-}): Promise<UpdateRunResult> {
-  const updateRoot = params.switchToGit ? resolveGitInstallDir() : params.root;
-  const effectiveTimeout = params.timeoutMs ?? 20 * 60_000;
-
-  const cloneStep = params.switchToGit
-    ? await ensureGitCheckout({
-        dir: updateRoot,
-        timeoutMs: effectiveTimeout,
-        progress: params.progress,
-      })
-    : null;
-
-  if (cloneStep && cloneStep.exitCode !== 0) {
-    const result: UpdateRunResult = {
-      status: "error",
-      mode: "git",
-      root: updateRoot,
-      reason: cloneStep.name,
-      steps: [cloneStep],
-      durationMs: Date.now() - params.startedAt,
-    };
-    params.stop();
-    printResult(result, { ...params.opts, hideSteps: params.showProgress });
-    defaultRuntime.exit(1);
-    return result;
-  }
-
-  const updateResult = await runGatewayUpdate({
-    cwd: updateRoot,
-    argv1: params.switchToGit ? undefined : process.argv[1],
-    timeoutMs: params.timeoutMs,
-    progress: params.progress,
-    channel: params.channel,
-    tag: params.tag,
-  });
-  const steps = [...(cloneStep ? [cloneStep] : []), ...updateResult.steps];
-
-  if (params.switchToGit && updateResult.status === "ok") {
-    const manager = await resolveGlobalManager({
-      root: params.root,
-      installKind: params.installKind,
-      timeoutMs: effectiveTimeout,
-    });
-    const installStep = await runUpdateStep({
-      name: "global install",
-      argv: globalInstallArgs(manager, updateRoot),
-      cwd: updateRoot,
-      timeoutMs: effectiveTimeout,
-      progress: params.progress,
-    });
-    steps.push(installStep);
-
-    const failedStep = installStep.exitCode !== 0 ? installStep : null;
-    return {
-      ...updateResult,
-      status: updateResult.status === "ok" && !failedStep ? "ok" : "error",
-      steps,
-      durationMs: Date.now() - params.startedAt,
-    };
-  }
-
-  return {
-    ...updateResult,
-    steps,
-    durationMs: Date.now() - params.startedAt,
-  };
-}
-
 async function updatePluginsAfterCoreUpdate(params: {
   root: string;
-  channel: "stable" | "beta" | "dev";
+  channel: "stable" | "beta" | "next";
   configSnapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>;
   opts: UpdateCommandOptions;
 }): Promise<void> {
@@ -636,13 +542,6 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   }
 
   const root = await resolveUpdateRoot();
-  const updateStatus = await checkUpdateStatus({
-    root,
-    timeoutMs: timeoutMs ?? 3500,
-    fetchGit: false,
-    includeRegistry: false,
-  });
-
   const configSnapshot = await readConfigFileSnapshot();
   const storedChannel = configSnapshot.valid
     ? normalizeUpdateChannel(configSnapshot.config.update?.channel)
@@ -650,7 +549,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
 
   const requestedChannel = normalizeUpdateChannel(opts.channel);
   if (opts.channel && !requestedChannel) {
-    defaultRuntime.error(`--channel must be "stable", "beta", or "dev" (got "${opts.channel}")`);
+    defaultRuntime.error(`--channel must be "stable", "beta", or "next" (got "${opts.channel}")`);
     defaultRuntime.exit(1);
     return;
   }
@@ -661,14 +560,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     return;
   }
 
-  const installKind = updateStatus.installKind;
-  const switchToGit = requestedChannel === "dev" && installKind !== "git";
-  const switchToPackage =
-    requestedChannel !== null && requestedChannel !== "dev" && installKind === "git";
-  const updateInstallKind = switchToGit ? "git" : switchToPackage ? "package" : installKind;
-  const defaultChannel =
-    updateInstallKind === "git" ? DEFAULT_GIT_CHANNEL : DEFAULT_PACKAGE_CHANNEL;
-  const channel = requestedChannel ?? storedChannel ?? defaultChannel;
+  const channel = requestedChannel ?? storedChannel ?? DEFAULT_PACKAGE_CHANNEL;
 
   const explicitTag = normalizeTag(opts.tag);
   let tag = explicitTag ?? channelToNpmTag(channel);
@@ -677,48 +569,32 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   let downgradeRisk = false;
   let fallbackToLatest = false;
 
-  if (updateInstallKind !== "git") {
-    currentVersion = switchToPackage ? null : await readPackageVersion(root);
-    targetVersion = explicitTag
-      ? await resolveTargetVersion(tag, timeoutMs)
-      : await resolveNpmChannelTag({ channel, timeoutMs }).then((resolved) => {
-          tag = resolved.tag;
-          fallbackToLatest = channel === "beta" && resolved.tag === "latest";
-          return resolved.version;
-        });
-    const cmp =
-      currentVersion && targetVersion ? compareSemverStrings(currentVersion, targetVersion) : null;
-    downgradeRisk =
-      !fallbackToLatest &&
-      currentVersion != null &&
-      (targetVersion == null || (cmp != null && cmp > 0));
-  }
+  currentVersion = await readPackageVersion(root);
+  targetVersion = explicitTag
+    ? await resolveTargetVersion(tag, timeoutMs)
+    : await resolveNpmChannelTag({ channel, timeoutMs }).then((resolved) => {
+        tag = resolved.tag;
+        fallbackToLatest = channel === "beta" && resolved.tag === "latest";
+        return resolved.version;
+      });
+  const cmp =
+    currentVersion && targetVersion ? compareSemverStrings(currentVersion, targetVersion) : null;
+  downgradeRisk =
+    !fallbackToLatest &&
+    currentVersion != null &&
+    (targetVersion == null || (cmp != null && cmp > 0));
 
   if (opts.dryRun) {
-    let mode: UpdateRunResult["mode"] = "unknown";
-    if (updateInstallKind === "git") {
-      mode = "git";
-    } else if (updateInstallKind === "package") {
-      mode = await resolveGlobalManager({
-        root,
-        installKind,
-        timeoutMs: timeoutMs ?? 20 * 60_000,
-      });
-    }
+    const mode: UpdateRunResult["mode"] = await resolveGlobalManager({
+      root,
+      timeoutMs: timeoutMs ?? 20 * 60_000,
+    });
 
     const actions: string[] = [];
     if (requestedChannel && requestedChannel !== storedChannel) {
       actions.push(`Persist update.channel=${requestedChannel} in config`);
     }
-    if (switchToGit) {
-      actions.push("Switch install mode from package to git checkout (dev channel)");
-    } else if (switchToPackage) {
-      actions.push(`Switch install mode from git to package manager (${mode})`);
-    } else if (updateInstallKind === "git") {
-      actions.push(`Run git update flow on channel ${channel} (fetch/rebase/build/doctor)`);
-    } else {
-      actions.push(`Run global package manager update with spec remoteclaw@${tag}`);
-    }
+    actions.push(`Run global package manager update with spec remoteclaw@${tag}`);
     actions.push("Run plugin update sync after core update");
     actions.push("Refresh shell completion cache (if needed)");
     actions.push(
@@ -728,9 +604,6 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     );
 
     const notes: string[] = [];
-    if (opts.tag && updateInstallKind === "git") {
-      notes.push("--tag applies to npm installs only; git updates ignore it.");
-    }
     if (fallbackToLatest) {
       notes.push("Beta channel resolves to latest for this run (fallback).");
     }
@@ -739,11 +612,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
       {
         dryRun: true,
         root,
-        installKind,
         mode,
-        updateInstallKind,
-        switchToGit,
-        switchToPackage,
         restart: shouldRestart,
         requestedChannel,
         storedChannel,
@@ -787,12 +656,6 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     }
   }
 
-  if (updateInstallKind === "git" && opts.tag && !opts.json) {
-    defaultRuntime.log(
-      theme.muted("Note: --tag applies to npm installs only; git updates ignore it."),
-    );
-  }
-
   if (requestedChannel && configSnapshot.valid) {
     const next = {
       ...configSnapshot.config,
@@ -830,28 +693,13 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     }
   }
 
-  const result = switchToPackage
-    ? await runPackageInstallUpdate({
-        root,
-        installKind,
-        tag,
-        timeoutMs: timeoutMs ?? 20 * 60_000,
-        startedAt,
-        progress,
-      })
-    : await runGitUpdate({
-        root,
-        switchToGit,
-        installKind,
-        timeoutMs,
-        startedAt,
-        progress,
-        channel,
-        tag,
-        showProgress,
-        opts,
-        stop,
-      });
+  const result = await runPackageInstallUpdate({
+    root,
+    tag,
+    timeoutMs: timeoutMs ?? 20 * 60_000,
+    startedAt,
+    progress,
+  });
 
   stop();
   printResult(result, { ...opts, hideSteps: showProgress });
@@ -862,17 +710,10 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   }
 
   if (result.status === "skipped") {
-    if (result.reason === "dirty") {
+    if (result.reason === "no-package-manager") {
       defaultRuntime.log(
         theme.warn(
-          "Skipped: working directory has uncommitted changes. Commit or stash them first.",
-        ),
-      );
-    }
-    if (result.reason === "not-git-install") {
-      defaultRuntime.log(
-        theme.warn(
-          `Skipped: this RemoteClaw install isn't a git checkout, and the package manager couldn't be detected. Update via your package manager, then run \`${replaceCliName(formatCliCommand("remoteclaw doctor"), CLI_NAME)}\` and \`${replaceCliName(formatCliCommand("remoteclaw gateway restart"), CLI_NAME)}\`.`,
+          `Skipped: package manager couldn't be detected. Update via your package manager, then run \`${replaceCliName(formatCliCommand("remoteclaw doctor"), CLI_NAME)}\` and \`${replaceCliName(formatCliCommand("remoteclaw gateway restart"), CLI_NAME)}\`.`,
         ),
       );
       defaultRuntime.log(

@@ -50,7 +50,7 @@ function mockRepoLocalPathExists() {
   });
 }
 
-async function runInitialValueForChannel(channel: "dev" | "beta") {
+async function runInitialValueForChannel(channel: "next" | "beta") {
   const runtime = makeRuntime();
   const select = vi.fn((async <T extends string>() => "skip" as T) as WizardPrompter["select"]);
   const prompter = makePrompter({ select: select as unknown as WizardPrompter["select"] });
@@ -128,8 +128,8 @@ describe("ensureOnboardingPluginInstalled", () => {
     expect(result.cfg.plugins?.entries?.zalo?.enabled).toBe(true);
   });
 
-  it("defaults to local on dev channel when local path exists", async () => {
-    expect(await runInitialValueForChannel("dev")).toBe("local");
+  it("defaults to local on next channel when local path exists", async () => {
+    expect(await runInitialValueForChannel("next")).toBe("local");
   });
 
   it("defaults to npm on beta channel even when local path exists", async () => {

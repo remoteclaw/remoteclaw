@@ -209,7 +209,7 @@ describe("gateway run option collisions", () => {
         expect.objectContaining({
           auth: expect.objectContaining({
             mode: "password",
-            password: "pw_from_file",
+            password: "pw_from_file", // pragma: allowlist secret
           }),
         }),
       );

@@ -6,6 +6,7 @@ import { RemoteClawSchema } from "../config/zod-schema.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { shortenHomePath } from "../utils.js";
+import { VERSION } from "../version.js";
 import { createClackPrompter } from "../wizard/clack-prompter.js";
 
 /**
@@ -538,6 +539,36 @@ export function materializeAuthDefaults(
 }
 
 /**
+ * Stamp `meta.lastTouchedVersion` and `meta.lastTouchedAt` on imported config JSON.
+ *
+ * OpenClaw configs carry the OpenClaw version in `meta.lastTouchedVersion`.
+ * After import, RemoteClaw is the last tool that wrote the config, so the
+ * version must be updated to prevent `warnIfConfigFromFuture()` from firing
+ * a spurious "newer RemoteClaw" warning.
+ */
+export function stampImportedConfigVersion(jsonContent: string): string {
+  let config: Record<string, unknown>;
+  try {
+    config = JSON.parse(jsonContent);
+  } catch {
+    return jsonContent;
+  }
+
+  if (typeof config !== "object" || config === null || Array.isArray(config)) {
+    return jsonContent;
+  }
+
+  const meta = (config.meta ?? {}) as Record<string, unknown>;
+  meta.lastTouchedVersion = VERSION;
+  meta.lastTouchedAt = new Date().toISOString();
+  config.meta = meta;
+
+  const indentMatch = jsonContent.match(/^(\s+)"/m);
+  const indent = indentMatch?.[1] ?? "  ";
+  return JSON.stringify(config, null, indent) + "\n";
+}
+
+/**
  * Determine the target filename for a source file.
  * Renames openclaw.json -> remoteclaw.json at any directory level.
  */
@@ -658,11 +689,13 @@ async function copyDirectory(params: {
         // Apply structural config transforms to the main config file
         const isMainConfig = entry.name === OPENCLAW_CONFIG_FILENAME;
         const final = isMainConfig
-          ? materializeAuthDefaults(
-              materializeWorkspaceDefaults(
-                clearWizardSection(stripUnrecognizedConfigKeys(transformed)),
+          ? stampImportedConfigVersion(
+              materializeAuthDefaults(
+                materializeWorkspaceDefaults(
+                  clearWizardSection(stripUnrecognizedConfigKeys(transformed)),
+                ),
+                params.discoveredAuthProfileIds,
               ),
-              params.discoveredAuthProfileIds,
             )
           : transformed;
         if (renames.length > 0 || final !== transformed) {

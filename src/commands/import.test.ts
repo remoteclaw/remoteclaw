@@ -13,6 +13,7 @@ import {
   materializeAuthDefaults,
   materializeWorkspaceDefaults,
   resolveTargetFilename,
+  stampImportedConfigVersion,
   stripUnrecognizedConfigKeys,
   transformConfigContent,
 } from "./import.js";
@@ -615,6 +616,39 @@ describe("isImportableRootEntry", () => {
   });
 });
 
+describe("stampImportedConfigVersion", () => {
+  it("sets meta.lastTouchedVersion and meta.lastTouchedAt", () => {
+    const input = JSON.stringify({ gateway: { port: 18789 } });
+    const result = JSON.parse(stampImportedConfigVersion(input));
+    expect(result.meta.lastTouchedVersion).toEqual(expect.any(String));
+    expect(result.meta.lastTouchedVersion.length).toBeGreaterThan(0);
+    expect(result.meta.lastTouchedAt).toEqual(expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/));
+  });
+
+  it("overwrites existing meta.lastTouchedVersion from OpenClaw", () => {
+    const input = JSON.stringify({
+      gateway: { port: 18789 },
+      meta: { lastTouchedVersion: "2026.2.6-3", lastTouchedAt: "2025-01-01T00:00:00.000Z" },
+    });
+    const result = JSON.parse(stampImportedConfigVersion(input));
+    expect(result.meta.lastTouchedVersion).not.toBe("2026.2.6-3");
+    expect(result.meta.lastTouchedAt).not.toBe("2025-01-01T00:00:00.000Z");
+  });
+
+  it("preserves other meta fields", () => {
+    const input = JSON.stringify({
+      meta: { someOtherField: "keep-me", lastTouchedVersion: "old" },
+    });
+    const result = JSON.parse(stampImportedConfigVersion(input));
+    expect(result.meta.someOtherField).toBe("keep-me");
+  });
+
+  it("returns non-JSON content unchanged", () => {
+    const input = "not valid json {{{";
+    expect(stampImportedConfigVersion(input)).toBe(input);
+  });
+});
+
 describe("resolveTargetFilename", () => {
   it("renames openclaw.json to remoteclaw.json", () => {
     expect(resolveTargetFilename("openclaw.json")).toBe("remoteclaw.json");
@@ -964,6 +998,25 @@ describe("importCommand", () => {
     const written = await fsp.readFile(path.join(targetDir, "remoteclaw.json"), "utf-8");
     const parsed = JSON.parse(written);
     expect(parsed.agents.defaults).toBeUndefined();
+  });
+
+  it("stamps meta.lastTouchedVersion on main config during import", async () => {
+    const configContent = JSON.stringify({
+      gateway: { port: 18789 },
+      meta: { lastTouchedVersion: "2026.2.6-3", lastTouchedAt: "2025-01-01T00:00:00.000Z" },
+    });
+    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    const written = await fsp.readFile(path.join(targetDir, "remoteclaw.json"), "utf-8");
+    const parsed = JSON.parse(written);
+    expect(parsed.meta.lastTouchedVersion).not.toBe("2026.2.6-3");
+    expect(parsed.meta.lastTouchedVersion).toEqual(expect.any(String));
+    expect(parsed.meta.lastTouchedAt).not.toBe("2025-01-01T00:00:00.000Z");
   });
 
   it("handles nested directory structures with mixed file types", async () => {

@@ -1,5 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { logDebug } from "../logger.js";
 
 /** Composite key for session lookup. */
 export type SessionKey = {
@@ -51,11 +52,16 @@ export class SessionMap {
     const compositeKey = formatKey(key);
     const entry = store[compositeKey];
     if (!entry) {
+      logDebug(`[session-map] get: key=${compositeKey} miss`);
       return undefined;
     }
     if (entry.lastAccessMs + this.#ttlMs < Date.now()) {
+      logDebug(
+        `[session-map] get: key=${compositeKey} expired (age=${Date.now() - entry.lastAccessMs}ms)`,
+      );
       return undefined;
     }
+    logDebug(`[session-map] get: key=${compositeKey} hit=${entry.sessionId}`);
     return entry.sessionId;
   }
 
@@ -65,13 +71,20 @@ export class SessionMap {
     const now = Date.now();
 
     // Evict all expired entries
+    let evicted = 0;
     for (const k of Object.keys(store)) {
       if (store[k].lastAccessMs + this.#ttlMs < now) {
         delete store[k];
+        evicted++;
       }
     }
+    if (evicted > 0) {
+      logDebug(`[session-map] evicted ${evicted} expired entries`);
+    }
 
-    store[formatKey(key)] = { sessionId, lastAccessMs: now };
+    const compositeKey = formatKey(key);
+    logDebug(`[session-map] set: key=${compositeKey} sessionId=${sessionId}`);
+    store[compositeKey] = { sessionId, lastAccessMs: now };
     await this.#writeStore(store);
   }
 
@@ -80,8 +93,10 @@ export class SessionMap {
     const store = await this.#readStore();
     const compositeKey = formatKey(key);
     if (!(compositeKey in store)) {
+      logDebug(`[session-map] delete: key=${compositeKey} not found`);
       return;
     }
+    logDebug(`[session-map] delete: key=${compositeKey}`);
     delete store[compositeKey];
     await this.#writeStore(store);
   }

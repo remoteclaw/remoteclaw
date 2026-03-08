@@ -1,3 +1,5 @@
+import { logDebug } from "../logger.js";
+
 /** Error categories for CLI subprocess failures. */
 export type ErrorCategory = "retryable" | "fatal" | "context_overflow" | "timeout" | "aborted";
 
@@ -71,18 +73,22 @@ export function isAuthRotatableError(message: string): boolean {
 export function classifyError(message: string): ErrorCategory {
   for (const pattern of retryablePatterns) {
     if (pattern.test(message)) {
+      logDebug(`[error-classifier] classified as retryable: ${message.slice(0, 200)}`);
       return "retryable";
     }
   }
   for (const pattern of contextOverflowPatterns) {
     if (pattern.test(message)) {
+      logDebug(`[error-classifier] classified as context_overflow: ${message.slice(0, 200)}`);
       return "context_overflow";
     }
   }
   for (const pattern of fatalAuthPatterns) {
     if (pattern.test(message)) {
+      logDebug(`[error-classifier] classified as fatal (auth): ${message.slice(0, 200)}`);
       return "fatal";
     }
   }
+  logDebug(`[error-classifier] classified as fatal (unmatched): ${message.slice(0, 200)}`);
   return "fatal";
 }

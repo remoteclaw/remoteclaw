@@ -27,7 +27,7 @@ curl -fsSL https://raw.githubusercontent.com/remoteclaw/remoteclaw-ansible/main/
 
 - 🔒 **Firewall-first security**: UFW + Docker isolation (only SSH + Tailscale accessible)
 - 🔐 **Tailscale VPN**: Secure remote access without exposing services publicly
-- 🐳 **Docker**: Isolated sandbox containers, localhost-only bindings
+- 🐳 **Docker**: Network isolation, localhost-only bindings
 - 🛡️ **Defense in depth**: 4-layer security architecture
 - 🚀 **One-command setup**: Complete deployment in minutes
 - 🔧 **Systemd integration**: Auto-start on boot with hardening
@@ -45,12 +45,12 @@ The Ansible playbook installs and configures:
 
 1. **Tailscale** (mesh VPN for secure remote access)
 2. **UFW firewall** (SSH + Tailscale ports only)
-3. **Docker CE + Compose V2** (for agent sandboxes)
+3. **Docker CE + Compose V2** (for network isolation and optional sandboxing)
 4. **Node.js 22.x + pnpm** (runtime dependencies)
 5. **RemoteClaw** (host-based, not containerized)
 6. **Systemd service** (auto-start with security hardening)
 
-Note: The gateway runs **directly on the host** (not in Docker), but agent sandboxes use Docker for isolation. See [Gateway configuration](/gateway/configuration#agentsdefaultssandbox) for details.
+Note: The gateway runs **directly on the host** (not in Docker). Docker is used for network isolation (firewall rules). See [Gateway configuration](/gateway/configuration) for details.
 
 ## Post-Install Setup
 
@@ -63,7 +63,7 @@ sudo -i -u remoteclaw
 The post-install script will guide you through:
 
 1. **Onboarding wizard**: Configure RemoteClaw settings
-2. **Provider login**: Connect WhatsApp/Telegram/Discord/Signal
+2. **Channel login**: Connect WhatsApp/Telegram/Discord/Signal
 3. **Gateway testing**: Verify the installation
 4. **Tailscale setup**: Connect to your VPN mesh
 
@@ -79,7 +79,7 @@ sudo journalctl -u remoteclaw -f
 # Restart gateway
 sudo systemctl restart remoteclaw
 
-# Provider login (run as remoteclaw user)
+# Channel login (run as remoteclaw user)
 sudo -i -u remoteclaw
 remoteclaw channels login
 ```
@@ -105,9 +105,9 @@ Should show **only port 22** (SSH) open. All other services (gateway, Docker) ar
 
 ### Docker Availability
 
-Docker is installed for **agent sandboxes** (isolated tool execution), not for running the gateway itself. The gateway binds to localhost only and is accessible via Tailscale VPN.
+Docker is installed for **network isolation** (firewall rules via DOCKER-USER iptables chain), not for running the gateway itself. The gateway binds to localhost only and is accessible via Tailscale VPN.
 
-See [Multi-Agent Routing](/concepts/multi-agent) for sandbox configuration.
+See [Multi-Agent Routing](/concepts/multi-agent) for agent configuration.
 
 ## Manual Installation
 
@@ -183,7 +183,7 @@ cd /opt/remoteclaw/remoteclaw
 sudo -u remoteclaw ./scripts/sandbox-setup.sh
 ```
 
-### Provider login fails
+### Channel login fails
 
 Make sure you're running as the `remoteclaw` user:
 
@@ -204,5 +204,5 @@ For detailed security architecture and troubleshooting:
 
 - [remoteclaw-ansible](https://github.com/remoteclaw/remoteclaw-ansible) — full deployment guide
 - [Docker](/install/docker) — containerized gateway setup
-- [Gateway configuration](/gateway/configuration#agentsdefaultssandbox) — agent sandbox configuration
+- [Gateway configuration](/gateway/configuration) — gateway configuration
 - [Multi-Agent Routing](/concepts/multi-agent) — per-agent isolation

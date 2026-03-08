@@ -7,7 +7,7 @@ Deploy RemoteClaw on Render using Infrastructure as Code. The included `render.y
 ## Prerequisites
 
 - A [Render account](https://render.com) (free tier available)
-- An API key from your preferred [model provider](/providers)
+- An API key for your CLI agent runtime (e.g. Anthropic API key for Claude)
 
 ## Deploy with a Render Blueprint
 
@@ -77,7 +77,7 @@ The Blueprint defaults to `starter`. To use free tier, change `plan: free` in yo
 
 1. Navigate to `https://<your-service>.onrender.com/setup`
 2. Enter your `SETUP_PASSWORD`
-3. Select a model provider and paste your API key
+3. Select a CLI agent runtime and paste its API key
 4. Optionally configure messaging channels (Telegram, Discord, Slack)
 5. Click **Run setup**
 

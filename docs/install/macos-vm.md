@@ -141,7 +141,7 @@ npm install -g remoteclaw@latest
 remoteclaw onboard --install-daemon
 ```
 
-Follow the onboarding prompts to set up your model provider (Anthropic, OpenAI, etc.).
+Follow the onboarding prompts to select an agent runtime and configure channels.
 
 ---
 

@@ -22,7 +22,7 @@ curl -fsSL https://remoteclaw.org/install.sh | bash
 
 Notes:
 
-- Add `--no-onboard` if you don’t want the onboarding wizard to run again.
+- Add `--no-onboard` to skip the post-install setup prompts.
 - For **source installs**, use:
 
   ```bash
@@ -32,7 +32,7 @@ Notes:
   The installer will `git pull --rebase` **only** if the repo is clean.
 
 - For **global installs**, the script uses `npm install -g remoteclaw@latest` under the hood.
-- Legacy note: `clawdbot` remains available as a compatibility shim.
+- Legacy note: `clawdbot` may still be available as a compatibility shim on older installs.
 
 ## Before you update
 

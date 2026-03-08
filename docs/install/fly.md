@@ -14,7 +14,7 @@ read_when:
 
 - [flyctl CLI](https://fly.io/docs/hands-on/install-flyctl/) installed
 - Fly.io account (free tier works)
-- Model auth: Anthropic API key (or other provider keys)
+- CLI agent credentials: Anthropic API key (for Claude runtime), or keys for other CLI agents
 - Channel credentials: Discord bot token, Telegram token, etc.
 
 ## Beginner quick path
@@ -95,10 +95,10 @@ primary_region = "iad"
 # Required: Gateway token (for non-loopback binding)
 fly secrets set REMOTECLAW_GATEWAY_TOKEN=$(openssl rand -hex 32)
 
-# Model provider API keys
+# CLI agent API keys (consumed by the agent subprocess, not RemoteClaw)
 fly secrets set ANTHROPIC_API_KEY=sk-ant-...
 
-# Optional: Other providers
+# Optional: other CLI agent keys
 fly secrets set OPENAI_API_KEY=sk-...
 fly secrets set GOOGLE_API_KEY=...
 
@@ -150,10 +150,7 @@ cat > /data/remoteclaw.json << 'EOF'
 {
   "agents": {
     "defaults": {
-      "model": {
-        "primary": "anthropic/claude-opus-4-6",
-        "fallbacks": ["anthropic/claude-sonnet-4-5", "openai/gpt-4o"]
-      },
+      "runtime": "claude",
       "maxConcurrent": 4
     },
     "list": [
@@ -162,12 +159,6 @@ cat > /data/remoteclaw.json << 'EOF'
         "default": true
       }
     ]
-  },
-  "auth": {
-    "profiles": {
-      "anthropic:default": { "mode": "token", "provider": "anthropic" },
-      "openai:default": { "mode": "token", "provider": "openai" }
-    }
   },
   "bindings": [
     {

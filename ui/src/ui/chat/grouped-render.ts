@@ -76,12 +76,18 @@ export function renderStreamingGroup(
   startedAt: number,
   onOpenSidebar?: (content: string) => void,
   assistant?: AssistantIdentity,
+  thinkingText?: string | null,
 ) {
   const timestamp = new Date(startedAt).toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
   });
   const name = assistant?.name ?? "Assistant";
+  const contentBlocks: Array<Record<string, unknown>> = [];
+  if (thinkingText) {
+    contentBlocks.push({ type: "thinking", thinking: thinkingText });
+  }
+  contentBlocks.push({ type: "text", text });
 
   return html`
     <div class="chat-group assistant">
@@ -90,10 +96,10 @@ export function renderStreamingGroup(
         ${renderGroupedMessage(
           {
             role: "assistant",
-            content: [{ type: "text", text }],
+            content: contentBlocks,
             timestamp: startedAt,
           },
-          { isStreaming: true, showReasoning: false },
+          { isStreaming: true, showReasoning: Boolean(thinkingText) },
           onOpenSidebar,
         )}
         <div class="chat-group-footer">
@@ -221,6 +227,31 @@ function renderMessageImages(images: ImageBlock[]) {
   `;
 }
 
+const THINKING_SUMMARY_PREVIEW_CHARS = 120;
+
+function renderThinkingBlock(reasoningMarkdown: string, isStreaming: boolean) {
+  const thinkingHtml = toSanitizedMarkdownHtml(reasoningMarkdown);
+  if (isStreaming) {
+    return html`<details class="chat-thinking" open>
+      <summary class="chat-thinking__summary">Thinking…</summary>
+      <div class="chat-thinking__content">${unsafeHTML(thinkingHtml)}</div>
+    </details>`;
+  }
+  // Extract a short preview for the collapsed summary
+  const plainPreview = reasoningMarkdown
+    .replace(/_Reasoning:_\n?/, "")
+    .replace(/_/g, "")
+    .slice(0, THINKING_SUMMARY_PREVIEW_CHARS)
+    .trim();
+  const summaryText = plainPreview
+    ? `Thinking: ${plainPreview}${reasoningMarkdown.length > THINKING_SUMMARY_PREVIEW_CHARS ? "…" : ""}`
+    : "Thinking";
+  return html`<details class="chat-thinking">
+    <summary class="chat-thinking__summary">${summaryText}</summary>
+    <div class="chat-thinking__content">${unsafeHTML(thinkingHtml)}</div>
+  </details>`;
+}
+
 function renderGroupedMessage(
   message: unknown,
   opts: { isStreaming: boolean; showReasoning: boolean },
@@ -269,13 +300,7 @@ function renderGroupedMessage(
     <div class="${bubbleClasses}">
       ${canCopyMarkdown ? renderCopyAsMarkdownButton(markdown!) : nothing}
       ${renderMessageImages(images)}
-      ${
-        reasoningMarkdown
-          ? html`<div class="chat-thinking">${unsafeHTML(
-              toSanitizedMarkdownHtml(reasoningMarkdown),
-            )}</div>`
-          : nothing
-      }
+      ${reasoningMarkdown ? renderThinkingBlock(reasoningMarkdown, opts.isStreaming) : nothing}
       ${
         markdown
           ? html`<div class="chat-text" dir="${detectTextDirection(markdown)}">${unsafeHTML(toSanitizedMarkdownHtml(markdown))}</div>`

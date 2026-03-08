@@ -367,7 +367,8 @@ export function resolveModelAuthLabel(params: {
       store,
       profileId,
     });
-    return `api-key ${formatApiKeySnippet(profile.key ?? "")}${label ? ` (${label})` : ""}`;
+    const keyValue = profile.type === "token" ? profile.token : (profile.key ?? "");
+    return `api-key ${formatApiKeySnippet(keyValue)}${label ? ` (${label})` : ""}`;
   }
 
   const envKey = resolveEnvApiKey(providerKey);

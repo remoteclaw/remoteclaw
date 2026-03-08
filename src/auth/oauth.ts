@@ -45,7 +45,7 @@ export async function resolveApiKeyForProfile(
     return null;
   }
 
-  const key = cred.key?.trim();
+  const key = (cred.type === "token" ? cred.token : cred.key)?.trim();
   if (!key) {
     return null;
   }

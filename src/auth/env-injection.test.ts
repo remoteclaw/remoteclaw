@@ -85,7 +85,7 @@ describe("resolveAuthEnv", () => {
         "claude:oauth-token": {
           type: "token",
           provider: "anthropic",
-          key: "sk-ant-oat01-test-oauth-token",
+          token: "sk-ant-oat01-test-oauth-token",
         },
       },
     };

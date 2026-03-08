@@ -7,17 +7,17 @@ export type ApiKeyCredential = {
   metadata?: Record<string, string>;
 };
 
-/**
- * Static bearer-style token (e.g., OAuth access token / PAT).
- * Stored with `type: "token"` so env-injection can map to the correct
- * env var (e.g., CLAUDE_CODE_OAUTH_TOKEN instead of ANTHROPIC_API_KEY).
- */
 export type TokenCredential = {
+  /**
+   * Static bearer-style token (often OAuth access token / PAT).
+   * Not refreshable by RemoteClaw.
+   */
   type: "token";
   provider: string;
-  key?: string;
+  token: string;
+  /** Optional expiry timestamp (ms since epoch). */
+  expires?: number;
   email?: string;
-  metadata?: Record<string, string>;
 };
 
 export type AuthProfileCredential = ApiKeyCredential | TokenCredential;

@@ -1,3 +1,4 @@
+import type { SpawnedRunMetadata } from "../../agents/spawned-context.js";
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
 
 /**
@@ -72,14 +73,11 @@ export type AgentCommandOpts = {
   accountId?: string;
   /** Context for embedded run routing (channel/account/thread). */
   runContext?: AgentRunContext;
-  /** Group id for channel-level tool policy resolution. */
-  groupId?: string | null;
-  /** Group channel label for channel-level tool policy resolution. */
-  groupChannel?: string | null;
-  /** Group space label for channel-level tool policy resolution. */
-  groupSpace?: string | null;
-  /** Parent session key for subagent policy inheritance. */
-  spawnedBy?: string | null;
+  /** Group/spawn metadata for subagent policy inheritance and routing context. */
+  groupId?: SpawnedRunMetadata["groupId"];
+  groupChannel?: SpawnedRunMetadata["groupChannel"];
+  groupSpace?: SpawnedRunMetadata["groupSpace"];
+  spawnedBy?: SpawnedRunMetadata["spawnedBy"];
   deliveryTargetMode?: ChannelOutboundTargetMode;
   bestEffortDeliver?: boolean;
   abortSignal?: AbortSignal;
@@ -92,7 +90,7 @@ export type AgentCommandOpts = {
   /** Whether the sender is the owner of the agent (defaults to true for CLI). */
   senderIsOwner?: boolean;
   /** Explicit workspace directory override (for subagents to inherit parent workspace). */
-  workspaceDir?: string;
+  workspaceDir?: SpawnedRunMetadata["workspaceDir"];
 };
 
 export type AgentCommandIngressOpts = Omit<AgentCommandOpts, "senderIsOwner"> & {

@@ -10,6 +10,7 @@ import { resolveChannelMessageToolHints } from "../agents/channel-tools.js";
 import { getCliSessionId } from "../agents/cli-session.js";
 // Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { normalizeModelRef } from "../agents/provider-utils.js";
+import { normalizeSpawnedRunMetadata } from "../agents/spawned-context.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import { normalizeVerboseLevel, type VerboseLevel } from "../auto-reply/thinking.js";
 import { formatCliCommand } from "../cli/command-format.js";
@@ -115,10 +116,9 @@ function buildCliChannelMessage(params: {
   };
 }
 
-async function agentCommandInternal(
+async function prepareAgentCommandExecution(
   opts: AgentCommandOpts & { senderIsOwner: boolean },
-  runtime: RuntimeEnv = defaultRuntime,
-  deps: CliDeps = createDefaultDeps(),
+  _runtime: RuntimeEnv,
 ) {
   const body = (opts.message ?? "").trim();
   if (!body) {
@@ -129,6 +129,13 @@ async function agentCommandInternal(
   }
 
   const cfg = loadConfig();
+  const normalizedSpawned = normalizeSpawnedRunMetadata({
+    spawnedBy: opts.spawnedBy,
+    groupId: opts.groupId,
+    groupChannel: opts.groupChannel,
+    groupSpace: opts.groupSpace,
+    workspaceDir: opts.workspaceDir,
+  });
   const agentIdOverrideRaw = opts.agentId?.trim();
   const agentIdOverride = agentIdOverrideRaw ? normalizeAgentId(agentIdOverrideRaw) : undefined;
   if (agentIdOverride) {
@@ -172,7 +179,7 @@ async function agentCommandInternal(
   const {
     sessionId,
     sessionKey,
-    sessionEntry: resolvedSessionEntry,
+    sessionEntry: sessionEntryRaw,
     sessionStore,
     storePath,
     isNewSession: _isNewSession,
@@ -191,10 +198,68 @@ async function agentCommandInternal(
   });
   // Internal callers (for example subagent spawns) may pin workspace inheritance.
   const workspaceDirRaw =
-    opts.workspaceDir?.trim() ?? resolveAgentWorkspaceDir(cfg, sessionAgentId);
+    normalizedSpawned.workspaceDir ?? resolveAgentWorkspaceDir(cfg, sessionAgentId);
   const workspaceDir = await ensureAgentWorkspace(workspaceDirRaw);
-  let sessionEntry = resolvedSessionEntry;
   const runId = opts.runId?.trim() || sessionId;
+
+  return {
+    body,
+    cfg,
+    normalizedSpawned,
+    agentCfg,
+    thinkOverride,
+    thinkOnce,
+    verboseOverride,
+    timeoutMs,
+    sessionId,
+    sessionKey,
+    sessionEntry: sessionEntryRaw,
+    sessionStore,
+    storePath,
+    isNewSession,
+    persistedThinking,
+    persistedVerbose,
+    sessionAgentId,
+    outboundSession,
+    workspaceDir,
+    agentDir,
+    runId,
+    acpManager,
+    acpResolution,
+  };
+}
+
+async function agentCommandInternal(
+  opts: AgentCommandOpts & { senderIsOwner: boolean },
+  _runtime: RuntimeEnv = defaultRuntime,
+  deps: CliDeps = createDefaultDeps(),
+) {
+  const prepared = await prepareAgentCommandExecution(opts, _runtime);
+  const {
+    body,
+    cfg,
+    normalizedSpawned: _normalizedSpawned,
+    agentCfg,
+    thinkOverride: _thinkOverride,
+    thinkOnce: _thinkOnce,
+    verboseOverride,
+    timeoutMs: _timeoutMs,
+    sessionId,
+    sessionKey,
+    sessionStore,
+    storePath,
+    isNewSession: _isNewSession,
+    persistedThinking: _persistedThinking,
+    persistedVerbose,
+    sessionAgentId,
+    outboundSession,
+    workspaceDir,
+    agentDir: _agentDir,
+    runId,
+    acpManager: _acpManager,
+    acpResolution: _acpResolution,
+  } = prepared;
+  let sessionEntry = prepared.sessionEntry;
 
   try {
     if (opts.deliver === true) {

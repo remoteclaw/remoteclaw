@@ -1,6 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import type { GatewayMessageChannel } from "../../utils/message-channel.js";
 import { optionalStringEnum } from "../schema/typebox.js";
+import type { SpawnedToolContext } from "../spawned-context.js";
 import { SUBAGENT_SPAWN_MODES, spawnSubagentDirect } from "../subagent-spawn.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult, readStringParam, ToolInputError } from "./common.js";
@@ -50,21 +51,18 @@ const SessionsSpawnToolSchema = Type.Object({
   ),
 });
 
-export function createSessionsSpawnTool(opts?: {
-  agentSessionKey?: string;
-  agentChannel?: GatewayMessageChannel;
-  agentAccountId?: string;
-  agentTo?: string;
-  agentThreadId?: string | number;
-  agentGroupId?: string | null;
-  agentGroupChannel?: string | null;
-  agentGroupSpace?: string | null;
-  sandboxed?: boolean;
-  /** Explicit agent ID override for cron/hook sessions where session key parsing may not work. */
-  requesterAgentIdOverride?: string;
-  /** Internal-only workspace inheritance path for spawned subagents. */
-  workspaceDir?: string;
-}): AnyAgentTool {
+export function createSessionsSpawnTool(
+  opts?: {
+    agentSessionKey?: string;
+    agentChannel?: GatewayMessageChannel;
+    agentAccountId?: string;
+    agentTo?: string;
+    agentThreadId?: string | number;
+    sandboxed?: boolean;
+    /** Explicit agent ID override for cron/hook sessions where session key parsing may not work. */
+    requesterAgentIdOverride?: string;
+  } & SpawnedToolContext,
+): AnyAgentTool {
   return {
     label: "Sessions",
     name: "sessions_spawn",

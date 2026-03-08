@@ -55,7 +55,7 @@ Your workspace is where files like `MEMORY.md` and `memory/*.md` live.
 If you copy **both** the state dir and workspace, you keep:
 
 - Gateway configuration (`remoteclaw.json`)
-- Auth profiles / API keys / OAuth tokens
+- Channel credentials and tokens
 - Session history + agent state
 - Channel state (e.g. WhatsApp login/session)
 - Your workspace files (memory, skills notes, etc.)

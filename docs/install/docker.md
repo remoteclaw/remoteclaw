@@ -42,7 +42,7 @@ This script:
 
 - builds the gateway image
 - runs the onboarding wizard
-- prints optional provider setup hints
+- prints optional channel setup hints
 - starts the gateway via Docker Compose
 - generates a gateway token and writes it to `.env`
 
@@ -296,12 +296,12 @@ docker compose run --rm remoteclaw-cli channels add --channel discord --token "<
 
 Docs: [WhatsApp](/channels/whatsapp), [Telegram](/channels/telegram), [Discord](/channels/discord)
 
-### OpenAI Codex OAuth (headless Docker)
+### CLI agent OAuth (headless Docker)
 
-If you pick OpenAI Codex OAuth in the wizard, it opens a browser URL and tries
-to capture a callback on `http://127.0.0.1:1455/auth/callback`. In Docker or
-headless setups that callback can show a browser error. Copy the full redirect
-URL you land on and paste it back into the wizard to finish auth.
+Some CLI agents (e.g. Codex) use OAuth flows that open a browser URL and try
+to capture a callback on a local port. In Docker or headless setups that
+callback can show a browser error. Copy the full redirect URL you land on and
+paste it back into the CLI agent's auth flow to finish auth.
 
 ### Health check
 

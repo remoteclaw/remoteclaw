@@ -5,7 +5,7 @@ import {
 } from "../../commands/daemon-runtime.js";
 import { randomToken } from "../../commands/onboard-helpers.js";
 import {
-  loadConfig,
+  readBestEffortConfig,
   readConfigFileSnapshot,
   resolveGatewayPort,
   writeConfigFile,
@@ -33,7 +33,7 @@ export async function runDaemonInstall(opts: DaemonInstallOptions) {
     return;
   }
 
-  const cfg = loadConfig();
+  const cfg = await readBestEffortConfig();
   const portOverride = parsePort(opts.port);
   if (opts.port !== undefined && portOverride === null) {
     fail("Invalid port");

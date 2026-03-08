@@ -1,6 +1,10 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import { withProgress } from "../cli/progress.js";
-import { loadConfig, readConfigFileSnapshot, resolveGatewayPort } from "../config/config.js";
+import {
+  readBestEffortConfig,
+  readConfigFileSnapshot,
+  resolveGatewayPort,
+} from "../config/config.js";
 import { readLastGatewayErrorLine } from "../daemon/diagnostics.js";
 import { resolveNodeService } from "../daemon/node-service.js";
 import type { GatewayService } from "../daemon/service.js";
@@ -35,7 +39,7 @@ export async function statusAllCommand(
 ): Promise<void> {
   await withProgress({ label: "Scanning status --all…", total: 11 }, async (progress) => {
     progress.setLabel("Loading config…");
-    const cfg = loadConfig();
+    const cfg = await readBestEffortConfig();
     const osSummary = resolveOsSummary();
     const snap = await readConfigFileSnapshot().catch(() => null);
     progress.tick();
@@ -171,6 +175,7 @@ export async function statusAllCommand(
     progress.setLabel("Querying gateway…");
     const health = gatewayReachable
       ? await callGateway({
+          config: cfg,
           method: "health",
           timeoutMs: Math.min(8000, opts?.timeoutMs ?? 10_000),
           ...callOverrides,
@@ -179,6 +184,7 @@ export async function statusAllCommand(
 
     const channelsStatus = gatewayReachable
       ? await callGateway({
+          config: cfg,
           method: "channels.status",
           params: { probe: false, timeoutMs: opts?.timeoutMs ?? 10_000 },
           timeoutMs: Math.min(8000, opts?.timeoutMs ?? 10_000),

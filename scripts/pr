@@ -1039,6 +1039,44 @@ prepare_validate_commit() {
   echo "commit subject validated: $subject"
 }
 
+validate_changelog_merge_hygiene() {
+  local diff
+  diff=$(git diff --unified=0 origin/main...HEAD -- CHANGELOG.md)
+
+  local removed_lines
+  removed_lines=$(printf '%s\n' "$diff" | awk '
+    /^---/ { next }
+    /^-/ { print substr($0, 2) }
+  ')
+  if [ -z "$removed_lines" ]; then
+    return 0
+  fi
+
+  local removed_refs
+  removed_refs=$(printf '%s\n' "$removed_lines" | rg -o '#[0-9]+' | sort -u || true)
+  if [ -z "$removed_refs" ]; then
+    return 0
+  fi
+
+  local added_lines
+  added_lines=$(printf '%s\n' "$diff" | awk '
+    /^\+\+\+/ { next }
+    /^\+/ { print substr($0, 2) }
+  ')
+
+  local ref
+  while IFS= read -r ref; do
+    [ -z "$ref" ] && continue
+    if ! printf '%s\n' "$added_lines" | rg -q -F "$ref"; then
+      echo "CHANGELOG.md drops existing entry reference $ref without re-adding it."
+      echo "Likely merge conflict loss; restore the dropped entry (or keep the same PR ref in rewritten text)."
+      exit 1
+    fi
+  done <<<"$removed_refs"
+
+  echo "changelog merge hygiene validated: no dropped PR references"
+}
+
 validate_changelog_entry_for_pr() {
   local pr="$1"
   local contrib="$2"
@@ -1205,6 +1243,7 @@ prepare_gates() {
     exit 1
   fi
   local contrib="${PR_AUTHOR:-}"
+  validate_changelog_merge_hygiene
   validate_changelog_entry_for_pr "$pr" "$contrib"
 
   run_quiet_logged "pnpm build" ".local/gates-build.log" pnpm build
@@ -1848,6 +1887,31 @@ EOF_BODY
     echo "Merge commit SHA missing."
     exit 1
   fi
+  local repo_nwo
+  repo_nwo=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+
+  local merge_sha_url=""
+  if gh api repos/:owner/:repo/commits/"$merge_sha" >/dev/null 2>&1; then
+    merge_sha_url="https://github.com/$repo_nwo/commit/$merge_sha"
+  else
+    echo "Merge commit is not resolvable via repository commit endpoint: $merge_sha"
+    exit 1
+  fi
+
+  local prep_sha_url=""
+  if gh api repos/:owner/:repo/commits/"$PREP_HEAD_SHA" >/dev/null 2>&1; then
+    prep_sha_url="https://github.com/$repo_nwo/commit/$PREP_HEAD_SHA"
+  else
+    local pr_commit_count
+    pr_commit_count=$(gh pr view "$pr" --json commits --jq "[.commits[].oid | select(. == \"$PREP_HEAD_SHA\")] | length")
+    if [ "${pr_commit_count:-0}" -gt 0 ]; then
+      prep_sha_url="https://github.com/$repo_nwo/pull/$pr/commits/$PREP_HEAD_SHA"
+    fi
+  fi
+  if [ -z "$prep_sha_url" ]; then
+    echo "Prepared head SHA is not resolvable in repo commits or PR commit list: $PREP_HEAD_SHA"
+    exit 1
+  fi
 
   local commit_body
   commit_body=$(gh api repos/:owner/:repo/commits/"$merge_sha" --jq .commit.message)
@@ -1861,8 +1925,8 @@ EOF_BODY
     if comment_output=$(gh pr comment "$pr" -F - 2>&1 <<EOF_COMMENT
 Merged via squash.
 
-- Prepared head SHA: $PREP_HEAD_SHA
-- Merge commit: $merge_sha
+- Prepared head SHA: [$PREP_HEAD_SHA]($prep_sha_url)
+- Merge commit: [$merge_sha]($merge_sha_url)
 
 Thanks @$contrib!
 EOF_COMMENT

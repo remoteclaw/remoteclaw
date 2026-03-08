@@ -1,6 +1,6 @@
 import type { loadConfig } from "../../../config/config.js";
 import type { resolveAgentRoute } from "../../../routing/resolve-route.js";
-import { buildAgentSessionKey } from "../../../routing/resolve-route.js";
+import { buildAgentSessionKey, deriveLastRoutePolicy } from "../../../routing/resolve-route.js";
 import {
   buildAgentMainSessionKey,
   DEFAULT_MAIN_KEY,
@@ -92,6 +92,10 @@ export async function maybeBroadcastMessage(params: {
       ...params.route,
       agentId: normalizedAgentId,
       ...routeKeys,
+      lastRoutePolicy: deriveLastRoutePolicy({
+        sessionKey: routeKeys.sessionKey,
+        mainSessionKey: routeKeys.mainSessionKey,
+      }),
     };
 
     try {

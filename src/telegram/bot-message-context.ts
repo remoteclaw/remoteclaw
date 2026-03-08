@@ -34,8 +34,10 @@ import { recordChannelActivity } from "../infra/channel-activity.js";
 import { getSessionBindingService } from "../infra/outbound/session-binding-service.js";
 import {
   buildAgentSessionKey,
+  deriveLastRoutePolicy,
   pickFirstExistingAgentId,
   resolveAgentRoute,
+  resolveInboundLastRouteSessionKey,
   type ResolvedAgentRoute,
 } from "../routing/resolve-route.js";
 import {
@@ -286,6 +288,14 @@ export const buildTelegramMessageContext = async ({
       ? resolveThreadSessionKeys({ baseSessionKey, threadId: `${chatId}:${dmThreadId}` })
       : null;
   const sessionKey = threadKeys?.sessionKey ?? baseSessionKey;
+  route = {
+    ...route,
+    sessionKey,
+    lastRoutePolicy: deriveLastRoutePolicy({
+      sessionKey,
+      mainSessionKey: route.mainSessionKey,
+    }),
+  };
   const mentionRegexes = buildMentionRegexes(cfg, route.agentId);
   const effectiveDmAllow = normalizeAllowFromWithStore({ allowFrom, storeAllowFrom, dmPolicy });
   const groupAllowOverride = firstDefined(topicConfig?.allowFrom, groupConfig?.allowFrom);
@@ -851,6 +861,10 @@ export const buildTelegramMessageContext = async ({
         normalizeEntry: (entry) => normalizeAllowFrom([entry]).entries[0],
       })
     : null;
+  const updateLastRouteSessionKey = resolveInboundLastRouteSessionKey({
+    route,
+    sessionKey,
+  });
 
   await recordInboundSession({
     storePath,
@@ -858,14 +872,14 @@ export const buildTelegramMessageContext = async ({
     ctx: ctxPayload,
     updateLastRoute: !isGroup
       ? {
-          sessionKey: route.mainSessionKey,
+          sessionKey: updateLastRouteSessionKey,
           channel: "telegram",
           to: `telegram:${chatId}`,
           accountId: route.accountId,
           // Preserve DM topic threadId for replies (fixes #8891)
           threadId: dmThreadId != null ? String(dmThreadId) : undefined,
           mainDmOwnerPin:
-            pinnedMainDmOwner && senderId
+            updateLastRouteSessionKey === route.mainSessionKey && pinnedMainDmOwner && senderId
               ? {
                   ownerRecipient: pinnedMainDmOwner,
                   senderRecipient: senderId,

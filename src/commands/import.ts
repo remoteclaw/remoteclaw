@@ -313,6 +313,37 @@ export function clearWizardSection(jsonContent: string): string {
 }
 
 /**
+ * Strip the `$schema` field from config JSON.
+ *
+ * OpenClaw configs may contain `"$schema": "https://openclaw.org/..."` pointing
+ * to an OpenClaw schema URL. Rather than rewriting to a RemoteClaw URL (which
+ * may have a different format), we strip the field entirely — RemoteClaw will
+ * write its own `$schema` on the next config save if needed.
+ */
+export function stripSchemaField(jsonContent: string): string {
+  let config: Record<string, unknown>;
+  try {
+    config = JSON.parse(jsonContent);
+  } catch {
+    return jsonContent;
+  }
+
+  if (typeof config !== "object" || config === null || Array.isArray(config)) {
+    return jsonContent;
+  }
+
+  if (!("$schema" in config)) {
+    return jsonContent;
+  }
+
+  delete config.$schema;
+
+  const indentMatch = jsonContent.match(/^(\s+)"/m);
+  const indent = indentMatch?.[1] ?? "  ";
+  return JSON.stringify(config, null, indent) + "\n";
+}
+
+/**
  * Materialize implicit OpenClaw workspace defaults into the main config JSON.
  *
  * OpenClaw had a three-tier workspace resolution chain that was removed in
@@ -692,7 +723,7 @@ async function copyDirectory(params: {
           ? stampImportedConfigVersion(
               materializeAuthDefaults(
                 materializeWorkspaceDefaults(
-                  clearWizardSection(stripUnrecognizedConfigKeys(transformed)),
+                  clearWizardSection(stripUnrecognizedConfigKeys(stripSchemaField(transformed))),
                 ),
                 params.discoveredAuthProfileIds,
               ),

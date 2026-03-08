@@ -1,0 +1,103 @@
+---
+description: "Compare NanoClaw and RemoteClaw: Anthropic Agent SDK vs CLI subprocess middleware, container isolation vs process isolation, and when each is the right choice."
+read_when:
+  - You are evaluating whether to use NanoClaw or RemoteClaw
+  - You want to understand the trade-offs between the two projects
+title: "NanoClaw or RemoteClaw? Decision Guide for AI Agent Middleware"
+---
+
+import { TabItem, Tabs } from "@astrojs/starlight/components";
+
+# NanoClaw or RemoteClaw?
+
+NanoClaw and RemoteClaw both connect AI agents to messaging channels, but they take fundamentally different approaches. NanoClaw builds a new agent using the Anthropic Agent SDK and runs it in containers. RemoteClaw bridges your existing CLI agent as a subprocess.
+
+## Quick decision
+
+**Already using Claude Code, Gemini CLI, Codex CLI, or OpenCode with your own config?**
+Use **RemoteClaw**. It connects your existing agent to messaging channels without replacing it.
+
+**Want a lightweight, security-hardened Claude agent with container isolation?**
+Use **NanoClaw**. It provides a purpose-built agent with strong sandboxing out of the box.
+
+## Decision tree
+
+| If you want…                                                                               | Choose         |
+| ------------------------------------------------------------------------------------------ | -------------- |
+| Connect an existing CLI agent (Claude, Gemini, Codex, OpenCode) to WhatsApp/Telegram/Slack | **RemoteClaw** |
+| Switch between multiple agent runtimes via config                                          | **RemoteClaw** |
+| Middleware-only architecture (no embedded LLM overhead)                                    | **RemoteClaw** |
+| MCP-first tool system (50 tools via MCP server)                                            | **RemoteClaw** |
+| 22+ messaging channels inherited from OpenClaw                                             | **RemoteClaw** |
+| Lightweight Claude agent with container isolation                                          | **NanoClaw**   |
+| Anthropic Agent SDK with built-in tool use                                                 | **NanoClaw**   |
+| Strong sandboxing via Docker/container boundaries                                          | **NanoClaw**   |
+| Minimal setup for a Claude-only workflow                                                   | **NanoClaw**   |
+
+## Architecture comparison
+
+<Tabs>
+  <TabItem label="RemoteClaw">
+    ```
+    RemoteClaw (middleware)
+    ├── ChannelBridge (message routing + session tracking)
+    ├── CLI subprocess (claude, gemini, codex, or opencode)
+    │   ├── LLM interaction (handled by the CLI)
+    │   ├── Tool execution (handled by the CLI)
+    │   └── Conversation management (handled by the CLI)
+    └── MCP server (injected into subprocess for gateway access)
+    ```
+
+    The CLI agent owns the agentic loop. RemoteClaw handles session persistence, message delivery, and MCP tool bridging. Your `~/.claude`, `~/.gemini`, or other agent config is preserved as-is.
+
+  </TabItem>
+  <TabItem label="NanoClaw">
+    ```
+    NanoClaw (containerized agent)
+    ├── Anthropic Agent SDK (Claude-only orchestration)
+    ├── Container isolation (Docker-based sandboxing)
+    ├── Built-in tool use (via Agent SDK)
+    └── Channel adapters (WhatsApp, Telegram, Slack, Discord, Gmail)
+    ```
+
+    NanoClaw runs a new Claude agent inside a container. The agent is built from the Anthropic SDK, not from your existing CLI setup.
+
+  </TabItem>
+</Tabs>
+
+## Key differences
+
+| Dimension                | RemoteClaw                                              | NanoClaw                                       |
+| ------------------------ | ------------------------------------------------------- | ---------------------------------------------- |
+| **Agent model**          | CLI subprocess (your agent, your config)                | Anthropic Agent SDK (new agent instance)       |
+| **Runtime support**      | 4 runtimes (Claude, Gemini, Codex, OpenCode)            | Claude only                                    |
+| **Config preservation**  | Yes — uses your `~/.<agent>` directly                   | No — agent configured within NanoClaw          |
+| **Isolation model**      | Process isolation (subprocess boundary)                 | Container isolation (Docker boundary)          |
+| **Channels**             | 22+ (inherited from OpenClaw)                           | ~5 (WhatsApp, Telegram, Slack, Discord, Gmail) |
+| **MCP tools**            | 50 infrastructure-bound tools                           | Agent SDK built-in tools                       |
+| **Session management**   | File-based, per {channel, user, thread}                 | Built-in                                       |
+| **Subscription support** | Yes — CLI agents use your existing subscription or keys | API keys required (Agent SDK)                  |
+
+:::note
+Anthropic's terms of service restrict Agent SDK usage with Max/Pro subscription OAuth tokens and third-party tools. RemoteClaw spawns the real CLI binary, so your existing Claude subscription works as-is. NanoClaw uses the Agent SDK directly, which requires API keys.
+:::
+
+## When NanoClaw is the better fit
+
+- You only need Claude and want the simplest possible setup
+- Container-level isolation is a hard requirement for your deployment
+- You don't have an existing CLI agent config you want to preserve
+- You prefer the Anthropic Agent SDK's built-in tool system
+
+## When RemoteClaw is the better fit
+
+- You already have a configured CLI agent (`~/.claude`, `~/.gemini`, etc.)
+- You want to switch between multiple agent runtimes without rebuilding
+- You need more than 5 messaging channels
+- You want middleware that stays out of the agent's way — no LLM layer between you and your agent
+
+## Learn more
+
+- [What is RemoteClaw?](/start/remoteclaw) — full setup guide
+- [OpenClaw or RemoteClaw?](/start/openclaw-or-remoteclaw) — comparison with OpenClaw
+- [Middleware Architecture](/concepts/middleware-architecture) — how RemoteClaw's architecture works

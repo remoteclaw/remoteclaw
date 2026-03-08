@@ -64,7 +64,8 @@ export async function readSystemdServiceExecStart(
     const content = await fs.readFile(unitPath, "utf8");
     let execStart = "";
     let workingDirectory = "";
-    const environment: Record<string, string> = {};
+    const inlineEnvironment: Record<string, string> = {};
+    const environmentFileSpecs: string[] = [];
     for (const rawLine of content.split("\n")) {
       const line = rawLine.trim();
       if (!line || line.startsWith("#")) {
@@ -78,23 +79,129 @@ export async function readSystemdServiceExecStart(
         const raw = line.slice("Environment=".length).trim();
         const parsed = parseSystemdEnvAssignment(raw);
         if (parsed) {
-          environment[parsed.key] = parsed.value;
+          inlineEnvironment[parsed.key] = parsed.value;
         }
       }
     }
     if (!execStart) {
       return null;
     }
+    const environmentFromFiles = await resolveSystemdEnvironmentFiles({
+      environmentFileSpecs,
+      env,
+      unitPath,
+    });
+    const mergedEnvironment = {
+      ...inlineEnvironment,
+      ...environmentFromFiles.environment,
+    };
+    const mergedEnvironmentSources = {
+      ...buildEnvironmentValueSources(inlineEnvironment, "inline"),
+      ...buildEnvironmentValueSources(environmentFromFiles.environment, "file"),
+    };
     const programArguments = parseSystemdExecStart(execStart);
     return {
       programArguments,
       ...(workingDirectory ? { workingDirectory } : {}),
-      ...(Object.keys(environment).length > 0 ? { environment } : {}),
+      ...(Object.keys(mergedEnvironment).length > 0 ? { environment: mergedEnvironment } : {}),
+      ...(Object.keys(mergedEnvironmentSources).length > 0
+        ? { environmentValueSources: mergedEnvironmentSources }
+        : {}),
       sourcePath: unitPath,
     };
   } catch {
     return null;
   }
+}
+
+function buildEnvironmentValueSources(
+  environment: Record<string, string>,
+  source: "inline" | "file",
+): Record<string, "inline" | "file"> {
+  return Object.fromEntries(Object.keys(environment).map((key) => [key, source]));
+}
+
+function expandSystemdSpecifier(input: string, env: GatewayServiceEnv): string {
+  // Support the common unit-specifier used in user services.
+  return input.replaceAll("%h", toPosixPath(resolveHomeDir(env)));
+}
+
+function parseEnvironmentFileSpecs(raw: string): string[] {
+  return splitArgsPreservingQuotes(raw, { escapeMode: "backslash" })
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function parseEnvironmentFileLine(rawLine: string): { key: string; value: string } | null {
+  const trimmed = rawLine.trim();
+  if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith(";")) {
+    return null;
+  }
+  const eq = trimmed.indexOf("=");
+  if (eq <= 0) {
+    return null;
+  }
+  const key = trimmed.slice(0, eq).trim();
+  if (!key) {
+    return null;
+  }
+  let value = trimmed.slice(eq + 1).trim();
+  if (
+    value.length >= 2 &&
+    ((value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'")))
+  ) {
+    value = value.slice(1, -1);
+  }
+  return { key, value };
+}
+
+async function readSystemdEnvironmentFile(pathname: string): Promise<Record<string, string>> {
+  const environment: Record<string, string> = {};
+  const content = await fs.readFile(pathname, "utf8");
+  for (const rawLine of content.split(/\r?\n/)) {
+    const parsed = parseEnvironmentFileLine(rawLine);
+    if (!parsed) {
+      continue;
+    }
+    environment[parsed.key] = parsed.value;
+  }
+  return environment;
+}
+
+async function resolveSystemdEnvironmentFiles(params: {
+  environmentFileSpecs: string[];
+  env: GatewayServiceEnv;
+  unitPath: string;
+}): Promise<{ environment: Record<string, string> }> {
+  const resolved: Record<string, string> = {};
+  if (params.environmentFileSpecs.length === 0) {
+    return { environment: resolved };
+  }
+  const unitDir = path.posix.dirname(params.unitPath);
+  for (const specRaw of params.environmentFileSpecs) {
+    for (const token of parseEnvironmentFileSpecs(specRaw)) {
+      const optional = token.startsWith("-");
+      const pathnameRaw = optional ? token.slice(1).trim() : token;
+      if (!pathnameRaw) {
+        continue;
+      }
+      const expanded = expandSystemdSpecifier(pathnameRaw, params.env);
+      const pathname = path.posix.isAbsolute(expanded)
+        ? expanded
+        : path.posix.resolve(unitDir, expanded);
+      try {
+        const fromFile = await readSystemdEnvironmentFile(pathname);
+        Object.assign(resolved, fromFile);
+      } catch {
+        // Keep service auditing resilient even when env files are unavailable
+        // in the current runtime context. Both optional and non-optional
+        // EnvironmentFile entries are skipped gracefully for diagnostics.
+        continue;
+      }
+    }
+  }
+  return { environment: resolved };
 }
 
 export type SystemdServiceInfo = {

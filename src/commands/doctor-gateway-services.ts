@@ -14,6 +14,7 @@ import { renderSystemNodeWarning, resolveSystemNodeInfo } from "../daemon/runtim
 import {
   auditGatewayServiceConfig,
   needsNodeRuntimeMigration,
+  readEmbeddedGatewayToken,
   SERVICE_AUDIT_CODES,
 } from "../daemon/service-audit.js";
 import { resolveGatewayService } from "../daemon/service.js";
@@ -228,6 +229,16 @@ export async function maybeRepairGatewayServiceConfig(
     command,
     expectedGatewayToken,
   });
+  const serviceToken = readEmbeddedGatewayToken(command);
+  if (tokenRefConfigured && serviceToken) {
+    audit.issues.push({
+      code: SERVICE_AUDIT_CODES.gatewayTokenMismatch,
+      message:
+        "Gateway service REMOTECLAW_GATEWAY_TOKEN should be unset when gateway.auth.token is SecretRef-managed",
+      detail: "service token is stale",
+      level: "recommended",
+    });
+  }
   const needsNodeRuntime = needsNodeRuntimeMigration(audit.issues);
   const systemNodeInfo = needsNodeRuntime
     ? await resolveSystemNodeInfo({ env: process.env })
@@ -304,7 +315,7 @@ export async function maybeRepairGatewayServiceConfig(
   if (!repair) {
     return;
   }
-  const serviceEmbeddedToken = command.environment?.REMOTECLAW_GATEWAY_TOKEN?.trim() || undefined;
+  const serviceEmbeddedToken = readEmbeddedGatewayToken(command);
   const gatewayTokenForRepair = expectedGatewayToken ?? serviceEmbeddedToken;
   const configuredGatewayToken =
     typeof cfg.gateway?.auth?.token === "string"

@@ -1,7 +1,3 @@
-import {
-  buildAccountScopedDmSecurityPolicy,
-  collectOpenGroupPolicyRestrictSendersWarnings,
-} from "remoteclaw/plugin-sdk";
 import type {
   ChannelAccountSnapshot,
   ChannelPlugin,
@@ -9,9 +5,11 @@ import type {
 } from "remoteclaw/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
+  buildAccountScopedDmSecurityPolicy,
   buildChannelConfigSchema,
   buildProbeChannelStatusSummary,
   collectBlueBubblesStatusIssues,
+  collectOpenGroupPolicyRestrictSendersWarnings,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   formatNormalizedAllowFromEntries,

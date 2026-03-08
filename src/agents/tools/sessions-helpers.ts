@@ -54,7 +54,6 @@ export type SessionListRow = {
   model?: string;
   contextTokens?: number | null;
   totalTokens?: number | null;
-  thinkingLevel?: string;
   verboseLevel?: string;
   systemSent?: boolean;
   abortedLastRun?: boolean;

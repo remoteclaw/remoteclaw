@@ -249,7 +249,6 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
         "anthropic/claude-sonnet-4-5": { alias: "sonnet" },
         "openai/gpt-5.2": { alias: "gpt" },
       },
-      thinkingDefault: "low",
       verboseDefault: "off",
       elevatedDefault: "on",
       blockStreamingDefault: "off",

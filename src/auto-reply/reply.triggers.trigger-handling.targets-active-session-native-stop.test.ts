@@ -155,13 +155,13 @@ describe("trigger handling", () => {
         expect(runAgentMock, testCase.error).toHaveBeenCalledOnce();
       }
 
-      const thinkCases = [
+      const directiveCases = [
         {
           label: "context-wrapper",
           request: {
             Body: [
               "[Chat messages since your last reply - for context]",
-              "Peter: /thinking high [2025-12-05T21:45:00.000Z]",
+              "Peter: /verbose:on [2025-12-05T21:45:00.000Z]",
               "",
               "[Current message - respond to this]",
               "Give me the status",
@@ -175,7 +175,7 @@ describe("trigger handling", () => {
         {
           label: "heartbeat",
           request: {
-            Body: "HEARTBEAT /think:high",
+            Body: "HEARTBEAT /verbose:on",
             From: "+1003",
             To: "+1003",
           },
@@ -184,18 +184,15 @@ describe("trigger handling", () => {
         },
       ] as const;
       runAgentMock.mockClear();
-      for (const testCase of thinkCases) {
+      for (const testCase of directiveCases) {
         mockRunAgentOk();
         const res = await getReplyFromConfig(testCase.request, testCase.options, makeCfg(home));
         const text = maybeReplyText(res);
         expect(text, testCase.label).toBe("ok");
-        expect(text, testCase.label).not.toMatch(/Thinking level set/i);
         expect(getRunAgentMock(), testCase.label).toHaveBeenCalledOnce();
         if (testCase.assertPrompt) {
           const prompt = getRunAgentMock().mock.calls[0]?.[0]?.prompt ?? "";
           expect(prompt).toContain("Give me the status");
-          expect(prompt).not.toContain("/thinking high");
-          expect(prompt).not.toContain("/think high");
         }
         getRunAgentMock().mockClear();
       }

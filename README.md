@@ -255,7 +255,7 @@ The macOS app can run in **node mode** and advertises its capabilities + permiss
 Elevated bash (host permissions) is separate from macOS TCC:
 
 - Use `/elevated on|off` to toggle per‑session elevated access when enabled + allowlisted.
-- Gateway persists the per‑session toggle via `sessions.patch` (WS method) alongside `thinkingLevel`, `verboseLevel`, `model`, `sendPolicy`, and `groupActivation`.
+- Gateway persists the per‑session toggle via `sessions.patch` (WS method) alongside `verboseLevel`, `model`, `sendPolicy`, and `groupActivation`.
 
 Details: [Nodes](https://docs.remoteclaw.org/nodes) · [macOS app](https://docs.remoteclaw.org/platforms/macos) · [Gateway protocol](https://docs.remoteclaw.org/concepts/architecture)
 

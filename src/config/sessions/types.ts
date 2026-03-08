@@ -41,9 +41,7 @@ export type SessionEntry = {
   systemSent?: boolean;
   abortedLastRun?: boolean;
   chatType?: SessionChatType;
-  thinkingLevel?: string;
   verboseLevel?: string;
-  reasoningLevel?: string;
   elevatedLevel?: string;
   ttsAuto?: TtsAutoMode;
   execHost?: string;

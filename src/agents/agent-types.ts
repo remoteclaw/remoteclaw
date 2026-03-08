@@ -13,12 +13,6 @@ export interface ImageContent {
   mimeType: string;
 }
 
-export interface ThinkingContent {
-  type: "thinking";
-  thinking: string;
-  thinkingSignature?: string;
-}
-
 export interface ToolCall {
   type: "toolCall";
   id: string;
@@ -35,7 +29,7 @@ export interface UserMessage {
 
 export interface AssistantMessage {
   role: "assistant";
-  content: (TextContent | ThinkingContent | ToolCall)[];
+  content: (TextContent | ToolCall)[];
   api: string;
   provider: string;
   model: string;

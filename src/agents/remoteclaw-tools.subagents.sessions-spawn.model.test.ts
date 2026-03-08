@@ -140,63 +140,6 @@ describe("remoteclaw-tools: subagents (sessions_spawn model + thinking)", () => 
     });
   });
 
-  it("sessions_spawn forwards thinking overrides to the agent run", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
-
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
-      calls.push(request);
-      if (request.method === "agent") {
-        return { runId: "run-thinking", status: "accepted" };
-      }
-      return {};
-    });
-
-    const tool = await getSessionsSpawnTool({
-      agentSessionKey: "discord:group:req",
-      agentChannel: "discord",
-    });
-
-    const result = await tool.execute("call-thinking", {
-      task: "do thing",
-      thinking: "high",
-    });
-    expect(result.details).toMatchObject({
-      status: "accepted",
-    });
-
-    const agentCall = calls.find((call) => call.method === "agent");
-    expect(agentCall?.params).toMatchObject({
-      thinking: "high",
-    });
-  });
-
-  it("sessions_spawn rejects invalid thinking levels", async () => {
-    const calls: Array<{ method?: string }> = [];
-
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string };
-      calls.push(request);
-      return {};
-    });
-
-    const tool = await getSessionsSpawnTool({
-      agentSessionKey: "discord:group:req",
-      agentChannel: "discord",
-    });
-
-    const result = await tool.execute("call-thinking-invalid", {
-      task: "do thing",
-      thinking: "banana",
-    });
-    expect(result.details).toMatchObject({
-      status: "error",
-    });
-    const errorDetails = result.details as { error?: unknown };
-    expect(String(errorDetails.error)).toMatch(/Invalid thinking level/i);
-    expect(calls).toHaveLength(0);
-  });
-
   it("sessions_spawn applies default subagent model from defaults config", async () => {
     await expectSpawnUsesConfiguredModel({
       config: {

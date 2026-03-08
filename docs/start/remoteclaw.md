@@ -121,7 +121,6 @@ Example:
   agent: {
     model: "anthropic/claude-opus-4-6",
     workspace: "~/.remoteclaw/workspace",
-    thinkingDefault: "high",
     timeoutSeconds: 1800,
     // Start with 0; enable later.
     heartbeat: { every: "0m" },

@@ -92,9 +92,9 @@ describe("RawBody directive parsing", () => {
       });
 
       const groupMessageCtx = {
-        Body: "/think:high status please",
-        BodyForAgent: "/think:high status please",
-        RawBody: "/think:high status please",
+        Body: "/verbose:on status please",
+        BodyForAgent: "/verbose:on status please",
+        RawBody: "/verbose:on status please",
         InboundHistory: [{ sender: "Peter", body: "hello", timestamp: 1700000000000 }],
         From: "+1222",
         To: "+1222",
@@ -120,7 +120,7 @@ describe("RawBody directive parsing", () => {
       expect(prompt).toContain('"sender": "Peter"');
       expect(prompt).toContain('"body": "hello"');
       expect(prompt).toContain("status please");
-      expect(prompt).not.toContain("/think:high");
+      expect(prompt).not.toContain("/verbose:on");
     });
   });
 });

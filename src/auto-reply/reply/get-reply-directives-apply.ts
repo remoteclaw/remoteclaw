@@ -188,9 +188,7 @@ export async function applyInlineDirectiveOverrides(params: {
   }
 
   const hasAnyDirective =
-    directives.hasThinkDirective ||
     directives.hasVerboseDirective ||
-    directives.hasReasoningDirective ||
     directives.hasElevatedDirective ||
     directives.hasExecDirective ||
     directives.hasModelDirective ||

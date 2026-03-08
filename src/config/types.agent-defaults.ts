@@ -84,8 +84,6 @@ export type AgentDefaultsConfig = {
   cliBackends?: unknown;
   /** Opt-in: prune old tool results from the LLM context to reduce token usage. */
   contextPruning?: AgentContextPruningConfig;
-  /** Default thinking level when no /think directive is present. */
-  thinkingDefault?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
   /** Default verbose level when no /verbose directive is present. */
   verboseDefault?: "off" | "on" | "full";
   /** Default elevated level when no /elevated directive is present. */
@@ -147,13 +145,6 @@ export type AgentDefaultsConfig = {
     file?: string;
     /** Suppress tool error warning payloads during heartbeat runs. */
     suppressToolErrorWarnings?: boolean;
-    /**
-     * When enabled, deliver the model's reasoning payload for heartbeat runs (when available)
-     * as a separate message prefixed with `Reasoning:` (same as `/reasoning on`).
-     *
-     * Default: false (only the final heartbeat payload is delivered).
-     */
-    includeReasoning?: boolean;
   };
   /** Boot prompt configuration (runs on gateway startup). */
   boot?: {
@@ -176,8 +167,6 @@ export type AgentDefaultsConfig = {
     archiveAfterMinutes?: number;
     /** Legacy sub-agent model override (kept for config compat). */
     model?: unknown;
-    /** Default thinking level for spawned sub-agents (e.g. "off", "low", "medium", "high"). */
-    thinking?: string;
     /** Default run timeout in seconds for spawned sub-agents (0 = no timeout). */
     runTimeoutSeconds?: number;
     /** Gateway timeout in ms for sub-agent announce delivery calls (default: 60000). */

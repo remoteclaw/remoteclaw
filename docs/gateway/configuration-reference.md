@@ -705,7 +705,6 @@ Time format in system prompt. Default: `auto` (OS preference).
         primary: "openrouter/qwen/qwen-2.5-vl-72b-instruct:free",
         fallbacks: ["openrouter/google/gemini-2.0-flash-vision:free"],
       },
-      thinkingDefault: "low",
       verboseDefault: "off",
       elevatedDefault: "on",
       timeoutSeconds: 600,
@@ -742,7 +741,6 @@ Time format in system prompt. Default: `auto` (OS preference).
 
 Your configured aliases always win over defaults.
 
-Z.AI GLM-4.x models automatically enable thinking mode unless you set `--thinking off` or define `agents.defaults.models["zai/<model>"].params.thinking` yourself.
 Z.AI models enable `tool_stream` by default for tool call streaming. Set `agents.defaults.models["zai/<model>"].params.tool_stream` to `false` to disable it.
 
 ### `agents.defaults.cliBackends`
@@ -790,7 +788,6 @@ Periodic heartbeat runs.
       heartbeat: {
         every: "30m", // 0m disables
         model: "openai/gpt-5.2-mini",
-        includeReasoning: false,
         session: "main",
         to: "+15555550123",
         target: "none", // default: none | options: last | whatsapp | telegram | discord | ...
@@ -905,7 +902,7 @@ See [Streaming](/concepts/streaming) for behavior + chunking details.
 {
   agents: {
     defaults: {
-      typingMode: "instant", // never | instant | thinking | message
+      typingMode: "instant", // never | instant | message
       typingIntervalSeconds: 6,
     },
   },
@@ -1337,15 +1334,14 @@ Resolution (most specific wins): account → channel → global. `""` disables a
 
 **Template variables:**
 
-| Variable          | Description            | Example                     |
-| ----------------- | ---------------------- | --------------------------- |
-| `{model}`         | Short model name       | `claude-opus-4-6`           |
-| `{modelFull}`     | Full model identifier  | `anthropic/claude-opus-4-6` |
-| `{provider}`      | Provider name          | `anthropic`                 |
-| `{thinkingLevel}` | Current thinking level | `high`, `low`, `off`        |
-| `{identity.name}` | Agent identity name    | (same as `"auto"`)          |
+| Variable          | Description           | Example                     |
+| ----------------- | --------------------- | --------------------------- |
+| `{model}`         | Short model name      | `claude-opus-4-6`           |
+| `{modelFull}`     | Full model identifier | `anthropic/claude-opus-4-6` |
+| `{provider}`      | Provider name         | `anthropic`                 |
+| `{identity.name}` | Agent identity name   | (same as `"auto"`)          |
 
-Variables are case-insensitive. `{think}` is an alias for `{thinkingLevel}`.
+Variables are case-insensitive.
 
 ### Ack reaction
 
@@ -2225,7 +2221,7 @@ Auth: `Authorization: Bearer <token>` or `x-remoteclaw-token: <token>`.
 **Endpoints:**
 
 - `POST /hooks/wake` → `{ text, mode?: "now"|"next-heartbeat" }`
-- `POST /hooks/agent` → `{ message, name?, agentId?, sessionKey?, wakeMode?, deliver?, channel?, to?, model?, thinking?, timeoutSeconds? }`
+- `POST /hooks/agent` → `{ message, name?, agentId?, sessionKey?, wakeMode?, deliver?, channel?, to?, model?, timeoutSeconds? }`
   - `sessionKey` from request payload is accepted only when `hooks.allowRequestSessionKey=true` (default: `false`).
 - `POST /hooks/<name>` → resolved via `hooks.mappings`
 
@@ -2264,7 +2260,6 @@ Auth: `Authorization: Bearer <token>` or `x-remoteclaw-token: <token>`.
       serve: { bind: "127.0.0.1", port: 8788, path: "/" },
       tailscale: { mode: "funnel", path: "/gmail-pubsub" },
       model: "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-      thinking: "off",
     },
   },
 }

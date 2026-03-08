@@ -149,7 +149,7 @@ function createMinimalRun(params?: {
       config: { agents: { defaults: { runtime: "claude" } } },
       provider: "anthropic",
       model: "claude",
-      thinkLevel: "low",
+
       verboseLevel: params?.resolvedVerboseLevel ?? "off",
       elevatedLevel: "off",
       bashElevated: {
@@ -236,7 +236,7 @@ function createBaseRun(params: {
       config: params.config ?? { agents: { defaults: { runtime: "claude" } } },
       provider: "anthropic",
       model: "claude",
-      thinkLevel: "low",
+
       verboseLevel: "off",
       elevatedLevel: "off",
       bashElevated: {

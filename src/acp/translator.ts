@@ -35,7 +35,7 @@ import {
   formatToolTitle,
   inferToolKind,
 } from "./event-mapper.js";
-import { readBool, readNumber, readString } from "./meta.js";
+import { readBool, readNumber } from "./meta.js";
 import { parseSessionMeta, resetSessionIfNeeded, resolveSessionKey } from "./session-mapper.js";
 import { defaultAcpSessionStore, type AcpSessionStore } from "./session.js";
 import { ACP_AGENT_INFO, type AcpServerOptions } from "./types.js";
@@ -240,7 +240,6 @@ export class AcpGatewayAgent implements Agent {
     try {
       await this.gateway.request("sessions.patch", {
         key: session.sessionKey,
-        thinkingLevel: params.modeId,
       });
       this.log(`setSessionMode: ${session.sessionId} -> ${params.modeId}`);
     } catch (err) {
@@ -294,7 +293,6 @@ export class AcpGatewayAgent implements Agent {
             message,
             attachments: attachments.length > 0 ? attachments : undefined,
             idempotencyKey: runId,
-            thinking: readString(params._meta, ["thinking", "thinkingLevel"]),
             deliver: readBool(params._meta, ["deliver"]),
             timeoutMs: readNumber(params._meta, ["timeoutMs"]),
           },

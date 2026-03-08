@@ -33,7 +33,6 @@ Example config:
         every: "30m",
         target: "last", // explicit delivery to last contact (default is "none")
         // activeHours: { start: "08:00", end: "24:00" },
-        // includeReasoning: true, // optional: send separate `Reasoning:` message too
       },
     },
   },
@@ -105,7 +104,6 @@ legacy text-based protocol:
       heartbeat: {
         every: "30m", // default: 30m (0m disables)
         model: "anthropic/claude-opus-4-6",
-        includeReasoning: false, // default: false (deliver separate Reasoning: message when available)
         target: "last", // default: none | options: last | none | <channel id> (core or plugin, e.g. "bluebubbles")
         to: "+15551234567", // optional channel-specific override
         accountId: "ops-bot", // optional multi-account channel id
@@ -227,7 +225,6 @@ Use `accountId` to target a specific account on multi-account channels like Tele
 
 - `every`: heartbeat interval (duration string; default unit = minutes).
 - `model`: optional model override for heartbeat runs (`provider/model`).
-- `includeReasoning`: when enabled, also deliver the separate `Reasoning:` message when available (same shape as `/reasoning on`).
 - `session`: optional session key for heartbeat runs.
   - `main` (default): agent main session.
   - Explicit session key (copy from `remoteclaw sessions --json` or the [sessions CLI](/cli/sessions)).
@@ -376,20 +373,6 @@ If multiple agents have `heartbeat` configured, a manual wake runs each of those
 agent heartbeats immediately.
 
 Use `--mode next-heartbeat` to wait for the next scheduled tick.
-
-## Reasoning delivery (optional)
-
-By default, heartbeats deliver only the final “answer” payload.
-
-If you want transparency, enable:
-
-- `agents.defaults.heartbeat.includeReasoning: true`
-
-When enabled, heartbeats will also deliver a separate message prefixed
-`Reasoning:` (same shape as `/reasoning on`). This can be useful when the agent
-is managing multiple sessions/codexes and you want to see why it decided to ping
-you — but it can also leak more internal detail than you want. Prefer keeping it
-off in group chats.
 
 ## Cost awareness
 

@@ -10,15 +10,7 @@ import { getCliSessionId } from "../agents/cli-session.js";
 // Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { normalizeModelRef } from "../agents/provider-utils.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
-import {
-  formatThinkingLevels,
-  formatXHighModelHint,
-  normalizeThinkLevel,
-  normalizeVerboseLevel,
-  supportsXHighThinking,
-  type ThinkLevel,
-  type VerboseLevel,
-} from "../auto-reply/thinking.js";
+import { normalizeVerboseLevel, type VerboseLevel } from "../auto-reply/thinking.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { type CliDeps, createDefaultDeps } from "../cli/deps.js";
 import { type RemoteClawConfig, loadConfig } from "../config/config.js";
@@ -162,16 +154,6 @@ export async function agentCommand(
     }
   }
   const agentCfg = cfg.agents?.defaults;
-  const thinkingLevelsHint = formatThinkingLevels("unknown", "unknown");
-
-  const thinkOverride = normalizeThinkLevel(opts.thinking);
-  const thinkOnce = normalizeThinkLevel(opts.thinkingOnce);
-  if (opts.thinking && !thinkOverride) {
-    throw new Error(`Invalid thinking level. Use one of: ${thinkingLevelsHint}.`);
-  }
-  if (opts.thinkingOnce && !thinkOnce) {
-    throw new Error(`Invalid one-shot thinking level. Use one of: ${thinkingLevelsHint}.`);
-  }
 
   const verboseOverride = normalizeVerboseLevel(opts.verbose);
   if (opts.verbose && !verboseOverride) {
@@ -200,7 +182,6 @@ export async function agentCommand(
     sessionStore,
     storePath,
     isNewSession: _isNewSession,
-    persistedThinking,
     persistedVerbose,
   } = sessionResolution;
   const sessionAgentId =
@@ -228,11 +209,6 @@ export async function agentCommand(
       }
     }
 
-    let resolvedThinkLevel =
-      thinkOnce ??
-      thinkOverride ??
-      persistedThinking ??
-      (agentCfg?.thinkingDefault as ThinkLevel | undefined);
     const resolvedVerboseLevel =
       verboseOverride ?? persistedVerbose ?? (agentCfg?.verboseDefault as VerboseLevel | undefined);
 
@@ -248,9 +224,6 @@ export async function agentCommand(
       const entry = sessionStore[sessionKey] ??
         sessionEntry ?? { sessionId, updatedAt: Date.now() };
       const next: SessionEntry = { ...entry, sessionId, updatedAt: Date.now() };
-      if (thinkOverride) {
-        next.thinkingLevel = thinkOverride;
-      }
       applyVerboseOverride(next, verboseOverride);
       await persistSessionEntry({
         sessionStore,
@@ -296,27 +269,6 @@ export async function agentCommand(
       }
     }
 
-    if (!resolvedThinkLevel) {
-      resolvedThinkLevel = (agentCfg?.thinkingDefault as ThinkLevel | undefined) ?? undefined;
-    }
-    if (resolvedThinkLevel === "xhigh" && !supportsXHighThinking(provider, model)) {
-      const explicitThink = Boolean(thinkOnce || thinkOverride);
-      if (explicitThink) {
-        throw new Error(`Thinking level "xhigh" is only supported for ${formatXHighModelHint()}.`);
-      }
-      resolvedThinkLevel = "high";
-      if (sessionEntry && sessionStore && sessionKey && sessionEntry.thinkingLevel === "xhigh") {
-        const entry = sessionEntry;
-        entry.thinkingLevel = "high";
-        entry.updatedAt = Date.now();
-        await persistSessionEntry({
-          sessionStore,
-          sessionKey,
-          storePath,
-          entry,
-        });
-      }
-    }
     const sessionPathOpts = resolveSessionFilePathOptions({
       agentId: sessionAgentId,
       storePath,

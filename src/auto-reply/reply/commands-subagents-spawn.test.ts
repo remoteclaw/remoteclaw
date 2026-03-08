@@ -67,7 +67,7 @@ describe("/subagents spawn command", () => {
     expect(commandResult).not.toBeNull();
     expect(commandResult?.reply?.text).toContain("Spawned subagent beta");
     const [spawnParams] = spawnSubagentDirectMock.mock.calls[0];
-    return spawnParams as { model?: string; thinking?: string; task?: string };
+    return spawnParams as { model?: string; task?: string };
   }
 
   async function runSuccessfulSpawn(params?: {
@@ -125,12 +125,6 @@ describe("/subagents spawn command", () => {
       acceptedResult({ modelApplied: true }),
     );
     expect(spawnParams.model).toBe("openai/gpt-4o");
-    expect(spawnParams.task).toBe("do the thing");
-  });
-
-  it("spawns with --thinking flag and passes thinking to spawnSubagentDirect", async () => {
-    const spawnParams = await runSpawnWithFlag("--thinking high");
-    expect(spawnParams.thinking).toBe("high");
     expect(spawnParams.task).toBe("do the thing");
   });
 

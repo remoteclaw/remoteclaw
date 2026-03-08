@@ -27,8 +27,7 @@ Set `agents.defaults.typingMode` to one of:
 - `never` — no typing indicator, ever.
 - `instant` — start typing **as soon as the model loop begins**, even if the run
   later returns only the silent reply token.
-- `thinking` — start typing on the **first reasoning delta** (requires
-  `reasoningLevel: "stream"` for the run).
+- `thinking` — start typing on the **first reasoning delta**.
 - `message` — start typing on the **first non-silent text delta** (ignores
   the `NO_REPLY` silent token).
 
@@ -61,7 +60,7 @@ You can override mode or cadence per session:
 
 - `message` mode won’t show typing for silent-only replies (e.g. the `NO_REPLY`
   token used to suppress output).
-- `thinking` only fires if the run streams reasoning (`reasoningLevel: "stream"`).
+- `thinking` only fires if the run streams reasoning deltas.
   If the model doesn’t emit reasoning deltas, typing won’t start.
 - Heartbeats never show typing, regardless of mode.
 - `typingIntervalSeconds` controls the **refresh cadence**, not the start time.

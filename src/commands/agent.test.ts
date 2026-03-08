@@ -225,19 +225,18 @@ describe("agentCommand", () => {
     });
   });
 
-  it("persists thinking and verbose overrides", async () => {
+  it("persists verbose overrides", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
 
-      await agentCommand({ message: "hi", to: "+1222", thinking: "high", verbose: "on" }, runtime);
+      await agentCommand({ message: "hi", to: "+1222", verbose: "on" }, runtime);
 
       const saved = JSON.parse(fs.readFileSync(store, "utf-8")) as Record<
         string,
-        { thinkingLevel?: string; verboseLevel?: string }
+        { verboseLevel?: string }
       >;
       const entry = Object.values(saved)[0];
-      expect(entry.thinkingLevel).toBe("high");
       expect(entry.verboseLevel).toBe("on");
     });
   });
@@ -506,7 +505,7 @@ describe("agentCommand", () => {
     });
   });
 
-  it("defaults thinking to low for reasoning-capable models", async () => {
+  it("runs successfully with reasoning-capable model catalog entries", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store);
@@ -519,7 +518,6 @@ describe("agentCommand", () => {
         },
       ]);
 
-      // Should succeed — thinking resolution defaults to "low" for reasoning models.
       await agentCommand({ message: "hi", to: "+1555" }, runtime);
 
       expect(bridgeHandleMock).toHaveBeenCalledTimes(1);

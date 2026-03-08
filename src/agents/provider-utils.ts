@@ -13,8 +13,6 @@ export type ModelRef = {
   model: string;
 };
 
-export type ThinkLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
-
 export function modelKey(provider: string, model: string) {
   return `${provider}/${model}`;
 }

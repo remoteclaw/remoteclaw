@@ -43,6 +43,10 @@ describe("resolveProviderEnvVarName", () => {
     expect(resolveProviderEnvVarName("openrouter")).toBe("OPENROUTER_API_KEY");
   });
 
+  it("maps elevenlabs to ELEVENLABS_API_KEY", () => {
+    expect(resolveProviderEnvVarName("elevenlabs")).toBe("ELEVENLABS_API_KEY");
+  });
+
   it("returns undefined for unknown providers", () => {
     expect(resolveProviderEnvVarName("unknown-provider")).toBeUndefined();
   });

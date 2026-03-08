@@ -62,6 +62,7 @@ export function resolveProviderEnvVarName(provider: string): string | undefined 
     venice: "VENICE_API_KEY",
     qianfan: "QIANFAN_API_KEY",
     kilocode: "KILOCODE_API_KEY",
+    elevenlabs: "ELEVENLABS_API_KEY",
   };
 
   return envMap[normalized];

@@ -269,3 +269,14 @@ export async function setKilocodeApiKey(key: string) {
     },
   });
 }
+
+export async function setElevenLabsApiKey(key: string) {
+  upsertAuthProfile({
+    profileId: "elevenlabs:default",
+    credential: {
+      type: "api_key",
+      provider: "elevenlabs",
+      key,
+    },
+  });
+}

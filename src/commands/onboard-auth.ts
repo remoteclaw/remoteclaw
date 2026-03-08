@@ -57,6 +57,7 @@ export {
   OPENROUTER_DEFAULT_MODEL_REF,
   setAnthropicApiKey,
   setCloudflareAiGatewayConfig,
+  setElevenLabsApiKey,
   setQianfanApiKey,
   setGeminiApiKey,
   setKilocodeApiKey,

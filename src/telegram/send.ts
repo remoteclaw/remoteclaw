@@ -27,7 +27,7 @@ import type { TelegramInlineButtons } from "./button-types.js";
 import { splitTelegramCaption } from "./caption.js";
 import { resolveTelegramFetch } from "./fetch.js";
 import { renderTelegramHtmlText } from "./format.js";
-import { isRecoverableTelegramNetworkError } from "./network-errors.js";
+import { isRecoverableTelegramNetworkError, isSafeToRetrySendError } from "./network-errors.js";
 import { makeProxyFetch } from "./proxy.js";
 import { recordSentMessage } from "./sent-message-cache.js";
 import { maybePersistResolvedTelegramTarget } from "./target-writeback.js";
@@ -339,6 +339,8 @@ function createTelegramRequestWithDiag(params: {
   retry?: RetryConfig;
   verbose?: boolean;
   shouldRetry?: (err: unknown) => boolean;
+  /** When true, the shouldRetry predicate is used exclusively without the TELEGRAM_RETRY_RE fallback. */
+  strictShouldRetry?: boolean;
   useApiErrorLogging?: boolean;
 }): TelegramRequestWithDiag {
   const request = createTelegramRetryRunner({
@@ -346,6 +348,7 @@ function createTelegramRequestWithDiag(params: {
     configRetry: params.account.config.retry,
     verbose: params.verbose,
     ...(params.shouldRetry ? { shouldRetry: params.shouldRetry } : {}),
+    ...(params.strictShouldRetry ? { strictShouldRetry: true } : {}),
   });
   const logHttpError = createTelegramHttpLogger(params.cfg);
   return <T>(
@@ -498,6 +501,8 @@ export async function sendMessageTelegram(
     account,
     retry: opts.retry,
     verbose: opts.verbose,
+    shouldRetry: (err) => isSafeToRetrySendError(err),
+    strictShouldRetry: true,
   });
   const requestWithChatNotFound = createRequestWithChatNotFound({
     requestWithDiag,
@@ -1108,6 +1113,8 @@ export async function sendPollTelegram(
     account,
     retry: opts.retry,
     verbose: opts.verbose,
+    shouldRetry: (err) => isSafeToRetrySendError(err),
+    strictShouldRetry: true,
   });
   const requestWithChatNotFound = createRequestWithChatNotFound({
     requestWithDiag,
@@ -1229,6 +1236,8 @@ export async function createForumTopicTelegram(
     account,
     retry: opts.retry,
     verbose: opts.verbose,
+    shouldRetry: (err) => isSafeToRetrySendError(err),
+    strictShouldRetry: true,
   });
 
   const extra: Record<string, unknown> = {};

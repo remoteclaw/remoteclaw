@@ -689,38 +689,6 @@ describe("runReplyAgent typing (heartbeat)", () => {
     expect(delivered).toEqual(["second"]);
   });
 
-  it("does not announce auto-compaction (ChannelBridge does not expose compaction events)", async () => {
-    // autoCompactionCompleted is now hardcoded to false in the ChannelBridge
-    // execution path (agent-runner-execution.ts), so auto-compaction
-    // announcements are no longer produced through the main execution path.
-    // Verify that the run completes without a compaction announcement.
-    await withTempStateDir(async (stateDir) => {
-      const storePath = path.join(stateDir, "sessions", "sessions.json");
-      const sessionEntry: SessionEntry = { sessionId: "session", updatedAt: Date.now() };
-      const sessionStore = { main: sessionEntry };
-
-      state.channelBridgeHandleMock.mockImplementationOnce(async () => {
-        return makeDeliveryResult();
-      });
-
-      const { run } = createMinimalRun({
-        resolvedVerboseLevel: "on",
-        sessionEntry,
-        sessionStore,
-        sessionKey: "main",
-        storePath,
-      });
-      const res = await run();
-      // With ChannelBridge, compaction tracking is not exposed through
-      // BridgeCallbacks, so the auto-compaction announcement is not emitted.
-      // The result is a single payload (not an array) because there's only one payload.
-      const payload = Array.isArray(res) ? res[0] : res;
-      expect(payload?.text).toBe("final");
-      // compactionCount should NOT be incremented since autoCompactionCompleted is always false
-      expect(sessionStore.main.compactionCount).toBeUndefined();
-    });
-  });
-
   it("retries after compaction failure by resetting the session", async () => {
     await withTempStateDir(async (stateDir) => {
       const sessionId = "session";
@@ -1069,7 +1037,6 @@ describe("runReplyAgent memory flush", () => {
         sessionId: "session",
         updatedAt: Date.now(),
         totalTokens: 80_000,
-        compactionCount: 1,
       };
 
       await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
@@ -1111,7 +1078,6 @@ describe("runReplyAgent memory flush", () => {
         sessionId: "session",
         updatedAt: Date.now(),
         totalTokens: 80_000,
-        compactionCount: 1,
       };
 
       await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
@@ -1144,7 +1110,6 @@ describe("runReplyAgent memory flush", () => {
 
       const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
       expect(stored[sessionKey].memoryFlushAt).toBeUndefined();
-      expect(stored[sessionKey].memoryFlushCompactionCount).toBeUndefined();
     });
   });
 
@@ -1155,7 +1120,6 @@ describe("runReplyAgent memory flush", () => {
         sessionId: "session",
         updatedAt: Date.now(),
         totalTokens: 80_000,
-        compactionCount: 1,
       };
 
       await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
@@ -1172,7 +1136,7 @@ describe("runReplyAgent memory flush", () => {
         sessionEntry,
         config: {
           agents: {
-            defaults: { runtime: "claude", compaction: { memoryFlush: { enabled: false } } },
+            defaults: { runtime: "claude" },
           },
         },
       });
@@ -1201,8 +1165,6 @@ describe("runReplyAgent memory flush", () => {
         sessionId: "session",
         updatedAt: Date.now(),
         totalTokens: 80_000,
-        compactionCount: 2,
-        memoryFlushCompactionCount: 2,
       };
 
       await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
@@ -1230,46 +1192,6 @@ describe("runReplyAgent memory flush", () => {
       // Main run through ChannelBridge, no flush (already flushed this cycle)
       expect(state.channelBridgeHandleMock).toHaveBeenCalledTimes(1);
       expect(state.runAgentMock).not.toHaveBeenCalled();
-    });
-  });
-
-  it("does not increment compaction count (memory flush gutted)", async () => {
-    await withTempStore(async (storePath) => {
-      const sessionKey = "main";
-      const sessionEntry = {
-        sessionId: "session",
-        updatedAt: Date.now(),
-        totalTokens: 80_000,
-        compactionCount: 1,
-      };
-
-      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
-
-      // Main run through ChannelBridge
-      state.channelBridgeHandleMock.mockResolvedValue(
-        makeDeliveryResult({
-          payloads: [{ text: "ok" }],
-          usage: { inputTokens: 1, outputTokens: 1 },
-        }),
-      );
-
-      const baseRun = createBaseRun({
-        storePath,
-        sessionEntry,
-      });
-
-      await runReplyAgentWithBase({
-        baseRun,
-        storePath,
-        sessionKey,
-        sessionEntry,
-        commandBody: "hello",
-      });
-
-      const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
-      // compactionCount stays at 1 (initial), not incremented since flush is gutted
-      expect(stored[sessionKey].compactionCount).toBe(1);
-      expect(stored[sessionKey].memoryFlushCompactionCount).toBeUndefined();
     });
   });
 });

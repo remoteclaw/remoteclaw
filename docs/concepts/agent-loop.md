@@ -122,7 +122,7 @@ See [Plugins](/tools/plugin#plugin-hooks) for the hook API and registration deta
 
 - Auto-compaction emits `compaction` stream events and can trigger a retry.
 - On retry, in-memory buffers and tool summaries are reset to avoid duplicate output.
-- See [Compaction](/concepts/compaction) for the compaction pipeline.
+- See [Session management — compaction](/reference/session-management-compaction) for the compaction pipeline.
 
 ## Event streams
 

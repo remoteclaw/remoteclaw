@@ -293,12 +293,6 @@ const TARGET_KEYS = [
   "agents",
   "agents.defaults",
   "agents.list",
-  "agents.defaults.compaction",
-  "agents.defaults.compaction.mode",
-  "agents.defaults.compaction.reserveTokens",
-  "agents.defaults.compaction.keepRecentTokens",
-  "agents.defaults.compaction.reserveTokensFloor",
-  "agents.defaults.compaction.maxHistoryShare",
 ] as const;
 
 const ENUM_EXPECTATIONS: Record<string, string[]> = {
@@ -344,7 +338,6 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   "logging.consoleStyle": ['"pretty"', '"compact"', '"json"'],
   "logging.redactSensitive": ['"off"', '"tools"'],
   "update.channel": ['"stable"', '"beta"', '"dev"'],
-  "agents.defaults.compaction.mode": ['"default"', '"safeguard"'],
 };
 
 const TOOLS_HOOKS_TARGET_KEYS = [
@@ -670,14 +663,5 @@ describe("config help copy quality", () => {
 
     const authCooldowns = FIELD_HELP["auth.cooldowns"];
     expect(/cooldown|backoff|retry/i.test(authCooldowns)).toBe(true);
-  });
-
-  it("documents agent compaction safeguards", () => {
-    const mode = FIELD_HELP["agents.defaults.compaction.mode"];
-    expect(mode.includes('"default"')).toBe(true);
-    expect(mode.includes('"safeguard"')).toBe(true);
-
-    const historyShare = FIELD_HELP["agents.defaults.compaction.maxHistoryShare"];
-    expect(/0\\.1-0\\.9|fraction|share/i.test(historyShare)).toBe(true);
   });
 });

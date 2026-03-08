@@ -289,7 +289,6 @@ export async function applySessionsPatchToStore(params: {
     if (next.providerOverride !== prevProvider || next.modelOverride !== prevModel) {
       delete next.authProfileOverride;
       delete next.authProfileOverrideSource;
-      delete next.authProfileOverrideCompactionCount;
       delete next.fallbackNoticeSelectedModel;
       delete next.fallbackNoticeActiveModel;
       delete next.fallbackNoticeReason;

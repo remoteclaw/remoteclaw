@@ -73,7 +73,7 @@ If `agents.defaults.contextTokens` is set, it is treated as a cap (min) on the r
 ## Interaction with other limits
 
 - Built-in tools already truncate their own output; session pruning is an extra layer that prevents long-running chats from accumulating too much tool output in the model context.
-- Compaction is separate: compaction summarizes and persists, pruning is transient per request. See [/concepts/compaction](/concepts/compaction).
+- Compaction is separate: compaction summarizes and persists, pruning is transient per request. See [Session management — compaction](/reference/session-management-compaction).
 
 ## Defaults (when enabled)
 

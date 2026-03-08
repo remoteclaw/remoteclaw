@@ -153,7 +153,6 @@ export async function getReplyFromConfig(
     ctx: finalized,
     cfg,
     agentId,
-    agentDir,
     workspaceDir,
     agentCfg,
     sessionCtx,

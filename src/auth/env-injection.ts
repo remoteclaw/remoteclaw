@@ -116,7 +116,6 @@ export function resolveAuthProfileCount(cfg: RemoteClawConfig, agentId: string):
 export async function resolveAuthEnv(params: {
   cfg: RemoteClawConfig;
   agentId: string;
-  agentDir?: string;
   store?: AuthProfileStore;
 }): Promise<Record<string, string> | undefined> {
   const auth = resolveAgentAuth(params.cfg, params.agentId);
@@ -131,7 +130,7 @@ export async function resolveAuthEnv(params: {
     return undefined;
   }
 
-  const store = params.store ?? ensureAuthProfileStore(params.agentDir);
+  const store = params.store ?? ensureAuthProfileStore();
 
   let resolved: { apiKey: string; provider: string; email?: string } | null;
   try {
@@ -139,7 +138,6 @@ export async function resolveAuthEnv(params: {
       cfg: params.cfg,
       store,
       profileId,
-      agentDir: params.agentDir,
     });
   } catch {
     log.warn(`Failed to resolve auth profile "${profileId}" — skipping env injection`);

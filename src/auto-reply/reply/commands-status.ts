@@ -1,8 +1,4 @@
-import {
-  resolveAgentDir,
-  resolveDefaultAgentId,
-  resolveSessionAgentId,
-} from "../../agents/agent-scope.js";
+import { resolveDefaultAgentId, resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { listSubagentRunsForRequester } from "../../agents/subagent-registry.js";
 import {
   resolveInternalSessionKey,
@@ -66,7 +62,6 @@ export async function buildStatusReply(params: {
   const statusAgentId = sessionKey
     ? resolveSessionAgentId({ sessionKey, config: cfg })
     : resolveDefaultAgentId(cfg);
-  const statusAgentDir = resolveAgentDir(cfg, statusAgentId);
   const currentUsageProvider = (() => {
     try {
       return resolveUsageProviderId(provider);
@@ -80,7 +75,6 @@ export async function buildStatusReply(params: {
       const usageSummary = await loadProviderUsageSummary({
         timeoutMs: 3500,
         providers: [currentUsageProvider],
-        agentDir: statusAgentDir,
       });
       const usageEntry = usageSummary.providers[0];
       if (usageEntry && !usageEntry.error && usageEntry.windows.length > 0) {
@@ -136,7 +130,6 @@ export async function buildStatusReply(params: {
     provider,
     cfg,
     sessionEntry,
-    agentDir: statusAgentDir,
   });
   // Resolve active model from session fallback notice fields.
   const activeProvider = sessionEntry?.modelProvider?.trim() || provider;
@@ -147,7 +140,6 @@ export async function buildStatusReply(params: {
         provider: activeProvider,
         cfg,
         sessionEntry,
-        agentDir: statusAgentDir,
       })
     : selectedModelAuth;
   const agentDefaults = cfg.agents?.defaults ?? {};

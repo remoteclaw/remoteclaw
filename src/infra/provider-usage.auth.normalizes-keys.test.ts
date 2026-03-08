@@ -67,10 +67,10 @@ describe("resolveProviderAuths key normalization", () => {
   }
 
   async function writeAuthProfiles(home: string, profiles: Record<string, unknown>) {
-    const agentDir = path.join(home, ".remoteclaw", "agents", "main", "agent");
-    await fs.mkdir(agentDir, { recursive: true });
+    const stateDir = path.join(home, ".remoteclaw");
+    await fs.mkdir(stateDir, { recursive: true });
     await fs.writeFile(
-      path.join(agentDir, "auth-profiles.json"),
+      path.join(stateDir, "auth-profiles.json"),
       `${JSON.stringify({ version: 1, profiles }, null, 2)}\n`,
       "utf8",
     );

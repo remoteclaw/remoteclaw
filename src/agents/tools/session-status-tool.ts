@@ -22,7 +22,6 @@ import {
   resolveAgentIdFromSessionKey,
 } from "../../routing/session-key.js";
 // Model override infrastructure gutted in RemoteClaw — inline override logic.
-import { resolveAgentDir } from "../agent-scope.js";
 import { formatUserTime, resolveUserTimeFormat, resolveUserTimezone } from "../date-time.js";
 // Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { parseModelRef } from "../provider-utils.js";
@@ -276,7 +275,6 @@ export function createSessionStatusTool(opts?: {
         }
       }
 
-      const agentDir = resolveAgentDir(cfg, agentId);
       const providerForCard = resolved.entry.providerOverride?.trim() || configured.provider;
       const usageProvider = resolveUsageProviderId(providerForCard);
       let usageLine: string | undefined;
@@ -285,7 +283,6 @@ export function createSessionStatusTool(opts?: {
           const usageSummary = await loadProviderUsageSummary({
             timeoutMs: 3500,
             providers: [usageProvider],
-            agentDir,
           });
           const snapshot = usageSummary.providers.find((entry) => entry.provider === usageProvider);
           if (snapshot) {

@@ -10,7 +10,6 @@ import type { AuthProfileCredential, AuthProfileStore } from "./types.js";
 export function upsertAuthProfile(params: {
   profileId: string;
   credential: AuthProfileCredential;
-  agentDir?: string;
 }): void {
   const credential = {
     ...params.credential,
@@ -18,18 +17,16 @@ export function upsertAuthProfile(params: {
       ? { key: normalizeSecretInput(params.credential.key) }
       : {}),
   };
-  const store = ensureAuthProfileStore(params.agentDir);
+  const store = ensureAuthProfileStore();
   store.profiles[params.profileId] = credential;
-  saveAuthProfileStore(store, params.agentDir);
+  saveAuthProfileStore(store);
 }
 
 export async function upsertAuthProfileWithLock(params: {
   profileId: string;
   credential: AuthProfileCredential;
-  agentDir?: string;
 }): Promise<AuthProfileStore | null> {
   return await updateAuthProfileStoreWithLock({
-    agentDir: params.agentDir,
     updater: (store) => {
       store.profiles[params.profileId] = params.credential;
       return true;

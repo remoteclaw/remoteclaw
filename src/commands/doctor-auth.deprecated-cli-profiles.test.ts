@@ -8,7 +8,7 @@ import { maybeRemoveDeprecatedCliAuthProfiles } from "./doctor-auth.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 
 let envSnapshot: ReturnType<typeof captureEnv>;
-let tempAgentDir: string | undefined;
+let tempStateDir: string | undefined;
 
 function makePrompter(confirmValue: boolean): DoctorPrompter {
   return {
@@ -23,26 +23,25 @@ function makePrompter(confirmValue: boolean): DoctorPrompter {
 }
 
 beforeEach(() => {
-  envSnapshot = captureEnv(["REMOTECLAW_AGENT_DIR", "PI_CODING_AGENT_DIR"]);
-  tempAgentDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-auth-"));
-  process.env.REMOTECLAW_AGENT_DIR = tempAgentDir;
-  process.env.PI_CODING_AGENT_DIR = tempAgentDir;
+  envSnapshot = captureEnv(["REMOTECLAW_STATE_DIR", "REMOTECLAW_AGENT_DIR", "PI_CODING_AGENT_DIR"]);
+  tempStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-auth-"));
+  process.env.REMOTECLAW_STATE_DIR = tempStateDir;
 });
 
 afterEach(() => {
   envSnapshot.restore();
-  if (tempAgentDir) {
-    fs.rmSync(tempAgentDir, { recursive: true, force: true });
-    tempAgentDir = undefined;
+  if (tempStateDir) {
+    fs.rmSync(tempStateDir, { recursive: true, force: true });
+    tempStateDir = undefined;
   }
 });
 
 describe("maybeRemoveDeprecatedCliAuthProfiles", () => {
   it("removes deprecated CLI auth profiles from store + config", async () => {
-    if (!tempAgentDir) {
-      throw new Error("Missing temp agent dir");
+    if (!tempStateDir) {
+      throw new Error("Missing temp state dir");
     }
-    const authPath = path.join(tempAgentDir, "auth-profiles.json");
+    const authPath = path.join(tempStateDir, "auth-profiles.json");
     fs.writeFileSync(
       authPath,
       `${JSON.stringify(

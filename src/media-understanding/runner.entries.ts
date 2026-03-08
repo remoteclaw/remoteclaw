@@ -308,7 +308,6 @@ async function resolveProviderExecutionAuth(params: {
     cfg: params.cfg,
     profileId: params.entry.profile,
     preferredProfile: params.entry.preferredProfile,
-    agentDir: params.agentDir,
   });
   return {
     apiKeys: collectProviderApiKeysForExecution({

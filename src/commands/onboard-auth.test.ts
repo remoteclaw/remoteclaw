@@ -1,5 +1,4 @@
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -54,11 +53,7 @@ import {
   setMinimaxApiKey,
   writeOAuthCredentials,
 } from "./onboard-auth.js";
-import {
-  createAuthTestLifecycle,
-  readAuthProfilesForAgent,
-  setupAuthTestEnv,
-} from "./test-wizard-helpers.js";
+import { createAuthTestLifecycle, setupAuthTestEnv } from "./test-wizard-helpers.js";
 
 function createLegacyProviderConfig(_params: {
   providerId: string;
@@ -119,14 +114,11 @@ describe("writeOAuthCredentials", () => {
     "REMOTECLAW_OAUTH_DIR",
   ]);
 
-  let tempStateDir: string;
-  const authProfilePathFor = (dir: string) => path.join(dir, "auth-profiles.json");
-
   afterEach(async () => {
     await lifecycle.cleanup();
   });
 
-  it("writes auth-profiles.json under REMOTECLAW_AGENT_DIR when set", async () => {
+  it("writes auth-profiles.json to global state dir", async () => {
     const env = await setupAuthTestEnv("remoteclaw-oauth-");
     lifecycle.setStateDir(env.stateDir);
 
@@ -138,129 +130,16 @@ describe("writeOAuthCredentials", () => {
 
     await writeOAuthCredentials("openai-codex", creds);
 
-    const parsed = await readAuthProfilesForAgent<{
+    const globalPath = path.join(env.stateDir, "auth-profiles.json");
+    const raw = await fs.readFile(globalPath, "utf8");
+    const parsed = JSON.parse(raw) as {
       profiles?: Record<string, { type?: string; key?: string; provider?: string }>;
-    }>(env.agentDir);
+    };
     expect(parsed.profiles?.["openai-codex:default"]).toMatchObject({
       type: "api_key",
       provider: "openai-codex",
       key: "access-token",
     });
-
-    await expect(
-      fs.readFile(path.join(env.stateDir, "agents", "main", "agent", "auth-profiles.json"), "utf8"),
-    ).rejects.toThrow();
-  });
-
-  it("writes OAuth credentials to all sibling agent dirs when syncSiblingAgents=true", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-oauth-sync-"));
-    process.env.REMOTECLAW_STATE_DIR = tempStateDir;
-
-    const mainAgentDir = path.join(tempStateDir, "agents", "main", "agent");
-    const kidAgentDir = path.join(tempStateDir, "agents", "kid", "agent");
-    const workerAgentDir = path.join(tempStateDir, "agents", "worker", "agent");
-    await fs.mkdir(mainAgentDir, { recursive: true });
-    await fs.mkdir(kidAgentDir, { recursive: true });
-    await fs.mkdir(workerAgentDir, { recursive: true });
-
-    process.env.REMOTECLAW_AGENT_DIR = kidAgentDir;
-    process.env.PI_CODING_AGENT_DIR = kidAgentDir;
-
-    const creds = {
-      refresh: "refresh-sync",
-      access: "access-sync",
-      expires: Date.now() + 60_000,
-    } satisfies OAuthCredentials;
-
-    await writeOAuthCredentials("openai-codex", creds, undefined, {
-      syncSiblingAgents: true,
-    });
-
-    for (const dir of [mainAgentDir, kidAgentDir, workerAgentDir]) {
-      const raw = await fs.readFile(authProfilePathFor(dir), "utf8");
-      const parsed = JSON.parse(raw) as {
-        profiles?: Record<string, { type?: string; key?: string; provider?: string }>;
-      };
-      expect(parsed.profiles?.["openai-codex:default"]).toMatchObject({
-        type: "api_key",
-        provider: "openai-codex",
-        key: "access-sync",
-      });
-    }
-  });
-
-  it("writes OAuth credentials only to target dir by default", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-oauth-nosync-"));
-    process.env.REMOTECLAW_STATE_DIR = tempStateDir;
-
-    const mainAgentDir = path.join(tempStateDir, "agents", "main", "agent");
-    const kidAgentDir = path.join(tempStateDir, "agents", "kid", "agent");
-    await fs.mkdir(mainAgentDir, { recursive: true });
-    await fs.mkdir(kidAgentDir, { recursive: true });
-
-    process.env.REMOTECLAW_AGENT_DIR = kidAgentDir;
-    process.env.PI_CODING_AGENT_DIR = kidAgentDir;
-
-    const creds = {
-      refresh: "refresh-kid",
-      access: "access-kid",
-      expires: Date.now() + 60_000,
-    } satisfies OAuthCredentials;
-
-    await writeOAuthCredentials("openai-codex", creds, kidAgentDir);
-
-    const kidRaw = await fs.readFile(authProfilePathFor(kidAgentDir), "utf8");
-    const kidParsed = JSON.parse(kidRaw) as {
-      profiles?: Record<string, { type?: string; key?: string; provider?: string }>;
-    };
-    expect(kidParsed.profiles?.["openai-codex:default"]).toMatchObject({
-      type: "api_key",
-      provider: "openai-codex",
-      key: "access-kid",
-    });
-
-    await expect(fs.readFile(authProfilePathFor(mainAgentDir), "utf8")).rejects.toThrow();
-  });
-
-  it("syncs siblings from explicit agentDir outside REMOTECLAW_STATE_DIR", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-oauth-external-"));
-    process.env.REMOTECLAW_STATE_DIR = tempStateDir;
-
-    // Create standard-layout agents tree *outside* REMOTECLAW_STATE_DIR
-    const externalRoot = path.join(tempStateDir, "external", "agents");
-    const extMain = path.join(externalRoot, "main", "agent");
-    const extKid = path.join(externalRoot, "kid", "agent");
-    const extWorker = path.join(externalRoot, "worker", "agent");
-    await fs.mkdir(extMain, { recursive: true });
-    await fs.mkdir(extKid, { recursive: true });
-    await fs.mkdir(extWorker, { recursive: true });
-
-    const creds = {
-      refresh: "refresh-ext",
-      access: "access-ext",
-      expires: Date.now() + 60_000,
-    } satisfies OAuthCredentials;
-
-    await writeOAuthCredentials("openai-codex", creds, extKid, {
-      syncSiblingAgents: true,
-    });
-
-    // All siblings under the external root should have credentials
-    for (const dir of [extMain, extKid, extWorker]) {
-      const raw = await fs.readFile(authProfilePathFor(dir), "utf8");
-      const parsed = JSON.parse(raw) as {
-        profiles?: Record<string, { type?: string; key?: string; provider?: string }>;
-      };
-      expect(parsed.profiles?.["openai-codex:default"]).toMatchObject({
-        type: "api_key",
-        provider: "openai-codex",
-        key: "access-ext",
-      });
-    }
-
-    // Global state dir should NOT have credentials written
-    const globalMain = path.join(tempStateDir, "agents", "main", "agent");
-    await expect(fs.readFile(authProfilePathFor(globalMain), "utf8")).rejects.toThrow();
   });
 });
 
@@ -275,24 +154,22 @@ describe("setMinimaxApiKey", () => {
     await lifecycle.cleanup();
   });
 
-  it("writes to REMOTECLAW_AGENT_DIR when set", async () => {
+  it("writes to global state dir", async () => {
     const env = await setupAuthTestEnv("remoteclaw-minimax-", { agentSubdir: "custom-agent" });
     lifecycle.setStateDir(env.stateDir);
 
     await setMinimaxApiKey("sk-minimax-test");
 
-    const parsed = await readAuthProfilesForAgent<{
+    const globalPath = path.join(env.stateDir, "auth-profiles.json");
+    const raw = await fs.readFile(globalPath, "utf8");
+    const parsed = JSON.parse(raw) as {
       profiles?: Record<string, { type?: string; provider?: string; key?: string }>;
-    }>(env.agentDir);
+    };
     expect(parsed.profiles?.["minimax:default"]).toMatchObject({
       type: "api_key",
       provider: "minimax",
       key: "sk-minimax-test",
     });
-
-    await expect(
-      fs.readFile(path.join(env.stateDir, "agents", "main", "agent", "auth-profiles.json"), "utf8"),
-    ).rejects.toThrow();
   });
 });
 

@@ -37,19 +37,18 @@ export async function clearSessionAuthProfileOverride(params: {
 export async function resolveSessionAuthProfileOverride(params: {
   cfg: RemoteClawConfig;
   provider: string;
-  agentDir: string;
   sessionEntry?: SessionEntry;
   sessionStore?: Record<string, SessionEntry>;
   sessionKey?: string;
   storePath?: string;
   isNewSession: boolean;
 }): Promise<string | undefined> {
-  const { provider, agentDir, sessionEntry, sessionStore, sessionKey, storePath } = params;
+  const { provider, sessionEntry, sessionStore, sessionKey, storePath } = params;
   if (!sessionEntry || !sessionStore || !sessionKey) {
     return sessionEntry?.authProfileOverride;
   }
 
-  const store = ensureAuthProfileStore(agentDir, { allowKeychainPrompt: false });
+  const store = ensureAuthProfileStore();
   const profiles = listProfilesForProvider(store, provider);
   let current = sessionEntry.authProfileOverride?.trim();
 

@@ -1,8 +1,3 @@
-import {
-  resolveAgentDir,
-  resolveDefaultAgentId,
-  resolveSessionAgentId,
-} from "../../agents/agent-scope.js";
 import { modelKey, parseModelRef } from "../../agents/provider-utils.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
@@ -17,7 +12,6 @@ export async function persistInlineDirectives(params: {
   directives: InlineDirectives;
   effectiveModelDirective?: string;
   cfg: RemoteClawConfig;
-  agentDir?: string;
   sessionEntry?: SessionEntry;
   sessionStore?: Record<string, SessionEntry>;
   sessionKey?: string;
@@ -52,11 +46,6 @@ export async function persistInlineDirectives(params: {
     agentCfg,
   } = params;
   let { provider, model } = params;
-  const activeAgentId = sessionKey
-    ? resolveSessionAgentId({ sessionKey, config: cfg })
-    : resolveDefaultAgentId(cfg);
-  const agentDir = resolveAgentDir(cfg, activeAgentId);
-
   if (sessionEntry && sessionStore && sessionKey) {
     const prevElevatedLevel =
       (sessionEntry.elevatedLevel as ElevatedLevel | undefined) ??
@@ -121,7 +110,6 @@ export async function persistInlineDirectives(params: {
               rawProfile: directives.rawModelProfile,
               provider: resolved.provider,
               cfg,
-              agentDir,
             });
             if (profileResolved.error) {
               throw new Error(profileResolved.error);

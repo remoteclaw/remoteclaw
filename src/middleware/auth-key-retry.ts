@@ -17,7 +17,6 @@ const log = createSubsystemLogger("auth-retry");
 export type AuthKeyRetryOptions = {
   cfg: RemoteClawConfig;
   agentId: string;
-  agentDir?: string;
   baseEnv?: Record<string, string>;
   store?: AuthProfileStore;
 };
@@ -52,7 +51,6 @@ export async function withAuthKeyRetry<T>(
     const authEnv = await resolveAuthEnv({
       cfg: options.cfg,
       agentId: options.agentId,
-      agentDir: options.agentDir,
       store: options.store,
     });
     const env = authEnv

@@ -25,7 +25,6 @@ type ResolveApiKeyForProfileParams = {
   cfg?: RemoteClawConfig;
   store: AuthProfileStore;
   profileId: string;
-  agentDir?: string;
 };
 
 export async function resolveApiKeyForProfile(

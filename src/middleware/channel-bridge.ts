@@ -8,6 +8,7 @@ import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { DeliveryAdapter } from "./delivery-adapter.js";
 import { classifyError } from "./error-classifier.js";
 import { readMcpSideEffects } from "./mcp-side-effects.js";
+import { formatUnsupportedMediaWarning, partitionMedia } from "./media-capability.js";
 import { resolveMediaAttachments } from "./media-resolver.js";
 import { createCliRuntime } from "./runtime-factory.js";
 import type { SessionKey, SessionMap } from "./session-map.js";
@@ -191,12 +192,23 @@ export class ChannelBridge {
       }
 
       // 5. Resolve inbound media attachments (download remote URLs to temp files)
-      const media = message.mediaUrls?.length
+      const resolvedMedia = message.mediaUrls?.length
         ? await resolveMediaAttachments(message.mediaUrls, invocationDir)
         : undefined;
-      if (media?.length) {
+      if (resolvedMedia?.length) {
         logDebug(
-          `[channel-bridge] resolved ${media.length}/${message.mediaUrls!.length} media attachments`,
+          `[channel-bridge] resolved ${resolvedMedia.length}/${message.mediaUrls!.length} media attachments`,
+        );
+      }
+
+      // 5b. Partition media by runtime capability
+      const { supported: supportedMedia, unsupported: unsupportedMedia } = resolvedMedia?.length
+        ? partitionMedia(runtime, resolvedMedia)
+        : { supported: [], unsupported: [] };
+      const mediaWarning = formatUnsupportedMediaWarning(unsupportedMedia, this.#provider);
+      if (unsupportedMedia.length > 0) {
+        logDebug(
+          `[channel-bridge] unsupported media: ${unsupportedMedia.length} attachment(s) not accepted by ${this.#provider}`,
         );
       }
 
@@ -217,7 +229,7 @@ export class ChannelBridge {
               (message.extraContext ? "\n\n" + message.extraContext : "") +
               "\n\n" +
               message.text,
-            media: media?.length ? media : undefined,
+            media: supportedMedia?.length ? supportedMedia : undefined,
             sessionId: existingSessionId,
             mcpServers,
             abortSignal,
@@ -243,6 +255,11 @@ export class ChannelBridge {
           // ErrorClassifier uses "context_overflow"; AgentRunResult uses "context_window"
           errorSubtype: category === "context_overflow" ? "context_window" : category,
         };
+      }
+
+      // 7b. Prepend unsupported-media warning (if any) to payloads
+      if (mediaWarning) {
+        payloads.unshift({ text: mediaWarning });
       }
 
       // 8. Read MCP side effects

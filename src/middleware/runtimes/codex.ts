@@ -26,6 +26,13 @@ import type {
  *   reasoning, web_search, error, todo_list
  */
 export class CodexCliRuntime extends CLIRuntimeBase {
+  // ── Media capabilities ────────────────────────────────────────────────
+
+  readonly mediaCapabilities = {
+    acceptsInbound: [] as string[],
+    emitsOutbound: false,
+  };
+
   // ── Per-execution state (reset before each run) ───────────────────────
 
   private currentSessionId: string | undefined;

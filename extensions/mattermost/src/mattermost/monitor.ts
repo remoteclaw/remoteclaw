@@ -315,6 +315,17 @@ export function evaluateMattermostMentionGate(
     dropReason: null,
   };
 }
+
+export function resolveMattermostReplyRootId(params: {
+  threadRootId?: string;
+  replyToId?: string;
+}): string | undefined {
+  const threadRootId = params.threadRootId?.trim();
+  if (threadRootId) {
+    return threadRootId;
+  }
+  return params.replyToId?.trim() || undefined;
+}
 type MattermostMediaInfo = {
   path: string;
   contentType?: string;
@@ -1694,7 +1705,10 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
               }
               await sendMessageMattermost(to, chunk, {
                 accountId: account.accountId,
-                replyToId: threadRootId,
+                replyToId: resolveMattermostReplyRootId({
+                  threadRootId,
+                  replyToId: payload.replyToId,
+                }),
               });
             }
           } else {
@@ -1705,7 +1719,10 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
               await sendMessageMattermost(to, caption, {
                 accountId: account.accountId,
                 mediaUrl,
-                replyToId: threadRootId,
+                replyToId: resolveMattermostReplyRootId({
+                  threadRootId,
+                  replyToId: payload.replyToId,
+                }),
               });
             }
           }

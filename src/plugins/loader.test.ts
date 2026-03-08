@@ -6,6 +6,9 @@ import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { withEnv } from "../test-utils/env.js";
 async function importFreshPluginTestModules() {
   vi.resetModules();
+  vi.unmock("node:fs");
+  vi.unmock("node:fs/promises");
+  vi.unmock("node:module");
   vi.unmock("./hook-runner-global.js");
   vi.unmock("./hooks.js");
   vi.unmock("./loader.js");

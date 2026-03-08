@@ -24,7 +24,7 @@ Priority:
 
 Next priorities:
 
-- Supporting all major model providers
+- Supporting more agent CLI runtimes and messaging channels
 - Improving support for major messaging channels (and adding a few high-demand ones)
 - Performance and test infrastructure
 - Better computer-use and agent harness capabilities
@@ -93,7 +93,7 @@ It is widely known, fast to iterate in, and easy to read, modify, and extend.
 ## What We Will Not Merge (For Now)
 
 - Full-doc translation sets for all docs (deferred; we plan AI-generated translations later)
-- Commercial service integrations that do not clearly fit the model-provider category
+- Commercial service integrations without a clear channel or tool use case
 - Wrapper channels around already supported channels without a clear capability or security gap
 - Agent-hierarchy frameworks (manager-of-managers / nested planner trees) as a default architecture
 - Heavy orchestration layers that duplicate existing agent and tool infrastructure

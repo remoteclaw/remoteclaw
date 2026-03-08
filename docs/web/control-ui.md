@@ -62,7 +62,7 @@ you revoke it with `remoteclaw devices revoke --device <id> --role <role>`. See
 
 ## What it can do (today)
 
-- Chat with the model via Gateway WS (`chat.history`, `chat.send`, `chat.abort`, `chat.inject`)
+- Chat with the agent via Gateway WS (`chat.history`, `chat.send`, `chat.abort`, `chat.inject`)
 - Stream tool calls + live tool output cards in Chat (agent events)
 - Channels: WhatsApp/Telegram/Discord/Slack + plugin channels (Mattermost, etc.) status + QR login + per-channel config (`channels.status`, `web.login.*`, `config.patch`)
 - Instances: presence list + refresh (`system-presence`)
@@ -74,7 +74,7 @@ you revoke it with `remoteclaw devices revoke --device <id> --role <role>`. See
 - Config: apply + restart with validation (`config.apply`) and wake the last active session
 - Config writes include a base-hash guard to prevent clobbering concurrent edits
 - Config schema + form rendering (`config.schema`, including plugin + channel schemas); Raw JSON editor remains available
-- Debug: status/health/models snapshots + event log + manual RPC calls (`status`, `health`, `models.list`)
+- Debug: status/health snapshots + event log + manual RPC calls (`status`, `health`)
 - Logs: live tail of gateway file logs with filter/export (`logs.tail`)
 - Update: run a package/git update + restart (`update.run`) with a restart report
 
@@ -85,7 +85,7 @@ Cron jobs panel notes:
 - Webhook mode uses `delivery.mode = "webhook"` with `delivery.to` set to a valid HTTP(S) webhook URL.
 - For main-session jobs, webhook and none delivery modes are available.
 - Advanced edit controls include delete-after-run, clear agent override, cron exact/stagger options,
-  agent model/thinking overrides, and best-effort delivery toggles.
+  agent thinking overrides, and best-effort delivery toggles.
 - Form validation is inline with field-level errors; invalid values disable the save button until fixed.
 - Set `cron.webhookToken` to send a dedicated bearer token, if omitted the webhook is sent without an auth header.
 - Deprecated fallback: stored legacy jobs with `notify: true` can still use `cron.webhook` until migrated.

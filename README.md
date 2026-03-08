@@ -173,13 +173,13 @@ Run `remoteclaw doctor` to surface risky/misconfigured DM policies.
 - [Canvas](https://docs.remoteclaw.org/platforms/mac/canvas): [A2UI](https://docs.remoteclaw.org/platforms/mac/canvas#canvas-a2ui) push/reset, eval, snapshot.
 - [Nodes](https://docs.remoteclaw.org/nodes): camera snap/clip, screen record, [location.get](https://docs.remoteclaw.org/nodes/location-command), notifications.
 - [Cron + wakeups](https://docs.remoteclaw.org/automation/cron-jobs); [webhooks](https://docs.remoteclaw.org/automation/webhook); [Gmail Pub/Sub](https://docs.remoteclaw.org/automation/gmail-pubsub).
-- [Skills platform](https://docs.remoteclaw.org/tools/skills): bundled, managed, and workspace skills with install gating + UI.
+- [Skills platform](https://docs.remoteclaw.org/tools/skills): bundled and workspace skills.
 
 ### Runtime + safety
 
 - [Channel routing](https://docs.remoteclaw.org/channels/channel-routing), [retry policy](https://docs.remoteclaw.org/concepts/retry), and [streaming/chunking](https://docs.remoteclaw.org/concepts/streaming).
 - [Presence](https://docs.remoteclaw.org/concepts/presence), [typing indicators](https://docs.remoteclaw.org/concepts/typing-indicators), and [usage tracking](https://docs.remoteclaw.org/concepts/usage-tracking).
-- [Models](https://docs.remoteclaw.org/concepts/models), [model failover](https://docs.remoteclaw.org/concepts/model-failover), and [session pruning](https://docs.remoteclaw.org/concepts/session-pruning).
+- [Session pruning](https://docs.remoteclaw.org/concepts/session-pruning).
 - [Security](https://docs.remoteclaw.org/gateway/security) and [troubleshooting](https://docs.remoteclaw.org/channels/troubleshooting).
 
 ### Ops + packaging
@@ -255,7 +255,7 @@ The macOS app can run in **node mode** and advertises its capabilities + permiss
 Elevated bash (host permissions) is separate from macOS TCC:
 
 - Use `/elevated on|off` to toggle per‑session elevated access when enabled + allowlisted.
-- Gateway persists the per‑session toggle via `sessions.patch` (WS method) alongside `verboseLevel`, `model`, `sendPolicy`, and `groupActivation`.
+- Gateway persists the per‑session toggle via `sessions.patch` (WS method) alongside `verboseLevel`, `sendPolicy`, and `groupActivation`.
 
 Details: [Nodes](https://docs.remoteclaw.org/nodes) · [macOS app](https://docs.remoteclaw.org/platforms/macos) · [Gateway protocol](https://docs.remoteclaw.org/concepts/architecture)
 
@@ -275,7 +275,7 @@ Send these in WhatsApp/Telegram/Slack/Google Chat/Microsoft Teams/WebChat (group
 - `/status` — compact session status (model + tokens, cost when available)
 - `/new` or `/reset` — reset the session
 - `/compact` — compact session context (summary)
-- `/think <level>` — off|minimal|low|medium|high|xhigh (GPT-5.2 + Codex models only)
+- `/think <level>` — off|minimal|low|medium|high|xhigh (runtimes that support extended thinking)
 - `/verbose on|off`
 - `/usage off|tokens|full` — per-response usage footer
 - `/restart` — restart the gateway (owner-only in groups)
@@ -318,12 +318,14 @@ Runbook: [iOS connect](https://docs.remoteclaw.org/platforms/ios).
 
 ## Configuration
 
-Minimal `~/.remoteclaw/remoteclaw.json` (model + defaults):
+Minimal `~/.remoteclaw/remoteclaw.json`:
 
 ```json5
 {
-  agent: {
-    model: "anthropic/claude-opus-4-6",
+  channels: {
+    telegram: {
+      botToken: "YOUR_BOT_TOKEN",
+    },
   },
 }
 ```

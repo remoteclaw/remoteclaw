@@ -41,7 +41,7 @@ title: "Exec Host Refactor"
 
 ### Host
 
-- `sandbox`: Docker exec (current behavior).
+- `sandbox`: Docker exec (removed; historical reference).
 - `gateway`: exec on gateway host.
 - `node`: exec on node runner via Bridge (`system.run`).
 
@@ -233,7 +233,7 @@ Option B:
 
 ### Sandbox host
 
-- Existing `exec` behavior (Docker or host when unsandboxed).
+- Existing `exec` behavior (host exec).
 - PTY supported in non-sandbox mode only.
 
 ### Gateway host

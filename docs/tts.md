@@ -23,12 +23,12 @@ It works anywhere RemoteClaw can send audio; Telegram gets a round voice-note bu
 Edge TTS uses Microsoft Edge's online neural TTS service via the `node-edge-tts`
 library. It's a hosted service (not local), uses Microsoft’s endpoints, and does
 not require an API key. `node-edge-tts` exposes speech configuration options and
-output formats, but not all options are supported by the Edge service. citeturn2search0
+output formats, but not all options are supported by the Edge service.
 
 Because Edge TTS is a public web service without a published SLA or quota, treat it
 as best-effort. If you need guaranteed limits and support, use OpenAI or ElevenLabs.
 Microsoft's Speech REST API documents a 10‑minute audio limit per request; Edge TTS
-does not publish limits, so assume similar or lower limits. citeturn0search3
+does not publish limits, so assume similar or lower limits.
 
 ## Optional keys
 
@@ -41,7 +41,7 @@ Edge TTS does **not** require an API key. If no API keys are found, RemoteClaw d
 to Edge TTS (unless disabled via `messages.tts.edge.enabled=false`).
 
 If multiple providers are configured, the selected provider is used first and the others are fallback options.
-Auto-summary uses the configured `summaryModel` (or `agents.defaults.model.primary`),
+Auto-summary uses the configured `summaryModel`,
 so that provider must also be authenticated if you enable summaries.
 
 ## Service links
@@ -207,7 +207,7 @@ Then run:
 - `provider`: `"elevenlabs"`, `"openai"`, or `"edge"` (fallback is automatic).
 - If `provider` is **unset**, RemoteClaw prefers `openai` (if key), then `elevenlabs` (if key),
   otherwise `edge`.
-- `summaryModel`: optional cheap model for auto-summary; defaults to `agents.defaults.model.primary`.
+- `summaryModel`: optional cheap model for auto-summary (e.g. `openai/gpt-4.1-mini`).
   - Accepts `provider/model` or a configured model alias.
 - `modelOverrides`: allow the model to emit TTS directives (on by default).
   - `allowProvider` defaults to `false` (provider switching is opt-in).
@@ -317,10 +317,10 @@ These override `messages.tts.*` for that host.
   - 44.1kHz / 128kbps is the default balance for speech clarity.
 - **Edge TTS**: uses `edge.outputFormat` (default `audio-24khz-48kbitrate-mono-mp3`).
   - `node-edge-tts` accepts an `outputFormat`, but not all formats are available
-    from the Edge service. citeturn2search0
-  - Output format values follow Microsoft Speech output formats (including Ogg/WebM Opus). citeturn1search0
+    from the Edge service.
+  - Output format values follow Microsoft Speech output formats (including Ogg/WebM Opus).
   - Telegram `sendVoice` accepts OGG/MP3/M4A; use OpenAI/ElevenLabs if you need
-    guaranteed Opus voice notes. citeturn1search1
+    guaranteed Opus voice notes.
   - If the configured Edge output format fails, RemoteClaw retries with MP3.
 
 OpenAI/ElevenLabs formats are fixed; Telegram expects Opus for voice-note UX.
@@ -331,7 +331,7 @@ When enabled, RemoteClaw:
 
 - skips TTS if the reply already contains media or a `MEDIA:` directive.
 - skips very short replies (< 10 chars).
-- summarizes long replies when enabled using `agents.defaults.model.primary` (or `summaryModel`).
+- summarizes long replies when enabled using the configured `summaryModel`.
 - attaches the generated audio to the reply.
 
 If the reply exceeds `maxLength` and summary is off (or no API key for the
@@ -349,7 +349,7 @@ Reply -> TTS enabled?
                    no  -> TTS -> attach audio
                    yes -> summary enabled?
                             no  -> send text
-                            yes -> summarize (summaryModel or agents.defaults.model.primary)
+                            yes -> summarize (summaryModel)
                                       -> TTS -> attach audio
 ```
 

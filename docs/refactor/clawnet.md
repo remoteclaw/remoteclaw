@@ -46,7 +46,7 @@ Single, rigorous document for:
 
 ### 1) Gateway WebSocket (control plane)
 
-- Full API surface: config, channels, models, sessions, agent runs, logs, nodes, etc.
+- Full API surface: config, channels, sessions, agent runs, logs, nodes, etc.
 - Default bind: loopback. Remote access via SSH/Tailscale.
 - Auth: token/password via `connect`.
 - No TLS pinning (relies on loopback/tunnel).
@@ -119,7 +119,7 @@ Single WS protocol with role + scope.
 - Optional **scope** for operator:
   - `operator.read` (status + viewing)
   - `operator.write` (agent run, sends)
-  - `operator.admin` (config, channels, models)
+  - `operator.admin` (config, channels)
 
 ### Role behaviors
 

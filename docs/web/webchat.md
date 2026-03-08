@@ -37,7 +37,7 @@ Status: the macOS/iOS SwiftUI chat UI talks directly to the Gateway WebSocket.
   tool as `core` or `plugin:<id>` (plus `optional` for optional plugin tools).
 - If `tools.catalog` is unavailable, the panel falls back to a built-in static list.
 - The panel edits profile and override config, but effective runtime access still follows policy
-  precedence (`allow`/`deny`, per-agent and provider/channel overrides).
+  precedence (`allow`/`deny`, per-agent and per-channel overrides).
 
 ## Remote use
 

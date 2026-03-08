@@ -58,66 +58,29 @@ If you want...
 
 Yes — this works well if your “personal” traffic is **DMs** and your “public” traffic is **groups**.
 
-Why: in single-agent mode, DMs typically land in the **main** session key (`agent:main:main`), while groups always use **non-main** session keys (`agent:main:<channel>:group:<id>`). If you enable sandboxing with `mode: "non-main"`, those group sessions run in Docker while your main DM session stays on-host.
+Why: in single-agent mode, DMs typically land in the **main** session key (`agent:main:main`), while groups always use **non-main** session keys (`agent:main:<channel>:group:<id>`). Per-session tool restrictions can be configured to limit what group sessions can do.
 
 This gives you one agent “brain” (shared workspace + memory), but two execution postures:
 
 - **DMs**: full tools (host)
-- **Groups**: sandbox + restricted tools (Docker)
+- **Groups**: restricted tools
+
+Example (DMs on host, groups with restricted tools):
+
+```json5
+{
+  tools: {
+    profiles: {
+      restricted: {
+        allow: [“group:messaging”, “group:sessions”],
+        deny: [“group:runtime”, “group:fs”, “group:ui”, “nodes”, “cron”, “gateway”],
+      },
+    },
+  },
+}
+```
 
 > If you need truly separate workspaces/personas (“personal” and “public” must never mix), use a second agent + bindings. See [Multi-Agent Routing](/concepts/multi-agent).
-
-Example (DMs on host, groups sandboxed + messaging-only tools):
-
-```json5
-{
-  agents: {
-    defaults: {
-      sandbox: {
-        mode: "non-main", // groups/channels are non-main -> sandboxed
-        scope: "session", // strongest isolation (one container per group/channel)
-        workspaceAccess: "none",
-      },
-    },
-  },
-  tools: {
-    sandbox: {
-      tools: {
-        // If allow is non-empty, everything else is blocked (deny still wins).
-        allow: ["group:messaging", "group:sessions"],
-        deny: ["group:runtime", "group:fs", "group:ui", "nodes", "cron", "gateway"],
-      },
-    },
-  },
-}
-```
-
-Want “groups can only see folder X” instead of “no host access”? Keep `workspaceAccess: "none"` and mount only allowlisted paths into the sandbox:
-
-```json5
-{
-  agents: {
-    defaults: {
-      sandbox: {
-        mode: "non-main",
-        scope: "session",
-        workspaceAccess: "none",
-        docker: {
-          binds: [
-            // hostPath:containerPath:mode
-            "/home/user/FriendsShared:/data:ro",
-          ],
-        },
-      },
-    },
-  },
-}
-```
-
-Related:
-
-- Configuration keys and defaults: [Gateway configuration](/gateway/configuration#agentsdefaultssandbox)
-- Debugging why a tool is blocked: [Exec approvals](/tools/exec-approvals)
 
 ## Display labels
 

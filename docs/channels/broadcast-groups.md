@@ -180,8 +180,8 @@ This allows each agent to have:
 
 - Different personalities
 - Different tool access (e.g., read-only vs. read-write)
-- Different models (e.g., opus vs. sonnet)
-- Different skills installed
+- Different CLI configurations (e.g., different system prompts, tool sets)
+- Different MCP tools or capabilities
 
 ### Example: Isolated Sessions
 
@@ -259,7 +259,7 @@ With many agents, consider:
 
 - Using `"strategy": "parallel"` (default) for speed
 - Limiting broadcast groups to 5-10 agents
-- Using faster models for simpler agents
+- Using lighter CLI settings for simpler agents
 
 ### 5. Handle Failures Gracefully
 
@@ -331,7 +331,7 @@ tail -f ~/.remoteclaw/logs/gateway.log | grep broadcast
 **If slow with many agents:**
 
 - Reduce number of agents per group
-- Use lighter models (sonnet instead of opus)
+- Use lighter CLI configurations
 - Check sandbox startup time
 
 ## Examples

@@ -8,13 +8,13 @@ title: "Personal Assistant Setup"
 
 # Building a personal assistant with RemoteClaw
 
-RemoteClaw is a WhatsApp + Telegram + Discord + iMessage gateway for **Pi** agents. Plugins add Mattermost. This guide is the "personal assistant" setup: one dedicated WhatsApp number that behaves like your always-on agent.
+RemoteClaw is a WhatsApp + Telegram + Discord + iMessage gateway for **CLI agents** (Claude, Gemini, Codex, OpenCode). Plugins add Mattermost. This guide is the "personal assistant" setup: one dedicated WhatsApp number that behaves like your always-on agent.
 
 ## ⚠️ Safety first
 
 You’re putting an agent in a position to:
 
-- run commands on your machine (depending on your Pi tool setup)
+- run commands on your machine (depending on the agent's configured tools/MCP servers)
 - read/write files in your workspace
 - send messages back out via WhatsApp/Telegram/Discord/Mattermost (plugin)
 
@@ -119,7 +119,6 @@ Example:
 {
   logging: { level: "info" },
   agent: {
-    model: "anthropic/claude-opus-4-6",
     workspace: "~/.remoteclaw/workspace",
     timeoutSeconds: 1800,
     // Start with 0; enable later.

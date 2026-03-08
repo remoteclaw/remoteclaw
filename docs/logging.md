@@ -165,7 +165,7 @@ diagnostics + the exporter plugin are enabled.
 
 Model usage:
 
-- `model.usage`: tokens, cost, duration, context, provider/model/channel, session ids.
+- `model.usage`: tokens, duration, context, runtime/model/channel, session ids.
 
 Message flow:
 
@@ -270,13 +270,13 @@ Notes:
 Model usage:
 
 - `remoteclaw.tokens` (counter, attrs: `remoteclaw.token`, `remoteclaw.channel`,
-  `remoteclaw.provider`, `remoteclaw.model`)
-- `remoteclaw.cost.usd` (counter, attrs: `remoteclaw.channel`, `remoteclaw.provider`,
+  `remoteclaw.runtime`, `remoteclaw.model`)
+- `remoteclaw.cost.usd` (counter, attrs: `remoteclaw.channel`, `remoteclaw.runtime`,
   `remoteclaw.model`)
 - `remoteclaw.run.duration_ms` (histogram, attrs: `remoteclaw.channel`,
-  `remoteclaw.provider`, `remoteclaw.model`)
+  `remoteclaw.runtime`, `remoteclaw.model`)
 - `remoteclaw.context.tokens` (histogram, attrs: `remoteclaw.context`,
-  `remoteclaw.channel`, `remoteclaw.provider`, `remoteclaw.model`)
+  `remoteclaw.channel`, `remoteclaw.runtime`, `remoteclaw.model`)
 
 Message flow:
 
@@ -308,7 +308,7 @@ Queues + sessions:
 ### Exported spans (names + key attributes)
 
 - `remoteclaw.model.usage`
-  - `remoteclaw.channel`, `remoteclaw.provider`, `remoteclaw.model`
+  - `remoteclaw.channel`, `remoteclaw.runtime`, `remoteclaw.model`
   - `remoteclaw.sessionKey`, `remoteclaw.sessionId`
   - `remoteclaw.tokens.*` (input/output/cache_read/cache_write/total)
 - `remoteclaw.webhook.processed`

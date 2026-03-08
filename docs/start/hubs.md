@@ -60,7 +60,6 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Channel routing](/channels/channel-routing)
 - [Groups](/channels/groups)
 - [Group messages](/channels/group-messages)
-- [Model failover](/concepts/model-failover)
 
 ## Providers + ingress
 
@@ -167,7 +166,7 @@ Use these hubs to discover every page, including deep dives and reference docs t
 ## Experiments (exploratory)
 
 - [Onboarding config protocol](/experiments/onboarding-config-protocol)
-- [Model config exploration](/experiments/proposals/model-config)
+- [Model config (historical)](/experiments/proposals/model-config)
 
 ## Project
 

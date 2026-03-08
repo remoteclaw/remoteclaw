@@ -451,7 +451,7 @@ curl "https://api.telegram.org/bot<bot_token>/getUpdates"
     - message sends omit `message_thread_id` (Telegram rejects `sendMessage(...thread_id=1)`)
     - typing actions still include `message_thread_id`
 
-    Topic inheritance: topic entries inherit group settings unless overridden (`requireMention`, `allowFrom`, `skills`, `systemPrompt`, `enabled`, `groupPolicy`).
+    Topic inheritance: topic entries inherit group settings unless overridden (`requireMention`, `allowFrom`, `tools`, `systemPrompt`, `enabled`, `groupPolicy`).
 
     Template context includes:
 
@@ -758,7 +758,7 @@ Primary reference:
 - `channels.telegram.groups`: per-group defaults + allowlist (use `"*"` for global defaults).
   - `channels.telegram.groups.<id>.groupPolicy`: per-group override for groupPolicy (`open | allowlist | disabled`).
   - `channels.telegram.groups.<id>.requireMention`: mention gating default.
-  - `channels.telegram.groups.<id>.skills`: skill filter (omit = all skills, empty = none).
+  - `channels.telegram.groups.<id>.tools`: tool filter (omit = all tools, empty = none).
   - `channels.telegram.groups.<id>.allowFrom`: per-group sender allowlist override.
   - `channels.telegram.groups.<id>.systemPrompt`: extra system prompt for the group.
   - `channels.telegram.groups.<id>.enabled`: disable the group when `false`.

@@ -370,7 +370,6 @@ remoteclaw pairing list feishu
 | --------- | ----------------- |
 | `/status` | Show bot status   |
 | `/reset`  | Reset the session |
-| `/model`  | Show/switch model |
 
 > Note: Feishu does not support native command menus yet, so commands must be sent as text.
 

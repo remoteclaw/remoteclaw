@@ -76,7 +76,7 @@ See: [Broadcast Groups](/channels/broadcast-groups).
 
 ## Config overview
 
-- `agents.list`: named agent definitions (workspace, model, etc.).
+- `agents.list`: named agent definitions (workspace, runtime, etc.).
 - `bindings`: map inbound channels/accounts/peers to agents.
 
 Example:

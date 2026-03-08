@@ -12,7 +12,7 @@ title: "Menu Bar"
 - We surface the current agent work state in the menu bar icon and in the first status row of the menu.
 - Health status is hidden while work is active; it returns when all sessions are idle.
 - The “Nodes” block in the menu lists **devices** only (paired nodes via `node.list`), not client/presence entries.
-- A “Usage” section appears under Context when provider usage snapshots are available.
+- A “Usage” section appears under Context when agent usage snapshots are available.
 
 ## State model
 

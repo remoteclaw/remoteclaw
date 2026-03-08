@@ -279,7 +279,7 @@ Every top-level key in `RemoteClawSchema` (from `src/config/zod-schema.ts`):
 | `update`      | object | Auto-update channel (`stable`/`beta`/`dev`) and check settings                                     |
 | `browser`     | object | Chrome DevTools Protocol automation, SSRF policy, browser profiles                                 |
 | `ui`          | object | UI customization: theme color, assistant name and avatar                                           |
-| `auth`        | object | Auth profiles (API key/OAuth/token), provider priority, billing cooldowns                          |
+| `auth`        | object | Auth profiles (API key/OAuth/token) for gateway access control                                     |
 | `nodeHost`    | object | Node host configuration (browser proxy)                                                            |
 | `agents`      | object | Agent defaults and agent list (see [Agent Configuration](#agent-configuration))                    |
 | `tools`       | object | Tool access profiles, allow/deny lists (see [MCP Server Configuration](#mcp-server-configuration)) |
@@ -332,16 +332,15 @@ Configure agent defaults and define multiple agents:
 
 Key agent default options:
 
-| Key                               | Type          | Description                                                 |
-| --------------------------------- | ------------- | ----------------------------------------------------------- |
-| `agents.defaults.runtime`         | string        | Default agent CLI (`claude`, `gemini`, `codex`, `opencode`) |
-| `agents.defaults.model`           | string/object | Default model                                               |
-| `agents.defaults.workspace`       | string        | Workspace root directory                                    |
-| `agents.defaults.contextTokens`   | number        | Context window size                                         |
-| `agents.defaults.timeoutSeconds`  | number        | Agent response timeout                                      |
-| `agents.defaults.maxConcurrent`   | number        | Max concurrent sessions                                     |
-| `agents.defaults.typingMode`      | string        | Typing indicator: `never`, `instant`, `thinking`, `message` |
-| `agents.defaults.humanDelay.mode` | string        | Simulated delay: `off`, `natural`, `custom`                 |
+| Key                               | Type   | Description                                                 |
+| --------------------------------- | ------ | ----------------------------------------------------------- |
+| `agents.defaults.runtime`         | string | Default agent CLI (`claude`, `gemini`, `codex`, `opencode`) |
+| `agents.defaults.workspace`       | string | Workspace root directory                                    |
+| `agents.defaults.contextTokens`   | number | Context window size                                         |
+| `agents.defaults.timeoutSeconds`  | number | Agent response timeout                                      |
+| `agents.defaults.maxConcurrent`   | number | Max concurrent sessions                                     |
+| `agents.defaults.typingMode`      | string | Typing indicator: `never`, `instant`, `thinking`, `message` |
+| `agents.defaults.humanDelay.mode` | string | Simulated delay: `off`, `natural`, `custom`                 |
 
 ## Gateway
 
@@ -418,8 +417,7 @@ centralized skill marketplace. Any `skills` configuration is ignored.
 **Status:** Removed.
 
 The model catalog has been removed. Each agent CLI manages its own model
-selection. Use `agents.defaults.model` or per-agent `model` overrides instead
-of the top-level `models` section. Any `models` configuration is ignored.
+selection. Any `models` configuration is ignored.
 
 ### `plugins` (partially deprecated)
 

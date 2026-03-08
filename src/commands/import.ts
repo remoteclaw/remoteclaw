@@ -79,6 +79,8 @@ export type ImportResult = {
   envVarRenames: string[];
   skippedEntries: string[];
   targetDir: string;
+  consolidatedAuthProfiles: string[];
+  authProfileConflicts: string[];
 };
 
 /**
@@ -433,13 +435,35 @@ export function materializeWorkspaceDefaults(jsonContent: string): string {
 }
 
 /**
+ * A single auth profile credential discovered during import, tagged
+ * with the source file path for conflict reporting.
+ */
+type DiscoveredAuthProfile = {
+  id: string;
+  credential: Record<string, unknown>;
+  sourceFile: string;
+};
+
+/**
  * Discover auth profile IDs from auth store files in the source directory.
  *
  * Walks the directory tree looking for `auth-profiles.json` (v1 format)
  * and legacy `auth.json` files. Returns deduplicated profile IDs.
  */
 export function discoverSourceAuthProfileIds(sourceDir: string): string[] {
-  const profileIds: string[] = [];
+  return [...new Set(discoverSourceAuthProfiles(sourceDir).map((p) => p.id))];
+}
+
+/**
+ * Discover full auth profile credentials from auth store files in the
+ * source directory.
+ *
+ * Walks the directory tree looking for `auth-profiles.json` (v1 format)
+ * and legacy `auth.json` files. Returns all discovered profiles with
+ * their credentials and source paths for conflict detection.
+ */
+export function discoverSourceAuthProfiles(sourceDir: string): DiscoveredAuthProfile[] {
+  const profiles: DiscoveredAuthProfile[] = [];
 
   const walk = (dir: string) => {
     let entries: fs.Dirent[];
@@ -454,30 +478,34 @@ export function discoverSourceAuthProfileIds(sourceDir: string): string[] {
         walk(fullPath);
       } else if (entry.isFile()) {
         if (entry.name === AUTH_PROFILES_FILENAME) {
-          collectModernStore(fullPath, profileIds);
+          collectModernStore(fullPath, profiles);
         } else if (entry.name === LEGACY_AUTH_FILENAME) {
-          collectLegacyStore(fullPath, profileIds);
+          collectLegacyStore(fullPath, profiles);
         }
       }
     }
   };
 
   walk(sourceDir);
-  return [...new Set(profileIds)];
+  return profiles;
 }
 
-function collectModernStore(filePath: string, out: string[]): void {
+function collectModernStore(filePath: string, out: DiscoveredAuthProfile[]): void {
   try {
     const raw = JSON.parse(fs.readFileSync(filePath, "utf-8"));
     if (raw?.profiles && typeof raw.profiles === "object") {
-      out.push(...Object.keys(raw.profiles));
+      for (const [id, credential] of Object.entries(raw.profiles)) {
+        if (credential && typeof credential === "object") {
+          out.push({ id, credential: credential as Record<string, unknown>, sourceFile: filePath });
+        }
+      }
     }
   } catch {
     /* ignore unreadable/malformed files */
   }
 }
 
-function collectLegacyStore(filePath: string, out: string[]): void {
+function collectLegacyStore(filePath: string, out: DiscoveredAuthProfile[]): void {
   try {
     const raw = JSON.parse(fs.readFileSync(filePath, "utf-8"));
     if (typeof raw !== "object" || raw === null || "profiles" in raw) {
@@ -489,7 +517,11 @@ function collectLegacyStore(filePath: string, out: string[]): void {
         typeof value === "object" &&
         (value as Record<string, unknown>).type === "api_key"
       ) {
-        out.push(`${key}:default`);
+        out.push({
+          id: `${key}:default`,
+          credential: value as Record<string, unknown>,
+          sourceFile: filePath,
+        });
       }
     }
   } catch {
@@ -567,6 +599,55 @@ export function materializeAuthDefaults(
   const indentMatch = jsonContent.match(/^(\s+)"/m);
   const indent = indentMatch?.[1] ?? "  ";
   return JSON.stringify(config, null, indent) + "\n";
+}
+
+/**
+ * Consolidate discovered auth profiles into a single global auth store.
+ *
+ * Merges all profiles into one store, writing it to `targetDir/auth-profiles.json`.
+ * When the same profile ID appears in multiple source files with different keys,
+ * a warning is emitted and the first occurrence wins.
+ */
+export async function consolidateAuthProfiles(params: {
+  profiles: DiscoveredAuthProfile[];
+  targetDir: string;
+  sourceDir: string;
+  dryRun: boolean;
+  result: ImportResult;
+  runtime: RuntimeEnv;
+}): Promise<void> {
+  const { profiles, targetDir, sourceDir, dryRun, result, runtime } = params;
+  if (profiles.length === 0) {
+    return;
+  }
+
+  const merged: Record<string, Record<string, unknown>> = {};
+
+  for (const { id, credential, sourceFile } of profiles) {
+    if (id in merged) {
+      // Check for conflict: same profile ID but different key value
+      const existing = merged[id];
+      if (existing.key !== credential.key) {
+        const relPath = path.relative(sourceDir, sourceFile);
+        const warning = `Auth profile "${id}" found in ${relPath} conflicts with earlier occurrence — keeping first`;
+        result.authProfileConflicts.push(warning);
+        runtime.log(`Warning: ${warning}`);
+      }
+      continue;
+    }
+    merged[id] = credential;
+    result.consolidatedAuthProfiles.push(id);
+  }
+
+  if (!dryRun) {
+    const store = {
+      version: 1,
+      profiles: merged,
+    };
+    const storePath = path.join(targetDir, AUTH_PROFILES_FILENAME);
+    await fsp.mkdir(targetDir, { recursive: true });
+    await fsp.writeFile(storePath, JSON.stringify(store, null, 2) + "\n", "utf-8");
+  }
 }
 
 /**
@@ -714,6 +795,11 @@ async function copyDirectory(params: {
         discoveredAuthProfileIds: params.discoveredAuthProfileIds,
       });
     } else if (entry.isFile()) {
+      // Skip auth-profiles.json files — they are consolidated into the
+      // global auth store separately, not copied per-agent.
+      if (entry.name === AUTH_PROFILES_FILENAME) {
+        continue;
+      }
       if (isConfigFile(entry.name)) {
         const content = await fsp.readFile(sourcePath, "utf-8");
         const { content: transformed, renames } = transformConfigContent(content);
@@ -801,6 +887,8 @@ export async function importCommand(
     envVarRenames: [],
     skippedEntries: [],
     targetDir,
+    consolidatedAuthProfiles: [],
+    authProfileConflicts: [],
   };
 
   if (opts.dryRun) {
@@ -811,7 +899,8 @@ export async function importCommand(
     `Importing from ${shortenHomePath(sourcePath)} to ${shortenHomePath(targetDir)}...\n`,
   );
 
-  const discoveredAuthProfileIds = discoverSourceAuthProfileIds(sourcePath);
+  const discoveredAuthProfiles = discoverSourceAuthProfiles(sourcePath);
+  const discoveredAuthProfileIds = [...new Set(discoveredAuthProfiles.map((p) => p.id))];
 
   await copyDirectory({
     sourceDir: sourcePath,
@@ -820,6 +909,15 @@ export async function importCommand(
     filterRoot: true,
     result,
     discoveredAuthProfileIds,
+  });
+
+  await consolidateAuthProfiles({
+    profiles: discoveredAuthProfiles,
+    targetDir,
+    sourceDir: sourcePath,
+    dryRun: Boolean(opts.dryRun),
+    result,
+    runtime,
   });
 
   // Deduplicate env var renames for reporting
@@ -837,6 +935,15 @@ export async function importCommand(
     runtime.log(`\nEnv var renames:`);
     for (const rename of result.envVarRenames) {
       runtime.log(`  ${rename}`);
+    }
+  }
+
+  if (result.consolidatedAuthProfiles.length > 0) {
+    runtime.log(
+      `\nConsolidated ${result.consolidatedAuthProfiles.length} auth profile(s) into global store:`,
+    );
+    for (const id of result.consolidatedAuthProfiles) {
+      runtime.log(`  ${id}`);
     }
   }
 

@@ -6,8 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RuntimeEnv } from "../runtime.js";
 import {
   clearWizardSection,
+  consolidateAuthProfiles,
   detectOpenClawInstallation,
   discoverSourceAuthProfileIds,
+  discoverSourceAuthProfiles,
   importCommand,
   isImportableRootEntry,
   materializeAuthDefaults,
@@ -474,6 +476,280 @@ describe("discoverSourceAuthProfileIds", () => {
     // auth.json with "profiles" key is treated as modern and skipped by legacy collector,
     // and it's not named auth-profiles.json so modern collector also skips it
     expect(discoverSourceAuthProfileIds(tmpDir)).toEqual([]);
+  });
+});
+
+describe("discoverSourceAuthProfiles", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "auth-profiles-test-"));
+  });
+
+  afterEach(async () => {
+    await fsp.rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("returns full profile credentials from modern auth-profiles.json", async () => {
+    const agentDir = path.join(tmpDir, "agents", "main", "agent");
+    await fsp.mkdir(agentDir, { recursive: true });
+    await fsp.writeFile(
+      path.join(agentDir, "auth-profiles.json"),
+      JSON.stringify({
+        version: 1,
+        profiles: {
+          "anthropic:default": { type: "api_key", provider: "anthropic", key: "sk-ant-fake" },
+        },
+      }),
+    );
+
+    const profiles = discoverSourceAuthProfiles(tmpDir);
+    expect(profiles).toHaveLength(1);
+    expect(profiles[0].id).toBe("anthropic:default");
+    expect(profiles[0].credential.key).toBe("sk-ant-fake");
+    expect(profiles[0].sourceFile).toContain("auth-profiles.json");
+  });
+
+  it("returns full profile credentials from legacy auth.json", async () => {
+    const agentDir = path.join(tmpDir, "agents", "main", "agent");
+    await fsp.mkdir(agentDir, { recursive: true });
+    await fsp.writeFile(
+      path.join(agentDir, "auth.json"),
+      JSON.stringify({
+        anthropic: { type: "api_key", provider: "anthropic", key: "sk-ant-fake" },
+      }),
+    );
+
+    const profiles = discoverSourceAuthProfiles(tmpDir);
+    expect(profiles).toHaveLength(1);
+    expect(profiles[0].id).toBe("anthropic:default");
+    expect(profiles[0].credential.key).toBe("sk-ant-fake");
+  });
+
+  it("returns profiles from multiple agent directories", async () => {
+    const agent1 = path.join(tmpDir, "agents", "main", "agent");
+    const agent2 = path.join(tmpDir, "agents", "helper", "agent");
+    await fsp.mkdir(agent1, { recursive: true });
+    await fsp.mkdir(agent2, { recursive: true });
+
+    await fsp.writeFile(
+      path.join(agent1, "auth-profiles.json"),
+      JSON.stringify({
+        version: 1,
+        profiles: {
+          "anthropic:default": { type: "api_key", provider: "anthropic", key: "key-1" },
+        },
+      }),
+    );
+    await fsp.writeFile(
+      path.join(agent2, "auth-profiles.json"),
+      JSON.stringify({
+        version: 1,
+        profiles: {
+          "google:my-key": { type: "api_key", provider: "google", key: "key-2" },
+        },
+      }),
+    );
+
+    const profiles = discoverSourceAuthProfiles(tmpDir);
+    expect(profiles).toHaveLength(2);
+    const ids = profiles.map((p) => p.id);
+    expect(ids).toContain("anthropic:default");
+    expect(ids).toContain("google:my-key");
+  });
+});
+
+describe("consolidateAuthProfiles", () => {
+  let tmpDir: string;
+  let targetDir: string;
+  let runtime: TestRuntime;
+
+  beforeEach(async () => {
+    tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "consolidate-test-"));
+    targetDir = path.join(tmpDir, "target");
+    runtime = createTestRuntime();
+  });
+
+  afterEach(async () => {
+    await fsp.rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("writes consolidated profiles to global auth-profiles.json", async () => {
+    const result = {
+      copiedFiles: [],
+      transformedFiles: [],
+      envVarRenames: [],
+      skippedEntries: [],
+      targetDir,
+      consolidatedAuthProfiles: [],
+      authProfileConflicts: [],
+    };
+
+    await consolidateAuthProfiles({
+      profiles: [
+        {
+          id: "anthropic:default",
+          credential: { type: "api_key", provider: "anthropic", key: "sk-ant-fake" },
+          sourceFile: "/src/agents/main/agent/auth-profiles.json",
+        },
+        {
+          id: "google:my-key",
+          credential: { type: "api_key", provider: "google", key: "goog-fake" },
+          sourceFile: "/src/agents/helper/agent/auth-profiles.json",
+        },
+      ],
+      targetDir,
+      sourceDir: "/src",
+      dryRun: false,
+      result,
+      runtime: runtime as RuntimeEnv,
+    });
+
+    const storePath = path.join(targetDir, "auth-profiles.json");
+    expect(fs.existsSync(storePath)).toBe(true);
+    const store = JSON.parse(await fsp.readFile(storePath, "utf-8"));
+    expect(store.version).toBe(1);
+    expect(store.profiles["anthropic:default"].key).toBe("sk-ant-fake");
+    expect(store.profiles["google:my-key"].key).toBe("goog-fake");
+    expect(result.consolidatedAuthProfiles).toEqual(["anthropic:default", "google:my-key"]);
+    expect(result.authProfileConflicts).toHaveLength(0);
+  });
+
+  it("warns on profile ID conflict with different keys", async () => {
+    const sourceDir = path.join(tmpDir, "source");
+    const result = {
+      copiedFiles: [],
+      transformedFiles: [],
+      envVarRenames: [],
+      skippedEntries: [],
+      targetDir,
+      consolidatedAuthProfiles: [],
+      authProfileConflicts: [],
+    };
+
+    await consolidateAuthProfiles({
+      profiles: [
+        {
+          id: "anthropic:default",
+          credential: { type: "api_key", provider: "anthropic", key: "key-first" },
+          sourceFile: path.join(sourceDir, "agents", "main", "agent", "auth-profiles.json"),
+        },
+        {
+          id: "anthropic:default",
+          credential: { type: "api_key", provider: "anthropic", key: "key-second" },
+          sourceFile: path.join(sourceDir, "agents", "helper", "agent", "auth-profiles.json"),
+        },
+      ],
+      targetDir,
+      sourceDir,
+      dryRun: false,
+      result,
+      runtime: runtime as RuntimeEnv,
+    });
+
+    // First occurrence wins
+    const store = JSON.parse(
+      await fsp.readFile(path.join(targetDir, "auth-profiles.json"), "utf-8"),
+    );
+    expect(store.profiles["anthropic:default"].key).toBe("key-first");
+
+    // Only one profile consolidated (deduped)
+    expect(result.consolidatedAuthProfiles).toEqual(["anthropic:default"]);
+
+    // Conflict warning emitted
+    expect(result.authProfileConflicts).toHaveLength(1);
+    expect(result.authProfileConflicts[0]).toContain("anthropic:default");
+    expect(result.authProfileConflicts[0]).toContain("conflicts");
+    expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("Warning"));
+  });
+
+  it("does not warn on duplicate with same key", async () => {
+    const sourceDir = path.join(tmpDir, "source");
+    const result = {
+      copiedFiles: [],
+      transformedFiles: [],
+      envVarRenames: [],
+      skippedEntries: [],
+      targetDir,
+      consolidatedAuthProfiles: [],
+      authProfileConflicts: [],
+    };
+
+    await consolidateAuthProfiles({
+      profiles: [
+        {
+          id: "anthropic:default",
+          credential: { type: "api_key", provider: "anthropic", key: "same-key" },
+          sourceFile: path.join(sourceDir, "agents", "main", "agent", "auth-profiles.json"),
+        },
+        {
+          id: "anthropic:default",
+          credential: { type: "api_key", provider: "anthropic", key: "same-key" },
+          sourceFile: path.join(sourceDir, "agents", "helper", "agent", "auth-profiles.json"),
+        },
+      ],
+      targetDir,
+      sourceDir,
+      dryRun: false,
+      result,
+      runtime: runtime as RuntimeEnv,
+    });
+
+    expect(result.authProfileConflicts).toHaveLength(0);
+  });
+
+  it("does nothing when no profiles discovered", async () => {
+    const result = {
+      copiedFiles: [],
+      transformedFiles: [],
+      envVarRenames: [],
+      skippedEntries: [],
+      targetDir,
+      consolidatedAuthProfiles: [],
+      authProfileConflicts: [],
+    };
+
+    await consolidateAuthProfiles({
+      profiles: [],
+      targetDir,
+      sourceDir: "/src",
+      dryRun: false,
+      result,
+      runtime: runtime as RuntimeEnv,
+    });
+
+    expect(fs.existsSync(path.join(targetDir, "auth-profiles.json"))).toBe(false);
+    expect(result.consolidatedAuthProfiles).toHaveLength(0);
+  });
+
+  it("dry run does not write file", async () => {
+    const result = {
+      copiedFiles: [],
+      transformedFiles: [],
+      envVarRenames: [],
+      skippedEntries: [],
+      targetDir,
+      consolidatedAuthProfiles: [],
+      authProfileConflicts: [],
+    };
+
+    await consolidateAuthProfiles({
+      profiles: [
+        {
+          id: "anthropic:default",
+          credential: { type: "api_key", provider: "anthropic", key: "sk-fake" },
+          sourceFile: "/src/auth-profiles.json",
+        },
+      ],
+      targetDir,
+      sourceDir: "/src",
+      dryRun: true,
+      result,
+      runtime: runtime as RuntimeEnv,
+    });
+
+    expect(fs.existsSync(path.join(targetDir, "auth-profiles.json"))).toBe(false);
+    expect(result.consolidatedAuthProfiles).toEqual(["anthropic:default"]);
   });
 });
 
@@ -1071,6 +1347,115 @@ describe("importCommand", () => {
     const parsed = JSON.parse(written);
     expect(parsed.$schema).toBeUndefined();
     expect(parsed.gateway.port).toBe(18789);
+  });
+
+  it("consolidates per-agent auth profiles into global store", async () => {
+    const configContent = JSON.stringify({
+      agents: {
+        defaults: { runtime: "claude" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+
+    // Create auth profiles in two agent directories
+    const agent1 = path.join(sourceDir, "agents", "main", "agent");
+    const agent2 = path.join(sourceDir, "agents", "helper", "agent");
+    await fsp.mkdir(agent1, { recursive: true });
+    await fsp.mkdir(agent2, { recursive: true });
+
+    await fsp.writeFile(
+      path.join(agent1, "auth-profiles.json"),
+      JSON.stringify({
+        version: 1,
+        profiles: {
+          "anthropic:default": { type: "api_key", provider: "anthropic", key: "key-1" },
+        },
+      }),
+    );
+    await fsp.writeFile(
+      path.join(agent2, "auth-profiles.json"),
+      JSON.stringify({
+        version: 1,
+        profiles: {
+          "google:my-key": { type: "api_key", provider: "google", key: "key-2" },
+        },
+      }),
+    );
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    // Global store should exist with both profiles
+    const globalStore = JSON.parse(
+      await fsp.readFile(path.join(targetDir, "auth-profiles.json"), "utf-8"),
+    );
+    expect(globalStore.version).toBe(1);
+    expect(globalStore.profiles["anthropic:default"].key).toBe("key-1");
+    expect(globalStore.profiles["google:my-key"].key).toBe("key-2");
+
+    // Per-agent auth-profiles.json should NOT be copied
+    expect(
+      fs.existsSync(path.join(targetDir, "agents", "main", "agent", "auth-profiles.json")),
+    ).toBe(false);
+    expect(
+      fs.existsSync(path.join(targetDir, "agents", "helper", "agent", "auth-profiles.json")),
+    ).toBe(false);
+
+    expect(result.consolidatedAuthProfiles).toContain("anthropic:default");
+    expect(result.consolidatedAuthProfiles).toContain("google:my-key");
+  });
+
+  it("warns on auth profile conflict during import", async () => {
+    const configContent = JSON.stringify({
+      agents: {
+        defaults: { runtime: "claude" },
+        list: [{ id: "main", workspace: "~/ws" }],
+      },
+    });
+    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+
+    // Same profile ID in two agents with different keys
+    const agent1 = path.join(sourceDir, "agents", "main", "agent");
+    const agent2 = path.join(sourceDir, "agents", "helper", "agent");
+    await fsp.mkdir(agent1, { recursive: true });
+    await fsp.mkdir(agent2, { recursive: true });
+
+    await fsp.writeFile(
+      path.join(agent1, "auth-profiles.json"),
+      JSON.stringify({
+        version: 1,
+        profiles: {
+          "anthropic:default": { type: "api_key", provider: "anthropic", key: "key-main" },
+        },
+      }),
+    );
+    await fsp.writeFile(
+      path.join(agent2, "auth-profiles.json"),
+      JSON.stringify({
+        version: 1,
+        profiles: {
+          "anthropic:default": { type: "api_key", provider: "anthropic", key: "key-helper" },
+        },
+      }),
+    );
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    // One of the two keys wins (walk order is OS-dependent)
+    const globalStore = JSON.parse(
+      await fsp.readFile(path.join(targetDir, "auth-profiles.json"), "utf-8"),
+    );
+    expect(["key-main", "key-helper"]).toContain(globalStore.profiles["anthropic:default"].key);
+
+    // Conflict reported
+    expect(result.authProfileConflicts).toHaveLength(1);
+    expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("Warning"));
   });
 
   it("handles nested directory structures with mixed file types", async () => {

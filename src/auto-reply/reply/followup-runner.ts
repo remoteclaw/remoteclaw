@@ -8,6 +8,7 @@ import { logVerbose } from "../../globals.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
 import {
   resolveCliRuntimeArgs,
+  resolveCliRuntimeEnv,
   resolveCliRuntimeProvider,
 } from "../../middleware/runtime-factory.js";
 import type { SessionMap } from "../../middleware/session-map.js";
@@ -71,6 +72,7 @@ export function createFollowupRunner(params: {
         gatewayToken,
         workspaceDir: queued.run.workspaceDir,
         runtimeArgs: resolveCliRuntimeArgs(cfg),
+        runtimeEnv: resolveCliRuntimeEnv(cfg),
       });
 
       // Build channel message from followup run fields.

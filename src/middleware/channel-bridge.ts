@@ -38,6 +38,8 @@ export type ChannelBridgeOptions = {
   mcpServerPath?: string | undefined;
   /** Extra CLI arguments appended to every runtime invocation. */
   runtimeArgs?: string[] | undefined;
+  /** Extra environment variables injected into every runtime invocation. */
+  runtimeEnv?: Record<string, string> | undefined;
 };
 
 const DEFAULT_WORKSPACE_DIR = ".";
@@ -74,6 +76,7 @@ export class ChannelBridge {
   readonly #chunkLimit: number | undefined;
   readonly #mcpServerPath: string;
   readonly #runtimeArgs: string[] | undefined;
+  readonly #runtimeEnv: Record<string, string> | undefined;
 
   constructor(options: ChannelBridgeOptions) {
     this.#provider = options.provider;
@@ -84,6 +87,7 @@ export class ChannelBridge {
     this.#chunkLimit = options.chunkLimit;
     this.#mcpServerPath = options.mcpServerPath ?? DEFAULT_MCP_SERVER_PATH;
     this.#runtimeArgs = options.runtimeArgs;
+    this.#runtimeEnv = options.runtimeEnv;
   }
 
   /**
@@ -142,7 +146,7 @@ export class ChannelBridge {
       // 4. Runtime params
       const runtime = createCliRuntime(this.#provider);
       let workspaceDir = this.#workspaceDir;
-      let extraEnv: Record<string, string> | undefined;
+      let hookEnv: Record<string, string> | undefined;
       const runId = randomUUID();
 
       // Hook: before_runtime_spawn — extensions can modify env and workspaceDir
@@ -167,7 +171,7 @@ export class ChannelBridge {
           workspaceDir = spawnResult.workspaceDir;
         }
         if (spawnResult?.env) {
-          extraEnv = spawnResult.env;
+          hookEnv = spawnResult.env;
         }
       }
 
@@ -192,7 +196,7 @@ export class ChannelBridge {
             mcpServers,
             abortSignal,
             workingDirectory: workspaceDir,
-            env: extraEnv,
+            env: this.#runtimeEnv || hookEnv ? { ...this.#runtimeEnv, ...hookEnv } : undefined,
             extraArgs: this.#runtimeArgs,
           }),
         );

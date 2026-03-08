@@ -27,6 +27,7 @@ import { logWarn } from "../../logger.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
 import {
   resolveCliRuntimeArgs,
+  resolveCliRuntimeEnv,
   resolveCliRuntimeProvider,
 } from "../../middleware/runtime-factory.js";
 import type { SessionMap } from "../../middleware/session-map.js";
@@ -382,6 +383,7 @@ export async function runCronIsolatedAgentTurn(params: {
       gatewayToken: resolveGatewayTokenFromConfig(cfgWithAgentDefaults),
       workspaceDir,
       runtimeArgs: resolveCliRuntimeArgs(cfgWithAgentDefaults),
+      runtimeEnv: resolveCliRuntimeEnv(cfgWithAgentDefaults),
     });
 
     const messageToolHints = resolveChannelMessageToolHints({

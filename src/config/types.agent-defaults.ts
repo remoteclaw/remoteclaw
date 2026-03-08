@@ -193,6 +193,8 @@ export type AgentDefaultsConfig = {
   runtime?: "claude" | "gemini" | "codex" | "opencode";
   /** Extra CLI arguments appended to every runtime invocation. */
   runtimeArgs?: string[];
+  /** Extra environment variables injected into every runtime invocation. */
+  runtimeEnv?: Record<string, string>;
 };
 
 export type AgentCompactionMode = "default" | "safeguard";

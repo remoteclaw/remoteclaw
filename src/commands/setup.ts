@@ -38,8 +38,16 @@ export async function setupCommand(
   const existingRaw = await readConfigFileRaw(configPath);
   const cfg = existingRaw.parsed;
 
-  if (!existingRaw.exists) {
-    await writeConfigFile(cfg);
+  const next: RemoteClawConfig = {
+    ...cfg,
+    gateway: {
+      ...cfg.gateway,
+      mode: cfg.gateway?.mode ?? "local",
+    },
+  };
+
+  if (!existingRaw.exists || cfg.gateway?.mode !== next.gateway?.mode) {
+    await writeConfigFile(next);
     runtime.log(`Wrote ${formatConfigPath(configPath)}`);
   } else {
     runtime.log(`Config OK: ${formatConfigPath(configPath)}`);

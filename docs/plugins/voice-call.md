@@ -298,9 +298,10 @@ Inbound policy defaults to `disabled`. To enable inbound calls, set:
 
 Auto-responses use the agent system. Tune with:
 
-- `responseModel`
 - `responseSystemPrompt`
 - `responseTimeoutMs`
+
+Model selection is the CLI agent's responsibility and is not configurable here.
 
 ## CLI
 

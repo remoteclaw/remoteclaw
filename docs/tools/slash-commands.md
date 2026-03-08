@@ -70,7 +70,7 @@ Text + native (when enabled):
 - `/help`
 - `/commands`
 - `/remoteclaw` (show RemoteClaw middleware status)
-- `/status` (show current status; includes provider usage/quota for the current model provider when available)
+- `/status` (show current status)
 - `/allowlist` (list/add/remove allowlist entries)
 - `/export-session [path]` (alias: `/export`) (export current session to HTML)
 - `/whoami` (show your sender id; alias: `/id`)
@@ -84,7 +84,7 @@ Text + native (when enabled):
 - `/tell <id|#> <message>` (alias for `/steer`)
 - `/config show|get|set|unset` (persist config to disk, owner-only; requires `commands.config: true`)
 - `/debug show|set|unset|reset` (runtime overrides, owner-only; requires `commands.debug: true`)
-- `/usage off|tokens|full|cost` (per-response usage footer or local cost summary)
+- `/usage off|tokens|full|cost` (per-response usage footer; `/usage cost` relays token counts from session logs)
 - `/tts off|always|inbound|tagged|status|provider|limit|summary|audio` (control TTS; see [/tts](/tts))
   - Discord: native command is `/voice` (Discord reserves `/tts`); text `/tts` still works.
 - `/stop`
@@ -108,7 +108,7 @@ Notes:
 
 - Commands accept an optional `:` between the command and args (e.g. `/send: on`, `/help:`).
 - `/allowlist add|remove` requires `commands.config=true` and honors channel `configWrites`.
-- `/usage` controls the per-response usage footer; `/usage cost` prints a local cost summary from session logs.
+- `/usage` controls the per-response usage footer; `/usage cost` prints a cost summary from session logs (relayed from the CLI agent).
 - `/restart` is enabled by default; set `commands.restart: false` to disable it.
 - Discord-only native command: `/vc join|leave|status` controls voice channels (requires `channels.discord.voice` and native commands; not available as text).
 - Discord thread-binding commands (`/focus`, `/unfocus`, `/agents`, `/session ttl`) require effective thread bindings to be enabled (`session.threadBindings.enabled` and/or `channels.discord.threadBindings.enabled`).
@@ -124,8 +124,8 @@ Notes:
 
 ## Usage surfaces (what shows where)
 
-- **Provider usage/quota** (example: “Claude 80% left”) shows up in `/status` for the current model provider when usage tracking is enabled.
-- **Per-response tokens/cost** is controlled by `/usage off|tokens|full` (appended to normal replies).
+- **Agent usage info** may be surfaced in `/status` when reported by the CLI agent.
+- **Per-response tokens/cost** is controlled by `/usage off|tokens|full` (appended to normal replies; relayed from CLI agent output).
 
 ## Debug overrides
 

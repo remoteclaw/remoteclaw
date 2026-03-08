@@ -46,7 +46,6 @@ If no `provider` is explicitly set, RemoteClaw auto-detects which provider to us
 1. **Brave** — `BRAVE_API_KEY` env var or `search.apiKey` config
 2. **Gemini** — `GEMINI_API_KEY` env var or `search.gemini.apiKey` config
 3. **Perplexity** — `PERPLEXITY_API_KEY` / `OPENROUTER_API_KEY` env var or `search.perplexity.apiKey` config
-4. **Grok** — `XAI_API_KEY` env var or `search.grok.apiKey` config
 
 If no keys are found, it falls back to Brave (you'll get a missing-key error prompting you to configure one).
 

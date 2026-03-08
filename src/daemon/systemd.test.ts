@@ -178,11 +178,8 @@ describe("isSystemdServiceEnabled", () => {
       cb(err, "", "");
     });
 
-    await expect(
-      isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } }),
-    ).rejects.toThrow(
-      "systemctl is-enabled unavailable: Command failed: systemctl --user is-enabled remoteclaw-gateway.service",
-    );
+    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } });
+    expect(result).toBe(false);
   });
 
   it("returns false when is-enabled cannot connect to the user bus without machine fallback", async () => {
@@ -200,11 +197,10 @@ describe("isSystemdServiceEnabled", () => {
       );
     });
 
-    await expect(
-      isSystemdServiceEnabled({
-        env: { HOME: "/tmp/openclaw-test-home", USER: "", LOGNAME: "" },
-      }),
-    ).rejects.toThrow("systemctl is-enabled unavailable: Failed to connect to bus");
+    const result = await isSystemdServiceEnabled({
+      env: { HOME: "/tmp/openclaw-test-home", USER: "", LOGNAME: "" },
+    });
+    expect(result).toBe(false);
   });
 
   it("returns false when both direct and machine-scope is-enabled checks report bus unavailability", async () => {
@@ -237,11 +233,10 @@ describe("isSystemdServiceEnabled", () => {
         );
       });
 
-    await expect(
-      isSystemdServiceEnabled({
-        env: { HOME: "/tmp/openclaw-test-home", USER: "debian" },
-      }),
-    ).rejects.toThrow("systemctl is-enabled unavailable: Failed to connect to user scope bus");
+    const result = await isSystemdServiceEnabled({
+      env: { HOME: "/tmp/openclaw-test-home", USER: "debian" },
+    });
+    expect(result).toBe(false);
   });
 
   it("throws when generic wrapper errors report infrastructure failures", async () => {

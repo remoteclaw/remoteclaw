@@ -9,9 +9,6 @@ title: "configure"
 
 Interactive prompt to set up credentials, devices, and agent defaults.
 
-Note: The **Model** section now includes a multi-select for the
-`agents.defaults.models` allowlist (what shows up in `/model` and the model picker).
-
 Tip: `remoteclaw config` without a subcommand opens the same wizard. Use
 `remoteclaw config get|set|unset` for non-interactive edits.
 
@@ -29,5 +26,5 @@ Notes:
 
 ```bash
 remoteclaw configure
-remoteclaw configure --section model --section channels
+remoteclaw configure --section channels
 ```

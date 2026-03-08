@@ -7,7 +7,7 @@ title: "agent"
 
 # `remoteclaw agent`
 
-Run an agent turn via the Gateway (use `--local` for embedded).
+Run an agent turn via the Gateway (use `--local` for a local CLI subprocess).
 Use `--agent <id>` to target a configured agent directly.
 
 Related:

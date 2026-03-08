@@ -151,17 +151,6 @@ remoteclaw [--dev] [--profile <name>] <command>
     event
     heartbeat last|enable|disable
     presence
-  models
-    list
-    status
-    set
-    set-image
-    aliases list|add|remove
-    fallbacks list|add|remove|clear
-    image-fallbacks list|add|remove|clear
-    scan
-    auth add|setup-token|paste-token
-    auth order get|set|clear
   cron
     status
     list
@@ -295,27 +284,11 @@ Options:
 - `--non-interactive`
 - `--mode <local|remote>`
 - `--flow <quickstart|advanced|manual>` (manual is an alias for advanced)
-- `--auth-choice <setup-token|token|chutes|openai-codex|openai-api-key|openrouter-api-key|ai-gateway-api-key|moonshot-api-key|moonshot-api-key-cn|kimi-code-api-key|synthetic-api-key|venice-api-key|gemini-api-key|zai-api-key|mistral-api-key|apiKey|minimax-api|minimax-api-lightning|opencode-zen|custom-api-key|skip>`
+- `--auth-choice <setup-token|token|skip>`
 - `--token-provider <id>` (non-interactive; used with `--auth-choice token`)
 - `--token <token>` (non-interactive; used with `--auth-choice token`)
 - `--token-profile-id <id>` (non-interactive; default: `<provider>:manual`)
 - `--token-expires-in <duration>` (non-interactive; e.g. `365d`, `12h`)
-- `--anthropic-api-key <key>`
-- `--openai-api-key <key>`
-- `--mistral-api-key <key>`
-- `--openrouter-api-key <key>`
-- `--ai-gateway-api-key <key>`
-- `--moonshot-api-key <key>`
-- `--kimi-code-api-key <key>`
-- `--gemini-api-key <key>`
-- `--zai-api-key <key>`
-- `--minimax-api-key <key>`
-- `--opencode-zen-api-key <key>`
-- `--custom-base-url <url>` (non-interactive; used with `--auth-choice custom-api-key`)
-- `--custom-model-id <id>` (non-interactive; used with `--auth-choice custom-api-key`)
-- `--custom-api-key <key>` (non-interactive; optional; used with `--auth-choice custom-api-key`; falls back to `CUSTOM_API_KEY` when omitted)
-- `--custom-provider-id <id>` (non-interactive; optional custom provider id)
-- `--custom-compatibility <openai|anthropic>` (non-interactive; optional; default `openai`)
 - `--gateway-port <port>`
 - `--gateway-bind <loopback|lan|tailnet|auto|custom>`
 - `--gateway-auth <token|password>`
@@ -337,7 +310,7 @@ Options:
 
 ### `configure`
 
-Interactive configuration wizard (models, channels, skills, gateway).
+Interactive configuration wizard (channels, skills, gateway).
 
 ### `config`
 
@@ -397,16 +370,13 @@ Common options:
 
 `channels list` options:
 
-- `--no-usage`: skip model provider usage/quota snapshots (OAuth/API-backed only).
-- `--json`: output JSON (includes usage unless `--no-usage` is set).
+- `--json`
 
 `channels logs` options:
 
 - `--channel <name|all>` (default `all`)
 - `--lines <n>` (default `200`)
 - `--json`
-
-More detail: [Model failover](/concepts/model-failover)
 
 Examples:
 
@@ -502,7 +472,7 @@ Examples:
 
 ### `agent`
 
-Run one agent turn via the Gateway (or `--local` embedded).
+Run one agent turn via the Gateway (or `--local` for a local CLI subprocess).
 
 Required:
 
@@ -512,7 +482,7 @@ Options:
 
 - `--to <dest>` (for session key and optional delivery)
 - `--session-id <id>`
-- `--thinking <off|minimal|low|medium|high|xhigh>` (GPT-5.2 + Codex models only)
+- `--thinking <off|minimal|low|medium|high|xhigh>`
 - `--verbose <on|full|off>`
 - `--channel <whatsapp|telegram|discord|slack|mattermost|signal|imessage|msteams>`
 - `--local`
@@ -540,7 +510,6 @@ Add a new isolated agent. Runs the guided wizard unless flags (or `--non-interac
 Options:
 
 - `--workspace <dir>`
-- `--model <id>`
 - `--agent-dir <dir>`
 - `--bind <channel[:accountId]>` (repeatable)
 - `--non-interactive`
@@ -572,7 +541,6 @@ Options:
 - `--json`
 - `--all` (full diagnosis; read-only, pasteable)
 - `--deep` (probe channels)
-- `--usage` (show model provider usage/quota)
 - `--timeout <ms>`
 - `--verbose`
 - `--debug` (alias for `--verbose`)
@@ -580,23 +548,6 @@ Options:
 Notes:
 
 - Overview includes Gateway + node host service status when available.
-
-### Usage tracking
-
-RemoteClaw can surface provider usage/quota when OAuth/API creds are available.
-
-Surfaces:
-
-- `/status` (adds a short provider usage line when available)
-- `remoteclaw status --usage` (prints full provider breakdown)
-- macOS menu bar (Usage section under Context)
-
-Notes:
-
-- Data comes directly from provider usage endpoints (no estimates).
-- Providers: Anthropic, GitHub Copilot, OpenAI Codex OAuth, plus Gemini CLI/Antigravity when those provider plugins are enabled.
-- If no matching credentials exist, usage is hidden.
-- Details: see [Usage tracking](/concepts/usage-tracking).
 
 ### `health`
 
@@ -747,119 +698,6 @@ Common RPCs:
 
 Tip: when calling `config.set`/`config.apply`/`config.patch` directly, pass `baseHash` from
 `config.get` if a config already exists.
-
-## Models
-
-Preferred Anthropic auth (setup-token):
-
-```bash
-claude setup-token
-remoteclaw models auth setup-token --provider anthropic
-remoteclaw models status
-```
-
-### `models` (root)
-
-`remoteclaw models` is an alias for `models status`.
-
-Root options:
-
-- `--status-json` (alias for `models status --json`)
-- `--status-plain` (alias for `models status --plain`)
-
-### `models list`
-
-Options:
-
-- `--all`
-- `--local`
-- `--provider <name>`
-- `--json`
-- `--plain`
-
-### `models status`
-
-Options:
-
-- `--json`
-- `--plain`
-- `--check` (exit 1=expired/missing, 2=expiring)
-- `--probe` (live probe of configured auth profiles)
-- `--probe-provider <name>`
-- `--probe-profile <id>` (repeat or comma-separated)
-- `--probe-timeout <ms>`
-- `--probe-concurrency <n>`
-- `--probe-max-tokens <n>`
-
-Always includes the auth overview and OAuth expiry status for profiles in the auth store.
-`--probe` runs live requests (may consume tokens and trigger rate limits).
-
-### `models set <model>`
-
-Set `agents.defaults.model.primary`.
-
-### `models set-image <model>`
-
-Set `agents.defaults.imageModel.primary`.
-
-### `models aliases list|add|remove`
-
-Options:
-
-- `list`: `--json`, `--plain`
-- `add <alias> <model>`
-- `remove <alias>`
-
-### `models fallbacks list|add|remove|clear`
-
-Options:
-
-- `list`: `--json`, `--plain`
-- `add <model>`
-- `remove <model>`
-- `clear`
-
-### `models image-fallbacks list|add|remove|clear`
-
-Options:
-
-- `list`: `--json`, `--plain`
-- `add <model>`
-- `remove <model>`
-- `clear`
-
-### `models scan`
-
-Options:
-
-- `--min-params <b>`
-- `--max-age-days <days>`
-- `--provider <name>`
-- `--max-candidates <n>`
-- `--timeout <ms>`
-- `--concurrency <n>`
-- `--no-probe`
-- `--yes`
-- `--no-input`
-- `--set-default`
-- `--set-image`
-- `--json`
-
-### `models auth add|setup-token|paste-token`
-
-Options:
-
-- `add`: interactive auth helper
-- `setup-token`: `--provider <name>` (default `anthropic`), `--yes`
-- `paste-token`: `--provider <name>`, `--profile-id <id>`, `--expires-in <duration>`
-
-### `models auth order get|set|clear`
-
-Options:
-
-- `get`: `--provider <name>`, `--agent <id>`, `--json`
-- `set`: `--provider <name>`, `--agent <id>`, `<profileIds...>`
-- `clear`: `--provider <name>`, `--agent <id>`
 
 ## System
 

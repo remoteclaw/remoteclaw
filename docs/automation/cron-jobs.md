@@ -220,20 +220,10 @@ Behavior details:
 
 ### Model and thinking overrides
 
-Isolated jobs (`agentTurn`) can override the model and thinking level:
+Isolated jobs (`agentTurn`) can pass a model and thinking level to the CLI agent:
 
-- `model`: Provider/model string (e.g., `anthropic/claude-sonnet-4-20250514`) or alias (e.g., `opus`)
-- `thinking`: Thinking level (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`; GPT-5.2 + Codex models only)
-
-Note: You can set `model` on main-session jobs too, but it changes the shared main
-session model. We recommend model overrides only for isolated jobs to avoid
-unexpected context shifts.
-
-Resolution priority:
-
-1. Job payload override (highest)
-2. Hook-specific defaults (e.g., `hooks.gmail.model`)
-3. Agent config default
+- `model`: Model alias (e.g., `opus`). Passed through to the CLI agent runtime.
+- `thinking`: Thinking level (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`). Passed through to the CLI agent runtime.
 
 ### Delivery (channel + target)
 

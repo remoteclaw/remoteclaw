@@ -334,7 +334,7 @@ export function createSessionStatusTool(opts?: {
         typeof rawModel === "object" && rawModel
           ? { ...rawModel, primary: defaultLabel }
           : { primary: defaultLabel };
-      const statusText = buildStatusMessage({
+      const statusText = await buildStatusMessage({
         config: cfg,
         agent: {
           ...agentDefaults,

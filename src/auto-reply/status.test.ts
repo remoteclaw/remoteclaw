@@ -27,8 +27,8 @@ afterEach(() => {
 });
 
 describe("buildStatusMessage", () => {
-  it("summarizes agent readiness and context usage", () => {
-    const text = buildStatusMessage({
+  it("summarizes agent readiness and context usage", async () => {
+    const text = await buildStatusMessage({
       config: {} as unknown as RemoteClawConfig,
       agent: {
         contextTokens: 32_000,
@@ -69,8 +69,8 @@ describe("buildStatusMessage", () => {
     expect(normalized).toContain("Queue: collect");
   });
 
-  it("notes channel model overrides in status output", () => {
-    const text = buildStatusMessage({
+  it("notes channel model overrides in status output", async () => {
+    const text = await buildStatusMessage({
       config: {
         channels: {
           modelByChannel: {
@@ -100,8 +100,8 @@ describe("buildStatusMessage", () => {
     expect(normalized).toContain("channel override");
   });
 
-  it("shows 1M context window when contextTokens is set to 1M", () => {
-    const text = buildStatusMessage({
+  it("shows 1M context window when contextTokens is set to 1M", async () => {
+    const text = await buildStatusMessage({
       config: {} as unknown as RemoteClawConfig,
       agent: {
         contextTokens: 1_000_000,
@@ -119,8 +119,8 @@ describe("buildStatusMessage", () => {
     expect(normalizeTestText(text)).toContain("Context: 200k/1.0m");
   });
 
-  it("shows verbose/elevated labels only when enabled", () => {
-    const text = buildStatusMessage({
+  it("shows verbose/elevated labels only when enabled", async () => {
+    const text = await buildStatusMessage({
       agent: { model: "anthropic/claude-opus-4-5" },
       sessionEntry: { sessionId: "v1", updatedAt: 0 },
       sessionKey: "agent:main:main",
@@ -135,8 +135,8 @@ describe("buildStatusMessage", () => {
     expect(text).toContain("elevated");
   });
 
-  it("includes media understanding decisions when present", () => {
-    const text = buildStatusMessage({
+  it("includes media understanding decisions when present", async () => {
+    const text = await buildStatusMessage({
       agent: { model: "anthropic/claude-opus-4-5" },
       sessionEntry: { sessionId: "media", updatedAt: 0 },
       sessionKey: "agent:main:main",
@@ -168,8 +168,8 @@ describe("buildStatusMessage", () => {
     expect(normalized).toContain("Media: image ok (openai/gpt-5.2) · audio skipped (maxBytes)");
   });
 
-  it("omits media line when all decisions are none", () => {
-    const text = buildStatusMessage({
+  it("omits media line when all decisions are none", async () => {
+    const text = await buildStatusMessage({
       agent: { model: "anthropic/claude-opus-4-5" },
       sessionEntry: { sessionId: "media-none", updatedAt: 0 },
       sessionKey: "agent:main:main",
@@ -184,8 +184,8 @@ describe("buildStatusMessage", () => {
     expect(normalizeTestText(text)).not.toContain("Media:");
   });
 
-  it("does not show elevated label when session explicitly disables it", () => {
-    const text = buildStatusMessage({
+  it("does not show elevated label when session explicitly disables it", async () => {
+    const text = await buildStatusMessage({
       agent: { model: "anthropic/claude-opus-4-5", elevatedDefault: "on" },
       sessionEntry: { sessionId: "v1", updatedAt: 0, elevatedLevel: "off" },
       sessionKey: "agent:main:main",
@@ -200,8 +200,8 @@ describe("buildStatusMessage", () => {
     expect(optionsLine).not.toContain("elevated");
   });
 
-  it("shows selected model and active runtime model when they differ", () => {
-    const text = buildStatusMessage({
+  it("shows selected model and active runtime model when they differ", async () => {
+    const text = await buildStatusMessage({
       agent: {
         model: "anthropic/claude-opus-4-5",
         contextTokens: 32_000,
@@ -234,8 +234,8 @@ describe("buildStatusMessage", () => {
     expect(normalized).toContain("di_123...abc");
   });
 
-  it("omits active fallback details when runtime drift does not match fallback state", () => {
-    const text = buildStatusMessage({
+  it("omits active fallback details when runtime drift does not match fallback state", async () => {
+    const text = await buildStatusMessage({
       agent: {
         contextTokens: 32_000,
       },
@@ -263,8 +263,8 @@ describe("buildStatusMessage", () => {
     expect(normalized).not.toContain("(rate limit)");
   });
 
-  it("omits active lines when runtime matches selected model", () => {
-    const text = buildStatusMessage({
+  it("omits active lines when runtime matches selected model", async () => {
+    const text = await buildStatusMessage({
       agent: {
         model: "openai/gpt-4.1-mini",
         contextTokens: 32_000,
@@ -286,8 +286,8 @@ describe("buildStatusMessage", () => {
     expect(normalized).not.toContain("Fallback:");
   });
 
-  it("keeps provider prefix from session override model", () => {
-    const text = buildStatusMessage({
+  it("keeps provider prefix from session override model", async () => {
+    const text = await buildStatusMessage({
       agent: {},
       sessionEntry: {
         sessionId: "prefix-test",
@@ -303,8 +303,8 @@ describe("buildStatusMessage", () => {
     expect(normalizeTestText(text)).toContain("Model: google-antigravity/claude-sonnet-4-5");
   });
 
-  it("handles missing agent config gracefully", () => {
-    const text = buildStatusMessage({
+  it("handles missing agent config gracefully", async () => {
+    const text = await buildStatusMessage({
       agent: {},
       sessionScope: "per-sender",
       queue: { mode: "collect", depth: 0 },
@@ -317,8 +317,8 @@ describe("buildStatusMessage", () => {
     expect(normalized).toContain("Queue: collect");
   });
 
-  it("includes group activation for group sessions", () => {
-    const text = buildStatusMessage({
+  it("includes group activation for group sessions", async () => {
+    const text = await buildStatusMessage({
       agent: {},
       sessionEntry: {
         sessionId: "g1",
@@ -335,8 +335,8 @@ describe("buildStatusMessage", () => {
     expect(text).toContain("Activation: always");
   });
 
-  it("shows queue details when overridden", () => {
-    const text = buildStatusMessage({
+  it("shows queue details when overridden", async () => {
+    const text = await buildStatusMessage({
       agent: {},
       sessionEntry: { sessionId: "q1", updatedAt: 0 },
       sessionKey: "agent:main:main",
@@ -355,8 +355,8 @@ describe("buildStatusMessage", () => {
     expect(text).toContain("Queue: collect (depth 3 · debounce 2s · cap 5 · drop old)");
   });
 
-  it("inserts usage summary beneath context line", () => {
-    const text = buildStatusMessage({
+  it("inserts usage summary beneath context line", async () => {
+    const text = await buildStatusMessage({
       agent: { model: "anthropic/claude-opus-4-5", contextTokens: 32_000 },
       sessionEntry: { sessionId: "u1", updatedAt: 0, totalTokens: 1000 },
       sessionKey: "agent:main:main",
@@ -372,8 +372,8 @@ describe("buildStatusMessage", () => {
     expect(lines[contextIndex + 1]).toContain("Usage: Claude 80% left (5h)");
   });
 
-  it("hides cost when not using an API key", () => {
-    const text = buildStatusMessage({
+  it("hides cost when not using an API key", async () => {
+    const text = await buildStatusMessage({
       config: {} as unknown as RemoteClawConfig,
       agent: { model: "anthropic/claude-opus-4-5" },
       sessionEntry: { sessionId: "c1", updatedAt: 0, inputTokens: 10 },
@@ -442,8 +442,8 @@ describe("buildStatusMessage", () => {
     });
   }
 
-  function buildTranscriptStatusText(params: { sessionId: string; sessionKey: string }) {
-    return buildStatusMessage({
+  async function buildTranscriptStatusText(params: { sessionId: string; sessionKey: string }) {
+    return await buildStatusMessage({
       agent: {
         model: "anthropic/claude-opus-4-5",
         contextTokens: 32_000,
@@ -472,7 +472,7 @@ describe("buildStatusMessage", () => {
           sessionId,
         });
 
-        const text = buildTranscriptStatusText({
+        const text = await buildTranscriptStatusText({
           sessionId,
           sessionKey: "agent:main:main",
         });
@@ -493,7 +493,7 @@ describe("buildStatusMessage", () => {
           sessionId,
         });
 
-        const text = buildTranscriptStatusText({
+        const text = await buildTranscriptStatusText({
           sessionId,
           sessionKey: "agent:worker1:telegram:12345",
         });
@@ -521,7 +521,7 @@ describe("buildStatusMessage", () => {
           },
         });
 
-        const text = buildStatusMessage({
+        const text = await buildStatusMessage({
           agent: {
             model: "anthropic/claude-opus-4-5",
             contextTokens: 32_000,

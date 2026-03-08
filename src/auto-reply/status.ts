@@ -332,10 +332,10 @@ const formatMediaUnderstandingLine = (decisions?: ReadonlyArray<MediaUnderstandi
   return `📎 Media: ${parts.join(" · ")}`;
 };
 
-const formatVoiceModeLine = (
+const formatVoiceModeLine = async (
   config?: RemoteClawConfig,
   sessionEntry?: SessionEntry,
-): string | null => {
+): Promise<string | null> => {
   if (!config) {
     return null;
   }
@@ -349,13 +349,13 @@ const formatVoiceModeLine = (
   if (autoMode === "off") {
     return null;
   }
-  const provider = getTtsProvider(ttsConfig, prefsPath);
+  const provider = await getTtsProvider(ttsConfig, prefsPath);
   const maxLength = getTtsMaxLength(prefsPath);
   const summarize = isSummarizationEnabled(prefsPath) ? "on" : "off";
   return `🔊 Voice: ${autoMode} · provider=${provider} · limit=${maxLength} · summary=${summarize}`;
 };
 
-export function buildStatusMessage(args: StatusArgs): string {
+export async function buildStatusMessage(args: StatusArgs): Promise<string> {
   const now = args.now ?? Date.now();
   const entry = args.sessionEntry;
   // Model selection gutted in RemoteClaw — CLI runtimes own model selection.
@@ -560,7 +560,7 @@ export function buildStatusMessage(args: StatusArgs): string {
   const usageCostLine =
     usagePair && costLine ? `${usagePair} · ${costLine}` : (usagePair ?? costLine);
   const mediaLine = formatMediaUnderstandingLine(args.mediaDecisions);
-  const voiceLine = formatVoiceModeLine(args.config, args.sessionEntry);
+  const voiceLine = await formatVoiceModeLine(args.config, args.sessionEntry);
 
   return [
     versionLine,

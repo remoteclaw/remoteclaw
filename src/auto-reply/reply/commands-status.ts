@@ -143,7 +143,7 @@ export async function buildStatusReply(params: {
       })
     : selectedModelAuth;
   const agentDefaults = cfg.agents?.defaults ?? {};
-  const statusText = buildStatusMessage({
+  const statusText = await buildStatusMessage({
     config: cfg,
     agent: {
       ...agentDefaults,

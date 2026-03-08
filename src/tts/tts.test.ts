@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import { withEnv } from "../test-utils/env.js";
+import { withEnvAsync } from "../test-utils/env.js";
 import * as tts from "./tts.js";
 
 const { _test, resolveTtsConfig, maybeApplyTtsToPayload, getTtsProvider } = tts;
@@ -198,7 +198,7 @@ describe("tts", () => {
       messages: { tts: {} },
     };
 
-    it("selects provider based on available API keys", () => {
+    it("selects provider based on available API keys", async () => {
       const cases = [
         {
           env: {
@@ -230,11 +230,11 @@ describe("tts", () => {
       ] as const;
 
       for (const testCase of cases) {
-        withEnv(testCase.env, () => {
+        const provider = await withEnvAsync(testCase.env, async () => {
           const config = resolveTtsConfig(baseCfg);
-          const provider = getTtsProvider(config, testCase.prefsPath);
-          expect(provider).toBe(testCase.expected);
+          return getTtsProvider(config, testCase.prefsPath);
         });
+        expect(provider).toBe(testCase.expected);
       }
     });
   });

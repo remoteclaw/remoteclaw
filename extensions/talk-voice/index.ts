@@ -84,7 +84,9 @@ export default function register(api: RemoteClawPluginApi) {
       const action = (tokens[0] ?? "status").toLowerCase();
 
       const cfg = api.runtime.config.loadConfig();
-      const apiKey = (cfg.talk?.apiKey ?? "").trim();
+      const rawApiKey = cfg.talk?.apiKey;
+      const apiKey =
+        typeof rawApiKey === "string" ? rawApiKey.trim() : rawApiKey != null ? "configured" : "";
       if (!apiKey) {
         return {
           text:

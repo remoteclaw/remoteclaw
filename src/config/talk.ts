@@ -9,6 +9,20 @@ import type {
 } from "./types.gateway.js";
 import type { RemoteClawConfig } from "./types.js";
 
+type SecretRef = { source: "env" | "file" | "exec"; provider: string; id: string };
+
+function isSecretRef(value: unknown): value is SecretRef {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const obj = value as Record<string, unknown>;
+  return (
+    (obj.source === "env" || obj.source === "file" || obj.source === "exec") &&
+    typeof obj.provider === "string" &&
+    typeof obj.id === "string"
+  );
+}
+
 type TalkApiKeyDeps = {
   fs?: typeof fs;
   os?: typeof os;
@@ -67,10 +81,21 @@ function normalizeTalkProviderConfig(value: unknown): TalkProviderConfig | undef
       }
       continue;
     }
-    if (key === "voiceId" || key === "modelId" || key === "outputFormat" || key === "apiKey") {
+    if (key === "voiceId" || key === "modelId" || key === "outputFormat") {
       const normalized = normalizeString(raw);
       if (normalized) {
         provider[key] = normalized;
+      }
+      continue;
+    }
+    if (key === "apiKey") {
+      if (isSecretRef(raw)) {
+        provider.apiKey = raw;
+      } else {
+        const normalized = normalizeString(raw);
+        if (normalized) {
+          provider.apiKey = normalized;
+        }
       }
       continue;
     }
@@ -117,9 +142,13 @@ function normalizedLegacyTalkFields(source: Record<string, unknown>): Partial<Ta
   if (outputFormat) {
     legacy.outputFormat = outputFormat;
   }
-  const apiKey = normalizeString(source.apiKey);
-  if (apiKey) {
-    legacy.apiKey = apiKey;
+  if (isSecretRef(source.apiKey)) {
+    legacy.apiKey = source.apiKey;
+  } else {
+    const apiKey = normalizeString(source.apiKey);
+    if (apiKey) {
+      legacy.apiKey = apiKey;
+    }
   }
   const silenceTimeoutMs = normalizeSilenceTimeoutMs(source.silenceTimeoutMs);
   if (silenceTimeoutMs !== undefined) {
@@ -179,7 +208,7 @@ function legacyTalkFieldsFromProviderConfig(
   if (typeof config.outputFormat === "string") {
     legacy.outputFormat = config.outputFormat;
   }
-  if (typeof config.apiKey === "string") {
+  if (typeof config.apiKey === "string" || isSecretRef(config.apiKey)) {
     legacy.apiKey = config.apiKey;
   }
   return legacy;

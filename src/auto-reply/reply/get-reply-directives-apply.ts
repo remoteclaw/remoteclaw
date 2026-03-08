@@ -39,7 +39,6 @@ export async function applyInlineDirectiveOverrides(params: {
   ctx: MsgContext;
   cfg: RemoteClawConfig;
   agentId: string;
-  agentDir: string;
   agentCfg: AgentDefaults;
   sessionEntry: SessionEntry;
   sessionStore: Record<string, SessionEntry>;
@@ -74,7 +73,6 @@ export async function applyInlineDirectiveOverrides(params: {
     ctx,
     cfg,
     agentId,
-    agentDir,
     agentCfg,
     sessionEntry,
     sessionStore,
@@ -233,7 +231,6 @@ export async function applyInlineDirectiveOverrides(params: {
     directives,
     effectiveModelDirective,
     cfg,
-    agentDir,
     sessionEntry,
     sessionStore,
     sessionKey,

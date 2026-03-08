@@ -362,7 +362,6 @@ export async function runPreparedReply(
   const authProfileId = await resolveSessionAuthProfileOverride({
     cfg,
     provider,
-    agentDir,
     sessionEntry,
     sessionStore,
     sessionKey,

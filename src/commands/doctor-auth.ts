@@ -59,7 +59,7 @@ export async function maybeRemoveDeprecatedCliAuthProfiles(
   cfg: RemoteClawConfig,
   prompter: DoctorPrompter,
 ): Promise<RemoteClawConfig> {
-  const store = ensureAuthProfileStore(undefined, { allowKeychainPrompt: false });
+  const store = ensureAuthProfileStore();
   const deprecated = new Set<string>();
   if (store.profiles[CLAUDE_CLI_PROFILE_ID] || cfg.auth?.profiles?.[CLAUDE_CLI_PROFILE_ID]) {
     deprecated.add(CLAUDE_CLI_PROFILE_ID);
@@ -144,9 +144,7 @@ export async function noteAuthProfileHealth(params: {
   prompter: DoctorPrompter;
   allowKeychainPrompt: boolean;
 }): Promise<void> {
-  const store = ensureAuthProfileStore(undefined, {
-    allowKeychainPrompt: params.allowKeychainPrompt,
-  });
+  const store = ensureAuthProfileStore();
 
   const summary = buildAuthHealthSummary({
     store,

@@ -8,7 +8,7 @@
 
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import path, { join } from "node:path";
+import { join } from "node:path";
 import { normalizeProviderId } from "../agents/provider-utils.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -113,17 +113,15 @@ export async function resolveApiKeyForProvider(params: {
   profileId?: string;
   preferredProfile?: string;
   store?: AuthProfileStore;
-  agentDir?: string;
 }): Promise<ResolvedProviderAuth> {
   const { provider, cfg, profileId } = params;
-  const store = params.store ?? ensureAuthProfileStore(params.agentDir);
+  const store = params.store ?? ensureAuthProfileStore();
 
   if (profileId) {
     const resolved = await resolveApiKeyForProfile({
       cfg,
       store,
       profileId,
-      agentDir: params.agentDir,
     });
     if (!resolved) {
       throw new Error(`No credentials found for profile "${profileId}".`);
@@ -150,7 +148,6 @@ export async function resolveApiKeyForProvider(params: {
         cfg,
         store,
         profileId: candidate,
-        agentDir: params.agentDir,
       });
       if (resolved) {
         return {
@@ -186,13 +183,12 @@ export async function resolveApiKeyForProvider(params: {
     }
   }
 
-  const authStorePath = resolveAuthStorePathForDisplay(params.agentDir);
-  const resolvedAgentDir = path.dirname(authStorePath);
+  const authStorePath = resolveAuthStorePathForDisplay();
   throw new Error(
     [
       `No API key found for provider "${provider}".`,
-      `Auth store: ${authStorePath} (agentDir: ${resolvedAgentDir}).`,
-      `Configure auth for this agent (${formatCliCommand("remoteclaw agents add <id>")}) or copy auth-profiles.json from the main agentDir.`,
+      `Auth store: ${authStorePath}.`,
+      `Configure auth via ${formatCliCommand("remoteclaw configure")} or ${formatCliCommand("remoteclaw onboard")}.`,
     ].join(" "),
   );
 }
@@ -349,7 +345,6 @@ export function resolveModelAuthLabel(params: {
   provider?: string;
   cfg?: RemoteClawConfig;
   sessionEntry?: SessionEntry;
-  agentDir?: string;
 }): string | undefined {
   const resolvedProvider = params.provider?.trim();
   if (!resolvedProvider) {
@@ -357,9 +352,7 @@ export function resolveModelAuthLabel(params: {
   }
 
   const providerKey = normalizeProviderId(resolvedProvider);
-  const store = ensureAuthProfileStore(params.agentDir, {
-    allowKeychainPrompt: false,
-  });
+  const store = ensureAuthProfileStore();
   const profileOverride = params.sessionEntry?.authProfileOverride?.trim();
   const profiles = listProfilesForProvider(store, providerKey);
   const candidates = [profileOverride, ...profiles].filter(Boolean) as string[];

@@ -1,12 +1,5 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import {
-  resolveAgentDir,
-  resolveAgentWorkspaceDir,
-  resolveDefaultAgentId,
-} from "../agents/agent-scope.js";
+import { resolveAgentDir, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { upsertAuthProfile } from "../auth/index.js";
-import { resolveAuthStorePath } from "../auth/paths.js";
 import { writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
 import { DEFAULT_AGENT_ID, normalizeAgentId } from "../routing/session-key.js";
@@ -36,15 +29,6 @@ type AgentsAddOptions = {
   nonInteractive?: boolean;
   json?: boolean;
 };
-
-async function fileExists(pathname: string): Promise<boolean> {
-  try {
-    await fs.stat(pathname);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export async function agentsAddCommand(
   opts: AgentsAddOptions,
@@ -228,29 +212,6 @@ export async function agentsAddCommand(
       agentDir,
     });
 
-    const defaultAgentId = resolveDefaultAgentId(cfg);
-    if (defaultAgentId !== agentId) {
-      const sourceAuthPath = resolveAuthStorePath(resolveAgentDir(cfg, defaultAgentId));
-      const destAuthPath = resolveAuthStorePath(agentDir);
-      const sameAuthPath =
-        path.resolve(sourceAuthPath).toLowerCase() === path.resolve(destAuthPath).toLowerCase();
-      if (
-        !sameAuthPath &&
-        (await fileExists(sourceAuthPath)) &&
-        !(await fileExists(destAuthPath))
-      ) {
-        const shouldCopy = await prompter.confirm({
-          message: `Copy auth profiles from "${defaultAgentId}"?`,
-          initialValue: false,
-        });
-        if (shouldCopy) {
-          await fs.mkdir(path.dirname(destAuthPath), { recursive: true });
-          await fs.copyFile(sourceAuthPath, destAuthPath);
-          await prompter.note(`Copied auth profiles from "${defaultAgentId}".`, "Auth profiles");
-        }
-      }
-    }
-
     const wantsAuth = await prompter.confirm({
       message: "Configure model/auth for this agent now?",
       initialValue: false,
@@ -278,7 +239,6 @@ export async function agentsAddCommand(
           upsertAuthProfile({
             profileId: "anthropic:default",
             credential: { type: "api_key", provider: "anthropic", key },
-            agentDir,
           });
         }
       } else if (selectedRuntime === "gemini") {
@@ -287,7 +247,6 @@ export async function agentsAddCommand(
           upsertAuthProfile({
             profileId: "google:default",
             credential: { type: "api_key", provider: "google", key },
-            agentDir,
           });
         }
       } else if (selectedRuntime === "codex") {
@@ -296,7 +255,6 @@ export async function agentsAddCommand(
           upsertAuthProfile({
             profileId: "codex:default",
             credential: { type: "api_key", provider: "codex", key },
-            agentDir,
           });
         }
       } else if (selectedRuntime === "opencode") {
@@ -305,7 +263,6 @@ export async function agentsAddCommand(
           upsertAuthProfile({
             profileId: "opencode:default",
             credential: { type: "api_key", provider: "opencode", key },
-            agentDir,
           });
         }
       }

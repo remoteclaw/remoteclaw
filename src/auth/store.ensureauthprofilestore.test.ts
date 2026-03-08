@@ -1,123 +1,59 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { AUTH_STORE_VERSION } from "./constants.js";
 import { ensureAuthProfileStore } from "./index.js";
 
 describe("ensureAuthProfileStore", () => {
-  it("migrates legacy auth.json and deletes it (PR #368)", () => {
-    const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-auth-profiles-"));
-    try {
-      const legacyPath = path.join(agentDir, "auth.json");
-      fs.writeFileSync(
-        legacyPath,
-        `${JSON.stringify(
-          {
-            anthropic: {
-              type: "api_key",
-              provider: "anthropic",
-              key: "sk-ant-legacy-key",
-            },
-          },
-          null,
-          2,
-        )}\n`,
-        "utf8",
-      );
+  let prevStateDir: string | undefined;
+  let tempDir: string;
 
-      const store = ensureAuthProfileStore(agentDir);
-      expect(store.profiles["anthropic:default"]).toMatchObject({
-        type: "api_key",
-        provider: "anthropic",
-      });
-
-      const migratedPath = path.join(agentDir, "auth-profiles.json");
-      expect(fs.existsSync(migratedPath)).toBe(true);
-      expect(fs.existsSync(legacyPath)).toBe(false);
-
-      // idempotent
-      const store2 = ensureAuthProfileStore(agentDir);
-      expect(store2.profiles["anthropic:default"]).toBeDefined();
-      expect(fs.existsSync(legacyPath)).toBe(false);
-    } finally {
-      fs.rmSync(agentDir, { recursive: true, force: true });
+  afterEach(() => {
+    if (prevStateDir === undefined) {
+      delete process.env.REMOTECLAW_STATE_DIR;
+    } else {
+      process.env.REMOTECLAW_STATE_DIR = prevStateDir;
     }
+    fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it("merges main auth profiles into agent store and keeps agent overrides", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-auth-merge-"));
-    const previousAgentDir = process.env.REMOTECLAW_AGENT_DIR;
-    const previousPiAgentDir = process.env.PI_CODING_AGENT_DIR;
-    try {
-      const mainDir = path.join(root, "main-agent");
-      const agentDir = path.join(root, "agent-x");
-      fs.mkdirSync(mainDir, { recursive: true });
-      fs.mkdirSync(agentDir, { recursive: true });
+  it("returns an empty store when no auth-profiles.json exists", () => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-auth-empty-"));
+    prevStateDir = process.env.REMOTECLAW_STATE_DIR;
+    process.env.REMOTECLAW_STATE_DIR = tempDir;
 
-      process.env.REMOTECLAW_AGENT_DIR = mainDir;
-      process.env.PI_CODING_AGENT_DIR = mainDir;
+    const store = ensureAuthProfileStore();
+    expect(store.version).toBe(AUTH_STORE_VERSION);
+    expect(Object.keys(store.profiles)).toHaveLength(0);
+  });
 
-      const mainStore = {
-        version: AUTH_STORE_VERSION,
-        profiles: {
-          "openai:default": {
-            type: "api_key",
-            provider: "openai",
-            key: "main-key",
-          },
-          "anthropic:default": {
-            type: "api_key",
-            provider: "anthropic",
-            key: "main-anthropic-key",
-          },
+  it("loads profiles from global auth-profiles.json", () => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-auth-global-"));
+    prevStateDir = process.env.REMOTECLAW_STATE_DIR;
+    process.env.REMOTECLAW_STATE_DIR = tempDir;
+
+    const globalStore = {
+      version: AUTH_STORE_VERSION,
+      profiles: {
+        "anthropic:default": {
+          type: "api_key",
+          provider: "anthropic",
+          key: "sk-ant-global-key",
         },
-      };
-      fs.writeFileSync(
-        path.join(mainDir, "auth-profiles.json"),
-        `${JSON.stringify(mainStore, null, 2)}\n`,
-        "utf8",
-      );
+      },
+    };
+    fs.writeFileSync(
+      path.join(tempDir, "auth-profiles.json"),
+      `${JSON.stringify(globalStore, null, 2)}\n`,
+      "utf8",
+    );
 
-      const agentStore = {
-        version: AUTH_STORE_VERSION,
-        profiles: {
-          "openai:default": {
-            type: "api_key",
-            provider: "openai",
-            key: "agent-key",
-          },
-        },
-      };
-      fs.writeFileSync(
-        path.join(agentDir, "auth-profiles.json"),
-        `${JSON.stringify(agentStore, null, 2)}\n`,
-        "utf8",
-      );
-
-      const store = ensureAuthProfileStore(agentDir);
-      expect(store.profiles["anthropic:default"]).toMatchObject({
-        type: "api_key",
-        provider: "anthropic",
-        key: "main-anthropic-key",
-      });
-      expect(store.profiles["openai:default"]).toMatchObject({
-        type: "api_key",
-        provider: "openai",
-        key: "agent-key",
-      });
-    } finally {
-      if (previousAgentDir === undefined) {
-        delete process.env.REMOTECLAW_AGENT_DIR;
-      } else {
-        process.env.REMOTECLAW_AGENT_DIR = previousAgentDir;
-      }
-      if (previousPiAgentDir === undefined) {
-        delete process.env.PI_CODING_AGENT_DIR;
-      } else {
-        process.env.PI_CODING_AGENT_DIR = previousPiAgentDir;
-      }
-      fs.rmSync(root, { recursive: true, force: true });
-    }
+    const store = ensureAuthProfileStore();
+    expect(store.profiles["anthropic:default"]).toMatchObject({
+      type: "api_key",
+      provider: "anthropic",
+      key: "sk-ant-global-key",
+    });
   });
 });

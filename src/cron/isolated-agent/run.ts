@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 import {
   resolveAgentConfig,
-  resolveAgentDir,
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
@@ -194,7 +193,6 @@ export async function runCronIsolatedAgentTurn(params: {
   });
 
   const workspaceDirRaw = resolveAgentWorkspaceDir(params.cfg, agentId);
-  const agentDir = resolveAgentDir(params.cfg, agentId);
   const workspaceDir = await ensureAgentWorkspace(workspaceDirRaw);
 
   const resolvedDefault = normalizeModelRef("unknown", "unknown");
@@ -345,7 +343,6 @@ export async function runCronIsolatedAgentTurn(params: {
   await resolveSessionAuthProfileOverride({
     cfg: cfgWithAgentDefaults,
     provider,
-    agentDir,
     sessionEntry: cronSession.sessionEntry,
     sessionStore: cronSession.store,
     sessionKey: agentSessionKey,

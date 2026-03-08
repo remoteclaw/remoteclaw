@@ -26,7 +26,6 @@ type UsageSummaryOptions = {
   timeoutMs?: number;
   providers?: UsageProviderId[];
   auth?: ProviderAuth[];
-  agentDir?: string;
   fetch?: typeof fetch;
 };
 
@@ -43,7 +42,6 @@ export async function loadProviderUsageSummary(
   const auths = await resolveProviderAuths({
     providers: opts.providers ?? usageProviders,
     auth: opts.auth,
-    agentDir: opts.agentDir,
   });
   if (auths.length === 0) {
     return { updatedAt: now, providers: [] };

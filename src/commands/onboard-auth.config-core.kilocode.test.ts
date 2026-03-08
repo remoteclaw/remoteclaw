@@ -1,6 +1,3 @@
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { resolveApiKeyForProvider, resolveEnvApiKey } from "../auth/provider-auth.js";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -143,14 +140,12 @@ describe("Kilo Gateway provider config", () => {
     });
 
     it("resolves the kilocode api key via resolveApiKeyForProvider", async () => {
-      const agentDir = mkdtempSync(join(tmpdir(), "remoteclaw-test-"));
       const envSnapshot = captureEnv(["KILOCODE_API_KEY"]);
       process.env.KILOCODE_API_KEY = "kilo-provider-test-key";
 
       try {
         const auth = await resolveApiKeyForProvider({
           provider: "kilocode",
-          agentDir,
         });
 
         expect(auth.apiKey).toBe("kilo-provider-test-key");

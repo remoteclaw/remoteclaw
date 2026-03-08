@@ -11,13 +11,11 @@ export const resolveAuthLabel = async (
   provider: string,
   cfg: RemoteClawConfig,
   modelsPath: string,
-  agentDir?: string,
+  _agentDir?: string,
   mode: ModelAuthDetailMode = "compact",
 ): Promise<{ label: string; source: string }> => {
   const formatPath = (value: string) => shortenHomePath(value);
-  const store = ensureAuthProfileStore(agentDir, {
-    allowKeychainPrompt: false,
-  });
+  const store = ensureAuthProfileStore();
   const profiles = listProfilesForProvider(store, provider);
   const nextProfileId = profiles[0];
 
@@ -60,7 +58,7 @@ export const resolveAuthLabel = async (
     });
     return {
       label: labels.join(", "),
-      source: `auth-profiles.json: ${formatPath(resolveAuthStorePathForDisplay(agentDir))}`,
+      source: `auth-profiles.json: ${formatPath(resolveAuthStorePathForDisplay())}`,
     };
   }
 
@@ -83,15 +81,12 @@ export const resolveProfileOverride = (params: {
   rawProfile?: string;
   provider: string;
   cfg: RemoteClawConfig;
-  agentDir?: string;
 }): { profileId?: string; error?: string } => {
   const raw = params.rawProfile?.trim();
   if (!raw) {
     return {};
   }
-  const store = ensureAuthProfileStore(params.agentDir, {
-    allowKeychainPrompt: false,
-  });
+  const store = ensureAuthProfileStore();
   const profile = store.profiles[raw];
   if (!profile) {
     return { error: `Auth profile "${raw}" not found.` };

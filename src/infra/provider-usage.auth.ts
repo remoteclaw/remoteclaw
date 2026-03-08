@@ -93,11 +93,8 @@ function resolveProviderApiKeyFromConfigAndStore(params: {
 
 async function resolveProfileToken(params: {
   provider: UsageProviderId;
-  agentDir?: string;
 }): Promise<ProviderAuth | null> {
-  const store = ensureAuthProfileStore(params.agentDir, {
-    allowKeychainPrompt: false,
-  });
+  const store = ensureAuthProfileStore();
   const profiles = listProfilesForProvider(store, params.provider);
 
   for (const profileId of profiles) {
@@ -106,7 +103,6 @@ async function resolveProfileToken(params: {
         cfg: undefined,
         store,
         profileId,
-        agentDir: params.agentDir,
       });
       if (resolved) {
         return {
@@ -122,10 +118,8 @@ async function resolveProfileToken(params: {
   return null;
 }
 
-function resolveProviderCandidates(agentDir?: string): UsageProviderId[] {
-  const store = ensureAuthProfileStore(agentDir, {
-    allowKeychainPrompt: false,
-  });
+function resolveProviderCandidates(): UsageProviderId[] {
+  const store = ensureAuthProfileStore();
   const providers = [
     "anthropic",
     "github-copilot",
@@ -141,13 +135,12 @@ function resolveProviderCandidates(agentDir?: string): UsageProviderId[] {
 export async function resolveProviderAuths(params: {
   providers: UsageProviderId[];
   auth?: ProviderAuth[];
-  agentDir?: string;
 }): Promise<ProviderAuth[]> {
   if (params.auth) {
     return params.auth;
   }
 
-  const candidates = resolveProviderCandidates(params.agentDir);
+  const candidates = resolveProviderCandidates();
   const auths: ProviderAuth[] = [];
 
   for (const provider of params.providers) {
@@ -178,7 +171,6 @@ export async function resolveProviderAuths(params: {
     }
     const auth = await resolveProfileToken({
       provider,
-      agentDir: params.agentDir,
     });
     if (auth) {
       auths.push(auth);

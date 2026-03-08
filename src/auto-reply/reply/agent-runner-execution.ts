@@ -366,7 +366,6 @@ export async function runAgentTurnWithFallback(params: {
           {
             cfg,
             agentId: params.followupRun.run.agentId,
-            agentDir: params.followupRun.run.agentDir,
             baseEnv: baseRuntimeEnv,
           },
           async (runtimeEnv) => {

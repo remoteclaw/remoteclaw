@@ -236,15 +236,10 @@ describe("provider usage loading", () => {
   it("discovers Claude usage from api_key auth profiles", async () => {
     await withTempHome(
       async (tempHome) => {
-        const agentDir = path.join(
-          process.env.REMOTECLAW_STATE_DIR ?? path.join(tempHome, ".remoteclaw"),
-          "agents",
-          "main",
-          "agent",
-        );
-        fs.mkdirSync(agentDir, { recursive: true, mode: 0o700 });
+        const stateDir = process.env.REMOTECLAW_STATE_DIR ?? path.join(tempHome, ".remoteclaw");
+        fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
         fs.writeFileSync(
-          path.join(agentDir, "auth-profiles.json"),
+          path.join(stateDir, "auth-profiles.json"),
           `${JSON.stringify(
             {
               version: 1,
@@ -261,9 +256,7 @@ describe("provider usage loading", () => {
           )}\n`,
           "utf8",
         );
-        const store = ensureAuthProfileStore(agentDir, {
-          allowKeychainPrompt: false,
-        });
+        const store = ensureAuthProfileStore();
         expect(listProfilesForProvider(store, "anthropic")).toContain("anthropic:default");
 
         const mockFetch = createProviderUsageFetch(async (url, init) => {
@@ -283,7 +276,6 @@ describe("provider usage loading", () => {
         const summary = await loadProviderUsageSummary({
           now: usageNow,
           providers: ["anthropic"],
-          agentDir,
           fetch: mockFetch as unknown as typeof fetch,
         });
 

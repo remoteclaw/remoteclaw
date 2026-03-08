@@ -119,7 +119,6 @@ export async function resolveReplyDirectives(params: {
   ctx: MsgContext;
   cfg: RemoteClawConfig;
   agentId: string;
-  agentDir: string;
   workspaceDir: string;
   agentCfg: AgentDefaults;
   sessionCtx: TemplateContext;
@@ -146,7 +145,6 @@ export async function resolveReplyDirectives(params: {
     cfg,
     agentId,
     agentCfg,
-    agentDir,
     workspaceDir: _workspaceDir,
     sessionCtx,
     sessionEntry,
@@ -410,7 +408,6 @@ export async function resolveReplyDirectives(params: {
     ctx,
     cfg,
     agentId,
-    agentDir,
     agentCfg,
     sessionEntry,
     sessionStore,

@@ -14,6 +14,13 @@ import type {
  * and maps the streaming NDJSON output to {@link AgentEvent} instances.
  */
 export class ClaudeCliRuntime extends CLIRuntimeBase {
+  // ── Media capabilities ────────────────────────────────────────────────
+
+  readonly mediaCapabilities = {
+    acceptsInbound: ["image/"],
+    emitsOutbound: false,
+  } as const;
+
   // ── Per-execution state (reset before each run) ───────────────────────
 
   private currentSessionId: string | undefined;

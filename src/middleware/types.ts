@@ -9,7 +9,7 @@ export interface AgentRuntime {
   /** Declare which media types this runtime can handle natively. */
   readonly mediaCapabilities?: {
     /** MIME type prefixes accepted as inbound media (e.g., ["image/", "audio/", "video/"]). */
-    acceptsInbound?: string[];
+    acceptsInbound?: readonly string[];
     /** Whether the runtime can emit media in responses. */
     emitsOutbound?: boolean;
   };

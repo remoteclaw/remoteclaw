@@ -849,6 +849,117 @@ describe("ChannelBridge", () => {
     });
   });
 
+  describe("unsupported media warnings", () => {
+    it("prepends warning payload when runtime does not accept media type", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) =>
+        eventStream([{ type: "text", text: "Reply" }, makeDone({ text: "Reply" })]),
+      );
+      mockRuntimeInstance = {
+        execute: executeFn,
+        mediaCapabilities: { acceptsInbound: ["image/"], emitsOutbound: false },
+      };
+      mockResolveMediaAttachments.mockResolvedValue([
+        { mimeType: "image/jpeg", filePath: "/tmp/photo.jpg" },
+        { mimeType: "audio/ogg", filePath: "/tmp/voice.ogg" },
+      ]);
+
+      const bridge = createBridge();
+      const result = await bridge.handle(
+        makeMessage({
+          mediaUrls: ["https://cdn.example.com/photo.jpg", "https://cdn.example.com/voice.ogg"],
+        }),
+      );
+
+      // Warning should be first payload
+      expect(result.payloads.length).toBeGreaterThanOrEqual(2);
+      expect(result.payloads[0].text).toContain("audio");
+      expect(result.payloads[0].text).toContain("not included");
+      // Agent reply follows
+      expect(result.payloads[1].text).toBe("Reply");
+    });
+
+    it("only passes supported media to runtime.execute()", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = {
+        execute: executeFn,
+        mediaCapabilities: { acceptsInbound: ["image/"], emitsOutbound: false },
+      };
+      mockResolveMediaAttachments.mockResolvedValue([
+        { mimeType: "image/jpeg", filePath: "/tmp/photo.jpg" },
+        { mimeType: "audio/ogg", filePath: "/tmp/voice.ogg" },
+      ]);
+
+      const bridge = createBridge();
+      await bridge.handle(
+        makeMessage({
+          mediaUrls: ["https://cdn.example.com/photo.jpg", "https://cdn.example.com/voice.ogg"],
+        }),
+      );
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.media).toEqual([{ mimeType: "image/jpeg", filePath: "/tmp/photo.jpg" }]);
+    });
+
+    it("does not add warning when all media is supported", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) =>
+        eventStream([{ type: "text", text: "Reply" }, makeDone({ text: "Reply" })]),
+      );
+      mockRuntimeInstance = {
+        execute: executeFn,
+        mediaCapabilities: { acceptsInbound: ["image/"], emitsOutbound: false },
+      };
+      mockResolveMediaAttachments.mockResolvedValue([
+        { mimeType: "image/jpeg", filePath: "/tmp/photo.jpg" },
+      ]);
+
+      const bridge = createBridge();
+      const result = await bridge.handle(
+        makeMessage({ mediaUrls: ["https://cdn.example.com/photo.jpg"] }),
+      );
+
+      expect(result.payloads).toEqual([{ text: "Reply" }]);
+    });
+
+    it("passes all media through when runtime has no mediaCapabilities", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+      mockResolveMediaAttachments.mockResolvedValue([
+        { mimeType: "audio/ogg", filePath: "/tmp/voice.ogg" },
+      ]);
+
+      const bridge = createBridge();
+      const result = await bridge.handle(
+        makeMessage({ mediaUrls: ["https://cdn.example.com/voice.ogg"] }),
+      );
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.media).toEqual([{ mimeType: "audio/ogg", filePath: "/tmp/voice.ogg" }]);
+      // No warning
+      expect(result.payloads.every((p) => !p.text?.includes("not included"))).toBe(true);
+    });
+
+    it("passes undefined media when all attachments are unsupported", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = {
+        execute: executeFn,
+        mediaCapabilities: { acceptsInbound: [], emitsOutbound: false },
+      };
+      mockResolveMediaAttachments.mockResolvedValue([
+        { mimeType: "image/jpeg", filePath: "/tmp/photo.jpg" },
+      ]);
+
+      const bridge = createBridge();
+      const result = await bridge.handle(
+        makeMessage({ mediaUrls: ["https://cdn.example.com/photo.jpg"] }),
+      );
+
+      const params = executeFn.mock.calls[0][0];
+      expect(params.media).toBeUndefined();
+      // Warning present
+      expect(result.payloads[0].text).toContain("not included");
+    });
+  });
+
   describe("outbound media delivery", () => {
     it("delivers media events as ReplyPayload with mediaUrl", async () => {
       mockRuntimeInstance = mockRuntime([

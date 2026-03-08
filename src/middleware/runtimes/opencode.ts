@@ -27,6 +27,13 @@ import type {
  * - Usage/cost comes from `step_finish` events
  */
 export class OpenCodeCliRuntime extends CLIRuntimeBase {
+  // ── Media capabilities ────────────────────────────────────────────────
+
+  readonly mediaCapabilities = {
+    acceptsInbound: [] as string[],
+    emitsOutbound: false,
+  };
+
   // ── Per-execution state (reset before each run) ───────────────────────
 
   private currentSessionId: string | undefined;

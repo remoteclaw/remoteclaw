@@ -10,6 +10,7 @@ import {
   unlinkSync,
 } from "node:fs";
 import path from "node:path";
+import { resolveApiKeyForProvider } from "../auth/provider-auth.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import { normalizeChannelId } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
@@ -400,7 +401,10 @@ export function setTtsEnabled(prefsPath: string, enabled: boolean): void {
   setTtsAutoMode(prefsPath, enabled ? "always" : "off");
 }
 
-export function getTtsProvider(config: ResolvedTtsConfig, prefsPath: string): TtsProvider {
+export async function getTtsProvider(
+  config: ResolvedTtsConfig,
+  prefsPath: string,
+): Promise<TtsProvider> {
   const prefs = readPrefs(prefsPath);
   if (prefs.tts?.provider) {
     return prefs.tts.provider;
@@ -409,10 +413,10 @@ export function getTtsProvider(config: ResolvedTtsConfig, prefsPath: string): Tt
     return config.provider;
   }
 
-  if (resolveTtsApiKey(config, "openai")) {
+  if (await resolveTtsApiKey(config, "openai")) {
     return "openai";
   }
-  if (resolveTtsApiKey(config, "elevenlabs")) {
+  if (await resolveTtsApiKey(config, "elevenlabs")) {
     return "elevenlabs";
   }
   return "edge";
@@ -469,15 +473,41 @@ function resolveEdgeOutputFormat(config: ResolvedTtsConfig): string {
   return config.edge.outputFormat;
 }
 
-export function resolveTtsApiKey(
+function ttsProviderToAuthProvider(provider: TtsProvider): string {
+  switch (provider) {
+    case "openai":
+      return "openai";
+    case "elevenlabs":
+      return "elevenlabs";
+    default:
+      return provider;
+  }
+}
+
+export async function resolveTtsApiKey(
   config: ResolvedTtsConfig,
   provider: TtsProvider,
-): string | undefined {
+): Promise<string | undefined> {
+  // 1. Auth profile store (unified credential system)
+  if (provider !== "edge") {
+    try {
+      const auth = await resolveApiKeyForProvider({
+        provider: ttsProviderToAuthProvider(provider),
+      });
+      if (auth.apiKey) {
+        return auth.apiKey;
+      }
+    } catch {
+      // no profile or env var found — fall through to config
+    }
+  }
+
+  // 2. TTS-specific config fallback (backwards compat)
   if (provider === "elevenlabs") {
-    return config.elevenlabs.apiKey || process.env.ELEVENLABS_API_KEY || process.env.XI_API_KEY;
+    return config.elevenlabs.apiKey || undefined;
   }
   if (provider === "openai") {
-    return config.openai.apiKey || process.env.OPENAI_API_KEY;
+    return config.openai.apiKey || undefined;
   }
   return undefined;
 }
@@ -488,11 +518,14 @@ export function resolveTtsProviderOrder(primary: TtsProvider): TtsProvider[] {
   return [primary, ...TTS_PROVIDERS.filter((provider) => provider !== primary)];
 }
 
-export function isTtsProviderConfigured(config: ResolvedTtsConfig, provider: TtsProvider): boolean {
+export async function isTtsProviderConfigured(
+  config: ResolvedTtsConfig,
+  provider: TtsProvider,
+): Promise<boolean> {
   if (provider === "edge") {
     return config.edge.enabled;
   }
-  return Boolean(resolveTtsApiKey(config, provider));
+  return Boolean(await resolveTtsApiKey(config, provider));
 }
 
 function formatTtsProviderError(provider: TtsProvider, err: unknown): string {
@@ -522,7 +555,7 @@ export async function textToSpeech(params: {
     };
   }
 
-  const userProvider = getTtsProvider(config, prefsPath);
+  const userProvider = await getTtsProvider(config, prefsPath);
   const overrideProvider = params.overrides?.provider;
   const provider = overrideProvider ?? userProvider;
   const providers = resolveTtsProviderOrder(provider);
@@ -602,7 +635,7 @@ export async function textToSpeech(params: {
         };
       }
 
-      const apiKey = resolveTtsApiKey(config, provider);
+      const apiKey = await resolveTtsApiKey(config, provider);
       if (!apiKey) {
         errors.push(`${provider}: no API key`);
         continue;
@@ -688,7 +721,7 @@ export async function textToSpeechTelephony(params: {
     };
   }
 
-  const userProvider = getTtsProvider(config, prefsPath);
+  const userProvider = await getTtsProvider(config, prefsPath);
   const providers = resolveTtsProviderOrder(userProvider);
 
   const errors: string[] = [];
@@ -701,7 +734,7 @@ export async function textToSpeechTelephony(params: {
         continue;
       }
 
-      const apiKey = resolveTtsApiKey(config, provider);
+      const apiKey = await resolveTtsApiKey(config, provider);
       if (!apiKey) {
         errors.push(`${provider}: no API key`);
         continue;

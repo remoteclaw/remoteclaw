@@ -24,11 +24,15 @@ export const ttsHandlers: GatewayRequestHandlers = {
       const cfg = loadConfig();
       const config = resolveTtsConfig(cfg);
       const prefsPath = resolveTtsPrefsPath(config);
-      const provider = getTtsProvider(config, prefsPath);
+      const provider = await getTtsProvider(config, prefsPath);
       const autoMode = resolveTtsAutoMode({ config, prefsPath });
-      const fallbackProviders = resolveTtsProviderOrder(provider)
-        .slice(1)
-        .filter((candidate) => isTtsProviderConfigured(config, candidate));
+      const candidates = resolveTtsProviderOrder(provider).slice(1);
+      const fallbackProviders: string[] = [];
+      for (const candidate of candidates) {
+        if (await isTtsProviderConfigured(config, candidate)) {
+          fallbackProviders.push(candidate);
+        }
+      }
       respond(true, {
         enabled: isTtsEnabled(config, prefsPath),
         auto: autoMode,
@@ -36,9 +40,9 @@ export const ttsHandlers: GatewayRequestHandlers = {
         fallbackProvider: fallbackProviders[0] ?? null,
         fallbackProviders,
         prefsPath,
-        hasOpenAIKey: Boolean(resolveTtsApiKey(config, "openai")),
-        hasElevenLabsKey: Boolean(resolveTtsApiKey(config, "elevenlabs")),
-        edgeEnabled: isTtsProviderConfigured(config, "edge"),
+        hasOpenAIKey: Boolean(await resolveTtsApiKey(config, "openai")),
+        hasElevenLabsKey: Boolean(await resolveTtsApiKey(config, "elevenlabs")),
+        edgeEnabled: await isTtsProviderConfigured(config, "edge"),
       });
     } catch (err) {
       respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, formatForLog(err)));
@@ -131,24 +135,24 @@ export const ttsHandlers: GatewayRequestHandlers = {
           {
             id: "openai",
             name: "OpenAI",
-            configured: Boolean(resolveTtsApiKey(config, "openai")),
+            configured: Boolean(await resolveTtsApiKey(config, "openai")),
             models: [...OPENAI_TTS_MODELS],
             voices: [...OPENAI_TTS_VOICES],
           },
           {
             id: "elevenlabs",
             name: "ElevenLabs",
-            configured: Boolean(resolveTtsApiKey(config, "elevenlabs")),
+            configured: Boolean(await resolveTtsApiKey(config, "elevenlabs")),
             models: ["eleven_multilingual_v2", "eleven_turbo_v2_5", "eleven_monolingual_v1"],
           },
           {
             id: "edge",
             name: "Edge TTS",
-            configured: isTtsProviderConfigured(config, "edge"),
+            configured: await isTtsProviderConfigured(config, "edge"),
             models: [],
           },
         ],
-        active: getTtsProvider(config, prefsPath),
+        active: await getTtsProvider(config, prefsPath),
       });
     } catch (err) {
       respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, formatForLog(err)));

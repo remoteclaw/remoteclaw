@@ -157,11 +157,11 @@ export const handleTtsCommands: CommandHandler = async (params, allowTextCommand
   }
 
   if (action === "provider") {
-    const currentProvider = getTtsProvider(config, prefsPath);
+    const currentProvider = await getTtsProvider(config, prefsPath);
     if (!args.trim()) {
-      const hasOpenAI = Boolean(resolveTtsApiKey(config, "openai"));
-      const hasElevenLabs = Boolean(resolveTtsApiKey(config, "elevenlabs"));
-      const hasEdge = isTtsProviderConfigured(config, "edge");
+      const hasOpenAI = Boolean(await resolveTtsApiKey(config, "openai"));
+      const hasElevenLabs = Boolean(await resolveTtsApiKey(config, "elevenlabs"));
+      const hasEdge = await isTtsProviderConfigured(config, "edge");
       return {
         shouldContinue: false,
         reply: {
@@ -248,8 +248,8 @@ export const handleTtsCommands: CommandHandler = async (params, allowTextCommand
 
   if (action === "status") {
     const enabled = isTtsEnabled(config, prefsPath);
-    const provider = getTtsProvider(config, prefsPath);
-    const hasKey = isTtsProviderConfigured(config, provider);
+    const provider = await getTtsProvider(config, prefsPath);
+    const hasKey = await isTtsProviderConfigured(config, provider);
     const maxLength = getTtsMaxLength(prefsPath);
     const summarize = isSummarizationEnabled(prefsPath);
     const last = getLastTtsAttempt();

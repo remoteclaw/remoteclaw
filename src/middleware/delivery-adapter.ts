@@ -1,4 +1,5 @@
 import type { ReplyPayload } from "../auto-reply/types.js";
+import { logDebug } from "../logger.js";
 import type { AgentEvent, BridgeCallbacks } from "./types.js";
 
 /** Options for the delivery adapter. */
@@ -48,8 +49,10 @@ export class DeliveryAdapter {
     const payloads: ReplyPayload[] = [];
     /** Track media delivered via streaming events to avoid duplicates from result.media. */
     const deliveredMediaKeys = new Set<string>();
+    let eventCount = 0;
 
     for await (const event of events) {
+      eventCount++;
       switch (event.type) {
         case "text": {
           if (event.text === "") {
@@ -126,6 +129,9 @@ export class DeliveryAdapter {
       payloads.push(payload);
     }
 
+    logDebug(
+      `[delivery-adapter] processed ${eventCount} events into ${payloads.length} payloads (chunkLimit=${this.chunkLimit})`,
+    );
     return payloads;
   }
 }

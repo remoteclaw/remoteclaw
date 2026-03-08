@@ -1,4 +1,5 @@
 import { appendFile, readFile } from "node:fs/promises";
+import { logDebug } from "../logger.js";
 import type { McpMessageTarget, McpSideEffects } from "./types.js";
 
 // NDJSON side effect record types
@@ -75,6 +76,7 @@ export class McpSideEffectsWriter {
   }
 
   private async appendRecord(record: SideEffectRecord): Promise<void> {
+    logDebug(`[mcp-side-effects] recording: type=${record.type}`);
     await appendFile(this.filePath, JSON.stringify(record) + "\n", "utf-8");
   }
 }

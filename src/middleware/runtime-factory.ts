@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { logDebug } from "../logger.js";
 import { ClaudeCliRuntime } from "./runtimes/claude.js";
 import { CodexCliRuntime } from "./runtimes/codex.js";
 import { GeminiCliRuntime } from "./runtimes/gemini.js";
@@ -21,10 +22,12 @@ const validatedCommands = new Set<string>();
  */
 function validateExecutable(command: string): void {
   if (validatedCommands.has(command)) {
+    logDebug(`[runtime-factory] executable already validated: ${command}`);
     return;
   }
   try {
     execFileSync("which", [command], { stdio: "ignore" });
+    logDebug(`[runtime-factory] executable validated: ${command}`);
     validatedCommands.add(command);
   } catch {
     throw new Error(
@@ -84,6 +87,7 @@ export function resolveCliRuntimeEnv(cfg?: {
 
 export function createCliRuntime(provider: string): AgentRuntime {
   const normalized = provider.trim().toLowerCase();
+  logDebug(`[runtime-factory] creating runtime: provider=${normalized}`);
 
   switch (normalized) {
     case "claude":

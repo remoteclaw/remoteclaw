@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
+import { logDebug } from "../logger.js";
 import type {
   AgentDoneEvent,
   AgentErrorEvent,
@@ -54,12 +55,28 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     if (params.extraArgs && params.extraArgs.length > 0) {
       args.push(...params.extraArgs);
     }
-    const env = { ...process.env, ...this.buildEnv(params), ...params.env };
+    const runtimeEnv = this.buildEnv(params);
+    const callerEnv = params.env ?? {};
+    const env = { ...process.env, ...runtimeEnv, ...callerEnv };
+
+    logDebug(
+      `[agent-runtime] spawn: ${this.command} ${args.map((a) => JSON.stringify(a)).join(" ")}`,
+    );
+    logDebug(`[agent-runtime] cwd: ${params.workingDirectory ?? process.cwd()}`);
+    if (Object.keys(runtimeEnv).length > 0) {
+      logDebug(`[agent-runtime] runtime env keys: ${Object.keys(runtimeEnv).join(", ")}`);
+    }
+    if (Object.keys(callerEnv).length > 0) {
+      logDebug(`[agent-runtime] caller env keys: ${Object.keys(callerEnv).join(", ")}`);
+    }
+
     const child = spawn(this.command, args, {
       cwd: params.workingDirectory,
       env,
       stdio: ["pipe", "pipe", "pipe"],
     });
+
+    logDebug(`[agent-runtime] spawned pid=${child.pid}`);
 
     const startMs = Date.now();
     const stderrChunks: string[] = [];
@@ -99,6 +116,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       }
       watchdogTimer = setTimeout(() => {
         watchdogFired = true;
+        logDebug(`[agent-runtime] pid=${child.pid}: watchdog timeout after ${this.timeoutMs}ms`);
         killWithEscalation();
       }, this.timeoutMs);
     };
@@ -164,6 +182,9 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       params.prompt.length > CLIRuntimeBase.STDIN_PROMPT_THRESHOLD &&
       child.stdin
     ) {
+      logDebug(
+        `[agent-runtime] pid=${child.pid}: delivering prompt via stdin (${params.prompt.length} chars)`,
+      );
       child.stdin.write(params.prompt);
     }
     // Always close stdin so CLIs that read from stdin get EOF and don't hang.
@@ -172,6 +193,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     // ── Abort signal wiring (after event infrastructure is ready) ────
     const onAbort = () => {
       aborted = true;
+      logDebug(`[agent-runtime] pid=${child.pid}: abort signal received`);
       killWithEscalation();
     };
     if (params.abortSignal) {
@@ -210,11 +232,15 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     }
 
     // ── Wait for process to fully exit ───────────────────────────────
-    const { code: exitCode } = await exitPromise;
+    const { code: exitCode, signal: exitSignal } = await exitPromise;
     if (escalationTimer !== undefined) {
       clearTimeout(escalationTimer);
     }
     const durationMs = Date.now() - startMs;
+
+    logDebug(
+      `[agent-runtime] pid=${child.pid}: exited code=${exitCode} signal=${exitSignal} duration=${durationMs}ms`,
+    );
 
     // ── Surface stderr when CLI exits with error ─────────────────────
     const stderr = stderrChunks.join("");

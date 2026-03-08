@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ReplyPayload } from "../auto-reply/types.js";
+import { logDebug } from "../logger.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { DeliveryAdapter } from "./delivery-adapter.js";
 import { classifyError } from "./error-classifier.js";
@@ -104,7 +105,13 @@ export class ChannelBridge {
   ): Promise<AgentDeliveryResult> {
     // 1. Session lookup
     const sessionKey = buildSessionKey(message);
+    logDebug(
+      `[channel-bridge] handle: channel=${message.provider} from=${message.from} channelId=${message.channelId} threadId=${message.replyToId ?? "none"} agentId=${message.agentId ?? "default"} media=${message.mediaUrls?.length ?? 0}`,
+    );
     const existingSessionId = await this.#sessionMap.get(sessionKey);
+    logDebug(
+      `[channel-bridge] session lookup: key=${formatSessionKeyString(sessionKey)} ${existingSessionId ? `hit=${existingSessionId}` : "miss"}`,
+    );
     const hookRunner = getGlobalHookRunner();
 
     // Hook: session_resumed — fires when reusing an existing session
@@ -145,6 +152,7 @@ export class ChannelBridge {
       const mcpServers = this.#buildMcpConfig(message, sessionKey, sideEffectsFile);
 
       // 4. Runtime params
+      logDebug(`[channel-bridge] creating runtime: provider=${this.#provider}`);
       const runtime = createCliRuntime(this.#provider);
       let workspaceDir = this.#workspaceDir;
       let hookEnv: Record<string, string> | undefined;
@@ -169,9 +177,15 @@ export class ChannelBridge {
           },
         );
         if (spawnResult?.workspaceDir) {
+          logDebug(
+            `[channel-bridge] hook overrode workspaceDir: ${this.#workspaceDir} -> ${spawnResult.workspaceDir}`,
+          );
           workspaceDir = spawnResult.workspaceDir;
         }
         if (spawnResult?.env) {
+          logDebug(
+            `[channel-bridge] hook injected env keys: ${Object.keys(spawnResult.env).join(", ")}`,
+          );
           hookEnv = spawnResult.env;
         }
       }
@@ -180,6 +194,11 @@ export class ChannelBridge {
       const media = message.mediaUrls?.length
         ? await resolveMediaAttachments(message.mediaUrls, invocationDir)
         : undefined;
+      if (media?.length) {
+        logDebug(
+          `[channel-bridge] resolved ${media.length}/${message.mediaUrls!.length} media attachments`,
+        );
+      }
 
       // 6-7. Execute + stream events through DeliveryAdapter
       const adapter = new DeliveryAdapter(
@@ -214,6 +233,9 @@ export class ChannelBridge {
         // 7. Error classification
         const errMsg = String(err);
         const category = classifyError(errMsg);
+        logDebug(
+          `[channel-bridge] runtime threw: category=${category} error=${errMsg.slice(0, 500)}`,
+        );
         lastError = errMsg;
         payloads = [];
         runResult = {
@@ -230,9 +252,15 @@ export class ChannelBridge {
       } catch {
         mcp = { ...EMPTY_SIDE_EFFECTS };
       }
+      logDebug(
+        `[channel-bridge] side effects: sentTexts=${mcp.sentTexts.length} sentMedia=${mcp.sentMediaUrls.length} cronAdds=${mcp.cronAdds}`,
+      );
 
       // 9. Session update
       if (runResult?.sessionId) {
+        logDebug(
+          `[channel-bridge] session update: key=${formatSessionKeyString(sessionKey)} sessionId=${runResult.sessionId}`,
+        );
         await this.#sessionMap.set(sessionKey, runResult.sessionId);
       }
 
@@ -278,6 +306,9 @@ export class ChannelBridge {
       }
 
       // 10. Return result
+      logDebug(
+        `[channel-bridge] complete: runId=${runId} duration=${finalResult.durationMs}ms payloads=${payloads.length} error=${lastError ?? "none"}`,
+      );
       return {
         payloads,
         run: finalResult,

@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { logDebug } from "../logger.js";
 import { fetchRemoteMedia } from "../media/fetch.js";
 import { detectMime, extensionForMime } from "../media/mime.js";
 import type { MediaAttachment } from "./types.js";
@@ -26,9 +27,13 @@ export async function resolveMediaAttachments(
     try {
       const attachment = await resolveOne(url, tempDir, index);
       if (attachment) {
+        logDebug(
+          `[media-resolver] resolved: url=${url} mime=${attachment.mimeType} path=${attachment.filePath}`,
+        );
         results.push(attachment);
       }
-    } catch {
+    } catch (err) {
+      logDebug(`[media-resolver] failed: url=${url} error=${String(err)}`);
       // Skip unresolvable media; don't block the entire message.
     }
   }

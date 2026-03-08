@@ -25,6 +25,7 @@ type OnboardProviderAuthOptionKey = keyof Pick<
   | "qianfanApiKey"
   | "volcengineApiKey"
   | "byteplusApiKey"
+  | "elevenLabsApiKey"
 >;
 
 export type OnboardProviderAuthFlag = {
@@ -197,5 +198,12 @@ export const ONBOARD_PROVIDER_AUTH_FLAGS: ReadonlyArray<OnboardProviderAuthFlag>
     cliFlag: "--byteplus-api-key",
     cliOption: "--byteplus-api-key <key>",
     description: "BytePlus API key",
+  },
+  {
+    optionKey: "elevenLabsApiKey",
+    authChoice: "elevenlabs-api-key",
+    cliFlag: "--elevenlabs-api-key",
+    cliOption: "--elevenlabs-api-key <key>",
+    description: "ElevenLabs API key",
   },
 ];

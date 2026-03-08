@@ -11,6 +11,7 @@ import {
   resolveControlUiLinks,
   waitForGatewayReachable,
 } from "../onboard-helpers.js";
+import { ONBOARD_PROVIDER_AUTH_FLAGS } from "../onboard-provider-auth-flags.js";
 import type { AgentRuntime, OnboardOptions } from "../onboard-types.js";
 import { applyNonInteractiveGatewayConfig } from "./local/gateway-config.js";
 import { logNonInteractiveOnboardingJson } from "./local/output.js";
@@ -125,6 +126,67 @@ async function applyNonInteractiveRuntimeAuth(params: {
   return config;
 }
 
+/**
+ * Apply credential setters for auxiliary (non-runtime) provider API keys.
+ *
+ * Runtime providers (anthropic, openai, gemini, codex) are already handled by
+ * {@link applyNonInteractiveRuntimeAuth}. Providers requiring structured config
+ * (cloudflare-ai-gateway) or lacking a setter (volcengine, byteplus) are skipped.
+ */
+async function applyNonInteractiveAuxiliaryAuth(opts: OnboardOptions): Promise<void> {
+  const {
+    setElevenLabsApiKey,
+    setHuggingfaceApiKey,
+    setKilocodeApiKey,
+    setKimiCodingApiKey,
+    setLitellmApiKey,
+    setMinimaxApiKey,
+    setMistralApiKey,
+    setMoonshotApiKey,
+    setOpencodeZenApiKey,
+    setOpenrouterApiKey,
+    setQianfanApiKey,
+    setSyntheticApiKey,
+    setTogetherApiKey,
+    setVeniceApiKey,
+    setVercelAiGatewayApiKey,
+    setXaiApiKey,
+    setXiaomiApiKey,
+    setZaiApiKey,
+  } = await import("../onboard-auth.js");
+
+  const setters: Partial<Record<string, (key: string) => void | Promise<void>>> = {
+    mistralApiKey: setMistralApiKey,
+    openrouterApiKey: setOpenrouterApiKey,
+    kilocodeApiKey: setKilocodeApiKey,
+    aiGatewayApiKey: setVercelAiGatewayApiKey,
+    moonshotApiKey: setMoonshotApiKey,
+    kimiCodeApiKey: setKimiCodingApiKey,
+    zaiApiKey: setZaiApiKey,
+    xiaomiApiKey: setXiaomiApiKey,
+    minimaxApiKey: setMinimaxApiKey,
+    syntheticApiKey: setSyntheticApiKey,
+    veniceApiKey: setVeniceApiKey,
+    togetherApiKey: setTogetherApiKey,
+    huggingfaceApiKey: setHuggingfaceApiKey,
+    opencodeZenApiKey: setOpencodeZenApiKey,
+    xaiApiKey: setXaiApiKey,
+    litellmApiKey: setLitellmApiKey,
+    qianfanApiKey: setQianfanApiKey,
+    elevenLabsApiKey: setElevenLabsApiKey,
+  };
+
+  for (const flag of ONBOARD_PROVIDER_AUTH_FLAGS) {
+    const value = opts[flag.optionKey];
+    if (value) {
+      const setter = setters[flag.optionKey];
+      if (setter) {
+        await setter(value);
+      }
+    }
+  }
+}
+
 export async function runNonInteractiveOnboardingLocal(params: {
   opts: OnboardOptions;
   runtime: RuntimeEnv;
@@ -159,6 +221,9 @@ export async function runNonInteractiveOnboardingLocal(params: {
       opts,
     });
   }
+
+  // Store credentials for auxiliary provider API keys (e.g., --mistral-api-key, --elevenlabs-api-key).
+  await applyNonInteractiveAuxiliaryAuth(opts);
 
   const gatewayBasePort = resolveGatewayPort(baseConfig);
   const gatewayResult = applyNonInteractiveGatewayConfig({

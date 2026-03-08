@@ -49,6 +49,7 @@ export type AuthChoice =
   | "volcengine-api-key"
   | "byteplus-api-key"
   | "qianfan-api-key"
+  | "elevenlabs-api-key"
   | "custom-api-key"
   | "skip";
 export type AuthChoiceGroupId =
@@ -127,6 +128,7 @@ export type OnboardOptions = {
   qianfanApiKey?: string;
   volcengineApiKey?: string;
   byteplusApiKey?: string;
+  elevenLabsApiKey?: string;
   gatewayPort?: number;
   gatewayBind?: GatewayBind;
   gatewayAuth?: GatewayAuthChoice;

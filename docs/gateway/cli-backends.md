@@ -1,37 +1,36 @@
 ---
-description: "CLI backends: text-only fallback via local AI CLIs"
+description: “CLI backends: text-only path via local AI CLIs”
 read_when:
-  - You want a reliable fallback when API providers fail
-  - You are running Claude Code CLI or other local AI CLIs and want to reuse them
+  - You are configuring CLI backend settings (command path, session handling, image pass-through)
   - You need a text-only, tool-free path that still supports sessions and images
-title: "CLI Backends"
+title: “CLI Backends”
 ---
 
-# CLI backends (fallback runtime)
+# CLI backends
 
-RemoteClaw can run **local AI CLIs** as a **text-only fallback** when API providers are down,
-rate-limited, or temporarily misbehaving. This is intentionally conservative:
+RemoteClaw spawns CLI agents as subprocesses. The **CLI backend** subsystem
+provides a text-only path through these CLIs:
 
 - **Tools are disabled** (no tool calls).
 - **Text in → text out** (reliable).
 - **Sessions are supported** (so follow-up turns stay coherent).
 - **Images can be passed through** if the CLI accepts image paths.
 
-This is designed as a **safety net** rather than a primary path. Use it when you
-want “always works” text responses without relying on external APIs.
+> For the primary CLI agent runtime (with full tool support), see
+> [Configuration Reference → agents.defaults](/gateway/configuration-reference#agentsdefaults).
 
 ## Beginner-friendly quick start
 
 You can use Claude Code CLI **without any config** (RemoteClaw ships a built-in default):
 
 ```bash
-remoteclaw agent --message "hi" --model claude-cli/opus-4.6
+remoteclaw agent --message “hi” --model claude-cli/opus-4.6
 ```
 
 Codex CLI also works out of the box:
 
 ```bash
-remoteclaw agent --message "hi" --model codex-cli/gpt-5.3-codex
+remoteclaw agent --message “hi” --model codex-cli/gpt-5.3-codex
 ```
 
 If your gateway runs under launchd/systemd and PATH is minimal, add just the
@@ -42,8 +41,8 @@ command path:
   agents: {
     defaults: {
       cliBackends: {
-        "claude-cli": {
-          command: "/opt/homebrew/bin/claude",
+        “claude-cli”: {
+          command: “/opt/homebrew/bin/claude”,
         },
       },
     },
@@ -52,34 +51,6 @@ command path:
 ```
 
 That’s it. No keys, no extra auth config needed beyond the CLI itself.
-
-## Using it as a fallback
-
-Add a CLI backend to your fallback list so it only runs when primary models fail:
-
-```json5
-{
-  agents: {
-    defaults: {
-      model: {
-        primary: "anthropic/claude-opus-4-6",
-        fallbacks: ["claude-cli/opus-4.6", "claude-cli/opus-4.5"],
-      },
-      models: {
-        "anthropic/claude-opus-4-6": { alias: "Opus" },
-        "claude-cli/opus-4.6": {},
-        "claude-cli/opus-4.5": {},
-      },
-    },
-  },
-}
-```
-
-Notes:
-
-- If you use `agents.defaults.models` (allowlist), you must include `claude-cli/...`.
-- If the primary provider fails (auth, rate limits, timeouts), RemoteClaw will
-  try the CLI backend next.
 
 ## Configuration overview
 

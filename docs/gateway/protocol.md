@@ -165,18 +165,11 @@ The Gateway treats these as **claims** and enforces server-side allowlists.
 - Presence entries include `deviceId`, `roles`, and `scopes` so UIs can show a single row per device
   even when it connects as both **operator** and **node**.
 
-### Node helper methods
-
-- Nodes may call `skills.bins` to fetch the current list of skill executables
-  for auto-allow checks.
-
 ### Operator helper methods
 
 - Operators may call `tools.catalog` (`operator.read`) to fetch the runtime tool catalog for an
   agent. The response includes grouped tools and provenance metadata:
-  - `source`: `core` or `plugin`
-  - `pluginId`: plugin owner when `source="plugin"`
-  - `optional`: whether a plugin tool is optional
+  - `source`: `core` or `mcp`
 
 ## Exec approvals
 
@@ -224,6 +217,6 @@ The Gateway treats these as **claims** and enforces server-side allowlists.
 
 ## Scope
 
-This protocol exposes the **full gateway API** (status, channels, models, chat,
+This protocol exposes the **full gateway API** (status, channels, chat,
 agent, sessions, nodes, approvals, etc.). The exact surface is defined by the
 TypeBox schemas in `src/gateway/protocol/schema.ts`.

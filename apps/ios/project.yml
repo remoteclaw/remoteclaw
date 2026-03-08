@@ -24,6 +24,15 @@ schemes:
     test:
       targets:
         - RemoteClawTests
+        - RemoteClawLogicTests
+  RemoteClawLogicTests:
+    shared: true
+    build:
+      targets:
+        RemoteClawLogicTests: all
+    test:
+      targets:
+        - RemoteClawLogicTests
 
 targets:
   RemoteClaw:
@@ -111,7 +120,11 @@ targets:
         NSLocationWhenInUseUsageDescription: RemoteClaw uses your location when you allow location sharing.
         NSLocationAlwaysAndWhenInUseUsageDescription: RemoteClaw can share your location in the background when you enable Always.
         NSMicrophoneUsageDescription: RemoteClaw needs microphone access for voice wake.
+        NSMotionUsageDescription: RemoteClaw may use motion data to support device-aware interactions and automations.
+        NSPhotoLibraryUsageDescription: RemoteClaw needs photo library access when you choose existing photos to share with your assistant.
         NSSpeechRecognitionUsageDescription: RemoteClaw uses on-device speech recognition for voice wake.
+        NSSupportsLiveActivities: true
+        ITSAppUsesNonExemptEncryption: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown
@@ -215,6 +228,8 @@ targets:
       Release: Signing.xcconfig
     sources:
       - path: Tests
+        excludes:
+          - Logic
     dependencies:
       - target: RemoteClaw
       - package: Swabble
@@ -234,5 +249,31 @@ targets:
       path: Tests/Info.plist
       properties:
         CFBundleDisplayName: RemoteClawTests
+        CFBundleShortVersionString: "2026.2.23"
+        CFBundleVersion: "20260223"
+
+  RemoteClawLogicTests:
+    type: bundle.unit-test
+    platform: iOS
+    configFiles:
+      Debug: Signing.xcconfig
+      Release: Signing.xcconfig
+    sources:
+      - path: Tests/Logic
+    dependencies:
+      - package: RemoteClawKit
+    settings:
+      base:
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
+        DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
+        PRODUCT_BUNDLE_IDENTIFIER: org.remoteclaw.ios.logic-tests
+        ENABLE_APP_INTENTS_METADATA_GENERATION: NO
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+    info:
+      path: Tests/Info.plist
+      properties:
+        CFBundleDisplayName: RemoteClawLogicTests
         CFBundleShortVersionString: "2026.2.23"
         CFBundleVersion: "20260223"

@@ -26,11 +26,16 @@ export type LegacyStateDetection = {
     hasLegacy: boolean;
   };
   pairingAllowFrom: {
-    legacyTelegramPath: string;
-    targetTelegramPath: string;
     hasLegacyTelegram: boolean;
+    copyPlans: FileCopyPlan[];
   };
   preview: string[];
+};
+
+type FileCopyPlan = {
+  label: string;
+  sourcePath: string;
+  targetPath: string;
 };
 
 const EMPTY_RESULT = {
@@ -56,7 +61,7 @@ const EMPTY_DETECTION: LegacyStateDetection = {
   },
   agentDir: { legacyDir: "", targetDir: "", hasLegacy: false },
   whatsappAuth: { legacyDir: "", targetDir: "", hasLegacy: false },
-  pairingAllowFrom: { legacyTelegramPath: "", targetTelegramPath: "", hasLegacyTelegram: false },
+  pairingAllowFrom: { hasLegacyTelegram: false, copyPlans: [] },
   preview: [],
 };
 

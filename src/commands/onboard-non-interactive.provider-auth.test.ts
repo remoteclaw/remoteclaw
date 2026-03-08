@@ -83,7 +83,7 @@ async function withOnboardEnv(
 }
 
 type RuntimeConfigSnapshot = {
-  agents?: { defaults?: { runtime?: string } };
+  agents?: { defaults?: { runtime?: string; auth?: false | string | string[] } };
 };
 
 async function runNonInteractiveOnboardingWithDefaults(
@@ -108,10 +108,12 @@ describe("onboard (non-interactive): runtime auth", () => {
       });
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       expect(config.agents?.defaults?.runtime).toBe("claude");
+      // No key provided — auth defaults to false (CLI-native auth).
+      expect(config.agents?.defaults?.auth).toBe(false);
     });
   });
 
-  it("infers claude runtime from --anthropic-api-key", async () => {
+  it("infers claude runtime from --anthropic-api-key and sets auth profile", async () => {
     await withOnboardEnv("remoteclaw-onboard-infer-claude-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         anthropicApiKey: "sk-ant-test-key",
@@ -119,10 +121,11 @@ describe("onboard (non-interactive): runtime auth", () => {
       });
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       expect(config.agents?.defaults?.runtime).toBe("claude");
+      expect(config.agents?.defaults?.auth).toBe("anthropic:default");
     });
   });
 
-  it("infers gemini runtime from --gemini-api-key", async () => {
+  it("infers gemini runtime from --gemini-api-key and sets auth profile", async () => {
     await withOnboardEnv("remoteclaw-onboard-infer-gemini-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         geminiApiKey: "gemini-test-key",
@@ -130,10 +133,11 @@ describe("onboard (non-interactive): runtime auth", () => {
       });
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       expect(config.agents?.defaults?.runtime).toBe("gemini");
+      expect(config.agents?.defaults?.auth).toBe("google:default");
     });
   });
 
-  it("infers codex runtime from --codex-api-key", async () => {
+  it("infers codex runtime from --codex-api-key and sets auth profile", async () => {
     await withOnboardEnv("remoteclaw-onboard-infer-codex-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         codexApiKey: "codex-test-key",
@@ -141,10 +145,11 @@ describe("onboard (non-interactive): runtime auth", () => {
       });
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       expect(config.agents?.defaults?.runtime).toBe("codex");
+      expect(config.agents?.defaults?.auth).toBe("codex:default");
     });
   });
 
-  it("infers opencode runtime from --openai-api-key", async () => {
+  it("infers opencode runtime from --openai-api-key and sets auth profile", async () => {
     await withOnboardEnv("remoteclaw-onboard-infer-opencode-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         openaiApiKey: "sk-openai-test-key",
@@ -152,10 +157,11 @@ describe("onboard (non-interactive): runtime auth", () => {
       });
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       expect(config.agents?.defaults?.runtime).toBe("opencode");
+      expect(config.agents?.defaults?.auth).toBe("openai:default");
     });
   });
 
-  it("infers claude runtime from --auth-token", async () => {
+  it("infers claude runtime from --auth-token and sets auth profile", async () => {
     await withOnboardEnv("remoteclaw-onboard-auth-token-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         authToken: "my-oauth-token",
@@ -163,6 +169,7 @@ describe("onboard (non-interactive): runtime auth", () => {
       });
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       expect(config.agents?.defaults?.runtime).toBe("claude");
+      expect(config.agents?.defaults?.auth).toBe("claude:oauth-token");
     });
   });
 
@@ -174,6 +181,8 @@ describe("onboard (non-interactive): runtime auth", () => {
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       // No runtime set when none specified.
       expect(config.agents?.defaults?.runtime).toBeUndefined();
+      // No auth field set when no runtime inferred.
+      expect(config.agents?.defaults?.auth).toBeUndefined();
     });
   });
 });

@@ -907,6 +907,9 @@ describe("isImportableRootEntry", () => {
     expect(isImportableRootEntry("telegram")).toBe(true);
     expect(isImportableRootEntry("media")).toBe(true);
     expect(isImportableRootEntry("workspace")).toBe(true);
+    expect(isImportableRootEntry("cron")).toBe(true);
+    expect(isImportableRootEntry("devices")).toBe(true);
+    expect(isImportableRootEntry("canvas")).toBe(true);
   });
 
   it("accepts workspace-{agentId} directories", () => {
@@ -923,7 +926,6 @@ describe("isImportableRootEntry", () => {
     expect(isImportableRootEntry("logs")).toBe(false);
     expect(isImportableRootEntry("packs")).toBe(false);
     expect(isImportableRootEntry("browser")).toBe(false);
-    expect(isImportableRootEntry("canvas")).toBe(false);
   });
 });
 
@@ -1085,6 +1087,45 @@ describe("importCommand", () => {
 
     expect(result.copiedFiles).toHaveLength(1);
     expect(fs.existsSync(path.join(targetDir, "workspace-helper", "project.json"))).toBe(true);
+  });
+
+  it("imports cron directory", async () => {
+    await fsp.mkdir(path.join(sourceDir, "cron"), { recursive: true });
+    await fsp.writeFile(path.join(sourceDir, "cron", "jobs.json"), '{"jobs":[]}');
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    expect(result.copiedFiles).toHaveLength(1);
+    expect(fs.existsSync(path.join(targetDir, "cron", "jobs.json"))).toBe(true);
+  });
+
+  it("imports devices directory", async () => {
+    await fsp.mkdir(path.join(sourceDir, "devices"), { recursive: true });
+    await fsp.writeFile(path.join(sourceDir, "devices", "paired.json"), "[]");
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    expect(result.copiedFiles).toHaveLength(1);
+    expect(fs.existsSync(path.join(targetDir, "devices", "paired.json"))).toBe(true);
+  });
+
+  it("imports canvas directory", async () => {
+    await fsp.mkdir(path.join(sourceDir, "canvas"), { recursive: true });
+    await fsp.writeFile(path.join(sourceDir, "canvas", "index.html"), "<html></html>");
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    expect(result.copiedFiles).toHaveLength(1);
+    expect(fs.existsSync(path.join(targetDir, "canvas", "index.html"))).toBe(true);
   });
 
   it("transforms config files during copy", async () => {

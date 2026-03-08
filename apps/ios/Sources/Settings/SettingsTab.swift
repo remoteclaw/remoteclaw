@@ -56,7 +56,7 @@ struct SettingsTab: View {
     @State private var activeFeatureHelp: FeatureHelp?
     @State private var suppressCredentialPersist: Bool = false
 
-    private let gatewayLogger = Logger(subsystem: "ai.remoteclaw.ios", category: "GatewaySettings")
+    private let gatewayLogger = Logger(subsystem: "org.remoteclaw.ios", category: "GatewaySettings")
 
     var body: some View {
         NavigationStack {

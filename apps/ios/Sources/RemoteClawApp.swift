@@ -15,9 +15,9 @@ private struct PendingWatchPromptAction {
 
 @MainActor
 final class RemoteClawAppDelegate: NSObject, UIApplicationDelegate, @preconcurrency UNUserNotificationCenterDelegate {
-    private let logger = Logger(subsystem: "ai.remoteclaw.ios", category: "Push")
-    private let backgroundWakeLogger = Logger(subsystem: "ai.remoteclaw.ios", category: "BackgroundWake")
-    private static let wakeRefreshTaskIdentifier = "ai.remoteclaw.ios.bgrefresh"
+    private let logger = Logger(subsystem: "org.remoteclaw.ios", category: "Push")
+    private let backgroundWakeLogger = Logger(subsystem: "org.remoteclaw.ios", category: "BackgroundWake")
+    private static let wakeRefreshTaskIdentifier = "org.remoteclaw.ios.bgrefresh"
     private var backgroundWakeTask: Task<Bool, Never>?
     private var pendingAPNsDeviceToken: Data?
     private var pendingWatchPromptActions: [PendingWatchPromptAction] = []

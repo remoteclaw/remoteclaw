@@ -4,7 +4,7 @@ import RemoteClawKit
 import OSLog
 import Security
 
-private let deepLinkLogger = Logger(subsystem: "ai.remoteclaw", category: "DeepLink")
+private let deepLinkLogger = Logger(subsystem: "org.remoteclaw", category: "DeepLink")
 
 enum DeepLinkAgentPolicy {
     static let maxMessageChars = 20000

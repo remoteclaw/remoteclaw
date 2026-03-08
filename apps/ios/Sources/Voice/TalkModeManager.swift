@@ -95,7 +95,7 @@ final class TalkModeManager: NSObject {
     private var incrementalSpeechPrefetch: IncrementalSpeechPrefetchState?
     private var incrementalSpeechPrefetchMonitorTask: Task<Void, Never>?
 
-    private let logger = Logger(subsystem: "ai.remoteclaw", category: "TalkMode")
+    private let logger = Logger(subsystem: "org.remoteclaw", category: "TalkMode")
 
     init(allowSimulatorCapture: Bool = false) {
         self.allowSimulatorCapture = allowSimulatorCapture

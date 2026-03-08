@@ -12,7 +12,7 @@ final class TalkOverlayController {
     static let orbPadding: CGFloat = 12
     static let orbHitSlop: CGFloat = 10
 
-    private let logger = Logger(subsystem: "ai.remoteclaw", category: "talk.overlay")
+    private let logger = Logger(subsystem: "org.remoteclaw", category: "talk.overlay")
 
     struct Model {
         var isVisible: Bool = false

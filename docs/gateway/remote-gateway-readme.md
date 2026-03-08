@@ -84,7 +84,7 @@ To have the SSH tunnel start automatically when you log in, create a Launch Agen
 
 ### Create the PLIST file
 
-Save this as `~/Library/LaunchAgents/ai.remoteclaw.ssh-tunnel.plist`:
+Save this as `~/Library/LaunchAgents/org.remoteclaw.ssh-tunnel.plist`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -92,7 +92,7 @@ Save this as `~/Library/LaunchAgents/ai.remoteclaw.ssh-tunnel.plist`:
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>ai.remoteclaw.ssh-tunnel</string>
+    <string>org.remoteclaw.ssh-tunnel</string>
     <key>ProgramArguments</key>
     <array>
         <string>/usr/bin/ssh</string>
@@ -110,7 +110,7 @@ Save this as `~/Library/LaunchAgents/ai.remoteclaw.ssh-tunnel.plist`:
 ### Load the Launch Agent
 
 ```bash
-launchctl bootstrap gui/$UID ~/Library/LaunchAgents/ai.remoteclaw.ssh-tunnel.plist
+launchctl bootstrap gui/$UID ~/Library/LaunchAgents/org.remoteclaw.ssh-tunnel.plist
 ```
 
 The tunnel will now:
@@ -135,13 +135,13 @@ lsof -i :18789
 **Restart the tunnel:**
 
 ```bash
-launchctl kickstart -k gui/$UID/ai.remoteclaw.ssh-tunnel
+launchctl kickstart -k gui/$UID/org.remoteclaw.ssh-tunnel
 ```
 
 **Stop the tunnel:**
 
 ```bash
-launchctl bootout gui/$UID/ai.remoteclaw.ssh-tunnel
+launchctl bootout gui/$UID/org.remoteclaw.ssh-tunnel
 ```
 
 ---

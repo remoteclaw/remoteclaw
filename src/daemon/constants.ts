@@ -1,16 +1,16 @@
 // Default service labels (canonical + legacy compatibility)
-export const GATEWAY_LAUNCH_AGENT_LABEL = "ai.remoteclaw.gateway";
+export const GATEWAY_LAUNCH_AGENT_LABEL = "org.remoteclaw.gateway";
 export const GATEWAY_SYSTEMD_SERVICE_NAME = "remoteclaw-gateway";
 export const GATEWAY_WINDOWS_TASK_NAME = "RemoteClaw Gateway";
 export const GATEWAY_SERVICE_MARKER = "remoteclaw";
 export const GATEWAY_SERVICE_KIND = "gateway";
-export const NODE_LAUNCH_AGENT_LABEL = "ai.remoteclaw.node";
+export const NODE_LAUNCH_AGENT_LABEL = "org.remoteclaw.node";
 export const NODE_SYSTEMD_SERVICE_NAME = "remoteclaw-node";
 export const NODE_WINDOWS_TASK_NAME = "RemoteClaw Node";
 export const NODE_SERVICE_MARKER = "remoteclaw";
 export const NODE_SERVICE_KIND = "node";
 export const NODE_WINDOWS_TASK_SCRIPT_NAME = "node.cmd";
-export const LEGACY_GATEWAY_LAUNCH_AGENT_LABELS: string[] = [];
+export const LEGACY_GATEWAY_LAUNCH_AGENT_LABELS: string[] = ["ai.remoteclaw.gateway"];
 export const LEGACY_GATEWAY_SYSTEMD_SERVICE_NAMES: string[] = [];
 export const LEGACY_GATEWAY_WINDOWS_TASK_NAMES: string[] = [];
 
@@ -32,12 +32,15 @@ export function resolveGatewayLaunchAgentLabel(profile?: string): string {
   if (!normalized) {
     return GATEWAY_LAUNCH_AGENT_LABEL;
   }
-  return `ai.remoteclaw.${normalized}`;
+  return `org.remoteclaw.${normalized}`;
 }
 
 export function resolveLegacyGatewayLaunchAgentLabels(profile?: string): string[] {
-  void profile;
-  return [];
+  const normalized = normalizeGatewayProfile(profile);
+  if (!normalized) {
+    return [...LEGACY_GATEWAY_LAUNCH_AGENT_LABELS];
+  }
+  return [`ai.remoteclaw.${normalized}`];
 }
 
 export function resolveGatewaySystemdServiceName(profile?: string): string {

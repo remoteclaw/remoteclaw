@@ -1,6 +1,6 @@
 name: RemoteClaw
 options:
-  bundleIdPrefix: ai.remoteclaw
+  bundleIdPrefix: org.remoteclaw
   deploymentTarget:
     iOS: "18.0"
   xcodeVersion: "16.0"
@@ -89,7 +89,7 @@ targets:
         CFBundleDisplayName: RemoteClaw
         CFBundleIconName: AppIcon
         CFBundleURLTypes:
-          - CFBundleURLName: ai.remoteclaw.ios
+          - CFBundleURLName: org.remoteclaw.ios
             CFBundleURLSchemes:
               - remoteclaw
         CFBundleShortVersionString: "2026.2.23"
@@ -101,7 +101,7 @@ targets:
           - audio
           - remote-notification
         BGTaskSchedulerPermittedIdentifiers:
-          - ai.remoteclaw.ios.bgrefresh
+          - org.remoteclaw.ios.bgrefresh
         NSLocalNetworkUsageDescription: RemoteClaw discovers and connects to your RemoteClaw gateway on the local network.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoadsInWebContent: true
@@ -225,7 +225,7 @@ targets:
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
         DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
-        PRODUCT_BUNDLE_IDENTIFIER: ai.remoteclaw.ios.tests
+        PRODUCT_BUNDLE_IDENTIFIER: org.remoteclaw.ios.tests
         SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: complete
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/RemoteClaw.app/RemoteClaw"

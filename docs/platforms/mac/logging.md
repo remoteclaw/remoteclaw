@@ -26,12 +26,12 @@ Notes:
 
 Unified logging redacts most payloads unless a subsystem opts into `privacy -off`. Per this write-up on macOS [logging privacy shenanigans](https://steipete.me/posts/2025/logging-privacy-shenanigans) (2025) this is controlled by a plist in `/Library/Preferences/Logging/Subsystems/` keyed by the subsystem name. Only new log entries pick up the flag, so enable it before reproducing an issue.
 
-## Enable for RemoteClaw (`ai.remoteclaw`)
+## Enable for RemoteClaw (`org.remoteclaw`)
 
 - Write the plist to a temp file first, then install it atomically as root:
 
 ```bash
-cat <<'EOF' >/tmp/ai.remoteclaw.plist
+cat <<'EOF' >/tmp/org.remoteclaw.plist
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -44,7 +44,7 @@ cat <<'EOF' >/tmp/ai.remoteclaw.plist
 </dict>
 </plist>
 EOF
-sudo install -m 644 -o root -g wheel /tmp/ai.remoteclaw.plist /Library/Preferences/Logging/Subsystems/ai.remoteclaw.plist
+sudo install -m 644 -o root -g wheel /tmp/org.remoteclaw.plist /Library/Preferences/Logging/Subsystems/org.remoteclaw.plist
 ```
 
 - No reboot is required; logd notices the file quickly, but only new log lines will include private payloads.
@@ -52,6 +52,6 @@ sudo install -m 644 -o root -g wheel /tmp/ai.remoteclaw.plist /Library/Preferenc
 
 ## Disable after debugging
 
-- Remove the override: `sudo rm /Library/Preferences/Logging/Subsystems/ai.remoteclaw.plist`.
+- Remove the override: `sudo rm /Library/Preferences/Logging/Subsystems/org.remoteclaw.plist`.
 - Optionally run `sudo log config --reload` to force logd to drop the override immediately.
 - Remember this surface can include phone numbers and message bodies; keep the plist in place only while you actively need the extra detail.

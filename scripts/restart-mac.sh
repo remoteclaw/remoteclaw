@@ -9,7 +9,7 @@ APP_PROCESS_PATTERN="RemoteClaw.app/Contents/MacOS/RemoteClaw"
 DEBUG_PROCESS_PATTERN="${ROOT_DIR}/apps/macos/.build/debug/RemoteClaw"
 LOCAL_PROCESS_PATTERN="${ROOT_DIR}/apps/macos/.build-local/debug/RemoteClaw"
 RELEASE_PROCESS_PATTERN="${ROOT_DIR}/apps/macos/.build/release/RemoteClaw"
-LAUNCH_AGENT="${HOME}/Library/LaunchAgents/ai.remoteclaw.mac.plist"
+LAUNCH_AGENT="${HOME}/Library/LaunchAgents/org.remoteclaw.mac.plist"
 LOCK_KEY="$(printf '%s' "${ROOT_DIR}" | shasum -a 256 | cut -c1-8)"
 LOCK_DIR="${TMPDIR:-/tmp}/remoteclaw-restart-${LOCK_KEY}"
 LOCK_PID_FILE="${LOCK_DIR}/pid"
@@ -145,7 +145,7 @@ kill_all_remoteclaw() {
 }
 
 stop_launch_agent() {
-  launchctl bootout gui/"$UID"/ai.remoteclaw.mac 2>/dev/null || true
+  launchctl bootout gui/"$UID"/org.remoteclaw.mac 2>/dev/null || true
 }
 
 # 1) Kill all running instances first.
@@ -265,5 +265,5 @@ else
 fi
 
 if [ "$NO_SIGN" -eq 1 ] && [ "$ATTACH_ONLY" -ne 1 ]; then
-  run_step "show gateway launch agent args (unsigned)" bash -lc "/usr/bin/plutil -p '${HOME}/Library/LaunchAgents/ai.remoteclaw.gateway.plist' | head -n 40 || true"
+  run_step "show gateway launch agent args (unsigned)" bash -lc "/usr/bin/plutil -p '${HOME}/Library/LaunchAgents/org.remoteclaw.gateway.plist' | head -n 40 || true"
 fi

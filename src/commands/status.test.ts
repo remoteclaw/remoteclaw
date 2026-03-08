@@ -267,7 +267,7 @@ vi.mock("../daemon/service.js", () => ({
     readRuntime: async () => ({ status: "running", pid: 1234 }),
     readCommand: async () => ({
       programArguments: ["node", "dist/entry.js", "gateway"],
-      sourcePath: "/tmp/Library/LaunchAgents/ai.remoteclaw.gateway.plist",
+      sourcePath: "/tmp/Library/LaunchAgents/org.remoteclaw.gateway.plist",
     }),
   }),
 }));
@@ -280,7 +280,7 @@ vi.mock("../daemon/node-service.js", () => ({
     readRuntime: async () => ({ status: "running", pid: 4321 }),
     readCommand: async () => ({
       programArguments: ["node", "dist/entry.js", "node-host"],
-      sourcePath: "/tmp/Library/LaunchAgents/ai.remoteclaw.node.plist",
+      sourcePath: "/tmp/Library/LaunchAgents/org.remoteclaw.node.plist",
     }),
   }),
 }));

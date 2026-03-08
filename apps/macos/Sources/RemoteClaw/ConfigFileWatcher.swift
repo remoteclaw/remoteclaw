@@ -17,7 +17,7 @@ final class ConfigFileWatcher: @unchecked Sendable {
         let targetName = self.targetName
         self.watcher = CoalescingFSEventsWatcher(
             paths: [watchedDirPath],
-            queueLabel: "ai.remoteclaw.configwatcher",
+            queueLabel: "org.remoteclaw.configwatcher",
             shouldNotify: { _, eventPaths in
                 guard let eventPaths else { return true }
                 let paths = unsafeBitCast(eventPaths, to: NSArray.self)

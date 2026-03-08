@@ -58,7 +58,7 @@ On macOS, the GUI app does not automatically inherit shell env vars. You can
 also enable Nix mode via defaults:
 
 ```bash
-defaults write ai.remoteclaw.mac remoteclaw.nixMode -bool true
+defaults write org.remoteclaw.mac remoteclaw.nixMode -bool true
 ```
 
 ### Config + state paths

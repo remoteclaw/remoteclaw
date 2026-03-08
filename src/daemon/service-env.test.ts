@@ -279,7 +279,7 @@ describe("buildServiceEnvironment", () => {
     expect(typeof env.REMOTECLAW_SERVICE_VERSION).toBe("string");
     expect(env.REMOTECLAW_SYSTEMD_UNIT).toBe("remoteclaw-gateway.service");
     if (process.platform === "darwin") {
-      expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("ai.remoteclaw.gateway");
+      expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("org.remoteclaw.gateway");
     }
   });
 
@@ -306,7 +306,7 @@ describe("buildServiceEnvironment", () => {
     });
     expect(env.REMOTECLAW_SYSTEMD_UNIT).toBe("remoteclaw-gateway-work.service");
     if (process.platform === "darwin") {
-      expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("ai.remoteclaw.work");
+      expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("org.remoteclaw.work");
     }
   });
 });

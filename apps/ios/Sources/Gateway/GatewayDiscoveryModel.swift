@@ -104,7 +104,7 @@ final class GatewayDiscoveryModel {
             }
 
             self.browsers[domain] = browser
-            browser.start(queue: DispatchQueue(label: "ai.remoteclaw.ios.gateway-discovery.\(domain)"))
+            browser.start(queue: DispatchQueue(label: "org.remoteclaw.ios.gateway-discovery.\(domain)"))
         }
     }
 

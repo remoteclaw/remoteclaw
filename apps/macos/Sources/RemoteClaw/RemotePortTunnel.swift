@@ -9,7 +9,7 @@ import Darwin
 ///
 /// Uses `ssh -N -L` to forward the remote gateway ports to localhost.
 final class RemotePortTunnel {
-    private static let logger = Logger(subsystem: "ai.remoteclaw", category: "remote.tunnel")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "remote.tunnel")
 
     let process: Process
     let localPort: UInt16?
@@ -186,7 +186,7 @@ final class RemotePortTunnel {
         }
 
         return try await withCheckedThrowingContinuation { cont in
-            let queue = DispatchQueue(label: "ai.remoteclaw.remote.tunnel.port", qos: .utility)
+            let queue = DispatchQueue(label: "org.remoteclaw.remote.tunnel.port", qos: .utility)
             do {
                 let listener = try NWListener(using: .tcp, on: .any)
                 listener.newConnectionHandler = { connection in connection.cancel() }

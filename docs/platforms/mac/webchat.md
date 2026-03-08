@@ -24,7 +24,7 @@ agent (with a session switcher for other sessions).
   dist/RemoteClaw.app/Contents/MacOS/RemoteClaw --webchat
   ```
 
-- Logs: `./scripts/clawlog.sh` (subsystem `ai.remoteclaw`, category `WebChatSwiftUI`).
+- Logs: `./scripts/clawlog.sh` (subsystem `org.remoteclaw`, category `WebChatSwiftUI`).
 
 ## How it’s wired
 

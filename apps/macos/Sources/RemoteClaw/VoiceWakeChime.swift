@@ -43,7 +43,7 @@ enum VoiceWakeChimeCatalog {
 
 @MainActor
 enum VoiceWakeChimePlayer {
-    private static let logger = Logger(subsystem: "ai.remoteclaw", category: "voicewake.chime")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "voicewake.chime")
     private static var lastSound: NSSound?
 
     static func play(_ chime: VoiceWakeChime, reason: String? = nil) {

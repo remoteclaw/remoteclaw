@@ -4,9 +4,11 @@ import {
   GATEWAY_LAUNCH_AGENT_LABEL,
   GATEWAY_SYSTEMD_SERVICE_NAME,
   GATEWAY_WINDOWS_TASK_NAME,
+  LEGACY_GATEWAY_LAUNCH_AGENT_LABELS,
   LEGACY_GATEWAY_SYSTEMD_SERVICE_NAMES,
   normalizeGatewayProfile,
   resolveGatewayLaunchAgentLabel,
+  resolveLegacyGatewayLaunchAgentLabels,
   resolveGatewayProfileSuffix,
   resolveGatewayServiceDescription,
   resolveGatewaySystemdServiceName,
@@ -32,12 +34,12 @@ describe("resolveGatewayLaunchAgentLabel", () => {
   it("returns default label when no profile is set", () => {
     const result = resolveGatewayLaunchAgentLabel();
     expect(result).toBe(GATEWAY_LAUNCH_AGENT_LABEL);
-    expect(result).toBe("ai.remoteclaw.gateway");
+    expect(result).toBe("org.remoteclaw.gateway");
   });
 
   it("returns profile-specific label when profile is set", () => {
     const result = resolveGatewayLaunchAgentLabel("dev");
-    expect(result).toBe("ai.remoteclaw.dev");
+    expect(result).toBe("org.remoteclaw.dev");
   });
 });
 
@@ -127,6 +129,22 @@ describe("resolveGatewayServiceDescription", () => {
         environment: { REMOTECLAW_SERVICE_VERSION: "remote" },
       }),
     ).toBe("RemoteClaw Gateway (profile: work, vremote)");
+  });
+});
+
+describe("LEGACY_GATEWAY_LAUNCH_AGENT_LABELS", () => {
+  it("contains the old ai.remoteclaw.gateway label", () => {
+    expect(LEGACY_GATEWAY_LAUNCH_AGENT_LABELS).toEqual(["ai.remoteclaw.gateway"]);
+  });
+});
+
+describe("resolveLegacyGatewayLaunchAgentLabels", () => {
+  it("returns the legacy default label when no profile is set", () => {
+    expect(resolveLegacyGatewayLaunchAgentLabels()).toEqual(["ai.remoteclaw.gateway"]);
+  });
+
+  it("returns the legacy profile-specific label when profile is set", () => {
+    expect(resolveLegacyGatewayLaunchAgentLabels("dev")).toEqual(["ai.remoteclaw.dev"]);
   });
 });
 

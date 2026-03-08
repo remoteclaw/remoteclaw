@@ -5,7 +5,7 @@ import RemoteClawProtocol
 import OSLog
 import SwiftUI
 
-private let onboardingWizardLogger = Logger(subsystem: "ai.remoteclaw", category: "onboarding.wizard")
+private let onboardingWizardLogger = Logger(subsystem: "org.remoteclaw", category: "onboarding.wizard")
 
 // MARK: - Swift 6 AnyCodable Bridging Helpers
 

@@ -34,15 +34,15 @@ capabilities to the agent as a node.
 
 ## Launchd control
 
-The app manages a per‑user LaunchAgent labeled `ai.remoteclaw.gateway`
-(or `ai.remoteclaw.<profile>` when using `--profile`/`REMOTECLAW_PROFILE`; legacy `com.remoteclaw.*` still unloads).
+The app manages a per‑user LaunchAgent labeled `org.remoteclaw.gateway`
+(or `org.remoteclaw.<profile>` when using `--profile`/`REMOTECLAW_PROFILE`; legacy `com.remoteclaw.*` still unloads).
 
 ```bash
-launchctl kickstart -k gui/$UID/ai.remoteclaw.gateway
-launchctl bootout gui/$UID/ai.remoteclaw.gateway
+launchctl kickstart -k gui/$UID/org.remoteclaw.gateway
+launchctl bootout gui/$UID/org.remoteclaw.gateway
 ```
 
-Replace the label with `ai.remoteclaw.<profile>` when running a named profile.
+Replace the label with `org.remoteclaw.<profile>` when running a named profile.
 
 If the LaunchAgent isn’t installed, enable it from the app or run
 `remoteclaw gateway install`.

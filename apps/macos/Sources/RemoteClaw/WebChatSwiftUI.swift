@@ -7,7 +7,7 @@ import OSLog
 import QuartzCore
 import SwiftUI
 
-private let webChatSwiftLogger = Logger(subsystem: "ai.remoteclaw", category: "WebChatSwiftUI")
+private let webChatSwiftLogger = Logger(subsystem: "org.remoteclaw", category: "WebChatSwiftUI")
 
 private enum WebChatSwiftUILayout {
     static let windowSize = NSSize(width: 500, height: 840)

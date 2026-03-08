@@ -8,7 +8,7 @@ import OSLog
 final class CanvasManager {
     static let shared = CanvasManager()
 
-    private static let logger = Logger(subsystem: "ai.remoteclaw", category: "CanvasManager")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "CanvasManager")
 
     private var panelController: CanvasWindowController?
     private var panelSessionKey: String?

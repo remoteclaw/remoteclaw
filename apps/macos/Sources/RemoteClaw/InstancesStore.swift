@@ -41,7 +41,7 @@ final class InstancesStore {
     var statusMessage: String?
     var isLoading = false
 
-    private let logger = Logger(subsystem: "ai.remoteclaw", category: "instances")
+    private let logger = Logger(subsystem: "org.remoteclaw", category: "instances")
     private var task: Task<Void, Never>?
     private let interval: TimeInterval = 30
     private var eventTask: Task<Void, Never>?

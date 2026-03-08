@@ -4,7 +4,7 @@ import Testing
 
 @Suite struct KeychainStoreTests {
     @Test func saveLoadUpdateDeleteRoundTrip() {
-        let service = "ai.remoteclaw.tests.\(UUID().uuidString)"
+        let service = "org.remoteclaw.tests.\(UUID().uuidString)"
         let account = "value"
 
         #expect(KeychainStore.delete(service: service, account: account))

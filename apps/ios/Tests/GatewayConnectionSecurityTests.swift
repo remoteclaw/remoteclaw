@@ -6,7 +6,7 @@ import Testing
 
 @Suite(.serialized) struct GatewayConnectionSecurityTests {
     private func clearTLSFingerprint(stableID: String) {
-        let suite = UserDefaults(suiteName: "ai.remoteclaw.shared") ?? .standard
+        let suite = UserDefaults(suiteName: "org.remoteclaw.shared") ?? .standard
         suite.removeObject(forKey: "gateway.tls.\(stableID)")
     }
 

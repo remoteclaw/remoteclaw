@@ -18,7 +18,7 @@ export BUILD_ARCHS="${BUILD_ARCHS:-all}"
 
 # Use release bundle ID (not .debug) so Sparkle auto-update works.
 # The .debug suffix in package-mac-app.sh blanks SUFeedURL intentionally for dev builds.
-export BUNDLE_ID="${BUNDLE_ID:-ai.remoteclaw.mac}"
+export BUNDLE_ID="${BUNDLE_ID:-org.remoteclaw.mac}"
 
 "$ROOT_DIR/scripts/package-mac-app.sh"
 

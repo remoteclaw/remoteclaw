@@ -93,7 +93,7 @@ function isRemoteClawGatewayLaunchdService(label: string, contents: string): boo
   if (!lowerContents.includes("gateway")) {
     return false;
   }
-  return label.startsWith("ai.remoteclaw.");
+  return label.startsWith("org.remoteclaw.");
 }
 
 function isRemoteClawGatewaySystemdService(name: string, contents: string): boolean {

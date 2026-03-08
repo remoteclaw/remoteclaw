@@ -8,7 +8,7 @@ import OSLog
 final class ExecApprovalsGatewayPrompter {
     static let shared = ExecApprovalsGatewayPrompter()
 
-    private let logger = Logger(subsystem: "ai.remoteclaw", category: "exec-approvals.gateway")
+    private let logger = Logger(subsystem: "org.remoteclaw", category: "exec-approvals.gateway")
     private var task: Task<Void, Never>?
 
     struct GatewayApprovalRequest: Codable, Sendable {

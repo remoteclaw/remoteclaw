@@ -6,7 +6,7 @@ extension ProcessInfo {
         return String(cString: raw) == "1"
     }
 
-    /// Nix deployments may write defaults into a stable suite (`ai.remoteclaw.mac`) even if the shipped
+    /// Nix deployments may write defaults into a stable suite (`org.remoteclaw.mac`) even if the shipped
     /// app bundle identifier changes (and therefore `UserDefaults.standard` domain changes).
     static func resolveNixMode(
         environment: [String: String],

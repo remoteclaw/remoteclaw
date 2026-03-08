@@ -133,12 +133,12 @@ describe("writeOAuthCredentials", () => {
     const globalPath = path.join(env.stateDir, "auth-profiles.json");
     const raw = await fs.readFile(globalPath, "utf8");
     const parsed = JSON.parse(raw) as {
-      profiles?: Record<string, { type?: string; key?: string; provider?: string }>;
+      profiles?: Record<string, { type?: string; token?: string; provider?: string }>;
     };
     expect(parsed.profiles?.["openai-codex:default"]).toMatchObject({
-      type: "api_key",
+      type: "token",
       provider: "openai-codex",
-      key: "access-token",
+      token: "access-token",
     });
   });
 });

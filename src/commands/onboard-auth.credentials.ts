@@ -14,9 +14,9 @@ export async function writeOAuthCredentials(
 
   const credEmail = email !== "default" ? email : undefined;
   const credential = {
-    type: "api_key" as const,
+    type: "token" as const,
     provider,
-    key: creds.access,
+    token: creds.access,
     ...(credEmail ? { email: credEmail } : {}),
   };
 

@@ -46,7 +46,8 @@ Notes:
 - `--bind <loopback|lan|tailnet|auto|custom>`: listener bind mode.
 - `--auth <token|password>`: auth mode override.
 - `--token <token>`: token override (also sets `REMOTECLAW_GATEWAY_TOKEN` for the process).
-- `--password <password>`: password override (also sets `REMOTECLAW_GATEWAY_PASSWORD` for the process).
+- `--password <password>`: password override. Warning: inline passwords can be exposed in local process listings.
+- `--password-file <path>`: read the gateway password from a file.
 - `--tailscale <off|serve|funnel>`: expose the Gateway via Tailscale.
 - `--tailscale-reset-on-exit`: reset Tailscale serve/funnel config on shutdown.
 - `--allow-unconfigured`: allow gateway start without `gateway.mode=local` in config.
@@ -166,6 +167,7 @@ remoteclaw gateway uninstall
 Notes:
 
 - `gateway install` supports `--port`, `--runtime`, `--token`, `--force`, `--json`.
+- For password auth on `gateway run`, prefer `REMOTECLAW_GATEWAY_PASSWORD`, `--password-file`, or a config-backed `gateway.auth.password` over inline `--password`.
 - Lifecycle commands accept `--json` for scripting.
 
 ## Discover gateways (Bonjour)

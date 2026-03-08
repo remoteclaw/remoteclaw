@@ -655,6 +655,7 @@ Options:
 - `--token <token>`
 - `--auth <token|password>`
 - `--password <password>`
+- `--password-file <path>`
 - `--tailscale <off|serve|funnel>`
 - `--tailscale-reset-on-exit`
 - `--allow-unconfigured`

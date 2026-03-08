@@ -25,7 +25,7 @@ output. This doc explains how that loop is wired end-to-end.
 
 1. `agent` RPC validates params, resolves session (sessionKey/sessionId), persists session metadata, returns `{ runId, acceptedAt }` immediately.
 2. `agentCommand` runs the agent:
-   - resolves model + thinking/verbose defaults
+   - resolves runtime + thinking/verbose CLI defaults
    - loads skills snapshot
    - launches the CLI runtime (Claude, Gemini, Codex, OpenCode) as a subprocess
    - emits **lifecycle end/error** if the runtime does not emit one
@@ -59,7 +59,7 @@ output. This doc explains how that loop is wired end-to-end.
 ## Prompt assembly + system prompt
 
 - System prompt is built from RemoteClaw's base prompt, skills prompt, bootstrap context, and per-run overrides.
-- Model-specific limits and compaction reserve tokens are enforced.
+- System prompt size budget and compaction reserve tokens are enforced.
 - See [System prompt](/concepts/system-prompt) for what the model sees.
 
 ## Hook points (where you can intercept)
@@ -81,7 +81,7 @@ See [Hooks](/automation/hooks) for setup and examples.
 
 These run inside the agent loop or gateway pipeline:
 
-- **`before_model_resolve`**: runs pre-session (no `messages`) to deterministically override provider/model before model resolution.
+- **`before_model_resolve`**: _(dead hook, silently dropped)_ was used by the removed in-process model resolution pipeline.
 - **`before_prompt_build`**: runs after session load (with `messages`) to inject `prependContext`/`systemPrompt` before prompt submission.
 - **`before_agent_start`**: legacy compatibility hook that may run in either phase; prefer the explicit hooks above.
 - **`agent_end`**: inspect the final message list and run metadata after completion.

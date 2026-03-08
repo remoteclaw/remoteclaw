@@ -16,7 +16,7 @@ Goal: multiple _isolated_ agents (separate workspace + `agentDir` + sessions), p
 An **agent** is a fully scoped brain with its own:
 
 - **Workspace** (working directory, agent config, local notes, memory).
-- **State directory** (`agentDir`) for auth profiles, model registry, and per-agent config.
+- **State directory** (`agentDir`) for auth profiles and per-agent config.
 - **Session store** (chat history + routing state) under `~/.remoteclaw/agents/<agentId>/sessions`.
 
 Auth profiles are **per-agent**. Each agent reads from its own:
@@ -357,29 +357,27 @@ remoteclaw channels login --channel whatsapp --account biz
 
 ## Example: WhatsApp daily chat + Telegram deep work
 
-Split by channel: route WhatsApp to a fast everyday agent and Telegram to an Opus agent.
+Split by channel: route WhatsApp to an everyday agent and Telegram to a dedicated deep-work agent.
 
 ```json5
 {
   agents: {
     list: [
       {
-        id: "chat",
+        id: "daily",
         name: "Everyday",
-        workspace: "~/.remoteclaw/workspace-chat",
-        model: "anthropic/claude-sonnet-4-5",
+        workspace: "~/.remoteclaw/workspace-daily",
       },
       {
-        id: "opus",
+        id: "deep-work",
         name: "Deep Work",
-        workspace: "~/.remoteclaw/workspace-opus",
-        model: "anthropic/claude-opus-4-6",
+        workspace: "~/.remoteclaw/workspace-deep-work",
       },
     ],
   },
   bindings: [
-    { agentId: "chat", match: { channel: "whatsapp" } },
-    { agentId: "opus", match: { channel: "telegram" } },
+    { agentId: "daily", match: { channel: "whatsapp" } },
+    { agentId: "deep-work", match: { channel: "telegram" } },
   ],
 }
 ```
@@ -387,36 +385,34 @@ Split by channel: route WhatsApp to a fast everyday agent and Telegram to an Opu
 Notes:
 
 - If you have multiple accounts for a channel, add `accountId` to the binding (for example `{ channel: "whatsapp", accountId: "personal" }`).
-- To route a single DM/group to Opus while keeping the rest on chat, add a `match.peer` binding for that peer; peer matches always win over channel-wide rules.
+- To route a single DM/group to the deep-work agent while keeping the rest on daily, add a `match.peer` binding for that peer; peer matches always win over channel-wide rules.
 
-## Example: same channel, one peer to Opus
+## Example: same channel, one peer to dedicated agent
 
-Keep WhatsApp on the fast agent, but route one DM to Opus:
+Keep WhatsApp on the everyday agent, but route one DM to a dedicated agent:
 
 ```json5
 {
   agents: {
     list: [
       {
-        id: "chat",
+        id: "daily",
         name: "Everyday",
-        workspace: "~/.remoteclaw/workspace-chat",
-        model: "anthropic/claude-sonnet-4-5",
+        workspace: "~/.remoteclaw/workspace-daily",
       },
       {
-        id: "opus",
+        id: "deep-work",
         name: "Deep Work",
-        workspace: "~/.remoteclaw/workspace-opus",
-        model: "anthropic/claude-opus-4-6",
+        workspace: "~/.remoteclaw/workspace-deep-work",
       },
     ],
   },
   bindings: [
     {
-      agentId: "opus",
+      agentId: "deep-work",
       match: { channel: "whatsapp", peer: { kind: "direct", id: "+15551234567" } },
     },
-    { agentId: "chat", match: { channel: "whatsapp" } },
+    { agentId: "daily", match: { channel: "whatsapp" } },
   ],
 }
 ```

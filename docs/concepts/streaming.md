@@ -32,7 +32,7 @@ Model output
 
 Legend:
 
-- `text_delta/events`: model stream events (may be sparse for non-streaming models).
+- `text_delta/events`: CLI agent output events (may be sparse if the CLI agent does not stream output).
 - `chunker`: `EmbeddedBlockChunker` applying min/max bounds + break preference.
 - `channel send`: actual outbound messages (block replies).
 

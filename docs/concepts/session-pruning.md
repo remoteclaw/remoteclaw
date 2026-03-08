@@ -8,28 +8,27 @@ read_when:
 
 # Session Pruning
 
-Session pruning trims **old tool results** from the in-memory context right before each LLM call. It does **not** rewrite the on-disk session history (`*.jsonl`).
+Session pruning trims **old tool results** from the in-memory context before passing it to the CLI agent subprocess. It does **not** rewrite the on-disk session history (`*.jsonl`).
 
 ## When it runs
 
-- When `mode: "cache-ttl"` is enabled and the last Anthropic call for the session is older than `ttl`.
-- Only affects the messages sent to the model for that request.
-- Only active for Anthropic API calls (and OpenRouter Anthropic models).
-- For best results, match `ttl` to your model `cacheRetention` policy (`short` = 5m, `long` = 1h).
+- When `mode: "cache-ttl"` is enabled and the last CLI agent run for the session is older than `ttl`.
+- Only affects the messages passed to the CLI agent subprocess for that run.
+- Currently optimized for the Claude runtime (cache-aware TTL behavior).
+- For best results, match `ttl` to the CLI agent's cache retention policy (`short` = 5m, `long` = 1h).
 - After a prune, the TTL window resets so subsequent requests keep cache until `ttl` expires again.
 
-## Smart defaults (Anthropic)
+## Smart defaults
 
-- **OAuth or setup-token** profiles: enable `cache-ttl` pruning and set heartbeat to `1h`.
-- **API key** profiles: enable `cache-ttl` pruning, set heartbeat to `30m`, and default `cacheRetention: "short"` on Anthropic models.
+- When cache-TTL pruning is enabled, RemoteClaw applies sensible defaults for heartbeat intervals and cache retention.
 - If you set any of these values explicitly, RemoteClaw does **not** override them.
 
-## What this improves (cost + cache behavior)
+## What this improves
 
-- **Why prune:** Anthropic prompt caching only applies within the TTL. If a session goes idle past the TTL, the next request re-caches the full prompt unless you trim it first.
-- **What gets cheaper:** pruning reduces the **cacheWrite** size for that first request after the TTL expires.
-- **Why the TTL reset matters:** once pruning runs, the cache window resets, so follow‑up requests can reuse the freshly cached prompt instead of re-caching the full history again.
-- **What it does not do:** pruning doesn’t add tokens or “double” costs; it only changes what gets cached on that first post‑TTL request.
+- **Why prune:** reducing the context payload passed to the CLI agent subprocess avoids re-processing stale tool output and can improve cache behavior for runtimes that support prompt caching.
+- **What gets cheaper:** pruning reduces the payload size for the first run after the TTL expires.
+- **Why the TTL reset matters:** once pruning runs, the cache window resets, so follow‑up runs can reuse the freshly cached context instead of re-processing the full history again.
+- **What it does not do:** pruning doesn’t add tokens or “double” costs; it only changes what gets passed to the CLI agent on that first post‑TTL run.
 
 ## What can be pruned
 
@@ -43,17 +42,16 @@ Session pruning trims **old tool results** from the in-memory context right befo
 
 Pruning uses an estimated context window (chars ≈ tokens × 4). The base window is resolved in this order:
 
-1. `models.providers.*.models[].contextWindow` override.
-2. Model definition `contextWindow` (from the model registry).
-3. Default `200000` tokens.
+1. `agents.defaults.contextTokens` (if set).
+2. Default `200000` tokens.
 
-If `agents.defaults.contextTokens` is set, it is treated as a cap (min) on the resolved window.
+Context window limits are determined by the CLI agent's own configuration; RemoteClaw uses the configured value as a pruning budget estimate.
 
 ## Mode
 
 ### cache-ttl
 
-- Pruning only runs if the last Anthropic call is older than `ttl` (default `5m`).
+- Pruning only runs if the last CLI agent run is older than `ttl` (default `5m`).
 - When it runs: same soft-trim + hard-clear behavior as before.
 
 ## Soft vs hard pruning

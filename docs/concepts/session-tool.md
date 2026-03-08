@@ -51,7 +51,7 @@ Row shape (JSON):
 - `displayName` (group display label if available)
 - `updatedAt` (ms)
 - `sessionId`
-- `model`, `contextTokens`, `totalTokens`
+- `runtime`, `contextTokens`, `totalTokens`
 - `verboseLevel`, `systemSent`, `abortedLastRun`
 - `sendPolicy` (session override if set)
 - `lastChannel`, `lastTo`
@@ -150,7 +150,7 @@ Parameters:
 - `task` (required)
 - `label?` (optional; used for logs/UI)
 - `agentId?` (optional; spawn under another agent id if allowed)
-- `model?` (optional; overrides the sub-agent model; invalid values error)
+- `model?` (optional; forwarded to the CLI agent as a model hint)
 - `thinking?` (optional; overrides thinking level for the sub-agent run)
 - `runTimeoutSeconds?` (defaults to `agents.defaults.subagents.runTimeoutSeconds` when set, otherwise `0`; when set, aborts the sub-agent run after N seconds)
 - `thread?` (default false; request thread-bound routing for this spawn when supported by the channel/plugin)

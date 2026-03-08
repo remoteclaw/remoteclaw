@@ -220,6 +220,6 @@ cleanup does not remove pre-existing user configuration.
 
 ## Runtime Selection
 
-`createCliRuntime(provider)` maps a provider string (`"claude"`, `"gemini"`,
-`"codex"`, or `"opencode"`) to the corresponding runtime class. The provider
-is normalized to lowercase before matching.
+`createCliRuntime(runtime)` maps a runtime string (`"claude"`, `"gemini"`,
+`"codex"`, or `"opencode"`) to the corresponding runtime class. The runtime
+name is normalized to lowercase before matching.

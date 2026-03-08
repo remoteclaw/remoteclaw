@@ -9,11 +9,11 @@ title: "Context"
 
 # Context
 
-“Context” is **everything RemoteClaw sends to the model for a run**. It is bounded by the model’s **context window** (token limit).
+“Context” is **everything RemoteClaw injects into the CLI agent’s input for a run**. The CLI agent ultimately sends content to the model, bounded by the model’s **context window** (token limit).
 
 Beginner mental model:
 
-- **System prompt** (RemoteClaw-built): rules, tools, skills list, time/runtime, and injected workspace files.
+- **System prompt** (RemoteClaw-built): rules, time/runtime, and injected workspace files.
 - **Conversation history**: your messages + the assistant’s messages for this session.
 - **Tool calls/results + attachments**: command output, file reads, images/audio, etc.
 
@@ -31,7 +31,7 @@ See also: [Slash commands](/tools/slash-commands), [Token use & costs](/referenc
 
 ## Example output
 
-Values vary by model, provider, tool policy, and what’s in your workspace.
+Values vary by runtime, tool policy, and what’s in your workspace.
 
 ### `/context list`
 
@@ -39,17 +39,13 @@ Values vary by model, provider, tool policy, and what’s in your workspace.
 🧠 Context breakdown
 Workspace: <workspaceDir>
 Bootstrap max/file: 20,000 chars
-Sandbox: mode=non-main sandboxed=false
 System prompt (run): 38,412 chars (~9,603 tok) (Project Context 23,901 chars (~5,976 tok))
 
 Workspace files:
 - HEARTBEAT.md: MISSING | raw 0 | injected 0
 
-Skills list (system prompt text): 2,184 chars (~546 tok) (12 skills)
-Tools: read, edit, write, exec, process, browser, message, sessions_send, …
-Tool list (system prompt text): 1,032 chars (~258 tok)
+MCP tools: read, edit, write, exec, process, browser, message, sessions_send, …
 Tool schemas (JSON): 31,988 chars (~7,997 tok) (counts toward context; not shown as text)
-Tools: (same as above)
 
 Session tokens (cached): 14,250 total / ctx=32,000
 ```
@@ -59,11 +55,6 @@ Session tokens (cached): 14,250 total / ctx=32,000
 ```
 🧠 Context breakdown (detailed)
 …
-Top skills (prompt entry size):
-- frontend-design: 412 chars (~103 tok)
-- oracle: 401 chars (~101 tok)
-… (+10 more skills)
-
 Top tools (schema size):
 - browser: 9,812 chars (~2,453 tok)
 - exec: 6,240 chars (~1,560 tok)
@@ -79,14 +70,11 @@ Everything the model receives counts, including:
 - Tool calls + tool results.
 - Attachments/transcripts (images/audio/files).
 - Compaction summaries and pruning artifacts.
-- Provider “wrappers” or hidden headers (not visible, still counted).
 
 ## How RemoteClaw builds the system prompt
 
 The system prompt is **RemoteClaw-owned** and rebuilt each run. It includes:
 
-- Tool list + short descriptions.
-- Skills list (metadata only; see below).
 - Workspace location.
 - Time (UTC + converted user time if configured).
 - Runtime metadata (host/OS/model/thinking).
@@ -100,18 +88,11 @@ RemoteClaw reads workspace files (`HEARTBEAT.md`) when present.
 Agent CLIs load their own config files (e.g. `CLAUDE.md` for Claude Code).
 See [Agent workspace](/concepts/agent-workspace) for the full layout.
 
-## Skills: what’s injected vs loaded on-demand
+## MCP tools
 
-The system prompt includes a compact **skills list** (name + description + location). This list has real overhead.
-
-Skill instructions are _not_ included by default. The model is expected to `read` the skill’s `SKILL.md` **only when needed**.
-
-## Tools: there are two costs
-
-Tools affect context in two ways:
-
-1. **Tool list text** in the system prompt (what you see as “Tooling”).
-2. **Tool schemas** (JSON). These are sent to the model so it can call tools. They count toward context even though you don’t see them as plain text.
+RemoteClaw exposes MCP tools (messaging, sessions, cron, canvas, etc.) to the
+CLI agent via the gateway. Tool schemas (JSON) count toward context even though
+you don’t see them as plain text.
 
 `/context detail` breaks down the biggest tool schemas so you can see what dominates.
 
@@ -141,7 +122,7 @@ Docs: [Session](/concepts/session), [Session pruning](/concepts/session-pruning)
 
 `/context` prefers the latest **run-built** system prompt report when available:
 
-- `System prompt (run)` = captured from the last embedded (tool-capable) run and persisted in the session store.
-- `System prompt (estimate)` = computed on the fly when no run report exists (or when running via a CLI backend that doesn’t generate the report).
+- `System prompt (run)` = captured from the last CLI agent run and persisted in the session store.
+- `System prompt (estimate)` = computed on the fly when no run report exists yet for the session.
 
 Either way, it reports sizes and top contributors; it does **not** dump the full system prompt or tool schemas.

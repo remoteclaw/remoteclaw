@@ -16,10 +16,7 @@ sessions.
 
 **Important:** the workspace is the **default cwd**, not a hard sandbox. Tools
 resolve relative paths against the workspace, but absolute paths can still reach
-elsewhere on the host unless sandboxing is enabled. If you need isolation, use
-`agents.defaults.sandbox` (and/or per‑agent sandbox config).
-When sandboxing is enabled and `workspaceAccess` is not `"rw"`, tools operate
-inside a sandbox workspace under `~/.remoteclaw/sandboxes`, not your host workspace.
+elsewhere on the host.
 
 ## Configuration
 
@@ -65,8 +62,7 @@ Files that RemoteClaw may read or write:
   - Only load in the main, private session (not shared/group contexts).
 
 - `skills/` (optional)
-  - Workspace-specific skills.
-  - Overrides managed/bundled skills when names collide.
+  - Workspace-local skills for the agent's own use.
 
 - `canvas/` (optional)
   - Canvas UI files for node displays (for example `canvas/index.html`).
@@ -94,7 +90,7 @@ These live under `~/.remoteclaw/` and should NOT be committed to the workspace r
 - `~/.remoteclaw/remoteclaw.json` (config)
 - `~/.remoteclaw/credentials/` (OAuth tokens, API keys)
 - `~/.remoteclaw/agents/<agentId>/sessions/` (session transcripts + metadata)
-- `~/.remoteclaw/skills/` (managed skills)
+- `~/.remoteclaw/skills/` (shared skills)
 
 If you need to migrate sessions or config, copy them separately and keep them
 out of version control.
@@ -194,5 +190,3 @@ Suggested `.gitignore` starter:
 
 - Multi-agent routing can use different workspaces per agent. See
   [Channel routing](/channels/channel-routing) for routing configuration.
-- If `agents.defaults.sandbox` is enabled, non-main sessions can use per-session sandbox
-  workspaces under `agents.defaults.sandbox.workspaceRoot`.

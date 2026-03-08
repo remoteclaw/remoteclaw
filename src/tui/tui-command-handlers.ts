@@ -93,39 +93,6 @@ export function createCommandHandlers(context: CommandHandlerContext) {
     tui.requestRender();
   };
 
-  const openModelSelector = async () => {
-    try {
-      const models = await client.listModels();
-      if (models.length === 0) {
-        chatLog.addSystem("no models available");
-        tui.requestRender();
-        return;
-      }
-      const items = models.map((model) => ({
-        value: `${model.provider}/${model.id}`,
-        label: `${model.provider}/${model.id}`,
-        description: model.name && model.name !== model.id ? model.name : "",
-      }));
-      const selector = createSearchableSelectList(items, 9);
-      openSelector(selector, async (value) => {
-        try {
-          const result = await client.patchSession({
-            key: state.currentSessionKey,
-            model: value,
-          });
-          chatLog.addSystem(`model set to ${value}`);
-          applySessionInfoFromPatch(result);
-          await refreshSessionInfo();
-        } catch (err) {
-          chatLog.addSystem(`model set failed: ${String(err)}`);
-        }
-      });
-    } catch (err) {
-      chatLog.addSystem(`model list failed: ${String(err)}`);
-      tui.requestRender();
-    }
-  };
-
   const openAgentSelector = async () => {
     await refreshAgents();
     if (state.agents.length === 0) {
@@ -273,7 +240,7 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         break;
       case "model":
         if (!args) {
-          await openModelSelector();
+          chatLog.addSystem("usage: /model <provider/model>");
         } else {
           try {
             const result = await client.patchSession({
@@ -287,9 +254,6 @@ export function createCommandHandlers(context: CommandHandlerContext) {
             chatLog.addSystem(`model set failed: ${String(err)}`);
           }
         }
-        break;
-      case "models":
-        await openModelSelector();
         break;
       case "verbose":
         if (!args) {
@@ -441,7 +405,6 @@ export function createCommandHandlers(context: CommandHandlerContext) {
   return {
     handleCommand,
     sendMessage,
-    openModelSelector,
     openAgentSelector,
     openSessionSelector,
     openSettings,

@@ -768,7 +768,7 @@ export async function runTui(opts: TuiOptions) {
     process.exit(0);
   };
 
-  const { handleCommand, sendMessage, openModelSelector, openAgentSelector, openSessionSelector } =
+  const { handleCommand, sendMessage, openAgentSelector, openSessionSelector } =
     createCommandHandlers({
       client,
       chatLog,
@@ -844,9 +844,6 @@ export async function runTui(opts: TuiOptions) {
     chatLog.setToolsExpanded(toolsExpanded);
     setActivityStatus(toolsExpanded ? "tools expanded" : "tools collapsed");
     tui.requestRender();
-  };
-  editor.onCtrlL = () => {
-    void openModelSelector();
   };
   editor.onCtrlG = () => {
     void openAgentSelector();

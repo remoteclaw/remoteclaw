@@ -251,9 +251,10 @@ export const buildTelegramMessageContext = async ({
   }
   const requiresExplicitAccountBinding = (candidate: ResolvedAgentRoute): boolean =>
     candidate.accountId !== DEFAULT_ACCOUNT_ID && candidate.matchedBy === "default";
-  // Fail closed for named Telegram accounts when route resolution falls back to
-  // default-agent routing. This prevents cross-account DM/session contamination.
-  if (requiresExplicitAccountBinding(route)) {
+  const isNamedAccountFallback = requiresExplicitAccountBinding(route);
+  // Named-account groups still require an explicit binding; DMs get a
+  // per-account fallback session key below to preserve isolation.
+  if (isNamedAccountFallback && isGroup) {
     logInboundDrop({
       log: logVerbose,
       channel: "telegram",
@@ -262,7 +263,22 @@ export const buildTelegramMessageContext = async ({
     });
     return null;
   }
-  const baseSessionKey = route.sessionKey;
+  const baseSessionKey = isNamedAccountFallback
+    ? buildAgentSessionKey({
+        agentId: route.agentId,
+        channel: "telegram",
+        accountId: route.accountId,
+        peer: {
+          kind: "direct",
+          id: resolveTelegramDirectPeerId({
+            chatId,
+            senderId,
+          }),
+        },
+        dmScope: "per-account-channel-peer",
+        identityLinks: freshCfg.session?.identityLinks,
+      }).toLowerCase()
+    : route.sessionKey;
   // DMs: use raw messageThreadId for thread sessions (not forum topic ids)
   const dmThreadId = threadSpec.scope === "dm" ? threadSpec.id : undefined;
   const threadKeys =

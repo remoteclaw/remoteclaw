@@ -1,5 +1,5 @@
 /**
- * Auth profile → CLI subprocess env var injection.
+ * Auth profile -> CLI subprocess env var injection.
  *
  * Resolves per-agent auth profile references to environment variables
  * suitable for injecting into CLI subprocess environments.
@@ -9,21 +9,17 @@ import { resolveAgentAuth } from "../agents/agent-scope.js";
 import { normalizeProviderId } from "../agents/provider-utils.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { ensureAuthProfileStore, resolveApiKeyForProfile } from "./index.js";
+import { resolveApiKeyForProfile } from "./oauth.js";
+import { ensureAuthProfileStore } from "./store.js";
 import type { AuthProfileStore } from "./types.js";
+import {
+  clearExpiredCooldowns,
+  isProfileInCooldown,
+  markAuthProfileUsed,
+  resolveProfileUnusableUntil,
+} from "./usage.js";
 
 const log = createSubsystemLogger("auth-env");
-
-/**
- * Round-robin state: tracks the last-used index per agent ID.
- * Resets on process restart — rotation is best-effort.
- */
-const roundRobinState = new Map<string, number>();
-
-/** @internal — exposed for tests only. */
-export function _resetRoundRobinState(): void {
-  roundRobinState.clear();
-}
 
 /**
  * Map a provider ID to the primary environment variable name used by CLI agents.
@@ -72,24 +68,69 @@ export function resolveProviderEnvVarName(provider: string): string | undefined 
 }
 
 /**
- * Pick the next profile ID from an array using round-robin.
+ * Pick the next profile ID from an array using persistent, cooldown-aware
+ * round-robin. Profiles are ordered by lastUsed (oldest first) with
+ * cooldown profiles pushed to the end. The selected profile is marked as
+ * used so subsequent calls rotate to the next one.
  */
-function pickRoundRobin(agentId: string, profiles: string[]): string | undefined {
+async function pickNextProfile(
+  store: AuthProfileStore,
+  profiles: string[],
+): Promise<string | undefined> {
   if (profiles.length === 0) {
     return undefined;
   }
-  const lastIndex = roundRobinState.get(agentId) ?? -1;
-  const nextIndex = (lastIndex + 1) % profiles.length;
-  roundRobinState.set(agentId, nextIndex);
-  return profiles[nextIndex];
+
+  // Clear expired cooldowns so recovered profiles are available again
+  clearExpiredCooldowns(store);
+
+  // Partition into available and in-cooldown
+  const available: string[] = [];
+  const inCooldown: Array<{ profileId: string; cooldownUntil: number }> = [];
+  const now = Date.now();
+
+  for (const profileId of profiles) {
+    if (!store.profiles[profileId]) {
+      continue;
+    }
+    if (isProfileInCooldown(store, profileId)) {
+      const cooldownUntil = resolveProfileUnusableUntil(store.usageStats?.[profileId] ?? {}) ?? now;
+      inCooldown.push({ profileId, cooldownUntil });
+    } else {
+      available.push(profileId);
+    }
+  }
+
+  // Sort available by lastUsed (oldest first = round-robin)
+  const sorted = available.toSorted((a, b) => {
+    const aUsed = store.usageStats?.[a]?.lastUsed ?? 0;
+    const bUsed = store.usageStats?.[b]?.lastUsed ?? 0;
+    return aUsed - bUsed;
+  });
+
+  // Append cooldown profiles sorted by soonest expiry
+  const cooldownSorted = inCooldown
+    .toSorted((a, b) => a.cooldownUntil - b.cooldownUntil)
+    .map((entry) => entry.profileId);
+
+  const ordered = [...sorted, ...cooldownSorted];
+  const selected = ordered[0];
+  if (!selected) {
+    return undefined;
+  }
+
+  // Mark as used to advance the round-robin for the next call
+  await markAuthProfileUsed({ store, profileId: selected });
+
+  return selected;
 }
 
 /**
  * Return the number of auth profiles configured for an agent.
  *
- * - `auth: false` or `undefined` → 0
- * - `auth: "profile-id"` → 1
- * - `auth: ["id1", "id2"]` → N
+ * - `auth: false` or `undefined` -> 0
+ * - `auth: "profile-id"` -> 1
+ * - `auth: ["id1", "id2"]` -> N
  */
 export function resolveAuthProfileCount(cfg: RemoteClawConfig, agentId: string): number {
   const auth = resolveAgentAuth(cfg, agentId);
@@ -105,10 +146,10 @@ export function resolveAuthProfileCount(cfg: RemoteClawConfig, agentId: string):
 /**
  * Resolve per-agent auth profile(s) to env vars for CLI subprocess injection.
  *
- * - `auth: false` → no injection (returns `undefined`)
- * - `auth: "profile-id"` → resolve single profile, inject as env var
- * - `auth: ["id1", "id2"]` → round-robin rotation, inject selected profile
- * - `auth: undefined` → no injection (returns `undefined`)
+ * - `auth: false` -> no injection (returns `undefined`)
+ * - `auth: "profile-id"` -> resolve single profile, inject as env var
+ * - `auth: ["id1", "id2"]` -> persistent cooldown-aware round-robin, inject selected profile
+ * - `auth: undefined` -> no injection (returns `undefined`)
  *
  * Missing or invalid profiles log a warning and return `undefined`
  * (fall-through to next credential precedence level).
@@ -124,13 +165,13 @@ export async function resolveAuthEnv(params: {
     return undefined;
   }
 
-  const profileId = Array.isArray(auth) ? pickRoundRobin(params.agentId, auth) : auth;
+  const store = params.store ?? ensureAuthProfileStore();
+
+  const profileId = Array.isArray(auth) ? await pickNextProfile(store, auth) : auth;
 
   if (!profileId) {
     return undefined;
   }
-
-  const store = params.store ?? ensureAuthProfileStore();
 
   let resolved: { apiKey: string; provider: string; email?: string } | null;
   try {

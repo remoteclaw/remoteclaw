@@ -7,6 +7,10 @@ import {
 } from "./store.js";
 import type { AuthProfileCredential, AuthProfileStore } from "./types.js";
 
+export function dedupeProfileIds(profileIds: string[]): string[] {
+  return [...new Set(profileIds)];
+}
+
 export function upsertAuthProfile(params: {
   profileId: string;
   credential: AuthProfileCredential;

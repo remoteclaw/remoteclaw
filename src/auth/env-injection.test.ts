@@ -1,15 +1,19 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
-  _resetRoundRobinState,
   resolveAuthEnv,
   resolveAuthProfileCount,
   resolveProviderEnvVarName,
 } from "./env-injection.js";
 import type { AuthProfileStore } from "./types.js";
 
-afterEach(() => {
-  _resetRoundRobinState();
+vi.mock("./store.js", async (importOriginal) => {
+  const original = await importOriginal<typeof import("./store.js")>();
+  return {
+    ...original,
+    updateAuthProfileStoreWithLock: vi.fn().mockResolvedValue(null),
+    saveAuthProfileStore: vi.fn(),
+  };
 });
 
 describe("resolveProviderEnvVarName", () => {
@@ -47,6 +51,7 @@ describe("resolveProviderEnvVarName", () => {
 describe("resolveAuthEnv", () => {
   const makeStore = (
     profiles: Record<string, { provider: string; key: string }>,
+    usageStats?: AuthProfileStore["usageStats"],
   ): AuthProfileStore => ({
     version: 1,
     profiles: Object.fromEntries(
@@ -55,6 +60,7 @@ describe("resolveAuthEnv", () => {
         { type: "api_key" as const, provider: p.provider, key: p.key },
       ]),
     ),
+    usageStats,
   });
 
   it("returns undefined when auth is undefined (no config)", async () => {
@@ -199,7 +205,7 @@ describe("resolveAuthEnv", () => {
   });
 
   describe("round-robin", () => {
-    it("cycles through array entries across calls", async () => {
+    it("picks least-recently-used profile from array", async () => {
       const cfg: RemoteClawConfig = {
         agents: {
           list: [
@@ -211,53 +217,69 @@ describe("resolveAuthEnv", () => {
           ],
         },
       };
-      const store = makeStore({
-        "anthropic:key1": { provider: "anthropic", key: "sk-1" },
-        "anthropic:key2": { provider: "anthropic", key: "sk-2" },
-        "anthropic:key3": { provider: "anthropic", key: "sk-3" },
-      });
+      // key2 was used least recently (lastUsed: 100), so it should be picked
+      const store = makeStore(
+        {
+          "anthropic:key1": { provider: "anthropic", key: "sk-1" },
+          "anthropic:key2": { provider: "anthropic", key: "sk-2" },
+          "anthropic:key3": { provider: "anthropic", key: "sk-3" },
+        },
+        {
+          "anthropic:key1": { lastUsed: 200 },
+          "anthropic:key2": { lastUsed: 100 },
+          "anthropic:key3": { lastUsed: 300 },
+        },
+      );
 
       const r1 = await resolveAuthEnv({ cfg, agentId: "main", store });
-      expect(r1).toEqual({ ANTHROPIC_API_KEY: "sk-1" });
-
-      const r2 = await resolveAuthEnv({ cfg, agentId: "main", store });
-      expect(r2).toEqual({ ANTHROPIC_API_KEY: "sk-2" });
-
-      const r3 = await resolveAuthEnv({ cfg, agentId: "main", store });
-      expect(r3).toEqual({ ANTHROPIC_API_KEY: "sk-3" });
-
-      // Wraps around
-      const r4 = await resolveAuthEnv({ cfg, agentId: "main", store });
-      expect(r4).toEqual({ ANTHROPIC_API_KEY: "sk-1" });
+      expect(r1).toEqual({ ANTHROPIC_API_KEY: "sk-2" });
     });
 
-    it("tracks rotation independently per agent", async () => {
+    it("picks first profile when no usage stats exist", async () => {
       const cfg: RemoteClawConfig = {
         agents: {
           list: [
-            { id: "a", workspace: "~/w", auth: ["anthropic:a1", "anthropic:a2"] },
-            { id: "b", workspace: "~/w", auth: ["anthropic:b1", "anthropic:b2"] },
+            {
+              id: "main",
+              workspace: "~/w",
+              auth: ["anthropic:key1", "anthropic:key2"],
+            },
           ],
         },
       };
       const store = makeStore({
-        "anthropic:a1": { provider: "anthropic", key: "sk-a1" },
-        "anthropic:a2": { provider: "anthropic", key: "sk-a2" },
-        "anthropic:b1": { provider: "anthropic", key: "sk-b1" },
-        "anthropic:b2": { provider: "anthropic", key: "sk-b2" },
+        "anthropic:key1": { provider: "anthropic", key: "sk-1" },
+        "anthropic:key2": { provider: "anthropic", key: "sk-2" },
       });
 
-      const ra1 = await resolveAuthEnv({ cfg, agentId: "a", store });
-      expect(ra1).toEqual({ ANTHROPIC_API_KEY: "sk-a1" });
+      const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+      expect(result).toEqual({ ANTHROPIC_API_KEY: "sk-1" });
+    });
 
-      const rb1 = await resolveAuthEnv({ cfg, agentId: "b", store });
-      expect(rb1).toEqual({ ANTHROPIC_API_KEY: "sk-b1" });
+    it("skips profiles in cooldown", async () => {
+      const cfg: RemoteClawConfig = {
+        agents: {
+          list: [
+            {
+              id: "main",
+              workspace: "~/w",
+              auth: ["anthropic:key1", "anthropic:key2"],
+            },
+          ],
+        },
+      };
+      const store = makeStore(
+        {
+          "anthropic:key1": { provider: "anthropic", key: "sk-1" },
+          "anthropic:key2": { provider: "anthropic", key: "sk-2" },
+        },
+        {
+          "anthropic:key1": { cooldownUntil: Date.now() + 60_000 },
+        },
+      );
 
-      const ra2 = await resolveAuthEnv({ cfg, agentId: "a", store });
-      expect(ra2).toEqual({ ANTHROPIC_API_KEY: "sk-a2" });
-
-      const rb2 = await resolveAuthEnv({ cfg, agentId: "b", store });
-      expect(rb2).toEqual({ ANTHROPIC_API_KEY: "sk-b2" });
+      const result = await resolveAuthEnv({ cfg, agentId: "main", store });
+      expect(result).toEqual({ ANTHROPIC_API_KEY: "sk-2" });
     });
 
     it("returns undefined for empty auth array", async () => {

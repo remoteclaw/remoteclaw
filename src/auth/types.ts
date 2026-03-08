@@ -22,7 +22,36 @@ export type TokenCredential = {
 
 export type AuthProfileCredential = ApiKeyCredential | TokenCredential;
 
+export type AuthProfileFailureReason =
+  | "auth"
+  | "format"
+  | "rate_limit"
+  | "billing"
+  | "timeout"
+  | "model_not_found"
+  | "unknown";
+
+/** Per-profile usage statistics for round-robin and cooldown tracking */
+export type ProfileUsageStats = {
+  lastUsed?: number;
+  cooldownUntil?: number;
+  disabledUntil?: number;
+  disabledReason?: AuthProfileFailureReason;
+  errorCount?: number;
+  failureCounts?: Partial<Record<AuthProfileFailureReason, number>>;
+  lastFailureAt?: number;
+};
+
 export type AuthProfileStore = {
   version: number;
   profiles: Record<string, AuthProfileCredential>;
+  /**
+   * Optional per-agent preferred profile order overrides.
+   * This lets you lock/override auth rotation for a specific agent without
+   * changing the global config.
+   */
+  order?: Record<string, string[]>;
+  lastGood?: Record<string, string>;
+  /** Usage statistics per profile for round-robin rotation */
+  usageStats?: Record<string, ProfileUsageStats>;
 };

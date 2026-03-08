@@ -604,7 +604,7 @@ describe("readSystemdServiceExecStart", () => {
     });
     expect(command?.environmentValueSources).toEqual({
       REMOTECLAW_GATEWAY_TOKEN: "file",
-      REMOTECLAW_GATEWAY_PASSWORD: "file",
+      REMOTECLAW_GATEWAY_PASSWORD: "file", // pragma: allowlist secret
     });
   });
 });

@@ -100,10 +100,14 @@ export function registerOnboardCommand(program: Command) {
           flow: opts.flow as "quickstart" | "advanced" | "manual" | undefined,
           mode: opts.mode as "local" | "remote" | undefined,
           runtime: opts.runtime as AgentRuntime | undefined,
-          anthropicApiKey: opts.anthropicApiKey as string | undefined,
-          openaiApiKey: opts.openaiApiKey as string | undefined,
-          geminiApiKey: opts.geminiApiKey as string | undefined,
           codexApiKey: opts.codexApiKey as string | undefined,
+          // Forward all provider auth flags registered via ONBOARD_PROVIDER_AUTH_FLAGS loop.
+          ...Object.fromEntries(
+            ONBOARD_PROVIDER_AUTH_FLAGS.map((f) => [
+              f.optionKey,
+              opts[f.optionKey] as string | undefined,
+            ]),
+          ),
           authToken: opts.authToken as string | undefined,
           gatewayPort:
             typeof gatewayPort === "number" && Number.isFinite(gatewayPort)

@@ -12,10 +12,11 @@ const runtime = {
 vi.mock("../../commands/onboard-provider-auth-flags.js", () => ({
   ONBOARD_PROVIDER_AUTH_FLAGS: [
     {
+      optionKey: "anthropicApiKey",
       cliOption: "--anthropic-api-key <key>",
       description: "Anthropic API key",
     },
-  ] as Array<{ cliOption: string; description: string }>,
+  ] as Array<{ optionKey: string; cliOption: string; description: string }>,
 }));
 
 vi.mock("../../commands/onboard.js", () => ({

@@ -245,6 +245,18 @@ export function createEventHandlers(context: EventHandlerContext) {
     if (!isKnownRun) {
       return;
     }
+    if (evt.stream === "thinking") {
+      const verbose = state.sessionInfo.verboseLevel ?? "off";
+      if (verbose === "off") {
+        return;
+      }
+      const text = typeof evt.data?.text === "string" ? evt.data.text : "";
+      if (text) {
+        chatLog.addSystem(text);
+      }
+      tui.requestRender();
+      return;
+    }
     if (evt.stream === "tool") {
       const verbose = state.sessionInfo.verboseLevel ?? "off";
       const allowToolEvents = verbose !== "off";

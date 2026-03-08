@@ -43,6 +43,7 @@ import {
 } from "./doctor-state-migrations.js";
 import { maybeRepairUiProtocolFreshness } from "./doctor-ui.js";
 import { maybeOfferUpdateBeforeDoctor } from "./doctor-update.js";
+import { noteVoiceChannelHealth } from "./doctor-voice.js";
 import { noteWorkspaceStatus } from "./doctor-workspace-status.js";
 import { applyWizardMetadata, printWizardHeader, randomToken } from "./onboard-helpers.js";
 import { ensureSystemdUserLingerInteractive } from "./systemd-linger.js";
@@ -111,6 +112,7 @@ export async function doctorCommand(
     prompter,
     allowKeychainPrompt: options.nonInteractive !== true && Boolean(process.stdin.isTTY),
   });
+  await noteVoiceChannelHealth(cfg);
   const gatewayDetails = buildGatewayConnectionDetails({ config: cfg });
   if (gatewayDetails.remoteFallbackNote) {
     note(gatewayDetails.remoteFallbackNote, "Gateway");

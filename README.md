@@ -2,8 +2,8 @@
 
 <p align="center">
     <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/remoteclaw/remoteclaw/main/docs/assets/remoteclaw-logo-text.png">
-        <img src="https://raw.githubusercontent.com/remoteclaw/remoteclaw/main/docs/assets/remoteclaw-logo-text-dark.png" alt="RemoteClaw" width="500">
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/remoteclaw/remoteclaw/main/docs/public/assets/remoteclaw-logo-text.png">
+        <img src="https://raw.githubusercontent.com/remoteclaw/remoteclaw/main/docs/public/assets/remoteclaw-logo-text-dark.png" alt="RemoteClaw" width="500">
     </picture>
 </p>
 

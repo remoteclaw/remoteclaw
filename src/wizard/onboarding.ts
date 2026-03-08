@@ -51,7 +51,9 @@ const SKIP_GUIDANCE: Record<AgentRuntime, string> = {
 
 type UpsertAuthProfileFn = (params: {
   profileId: string;
-  credential: { type: "api_key"; provider: string; key: string };
+  credential:
+    | { type: "api_key"; provider: string; key: string }
+    | { type: "token"; provider: string; token: string };
 }) => void;
 
 async function promptRuntimeCredential(params: {
@@ -118,7 +120,7 @@ async function promptRuntimeCredential(params: {
       if (token.trim()) {
         upsertAuthProfile({
           profileId: "claude:oauth-token",
-          credential: { type: "api_key", provider: "anthropic", key: token.trim() },
+          credential: { type: "token", provider: "anthropic", token: token.trim() },
         });
         setAuthDefault("claude:oauth-token");
       }

@@ -43,11 +43,10 @@ function coerceAuthStore(raw: unknown): AuthProfileStore | null {
     if (!provider) {
       continue;
     }
-    // Accept any credential type from disk — coerce to api_key since
-    // OAuth/token types have been removed.
+    const type = typed.type === "token" ? "token" : "api_key";
     normalized[key] = {
       ...typed,
-      type: "api_key",
+      type,
       provider,
     } as AuthProfileCredential;
   }

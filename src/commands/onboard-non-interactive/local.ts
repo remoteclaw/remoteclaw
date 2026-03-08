@@ -79,7 +79,7 @@ async function applyNonInteractiveRuntimeAuth(params: {
       profileId = "claude:oauth-token";
       upsertAuthProfile({
         profileId,
-        credential: { type: "api_key", provider: "anthropic", key: opts.authToken },
+        credential: { type: "token", provider: "anthropic", token: opts.authToken },
       });
     } else if (opts.anthropicApiKey) {
       profileId = "anthropic:default";

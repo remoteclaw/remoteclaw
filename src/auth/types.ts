@@ -7,7 +7,20 @@ export type ApiKeyCredential = {
   metadata?: Record<string, string>;
 };
 
-export type AuthProfileCredential = ApiKeyCredential;
+export type TokenCredential = {
+  /**
+   * Static bearer-style token (often OAuth access token / PAT).
+   * Not refreshable by RemoteClaw.
+   */
+  type: "token";
+  provider: string;
+  token: string;
+  /** Optional expiry timestamp (ms since epoch). */
+  expires?: number;
+  email?: string;
+};
+
+export type AuthProfileCredential = ApiKeyCredential | TokenCredential;
 
 export type AuthProfileStore = {
   version: number;

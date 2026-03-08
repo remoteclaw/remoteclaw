@@ -11,12 +11,15 @@ export function upsertAuthProfile(params: {
   profileId: string;
   credential: AuthProfileCredential;
 }): void {
-  const credential = {
-    ...params.credential,
-    ...(typeof params.credential.key === "string"
-      ? { key: normalizeSecretInput(params.credential.key) }
-      : {}),
-  };
+  const credential =
+    params.credential.type === "token"
+      ? { ...params.credential, token: normalizeSecretInput(params.credential.token) ?? "" }
+      : {
+          ...params.credential,
+          ...(typeof params.credential.key === "string"
+            ? { key: normalizeSecretInput(params.credential.key) }
+            : {}),
+        };
   const store = ensureAuthProfileStore();
   store.profiles[params.profileId] = credential;
   saveAuthProfileStore(store);

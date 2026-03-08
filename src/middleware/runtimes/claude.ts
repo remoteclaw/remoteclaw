@@ -88,6 +88,9 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
 
     if (parsed.type === "result") {
       this.storeResultData(parsed);
+      if (parsed.is_error === true && typeof parsed.result === "string" && parsed.result) {
+        return { type: "error", message: parsed.result, code: "CLI_ERROR" };
+      }
       return null;
     }
 

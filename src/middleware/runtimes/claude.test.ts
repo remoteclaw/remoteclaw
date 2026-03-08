@@ -276,8 +276,29 @@ describe("ClaudeCliRuntime", () => {
       expect(event).toBeNull();
     });
 
-    it("stores result line data and returns null", () => {
+    it("stores result line data and returns null for successful results", () => {
       const event = runtime.testExtractEvent(resultLine());
+      expect(event).toBeNull();
+    });
+
+    it("emits error event when result line has is_error=true", () => {
+      const event = runtime.testExtractEvent(
+        resultLine({ is_error: true, result: "Not logged in · Please run /login" }),
+      );
+      expect(event).toEqual({
+        type: "error",
+        message: "Not logged in · Please run /login",
+        code: "CLI_ERROR",
+      });
+    });
+
+    it("returns null for is_error result with no result text", () => {
+      const event = runtime.testExtractEvent(resultLine({ is_error: true, result: "" }));
+      expect(event).toBeNull();
+    });
+
+    it("returns null for is_error result with non-string result", () => {
+      const event = runtime.testExtractEvent(resultLine({ is_error: true, result: 42 }));
       expect(event).toBeNull();
     });
 

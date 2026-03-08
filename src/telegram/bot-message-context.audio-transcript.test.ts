@@ -3,7 +3,7 @@ import { buildTelegramMessageContextForTest } from "./bot-message-context.test-h
 
 const transcribeFirstAudioMock = vi.fn();
 
-vi.mock("../media-understanding/audio-preflight.js", () => ({
+vi.mock("../stt/preflight.js", () => ({
   transcribeFirstAudio: (...args: unknown[]) => transcribeFirstAudioMock(...args),
 }));
 

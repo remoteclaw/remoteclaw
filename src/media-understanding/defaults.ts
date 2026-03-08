@@ -27,20 +27,7 @@ export const DEFAULT_PROMPT: Record<MediaUnderstandingCapability, string> = {
   video: "Describe the video.",
 };
 export const DEFAULT_VIDEO_MAX_BASE64_BYTES = 70 * MB;
-export const DEFAULT_AUDIO_MODELS: Record<string, string> = {
-  groq: "whisper-large-v3-turbo",
-  openai: "gpt-4o-mini-transcribe",
-  deepgram: "nova-3",
-  mistral: "voxtral-mini-latest",
-};
-
-export const AUTO_AUDIO_KEY_PROVIDERS = [
-  "openai",
-  "groq",
-  "deepgram",
-  "google",
-  "mistral",
-] as const;
+export { AUTO_AUDIO_KEY_PROVIDERS, DEFAULT_AUDIO_MODELS } from "../stt/defaults.js";
 export const AUTO_VIDEO_KEY_PROVIDERS = ["google", "moonshot"] as const;
 export const CLI_OUTPUT_MAX_BUFFER = 5 * MB;
 export const DEFAULT_MEDIA_CONCURRENCY = 2;

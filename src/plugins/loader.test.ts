@@ -2,9 +2,27 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { withEnv } from "../test-utils/env.js";
-import { loadRemoteClawPlugins } from "./loader.js";
+async function importFreshPluginTestModules() {
+  vi.resetModules();
+  vi.unmock("./hook-runner-global.js");
+  vi.unmock("./hooks.js");
+  vi.unmock("./loader.js");
+  vi.unmock("jiti");
+  const [loader, hookRunnerGlobal, hooks] = await Promise.all([
+    import("./loader.js"),
+    import("./hook-runner-global.js"),
+    import("./hooks.js"),
+  ]);
+  return {
+    ...loader,
+    ...hookRunnerGlobal,
+    ...hooks,
+  };
+}
+
+const { loadRemoteClawPlugins } = await importFreshPluginTestModules();
 
 type TempPlugin = { dir: string; file: string; id: string };
 

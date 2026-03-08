@@ -25,9 +25,9 @@ The prompt is intentionally compact and uses fixed sections:
 - **Workspace Files (injected)**: indicates workspace context files are included below.
 - **Sandbox** (when enabled): indicates sandboxed runtime, sandbox paths, and whether elevated exec is available.
 - **Current Date & Time**: user-local time, timezone, and time format.
-- **Reply Tags**: optional reply tag syntax for supported providers.
+- **Reply Tags**: optional reply tag syntax for supported channels.
 - **Heartbeats**: heartbeat prompt and ack behavior.
-- **Runtime**: host, OS, node, model, repo root (when detected), thinking level (one line).
+- **Runtime**: host, OS, node, runtime name, repo root (when detected), thinking level (one line).
 - **Reasoning**: current visibility level + /reasoning toggle hint.
 
 Safety guardrails in the system prompt are advisory. They guide model behavior but do not enforce policy. Use tool policy, exec approvals, sandboxing, and channel allowlists for hard enforcement; operators can disable these by design.
@@ -39,8 +39,8 @@ RemoteClaw can render smaller system prompts for sub-agents. The runtime sets a
 
 - `full` (default): includes all sections above.
 - `minimal`: used for sub-agents; omits **Skills**, **Memory Recall**, **RemoteClaw
-  Self-Update**, **Model Aliases**, **User Identity**, **Reply Tags**,
-  **Messaging**, **Silent Replies**, and **Heartbeats**. Tooling, **Safety**,
+  Self-Update**, **User Identity**, **Reply Tags**,
+  **Messaging**, **Silent Replies**, and **Heartbeats**. **Safety**,
   Workspace, Sandbox, Current Date & Time (when known), Runtime, and injected
   context stay available.
 - `none`: returns only the base identity line.

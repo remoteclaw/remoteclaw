@@ -38,8 +38,9 @@ See [Agent workspace](/concepts/agent-workspace) for the full layout.
 
 ## Built-in tools
 
-Core tools (read/exec/edit/write and related system tools) are always available,
-subject to tool policy.
+The CLI agent brings its own tool set (e.g., Claude Code's built-in
+read/write/bash tools). RemoteClaw exposes additional MCP tools (messaging,
+sessions, cron, canvas, etc.) via the gateway.
 
 ## Skills
 
@@ -49,7 +50,7 @@ RemoteClaw loads skills from three locations (workspace wins on name conflict):
 - Managed/local: `~/.remoteclaw/skills`
 - Workspace: `<workspace>/skills`
 
-Skills can be gated by config/env (see `skills` in [Gateway configuration](/gateway/configuration)).
+Skills loading from each location can be enabled or disabled via config (see `skills` in [Gateway configuration](/gateway/configuration)).
 
 ## Sessions
 
@@ -58,7 +59,7 @@ Session transcripts are stored as JSONL at:
 - `~/.remoteclaw/agents/<agentId>/sessions/<SessionId>.jsonl`
 
 The session ID is stable and chosen by RemoteClaw.
-Legacy Pi/Tau session folders are **not** read.
+Session folders from prior OpenClaw versions (Pi/Tau) are **not** read.
 
 ## Steering while streaming
 
@@ -83,14 +84,6 @@ explicit `*.blockStreaming: true` to enable block replies.
 Verbose tool summaries are emitted at tool start (no debounce); Control UI
 streams tool output via agent events when available.
 More details: [Streaming + chunking](/concepts/streaming).
-
-## Model refs
-
-Model refs in config (for example `agents.defaults.model` and `agents.defaults.models`) are parsed by splitting on the **first** `/`.
-
-- Use `provider/model` when configuring models.
-- If the model ID itself contains `/` (OpenRouter-style), include the provider prefix (example: `openrouter/moonshotai/kimi-k2`).
-- If you omit the provider, RemoteClaw treats the input as an alias or a model for the **default provider** (only works when there is no `/` in the model ID).
 
 ## Configuration (minimal)
 

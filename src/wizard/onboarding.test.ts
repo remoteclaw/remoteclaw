@@ -319,6 +319,137 @@ describe("runOnboardingWizard", () => {
     expect(hasWorkspaceInList).toBe(true);
   });
 
+  it("sets agents.defaults.auth to false when user skips credential", async () => {
+    writeConfigFile.mockClear();
+
+    const workspaceDir = await makeCaseDir("workspace-");
+
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      if (params.message === "Authentication for Claude Code") {
+        return "skip";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const prompter = buildWizardPrompter({ select });
+    const runtime = createRuntime({ throwsOnExit: true });
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        runtime: "claude",
+        workspace: workspaceDir,
+        installDaemon: false,
+        skipProviders: true,
+        skipSkills: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    type WrittenConfig = {
+      agents?: { defaults?: { auth?: false | string | string[] } };
+    };
+    const writtenConfigs = writeConfigFile.mock.calls.map(
+      (call) => (call as unknown[])[0] as WrittenConfig,
+    );
+    const hasAuthFalse = writtenConfigs.some((cfg) => cfg.agents?.defaults?.auth === false);
+    expect(hasAuthFalse).toBe(true);
+  });
+
+  it("sets agents.defaults.auth to profile id when user provides API key", async () => {
+    writeConfigFile.mockClear();
+    upsertAuthProfile.mockClear();
+
+    const workspaceDir = await makeCaseDir("workspace-");
+
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      if (params.message === "Authentication for Claude Code") {
+        return "api-key";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const text: WizardPrompter["text"] = vi.fn(async () => "sk-ant-test-key");
+    const prompter = buildWizardPrompter({ select, text });
+    const runtime = createRuntime({ throwsOnExit: true });
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        runtime: "claude",
+        workspace: workspaceDir,
+        installDaemon: false,
+        skipProviders: true,
+        skipSkills: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    type WrittenConfig = {
+      agents?: { defaults?: { auth?: false | string | string[] } };
+    };
+    const writtenConfigs = writeConfigFile.mock.calls.map(
+      (call) => (call as unknown[])[0] as WrittenConfig,
+    );
+    const hasAuthProfile = writtenConfigs.some(
+      (cfg) => cfg.agents?.defaults?.auth === "anthropic:default",
+    );
+    expect(hasAuthProfile).toBe(true);
+    expect(upsertAuthProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ profileId: "anthropic:default" }),
+    );
+  });
+
+  it("sets agents.defaults.auth to claude:oauth-token when user provides auth token", async () => {
+    writeConfigFile.mockClear();
+    upsertAuthProfile.mockClear();
+
+    const workspaceDir = await makeCaseDir("workspace-");
+
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      if (params.message === "Authentication for Claude Code") {
+        return "auth-token";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const text: WizardPrompter["text"] = vi.fn(async () => "my-oauth-token");
+    const prompter = buildWizardPrompter({ select, text });
+    const runtime = createRuntime({ throwsOnExit: true });
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        runtime: "claude",
+        workspace: workspaceDir,
+        installDaemon: false,
+        skipProviders: true,
+        skipSkills: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    type WrittenConfig = {
+      agents?: { defaults?: { auth?: false | string | string[] } };
+    };
+    const writtenConfigs = writeConfigFile.mock.calls.map(
+      (call) => (call as unknown[])[0] as WrittenConfig,
+    );
+    const hasAuthProfile = writtenConfigs.some(
+      (cfg) => cfg.agents?.defaults?.auth === "claude:oauth-token",
+    );
+    expect(hasAuthProfile).toBe(true);
+  });
+
   async function runTuiHatchTest(params: {
     writeBootstrapFile: boolean;
     expectedMessage: string | undefined;

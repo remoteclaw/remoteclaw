@@ -56,47 +56,71 @@ async function applyNonInteractiveRuntimeAuth(params: {
     },
   };
 
+  /** Set `agents.defaults.auth` on the config being built. */
+  function setAuthDefault(auth: false | string): void {
+    config = {
+      ...config,
+      agents: {
+        ...config.agents,
+        defaults: {
+          ...config.agents?.defaults,
+          auth,
+        },
+      },
+    };
+  }
+
   const { upsertAuthProfile } = await import("../../auth/index.js");
+
+  let profileId: string | undefined;
 
   if (runtime === "claude") {
     if (opts.authToken) {
+      profileId = "claude:oauth-token";
       upsertAuthProfile({
-        profileId: "claude:oauth-token",
+        profileId,
         credential: { type: "api_key", provider: "anthropic", key: opts.authToken },
       });
     } else if (opts.anthropicApiKey) {
+      profileId = "anthropic:default";
       upsertAuthProfile({
-        profileId: "anthropic:default",
+        profileId,
         credential: { type: "api_key", provider: "anthropic", key: opts.anthropicApiKey },
       });
     }
   } else if (runtime === "gemini") {
     if (opts.geminiApiKey) {
+      profileId = "google:default";
       upsertAuthProfile({
-        profileId: "google:default",
+        profileId,
         credential: { type: "api_key", provider: "google", key: opts.geminiApiKey },
       });
     }
   } else if (runtime === "codex") {
     if (opts.codexApiKey) {
+      profileId = "codex:default";
       upsertAuthProfile({
-        profileId: "codex:default",
+        profileId,
         credential: { type: "api_key", provider: "codex", key: opts.codexApiKey },
       });
     }
   } else if (runtime === "opencode") {
     if (opts.anthropicApiKey) {
+      profileId = "anthropic:default";
       upsertAuthProfile({
-        profileId: "anthropic:default",
+        profileId,
         credential: { type: "api_key", provider: "anthropic", key: opts.anthropicApiKey },
       });
     } else if (opts.openaiApiKey) {
+      profileId = "openai:default";
       upsertAuthProfile({
-        profileId: "openai:default",
+        profileId,
         credential: { type: "api_key", provider: "openai", key: opts.openaiApiKey },
       });
     }
   }
+
+  setAuthDefault(profileId ?? false);
 
   return config;
 }

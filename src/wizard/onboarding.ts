@@ -22,22 +22,27 @@ import type { QuickstartGatewayDefaults, WizardFlow } from "./onboarding.types.j
 import { WizardCancelledError, type WizardPrompter } from "./prompts.js";
 
 // Skip guidance messages shown when user chooses "Skip" for credential.
+// Skipping sets `agents.defaults.auth: false` — the CLI handles its own authentication.
 const SKIP_GUIDANCE: Record<AgentRuntime, string> = {
   claude: [
+    "CLI handles its own authentication (auth: false).",
     "Make sure Claude Code can authenticate. Options: run `claude login`,",
     "set `ANTHROPIC_API_KEY`, or configure AWS Bedrock (`CLAUDE_CODE_USE_BEDROCK=1`)",
     "or Google Vertex AI (`CLAUDE_CODE_USE_VERTEX=1`).",
   ].join(" "),
   gemini: [
+    "CLI handles its own authentication (auth: false).",
     "Make sure Gemini CLI can authenticate. Options: run `gemini` and select",
     "'Login with Google', set `GEMINI_API_KEY`, or configure",
     "`gcloud auth application-default login` for Vertex AI.",
   ].join(" "),
   codex: [
+    "CLI handles its own authentication (auth: false).",
     "Make sure Codex CLI can authenticate. Options: run `codex login`,",
     "or set `CODEX_API_KEY` in your environment.",
   ].join(" "),
   opencode: [
+    "CLI handles its own authentication (auth: false).",
     "Make sure OpenCode can authenticate. Options: run `opencode` and use `/connect`,",
     "configure `opencode.json`, or set the appropriate provider env var",
     "(e.g., `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`).",
@@ -59,6 +64,20 @@ async function promptRuntimeCredential(params: {
   const { runtime, prompter, upsertAuthProfile, opts } = params;
   let config = params.config;
 
+  /** Set `agents.defaults.auth` on the config being built. */
+  function setAuthDefault(auth: false | string): void {
+    config = {
+      ...config,
+      agents: {
+        ...config.agents,
+        defaults: {
+          ...config.agents?.defaults,
+          auth,
+        },
+      },
+    };
+  }
+
   if (runtime === "claude") {
     const choice = await prompter.select({
       message: "Authentication for Claude Code",
@@ -76,7 +95,7 @@ async function promptRuntimeCredential(params: {
         {
           value: "skip",
           label: "Skip",
-          hint: "Claude CLI is already authorized",
+          hint: "CLI handles its own authentication",
         },
       ],
       initialValue: "skip",
@@ -91,6 +110,7 @@ async function promptRuntimeCredential(params: {
           profileId: "anthropic:default",
           credential: { type: "api_key", provider: "anthropic", key: key.trim() },
         });
+        setAuthDefault("anthropic:default");
       }
     } else if (choice === "auth-token") {
       const token =
@@ -100,9 +120,11 @@ async function promptRuntimeCredential(params: {
           profileId: "claude:oauth-token",
           credential: { type: "api_key", provider: "anthropic", key: token.trim() },
         });
+        setAuthDefault("claude:oauth-token");
       }
     } else {
       await prompter.note(SKIP_GUIDANCE.claude, "Authentication");
+      setAuthDefault(false);
     }
   } else if (runtime === "gemini") {
     const choice = await prompter.select({
@@ -112,7 +134,7 @@ async function promptRuntimeCredential(params: {
         {
           value: "skip",
           label: "Skip",
-          hint: "Already authorized",
+          hint: "CLI handles its own authentication",
         },
       ],
       initialValue: "skip",
@@ -126,9 +148,11 @@ async function promptRuntimeCredential(params: {
           profileId: "google:default",
           credential: { type: "api_key", provider: "google", key: key.trim() },
         });
+        setAuthDefault("google:default");
       }
     } else {
       await prompter.note(SKIP_GUIDANCE.gemini, "Authentication");
+      setAuthDefault(false);
     }
   } else if (runtime === "codex") {
     const choice = await prompter.select({
@@ -138,7 +162,7 @@ async function promptRuntimeCredential(params: {
         {
           value: "skip",
           label: "Skip",
-          hint: "Already authorized",
+          hint: "CLI handles its own authentication",
         },
       ],
       initialValue: "skip",
@@ -152,9 +176,11 @@ async function promptRuntimeCredential(params: {
           profileId: "codex:default",
           credential: { type: "api_key", provider: "codex", key: key.trim() },
         });
+        setAuthDefault("codex:default");
       }
     } else {
       await prompter.note(SKIP_GUIDANCE.codex, "Authentication");
+      setAuthDefault(false);
     }
   } else if (runtime === "opencode") {
     const choice = await prompter.select({
@@ -164,7 +190,7 @@ async function promptRuntimeCredential(params: {
         {
           value: "skip",
           label: "Skip",
-          hint: "Already authorized",
+          hint: "CLI handles its own authentication",
         },
       ],
       initialValue: "skip",
@@ -189,6 +215,7 @@ async function promptRuntimeCredential(params: {
             profileId: "anthropic:default",
             credential: { type: "api_key", provider: "anthropic", key: key.trim() },
           });
+          setAuthDefault("anthropic:default");
         }
       } else if (provider === "openai") {
         const key =
@@ -199,6 +226,7 @@ async function promptRuntimeCredential(params: {
             profileId: "openai:default",
             credential: { type: "api_key", provider: "openai", key: key.trim() },
           });
+          setAuthDefault("openai:default");
         }
       } else {
         const envVarName = await prompter.text({
@@ -210,18 +238,21 @@ async function promptRuntimeCredential(params: {
           initialValue: "",
         });
         if (envVarName.trim() && envVarValue.trim()) {
+          const profileId = `opencode:${envVarName.trim().toLowerCase()}`;
           upsertAuthProfile({
-            profileId: `opencode:${envVarName.trim().toLowerCase()}`,
+            profileId,
             credential: {
               type: "api_key",
               provider: "opencode",
               key: envVarValue.trim(),
             },
           });
+          setAuthDefault(profileId);
         }
       }
     } else {
       await prompter.note(SKIP_GUIDANCE.opencode, "Authentication");
+      setAuthDefault(false);
     }
   }
 

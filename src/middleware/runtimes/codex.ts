@@ -8,6 +8,7 @@ import type {
   AgentEvent,
   AgentExecuteParams,
   AgentTextEvent,
+  AgentThinkingEvent,
   AgentToolResultEvent,
   AgentToolUseEvent,
   AgentUsage,
@@ -155,6 +156,8 @@ export class CodexCliRuntime extends CLIRuntimeBase {
         // Reset delta tracking for new message item
         this.lastEmittedTextLength = 0;
         return null;
+      case "reasoning":
+        return null;
       default:
         return null;
     }
@@ -162,7 +165,19 @@ export class CodexCliRuntime extends CLIRuntimeBase {
 
   private handleItemUpdated(parsed: Record<string, unknown>): AgentEvent | null {
     const item = isObject(parsed.item) ? parsed.item : null;
-    if (!item || item.type !== "agent_message") {
+    if (!item) {
+      return null;
+    }
+
+    if (item.type === "reasoning") {
+      const text = this.extractReasoningText(item);
+      if (text) {
+        return { type: "thinking", text } satisfies AgentThinkingEvent;
+      }
+      return null;
+    }
+
+    if (item.type !== "agent_message") {
       return null;
     }
 
@@ -199,6 +214,13 @@ export class CodexCliRuntime extends CLIRuntimeBase {
             this.accumulatedText += delta;
             return { type: "text", text: delta } satisfies AgentTextEvent;
           }
+        }
+        return null;
+      }
+      case "reasoning": {
+        const text = this.extractReasoningText(item);
+        if (text) {
+          return { type: "thinking", text } satisfies AgentThinkingEvent;
         }
         return null;
       }
@@ -297,6 +319,28 @@ export class CodexCliRuntime extends CLIRuntimeBase {
       const textParts: string[] = [];
       for (const part of item.content) {
         if (isObject(part) && part.type === "output_text" && typeof part.text === "string") {
+          textParts.push(part.text);
+        }
+      }
+      if (textParts.length > 0) {
+        return textParts.join("");
+      }
+    }
+
+    // Fallback: direct text field
+    if (typeof item.text === "string") {
+      return item.text;
+    }
+
+    return undefined;
+  }
+
+  private extractReasoningText(item: Record<string, unknown>): string | undefined {
+    // Codex reasoning items carry text in a `summary` array of text parts
+    if (Array.isArray(item.summary)) {
+      const textParts: string[] = [];
+      for (const part of item.summary) {
+        if (isObject(part) && part.type === "summary_text" && typeof part.text === "string") {
           textParts.push(part.text);
         }
       }

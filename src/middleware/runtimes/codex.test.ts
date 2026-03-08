@@ -190,9 +190,39 @@ describe("CodexCliRuntime", () => {
       expect(event).toBeNull();
     });
 
-    it("skips item.started + reasoning", () => {
+    it("skips item.started + reasoning (no content yet)", () => {
       const event = runtime.testExtractEvent(itemEvent("item.started", "reasoning", { id: "r-1" }));
       expect(event).toBeNull();
+    });
+
+    it("maps item.completed + reasoning to AgentThinkingEvent", () => {
+      const event = runtime.testExtractEvent(
+        itemEvent("item.completed", "reasoning", {
+          id: "r-1",
+          summary: [{ type: "summary_text", text: "Let me reason..." }],
+        }),
+      );
+      expect(event).toEqual({ type: "thinking", text: "Let me reason..." });
+    });
+
+    it("maps item.completed + reasoning with text fallback to AgentThinkingEvent", () => {
+      const event = runtime.testExtractEvent(
+        itemEvent("item.completed", "reasoning", {
+          id: "r-2",
+          text: "Thinking through this...",
+        }),
+      );
+      expect(event).toEqual({ type: "thinking", text: "Thinking through this..." });
+    });
+
+    it("maps item.updated + reasoning to AgentThinkingEvent", () => {
+      const event = runtime.testExtractEvent(
+        itemEvent("item.updated", "reasoning", {
+          id: "r-3",
+          text: "Partial reasoning",
+        }),
+      );
+      expect(event).toEqual({ type: "thinking", text: "Partial reasoning" });
     });
 
     it("maps item.updated + agent_message to AgentTextEvent with delta", () => {

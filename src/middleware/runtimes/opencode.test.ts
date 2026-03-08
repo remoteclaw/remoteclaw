@@ -290,10 +290,22 @@ describe("OpenCodeCliRuntime", () => {
       expect(event).toBeNull();
     });
 
-    it("skips reasoning events", () => {
+    it("maps reasoning event to AgentThinkingEvent", () => {
       const event = runtime.testExtractEvent(
         openCodeEvent("reasoning", { content: "thinking..." }),
       );
+      expect(event).toEqual({ type: "thinking", text: "thinking..." });
+    });
+
+    it("maps reasoning event with text field to AgentThinkingEvent", () => {
+      const event = runtime.testExtractEvent(
+        openCodeEvent("reasoning", { part: { text: "reasoning text" } }),
+      );
+      expect(event).toEqual({ type: "thinking", text: "reasoning text" });
+    });
+
+    it("returns null for reasoning event with empty content", () => {
+      const event = runtime.testExtractEvent(openCodeEvent("reasoning", { content: "" }));
       expect(event).toBeNull();
     });
 

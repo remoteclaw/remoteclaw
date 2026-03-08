@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RuntimeEnv } from "../runtime.js";
 import {
+  clearWizardSection,
   detectOpenClawInstallation,
   discoverSourceAuthProfileIds,
   importCommand,
@@ -301,6 +302,46 @@ describe("stripUnrecognizedConfigKeys", () => {
   it("returns non-JSON content unchanged", () => {
     const input = "not valid json {{{";
     expect(stripUnrecognizedConfigKeys(input)).toBe(input);
+  });
+});
+
+describe("clearWizardSection", () => {
+  it("removes wizard section from config", () => {
+    const input = JSON.stringify({
+      gateway: { port: 18789 },
+      wizard: {
+        lastRunAt: "2025-01-01T00:00:00Z",
+        lastRunVersion: "2026.2.6-3",
+        lastRunCommit: "abc123",
+        lastRunCommand: "openclaw onboard",
+        lastRunMode: "full",
+      },
+    });
+    const result = JSON.parse(clearWizardSection(input));
+    expect(result.wizard).toBeUndefined();
+    expect(result.gateway.port).toBe(18789);
+  });
+
+  it("returns unchanged when no wizard section exists", () => {
+    const input = JSON.stringify({
+      gateway: { port: 18789 },
+    });
+    expect(clearWizardSection(input)).toBe(input);
+  });
+
+  it("returns non-JSON content unchanged", () => {
+    const input = "not valid json {{{";
+    expect(clearWizardSection(input)).toBe(input);
+  });
+
+  it("handles empty wizard section", () => {
+    const input = JSON.stringify({
+      gateway: { port: 18789 },
+      wizard: {},
+    });
+    const result = JSON.parse(clearWizardSection(input));
+    expect(result.wizard).toBeUndefined();
+    expect(result.gateway.port).toBe(18789);
   });
 });
 
@@ -761,6 +802,31 @@ describe("importCommand", () => {
     const written = await fsp.readFile(path.join(targetDir, "remoteclaw.json"), "utf-8");
     const parsed = JSON.parse(written);
     expect(parsed.agents.defaults.auth).toBe("anthropic:default");
+  });
+
+  it("clears wizard section from main config during import", async () => {
+    const configContent = JSON.stringify({
+      gateway: { port: 18789 },
+      agents: { list: [{ id: "main", workspace: "~/ws" }] },
+      wizard: {
+        lastRunAt: "2025-01-01T00:00:00Z",
+        lastRunVersion: "2026.2.6-3",
+        lastRunCommit: "abc123",
+        lastRunCommand: "openclaw onboard",
+        lastRunMode: "full",
+      },
+    });
+    await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
+
+    const pathsMod = await import("../config/paths.js");
+    vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
+
+    await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
+
+    const written = await fsp.readFile(path.join(targetDir, "remoteclaw.json"), "utf-8");
+    const parsed = JSON.parse(written);
+    expect(parsed.wizard).toBeUndefined();
+    expect(parsed.gateway.port).toBe(18789);
   });
 
   it("does not set auth when no auth profiles exist in source", async () => {

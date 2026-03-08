@@ -9,6 +9,7 @@ import {
 } from "../../agents/agent-helpers.js";
 import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { resolveUserTimezone } from "../../agents/date-time.js";
+import { resolveAuthEnv } from "../../auth/env-injection.js";
 import { resolveGatewayPort } from "../../config/paths.js";
 import {
   resolveSessionTranscriptPath,
@@ -281,6 +282,17 @@ export async function runAgentTurnWithFallback(params: {
         });
 
         const cfg = params.followupRun.run.config;
+        const baseRuntimeEnv = resolveCliRuntimeEnv(cfg);
+
+        // Resolve auth profile → env vars for credential injection.
+        // Auth profile takes priority over runtimeEnv (highest precedence).
+        const authEnv = await resolveAuthEnv({
+          cfg,
+          agentId: params.followupRun.run.agentId,
+          agentDir: params.followupRun.run.agentDir,
+        });
+        const runtimeEnv = authEnv ? { ...baseRuntimeEnv, ...authEnv } : baseRuntimeEnv;
+
         const bridge = new ChannelBridge({
           provider: resolveCliRuntimeProvider(cfg),
           sessionMap,
@@ -288,7 +300,7 @@ export async function runAgentTurnWithFallback(params: {
           gatewayToken: resolveGatewayTokenFromConfig(cfg),
           workspaceDir: params.followupRun.run.workspaceDir,
           runtimeArgs: resolveCliRuntimeArgs(cfg),
-          runtimeEnv: resolveCliRuntimeEnv(cfg),
+          runtimeEnv,
         });
 
         const messageToolHints = resolveChannelMessageToolHints({

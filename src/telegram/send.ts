@@ -423,6 +423,24 @@ function createRequestWithChatNotFound(params: {
     });
 }
 
+function createTelegramNonIdempotentRequestWithDiag(params: {
+  cfg: ReturnType<typeof loadConfig>;
+  account: ResolvedTelegramAccount;
+  retry?: RetryConfig;
+  verbose?: boolean;
+  useApiErrorLogging?: boolean;
+}): TelegramRequestWithDiag {
+  return createTelegramRequestWithDiag({
+    cfg: params.cfg,
+    account: params.account,
+    retry: params.retry,
+    verbose: params.verbose,
+    useApiErrorLogging: params.useApiErrorLogging,
+    shouldRetry: (err) => isSafeToRetrySendError(err),
+    strictShouldRetry: true,
+  });
+}
+
 export function buildInlineKeyboard(
   buttons?: TelegramSendOpts["buttons"],
 ): InlineKeyboardMarkup | undefined {
@@ -476,7 +494,7 @@ export async function sendMessageTelegram(
     quoteText: opts.quoteText,
   });
   const hasThreadParams = Object.keys(threadParams).length > 0;
-  const requestWithDiag = createTelegramRequestWithDiag({
+  const requestWithDiag = createTelegramNonIdempotentRequestWithDiag({
     cfg,
     account,
     retry: opts.retry,
@@ -1087,7 +1105,7 @@ export async function sendPollTelegram(
   // Build poll options as simple strings (Grammy accepts string[] or InputPollOption[])
   const pollOptions = normalizedPoll.options;
 
-  const requestWithDiag = createTelegramRequestWithDiag({
+  const requestWithDiag = createTelegramNonIdempotentRequestWithDiag({
     cfg,
     account,
     retry: opts.retry,
@@ -1209,21 +1227,13 @@ export async function createForumTopicTelegram(
     verbose: opts.verbose,
   });
 
-  const request = createTelegramRetryRunner({
+  const requestWithDiag = createTelegramNonIdempotentRequestWithDiag({
+    cfg,
+    account,
     retry: opts.retry,
-    configRetry: account.config.retry,
     verbose: opts.verbose,
     shouldRetry: (err) => isRecoverableTelegramNetworkError(err, { context: "send" }),
   });
-  const logHttpError = createTelegramHttpLogger(cfg);
-  const requestWithDiag = <T>(fn: () => Promise<T>, label?: string) =>
-    withTelegramApiErrorLogging({
-      operation: label ?? "request",
-      fn: () => request(fn, label),
-    }).catch((err) => {
-      logHttpError(label ?? "request", err);
-      throw err;
-    });
 
   const extra: Record<string, unknown> = {};
   if (opts.iconColor != null) {

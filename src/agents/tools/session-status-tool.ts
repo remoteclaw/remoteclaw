@@ -252,9 +252,6 @@ export function createSessionStatusTool(opts?: {
         if (overrideSelection.isDefault) {
           delete nextEntry.providerOverride;
           delete nextEntry.modelOverride;
-          // Reset auth profile override when returning to defaults.
-          delete nextEntry.authProfileOverride;
-          delete nextEntry.authProfileOverrideSource;
         } else {
           nextEntry.providerOverride = overrideSelection.provider;
           nextEntry.modelOverride = overrideSelection.model;
@@ -345,7 +342,6 @@ export function createSessionStatusTool(opts?: {
         sessionKey: resolved.key,
         sessionStorePath: storePath,
         groupActivation,
-        modelAuth: undefined,
         usageLine,
         timeLine,
         queue: {

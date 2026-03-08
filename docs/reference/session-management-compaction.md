@@ -147,7 +147,6 @@ Key fields (not exhaustive):
 - Model selection (per-session overrides for provider routing and CLI runtime flags):
   - `modelOverride`: model to pass to the CLI runtime (e.g. `--model` flag)
   - `providerOverride`: which provider to route to (e.g. `anthropic`, `openai`)
-  - `authProfileOverride`: which auth profile to use for the selected provider
 - Token counters (best-effort / provider-dependent):
   - `inputTokens`, `outputTokens`, `totalTokens`, `contextTokens`
 

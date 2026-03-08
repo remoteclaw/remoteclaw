@@ -173,7 +173,6 @@ describe("sessions", () => {
             responseUsage: "on",
             queueDebounceMs: 1234,
             elevatedLevel: "on",
-            authProfileOverride: "auth-1",
           },
         },
         null,
@@ -203,7 +202,6 @@ describe("sessions", () => {
     expect(store[mainSessionKey]?.responseUsage).toBe("on");
     expect(store[mainSessionKey]?.queueDebounceMs).toBe(1234);
     expect(store[mainSessionKey]?.elevatedLevel).toBe("on");
-    expect(store[mainSessionKey]?.authProfileOverride).toBe("auth-1");
   });
 
   it("updateLastRoute prefers explicit deliveryContext", async () => {

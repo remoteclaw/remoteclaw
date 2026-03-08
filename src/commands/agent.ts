@@ -8,8 +8,6 @@ import { getCliSessionId } from "../agents/cli-session.js";
 // Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { normalizeModelRef } from "../agents/provider-utils.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
-import { ensureAuthProfileStore } from "../auth/index.js";
-import { clearSessionAuthProfileOverride } from "../auth/session-override.js";
 import { normalizeVerboseLevel, type VerboseLevel } from "../auto-reply/thinking.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { type CliDeps, createDefaultDeps } from "../cli/deps.js";
@@ -250,25 +248,6 @@ export async function agentCommand(
       provider = normalizedStored.provider;
       model = normalizedStored.model;
     }
-    if (sessionEntry) {
-      const authProfileId = sessionEntry.authProfileOverride;
-      if (authProfileId) {
-        const entry = sessionEntry;
-        const store = ensureAuthProfileStore();
-        const profile = store.profiles[authProfileId];
-        if (!profile || profile.provider !== provider) {
-          if (sessionStore && sessionKey) {
-            await clearSessionAuthProfileOverride({
-              sessionEntry: entry,
-              sessionStore,
-              sessionKey,
-              storePath,
-            });
-          }
-        }
-      }
-    }
-
     const sessionPathOpts = resolveSessionFilePathOptions({
       agentId: sessionAgentId,
       storePath,

@@ -11,12 +11,8 @@ vi.mock("../../agents/agent-scope.js", () => ({
     hoisted.resolveRunModelFallbacksOverrideMock(...args),
 }));
 
-const {
-  buildEmbeddedRunBaseParams,
-  buildEmbeddedRunContexts,
-  resolveModelFallbackOptions,
-  resolveProviderScopedAuthProfile,
-} = await import("./agent-runner-utils.js");
+const { buildEmbeddedRunBaseParams, buildEmbeddedRunContexts, resolveModelFallbackOptions } =
+  await import("./agent-runner-utils.js");
 
 function makeRun(overrides: Partial<FollowupRun["run"]> = {}): FollowupRun["run"] {
   return {
@@ -78,21 +74,14 @@ describe("agent-runner-utils", () => {
     expect(resolved.fallbacksOverride).toEqual(["fallback-model"]);
   });
 
-  it("builds embedded run base params with auth profile and run metadata", () => {
+  it("builds embedded run base params with run metadata", () => {
     const run = makeRun({ enforceFinalTag: true });
-    const authProfile = resolveProviderScopedAuthProfile({
-      provider: "openai",
-      primaryProvider: "openai",
-      authProfileId: "profile-openai",
-      authProfileIdSource: "user",
-    });
 
     const resolved = buildEmbeddedRunBaseParams({
       run,
       provider: "openai",
       model: "gpt-4.1-mini",
       runId: "run-1",
-      authProfile,
     });
 
     expect(resolved).toMatchObject({
@@ -104,8 +93,6 @@ describe("agent-runner-utils", () => {
       enforceFinalTag: true,
       provider: "openai",
       model: "gpt-4.1-mini",
-      authProfileId: "profile-openai",
-      authProfileIdSource: "user",
       verboseLevel: run.verboseLevel,
       execOverrides: run.execOverrides,
       bashElevated: run.bashElevated,
@@ -114,11 +101,8 @@ describe("agent-runner-utils", () => {
     });
   });
 
-  it("builds embedded contexts and scopes auth profile by provider", () => {
-    const run = makeRun({
-      authProfileId: "profile-openai",
-      authProfileIdSource: "auto",
-    });
+  it("builds embedded contexts from run and session context", () => {
+    const run = makeRun();
 
     const resolved = buildEmbeddedRunContexts({
       run,
@@ -131,10 +115,6 @@ describe("agent-runner-utils", () => {
       provider: "anthropic",
     });
 
-    expect(resolved.authProfile).toEqual({
-      authProfileId: undefined,
-      authProfileIdSource: undefined,
-    });
     expect(resolved.embeddedContext).toMatchObject({
       sessionId: run.sessionId,
       sessionKey: run.sessionKey,

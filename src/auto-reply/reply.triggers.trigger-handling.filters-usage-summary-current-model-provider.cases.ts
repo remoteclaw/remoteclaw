@@ -1,8 +1,7 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { normalizeTestText } from "../../test/helpers/normalize-text.js";
-import { resolveSessionKey } from "../config/sessions.js";
 import {
   getProviderUsageMocks,
   getRunAgentMock,
@@ -149,74 +148,6 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
           expect(pickFirstStoreEntry<{ responseUsage?: string }>(finalStore)?.responseUsage).toBe(
             "tokens",
           );
-          expect(runAgentMock).not.toHaveBeenCalled();
-        }
-
-        {
-          runAgentMock.mockClear();
-          const cfg = makeCfg(home);
-          cfg.session = { ...cfg.session, store: join(home, "auth-profile-status.sessions.json") };
-          const stateDir = join(home, ".remoteclaw");
-          await mkdir(stateDir, { recursive: true });
-          await writeFile(
-            join(stateDir, "auth-profiles.json"),
-            JSON.stringify(
-              {
-                version: 1,
-                profiles: {
-                  "anthropic:work": {
-                    type: "api_key",
-                    provider: "anthropic",
-                    key: "sk-test-1234567890abcdef",
-                  },
-                },
-                lastGood: { anthropic: "anthropic:work" },
-              },
-              null,
-              2,
-            ),
-          );
-
-          const sessionKey = resolveSessionKey("per-sender", {
-            From: "+1002",
-            To: "+2000",
-            Provider: "whatsapp",
-          } as Parameters<typeof resolveSessionKey>[1]);
-          await writeFile(
-            requireSessionStorePath(cfg),
-            JSON.stringify(
-              {
-                [sessionKey]: {
-                  sessionId: "session-auth",
-                  updatedAt: Date.now(),
-                  authProfileOverride: "anthropic:work",
-                },
-              },
-              null,
-              2,
-            ),
-          );
-
-          const res = await getReplyFromConfig(
-            {
-              Body: "/status",
-              From: "+1002",
-              To: "+2000",
-              Provider: "whatsapp",
-              SenderE164: "+1002",
-              CommandAuthorized: true,
-            },
-            {},
-            cfg,
-          );
-          const text = Array.isArray(res) ? res[0]?.text : res?.text;
-          expect(text).toContain("api-key");
-          expect(text).toMatch(/\u2026|\.{3}/);
-          expect(text).toContain("sk-tes");
-          expect(text).toContain("abcdef");
-          expect(text).not.toContain("1234567890abcdef");
-          expect(text).toContain("(anthropic:work)");
-          expect(text).not.toContain("mixed");
           expect(runAgentMock).not.toHaveBeenCalled();
         }
       });

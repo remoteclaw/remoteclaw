@@ -49,14 +49,13 @@ describe("buildStatusMessage", () => {
 
       resolvedVerbose: "off",
       queue: { mode: "collect", depth: 0 },
-      modelAuth: "api-key",
+
       now: 10 * 60_000, // 10 minutes later
     });
     const normalized = normalizeTestText(text);
 
     expect(normalized).toContain("RemoteClaw");
     expect(normalized).toContain("Model: anthropic/pi:opus");
-    expect(normalized).toContain("api-key");
     expect(normalized).toContain("Tokens: 1.2k in / 800 out");
     // Cost assertion removed: resolveModelCostConfig is now a no-op
     expect(normalized).toContain("Context: 16k/32k (50%)");
@@ -221,8 +220,6 @@ describe("buildStatusMessage", () => {
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
       queue: { mode: "collect", depth: 0 },
-      modelAuth: "api-key",
-      activeModelAuth: "api-key di_123…abc (deepinfra:default)",
     });
 
     const normalized = normalizeTestText(text);
@@ -231,7 +228,6 @@ describe("buildStatusMessage", () => {
     expect(normalized).toContain("(rate limit)");
     expect(normalized).not.toContain(" - Reason:");
     expect(normalized).not.toContain("Active:");
-    expect(normalized).toContain("di_123...abc");
   });
 
   it("omits active fallback details when runtime drift does not match fallback state", async () => {
@@ -253,8 +249,6 @@ describe("buildStatusMessage", () => {
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
       queue: { mode: "collect", depth: 0 },
-      modelAuth: "api-key",
-      activeModelAuth: "api-key di_123…abc (deepinfra:default)",
     });
 
     const normalized = normalizeTestText(text);
@@ -279,7 +273,6 @@ describe("buildStatusMessage", () => {
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
       queue: { mode: "collect", depth: 0 },
-      modelAuth: "api-key",
     });
 
     const normalized = normalizeTestText(text);
@@ -297,7 +290,6 @@ describe("buildStatusMessage", () => {
       },
       sessionScope: "per-sender",
       queue: { mode: "collect", depth: 0 },
-      modelAuth: "api-key",
     });
 
     expect(normalizeTestText(text)).toContain("Model: google-antigravity/claude-sonnet-4-5");
@@ -308,7 +300,6 @@ describe("buildStatusMessage", () => {
       agent: {},
       sessionScope: "per-sender",
       queue: { mode: "collect", depth: 0 },
-      modelAuth: "api-key",
     });
 
     const normalized = normalizeTestText(text);
@@ -329,7 +320,6 @@ describe("buildStatusMessage", () => {
       sessionKey: "agent:main:whatsapp:group:123@g.us",
       sessionScope: "per-sender",
       queue: { mode: "collect", depth: 0 },
-      modelAuth: "api-key",
     });
 
     expect(text).toContain("Activation: always");
@@ -349,7 +339,6 @@ describe("buildStatusMessage", () => {
         dropPolicy: "old",
         showDetails: true,
       },
-      modelAuth: "api-key",
     });
 
     expect(text).toContain("Queue: collect (depth 3 · debounce 2s · cap 5 · drop old)");
@@ -363,7 +352,6 @@ describe("buildStatusMessage", () => {
       sessionScope: "per-sender",
       queue: { mode: "collect", depth: 0 },
       usageLine: "📊 Usage: Claude 80% left (5h)",
-      modelAuth: "api-key",
     });
 
     const lines = normalizeTestText(text).split("\n");
@@ -380,7 +368,6 @@ describe("buildStatusMessage", () => {
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
       queue: { mode: "collect", depth: 0 },
-      modelAuth: "oauth",
     });
 
     expect(text).not.toContain("💵 Cost:");
@@ -458,7 +445,6 @@ describe("buildStatusMessage", () => {
       sessionScope: "per-sender",
       queue: { mode: "collect", depth: 0 },
       includeTranscriptUsage: true,
-      modelAuth: "api-key",
     });
   }
 
@@ -537,7 +523,6 @@ describe("buildStatusMessage", () => {
           sessionScope: "per-sender",
           queue: { mode: "collect", depth: 0 },
           includeTranscriptUsage: true,
-          modelAuth: "api-key",
         });
 
         expect(normalizeTestText(text)).toContain("Context: 1.2k/32k");

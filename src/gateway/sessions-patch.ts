@@ -244,10 +244,8 @@ export async function applySessionsPatchToStore(params: {
         next.modelOverride = parsed.model;
       }
     }
-    // Clear auth profile and stale fallback notice when model overrides change.
+    // Clear stale fallback notice when model overrides change.
     if (next.providerOverride !== prevProvider || next.modelOverride !== prevModel) {
-      delete next.authProfileOverride;
-      delete next.authProfileOverrideSource;
       delete next.fallbackNoticeSelectedModel;
       delete next.fallbackNoticeActiveModel;
       delete next.fallbackNoticeReason;

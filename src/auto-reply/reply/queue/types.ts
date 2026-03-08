@@ -59,8 +59,6 @@ export type FollowupRun = {
     config: RemoteClawConfig;
     provider: string;
     model: string;
-    authProfileId?: string;
-    authProfileIdSource?: "auto" | "user";
     verboseLevel?: VerboseLevel;
     elevatedLevel?: ElevatedLevel;
     // Exec tool infrastructure removed (#70) — inline type for remaining directive plumbing

@@ -13,7 +13,6 @@ import { isCliProvider, normalizeModelRef, parseModelRef } from "../../agents/pr
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
-import { resolveSessionAuthProfileOverride } from "../../auth/session-override.js";
 import { normalizeVerboseLevel } from "../../auto-reply/thinking.js";
 import type { CliDeps } from "../../cli/outbound-send-deps.js";
 import type { RemoteClawConfig } from "../../config/config.js";
@@ -335,20 +334,6 @@ export async function runCronIsolatedAgentTurn(params: {
   // Persist systemSent before the run, mirroring the inbound auto-reply behavior.
   cronSession.sessionEntry.systemSent = true;
   await persistSessionEntry();
-
-  // Resolve auth profile for the session, mirroring the inbound auto-reply path
-  // (get-reply-run.ts). Without this, isolated cron sessions fall back to env-var
-  // auth which may not match the configured auth-profiles, causing 401 errors.
-  // Resolve auth profile for the session (side effect: updates cronSession.sessionEntry).
-  await resolveSessionAuthProfileOverride({
-    cfg: cfgWithAgentDefaults,
-    provider,
-    sessionEntry: cronSession.sessionEntry,
-    sessionStore: cronSession.store,
-    sessionKey: agentSessionKey,
-    storePath: cronSession.storePath,
-    isNewSession: cronSession.isNewSession,
-  });
 
   let runResult: AgentDeliveryResult;
   const fallbackProvider = provider;

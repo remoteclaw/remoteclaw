@@ -220,7 +220,6 @@ describe("session_status tool", () => {
         updatedAt: 10,
         providerOverride: "anthropic",
         modelOverride: "claude-sonnet-4-5",
-        authProfileOverride: "p1",
       },
     });
 
@@ -235,6 +234,5 @@ describe("session_status tool", () => {
     const saved = savedStore.main as Record<string, unknown>;
     expect(saved.providerOverride).toBeUndefined();
     expect(saved.modelOverride).toBeUndefined();
-    expect(saved.authProfileOverride).toBeUndefined();
   });
 });

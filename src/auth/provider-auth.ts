@@ -12,7 +12,6 @@ import { join } from "node:path";
 import { normalizeProviderId } from "../agents/provider-utils.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import type { SessionEntry } from "../config/sessions.js";
 import { getShellEnvAppliedKeys } from "../infra/shell-env.js";
 import {
   normalizeOptionalSecretInput,
@@ -23,7 +22,6 @@ import {
   ensureAuthProfileStore,
   listProfilesForProvider,
   resolveApiKeyForProfile,
-  resolveAuthProfileDisplayLabel,
   resolveAuthStorePathForDisplay,
 } from "./index.js";
 
@@ -332,56 +330,4 @@ export function requireApiKey(auth: ResolvedProviderAuth, provider: string): str
     return key;
   }
   throw new Error(`No API key resolved for provider "${provider}" (auth mode: ${auth.mode}).`);
-}
-
-function formatApiKeySnippet(apiKey: string): string {
-  const compact = apiKey.replace(/\s+/g, "");
-  if (!compact) {
-    return "unknown";
-  }
-  const edge = compact.length >= 12 ? 6 : 4;
-  const head = compact.slice(0, edge);
-  const tail = compact.slice(-edge);
-  return `${head}…${tail}`;
-}
-
-export function resolveModelAuthLabel(params: {
-  provider?: string;
-  cfg?: RemoteClawConfig;
-  sessionEntry?: SessionEntry;
-}): string | undefined {
-  const resolvedProvider = params.provider?.trim();
-  if (!resolvedProvider) {
-    return undefined;
-  }
-
-  const providerKey = normalizeProviderId(resolvedProvider);
-  const store = ensureAuthProfileStore();
-  const profileOverride = params.sessionEntry?.authProfileOverride?.trim();
-  const profiles = listProfilesForProvider(store, providerKey);
-  const candidates = [profileOverride, ...profiles].filter(Boolean) as string[];
-
-  for (const profileId of candidates) {
-    const profile = store.profiles[profileId];
-    if (!profile || normalizeProviderId(profile.provider) !== providerKey) {
-      continue;
-    }
-    const label = resolveAuthProfileDisplayLabel({
-      cfg: params.cfg,
-      store,
-      profileId,
-    });
-    const keyValue = profile.type === "token" ? profile.token : (profile.key ?? "");
-    return `api-key ${formatApiKeySnippet(keyValue)}${label ? ` (${label})` : ""}`;
-  }
-
-  const envKey = resolveEnvApiKey(providerKey);
-  if (envKey?.apiKey) {
-    if (envKey.source.includes("OAUTH_TOKEN")) {
-      return `oauth (${envKey.source})`;
-    }
-    return `api-key ${formatApiKeySnippet(envKey.apiKey)} (${envKey.source})`;
-  }
-
-  return "unknown";
 }

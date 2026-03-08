@@ -144,6 +144,7 @@ function buildChannelMessage(params: {
     provider: params.sessionCtx.Provider?.trim() ?? "",
     timestamp: Date.now(),
     replyToId: params.sessionCtx.ReplyToId?.trim() || undefined,
+    mediaUrls: params.sessionCtx.MediaUrls?.length ? params.sessionCtx.MediaUrls : undefined,
     messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
     senderIsOwner: params.senderIsOwner,
     extraContext: params.extraSystemPrompt || undefined,

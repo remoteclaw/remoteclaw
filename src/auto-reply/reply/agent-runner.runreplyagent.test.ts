@@ -329,6 +329,121 @@ describe("runReplyAgent heartbeat followup guard", () => {
   });
 });
 
+describe("runReplyAgent mediaUrls forwarding", () => {
+  it("passes sessionCtx.MediaUrls to the ChannelMessage", async () => {
+    state.channelBridgeHandleMock.mockResolvedValueOnce(makeDeliveryResult());
+
+    const typing = createMockTypingController();
+    const sessionCtx = {
+      Provider: "telegram",
+      MessageSid: "msg-media",
+      MediaUrls: ["https://example.test/photo.jpg", "https://example.test/doc.pdf"],
+    } as unknown as TemplateContext;
+    const resolvedQueue = { mode: "interrupt" } as unknown as QueueSettings;
+    const followupRun = {
+      prompt: "hello",
+      summaryLine: "hello",
+      enqueuedAt: Date.now(),
+      run: {
+        sessionId: "session",
+        sessionKey: "main",
+        messageProvider: "telegram",
+        sessionFile: "/tmp/session.jsonl",
+        workspaceDir: "/tmp",
+        config: { agents: { defaults: { runtime: "claude" } } },
+        provider: "anthropic",
+        model: "claude",
+        verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: { enabled: false, allowed: false, defaultLevel: "off" },
+        timeoutMs: 1_000,
+        blockReplyBreak: "message_end",
+      },
+    } as unknown as FollowupRun;
+
+    const runReplyAgent = await getRunReplyAgent();
+    await runReplyAgent({
+      commandBody: "describe this image",
+      followupRun,
+      queueKey: "main",
+      resolvedQueue,
+      shouldFollowup: false,
+      isActive: false,
+      typing,
+      sessionCtx,
+      defaultModel: "anthropic/claude-opus-4-5",
+      resolvedVerboseLevel: "off",
+      isNewSession: false,
+      blockStreamingEnabled: false,
+      resolvedBlockStreamingBreak: "message_end",
+      shouldInjectGroupIntro: false,
+      typingMode: "instant",
+    });
+
+    expect(state.channelBridgeHandleMock).toHaveBeenCalledTimes(1);
+    const message: ChannelMessage = state.channelBridgeHandleMock.mock.calls[0][0];
+    expect(message.mediaUrls).toEqual([
+      "https://example.test/photo.jpg",
+      "https://example.test/doc.pdf",
+    ]);
+  });
+
+  it("omits mediaUrls when sessionCtx.MediaUrls is empty", async () => {
+    state.channelBridgeHandleMock.mockResolvedValueOnce(makeDeliveryResult());
+
+    const typing = createMockTypingController();
+    const sessionCtx = {
+      Provider: "telegram",
+      MessageSid: "msg-no-media",
+      MediaUrls: [],
+    } as unknown as TemplateContext;
+    const resolvedQueue = { mode: "interrupt" } as unknown as QueueSettings;
+    const followupRun = {
+      prompt: "hello",
+      summaryLine: "hello",
+      enqueuedAt: Date.now(),
+      run: {
+        sessionId: "session",
+        sessionKey: "main",
+        messageProvider: "telegram",
+        sessionFile: "/tmp/session.jsonl",
+        workspaceDir: "/tmp",
+        config: { agents: { defaults: { runtime: "claude" } } },
+        provider: "anthropic",
+        model: "claude",
+        verboseLevel: "off",
+        elevatedLevel: "off",
+        bashElevated: { enabled: false, allowed: false, defaultLevel: "off" },
+        timeoutMs: 1_000,
+        blockReplyBreak: "message_end",
+      },
+    } as unknown as FollowupRun;
+
+    const runReplyAgent = await getRunReplyAgent();
+    await runReplyAgent({
+      commandBody: "hello",
+      followupRun,
+      queueKey: "main",
+      resolvedQueue,
+      shouldFollowup: false,
+      isActive: false,
+      typing,
+      sessionCtx,
+      defaultModel: "anthropic/claude-opus-4-5",
+      resolvedVerboseLevel: "off",
+      isNewSession: false,
+      blockStreamingEnabled: false,
+      resolvedBlockStreamingBreak: "message_end",
+      shouldInjectGroupIntro: false,
+      typingMode: "instant",
+    });
+
+    expect(state.channelBridgeHandleMock).toHaveBeenCalledTimes(1);
+    const message: ChannelMessage = state.channelBridgeHandleMock.mock.calls[0][0];
+    expect(message.mediaUrls).toBeUndefined();
+  });
+});
+
 describe("runReplyAgent typing (heartbeat)", () => {
   async function withTempStateDir<T>(fn: (stateDir: string) => Promise<T>): Promise<T> {
     return await withStateDirEnv(

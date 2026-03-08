@@ -5,7 +5,7 @@ import {
   ensureAuthProfileStore,
   listProfilesForProvider,
   resolveApiKeyForProfile,
-} from "../agents/auth-profiles.js";
+} from "../auth/index.js";
 import { normalizeSecretInput } from "../utils/normalize-secret-input.js";
 import { resolveRequiredHomeDir } from "./home-dir.js";
 import type { UsageProviderId } from "./provider-usage.types.js";

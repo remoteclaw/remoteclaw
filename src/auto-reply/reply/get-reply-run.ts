@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
+import { resolveSessionAuthProfileOverride } from "../../auth/session-override.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   resolveGroupSessionKey,

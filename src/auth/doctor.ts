@@ -1,6 +1,6 @@
-import { formatCliCommand } from "../../cli/command-format.js";
-import type { RemoteClawConfig } from "../../config/config.js";
-import { normalizeProviderId } from "../provider-utils.js";
+import { normalizeProviderId } from "../agents/provider-utils.js";
+import { formatCliCommand } from "../cli/command-format.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { listProfilesForProvider } from "./profiles.js";
 import type { AuthProfileStore } from "./types.js";
 

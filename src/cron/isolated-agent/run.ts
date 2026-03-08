@@ -5,7 +5,6 @@ import {
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
-import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
 import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { getCliSessionId, setCliSessionId } from "../../agents/cli-session.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
@@ -15,6 +14,7 @@ import { isCliProvider, normalizeModelRef, parseModelRef } from "../../agents/pr
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
+import { resolveSessionAuthProfileOverride } from "../../auth/session-override.js";
 import { normalizeVerboseLevel } from "../../auto-reply/thinking.js";
 import type { CliDeps } from "../../cli/outbound-send-deps.js";
 import type { RemoteClawConfig } from "../../config/config.js";

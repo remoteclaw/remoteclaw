@@ -55,7 +55,7 @@ vi.mock("../agents/model-catalog.js", () => ({
   ],
 }));
 
-vi.mock("../agents/auth-profiles.js", () => ({
+vi.mock("../auth/index.js", () => ({
   ensureAuthProfileStore: () => ({ profiles: {} }),
   listProfilesForProvider: () => [],
   resolveAuthProfileDisplayLabel: () => undefined,

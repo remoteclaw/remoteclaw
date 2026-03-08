@@ -84,7 +84,7 @@ vi.mock("../../agents/usage.js", () => ({
   hasNonzeroUsage: vi.fn().mockReturnValue(false),
 }));
 
-vi.mock("../../agents/auth-profiles/session-override.js", () => ({
+vi.mock("../../auth/session-override.js", () => ({
   resolveSessionAuthProfileOverride: vi.fn().mockResolvedValue(undefined),
 }));
 

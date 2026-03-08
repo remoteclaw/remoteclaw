@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolveApiKeyForProvider, resolveEnvApiKey } from "../agents/provider-auth.js";
+import { resolveApiKeyForProvider, resolveEnvApiKey } from "../auth/provider-auth.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { captureEnv } from "../test-utils/env.js";
 

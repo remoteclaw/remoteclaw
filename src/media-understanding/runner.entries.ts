@@ -3,8 +3,8 @@ import path from "node:path";
 import {
   collectProviderApiKeysForExecution,
   executeWithApiKeyRotation,
-} from "../agents/api-key-rotation.js";
-import { requireApiKey, resolveApiKeyForProvider } from "../agents/provider-auth.js";
+} from "../auth/api-key-rotation.js";
+import { requireApiKey, resolveApiKeyForProvider } from "../auth/provider-auth.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import { applyTemplate } from "../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../config/config.js";

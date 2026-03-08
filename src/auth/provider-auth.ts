@@ -9,6 +9,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import path, { join } from "node:path";
+import { normalizeProviderId } from "../agents/provider-utils.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
@@ -24,10 +25,9 @@ import {
   resolveApiKeyForProfile,
   resolveAuthProfileDisplayLabel,
   resolveAuthStorePathForDisplay,
-} from "./auth-profiles.js";
-import { normalizeProviderId } from "./provider-utils.js";
+} from "./index.js";
 
-export { ensureAuthProfileStore } from "./auth-profiles.js";
+export { ensureAuthProfileStore } from "./index.js";
 
 const AWS_BEARER_ENV = "AWS_BEARER_TOKEN_BEDROCK";
 const AWS_ACCESS_KEY_ENV = "AWS_ACCESS_KEY_ID";

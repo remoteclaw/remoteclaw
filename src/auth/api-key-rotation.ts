@@ -1,5 +1,5 @@
+import { collectProviderApiKeys, isApiKeyRateLimitError } from "../agents/live-auth-keys.js";
 import { formatErrorMessage } from "../infra/errors.js";
-import { collectProviderApiKeys, isApiKeyRateLimitError } from "./live-auth-keys.js";
 
 type ApiKeyRetryParams = {
   apiKey: string;

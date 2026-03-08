@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Command } from "commander";
-import type { AuthProfileCredential } from "../agents/auth-profiles/types.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
+import type { AuthProfileCredential } from "../auth/types.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import type { ChannelDock } from "../channels/dock.js";
 import type { ChannelId, ChannelPlugin } from "../channels/plugins/types.js";

@@ -1,4 +1,4 @@
-import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 
 export const AUTH_STORE_VERSION = 1;
 export const AUTH_PROFILE_FILENAME = "auth-profiles.json";
@@ -18,4 +18,4 @@ export const AUTH_STORE_LOCK_OPTIONS = {
   stale: 30_000,
 } as const;
 
-export const log = createSubsystemLogger("agents/auth-profiles");
+export const log = createSubsystemLogger("auth");

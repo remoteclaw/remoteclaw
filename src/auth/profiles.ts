@@ -1,5 +1,5 @@
-import { normalizeSecretInput } from "../../utils/normalize-secret-input.js";
-import { normalizeProviderId } from "../provider-utils.js";
+import { normalizeProviderId } from "../agents/provider-utils.js";
+import { normalizeSecretInput } from "../utils/normalize-secret-input.js";
 import {
   ensureAuthProfileStore,
   saveAuthProfileStore,

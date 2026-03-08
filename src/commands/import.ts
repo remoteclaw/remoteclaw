@@ -280,6 +280,37 @@ export function stripUnrecognizedConfigKeys(jsonContent: string): string {
 }
 
 /**
+ * Remove the `wizard` section from imported config.
+ *
+ * OpenClaw configs carry wizard state (`wizard.lastRunVersion`,
+ * `wizard.lastRunCommand`, etc.) that reflects OpenClaw's wizard history.
+ * This is misleading after import — RemoteClaw's wizard has never run.
+ * Clearing the section ensures the user gets a fresh wizard experience.
+ */
+export function clearWizardSection(jsonContent: string): string {
+  let config: Record<string, unknown>;
+  try {
+    config = JSON.parse(jsonContent);
+  } catch {
+    return jsonContent;
+  }
+
+  if (typeof config !== "object" || config === null || Array.isArray(config)) {
+    return jsonContent;
+  }
+
+  if (!("wizard" in config)) {
+    return jsonContent;
+  }
+
+  delete config.wizard;
+
+  const indentMatch = jsonContent.match(/^(\s+)"/m);
+  const indent = indentMatch?.[1] ?? "  ";
+  return JSON.stringify(config, null, indent) + "\n";
+}
+
+/**
  * Materialize implicit OpenClaw workspace defaults into the main config JSON.
  *
  * OpenClaw had a three-tier workspace resolution chain that was removed in
@@ -562,7 +593,9 @@ async function copyDirectory(params: {
         const isMainConfig = entry.name === OPENCLAW_CONFIG_FILENAME;
         const final = isMainConfig
           ? materializeAuthDefaults(
-              materializeWorkspaceDefaults(stripUnrecognizedConfigKeys(transformed)),
+              materializeWorkspaceDefaults(
+                clearWizardSection(stripUnrecognizedConfigKeys(transformed)),
+              ),
               params.discoveredAuthProfileIds,
             )
           : transformed;

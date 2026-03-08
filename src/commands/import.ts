@@ -2,6 +2,7 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { resolveNewStateDir } from "../config/paths.js";
+import { RemoteClawSchema } from "../config/zod-schema.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { shortenHomePath } from "../utils.js";
@@ -111,6 +112,153 @@ export function transformConfigContent(content: string): {
   });
 
   return { content: transformed, renames: [...new Set(renames)] };
+}
+
+/**
+ * Recursive key-tree node describing an object schema's known keys.
+ *
+ * - `children`: declared shape keys → their sub-trees (`null` = leaf)
+ * - `catchall`: when `true`, undeclared keys are preserved as-is
+ *   (the schema uses `.catchall()` to accept arbitrary extra keys)
+ */
+type KeyTreeNode = {
+  children: Map<string, KeyTreeNode | null>;
+  catchall: boolean;
+};
+
+/**
+ * Build a recursive key-tree from a Zod schema by walking `.shape` properties.
+ * Unwraps optional/nullable/default wrappers via `.unwrap()` to reach the
+ * underlying object shape. Returns `null` for non-object schemas (leaves).
+ */
+function buildKeyTree(schema: unknown): KeyTreeNode | null {
+  // Unwrap optional / nullable / default wrappers (.unwrap())
+  let current = schema;
+  while (
+    current &&
+    typeof current === "object" &&
+    "unwrap" in current &&
+    typeof current.unwrap === "function"
+  ) {
+    current = current.unwrap();
+  }
+
+  // Check for object shape
+  if (
+    !current ||
+    typeof current !== "object" ||
+    !("shape" in current) ||
+    !current.shape ||
+    typeof current.shape !== "object"
+  ) {
+    return null;
+  }
+
+  // Detect .catchall() — schema allows arbitrary extra keys.
+  // In Zod v4, .strict() sets catchall to ZodNever (type "never"),
+  // while a real .catchall() sets it to the accepting type.
+  const def =
+    "_zod" in current &&
+    current._zod &&
+    typeof current._zod === "object" &&
+    "def" in current._zod &&
+    current._zod.def &&
+    typeof current._zod.def === "object"
+      ? (current._zod.def as Record<string, unknown>)
+      : null;
+  const catchallSchema = def !== null && "catchall" in def ? def.catchall : null;
+  const hasCatchall = Boolean(
+    catchallSchema != null &&
+    typeof catchallSchema === "object" &&
+    "_zod" in catchallSchema &&
+    catchallSchema._zod &&
+    typeof catchallSchema._zod === "object" &&
+    "def" in catchallSchema._zod &&
+    catchallSchema._zod.def &&
+    typeof catchallSchema._zod.def === "object" &&
+    "type" in catchallSchema._zod.def &&
+    catchallSchema._zod.def.type !== "never",
+  );
+
+  const shape = current.shape as Record<string, unknown>;
+  const children = new Map<string, KeyTreeNode | null>();
+
+  for (const [key, fieldSchema] of Object.entries(shape)) {
+    children.set(key, buildKeyTree(fieldSchema));
+  }
+
+  return { children, catchall: hasCatchall };
+}
+
+/** Pre-built key tree from the root config schema, computed once at module load. */
+const CONFIG_KEY_TREE = buildKeyTree(RemoteClawSchema)!;
+
+/**
+ * Recursively filter an object to only keep keys present in the key tree.
+ * Keys in catchall objects are always preserved.
+ */
+function filterByKeyTree(
+  obj: Record<string, unknown>,
+  node: KeyTreeNode,
+): { result: Record<string, unknown>; changed: boolean } {
+  let changed = false;
+  const result: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (!node.children.has(key)) {
+      if (node.catchall) {
+        // Schema accepts arbitrary extra keys — preserve as-is
+        result[key] = value;
+      } else {
+        changed = true;
+      }
+      continue;
+    }
+
+    const childNode = node.children.get(key);
+    if (childNode && value !== null && typeof value === "object" && !Array.isArray(value)) {
+      const nested = filterByKeyTree(value as Record<string, unknown>, childNode);
+      result[key] = nested.result;
+      if (nested.changed) {
+        changed = true;
+      }
+    } else {
+      result[key] = value;
+    }
+  }
+
+  return { result, changed };
+}
+
+/**
+ * Strip unrecognized keys from the entire config JSON by filtering against
+ * the current RemoteClawSchema shape tree.
+ *
+ * OpenClaw configs may contain keys that RemoteClaw's schema no longer accepts.
+ * Instead of maintaining a denylist of dead keys, this function keeps only keys
+ * the current schema recognizes — any key we don't know about is dropped.
+ * Recurses into nested strict objects so sub-keys are filtered too.
+ */
+export function stripUnrecognizedConfigKeys(jsonContent: string): string {
+  let config: Record<string, unknown>;
+  try {
+    config = JSON.parse(jsonContent);
+  } catch {
+    return jsonContent;
+  }
+
+  if (typeof config !== "object" || config === null || Array.isArray(config)) {
+    return jsonContent;
+  }
+
+  const { result, changed } = filterByKeyTree(config, CONFIG_KEY_TREE);
+  if (!changed) {
+    return jsonContent;
+  }
+
+  const indentMatch = jsonContent.match(/^(\s+)"/m);
+  const indent = indentMatch?.[1] ?? "  ";
+  return JSON.stringify(result, null, indent) + "\n";
 }
 
 /**
@@ -253,9 +401,11 @@ async function copyDirectory(params: {
       if (isConfigFile(entry.name)) {
         const content = await fsp.readFile(sourcePath, "utf-8");
         const { content: transformed, renames } = transformConfigContent(content);
-        // Apply structural config transform to the main config file
+        // Apply structural config transforms to the main config file
         const isMainConfig = entry.name === OPENCLAW_CONFIG_FILENAME;
-        const final = isMainConfig ? materializeWorkspaceDefaults(transformed) : transformed;
+        const final = isMainConfig
+          ? materializeWorkspaceDefaults(stripUnrecognizedConfigKeys(transformed))
+          : transformed;
         if (renames.length > 0 || final !== transformed) {
           result.transformedFiles.push(targetPath);
           result.envVarRenames.push(...renames);

@@ -9,6 +9,7 @@ import {
   importCommand,
   materializeWorkspaceDefaults,
   resolveTargetFilename,
+  stripUnrecognizedConfigKeys,
   transformConfigContent,
 } from "./import.js";
 import { createTestRuntime, type TestRuntime } from "./test-runtime-config-helpers.js";
@@ -195,6 +196,112 @@ describe("materializeWorkspaceDefaults", () => {
   });
 });
 
+describe("stripUnrecognizedConfigKeys", () => {
+  it("strips unknown top-level keys", () => {
+    const input = JSON.stringify({
+      gateway: { port: 18789 },
+      deadTopLevel: true,
+    });
+    const result = JSON.parse(stripUnrecognizedConfigKeys(input));
+    expect(result.gateway.port).toBe(18789);
+    expect(result.deadTopLevel).toBeUndefined();
+  });
+
+  it("strips unknown keys from agents.defaults", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: { compaction: { mode: "default" }, workspace: "~/ws" },
+        list: [{ id: "main" }],
+      },
+    });
+    const result = JSON.parse(stripUnrecognizedConfigKeys(input));
+    expect(result.agents.defaults.workspace).toBe("~/ws");
+    expect(result.agents.defaults.compaction).toBeUndefined();
+  });
+
+  it("strips unknown nested keys from agents.defaults.heartbeat", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: {
+          heartbeat: { every: "30m", includeReasoning: true },
+        },
+        list: [{ id: "main" }],
+      },
+    });
+    const result = JSON.parse(stripUnrecognizedConfigKeys(input));
+    expect(result.agents.defaults.heartbeat.every).toBe("30m");
+    expect(result.agents.defaults.heartbeat.includeReasoning).toBeUndefined();
+  });
+
+  it("strips unknown nested keys from agents.defaults.subagents", () => {
+    const input = JSON.stringify({
+      agents: {
+        defaults: {
+          subagents: { maxConcurrent: 2, thinking: "high" },
+        },
+        list: [{ id: "main" }],
+      },
+    });
+    const result = JSON.parse(stripUnrecognizedConfigKeys(input));
+    expect(result.agents.defaults.subagents.maxConcurrent).toBe(2);
+    expect(result.agents.defaults.subagents.thinking).toBeUndefined();
+  });
+
+  it("strips unknown keys from nested gateway sub-objects", () => {
+    const input = JSON.stringify({
+      gateway: {
+        port: 18789,
+        auth: { mode: "token", legacyField: true },
+      },
+    });
+    const result = JSON.parse(stripUnrecognizedConfigKeys(input));
+    expect(result.gateway.auth.mode).toBe("token");
+    expect(result.gateway.auth.legacyField).toBeUndefined();
+  });
+
+  it("returns content unchanged when all keys are recognized", () => {
+    const input = JSON.stringify({
+      gateway: { port: 18789 },
+      agents: {
+        defaults: { workspace: "~/ws", timeoutSeconds: 60 },
+        list: [{ id: "main" }],
+      },
+    });
+    expect(stripUnrecognizedConfigKeys(input)).toBe(input);
+  });
+
+  it("preserves dynamic keys in catchall objects like broadcast", () => {
+    const input = JSON.stringify({
+      broadcast: {
+        strategy: "parallel",
+        "whatsapp-main": ["main", "helper"],
+        "telegram-ops": ["ops"],
+      },
+    });
+    const result = JSON.parse(stripUnrecognizedConfigKeys(input));
+    expect(result.broadcast.strategy).toBe("parallel");
+    expect(result.broadcast["whatsapp-main"]).toEqual(["main", "helper"]);
+    expect(result.broadcast["telegram-ops"]).toEqual(["ops"]);
+  });
+
+  it("preserves dynamic keys in env catchall", () => {
+    const input = JSON.stringify({
+      env: {
+        vars: { FOO: "bar" },
+        CUSTOM_KEY: "custom-value",
+      },
+    });
+    const result = JSON.parse(stripUnrecognizedConfigKeys(input));
+    expect(result.env.vars.FOO).toBe("bar");
+    expect(result.env.CUSTOM_KEY).toBe("custom-value");
+  });
+
+  it("returns non-JSON content unchanged", () => {
+    const input = "not valid json {{{";
+    expect(stripUnrecognizedConfigKeys(input)).toBe(input);
+  });
+});
+
 describe("resolveTargetFilename", () => {
   it("renames openclaw.json to remoteclaw.json", () => {
     expect(resolveTargetFilename("openclaw.json")).toBe("remoteclaw.json");
@@ -277,10 +384,10 @@ describe("importCommand", () => {
     const configContent = `{
   "env": {
     "vars": {
-      "token": "\${OPENCLAW_GATEWAY_TOKEN}"
+      "token": "\${OPENCLAW_GATEWAY_TOKEN}",
+      "workspace": "/home/user/.openclaw/workspace"
     }
-  },
-  "workspace": "/home/user/.openclaw/workspace"
+  }
 }`;
     await fsp.writeFile(path.join(sourceDir, "openclaw.json"), configContent);
 

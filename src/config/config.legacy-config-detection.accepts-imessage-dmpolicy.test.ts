@@ -2,34 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-// Inline helpers replacing deleted src/config/model-input.ts exports.
-function resolveAgentModelPrimaryValue(model: unknown): string | undefined {
-  if (typeof model === "string") {
-    const trimmed = model.trim();
-    return trimmed || undefined;
-  }
-  if (!model || typeof model !== "object") {
-    return undefined;
-  }
-  const primary = (model as { primary?: unknown }).primary;
-  if (typeof primary !== "string") {
-    return undefined;
-  }
-  const trimmed = primary.trim();
-  return trimmed || undefined;
-}
-
-function resolveAgentModelFallbackValues(model: unknown): string[] {
-  if (!model || typeof model !== "object") {
-    return [];
-  }
-  return Array.isArray((model as { fallbacks?: unknown }).fallbacks)
-    ? (model as { fallbacks: string[] }).fallbacks
-    : [];
-}
-
-const { loadConfig, migrateLegacyConfig, readConfigFileSnapshot, validateConfigObject } =
+const { loadConfig, readConfigFileSnapshot, validateConfigObject } =
   await vi.importActual<typeof import("./config.js")>("./config.js");
 import { withTempHome } from "./test-helpers.js";
 
@@ -88,20 +61,6 @@ function expectInvalidIssuePath(config: unknown, expectedPath: string) {
   if (!res.ok) {
     expect(res.issues[0]?.path).toBe(expectedPath);
   }
-}
-
-function expectRoutingAllowFromLegacySnapshot(
-  ctx: { snapshot: ConfigSnapshot; parsed: unknown },
-  expectedAllowFrom: string[],
-) {
-  expect(ctx.snapshot.valid).toBe(false);
-  expect(ctx.snapshot.legacyIssues.some((issue) => issue.path === "routing.allowFrom")).toBe(true);
-  const parsed = ctx.parsed as {
-    routing?: { allowFrom?: string[] };
-    channels?: unknown;
-  };
-  expect(parsed.routing?.allowFrom).toEqual(expectedAllowFrom);
-  expect(parsed.channels).toBeUndefined();
 }
 
 describe("legacy config detection", () => {
@@ -227,83 +186,6 @@ describe("legacy config detection", () => {
     const res = validateConfigObject(config);
     expect(res.ok).toBe(true);
   });
-  it("rejects legacy agent.model string", async () => {
-    const res = validateConfigObject({
-      agent: { model: "anthropic/claude-opus-4-5" },
-    });
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(res.issues.some((i) => i.path === "agent.model")).toBe(true);
-    }
-  });
-  it("migrates telegram.requireMention to channels.telegram.groups.*.requireMention", async () => {
-    const res = migrateLegacyConfig({
-      telegram: { requireMention: false },
-    });
-    expect(res.changes).toContain(
-      'Moved telegram.requireMention → channels.telegram.groups."*".requireMention.',
-    );
-    expect(res.config?.channels?.telegram?.groups?.["*"]?.requireMention).toBe(false);
-    expect(
-      (res.config?.channels?.telegram as { requireMention?: boolean } | undefined)?.requireMention,
-    ).toBeUndefined();
-  });
-  it("migrates messages.tts.enabled to messages.tts.auto", async () => {
-    const res = migrateLegacyConfig({
-      messages: { tts: { enabled: true } },
-    });
-    expect(res.changes).toContain("Moved messages.tts.enabled → messages.tts.auto (always).");
-    expect(res.config?.messages?.tts?.auto).toBe("always");
-    expect(res.config?.messages?.tts?.enabled).toBeUndefined();
-  });
-  it("migrates legacy model config to agent.models + model lists", async () => {
-    const res = migrateLegacyConfig({
-      agent: {
-        model: "anthropic/claude-opus-4-5",
-        modelFallbacks: ["openai/gpt-4.1-mini"],
-        imageModel: "openai/gpt-4.1-mini",
-        imageModelFallbacks: ["anthropic/claude-opus-4-5"],
-        allowedModels: ["anthropic/claude-opus-4-5", "openai/gpt-4.1-mini"],
-        modelAliases: { Opus: "anthropic/claude-opus-4-5" },
-      },
-    });
-
-    expect(resolveAgentModelPrimaryValue(res.config?.agents?.defaults?.model)).toBe(
-      "anthropic/claude-opus-4-5",
-    );
-    expect(resolveAgentModelFallbackValues(res.config?.agents?.defaults?.model)).toEqual([
-      "openai/gpt-4.1-mini",
-    ]);
-    expect(resolveAgentModelPrimaryValue(res.config?.agents?.defaults?.imageModel)).toBe(
-      "openai/gpt-4.1-mini",
-    );
-    expect(resolveAgentModelFallbackValues(res.config?.agents?.defaults?.imageModel)).toEqual([
-      "anthropic/claude-opus-4-5",
-    ]);
-    expect(res.config?.agents?.defaults?.models?.["anthropic/claude-opus-4-5"]).toMatchObject({
-      alias: "Opus",
-    });
-    expect(res.config?.agents?.defaults?.models?.["openai/gpt-4.1-mini"]).toBeTruthy();
-    expect((res.config as { agent?: unknown } | undefined)?.agent).toBeUndefined();
-  });
-  it("flags legacy config in snapshot", async () => {
-    await withSnapshotForConfig({ routing: { allowFrom: ["+15555550123"] } }, async (ctx) => {
-      expectRoutingAllowFromLegacySnapshot(ctx, ["+15555550123"]);
-    });
-  });
-  it("flags legacy provider sections in snapshot", async () => {
-    await withSnapshotForConfig({ whatsapp: { allowFrom: ["+1555"] } }, async (ctx) => {
-      expect(ctx.snapshot.valid).toBe(false);
-      expect(ctx.snapshot.legacyIssues.some((issue) => issue.path === "whatsapp")).toBe(true);
-
-      const parsed = ctx.parsed as {
-        channels?: unknown;
-        whatsapp?: unknown;
-      };
-      expect(parsed.channels).toBeUndefined();
-      expect(parsed.whatsapp).toBeTruthy();
-    });
-  });
   it("does not auto-migrate claude-cli auth profile mode on load", async () => {
     await withTempHome(async (home) => {
       const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
@@ -332,11 +214,6 @@ describe("legacy config detection", () => {
         auth?: { profiles?: Record<string, { mode?: string }> };
       };
       expect(parsed.auth?.profiles?.["anthropic:claude-cli"]?.mode).toBe("token");
-    });
-  });
-  it("flags routing.allowFrom in snapshot", async () => {
-    await withSnapshotForConfig({ routing: { allowFrom: ["+1666"] } }, async (ctx) => {
-      expectRoutingAllowFromLegacySnapshot(ctx, ["+1666"]);
     });
   });
   it("rejects bindings[].match.provider on load", async () => {

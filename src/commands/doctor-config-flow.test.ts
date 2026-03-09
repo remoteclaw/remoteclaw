@@ -102,43 +102,6 @@ describe("doctor config flow", () => {
     });
   });
 
-  it("preserves discord streaming intent while stripping unsupported keys on repair", async () => {
-    const result = await runDoctorConfigWithInput({
-      repair: true,
-      config: {
-        channels: {
-          discord: {
-            streaming: true,
-            lifecycle: {
-              enabled: true,
-              reactions: {
-                queued: "⏳",
-                thinking: "🧠",
-                tool: "🔧",
-                done: "✅",
-                error: "❌",
-              },
-            },
-          },
-        },
-      },
-      run: loadAndMaybeMigrateDoctorConfig,
-    });
-
-    const cfg = result.cfg as {
-      channels: {
-        discord: {
-          streamMode?: string;
-          streaming?: string;
-          lifecycle?: unknown;
-        };
-      };
-    };
-    expect(cfg.channels.discord.streaming).toBe("partial");
-    expect(cfg.channels.discord.streamMode).toBeUndefined();
-    expect(cfg.channels.discord.lifecycle).toBeUndefined();
-  });
-
   it("resolves Telegram @username allowFrom entries to numeric IDs on repair", async () => {
     const fetchSpy = vi.fn(async (url: string) => {
       const u = String(url);

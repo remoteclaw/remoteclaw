@@ -73,14 +73,14 @@ describe("isRestartEnabled", () => {
 
 describe("isCommandFlagEnabled", () => {
   it("requires own boolean true", () => {
-    expect(isCommandFlagEnabled({ commands: { bash: true } }, "bash")).toBe(true);
-    expect(isCommandFlagEnabled({ commands: { bash: false } }, "bash")).toBe(false);
+    expect(isCommandFlagEnabled({ commands: { config: true } }, "config")).toBe(true);
+    expect(isCommandFlagEnabled({ commands: { config: false } }, "config")).toBe(false);
     expect(
       isCommandFlagEnabled(
         {
-          commands: Object.create({ bash: true }) as Record<string, unknown>,
+          commands: Object.create({ config: true }) as Record<string, unknown>,
         },
-        "bash",
+        "config",
       ),
     ).toBe(false);
   });

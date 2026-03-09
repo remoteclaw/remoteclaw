@@ -78,9 +78,6 @@ export function isCommandEnabled(cfg: RemoteClawConfig, commandKey: string): boo
   if (commandKey === "debug") {
     return isCommandFlagEnabled(cfg, "debug");
   }
-  if (commandKey === "bash") {
-    return isCommandFlagEnabled(cfg, "bash");
-  }
   return true;
 }
 

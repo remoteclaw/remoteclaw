@@ -37,6 +37,10 @@ export type MediaAttachment = {
 export type AgentExecuteParams = {
   /** The user prompt to send to the agent. */
   prompt: string;
+  /** System instructions for the agent (passed separately where supported). */
+  systemPrompt?: string | undefined;
+  /** Extra context inserted between the system prompt and user prompt. */
+  extraContext?: string | undefined;
   /** Media attachments to include with the prompt. */
   media?: MediaAttachment[] | undefined;
   /** Resume an existing session (CLI-specific session identifier). */

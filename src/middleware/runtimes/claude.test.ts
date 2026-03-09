@@ -140,11 +140,43 @@ describe("ClaudeCliRuntime", () => {
       expect(args).not.toContain("--mcp-config");
     });
 
-    it("combines all flags: session + MCP + prompt", () => {
+    it("adds --append-system-prompt when systemPrompt is provided", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({ systemPrompt: "You are a helpful assistant." }),
+      );
+      expect(args).toContain("--append-system-prompt");
+      const idx = args.indexOf("--append-system-prompt");
+      expect(args[idx + 1]).toBe("You are a helpful assistant.");
+    });
+
+    it("combines systemPrompt and extraContext in --append-system-prompt", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          systemPrompt: "You are a helpful assistant.",
+          extraContext: "Answer in French",
+        }),
+      );
+      const idx = args.indexOf("--append-system-prompt");
+      expect(args[idx + 1]).toBe("You are a helpful assistant.\n\nAnswer in French");
+    });
+
+    it("does not add --append-system-prompt when neither systemPrompt nor extraContext is set", () => {
+      const args = runtime.testBuildArgs(makeParams());
+      expect(args).not.toContain("--append-system-prompt");
+    });
+
+    it("adds --append-system-prompt with extraContext alone", () => {
+      const args = runtime.testBuildArgs(makeParams({ extraContext: "Extra info" }));
+      const idx = args.indexOf("--append-system-prompt");
+      expect(args[idx + 1]).toBe("Extra info");
+    });
+
+    it("combines all flags: session + MCP + system prompt + prompt", () => {
       const args = runtime.testBuildArgs(
         makeParams({
           sessionId: "sess-456",
           mcpServers: { s1: { command: "cmd" } },
+          systemPrompt: "System instructions",
         }),
       );
 
@@ -154,6 +186,8 @@ describe("ClaudeCliRuntime", () => {
       expect(args).toContain("--resume");
       expect(args).toContain("sess-456");
       expect(args).toContain("--mcp-config");
+      expect(args).toContain("--append-system-prompt");
+      expect(args[args.indexOf("--append-system-prompt") + 1]).toBe("System instructions");
       // --print prompt comes last
       expect(args[args.length - 2]).toBe("--print");
       expect(args[args.length - 1]).toBe("Hello, Claude!");

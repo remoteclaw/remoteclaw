@@ -37,6 +37,23 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
   protected abstract buildEnv(params: AgentExecuteParams): Record<string, string>;
 
   /**
+   * Compose the full prompt from structured parts (system + extra context + user).
+   * Runtimes that support separate system prompt delivery (e.g. Claude) should
+   * override or bypass this and handle the parts individually.
+   */
+  protected composePrompt(params: AgentExecuteParams): string {
+    let composed = "";
+    if (params.systemPrompt) {
+      composed += params.systemPrompt;
+    }
+    if (params.extraContext) {
+      composed += (composed ? "\n\n" : "") + params.extraContext;
+    }
+    composed += (composed ? "\n\n" : "") + params.prompt;
+    return composed;
+  }
+
+  /**
    * Construct a custom stdin payload for the subprocess.
    * When this returns a string, it is written to stdin instead of
    * the default large-prompt fallback.  Subclasses may override.
@@ -193,15 +210,14 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
         `[agent-runtime] pid=${child.pid}: delivering custom stdin payload (${customStdin.length} chars)`,
       );
       child.stdin.write(customStdin);
-    } else if (
-      this.supportsStdinPrompt &&
-      params.prompt.length > CLIRuntimeBase.STDIN_PROMPT_THRESHOLD &&
-      child.stdin
-    ) {
-      logDebug(
-        `[agent-runtime] pid=${child.pid}: delivering prompt via stdin (${params.prompt.length} chars)`,
-      );
-      child.stdin.write(params.prompt);
+    } else if (this.supportsStdinPrompt && child.stdin) {
+      const composedPrompt = this.composePrompt(params);
+      if (composedPrompt.length > CLIRuntimeBase.STDIN_PROMPT_THRESHOLD) {
+        logDebug(
+          `[agent-runtime] pid=${child.pid}: delivering prompt via stdin (${composedPrompt.length} chars)`,
+        );
+        child.stdin.write(composedPrompt);
+      }
     }
     // Always close stdin so CLIs that read from stdin get EOF and don't hang.
     child.stdin?.end();

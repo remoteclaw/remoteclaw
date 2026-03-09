@@ -224,11 +224,9 @@ export class ChannelBridge {
       try {
         const captured = captureResult(
           runtime.execute({
-            prompt:
-              systemPrompt +
-              (message.extraContext ? "\n\n" + message.extraContext : "") +
-              "\n\n" +
-              message.text,
+            prompt: message.text,
+            systemPrompt,
+            extraContext: message.extraContext,
             media: supportedMedia?.length ? supportedMedia : undefined,
             sessionId: existingSessionId,
             mcpServers,

@@ -75,7 +75,12 @@ export class GeminiCliRuntime extends CLIRuntimeBase {
   // ── CLIRuntimeBase abstract method implementations ────────────────────
 
   protected buildArgs(params: AgentExecuteParams): string[] {
-    const args: string[] = ["--output-format", "stream-json", "--prompt", params.prompt];
+    const args: string[] = [
+      "--output-format",
+      "stream-json",
+      "--prompt",
+      this.composePrompt(params),
+    ];
 
     if (params.sessionId) {
       args.push("--resume", params.sessionId);

@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { logDebug } from "../../logger.js";
 import { CLIRuntimeBase } from "../cli-runtime-base.js";
 import type {
   AgentDoneEvent,
@@ -7,6 +9,7 @@ import type {
   AgentThinkingEvent,
   AgentToolUseEvent,
   AgentUsage,
+  MediaAttachment,
 } from "../types.js";
 
 /**
@@ -38,7 +41,8 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
 
   async *execute(params: AgentExecuteParams): AsyncIterable<AgentEvent> {
     this.resetState();
-    for await (const event of super.execute(params)) {
+    const prepared = await this.prepareMedia(params);
+    for await (const event of super.execute(prepared)) {
       if (event.type === "done") {
         this.enrichDoneEvent(event);
       }
@@ -64,10 +68,43 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
       args.push("--mcp-config", JSON.stringify({ mcpServers: params.mcpServers }));
     }
 
-    // --print <prompt> comes last so it doesn't interfere with other flags.
-    args.push("--print", params.prompt);
+    // When image media is present (with base64 populated), use stream-json stdin
+    // delivery instead of --print so content blocks can carry inline images.
+    // -p activates print mode (required for --input-format / --output-format).
+    const hasImages = params.media?.some((m) => m.mimeType.startsWith("image/") && m.base64);
+    if (hasImages) {
+      args.push("-p", "--input-format", "stream-json");
+    } else {
+      // --print <prompt> comes last so it doesn't interfere with other flags.
+      args.push("--print", params.prompt);
+    }
 
     return args;
+  }
+
+  protected buildStdinPayload(params: AgentExecuteParams): string | undefined {
+    const images = params.media?.filter((m) => m.mimeType.startsWith("image/") && m.base64);
+    if (!images?.length) {
+      return undefined;
+    }
+
+    const content: unknown[] = images.map((img) => ({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: img.mimeType,
+        data: img.base64,
+      },
+    }));
+    content.push({ type: "text", text: params.prompt });
+
+    // Claude CLI --input-format stream-json expects each line to be a
+    // { type: "user", message: { role: "user", content: [...] } } envelope.
+    const envelope = {
+      type: "user",
+      message: { role: "user", content },
+    };
+    return JSON.stringify(envelope) + "\n";
   }
 
   protected extractEvent(line: string): AgentEvent | null {
@@ -247,6 +284,45 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
     if (this.resultData?.numTurns !== undefined) {
       result.numTurns = this.resultData.numTurns;
     }
+  }
+
+  // ── Media preparation ────────────────────────────────────────────────
+
+  /**
+   * Read image files referenced by media attachments and populate their base64 field.
+   * Non-image media types are filtered out (audio/video are not supported natively).
+   */
+  private async prepareMedia(params: AgentExecuteParams): Promise<AgentExecuteParams> {
+    if (!params.media?.length) {
+      return params;
+    }
+
+    const prepared: MediaAttachment[] = [];
+    for (const attachment of params.media) {
+      if (!attachment.mimeType.startsWith("image/")) {
+        continue;
+      }
+
+      if (attachment.base64) {
+        prepared.push(attachment);
+        continue;
+      }
+
+      if (attachment.filePath) {
+        try {
+          const buffer = await readFile(attachment.filePath);
+          prepared.push({ ...attachment, base64: buffer.toString("base64") });
+        } catch {
+          logDebug(`[claude-runtime] failed to read media file: ${attachment.filePath}`);
+        }
+        continue;
+      }
+    }
+
+    return {
+      ...params,
+      media: prepared.length > 0 ? prepared : undefined,
+    };
   }
 
   // ── State reset ───────────────────────────────────────────────────────

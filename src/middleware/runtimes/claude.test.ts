@@ -16,6 +16,10 @@ class TestableClaudeCliRuntime extends ClaudeCliRuntime {
   public testBuildEnv(params: AgentExecuteParams): Record<string, string> {
     return this.buildEnv(params);
   }
+
+  public testBuildStdinPayload(params: AgentExecuteParams): string | undefined {
+    return this.buildStdinPayload(params);
+  }
 }
 
 // ── Fixtures ────────────────────────────────────────────────────────────
@@ -159,6 +163,56 @@ describe("ClaudeCliRuntime", () => {
       const args = runtime.testBuildArgs(makeParams({ prompt: "test prompt" }));
       expect(args[args.length - 2]).toBe("--print");
       expect(args[args.length - 1]).toBe("test prompt");
+    });
+
+    it("uses -p --input-format stream-json when image media with base64 is present", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          media: [{ mimeType: "image/jpeg", base64: "dGVzdA==" }],
+        }),
+      );
+      expect(args).toContain("-p");
+      expect(args).toContain("--input-format");
+      expect(args).toContain("stream-json");
+      expect(args).not.toContain("--print");
+    });
+
+    it("uses --print when media has no base64 populated", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          media: [{ mimeType: "image/jpeg", filePath: "/tmp/img.jpg" }],
+        }),
+      );
+      expect(args).toContain("--print");
+      expect(args).not.toContain("--input-format");
+    });
+
+    it("uses --print when media is non-image (audio/video)", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          media: [
+            { mimeType: "audio/ogg", base64: "dGVzdA==" },
+            { mimeType: "video/mp4", base64: "dGVzdA==" },
+          ],
+        }),
+      );
+      expect(args).toContain("--print");
+      expect(args).not.toContain("--input-format");
+    });
+
+    it("uses -p --input-format stream-json when mixed media includes images with base64", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          media: [
+            { mimeType: "audio/ogg", base64: "dGVzdA==" },
+            { mimeType: "image/png", base64: "aW1hZ2U=" },
+          ],
+        }),
+      );
+      expect(args).toContain("-p");
+      expect(args).toContain("--input-format");
+      expect(args).toContain("stream-json");
+      expect(args).not.toContain("--print");
     });
   });
 
@@ -498,6 +552,119 @@ describe("ClaudeCliRuntime", () => {
       expect(parsed).toEqual({
         mcpServers: { s: { command: "node" } },
       });
+    });
+  });
+
+  // ── buildStdinPayload ────────────────────────────────────────────────
+
+  describe("buildStdinPayload", () => {
+    it("returns undefined when no media is present", () => {
+      const payload = runtime.testBuildStdinPayload(makeParams());
+      expect(payload).toBeUndefined();
+    });
+
+    it("returns undefined when media has no base64", () => {
+      const payload = runtime.testBuildStdinPayload(
+        makeParams({ media: [{ mimeType: "image/jpeg", filePath: "/tmp/img.jpg" }] }),
+      );
+      expect(payload).toBeUndefined();
+    });
+
+    it("returns undefined for non-image media", () => {
+      const payload = runtime.testBuildStdinPayload(
+        makeParams({ media: [{ mimeType: "audio/ogg", base64: "dGVzdA==" }] }),
+      );
+      expect(payload).toBeUndefined();
+    });
+
+    it("constructs correct stream-json envelope for a single image", () => {
+      const payload = runtime.testBuildStdinPayload(
+        makeParams({
+          prompt: "Describe this image",
+          media: [{ mimeType: "image/jpeg", base64: "aW1hZ2VkYXRh" }],
+        }),
+      );
+
+      expect(payload).toBeDefined();
+      const parsed = JSON.parse(payload!.trimEnd());
+      expect(parsed).toEqual({
+        type: "user",
+        message: {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: "image/jpeg",
+                data: "aW1hZ2VkYXRh",
+              },
+            },
+            { type: "text", text: "Describe this image" },
+          ],
+        },
+      });
+    });
+
+    it("constructs correct envelope for multiple images", () => {
+      const payload = runtime.testBuildStdinPayload(
+        makeParams({
+          prompt: "Compare these",
+          media: [
+            { mimeType: "image/jpeg", base64: "aW1nMQ==" },
+            { mimeType: "image/png", base64: "aW1nMg==" },
+          ],
+        }),
+      );
+
+      const parsed = JSON.parse(payload!.trimEnd());
+      expect(parsed.type).toBe("user");
+      const { content } = parsed.message;
+      expect(content).toHaveLength(3); // 2 images + 1 text
+      expect(content[0].type).toBe("image");
+      expect(content[0].source.media_type).toBe("image/jpeg");
+      expect(content[1].type).toBe("image");
+      expect(content[1].source.media_type).toBe("image/png");
+      expect(content[2]).toEqual({ type: "text", text: "Compare these" });
+    });
+
+    it("filters out non-image media from payload", () => {
+      const payload = runtime.testBuildStdinPayload(
+        makeParams({
+          prompt: "Describe",
+          media: [
+            { mimeType: "audio/ogg", base64: "YXVkaW8=" },
+            { mimeType: "image/jpeg", base64: "aW1hZ2U=" },
+            { mimeType: "video/mp4", base64: "dmlkZW8=" },
+          ],
+        }),
+      );
+
+      const parsed = JSON.parse(payload!.trimEnd());
+      const { content } = parsed.message;
+      expect(content).toHaveLength(2); // 1 image + 1 text
+      expect(content[0].source.media_type).toBe("image/jpeg");
+    });
+
+    it("ends payload with newline", () => {
+      const payload = runtime.testBuildStdinPayload(
+        makeParams({
+          media: [{ mimeType: "image/jpeg", base64: "dGVzdA==" }],
+        }),
+      );
+      expect(payload).toMatch(/\n$/);
+    });
+  });
+
+  // ── mediaCapabilities ──────────────────────────────────────────────────
+
+  describe("mediaCapabilities", () => {
+    it("accepts inbound images", () => {
+      expect(runtime.mediaCapabilities.acceptsInbound).toEqual(["image/"]);
+    });
+
+    it("does not emit outbound media", () => {
+      expect(runtime.mediaCapabilities.emitsOutbound).toBe(false);
     });
   });
 

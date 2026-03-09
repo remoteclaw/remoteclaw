@@ -346,6 +346,16 @@ export function resolveModelAuthMode(
   return "unknown";
 }
 
+export async function getApiKeyForModel(params: {
+  model: { provider: string };
+  cfg?: RemoteClawConfig;
+}): Promise<ResolvedProviderAuth> {
+  return resolveApiKeyForProvider({
+    provider: params.model.provider,
+    cfg: params.cfg,
+  });
+}
+
 export function requireApiKey(auth: ResolvedProviderAuth, provider: string): string {
   const key = normalizeSecretInput(auth.apiKey);
   if (key) {

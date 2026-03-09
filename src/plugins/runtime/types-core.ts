@@ -53,4 +53,16 @@ export type PluginRuntimeCore = {
   state: {
     resolveStateDir: typeof import("../../config/paths.js").resolveStateDir;
   };
+  modelAuth: {
+    /** Resolve auth for a model. Only provider/model and optional cfg are used. */
+    getApiKeyForModel: (params: {
+      model: { provider: string };
+      cfg?: import("../../config/config.js").RemoteClawConfig;
+    }) => Promise<import("../../auth/provider-auth.js").ResolvedProviderAuth>;
+    /** Resolve auth for a provider by name. Only provider and optional cfg are used. */
+    resolveApiKeyForProvider: (params: {
+      provider: string;
+      cfg?: import("../../config/config.js").RemoteClawConfig;
+    }) => Promise<import("../../auth/provider-auth.js").ResolvedProviderAuth>;
+  };
 };

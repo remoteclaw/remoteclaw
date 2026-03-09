@@ -40,10 +40,8 @@ struct AgentWorkspaceTests {
 
         let identityURL = tmp.appendingPathComponent(AgentWorkspace.identityFilename)
         let userURL = tmp.appendingPathComponent(AgentWorkspace.userFilename)
-        let bootstrapURL = tmp.appendingPathComponent(AgentWorkspace.bootstrapFilename)
         #expect(FileManager().fileExists(atPath: identityURL.path))
         #expect(FileManager().fileExists(atPath: userURL.path))
-        #expect(FileManager().fileExists(atPath: bootstrapURL.path))
 
         let second = try AgentWorkspace.bootstrap(workspaceURL: tmp)
         #expect(second == agentsURL)
@@ -76,17 +74,14 @@ struct AgentWorkspaceTests {
     }
 
     @Test
-    func bootstrapSkipsBootstrapFileWhenWorkspaceHasContent() throws {
+    func bootstrapDoesNotCreateBootstrapFile() throws {
         let tmp = FileManager().temporaryDirectory
             .appendingPathComponent("remoteclaw-ws-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager().removeItem(at: tmp) }
-        try FileManager().createDirectory(at: tmp, withIntermediateDirectories: true)
-        let marker = tmp.appendingPathComponent("notes.txt")
-        try "hello".write(to: marker, atomically: true, encoding: .utf8)
 
         _ = try AgentWorkspace.bootstrap(workspaceURL: tmp)
 
-        let bootstrapURL = tmp.appendingPathComponent(AgentWorkspace.bootstrapFilename)
+        let bootstrapURL = tmp.appendingPathComponent("BOOTSTRAP.md")
         #expect(!FileManager().fileExists(atPath: bootstrapURL.path))
     }
 
@@ -105,8 +100,6 @@ struct AgentWorkspaceTests {
         - Vibe: Helpful
         - Emoji: crab
         """.write(to: identityURL, atomically: true, encoding: .utf8)
-        let bootstrapURL = tmp.appendingPathComponent(AgentWorkspace.bootstrapFilename)
-        try "bootstrap".write(to: bootstrapURL, atomically: true, encoding: .utf8)
 
         #expect(!AgentWorkspace.needsBootstrap(workspaceURL: tmp))
     }

@@ -7,7 +7,6 @@ enum AgentWorkspace {
     static let soulFilename = "SOUL.md"
     static let identityFilename = "IDENTITY.md"
     static let userFilename = "USER.md"
-    static let bootstrapFilename = "BOOTSTRAP.md"
     private static let templateDirname = "templates"
     private static let ignoredEntries: Set<String> = [".DS_Store", ".git", ".gitignore"]
     private static let templateEntries: Set<String> = [
@@ -15,7 +14,6 @@ enum AgentWorkspace {
         AgentWorkspace.soulFilename,
         AgentWorkspace.identityFilename,
         AgentWorkspace.userFilename,
-        AgentWorkspace.bootstrapFilename,
     ]
     struct BootstrapSafety: Equatable {
         let unsafeReason: String?
@@ -92,7 +90,6 @@ enum AgentWorkspace {
     }
 
     static func bootstrap(workspaceURL: URL) throws -> URL {
-        let shouldSeedBootstrap = self.isWorkspaceEmpty(workspaceURL: workspaceURL)
         try FileManager().createDirectory(at: workspaceURL, withIntermediateDirectories: true)
         let agentsURL = self.agentsURL(workspaceURL: workspaceURL)
         if !FileManager().fileExists(atPath: agentsURL.path) {
@@ -114,11 +111,6 @@ enum AgentWorkspace {
             try self.defaultUserTemplate().write(to: userURL, atomically: true, encoding: .utf8)
             self.logger.info("Created USER.md at \(userURL.path, privacy: .public)")
         }
-        let bootstrapURL = workspaceURL.appendingPathComponent(self.bootstrapFilename)
-        if shouldSeedBootstrap, !FileManager().fileExists(atPath: bootstrapURL.path) {
-            try self.defaultBootstrapTemplate().write(to: bootstrapURL, atomically: true, encoding: .utf8)
-            self.logger.info("Created BOOTSTRAP.md at \(bootstrapURL.path, privacy: .public)")
-        }
         return agentsURL
     }
 
@@ -132,8 +124,6 @@ enum AgentWorkspace {
         if self.hasIdentity(workspaceURL: workspaceURL) {
             return false
         }
-        let bootstrapURL = workspaceURL.appendingPathComponent(self.bootstrapFilename)
-        guard fm.fileExists(atPath: bootstrapURL.path) else { return false }
         return self.isTemplateOnlyWorkspace(workspaceURL: workspaceURL)
     }
 
@@ -162,7 +152,6 @@ enum AgentWorkspace {
         This folder is the assistant's working directory.
 
         ## First run (one-time)
-        - If BOOTSTRAP.md exists, follow its ritual and delete it once complete.
         - Your agent identity lives in IDENTITY.md.
         - Your profile lives in USER.md.
 
@@ -230,53 +219,6 @@ enum AgentWorkspace {
         return self.loadTemplate(named: self.userFilename, fallback: fallback)
     }
 
-    static func defaultBootstrapTemplate() -> String {
-        let fallback = """
-        # BOOTSTRAP.md - First Run Ritual (delete after)
-
-        Hello. I was just born.
-
-        ## Your mission
-        Start a short, playful conversation and learn:
-        - Who am I?
-        - What am I?
-        - Who are you?
-        - How should I call you?
-
-        ## How to ask (cute + helpful)
-        Say:
-        "Hello! I was just born. Who am I? What am I? Who are you? How should I call you?"
-
-        Then offer suggestions:
-        - 3-5 name ideas.
-        - 3-5 creature/vibe combos.
-        - 5 emoji ideas.
-
-        ## Write these files
-        After the user chooses, update:
-
-        1) IDENTITY.md
-        - Name
-        - Creature
-        - Vibe
-        - Emoji
-
-        2) USER.md
-        - Name
-        - Preferred address
-        - Pronouns (optional)
-        - Timezone (optional)
-        - Notes
-
-        3) ~/.remoteclaw/remoteclaw.json
-        Set identity.name, identity.theme, identity.emoji to match IDENTITY.md.
-
-        ## Cleanup
-        Delete BOOTSTRAP.md once this is complete.
-        """
-        return self.loadTemplate(named: self.bootstrapFilename, fallback: fallback)
-    }
-
     private static func loadTemplate(named: String, fallback: String) -> String {
         for url in self.templateURLs(named: named) {
             if let content = try? String(contentsOf: url, encoding: .utf8) {
@@ -339,5 +281,5 @@ enum AgentWorkspace {
         return trimmed + "\n"
     }
 
-    // Identity is written by the agent during the bootstrap ritual.
+    // Identity is written by the agent during onboarding.
 }

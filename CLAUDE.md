@@ -109,7 +109,7 @@ GitHub Actions (`.github/workflows/ci.yml`):
 - **build** job: checkout, setup Node env, `pnpm build`
 - **test** job: checkout, setup Node env, canvas bundle, `pnpm test`
 - Both run on `ubuntu-latest` with Node 22 and pnpm 10.23.0
-- Branch protection requires both `build` and `test` to pass
+- Branch protection requires `build`, `test`, `lint`, and `docs` to pass
 
 ## Security
 

@@ -372,6 +372,40 @@ describe("ChannelBridge", () => {
       expect(stored).toBe("old-session");
     });
 
+    it("does not update session when runtime emits an error event", async () => {
+      const msg = makeMessage();
+      const key = buildSessionKey(msg);
+      await sessionMap.set(key, "old-session");
+
+      // Runtime emits error then done with a new (meaningless) sessionId
+      mockRuntimeInstance = mockRuntime([
+        { type: "error", message: "No conversation found" },
+        makeDone({ sessionId: "bad-session-id" }),
+      ]);
+
+      const bridge = createBridge();
+      await bridge.handle(msg);
+
+      // Old session preserved — bad ID not stored
+      const stored = await sessionMap.get(key);
+      expect(stored).toBe("old-session");
+    });
+
+    it("does not update session when runtime throws", async () => {
+      const msg = makeMessage();
+      const key = buildSessionKey(msg);
+      await sessionMap.set(key, "old-session");
+
+      mockRuntimeInstance = { execute: () => failingStream("spawn error") };
+
+      const bridge = createBridge();
+      await bridge.handle(msg);
+
+      // Old session preserved — runtime crash doesn't corrupt the map
+      const stored = await sessionMap.get(key);
+      expect(stored).toBe("old-session");
+    });
+
     it("uses separate sessions for different threads", async () => {
       const msg1 = makeMessage({ replyToId: "thread-1" });
       const msg2 = makeMessage({ replyToId: "thread-2" });

@@ -273,8 +273,9 @@ export class ChannelBridge {
         `[channel-bridge] side effects: sentTexts=${mcp.sentTexts.length} sentMedia=${mcp.sentMediaUrls.length} cronAdds=${mcp.cronAdds}`,
       );
 
-      // 9. Session update
-      if (runResult?.sessionId) {
+      // 9. Session update — skip when runtime errored to avoid overwriting
+      // a potentially-recoverable session ID with a meaningless one.
+      if (runResult?.sessionId && !lastError) {
         logDebug(
           `[channel-bridge] session update: key=${formatSessionKeyString(sessionKey)} sessionId=${runResult.sessionId}`,
         );

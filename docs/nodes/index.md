@@ -140,7 +140,6 @@ Related:
 
 - [Node host CLI](/cli/node)
 - [Exec tool](/tools/exec)
-- [Exec approvals](/tools/exec-approvals)
 
 ## Invoking commands
 
@@ -332,8 +331,7 @@ Notes:
 
 - Pairing is still required (the Gateway will show a node approval prompt).
 - The node host stores its node id, token, display name, and gateway connection info in `~/.remoteclaw/node.json`.
-- Exec approvals are enforced locally via `~/.remoteclaw/exec-approvals.json`
-  (see [Exec approvals](/tools/exec-approvals)).
+- Exec approvals are enforced locally via `~/.remoteclaw/exec-approvals.json`.
 - On macOS, the headless node host executes `system.run` locally by default. Set
   `REMOTECLAW_NODE_EXEC_HOST=app` to route `system.run` through the companion app exec host; add
   `REMOTECLAW_NODE_EXEC_FALLBACK=0` to require the app host and fail closed if it is unavailable.

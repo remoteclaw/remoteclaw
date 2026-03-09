@@ -26,11 +26,6 @@ type TailscaleStatusLike = {
   error: string | null;
 };
 
-type SkillStatusLike = {
-  workspaceDir: string;
-  skills: Array<{ eligible: boolean; missing: Record<string, unknown[]> }>;
-};
-
 type ChannelIssueLike = {
   channel: string;
   accountId: string;
@@ -56,7 +51,6 @@ export async function appendStatusAllDiagnosis(params: {
   tailscaleMode: string;
   tailscale: TailscaleStatusLike;
   tailscaleHttpsUrl: string | null;
-  skillStatus: SkillStatusLike | null;
   channelsStatus: unknown;
   channelIssues: ChannelIssueLike[];
   gatewayReachable: boolean;
@@ -150,17 +144,6 @@ export async function appendStatusAllDiagnosis(params: {
     if (params.tailscaleHttpsUrl) {
       lines.push(`  ${muted(`https: ${params.tailscaleHttpsUrl}`)}`);
     }
-  }
-
-  if (params.skillStatus) {
-    const eligible = params.skillStatus.skills.filter((s) => s.eligible).length;
-    const missing = params.skillStatus.skills.filter(
-      (s) => s.eligible && Object.values(s.missing).some((arr) => arr.length),
-    ).length;
-    emitCheck(
-      `Skills: ${eligible} eligible · ${missing} missing · ${params.skillStatus.workspaceDir}`,
-      missing === 0 ? "ok" : "warn",
-    );
   }
 
   params.progress.setLabel("Reading logs…");

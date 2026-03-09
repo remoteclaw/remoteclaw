@@ -25,7 +25,6 @@ const LineGroupConfigSchema = z
     allowFrom: z.array(z.union([z.string(), z.number()])).optional(),
     requireMention: z.boolean().optional(),
     systemPrompt: z.string().optional(),
-    skills: z.array(z.string()).optional(),
   })
   .strict();
 

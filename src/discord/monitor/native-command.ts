@@ -901,7 +901,6 @@ async function dispatchDiscordCommandInteraction(params: {
       },
     },
     replyOptions: {
-      skillFilter: channelConfig?.skills,
       disableBlockStreaming:
         typeof discordConfig?.blockStreaming === "boolean"
           ? !discordConfig.blockStreaming

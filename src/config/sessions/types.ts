@@ -218,10 +218,6 @@ export type SessionSystemPromptReport = {
     injectedChars: number;
     truncated: boolean;
   }>;
-  skills: {
-    promptChars: number;
-    entries: Array<{ name: string; blockChars: number }>;
-  };
   tools: {
     listChars: number;
     schemaChars: number;

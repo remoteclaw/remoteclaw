@@ -5,7 +5,6 @@ import type {
   AgentRuntime,
   GatewayAuthChoice,
   GatewayBind,
-  NodeManagerChoice,
   TailscaleMode,
 } from "../../commands/onboard-types.js";
 import { onboardCommand } from "../../commands/onboard.js";
@@ -79,10 +78,8 @@ export function registerOnboardCommand(program: Command) {
     .option("--skip-daemon", "Skip gateway service install")
     .option("--daemon-runtime <runtime>", "Daemon runtime: node|bun")
     .option("--skip-channels", "Skip channel setup")
-    .option("--skip-skills", "Skip skills setup")
     .option("--skip-health", "Skip health check")
     .option("--skip-ui", "Skip Control UI/TUI prompts")
-    .option("--node-manager <name>", "Node manager for skills: npm|pnpm|bun")
     .option("--json", "Output JSON summary", false);
 
   command.action(async (opts, commandRuntime) => {
@@ -125,10 +122,8 @@ export function registerOnboardCommand(program: Command) {
           installDaemon,
           daemonRuntime: opts.daemonRuntime as GatewayDaemonRuntime | undefined,
           skipChannels: Boolean(opts.skipChannels),
-          skipSkills: Boolean(opts.skipSkills),
           skipHealth: Boolean(opts.skipHealth),
           skipUi: Boolean(opts.skipUi),
-          nodeManager: opts.nodeManager as NodeManagerChoice | undefined,
           json: Boolean(opts.json),
         },
         defaultRuntime,

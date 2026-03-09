@@ -258,7 +258,7 @@ describe("discord guild/channel resolution", () => {
         help: {
           allow: true,
           requireMention: true,
-          skills: ["search"],
+
           enabled: false,
           users: ["123"],
           systemPrompt: "Use short answers.",
@@ -283,7 +283,7 @@ describe("discord guild/channel resolution", () => {
     });
     expect(help?.allowed).toBe(true);
     expect(help?.requireMention).toBe(true);
-    expect(help?.skills).toEqual(["search"]);
+
     expect(help?.enabled).toBe(false);
     expect(help?.users).toEqual(["123"]);
     expect(help?.systemPrompt).toBe("Use short answers.");

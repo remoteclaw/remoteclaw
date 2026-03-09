@@ -13,7 +13,6 @@ export type SlackChannelConfigResolved = {
   requireMention: boolean;
   allowBots?: boolean;
   users?: Array<string | number>;
-  skills?: string[];
   systemPrompt?: string;
   matchKey?: string;
   matchSource?: ChannelMatchSource;
@@ -25,7 +24,6 @@ export type SlackChannelConfigEntry = {
   requireMention?: boolean;
   allowBots?: boolean;
   users?: Array<string | number>;
-  skills?: string[];
   systemPrompt?: string;
 };
 
@@ -126,14 +124,12 @@ export function resolveSlackChannelConfig(params: {
     requireMentionDefault;
   const allowBots = firstDefined(resolved.allowBots, fallback?.allowBots);
   const users = firstDefined(resolved.users, fallback?.users);
-  const skills = firstDefined(resolved.skills, fallback?.skills);
   const systemPrompt = firstDefined(resolved.systemPrompt, fallback?.systemPrompt);
   const result: SlackChannelConfigResolved = {
     allowed,
     requireMention,
     allowBots,
     users,
-    skills,
     systemPrompt,
   };
   return applyChannelMatchMeta(result, match);

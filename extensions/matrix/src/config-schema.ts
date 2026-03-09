@@ -29,7 +29,7 @@ const matrixRoomSchema = z
     tools: ToolPolicySchema,
     autoReply: z.boolean().optional(),
     users: z.array(allowFromEntry).optional(),
-    skills: z.array(z.string()).optional(),
+
     systemPrompt: z.string().optional(),
   })
   .optional();

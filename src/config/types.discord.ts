@@ -34,8 +34,6 @@ export type DiscordGuildChannelConfig = {
   /** Optional tool policy overrides for this channel. */
   tools?: GroupToolPolicyConfig;
   toolsBySender?: GroupToolPolicyBySenderConfig;
-  /** If specified, only load these skills for this channel. Omit = all skills; empty = no skills. */
-  skills?: string[];
   /** If false, disable the bot for this channel. */
   enabled?: boolean;
   /** Optional allowlist for channel senders (ids or names). */

@@ -10,7 +10,7 @@ function makeRegistry(plugins: Array<{ id: string; channels: string[] }>): Plugi
       id: p.id,
       channels: p.channels,
       providers: [],
-      skills: [],
+
       stt: [],
       tts: [],
       origin: "config" as const,

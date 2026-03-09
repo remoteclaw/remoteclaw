@@ -61,7 +61,6 @@ const CLI_NAME = resolveCliName();
 const SERVICE_REFRESH_TIMEOUT_MS = 60_000;
 
 const UPDATE_QUIPS = [
-  "Leveled up! New skills unlocked. You're welcome.",
   "Fresh code, same crab. Miss me?",
   "Back and better. Did you even notice I was gone?",
   "Update complete. I learned some new tricks while I was out.",

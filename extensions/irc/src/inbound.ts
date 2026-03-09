@@ -357,7 +357,6 @@ export async function handleIrcInbound(params: {
       },
     },
     replyOptions: {
-      skillFilter: groupMatch.groupConfig?.skills,
       onModelSelected,
       disableBlockStreaming:
         typeof account.config.blockStreaming === "boolean"

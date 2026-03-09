@@ -661,7 +661,7 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         dispatcher,
         replyOptions: {
           ...replyOptions,
-          skillFilter: roomConfig?.skills,
+
           onModelSelected,
         },
       });

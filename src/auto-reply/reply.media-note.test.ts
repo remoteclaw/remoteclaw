@@ -22,9 +22,6 @@ async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
       return await fn(home);
     },
     {
-      env: {
-        REMOTECLAW_BUNDLED_SKILLS_DIR: (home) => path.join(home, "bundled-skills"),
-      },
       prefix: "remoteclaw-media-note-",
     },
   );

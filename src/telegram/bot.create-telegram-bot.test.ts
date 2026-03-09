@@ -1834,10 +1834,9 @@ describe("createTelegramBot", () => {
             "-1001234567890": {
               requireMention: false,
               systemPrompt: "Group prompt",
-              skills: ["group-skill"],
+
               topics: {
                 "99": {
-                  skills: [],
                   systemPrompt: "Topic prompt",
                 },
               },
@@ -1855,8 +1854,7 @@ describe("createTelegramBot", () => {
     expect(replySpy).toHaveBeenCalledTimes(1);
     const payload = replySpy.mock.calls[0][0];
     expect(payload.GroupSystemPrompt).toBe("Group prompt\n\nTopic prompt");
-    const opts = replySpy.mock.calls[0][1] as { skillFilter?: unknown };
-    expect(opts?.skillFilter).toEqual([]);
+    expect(replySpy.mock.calls[0][1]).toBeDefined();
   });
   it("threads native command replies inside topics", async () => {
     commandSpy.mockClear();

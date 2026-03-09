@@ -12,8 +12,6 @@ export type AgentConfig = {
   workspace?: string;
   agentDir?: string;
   model?: AgentModelConfig;
-  /** Optional allowlist of skills for this agent (omit = all skills; empty = none). */
-  skills?: string[];
   /** Human-like delay between block replies for this agent. */
   humanDelay?: HumanDelayConfig;
   /** Optional per-agent heartbeat overrides. */

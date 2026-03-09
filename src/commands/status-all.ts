@@ -198,8 +198,6 @@ export async function statusAllCommand(
     const portUsage = await inspectPortUsage(port).catch(() => null);
     progress.tick();
 
-    const skillStatus = null;
-
     const controlUiEnabled = cfg.gateway?.controlUi?.enabled ?? true;
     const dashboard = controlUiEnabled
       ? resolveControlUiLinks({
@@ -308,7 +306,7 @@ export async function statusAllCommand(
         tailscaleMode,
         tailscale,
         tailscaleHttpsUrl,
-        skillStatus,
+
         channelsStatus,
         channelIssues,
         gatewayReachable,

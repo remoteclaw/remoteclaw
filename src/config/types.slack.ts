@@ -38,8 +38,6 @@ export type SlackChannelConfig = {
   allowBots?: boolean;
   /** Allowlist of users that can invoke the bot in this channel. */
   users?: Array<string | number>;
-  /** Optional skill filter for this channel. */
-  skills?: string[];
   /** Optional system prompt for this channel. */
   systemPrompt?: string;
 };

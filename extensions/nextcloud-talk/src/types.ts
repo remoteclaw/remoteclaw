@@ -11,8 +11,7 @@ export type NextcloudTalkRoomConfig = {
   requireMention?: boolean;
   /** Optional tool policy overrides for this room. */
   tools?: { allow?: string[]; deny?: string[] };
-  /** If specified, only load these skills for this room. Omit = all skills; empty = no skills. */
-  skills?: string[];
+
   /** If false, disable the bot for this room. */
   enabled?: boolean;
   /** Optional allowlist for room senders (user ids). */

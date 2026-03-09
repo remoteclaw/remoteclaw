@@ -41,7 +41,6 @@ export interface LineGroupConfig {
   allowFrom?: Array<string | number>;
   requireMention?: boolean;
   systemPrompt?: string;
-  skills?: string[];
 }
 
 export interface ResolvedLineAccount {

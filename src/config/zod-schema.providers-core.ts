@@ -56,7 +56,6 @@ export const TelegramTopicSchema = z
   .object({
     requireMention: z.boolean().optional(),
     groupPolicy: GroupPolicySchema.optional(),
-    skills: z.array(z.string()).optional(),
     enabled: z.boolean().optional(),
     allowFrom: z.array(z.union([z.string(), z.number()])).optional(),
     systemPrompt: z.string().optional(),
@@ -69,7 +68,6 @@ export const TelegramGroupSchema = z
     groupPolicy: GroupPolicySchema.optional(),
     tools: ToolPolicySchema,
     toolsBySender: ToolPolicyBySenderSchema,
-    skills: z.array(z.string()).optional(),
     enabled: z.boolean().optional(),
     allowFrom: z.array(z.union([z.string(), z.number()])).optional(),
     systemPrompt: z.string().optional(),
@@ -269,7 +267,6 @@ export const DiscordGuildChannelSchema = z
     requireMention: z.boolean().optional(),
     tools: ToolPolicySchema,
     toolsBySender: ToolPolicyBySenderSchema,
-    skills: z.array(z.string()).optional(),
     enabled: z.boolean().optional(),
     users: DiscordIdListSchema.optional(),
     roles: DiscordIdListSchema.optional(),
@@ -579,7 +576,6 @@ export const SlackChannelSchema = z
     toolsBySender: ToolPolicyBySenderSchema,
     allowBots: z.boolean().optional(),
     users: z.array(z.union([z.string(), z.number()])).optional(),
-    skills: z.array(z.string()).optional(),
     systemPrompt: z.string().optional(),
   })
   .strict();
@@ -799,7 +795,6 @@ export const IrcGroupSchema = z
     requireMention: z.boolean().optional(),
     tools: ToolPolicySchema,
     toolsBySender: ToolPolicyBySenderSchema,
-    skills: z.array(z.string()).optional(),
     enabled: z.boolean().optional(),
     allowFrom: z.array(z.union([z.string(), z.number()])).optional(),
     systemPrompt: z.string().optional(),

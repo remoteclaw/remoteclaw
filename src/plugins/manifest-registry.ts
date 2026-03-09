@@ -28,7 +28,6 @@ export type PluginManifestRecord = {
   kind?: PluginKind;
   channels: string[];
   providers: string[];
-  skills: string[];
   stt: string[];
   tts: string[];
   origin: PluginOrigin;
@@ -121,7 +120,6 @@ function buildRecord(params: {
     kind: params.manifest.kind,
     channels: params.manifest.channels ?? [],
     providers: params.manifest.providers ?? [],
-    skills: params.manifest.skills ?? [],
     stt: params.manifest.stt ?? [],
     tts: params.manifest.tts ?? [],
     origin: params.candidate.origin,

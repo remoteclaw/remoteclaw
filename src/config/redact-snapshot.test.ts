@@ -693,16 +693,7 @@ describe("redactConfigSnapshot", () => {
         GROQ_API_KEY: "gsk-contract-123",
         NODE_ENV: "production",
       },
-      skills: {
-        entries: {
-          web_search: {
-            env: {
-              GEMINI_API_KEY: "gemini-contract-456",
-              BRAVE_REGION: "us",
-            },
-          },
-        },
-      },
+
       broadcast: {
         apiToken: ["broadcast-secret-1", "broadcast-secret-2"],
         channels: ["ops", "eng"],
@@ -712,14 +703,11 @@ describe("redactConfigSnapshot", () => {
     const redacted = redactConfigSnapshot(snapshot, hints);
     const config = redacted.config as {
       env: Record<string, string>;
-      skills: { entries: Record<string, { env: Record<string, string> }> };
       broadcast: Record<string, string[]>;
     };
 
     expect(config.env.GROQ_API_KEY).toBe(REDACTED_SENTINEL);
     expect(config.env.NODE_ENV).toBe("production");
-    expect(config.skills.entries.web_search.env.GEMINI_API_KEY).toBe(REDACTED_SENTINEL);
-    expect(config.skills.entries.web_search.env.BRAVE_REGION).toBe("us");
     expect(config.broadcast.apiToken).toEqual([REDACTED_SENTINEL, REDACTED_SENTINEL]);
     expect(config.broadcast.channels).toEqual(["ops", "eng"]);
 

@@ -175,8 +175,6 @@ export type TelegramTopicConfig = {
   requireMention?: boolean;
   /** Per-topic override for group message policy (open|disabled|allowlist). */
   groupPolicy?: GroupPolicy;
-  /** If specified, only load these skills for this topic. Omit = all skills; empty = no skills. */
-  skills?: string[];
   /** If false, disable the bot for this topic. */
   enabled?: boolean;
   /** Optional allowlist for topic senders (numeric Telegram user IDs). */
@@ -192,8 +190,6 @@ export type TelegramGroupConfig = {
   /** Optional tool policy overrides for this group. */
   tools?: GroupToolPolicyConfig;
   toolsBySender?: GroupToolPolicyBySenderConfig;
-  /** If specified, only load these skills for this group (when no topic). Omit = all skills; empty = no skills. */
-  skills?: string[];
   /** Per-topic configuration (key is message_thread_id as string) */
   topics?: Record<string, TelegramTopicConfig>;
   /** If false, disable the bot for this group (and its topics). */

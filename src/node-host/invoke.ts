@@ -15,7 +15,6 @@ type ExecApprovalsResolved = {
     security: ExecSecurity;
     ask: ExecAsk;
     askFallback: string | undefined;
-    autoAllowSkills: boolean;
   };
   allowlist: ExecAllowlistEntry[];
   socketPath: string | undefined;
@@ -60,12 +59,7 @@ async function requestExecHostViaSocket(_opts: {
 }
 import { runBrowserProxyCommand } from "./invoke-browser.js";
 import { handleSystemRunInvoke } from "./invoke-system-run.js";
-import type {
-  ExecEventPayload,
-  RunResult,
-  SkillBinsProvider,
-  SystemRunParams,
-} from "./invoke-types.js";
+import type { ExecEventPayload, RunResult, SystemRunParams } from "./invoke-types.js";
 
 const OUTPUT_CAP = 200_000;
 const OUTPUT_EVENT_TAIL = 20_000;
@@ -100,8 +94,6 @@ export type NodeInvokeRequestPayload = {
   timeoutMs?: number | null;
   idempotencyKey?: string | null;
 };
-
-export type { SkillBinsProvider } from "./invoke-types.js";
 
 function resolveExecSecurity(value?: string): ExecSecurity {
   return value === "deny" || value === "allowlist" || value === "full" ? value : "allowlist";
@@ -383,11 +375,7 @@ async function sendInvalidRequestResult(
   await sendErrorResult(client, frame, "INVALID_REQUEST", String(err));
 }
 
-export async function handleInvoke(
-  frame: NodeInvokeRequestPayload,
-  client: GatewayClient,
-  skillBins: SkillBinsProvider,
-) {
+export async function handleInvoke(frame: NodeInvokeRequestPayload, client: GatewayClient) {
   const command = String(frame.command ?? "");
   if (command === "system.execApprovals.get") {
     try {
@@ -480,7 +468,6 @@ export async function handleInvoke(
   await handleSystemRunInvoke({
     client,
     params,
-    skillBins,
     execHostEnforced,
     execHostFallbackAllowed,
     resolveExecSecurity,

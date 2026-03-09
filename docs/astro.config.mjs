@@ -393,34 +393,6 @@ export default defineConfig({
           ],
         },
         {
-          label: "Models",
-          items: [
-            {
-              label: "Overview",
-              items: [{ slug: "providers/index" }, { slug: "providers/models" }],
-            },
-            {
-              label: "Providers",
-              items: [
-                { slug: "providers/anthropic" },
-                { slug: "providers/openai" },
-                { slug: "providers/openrouter" },
-                { slug: "providers/litellm" },
-                { slug: "providers/bedrock" },
-                { slug: "providers/vercel-ai-gateway" },
-                { slug: "providers/moonshot" },
-                { slug: "providers/mistral" },
-                { slug: "providers/minimax" },
-                { slug: "providers/opencode" },
-                { slug: "providers/glm" },
-                { slug: "providers/zai" },
-                { slug: "providers/synthetic" },
-                { slug: "providers/qianfan" },
-              ],
-            },
-          ],
-        },
-        {
           label: "Platforms",
           items: [
             {

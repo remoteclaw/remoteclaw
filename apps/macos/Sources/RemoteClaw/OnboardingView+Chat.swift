@@ -15,10 +15,10 @@ extension OnboardingView {
             guard self.onboardingChatModel.messages.isEmpty else { return }
             let kickoff =
                 "Hi! I just installed RemoteClaw and you’re my brand‑new agent. " +
-                "Please start the first‑run ritual from BOOTSTRAP.md, ask one question at a time, " +
-                "and before we talk about WhatsApp/Telegram, visit soul.md with me to craft SOUL.md: " +
-                "ask what matters to me and how you should be. Then guide me through choosing " +
-                "how we should talk (web‑only, WhatsApp, or Telegram)."
+                "Please help me set up my agent identity — ask one question at a time " +
+                "to fill in IDENTITY.md and USER.md. Then visit SOUL.md with me: " +
+                "ask what matters to me and how you should be. Finally, guide me through " +
+                "choosing how we should talk (web‑only, WhatsApp, or Telegram)."
             self.onboardingChatModel.input = kickoff
             self.onboardingChatModel.send()
         }

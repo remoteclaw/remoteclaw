@@ -20,7 +20,7 @@ const ROOT_COMMANDS_HINT =
   "Hint: commands suffixed with * have subcommands. Run <command> --help for details.";
 
 const EXAMPLES = [
-  ["remoteclaw models --help", "Show detailed help for the models command."],
+  ["remoteclaw onboard --help", "Show detailed help for the onboard command."],
   [
     "remoteclaw channels login --verbose",
     "Link personal WhatsApp Web and show QR + connection logs.",

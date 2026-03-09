@@ -1,5 +1,5 @@
 ---
-description: "Complete reference for all 50 MCP tools across 8 handler groups"
+description: "Complete reference for all 51 MCP tools across 9 handler groups"
 read_when:
   - Implementing or debugging MCP tool calls
   - Understanding which tools are available to agents
@@ -8,11 +8,11 @@ title: "MCP Tool Reference"
 
 # MCP Tool Reference
 
-RemoteClaw exposes **50 MCP tools** across **8 handler groups**. These tools
+RemoteClaw exposes **51 MCP tools** across **9 handler groups**. These tools
 allow CLI agents (Claude, Gemini, Codex, OpenCode) to interact with RemoteClaw
-infrastructure: session management, cross-channel messaging, cron scheduling,
-gateway administration, paired-node execution, canvas collaboration, browser
-proxy, and text-to-speech.
+infrastructure: session management, cross-channel messaging, heartbeat
+reporting, cron scheduling, gateway administration, paired-node execution,
+canvas collaboration, browser proxy, and text-to-speech.
 
 RemoteClaw only provides tools that **require RemoteClaw infrastructure**.
 Generic capabilities (web search, file I/O, shell exec) are left to each CLI
@@ -27,7 +27,7 @@ Tools are divided into two permission tiers based on the `senderIsOwner` flag
 
 | Tier           | Groups                                     | Tool Count | Access     |
 | -------------- | ------------------------------------------ | ---------- | ---------- |
-| **Baseline**   | Session, Message                           | 17         | All agents |
+| **Baseline**   | Session, Message, Heartbeat                | 18         | All agents |
 | **Owner-only** | Cron, Gateway, Nodes, Canvas, Browser, TTS | 33         | Owner only |
 
 Owner-only tools are not registered at all for non-owner sessions, so they do
@@ -278,6 +278,25 @@ Read messages from a channel.
 | ----------- | ------ | -------- | ------------------------------------------------------- |
 | `channelId` | string | no       | Channel to read from (defaults to current conversation) |
 | `limit`     | number | no       | Max messages to return                                  |
+
+---
+
+## Heartbeat Tools (1 tool)
+
+**Source**: `src/middleware/mcp-handlers/heartbeat.ts`
+**Permission**: All agents
+
+### `heartbeat_report`
+
+Report the result of a heartbeat check. Call this at the end of a heartbeat run
+to indicate whether any actions were taken.
+
+| Parameter       | Type    | Required | Description                                                                                                                                                  |
+| --------------- | ------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `anything_done` | boolean | yes      | `true` if any actions were performed or alerts need attention; `false` if nothing needs user-facing follow-up                                                |
+| `summary`       | string  | no       | Optional summary of what was done or observed. When `anything_done` is true, this is delivered to the channel. When false, only shown if `showOk` is enabled |
+
+Records a `heartbeat_report` side effect.
 
 ---
 
@@ -630,15 +649,16 @@ skips registration.
 
 ## Tool Summary
 
-| Group     | Source                    | Permission | Count   | Tools                                                                                                                                                                                                 |
-| --------- | ------------------------- | ---------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Session   | `mcp-handlers/session.ts` | All        | 7       | `sessions_list`, `sessions_history`, `sessions_send`, `sessions_spawn`, `session_status`, `agents_list`, `subagents`                                                                                  |
-| Message   | `mcp-handlers/message.ts` | All        | 10      | `message_send`, `message_reply`, `message_thread_reply`, `message_broadcast`, `message_react`, `message_delete`, `message_send_attachment`, `message_send_with_effect`, `message_pin`, `message_read` |
-| Cron      | `mcp-handlers/cron.ts`    | Owner      | 7       | `cron_status`, `cron_list`, `cron_add`, `cron_update`, `cron_remove`, `cron_run`, `cron_runs`                                                                                                         |
-| Gateway   | `mcp-handlers/gateway.ts` | Owner      | 5       | `gateway_restart`, `gateway_config_get`, `gateway_config_apply`, `gateway_config_patch`, `gateway_config_schema`                                                                                      |
-| Nodes     | `mcp-handlers/nodes.ts`   | Owner      | 7       | `node_list`, `node_describe`, `node_invoke`, `node_rename`, `node_pair_list`, `node_pair_approve`, `node_pair_reject`                                                                                 |
-| Canvas    | `mcp-handlers/canvas.ts`  | Owner      | 7       | `canvas_present`, `canvas_hide`, `canvas_navigate`, `canvas_eval`, `canvas_snapshot`, `canvas_a2ui_push`, `canvas_a2ui_reset`                                                                         |
-| Browser   | `mcp-handlers/browser.ts` | Owner      | 1       | `browser_request`                                                                                                                                                                                     |
-| TTS       | `mcp-handlers/tts.ts`     | Owner      | 6       | `tts_status`, `tts_convert`, `tts_providers`, `tts_set_provider`, `tts_enable`, `tts_disable`                                                                                                         |
-| Plugin    | `mcp-plugin-tools.ts`     | All        | dynamic | Registered from gateway at startup                                                                                                                                                                    |
-| **Total** |                           |            | **50**  |                                                                                                                                                                                                       |
+| Group     | Source                      | Permission | Count   | Tools                                                                                                                                                                                                 |
+| --------- | --------------------------- | ---------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session   | `mcp-handlers/session.ts`   | All        | 7       | `sessions_list`, `sessions_history`, `sessions_send`, `sessions_spawn`, `session_status`, `agents_list`, `subagents`                                                                                  |
+| Message   | `mcp-handlers/message.ts`   | All        | 10      | `message_send`, `message_reply`, `message_thread_reply`, `message_broadcast`, `message_react`, `message_delete`, `message_send_attachment`, `message_send_with_effect`, `message_pin`, `message_read` |
+| Heartbeat | `mcp-handlers/heartbeat.ts` | All        | 1       | `heartbeat_report`                                                                                                                                                                                    |
+| Cron      | `mcp-handlers/cron.ts`      | Owner      | 7       | `cron_status`, `cron_list`, `cron_add`, `cron_update`, `cron_remove`, `cron_run`, `cron_runs`                                                                                                         |
+| Gateway   | `mcp-handlers/gateway.ts`   | Owner      | 5       | `gateway_restart`, `gateway_config_get`, `gateway_config_apply`, `gateway_config_patch`, `gateway_config_schema`                                                                                      |
+| Nodes     | `mcp-handlers/nodes.ts`     | Owner      | 7       | `node_list`, `node_describe`, `node_invoke`, `node_rename`, `node_pair_list`, `node_pair_approve`, `node_pair_reject`                                                                                 |
+| Canvas    | `mcp-handlers/canvas.ts`    | Owner      | 7       | `canvas_present`, `canvas_hide`, `canvas_navigate`, `canvas_eval`, `canvas_snapshot`, `canvas_a2ui_push`, `canvas_a2ui_reset`                                                                         |
+| Browser   | `mcp-handlers/browser.ts`   | Owner      | 1       | `browser_request`                                                                                                                                                                                     |
+| TTS       | `mcp-handlers/tts.ts`       | Owner      | 6       | `tts_status`, `tts_convert`, `tts_providers`, `tts_set_provider`, `tts_enable`, `tts_disable`                                                                                                         |
+| Plugin    | `mcp-plugin-tools.ts`       | All        | dynamic | Registered from gateway at startup                                                                                                                                                                    |
+| **Total** |                             |            | **51**  |                                                                                                                                                                                                       |

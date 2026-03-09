@@ -110,7 +110,8 @@ jobs:
         run: |
           PKG_VERSION=$(node -p "require('./package.json').version")
           SHORT_SHA=$(git rev-parse --short HEAD)
-          NEXT_VERSION="${PKG_VERSION}-next.${SHORT_SHA}"
+          BUILD_TS=$(date -u +%Y%m%d%H%M%S)
+          NEXT_VERSION="${PKG_VERSION}-next.${BUILD_TS}.${SHORT_SHA}"
 
           if npm view "remoteclaw@${NEXT_VERSION}" version &>/dev/null; then
             echo "Version ${NEXT_VERSION} already published, skipping"

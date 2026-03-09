@@ -14,7 +14,7 @@ import { resolveBlockStreamingChunking } from "./block-streaming.js";
 import { buildCommandContext } from "./commands.js";
 import { type InlineDirectives, parseInlineDirectives } from "./directive-handling.js";
 import { applyInlineDirectiveOverrides } from "./get-reply-directives-apply.js";
-import { clearExecInlineDirectives, clearInlineDirectives } from "./get-reply-directives-utils.js";
+import { clearInlineDirectives } from "./get-reply-directives-utils.js";
 import { defaultGroupActivation, resolveGroupRequireMention } from "./groups.js";
 import { CURRENT_MESSAGE_MARKER, stripMentions, stripStructuralPrefixes } from "./mentions.js";
 
@@ -58,8 +58,6 @@ import { stripInlineStatus } from "./reply-inline.js";
 import type { TypingController } from "./typing.js";
 
 type AgentDefaults = NonNullable<RemoteClawConfig["agents"]>["defaults"];
-// Exec tool infrastructure removed (#70) — inline type for remaining directive plumbing
-type ExecOverrides = { host?: string; security?: string; ask?: string; node?: string | boolean };
 
 export type ReplyDirectiveContinuation = {
   commandSource: string;
@@ -74,7 +72,6 @@ export type ReplyDirectiveContinuation = {
   defaultActivation: ReturnType<typeof defaultGroupActivation>;
   resolvedVerboseLevel: VerboseLevel | undefined;
   resolvedElevatedLevel: ElevatedLevel;
-  execOverrides?: ExecOverrides;
   blockStreamingEnabled: boolean;
   blockReplyChunking?: {
     minChars: number;
@@ -96,20 +93,6 @@ export type ReplyDirectiveContinuation = {
     dropPolicy?: InlineDirectives["dropPolicy"];
   };
 };
-
-function resolveExecOverrides(params: {
-  directives: InlineDirectives;
-  sessionEntry?: SessionEntry;
-}): ExecOverrides | undefined {
-  const host = params.directives.execHost ?? params.sessionEntry?.execHost;
-  const security = params.directives.execSecurity ?? params.sessionEntry?.execSecurity;
-  const ask = params.directives.execAsk ?? params.sessionEntry?.execAsk;
-  const node = params.directives.execNode ?? params.sessionEntry?.execNode;
-  if (!host && !security && !ask && !node) {
-    return undefined;
-  }
-  return { host, security, ask, node };
-}
 
 export type ReplyDirectiveResult =
   | { kind: "reply"; reply: ReplyPayload | ReplyPayload[] | undefined }
@@ -233,15 +216,9 @@ export async function resolveReplyDirectives(params: {
       };
     }
   }
-  if (isGroup && ctx.WasMentioned !== true && parsedDirectives.hasExecDirective) {
-    if (parsedDirectives.execSecurity !== "deny") {
-      parsedDirectives = clearExecInlineDirectives(parsedDirectives);
-    }
-  }
   const hasInlineDirective =
     parsedDirectives.hasVerboseDirective ||
     parsedDirectives.hasElevatedDirective ||
-    parsedDirectives.hasExecDirective ||
     parsedDirectives.hasModelDirective ||
     parsedDirectives.hasQueueDirective;
   if (hasInlineDirective) {
@@ -444,7 +421,6 @@ export async function resolveReplyDirectives(params: {
   model = applyResult.model;
   contextTokens = applyResult.contextTokens;
   const { directiveAck, perMessageQueueMode, perMessageQueueOptions } = applyResult;
-  const execOverrides = resolveExecOverrides({ directives, sessionEntry });
 
   return {
     kind: "continue",
@@ -461,7 +437,6 @@ export async function resolveReplyDirectives(params: {
       defaultActivation,
       resolvedVerboseLevel,
       resolvedElevatedLevel,
-      execOverrides,
       blockStreamingEnabled,
       blockReplyChunking,
       resolvedBlockStreamingBreak,

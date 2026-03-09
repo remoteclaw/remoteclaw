@@ -228,7 +228,7 @@ describe("gateway sessions patch", () => {
     expect(res.error.message).toContain("spawnDepth is only supported");
   });
 
-  test("normalizes exec/send/group patches", async () => {
+  test("normalizes send/group patches", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
       cfg: {} as RemoteClawConfig,
@@ -236,10 +236,6 @@ describe("gateway sessions patch", () => {
       storeKey: "agent:main:main",
       patch: {
         key: "agent:main:main",
-        execHost: " NODE ",
-        execSecurity: " ALLOWLIST ",
-        execAsk: " ON-MISS ",
-        execNode: " worker-1 ",
         sendPolicy: "DENY" as unknown as "allow",
         groupActivation: "Always" as unknown as "mention",
       },
@@ -248,27 +244,8 @@ describe("gateway sessions patch", () => {
     if (!res.ok) {
       return;
     }
-    expect(res.entry.execHost).toBe("node");
-    expect(res.entry.execSecurity).toBe("allowlist");
-    expect(res.entry.execAsk).toBe("on-miss");
-    expect(res.entry.execNode).toBe("worker-1");
     expect(res.entry.sendPolicy).toBe("deny");
     expect(res.entry.groupActivation).toBe("always");
-  });
-
-  test("rejects invalid execHost values", async () => {
-    const store: Record<string, SessionEntry> = {};
-    const res = await applySessionsPatchToStore({
-      cfg: {} as RemoteClawConfig,
-      store,
-      storeKey: "agent:main:main",
-      patch: { key: "agent:main:main", execHost: "edge" },
-    });
-    expect(res.ok).toBe(false);
-    if (res.ok) {
-      return;
-    }
-    expect(res.error.message).toContain("invalid execHost");
   });
 
   test("rejects invalid sendPolicy values", async () => {

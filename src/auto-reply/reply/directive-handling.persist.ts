@@ -74,24 +74,6 @@ export async function persistInlineDirectives(params: {
         (directives.elevatedLevel !== prevElevatedLevel && directives.elevatedLevel !== undefined);
       updated = true;
     }
-    if (directives.hasExecDirective && directives.hasExecOptions) {
-      if (directives.execHost) {
-        sessionEntry.execHost = directives.execHost;
-        updated = true;
-      }
-      if (directives.execSecurity) {
-        sessionEntry.execSecurity = directives.execSecurity;
-        updated = true;
-      }
-      if (directives.execAsk) {
-        sessionEntry.execAsk = directives.execAsk;
-        updated = true;
-      }
-      if (directives.execNode) {
-        sessionEntry.execNode = directives.execNode;
-        updated = true;
-      }
-    }
 
     const modelDirective =
       directives.hasModelDirective && params.effectiveModelDirective

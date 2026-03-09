@@ -32,8 +32,6 @@ import type { TypingController } from "./typing.js";
 import { appendUntrustedContext } from "./untrusted-context.js";
 
 type AgentDefaults = NonNullable<RemoteClawConfig["agents"]>["defaults"];
-// Exec tool infrastructure removed (#70) — inline type for remaining directive plumbing
-type ExecOverrides = { host?: string; security?: string; ask?: string; node?: string | boolean };
 
 function buildResetSessionNoticeText(params: {
   provider: string;
@@ -121,7 +119,6 @@ type RunPreparedReplyParams = {
   defaultActivation: Parameters<typeof buildGroupIntro>[0]["defaultActivation"];
   resolvedVerboseLevel: VerboseLevel | undefined;
   resolvedElevatedLevel: ElevatedLevel;
-  execOverrides?: ExecOverrides;
   elevatedEnabled: boolean;
   elevatedAllowed: boolean;
   blockStreamingEnabled: boolean;
@@ -197,8 +194,7 @@ export async function runPreparedReply(
     workspaceDir,
     sessionStore,
   } = params;
-  let { sessionEntry, resolvedVerboseLevel, resolvedElevatedLevel, execOverrides, abortedLastRun } =
-    params;
+  let { sessionEntry, resolvedVerboseLevel, resolvedElevatedLevel, abortedLastRun } = params;
   const currentSystemSent = systemSent;
 
   const isFirstTurnInSession = isNewSession || !currentSystemSent;
@@ -394,7 +390,6 @@ export async function runPreparedReply(
       model,
       verboseLevel: resolvedVerboseLevel,
       elevatedLevel: resolvedElevatedLevel,
-      execOverrides,
       bashElevated: {
         enabled: elevatedEnabled,
         allowed: elevatedAllowed,

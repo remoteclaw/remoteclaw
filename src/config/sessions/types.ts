@@ -44,10 +44,6 @@ export type SessionEntry = {
   verboseLevel?: string;
   elevatedLevel?: string;
   ttsAuto?: TtsAutoMode;
-  execHost?: string;
-  execSecurity?: string;
-  execAsk?: string;
-  execNode?: string;
   responseUsage?: "on" | "off" | "tokens" | "full";
   providerOverride?: string;
   modelOverride?: string;

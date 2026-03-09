@@ -1,22 +1,5 @@
 import type { InlineDirectives } from "./directive-handling.js";
 
-const CLEARED_EXEC_FIELDS = {
-  hasExecDirective: false,
-  execHost: undefined,
-  execSecurity: undefined,
-  execAsk: undefined,
-  execNode: undefined,
-  rawExecHost: undefined,
-  rawExecSecurity: undefined,
-  rawExecAsk: undefined,
-  rawExecNode: undefined,
-  hasExecOptions: false,
-  invalidExecHost: false,
-  invalidExecSecurity: false,
-  invalidExecAsk: false,
-  invalidExecNode: false,
-} satisfies Partial<InlineDirectives>;
-
 export function clearInlineDirectives(cleaned: string): InlineDirectives {
   return {
     cleaned,
@@ -26,7 +9,6 @@ export function clearInlineDirectives(cleaned: string): InlineDirectives {
     hasElevatedDirective: false,
     elevatedLevel: undefined,
     rawElevatedLevel: undefined,
-    ...CLEARED_EXEC_FIELDS,
     hasStatusDirective: false,
     hasModelDirective: false,
     rawModelDirective: undefined,
@@ -41,12 +23,5 @@ export function clearInlineDirectives(cleaned: string): InlineDirectives {
     rawCap: undefined,
     rawDrop: undefined,
     hasQueueOptions: false,
-  };
-}
-
-export function clearExecInlineDirectives(directives: InlineDirectives): InlineDirectives {
-  return {
-    ...directives,
-    ...CLEARED_EXEC_FIELDS,
   };
 }

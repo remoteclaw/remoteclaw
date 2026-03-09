@@ -61,8 +61,6 @@ export type FollowupRun = {
     model: string;
     verboseLevel?: VerboseLevel;
     elevatedLevel?: ElevatedLevel;
-    // Exec tool infrastructure removed (#70) — inline type for remaining directive plumbing
-    execOverrides?: { host?: string; security?: string; ask?: string; node?: string | boolean };
     bashElevated?: {
       enabled: boolean;
       allowed: boolean;

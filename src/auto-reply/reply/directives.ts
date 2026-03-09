@@ -150,35 +150,3 @@ export function extractStatusDirective(body?: string): {
 }
 
 export type { ElevatedLevel, NoticeLevel, VerboseLevel };
-
-/**
- * Stub: exec directive parsing was removed as part of gutting bash/exec
- * infrastructure. Always returns "no directive found".
- */
-export function extractExecDirective(body?: string): {
-  cleaned: string;
-  hasDirective: boolean;
-  hasExecOptions: boolean;
-  execHost?: "sandbox" | "gateway" | "node";
-  execSecurity?: "deny" | "allowlist" | "full";
-  execAsk?: "off" | "on-miss" | "always";
-  execNode?: string;
-  rawExecHost?: string;
-  rawExecSecurity?: string;
-  rawExecAsk?: string;
-  rawExecNode?: string;
-  invalidHost: boolean;
-  invalidSecurity: boolean;
-  invalidAsk: boolean;
-  invalidNode: boolean;
-} {
-  return {
-    cleaned: body?.trim() ?? "",
-    hasDirective: false,
-    hasExecOptions: false,
-    invalidHost: false,
-    invalidSecurity: false,
-    invalidAsk: false,
-    invalidNode: false,
-  };
-}

@@ -152,7 +152,7 @@ describe("getReplyFromConfig reset-hook fallback", () => {
         defaultActivation: "always",
         resolvedVerboseLevel: "off",
         resolvedElevatedLevel: "off",
-        execOverrides: undefined,
+
         blockStreamingEnabled: false,
         blockReplyChunking: undefined,
         resolvedBlockStreamingBreak: undefined,
@@ -212,7 +212,7 @@ describe("getReplyFromConfig reset-hook fallback", () => {
         defaultActivation: "always",
         resolvedVerboseLevel: "off",
         resolvedElevatedLevel: "off",
-        execOverrides: undefined,
+
         blockStreamingEnabled: false,
         blockReplyChunking: undefined,
         resolvedBlockStreamingBreak: undefined,

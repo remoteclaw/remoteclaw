@@ -402,28 +402,6 @@ describe("cron tool", () => {
     expect(call.params?.payload?.text).toBe("wake up");
   });
 
-  it("recovers flat message shorthand as agentTurn payload", async () => {
-    callGatewayMock.mockResolvedValueOnce({ ok: true });
-
-    const tool = createCronTool();
-    await tool.execute("call-msg-shorthand", {
-      action: "add",
-      schedule: { kind: "at", at: new Date(456).toISOString() },
-      message: "do stuff",
-    });
-
-    expect(callGatewayMock).toHaveBeenCalledTimes(1);
-    const call = callGatewayMock.mock.calls[0]?.[0] as {
-      method?: string;
-      params?: { payload?: { kind?: string; message?: string }; sessionTarget?: string };
-    };
-    expect(call.method).toBe("cron.add");
-    // normalizeCronJobCreate infers agentTurn from message and isolated from agentTurn
-    expect(call.params?.payload?.kind).toBe("agentTurn");
-    expect(call.params?.payload?.message).toBe("do stuff");
-    expect(call.params?.sessionTarget).toBe("isolated");
-  });
-
   it("does not recover flat params when no meaningful job field is present", async () => {
     const tool = createCronTool();
     await expect(

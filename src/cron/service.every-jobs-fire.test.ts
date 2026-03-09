@@ -128,7 +128,7 @@ describe("CronService interval/cron jobs fire on time", () => {
           enabled: true,
           createdAtMs: nowMs,
           updatedAtMs: nowMs,
-          schedule: { kind: "every", everyMs: 120_000 },
+          schedule: { kind: "every", everyMs: 120_000, anchorMs: nowMs },
           sessionTarget: "main",
           wakeMode: "now",
           payload: { kind: "systemEvent", text: "sf-tick" },

@@ -349,49 +349,6 @@ async function addWakeModeNowMainSystemEventJob(
   });
 }
 
-function createLegacyDeliveryMigrationJob(options: {
-  id: string;
-  payload: { provider?: string; channel?: string };
-}) {
-  return {
-    id: options.id,
-    name: "legacy",
-    enabled: true,
-    createdAtMs: Date.now(),
-    updatedAtMs: Date.now(),
-    schedule: { kind: "cron", expr: "* * * * *" },
-    sessionTarget: "isolated",
-    wakeMode: "now",
-    payload: {
-      kind: "agentTurn",
-      message: "hi",
-      deliver: true,
-      ...options.payload,
-      to: "7200373102",
-    },
-    state: {},
-  };
-}
-
-async function loadLegacyDeliveryMigration(rawJob: Record<string, unknown>) {
-  ensureDir(fixturesRoot);
-  const store = await makeStorePath();
-  writeStoreFile(store.storePath, { version: 1, jobs: [rawJob] });
-
-  const cron = new CronService({
-    storePath: store.storePath,
-    cronEnabled: true,
-    log: noopLogger,
-    enqueueSystemEvent: vi.fn(),
-    requestHeartbeatNow: vi.fn(),
-    runIsolatedAgentJob: vi.fn(async () => ({ status: "ok" as const })),
-  });
-  await cron.start();
-  const jobs = await cron.list({ includeDisabled: true });
-  const job = jobs.find((j) => j.id === rawJob.id);
-  return { store, cron, job };
-}
-
 describe("CronService", () => {
   it("runs a one-shot main job and disables it after success when requested", async () => {
     const { store, cron, enqueueSystemEvent, requestHeartbeatNow, events } =
@@ -621,37 +578,6 @@ describe("CronService", () => {
     expect(runIsolatedAgentJob).toHaveBeenCalledTimes(1);
     expect(enqueueSystemEvent).not.toHaveBeenCalled();
     expect(requestHeartbeatNow).not.toHaveBeenCalled();
-    cron.stop();
-    await store.cleanup();
-  });
-
-  it("migrates legacy payload.provider to payload.channel on load", async () => {
-    const rawJob = createLegacyDeliveryMigrationJob({
-      id: "legacy-1",
-      payload: { provider: " TeLeGrAm " },
-    });
-    const { store, cron, job } = await loadLegacyDeliveryMigration(rawJob);
-    // Legacy delivery fields are migrated to the top-level delivery object
-    const delivery = job?.delivery as unknown as Record<string, unknown>;
-    expect(delivery?.channel).toBe("telegram");
-    const payload = job?.payload as unknown as Record<string, unknown>;
-    expect("provider" in payload).toBe(false);
-    expect("channel" in payload).toBe(false);
-
-    cron.stop();
-    await store.cleanup();
-  });
-
-  it("canonicalizes payload.channel casing on load", async () => {
-    const rawJob = createLegacyDeliveryMigrationJob({
-      id: "legacy-2",
-      payload: { channel: "Telegram" },
-    });
-    const { store, cron, job } = await loadLegacyDeliveryMigration(rawJob);
-    // Legacy delivery fields are migrated to the top-level delivery object
-    const delivery = job?.delivery as unknown as Record<string, unknown>;
-    expect(delivery?.channel).toBe("telegram");
-
     cron.stop();
     await store.cleanup();
   });

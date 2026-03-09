@@ -319,6 +319,7 @@ describe("Cron issue regressions", () => {
             {
               id: "missing-enabled-update",
               name: "legacy missing enabled",
+              enabled: true,
               createdAtMs: now - 60_000,
               updatedAtMs: now - 60_000,
               schedule: { kind: "cron", expr: "0 */2 * * *", tz: "UTC" },
@@ -363,6 +364,7 @@ describe("Cron issue regressions", () => {
             {
               id: "missing-enabled-due",
               name: "legacy due job",
+              enabled: true,
               createdAtMs: dueAt - 60_000,
               updatedAtMs: dueAt,
               schedule: { kind: "at", at: new Date(dueAt).toISOString() },

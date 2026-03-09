@@ -33,6 +33,9 @@ vi.mock("../../agents/channel-tools.js", () => ({
 vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentConfig: vi.fn().mockReturnValue(undefined),
   resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),
+  resolveAgentRuntimeArgs: vi.fn().mockReturnValue(undefined),
+  resolveAgentRuntimeEnv: vi.fn().mockReturnValue(undefined),
+  resolveAgentRuntimeOrThrow: vi.fn().mockReturnValue("claude"),
   resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
   resolveDefaultAgentId: vi.fn().mockReturnValue("default"),
 }));

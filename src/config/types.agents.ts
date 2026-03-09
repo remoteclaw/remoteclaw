@@ -40,6 +40,10 @@ export type AgentConfig = {
   auth?: false | string | string[];
   /** Selected agent runtime (claude, gemini, codex, opencode). Overrides `agents.defaults.runtime`. */
   runtime?: "claude" | "gemini" | "codex" | "opencode";
+  /** Extra CLI arguments appended to runtime invocation. Replaces `agents.defaults.runtimeArgs`. */
+  runtimeArgs?: string[];
+  /** Extra environment variables injected into runtime invocation. Replaces `agents.defaults.runtimeEnv`. */
+  runtimeEnv?: Record<string, string>;
 };
 
 export type AgentsConfig = {

@@ -6,6 +6,9 @@ import {
   resolveAgentConfig,
   resolveAgentDir,
   resolveAgentRuntime,
+  resolveAgentRuntimeArgs,
+  resolveAgentRuntimeEnv,
+  resolveAgentRuntimeOrThrow,
   resolveFallbackAgentId,
   resolveAgentWorkspaceDir,
   resolveAgentWorkspaceDirOrNull,
@@ -369,5 +372,143 @@ describe("resolveAgentAuth", () => {
     // Agent "main" doesn't exist in list, so resolveAgentEntry returns undefined.
     // Falls through to defaults.auth.
     expect(resolveAgentAuth(cfg, "main")).toBe(false);
+  });
+});
+
+describe("resolveAgentRuntimeOrThrow", () => {
+  it("returns runtime when set on agent entry", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { runtime: "claude" },
+        list: [{ id: "main", workspace: "~/remoteclaw", runtime: "gemini" }],
+      },
+    };
+    expect(resolveAgentRuntimeOrThrow(cfg, "main")).toBe("gemini");
+  });
+
+  it("falls back to defaults runtime", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { runtime: "claude" },
+        list: [{ id: "main", workspace: "~/remoteclaw" }],
+      },
+    };
+    expect(resolveAgentRuntimeOrThrow(cfg, "main")).toBe("claude");
+  });
+
+  it("throws when no runtime is configured", () => {
+    expect(() => resolveAgentRuntimeOrThrow({}, "main")).toThrow("No runtime configured");
+  });
+
+  it("includes supported providers in error message", () => {
+    expect(() => resolveAgentRuntimeOrThrow({}, "main")).toThrow("claude, gemini, codex, opencode");
+  });
+});
+
+describe("resolveAgentRuntimeArgs", () => {
+  it("returns undefined when no agents config exists", () => {
+    expect(resolveAgentRuntimeArgs({}, "main")).toBeUndefined();
+  });
+
+  it("returns undefined when agent has no runtimeArgs and no defaults", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main", workspace: "~/remoteclaw" }],
+      },
+    };
+    expect(resolveAgentRuntimeArgs(cfg, "main")).toBeUndefined();
+  });
+
+  it("inherits runtimeArgs from defaults when agent entry has none", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { runtimeArgs: ["--verbose"] },
+        list: [{ id: "main", workspace: "~/remoteclaw" }],
+      },
+    };
+    expect(resolveAgentRuntimeArgs(cfg, "main")).toEqual(["--verbose"]);
+  });
+
+  it("agent entry runtimeArgs replaces defaults entirely", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { runtimeArgs: ["--verbose"] },
+        list: [{ id: "main", workspace: "~/remoteclaw", runtimeArgs: ["--model", "sonnet"] }],
+      },
+    };
+    expect(resolveAgentRuntimeArgs(cfg, "main")).toEqual(["--model", "sonnet"]);
+  });
+
+  it("returns defaults runtimeArgs when agent entry does not exist", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { runtimeArgs: ["--dangerously-skip-permissions"] },
+        list: [{ id: "other", workspace: "~/remoteclaw" }],
+      },
+    };
+    expect(resolveAgentRuntimeArgs(cfg, "main")).toEqual(["--dangerously-skip-permissions"]);
+  });
+
+  it("agent entry with empty runtimeArgs clears defaults", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { runtimeArgs: ["--verbose"] },
+        list: [{ id: "main", workspace: "~/remoteclaw", runtimeArgs: [] }],
+      },
+    };
+    // Empty array is truthy — per-agent [] replaces defaults entirely.
+    expect(resolveAgentRuntimeArgs(cfg, "main")).toEqual([]);
+  });
+});
+
+describe("resolveAgentRuntimeEnv", () => {
+  it("returns undefined when no agents config exists", () => {
+    expect(resolveAgentRuntimeEnv({}, "main")).toBeUndefined();
+  });
+
+  it("returns undefined when agent has no runtimeEnv and no defaults", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "main", workspace: "~/remoteclaw" }],
+      },
+    };
+    expect(resolveAgentRuntimeEnv(cfg, "main")).toBeUndefined();
+  });
+
+  it("inherits runtimeEnv from defaults when agent entry has none", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { runtimeEnv: { API_KEY: "sk-default" } },
+        list: [{ id: "main", workspace: "~/remoteclaw" }],
+      },
+    };
+    expect(resolveAgentRuntimeEnv(cfg, "main")).toEqual({ API_KEY: "sk-default" });
+  });
+
+  it("agent entry runtimeEnv replaces defaults entirely", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { runtimeEnv: { API_KEY: "sk-default", SHARED: "yes" } },
+        list: [
+          {
+            id: "main",
+            workspace: "~/remoteclaw",
+            runtimeEnv: { API_KEY: "sk-agent-specific" },
+          },
+        ],
+      },
+    };
+    // Per-agent replaces entirely — SHARED is NOT inherited.
+    expect(resolveAgentRuntimeEnv(cfg, "main")).toEqual({ API_KEY: "sk-agent-specific" });
+  });
+
+  it("returns defaults runtimeEnv when agent entry does not exist", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        defaults: { runtimeEnv: { API_KEY: "sk-default" } },
+        list: [{ id: "other", workspace: "~/remoteclaw" }],
+      },
+    };
+    expect(resolveAgentRuntimeEnv(cfg, "main")).toEqual({ API_KEY: "sk-default" });
   });
 });

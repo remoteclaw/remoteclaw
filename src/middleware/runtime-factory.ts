@@ -42,49 +42,6 @@ export function _resetValidationCache(): void {
   validatedCommands.clear();
 }
 
-/**
- * Resolve the CLI runtime provider from config.
- *
- * Reads `agents.defaults.runtime` (set during onboarding) and throws when
- * unset.  This is the **CLI runtime** (which binary to spawn), NOT the
- * model-API provider (e.g. "anthropic").
- */
-export function resolveCliRuntimeProvider(cfg?: {
-  agents?: { defaults?: { runtime?: string } };
-}): string {
-  const runtime = cfg?.agents?.defaults?.runtime;
-  if (!runtime) {
-    throw new Error(
-      `No runtime configured. Set agents.defaults.runtime to one of: ${SUPPORTED_PROVIDERS.join(", ")}`,
-    );
-  }
-  return runtime;
-}
-
-/**
- * Resolve extra CLI runtime args from config.
- *
- * Reads `agents.defaults.runtimeArgs` — extra CLI flags appended to every
- * runtime invocation (e.g. `["--dangerously-skip-permissions"]`).
- */
-export function resolveCliRuntimeArgs(cfg?: {
-  agents?: { defaults?: { runtimeArgs?: string[] } };
-}): string[] | undefined {
-  return cfg?.agents?.defaults?.runtimeArgs;
-}
-
-/**
- * Resolve extra CLI runtime env vars from config.
- *
- * Reads `agents.defaults.runtimeEnv` — environment variables injected into
- * every runtime invocation (e.g. `{ "ANTHROPIC_API_KEY": "sk-ant-..." }`).
- */
-export function resolveCliRuntimeEnv(cfg?: {
-  agents?: { defaults?: { runtimeEnv?: Record<string, string> } };
-}): Record<string, string> | undefined {
-  return cfg?.agents?.defaults?.runtimeEnv;
-}
-
 export function createCliRuntime(provider: string): AgentRuntime {
   const normalized = provider.trim().toLowerCase();
   logDebug(`[runtime-factory] creating runtime: provider=${normalized}`);

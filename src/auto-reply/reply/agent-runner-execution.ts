@@ -7,6 +7,11 @@ import {
   isTransientHttpError,
   sanitizeUserFacingText,
 } from "../../agents/agent-helpers.js";
+import {
+  resolveAgentRuntimeArgs,
+  resolveAgentRuntimeEnv,
+  resolveAgentRuntimeOrThrow,
+} from "../../agents/agent-scope.js";
 import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { resolveUserTimezone } from "../../agents/date-time.js";
 import { resolveGatewayPort } from "../../config/paths.js";
@@ -20,11 +25,6 @@ import { logVerbose } from "../../globals.js";
 import { emitAgentEvent, registerAgentRunContext } from "../../infra/agent-events.js";
 import { withAuthKeyRetry } from "../../middleware/auth-key-retry.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
-import {
-  resolveCliRuntimeArgs,
-  resolveCliRuntimeEnv,
-  resolveCliRuntimeProvider,
-} from "../../middleware/runtime-factory.js";
 import type { SessionMap } from "../../middleware/session-map.js";
 import type {
   AgentDeliveryResult,
@@ -282,7 +282,8 @@ export async function runAgentTurnWithFallback(params: {
         });
 
         const cfg = params.followupRun.run.config;
-        const baseRuntimeEnv = resolveCliRuntimeEnv(cfg);
+        const agentId = params.followupRun.run.agentId;
+        const baseRuntimeEnv = resolveAgentRuntimeEnv(cfg, agentId);
 
         const messageToolHints = resolveChannelMessageToolHints({
           cfg,
@@ -377,12 +378,12 @@ export async function runAgentTurnWithFallback(params: {
           },
           async (runtimeEnv) => {
             const bridge = new ChannelBridge({
-              provider: resolveCliRuntimeProvider(cfg),
+              provider: resolveAgentRuntimeOrThrow(cfg, agentId),
               sessionMap,
               gatewayUrl: resolveGatewayUrlFromConfig(cfg),
               gatewayToken: resolveGatewayTokenFromConfig(cfg),
               workspaceDir: params.followupRun.run.workspaceDir,
-              runtimeArgs: resolveCliRuntimeArgs(cfg),
+              runtimeArgs: resolveAgentRuntimeArgs(cfg, agentId),
               runtimeEnv,
             });
 

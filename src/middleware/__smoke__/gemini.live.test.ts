@@ -7,6 +7,7 @@ import { isTruthyEnvValue } from "../../infra/env.js";
 import { ChannelBridge } from "../channel-bridge.js";
 import { SessionMap } from "../session-map.js";
 import type { ChannelMessage } from "../types.js";
+import { TEST_IMAGE_PATH } from "./test-image.js";
 
 const LIVE = isTruthyEnvValue(process.env.LIVE);
 
@@ -67,14 +68,8 @@ describe.skipIf(!LIVE)("gemini CLI middleware smoke test", () => {
   }, 60_000);
 
   it("processes an image attachment and describes the content", async () => {
-    // 100x100 solid red PNG
-    const pngBase64 =
-      "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAABFUlEQVR4nO3OUQkAIABEsetfWiv4Nx4IC7Cd7XvkByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIReeLesrH9s1agAAAABJRU5ErkJggg==";
-    const testImagePath = join(tempDir, "test-image.png");
-    await writeFile(testImagePath, Buffer.from(pngBase64, "base64"));
-
     const msg = makeMessage("What color is this image? Reply with just the color name.");
-    msg.mediaUrls = [testImagePath];
+    msg.mediaUrls = [TEST_IMAGE_PATH];
 
     const result = await bridge.handle(msg);
 

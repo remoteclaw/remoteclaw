@@ -9,6 +9,7 @@ import { shouldSkipRespawnForArgv } from "./cli/respawn-policy.js";
 import { normalizeWindowsArgv } from "./cli/windows-argv.js";
 import { isTruthyEnvValue, normalizeEnv } from "./infra/env.js";
 import { isMainModule } from "./infra/is-main.js";
+import { ensureRemoteClawExecMarkerOnProcess } from "./infra/remoteclaw-exec-env.js";
 import { installProcessWarningFilter } from "./infra/warning-filter.js";
 import { attachChildProcessBridge } from "./process/child-process-bridge.js";
 
@@ -31,6 +32,7 @@ if (
   // Imported as a dependency — skip all entry-point side effects.
 } else {
   process.title = "remoteclaw";
+  ensureRemoteClawExecMarkerOnProcess();
   installProcessWarningFilter();
   normalizeEnv();
   if (!isTruthyEnvValue(process.env.NODE_DISABLE_COMPILE_CACHE)) {

@@ -475,17 +475,16 @@ describe("security audit", () => {
     expect(res.findings.some((f) => f.checkId === "fs.config.perms_group_readable")).toBe(false);
   });
 
-  it("scores small-model risk by tool exposure", async () => {
+  it("does not score small-model risk when model config is absent", async () => {
+    // Model selection gutted — collectModels only reads imageModel (which is
+    // filtered out of small-param checks), so no small-model finding is expected.
     const cfg: RemoteClawConfig = {
-      agents: { defaults: { model: { primary: "ollama/mistral-8b" } } },
+      agents: { defaults: {} },
       browser: { enabled: true },
     };
     const res = await audit(cfg);
     const finding = res.findings.find((f) => f.checkId === "models.small_params");
-    expect(finding?.severity).toBe("critical");
-    for (const text of ["mistral-8b", "browser"]) {
-      expect(finding?.detail).toContain(text);
-    }
+    expect(finding).toBeUndefined();
   });
 
   it("flags ineffective gateway.nodes.denyCommands entries", async () => {
@@ -1512,7 +1511,7 @@ describe("security audit", () => {
     await Promise.all(
       cases.map(async (testCase) => {
         const res = await audit({
-          agents: { defaults: { model: { primary: testCase.model } } },
+          agents: { defaults: { imageModel: testCase.model } },
         });
         for (const expected of testCase.expectedFindings ?? []) {
           expect(hasFinding(res, expected.checkId, expected.severity), testCase.name).toBe(true);

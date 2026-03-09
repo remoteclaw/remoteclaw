@@ -12,9 +12,7 @@ describe("agents helpers", () => {
   it("buildAgentSummaries includes default + configured agents", () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        defaults: {
-          model: { primary: "anthropic/claude" },
-        },
+        defaults: {},
         list: [
           { id: "main", workspace: "/main-ws" },
           {
@@ -23,7 +21,7 @@ describe("agents helpers", () => {
             name: "Work",
             workspace: "/work-ws",
             agentDir: "/state/agents/work/agent",
-            model: "openai/gpt-4.1",
+            runtime: "claude",
           },
         ],
       },
@@ -43,7 +41,7 @@ describe("agents helpers", () => {
     expect(main).toBeTruthy();
     expect(main?.workspace).toBe(path.resolve("/main-ws"));
     expect(main?.bindings).toBe(1);
-    expect(main?.model).toBe("anthropic/claude");
+    expect(main?.runtime).toBeUndefined();
     expect(main?.agentDir.endsWith(path.join("agents", "main", "agent"))).toBe(true);
 
     expect(work).toBeTruthy();
@@ -57,7 +55,7 @@ describe("agents helpers", () => {
   it("applyAgentConfig merges updates", () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "work", workspace: "/old-ws", model: "anthropic/claude" }],
+        list: [{ id: "work", workspace: "/old-ws" }],
       },
     };
 
@@ -72,7 +70,6 @@ describe("agents helpers", () => {
     expect(work?.name).toBe("Work");
     expect(work?.workspace).toBe("/new-ws");
     expect(work?.agentDir).toBe("/state/work/agent");
-    expect(work?.model).toBe("anthropic/claude");
   });
 
   it("applyAgentBindings skips duplicates and reports conflicts", () => {

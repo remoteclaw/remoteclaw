@@ -15,7 +15,7 @@ export type AgentSummary = {
   identityEmoji?: string;
   workspace: string;
   agentDir: string;
-  model?: string;
+  runtime?: string;
   bindings: number;
   bindingDetails?: string[];
   routes?: string[];
@@ -39,26 +39,11 @@ function resolveAgentName(cfg: RemoteClawConfig, agentId: string) {
   return entry?.name?.trim() || undefined;
 }
 
-function resolveAgentModel(cfg: RemoteClawConfig, agentId: string) {
+function resolveAgentRuntimeLabel(cfg: RemoteClawConfig, agentId: string): string | undefined {
   const entry = listAgentEntries(cfg).find(
     (agent) => normalizeAgentId(agent.id) === normalizeAgentId(agentId),
   );
-  if (entry?.model) {
-    if (typeof entry.model === "string" && entry.model.trim()) {
-      return entry.model.trim();
-    }
-    if (typeof entry.model === "object") {
-      const primary = entry.model.primary?.trim();
-      if (primary) {
-        return primary;
-      }
-    }
-  }
-  const raw = cfg.agents?.defaults?.model;
-  if (typeof raw === "string") {
-    return raw;
-  }
-  return raw?.primary?.trim() || undefined;
+  return entry?.runtime ?? cfg.agents?.defaults?.runtime ?? undefined;
 }
 
 export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
@@ -90,7 +75,7 @@ export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
       identityEmoji,
       workspace,
       agentDir: resolveAgentDir(cfg, id),
-      model: resolveAgentModel(cfg, id),
+      runtime: resolveAgentRuntimeLabel(cfg, id),
       bindings: bindingCounts.get(id) ?? 0,
       isDefault: id === defaultAgentId,
     };
@@ -104,8 +89,8 @@ export function applyAgentConfig(
     name?: string;
     workspace?: string;
     agentDir?: string;
-    model?: string;
     identity?: IdentityConfig;
+    runtime?: AgentEntry["runtime"];
   },
 ): RemoteClawConfig {
   const agentId = normalizeAgentId(params.agentId);
@@ -119,8 +104,8 @@ export function applyAgentConfig(
     ...(name ? { name } : {}),
     ...(params.workspace ? { workspace: params.workspace } : {}),
     ...(params.agentDir ? { agentDir: params.agentDir } : {}),
-    ...(params.model ? { model: params.model } : {}),
     ...(nextIdentity ? { identity: nextIdentity } : {}),
+    ...(params.runtime ? { runtime: params.runtime } : {}),
   };
   const nextList = [...list];
   if (index >= 0) {

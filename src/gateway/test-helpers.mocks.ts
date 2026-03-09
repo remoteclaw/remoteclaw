@@ -385,7 +385,6 @@ vi.mock("../config/config.js", async () => {
           ? (fileAgents.defaults as Record<string, unknown>)
           : {};
       const defaults = {
-        model: { primary: "anthropic/claude-opus-4-6" },
         ...fileDefaults,
         ...testState.agentConfig,
       };

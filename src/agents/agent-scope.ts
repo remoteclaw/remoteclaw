@@ -25,7 +25,6 @@ type ResolvedAgentConfig = {
   name?: string;
   workspace?: string;
   agentDir?: string;
-  model?: AgentEntry["model"];
   humanDelay?: AgentEntry["humanDelay"];
   heartbeat?: AgentEntry["heartbeat"];
   boot?: AgentEntry["boot"];
@@ -35,6 +34,7 @@ type ResolvedAgentConfig = {
   sandbox?: AgentEntry["sandbox"];
   tools?: AgentEntry["tools"];
   auth?: AgentEntry["auth"];
+  runtime?: AgentEntry["runtime"];
 };
 
 let defaultAgentWarned = false;
@@ -124,10 +124,6 @@ export function resolveAgentConfig(
     name: typeof entry.name === "string" ? entry.name : undefined,
     workspace: typeof entry.workspace === "string" ? entry.workspace : undefined,
     agentDir: typeof entry.agentDir === "string" ? entry.agentDir : undefined,
-    model:
-      typeof entry.model === "string" || (entry.model && typeof entry.model === "object")
-        ? entry.model
-        : undefined,
     humanDelay: entry.humanDelay,
     heartbeat: entry.heartbeat,
     boot: entry.boot,
@@ -137,6 +133,7 @@ export function resolveAgentConfig(
     sandbox: entry.sandbox,
     tools: entry.tools,
     auth: entry.auth,
+    runtime: entry.runtime,
   };
 }
 
@@ -162,61 +159,21 @@ export function resolveAgentAuth(
   return defaultsAuth !== undefined ? defaultsAuth : undefined;
 }
 
-function resolveModelPrimary(raw: unknown): string | undefined {
-  if (typeof raw === "string") {
-    const trimmed = raw.trim();
-    return trimmed || undefined;
-  }
-  if (!raw || typeof raw !== "object") {
-    return undefined;
-  }
-  const primary = (raw as { primary?: unknown }).primary;
-  if (typeof primary !== "string") {
-    return undefined;
-  }
-  const trimmed = primary.trim();
-  return trimmed || undefined;
-}
-
-export function resolveAgentExplicitModelPrimary(
+/**
+ * Resolve the effective runtime for an agent.
+ *
+ * Resolution: agent entry `runtime` overrides `agents.defaults.runtime`.
+ * Returns `undefined` when neither the entry nor defaults define runtime.
+ */
+export function resolveAgentRuntime(
   cfg: RemoteClawConfig,
   agentId: string,
-): string | undefined {
-  const raw = resolveAgentConfig(cfg, agentId)?.model;
-  return resolveModelPrimary(raw);
-}
-
-export function resolveAgentEffectiveModelPrimary(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): string | undefined {
-  return (
-    resolveAgentExplicitModelPrimary(cfg, agentId) ??
-    resolveModelPrimary(cfg.agents?.defaults?.model)
-  );
-}
-
-// Backward-compatible alias. Prefer explicit/effective helpers at new call sites.
-export function resolveAgentModelPrimary(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): string | undefined {
-  return resolveAgentExplicitModelPrimary(cfg, agentId);
-}
-
-export function resolveAgentModelFallbacksOverride(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): string[] | undefined {
-  const raw = resolveAgentConfig(cfg, agentId)?.model;
-  if (!raw || typeof raw === "string") {
-    return undefined;
+): "claude" | "gemini" | "codex" | "opencode" | undefined {
+  const entry = resolveAgentEntry(cfg, normalizeAgentId(agentId));
+  if (entry?.runtime) {
+    return entry.runtime;
   }
-  // Important: treat an explicitly provided empty array as an override to disable global fallbacks.
-  if (!Object.hasOwn(raw, "fallbacks")) {
-    return undefined;
-  }
-  return Array.isArray(raw.fallbacks) ? raw.fallbacks : undefined;
+  return cfg.agents?.defaults?.runtime ?? undefined;
 }
 
 export function resolveFallbackAgentId(params: {
@@ -228,52 +185,6 @@ export function resolveFallbackAgentId(params: {
     return normalizeAgentId(explicitAgentId);
   }
   return resolveAgentIdFromSessionKey(params.sessionKey);
-}
-
-export function resolveRunModelFallbacksOverride(params: {
-  cfg: RemoteClawConfig | undefined;
-  agentId?: string | null;
-  sessionKey?: string | null;
-}): string[] | undefined {
-  if (!params.cfg) {
-    return undefined;
-  }
-  return resolveAgentModelFallbacksOverride(
-    params.cfg,
-    resolveFallbackAgentId({ agentId: params.agentId, sessionKey: params.sessionKey }),
-  );
-}
-
-function resolveModelFallbackValues(model: unknown): string[] {
-  if (!model || typeof model !== "object") {
-    return [];
-  }
-  return Array.isArray((model as { fallbacks?: unknown }).fallbacks)
-    ? (model as { fallbacks: string[] }).fallbacks
-    : [];
-}
-
-export function hasConfiguredModelFallbacks(params: {
-  cfg: RemoteClawConfig | undefined;
-  agentId?: string | null;
-  sessionKey?: string | null;
-}): boolean {
-  const fallbacksOverride = resolveRunModelFallbacksOverride(params);
-  const defaultFallbacks = resolveModelFallbackValues(params.cfg?.agents?.defaults?.model);
-  return (fallbacksOverride ?? defaultFallbacks).length > 0;
-}
-
-export function resolveEffectiveModelFallbacks(params: {
-  cfg: RemoteClawConfig;
-  agentId: string;
-  hasSessionModelOverride: boolean;
-}): string[] | undefined {
-  const agentFallbacksOverride = resolveAgentModelFallbacksOverride(params.cfg, params.agentId);
-  if (!params.hasSessionModelOverride) {
-    return agentFallbacksOverride;
-  }
-  const defaultFallbacks = resolveModelFallbackValues(params.cfg.agents?.defaults?.model);
-  return agentFallbacksOverride ?? defaultFallbacks;
 }
 
 export function resolveAgentWorkspaceDir(cfg: RemoteClawConfig, agentId: string): string {

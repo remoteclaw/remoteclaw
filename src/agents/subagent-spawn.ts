@@ -1,38 +1,20 @@
 import crypto from "node:crypto";
 import { DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH } from "../config/agent-limits.js";
 import { loadConfig } from "../config/config.js";
-// Model input infrastructure gutted in RemoteClaw — inline primary resolution.
 import { callGateway } from "../gateway/call.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { resolveAgentConfig } from "./agent-scope.js";
-// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { AGENT_LANE_SUBAGENT } from "./lanes.js";
 import { buildSubagentSystemPrompt } from "./subagent-announce.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import { countActiveRunsForSession, registerSubagentRun } from "./subagent-registry.js";
-import { readStringParam } from "./tools/common.js";
 import {
   resolveDisplaySessionKey,
   resolveInternalSessionKey,
   resolveMainSessionAlias,
 } from "./tools/sessions-helpers.js";
-
-function resolveModelPrimaryValue(model: unknown): string | undefined {
-  if (typeof model === "string") {
-    const trimmed = model.trim();
-    return trimmed || undefined;
-  }
-  if (model && typeof model === "object") {
-    const primary = (model as { primary?: unknown }).primary;
-    if (typeof primary === "string") {
-      const trimmed = primary.trim();
-      return trimmed || undefined;
-    }
-  }
-  return undefined;
-}
 
 export const SUBAGENT_SPAWN_MODES = ["run", "session"] as const;
 export type SpawnSubagentMode = (typeof SUBAGENT_SPAWN_MODES)[number];
@@ -280,17 +262,9 @@ export async function spawnSubagentDirect(
   const childSessionKey = `agent:${targetAgentId}:subagent:${crypto.randomUUID()}`;
   const childDepth = callerDepth + 1;
   const spawnedByKey = requesterInternalKey;
-  const targetAgentConfig = resolveAgentConfig(cfg, targetAgentId);
-  // Resolve model from explicit override, per-agent config, global defaults,
-  // or the runtime default (CLI agents handle selection but the gateway passes
-  // through a configured model so sessions start with the right context).
-  const resolvedModel =
-    modelOverride?.trim() ||
-    readStringParam(targetAgentConfig?.subagents ?? {}, "model") ||
-    readStringParam(cfg.agents?.defaults?.subagents ?? {}, "model") ||
-    resolveModelPrimaryValue(targetAgentConfig?.model) ||
-    resolveModelPrimaryValue(cfg.agents?.defaults?.model) ||
-    "unknown/unknown";
+  // Model config gutted — CLIs own model selection. Pass through explicit
+  // override if provided, otherwise "unknown/unknown" as a placeholder.
+  const resolvedModel = modelOverride?.trim() || "unknown/unknown";
 
   try {
     await callGateway({

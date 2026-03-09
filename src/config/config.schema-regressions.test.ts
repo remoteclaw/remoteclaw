@@ -75,11 +75,11 @@ describe("config schema regressions", () => {
     expect(res.ok).toBe(true);
   });
 
-  it("accepts string values for agents defaults model inputs", () => {
+  it("accepts string values for agents defaults imageModel input", () => {
+    // defaults.model gutted — only imageModel remains as a string input
     const res = validateConfigObject({
       agents: {
         defaults: {
-          model: "anthropic/claude-opus-4-6",
           imageModel: "openai/gpt-4.1-mini",
         },
       },

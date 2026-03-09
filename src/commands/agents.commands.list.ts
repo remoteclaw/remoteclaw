@@ -41,8 +41,8 @@ function formatSummary(summary: AgentSummary) {
   }
   lines.push(`  Workspace: ${shortenHomePath(summary.workspace)}`);
   lines.push(`  Agent dir: ${shortenHomePath(summary.agentDir)}`);
-  if (summary.model) {
-    lines.push(`  Model: ${summary.model}`);
+  if (summary.runtime) {
+    lines.push(`  Runtime: ${summary.runtime}`);
   }
   lines.push(`  Routing rules: ${summary.bindings}`);
 

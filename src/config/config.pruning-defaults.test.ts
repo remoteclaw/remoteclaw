@@ -47,7 +47,7 @@ describe("config pruning defaults", () => {
     });
   });
 
-  it("enables cache-ttl pruning + 1h cache TTL for Anthropic API keys", async () => {
+  it("enables cache-ttl pruning + 30m heartbeat for Anthropic API keys", async () => {
     await withTempHome(async (home) => {
       await writeConfigForTest(home, {
         auth: {
@@ -55,11 +55,7 @@ describe("config pruning defaults", () => {
             "anthropic:api": { provider: "anthropic", mode: "api_key" },
           },
         },
-        agents: {
-          defaults: {
-            model: { primary: "anthropic/claude-opus-4-5" },
-          },
-        },
+        agents: { defaults: {} },
       });
 
       const cfg = loadConfig();
@@ -67,13 +63,10 @@ describe("config pruning defaults", () => {
       expect(cfg.agents?.defaults?.contextPruning?.mode).toBe("cache-ttl");
       expect(cfg.agents?.defaults?.contextPruning?.ttl).toBe("1h");
       expect(cfg.agents?.defaults?.heartbeat?.every).toBe("30m");
-      expect(
-        cfg.agents?.defaults?.models?.["anthropic/claude-opus-4-5"]?.params?.cacheRetention,
-      ).toBe("short");
     });
   });
 
-  it("adds default cacheRetention for Anthropic Claude models on Bedrock", async () => {
+  it("adds default cacheRetention for Anthropic Claude models in models map", async () => {
     await withTempHome(async (home) => {
       await writeConfigForTest(home, {
         auth: {
@@ -83,7 +76,34 @@ describe("config pruning defaults", () => {
         },
         agents: {
           defaults: {
-            model: { primary: "amazon-bedrock/us.anthropic.claude-opus-4-6-v1" },
+            models: {
+              "anthropic/claude-opus-4-5": {},
+            },
+          },
+        },
+      });
+
+      const cfg = loadConfig();
+
+      expect(
+        cfg.agents?.defaults?.models?.["anthropic/claude-opus-4-5"]?.params?.cacheRetention,
+      ).toBe("short");
+    });
+  });
+
+  it("adds default cacheRetention for Anthropic Claude models on Bedrock in models map", async () => {
+    await withTempHome(async (home) => {
+      await writeConfigForTest(home, {
+        auth: {
+          profiles: {
+            "anthropic:api": { provider: "anthropic", mode: "api_key" },
+          },
+        },
+        agents: {
+          defaults: {
+            models: {
+              "amazon-bedrock/us.anthropic.claude-opus-4-6-v1": {},
+            },
           },
         },
       });
@@ -107,7 +127,9 @@ describe("config pruning defaults", () => {
         },
         agents: {
           defaults: {
-            model: { primary: "amazon-bedrock/amazon.nova-micro-v1:0" },
+            models: {
+              "amazon-bedrock/amazon.nova-micro-v1:0": {},
+            },
           },
         },
       });

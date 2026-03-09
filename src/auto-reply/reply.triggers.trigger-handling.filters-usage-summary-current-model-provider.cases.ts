@@ -71,8 +71,9 @@ export function registerTriggerHandlingUsageSummaryCases(params: {
           expect(text).toContain("Model:");
           expect(text).toContain("RemoteClaw");
           expect(normalizeTestText(text ?? "")).toContain("Usage: Claude 80% left");
+          // Model provider gutted in RemoteClaw — resolves to "unknown"
           expect(usageMocks.loadProviderUsageSummary).toHaveBeenCalledWith(
-            expect.objectContaining({ providers: ["anthropic"] }),
+            expect.objectContaining({ providers: ["unknown"] }),
           );
           expect(runAgentMock).not.toHaveBeenCalled();
         }

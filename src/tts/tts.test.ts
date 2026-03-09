@@ -118,7 +118,7 @@ describe("tts", () => {
 
   describe("resolveEdgeOutputFormat", () => {
     const baseCfg: RemoteClawConfig = {
-      agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
+      agents: { defaults: {} },
       messages: { tts: {} },
     };
 
@@ -194,7 +194,7 @@ describe("tts", () => {
 
   describe("getTtsProvider", () => {
     const baseCfg: RemoteClawConfig = {
-      agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
+      agents: { defaults: {} },
       messages: { tts: {} },
     };
 
@@ -241,7 +241,7 @@ describe("tts", () => {
 
   describe("maybeApplyTtsToPayload", () => {
     const baseCfg: RemoteClawConfig = {
-      agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
+      agents: { defaults: {} },
       messages: {
         tts: {
           auto: "inbound",

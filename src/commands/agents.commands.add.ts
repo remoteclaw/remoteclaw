@@ -290,7 +290,7 @@ export async function agentsAddCommand(
 
       nextConfig = applyAgentConfig(nextConfig, {
         agentId,
-        model: selectedRuntime,
+        runtime: selectedRuntime,
       });
     }
 

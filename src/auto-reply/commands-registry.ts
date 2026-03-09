@@ -245,18 +245,12 @@ export function buildCommandTextFromArgs(
   return buildCommandText(commandName, serializeCommandArgs(command, args));
 }
 
-function resolveDefaultCommandContext(cfg?: RemoteClawConfig): {
+function resolveDefaultCommandContext(_cfg?: RemoteClawConfig): {
   provider: string;
   model: string;
 } {
-  // Model selection gutted in RemoteClaw — derive from agent config primary.
-  const agentModel = cfg?.agents?.defaults?.model;
-  const primary =
-    typeof agentModel === "string" ? agentModel : (agentModel as { primary?: string })?.primary;
-  const slashIdx = primary?.indexOf("/") ?? -1;
-  const provider = primary && slashIdx > 0 ? primary.slice(0, slashIdx) : "unknown";
-  const model = primary && slashIdx > 0 ? primary.slice(slashIdx + 1) : (primary ?? "unknown");
-  return { provider, model };
+  // Model selection gutted in RemoteClaw — CLIs own model selection.
+  return { provider: "unknown", model: "unknown" };
 }
 
 export type ResolvedCommandArgChoice = { value: string; label: string };

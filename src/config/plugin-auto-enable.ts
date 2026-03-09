@@ -202,38 +202,14 @@ function collectModelRefs(cfg: RemoteClawConfig): string[] {
       refs.push(value.trim());
     }
   };
-  const collectFromAgent = (agent: Record<string, unknown> | null | undefined) => {
-    if (!agent) {
-      return;
-    }
-    const model = agent.model;
-    if (typeof model === "string") {
-      pushModelRef(model);
-    } else if (isRecord(model)) {
-      pushModelRef(model.primary);
-      const fallbacks = model.fallbacks;
-      if (Array.isArray(fallbacks)) {
-        for (const entry of fallbacks) {
-          pushModelRef(entry);
-        }
-      }
-    }
-    const models = agent.models;
+  // Model config gutted from per-agent and defaults — only legacy `models` map
+  // (per-model settings like cache retention) still contributes refs.
+  const defaults = cfg.agents?.defaults as Record<string, unknown> | undefined;
+  if (defaults) {
+    const models = defaults.models;
     if (isRecord(models)) {
       for (const key of Object.keys(models)) {
         pushModelRef(key);
-      }
-    }
-  };
-
-  const defaults = cfg.agents?.defaults as Record<string, unknown> | undefined;
-  collectFromAgent(defaults);
-
-  const list = cfg.agents?.list;
-  if (Array.isArray(list)) {
-    for (const entry of list) {
-      if (isRecord(entry)) {
-        collectFromAgent(entry);
       }
     }
   }

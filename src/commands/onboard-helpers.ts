@@ -38,17 +38,6 @@ export function guardCancel<T>(value: T | symbol, runtime: RuntimeEnv): T {
 
 export function summarizeExistingConfig(config: RemoteClawConfig): string {
   const rows: string[] = [];
-  const defaults = config.agents?.defaults;
-  if (defaults?.model) {
-    const rawModel = defaults.model;
-    const model =
-      typeof rawModel === "string"
-        ? rawModel.trim() || undefined
-        : (rawModel as { primary?: string } | undefined)?.primary?.trim() || undefined;
-    if (model) {
-      rows.push(shortenHomeInString(`model: ${model}`));
-    }
-  }
   if (config.gateway?.mode) {
     rows.push(shortenHomeInString(`gateway.mode: ${config.gateway.mode}`));
   }

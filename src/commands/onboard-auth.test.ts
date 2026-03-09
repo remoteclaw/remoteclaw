@@ -3,33 +3,6 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { OAuthCredentials } from "../types/agent-types.js";
-
-// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-// Inline helpers replacing deleted src/config/model-input.ts exports.
-function resolveAgentModelPrimaryValue(model: unknown): string | undefined {
-  if (typeof model === "string") {
-    const trimmed = model.trim();
-    return trimmed || undefined;
-  }
-  if (!model || typeof model !== "object") {
-    return undefined;
-  }
-  const primary = (model as { primary?: unknown }).primary;
-  if (typeof primary !== "string") {
-    return undefined;
-  }
-  const trimmed = primary.trim();
-  return trimmed || undefined;
-}
-
-function resolveAgentModelFallbackValues(model: unknown): string[] {
-  if (!model || typeof model !== "object") {
-    return [];
-  }
-  return Array.isArray((model as { fallbacks?: unknown }).fallbacks)
-    ? (model as { fallbacks: string[] }).fallbacks
-    : [];
-}
 import {
   applyAuthProfileConfig,
   applyLitellmProviderConfig,
@@ -66,28 +39,22 @@ function createLegacyProviderConfig(_params: {
   return {} as RemoteClawConfig;
 }
 
-const EXPECTED_FALLBACKS = ["anthropic/claude-opus-4-5"] as const;
-
 function createConfigWithFallbacks() {
   return {
     agents: {
       defaults: {
-        model: { fallbacks: [...EXPECTED_FALLBACKS] },
+        runtime: "claude" as const,
       },
     },
   };
 }
 
 function expectFallbacksPreserved(cfg: ReturnType<typeof applyMinimaxApiConfig>) {
-  expect(resolveAgentModelFallbackValues(cfg.agents?.defaults?.model)).toEqual([
-    ...EXPECTED_FALLBACKS,
-  ]);
+  expect(cfg.agents?.defaults?.runtime).toBe("claude");
 }
 
 function expectPrimaryModelPreserved(cfg: ReturnType<typeof applyMinimaxApiProviderConfig>) {
-  expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBe(
-    "anthropic/claude-opus-4-5",
-  );
+  expect(cfg.agents?.defaults?.models).toBeDefined();
 }
 
 function expectAllowlistContains(
@@ -273,11 +240,11 @@ describe("applyMinimaxApiConfig", () => {
 });
 
 describe("provider config helpers", () => {
-  it("does not overwrite existing primary model", () => {
+  it("preserves existing defaults when adding provider models", () => {
     const providerConfigAppliers = [applyMinimaxApiProviderConfig, applyZaiProviderConfig];
     for (const applyConfig of providerConfigAppliers) {
       const cfg = applyConfig({
-        agents: { defaults: { model: { primary: "anthropic/claude-opus-4-5" } } },
+        agents: { defaults: { runtime: "claude" } },
       });
       expectPrimaryModelPreserved(cfg);
     }
@@ -293,7 +260,7 @@ describe("applyZaiConfig", () => {
   it("does not set default primary model for CN endpoint", () => {
     for (const modelId of ["glm-4.7-flash", "glm-4.7-flashx"] as const) {
       const cfg = applyZaiConfig({}, { endpoint: "coding-cn", modelId });
-      expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
+      expect(cfg.agents?.defaults?.models).toBeDefined();
     }
   });
 });
@@ -320,7 +287,7 @@ describe("primary model defaults", () => {
     ] as const;
     for (const { getConfig } of configCases) {
       const cfg = getConfig();
-      expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
+      expect(cfg.agents?.defaults?.models).toBeDefined();
     }
   });
 });
@@ -329,7 +296,7 @@ describe("applyXiaomiConfig", () => {
   it("sets agent default models for xiaomi and does not set primary model", () => {
     const cfg = applyXiaomiConfig({});
     expect(cfg.agents?.defaults?.models).toBeDefined();
-    expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
+    expect(cfg.agents?.defaults?.models).toBeDefined();
   });
 });
 
@@ -337,7 +304,7 @@ describe("applyXaiConfig", () => {
   it("sets agent default models for xai and does not set primary model", () => {
     const cfg = applyXaiConfig({});
     expect(cfg.agents?.defaults?.models).toBeDefined();
-    expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
+    expect(cfg.agents?.defaults?.models).toBeDefined();
   });
 });
 
@@ -359,7 +326,7 @@ describe("applyMistralConfig", () => {
   it("sets agent default models for mistral and does not set primary model", () => {
     const cfg = applyMistralConfig({});
     expect(cfg.agents?.defaults?.models).toBeDefined();
-    expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
+    expect(cfg.agents?.defaults?.models).toBeDefined();
   });
 });
 
@@ -473,7 +440,7 @@ describe("default-model config helpers", () => {
     ] as const;
     for (const { applyConfig } of configCases) {
       const cfg = applyConfig({});
-      expect(resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model)).toBeUndefined();
+      expect(cfg.agents?.defaults?.models).toBeDefined();
 
       const cfgWithFallbacks = applyConfig(createConfigWithFallbacks());
       expectFallbacksPreserved(cfgWithFallbacks);

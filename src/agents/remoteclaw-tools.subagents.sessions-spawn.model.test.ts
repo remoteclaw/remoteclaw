@@ -140,19 +140,19 @@ describe("remoteclaw-tools: subagents (sessions_spawn model + thinking)", () => 
     });
   });
 
-  it("sessions_spawn applies default subagent model from defaults config", async () => {
+  it("sessions_spawn applies runtime default model when no model config is set", async () => {
     await expectSpawnUsesConfiguredModel({
       config: {
         session: { mainKey: "main", scope: "per-sender" },
-        agents: { defaults: { subagents: { model: "minimax/MiniMax-M2.1" } } },
+        agents: { defaults: { subagents: {} } },
       },
       runId: "run-default-model",
       callId: "call-default-model",
-      expectedModel: "minimax/MiniMax-M2.1",
+      expectedModel: `${DEFAULT_PROVIDER}/${DEFAULT_MODEL}`,
     });
   });
 
-  it("sessions_spawn falls back to runtime default model when no model config is set", async () => {
+  it("sessions_spawn falls back to runtime default model when no config is set", async () => {
     await expectSpawnUsesConfiguredModel({
       runId: "run-runtime-default-model",
       callId: "call-runtime-default-model",
@@ -160,33 +160,33 @@ describe("remoteclaw-tools: subagents (sessions_spawn model + thinking)", () => 
     });
   });
 
-  it("sessions_spawn prefers per-agent subagent model over defaults", async () => {
+  it("sessions_spawn uses runtime default model with per-agent subagent config", async () => {
     await expectSpawnUsesConfiguredModel({
       config: {
         session: { mainKey: "main", scope: "per-sender" },
         agents: {
-          defaults: { subagents: { model: "minimax/MiniMax-M2.1" } },
-          list: [{ id: "research", subagents: { model: "opencode/claude" } }],
+          defaults: { subagents: {} },
+          list: [{ id: "research", subagents: {} }],
         },
       },
       runId: "run-agent-model",
       callId: "call-agent-model",
-      expectedModel: "opencode/claude",
+      expectedModel: `${DEFAULT_PROVIDER}/${DEFAULT_MODEL}`,
     });
   });
 
-  it("sessions_spawn prefers target agent primary model over global default", async () => {
+  it("sessions_spawn uses runtime default model with agent list config", async () => {
     await expectSpawnUsesConfiguredModel({
       config: {
         session: { mainKey: "main", scope: "per-sender" },
         agents: {
-          defaults: { model: { primary: "minimax/MiniMax-M2.1" } },
-          list: [{ id: "research", model: { primary: "opencode/claude" } }],
+          defaults: {},
+          list: [{ id: "research" }],
         },
       },
       runId: "run-agent-primary-model",
       callId: "call-agent-primary-model",
-      expectedModel: "opencode/claude",
+      expectedModel: `${DEFAULT_PROVIDER}/${DEFAULT_MODEL}`,
     });
   });
 

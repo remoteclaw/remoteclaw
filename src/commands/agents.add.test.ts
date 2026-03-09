@@ -94,6 +94,71 @@ describe("agents add command", () => {
     const textMock = vi
       .fn()
       .mockResolvedValueOnce("My Agent") // agent name
+      .mockResolvedValueOnce("my-agent") // editable agent id (normalized differs from name)
+      .mockResolvedValueOnce("/tmp/workspace"); // workspace directory
+    const confirmMock = vi.fn().mockResolvedValue(false);
+    const outroMock = vi.fn();
+
+    wizardMocks.createClackPrompter.mockReturnValue({
+      intro: vi.fn(),
+      text: textMock,
+      confirm: confirmMock,
+      select: vi.fn(),
+      note: vi.fn(),
+      outro: outroMock,
+    });
+
+    await agentsAddCommand({}, runtime);
+
+    expect(textMock).toHaveBeenCalledTimes(3);
+    expect(textMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ message: "Agent id", initialValue: "my-agent" }),
+    );
+    expect(textMock).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({ message: "Workspace directory" }),
+    );
+    expect(writeConfigFileMock).toHaveBeenCalled();
+    expect(outroMock).toHaveBeenCalledWith(expect.stringContaining("my-agent"));
+    expect(runtime.exit).not.toHaveBeenCalled();
+  });
+
+  it("allows user to override the normalized agent id", async () => {
+    const cfg = { ...baseConfigSnapshot };
+    readConfigFileSnapshotMock.mockResolvedValue(cfg);
+    setupChannelsMock.mockImplementation((c: unknown) => Promise.resolve(c));
+
+    const textMock = vi
+      .fn()
+      .mockResolvedValueOnce("My Agent") // agent name
+      .mockResolvedValueOnce("custom-id") // user overrides normalized id
+      .mockResolvedValueOnce("/tmp/workspace"); // workspace directory
+    const confirmMock = vi.fn().mockResolvedValue(false);
+    const outroMock = vi.fn();
+
+    wizardMocks.createClackPrompter.mockReturnValue({
+      intro: vi.fn(),
+      text: textMock,
+      confirm: confirmMock,
+      select: vi.fn(),
+      note: vi.fn(),
+      outro: outroMock,
+    });
+
+    await agentsAddCommand({}, runtime);
+
+    expect(outroMock).toHaveBeenCalledWith(expect.stringContaining("custom-id"));
+  });
+
+  it("skips agent id prompt when name already matches normalized id", async () => {
+    const cfg = { ...baseConfigSnapshot };
+    readConfigFileSnapshotMock.mockResolvedValue(cfg);
+    setupChannelsMock.mockImplementation((c: unknown) => Promise.resolve(c));
+
+    const textMock = vi
+      .fn()
+      .mockResolvedValueOnce("myagent") // agent name (already normalized)
       .mockResolvedValueOnce("/tmp/workspace"); // workspace directory
     const confirmMock = vi.fn().mockResolvedValue(false);
     const outroMock = vi.fn();
@@ -110,12 +175,48 @@ describe("agents add command", () => {
     await agentsAddCommand({}, runtime);
 
     expect(textMock).toHaveBeenCalledTimes(2);
-    expect(textMock).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ message: "Workspace directory" }),
-    );
-    expect(writeConfigFileMock).toHaveBeenCalled();
-    expect(outroMock).toHaveBeenCalledWith(expect.stringContaining("my-agent"));
-    expect(runtime.exit).not.toHaveBeenCalled();
+    expect(outroMock).toHaveBeenCalledWith(expect.stringContaining("myagent"));
+  });
+
+  it("validates the editable agent id rejects reserved and invalid values", async () => {
+    const cfg = { ...baseConfigSnapshot };
+    readConfigFileSnapshotMock.mockResolvedValue(cfg);
+    setupChannelsMock.mockImplementation((c: unknown) => Promise.resolve(c));
+
+    let capturedValidate: ((value: string) => string | undefined) | undefined;
+    const textMock = vi
+      .fn()
+      .mockImplementation(
+        (params: { validate?: (value: string) => string | undefined; message: string }) => {
+          if (params.message === "Agent id" && params.validate) {
+            capturedValidate = params.validate;
+          }
+          if (params.message === "Agent name") {
+            return Promise.resolve("My Agent");
+          }
+          if (params.message === "Agent id") {
+            return Promise.resolve("my-agent");
+          }
+          return Promise.resolve("/tmp/workspace");
+        },
+      );
+    const confirmMock = vi.fn().mockResolvedValue(false);
+
+    wizardMocks.createClackPrompter.mockReturnValue({
+      intro: vi.fn(),
+      text: textMock,
+      confirm: confirmMock,
+      select: vi.fn(),
+      note: vi.fn(),
+      outro: vi.fn(),
+    });
+
+    await agentsAddCommand({}, runtime);
+
+    expect(capturedValidate).toBeDefined();
+    expect(capturedValidate!("")).toBe("Required");
+    expect(capturedValidate!("main")).toContain("reserved");
+    expect(capturedValidate!("!!!")).toContain("Must start");
+    expect(capturedValidate!("valid-id")).toBeUndefined();
   });
 });

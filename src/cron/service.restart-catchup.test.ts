@@ -3,8 +3,8 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { CronService } from "./service.js";
 import { setupCronServiceSuite } from "./service.test-harness.js";
-import { createCronServiceState } from "./state.js";
-import { runMissedJobs } from "./timer.js";
+import { createCronServiceState } from "./service/state.js";
+import { runMissedJobs } from "./service/timer.js";
 
 const { logger: noopLogger, makeStorePath } = setupCronServiceSuite({
   prefix: "remoteclaw-cron-",

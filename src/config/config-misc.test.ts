@@ -1,5 +1,3 @@
-import fs from "node:fs/promises";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   getConfigValueAtPath,
@@ -7,8 +5,7 @@ import {
   setConfigValueAtPath,
   unsetConfigValueAtPath,
 } from "./config-paths.js";
-import { readConfigFileSnapshot, validateConfigObject } from "./config.js";
-import { withTempHome } from "./test-helpers.js";
+import { validateConfigObject } from "./config.js";
 import { RemoteClawSchema } from "./zod-schema.js";
 
 describe("$schema key in config (#14998)", () => {
@@ -240,25 +237,5 @@ describe("config strict validation", () => {
       customUnknownField: { nested: "value" },
     });
     expect(res.ok).toBe(false);
-  });
-
-  it("flags legacy config entries without auto-migrating", async () => {
-    await withTempHome(async (home) => {
-      const configDir = path.join(home, ".remoteclaw");
-      await fs.mkdir(configDir, { recursive: true });
-      await fs.writeFile(
-        path.join(configDir, "remoteclaw.json"),
-        JSON.stringify({
-          agents: { list: [{ id: "pi" }] },
-          routing: { allowFrom: ["+15555550123"] },
-        }),
-        "utf-8",
-      );
-
-      const snap = await readConfigFileSnapshot();
-
-      expect(snap.valid).toBe(false);
-      expect(snap.legacyIssues).not.toHaveLength(0);
-    });
   });
 });

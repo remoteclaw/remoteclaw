@@ -176,6 +176,7 @@ export class RemoteClawApp extends LitElement {
   @state() execApprovalBusy = false;
   @state() execApprovalError: string | null = null;
   @state() pendingGatewayUrl: string | null = null;
+  pendingGatewayToken: string | null = null;
 
   @state() configLoading = false;
   @state() configRaw = "{\n}\n";
@@ -557,16 +558,20 @@ export class RemoteClawApp extends LitElement {
     if (!nextGatewayUrl) {
       return;
     }
+    const nextToken = this.pendingGatewayToken?.trim() || "";
     this.pendingGatewayUrl = null;
+    this.pendingGatewayToken = null;
     applySettingsInternal(this as unknown as Parameters<typeof applySettingsInternal>[0], {
       ...this.settings,
       gatewayUrl: nextGatewayUrl,
+      token: nextToken,
     });
     this.connect();
   }
 
   handleGatewayUrlCancel() {
     this.pendingGatewayUrl = null;
+    this.pendingGatewayToken = null;
   }
 
   // Sidebar handlers for tool output viewing

@@ -61,7 +61,7 @@ To switch update channels (git + npm installs):
 
 ```bash
 remoteclaw update --channel beta
-remoteclaw update --channel dev
+remoteclaw update --channel next
 remoteclaw update --channel stable
 ```
 
@@ -93,7 +93,7 @@ Behavior:
 
 - `stable`: when a new version is seen, RemoteClaw waits `stableDelayHours` and then applies a deterministic per-install jitter in `stableJitterHours` (spread rollout).
 - `beta`: checks on `betaCheckIntervalHours` cadence (default: hourly) and applies when an update is available.
-- `dev`: no automatic apply; use manual `remoteclaw update`.
+- `next`: no automatic apply; use manual `remoteclaw update`.
 
 Use `remoteclaw update --dry-run` to preview update actions before enabling automation.
 
@@ -122,7 +122,7 @@ It runs a safe-ish update flow:
 
 - Requires a clean worktree.
 - Switches to the selected channel (tag or branch).
-- Fetches + rebases against the configured upstream (dev channel).
+- Fetches + rebases against the configured upstream (next channel).
 - Installs deps, builds, builds the Control UI, and runs `remoteclaw doctor`.
 - Restarts the gateway by default (use `--no-restart` to skip).
 

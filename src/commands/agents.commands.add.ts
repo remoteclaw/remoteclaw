@@ -1,4 +1,4 @@
-import { resolveAgentDir, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
+import { resolveAgentDir, resolveAgentWorkspaceDirOrNull } from "../agents/agent-scope.js";
 import { upsertAuthProfile } from "../auth/index.js";
 import { writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
@@ -195,7 +195,7 @@ export async function agentsAddCommand(
       }
     }
 
-    const workspaceDefault = resolveAgentWorkspaceDir(cfg, agentId);
+    const workspaceDefault = resolveAgentWorkspaceDirOrNull(cfg, agentId) ?? process.cwd();
     const workspaceInput = await prompter.text({
       message: "Workspace directory",
       initialValue: workspaceDefault,

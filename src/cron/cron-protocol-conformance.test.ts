@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { MACOS_APP_SOURCES_DIR } from "../compat/legacy-names.js";
 import { CronDeliverySchema } from "../gateway/protocol/schema.js";
 
 type SchemaLike = {
@@ -31,8 +30,8 @@ function extractDeliveryModes(schema: SchemaLike): string[] {
 
 const UI_FILES = ["ui/src/ui/types.ts", "ui/src/ui/ui-types.ts", "ui/src/ui/views/cron.ts"];
 
-const SWIFT_MODEL_CANDIDATES = [`${MACOS_APP_SOURCES_DIR}/CronModels.swift`];
-const SWIFT_STATUS_CANDIDATES = [`${MACOS_APP_SOURCES_DIR}/GatewayConnection.swift`];
+const SWIFT_MODEL_CANDIDATES = ["apps/macos/Sources/RemoteClaw/CronModels.swift"];
+const SWIFT_STATUS_CANDIDATES = ["apps/macos/Sources/RemoteClaw/GatewayConnection.swift"];
 
 async function resolveSwiftFiles(cwd: string, candidates: string[]): Promise<string[]> {
   const matches: string[] = [];

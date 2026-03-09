@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
 import { fileExists, readJsonFile, resolveArchiveKind } from "../infra/archive.js";
 import { resolveExistingInstallPath, withExtractedArchiveRoot } from "../infra/install-flow.js";
 import {
@@ -28,14 +27,13 @@ export type HookInstallLogger = {
   warn?: (message: string) => void;
 };
 
+const MANIFEST_KEY = "remoteclaw" as const;
+
 type HookPackageManifest = {
   name?: string;
   version?: string;
   dependencies?: Record<string, string>;
-} & Partial<
-  // oxlint-disable-next-line typescript-eslint/no-redundant-type-constituents -- legacy keys empty during rebrand
-  Record<typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number], { hooks?: string[] }>
->;
+} & Partial<Record<typeof MANIFEST_KEY, { hooks?: string[] }>>;
 
 export type InstallHooksResult =
   | {
@@ -89,16 +87,7 @@ export function resolveHookInstallDir(hookId: string, hooksDir?: string): string
 }
 
 async function ensureRemoteClawHooks(manifest: HookPackageManifest) {
-  let hooks = manifest[MANIFEST_KEY]?.hooks;
-  if (!Array.isArray(hooks)) {
-    for (const key of LEGACY_MANIFEST_KEYS) {
-      const legacy = manifest[key]?.hooks;
-      if (Array.isArray(legacy)) {
-        hooks = legacy;
-        break;
-      }
-    }
-  }
+  const hooks = manifest[MANIFEST_KEY]?.hooks;
   if (!Array.isArray(hooks)) {
     throw new Error("package.json missing remoteclaw.hooks");
   }

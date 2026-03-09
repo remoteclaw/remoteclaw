@@ -5,30 +5,12 @@ import { loadJsonFile, saveJsonFile } from "../infra/json-file.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
-export type PersistedSubagentRegistryVersion = 1 | 2;
-
-type PersistedSubagentRegistryV1 = {
-  version: 1;
-  runs: Record<string, LegacySubagentRunRecord>;
-};
-
-type PersistedSubagentRegistryV2 = {
+type PersistedSubagentRegistry = {
   version: 2;
-  runs: Record<string, PersistedSubagentRunRecord>;
+  runs: Record<string, SubagentRunRecord>;
 };
-
-type PersistedSubagentRegistry = PersistedSubagentRegistryV1 | PersistedSubagentRegistryV2;
 
 const REGISTRY_VERSION = 2 as const;
-
-type PersistedSubagentRunRecord = SubagentRunRecord;
-
-type LegacySubagentRunRecord = PersistedSubagentRunRecord & {
-  announceCompletedAt?: unknown;
-  announceHandled?: unknown;
-  requesterChannel?: unknown;
-  requesterAccountId?: unknown;
-};
 
 function resolveSubagentStateDir(env: NodeJS.ProcessEnv = process.env): string {
   const explicit = env.REMOTECLAW_STATE_DIR?.trim();
@@ -52,7 +34,7 @@ export function loadSubagentRegistryFromDisk(): Map<string, SubagentRunRecord> {
     return new Map();
   }
   const record = raw as Partial<PersistedSubagentRegistry>;
-  if (record.version !== 1 && record.version !== 2) {
+  if (record.version !== 2) {
     return new Map();
   }
   const runsRaw = record.runs;
@@ -60,66 +42,28 @@ export function loadSubagentRegistryFromDisk(): Map<string, SubagentRunRecord> {
     return new Map();
   }
   const out = new Map<string, SubagentRunRecord>();
-  const isLegacy = record.version === 1;
-  let migrated = false;
   for (const [runId, entry] of Object.entries(runsRaw)) {
     if (!entry || typeof entry !== "object") {
       continue;
     }
-    const typed = entry as LegacySubagentRunRecord;
-    if (!typed.runId || typeof typed.runId !== "string") {
+    if (!entry.runId || typeof entry.runId !== "string") {
       continue;
     }
-    const legacyCompletedAt =
-      isLegacy && typeof typed.announceCompletedAt === "number"
-        ? typed.announceCompletedAt
-        : undefined;
-    const cleanupCompletedAt =
-      typeof typed.cleanupCompletedAt === "number" ? typed.cleanupCompletedAt : legacyCompletedAt;
-    const cleanupHandled =
-      typeof typed.cleanupHandled === "boolean"
-        ? typed.cleanupHandled
-        : isLegacy
-          ? Boolean(typed.announceHandled ?? cleanupCompletedAt)
-          : undefined;
-    const requesterOrigin = normalizeDeliveryContext(
-      typed.requesterOrigin ?? {
-        channel: typeof typed.requesterChannel === "string" ? typed.requesterChannel : undefined,
-        accountId:
-          typeof typed.requesterAccountId === "string" ? typed.requesterAccountId : undefined,
-      },
-    );
-    const {
-      announceCompletedAt: _announceCompletedAt,
-      announceHandled: _announceHandled,
-      requesterChannel: _channel,
-      requesterAccountId: _accountId,
-      ...rest
-    } = typed;
     out.set(runId, {
-      ...rest,
-      requesterOrigin,
-      cleanupCompletedAt,
-      cleanupHandled,
-      spawnMode: typed.spawnMode === "session" ? "session" : "run",
+      ...entry,
+      requesterOrigin: normalizeDeliveryContext(entry.requesterOrigin),
+      cleanupCompletedAt:
+        typeof entry.cleanupCompletedAt === "number" ? entry.cleanupCompletedAt : undefined,
+      cleanupHandled: typeof entry.cleanupHandled === "boolean" ? entry.cleanupHandled : undefined,
+      spawnMode: entry.spawnMode === "session" ? "session" : "run",
     });
-    if (isLegacy) {
-      migrated = true;
-    }
-  }
-  if (migrated) {
-    try {
-      saveSubagentRegistryToDisk(out);
-    } catch {
-      // ignore migration write failures
-    }
   }
   return out;
 }
 
 export function saveSubagentRegistryToDisk(runs: Map<string, SubagentRunRecord>) {
   const pathname = resolveSubagentRegistryPath();
-  const serialized: Record<string, PersistedSubagentRunRecord> = {};
+  const serialized: Record<string, SubagentRunRecord> = {};
   for (const [runId, entry] of runs.entries()) {
     serialized[runId] = entry;
   }

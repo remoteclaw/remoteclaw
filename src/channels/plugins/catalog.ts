@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import { MANIFEST_KEY } from "../../compat/legacy-names.js";
 import { discoverRemoteClawPlugins } from "../../plugins/discovery.js";
 import type { RemoteClawPackageManifest } from "../../plugins/manifest.js";
 import type { PluginOrigin } from "../../plugins/types.js";
@@ -59,6 +58,7 @@ const DEFAULT_CATALOG_PATHS = [
 
 const ENV_CATALOG_PATHS = ["REMOTECLAW_PLUGIN_CATALOG_PATHS", "REMOTECLAW_MPM_CATALOG_PATHS"];
 
+const MANIFEST_KEY = "remoteclaw" as const;
 type ManifestKey = typeof MANIFEST_KEY;
 
 function parseCatalogEntries(raw: unknown): ExternalCatalogEntry[] {

@@ -55,6 +55,10 @@ class TestRuntime extends CLIRuntimeBase {
   protected buildEnv(_params: AgentExecuteParams): Record<string, string> {
     return { TEST_VAR: "1" };
   }
+
+  public testComposePrompt(params: AgentExecuteParams): string {
+    return this.composePrompt(params);
+  }
 }
 
 /** Collect all events from the async iterable. */
@@ -681,6 +685,49 @@ describe("CLIRuntimeBase", () => {
       const last = events[events.length - 1];
 
       expect(last.type).toBe("done");
+    });
+  });
+
+  describe("composePrompt thread context gating", () => {
+    it("includes threadContext on new sessions (no sessionId)", () => {
+      const runtime = new TestRuntime("test-cli");
+      const result = runtime.testComposePrompt({
+        prompt: "hello",
+        systemPrompt: "system",
+        threadContext: "[Thread history - for context]\nAlice: Hi",
+      });
+      expect(result).toBe("system\n\n[Thread history - for context]\nAlice: Hi\n\nhello");
+    });
+
+    it("excludes threadContext on resume (sessionId set)", () => {
+      const runtime = new TestRuntime("test-cli");
+      const result = runtime.testComposePrompt({
+        prompt: "hello",
+        systemPrompt: "system",
+        sessionId: "sess-123",
+        threadContext: "[Thread history - for context]\nAlice: Hi",
+      });
+      expect(result).toBe("system\n\nhello");
+    });
+
+    it("includes threadContext between extraContext and prompt", () => {
+      const runtime = new TestRuntime("test-cli");
+      const result = runtime.testComposePrompt({
+        prompt: "hello",
+        systemPrompt: "system",
+        extraContext: "extra",
+        threadContext: "[Thread starter - for context]\nAlice: Hi",
+      });
+      expect(result).toBe("system\n\nextra\n\n[Thread starter - for context]\nAlice: Hi\n\nhello");
+    });
+
+    it("includes threadContext alone when no systemPrompt or extraContext", () => {
+      const runtime = new TestRuntime("test-cli");
+      const result = runtime.testComposePrompt({
+        prompt: "hello",
+        threadContext: "[Thread starter - for context]\nAlice: Hi",
+      });
+      expect(result).toBe("[Thread starter - for context]\nAlice: Hi\n\nhello");
     });
   });
 });

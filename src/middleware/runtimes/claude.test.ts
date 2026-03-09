@@ -171,6 +171,41 @@ describe("ClaudeCliRuntime", () => {
       expect(args[idx + 1]).toBe("Extra info");
     });
 
+    it("includes threadContext in --append-system-prompt on new sessions", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          systemPrompt: "System instructions",
+          threadContext: "[Thread history - for context]\nAlice: Hi",
+        }),
+      );
+      const idx = args.indexOf("--append-system-prompt");
+      expect(args[idx + 1]).toBe(
+        "System instructions\n\n[Thread history - for context]\nAlice: Hi",
+      );
+    });
+
+    it("excludes threadContext from --append-system-prompt on resume", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          sessionId: "sess-123",
+          systemPrompt: "System instructions",
+          threadContext: "[Thread history - for context]\nAlice: Hi",
+        }),
+      );
+      const idx = args.indexOf("--append-system-prompt");
+      expect(args[idx + 1]).toBe("System instructions");
+    });
+
+    it("includes threadContext alone in --append-system-prompt when no systemPrompt", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          threadContext: "[Thread starter - for context]\nAlice: Hi",
+        }),
+      );
+      const idx = args.indexOf("--append-system-prompt");
+      expect(args[idx + 1]).toBe("[Thread starter - for context]\nAlice: Hi");
+    });
+
     it("combines all flags: session + MCP + system prompt + prompt", () => {
       const args = runtime.testBuildArgs(
         makeParams({

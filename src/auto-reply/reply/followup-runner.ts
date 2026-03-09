@@ -94,6 +94,7 @@ export function createFollowupRunner(params: {
         messageToolHints: messageToolHints?.length ? messageToolHints : undefined,
         senderIsOwner: queued.run.senderIsOwner,
         extraContext: queued.run.extraSystemPrompt || undefined,
+        threadContext: queued.run.threadContext || undefined,
       };
 
       // Wire BridgeCallbacks from opts callbacks.

@@ -132,18 +132,20 @@ describe("runPreparedReply media-only handling", () => {
     vi.clearAllMocks();
   });
 
-  it("allows media-only prompts and preserves thread context in queued followups", async () => {
+  it("allows media-only prompts and preserves thread context as structured field", async () => {
     const result = await runPreparedReply(baseParams());
     expect(result).toEqual({ text: "ok" });
 
     const call = vi.mocked(runReplyAgent).mock.calls[0]?.[0];
     expect(call).toBeTruthy();
-    expect(call?.followupRun.prompt).toContain("[Thread history - for context]");
-    expect(call?.followupRun.prompt).toContain("Earlier message in this thread");
+    expect(call?.followupRun.run.threadContext).toContain("[Thread history - for context]");
+    expect(call?.followupRun.run.threadContext).toContain("Earlier message in this thread");
     expect(call?.followupRun.prompt).toContain("[User sent media without caption]");
+    // Thread context should NOT be baked into the prompt
+    expect(call?.followupRun.prompt).not.toContain("[Thread history - for context]");
   });
 
-  it("keeps thread history context on follow-up turns", async () => {
+  it("keeps thread history context on follow-up turns as structured field", async () => {
     const result = await runPreparedReply(
       baseParams({
         isNewSession: false,
@@ -153,8 +155,10 @@ describe("runPreparedReply media-only handling", () => {
 
     const call = vi.mocked(runReplyAgent).mock.calls[0]?.[0];
     expect(call).toBeTruthy();
-    expect(call?.followupRun.prompt).toContain("[Thread history - for context]");
-    expect(call?.followupRun.prompt).toContain("Earlier message in this thread");
+    expect(call?.followupRun.run.threadContext).toContain("[Thread history - for context]");
+    expect(call?.followupRun.run.threadContext).toContain("Earlier message in this thread");
+    // Thread context should NOT be baked into the prompt
+    expect(call?.followupRun.prompt).not.toContain("[Thread history - for context]");
   });
 
   it("returns the empty-body reply when there is no text and no media", async () => {

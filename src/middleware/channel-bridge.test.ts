@@ -212,6 +212,36 @@ describe("ChannelBridge", () => {
       expect(params.extraContext).toBeUndefined();
     });
 
+    it("passes threadContext as a separate field", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(
+        makeMessage({
+          text: "Thanks!",
+          threadContext: "[Thread history - for context]\nAlice: Hi\nBob: Hello",
+        }),
+      );
+
+      expect(executeFn).toHaveBeenCalledOnce();
+      const params = executeFn.mock.calls[0][0];
+      expect(params.prompt).toBe("Thanks!");
+      expect(params.threadContext).toBe("[Thread history - for context]\nAlice: Hi\nBob: Hello");
+    });
+
+    it("leaves threadContext undefined when not provided", async () => {
+      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
+      mockRuntimeInstance = { execute: executeFn };
+
+      const bridge = createBridge();
+      await bridge.handle(makeMessage({ text: "What is 2+2?" }));
+
+      expect(executeFn).toHaveBeenCalledOnce();
+      const params = executeFn.mock.calls[0][0];
+      expect(params.threadContext).toBeUndefined();
+    });
+
     it("passes workingDirectory to runtime", async () => {
       const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
       mockRuntimeInstance = { execute: executeFn };

@@ -49,6 +49,7 @@ import { buildPairingReply } from "../../pairing/pairing-messages.js";
 import { executePluginCommand, matchPluginCommand } from "../../plugins/commands.js";
 import { chunkItems } from "../../utils/chunk-items.js";
 import { loadWebMedia } from "../../web/media.js";
+import { resolveDiscordMaxLinesPerMessage } from "../accounts.js";
 import { chunkDiscordTextWithMode } from "../chunk.js";
 import {
   isDiscordGroupAllowedByPolicy,
@@ -868,7 +869,7 @@ async function dispatchDiscordCommandInteraction(params: {
       textLimit: resolveTextChunkLimit(cfg, "discord", accountId, {
         fallbackLimit: 2000,
       }),
-      maxLinesPerMessage: discordConfig?.maxLinesPerMessage,
+      maxLinesPerMessage: resolveDiscordMaxLinesPerMessage({ cfg, discordConfig, accountId }),
       preferFollowUp,
       chunkMode: resolveChunkMode(cfg, "discord", accountId),
     });
@@ -986,7 +987,7 @@ async function dispatchDiscordCommandInteraction(params: {
             textLimit: resolveTextChunkLimit(cfg, "discord", accountId, {
               fallbackLimit: 2000,
             }),
-            maxLinesPerMessage: discordConfig?.maxLinesPerMessage,
+            maxLinesPerMessage: resolveDiscordMaxLinesPerMessage({ cfg, discordConfig, accountId }),
             preferFollowUp: preferFollowUp || didReply,
             chunkMode: resolveChunkMode(cfg, "discord", accountId),
           });

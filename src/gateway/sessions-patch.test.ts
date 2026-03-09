@@ -5,6 +5,34 @@ import { applySessionsPatchToStore } from "./sessions-patch.js";
 
 const SUBAGENT_MODEL = "synthetic/hf:moonshotai/Kimi-K2.5";
 const KIMI_SUBAGENT_KEY = "agent:kimi:subagent:child";
+const MAIN_SESSION_KEY = "agent:main:main";
+const EMPTY_CFG = {} as RemoteClawConfig;
+
+type ApplySessionsPatchArgs = Parameters<typeof applySessionsPatchToStore>[0];
+
+async function runPatch(params: {
+  patch: ApplySessionsPatchArgs["patch"];
+  store?: Record<string, SessionEntry>;
+  cfg?: RemoteClawConfig;
+  storeKey?: string;
+}) {
+  return applySessionsPatchToStore({
+    cfg: params.cfg ?? EMPTY_CFG,
+    store: params.store ?? {},
+    storeKey: params.storeKey ?? MAIN_SESSION_KEY,
+    patch: params.patch,
+  });
+}
+
+function expectPatchOk(
+  result: Awaited<ReturnType<typeof applySessionsPatchToStore>>,
+): SessionEntry {
+  expect(result.ok).toBe(true);
+  if (!result.ok) {
+    throw new Error(result.error.message);
+  }
+  return result.entry;
+}
 
 async function applySubagentModelPatch(cfg: RemoteClawConfig) {
   const res = await applySessionsPatchToStore({
@@ -142,6 +170,29 @@ describe("gateway sessions patch", () => {
       return;
     }
     expect(res.entry.spawnDepth).toBe(2);
+  });
+
+  test("sets spawnedBy for ACP sessions", async () => {
+    const entry = expectPatchOk(
+      await runPatch({
+        storeKey: "agent:main:acp:child",
+        patch: {
+          key: "agent:main:acp:child",
+          spawnedBy: "agent:main:main",
+        },
+      }),
+    );
+    expect(entry.spawnedBy).toBe("agent:main:main");
+  });
+
+  test("sets spawnDepth for ACP sessions", async () => {
+    const entry = expectPatchOk(
+      await runPatch({
+        storeKey: "agent:main:acp:child",
+        patch: { key: "agent:main:acp:child", spawnDepth: 2 },
+      }),
+    );
+    expect(entry.spawnDepth).toBe(2);
   });
 
   test("rejects spawnDepth on non-subagent sessions", async () => {

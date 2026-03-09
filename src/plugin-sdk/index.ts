@@ -725,5 +725,11 @@ export type { ProcessedLineMessage } from "../line/markdown-to-line.js";
 // Media utilities
 export { loadWebMedia, type WebMediaResult } from "../web/media.js";
 
+// Model authentication types for plugins.
+// Plugins should use runtime.modelAuth (which strips unsafe overrides like
+// agentDir/store) rather than importing raw helpers directly.
+export { requireApiKey } from "../auth/provider-auth.js";
+export type { ResolvedProviderAuth } from "../auth/provider-auth.js";
+
 // Security utilities
 export { redactSensitiveText } from "../logging/redact.js";

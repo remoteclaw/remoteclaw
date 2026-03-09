@@ -250,6 +250,14 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
         debug: vi.fn(),
       })),
     },
+    state: {
+      resolveStateDir: vi.fn(() => "/tmp/remoteclaw"),
+    },
+    modelAuth: {
+      getApiKeyForModel: vi.fn() as unknown as PluginRuntime["modelAuth"]["getApiKeyForModel"],
+      resolveApiKeyForProvider:
+        vi.fn() as unknown as PluginRuntime["modelAuth"]["resolveApiKeyForProvider"],
+    },
     subagent: {
       run: vi.fn() as unknown as PluginRuntime["subagent"]["run"],
       waitForRun: vi.fn() as unknown as PluginRuntime["subagent"]["waitForRun"],

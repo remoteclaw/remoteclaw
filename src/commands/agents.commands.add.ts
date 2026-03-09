@@ -176,9 +176,31 @@ export async function agentsAddCommand(
       }));
 
     const agentName = String(name ?? "").trim();
-    const agentId = normalizeAgentId(agentName);
+    let agentId = normalizeAgentId(agentName);
     if (agentName !== agentId) {
-      await prompter.note(`Normalized id to "${agentId}".`, "Agent id");
+      const existingIds = new Set(listAgentEntries(cfg).map((a) => normalizeAgentId(a.id)));
+      agentId = await prompter.text({
+        message: "Agent id",
+        initialValue: agentId,
+        validate: (value) => {
+          const trimmed = value.trim();
+          if (!trimmed) {
+            return "Required";
+          }
+          if (!/^[a-z0-9][a-z0-9_-]{0,63}$/i.test(trimmed)) {
+            return "Must start with a letter or digit and contain only letters, digits, hyphens, and underscores (max 64 chars).";
+          }
+          const normalized = trimmed.toLowerCase();
+          if (normalized === DEFAULT_AGENT_ID) {
+            return `"${DEFAULT_AGENT_ID}" is reserved. Choose another id.`;
+          }
+          if (existingIds.has(normalized)) {
+            return `Agent "${normalized}" already exists.`;
+          }
+          return undefined;
+        },
+      });
+      agentId = agentId.trim().toLowerCase();
     }
 
     const existingAgent = listAgentEntries(cfg).find(

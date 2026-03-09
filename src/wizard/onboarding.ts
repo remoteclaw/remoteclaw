@@ -660,7 +660,7 @@ export async function runOnboardingWizard(
   nextConfig = gateway.nextConfig;
   const settings = gateway.settings;
 
-  if (opts.skipChannels ?? opts.skipProviders) {
+  if (opts.skipChannels) {
     await prompter.note("Skipping channel setup.", "Channels");
   } else {
     const { listChannelPlugins } = await import("../channels/plugins/index.js");

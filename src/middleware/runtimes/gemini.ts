@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdir, readFile, readdir, rm, rmdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -215,10 +216,7 @@ export class GeminiCliRuntime extends CLIRuntimeBase {
       return params;
     }
 
-    const tempDir = join(
-      tmpdir(),
-      `remoteclaw-gemini-media-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    );
+    const tempDir = join(tmpdir(), `remoteclaw-gemini-media-${randomUUID()}`);
     await mkdir(tempDir, { recursive: true });
     this.mediaTempDir = tempDir;
 

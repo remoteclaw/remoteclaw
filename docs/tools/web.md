@@ -43,9 +43,9 @@ If no `provider` is explicitly set, RemoteClaw auto-detects which provider to us
 
 1. **Brave** — `BRAVE_API_KEY` env var or `tools.web.search.apiKey` config
 2. **Gemini** — `GEMINI_API_KEY` env var or `tools.web.search.gemini.apiKey` config
-3. **Kimi** — `KIMI_API_KEY` / `MOONSHOT_API_KEY` env var or `tools.web.search.kimi.apiKey` config
-4. **Perplexity** — `PERPLEXITY_API_KEY` env var or `tools.web.search.perplexity.apiKey` config
-5. **Grok** — `XAI_API_KEY` env var or `tools.web.search.grok.apiKey` config
+3. **Grok** — `XAI_API_KEY` env var or `tools.web.search.grok.apiKey` config
+4. **Kimi** — `KIMI_API_KEY` / `MOONSHOT_API_KEY` env var or `tools.web.search.kimi.apiKey` config
+5. **Perplexity** — `PERPLEXITY_API_KEY` env var or `tools.web.search.perplexity.apiKey` config
 
 If no keys are found, it falls back to Brave (you'll get a missing-key error prompting you to configure one).
 
@@ -163,10 +163,10 @@ Search the web using your configured provider.
 - `tools.web.search.enabled` must not be `false` (default: enabled)
 - API key for your chosen provider:
   - **Brave**: `BRAVE_API_KEY` or `tools.web.search.apiKey`
-  - **Perplexity**: `PERPLEXITY_API_KEY` or `tools.web.search.perplexity.apiKey`
   - **Gemini**: `GEMINI_API_KEY` or `tools.web.search.gemini.apiKey`
   - **Grok**: `XAI_API_KEY` or `tools.web.search.grok.apiKey`
   - **Kimi**: `KIMI_API_KEY`, `MOONSHOT_API_KEY`, or `tools.web.search.kimi.apiKey`
+  - **Perplexity**: `PERPLEXITY_API_KEY` or `tools.web.search.perplexity.apiKey`
 
 ### Config
 

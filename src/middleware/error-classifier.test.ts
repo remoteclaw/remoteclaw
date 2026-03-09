@@ -160,7 +160,7 @@ describe("classifyError", () => {
         "timeout",
         "aborted",
         "execution aborted",
-        "watchdog timeout",
+        "startup timeout",
         "rate limit",
         "context length",
         "unauthorized",

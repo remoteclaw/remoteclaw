@@ -115,21 +115,19 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       }
     });
 
-    // ── Watchdog timer ───────────────────────────────────────────────
-    let watchdogTimer: ReturnType<typeof setTimeout> | undefined;
-    let watchdogFired = false;
+    // ── Startup timeout ──────────────────────────────────────────────
+    // One-shot timer: fires if no NDJSON output arrives before the
+    // deadline.  Cancelled as soon as the first line is received.
+    let startupTimer: ReturnType<typeof setTimeout> | undefined;
+    let startupTimedOut = false;
 
-    const resetWatchdog = () => {
-      if (watchdogTimer !== undefined) {
-        clearTimeout(watchdogTimer);
-      }
-      watchdogTimer = setTimeout(() => {
-        watchdogFired = true;
-        logDebug(`[agent-runtime] pid=${child.pid}: watchdog timeout after ${this.timeoutMs}ms`);
-        killWithEscalation();
-      }, this.timeoutMs);
-    };
-    resetWatchdog();
+    startupTimer = setTimeout(() => {
+      startupTimedOut = true;
+      logDebug(
+        `[agent-runtime] pid=${child.pid}: startup timeout — no output within ${this.timeoutMs}ms`,
+      );
+      killWithEscalation();
+    }, this.timeoutMs);
 
     // ── Stream selection: NDJSON source + diagnostic capture ─────────
     const ndjsonSource = this.ndjsonStream === "stderr" ? child.stderr : child.stdout;
@@ -153,7 +151,10 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     };
 
     rl.on("line", (line) => {
-      resetWatchdog();
+      if (startupTimer !== undefined) {
+        clearTimeout(startupTimer);
+        startupTimer = undefined;
+      }
       if (!line.trim()) {
         return;
       }
@@ -240,8 +241,8 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
         }
       }
     } finally {
-      if (watchdogTimer !== undefined) {
-        clearTimeout(watchdogTimer);
+      if (startupTimer !== undefined) {
+        clearTimeout(startupTimer);
       }
       params.abortSignal?.removeEventListener("abort", onAbort);
     }
@@ -268,11 +269,11 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     }
 
     // ── Emit terminal events ─────────────────────────────────────────
-    if (watchdogFired) {
+    if (startupTimedOut) {
       yield {
         type: "error",
-        message: `Watchdog timeout: no output for ${this.timeoutMs}ms`,
-        code: "WATCHDOG_TIMEOUT",
+        message: `Startup timeout: no output within ${this.timeoutMs}ms`,
+        code: "STARTUP_TIMEOUT",
       } satisfies AgentErrorEvent;
     }
 

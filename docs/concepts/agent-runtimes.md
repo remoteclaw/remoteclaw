@@ -90,18 +90,21 @@ When `execute()` is called:
 5. **Event yielding**: Events are pushed into a queue and yielded to the
    caller via async iteration.
 
-6. **Termination**: After the process exits, any final events (watchdog
-   errors, abort markers) are emitted, followed by the `done` event.
+6. **Termination**: After the process exits, any final events (startup
+   timeout errors, abort markers) are emitted, followed by the `done` event.
 
-### Watchdog Timer
+### Startup Timeout
 
-A 5-minute inactivity watchdog resets on every NDJSON line received. If no
-output arrives within the timeout, the runtime triggers process termination
-and emits an error event with code `WATCHDOG_TIMEOUT`.
+A 5-minute startup timeout begins when the subprocess spawns. If the first
+NDJSON line arrives before the deadline, the timer is cancelled and the
+process runs without any further timeout — tool executions may take
+arbitrarily long. If no output arrives before the deadline, the runtime
+triggers process termination and emits an error event with code
+`STARTUP_TIMEOUT`.
 
 ### Signal Escalation
 
-Process termination (from watchdog, abort signal, or errors) follows a
+Process termination (from startup timeout, abort signal, or errors) follows a
 two-step escalation:
 
 1. **SIGTERM** — gives the CLI process a chance to clean up

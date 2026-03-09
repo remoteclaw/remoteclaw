@@ -118,7 +118,7 @@ describe("buildStatusMessage", () => {
 
   it("shows verbose label only when enabled", async () => {
     const text = await buildStatusMessage({
-      agent: { model: "anthropic/claude-opus-4-5" },
+      agent: {},
       sessionEntry: { sessionId: "v1", updatedAt: 0 },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
@@ -133,7 +133,6 @@ describe("buildStatusMessage", () => {
   it("shows selected model and active runtime model when they differ", async () => {
     const text = await buildStatusMessage({
       agent: {
-        model: "anthropic/claude-opus-4-5",
         contextTokens: 32_000,
       },
       sessionEntry: {
@@ -191,7 +190,6 @@ describe("buildStatusMessage", () => {
   it("omits active lines when runtime matches selected model", async () => {
     const text = await buildStatusMessage({
       agent: {
-        model: "openai/gpt-4.1-mini",
         contextTokens: 32_000,
       },
       sessionEntry: {
@@ -277,7 +275,7 @@ describe("buildStatusMessage", () => {
 
   it("inserts usage summary beneath context line", async () => {
     const text = await buildStatusMessage({
-      agent: { model: "anthropic/claude-opus-4-5", contextTokens: 32_000 },
+      agent: { contextTokens: 32_000 },
       sessionEntry: { sessionId: "u1", updatedAt: 0, totalTokens: 1000 },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
@@ -294,7 +292,7 @@ describe("buildStatusMessage", () => {
   it("hides cost when not using an API key", async () => {
     const text = await buildStatusMessage({
       config: {} as unknown as RemoteClawConfig,
-      agent: { model: "anthropic/claude-opus-4-5" },
+      agent: {},
       sessionEntry: { sessionId: "c1", updatedAt: 0, inputTokens: 10 },
       sessionKey: "agent:main:main",
       sessionScope: "per-sender",
@@ -363,7 +361,6 @@ describe("buildStatusMessage", () => {
   async function buildTranscriptStatusText(params: { sessionId: string; sessionKey: string }) {
     return await buildStatusMessage({
       agent: {
-        model: "anthropic/claude-opus-4-5",
         contextTokens: 32_000,
       },
       sessionEntry: {
@@ -440,7 +437,6 @@ describe("buildStatusMessage", () => {
 
         const text = await buildStatusMessage({
           agent: {
-            model: "anthropic/claude-opus-4-5",
             contextTokens: 32_000,
           },
           agentId: "worker2",

@@ -1,5 +1,5 @@
 import type { ChannelId } from "../channels/plugins/types.js";
-import type { AgentModelConfig, AgentSandboxConfig } from "./types.agents-shared.js";
+import type { AgentSandboxConfig } from "./types.agents-shared.js";
 import type {
   BlockStreamingChunkConfig,
   BlockStreamingCoalesceConfig,
@@ -42,12 +42,6 @@ export type AgentContextPruningConfig = {
 };
 
 export type AgentDefaultsConfig = {
-  /**
-   * Legacy model config fields — accepted by the Zod schema as `unknown`
-   * for backwards compat but no longer used by the runtime.
-   * CLIs own model selection; RemoteClaw is middleware.
-   */
-  model?: AgentModelConfig;
   /** Legacy image-model override (kept for config compat). */
   imageModel?: unknown;
   /** Legacy per-model settings map (kept for config compat). */
@@ -157,8 +151,6 @@ export type AgentDefaultsConfig = {
     maxChildrenPerAgent?: number;
     /** Auto-archive sub-agent sessions after N minutes (default: 60). */
     archiveAfterMinutes?: number;
-    /** Legacy sub-agent model override (kept for config compat). */
-    model?: unknown;
     /** Default run timeout in seconds for spawned sub-agents (0 = no timeout). */
     runTimeoutSeconds?: number;
     /** Gateway timeout in ms for sub-agent announce delivery calls (default: 60000). */

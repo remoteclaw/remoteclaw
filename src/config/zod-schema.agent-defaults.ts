@@ -9,7 +9,6 @@ import {
 
 export const AgentDefaultsSchema = z
   .object({
-    model: z.unknown().optional(),
     imageModel: z.unknown().optional(),
     models: z.unknown().optional(),
     workspace: z.string().optional(),
@@ -90,7 +89,6 @@ export const AgentDefaultsSchema = z
             "Maximum number of active children a single agent session can spawn (default: 5).",
           ),
         archiveAfterMinutes: z.number().int().positive().optional(),
-        model: z.unknown().optional(),
         runTimeoutSeconds: z.number().int().min(0).optional(),
         announceTimeoutMs: z.number().int().positive().optional(),
       })

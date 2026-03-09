@@ -24,17 +24,13 @@ async function applySubagentModelPatch(cfg: RemoteClawConfig) {
 }
 
 function makeKimiSubagentCfg(params: {
-  agentPrimaryModel: string;
   agentSubagentModel?: string;
   defaultsSubagentModel?: string;
 }): RemoteClawConfig {
   return {
     agents: {
       defaults: {
-        model: { primary: "anthropic/claude-sonnet-4-6" },
-        subagents: params.defaultsSubagentModel
-          ? { model: params.defaultsSubagentModel }
-          : undefined,
+        subagents: params.defaultsSubagentModel ? {} : undefined,
         models: {
           "anthropic/claude-sonnet-4-6": { alias: "default" },
         },
@@ -42,8 +38,7 @@ function makeKimiSubagentCfg(params: {
       list: [
         {
           id: "kimi",
-          model: { primary: params.agentPrimaryModel },
-          subagents: params.agentSubagentModel ? { model: params.agentSubagentModel } : undefined,
+          subagents: params.agentSubagentModel ? {} : undefined,
         },
       ],
     },
@@ -85,7 +80,6 @@ describe("gateway sessions patch", () => {
     const cfg = {
       agents: {
         defaults: {
-          model: { primary: "openai/gpt-5.2" },
           models: {
             "anthropic/claude-sonnet-4-6": { alias: "sonnet" },
           },
@@ -113,7 +107,6 @@ describe("gateway sessions patch", () => {
     const cfg = {
       agents: {
         defaults: {
-          model: { primary: "openai/gpt-5.2" },
           models: {
             "anthropic/claude-sonnet-4-6": { alias: "sonnet" },
           },
@@ -217,9 +210,7 @@ describe("gateway sessions patch", () => {
   });
 
   test("allows target agent own model for subagent session even when missing from global allowlist", async () => {
-    const cfg = makeKimiSubagentCfg({
-      agentPrimaryModel: "synthetic/hf:moonshotai/Kimi-K2.5",
-    });
+    const cfg = makeKimiSubagentCfg({});
 
     const entry = await applySubagentModelPatch(cfg);
     // Model override is always stored when different from the global default,
@@ -231,7 +222,6 @@ describe("gateway sessions patch", () => {
 
   test("allows target agent subagents.model for subagent session even when missing from global allowlist", async () => {
     const cfg = makeKimiSubagentCfg({
-      agentPrimaryModel: "anthropic/claude-sonnet-4-6",
       agentSubagentModel: SUBAGENT_MODEL,
     });
 
@@ -242,7 +232,6 @@ describe("gateway sessions patch", () => {
 
   test("allows global defaults.subagents.model for subagent session even when missing from global allowlist", async () => {
     const cfg = makeKimiSubagentCfg({
-      agentPrimaryModel: "anthropic/claude-sonnet-4-6",
       defaultsSubagentModel: SUBAGENT_MODEL,
     });
 

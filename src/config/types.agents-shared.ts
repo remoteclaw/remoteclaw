@@ -20,15 +20,6 @@ type SandboxPruneSettings = {
   maxAge?: string;
 };
 
-export type AgentModelConfig =
-  | string
-  | {
-      /** Primary model (provider/model). */
-      primary?: string;
-      /** Per-agent model fallbacks (provider/model). */
-      fallbacks?: string[];
-    };
-
 export type AgentSandboxConfig = {
   mode?: "off" | "non-main" | "all";
   /** Agent workspace access inside the sandbox. */

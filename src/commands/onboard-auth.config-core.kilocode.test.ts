@@ -2,23 +2,6 @@ import { describe, expect, it } from "vitest";
 import { resolveApiKeyForProvider, resolveEnvApiKey } from "../auth/provider-auth.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { captureEnv } from "../test-utils/env.js";
-
-// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-function resolveAgentModelPrimaryValue(model: unknown): string | undefined {
-  if (typeof model === "string") {
-    const trimmed = model.trim();
-    return trimmed || undefined;
-  }
-  if (!model || typeof model !== "object") {
-    return undefined;
-  }
-  const primary = (model as { primary?: unknown }).primary;
-  if (typeof primary !== "string") {
-    return undefined;
-  }
-  const trimmed = primary.trim();
-  return trimmed || undefined;
-}
 import {
   applyKilocodeProviderConfig,
   applyKilocodeConfig,
@@ -86,23 +69,23 @@ describe("Kilo Gateway provider config", () => {
       expect(agentModel?.alias).toBe("My Custom Alias");
     });
 
-    it("does not change the default model selection", () => {
+    it("does not change other default fields", () => {
       const cfg: RemoteClawConfig = {
         agents: {
           defaults: {
-            model: { primary: "openai/gpt-5" },
+            runtime: "claude",
           },
         },
       };
       const result = applyKilocodeProviderConfig(cfg);
-      expect(resolveAgentModelPrimaryValue(result.agents?.defaults?.model)).toBe("openai/gpt-5");
+      expect(result.agents?.defaults?.runtime).toBe("claude");
     });
   });
 
   describe("applyKilocodeConfig", () => {
     it("does not set a default model", () => {
       const result = applyKilocodeConfig(emptyCfg);
-      expect(resolveAgentModelPrimaryValue(result.agents?.defaults?.model)).toBeUndefined();
+      expect(result.agents?.defaults?.models?.[KILOCODE_DEFAULT_MODEL_REF]).toBeDefined();
     });
 
     it("also applies provider config", () => {

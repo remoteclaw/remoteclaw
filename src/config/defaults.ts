@@ -68,18 +68,6 @@ function resolveAnthropicDefaultAuthMode(cfg: RemoteClawConfig): AnthropicAuthDe
   return null;
 }
 
-function resolvePrimaryModelRef(raw?: string): string | null {
-  if (!raw || typeof raw !== "string") {
-    return null;
-  }
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return null;
-  }
-  const aliasKey = trimmed.toLowerCase();
-  return DEFAULT_MODEL_ALIASES[aliasKey] ?? trimmed;
-}
-
 export type SessionDefaultsOptions = {
   warn?: (message: string) => void;
   warnState?: WarnState;
@@ -328,27 +316,6 @@ export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawCo
         params: { ...params, cacheRetention: "short" },
       };
       modelsMutated = true;
-    }
-
-    const rawModel = defaults.model;
-    const rawPrimary =
-      typeof rawModel === "string" ? rawModel : (rawModel as { primary?: string })?.primary;
-    const primary = resolvePrimaryModelRef(typeof rawPrimary === "string" ? rawPrimary : undefined);
-    if (primary) {
-      const parsedPrimary = parseModelRef(primary, "anthropic");
-      if (isAnthropicCacheRetentionTarget(parsedPrimary)) {
-        const key = `${parsedPrimary.provider}/${parsedPrimary.model}`;
-        const entry = nextModels[key];
-        const current = entry ?? {};
-        const params = (current as { params?: Record<string, unknown> }).params ?? {};
-        if (typeof params.cacheRetention !== "string") {
-          nextModels[key] = {
-            ...(current as Record<string, unknown>),
-            params: { ...params, cacheRetention: "short" },
-          };
-          modelsMutated = true;
-        }
-      }
     }
 
     if (modelsMutated) {

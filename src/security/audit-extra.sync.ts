@@ -138,71 +138,14 @@ function addModel(models: ModelRef[], raw: unknown, source: string) {
   models.push({ id, source });
 }
 
-// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-// Inline helpers replacing deleted src/config/model-input.ts exports.
-function resolveModelPrimaryValue(model: unknown): string | undefined {
-  if (typeof model === "string") {
-    const trimmed = model.trim();
-    return trimmed || undefined;
-  }
-  if (!model || typeof model !== "object") {
-    return undefined;
-  }
-  const primary = (model as { primary?: unknown }).primary;
-  if (typeof primary !== "string") {
-    return undefined;
-  }
-  const trimmed = primary.trim();
-  return trimmed || undefined;
-}
-
-function resolveModelFallbackValues(model: unknown): string[] {
-  if (!model || typeof model !== "object") {
-    return [];
-  }
-  return Array.isArray((model as { fallbacks?: unknown }).fallbacks)
-    ? (model as { fallbacks: string[] }).fallbacks
-    : [];
-}
-
+// Model config gutted from per-agent and defaults — only legacy imageModel
+// and per-model settings map still contribute refs for auditing.
 function collectModels(cfg: RemoteClawConfig): ModelRef[] {
   const out: ModelRef[] = [];
-  addModel(
-    out,
-    resolveModelPrimaryValue(cfg.agents?.defaults?.model),
-    "agents.defaults.model.primary",
-  );
-  for (const f of resolveModelFallbackValues(cfg.agents?.defaults?.model)) {
-    addModel(out, f, "agents.defaults.model.fallbacks");
-  }
-  addModel(
-    out,
-    resolveModelPrimaryValue(cfg.agents?.defaults?.imageModel),
-    "agents.defaults.imageModel.primary",
-  );
-  for (const f of resolveModelFallbackValues(cfg.agents?.defaults?.imageModel)) {
-    addModel(out, f, "agents.defaults.imageModel.fallbacks");
-  }
-
-  const list = Array.isArray(cfg.agents?.list) ? cfg.agents?.list : [];
-  for (const agent of list ?? []) {
-    if (!agent || typeof agent !== "object") {
-      continue;
-    }
-    const id =
-      typeof (agent as { id?: unknown }).id === "string" ? (agent as { id: string }).id : "";
-    const model = (agent as { model?: unknown }).model;
-    if (typeof model === "string") {
-      addModel(out, model, `agents.list.${id}.model`);
-    } else if (model && typeof model === "object") {
-      addModel(out, (model as { primary?: unknown }).primary, `agents.list.${id}.model.primary`);
-      const fallbacks = (model as { fallbacks?: unknown }).fallbacks;
-      if (Array.isArray(fallbacks)) {
-        for (const f of fallbacks) {
-          addModel(out, f, `agents.list.${id}.model.fallbacks`);
-        }
-      }
-    }
+  // imageModel is a legacy field kept for config compat — still audit if present.
+  const imageModel = cfg.agents?.defaults?.imageModel;
+  if (typeof imageModel === "string" && imageModel.trim()) {
+    addModel(out, imageModel, "agents.defaults.imageModel");
   }
   return out;
 }

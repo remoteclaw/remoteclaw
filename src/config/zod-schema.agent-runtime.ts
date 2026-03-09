@@ -226,7 +226,6 @@ export const AgentEntrySchema = z
     name: z.string().optional(),
     workspace: z.string().optional(),
     agentDir: z.string().optional(),
-    model: z.unknown().optional(),
     humanDelay: HumanDelaySchema.optional(),
     heartbeat: HeartbeatSchema,
     boot: BootSchema,
@@ -235,13 +234,15 @@ export const AgentEntrySchema = z
     subagents: z
       .object({
         allowAgents: z.array(z.string()).optional(),
-        model: z.unknown().optional(),
       })
       .strict()
       .optional(),
     editableFiles: z.array(z.string()).optional(),
     tools: AgentToolsSchema,
     auth: AuthFieldSchema,
+    runtime: z
+      .union([z.literal("claude"), z.literal("gemini"), z.literal("codex"), z.literal("opencode")])
+      .optional(),
   })
   .strict();
 

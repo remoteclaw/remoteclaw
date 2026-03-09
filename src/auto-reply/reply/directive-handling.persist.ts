@@ -116,20 +116,12 @@ export async function persistInlineDirectives(params: {
   };
 }
 
-export function resolveDefaultModel(params: { cfg: RemoteClawConfig; agentId?: string }): {
+export function resolveDefaultModel(_params: { cfg: RemoteClawConfig; agentId?: string }): {
   defaultProvider: string;
   defaultModel: string;
   aliasIndex: Map<string, { provider: string; model: string }>;
 } {
-  // Model selection/alias infrastructure gutted in RemoteClaw — derive from agent config primary.
-  const agentModel = params.cfg.agents?.defaults?.model;
-  const primary =
-    typeof agentModel === "string" ? agentModel : (agentModel as { primary?: string })?.primary;
-  const slashIdx = primary?.indexOf("/") ?? -1;
-  const defaultProvider = primary && slashIdx > 0 ? primary.slice(0, slashIdx) : "unknown";
-  const defaultModel =
-    primary && slashIdx > 0 ? primary.slice(slashIdx + 1) : (primary ?? "unknown");
-  // Alias index is empty — model aliases gutted in RemoteClaw.
+  // Model selection/alias infrastructure gutted in RemoteClaw — CLIs own model selection.
   const aliasIndex = new Map<string, { provider: string; model: string }>();
-  return { defaultProvider, defaultModel, aliasIndex };
+  return { defaultProvider: "unknown", defaultModel: "unknown", aliasIndex };
 }

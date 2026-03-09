@@ -1,6 +1,6 @@
 import type { ChatType } from "../channels/chat-type.js";
 import type { AgentDefaultsConfig } from "./types.agent-defaults.js";
-import type { AgentModelConfig, AgentSandboxConfig } from "./types.agents-shared.js";
+import type { AgentSandboxConfig } from "./types.agents-shared.js";
 import type { HumanDelayConfig, IdentityConfig } from "./types.base.js";
 import type { GroupChatConfig } from "./types.messages.js";
 import type { AgentToolsConfig } from "./types.tools.js";
@@ -11,7 +11,6 @@ export type AgentConfig = {
   name?: string;
   workspace?: string;
   agentDir?: string;
-  model?: AgentModelConfig;
   /** Human-like delay between block replies for this agent. */
   humanDelay?: HumanDelayConfig;
   /** Optional per-agent heartbeat overrides. */
@@ -23,8 +22,6 @@ export type AgentConfig = {
   subagents?: {
     /** Allow spawning sub-agents under other agent ids. Use "*" to allow any. */
     allowAgents?: string[];
-    /** Per-agent default model for spawned sub-agents (string or {primary,fallbacks}). */
-    model?: AgentModelConfig;
   };
   /** Optional per-agent sandbox overrides. */
   sandbox?: AgentSandboxConfig;
@@ -41,6 +38,8 @@ export type AgentConfig = {
    * - `undefined` — inherit from `agents.defaults.auth`
    */
   auth?: false | string | string[];
+  /** Selected agent runtime (claude, gemini, codex, opencode). Overrides `agents.defaults.runtime`. */
+  runtime?: "claude" | "gemini" | "codex" | "opencode";
 };
 
 export type AgentsConfig = {

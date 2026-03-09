@@ -325,17 +325,10 @@ export function createSessionStatusTool(opts?: {
         : `🕒 Time zone: ${userTimezone}`;
 
       const agentDefaults = cfg.agents?.defaults ?? {};
-      const defaultLabel = `${configured.provider}/${configured.model}`;
-      const rawModel = agentDefaults.model as { primary?: string } | undefined;
-      const agentModel =
-        typeof rawModel === "object" && rawModel
-          ? { ...rawModel, primary: defaultLabel }
-          : { primary: defaultLabel };
       const statusText = await buildStatusMessage({
         config: cfg,
         agent: {
           ...agentDefaults,
-          model: agentModel,
         },
         agentId,
         sessionEntry: resolved.entry,

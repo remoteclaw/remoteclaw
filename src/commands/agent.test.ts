@@ -134,7 +134,6 @@ function mockConfig(
     agents: {
       defaults: {
         runtime: "claude",
-        model: { primary: "anthropic/claude-opus-4-5" },
         models: { "anthropic/claude-opus-4-5": {} },
         ...agentOverrides,
       },
@@ -331,7 +330,6 @@ describe("agentCommand", () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store, {
-        model: { primary: "openai/gpt-4.1-mini" },
         models: {
           "anthropic/claude-opus-4-5": {},
           "openai/gpt-4.1-mini": {},
@@ -359,7 +357,6 @@ describe("agentCommand", () => {
       });
 
       mockConfig(home, store, {
-        model: { primary: "anthropic/claude-opus-4-5" },
         models: {},
       });
 

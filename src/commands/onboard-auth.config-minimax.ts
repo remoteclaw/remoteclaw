@@ -42,23 +42,7 @@ export function applyMinimaxHostedConfig(
   params?: { baseUrl?: string },
 ): RemoteClawConfig {
   const next = applyMinimaxHostedProviderConfig(cfg, params);
-  return {
-    ...next,
-    agents: {
-      ...next.agents,
-      defaults: {
-        ...next.agents?.defaults,
-        model: {
-          ...(typeof next.agents?.defaults?.model === "string"
-            ? { primary: next.agents.defaults.model }
-            : typeof next.agents?.defaults?.model === "object" && next.agents.defaults.model
-              ? next.agents.defaults.model
-              : {}),
-          primary: MINIMAX_HOSTED_MODEL_REF,
-        },
-      },
-    },
-  };
+  return next;
 }
 
 // MiniMax Anthropic-compatible API (platform.minimax.io/anthropic)

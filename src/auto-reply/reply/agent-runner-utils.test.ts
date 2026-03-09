@@ -1,15 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { FollowupRun } from "./queue.js";
-
-const hoisted = vi.hoisted(() => {
-  const resolveRunModelFallbacksOverrideMock = vi.fn();
-  return { resolveRunModelFallbacksOverrideMock };
-});
-
-vi.mock("../../agents/agent-scope.js", () => ({
-  resolveRunModelFallbacksOverride: (...args: unknown[]) =>
-    hoisted.resolveRunModelFallbacksOverrideMock(...args),
-}));
 
 const { buildEmbeddedRunBaseParams, buildEmbeddedRunContexts, resolveModelFallbackOptions } =
   await import("./agent-runner-utils.js");
@@ -34,42 +24,18 @@ function makeRun(overrides: Partial<FollowupRun["run"]> = {}): FollowupRun["run"
 }
 
 describe("agent-runner-utils", () => {
-  beforeEach(() => {
-    hoisted.resolveRunModelFallbacksOverrideMock.mockClear();
-  });
-
-  it("resolves model fallback options from run context", () => {
-    hoisted.resolveRunModelFallbacksOverrideMock.mockReturnValue(["fallback-model"]);
+  it("resolves model fallback options with undefined fallbacksOverride", () => {
     const run = makeRun();
 
     const resolved = resolveModelFallbackOptions(run);
 
-    expect(hoisted.resolveRunModelFallbacksOverrideMock).toHaveBeenCalledWith({
-      cfg: run.config,
-      agentId: run.agentId,
-      sessionKey: run.sessionKey,
-    });
     expect(resolved).toEqual({
       cfg: run.config,
       provider: run.provider,
       model: run.model,
       agentDir: run.agentDir,
-      fallbacksOverride: ["fallback-model"],
+      fallbacksOverride: undefined,
     });
-  });
-
-  it("passes through missing agentId for helper-based fallback resolution", () => {
-    hoisted.resolveRunModelFallbacksOverrideMock.mockReturnValue(["fallback-model"]);
-    const run = makeRun({ agentId: undefined });
-
-    const resolved = resolveModelFallbackOptions(run);
-
-    expect(hoisted.resolveRunModelFallbacksOverrideMock).toHaveBeenCalledWith({
-      cfg: run.config,
-      agentId: undefined,
-      sessionKey: run.sessionKey,
-    });
-    expect(resolved.fallbacksOverride).toEqual(["fallback-model"]);
   });
 
   it("builds embedded run base params with run metadata", () => {

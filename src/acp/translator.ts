@@ -458,7 +458,10 @@ export class AcpGatewayAgent implements Agent {
     this.log(`loadSession: ${session.sessionId} -> ${session.sessionKey}`);
     const [sessionSnapshot, transcript] = await Promise.all([
       this.getSessionSnapshot(session.sessionKey),
-      this.getSessionTranscript(session.sessionKey),
+      this.getSessionTranscript(session.sessionKey).catch((err) => {
+        this.log(`session transcript fallback for ${session.sessionKey}: ${String(err)}`);
+        return [];
+      }),
     ]);
     await this.replaySessionTranscript(session.sessionId, transcript);
     await this.sendSessionSnapshotUpdate(session.sessionId, sessionSnapshot, {
@@ -628,7 +631,6 @@ export class AcpGatewayAgent implements Agent {
     if (!session) {
       return;
     }
-
     this.sessionStore.cancelActiveRun(params.sessionId);
     try {
       await this.gateway.request("chat.abort", { sessionKey: session.sessionKey });
@@ -839,9 +841,13 @@ export class AcpGatewayAgent implements Agent {
     this.pendingPrompts.delete(sessionId);
     this.sessionStore.clearActiveRun(sessionId);
     const sessionSnapshot = await this.getSessionSnapshot(pending.sessionKey);
-    await this.sendSessionSnapshotUpdate(sessionId, sessionSnapshot, {
-      includeControls: false,
-    });
+    try {
+      await this.sendSessionSnapshotUpdate(sessionId, sessionSnapshot, {
+        includeControls: false,
+      });
+    } catch (err) {
+      this.log(`session snapshot update failed for ${sessionId}: ${String(err)}`);
+    }
     pending.resolve({ stopReason });
   }
 

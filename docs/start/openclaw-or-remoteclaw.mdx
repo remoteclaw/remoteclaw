@@ -10,7 +10,7 @@ import { TabItem, Tabs } from "@astrojs/starlight/components";
 
 # OpenClaw or RemoteClaw?
 
-RemoteClaw is a fork of OpenClaw that replaced the embedded AI execution engine with a middleware architecture. Both projects are actively maintained but serve different use cases.
+RemoteClaw is a fork of [OpenClaw](https://openclaw.ai) that replaced the embedded AI execution engine with a middleware architecture. Both projects serve different use cases.
 
 ## Quick decision
 
@@ -49,13 +49,13 @@ Use **OpenClaw**. It includes everything in one process.
     └── MCP server (injected into subprocess for gateway access)
     ```
 
-    The CLI agent owns the agentic loop. RemoteClaw handles session persistence, message delivery, and MCP tool bridging.
+    The CLI agent owns the agentic loop. RemoteClaw handles session persistence, message delivery, and MCP tool bridging. Your `~/.claude`, `~/.gemini`, or other agent config is preserved as-is.
 
   </TabItem>
   <TabItem label="OpenClaw">
     ```
     OpenClaw (single process)
-    ├── Pi execution engine (in-process LLM orchestration)
+    ├── Embedded execution engine (in-process LLM orchestration)
     ├── Model provider ecosystem (OpenAI, Anthropic, Google, etc.)
     ├── Tool execution (in-process)
     ├── Skills marketplace (ClawHub)
@@ -72,3 +72,9 @@ For a deeper architectural comparison, see [Middleware Architecture — How This
 ## Switching from OpenClaw
 
 If you decide to switch, see [Migrate from OpenClaw](/install/from-openclaw) for step-by-step instructions and [Breaking changes](/install/breaking-changes-from-openclaw) for what to expect.
+
+## Learn more
+
+- [What is RemoteClaw?](/start/remoteclaw) — full setup guide
+- [Get started with OpenClaw](https://openclaw.ai) — OpenClaw's official site
+- [Middleware Architecture](/concepts/middleware-architecture) — how RemoteClaw's architecture works

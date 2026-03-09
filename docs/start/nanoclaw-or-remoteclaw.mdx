@@ -10,7 +10,7 @@ import { TabItem, Tabs } from "@astrojs/starlight/components";
 
 # NanoClaw or RemoteClaw?
 
-NanoClaw and RemoteClaw both connect AI agents to messaging channels, but they take fundamentally different approaches. NanoClaw builds a new agent using the Anthropic Agent SDK and runs it in containers. RemoteClaw bridges your existing CLI agent as a subprocess.
+[NanoClaw](https://github.com/qwibitai/nanoclaw) and RemoteClaw both connect AI agents to messaging channels, but they take fundamentally different approaches. NanoClaw builds a new agent using the Anthropic Agent SDK and runs it in containers. RemoteClaw bridges your existing CLI agent as a subprocess.
 
 ## Quick decision
 
@@ -29,10 +29,10 @@ Use **NanoClaw**. It provides a purpose-built agent with strong sandboxing out o
 | Middleware-only architecture (no embedded LLM overhead)                                    | **RemoteClaw** |
 | MCP-first tool system (50 tools via MCP server)                                            | **RemoteClaw** |
 | 22+ messaging channels inherited from OpenClaw                                             | **RemoteClaw** |
-| Lightweight Claude agent with container isolation                                          | **NanoClaw**   |
+| Lightweight Claude agent with container-level sandboxing                                   | **NanoClaw**   |
 | Anthropic Agent SDK with built-in tool use                                                 | **NanoClaw**   |
-| Strong sandboxing via Docker/container boundaries                                          | **NanoClaw**   |
 | Minimal setup for a Claude-only workflow                                                   | **NanoClaw**   |
+| Fastest path from zero to a messaging agent (no CLI setup required)                        | **NanoClaw**   |
 
 ## Architecture comparison
 
@@ -67,19 +67,19 @@ Use **NanoClaw**. It provides a purpose-built agent with strong sandboxing out o
 
 ## Key differences
 
-| Dimension                | RemoteClaw                                              | NanoClaw                                       |
-| ------------------------ | ------------------------------------------------------- | ---------------------------------------------- |
-| **Agent model**          | CLI subprocess (your agent, your config)                | Anthropic Agent SDK (new agent instance)       |
-| **Runtime support**      | 4 runtimes (Claude, Gemini, Codex, OpenCode)            | Claude only                                    |
-| **Config preservation**  | Yes — uses your `~/.<agent>` directly                   | No — agent configured within NanoClaw          |
-| **Isolation model**      | Process isolation (subprocess boundary)                 | Container isolation (Docker boundary)          |
-| **Channels**             | 22+ (inherited from OpenClaw)                           | ~5 (WhatsApp, Telegram, Slack, Discord, Gmail) |
-| **MCP tools**            | 50 infrastructure-bound tools                           | Agent SDK built-in tools                       |
-| **Session management**   | File-based, per {channel, user, thread}                 | Built-in                                       |
-| **Subscription support** | Yes — CLI agents use your existing subscription or keys | API keys required (Agent SDK)                  |
+| Dimension               | RemoteClaw                                   | NanoClaw                                      |
+| ----------------------- | -------------------------------------------- | --------------------------------------------- |
+| **Agent model**         | CLI subprocess (your agent, your config)     | Anthropic Agent SDK (new agent instance)      |
+| **Runtime support**     | 4 runtimes (Claude, Gemini, Codex, OpenCode) | Claude only                                   |
+| **Config preservation** | Yes — uses your `~/.<agent>` directly        | No — agent configured within NanoClaw         |
+| **Authentication**      | Your existing CLI subscription or API keys   | API keys (Anthropic policy for Agent SDK)     |
+| **Isolation model**     | Process isolation (subprocess boundary)      | Container isolation (Docker boundary)         |
+| **Channels**            | 22+ (inherited from OpenClaw)                | 5 (WhatsApp, Telegram, Slack, Discord, Gmail) |
+| **MCP tools**           | 50 infrastructure-bound tools                | Agent SDK built-in tools                      |
+| **Session management**  | File-based, per {channel, user, thread}      | Built-in                                      |
 
 :::note
-Anthropic's terms of service restrict Agent SDK usage with Max/Pro subscription OAuth tokens and third-party tools. RemoteClaw spawns the real CLI binary, so your existing Claude subscription works as-is. NanoClaw uses the Agent SDK directly, which requires API keys.
+Anthropic restricts using the Agent SDK with consumer subscription plans (Max/Pro). This affects any project built on the Agent SDK, including NanoClaw. RemoteClaw spawns the CLI binary, which works with your existing subscription or API keys — whichever you have configured.
 :::
 
 ## When NanoClaw is the better fit
@@ -99,5 +99,6 @@ Anthropic's terms of service restrict Agent SDK usage with Max/Pro subscription 
 ## Learn more
 
 - [What is RemoteClaw?](/start/remoteclaw) — full setup guide
+- [Get started with NanoClaw](https://github.com/qwibitai/nanoclaw) — NanoClaw's repository
 - [OpenClaw or RemoteClaw?](/start/openclaw-or-remoteclaw) — comparison with OpenClaw
 - [Middleware Architecture](/concepts/middleware-architecture) — how RemoteClaw's architecture works

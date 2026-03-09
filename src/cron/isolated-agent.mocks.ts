@@ -15,3 +15,7 @@ vi.mock("../agents/provider-utils.js", async (importOriginal) => {
 vi.mock("../agents/subagent-announce.js", () => ({
   runSubagentAnnounceFlow: vi.fn(),
 }));
+
+vi.mock("../gateway/call.js", () => ({
+  callGateway: vi.fn(),
+}));

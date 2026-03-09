@@ -36,6 +36,15 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
   /** Construct provider-specific environment variables. */
   protected abstract buildEnv(params: AgentExecuteParams): Record<string, string>;
 
+  /**
+   * Construct a custom stdin payload for the subprocess.
+   * When this returns a string, it is written to stdin instead of
+   * the default large-prompt fallback.  Subclasses may override.
+   */
+  protected buildStdinPayload(_params: AgentExecuteParams): string | undefined {
+    return undefined;
+  }
+
   /** Whether this CLI accepts prompts via stdin. Subclasses may override. */
   protected get supportsStdinPrompt(): boolean {
     return true;
@@ -177,7 +186,13 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     );
 
     // ── Stdin prompt delivery ────────────────────────────────────────
-    if (
+    const customStdin = this.buildStdinPayload(params);
+    if (customStdin !== undefined && child.stdin) {
+      logDebug(
+        `[agent-runtime] pid=${child.pid}: delivering custom stdin payload (${customStdin.length} chars)`,
+      );
+      child.stdin.write(customStdin);
+    } else if (
       this.supportsStdinPrompt &&
       params.prompt.length > CLIRuntimeBase.STDIN_PROMPT_THRESHOLD &&
       child.stdin

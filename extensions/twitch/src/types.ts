@@ -12,7 +12,6 @@ import type {
   ChannelLogSink,
   ChannelMessageActionAdapter,
   ChannelMessageActionContext,
-  ChannelMeta,
   ChannelOutboundAdapter,
   ChannelOutboundContext,
   ChannelPlugin,

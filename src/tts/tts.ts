@@ -28,6 +28,10 @@ import { stripMarkdown } from "../line/markdown-to-line.js";
 import { isVoiceCompatibleAudio } from "../media/audio.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";
 import {
+  buildTtsProviderRegistry,
+  getTtsProvider as lookupTtsProvider,
+} from "./providers/index.js";
+import {
   edgeTTS,
   elevenLabsTTS,
   inferEdgeExtension,
@@ -40,6 +44,7 @@ import {
   parseTtsDirectives,
   scheduleCleanup,
 } from "./tts-core.js";
+import type { TtsProviderImpl } from "./types.js";
 export { OPENAI_TTS_MODELS, OPENAI_TTS_VOICES } from "./tts-core.js";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -156,7 +161,7 @@ export type ResolvedTtsModelOverrides = {
 
 export type TtsDirectiveOverrides = {
   ttsText?: string;
-  provider?: TtsProvider;
+  provider?: string;
   openai?: {
     voice?: string;
     model?: string;
@@ -401,7 +406,7 @@ export function setTtsEnabled(prefsPath: string, enabled: boolean): void {
   setTtsAutoMode(prefsPath, enabled ? "always" : "off");
 }
 
-export async function getTtsProvider(
+export async function resolveConfiguredTtsProvider(
   config: ResolvedTtsConfig,
   prefsPath: string,
 ): Promise<TtsProvider> {
@@ -421,6 +426,9 @@ export async function getTtsProvider(
   }
   return "edge";
 }
+
+/** @deprecated Use resolveConfiguredTtsProvider instead. */
+export const getTtsProvider = resolveConfiguredTtsProvider;
 
 export function setTtsProvider(prefsPath: string, provider: TtsProvider): void {
   updatePrefs(prefsPath, (prefs) => {
@@ -473,7 +481,7 @@ function resolveEdgeOutputFormat(config: ResolvedTtsConfig): string {
   return config.edge.outputFormat;
 }
 
-function ttsProviderToAuthProvider(provider: TtsProvider): string {
+function ttsProviderToAuthProvider(provider: string): string {
   switch (provider) {
     case "openai":
       return "openai";
@@ -486,7 +494,7 @@ function ttsProviderToAuthProvider(provider: TtsProvider): string {
 
 export async function resolveTtsApiKey(
   config: ResolvedTtsConfig,
-  provider: TtsProvider,
+  provider: string,
 ): Promise<string | undefined> {
   // 1. Auth profile store (unified credential system)
   if (provider !== "edge") {
@@ -512,15 +520,18 @@ export async function resolveTtsApiKey(
   return undefined;
 }
 
-export const TTS_PROVIDERS = ["openai", "elevenlabs", "edge"] as const;
+export const BUILTIN_TTS_PROVIDER_IDS = ["openai", "elevenlabs", "edge"] as const;
 
-export function resolveTtsProviderOrder(primary: TtsProvider): TtsProvider[] {
-  return [primary, ...TTS_PROVIDERS.filter((provider) => provider !== primary)];
+/** @deprecated Use BUILTIN_TTS_PROVIDER_IDS instead. */
+export const TTS_PROVIDERS = BUILTIN_TTS_PROVIDER_IDS;
+
+export function resolveTtsProviderOrder(primary: string): string[] {
+  return [primary, ...BUILTIN_TTS_PROVIDER_IDS.filter((id) => id !== primary)];
 }
 
 export async function isTtsProviderConfigured(
   config: ResolvedTtsConfig,
-  provider: TtsProvider,
+  provider: string,
 ): Promise<boolean> {
   if (provider === "edge") {
     return config.edge.enabled;
@@ -528,7 +539,7 @@ export async function isTtsProviderConfigured(
   return Boolean(await resolveTtsApiKey(config, provider));
 }
 
-function formatTtsProviderError(provider: TtsProvider, err: unknown): string {
+function formatTtsProviderError(provider: string, err: unknown): string {
   const error = err instanceof Error ? err : new Error(String(err));
   if (error.name === "AbortError") {
     return `${provider}: request timed out`;
@@ -542,6 +553,7 @@ export async function textToSpeech(params: {
   prefsPath?: string;
   channel?: string;
   overrides?: TtsDirectiveOverrides;
+  ttsProviders?: TtsProviderImpl[];
 }): Promise<TtsResult> {
   const config = resolveTtsConfig(params.cfg);
   const prefsPath = params.prefsPath ?? resolveTtsPrefsPath(config);
@@ -555,7 +567,8 @@ export async function textToSpeech(params: {
     };
   }
 
-  const userProvider = await getTtsProvider(config, prefsPath);
+  const providerRegistry = buildTtsProviderRegistry(params.ttsProviders);
+  const userProvider = await resolveConfiguredTtsProvider(config, prefsPath);
   const overrideProvider = params.overrides?.provider;
   const provider = overrideProvider ?? userProvider;
   const providers = resolveTtsProviderOrder(provider);
@@ -565,6 +578,7 @@ export async function textToSpeech(params: {
   for (const provider of providers) {
     const providerStart = Date.now();
     try {
+      // ── Built-in: Edge ──────────────────────────────────────────────
       if (provider === "edge") {
         if (!config.edge.enabled) {
           errors.push("edge: disabled");
@@ -635,56 +649,101 @@ export async function textToSpeech(params: {
         };
       }
 
-      const apiKey = await resolveTtsApiKey(config, provider);
-      if (!apiKey) {
-        errors.push(`${provider}: no API key`);
+      // ── Built-in: ElevenLabs / OpenAI ───────────────────────────────
+      if (provider === "elevenlabs" || provider === "openai") {
+        const apiKey = await resolveTtsApiKey(config, provider);
+        if (!apiKey) {
+          errors.push(`${provider}: no API key`);
+          continue;
+        }
+
+        let audioBuffer: Buffer;
+        if (provider === "elevenlabs") {
+          const voiceIdOverride = params.overrides?.elevenlabs?.voiceId;
+          const modelIdOverride = params.overrides?.elevenlabs?.modelId;
+          const voiceSettings = {
+            ...config.elevenlabs.voiceSettings,
+            ...params.overrides?.elevenlabs?.voiceSettings,
+          };
+          const seedOverride = params.overrides?.elevenlabs?.seed;
+          const normalizationOverride = params.overrides?.elevenlabs?.applyTextNormalization;
+          const languageOverride = params.overrides?.elevenlabs?.languageCode;
+          audioBuffer = await elevenLabsTTS({
+            text: params.text,
+            apiKey,
+            baseUrl: config.elevenlabs.baseUrl,
+            voiceId: voiceIdOverride ?? config.elevenlabs.voiceId,
+            modelId: modelIdOverride ?? config.elevenlabs.modelId,
+            outputFormat: output.elevenlabs,
+            seed: seedOverride ?? config.elevenlabs.seed,
+            applyTextNormalization:
+              normalizationOverride ?? config.elevenlabs.applyTextNormalization,
+            languageCode: languageOverride ?? config.elevenlabs.languageCode,
+            voiceSettings,
+            timeoutMs: config.timeoutMs,
+          });
+        } else {
+          const openaiModelOverride = params.overrides?.openai?.model;
+          const openaiVoiceOverride = params.overrides?.openai?.voice;
+          audioBuffer = await openaiTTS({
+            text: params.text,
+            apiKey,
+            model: openaiModelOverride ?? config.openai.model,
+            voice: openaiVoiceOverride ?? config.openai.voice,
+            responseFormat: output.openai,
+            timeoutMs: config.timeoutMs,
+          });
+        }
+
+        const latencyMs = Date.now() - providerStart;
+
+        const tempRoot = resolvePreferredRemoteClawTmpDir();
+        mkdirSync(tempRoot, { recursive: true, mode: 0o700 });
+        const tempDir = mkdtempSync(path.join(tempRoot, "tts-"));
+        const audioPath = path.join(tempDir, `voice-${Date.now()}${output.extension}`);
+        writeFileSync(audioPath, audioBuffer);
+        scheduleCleanup(tempDir);
+
+        return {
+          success: true,
+          audioPath,
+          latencyMs,
+          provider,
+          outputFormat: provider === "openai" ? output.openai : output.elevenlabs,
+          voiceCompatible: output.voiceCompatible,
+        };
+      }
+
+      // ── Plugin provider ─────────────────────────────────────────────
+      const pluginProvider = lookupTtsProvider(provider, providerRegistry);
+      if (!pluginProvider) {
+        errors.push(`${provider}: unknown provider`);
         continue;
       }
 
-      let audioBuffer: Buffer;
-      if (provider === "elevenlabs") {
-        const voiceIdOverride = params.overrides?.elevenlabs?.voiceId;
-        const modelIdOverride = params.overrides?.elevenlabs?.modelId;
-        const voiceSettings = {
-          ...config.elevenlabs.voiceSettings,
-          ...params.overrides?.elevenlabs?.voiceSettings,
-        };
-        const seedOverride = params.overrides?.elevenlabs?.seed;
-        const normalizationOverride = params.overrides?.elevenlabs?.applyTextNormalization;
-        const languageOverride = params.overrides?.elevenlabs?.languageCode;
-        audioBuffer = await elevenLabsTTS({
-          text: params.text,
-          apiKey,
-          baseUrl: config.elevenlabs.baseUrl,
-          voiceId: voiceIdOverride ?? config.elevenlabs.voiceId,
-          modelId: modelIdOverride ?? config.elevenlabs.modelId,
-          outputFormat: output.elevenlabs,
-          seed: seedOverride ?? config.elevenlabs.seed,
-          applyTextNormalization: normalizationOverride ?? config.elevenlabs.applyTextNormalization,
-          languageCode: languageOverride ?? config.elevenlabs.languageCode,
-          voiceSettings,
-          timeoutMs: config.timeoutMs,
-        });
-      } else {
-        const openaiModelOverride = params.overrides?.openai?.model;
-        const openaiVoiceOverride = params.overrides?.openai?.voice;
-        audioBuffer = await openaiTTS({
-          text: params.text,
-          apiKey,
-          model: openaiModelOverride ?? config.openai.model,
-          voice: openaiVoiceOverride ?? config.openai.voice,
-          responseFormat: output.openai,
-          timeoutMs: config.timeoutMs,
-        });
+      let apiKey: string | undefined;
+      if (pluginProvider.requiresApiKey) {
+        apiKey = await resolveTtsApiKey(config, provider);
+        if (!apiKey) {
+          errors.push(`${provider}: no API key`);
+          continue;
+        }
       }
 
-      const latencyMs = Date.now() - providerStart;
+      const result = await pluginProvider.synthesize({
+        text: params.text,
+        apiKey,
+        outputFormat: output.openai,
+        timeoutMs: config.timeoutMs,
+      });
 
+      const latencyMs = Date.now() - providerStart;
       const tempRoot = resolvePreferredRemoteClawTmpDir();
       mkdirSync(tempRoot, { recursive: true, mode: 0o700 });
       const tempDir = mkdtempSync(path.join(tempRoot, "tts-"));
-      const audioPath = path.join(tempDir, `voice-${Date.now()}${output.extension}`);
-      writeFileSync(audioPath, audioBuffer);
+      const ext = resolveExtensionForFormat(result.format);
+      const audioPath = path.join(tempDir, `voice-${Date.now()}${ext}`);
+      writeFileSync(audioPath, result.audioBuffer);
       scheduleCleanup(tempDir);
 
       return {
@@ -692,8 +751,8 @@ export async function textToSpeech(params: {
         audioPath,
         latencyMs,
         provider,
-        outputFormat: provider === "openai" ? output.openai : output.elevenlabs,
-        voiceCompatible: output.voiceCompatible,
+        outputFormat: result.format,
+        voiceCompatible: isVoiceCompatibleAudio({ fileName: audioPath }),
       };
     } catch (err) {
       errors.push(formatTtsProviderError(provider, err));
@@ -706,10 +765,28 @@ export async function textToSpeech(params: {
   };
 }
 
+function resolveExtensionForFormat(format: string): string {
+  const normalized = format.toLowerCase();
+  if (normalized.includes("opus")) {
+    return ".opus";
+  }
+  if (normalized.includes("ogg")) {
+    return ".ogg";
+  }
+  if (normalized.includes("wav") || normalized.includes("pcm")) {
+    return ".wav";
+  }
+  if (normalized.includes("webm")) {
+    return ".webm";
+  }
+  return ".mp3";
+}
+
 export async function textToSpeechTelephony(params: {
   text: string;
   cfg: RemoteClawConfig;
   prefsPath?: string;
+  ttsProviders?: TtsProviderImpl[];
 }): Promise<TtsTelephonyResult> {
   const config = resolveTtsConfig(params.cfg);
   const prefsPath = params.prefsPath ?? resolveTtsPrefsPath(config);
@@ -721,7 +798,8 @@ export async function textToSpeechTelephony(params: {
     };
   }
 
-  const userProvider = await getTtsProvider(config, prefsPath);
+  const providerRegistry = buildTtsProviderRegistry(params.ttsProviders);
+  const userProvider = await resolveConfiguredTtsProvider(config, prefsPath);
   const providers = resolveTtsProviderOrder(userProvider);
 
   const errors: string[] = [];
@@ -734,25 +812,47 @@ export async function textToSpeechTelephony(params: {
         continue;
       }
 
-      const apiKey = await resolveTtsApiKey(config, provider);
-      if (!apiKey) {
-        errors.push(`${provider}: no API key`);
-        continue;
-      }
+      // ── Built-in: ElevenLabs / OpenAI ───────────────────────────────
+      if (provider === "elevenlabs" || provider === "openai") {
+        const apiKey = await resolveTtsApiKey(config, provider);
+        if (!apiKey) {
+          errors.push(`${provider}: no API key`);
+          continue;
+        }
 
-      if (provider === "elevenlabs") {
-        const output = TELEPHONY_OUTPUT.elevenlabs;
-        const audioBuffer = await elevenLabsTTS({
+        if (provider === "elevenlabs") {
+          const output = TELEPHONY_OUTPUT.elevenlabs;
+          const audioBuffer = await elevenLabsTTS({
+            text: params.text,
+            apiKey,
+            baseUrl: config.elevenlabs.baseUrl,
+            voiceId: config.elevenlabs.voiceId,
+            modelId: config.elevenlabs.modelId,
+            outputFormat: output.format,
+            seed: config.elevenlabs.seed,
+            applyTextNormalization: config.elevenlabs.applyTextNormalization,
+            languageCode: config.elevenlabs.languageCode,
+            voiceSettings: config.elevenlabs.voiceSettings,
+            timeoutMs: config.timeoutMs,
+          });
+
+          return {
+            success: true,
+            audioBuffer,
+            latencyMs: Date.now() - providerStart,
+            provider,
+            outputFormat: output.format,
+            sampleRate: output.sampleRate,
+          };
+        }
+
+        const output = TELEPHONY_OUTPUT.openai;
+        const audioBuffer = await openaiTTS({
           text: params.text,
           apiKey,
-          baseUrl: config.elevenlabs.baseUrl,
-          voiceId: config.elevenlabs.voiceId,
-          modelId: config.elevenlabs.modelId,
-          outputFormat: output.format,
-          seed: config.elevenlabs.seed,
-          applyTextNormalization: config.elevenlabs.applyTextNormalization,
-          languageCode: config.elevenlabs.languageCode,
-          voiceSettings: config.elevenlabs.voiceSettings,
+          model: config.openai.model,
+          voice: config.openai.voice,
+          responseFormat: output.format,
           timeoutMs: config.timeoutMs,
         });
 
@@ -766,23 +866,36 @@ export async function textToSpeechTelephony(params: {
         };
       }
 
-      const output = TELEPHONY_OUTPUT.openai;
-      const audioBuffer = await openaiTTS({
+      // ── Plugin provider ─────────────────────────────────────────────
+      const pluginProvider = lookupTtsProvider(provider, providerRegistry);
+      if (!pluginProvider) {
+        errors.push(`${provider}: unknown provider`);
+        continue;
+      }
+
+      let apiKey: string | undefined;
+      if (pluginProvider.requiresApiKey) {
+        apiKey = await resolveTtsApiKey(config, provider);
+        if (!apiKey) {
+          errors.push(`${provider}: no API key`);
+          continue;
+        }
+      }
+
+      const result = await pluginProvider.synthesize({
         text: params.text,
         apiKey,
-        model: config.openai.model,
-        voice: config.openai.voice,
-        responseFormat: output.format,
+        outputFormat: "pcm",
         timeoutMs: config.timeoutMs,
       });
 
       return {
         success: true,
-        audioBuffer,
+        audioBuffer: result.audioBuffer,
         latencyMs: Date.now() - providerStart,
         provider,
-        outputFormat: output.format,
-        sampleRate: output.sampleRate,
+        outputFormat: result.format,
+        sampleRate: result.sampleRate,
       };
     } catch (err) {
       errors.push(formatTtsProviderError(provider, err));
@@ -802,6 +915,7 @@ export async function maybeApplyTtsToPayload(params: {
   kind?: "tool" | "block" | "final";
   inboundAudio?: boolean;
   ttsAuto?: string;
+  ttsProviders?: TtsProviderImpl[];
 }): Promise<ReplyPayload> {
   const config = resolveTtsConfig(params.cfg);
   const prefsPath = resolveTtsPrefsPath(config);
@@ -878,6 +992,7 @@ export async function maybeApplyTtsToPayload(params: {
     prefsPath,
     channel: params.channel,
     overrides: directives.overrides,
+    ttsProviders: params.ttsProviders,
   });
 
   if (result.success && result.audioPath) {

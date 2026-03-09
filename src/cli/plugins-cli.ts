@@ -110,6 +110,9 @@ function formatPluginLine(plugin: PluginRecord, verbose = false): string {
   if (plugin.sttProviderIds.length > 0) {
     parts.push(`  stt: ${plugin.sttProviderIds.join(", ")}`);
   }
+  if (plugin.ttsProviderIds.length > 0) {
+    parts.push(`  tts: ${plugin.ttsProviderIds.join(", ")}`);
+  }
   if (plugin.error) {
     parts.push(theme.error(`  error: ${plugin.error}`));
   }
@@ -307,6 +310,9 @@ export function registerPluginsCli(program: Command) {
       }
       if (plugin.sttProviderIds.length > 0) {
         lines.push(`${theme.muted("STT providers:")} ${plugin.sttProviderIds.join(", ")}`);
+      }
+      if (plugin.ttsProviderIds.length > 0) {
+        lines.push(`${theme.muted("TTS providers:")} ${plugin.ttsProviderIds.join(", ")}`);
       }
       if (plugin.cliCommands.length > 0) {
         lines.push(`${theme.muted("CLI commands:")} ${plugin.cliCommands.join(", ")}`);

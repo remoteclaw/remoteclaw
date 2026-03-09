@@ -560,6 +560,9 @@ export type {
   SttProvider,
 } from "../stt/types.js";
 
+// TTS provider types
+export type { TtsProviderImpl, TtsSynthesisRequest, TtsSynthesisResult } from "../tts/types.js";
+
 // Voice credential validation
 export {
   checkSttCredentials,

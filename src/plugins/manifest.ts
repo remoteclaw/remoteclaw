@@ -22,6 +22,7 @@ export type PluginManifest = {
   providers?: string[];
   skills?: string[];
   stt?: string[];
+  tts?: string[];
   name?: string;
   description?: string;
   version?: string;
@@ -84,6 +85,7 @@ export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
   const providers = normalizeStringList(raw.providers);
   const skills = normalizeStringList(raw.skills);
   const stt = normalizeStringList(raw.stt);
+  const tts = normalizeStringList(raw.tts);
 
   let uiHints: Record<string, PluginConfigUiHint> | undefined;
   if (isRecord(raw.uiHints)) {
@@ -100,6 +102,7 @@ export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
       providers,
       skills,
       stt,
+      tts,
       name,
       description,
       version,

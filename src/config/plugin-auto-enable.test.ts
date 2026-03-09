@@ -12,6 +12,7 @@ function makeRegistry(plugins: Array<{ id: string; channels: string[] }>): Plugi
       providers: [],
       skills: [],
       stt: [],
+      tts: [],
       origin: "config" as const,
       rootDir: `/fake/${p.id}`,
       source: `/fake/${p.id}/index.js`,

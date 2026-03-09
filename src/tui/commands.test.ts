@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { getSlashCommands, helpText, parseCommand } from "./commands.js";
 
 describe("parseCommand", () => {
-  it("normalizes aliases and keeps command args", () => {
-    expect(parseCommand("/elev full")).toEqual({ name: "elevated", args: "full" });
+  it("returns the command name and args from input", () => {
+    expect(parseCommand("/verbose on")).toEqual({ name: "verbose", args: "on" });
   });
 
   it("returns empty name for empty input", () => {
@@ -29,7 +29,6 @@ describe("getSlashCommands", () => {
 describe("helpText", () => {
   it("includes slash command help for aliases", () => {
     const output = helpText();
-    expect(output).toContain("/elevated <on|off|ask|full>");
-    expect(output).toContain("/elev <on|off|ask|full>");
+    expect(output).toContain("/activation <mention|always>");
   });
 });

@@ -356,10 +356,6 @@ describe("resolveAgentConfig", () => {
             tools: {
               allow: ["read"],
               deny: ["exec", "write"],
-              elevated: {
-                enabled: false,
-                allowFrom: { whatsapp: ["+15555550123"] },
-              },
             },
           },
         ],
@@ -369,10 +365,6 @@ describe("resolveAgentConfig", () => {
     expect(result?.tools).toEqual({
       allow: ["read"],
       deny: ["exec", "write"],
-      elevated: {
-        enabled: false,
-        allowFrom: { whatsapp: ["+15555550123"] },
-      },
     });
   });
 

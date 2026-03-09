@@ -12,7 +12,6 @@ export type {
   ChannelResolveKind,
   ChannelResolveResult,
   ChannelResolverAdapter,
-  ChannelElevatedAdapter,
   ChannelGatewayAdapter,
   ChannelGatewayContext,
   ChannelGroupAdapter,

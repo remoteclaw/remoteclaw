@@ -13,7 +13,7 @@ Commands are handled by the Gateway. Most commands must be sent as a **standalon
 There are two related systems:
 
 - **Commands**: standalone `/...` messages.
-- **Directives**: `/verbose`, `/queue`, `/elevated` (`/elev`), `/notice` (`/notices`), `/model`.
+- **Directives**: `/verbose`, `/queue`, `/notice` (`/notices`), `/model`.
   - Directives are stripped from the message before the model sees it.
   - In normal chat messages (not directive-only), they are treated as “inline hints” and do **not** persist session settings.
   - In directive-only messages (the message contains only directives), they persist to the session and reply with an acknowledgement.
@@ -92,7 +92,6 @@ Text + native (when enabled):
 - `/reset` or `/new` (remainder is passed through)
 - `/verbose on|full|off` (alias: `/v`)
 - `/queue <mode>` (plus options like `debounce:2s cap:25 drop:summarize`; send `/queue` to see current settings)
-- `/elevated off|on|ask|full` (alias: `/elev`) (toggle elevated bash permissions; tracked for removal in #517)
 - `/notice off|on|full` (alias: `/notices`) (toggle system notice level)
 - `/model [provider/model[@profile]]` (switch model mid-session; `/model status` or `/model list` to show current; supports config-defined aliases)
 

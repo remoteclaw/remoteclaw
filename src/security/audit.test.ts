@@ -171,7 +171,6 @@ describe("security audit", () => {
   it("includes an attack surface summary (info)", async () => {
     const cfg: RemoteClawConfig = {
       channels: { whatsapp: { groupPolicy: "open" }, telegram: { groupPolicy: "allowlist" } },
-      tools: { elevated: { enabled: true, allowFrom: { whatsapp: ["+1"] } } },
       hooks: { enabled: true },
       browser: { enabled: true },
     };
@@ -581,20 +580,6 @@ describe("security audit", () => {
     const res = await audit(cfg);
 
     expectFinding(res, "tools.profile_minimal_overridden", "warn");
-  });
-
-  it("flags tools.elevated allowFrom wildcard as critical", async () => {
-    const cfg: RemoteClawConfig = {
-      tools: {
-        elevated: {
-          allowFrom: { whatsapp: ["*"] },
-        },
-      },
-    };
-
-    const res = await audit(cfg);
-
-    expectFinding(res, "tools.elevated.allowFrom.whatsapp.wildcard", "critical");
   });
 
   it("flags browser control without auth when browser is enabled", async () => {
@@ -2064,29 +2049,10 @@ describe("security audit", () => {
     expect(findings.some((f) => f.checkId === "plugins.code_safety.entry_escape")).toBe(true);
   });
 
-  it("flags open groupPolicy when tools.elevated is enabled", async () => {
-    const cfg: RemoteClawConfig = {
-      tools: { elevated: { enabled: true, allowFrom: { whatsapp: ["+1"] } } },
-      channels: { whatsapp: { groupPolicy: "open" } },
-    };
-
-    const res = await audit(cfg);
-
-    expect(res.findings).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          checkId: "security.exposure.open_groups_with_elevated",
-          severity: "critical",
-        }),
-      ]),
-    );
-  });
-
   it("does not flag runtime/filesystem exposure for open groups when runtime is denied and fs is workspace-only", async () => {
     const cfg: RemoteClawConfig = {
       channels: { whatsapp: { groupPolicy: "open" } },
       tools: {
-        elevated: { enabled: false },
         profile: "coding",
         deny: ["group:runtime"],
         fs: { workspaceOnly: true },
@@ -2114,7 +2080,7 @@ describe("security audit", () => {
           },
         },
       },
-      tools: { elevated: { enabled: false } },
+      tools: {},
     };
 
     const res = await audit(cfg);
@@ -2137,7 +2103,7 @@ describe("security audit", () => {
           groupPolicy: "allowlist",
         },
       },
-      tools: { elevated: { enabled: false } },
+      tools: {},
     };
 
     const res = await audit(cfg);

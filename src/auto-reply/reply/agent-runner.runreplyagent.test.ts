@@ -151,12 +151,6 @@ function createMinimalRun(params?: {
       model: "claude",
 
       verboseLevel: params?.resolvedVerboseLevel ?? "off",
-      elevatedLevel: "off",
-      bashElevated: {
-        enabled: false,
-        allowed: false,
-        defaultLevel: "off",
-      },
       timeoutMs: 1_000,
       blockReplyBreak: "message_end",
       ...params?.runOverrides,
@@ -238,12 +232,6 @@ function createBaseRun(params: {
       model: "claude",
 
       verboseLevel: "off",
-      elevatedLevel: "off",
-      bashElevated: {
-        enabled: false,
-        allowed: false,
-        defaultLevel: "off",
-      },
       timeoutMs: 1_000,
       blockReplyBreak: "message_end",
     },
@@ -354,8 +342,6 @@ describe("runReplyAgent mediaUrls forwarding", () => {
         provider: "anthropic",
         model: "claude",
         verboseLevel: "off",
-        elevatedLevel: "off",
-        bashElevated: { enabled: false, allowed: false, defaultLevel: "off" },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -412,8 +398,6 @@ describe("runReplyAgent mediaUrls forwarding", () => {
         provider: "anthropic",
         model: "claude",
         verboseLevel: "off",
-        elevatedLevel: "off",
-        bashElevated: { enabled: false, allowed: false, defaultLevel: "off" },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },

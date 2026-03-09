@@ -42,7 +42,6 @@ export type SessionEntry = {
   abortedLastRun?: boolean;
   chatType?: SessionChatType;
   verboseLevel?: string;
-  elevatedLevel?: string;
   ttsAuto?: TtsAutoMode;
   responseUsage?: "on" | "off" | "tokens" | "full";
   providerOverride?: string;

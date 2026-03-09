@@ -3,7 +3,6 @@ import { listChatCommands, listChatCommandsForConfig } from "../auto-reply/comma
 import type { RemoteClawConfig } from "../config/types.js";
 
 const VERBOSE_LEVELS = ["on", "off"];
-const ELEVATED_LEVELS = ["on", "off", "ask", "full"];
 const ACTIVATION_LEVELS = ["mention", "always"];
 const USAGE_FOOTER_LEVELS = ["off", "tokens", "full"];
 
@@ -18,9 +17,7 @@ export type SlashCommandOptions = {
   model?: string;
 };
 
-const COMMAND_ALIASES: Record<string, string> = {
-  elev: "elevated",
-};
+const COMMAND_ALIASES: Record<string, string> = {};
 
 function createLevelCompletion(
   levels: string[],
@@ -50,7 +47,6 @@ export function parseCommand(input: string): ParsedCommand {
 export function getSlashCommands(options: SlashCommandOptions = {}): SlashCommand[] {
   const verboseCompletions = createLevelCompletion(VERBOSE_LEVELS);
   const usageCompletions = createLevelCompletion(USAGE_FOOTER_LEVELS);
-  const elevatedCompletions = createLevelCompletion(ELEVATED_LEVELS);
   const activationCompletions = createLevelCompletion(ACTIVATION_LEVELS);
   const commands: SlashCommand[] = [
     { name: "help", description: "Show slash command help" },
@@ -69,16 +65,6 @@ export function getSlashCommands(options: SlashCommandOptions = {}): SlashComman
       name: "usage",
       description: "Toggle per-response usage line",
       getArgumentCompletions: usageCompletions,
-    },
-    {
-      name: "elevated",
-      description: "Set elevated on/off/ask/full",
-      getArgumentCompletions: elevatedCompletions,
-    },
-    {
-      name: "elev",
-      description: "Alias for /elevated",
-      getArgumentCompletions: elevatedCompletions,
     },
     {
       name: "activation",
@@ -121,8 +107,6 @@ export function helpText(_options: SlashCommandOptions = {}): string {
     "/model <provider/model>",
     "/verbose <on|off>",
     "/usage <off|tokens|full>",
-    "/elevated <on|off|ask|full>",
-    "/elev <on|off|ask|full>",
     "/activation <mention|always>",
     "/new or /reset",
     "/abort",

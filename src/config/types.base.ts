@@ -213,9 +213,6 @@ export type WebConfig = {
   reconnect?: WebReconnectConfig;
 };
 
-// Provider docking: allowlists keyed by provider id (and internal "webchat").
-export type AgentElevatedAllowFromConfig = Partial<Record<string, Array<string | number>>>;
-
 export type IdentityConfig = {
   name?: string;
   theme?: string;

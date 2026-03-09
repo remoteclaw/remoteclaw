@@ -94,25 +94,6 @@ export const AUTHORIZED_WHATSAPP_COMMAND = {
   CommandAuthorized: true,
 } as const;
 
-export function makeElevatedDirectiveConfig(home: string) {
-  return makeWhatsAppDirectiveConfig(
-    home,
-    {
-      model: "anthropic/claude-opus-4-5",
-      elevatedDefault: "on",
-    },
-    {
-      tools: {
-        elevated: {
-          allowFrom: { whatsapp: ["+1222"] },
-        },
-      },
-      channels: { whatsapp: { allowFrom: ["+1222"] } },
-      session: { store: sessionStorePath(home) },
-    },
-  );
-}
-
 export function assertModelSelection(
   storePath: string,
   selection: { model?: string; provider?: string } = {},
@@ -124,13 +105,6 @@ export function assertModelSelection(
   expect(entry?.providerOverride).toBe(selection.provider);
 }
 
-export function assertElevatedOffStatusReply(text: string | undefined) {
-  expect(text).toContain("Elevated mode disabled.");
-  const optionsLine = text?.split("\n").find((line) => line.trim().startsWith("⚙️"));
-  expect(optionsLine).toBeTruthy();
-  expect(optionsLine).not.toContain("elevated");
-}
-
 export function installDirectiveBehaviorE2EHooks() {
   beforeEach(() => {
     vi.mocked(runAgent).mockReset();
@@ -139,30 +113,4 @@ export function installDirectiveBehaviorE2EHooks() {
   afterEach(() => {
     vi.restoreAllMocks();
   });
-}
-
-export function makeRestrictedElevatedDisabledConfig(home: string) {
-  return {
-    agents: {
-      defaults: {
-        model: "anthropic/claude-opus-4-5",
-      },
-      list: [
-        {
-          id: "restricted",
-          workspace: path.join(home, "remoteclaw"),
-          tools: {
-            elevated: { enabled: false },
-          },
-        },
-      ],
-    },
-    tools: {
-      elevated: {
-        allowFrom: { whatsapp: ["+1222"] },
-      },
-    },
-    channels: { whatsapp: { allowFrom: ["+1222"] } },
-    session: { store: path.join(home, "sessions.json") },
-  } as const;
 }

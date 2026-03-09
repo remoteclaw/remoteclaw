@@ -295,27 +295,6 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         }
         break;
       }
-      case "elevated":
-        if (!args) {
-          chatLog.addSystem("usage: /elevated <on|off|ask|full>");
-          break;
-        }
-        if (!["on", "off", "ask", "full"].includes(args)) {
-          chatLog.addSystem("usage: /elevated <on|off|ask|full>");
-          break;
-        }
-        try {
-          const result = await client.patchSession({
-            key: state.currentSessionKey,
-            elevatedLevel: args,
-          });
-          chatLog.addSystem(`elevated set to ${args}`);
-          applySessionInfoFromPatch(result);
-          await refreshSessionInfo();
-        } catch (err) {
-          chatLog.addSystem(`elevated failed: ${String(err)}`);
-        }
-        break;
       case "activation":
         if (!args) {
           chatLog.addSystem("usage: /activation <mention|always>");

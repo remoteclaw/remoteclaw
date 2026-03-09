@@ -1,7 +1,5 @@
 export type VerboseLevel = "off" | "on" | "full";
 export type NoticeLevel = "off" | "on" | "full";
-export type ElevatedLevel = "off" | "on" | "ask" | "full";
-export type ElevatedMode = "off" | "ask" | "full";
 export type UsageDisplayLevel = "off" | "tokens" | "full";
 
 type OnOffFullLevel = "off" | "on" | "full";
@@ -56,35 +54,4 @@ export function normalizeUsageDisplay(raw?: string | null): UsageDisplayLevel | 
 
 export function resolveResponseUsageMode(raw?: string | null): UsageDisplayLevel {
   return normalizeUsageDisplay(raw) ?? "off";
-}
-
-// Normalize elevated flags used to toggle elevated bash permissions.
-export function normalizeElevatedLevel(raw?: string | null): ElevatedLevel | undefined {
-  if (!raw) {
-    return undefined;
-  }
-  const key = raw.toLowerCase();
-  if (["off", "false", "no", "0"].includes(key)) {
-    return "off";
-  }
-  if (["full", "auto", "auto-approve", "autoapprove"].includes(key)) {
-    return "full";
-  }
-  if (["ask", "prompt", "approval", "approve"].includes(key)) {
-    return "ask";
-  }
-  if (["on", "true", "yes", "1"].includes(key)) {
-    return "on";
-  }
-  return undefined;
-}
-
-export function resolveElevatedMode(level?: ElevatedLevel | null): ElevatedMode {
-  if (!level || level === "off") {
-    return "off";
-  }
-  if (level === "full") {
-    return "full";
-  }
-  return "ask";
 }

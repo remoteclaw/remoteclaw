@@ -190,14 +190,12 @@ describe("legacy config detection", () => {
       agent: {
         model: "openai/gpt-5.2",
         tools: { allow: ["sessions.list"], deny: ["danger"] },
-        elevated: { enabled: true, allowFrom: { discord: ["user:1"] } },
         bash: { timeoutSec: 12 },
         subagents: { tools: { deny: ["sandbox"] } },
       },
     });
     expect(res.changes).toContain("Moved agent.tools.allow → tools.allow.");
     expect(res.changes).toContain("Moved agent.tools.deny → tools.deny.");
-    expect(res.changes).toContain("Moved agent.elevated → tools.elevated.");
     expect(res.changes).toContain("Moved agent.bash → tools.exec.");
     expect(res.changes).toContain("Moved agent.subagents.tools → tools.subagents.tools.");
     expect(res.changes).toContain("Moved agent → agents.defaults.");
@@ -207,10 +205,6 @@ describe("legacy config detection", () => {
     });
     expect(res.config?.tools?.allow).toEqual(["sessions.list"]);
     expect(res.config?.tools?.deny).toEqual(["danger"]);
-    expect(res.config?.tools?.elevated).toEqual({
-      enabled: true,
-      allowFrom: { discord: ["user:1"] },
-    });
     expect(res.config?.tools?.exec).toEqual({ timeoutSec: 12 });
     expect(res.config?.tools?.subagents?.tools).toEqual({
       deny: ["sandbox"],
@@ -226,36 +220,6 @@ describe("legacy config detection", () => {
     expect(res.changes).toContain("Moved tools.bash → tools.exec.");
     expect(res.config?.tools?.exec).toEqual({ timeoutSec: 12 });
     expect((res.config?.tools as { bash?: unknown } | undefined)?.bash).toBeUndefined();
-  });
-  it("accepts per-agent tools.elevated overrides", async () => {
-    const res = validateConfigObject({
-      tools: {
-        elevated: {
-          allowFrom: { whatsapp: ["+15555550123"] },
-        },
-      },
-      agents: {
-        list: [
-          {
-            id: "work",
-            workspace: "~/remoteclaw-work",
-            tools: {
-              elevated: {
-                enabled: false,
-                allowFrom: { whatsapp: ["+15555550123"] },
-              },
-            },
-          },
-        ],
-      },
-    });
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.config?.agents?.list?.[0]?.tools?.elevated).toEqual({
-        enabled: false,
-        allowFrom: { whatsapp: ["+15555550123"] },
-      });
-    }
   });
   it("rejects telegram.requireMention", async () => {
     const res = validateConfigObject({

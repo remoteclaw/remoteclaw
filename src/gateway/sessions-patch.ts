@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { parseModelRef } from "../agents/provider-utils.js";
 import { normalizeGroupActivation } from "../auto-reply/group-activation.js";
-import { normalizeElevatedLevel, normalizeUsageDisplay } from "../auto-reply/thinking.js";
+import { normalizeUsageDisplay } from "../auto-reply/thinking.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
 import { isSubagentSessionKey } from "../routing/session-key.js";
@@ -124,20 +124,6 @@ export async function applySessionsPatchToStore(params: {
       } else {
         next.responseUsage = normalized;
       }
-    }
-  }
-
-  if ("elevatedLevel" in patch) {
-    const raw = patch.elevatedLevel;
-    if (raw === null) {
-      delete next.elevatedLevel;
-    } else if (raw !== undefined) {
-      const normalized = normalizeElevatedLevel(String(raw));
-      if (!normalized) {
-        return invalid('invalid elevatedLevel (use "on"|"off"|"ask"|"full")');
-      }
-      // Persist "off" explicitly so patches can override defaults.
-      next.elevatedLevel = normalized;
     }
   }
 

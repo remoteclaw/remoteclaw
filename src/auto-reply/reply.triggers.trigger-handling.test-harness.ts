@@ -273,66 +273,6 @@ export function requireSessionStorePath(cfg: { session?: { store?: string } }): 
   return storePath;
 }
 
-export async function readSessionStore(cfg: {
-  session?: { store?: string };
-}): Promise<Record<string, { elevatedLevel?: string }>> {
-  const storeRaw = await fs.readFile(requireSessionStorePath(cfg), "utf-8");
-  return JSON.parse(storeRaw) as Record<string, { elevatedLevel?: string }>;
-}
-
-export function makeWhatsAppElevatedCfg(
-  home: string,
-  opts?: { elevatedEnabled?: boolean; requireMentionInGroups?: boolean },
-): RemoteClawConfig {
-  const cfg = makeCfg(home);
-  cfg.channels ??= {};
-  cfg.channels.whatsapp = {
-    ...cfg.channels.whatsapp,
-    allowFrom: ["+1000"],
-  };
-  if (opts?.requireMentionInGroups !== undefined) {
-    cfg.channels.whatsapp.groups = { "*": { requireMention: opts.requireMentionInGroups } };
-  }
-
-  cfg.tools = {
-    ...cfg.tools,
-    elevated: {
-      allowFrom: { whatsapp: ["+1000"] },
-      ...(opts?.elevatedEnabled === false ? { enabled: false } : {}),
-    },
-  };
-  return cfg;
-}
-
-export async function runDirectElevatedToggleAndLoadStore(params: {
-  cfg: RemoteClawConfig;
-  getReplyFromConfig: typeof import("./reply.js").getReplyFromConfig;
-  body?: string;
-}): Promise<{
-  text: string | undefined;
-  store: Record<string, { elevatedLevel?: string }>;
-}> {
-  const res = await params.getReplyFromConfig(
-    {
-      Body: params.body ?? "/elevated on",
-      From: "+1000",
-      To: "+2000",
-      Provider: "whatsapp",
-      SenderE164: "+1000",
-      CommandAuthorized: true,
-    },
-    {},
-    params.cfg,
-  );
-  const text = Array.isArray(res) ? res[0]?.text : res?.text;
-  const storePath = params.cfg.session?.store;
-  if (!storePath) {
-    throw new Error("session.store is required in test config");
-  }
-  const store = await readSessionStore(params.cfg);
-  return { text, store };
-}
-
 export async function expectInlineCommandHandledAndStripped(params: {
   home: string;
   getReplyFromConfig: typeof import("./reply.js").getReplyFromConfig;

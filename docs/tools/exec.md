@@ -25,12 +25,9 @@ Background sessions are scoped per agent; `process` only sees sessions from the 
 - `security` (`deny | allowlist | full`): enforcement mode for `gateway`/`node`
 - `ask` (`off | on-miss | always`): approval prompts for `gateway`/`node`
 - `node` (string): node id/name for `host=node`
-- `elevated` (bool): request elevated mode (gateway host); `security=full` is only forced when elevated resolves to `full`
-
-Notes:
+  Notes:
 
 - `host` defaults to `sandbox`.
-- `elevated` is ignored when sandboxing is off (exec already runs on the host).
 - `gateway`/`node` approvals are controlled by `~/.remoteclaw/exec-approvals.json`.
 - `node` requires a paired node (companion app or headless node host).
 - If multiple nodes are available, set `exec.node` or `tools.exec.node` to select one.

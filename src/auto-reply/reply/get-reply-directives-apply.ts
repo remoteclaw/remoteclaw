@@ -1,7 +1,6 @@
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { MsgContext } from "../templating.js";
-import type { ElevatedLevel } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";
 import { buildStatusReply } from "./commands.js";
 import {
@@ -50,9 +49,6 @@ export async function applyInlineDirectiveOverrides(params: {
   command: Parameters<typeof buildStatusReply>[0]["command"];
   directives: InlineDirectives;
   messageProviderKey: string;
-  elevatedEnabled: boolean;
-  elevatedAllowed: boolean;
-  elevatedFailures: Array<{ gate: string; key: string }>;
   defaultProvider: string;
   defaultModel: string;
   aliasIndex: Parameters<typeof applyInlineDirectivesFastLane>[0]["aliasIndex"];
@@ -61,7 +57,6 @@ export async function applyInlineDirectiveOverrides(params: {
   modelState: Awaited<ReturnType<typeof createModelSelectionState>>;
   initialModelLabel: string;
   formatModelSwitchEvent: (label: string, alias?: string) => string;
-  resolvedElevatedLevel: ElevatedLevel;
   defaultActivation: () => ReturnType<
     Parameters<typeof buildStatusReply>[0]["defaultGroupActivation"]
   >;
@@ -83,16 +78,12 @@ export async function applyInlineDirectiveOverrides(params: {
     allowTextCommands,
     command,
     messageProviderKey,
-    elevatedEnabled,
-    elevatedAllowed,
-    elevatedFailures,
     defaultProvider,
     defaultModel,
     aliasIndex,
     modelState,
     initialModelLabel,
     formatModelSwitchEvent,
-    resolvedElevatedLevel,
     defaultActivation,
     typing,
     effectiveModelDirective,
@@ -112,9 +103,6 @@ export async function applyInlineDirectiveOverrides(params: {
     sessionStore,
     sessionKey,
     storePath,
-    elevatedEnabled,
-    elevatedAllowed,
-    elevatedFailures,
     messageProviderKey,
     defaultProvider,
     defaultModel,
@@ -146,14 +134,13 @@ export async function applyInlineDirectiveOverrides(params: {
       typing.cleanup();
       return { kind: "reply", reply: undefined };
     }
-    const { currentVerboseLevel, currentElevatedLevel } = await resolveCurrentDirectiveLevels({
+    const { currentVerboseLevel } = await resolveCurrentDirectiveLevels({
       sessionEntry,
       agentCfg,
     });
     const directiveReply = await handleDirectiveOnly({
       ...createDirectiveHandlingBase(),
       currentVerboseLevel,
-      currentElevatedLevel,
       surface: ctx.Surface,
     });
     let statusReply: ReplyPayload | undefined;
@@ -169,7 +156,6 @@ export async function applyInlineDirectiveOverrides(params: {
         model,
         contextTokens,
         resolvedVerboseLevel: currentVerboseLevel ?? "off",
-        resolvedElevatedLevel,
         isGroup,
         defaultGroupActivation: defaultActivation,
       });
@@ -186,7 +172,6 @@ export async function applyInlineDirectiveOverrides(params: {
 
   const hasAnyDirective =
     directives.hasVerboseDirective ||
-    directives.hasElevatedDirective ||
     directives.hasModelDirective ||
     directives.hasQueueDirective ||
     directives.hasStatusDirective;
@@ -203,9 +188,6 @@ export async function applyInlineDirectiveOverrides(params: {
       sessionStore,
       sessionKey,
       storePath,
-      elevatedEnabled,
-      elevatedAllowed,
-      elevatedFailures,
       messageProviderKey,
       defaultProvider,
       defaultModel,
@@ -233,8 +215,6 @@ export async function applyInlineDirectiveOverrides(params: {
     sessionStore,
     sessionKey,
     storePath,
-    elevatedEnabled,
-    elevatedAllowed,
     defaultProvider,
     defaultModel,
     aliasIndex,

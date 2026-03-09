@@ -36,7 +36,7 @@ remoteclaw security audit --fix
 remoteclaw security audit --json
 ```
 
-It flags common footguns (Gateway auth exposure, browser control exposure, elevated allowlists, filesystem permissions).
+It flags common footguns (Gateway auth exposure, browser control exposure, exec allowlists, filesystem permissions).
 
 RemoteClaw is both a product and an experiment: you’re wiring frontier-model behavior into real messaging surfaces and real tools. **There is no “perfectly secure” setup.** The goal is to be deliberate about:
 
@@ -161,7 +161,6 @@ Use this baseline first, then selectively re-enable tools per trusted agent:
     deny: ["group:automation", "group:runtime", "group:fs", "sessions_spawn", "sessions_send"],
     fs: { workspaceOnly: true },
     exec: { security: "deny", ask: "always" },
-    elevated: { enabled: false },
   },
   channels: {
     whatsapp: { dmPolicy: "pairing", groups: { "*": { requireMention: true } } },
@@ -183,7 +182,7 @@ If more than one person can DM your bot:
 ### What the audit checks (high level)
 
 - **Inbound access** (DM policies, group policies, allowlists): can strangers trigger the bot?
-- **Tool blast radius** (elevated tools + open rooms): could prompt injection turn into shell/file/network actions?
+- **Tool blast radius** (open rooms): could prompt injection turn into shell/file/network actions?
 - **Network exposure** (Gateway bind/auth, Tailscale Serve/Funnel, weak/short auth tokens).
 - **Browser control exposure** (remote nodes, relay ports, remote CDP endpoints).
 - **Local disk hygiene** (permissions, symlinks, config includes, “synced folder” paths).
@@ -244,7 +243,6 @@ High-signal `checkId` values you will most likely see in real deployments (not e
 | `tools.exec.host_sandbox_no_sandbox_defaults`      | warn          | `exec host=sandbox` resolves to host exec when sandbox is off                      | `tools.exec.host`, `agents.defaults.sandbox.mode`                                                 | no       |
 | `tools.exec.host_sandbox_no_sandbox_agents`        | warn          | Per-agent `exec host=sandbox` resolves to host exec when sandbox is off            | `agents.list[].tools.exec.host`, `agents.list[].sandbox.mode`                                     | no       |
 | `tools.exec.safe_bins_interpreter_unprofiled`      | warn          | Interpreter/runtime bins in `safeBins` without explicit profiles broaden exec risk | `tools.exec.safeBins`, `tools.exec.safeBinProfiles`, `agents.list[].tools.exec.*`                 | no       |
-| `security.exposure.open_groups_with_elevated`      | critical      | Open groups + elevated tools create high-impact prompt-injection paths             | `channels.*.groupPolicy`, `tools.elevated.*`                                                      | no       |
 | `security.exposure.open_groups_with_runtime_or_fs` | critical/warn | Open groups can reach command/file tools without sandbox/workspace guards          | `channels.*.groupPolicy`, `tools.profile/deny`, `tools.fs.workspaceOnly`, `agents.*.sandbox.mode` | no       |
 | `security.trust_model.multi_user_heuristic`        | warn          | Config looks multi-user while gateway trust model is personal-assistant            | split trust boundaries, or shared-user hardening (`sandbox.mode`, tool deny/workspace scoping)    | no       |
 | `tools.profile_minimal_overridden`                 | warn          | Agent overrides bypass global minimal profile                                      | `agents.list[].tools.profile`                                                                     | no       |
@@ -875,8 +873,6 @@ Also consider agent workspace access inside the sandbox:
 - `agents.defaults.sandbox.workspaceAccess: "ro"` mounts the agent workspace read-only at `/agent` (disables `write`/`edit`/`apply_patch`)
 - `agents.defaults.sandbox.workspaceAccess: "rw"` mounts the agent workspace read/write at `/workspace`
 
-Important: `tools.elevated` is the global baseline escape hatch that runs exec on the host. Keep `tools.elevated.allowFrom` tight and don’t enable it for strangers. You can further restrict elevated per agent via `agents.list[].tools.elevated`. See [Elevated Mode](/tools/elevated).
-
 ## Browser control risks
 
 Enabling browser control gives the model the ability to drive a real browser.
@@ -1055,7 +1051,7 @@ If your AI does something bad:
 
 1. Check Gateway logs: `/tmp/remoteclaw/remoteclaw-YYYY-MM-DD.log` (or `logging.file`).
 2. Review the relevant transcript(s): `~/.remoteclaw/agents/<agentId>/sessions/*.jsonl`.
-3. Review recent config changes (anything that could have widened access: `gateway.bind`, `gateway.auth`, dm/group policies, `tools.elevated`, plugin changes).
+3. Review recent config changes (anything that could have widened access: `gateway.bind`, `gateway.auth`, dm/group policies, plugin changes).
 4. Re-run `remoteclaw security audit --deep` and confirm critical findings are resolved.
 
 ### Collect for a report

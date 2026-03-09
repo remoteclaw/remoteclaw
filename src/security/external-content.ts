@@ -22,7 +22,6 @@ const SUSPICIOUS_PATTERNS = [
   /new\s+instructions?:/i,
   /system\s*:?\s*(prompt|override|command)/i,
   /\bexec\b.*command\s*=/i,
-  /elevated\s*=\s*true/i,
   /rm\s+-rf/i,
   /delete\s+all\s+(emails?|files?|data)/i,
   /<\/?system>/i,

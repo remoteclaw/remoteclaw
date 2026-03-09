@@ -172,7 +172,6 @@ describe("sessions", () => {
             systemSent: true,
             responseUsage: "on",
             queueDebounceMs: 1234,
-            elevatedLevel: "on",
           },
         },
         null,
@@ -201,7 +200,6 @@ describe("sessions", () => {
     });
     expect(store[mainSessionKey]?.responseUsage).toBe("on");
     expect(store[mainSessionKey]?.queueDebounceMs).toBe(1234);
-    expect(store[mainSessionKey]?.elevatedLevel).toBe("on");
   });
 
   it("updateLastRoute prefers explicit deliveryContext", async () => {

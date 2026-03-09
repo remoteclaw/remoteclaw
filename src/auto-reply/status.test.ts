@@ -63,7 +63,6 @@ describe("buildStatusMessage", () => {
     expect(normalized).toContain("Runtime: direct");
     expect(normalized).not.toContain("Think:");
     expect(normalized).not.toContain("verbose");
-    expect(normalized).toContain("elevated");
     expect(normalized).toContain("Queue: collect");
   });
 
@@ -117,7 +116,7 @@ describe("buildStatusMessage", () => {
     expect(normalizeTestText(text)).toContain("Context: 200k/1.0m");
   });
 
-  it("shows verbose/elevated labels only when enabled", async () => {
+  it("shows verbose label only when enabled", async () => {
     const text = await buildStatusMessage({
       agent: { model: "anthropic/claude-opus-4-5" },
       sessionEntry: { sessionId: "v1", updatedAt: 0 },
@@ -125,28 +124,10 @@ describe("buildStatusMessage", () => {
       sessionScope: "per-sender",
 
       resolvedVerbose: "on",
-      resolvedElevated: "on",
       queue: { mode: "collect", depth: 0 },
     });
 
     expect(text).toContain("verbose");
-    expect(text).toContain("elevated");
-  });
-
-  it("does not show elevated label when session explicitly disables it", async () => {
-    const text = await buildStatusMessage({
-      agent: { model: "anthropic/claude-opus-4-5", elevatedDefault: "on" },
-      sessionEntry: { sessionId: "v1", updatedAt: 0, elevatedLevel: "off" },
-      sessionKey: "agent:main:main",
-      sessionScope: "per-sender",
-
-      resolvedVerbose: "off",
-      queue: { mode: "collect", depth: 0 },
-    });
-
-    const optionsLine = text.split("\n").find((line) => line.trim().startsWith("⚙️"));
-    expect(optionsLine).toBeTruthy();
-    expect(optionsLine).not.toContain("elevated");
   });
 
   it("shows selected model and active runtime model when they differ", async () => {

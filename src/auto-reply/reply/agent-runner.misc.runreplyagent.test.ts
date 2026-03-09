@@ -173,12 +173,6 @@ describe("runReplyAgent onAgentRunStart", () => {
         model,
 
         verboseLevel: "off",
-        elevatedLevel: "off",
-        bashElevated: {
-          enabled: false,
-          allowed: false,
-          defaultLevel: "off",
-        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -285,8 +279,6 @@ describe("runReplyAgent token update", () => {
         model: "claude",
 
         verboseLevel: "off",
-        elevatedLevel: "off",
-        bashElevated: { enabled: false, allowed: false, defaultLevel: "off" },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -446,12 +438,6 @@ describe("runReplyAgent block streaming", () => {
         model: "claude",
 
         verboseLevel: "off",
-        elevatedLevel: "off",
-        bashElevated: {
-          enabled: false,
-          allowed: false,
-          defaultLevel: "off",
-        },
         timeoutMs: 1_000,
         blockReplyBreak: "text_end",
       },
@@ -544,12 +530,6 @@ describe("runReplyAgent block streaming", () => {
         model: "claude",
 
         verboseLevel: "off",
-        elevatedLevel: "off",
-        bashElevated: {
-          enabled: false,
-          allowed: false,
-          defaultLevel: "off",
-        },
         timeoutMs: 1_000,
         blockReplyBreak: "text_end",
       },
@@ -612,12 +592,6 @@ describe("runReplyAgent claude-cli routing", () => {
         model: "opus-4.5",
 
         verboseLevel: "off",
-        elevatedLevel: "off",
-        bashElevated: {
-          enabled: false,
-          allowed: false,
-          defaultLevel: "off",
-        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -701,12 +675,6 @@ describe("runReplyAgent messaging tool suppression", () => {
         model: "claude",
 
         verboseLevel: "off",
-        elevatedLevel: "off",
-        bashElevated: {
-          enabled: false,
-          allowed: false,
-          defaultLevel: "off",
-        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -923,12 +891,6 @@ describe("runReplyAgent reminder commitment guard", () => {
         model: "claude",
 
         verboseLevel: "off",
-        elevatedLevel: "off",
-        bashElevated: {
-          enabled: false,
-          allowed: false,
-          defaultLevel: "off",
-        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -1015,12 +977,6 @@ describe("runReplyAgent fallback provider routing", () => {
         model: "claude",
 
         verboseLevel: "off",
-        elevatedLevel: "off",
-        bashElevated: {
-          enabled: false,
-          allowed: false,
-          defaultLevel: "off",
-        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -1122,12 +1078,6 @@ describe("runReplyAgent response usage footer", () => {
         model: "claude",
 
         verboseLevel: "off",
-        elevatedLevel: "off",
-        bashElevated: {
-          enabled: false,
-          allowed: false,
-          defaultLevel: "off",
-        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },
@@ -1217,12 +1167,6 @@ describe("runReplyAgent transient HTTP retry", () => {
         model: "claude",
 
         verboseLevel: "off",
-        elevatedLevel: "off",
-        bashElevated: {
-          enabled: false,
-          allowed: false,
-          defaultLevel: "off",
-        },
         timeoutMs: 1_000,
         blockReplyBreak: "message_end",
       },

@@ -4,8 +4,6 @@ import { type SessionEntry, updateSessionStore } from "../../config/sessions.js"
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { applyVerboseOverride } from "../../sessions/level-overrides.js";
 import type { InlineDirectives } from "./directive-handling.parse.js";
-import { enqueueModeSwitchEvents } from "./directive-handling.shared.js";
-import type { ElevatedLevel } from "./directives.js";
 
 export async function persistInlineDirectives(params: {
   directives: InlineDirectives;
@@ -15,8 +13,6 @@ export async function persistInlineDirectives(params: {
   sessionStore?: Record<string, SessionEntry>;
   sessionKey?: string;
   storePath?: string;
-  elevatedEnabled: boolean;
-  elevatedAllowed: boolean;
   defaultProvider: string;
   defaultModel: string;
   aliasIndex: Map<string, { provider: string; model: string }>;
@@ -34,8 +30,6 @@ export async function persistInlineDirectives(params: {
     sessionStore,
     sessionKey,
     storePath,
-    elevatedEnabled,
-    elevatedAllowed,
     defaultProvider,
     defaultModel,
     aliasIndex: _aliasIndex,
@@ -46,32 +40,10 @@ export async function persistInlineDirectives(params: {
   } = params;
   let { provider, model } = params;
   if (sessionEntry && sessionStore && sessionKey) {
-    const prevElevatedLevel =
-      (sessionEntry.elevatedLevel as ElevatedLevel | undefined) ??
-      (agentCfg?.elevatedDefault as ElevatedLevel | undefined) ??
-      (elevatedAllowed ? ("on" as ElevatedLevel) : ("off" as ElevatedLevel));
-    let elevatedChanged =
-      directives.hasElevatedDirective &&
-      directives.elevatedLevel !== undefined &&
-      elevatedEnabled &&
-      elevatedAllowed;
     let updated = false;
 
     if (directives.hasVerboseDirective && directives.verboseLevel) {
       applyVerboseOverride(sessionEntry, directives.verboseLevel);
-      updated = true;
-    }
-    if (
-      directives.hasElevatedDirective &&
-      directives.elevatedLevel &&
-      elevatedEnabled &&
-      elevatedAllowed
-    ) {
-      // Persist "off" explicitly so inline `/elevated off` overrides defaults.
-      sessionEntry.elevatedLevel = directives.elevatedLevel;
-      elevatedChanged =
-        elevatedChanged ||
-        (directives.elevatedLevel !== prevElevatedLevel && directives.elevatedLevel !== undefined);
       updated = true;
     }
 
@@ -133,12 +105,6 @@ export async function persistInlineDirectives(params: {
           store[sessionKey] = sessionEntry;
         });
       }
-      enqueueModeSwitchEvents({
-        enqueueSystemEvent,
-        sessionEntry,
-        sessionKey,
-        elevatedChanged,
-      });
     }
   }
 

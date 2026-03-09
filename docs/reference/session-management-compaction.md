@@ -142,7 +142,7 @@ Key fields (not exhaustive):
 - `chatType`: `direct | group | room` (helps UIs and send policy)
 - `provider`, `subject`, `room`, `space`, `displayName`: metadata for group/channel labeling
 - Toggles:
-  - `verboseLevel`, `elevatedLevel`
+  - `verboseLevel`
   - `sendPolicy` (per-session override)
 - Model selection (per-session overrides for provider routing and CLI runtime flags):
   - `modelOverride`: model to pass to the CLI runtime (e.g. `--model` flag)

@@ -14,7 +14,7 @@ import {
 } from "../../infra/provider-usage.js";
 import { normalizeGroupActivation } from "../group-activation.js";
 import { buildStatusMessage } from "../status.js";
-import type { ElevatedLevel, VerboseLevel } from "../thinking.js";
+import type { VerboseLevel } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";
 import type { CommandContext } from "./commands-types.js";
 import { getFollowupQueueDepth, resolveQueueSettings } from "./queue.js";
@@ -32,7 +32,6 @@ export async function buildStatusReply(params: {
   model: string;
   contextTokens: number;
   resolvedVerboseLevel: VerboseLevel;
-  resolvedElevatedLevel?: ElevatedLevel;
   isGroup: boolean;
   defaultGroupActivation: () => "always" | "mention";
 }): Promise<ReplyPayload | undefined> {
@@ -48,7 +47,6 @@ export async function buildStatusReply(params: {
     model: _model,
     contextTokens,
     resolvedVerboseLevel,
-    resolvedElevatedLevel,
     isGroup,
     defaultGroupActivation,
   } = params;
@@ -130,7 +128,6 @@ export async function buildStatusReply(params: {
       ...agentDefaults,
       contextTokens,
       verboseDefault: agentDefaults.verboseDefault,
-      elevatedDefault: agentDefaults.elevatedDefault,
     },
     agentId: statusAgentId,
     sessionEntry,
@@ -140,7 +137,6 @@ export async function buildStatusReply(params: {
     sessionStorePath: storePath,
     groupActivation,
     resolvedVerbose: resolvedVerboseLevel,
-    resolvedElevated: resolvedElevatedLevel,
     usageLine: usageLine ?? undefined,
     queue: {
       mode: queueSettings.mode,

@@ -83,7 +83,7 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   {
     path: ["agent"],
     message:
-      "agent.* was moved; use agents.defaults (and tools.* for tool/elevated/exec settings) instead (auto-migrated on load).",
+      "agent.* was moved; use agents.defaults (and tools.* for tool/exec settings) instead (auto-migrated on load).",
   },
   {
     path: ["agent", "model"],

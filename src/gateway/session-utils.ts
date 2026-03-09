@@ -806,7 +806,6 @@ export function listSessionsFromStore(params: {
         systemSent: entry?.systemSent,
         abortedLastRun: entry?.abortedLastRun,
         verboseLevel: entry?.verboseLevel,
-        elevatedLevel: entry?.elevatedLevel,
         sendPolicy: entry?.sendPolicy,
         inputTokens: entry?.inputTokens,
         outputTokens: entry?.outputTokens,

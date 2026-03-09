@@ -102,16 +102,6 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_3: LegacyConfigMigration[] = [
         }
       }
 
-      const elevated = getRecord(agent.elevated);
-      if (elevated) {
-        if (tools.elevated === undefined) {
-          tools.elevated = elevated;
-          changes.push("Moved agent.elevated → tools.elevated.");
-        } else {
-          changes.push("Removed agent.elevated (tools.elevated already set).");
-        }
-      }
-
       const bash = getRecord(agent.bash);
       if (bash) {
         if (tools.exec === undefined) {
@@ -148,7 +138,6 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_3: LegacyConfigMigration[] = [
 
       const agentCopy: Record<string, unknown> = structuredClone(agent);
       delete agentCopy.tools;
-      delete agentCopy.elevated;
       delete agentCopy.bash;
       if (isRecord(agentCopy.sandbox)) {
         delete agentCopy.sandbox.tools;

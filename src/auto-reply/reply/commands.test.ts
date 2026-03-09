@@ -103,7 +103,7 @@ function buildParams(
 }
 
 describe("handleCommands gating", () => {
-  it("blocks gated commands when disabled or not elevated-allowlisted", async () => {
+  it("blocks gated commands when disabled or not allowlisted", async () => {
     const cases = typedCases<{
       name: string;
       commandBody: string;
@@ -301,7 +301,6 @@ function buildPolicyParams(
     cfg,
     command,
     directives: parseInlineDirectives(commandBody),
-    elevated: { enabled: true, allowed: true, failures: [] },
     sessionKey: "agent:main:main",
     workspaceDir: "/tmp",
     defaultGroupActivation: () => "mention",

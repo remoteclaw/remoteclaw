@@ -8,7 +8,6 @@ export type SessionStatus = {
   updatedAt: number | null;
   age: number | null;
   verboseLevel?: string;
-  elevatedLevel?: string;
   systemSent?: boolean;
   abortedLastRun?: boolean;
   inputTokens?: number;

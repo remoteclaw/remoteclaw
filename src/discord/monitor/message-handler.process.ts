@@ -680,7 +680,6 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
       dispatcher,
       replyOptions: {
         ...replyOptions,
-        skillFilter: channelConfig?.skills,
         disableBlockStreaming:
           disableBlockStreamingForDraft ??
           (typeof discordConfig?.blockStreaming === "boolean"

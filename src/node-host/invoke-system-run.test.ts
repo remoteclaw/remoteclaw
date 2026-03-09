@@ -40,9 +40,6 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
         approved: params.approved ?? false,
         sessionKey: "agent:main:main",
       },
-      skillBins: {
-        current: async () => [],
-      },
       execHostEnforced: false,
       execHostFallbackAllowed: true,
       resolveExecSecurity: () => params.security ?? "full",

@@ -126,7 +126,7 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
           nonInteractive: true,
           mode: "local",
           workspace,
-          skipSkills: true,
+
           skipHealth: true,
           installDaemon: false,
           gatewayBind: "loopback",
@@ -195,7 +195,7 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
           nonInteractive: true,
           mode: "local",
           workspace,
-          skipSkills: true,
+
           skipHealth: true,
           installDaemon: false,
           gatewayPort: port,

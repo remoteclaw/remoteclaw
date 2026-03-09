@@ -423,8 +423,7 @@ const FINAL_BACKLOG_TARGET_KEYS = [
   "diagnostics.otel.traces",
   "gateway.remote.password",
   "gateway.remote.token",
-  "skills.load.watch",
-  "skills.load.watchDebounceMs",
+
   "talk.apiKey",
   "ui.assistant.avatar",
   "ui.assistant.name",

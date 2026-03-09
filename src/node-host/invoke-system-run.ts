@@ -13,7 +13,6 @@ type ExecCommandSegment = {
   argv: string[];
   resolution?: { resolvedPath?: string; effectiveArgv?: string[] };
 };
-type SkillBinTrustEntry = Record<string, unknown>;
 type ExecHostRequest = Record<string, unknown>;
 type ExecHostResponse = {
   ok: boolean;
@@ -51,7 +50,6 @@ function resolveExecApprovals(
       security: overrides?.security ?? ("allowlist" as ExecSecurity),
       ask: overrides?.ask ?? ("on-miss" as ExecAsk),
       askFallback: undefined as string | undefined,
-      autoAllowSkills: false,
     },
     allowlist: [] as ExecAllowlistEntry[],
     socketPath: undefined as string | undefined,
@@ -132,12 +130,7 @@ function resolveExecApprovalDecision(value?: unknown): string | undefined {
 export function formatSystemRunAllowlistMissMessage(_opts?: Record<string, unknown>): string {
   return "SYSTEM_RUN_DENIED: allowlist miss";
 }
-import type {
-  ExecEventPayload,
-  RunResult,
-  SkillBinsProvider,
-  SystemRunParams,
-} from "./invoke-types.js";
+import type { ExecEventPayload, RunResult, SystemRunParams } from "./invoke-types.js";
 
 type SystemRunInvokeResult = {
   ok: boolean;
@@ -224,7 +217,6 @@ function normalizeDeniedReason(reason: string | null | undefined): SystemRunDeni
 export type HandleSystemRunInvokeOptions = {
   client: GatewayClient;
   params: SystemRunParams;
-  skillBins: SkillBinsProvider;
   execHostEnforced: boolean;
   execHostFallbackAllowed: boolean;
   resolveExecSecurity: (value?: string) => ExecSecurity;
@@ -298,8 +290,6 @@ function evaluateSystemRunAllowlist(params: {
   trustedSafeBinDirs: ReturnType<typeof resolveExecSafeBinRuntimePolicy>["trustedSafeBinDirs"];
   cwd: string | undefined;
   env: Record<string, string> | undefined;
-  skillBins: SkillBinTrustEntry[];
-  autoAllowSkills: boolean;
 }): SystemRunAllowlistAnalysis {
   if (params.shellCommand) {
     const allowlistEval = evaluateShellAllowlist({
@@ -310,8 +300,6 @@ function evaluateSystemRunAllowlist(params: {
       cwd: params.cwd,
       env: params.env,
       trustedSafeBinDirs: params.trustedSafeBinDirs,
-      skillBins: params.skillBins,
-      autoAllowSkills: params.autoAllowSkills,
       platform: process.platform,
     });
     return {
@@ -333,8 +321,6 @@ function evaluateSystemRunAllowlist(params: {
     safeBinProfiles: params.safeBinProfiles,
     cwd: params.cwd,
     trustedSafeBinDirs: params.trustedSafeBinDirs,
-    skillBins: params.skillBins,
-    autoAllowSkills: params.autoAllowSkills,
   });
   return {
     analysisOk: analysis.ok,
@@ -477,13 +463,11 @@ async function evaluateSystemRunPolicyPhase(
   });
   const security = approvals.agent.security;
   const ask = approvals.agent.ask;
-  const autoAllowSkills = approvals.agent.autoAllowSkills;
   const { safeBins, safeBinProfiles, trustedSafeBinDirs } = resolveExecSafeBinRuntimePolicy({
     global: cfg.tools?.exec,
     local: agentExec,
     onWarning: warnWritableTrustedDirOnce,
   });
-  const bins = autoAllowSkills ? await opts.skillBins.current() : [];
   let { analysisOk, allowlistMatches, allowlistSatisfied, segments } = evaluateSystemRunAllowlist({
     shellCommand: parsed.shellCommand,
     argv: parsed.argv,
@@ -494,8 +478,6 @@ async function evaluateSystemRunPolicyPhase(
     trustedSafeBinDirs,
     cwd: parsed.cwd,
     env: parsed.env,
-    skillBins: bins,
-    autoAllowSkills,
   });
   const isWindows = process.platform === "win32";
   const cmdInvocation = parsed.shellCommand

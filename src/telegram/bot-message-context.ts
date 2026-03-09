@@ -585,7 +585,7 @@ export const buildTelegramMessageContext = async ({
     });
   }
 
-  const { skillFilter, groupSystemPrompt } = resolveTelegramGroupPromptSettings({
+  const { groupSystemPrompt } = resolveTelegramGroupPromptSettings({
     groupConfig,
     topicConfig,
   });
@@ -728,7 +728,6 @@ export const buildTelegramMessageContext = async ({
     historyLimit,
     groupHistories,
     route,
-    skillFilter,
     sendTyping,
     sendRecordVoice,
     ackReactionPromise,

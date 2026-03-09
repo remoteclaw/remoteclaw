@@ -332,7 +332,6 @@ export async function handleNextcloudTalkInbound(params: {
       },
     },
     replyOptions: {
-      skillFilter: roomConfig?.skills,
       onModelSelected,
       disableBlockStreaming:
         typeof account.config.blockStreaming === "boolean"

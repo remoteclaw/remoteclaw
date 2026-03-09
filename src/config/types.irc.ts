@@ -44,7 +44,6 @@ export type IrcAccountConfig = CommonChannelMessagingConfig & {
       tools?: GroupToolPolicyConfig;
       toolsBySender?: GroupToolPolicyBySenderConfig;
       allowFrom?: Array<string | number>;
-      skills?: string[];
       enabled?: boolean;
       systemPrompt?: string;
     }

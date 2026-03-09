@@ -28,7 +28,6 @@ export type DiscordGuildEntryResolved = {
     {
       allow?: boolean;
       requireMention?: boolean;
-      skills?: string[];
       enabled?: boolean;
       users?: string[];
       roles?: string[];
@@ -42,7 +41,6 @@ export type DiscordGuildEntryResolved = {
 export type DiscordChannelConfigResolved = {
   allowed: boolean;
   requireMention?: boolean;
-  skills?: string[];
   enabled?: boolean;
   users?: string[];
   roles?: string[];
@@ -361,7 +359,6 @@ function resolveDiscordChannelConfigEntry(
   const resolved: DiscordChannelConfigResolved = {
     allowed: entry.allow !== false,
     requireMention: entry.requireMention,
-    skills: entry.skills,
     enabled: entry.enabled,
     users: entry.users,
     roles: entry.roles,

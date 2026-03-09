@@ -14,7 +14,6 @@ export type IrcChannelConfig = {
   requireMention?: boolean;
   tools?: GroupToolPolicyConfig;
   toolsBySender?: GroupToolPolicyBySenderConfig;
-  skills?: string[];
   enabled?: boolean;
   allowFrom?: Array<string | number>;
   systemPrompt?: string;

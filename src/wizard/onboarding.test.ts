@@ -214,7 +214,7 @@ describe("runOnboardingWizard", () => {
           runtime: "claude",
           installDaemon: false,
           skipChannels: true,
-          skipSkills: true,
+
           skipHealth: true,
           skipUi: true,
         },
@@ -253,7 +253,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-        skipSkills: true,
+
         skipHealth: true,
         skipUi: true,
       },
@@ -293,7 +293,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-        skipSkills: true,
+
         skipHealth: true,
         skipUi: true,
       },
@@ -333,7 +333,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-        skipSkills: true,
+
         skipHealth: true,
         skipUi: true,
       },
@@ -375,7 +375,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-        skipSkills: true,
+
         skipHealth: true,
         skipUi: true,
       },
@@ -422,7 +422,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-        skipSkills: true,
+
         skipHealth: true,
         skipUi: true,
       },
@@ -473,7 +473,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         runtime: "claude",
         skipChannels: true,
-        skipSkills: true,
+
         skipHealth: true,
         installDaemon: false,
       },
@@ -518,7 +518,7 @@ describe("runOnboardingWizard", () => {
           workspace: workspaceDir,
           installDaemon: false,
           skipChannels: true,
-          skipSkills: true,
+
           skipHealth: true,
           skipUi: true,
         },

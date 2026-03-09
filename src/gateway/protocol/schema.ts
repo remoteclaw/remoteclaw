@@ -1,5 +1,5 @@
 export * from "./schema/agent.js";
-export * from "./schema/agents-models-skills.js";
+export * from "./schema/agents-models.js";
 export * from "./schema/channels.js";
 export * from "./schema/config.js";
 export * from "./schema/cron.js";

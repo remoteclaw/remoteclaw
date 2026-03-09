@@ -106,7 +106,7 @@ function candidateBinDirs(opts: EnsureRemoteClawPathOpts): { prepend: string[]; 
 }
 
 /**
- * Best-effort PATH bootstrap so skills that require the `remoteclaw` CLI can run
+ * Best-effort PATH bootstrap so the `remoteclaw` CLI is available on PATH
  * under launchd/minimal environments (and inside the macOS app bundle).
  */
 export function ensureRemoteClawCliOnPath(opts: EnsureRemoteClawPathOpts = {}) {

@@ -56,7 +56,7 @@ describe("argv helpers", () => {
     },
     {
       name: "subcommand path after global root flags should not be treated as version",
-      argv: ["node", "remoteclaw", "--dev", "skills", "list", "-v"],
+      argv: ["node", "remoteclaw", "--dev", "status", "list", "-v"],
       expected: false,
     },
   ])("detects help/version flags: $name", ({ argv, expected }) => {

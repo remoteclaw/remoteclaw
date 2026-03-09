@@ -81,7 +81,6 @@ const BASE_RELOAD_RULES_TAIL: ReloadRule[] = [
   { prefix: "messages", kind: "none" },
   { prefix: "session", kind: "none" },
   { prefix: "talk", kind: "none" },
-  { prefix: "skills", kind: "none" },
   { prefix: "plugins", kind: "restart" },
   { prefix: "ui", kind: "none" },
   { prefix: "gateway", kind: "restart" },

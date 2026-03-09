@@ -56,7 +56,7 @@ describe("buildStatusAllReportLines", () => {
           error: null,
         },
         tailscaleHttpsUrl: null,
-        skillStatus: null,
+
         channelsStatus: null,
         channelIssues: [],
         gatewayReachable: false,

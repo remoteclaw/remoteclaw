@@ -650,7 +650,6 @@ export async function registerSlackMonitorSlashCommands(params: {
           },
         },
         replyOptions: {
-          skillFilter: channelConfig?.skills,
           onModelSelected,
         },
       });

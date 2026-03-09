@@ -68,7 +68,6 @@ export const dispatchTelegramMessage = async ({
     historyLimit,
     groupHistories,
     route,
-    skillFilter,
     sendTyping,
     sendRecordVoice,
     ackReactionPromise,
@@ -370,7 +369,6 @@ export const dispatchTelegramMessage = async ({
         },
       },
       replyOptions: {
-        skillFilter,
         disableBlockStreaming,
         onPartialReply: answerLane.stream
           ? (payload) => updateDraftFromPartial(answerLane, payload.text)

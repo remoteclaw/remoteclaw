@@ -13,7 +13,6 @@ export type PluginManifest = {
   kind?: PluginKind;
   channels?: string[];
   providers?: string[];
-  skills?: string[];
   stt?: string[];
   tts?: string[];
   name?: string;
@@ -70,7 +69,6 @@ export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
   const version = typeof raw.version === "string" ? raw.version.trim() : undefined;
   const channels = normalizeStringList(raw.channels);
   const providers = normalizeStringList(raw.providers);
-  const skills = normalizeStringList(raw.skills);
   const stt = normalizeStringList(raw.stt);
   const tts = normalizeStringList(raw.tts);
 
@@ -87,7 +85,6 @@ export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
       kind,
       channels,
       providers,
-      skills,
       stt,
       tts,
       name,

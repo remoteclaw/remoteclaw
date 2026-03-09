@@ -32,7 +32,7 @@ import type {
   ToolCatalogProfileSchema,
   ToolsCatalogParamsSchema,
   ToolsCatalogResultSchema,
-} from "./agents-models-skills.js";
+} from "./agents-models.js";
 import type {
   ChannelsLogoutParamsSchema,
   TalkConfigParamsSchema,

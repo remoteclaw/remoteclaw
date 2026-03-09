@@ -508,11 +508,9 @@ describe("update-cli", () => {
         expect(process.env.REMOTECLAW_UPDATE_IN_PROGRESS).toBeUndefined();
 
         const logLines = vi.mocked(defaultRuntime.log).mock.calls.map((call) => String(call[0]));
-        expect(
-          logLines.some((line) =>
-            line.includes("Leveled up! New skills unlocked. You're welcome."),
-          ),
-        ).toBe(true);
+        expect(logLines.some((line) => line.includes("Fresh code, same crab. Miss me?"))).toBe(
+          true,
+        );
       });
     } finally {
       randomSpy.mockRestore();

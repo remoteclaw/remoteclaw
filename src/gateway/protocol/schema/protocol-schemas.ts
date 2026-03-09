@@ -34,7 +34,7 @@ import {
   ToolCatalogProfileSchema,
   ToolsCatalogParamsSchema,
   ToolsCatalogResultSchema,
-} from "./agents-models-skills.js";
+} from "./agents-models.js";
 import {
   ChannelsLogoutParamsSchema,
   TalkConfigParamsSchema,

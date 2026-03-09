@@ -15,7 +15,6 @@ export function logNonInteractiveOnboardingJson(params: {
   };
   installDaemon?: boolean;
   daemonRuntime?: string;
-  skipSkills?: boolean;
   skipHealth?: boolean;
 }) {
   if (!params.opts.json) {
@@ -30,7 +29,6 @@ export function logNonInteractiveOnboardingJson(params: {
         gateway: params.gateway,
         installDaemon: Boolean(params.installDaemon),
         daemonRuntime: params.daemonRuntime,
-        skipSkills: Boolean(params.skipSkills),
         skipHealth: Boolean(params.skipHealth),
       },
       null,

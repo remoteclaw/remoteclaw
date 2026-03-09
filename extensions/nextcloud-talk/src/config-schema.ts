@@ -14,7 +14,7 @@ export const NextcloudTalkRoomSchema = z
   .object({
     requireMention: z.boolean().optional(),
     tools: ToolPolicySchema,
-    skills: z.array(z.string()).optional(),
+
     enabled: z.boolean().optional(),
     allowFrom: z.array(z.string()).optional(),
     systemPrompt: z.string().optional(),

@@ -104,7 +104,6 @@ describe("onboard (non-interactive): runtime auth", () => {
     await withOnboardEnv("remoteclaw-onboard-runtime-claude-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         runtime: "claude",
-        skipSkills: true,
       });
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       expect(config.agents?.defaults?.runtime).toBe("claude");
@@ -117,7 +116,6 @@ describe("onboard (non-interactive): runtime auth", () => {
     await withOnboardEnv("remoteclaw-onboard-infer-claude-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         anthropicApiKey: "sk-ant-test-key",
-        skipSkills: true,
       });
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       expect(config.agents?.defaults?.runtime).toBe("claude");
@@ -129,7 +127,6 @@ describe("onboard (non-interactive): runtime auth", () => {
     await withOnboardEnv("remoteclaw-onboard-infer-gemini-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         geminiApiKey: "gemini-test-key",
-        skipSkills: true,
       });
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       expect(config.agents?.defaults?.runtime).toBe("gemini");
@@ -141,7 +138,6 @@ describe("onboard (non-interactive): runtime auth", () => {
     await withOnboardEnv("remoteclaw-onboard-infer-codex-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         codexApiKey: "codex-test-key",
-        skipSkills: true,
       });
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       expect(config.agents?.defaults?.runtime).toBe("codex");
@@ -153,7 +149,6 @@ describe("onboard (non-interactive): runtime auth", () => {
     await withOnboardEnv("remoteclaw-onboard-infer-opencode-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         openaiApiKey: "sk-openai-test-key",
-        skipSkills: true,
       });
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       expect(config.agents?.defaults?.runtime).toBe("opencode");
@@ -165,7 +160,6 @@ describe("onboard (non-interactive): runtime auth", () => {
     await withOnboardEnv("remoteclaw-onboard-auth-token-", async ({ configPath, runtime }) => {
       await runNonInteractiveOnboardingWithDefaults(runtime, {
         authToken: "my-oauth-token",
-        skipSkills: true,
       });
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       expect(config.agents?.defaults?.runtime).toBe("claude");
@@ -175,9 +169,7 @@ describe("onboard (non-interactive): runtime auth", () => {
 
   it("completes without error when no runtime or key is provided (skip mode)", async () => {
     await withOnboardEnv("remoteclaw-onboard-no-runtime-", async ({ configPath, runtime }) => {
-      await runNonInteractiveOnboardingWithDefaults(runtime, {
-        skipSkills: true,
-      });
+      await runNonInteractiveOnboardingWithDefaults(runtime, {});
       const config = await readJsonFile<RuntimeConfigSnapshot>(configPath);
       // No runtime set when none specified.
       expect(config.agents?.defaults?.runtime).toBeUndefined();

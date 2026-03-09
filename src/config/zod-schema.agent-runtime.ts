@@ -227,7 +227,6 @@ export const AgentEntrySchema = z
     workspace: z.string().optional(),
     agentDir: z.string().optional(),
     model: z.unknown().optional(),
-    skills: z.array(z.string()).optional(),
     humanDelay: HumanDelaySchema.optional(),
     heartbeat: HeartbeatSchema,
     boot: BootSchema,

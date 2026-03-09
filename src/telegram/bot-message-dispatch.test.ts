@@ -87,7 +87,7 @@ describe("dispatchTelegramMessage draft streaming", () => {
       historyLimit: 0,
       groupHistories: new Map(),
       route: { agentId: "default", accountId: "default" },
-      skillFilter: undefined,
+
       sendTyping: vi.fn(),
       sendRecordVoice: vi.fn(),
       ackReactionPromise: null,

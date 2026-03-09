@@ -38,7 +38,7 @@ export function installBaseProgramMocks() {
       "gateway",
       "daemon",
       "channels",
-      "skills",
+
       "health",
     ],
     configureCommand,

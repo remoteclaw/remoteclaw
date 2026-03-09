@@ -285,7 +285,6 @@ export async function runNonInteractiveOnboardingLocal(params: {
     },
     installDaemon: Boolean(opts.installDaemon),
     daemonRuntime: opts.installDaemon ? daemonRuntimeRaw : undefined,
-    skipSkills: Boolean(opts.skipSkills),
     skipHealth: Boolean(opts.skipHealth),
   });
 

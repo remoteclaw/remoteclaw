@@ -25,7 +25,7 @@ import {
 } from "../utils.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { VERSION } from "../version.js";
-import type { NodeManagerChoice, OnboardMode, ResetScope } from "./onboard-types.js";
+import type { OnboardMode, ResetScope } from "./onboard-types.js";
 
 export function guardCancel<T>(value: T | symbol, runtime: RuntimeEnv): T {
   if (isCancel(value)) {
@@ -293,17 +293,6 @@ export async function ensureWorkspaceAndSessions(
   const sessionsDir = resolveSessionTranscriptsDirForAgent(options?.agentId);
   await fs.mkdir(sessionsDir, { recursive: true });
   runtime.log(`Sessions OK: ${shortenHomePath(sessionsDir)}`);
-}
-
-export function resolveNodeManagerOptions(): Array<{
-  value: NodeManagerChoice;
-  label: string;
-}> {
-  return [
-    { value: "npm", label: "npm" },
-    { value: "pnpm", label: "pnpm" },
-    { value: "bun", label: "bun" },
-  ];
 }
 
 export async function moveToTrash(pathname: string, runtime: RuntimeEnv): Promise<void> {

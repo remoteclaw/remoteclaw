@@ -84,7 +84,6 @@ export type GatewayAuthChoice = "token" | "password";
 export type ResetScope = "config" | "config+creds+sessions" | "full";
 export type GatewayBind = "loopback" | "lan" | "auto" | "custom" | "tailnet";
 export type TailscaleMode = "off" | "serve" | "funnel";
-export type NodeManagerChoice = "npm" | "pnpm" | "bun";
 export type ChannelChoice = ChannelId;
 // Legacy alias (pre-rename).
 export type ProviderChoice = ChannelChoice;
@@ -139,10 +138,8 @@ export type OnboardOptions = {
   installDaemon?: boolean;
   daemonRuntime?: GatewayDaemonRuntime;
   skipChannels?: boolean;
-  skipSkills?: boolean;
   skipHealth?: boolean;
   skipUi?: boolean;
-  nodeManager?: NodeManagerChoice;
   remoteUrl?: string;
   remoteToken?: string;
   json?: boolean;

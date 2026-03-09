@@ -1,5 +1,3 @@
-type SkillBinTrustEntry = Record<string, unknown>;
-
 export type SystemRunParams = {
   command: string[];
   rawCommand?: string | null;
@@ -34,8 +32,4 @@ export type ExecEventPayload = {
   success?: boolean;
   output?: string;
   reason?: string;
-};
-
-export type SkillBinsProvider = {
-  current(force?: boolean): Promise<SkillBinTrustEntry[]>;
 };

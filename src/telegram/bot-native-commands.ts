@@ -538,7 +538,7 @@ export const registerTelegramNativeCommands = ({
                 })
               : null;
           const sessionKey = threadKeys?.sessionKey ?? baseSessionKey;
-          const { skillFilter, groupSystemPrompt } = resolveTelegramGroupPromptSettings({
+          const { groupSystemPrompt } = resolveTelegramGroupPromptSettings({
             groupConfig,
             topicConfig,
           });
@@ -633,7 +633,6 @@ export const registerTelegramNativeCommands = ({
               },
             },
             replyOptions: {
-              skillFilter,
               disableBlockStreaming,
               onModelSelected,
             },

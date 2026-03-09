@@ -531,6 +531,7 @@ export default defineConfig({
                 { slug: "cli/message" },
                 { slug: "cli/node" },
                 { slug: "cli/nodes" },
+                { slug: "cli/onboard" },
                 { slug: "cli/pairing" },
                 { slug: "cli/plugins" },
                 { slug: "cli/qr" },

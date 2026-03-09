@@ -1,41 +1,34 @@
 ---
-description: "Compare OpenClaw and RemoteClaw: middleware architecture vs embedded engine, CLI subprocess vs in-process, and when each is the right choice."
+description: "What changes when you switch from OpenClaw to RemoteClaw: middleware architecture replaces the embedded engine, CLI subprocess replaces in-process execution, and what you keep."
 read_when:
-  - You are evaluating whether to use OpenClaw or RemoteClaw
-  - You want to understand the trade-offs between the two projects
-title: "OpenClaw or RemoteClaw? Decision Guide for AI Agent Middleware"
+  - You are coming from OpenClaw and want to understand what RemoteClaw changes
+  - You want to know what to expect when switching from OpenClaw
+title: "Coming from OpenClaw"
 ---
 
 import { TabItem, Tabs } from "@astrojs/starlight/components";
 
-# OpenClaw or RemoteClaw?
+# Coming from OpenClaw
 
-RemoteClaw is a fork of [OpenClaw](https://openclaw.ai) that replaced the embedded AI execution engine with a middleware architecture. Both projects serve different use cases.
+RemoteClaw is a fork of [OpenClaw](https://openclaw.ai) that replaced the embedded AI execution engine with a middleware architecture. If you're coming from OpenClaw, here's what changes and what stays the same.
 
-## Quick decision
+## What stays
 
-**Already using Claude Code, Gemini CLI, Codex CLI, or OpenCode?**
-Use **RemoteClaw**. It connects your existing agent to messaging channels without adding another LLM layer.
+RemoteClaw inherits OpenClaw's channel infrastructure. The 20+ messaging adapters (WhatsApp, Telegram, Discord, Slack, iMessage, and more), the gateway, the plugin system, and the native apps all carry over. Your channel configurations import directly.
 
-**Want a self-contained platform with built-in model providers and a skills marketplace?**
-Use **OpenClaw**. It includes everything in one process.
+## What changes
 
-## Decision tree
+RemoteClaw gutted OpenClaw's embedded execution engine and replaced it with a CLI subprocess bridge. Instead of running an LLM inside its own process, RemoteClaw launches your existing CLI agent (Claude Code, Gemini CLI, Codex CLI, or OpenCode) as a subprocess.
 
-| If you want…                                                                               | Choose         |
-| ------------------------------------------------------------------------------------------ | -------------- |
-| Connect an existing CLI agent (Claude, Gemini, Codex, OpenCode) to WhatsApp/Telegram/Slack | **RemoteClaw** |
-| Switch between multiple agent runtimes via config                                          | **RemoteClaw** |
-| Middleware-only architecture (no embedded LLM overhead)                                    | **RemoteClaw** |
-| MCP-first tool system (50 tools via MCP server)                                            | **RemoteClaw** |
-| Subprocess isolation (agent crashes don't crash the gateway)                               | **RemoteClaw** |
-| Consumer onboarding wizard with 30+ LLM provider picker                                    | **OpenClaw**   |
-| Built-in skills marketplace (ClawHub)                                                      | **OpenClaw**   |
-| In-process model catalog (switch between OpenAI, Anthropic, Google, etc.)                  | **OpenClaw**   |
-| Docker sandbox for code execution                                                          | **OpenClaw**   |
-| Centralized OAuth for all providers                                                        | **OpenClaw**   |
+This means:
 
-## Architecture comparison
+- **Your agent config is preserved.** Your `~/.claude`, `~/.gemini`, or other agent setup works as-is — no reconfiguration inside RemoteClaw.
+- **No built-in model catalog.** OpenClaw ships many LLM providers with a picker wizard. RemoteClaw delegates model selection entirely to your CLI agent.
+- **No skills marketplace.** ClawHub and the skills system are removed. Agents bring their own capabilities via MCP or built-in tools.
+- **No Docker sandbox.** Agents manage their own sandboxing. RemoteClaw provides process isolation via the subprocess boundary.
+- **No provider auth management.** Agents use their own API keys or subscriptions via environment variables.
+
+## Architecture side by side
 
 <Tabs>
   <TabItem label="RemoteClaw">
@@ -49,7 +42,7 @@ Use **OpenClaw**. It includes everything in one process.
     └── MCP server (injected into subprocess for gateway access)
     ```
 
-    The CLI agent owns the agentic loop. RemoteClaw handles session persistence, message delivery, and MCP tool bridging. Your `~/.claude`, `~/.gemini`, or other agent config is preserved as-is.
+    The CLI agent owns the agentic loop. RemoteClaw handles session persistence, message delivery, and MCP tool bridging.
 
   </TabItem>
   <TabItem label="OpenClaw">
@@ -69,12 +62,8 @@ Use **OpenClaw**. It includes everything in one process.
 
 For a deeper architectural comparison, see [Middleware Architecture — How This Differs from OpenClaw](/concepts/middleware-architecture#how-this-differs-from-openclaw).
 
-## Switching from OpenClaw
+## Ready to switch?
 
-If you decide to switch, see [Migrate from OpenClaw](/install/from-openclaw) for step-by-step instructions and [Breaking changes](/install/breaking-changes-from-openclaw) for what to expect.
+See [Migrate from OpenClaw](/install/from-openclaw) for step-by-step instructions and [Breaking changes](/install/breaking-changes-from-openclaw) for the full list of what's removed and what's new.
 
-## Learn more
-
-- [What is RemoteClaw?](/start/remoteclaw) — full setup guide
-- [Get started with OpenClaw](https://openclaw.ai) — OpenClaw's official site
-- [Middleware Architecture](/concepts/middleware-architecture) — how RemoteClaw's architecture works
+If RemoteClaw isn't the right fit, [OpenClaw](https://openclaw.ai) remains a great choice for anyone who wants a self-contained platform with built-in model providers and a skills marketplace.

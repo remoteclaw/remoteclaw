@@ -1,5 +1,5 @@
-import { generateGeminiInlineDataText } from "../../../media-understanding/providers/google/inline-data.js";
 import type { AudioTranscriptionRequest, AudioTranscriptionResult } from "../../types.js";
+import { generateGeminiInlineDataText } from "./inline-data.js";
 
 export const DEFAULT_GOOGLE_AUDIO_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const DEFAULT_GOOGLE_AUDIO_MODEL = "gemini-3-flash-preview";

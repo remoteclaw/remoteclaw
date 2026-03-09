@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { normalizeTestText } from "../../test/helpers/normalize-text.js";
 import { withTempHome } from "../../test/helpers/temp-home.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { createSuccessfulImageMediaDecision } from "./media-understanding.test-fixtures.js";
 import {
   buildCommandsMessage,
   buildCommandsMessagePaginated,
@@ -132,55 +131,6 @@ describe("buildStatusMessage", () => {
 
     expect(text).toContain("verbose");
     expect(text).toContain("elevated");
-  });
-
-  it("includes media understanding decisions when present", async () => {
-    const text = await buildStatusMessage({
-      agent: { model: "anthropic/claude-opus-4-5" },
-      sessionEntry: { sessionId: "media", updatedAt: 0 },
-      sessionKey: "agent:main:main",
-      queue: { mode: "none" },
-      mediaDecisions: [
-        createSuccessfulImageMediaDecision() as unknown as NonNullable<
-          Parameters<typeof buildStatusMessage>[0]["mediaDecisions"]
-        >[number],
-        {
-          capability: "audio",
-          outcome: "skipped",
-          attachments: [
-            {
-              attachmentIndex: 1,
-              attempts: [
-                {
-                  type: "provider",
-                  outcome: "skipped",
-                  reason: "maxBytes: too large",
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    });
-
-    const normalized = normalizeTestText(text);
-    expect(normalized).toContain("Media: image ok (openai/gpt-5.2) · audio skipped (maxBytes)");
-  });
-
-  it("omits media line when all decisions are none", async () => {
-    const text = await buildStatusMessage({
-      agent: { model: "anthropic/claude-opus-4-5" },
-      sessionEntry: { sessionId: "media-none", updatedAt: 0 },
-      sessionKey: "agent:main:main",
-      queue: { mode: "none" },
-      mediaDecisions: [
-        { capability: "image", outcome: "no-attachment", attachments: [] },
-        { capability: "audio", outcome: "no-attachment", attachments: [] },
-        { capability: "video", outcome: "no-attachment", attachments: [] },
-      ],
-    });
-
-    expect(normalizeTestText(text)).not.toContain("Media:");
   });
 
   it("does not show elevated label when session explicitly disables it", async () => {

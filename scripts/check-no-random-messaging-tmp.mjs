@@ -10,7 +10,6 @@ const sourceRoots = [
   path.join(repoRoot, "src", "channels"),
   path.join(repoRoot, "src", "infra", "outbound"),
   path.join(repoRoot, "src", "line"),
-  path.join(repoRoot, "src", "media-understanding"),
   path.join(repoRoot, "extensions"),
 ];
 const allowedCallsites = new Set([path.join(repoRoot, "extensions", "feishu", "src", "dedup.ts")]);

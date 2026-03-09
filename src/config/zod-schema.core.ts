@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { isSafeExecutableValue } from "../infra/safe-executable-value.js";
-import { createAllowDenyChannelRulesSchema } from "./zod-schema.allowdeny.js";
 import { sensitive } from "./zod-schema.sensitive.js";
 
 export const GroupChatSchema = z
@@ -330,23 +329,6 @@ export const ExecutableTokenSchema = z
   .string()
   .refine(isSafeExecutableValue, "expected safe executable name or path");
 
-export const MediaUnderstandingScopeSchema = createAllowDenyChannelRulesSchema();
-
-export const MediaUnderstandingCapabilitiesSchema = z
-  .array(z.union([z.literal("image"), z.literal("audio"), z.literal("video")]))
-  .optional();
-
-export const MediaUnderstandingAttachmentsSchema = z
-  .object({
-    mode: z.union([z.literal("first"), z.literal("all")]).optional(),
-    maxAttachments: z.number().int().positive().optional(),
-    prefer: z
-      .union([z.literal("first"), z.literal("last"), z.literal("path"), z.literal("url")])
-      .optional(),
-  })
-  .strict()
-  .optional();
-
 const DeepgramAudioSchema = z
   .object({
     detectLanguage: z.boolean().optional(),
@@ -375,7 +357,6 @@ export const MediaUnderstandingModelSchema = z
   .object({
     provider: z.string().optional(),
     model: z.string().optional(),
-    capabilities: MediaUnderstandingCapabilitiesSchema,
     type: z.union([z.literal("provider"), z.literal("cli")]).optional(),
     command: z.string().optional(),
     args: z.array(z.string()).optional(),
@@ -391,11 +372,9 @@ export const MediaUnderstandingModelSchema = z
 export const ToolsMediaUnderstandingSchema = z
   .object({
     enabled: z.boolean().optional(),
-    scope: MediaUnderstandingScopeSchema,
     maxBytes: z.number().int().positive().optional(),
     maxChars: z.number().int().positive().optional(),
     ...MediaUnderstandingRuntimeFields,
-    attachments: MediaUnderstandingAttachmentsSchema,
     models: z.array(MediaUnderstandingModelSchema).optional(),
   })
   .strict()
@@ -403,31 +382,7 @@ export const ToolsMediaUnderstandingSchema = z
 
 export const ToolsMediaSchema = z
   .object({
-    models: z.array(MediaUnderstandingModelSchema).optional(),
-    concurrency: z.number().int().positive().optional(),
-    image: ToolsMediaUnderstandingSchema.optional(),
     audio: ToolsMediaUnderstandingSchema.optional(),
-    video: ToolsMediaUnderstandingSchema.optional(),
-  })
-  .strict()
-  .optional();
-
-export const LinkModelSchema = z
-  .object({
-    type: z.literal("cli").optional(),
-    command: z.string().min(1),
-    args: z.array(z.string()).optional(),
-    timeoutSeconds: z.number().int().positive().optional(),
-  })
-  .strict();
-
-export const ToolsLinksSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    scope: MediaUnderstandingScopeSchema,
-    maxLinks: z.number().int().positive().optional(),
-    timeoutSeconds: z.number().int().positive().optional(),
-    models: z.array(LinkModelSchema).optional(),
   })
   .strict()
   .optional();

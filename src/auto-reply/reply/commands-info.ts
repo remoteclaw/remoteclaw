@@ -141,7 +141,6 @@ export const handleStatusCommand: CommandHandler = async (params, allowTextComma
     resolvedElevatedLevel: params.resolvedElevatedLevel,
     isGroup: params.isGroup,
     defaultGroupActivation: params.defaultGroupActivation,
-    mediaDecisions: params.ctx.MediaUnderstandingDecisions,
   });
   return { shouldContinue: false, reply };
 };

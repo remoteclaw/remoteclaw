@@ -12,7 +12,6 @@ import {
 } from "../config/sessions.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { resolveCommitHash } from "../infra/git-commit.js";
-import type { MediaUnderstandingDecision } from "../media-understanding/types.js";
 import { listPluginCommands } from "../plugins/commands.js";
 import { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
 import {
@@ -67,7 +66,6 @@ type StatusArgs = {
   usageLine?: string;
   timeLine?: string;
   queue?: QueueStatus;
-  mediaDecisions?: ReadonlyArray<MediaUnderstandingDecision>;
   subagentsLine?: string;
   includeTranscriptUsage?: boolean;
   now?: number;
@@ -257,49 +255,6 @@ const formatCacheLine = (
       : 0;
 
   return `🗄️ Cache: ${hitRate}% hit · ${cachedLabel} cached, ${newLabel} new`;
-};
-
-const formatMediaUnderstandingLine = (decisions?: ReadonlyArray<MediaUnderstandingDecision>) => {
-  if (!decisions || decisions.length === 0) {
-    return null;
-  }
-  const parts = decisions
-    .map((decision) => {
-      const count = decision.attachments.length;
-      const countLabel = count > 1 ? ` x${count}` : "";
-      if (decision.outcome === "success") {
-        const chosen = decision.attachments.find((entry) => entry.chosen)?.chosen;
-        const provider = chosen?.provider?.trim();
-        const model = chosen?.model?.trim();
-        const modelLabel = provider ? (model ? `${provider}/${model}` : provider) : null;
-        return `${decision.capability}${countLabel} ok${modelLabel ? ` (${modelLabel})` : ""}`;
-      }
-      if (decision.outcome === "no-attachment") {
-        return `${decision.capability} none`;
-      }
-      if (decision.outcome === "disabled") {
-        return `${decision.capability} off`;
-      }
-      if (decision.outcome === "scope-deny") {
-        return `${decision.capability} denied`;
-      }
-      if (decision.outcome === "skipped") {
-        const reason = decision.attachments
-          .flatMap((entry) => entry.attempts.map((attempt) => attempt.reason).filter(Boolean))
-          .find(Boolean);
-        const shortReason = reason ? reason.split(":")[0]?.trim() : undefined;
-        return `${decision.capability} skipped${shortReason ? ` (${shortReason})` : ""}`;
-      }
-      return null;
-    })
-    .filter((part): part is string => part != null);
-  if (parts.length === 0) {
-    return null;
-  }
-  if (parts.every((part) => part.endsWith(" none"))) {
-    return null;
-  }
-  return `📎 Media: ${parts.join(" · ")}`;
 };
 
 const formatVoiceModeLine = async (
@@ -517,7 +472,6 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
   const costLine = costLabel ? `💵 Cost: ${costLabel}` : null;
   const usageCostLine =
     usagePair && costLine ? `${usagePair} · ${costLine}` : (usagePair ?? costLine);
-  const mediaLine = formatMediaUnderstandingLine(args.mediaDecisions);
   const voiceLine = await formatVoiceModeLine(args.config, args.sessionEntry);
 
   return [
@@ -528,7 +482,6 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
     usageCostLine,
     cacheLine,
     `📚 ${contextLine}`,
-    mediaLine,
     args.usageLine,
     `🧵 ${sessionLine}`,
     args.subagentsLine,

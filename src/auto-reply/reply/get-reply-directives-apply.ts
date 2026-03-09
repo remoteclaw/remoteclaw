@@ -172,7 +172,6 @@ export async function applyInlineDirectiveOverrides(params: {
         resolvedElevatedLevel,
         isGroup,
         defaultGroupActivation: defaultActivation,
-        mediaDecisions: ctx.MediaUnderstandingDecisions,
       });
     }
     typing.cleanup();

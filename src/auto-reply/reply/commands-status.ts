@@ -12,7 +12,6 @@ import {
   loadProviderUsageSummary,
   resolveUsageProviderId,
 } from "../../infra/provider-usage.js";
-import type { MediaUnderstandingDecision } from "../../media-understanding/types.js";
 import { normalizeGroupActivation } from "../group-activation.js";
 import { buildStatusMessage } from "../status.js";
 import type { ElevatedLevel, VerboseLevel } from "../thinking.js";
@@ -36,7 +35,6 @@ export async function buildStatusReply(params: {
   resolvedElevatedLevel?: ElevatedLevel;
   isGroup: boolean;
   defaultGroupActivation: () => "always" | "mention";
-  mediaDecisions?: MediaUnderstandingDecision[];
 }): Promise<ReplyPayload | undefined> {
   const {
     cfg,
@@ -153,7 +151,6 @@ export async function buildStatusReply(params: {
       showDetails: queueOverrides,
     },
     subagentsLine,
-    mediaDecisions: params.mediaDecisions,
     includeTranscriptUsage: false,
   });
 

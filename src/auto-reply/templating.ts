@@ -1,8 +1,4 @@
 import type { ChannelId } from "../channels/plugins/types.js";
-import type {
-  MediaUnderstandingDecision,
-  MediaUnderstandingOutput,
-} from "../media-understanding/types.js";
 import type { StickerMetadata } from "../telegram/bot/types.js";
 import type { InternalMessageChannel } from "../utils/message-channel.js";
 import type { CommandArgs } from "./commands-registry.types.js";
@@ -94,9 +90,6 @@ export type MsgContext = {
   /** Remote host for SCP when media lives on a different machine (e.g., remoteclaw@192.168.64.3). */
   MediaRemoteHost?: string;
   Transcript?: string;
-  MediaUnderstanding?: MediaUnderstandingOutput[];
-  MediaUnderstandingDecisions?: MediaUnderstandingDecision[];
-  LinkUnderstanding?: string[];
   Prompt?: string;
   MaxChars?: number;
   ChatType?: string;

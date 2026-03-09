@@ -9,7 +9,7 @@ import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { SecretInputMode } from "./onboard-types.js";
 
-export type SearchProvider = "perplexity" | "brave" | "gemini" | "grok" | "kimi";
+export type SearchProvider = "brave" | "gemini" | "grok" | "kimi" | "perplexity";
 
 type SearchProviderEntry = {
   value: SearchProvider;
@@ -72,14 +72,14 @@ function rawKeyValue(config: RemoteClawConfig, provider: SearchProvider): unknow
   switch (provider) {
     case "brave":
       return search?.apiKey;
-    case "perplexity":
-      return search?.perplexity?.apiKey;
     case "gemini":
       return search?.gemini?.apiKey;
     case "grok":
       return search?.grok?.apiKey;
     case "kimi":
       return search?.kimi?.apiKey;
+    case "perplexity":
+      return search?.perplexity?.apiKey;
   }
 }
 
@@ -131,9 +131,6 @@ export function applySearchKey(
     case "brave":
       search.apiKey = key;
       break;
-    case "perplexity":
-      search.perplexity = { ...search.perplexity, apiKey: key };
-      break;
     case "gemini":
       search.gemini = { ...search.gemini, apiKey: key };
       break;
@@ -142,6 +139,9 @@ export function applySearchKey(
       break;
     case "kimi":
       search.kimi = { ...search.kimi, apiKey: key };
+      break;
+    case "perplexity":
+      search.perplexity = { ...search.perplexity, apiKey: key };
       break;
   }
   return {
@@ -224,7 +224,7 @@ export async function setupSearch(
     if (detected) {
       return detected.value;
     }
-    return "perplexity";
+    return SEARCH_PROVIDER_OPTIONS[0].value;
   })();
 
   type PickerValue = SearchProvider | "__skip__";

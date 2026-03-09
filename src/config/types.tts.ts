@@ -1,4 +1,5 @@
-export type TtsProvider = "elevenlabs" | "openai" | "edge";
+export type BuiltinTtsProvider = "elevenlabs" | "openai" | "edge";
+export type TtsProvider = BuiltinTtsProvider | (string & {});
 
 export type TtsMode = "final" | "all";
 

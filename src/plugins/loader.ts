@@ -163,6 +163,7 @@ function createPluginRecord(params: {
     channelIds: [],
     providerIds: [],
     sttProviderIds: [],
+    ttsProviderIds: [],
     gatewayMethods: [],
     cliCommands: [],
     services: [],

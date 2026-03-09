@@ -9,6 +9,7 @@ import type {
 import { registerInternalHook } from "../hooks/internal-hooks.js";
 import type { HookEntry } from "../hooks/types.js";
 import type { SttProvider } from "../stt/types.js";
+import type { TtsProviderImpl } from "../tts/types.js";
 import { resolveUserPath } from "../utils.js";
 import { registerPluginCommand } from "./commands.js";
 import { normalizePluginHttpPath } from "./http-path.js";
@@ -101,6 +102,12 @@ export type PluginSttProviderRegistration = {
   source: string;
 };
 
+export type PluginTtsProviderRegistration = {
+  pluginId: string;
+  provider: TtsProviderImpl;
+  source: string;
+};
+
 export type PluginRecord = {
   id: string;
   name: string;
@@ -120,6 +127,7 @@ export type PluginRecord = {
   gatewayMethods: string[];
   cliCommands: string[];
   sttProviderIds: string[];
+  ttsProviderIds: string[];
   services: string[];
   commands: string[];
   httpHandlers: number;
@@ -137,6 +145,7 @@ export type PluginRegistry = {
   channels: PluginChannelRegistration[];
   providers: PluginProviderRegistration[];
   sttProviders: PluginSttProviderRegistration[];
+  ttsProviders: PluginTtsProviderRegistration[];
   gatewayHandlers: GatewayRequestHandlers;
   httpHandlers: PluginHttpRegistration[];
   httpRoutes: PluginHttpRouteRegistration[];
@@ -161,6 +170,7 @@ export function createEmptyPluginRegistry(): PluginRegistry {
     channels: [],
     providers: [],
     sttProviders: [],
+    ttsProviders: [],
     gatewayHandlers: {},
     httpHandlers: [],
     httpRoutes: [],
@@ -491,6 +501,34 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     });
   };
 
+  const registerTtsProvider = (record: PluginRecord, provider: TtsProviderImpl) => {
+    const id = provider.id.trim();
+    if (!id) {
+      pushDiagnostic({
+        level: "error",
+        pluginId: record.id,
+        source: record.source,
+        message: "TTS provider registration missing id",
+      });
+      return;
+    }
+    if (registry.ttsProviders.some((entry) => entry.provider.id === id)) {
+      pushDiagnostic({
+        level: "error",
+        pluginId: record.id,
+        source: record.source,
+        message: `TTS provider already registered: ${id}`,
+      });
+      return;
+    }
+    record.ttsProviderIds.push(id);
+    registry.ttsProviders.push({
+      pluginId: record.id,
+      provider,
+      source: record.source,
+    });
+  };
+
   const registerTypedHook = <K extends PluginHookName>(
     record: PluginRecord,
     hookName: K,
@@ -542,6 +580,7 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       registerService: (service) => registerService(record, service),
       registerCommand: (command) => registerCommand(record, command),
       registerSttProvider: (provider) => registerSttProvider(record, provider),
+      registerTtsProvider: (provider) => registerTtsProvider(record, provider),
       resolvePath: (input: string) => resolveUserPath(input),
       on: (hookName, handler, opts) => {
         if (DEAD_HOOKS.has(hookName as string)) {
@@ -572,6 +611,7 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     registerService,
     registerCommand,
     registerSttProvider,
+    registerTtsProvider,
     registerHook,
     registerTypedHook,
   };

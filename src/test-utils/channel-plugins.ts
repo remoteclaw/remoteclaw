@@ -20,6 +20,7 @@ export const createTestRegistry = (channels: TestChannelRegistration[] = []): Pl
   channels: channels as unknown as PluginRegistry["channels"],
   providers: [],
   sttProviders: [],
+  ttsProviders: [],
   gatewayHandlers: {},
   httpHandlers: [],
   httpRoutes: [],

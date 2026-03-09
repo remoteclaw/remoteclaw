@@ -129,10 +129,10 @@ export function parseTtsDirectives(
             if (!policy.allowProvider) {
               break;
             }
-            if (rawValue === "openai" || rawValue === "elevenlabs" || rawValue === "edge") {
-              overrides.provider = rawValue;
+            if (rawValue.trim()) {
+              overrides.provider = rawValue.trim();
             } else {
-              warnings.push(`unsupported provider "${rawValue}"`);
+              warnings.push(`empty provider value`);
             }
             break;
           case "voice":

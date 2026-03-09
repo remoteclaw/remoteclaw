@@ -37,36 +37,38 @@ function makeRecord(overrides?: Partial<PluginRecord>): PluginRecord {
   };
 }
 
-describe("registerSttProvider", () => {
-  it("registers a plugin STT provider", () => {
-    const { registry, registerSttProvider } = createPluginRegistry(makeRegistryParams());
+describe("registerTtsProvider", () => {
+  it("registers a plugin TTS provider", () => {
+    const { registry, registerTtsProvider } = createPluginRegistry(makeRegistryParams());
     const record = makeRecord();
     const provider = {
-      id: "my-custom-stt",
-      transcribeAudio: async () => ({ text: "hello" }),
+      id: "my-custom-tts",
+      requiresApiKey: true as const,
+      synthesize: async () => ({ audioBuffer: Buffer.from("audio"), format: "mp3" }),
     };
 
-    registerSttProvider(record, provider);
+    registerTtsProvider(record, provider);
 
-    expect(registry.sttProviders).toHaveLength(1);
-    expect(registry.sttProviders[0]).toMatchObject({
+    expect(registry.ttsProviders).toHaveLength(1);
+    expect(registry.ttsProviders[0]).toMatchObject({
       pluginId: "test-plugin",
       provider,
     });
-    expect(record.sttProviderIds).toEqual(["my-custom-stt"]);
+    expect(record.ttsProviderIds).toEqual(["my-custom-tts"]);
   });
 
   it("rejects provider with empty id", () => {
-    const { registry, registerSttProvider } = createPluginRegistry(makeRegistryParams());
+    const { registry, registerTtsProvider } = createPluginRegistry(makeRegistryParams());
     const record = makeRecord();
     const provider = {
       id: "  ",
-      transcribeAudio: async () => ({ text: "" }),
+      requiresApiKey: false as const,
+      synthesize: async () => ({ audioBuffer: Buffer.from(""), format: "mp3" }),
     };
 
-    registerSttProvider(record, provider);
+    registerTtsProvider(record, provider);
 
-    expect(registry.sttProviders).toHaveLength(0);
+    expect(registry.ttsProviders).toHaveLength(0);
     expect(registry.diagnostics).toHaveLength(1);
     expect(registry.diagnostics[0]).toMatchObject({
       level: "error",
@@ -76,21 +78,23 @@ describe("registerSttProvider", () => {
   });
 
   it("rejects duplicate provider id", () => {
-    const { registry, registerSttProvider } = createPluginRegistry(makeRegistryParams());
+    const { registry, registerTtsProvider } = createPluginRegistry(makeRegistryParams());
     const record = makeRecord();
     const provider1 = {
-      id: "my-stt",
-      transcribeAudio: async () => ({ text: "one" }),
+      id: "my-tts",
+      requiresApiKey: true as const,
+      synthesize: async () => ({ audioBuffer: Buffer.from("one"), format: "mp3" }),
     };
     const provider2 = {
-      id: "my-stt",
-      transcribeAudio: async () => ({ text: "two" }),
+      id: "my-tts",
+      requiresApiKey: true as const,
+      synthesize: async () => ({ audioBuffer: Buffer.from("two"), format: "mp3" }),
     };
 
-    registerSttProvider(record, provider1);
-    registerSttProvider(record, provider2);
+    registerTtsProvider(record, provider1);
+    registerTtsProvider(record, provider2);
 
-    expect(registry.sttProviders).toHaveLength(1);
+    expect(registry.ttsProviders).toHaveLength(1);
     expect(registry.diagnostics).toHaveLength(1);
     expect(registry.diagnostics[0]).toMatchObject({
       level: "error",
@@ -103,14 +107,15 @@ describe("registerSttProvider", () => {
     const record = makeRecord();
     const api = createApi(record, { config: EMPTY_CONFIG });
     const provider = {
-      id: "api-stt",
-      transcribeAudio: async () => ({ text: "via api" }),
+      id: "api-tts",
+      requiresApiKey: false as const,
+      synthesize: async () => ({ audioBuffer: Buffer.from("via api"), format: "opus" }),
     };
 
-    api.registerSttProvider(provider);
+    api.registerTtsProvider(provider);
 
-    expect(registry.sttProviders).toHaveLength(1);
-    expect(registry.sttProviders[0].provider.id).toBe("api-stt");
-    expect(record.sttProviderIds).toEqual(["api-stt"]);
+    expect(registry.ttsProviders).toHaveLength(1);
+    expect(registry.ttsProviders[0].provider.id).toBe("api-tts");
+    expect(record.ttsProviderIds).toEqual(["api-tts"]);
   });
 });

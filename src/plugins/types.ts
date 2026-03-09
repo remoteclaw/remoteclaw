@@ -13,6 +13,7 @@ import type { InternalHookHandler } from "../hooks/internal-hooks.js";
 import type { HookEntry } from "../hooks/types.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { SttProvider } from "../stt/types.js";
+import type { TtsProviderImpl } from "../tts/types.js";
 import type { AgentMessage } from "../types/agent-types.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { PluginRuntime } from "./runtime/types.js";
@@ -276,6 +277,7 @@ export type RemoteClawPluginApi = {
    */
   registerCommand: (command: RemoteClawPluginCommandDefinition) => void;
   registerSttProvider: (provider: SttProvider) => void;
+  registerTtsProvider: (provider: TtsProviderImpl) => void;
   resolvePath: (input: string) => string;
   /** Register a lifecycle hook handler */
   on: <K extends PluginHookName>(

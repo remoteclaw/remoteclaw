@@ -167,6 +167,23 @@ describe("CodexCliRuntime", () => {
       expect(args[imageIndices[1] + 1]).toBe("/tmp/b.jpg");
     });
 
+    it("inserts -- separator before prompt when images are present", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          prompt: "Describe this",
+          media: [{ mimeType: "image/png", filePath: "/tmp/photo.png" }],
+        }),
+      );
+      const separatorIdx = args.indexOf("--");
+      expect(separatorIdx).toBeGreaterThan(-1);
+      expect(args[separatorIdx + 1]).toContain("Describe this");
+    });
+
+    it("does not insert -- separator when no images are present", () => {
+      const args = runtime.testBuildArgs(makeParams());
+      expect(args).not.toContain("--");
+    });
+
     it("does not include --image when no media is provided", () => {
       const args = runtime.testBuildArgs(makeParams());
       expect(args).not.toContain("--image");
@@ -193,14 +210,30 @@ describe("CodexCliRuntime", () => {
       expect(args).not.toContain("--image");
     });
 
-    it("does not include --image on session resume", () => {
+    it("forces new session with --image when images are present on resume", () => {
       const args = runtime.testBuildArgs(
         makeParams({
           sessionId: "thread-abc",
           media: [{ mimeType: "image/png", filePath: "/tmp/photo.png" }],
         }),
       );
-      expect(args).not.toContain("--image");
+      // Resume subcommand does not support --image, so force a new session
+      expect(args).not.toContain("resume");
+      expect(args).not.toContain("thread-abc");
+      expect(args).toContain("--image");
+      expect(args[args.indexOf("--image") + 1]).toBe("/tmp/photo.png");
+    });
+
+    it("includes thread context when forcing new session for images on resume", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          sessionId: "thread-abc",
+          threadContext: "Previous conversation context",
+          media: [{ mimeType: "image/png", filePath: "/tmp/photo.png" }],
+        }),
+      );
+      const prompt = args[args.length - 1];
+      expect(prompt).toContain("Previous conversation context");
     });
 
     it("places --image flags before the prompt", () => {

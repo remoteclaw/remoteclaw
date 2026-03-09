@@ -79,25 +79,35 @@ export class CodexCliRuntime extends CLIRuntimeBase {
   // ── CLIRuntimeBase abstract method implementations ────────────────────
 
   protected buildArgs(params: AgentExecuteParams): string[] {
-    const composed = this.composePrompt(params);
+    const hasImages = params.media?.some((a) => a.mimeType.startsWith("image/") && a.filePath);
 
-    if (params.sessionId) {
-      // Session resume: codex exec resume --json <id> <prompt>
+    if (params.sessionId && !hasImages) {
+      // Pure text resume: codex exec resume --json <id> <prompt>
       // Note: --color is not supported by the resume subcommand.
-      // Images are skipped on resume — Codex propagates conversation context internally.
+      const composed = this.composePrompt(params);
       return ["exec", "resume", "--json", params.sessionId, composed];
     }
 
     // New session: codex exec --json --color never [--image ...] <prompt>
+    // When images are present on resume, force a new session because the Codex
+    // resume subcommand does not support --image.  Clear sessionId so
+    // composePrompt includes thread context (the new session has no history).
+    const promptParams = params.sessionId ? { ...params, sessionId: undefined } : params;
+    const composed = this.composePrompt(promptParams);
+
     const args = ["exec", "--json", "--color", "never"];
 
-    // Append --image flags for each image attachment with a file path
-    if (params.media) {
-      for (const attachment of params.media) {
+    // Append --image flags for each image attachment with a file path.
+    // The Codex --image flag is variadic (<FILE>...) so a `--` separator
+    // is required before the positional prompt to prevent it from being
+    // consumed as another image path.
+    if (hasImages) {
+      for (const attachment of params.media!) {
         if (attachment.mimeType.startsWith("image/") && attachment.filePath) {
           args.push("--image", attachment.filePath);
         }
       }
+      args.push("--");
     }
 
     args.push(composed);

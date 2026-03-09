@@ -8,6 +8,7 @@ import {
   clearWizardSection,
   consolidateAuthProfiles,
   detectOpenClawInstallation,
+  discoverImportableFiles,
   discoverSourceAuthProfileIds,
   discoverSourceAuthProfiles,
   importCommand,
@@ -929,6 +930,86 @@ describe("isImportableRootEntry", () => {
   });
 });
 
+describe("discoverImportableFiles", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "discover-import-test-"));
+  });
+
+  afterEach(async () => {
+    await fsp.rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("discovers files matching glob patterns", async () => {
+    await fsp.mkdir(path.join(tmpDir, "agents", "main", "sessions"), { recursive: true });
+    await fsp.writeFile(path.join(tmpDir, "agents", "main", "sessions", "data.bin"), "bin");
+    await fsp.writeFile(path.join(tmpDir, ".env"), "KEY=value");
+    await fsp.writeFile(path.join(tmpDir, "openclaw.json"), "{}");
+
+    const files = await discoverImportableFiles(tmpDir);
+
+    expect(files).toContain(".env");
+    expect(files).toContain("openclaw.json");
+    expect(files).toContain(path.join("agents", "main", "sessions", "data.bin"));
+  });
+
+  it("excludes agent working directories (only sessions are imported)", async () => {
+    await fsp.mkdir(path.join(tmpDir, "agents", "main", "agent"), { recursive: true });
+    await fsp.mkdir(path.join(tmpDir, "agents", "main", "sessions"), { recursive: true });
+    await fsp.writeFile(
+      path.join(tmpDir, "agents", "main", "agent", "auth-profiles.json"),
+      '{"profiles":{}}',
+    );
+    await fsp.writeFile(path.join(tmpDir, "agents", "main", "agent", "auth.json"), "{}");
+    await fsp.writeFile(path.join(tmpDir, "agents", "main", "agent", "data.bin"), "bin");
+    await fsp.writeFile(path.join(tmpDir, "agents", "main", "sessions", "log.json"), "{}");
+
+    const files = await discoverImportableFiles(tmpDir);
+
+    expect(files).toContain(path.join("agents", "main", "sessions", "log.json"));
+    expect(files).not.toContain(path.join("agents", "main", "agent", "auth-profiles.json"));
+    expect(files).not.toContain(path.join("agents", "main", "agent", "auth.json"));
+    expect(files).not.toContain(path.join("agents", "main", "agent", "data.bin"));
+  });
+
+  it("excludes files outside importable patterns", async () => {
+    await fsp.mkdir(path.join(tmpDir, "completions"));
+    await fsp.writeFile(path.join(tmpDir, "completions", "openclaw.zsh"), "# completions");
+    await fsp.writeFile(path.join(tmpDir, "restart-sentinel.json"), "{}");
+    await fsp.writeFile(path.join(tmpDir, ".env"), "KEY=value");
+
+    const files = await discoverImportableFiles(tmpDir);
+
+    expect(files).toContain(".env");
+    expect(files).not.toContain(path.join("completions", "openclaw.zsh"));
+    expect(files).not.toContain("restart-sentinel.json");
+  });
+
+  it("discovers workspace-{agentId} files", async () => {
+    await fsp.mkdir(path.join(tmpDir, "workspace-helper"), { recursive: true });
+    await fsp.writeFile(path.join(tmpDir, "workspace-helper", "project.json"), "{}");
+
+    const files = await discoverImportableFiles(tmpDir);
+
+    expect(files).toContain(path.join("workspace-helper", "project.json"));
+  });
+
+  it("does not include directories as entries", async () => {
+    await fsp.mkdir(path.join(tmpDir, "agents", "main", "sessions"), { recursive: true });
+    await fsp.writeFile(path.join(tmpDir, "agents", "main", "sessions", "data.txt"), "data");
+
+    const files = await discoverImportableFiles(tmpDir);
+
+    // Should contain the file but not the intermediate directory
+    expect(files).toContain(path.join("agents", "main", "sessions", "data.txt"));
+    for (const f of files) {
+      const stat = await fsp.stat(path.join(tmpDir, f));
+      expect(stat.isFile()).toBe(true);
+    }
+  });
+});
+
 describe("stampImportedConfigVersion", () => {
   it("sets meta.lastTouchedVersion and meta.lastTouchedAt", () => {
     const input = JSON.stringify({ gateway: { port: 18789 } });
@@ -1059,10 +1140,13 @@ describe("importCommand", () => {
     expect(result.skippedEntries).toContain("restart-sentinel.json");
   });
 
-  it("copies all contents within allowed directories without filtering", async () => {
-    await fsp.mkdir(path.join(sourceDir, "agents", "main", "agent"), { recursive: true });
-    await fsp.writeFile(path.join(sourceDir, "agents", "main", "agent", "custom-data.bin"), "bin");
-    await fsp.writeFile(path.join(sourceDir, "agents", "main", "agent", "notes.txt"), "notes");
+  it("copies files matching glob patterns within allowed directories", async () => {
+    await fsp.mkdir(path.join(sourceDir, "agents", "main", "sessions"), { recursive: true });
+    await fsp.writeFile(
+      path.join(sourceDir, "agents", "main", "sessions", "custom-data.bin"),
+      "bin",
+    );
+    await fsp.writeFile(path.join(sourceDir, "agents", "main", "sessions", "notes.txt"), "notes");
 
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
@@ -1070,10 +1154,12 @@ describe("importCommand", () => {
     const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
 
     expect(result.copiedFiles).toHaveLength(2);
-    expect(fs.existsSync(path.join(targetDir, "agents", "main", "agent", "custom-data.bin"))).toBe(
+    expect(
+      fs.existsSync(path.join(targetDir, "agents", "main", "sessions", "custom-data.bin")),
+    ).toBe(true);
+    expect(fs.existsSync(path.join(targetDir, "agents", "main", "sessions", "notes.txt"))).toBe(
       true,
     );
-    expect(fs.existsSync(path.join(targetDir, "agents", "main", "agent", "notes.txt"))).toBe(true);
   });
 
   it("imports workspace-{agentId} directories", async () => {

@@ -693,64 +693,88 @@ export function resolveTargetFilename(filename: string): string {
 }
 
 /**
- * Top-level entries in the OpenClaw state directory that should be imported.
+ * Glob patterns that define which files are importable from an OpenClaw
+ * state directory.
  *
- * Only entries in this set (plus the `workspace-*` pattern) are copied from
- * the source root. Everything else — generated caches (`completions/`),
- * runtime state (`delivery-queue/`, `sandbox/`, `restart-sentinel.json`),
- * identity data (`identity/`), and removed subsystems (`packs/`) — is
- * intentionally skipped.
+ * Every file that gets copied must explicitly match a pattern — there is
+ * no implicit recursion. Patterns use `**​/*` for explicit recursive
+ * matching within allowed directories.
  *
- * Sub-directories within importable entries are copied recursively without
- * further filtering.
+ * Everything else — generated caches (`completions/`), runtime state
+ * (`delivery-queue/`, `sandbox/`, `restart-sentinel.json`), identity data
+ * (`identity/`), and removed subsystems (`packs/`) — is intentionally
+ * not matched.
+ *
+ * Auth store files (`auth-profiles.json`, `auth.json`) inside agent dirs
+ * are NOT matched here — they are handled separately by
+ * {@link discoverSourceAuthProfiles} + {@link consolidateAuthProfiles}.
  */
-const IMPORTABLE_ROOT_ENTRIES = new Set([
-  // Config files
+const IMPORTABLE_GLOB_PATTERNS: string[] = [
+  // Config files (root level)
   OPENCLAW_CONFIG_FILENAME, // openclaw.json → remoteclaw.json
   REMOTECLAW_CONFIG_FILENAME, // remoteclaw.json (partially migrated source)
   ".env",
 
-  // Agent state
-  "agents",
-  "agent", // Legacy root-level agent dir (pre-migration layout)
-  "sessions", // Legacy sessions dir
+  // Agent sessions (transcripts, metadata)
+  "agents/*/sessions/**/*",
+
+  // Legacy root-level session dirs
+  "agent/sessions/**/*",
+  "sessions/**/*",
 
   // Credentials and auth
-  "credentials",
+  "credentials/**/*",
 
   // User customizations
-  "extensions",
-  "hooks",
-  "includes",
+  "extensions/**/*",
+  "hooks/**/*",
+  "includes/**/*",
 
   // Channel state
-  "telegram",
+  "telegram/**/*",
 
   // Media and workspaces
-  "media",
-  "workspace",
+  "media/**/*",
+  "workspace/**/*",
+
+  // Dynamic workspace directories: workspace-{agentId}
+  "workspace-*/**/*",
 
   // Scheduled jobs
-  "cron",
+  "cron/**/*",
 
   // Paired device registry
-  "devices",
+  "devices/**/*",
 
   // User-authored canvas content
-  "canvas",
-]);
+  "canvas/**/*",
+];
 
 /**
  * Check whether a root-level entry name should be imported.
- * Matches the static allowlist plus `workspace-{agentId}` directories.
+ * Derived from {@link IMPORTABLE_GLOB_PATTERNS} to keep a single source of truth.
  */
 export function isImportableRootEntry(name: string): boolean {
-  if (IMPORTABLE_ROOT_ENTRIES.has(name)) {
-    return true;
-  }
-  // Dynamic workspace directories: workspace-{agentId}
-  if (name.startsWith("workspace-") && name.length > "workspace-".length) {
-    return true;
+  for (const pattern of IMPORTABLE_GLOB_PATTERNS) {
+    const slashIdx = pattern.indexOf("/");
+    if (slashIdx === -1) {
+      // Root-level file pattern (no slash) — exact match
+      if (pattern === name) {
+        return true;
+      }
+    } else {
+      // Directory pattern — match the first segment
+      const firstSegment = pattern.slice(0, slashIdx);
+      if (firstSegment.includes("*")) {
+        // Dynamic pattern like "workspace-*/**/*" — prefix match
+        const prefix = firstSegment.slice(0, firstSegment.indexOf("*"));
+        if (name.startsWith(prefix) && name.length > prefix.length) {
+          return true;
+        }
+      } else if (name === firstSegment) {
+        return true;
+      }
+    }
   }
   return false;
 }
@@ -763,82 +787,78 @@ function isConfigFile(filename: string): boolean {
 }
 
 /**
- * Recursively copy a directory, transforming config files along the way.
+ * Discover all importable files in a source directory using glob patterns.
  *
- * When `filterRoot` is true (used for the top-level source directory),
- * only entries matching the importable allowlist are processed.
- * Sub-directories are always copied in full without filtering.
+ * Returns relative paths (from sourceDir) for files that match
+ * {@link IMPORTABLE_GLOB_PATTERNS}.
  */
-async function copyDirectory(params: {
+export async function discoverImportableFiles(sourceDir: string): Promise<string[]> {
+  const files: string[] = [];
+  for await (const entry of fsp.glob(IMPORTABLE_GLOB_PATTERNS, { cwd: sourceDir })) {
+    const fullPath = path.join(sourceDir, entry);
+    const stat = await fsp.stat(fullPath);
+    if (!stat.isFile()) {
+      continue;
+    }
+    files.push(entry);
+  }
+  return files;
+}
+
+/**
+ * Copy a list of discovered files from source to target, applying config
+ * transforms along the way.
+ */
+async function copyImportableFiles(params: {
   sourceDir: string;
   targetDir: string;
+  files: string[];
   dryRun: boolean;
-  filterRoot: boolean;
   result: ImportResult;
   discoveredAuthProfileIds: string[];
 }): Promise<void> {
-  const { sourceDir, targetDir, dryRun, filterRoot, result } = params;
+  const { sourceDir, targetDir, files, dryRun, result } = params;
 
-  const entries = await fsp.readdir(sourceDir, { withFileTypes: true });
+  for (const relPath of files) {
+    const dir = path.dirname(relPath);
+    const basename = path.basename(relPath);
+    const targetBasename = resolveTargetFilename(basename);
+    const targetRelPath = path.join(dir, targetBasename);
+    const sourcePath = path.join(sourceDir, relPath);
+    const targetPath = path.join(targetDir, targetRelPath);
 
-  if (!dryRun) {
-    await fsp.mkdir(targetDir, { recursive: true });
-  }
-
-  for (const entry of entries) {
-    if (filterRoot && !isImportableRootEntry(entry.name)) {
-      result.skippedEntries.push(entry.name);
-      continue;
+    if (!dryRun) {
+      await fsp.mkdir(path.dirname(targetPath), { recursive: true });
     }
 
-    const sourcePath = path.join(sourceDir, entry.name);
-    const targetFilename = resolveTargetFilename(entry.name);
-    const targetPath = path.join(targetDir, targetFilename);
-
-    if (entry.isDirectory()) {
-      await copyDirectory({
-        sourceDir: sourcePath,
-        targetDir: targetPath,
-        dryRun,
-        filterRoot: false,
-        result,
-        discoveredAuthProfileIds: params.discoveredAuthProfileIds,
-      });
-    } else if (entry.isFile()) {
-      // Skip auth-profiles.json files — they are consolidated into the
-      // global auth store separately, not copied per-agent.
-      if (entry.name === AUTH_PROFILES_FILENAME) {
-        continue;
-      }
-      if (isConfigFile(entry.name)) {
-        const content = await fsp.readFile(sourcePath, "utf-8");
-        const { content: transformed, renames } = transformConfigContent(content);
-        // Apply structural config transforms to the main config file
-        const isMainConfig = entry.name === OPENCLAW_CONFIG_FILENAME;
-        const final = isMainConfig
-          ? stampImportedConfigVersion(
-              materializeAuthDefaults(
-                materializeWorkspaceDefaults(
-                  clearWizardSection(stripUnrecognizedConfigKeys(stripSchemaField(transformed))),
-                ),
-                params.discoveredAuthProfileIds,
+    if (isConfigFile(basename)) {
+      const content = await fsp.readFile(sourcePath, "utf-8");
+      const { content: transformed, renames } = transformConfigContent(content);
+      // Apply structural config transforms to the root-level main config only
+      const isMainConfig = basename === OPENCLAW_CONFIG_FILENAME && (dir === "." || dir === "");
+      const final = isMainConfig
+        ? stampImportedConfigVersion(
+            materializeAuthDefaults(
+              materializeWorkspaceDefaults(
+                clearWizardSection(stripUnrecognizedConfigKeys(stripSchemaField(transformed))),
               ),
-            )
-          : transformed;
-        if (renames.length > 0 || final !== transformed) {
-          result.transformedFiles.push(targetPath);
-          result.envVarRenames.push(...renames);
-        }
-        if (!dryRun) {
-          await fsp.writeFile(targetPath, final, "utf-8");
-        }
-        result.copiedFiles.push(targetPath);
-      } else {
-        if (!dryRun) {
-          await fsp.copyFile(sourcePath, targetPath);
-        }
-        result.copiedFiles.push(targetPath);
+              params.discoveredAuthProfileIds,
+            ),
+          )
+        : transformed;
+      if (renames.length > 0 || final !== transformed) {
+        result.transformedFiles.push(targetPath);
+        result.envVarRenames.push(...renames);
       }
+      if (!dryRun) {
+        await fsp.writeFile(targetPath, final, "utf-8");
+      }
+      result.copiedFiles.push(targetPath);
+    } else {
+      if (!dryRun) {
+        await fsp.copyFile(sourcePath, targetPath);
+      }
+      result.copiedFiles.push(targetPath);
     }
   }
 }
@@ -912,11 +932,18 @@ export async function importCommand(
   const discoveredAuthProfiles = discoverSourceAuthProfiles(sourcePath);
   const discoveredAuthProfileIds = [...new Set(discoveredAuthProfiles.map((p) => p.id))];
 
-  await copyDirectory({
+  const importableFiles = await discoverImportableFiles(sourcePath);
+
+  // Compute skipped root entries for reporting
+  const allRootEntries = await fsp.readdir(sourcePath);
+  const matchedRoots = new Set(importableFiles.map((f) => f.split("/")[0]));
+  result.skippedEntries = allRootEntries.filter((e) => !matchedRoots.has(e));
+
+  await copyImportableFiles({
     sourceDir: sourcePath,
     targetDir,
+    files: importableFiles,
     dryRun: Boolean(opts.dryRun),
-    filterRoot: true,
     result,
     discoveredAuthProfileIds,
   });

@@ -298,14 +298,13 @@ export async function runPreparedReply(
     : threadStarterBody
       ? `[Thread starter - for context]\n${threadStarterBody}`
       : undefined;
-  const prefixedBody = [threadContextNote, prefixedBodyBase].filter(Boolean).join("\n\n");
   const mediaNote = buildInboundMediaNote(ctx);
   const mediaReplyHint = mediaNote
     ? "To send an image back, prefer the message tool (media/path/filePath). If you must inline, use MEDIA:https://example.com/image.jpg (spaces ok, quote if needed) or a safe relative path like MEDIA:./image.jpg. Avoid absolute paths (MEDIA:/...) and ~ paths — they are blocked for security. Keep caption in the text body."
     : undefined;
   const prefixedCommandBody = mediaNote
-    ? [mediaNote, mediaReplyHint, prefixedBody ?? ""].filter(Boolean).join("\n").trim()
-    : prefixedBody;
+    ? [mediaNote, mediaReplyHint, prefixedBodyBase ?? ""].filter(Boolean).join("\n").trim()
+    : prefixedBodyBase;
   if (resetTriggered && command.isAuthorizedSender) {
     await sendResetSessionNotice({
       ctx,
@@ -326,10 +325,9 @@ export async function runPreparedReply(
     sessionEntry,
     resolveSessionFilePathOptions({ agentId, storePath }),
   );
-  const queueBodyBase = [threadContextNote, effectiveBaseBody].filter(Boolean).join("\n\n");
   const queuedBody = mediaNote
-    ? [mediaNote, mediaReplyHint, queueBodyBase].filter(Boolean).join("\n").trim()
-    : queueBodyBase;
+    ? [mediaNote, mediaReplyHint, effectiveBaseBody].filter(Boolean).join("\n").trim()
+    : effectiveBaseBody;
   const resolvedQueue = resolveQueueSettings({
     cfg,
     channel: sessionCtx.Provider,
@@ -388,6 +386,7 @@ export async function runPreparedReply(
       blockReplyBreak: resolvedBlockStreamingBreak,
       ownerNumbers: command.ownerList.length > 0 ? command.ownerList : undefined,
       extraSystemPrompt: extraSystemPrompt || undefined,
+      threadContext: threadContextNote,
       ...(isReasoningTagProvider(provider) ? { enforceFinalTag: true } : {}),
     },
   };

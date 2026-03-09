@@ -131,6 +131,7 @@ function buildChannelMessage(params: {
   messageToolHints: string[] | undefined;
   senderIsOwner?: boolean;
   extraSystemPrompt?: string;
+  threadContext?: string;
   userName?: string;
   agentId?: string;
   timezone?: string;
@@ -149,6 +150,7 @@ function buildChannelMessage(params: {
     messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
     senderIsOwner: params.senderIsOwner,
     extraContext: params.extraSystemPrompt || undefined,
+    threadContext: params.threadContext || undefined,
     userName: params.userName || undefined,
     agentId: params.agentId || undefined,
     timezone: params.timezone || undefined,
@@ -298,6 +300,7 @@ export async function runAgentTurnWithFallback(params: {
           messageToolHints,
           senderIsOwner: params.followupRun.run.senderIsOwner,
           extraSystemPrompt: params.followupRun.run.extraSystemPrompt,
+          threadContext: params.followupRun.run.threadContext,
           userName: params.followupRun.run.senderName,
           agentId: params.followupRun.run.agentId,
           timezone: resolveUserTimezone(cfg?.agents?.defaults?.userTimezone),

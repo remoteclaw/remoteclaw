@@ -64,6 +64,7 @@ export type FollowupRun = {
     blockReplyBreak: "text_end" | "message_end";
     ownerNumbers?: string[];
     extraSystemPrompt?: string;
+    threadContext?: string;
     enforceFinalTag?: boolean;
   };
 };

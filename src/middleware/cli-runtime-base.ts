@@ -49,6 +49,11 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     if (params.extraContext) {
       composed += (composed ? "\n\n" : "") + params.extraContext;
     }
+    // Include thread context only on new sessions — on resume the CLI
+    // already has conversation history, so injecting it again is redundant.
+    if (params.threadContext && !params.sessionId) {
+      composed += (composed ? "\n\n" : "") + params.threadContext;
+    }
     composed += (composed ? "\n\n" : "") + params.prompt;
     return composed;
   }

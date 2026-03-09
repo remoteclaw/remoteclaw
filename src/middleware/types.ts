@@ -41,6 +41,8 @@ export type AgentExecuteParams = {
   systemPrompt?: string | undefined;
   /** Extra context inserted between the system prompt and user prompt. */
   extraContext?: string | undefined;
+  /** Thread history or thread-starter context (skipped on session resume). */
+  threadContext?: string | undefined;
   /** Media attachments to include with the prompt. */
   media?: MediaAttachment[] | undefined;
   /** Resume an existing session (CLI-specific session identifier). */
@@ -241,6 +243,8 @@ export type ChannelMessage = {
   messageToolHints?: string[] | undefined;
   /** Extra context to prepend between the system prompt and user text (e.g. per-channel instructions). */
   extraContext?: string | undefined;
+  /** Thread history or thread-starter context (skipped on session resume). */
+  threadContext?: string | undefined;
   /** Provider-specific metadata. */
   metadata?: Record<string, unknown> | undefined;
   /** Whether the message sender is the bot owner. Defaults to `false`. */

@@ -68,8 +68,13 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
       args.push("--mcp-config", JSON.stringify({ mcpServers: params.mcpServers }));
     }
 
-    // Pass system prompt via --append-system-prompt (includes extraContext)
-    const systemContent = [params.systemPrompt, params.extraContext].filter(Boolean).join("\n\n");
+    // Pass system prompt via --append-system-prompt (includes extraContext and
+    // thread context on new sessions — on resume the CLI already has history).
+    const systemParts = [params.systemPrompt, params.extraContext];
+    if (!params.sessionId && params.threadContext) {
+      systemParts.push(params.threadContext);
+    }
+    const systemContent = systemParts.filter(Boolean).join("\n\n");
     if (systemContent) {
       args.push("--append-system-prompt", systemContent);
     }

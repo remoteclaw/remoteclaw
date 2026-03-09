@@ -227,6 +227,7 @@ export class ChannelBridge {
             prompt: message.text,
             systemPrompt,
             extraContext: message.extraContext,
+            threadContext: message.threadContext,
             media: supportedMedia?.length ? supportedMedia : undefined,
             sessionId: existingSessionId,
             mcpServers,

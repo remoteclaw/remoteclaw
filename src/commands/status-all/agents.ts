@@ -1,18 +1,7 @@
-import fs from "node:fs/promises";
-import path from "node:path";
 import { resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { loadSessionStore, resolveStorePath } from "../../config/sessions.js";
 import { listAgentsForGateway } from "../../gateway/session-utils.js";
-
-async function fileExists(p: string): Promise<boolean> {
-  try {
-    await fs.access(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export async function getAgentLocalStatuses(cfg: RemoteClawConfig) {
   const agentList = listAgentsForGateway(cfg);
@@ -27,8 +16,6 @@ export async function getAgentLocalStatuses(cfg: RemoteClawConfig) {
           return null;
         }
       })();
-      const bootstrapPending =
-        workspaceDir != null ? await fileExists(path.join(workspaceDir, "BOOTSTRAP.md")) : null;
       const sessionsPath = resolveStorePath(cfg.session?.store, {
         agentId: agent.id,
       });
@@ -52,7 +39,6 @@ export async function getAgentLocalStatuses(cfg: RemoteClawConfig) {
         id: agent.id,
         name: agent.name,
         workspaceDir,
-        bootstrapPending,
         sessionsPath,
         sessionsCount,
         lastUpdatedAt,
@@ -62,11 +48,9 @@ export async function getAgentLocalStatuses(cfg: RemoteClawConfig) {
   );
 
   const totalSessions = agents.reduce((sum, a) => sum + a.sessionsCount, 0);
-  const bootstrapPendingCount = agents.reduce((sum, a) => sum + (a.bootstrapPending ? 1 : 0), 0);
   return {
     defaultId: agentList.defaultId,
     agents,
     totalSessions,
-    bootstrapPendingCount,
   };
 }

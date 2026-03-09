@@ -415,7 +415,7 @@ That preserves config, auth profiles, WhatsApp creds, sessions, and memory. If y
 remote mode, remember the gateway host owns the session store and workspace.
 
 **Important:** if you only commit/push your workspace to GitHub, you're backing
-up **memory + bootstrap files**, but **not** session history or auth. Those live
+up **memory files**, but **not** session history or auth. Those live
 under `~/.remoteclaw/` (for example `~/.remoteclaw/agents/<agentId>/sessions/`).
 
 Related: [Migrating](/install/migrating), [Where things live on disk](/help/faq#where-does-remoteclaw-store-its-data),
@@ -648,7 +648,7 @@ Docs: [Update](/cli/update), [Updating](/install/updating).
 `remoteclaw onboard` is the recommended setup path. In **local mode** it walks you through:
 
 - **CLI runtime selection** (choose which CLI agent to spawn: `claude`, `gemini`, `codex`, or `opencode`) and **auth setup** (each CLI runtime manages its own credentials — e.g. Anthropic setup-token for Claude, OAuth for Codex)
-- **Workspace** location + bootstrap files
+- **Workspace** location
 - **Gateway settings** (bind/port/auth/tailscale)
 - **Providers** (WhatsApp, Telegram, Discord, Mattermost (plugin), Signal, iMessage)
 - **Daemon install** (LaunchAgent on macOS; systemd user unit on Linux/WSL2)

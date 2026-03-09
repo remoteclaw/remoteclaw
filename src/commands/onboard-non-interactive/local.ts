@@ -241,9 +241,7 @@ export async function runNonInteractiveOnboardingLocal(params: {
   await writeConfigFile(nextConfig);
   logConfigUpdated(runtime);
 
-  await ensureWorkspaceAndSessions(workspaceDir, runtime, {
-    skipBootstrap: Boolean(nextConfig.agents?.defaults?.skipBootstrap),
-  });
+  await ensureWorkspaceAndSessions(workspaceDir, runtime);
 
   if (opts.installDaemon) {
     const { installGatewayDaemonNonInteractive } = await import("./local/daemon-install.js");

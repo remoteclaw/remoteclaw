@@ -218,7 +218,6 @@ Each event includes:
     commandSource?: string,    // e.g., 'whatsapp', 'telegram'
     senderId?: string,
     workspaceDir?: string,
-    bootstrapFiles?: WorkspaceBootstrapFile[],
     cfg?: RemoteClawConfig,
     // Message events (see Message Events section for full details):
     from?: string,             // message:received
@@ -240,10 +239,6 @@ Triggered when agent commands are issued:
 - **`command:new`**: When `/new` command is issued
 - **`command:reset`**: When `/reset` command is issued
 - **`command:stop`**: When `/stop` command is issued
-
-### Agent Events
-
-- **`agent:bootstrap`**: Before workspace bootstrap files are injected (hooks may mutate `context.bootstrapFiles`)
 
 ### Gateway Events
 

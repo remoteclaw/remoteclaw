@@ -30,7 +30,6 @@ type AgentStatusLike = {
   agents: Array<{
     id: string;
     name?: string | null;
-    bootstrapPending?: boolean | null;
     sessionsCount: number;
     lastActiveAgeMs?: number | null;
     sessionsPath: string;
@@ -121,12 +120,6 @@ export async function buildStatusAllReportLines(params: {
 
   const agentRows = params.agentStatus.agents.map((a) => ({
     Agent: a.name?.trim() ? `${a.id} (${a.name.trim()})` : a.id,
-    BootstrapFile:
-      a.bootstrapPending === true
-        ? warn("PRESENT")
-        : a.bootstrapPending === false
-          ? ok("ABSENT")
-          : "unknown",
     Sessions: String(a.sessionsCount),
     Active: a.lastActiveAgeMs != null ? formatTimeAgo(a.lastActiveAgeMs) : "unknown",
     Store: a.sessionsPath,
@@ -136,7 +129,6 @@ export async function buildStatusAllReportLines(params: {
     width: tableWidth,
     columns: [
       { key: "Agent", header: "Agent", minWidth: 12 },
-      { key: "BootstrapFile", header: "Bootstrap file", minWidth: 14 },
       { key: "Sessions", header: "Sessions", align: "right", minWidth: 8 },
       { key: "Active", header: "Active", minWidth: 10 },
       { key: "Store", header: "Store", flex: true, minWidth: 34 },

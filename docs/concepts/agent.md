@@ -1,7 +1,7 @@
 ---
-description: "Agent runtime, workspace contract, and session bootstrap"
+description: "Agent runtime and workspace contract"
 read_when:
-  - Changing agent runtime, workspace bootstrap, or session behavior
+  - Changing agent runtime, workspace, or session behavior
 title: "Agent Runtime"
 ---
 
@@ -21,7 +21,7 @@ If `agents.defaults.sandbox` is enabled, non-main sessions can override this wit
 per-session workspaces under `agents.defaults.sandbox.workspaceRoot` (see
 [Gateway configuration](/gateway/configuration)).
 
-## Bootstrap files (injected)
+## Workspace files
 
 The workspace is a plain working directory. Agents bring their own configuration
 (e.g. `CLAUDE.md` for Claude Code, `.gemini/` for Gemini CLI). RemoteClaw does

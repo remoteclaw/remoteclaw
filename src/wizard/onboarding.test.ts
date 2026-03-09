@@ -39,15 +39,7 @@ const finalizeOnboardingWizard = vi.hoisted(() =>
       return { launchedTui: false };
     }
 
-    let message: string | undefined;
-    try {
-      await fs.stat(path.join(options.workspaceDir, "BOOTSTRAP.md"));
-      message = "Wake up, my friend!";
-    } catch {
-      message = undefined;
-    }
-
-    await runTui({ deliver: false, message });
+    await runTui({ deliver: false, message: undefined });
     return { launchedTui: true };
   }),
 );
@@ -450,16 +442,10 @@ describe("runOnboardingWizard", () => {
     expect(hasAuthProfile).toBe(true);
   });
 
-  async function runTuiHatchTest(params: {
-    writeBootstrapFile: boolean;
-    expectedMessage: string | undefined;
-  }) {
+  it("launches TUI without auto-delivery when hatching", async () => {
     runTui.mockClear();
 
     const workspaceDir = await makeCaseDir("workspace-");
-    if (params.writeBootstrapFile) {
-      await fs.writeFile(path.join(workspaceDir, "BOOTSTRAP.md"), "{}");
-    }
 
     const select = vi.fn(async (opts: WizardSelectParams<unknown>) => {
       if (opts.message === "How do you want to hatch your bot?") {
@@ -498,17 +484,9 @@ describe("runOnboardingWizard", () => {
     expect(runTui).toHaveBeenCalledWith(
       expect.objectContaining({
         deliver: false,
-        message: params.expectedMessage,
+        message: undefined,
       }),
     );
-  }
-
-  it("launches TUI without auto-delivery when hatching", async () => {
-    await runTuiHatchTest({ writeBootstrapFile: true, expectedMessage: "Wake up, my friend!" });
-  });
-
-  it("offers TUI hatch even without BOOTSTRAP.md", async () => {
-    await runTuiHatchTest({ writeBootstrapFile: false, expectedMessage: undefined });
   });
 
   it("shows the web search hint at the end of onboarding", async () => {

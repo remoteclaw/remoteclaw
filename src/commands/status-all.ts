@@ -284,7 +284,7 @@ export async function statusAllCommand(
         : { Item: "Node service", Value: "unknown" },
       {
         Item: "Agents",
-        Value: `${agentStatus.agents.length} total · ${agentStatus.bootstrapPendingCount} bootstrapping · ${aliveAgents} active · ${agentStatus.totalSessions} sessions`,
+        Value: `${agentStatus.agents.length} total · ${aliveAgents} active · ${agentStatus.totalSessions} sessions`,
       },
     ];
 

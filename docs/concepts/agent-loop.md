@@ -53,12 +53,11 @@ output. This doc explains how that loop is wired end-to-end.
 
 - Workspace is resolved and created; sandboxed runs may redirect to a sandbox workspace root.
 - Skills are loaded (or reused from a snapshot) and injected into env and prompt.
-- Bootstrap/context files are resolved and injected into the system prompt report.
 - A session write lock is acquired; `SessionManager` is opened and prepared before streaming.
 
 ## Prompt assembly + system prompt
 
-- System prompt is built from RemoteClaw's base prompt, skills prompt, bootstrap context, and per-run overrides.
+- System prompt is built from RemoteClaw's base prompt, skills prompt, and per-run overrides.
 - System prompt size budget and compaction reserve tokens are enforced.
 - See [System prompt](/concepts/system-prompt) for what the model sees.
 
@@ -71,8 +70,6 @@ RemoteClaw has two hook systems:
 
 ### Internal hooks (Gateway hooks)
 
-- **`agent:bootstrap`**: runs while building bootstrap files before the system prompt is finalized.
-  Use this to add/remove bootstrap context files.
 - **Command hooks**: `/new`, `/reset`, `/stop`, and other command events (see Hooks doc).
 
 See [Hooks](/automation/hooks) for setup and examples.

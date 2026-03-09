@@ -305,9 +305,6 @@ TRASH
 
     assert_file "$config_path"
     assert_dir "$sessions_dir"
-    for file in AGENTS.md BOOTSTRAP.md IDENTITY.md SOUL.md TOOLS.md USER.md; do
-      assert_file "$workspace_dir/$file"
-    done
 
     CONFIG_PATH="$config_path" WORKSPACE_DIR="$workspace_dir" node --input-type=module - <<'"'"'NODE'"'"'
 import fs from "node:fs";

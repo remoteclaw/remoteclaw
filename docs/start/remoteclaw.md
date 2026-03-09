@@ -95,16 +95,6 @@ Optional: choose a different workspace with `agents.defaults.workspace` (support
 }
 ```
 
-If you already ship your own workspace files from a repo, you can disable bootstrap file creation entirely:
-
-```json5
-{
-  agent: {
-    skipBootstrap: true,
-  },
-}
-```
-
 ## The config that turns it into “an assistant”
 
 RemoteClaw defaults to a good assistant setup, but you’ll usually want to tune:

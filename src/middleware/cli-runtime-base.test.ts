@@ -210,59 +210,58 @@ describe("CLIRuntimeBase", () => {
     });
   });
 
-  describe("watchdog timer", () => {
-    it("kills child process after inactivity timeout", async () => {
+  describe("startup timeout", () => {
+    it("kills child process when no output arrives before deadline", async () => {
       const runtime = new TestRuntime("test-cli", 1000);
 
       const promise = collectEvents(runtime.execute(defaultParams));
 
-      // Advance past the watchdog timeout with no output.
+      // Advance past the startup timeout with no output.
       await vi.advanceTimersByTimeAsync(1001);
 
       const events = await promise;
 
       expect(mockChild.kill).toHaveBeenCalledWith("SIGTERM");
       expect(events).toContainEqual(
-        expect.objectContaining({ type: "error", code: "WATCHDOG_TIMEOUT" }),
+        expect.objectContaining({ type: "error", code: "STARTUP_TIMEOUT" }),
       );
     });
 
-    it("resets on each NDJSON line", async () => {
+    it("does not fire after the first NDJSON line is received", async () => {
       const runtime = new TestRuntime("test-cli", 1000);
 
       const promise = collectEvents(runtime.execute(defaultParams));
 
-      // Emit a line at 800ms — should reset the watchdog.
-      await vi.advanceTimersByTimeAsync(800);
+      // Emit a line at 500ms — cancels the startup timer.
+      await vi.advanceTimersByTimeAsync(500);
       mockChild.stdout.write('{"type":"text","text":"alive"}\n');
 
-      // Advance another 800ms (total 1600ms, but only 800ms since last line).
-      await vi.advanceTimersByTimeAsync(800);
-      // Watchdog should NOT have fired yet.
+      // Advance well past the original deadline — no timeout should fire.
+      await vi.advanceTimersByTimeAsync(2000);
       expect(mockChild.kill).not.toHaveBeenCalled();
 
-      // Now advance past the remaining 200ms of the watchdog.
-      await vi.advanceTimersByTimeAsync(201);
+      // Close cleanly.
+      mockChild.stdout.end();
+      mockChild.emit("exit", 0, null);
 
       const events = await promise;
 
-      // We should have the text event, then the watchdog error, then done.
       expect(events[0]).toEqual({ type: "text", text: "alive" });
-      expect(events).toContainEqual(
-        expect.objectContaining({ type: "error", code: "WATCHDOG_TIMEOUT" }),
+      expect(events).not.toContainEqual(
+        expect.objectContaining({ type: "error", code: "STARTUP_TIMEOUT" }),
       );
     });
   });
 
   describe("SIGKILL escalation", () => {
-    it("sends SIGKILL after SIGTERM if process does not exit (watchdog)", async () => {
+    it("sends SIGKILL after SIGTERM if process does not exit (startup timeout)", async () => {
       const stubbornChild = createMockChild({ exitOnKill: false });
       spawnMock.mockReturnValue(stubbornChild);
 
       const runtime = new TestRuntime("test-cli", 1000);
       const promise = collectEvents(runtime.execute(defaultParams));
 
-      // Advance past watchdog timeout → SIGTERM sent.
+      // Advance past startup timeout → SIGTERM sent.
       await vi.advanceTimersByTimeAsync(1001);
       expect(stubbornChild.kill).toHaveBeenCalledWith("SIGTERM");
       expect(stubbornChild.kill).not.toHaveBeenCalledWith("SIGKILL");
@@ -277,18 +276,18 @@ describe("CLIRuntimeBase", () => {
 
       const events = await promise;
       expect(events).toContainEqual(
-        expect.objectContaining({ type: "error", code: "WATCHDOG_TIMEOUT" }),
+        expect.objectContaining({ type: "error", code: "STARTUP_TIMEOUT" }),
       );
     });
 
-    it("cancels SIGKILL timer if process exits after SIGTERM (watchdog)", async () => {
+    it("cancels SIGKILL timer if process exits after SIGTERM (startup timeout)", async () => {
       const stubbornChild = createMockChild({ exitOnKill: false });
       spawnMock.mockReturnValue(stubbornChild);
 
       const runtime = new TestRuntime("test-cli", 1000);
       const promise = collectEvents(runtime.execute(defaultParams));
 
-      // Advance past watchdog → SIGTERM.
+      // Advance past startup timeout → SIGTERM.
       await vi.advanceTimersByTimeAsync(1001);
       expect(stubbornChild.kill).toHaveBeenCalledWith("SIGTERM");
 
@@ -302,7 +301,7 @@ describe("CLIRuntimeBase", () => {
       const events = await promise;
       expect(stubbornChild.kill).not.toHaveBeenCalledWith("SIGKILL");
       expect(events).toContainEqual(
-        expect.objectContaining({ type: "error", code: "WATCHDOG_TIMEOUT" }),
+        expect.objectContaining({ type: "error", code: "STARTUP_TIMEOUT" }),
       );
     });
 

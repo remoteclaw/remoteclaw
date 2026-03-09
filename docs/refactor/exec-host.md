@@ -27,7 +27,6 @@ title: "Exec Host Refactor"
 ## Decisions (locked)
 
 - **Config keys:** `exec.host` + `exec.security` (per-agent override allowed).
-- **Elevation:** keep `/elevated` as an alias for gateway full access.
 - **Ask default:** `on-miss`.
 - **Approvals store:** `~/.remoteclaw/exec-approvals.json` (JSON, no legacy migration).
 - **Runner:** headless system service; UI app hosts a Unix socket for approvals.
@@ -49,7 +48,7 @@ title: "Exec Host Refactor"
 
 - `deny`: always block.
 - `allowlist`: allow only matches.
-- `full`: allow everything (equivalent to elevated).
+- `full`: allow everything.
 
 ### Ask mode
 
@@ -97,9 +96,6 @@ Ask is **independent** of allowlist; allowlist can be used with `always` or `on-
 - `agents.list[].tools.exec.node`
 
 ### Alias
-
-- `/elevated on` = set `tools.exec.host=gateway`, `tools.exec.security=full` for the agent session.
-- `/elevated off` = restore previous exec settings for the agent session.
 
 ## Approvals store (JSON)
 
@@ -257,7 +253,6 @@ Option B:
 
 - `/exec host=<sandbox|gateway|node> security=<deny|allowlist|full> ask=<off|on-miss|always> node=<id>`
 - Per-agent, per-session overrides; non-persistent unless saved via config.
-- `/elevated on|off|ask|full` remains a shortcut for `host=gateway security=full` (with `full` skipping approvals).
 
 ## Cross-platform story
 
@@ -271,7 +266,7 @@ Option B:
 
 - Add config schema for `exec.host`, `exec.security`, `exec.ask`, `exec.node`.
 - Update tool plumbing to respect `exec.host`.
-- Add `/exec` slash command and keep `/elevated` alias.
+- Add `/exec` slash command.
 
 ### Phase 2: approvals store + gateway enforcement
 
@@ -312,4 +307,3 @@ Option B:
 
 - [Exec tool](/tools/exec)
 - [Nodes](/nodes)
-- [Elevated mode](/tools/elevated)

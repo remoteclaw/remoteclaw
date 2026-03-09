@@ -127,7 +127,6 @@ Core parameters:
 - `yieldMs` (auto-background after timeout, default 10000)
 - `background` (immediate background)
 - `timeout` (seconds; kills the process if exceeded, default 1800)
-- `elevated` (bool; run on host if elevated mode is enabled/allowed; only changes behavior when the agent is sandboxed)
 - `host` (`sandbox | gateway | node`)
 - `security` (`deny | allowlist | full`)
 - `ask` (`off | on-miss | always`)
@@ -139,8 +138,6 @@ Notes:
 - Returns `status: "running"` with a `sessionId` when backgrounded.
 - Use `process` to poll/log/write/kill/clear background sessions.
 - If `process` is disallowed, `exec` runs synchronously and ignores `yieldMs`/`background`.
-- `elevated` is gated by `tools.elevated` plus any `agents.list[].tools.elevated` override (both must allow) and is an alias for `host=gateway` + `security=full`.
-- `elevated` only changes behavior when the agent is sandboxed (otherwise it’s a no-op).
 - `host=node` can target a macOS companion app or a headless node host (`remoteclaw node run`).
 - gateway/node approvals and allowlists are controlled by `~/.remoteclaw/exec-approvals.json`.
 

@@ -119,7 +119,7 @@ Current migrations:
 - `routing.transcribeAudio` → `tools.media.audio.models`
 - `bindings[].match.accountID` → `bindings[].match.accountId`
 - `identity` → `agents.list[].identity`
-- `agent.*` → `agents.defaults` + `tools.*` (tools/elevated/exec/sandbox/subagents)
+- `agent.*` → `agents.defaults` + `tools.*` (tools/exec/sandbox/subagents)
 - `browser.ssrfPolicy.allowPrivateNetwork` → `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork`
 
 ### 3) Legacy state migrations (disk layout)

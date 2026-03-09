@@ -26,7 +26,6 @@ export type GatewaySessionRow = {
   systemSent?: boolean;
   abortedLastRun?: boolean;
   verboseLevel?: string;
-  elevatedLevel?: string;
   sendPolicy?: "allow" | "deny";
   inputTokens?: number;
   outputTokens?: number;

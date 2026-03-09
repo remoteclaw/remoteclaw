@@ -1,7 +1,7 @@
 import type { RemoteClawConfig } from "../../../config/config.js";
 import type { SessionEntry } from "../../../config/sessions.js";
 import type { OriginatingChannelType } from "../../templating.js";
-import type { ElevatedLevel, VerboseLevel } from "../directives.js";
+import type { VerboseLevel } from "../directives.js";
 
 export type QueueMode = "steer" | "followup" | "collect" | "steer-backlog" | "interrupt" | "queue";
 
@@ -60,12 +60,6 @@ export type FollowupRun = {
     provider: string;
     model: string;
     verboseLevel?: VerboseLevel;
-    elevatedLevel?: ElevatedLevel;
-    bashElevated?: {
-      enabled: boolean;
-      allowed: boolean;
-      defaultLevel: ElevatedLevel;
-    };
     timeoutMs: number;
     blockReplyBreak: "text_end" | "message_end";
     ownerNumbers?: string[];

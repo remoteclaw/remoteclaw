@@ -487,15 +487,12 @@ function collectRiskyToolExposureContexts(cfg: RemoteClawConfig): {
 
 export function collectAttackSurfaceSummaryFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
   const group = summarizeGroupPolicy(cfg);
-  const elevated = cfg.tools?.elevated?.enabled !== false;
   const webhooksEnabled = cfg.hooks?.enabled === true;
   const internalHooksEnabled = cfg.hooks?.internal?.enabled === true;
   const browserEnabled = cfg.browser?.enabled ?? true;
 
   const detail =
     `groups: open=${group.open}, allowlist=${group.allowlist}` +
-    `\n` +
-    `tools.elevated: ${elevated ? "enabled" : "disabled"}` +
     `\n` +
     `hooks.webhooks: ${webhooksEnabled ? "enabled" : "disabled"}` +
     `\n` +
@@ -1230,19 +1227,6 @@ export function collectExposureMatrixFindings(cfg: RemoteClawConfig): SecurityAu
   const openGroups = listGroupPolicyOpen(cfg);
   if (openGroups.length === 0) {
     return findings;
-  }
-
-  const elevatedEnabled = cfg.tools?.elevated?.enabled !== false;
-  if (elevatedEnabled) {
-    findings.push({
-      checkId: "security.exposure.open_groups_with_elevated",
-      severity: "critical",
-      title: "Open groupPolicy with elevated tools enabled",
-      detail:
-        `Found groupPolicy="open" at:\n${openGroups.map((p) => `- ${p}`).join("\n")}\n` +
-        "With tools.elevated enabled, a prompt injection in those rooms can become a high-impact incident.",
-      remediation: `Set groupPolicy="allowlist" and keep elevated allowlists extremely tight.`,
-    });
   }
 
   const { riskyContexts, hasRuntimeRisk } = collectRiskyToolExposureContexts(cfg);

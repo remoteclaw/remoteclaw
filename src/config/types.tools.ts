@@ -1,5 +1,3 @@
-import type { AgentElevatedAllowFromConfig } from "./types.base.js";
-
 // Stub type: exec-safe-bin-policy infrastructure was gutted.
 type SafeBinProfileFixture = {
   minPositional?: number;
@@ -184,13 +182,6 @@ export type AgentToolsConfig = {
   deny?: string[];
   /** Optional tool policy overrides keyed by provider id or "provider/model". */
   byProvider?: Record<string, ToolPolicyConfig>;
-  /** Per-agent elevated exec gate (can only further restrict global tools.elevated). */
-  elevated?: {
-    /** Enable or disable elevated mode for this agent (default: true). */
-    enabled?: boolean;
-    /** Approved senders for /elevated (per-provider allowlists). */
-    allowFrom?: AgentElevatedAllowFromConfig;
-  };
   /** Exec tool defaults for this agent. */
   exec?: ExecToolConfig;
   /** Filesystem tool path guards. */
@@ -260,13 +251,6 @@ export type ToolsConfig = {
      * - "all": any session (cross-agent still requires tools.agentToAgent)
      */
     visibility?: SessionsToolsVisibility;
-  };
-  /** Elevated exec permissions for the host machine. */
-  elevated?: {
-    /** Enable or disable elevated mode (default: true). */
-    enabled?: boolean;
-    /** Approved senders for /elevated (per-provider allowlists). */
-    allowFrom?: AgentElevatedAllowFromConfig;
   };
   /** Exec tool defaults. */
   exec?: ExecToolConfig;

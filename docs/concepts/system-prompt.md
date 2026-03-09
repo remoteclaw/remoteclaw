@@ -23,7 +23,7 @@ The prompt is intentionally compact and uses fixed sections:
 - **Workspace**: working directory (`agents.defaults.workspace`).
 - **Documentation**: local path to RemoteClaw docs (repo or npm package) and when to read them.
 - **Workspace Files (injected)**: indicates workspace context files are included below.
-- **Sandbox** (when enabled): indicates sandboxed runtime, sandbox paths, and whether elevated exec is available.
+- **Sandbox** (when enabled): indicates sandboxed runtime and sandbox paths.
 - **Current Date & Time**: user-local time, timezone, and time format.
 - **Reply Tags**: optional reply tag syntax for supported channels.
 - **Heartbeats**: heartbeat prompt and ack behavior.

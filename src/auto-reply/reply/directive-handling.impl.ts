@@ -1,14 +1,9 @@
 import { updateSessionStore } from "../../config/sessions.js";
-import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { applyVerboseOverride } from "../../sessions/level-overrides.js";
 import type { ReplyPayload } from "../types.js";
 import type { HandleDirectiveOnlyParams } from "./directive-handling.params.js";
 import { maybeHandleQueueDirective } from "./directive-handling.queue-validation.js";
-import {
-  formatDirectiveAck,
-  enqueueModeSwitchEvents,
-  withOptions,
-} from "./directive-handling.shared.js";
+import { formatDirectiveAck, withOptions } from "./directive-handling.shared.js";
 
 export async function handleDirectiveOnly(
   params: HandleDirectiveOnlyParams,
@@ -67,13 +62,6 @@ export async function handleDirectiveOnly(
       store[sessionKey] = sessionEntry;
     });
   }
-  enqueueModeSwitchEvents({
-    enqueueSystemEvent,
-    sessionEntry,
-    sessionKey,
-    elevatedChanged: false,
-  });
-
   const parts: string[] = [];
   if (directives.hasVerboseDirective && directives.verboseLevel) {
     parts.push(

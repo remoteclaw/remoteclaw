@@ -28,7 +28,6 @@ function makeRun(overrides: Partial<FollowupRun["run"]> = {}): FollowupRun["run"
     ownerNumbers: ["+15550001"],
     enforceFinalTag: false,
     verboseLevel: "off",
-    bashElevated: false,
     timeoutMs: 60_000,
     ...overrides,
   } as unknown as FollowupRun["run"];
@@ -93,7 +92,6 @@ describe("agent-runner-utils", () => {
       provider: "openai",
       model: "gpt-4.1-mini",
       verboseLevel: run.verboseLevel,
-      bashElevated: run.bashElevated,
       timeoutMs: run.timeoutMs,
       runId: "run-1",
     });

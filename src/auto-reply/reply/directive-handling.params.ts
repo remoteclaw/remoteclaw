@@ -2,7 +2,7 @@ import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { MsgContext } from "../templating.js";
 import type { InlineDirectives } from "./directive-handling.parse.js";
-import type { ElevatedLevel, VerboseLevel } from "./directives.js";
+import type { VerboseLevel } from "./directives.js";
 
 export type HandleDirectiveOnlyCoreParams = {
   cfg: RemoteClawConfig;
@@ -11,9 +11,6 @@ export type HandleDirectiveOnlyCoreParams = {
   sessionStore: Record<string, SessionEntry>;
   sessionKey: string;
   storePath?: string;
-  elevatedEnabled: boolean;
-  elevatedAllowed: boolean;
-  elevatedFailures?: Array<{ gate: string; key: string }>;
   messageProviderKey?: string;
   defaultProvider: string;
   defaultModel: string;
@@ -29,7 +26,6 @@ export type HandleDirectiveOnlyCoreParams = {
 
 export type HandleDirectiveOnlyParams = HandleDirectiveOnlyCoreParams & {
   currentVerboseLevel?: VerboseLevel;
-  currentElevatedLevel?: ElevatedLevel;
   surface?: string;
 };
 

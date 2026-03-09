@@ -293,13 +293,6 @@ export type ChannelResolverAdapter = {
   }) => Promise<ChannelResolveResult[]>;
 };
 
-export type ChannelElevatedAdapter = {
-  allowFromFallback?: (params: {
-    cfg: RemoteClawConfig;
-    accountId?: string | null;
-  }) => Array<string | number> | undefined;
-};
-
 export type ChannelCommandAdapter = {
   enforceOwnerForCommands?: boolean;
   skipWhenConfigEmpty?: boolean;

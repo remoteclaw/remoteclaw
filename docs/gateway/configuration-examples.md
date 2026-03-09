@@ -213,7 +213,6 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
       workspace: "~/.remoteclaw/workspace",
       userTimezone: "America/Chicago",
       verboseDefault: "off",
-      elevatedDefault: "on",
       blockStreamingDefault: "off",
       blockStreamingBreak: "text_end",
       blockStreamingChunk: {
@@ -263,18 +262,6 @@ Save to `~/.remoteclaw/remoteclaw.json` and you can DM the bot from that number.
       backgroundMs: 10000,
       timeoutSec: 1800,
       cleanupMs: 1800000,
-    },
-    elevated: {
-      enabled: true,
-      allowFrom: {
-        whatsapp: ["+15555550123"],
-        telegram: ["123456789"],
-        discord: ["123456789012345678"],
-        slack: ["U123"],
-        signal: ["+15555550123"],
-        imessage: ["user@example.com"],
-        webchat: ["session:demo"],
-      },
     },
   },
 
@@ -422,7 +409,6 @@ Only enable direct mutable name/email/nick matching with each channel's `dangero
   },
   agent: {
     workspace: "~/work-remoteclaw",
-    elevated: { enabled: false },
   },
   channels: {
     slack: {

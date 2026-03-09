@@ -65,7 +65,6 @@ const RESERVED_COMMANDS = new Set([
   "think",
   "verbose",
   "reasoning",
-  "elevated",
   // Billing
   "usage",
 ]);

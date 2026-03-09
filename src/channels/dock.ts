@@ -32,7 +32,6 @@ import type {
   ChannelCapabilities,
   ChannelCommandAdapter,
   ChannelConfigAdapter,
-  ChannelElevatedAdapter,
   ChannelGroupAdapter,
   ChannelId,
   ChannelAgentPromptAdapter,
@@ -56,7 +55,6 @@ export type ChannelDock = {
     textChunkLimit?: number;
   };
   streaming?: ChannelDockStreaming;
-  elevated?: ChannelElevatedAdapter;
   config?: Pick<
     ChannelConfigAdapter<unknown>,
     "resolveAllowFrom" | "formatAllowFrom" | "resolveDefaultTo"
@@ -330,10 +328,6 @@ const DOCKS: Record<ChatChannelId, ChannelDock> = {
     },
     outbound: { textChunkLimit: 2000 },
     streaming: DEFAULT_BLOCK_STREAMING_COALESCE,
-    elevated: {
-      allowFromFallback: ({ cfg }) =>
-        cfg.channels?.discord?.allowFrom ?? cfg.channels?.discord?.dm?.allowFrom,
-    },
     config: {
       resolveAllowFrom: ({ cfg, accountId }) => {
         const account = resolveDiscordAccount({ cfg, accountId });
@@ -565,7 +559,6 @@ function buildDockFromPlugin(plugin: ChannelPlugin): ChannelDock {
     streaming: plugin.streaming
       ? { blockStreamingCoalesceDefaults: plugin.streaming.blockStreamingCoalesceDefaults }
       : undefined,
-    elevated: plugin.elevated,
     config: plugin.config
       ? {
           resolveAllowFrom: plugin.config.resolveAllowFrom,

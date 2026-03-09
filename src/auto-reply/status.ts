@@ -35,7 +35,7 @@ import {
   type ChatCommandDefinition,
 } from "./commands-registry.js";
 import type { CommandCategory } from "./commands-registry.types.js";
-import type { ElevatedLevel, VerboseLevel } from "./thinking.js";
+import type { VerboseLevel } from "./thinking.js";
 
 type AgentDefaults = NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>;
 type AgentConfig = Partial<AgentDefaults>;
@@ -62,7 +62,6 @@ type StatusArgs = {
   sessionStorePath?: string;
   groupActivation?: "mention" | "always";
   resolvedVerbose?: VerboseLevel;
-  resolvedElevated?: ElevatedLevel;
   usageLine?: string;
   timeLine?: string;
   queue?: QueueStatus;
@@ -337,11 +336,6 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
   }
 
   const verboseLevel = args.resolvedVerbose ?? args.agent?.verboseDefault ?? "off";
-  const elevatedLevel =
-    args.resolvedElevated ??
-    args.sessionEntry?.elevatedLevel ??
-    args.agent?.elevatedDefault ??
-    "on";
 
   const runtime = { label: resolveRuntimeLabel(args) };
 
@@ -368,13 +362,7 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
   const queueDetails = formatQueueDetails(args.queue);
   const verboseLabel =
     verboseLevel === "full" ? "verbose:full" : verboseLevel === "on" ? "verbose" : null;
-  const elevatedLabel =
-    elevatedLevel && elevatedLevel !== "off"
-      ? elevatedLevel === "on"
-        ? "elevated"
-        : `elevated:${elevatedLevel}`
-      : null;
-  const optionParts = [`Runtime: ${runtime.label}`, verboseLabel, elevatedLabel];
+  const optionParts = [`Runtime: ${runtime.label}`, verboseLabel];
   const optionsLine = optionParts.filter(Boolean).join(" · ");
   const activationParts = [
     groupActivationValue ? `👥 Activation: ${groupActivationValue}` : null,

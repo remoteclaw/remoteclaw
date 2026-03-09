@@ -188,15 +188,13 @@ Tool access is configured under `tools`:
 }
 ```
 
-| Key                        | Type     | Default | Description                                            |
-| -------------------------- | -------- | ------- | ------------------------------------------------------ |
-| `tools.profile`            | string   |         | Tool profile: `minimal`, `coding`, `messaging`, `full` |
-| `tools.allow`              | string[] |         | Allowlist of tool names (glob patterns supported)      |
-| `tools.alsoAllow`          | string[] |         | Additional tools on top of the profile                 |
-| `tools.deny`               | string[] |         | Denylist of tool names                                 |
-| `tools.byProvider`         | object   |         | Per-provider tool policies                             |
-| `tools.elevated.enabled`   | boolean  |         | Enable privileged tool access                          |
-| `tools.elevated.allowFrom` | object   |         | Per-provider user allowlist for elevated tools         |
+| Key                | Type     | Default | Description                                            |
+| ------------------ | -------- | ------- | ------------------------------------------------------ |
+| `tools.profile`    | string   |         | Tool profile: `minimal`, `coding`, `messaging`, `full` |
+| `tools.allow`      | string[] |         | Allowlist of tool names (glob patterns supported)      |
+| `tools.alsoAllow`  | string[] |         | Additional tools on top of the profile                 |
+| `tools.deny`       | string[] |         | Denylist of tool names                                 |
+| `tools.byProvider` | object   |         | Per-provider tool policies                             |
 
 Tool policies can also be set per-agent in `agents.list[].tools` and
 per-channel-group in `channels.<provider>.groups.<id>.tools`.

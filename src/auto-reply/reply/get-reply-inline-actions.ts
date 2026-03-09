@@ -2,7 +2,7 @@ import { getChannelDock } from "../../channels/dock.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
-import type { ElevatedLevel, VerboseLevel } from "../thinking.js";
+import type { VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { getAbortMemory } from "./abort.js";
 import { buildStatusReply, handleCommands } from "./commands.js";
@@ -40,12 +40,8 @@ export async function handleInlineActions(params: {
   command: Parameters<typeof handleCommands>[0]["command"];
   directives: InlineDirectives;
   cleanedBody: string;
-  elevatedEnabled: boolean;
-  elevatedAllowed: boolean;
-  elevatedFailures: Array<{ gate: string; key: string }>;
   defaultActivation: Parameters<typeof buildStatusReply>[0]["defaultGroupActivation"];
   resolvedVerboseLevel: VerboseLevel | undefined;
-  resolvedElevatedLevel: ElevatedLevel;
   provider: string;
   model: string;
   contextTokens: number;
@@ -73,12 +69,8 @@ export async function handleInlineActions(params: {
     command,
     directives: initialDirectives,
     cleanedBody: initialCleanedBody,
-    elevatedEnabled,
-    elevatedAllowed,
-    elevatedFailures,
     defaultActivation,
     resolvedVerboseLevel,
-    resolvedElevatedLevel,
     provider,
     model,
     contextTokens,
@@ -131,7 +123,6 @@ export async function handleInlineActions(params: {
       model,
       contextTokens,
       resolvedVerboseLevel: resolvedVerboseLevel ?? "off",
-      resolvedElevatedLevel,
       isGroup,
       defaultGroupActivation: defaultActivation,
     });
@@ -147,11 +138,6 @@ export async function handleInlineActions(params: {
       agentId,
       agentDir,
       directives,
-      elevated: {
-        enabled: elevatedEnabled,
-        allowed: elevatedAllowed,
-        failures: elevatedFailures,
-      },
       sessionEntry,
       previousSessionEntry,
       sessionStore,
@@ -161,7 +147,6 @@ export async function handleInlineActions(params: {
       workspaceDir,
       defaultGroupActivation: defaultActivation,
       resolvedVerboseLevel: resolvedVerboseLevel ?? "off",
-      resolvedElevatedLevel,
       provider,
       model,
       contextTokens,

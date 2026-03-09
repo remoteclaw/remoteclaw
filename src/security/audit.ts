@@ -109,13 +109,6 @@ function countBySeverity(findings: SecurityAuditFinding[]): SecurityAuditSummary
   return { critical, warn, info };
 }
 
-function normalizeAllowFromList(list: Array<string | number> | undefined | null): string[] {
-  if (!Array.isArray(list)) {
-    return [];
-  }
-  return list.map((v) => String(v).trim()).filter(Boolean);
-}
-
 async function collectFilesystemFindings(params: {
   stateDir: string;
   configPath: string;
@@ -646,41 +639,6 @@ function collectLoggingFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
   ];
 }
 
-function collectElevatedFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
-  const findings: SecurityAuditFinding[] = [];
-  const enabled = cfg.tools?.elevated?.enabled;
-  const allowFrom = cfg.tools?.elevated?.allowFrom ?? {};
-  const anyAllowFromKeys = Object.keys(allowFrom).length > 0;
-
-  if (enabled === false) {
-    return findings;
-  }
-  if (!anyAllowFromKeys) {
-    return findings;
-  }
-
-  for (const [provider, list] of Object.entries(allowFrom)) {
-    const normalized = normalizeAllowFromList(list);
-    if (normalized.includes("*")) {
-      findings.push({
-        checkId: `tools.elevated.allowFrom.${provider}.wildcard`,
-        severity: "critical",
-        title: "Elevated exec allowlist contains wildcard",
-        detail: `tools.elevated.allowFrom.${provider} includes "*" which effectively approves everyone on that channel for elevated mode.`,
-      });
-    } else if (normalized.length > 25) {
-      findings.push({
-        checkId: `tools.elevated.allowFrom.${provider}.large`,
-        severity: "warn",
-        title: "Elevated exec allowlist is large",
-        detail: `tools.elevated.allowFrom.${provider} has ${normalized.length} entries; consider tightening elevated access.`,
-      });
-    }
-  }
-
-  return findings;
-}
-
 async function maybeProbeGateway(params: {
   cfg: RemoteClawConfig;
   env: NodeJS.ProcessEnv;
@@ -736,7 +694,7 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
   findings.push(...collectGatewayConfigFindings(cfg, env));
   findings.push(...collectBrowserControlFindings(cfg, env));
   findings.push(...collectLoggingFindings(cfg));
-  findings.push(...collectElevatedFindings(cfg));
+
   findings.push(...collectHooksHardeningFindings(cfg, env));
   findings.push(...collectGatewayHttpNoAuthFindings(cfg, env));
   findings.push(...collectGatewayHttpSessionKeyOverrideFindings(cfg));

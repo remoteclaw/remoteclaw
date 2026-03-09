@@ -2,7 +2,7 @@ import type { ChannelId } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry, SessionScope } from "../../config/sessions.js";
 import type { MsgContext } from "../templating.js";
-import type { ElevatedLevel, VerboseLevel } from "../thinking.js";
+import type { VerboseLevel } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";
 import type { InlineDirectives } from "./directive-handling.js";
 
@@ -30,11 +30,6 @@ export type HandleCommandsParams = {
   agentId?: string;
   agentDir?: string;
   directives: InlineDirectives;
-  elevated: {
-    enabled: boolean;
-    allowed: boolean;
-    failures: Array<{ gate: string; key: string }>;
-  };
   sessionEntry?: SessionEntry;
   previousSessionEntry?: SessionEntry;
   sessionStore?: Record<string, SessionEntry>;
@@ -44,7 +39,6 @@ export type HandleCommandsParams = {
   workspaceDir: string;
   defaultGroupActivation: () => "always" | "mention";
   resolvedVerboseLevel: VerboseLevel;
-  resolvedElevatedLevel?: ElevatedLevel;
   provider: string;
   model: string;
   contextTokens: number;

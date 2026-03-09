@@ -14,7 +14,6 @@ export type SessionDisplayRow = {
   systemSent?: boolean;
   abortedLastRun?: boolean;
   verboseLevel?: string;
-  elevatedLevel?: string;
   responseUsage?: string;
   groupActivation?: string;
   inputTokens?: number;
@@ -48,7 +47,6 @@ export function toSessionDisplayRows(store: Record<string, SessionEntry>): Sessi
         systemSent: entry?.systemSent,
         abortedLastRun: entry?.abortedLastRun,
         verboseLevel: entry?.verboseLevel,
-        elevatedLevel: entry?.elevatedLevel,
         responseUsage: entry?.responseUsage,
         groupActivation: entry?.groupActivation,
         inputTokens: entry?.inputTokens,
@@ -111,7 +109,6 @@ export function formatSessionFlagsCell(
   row: Pick<
     SessionDisplayRow,
     | "verboseLevel"
-    | "elevatedLevel"
     | "responseUsage"
     | "groupActivation"
     | "systemSent"
@@ -122,7 +119,6 @@ export function formatSessionFlagsCell(
 ): string {
   const flags = [
     row.verboseLevel ? `verbose:${row.verboseLevel}` : null,
-    row.elevatedLevel ? `elev:${row.elevatedLevel}` : null,
     row.responseUsage ? `usage:${row.responseUsage}` : null,
     row.groupActivation ? `activation:${row.groupActivation}` : null,
     row.systemSent ? "system" : null,

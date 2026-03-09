@@ -31,7 +31,6 @@ export function getAvailableCommands(): AvailableCommand[] {
     },
     { name: "verbose", description: "Set verbose mode (on|full|off)." },
     { name: "reasoning", description: "Toggle reasoning output (on|off|stream)." },
-    { name: "elevated", description: "Toggle elevated mode (on|off)." },
     { name: "model", description: "Select a model (list|status|<name>)." },
     { name: "queue", description: "Adjust queue mode and options." },
     { name: "compact", description: "Compact the session history." },

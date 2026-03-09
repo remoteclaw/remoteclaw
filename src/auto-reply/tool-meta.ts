@@ -104,7 +104,7 @@ function splitExecFlags(meta: string): { flags: string[]; body: string } {
   const flags: string[] = [];
   const bodyParts: string[] = [];
   for (const part of parts) {
-    if (part === "elevated" || part === "pty") {
+    if (part === "pty") {
       flags.push(part);
       continue;
     }

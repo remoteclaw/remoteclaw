@@ -17,7 +17,6 @@ export type {
   ChannelDirectoryAdapter,
   ChannelDirectoryEntry,
   ChannelDirectoryEntryKind,
-  ChannelElevatedAdapter,
   ChannelGatewayAdapter,
   ChannelGatewayContext,
   ChannelGroupAdapter,

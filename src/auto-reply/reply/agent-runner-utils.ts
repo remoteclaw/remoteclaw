@@ -176,7 +176,6 @@ export function buildEmbeddedRunBaseParams(params: {
     provider: params.provider,
     model: params.model,
     verboseLevel: params.run.verboseLevel,
-    bashElevated: params.run.bashElevated,
     timeoutMs: params.run.timeoutMs,
     runId: params.runId,
   };

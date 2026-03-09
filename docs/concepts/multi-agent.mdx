@@ -520,8 +520,6 @@ Per-agent `sandbox.docker.*` overrides are ignored when the resolved scope is `"
 - **Resource control**: Sandbox specific agents while keeping others on host
 - **Flexible policies**: Different permissions per agent
 
-Note: `tools.elevated` is **global** and sender-based; it is not configurable per agent.
-If you need per-agent boundaries, use `agents.list[].tools` to deny `exec`.
 For group targeting, use `agents.list[].groupChat.mentionPatterns` so @mentions map cleanly to the intended agent.
 
 See [Gateway configuration](/gateway/configuration#agentsdefaultssandbox) for detailed examples.

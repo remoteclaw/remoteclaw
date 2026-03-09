@@ -18,9 +18,6 @@ export async function applyInlineDirectivesFastLane(
     sessionStore,
     sessionKey,
     storePath,
-    elevatedEnabled,
-    elevatedAllowed,
-    elevatedFailures,
     messageProviderKey,
     defaultProvider,
     defaultModel,
@@ -48,7 +45,7 @@ export async function applyInlineDirectivesFastLane(
   }
 
   const agentCfg = params.agentCfg;
-  const { currentVerboseLevel, currentElevatedLevel } = await resolveCurrentDirectiveLevels({
+  const { currentVerboseLevel } = await resolveCurrentDirectiveLevels({
     sessionEntry,
     agentCfg,
   });
@@ -60,9 +57,6 @@ export async function applyInlineDirectivesFastLane(
     sessionStore,
     sessionKey,
     storePath,
-    elevatedEnabled,
-    elevatedAllowed,
-    elevatedFailures,
     messageProviderKey,
     defaultProvider,
     defaultModel,
@@ -75,7 +69,6 @@ export async function applyInlineDirectivesFastLane(
     initialModelLabel: params.initialModelLabel,
     formatModelSwitchEvent,
     currentVerboseLevel,
-    currentElevatedLevel,
   });
 
   if (sessionEntry?.providerOverride) {

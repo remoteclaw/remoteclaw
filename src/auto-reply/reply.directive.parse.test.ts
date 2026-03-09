@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  extractElevatedDirective,
-  extractQueueDirective,
-  extractReplyToTag,
-  extractVerboseDirective,
-} from "./reply.js";
+import { extractQueueDirective, extractReplyToTag, extractVerboseDirective } from "./reply.js";
 import { extractStatusDirective } from "./reply/directives.js";
 
 describe("directive parsing", () => {
@@ -28,34 +23,10 @@ describe("directive parsing", () => {
     expect(res.verboseLevel).toBe("on");
   });
 
-  it("matches elevated with leading space", () => {
-    const res = extractElevatedDirective(" please /elevated on now");
-    expect(res.hasDirective).toBe(true);
-    expect(res.elevatedLevel).toBe("on");
-  });
-  it("matches elevated ask", () => {
-    const res = extractElevatedDirective("/elevated ask please");
-    expect(res.hasDirective).toBe(true);
-    expect(res.elevatedLevel).toBe("ask");
-  });
-  it("matches elevated full", () => {
-    const res = extractElevatedDirective("/elevated full please");
-    expect(res.hasDirective).toBe(true);
-    expect(res.elevatedLevel).toBe("full");
-  });
-
   it("matches verbose with no argument", () => {
     const res = extractVerboseDirective("/verbose:");
     expect(res.hasDirective).toBe(true);
     expect(res.verboseLevel).toBeUndefined();
-    expect(res.rawLevel).toBeUndefined();
-    expect(res.cleaned).toBe("");
-  });
-
-  it("matches elevated with no argument", () => {
-    const res = extractElevatedDirective("/elevated:");
-    expect(res.hasDirective).toBe(true);
-    expect(res.elevatedLevel).toBeUndefined();
     expect(res.rawLevel).toBeUndefined();
     expect(res.cleaned).toBe("");
   });

@@ -208,8 +208,6 @@ const TARGET_KEYS = [
   "tools.exec.ask",
   "tools.exec.node",
   "tools.agentToAgent.enabled",
-  "tools.elevated.enabled",
-  "tools.elevated.allowFrom",
   "tools.subagents.tools",
   "tools.sandbox.tools",
   "web",

@@ -47,10 +47,10 @@ describe("tool meta formatting", () => {
 
   it("keeps exec flags outside markdown and moves them to the front", () => {
     vi.stubEnv("HOME", home);
-    const out = formatToolAggregate("exec", [`cd ${home}/dir && gemini 2>&1 · elevated`], {
+    const out = formatToolAggregate("exec", [`cd ${home}/dir && gemini 2>&1 · pty`], {
       markdown: true,
     });
-    expect(out).toBe("🧩 Exec: elevated · `cd ~/dir && gemini 2>&1`");
+    expect(out).toBe("🧩 Exec: pty · `cd ~/dir && gemini 2>&1`");
   });
 
   it("formats prefixes with default labels", () => {

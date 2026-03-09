@@ -1,12 +1,6 @@
 import { escapeRegExp } from "../../utils.js";
 import type { NoticeLevel } from "../thinking.js";
-import {
-  type ElevatedLevel,
-  normalizeElevatedLevel,
-  normalizeNoticeLevel,
-  normalizeVerboseLevel,
-  type VerboseLevel,
-} from "../thinking.js";
+import { normalizeNoticeLevel, normalizeVerboseLevel, type VerboseLevel } from "../thinking.js";
 
 type ExtractedLevel<T> = {
   cleaned: string;
@@ -121,24 +115,6 @@ export function extractNoticeDirective(body?: string): {
   };
 }
 
-export function extractElevatedDirective(body?: string): {
-  cleaned: string;
-  elevatedLevel?: ElevatedLevel;
-  rawLevel?: string;
-  hasDirective: boolean;
-} {
-  if (!body) {
-    return { cleaned: "", hasDirective: false };
-  }
-  const extracted = extractLevelDirective(body, ["elevated", "elev"], normalizeElevatedLevel);
-  return {
-    cleaned: extracted.cleaned,
-    elevatedLevel: extracted.level,
-    rawLevel: extracted.rawLevel,
-    hasDirective: extracted.hasDirective,
-  };
-}
-
 export function extractStatusDirective(body?: string): {
   cleaned: string;
   hasDirective: boolean;
@@ -149,4 +125,4 @@ export function extractStatusDirective(body?: string): {
   return extractSimpleDirective(body, ["status"]);
 }
 
-export type { ElevatedLevel, NoticeLevel, VerboseLevel };
+export type { NoticeLevel, VerboseLevel };

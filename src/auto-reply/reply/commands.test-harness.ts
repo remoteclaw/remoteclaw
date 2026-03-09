@@ -35,7 +35,6 @@ export function buildCommandTestParams(
     cfg,
     command,
     directives: parseInlineDirectives(commandBody),
-    elevated: { enabled: true, allowed: true, failures: [] },
     sessionKey: "agent:main:main",
     workspaceDir: options?.workspaceDir ?? "/tmp",
     defaultGroupActivation: () => "mention",

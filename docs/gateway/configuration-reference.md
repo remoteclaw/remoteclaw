@@ -658,7 +658,6 @@ Time format in system prompt. Default: `auto` (OS preference).
   agents: {
     defaults: {
       verboseDefault: "off",
-      elevatedDefault: "on",
       timeoutSeconds: 600,
       mediaMaxMb: 5,
       contextTokens: 200000,
@@ -989,7 +988,6 @@ scripts/sandbox-browser-setup.sh   # optional browser image
           profile: "coding",
           allow: ["browser"],
           deny: ["canvas"],
-          elevated: { enabled: true },
         },
       },
     ],
@@ -1395,28 +1393,6 @@ Further restrict tools for specific providers or models. Order: base profile →
   },
 }
 ```
-
-### `tools.elevated`
-
-Controls elevated (host) exec access:
-
-```json5
-{
-  tools: {
-    elevated: {
-      enabled: true,
-      allowFrom: {
-        whatsapp: ["+15555550123"],
-        discord: ["1234567890123", "987654321098765432"],
-      },
-    },
-  },
-}
-```
-
-- Per-agent override (`agents.list[].tools.elevated`) can only further restrict.
-- `/elevated on|off|ask|full` stores state per session; inline directives apply to single message.
-- Elevated `exec` runs on the host, bypasses sandboxing.
 
 ### `tools.exec`
 

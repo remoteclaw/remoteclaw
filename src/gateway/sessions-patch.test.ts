@@ -51,68 +51,6 @@ function makeKimiSubagentCfg(params: {
 }
 
 describe("gateway sessions patch", () => {
-  test("persists elevatedLevel=off (does not clear)", async () => {
-    const store: Record<string, SessionEntry> = {};
-    const res = await applySessionsPatchToStore({
-      cfg: {} as RemoteClawConfig,
-      store,
-      storeKey: "agent:main:main",
-      patch: { key: "agent:main:main", elevatedLevel: "off" },
-    });
-    expect(res.ok).toBe(true);
-    if (!res.ok) {
-      return;
-    }
-    expect(res.entry.elevatedLevel).toBe("off");
-  });
-
-  test("persists elevatedLevel=on", async () => {
-    const store: Record<string, SessionEntry> = {};
-    const res = await applySessionsPatchToStore({
-      cfg: {} as RemoteClawConfig,
-      store,
-      storeKey: "agent:main:main",
-      patch: { key: "agent:main:main", elevatedLevel: "on" },
-    });
-    expect(res.ok).toBe(true);
-    if (!res.ok) {
-      return;
-    }
-    expect(res.entry.elevatedLevel).toBe("on");
-  });
-
-  test("clears elevatedLevel when patch sets null", async () => {
-    const store: Record<string, SessionEntry> = {
-      "agent:main:main": { elevatedLevel: "off" } as SessionEntry,
-    };
-    const res = await applySessionsPatchToStore({
-      cfg: {} as RemoteClawConfig,
-      store,
-      storeKey: "agent:main:main",
-      patch: { key: "agent:main:main", elevatedLevel: null },
-    });
-    expect(res.ok).toBe(true);
-    if (!res.ok) {
-      return;
-    }
-    expect(res.entry.elevatedLevel).toBeUndefined();
-  });
-
-  test("rejects invalid elevatedLevel values", async () => {
-    const store: Record<string, SessionEntry> = {};
-    const res = await applySessionsPatchToStore({
-      cfg: {} as RemoteClawConfig,
-      store,
-      storeKey: "agent:main:main",
-      patch: { key: "agent:main:main", elevatedLevel: "maybe" },
-    });
-    expect(res.ok).toBe(false);
-    if (res.ok) {
-      return;
-    }
-    expect(res.error.message).toContain("invalid elevatedLevel");
-  });
-
   test("clears fallback notice when model patch changes", async () => {
     const store: Record<string, SessionEntry> = {
       "agent:main:main": {

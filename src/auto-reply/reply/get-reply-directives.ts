@@ -1,14 +1,8 @@
-// Sandbox infrastructure removed (#68)
-const resolveSandboxRuntimeStatus = (_opts: Record<string, unknown>) => ({
-  sandboxed: false as const,
-  mode: "off" as const,
-  agentId: undefined as string | undefined,
-});
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
-import type { ElevatedLevel, VerboseLevel } from "../thinking.js";
+import type { VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { resolveBlockStreamingChunking } from "./block-streaming.js";
 import { buildCommandContext } from "./commands.js";
@@ -53,7 +47,6 @@ function resolveContextTokens(params: {
   // Context token lookup from model catalog gutted in RemoteClaw — CLI agents manage their own context.
   return params.agentCfg?.contextTokens ?? 200_000;
 }
-import { formatElevatedUnavailableMessage, resolveElevatedPermissions } from "./reply-elevated.js";
 import { stripInlineStatus } from "./reply-inline.js";
 import type { TypingController } from "./typing.js";
 
@@ -66,12 +59,8 @@ export type ReplyDirectiveContinuation = {
   directives: InlineDirectives;
   cleanedBody: string;
   messageProviderKey: string;
-  elevatedEnabled: boolean;
-  elevatedAllowed: boolean;
-  elevatedFailures: Array<{ gate: string; key: string }>;
   defaultActivation: ReturnType<typeof defaultGroupActivation>;
   resolvedVerboseLevel: VerboseLevel | undefined;
-  resolvedElevatedLevel: ElevatedLevel;
   blockStreamingEnabled: boolean;
   blockReplyChunking?: {
     minChars: number;
@@ -206,19 +195,8 @@ export async function resolveReplyDirectives(params: {
       hasStatusDirective: false,
     };
   }
-  if (isGroup && ctx.WasMentioned !== true && parsedDirectives.hasElevatedDirective) {
-    if (parsedDirectives.elevatedLevel !== "off") {
-      parsedDirectives = {
-        ...parsedDirectives,
-        hasElevatedDirective: false,
-        elevatedLevel: undefined,
-        rawElevatedLevel: undefined,
-      };
-    }
-  }
   const hasInlineDirective =
     parsedDirectives.hasVerboseDirective ||
-    parsedDirectives.hasElevatedDirective ||
     parsedDirectives.hasModelDirective ||
     parsedDirectives.hasQueueDirective;
   if (hasInlineDirective) {
@@ -289,32 +267,6 @@ export async function resolveReplyDirectives(params: {
 
   const messageProviderKey =
     sessionCtx.Provider?.trim().toLowerCase() ?? ctx.Provider?.trim().toLowerCase() ?? "";
-  const elevated = resolveElevatedPermissions({
-    cfg,
-    agentId,
-    ctx,
-    provider: messageProviderKey,
-  });
-  const elevatedEnabled = elevated.enabled;
-  const elevatedAllowed = elevated.allowed;
-  const elevatedFailures = elevated.failures;
-  if (directives.hasElevatedDirective && (!elevatedEnabled || !elevatedAllowed)) {
-    typing.cleanup();
-    const runtimeSandboxed = resolveSandboxRuntimeStatus({
-      cfg,
-      sessionKey: ctx.SessionKey,
-    }).sandboxed;
-    return {
-      kind: "reply",
-      reply: {
-        text: formatElevatedUnavailableMessage({
-          runtimeSandboxed,
-          failures: elevatedFailures,
-          sessionKey: ctx.SessionKey,
-        }),
-      },
-    };
-  }
 
   const requireMention = resolveGroupRequireMention({
     cfg,
@@ -326,12 +278,6 @@ export async function resolveReplyDirectives(params: {
     directives.verboseLevel ??
     (sessionEntry?.verboseLevel as VerboseLevel | undefined) ??
     (agentCfg?.verboseDefault as VerboseLevel | undefined);
-  const resolvedElevatedLevel = elevatedAllowed
-    ? (directives.elevatedLevel ??
-      (sessionEntry?.elevatedLevel as ElevatedLevel | undefined) ??
-      (agentCfg?.elevatedDefault as ElevatedLevel | undefined) ??
-      "on")
-    : "off";
   const resolvedBlockStreaming =
     opts?.disableBlockStreaming === true
       ? "off"
@@ -396,9 +342,6 @@ export async function resolveReplyDirectives(params: {
     command,
     directives,
     messageProviderKey,
-    elevatedEnabled,
-    elevatedAllowed,
-    elevatedFailures,
     defaultProvider,
     defaultModel,
     aliasIndex: params.aliasIndex,
@@ -407,7 +350,6 @@ export async function resolveReplyDirectives(params: {
     modelState,
     initialModelLabel,
     formatModelSwitchEvent,
-    resolvedElevatedLevel,
     defaultActivation: () => defaultActivation,
     contextTokens,
     effectiveModelDirective,
@@ -431,12 +373,8 @@ export async function resolveReplyDirectives(params: {
       directives,
       cleanedBody,
       messageProviderKey,
-      elevatedEnabled,
-      elevatedAllowed,
-      elevatedFailures,
       defaultActivation,
       resolvedVerboseLevel,
-      resolvedElevatedLevel,
       blockStreamingEnabled,
       blockReplyChunking,
       resolvedBlockStreamingBreak,

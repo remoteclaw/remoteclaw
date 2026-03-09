@@ -138,7 +138,6 @@ export const handleStatusCommand: CommandHandler = async (params, allowTextComma
     model: params.model,
     contextTokens: params.contextTokens,
     resolvedVerboseLevel: params.resolvedVerboseLevel,
-    resolvedElevatedLevel: params.resolvedElevatedLevel,
     isGroup: params.isGroup,
     defaultGroupActivation: params.defaultGroupActivation,
   });

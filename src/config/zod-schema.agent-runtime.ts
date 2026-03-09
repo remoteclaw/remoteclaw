@@ -153,11 +153,6 @@ export const ToolPolicyWithProfileSchema = z
     );
   });
 
-// Provider docking: allowlists keyed by provider id (no schema updates when adding providers).
-export const ElevatedAllowFromSchema = z
-  .record(z.string(), z.array(z.union([z.string(), z.number()])))
-  .optional();
-
 const ToolExecSafeBinProfileSchema = z
   .object({
     minPositional: z.number().int().nonnegative().optional(),
@@ -211,13 +206,6 @@ const CommonToolPolicyFields = {
 export const AgentToolsSchema = z
   .object({
     ...CommonToolPolicyFields,
-    elevated: z
-      .object({
-        enabled: z.boolean().optional(),
-        allowFrom: ElevatedAllowFromSchema,
-      })
-      .strict()
-      .optional(),
     exec: AgentToolExecSchema,
     fs: ToolFsSchema,
   })
@@ -299,13 +287,6 @@ export const ToolsSchema = z
       .object({
         enabled: z.boolean().optional(),
         allow: z.array(z.string()).optional(),
-      })
-      .strict()
-      .optional(),
-    elevated: z
-      .object({
-        enabled: z.boolean().optional(),
-        allowFrom: ElevatedAllowFromSchema,
       })
       .strict()
       .optional(),

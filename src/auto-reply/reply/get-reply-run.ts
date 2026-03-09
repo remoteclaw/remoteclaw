@@ -13,7 +13,7 @@ import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { hasControlCommand } from "../command-detection.js";
 import { buildInboundMediaNote } from "../media-note.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
-import { type ElevatedLevel, type VerboseLevel } from "../thinking.js";
+import type { VerboseLevel } from "../thinking.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { runReplyAgent } from "./agent-runner.js";
@@ -118,9 +118,6 @@ type RunPreparedReplyParams = {
   directives: InlineDirectives;
   defaultActivation: Parameters<typeof buildGroupIntro>[0]["defaultActivation"];
   resolvedVerboseLevel: VerboseLevel | undefined;
-  resolvedElevatedLevel: ElevatedLevel;
-  elevatedEnabled: boolean;
-  elevatedAllowed: boolean;
   blockStreamingEnabled: boolean;
   blockReplyChunking?: {
     minChars: number;
@@ -171,8 +168,6 @@ export async function runPreparedReply(
     allowTextCommands,
     directives: _directives,
     defaultActivation,
-    elevatedEnabled,
-    elevatedAllowed,
     blockStreamingEnabled,
     blockReplyChunking,
     resolvedBlockStreamingBreak,
@@ -194,7 +189,7 @@ export async function runPreparedReply(
     workspaceDir,
     sessionStore,
   } = params;
-  let { sessionEntry, resolvedVerboseLevel, resolvedElevatedLevel, abortedLastRun } = params;
+  let { sessionEntry, resolvedVerboseLevel, abortedLastRun } = params;
   const currentSystemSent = systemSent;
 
   const isFirstTurnInSession = isNewSession || !currentSystemSent;
@@ -389,12 +384,6 @@ export async function runPreparedReply(
       provider,
       model,
       verboseLevel: resolvedVerboseLevel,
-      elevatedLevel: resolvedElevatedLevel,
-      bashElevated: {
-        enabled: elevatedEnabled,
-        allowed: elevatedAllowed,
-        defaultLevel: resolvedElevatedLevel ?? "off",
-      },
       timeoutMs,
       blockReplyBreak: resolvedBlockStreamingBreak,
       ownerNumbers: command.ownerList.length > 0 ? command.ownerList : undefined,

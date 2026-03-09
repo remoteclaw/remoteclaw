@@ -28,10 +28,6 @@ const buildFlags = (entry?: SessionEntry): string[] => {
   if (typeof verbose === "string" && verbose.length > 0) {
     flags.push(`verbose:${verbose}`);
   }
-  const elevated = entry?.elevatedLevel;
-  if (typeof elevated === "string" && elevated.length > 0) {
-    flags.push(`elevated:${elevated}`);
-  }
   if (entry?.systemSent) {
     flags.push("system");
   }
@@ -134,7 +130,6 @@ export async function getStatusSummary(
           updatedAt,
           age,
           verboseLevel: entry?.verboseLevel,
-          elevatedLevel: entry?.elevatedLevel,
           systemSent: entry?.systemSent,
           abortedLastRun: entry?.abortedLastRun,
           inputTokens: entry?.inputTokens,

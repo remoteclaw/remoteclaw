@@ -5,7 +5,6 @@ import type {
   ChannelConfigAdapter,
   ChannelDirectoryAdapter,
   ChannelResolverAdapter,
-  ChannelElevatedAdapter,
   ChannelGatewayAdapter,
   ChannelGroupAdapter,
   ChannelHeartbeatAdapter,
@@ -70,7 +69,6 @@ export type ChannelPlugin<ResolvedAccount = any, Probe = unknown, Audit = unknow
   gatewayMethods?: string[];
   gateway?: ChannelGatewayAdapter<ResolvedAccount>;
   auth?: ChannelAuthAdapter;
-  elevated?: ChannelElevatedAdapter;
   commands?: ChannelCommandAdapter;
   streaming?: ChannelStreamingAdapter;
   threading?: ChannelThreadingAdapter;

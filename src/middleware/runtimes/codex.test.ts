@@ -135,6 +135,97 @@ describe("CodexCliRuntime", () => {
       );
       expect(args).not.toContain("--mcp-config");
     });
+
+    it("appends --image flag for image media with filePath", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          media: [{ mimeType: "image/png", filePath: "/tmp/photo.png" }],
+        }),
+      );
+      const imageIdx = args.indexOf("--image");
+      expect(imageIdx).toBeGreaterThan(-1);
+      expect(args[imageIdx + 1]).toBe("/tmp/photo.png");
+    });
+
+    it("appends multiple --image flags for multiple images", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          media: [
+            { mimeType: "image/png", filePath: "/tmp/a.png" },
+            { mimeType: "image/jpeg", filePath: "/tmp/b.jpg" },
+          ],
+        }),
+      );
+      const imageIndices = args.reduce<number[]>((acc, arg, i) => {
+        if (arg === "--image") {
+          acc.push(i);
+        }
+        return acc;
+      }, []);
+      expect(imageIndices).toHaveLength(2);
+      expect(args[imageIndices[0] + 1]).toBe("/tmp/a.png");
+      expect(args[imageIndices[1] + 1]).toBe("/tmp/b.jpg");
+    });
+
+    it("does not include --image when no media is provided", () => {
+      const args = runtime.testBuildArgs(makeParams());
+      expect(args).not.toContain("--image");
+    });
+
+    it("filters non-image media (no --image for audio/video)", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          media: [
+            { mimeType: "audio/ogg", filePath: "/tmp/audio.ogg" },
+            { mimeType: "video/mp4", filePath: "/tmp/video.mp4" },
+          ],
+        }),
+      );
+      expect(args).not.toContain("--image");
+    });
+
+    it("skips image media without filePath", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          media: [{ mimeType: "image/png", base64: "aW1hZ2U=" }],
+        }),
+      );
+      expect(args).not.toContain("--image");
+    });
+
+    it("does not include --image on session resume", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          sessionId: "thread-abc",
+          media: [{ mimeType: "image/png", filePath: "/tmp/photo.png" }],
+        }),
+      );
+      expect(args).not.toContain("--image");
+    });
+
+    it("places --image flags before the prompt", () => {
+      const args = runtime.testBuildArgs(
+        makeParams({
+          prompt: "Describe this",
+          media: [{ mimeType: "image/jpeg", filePath: "/tmp/img.jpg" }],
+        }),
+      );
+      const imageIdx = args.indexOf("--image");
+      const promptIdx = args.indexOf("Describe this");
+      expect(imageIdx).toBeLessThan(promptIdx);
+    });
+  });
+
+  // ── mediaCapabilities ─────────────────────────────────────────────────
+
+  describe("mediaCapabilities", () => {
+    it("accepts inbound images", () => {
+      expect(runtime.mediaCapabilities.acceptsInbound).toEqual(["image/"]);
+    });
+
+    it("does not emit outbound media", () => {
+      expect(runtime.mediaCapabilities.emitsOutbound).toBe(false);
+    });
   });
 
   // ── extractEvent ──────────────────────────────────────────────────────

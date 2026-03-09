@@ -29,9 +29,9 @@ export class CodexCliRuntime extends CLIRuntimeBase {
   // ── Media capabilities ────────────────────────────────────────────────
 
   readonly mediaCapabilities = {
-    acceptsInbound: [] as string[],
+    acceptsInbound: ["image/"],
     emitsOutbound: false,
-  };
+  } as const;
 
   // ── Per-execution state (reset before each run) ───────────────────────
 
@@ -81,12 +81,25 @@ export class CodexCliRuntime extends CLIRuntimeBase {
   protected buildArgs(params: AgentExecuteParams): string[] {
     if (params.sessionId) {
       // Session resume: codex exec resume --json <id> <prompt>
-      // Note: --color is not supported by the resume subcommand
+      // Note: --color is not supported by the resume subcommand.
+      // Images are skipped on resume — Codex propagates conversation context internally.
       return ["exec", "resume", "--json", params.sessionId, params.prompt];
     }
 
-    // New session: codex exec --json --color never <prompt>
-    return ["exec", "--json", "--color", "never", params.prompt];
+    // New session: codex exec --json --color never [--image ...] <prompt>
+    const args = ["exec", "--json", "--color", "never"];
+
+    // Append --image flags for each image attachment with a file path
+    if (params.media) {
+      for (const attachment of params.media) {
+        if (attachment.mimeType.startsWith("image/") && attachment.filePath) {
+          args.push("--image", attachment.filePath);
+        }
+      }
+    }
+
+    args.push(params.prompt);
+    return args;
   }
 
   protected extractEvent(line: string): AgentEvent | null {

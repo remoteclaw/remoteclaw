@@ -70,6 +70,25 @@ describe.skipIf(!LIVE)("codex CLI middleware smoke test", () => {
     firstSessionId = result.run.sessionId;
   }, 60_000);
 
+  it("processes an image attachment and describes the content", async () => {
+    // 100x100 solid red PNG (large enough for the API to process)
+    const pngBase64 =
+      "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAABFUlEQVR4nO3OUQkAIABEsetfWiv4Nx4IC7Cd7XvkByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIReeLesrH9s1agAAAABJRU5ErkJggg==";
+    const testImagePath = join(tempDir, "test-image.png");
+    await writeFile(testImagePath, Buffer.from(pngBase64, "base64"));
+
+    const msg = makeMessage("What color is this image? Reply with just the color name.");
+    msg.mediaUrls = [testImagePath];
+
+    const result = await bridge.handle(msg);
+
+    expect(result.payloads.length).toBeGreaterThan(0);
+    expect(result.run.text).toBeTruthy();
+    expect(result.run.text.toLowerCase()).toContain("red");
+    expect(result.run.aborted).toBe(false);
+    expect(result.run.sessionId).toBeTruthy();
+  }, 60_000);
+
   it("resumes the session on a follow-up message", async () => {
     expect(firstSessionId).toBeTruthy();
 

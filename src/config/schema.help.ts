@@ -563,10 +563,6 @@ export const FIELD_HELP: Record<string, string> = {
   "agents.list[].boot.prompt": "Per-agent inline boot prompt text.",
   "agents.list[].boot.file":
     "Per-agent boot prompt file path (relative to agent workspace directory).",
-  "agents.defaults.bootstrapMaxChars":
-    "Max characters of each workspace bootstrap file injected into the system prompt before truncation (default: 20000).",
-  "agents.defaults.bootstrapTotalMaxChars":
-    "Max total characters across all injected workspace bootstrap files (default: 150000).",
   "agents.defaults.repoRoot":
     "Optional repository root shown in the system prompt runtime line (overrides auto-detect).",
   "agents.defaults.envelopeTimezone":

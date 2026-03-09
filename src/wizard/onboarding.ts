@@ -683,9 +683,7 @@ export async function runOnboardingWizard(
   await writeConfigFile(nextConfig);
   const { logConfigUpdated } = await import("../config/logging.js");
   logConfigUpdated(runtime);
-  await onboardHelpers.ensureWorkspaceAndSessions(workspaceDir, runtime, {
-    skipBootstrap: Boolean(nextConfig.agents?.defaults?.skipBootstrap),
-  });
+  await onboardHelpers.ensureWorkspaceAndSessions(workspaceDir, runtime);
 
   nextConfig = onboardHelpers.applyWizardMetadata(nextConfig, { command: "onboard", mode });
   await writeConfigFile(nextConfig);

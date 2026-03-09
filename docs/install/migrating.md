@@ -46,7 +46,7 @@ There is no built-in default workspace path — check your `agents.defaults.work
 Your workspace is where files like `MEMORY.md` and `memory/*.md` live.
 
 > **Note:** RemoteClaw no longer seeds template files (`SOUL.md`, `AGENTS.md`,
-> `USER.md`, `TOOLS.md`, `BOOTSTRAP.md`) in the workspace. Agents bring their
+> `USER.md`, `TOOLS.md`) in the workspace. Agents bring their
 > own config (e.g. `CLAUDE.md` for Claude Code). If you're migrating from an
 > older install, these files can be safely removed.
 

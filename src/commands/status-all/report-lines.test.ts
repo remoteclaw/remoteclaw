@@ -9,7 +9,7 @@ vi.mock("./diagnosis.js", () => ({
 }));
 
 describe("buildStatusAllReportLines", () => {
-  it("renders bootstrap column using file-presence semantics", async () => {
+  it("renders agents table with sessions and activity columns", async () => {
     const progress: ProgressReporter = {
       setLabel: () => {},
       setPercent: () => {},
@@ -28,14 +28,12 @@ describe("buildStatusAllReportLines", () => {
         agents: [
           {
             id: "main",
-            bootstrapPending: true,
             sessionsCount: 1,
             lastActiveAgeMs: 12_000,
             sessionsPath: "/tmp/main-sessions.json",
           },
           {
             id: "ops",
-            bootstrapPending: false,
             sessionsCount: 0,
             lastActiveAgeMs: null,
             sessionsPath: "/tmp/ops-sessions.json",
@@ -67,8 +65,8 @@ describe("buildStatusAllReportLines", () => {
     });
 
     const output = lines.join("\n");
-    expect(output).toContain("Bootstrap file");
-    expect(output).toContain("PRESENT");
-    expect(output).toContain("ABSENT");
+    expect(output).toContain("Agent");
+    expect(output).toContain("Sessions");
+    expect(output).not.toContain("Bootstrap");
   });
 });

@@ -297,10 +297,6 @@ export default defineConfig({
               ],
             },
             {
-              label: "Bootstrapping",
-              items: [{ slug: "start/bootstrapping" }],
-            },
-            {
               label: "Sessions and memory",
               items: [
                 { slug: "concepts/session" },

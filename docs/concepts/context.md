@@ -38,7 +38,6 @@ Values vary by runtime, tool policy, and what’s in your workspace.
 ```
 🧠 Context breakdown
 Workspace: <workspaceDir>
-Bootstrap max/file: 20,000 chars
 System prompt (run): 38,412 chars (~9,603 tok) (Project Context 23,901 chars (~5,976 tok))
 
 Workspace files:

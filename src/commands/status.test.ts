@@ -352,7 +352,6 @@ describe("statusCommand", () => {
     expect(logs.some((l: string) => l.includes("macos 14.0 (arm64)"))).toBe(true);
     expect(logs.some((l: string) => l.includes("Channels"))).toBe(true);
     expect(logs.some((l: string) => l.includes("WhatsApp"))).toBe(true);
-    expect(logs.some((l: string) => l.includes("bootstrap files"))).toBe(true);
     expect(logs.some((l: string) => l.includes("Sessions"))).toBe(true);
     expect(logs.some((l: string) => l.includes("+1000"))).toBe(true);
     expect(logs.some((l: string) => l.includes("50%"))).toBe(true);

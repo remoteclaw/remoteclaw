@@ -606,16 +606,6 @@ Optional repository root shown in the system prompt's Runtime line. If unset, Re
 }
 ```
 
-### `agents.defaults.skipBootstrap`
-
-Legacy option (no-op). Workspace template seeding has been removed.
-
-```json5
-{
-  agents: { defaults: { skipBootstrap: true } },
-}
-```
-
 ### `agents.defaults.editableFiles`
 
 Glob patterns for workspace files exposed by the gateway file editor.

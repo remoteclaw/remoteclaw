@@ -202,8 +202,6 @@ export type SessionSystemPromptReport = {
   provider?: string;
   model?: string;
   workspaceDir?: string;
-  bootstrapMaxChars?: number;
-  bootstrapTotalMaxChars?: number;
   sandbox?: {
     mode?: string;
     sandboxed?: boolean;

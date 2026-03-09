@@ -286,7 +286,7 @@ export async function openUrlInBackground(url: string): Promise<boolean> {
 export async function ensureWorkspaceAndSessions(
   workspaceDir: string,
   runtime: RuntimeEnv,
-  options?: { skipBootstrap?: boolean; agentId?: string },
+  options?: { agentId?: string },
 ) {
   const ws = await ensureAgentWorkspace(workspaceDir);
   runtime.log(`Workspace OK: ${shortenHomePath(ws)}`);

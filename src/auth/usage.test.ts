@@ -577,6 +577,10 @@ describe("markAuthProfileFailure — active windows do not extend on retry", () 
     });
   }
 
+  // When a cooldown/disabled window expires, the error count resets to prevent
+  // stale counters from escalating the next cooldown (the root cause of
+  // infinite cooldown loops — see #40989). The next failure should compute
+  // backoff from errorCount=1, not from the accumulated stale count.
   const expiredWindowCases = [
     {
       label: "cooldownUntil",
@@ -586,7 +590,8 @@ describe("markAuthProfileFailure — active windows do not extend on retry", () 
         errorCount: 3,
         lastFailureAt: now - 60_000,
       }),
-      expectedUntil: (now: number) => now + 60 * 60 * 1000,
+      // errorCount resets → calculateAuthProfileCooldownMs(1) = 60_000
+      expectedUntil: (now: number) => now + 60_000,
       readUntil: (stats: WindowStats | undefined) => stats?.cooldownUntil,
     },
     {
@@ -599,7 +604,9 @@ describe("markAuthProfileFailure — active windows do not extend on retry", () 
         failureCounts: { billing: 2 },
         lastFailureAt: now - 60_000,
       }),
-      expectedUntil: (now: number) => now + 20 * 60 * 60 * 1000,
+      // errorCount resets, billing count resets to 1 →
+      // calculateAuthProfileBillingDisableMsWithConfig(1, 5h, 24h) = 5h
+      expectedUntil: (now: number) => now + 5 * 60 * 60 * 1000,
       readUntil: (stats: WindowStats | undefined) => stats?.disabledUntil,
     },
   ];

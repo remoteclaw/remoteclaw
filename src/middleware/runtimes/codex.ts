@@ -79,11 +79,13 @@ export class CodexCliRuntime extends CLIRuntimeBase {
   // ── CLIRuntimeBase abstract method implementations ────────────────────
 
   protected buildArgs(params: AgentExecuteParams): string[] {
+    const composed = this.composePrompt(params);
+
     if (params.sessionId) {
       // Session resume: codex exec resume --json <id> <prompt>
       // Note: --color is not supported by the resume subcommand.
       // Images are skipped on resume — Codex propagates conversation context internally.
-      return ["exec", "resume", "--json", params.sessionId, params.prompt];
+      return ["exec", "resume", "--json", params.sessionId, composed];
     }
 
     // New session: codex exec --json --color never [--image ...] <prompt>
@@ -98,7 +100,7 @@ export class CodexCliRuntime extends CLIRuntimeBase {
       }
     }
 
-    args.push(params.prompt);
+    args.push(composed);
     return args;
   }
 

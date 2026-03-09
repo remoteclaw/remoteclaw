@@ -172,7 +172,7 @@ describe("ChannelBridge", () => {
       expect(result.error).toBeUndefined();
     });
 
-    it("passes system prompt + message text as the prompt", async () => {
+    it("passes user text as prompt and system prompt separately", async () => {
       const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
       mockRuntimeInstance = { execute: executeFn };
 
@@ -181,10 +181,11 @@ describe("ChannelBridge", () => {
 
       expect(executeFn).toHaveBeenCalledOnce();
       const params = executeFn.mock.calls[0][0];
-      expect(params.prompt).toBe("SYSTEM_PROMPT\n\nWhat is 2+2?");
+      expect(params.prompt).toBe("What is 2+2?");
+      expect(params.systemPrompt).toBe("SYSTEM_PROMPT");
     });
 
-    it("prepends extraContext between system prompt and user text", async () => {
+    it("passes extraContext as a separate field", async () => {
       const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
       mockRuntimeInstance = { execute: executeFn };
 
@@ -193,10 +194,12 @@ describe("ChannelBridge", () => {
 
       expect(executeFn).toHaveBeenCalledOnce();
       const params = executeFn.mock.calls[0][0];
-      expect(params.prompt).toBe("SYSTEM_PROMPT\n\nAnswer in French\n\nWhat is 2+2?");
+      expect(params.prompt).toBe("What is 2+2?");
+      expect(params.systemPrompt).toBe("SYSTEM_PROMPT");
+      expect(params.extraContext).toBe("Answer in French");
     });
 
-    it("omits extraContext section when not provided", async () => {
+    it("leaves extraContext undefined when not provided", async () => {
       const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
       mockRuntimeInstance = { execute: executeFn };
 
@@ -205,7 +208,8 @@ describe("ChannelBridge", () => {
 
       expect(executeFn).toHaveBeenCalledOnce();
       const params = executeFn.mock.calls[0][0];
-      expect(params.prompt).toBe("SYSTEM_PROMPT\n\nWhat is 2+2?");
+      expect(params.prompt).toBe("What is 2+2?");
+      expect(params.extraContext).toBeUndefined();
     });
 
     it("passes workingDirectory to runtime", async () => {

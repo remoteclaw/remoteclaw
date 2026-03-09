@@ -68,6 +68,12 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
       args.push("--mcp-config", JSON.stringify({ mcpServers: params.mcpServers }));
     }
 
+    // Pass system prompt via --append-system-prompt (includes extraContext)
+    const systemContent = [params.systemPrompt, params.extraContext].filter(Boolean).join("\n\n");
+    if (systemContent) {
+      args.push("--append-system-prompt", systemContent);
+    }
+
     // When image media is present (with base64 populated), use stream-json stdin
     // delivery instead of --print so content blocks can carry inline images.
     // -p activates print mode (required for --input-format / --output-format).

@@ -84,7 +84,7 @@ export class OpenCodeCliRuntime extends CLIRuntimeBase {
       args.push("--session", params.sessionId);
     }
 
-    args.push(params.prompt);
+    args.push(this.composePrompt(params));
     return args;
   }
 

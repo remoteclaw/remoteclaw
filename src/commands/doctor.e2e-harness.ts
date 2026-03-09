@@ -321,40 +321,6 @@ export function createDoctorRuntime() {
   };
 }
 
-export async function arrangeLegacyStateMigrationTest(): Promise<{
-  doctorCommand: unknown;
-  runtime: { log: MockFn; error: MockFn; exit: MockFn };
-  detectLegacyStateMigrations: MockFn;
-  runLegacyStateMigrations: MockFn;
-}> {
-  mockDoctorConfigSnapshot();
-
-  const { doctorCommand } = await import("./doctor.js");
-  const runtime = createDoctorRuntime();
-
-  detectLegacyStateMigrations.mockClear();
-  runLegacyStateMigrations.mockClear();
-  detectLegacyStateMigrations.mockResolvedValueOnce(
-    createLegacyStateMigrationDetectionResult({
-      hasLegacySessions: true,
-      preview: ["- Legacy sessions detected"],
-    }),
-  );
-  runLegacyStateMigrations.mockResolvedValueOnce({
-    changes: ["migrated"],
-    warnings: [],
-  });
-
-  confirm.mockClear();
-
-  return {
-    doctorCommand,
-    runtime,
-    detectLegacyStateMigrations,
-    runLegacyStateMigrations,
-  };
-}
-
 beforeEach(() => {
   confirm.mockReset().mockResolvedValue(true);
   select.mockReset().mockResolvedValue("node");

@@ -331,7 +331,7 @@ export async function runOnboardingWizard(
   }
 
   const snapshot = await readConfigFileSnapshot();
-  let baseConfig: RemoteClawConfig = snapshot.valid ? snapshot.config : {};
+  let baseConfig: RemoteClawConfig = snapshot.valid ? (snapshot.exists ? snapshot.config : {}) : {};
 
   if (snapshot.exists && !snapshot.valid) {
     await prompter.note(onboardHelpers.summarizeExistingConfig(baseConfig), "Invalid config");

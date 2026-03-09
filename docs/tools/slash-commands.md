@@ -9,7 +9,6 @@ title: "Slash Commands"
 # Slash commands
 
 Commands are handled by the Gateway. Most commands must be sent as a **standalone** message that starts with `/`.
-The host-only bash chat command uses `! <cmd>` (with `/bash <cmd>` as an alias).
 
 There are two related systems:
 
@@ -33,8 +32,6 @@ They run immediately, are stripped before the model sees the message, and the re
     native: "auto",
 
     text: true,
-    bash: false,
-    bashForegroundMs: 2000,
     config: false,
     debug: false,
     restart: false,
@@ -54,8 +51,6 @@ They run immediately, are stripped before the model sees the message, and the re
   - Set `channels.discord.commands.native`, `channels.telegram.commands.native`, or `channels.slack.commands.native` to override per provider (bool or `"auto"`).
   - `false` clears previously registered commands on Discord/Telegram at startup. Slack commands are managed in the Slack app and are not removed automatically.
 
-- `commands.bash` (default `false`) enables `! <cmd>` to run host shell commands (`/bash <cmd>` is an alias; requires `tools.elevated` allowlists).
-- `commands.bashForegroundMs` (default `2000`) controls how long bash waits before switching to background mode (`0` backgrounds immediately).
 - `commands.config` (default `false`) enables `/config` (reads/writes `remoteclaw.json`).
 - `commands.debug` (default `false`) enables `/debug` (runtime-only overrides).
 - `commands.allowFrom` (optional) sets a per-provider allowlist for command authorization. When configured, it is the
@@ -100,12 +95,6 @@ Text + native (when enabled):
 - `/elevated off|on|ask|full` (alias: `/elev`) (toggle elevated bash permissions; tracked for removal in #517)
 - `/notice off|on|full` (alias: `/notices`) (toggle system notice level)
 - `/model [provider/model[@profile]]` (switch model mid-session; `/model status` or `/model list` to show current; supports config-defined aliases)
-
-Text-only:
-
-- `! <command>` (host-only; one at a time; use `!poll` + `!stop` for long-running jobs)
-- `!poll` (check output / status; accepts optional `sessionId`; `/bash poll` also works)
-- `!stop` (stop the running bash job; accepts optional `sessionId`; `/bash stop` also works)
 
 Notes:
 

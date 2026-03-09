@@ -34,7 +34,6 @@ export function getAvailableCommands(): AvailableCommand[] {
     { name: "elevated", description: "Toggle elevated mode (on|off)." },
     { name: "model", description: "Select a model (list|status|<name>)." },
     { name: "queue", description: "Adjust queue mode and options." },
-    { name: "bash", description: "Run a host command (if enabled)." },
     { name: "compact", description: "Compact the session history." },
   ];
 }

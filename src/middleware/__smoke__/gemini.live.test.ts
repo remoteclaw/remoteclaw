@@ -66,6 +66,63 @@ describe.skipIf(!LIVE)("gemini CLI middleware smoke test", () => {
     firstSessionId = result.run.sessionId;
   }, 60_000);
 
+  it("processes an image attachment and describes the content", async () => {
+    // 100x100 solid red PNG
+    const pngBase64 =
+      "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAABFUlEQVR4nO3OUQkAIABEsetfWiv4Nx4IC7Cd7XvkByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIX4Q4gchfhDiByF+EOIHIReeLesrH9s1agAAAABJRU5ErkJggg==";
+    const testImagePath = join(tempDir, "test-image.png");
+    await writeFile(testImagePath, Buffer.from(pngBase64, "base64"));
+
+    const msg = makeMessage("What color is this image? Reply with just the color name.");
+    msg.mediaUrls = [testImagePath];
+
+    const result = await bridge.handle(msg);
+
+    expect(result.payloads.length).toBeGreaterThan(0);
+    expect(result.run.text).toBeTruthy();
+    expect(result.run.text.toLowerCase()).toContain("red");
+    expect(result.run.aborted).toBe(false);
+    expect(result.run.sessionId).toBeTruthy();
+  }, 60_000);
+
+  it("processes an audio attachment and describes the content", async () => {
+    // Generate a minimal WAV file with a 440Hz sine tone (1 second, 8kHz mono 16-bit)
+    const sampleRate = 8000;
+    const numSamples = sampleRate;
+    const dataSize = numSamples * 2;
+    const header = Buffer.alloc(44);
+    header.write("RIFF", 0);
+    header.writeUInt32LE(36 + dataSize, 4);
+    header.write("WAVE", 8);
+    header.write("fmt ", 12);
+    header.writeUInt32LE(16, 16);
+    header.writeUInt16LE(1, 20);
+    header.writeUInt16LE(1, 22);
+    header.writeUInt32LE(sampleRate, 24);
+    header.writeUInt32LE(sampleRate * 2, 28);
+    header.writeUInt16LE(2, 32);
+    header.writeUInt16LE(16, 34);
+    header.write("data", 36);
+    header.writeUInt32LE(dataSize, 40);
+    const samples = Buffer.alloc(dataSize);
+    for (let i = 0; i < numSamples; i++) {
+      const sample = Math.sin((2 * Math.PI * 440 * i) / sampleRate) * 0x7fff;
+      samples.writeInt16LE(Math.round(sample), i * 2);
+    }
+    const testAudioPath = join(tempDir, "test-tone.wav");
+    await writeFile(testAudioPath, Buffer.concat([header, samples]));
+
+    const msg = makeMessage("What do you hear in this audio? Reply briefly.");
+    msg.mediaUrls = [testAudioPath];
+
+    const result = await bridge.handle(msg);
+
+    expect(result.payloads.length).toBeGreaterThan(0);
+    expect(result.run.text).toBeTruthy();
+    expect(result.run.aborted).toBe(false);
+    expect(result.run.sessionId).toBeTruthy();
+  }, 60_000);
+
   it("resumes the session on a follow-up message", async () => {
     expect(firstSessionId).toBeTruthy();
 

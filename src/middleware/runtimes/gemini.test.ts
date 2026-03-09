@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -22,6 +22,20 @@ class TestableGeminiCliRuntime extends GeminiCliRuntime {
 
   public get testSupportsStdinPrompt(): boolean {
     return this.supportsStdinPrompt;
+  }
+
+  public testPrepareMedia(params: AgentExecuteParams): Promise<AgentExecuteParams> {
+    return (
+      this as unknown as { prepareMedia(p: AgentExecuteParams): Promise<AgentExecuteParams> }
+    ).prepareMedia(params);
+  }
+
+  public testCleanupMediaTempDir(): Promise<void> {
+    return (this as unknown as { cleanupMediaTempDir(): Promise<void> }).cleanupMediaTempDir();
+  }
+
+  public get testMediaTempDir(): string | undefined {
+    return (this as unknown as { mediaTempDir: string | undefined }).mediaTempDir;
   }
 }
 
@@ -432,6 +446,150 @@ describe("GeminiCliRuntime", () => {
         outputTokens: 50,
       });
       expect(doneEvent.result.usage).not.toHaveProperty("cacheReadTokens");
+    });
+  });
+
+  // ── media preparation ────────────────────────────────────────────────
+
+  describe("prepareMedia", () => {
+    afterEach(async () => {
+      await runtime.testCleanupMediaTempDir();
+    });
+
+    it("creates temp file and injects @path in prompt for image attachment", async () => {
+      const prepared = await runtime.testPrepareMedia(
+        makeParams({
+          prompt: "describe this",
+          media: [{ mimeType: "image/png", base64: "aW1hZ2U=" }],
+        }),
+      );
+
+      expect(prepared.prompt).toMatch(/^@\S+\.png describe this$/);
+      expect(runtime.testMediaTempDir).toBeDefined();
+      const files = await readdir(runtime.testMediaTempDir!);
+      expect(files).toHaveLength(1);
+      expect(files[0]).toMatch(/\.png$/);
+    });
+
+    it("creates temp file and injects @path for audio attachment", async () => {
+      const prepared = await runtime.testPrepareMedia(
+        makeParams({
+          prompt: "transcribe this",
+          media: [{ mimeType: "audio/ogg", base64: "YXVkaW8=" }],
+        }),
+      );
+
+      expect(prepared.prompt).toMatch(/^@\S+\.ogg transcribe this$/);
+    });
+
+    it("creates multiple temp files for multiple attachments", async () => {
+      const prepared = await runtime.testPrepareMedia(
+        makeParams({
+          prompt: "describe all",
+          media: [
+            { mimeType: "image/jpeg", base64: "aW1n" },
+            { mimeType: "audio/ogg", base64: "YXVk" },
+          ],
+        }),
+      );
+
+      expect(prepared.prompt).toMatch(/^@\S+\.jpg @\S+\.ogg describe all$/);
+      const files = await readdir(runtime.testMediaTempDir!);
+      expect(files).toHaveLength(2);
+    });
+
+    it("returns params unchanged when no media is present", async () => {
+      const params = makeParams();
+      const prepared = await runtime.testPrepareMedia(params);
+      expect(prepared).toBe(params);
+      expect(runtime.testMediaTempDir).toBeUndefined();
+    });
+
+    it("reads from filePath when base64 is not available", async () => {
+      const sourceDir = join(
+        tmpdir(),
+        `gemini-test-src-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      );
+      await mkdir(sourceDir, { recursive: true });
+      const sourcePath = join(sourceDir, "test.jpg");
+      await writeFile(sourcePath, Buffer.from("testcontent"));
+
+      try {
+        const prepared = await runtime.testPrepareMedia(
+          makeParams({
+            prompt: "describe",
+            media: [{ mimeType: "image/jpeg", filePath: sourcePath }],
+          }),
+        );
+
+        expect(prepared.prompt).toMatch(/^@\S+\.jpg describe$/);
+        const files = await readdir(runtime.testMediaTempDir!);
+        expect(files).toHaveLength(1);
+        const content = await readFile(join(runtime.testMediaTempDir!, files[0]));
+        expect(content.toString()).toBe("testcontent");
+      } finally {
+        await rm(sourceDir, { recursive: true, force: true });
+      }
+    });
+
+    it("skips attachments with neither base64 nor filePath", async () => {
+      const prepared = await runtime.testPrepareMedia(
+        makeParams({
+          prompt: "describe",
+          media: [{ mimeType: "image/jpeg" }],
+        }),
+      );
+
+      // No files written → params returned unchanged (mediaRefs empty)
+      expect(prepared.prompt).toBe("describe");
+    });
+
+    it("cleans up temp directory after cleanupMediaTempDir()", async () => {
+      await runtime.testPrepareMedia(
+        makeParams({
+          media: [{ mimeType: "image/png", base64: "dGVzdA==" }],
+        }),
+      );
+
+      const tempDir = runtime.testMediaTempDir!;
+      expect(tempDir).toBeDefined();
+
+      await runtime.testCleanupMediaTempDir();
+
+      await expect(readdir(tempDir)).rejects.toThrow();
+      expect(runtime.testMediaTempDir).toBeUndefined();
+    });
+
+    it("writes correct binary content from base64", async () => {
+      const originalContent = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+      const base64 = originalContent.toString("base64");
+
+      await runtime.testPrepareMedia(
+        makeParams({
+          media: [{ mimeType: "image/png", base64 }],
+        }),
+      );
+
+      const files = await readdir(runtime.testMediaTempDir!);
+      const written = await readFile(join(runtime.testMediaTempDir!, files[0]));
+      expect(written).toEqual(originalContent);
+    });
+  });
+
+  // ── mediaCapabilities ─────────────────────────────────────────────────
+
+  describe("mediaCapabilities", () => {
+    it("accepts inbound images, audio, video, and PDF", () => {
+      expect(runtime.mediaCapabilities.acceptsInbound).toEqual([
+        "image/",
+        "audio/",
+        "video/",
+        "application/pdf",
+      ]);
+    });
+
+    it("does not emit outbound media", () => {
+      expect(runtime.mediaCapabilities.emitsOutbound).toBe(false);
     });
   });
 

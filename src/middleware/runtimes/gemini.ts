@@ -1,5 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { mkdir, readFile, readdir, rm, rmdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { logDebug } from "../../logger.js";
 import { CLIRuntimeBase } from "../cli-runtime-base.js";
 import type {
   AgentDoneEvent,
@@ -21,7 +24,7 @@ export class GeminiCliRuntime extends CLIRuntimeBase {
   // ── Media capabilities ────────────────────────────────────────────────
 
   readonly mediaCapabilities = {
-    acceptsInbound: ["image/", "audio/", "video/"],
+    acceptsInbound: ["image/", "audio/", "video/", "application/pdf"],
     emitsOutbound: false,
   } as const;
 
@@ -30,6 +33,7 @@ export class GeminiCliRuntime extends CLIRuntimeBase {
   private currentSessionId: string | undefined;
   private accumulatedText = "";
   private resultStats: GeminiResultStats | undefined;
+  private mediaTempDir: string | undefined;
 
   constructor() {
     super("gemini");
@@ -54,7 +58,9 @@ export class GeminiCliRuntime extends CLIRuntimeBase {
     try {
       await mcpConfigManager?.setup();
 
-      for await (const event of super.execute(params)) {
+      const prepared = await this.prepareMedia(params);
+
+      for await (const event of super.execute(prepared)) {
         if (event.type === "done") {
           this.enrichDoneEvent(event);
         }
@@ -62,6 +68,7 @@ export class GeminiCliRuntime extends CLIRuntimeBase {
       }
     } finally {
       await mcpConfigManager?.teardown();
+      await this.cleanupMediaTempDir();
     }
   }
 
@@ -198,12 +205,71 @@ export class GeminiCliRuntime extends CLIRuntimeBase {
     }
   }
 
+  // ── Media preparation ────────────────────────────────────────────────
+
+  /**
+   * Save media attachments to temp files and inject `@path` references into
+   * the prompt.  Gemini CLI resolves `@path` inline references natively.
+   */
+  private async prepareMedia(params: AgentExecuteParams): Promise<AgentExecuteParams> {
+    if (!params.media?.length) {
+      return params;
+    }
+
+    const tempDir = join(tmpdir(), `remoteclaw-gemini-media-${randomUUID()}`);
+    await mkdir(tempDir, { recursive: true });
+    this.mediaTempDir = tempDir;
+
+    const mediaRefs: string[] = [];
+
+    for (const attachment of params.media) {
+      const ext = extensionForMime(attachment.mimeType);
+      const fileName = `media-${mediaRefs.length}${ext}`;
+      const filePath = join(tempDir, fileName);
+
+      if (attachment.base64) {
+        await writeFile(filePath, Buffer.from(attachment.base64, "base64"));
+        mediaRefs.push(filePath);
+      } else if (attachment.filePath) {
+        try {
+          const content = await readFile(attachment.filePath);
+          await writeFile(filePath, content);
+          mediaRefs.push(filePath);
+        } catch {
+          logDebug(`[gemini-runtime] failed to read media file: ${attachment.filePath}`);
+        }
+      }
+    }
+
+    if (mediaRefs.length === 0) {
+      return params;
+    }
+
+    const mediaPrefix = mediaRefs.map((ref) => `@${ref}`).join(" ");
+    return {
+      ...params,
+      prompt: `${mediaPrefix} ${params.prompt}`,
+    };
+  }
+
+  private async cleanupMediaTempDir(): Promise<void> {
+    if (this.mediaTempDir) {
+      try {
+        await rm(this.mediaTempDir, { recursive: true, force: true });
+      } catch {
+        // Best-effort cleanup
+      }
+      this.mediaTempDir = undefined;
+    }
+  }
+
   // ── State reset ───────────────────────────────────────────────────────
 
   private resetState(): void {
     this.currentSessionId = undefined;
     this.accumulatedText = "";
     this.resultStats = undefined;
+    this.mediaTempDir = undefined;
   }
 }
 
@@ -316,4 +382,23 @@ export class GeminiMcpConfigManager {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Map common MIME types to file extensions for Gemini CLI `@path` references. */
+function extensionForMime(mimeType: string): string {
+  const map: Record<string, string> = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "audio/ogg": ".ogg",
+    "audio/mpeg": ".mp3",
+    "audio/wav": ".wav",
+    "audio/webm": ".weba",
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
+    "video/quicktime": ".mov",
+    "application/pdf": ".pdf",
+  };
+  return map[mimeType] ?? "";
 }

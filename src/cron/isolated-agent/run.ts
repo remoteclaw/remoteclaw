@@ -1,6 +1,9 @@
 import crypto from "node:crypto";
 import {
   resolveAgentConfig,
+  resolveAgentRuntimeArgs,
+  resolveAgentRuntimeEnv,
+  resolveAgentRuntimeOrThrow,
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
@@ -23,11 +26,6 @@ import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.j
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { logWarn } from "../../logger.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
-import {
-  resolveCliRuntimeArgs,
-  resolveCliRuntimeEnv,
-  resolveCliRuntimeProvider,
-} from "../../middleware/runtime-factory.js";
 import type { SessionMap } from "../../middleware/session-map.js";
 import type { AgentDeliveryResult, ChannelMessage } from "../../middleware/types.js";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../../routing/session-key.js";
@@ -349,13 +347,13 @@ export async function runCronIsolatedAgentTurn(params: {
     });
 
     const bridge = new ChannelBridge({
-      provider: resolveCliRuntimeProvider(cfgWithAgentDefaults),
+      provider: resolveAgentRuntimeOrThrow(params.cfg, agentId),
       sessionMap,
       gatewayUrl: resolveGatewayUrlFromConfig(cfgWithAgentDefaults),
       gatewayToken: resolveGatewayTokenFromConfig(cfgWithAgentDefaults),
       workspaceDir,
-      runtimeArgs: resolveCliRuntimeArgs(cfgWithAgentDefaults),
-      runtimeEnv: resolveCliRuntimeEnv(cfgWithAgentDefaults),
+      runtimeArgs: resolveAgentRuntimeArgs(params.cfg, agentId),
+      runtimeEnv: resolveAgentRuntimeEnv(params.cfg, agentId),
     });
 
     const messageToolHints = resolveChannelMessageToolHints({

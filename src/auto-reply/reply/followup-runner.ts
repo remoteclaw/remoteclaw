@@ -1,4 +1,9 @@
 import crypto from "node:crypto";
+import {
+  resolveAgentRuntimeArgs,
+  resolveAgentRuntimeEnv,
+  resolveAgentRuntimeOrThrow,
+} from "../../agents/agent-scope.js";
 import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { resolveGatewayPort } from "../../config/paths.js";
 import type { SessionEntry } from "../../config/sessions.js";
@@ -6,11 +11,6 @@ import type { TypingMode } from "../../config/types.js";
 import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.js";
 import { logVerbose } from "../../globals.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
-import {
-  resolveCliRuntimeArgs,
-  resolveCliRuntimeEnv,
-  resolveCliRuntimeProvider,
-} from "../../middleware/runtime-factory.js";
 import type { SessionMap } from "../../middleware/session-map.js";
 import type { BridgeCallbacks, ChannelMessage } from "../../middleware/types.js";
 import type { GetReplyOptions } from "../types.js";
@@ -66,13 +66,13 @@ export function createFollowupRunner(params: {
         : "";
 
       const bridge = new ChannelBridge({
-        provider: resolveCliRuntimeProvider(cfg),
+        provider: resolveAgentRuntimeOrThrow(cfg, queued.run.agentId),
         sessionMap,
         gatewayUrl,
         gatewayToken,
         workspaceDir: queued.run.workspaceDir,
-        runtimeArgs: resolveCliRuntimeArgs(cfg),
-        runtimeEnv: resolveCliRuntimeEnv(cfg),
+        runtimeArgs: resolveAgentRuntimeArgs(cfg, queued.run.agentId),
+        runtimeEnv: resolveAgentRuntimeEnv(cfg, queued.run.agentId),
       });
 
       // Build channel message from followup run fields.

@@ -243,6 +243,8 @@ export const AgentEntrySchema = z
     runtime: z
       .union([z.literal("claude"), z.literal("gemini"), z.literal("codex"), z.literal("opencode")])
       .optional(),
+    runtimeArgs: z.array(z.string()).optional(),
+    runtimeEnv: z.record(z.string(), z.string()).optional(),
   })
   .strict();
 

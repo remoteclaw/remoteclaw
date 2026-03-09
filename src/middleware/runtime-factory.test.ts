@@ -1,13 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  _resetValidationCache,
-  createCliRuntime,
-  resolveCliRuntimeArgs,
-  resolveCliRuntimeEnv,
-  resolveCliRuntimeProvider,
-  SUPPORTED_PROVIDERS,
-} from "./runtime-factory.js";
+import { _resetValidationCache, createCliRuntime, SUPPORTED_PROVIDERS } from "./runtime-factory.js";
 import { ClaudeCliRuntime } from "./runtimes/claude.js";
 import { CodexCliRuntime } from "./runtimes/codex.js";
 import { GeminiCliRuntime } from "./runtimes/gemini.js";
@@ -166,101 +159,5 @@ describe("createCliRuntime", () => {
       }
       expect(mockedExecFileSync).toHaveBeenCalledTimes(4);
     });
-  });
-});
-
-// ── resolveCliRuntimeProvider ─────────────────────────────────────────────
-
-describe("resolveCliRuntimeProvider", () => {
-  it("returns agents.defaults.runtime when set", () => {
-    expect(resolveCliRuntimeProvider({ agents: { defaults: { runtime: "gemini" } } })).toBe(
-      "gemini",
-    );
-  });
-
-  it("throws when runtime is undefined", () => {
-    expect(() => resolveCliRuntimeProvider({ agents: { defaults: {} } })).toThrow(
-      "No runtime configured",
-    );
-  });
-
-  it("throws when defaults is undefined", () => {
-    expect(() => resolveCliRuntimeProvider({ agents: {} })).toThrow("No runtime configured");
-  });
-
-  it("throws when agents is undefined", () => {
-    expect(() => resolveCliRuntimeProvider({})).toThrow("No runtime configured");
-  });
-
-  it("throws when config is undefined", () => {
-    expect(() => resolveCliRuntimeProvider(undefined)).toThrow("No runtime configured");
-  });
-
-  it("includes supported providers in error message", () => {
-    expect(() => resolveCliRuntimeProvider({})).toThrow("claude, gemini, codex, opencode");
-  });
-});
-
-// ── resolveCliRuntimeArgs ───────────────────────────────────────────────
-
-describe("resolveCliRuntimeArgs", () => {
-  it("returns agents.defaults.runtimeArgs when set", () => {
-    expect(
-      resolveCliRuntimeArgs({
-        agents: { defaults: { runtimeArgs: ["--dangerously-skip-permissions"] } },
-      }),
-    ).toEqual(["--dangerously-skip-permissions"]);
-  });
-
-  it("returns undefined when runtimeArgs is not set", () => {
-    expect(resolveCliRuntimeArgs({ agents: { defaults: {} } })).toBeUndefined();
-  });
-
-  it("returns undefined when defaults is undefined", () => {
-    expect(resolveCliRuntimeArgs({ agents: {} })).toBeUndefined();
-  });
-
-  it("returns undefined when agents is undefined", () => {
-    expect(resolveCliRuntimeArgs({})).toBeUndefined();
-  });
-
-  it("returns undefined when config is undefined", () => {
-    expect(resolveCliRuntimeArgs(undefined)).toBeUndefined();
-  });
-
-  it("returns empty array when set to empty array", () => {
-    expect(resolveCliRuntimeArgs({ agents: { defaults: { runtimeArgs: [] } } })).toEqual([]);
-  });
-});
-
-// ── resolveCliRuntimeEnv ────────────────────────────────────────────────
-
-describe("resolveCliRuntimeEnv", () => {
-  it("returns agents.defaults.runtimeEnv when set", () => {
-    expect(
-      resolveCliRuntimeEnv({
-        agents: { defaults: { runtimeEnv: { ANTHROPIC_API_KEY: "sk-ant-test" } } },
-      }),
-    ).toEqual({ ANTHROPIC_API_KEY: "sk-ant-test" });
-  });
-
-  it("returns undefined when runtimeEnv is not set", () => {
-    expect(resolveCliRuntimeEnv({ agents: { defaults: {} } })).toBeUndefined();
-  });
-
-  it("returns undefined when defaults is undefined", () => {
-    expect(resolveCliRuntimeEnv({ agents: {} })).toBeUndefined();
-  });
-
-  it("returns undefined when agents is undefined", () => {
-    expect(resolveCliRuntimeEnv({})).toBeUndefined();
-  });
-
-  it("returns undefined when config is undefined", () => {
-    expect(resolveCliRuntimeEnv(undefined)).toBeUndefined();
-  });
-
-  it("returns empty object when set to empty object", () => {
-    expect(resolveCliRuntimeEnv({ agents: { defaults: { runtimeEnv: {} } } })).toEqual({});
   });
 });

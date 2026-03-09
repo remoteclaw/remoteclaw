@@ -35,6 +35,8 @@ type ResolvedAgentConfig = {
   tools?: AgentEntry["tools"];
   auth?: AgentEntry["auth"];
   runtime?: AgentEntry["runtime"];
+  runtimeArgs?: AgentEntry["runtimeArgs"];
+  runtimeEnv?: AgentEntry["runtimeEnv"];
 };
 
 let defaultAgentWarned = false;
@@ -134,6 +136,8 @@ export function resolveAgentConfig(
     tools: entry.tools,
     auth: entry.auth,
     runtime: entry.runtime,
+    runtimeArgs: entry.runtimeArgs,
+    runtimeEnv: entry.runtimeEnv,
   };
 }
 
@@ -174,6 +178,59 @@ export function resolveAgentRuntime(
     return entry.runtime;
   }
   return cfg.agents?.defaults?.runtime ?? undefined;
+}
+
+/**
+ * Resolve the effective runtime for an agent, throwing if unset.
+ *
+ * Same as {@link resolveAgentRuntime} but throws when neither the agent entry
+ * nor defaults define a runtime.
+ */
+export function resolveAgentRuntimeOrThrow(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): "claude" | "gemini" | "codex" | "opencode" {
+  const runtime = resolveAgentRuntime(cfg, agentId);
+  if (!runtime) {
+    throw new Error(
+      "No runtime configured. Set agents.defaults.runtime to one of: claude, gemini, codex, opencode",
+    );
+  }
+  return runtime;
+}
+
+/**
+ * Resolve the effective runtimeArgs for an agent.
+ *
+ * Resolution: agent entry `runtimeArgs` replaces `agents.defaults.runtimeArgs`.
+ * Returns `undefined` when neither the entry nor defaults define runtimeArgs.
+ */
+export function resolveAgentRuntimeArgs(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): string[] | undefined {
+  const entry = resolveAgentEntry(cfg, normalizeAgentId(agentId));
+  if (entry?.runtimeArgs) {
+    return entry.runtimeArgs;
+  }
+  return cfg.agents?.defaults?.runtimeArgs ?? undefined;
+}
+
+/**
+ * Resolve the effective runtimeEnv for an agent.
+ *
+ * Resolution: agent entry `runtimeEnv` replaces `agents.defaults.runtimeEnv`.
+ * Returns `undefined` when neither the entry nor defaults define runtimeEnv.
+ */
+export function resolveAgentRuntimeEnv(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): Record<string, string> | undefined {
+  const entry = resolveAgentEntry(cfg, normalizeAgentId(agentId));
+  if (entry?.runtimeEnv) {
+    return entry.runtimeEnv;
+  }
+  return cfg.agents?.defaults?.runtimeEnv ?? undefined;
 }
 
 export function resolveFallbackAgentId(params: {

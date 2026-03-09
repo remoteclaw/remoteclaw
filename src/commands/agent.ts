@@ -1,5 +1,8 @@
 import {
   listAgentIds,
+  resolveAgentRuntimeArgs,
+  resolveAgentRuntimeEnv,
+  resolveAgentRuntimeOrThrow,
   resolveSessionAgentId,
   resolveAgentWorkspaceDir,
 } from "../agents/agent-scope.js";
@@ -29,11 +32,6 @@ import {
   registerAgentRunContext,
 } from "../infra/agent-events.js";
 import { ChannelBridge } from "../middleware/channel-bridge.js";
-import {
-  resolveCliRuntimeArgs,
-  resolveCliRuntimeEnv,
-  resolveCliRuntimeProvider,
-} from "../middleware/runtime-factory.js";
 import type { SessionMap } from "../middleware/session-map.js";
 import type { AgentDeliveryResult, ChannelMessage } from "../middleware/types.js";
 import { normalizeAgentId } from "../routing/session-key.js";
@@ -291,13 +289,13 @@ export async function agentCommand(
       });
 
       const bridge = new ChannelBridge({
-        provider: resolveCliRuntimeProvider(cfg),
+        provider: resolveAgentRuntimeOrThrow(cfg, sessionAgentId),
         sessionMap,
         gatewayUrl: resolveGatewayUrlFromConfig(cfg),
         gatewayToken: resolveGatewayTokenFromConfig(cfg),
         workspaceDir,
-        runtimeArgs: resolveCliRuntimeArgs(cfg),
-        runtimeEnv: resolveCliRuntimeEnv(cfg),
+        runtimeArgs: resolveAgentRuntimeArgs(cfg, sessionAgentId),
+        runtimeEnv: resolveAgentRuntimeEnv(cfg, sessionAgentId),
       });
 
       const messageToolHints = resolveChannelMessageToolHints({

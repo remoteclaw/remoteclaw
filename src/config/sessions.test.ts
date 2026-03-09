@@ -458,36 +458,6 @@ describe("sessions", () => {
     expect(store["agent:main:new"]?.sessionId).toBe("sess-new");
   });
 
-  it("loadSessionStore auto-migrates legacy provider keys to channel keys", async () => {
-    const mainSessionKey = "agent:main:main";
-    const dir = await createCaseDir("loadSessionStore");
-    const storePath = path.join(dir, "sessions.json");
-    await fs.writeFile(
-      storePath,
-      JSON.stringify(
-        {
-          [mainSessionKey]: {
-            sessionId: "sess-legacy",
-            updatedAt: 123,
-            provider: "slack",
-            lastProvider: "telegram",
-            lastTo: "user:U123",
-          },
-        },
-        null,
-        2,
-      ),
-      "utf-8",
-    );
-
-    const store = loadSessionStore(storePath) as unknown as Record<string, Record<string, unknown>>;
-    const entry = store[mainSessionKey] ?? {};
-    expect(entry.channel).toBe("slack");
-    expect(entry.provider).toBeUndefined();
-    expect(entry.lastChannel).toBe("telegram");
-    expect(entry.lastProvider).toBeUndefined();
-  });
-
   it("derives session transcripts dir from REMOTECLAW_STATE_DIR", () => {
     const dir = resolveSessionTranscriptsDir(
       { REMOTECLAW_STATE_DIR: "/custom/state" } as NodeJS.ProcessEnv,

@@ -1,6 +1,7 @@
 import JSON5 from "json5";
-import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
 import { parseBooleanValue } from "../utils/boolean.js";
+
+const MANIFEST_KEY = "remoteclaw" as const;
 
 export function normalizeStringList(input: unknown): string[] {
   if (!input) {
@@ -46,12 +47,9 @@ export function resolveRemoteClawManifestBlock(params: {
       return undefined;
     }
 
-    const manifestKeys = [MANIFEST_KEY, ...LEGACY_MANIFEST_KEYS];
-    for (const key of manifestKeys) {
-      const candidate = (parsed as Record<string, unknown>)[key];
-      if (candidate && typeof candidate === "object") {
-        return candidate as Record<string, unknown>;
-      }
+    const candidate = (parsed as Record<string, unknown>)[MANIFEST_KEY];
+    if (candidate && typeof candidate === "object") {
+      return candidate as Record<string, unknown>;
     }
     return undefined;
   } catch {

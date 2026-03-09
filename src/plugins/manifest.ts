@@ -1,18 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import {
-  LEGACY_MANIFEST_KEYS,
-  LEGACY_PLUGIN_MANIFEST_FILENAMES,
-  MANIFEST_KEY,
-} from "../compat/legacy-names.js";
 import { isRecord } from "../utils.js";
 import type { PluginConfigUiHint, PluginKind } from "./types.js";
 
+const MANIFEST_KEY = "remoteclaw" as const;
+
 export const PLUGIN_MANIFEST_FILENAME = "remoteclaw.plugin.json";
-export const PLUGIN_MANIFEST_FILENAMES = [
-  PLUGIN_MANIFEST_FILENAME,
-  ...LEGACY_PLUGIN_MANIFEST_FILENAMES,
-] as const;
 
 export type PluginManifest = {
   id: string;
@@ -41,12 +34,6 @@ function normalizeStringList(value: unknown): string[] {
 }
 
 export function resolvePluginManifestPath(rootDir: string): string {
-  for (const filename of PLUGIN_MANIFEST_FILENAMES) {
-    const candidate = path.join(rootDir, filename);
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-  }
   return path.join(rootDir, PLUGIN_MANIFEST_FILENAME);
 }
 
@@ -147,13 +134,12 @@ export type RemoteClawPackageManifest = {
 };
 
 export type ManifestKey = typeof MANIFEST_KEY;
-type LegacyManifestKey = (typeof LEGACY_MANIFEST_KEYS)[number];
 
 export type PackageManifest = {
   name?: string;
   version?: string;
   description?: string;
-} & Partial<Record<ManifestKey | LegacyManifestKey, RemoteClawPackageManifest>>; // oxlint-disable-line typescript-eslint/no-redundant-type-constituents -- legacy keys empty during rebrand
+} & Partial<Record<ManifestKey, RemoteClawPackageManifest>>;
 
 export function getPackageManifestMetadata(
   manifest: PackageManifest | undefined,
@@ -161,15 +147,5 @@ export function getPackageManifestMetadata(
   if (!manifest) {
     return undefined;
   }
-  const current = manifest[MANIFEST_KEY];
-  if (current) {
-    return current;
-  }
-  for (const key of LEGACY_MANIFEST_KEYS) {
-    const legacy = manifest[key];
-    if (legacy) {
-      return legacy;
-    }
-  }
-  return undefined;
+  return manifest[MANIFEST_KEY];
 }

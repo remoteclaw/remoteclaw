@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
 import { fileExists, readJsonFile, resolveArchiveKind } from "../infra/archive.js";
 import { resolveExistingInstallPath, withExtractedArchiveRoot } from "../infra/install-flow.js";
 import {
@@ -32,12 +31,14 @@ type PluginInstallLogger = {
   warn?: (message: string) => void;
 };
 
+const MANIFEST_KEY = "remoteclaw" as const;
+
 type ManifestMeta = { extensions?: string[] };
 type PackageManifest = {
   name?: string;
   version?: string;
   dependencies?: Record<string, string>;
-} & Partial<Record<typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number], ManifestMeta>>; // oxlint-disable-line typescript-eslint/no-redundant-type-constituents -- legacy keys empty during rebrand
+} & Partial<Record<typeof MANIFEST_KEY, ManifestMeta>>;
 
 export type InstallPluginResult =
   | {
@@ -78,16 +79,7 @@ function validatePluginId(pluginId: string): string | null {
 }
 
 async function ensureRemoteClawExtensions(manifest: PackageManifest) {
-  let extensions = manifest[MANIFEST_KEY]?.extensions;
-  if (!Array.isArray(extensions)) {
-    for (const key of LEGACY_MANIFEST_KEYS) {
-      const legacy = manifest[key]?.extensions;
-      if (Array.isArray(legacy)) {
-        extensions = legacy;
-        break;
-      }
-    }
-  }
+  const extensions = manifest[MANIFEST_KEY]?.extensions;
   if (!Array.isArray(extensions)) {
     throw new Error("package.json missing remoteclaw.extensions");
   }

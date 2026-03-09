@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { isPathInsideWithRealpath } from "../security/scan-paths.js";
@@ -21,12 +20,11 @@ import type {
   ParsedHookFrontmatter,
 } from "./types.js";
 
+const MANIFEST_KEY = "remoteclaw" as const;
+
 type HookPackageManifest = {
   name?: string;
-} & Partial<
-  // oxlint-disable-next-line typescript-eslint/no-redundant-type-constituents -- legacy keys empty during rebrand
-  Record<typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number], { hooks?: string[] }>
->;
+} & Partial<Record<typeof MANIFEST_KEY, { hooks?: string[] }>>;
 const log = createSubsystemLogger("hooks/workspace");
 
 function filterHookEntries(
@@ -51,16 +49,7 @@ function readHookPackageManifest(dir: string): HookPackageManifest | null {
 }
 
 function resolvePackageHooks(manifest: HookPackageManifest): string[] {
-  let raw = manifest[MANIFEST_KEY]?.hooks;
-  if (!Array.isArray(raw)) {
-    for (const key of LEGACY_MANIFEST_KEYS) {
-      const legacy = manifest[key]?.hooks;
-      if (Array.isArray(legacy)) {
-        raw = legacy;
-        break;
-      }
-    }
-  }
+  const raw = manifest[MANIFEST_KEY]?.hooks;
   if (!Array.isArray(raw)) {
     return [];
   }

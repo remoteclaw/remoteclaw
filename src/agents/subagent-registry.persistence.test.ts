@@ -269,40 +269,6 @@ describe("subagent registry persistence", () => {
     expect(match).toBeFalsy();
   });
 
-  it("maps legacy announce fields into cleanup state", async () => {
-    const persisted = {
-      version: 1,
-      runs: {
-        "run-legacy": {
-          runId: "run-legacy",
-          childSessionKey: "agent:main:subagent:legacy",
-          requesterSessionKey: "agent:main:main",
-          requesterDisplayKey: "main",
-          task: "legacy announce",
-          cleanup: "keep",
-          createdAt: 1,
-          startedAt: 1,
-          endedAt: 2,
-          announceCompletedAt: 9,
-          announceHandled: true,
-          requesterChannel: "whatsapp",
-          requesterAccountId: "legacy-account",
-        },
-      },
-    };
-    const registryPath = await writePersistedRegistry(persisted);
-
-    const runs = loadSubagentRegistryFromDisk();
-    const entry = runs.get("run-legacy");
-    expect(entry?.cleanupHandled).toBe(true);
-    expect(entry?.cleanupCompletedAt).toBe(9);
-    expect(entry?.requesterOrigin?.channel).toBe("whatsapp");
-    expect(entry?.requesterOrigin?.accountId).toBe("legacy-account");
-
-    const after = JSON.parse(await fs.readFile(registryPath, "utf8")) as { version?: number };
-    expect(after.version).toBe(2);
-  });
-
   it("retries cleanup announce after a failed announce", async () => {
     const persisted = createPersistedEndedRun({
       runId: "run-3",

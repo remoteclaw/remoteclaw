@@ -2,8 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import { loadHookEntriesFromDir } from "./workspace.js";
+
+const MANIFEST_KEY = "remoteclaw" as const;
 
 describe("hooks workspace", () => {
   it("ignores package.json hook paths that traverse outside package directory", () => {

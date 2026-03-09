@@ -15,7 +15,6 @@ const resolveToolPolicyForAgent = (_cfg: unknown, _agentId?: string) =>
   undefined as ToolPolicy | undefined;
 type ToolPolicy = { allow?: string[]; deny?: string[] };
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
-import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import type { RemoteClawConfig, ConfigFileSnapshot } from "../config/config.js";
 import { createConfigIO } from "../config/config.js";
 import { collectIncludePathsRecursive } from "../config/includes-scan.js";
@@ -46,6 +45,8 @@ function normalizeToolPolicy(config?: {
 }
 import { extensionUsesSkippedScannerPath, isPathInside } from "./scan-paths.js";
 import type { ExecFn } from "./windows-acl.js";
+
+const MANIFEST_KEY = "remoteclaw" as const;
 
 export type SecurityAuditFinding = {
   checkId: string;

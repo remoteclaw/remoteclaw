@@ -4,7 +4,6 @@ import {
   GroupChatSchema,
   HumanDelaySchema,
   IdentitySchema,
-  ToolsLinksSchema,
   ToolsMediaSchema,
 } from "./zod-schema.core.js";
 
@@ -263,7 +262,6 @@ export const ToolsSchema = z
   .object({
     ...CommonToolPolicyFields,
     media: ToolsMediaSchema,
-    links: ToolsLinksSchema,
     sessions: z
       .object({
         visibility: z.enum(["self", "tree", "agent", "all"]).optional(),

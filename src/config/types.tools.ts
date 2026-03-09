@@ -1,5 +1,4 @@
-import type { ChatType } from "../channels/chat-type.js";
-import type { AgentElevatedAllowFromConfig, SessionSendPolicyAction } from "./types.base.js";
+import type { AgentElevatedAllowFromConfig } from "./types.base.js";
 
 // Stub type: exec-safe-bin-policy infrastructure was gutted.
 type SafeBinProfileFixture = {
@@ -7,33 +6,6 @@ type SafeBinProfileFixture = {
   maxPositional?: number;
   allowedValueFlags?: readonly string[];
   deniedFlags?: readonly string[];
-};
-
-export type MediaUnderstandingScopeMatch = {
-  channel?: string;
-  chatType?: ChatType;
-  keyPrefix?: string;
-};
-
-export type MediaUnderstandingScopeRule = {
-  action: SessionSendPolicyAction;
-  match?: MediaUnderstandingScopeMatch;
-};
-
-export type MediaUnderstandingScopeConfig = {
-  default?: SessionSendPolicyAction;
-  rules?: MediaUnderstandingScopeRule[];
-};
-
-export type MediaUnderstandingCapability = "image" | "audio" | "video";
-
-export type MediaUnderstandingAttachmentsConfig = {
-  /** Select the first matching attachment or process multiple. */
-  mode?: "first" | "all";
-  /** Max number of attachments to process (default: 1). */
-  maxAttachments?: number;
-  /** Attachment ordering preference. */
-  prefer?: "first" | "last" | "path" | "url";
 };
 
 type MediaProviderRequestConfig = {
@@ -56,8 +28,6 @@ export type MediaUnderstandingModelConfig = MediaProviderRequestConfig & {
   provider?: string;
   /** Model id for provider-based understanding. */
   model?: string;
-  /** Optional capability tags for shared model lists. */
-  capabilities?: MediaUnderstandingCapability[];
   /** Use a CLI command instead of provider API. */
   type?: "provider" | "cli";
   /** CLI binary (required when type=cli). */
@@ -83,8 +53,6 @@ export type MediaUnderstandingModelConfig = MediaProviderRequestConfig & {
 export type MediaUnderstandingConfig = MediaProviderRequestConfig & {
   /** Enable media understanding when models are configured. */
   enabled?: boolean;
-  /** Optional scope gating for understanding. */
-  scope?: MediaUnderstandingScopeConfig;
   /** Default max bytes to send. */
   maxBytes?: number;
   /** Default max output characters. */
@@ -95,44 +63,12 @@ export type MediaUnderstandingConfig = MediaProviderRequestConfig & {
   timeoutSeconds?: number;
   /** Default language hint (audio). */
   language?: string;
-  /** Attachment selection policy. */
-  attachments?: MediaUnderstandingAttachmentsConfig;
   /** Ordered model list (fallbacks in order). */
   models?: MediaUnderstandingModelConfig[];
-};
-
-export type LinkModelConfig = {
-  /** Use a CLI command for link processing. */
-  type?: "cli";
-  /** CLI binary (required when type=cli). */
-  command: string;
-  /** CLI args (template-enabled). */
-  args?: string[];
-  /** Optional timeout override (seconds) for this model entry. */
-  timeoutSeconds?: number;
-};
-
-export type LinkToolsConfig = {
-  /** Enable link understanding when models are configured. */
-  enabled?: boolean;
-  /** Optional scope gating for understanding. */
-  scope?: MediaUnderstandingScopeConfig;
-  /** Max number of links to process per message. */
-  maxLinks?: number;
-  /** Default timeout (seconds). */
-  timeoutSeconds?: number;
-  /** Ordered model list (fallbacks in order). */
-  models?: LinkModelConfig[];
 };
 
 export type MediaToolsConfig = {
-  /** Shared model list applied across image/audio/video. */
-  models?: MediaUnderstandingModelConfig[];
-  /** Max concurrent media understanding runs. */
-  concurrency?: number;
-  image?: MediaUnderstandingConfig;
   audio?: MediaUnderstandingConfig;
-  video?: MediaUnderstandingConfig;
 };
 
 export type ToolProfileId = "minimal" | "coding" | "messaging" | "full";
@@ -277,7 +213,6 @@ export type ToolsConfig = {
   /** Optional tool policy overrides keyed by provider id or "provider/model". */
   byProvider?: Record<string, ToolPolicyConfig>;
   media?: MediaToolsConfig;
-  links?: LinkToolsConfig;
   /** Message tool configuration. */
   message?: {
     /**

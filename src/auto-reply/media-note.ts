@@ -47,32 +47,6 @@ function isAudioPath(path: string | undefined): boolean {
 }
 
 export function buildInboundMediaNote(ctx: MsgContext): string | undefined {
-  // Attachment indices follow MediaPaths/MediaUrls ordering as supplied by the channel.
-  const suppressed = new Set<number>();
-  const transcribedAudioIndices = new Set<number>();
-  if (Array.isArray(ctx.MediaUnderstanding)) {
-    for (const output of ctx.MediaUnderstanding) {
-      suppressed.add(output.attachmentIndex);
-      if (output.kind === "audio.transcription") {
-        transcribedAudioIndices.add(output.attachmentIndex);
-      }
-    }
-  }
-  if (Array.isArray(ctx.MediaUnderstandingDecisions)) {
-    for (const decision of ctx.MediaUnderstandingDecisions) {
-      if (decision.outcome !== "success") {
-        continue;
-      }
-      for (const attachment of decision.attachments) {
-        if (attachment.chosen?.outcome === "success") {
-          suppressed.add(attachment.attachmentIndex);
-          if (decision.capability === "audio") {
-            transcribedAudioIndices.add(attachment.attachmentIndex);
-          }
-        }
-      }
-    }
-  }
   const pathsFromArray = Array.isArray(ctx.MediaPaths) ? ctx.MediaPaths : undefined;
   const paths =
     pathsFromArray && pathsFromArray.length > 0
@@ -105,9 +79,6 @@ export function buildInboundMediaNote(ctx: MsgContext): string | undefined {
       index,
     }))
     .filter((entry) => {
-      if (suppressed.has(entry.index)) {
-        return false;
-      }
       // Strip audio attachments when transcription succeeded - the transcript is already
       // available in the context, raw audio binary would only waste tokens (issue #4197)
       // Note: Only trust MIME type from per-entry types array, not fallback ctx.MediaType
@@ -118,10 +89,7 @@ export function buildInboundMediaNote(ctx: MsgContext): string | undefined {
       if (!isAudioEntry) {
         return true;
       }
-      if (
-        transcribedAudioIndices.has(entry.index) ||
-        (canStripSingleAttachmentByTranscript && entry.index === 0)
-      ) {
+      if (canStripSingleAttachmentByTranscript && entry.index === 0) {
         return false;
       }
       return true;

@@ -94,7 +94,6 @@ export default defineConfig({
         "src/channels/**",
         "src/gateway/**",
         "src/line/**",
-        "src/media-understanding/**",
         "src/node-host/**",
         "src/plugins/**",
         "src/providers/**",

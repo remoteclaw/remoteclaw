@@ -186,8 +186,8 @@ export default defineConfig({
               label: "Guides",
               items: [
                 { slug: "start/remoteclaw" },
-                { slug: "start/openclaw-or-remoteclaw" },
-                { slug: "start/nanoclaw-or-remoteclaw" },
+                { slug: "start/openclaw-or-remoteclaw", label: "Coming from OpenClaw" },
+                { slug: "start/nanoclaw-or-remoteclaw", label: "Coming from NanoClaw" },
               ],
             },
           ],

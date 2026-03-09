@@ -30,6 +30,39 @@ describe("buildSttProviderRegistry", () => {
     const registry = buildSttProviderRegistry({ openai: custom });
     expect(registry.get("openai")).toBe(custom);
   });
+
+  it("includes plugin providers", () => {
+    const plugin = {
+      id: "my-custom-stt",
+      transcribeAudio: async () => ({ text: "plugin" }),
+    };
+    const registry = buildSttProviderRegistry(undefined, [plugin]);
+    expect(registry.get("my-custom-stt")).toBe(plugin);
+    // Built-in providers still present
+    expect(registry.has("openai")).toBe(true);
+  });
+
+  it("plugin providers override built-in providers", () => {
+    const plugin = {
+      id: "openai",
+      transcribeAudio: async () => ({ text: "plugin-openai" }),
+    };
+    const registry = buildSttProviderRegistry(undefined, [plugin]);
+    expect(registry.get("openai")).toBe(plugin);
+  });
+
+  it("overrides take precedence over plugin providers", () => {
+    const plugin = {
+      id: "openai",
+      transcribeAudio: async () => ({ text: "plugin-openai" }),
+    };
+    const override = {
+      id: "openai",
+      transcribeAudio: async () => ({ text: "override-openai" }),
+    };
+    const registry = buildSttProviderRegistry({ openai: override }, [plugin]);
+    expect(registry.get("openai")).toBe(override);
+  });
 });
 
 describe("getSttProvider", () => {

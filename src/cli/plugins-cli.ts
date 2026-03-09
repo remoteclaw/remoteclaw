@@ -107,6 +107,9 @@ function formatPluginLine(plugin: PluginRecord, verbose = false): string {
   if (plugin.providerIds.length > 0) {
     parts.push(`  providers: ${plugin.providerIds.join(", ")}`);
   }
+  if (plugin.sttProviderIds.length > 0) {
+    parts.push(`  stt: ${plugin.sttProviderIds.join(", ")}`);
+  }
   if (plugin.error) {
     parts.push(theme.error(`  error: ${plugin.error}`));
   }
@@ -301,6 +304,9 @@ export function registerPluginsCli(program: Command) {
       }
       if (plugin.providerIds.length > 0) {
         lines.push(`${theme.muted("Providers:")} ${plugin.providerIds.join(", ")}`);
+      }
+      if (plugin.sttProviderIds.length > 0) {
+        lines.push(`${theme.muted("STT providers:")} ${plugin.sttProviderIds.join(", ")}`);
       }
       if (plugin.cliCommands.length > 0) {
         lines.push(`${theme.muted("CLI commands:")} ${plugin.cliCommands.join(", ")}`);

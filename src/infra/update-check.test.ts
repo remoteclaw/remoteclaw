@@ -15,6 +15,27 @@ describe("compareSemverStrings", () => {
     expect(compareSemverStrings("1.0.0", "1.0.0.beta.1")).toBe(1);
   });
 
+  it("correctly orders next channel versions with datetime-based prerelease", () => {
+    expect(
+      compareSemverStrings(
+        "0.1.0-next.20260309160000.abc1234",
+        "0.1.0-next.20260309150000.def5678",
+      ),
+    ).toBe(1);
+    expect(
+      compareSemverStrings(
+        "0.1.0-next.20260309150000.def5678",
+        "0.1.0-next.20260309160000.abc1234",
+      ),
+    ).toBe(-1);
+    expect(
+      compareSemverStrings(
+        "0.1.0-next.20260309150000.abc1234",
+        "0.1.0-next.20260309150000.abc1234",
+      ),
+    ).toBe(0);
+  });
+
   it("returns null for invalid inputs", () => {
     expect(compareSemverStrings("1.0", "1.0.0")).toBeNull();
     expect(compareSemverStrings("latest", "1.0.0")).toBeNull();

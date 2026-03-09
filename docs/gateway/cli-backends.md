@@ -1,9 +1,9 @@
 ---
-description: “CLI backends: text-only path via local AI CLIs”
+description: "CLI backends: text-only path via local AI CLIs"
 read_when:
   - You are configuring CLI backend settings (command path, session handling, image pass-through)
   - You need a text-only, tool-free path that still supports sessions and images
-title: “CLI Backends”
+title: "CLI Backends"
 ---
 
 # CLI backends
@@ -24,13 +24,13 @@ provides a text-only path through these CLIs:
 You can use Claude Code CLI **without any config** (RemoteClaw ships a built-in default):
 
 ```bash
-remoteclaw agent --message “hi” --model claude-cli/opus-4.6
+remoteclaw agent --message "hi" --model claude-cli/opus-4.6
 ```
 
 Codex CLI also works out of the box:
 
 ```bash
-remoteclaw agent --message “hi” --model codex-cli/gpt-5.3-codex
+remoteclaw agent --message "hi" --model codex-cli/gpt-5.3-codex
 ```
 
 If your gateway runs under launchd/systemd and PATH is minimal, add just the
@@ -41,8 +41,8 @@ command path:
   agents: {
     defaults: {
       cliBackends: {
-        “claude-cli”: {
-          command: “/opt/homebrew/bin/claude”,
+        "claude-cli": {
+          command: "/opt/homebrew/bin/claude",
         },
       },
     },

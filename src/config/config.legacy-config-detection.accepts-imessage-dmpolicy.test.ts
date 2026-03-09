@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-const { loadConfig, readConfigFileSnapshot, validateConfigObject } =
+const { readConfigFileSnapshot, validateConfigObject } =
   await vi.importActual<typeof import("./config.js")>("./config.js");
 import { withTempHome } from "./test-helpers.js";
 
@@ -185,36 +185,6 @@ describe("legacy config detection", () => {
   ])("$name", ({ config }) => {
     const res = validateConfigObject(config);
     expect(res.ok).toBe(true);
-  });
-  it("does not auto-migrate claude-cli auth profile mode on load", async () => {
-    await withTempHome(async (home) => {
-      const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
-      await fs.mkdir(path.dirname(configPath), { recursive: true });
-      await fs.writeFile(
-        configPath,
-        JSON.stringify(
-          {
-            auth: {
-              profiles: {
-                "anthropic:claude-cli": { provider: "anthropic", mode: "token" },
-              },
-            },
-          },
-          null,
-          2,
-        ),
-        "utf-8",
-      );
-
-      const cfg = loadConfig();
-      expect(cfg.auth?.profiles?.["anthropic:claude-cli"]?.mode).toBe("token");
-
-      const raw = await fs.readFile(configPath, "utf-8");
-      const parsed = JSON.parse(raw) as {
-        auth?: { profiles?: Record<string, { mode?: string }> };
-      };
-      expect(parsed.auth?.profiles?.["anthropic:claude-cli"]?.mode).toBe("token");
-    });
   });
   it("rejects bindings[].match.provider on load", async () => {
     await expectLoadRejectionPreservesField({

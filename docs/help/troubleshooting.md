@@ -241,7 +241,6 @@ flowchart TD
 
     - [/gateway/troubleshooting#node-paired-tool-fails](/gateway/troubleshooting#node-paired-tool-fails)
     - [/nodes/troubleshooting](/nodes/troubleshooting)
-    - [/tools/exec-approvals](/tools/exec-approvals)
 
 </details>
 

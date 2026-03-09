@@ -311,6 +311,5 @@ Option B:
 ## Related docs
 
 - [Exec tool](/tools/exec)
-- [Exec approvals](/tools/exec-approvals)
 - [Nodes](/nodes)
 - [Elevated mode](/tools/elevated)

@@ -108,5 +108,4 @@ The node host stores its node id, token, display name, and gateway connection in
 `system.run` is gated by local exec approvals:
 
 - `~/.remoteclaw/exec-approvals.json`
-- [Exec approvals](/tools/exec-approvals)
 - `remoteclaw approvals --node <id|name|ip>` (edit from the Gateway)

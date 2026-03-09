@@ -211,7 +211,6 @@ Related:
 
 - [/nodes/troubleshooting](/nodes/troubleshooting)
 - [/nodes/index](/nodes/index)
-- [/tools/exec-approvals](/tools/exec-approvals)
 
 ## Browser tool fails
 

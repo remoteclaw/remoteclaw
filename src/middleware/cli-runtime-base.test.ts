@@ -598,6 +598,56 @@ describe("CLIRuntimeBase", () => {
       );
       expect(stderrErrors).toHaveLength(0);
     });
+
+    it("emits CLI_EXIT_ERROR when non-zero exit with no stderr and no NDJSON output", async () => {
+      const runtime = new TestRuntime("test-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      mockChild.stdout.end();
+      mockChild.emit("exit", 1, null);
+
+      const events = await promise;
+
+      expect(events).toContainEqual({
+        type: "error",
+        message: "Agent process exited with code 1",
+        code: "CLI_EXIT_ERROR",
+      });
+    });
+
+    it("does not emit CLI_EXIT_ERROR when non-zero exit has NDJSON output", async () => {
+      const runtime = new TestRuntime("test-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      mockChild.stdout.write('{"type":"text","text":"partial"}\n');
+      mockChild.stdout.end();
+      mockChild.emit("exit", 1, null);
+
+      const events = await promise;
+
+      const exitErrors = events.filter(
+        (e) => e.type === "error" && "code" in e && e.code === "CLI_EXIT_ERROR",
+      );
+      expect(exitErrors).toHaveLength(0);
+    });
+
+    it("does not emit CLI_EXIT_ERROR on zero exit with no output", async () => {
+      const runtime = new TestRuntime("test-cli");
+
+      const promise = collectEvents(runtime.execute(defaultParams));
+
+      mockChild.stdout.end();
+      mockChild.emit("exit", 0, null);
+
+      const events = await promise;
+
+      const exitErrors = events.filter(
+        (e) => e.type === "error" && "code" in e && e.code === "CLI_EXIT_ERROR",
+      );
+      expect(exitErrors).toHaveLength(0);
+    });
   });
 
   describe("done event", () => {

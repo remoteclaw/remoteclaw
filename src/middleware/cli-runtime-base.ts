@@ -268,6 +268,15 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       } satisfies AgentErrorEvent;
     }
 
+    // ── Fallback error for non-zero exit with no output ────────────────
+    if (exitCode !== 0 && !yieldedEvents && !stderr) {
+      yield {
+        type: "error",
+        message: `Agent process exited with code ${exitCode}`,
+        code: "CLI_EXIT_ERROR",
+      } satisfies AgentErrorEvent;
+    }
+
     // ── Emit terminal events ─────────────────────────────────────────
     if (startupTimedOut) {
       yield {

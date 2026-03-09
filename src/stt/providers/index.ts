@@ -24,10 +24,16 @@ export function normalizeSttProviderId(id: string): string {
 
 export function buildSttProviderRegistry(
   overrides?: Record<string, SttProvider>,
+  pluginProviders?: SttProvider[],
 ): Map<string, SttProvider> {
   const registry = new Map<string, SttProvider>();
   for (const provider of STT_PROVIDERS) {
     registry.set(normalizeSttProviderId(provider.id), provider);
+  }
+  if (pluginProviders) {
+    for (const provider of pluginProviders) {
+      registry.set(normalizeSttProviderId(provider.id), provider);
+    }
   }
   if (overrides) {
     for (const [key, provider] of Object.entries(overrides)) {

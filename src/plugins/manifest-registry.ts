@@ -29,6 +29,7 @@ export type PluginManifestRecord = {
   channels: string[];
   providers: string[];
   skills: string[];
+  stt: string[];
   origin: PluginOrigin;
   workspaceDir?: string;
   rootDir: string;
@@ -120,6 +121,7 @@ function buildRecord(params: {
     channels: params.manifest.channels ?? [],
     providers: params.manifest.providers ?? [],
     skills: params.manifest.skills ?? [],
+    stt: params.manifest.stt ?? [],
     origin: params.candidate.origin,
     workspaceDir: params.candidate.workspaceDir,
     rootDir: params.candidate.rootDir,

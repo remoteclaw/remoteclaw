@@ -14,6 +14,7 @@ import type {
 } from "../config/types.tools.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
+import { getActivePluginRegistry } from "../plugins/runtime.js";
 import { runExec } from "../process/exec.js";
 import { buildSttProviderRegistry, transcribeAudioWithProvider } from "../stt/stt.js";
 import type { SttProvider } from "../stt/types.js";
@@ -329,7 +330,8 @@ export async function runProviderEntry(params: {
         };
       }
     }
-    const sttRegistry = buildSttProviderRegistry(sttOverrides);
+    const pluginSttProviders = getActivePluginRegistry()?.sttProviders.map((r) => r.provider);
+    const sttRegistry = buildSttProviderRegistry(sttOverrides, pluginSttProviders);
     const result = await transcribeAudioWithProvider({
       buffer: media.buffer,
       fileName: media.fileName,

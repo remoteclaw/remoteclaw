@@ -18,6 +18,7 @@ import { VERSION } from "../version.js";
 import { DuplicateAgentDirError, findDuplicateAgentDirs } from "./agent-dirs.js";
 import { maintainConfigBackups } from "./backup-rotation.js";
 import {
+  applyCompactionDefaults,
   applyContextPruningDefaults,
   applyAgentDefaults,
   applyLoggingDefaults,
@@ -42,6 +43,7 @@ import {
 } from "./includes.js";
 import { findLegacyConfigIssues } from "./legacy.js";
 import { applyMergePatch } from "./merge-patch.js";
+import { normalizeExecSafeBinProfilesInConfig } from "./normalize-exec-safe-bin.js";
 import { normalizeConfigPaths } from "./normalize-paths.js";
 import { resolveConfigPath, resolveDefaultConfigCandidates, resolveStateDir } from "./paths.js";
 import { isBlockedObjectKey } from "./prototype-keys.js";
@@ -66,6 +68,7 @@ const SHELL_ENV_EXPECTED_KEYS = [
   "OPENROUTER_API_KEY",
   "AI_GATEWAY_API_KEY",
   "MINIMAX_API_KEY",
+  "MODELSTUDIO_API_KEY",
   "SYNTHETIC_API_KEY",
   "KILOCODE_API_KEY",
   "ELEVENLABS_API_KEY",
@@ -73,8 +76,8 @@ const SHELL_ENV_EXPECTED_KEYS = [
   "DISCORD_BOT_TOKEN",
   "SLACK_BOT_TOKEN",
   "SLACK_APP_TOKEN",
-  "REMOTECLAW_GATEWAY_TOKEN",
-  "REMOTECLAW_GATEWAY_PASSWORD",
+  "OPENCLAW_GATEWAY_TOKEN",
+  "OPENCLAW_GATEWAY_PASSWORD",
 ];
 
 const OPEN_DM_POLICY_ALLOW_FROM_RE =
@@ -138,37 +141,27 @@ export type ReadConfigFileSnapshotForWriteResult = {
   writeOptions: ConfigWriteOptions;
 };
 
+export type RuntimeConfigSnapshotRefreshParams = {
+  sourceConfig: RemoteClawConfig;
+};
+
+export type RuntimeConfigSnapshotRefreshHandler = {
+  refresh: (params: RuntimeConfigSnapshotRefreshParams) => boolean | Promise<boolean>;
+  clearOnRefreshFailure?: () => void;
+};
+
+export class ConfigRuntimeRefreshError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "ConfigRuntimeRefreshError";
+  }
+}
+
 function hashConfigRaw(raw: string | null): string {
   return crypto
     .createHash("sha256")
     .update(raw ?? "")
     .digest("hex");
-}
-
-async function tightenStateDirPermissionsIfNeeded(params: {
-  configPath: string;
-  env: NodeJS.ProcessEnv;
-  homedir: () => string;
-  fsModule: typeof fs;
-}): Promise<void> {
-  if (process.platform === "win32") {
-    return;
-  }
-  const stateDir = resolveStateDir(params.env, params.homedir);
-  const configDir = path.dirname(params.configPath);
-  if (path.resolve(configDir) !== path.resolve(stateDir)) {
-    return;
-  }
-  try {
-    const stat = await params.fsModule.promises.stat(configDir);
-    const mode = stat.mode & 0o777;
-    if ((mode & 0o077) === 0) {
-      return;
-    }
-    await params.fsModule.promises.chmod(configDir, 0o700);
-  } catch {
-    // Best-effort hardening only; callers still need the config write to proceed.
-  }
 }
 
 function formatConfigValidationFailure(pathLabel: string, issueMessage: string): string {
@@ -779,15 +772,17 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       warnIfConfigFromFuture(validated.config, deps.logger);
       const cfg = applyTalkConfigNormalization(
         applyModelDefaults(
-          applyContextPruningDefaults(
-            applyAgentDefaults(
-              applySessionDefaults(applyLoggingDefaults(applyMessageDefaults(validated.config))),
+          applyCompactionDefaults(
+            applyContextPruningDefaults(
+              applyAgentDefaults(
+                applySessionDefaults(applyLoggingDefaults(applyMessageDefaults(validated.config))),
+              ),
             ),
           ),
         ),
       );
       normalizeConfigPaths(cfg);
-      // Exec safe-bin normalization removed (#70)
+      normalizeExecSafeBinProfilesInConfig(cfg);
 
       const duplicates = findDuplicateAgentDirs(cfg, {
         env: deps.env,
@@ -869,8 +864,10 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       const config = applyTalkApiKey(
         applyTalkConfigNormalization(
           applyModelDefaults(
-            applyContextPruningDefaults(
-              applyAgentDefaults(applySessionDefaults(applyMessageDefaults({}))),
+            applyCompactionDefaults(
+              applyContextPruningDefaults(
+                applyAgentDefaults(applySessionDefaults(applyMessageDefaults({}))),
+              ),
             ),
           ),
         ),
@@ -987,7 +984,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
           ),
         ),
       );
-      // Exec safe-bin normalization removed (#70)
+      normalizeExecSafeBinProfilesInConfig(snapshotConfig);
       return {
         snapshot: {
           path: configPath,
@@ -1139,12 +1136,6 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
 
     const dir = path.dirname(configPath);
     await deps.fs.promises.mkdir(dir, { recursive: true, mode: 0o700 });
-    await tightenStateDirPermissionsIfNeeded({
-      configPath,
-      env: deps.env,
-      homedir: deps.homedir,
-      fsModule: deps.fs,
-    });
     const outputConfigBase =
       envRefMap && changedPaths
         ? (restoreEnvRefsFromMap(cfgToWrite, "", envRefMap, changedPaths) as RemoteClawConfig)
@@ -1188,7 +1179,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
         return;
       }
       const isVitest = deps.env.VITEST === "true";
-      const shouldLogInVitest = deps.env.REMOTECLAW_TEST_CONFIG_OVERWRITE_LOG === "1";
+      const shouldLogInVitest = deps.env.OPENCLAW_TEST_CONFIG_OVERWRITE_LOG === "1";
       if (isVitest && !shouldLogInVitest) {
         return;
       }
@@ -1204,7 +1195,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       }
       // Tests often write minimal configs (missing meta, etc); keep output quiet unless requested.
       const isVitest = deps.env.VITEST === "true";
-      const shouldLogInVitest = deps.env.REMOTECLAW_TEST_CONFIG_WRITE_ANOMALY_LOG === "1";
+      const shouldLogInVitest = deps.env.OPENCLAW_TEST_CONFIG_WRITE_ANOMALY_LOG === "1";
       if (isVitest && !shouldLogInVitest) {
         return;
       }
@@ -1220,16 +1211,16 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       cwd: process.cwd(),
       argv: process.argv.slice(0, 8),
       execArgv: process.execArgv.slice(0, 8),
-      watchMode: deps.env.REMOTECLAW_WATCH_MODE === "1",
+      watchMode: deps.env.OPENCLAW_WATCH_MODE === "1",
       watchSession:
-        typeof deps.env.REMOTECLAW_WATCH_SESSION === "string" &&
-        deps.env.REMOTECLAW_WATCH_SESSION.trim().length > 0
-          ? deps.env.REMOTECLAW_WATCH_SESSION.trim()
+        typeof deps.env.OPENCLAW_WATCH_SESSION === "string" &&
+        deps.env.OPENCLAW_WATCH_SESSION.trim().length > 0
+          ? deps.env.OPENCLAW_WATCH_SESSION.trim()
           : null,
       watchCommand:
-        typeof deps.env.REMOTECLAW_WATCH_COMMAND === "string" &&
-        deps.env.REMOTECLAW_WATCH_COMMAND.trim().length > 0
-          ? deps.env.REMOTECLAW_WATCH_COMMAND.trim()
+        typeof deps.env.OPENCLAW_WATCH_COMMAND === "string" &&
+        deps.env.OPENCLAW_WATCH_COMMAND.trim().length > 0
+          ? deps.env.OPENCLAW_WATCH_COMMAND.trim()
           : null,
       existsBefore: snapshot.exists,
       previousHash: previousHash ?? null,
@@ -1319,7 +1310,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
 }
 
 // NOTE: These wrappers intentionally do *not* cache the resolved config path at
-// module scope. `REMOTECLAW_CONFIG_PATH` (and friends) are expected to work even
+// module scope. `OPENCLAW_CONFIG_PATH` (and friends) are expected to work even
 // when set after the module has been imported (tests, one-off scripts, etc.).
 const DEFAULT_CONFIG_CACHE_MS = 200;
 const AUTO_OWNER_DISPLAY_SECRET_BY_PATH = new Map<string, string>();
@@ -1331,9 +1322,11 @@ let configCache: {
   config: RemoteClawConfig;
 } | null = null;
 let runtimeConfigSnapshot: RemoteClawConfig | null = null;
+let runtimeConfigSourceSnapshot: RemoteClawConfig | null = null;
+let runtimeConfigSnapshotRefreshHandler: RuntimeConfigSnapshotRefreshHandler | null = null;
 
 function resolveConfigCacheMs(env: NodeJS.ProcessEnv): number {
-  const raw = env.REMOTECLAW_CONFIG_CACHE_MS?.trim();
+  const raw = env.OPENCLAW_CONFIG_CACHE_MS?.trim();
   if (raw === "" || raw === "0") {
     return 0;
   }
@@ -1348,7 +1341,7 @@ function resolveConfigCacheMs(env: NodeJS.ProcessEnv): number {
 }
 
 function shouldUseConfigCache(env: NodeJS.ProcessEnv): boolean {
-  if (env.REMOTECLAW_DISABLE_CONFIG_CACHE?.trim()) {
+  if (env.OPENCLAW_DISABLE_CONFIG_CACHE?.trim()) {
     return false;
   }
   return resolveConfigCacheMs(env) > 0;
@@ -1358,18 +1351,85 @@ export function clearConfigCache(): void {
   configCache = null;
 }
 
-export function getRuntimeConfigSnapshot(): RemoteClawConfig | null {
-  return runtimeConfigSnapshot;
-}
-
-export function setRuntimeConfigSnapshot(config: RemoteClawConfig): void {
+export function setRuntimeConfigSnapshot(
+  config: RemoteClawConfig,
+  sourceConfig?: RemoteClawConfig,
+): void {
   runtimeConfigSnapshot = config;
+  runtimeConfigSourceSnapshot = sourceConfig ?? null;
   clearConfigCache();
 }
 
 export function clearRuntimeConfigSnapshot(): void {
   runtimeConfigSnapshot = null;
+  runtimeConfigSourceSnapshot = null;
   clearConfigCache();
+}
+
+export function getRuntimeConfigSnapshot(): RemoteClawConfig | null {
+  return runtimeConfigSnapshot;
+}
+
+export function getRuntimeConfigSourceSnapshot(): RemoteClawConfig | null {
+  return runtimeConfigSourceSnapshot;
+}
+
+function isCompatibleTopLevelRuntimeProjectionShape(params: {
+  runtimeSnapshot: RemoteClawConfig;
+  candidate: RemoteClawConfig;
+}): boolean {
+  const runtime = params.runtimeSnapshot as Record<string, unknown>;
+  const candidate = params.candidate as Record<string, unknown>;
+  for (const key of Object.keys(runtime)) {
+    if (!Object.hasOwn(candidate, key)) {
+      return false;
+    }
+    const runtimeValue = runtime[key];
+    const candidateValue = candidate[key];
+    const runtimeType = Array.isArray(runtimeValue)
+      ? "array"
+      : runtimeValue === null
+        ? "null"
+        : typeof runtimeValue;
+    const candidateType = Array.isArray(candidateValue)
+      ? "array"
+      : candidateValue === null
+        ? "null"
+        : typeof candidateValue;
+    if (runtimeType !== candidateType) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function projectConfigOntoRuntimeSourceSnapshot(config: RemoteClawConfig): RemoteClawConfig {
+  if (!runtimeConfigSnapshot || !runtimeConfigSourceSnapshot) {
+    return config;
+  }
+  if (config === runtimeConfigSnapshot) {
+    return runtimeConfigSourceSnapshot;
+  }
+  // This projection expects callers to pass config objects derived from the
+  // active runtime snapshot (for example shallow/deep clones with targeted edits).
+  // For structurally unrelated configs, skip projection to avoid accidental
+  // merge-patch deletions or reintroducing resolved values into source refs.
+  if (
+    !isCompatibleTopLevelRuntimeProjectionShape({
+      runtimeSnapshot: runtimeConfigSnapshot,
+      candidate: config,
+    })
+  ) {
+    return config;
+  }
+  const runtimePatch = createMergePatch(runtimeConfigSnapshot, config);
+  return coerceConfig(applyMergePatch(runtimeConfigSourceSnapshot, runtimePatch));
+}
+
+export function setRuntimeConfigSnapshotRefreshHandler(
+  refreshHandler: RuntimeConfigSnapshotRefreshHandler | null,
+): void {
+  runtimeConfigSnapshotRefreshHandler = refreshHandler;
 }
 
 export function loadConfig(): RemoteClawConfig {
@@ -1417,10 +1477,51 @@ export async function writeConfigFile(
   options: ConfigWriteOptions = {},
 ): Promise<void> {
   const io = createConfigIO();
+  let nextCfg = cfg;
+  const hadRuntimeSnapshot = Boolean(runtimeConfigSnapshot);
+  const hadBothSnapshots = Boolean(runtimeConfigSnapshot && runtimeConfigSourceSnapshot);
+  if (hadBothSnapshots) {
+    const runtimePatch = createMergePatch(runtimeConfigSnapshot!, cfg);
+    nextCfg = coerceConfig(applyMergePatch(runtimeConfigSourceSnapshot!, runtimePatch));
+  }
   const sameConfigPath =
     options.expectedConfigPath === undefined || options.expectedConfigPath === io.configPath;
-  await io.writeConfigFile(cfg, {
+  await io.writeConfigFile(nextCfg, {
     envSnapshotForRestore: sameConfigPath ? options.envSnapshotForRestore : undefined,
     unsetPaths: options.unsetPaths,
   });
+  // Keep the last-known-good runtime snapshot active until the specialized refresh path
+  // succeeds, so concurrent readers do not observe unresolved SecretRefs mid-refresh.
+  const refreshHandler = runtimeConfigSnapshotRefreshHandler;
+  if (refreshHandler) {
+    try {
+      const refreshed = await refreshHandler.refresh({ sourceConfig: nextCfg });
+      if (refreshed) {
+        return;
+      }
+    } catch (error) {
+      try {
+        refreshHandler.clearOnRefreshFailure?.();
+      } catch {
+        // Keep the original refresh failure as the surfaced error.
+      }
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new ConfigRuntimeRefreshError(
+        `Config was written to ${io.configPath}, but runtime snapshot refresh failed: ${detail}`,
+        { cause: error },
+      );
+    }
+  }
+  if (hadBothSnapshots) {
+    // Refresh both snapshots from disk atomically so follow-up reads get normalized config and
+    // subsequent writes still get secret-preservation merge-patch (hadBothSnapshots stays true).
+    const fresh = io.loadConfig();
+    setRuntimeConfigSnapshot(fresh, nextCfg);
+    return;
+  }
+  if (hadRuntimeSnapshot) {
+    clearRuntimeConfigSnapshot();
+  }
+  // When we had no runtime snapshot, keep callers reading from disk/cache so external/manual
+  // edits to remoteclaw.json remain visible (no stale snapshot).
 }

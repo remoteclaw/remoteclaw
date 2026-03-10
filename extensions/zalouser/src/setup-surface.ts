@@ -1,14 +1,19 @@
+import type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+  RemoteClawConfig,
+  WizardPrompter,
+} from "remoteclaw/plugin-sdk/zalouser";
 import {
+  DEFAULT_ACCOUNT_ID,
+  formatResolvedUnresolvedNote,
   mergeAllowFromEntries,
+  normalizeAccountId,
+  patchScopedAccountConfig,
+  promptChannelAccessConfig,
+  resolveAccountIdForConfigure,
   setTopLevelChannelDmPolicyWithAllowFrom,
-} from "../../../src/channels/plugins/setup-flow-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
-import { patchScopedAccountConfig } from "../../../src/channels/plugins/setup-helpers.js";
-import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { formatResolvedUnresolvedNote } from "../../../src/plugin-sdk/resolution-notes.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "remoteclaw/plugin-sdk/zalouser";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,
@@ -16,7 +21,6 @@ import {
   checkZcaAuthenticated,
 } from "./accounts.js";
 import { writeQrDataUrlToTempFile } from "./qr-temp-file.js";
-import { zalouserSetupAdapter } from "./setup-core.js";
 import {
   logoutZaloProfile,
   resolveZaloAllowFromEntries,
@@ -48,42 +52,19 @@ function setZalouserDmPolicy(
 ): RemoteClawConfig {
   return setTopLevelChannelDmPolicyWithAllowFrom({
     cfg,
-    channel,
+    channel: "zalouser",
     dmPolicy,
   }) as RemoteClawConfig;
 }
 
-function setZalouserGroupPolicy(
-  cfg: RemoteClawConfig,
-  accountId: string,
-  groupPolicy: "open" | "allowlist" | "disabled",
-): RemoteClawConfig {
-  return setZalouserAccountScopedConfig(cfg, accountId, {
-    groupPolicy,
-  });
-}
-
-function setZalouserGroupAllowlist(
-  cfg: RemoteClawConfig,
-  accountId: string,
-  groupKeys: string[],
-): RemoteClawConfig {
-  const groups = Object.fromEntries(groupKeys.map((key) => [key, { allow: true }]));
-  return setZalouserAccountScopedConfig(cfg, accountId, {
-    groups,
-  });
-}
-
-async function noteZalouserHelp(
-  prompter: Parameters<NonNullable<ChannelSetupWizard["prepare"]>>[0]["prompter"],
-): Promise<void> {
+async function noteZalouserHelp(prompter: WizardPrompter): Promise<void> {
   await prompter.note(
     [
       "Zalo Personal Account login via QR code.",
       "",
       "This plugin uses zca-js directly (no external CLI dependency).",
       "",
-      `Docs: ${formatDocsLink("/channels/zalouser", "zalouser")}`,
+      "Docs: https://docs.remoteclaw.ai/channels/zalouser",
     ].join("\n"),
     "Zalo Personal Setup",
   );
@@ -91,7 +72,7 @@ async function noteZalouserHelp(
 
 async function promptZalouserAllowFrom(params: {
   cfg: RemoteClawConfig;
-  prompter: Parameters<NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>>[0]["prompter"];
+  prompter: WizardPrompter;
   accountId: string;
 }): Promise<RemoteClawConfig> {
   const { cfg, prompter, accountId } = params;
@@ -144,59 +125,94 @@ async function promptZalouserAllowFrom(params: {
   }
 }
 
-const zalouserDmPolicy: ChannelSetupDmPolicy = {
+function setZalouserGroupPolicy(
+  cfg: RemoteClawConfig,
+  accountId: string,
+  groupPolicy: "open" | "allowlist" | "disabled",
+): RemoteClawConfig {
+  return setZalouserAccountScopedConfig(cfg, accountId, {
+    groupPolicy,
+  });
+}
+
+function setZalouserGroupAllowlist(
+  cfg: RemoteClawConfig,
+  accountId: string,
+  groupKeys: string[],
+): RemoteClawConfig {
+  const groups = Object.fromEntries(groupKeys.map((key) => [key, { allow: true }]));
+  return setZalouserAccountScopedConfig(cfg, accountId, {
+    groups,
+  });
+}
+
+const dmPolicy: ChannelOnboardingDmPolicy = {
   label: "Zalo Personal",
   channel,
   policyKey: "channels.zalouser.dmPolicy",
   allowFromKey: "channels.zalouser.allowFrom",
   getCurrent: (cfg) => (cfg.channels?.zalouser?.dmPolicy ?? "pairing") as "pairing",
-  setPolicy: (cfg, policy) => setZalouserDmPolicy(cfg as RemoteClawConfig, policy),
+  setPolicy: (cfg, policy) => setZalouserDmPolicy(cfg, policy),
   promptAllowFrom: async ({ cfg, prompter, accountId }) => {
     const id =
       accountId && normalizeAccountId(accountId)
         ? (normalizeAccountId(accountId) ?? DEFAULT_ACCOUNT_ID)
-        : resolveDefaultZalouserAccountId(cfg as RemoteClawConfig);
-    return await promptZalouserAllowFrom({
-      cfg: cfg as RemoteClawConfig,
+        : resolveDefaultZalouserAccountId(cfg);
+    return promptZalouserAllowFrom({
+      cfg,
       prompter,
       accountId: id,
     });
   },
 };
 
-export { zalouserSetupAdapter } from "./setup-core.js";
-
-export const zalouserSetupWizard: ChannelSetupWizard = {
+export const zalouserOnboardingAdapter: ChannelOnboardingAdapter = {
   channel,
-  status: {
-    configuredLabel: "logged in",
-    unconfiguredLabel: "needs QR login",
-    configuredHint: "recommended · logged in",
-    unconfiguredHint: "recommended · QR login",
-    configuredScore: 1,
-    unconfiguredScore: 15,
-    resolveConfigured: async ({ cfg }) => {
-      const ids = listZalouserAccountIds(cfg);
-      for (const accountId of ids) {
-        const account = resolveZalouserAccountSync({ cfg, accountId });
-        if (await checkZcaAuthenticated(account.profile)) {
-          return true;
-        }
+  dmPolicy,
+  getStatus: async ({ cfg }) => {
+    const ids = listZalouserAccountIds(cfg);
+    let configured = false;
+    for (const accountId of ids) {
+      const account = resolveZalouserAccountSync({ cfg, accountId });
+      const isAuth = await checkZcaAuthenticated(account.profile);
+      if (isAuth) {
+        configured = true;
+        break;
       }
-      return false;
-    },
-    resolveStatusLines: async ({ cfg, configured }) => {
-      void cfg;
-      return [`Zalo Personal: ${configured ? "logged in" : "needs QR login"}`];
-    },
+    }
+    return {
+      channel,
+      configured,
+      statusLines: [`Zalo Personal: ${configured ? "logged in" : "needs QR login"}`],
+      selectionHint: configured ? "recommended · logged in" : "recommended · QR login",
+      quickstartScore: configured ? 1 : 15,
+    };
   },
-  prepare: async ({ cfg, accountId, prompter }) => {
+  configure: async ({
+    cfg,
+    prompter,
+    accountOverrides,
+    shouldPromptAccountIds,
+    forceAllowFrom,
+  }) => {
+    const defaultAccountId = resolveDefaultZalouserAccountId(cfg);
+    const accountId = await resolveAccountIdForConfigure({
+      cfg,
+      prompter,
+      label: "Zalo Personal",
+      accountOverride: accountOverrides.zalouser,
+      shouldPromptAccountIds,
+      listAccountIds: listZalouserAccountIds,
+      defaultAccountId,
+    });
+
     let next = cfg;
     const account = resolveZalouserAccountSync({ cfg: next, accountId });
     const alreadyAuthenticated = await checkZcaAuthenticated(account.profile);
 
     if (!alreadyAuthenticated) {
       await noteZalouserHelp(prompter);
+
       const wantsLogin = await prompter.confirm({
         message: "Login via QR code now?",
         initialValue: true,
@@ -264,56 +280,6 @@ export const zalouserSetupWizard: ChannelSetupWizard = {
       { profile: account.profile, enabled: true },
     );
 
-    return { cfg: next };
-  },
-  credentials: [],
-  groupAccess: {
-    label: "Zalo groups",
-    placeholder: "Family, Work, 123456789",
-    currentPolicy: ({ cfg, accountId }) =>
-      resolveZalouserAccountSync({ cfg, accountId }).config.groupPolicy ?? "allowlist",
-    currentEntries: ({ cfg, accountId }) =>
-      Object.keys(resolveZalouserAccountSync({ cfg, accountId }).config.groups ?? {}),
-    updatePrompt: ({ cfg, accountId }) =>
-      Boolean(resolveZalouserAccountSync({ cfg, accountId }).config.groups),
-    setPolicy: ({ cfg, accountId, policy }) =>
-      setZalouserGroupPolicy(cfg as RemoteClawConfig, accountId, policy),
-    resolveAllowlist: async ({ cfg, accountId, entries, prompter }) => {
-      if (entries.length === 0) {
-        return [];
-      }
-      const updatedAccount = resolveZalouserAccountSync({ cfg: cfg as RemoteClawConfig, accountId });
-      try {
-        const resolved = await resolveZaloGroupsByEntries({
-          profile: updatedAccount.profile,
-          entries,
-        });
-        const resolvedIds = resolved
-          .filter((entry) => entry.resolved && entry.id)
-          .map((entry) => entry.id as string);
-        const unresolved = resolved.filter((entry) => !entry.resolved).map((entry) => entry.input);
-        const keys = [...resolvedIds, ...unresolved.map((entry) => entry.trim()).filter(Boolean)];
-        const resolution = formatResolvedUnresolvedNote({
-          resolved: resolvedIds,
-          unresolved,
-        });
-        if (resolution) {
-          await prompter.note(resolution, "Zalo groups");
-        }
-        return keys;
-      } catch (err) {
-        await prompter.note(
-          `Group lookup failed; keeping entries as typed. ${String(err)}`,
-          "Zalo groups",
-        );
-        return entries.map((entry) => entry.trim()).filter(Boolean);
-      }
-    },
-    applyAllowlist: ({ cfg, accountId, resolved }) =>
-      setZalouserGroupAllowlist(cfg as RemoteClawConfig, accountId, resolved as string[]),
-  },
-  finalize: async ({ cfg, accountId, forceAllowFrom, prompter }) => {
-    let next = cfg;
     if (forceAllowFrom) {
       next = await promptZalouserAllowFrom({
         cfg: next,
@@ -321,7 +287,54 @@ export const zalouserSetupWizard: ChannelSetupWizard = {
         accountId,
       });
     }
-    return { cfg: next };
+
+    const updatedAccount = resolveZalouserAccountSync({ cfg: next, accountId });
+    const accessConfig = await promptChannelAccessConfig({
+      prompter,
+      label: "Zalo groups",
+      currentPolicy: updatedAccount.config.groupPolicy ?? "allowlist",
+      currentEntries: Object.keys(updatedAccount.config.groups ?? {}),
+      placeholder: "Family, Work, 123456789",
+      updatePrompt: Boolean(updatedAccount.config.groups),
+    });
+
+    if (accessConfig) {
+      if (accessConfig.policy !== "allowlist") {
+        next = setZalouserGroupPolicy(next, accountId, accessConfig.policy);
+      } else {
+        let keys = accessConfig.entries;
+        if (accessConfig.entries.length > 0) {
+          try {
+            const resolved = await resolveZaloGroupsByEntries({
+              profile: updatedAccount.profile,
+              entries: accessConfig.entries,
+            });
+            const resolvedIds = resolved
+              .filter((entry) => entry.resolved && entry.id)
+              .map((entry) => entry.id as string);
+            const unresolved = resolved
+              .filter((entry) => !entry.resolved)
+              .map((entry) => entry.input);
+            keys = [...resolvedIds, ...unresolved.map((entry) => entry.trim()).filter(Boolean)];
+            const resolution = formatResolvedUnresolvedNote({
+              resolved: resolvedIds,
+              unresolved,
+            });
+            if (resolution) {
+              await prompter.note(resolution, "Zalo groups");
+            }
+          } catch (err) {
+            await prompter.note(
+              `Group lookup failed; keeping entries as typed. ${String(err)}`,
+              "Zalo groups",
+            );
+          }
+        }
+        next = setZalouserGroupPolicy(next, accountId, "allowlist");
+        next = setZalouserGroupAllowlist(next, accountId, keys);
+      }
+    }
+
+    return { cfg: next, accountId };
   },
-  dmPolicy: zalouserDmPolicy,
 };

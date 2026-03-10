@@ -1,10 +1,18 @@
+import {
+  promptSecretRefForOnboarding,
+  resolveSecretInputModeForEnvSelection,
+} from "../../../commands/auth-choice.apply-helpers.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
 import type { DmPolicy, GroupPolicy } from "../../../config/types.js";
-import { promptAccountId as promptAccountIdSdk } from "../../../plugin-sdk/setup.js";
+import type { SecretInput } from "../../../config/types.secrets.js";
+import { promptAccountId as promptAccountIdSdk } from "../../../plugin-sdk/onboarding.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
 import type { WizardPrompter } from "../../../wizard/prompts.js";
 import type { PromptAccountId, PromptAccountIdParams } from "../onboarding-types.js";
-import { moveSingleAccountChannelSectionToDefaultAccount } from "../setup-helpers.js";
+import {
+  moveSingleAccountChannelSectionToDefaultAccount,
+  patchScopedAccountConfig,
+} from "../setup-helpers.js";
 
 export const promptAccountId: PromptAccountId = async (params: PromptAccountIdParams) => {
   return await promptAccountIdSdk(params);
@@ -359,50 +367,14 @@ function patchConfigForScopedAccount(params: {
           cfg,
           channelKey: channel,
         });
-  const channelConfig =
-    (seededCfg.channels?.[channel] as Record<string, unknown> | undefined) ?? {};
-
-  if (accountId === DEFAULT_ACCOUNT_ID) {
-    return {
-      ...seededCfg,
-      channels: {
-        ...seededCfg.channels,
-        [channel]: {
-          ...channelConfig,
-          ...(ensureEnabled ? { enabled: true } : {}),
-          ...patch,
-        },
-      },
-    };
-  }
-
-  const accounts =
-    (channelConfig.accounts as Record<string, Record<string, unknown>> | undefined) ?? {};
-  const existingAccount = accounts[accountId] ?? {};
-
-  return {
-    ...seededCfg,
-    channels: {
-      ...seededCfg.channels,
-      [channel]: {
-        ...channelConfig,
-        ...(ensureEnabled ? { enabled: true } : {}),
-        accounts: {
-          ...accounts,
-          [accountId]: {
-            ...existingAccount,
-            ...(ensureEnabled
-              ? {
-                  enabled:
-                    typeof existingAccount.enabled === "boolean" ? existingAccount.enabled : true,
-                }
-              : {}),
-            ...patch,
-          },
-        },
-      },
-    },
-  };
+  return patchScopedAccountConfig({
+    cfg: seededCfg,
+    channelKey: channel,
+    accountId,
+    patch,
+    ensureChannelEnabled: ensureEnabled,
+    ensureAccountEnabled: ensureEnabled,
+  });
 }
 
 export function patchChannelConfigForAccount(params: {
@@ -424,7 +396,7 @@ export function applySingleTokenPromptResult(params: {
   tokenPatchKey: "token" | "botToken";
   tokenResult: {
     useEnv: boolean;
-    token: string | null;
+    token: SecretInput | null;
   };
 }): RemoteClawConfig {
   let next = params.cfg;
@@ -503,6 +475,163 @@ export async function promptSingleChannelToken(params: {
   }
 
   return { useEnv: false, token: await promptToken() };
+}
+
+export type SingleChannelSecretInputPromptResult =
+  | { action: "keep" }
+  | { action: "use-env" }
+  | { action: "set"; value: SecretInput; resolvedValue: string };
+
+export async function runSingleChannelSecretStep(params: {
+  cfg: RemoteClawConfig;
+  prompter: Pick<WizardPrompter, "confirm" | "text" | "select" | "note">;
+  providerHint: string;
+  credentialLabel: string;
+  secretInputMode?: "plaintext" | "ref";
+  accountConfigured: boolean;
+  hasConfigToken: boolean;
+  allowEnv: boolean;
+  envValue?: string;
+  envPrompt: string;
+  keepPrompt: string;
+  inputPrompt: string;
+  preferredEnvVar?: string;
+  onMissingConfigured?: () => Promise<void>;
+  applyUseEnv?: (cfg: RemoteClawConfig) => RemoteClawConfig | Promise<RemoteClawConfig>;
+  applySet?: (
+    cfg: RemoteClawConfig,
+    value: SecretInput,
+    resolvedValue: string,
+  ) => RemoteClawConfig | Promise<RemoteClawConfig>;
+}): Promise<{
+  cfg: RemoteClawConfig;
+  action: SingleChannelSecretInputPromptResult["action"];
+  resolvedValue?: string;
+}> {
+  const promptState = buildSingleChannelSecretPromptState({
+    accountConfigured: params.accountConfigured,
+    hasConfigToken: params.hasConfigToken,
+    allowEnv: params.allowEnv,
+    envValue: params.envValue,
+  });
+
+  if (!promptState.accountConfigured && params.onMissingConfigured) {
+    await params.onMissingConfigured();
+  }
+
+  const result = await promptSingleChannelSecretInput({
+    cfg: params.cfg,
+    prompter: params.prompter,
+    providerHint: params.providerHint,
+    credentialLabel: params.credentialLabel,
+    secretInputMode: params.secretInputMode,
+    accountConfigured: promptState.accountConfigured,
+    canUseEnv: promptState.canUseEnv,
+    hasConfigToken: promptState.hasConfigToken,
+    envPrompt: params.envPrompt,
+    keepPrompt: params.keepPrompt,
+    inputPrompt: params.inputPrompt,
+    preferredEnvVar: params.preferredEnvVar,
+  });
+
+  if (result.action === "use-env") {
+    return {
+      cfg: params.applyUseEnv ? await params.applyUseEnv(params.cfg) : params.cfg,
+      action: result.action,
+      resolvedValue: params.envValue?.trim() || undefined,
+    };
+  }
+
+  if (result.action === "set") {
+    return {
+      cfg: params.applySet
+        ? await params.applySet(params.cfg, result.value, result.resolvedValue)
+        : params.cfg,
+      action: result.action,
+      resolvedValue: result.resolvedValue,
+    };
+  }
+
+  return {
+    cfg: params.cfg,
+    action: result.action,
+  };
+}
+
+export async function promptSingleChannelSecretInput(params: {
+  cfg: RemoteClawConfig;
+  prompter: Pick<WizardPrompter, "confirm" | "text" | "select" | "note">;
+  providerHint: string;
+  credentialLabel: string;
+  secretInputMode?: "plaintext" | "ref";
+  accountConfigured: boolean;
+  canUseEnv: boolean;
+  hasConfigToken: boolean;
+  envPrompt: string;
+  keepPrompt: string;
+  inputPrompt: string;
+  preferredEnvVar?: string;
+}): Promise<SingleChannelSecretInputPromptResult> {
+  const selectedMode = await resolveSecretInputModeForEnvSelection({
+    prompter: params.prompter as WizardPrompter,
+    explicitMode: params.secretInputMode,
+    copy: {
+      modeMessage: `How do you want to provide this ${params.credentialLabel}?`,
+      plaintextLabel: `Enter ${params.credentialLabel}`,
+      plaintextHint: "Stores the credential directly in OpenClaw config",
+      refLabel: "Use external secret provider",
+      refHint: "Stores a reference to env or configured external secret providers",
+    },
+  });
+
+  if (selectedMode === "plaintext") {
+    const plainResult = await promptSingleChannelToken({
+      prompter: params.prompter,
+      accountConfigured: params.accountConfigured,
+      canUseEnv: params.canUseEnv,
+      hasConfigToken: params.hasConfigToken,
+      envPrompt: params.envPrompt,
+      keepPrompt: params.keepPrompt,
+      inputPrompt: params.inputPrompt,
+    });
+    if (plainResult.useEnv) {
+      return { action: "use-env" };
+    }
+    if (plainResult.token) {
+      return { action: "set", value: plainResult.token, resolvedValue: plainResult.token };
+    }
+    return { action: "keep" };
+  }
+
+  if (params.hasConfigToken && params.accountConfigured) {
+    const keep = await params.prompter.confirm({
+      message: params.keepPrompt,
+      initialValue: true,
+    });
+    if (keep) {
+      return { action: "keep" };
+    }
+  }
+
+  const resolved = await promptSecretRefForOnboarding({
+    provider: params.providerHint,
+    config: params.cfg,
+    prompter: params.prompter as WizardPrompter,
+    preferredEnvVar: params.preferredEnvVar,
+    copy: {
+      sourceMessage: `Where is this ${params.credentialLabel} stored?`,
+      envVarPlaceholder: params.preferredEnvVar ?? "OPENCLAW_SECRET",
+      envVarFormatError:
+        'Use an env var name like "OPENCLAW_SECRET" (uppercase letters, numbers, underscores).',
+      noProvidersMessage:
+        "No file/exec secret providers are configured yet. Add one under secrets.providers, or select Environment variable.",
+    },
+  });
+  return {
+    action: "set",
+    value: resolved.ref,
+    resolvedValue: resolved.resolvedValue,
+  };
 }
 
 type ParsedAllowFromResult = { entries: string[]; error?: string };

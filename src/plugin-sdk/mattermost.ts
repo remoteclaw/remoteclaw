@@ -9,11 +9,18 @@ export {
   DEFAULT_GROUP_HISTORY_LIMIT,
   recordPendingHistoryEntryIfEnabled,
 } from "../auto-reply/reply/history.js";
+export { listSkillCommandsForAgents } from "../auto-reply/skill-commands.js";
 export type { ReplyPayload } from "../auto-reply/types.js";
 export type { ChatType } from "../channels/chat-type.js";
 export { resolveControlCommandGate } from "../channels/command-gating.js";
 export { logInboundDrop, logTypingFailure } from "../channels/logging.js";
 export { resolveAllowlistMatchSimple } from "../channels/plugins/allowlist-match.js";
+export { normalizeProviderId } from "../agents/model-selection.js";
+export {
+  buildModelsProviderData,
+  type ModelsProviderData,
+} from "../auto-reply/reply/commands-models.js";
+export { resolveStoredModelOverride } from "../auto-reply/reply/model-selection.js";
 export {
   deleteAccountFromConfigSection,
   setAccountEnabledInConfigSection,
@@ -25,7 +32,8 @@ export type { ChannelOnboardingAdapter } from "../channels/plugins/onboarding-ty
 export {
   buildSingleChannelSecretPromptState,
   promptAccountId,
-  promptSingleChannelToken,
+  promptSingleChannelSecretInput,
+  runSingleChannelSecretStep,
   resolveAccountIdForConfigure,
 } from "../channels/plugins/onboarding/helpers.js";
 export {
@@ -46,8 +54,9 @@ export type { ChannelDirectoryEntry } from "../channels/plugins/types.core.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export { createTypingCallbacks } from "../channels/typing.js";
-export type { RemoteClawConfig } from "../config/config.js";
+export type { OpenClawConfig } from "../config/config.js";
 export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
+export { loadSessionStore, resolveStorePath } from "../config/sessions.js";
 export {
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
@@ -55,7 +64,11 @@ export {
 } from "../config/runtime-group-policy.js";
 export type { BlockStreamingCoalesceConfig, DmPolicy, GroupPolicy } from "../config/types.js";
 export type { SecretInput } from "../config/types.secrets.js";
-export { normalizeSecretInputString } from "../config/types.secrets.js";
+export {
+  hasConfiguredSecretInput,
+  normalizeResolvedSecretInputString,
+  normalizeSecretInputString,
+} from "../config/types.secrets.js";
 export { buildSecretInputSchema } from "./secret-input-schema.js";
 export {
   BlockStreamingCoalesceSchema,
@@ -68,12 +81,10 @@ export { createDedupeCache } from "../infra/dedupe.js";
 export { parseStrictPositiveInteger } from "../infra/parse-finite-number.js";
 export { rawDataToString } from "../infra/ws.js";
 export { isLoopbackHost, isTrustedProxyAddress, resolveClientIp } from "../gateway/net.js";
-export { normalizeProviderId } from "../agents/provider-utils.js";
-export { loadSessionStore, resolveStorePath } from "../config/sessions.js";
 export { registerPluginHttpRoute } from "../plugins/http-registry.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
-export type { RemoteClawPluginApi } from "../plugins/types.js";
+export type { OpenClawPluginApi } from "../plugins/types.js";
 export {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
@@ -89,33 +100,5 @@ export {
 export { evaluateSenderGroupAccessForPolicy } from "./group-access.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { buildAgentMediaPayload } from "./agent-media-payload.js";
-export { getAgentScopedMediaLocalRoots } from "../media/local-roots.js";
 export { loadOutboundMediaFromUrl } from "./outbound-media.js";
 export { createScopedPairingAccess } from "./pairing-access.js";
-
-// --------------------------------------------------------------------------
-// Stubs for model-picker infrastructure (upstream modules gutted in fork).
-// These satisfy type-checking for cherry-picked model-picker code until
-// the replacement execution engine provides real implementations.
-// --------------------------------------------------------------------------
-
-export type ModelsProviderData = {
-  byProvider: Map<string, Set<string>>;
-  providers: string[];
-  resolvedDefault: { provider: string; model: string };
-};
-
-export async function buildModelsProviderData(
-  _cfg: import("../config/config.js").RemoteClawConfig,
-  _agentId?: string,
-): Promise<ModelsProviderData> {
-  return { byProvider: new Map(), providers: [], resolvedDefault: { provider: "", model: "" } };
-}
-
-export function resolveStoredModelOverride(_params: {
-  sessionEntry?: unknown;
-  sessionStore?: unknown;
-  sessionKey?: string;
-}): { model?: string; provider?: string } | null {
-  return null;
-}

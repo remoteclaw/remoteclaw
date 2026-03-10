@@ -1,27 +1,22 @@
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
 import {
-  adaptScopedAccountAccessor,
-  createScopedChannelConfigAdapter,
-  createScopedDmSecurityResolver,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
-import {
-  createLoggedPairingApprovalNotifier,
-  createPairingPrefixStripper,
-} from "remoteclaw/plugin-sdk/channel-pairing";
-import { createAllowlistProviderRouteAllowlistWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
-import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
-import { runStoppablePassiveMonitor } from "remoteclaw/plugin-sdk/extension-shared";
-import {
-  createComputedAccountStatusAdapter,
-  createDefaultChannelRuntimeState,
-} from "remoteclaw/plugin-sdk/status-helpers";
+  buildAccountScopedDmSecurityPolicy,
+  collectAllowlistProviderGroupPolicyWarnings,
+  collectOpenGroupPolicyRouteAllowlistWarnings,
+  createAccountStatusSink,
+  formatAllowFromLowercase,
+  mapAllowFromEntries,
+  runPassiveAccountLifecycle,
+} from "remoteclaw/plugin-sdk/compat";
 import {
   applyAccountNameToChannelSection,
   buildBaseChannelStatusSummary,
   buildChannelConfigSchema,
   clearAccountEntryFields,
   DEFAULT_ACCOUNT_ID,
+  deleteAccountFromConfigSection,
+  normalizeAccountId,
+  setAccountEnabledInConfigSection,
   type ChannelPlugin,
   type RemoteClawConfig,
   type ChannelSetupInput,
@@ -254,17 +249,25 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
 
       ctx.log?.info(`[${account.accountId}] starting Nextcloud Talk webhook server`);
 
-      const { stop } = await monitorNextcloudTalkProvider({
-        accountId: account.accountId,
-        config: ctx.cfg as CoreConfig,
-        runtime: ctx.runtime,
-        abortSignal: ctx.abortSignal,
-        statusSink: (patch) => ctx.setStatus({ accountId: ctx.accountId, ...patch }),
+      const statusSink = createAccountStatusSink({
+        accountId: ctx.accountId,
+        setStatus: ctx.setStatus,
       });
 
-      // Keep webhook channels pending for the account lifecycle.
-      await waitForAbortSignal(ctx.abortSignal);
-      stop();
+      await runPassiveAccountLifecycle({
+        abortSignal: ctx.abortSignal,
+        start: async () =>
+          await monitorNextcloudTalkProvider({
+            accountId: account.accountId,
+            config: ctx.cfg as CoreConfig,
+            runtime: ctx.runtime,
+            abortSignal: ctx.abortSignal,
+            statusSink,
+          }),
+        stop: async (monitor) => {
+          monitor.stop();
+        },
+      });
     },
     logoutAccount: async ({ accountId, cfg }) => {
       const nextCfg = { ...cfg } as RemoteClawConfig;

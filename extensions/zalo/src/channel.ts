@@ -1,33 +1,17 @@
 import {
-  adaptScopedAccountAccessor,
-  createScopedChannelConfigAdapter,
-  createScopedDmSecurityResolver,
-  mapAllowFromEntries,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import {
+  buildAccountScopedDmSecurityPolicy,
   buildOpenGroupPolicyRestrictSendersWarning,
   buildOpenGroupPolicyWarning,
-  createOpenProviderGroupPolicyWarningCollector,
-} from "remoteclaw/plugin-sdk/channel-policy";
-import {
-  createChannelDirectoryAdapter,
-  createEmptyChannelResult,
-  createRawChannelSendResultAdapter,
-} from "remoteclaw/plugin-sdk/channel-send-result";
-import { createStaticReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
-import { createChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
-import { listResolvedDirectoryUserEntriesFromAllowFrom } from "remoteclaw/plugin-sdk/directory-runtime";
-import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
-import { createDefaultChannelRuntimeState } from "remoteclaw/plugin-sdk/status-helpers";
-import {
-  listZaloAccountIds,
-  resolveDefaultZaloAccountId,
-  resolveZaloAccount,
-  type ResolvedZaloAccount,
-} from "./accounts.js";
-import { zaloMessageActions } from "./actions.js";
-import { ZaloConfigSchema } from "./config-schema.js";
+  collectOpenProviderGroupPolicyWarnings,
+  createAccountStatusSink,
+  mapAllowFromEntries,
+} from "remoteclaw/plugin-sdk/compat";
+import type {
+  ChannelAccountSnapshot,
+  ChannelDock,
+  ChannelPlugin,
+  RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/zalo";
 import {
   buildBaseAccountStatusSnapshot,
   buildChannelConfigSchema,
@@ -327,6 +311,10 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount, ZaloProbeResult> =
           `[${account.accountId}] Zalo probe threw before provider start: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`,
         );
       }
+      const statusSink = createAccountStatusSink({
+        accountId: ctx.accountId,
+        setStatus: ctx.setStatus,
+      });
       ctx.log?.info(`[${account.accountId}] starting provider${zaloBotLabel} mode=${mode}`);
       const { monitorZaloProvider } = await import("./monitor.js");
       return monitorZaloProvider({
@@ -340,7 +328,7 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount, ZaloProbeResult> =
         webhookSecret: account.config.webhookSecret,
         webhookPath: account.config.webhookPath,
         fetcher,
-        statusSink: (patch) => ctx.setStatus({ accountId: ctx.accountId, ...patch }),
+        statusSink,
       });
     },
   },

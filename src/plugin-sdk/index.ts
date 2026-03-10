@@ -131,7 +131,13 @@ export {
   isJsonContentType,
   readJsonWebhookBodyOrReject,
 } from "./webhook-request-guards.js";
-export { keepHttpServerTaskAlive, waitUntilAbort } from "./channel-lifecycle.js";
+export type { WebhookBodyReadProfile, WebhookInFlightLimiter } from "./webhook-request-guards.js";
+export {
+  createAccountStatusSink,
+  keepHttpServerTaskAlive,
+  runPassiveAccountLifecycle,
+  waitUntilAbort,
+} from "./channel-lifecycle.js";
 export type { AgentMediaPayload } from "./agent-media-payload.js";
 export { buildAgentMediaPayload } from "./agent-media-payload.js";
 export { buildModelsProviderData, type ModelsProviderData } from "./mattermost.js";

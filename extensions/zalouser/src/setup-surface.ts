@@ -5,18 +5,14 @@ import type {
   WizardPrompter,
 } from "remoteclaw/plugin-sdk";
 import {
-  createTopLevelChannelDmPolicy,
-  createTopLevelChannelDmPolicySetter,
-  DEFAULT_ACCOUNT_ID,
   formatResolvedUnresolvedNote,
   mergeAllowFromEntries,
   normalizeAccountId,
   patchScopedAccountConfig,
-  type ChannelSetupDmPolicy,
-  type ChannelSetupWizard,
-  type DmPolicy,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/setup";
+  promptChannelAccessConfig,
+  resolveAccountIdForConfigure,
+  setTopLevelChannelDmPolicyWithAllowFrom,
+} from "remoteclaw/plugin-sdk/zalouser";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,
@@ -62,64 +58,6 @@ function setZalouserAccountScopedConfig(
     patch: defaultPatch,
     accountPatch,
   }) as RemoteClawConfig;
-}
-
-function setZalouserGroupPolicy(
-  cfg: RemoteClawConfig,
-  accountId: string,
-  groupPolicy: "open" | "allowlist" | "disabled",
-): RemoteClawConfig {
-  return setZalouserAccountScopedConfig(cfg, accountId, {
-    groupPolicy,
-  });
-}
-
-function setZalouserGroupAllowlist(
-  cfg: RemoteClawConfig,
-  accountId: string,
-  groupKeys: string[],
-): RemoteClawConfig {
-  const groups = Object.fromEntries(
-    groupKeys.map((key) => [key, { allow: true, requireMention: true }]),
-  );
-  return setZalouserAccountScopedConfig(cfg, accountId, {
-    groups,
-  });
-}
-
-function ensureZalouserPluginEnabled(cfg: RemoteClawConfig): RemoteClawConfig {
-  const next: RemoteClawConfig = {
-    ...cfg,
-    plugins: {
-      ...cfg.plugins,
-      entries: {
-        ...cfg.plugins?.entries,
-        zalouser: {
-          ...cfg.channels?.zalouser,
-          enabled: true,
-          ...defaultPatch,
-        },
-      },
-    } as RemoteClawConfig;
-  }
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      zalouser: {
-        ...cfg.channels?.zalouser,
-        enabled: true,
-        accounts: {
-          ...cfg.channels?.zalouser?.accounts,
-          [accountId]: {
-            ...cfg.channels?.zalouser?.accounts?.[accountId],
-            enabled: cfg.channels?.zalouser?.accounts?.[accountId]?.enabled ?? true,
-            ...accountPatch,
-          },
-        },
-      },
-    },
-  } as RemoteClawConfig;
 }
 
 function setZalouserDmPolicy(

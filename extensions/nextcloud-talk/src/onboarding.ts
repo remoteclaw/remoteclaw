@@ -3,6 +3,8 @@ import {
   formatDocsLink,
   mapAllowFromEntries,
   mergeAllowFromEntries,
+  patchScopedAccountConfig,
+  promptSingleChannelSecretInput,
   resolveAccountIdForConfigure,
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
@@ -28,6 +30,19 @@ function setNextcloudTalkDmPolicy(cfg: CoreConfig, dmPolicy: DmPolicy): CoreConf
     dmPolicy,
     getAllowFrom: (inputCfg) =>
       mapAllowFromEntries(inputCfg.channels?.["nextcloud-talk"]?.allowFrom),
+  }) as CoreConfig;
+}
+
+function setNextcloudTalkAccountConfig(
+  cfg: CoreConfig,
+  accountId: string,
+  updates: Record<string, unknown>,
+): CoreConfig {
+  return patchScopedAccountConfig({
+    cfg,
+    channelKey: channel,
+    accountId,
+    patch: updates,
   }) as CoreConfig;
 }
 

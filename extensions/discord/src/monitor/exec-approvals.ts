@@ -10,27 +10,23 @@ import {
   type TopLevelComponents,
 } from "@buape/carbon";
 import { ButtonStyle, Routes } from "discord-api-types/v10";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { loadSessionStore, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
-import type { DiscordExecApprovalConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { GatewayClient } from "remoteclaw/plugin-sdk/gateway-runtime";
-import { createOperatorApprovalsGatewayClient } from "remoteclaw/plugin-sdk/gateway-runtime";
-import type { EventFrame } from "remoteclaw/plugin-sdk/gateway-runtime";
-import { resolveExecApprovalCommandDisplay } from "remoteclaw/plugin-sdk/infra-runtime";
-import { getExecApprovalApproverDmNoticeText } from "remoteclaw/plugin-sdk/infra-runtime";
+import type { OpenClawConfig } from "../../config/config.js";
+import { loadSessionStore, resolveStorePath } from "../../config/sessions.js";
+import type { DiscordExecApprovalConfig } from "../../config/types.discord.js";
+import { GatewayClient } from "../../gateway/client.js";
+import { createOperatorApprovalsGatewayClient } from "../../gateway/operator-approvals-client.js";
+import type { EventFrame } from "../../gateway/protocol/index.js";
+import { getExecApprovalApproverDmNoticeText } from "../../infra/exec-approval-reply.js";
 import type {
   ExecApprovalDecision,
   ExecApprovalRequest,
   ExecApprovalResolved,
-} from "remoteclaw/plugin-sdk/infra-runtime";
-import {
-  normalizeAccountId,
-  normalizeMessageChannel,
-  resolveAgentIdFromSessionKey,
-} from "remoteclaw/plugin-sdk/routing";
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import { compileSafeRegex, testRegexWithBoundedInput } from "remoteclaw/plugin-sdk/security-runtime";
-import { logDebug, logError } from "remoteclaw/plugin-sdk/text-runtime";
+} from "../../infra/exec-approvals.js";
+import { logDebug, logError } from "../../logger.js";
+import { normalizeAccountId, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
+import type { RuntimeEnv } from "../../runtime.js";
+import { compileSafeRegex, testRegexWithBoundedInput } from "../../security/safe-regex.js";
+import { normalizeMessageChannel } from "../../utils/message-channel.js";
 import { createDiscordClient, stripUndefinedFields } from "../send.shared.js";
 import { DiscordUiContainer } from "../ui.js";
 

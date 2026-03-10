@@ -1,18 +1,18 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { GatewayClient } from "remoteclaw/plugin-sdk/gateway-runtime";
-import { createOperatorApprovalsGatewayClient } from "remoteclaw/plugin-sdk/gateway-runtime";
-import type { EventFrame } from "remoteclaw/plugin-sdk/gateway-runtime";
-import { resolveExecApprovalCommandDisplay } from "remoteclaw/plugin-sdk/infra-runtime";
+import type { OpenClawConfig } from "../config/config.js";
+import { loadSessionStore, resolveStorePath } from "../config/sessions.js";
+import { GatewayClient } from "../gateway/client.js";
+import { createOperatorApprovalsGatewayClient } from "../gateway/operator-approvals-client.js";
+import type { EventFrame } from "../gateway/protocol/index.js";
 import {
   buildExecApprovalPendingReplyPayload,
   type ExecApprovalPendingReplyParams,
-} from "remoteclaw/plugin-sdk/infra-runtime";
-import { resolveExecApprovalSessionTarget } from "remoteclaw/plugin-sdk/infra-runtime";
-import type { ExecApprovalRequest, ExecApprovalResolved } from "remoteclaw/plugin-sdk/infra-runtime";
-import { normalizeAccountId, parseAgentSessionKey } from "remoteclaw/plugin-sdk/routing";
-import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import { compileSafeRegex, testRegexWithBoundedInput } from "remoteclaw/plugin-sdk/security-runtime";
+} from "../infra/exec-approval-reply.js";
+import type { ExecApprovalRequest, ExecApprovalResolved } from "../infra/exec-approvals.js";
+import { resolveSessionDeliveryTarget } from "../infra/outbound/targets.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
+import { normalizeAccountId, parseAgentSessionKey } from "../routing/session-key.js";
+import type { RuntimeEnv } from "../runtime.js";
+import { compileSafeRegex, testRegexWithBoundedInput } from "../security/safe-regex.js";
 import { buildTelegramExecApprovalButtons } from "./approval-buttons.js";
 import {
   getTelegramExecApprovalApprovers,

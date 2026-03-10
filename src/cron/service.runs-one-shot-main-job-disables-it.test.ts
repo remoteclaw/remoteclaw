@@ -582,6 +582,59 @@ describe("CronService", () => {
     await store.cleanup();
   });
 
+  it("does not post isolated summary to main when announce delivery was attempted", async () => {
+    const runIsolatedAgentJob = vi.fn(async () => ({
+      status: "ok" as const,
+      summary: "done",
+      delivered: false,
+      deliveryAttempted: true,
+    }));
+    const { store, cron, enqueueSystemEvent, requestHeartbeatNow, events } =
+      await createIsolatedAnnounceHarness(runIsolatedAgentJob);
+    await runIsolatedAnnounceJobAndWait({
+      cron,
+      events,
+      name: "weekly attempted",
+      status: "ok",
+    });
+    expect(runIsolatedAgentJob).toHaveBeenCalledTimes(1);
+    expect(enqueueSystemEvent).not.toHaveBeenCalled();
+    expect(requestHeartbeatNow).not.toHaveBeenCalled();
+    cron.stop();
+    await store.cleanup();
+  });
+
+  it("migrates legacy payload.provider to payload.channel on load", async () => {
+    const rawJob = createLegacyDeliveryMigrationJob({
+      id: "legacy-1",
+      payload: { provider: " TeLeGrAm " },
+    });
+    const { store, cron, job } = await loadLegacyDeliveryMigration(rawJob);
+    // Legacy delivery fields are migrated to the top-level delivery object
+    const delivery = job?.delivery as unknown as Record<string, unknown>;
+    expect(delivery?.channel).toBe("telegram");
+    const payload = job?.payload as unknown as Record<string, unknown>;
+    expect("provider" in payload).toBe(false);
+    expect("channel" in payload).toBe(false);
+
+    cron.stop();
+    await store.cleanup();
+  });
+
+  it("canonicalizes payload.channel casing on load", async () => {
+    const rawJob = createLegacyDeliveryMigrationJob({
+      id: "legacy-2",
+      payload: { channel: "Telegram" },
+    });
+    const { store, cron, job } = await loadLegacyDeliveryMigration(rawJob);
+    // Legacy delivery fields are migrated to the top-level delivery object
+    const delivery = job?.delivery as unknown as Record<string, unknown>;
+    expect(delivery?.channel).toBe("telegram");
+
+    cron.stop();
+    await store.cleanup();
+  });
+
   it("posts last output to main even when isolated job errors", async () => {
     const runIsolatedAgentJob = vi.fn(async () => ({
       status: "error" as const,

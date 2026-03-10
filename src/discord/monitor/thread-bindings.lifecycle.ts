@@ -66,6 +66,7 @@ export function listThreadBindingsBySessionKey(params: {
 }
 
 export async function autoBindSpawnedDiscordSubagent(params: {
+  cfg?: RemoteClawConfig;
   accountId?: string;
   channel?: string;
   to?: string;
@@ -94,6 +95,7 @@ export async function autoBindSpawnedDiscordSubagent(params: {
     } else {
       channelId =
         (await resolveChannelIdForBinding({
+          cfg: params.cfg,
           accountId: manager.accountId,
           token: managerToken,
           threadId: requesterThreadId,
@@ -112,6 +114,7 @@ export async function autoBindSpawnedDiscordSubagent(params: {
       }
       channelId =
         (await resolveChannelIdForBinding({
+          cfg: params.cfg,
           accountId: manager.accountId,
           token: managerToken,
           threadId: target.id,

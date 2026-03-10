@@ -2,6 +2,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  clearRuntimeConfigSnapshot,
+  setRuntimeConfigSnapshot,
+  type RemoteClawConfig,
+} from "../../config/config.js";
 
 const hoisted = vi.hoisted(() => {
   const sendMessageDiscord = vi.fn(async (_to: string, _text: string, _opts?: unknown) => ({}));
@@ -60,6 +65,7 @@ const {
 describe("thread binding lifecycle", () => {
   beforeEach(() => {
     __testing.resetThreadBindingsForTests();
+    clearRuntimeConfigSnapshot();
     hoisted.sendMessageDiscord.mockClear();
     hoisted.sendWebhookMessageDiscord.mockClear();
     hoisted.restGet.mockClear();
@@ -618,9 +624,13 @@ describe("thread binding lifecycle", () => {
   });
 
   it("passes manager token when resolving parent channels for auto-bind", async () => {
+    const cfg = {
+      channels: { discord: { token: "tok" } },
+    } as RemoteClawConfig;
     createThreadBindingManager({
       accountId: "runtime",
       token: "runtime-token",
+      cfg,
       persist: false,
       enableSweeper: false,
       idleTimeoutMs: 24 * 60 * 60 * 1000,
@@ -638,6 +648,7 @@ describe("thread binding lifecycle", () => {
     hoisted.createThreadDiscord.mockResolvedValueOnce({ id: "thread-created-runtime" });
 
     const childBinding = await autoBindSpawnedDiscordSubagent({
+      cfg,
       accountId: "runtime",
       channel: "discord",
       to: "channel:thread-runtime",
@@ -653,6 +664,73 @@ describe("thread binding lifecycle", () => {
       accountId: "runtime",
       token: "runtime-token",
     });
+    const usedCfg = hoisted.createDiscordRestClient.mock.calls.some((call) => {
+      if (call?.[1] === cfg) {
+        return true;
+      }
+      const first = call?.[0];
+      return (
+        typeof first === "object" && first !== null && (first as { cfg?: unknown }).cfg === cfg
+      );
+    });
+    expect(usedCfg).toBe(true);
+  });
+
+  it("uses the active runtime snapshot cfg for manager operations", async () => {
+    const startupCfg = {
+      channels: { discord: { token: "startup-token" } },
+    } as RemoteClawConfig;
+    const refreshedCfg = {
+      channels: { discord: { token: "refreshed-token" } },
+    } as RemoteClawConfig;
+    const manager = createThreadBindingManager({
+      accountId: "runtime",
+      token: "runtime-token",
+      cfg: startupCfg,
+      persist: false,
+      enableSweeper: false,
+      idleTimeoutMs: 24 * 60 * 60 * 1000,
+      maxAgeMs: 0,
+    });
+
+    setRuntimeConfigSnapshot(refreshedCfg);
+    hoisted.createDiscordRestClient.mockClear();
+    hoisted.createThreadDiscord.mockClear();
+    hoisted.createThreadDiscord.mockResolvedValueOnce({ id: "thread-created-runtime-cfg" });
+
+    const bound = await manager.bindTarget({
+      createThread: true,
+      channelId: "parent-runtime",
+      targetKind: "subagent",
+      targetSessionKey: "agent:main:subagent:runtime-cfg",
+      agentId: "main",
+    });
+
+    expect(bound).not.toBeNull();
+    const usedRefreshedCfg = hoisted.createDiscordRestClient.mock.calls.some((call) => {
+      if (call?.[1] === refreshedCfg) {
+        return true;
+      }
+      const first = call?.[0];
+      return (
+        typeof first === "object" &&
+        first !== null &&
+        (first as { cfg?: unknown }).cfg === refreshedCfg
+      );
+    });
+    expect(usedRefreshedCfg).toBe(true);
+    const usedStartupCfg = hoisted.createDiscordRestClient.mock.calls.some((call) => {
+      if (call?.[1] === startupCfg) {
+        return true;
+      }
+      const first = call?.[0];
+      return (
+        typeof first === "object" &&
+        first !== null &&
+        (first as { cfg?: unknown }).cfg === startupCfg
+      );
+    });
+    expect(usedStartupCfg).toBe(false);
   });
 
   it("refreshes manager token when an existing manager is reused", async () => {

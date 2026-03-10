@@ -683,6 +683,7 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
 
         const replyToId = replyReference.use();
         await deliverDiscordReply({
+          cfg,
           replies: [payload],
           target: deliverTarget,
           token,

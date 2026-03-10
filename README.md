@@ -17,10 +17,6 @@
 
 Your agents keep their full power — MCP servers, filesystem access, tools, config — RemoteClaw just bridges the messaging layer. Middleware, not a platform.
 
-<p align="center">
-  <img src="docs/public/assets/slack-demo.png" alt="RemoteClaw responding in Slack" width="420">
-</p>
-
 ## Quick Start
 
 **Prerequisites:** Node.js 22+

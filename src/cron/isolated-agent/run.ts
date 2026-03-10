@@ -191,10 +191,13 @@ export async function runCronIsolatedAgentTurn(params: {
   if (modelOverride !== undefined && modelOverride.length > 0) {
     const parsed = parseModelRef(modelOverride, resolvedDefault.provider);
     if (!parsed) {
-      return { status: "error", error: `Unrecognized model "${modelOverride}".` };
+      logWarn(
+        `cron: payload.model '${modelOverride}' not recognized, falling back to agent defaults`,
+      );
+    } else {
+      provider = parsed.provider;
+      model = parsed.model;
     }
-    provider = parsed.provider;
-    model = parsed.model;
   }
   const now = Date.now();
   const cronSession = resolveCronSession({

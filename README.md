@@ -27,8 +27,8 @@ Your agents keep their full power — MCP servers, filesystem access, tools, con
 ```bash
 npm install -g remoteclaw
 # or
-curl -fsSL https://remoteclaw.sh | bash        # macOS / Linux
-irm https://remoteclaw.ps1 | iex               # Windows (PowerShell)
+curl -fsSL https://remoteclaw.sh | bash        # macOS / Linux / Windows (WSL)
+irm https://remoteclaw.ps | iex                # Windows (PowerShell)
 ```
 
 ### 2. Configure a channel

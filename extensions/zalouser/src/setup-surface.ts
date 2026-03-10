@@ -1,12 +1,5 @@
 import {
-  mergeAllowFromEntries,
-  setTopLevelChannelDmPolicyWithAllowFrom,
-} from "../../../src/channels/plugins/setup-flow-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
-import { patchScopedAccountConfig } from "../../../src/channels/plugins/setup-helpers.js";
-import {
   DEFAULT_ACCOUNT_ID,
-  formatDocsLink,
   formatResolvedUnresolvedNote,
   mergeAllowFromEntries,
   normalizeAccountId,

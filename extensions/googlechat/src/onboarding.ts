@@ -1,5 +1,7 @@
 import type { RemoteClawConfig, DmPolicy } from "remoteclaw/plugin-sdk";
 import {
+  DEFAULT_ACCOUNT_ID,
+  applySetupAccountConfigPatch,
   addWildcardAllowFrom,
   formatDocsLink,
   mergeAllowFromEntries,

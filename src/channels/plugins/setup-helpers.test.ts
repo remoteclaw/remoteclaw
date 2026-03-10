@@ -34,7 +34,7 @@ describe("applySetupAccountConfigPatch", () => {
     });
   });
 
-  it("patches named account config and enables both channel and account", () => {
+  it("patches named account config and preserves existing account enabled flag", () => {
     const next = applySetupAccountConfigPatch({
       cfg: asConfig({
         channels: {
@@ -54,7 +54,7 @@ describe("applySetupAccountConfigPatch", () => {
     expect(next.channels?.zalo).toMatchObject({
       enabled: true,
       accounts: {
-        work: { enabled: true, botToken: "new" },
+        work: { enabled: false, botToken: "new" },
       },
     });
   });

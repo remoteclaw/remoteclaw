@@ -4,19 +4,18 @@ import type { SecretInput } from "../../config/types.secrets.js";
 import {
   promptSecretRefForSetup,
   resolveSecretInputModeForEnvSelection,
-} from "../../plugins/provider-auth-input.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
-import type { WizardPrompter } from "../../wizard/prompts.js";
+} from "../../../commands/auth-choice.apply-helpers.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
+import type { DmPolicy, GroupPolicy } from "../../../config/types.js";
+import type { SecretInput } from "../../../config/types.secrets.js";
+import { promptAccountId as promptAccountIdSdk } from "../../../plugin-sdk/onboarding.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
+import type { WizardPrompter } from "../../../wizard/prompts.js";
+import type { PromptAccountId, PromptAccountIdParams } from "../onboarding-types.js";
 import {
   moveSingleAccountChannelSectionToDefaultAccount,
   patchScopedAccountConfig,
-} from "./setup-helpers.js";
-import type {
-  ChannelSetupDmPolicy,
-  PromptAccountId,
-  PromptAccountIdParams,
-} from "./setup-wizard-types.js";
-import type { ChannelSetupWizard } from "./setup-wizard.js";
+} from "../setup-helpers.js";
 
 export const promptAccountId: PromptAccountId = async (params: PromptAccountIdParams) => {
   return await promptAccountIdSdk(params);
@@ -754,50 +753,14 @@ function patchConfigForScopedAccount(params: {
           cfg,
           channelKey: channel,
         });
-  const channelConfig =
-    (seededCfg.channels?.[channel] as Record<string, unknown> | undefined) ?? {};
-
-  if (accountId === DEFAULT_ACCOUNT_ID) {
-    return {
-      ...seededCfg,
-      channels: {
-        ...seededCfg.channels,
-        [channel]: {
-          ...channelConfig,
-          ...(ensureEnabled ? { enabled: true } : {}),
-          ...patch,
-        },
-      },
-    };
-  }
-
-  const accounts =
-    (channelConfig.accounts as Record<string, Record<string, unknown>> | undefined) ?? {};
-  const existingAccount = accounts[accountId] ?? {};
-
-  return {
-    ...seededCfg,
-    channels: {
-      ...seededCfg.channels,
-      [channel]: {
-        ...channelConfig,
-        ...(ensureEnabled ? { enabled: true } : {}),
-        accounts: {
-          ...accounts,
-          [accountId]: {
-            ...existingAccount,
-            ...(ensureEnabled
-              ? {
-                  enabled:
-                    typeof existingAccount.enabled === "boolean" ? existingAccount.enabled : true,
-                }
-              : {}),
-            ...patch,
-          },
-        },
-      },
-    },
-  };
+  return patchScopedAccountConfig({
+    cfg: seededCfg,
+    channelKey: channel,
+    accountId,
+    patch,
+    ensureChannelEnabled: ensureEnabled,
+    ensureAccountEnabled: ensureEnabled,
+  });
 }
 
 export function patchChannelConfigForAccount(params: {

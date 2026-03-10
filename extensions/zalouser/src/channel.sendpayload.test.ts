@@ -1,6 +1,7 @@
 import type { ReplyPayload } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of d7aa3cc1c3 (test: share zalouser test helpers)
 import {
   installSendPayloadContractSuite,
@@ -13,6 +14,13 @@ import {
   primeSendMock,
 } from "../../../src/test-utils/send-payload-contract.js";
 >>>>>>> d7aa3cc1c3 (test: share zalouser test helpers)
+||||||| parent of f209a9be80 (test: extract sendpayload outbound contract suite)
+=======
+import {
+  installSendPayloadContractSuite,
+  primeSendMock,
+} from "../../../src/test-utils/send-payload-contract.js";
+>>>>>>> f209a9be80 (test: extract sendpayload outbound contract suite)
 import { zalouserPlugin } from "./channel.js";
 
 vi.mock("./send.js", () => ({
@@ -39,15 +47,6 @@ describe("zalouserPlugin outbound sendPayload", () => {
     mockedSend.mockResolvedValue({ ok: true, messageId: "zlu-1" });
   });
 
-  it("text-only delegates to sendText", async () => {
-    mockedSend.mockResolvedValue({ ok: true, messageId: "zlu-t1" });
-
-    const result = await zalouserPlugin.outbound!.sendPayload!(baseCtx({ text: "hello" }));
-
-    expect(mockedSend).toHaveBeenCalledWith("987654321", "hello", expect.any(Object));
-    expect(result).toMatchObject({ channel: "zalouser", messageId: "zlu-t1" });
-  });
-
   it("group target delegates with isGroup=true and stripped threadId", async () => {
     mockedSend.mockResolvedValue({ ok: true, messageId: "zlu-g1" });
 
@@ -62,21 +61,6 @@ describe("zalouserPlugin outbound sendPayload", () => {
       expect.objectContaining({ isGroup: true }),
     );
     expect(result).toMatchObject({ channel: "zalouser", messageId: "zlu-g1" });
-  });
-
-  it("single media delegates to sendMedia", async () => {
-    mockedSend.mockResolvedValue({ ok: true, messageId: "zlu-m1" });
-
-    const result = await zalouserPlugin.outbound!.sendPayload!(
-      baseCtx({ text: "cap", mediaUrl: "https://example.com/a.jpg" }),
-    );
-
-    expect(mockedSend).toHaveBeenCalledWith(
-      "987654321",
-      "cap",
-      expect.objectContaining({ mediaUrl: "https://example.com/a.jpg" }),
-    );
-    expect(result).toMatchObject({ channel: "zalouser" });
   });
 
   it("treats bare numeric targets as direct chats for backward compatibility", async () => {
@@ -111,55 +95,17 @@ describe("zalouserPlugin outbound sendPayload", () => {
     expect(result).toMatchObject({ channel: "zalouser", messageId: "zlu-g-native" });
   });
 
-  it("multi-media iterates URLs with caption on first", async () => {
-    mockedSend
-      .mockResolvedValueOnce({ ok: true, messageId: "zlu-1" })
-      .mockResolvedValueOnce({ ok: true, messageId: "zlu-2" });
-
-    const result = await zalouserPlugin.outbound!.sendPayload!(
-      baseCtx({
-        text: "caption",
-        mediaUrls: ["https://example.com/1.jpg", "https://example.com/2.jpg"],
-      }),
-    );
-
-    expect(mockedSend).toHaveBeenCalledTimes(2);
-    expect(mockedSend).toHaveBeenNthCalledWith(
-      1,
-      "987654321",
-      "caption",
-      expect.objectContaining({ mediaUrl: "https://example.com/1.jpg" }),
-    );
-    expect(mockedSend).toHaveBeenNthCalledWith(
-      2,
-      "987654321",
-      "",
-      expect.objectContaining({ mediaUrl: "https://example.com/2.jpg" }),
-    );
-    expect(result).toMatchObject({ channel: "zalouser", messageId: "zlu-2" });
-  });
-
-  it("empty payload returns no-op", async () => {
-    const result = await zalouserPlugin.outbound!.sendPayload!(baseCtx({}));
-
-    expect(mockedSend).not.toHaveBeenCalled();
-    expect(result).toEqual({ channel: "zalouser", messageId: "" });
-  });
-
-  it("chunking splits long text", async () => {
-    mockedSend
-      .mockResolvedValueOnce({ ok: true, messageId: "zlu-c1" })
-      .mockResolvedValueOnce({ ok: true, messageId: "zlu-c2" });
-
-    const longText = "a".repeat(3000);
-    const result = await zalouserPlugin.outbound!.sendPayload!(baseCtx({ text: longText }));
-
-    // textChunkLimit is 2000 with chunkTextForOutbound, so it should split
-    expect(mockedSend.mock.calls.length).toBeGreaterThanOrEqual(2);
-    for (const call of mockedSend.mock.calls) {
-      expect((call[1] as string).length).toBeLessThanOrEqual(2000);
-    }
-    expect(result).toMatchObject({ channel: "zalouser" });
+  installSendPayloadContractSuite({
+    channel: "zalouser",
+    chunking: { mode: "split", longTextLength: 3000, maxChunkLength: 2000 },
+    createHarness: ({ payload, sendResults }) => {
+      primeSendMock(mockedSend, { ok: true, messageId: "zlu-1" }, sendResults);
+      return {
+        run: async () => await zalouserPlugin.outbound!.sendPayload!(baseCtx(payload)),
+        sendMock: mockedSend,
+        to: "987654321",
+      };
+    },
   });
 });
 

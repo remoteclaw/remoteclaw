@@ -7,12 +7,12 @@ import {
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import { createPairingPrefixStripper } from "remoteclaw/plugin-sdk/channel-pairing";
 import {
-  createOpenGroupPolicyRestrictSendersWarningCollector,
-  projectWarningCollector,
-} from "remoteclaw/plugin-sdk/channel-policy";
-import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
-import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
-import { createComputedAccountStatusAdapter } from "remoteclaw/plugin-sdk/status-helpers";
+  buildAccountScopedDmSecurityPolicy,
+  collectOpenGroupPolicyRestrictSendersWarnings,
+  createAccountStatusSink,
+  formatNormalizedAllowFromEntries,
+  mapAllowFromEntries,
+} from "remoteclaw/plugin-sdk/compat";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,
@@ -343,7 +343,7 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = crea
     startAccount: async (ctx) => {
       const runtime = await loadBlueBubblesChannelRuntime();
       const account = ctx.account;
-      const webhookPath = runtime.resolveWebhookPathFromConfig(account.config);
+      const webhookPath = resolveWebhookPathFromConfig(account.config);
       const statusSink = createAccountStatusSink({
         accountId: ctx.accountId,
         setStatus: ctx.setStatus,

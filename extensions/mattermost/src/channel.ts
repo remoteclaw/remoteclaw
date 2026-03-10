@@ -1,20 +1,25 @@
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
 import {
-  adaptScopedAccountAccessor,
-  createScopedChannelConfigAdapter,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import type {
-  ChannelMessageActionAdapter,
-  ChannelMessageActionName,
-  ChannelMessageToolDiscovery,
-} from "remoteclaw/plugin-sdk/channel-contract";
-import { createLoggedPairingApprovalNotifier } from "remoteclaw/plugin-sdk/channel-pairing";
-import { createAllowlistProviderRestrictSendersWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
-import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
-import { createScopedAccountReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { createChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
-import { buildPassiveProbedChannelStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
-import { createComputedAccountStatusAdapter } from "remoteclaw/plugin-sdk/status-helpers";
+  buildAccountScopedDmSecurityPolicy,
+  collectAllowlistProviderRestrictSendersWarnings,
+  createScopedAccountConfigAccessors,
+  formatNormalizedAllowFromEntries,
+} from "remoteclaw/plugin-sdk/compat";
+import {
+  applyAccountNameToChannelSection,
+  applySetupAccountConfigPatch,
+  buildComputedAccountStatusSnapshot,
+  buildChannelConfigSchema,
+  createAccountStatusSink,
+  DEFAULT_ACCOUNT_ID,
+  deleteAccountFromConfigSection,
+  migrateBaseNameToDefaultAccount,
+  normalizeAccountId,
+  setAccountEnabledInConfigSection,
+  type ChannelMessageActionAdapter,
+  type ChannelMessageActionName,
+  type ChannelPlugin,
+} from "remoteclaw/plugin-sdk/mattermost";
 import { MattermostConfigSchema } from "./config-schema.js";
 import { resolveMattermostGroupRequireMention } from "./group-mentions.js";
 import {
@@ -547,8 +552,11 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = create
   gateway: {
     startAccount: async (ctx) => {
       const account = ctx.account;
-      ctx.setStatus({
-        accountId: account.accountId,
+      const statusSink = createAccountStatusSink({
+        accountId: ctx.accountId,
+        setStatus: ctx.setStatus,
+      });
+      statusSink({
         baseUrl: account.baseUrl,
         botTokenSource: account.botTokenSource,
       });
@@ -560,7 +568,7 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = create
         config: ctx.cfg,
         runtime: ctx.runtime,
         abortSignal: ctx.abortSignal,
-        statusSink: (patch) => ctx.setStatus({ accountId: ctx.accountId, ...patch }),
+        statusSink,
       });
     },
   },

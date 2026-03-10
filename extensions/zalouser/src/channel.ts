@@ -2,13 +2,10 @@ import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-co
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import { createPairingPrefixStripper } from "remoteclaw/plugin-sdk/channel-pairing";
 import {
-  createEmptyChannelResult,
-  createRawChannelSendResultAdapter,
-} from "remoteclaw/plugin-sdk/channel-send-result";
-import { createStaticReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
-import { buildPassiveProbedChannelStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
-import { createDefaultChannelRuntimeState } from "remoteclaw/plugin-sdk/status-helpers";
+  buildAccountScopedDmSecurityPolicy,
+  createAccountStatusSink,
+  mapAllowFromEntries,
+} from "remoteclaw/plugin-sdk/compat";
 import type {
   ChannelAccountSnapshot,
   ChannelDirectoryEntry,
@@ -662,35 +659,36 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
         },
       );
     },
-    pairing: {
-      text: {
-        idLabel: "zalouserUserId",
-        message: "Your pairing request has been approved.",
-        normalizeAllowEntry: createPairingPrefixStripper(/^(zalouser|zlu):/i),
-        notify: async ({ cfg, id, message }) => {
-          const account = resolveZalouserAccountSync({ cfg: cfg });
-          const authenticated = await checkZcaAuthenticated(account.profile);
-          if (!authenticated) {
-            throw new Error("Zalouser not authenticated");
-          }
-          await sendMessageZalouser(id, message, {
-            profile: account.profile,
-          });
-        },
-      },
-    },
-    outbound: {
-      deliveryMode: "direct",
-      chunker: (text, limit) => getZalouserRuntime().channel.text.chunkMarkdownText(text, limit),
-      chunkerMode: "markdown",
-      sendPayload: async (ctx) =>
-        await sendPayloadWithChunkedTextAndMedia({
-          ctx,
-          sendText: (nextCtx) => zalouserRawSendResultAdapter.sendText!(nextCtx),
-          sendMedia: (nextCtx) => zalouserRawSendResultAdapter.sendMedia!(nextCtx),
-          emptyResult: createEmptyChannelResult("zalouser"),
-        }),
-      ...zalouserRawSendResultAdapter,
+  },
+  gateway: {
+    startAccount: async (ctx) => {
+      const account = ctx.account;
+      let userLabel = "";
+      try {
+        const userInfo = await getZcaUserInfo(account.profile);
+        if (userInfo?.displayName) {
+          userLabel = ` (${userInfo.displayName})`;
+        }
+        ctx.setStatus({
+          accountId: account.accountId,
+          profile: userInfo,
+        });
+      } catch {
+        // ignore probe errors
+      }
+      const statusSink = createAccountStatusSink({
+        accountId: ctx.accountId,
+        setStatus: ctx.setStatus,
+      });
+      ctx.log?.info(`[${account.accountId}] starting zalouser provider${userLabel}`);
+      const { monitorZalouserProvider } = await import("./monitor.js");
+      return monitorZalouserProvider({
+        account,
+        config: ctx.cfg,
+        runtime: ctx.runtime,
+        abortSignal: ctx.abortSignal,
+        statusSink,
+      });
     },
     loginWithQrStart: async (params) => {
       const profile = resolveZalouserQrProfile(params.accountId);

@@ -63,7 +63,7 @@ vi.mock("../auth/index.js", () => ({
 
 vi.mock("../agents/model-auth.js", () => ({
   resolveEnvApiKey: () => null,
-  getCustomProviderApiKey: () => null,
+  resolveUsableCustomProviderApiKey: () => null,
   resolveModelAuthMode: () => "api-key",
 }));
 

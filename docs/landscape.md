@@ -6,7 +6,7 @@ description: "A map of 100+ AI agent projects and where agent middleware fits"
 250,000 stars. 36,900 forks. Five complete language rewrites. And nobody built the one thing
 developers kept asking for.
 
-We spent months mapping the AI agent landscape -- every fork, rewrite, bridge, and managed service
+We mapped the AI agent landscape -- every fork, rewrite, bridge, and managed service
 we could find -- and discovered a product category that barely exists.
 
 100+ projects want to be your AI agent. Zero connect the one you already have.
@@ -134,8 +134,8 @@ your channel](/channels).
 
 ## Why We Built RemoteClaw
 
-We built RemoteClaw because we spent months inside the OpenClaw codebase -- analyzing 5,605 files
-across 334 analysis batches -- and realized that the channel infrastructure was exactly what
+We built RemoteClaw after going deep inside the OpenClaw codebase -- analyzing 5,605 files
+across 334 analysis batches -- and realizing that the channel infrastructure was exactly what
 developers with existing agents needed, but the platform layer was exactly what they did not.
 
 RemoteClaw is a fork of OpenClaw that strips the platform layer and replaces it with an AgentRuntime

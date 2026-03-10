@@ -17,10 +17,6 @@
 
 RemoteClaw is middleware, not a platform. It connects agent CLIs to messaging channels without reinventing the agentic loop.
 
-<p align="center">
-  <img src="docs/public/assets/slack-demo.png" alt="RemoteClaw responding in Slack" width="420">
-</p>
-
 [Website](https://remoteclaw.org) · [Docs](https://docs.remoteclaw.org) · [Vision](VISION.md) · [DeepWiki](https://deepwiki.com/remoteclaw/remoteclaw) · [Getting Started](https://docs.remoteclaw.org/start/getting-started) · [Updating](https://docs.remoteclaw.org/install/updating) · [Showcase](https://docs.remoteclaw.org/start/showcase) · [FAQ](https://docs.remoteclaw.org/help/faq) · [Wizard](https://docs.remoteclaw.org/start/wizard) · [Nix](https://github.com/remoteclaw/nix-remoteclaw) · [Docker](https://docs.remoteclaw.org/install/docker)
 
 Preferred setup: run the onboarding wizard (`remoteclaw onboard`) in your terminal.

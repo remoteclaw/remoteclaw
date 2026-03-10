@@ -187,6 +187,7 @@ export default defineConfig({
                 { slug: "start/remoteclaw" },
                 { slug: "start/openclaw-or-remoteclaw", label: "Coming from OpenClaw" },
                 { slug: "start/nanoclaw-or-remoteclaw", label: "Coming from NanoClaw" },
+                { slug: "landscape", label: "Agent Middleware Landscape" },
               ],
             },
           ],

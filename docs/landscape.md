@@ -9,7 +9,7 @@ developers kept asking for.
 We mapped the AI agent landscape -- every fork, rewrite, bridge, and managed service
 we could find -- and discovered a product category that barely exists.
 
-100+ projects want to be your AI agent. Zero connect the one you already have.
+100+ projects want to be your AI agent. Almost none connect the one you already have.
 
 ## Two Kinds of Users
 

@@ -10,7 +10,7 @@
 <p align="center">
   <a href="https://github.com/remoteclaw/remoteclaw/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/remoteclaw/remoteclaw/ci.yml?branch=main&style=for-the-badge" alt="CI status"></a>
   <a href="https://www.npmjs.com/package/remoteclaw"><img src="https://img.shields.io/npm/v/remoteclaw?style=for-the-badge" alt="npm version"></a>
-  <a href="https://github.com/remoteclaw/remoteclaw/releases"><img src="https://img.shields.io/github/v/release/remoteclaw/remoteclaw?include_prereleases&style=for-the-badge" alt="GitHub release"></a>
+  <a href="https://github.com/remoteclaw/remoteclaw/releases"><img src="https://img.shields.io/github/v/release/remoteclaw/remoteclaw?include_prereleases&display_name=release&style=for-the-badge&label=GITHUB" alt="GitHub release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg?style=for-the-badge" alt="AGPL-3.0-only License"></a>
 </p>
 
@@ -27,7 +27,8 @@ Your agents keep their full power — MCP servers, filesystem access, tools, con
 ```bash
 npm install -g remoteclaw
 # or
-curl -fsSL https://remoteclaw.org/install.sh | bash
+curl -fsSL https://remoteclaw.sh | bash        # macOS / Linux
+irm https://remoteclaw.ps1 | iex               # Windows (PowerShell)
 ```
 
 ### 2. Configure a channel
@@ -44,13 +45,11 @@ Create `~/.remoteclaw/remoteclaw.json` with a channel adapter. Telegram is the s
 }
 ```
 
-### 3. Set your API key
+### 3. Install and authenticate your agent CLI
 
-Claude is the default runtime:
+RemoteClaw spawns agent CLIs as subprocesses — install the one you want and make sure it's authenticated on the gateway host. The easiest way is to install the CLI and log in, though you can also configure a token or API key through onboarding.
 
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-```
+Claude Code is the default runtime. See each CLI's own docs for setup. Set `runtime` in your config to switch runtimes.
 
 ### 4. Start the gateway
 

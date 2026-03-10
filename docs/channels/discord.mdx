@@ -168,6 +168,7 @@ You will need to create a new application with a bot, add the bot to your server
 
 :::note
 Token resolution is account-aware. Config token values win over env fallback. `DISCORD_BOT_TOKEN` is only used for the default account.
+For advanced outbound calls (message tool/channel actions), an explicit per-call `token` is used for that call. Account policy/retry settings still come from the selected account in the active runtime snapshot.
 :::
 
 ## Recommended: Set up a guild workspace

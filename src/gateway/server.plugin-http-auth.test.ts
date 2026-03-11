@@ -65,6 +65,39 @@ async function dispatchRequest(
   await new Promise((resolve) => setImmediate(resolve));
 }
 
+function createHooksConfig(): HooksConfigResolved {
+  return {
+    basePath: "/hooks",
+    token: "hook-secret",
+    maxBodyBytes: 1024,
+    mappings: [],
+    agentPolicy: {
+      defaultAgentId: "main",
+      knownAgentIds: new Set(["main"]),
+      allowedAgentIds: undefined,
+    },
+    sessionPolicy: {
+      allowRequestSessionKey: false,
+      defaultSessionKey: undefined,
+      allowedSessionKeyPrefixes: undefined,
+    },
+  };
+}
+
+function canonicalizePluginPath(pathname: string): string {
+  let decoded = pathname;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    decoded = pathname;
+  }
+  const collapsed = decoded.toLowerCase().replace(/\/{2,}/g, "/");
+  if (collapsed.length <= 1) {
+    return collapsed;
+  }
+  return collapsed.replace(/\/+$/, "");
+}
+
 describe("gateway plugin HTTP auth boundary", () => {
   test("applies default security headers and optional strict transport security", async () => {
     const resolvedAuth: ResolvedGatewayAuth = {
@@ -217,6 +250,179 @@ describe("gateway plugin HTTP auth boundary", () => {
         expect(unauthenticatedPublic.getBody()).toContain('"route":"public"');
 
         expect(handlePluginRequest).toHaveBeenCalledTimes(2);
+      },
+    });
+  });
+
+  test("requires gateway auth for canonicalized /api/channels variants", async () => {
+    const resolvedAuth: ResolvedGatewayAuth = {
+      mode: "token",
+      token: "test-token",
+      password: undefined,
+      allowTailscale: false,
+    };
+
+    await withTempConfig({
+      cfg: { gateway: { trustedProxies: [] } },
+      prefix: "openclaw-plugin-http-auth-canonicalized-test-",
+      run: async () => {
+        const handlePluginRequest = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+          const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+          const canonicalPath = canonicalizePluginPath(pathname);
+          if (canonicalPath === "/api/channels/nostr/default/profile") {
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "application/json; charset=utf-8");
+            res.end(JSON.stringify({ ok: true, route: "channel-canonicalized" }));
+            return true;
+          }
+          return false;
+        });
+
+        const server = createGatewayHttpServer({
+          canvasHost: null,
+          clients: new Set(),
+          controlUiEnabled: false,
+          controlUiBasePath: "/__control__",
+          openAiChatCompletionsEnabled: false,
+          openResponsesEnabled: false,
+          handleHooksRequest: async () => false,
+          handlePluginRequest,
+          resolvedAuth,
+        });
+
+        const unauthenticatedVariants = [
+          "/API/channels/nostr/default/profile",
+          "/api/channels%2Fnostr%2Fdefault%2Fprofile",
+          "/api/%63hannels/nostr/default/profile",
+          "/api/channels//nostr/default/profile",
+          "/api/channels/nostr/default/profile/",
+          "/api/channels%2",
+          "/api//channels%2",
+        ];
+        for (const path of unauthenticatedVariants) {
+          const response = createResponse();
+          await dispatchRequest(server, createRequest({ path }), response.res);
+          expect(response.res.statusCode).toBe(401);
+          expect(response.getBody()).toContain("Unauthorized");
+        }
+        expect(handlePluginRequest).not.toHaveBeenCalled();
+
+        const authenticatedVariants = [
+          "/API/channels/nostr/default/profile",
+          "/api/%63hannels/nostr/default/profile",
+          "/api/channels//nostr/default/profile/",
+        ];
+        for (const path of authenticatedVariants) {
+          const response = createResponse();
+          await dispatchRequest(
+            server,
+            createRequest({
+              path,
+              authorization: "Bearer test-token",
+            }),
+            response.res,
+          );
+          expect(response.res.statusCode).toBe(200);
+          expect(response.getBody()).toContain('"route":"channel-canonicalized"');
+        }
+        expect(handlePluginRequest).toHaveBeenCalledTimes(authenticatedVariants.length);
+      },
+    });
+  });
+
+  test.each(["0.0.0.0", "::"])(
+    "returns 404 (not 500) for non-hook routes with hooks enabled and bindHost=%s",
+    async (bindHost) => {
+      const resolvedAuth: ResolvedGatewayAuth = {
+        mode: "none",
+        token: undefined,
+        password: undefined,
+        allowTailscale: false,
+      };
+
+      await withTempConfig({
+        cfg: { gateway: { trustedProxies: [] } },
+        prefix: "openclaw-plugin-http-hooks-bindhost-",
+        run: async () => {
+          const handleHooksRequest = createHooksRequestHandler({
+            getHooksConfig: () => createHooksConfig(),
+            bindHost,
+            port: 18789,
+            logHooks: {
+              warn: vi.fn(),
+              debug: vi.fn(),
+              info: vi.fn(),
+              error: vi.fn(),
+            } as unknown as ReturnType<typeof createSubsystemLogger>,
+            dispatchWakeHook: () => {},
+            dispatchAgentHook: () => "run-1",
+          });
+          const server = createGatewayHttpServer({
+            canvasHost: null,
+            clients: new Set(),
+            controlUiEnabled: false,
+            controlUiBasePath: "/__control__",
+            openAiChatCompletionsEnabled: false,
+            openResponsesEnabled: false,
+            handleHooksRequest,
+            resolvedAuth,
+          });
+
+          const response = createResponse();
+          await dispatchRequest(server, createRequest({ path: "/" }), response.res);
+
+          expect(response.res.statusCode).toBe(404);
+          expect(response.getBody()).toBe("Not Found");
+        },
+      });
+    },
+  );
+
+  test("rejects query-token hooks requests with bindHost=::", async () => {
+    const resolvedAuth: ResolvedGatewayAuth = {
+      mode: "none",
+      token: undefined,
+      password: undefined,
+      allowTailscale: false,
+    };
+
+    await withTempConfig({
+      cfg: { gateway: { trustedProxies: [] } },
+      prefix: "openclaw-plugin-http-hooks-query-token-",
+      run: async () => {
+        const handleHooksRequest = createHooksRequestHandler({
+          getHooksConfig: () => createHooksConfig(),
+          bindHost: "::",
+          port: 18789,
+          logHooks: {
+            warn: vi.fn(),
+            debug: vi.fn(),
+            info: vi.fn(),
+            error: vi.fn(),
+          } as unknown as ReturnType<typeof createSubsystemLogger>,
+          dispatchWakeHook: () => {},
+          dispatchAgentHook: () => "run-1",
+        });
+        const server = createGatewayHttpServer({
+          canvasHost: null,
+          clients: new Set(),
+          controlUiEnabled: false,
+          controlUiBasePath: "/__control__",
+          openAiChatCompletionsEnabled: false,
+          openResponsesEnabled: false,
+          handleHooksRequest,
+          resolvedAuth,
+        });
+
+        const response = createResponse();
+        await dispatchRequest(
+          server,
+          createRequest({ path: "/hooks/wake?token=bad" }),
+          response.res,
+        );
+
+        expect(response.res.statusCode).toBe(400);
+        expect(response.getBody()).toContain("Hook token must be provided");
       },
     });
   });

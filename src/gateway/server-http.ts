@@ -88,6 +88,52 @@ function isCanvasPath(pathname: string): boolean {
   );
 }
 
+function normalizeSecurityPath(pathname: string): string {
+  const collapsed = pathname.replace(/\/{2,}/g, "/");
+  if (collapsed.length <= 1) {
+    return collapsed;
+  }
+  return collapsed.replace(/\/+$/, "");
+}
+
+function canonicalizePathForSecurity(pathname: string): {
+  path: string;
+  malformedEncoding: boolean;
+} {
+  let decoded = pathname;
+  let malformedEncoding = false;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    malformedEncoding = true;
+  }
+  return {
+    path: normalizeSecurityPath(decoded.toLowerCase()) || "/",
+    malformedEncoding,
+  };
+}
+
+function hasProtectedPluginChannelPrefix(pathname: string): boolean {
+  return (
+    pathname === "/api/channels" ||
+    pathname.startsWith("/api/channels/") ||
+    pathname.startsWith("/api/channels%")
+  );
+}
+
+function isProtectedPluginChannelPath(pathname: string): boolean {
+  const canonicalPath = canonicalizePathForSecurity(pathname);
+  if (hasProtectedPluginChannelPrefix(canonicalPath.path)) {
+    return true;
+  }
+  if (!canonicalPath.malformedEncoding) {
+    return false;
+  }
+  // Fail closed on bad %-encoding. Keep channel-prefix paths protected even
+  // when URL decoding fails.
+  return hasProtectedPluginChannelPrefix(normalizeSecurityPath(pathname.toLowerCase()));
+}
+
 function isNodeWsClient(client: GatewayWsClient): boolean {
   if (client.connect.role === "node") {
     return true;
@@ -491,7 +537,7 @@ export function createGatewayHttpServer(opts: {
         // Channel HTTP endpoints are gateway-auth protected by default.
         // Non-channel plugin routes remain plugin-owned and must enforce
         // their own auth when exposing sensitive functionality.
-        if (requestPath === "/api/channels" || requestPath.startsWith("/api/channels/")) {
+        if (isProtectedPluginChannelPath(requestPath)) {
           const token = getBearerToken(req);
           const authResult = await authorizeHttpGatewayConnect({
             auth: resolvedAuth,

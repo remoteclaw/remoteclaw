@@ -75,7 +75,9 @@ REMOTECLAW_IMAGE="${REMOTECLAW_PODMAN_IMAGE:-remoteclaw:local}"
 PODMAN_PULL="${REMOTECLAW_PODMAN_PULL:-never}"
 HOST_GATEWAY_PORT="${REMOTECLAW_PODMAN_GATEWAY_HOST_PORT:-${REMOTECLAW_GATEWAY_PORT:-18789}}"
 HOST_BRIDGE_PORT="${REMOTECLAW_PODMAN_BRIDGE_HOST_PORT:-${REMOTECLAW_BRIDGE_PORT:-18790}}"
-GATEWAY_BIND="${REMOTECLAW_GATEWAY_BIND:-lan}"
+# Keep Podman default local-only unless explicitly overridden.
+# Non-loopback binds require gateway.controlUi.allowedOrigins (security hardening).
+GATEWAY_BIND="${REMOTECLAW_GATEWAY_BIND:-loopback}"
 
 # Safe cwd for podman (remoteclaw is nologin; avoid inherited cwd from sudo)
 cd "$EFFECTIVE_HOME" 2>/dev/null || cd /tmp 2>/dev/null || true

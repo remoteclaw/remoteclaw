@@ -1,6 +1,7 @@
 import type { ReplyPayload } from "../auto-reply/types.js";
 import type { TelegramInlineButtons } from "./button-types.js";
 import type { TelegramDraftStream } from "./draft-stream.js";
+import { isTelegramClientRejection } from "./network-errors.js";
 
 const MESSAGE_NOT_MODIFIED_RE =
   /400:\s*Bad Request:\s*message is not modified|MESSAGE_NOT_MODIFIED/i;
@@ -35,7 +36,12 @@ export type ArchivedPreview = {
   deleteIfUnused?: boolean;
 };
 
-export type LaneDeliveryResult = "preview-finalized" | "preview-updated" | "sent" | "skipped";
+export type LaneDeliveryResult =
+  | "preview-finalized"
+  | "preview-retained"
+  | "preview-updated"
+  | "sent"
+  | "skipped";
 
 type CreateLaneTextDelivererParams = {
   lanes: Record<LaneName, DraftLaneState>;
@@ -185,7 +191,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
     updateLaneSnapshot: boolean;
     lane: DraftLaneState;
     treatEditFailureAsDelivered: boolean;
-  }): Promise<boolean> => {
+  }): Promise<"edited" | "retained" | "fallback"> => {
     try {
       await params.editPreview({
         laneName: args.laneName,
@@ -198,28 +204,37 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
         args.lane.lastPartialText = args.text;
       }
       params.markDelivered();
-      return true;
+      return "edited";
     } catch (err) {
       if (isMessageNotModifiedError(err)) {
         params.log(
           `telegram: ${args.laneName} preview ${args.context} edit returned "message is not modified"; treating as delivered`,
         );
         params.markDelivered();
-        return true;
+        return "edited";
+      }
+      if (isTelegramClientRejection(err)) {
+        params.log(
+          `telegram: ${args.laneName} preview ${args.context} edit rejected by Telegram (client error); falling back to standard send (${String(err)})`,
+        );
+        return "fallback";
       }
       if (args.treatEditFailureAsDelivered) {
+        // Default: ambiguous error — prefer incomplete over duplicate
         params.log(
-          `telegram: ${args.laneName} preview ${args.context} edit failed after stop-created flush; treating as delivered (${String(err)})`,
+          `telegram: ${args.laneName} preview ${args.context} edit failed with ambiguous error; keeping existing preview to avoid duplicate (${String(err)})`,
         );
         params.markDelivered();
-        return true;
+        return "retained";
       }
       params.log(
         `telegram: ${args.laneName} preview ${args.context} edit failed; falling back to standard send (${String(err)})`,
       );
-      return false;
+      return "fallback";
     }
   };
+
+  type PreviewEditResult = "edited" | "retained" | "fallback";
 
   const tryUpdatePreviewForLane = async ({
     lane,
@@ -232,7 +247,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
     context,
     previewMessageId: previewMessageIdOverride,
     previewTextSnapshot,
-  }: TryUpdatePreviewParams): Promise<boolean> => {
+  }: TryUpdatePreviewParams): Promise<PreviewEditResult> => {
     const editPreview = (messageId: number, treatEditFailureAsDelivered: boolean) =>
       tryEditPreviewMessage({
         laneName,
@@ -248,7 +263,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
       previewMessageId: number,
       treatEditFailureAsDelivered: boolean,
       hadPreviewMessage: boolean,
-    ): boolean | Promise<boolean> => {
+    ): PreviewEditResult | Promise<PreviewEditResult> => {
       const currentPreviewText = previewTextSnapshot ?? getLanePreviewText(lane);
       const shouldSkipRegressive = shouldSkipRegressivePreviewUpdate({
         currentPreviewText,
@@ -258,12 +273,12 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
       });
       if (shouldSkipRegressive) {
         params.markDelivered();
-        return true;
+        return "edited";
       }
       return editPreview(previewMessageId, treatEditFailureAsDelivered);
     };
     if (!lane.stream) {
-      return false;
+      return "fallback";
     }
     const previewTargetBeforeStop = resolvePreviewTarget({
       lane,
@@ -282,7 +297,14 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
         context,
       });
       if (typeof previewTargetAfterStop.previewMessageId !== "number") {
-        return false;
+        if (lane.stream?.sendMayHaveLanded?.()) {
+          params.log(
+            `telegram: ${laneName} first preview send may have landed despite missing message id; keeping to avoid duplicate`,
+          );
+          params.markDelivered();
+          return "retained";
+        }
+        return "fallback";
       }
       return finalizePreview(previewTargetAfterStop.previewMessageId, true, false);
     }
@@ -296,7 +318,18 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
       context,
     });
     if (typeof previewTargetAfterStop.previewMessageId !== "number") {
-      return false;
+      // Only retain for final delivery when a prior preview is already visible
+      // to the user — otherwise falling back is safer than silence. For updates,
+      // always fall back so the caller can attempt sendPayload without stale
+      // markDelivered() state.
+      if (context === "final" && lane.hasStreamedMessage && lane.stream?.sendMayHaveLanded?.()) {
+        params.log(
+          `telegram: ${laneName} preview send may have landed despite missing message id; keeping to avoid duplicate`,
+        );
+        params.markDelivered();
+        return "retained";
+      }
+      return "fallback";
     }
     return finalizePreview(
       previewTargetAfterStop.previewMessageId,
@@ -317,7 +350,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
       return undefined;
     }
     if (canEditViaPreview) {
-      const finalized = await tryUpdatePreviewForLane({
+      const editResult = await tryUpdatePreviewForLane({
         lane,
         laneName: "answer",
         text,
@@ -328,7 +361,10 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
         previewMessageId: archivedPreview.messageId,
         previewTextSnapshot: archivedPreview.textSnapshot,
       });
-      if (finalized) {
+      if (editResult === "retained") {
+        return "preview-retained";
+      }
+      if (editResult === "edited") {
         return "preview-finalized";
       }
     }
@@ -400,7 +436,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
             return "preview-finalized";
           }
         }
-        const finalized = await tryUpdatePreviewForLane({
+        const finalEditResult = await tryUpdatePreviewForLane({
           lane,
           laneName,
           text,
@@ -409,7 +445,10 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
           skipRegressive: "existingOnly",
           context: "final",
         });
-        if (finalized) {
+        if (finalEditResult === "retained") {
+          return "preview-retained";
+        }
+        if (finalEditResult === "edited") {
           params.finalizedPreviewByLane[laneName] = true;
           return "preview-finalized";
         }
@@ -442,7 +481,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
         params.markDelivered();
         return "preview-updated";
       }
-      const updated = await tryUpdatePreviewForLane({
+      const updateResult = await tryUpdatePreviewForLane({
         lane,
         laneName,
         text,
@@ -452,7 +491,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
         skipRegressive: "always",
         context: "update",
       });
-      if (updated) {
+      if (updateResult !== "fallback") {
         return "preview-updated";
       }
     }

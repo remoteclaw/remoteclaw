@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
-import type { RemoteClawConfig } from "../config/config.js";
+import type { OpenClawConfig } from "../config/config.js";
 import {
   resolveGatewayCredentialsFromConfig,
   resolveGatewayCredentialsFromValues,
 } from "./credentials.js";
 
-function cfg(input: Partial<RemoteClawConfig>): RemoteClawConfig {
-  return input as RemoteClawConfig;
+function cfg(input: Partial<OpenClawConfig>): OpenClawConfig {
+  return input;
 }
 
 type ResolveFromConfigInput = Parameters<typeof resolveGatewayCredentialsFromConfig>[0];
-type GatewayConfig = NonNullable<RemoteClawConfig["gateway"]>;
+type GatewayConfig = NonNullable<OpenClawConfig["gateway"]>;
 
 const DEFAULT_GATEWAY_AUTH = { token: "config-token", password: "config-password" }; // pragma: allowlist secret
 const DEFAULT_REMOTE_AUTH = { token: "remote-token", password: "remote-password" }; // pragma: allowlist secret
 const DEFAULT_GATEWAY_ENV = {
-  REMOTECLAW_GATEWAY_TOKEN: "env-token",
-  REMOTECLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
+  OPENCLAW_GATEWAY_TOKEN: "env-token",
+  OPENCLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
 } as NodeJS.ProcessEnv;
 
 function resolveGatewayCredentialsFor(
@@ -48,6 +48,27 @@ function resolveRemoteModeWithRemoteCredentials(
     },
     overrides,
   );
+}
+
+function resolveLocalModeWithUnresolvedPassword(mode: "none" | "trusted-proxy") {
+  return resolveGatewayCredentialsFromConfig({
+    cfg: {
+      gateway: {
+        mode: "local",
+        auth: {
+          mode,
+          password: { source: "env", provider: "default", id: "MISSING_GATEWAY_PASSWORD" },
+        },
+      },
+      secrets: {
+        providers: {
+          default: { source: "env" },
+        },
+      },
+    } as unknown as OpenClawConfig,
+    env: {} as NodeJS.ProcessEnv,
+    includeLegacyEnv: false,
+  });
 }
 
 describe("resolveGatewayCredentialsFromConfig", () => {
@@ -137,6 +158,138 @@ describe("resolveGatewayCredentialsFromConfig", () => {
     });
   });
 
+  it("throws when local password auth relies on an unresolved SecretRef", () => {
+    expect(() =>
+      resolveGatewayCredentialsFromConfig({
+        cfg: {
+          gateway: {
+            mode: "local",
+            auth: {
+              mode: "password",
+              password: { source: "env", provider: "default", id: "MISSING_GATEWAY_PASSWORD" },
+            },
+          },
+          secrets: {
+            providers: {
+              default: { source: "env" },
+            },
+          },
+        } as unknown as OpenClawConfig,
+        env: {} as NodeJS.ProcessEnv,
+        includeLegacyEnv: false,
+      }),
+    ).toThrow("gateway.auth.password");
+  });
+
+  it("treats env-template local tokens as SecretRefs instead of plaintext", () => {
+    const resolved = resolveGatewayCredentialsFromConfig({
+      cfg: cfg({
+        gateway: {
+          mode: "local",
+          auth: {
+            mode: "token",
+            token: "${OPENCLAW_GATEWAY_TOKEN}",
+          },
+        },
+      }),
+      env: {
+        OPENCLAW_GATEWAY_TOKEN: "env-token",
+      } as NodeJS.ProcessEnv,
+      includeLegacyEnv: false,
+    });
+
+    expect(resolved).toEqual({
+      token: "env-token",
+      password: undefined,
+    });
+  });
+
+  it("throws when env-template local token SecretRef is unresolved in token mode", () => {
+    expect(() =>
+      resolveGatewayCredentialsFromConfig({
+        cfg: cfg({
+          gateway: {
+            mode: "local",
+            auth: {
+              mode: "token",
+              token: "${OPENCLAW_GATEWAY_TOKEN}",
+            },
+          },
+        }),
+        env: {} as NodeJS.ProcessEnv,
+        includeLegacyEnv: false,
+      }),
+    ).toThrow("gateway.auth.token");
+  });
+
+  it("throws when unresolved local token SecretRef would otherwise fall back to remote token", () => {
+    expect(() =>
+      resolveGatewayCredentialsFromConfig({
+        cfg: {
+          gateway: {
+            mode: "local",
+            auth: {
+              mode: "token",
+              token: { source: "env", provider: "default", id: "MISSING_LOCAL_TOKEN" },
+            },
+            remote: {
+              token: "remote-token",
+            },
+          },
+          secrets: {
+            providers: {
+              default: { source: "env" },
+            },
+          },
+        } as unknown as OpenClawConfig,
+        env: {} as NodeJS.ProcessEnv,
+        includeLegacyEnv: false,
+      }),
+    ).toThrow("gateway.auth.token");
+  });
+
+  it("throws when unresolved local password SecretRef would otherwise fall back to remote password", () => {
+    expect(() =>
+      resolveGatewayCredentialsFromConfig({
+        cfg: {
+          gateway: {
+            mode: "local",
+            auth: {
+              mode: "password",
+              password: { source: "env", provider: "default", id: "MISSING_LOCAL_PASSWORD" },
+            },
+            remote: {
+              password: "remote-password", // pragma: allowlist secret
+            },
+          },
+          secrets: {
+            providers: {
+              default: { source: "env" },
+            },
+          },
+        } as unknown as OpenClawConfig,
+        env: {} as NodeJS.ProcessEnv,
+        includeLegacyEnv: false,
+      }),
+    ).toThrow("gateway.auth.password");
+  });
+
+  it("ignores unresolved local password ref when local auth mode is none", () => {
+    const resolved = resolveLocalModeWithUnresolvedPassword("none");
+    expect(resolved).toEqual({
+      token: undefined,
+      password: undefined,
+    });
+  });
+
+  it("ignores unresolved local password ref when local auth mode is trusted-proxy", () => {
+    const resolved = resolveLocalModeWithUnresolvedPassword("trusted-proxy");
+    expect(resolved).toEqual({
+      token: undefined,
+      password: undefined,
+    });
+  });
+
   it("keeps local credentials ahead of remote fallback in local mode", () => {
     const resolved = resolveGatewayCredentialsFromConfig({
       cfg: cfg({
@@ -220,11 +373,134 @@ describe("resolveGatewayCredentialsFromConfig", () => {
         },
       }),
       env: {
-        REMOTECLAW_GATEWAY_TOKEN: "env-token",
+        OPENCLAW_GATEWAY_TOKEN: "env-token",
       } as NodeJS.ProcessEnv,
       remoteTokenFallback: "remote-only",
     });
     expect(resolved.token).toBeUndefined();
+  });
+
+  it("throws when remote token auth relies on an unresolved SecretRef", () => {
+    expect(() =>
+      resolveGatewayCredentialsFromConfig({
+        cfg: {
+          gateway: {
+            mode: "remote",
+            remote: {
+              url: "wss://gateway.example",
+              token: { source: "env", provider: "default", id: "MISSING_REMOTE_TOKEN" },
+            },
+            auth: {},
+          },
+          secrets: {
+            providers: {
+              default: { source: "env" },
+            },
+          },
+        } as unknown as OpenClawConfig,
+        env: {} as NodeJS.ProcessEnv,
+        includeLegacyEnv: false,
+        remoteTokenFallback: "remote-only",
+      }),
+    ).toThrow("gateway.remote.token");
+  });
+
+  function createRemoteConfigWithMissingLocalTokenRef() {
+    return {
+      gateway: {
+        mode: "remote",
+        remote: {
+          url: "wss://gateway.example",
+        },
+        auth: {
+          mode: "token",
+          token: { source: "env", provider: "default", id: "MISSING_LOCAL_TOKEN" },
+        },
+      },
+      secrets: {
+        providers: {
+          default: { source: "env" },
+        },
+      },
+    } as unknown as OpenClawConfig;
+  }
+
+  it("ignores unresolved local token ref in remote-only mode when local auth mode is token", () => {
+    const resolved = resolveGatewayCredentialsFromConfig({
+      cfg: createRemoteConfigWithMissingLocalTokenRef(),
+      env: {} as NodeJS.ProcessEnv,
+      includeLegacyEnv: false,
+      remoteTokenFallback: "remote-only",
+      remotePasswordFallback: "remote-only", // pragma: allowlist secret
+    });
+    expect(resolved).toEqual({
+      token: undefined,
+      password: undefined,
+    });
+  });
+
+  it("throws for unresolved local token ref in remote mode when local fallback is enabled", () => {
+    expect(() =>
+      resolveGatewayCredentialsFromConfig({
+        cfg: createRemoteConfigWithMissingLocalTokenRef(),
+        env: {} as NodeJS.ProcessEnv,
+        includeLegacyEnv: false,
+        remoteTokenFallback: "remote-env-local",
+        remotePasswordFallback: "remote-only", // pragma: allowlist secret
+      }),
+    ).toThrow("gateway.auth.token");
+  });
+
+  it("does not throw for unresolved remote token ref when password is available", () => {
+    const resolved = resolveGatewayCredentialsFromConfig({
+      cfg: {
+        gateway: {
+          mode: "remote",
+          remote: {
+            url: "wss://gateway.example",
+            token: { source: "env", provider: "default", id: "MISSING_REMOTE_TOKEN" },
+            password: "remote-password", // pragma: allowlist secret
+          },
+          auth: {},
+        },
+        secrets: {
+          providers: {
+            default: { source: "env" },
+          },
+        },
+      } as unknown as OpenClawConfig,
+      env: {} as NodeJS.ProcessEnv,
+      includeLegacyEnv: false,
+    });
+    expect(resolved).toEqual({
+      token: undefined,
+      password: "remote-password", // pragma: allowlist secret
+    });
+  });
+
+  it("throws when remote password auth relies on an unresolved SecretRef", () => {
+    expect(() =>
+      resolveGatewayCredentialsFromConfig({
+        cfg: {
+          gateway: {
+            mode: "remote",
+            remote: {
+              url: "wss://gateway.example",
+              password: { source: "env", provider: "default", id: "MISSING_REMOTE_PASSWORD" },
+            },
+            auth: {},
+          },
+          secrets: {
+            providers: {
+              default: { source: "env" },
+            },
+          },
+        } as unknown as OpenClawConfig,
+        env: {} as NodeJS.ProcessEnv,
+        includeLegacyEnv: false,
+        remotePasswordFallback: "remote-only", // pragma: allowlist secret
+      }),
+    ).toThrow("gateway.remote.password");
   });
 
   it("can disable legacy CLAWDBOT env fallback", () => {
@@ -250,8 +526,8 @@ describe("resolveGatewayCredentialsFromValues", () => {
       configToken: "config-token",
       configPassword: "config-password", // pragma: allowlist secret
       env: {
-        REMOTECLAW_GATEWAY_TOKEN: "env-token",
-        REMOTECLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
+        OPENCLAW_GATEWAY_TOKEN: "env-token",
+        OPENCLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
       } as NodeJS.ProcessEnv,
       includeLegacyEnv: false,
       tokenPrecedence: "config-first",
@@ -268,8 +544,8 @@ describe("resolveGatewayCredentialsFromValues", () => {
       configToken: "config-token",
       configPassword: "config-password", // pragma: allowlist secret
       env: {
-        REMOTECLAW_GATEWAY_TOKEN: "env-token",
-        REMOTECLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
+        OPENCLAW_GATEWAY_TOKEN: "env-token",
+        OPENCLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
       } as NodeJS.ProcessEnv,
     });
     expect(resolved).toEqual({

@@ -19,7 +19,7 @@ import { resolveAgentRoute } from "../routing/resolve-route.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import {
   isSenderAllowed,
-  normalizeAllowFromWithStore,
+  normalizeDmAllowFromWithStore,
   type NormalizedAllowFrom,
 } from "./bot-access.js";
 import type { TelegramMediaRef } from "./bot-message-context.js";
@@ -763,7 +763,7 @@ export const registerTelegramHandlers = ({
         hasGroupAllowOverride,
       } = groupAllowContext;
       const dmPolicy = telegramCfg.dmPolicy ?? "pairing";
-      const effectiveDmAllow = normalizeAllowFromWithStore({
+      const effectiveDmAllow = normalizeDmAllowFromWithStore({
         allowFrom: telegramCfg.allowFrom,
         storeAllowFrom,
         dmPolicy,
@@ -948,7 +948,7 @@ export const registerTelegramHandlers = ({
         effectiveGroupAllow,
         hasGroupAllowOverride,
       } = groupAllowContext;
-      const effectiveDmAllow = normalizeAllowFromWithStore({
+      const effectiveDmAllow = normalizeDmAllowFromWithStore({
         allowFrom,
         storeAllowFrom,
         dmPolicy,

@@ -32,7 +32,6 @@ import { createDiscordRetryRunner } from "../../infra/retry-policy.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { createNonExitingRuntime, type RuntimeEnv } from "../../runtime.js";
 import { resolveDiscordAccount } from "../accounts.js";
-import { getDiscordGatewayEmitter } from "../monitor.gateway.js";
 import { fetchDiscordApplicationId } from "../probe.js";
 import { normalizeDiscordToken } from "../token.js";
 import { createDiscordVoiceCommand } from "../voice/command.js";
@@ -49,6 +48,7 @@ import {
   createDiscordComponentUserSelect,
 } from "./agent-components.js";
 import { resolveDiscordSlashCommandConfig } from "./commands.js";
+import { attachEarlyGatewayErrorGuard } from "./gateway-error-guard.js";
 import { createDiscordGatewayPlugin } from "./gateway-plugin.js";
 import {
   DiscordMessageListener,
@@ -203,33 +203,6 @@ function isDiscordDisallowedIntentsError(err: unknown): boolean {
   }
   const message = formatErrorMessage(err);
   return message.includes(String(DISCORD_DISALLOWED_INTENTS_CODE));
-}
-
-type EarlyGatewayErrorGuard = {
-  pendingErrors: unknown[];
-  release: () => void;
-};
-
-function attachEarlyGatewayErrorGuard(client: Client): EarlyGatewayErrorGuard {
-  const pendingErrors: unknown[] = [];
-  const gateway = client.getPlugin<GatewayPlugin>("gateway");
-  const emitter = getDiscordGatewayEmitter(gateway);
-  if (!emitter) {
-    return {
-      pendingErrors,
-      release: () => {},
-    };
-  }
-  const onGatewayError = (err: unknown) => {
-    pendingErrors.push(err);
-  };
-  emitter.on("error", onGatewayError);
-  return {
-    pendingErrors,
-    release: () => {
-      emitter.removeListener("error", onGatewayError);
-    },
-  };
 }
 
 export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {

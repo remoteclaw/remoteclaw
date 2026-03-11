@@ -155,7 +155,7 @@ Set `agents.defaults.heartbeat.every: "0m"` to disable.
 - If `HEARTBEAT.md` exists but is effectively empty (only blank lines and markdown headers like `# Heading`), RemoteClaw skips the heartbeat run to save API calls.
 - If the file is missing, the heartbeat still runs and the model decides what to do.
 - If the agent replies with `HEARTBEAT_OK`, RemoteClaw suppresses outbound delivery for that heartbeat.
-- Heartbeat delivery to DM-style `user:<id>` targets is blocked; those runs still execute but skip outbound delivery.
+- By default, heartbeat delivery to DM-style `user:<id>` targets is allowed. Set `agents.defaults.heartbeat.directPolicy: "block"` to suppress direct-target delivery while keeping heartbeat runs active.
 - Heartbeats run full agent turns — shorter intervals burn more tokens.
 
 ```json5

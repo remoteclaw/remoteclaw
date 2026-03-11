@@ -321,7 +321,7 @@ export function resolveHeartbeatDeliveryTarget(params: {
     to: resolved.to,
     sessionChatType: sessionChatTypeHint,
   });
-  if (deliveryChatType === "direct") {
+  if (deliveryChatType === "direct" && heartbeat?.directPolicy === "block") {
     return buildNoHeartbeatDeliveryTarget({
       reason: "dm-blocked",
       accountId: effectiveAccountId,

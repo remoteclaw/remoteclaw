@@ -34,7 +34,12 @@ import type {
 import { defaultRuntime } from "../../runtime.js";
 import type { TemplateContext } from "../templating.js";
 import type { VerboseLevel } from "../thinking.js";
-import { isSilentReplyPrefixText, isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
+import {
+  HEARTBEAT_TOKEN,
+  isSilentReplyPrefixText,
+  isSilentReplyText,
+  SILENT_REPLY_TOKEN,
+} from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { type BlockReplyPipeline } from "./block-reply-pipeline.js";
 import type { FollowupRun } from "./queue.js";
@@ -222,6 +227,12 @@ export async function runAgentTurnWithFallback(params: {
       const normalizeStreamingText = (payload: ReplyPayload): { text?: string; skip: boolean } => {
         const text = payload.text;
         if (isSilentReplyText(text, SILENT_REPLY_TOKEN)) {
+          return { skip: true };
+        }
+        if (
+          isSilentReplyPrefixText(text, SILENT_REPLY_TOKEN) ||
+          isSilentReplyPrefixText(text, HEARTBEAT_TOKEN)
+        ) {
           return { skip: true };
         }
         if (!text) {

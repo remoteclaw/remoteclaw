@@ -1165,6 +1165,7 @@ See [Multi-Agent Routing](/concepts/multi-agent) for precedence details.
     },
     resetTriggers: ["/new", "/reset"],
     store: "~/.remoteclaw/agents/{agentId}/sessions/sessions.json",
+    parentForkMaxTokens: 100000, // skip parent-thread fork above this token count (0 disables)
     maintenance: {
       mode: "warn", // warn | enforce
       pruneAfter: "30d",
@@ -1199,6 +1200,9 @@ See [Multi-Agent Routing](/concepts/multi-agent) for precedence details.
 - **`identityLinks`**: map canonical ids to provider-prefixed peers for cross-channel session sharing.
 - **`reset`**: primary reset policy. `daily` resets at `atHour` local time; `idle` resets after `idleMinutes`. When both configured, whichever expires first wins.
 - **`resetByType`**: per-type overrides (`direct`, `group`, `thread`). Legacy `dm` accepted as alias for `direct`.
+- **`parentForkMaxTokens`**: max parent-session `totalTokens` allowed when creating a forked thread session (default `100000`).
+  - If parent `totalTokens` is above this value, RemoteClaw starts a fresh thread session instead of inheriting parent transcript history.
+  - Set `0` to disable this guard and always allow parent forking.
 - **`mainKey`**: legacy field. Runtime now always uses `"main"` for the main direct-chat bucket.
 - **`sendPolicy`**: match by `channel`, `chatType` (`direct|group|channel`, with legacy `dm` alias), `keyPrefix`, or `rawKeyPrefix`. First deny wins.
 - **`maintenance`**: session-store cleanup + retention controls.

@@ -1,14 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { listAgentIds } from "../../agents/agent-scope.js";
+import type { AgentInternalEvent } from "../../agents/internal-events.js";
 import {
   normalizeSpawnedRunMetadata,
   resolveIngressWorkspaceOverrideForSpawnedRun,
 } from "../../agents/spawned-context.js";
 import { buildBareSessionResetPrompt } from "../../auto-reply/reply/session-reset-prompt.js";
-import { CHANNEL_IDS, type ChatChannelId } from "../../channels/registry.js";
 import { agentCommandFromIngress } from "../../commands/agent.js";
 import { loadConfig } from "../../config/config.js";
 import {
+  mergeSessionEntry,
   resolveAgentIdFromSessionKey,
   resolveExplicitAgentSessionKey,
   resolveAgentMainSessionKey,
@@ -20,10 +21,7 @@ import {
   resolveAgentDeliveryPlan,
   resolveAgentOutboundTarget,
 } from "../../infra/outbound/agent-delivery.js";
-import {
-  listConfiguredMessageChannels,
-  resolveMessageChannelSelection,
-} from "../../infra/outbound/channel-selection.js";
+import { resolveMessageChannelSelection } from "../../infra/outbound/channel-selection.js";
 import { classifySessionKeyShape, normalizeAgentId } from "../../routing/session-key.js";
 import { defaultRuntime } from "../../runtime.js";
 import { normalizeInputProvenance, type InputProvenance } from "../../sessions/input-provenance.js";
@@ -38,6 +36,7 @@ import {
 import { resolveAssistantIdentity } from "../assistant-identity.js";
 import { parseMessageWithAttachments } from "../chat-attachments.js";
 import { resolveAssistantAvatarUrl } from "../control-ui-shared.js";
+import { ADMIN_SCOPE } from "../method-scopes.js";
 import { GATEWAY_CLIENT_CAPS, hasGatewayClientCap } from "../protocol/client-info.js";
 import {
   ErrorCodes,
@@ -47,6 +46,7 @@ import {
   validateAgentParams,
   validateAgentWaitParams,
 } from "../protocol/index.js";
+import { performGatewaySessionReset } from "../session-reset-service.js";
 import {
   canonicalizeSpawnedByForAgent,
   loadSessionEntry,
@@ -63,106 +63,35 @@ import {
   waitForTerminalGatewayDedupe,
 } from "./agent-wait-dedupe.js";
 import { normalizeRpcAttachmentsToChatAttachments } from "./attachment-normalize.js";
-import { sessionsHandlers } from "./sessions.js";
 import type { GatewayRequestHandlerOptions, GatewayRequestHandlers } from "./types.js";
 
 const RESET_COMMAND_RE = /^\/(new|reset)(?:\s+([\s\S]*))?$/i;
 
-function isGatewayErrorShape(value: unknown): value is { code: string; message: string } {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const candidate = value as { code?: unknown; message?: unknown };
-  return typeof candidate.code === "string" && typeof candidate.message === "string";
+function resolveSenderIsOwnerFromClient(client: GatewayRequestHandlerOptions["client"]): boolean {
+  const scopes = Array.isArray(client?.connect?.scopes) ? client.connect.scopes : [];
+  return scopes.includes(ADMIN_SCOPE);
 }
 
 async function runSessionResetFromAgent(params: {
   key: string;
   reason: "new" | "reset";
-  idempotencyKey: string;
-  context: GatewayRequestHandlerOptions["context"];
-  client: GatewayRequestHandlerOptions["client"];
-  isWebchatConnect: GatewayRequestHandlerOptions["isWebchatConnect"];
 }): Promise<
   | { ok: true; key: string; sessionId?: string }
   | { ok: false; error: ReturnType<typeof errorShape> }
 > {
-  return await new Promise((resolve) => {
-    let settled = false;
-    const settle = (
-      result:
-        | { ok: true; key: string; sessionId?: string }
-        | { ok: false; error: ReturnType<typeof errorShape> },
-    ) => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      resolve(result);
-    };
-
-    const respond: GatewayRequestHandlerOptions["respond"] = (ok, payload, error) => {
-      if (!ok) {
-        settle({
-          ok: false,
-          error: isGatewayErrorShape(error)
-            ? error
-            : errorShape(ErrorCodes.UNAVAILABLE, String(error ?? "sessions.reset failed")),
-        });
-        return;
-      }
-      const payloadObj = payload as
-        | {
-            key?: unknown;
-            entry?: {
-              sessionId?: unknown;
-            };
-          }
-        | undefined;
-      const key = typeof payloadObj?.key === "string" ? payloadObj.key : params.key;
-      const sessionId =
-        payloadObj?.entry && typeof payloadObj.entry.sessionId === "string"
-          ? payloadObj.entry.sessionId
-          : undefined;
-      settle({ ok: true, key, sessionId });
-    };
-
-    const resetResult = sessionsHandlers["sessions.reset"]({
-      req: {
-        type: "req",
-        id: `${params.idempotencyKey}:reset`,
-        method: "sessions.reset",
-      },
-      params: {
-        key: params.key,
-        reason: params.reason,
-      },
-      context: params.context,
-      client: params.client,
-      isWebchatConnect: params.isWebchatConnect,
-      respond,
-    });
-
-    void (async () => {
-      try {
-        await resetResult;
-        if (!settled) {
-          settle({
-            ok: false,
-            error: errorShape(
-              ErrorCodes.UNAVAILABLE,
-              "sessions.reset completed without returning a response",
-            ),
-          });
-        }
-      } catch (err: unknown) {
-        settle({
-          ok: false,
-          error: errorShape(ErrorCodes.UNAVAILABLE, String(err)),
-        });
-      }
-    })();
+  const result = await performGatewaySessionReset({
+    key: params.key,
+    reason: params.reason,
+    commandSource: "gateway:agent",
   });
+  if (!result.ok) {
+    return result;
+  }
+  return {
+    ok: true,
+    key: result.key,
+    sessionId: result.entry.sessionId,
+  };
 }
 
 function dispatchAgentRunFromGateway(params: {
@@ -256,6 +185,7 @@ export const agentHandlers: GatewayRequestHandlers = {
       groupSpace?: string;
       lane?: string;
       extraSystemPrompt?: string;
+      internalEvents?: AgentInternalEvent[];
       idempotencyKey: string;
       timeout?: number;
       bestEffortDeliver?: boolean;
@@ -264,6 +194,7 @@ export const agentHandlers: GatewayRequestHandlers = {
       inputProvenance?: InputProvenance;
       workspaceDir?: string;
     };
+    const senderIsOwner = resolveSenderIsOwnerFromClient(client);
     const cfg = loadConfig();
     const idem = request.idempotencyKey;
     const normalizedSpawned = normalizeSpawnedRunMetadata({
@@ -393,10 +324,6 @@ export const agentHandlers: GatewayRequestHandlers = {
       const resetResult = await runSessionResetFromAgent({
         key: requestedSessionKey,
         reason: resetReason,
-        idempotencyKey: idem,
-        context,
-        client,
-        isWebchatConnect,
       });
       if (!resetResult.ok) {
         respond(false, undefined, resetResult.error);
@@ -456,12 +383,15 @@ export const agentHandlers: GatewayRequestHandlers = {
       resolvedGroupChannel = resolvedGroupChannel || inheritedGroup?.groupChannel;
       resolvedGroupSpace = resolvedGroupSpace || inheritedGroup?.groupSpace;
       const deliveryFields = normalizeSessionDeliveryFields(entry);
-      const nextEntry: SessionEntry = {
+      const nextEntryPatch: SessionEntry = {
         sessionId,
         updatedAt: now,
+        thinkingLevel: entry?.thinkingLevel,
         verboseLevel: entry?.verboseLevel,
+        reasoningLevel: entry?.reasoningLevel,
         systemSent: entry?.systemSent,
         sendPolicy: entry?.sendPolicy,
+        skillsSnapshot: entry?.skillsSnapshot,
         deliveryContext: deliveryFields.deliveryContext,
         lastChannel: deliveryFields.lastChannel ?? entry?.lastChannel,
         lastTo: deliveryFields.lastTo ?? entry?.lastTo,
@@ -478,7 +408,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         cliSessionIds: entry?.cliSessionIds,
         claudeCliSessionId: entry?.claudeCliSessionId,
       };
-      sessionEntry = nextEntry;
+      sessionEntry = mergeSessionEntry(entry, nextEntryPatch);
       const sendPolicy = resolveSendPolicy({
         cfg,
         entry,
@@ -500,7 +430,7 @@ export const agentHandlers: GatewayRequestHandlers = {
       const agentId = resolveAgentIdFromSessionKey(canonicalSessionKey);
       const mainSessionKey = resolveAgentMainSessionKey({ cfg, agentId });
       if (storePath) {
-        await updateSessionStore(storePath, (store) => {
+        const persisted = await updateSessionStore(storePath, (store) => {
           const target = resolveGatewaySessionStoreTarget({
             cfg,
             key: requestedSessionKey,
@@ -511,8 +441,11 @@ export const agentHandlers: GatewayRequestHandlers = {
             canonicalKey: target.canonicalKey,
             candidates: target.storeKeys,
           });
-          store[canonicalSessionKey] = nextEntry;
+          const merged = mergeSessionEntry(store[canonicalSessionKey], nextEntryPatch);
+          store[canonicalSessionKey] = merged;
+          return merged;
         });
+        sessionEntry = persisted;
       }
       if (canonicalSessionKey === mainSessionKey || canonicalSessionKey === "global") {
         context.addChatRun(idem, {
@@ -583,26 +516,6 @@ export const agentHandlers: GatewayRequestHandlers = {
     let resolvedAccountId = deliveryPlan.resolvedAccountId;
     let resolvedTo = deliveryPlan.resolvedTo;
     let effectivePlan = deliveryPlan;
-
-    // A plugin channel may be registered but have no configured accounts,
-    // making it unusable for delivery.  Fall back to the
-    // INTERNAL_MESSAGE_CHANNEL path so the existing channel-selection
-    // logic can surface a proper error.  Built-in channels (in
-    // CHANNEL_IDS) are always considered available.
-    if (
-      wantsDelivery &&
-      resolvedChannel !== INTERNAL_MESSAGE_CHANNEL &&
-      isDeliverableMessageChannel(resolvedChannel) &&
-      !CHANNEL_IDS.includes(resolvedChannel as ChatChannelId)
-    ) {
-      const cfgResolved = cfgForAgent ?? cfg;
-      const configured = await listConfiguredMessageChannels(cfgResolved);
-      if (!configured.includes(resolvedChannel)) {
-        resolvedChannel = INTERNAL_MESSAGE_CHANNEL;
-        resolvedTo = undefined;
-        resolvedAccountId = undefined;
-      }
-    }
 
     if (wantsDelivery && resolvedChannel === INTERNAL_MESSAGE_CHANNEL) {
       const cfgResolved = cfgForAgent ?? cfg;
@@ -710,13 +623,14 @@ export const agentHandlers: GatewayRequestHandlers = {
         runId,
         lane: request.lane,
         extraSystemPrompt: request.extraSystemPrompt,
+        internalEvents: request.internalEvents,
         inputProvenance,
         // Internal-only: allow workspace override for spawned subagent runs.
         workspaceDir: resolveIngressWorkspaceOverrideForSpawnedRun({
           spawnedBy: spawnedByValue,
           workspaceDir: request.workspaceDir,
         }),
-        senderIsOwner: true,
+        senderIsOwner,
       },
       runId,
       idempotencyKey: idem,

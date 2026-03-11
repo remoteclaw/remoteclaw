@@ -100,6 +100,7 @@ Notes:
 
 - Commands accept an optional `:` between the command and args (e.g. `/send: on`, `/help:`).
 - `/allowlist add|remove` requires `commands.config=true` and honors channel `configWrites`.
+- In multi-account channels, config-targeted `/allowlist --account <id>` and `/config set channels.<provider>.accounts.<id>...` also honor the target account's `configWrites`.
 - `/usage` controls the per-response usage footer; `/usage cost` prints a cost summary from session logs (relayed from the CLI agent).
 - `/restart` is enabled by default; set `commands.restart: false` to disable it.
 - Discord-only native command: `/vc join|leave|status` controls voice channels (requires `channels.discord.voice` and native commands; not available as text).

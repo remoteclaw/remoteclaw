@@ -1,4 +1,3 @@
-import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
@@ -18,7 +17,7 @@ import { loadConfig, writeConfigFile } from "../../config/config.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveSessionTranscriptsDirForAgent } from "../../config/sessions/paths.js";
 import { sameFileIdentity } from "../../infra/file-identity.js";
-import { SafeOpenError, readLocalFileSafely } from "../../infra/fs-safe.js";
+import { SafeOpenError, readLocalFileSafely, writeFileWithinRoot } from "../../infra/fs-safe.js";
 import { isNotFoundPathError, isPathInside } from "../../infra/path-guards.js";
 import { DEFAULT_AGENT_ID, normalizeAgentId } from "../../routing/session-key.js";
 import { resolveUserPath } from "../../utils.js";
@@ -87,13 +86,6 @@ type ResolvedAgentWorkspaceFilePath =
       requestPath: string;
       reason: string;
     };
-
-const SUPPORTS_NOFOLLOW = process.platform !== "win32" && "O_NOFOLLOW" in fsConstants;
-const OPEN_WRITE_FLAGS =
-  fsConstants.O_WRONLY |
-  fsConstants.O_CREAT |
-  fsConstants.O_TRUNC |
-  (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
 
 async function resolveWorkspaceRealPath(workspaceDir: string): Promise<string> {
   try {
@@ -184,22 +176,6 @@ async function statFileSafely(filePath: string): Promise<FileMeta | null> {
     };
   } catch {
     return null;
-  }
-}
-
-async function writeFileSafely(filePath: string, content: string): Promise<void> {
-  const handle = await fs.open(filePath, OPEN_WRITE_FLAGS, 0o600);
-  try {
-    const [stat, lstat] = await Promise.all([handle.stat(), fs.lstat(filePath)]);
-    if (lstat.isSymbolicLink() || !stat.isFile()) {
-      throw new Error("unsafe file path");
-    }
-    if (!sameFileIdentity(stat, lstat)) {
-      throw new Error("path changed during write");
-    }
-    await handle.writeFile(content, "utf-8");
-  } finally {
-    await handle.close().catch(() => {});
   }
 }
 
@@ -749,7 +725,12 @@ export const agentsHandlers: GatewayRequestHandlers = {
     }
     const content = String(params.content ?? "");
     try {
-      await writeFileSafely(resolvedPath.ioPath, content);
+      await writeFileWithinRoot({
+        rootDir: workspaceDir,
+        relativePath: name,
+        data: content,
+        encoding: "utf8",
+      });
     } catch {
       respond(
         false,

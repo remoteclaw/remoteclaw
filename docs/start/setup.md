@@ -130,7 +130,9 @@ Use this when debugging auth or deciding what to back up:
 - **Telegram bot token**: config/env or `channels.telegram.tokenFile`
 - **Discord bot token**: config/env (token file not yet supported)
 - **Slack tokens**: config/env (`channels.slack.*`)
-- **Pairing allowlists**: `~/.remoteclaw/credentials/<channel>-allowFrom.json`
+- **Pairing allowlists**:
+  - `~/.remoteclaw/credentials/<channel>-allowFrom.json` (default account)
+  - `~/.remoteclaw/credentials/<channel>-<accountId>-allowFrom.json` (non-default accounts)
 - **Agent auth profiles**: `~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json`
   More detail: [Security](/gateway/security#credential-storage-map).
 

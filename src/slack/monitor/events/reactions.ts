@@ -1,6 +1,7 @@
 import type { SlackEventMiddlewareArgs } from "@slack/bolt";
-import { danger } from "../../../globals.js";
+import { danger, logVerbose } from "../../../globals.js";
 import { enqueueSystemEvent } from "../../../infra/system-events.js";
+import { authorizeSlackSystemEventSender } from "../auth.js";
 import { resolveSlackChannelLabel } from "../channel-config.js";
 import type { SlackMonitorContext } from "../context.js";
 import type { SlackReactionEvent } from "../types.js";
@@ -15,21 +16,21 @@ export function registerSlackReactionEvents(params: { ctx: SlackMonitorContext }
         return;
       }
 
-      const channelInfo = item.channel ? await ctx.resolveChannelName(item.channel) : {};
-      const channelType = channelInfo?.type;
-      if (
-        !ctx.isChannelAllowed({
-          channelId: item.channel,
-          channelName: channelInfo?.name,
-          channelType,
-        })
-      ) {
+      const auth = await authorizeSlackSystemEventSender({
+        ctx,
+        senderId: event.user,
+        channelId: item.channel,
+      });
+      if (!auth.allowed) {
+        logVerbose(
+          `slack: drop reaction sender ${event.user ?? "unknown"} channel=${item.channel ?? "unknown"} reason=${auth.reason ?? "unauthorized"}`,
+        );
         return;
       }
 
       const channelLabel = resolveSlackChannelLabel({
         channelId: item.channel,
-        channelName: channelInfo?.name,
+        channelName: auth.channelName,
       });
       const actorInfo = event.user ? await ctx.resolveUserName(event.user) : undefined;
       const actorLabel = actorInfo?.name ?? event.user;
@@ -40,7 +41,7 @@ export function registerSlackReactionEvents(params: { ctx: SlackMonitorContext }
       const text = authorLabel ? `${baseText} from ${authorLabel}` : baseText;
       const sessionKey = ctx.resolveSlackSystemEventSessionKey({
         channelId: item.channel,
-        channelType,
+        channelType: auth.channelType,
       });
       enqueueSystemEvent(text, {
         sessionKey,

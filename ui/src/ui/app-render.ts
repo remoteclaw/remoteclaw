@@ -968,6 +968,7 @@ export function renderApp(state: AppViewState) {
                 health: state.debugHealth,
                 heartbeat: state.debugHeartbeat,
                 eventLog: state.eventLog,
+                methods: (state.hello?.features?.methods ?? []).toSorted(),
                 callMethod: state.debugCallMethod,
                 callParams: state.debugCallParams,
                 callResult: state.debugCallResult,

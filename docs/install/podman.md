@@ -85,6 +85,7 @@ To add quadlet **after** an initial setup that did not use it, re-run: `./setup-
 - **Token:** Stored in `~remoteclaw/.remoteclaw/.env` as `REMOTECLAW_GATEWAY_TOKEN`. `setup-podman.sh` and `run-remoteclaw-podman.sh` generate it if missing (uses `openssl`, `python3`, or `od`).
 - **Optional:** In that `.env` you can set CLI agent API keys (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) and other RemoteClaw env vars.
 - **Host ports:** By default the script maps `18789` (gateway) and `18790` (bridge). Override the **host** port mapping with `REMOTECLAW_PODMAN_GATEWAY_HOST_PORT` and `REMOTECLAW_PODMAN_BRIDGE_HOST_PORT` when launching.
+- **Gateway bind:** By default, `run-remoteclaw-podman.sh` starts the gateway with `--bind loopback` for safe local access. To expose on LAN, set `REMOTECLAW_GATEWAY_BIND=lan` and configure `gateway.controlUi.allowedOrigins` (or explicitly enable host-header fallback) in `remoteclaw.json`.
 - **Paths:** Host config and workspace default to `~remoteclaw/.remoteclaw` and `~remoteclaw/.remoteclaw/workspace`. Override the host paths used by the launch script with `REMOTECLAW_CONFIG_DIR` and `REMOTECLAW_WORKSPACE_DIR`.
 
 ## Useful commands

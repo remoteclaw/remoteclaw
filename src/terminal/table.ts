@@ -153,6 +153,20 @@ function wrapLine(text: string, width: number): string[] {
     lines.push(cleaned);
   };
 
+  const trimLeadingSpaces = (tokens: Token[]) => {
+    while (true) {
+      const firstCharIndex = tokens.findIndex((token) => token.kind === "char");
+      if (firstCharIndex < 0) {
+        return;
+      }
+      const firstChar = tokens[firstCharIndex];
+      if (!firstChar || !isSpaceChar(firstChar.value)) {
+        return;
+      }
+      tokens.splice(firstCharIndex, 1);
+    }
+  };
+
   const flushAt = (breakAt: number | null) => {
     if (buf.length === 0) {
       return;
@@ -168,10 +182,7 @@ function wrapLine(text: string, width: number): string[] {
     const left = buf.slice(0, breakAt);
     const rest = buf.slice(breakAt);
     pushLine(bufToString(left));
-
-    while (rest.length > 0 && rest[0]?.kind === "char" && isSpaceChar(rest[0].value)) {
-      rest.shift();
-    }
+    trimLeadingSpaces(rest);
 
     buf.length = 0;
     buf.push(...rest);
@@ -201,6 +212,9 @@ function wrapLine(text: string, width: number): string[] {
     }
     if (bufVisible + 1 > width && bufVisible > 0) {
       flushAt(lastBreakIndex);
+    }
+    if (bufVisible === 0 && isSpaceChar(ch)) {
+      continue;
     }
 
     buf.push(token);
@@ -233,6 +247,10 @@ function normalizeWidth(n: number | undefined): number | undefined {
     return undefined;
   }
   return Math.floor(n);
+}
+
+export function getTerminalTableWidth(minWidth = 60, fallbackWidth = 120): number {
+  return Math.max(minWidth, process.stdout.columns ?? fallbackWidth);
 }
 
 export function renderTable(opts: RenderTableOptions): string {

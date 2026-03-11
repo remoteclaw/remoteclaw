@@ -58,6 +58,7 @@ export async function buildTelegramMessageContextForTest(
     logger: { info: vi.fn() },
     resolveGroupActivation: params.resolveGroupActivation ?? (() => undefined),
     resolveGroupRequireMention: params.resolveGroupRequireMention ?? (() => false),
+    sendChatActionHandler: { sendChatAction: vi.fn() } as never,
     resolveTelegramGroupConfig:
       params.resolveTelegramGroupConfig ??
       (() => ({

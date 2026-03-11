@@ -1,8 +1,6 @@
 import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveAccountEntry } from "../../routing/account-lookup.js";
-import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
-import { isInternalMessageChannel } from "../../utils/message-channel.js";
 import type { ChannelId } from "./types.js";
 
 type ChannelConfigWithAccounts = {
@@ -18,12 +16,6 @@ export type ConfigWriteScope = {
   channelId?: ChannelId | null;
   accountId?: string | null;
 };
-
-export type ConfigWriteTarget =
-  | { kind: "global" }
-  | { kind: "channel"; scope: { channelId: ChannelId } }
-  | { kind: "account"; scope: { channelId: ChannelId; accountId: string } }
-  | { kind: "ambiguous"; scopes: ConfigWriteScope[] };
 
 export type ConfigWriteAuthorizationResult =
   | { allowed: true }
@@ -55,13 +47,14 @@ export function resolveChannelConfigWrites(params: {
 export function authorizeConfigWrite(params: {
   cfg: RemoteClawConfig;
   origin?: ConfigWriteScope;
-  target?: ConfigWriteTarget;
+  targets?: ConfigWriteScope[];
   allowBypass?: boolean;
+  hasAmbiguousTarget?: boolean;
 }): ConfigWriteAuthorizationResult {
   if (params.allowBypass) {
     return { allowed: true };
   }
-  if (params.target?.kind === "ambiguous") {
+  if (params.hasAmbiguousTarget) {
     return { allowed: false, reason: "ambiguous-target" };
   }
   if (
@@ -79,7 +72,7 @@ export function authorizeConfigWrite(params: {
     };
   }
   const seen = new Set<string>();
-  for (const target of listConfigWriteTargetScopes(params.target)) {
+  for (const target of params.targets ?? []) {
     if (!target.channelId) {
       continue;
     }
@@ -105,79 +98,31 @@ export function authorizeConfigWrite(params: {
   return { allowed: true };
 }
 
-export function resolveExplicitConfigWriteTarget(scope: ConfigWriteScope): ConfigWriteTarget {
-  if (!scope.channelId) {
-    return { kind: "global" };
-  }
-  const accountId = normalizeAccountId(scope.accountId);
-  if (!accountId || accountId === DEFAULT_ACCOUNT_ID) {
-    return { kind: "channel", scope: { channelId: scope.channelId } };
-  }
-  return { kind: "account", scope: { channelId: scope.channelId, accountId } };
-}
-
-export function resolveConfigWriteTargetFromPath(path: string[]): ConfigWriteTarget {
+export function resolveConfigWriteScopesFromPath(path: string[]): {
+  targets: ConfigWriteScope[];
+  hasAmbiguousTarget: boolean;
+} {
   if (path[0] !== "channels") {
-    return { kind: "global" };
+    return { targets: [], hasAmbiguousTarget: false };
   }
   if (path.length < 2) {
-    return { kind: "ambiguous", scopes: [] };
+    return { targets: [], hasAmbiguousTarget: true };
   }
   const channelId = path[1].trim().toLowerCase() as ChannelId;
   if (!channelId) {
-    return { kind: "ambiguous", scopes: [] };
+    return { targets: [], hasAmbiguousTarget: true };
   }
   if (path.length === 2) {
-    return { kind: "ambiguous", scopes: [{ channelId }] };
+    return { targets: [{ channelId }], hasAmbiguousTarget: true };
   }
   if (path[2] !== "accounts") {
-    return { kind: "channel", scope: { channelId } };
+    return { targets: [{ channelId }], hasAmbiguousTarget: false };
   }
   if (path.length < 4) {
-    return { kind: "ambiguous", scopes: [{ channelId }] };
+    return { targets: [{ channelId }], hasAmbiguousTarget: true };
   }
-  return resolveExplicitConfigWriteTarget({
-    channelId,
-    accountId: normalizeAccountId(path[3]),
-  });
-}
-
-export function canBypassConfigWritePolicy(params: {
-  channel?: string | null;
-  gatewayClientScopes?: string[] | null;
-}): boolean {
-  return (
-    isInternalMessageChannel(params.channel) &&
-    params.gatewayClientScopes?.includes("operator.admin") === true
-  );
-}
-
-export function formatConfigWriteDeniedMessage(params: {
-  result: Exclude<ConfigWriteAuthorizationResult, { allowed: true }>;
-  fallbackChannelId?: ChannelId | null;
-}): string {
-  if (params.result.reason === "ambiguous-target") {
-    return "⚠️ Channel-initiated /config writes cannot replace channels, channel roots, or accounts collections. Use a more specific path or gateway operator.admin.";
-  }
-
-  const blocked = params.result.blockedScope?.scope;
-  const channelLabel = blocked?.channelId ?? params.fallbackChannelId ?? "this channel";
-  const hint = blocked?.channelId
-    ? blocked.accountId
-      ? `channels.${blocked.channelId}.accounts.${blocked.accountId}.configWrites=true`
-      : `channels.${blocked.channelId}.configWrites=true`
-    : params.fallbackChannelId
-      ? `channels.${params.fallbackChannelId}.configWrites=true`
-      : "channels.<channel>.configWrites=true";
-  return `⚠️ Config writes are disabled for ${channelLabel}. Set ${hint} to enable.`;
-}
-
-function listConfigWriteTargetScopes(target?: ConfigWriteTarget): ConfigWriteScope[] {
-  if (!target || target.kind === "global") {
-    return [];
-  }
-  if (target.kind === "ambiguous") {
-    return target.scopes;
-  }
-  return [target.scope];
+  return {
+    targets: [{ channelId, accountId: normalizeAccountId(path[3]) }],
+    hasAmbiguousTarget: false,
+  };
 }

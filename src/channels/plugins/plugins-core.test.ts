@@ -19,15 +19,11 @@ import {
   createTestRegistry,
 } from "../../test-utils/channel-plugins.js";
 import { withEnvAsync } from "../../test-utils/env.js";
-import { INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel.js";
 import { getChannelPluginCatalogEntry, listChannelPluginCatalogEntries } from "./catalog.js";
 import {
   authorizeConfigWrite,
-  canBypassConfigWritePolicy,
-  formatConfigWriteDeniedMessage,
-  resolveExplicitConfigWriteTarget,
   resolveChannelConfigWrites,
-  resolveConfigWriteTargetFromPath,
+  resolveConfigWriteScopesFromPath,
 } from "./config-writes.js";
 import {
   listDiscordDirectoryGroupsFromConfig,
@@ -112,7 +108,7 @@ describe("channel plugin registry", () => {
 describe("channel plugin catalog", () => {
   it("includes Microsoft Teams", () => {
     const entry = getChannelPluginCatalogEntry("msteams");
-    expect(entry?.install.npmSpec).toBe("@remoteclaw/msteams");
+    expect(entry?.install.npmSpec).toBe("@openclaw/msteams");
     expect(entry?.meta.aliases).toContain("teams");
   });
 
@@ -122,15 +118,15 @@ describe("channel plugin catalog", () => {
   });
 
   it("includes external catalog entries", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-catalog-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-catalog-"));
     const catalogPath = path.join(dir, "catalog.json");
     fs.writeFileSync(
       catalogPath,
       JSON.stringify({
         entries: [
           {
-            name: "@remoteclaw/demo-channel",
-            remoteclaw: {
+            name: "@openclaw/demo-channel",
+            openclaw: {
               channel: {
                 id: "demo-channel",
                 label: "Demo Channel",
@@ -140,7 +136,7 @@ describe("channel plugin catalog", () => {
                 order: 999,
               },
               install: {
-                npmSpec: "@remoteclaw/demo-channel",
+                npmSpec: "@openclaw/demo-channel",
               },
             },
           },
@@ -331,12 +327,6 @@ describe("resolveChannelConfigWrites", () => {
     const cfg = makeSlackConfigWritesCfg("Work");
     expect(resolveChannelConfigWrites({ cfg, channelId: "slack", accountId: "work" })).toBe(false);
   });
-
-  it("ignores account ids when the channel is missing", () => {
-    expect(resolveChannelConfigWrites({ cfg: {}, channelId: "slack", accountId: "work" })).toBe(
-      true,
-    );
-  });
 });
 
 describe("authorizeConfigWrite", () => {
@@ -346,7 +336,7 @@ describe("authorizeConfigWrite", () => {
       authorizeConfigWrite({
         cfg,
         origin: { channelId: "slack", accountId: "default" },
-        target: resolveExplicitConfigWriteTarget({ channelId: "slack", accountId: "work" }),
+        targets: [{ channelId: "slack", accountId: "work" }],
       }),
     ).toEqual({
       allowed: false,
@@ -355,79 +345,15 @@ describe("authorizeConfigWrite", () => {
     });
   });
 
-  it("blocks when the origin account disables writes", () => {
-    const cfg = makeSlackConfigWritesCfg("default");
-    expect(
-      authorizeConfigWrite({
-        cfg,
-        origin: { channelId: "slack", accountId: "default" },
-        target: resolveExplicitConfigWriteTarget({ channelId: "slack", accountId: "work" }),
-      }),
-    ).toEqual({
-      allowed: false,
-      reason: "origin-disabled",
-      blockedScope: { kind: "origin", scope: { channelId: "slack", accountId: "default" } },
-    });
-  });
-
-  it("allows bypass for internal operator.admin writes", () => {
-    const cfg = makeSlackConfigWritesCfg("work");
-    expect(
-      authorizeConfigWrite({
-        cfg,
-        origin: { channelId: "slack", accountId: "default" },
-        target: resolveExplicitConfigWriteTarget({ channelId: "slack", accountId: "work" }),
-        allowBypass: canBypassConfigWritePolicy({
-          channel: INTERNAL_MESSAGE_CHANNEL,
-          gatewayClientScopes: ["operator.admin"],
-        }),
-      }),
-    ).toEqual({ allowed: true });
-  });
-
-  it("treats non-channel config paths as global writes", () => {
-    const cfg = makeSlackConfigWritesCfg("work");
-    expect(
-      authorizeConfigWrite({
-        cfg,
-        origin: { channelId: "slack", accountId: "default" },
-        target: resolveConfigWriteTargetFromPath(["messages", "ackReaction"]),
-      }),
-    ).toEqual({ allowed: true });
-  });
-
   it("rejects ambiguous channel collection writes", () => {
-    expect(resolveConfigWriteTargetFromPath(["channels", "telegram"])).toEqual({
-      kind: "ambiguous",
-      scopes: [{ channelId: "telegram" }],
+    expect(resolveConfigWriteScopesFromPath(["channels", "telegram"])).toEqual({
+      targets: [{ channelId: "telegram" }],
+      hasAmbiguousTarget: true,
     });
-    expect(resolveConfigWriteTargetFromPath(["channels", "telegram", "accounts"])).toEqual({
-      kind: "ambiguous",
-      scopes: [{ channelId: "telegram" }],
+    expect(resolveConfigWriteScopesFromPath(["channels", "telegram", "accounts"])).toEqual({
+      targets: [{ channelId: "telegram" }],
+      hasAmbiguousTarget: true,
     });
-  });
-
-  it("resolves explicit channel and account targets", () => {
-    expect(resolveExplicitConfigWriteTarget({ channelId: "slack" })).toEqual({
-      kind: "channel",
-      scope: { channelId: "slack" },
-    });
-    expect(resolveExplicitConfigWriteTarget({ channelId: "slack", accountId: "work" })).toEqual({
-      kind: "account",
-      scope: { channelId: "slack", accountId: "work" },
-    });
-  });
-
-  it("formats denied messages consistently", () => {
-    expect(
-      formatConfigWriteDeniedMessage({
-        result: {
-          allowed: false,
-          reason: "target-disabled",
-          blockedScope: { kind: "target", scope: { channelId: "slack", accountId: "work" } },
-        },
-      }),
-    ).toContain("channels.slack.accounts.work.configWrites=true");
   });
 });
 

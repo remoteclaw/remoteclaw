@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 export const POSIX_REMOTECLAW_TMP_DIR = "/tmp/remoteclaw";
+const TMP_DIR_ACCESS_MODE = fs.constants.W_OK | fs.constants.X_OK;
 
 type ResolvePreferredRemoteClawTmpDirOptions = {
   accessSync?: (path: string, mode?: number) => void;
@@ -66,7 +67,7 @@ export function resolvePreferredRemoteClawTmpDir(
     return path.join(base, suffix);
   };
 
-  const isTrustedPreferredDir = (st: {
+  const isTrustedTmpDir = (st: {
     isDirectory(): boolean;
     isSymbolicLink(): boolean;
     mode?: number;
@@ -75,17 +76,13 @@ export function resolvePreferredRemoteClawTmpDir(
     return st.isDirectory() && !st.isSymbolicLink() && isSecureDirForUser(st);
   };
 
-  const resolvePreferredState = (
-    requireWritableAccess: boolean,
-  ): "available" | "missing" | "invalid" => {
+  const resolvePreferredState = (): "available" | "missing" | "invalid" => {
     try {
       const preferred = lstatSync(POSIX_REMOTECLAW_TMP_DIR);
-      if (!isTrustedPreferredDir(preferred)) {
+      if (!isTrustedTmpDir(preferred)) {
         return "invalid";
       }
-      if (requireWritableAccess) {
-        accessSync(POSIX_REMOTECLAW_TMP_DIR, fs.constants.W_OK | fs.constants.X_OK);
-      }
+      accessSync(POSIX_REMOTECLAW_TMP_DIR, TMP_DIR_ACCESS_MODE);
       return "available";
     } catch (err) {
       if (isNodeErrorWithCode(err, "ENOENT")) {
@@ -95,7 +92,7 @@ export function resolvePreferredRemoteClawTmpDir(
     }
   };
 
-  const existingPreferredState = resolvePreferredState(true);
+  const existingPreferredState = resolvePreferredState();
   if (existingPreferredState === "available") {
     return POSIX_REMOTECLAW_TMP_DIR;
   }
@@ -104,10 +101,10 @@ export function resolvePreferredRemoteClawTmpDir(
   }
 
   try {
-    accessSync("/tmp", fs.constants.W_OK | fs.constants.X_OK);
+    accessSync("/tmp", TMP_DIR_ACCESS_MODE);
     // Create with a safe default; subsequent callers expect it exists.
     mkdirSync(POSIX_REMOTECLAW_TMP_DIR, { recursive: true, mode: 0o700 });
-    if (resolvePreferredState(true) !== "available") {
+    if (resolvePreferredState() !== "available") {
       return fallback();
     }
     return POSIX_REMOTECLAW_TMP_DIR;

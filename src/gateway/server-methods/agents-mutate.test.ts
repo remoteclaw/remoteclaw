@@ -27,10 +27,12 @@ const mocks = vi.hoisted(() => ({
   fsAppendFile: vi.fn(async () => {}),
   fsReadFile: vi.fn(async () => ""),
   fsWriteFile: vi.fn(async () => {}),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  fsStat: vi.fn(async () => null) as any,
+  fsStat: vi.fn(async (..._args: unknown[]) => null as import("node:fs").Stats | null),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fsReaddir: vi.fn(async () => []) as any,
+  fsLstat: vi.fn(async (..._args: unknown[]) => null as import("node:fs").Stats | null),
+  fsRealpath: vi.fn(async (p: string) => p),
+  fsOpen: vi.fn(async () => ({}) as unknown),
 }));
 
 vi.mock("../../config/config.js", () => ({
@@ -91,6 +93,9 @@ vi.mock("node:fs/promises", async () => {
     writeFile: mocks.fsWriteFile,
     stat: mocks.fsStat,
     readdir: mocks.fsReaddir,
+    lstat: mocks.fsLstat,
+    realpath: mocks.fsRealpath,
+    open: mocks.fsOpen,
   };
   return { ...patched, default: patched };
 });
@@ -125,6 +130,33 @@ function createEnoentError() {
   return err;
 }
 
+function makeFileStat(params?: {
+  size?: number;
+  mtimeMs?: number;
+  dev?: number;
+  ino?: number;
+}): import("node:fs").Stats {
+  return {
+    isFile: () => true,
+    isSymbolicLink: () => false,
+    size: params?.size ?? 10,
+    mtimeMs: params?.mtimeMs ?? 1234,
+    dev: params?.dev ?? 1,
+    ino: params?.ino ?? 1,
+  } as unknown as import("node:fs").Stats;
+}
+
+function makeSymlinkStat(params?: { dev?: number; ino?: number }): import("node:fs").Stats {
+  return {
+    isFile: () => false,
+    isSymbolicLink: () => true,
+    size: 0,
+    mtimeMs: 0,
+    dev: params?.dev ?? 1,
+    ino: params?.ino ?? 2,
+  } as unknown as import("node:fs").Stats;
+}
+
 function expectNotFoundResponseAndNoWrite(respond: ReturnType<typeof vi.fn>) {
   expect(respond).toHaveBeenCalledWith(
     false,
@@ -141,6 +173,19 @@ beforeEach(() => {
   mocks.fsStat.mockImplementation(async () => {
     throw createEnoentError();
   });
+  mocks.fsLstat.mockImplementation(async () => {
+    throw createEnoentError();
+  });
+  mocks.fsRealpath.mockImplementation(async (p: string) => p);
+  mocks.fsOpen.mockImplementation(
+    async () =>
+      ({
+        stat: async () => makeFileStat(),
+        readFile: async () => Buffer.from(""),
+        writeFile: async () => {},
+        close: async () => {},
+      }) as unknown,
+  );
 });
 
 /* ------------------------------------------------------------------ */
@@ -439,11 +484,9 @@ describe("agents.files.list", () => {
       { name: "CLAUDE.md", isFile: () => true, isDirectory: () => false },
       { name: "secret.key", isFile: () => true, isDirectory: () => false },
     ]);
-    mocks.fsStat.mockImplementation(async () => ({
-      isFile: () => true,
-      size: 42,
-      mtimeMs: 1000,
-    }));
+    const fileStat = makeFileStat({ size: 42, mtimeMs: 1000 });
+    mocks.fsLstat.mockResolvedValue(fileStat);
+    mocks.fsStat.mockResolvedValue(fileStat);
 
     const { respond, promise } = makeCall("agents.files.list", { agentId: "main" });
     await promise;
@@ -465,11 +508,9 @@ describe("agents.files.list", () => {
       { name: "README.md", isFile: () => true, isDirectory: () => false },
       { name: "notes.txt", isFile: () => true, isDirectory: () => false },
     ]);
-    mocks.fsStat.mockImplementation(async () => ({
-      isFile: () => true,
-      size: 10,
-      mtimeMs: 2000,
-    }));
+    const fileStat = makeFileStat({ size: 10, mtimeMs: 2000 });
+    mocks.fsLstat.mockResolvedValue(fileStat);
+    mocks.fsStat.mockResolvedValue(fileStat);
 
     const { respond, promise } = makeCall("agents.files.list", { agentId: "main" });
     await promise;
@@ -519,12 +560,17 @@ describe("agents.files.get", () => {
   });
 
   it("returns file content for matching glob", async () => {
-    mocks.fsStat.mockImplementation(async () => ({
-      isFile: () => true,
-      size: 5,
-      mtimeMs: 3000,
-    }));
-    mocks.fsReadFile.mockImplementation(async () => "hello");
+    const fileStat = makeFileStat({ size: 5, mtimeMs: 3000 });
+    mocks.fsLstat.mockResolvedValue(fileStat);
+    mocks.fsStat.mockResolvedValue(fileStat);
+    mocks.fsOpen.mockImplementation(
+      async () =>
+        ({
+          stat: async () => fileStat,
+          readFile: async () => Buffer.from("hello"),
+          close: async () => {},
+        }) as unknown,
+    );
 
     const { respond, promise } = makeCall("agents.files.get", {
       agentId: "main",
@@ -572,15 +618,22 @@ describe("agents.files.set", () => {
       undefined,
       expect.objectContaining({ message: expect.stringContaining("not in editableFiles") }),
     );
-    expect(mocks.fsWriteFile).not.toHaveBeenCalled();
+    expect(mocks.fsOpen).not.toHaveBeenCalled();
   });
 
   it("writes file content for matching glob", async () => {
-    mocks.fsStat.mockImplementation(async () => ({
-      isFile: () => true,
-      size: 11,
-      mtimeMs: 4000,
-    }));
+    const fileStat = makeFileStat({ size: 11, mtimeMs: 4000 });
+    mocks.fsLstat.mockResolvedValue(fileStat);
+    mocks.fsStat.mockResolvedValue(fileStat);
+    mocks.fsOpen.mockImplementation(
+      async () =>
+        ({
+          stat: async () => fileStat,
+          readFile: async () => Buffer.from(""),
+          writeFile: async () => {},
+          close: async () => {},
+        }) as unknown,
+    );
 
     const { respond, promise } = makeCall("agents.files.set", {
       agentId: "main",
@@ -589,7 +642,7 @@ describe("agents.files.set", () => {
     });
     await promise;
 
-    expect(mocks.fsWriteFile).toHaveBeenCalled();
+    expect(mocks.fsOpen).toHaveBeenCalled();
     const [ok, result] = respond.mock.calls[0] ?? [];
     expect(ok).toBe(true);
     expect((result as { ok: boolean }).ok).toBe(true);
@@ -608,6 +661,152 @@ describe("agents.files.set", () => {
       undefined,
       expect.objectContaining({ message: expect.stringContaining("unsafe") }),
     );
-    expect(mocks.fsWriteFile).not.toHaveBeenCalled();
+    expect(mocks.fsOpen).not.toHaveBeenCalled();
+  });
+});
+
+describe("agents.files.get/set symlink safety", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.loadConfigReturn = {
+      agents: { defaults: { editableFiles: ["*.md"] } },
+    };
+    mocks.fsMkdir.mockResolvedValue(undefined);
+  });
+
+  it("rejects agents.files.get when allowlisted file symlink escapes workspace", async () => {
+    const workspace = "/workspace/test-agent";
+    const candidate = `${workspace}/AGENTS.md`;
+    mocks.fsRealpath.mockImplementation(async (p: string) => {
+      if (p === workspace) {
+        return workspace;
+      }
+      if (p === candidate) {
+        return "/outside/secret.txt";
+      }
+      return p;
+    });
+    mocks.fsLstat.mockImplementation(async (...args: unknown[]) => {
+      const p = typeof args[0] === "string" ? args[0] : "";
+      if (p === candidate) {
+        return makeSymlinkStat();
+      }
+      throw createEnoentError();
+    });
+
+    const { respond, promise } = makeCall("agents.files.get", {
+      agentId: "main",
+      name: "AGENTS.md",
+    });
+    await promise;
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({ message: expect.stringContaining("unsafe workspace file") }),
+    );
+  });
+
+  it("rejects agents.files.set when allowlisted file symlink escapes workspace", async () => {
+    const workspace = "/workspace/test-agent";
+    const candidate = `${workspace}/AGENTS.md`;
+    mocks.fsRealpath.mockImplementation(async (p: string) => {
+      if (p === workspace) {
+        return workspace;
+      }
+      if (p === candidate) {
+        return "/outside/secret.txt";
+      }
+      return p;
+    });
+    mocks.fsLstat.mockImplementation(async (...args: unknown[]) => {
+      const p = typeof args[0] === "string" ? args[0] : "";
+      if (p === candidate) {
+        return makeSymlinkStat();
+      }
+      throw createEnoentError();
+    });
+
+    const { respond, promise } = makeCall("agents.files.set", {
+      agentId: "main",
+      name: "AGENTS.md",
+      content: "x",
+    });
+    await promise;
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({ message: expect.stringContaining("unsafe workspace file") }),
+    );
+    expect(mocks.fsOpen).not.toHaveBeenCalled();
+  });
+
+  it("allows in-workspace symlink targets for get/set", async () => {
+    const workspace = "/workspace/test-agent";
+    const candidate = `${workspace}/AGENTS.md`;
+    const target = `${workspace}/policies/AGENTS.md`;
+    const targetStat = makeFileStat({ size: 7, mtimeMs: 1700, dev: 9, ino: 42 });
+
+    mocks.fsRealpath.mockImplementation(async (p: string) => {
+      if (p === workspace) {
+        return workspace;
+      }
+      if (p === candidate) {
+        return target;
+      }
+      return p;
+    });
+    mocks.fsLstat.mockImplementation(async (...args: unknown[]) => {
+      const p = typeof args[0] === "string" ? args[0] : "";
+      if (p === candidate) {
+        return makeSymlinkStat({ dev: 9, ino: 41 });
+      }
+      if (p === target) {
+        return targetStat;
+      }
+      throw createEnoentError();
+    });
+    mocks.fsStat.mockImplementation(async (...args: unknown[]) => {
+      const p = typeof args[0] === "string" ? args[0] : "";
+      if (p === target) {
+        return targetStat;
+      }
+      throw createEnoentError();
+    });
+    mocks.fsOpen.mockImplementation(
+      async () =>
+        ({
+          stat: async () => targetStat,
+          readFile: async () => Buffer.from("inside\n"),
+          writeFile: async () => {},
+          close: async () => {},
+        }) as unknown,
+    );
+
+    const getCall = makeCall("agents.files.get", { agentId: "main", name: "AGENTS.md" });
+    await getCall.promise;
+    expect(getCall.respond).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({
+        file: expect.objectContaining({ missing: false, content: "inside\n" }),
+      }),
+      undefined,
+    );
+
+    const setCall = makeCall("agents.files.set", {
+      agentId: "main",
+      name: "AGENTS.md",
+      content: "updated\n",
+    });
+    await setCall.promise;
+    expect(setCall.respond).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({
+        ok: true,
+        file: expect.objectContaining({ missing: false, content: "updated\n" }),
+      }),
+      undefined,
+    );
   });
 });

@@ -125,6 +125,12 @@ export type RunCronAgentTurnResult = {
    * messages.  See: https://github.com/remoteclaw/remoteclaw/issues/15692
    */
   delivered?: boolean;
+  /**
+   * `true` when cron attempted announce/direct delivery for this run.
+   * This is tracked separately from `delivered` because some announce paths
+   * cannot guarantee a final delivery ack synchronously.
+   */
+  deliveryAttempted?: boolean;
 } & CronRunOutcome &
   CronRunTelemetry;
 
@@ -471,7 +477,7 @@ export async function runCronIsolatedAgentTurn(params: {
   const embeddedRunError = hasErrorPayload
     ? (lastErrorPayloadText ?? "cron isolated run returned an error payload")
     : undefined;
-  const resolveRunOutcome = (params?: { delivered?: boolean }) =>
+  const resolveRunOutcome = (params?: { delivered?: boolean; deliveryAttempted?: boolean }) =>
     withRunSession({
       status: hasErrorPayload ? "error" : "ok",
       ...(hasErrorPayload
@@ -480,6 +486,7 @@ export async function runCronIsolatedAgentTurn(params: {
       summary,
       outputText,
       delivered: params?.delivered,
+      deliveryAttempted: params?.deliveryAttempted,
       ...telemetry,
     });
 
@@ -529,14 +536,23 @@ export async function runCronIsolatedAgentTurn(params: {
     withRunSession,
   });
   if (deliveryResult.result) {
+    const resultWithDeliveryMeta: RunCronAgentTurnResult = {
+      ...deliveryResult.result,
+      deliveryAttempted:
+        deliveryResult.result.deliveryAttempted ?? deliveryResult.deliveryAttempted,
+    };
     if (!hasErrorPayload || deliveryResult.result.status !== "ok") {
-      return deliveryResult.result;
+      return resultWithDeliveryMeta;
     }
-    return resolveRunOutcome({ delivered: deliveryResult.result.delivered });
+    return resolveRunOutcome({
+      delivered: deliveryResult.result.delivered,
+      deliveryAttempted: resultWithDeliveryMeta.deliveryAttempted,
+    });
   }
   const delivered = deliveryResult.delivered;
+  const deliveryAttempted = deliveryResult.deliveryAttempted;
   summary = deliveryResult.summary;
   outputText = deliveryResult.outputText;
 
-  return resolveRunOutcome({ delivered });
+  return resolveRunOutcome({ delivered, deliveryAttempted });
 }

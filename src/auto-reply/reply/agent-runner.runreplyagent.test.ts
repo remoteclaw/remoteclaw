@@ -892,6 +892,57 @@ describe("runReplyAgent typing (heartbeat)", () => {
     });
   });
 
+  it("surfaces overflow fallback when bridge returns empty payloads with context error", async () => {
+    state.channelBridgeHandleMock.mockImplementationOnce(async () =>
+      makeDeliveryResult({
+        payloads: [],
+        error: 'Context overflow: Summarization failed: 400 {"message":"prompt is too long"}',
+      }),
+    );
+
+    const { run } = createMinimalRun();
+    const res = await run();
+    const payload = Array.isArray(res) ? res[0] : res;
+    expect(payload).toMatchObject({
+      text: expect.stringContaining("Context overflow"),
+    });
+  });
+
+  it("surfaces overflow fallback when bridge payload text is whitespace-only with context error", async () => {
+    await withTempStateDir(async (stateDir) => {
+      const sessionId = "session";
+      const storePath = path.join(stateDir, "sessions", "sessions.json");
+      const transcriptPath = sessions.resolveSessionTranscriptPath(sessionId);
+      const sessionEntry = { sessionId, updatedAt: Date.now(), sessionFile: transcriptPath };
+      const sessionStore = { main: sessionEntry };
+
+      await fs.mkdir(path.dirname(storePath), { recursive: true });
+      await fs.writeFile(storePath, JSON.stringify(sessionStore), "utf-8");
+      await fs.mkdir(path.dirname(transcriptPath), { recursive: true });
+      await fs.writeFile(transcriptPath, "ok", "utf-8");
+
+      state.channelBridgeHandleMock.mockImplementationOnce(async () =>
+        makeDeliveryResult({
+          payloads: [{ text: "   \n\t  " }],
+          errorSubtype: "context_window",
+          error: 'Context overflow: Summarization failed: 400 {"message":"prompt is too long"}',
+        }),
+      );
+
+      const { run } = createMinimalRun({
+        sessionEntry,
+        sessionStore,
+        sessionKey: "main",
+        storePath,
+      });
+      const res = await run();
+      const payload = Array.isArray(res) ? res[0] : res;
+      expect(payload).toMatchObject({
+        text: expect.stringContaining("Context limit exceeded"),
+      });
+    });
+  });
+
   it("resets the session after role ordering payloads", async () => {
     await withTempStateDir(async (stateDir) => {
       const sessionId = "session";

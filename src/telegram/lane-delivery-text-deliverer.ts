@@ -36,6 +36,8 @@ export type ArchivedPreview = {
   deleteIfUnused?: boolean;
 };
 
+export type LanePreviewLifecycle = "transient" | "complete";
+
 export type LaneDeliveryResult =
   | "preview-finalized"
   | "preview-retained"
@@ -46,7 +48,8 @@ export type LaneDeliveryResult =
 type CreateLaneTextDelivererParams = {
   lanes: Record<LaneName, DraftLaneState>;
   archivedAnswerPreviews: ArchivedPreview[];
-  finalizedPreviewByLane: Record<LaneName, boolean>;
+  activePreviewLifecycleByLane: Record<LaneName, LanePreviewLifecycle>;
+  retainPreviewOnCleanupByLane: Record<LaneName, boolean>;
   draftMaxChars: number;
   applyTextToPayload: (payload: ReplyPayload, text: string) => ReplyPayload;
   sendPayload: (payload: ReplyPayload) => Promise<boolean>;
@@ -156,6 +159,11 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
       !hasPreviewButtons &&
       typeof lane.stream?.materialize === "function"
     );
+  };
+
+  const markActivePreviewComplete = (laneName: LaneName) => {
+    params.activePreviewLifecycleByLane[laneName] = "complete";
+    params.retainPreviewOnCleanupByLane[laneName] = true;
   };
 
   const tryMaterializeDraftPreviewForFinal = async (args: {
@@ -399,6 +407,12 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
       !hasMedia && text.length > 0 && text.length <= params.draftMaxChars && !payload.isError;
 
     if (infoKind === "final") {
+      // Transient previews must decide cleanup retention per final attempt.
+      // Completed previews intentionally stay retained so later extra payloads
+      // do not clear the already-finalized message.
+      if (params.activePreviewLifecycleByLane[laneName] === "transient") {
+        params.retainPreviewOnCleanupByLane[laneName] = false;
+      }
       if (laneName === "answer") {
         const archivedResult = await consumeArchivedAnswerPreviewForFinal({
           lane,
@@ -411,7 +425,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
           return archivedResult;
         }
       }
-      if (canEditViaPreview && !params.finalizedPreviewByLane[laneName]) {
+      if (canEditViaPreview && params.activePreviewLifecycleByLane[laneName] === "transient") {
         await params.flushDraftLane(lane);
         if (laneName === "answer") {
           const archivedResultAfterFlush = await consumeArchivedAnswerPreviewForFinal({
@@ -432,7 +446,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
             text,
           });
           if (materialized) {
-            params.finalizedPreviewByLane[laneName] = true;
+            markActivePreviewComplete(laneName);
             return "preview-finalized";
           }
         }
@@ -449,7 +463,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
           return "preview-retained";
         }
         if (finalEditResult === "edited") {
-          params.finalizedPreviewByLane[laneName] = true;
+          markActivePreviewComplete(laneName);
           return "preview-finalized";
         }
       } else if (!hasMedia && !payload.isError && text.length > params.draftMaxChars) {

@@ -191,7 +191,6 @@ describe("createTelegramBot", () => {
   it("allows callback_query in groups when group policy authorizes the sender", async () => {
     onSpy.mockClear();
     editMessageTextSpy.mockClear();
-    listSkillCommandsForAgents.mockClear();
 
     createTelegramBot({
       token: "tok",
@@ -223,7 +222,7 @@ describe("createTelegramBot", () => {
           message_id: 20,
         },
       },
-      me: { username: "openclaw_bot" },
+      me: { username: "remoteclaw_bot" },
       getFile: async () => ({ download: async () => new Uint8Array() }),
     });
 

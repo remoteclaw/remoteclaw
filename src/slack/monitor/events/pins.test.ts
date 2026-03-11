@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { registerSlackReactionEvents } from "./reactions.js";
+import { registerSlackPinEvents } from "./pins.js";
 import {
   createSlackSystemEventTestHarness,
   type SlackSystemEventTestOverrides,
@@ -16,69 +16,67 @@ vi.mock("../../../pairing/pairing-store.js", () => ({
   readChannelAllowFromStore: (...args: unknown[]) => readAllowFromStoreMock(...args),
 }));
 
-type SlackReactionHandler = (args: {
-  event: Record<string, unknown>;
-  body: unknown;
-}) => Promise<void>;
+type SlackPinHandler = (args: { event: Record<string, unknown>; body: unknown }) => Promise<void>;
 
-function createReactionContext(overrides?: SlackSystemEventTestOverrides) {
+function createPinContext(overrides?: SlackSystemEventTestOverrides) {
   const harness = createSlackSystemEventTestHarness(overrides);
-  registerSlackReactionEvents({ ctx: harness.ctx });
+  registerSlackPinEvents({ ctx: harness.ctx });
   return {
-    getAddedHandler: () => harness.getHandler("reaction_added") as SlackReactionHandler | null,
-    getRemovedHandler: () => harness.getHandler("reaction_removed") as SlackReactionHandler | null,
+    getAddedHandler: () => harness.getHandler("pin_added") as SlackPinHandler | null,
+    getRemovedHandler: () => harness.getHandler("pin_removed") as SlackPinHandler | null,
   };
 }
 
-function makeReactionEvent(overrides?: { user?: string; channel?: string }) {
+function makePinEvent(overrides?: { user?: string; channel?: string }) {
   return {
-    type: "reaction_added",
+    type: "pin_added",
     user: overrides?.user ?? "U1",
-    reaction: "thumbsup",
+    channel_id: overrides?.channel ?? "D1",
+    event_ts: "123.456",
     item: {
       type: "message",
-      channel: overrides?.channel ?? "D1",
-      ts: "123.456",
+      message: {
+        ts: "123.456",
+      },
     },
-    item_user: "UBOT",
   };
 }
 
-describe("registerSlackReactionEvents", () => {
-  it("enqueues DM reaction system events when dmPolicy is open", async () => {
+describe("registerSlackPinEvents", () => {
+  it("enqueues DM pin system events when dmPolicy is open", async () => {
     enqueueSystemEventMock.mockClear();
     readAllowFromStoreMock.mockReset().mockResolvedValue([]);
-    const { getAddedHandler } = createReactionContext({ dmPolicy: "open" });
+    const { getAddedHandler } = createPinContext({ dmPolicy: "open" });
     const addedHandler = getAddedHandler();
     expect(addedHandler).toBeTruthy();
 
     await addedHandler!({
-      event: makeReactionEvent(),
+      event: makePinEvent(),
       body: {},
     });
 
     expect(enqueueSystemEventMock).toHaveBeenCalledTimes(1);
   });
 
-  it("blocks DM reaction system events when dmPolicy is disabled", async () => {
+  it("blocks DM pin system events when dmPolicy is disabled", async () => {
     enqueueSystemEventMock.mockClear();
     readAllowFromStoreMock.mockReset().mockResolvedValue([]);
-    const { getAddedHandler } = createReactionContext({ dmPolicy: "disabled" });
+    const { getAddedHandler } = createPinContext({ dmPolicy: "disabled" });
     const addedHandler = getAddedHandler();
     expect(addedHandler).toBeTruthy();
 
     await addedHandler!({
-      event: makeReactionEvent(),
+      event: makePinEvent(),
       body: {},
     });
 
     expect(enqueueSystemEventMock).not.toHaveBeenCalled();
   });
 
-  it("blocks DM reaction system events for unauthorized senders in allowlist mode", async () => {
+  it("blocks DM pin system events for unauthorized senders in allowlist mode", async () => {
     enqueueSystemEventMock.mockClear();
     readAllowFromStoreMock.mockReset().mockResolvedValue([]);
-    const { getAddedHandler } = createReactionContext({
+    const { getAddedHandler } = createPinContext({
       dmPolicy: "allowlist",
       allowFrom: ["U2"],
     });
@@ -86,17 +84,17 @@ describe("registerSlackReactionEvents", () => {
     expect(addedHandler).toBeTruthy();
 
     await addedHandler!({
-      event: makeReactionEvent({ user: "U1" }),
+      event: makePinEvent({ user: "U1" }),
       body: {},
     });
 
     expect(enqueueSystemEventMock).not.toHaveBeenCalled();
   });
 
-  it("allows DM reaction system events for authorized senders in allowlist mode", async () => {
+  it("allows DM pin system events for authorized senders in allowlist mode", async () => {
     enqueueSystemEventMock.mockClear();
     readAllowFromStoreMock.mockReset().mockResolvedValue([]);
-    const { getAddedHandler } = createReactionContext({
+    const { getAddedHandler } = createPinContext({
       dmPolicy: "allowlist",
       allowFrom: ["U1"],
     });
@@ -104,38 +102,17 @@ describe("registerSlackReactionEvents", () => {
     expect(addedHandler).toBeTruthy();
 
     await addedHandler!({
-      event: makeReactionEvent({ user: "U1" }),
+      event: makePinEvent({ user: "U1" }),
       body: {},
     });
 
     expect(enqueueSystemEventMock).toHaveBeenCalledTimes(1);
   });
 
-  it("enqueues channel reaction events regardless of dmPolicy", async () => {
+  it("blocks channel pin events for users outside channel users allowlist", async () => {
     enqueueSystemEventMock.mockClear();
     readAllowFromStoreMock.mockReset().mockResolvedValue([]);
-    const { getRemovedHandler } = createReactionContext({
-      dmPolicy: "disabled",
-      channelType: "channel",
-    });
-    const removedHandler = getRemovedHandler();
-    expect(removedHandler).toBeTruthy();
-
-    await removedHandler!({
-      event: {
-        ...makeReactionEvent({ channel: "C1" }),
-        type: "reaction_removed",
-      },
-      body: {},
-    });
-
-    expect(enqueueSystemEventMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("blocks channel reaction events for users outside channel users allowlist", async () => {
-    enqueueSystemEventMock.mockClear();
-    readAllowFromStoreMock.mockReset().mockResolvedValue([]);
-    const { getAddedHandler } = createReactionContext({
+    const { getAddedHandler } = createPinContext({
       dmPolicy: "open",
       channelType: "channel",
       channelUsers: ["U_OWNER"],
@@ -144,7 +121,7 @@ describe("registerSlackReactionEvents", () => {
     expect(addedHandler).toBeTruthy();
 
     await addedHandler!({
-      event: makeReactionEvent({ channel: "C1", user: "U_ATTACKER" }),
+      event: makePinEvent({ channel: "C1", user: "U_ATTACKER" }),
       body: {},
     });
 

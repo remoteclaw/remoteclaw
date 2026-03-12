@@ -9,7 +9,6 @@ import {
 import { logVerbose } from "../../globals.js";
 import { clearCommandLane, getQueueSize } from "../../process/command-queue.js";
 import { normalizeMainKey } from "../../routing/session-key.js";
-import { INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel.js";
 import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { hasControlCommand } from "../command-detection.js";
 import { buildInboundMediaNote } from "../media-note.js";
@@ -29,6 +28,7 @@ import { routeReply } from "./route-reply.js";
 import { BARE_SESSION_RESET_PROMPT } from "./session-reset-prompt.js";
 import { prependSystemEvents } from "./session-updates.js";
 import { resolveTypingMode } from "./typing-mode.js";
+import { resolveRunTypingPolicy } from "./typing-policy.js";
 import type { TypingController } from "./typing.js";
 import { appendUntrustedContext } from "./untrusted-context.js";
 
@@ -197,14 +197,12 @@ export async function runPreparedReply(
   const isGroupChat = sessionCtx.ChatType === "group";
   const wasMentioned = ctx.WasMentioned === true;
   const isHeartbeat = opts?.isHeartbeat === true;
-  const typingPolicy =
-    opts?.typingPolicy ??
-    (isHeartbeat
-      ? "heartbeat"
-      : ctx.OriginatingChannel === INTERNAL_MESSAGE_CHANNEL
-        ? "internal_webchat"
-        : "auto");
-  const suppressTyping = opts?.suppressTyping === true;
+  const { typingPolicy, suppressTyping } = resolveRunTypingPolicy({
+    requestedPolicy: opts?.typingPolicy,
+    suppressTyping: opts?.suppressTyping === true,
+    isHeartbeat,
+    originatingChannel: ctx.OriginatingChannel,
+  });
   const typingMode = resolveTypingMode({
     configured: sessionCfg?.typingMode ?? agentCfg?.typingMode,
     isGroupChat,

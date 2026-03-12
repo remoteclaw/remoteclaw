@@ -173,7 +173,7 @@ describe("doctor state integrity oauth dir checks", () => {
   });
 
   it("ignores slash-routing sessions for recent missing transcript warnings", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: RemoteClawConfig = {};
     setupSessionState(cfg, process.env, process.env.HOME ?? "");
     const storePath = resolveStorePath(cfg.session?.store, { agentId: "main" });
     fs.writeFileSync(

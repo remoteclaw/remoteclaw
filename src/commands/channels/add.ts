@@ -1,6 +1,7 @@
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { listChannelPluginCatalogEntries } from "../../channels/plugins/catalog.js";
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
+import { moveSingleAccountChannelSectionToDefaultAccount } from "../../channels/plugins/setup-helpers.js";
 import type { ChannelId, ChannelSetupInput } from "../../channels/plugins/types.js";
 import { validateVoiceCredentials } from "../../channels/voice-credentials.js";
 import { writeConfigFile, type RemoteClawConfig } from "../../config/config.js";
@@ -216,6 +217,13 @@ export async function channelsAddCommand(
     channel === "telegram"
       ? resolveTelegramAccount({ cfg: nextConfig, accountId }).token.trim()
       : "";
+
+  if (accountId !== DEFAULT_ACCOUNT_ID) {
+    nextConfig = moveSingleAccountChannelSectionToDefaultAccount({
+      cfg: nextConfig,
+      channelKey: channel,
+    });
+  }
 
   nextConfig = applyChannelAccountConfig({
     cfg: nextConfig,

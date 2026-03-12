@@ -249,7 +249,10 @@ export function validateConfigObject(
   };
 }
 
-export function validateConfigObjectWithPlugins(raw: unknown):
+export function validateConfigObjectWithPlugins(
+  raw: unknown,
+  params?: { env?: NodeJS.ProcessEnv },
+):
   | {
       ok: true;
       config: RemoteClawConfig;
@@ -260,10 +263,13 @@ export function validateConfigObjectWithPlugins(raw: unknown):
       issues: ConfigValidationIssue[];
       warnings: ConfigValidationIssue[];
     } {
-  return validateConfigObjectWithPluginsBase(raw, { applyDefaults: true });
+  return validateConfigObjectWithPluginsBase(raw, { applyDefaults: true, env: params?.env });
 }
 
-export function validateConfigObjectRawWithPlugins(raw: unknown):
+export function validateConfigObjectRawWithPlugins(
+  raw: unknown,
+  params?: { env?: NodeJS.ProcessEnv },
+):
   | {
       ok: true;
       config: RemoteClawConfig;
@@ -274,12 +280,12 @@ export function validateConfigObjectRawWithPlugins(raw: unknown):
       issues: ConfigValidationIssue[];
       warnings: ConfigValidationIssue[];
     } {
-  return validateConfigObjectWithPluginsBase(raw, { applyDefaults: false });
+  return validateConfigObjectWithPluginsBase(raw, { applyDefaults: false, env: params?.env });
 }
 
 function validateConfigObjectWithPluginsBase(
   raw: unknown,
-  opts: { applyDefaults: boolean },
+  opts: { applyDefaults: boolean; env?: NodeJS.ProcessEnv },
 ):
   | {
       ok: true;
@@ -327,6 +333,7 @@ function validateConfigObjectWithPluginsBase(
     const registry = loadPluginManifestRegistry({
       config,
       workspaceDir: workspaceDir ?? undefined,
+      env: opts.env,
     });
 
     for (const diag of registry.diagnostics) {

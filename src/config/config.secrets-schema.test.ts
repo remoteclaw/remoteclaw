@@ -48,4 +48,46 @@ describe("config secret refs schema", () => {
       ).toBe(true);
     }
   });
+
+  it("rejects env refs that are not env var names", () => {
+    const result = validateConfigObjectRaw({
+      channels: {
+        googlechat: {
+          serviceAccountRef: { source: "env", id: "/channels/googlechat/serviceAccount" },
+        },
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(
+        result.issues.some(
+          (issue) =>
+            issue.path.includes("channels.googlechat.serviceAccountRef") &&
+            issue.message.includes("Env secret reference id"),
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it("rejects file refs that are not absolute JSON pointers", () => {
+    const result = validateConfigObjectRaw({
+      channels: {
+        googlechat: {
+          serviceAccountRef: { source: "file", id: "channels/googlechat/serviceAccount" },
+        },
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(
+        result.issues.some(
+          (issue) =>
+            issue.path.includes("channels.googlechat.serviceAccountRef") &&
+            issue.message.includes("absolute JSON pointer"),
+        ),
+      ).toBe(true);
+    }
+  });
 });

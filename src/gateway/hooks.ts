@@ -99,7 +99,7 @@ function resolveKnownAgentIds(cfg: RemoteClawConfig, defaultAgentId: string): Se
   return known;
 }
 
-function resolveAllowedAgentIds(raw: string[] | undefined): Set<string> | undefined {
+export function resolveAllowedAgentIds(raw: string[] | undefined): Set<string> | undefined {
   if (!Array.isArray(raw)) {
     return undefined;
   }

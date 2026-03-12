@@ -69,7 +69,7 @@ describe("agents bind/unbind commands", () => {
   it("binds routes to default agent when --agent is omitted", async () => {
     readConfigFileSnapshotMock.mockResolvedValue({
       ...baseConfigSnapshot,
-      config: {},
+      config: { agents: { list: [{ id: "main", workspace: "/tmp/main" }] } },
     });
 
     await agentsBindCommand({ bind: ["telegram"] }, runtime);
@@ -85,7 +85,7 @@ describe("agents bind/unbind commands", () => {
   it("defaults matrix-js accountId to the target agent id when omitted", async () => {
     readConfigFileSnapshotMock.mockResolvedValue({
       ...baseConfigSnapshot,
-      config: {},
+      config: { agents: { list: [{ id: "main", workspace: "/tmp/main" }] } },
     });
 
     await agentsBindCommand({ agent: "main", bind: ["matrix-js"] }, runtime);
@@ -102,6 +102,7 @@ describe("agents bind/unbind commands", () => {
     readConfigFileSnapshotMock.mockResolvedValue({
       ...baseConfigSnapshot,
       config: {
+        agents: { list: [{ id: "main", workspace: "/tmp/main" }] },
         bindings: [{ agentId: "main", match: { channel: "telegram" } }],
       },
     });
@@ -159,6 +160,7 @@ describe("agents bind/unbind commands", () => {
     readConfigFileSnapshotMock.mockResolvedValue({
       ...baseConfigSnapshot,
       config: {
+        agents: { list: [{ id: "main", workspace: "/tmp/main" }] },
         bindings: [
           {
             agentId: "main",

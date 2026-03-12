@@ -416,12 +416,14 @@ describe("gateway server auth/connect", () => {
         opts: Parameters<typeof connectReq>[1];
         expectConnectOk: boolean;
         expectConnectError?: string;
+        expectStatusOk?: boolean;
         expectStatusError?: string;
       }> = [
         {
           name: "operator + valid shared token => connected with preserved scopes",
           opts: { role: "operator", token, device: null },
           expectConnectOk: true,
+          expectStatusOk: true,
         },
         {
           name: "node + valid shared token => rejected without device",
@@ -448,12 +450,14 @@ describe("gateway server auth/connect", () => {
             );
             continue;
           }
-          if (scenario.expectStatusError) {
+          if (scenario.expectStatusOk !== undefined) {
             const status = await rpcReq(ws, "status");
-            expect(status.ok, scenario.name).toBe(false);
-            expect(status.error?.message ?? "", scenario.name).toContain(
-              scenario.expectStatusError,
-            );
+            expect(status.ok, scenario.name).toBe(scenario.expectStatusOk);
+            if (!scenario.expectStatusOk && scenario.expectStatusError) {
+              expect(status.error?.message ?? "", scenario.name).toContain(
+                scenario.expectStatusError,
+              );
+            }
           }
         } finally {
           ws.close();

@@ -1,18 +1,21 @@
 import os from "node:os";
 import { resolveGatewayPort } from "../config/paths.js";
-import type { RemoteClawConfig } from "../config/types.js";
+import type { OpenClawConfig } from "../config/types.js";
 import {
-  pickMatchingExternalInterfaceAddress,
-  safeNetworkInterfaces,
-} from "../infra/network-interfaces.js";
+  hasConfiguredSecretInput,
+  normalizeSecretInputString,
+  resolveSecretInputRef,
+} from "../config/types.secrets.js";
+import { assertExplicitGatewayAuthModeWhenBothConfigured } from "../gateway/auth-mode-policy.js";
+import { resolveRequiredConfiguredSecretRefInputString } from "../gateway/resolve-configured-secret-input-string.js";
+import { issueDeviceBootstrapToken } from "../infra/device-bootstrap.js";
 import { resolveGatewayBindUrl } from "../shared/gateway-bind-url.js";
 import { isCarrierGradeNatIpv4Address, isRfc1918Ipv4Address } from "../shared/net/ip.js";
 import { resolveTailnetHostWithRunner } from "../shared/tailscale-status.js";
 
 export type PairingSetupPayload = {
   url: string;
-  token?: string;
-  password?: string;
+  bootstrapToken: string;
 };
 
 export type PairingSetupCommandResult = {
@@ -31,6 +34,7 @@ export type ResolvePairingSetupOptions = {
   publicUrl?: string;
   preferRemoteUrl?: boolean;
   forceSecure?: boolean;
+  pairingBaseDir?: string;
   runCommandWithTimeout?: PairingSetupCommandRunner;
   networkInterfaces?: () => ReturnType<typeof os.networkInterfaces>;
 };
@@ -53,9 +57,7 @@ type ResolveUrlResult = {
   error?: string;
 };
 
-type ResolveAuthResult = {
-  token?: string;
-  password?: string;
+type ResolveAuthLabelResult = {
   label?: "token" | "password";
   error?: string;
 };
@@ -93,7 +95,7 @@ function normalizeUrl(raw: string, schemeFallback: "ws" | "wss"): string | null 
 }
 
 function resolveScheme(
-  cfg: RemoteClawConfig,
+  cfg: OpenClawConfig,
   opts?: {
     forceSecure?: boolean;
   },
@@ -116,12 +118,27 @@ function pickIPv4Matching(
   networkInterfaces: () => ReturnType<typeof os.networkInterfaces>,
   matches: (address: string) => boolean,
 ): string | null {
-  return (
-    pickMatchingExternalInterfaceAddress(safeNetworkInterfaces(networkInterfaces), {
-      family: "IPv4",
-      matches,
-    }) ?? null
-  );
+  const nets = networkInterfaces();
+  for (const entries of Object.values(nets)) {
+    if (!entries) {
+      continue;
+    }
+    for (const entry of entries) {
+      const family = entry?.family;
+      const isIpv4 = family === "IPv4";
+      if (!entry || entry.internal || !isIpv4) {
+        continue;
+      }
+      const address = entry.address?.trim() ?? "";
+      if (!address) {
+        continue;
+      }
+      if (matches(address)) {
+        return address;
+      }
+    }
+  }
+  return null;
 }
 
 function pickLanIPv4(
@@ -136,40 +153,151 @@ function pickTailnetIPv4(
   return pickIPv4Matching(networkInterfaces, isTailnetIPv4);
 }
 
-function resolveAuth(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): ResolveAuthResult {
+function resolveGatewayTokenFromEnv(env: NodeJS.ProcessEnv): string | undefined {
+  return env.OPENCLAW_GATEWAY_TOKEN?.trim() || env.CLAWDBOT_GATEWAY_TOKEN?.trim() || undefined;
+}
+
+function resolveGatewayPasswordFromEnv(env: NodeJS.ProcessEnv): string | undefined {
+  return (
+    env.OPENCLAW_GATEWAY_PASSWORD?.trim() || env.CLAWDBOT_GATEWAY_PASSWORD?.trim() || undefined
+  );
+}
+
+function resolvePairingSetupAuthLabel(
+  cfg: OpenClawConfig,
+  env: NodeJS.ProcessEnv,
+): ResolveAuthLabelResult {
   const mode = cfg.gateway?.auth?.mode;
+  const defaults = cfg.secrets?.defaults;
+  const tokenRef = resolveSecretInputRef({
+    value: cfg.gateway?.auth?.token,
+    defaults,
+  }).ref;
+  const passwordRef = resolveSecretInputRef({
+    value: cfg.gateway?.auth?.password,
+    defaults,
+  }).ref;
+  const envToken = resolveGatewayTokenFromEnv(env);
+  const envPassword = resolveGatewayPasswordFromEnv(env);
   const token =
-    env.REMOTECLAW_GATEWAY_TOKEN?.trim() ||
-    env.CLAWDBOT_GATEWAY_TOKEN?.trim() ||
-    cfg.gateway?.auth?.token?.trim();
+    envToken || (tokenRef ? undefined : normalizeSecretInputString(cfg.gateway?.auth?.token));
   const password =
-    env.REMOTECLAW_GATEWAY_PASSWORD?.trim() ||
-    env.CLAWDBOT_GATEWAY_PASSWORD?.trim() ||
-    cfg.gateway?.auth?.password?.trim();
+    envPassword ||
+    (passwordRef ? undefined : normalizeSecretInputString(cfg.gateway?.auth?.password));
 
   if (mode === "password") {
     if (!password) {
       return { error: "Gateway auth is set to password, but no password is configured." };
     }
-    return { password, label: "password" };
+    return { label: "password" };
   }
   if (mode === "token") {
     if (!token) {
       return { error: "Gateway auth is set to token, but no token is configured." };
     }
-    return { token, label: "token" };
+    return { label: "token" };
   }
   if (token) {
-    return { token, label: "token" };
+    return { label: "token" };
   }
   if (password) {
-    return { password, label: "password" };
+    return { label: "password" };
   }
   return { error: "Gateway auth is not configured (no token or password)." };
 }
 
+async function resolveGatewayTokenSecretRef(
+  cfg: OpenClawConfig,
+  env: NodeJS.ProcessEnv,
+): Promise<OpenClawConfig> {
+  const hasTokenEnvCandidate = Boolean(resolveGatewayTokenFromEnv(env));
+  if (hasTokenEnvCandidate) {
+    return cfg;
+  }
+  const mode = cfg.gateway?.auth?.mode;
+  if (mode === "password" || mode === "none" || mode === "trusted-proxy") {
+    return cfg;
+  }
+  if (mode !== "token") {
+    const hasPasswordEnvCandidate = Boolean(
+      env.OPENCLAW_GATEWAY_PASSWORD?.trim() || env.CLAWDBOT_GATEWAY_PASSWORD?.trim(),
+    );
+    if (hasPasswordEnvCandidate) {
+      return cfg;
+    }
+  }
+  const token = await resolveRequiredConfiguredSecretRefInputString({
+    config: cfg,
+    env,
+    value: cfg.gateway?.auth?.token,
+    path: "gateway.auth.token",
+  });
+  if (!token) {
+    return cfg;
+  }
+  return {
+    ...cfg,
+    gateway: {
+      ...cfg.gateway,
+      auth: {
+        ...cfg.gateway?.auth,
+        token,
+      },
+    },
+  };
+}
+
+async function resolveGatewayPasswordSecretRef(
+  cfg: OpenClawConfig,
+  env: NodeJS.ProcessEnv,
+): Promise<OpenClawConfig> {
+  const hasPasswordEnvCandidate = Boolean(resolveGatewayPasswordFromEnv(env));
+  if (hasPasswordEnvCandidate) {
+    return cfg;
+  }
+  const mode = cfg.gateway?.auth?.mode;
+  if (mode === "token" || mode === "none" || mode === "trusted-proxy") {
+    return cfg;
+  }
+  if (mode !== "password") {
+    const hasTokenCandidate =
+      Boolean(resolveGatewayTokenFromEnv(env)) ||
+      hasConfiguredSecretInput(cfg.gateway?.auth?.token, cfg.secrets?.defaults);
+    if (hasTokenCandidate) {
+      return cfg;
+    }
+  }
+  const password = await resolveRequiredConfiguredSecretRefInputString({
+    config: cfg,
+    env,
+    value: cfg.gateway?.auth?.password,
+    path: "gateway.auth.password",
+  });
+  if (!password) {
+    return cfg;
+  }
+  return {
+    ...cfg,
+    gateway: {
+      ...cfg.gateway,
+      auth: {
+        ...cfg.gateway?.auth,
+        password,
+      },
+    },
+  };
+}
+
+async function materializePairingSetupAuthConfig(
+  cfg: OpenClawConfig,
+  env: NodeJS.ProcessEnv,
+): Promise<OpenClawConfig> {
+  const cfgWithToken = await resolveGatewayTokenSecretRef(cfg, env);
+  return await resolveGatewayPasswordSecretRef(cfgWithToken, env);
+}
+
 async function resolveGatewayUrl(
-  cfg: RemoteClawConfig,
+  cfg: OpenClawConfig,
   opts: {
     env: NodeJS.ProcessEnv;
     publicUrl?: string;
@@ -237,16 +365,18 @@ export function encodePairingSetupCode(payload: PairingSetupPayload): string {
 }
 
 export async function resolvePairingSetupFromConfig(
-  cfg: RemoteClawConfig,
+  cfg: OpenClawConfig,
   options: ResolvePairingSetupOptions = {},
 ): Promise<PairingSetupResolution> {
+  assertExplicitGatewayAuthModeWhenBothConfigured(cfg);
   const env = options.env ?? process.env;
-  const auth = resolveAuth(cfg, env);
-  if (auth.error) {
-    return { ok: false, error: auth.error };
+  const cfgForAuth = await materializePairingSetupAuthConfig(cfg, env);
+  const authLabel = resolvePairingSetupAuthLabel(cfgForAuth, env);
+  if (authLabel.error) {
+    return { ok: false, error: authLabel.error };
   }
 
-  const urlResult = await resolveGatewayUrl(cfg, {
+  const urlResult = await resolveGatewayUrl(cfgForAuth, {
     env,
     publicUrl: options.publicUrl,
     preferRemoteUrl: options.preferRemoteUrl,
@@ -259,7 +389,7 @@ export async function resolvePairingSetupFromConfig(
     return { ok: false, error: urlResult.error ?? "Gateway URL unavailable." };
   }
 
-  if (!auth.label) {
+  if (!authLabel.label) {
     return { ok: false, error: "Gateway auth is not configured (no token or password)." };
   }
 
@@ -267,10 +397,13 @@ export async function resolvePairingSetupFromConfig(
     ok: true,
     payload: {
       url: urlResult.url,
-      token: auth.token,
-      password: auth.password,
+      bootstrapToken: (
+        await issueDeviceBootstrapToken({
+          baseDir: options.pairingBaseDir,
+        })
+      ).token,
     },
-    authLabel: auth.label,
+    authLabel: authLabel.label,
     urlSource: urlResult.source ?? "unknown",
   };
 }

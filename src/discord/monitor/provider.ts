@@ -44,7 +44,6 @@ import { resolveDiscordAccount } from "../accounts.js";
 import { fetchDiscordApplicationId } from "../probe.js";
 import { normalizeDiscordToken } from "../token.js";
 import { createDiscordVoiceCommand } from "../voice/command.js";
-import { DiscordVoiceManager, DiscordVoiceReadyListener } from "../voice/manager.js";
 import {
   createAgentComponentButton,
   createAgentSelectMenu,
@@ -92,6 +91,17 @@ export type MonitorDiscordOpts = {
   replyToMode?: ReplyToMode;
   setStatus?: DiscordMonitorStatusSink;
 };
+
+type DiscordVoiceManager = import("../voice/manager.js").DiscordVoiceManager;
+
+type DiscordVoiceRuntimeModule = typeof import("../voice/manager.runtime.js");
+
+let discordVoiceRuntimePromise: Promise<DiscordVoiceRuntimeModule> | undefined;
+
+async function loadDiscordVoiceRuntime(): Promise<DiscordVoiceRuntimeModule> {
+  discordVoiceRuntimePromise ??= import("../voice/manager.runtime.js");
+  return await discordVoiceRuntimePromise;
+}
 
 function formatThreadBindingDurationForConfigLabel(durationMs: number): string {
   const label = formatThreadBindingDurationLabel(durationMs);
@@ -487,6 +497,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     }
 
     if (voiceEnabled) {
+      const { DiscordVoiceManager, DiscordVoiceReadyListener } = await loadDiscordVoiceRuntime();
       voiceManager = new DiscordVoiceManager({
         client,
         cfg,

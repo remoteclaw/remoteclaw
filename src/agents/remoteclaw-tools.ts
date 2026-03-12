@@ -142,6 +142,7 @@ export function createRemoteClawTools(
     createSessionStatusTool({
       agentSessionKey: options?.agentSessionKey,
       config: options?.config,
+      sandboxed: options?.sandboxed,
     }),
   ];
 

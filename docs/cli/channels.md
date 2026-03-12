@@ -35,6 +35,16 @@ remoteclaw channels remove --channel telegram --delete
 
 Tip: `remoteclaw channels add --help` shows per-channel flags (token, app token, signal-cli paths, etc).
 
+When you add a non-default account to a channel that is still using single-account top-level settings (no `channels.<channel>.accounts` entries yet), RemoteClaw moves account-scoped single-account top-level values into `channels.<channel>.accounts.default`, then writes the new account. This preserves the original account behavior while moving to the multi-account shape.
+
+Routing behavior stays consistent:
+
+- Existing channel-only bindings (no `accountId`) continue to match the default account.
+- `channels add` does not auto-create or rewrite bindings in non-interactive mode.
+- Interactive setup can optionally add account-scoped bindings.
+
+If your config was already in a mixed state (named accounts present, missing `default`, and top-level single-account values still set), run `remoteclaw doctor --fix` to move account-scoped values into `accounts.default`.
+
 ## Login / logout (interactive)
 
 ```bash

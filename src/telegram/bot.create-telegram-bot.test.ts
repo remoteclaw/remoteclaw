@@ -85,7 +85,15 @@ describe("createTelegramBot", () => {
   });
   it("aborts wrapped client fetch when fetchAbortSignal aborts", async () => {
     const originalFetch = globalThis.fetch;
-    const fetchSpy = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => init?.signal);
+    // Capture the signal passed to fetch by returning a never-resolving promise.
+    // The wrapped fetch installs abort listeners and cleans them up in .finally();
+    // if the mock resolves immediately the listeners are removed before we can
+    // fire the shutdown signal.
+    let capturedSignal: AbortSignal | undefined;
+    const fetchSpy = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      capturedSignal = init?.signal as AbortSignal | undefined;
+      return new Promise<Response>(() => {}); // never resolves — simulates in-flight request
+    });
     const shutdown = new AbortController();
     globalThis.fetch = fetchSpy as unknown as typeof fetch;
     try {
@@ -94,12 +102,13 @@ describe("createTelegramBot", () => {
         ?.client?.fetch as (input: RequestInfo | URL, init?: RequestInit) => Promise<unknown>;
       expect(clientFetch).toBeTypeOf("function");
 
-      const observedSignal = (await clientFetch("https://example.test")) as AbortSignal;
-      expect(observedSignal).toBeInstanceOf(AbortSignal);
-      expect(observedSignal.aborted).toBe(false);
+      // Start the fetch but do NOT await it — the promise never resolves.
+      void clientFetch("https://example.test");
+      expect(capturedSignal).toBeInstanceOf(AbortSignal);
+      expect(capturedSignal!.aborted).toBe(false);
 
       shutdown.abort(new Error("shutdown"));
-      expect(observedSignal.aborted).toBe(true);
+      expect(capturedSignal!.aborted).toBe(true);
     } finally {
       globalThis.fetch = originalFetch;
     }

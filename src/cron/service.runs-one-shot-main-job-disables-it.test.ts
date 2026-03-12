@@ -546,17 +546,14 @@ describe("CronService", () => {
     await store.cleanup();
   });
 
-  it("runs an isolated job and posts summary to main", async () => {
+  it("runs an isolated job without posting a fallback summary to main", async () => {
     const runIsolatedAgentJob = vi.fn(async () => ({ status: "ok" as const, summary: "done" }));
     const { store, cron, enqueueSystemEvent, requestHeartbeatNow, events } =
       await createIsolatedAnnounceHarness(runIsolatedAgentJob);
     await runIsolatedAnnounceJobAndWait({ cron, events, name: "weekly", status: "ok" });
     expect(runIsolatedAgentJob).toHaveBeenCalledTimes(1);
-    expect(enqueueSystemEvent).toHaveBeenCalledWith(
-      "Cron: done",
-      expect.objectContaining({ agentId: undefined }),
-    );
-    expect(requestHeartbeatNow).toHaveBeenCalled();
+    expect(enqueueSystemEvent).not.toHaveBeenCalled();
+    expect(requestHeartbeatNow).not.toHaveBeenCalled();
     cron.stop();
     await store.cleanup();
   });
@@ -604,7 +601,7 @@ describe("CronService", () => {
     await store.cleanup();
   });
 
-  it("posts last output to main even when isolated job errors", async () => {
+  it("does not post a fallback main summary when an isolated job errors", async () => {
     const runIsolatedAgentJob = vi.fn(async () => ({
       status: "error" as const,
       summary: "last output",
@@ -619,11 +616,8 @@ describe("CronService", () => {
       status: "error",
     });
 
-    expect(enqueueSystemEvent).toHaveBeenCalledWith(
-      "Cron (error): last output",
-      expect.objectContaining({ agentId: undefined }),
-    );
-    expect(requestHeartbeatNow).toHaveBeenCalled();
+    expect(enqueueSystemEvent).not.toHaveBeenCalled();
+    expect(requestHeartbeatNow).not.toHaveBeenCalled();
     cron.stop();
     await store.cleanup();
   });

@@ -7,12 +7,6 @@ import org.remoteclaw.android.gateway.GatewayClientInfo
 import org.remoteclaw.android.gateway.GatewayConnectOptions
 import org.remoteclaw.android.gateway.GatewayEndpoint
 import org.remoteclaw.android.gateway.GatewayTlsParams
-import org.remoteclaw.android.protocol.RemoteClawCanvasA2UICommand
-import org.remoteclaw.android.protocol.RemoteClawCanvasCommand
-import org.remoteclaw.android.protocol.RemoteClawCameraCommand
-import org.remoteclaw.android.protocol.RemoteClawLocationCommand
-import org.remoteclaw.android.protocol.RemoteClawScreenCommand
-import org.remoteclaw.android.protocol.RemoteClawSmsCommand
 import org.remoteclaw.android.protocol.RemoteClawCapability
 import org.remoteclaw.android.LocationMode
 import org.remoteclaw.android.VoiceWakeMode
@@ -80,32 +74,12 @@ class ConnectionManager(
   }
 
   fun buildInvokeCommands(): List<String> =
-    buildList {
-      add(RemoteClawCanvasCommand.Present.rawValue)
-      add(RemoteClawCanvasCommand.Hide.rawValue)
-      add(RemoteClawCanvasCommand.Navigate.rawValue)
-      add(RemoteClawCanvasCommand.Eval.rawValue)
-      add(RemoteClawCanvasCommand.Snapshot.rawValue)
-      add(RemoteClawCanvasA2UICommand.Push.rawValue)
-      add(RemoteClawCanvasA2UICommand.PushJSONL.rawValue)
-      add(RemoteClawCanvasA2UICommand.Reset.rawValue)
-      add(RemoteClawScreenCommand.Record.rawValue)
-      if (cameraEnabled()) {
-        add(RemoteClawCameraCommand.Snap.rawValue)
-        add(RemoteClawCameraCommand.Clip.rawValue)
-      }
-      if (locationMode() != LocationMode.Off) {
-        add(RemoteClawLocationCommand.Get.rawValue)
-      }
-      if (smsAvailable()) {
-        add(RemoteClawSmsCommand.Send.rawValue)
-      }
-      if (BuildConfig.DEBUG) {
-        add("debug.logs")
-        add("debug.ed25519")
-      }
-      add("app.update")
-    }
+    InvokeCommandRegistry.advertisedCommands(
+      cameraEnabled = cameraEnabled(),
+      locationEnabled = locationMode() != LocationMode.Off,
+      smsAvailable = smsAvailable(),
+      debugBuild = BuildConfig.DEBUG,
+    )
 
   fun buildCapabilities(): List<String> =
     buildList {

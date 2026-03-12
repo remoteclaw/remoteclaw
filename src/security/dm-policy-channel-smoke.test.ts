@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isAllowedBlueBubblesSender } from "../../extensions/bluebubbles/src/targets.js";
 import { isSignalSenderAllowed, type SignalSender } from "../signal/identity.js";
-import { resolveDmGroupAccessWithLists } from "./dm-policy-shared.js";
+import { DM_GROUP_ACCESS_REASON, resolveDmGroupAccessWithLists } from "./dm-policy-shared.js";
 
 /** Inline mattermost sender check — fork equivalent of upstream monitor-auth.ts */
 function isMattermostSenderAllowed(params: {
@@ -90,6 +90,7 @@ describe("security/dm-policy-shared channel smoke", () => {
           isSenderAllowed: testCase.isSenderAllowed,
         });
         expect(access.decision).toBe("block");
+        expect(access.reasonCode).toBe(DM_GROUP_ACCESS_REASON.GROUP_POLICY_NOT_ALLOWLISTED);
         expect(access.reason).toBe("groupPolicy=allowlist (not allowlisted)");
       });
     }

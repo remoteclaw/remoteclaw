@@ -222,7 +222,14 @@ describe("doctor config flow", () => {
       });
 
       const cfg = result.cfg as unknown as {
-        channels: { discord: RepairedDiscordPolicy };
+        channels: {
+          discord: Omit<RepairedDiscordPolicy, "allowFrom"> & {
+            allowFrom?: string[];
+            accounts: Record<string, DiscordAccountRule> & {
+              default: { allowFrom: string[] };
+            };
+          };
+        };
       };
 
       expect(cfg.channels.discord.allowFrom).toEqual(["123"]);
@@ -246,6 +253,35 @@ describe("doctor config flow", () => {
         "1212",
       ]);
     });
+  });
+
+  it("does not restore top-level allowFrom when config is intentionally default-account scoped", async () => {
+    const result = await runDoctorConfigWithInput({
+      repair: true,
+      config: {
+        channels: {
+          discord: {
+            accounts: {
+              default: { token: "discord-default-token", allowFrom: ["123"] },
+              work: { token: "discord-work-token" },
+            },
+          },
+        },
+      },
+      run: loadAndMaybeMigrateDoctorConfig,
+    });
+
+    const cfg = result.cfg as {
+      channels: {
+        discord: {
+          allowFrom?: string[];
+          accounts: Record<string, { allowFrom?: string[] }>;
+        };
+      };
+    };
+
+    expect(cfg.channels.discord.allowFrom).toBeUndefined();
+    expect(cfg.channels.discord.accounts.default.allowFrom).toEqual(["123"]);
   });
 
   it('adds allowFrom ["*"] when dmPolicy="open" and allowFrom is missing on repair', async () => {

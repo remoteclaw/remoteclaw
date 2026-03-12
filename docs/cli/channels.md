@@ -35,6 +35,16 @@ remoteclaw channels remove --channel telegram --delete
 
 Tip: `remoteclaw channels add --help` shows per-channel flags (token, app token, signal-cli paths, etc).
 
+When you run `remoteclaw channels add` without flags, the interactive wizard can prompt:
+
+- account ids per selected channel
+- optional display names for those accounts
+- `Bind configured channel accounts to agents now?`
+
+If you confirm bind now, the wizard asks which agent should own each configured channel account and writes account-scoped routing bindings.
+
+You can also manage the same routing rules later with `remoteclaw agents bindings`, `remoteclaw agents bind`, and `remoteclaw agents unbind` (see [agents](/cli/agents)).
+
 When you add a non-default account to a channel that is still using single-account top-level settings (no `channels.<channel>.accounts` entries yet), RemoteClaw moves account-scoped single-account top-level values into `channels.<channel>.accounts.default`, then writes the new account. This preserves the original account behavior while moving to the multi-account shape.
 
 Routing behavior stays consistent:

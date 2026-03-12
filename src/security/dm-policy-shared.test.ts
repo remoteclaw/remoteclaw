@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  DM_GROUP_ACCESS_REASON,
+  readStoreAllowFromForDmPolicy,
   resolveDmAllowState,
   resolveDmGroupAccessDecision,
   resolveDmGroupAccessWithLists,
@@ -32,6 +34,34 @@ describe("security/dm-policy-shared", () => {
     expect(state.hasWildcard).toBe(false);
     expect(state.allowCount).toBe(0);
     expect(state.isMultiUserDm).toBe(false);
+  });
+
+  it("skips pairing-store reads when dmPolicy is allowlist", async () => {
+    let called = false;
+    const storeAllowFrom = await readStoreAllowFromForDmPolicy({
+      provider: "telegram",
+      dmPolicy: "allowlist",
+      readStore: async () => {
+        called = true;
+        return ["should-not-be-read"];
+      },
+    });
+    expect(called).toBe(false);
+    expect(storeAllowFrom).toEqual([]);
+  });
+
+  it("skips pairing-store reads when shouldRead=false", async () => {
+    let called = false;
+    const storeAllowFrom = await readStoreAllowFromForDmPolicy({
+      provider: "slack",
+      shouldRead: false,
+      readStore: async () => {
+        called = true;
+        return ["should-not-be-read"];
+      },
+    });
+    expect(called).toBe(false);
+    expect(storeAllowFrom).toEqual([]);
   });
 
   it("builds effective DM/group allowlists from config + pairing store", () => {
@@ -90,6 +120,7 @@ describe("security/dm-policy-shared", () => {
       isSenderAllowed: (allowFrom) => allowFrom.includes("paired-user"),
     });
     expect(resolved.decision).toBe("allow");
+    expect(resolved.reasonCode).toBe(DM_GROUP_ACCESS_REASON.DM_POLICY_ALLOWLISTED);
     expect(resolved.reason).toBe("dmPolicy=pairing (allowlisted)");
     expect(resolved.effectiveAllowFrom).toEqual(["owner", "paired-user"]);
     // Pairing store is DM-only — not included in group allowlist
@@ -107,6 +138,7 @@ describe("security/dm-policy-shared", () => {
       isSenderAllowed: () => false,
     });
     expect(resolved.decision).toBe("block");
+    expect(resolved.reasonCode).toBe(DM_GROUP_ACCESS_REASON.DM_POLICY_NOT_ALLOWLISTED);
     expect(resolved.reason).toBe("dmPolicy=allowlist (not allowlisted)");
     expect(resolved.effectiveAllowFrom).toEqual(["owner"]);
   });
@@ -230,6 +262,7 @@ describe("security/dm-policy-shared", () => {
       });
       expect(decision).toEqual({
         decision: "block",
+        reasonCode: DM_GROUP_ACCESS_REASON.DM_POLICY_NOT_ALLOWLISTED,
         reason: "dmPolicy=allowlist (not allowlisted)",
       });
     });
@@ -245,6 +278,7 @@ describe("security/dm-policy-shared", () => {
       });
       expect(decision).toEqual({
         decision: "pairing",
+        reasonCode: DM_GROUP_ACCESS_REASON.DM_POLICY_PAIRING_REQUIRED,
         reason: "dmPolicy=pairing (not allowlisted)",
       });
     });
@@ -272,6 +306,7 @@ describe("security/dm-policy-shared", () => {
       });
       expect(decision).toEqual({
         decision: "block",
+        reasonCode: DM_GROUP_ACCESS_REASON.GROUP_POLICY_NOT_ALLOWLISTED,
         reason: "groupPolicy=allowlist (not allowlisted)",
       });
     });

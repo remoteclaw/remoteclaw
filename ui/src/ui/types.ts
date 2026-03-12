@@ -394,6 +394,7 @@ export type AgentsFilesSetResult = {
 
 export type GatewaySessionRow = {
   key: string;
+  spawnedBy?: string;
   kind: "direct" | "group" | "global" | "unknown";
   label?: string;
   displayName?: string;

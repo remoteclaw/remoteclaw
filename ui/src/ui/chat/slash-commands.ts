@@ -21,14 +21,14 @@ export const SLASH_COMMANDS: SlashCommandDef[] = [
   {
     name: "new",
     description: "Start a new session",
-    icon: "plus",
+    icon: "circle",
     category: "session",
     executeLocal: true,
   },
   {
     name: "reset",
     description: "Reset current session",
-    icon: "refresh",
+    icon: "loader",
     category: "session",
     executeLocal: true,
   },
@@ -42,21 +42,21 @@ export const SLASH_COMMANDS: SlashCommandDef[] = [
   {
     name: "stop",
     description: "Stop current run",
-    icon: "stop",
+    icon: "x",
     category: "session",
     executeLocal: true,
   },
   {
     name: "clear",
     description: "Clear chat history",
-    icon: "trash",
+    icon: "x",
     category: "session",
     executeLocal: true,
   },
   {
     name: "focus",
     description: "Toggle focus mode",
-    icon: "eye",
+    icon: "search",
     category: "session",
     executeLocal: true,
   },
@@ -77,13 +77,13 @@ export const SLASH_COMMANDS: SlashCommandDef[] = [
     icon: "brain",
     category: "model",
     executeLocal: true,
-    argOptions: ["off", "low", "medium", "high"],
+    argOptions: ["off", "minimal", "low", "medium", "high", "xhigh", "adaptive"],
   },
   {
     name: "verbose",
     description: "Toggle verbose mode",
     args: "<on|off|full>",
-    icon: "terminal",
+    icon: "fileCode",
     category: "model",
     executeLocal: true,
     argOptions: ["on", "off", "full"],
@@ -107,7 +107,7 @@ export const SLASH_COMMANDS: SlashCommandDef[] = [
   {
     name: "export",
     description: "Export session to Markdown",
-    icon: "download",
+    icon: "arrowDown",
     category: "tools",
     executeLocal: true,
   },
@@ -146,7 +146,7 @@ export const SLASH_COMMANDS: SlashCommandDef[] = [
     name: "steer",
     description: "Steer a sub-agent",
     args: "<id> <msg>",
-    icon: "send",
+    icon: "zap",
     category: "agents",
   },
 ];
@@ -192,7 +192,7 @@ export type ParsedSlashCommand = {
 
 /**
  * Parse a message as a slash command. Returns null if it doesn't match.
- * Supports `/command` and `/command args...`.
+ * Supports `/command`, `/command args...`, and `/command: args...`.
  */
 export function parseSlashCommand(text: string): ParsedSlashCommand | null {
   const trimmed = text.trim();
@@ -200,9 +200,14 @@ export function parseSlashCommand(text: string): ParsedSlashCommand | null {
     return null;
   }
 
-  const spaceIdx = trimmed.indexOf(" ");
-  const name = spaceIdx === -1 ? trimmed.slice(1) : trimmed.slice(1, spaceIdx);
-  const args = spaceIdx === -1 ? "" : trimmed.slice(spaceIdx + 1).trim();
+  const body = trimmed.slice(1);
+  const firstSeparator = body.search(/[\s:]/u);
+  const name = firstSeparator === -1 ? body : body.slice(0, firstSeparator);
+  let remainder = firstSeparator === -1 ? "" : body.slice(firstSeparator).trimStart();
+  if (remainder.startsWith(":")) {
+    remainder = remainder.slice(1).trimStart();
+  }
+  const args = remainder.trim();
 
   if (!name) {
     return null;

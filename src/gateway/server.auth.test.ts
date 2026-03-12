@@ -419,10 +419,9 @@ describe("gateway server auth/connect", () => {
         expectStatusError?: string;
       }> = [
         {
-          name: "operator + valid shared token => connected with zero scopes",
+          name: "operator + valid shared token => connected with preserved scopes",
           opts: { role: "operator", token, device: null },
           expectConnectOk: true,
-          expectStatusError: "missing scope",
         },
         {
           name: "node + valid shared token => rejected without device",
@@ -811,8 +810,7 @@ describe("gateway server auth/connect", () => {
       const res = await connectReq(ws, { token: "secret", device: null });
       expect(res.ok).toBe(true);
       const status = await rpcReq(ws, "status");
-      expect(status.ok).toBe(false);
-      expect(status.error?.message).toContain("missing scope");
+      expect(status.ok).toBe(true);
       const health = await rpcReq(ws, "health");
       expect(health.ok).toBe(true);
       ws.close();
@@ -896,8 +894,7 @@ describe("gateway server auth/connect", () => {
         }
         if (tc.expectStatusChecks) {
           const status = await rpcReq(ws, "status");
-          expect(status.ok).toBe(false);
-          expect(status.error?.message ?? "").toContain("missing scope");
+          expect(status.ok).toBe(true);
           const health = await rpcReq(ws, "health");
           expect(health.ok).toBe(true);
         }
@@ -923,8 +920,7 @@ describe("gateway server auth/connect", () => {
     });
     expect(res.ok).toBe(true);
     const status = await rpcReq(ws, "status");
-    expect(status.ok).toBe(false);
-    expect(status.error?.message ?? "").toContain("missing scope");
+    expect(status.ok).toBe(true);
     const health = await rpcReq(ws, "health");
     expect(health.ok).toBe(true);
     ws.close();
@@ -946,8 +942,7 @@ describe("gateway server auth/connect", () => {
       });
       expect(res.ok).toBe(true);
       const status = await rpcReq(ws, "status");
-      expect(status.ok).toBe(false);
-      expect(status.error?.message ?? "").toContain("missing scope");
+      expect(status.ok).toBe(true);
       const health = await rpcReq(ws, "health");
       expect(health.ok).toBe(true);
       ws.close();

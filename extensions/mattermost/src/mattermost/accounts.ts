@@ -1,6 +1,11 @@
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
-import type { MattermostAccountConfig, MattermostChatMode } from "../types.js";
+import type {
+  MattermostAccountConfig,
+  MattermostChatMode,
+  MattermostChatTypeKey,
+  MattermostReplyToMode,
+} from "../types.js";
 import { normalizeMattermostBaseUrl } from "./client.js";
 
 export type MattermostTokenSource = "env" | "config" | "none";
@@ -121,6 +126,20 @@ export function resolveMattermostAccount(params: {
     blockStreaming: merged.blockStreaming,
     blockStreamingCoalesce: merged.blockStreamingCoalesce,
   };
+}
+
+/**
+ * Resolve the effective replyToMode for a given chat type.
+ * Mattermost auto-threading only applies to channel and group messages.
+ */
+export function resolveMattermostReplyToMode(
+  account: ResolvedMattermostAccount,
+  kind: MattermostChatTypeKey,
+): MattermostReplyToMode {
+  if (kind === "direct") {
+    return "off";
+  }
+  return account.config.replyToMode ?? "off";
 }
 
 export function listEnabledMattermostAccounts(cfg: RemoteClawConfig): ResolvedMattermostAccount[] {

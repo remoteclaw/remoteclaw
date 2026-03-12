@@ -557,9 +557,8 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
   },
   outbound: {
     deliveryMode: "direct",
-    chunker: chunkTextForOutbound,
-    chunkerMode: "text",
-    textChunkLimit: 2000,
+    chunker: (text, limit) => getZalouserRuntime().channel.text.chunkMarkdownText(text, limit),
+    chunkerMode: "markdown",
     sendPayload: async (ctx) =>
       await sendPayloadWithChunkedTextAndMedia({
         ctx,

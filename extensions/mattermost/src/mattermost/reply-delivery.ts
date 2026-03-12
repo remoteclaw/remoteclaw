@@ -1,9 +1,5 @@
-import type {
-  RemoteClawConfig,
-  PluginRuntime,
-  ReplyPayload,
-} from "remoteclaw/plugin-sdk/mattermost";
-import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/mattermost";
+import type { RemoteClawConfig, PluginRuntime, ReplyPayload } from "remoteclaw/plugin-sdk";
+import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk";
 
 type MarkdownTableMode = Parameters<PluginRuntime["channel"]["text"]["convertMarkdownTables"]>[1];
 

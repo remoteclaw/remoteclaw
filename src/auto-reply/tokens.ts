@@ -1,6 +1,7 @@
 import { escapeRegExp } from "../utils.js";
 
 export const SILENT_REPLY_TOKEN = "NO_REPLY";
+export const HEARTBEAT_TOKEN = "HEARTBEAT_OK";
 
 export function isSilentReplyText(
   text: string | undefined,
@@ -11,7 +12,7 @@ export function isSilentReplyText(
   }
   const escaped = escapeRegExp(token);
   // Only match when the entire response (trimmed) is the silent token,
-  // optionally surrounded by whitespace/punctuation. This prevents
+  // optionally surrounded by whitespace. This prevents
   // substantive replies ending with NO_REPLY from being suppressed (#19537).
   return new RegExp(`^\\s*${escaped}\\s*$`).test(text);
 }

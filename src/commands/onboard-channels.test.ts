@@ -298,12 +298,19 @@ describe("setupChannels", () => {
 
     const runtime = createExitThrowingRuntime();
     try {
-      const cfg = await setupChannels({} as RemoteClawConfig, runtime, prompter, {
-        skipConfirm: true,
-        quickstartDefaults: true,
-        onSelection: selection,
-        onAccountId,
-      });
+      const cfg = await setupChannels(
+        {
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+        } as RemoteClawConfig,
+        runtime,
+        prompter,
+        {
+          skipConfirm: true,
+          quickstartDefaults: true,
+          onSelection: selection,
+          onAccountId,
+        },
+      );
 
       expect(configureInteractive).toHaveBeenCalledWith(
         expect.objectContaining({ configured: false, label: expect.any(String) }),
@@ -357,12 +364,19 @@ describe("setupChannels", () => {
 
     const runtime = createExitThrowingRuntime();
     try {
-      const cfg = await setupChannels({} as RemoteClawConfig, runtime, prompter, {
-        skipConfirm: true,
-        quickstartDefaults: true,
-        onSelection: selection,
-        onAccountId,
-      });
+      const cfg = await setupChannels(
+        {
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
+        } as RemoteClawConfig,
+        runtime,
+        prompter,
+        {
+          skipConfirm: true,
+          quickstartDefaults: true,
+          onSelection: selection,
+          onAccountId,
+        },
+      );
 
       expect(configureInteractive).toHaveBeenCalledTimes(1);
       expect(configure).not.toHaveBeenCalled();
@@ -420,6 +434,7 @@ describe("setupChannels", () => {
     try {
       const cfg = await setupChannels(
         {
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               botToken: "old-token",
@@ -484,6 +499,7 @@ describe("setupChannels", () => {
     try {
       const cfg = await setupChannels(
         {
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               botToken: "old-token",
@@ -546,6 +562,7 @@ describe("setupChannels", () => {
     try {
       await setupChannels(
         {
+          agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
           channels: {
             telegram: {
               botToken: "old-token",

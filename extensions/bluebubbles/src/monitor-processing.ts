@@ -459,6 +459,15 @@ export async function processMessage(
     : text || placeholder;
 
   const cacheMessageId = message.messageId?.trim();
+  const confirmedOutboundCacheEntry = cacheMessageId
+    ? resolveReplyContextFromCache({
+        accountId: account.accountId,
+        replyToId: cacheMessageId,
+        chatGuid: message.chatGuid,
+        chatIdentifier: message.chatIdentifier,
+        chatId: message.chatId,
+      })
+    : null;
   let messageShortId: string | undefined;
   const cacheInboundMessage = () => {
     if (!cacheMessageId) {
@@ -480,6 +489,12 @@ export async function processMessage(
   if (message.fromMe) {
     // Cache from-me messages so reply context can resolve sender/body.
     cacheInboundMessage();
+    const confirmedAssistantOutbound =
+      confirmedOutboundCacheEntry?.senderLabel === "me" &&
+      normalizeSnippet(confirmedOutboundCacheEntry.body ?? "") === normalizeSnippet(rawBody);
+    if (isSelfChatMessage && confirmedAssistantOutbound) {
+      rememberBlueBubblesSelfChatCopy(selfChatLookup);
+    }
     if (cacheMessageId) {
       const pending = consumePendingOutboundMessageId({
         accountId: account.accountId,

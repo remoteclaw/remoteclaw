@@ -42,6 +42,7 @@ import {
   loadOverview as loadOverviewInternal,
   setTab as setTabInternal,
   setTheme as setThemeInternal,
+  setThemeMode as setThemeModeInternal,
   onPopState as onPopStateInternal,
 } from "./app-settings.ts";
 import {
@@ -60,7 +61,7 @@ import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exe
 import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.ts";
 import type { Tab } from "./navigation.ts";
 import { loadSettings, type UiSettings } from "./storage.ts";
-import type { ResolvedTheme, ThemeMode } from "./theme.ts";
+import type { ResolvedTheme, ThemeMode, ThemeName } from "./theme.ts";
 import type {
   AgentsListResult,
   AgentsFilesListResult,
@@ -121,7 +122,8 @@ export class RemoteClawApp extends LitElement {
   @state() tab: Tab = "chat";
   @state() onboarding = resolveOnboardingMode();
   @state() connected = false;
-  @state() theme: ThemeMode = this.settings.theme ?? "system";
+  @state() theme: ThemeName = this.settings.theme;
+  @state() themeMode: ThemeMode = this.settings.themeMode;
   @state() themeResolved: ResolvedTheme = "dark";
   @state() hello: GatewayHelloOk | null = null;
   @state() lastError: string | null = null;
@@ -455,8 +457,16 @@ export class RemoteClawApp extends LitElement {
     setTabInternal(this as unknown as Parameters<typeof setTabInternal>[0], next);
   }
 
-  setTheme(next: ThemeMode, context?: Parameters<typeof setThemeInternal>[2]) {
+  setTheme(next: ThemeName, context?: Parameters<typeof setThemeInternal>[2]) {
     setThemeInternal(this as unknown as Parameters<typeof setThemeInternal>[0], next, context);
+  }
+
+  setThemeMode(next: ThemeMode, context?: Parameters<typeof setThemeModeInternal>[2]) {
+    setThemeModeInternal(
+      this as unknown as Parameters<typeof setThemeModeInternal>[0],
+      next,
+      context,
+    );
   }
 
   async loadOverview() {

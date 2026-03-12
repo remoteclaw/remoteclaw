@@ -55,7 +55,7 @@ data class GatewayConnectOptions(
 class GatewaySession(
   private val scope: CoroutineScope,
   private val identityStore: DeviceIdentityStore,
-  private val deviceAuthStore: DeviceAuthStore,
+  private val deviceAuthStore: DeviceAuthTokenStore,
   private val onConnected: (serverName: String?, remoteAddress: String?, mainSessionKey: String?) -> Unit,
   private val onDisconnected: (message: String) -> Unit,
   private val onEvent: (event: String, payloadJson: String?) -> Unit,

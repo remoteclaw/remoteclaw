@@ -5,6 +5,7 @@ import org.remoteclaw.android.protocol.RemoteClawCanvasA2UICommand
 import org.remoteclaw.android.protocol.RemoteClawCanvasCommand
 import org.remoteclaw.android.protocol.RemoteClawCameraCommand
 import org.remoteclaw.android.protocol.RemoteClawLocationCommand
+import org.remoteclaw.android.protocol.RemoteClawNotificationsCommand
 import org.remoteclaw.android.protocol.RemoteClawScreenCommand
 import org.remoteclaw.android.protocol.RemoteClawSmsCommand
 
@@ -12,6 +13,7 @@ class InvokeDispatcher(
   private val canvas: CanvasController,
   private val cameraHandler: CameraHandler,
   private val locationHandler: LocationHandler,
+  private val notificationsHandler: NotificationsHandler,
   private val screenHandler: ScreenHandler,
   private val smsHandler: SmsHandler,
   private val a2uiHandler: A2UIHandler,
@@ -113,6 +115,9 @@ class InvokeDispatcher(
 
       // Location command
       RemoteClawLocationCommand.Get.rawValue -> locationHandler.handleLocationGet(paramsJson)
+
+      // Notifications command
+      RemoteClawNotificationsCommand.List.rawValue -> notificationsHandler.handleNotificationsList(paramsJson)
 
       // Screen command
       RemoteClawScreenCommand.Record.rawValue -> screenHandler.handleScreenRecord(paramsJson)

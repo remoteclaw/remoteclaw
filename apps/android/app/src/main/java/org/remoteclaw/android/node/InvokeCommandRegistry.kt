@@ -4,6 +4,7 @@ import org.remoteclaw.android.protocol.RemoteClawCanvasA2UICommand
 import org.remoteclaw.android.protocol.RemoteClawCanvasCommand
 import org.remoteclaw.android.protocol.RemoteClawCameraCommand
 import org.remoteclaw.android.protocol.RemoteClawLocationCommand
+import org.remoteclaw.android.protocol.RemoteClawNotificationsCommand
 import org.remoteclaw.android.protocol.RemoteClawScreenCommand
 import org.remoteclaw.android.protocol.RemoteClawSmsCommand
 
@@ -73,6 +74,9 @@ object InvokeCommandRegistry {
       InvokeCommandSpec(
         name = RemoteClawLocationCommand.Get.rawValue,
         availability = InvokeCommandAvailability.LocationEnabled,
+      ),
+      InvokeCommandSpec(
+        name = RemoteClawNotificationsCommand.List.rawValue,
       ),
       InvokeCommandSpec(
         name = RemoteClawSmsCommand.Send.rawValue,

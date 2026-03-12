@@ -1,8 +1,9 @@
 package org.remoteclaw.android.node
 
-import org.remoteclaw.android.protocol.OpenClawCameraCommand
-import org.remoteclaw.android.protocol.OpenClawLocationCommand
-import org.remoteclaw.android.protocol.OpenClawSmsCommand
+import org.remoteclaw.android.protocol.RemoteClawCameraCommand
+import org.remoteclaw.android.protocol.RemoteClawLocationCommand
+import org.remoteclaw.android.protocol.RemoteClawNotificationsCommand
+import org.remoteclaw.android.protocol.RemoteClawSmsCommand
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,10 +19,11 @@ class InvokeCommandRegistryTest {
         debugBuild = false,
       )
 
-    assertFalse(commands.contains(OpenClawCameraCommand.Snap.rawValue))
-    assertFalse(commands.contains(OpenClawCameraCommand.Clip.rawValue))
-    assertFalse(commands.contains(OpenClawLocationCommand.Get.rawValue))
-    assertFalse(commands.contains(OpenClawSmsCommand.Send.rawValue))
+    assertFalse(commands.contains(RemoteClawCameraCommand.Snap.rawValue))
+    assertFalse(commands.contains(RemoteClawCameraCommand.Clip.rawValue))
+    assertFalse(commands.contains(RemoteClawLocationCommand.Get.rawValue))
+    assertTrue(commands.contains(RemoteClawNotificationsCommand.List.rawValue))
+    assertFalse(commands.contains(RemoteClawSmsCommand.Send.rawValue))
     assertFalse(commands.contains("debug.logs"))
     assertFalse(commands.contains("debug.ed25519"))
     assertTrue(commands.contains("app.update"))
@@ -37,10 +39,11 @@ class InvokeCommandRegistryTest {
         debugBuild = true,
       )
 
-    assertTrue(commands.contains(OpenClawCameraCommand.Snap.rawValue))
-    assertTrue(commands.contains(OpenClawCameraCommand.Clip.rawValue))
-    assertTrue(commands.contains(OpenClawLocationCommand.Get.rawValue))
-    assertTrue(commands.contains(OpenClawSmsCommand.Send.rawValue))
+    assertTrue(commands.contains(RemoteClawCameraCommand.Snap.rawValue))
+    assertTrue(commands.contains(RemoteClawCameraCommand.Clip.rawValue))
+    assertTrue(commands.contains(RemoteClawLocationCommand.Get.rawValue))
+    assertTrue(commands.contains(RemoteClawNotificationsCommand.List.rawValue))
+    assertTrue(commands.contains(RemoteClawSmsCommand.Send.rawValue))
     assertTrue(commands.contains("debug.logs"))
     assertTrue(commands.contains("debug.ed25519"))
     assertTrue(commands.contains("app.update"))

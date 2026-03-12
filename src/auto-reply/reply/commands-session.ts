@@ -18,6 +18,7 @@ import { normalizeUsageDisplay, resolveResponseUsageMode } from "../thinking.js"
 import {
   formatAbortReplyText,
   isAbortTrigger,
+  resolveAbortCutoffFromContext,
   resolveSessionEntryForKey,
   setAbortMemory,
   stopSubagentsForRequester,
@@ -98,15 +99,24 @@ async function applyAbortTarget(params: {
   sessionStore?: Record<string, SessionEntry>;
   storePath?: string;
   abortKey?: string;
+  abortCutoff?: { messageSid?: string; timestamp?: number };
 }) {
   const { abortTarget } = params;
   if (abortTarget.entry && params.sessionStore && abortTarget.key) {
     abortTarget.entry.abortedLastRun = true;
+    abortTarget.entry.abortCutoffMessageSid = params.abortCutoff?.messageSid;
+    abortTarget.entry.abortCutoffTimestamp = params.abortCutoff?.timestamp;
     abortTarget.entry.updatedAt = Date.now();
     params.sessionStore[abortTarget.key] = abortTarget.entry;
     if (params.storePath) {
       await updateSessionStore(params.storePath, (store) => {
-        store[abortTarget.key] = abortTarget.entry;
+        store[abortTarget.key] = {
+          ...abortTarget.entry,
+          abortedLastRun: true,
+          abortCutoffMessageSid: params.abortCutoff?.messageSid,
+          abortCutoffTimestamp: params.abortCutoff?.timestamp,
+          updatedAt: Date.now(),
+        };
       });
     }
   } else if (params.abortKey) {
@@ -499,6 +509,12 @@ export const handleStopCommand: CommandHandler = async (params, allowTextCommand
     sessionStore: params.sessionStore,
     storePath: params.storePath,
     abortKey: params.command.abortKey,
+    abortCutoff:
+      params.sessionKey?.trim() &&
+      abortTarget.key?.trim() &&
+      params.sessionKey.trim() === abortTarget.key.trim()
+        ? resolveAbortCutoffFromContext(params.ctx)
+        : undefined,
   });
 
   // Trigger internal hook for stop command
@@ -541,6 +557,12 @@ export const handleAbortTrigger: CommandHandler = async (params, allowTextComman
     sessionStore: params.sessionStore,
     storePath: params.storePath,
     abortKey: params.command.abortKey,
+    abortCutoff:
+      params.sessionKey?.trim() &&
+      abortTarget.key?.trim() &&
+      params.sessionKey.trim() === abortTarget.key.trim()
+        ? resolveAbortCutoffFromContext(params.ctx)
+        : undefined,
   });
   return { shouldContinue: false, reply: { text: "⚙️ Agent was aborted." } };
 };

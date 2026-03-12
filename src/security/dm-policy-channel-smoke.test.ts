@@ -1,8 +1,40 @@
 import { describe, expect, it } from "vitest";
 import { isAllowedBlueBubblesSender } from "../../extensions/bluebubbles/src/targets.js";
-import { isMattermostSenderAllowed } from "../../extensions/mattermost/src/mattermost/monitor-auth.js";
 import { isSignalSenderAllowed, type SignalSender } from "../signal/identity.js";
 import { resolveDmGroupAccessWithLists } from "./dm-policy-shared.js";
+
+/** Inline mattermost sender check — fork equivalent of upstream monitor-auth.ts */
+function isMattermostSenderAllowed(params: {
+  senderId: string;
+  senderName?: string;
+  allowFrom: string[];
+  allowNameMatching?: boolean;
+}): boolean {
+  if (params.allowFrom.length === 0) {
+    return false;
+  }
+  if (params.allowFrom.includes("*")) {
+    return true;
+  }
+  const normalizedId = params.senderId
+    .replace(/^(mattermost|user):/i, "")
+    .replace(/^@/, "")
+    .toLowerCase();
+  return params.allowFrom.some((entry) => {
+    const normalizedEntry = entry
+      .replace(/^(mattermost|user):/i, "")
+      .replace(/^@/, "")
+      .toLowerCase();
+    if (normalizedEntry === normalizedId) {
+      return true;
+    }
+    if (!params.allowNameMatching || !params.senderName) {
+      return false;
+    }
+    const normalizedName = params.senderName.replace(/^@/, "").toLowerCase();
+    return normalizedEntry === normalizedName;
+  });
+}
 
 type ChannelSmokeCase = {
   name: string;

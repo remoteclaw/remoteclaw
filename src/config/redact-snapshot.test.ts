@@ -129,25 +129,25 @@ describe("redactConfigSnapshot", () => {
     expect(channels.googlechat.serviceAccount).toBe(REDACTED_SENTINEL);
   });
 
-  it("redacts object-valued apiKey refs in model providers", () => {
+  it("redacts object-valued apiKey refs in talk providers", () => {
     const snapshot = makeSnapshot({
-      models: {
+      talk: {
         providers: {
-          openai: {
-            apiKey: { source: "env", id: "OPENAI_API_KEY" },
-            baseUrl: "https://api.openai.com",
+          elevenlabs: {
+            apiKey: { source: "env", id: "ELEVENLABS_API_KEY" },
+            voiceId: "some-voice-id",
           },
         },
       },
     });
 
     const result = redactConfigSnapshot(snapshot);
-    const models = result.config.models as Record<string, Record<string, Record<string, unknown>>>;
-    expect(models.providers.openai.apiKey).toEqual({
+    const talk = result.config.talk as Record<string, Record<string, Record<string, unknown>>>;
+    expect(talk.providers.elevenlabs.apiKey).toEqual({
       source: REDACTED_SENTINEL,
       id: REDACTED_SENTINEL,
     });
-    expect(models.providers.openai.baseUrl).toBe("https://api.openai.com");
+    expect(talk.providers.elevenlabs.voiceId).toBe("some-voice-id");
   });
 
   it("preserves non-sensitive fields", () => {

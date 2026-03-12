@@ -51,13 +51,9 @@ describe("config secret refs schema", () => {
 
   it("rejects env refs that are not env var names", () => {
     const result = validateConfigObjectRaw({
-      models: {
-        providers: {
-          openai: {
-            baseUrl: "https://api.openai.com/v1",
-            apiKey: { source: "env", id: "/providers/openai/apiKey" },
-            models: [{ id: "gpt-5", name: "gpt-5" }],
-          },
+      channels: {
+        googlechat: {
+          serviceAccountRef: { source: "env", id: "/channels/googlechat/serviceAccount" },
         },
       },
     });
@@ -67,7 +63,7 @@ describe("config secret refs schema", () => {
       expect(
         result.issues.some(
           (issue) =>
-            issue.path.includes("models.providers.openai.apiKey") &&
+            issue.path.includes("channels.googlechat.serviceAccountRef") &&
             issue.message.includes("Env secret reference id"),
         ),
       ).toBe(true);
@@ -76,13 +72,9 @@ describe("config secret refs schema", () => {
 
   it("rejects file refs that are not absolute JSON pointers", () => {
     const result = validateConfigObjectRaw({
-      models: {
-        providers: {
-          openai: {
-            baseUrl: "https://api.openai.com/v1",
-            apiKey: { source: "file", id: "providers/openai/apiKey" },
-            models: [{ id: "gpt-5", name: "gpt-5" }],
-          },
+      channels: {
+        googlechat: {
+          serviceAccountRef: { source: "file", id: "channels/googlechat/serviceAccount" },
         },
       },
     });
@@ -92,7 +84,7 @@ describe("config secret refs schema", () => {
       expect(
         result.issues.some(
           (issue) =>
-            issue.path.includes("models.providers.openai.apiKey") &&
+            issue.path.includes("channels.googlechat.serviceAccountRef") &&
             issue.message.includes("absolute JSON pointer"),
         ),
       ).toBe(true);

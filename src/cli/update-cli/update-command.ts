@@ -21,6 +21,7 @@ import { compareSemverStrings, resolveNpmChannelTag } from "../../infra/update-c
 import {
   cleanupGlobalRenameDirs,
   globalInstallArgs,
+  resolveGlobalInstallSpec,
   resolveGlobalPackageRoot,
 } from "../../infra/update-global.js";
 import type { UpdateRunResult } from "../../infra/update-runner.js";
@@ -260,6 +261,11 @@ async function runPackageInstallUpdate(params: {
   const packageName =
     (pkgRoot ? await readPackageName(pkgRoot) : await readPackageName(params.root)) ??
     DEFAULT_PACKAGE_NAME;
+  const installSpec = resolveGlobalInstallSpec({
+    packageName,
+    tag: params.tag,
+    env: installEnv,
+  });
 
   const beforeVersion = pkgRoot ? await readPackageVersion(pkgRoot) : null;
   if (pkgRoot) {
@@ -271,7 +277,8 @@ async function runPackageInstallUpdate(params: {
 
   const updateStep = await runUpdateStep({
     name: "global update",
-    argv: globalInstallArgs(manager, `${packageName}@${params.tag}`),
+    argv: globalInstallArgs(manager, installSpec),
+    env: installEnv,
     timeoutMs: params.timeoutMs,
     progress: params.progress,
   });

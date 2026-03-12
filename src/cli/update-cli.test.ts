@@ -435,6 +435,32 @@ describe("update-cli", () => {
     expect(fetchNpmTagVersion).toHaveBeenCalled();
   });
 
+  it("uses OPENCLAW_UPDATE_PACKAGE_SPEC for package updates", async () => {
+    const tempDir = createCaseDir("openclaw-update");
+    mockPackageInstallStatus(tempDir);
+
+    await withEnvAsync(
+      { OPENCLAW_UPDATE_PACKAGE_SPEC: "http://10.211.55.2:8138/openclaw-next.tgz" },
+      async () => {
+        await updateCommand({ yes: true, tag: "latest" });
+      },
+    );
+
+    expect(runGatewayUpdate).not.toHaveBeenCalled();
+    expect(runCommandWithTimeout).toHaveBeenCalledWith(
+      [
+        "npm",
+        "i",
+        "-g",
+        "http://10.211.55.2:8138/openclaw-next.tgz",
+        "--no-fund",
+        "--no-audit",
+        "--loglevel=error",
+      ],
+      expect.any(Object),
+    );
+  });
+
   it("updateCommand outputs JSON when --json is set", async () => {
     vi.mocked(defaultRuntime.log).mockClear();
 

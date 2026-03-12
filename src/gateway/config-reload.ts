@@ -254,7 +254,7 @@ export function startGatewayConfigReloader(opts: {
   initialConfig: RemoteClawConfig;
   readSnapshot: () => Promise<ConfigFileSnapshot>;
   onHotReload: (plan: GatewayReloadPlan, nextConfig: RemoteClawConfig) => Promise<void>;
-  onRestart: (plan: GatewayReloadPlan, nextConfig: RemoteClawConfig) => void;
+  onRestart: (plan: GatewayReloadPlan, nextConfig: RemoteClawConfig) => Promise<void> | void;
   log: {
     info: (msg: string) => void;
     warn: (msg: string) => void;
@@ -290,7 +290,7 @@ export function startGatewayConfigReloader(opts: {
       return;
     }
     restartQueued = true;
-    opts.onRestart(plan, nextConfig);
+    void opts.onRestart(plan, nextConfig);
   };
 
   const handleMissingSnapshot = (snapshot: ConfigFileSnapshot): boolean => {

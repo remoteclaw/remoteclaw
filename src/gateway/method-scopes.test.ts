@@ -14,6 +14,10 @@ describe("method scope resolution", () => {
     expect(resolveLeastPrivilegeOperatorScopesForMethod("poll")).toEqual(["operator.write"]);
   });
 
+  it("leaves node-only pending drain outside operator scopes", () => {
+    expect(resolveLeastPrivilegeOperatorScopesForMethod("node.pending.drain")).toEqual([]);
+  });
+
   it("returns empty scopes for unknown methods", () => {
     expect(resolveLeastPrivilegeOperatorScopesForMethod("totally.unknown.method")).toEqual([]);
   });

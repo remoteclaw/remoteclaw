@@ -100,6 +100,11 @@ import type {
   NodePairRejectParamsSchema,
   NodePairRequestParamsSchema,
   NodePairVerifyParamsSchema,
+  NodePendingAckParamsSchema,
+  NodePendingDrainParamsSchema,
+  NodePendingDrainResultSchema,
+  NodePendingEnqueueParamsSchema,
+  NodePendingEnqueueResultSchema,
   NodeRenameParamsSchema,
 } from "./nodes.js";
 import type { PushTestParamsSchema, PushTestResultSchema } from "./push.js";
@@ -148,10 +153,15 @@ export type NodePairRejectParams = Static<typeof NodePairRejectParamsSchema>;
 export type NodePairVerifyParams = Static<typeof NodePairVerifyParamsSchema>;
 export type NodeRenameParams = Static<typeof NodeRenameParamsSchema>;
 export type NodeListParams = Static<typeof NodeListParamsSchema>;
+export type NodePendingAckParams = Static<typeof NodePendingAckParamsSchema>;
 export type NodeDescribeParams = Static<typeof NodeDescribeParamsSchema>;
 export type NodeInvokeParams = Static<typeof NodeInvokeParamsSchema>;
 export type NodeInvokeResultParams = Static<typeof NodeInvokeResultParamsSchema>;
 export type NodeEventParams = Static<typeof NodeEventParamsSchema>;
+export type NodePendingDrainParams = Static<typeof NodePendingDrainParamsSchema>;
+export type NodePendingDrainResult = Static<typeof NodePendingDrainResultSchema>;
+export type NodePendingEnqueueParams = Static<typeof NodePendingEnqueueParamsSchema>;
+export type NodePendingEnqueueResult = Static<typeof NodePendingEnqueueResultSchema>;
 export type PushTestParams = Static<typeof PushTestParamsSchema>;
 export type PushTestResult = Static<typeof PushTestResultSchema>;
 export type SessionsListParams = Static<typeof SessionsListParamsSchema>;

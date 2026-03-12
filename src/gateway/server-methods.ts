@@ -15,6 +15,7 @@ import { deviceHandlers } from "./server-methods/devices.js";
 import { healthHandlers } from "./server-methods/health.js";
 import { logsHandlers } from "./server-methods/logs.js";
 import { messageHandlers } from "./server-methods/message.js";
+import { nodePendingHandlers } from "./server-methods/nodes-pending.js";
 import { nodeHandlers } from "./server-methods/nodes.js";
 import { pluginToolsHandlers } from "./server-methods/plugin-tools.js";
 import { pushHandlers } from "./server-methods/push.js";
@@ -81,6 +82,7 @@ export const coreGatewayHandlers: GatewayRequestHandlers = {
   ...systemHandlers,
   ...updateHandlers,
   ...nodeHandlers,
+  ...nodePendingHandlers,
   ...pushHandlers,
   ...sendHandlers,
   ...usageHandlers,

@@ -69,6 +69,8 @@ const BASE_METHODS = [
   "node.rename",
   "node.list",
   "node.describe",
+  "node.pending.drain",
+  "node.pending.enqueue",
   "node.invoke",
   "node.invoke.result",
   "node.event",

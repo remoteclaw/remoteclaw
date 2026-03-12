@@ -50,6 +50,45 @@ Shortcut command (same flow + open project):
 pnpm ios:open
 ```
 
+## Local Beta Release Flow
+
+Prereqs:
+
+- Xcode 16+
+- `pnpm`
+- `xcodegen`
+- `fastlane`
+- Apple account signed into Xcode for automatic signing/provisioning
+- App Store Connect API key set up in Keychain via `scripts/ios-asc-keychain-setup.sh` when auto-resolving a beta build number or uploading to TestFlight
+
+Release behavior:
+
+- Local development keeps using unique per-developer bundle IDs from `scripts/ios-configure-signing.sh`.
+- Beta release uses canonical bundle IDs through a temporary generated xcconfig in `apps/ios/build/BetaRelease.xcconfig`.
+- The beta flow does not modify `apps/ios/.local-signing.xcconfig` or `apps/ios/LocalSigning.xcconfig`.
+- Root `package.json.version` is the only version source for iOS.
+- A root version like `2026.3.11-beta.1` becomes:
+  - `CFBundleShortVersionString = 2026.3.11`
+  - `CFBundleVersion = next TestFlight build number for 2026.3.11`
+
+Archive without upload:
+
+```bash
+pnpm ios:beta:archive
+```
+
+Archive and upload to TestFlight:
+
+```bash
+pnpm ios:beta
+```
+
+If you need to force a specific build number:
+
+```bash
+pnpm ios:beta -- --build-number 7
+```
+
 ## APNs Expectations For Local/Manual Builds
 
 - The app calls `registerForRemoteNotifications()` at launch.

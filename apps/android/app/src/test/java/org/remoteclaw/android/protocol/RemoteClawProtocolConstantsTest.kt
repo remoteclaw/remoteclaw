@@ -32,4 +32,9 @@ class RemoteClawProtocolConstantsTest {
   fun screenCommandsUseStableStrings() {
     assertEquals("screen.record", RemoteClawScreenCommand.Record.rawValue)
   }
+
+  @Test
+  fun notificationsCommandsUseStableStrings() {
+    assertEquals("notifications.list", RemoteClawNotificationsCommand.List.rawValue)
+  }
 }

@@ -1,5 +1,5 @@
 # Opt-in extension dependencies at build time (space-separated directory names).
-# Example: docker build --build-arg OPENCLAW_EXTENSIONS="diagnostics-otel matrix" .
+# Example: docker build --build-arg REMOTECLAW_EXTENSIONS="diagnostics-otel matrix" .
 #
 # Multi-stage build produces a minimal runtime image without build tools,
 # source code, or Bun. Works with Docker, Buildx, and Podman.
@@ -9,25 +9,25 @@
 #
 # Two runtime variants:
 #   Default (bookworm):      docker build .
-#   Slim (bookworm-slim):    docker build --build-arg OPENCLAW_VARIANT=slim .
-ARG OPENCLAW_EXTENSIONS=""
-ARG OPENCLAW_VARIANT=default
-ARG OPENCLAW_NODE_BOOKWORM_IMAGE="node:22-bookworm@sha256:b501c082306a4f528bc4038cbf2fbb58095d583d0419a259b2114b5ac53d12e9"
-ARG OPENCLAW_NODE_BOOKWORM_DIGEST="sha256:b501c082306a4f528bc4038cbf2fbb58095d583d0419a259b2114b5ac53d12e9"
-ARG OPENCLAW_NODE_BOOKWORM_SLIM_IMAGE="node:22-bookworm-slim@sha256:9c2c405e3ff9b9afb2873232d24bb06367d649aa3e6259cbe314da59578e81e9"
-ARG OPENCLAW_NODE_BOOKWORM_SLIM_DIGEST="sha256:9c2c405e3ff9b9afb2873232d24bb06367d649aa3e6259cbe314da59578e81e9"
+#   Slim (bookworm-slim):    docker build --build-arg REMOTECLAW_VARIANT=slim .
+ARG REMOTECLAW_EXTENSIONS=""
+ARG REMOTECLAW_VARIANT=default
+ARG REMOTECLAW_NODE_BOOKWORM_IMAGE="node:24-bookworm@sha256:3a09aa6354567619221ef6c45a5051b671f953f0a1924d1f819ffb236e520e6b"
+ARG REMOTECLAW_NODE_BOOKWORM_DIGEST="sha256:3a09aa6354567619221ef6c45a5051b671f953f0a1924d1f819ffb236e520e6b"
+ARG REMOTECLAW_NODE_BOOKWORM_SLIM_IMAGE="node:24-bookworm-slim@sha256:e8e2e91b1378f83c5b2dd15f0247f34110e2fe895f6ca7719dbb780f929368eb"
+ARG REMOTECLAW_NODE_BOOKWORM_SLIM_DIGEST="sha256:e8e2e91b1378f83c5b2dd15f0247f34110e2fe895f6ca7719dbb780f929368eb"
 
 # Base images are pinned to SHA256 digests for reproducible builds.
 # Trade-off: digests must be updated manually when upstream tags move.
-# To update, run: docker manifest inspect node:22-bookworm (or podman)
+# To update, run: docker buildx imagetools inspect node:24-bookworm (or podman)
 # and replace the digest below with the current multi-arch manifest list entry.
 
-FROM ${OPENCLAW_NODE_BOOKWORM_IMAGE} AS ext-deps
-ARG OPENCLAW_EXTENSIONS
+FROM ${REMOTECLAW_NODE_BOOKWORM_IMAGE} AS ext-deps
+ARG REMOTECLAW_EXTENSIONS
 COPY extensions /tmp/extensions
 # Copy package.json for opted-in extensions so pnpm resolves their deps.
 RUN mkdir -p /out && \
-    for ext in $OPENCLAW_EXTENSIONS; do \
+    for ext in $REMOTECLAW_EXTENSIONS; do \
       if [ -f "/tmp/extensions/$ext/package.json" ]; then \
         mkdir -p "/out/$ext" && \
         cp "/tmp/extensions/$ext/package.json" "/out/$ext/package.json"; \
@@ -35,7 +35,7 @@ RUN mkdir -p /out && \
     done
 
 # ── Stage 2: Build ──────────────────────────────────────────────
-FROM ${OPENCLAW_NODE_BOOKWORM_IMAGE} AS build
+FROM ${REMOTECLAW_NODE_BOOKWORM_IMAGE} AS build
 
 # Install Bun (required for build scripts). Retry the whole bootstrap flow to
 # tolerate transient 5xx failures from bun.sh/GitHub during CI image builds.
@@ -76,26 +76,26 @@ RUN pnpm canvas:a2ui:bundle || \
      mkdir -p src/canvas-host/a2ui && \
      echo "/* A2UI bundle unavailable in this build */" > src/canvas-host/a2ui/a2ui.bundle.js && \
      echo "stub" > src/canvas-host/a2ui/.bundle.hash && \
-     rm -rf vendor/a2ui apps/shared/OpenClawKit/Tools/CanvasA2UI)
+     rm -rf vendor/a2ui apps/shared/RemoteClawKit/Tools/CanvasA2UI)
 RUN pnpm build
 # Force pnpm for UI build (Bun may fail on ARM/Synology architectures)
-ENV OPENCLAW_PREFER_PNPM=1
+ENV REMOTECLAW_PREFER_PNPM=1
 RUN pnpm ui:build
 
 # ── Runtime base images ─────────────────────────────────────────
-FROM ${OPENCLAW_NODE_BOOKWORM_IMAGE} AS base-default
-ARG OPENCLAW_NODE_BOOKWORM_DIGEST
-LABEL org.opencontainers.image.base.name="docker.io/library/node:22-bookworm" \
-  org.opencontainers.image.base.digest="${OPENCLAW_NODE_BOOKWORM_DIGEST}"
+FROM ${REMOTECLAW_NODE_BOOKWORM_IMAGE} AS base-default
+ARG REMOTECLAW_NODE_BOOKWORM_DIGEST
+LABEL org.opencontainers.image.base.name="docker.io/library/node:24-bookworm" \
+  org.opencontainers.image.base.digest="${REMOTECLAW_NODE_BOOKWORM_DIGEST}"
 
-FROM ${OPENCLAW_NODE_BOOKWORM_SLIM_IMAGE} AS base-slim
-ARG OPENCLAW_NODE_BOOKWORM_SLIM_DIGEST
-LABEL org.opencontainers.image.base.name="docker.io/library/node:22-bookworm-slim" \
-  org.opencontainers.image.base.digest="${OPENCLAW_NODE_BOOKWORM_SLIM_DIGEST}"
+FROM ${REMOTECLAW_NODE_BOOKWORM_SLIM_IMAGE} AS base-slim
+ARG REMOTECLAW_NODE_BOOKWORM_SLIM_DIGEST
+LABEL org.opencontainers.image.base.name="docker.io/library/node:24-bookworm-slim" \
+  org.opencontainers.image.base.digest="${REMOTECLAW_NODE_BOOKWORM_SLIM_DIGEST}"
 
 # ── Stage 3: Runtime ────────────────────────────────────────────
-FROM base-${OPENCLAW_VARIANT}
-ARG OPENCLAW_VARIANT
+FROM base-${REMOTECLAW_VARIANT}
+ARG REMOTECLAW_VARIANT
 
 # OCI base-image metadata for downstream image consumers.
 # If you change these annotations, also update:
@@ -219,7 +219,7 @@ RUN ln -sf /app/remoteclaw.mjs /usr/local/bin/remoteclaw \
 ENV NODE_ENV=production
 
 # Security hardening: Run as non-root user
-# The node:22-bookworm image includes a 'node' user (uid 1000)
+# The node:24-bookworm image includes a 'node' user (uid 1000)
 # This reduces the attack surface by preventing container escape via root privileges
 USER node
 

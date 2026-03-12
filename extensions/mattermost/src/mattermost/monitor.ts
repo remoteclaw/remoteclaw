@@ -400,20 +400,30 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       senderId;
     const rawText = post.message?.trim() || "";
     const dmPolicy = account.config.dmPolicy ?? "pairing";
-    const configAllowFrom = normalizeAllowList(account.config.allowFrom ?? []);
-    const configGroupAllowFrom = normalizeAllowList(account.config.groupAllowFrom ?? []);
+    const normalizedAllowFrom = normalizeAllowList(account.config.allowFrom ?? []);
+    const normalizedGroupAllowFrom = normalizeAllowList(account.config.groupAllowFrom ?? []);
     const storeAllowFrom = normalizeAllowList(
       dmPolicy === "allowlist"
         ? []
         : await core.channel.pairing.readAllowFromStore("mattermost").catch(() => []),
     );
-    const effectiveAllowFrom = Array.from(new Set([...configAllowFrom, ...storeAllowFrom]));
-    const effectiveGroupAllowFrom = Array.from(
-      new Set([
-        ...(configGroupAllowFrom.length > 0 ? configGroupAllowFrom : configAllowFrom),
-        ...storeAllowFrom,
-      ]),
-    );
+    const accessDecision = resolveDmGroupAccessWithLists({
+      isGroup: kind !== "direct",
+      dmPolicy,
+      groupPolicy,
+      allowFrom: normalizedAllowFrom,
+      groupAllowFrom: normalizedGroupAllowFrom,
+      storeAllowFrom,
+      isSenderAllowed: (allowFrom) =>
+        isSenderAllowed({
+          senderId,
+          senderName,
+          allowFrom,
+          allowNameMatching,
+        }),
+    });
+    const effectiveAllowFrom = accessDecision.effectiveAllowFrom;
+    const effectiveGroupAllowFrom = accessDecision.effectiveGroupAllowFrom;
     const allowTextCommands = core.channel.commands.shouldHandleTextCommands({
       cfg,
       surface: "mattermost",
@@ -446,17 +456,15 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       hasControlCommand,
     });
     const commandAuthorized =
-      kind === "direct"
-        ? dmPolicy === "open" || senderAllowedForCommands
-        : commandGate.commandAuthorized;
+      kind === "direct" ? accessDecision.decision === "allow" : commandGate.commandAuthorized;
 
-    if (kind === "direct") {
-      if (dmPolicy === "disabled") {
-        logVerboseMessage(`mattermost: drop dm (dmPolicy=disabled sender=${senderId})`);
-        return;
-      }
-      if (dmPolicy !== "open" && !senderAllowedForCommands) {
-        if (dmPolicy === "pairing") {
+    if (accessDecision.decision !== "allow") {
+      if (kind === "direct") {
+        if (accessDecision.reason === "dmPolicy=disabled") {
+          logVerboseMessage(`mattermost: drop dm (dmPolicy=disabled sender=${senderId})`);
+          return;
+        }
+        if (accessDecision.decision === "pairing") {
           const { code, created } = await core.channel.pairing.upsertPairingRequest({
             channel: "mattermost",
             id: senderId,
@@ -479,26 +487,27 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
               logVerboseMessage(`mattermost: pairing reply failed for ${senderId}: ${String(err)}`);
             }
           }
-        } else {
-          logVerboseMessage(`mattermost: drop dm sender=${senderId} (dmPolicy=${dmPolicy})`);
+          return;
         }
+        logVerboseMessage(`mattermost: drop dm sender=${senderId} (dmPolicy=${dmPolicy})`);
         return;
       }
-    } else {
-      if (groupPolicy === "disabled") {
+      if (accessDecision.reason === "groupPolicy=disabled") {
         logVerboseMessage("mattermost: drop group message (groupPolicy=disabled)");
         return;
       }
-      if (groupPolicy === "allowlist") {
-        if (effectiveGroupAllowFrom.length === 0) {
-          logVerboseMessage("mattermost: drop group message (no group allowlist)");
-          return;
-        }
-        if (!groupAllowedForCommands) {
-          logVerboseMessage(`mattermost: drop group sender=${senderId} (not in groupAllowFrom)`);
-          return;
-        }
+      if (accessDecision.reason === "groupPolicy=allowlist (empty allowlist)") {
+        logVerboseMessage("mattermost: drop group message (no group allowlist)");
+        return;
       }
+      if (accessDecision.reason === "groupPolicy=allowlist (not allowlisted)") {
+        logVerboseMessage(`mattermost: drop group sender=${senderId} (not in groupAllowFrom)`);
+        return;
+      }
+      logVerboseMessage(
+        `mattermost: drop group message (groupPolicy=${groupPolicy} reason=${accessDecision.reason})`,
+      );
+      return;
     }
 
     if (kind !== "direct" && commandGate.shouldBlock) {
@@ -894,14 +903,14 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       isGroup: kind !== "direct",
       dmPolicy,
       groupPolicy,
-      allowFrom: account.config.allowFrom,
-      groupAllowFrom: account.config.groupAllowFrom,
+      allowFrom: normalizeAllowList(account.config.allowFrom ?? []),
+      groupAllowFrom: normalizeAllowList(account.config.groupAllowFrom ?? []),
       storeAllowFrom,
       isSenderAllowed: (allowFrom) =>
         isSenderAllowed({
           senderId: userId,
           senderName,
-          allowFrom: normalizeAllowList(allowFrom),
+          allowFrom,
           allowNameMatching,
         }),
     });

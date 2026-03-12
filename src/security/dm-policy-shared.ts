@@ -7,6 +7,7 @@ export function resolveEffectiveAllowFromLists(params: {
   groupAllowFrom?: Array<string | number> | null;
   storeAllowFrom?: Array<string | number> | null;
   dmPolicy?: string | null;
+  groupAllowFromFallbackToAllowFrom?: boolean;
 }): {
   effectiveAllowFrom: string[];
   effectiveGroupAllowFrom: string[];
@@ -24,8 +25,15 @@ export function resolveEffectiveAllowFromLists(params: {
           Array.isArray(params.storeAllowFrom) ? params.storeAllowFrom : undefined,
         );
   const effectiveAllowFrom = normalizeStringEntries([...configAllowFrom, ...storeAllowFrom]);
-  const groupBase = configGroupAllowFrom.length > 0 ? configGroupAllowFrom : configAllowFrom;
-  const effectiveGroupAllowFrom = normalizeStringEntries([...groupBase, ...storeAllowFrom]);
+  const fallbackToAllowFrom = params.groupAllowFromFallbackToAllowFrom !== false;
+  const groupBase =
+    configGroupAllowFrom.length > 0
+      ? configGroupAllowFrom
+      : fallbackToAllowFrom
+        ? configAllowFrom
+        : [];
+  // Pairing store is DM-only — do not include storeAllowFrom in group allowlist
+  const effectiveGroupAllowFrom = normalizeStringEntries(groupBase);
   return { effectiveAllowFrom, effectiveGroupAllowFrom };
 }
 
@@ -84,6 +92,7 @@ export function resolveDmGroupAccessWithLists(params: {
   allowFrom?: Array<string | number> | null;
   groupAllowFrom?: Array<string | number> | null;
   storeAllowFrom?: Array<string | number> | null;
+  groupAllowFromFallbackToAllowFrom?: boolean;
   isSenderAllowed: (allowFrom: string[]) => boolean;
 }): {
   decision: DmGroupAccessDecision;
@@ -96,6 +105,7 @@ export function resolveDmGroupAccessWithLists(params: {
     groupAllowFrom: params.groupAllowFrom,
     storeAllowFrom: params.storeAllowFrom,
     dmPolicy: params.dmPolicy,
+    groupAllowFromFallbackToAllowFrom: params.groupAllowFromFallbackToAllowFrom,
   });
   const access = resolveDmGroupAccessDecision({
     isGroup: params.isGroup,

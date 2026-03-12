@@ -41,7 +41,8 @@ describe("security/dm-policy-shared", () => {
       storeAllowFrom: [" owner3 ", ""],
     });
     expect(lists.effectiveAllowFrom).toEqual(["owner", "owner2", "owner3"]);
-    expect(lists.effectiveGroupAllowFrom).toEqual(["group:abc", "owner3"]);
+    // Pairing store is DM-only — not included in group allowlist
+    expect(lists.effectiveGroupAllowFrom).toEqual(["group:abc"]);
   });
 
   it("falls back to DM allowlist for groups when groupAllowFrom is empty", () => {
@@ -51,7 +52,8 @@ describe("security/dm-policy-shared", () => {
       storeAllowFrom: [" owner2 "],
     });
     expect(lists.effectiveAllowFrom).toEqual(["owner", "owner2"]);
-    expect(lists.effectiveGroupAllowFrom).toEqual(["owner", "owner2"]);
+    // Group falls back to config allowFrom (not store) when groupAllowFrom is empty
+    expect(lists.effectiveGroupAllowFrom).toEqual(["owner"]);
   });
 
   it("excludes storeAllowFrom when dmPolicy is allowlist", () => {
@@ -73,7 +75,8 @@ describe("security/dm-policy-shared", () => {
       dmPolicy: "pairing",
     });
     expect(lists.effectiveAllowFrom).toEqual(["+1111", "+2222"]);
-    expect(lists.effectiveGroupAllowFrom).toEqual(["+1111", "+2222"]);
+    // Pairing store is DM-only — group falls back to config allowFrom only
+    expect(lists.effectiveGroupAllowFrom).toEqual(["+1111"]);
   });
 
   it("resolves access + effective allowlists in one shared call", () => {
@@ -89,7 +92,8 @@ describe("security/dm-policy-shared", () => {
     expect(resolved.decision).toBe("allow");
     expect(resolved.reason).toBe("dmPolicy=pairing (allowlisted)");
     expect(resolved.effectiveAllowFrom).toEqual(["owner", "paired-user"]);
-    expect(resolved.effectiveGroupAllowFrom).toEqual(["group:room", "paired-user"]);
+    // Pairing store is DM-only — not included in group allowlist
+    expect(resolved.effectiveGroupAllowFrom).toEqual(["group:room"]);
   });
 
   it("keeps allowlist mode strict in shared resolver (no pairing-store fallback)", () => {
@@ -122,42 +126,74 @@ describe("security/dm-policy-shared", () => {
     const cases = [
       {
         name: "dmPolicy=open",
+        isGroup: false,
         dmPolicy: "open" as const,
+        groupPolicy: "allowlist" as const,
         allowFrom: [] as string[],
-        senderAllowed: false,
+        groupAllowFrom: [] as string[],
+        storeAllowFrom: [] as string[],
+        isSenderAllowed: () => false,
         expectedDecision: "allow" as const,
         expectedReactionAllowed: true,
       },
       {
         name: "dmPolicy=disabled",
+        isGroup: false,
         dmPolicy: "disabled" as const,
+        groupPolicy: "allowlist" as const,
         allowFrom: [] as string[],
-        senderAllowed: false,
+        groupAllowFrom: [] as string[],
+        storeAllowFrom: [] as string[],
+        isSenderAllowed: () => false,
         expectedDecision: "block" as const,
         expectedReactionAllowed: false,
       },
       {
         name: "dmPolicy=allowlist unauthorized",
+        isGroup: false,
         dmPolicy: "allowlist" as const,
+        groupPolicy: "allowlist" as const,
         allowFrom: ["owner"],
-        senderAllowed: false,
+        groupAllowFrom: [] as string[],
+        storeAllowFrom: [] as string[],
+        isSenderAllowed: () => false,
         expectedDecision: "block" as const,
         expectedReactionAllowed: false,
       },
       {
         name: "dmPolicy=allowlist authorized",
+        isGroup: false,
         dmPolicy: "allowlist" as const,
+        groupPolicy: "allowlist" as const,
         allowFrom: ["owner"],
-        senderAllowed: true,
+        groupAllowFrom: [] as string[],
+        storeAllowFrom: [] as string[],
+        isSenderAllowed: () => true,
         expectedDecision: "allow" as const,
         expectedReactionAllowed: true,
       },
       {
         name: "dmPolicy=pairing unauthorized",
+        isGroup: false,
         dmPolicy: "pairing" as const,
+        groupPolicy: "allowlist" as const,
         allowFrom: [] as string[],
-        senderAllowed: false,
+        groupAllowFrom: [] as string[],
+        storeAllowFrom: [] as string[],
+        isSenderAllowed: () => false,
         expectedDecision: "pairing" as const,
+        expectedReactionAllowed: false,
+      },
+      {
+        name: "groupPolicy=allowlist rejects DM-paired sender not in explicit group list",
+        isGroup: true,
+        dmPolicy: "pairing" as const,
+        groupPolicy: "allowlist" as const,
+        allowFrom: ["owner"] as string[],
+        groupAllowFrom: ["group-owner"] as string[],
+        storeAllowFrom: ["paired-user"] as string[],
+        isSenderAllowed: (allowFrom: string[]) => allowFrom.includes("paired-user"),
+        expectedDecision: "block" as const,
         expectedReactionAllowed: false,
       },
     ];
@@ -165,13 +201,13 @@ describe("security/dm-policy-shared", () => {
     for (const channel of channels) {
       for (const testCase of cases) {
         const access = resolveDmGroupAccessWithLists({
-          isGroup: false,
+          isGroup: testCase.isGroup,
           dmPolicy: testCase.dmPolicy,
-          groupPolicy: "allowlist",
+          groupPolicy: testCase.groupPolicy,
           allowFrom: testCase.allowFrom,
-          groupAllowFrom: [],
-          storeAllowFrom: [],
-          isSenderAllowed: () => testCase.senderAllowed,
+          groupAllowFrom: testCase.groupAllowFrom,
+          storeAllowFrom: testCase.storeAllowFrom,
+          isSenderAllowed: testCase.isSenderAllowed,
         });
         const reactionAllowed = access.decision === "allow";
         expect(access.decision, `[${channel}] ${testCase.name}`).toBe(testCase.expectedDecision);

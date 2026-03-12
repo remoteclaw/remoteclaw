@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
-import type { ExecApprovalRequestPayload } from "../infra/exec-approvals.js";
 import { normalizeEnvVarKey } from "../infra/host-env-security.js";
+
+/** Minimal shape needed from the exec approval request payload (gutted module). */
+type ExecApprovalEnvFields = { envHash?: string | null };
 
 type NormalizedSystemRunEnvEntry = [key: string, value: string];
 
@@ -51,7 +53,7 @@ export type SystemRunEnvBindingMatchResult =
     };
 
 export function matchSystemRunApprovalEnvBinding(params: {
-  request: Pick<ExecApprovalRequestPayload, "envHash">;
+  request: ExecApprovalEnvFields;
   env: unknown;
 }): SystemRunEnvBindingMatchResult {
   const expectedEnvHash =

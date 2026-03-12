@@ -59,6 +59,10 @@ const { createTelegramBotErrors } = vi.hoisted(() => ({
   createTelegramBotErrors: [] as unknown[],
 }));
 
+const { createTelegramBotCalls } = vi.hoisted(() => ({
+  createTelegramBotCalls: [] as Array<Record<string, unknown>>,
+}));
+
 const { computeBackoff, sleepWithAbort } = vi.hoisted(() => ({
   computeBackoff: vi.fn(() => 0),
   sleepWithAbort: vi.fn(async () => undefined),
@@ -106,7 +110,8 @@ vi.mock("../config/config.js", async (importOriginal) => {
 });
 
 vi.mock("./bot.js", () => ({
-  createTelegramBot: () => {
+  createTelegramBot: (opts: Record<string, unknown>) => {
+    createTelegramBotCalls.push(opts);
     const nextError = createTelegramBotErrors.shift();
     if (nextError) {
       throw nextError;
@@ -179,6 +184,7 @@ describe("monitorTelegramProvider (grammY)", () => {
     registerUnhandledRejectionHandlerMock.mockClear();
     resetUnhandledRejection();
     createTelegramBotErrors.length = 0;
+    createTelegramBotCalls.length = 0;
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
@@ -430,6 +436,47 @@ describe("monitorTelegramProvider (grammY)", () => {
     expect(computeBackoff).toHaveBeenCalled();
     expect(sleepWithAbort).toHaveBeenCalled();
     expect(runSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("aborts the active Telegram fetch when unhandled network rejection forces restart", async () => {
+    const abort = new AbortController();
+    let running = true;
+    let releaseTask: (() => void) | undefined;
+    const stop = vi.fn(async () => {
+      running = false;
+      releaseTask?.();
+    });
+
+    runSpy
+      .mockImplementationOnce(() =>
+        makeRunnerStub({
+          task: () =>
+            new Promise<void>((resolve) => {
+              releaseTask = resolve;
+            }),
+          stop,
+          isRunning: () => running,
+        }),
+      )
+      .mockImplementationOnce(() =>
+        makeRunnerStub({
+          task: async () => {
+            abort.abort();
+          },
+        }),
+      );
+
+    const monitor = monitorTelegramProvider({ token: "tok", abortSignal: abort.signal });
+    await vi.waitFor(() => expect(createTelegramBotCalls.length).toBeGreaterThanOrEqual(1));
+    const firstSignal = createTelegramBotCalls[0]?.fetchAbortSignal;
+    expect(firstSignal).toBeInstanceOf(AbortSignal);
+    expect((firstSignal as AbortSignal).aborted).toBe(false);
+
+    expect(emitUnhandledRejection(new TypeError("fetch failed"))).toBe(true);
+    await monitor;
+
+    expect((firstSignal as AbortSignal).aborted).toBe(true);
+    expect(stop).toHaveBeenCalled();
   });
 
   it("passes configured webhookHost to webhook listener", async () => {

@@ -96,6 +96,7 @@ const isGrammyHttpError = (err: unknown): boolean => {
 export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
   const log = opts.runtime?.error ?? console.error;
   let activeRunner: ReturnType<typeof run> | undefined;
+  let activeFetchAbort: AbortController | undefined;
   let forceRestarted = false;
 
   // Register handler for Grammy HttpError unhandled rejections.
@@ -112,6 +113,7 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
     // polling stuck; force-stop the active runner so the loop can recover.
     if (isNetworkError && activeRunner && activeRunner.isRunning()) {
       forceRestarted = true;
+      activeFetchAbort?.abort();
       void activeRunner.stop().catch(() => {});
       log(
         `[telegram] Restarting polling after unhandled network error: ${formatErrorMessage(err)}`,
@@ -212,7 +214,9 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
       );
     };
 
-    const createPollingBot = async (): Promise<TelegramBot | undefined> => {
+    const createPollingBot = async (
+      fetchAbortController: AbortController,
+    ): Promise<TelegramBot | undefined> => {
       try {
         return createTelegramBot({
           token,
@@ -220,6 +224,7 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
           proxyFetch,
           config: cfg,
           accountId: account.accountId,
+          fetchAbortSignal: fetchAbortController.signal,
           updateOffset: {
             lastUpdateId,
             onUpdateId: persistUpdateId,
@@ -258,11 +263,15 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
       }
     };
 
-    const runPollingCycle = async (bot: TelegramBot): Promise<"continue" | "exit"> => {
+    const runPollingCycle = async (
+      bot: TelegramBot,
+      fetchAbortController: AbortController,
+    ): Promise<"continue" | "exit"> => {
       const runner = run(bot, runnerOptions);
       activeRunner = runner;
       let stopPromise: Promise<void> | undefined;
       const stopRunner = () => {
+        fetchAbortController.abort();
         stopPromise ??= Promise.resolve(runner.stop())
           .then(() => undefined)
           .catch(() => {
@@ -309,12 +318,20 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
       } finally {
         opts.abortSignal?.removeEventListener("abort", stopOnAbort);
         await stopRunner();
+        if (activeFetchAbort === fetchAbortController) {
+          activeFetchAbort = undefined;
+        }
       }
     };
 
     while (!opts.abortSignal?.aborted) {
-      const bot = await createPollingBot();
+      const fetchAbortController = new AbortController();
+      activeFetchAbort = fetchAbortController;
+      const bot = await createPollingBot(fetchAbortController);
       if (!bot) {
+        if (activeFetchAbort === fetchAbortController) {
+          activeFetchAbort = undefined;
+        }
         continue;
       }
 
@@ -326,7 +343,7 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
         return;
       }
 
-      const state = await runPollingCycle(bot);
+      const state = await runPollingCycle(bot, fetchAbortController);
       if (state === "exit") {
         return;
       }

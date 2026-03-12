@@ -95,7 +95,6 @@ describe("redactConfigSnapshot", () => {
       },
       shortSecret: { token: "short" },
     });
-
     const result = redactConfigSnapshot(snapshot);
     const cfg = result.config as typeof snapshot.config;
 
@@ -110,6 +109,45 @@ describe("redactConfigSnapshot", () => {
     expect(cfg.custom.providers.openai.apiKey).toBe(REDACTED_SENTINEL);
     expect(cfg.custom.providers.openai.baseUrl).toBe("https://api.openai.com");
     expect(cfg.shortSecret.token).toBe(REDACTED_SENTINEL);
+  });
+
+  it("redacts googlechat serviceAccount object payloads", () => {
+    const snapshot = makeSnapshot({
+      channels: {
+        googlechat: {
+          serviceAccount: {
+            type: "service_account",
+            client_email: "bot@example.iam.gserviceaccount.com",
+            private_key: "-----BEGIN PRIVATE KEY-----secret-----END PRIVATE KEY-----",
+          },
+        },
+      },
+    });
+
+    const result = redactConfigSnapshot(snapshot);
+    const channels = result.config.channels as Record<string, Record<string, unknown>>;
+    expect(channels.googlechat.serviceAccount).toBe(REDACTED_SENTINEL);
+  });
+
+  it("redacts object-valued apiKey refs in talk providers", () => {
+    const snapshot = makeSnapshot({
+      talk: {
+        providers: {
+          elevenlabs: {
+            apiKey: { source: "env", id: "ELEVENLABS_API_KEY" },
+            voiceId: "some-voice-id",
+          },
+        },
+      },
+    });
+
+    const result = redactConfigSnapshot(snapshot);
+    const talk = result.config.talk as Record<string, Record<string, Record<string, unknown>>>;
+    expect(talk.providers.elevenlabs.apiKey).toEqual({
+      source: REDACTED_SENTINEL,
+      id: REDACTED_SENTINEL,
+    });
+    expect(talk.providers.elevenlabs.voiceId).toBe("some-voice-id");
   });
 
   it("preserves non-sensitive fields", () => {

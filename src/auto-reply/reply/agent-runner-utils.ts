@@ -166,6 +166,7 @@ export function buildEmbeddedRunBaseParams(params: {
     agentDir: params.run.agentDir,
     config: params.run.config,
     ownerNumbers: params.run.ownerNumbers,
+    inputProvenance: params.run.inputProvenance,
     senderIsOwner: params.run.senderIsOwner,
     enforceFinalTag: resolveEnforceFinalTag(params.run, params.provider),
     provider: params.provider,

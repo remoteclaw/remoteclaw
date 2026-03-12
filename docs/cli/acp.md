@@ -96,6 +96,52 @@ Each ACP session maps to a single Gateway session key. One agent can have many
 sessions; ACP defaults to an isolated `acp:<uuid>` session unless you override
 the key or label.
 
+## Use from `acpx` (Codex, Claude, other ACP clients)
+
+If you want a coding agent such as Codex or Claude Code to talk to your
+RemoteClaw bot over ACP, use `acpx` with its built-in `remoteclaw` target.
+
+Typical flow:
+
+1. Run the Gateway and make sure the ACP bridge can reach it.
+2. Point `acpx remoteclaw` at `remoteclaw acp`.
+3. Target the RemoteClaw session key you want the coding agent to use.
+
+Examples:
+
+```bash
+# One-shot request into your default RemoteClaw ACP session
+acpx remoteclaw exec "Summarize the active RemoteClaw session state."
+
+# Persistent named session for follow-up turns
+acpx remoteclaw sessions ensure --name codex-bridge
+acpx remoteclaw -s codex-bridge --cwd /path/to/repo \
+  "Ask my RemoteClaw work agent for recent context relevant to this repo."
+```
+
+If you want `acpx remoteclaw` to target a specific Gateway and session key every
+time, override the `remoteclaw` agent command in `~/.acpx/config.json`:
+
+```json
+{
+  "agents": {
+    "remoteclaw": {
+      "command": "env REMOTECLAW_HIDE_BANNER=1 REMOTECLAW_SUPPRESS_NOTES=1 remoteclaw acp --url ws://127.0.0.1:18789 --token-file ~/.remoteclaw/gateway.token --session agent:main:main"
+    }
+  }
+}
+```
+
+For a repo-local RemoteClaw checkout, use the direct CLI entrypoint instead of the
+dev runner so the ACP stream stays clean. For example:
+
+```bash
+env REMOTECLAW_HIDE_BANNER=1 REMOTECLAW_SUPPRESS_NOTES=1 node remoteclaw.mjs acp ...
+```
+
+This is the easiest way to let Codex, Claude Code, or another ACP-aware client
+pull contextual information from a RemoteClaw agent without scraping a terminal.
+
 ## Zed editor setup
 
 Add a custom ACP agent in `~/.config/zed/settings.json` (or use Zed’s Settings UI):

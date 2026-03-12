@@ -41,7 +41,8 @@ describe("security/dm-policy-shared", () => {
       storeAllowFrom: [" owner3 ", ""],
     });
     expect(lists.effectiveAllowFrom).toEqual(["owner", "owner2", "owner3"]);
-    expect(lists.effectiveGroupAllowFrom).toEqual(["group:abc", "owner3"]);
+    // Pairing store is DM-only — not included in group allowlist
+    expect(lists.effectiveGroupAllowFrom).toEqual(["group:abc"]);
   });
 
   it("falls back to DM allowlist for groups when groupAllowFrom is empty", () => {
@@ -51,7 +52,8 @@ describe("security/dm-policy-shared", () => {
       storeAllowFrom: [" owner2 "],
     });
     expect(lists.effectiveAllowFrom).toEqual(["owner", "owner2"]);
-    expect(lists.effectiveGroupAllowFrom).toEqual(["owner", "owner2"]);
+    // Group falls back to config allowFrom (not store) when groupAllowFrom is empty
+    expect(lists.effectiveGroupAllowFrom).toEqual(["owner"]);
   });
 
   it("excludes storeAllowFrom when dmPolicy is allowlist", () => {
@@ -73,7 +75,8 @@ describe("security/dm-policy-shared", () => {
       dmPolicy: "pairing",
     });
     expect(lists.effectiveAllowFrom).toEqual(["+1111", "+2222"]);
-    expect(lists.effectiveGroupAllowFrom).toEqual(["+1111", "+2222"]);
+    // Pairing store is DM-only — group falls back to config allowFrom only
+    expect(lists.effectiveGroupAllowFrom).toEqual(["+1111"]);
   });
 
   it("resolves access + effective allowlists in one shared call", () => {
@@ -89,7 +92,8 @@ describe("security/dm-policy-shared", () => {
     expect(resolved.decision).toBe("allow");
     expect(resolved.reason).toBe("dmPolicy=pairing (allowlisted)");
     expect(resolved.effectiveAllowFrom).toEqual(["owner", "paired-user"]);
-    expect(resolved.effectiveGroupAllowFrom).toEqual(["group:room", "paired-user"]);
+    // Pairing store is DM-only — not included in group allowlist
+    expect(resolved.effectiveGroupAllowFrom).toEqual(["group:room"]);
   });
 
   it("keeps allowlist mode strict in shared resolver (no pairing-store fallback)", () => {

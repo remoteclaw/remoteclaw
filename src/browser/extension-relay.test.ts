@@ -337,7 +337,7 @@ describe("chrome extension relay server", () => {
     cdpUrl = `http://127.0.0.1:${port}`;
     await ensureChromeExtensionRelayServer({ cdpUrl });
 
-    const token = relayAuthHeaders(cdpUrl)["x-openclaw-relay-token"];
+    const token = relayAuthHeaders(cdpUrl)["x-remoteclaw-relay-token"];
     expect(token).toBeTruthy();
     const versionRes = await fetch(
       `${cdpUrl}/json/version?token=${encodeURIComponent(String(token))}`,

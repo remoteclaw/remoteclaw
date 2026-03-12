@@ -72,6 +72,7 @@ import {
   type MattermostWebSocketFactory,
 } from "./monitor-websocket.js";
 import { runWithReconnect } from "./reconnect.js";
+import { deliverMattermostReplyPayload } from "./reply-delivery.js";
 import { sendMessageMattermost } from "./send.js";
 import {
   DEFAULT_COMMAND_SPECS,
@@ -591,36 +592,17 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
             ...prefixOptions,
             humanDelay: core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId),
             deliver: async (payload: ReplyPayload) => {
-              const mediaUrls = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
-              const text = core.channel.text.convertMarkdownTables(payload.text ?? "", tableMode);
-              if (mediaUrls.length === 0) {
-                const chunkMode = core.channel.text.resolveChunkMode(
-                  cfg,
-                  "mattermost",
-                  account.accountId,
-                );
-                const chunks = core.channel.text.chunkMarkdownTextWithMode(
-                  text,
-                  textLimit,
-                  chunkMode,
-                );
-                for (const chunk of chunks.length > 0 ? chunks : [text]) {
-                  if (!chunk) continue;
-                  await sendMessageMattermost(to, chunk, {
-                    accountId: account.accountId,
-                  });
-                }
-              } else {
-                let first = true;
-                for (const mediaUrl of mediaUrls) {
-                  const caption = first ? text : "";
-                  first = false;
-                  await sendMessageMattermost(to, caption, {
-                    accountId: account.accountId,
-                    mediaUrl,
-                  });
-                }
-              }
+              await deliverMattermostReplyPayload({
+                core,
+                cfg,
+                payload,
+                to,
+                accountId: account.accountId,
+                agentId: route.agentId,
+                textLimit,
+                tableMode,
+                sendMessage: sendMessageMattermost,
+              });
               runtime.log?.(`delivered button-click reply to ${to}`);
             },
             onError: (err, info) => {
@@ -1339,42 +1321,21 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
         humanDelay: core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId),
         typingCallbacks,
         deliver: async (payload: ReplyPayload) => {
-          const mediaUrls = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
-          const text = core.channel.text.convertMarkdownTables(payload.text ?? "", tableMode);
-          if (mediaUrls.length === 0) {
-            const chunkMode = core.channel.text.resolveChunkMode(
-              cfg,
-              "mattermost",
-              account.accountId,
-            );
-            const chunks = core.channel.text.chunkMarkdownTextWithMode(text, textLimit, chunkMode);
-            for (const chunk of chunks.length > 0 ? chunks : [text]) {
-              if (!chunk) {
-                continue;
-              }
-              await sendMessageMattermost(to, chunk, {
-                accountId: account.accountId,
-                replyToId: resolveMattermostReplyRootId({
-                  threadRootId,
-                  replyToId: payload.replyToId,
-                }),
-              });
-            }
-          } else {
-            let first = true;
-            for (const mediaUrl of mediaUrls) {
-              const caption = first ? text : "";
-              first = false;
-              await sendMessageMattermost(to, caption, {
-                accountId: account.accountId,
-                mediaUrl,
-                replyToId: resolveMattermostReplyRootId({
-                  threadRootId,
-                  replyToId: payload.replyToId,
-                }),
-              });
-            }
-          }
+          await deliverMattermostReplyPayload({
+            core,
+            cfg,
+            payload,
+            to,
+            accountId: account.accountId,
+            agentId: route.agentId,
+            replyToId: resolveMattermostReplyRootId({
+              threadRootId,
+              replyToId: payload.replyToId,
+            }),
+            textLimit,
+            tableMode,
+            sendMessage: sendMessageMattermost,
+          });
           runtime.log?.(`delivered reply to ${to}`);
         },
         onError: (err, info) => {

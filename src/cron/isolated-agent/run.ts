@@ -122,11 +122,10 @@ export type RunCronAgentTurnResult = {
   /** Last non-empty agent text output (not truncated). */
   outputText?: string;
   /**
-   * `true` when the isolated run already delivered its output to the target
-   * channel (via outbound payloads, the subagent announce flow, or a matching
-   * messaging-tool send). Callers should skip posting a summary to the main
-   * session to avoid duplicate
-   * messages.  See: https://github.com/remoteclaw/remoteclaw/issues/15692
+   * `true` when the isolated runner already handled the run's user-visible
+   * delivery outcome. Cron-owned callers use this for cron delivery or
+   * explicit suppression; shared callers may also use it for a matching
+   * message-tool send that already reached the target.
    */
   delivered?: boolean;
   /**
@@ -138,6 +137,52 @@ export type RunCronAgentTurnResult = {
 } & CronRunOutcome &
   CronRunTelemetry;
 
+type ResolvedCronDeliveryTarget = Awaited<ReturnType<typeof resolveDeliveryTarget>>;
+
+type IsolatedDeliveryContract = "cron-owned" | "shared";
+
+function resolveCronToolPolicy(params: {
+  deliveryRequested: boolean;
+  resolvedDelivery: ResolvedCronDeliveryTarget;
+  deliveryContract: IsolatedDeliveryContract;
+}) {
+  return {
+    // Only enforce an explicit message target when the cron delivery target
+    // was successfully resolved. When resolution fails the agent should not
+    // be blocked by a target it cannot satisfy (#27898).
+    requireExplicitMessageTarget: params.deliveryRequested && params.resolvedDelivery.ok,
+    // Cron-owned runs always route user-facing delivery through the runner
+    // itself. Shared callers keep the previous behavior so non-cron paths do
+    // not silently lose the message tool when no explicit delivery is active.
+    disableMessageTool: params.deliveryContract === "cron-owned" ? true : params.deliveryRequested,
+  };
+}
+
+async function resolveCronDeliveryContext(params: {
+  cfg: RemoteClawConfig;
+  job: CronJob;
+  agentId: string;
+  deliveryContract: IsolatedDeliveryContract;
+}) {
+  const deliveryPlan = resolveCronDeliveryPlan(params.job);
+  const resolvedDelivery = await resolveDeliveryTarget(params.cfg, params.agentId, {
+    channel: deliveryPlan.channel ?? "last",
+    to: deliveryPlan.to,
+    accountId: deliveryPlan.accountId,
+    sessionKey: params.job.sessionKey,
+  });
+  return {
+    deliveryPlan,
+    deliveryRequested: deliveryPlan.requested,
+    resolvedDelivery,
+    toolPolicy: resolveCronToolPolicy({
+      deliveryRequested: deliveryPlan.requested,
+      resolvedDelivery,
+      deliveryContract: params.deliveryContract,
+    }),
+  };
+}
+
 export async function runCronIsolatedAgentTurn(params: {
   cfg: RemoteClawConfig;
   deps: CliDeps;
@@ -148,6 +193,7 @@ export async function runCronIsolatedAgentTurn(params: {
   sessionKey: string;
   agentId?: string;
   lane?: string;
+  deliveryContract?: IsolatedDeliveryContract;
 }): Promise<RunCronAgentTurnResult> {
   const abortSignal = params.abortSignal ?? params.signal;
   const isAborted = () => abortSignal?.aborted === true;
@@ -158,6 +204,7 @@ export async function runCronIsolatedAgentTurn(params: {
       : "cron: job execution timed out";
   };
   const isFastTestEnv = process.env.REMOTECLAW_TEST_FAST === "1";
+  const deliveryContract = params.deliveryContract ?? "cron-owned";
   const defaultAgentId = resolveDefaultAgentId(params.cfg);
   const requestedAgentId =
     typeof params.agentId === "string" && params.agentId.trim()
@@ -275,14 +322,15 @@ export async function runCronIsolatedAgentTurn(params: {
   });
 
   const agentPayload = params.job.payload.kind === "agentTurn" ? params.job.payload : null;
-  const deliveryPlan = resolveCronDeliveryPlan(params.job);
-  const deliveryRequested = deliveryPlan.requested;
-
-  const resolvedDelivery = await resolveDeliveryTarget(cfgWithAgentDefaults, agentId, {
-    channel: deliveryPlan.channel ?? "last",
-    to: deliveryPlan.to,
-    sessionKey: params.job.sessionKey,
-    accountId: deliveryPlan.accountId,
+  const {
+    deliveryRequested,
+    resolvedDelivery,
+    toolPolicy: _toolPolicy,
+  } = await resolveCronDeliveryContext({
+    cfg: cfgWithAgentDefaults,
+    job: params.job,
+    agentId,
+    deliveryContract,
   });
 
   const { formattedTime, timeLine } = resolveCronStyleNow(params.cfg, now);
@@ -503,6 +551,7 @@ export async function runCronIsolatedAgentTurn(params: {
   const didSendViaMessagingTool =
     runResult.mcp.sentTexts.length > 0 || runResult.mcp.sentMediaUrls.length > 0;
   const skipMessagingToolDelivery =
+    deliveryContract === "shared" &&
     deliveryRequested &&
     didSendViaMessagingTool &&
     runResult.mcp.sentTargets.some((target) =>
@@ -512,7 +561,6 @@ export async function runCronIsolatedAgentTurn(params: {
         accountId: resolvedDelivery.accountId,
       }),
     );
-
   const deliveryResult = await dispatchCronDelivery({
     cfg: params.cfg,
     cfgWithAgentDefaults,

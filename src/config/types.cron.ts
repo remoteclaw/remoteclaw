@@ -1,3 +1,6 @@
+/** Error types that can trigger retries for one-shot jobs. */
+export type CronRetryOn = "rate_limit" | "overloaded" | "network" | "timeout" | "server_error";
+
 export type CronConfig = {
   enabled?: boolean;
   store?: string;

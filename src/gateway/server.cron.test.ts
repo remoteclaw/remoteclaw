@@ -644,6 +644,7 @@ describe("gateway server cron", () => {
       await yieldToEventLoop();
       expect(fetchWithSsrFGuardMock).toHaveBeenCalledTimes(2);
 
+      fetchWithSsrFGuardMock.mockClear();
       cronIsolatedRun.mockResolvedValueOnce({ status: "ok", summary: "" });
       const noSummaryRes = await rpcReq(ws, "cron.add", {
         name: "webhook no summary",
@@ -668,7 +669,7 @@ describe("gateway server cron", () => {
       expect(noSummaryRunRes.ok).toBe(true);
       await yieldToEventLoop();
       await yieldToEventLoop();
-      expect(fetchWithSsrFGuardMock).toHaveBeenCalledTimes(2);
+      expect(fetchWithSsrFGuardMock).not.toHaveBeenCalled();
     } finally {
       await cleanupCronTestRun({ ws, server, dir, prevSkipCron });
     }

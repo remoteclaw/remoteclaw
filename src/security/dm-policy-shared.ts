@@ -216,7 +216,7 @@ export function resolveDmGroupAccessWithCommandGate(params: {
     allowFrom: params.allowFrom,
     groupAllowFrom: params.groupAllowFrom,
     storeAllowFrom: params.storeAllowFrom,
-    groupAllowFromFallbackToAllowFrom: params.groupAllowFromFallbackToAllowFrom,
+    groupAllowFromFallbackToAllowFrom: params.groupAllowFromFallbackToAllowFrom ?? undefined,
     isSenderAllowed: params.isSenderAllowed,
   });
 

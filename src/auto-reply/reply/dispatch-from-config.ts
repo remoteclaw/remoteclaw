@@ -347,7 +347,7 @@ export async function dispatchReplyFromConfig(params: {
       requestedPolicy: params.replyOptions?.typingPolicy,
       suppressTyping: params.replyOptions?.suppressTyping === true || shouldSuppressTyping,
       originatingChannel,
-      systemEvent: shouldRouteToOriginating,
+      systemEvent: !!shouldRouteToOriginating,
     });
 
     const replyResult = await (params.replyResolver ?? getReplyFromConfig)(

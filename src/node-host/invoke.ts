@@ -58,7 +58,7 @@ async function requestExecHostViaSocket(_opts: {
   return null;
 }
 import { runBrowserProxyCommand } from "./invoke-browser.js";
-import { handleSystemRunInvoke } from "./invoke-system-run.js";
+import { buildSystemRunApprovalPlanV2, handleSystemRunInvoke } from "./invoke-system-run.js";
 import type { ExecEventPayload, RunResult, SystemRunParams } from "./invoke-types.js";
 
 const OUTPUT_CAP = 200_000;
@@ -441,6 +441,30 @@ export async function handleInvoke(frame: NodeInvokeRequestPayload, client: Gate
     try {
       const payload = await runBrowserProxyCommand(frame.paramsJSON);
       await sendRawPayloadResult(client, frame, payload);
+    } catch (err) {
+      await sendInvalidRequestResult(client, frame, err);
+    }
+    return;
+  }
+
+  if (command === "system.run.prepare") {
+    try {
+      const params = decodeParams<{
+        command?: unknown;
+        rawCommand?: unknown;
+        cwd?: unknown;
+        agentId?: unknown;
+        sessionKey?: unknown;
+      }>(frame.paramsJSON);
+      const prepared = buildSystemRunApprovalPlanV2(params);
+      if (!prepared.ok) {
+        await sendErrorResult(client, frame, "INVALID_REQUEST", prepared.message);
+        return;
+      }
+      await sendJsonPayloadResult(client, frame, {
+        cmdText: prepared.cmdText,
+        plan: prepared.plan,
+      });
     } catch (err) {
       await sendInvalidRequestResult(client, frame, err);
     }

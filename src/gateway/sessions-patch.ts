@@ -4,7 +4,7 @@ import { normalizeGroupActivation } from "../auto-reply/group-activation.js";
 import { normalizeUsageDisplay } from "../auto-reply/thinking.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
-import { isSubagentSessionKey } from "../routing/session-key.js";
+import { isAcpSessionKey, isSubagentSessionKey } from "../routing/session-key.js";
 import { applyVerboseOverride, parseVerboseOverride } from "../sessions/level-overrides.js";
 import { normalizeSendPolicy } from "../sessions/send-policy.js";
 import { parseSessionLabel } from "../sessions/session-label.js";
@@ -17,6 +17,10 @@ import {
 
 function invalid(message: string): { ok: false; error: ErrorShape } {
   return { ok: false, error: errorShape(ErrorCodes.INVALID_REQUEST, message) };
+}
+
+function supportsSpawnLineage(storeKey: string): boolean {
+  return isSubagentSessionKey(storeKey) || isAcpSessionKey(storeKey);
 }
 
 export async function applySessionsPatchToStore(params: {
@@ -48,8 +52,8 @@ export async function applySessionsPatchToStore(params: {
       if (!trimmed) {
         return invalid("invalid spawnedBy: empty");
       }
-      if (!isSubagentSessionKey(storeKey)) {
-        return invalid("spawnedBy is only supported for subagent:* sessions");
+      if (!supportsSpawnLineage(storeKey)) {
+        return invalid("spawnedBy is only supported for subagent:* or acp:* sessions");
       }
       if (existing?.spawnedBy && existing.spawnedBy !== trimmed) {
         return invalid("spawnedBy cannot be changed once set");
@@ -65,8 +69,8 @@ export async function applySessionsPatchToStore(params: {
         return invalid("spawnDepth cannot be cleared once set");
       }
     } else if (raw !== undefined) {
-      if (!isSubagentSessionKey(storeKey)) {
-        return invalid("spawnDepth is only supported for subagent:* sessions");
+      if (!supportsSpawnLineage(storeKey)) {
+        return invalid("spawnDepth is only supported for subagent:* or acp:* sessions");
       }
       const numeric = Number(raw);
       if (!Number.isInteger(numeric) || numeric < 0) {

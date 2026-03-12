@@ -69,6 +69,7 @@ async function sendLinePairingReply(params: {
   const { code, created } = await upsertChannelPairingRequest({
     channel: "line",
     id: senderId,
+    accountId: context.account.accountId,
   });
   if (!created) {
     return;
@@ -116,7 +117,11 @@ async function shouldProcessLineEvent(
   const senderId = userId ?? "";
   const dmPolicy = account.config.dmPolicy ?? "pairing";
 
-  const storeAllowFrom = await readChannelAllowFromStore("line").catch(() => []);
+  const storeAllowFrom = await readChannelAllowFromStore(
+    "line",
+    process.env,
+    account.accountId,
+  ).catch(() => []);
   const effectiveDmAllow = normalizeAllowFromWithStore({
     allowFrom: account.config.allowFrom,
     storeAllowFrom,

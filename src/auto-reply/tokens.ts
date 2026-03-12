@@ -1,6 +1,7 @@
 import { escapeRegExp } from "../utils.js";
 
 export const SILENT_REPLY_TOKEN = "NO_REPLY";
+export const HEARTBEAT_TOKEN = "HEARTBEAT_OK";
 
 export function isSilentReplyText(
   text: string | undefined,

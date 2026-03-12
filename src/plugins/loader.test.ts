@@ -222,7 +222,7 @@ describe("loadRemoteClawPlugins", () => {
   });
 
   it("loads plugins when source and root differ only by realpath alias", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "alias-safe",
       body: `export default { id: "alias-safe", register() {} };`,
@@ -232,7 +232,7 @@ describe("loadRemoteClawPlugins", () => {
       return;
     }
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       workspaceDir: plugin.dir,
       config: {

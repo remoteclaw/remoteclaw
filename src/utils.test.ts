@@ -18,10 +18,13 @@ import {
   toWhatsappJid,
 } from "./utils.js";
 
-function withTempDirSync<T>(prefix: string, run: (dir: string) => T): T {
+async function withTempDir<T>(
+  prefix: string,
+  run: (dir: string) => T | Promise<T>,
+): Promise<Awaited<T>> {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   try {
-    return run(dir);
+    return await run(dir);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -29,7 +32,7 @@ function withTempDirSync<T>(prefix: string, run: (dir: string) => T): T {
 
 describe("ensureDir", () => {
   it("creates nested directory", async () => {
-    await withTempDirSync("remoteclaw-test-", async (tmp) => {
+    await withTempDir("remoteclaw-test-", async (tmp) => {
       const target = path.join(tmp, "nested", "dir");
       await ensureDir(target);
       expect(fs.existsSync(target)).toBe(true);
@@ -84,16 +87,16 @@ describe("jidToE164", () => {
     spy.mockRestore();
   });
 
-  it("maps @lid from authDir mapping files", () => {
-    withTempDirSync("remoteclaw-auth-", (authDir) => {
+  it("maps @lid from authDir mapping files", async () => {
+    await withTempDir("remoteclaw-auth-", (authDir) => {
       const mappingPath = path.join(authDir, "lid-mapping-456_reverse.json");
       fs.writeFileSync(mappingPath, JSON.stringify("5559876"));
       expect(jidToE164("456@lid", { authDir })).toBe("+5559876");
     });
   });
 
-  it("maps @hosted.lid from authDir mapping files", () => {
-    withTempDirSync("remoteclaw-auth-", (authDir) => {
+  it("maps @hosted.lid from authDir mapping files", async () => {
+    await withTempDir("remoteclaw-auth-", (authDir) => {
       const mappingPath = path.join(authDir, "lid-mapping-789_reverse.json");
       fs.writeFileSync(mappingPath, JSON.stringify(4440001));
       expect(jidToE164("789@hosted.lid", { authDir })).toBe("+4440001");
@@ -104,9 +107,9 @@ describe("jidToE164", () => {
     expect(jidToE164("1555000:2@hosted")).toBe("+1555000");
   });
 
-  it("falls back through lidMappingDirs in order", () => {
-    withTempDirSync("remoteclaw-lid-a-", (first) => {
-      withTempDirSync("remoteclaw-lid-b-", (second) => {
+  it("falls back through lidMappingDirs in order", async () => {
+    await withTempDir("remoteclaw-lid-a-", async (first) => {
+      await withTempDir("remoteclaw-lid-b-", (second) => {
         const mappingPath = path.join(second, "lid-mapping-321_reverse.json");
         fs.writeFileSync(mappingPath, JSON.stringify("123321"));
         expect(jidToE164("321@lid", { lidMappingDirs: [first, second] })).toBe("+123321");
@@ -127,6 +130,15 @@ describe("resolveConfigDir", () => {
       await fs.promises.rm(root, { recursive: true, force: true });
     }
   });
+
+  it("expands REMOTECLAW_STATE_DIR using the provided env", () => {
+    const env = {
+      HOME: "/tmp/remoteclaw-home",
+      REMOTECLAW_STATE_DIR: "~/state",
+    } as NodeJS.ProcessEnv;
+
+    expect(resolveConfigDir(env)).toBe(path.resolve("/tmp/remoteclaw-home", "state"));
+  });
 });
 
 describe("resolveHomeDir", () => {
@@ -145,9 +157,9 @@ describe("shortenHomePath", () => {
     vi.stubEnv("REMOTECLAW_HOME", "/srv/remoteclaw-home");
     vi.stubEnv("HOME", "/home/other");
 
-    expect(
-      shortenHomePath(`${path.resolve("/srv/remoteclaw-home")}/.remoteclaw/remoteclaw.json`),
-    ).toBe("$REMOTECLAW_HOME/.remoteclaw/remoteclaw.json");
+    expect(shortenHomePath(`${path.resolve("/srv/remoteclaw-home")}/.remoteclaw/remoteclaw.json`)).toBe(
+      "$REMOTECLAW_HOME/.remoteclaw/remoteclaw.json",
+    );
 
     vi.unstubAllEnvs();
   });
@@ -159,9 +171,7 @@ describe("shortenHomeInString", () => {
     vi.stubEnv("HOME", "/home/other");
 
     expect(
-      shortenHomeInString(
-        `config: ${path.resolve("/srv/remoteclaw-home")}/.remoteclaw/remoteclaw.json`,
-      ),
+      shortenHomeInString(`config: ${path.resolve("/srv/remoteclaw-home")}/.remoteclaw/remoteclaw.json`),
     ).toBe("config: $REMOTECLAW_HOME/.remoteclaw/remoteclaw.json");
 
     vi.unstubAllEnvs();
@@ -211,11 +221,18 @@ describe("resolveUserPath", () => {
     vi.stubEnv("REMOTECLAW_HOME", "/srv/remoteclaw-home");
     vi.stubEnv("HOME", "/home/other");
 
-    expect(resolveUserPath("~/remoteclaw")).toBe(
-      path.resolve("/srv/remoteclaw-home", "remoteclaw"),
-    );
+    expect(resolveUserPath("~/remoteclaw")).toBe(path.resolve("/srv/remoteclaw-home", "remoteclaw"));
 
     vi.unstubAllEnvs();
+  });
+
+  it("uses the provided env for tilde expansion", () => {
+    const env = {
+      HOME: "/tmp/remoteclaw-home",
+      REMOTECLAW_HOME: "/srv/remoteclaw-home",
+    } as NodeJS.ProcessEnv;
+
+    expect(resolveUserPath("~/remoteclaw", env)).toBe(path.resolve("/srv/remoteclaw-home", "remoteclaw"));
   });
 
   it("keeps blank paths blank", () => {

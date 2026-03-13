@@ -6,6 +6,7 @@ import {
   getFreePort,
   openWs,
   originForPort,
+  rpcReq,
   restoreGatewayToken,
   startGatewayServer,
   testState,
@@ -33,6 +34,27 @@ function expectAuthErrorDetails(params: {
   }
 }
 
+async function expectSharedOperatorScopesCleared(
+  port: number,
+  auth: { token?: string; password?: string },
+) {
+  const ws = await openWs(port);
+  try {
+    const res = await connectReq(ws, {
+      ...auth,
+      scopes: ["operator.admin"],
+      device: null,
+    });
+    expect(res.ok).toBe(true);
+
+    const adminRes = await rpcReq(ws, "set-heartbeats", { enabled: false });
+    expect(adminRes.ok).toBe(false);
+    expect(adminRes.error?.message).toBe("missing scope: operator.admin");
+  } finally {
+    ws.close();
+  }
+}
+
 describe("gateway auth compatibility baseline", () => {
   describe("token mode", () => {
     let server: Awaited<ReturnType<typeof startGatewayServer>>;
@@ -40,9 +62,9 @@ describe("gateway auth compatibility baseline", () => {
     let prevToken: string | undefined;
 
     beforeAll(async () => {
-      prevToken = process.env.OPENCLAW_GATEWAY_TOKEN;
+      prevToken = process.env.REMOTECLAW_GATEWAY_TOKEN;
       testState.gatewayAuth = { mode: "token", token: "secret" };
-      process.env.OPENCLAW_GATEWAY_TOKEN = "secret";
+      process.env.REMOTECLAW_GATEWAY_TOKEN = "secret";
       port = await getFreePort();
       server = await startGatewayServer(port);
     });
@@ -60,6 +82,10 @@ describe("gateway auth compatibility baseline", () => {
       } finally {
         ws.close();
       }
+    });
+
+    test("clears client-declared scopes for shared-token operator connects", async () => {
+      await expectSharedOperatorScopesCleared(port, { token: "secret" });
     });
 
     test("returns stable token-missing details for control ui without token", async () => {
@@ -126,9 +152,9 @@ describe("gateway auth compatibility baseline", () => {
     let prevToken: string | undefined;
 
     beforeAll(async () => {
-      prevToken = process.env.OPENCLAW_GATEWAY_TOKEN;
+      prevToken = process.env.REMOTECLAW_GATEWAY_TOKEN;
       testState.gatewayAuth = { mode: "password", password: "secret" };
-      delete process.env.OPENCLAW_GATEWAY_TOKEN;
+      delete process.env.REMOTECLAW_GATEWAY_TOKEN;
       port = await getFreePort();
       server = await startGatewayServer(port);
     });
@@ -163,6 +189,10 @@ describe("gateway auth compatibility baseline", () => {
         ws.close();
       }
     });
+
+    test("clears client-declared scopes for shared-password operator connects", async () => {
+      await expectSharedOperatorScopesCleared(port, { password: "secret" });
+    });
   });
 
   describe("none mode", () => {
@@ -171,9 +201,9 @@ describe("gateway auth compatibility baseline", () => {
     let prevToken: string | undefined;
 
     beforeAll(async () => {
-      prevToken = process.env.OPENCLAW_GATEWAY_TOKEN;
+      prevToken = process.env.REMOTECLAW_GATEWAY_TOKEN;
       testState.gatewayAuth = { mode: "none" };
-      delete process.env.OPENCLAW_GATEWAY_TOKEN;
+      delete process.env.REMOTECLAW_GATEWAY_TOKEN;
       port = await getFreePort();
       server = await startGatewayServer(port);
     });

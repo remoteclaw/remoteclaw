@@ -294,22 +294,15 @@ describe("BlueBubbles webhook monitor", () => {
     );
   }
 
-  async function expectProtectedLoopbackWebhookRequestStatus(
-    remoteAddress: (typeof LOOPBACK_REMOTE_ADDRESSES_FOR_TEST)[number],
-    expectedStatus: number,
-    overrides?: Omit<WebhookRequestParams, "remoteAddress">,
-  ) {
-    setupProtectedWebhookTarget();
-    return expectLoopbackWebhookRequestStatus(remoteAddress, expectedStatus, overrides);
-  }
-
-  async function expectPasswordlessLoopbackWebhookRequestStatus(
-    remoteAddress: (typeof LOOPBACK_REMOTE_ADDRESSES_FOR_TEST)[number],
-    expectedStatus: number,
-    overrides?: Omit<WebhookRequestParams, "remoteAddress">,
-  ) {
-    setupPasswordlessWebhookTarget();
-    return expectLoopbackWebhookRequestStatus(remoteAddress, expectedStatus, overrides);
+  function createHangingWebhookRequest(url = "/bluebubbles-webhook?password=test-password") {
+    const req = new EventEmitter() as IncomingMessage;
+    const destroyMock = vi.fn();
+    req.method = "POST";
+    req.url = url;
+    req.headers = {};
+    req.destroy = destroyMock as unknown as IncomingMessage["destroy"];
+    setRequestRemoteAddress(req, "127.0.0.1");
+    return { req, destroyMock };
   }
 
   function registerWebhookTargets(
@@ -388,7 +381,9 @@ describe("BlueBubbles webhook monitor", () => {
         });
 
         // Create a request that never sends data or ends (simulates slow-loris)
-        const { req, destroyMock } = createHangingWebhookRequestForTest();
+        const { req, destroyMock } = createHangingWebhookRequest();
+
+        const res = createMockResponse();
 
         const { res, handledPromise } = createWebhookDispatchForTest(req);
 
@@ -398,17 +393,16 @@ describe("BlueBubbles webhook monitor", () => {
         const handled = await handledPromise;
         expect(handled).toBe(true);
         expect(res.statusCode).toBe(408);
-        expect(req.destroy).toHaveBeenCalled();
+        expect(destroyMock).toHaveBeenCalled();
       } finally {
         vi.useRealTimers();
       }
     });
 
     it("rejects unauthorized requests before reading the body", async () => {
-      setupProtectedWebhookTarget();
-      const { req } = createHangingWebhookRequestForTest(
-        "/bluebubbles-webhook?password=wrong-token",
-      );
+      const account = createMockAccount({ password: "secret-token" });
+      setupWebhookTarget({ account });
+      const { req } = createHangingWebhookRequest("/bluebubbles-webhook?password=wrong-token");
       const onSpy = vi.spyOn(req, "on");
       await expectWebhookStatusForTest(req, 401);
       expect(onSpy).not.toHaveBeenCalledWith("data", expect.any(Function));

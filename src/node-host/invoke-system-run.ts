@@ -455,6 +455,7 @@ import type {
 } from "../infra/system-run-approval-binding.js";
 import type {
   ExecEventPayload,
+  ExecFinishedResult,
   ExecFinishedEventParams,
   RunResult,
   SystemRunParams,

@@ -3,6 +3,7 @@
 
 export type { ReplyPayload } from "../auto-reply/types.js";
 export { mergeAllowlist, summarizeMapping } from "../channels/allowlists/resolve-utils.js";
+export type { ChannelDock } from "../channels/dock.js";
 export { resolveMentionGatingWithBypass } from "../channels/mention-gating.js";
 export {
   deleteAccountFromConfigSection,
@@ -10,16 +11,23 @@ export {
 } from "../channels/plugins/config-helpers.js";
 export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
 export { formatPairingApproveHint } from "../channels/plugins/helpers.js";
+export type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+} from "../channels/plugins/onboarding-types.js";
+export { promptChannelAccessConfig } from "../channels/plugins/onboarding/channel-access.js";
 export {
   addWildcardAllowFrom,
   mergeAllowFromEntries,
   promptAccountId,
+  resolveAccountIdForConfigure,
   setTopLevelChannelDmPolicyWithAllowFrom,
 } from "../channels/plugins/onboarding/helpers.js";
 export {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
   migrateBaseNameToDefaultAccount,
+  patchScopedAccountConfig,
 } from "../channels/plugins/setup-helpers.js";
 export { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
 export type {
@@ -34,7 +42,7 @@ export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export { createTypingCallbacks } from "../channels/typing.js";
 export type { RemoteClawConfig } from "../config/config.js";
-
+export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 export {
   resolveDefaultGroupPolicy,
   resolveOpenProviderRuntimeGroupPolicy,
@@ -43,10 +51,10 @@ export {
 export type { GroupToolPolicyConfig, MarkdownTableMode } from "../config/types.js";
 export { ToolPolicySchema } from "../config/zod-schema.agent-runtime.js";
 export { MarkdownConfigSchema } from "../config/zod-schema.core.js";
-export { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
+export { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
-export type { AnyAgentTool, RemoteClawPluginApi } from "../plugins/types.js";
+export type { AnyAgentTool, OpenClawPluginApi } from "../plugins/types.js";
 export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 export type { RuntimeEnv } from "../runtime.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
@@ -57,7 +65,6 @@ export { evaluateGroupRouteAccessForPolicy } from "./group-access.js";
 export { loadOutboundMediaFromUrl } from "./outbound-media.js";
 export { createScopedPairingAccess } from "./pairing-access.js";
 export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
-
 export { buildChannelSendResult } from "./channel-send-result.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
 export {

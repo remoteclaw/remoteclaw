@@ -35,6 +35,7 @@ import {
   isMSTeamsMutableAllowEntry,
   isMattermostMutableAllowEntry,
   isSlackMutableAllowEntry,
+  isZalouserMutableGroupEntry,
 } from "../security/mutable-allowlist-detectors.js";
 import { listTelegramAccountIds, resolveTelegramAccount } from "../telegram/accounts.js";
 import { note } from "../terminal/note.js";
@@ -994,6 +995,27 @@ function scanMutableAllowlistEntries(cfg: RemoteClawConfig): MutableAllowlistHit
         list: group.allowFrom,
         detector: isIrcMutableAllowEntry,
         channel: "irc",
+        dangerousFlagPath: scope.dangerousFlagPath,
+      });
+    }
+  }
+
+  for (const scope of collectProviderDangerousNameMatchingScopes(cfg, "zalouser")) {
+    if (scope.dangerousNameMatchingEnabled) {
+      continue;
+    }
+    const groups = asObjectRecord(scope.account.groups);
+    if (!groups) {
+      continue;
+    }
+    for (const entry of Object.keys(groups)) {
+      if (!isZalouserMutableGroupEntry(entry)) {
+        continue;
+      }
+      hits.push({
+        channel: "zalouser",
+        path: `${scope.prefix}.groups`,
+        entry,
         dangerousFlagPath: scope.dangerousFlagPath,
       });
     }

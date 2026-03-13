@@ -20,7 +20,6 @@ type TargetOpts = {
   cdpUrl: string;
   targetId?: string;
 };
-
 const MAX_CLICK_DELAY_MS = 5_000;
 const MAX_WAIT_TIME_MS = 30_000;
 const MAX_BATCH_ACTIONS = 100;
@@ -93,13 +92,13 @@ export async function clickViaPlaywright(opts: {
   const label = resolved.ref ?? resolved.selector!;
   const locator = resolved.ref
     ? refLocator(page, requireRef(resolved.ref))
-    : page.locator(resolved.selector!);
+    : page.locator(resolved.selector);
   const timeout = resolveInteractionTimeoutMs(opts.timeoutMs);
   try {
     const delayMs = resolveBoundedDelayMs(opts.delayMs, "click delayMs", MAX_CLICK_DELAY_MS);
     if (delayMs > 0) {
       await locator.hover({ timeout });
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      await new Promise((r) => setTimeout(r, delayMs));
     }
     if (opts.doubleClick) {
       await locator.dblclick({
@@ -131,7 +130,7 @@ export async function hoverViaPlaywright(opts: {
   const label = resolved.ref ?? resolved.selector!;
   const locator = resolved.ref
     ? refLocator(page, requireRef(resolved.ref))
-    : page.locator(resolved.selector!);
+    : page.locator(resolved.selector);
   try {
     await locator.hover({
       timeout: resolveInteractionTimeoutMs(opts.timeoutMs),
@@ -155,10 +154,10 @@ export async function dragViaPlaywright(opts: {
   const page = await getRestoredPageForTarget(opts);
   const startLocator = resolvedStart.ref
     ? refLocator(page, requireRef(resolvedStart.ref))
-    : page.locator(resolvedStart.selector!);
+    : page.locator(resolvedStart.selector);
   const endLocator = resolvedEnd.ref
     ? refLocator(page, requireRef(resolvedEnd.ref))
-    : page.locator(resolvedEnd.selector!);
+    : page.locator(resolvedEnd.selector);
   const startLabel = resolvedStart.ref ?? resolvedStart.selector!;
   const endLabel = resolvedEnd.ref ?? resolvedEnd.selector!;
   try {
@@ -186,7 +185,7 @@ export async function selectOptionViaPlaywright(opts: {
   const label = resolved.ref ?? resolved.selector!;
   const locator = resolved.ref
     ? refLocator(page, requireRef(resolved.ref))
-    : page.locator(resolved.selector!);
+    : page.locator(resolved.selector);
   try {
     await locator.selectOption(opts.values, {
       timeout: resolveInteractionTimeoutMs(opts.timeoutMs),
@@ -229,7 +228,7 @@ export async function typeViaPlaywright(opts: {
   const label = resolved.ref ?? resolved.selector!;
   const locator = resolved.ref
     ? refLocator(page, requireRef(resolved.ref))
-    : page.locator(resolved.selector!);
+    : page.locator(resolved.selector);
   const timeout = resolveInteractionTimeoutMs(opts.timeoutMs);
   try {
     if (opts.slowly) {
@@ -430,7 +429,7 @@ export async function scrollIntoViewViaPlaywright(opts: {
   const label = resolved.ref ?? resolved.selector!;
   const locator = resolved.ref
     ? refLocator(page, requireRef(resolved.ref))
-    : page.locator(resolved.selector!);
+    : page.locator(resolved.selector);
   try {
     await locator.scrollIntoViewIfNeeded({ timeout });
   } catch (err) {
@@ -592,11 +591,11 @@ export async function screenshotWithLabelsViaPlaywright(opts: {
   try {
     if (boxes.length > 0) {
       await page.evaluate((labels) => {
-        const existing = document.querySelectorAll("[data-remoteclaw-labels]");
+        const existing = document.querySelectorAll("[data-openclaw-labels]");
         existing.forEach((el) => el.remove());
 
         const root = document.createElement("div");
-        root.setAttribute("data-remoteclaw-labels", "1");
+        root.setAttribute("data-openclaw-labels", "1");
         root.style.position = "fixed";
         root.style.left = "0";
         root.style.top = "0";
@@ -610,7 +609,7 @@ export async function screenshotWithLabelsViaPlaywright(opts: {
 
         for (const label of labels) {
           const box = document.createElement("div");
-          box.setAttribute("data-remoteclaw-labels", "1");
+          box.setAttribute("data-openclaw-labels", "1");
           box.style.position = "absolute";
           box.style.left = `${label.x}px`;
           box.style.top = `${label.y}px`;
@@ -620,7 +619,7 @@ export async function screenshotWithLabelsViaPlaywright(opts: {
           box.style.boxSizing = "border-box";
 
           const tag = document.createElement("div");
-          tag.setAttribute("data-remoteclaw-labels", "1");
+          tag.setAttribute("data-openclaw-labels", "1");
           tag.textContent = label.ref;
           tag.style.position = "absolute";
           tag.style.left = `${label.x}px`;
@@ -647,7 +646,7 @@ export async function screenshotWithLabelsViaPlaywright(opts: {
   } finally {
     await page
       .evaluate(() => {
-        const existing = document.querySelectorAll("[data-remoteclaw-labels]");
+        const existing = document.querySelectorAll("[data-openclaw-labels]");
         existing.forEach((el) => el.remove());
       })
       .catch(() => {});
@@ -844,16 +843,25 @@ async function executeSingleAction(
         targetId: effectiveTargetId,
       });
       break;
-    case "batch":
-      await batchViaPlaywright({
-        cdpUrl,
-        targetId: effectiveTargetId,
-        actions: action.actions,
-        stopOnError: action.stopOnError,
-        evaluateEnabled,
-        depth: depth + 1,
-      });
+    case "batch": {
+      // Nested batches: delegate recursively
+      const nestedFailures = (
+        await batchViaPlaywright({
+          cdpUrl,
+          targetId: effectiveTargetId,
+          actions: action.actions,
+          stopOnError: action.stopOnError,
+          evaluateEnabled,
+          depth: depth + 1,
+        })
+      ).results.filter((result) => !result.ok);
+      if (nestedFailures.length > 0) {
+        throw new Error(
+          nestedFailures.map((result) => result.error ?? "Nested batch action failed").join("; "),
+        );
+      }
       break;
+    }
     default:
       throw new Error(`Unsupported batch action kind: ${(action as { kind: string }).kind}`);
   }

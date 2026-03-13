@@ -39,7 +39,7 @@ const redirects = {
   "/gcp": "/install/gcp",
   "/getting-started": "/start/getting-started",
   "/gmail-pubsub": "/automation/gmail-pubsub",
-  "/grammy": "/channels/grammy",
+  "/grammy": "/channels/telegram",
   "/group-messages": "/channels/group-messages",
   "/groups": "/channels/groups",
   "/health": "/gateway/health",
@@ -100,7 +100,7 @@ const redirects = {
   "/provider-routing": "/channels/channel-routing",
   "/providers/discord": "/channels/discord",
   "/providers/googlechat": "/channels/googlechat",
-  "/providers/grammy": "/channels/grammy",
+  "/providers/grammy": "/channels/telegram",
   "/providers/imessage": "/channels/imessage",
   "/providers/line": "/channels/line",
   "/providers/location": "/channels/location",
@@ -559,11 +559,7 @@ export default defineConfig({
             },
             {
               label: "Technical reference",
-              items: [
-                { slug: "reference/token-use" },
-                { slug: "reference/prompt-caching" },
-                { slug: "channels/grammy" },
-              ],
+              items: [{ slug: "reference/token-use" }, { slug: "reference/prompt-caching" }],
             },
             {
               label: "Concept internals",

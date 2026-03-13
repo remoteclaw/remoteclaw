@@ -110,12 +110,11 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
     skipRegressive: "always" | "existingOnly";
     hadPreviewMessage: boolean;
   }): boolean => {
-    const preview = args.currentPreviewText;
+    const currentPreviewText = args.currentPreviewText;
     return (
-      preview != null &&
-      preview.length > 0 &&
-      preview.startsWith(args.text) &&
-      args.text.length < preview.length &&
+      currentPreviewText !== undefined &&
+      currentPreviewText.startsWith(args.text) &&
+      args.text.length < currentPreviewText.length &&
       (args.skipRegressive === "always" || args.hadPreviewMessage)
     );
   };

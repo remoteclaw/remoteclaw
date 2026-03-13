@@ -1,3 +1,5 @@
+import { readSnakeCaseParamRaw } from "./param-key.js";
+
 export type PollCreationParamKind = "string" | "stringArray" | "number" | "boolean";
 
 export type PollCreationParamDef = {
@@ -34,22 +36,8 @@ export const TELEGRAM_POLL_CREATION_PARAM_NAMES = Object.keys(
   TELEGRAM_POLL_CREATION_PARAM_DEFS,
 ) as TelegramPollCreationParamName[];
 
-function toSnakeCaseKey(key: string): string {
-  return key
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
-    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
-    .toLowerCase();
-}
-
 function readPollParamRaw(params: Record<string, unknown>, key: string): unknown {
-  if (Object.hasOwn(params, key)) {
-    return params[key];
-  }
-  const snakeKey = toSnakeCaseKey(key);
-  if (snakeKey !== key && Object.hasOwn(params, snakeKey)) {
-    return params[snakeKey];
-  }
-  return undefined;
+  return readSnakeCaseParamRaw(params, key);
 }
 
 export function resolveTelegramPollVisibility(params: {

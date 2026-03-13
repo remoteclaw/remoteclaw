@@ -1,28 +1,34 @@
 import {
   buildAccountScopedDmSecurityPolicy,
+  createAccountStatusSink,
   mapAllowFromEntries,
+} from "remoteclaw/plugin-sdk/compat";
+import type {
+  ChannelAccountSnapshot,
+  ChannelDirectoryEntry,
+  ChannelDock,
+  ChannelGroupContext,
+  ChannelMessageActionAdapter,
+  ChannelPlugin,
+  RemoteClawConfig,
+  GroupToolPolicyConfig,
+} from "remoteclaw/plugin-sdk/zalouser";
+import {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
   buildChannelSendResult,
   buildBaseAccountStatusSnapshot,
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
-  chunkTextForOutbound,
   deleteAccountFromConfigSection,
   formatAllowFromLowercase,
+  isDangerousNameMatchingEnabled,
   isNumericTargetId,
+  migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   sendPayloadWithChunkedTextAndMedia,
   setAccountEnabledInConfigSection,
-  type ChannelAccountSnapshot,
-  type ChannelDirectoryEntry,
-  type ChannelDock,
-  type ChannelGroupContext,
-  type ChannelMessageActionAdapter,
-  type ChannelPlugin,
-  type RemoteClawConfig,
-  type GroupToolPolicyConfig,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/zalouser";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,
@@ -34,10 +40,11 @@ import {
 import { ZalouserConfigSchema } from "./config-schema.js";
 import { buildZalouserGroupCandidates, findZalouserGroupEntry } from "./group-policy.js";
 import { resolveZalouserReactionMessageIds } from "./message-sid.js";
+import { zalouserOnboardingAdapter } from "./onboarding.js";
 import { probeZalouser } from "./probe.js";
 import { writeQrDataUrlToTempFile } from "./qr-temp-file.js";
+import { getZalouserRuntime } from "./runtime.js";
 import { sendMessageZalouser, sendReactionZalouser } from "./send.js";
-import { zalouserOnboardingAdapter } from "./setup-surface.js";
 import { collectZalouserStatusIssues } from "./status-issues.js";
 import {
   listZaloFriendsMatching,
@@ -160,6 +167,16 @@ function resolveZalouserQrProfile(accountId?: string | null): string {
   return normalized;
 }
 
+function resolveZalouserOutboundChunkMode(cfg: RemoteClawConfig, accountId?: string) {
+  return getZalouserRuntime().channel.text.resolveChunkMode(cfg, "zalouser", accountId);
+}
+
+function resolveZalouserOutboundTextChunkLimit(cfg: RemoteClawConfig, accountId?: string) {
+  return getZalouserRuntime().channel.text.resolveTextChunkLimit(cfg, "zalouser", accountId, {
+    fallbackLimit: zalouserDock.outbound?.textChunkLimit ?? 2000,
+  });
+}
+
 function mapUser(params: {
   id: string;
   name?: string | null;
@@ -200,6 +217,7 @@ function resolveZalouserGroupPolicyEntry(params: ChannelGroupContext) {
       groupId: params.groupId,
       groupChannel: params.groupChannel,
       includeWildcard: true,
+      allowNameMatching: isDangerousNameMatchingEnabled(account.config),
     }),
   );
 }
@@ -388,6 +406,38 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
     resolveReplyToMode: () => "off",
   },
   actions: zalouserMessageActions,
+  setup: {
+    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
+    applyAccountName: ({ cfg, accountId, name }) =>
+      applyAccountNameToChannelSection({
+        cfg: cfg,
+        channelKey: "zalouser",
+        accountId,
+        name,
+      }),
+    validateInput: () => null,
+    applyAccountConfig: ({ cfg, accountId, input }) => {
+      const namedConfig = applyAccountNameToChannelSection({
+        cfg: cfg,
+        channelKey: "zalouser",
+        accountId,
+        name: input.name,
+      });
+      const next =
+        accountId !== DEFAULT_ACCOUNT_ID
+          ? migrateBaseNameToDefaultAccount({
+              cfg: namedConfig,
+              channelKey: "zalouser",
+            })
+          : namedConfig;
+      return applySetupAccountConfigPatch({
+        cfg: next,
+        channelKey: "zalouser",
+        accountId,
+        patch: {},
+      });
+    },
+  },
   messaging: {
     normalizeTarget: (raw) => normalizePrefixedTarget(raw),
     targetResolver: {
@@ -562,8 +612,6 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
     sendPayload: async (ctx) =>
       await sendPayloadWithChunkedTextAndMedia({
         ctx,
-        textChunkLimit: zalouserPlugin.outbound!.textChunkLimit,
-        chunker: zalouserPlugin.outbound!.chunker,
         sendText: (nextCtx) => zalouserPlugin.outbound!.sendText!(nextCtx),
         sendMedia: (nextCtx) => zalouserPlugin.outbound!.sendMedia!(nextCtx),
         emptyResult: { channel: "zalouser", messageId: "" },
@@ -574,6 +622,9 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
       const result = await sendMessageZalouser(target.threadId, text, {
         profile: account.profile,
         isGroup: target.isGroup,
+        textMode: "markdown",
+        textChunkMode: resolveZalouserOutboundChunkMode(cfg, account.accountId),
+        textChunkLimit: resolveZalouserOutboundTextChunkLimit(cfg, account.accountId),
       });
       return buildChannelSendResult("zalouser", result);
     },
@@ -585,6 +636,9 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
         isGroup: target.isGroup,
         mediaUrl,
         mediaLocalRoots,
+        textMode: "markdown",
+        textChunkMode: resolveZalouserOutboundChunkMode(cfg, account.accountId),
+        textChunkLimit: resolveZalouserOutboundTextChunkLimit(cfg, account.accountId),
       });
       return buildChannelSendResult("zalouser", result);
     },
@@ -644,6 +698,10 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
       } catch {
         // ignore probe errors
       }
+      const statusSink = createAccountStatusSink({
+        accountId: ctx.accountId,
+        setStatus: ctx.setStatus,
+      });
       ctx.log?.info(`[${account.accountId}] starting zalouser provider${userLabel}`);
       const { monitorZalouserProvider } = await import("./monitor.js");
       return monitorZalouserProvider({
@@ -651,7 +709,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
         config: ctx.cfg,
         runtime: ctx.runtime,
         abortSignal: ctx.abortSignal,
-        statusSink: (patch) => ctx.setStatus({ accountId: ctx.accountId, ...patch }),
+        statusSink,
       });
     },
     loginWithQrStart: async (params) => {

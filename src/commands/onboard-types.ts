@@ -99,6 +99,7 @@ export type OnboardOptions = {
   /** Required for non-interactive onboarding; skips the interactive risk prompt when true. */
   acceptRisk?: boolean;
   reset?: boolean;
+  resetScope?: ResetScope;
   runtime?: AgentRuntime;
   anthropicApiKey?: string;
   openaiApiKey?: string;

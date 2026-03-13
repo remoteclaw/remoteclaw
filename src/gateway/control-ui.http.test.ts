@@ -12,7 +12,7 @@ describe("handleControlUiHttpRequest", () => {
     indexHtml?: string;
     fn: (tmp: string) => Promise<T>;
   }) {
-    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-ui-"));
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ui-"));
     try {
       await fs.writeFile(path.join(tmp, "index.html"), params.indexHtml ?? "<html></html>\n");
       return await params.fn(tmp);
@@ -40,11 +40,31 @@ describe("handleControlUiHttpRequest", () => {
     expect(params.end).toHaveBeenCalledWith("Not Found");
   }
 
+  function expectUnhandledRoutes(params: {
+    urls: string[];
+    method: "GET" | "POST";
+    rootPath: string;
+    basePath?: string;
+    expectationLabel: string;
+  }) {
+    for (const url of params.urls) {
+      const { handled, end } = runControlUiRequest({
+        url,
+        method: params.method,
+        rootPath: params.rootPath,
+        ...(params.basePath ? { basePath: params.basePath } : {}),
+      });
+      expect(handled, `${params.expectationLabel}: ${url}`).toBe(false);
+      expect(end, `${params.expectationLabel}: ${url}`).not.toHaveBeenCalled();
+    }
+  }
+
   function runControlUiRequest(params: {
     url: string;
     method: "GET" | "HEAD" | "POST";
     rootPath: string;
     basePath?: string;
+    rootKind?: "resolved" | "bundled";
   }) {
     const { res, end } = makeMockHttpResponse();
     const handled = handleControlUiHttpRequest(
@@ -52,7 +72,7 @@ describe("handleControlUiHttpRequest", () => {
       res,
       {
         ...(params.basePath ? { basePath: params.basePath } : {}),
-        root: { kind: "resolved", path: params.rootPath },
+        root: { kind: params.rootKind ?? "resolved", path: params.rootPath },
       },
     );
     return { res, end, handled };
@@ -88,7 +108,7 @@ describe("handleControlUiHttpRequest", () => {
     siblingDir: string;
     fn: (paths: { root: string; sibling: string }) => Promise<T>;
   }) {
-    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-ui-root-"));
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ui-root-"));
     try {
       const root = path.join(tmp, "ui");
       const sibling = path.join(tmp, params.siblingDir);
@@ -146,62 +166,86 @@ describe("handleControlUiHttpRequest", () => {
     });
   });
 
-  it("serves bootstrap config JSON", async () => {
+  it.each([
+    {
+      name: "at root",
+      url: CONTROL_UI_BOOTSTRAP_CONFIG_PATH,
+      expectedBasePath: "",
+      assistantName: "</script><script>alert(1)//",
+      assistantAvatar: "</script>.png",
+      expectedAvatarUrl: "/avatar/main",
+    },
+    {
+      name: "under basePath",
+      url: `/openclaw${CONTROL_UI_BOOTSTRAP_CONFIG_PATH}`,
+      basePath: "/openclaw",
+      expectedBasePath: "/openclaw",
+      assistantName: "Ops",
+      assistantAvatar: "ops.png",
+      expectedAvatarUrl: "/openclaw/avatar/main",
+    },
+  ])("serves bootstrap config JSON $name", async (testCase) => {
     await withControlUiRoot({
       fn: async (tmp) => {
         const { res, end } = makeMockHttpResponse();
         const handled = handleControlUiHttpRequest(
-          { url: CONTROL_UI_BOOTSTRAP_CONFIG_PATH, method: "GET" } as IncomingMessage,
+          { url: testCase.url, method: "GET" } as IncomingMessage,
           res,
           {
+            ...(testCase.basePath ? { basePath: testCase.basePath } : {}),
             root: { kind: "resolved", path: tmp },
             config: {
               agents: { list: [{ id: "main", workspace: tmp }] },
-              ui: { assistant: { name: "</script><script>alert(1)//", avatar: "</script>.png" } },
+              ui: {
+                assistant: {
+                  name: testCase.assistantName,
+                  avatar: testCase.assistantAvatar,
+                },
+              },
             },
           },
         );
         expect(handled).toBe(true);
         const parsed = parseBootstrapPayload(end);
-        expect(parsed.basePath).toBe("");
-        expect(parsed.assistantName).toBe("</script><script>alert(1)//");
-        expect(parsed.assistantAvatar).toBe("/avatar/main");
+        expect(parsed.basePath).toBe(testCase.expectedBasePath);
+        expect(parsed.assistantName).toBe(testCase.assistantName);
+        expect(parsed.assistantAvatar).toBe(testCase.expectedAvatarUrl);
         expect(parsed.assistantAgentId).toBe("main");
       },
     });
   });
 
-  it("serves bootstrap config JSON under basePath", async () => {
+  it.each([
+    {
+      name: "at root",
+      url: CONTROL_UI_BOOTSTRAP_CONFIG_PATH,
+    },
+    {
+      name: "under basePath",
+      url: `/openclaw${CONTROL_UI_BOOTSTRAP_CONFIG_PATH}`,
+      basePath: "/openclaw",
+    },
+  ])("serves bootstrap config HEAD $name without writing a body", async (testCase) => {
     await withControlUiRoot({
       fn: async (tmp) => {
         const { res, end } = makeMockHttpResponse();
         const handled = handleControlUiHttpRequest(
-          {
-            url: `/remoteclaw${CONTROL_UI_BOOTSTRAP_CONFIG_PATH}`,
-            method: "GET",
-          } as IncomingMessage,
+          { url: testCase.url, method: "HEAD" } as IncomingMessage,
           res,
           {
-            basePath: "/remoteclaw",
+            ...(testCase.basePath ? { basePath: testCase.basePath } : {}),
             root: { kind: "resolved", path: tmp },
-            config: {
-              agents: { list: [{ id: "main", workspace: tmp }] },
-              ui: { assistant: { name: "Ops", avatar: "ops.png" } },
-            },
           },
         );
         expect(handled).toBe(true);
-        const parsed = parseBootstrapPayload(end);
-        expect(parsed.basePath).toBe("/remoteclaw");
-        expect(parsed.assistantName).toBe("Ops");
-        expect(parsed.assistantAvatar).toBe("/remoteclaw/avatar/main");
-        expect(parsed.assistantAgentId).toBe("main");
+        expect(res.statusCode).toBe(200);
+        expect(end.mock.calls[0]?.length ?? -1).toBe(0);
       },
     });
   });
 
   it("serves local avatar bytes through hardened avatar handler", async () => {
-    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-avatar-http-"));
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-avatar-http-"));
     try {
       const avatarPath = path.join(tmp, "main.png");
       await fs.writeFile(avatarPath, "avatar-bytes\n");
@@ -221,8 +265,8 @@ describe("handleControlUiHttpRequest", () => {
   });
 
   it("rejects avatar symlink paths from resolver", async () => {
-    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-avatar-http-link-"));
-    const outside = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-avatar-http-outside-"));
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-avatar-http-link-"));
+    const outside = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-avatar-http-outside-"));
     try {
       const outsideFile = path.join(outside, "secret.txt");
       await fs.writeFile(outsideFile, "outside-secret\n");
@@ -246,7 +290,7 @@ describe("handleControlUiHttpRequest", () => {
     await withControlUiRoot({
       fn: async (tmp) => {
         const assetsDir = path.join(tmp, "assets");
-        const outsideDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-ui-outside-"));
+        const outsideDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ui-outside-"));
         try {
           const outsideFile = path.join(outsideDir, "secret.txt");
           await fs.mkdir(assetsDir, { recursive: true });
@@ -309,7 +353,7 @@ describe("handleControlUiHttpRequest", () => {
   it("rejects symlinked SPA fallback index.html outside control-ui root", async () => {
     await withControlUiRoot({
       fn: async (tmp) => {
-        const outsideDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-ui-index-outside-"));
+        const outsideDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ui-index-outside-"));
         try {
           const outsideIndex = path.join(outsideDir, "index.html");
           await fs.writeFile(outsideIndex, "<html>outside</html>\n");
@@ -329,20 +373,73 @@ describe("handleControlUiHttpRequest", () => {
     });
   });
 
+  it("rejects hardlinked index.html for non-package control-ui roots", async () => {
+    await withControlUiRoot({
+      fn: async (tmp) => {
+        const outsideDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ui-index-hardlink-"));
+        try {
+          const outsideIndex = path.join(outsideDir, "index.html");
+          await fs.writeFile(outsideIndex, "<html>outside-hardlink</html>\n");
+          await fs.rm(path.join(tmp, "index.html"));
+          await fs.link(outsideIndex, path.join(tmp, "index.html"));
+
+          const { res, end, handled } = runControlUiRequest({
+            url: "/",
+            method: "GET",
+            rootPath: tmp,
+          });
+          expectNotFoundResponse({ handled, res, end });
+        } finally {
+          await fs.rm(outsideDir, { recursive: true, force: true });
+        }
+      },
+    });
+  });
+
+  it.each([
+    {
+      name: "rejects hardlinked asset files for custom/resolved roots",
+      rootKind: "resolved" as const,
+      expectedStatus: 404,
+      expectedBody: "Not Found",
+    },
+    {
+      name: "serves hardlinked asset files for bundled roots",
+      rootKind: "bundled" as const,
+      expectedStatus: 200,
+      expectedBody: "console.log('hi');",
+    },
+  ])("$name", async (testCase) => {
+    await withControlUiRoot({
+      fn: async (tmp) => {
+        const assetsDir = path.join(tmp, "assets");
+        await fs.mkdir(assetsDir, { recursive: true });
+        await fs.writeFile(path.join(assetsDir, "app.js"), "console.log('hi');");
+        await fs.link(path.join(assetsDir, "app.js"), path.join(assetsDir, "app.hl.js"));
+
+        const { res, end, handled } = runControlUiRequest({
+          url: "/assets/app.hl.js",
+          method: "GET",
+          rootPath: tmp,
+          rootKind: testCase.rootKind,
+        });
+
+        expect(handled).toBe(true);
+        expect(res.statusCode).toBe(testCase.expectedStatus);
+        expect(String(end.mock.calls[0]?.[0] ?? "")).toBe(testCase.expectedBody);
+      },
+    });
+  });
+
   it("does not handle POST to root-mounted paths (plugin webhook passthrough)", async () => {
     await withControlUiRoot({
       fn: async (tmp) => {
-        for (const webhookPath of ["/bluebubbles-webhook", "/custom-webhook", "/callback"]) {
-          const { res } = makeMockHttpResponse();
-          const handled = handleControlUiHttpRequest(
-            { url: webhookPath, method: "POST" } as IncomingMessage,
-            res,
-            { root: { kind: "resolved", path: tmp } },
-          );
-          expect(handled, `POST to ${webhookPath} should pass through to plugin handlers`).toBe(
-            false,
-          );
-        }
+        expectUnhandledRoutes({
+          urls: ["/bluebubbles-webhook", "/custom-webhook", "/callback"],
+          method: "POST",
+          rootPath: tmp,
+          expectationLabel: "POST should pass through to plugin handlers",
+        });
       },
     });
   });
@@ -350,43 +447,35 @@ describe("handleControlUiHttpRequest", () => {
   it("does not handle POST to paths outside basePath", async () => {
     await withControlUiRoot({
       fn: async (tmp) => {
-        const { res } = makeMockHttpResponse();
-        const handled = handleControlUiHttpRequest(
-          { url: "/bluebubbles-webhook", method: "POST" } as IncomingMessage,
-          res,
-          { basePath: "/openclaw", root: { kind: "resolved", path: tmp } },
-        );
-        expect(handled).toBe(false);
+        expectUnhandledRoutes({
+          urls: ["/bluebubbles-webhook"],
+          method: "POST",
+          rootPath: tmp,
+          basePath: "/openclaw",
+          expectationLabel: "POST outside basePath should pass through",
+        });
       },
     });
   });
 
-  it("does not handle /api paths when basePath is empty", async () => {
+  it.each([
+    {
+      name: "does not handle /api paths when basePath is empty",
+      urls: ["/api", "/api/sessions", "/api/channels/nostr"],
+    },
+    {
+      name: "does not handle /plugins paths when basePath is empty",
+      urls: ["/plugins", "/plugins/diffs/view/abc/def"],
+    },
+  ])("$name", async (testCase) => {
     await withControlUiRoot({
       fn: async (tmp) => {
-        for (const apiPath of ["/api", "/api/sessions", "/api/channels/nostr"]) {
-          const { handled } = runControlUiRequest({
-            url: apiPath,
-            method: "GET",
-            rootPath: tmp,
-          });
-          expect(handled, `expected ${apiPath} to not be handled`).toBe(false);
-        }
-      },
-    });
-  });
-
-  it("does not handle /plugins paths when basePath is empty", async () => {
-    await withControlUiRoot({
-      fn: async (tmp) => {
-        for (const pluginPath of ["/plugins", "/plugins/diffs/view/abc/def"]) {
-          const { handled } = runControlUiRequest({
-            url: pluginPath,
-            method: "GET",
-            rootPath: tmp,
-          });
-          expect(handled, `expected ${pluginPath} to not be handled`).toBe(false);
-        }
+        expectUnhandledRoutes({
+          urls: testCase.urls,
+          method: "GET",
+          rootPath: tmp,
+          expectationLabel: "expected route to not be handled",
+        });
       },
     });
   });
@@ -394,13 +483,12 @@ describe("handleControlUiHttpRequest", () => {
   it("falls through POST requests when basePath is empty", async () => {
     await withControlUiRoot({
       fn: async (tmp) => {
-        const { handled, end } = runControlUiRequest({
-          url: "/webhook/bluebubbles",
+        expectUnhandledRoutes({
+          urls: ["/webhook/bluebubbles"],
           method: "POST",
           rootPath: tmp,
+          expectationLabel: "POST webhook should fall through",
         });
-        expect(handled).toBe(false);
-        expect(end).not.toHaveBeenCalled();
       },
     });
   });
@@ -408,16 +496,13 @@ describe("handleControlUiHttpRequest", () => {
   it("falls through POST requests under configured basePath (plugin webhook passthrough)", async () => {
     await withControlUiRoot({
       fn: async (tmp) => {
-        for (const route of ["/remoteclaw", "/remoteclaw/", "/remoteclaw/some-page"]) {
-          const { handled, end } = runControlUiRequest({
-            url: route,
-            method: "POST",
-            rootPath: tmp,
-            basePath: "/remoteclaw",
-          });
-          expect(handled, `POST to ${route} should pass through to plugin handlers`).toBe(false);
-          expect(end, `POST to ${route} should not write a response`).not.toHaveBeenCalled();
-        }
+        expectUnhandledRoutes({
+          urls: ["/openclaw", "/openclaw/", "/openclaw/some-page"],
+          method: "POST",
+          rootPath: tmp,
+          basePath: "/openclaw",
+          expectationLabel: "POST under basePath should pass through to plugin handlers",
+        });
       },
     });
   });
@@ -432,10 +517,10 @@ describe("handleControlUiHttpRequest", () => {
         const secretPathUrl = secretPath.split(path.sep).join("/");
         const absolutePathUrl = secretPathUrl.startsWith("/") ? secretPathUrl : `/${secretPathUrl}`;
         const { res, end, handled } = runControlUiRequest({
-          url: `/remoteclaw/${absolutePathUrl}`,
+          url: `/openclaw/${absolutePathUrl}`,
           method: "GET",
           rootPath: root,
-          basePath: "/remoteclaw",
+          basePath: "/openclaw",
         });
         expectNotFoundResponse({ handled, res, end });
       },
@@ -461,10 +546,10 @@ describe("handleControlUiHttpRequest", () => {
         }
 
         const { res, end, handled } = runControlUiRequest({
-          url: "/remoteclaw/assets/leak.txt",
+          url: "/openclaw/assets/leak.txt",
           method: "GET",
           rootPath: root,
-          basePath: "/remoteclaw",
+          basePath: "/openclaw",
         });
         expectNotFoundResponse({ handled, res, end });
       },

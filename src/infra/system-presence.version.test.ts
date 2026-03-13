@@ -41,6 +41,36 @@ describe("system-presence version fallback", () => {
     );
   });
 
+  it("still prefers runtime VERSION over REMOTECLAW_SERVICE_VERSION when REMOTECLAW_VERSION is blank", async () => {
+    await withPresenceModule(
+      {
+        REMOTECLAW_VERSION: " ",
+        REMOTECLAW_SERVICE_VERSION: "2.4.6-service",
+        npm_package_version: "1.0.0-package",
+      },
+      async ({ listSystemPresence }) => {
+        const { VERSION } = await import("../version.js");
+        const selfEntry = listSystemPresence().find((entry) => entry.reason === "self");
+        expect(selfEntry?.version).toBe(VERSION);
+      },
+    );
+  });
+
+  it("still prefers runtime VERSION over npm_package_version when service markers are blank", async () => {
+    await withPresenceModule(
+      {
+        REMOTECLAW_VERSION: " ",
+        REMOTECLAW_SERVICE_VERSION: "\t",
+        npm_package_version: "1.0.0-package",
+      },
+      async ({ listSystemPresence }) => {
+        const { VERSION } = await import("../version.js");
+        const selfEntry = listSystemPresence().find((entry) => entry.reason === "self");
+        expect(selfEntry?.version).toBe(VERSION);
+      },
+    );
+  });
+
   it("uses runtime VERSION when REMOTECLAW_VERSION and REMOTECLAW_SERVICE_VERSION are blank", async () => {
     await withPresenceModule(
       {

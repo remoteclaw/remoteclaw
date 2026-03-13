@@ -308,17 +308,8 @@ async function handleTextMessage(
   });
 }
 
-async function handleImageMessage(
-  message: ZaloMessage,
-  token: string,
-  account: ResolvedZaloAccount,
-  config: RemoteClawConfig,
-  runtime: ZaloRuntimeEnv,
-  core: ZaloCoreRuntime,
-  mediaMaxMb: number,
-  statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void,
-  fetcher?: ZaloFetch,
-): Promise<void> {
+async function handleImageMessage(params: ZaloImageMessageParams): Promise<void> {
+  const { message, mediaMaxMb, account, core, runtime } = params;
   const { photo, caption } = message;
 
   let mediaPath: string | undefined;

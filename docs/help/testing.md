@@ -1,5 +1,5 @@
 ---
-description: "Testing kit: unit/e2e/live suites, Docker runners, and what each test covers"
+summary: "Testing kit: unit/e2e/live suites, Docker runners, and what each test covers"
 read_when:
   - Running tests locally or in CI
   - Adding regressions for model/provider bugs
@@ -52,15 +52,10 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
   - Runs in CI
   - No real keys required
   - Should be fast and stable
-- Scheduler note:
-  - `pnpm test` now keeps a small checked-in behavioral manifest for true pool/isolation overrides and a separate timing snapshot for the slowest unit files.
-  - Shared unit coverage now defaults to `threads`, while the manifest keeps the measured fork-only exceptions and heavy singleton lanes explicit.
-  - The wrapper peels the heaviest measured files into dedicated lanes instead of relying on a growing hand-maintained exclusion list.
-  - Refresh the timing snapshot with `pnpm test:perf:update-timings` after major suite shape changes.
 - Pool note:
-  - RemoteClaw uses Vitest `vmForks` on Node 22/23 for faster unit shards.
-  - On Node 24+, RemoteClaw automatically falls back to regular `forks` to avoid Node VM linking errors (`ERR_VM_MODULE_LINK_FAILURE` / `module is already linked`).
-  - Override manually with `REMOTECLAW_TEST_VM_FORKS=0` (force `forks`) or `REMOTECLAW_TEST_VM_FORKS=1` (force `vmForks`).
+  - RemoteClaw uses Vitest `vmForks` on Node 22, 23, and 24 for faster unit shards.
+  - On Node 25+, RemoteClaw automatically falls back to regular `forks` until the repo is re-validated there.
+  - Override manually with `OPENCLAW_TEST_VM_FORKS=0` (force `forks`) or `OPENCLAW_TEST_VM_FORKS=1` (force `vmForks`).
 
 ### E2E (gateway smoke)
 
@@ -72,8 +67,8 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
   - Uses adaptive workers (CI: 2-4, local: 4-8).
   - Runs in silent mode by default to reduce console I/O overhead.
 - Useful overrides:
-  - `REMOTECLAW_E2E_WORKERS=<n>` to force worker count (capped at 16).
-  - `REMOTECLAW_E2E_VERBOSE=1` to re-enable verbose console output.
+  - `OPENCLAW_E2E_WORKERS=<n>` to force worker count (capped at 16).
+  - `OPENCLAW_E2E_VERBOSE=1` to re-enable verbose console output.
 - Scope:
   - Multi-instance gateway end-to-end behavior
   - WebSocket/HTTP surfaces, node pairing, and heavier networking
@@ -87,7 +82,7 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
 - Command: `pnpm test:live`
 - Config: `vitest.live.config.ts`
 - Files: `src/**/*.live.test.ts`
-- Default: **enabled** by `pnpm test:live` (sets `REMOTECLAW_LIVE_TEST=1`)
+- Default: **enabled** by `pnpm test:live` (sets `OPENCLAW_LIVE_TEST=1`)
 - Scope:
   - “Does this provider/model actually work _today_ with real creds?”
   - Catch provider format changes, tool-calling quirks, auth issues, and rate limit behavior
@@ -96,7 +91,7 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
   - Costs money / uses rate limits
   - Prefer running narrowed subsets instead of “everything”
   - Live runs will source `~/.profile` to pick up missing API keys
-- Test credential rotation: set `*_API_KEYS` with comma/semicolon format or `*_API_KEY_1`, `*_API_KEY_2` (for example `OPENAI_API_KEYS`, `ANTHROPIC_API_KEYS`, `GEMINI_API_KEYS`) or per-live override via `REMOTECLAW_LIVE_*_KEY`; tests retry on rate limit responses. These env vars are used by the live test harness for credential cycling and are not part of the production runtime.
+- API key rotation (provider-specific): set `*_API_KEYS` with comma/semicolon format or `*_API_KEY_1`, `*_API_KEY_2` (for example `OPENAI_API_KEYS`, `ANTHROPIC_API_KEYS`, `GEMINI_API_KEYS`) or per-live override via `OPENCLAW_LIVE_*_KEY`; tests retry on rate limit responses.
 
 ## Which suite should I run?
 
@@ -130,25 +125,25 @@ Live tests are split into two layers so we can isolate failures:
 - “Direct model” tells us the provider/model can answer at all with the given key.
 - “Gateway smoke” tells us the full gateway+agent pipeline works for that model (sessions, history, tools, sandbox policy, etc.).
 
-### Layer 1: Direct model provider connectivity (no gateway)
+### Layer 1: Direct model completion (no gateway)
 
 - Test: `src/agents/models.profiles.live.test.ts`
 - Goal:
-  - Verify that model provider credentials are valid and the provider API is reachable
-  - Run a small completion per model as a diagnostic connectivity check (and targeted regressions where needed)
-  - **Note:** In production, RemoteClaw delegates model interaction to CLI agents (Claude, Gemini, Codex, etc.). This test exercises the provider API directly for diagnostic isolation only — it is not representative of the production request path.
+  - Enumerate discovered models
+  - Use `getApiKeyForModel` to select models you have creds for
+  - Run a small completion per model (and targeted regressions where needed)
 - How to enable:
-  - `pnpm test:live` (or `REMOTECLAW_LIVE_TEST=1` if invoking Vitest directly)
-- Set `REMOTECLAW_LIVE_MODELS=modern` (or `all`, alias for modern) to actually run this suite; otherwise it skips to keep `pnpm test:live` focused on gateway smoke
+  - `pnpm test:live` (or `OPENCLAW_LIVE_TEST=1` if invoking Vitest directly)
+- Set `OPENCLAW_LIVE_MODELS=modern` (or `all`, alias for modern) to actually run this suite; otherwise it skips to keep `pnpm test:live` focused on gateway smoke
 - How to select models:
-  - `REMOTECLAW_LIVE_MODELS=modern` to run the modern allowlist (Opus/Sonnet/Haiku 4.5, GPT-5.x + Codex, Gemini 3, GLM 4.7, MiniMax M2.1, Grok 4)
-  - `REMOTECLAW_LIVE_MODELS=all` is an alias for the modern allowlist
-  - or `REMOTECLAW_LIVE_MODELS=”openai/gpt-5.2,anthropic/claude-opus-4-6,...”` (comma allowlist)
+  - `OPENCLAW_LIVE_MODELS=modern` to run the modern allowlist (Opus/Sonnet/Haiku 4.5, GPT-5.x + Codex, Gemini 3, GLM 4.7, MiniMax M2.5, Grok 4)
+  - `OPENCLAW_LIVE_MODELS=all` is an alias for the modern allowlist
+  - or `OPENCLAW_LIVE_MODELS="openai/gpt-5.2,anthropic/claude-opus-4-6,..."` (comma allowlist)
 - How to select providers:
-  - `REMOTECLAW_LIVE_PROVIDERS=”google,google-antigravity,google-gemini-cli”` (comma allowlist)
+  - `OPENCLAW_LIVE_PROVIDERS="google,google-antigravity,google-gemini-cli"` (comma allowlist)
 - Where keys come from:
   - By default: profile store and env fallbacks
-  - Set `REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS=1` to enforce **profile store** only
+  - Set `OPENCLAW_LIVE_REQUIRE_PROFILE_KEYS=1` to enforce **profile store** only
 - Why this exists:
   - Separates “provider API is broken / key is invalid” from “gateway agent pipeline is broken”
   - Contains small, isolated regressions (example: OpenAI Responses/Codex Responses reasoning replay + tool-call flows)
@@ -170,13 +165,13 @@ Live tests are split into two layers so we can isolate failures:
   - image probe: the test attaches a generated PNG (cat + randomized code) and expects the model to return `cat <CODE>`.
   - Implementation reference: `src/gateway/gateway-models.profiles.live.test.ts` and `src/gateway/live-image-probe.ts`.
 - How to enable:
-  - `pnpm test:live` (or `REMOTECLAW_LIVE_TEST=1` if invoking Vitest directly)
+  - `pnpm test:live` (or `OPENCLAW_LIVE_TEST=1` if invoking Vitest directly)
 - How to select models:
-  - Default: modern allowlist (Opus/Sonnet/Haiku 4.5, GPT-5.x + Codex, Gemini 3, GLM 4.7, MiniMax M2.1, Grok 4)
-  - `REMOTECLAW_LIVE_GATEWAY_MODELS=all` is an alias for the modern allowlist
-  - Or set `REMOTECLAW_LIVE_GATEWAY_MODELS="provider/model"` (or comma list) to narrow
+  - Default: modern allowlist (Opus/Sonnet/Haiku 4.5, GPT-5.x + Codex, Gemini 3, GLM 4.7, MiniMax M2.5, Grok 4)
+  - `OPENCLAW_LIVE_GATEWAY_MODELS=all` is an alias for the modern allowlist
+  - Or set `OPENCLAW_LIVE_GATEWAY_MODELS="provider/model"` (or comma list) to narrow
 - How to select providers (avoid “OpenRouter everything”):
-  - `REMOTECLAW_LIVE_GATEWAY_PROVIDERS="google,google-antigravity,google-gemini-cli,openai,anthropic,zai,minimax"` (comma allowlist)
+  - `OPENCLAW_LIVE_GATEWAY_PROVIDERS="google,google-antigravity,google-gemini-cli,openai,anthropic,zai,minimax"` (comma allowlist)
 - Tool + image probes are always on in this live test:
   - `read` probe + `exec+read` probe (tool stress)
   - image probe runs when the model advertises image input support
@@ -199,19 +194,19 @@ remoteclaw models list --json
 - Test: `src/agents/anthropic.setup-token.live.test.ts`
 - Goal: verify Claude Code CLI setup-token (or a pasted setup-token profile) can complete an Anthropic prompt.
 - Enable:
-  - `pnpm test:live` (or `REMOTECLAW_LIVE_TEST=1` if invoking Vitest directly)
-  - `REMOTECLAW_LIVE_SETUP_TOKEN=1`
+  - `pnpm test:live` (or `OPENCLAW_LIVE_TEST=1` if invoking Vitest directly)
+  - `OPENCLAW_LIVE_SETUP_TOKEN=1`
 - Token sources (pick one):
-  - Profile: `REMOTECLAW_LIVE_SETUP_TOKEN_PROFILE=anthropic:setup-token-test`
-  - Raw token: `REMOTECLAW_LIVE_SETUP_TOKEN_VALUE=sk-ant-oat01-...`
+  - Profile: `OPENCLAW_LIVE_SETUP_TOKEN_PROFILE=anthropic:setup-token-test`
+  - Raw token: `OPENCLAW_LIVE_SETUP_TOKEN_VALUE=sk-ant-oat01-...`
 - Model override (optional):
-  - `REMOTECLAW_LIVE_SETUP_TOKEN_MODEL=anthropic/claude-opus-4-6`
+  - `OPENCLAW_LIVE_SETUP_TOKEN_MODEL=anthropic/claude-opus-4-6`
 
 Setup example:
 
 ```bash
 remoteclaw models auth paste-token --provider anthropic --profile-id anthropic:setup-token-test
-REMOTECLAW_LIVE_SETUP_TOKEN=1 REMOTECLAW_LIVE_SETUP_TOKEN_PROFILE=anthropic:setup-token-test pnpm test:live src/agents/anthropic.setup-token.live.test.ts
+OPENCLAW_LIVE_SETUP_TOKEN=1 OPENCLAW_LIVE_SETUP_TOKEN_PROFILE=anthropic:setup-token-test pnpm test:live src/agents/anthropic.setup-token.live.test.ts
 ```
 
 ## Live: CLI backend smoke (Claude Code CLI or other local CLIs)
@@ -219,29 +214,29 @@ REMOTECLAW_LIVE_SETUP_TOKEN=1 REMOTECLAW_LIVE_SETUP_TOKEN_PROFILE=anthropic:setu
 - Test: `src/gateway/gateway-cli-backend.live.test.ts`
 - Goal: validate the Gateway + agent pipeline using a local CLI backend, without touching your default config.
 - Enable:
-  - `pnpm test:live` (or `REMOTECLAW_LIVE_TEST=1` if invoking Vitest directly)
-  - `REMOTECLAW_LIVE_CLI_BACKEND=1`
+  - `pnpm test:live` (or `OPENCLAW_LIVE_TEST=1` if invoking Vitest directly)
+  - `OPENCLAW_LIVE_CLI_BACKEND=1`
 - Defaults:
   - Model: `claude-cli/claude-sonnet-4-6`
   - Command: `claude`
   - Args: `["-p","--output-format","json","--permission-mode","bypassPermissions"]`
 - Overrides (optional):
-  - `REMOTECLAW_LIVE_CLI_BACKEND_MODEL="claude-cli/claude-opus-4-6"`
-  - `REMOTECLAW_LIVE_CLI_BACKEND_MODEL="codex-cli/gpt-5.4"`
-  - `REMOTECLAW_LIVE_CLI_BACKEND_COMMAND="/full/path/to/claude"`
-  - `REMOTECLAW_LIVE_CLI_BACKEND_ARGS='["-p","--output-format","json","--permission-mode","bypassPermissions"]'`
-  - `REMOTECLAW_LIVE_CLI_BACKEND_CLEAR_ENV='["ANTHROPIC_API_KEY","ANTHROPIC_API_KEY_OLD"]'`
-  - `REMOTECLAW_LIVE_CLI_BACKEND_IMAGE_PROBE=1` to send a real image attachment (paths are injected into the prompt).
-  - `REMOTECLAW_LIVE_CLI_BACKEND_IMAGE_ARG="--image"` to pass image file paths as CLI args instead of prompt injection.
-  - `REMOTECLAW_LIVE_CLI_BACKEND_IMAGE_MODE="repeat"` (or `"list"`) to control how image args are passed when `IMAGE_ARG` is set.
-  - `REMOTECLAW_LIVE_CLI_BACKEND_RESUME_PROBE=1` to send a second turn and validate resume flow.
-- `REMOTECLAW_LIVE_CLI_BACKEND_DISABLE_MCP_CONFIG=0` to keep Claude Code CLI MCP config enabled (default disables MCP config with a temporary empty file).
+  - `OPENCLAW_LIVE_CLI_BACKEND_MODEL="claude-cli/claude-opus-4-6"`
+  - `OPENCLAW_LIVE_CLI_BACKEND_MODEL="codex-cli/gpt-5.4"`
+  - `OPENCLAW_LIVE_CLI_BACKEND_COMMAND="/full/path/to/claude"`
+  - `OPENCLAW_LIVE_CLI_BACKEND_ARGS='["-p","--output-format","json","--permission-mode","bypassPermissions"]'`
+  - `OPENCLAW_LIVE_CLI_BACKEND_CLEAR_ENV='["ANTHROPIC_API_KEY","ANTHROPIC_API_KEY_OLD"]'`
+  - `OPENCLAW_LIVE_CLI_BACKEND_IMAGE_PROBE=1` to send a real image attachment (paths are injected into the prompt).
+  - `OPENCLAW_LIVE_CLI_BACKEND_IMAGE_ARG="--image"` to pass image file paths as CLI args instead of prompt injection.
+  - `OPENCLAW_LIVE_CLI_BACKEND_IMAGE_MODE="repeat"` (or `"list"`) to control how image args are passed when `IMAGE_ARG` is set.
+  - `OPENCLAW_LIVE_CLI_BACKEND_RESUME_PROBE=1` to send a second turn and validate resume flow.
+- `OPENCLAW_LIVE_CLI_BACKEND_DISABLE_MCP_CONFIG=0` to keep Claude Code CLI MCP config enabled (default disables MCP config with a temporary empty file).
 
 Example:
 
 ```bash
-REMOTECLAW_LIVE_CLI_BACKEND=1 \
-  REMOTECLAW_LIVE_CLI_BACKEND_MODEL="claude-cli/claude-sonnet-4-6" \
+OPENCLAW_LIVE_CLI_BACKEND=1 \
+  OPENCLAW_LIVE_CLI_BACKEND_MODEL="claude-cli/claude-sonnet-4-6" \
   pnpm test:live src/gateway/gateway-cli-backend.live.test.ts
 ```
 
@@ -250,17 +245,17 @@ REMOTECLAW_LIVE_CLI_BACKEND=1 \
 Narrow, explicit allowlists are fastest and least flaky:
 
 - Single model, direct (no gateway):
-  - `REMOTECLAW_LIVE_MODELS="openai/gpt-5.2" pnpm test:live src/agents/models.profiles.live.test.ts`
+  - `OPENCLAW_LIVE_MODELS="openai/gpt-5.2" pnpm test:live src/agents/models.profiles.live.test.ts`
 
 - Single model, gateway smoke:
-  - `REMOTECLAW_LIVE_GATEWAY_MODELS="openai/gpt-5.2" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
+  - `OPENCLAW_LIVE_GATEWAY_MODELS="openai/gpt-5.2" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
 
 - Tool calling across several providers:
-  - `REMOTECLAW_LIVE_GATEWAY_MODELS="openai/gpt-5.2,anthropic/claude-opus-4-6,google/gemini-3-flash-preview,zai/glm-4.7,minimax/minimax-m2.1" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
+  - `OPENCLAW_LIVE_GATEWAY_MODELS="openai/gpt-5.2,anthropic/claude-opus-4-6,google/gemini-3-flash-preview,zai/glm-4.7,minimax/minimax-m2.5" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
 
 - Google focus (Gemini API key + Antigravity):
-  - Gemini (API key): `REMOTECLAW_LIVE_GATEWAY_MODELS="google/gemini-3-flash-preview" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
-  - Antigravity (OAuth): `REMOTECLAW_LIVE_GATEWAY_MODELS="google-antigravity/claude-opus-4-6-thinking,google-antigravity/gemini-3-pro-high" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
+  - Gemini (API key): `OPENCLAW_LIVE_GATEWAY_MODELS="google/gemini-3-flash-preview" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
+  - Antigravity (OAuth): `OPENCLAW_LIVE_GATEWAY_MODELS="google-antigravity/claude-opus-4-6-thinking,google-antigravity/gemini-3-pro-high" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
 
 Notes:
 
@@ -268,8 +263,8 @@ Notes:
 - `google-antigravity/...` uses the Antigravity OAuth bridge (Cloud Code Assist-style agent endpoint).
 - `google-gemini-cli/...` uses the local Gemini CLI on your machine (separate auth + tooling quirks).
 - Gemini API vs Gemini CLI:
-  - API: RemoteClaw routes requests to Google’s Gemini API via the gateway’s model provider integration (API key / profile auth); this is what most users mean by “Gemini”.
-  - CLI: RemoteClaw delegates to a local `gemini` binary as a CLI agent runtime; it has its own auth and can behave differently (streaming/tool support/version skew).
+  - API: RemoteClaw calls Google’s hosted Gemini API over HTTP (API key / profile auth); this is what most users mean by “Gemini”.
+  - CLI: RemoteClaw shells out to a local `gemini` binary; it has its own auth and can behave differently (streaming/tool support/version skew).
 
 ## Live: model matrix (what we cover)
 
@@ -285,10 +280,10 @@ This is the “common models” run we expect to keep working:
 - Google (Gemini API): `google/gemini-3.1-pro-preview` and `google/gemini-3-flash-preview` (avoid older Gemini 2.x models)
 - Google (Antigravity): `google-antigravity/claude-opus-4-6-thinking` and `google-antigravity/gemini-3-flash`
 - Z.AI (GLM): `zai/glm-4.7`
-- MiniMax: `minimax/minimax-m2.1`
+- MiniMax: `minimax/minimax-m2.5`
 
 Run gateway smoke with tools + image:
-`REMOTECLAW_LIVE_GATEWAY_MODELS="openai/gpt-5.2,openai-codex/gpt-5.4,anthropic/claude-opus-4-6,google/gemini-3.1-pro-preview,google/gemini-3-flash-preview,google-antigravity/claude-opus-4-6-thinking,google-antigravity/gemini-3-flash,zai/glm-4.7,minimax/minimax-m2.1" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
+`OPENCLAW_LIVE_GATEWAY_MODELS="openai/gpt-5.2,openai-codex/gpt-5.4,anthropic/claude-opus-4-6,google/gemini-3.1-pro-preview,google/gemini-3-flash-preview,google-antigravity/claude-opus-4-6-thinking,google-antigravity/gemini-3-flash,zai/glm-4.7,minimax/minimax-m2.5" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
 
 ### Baseline: tool calling (Read + optional Exec)
 
@@ -298,7 +293,7 @@ Pick at least one per provider family:
 - Anthropic: `anthropic/claude-opus-4-6` (or `anthropic/claude-sonnet-4-5`)
 - Google: `google/gemini-3-flash-preview` (or `google/gemini-3.1-pro-preview`)
 - Z.AI (GLM): `zai/glm-4.7`
-- MiniMax: `minimax/minimax-m2.1`
+- MiniMax: `minimax/minimax-m2.5`
 
 Optional additional coverage (nice to have):
 
@@ -309,21 +304,21 @@ Optional additional coverage (nice to have):
 
 ### Vision: image send (attachment → multimodal message)
 
-Include at least one image-capable model in `REMOTECLAW_LIVE_GATEWAY_MODELS` (Claude/Gemini/OpenAI vision-capable variants, etc.) to exercise the image probe.
+Include at least one image-capable model in `OPENCLAW_LIVE_GATEWAY_MODELS` (Claude/Gemini/OpenAI vision-capable variants, etc.) to exercise the image probe.
 
 ### Aggregators / alternate gateways
 
 If you have keys enabled, we also support testing via:
 
-- OpenRouter: `openrouter/...` (hundreds of models; use `remoteclaw models list` to find tool+image capable candidates)
-- OpenCode Zen: `opencode/...` (auth via `OPENCODE_API_KEY` / `OPENCODE_ZEN_API_KEY`)
+- OpenRouter: `openrouter/...` (hundreds of models; use `remoteclaw models scan` to find tool+image capable candidates)
+- OpenCode: `opencode/...` for Zen and `opencode-go/...` for Go (auth via `OPENCODE_API_KEY` / `OPENCODE_ZEN_API_KEY`)
 
 More providers you can include in the live matrix (if you have creds/config):
 
-- Supported runtimes/providers: `openai`, `openai-codex`, `anthropic`, `google`, `google-vertex`, `google-antigravity`, `google-gemini-cli`, `zai`, `openrouter`, `opencode`, `xai`, `groq`, `cerebras`, `mistral`, `github-copilot`
-- Custom endpoints (OpenAI/Anthropic-compatible proxies): `minimax` (cloud/API), LM Studio, vLLM, LiteLLM, etc. — configured via custom provider entries
+- Built-in: `openai`, `openai-codex`, `anthropic`, `google`, `google-vertex`, `google-antigravity`, `google-gemini-cli`, `zai`, `openrouter`, `opencode`, `opencode-go`, `xai`, `groq`, `cerebras`, `mistral`, `github-copilot`
+- Via `models.providers` (custom endpoints): `minimax` (cloud/API), plus any OpenAI/Anthropic-compatible proxy (LM Studio, vLLM, LiteLLM, etc.)
 
-Tip: don’t try to hardcode “all models” in docs. The authoritative list is whatever `remoteclaw models list` returns on your machine + whatever keys are available. Consult each CLI agent’s own documentation for model-specific details.
+Tip: don’t try to hardcode “all models” in docs. The authoritative list is whatever `discoverModels(...)` returns on your machine + whatever keys are available.
 
 ## Credentials (never commit)
 
@@ -333,7 +328,7 @@ Live tests discover credentials the same way the CLI does. Practical implication
 - If a live test says “no creds”, debug the same way you’d debug `remoteclaw models list` / model selection.
 
 - Profile store: `~/.remoteclaw/credentials/` (preferred; what “profile keys” means in the tests)
-- Config: `~/.remoteclaw/remoteclaw.json` (or `REMOTECLAW_CONFIG_PATH`)
+- Config: `~/.remoteclaw/remoteclaw.json` (or `OPENCLAW_CONFIG_PATH`)
 
 If you want to rely on env keys (e.g. exported in your `~/.profile`), run local tests after `source ~/.profile`, or use the Docker runners below (they can mount `~/.profile` into the container).
 
@@ -369,11 +364,11 @@ Manual ACP plain-language thread smoke (not CI):
 
 Useful env vars:
 
-- `REMOTECLAW_CONFIG_DIR=...` (default: `~/.remoteclaw`) mounted to `/home/node/.remoteclaw`
-- `REMOTECLAW_WORKSPACE_DIR=...` (no built-in default — must be set) mounted to `/home/node/.remoteclaw/workspace`
-- `REMOTECLAW_PROFILE_FILE=...` (default: `~/.profile`) mounted to `/home/node/.profile` and sourced before running tests
-- `REMOTECLAW_LIVE_GATEWAY_MODELS=...` / `REMOTECLAW_LIVE_MODELS=...` to narrow the run
-- `REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS=1` to ensure creds come from the profile store (not env)
+- `OPENCLAW_CONFIG_DIR=...` (default: `~/.remoteclaw`) mounted to `/home/node/.remoteclaw`
+- `OPENCLAW_WORKSPACE_DIR=...` (default: `~/.remoteclaw/workspace`) mounted to `/home/node/.remoteclaw/workspace`
+- `OPENCLAW_PROFILE_FILE=...` (default: `~/.profile`) mounted to `/home/node/.profile` and sourced before running tests
+- `OPENCLAW_LIVE_GATEWAY_MODELS=...` / `OPENCLAW_LIVE_MODELS=...` to narrow the run
+- `OPENCLAW_LIVE_REQUIRE_PROFILE_KEYS=1` to ensure creds come from the profile store (not env)
 
 ## Docs sanity
 
@@ -393,7 +388,7 @@ We already have a few CI-safe tests that behave like “agent reliability evals�
 - Mock tool-calling through the real gateway + agent loop (`src/gateway/gateway.test.ts`).
 - End-to-end wizard flows that validate session wiring and config effects (`src/gateway/gateway.test.ts`).
 
-What’s still missing for skills:
+What’s still missing for skills (see [Skills](/tools/skills)):
 
 - **Decisioning:** when skills are listed in the prompt, does the agent pick the right skill (or avoid irrelevant ones)?
 - **Compliance:** does the agent read `SKILL.md` before use and follow required steps/args?
@@ -404,55 +399,6 @@ Future evals should stay deterministic first:
 - A scenario runner using mock providers to assert tool calls + order, skill file reads, and session wiring.
 - A small suite of skill-focused scenarios (use vs avoid, gating, prompt injection).
 - Optional live evals (opt-in, env-gated) only after the CI-safe suite is in place.
-
-## Contract tests (plugin and channel shape)
-
-Contract tests verify that every registered plugin and channel conforms to its
-interface contract. They iterate over all discovered plugins and run a suite of
-shape and behavior assertions.
-
-### Commands
-
-- All contracts: `pnpm test:contracts`
-- Channel contracts only: `pnpm test:contracts:channels`
-- Provider contracts only: `pnpm test:contracts:plugins`
-
-### Channel contracts
-
-Located in `src/channels/plugins/contracts/*.contract.test.ts`:
-
-- **plugin** - Basic plugin shape (id, name, capabilities)
-- **setup** - Setup wizard contract
-- **session-binding** - Session binding behavior
-- **outbound-payload** - Message payload structure
-- **inbound** - Inbound message handling
-- **actions** - Channel action handlers
-- **threading** - Thread ID handling
-- **directory** - Directory/roster API
-- **group-policy** - Group policy enforcement
-- **status** - Channel status probes
-- **registry** - Plugin registry shape
-
-### Provider contracts
-
-Located in `src/plugins/contracts/*.contract.test.ts`:
-
-- **auth** - Auth flow contract
-- **auth-choice** - Auth choice/selection
-- **catalog** - Model catalog API
-- **discovery** - Plugin discovery
-- **loader** - Plugin loading
-- **runtime** - Provider runtime
-- **shape** - Plugin shape/interface
-- **wizard** - Setup wizard
-
-### When to run
-
-- After changing plugin-sdk exports or subpaths
-- After adding or modifying a channel or provider plugin
-- After refactoring plugin registration or discovery
-
-Contract tests run in CI and do not require real API keys.
 
 ## Adding regressions (guidance)
 

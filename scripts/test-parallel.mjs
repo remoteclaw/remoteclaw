@@ -1,32 +1,97 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
-import path from "node:path";
-import { channelTestPrefixes } from "../vitest.channel-paths.mjs";
-import {
-  loadTestRunnerBehavior,
-  loadUnitTimingManifest,
-  packFilesByDuration,
-  selectTimedHeavyFiles,
-} from "./test-runner-manifest.mjs";
 
 // On Windows, `.cmd` launchers can fail with `spawn EINVAL` when invoked without a shell
 // (especially under GitHub Actions + Git Bash). Use `shell: true` and let the shell resolve pnpm.
 const pnpm = "pnpm";
-const behaviorManifest = loadTestRunnerBehavior();
-const existingFiles = (entries) =>
-  entries.map((entry) => entry.file).filter((file) => fs.existsSync(file));
-const unitBehaviorIsolatedFiles = existingFiles(behaviorManifest.unit.isolated);
-const unitSingletonIsolatedFiles = existingFiles(behaviorManifest.unit.singletonIsolated);
-const unitThreadSingletonFiles = existingFiles(behaviorManifest.unit.threadSingleton);
-const unitVmForkSingletonFiles = existingFiles(behaviorManifest.unit.vmForkSingleton);
-const unitBehaviorOverrideSet = new Set([
-  ...unitBehaviorIsolatedFiles,
-  ...unitSingletonIsolatedFiles,
-  ...unitThreadSingletonFiles,
-  ...unitVmForkSingletonFiles,
-]);
-const channelSingletonFiles = [];
+
+const unitIsolatedFilesRaw = [
+  "src/plugins/loader.test.ts",
+  "src/plugins/tools.optional.test.ts",
+  "src/agents/session-tool-result-guard.tool-result-persist-hook.test.ts",
+  "src/security/fix.test.ts",
+  // Runtime source guard scans are sensitive to filesystem contention.
+  "src/security/temp-path-guard.test.ts",
+  "src/security/audit.test.ts",
+  "src/utils.test.ts",
+  "src/auto-reply/tool-meta.test.ts",
+  "src/auto-reply/envelope.test.ts",
+  "src/commands/auth-choice.test.ts",
+  // Process supervision + docker setup suites are stable but setup-heavy.
+  "src/process/supervisor/supervisor.test.ts",
+  "src/docker-setup.test.ts",
+  // Filesystem-heavy skills sync suite.
+  "src/agents/skills.build-workspace-skills-prompt.syncs-merged-skills-into-target-workspace.test.ts",
+  // Real git hook integration test; keep signal, move off unit-fast critical path.
+  "test/git-hooks-pre-commit.test.ts",
+  // Setup-heavy doctor command suites; keep them off the unit-fast critical path.
+  "src/commands/doctor.warns-state-directory-is-missing.test.ts",
+  "src/commands/doctor.warns-per-agent-sandbox-docker-browser-prune.test.ts",
+  "src/commands/doctor.runs-legacy-state-migrations-yes-mode-without.test.ts",
+  // Setup-heavy CLI update flow suite; move off unit-fast critical path.
+  "src/cli/update-cli.test.ts",
+  // Uses temp repos + module cache resets; keep it off vmForks to avoid ref-resolution flakes.
+  "src/infra/git-commit.test.ts",
+  // Expensive schema build/bootstrap checks; keep coverage but run in isolated lane.
+  "src/config/schema.test.ts",
+  "src/config/schema.tags.test.ts",
+  // CLI smoke/agent flows are stable but setup-heavy.
+  "src/cli/program.smoke.test.ts",
+  "src/commands/agent.test.ts",
+  "src/media/store.test.ts",
+  "src/media/store.header-ext.test.ts",
+  "src/web/media.test.ts",
+  "src/web/auto-reply.web-auto-reply.falls-back-text-media-send-fails.test.ts",
+  "src/browser/server.covers-additional-endpoint-branches.test.ts",
+  "src/browser/server.post-tabs-open-profile-unknown-returns-404.test.ts",
+  "src/browser/server.agent-contract-snapshot-endpoints.test.ts",
+  "src/browser/server.agent-contract-form-layout-act-commands.test.ts",
+  "src/browser/server.skips-default-maxchars-explicitly-set-zero.test.ts",
+  "src/browser/server.auth-token-gates-http.test.ts",
+  // Keep this high-variance heavy file off the unit-fast critical path.
+  "src/auto-reply/reply.block-streaming.test.ts",
+  // Archive extraction/fixture-heavy suite; keep off unit-fast critical path.
+  "src/hooks/install.test.ts",
+  // Download/extraction safety cases can spike under unit-fast contention.
+  "src/agents/skills-install.download.test.ts",
+  // Skills discovery/snapshot suites are filesystem-heavy and high-variance in vmForks lanes.
+  "src/agents/skills.test.ts",
+  "src/agents/skills.buildworkspaceskillsnapshot.test.ts",
+  "src/browser/extension-relay.test.ts",
+  "extensions/acpx/src/runtime.test.ts",
+  // Shell-heavy script harness can contend under vmForks startup bursts.
+  "test/scripts/ios-team-id.test.ts",
+  // Heavy runner/exec/archive suites are stable but contend on shared resources under vmForks.
+  "src/agents/pi-embedded-runner.test.ts",
+  "src/agents/bash-tools.test.ts",
+  "src/agents/openclaw-tools.subagents.sessions-spawn.lifecycle.test.ts",
+  "src/agents/bash-tools.exec.background-abort.test.ts",
+  "src/agents/subagent-announce.format.test.ts",
+  "src/infra/archive.test.ts",
+  "src/cli/daemon-cli.coverage.test.ts",
+  // Model normalization test imports config/model discovery stack; keep off unit-fast critical path.
+  "src/agents/models-config.normalizes-gemini-3-ids-preview-google-providers.test.ts",
+  // Auth profile rotation suite is retry-heavy and high-variance under vmForks contention.
+  "src/agents/pi-embedded-runner.run-embedded-pi-agent.auth-profile-rotation.test.ts",
+  // Heavy trigger command scenarios; keep off unit-fast critical path to reduce contention noise.
+  "src/auto-reply/reply.triggers.trigger-handling.filters-usage-summary-current-model-provider.test.ts",
+  "src/auto-reply/reply.triggers.trigger-handling.targets-active-session-native-stop.test.ts",
+  "src/auto-reply/reply.triggers.group-intro-prompts.test.ts",
+  "src/auto-reply/reply.triggers.trigger-handling.handles-inline-commands-strips-it-before-agent.test.ts",
+  "src/web/auto-reply.web-auto-reply.compresses-common-formats-jpeg-cap.test.ts",
+  // Setup-heavy bot bootstrap suite.
+  "src/telegram/bot.create-telegram-bot.test.ts",
+  // Medium-heavy bot behavior suite; move off unit-fast critical path.
+  "src/telegram/bot.test.ts",
+  // Slack slash registration tests are setup-heavy and can bottleneck unit-fast.
+  "src/slack/monitor/slash.test.ts",
+  // Uses process-level unhandledRejection listeners; keep it off vmForks to avoid cross-file leakage.
+  "src/imessage/monitor.shutdown.unhandled-rejection.test.ts",
+  // Mutates process.cwd() and mocks core module loaders; isolate from the shared fast lane.
+  "src/infra/git-commit.test.ts",
+];
+const unitIsolatedFiles = unitIsolatedFilesRaw.filter((file) => fs.existsSync(file));
 
 const children = new Set();
 const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
@@ -64,220 +129,7 @@ const testProfile =
 // Even on low-memory hosts, keep the isolated lane split so files like
 // git-commit.test.ts still get the worker/process isolation they require.
 const shouldSplitUnitRuns = testProfile !== "serial";
-let runs = [];
-const shardOverride = Number.parseInt(process.env.REMOTECLAW_TEST_SHARDS ?? "", 10);
-const configuredShardCount =
-  Number.isFinite(shardOverride) && shardOverride > 1 ? shardOverride : null;
-const shardCount = configuredShardCount ?? (isWindowsCi ? 2 : 1);
-const shardIndexOverride = (() => {
-  const parsed = Number.parseInt(process.env.REMOTECLAW_TEST_SHARD_INDEX ?? "", 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-})();
-const OPTION_TAKES_VALUE = new Set([
-  "-t",
-  "-c",
-  "-r",
-  "--testNamePattern",
-  "--config",
-  "--root",
-  "--dir",
-  "--reporter",
-  "--outputFile",
-  "--pool",
-  "--execArgv",
-  "--vmMemoryLimit",
-  "--maxWorkers",
-  "--environment",
-  "--shard",
-  "--changed",
-  "--sequence",
-  "--inspect",
-  "--inspectBrk",
-  "--testTimeout",
-  "--hookTimeout",
-  "--bail",
-  "--retry",
-  "--diff",
-  "--exclude",
-  "--project",
-  "--slowTestThreshold",
-  "--teardownTimeout",
-  "--attachmentsDir",
-  "--mode",
-  "--api",
-  "--browser",
-  "--maxConcurrency",
-  "--mergeReports",
-  "--configLoader",
-  "--experimental",
-]);
-const SINGLE_RUN_ONLY_FLAGS = new Set(["--coverage", "--outputFile", "--mergeReports"]);
-
-if (shardIndexOverride !== null && shardCount <= 1) {
-  console.error(
-    `[test-parallel] REMOTECLAW_TEST_SHARD_INDEX=${String(
-      shardIndexOverride,
-    )} requires REMOTECLAW_TEST_SHARDS>1.`,
-  );
-  process.exit(2);
-}
-
-if (shardIndexOverride !== null && shardIndexOverride > shardCount) {
-  console.error(
-    `[test-parallel] REMOTECLAW_TEST_SHARD_INDEX=${String(
-      shardIndexOverride,
-    )} exceeds REMOTECLAW_TEST_SHARDS=${String(shardCount)}.`,
-  );
-  process.exit(2);
-}
-const windowsCiArgs = isWindowsCi ? ["--dangerouslyIgnoreUnhandledErrors"] : [];
-const silentArgs =
-  process.env.REMOTECLAW_TEST_SHOW_PASSED_LOGS === "1" ? [] : ["--silent=passed-only"];
-const rawPassthroughArgs = process.argv.slice(2);
-const passthroughArgs =
-  rawPassthroughArgs[0] === "--" ? rawPassthroughArgs.slice(1) : rawPassthroughArgs;
-const parsePassthroughArgs = (args) => {
-  const fileFilters = [];
-  const optionArgs = [];
-  let consumeNextAsOptionValue = false;
-
-  for (const arg of args) {
-    if (consumeNextAsOptionValue) {
-      optionArgs.push(arg);
-      consumeNextAsOptionValue = false;
-      continue;
-    }
-    if (arg === "--") {
-      optionArgs.push(arg);
-      continue;
-    }
-    if (arg.startsWith("-")) {
-      optionArgs.push(arg);
-      consumeNextAsOptionValue = !arg.includes("=") && OPTION_TAKES_VALUE.has(arg);
-      continue;
-    }
-    fileFilters.push(arg);
-  }
-
-  return { fileFilters, optionArgs };
-};
-const { fileFilters: passthroughFileFilters, optionArgs: passthroughOptionArgs } =
-  parsePassthroughArgs(passthroughArgs);
-const countExplicitEntryFilters = (entryArgs) => {
-  const { fileFilters } = parsePassthroughArgs(entryArgs.slice(2));
-  return fileFilters.length > 0 ? fileFilters.length : null;
-};
-const passthroughRequiresSingleRun = passthroughOptionArgs.some((arg) => {
-  if (!arg.startsWith("-")) {
-    return false;
-  }
-  const [flag] = arg.split("=", 1);
-  return SINGLE_RUN_ONLY_FLAGS.has(flag);
-});
-const baseConfigPrefixes = ["src/agents/", "src/auto-reply/", "src/commands/", "test/", "ui/"];
-const normalizeRepoPath = (value) => value.split(path.sep).join("/");
-const walkTestFiles = (rootDir) => {
-  if (!fs.existsSync(rootDir)) {
-    return [];
-  }
-  const entries = fs.readdirSync(rootDir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const fullPath = path.join(rootDir, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...walkTestFiles(fullPath));
-      continue;
-    }
-    if (!entry.isFile()) {
-      continue;
-    }
-    if (
-      fullPath.endsWith(".test.ts") ||
-      fullPath.endsWith(".live.test.ts") ||
-      fullPath.endsWith(".e2e.test.ts")
-    ) {
-      files.push(normalizeRepoPath(fullPath));
-    }
-  }
-  return files;
-};
-const allKnownTestFiles = [
-  ...new Set([
-    ...walkTestFiles("src"),
-    ...walkTestFiles("extensions"),
-    ...walkTestFiles("test"),
-    ...walkTestFiles(path.join("ui", "src", "ui")),
-  ]),
-];
-const inferTarget = (fileFilter) => {
-  const isolated = unitBehaviorIsolatedFiles.includes(fileFilter);
-  if (fileFilter.endsWith(".live.test.ts")) {
-    return { owner: "live", isolated };
-  }
-  if (fileFilter.endsWith(".e2e.test.ts")) {
-    return { owner: "e2e", isolated };
-  }
-  if (channelTestPrefixes.some((prefix) => fileFilter.startsWith(prefix))) {
-    return { owner: "channels", isolated };
-  }
-  if (fileFilter.startsWith("extensions/")) {
-    return { owner: "extensions", isolated };
-  }
-  if (fileFilter.startsWith("src/gateway/")) {
-    return { owner: "gateway", isolated };
-  }
-  if (baseConfigPrefixes.some((prefix) => fileFilter.startsWith(prefix))) {
-    return { owner: "base", isolated };
-  }
-  if (fileFilter.startsWith("src/")) {
-    return { owner: "unit", isolated };
-  }
-  return { owner: "base", isolated };
-};
-const unitTimingManifest = loadUnitTimingManifest();
-const parseEnvNumber = (name, fallback) => {
-  const parsed = Number.parseInt(process.env[name] ?? "", 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
-};
-const allKnownUnitFiles = allKnownTestFiles.filter((file) => inferTarget(file).owner === "unit");
-const defaultHeavyUnitFileLimit =
-  testProfile === "serial" ? 0 : testProfile === "low" ? 8 : highMemLocalHost ? 24 : 16;
-const defaultHeavyUnitLaneCount =
-  testProfile === "serial" ? 0 : testProfile === "low" ? 1 : highMemLocalHost ? 3 : 2;
-const heavyUnitFileLimit = parseEnvNumber(
-  "REMOTECLAW_TEST_HEAVY_UNIT_FILE_LIMIT",
-  defaultHeavyUnitFileLimit,
-);
-const heavyUnitLaneCount = parseEnvNumber(
-  "REMOTECLAW_TEST_HEAVY_UNIT_LANES",
-  defaultHeavyUnitLaneCount,
-);
-const heavyUnitMinDurationMs = parseEnvNumber("REMOTECLAW_TEST_HEAVY_UNIT_MIN_MS", 1200);
-const timedHeavyUnitFiles =
-  shouldSplitUnitRuns && heavyUnitFileLimit > 0
-    ? selectTimedHeavyFiles({
-        candidates: allKnownUnitFiles,
-        limit: heavyUnitFileLimit,
-        minDurationMs: heavyUnitMinDurationMs,
-        exclude: unitBehaviorOverrideSet,
-        timings: unitTimingManifest,
-      })
-    : [];
-const unitFastExcludedFiles = [
-  ...new Set([...unitBehaviorOverrideSet, ...timedHeavyUnitFiles, ...channelSingletonFiles]),
-];
-const estimateUnitDurationMs = (file) =>
-  unitTimingManifest.files[file]?.durationMs ?? unitTimingManifest.defaultDurationMs;
-const heavyUnitBuckets = packFilesByDuration(
-  timedHeavyUnitFiles,
-  heavyUnitLaneCount,
-  estimateUnitDurationMs,
-);
-const unitHeavyEntries = heavyUnitBuckets.map((files, index) => ({
-  name: `unit-heavy-${String(index + 1)}`,
-  args: ["vitest", "run", "--config", "vitest.unit.config.ts", "--pool=forks", ...files],
-}));
-const baseRuns = [
+const runs = [
   ...(shouldSplitUnitRuns
     ? [
         {
@@ -289,56 +141,20 @@ const baseRuns = [
             "vitest.unit.config.ts",
             `--pool=${useVmForks ? "vmForks" : "forks"}`,
             ...(disableIsolation ? ["--isolate=false"] : []),
-            ...unitFastExcludedFiles.flatMap((file) => ["--exclude", file]),
+            ...unitIsolatedFiles.flatMap((file) => ["--exclude", file]),
           ],
         },
-        ...(unitBehaviorIsolatedFiles.length > 0
-          ? [
-              {
-                name: "unit-isolated",
-                args: [
-                  "vitest",
-                  "run",
-                  "--config",
-                  "vitest.unit.config.ts",
-                  "--pool=forks",
-                  ...unitBehaviorIsolatedFiles,
-                ],
-              },
-            ]
-          : []),
-        ...unitHeavyEntries,
-        ...unitSingletonIsolatedFiles.map((file) => ({
-          name: `${path.basename(file, ".test.ts")}-isolated`,
+        {
+          name: "unit-isolated",
           args: [
             "vitest",
             "run",
             "--config",
             "vitest.unit.config.ts",
-            `--pool=${useVmForks ? "vmForks" : "forks"}`,
-            file,
+            "--pool=forks",
+            ...unitIsolatedFiles,
           ],
-        })),
-        ...unitThreadSingletonFiles.map((file) => ({
-          name: `${path.basename(file, ".test.ts")}-threads`,
-          args: ["vitest", "run", "--config", "vitest.unit.config.ts", "--pool=threads", file],
-        })),
-        ...unitVmForkSingletonFiles.map((file) => ({
-          name: `${path.basename(file, ".test.ts")}-vmforks`,
-          args: [
-            "vitest",
-            "run",
-            "--config",
-            "vitest.unit.config.ts",
-            `--pool=${useVmForks ? "vmForks" : "forks"}`,
-            ...(disableIsolation ? ["--isolate=false"] : []),
-            file,
-          ],
-        })),
-        ...channelSingletonFiles.map((file) => ({
-          name: `${path.basename(file, ".test.ts")}-channels-isolated`,
-          args: ["vitest", "run", "--config", "vitest.channels.config.ts", "--pool=forks", file],
-        })),
+        },
       ]
     : [
         {
@@ -371,173 +187,52 @@ const baseRuns = [
     ? [
         {
           name: "gateway",
-          args: ["vitest", "run", "--config", "vitest.gateway.config.ts", "--pool=forks"],
+          args: [
+            "vitest",
+            "run",
+            "--config",
+            "vitest.gateway.config.ts",
+            // Gateway tests are sensitive to vmForks behavior (global state + env stubs).
+            // Keep them on process forks for determinism even when other suites use vmForks.
+            "--pool=forks",
+          ],
         },
       ]
     : []),
 ];
-runs = baseRuns;
-const formatEntrySummary = (entry) => {
-  const explicitFilters = countExplicitEntryFilters(entry.args) ?? 0;
-  return `${entry.name} filters=${String(explicitFilters || "all")} maxWorkers=${String(
-    maxWorkersForRun(entry.name) ?? "default",
-  )}`;
-};
-const resolveFilterMatches = (fileFilter) => {
-  const normalizedFilter = normalizeRepoPath(fileFilter);
-  if (fs.existsSync(fileFilter)) {
-    const stats = fs.statSync(fileFilter);
-    if (stats.isFile()) {
-      return [normalizedFilter];
-    }
-    if (stats.isDirectory()) {
-      const prefix = normalizedFilter.endsWith("/") ? normalizedFilter : `${normalizedFilter}/`;
-      return allKnownTestFiles.filter((file) => file.startsWith(prefix));
-    }
-  }
-  if (/[*?[\]{}]/.test(normalizedFilter)) {
-    return allKnownTestFiles.filter((file) => path.matchesGlob(file, normalizedFilter));
-  }
-  return allKnownTestFiles.filter((file) => file.includes(normalizedFilter));
-};
-const isVmForkSingletonUnitFile = (fileFilter) => unitVmForkSingletonFiles.includes(fileFilter);
-const isThreadSingletonUnitFile = (fileFilter) => unitThreadSingletonFiles.includes(fileFilter);
-const createTargetedEntry = (owner, isolated, filters) => {
-  const name = isolated ? `${owner}-isolated` : owner;
-  const forceForks = isolated;
-  if (owner === "unit-vmforks") {
-    return {
-      name,
-      args: [
-        "vitest",
-        "run",
-        "--config",
-        "vitest.unit.config.ts",
-        `--pool=${useVmForks ? "vmForks" : "forks"}`,
-        ...(disableIsolation ? ["--isolate=false"] : []),
-        ...filters,
-      ],
-    };
-  }
-  if (owner === "unit") {
-    return {
-      name,
-      args: [
-        "vitest",
-        "run",
-        "--config",
-        "vitest.unit.config.ts",
-        `--pool=${forceForks ? "forks" : useVmForks ? "vmForks" : "forks"}`,
-        ...(disableIsolation ? ["--isolate=false"] : []),
-        ...filters,
-      ],
-    };
-  }
-  if (owner === "unit-threads") {
-    return {
-      name,
-      args: ["vitest", "run", "--config", "vitest.unit.config.ts", "--pool=threads", ...filters],
-    };
-  }
-  if (owner === "extensions") {
-    return {
-      name,
-      args: [
-        "vitest",
-        "run",
-        "--config",
-        "vitest.extensions.config.ts",
-        ...(forceForks ? ["--pool=forks"] : useVmForks ? ["--pool=vmForks"] : []),
-        ...filters,
-      ],
-    };
-  }
-  if (owner === "gateway") {
-    return {
-      name,
-      args: ["vitest", "run", "--config", "vitest.gateway.config.ts", "--pool=forks", ...filters],
-    };
-  }
-  if (owner === "channels") {
-    return {
-      name,
-      args: [
-        "vitest",
-        "run",
-        "--config",
-        "vitest.channels.config.ts",
-        ...(forceForks ? ["--pool=forks"] : useVmForks ? ["--pool=vmForks"] : []),
-        ...filters,
-      ],
-    };
-  }
-  if (owner === "live") {
-    return {
-      name,
-      args: ["vitest", "run", "--config", "vitest.live.config.ts", ...filters],
-    };
-  }
-  if (owner === "e2e") {
-    return {
-      name,
-      args: ["vitest", "run", "--config", "vitest.e2e.config.ts", ...filters],
-    };
-  }
-  return {
-    name,
-    args: [
-      "vitest",
-      "run",
-      "--config",
-      "vitest.config.ts",
-      ...(forceForks ? ["--pool=forks"] : []),
-      ...filters,
-    ],
-  };
-};
-const targetedEntries = (() => {
-  if (passthroughFileFilters.length === 0) {
-    return [];
-  }
-  const groups = passthroughFileFilters.reduce((acc, fileFilter) => {
-    const matchedFiles = resolveFilterMatches(fileFilter);
-    if (matchedFiles.length === 0) {
-      const normalizedFile = normalizeRepoPath(fileFilter);
-      const target = inferTarget(normalizedFile);
-      const owner = isThreadSingletonUnitFile(normalizedFile)
-        ? "unit-threads"
-        : isVmForkSingletonUnitFile(normalizedFile)
-          ? "unit-vmforks"
-          : target.owner;
-      const key = `${owner}:${target.isolated ? "isolated" : "default"}`;
-      const files = acc.get(key) ?? [];
-      files.push(normalizedFile);
-      acc.set(key, files);
-      return acc;
-    }
-    for (const matchedFile of matchedFiles) {
-      const target = inferTarget(matchedFile);
-      const owner = isThreadSingletonUnitFile(matchedFile)
-        ? "unit-threads"
-        : isVmForkSingletonUnitFile(matchedFile)
-          ? "unit-vmforks"
-          : target.owner;
-      const key = `${owner}:${target.isolated ? "isolated" : "default"}`;
-      const files = acc.get(key) ?? [];
-      files.push(matchedFile);
-      acc.set(key, files);
-    }
-    return acc;
-  }, new Map());
-  return Array.from(groups, ([key, filters]) => {
-    const [owner, mode] = key.split(":");
-    return createTargetedEntry(owner, mode === "isolated", [...new Set(filters)]);
-  });
+const shardOverride = Number.parseInt(process.env.REMOTECLAW_TEST_SHARDS ?? "", 10);
+const configuredShardCount =
+  Number.isFinite(shardOverride) && shardOverride > 1 ? shardOverride : null;
+const shardCount = configuredShardCount ?? (isWindowsCi ? 2 : 1);
+const shardIndexOverride = (() => {
+  const parsed = Number.parseInt(process.env.REMOTECLAW_TEST_SHARD_INDEX ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 })();
-// Node 25 local runs still show cross-process worker shutdown contention even
-// after moving the known heavy files into singleton lanes.
-const topLevelParallelEnabled =
-  testProfile !== "low" && testProfile !== "serial" && !(!isCI && nodeMajor >= 25);
+
+if (shardIndexOverride !== null && shardCount <= 1) {
+  console.error(
+    `[test-parallel] REMOTECLAW_TEST_SHARD_INDEX=${String(
+      shardIndexOverride,
+    )} requires REMOTECLAW_TEST_SHARDS>1.`,
+  );
+  process.exit(2);
+}
+
+if (shardIndexOverride !== null && shardIndexOverride > shardCount) {
+  console.error(
+    `[test-parallel] REMOTECLAW_TEST_SHARD_INDEX=${String(
+      shardIndexOverride,
+    )} exceeds REMOTECLAW_TEST_SHARDS=${String(shardCount)}.`,
+  );
+  process.exit(2);
+}
+const windowsCiArgs = isWindowsCi ? ["--dangerouslyIgnoreUnhandledErrors"] : [];
+const silentArgs =
+  process.env.REMOTECLAW_TEST_SHOW_PASSED_LOGS === "1" ? [] : ["--silent=passed-only"];
+const rawPassthroughArgs = process.argv.slice(2);
+const passthroughArgs =
+  rawPassthroughArgs[0] === "--" ? rawPassthroughArgs.slice(1) : rawPassthroughArgs;
+const topLevelParallelEnabled = testProfile !== "low" && testProfile !== "serial";
 const overrideWorkers = Number.parseInt(process.env.REMOTECLAW_TEST_WORKERS ?? "", 10);
 const resolvedOverride =
   Number.isFinite(overrideWorkers) && overrideWorkers > 0 ? overrideWorkers : null;
@@ -619,13 +314,7 @@ const maxWorkersForRun = (name) => {
   if (isCI && isMacOS) {
     return 1;
   }
-  if (name.endsWith("-threads") || name.endsWith("-vmforks")) {
-    return 1;
-  }
-  if (name.endsWith("-isolated") && name !== "unit-isolated") {
-    return 1;
-  }
-  if (name === "unit-isolated" || name.startsWith("unit-heavy-")) {
+  if (name === "unit-isolated") {
     return defaultWorkerBudget.unitIsolated;
   }
   if (name === "extensions") {
@@ -657,12 +346,9 @@ const maxOldSpaceSizeMb = (() => {
   }
   return null;
 })();
-const formatElapsedMs = (elapsedMs) =>
-  elapsedMs >= 1000 ? `${(elapsedMs / 1000).toFixed(1)}s` : `${Math.round(elapsedMs)}ms`;
 
 const runOnce = (entry, extraArgs = []) =>
   new Promise((resolve) => {
-    const startedAt = Date.now();
     const maxWorkers = maxWorkersForRun(entry.name);
     // vmForks with a single worker has shown cross-file leakage in extension suites.
     // Fall back to process forks when we intentionally clamp that lane to one worker.
@@ -680,11 +366,6 @@ const runOnce = (entry, extraArgs = []) =>
           ...extraArgs,
         ]
       : [...entryArgs, ...silentArgs, ...windowsCiArgs, ...extraArgs];
-    console.log(
-      `[test-parallel] start ${entry.name} workers=${maxWorkers ?? "default"} filters=${String(
-        countExplicitEntryFilters(entryArgs) ?? "all",
-      )}`,
-    );
     const nodeOptions = process.env.NODE_OPTIONS ?? "";
     const nextNodeOptions = WARNING_SUPPRESSION_FLAGS.reduce(
       (acc, flag) => (acc.includes(flag) ? acc : `${acc} ${flag}`.trim()),
@@ -715,45 +396,20 @@ const runOnce = (entry, extraArgs = []) =>
     });
     child.on("exit", (code, signal) => {
       children.delete(child);
-      console.log(
-        `[test-parallel] done ${entry.name} code=${String(code ?? (signal ? 1 : 0))} elapsed=${formatElapsedMs(
-          Date.now() - startedAt,
-        )}`,
-      );
       resolve(code ?? (signal ? 1 : 0));
     });
   });
 
-const run = async (entry, extraArgs = []) => {
-  const explicitFilterCount = countExplicitEntryFilters(entry.args);
-  // Wrapper-generated singleton/small-file lanes should not ask Vitest to shard
-  // into more buckets than there are explicit test filters.
-  const effectiveShardCount =
-    explicitFilterCount === null ? shardCount : Math.min(shardCount, explicitFilterCount);
-
-  if (effectiveShardCount <= 1) {
-    if (shardIndexOverride !== null && shardIndexOverride > effectiveShardCount) {
-      return 0;
-    }
-    return runOnce(entry, extraArgs);
+const run = async (entry) => {
+  if (shardCount <= 1) {
+    return runOnce(entry);
   }
   if (shardIndexOverride !== null) {
-    if (shardIndexOverride > effectiveShardCount) {
-      return 0;
-    }
-    return runOnce(entry, [
-      "--shard",
-      `${shardIndexOverride}/${effectiveShardCount}`,
-      ...extraArgs,
-    ]);
+    return runOnce(entry, ["--shard", `${shardIndexOverride}/${shardCount}`]);
   }
-  for (let shardIndex = 1; shardIndex <= effectiveShardCount; shardIndex += 1) {
+  for (let shardIndex = 1; shardIndex <= shardCount; shardIndex += 1) {
     // eslint-disable-next-line no-await-in-loop
-    const code = await runOnce(entry, [
-      "--shard",
-      `${shardIndex}/${effectiveShardCount}`,
-      ...extraArgs,
-    ]);
+    const code = await runOnce(entry, ["--shard", `${shardIndex}/${shardCount}`]);
     if (code !== 0) {
       return code;
     }
@@ -761,15 +417,15 @@ const run = async (entry, extraArgs = []) => {
   return 0;
 };
 
-const runEntries = async (entries, extraArgs = []) => {
+const runEntries = async (entries) => {
   if (topLevelParallelEnabled) {
-    const codes = await Promise.all(entries.map((entry) => run(entry, extraArgs)));
+    const codes = await Promise.all(entries.map(run));
     return codes.find((code) => code !== 0);
   }
 
   for (const entry of entries) {
     // eslint-disable-next-line no-await-in-loop
-    const code = await run(entry, extraArgs);
+    const code = await run(entry);
     if (code !== 0) {
       return code;
     }
@@ -787,56 +443,57 @@ const shutdown = (signal) => {
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
-if (process.env.REMOTECLAW_TEST_LIST_LANES === "1") {
-  const entriesToPrint = targetedEntries.length > 0 ? targetedEntries : runs;
-  for (const entry of entriesToPrint) {
-    console.log(formatEntrySummary(entry));
-  }
-  process.exit(0);
-}
-
-if (targetedEntries.length > 0) {
-  if (passthroughRequiresSingleRun && targetedEntries.length > 1) {
-    console.error(
-      "[test-parallel] The provided Vitest args require a single run, but the selected test filters span multiple wrapper configs. Run one target/config at a time.",
-    );
-    process.exit(2);
-  }
-  const targetedParallelRuns = keepGatewaySerial
-    ? targetedEntries.filter((entry) => entry.name !== "gateway")
-    : targetedEntries;
-  const targetedSerialRuns = keepGatewaySerial
-    ? targetedEntries.filter((entry) => entry.name === "gateway")
-    : [];
-  const failedTargetedParallel = await runEntries(targetedParallelRuns, passthroughOptionArgs);
-  if (failedTargetedParallel !== undefined) {
-    process.exit(failedTargetedParallel);
-  }
-  for (const entry of targetedSerialRuns) {
-    // eslint-disable-next-line no-await-in-loop
-    const code = await run(entry, passthroughOptionArgs);
-    if (code !== 0) {
-      process.exit(code);
-    }
-  }
-  process.exit(0);
-}
-
-if (passthroughRequiresSingleRun && passthroughOptionArgs.length > 0) {
-  console.error(
-    "[test-parallel] The provided Vitest args require a single run. Use the dedicated npm script for that workflow (for example `pnpm test:coverage`) or target a single test file/filter.",
+if (passthroughArgs.length > 0) {
+  const maxWorkers = maxWorkersForRun("unit");
+  const args = maxWorkers
+    ? [
+        "vitest",
+        "run",
+        "--maxWorkers",
+        String(maxWorkers),
+        ...silentArgs,
+        ...windowsCiArgs,
+        ...passthroughArgs,
+      ]
+    : ["vitest", "run", ...silentArgs, ...windowsCiArgs, ...passthroughArgs];
+  const nodeOptions = process.env.NODE_OPTIONS ?? "";
+  const nextNodeOptions = WARNING_SUPPRESSION_FLAGS.reduce(
+    (acc, flag) => (acc.includes(flag) ? acc : `${acc} ${flag}`.trim()),
+    nodeOptions,
   );
-  process.exit(2);
+  const code = await new Promise((resolve) => {
+    let child;
+    try {
+      child = spawn(pnpm, args, {
+        stdio: "inherit",
+        env: { ...process.env, NODE_OPTIONS: nextNodeOptions },
+        shell: isWindows,
+      });
+    } catch (err) {
+      console.error(`[test-parallel] spawn failed: ${String(err)}`);
+      resolve(1);
+      return;
+    }
+    children.add(child);
+    child.on("error", (err) => {
+      console.error(`[test-parallel] child error: ${String(err)}`);
+    });
+    child.on("exit", (exitCode, signal) => {
+      children.delete(child);
+      resolve(exitCode ?? (signal ? 1 : 0));
+    });
+  });
+  process.exit(Number(code) || 0);
 }
 
-const failedParallel = await runEntries(parallelRuns, passthroughOptionArgs);
+const failedParallel = await runEntries(parallelRuns);
 if (failedParallel !== undefined) {
   process.exit(failedParallel);
 }
 
 for (const entry of serialRuns) {
   // eslint-disable-next-line no-await-in-loop
-  const code = await run(entry, passthroughOptionArgs);
+  const code = await run(entry);
   if (code !== 0) {
     process.exit(code);
   }

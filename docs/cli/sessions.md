@@ -1,20 +1,20 @@
 ---
-description: "CLI reference for `remoteclaw sessions` (list stored sessions + usage)"
+summary: "CLI reference for `openclaw sessions` (list stored sessions + usage)"
 read_when:
   - You want to list stored sessions and see recent activity
 title: "sessions"
 ---
 
-# `remoteclaw sessions`
+# `openclaw sessions`
 
 List stored conversation sessions.
 
 ```bash
-remoteclaw sessions
-remoteclaw sessions --agent work
-remoteclaw sessions --all-agents
-remoteclaw sessions --active 120
-remoteclaw sessions --json
+openclaw sessions
+openclaw sessions --agent work
+openclaw sessions --all-agents
+openclaw sessions --active 120
+openclaw sessions --json
 ```
 
 Scope selection:
@@ -32,21 +32,21 @@ agent root; symlinks and out-of-root paths are skipped.
 
 JSON examples:
 
-`remoteclaw sessions --all-agents --json`:
+`openclaw sessions --all-agents --json`:
 
 ```json
 {
   "path": null,
   "stores": [
-    { "agentId": "main", "path": "/home/user/.remoteclaw/agents/main/sessions/sessions.json" },
-    { "agentId": "work", "path": "/home/user/.remoteclaw/agents/work/sessions/sessions.json" }
+    { "agentId": "main", "path": "/home/user/.openclaw/agents/main/sessions/sessions.json" },
+    { "agentId": "work", "path": "/home/user/.openclaw/agents/work/sessions/sessions.json" }
   ],
   "allAgents": true,
   "count": 2,
   "activeMinutes": null,
   "sessions": [
-    { "agentId": "main", "key": "agent:main:main", "runtime": "claude" },
-    { "agentId": "work", "key": "agent:work:main", "runtime": "claude" }
+    { "agentId": "main", "key": "agent:main:main", "model": "gpt-5" },
+    { "agentId": "work", "key": "agent:work:main", "model": "claude-opus-4-5" }
   ]
 }
 ```
@@ -56,17 +56,17 @@ JSON examples:
 Run maintenance now (instead of waiting for the next write cycle):
 
 ```bash
-remoteclaw sessions cleanup --dry-run
-remoteclaw sessions cleanup --agent work --dry-run
-remoteclaw sessions cleanup --all-agents --dry-run
-remoteclaw sessions cleanup --enforce
-remoteclaw sessions cleanup --enforce --active-key "agent:main:telegram:dm:123"
-remoteclaw sessions cleanup --json
+openclaw sessions cleanup --dry-run
+openclaw sessions cleanup --agent work --dry-run
+openclaw sessions cleanup --all-agents --dry-run
+openclaw sessions cleanup --enforce
+openclaw sessions cleanup --enforce --active-key "agent:main:telegram:direct:123"
+openclaw sessions cleanup --json
 ```
 
-`remoteclaw sessions cleanup` uses `session.maintenance` settings from config:
+`openclaw sessions cleanup` uses `session.maintenance` settings from config:
 
-- Scope note: `remoteclaw sessions cleanup` maintains session stores/transcripts only. It does not prune cron run logs (`cron/runs/<jobId>.jsonl`), which are managed by `cron.runLog.maxBytes` and `cron.runLog.keepLines` in [Cron configuration](/automation/cron-jobs#configuration) and explained in [Cron maintenance](/automation/cron-jobs#maintenance).
+- Scope note: `openclaw sessions cleanup` maintains session stores/transcripts only. It does not prune cron run logs (`cron/runs/<jobId>.jsonl`), which are managed by `cron.runLog.maxBytes` and `cron.runLog.keepLines` in [Cron configuration](/automation/cron-jobs#configuration) and explained in [Cron maintenance](/automation/cron-jobs#maintenance).
 
 - `--dry-run`: preview how many entries would be pruned/capped without writing.
   - In text mode, dry-run prints a per-session action table (`Action`, `Key`, `Age`, `Model`, `Flags`) so you can see what would be kept vs removed.
@@ -77,7 +77,7 @@ remoteclaw sessions cleanup --json
 - `--store <path>`: run against a specific `sessions.json` file.
 - `--json`: print a JSON summary. With `--all-agents`, output includes one summary per store.
 
-`remoteclaw sessions cleanup --all-agents --dry-run --json`:
+`openclaw sessions cleanup --all-agents --dry-run --json`:
 
 ```json
 {
@@ -87,7 +87,7 @@ remoteclaw sessions cleanup --json
   "stores": [
     {
       "agentId": "main",
-      "storePath": "/home/user/.remoteclaw/agents/main/sessions/sessions.json",
+      "storePath": "/home/user/.openclaw/agents/main/sessions/sessions.json",
       "beforeCount": 120,
       "afterCount": 80,
       "pruned": 40,
@@ -95,7 +95,7 @@ remoteclaw sessions cleanup --json
     },
     {
       "agentId": "work",
-      "storePath": "/home/user/.remoteclaw/agents/work/sessions/sessions.json",
+      "storePath": "/home/user/.openclaw/agents/work/sessions/sessions.json",
       "beforeCount": 18,
       "afterCount": 18,
       "pruned": 0,

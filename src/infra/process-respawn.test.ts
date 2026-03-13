@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { captureFullEnv } from "../test-utils/env.js";
+import { SUPERVISOR_HINT_ENV_VARS } from "./supervisor-markers.js";
 
 const spawnMock = vi.hoisted(() => vi.fn());
 
@@ -21,14 +22,9 @@ afterEach(() => {
 });
 
 function clearSupervisorHints() {
-  delete process.env.LAUNCH_JOB_LABEL;
-  delete process.env.LAUNCH_JOB_NAME;
-  delete process.env.REMOTECLAW_LAUNCHD_LABEL;
-  delete process.env.INVOCATION_ID;
-  delete process.env.SYSTEMD_EXEC_PID;
-  delete process.env.JOURNAL_STREAM;
-  delete process.env.REMOTECLAW_SYSTEMD_UNIT;
-  delete process.env.REMOTECLAW_SERVICE_MARKER;
+  for (const key of SUPERVISOR_HINT_ENV_VARS) {
+    delete process.env[key];
+  }
 }
 
 describe("restartGatewayProcessWithFreshPid", () => {

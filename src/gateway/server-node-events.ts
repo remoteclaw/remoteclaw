@@ -239,6 +239,7 @@ async function sendReceiptAck(params: {
     agentId,
     bestEffort: true,
     deps: createOutboundSendDeps(params.deps),
+    sessionKey: params.sessionKey,
   });
 }
 

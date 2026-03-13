@@ -7,6 +7,7 @@ const TMP_DIR_ACCESS_MODE = fs.constants.W_OK | fs.constants.X_OK;
 
 type ResolvePreferredRemoteClawTmpDirOptions = {
   accessSync?: (path: string, mode?: number) => void;
+  chmodSync?: (path: string, mode: number) => void;
   lstatSync?: (path: string) => {
     isDirectory(): boolean;
     isSymbolicLink(): boolean;
@@ -16,6 +17,7 @@ type ResolvePreferredRemoteClawTmpDirOptions = {
   mkdirSync?: (path: string, opts: { recursive: boolean; mode?: number }) => void;
   getuid?: () => number | undefined;
   tmpdir?: () => string;
+  warn?: (message: string) => void;
 };
 
 type MaybeNodeError = { code?: string };
@@ -33,8 +35,10 @@ export function resolvePreferredRemoteClawTmpDir(
   options: ResolvePreferredRemoteClawTmpDirOptions = {},
 ): string {
   const accessSync = options.accessSync ?? fs.accessSync;
+  const chmodSync = options.chmodSync ?? fs.chmodSync;
   const lstatSync = options.lstatSync ?? fs.lstatSync;
   const mkdirSync = options.mkdirSync ?? fs.mkdirSync;
+  const warn = options.warn ?? ((message: string) => console.warn(message));
   const getuid =
     options.getuid ??
     (() => {
@@ -97,6 +101,26 @@ export function resolvePreferredRemoteClawTmpDir(
     }
   };
 
+  const tryRepairWritableBits = (candidatePath: string): boolean => {
+    try {
+      const st = lstatSync(candidatePath);
+      if (!st.isDirectory() || st.isSymbolicLink()) {
+        return false;
+      }
+      if (uid !== undefined && typeof st.uid === "number" && st.uid !== uid) {
+        return false;
+      }
+      if (typeof st.mode !== "number" || (st.mode & 0o022) === 0) {
+        return false;
+      }
+      chmodSync(candidatePath, 0o700);
+      warn(`[remoteclaw] tightened permissions on temp dir: ${candidatePath}`);
+      return resolveDirState(candidatePath, false) === "available";
+    } catch {
+      return false;
+    }
+  };
+
   const ensureTrustedFallbackDir = (): string => {
     const fallbackPath = fallback();
     const state = resolveDirState(fallbackPath, true);
@@ -104,14 +128,21 @@ export function resolvePreferredRemoteClawTmpDir(
       return fallbackPath;
     }
     if (state === "invalid") {
+      if (tryRepairWritableBits(fallbackPath)) {
+        return fallbackPath;
+      }
       throw new Error(`Unsafe fallback RemoteClaw temp dir: ${fallbackPath}`);
     }
     try {
       mkdirSync(fallbackPath, { recursive: true, mode: 0o700 });
+      chmodSync(fallbackPath, 0o700);
     } catch {
       throw new Error(`Unable to create fallback RemoteClaw temp dir: ${fallbackPath}`);
     }
-    if (resolveDirState(fallbackPath, true) !== "available") {
+    if (
+      resolveDirState(fallbackPath, true) !== "available" &&
+      !tryRepairWritableBits(fallbackPath)
+    ) {
       throw new Error(`Unsafe fallback RemoteClaw temp dir: ${fallbackPath}`);
     }
     return fallbackPath;
@@ -122,6 +153,9 @@ export function resolvePreferredRemoteClawTmpDir(
     return POSIX_REMOTECLAW_TMP_DIR;
   }
   if (existingPreferredState === "invalid") {
+    if (tryRepairWritableBits(POSIX_REMOTECLAW_TMP_DIR)) {
+      return POSIX_REMOTECLAW_TMP_DIR;
+    }
     return ensureTrustedFallbackDir();
   }
 
@@ -129,7 +163,11 @@ export function resolvePreferredRemoteClawTmpDir(
     accessSync("/tmp", TMP_DIR_ACCESS_MODE);
     // Create with a safe default; subsequent callers expect it exists.
     mkdirSync(POSIX_REMOTECLAW_TMP_DIR, { recursive: true, mode: 0o700 });
-    if (resolveDirState(POSIX_REMOTECLAW_TMP_DIR, true) !== "available") {
+    chmodSync(POSIX_REMOTECLAW_TMP_DIR, 0o700);
+    if (
+      resolveDirState(POSIX_REMOTECLAW_TMP_DIR, true) !== "available" &&
+      !tryRepairWritableBits(POSIX_REMOTECLAW_TMP_DIR)
+    ) {
       return ensureTrustedFallbackDir();
     }
     return POSIX_REMOTECLAW_TMP_DIR;

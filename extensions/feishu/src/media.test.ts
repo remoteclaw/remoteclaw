@@ -64,18 +64,21 @@ function expectMediaTimeoutClientConfigured(): void {
   );
 }
 
+function mockResolvedFeishuAccount() {
+  resolveFeishuAccountMock.mockReturnValue({
+    configured: true,
+    accountId: "main",
+    config: {},
+    appId: "app_id",
+    appSecret: "app_secret",
+    domain: "feishu",
+  });
+}
+
 describe("sendMediaFeishu msg_type routing", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-
-    resolveFeishuAccountMock.mockReturnValue({
-      configured: true,
-      accountId: "main",
-      config: {},
-      appId: "app_id",
-      appSecret: "app_secret",
-      domain: "feishu",
-    });
+    mockResolvedFeishuAccount();
 
     normalizeFeishuTargetMock.mockReturnValue("ou_target");
     resolveReceiveIdTypeMock.mockReturnValue("open_id");
@@ -465,15 +468,7 @@ describe("sanitizeFileNameForUpload", () => {
 describe("downloadMessageResourceFeishu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-
-    resolveFeishuAccountMock.mockReturnValue({
-      configured: true,
-      accountId: "main",
-      config: {},
-      appId: "app_id",
-      appSecret: "app_secret",
-      domain: "feishu",
-    });
+    mockResolvedFeishuAccount();
 
     createFeishuClientMock.mockReturnValue({
       im: {

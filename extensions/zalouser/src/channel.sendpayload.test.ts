@@ -1,25 +1,24 @@
 import type { ReplyPayload } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+<<<<<<< HEAD
+||||||| parent of d7aa3cc1c3 (test: share zalouser test helpers)
+import {
+  installSendPayloadContractSuite,
+  primeSendMock,
+} from "../../../src/test-utils/send-payload-contract.js";
+=======
+import "./accounts.test-mocks.js";
+import {
+  installSendPayloadContractSuite,
+  primeSendMock,
+} from "../../../src/test-utils/send-payload-contract.js";
+>>>>>>> d7aa3cc1c3 (test: share zalouser test helpers)
 import { zalouserPlugin } from "./channel.js";
 
 vi.mock("./send.js", () => ({
   sendMessageZalouser: vi.fn().mockResolvedValue({ ok: true, messageId: "zlu-1" }),
   sendReactionZalouser: vi.fn().mockResolvedValue({ ok: true }),
 }));
-
-vi.mock("./accounts.js", async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>;
-  return {
-    ...actual,
-    resolveZalouserAccountSync: () => ({
-      accountId: "default",
-      profile: "default",
-      name: "test",
-      enabled: true,
-      config: {},
-    }),
-  };
-});
 
 function baseCtx(payload: ReplyPayload) {
   return {

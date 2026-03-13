@@ -4,8 +4,7 @@
 
 export type SynologyWebhookPathSource = "default" | "inherited-base" | "explicit";
 
-/** Raw channel config from remoteclaw.json channels.synology-chat */
-export interface SynologyChatChannelConfig {
+type SynologyChatConfigFields = {
   enabled?: boolean;
   token?: string;
   incomingUrl?: string;
@@ -18,24 +17,15 @@ export interface SynologyChatChannelConfig {
   rateLimitPerMinute?: number;
   botName?: string;
   allowInsecureSsl?: boolean;
+};
+
+/** Raw channel config from remoteclaw.json channels.synology-chat */
+export interface SynologyChatChannelConfig extends SynologyChatConfigFields {
   accounts?: Record<string, SynologyChatAccountRaw>;
 }
 
 /** Raw per-account config (overrides base config) */
-export interface SynologyChatAccountRaw {
-  enabled?: boolean;
-  token?: string;
-  incomingUrl?: string;
-  nasHost?: string;
-  webhookPath?: string;
-  dangerouslyAllowNameMatching?: boolean;
-  dangerouslyAllowInheritedWebhookPath?: boolean;
-  dmPolicy?: "open" | "allowlist" | "disabled";
-  allowedUserIds?: string | string[];
-  rateLimitPerMinute?: number;
-  botName?: string;
-  allowInsecureSsl?: boolean;
-}
+export interface SynologyChatAccountRaw extends SynologyChatConfigFields {}
 
 /** Fully resolved account config with defaults applied */
 export interface ResolvedSynologyChatAccount {

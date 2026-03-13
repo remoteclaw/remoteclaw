@@ -12,56 +12,34 @@ import {
   onDiagnosticEvent,
   resetDiagnosticEventsForTest,
 } from "./diagnostic-events.js";
-import {
-  defaultVoiceWakeTriggers,
-  loadVoiceWakeConfig,
-  setVoiceWakeTriggers,
-} from "./voicewake.js";
+import { readSessionStoreJson5 } from "./state-migrations.fs.js";
 
 describe("infra store", () => {
-  describe("voicewake store", () => {
-    it("returns defaults when missing", async () => {
-      await withTempDir("remoteclaw-voicewake-", async (baseDir) => {
-        const cfg = await loadVoiceWakeConfig(baseDir);
-        expect(cfg.triggers).toEqual(defaultVoiceWakeTriggers());
-        expect(cfg.updatedAtMs).toBe(0);
+  describe("state migrations fs", () => {
+    it("treats array session stores as invalid", async () => {
+      await withTempDir("remoteclaw-session-store-", async (dir) => {
+        const storePath = path.join(dir, "sessions.json");
+        await fs.writeFile(storePath, "[]", "utf-8");
+
+        const result = readSessionStoreJson5(storePath);
+        expect(result.ok).toBe(false);
+        expect(result.store).toEqual({});
       });
     });
 
-    it("sanitizes and persists triggers", async () => {
-      await withTempDir("remoteclaw-voicewake-", async (baseDir) => {
-        const saved = await setVoiceWakeTriggers(["  hi  ", "", "  there "], baseDir);
-        expect(saved.triggers).toEqual(["hi", "there"]);
-        expect(saved.updatedAtMs).toBeGreaterThan(0);
-
-        const loaded = await loadVoiceWakeConfig(baseDir);
-        expect(loaded.triggers).toEqual(["hi", "there"]);
-        expect(loaded.updatedAtMs).toBeGreaterThan(0);
-      });
-    });
-
-    it("falls back to defaults when triggers empty", async () => {
-      await withTempDir("remoteclaw-voicewake-", async (baseDir) => {
-        const saved = await setVoiceWakeTriggers(["", "   "], baseDir);
-        expect(saved.triggers).toEqual(defaultVoiceWakeTriggers());
-      });
-    });
-
-    it("sanitizes malformed persisted config values", async () => {
-      await withTempDir("remoteclaw-voicewake-", async (baseDir) => {
-        await fs.mkdir(path.join(baseDir, "settings"), { recursive: true });
+    it("parses JSON5 object session stores", async () => {
+      await withTempDir("remoteclaw-session-store-", async (dir) => {
+        const storePath = path.join(dir, "sessions.json");
         await fs.writeFile(
-          path.join(baseDir, "settings", "voicewake.json"),
-          JSON.stringify({
-            triggers: ["  wake ", "", 42, null],
-            updatedAtMs: -1,
-          }),
+          storePath,
+          "{\n  // comment allowed in JSON5\n  main: { sessionId: 's1', updatedAt: 123 },\n}\n",
           "utf-8",
         );
 
-        const loaded = await loadVoiceWakeConfig(baseDir);
-        expect(loaded.triggers).toEqual(["wake"]);
-        expect(loaded.updatedAtMs).toBe(0);
+        const result = readSessionStoreJson5(storePath);
+        expect(result.ok).toBe(true);
+        expect(result.store.main?.sessionId).toBe("s1");
+        expect(result.store.main?.updatedAt).toBe(123);
       });
     });
   });

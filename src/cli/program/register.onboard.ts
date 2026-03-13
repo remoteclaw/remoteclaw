@@ -5,6 +5,7 @@ import type {
   AgentRuntime,
   GatewayAuthChoice,
   GatewayBind,
+  ResetScope,
   TailscaleMode,
 } from "../../commands/onboard-types.js";
 import { onboardCommand } from "../../commands/onboard.js";
@@ -47,7 +48,11 @@ export function registerOnboardCommand(program: Command) {
         `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/onboard", "docs.remoteclaw.org/cli/onboard")}\n`,
     )
     .option("--workspace <dir>", "Agent workspace directory (default: ~/.remoteclaw/workspace)")
-    .option("--reset", "Reset config + credentials + sessions + workspace before running wizard")
+    .option(
+      "--reset",
+      "Reset config + credentials + sessions before running wizard (workspace only with --reset-scope full)",
+    )
+    .option("--reset-scope <scope>", "Reset scope: config|config+creds+sessions|full")
     .option("--non-interactive", "Run without prompts", false)
     .option(
       "--accept-risk",
@@ -119,6 +124,7 @@ export function registerOnboardCommand(program: Command) {
           tailscale: opts.tailscale as TailscaleMode | undefined,
           tailscaleResetOnExit: Boolean(opts.tailscaleResetOnExit),
           reset: Boolean(opts.reset),
+          resetScope: opts.resetScope as ResetScope | undefined,
           installDaemon,
           daemonRuntime: opts.daemonRuntime as GatewayDaemonRuntime | undefined,
           skipChannels: Boolean(opts.skipChannels),

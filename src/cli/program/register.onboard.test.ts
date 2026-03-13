@@ -115,6 +115,17 @@ describe("registerOnboardCommand", () => {
     );
   });
 
+  it("forwards --reset-scope to onboard command options", async () => {
+    await runCli(["onboard", "--reset", "--reset-scope", "full"]);
+    expect(onboardCommandMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reset: true,
+        resetScope: "full",
+      }),
+      runtime,
+    );
+  });
+
   it("parses --anthropic-api-key and forwards anthropicApiKey", async () => {
     await runCli(["onboard", "--anthropic-api-key", "sk-ant-test"]);
     expect(onboardCommandMock).toHaveBeenCalledWith(

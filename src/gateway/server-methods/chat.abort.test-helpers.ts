@@ -1,5 +1,5 @@
 import { type Mock, vi } from "vitest";
-import type { GatewayRequestHandler } from "./types.js";
+import type { GatewayRequestHandler, RespondFn } from "./types.js";
 
 export function createActiveRun(
   sessionKey: string,
@@ -20,7 +20,7 @@ export function createActiveRun(
   };
 }
 
-export function createChatAbortContext(overrides: Record<string, unknown> = {}): {
+export type ChatAbortTestContext = {
   chatAbortControllers: Map<string, unknown>;
   chatRunBuffers: Map<string, string>;
   chatDeltaSentAt: Map<string, number>;
@@ -33,7 +33,13 @@ export function createChatAbortContext(overrides: Record<string, unknown> = {}):
   logGateway: { warn: Mock };
   dedupe?: { get: Mock };
   [key: string]: unknown;
-} {
+};
+
+export type ChatAbortRespondMock = Mock<RespondFn>;
+
+export function createChatAbortContext(
+  overrides: Record<string, unknown> = {},
+): ChatAbortTestContext {
   return {
     chatAbortControllers: new Map(),
     chatRunBuffers: new Map(),
@@ -53,7 +59,7 @@ export function createChatAbortContext(overrides: Record<string, unknown> = {}):
 
 export async function invokeChatAbortHandler(params: {
   handler: GatewayRequestHandler;
-  context: ReturnType<typeof createChatAbortContext>;
+  context: ChatAbortTestContext;
   request: { sessionKey: string; runId?: string };
   client?: {
     connId?: string;
@@ -62,8 +68,8 @@ export async function invokeChatAbortHandler(params: {
       scopes?: string[];
     };
   } | null;
-  respond?: Mock;
-}): Promise<Mock> {
+  respond?: ChatAbortRespondMock;
+}): Promise<ChatAbortRespondMock> {
   const respond = params.respond ?? vi.fn();
   await params.handler({
     params: params.request,

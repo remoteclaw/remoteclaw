@@ -23,6 +23,29 @@ async function makeTempDir(): Promise<string> {
   return dir;
 }
 
+function createDirectApnsSendFixture(params: {
+  nodeId: string;
+  environment: "sandbox" | "production";
+  sendResult: { status: number; apnsId: string; body: string };
+}) {
+  return {
+    send: vi.fn().mockResolvedValue(params.sendResult),
+    registration: {
+      nodeId: params.nodeId,
+      transport: "direct" as const,
+      token: "ABCD1234ABCD1234ABCD1234ABCD1234",
+      topic: "ai.openclaw.ios",
+      environment: params.environment,
+      updatedAtMs: 1,
+    },
+    auth: {
+      teamId: "TEAM123",
+      keyId: "KEY123",
+      privateKey: testAuthPrivateKey,
+    },
+  };
+}
+
 afterEach(async () => {
   while (tempDirs.length > 0) {
     const dir = tempDirs.pop();
@@ -101,28 +124,22 @@ describe("push APNs env config", () => {
 
 describe("push APNs send semantics", () => {
   it("sends alert pushes with alert headers and payload", async () => {
-    const send = vi.fn().mockResolvedValue({
-      status: 200,
-      apnsId: "apns-alert-id",
-      body: "",
+    const { send, registration, auth } = createDirectApnsSendFixture({
+      nodeId: "ios-node-alert",
+      environment: "sandbox",
+      sendResult: {
+        status: 200,
+        apnsId: "apns-alert-id",
+        body: "",
+      },
     });
 
     const result = await sendApnsAlert({
-      auth: {
-        teamId: "TEAM123",
-        keyId: "KEY123",
-        privateKey: testAuthPrivateKey,
-      },
-      registration: {
-        nodeId: "ios-node-alert",
-        token: "ABCD1234ABCD1234ABCD1234ABCD1234",
-        topic: "org.remoteclaw.ios",
-        environment: "sandbox",
-        updatedAtMs: 1,
-      },
+      registration,
       nodeId: "ios-node-alert",
       title: "Wake",
       body: "Ping",
+      auth,
       requestSender: send,
     });
 
@@ -145,27 +162,21 @@ describe("push APNs send semantics", () => {
   });
 
   it("sends background wake pushes with silent payload semantics", async () => {
-    const send = vi.fn().mockResolvedValue({
-      status: 200,
-      apnsId: "apns-wake-id",
-      body: "",
+    const { send, registration, auth } = createDirectApnsSendFixture({
+      nodeId: "ios-node-wake",
+      environment: "production",
+      sendResult: {
+        status: 200,
+        apnsId: "apns-wake-id",
+        body: "",
+      },
     });
 
     const result = await sendApnsBackgroundWake({
-      auth: {
-        teamId: "TEAM123",
-        keyId: "KEY123",
-        privateKey: testAuthPrivateKey,
-      },
-      registration: {
-        nodeId: "ios-node-wake",
-        token: "ABCD1234ABCD1234ABCD1234ABCD1234",
-        topic: "org.remoteclaw.ios",
-        environment: "production",
-        updatedAtMs: 1,
-      },
+      registration,
       nodeId: "ios-node-wake",
       wakeReason: "node.invoke",
+      auth,
       requestSender: send,
     });
 
@@ -192,26 +203,20 @@ describe("push APNs send semantics", () => {
   });
 
   it("defaults background wake reason when not provided", async () => {
-    const send = vi.fn().mockResolvedValue({
-      status: 200,
-      apnsId: "apns-wake-default-reason-id",
-      body: "",
+    const { send, registration, auth } = createDirectApnsSendFixture({
+      nodeId: "ios-node-wake-default-reason",
+      environment: "sandbox",
+      sendResult: {
+        status: 200,
+        apnsId: "apns-wake-default-reason-id",
+        body: "",
+      },
     });
 
     await sendApnsBackgroundWake({
-      auth: {
-        teamId: "TEAM123",
-        keyId: "KEY123",
-        privateKey: testAuthPrivateKey,
-      },
-      registration: {
-        nodeId: "ios-node-wake-default-reason",
-        token: "ABCD1234ABCD1234ABCD1234ABCD1234",
-        topic: "org.remoteclaw.ios",
-        environment: "sandbox",
-        updatedAtMs: 1,
-      },
+      registration,
       nodeId: "ios-node-wake-default-reason",
+      auth,
       requestSender: send,
     });
 

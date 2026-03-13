@@ -244,6 +244,25 @@ describe("packNpmSpecToArchive", () => {
     });
   });
 
+  it("returns friendly error for 404 (package not on npm)", async () => {
+    const cwd = await createFixtureDir();
+    mockPackCommandResult({
+      stdout: "",
+      stderr:
+        "npm error code E404\nnpm error 404  '@remoteclaw/whatsapp@*' is not in this registry.",
+      code: 1,
+    });
+
+    const result = await runPack("@remoteclaw/whatsapp", cwd);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("Package not found on npm");
+      expect(result.error).toContain("@remoteclaw/whatsapp");
+      expect(result.error).toContain("docs.remoteclaw.com/tools/plugin");
+    }
+  });
+
   it("returns explicit error when npm pack produces no archive name", async () => {
     const cwd = await createFixtureDir();
     mockPackCommandResult({

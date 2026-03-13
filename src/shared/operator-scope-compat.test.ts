@@ -2,6 +2,16 @@ import { describe, expect, it } from "vitest";
 import { resolveMissingRequestedScope, roleScopesAllow } from "./operator-scope-compat.js";
 
 describe("roleScopesAllow", () => {
+  it("allows empty requested scope lists regardless of granted scopes", () => {
+    expect(
+      roleScopesAllow({
+        role: "operator",
+        requestedScopes: [],
+        allowedScopes: [],
+      }),
+    ).toBe(true);
+  });
+
   it("treats operator.read as satisfied by read/write/admin scopes", () => {
     expect(
       roleScopesAllow({
@@ -85,6 +95,13 @@ describe("roleScopesAllow", () => {
         allowedScopes: ["operator.admin"],
       }),
     ).toBe(false);
+    expect(
+      roleScopesAllow({
+        role: " node ",
+        requestedScopes: [" system.run ", "system.run", "  "],
+        allowedScopes: ["system.run", "operator.admin"],
+      }),
+    ).toBe(true);
   });
 
   it("returns the first missing requested scope with operator compatibility", () => {

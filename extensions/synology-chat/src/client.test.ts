@@ -52,7 +52,7 @@ function mockFailureResponse(statusCode = 500) {
   mockResponse(statusCode, "error");
 }
 
-describe("sendMessage", () => {
+function installFakeTimerHarness() {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
@@ -63,6 +63,10 @@ describe("sendMessage", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
+}
+
+describe("sendMessage", () => {
+  installFakeTimerHarness();
 
   it("returns true on successful send", async () => {
     mockSuccessResponse();
@@ -87,16 +91,7 @@ describe("sendMessage", () => {
 });
 
 describe("sendFileUrl", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    fakeNowMs += 10_000;
-    vi.setSystemTime(fakeNowMs);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+  installFakeTimerHarness();
 
   it("returns true on success", async () => {
     mockSuccessResponse();

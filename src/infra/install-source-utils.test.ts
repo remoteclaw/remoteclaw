@@ -9,7 +9,7 @@ import {
 } from "./install-source-utils.js";
 
 const runCommandWithTimeoutMock = vi.fn();
-const TEMP_DIR_PREFIX = "remoteclaw-install-source-utils-";
+const TEMP_DIR_PREFIX = "openclaw-install-source-utils-";
 
 vi.mock("../process/exec.js", () => ({
   runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
@@ -56,6 +56,34 @@ async function runPack(spec: string, cwd: string, timeoutMs = 1000) {
   });
 }
 
+async function expectPackFallsBackToDetectedArchive(params: {
+  stdout: string;
+  expectedMetadata?: Record<string, unknown>;
+}) {
+  const cwd = await createTempDir("openclaw-install-source-utils-");
+  const archivePath = path.join(cwd, "openclaw-plugin-1.2.3.tgz");
+  await fs.writeFile(archivePath, "", "utf-8");
+  runCommandWithTimeoutMock.mockResolvedValue({
+    stdout: params.stdout,
+    stderr: "",
+    code: 0,
+    signal: null,
+    killed: false,
+  });
+
+  const result = await packNpmSpecToArchive({
+    spec: "openclaw-plugin@1.2.3",
+    timeoutMs: 5000,
+    cwd,
+  });
+
+  expect(result).toEqual({
+    ok: true,
+    archivePath,
+    metadata: params.expectedMetadata ?? {},
+  });
+}
+
 beforeEach(() => {
   runCommandWithTimeoutMock.mockClear();
 });
@@ -75,7 +103,7 @@ describe("withTempDir", () => {
     let observedDir = "";
     const markerFile = "marker.txt";
 
-    const value = await withTempDir("remoteclaw-install-source-utils-", async (tmpDir) => {
+    const value = await withTempDir("openclaw-install-source-utils-", async (tmpDir) => {
       observedDir = tmpDir;
       await fs.writeFile(path.join(tmpDir, markerFile), "ok", "utf-8");
       await expect(fs.stat(path.join(tmpDir, markerFile))).resolves.toBeDefined();
@@ -89,7 +117,7 @@ describe("withTempDir", () => {
 
 describe("resolveArchiveSourcePath", () => {
   it("returns not found error for missing archive paths", async () => {
-    const result = await resolveArchiveSourcePath("/tmp/does-not-exist-remoteclaw-archive.tgz");
+    const result = await resolveArchiveSourcePath("/tmp/does-not-exist-openclaw-archive.tgz");
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toContain("archive not found");
@@ -109,50 +137,53 @@ describe("resolveArchiveSourcePath", () => {
     }
   });
 
-  it("accepts supported archive extensions", async () => {
-    const { filePath } = await createFixtureFile({
-      fileName: "plugin.zip",
-      contents: "",
-    });
+  it.each(["plugin.zip", "plugin.tgz", "plugin.tar.gz"])(
+    "accepts supported archive extension %s",
+    async (fileName) => {
+      const { filePath } = await createFixtureFile({
+        fileName,
+        contents: "",
+      });
 
-    const result = await resolveArchiveSourcePath(filePath);
-    expect(result).toEqual({ ok: true, path: filePath });
-  });
+      const result = await resolveArchiveSourcePath(filePath);
+      expect(result).toEqual({ ok: true, path: filePath });
+    },
+  );
 });
 
 describe("packNpmSpecToArchive", () => {
   it("packs spec and returns archive path using JSON output metadata", async () => {
     const cwd = await createFixtureDir();
-    const archivePath = path.join(cwd, "remoteclaw-plugin-1.2.3.tgz");
+    const archivePath = path.join(cwd, "openclaw-plugin-1.2.3.tgz");
     await fs.writeFile(archivePath, "", "utf-8");
     mockPackCommandResult({
       stdout: JSON.stringify([
         {
-          id: "remoteclaw-plugin@1.2.3",
-          name: "remoteclaw-plugin",
+          id: "openclaw-plugin@1.2.3",
+          name: "openclaw-plugin",
           version: "1.2.3",
-          filename: "remoteclaw-plugin-1.2.3.tgz",
+          filename: "openclaw-plugin-1.2.3.tgz",
           integrity: "sha512-test-integrity",
           shasum: "abc123",
         },
       ]),
     });
 
-    const result = await runPack("remoteclaw-plugin@1.2.3", cwd);
+    const result = await runPack("openclaw-plugin@1.2.3", cwd);
 
     expect(result).toEqual({
       ok: true,
       archivePath,
       metadata: {
-        name: "remoteclaw-plugin",
+        name: "openclaw-plugin",
         version: "1.2.3",
-        resolvedSpec: "remoteclaw-plugin@1.2.3",
+        resolvedSpec: "openclaw-plugin@1.2.3",
         integrity: "sha512-test-integrity",
         shasum: "abc123",
       },
     });
     expect(runCommandWithTimeoutMock).toHaveBeenCalledWith(
-      ["npm", "pack", "remoteclaw-plugin@1.2.3", "--ignore-scripts", "--json"],
+      ["npm", "pack", "openclaw-plugin@1.2.3", "--ignore-scripts", "--json"],
       expect.objectContaining({
         cwd,
         timeoutMs: 300_000,
@@ -162,13 +193,13 @@ describe("packNpmSpecToArchive", () => {
 
   it("falls back to parsing final stdout line when npm json output is unavailable", async () => {
     const cwd = await createFixtureDir();
-    const expectedArchivePath = path.join(cwd, "remoteclaw-plugin-1.2.3.tgz");
+    const expectedArchivePath = path.join(cwd, "openclaw-plugin-1.2.3.tgz");
     await fs.writeFile(expectedArchivePath, "", "utf-8");
     mockPackCommandResult({
-      stdout: "npm notice created package\nremoteclaw-plugin-1.2.3.tgz\n",
+      stdout: "npm notice created package\nopenclaw-plugin-1.2.3.tgz\n",
     });
 
-    const result = await runPack("remoteclaw-plugin@1.2.3", cwd);
+    const result = await runPack("openclaw-plugin@1.2.3", cwd);
 
     expect(result).toEqual({
       ok: true,
@@ -194,72 +225,46 @@ describe("packNpmSpecToArchive", () => {
     }
   });
 
-  it("falls back to archive detected in cwd when npm pack stdout is empty", async () => {
-    const cwd = await createTempDir("remoteclaw-install-source-utils-");
-    const archivePath = path.join(cwd, "remoteclaw-plugin-1.2.3.tgz");
-    await fs.writeFile(archivePath, "", "utf-8");
-    runCommandWithTimeoutMock.mockResolvedValue({
+  it.each([
+    {
+      name: "falls back to archive detected in cwd when npm pack stdout is empty",
       stdout: " \n\n",
-      stderr: "",
-      code: 0,
-      signal: null,
-      killed: false,
-    });
-
-    const result = await packNpmSpecToArchive({
-      spec: "remoteclaw-plugin@1.2.3",
-      timeoutMs: 5000,
-      cwd,
-    });
-
-    expect(result).toEqual({
-      ok: true,
-      archivePath,
-      metadata: {},
-    });
-  });
-
-  it("falls back to archive detected in cwd when stdout does not contain a tgz", async () => {
-    const cwd = await createTempDir("remoteclaw-install-source-utils-");
-    const archivePath = path.join(cwd, "remoteclaw-plugin-1.2.3.tgz");
-    await fs.writeFile(archivePath, "", "utf-8");
-    runCommandWithTimeoutMock.mockResolvedValue({
+    },
+    {
+      name: "falls back to archive detected in cwd when stdout does not contain a tgz",
       stdout: "npm pack completed successfully\n",
-      stderr: "",
-      code: 0,
-      signal: null,
-      killed: false,
-    });
-
-    const result = await packNpmSpecToArchive({
-      spec: "remoteclaw-plugin@1.2.3",
-      timeoutMs: 5000,
-      cwd,
-    });
-
-    expect(result).toEqual({
-      ok: true,
-      archivePath,
-      metadata: {},
-    });
+    },
+    {
+      name: "falls back to cwd archive when logged JSON metadata omits filename",
+      stdout:
+        'npm notice using cache\n[{"id":"openclaw-plugin@1.2.3","name":"openclaw-plugin","version":"1.2.3","integrity":"sha512-test-integrity","shasum":"abc123"}]\n',
+      expectedMetadata: {
+        name: "openclaw-plugin",
+        version: "1.2.3",
+        resolvedSpec: "openclaw-plugin@1.2.3",
+        integrity: "sha512-test-integrity",
+        shasum: "abc123",
+      },
+    },
+  ])("$name", async ({ stdout, expectedMetadata }) => {
+    await expectPackFallsBackToDetectedArchive({ stdout, expectedMetadata });
   });
 
   it("returns friendly error for 404 (package not on npm)", async () => {
     const cwd = await createFixtureDir();
     mockPackCommandResult({
       stdout: "",
-      stderr:
-        "npm error code E404\nnpm error 404  '@remoteclaw/whatsapp@*' is not in this registry.",
+      stderr: "npm error code E404\nnpm error 404  '@openclaw/whatsapp@*' is not in this registry.",
       code: 1,
     });
 
-    const result = await runPack("@remoteclaw/whatsapp", cwd);
+    const result = await runPack("@openclaw/whatsapp", cwd);
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toContain("Package not found on npm");
-      expect(result.error).toContain("@remoteclaw/whatsapp");
-      expect(result.error).toContain("docs.remoteclaw.org/tools/plugin");
+      expect(result.error).toContain("@openclaw/whatsapp");
+      expect(result.error).toContain("docs.openclaw.ai/tools/plugin");
     }
   });
 
@@ -269,7 +274,7 @@ describe("packNpmSpecToArchive", () => {
       stdout: " \n\n",
     });
 
-    const result = await runPack("remoteclaw-plugin@1.2.3", cwd, 5000);
+    const result = await runPack("openclaw-plugin@1.2.3", cwd, 5000);
 
     expect(result).toEqual({
       ok: false,
@@ -279,24 +284,24 @@ describe("packNpmSpecToArchive", () => {
 
   it("parses scoped metadata from id-only json output even with npm notice prefix", async () => {
     const cwd = await createFixtureDir();
-    await fs.writeFile(path.join(cwd, "remoteclaw-plugin-demo-2.0.0.tgz"), "", "utf-8");
+    await fs.writeFile(path.join(cwd, "openclaw-plugin-demo-2.0.0.tgz"), "", "utf-8");
     mockPackCommandResult({
       stdout:
         "npm notice creating package\n" +
         JSON.stringify([
           {
-            id: "@remoteclaw/plugin-demo@2.0.0",
-            filename: "remoteclaw-plugin-demo-2.0.0.tgz",
+            id: "@openclaw/plugin-demo@2.0.0",
+            filename: "openclaw-plugin-demo-2.0.0.tgz",
           },
         ]),
     });
 
-    const result = await runPack("@remoteclaw/plugin-demo@2.0.0", cwd);
+    const result = await runPack("@openclaw/plugin-demo@2.0.0", cwd);
     expect(result).toEqual({
       ok: true,
-      archivePath: path.join(cwd, "remoteclaw-plugin-demo-2.0.0.tgz"),
+      archivePath: path.join(cwd, "openclaw-plugin-demo-2.0.0.tgz"),
       metadata: {
-        resolvedSpec: "@remoteclaw/plugin-demo@2.0.0",
+        resolvedSpec: "@openclaw/plugin-demo@2.0.0",
       },
     });
   });

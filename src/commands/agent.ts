@@ -31,6 +31,7 @@ import {
   emitAgentEvent,
   registerAgentRunContext,
 } from "../infra/agent-events.js";
+import { buildOutboundSessionContext } from "../infra/outbound/session-context.js";
 import { ChannelBridge } from "../middleware/channel-bridge.js";
 import type { SessionMap } from "../middleware/session-map.js";
 import type { AgentDeliveryResult, ChannelMessage } from "../middleware/types.js";
@@ -186,6 +187,11 @@ export async function agentCommand(
       sessionKey: sessionKey ?? opts.sessionKey?.trim(),
       config: cfg,
     });
+  const outboundSession = buildOutboundSessionContext({
+    cfg,
+    agentId: sessionAgentId,
+    sessionKey,
+  });
   const workspaceDirRaw = resolveAgentWorkspaceDir(cfg, sessionAgentId);
   const workspaceDir = await ensureAgentWorkspace(workspaceDirRaw);
   let sessionEntry = resolvedSessionEntry;
@@ -363,6 +369,7 @@ export async function agentCommand(
       deps,
       runtime,
       opts,
+      outboundSession,
       sessionEntry,
       result,
       payloads,

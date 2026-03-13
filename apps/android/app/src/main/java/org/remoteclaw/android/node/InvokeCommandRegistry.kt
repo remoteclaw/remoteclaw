@@ -3,6 +3,7 @@ package org.remoteclaw.android.node
 import org.remoteclaw.android.protocol.RemoteClawCanvasA2UICommand
 import org.remoteclaw.android.protocol.RemoteClawCanvasCommand
 import org.remoteclaw.android.protocol.RemoteClawCameraCommand
+import org.remoteclaw.android.protocol.RemoteClawDeviceCommand
 import org.remoteclaw.android.protocol.RemoteClawLocationCommand
 import org.remoteclaw.android.protocol.RemoteClawNotificationsCommand
 import org.remoteclaw.android.protocol.RemoteClawScreenCommand
@@ -76,7 +77,16 @@ object InvokeCommandRegistry {
         availability = InvokeCommandAvailability.LocationEnabled,
       ),
       InvokeCommandSpec(
+        name = RemoteClawDeviceCommand.Permissions.rawValue,
+      ),
+      InvokeCommandSpec(
+        name = RemoteClawDeviceCommand.Health.rawValue,
+      ),
+      InvokeCommandSpec(
         name = RemoteClawNotificationsCommand.List.rawValue,
+      ),
+      InvokeCommandSpec(
+        name = RemoteClawNotificationsCommand.Actions.rawValue,
       ),
       InvokeCommandSpec(
         name = RemoteClawSmsCommand.Send.rawValue,

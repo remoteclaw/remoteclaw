@@ -36,5 +36,14 @@ class RemoteClawProtocolConstantsTest {
   @Test
   fun notificationsCommandsUseStableStrings() {
     assertEquals("notifications.list", RemoteClawNotificationsCommand.List.rawValue)
+    assertEquals("notifications.actions", RemoteClawNotificationsCommand.Actions.rawValue)
+  }
+
+  @Test
+  fun deviceCommandsUseStableStrings() {
+    assertEquals("device.status", RemoteClawDeviceCommand.Status.rawValue)
+    assertEquals("device.info", RemoteClawDeviceCommand.Info.rawValue)
+    assertEquals("device.permissions", RemoteClawDeviceCommand.Permissions.rawValue)
+    assertEquals("device.health", RemoteClawDeviceCommand.Health.rawValue)
   }
 }

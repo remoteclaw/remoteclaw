@@ -1,16 +1,15 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type {
   MarkdownTableMode,
-  RemoteClawConfig,
+  OpenClawConfig,
   OutboundReplyPayload,
-} from "remoteclaw/plugin-sdk";
+} from "openclaw/plugin-sdk/zalo";
 import {
   createTypingCallbacks,
   createScopedPairingAccess,
   createReplyPrefixOptions,
   issuePairingChallenge,
   logTypingFailure,
-  registerPluginHttpRoute,
   resolveDirectDmAuthorizationOutcome,
   resolveSenderCommandAuthorizationWithRuntime,
   resolveOutboundMediaUrls,
@@ -20,7 +19,7 @@ import {
   resolveWebhookPath,
   waitForAbortSignal,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "remoteclaw/plugin-sdk";
+} from "openclaw/plugin-sdk/zalo";
 import type { ResolvedZaloAccount } from "./accounts.js";
 import {
   ZaloApiError,
@@ -59,7 +58,7 @@ export type ZaloRuntimeEnv = {
 export type ZaloMonitorOptions = {
   token: string;
   account: ResolvedZaloAccount;
-  config: RemoteClawConfig;
+  config: OpenClawConfig;
   runtime: ZaloRuntimeEnv;
   abortSignal: AbortSignal;
   useWebhook?: boolean;
@@ -76,6 +75,35 @@ const WEBHOOK_CLEANUP_TIMEOUT_MS = 5_000;
 const ZALO_TYPING_TIMEOUT_MS = 5_000;
 
 type ZaloCoreRuntime = ReturnType<typeof getZaloRuntime>;
+type ZaloStatusSink = (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
+type ZaloProcessingContext = {
+  token: string;
+  account: ResolvedZaloAccount;
+  config: OpenClawConfig;
+  runtime: ZaloRuntimeEnv;
+  core: ZaloCoreRuntime;
+  statusSink?: ZaloStatusSink;
+  fetcher?: ZaloFetch;
+};
+type ZaloPollingLoopParams = ZaloProcessingContext & {
+  abortSignal: AbortSignal;
+  isStopped: () => boolean;
+  mediaMaxMb: number;
+};
+type ZaloUpdateProcessingParams = ZaloProcessingContext & {
+  update: ZaloUpdate;
+  mediaMaxMb: number;
+};
+type ZaloMessagePipelineParams = ZaloProcessingContext & {
+  message: ZaloMessage;
+  text?: string;
+  mediaPath?: string;
+  mediaType?: string;
+};
+type ZaloImageMessageParams = ZaloProcessingContext & {
+  message: ZaloMessage;
+  mediaMaxMb: number;
+};
 
 function formatZaloError(error: unknown): string {
   if (error instanceof Error) {
@@ -106,22 +134,22 @@ function logVerbose(core: ZaloCoreRuntime, runtime: ZaloRuntimeEnv, message: str
 
 export function registerZaloWebhookTarget(target: ZaloWebhookTarget): () => void {
   return registerZaloWebhookTargetInternal(target, {
-    onFirstPathTarget: ({ path }) =>
-      registerPluginHttpRoute({
-        path,
-        pluginId: "zalo",
-        source: "zalo-webhook",
-        accountId: target.account.accountId,
-        log: target.runtime.log,
-        handler: async (req, res) => {
-          const handled = await handleZaloWebhookRequest(req, res);
-          if (!handled && !res.headersSent) {
-            res.statusCode = 404;
-            res.setHeader("Content-Type", "text/plain; charset=utf-8");
-            res.end("Not Found");
-          }
-        },
-      }),
+    route: {
+      auth: "plugin",
+      match: "exact",
+      pluginId: "zalo",
+      source: "zalo-webhook",
+      accountId: target.account.accountId,
+      log: target.runtime.log,
+      handler: async (req, res) => {
+        const handled = await handleZaloWebhookRequest(req, res);
+        if (!handled && !res.headersSent) {
+          res.statusCode = 404;
+          res.setHeader("Content-Type", "text/plain; charset=utf-8");
+          res.end("Not Found");
+        }
+      },
+    },
   });
 }
 
@@ -136,32 +164,21 @@ export async function handleZaloWebhookRequest(
   res: ServerResponse,
 ): Promise<boolean> {
   return handleZaloWebhookRequestInternal(req, res, async ({ update, target }) => {
-    await processUpdate(
+    await processUpdate({
       update,
-      target.token,
-      target.account,
-      target.config,
-      target.runtime,
-      target.core as ZaloCoreRuntime,
-      target.mediaMaxMb,
-      target.statusSink,
-      target.fetcher,
-    );
+      token: target.token,
+      account: target.account,
+      config: target.config,
+      runtime: target.runtime,
+      core: target.core as ZaloCoreRuntime,
+      mediaMaxMb: target.mediaMaxMb,
+      statusSink: target.statusSink,
+      fetcher: target.fetcher,
+    });
   });
 }
 
-function startPollingLoop(params: {
-  token: string;
-  account: ResolvedZaloAccount;
-  config: RemoteClawConfig;
-  runtime: ZaloRuntimeEnv;
-  core: ZaloCoreRuntime;
-  abortSignal: AbortSignal;
-  isStopped: () => boolean;
-  mediaMaxMb: number;
-  statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
-  fetcher?: ZaloFetch;
-}) {
+function startPollingLoop(params: ZaloPollingLoopParams) {
   const {
     token,
     account,
@@ -175,6 +192,16 @@ function startPollingLoop(params: {
     fetcher,
   } = params;
   const pollTimeout = 30;
+  const processingContext = {
+    token,
+    account,
+    config,
+    runtime,
+    core,
+    mediaMaxMb,
+    statusSink,
+    fetcher,
+  };
 
   runtime.log?.(`[${account.accountId}] Zalo polling loop started timeout=${String(pollTimeout)}s`);
 
@@ -187,17 +214,10 @@ function startPollingLoop(params: {
       const response = await getUpdates(token, { timeout: pollTimeout }, fetcher);
       if (response.ok && response.result) {
         statusSink?.({ lastInboundAt: Date.now() });
-        await processUpdate(
-          response.result,
-          token,
-          account,
-          config,
-          runtime,
-          core,
-          mediaMaxMb,
-          statusSink,
-          fetcher,
-        );
+        await processUpdate({
+          update: response.result,
+          ...processingContext,
+        });
       }
     } catch (err) {
       if (err instanceof ZaloApiError && err.isPollingTimeout) {
@@ -216,38 +236,27 @@ function startPollingLoop(params: {
   void poll();
 }
 
-async function processUpdate(
-  update: ZaloUpdate,
-  token: string,
-  account: ResolvedZaloAccount,
-  config: RemoteClawConfig,
-  runtime: ZaloRuntimeEnv,
-  core: ZaloCoreRuntime,
-  mediaMaxMb: number,
-  statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void,
-  fetcher?: ZaloFetch,
-): Promise<void> {
+async function processUpdate(params: ZaloUpdateProcessingParams): Promise<void> {
+  const { update, token, account, config, runtime, core, mediaMaxMb, statusSink, fetcher } = params;
   const { event_name, message } = update;
+  const sharedContext = { token, account, config, runtime, core, statusSink, fetcher };
   if (!message) {
     return;
   }
 
   switch (event_name) {
     case "message.text.received":
-      await handleTextMessage(message, token, account, config, runtime, core, statusSink, fetcher);
+      await handleTextMessage({
+        message,
+        ...sharedContext,
+      });
       break;
     case "message.image.received":
-      await handleImageMessage(
+      await handleImageMessage({
         message,
-        token,
-        account,
-        config,
-        runtime,
-        core,
+        ...sharedContext,
         mediaMaxMb,
-        statusSink,
-        fetcher,
-      );
+      });
       break;
     case "message.sticker.received":
       logVerbose(core, runtime, `[${account.accountId}] Received sticker from ${message.from.id}`);
@@ -263,46 +272,24 @@ async function processUpdate(
 }
 
 async function handleTextMessage(
-  message: ZaloMessage,
-  token: string,
-  account: ResolvedZaloAccount,
-  config: RemoteClawConfig,
-  runtime: ZaloRuntimeEnv,
-  core: ZaloCoreRuntime,
-  statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void,
-  fetcher?: ZaloFetch,
+  params: ZaloProcessingContext & { message: ZaloMessage },
 ): Promise<void> {
+  const { message } = params;
   const { text } = message;
   if (!text?.trim()) {
     return;
   }
 
   await processMessageWithPipeline({
-    message,
-    token,
-    account,
-    config,
-    runtime,
-    core,
+    ...params,
     text,
     mediaPath: undefined,
     mediaType: undefined,
-    statusSink,
-    fetcher,
   });
 }
 
-async function handleImageMessage(
-  message: ZaloMessage,
-  token: string,
-  account: ResolvedZaloAccount,
-  config: RemoteClawConfig,
-  runtime: ZaloRuntimeEnv,
-  core: ZaloCoreRuntime,
-  mediaMaxMb: number,
-  statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void,
-  fetcher?: ZaloFetch,
-): Promise<void> {
+async function handleImageMessage(params: ZaloImageMessageParams): Promise<void> {
+  const { message, mediaMaxMb } = params;
   const { photo, caption } = message;
 
   let mediaPath: string | undefined;
@@ -326,33 +313,14 @@ async function handleImageMessage(
   }
 
   await processMessageWithPipeline({
-    message,
-    token,
-    account,
-    config,
-    runtime,
-    core,
+    ...params,
     text: caption,
     mediaPath,
     mediaType,
-    statusSink,
-    fetcher,
   });
 }
 
-async function processMessageWithPipeline(params: {
-  message: ZaloMessage;
-  token: string;
-  account: ResolvedZaloAccount;
-  config: RemoteClawConfig;
-  runtime: ZaloRuntimeEnv;
-  core: ZaloCoreRuntime;
-  text?: string;
-  mediaPath?: string;
-  mediaType?: string;
-  statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
-  fetcher?: ZaloFetch;
-}): Promise<void> {
+async function processMessageWithPipeline(params: ZaloMessagePipelineParams): Promise<void> {
   const {
     message,
     token,
@@ -533,7 +501,7 @@ async function processMessageWithPipeline(params: {
     storePath,
     sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
     ctx: ctxPayload,
-    onRecordError: (err: any) => {
+    onRecordError: (err) => {
       runtime.error?.(`zalo: failed updating session meta: ${String(err)}`);
     },
   });
@@ -578,7 +546,7 @@ async function processMessageWithPipeline(params: {
     dispatcherOptions: {
       ...prefixOptions,
       typingCallbacks,
-      deliver: async (payload: any) => {
+      deliver: async (payload) => {
         await deliverZaloReply({
           payload,
           token,
@@ -592,7 +560,7 @@ async function processMessageWithPipeline(params: {
           tableMode,
         });
       },
-      onError: (err: any, info: any) => {
+      onError: (err, info) => {
         runtime.error?.(`[${account.accountId}] Zalo ${info.kind} reply failed: ${String(err)}`);
       },
     },
@@ -608,9 +576,9 @@ async function deliverZaloReply(params: {
   chatId: string;
   runtime: ZaloRuntimeEnv;
   core: ZaloCoreRuntime;
-  config: RemoteClawConfig;
+  config: OpenClawConfig;
   accountId?: string;
-  statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
+  statusSink?: ZaloStatusSink;
   fetcher?: ZaloFetch;
   tableMode?: MarkdownTableMode;
 }): Promise<void> {
@@ -738,17 +706,7 @@ export async function monitorZaloProvider(options: ZaloMonitorOptions): Promise<
         mediaMaxMb: effectiveMediaMaxMb,
         fetcher,
       });
-      const unregisterRoute = registerPluginHttpRoute({
-        path,
-        auth: "plugin",
-        match: "exact",
-        pluginId: "zalo",
-        accountId: account.accountId,
-        log: (message) => logVerbose(core, runtime, message),
-        handler: handleZaloWebhookRequest,
-      });
       stopHandlers.push(unregister);
-      stopHandlers.push(unregisterRoute);
       await waitForAbortSignal(abortSignal);
       return;
     }

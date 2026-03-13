@@ -1,5 +1,5 @@
 ---
-description: "Run RemoteClaw Gateway 24/7 on a GCP Compute Engine VM (Docker) with durable state"
+summary: "Run RemoteClaw Gateway 24/7 on a GCP Compute Engine VM (Docker) with durable state"
 read_when:
   - You want RemoteClaw running 24/7 on GCP
   - You want a production-grade, always-on Gateway on your own VM
@@ -57,8 +57,8 @@ For the generic Docker flow, see [Docker](/install/docker).
 - Basic comfort with SSH + copy/paste
 - ~20-30 minutes
 - Docker and Docker Compose
-- CLI agent credentials (e.g., Anthropic API key for Claude runtime)
-- Optional channel credentials
+- Model auth credentials
+- Optional provider credentials
   - WhatsApp QR
   - Telegram bot token
   - Gmail OAuth
@@ -216,13 +216,13 @@ mkdir -p ~/.remoteclaw/workspace
 Create `.env` in the repository root.
 
 ```bash
-REMOTECLAW_IMAGE=remoteclaw:latest
-REMOTECLAW_GATEWAY_TOKEN=change-me-now
-REMOTECLAW_GATEWAY_BIND=lan
-REMOTECLAW_GATEWAY_PORT=18789
+OPENCLAW_IMAGE=remoteclaw:latest
+OPENCLAW_GATEWAY_TOKEN=change-me-now
+OPENCLAW_GATEWAY_BIND=lan
+OPENCLAW_GATEWAY_PORT=18789
 
-REMOTECLAW_CONFIG_DIR=/home/$USER/.remoteclaw
-REMOTECLAW_WORKSPACE_DIR=/home/$USER/.remoteclaw/workspace
+OPENCLAW_CONFIG_DIR=/home/$USER/.remoteclaw
+OPENCLAW_WORKSPACE_DIR=/home/$USER/.remoteclaw/workspace
 
 GOG_KEYRING_PASSWORD=change-me-now
 XDG_CONFIG_HOME=/home/node/.remoteclaw
@@ -245,7 +245,7 @@ Create or update `docker-compose.yml`.
 ```yaml
 services:
   remoteclaw-gateway:
-    image: ${REMOTECLAW_IMAGE}
+    image: ${OPENCLAW_IMAGE}
     build: .
     restart: unless-stopped
     env_file:
@@ -254,138 +254,57 @@ services:
       - HOME=/home/node
       - NODE_ENV=production
       - TERM=xterm-256color
-      - REMOTECLAW_GATEWAY_BIND=${REMOTECLAW_GATEWAY_BIND}
-      - REMOTECLAW_GATEWAY_PORT=${REMOTECLAW_GATEWAY_PORT}
-      - REMOTECLAW_GATEWAY_TOKEN=${REMOTECLAW_GATEWAY_TOKEN}
+      - OPENCLAW_GATEWAY_BIND=${OPENCLAW_GATEWAY_BIND}
+      - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT}
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
       - XDG_CONFIG_HOME=${XDG_CONFIG_HOME}
       - PATH=/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     volumes:
-      - ${REMOTECLAW_CONFIG_DIR}:/home/node/.remoteclaw
-      - ${REMOTECLAW_WORKSPACE_DIR}:/home/node/.remoteclaw/workspace
+      - ${OPENCLAW_CONFIG_DIR}:/home/node/.remoteclaw
+      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.remoteclaw/workspace
     ports:
       # Recommended: keep the Gateway loopback-only on the VM; access via SSH tunnel.
       # To expose it publicly, remove the `127.0.0.1:` prefix and firewall accordingly.
-      - "127.0.0.1:${REMOTECLAW_GATEWAY_PORT}:18789"
+      - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:18789"
     command:
       [
         "node",
         "dist/index.js",
         "gateway",
         "--bind",
-        "${REMOTECLAW_GATEWAY_BIND}",
+        "${OPENCLAW_GATEWAY_BIND}",
         "--port",
-        "${REMOTECLAW_GATEWAY_PORT}",
+        "${OPENCLAW_GATEWAY_PORT}",
       ]
 ```
 
 ---
 
-## 10) Bake required binaries into the image (critical)
+## 10) Shared Docker VM runtime steps
 
-Installing binaries inside a running container is a trap.
-Anything installed at runtime will be lost on restart.
+Use the shared runtime guide for the common Docker host flow:
 
-All external binaries required by MCP tools or extensions must be installed at image build time.
-
-The examples below show three common binaries only:
-
-- `gog` for Gmail access
-- `goplaces` for Google Places
-- `wacli` for WhatsApp
-
-These are examples, not a complete list.
-You may install as many binaries as needed using the same pattern.
-
-If you add new MCP tools or extensions later that depend on additional binaries, you must:
-
-1. Update the Dockerfile
-2. Rebuild the image
-3. Restart the containers
-
-**Example Dockerfile**
-
-```dockerfile
-FROM node:24-bookworm
-
-RUN apt-get update && apt-get install -y socat && rm -rf /var/lib/apt/lists/*
-
-# Example binary 1: Gmail CLI
-RUN curl -L https://github.com/steipete/gog/releases/latest/download/gog_Linux_x86_64.tar.gz \
-  | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/gog
-
-# Example binary 2: Google Places CLI
-RUN curl -L https://github.com/steipete/goplaces/releases/latest/download/goplaces_Linux_x86_64.tar.gz \
-  | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/goplaces
-
-# Example binary 3: WhatsApp CLI
-RUN curl -L https://github.com/steipete/wacli/releases/latest/download/wacli_Linux_x86_64.tar.gz \
-  | tar -xz -C /usr/local/bin && chmod +x /usr/local/bin/wacli
-
-# Add more binaries below using the same pattern
-
-WORKDIR /app
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-COPY ui/package.json ./ui/package.json
-COPY scripts ./scripts
-
-RUN corepack enable
-RUN pnpm install --frozen-lockfile
-
-COPY . .
-RUN pnpm build
-RUN pnpm ui:install
-RUN pnpm ui:build
-
-ENV NODE_ENV=production
-
-CMD ["node","dist/index.js"]
-```
+- [Bake required binaries into the image](/install/docker-vm-runtime#bake-required-binaries-into-the-image)
+- [Build and launch](/install/docker-vm-runtime#build-and-launch)
+- [What persists where](/install/docker-vm-runtime#what-persists-where)
+- [Updates](/install/docker-vm-runtime#updates)
 
 ---
 
-## 11) Build and launch
+## 11) GCP-specific launch notes
+
+On GCP, if build fails with `Killed` or `exit code 137` during `pnpm install --frozen-lockfile`, the VM is out of memory. Use `e2-small` minimum, or `e2-medium` for more reliable first builds.
+
+When binding to LAN (`OPENCLAW_GATEWAY_BIND=lan`), configure a trusted browser origin before continuing:
 
 ```bash
-docker compose build
-docker compose up -d remoteclaw-gateway
+docker compose run --rm remoteclaw-cli config set gateway.controlUi.allowedOrigins '["http://127.0.0.1:18789"]' --strict-json
 ```
 
-If build fails with `Killed` / `exit code 137` during `pnpm install --frozen-lockfile`, the VM is out of memory. Use `e2-small` minimum, or `e2-medium` for more reliable first builds.
+If you changed the gateway port, replace `18789` with your configured port.
 
-Verify binaries:
-
-```bash
-docker compose exec remoteclaw-gateway which gog
-docker compose exec remoteclaw-gateway which goplaces
-docker compose exec remoteclaw-gateway which wacli
-```
-
-Expected output:
-
-```
-/usr/local/bin/gog
-/usr/local/bin/goplaces
-/usr/local/bin/wacli
-```
-
----
-
-## 12) Verify Gateway
-
-```bash
-docker compose logs -f remoteclaw-gateway
-```
-
-Success:
-
-```
-[gateway] listening on ws://0.0.0.0:18789
-```
-
----
-
-## 13) Access from your laptop
+## 12) Access from your laptop
 
 Create an SSH tunnel to forward the Gateway port:
 
@@ -397,40 +316,23 @@ Open in your browser:
 
 `http://127.0.0.1:18789/`
 
-Paste your gateway token.
-
----
-
-## What persists where (source of truth)
-
-RemoteClaw runs in Docker, but Docker is not the source of truth.
-All long-lived state must survive restarts, rebuilds, and reboots.
-
-| Component           | Location                             | Persistence mechanism  | Notes                              |
-| ------------------- | ------------------------------------ | ---------------------- | ---------------------------------- |
-| Gateway config      | `/home/node/.remoteclaw/`            | Host volume mount      | Includes `remoteclaw.json`, tokens |
-| Channel credentials | `/home/node/.remoteclaw/`            | Host volume mount      | Channel tokens, session state      |
-| Extension configs   | `/home/node/.remoteclaw/extensions/` | Host volume mount      | Extension-level state              |
-| Agent workspace     | `/home/node/.remoteclaw/workspace/`  | Host volume mount      | Code and agent artifacts           |
-| WhatsApp session    | `/home/node/.remoteclaw/`            | Host volume mount      | Preserves QR login                 |
-| Gmail keyring       | `/home/node/.remoteclaw/`            | Host volume + password | Requires `GOG_KEYRING_PASSWORD`    |
-| External binaries   | `/usr/local/bin/`                    | Docker image           | Must be baked at build time        |
-| Node runtime        | Container filesystem                 | Docker image           | Rebuilt every image build          |
-| OS packages         | Container filesystem                 | Docker image           | Do not install at runtime          |
-| Docker container    | Ephemeral                            | Restartable            | Safe to destroy                    |
-
----
-
-## Updates
-
-To update RemoteClaw on the VM:
+Fetch a fresh tokenized dashboard link:
 
 ```bash
-cd ~/remoteclaw
-git pull
-docker compose build
-docker compose up -d
+docker compose run --rm remoteclaw-cli dashboard --no-open
 ```
+
+Paste the token from that URL.
+
+If Control UI shows `unauthorized` or `disconnected (1008): pairing required`, approve the browser device:
+
+```bash
+docker compose run --rm remoteclaw-cli devices list
+docker compose run --rm remoteclaw-cli devices approve <requestId>
+```
+
+Need the shared persistence and update reference again?
+See [Docker VM Runtime](/install/docker-vm-runtime#what-persists-where) and [Docker VM Runtime updates](/install/docker-vm-runtime#updates).
 
 ---
 

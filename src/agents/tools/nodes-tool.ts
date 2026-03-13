@@ -40,6 +40,8 @@ const NODES_TOOL_ACTIONS = [
   "screen_record",
   "location_get",
   "notifications_list",
+  "device_status",
+  "device_info",
   "run",
   "invoke",
 ] as const;
@@ -287,12 +289,23 @@ export function createNodesTool(options?: {
             const result: AgentToolResult = { content, details };
             return await sanitizeToolResultImages(result, "nodes:camera_snap", imageSanitization);
           }
-          case "camera_list": {
+          case "camera_list":
+          case "notifications_list":
+          case "device_status":
+          case "device_info": {
             const node = readStringParam(params, "node", { required: true });
+            const command =
+              action === "camera_list"
+                ? "camera.list"
+                : action === "notifications_list"
+                  ? "notifications.list"
+                  : action === "device_status"
+                    ? "device.status"
+                    : "device.info";
             const payloadRaw = await invokeNodeCommandPayload({
               gatewayOpts,
               node,
-              command: "camera.list",
+              command,
             });
             const payload =
               payloadRaw && typeof payloadRaw === "object" && payloadRaw !== null ? payloadRaw : {};
@@ -417,15 +430,6 @@ export function createNodesTool(options?: {
                 desiredAccuracy,
                 timeoutMs: locationTimeoutMs,
               },
-            });
-            return jsonResult(payload);
-          }
-          case "notifications_list": {
-            const node = readStringParam(params, "node", { required: true });
-            const payload = await invokeNodeCommandPayload({
-              gatewayOpts,
-              node,
-              command: "notifications.list",
             });
             return jsonResult(payload);
           }

@@ -238,6 +238,9 @@ export function createNodesTool(options?: {
               typeof params.deviceId === "string" && params.deviceId.trim()
                 ? params.deviceId.trim()
                 : undefined;
+            if (deviceId && facings.length > 1) {
+              throw new Error("facing=both is not allowed when deviceId is set");
+            }
 
             const content: AgentToolResult["content"] = [];
             const details: Array<Record<string, unknown>> = [];

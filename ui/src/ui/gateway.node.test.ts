@@ -81,6 +81,30 @@ vi.mock("./device-identity.ts", () => ({
 
 const { GatewayBrowserClient } = await import("./gateway.ts");
 
+function createStorageMock(): Storage {
+  const store = new Map<string, string>();
+  return {
+    get length() {
+      return store.size;
+    },
+    clear() {
+      store.clear();
+    },
+    getItem(key: string) {
+      return store.get(key) ?? null;
+    },
+    key(index: number) {
+      return Array.from(store.keys())[index] ?? null;
+    },
+    removeItem(key: string) {
+      store.delete(key);
+    },
+    setItem(key: string, value: string) {
+      store.set(key, String(value));
+    },
+  };
+}
+
 function getLatestWebSocket(): MockWebSocket {
   const ws = wsInstances.at(-1);
   if (!ws) {
@@ -109,6 +133,7 @@ async function startConnect(client: InstanceType<typeof GatewayBrowserClient>) {
 
 describe("GatewayBrowserClient", () => {
   beforeEach(() => {
+    const storage = createStorageMock();
     wsInstances.length = 0;
     loadOrCreateDeviceIdentityMock.mockReset();
     signDevicePayloadMock.mockClear();
@@ -118,7 +143,12 @@ describe("GatewayBrowserClient", () => {
       publicKey: "public-key", // pragma: allowlist secret
     });
 
-    window.localStorage.clear();
+    vi.stubGlobal("localStorage", storage);
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: storage,
+    });
+    localStorage.clear();
     vi.stubGlobal("WebSocket", MockWebSocket);
 
     storeDeviceAuthToken({
@@ -345,7 +375,7 @@ describe("GatewayBrowserClient", () => {
 
   it("continues reconnecting on first token mismatch when no retry was attempted", async () => {
     vi.useFakeTimers();
-    window.localStorage.clear();
+    localStorage.clear();
 
     const client = new GatewayBrowserClient({
       url: "ws://127.0.0.1:18789",
@@ -385,7 +415,7 @@ describe("GatewayBrowserClient", () => {
 
   it("does not auto-reconnect on AUTH_TOKEN_MISSING", async () => {
     vi.useFakeTimers();
-    window.localStorage.clear();
+    localStorage.clear();
 
     const client = new GatewayBrowserClient({
       url: "ws://127.0.0.1:18789",

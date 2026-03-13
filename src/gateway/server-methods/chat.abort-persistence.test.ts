@@ -190,7 +190,7 @@ describe("chat abort transcript persistence", () => {
     const { transcriptPath, sessionId } = await createTranscriptFixture("remoteclaw-chat-stop-");
     const respond = vi.fn();
     const context = createChatAbortContext({
-      chatAbortControllers: new Map([["run-stop-1", createActiveRun("main", sessionId)]]),
+      chatAbortControllers: new Map([["run-stop-1", createActiveRun("main", { sessionId })]]),
       chatRunBuffers: new Map([["run-stop-1", "Partial from /stop"]]),
       chatDeltaSentAt: new Map([["run-stop-1", Date.now()]]),
       removeChatRun: vi.fn().mockReturnValue({ sessionKey: "main", clientRunId: "client-stop-1" }),

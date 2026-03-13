@@ -192,27 +192,89 @@ describe("BlueBubbles webhook monitor", () => {
     return setupWebhookTargetAccount(createProtectedWebhookTarget(password).account);
   }
 
-  function setupPasswordlessWebhookTarget() {
-    return setupWebhookTargetAccount(createPasswordlessWebhookTarget().account);
-  }
-
-  function setupWebhookTargetAccount(account: ResolvedBlueBubblesAccount) {
-    setupWebhookTarget({ account });
-    return account;
-  }
-
-  function createWebhookTarget(
-    account: ResolvedBlueBubblesAccount,
-    statusSink: (event: unknown) => void = vi.fn(),
-  ) {
-    return { account, statusSink };
-  }
-
   async function dispatchWebhook(req: IncomingMessage) {
     const res = createMockResponse();
     const handled = await handleBlueBubblesWebhookRequest(req, res);
     return { handled, res };
   }
+
+  function createWebhookRequestForTest(params?: {
+    method?: string;
+    url?: string;
+    body?: unknown;
+    headers?: Record<string, string>;
+    remoteAddress?: string;
+  }) {
+    const req = createMockRequest(
+      params?.method ?? "POST",
+      params?.url ?? "/bluebubbles-webhook",
+      params?.body ?? {},
+      params?.headers,
+    );
+    if (params?.remoteAddress) {
+      setRequestRemoteAddress(req, params.remoteAddress);
+    }
+    return req;
+  }
+
+  function createHangingWebhookRequest(url = "/bluebubbles-webhook?password=test-password") {
+    const req = new EventEmitter() as IncomingMessage & { destroy: ReturnType<typeof vi.fn> };
+    req.method = "POST";
+    req.url = url;
+    req.headers = {};
+    req.destroy = vi.fn();
+    setRequestRemoteAddress(req, "127.0.0.1");
+    return req;
+  }
+
+  function registerWebhookTargets(
+    params: Array<{
+      account: ResolvedBlueBubblesAccount;
+      statusSink?: (event: unknown) => void;
+    }>,
+  ) {
+    const config: RemoteClawConfig = {};
+    const core = createMockRuntime();
+    setBlueBubblesRuntime(core);
+
+    const unregisterFns = params.map(({ account, statusSink }) =>
+      registerBlueBubblesWebhookTarget({
+        account,
+        config,
+        runtime: { log: vi.fn(), error: vi.fn() },
+        core,
+        path: "/bluebubbles-webhook",
+        statusSink,
+      }),
+    );
+
+    unregister = () => {
+      for (const unregisterFn of unregisterFns) {
+        unregisterFn();
+      }
+    };
+  }
+
+  async function expectWebhookStatus(
+    req: IncomingMessage,
+    expectedStatus: number,
+    expectedBody?: string,
+  ) {
+    const { handled, res } = await dispatchWebhook(req);
+    expect(handled).toBe(true);
+    expect(res.statusCode).toBe(expectedStatus);
+    if (expectedBody !== undefined) {
+      expect(res.body).toBe(expectedBody);
+    }
+    return res;
+  }
+
+  describe("webhook parsing + auth handling", () => {
+    it("rejects non-POST requests", async () => {
+      setupWebhookTarget();
+      const req = createWebhookRequestForTest({ method: "GET" });
+      await expectWebhookStatus(req, 405);
+    });
 
   function createPasswordlessWebhookTarget() {
     return createWebhookTarget(createMockAccount({ password: undefined }));
@@ -280,79 +342,15 @@ describe("BlueBubbles webhook monitor", () => {
   async function dispatchRegisteredWebhookPayload(payload: unknown) {
     return dispatchWebhookPayloadWithSetup(() => {
       setupWebhookTarget();
-    }, payload);
-  }
-
-  async function expectLoopbackWebhookRequestStatus(
-    remoteAddress: (typeof LOOPBACK_REMOTE_ADDRESSES_FOR_TEST)[number],
-    expectedStatus: number,
-    overrides?: Omit<WebhookRequestParams, "remoteAddress">,
-  ) {
-    return expectWebhookRequestStatusForTest(
-      createLoopbackWebhookRequestParamsForTest(remoteAddress, { overrides }),
-      expectedStatus,
-    );
-  }
-
-  function createHangingWebhookRequest(url = "/bluebubbles-webhook?password=test-password") {
-    const req = new EventEmitter() as IncomingMessage;
-    const destroyMock = vi.fn();
-    req.method = "POST";
-    req.url = url;
-    req.headers = {};
-    req.destroy = destroyMock as unknown as IncomingMessage["destroy"];
-    setRequestRemoteAddress(req, "127.0.0.1");
-    return { req, destroyMock };
-  }
-
-  function registerWebhookTargets(
-    params: Array<{
-      account: ResolvedBlueBubblesAccount;
-      statusSink?: (event: unknown) => void;
-    }>,
-  ) {
-    const core = createMockRuntime();
-    const unregisterFns = registerWebhookTargetsForTest({
-      core,
-      accounts: params,
-    });
-
-    unregister = () => {
-      for (const unregisterFn of unregisterFns) {
-        unregisterFn();
-      }
-    };
-  }
-
-  async function expectWebhookStatus(
-    req: IncomingMessage,
-    expectedStatus: number,
-    expectedBody?: string,
-  ) {
-    const { handled, res } = await dispatchWebhook(req);
-    expect(handled).toBe(true);
-    expect(res.statusCode).toBe(expectedStatus);
-    if (expectedBody !== undefined) {
-      expect(res.body).toBe(expectedBody);
-    }
-    return res;
-  }
-
-  describe("webhook parsing + auth handling", () => {
-    it("rejects non-POST requests", async () => {
-      setupWebhookTarget();
-      await expectWebhookRequestStatusForTest({ method: "GET" }, 405);
-    });
-
-    it("accepts POST requests with valid JSON payload", async () => {
-      setupWebhookTarget();
-      const payload = createNewMessagePayloadForTest({ date: Date.now() });
-      await expectWebhookRequestStatusForTest({ body: payload }, 200, "ok");
+      const payload = createNewMessagePayload({ date: Date.now() });
+      const req = createWebhookRequestForTest({ body: payload });
+      await expectWebhookStatus(req, 200, "ok");
     });
 
     it("rejects requests with invalid JSON", async () => {
       setupWebhookTarget();
-      await expectWebhookRequestStatusForTest({ body: "invalid json {{" }, 400);
+      const req = createWebhookRequestForTest({ body: "invalid json {{" });
+      await expectWebhookStatus(req, 400);
     });
 
     it("accepts URL-encoded payload wrappers", async () => {
@@ -361,27 +359,17 @@ describe("BlueBubbles webhook monitor", () => {
       const encodedBody = new URLSearchParams({
         payload: JSON.stringify(payload),
       }).toString();
-      await expectWebhookRequestStatusForTest({ body: encodedBody }, 200, "ok");
+      const req = createWebhookRequestForTest({ body: encodedBody });
+      await expectWebhookStatus(req, 200, "ok");
     });
 
     it("returns 408 when request body times out (Slow-Loris protection)", async () => {
       vi.useFakeTimers();
       try {
-        const account = createMockAccount();
-        const config: RemoteClawConfig = {};
-        const core = createMockRuntime();
-        setBlueBubblesRuntime(core);
-
-        unregister = registerBlueBubblesWebhookTarget({
-          account,
-          config,
-          runtime: { log: vi.fn(), error: vi.fn() },
-          core,
-          path: "/bluebubbles-webhook",
-        });
+        setupWebhookTarget();
 
         // Create a request that never sends data or ends (simulates slow-loris)
-        const { req, destroyMock } = createHangingWebhookRequest();
+        const req = createHangingWebhookRequest();
 
         const res = createMockResponse();
 
@@ -402,39 +390,48 @@ describe("BlueBubbles webhook monitor", () => {
     it("rejects unauthorized requests before reading the body", async () => {
       const account = createMockAccount({ password: "secret-token" });
       setupWebhookTarget({ account });
-      const { req } = createHangingWebhookRequest("/bluebubbles-webhook?password=wrong-token");
+      const req = createHangingWebhookRequest("/bluebubbles-webhook?password=wrong-token");
       const onSpy = vi.spyOn(req, "on");
-      await expectWebhookStatusForTest(req, 401);
+      await expectWebhookStatus(req, 401);
       expect(onSpy).not.toHaveBeenCalledWith("data", expect.any(Function));
     });
 
     it("authenticates via password query parameter", async () => {
-      await expectProtectedWebhookRequestStatus(createProtectedPasswordQueryRequestParams(), 200);
+      const account = createMockAccount({ password: "secret-token" });
+      setupWebhookTarget({ account });
+      const req = createWebhookRequestForTest({
+        url: "/bluebubbles-webhook?password=secret-token",
+        body: createNewMessagePayload(),
+        remoteAddress: "192.168.1.100",
+      });
+      await expectWebhookStatus(req, 200);
     });
 
     it("authenticates via x-password header", async () => {
-      setupProtectedWebhookTarget();
-      await expectWebhookRequestStatusForTest(
-        createRemoteWebhookRequestParamsForTest({
-          body: createNewMessagePayloadForTest(),
-          overrides: {
-            headers: { "x-password": TEST_WEBHOOK_PASSWORD }, // pragma: allowlist secret
-          },
-        }),
-        200,
-      );
+      const account = createMockAccount({ password: "secret-token" });
+      setupWebhookTarget({ account });
+      const req = createWebhookRequestForTest({
+        body: createNewMessagePayload(),
+        headers: { "x-password": "secret-token" }, // pragma: allowlist secret
+        remoteAddress: "192.168.1.100",
+      });
+      await expectWebhookStatus(req, 200);
     });
 
     it("rejects unauthorized requests with wrong password", async () => {
-      await expectProtectedWebhookRequestStatus(
-        createProtectedPasswordQueryRequestParams("wrong-token"),
-        401,
-      );
+      const account = createMockAccount({ password: "secret-token" });
+      setupWebhookTarget({ account });
+      const req = createWebhookRequestForTest({
+        url: "/bluebubbles-webhook?password=wrong-token",
+        body: createNewMessagePayload(),
+        remoteAddress: "192.168.1.100",
+      });
+      await expectWebhookStatus(req, 401);
     });
 
     it("rejects ambiguous routing when multiple targets match the same password", async () => {
-      const accountA = createProtectedWebhookAccountForTest(TEST_WEBHOOK_PASSWORD);
-      const accountB = createProtectedWebhookAccountForTest(TEST_WEBHOOK_PASSWORD);
+      const accountA = createMockAccount({ password: "secret-token" });
+      const accountB = createMockAccount({ password: "secret-token" });
       const sinkA = vi.fn();
       const sinkB = vi.fn();
       registerWebhookTargets([
@@ -442,35 +439,64 @@ describe("BlueBubbles webhook monitor", () => {
         { account: accountB, statusSink: sinkB },
       ]);
 
-      await expectProtectedPasswordQueryRequestStatus(401);
-      expect(targetA.statusSink).not.toHaveBeenCalled();
-      expect(targetB.statusSink).not.toHaveBeenCalled();
+      const req = createWebhookRequestForTest({
+        url: "/bluebubbles-webhook?password=secret-token",
+        body: createNewMessagePayload(),
+        remoteAddress: "192.168.1.100",
+      });
+      await expectWebhookStatus(req, 401);
+      expect(sinkA).not.toHaveBeenCalled();
+      expect(sinkB).not.toHaveBeenCalled();
     });
 
     it("ignores targets without passwords when a password-authenticated target matches", async () => {
-      const strictTarget = createProtectedWebhookTarget();
-      const passwordlessTarget = createPasswordlessWebhookTarget();
-      registerWebhookTargets([strictTarget, passwordlessTarget]);
+      const accountStrict = createMockAccount({ password: "secret-token" });
+      const accountWithoutPassword = createMockAccount({ password: undefined });
+      const sinkStrict = vi.fn();
+      const sinkWithoutPassword = vi.fn();
+      registerWebhookTargets([
+        { account: accountStrict, statusSink: sinkStrict },
+        { account: accountWithoutPassword, statusSink: sinkWithoutPassword },
+      ]);
 
-      await expectProtectedPasswordQueryRequestStatus(200);
-      expect(strictTarget.statusSink).toHaveBeenCalledTimes(1);
-      expect(passwordlessTarget.statusSink).not.toHaveBeenCalled();
+      const req = createWebhookRequestForTest({
+        url: "/bluebubbles-webhook?password=secret-token",
+        body: createNewMessagePayload(),
+        remoteAddress: "192.168.1.100",
+      });
+      await expectWebhookStatus(req, 200);
+      expect(sinkStrict).toHaveBeenCalledTimes(1);
+      expect(sinkWithoutPassword).not.toHaveBeenCalled();
     });
 
     it("requires authentication for loopback requests when password is configured", async () => {
-      for (const remoteAddress of LOOPBACK_REMOTE_ADDRESSES_FOR_TEST) {
-        await expectProtectedLoopbackWebhookRequestStatus(remoteAddress, 401);
+      const account = createMockAccount({ password: "secret-token" });
+      setupWebhookTarget({ account });
+      for (const remoteAddress of ["127.0.0.1", "::1", "::ffff:127.0.0.1"]) {
+        const req = createWebhookRequestForTest({
+          body: createNewMessagePayload(),
+          remoteAddress,
+        });
+        await expectWebhookStatus(req, 401);
       }
     });
 
     it("rejects targets without passwords for loopback and proxied-looking requests", async () => {
+      const account = createMockAccount({ password: undefined });
+      setupWebhookTarget({ account });
+
       const headerVariants: Record<string, string>[] = [
         { host: "localhost" },
         { host: "localhost", "x-forwarded-for": "203.0.113.10" },
         { host: "localhost", forwarded: "for=203.0.113.10;proto=https;host=example.com" },
       ];
       for (const headers of headerVariants) {
-        await expectPasswordlessLoopbackWebhookRequestStatus("127.0.0.1", 401, { headers });
+        const req = createWebhookRequestForTest({
+          body: createNewMessagePayload(),
+          headers,
+          remoteAddress: "127.0.0.1",
+        });
+        await expectWebhookStatus(req, 401);
       }
     });
 

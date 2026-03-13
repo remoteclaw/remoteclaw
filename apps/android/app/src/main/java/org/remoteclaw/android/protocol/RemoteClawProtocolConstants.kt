@@ -34,6 +34,7 @@ enum class RemoteClawCanvasA2UICommand(val rawValue: String) {
 }
 
 enum class RemoteClawCameraCommand(val rawValue: String) {
+  List("camera.list"),
   Snap("camera.snap"),
   Clip("camera.clip"),
   ;

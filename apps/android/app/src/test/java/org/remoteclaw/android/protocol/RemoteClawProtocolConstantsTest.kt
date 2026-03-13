@@ -29,6 +29,13 @@ class RemoteClawProtocolConstantsTest {
   }
 
   @Test
+  fun cameraCommandsUseStableStrings() {
+    assertEquals("camera.list", RemoteClawCameraCommand.List.rawValue)
+    assertEquals("camera.snap", RemoteClawCameraCommand.Snap.rawValue)
+    assertEquals("camera.clip", RemoteClawCameraCommand.Clip.rawValue)
+  }
+
+  @Test
   fun screenCommandsUseStableStrings() {
     assertEquals("screen.record", RemoteClawScreenCommand.Record.rawValue)
   }

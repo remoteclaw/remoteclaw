@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReplyPayload } from "../../auto-reply/types.js";
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { OpenClawConfig } from "../../config/config.js";
 import { typedCases } from "../../test-utils/typed-cases.js";
 import {
   ackDelivery,
@@ -18,14 +18,6 @@ import {
   moveToFailed,
   recoverPendingDeliveries,
 } from "./delivery-queue.js";
-import { DirectoryCache } from "./directory-cache.js";
-import { buildOutboundResultEnvelope } from "./envelope.js";
-import type { OutboundDeliveryJson } from "./format.js";
-import {
-  buildOutboundDeliveryJson,
-  formatGatewaySummary,
-  formatOutboundDeliverySummary,
-} from "./format.js";
 import {
   applyCrossContextDecoration,
   buildCrossContextDecoration,
@@ -114,8 +106,7 @@ describe("delivery-queue", () => {
       await expect(ackDelivery("nonexistent-id", tmpDir)).resolves.toBeUndefined();
     });
 
-    // Upstream test: .delivered marker cleanup requires two-phase ack not yet implemented in the fork.
-    it.skip("ack cleans up leftover .delivered marker when .json is already gone", async () => {
+    it("ack cleans up leftover .delivered marker when .json is already gone", async () => {
       const id = await enqueueDelivery(
         { channel: "whatsapp", to: "+1", payloads: [{ text: "stale-marker" }] },
         tmpDir,
@@ -142,8 +133,7 @@ describe("delivery-queue", () => {
       expect(fs.existsSync(path.join(queueDir, `${id}.delivered`))).toBe(false);
     });
 
-    // Upstream test: .delivered marker cleanup requires two-phase ack not yet implemented in the fork.
-    it.skip("loadPendingDeliveries cleans up stale .delivered markers without replaying", async () => {
+    it("loadPendingDeliveries cleans up stale .delivered markers without replaying", async () => {
       const id = await enqueueDelivery(
         { channel: "telegram", to: "99", payloads: [{ text: "stale" }] },
         tmpDir,
@@ -620,251 +610,6 @@ describe("delivery-queue", () => {
   });
 });
 
-describe("DirectoryCache", () => {
-  const cfg = {} as RemoteClawConfig;
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("expires entries after ttl", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
-    const cache = new DirectoryCache<string>(1000, 10);
-
-    cache.set("a", "value-a", cfg);
-    expect(cache.get("a", cfg)).toBe("value-a");
-
-    vi.setSystemTime(new Date("2026-01-01T00:00:02.000Z"));
-    expect(cache.get("a", cfg)).toBeUndefined();
-  });
-
-  it("evicts least-recent entries when capacity is exceeded", () => {
-    const cases = [
-      {
-        actions: [
-          ["set", "a", "value-a"],
-          ["set", "b", "value-b"],
-          ["set", "c", "value-c"],
-        ] as const,
-        expected: { a: undefined, b: "value-b", c: "value-c" },
-      },
-      {
-        actions: [
-          ["set", "a", "value-a"],
-          ["set", "b", "value-b"],
-          ["set", "a", "value-a2"],
-          ["set", "c", "value-c"],
-        ] as const,
-        expected: { a: "value-a2", b: undefined, c: "value-c" },
-      },
-    ];
-
-    for (const testCase of cases) {
-      const cache = new DirectoryCache<string>(60_000, 2);
-      for (const action of testCase.actions) {
-        cache.set(action[1], action[2], cfg);
-      }
-      expect(cache.get("a", cfg)).toBe(testCase.expected.a);
-      expect(cache.get("b", cfg)).toBe(testCase.expected.b);
-      expect(cache.get("c", cfg)).toBe(testCase.expected.c);
-    }
-  });
-});
-
-describe("buildOutboundResultEnvelope", () => {
-  it("formats envelope variants", () => {
-    const whatsappDelivery: OutboundDeliveryJson = {
-      channel: "whatsapp",
-      via: "gateway",
-      to: "+1",
-      messageId: "m1",
-      mediaUrl: null,
-    };
-    const telegramDelivery: OutboundDeliveryJson = {
-      channel: "telegram",
-      via: "direct",
-      to: "123",
-      messageId: "m2",
-      mediaUrl: null,
-      chatId: "c1",
-    };
-    const discordDelivery: OutboundDeliveryJson = {
-      channel: "discord",
-      via: "gateway",
-      to: "channel:C1",
-      messageId: "m3",
-      mediaUrl: null,
-      channelId: "C1",
-    };
-    const cases = typedCases<{
-      name: string;
-      input: Parameters<typeof buildOutboundResultEnvelope>[0];
-      expected: unknown;
-    }>([
-      {
-        name: "flatten delivery by default",
-        input: { delivery: whatsappDelivery },
-        expected: whatsappDelivery,
-      },
-      {
-        name: "keep payloads + meta",
-        input: {
-          payloads: [{ text: "hi", mediaUrl: null, mediaUrls: undefined }],
-          meta: { foo: "bar" },
-        },
-        expected: {
-          payloads: [{ text: "hi", mediaUrl: null, mediaUrls: undefined }],
-          meta: { foo: "bar" },
-        },
-      },
-      {
-        name: "include delivery when payloads exist",
-        input: { payloads: [], delivery: telegramDelivery, meta: { ok: true } },
-        expected: {
-          payloads: [],
-          meta: { ok: true },
-          delivery: telegramDelivery,
-        },
-      },
-      {
-        name: "keep wrapped delivery when flatten disabled",
-        input: { delivery: discordDelivery, flattenDelivery: false },
-        expected: { delivery: discordDelivery },
-      },
-    ]);
-    for (const testCase of cases) {
-      expect(buildOutboundResultEnvelope(testCase.input), testCase.name).toEqual(testCase.expected);
-    }
-  });
-});
-
-describe("formatOutboundDeliverySummary", () => {
-  it("formats fallback and channel-specific detail variants", () => {
-    const cases = [
-      {
-        name: "fallback telegram",
-        channel: "telegram" as const,
-        result: undefined,
-        expected: "✅ Sent via Telegram. Message ID: unknown",
-      },
-      {
-        name: "fallback imessage",
-        channel: "imessage" as const,
-        result: undefined,
-        expected: "✅ Sent via iMessage. Message ID: unknown",
-      },
-      {
-        name: "telegram with chat detail",
-        channel: "telegram" as const,
-        result: {
-          channel: "telegram" as const,
-          messageId: "m1",
-          chatId: "c1",
-        },
-        expected: "✅ Sent via Telegram. Message ID: m1 (chat c1)",
-      },
-      {
-        name: "discord with channel detail",
-        channel: "discord" as const,
-        result: {
-          channel: "discord" as const,
-          messageId: "d1",
-          channelId: "chan",
-        },
-        expected: "✅ Sent via Discord. Message ID: d1 (channel chan)",
-      },
-    ];
-
-    for (const testCase of cases) {
-      expect(formatOutboundDeliverySummary(testCase.channel, testCase.result), testCase.name).toBe(
-        testCase.expected,
-      );
-    }
-  });
-});
-
-describe("buildOutboundDeliveryJson", () => {
-  it("builds direct delivery payloads across provider-specific fields", () => {
-    const cases = [
-      {
-        name: "telegram direct payload",
-        input: {
-          channel: "telegram" as const,
-          to: "123",
-          result: { channel: "telegram" as const, messageId: "m1", chatId: "c1" },
-          mediaUrl: "https://example.com/a.png",
-        },
-        expected: {
-          channel: "telegram",
-          via: "direct",
-          to: "123",
-          messageId: "m1",
-          mediaUrl: "https://example.com/a.png",
-          chatId: "c1",
-        },
-      },
-      {
-        name: "whatsapp metadata",
-        input: {
-          channel: "whatsapp" as const,
-          to: "+1",
-          result: { channel: "whatsapp" as const, messageId: "w1", toJid: "jid" },
-        },
-        expected: {
-          channel: "whatsapp",
-          via: "direct",
-          to: "+1",
-          messageId: "w1",
-          mediaUrl: null,
-          toJid: "jid",
-        },
-      },
-      {
-        name: "signal timestamp",
-        input: {
-          channel: "signal" as const,
-          to: "+1",
-          result: { channel: "signal" as const, messageId: "s1", timestamp: 123 },
-        },
-        expected: {
-          channel: "signal",
-          via: "direct",
-          to: "+1",
-          messageId: "s1",
-          mediaUrl: null,
-          timestamp: 123,
-        },
-      },
-    ];
-
-    for (const testCase of cases) {
-      expect(buildOutboundDeliveryJson(testCase.input), testCase.name).toEqual(testCase.expected);
-    }
-  });
-});
-
-describe("formatGatewaySummary", () => {
-  it("formats default and custom gateway action summaries", () => {
-    const cases = [
-      {
-        name: "default send action",
-        input: { channel: "whatsapp", messageId: "m1" },
-        expected: "✅ Sent via gateway (whatsapp). Message ID: m1",
-      },
-      {
-        name: "custom action",
-        input: { action: "Poll sent", channel: "discord", messageId: "p1" },
-        expected: "✅ Poll sent via gateway (discord). Message ID: p1",
-      },
-    ];
-
-    for (const testCase of cases) {
-      expect(formatGatewaySummary(testCase.input), testCase.name).toBe(testCase.expected);
-    }
-  });
-});
-
 const slackConfig = {
   channels: {
     slack: {
@@ -872,13 +617,13 @@ const slackConfig = {
       appToken: "xapp-test",
     },
   },
-} as RemoteClawConfig;
+} as OpenClawConfig;
 
 const discordConfig = {
   channels: {
     discord: {},
   },
-} as RemoteClawConfig;
+} as OpenClawConfig;
 
 describe("outbound policy", () => {
   it("allows cross-provider sends when enabled", () => {
@@ -887,7 +632,7 @@ describe("outbound policy", () => {
       tools: {
         message: { crossContext: { allowAcrossProviders: true } },
       },
-    } as RemoteClawConfig;
+    } as OpenClawConfig;
 
     expect(() =>
       enforceCrossContextPolicy({
@@ -923,10 +668,10 @@ describe("outbound policy", () => {
 });
 
 describe("resolveOutboundSessionRoute", () => {
-  const baseConfig = {} as RemoteClawConfig;
+  const baseConfig = {} as OpenClawConfig;
 
   it("resolves provider-specific session routes", async () => {
-    const perChannelPeerCfg = { session: { dmScope: "per-channel-peer" } } as RemoteClawConfig;
+    const perChannelPeerCfg = { session: { dmScope: "per-channel-peer" } } as OpenClawConfig;
     const identityLinksCfg = {
       session: {
         dmScope: "per-peer",
@@ -934,7 +679,7 @@ describe("resolveOutboundSessionRoute", () => {
           alice: ["discord:123"],
         },
       },
-    } as RemoteClawConfig;
+    } as OpenClawConfig;
     const slackMpimCfg = {
       channels: {
         slack: {
@@ -943,10 +688,10 @@ describe("resolveOutboundSessionRoute", () => {
           },
         },
       },
-    } as RemoteClawConfig;
+    } as OpenClawConfig;
     const cases: Array<{
       name: string;
-      cfg: RemoteClawConfig;
+      cfg: OpenClawConfig;
       channel: string;
       target: string;
       replyToId?: string;
@@ -956,7 +701,7 @@ describe("resolveOutboundSessionRoute", () => {
         from?: string;
         to?: string;
         threadId?: string | number;
-        chatType?: "direct" | "group" | "channel";
+        chatType?: "direct" | "group";
       };
     }> = [
       {
@@ -985,6 +730,19 @@ describe("resolveOutboundSessionRoute", () => {
         },
       },
       {
+        name: "Telegram DM with topic",
+        cfg: perChannelPeerCfg,
+        channel: "telegram",
+        target: "123456789:topic:99",
+        expected: {
+          sessionKey: "agent:main:telegram:direct:123456789:thread:99",
+          from: "telegram:123456789:topic:99",
+          to: "telegram:123456789",
+          threadId: 99,
+          chatType: "direct",
+        },
+      },
+      {
         name: "Telegram unresolved username DM",
         cfg: perChannelPeerCfg,
         channel: "telegram",
@@ -1001,8 +759,8 @@ describe("resolveOutboundSessionRoute", () => {
         target: "12345",
         threadId: "12345:99",
         expected: {
-          sessionKey: "agent:main:telegram:direct:12345",
-          from: "telegram:12345",
+          sessionKey: "agent:main:telegram:direct:12345:thread:99",
+          from: "telegram:12345:topic:99",
           to: "telegram:12345",
           threadId: 99,
           chatType: "direct",
@@ -1083,30 +841,6 @@ describe("resolveOutboundSessionRoute", () => {
           chatType: "direct",
         },
       },
-      {
-        name: "Slack user DM target",
-        cfg: perChannelPeerCfg,
-        channel: "slack",
-        target: "user:U12345ABC",
-        expected: {
-          sessionKey: "agent:main:slack:direct:u12345abc",
-          from: "slack:U12345ABC",
-          to: "user:U12345ABC",
-          chatType: "direct",
-        },
-      },
-      {
-        name: "Slack channel target without thread",
-        cfg: baseConfig,
-        channel: "slack",
-        target: "channel:C999XYZ",
-        expected: {
-          sessionKey: "agent:main:slack:channel:c999xyz",
-          from: "slack:channel:C999XYZ",
-          to: "channel:C999XYZ",
-          chatType: "channel",
-        },
-      },
     ];
 
     for (const testCase of cases) {
@@ -1136,7 +870,7 @@ describe("resolveOutboundSessionRoute", () => {
 
   it("uses resolved Discord user targets to route bare numeric ids as DMs", async () => {
     const route = await resolveOutboundSessionRoute({
-      cfg: { session: { dmScope: "per-channel-peer" } } as RemoteClawConfig,
+      cfg: { session: { dmScope: "per-channel-peer" } } as OpenClawConfig,
       channel: "discord",
       agentId: "main",
       target: "123",
@@ -1155,10 +889,32 @@ describe("resolveOutboundSessionRoute", () => {
     });
   });
 
+  it("uses resolved Mattermost user targets to route bare ids as DMs", async () => {
+    const userId = "dthcxgoxhifn3pwh65cut3ud3w";
+    const route = await resolveOutboundSessionRoute({
+      cfg: { session: { dmScope: "per-channel-peer" } } as OpenClawConfig,
+      channel: "mattermost",
+      agentId: "main",
+      target: userId,
+      resolvedTarget: {
+        to: `user:${userId}`,
+        kind: "user",
+        source: "directory",
+      },
+    });
+
+    expect(route).toMatchObject({
+      sessionKey: `agent:main:mattermost:direct:${userId}`,
+      from: `mattermost:${userId}`,
+      to: `user:${userId}`,
+      chatType: "direct",
+    });
+  });
+
   it("rejects bare numeric Discord targets when the caller has no kind hint", async () => {
     await expect(
       resolveOutboundSessionRoute({
-        cfg: { session: { dmScope: "per-channel-peer" } } as RemoteClawConfig,
+        cfg: { session: { dmScope: "per-channel-peer" } } as OpenClawConfig,
         channel: "discord",
         agentId: "main",
         target: "123",
@@ -1176,29 +932,21 @@ describe("normalizeOutboundPayloadsForJson", () => {
       {
         input: [
           { text: "hi" },
-          { text: "photo", mediaUrl: "https://x.test/a.jpg", audioAsVoice: true },
+          { text: "photo", mediaUrl: "https://x.test/a.jpg" },
           { text: "multi", mediaUrls: ["https://x.test/1.png"] },
         ],
         expected: [
-          {
-            text: "hi",
-            mediaUrl: null,
-            mediaUrls: undefined,
-            audioAsVoice: undefined,
-            channelData: undefined,
-          },
+          { text: "hi", mediaUrl: null, mediaUrls: undefined, channelData: undefined },
           {
             text: "photo",
             mediaUrl: "https://x.test/a.jpg",
             mediaUrls: ["https://x.test/a.jpg"],
-            audioAsVoice: true,
             channelData: undefined,
           },
           {
             text: "multi",
             mediaUrl: null,
             mediaUrls: ["https://x.test/1.png"],
-            audioAsVoice: undefined,
             channelData: undefined,
           },
         ],
@@ -1214,7 +962,6 @@ describe("normalizeOutboundPayloadsForJson", () => {
             text: "",
             mediaUrl: null,
             mediaUrls: ["https://x.test/a.png", "https://x.test/b.png"],
-            audioAsVoice: undefined,
             channelData: undefined,
           },
         ],
@@ -1239,9 +986,7 @@ describe("normalizeOutboundPayloadsForJson", () => {
       { text: "Reasoning:\n_step_", isReasoning: true },
       { text: "final answer" },
     ]);
-    expect(normalized).toEqual([
-      { text: "final answer", mediaUrl: null, mediaUrls: undefined, audioAsVoice: undefined },
-    ]);
+    expect(normalized).toEqual([{ text: "final answer", mediaUrl: null, mediaUrls: undefined }]);
   });
 });
 

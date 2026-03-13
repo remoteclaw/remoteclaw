@@ -15,6 +15,18 @@ vi.mock("./runtime.js", () => ({
 
 import { slackPlugin } from "./channel.js";
 
+async function getSlackConfiguredState(cfg: OpenClawConfig) {
+  const account = slackPlugin.config.resolveAccount(cfg, "default");
+  return {
+    configured: slackPlugin.config.isConfigured?.(account, cfg),
+    snapshot: await slackPlugin.status?.buildAccountSnapshot?.({
+      account,
+      cfg,
+      runtime: undefined,
+    }),
+  };
+}
+
 describe("slackPlugin actions", () => {
   it("prefers session lookup for announce target routing", () => {
     expect(slackPlugin.meta.preferSessionLookupForAnnounceTarget).toBe(true);
@@ -249,13 +261,7 @@ describe("slackPlugin config", () => {
       },
     };
 
-    const account = slackPlugin.config.resolveAccount(cfg, "default");
-    const configured = slackPlugin.config.isConfigured?.(account, cfg);
-    const snapshot = await slackPlugin.status?.buildAccountSnapshot?.({
-      account,
-      cfg,
-      runtime: undefined,
-    });
+    const { configured, snapshot } = await getSlackConfiguredState(cfg);
 
     expect(configured).toBe(true);
     expect(snapshot?.configured).toBe(true);
@@ -271,13 +277,7 @@ describe("slackPlugin config", () => {
       },
     };
 
-    const account = slackPlugin.config.resolveAccount(cfg, "default");
-    const configured = slackPlugin.config.isConfigured?.(account, cfg);
-    const snapshot = await slackPlugin.status?.buildAccountSnapshot?.({
-      account,
-      cfg,
-      runtime: undefined,
-    });
+    const { configured, snapshot } = await getSlackConfiguredState(cfg);
 
     expect(configured).toBe(false);
     expect(snapshot?.configured).toBe(false);

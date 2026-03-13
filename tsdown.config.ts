@@ -110,12 +110,12 @@ export default defineConfig([
     // instead of emitting near-identical copies across separate builds.
     entry: coreDistEntries,
   }),
-  ...pluginSdkEntrypoints.map((entry) =>
-    nodeBuildConfig({
-      entry: `src/plugin-sdk/${entry}.ts`,
-      outDir: "dist/plugin-sdk",
-    }),
-  ),
+  nodeBuildConfig({
+    // Bundle all plugin-sdk entries in a single build so the bundler can share
+    // common chunks instead of duplicating them per entry (~712MB heap saved).
+    entry: Object.fromEntries(pluginSdkEntrypoints.map((e) => [e, `src/plugin-sdk/${e}.ts`])),
+    outDir: "dist/plugin-sdk",
+  }),
   nodeBuildConfig({
     entry: ["src/hooks/bundled/*/handler.ts", "src/hooks/llm-slug-generator.ts"],
   }),

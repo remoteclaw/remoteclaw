@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { withFetchPreconnect } from "../../../test/helpers/extensions/fetch-mock.js";
+import { withFetchPreconnect } from "../../../src/test-utils/fetch-mock.js";
 import { resolveGraphChatId, uploadToOneDrive, uploadToSharePoint } from "./graph-upload.js";
 
 describe("graph upload helpers", () => {
@@ -23,11 +23,11 @@ describe("graph upload helpers", () => {
       buffer: Buffer.from("hello"),
       filename: "a.txt",
       tokenProvider,
-      fetchFn: withFetchPreconnect(fetchFn),
+      fetchFn: fetchFn as typeof fetch,
     });
 
     expect(fetchFn).toHaveBeenCalledWith(
-      "https://graph.microsoft.com/v1.0/me/drive/root:/OpenClawShared/a.txt:/content",
+      "https://graph.microsoft.com/v1.0/me/drive/root:/RemoteClawShared/a.txt:/content",
       expect.objectContaining({
         method: "PUT",
         headers: expect.objectContaining({
@@ -60,11 +60,11 @@ describe("graph upload helpers", () => {
       filename: "b.txt",
       siteId: "site-123",
       tokenProvider,
-      fetchFn: withFetchPreconnect(fetchFn),
+      fetchFn: fetchFn as typeof fetch,
     });
 
     expect(fetchFn).toHaveBeenCalledWith(
-      "https://graph.microsoft.com/v1.0/sites/site-123/drive/root:/OpenClawShared/b.txt:/content",
+      "https://graph.microsoft.com/v1.0/sites/site-123/drive/root:/RemoteClawShared/b.txt:/content",
       expect.objectContaining({
         method: "PUT",
         headers: expect.objectContaining({
@@ -95,12 +95,11 @@ describe("graph upload helpers", () => {
         filename: "bad.txt",
         siteId: "site-123",
         tokenProvider,
-        fetchFn: withFetchPreconnect(fetchFn),
+        fetchFn: fetchFn as typeof fetch,
       }),
     ).rejects.toThrow("SharePoint upload response missing required fields");
   });
 });
-
 describe("resolveGraphChatId", () => {
   const tokenProvider = {
     getAccessToken: vi.fn(async () => "graph-token"),

@@ -21,6 +21,53 @@ export interface OneDriveUploadResult {
   name: string;
 }
 
+function parseUploadedDriveItem(
+  data: { id?: string; webUrl?: string; name?: string },
+  label: "OneDrive" | "SharePoint",
+): OneDriveUploadResult {
+  if (!data.id || !data.webUrl || !data.name) {
+    throw new Error(`${label} upload response missing required fields`);
+  }
+
+  return {
+    id: data.id,
+    webUrl: data.webUrl,
+    name: data.name,
+  };
+}
+
+async function uploadDriveItem(params: {
+  buffer: Buffer;
+  filename: string;
+  contentType?: string;
+  tokenProvider: MSTeamsAccessTokenProvider;
+  fetchFn?: typeof fetch;
+  url: string;
+  label: "OneDrive" | "SharePoint";
+}): Promise<OneDriveUploadResult> {
+  const fetchFn = params.fetchFn ?? fetch;
+  const token = await params.tokenProvider.getAccessToken(GRAPH_SCOPE);
+
+  const res = await fetchFn(params.url, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": params.contentType ?? "application/octet-stream",
+    },
+    body: new Uint8Array(params.buffer),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`${params.label} upload failed: ${res.status} ${res.statusText} - ${body}`);
+  }
+
+  return parseUploadedDriveItem(
+    (await res.json()) as { id?: string; webUrl?: string; name?: string },
+    params.label,
+  );
+}
+
 /**
  * Upload a file to the user's OneDrive root folder.
  * For larger files, this uses the simple upload endpoint (up to 4MB).
@@ -32,41 +79,13 @@ export async function uploadToOneDrive(params: {
   tokenProvider: MSTeamsAccessTokenProvider;
   fetchFn?: typeof fetch;
 }): Promise<OneDriveUploadResult> {
-  const fetchFn = params.fetchFn ?? fetch;
-  const token = await params.tokenProvider.getAccessToken(GRAPH_SCOPE);
-
   // Use "RemoteClawShared" folder to organize bot-uploaded files
   const uploadPath = `/RemoteClawShared/${encodeURIComponent(params.filename)}`;
-
-  const res = await fetchFn(`${GRAPH_ROOT}/me/drive/root:${uploadPath}:/content`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": params.contentType ?? "application/octet-stream",
-    },
-    body: new Uint8Array(params.buffer),
+  return await uploadDriveItem({
+    ...params,
+    url: `${GRAPH_ROOT}/me/drive/root:${uploadPath}:/content`,
+    label: "OneDrive",
   });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`OneDrive upload failed: ${res.status} ${res.statusText} - ${body}`);
-  }
-
-  const data = (await res.json()) as {
-    id?: string;
-    webUrl?: string;
-    name?: string;
-  };
-
-  if (!data.id || !data.webUrl || !data.name) {
-    throw new Error("OneDrive upload response missing required fields");
-  }
-
-  return {
-    id: data.id,
-    webUrl: data.webUrl,
-    name: data.name,
-  };
 }
 
 export interface OneDriveSharingLink {
@@ -175,119 +194,15 @@ export async function uploadToSharePoint(params: {
   siteId: string;
   fetchFn?: typeof fetch;
 }): Promise<OneDriveUploadResult> {
-  const fetchFn = params.fetchFn ?? fetch;
-  const token = await params.tokenProvider.getAccessToken(GRAPH_SCOPE);
-
   // Use "RemoteClawShared" folder to organize bot-uploaded files
   const uploadPath = `/RemoteClawShared/${encodeURIComponent(params.filename)}`;
-
-  const res = await fetchFn(
-    `${GRAPH_ROOT}/sites/${params.siteId}/drive/root:${uploadPath}:/content`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": params.contentType ?? "application/octet-stream",
-      },
-      body: new Uint8Array(params.buffer),
-    },
-  );
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`SharePoint upload failed: ${res.status} ${res.statusText} - ${body}`);
-  }
-
-  const data = (await res.json()) as {
-    id?: string;
-    webUrl?: string;
-    name?: string;
-  };
-
-  if (!data.id || !data.webUrl || !data.name) {
-    throw new Error("SharePoint upload response missing required fields");
-  }
-
-  return {
-    id: data.id,
-    webUrl: data.webUrl,
-    name: data.name,
-  };
+  return await uploadDriveItem({
+    ...params,
+    url: `${GRAPH_ROOT}/sites/${params.siteId}/drive/root:${uploadPath}:/content`,
+    label: "SharePoint",
+  });
 }
 
-export interface ChatMember {
-  aadObjectId: string;
-  displayName?: string;
-}
-
-/**
- * Properties needed for native Teams file card attachments.
- * The eTag is used as the attachment ID and webDavUrl as the contentUrl.
- */
-export interface DriveItemProperties {
-  /** The eTag of the driveItem (used as attachment ID) */
-  eTag: string;
-  /** The WebDAV URL of the driveItem (used as contentUrl for reference attachment) */
-  webDavUrl: string;
-  /** The filename */
-  name: string;
-}
-
-/**
- * Get driveItem properties needed for native Teams file card attachments.
- * This fetches the eTag and webDavUrl which are required for "reference" type attachments.
- *
- * @param params.siteId - SharePoint site ID
- * @param params.itemId - The driveItem ID (returned from upload)
- */
-export async function getDriveItemProperties(params: {
-  siteId: string;
-  itemId: string;
-  tokenProvider: MSTeamsAccessTokenProvider;
-  fetchFn?: typeof fetch;
-}): Promise<DriveItemProperties> {
-  const fetchFn = params.fetchFn ?? fetch;
-  const token = await params.tokenProvider.getAccessToken(GRAPH_SCOPE);
-
-  const res = await fetchFn(
-    `${GRAPH_ROOT}/sites/${params.siteId}/drive/items/${params.itemId}?$select=eTag,webDavUrl,name`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  );
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Get driveItem properties failed: ${res.status} ${res.statusText} - ${body}`);
-  }
-
-  const data = (await res.json()) as {
-    eTag?: string;
-    webDavUrl?: string;
-    name?: string;
-  };
-
-  if (!data.eTag || !data.webDavUrl || !data.name) {
-    throw new Error("DriveItem response missing required properties (eTag, webDavUrl, or name)");
-  }
-
-  return {
-    eTag: data.eTag,
-    webDavUrl: data.webDavUrl,
-    name: data.name,
-  };
-}
-
-/**
- * Resolve the Graph API-native chat ID from a Bot Framework conversation ID.
- *
- * Bot Framework personal DM conversation IDs use formats like `a:1xxx@unq.gbl.spaces`
- * or `8:orgid:xxx` that the Graph API does not accept. Graph API requires the
- * `19:xxx@thread.tacv2` or `19:xxx@unq.gbl.spaces` format.
- *
- * This function looks up the matching Graph chat by querying the bot's chats filtered
- * by the target user's AAD object ID.
- *
- * Returns the Graph chat ID if found, or null if resolution fails.
- */
 export async function resolveGraphChatId(params: {
   /** Bot Framework conversation ID (may be in non-Graph format for personal DMs) */
   botFrameworkConversationId: string;
@@ -350,6 +265,67 @@ export async function resolveGraphChatId(params: {
   }
 
   return null;
+}
+
+export interface ChatMember {
+  aadObjectId: string;
+  displayName?: string;
+}
+
+/**
+ * Properties needed for native Teams file card attachments.
+ * The eTag is used as the attachment ID and webDavUrl as the contentUrl.
+ */
+export interface DriveItemProperties {
+  /** The eTag of the driveItem (used as attachment ID) */
+  eTag: string;
+  /** The WebDAV URL of the driveItem (used as contentUrl for reference attachment) */
+  webDavUrl: string;
+  /** The filename */
+  name: string;
+}
+
+/**
+ * Get driveItem properties needed for native Teams file card attachments.
+ * This fetches the eTag and webDavUrl which are required for "reference" type attachments.
+ *
+ * @param params.siteId - SharePoint site ID
+ * @param params.itemId - The driveItem ID (returned from upload)
+ */
+export async function getDriveItemProperties(params: {
+  siteId: string;
+  itemId: string;
+  tokenProvider: MSTeamsAccessTokenProvider;
+  fetchFn?: typeof fetch;
+}): Promise<DriveItemProperties> {
+  const fetchFn = params.fetchFn ?? fetch;
+  const token = await params.tokenProvider.getAccessToken(GRAPH_SCOPE);
+
+  const res = await fetchFn(
+    `${GRAPH_ROOT}/sites/${params.siteId}/drive/items/${params.itemId}?$select=eTag,webDavUrl,name`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Get driveItem properties failed: ${res.status} ${res.statusText} - ${body}`);
+  }
+
+  const data = (await res.json()) as {
+    eTag?: string;
+    webDavUrl?: string;
+    name?: string;
+  };
+
+  if (!data.eTag || !data.webDavUrl || !data.name) {
+    throw new Error("DriveItem response missing required properties (eTag, webDavUrl, or name)");
+  }
+
+  return {
+    eTag: data.eTag,
+    webDavUrl: data.webDavUrl,
+    name: data.name,
+  };
 }
 
 /**

@@ -1,18 +1,17 @@
-import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { withEnvAsync } from "../test-utils/env.js";
 import { clearPluginDiscoveryCache, discoverRemoteClawPlugins } from "./discovery.js";
+import {
+  cleanupTrackedTempDirs,
+  makeTrackedTempDir,
+} from "./test-helpers/fs-fixtures.js";
 
 const tempDirs: string[] = [];
 
 function makeTempDir() {
-  const dir = path.join(os.tmpdir(), `remoteclaw-plugins-${randomUUID()}`);
-  fs.mkdirSync(dir, { recursive: true });
-  tempDirs.push(dir);
-  return dir;
+  return makeTrackedTempDir("remoteclaw-plugins", tempDirs);
 }
 
 async function withStateDir<T>(stateDir: string, fn: () => Promise<T>) {
@@ -58,13 +57,7 @@ function expectEscapesPackageDiagnostic(diagnostics: Array<{ message: string }>)
 
 afterEach(() => {
   clearPluginDiscoveryCache();
-  for (const dir of tempDirs.splice(0)) {
-    try {
-      fs.rmSync(dir, { recursive: true, force: true });
-    } catch {
-      // ignore cleanup failures
-    }
-  }
+  cleanupTrackedTempDirs(tempDirs);
 });
 
 describe("discoverRemoteClawPlugins", () => {

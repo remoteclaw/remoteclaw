@@ -1,18 +1,14 @@
-import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { PluginCandidate } from "./discovery.js";
 import { loadPluginManifestRegistry } from "./manifest-registry.js";
+import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fixtures.js";
 
 const tempDirs: string[] = [];
 
 function makeTempDir() {
-  const dir = path.join(os.tmpdir(), `remoteclaw-manifest-registry-${randomUUID()}`);
-  fs.mkdirSync(dir, { recursive: true });
-  tempDirs.push(dir);
-  return dir;
+  return makeTrackedTempDir("remoteclaw-manifest-registry", tempDirs);
 }
 
 function writeManifest(dir: string, manifest: Record<string, unknown>) {
@@ -116,17 +112,7 @@ function expectUnsafeWorkspaceManifestRejected(params: {
 }
 
 afterEach(() => {
-  while (tempDirs.length > 0) {
-    const dir = tempDirs.pop();
-    if (!dir) {
-      break;
-    }
-    try {
-      fs.rmSync(dir, { recursive: true, force: true });
-    } catch {
-      // ignore cleanup failures
-    }
-  }
+  cleanupTrackedTempDirs(tempDirs);
 });
 
 describe("loadPluginManifestRegistry", () => {

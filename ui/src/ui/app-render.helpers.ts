@@ -489,6 +489,23 @@ function countHiddenCronSessions(sessionKey: string, sessions: SessionsListResul
 
 const THEME_ORDER: ThemeMode[] = ["system", "light", "dark"];
 
+export function renderSidebarConnectionStatus(state: AppViewState) {
+  const label = state.connected ? t("common.online") : t("common.offline");
+  const toneClass = state.connected
+    ? "sidebar-connection-status--online"
+    : "sidebar-connection-status--offline";
+
+  return html`
+    <span
+      class="sidebar-version__status ${toneClass}"
+      role="img"
+      aria-live="polite"
+      aria-label="Gateway status: ${label}"
+      title="Gateway status: ${label}"
+    ></span>
+  `;
+}
+
 export function renderThemeToggle(state: AppViewState) {
   const index = Math.max(0, THEME_ORDER.indexOf(state.theme));
   const applyTheme = (next: ThemeMode) => (event: MouseEvent) => {

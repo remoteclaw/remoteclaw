@@ -358,7 +358,53 @@ export async function run(state: CronServiceState, id: string, mode?: "due" | "f
       return { ok: true, ran: false, reason: "already-running" as const };
     }
     const now = state.deps.nowMs();
-    job.state.runningAtMs = now;
+    const due = isJobDue(job, now, { forced: mode === "force" });
+    if (!due) {
+      return { ok: true, ran: false, reason: "not-due" as const };
+    }
+    return { ok: true, runnable: true, job, now } as const;
+  });
+}
+
+async function inspectManualRunDisposition(
+  state: CronServiceState,
+  id: string,
+  mode?: "due" | "force",
+): Promise<ManualRunDisposition | { ok: false }> {
+  const result = await inspectManualRunPreflight(state, id, mode);
+  if (!result.ok) {
+    return result;
+  }
+  if ("reason" in result) {
+    return result;
+  }
+  return { ok: true, runnable: true } as const;
+}
+
+async function prepareManualRun(
+  state: CronServiceState,
+  id: string,
+  mode?: "due" | "force",
+): Promise<PreparedManualRun> {
+  const preflight = await inspectManualRunPreflight(state, id, mode);
+  if (!preflight.ok) {
+    return preflight;
+  }
+  if ("reason" in preflight) {
+    return {
+      ok: true,
+      ran: false,
+      reason: preflight.reason,
+    } as const;
+  }
+  return await locked(state, async () => {
+    // Reserve this run under lock, then execute outside lock so read ops
+    // (`list`, `status`) stay responsive while the run is in progress.
+    const job = findJobOrThrow(state, id);
+    if (typeof job.state.runningAtMs === "number") {
+      return { ok: true, ran: false, reason: "already-running" as const };
+    }
+    job.state.runningAtMs = preflight.now;
     job.state.lastError = undefined;
     // Persist the running marker before releasing lock so timer ticks that
     // force-reload from disk cannot start the same job concurrently.

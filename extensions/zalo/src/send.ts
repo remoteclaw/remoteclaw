@@ -21,6 +21,28 @@ export type ZaloSendResult = {
   error?: string;
 };
 
+function toZaloSendResult(response: {
+  ok?: boolean;
+  result?: { message_id?: string };
+}): ZaloSendResult {
+  if (response.ok && response.result) {
+    return { ok: true, messageId: response.result.message_id };
+  }
+  return { ok: false, error: "Failed to send message" };
+}
+
+async function runZaloSend(
+  failureMessage: string,
+  send: () => Promise<{ ok?: boolean; result?: { message_id?: string } }>,
+): Promise<ZaloSendResult> {
+  try {
+    const result = toZaloSendResult(await send());
+    return result.ok ? result : { ok: false, error: failureMessage };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 function resolveSendContext(options: ZaloSendOptions): {
   token: string;
   fetcher?: ZaloFetch;
@@ -55,6 +77,7 @@ function resolveValidatedSendContext(
   return { ok: true, chatId: trimmedChatId, token, fetcher };
 }
 
+<<<<<<< HEAD
 function resolveSendContextOrFailure(
   chatId: string,
   options: ZaloSendOptions,
@@ -69,14 +92,34 @@ function resolveSendContextOrFailure(
       };
 }
 
+||||||| parent of f5b9095108 (refactor: share zalo send result handling)
+=======
+function toInvalidContextResult(
+  context: ReturnType<typeof resolveValidatedSendContext>,
+): ZaloSendResult | null {
+  return context.ok ? null : { ok: false, error: context.error };
+}
+
+>>>>>>> f5b9095108 (refactor: share zalo send result handling)
 export async function sendMessageZalo(
   chatId: string,
   text: string,
   options: ZaloSendOptions = {},
 ): Promise<ZaloSendResult> {
+<<<<<<< HEAD
   const resolved = resolveSendContextOrFailure(chatId, options);
   if ("failure" in resolved) {
     return resolved.failure;
+||||||| parent of f5b9095108 (refactor: share zalo send result handling)
+  const context = resolveValidatedSendContext(chatId, options);
+  if (!context.ok) {
+    return { ok: false, error: context.error };
+=======
+  const context = resolveValidatedSendContext(chatId, options);
+  const invalidResult = toInvalidContextResult(context);
+  if (invalidResult) {
+    return invalidResult;
+>>>>>>> f5b9095108 (refactor: share zalo send result handling)
   }
   const { context } = resolved;
 
@@ -88,24 +131,16 @@ export async function sendMessageZalo(
     });
   }
 
-  try {
-    const response = await sendMessage(
+  return await runZaloSend("Failed to send message", () =>
+    sendMessage(
       context.token,
       {
         chat_id: context.chatId,
         text: text.slice(0, 2000),
       },
       context.fetcher,
-    );
-
-    if (response.ok && response.result) {
-      return { ok: true, messageId: response.result.message_id };
-    }
-
-    return { ok: false, error: "Failed to send message" };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
-  }
+    ),
+  );
 }
 
 export async function sendPhotoZalo(
@@ -113,9 +148,20 @@ export async function sendPhotoZalo(
   photoUrl: string,
   options: ZaloSendOptions = {},
 ): Promise<ZaloSendResult> {
+<<<<<<< HEAD
   const resolved = resolveSendContextOrFailure(chatId, options);
   if ("failure" in resolved) {
     return resolved.failure;
+||||||| parent of f5b9095108 (refactor: share zalo send result handling)
+  const context = resolveValidatedSendContext(chatId, options);
+  if (!context.ok) {
+    return { ok: false, error: context.error };
+=======
+  const context = resolveValidatedSendContext(chatId, options);
+  const invalidResult = toInvalidContextResult(context);
+  if (invalidResult) {
+    return invalidResult;
+>>>>>>> f5b9095108 (refactor: share zalo send result handling)
   }
   const { context } = resolved;
 
@@ -123,8 +169,8 @@ export async function sendPhotoZalo(
     return { ok: false, error: "No photo URL provided" };
   }
 
-  try {
-    const response = await sendPhoto(
+  return await runZaloSend("Failed to send photo", () =>
+    sendPhoto(
       context.token,
       {
         chat_id: context.chatId,
@@ -132,14 +178,6 @@ export async function sendPhotoZalo(
         caption: options.caption?.slice(0, 2000),
       },
       context.fetcher,
-    );
-
-    if (response.ok && response.result) {
-      return { ok: true, messageId: response.result.message_id };
-    }
-
-    return { ok: false, error: "Failed to send photo" };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
-  }
+    ),
+  );
 }

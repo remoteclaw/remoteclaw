@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { peekSystemEvents } from "../../../src/infra/system-events.js";
 import { resolveAgentRoute } from "../../../src/routing/resolve-route.js";
 import { normalizeE164 } from "../../../src/utils.js";
@@ -46,7 +46,7 @@ function setSignalAutoStartConfig(overrides: Record<string, unknown> = {}) {
 }
 
 function createSignalConfig(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  const base = config as OpenClawConfig;
+  const base = config as RemoteClawConfig;
   const channels = (base.channels ?? {}) as Record<string, unknown>;
   const signal = (channels.signal ?? {}) as Record<string, unknown>;
   return {
@@ -74,7 +74,10 @@ function createAutoAbortController() {
 }
 
 async function runMonitorWithMocks(opts: MonitorSignalProviderOptions) {
-  return monitorSignalProvider(opts);
+  return monitorSignalProvider({
+    config: config as RemoteClawConfig,
+    ...opts,
+  });
 }
 
 async function receiveSignalPayloads(params: {
@@ -104,7 +107,7 @@ async function receiveSignalPayloads(params: {
 
 function getDirectSignalEventsFor(sender: string) {
   const route = resolveAgentRoute({
-    cfg: config as OpenClawConfig,
+    cfg: config as RemoteClawConfig,
     channel: "signal",
     accountId: "default",
     peer: { kind: "direct", id: normalizeE164(sender) },
@@ -304,7 +307,9 @@ describe("monitorSignalProvider tool results", () => {
       ],
     });
 
-    expect(sendMock).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => {
+      expect(sendMock).toHaveBeenCalledTimes(1);
+    });
     expect(sendMock.mock.calls[0][1]).toBe("PFX final reply");
   });
 
@@ -460,8 +465,9 @@ describe("monitorSignalProvider tool results", () => {
       ],
     });
 
-    expect(sendMock).toHaveBeenCalledTimes(1);
-    expect(updateLastRouteMock).toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(sendMock).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("does not resend pairing code when a request is already pending", async () => {

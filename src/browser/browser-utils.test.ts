@@ -267,9 +267,10 @@ describe("browser server-context listKnownProfileNames", () => {
     };
 
     expect(listKnownProfileNames(state).toSorted()).toEqual([
-      "chrome",
-      "remoteclaw",
+      "chrome-relay",
+      "openclaw",
       "stale-removed",
+      "user",
     ]);
   });
 });

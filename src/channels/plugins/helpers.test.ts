@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
+<<<<<<< HEAD
 import type { RemoteClawConfig } from "../../config/config.js";
 import { buildAccountScopedDmSecurityPolicy, formatPairingApproveHint } from "./helpers.js";
+||||||| parent of d55fa78e40 (refactor: share delimited channel entry parsing)
+import type { OpenClawConfig } from "../../config/config.js";
+import { buildAccountScopedDmSecurityPolicy, formatPairingApproveHint } from "./helpers.js";
+=======
+import type { OpenClawConfig } from "../../config/config.js";
+import {
+  buildAccountScopedDmSecurityPolicy,
+  formatPairingApproveHint,
+  parseOptionalDelimitedEntries,
+} from "./helpers.js";
+>>>>>>> d55fa78e40 (refactor: share delimited channel entry parsing)
 
 function cfgWithChannel(channelKey: string, accounts?: Record<string, unknown>): RemoteClawConfig {
   return {
@@ -91,5 +103,20 @@ describe("buildAccountScopedDmSecurityPolicy", () => {
       approveHint: "openclaw pairing approve synology-chat <code>",
       normalizeEntry: undefined,
     });
+  });
+});
+
+describe("parseOptionalDelimitedEntries", () => {
+  it("returns undefined for empty input", () => {
+    expect(parseOptionalDelimitedEntries("  ")).toBeUndefined();
+  });
+
+  it("splits comma, newline, and semicolon separated entries", () => {
+    expect(parseOptionalDelimitedEntries("alpha, beta\ngamma; delta")).toEqual([
+      "alpha",
+      "beta",
+      "gamma",
+      "delta",
+    ]);
   });
 });

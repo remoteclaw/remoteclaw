@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -12,6 +14,8 @@ import {
   resolveFallbackAgentId,
   resolveAgentWorkspaceDir,
   resolveAgentWorkspaceDirOrNull,
+  resolveAgentIdByWorkspacePath,
+  resolveAgentIdsByWorkspacePath,
 } from "./agent-scope.js";
 
 afterEach(() => {
@@ -510,5 +514,94 @@ describe("resolveAgentRuntimeEnv", () => {
       },
     };
     expect(resolveAgentRuntimeEnv(cfg, "main")).toEqual({ API_KEY: "sk-default" });
+  });
+});
+
+describe("resolveAgentIdByWorkspacePath", () => {
+  it("returns the most specific workspace match for a directory", () => {
+    const workspaceRoot = `/tmp/remoteclaw-agent-scope-${Date.now()}-root`;
+    const opsWorkspace = `${workspaceRoot}/projects/ops`;
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [
+          { id: "main", workspace: workspaceRoot },
+          { id: "ops", workspace: opsWorkspace },
+        ],
+      },
+    };
+
+    expect(resolveAgentIdByWorkspacePath(cfg, `${opsWorkspace}/src`)).toBe("ops");
+  });
+
+  it("returns undefined when directory has no matching workspace", () => {
+    const workspaceRoot = `/tmp/remoteclaw-agent-scope-${Date.now()}-root`;
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [
+          { id: "main", workspace: workspaceRoot },
+          { id: "ops", workspace: `${workspaceRoot}-ops` },
+        ],
+      },
+    };
+
+    expect(
+      resolveAgentIdByWorkspacePath(cfg, `/tmp/remoteclaw-agent-scope-${Date.now()}-unrelated`),
+    ).toBeUndefined();
+  });
+
+  it("matches workspace paths through symlink aliases", () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-agent-scope-"));
+    const realWorkspaceRoot = path.join(tempRoot, "real-root");
+    const realOpsWorkspace = path.join(realWorkspaceRoot, "projects", "ops");
+    const aliasWorkspaceRoot = path.join(tempRoot, "alias-root");
+    try {
+      fs.mkdirSync(path.join(realOpsWorkspace, "src"), { recursive: true });
+      fs.symlinkSync(
+        realWorkspaceRoot,
+        aliasWorkspaceRoot,
+        process.platform === "win32" ? "junction" : "dir",
+      );
+
+      const cfg: RemoteClawConfig = {
+        agents: {
+          list: [
+            { id: "main", workspace: realWorkspaceRoot },
+            { id: "ops", workspace: realOpsWorkspace },
+          ],
+        },
+      };
+
+      expect(
+        resolveAgentIdByWorkspacePath(cfg, path.join(aliasWorkspaceRoot, "projects", "ops")),
+      ).toBe("ops");
+      expect(
+        resolveAgentIdByWorkspacePath(cfg, path.join(aliasWorkspaceRoot, "projects", "ops", "src")),
+      ).toBe("ops");
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("resolveAgentIdsByWorkspacePath", () => {
+  it("returns matching workspaces ordered by specificity", () => {
+    const workspaceRoot = `/tmp/remoteclaw-agent-scope-${Date.now()}-root`;
+    const opsWorkspace = `${workspaceRoot}/projects/ops`;
+    const opsDevWorkspace = `${opsWorkspace}/dev`;
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [
+          { id: "main", workspace: workspaceRoot },
+          { id: "ops", workspace: opsWorkspace },
+          { id: "ops-dev", workspace: opsDevWorkspace },
+        ],
+      },
+    };
+
+    expect(resolveAgentIdsByWorkspacePath(cfg, `${opsDevWorkspace}/pkg`)).toEqual([
+      "ops-dev",
+      "ops",
+      "main",
+    ]);
   });
 });

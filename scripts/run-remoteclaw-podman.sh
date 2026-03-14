@@ -181,6 +181,22 @@ fi
 ENV_FILE_ARGS=()
 [[ -f "$ENV_FILE" ]] && ENV_FILE_ARGS+=(--env-file "$ENV_FILE")
 
+# On Linux with SELinux enforcing/permissive, add ,Z so Podman relabels the
+# bind-mounted directories and the container can access them.
+SELINUX_MOUNT_OPTS=""
+if [[ -z "${OPENCLAW_BIND_MOUNT_OPTIONS:-}" ]]; then
+  if [[ "$(uname -s 2>/dev/null)" == "Linux" ]] && command -v getenforce >/dev/null 2>&1; then
+    _selinux_mode="$(getenforce 2>/dev/null || true)"
+    if [[ "$_selinux_mode" == "Enforcing" || "$_selinux_mode" == "Permissive" ]]; then
+      SELINUX_MOUNT_OPTS=",Z"
+    fi
+  fi
+else
+  # Honour explicit override (e.g. OPENCLAW_BIND_MOUNT_OPTIONS=":Z" → strip leading colon for inline use).
+  SELINUX_MOUNT_OPTS="${OPENCLAW_BIND_MOUNT_OPTIONS#:}"
+  [[ -n "$SELINUX_MOUNT_OPTS" ]] && SELINUX_MOUNT_OPTS=",$SELINUX_MOUNT_OPTS"
+fi
+
 if [[ "$RUN_SETUP" == true ]]; then
   exec podman run --pull="$PODMAN_PULL" --rm -it \
     --init \
@@ -189,6 +205,9 @@ if [[ "$RUN_SETUP" == true ]]; then
     -e REMOTECLAW_GATEWAY_TOKEN="$REMOTECLAW_GATEWAY_TOKEN" \
     -v "$CONFIG_DIR:/home/node/.remoteclaw:rw" \
     -v "$WORKSPACE_DIR:/home/node/.remoteclaw/workspace:rw" \
+    -e REMOTECLAW_GATEWAY_TOKEN="$REMOTECLAW_GATEWAY_TOKEN" \
+    -v "$CONFIG_DIR:/home/node/.remoteclaw:rw${SELINUX_MOUNT_OPTS}" \
+    -v "$WORKSPACE_DIR:/home/node/.remoteclaw/workspace:rw${SELINUX_MOUNT_OPTS}" \
     "${ENV_FILE_ARGS[@]}" \
     "$REMOTECLAW_IMAGE" \
     node dist/index.js onboard "$@"
@@ -203,6 +222,8 @@ podman run --pull="$PODMAN_PULL" -d --replace \
   "${ENV_FILE_ARGS[@]}" \
   -v "$CONFIG_DIR:/home/node/.remoteclaw:rw" \
   -v "$WORKSPACE_DIR:/home/node/.remoteclaw/workspace:rw" \
+  -v "$CONFIG_DIR:/home/node/.remoteclaw:rw${SELINUX_MOUNT_OPTS}" \
+  -v "$WORKSPACE_DIR:/home/node/.remoteclaw/workspace:rw${SELINUX_MOUNT_OPTS}" \
   -p "${HOST_GATEWAY_PORT}:18789" \
   -p "${HOST_BRIDGE_PORT}:18790" \
   "$REMOTECLAW_IMAGE" \

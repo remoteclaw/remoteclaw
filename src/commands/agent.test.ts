@@ -5,7 +5,7 @@ import "../cron/isolated-agent.mocks.js";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import * as configModule from "../config/config.js";
-import * as sessionsModule from "../config/sessions.js";
+import * as transcriptModule from "../config/sessions/transcript.js";
 import { onAgentEvent } from "../infra/agent-events.js";
 import type { AgentDeliveryResult, ChannelMessage } from "../middleware/types.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
@@ -319,15 +319,15 @@ describe("agentCommand", () => {
       const store = path.join(customStoreDir, "sessions.json");
       writeSessionStoreSeed(store, {});
       mockConfig(home, store);
-      const resolveSessionFilePathOptionsSpy = vi.spyOn(
-        sessionsModule,
-        "resolveSessionFilePathOptions",
+      const resolveSessionTranscriptFileSpy = vi.spyOn(
+        transcriptModule,
+        "resolveSessionTranscriptFile",
       );
 
       await agentCommand({ message: "resume me", sessionId: "session-custom-123" }, runtime);
 
-      const matchingCall = resolveSessionFilePathOptionsSpy.mock.calls.find(
-        (call) => call[0]?.storePath === store,
+      const matchingCall = resolveSessionTranscriptFileSpy.mock.calls.find(
+        (call) => call[0]?.sessionId === "session-custom-123",
       );
       expect(matchingCall?.[0]).toEqual(
         expect.objectContaining({

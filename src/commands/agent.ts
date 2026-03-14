@@ -17,14 +17,11 @@ import { type CliDeps, createDefaultDeps } from "../cli/deps.js";
 import { type RemoteClawConfig, loadConfig } from "../config/config.js";
 import { resolveGatewayPort } from "../config/paths.js";
 import {
-  parseSessionThreadInfo,
-  resolveAndPersistSessionFile,
   resolveAgentIdFromSessionKey,
-  resolveSessionFilePathOptions,
-  resolveSessionTranscriptPath,
   type SessionEntry,
   updateSessionStore,
 } from "../config/sessions.js";
+import { resolveSessionTranscriptFile } from "../config/sessions/transcript.js";
 import { resolveGatewayCredentialsFromConfig } from "../gateway/credentials.js";
 import {
   clearAgentRunContext,
@@ -252,30 +249,25 @@ export async function agentCommand(
       provider = normalizedStored.provider;
       model = normalizedStored.model;
     }
-    const sessionPathOpts = resolveSessionFilePathOptions({
-      agentId: sessionAgentId,
-      storePath,
-    });
     if (sessionStore && sessionKey) {
-      const threadIdFromSessionKey = parseSessionThreadInfo(sessionKey).threadId;
-      const fallbackSessionFile = !sessionEntry?.sessionFile
-        ? resolveSessionTranscriptPath(
-            sessionId,
-            sessionAgentId,
-            opts.threadId ?? threadIdFromSessionKey,
-          )
-        : undefined;
-      const resolvedSessionFile = await resolveAndPersistSessionFile({
+      const resolvedSessionFile = await resolveSessionTranscriptFile({
         sessionId,
         sessionKey,
+        sessionEntry,
         sessionStore,
         storePath,
-        sessionEntry,
-        agentId: sessionPathOpts?.agentId,
-        sessionsDir: sessionPathOpts?.sessionsDir,
-        fallbackSessionFile,
+        agentId: sessionAgentId,
+        threadId: opts.threadId,
       });
       sessionEntry = resolvedSessionFile.sessionEntry;
+    } else {
+      await resolveSessionTranscriptFile({
+        sessionId,
+        sessionKey: sessionKey ?? sessionId,
+        sessionEntry,
+        agentId: sessionAgentId,
+        threadId: opts.threadId,
+      });
     }
 
     const startedAt = Date.now();

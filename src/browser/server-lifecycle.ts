@@ -1,4 +1,4 @@
-import { stopOpenClawChrome } from "./chrome.js";
+import { stopRemoteClawChrome } from "./chrome.js";
 import type { ResolvedBrowserConfig } from "./config.js";
 import { resolveProfile } from "./config.js";
 import {
@@ -46,7 +46,7 @@ export async function stopKnownBrowserProfiles(params: {
       try {
         const runtime = current.profiles.get(name);
         if (runtime?.running) {
-          await stopOpenClawChrome(runtime.running);
+          await stopRemoteClawChrome(runtime.running);
           runtime.running = null;
           continue;
         }

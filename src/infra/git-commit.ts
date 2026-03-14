@@ -56,6 +56,10 @@ const safeReadFilePrefix = (filePath: string, limit = 256) => {
   }
 };
 
+const clearCachedGitCommits = () => {
+  cachedGitCommitBySearchDir.clear();
+};
+
 const cacheGitCommit = (searchDir: string, commit: string | null) => {
   cachedGitCommitBySearchDir.set(searchDir, commit);
   return commit;
@@ -213,4 +217,8 @@ export const resolveCommitHash = (
   } catch {
     return cacheGitCommit(searchDir, null);
   }
+};
+
+export const __testing = {
+  clearCachedGitCommits,
 };

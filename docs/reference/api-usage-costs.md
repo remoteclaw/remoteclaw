@@ -64,9 +64,7 @@ See [Media understanding](/nodes/media-understanding).
 
 **Brave free tier (generous):**
 
-- **2,000 requests/month**
-- **1 request/second**
-- **Credit card required** for verification (no charge unless you upgrade)
+Each Brave plan includes **$5/month in renewing free credit**. The Search plan costs $5 per 1,000 requests, so the credit covers 1,000 requests/month at no charge. Set your usage limit in the Brave dashboard to avoid unexpected charges.
 
 See [Web tools](/tools/web).
 

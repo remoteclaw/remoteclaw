@@ -48,4 +48,12 @@ import Testing
 
         #expect(TalkModeManager.resolvedSilenceTimeoutMs(talk) == 900)
     }
+
+    @Test func defaultsSilenceTimeoutMsWhenBool() {
+        let talk: [String: Any] = [
+            "silenceTimeoutMs": true,
+        ]
+
+        #expect(TalkModeManager.resolvedSilenceTimeoutMs(talk) == 900)
+    }
 }

@@ -1,6 +1,6 @@
 ---
 title: "Release Checklist"
-description: "Step-by-step release checklist for npm + macOS app"
+summary: "Step-by-step release checklist for npm + macOS app"
 read_when:
   - Cutting a new npm release
   - Cutting a new macOS app release
@@ -18,6 +18,32 @@ When the operator says “release”, immediately do this preflight (no extra qu
 - Read this doc and `docs/platforms/mac/release.md`.
 - Load env from `~/.profile` and confirm `SPARKLE_PRIVATE_KEY_FILE` + App Store Connect vars are set (SPARKLE_PRIVATE_KEY_FILE should live in `~/.profile`).
 - Use Sparkle keys from `~/Library/CloudStorage/Dropbox/Backup/Sparkle` if needed.
+
+## Versioning
+
+Current RemoteClaw releases use date-based versioning.
+
+- Stable release version: `YYYY.M.D`
+  - Git tag: `vYYYY.M.D`
+  - Examples from repo history: `v2026.2.26`, `v2026.3.8`
+- Beta prerelease version: `YYYY.M.D-beta.N`
+  - Git tag: `vYYYY.M.D-beta.N`
+  - Examples from repo history: `v2026.2.15-beta.1`, `v2026.3.8-beta.1`
+- Use the same version string everywhere, minus the leading `v` where Git tags are not used:
+  - `package.json`: `2026.3.8`
+  - Git tag: `v2026.3.8`
+  - GitHub release title: `remoteclaw 2026.3.8`
+- Do not zero-pad month or day. Use `2026.3.8`, not `2026.03.08`.
+- Stable and beta are npm dist-tags, not separate release lines:
+  - `latest` = stable
+  - `beta` = prerelease/testing
+- Dev is the moving head of `main`, not a normal git-tagged release.
+- The tag-triggered preview run enforces the current stable/beta tag formats and rejects versions whose CalVer date is more than 2 UTC calendar days away from the release date.
+
+Historical note:
+
+- Older tags such as `v2026.1.11-1`, `v2026.2.6-3`, and `v2.0.0-beta2` exist in repo history.
+- Treat those as legacy tag patterns. New releases should use `vYYYY.M.D` for stable and `vYYYY.M.D-beta.N` for beta.
 
 1. **Version & metadata**
 
@@ -46,13 +72,13 @@ When the operator says “release”, immediately do this preflight (no extra qu
 - [ ] `pnpm check`
 - [ ] `pnpm test` (or `pnpm test:coverage` if you need coverage output)
 - [ ] `pnpm release:check` (verifies npm pack contents)
-- [ ] `REMOTECLAW_INSTALL_SMOKE_SKIP_NONROOT=1 pnpm test:install:smoke` (Docker install smoke test, fast path; required before release)
-  - If the immediate previous npm release is known broken, set `REMOTECLAW_INSTALL_SMOKE_PREVIOUS=<last-good-version>` or `REMOTECLAW_INSTALL_SMOKE_SKIP_PREVIOUS=1` for the preinstall step.
+- [ ] `OPENCLAW_INSTALL_SMOKE_SKIP_NONROOT=1 pnpm test:install:smoke` (Docker install smoke test, fast path; required before release)
+  - If the immediate previous npm release is known broken, set `OPENCLAW_INSTALL_SMOKE_PREVIOUS=<last-good-version>` or `OPENCLAW_INSTALL_SMOKE_SKIP_PREVIOUS=1` for the preinstall step.
 - [ ] (Optional) Full installer smoke (adds non-root + CLI coverage): `pnpm test:install:smoke`
-- [ ] (Optional) Installer E2E (Docker, runs `curl -fsSL https://remoteclaw.org/install.sh | bash`, onboards, then runs real tool calls):
-  - `pnpm test:install:e2e:openai` (requires `OPENAI_API_KEY`, tests OpenAI runtime)
-  - `pnpm test:install:e2e:anthropic` (requires `ANTHROPIC_API_KEY`, tests Claude runtime)
-  - `pnpm test:install:e2e` (requires both keys; runs both runtimes)
+- [ ] (Optional) Installer E2E (Docker, runs `curl -fsSL https://remoteclaw.ai/install.sh | bash`, onboards, then runs real tool calls):
+  - `pnpm test:install:e2e:openai` (requires `OPENAI_API_KEY`)
+  - `pnpm test:install:e2e:anthropic` (requires `ANTHROPIC_API_KEY`)
+  - `pnpm test:install:e2e` (requires both keys; runs both providers)
 - [ ] (Optional) Spot-check the web gateway if your changes affect send/receive paths.
 
 5. **macOS app (Sparkle)**
@@ -67,8 +93,13 @@ When the operator says “release”, immediately do this preflight (no extra qu
 6. **Publish (npm)**
 
 - [ ] Confirm git status is clean; commit and push as needed.
-- [ ] `npm login` (verify 2FA) if needed.
-- [ ] `npm publish --access public` (use `--tag beta` for pre-releases).
+- [ ] Confirm npm trusted publishing is configured for the `remoteclaw` package.
+- [ ] Push the matching git tag to trigger the preview run in `.github/workflows/remoteclaw-npm-release.yml`.
+- [ ] Run `RemoteClaw NPM Release` manually with the same tag to publish after `npm-release` environment approval.
+  - Stable tags publish to npm `latest`.
+  - Beta tags publish to npm `beta`.
+  - The preview run rejects tags that do not match `package.json`, are not on `main`, or whose CalVer date is more than 2 UTC calendar days away from the release date.
+  - The manual publish run rechecks tag/package/main alignment, but it does not expire a tag just because approval happens later.
 - [ ] Verify the registry: `npm view remoteclaw version`, `npm view remoteclaw dist-tags`, and `npx -y remoteclaw@X.Y.Z --version` (or `--help`).
 
 ### Troubleshooting (notes from 2.0.0-beta2 release)
@@ -84,6 +115,7 @@ When the operator says “release”, immediately do this preflight (no extra qu
 7. **GitHub release + appcast**
 
 - [ ] Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z` (or `git push --tags`).
+  - Pushing the tag also triggers the npm release workflow.
 - [ ] Create/refresh the GitHub release for `vX.Y.Z` with **title `remoteclaw X.Y.Z`** (not just the tag); body should include the **full** changelog section for that version (Highlights + Changes + Fixes), inline (no bare links), and **must not repeat the title inside the body**.
 - [ ] Attach artifacts: `npm pack` tarball (optional), `RemoteClaw-X.Y.Z.zip`, and `RemoteClaw-X.Y.Z.dSYM.zip` (if generated).
 - [ ] Commit the updated `appcast.xml` and push it (Sparkle feeds from main).
@@ -108,6 +140,7 @@ Current npm plugin list (update as needed):
 - @remoteclaw/diagnostics-otel
 - @remoteclaw/discord
 - @remoteclaw/feishu
+- @remoteclaw/lobster
 - @remoteclaw/matrix
 - @remoteclaw/msteams
 - @remoteclaw/nextcloud-talk

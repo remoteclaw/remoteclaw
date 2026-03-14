@@ -123,18 +123,18 @@ export function applyTalkApiKey(config: RemoteClawConfig): RemoteClawConfig {
 
   const talk = normalized.talk;
   const active = resolveActiveTalkProviderConfig(talk);
-  if (active.provider && active.provider !== DEFAULT_TALK_PROVIDER) {
+  if (active?.provider && active.provider !== DEFAULT_TALK_PROVIDER) {
     return normalized;
   }
 
   const existingProviderApiKey =
-    typeof active.config?.apiKey === "string" ? active.config.apiKey.trim() : "";
+    typeof active?.config?.apiKey === "string" ? active.config.apiKey.trim() : "";
   const existingLegacyApiKey = typeof talk?.apiKey === "string" ? talk.apiKey.trim() : "";
   if (existingProviderApiKey || existingLegacyApiKey) {
     return normalized;
   }
 
-  const providerId = active.provider ?? DEFAULT_TALK_PROVIDER;
+  const providerId = active?.provider ?? DEFAULT_TALK_PROVIDER;
   const providers = { ...talk?.providers };
   const providerConfig = { ...providers[providerId], apiKey: resolved };
   providers[providerId] = providerConfig;

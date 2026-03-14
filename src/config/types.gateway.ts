@@ -61,6 +61,13 @@ export type TalkProviderConfig = {
   [key: string]: unknown;
 };
 
+export type ResolvedTalkConfig = {
+  /** Active Talk TTS provider resolved from the current config payload. */
+  provider: string;
+  /** Provider config for the active Talk provider. */
+  config: TalkProviderConfig;
+};
+
 export type TalkConfig = {
   /** Active Talk TTS provider (for example "elevenlabs"). */
   provider?: string;
@@ -78,6 +85,11 @@ export type TalkConfig = {
   modelId?: string;
   outputFormat?: string;
   apiKey?: string;
+};
+
+export type TalkConfigResponse = TalkConfig & {
+  /** Canonical active Talk payload for clients. */
+  resolved?: ResolvedTalkConfig;
 };
 
 export type GatewayControlUiConfig = {

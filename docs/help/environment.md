@@ -56,6 +56,12 @@ Env var equivalents:
 - `REMOTECLAW_LOAD_SHELL_ENV=1`
 - `REMOTECLAW_SHELL_ENV_TIMEOUT_MS=15000`
 
+## UI env vars
+
+- `REMOTECLAW_THEME=light`: force the light TUI palette when your terminal has a light background.
+- `REMOTECLAW_THEME=dark`: force the dark TUI palette.
+- `COLORFGBG`: if your terminal exports it, OpenClaw uses the background color hint to auto-pick the TUI palette.
+
 ## Env var substitution in config
 
 You can reference env vars directly in config string values using `${VAR_NAME}` syntax:

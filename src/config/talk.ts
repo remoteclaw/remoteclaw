@@ -1,7 +1,12 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { TalkConfig, TalkProviderConfig } from "./types.gateway.js";
+import type {
+  ResolvedTalkConfig,
+  TalkConfig,
+  TalkConfigResponse,
+  TalkProviderConfig,
+} from "./types.gateway.js";
 import type { RemoteClawConfig } from "./types.js";
 
 type TalkApiKeyDeps = {
@@ -220,25 +225,24 @@ export function normalizeTalkConfig(config: RemoteClawConfig): RemoteClawConfig 
   };
 }
 
-export function resolveActiveTalkProviderConfig(talk: TalkConfig | undefined): {
-  provider?: string;
-  config?: TalkProviderConfig;
-} {
+export function resolveActiveTalkProviderConfig(
+  talk: TalkConfig | undefined,
+): ResolvedTalkConfig | undefined {
   const normalizedTalk = normalizeTalkSection(talk);
   if (!normalizedTalk) {
-    return {};
+    return undefined;
   }
   const provider = activeProviderFromTalk(normalizedTalk);
   if (!provider) {
-    return {};
+    return undefined;
   }
   return {
     provider,
-    config: normalizedTalk.providers?.[provider],
+    config: normalizedTalk.providers?.[provider] ?? {},
   };
 }
 
-export function buildTalkConfigResponse(value: unknown): TalkConfig | undefined {
+export function buildTalkConfigResponse(value: unknown): TalkConfigResponse | undefined {
   if (!isPlainObject(value)) {
     return undefined;
   }
@@ -247,7 +251,7 @@ export function buildTalkConfigResponse(value: unknown): TalkConfig | undefined 
     return undefined;
   }
 
-  const payload: TalkConfig = {};
+  const payload: TalkConfigResponse = {};
   if (typeof normalized.interruptOnSpeech === "boolean") {
     payload.interruptOnSpeech = normalized.interruptOnSpeech;
   }
@@ -258,8 +262,12 @@ export function buildTalkConfigResponse(value: unknown): TalkConfig | undefined 
     payload.provider = normalized.provider;
   }
 
-  const activeProvider = activeProviderFromTalk(normalized);
-  const providerConfig = activeProvider ? normalized.providers?.[activeProvider] : undefined;
+  const resolved = resolveActiveTalkProviderConfig(normalized);
+  if (resolved) {
+    payload.resolved = resolved;
+  }
+
+  const providerConfig = resolved?.config;
   const providerCompatibilityLegacy = legacyTalkFieldsFromProviderConfig(providerConfig);
   const compatibilityLegacy =
     Object.keys(providerCompatibilityLegacy).length > 0

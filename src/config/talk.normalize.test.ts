@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { createConfigIO } from "./io.js";
-import { normalizeTalkSection } from "./talk.js";
+import { buildTalkConfigResponse, normalizeTalkSection } from "./talk.js";
 
 async function withTempConfig(
   config: unknown,
@@ -99,6 +99,40 @@ describe("talk normalization", () => {
         },
       },
       voiceId: "legacy-voice",
+      interruptOnSpeech: true,
+    });
+  });
+
+  it("builds a canonical resolved talk payload for clients", () => {
+    const payload = buildTalkConfigResponse({
+      provider: "acme",
+      providers: {
+        acme: {
+          voiceId: "acme-voice",
+          modelId: "acme-model",
+        },
+      },
+      voiceId: "legacy-voice",
+      interruptOnSpeech: true,
+    });
+
+    expect(payload).toEqual({
+      provider: "acme",
+      providers: {
+        acme: {
+          voiceId: "acme-voice",
+          modelId: "acme-model",
+        },
+      },
+      resolved: {
+        provider: "acme",
+        config: {
+          voiceId: "acme-voice",
+          modelId: "acme-model",
+        },
+      },
+      voiceId: "acme-voice",
+      modelId: "acme-model",
       interruptOnSpeech: true,
     });
   });

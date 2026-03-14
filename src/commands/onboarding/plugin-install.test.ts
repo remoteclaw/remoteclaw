@@ -174,7 +174,7 @@ describe("ensureOnboardingPluginInstalled", () => {
     const runtime = makeRuntime();
     const select = vi.fn((async <T extends string>() => "skip" as T) as WizardPrompter["select"]);
     const prompter = makePrompter({ select: select as unknown as WizardPrompter["select"] });
-    const cfg: OpenClawConfig = { update: { channel: "beta" } };
+    const cfg: RemoteClawConfig = { update: { channel: "beta" } };
     vi.mocked(fs.existsSync).mockReturnValue(false);
     resolveBundledPluginSources.mockReturnValue(
       new Map([

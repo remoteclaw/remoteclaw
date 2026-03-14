@@ -4,7 +4,7 @@ import Testing
 @testable import RemoteClaw
 
 @Suite struct TalkModeConfigParsingTests {
-    @Test func prefersNormalizedTalkProviderPayload() {
+    @Test func rejectsNormalizedTalkProviderPayloadWithoutResolved() {
         let talk: [String: AnyCodable] = [
             "provider": AnyCodable("elevenlabs"),
             "providers": AnyCodable([
@@ -16,9 +16,7 @@ import Testing
         ]
 
         let selection = TalkModeRuntime.selectTalkProviderConfig(talk)
-        #expect(selection?.provider == "elevenlabs")
-        #expect(selection?.normalizedPayload == true)
-        #expect(selection?.config["voiceId"]?.stringValue == "voice-normalized")
+        #expect(selection == nil)
     }
 
     @Test func fallsBackToLegacyTalkFieldsWhenNormalizedPayloadMissing() {
@@ -34,7 +32,7 @@ import Testing
         #expect(selection?.config["apiKey"]?.stringValue == "legacy-key")
     }
 
-    @Test func `reads configured silence timeout ms`() {
+    @Test func readsSilenceTimeoutMs() {
         let talk: [String: AnyCodable] = [
             "silenceTimeoutMs": AnyCodable(1500),
         ]
@@ -42,11 +40,11 @@ import Testing
         #expect(TalkModeRuntime.resolvedSilenceTimeoutMs(talk) == 1500)
     }
 
-    @Test func `defaults silence timeout ms when missing`() {
+    @Test func defaultsSilenceTimeoutMsWhenMissing() {
         #expect(TalkModeRuntime.resolvedSilenceTimeoutMs(nil) == TalkDefaults.silenceTimeoutMs)
     }
 
-    @Test func `defaults silence timeout ms when invalid`() {
+    @Test func defaultsSilenceTimeoutMsWhenInvalid() {
         let talk: [String: AnyCodable] = [
             "silenceTimeoutMs": AnyCodable(0),
         ]

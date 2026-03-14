@@ -2,7 +2,29 @@ import RemoteClawKit
 import Testing
 
 struct TalkConfigParsingTests {
-    @Test func prefersNormalizedTalkProviderPayload() {
+    @Test func prefersCanonicalResolvedTalkProviderPayload() {
+        let talk: [String: AnyCodable] = [
+            "resolved": AnyCodable([
+                "provider": "elevenlabs",
+                "config": [
+                    "voiceId": "voice-resolved",
+                ],
+            ]),
+            "provider": AnyCodable("elevenlabs"),
+            "providers": AnyCodable([
+                "elevenlabs": [
+                    "voiceId": "voice-normalized",
+                ],
+            ]),
+        ]
+
+        let selection = TalkConfigParsing.selectProviderConfig(talk, defaultProvider: "elevenlabs")
+        #expect(selection?.provider == "elevenlabs")
+        #expect(selection?.normalizedPayload == true)
+        #expect(selection?.config["voiceId"]?.stringValue == "voice-resolved")
+    }
+
+    @Test func rejectsNormalizedTalkProviderPayloadWithoutResolved() {
         let talk: [String: AnyCodable] = [
             "provider": AnyCodable("elevenlabs"),
             "providers": AnyCodable([
@@ -14,9 +36,7 @@ struct TalkConfigParsingTests {
         ]
 
         let selection = TalkConfigParsing.selectProviderConfig(talk, defaultProvider: "elevenlabs")
-        #expect(selection?.provider == "elevenlabs")
-        #expect(selection?.normalizedPayload == true)
-        #expect(selection?.config["voiceId"]?.stringValue == "voice-normalized")
+        #expect(selection == nil)
     }
 
     @Test func fallsBackToLegacyTalkFieldsWhenNormalizedPayloadMissing() {

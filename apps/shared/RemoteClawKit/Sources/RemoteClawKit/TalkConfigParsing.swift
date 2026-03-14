@@ -23,19 +23,12 @@ public enum TalkConfigParsing {
         allowLegacyFallback: Bool = true,
     ) -> TalkProviderConfigSelection? {
         guard let talk else { return nil }
-        let rawProvider = talk["provider"]?.stringValue
-        let rawProviders = talk["providers"]
-        let hasNormalizedPayload = rawProvider != nil || rawProviders != nil
+        if let resolvedSelection = self.resolvedProviderConfig(talk) {
+            return resolvedSelection
+        }
+        let hasNormalizedPayload = talk["provider"] != nil || talk["providers"] != nil
         if hasNormalizedPayload {
-            let normalizedProviders = self.normalizedTalkProviders(rawProviders)
-            let providerID =
-                self.normalizedTalkProviderID(rawProvider) ??
-                normalizedProviders.keys.min() ??
-                defaultProvider
-            return TalkProviderConfigSelection(
-                provider: providerID,
-                config: normalizedProviders[providerID] ?? [:],
-                normalizedPayload: true)
+            return nil
         }
         guard allowLegacyFallback else { return nil }
         return TalkProviderConfigSelection(
@@ -68,14 +61,16 @@ public enum TalkConfigParsing {
         return trimmed.isEmpty ? nil : trimmed
     }
 
-    private static func normalizedTalkProviders(_ raw: AnyCodable?) -> [String: [String: AnyCodable]] {
-        guard let providerMap = raw?.dictionaryValue else { return [:] }
-        return providerMap.reduce(into: [String: [String: AnyCodable]]()) { acc, entry in
-            guard
-                let providerID = self.normalizedTalkProviderID(entry.key),
-                let providerConfig = entry.value.dictionaryValue
-            else { return }
-            acc[providerID] = providerConfig
-        }
+    private static func resolvedProviderConfig(
+        _ talk: [String: AnyCodable]
+    ) -> TalkProviderConfigSelection? {
+        guard
+            let resolved = talk["resolved"]?.dictionaryValue,
+            let providerID = self.normalizedTalkProviderID(resolved["provider"]?.stringValue)
+        else { return nil }
+        return TalkProviderConfigSelection(
+            provider: providerID,
+            config: resolved["config"]?.dictionaryValue ?? [:],
+            normalizedPayload: true)
     }
 }

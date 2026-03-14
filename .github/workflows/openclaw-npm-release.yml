@@ -46,17 +46,12 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          RELEASE_SHA=$(git rev-parse HEAD)
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
           echo "Release plan for ${RELEASE_TAG}:"
-          echo "Resolved release SHA: ${RELEASE_SHA}"
-          echo "Resolved package version: ${PACKAGE_VERSION}"
-          echo "Would run: git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main"
-          echo "Would run with env: RELEASE_SHA=${RELEASE_SHA} RELEASE_TAG=${RELEASE_TAG} RELEASE_MAIN_REF=origin/main pnpm release:remoteclaw:npm:check"
-          echo "Would run: npm view remoteclaw@${PACKAGE_VERSION} version"
-          echo "Would run: pnpm check"
-          echo "Would run: pnpm build"
-          echo "Would run: pnpm release:check"
+          echo "git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main"
+          echo "pnpm release:remoteclaw:npm:check"
+          echo "pnpm check"
+          echo "pnpm build"
+          echo "pnpm release:check"
           bash scripts/remoteclaw-npm-publish.sh --dry-run
 
       - name: Validate release tag and package metadata
@@ -64,7 +59,7 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
           RELEASE_MAIN_REF: origin/main
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           RELEASE_SHA=$(git rev-parse HEAD)
           export RELEASE_SHA RELEASE_TAG RELEASE_MAIN_REF
           # Fetch the full main ref so merge-base ancestry checks keep working
@@ -74,7 +69,7 @@ jobs:
 
       - name: Ensure version is not already published
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
 
           if npm view "remoteclaw@${PACKAGE_VERSION}" version >/dev/null 2>&1; then
@@ -85,19 +80,13 @@ jobs:
           echo "Previewing remoteclaw@${PACKAGE_VERSION}"
 
       - name: Check
-        run: |
-          set -euxo pipefail
-          pnpm check
+        run: pnpm check
 
       - name: Build
-        run: |
-          set -euxo pipefail
-          pnpm build
+        run: pnpm build
 
       - name: Verify release contents
-        run: |
-          set -euxo pipefail
-          pnpm release:check
+        run: pnpm release:check
 
       - name: Preview publish command
         run: bash scripts/remoteclaw-npm-publish.sh --dry-run

@@ -19,6 +19,7 @@ class SecurePrefs(context: Context) {
   companion object {
     val defaultWakeWords: List<String> = listOf("remoteclaw", "claude")
     private const val displayNameKey = "node.displayName"
+    private const val locationModeKey = "location.enabledMode"
     private const val voiceWakeModeKey = "voiceWake.mode"
   }
 
@@ -44,8 +45,7 @@ class SecurePrefs(context: Context) {
   private val _cameraEnabled = MutableStateFlow(prefs.getBoolean("camera.enabled", true))
   val cameraEnabled: StateFlow<Boolean> = _cameraEnabled
 
-  private val _locationMode =
-    MutableStateFlow(LocationMode.fromRawValue(prefs.getString("location.enabledMode", "off")))
+  private val _locationMode = MutableStateFlow(loadLocationMode())
   val locationMode: StateFlow<LocationMode> = _locationMode
 
   private val _locationPreciseEnabled =
@@ -116,7 +116,7 @@ class SecurePrefs(context: Context) {
   }
 
   fun setLocationMode(mode: LocationMode) {
-    prefs.edit { putString("location.enabledMode", mode.rawValue) }
+    prefs.edit { putString(locationModeKey, mode.rawValue) }
     _locationMode.value = mode
   }
 
@@ -273,6 +273,15 @@ class SecurePrefs(context: Context) {
       prefs.edit { putString(voiceWakeModeKey, resolved.rawValue) }
     }
 
+    return resolved
+  }
+
+  private fun loadLocationMode(): LocationMode {
+    val raw = prefs.getString(locationModeKey, "off")
+    val resolved = LocationMode.fromRawValue(raw)
+    if (raw?.trim()?.lowercase() == "always") {
+      prefs.edit { putString(locationModeKey, resolved.rawValue) }
+    }
     return resolved
   }
 

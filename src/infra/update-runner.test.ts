@@ -236,12 +236,12 @@ describe("runGatewayUpdate", () => {
       if (key === "pnpm root -g") {
         return { stdout: "", stderr: "", code: 1 };
       }
-      if (key === "npm i -g remoteclaw@latest --no-fund --no-audit --loglevel=error") {
+      if (key === "npm i -g remoteclaw@next --no-fund --no-audit --loglevel=error") {
         firstAttempt = false;
         return { stdout: "", stderr: "node-gyp failed", code: 1 };
       }
       if (
-        key === "npm i -g remoteclaw@latest --omit=optional --no-fund --no-audit --loglevel=error"
+        key === "npm i -g remoteclaw@next --omit=optional --no-fund --no-audit --loglevel=error"
       ) {
         await fs.writeFile(
           path.join(pkgRoot, "package.json"),

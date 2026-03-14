@@ -265,15 +265,15 @@ export const validateNodePairVerifyParams = ajv.compile<NodePairVerifyParams>(
 );
 export const validateNodeRenameParams = ajv.compile<NodeRenameParams>(NodeRenameParamsSchema);
 export const validateNodeListParams = ajv.compile<NodeListParams>(NodeListParamsSchema);
+export const validateNodePendingAckParams = ajv.compile<NodePendingAckParams>(
+  NodePendingAckParamsSchema,
+);
 export const validateNodeDescribeParams = ajv.compile<NodeDescribeParams>(NodeDescribeParamsSchema);
 export const validateNodeInvokeParams = ajv.compile<NodeInvokeParams>(NodeInvokeParamsSchema);
 export const validateNodeInvokeResultParams = ajv.compile<NodeInvokeResultParams>(
   NodeInvokeResultParamsSchema,
 );
 export const validateNodeEventParams = ajv.compile<NodeEventParams>(NodeEventParamsSchema);
-export const validateNodePendingAckParams = ajv.compile<NodePendingAckParams>(
-  NodePendingAckParamsSchema,
-);
 export const validateNodePendingDrainParams = ajv.compile<NodePendingDrainParams>(
   NodePendingDrainParamsSchema,
 );
@@ -419,8 +419,8 @@ export {
   NodePairRejectParamsSchema,
   NodePairVerifyParamsSchema,
   NodeListParamsSchema,
-  NodeInvokeParamsSchema,
   NodePendingAckParamsSchema,
+  NodeInvokeParamsSchema,
   NodePendingDrainParamsSchema,
   NodePendingDrainResultSchema,
   NodePendingEnqueueParamsSchema,

@@ -72,6 +72,8 @@ const BASE_METHODS = [
   "node.pending.drain",
   "node.pending.enqueue",
   "node.invoke",
+  "node.pending.pull",
+  "node.pending.ack",
   "node.invoke.result",
   "node.event",
   "cron.list",

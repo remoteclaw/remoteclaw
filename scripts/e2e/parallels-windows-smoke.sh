@@ -10,8 +10,6 @@ HOST_PORT="18426"
 HOST_PORT_EXPLICIT=0
 HOST_IP=""
 LATEST_VERSION=""
-INSTALL_VERSION=""
-TARGET_PACKAGE_SPEC=""
 JSON_OUTPUT=0
 KEEP_SERVER=0
 CHECK_LATEST_REF=1
@@ -44,14 +42,6 @@ UPGRADE_AGENT_STATUS="skip"
 
 say() {
   printf '==> %s\n' "$*"
-}
-
-artifact_label() {
-  if [[ -n "$TARGET_PACKAGE_SPEC" ]]; then
-    printf 'target package tgz'
-    return
-  fi
-  printf 'current main tgz'
 }
 
 warn() {
@@ -87,10 +77,6 @@ Options:
   --host-port <port>         Host HTTP port for current-main tgz. Default: 18426
   --host-ip <ip>             Override Parallels host IP.
   --latest-version <ver>     Override npm latest version lookup.
-  --install-version <ver>    Pin site-installer version/dist-tag for the baseline lane.
-  --target-package-spec <npm-spec>
-                             Install this npm package tarball instead of packing current main.
-                             Example: remoteclaw@2026.3.13-beta.1
   --skip-latest-ref-check    Skip latest-release ref-mode precheck.
   --keep-server              Leave temp host HTTP server running.
   --json                     Print machine-readable JSON summary.
@@ -131,14 +117,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --latest-version)
       LATEST_VERSION="$2"
-      shift 2
-      ;;
-    --install-version)
-      INSTALL_VERSION="$2"
-      shift 2
-      ;;
-    --target-package-spec)
-      TARGET_PACKAGE_SPEC="$2"
       shift 2
       ;;
     --skip-latest-ref-check)
@@ -443,8 +421,6 @@ summary = {
     "snapshotId": os.environ["SUMMARY_SNAPSHOT_ID"],
     "mode": os.environ["SUMMARY_MODE"],
     "latestVersion": os.environ["SUMMARY_LATEST_VERSION"],
-    "installVersion": os.environ["SUMMARY_INSTALL_VERSION"],
-    "targetPackageSpec": os.environ["SUMMARY_TARGET_PACKAGE_SPEC"],
     "currentHead": os.environ["SUMMARY_CURRENT_HEAD"],
     "runDir": os.environ["SUMMARY_RUN_DIR"],
     "freshMain": {
@@ -580,7 +556,6 @@ ensure_guest_git() {
     return
   fi
   guest_exec cmd.exe /d /s /c "if exist \"%LOCALAPPDATA%\\RemoteClaw\\deps\\portable-git\" rmdir /s /q \"%LOCALAPPDATA%\\RemoteClaw\\deps\\portable-git\""
-  guest_exec cmd.exe /d /s /c "if not exist \"%LOCALAPPDATA%\\RemoteClaw\\deps\" mkdir \"%LOCALAPPDATA%\\RemoteClaw\\deps\""
   guest_exec cmd.exe /d /s /c "mkdir \"%LOCALAPPDATA%\\RemoteClaw\\deps\\portable-git\""
   guest_exec cmd.exe /d /s /c "curl.exe -fsSL \"$mingit_url\" -o \"%TEMP%\\$MINGIT_ZIP_NAME\""
   guest_exec cmd.exe /d /s /c "tar.exe -xf \"%TEMP%\\$MINGIT_ZIP_NAME\" -C \"%LOCALAPPDATA%\\RemoteClaw\\deps\\portable-git\""
@@ -588,30 +563,9 @@ ensure_guest_git() {
 }
 
 pack_main_tgz() {
-  local mingit_name mingit_url short_head pkg
-  if [[ -n "$TARGET_PACKAGE_SPEC" ]]; then
-    say "Pack target package tgz: $TARGET_PACKAGE_SPEC"
-    mapfile -t mingit_meta < <(resolve_mingit_download)
-    mingit_name="${mingit_meta[0]}"
-    mingit_url="${mingit_meta[1]}"
-    MINGIT_ZIP_NAME="$mingit_name"
-    MINGIT_ZIP_PATH="$MAIN_TGZ_DIR/$mingit_name"
-    if [[ ! -f "$MINGIT_ZIP_PATH" ]]; then
-      say "Download $MINGIT_ZIP_NAME"
-      curl -fsSL "$mingit_url" -o "$MINGIT_ZIP_PATH"
-    fi
-    pkg="$(
-      npm pack "$TARGET_PACKAGE_SPEC" --ignore-scripts --json --pack-destination "$MAIN_TGZ_DIR" \
-        | python3 -c 'import json, sys; data = json.load(sys.stdin); print(data[-1]["filename"])'
-    )"
-    MAIN_TGZ_PATH="$MAIN_TGZ_DIR/$(basename "$pkg")"
-    TARGET_EXPECT_VERSION="$(tar -xOf "$MAIN_TGZ_PATH" package/package.json | python3 -c "import json, sys; print(json.load(sys.stdin)['version'])")"
-    say "Packed $MAIN_TGZ_PATH"
-    say "Target package version: $TARGET_EXPECT_VERSION"
-    return
-  fi
   say "Pack current main tgz"
   ensure_current_build
+  local mingit_name mingit_url
   mapfile -t mingit_meta < <(resolve_mingit_download)
   mingit_name="${mingit_meta[0]}"
   mingit_url="${mingit_meta[1]}"
@@ -621,6 +575,7 @@ pack_main_tgz() {
     say "Download $MINGIT_ZIP_NAME"
     curl -fsSL "$mingit_url" -o "$MINGIT_ZIP_PATH"
   fi
+  local short_head pkg
   short_head="$(git rev-parse --short HEAD)"
   pkg="$(
     npm pack --ignore-scripts --json --pack-destination "$MAIN_TGZ_DIR" \
@@ -632,14 +587,6 @@ pack_main_tgz() {
   tar -xOf "$MAIN_TGZ_PATH" package/dist/build-info.json
 }
 
-verify_target_version() {
-  if [[ -n "$TARGET_PACKAGE_SPEC" ]]; then
-    verify_version_contains "$TARGET_EXPECT_VERSION"
-    return
-  fi
-  verify_version_contains "$(git rev-parse --short=7 HEAD)"
-}
-
 start_server() {
   local host_ip="$1"
   local artifact probe_url attempt
@@ -647,7 +594,7 @@ start_server() {
   attempt=0
   while :; do
     attempt=$((attempt + 1))
-    say "Serve $(artifact_label) on $host_ip:$HOST_PORT"
+    say "Serve current main tgz on $host_ip:$HOST_PORT"
     (
       cd "$MAIN_TGZ_DIR"
       exec python3 -m http.server "$HOST_PORT" --bind 0.0.0.0
@@ -670,16 +617,12 @@ start_server() {
 }
 
 install_latest_release() {
-  local install_url_q version_flag_q
+  local install_url_q
   install_url_q="$(ps_single_quote "$INSTALL_URL")"
-  version_flag_q=""
-  if [[ -n "$INSTALL_VERSION" ]]; then
-    version_flag_q="-Tag '$(ps_single_quote "$INSTALL_VERSION")' "
-  fi
   guest_powershell "$(cat <<EOF
 \$ProgressPreference = 'SilentlyContinue'
 \$script = Invoke-RestMethod -Uri '$install_url_q'
-& ([scriptblock]::Create(\$script)) ${version_flag_q}-NoOnboard
+& ([scriptblock]::Create(\$script)) -NoOnboard
 & (Join-Path \$env:APPDATA 'npm\remoteclaw.cmd') --version
 EOF
 )"
@@ -797,7 +740,7 @@ run_fresh_main_lane() {
   phase_run "fresh.ensure-git" "$TIMEOUT_INSTALL_S" ensure_guest_git "$host_ip" || return $?
   phase_run "fresh.install-main" "$TIMEOUT_INSTALL_S" install_main_tgz "$host_ip" "remoteclaw-main-fresh.tgz" || return $?
   FRESH_MAIN_VERSION="$(extract_last_version "$(phase_log_path fresh.install-main)")"
-  phase_run "fresh.verify-main-version" "$TIMEOUT_VERIFY_S" verify_target_version || return $?
+  phase_run "fresh.verify-main-version" "$TIMEOUT_VERIFY_S" verify_version_contains "$(git rev-parse --short=7 HEAD)" || return $?
   phase_run "fresh.onboard-ref" "$TIMEOUT_ONBOARD_S" run_ref_onboard || return $?
   phase_run "fresh.gateway-status" "$TIMEOUT_GATEWAY_S" verify_gateway || return $?
   FRESH_GATEWAY_STATUS="pass"
@@ -825,7 +768,7 @@ run_upgrade_lane() {
   phase_run "upgrade.ensure-git" "$TIMEOUT_INSTALL_S" ensure_guest_git "$host_ip" || return $?
   phase_run "upgrade.install-main" "$TIMEOUT_INSTALL_S" install_main_tgz "$host_ip" "remoteclaw-main-upgrade.tgz" || return $?
   UPGRADE_MAIN_VERSION="$(extract_last_version "$(phase_log_path upgrade.install-main)")"
-  phase_run "upgrade.verify-main-version" "$TIMEOUT_VERIFY_S" verify_target_version || return $?
+  phase_run "upgrade.verify-main-version" "$TIMEOUT_VERIFY_S" verify_version_contains "$(git rev-parse --short=7 HEAD)" || return $?
   phase_run "upgrade.onboard-ref" "$TIMEOUT_ONBOARD_S" run_ref_onboard || return $?
   phase_run "upgrade.gateway-status" "$TIMEOUT_GATEWAY_S" verify_gateway || return $?
   UPGRADE_GATEWAY_STATUS="pass"
@@ -882,8 +825,6 @@ SUMMARY_JSON_PATH="$(
   SUMMARY_SNAPSHOT_ID="$SNAPSHOT_ID" \
   SUMMARY_MODE="$MODE" \
   SUMMARY_LATEST_VERSION="$LATEST_VERSION" \
-  SUMMARY_INSTALL_VERSION="$INSTALL_VERSION" \
-  SUMMARY_TARGET_PACKAGE_SPEC="$TARGET_PACKAGE_SPEC" \
   SUMMARY_CURRENT_HEAD="$(git rev-parse --short HEAD)" \
   SUMMARY_RUN_DIR="$RUN_DIR" \
   SUMMARY_FRESH_MAIN_STATUS="$FRESH_MAIN_STATUS" \
@@ -903,12 +844,6 @@ if [[ "$JSON_OUTPUT" -eq 1 ]]; then
   cat "$SUMMARY_JSON_PATH"
 else
   printf '\nSummary:\n'
-  if [[ -n "$TARGET_PACKAGE_SPEC" ]]; then
-    printf '  target-package: %s\n' "$TARGET_PACKAGE_SPEC"
-  fi
-  if [[ -n "$INSTALL_VERSION" ]]; then
-    printf '  baseline-install-version: %s\n' "$INSTALL_VERSION"
-  fi
   printf '  fresh-main: %s (%s)\n' "$FRESH_MAIN_STATUS" "$FRESH_MAIN_VERSION"
   printf '  latest->main precheck: %s (%s)\n' "$UPGRADE_PRECHECK_STATUS" "$LATEST_INSTALLED_VERSION"
   printf '  latest->main: %s (%s)\n' "$UPGRADE_STATUS" "$UPGRADE_MAIN_VERSION"

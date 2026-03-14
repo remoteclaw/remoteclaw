@@ -7,6 +7,7 @@ import {
   cleanupGlobalRenameDirs,
   detectGlobalInstallManagerForRoot,
   globalInstallArgs,
+  globalInstallFallbackArgs,
 } from "./update-global.js";
 
 export type UpdateStepResult = {
@@ -198,12 +199,53 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
       stderrTail,
     };
     const steps = [updateStep];
+
+    let finalStep = updateStep;
+    if (updateStep.exitCode !== 0) {
+      const fallbackArgv = globalInstallFallbackArgs(globalManager, spec);
+      if (fallbackArgv) {
+        const fbCommand = fallbackArgv.join(" ");
+        const fbStepInfo: UpdateStepInfo = {
+          name: "global update (omit optional)",
+          command: fbCommand,
+          index: 0,
+          total: 1,
+        };
+        progress?.onStepStart?.(fbStepInfo);
+        const fbStarted = Date.now();
+        const fbResult = await runCommand(fallbackArgv, {
+          cwd: pkgRoot,
+          timeoutMs,
+        });
+        const fbDurationMs = Date.now() - fbStarted;
+        const fbStderrTail = trimLogTail(fbResult.stderr, MAX_LOG_CHARS);
+        progress?.onStepComplete?.({
+          ...fbStepInfo,
+          durationMs: fbDurationMs,
+          exitCode: fbResult.code,
+          stderrTail: fbStderrTail,
+        });
+
+        const fallbackStep: UpdateStepResult = {
+          name: "global update (omit optional)",
+          command: fbCommand,
+          cwd: pkgRoot,
+          durationMs: fbDurationMs,
+          exitCode: fbResult.code,
+          stdoutTail: trimLogTail(fbResult.stdout, MAX_LOG_CHARS),
+          stderrTail: fbStderrTail,
+        };
+        steps.push(fallbackStep);
+        finalStep = fallbackStep;
+      }
+    }
+
     const afterVersion = await readPackageVersion(pkgRoot);
     return {
-      status: updateStep.exitCode === 0 ? "ok" : "error",
+      status: finalStep.exitCode === 0 ? "ok" : "error",
       mode: globalManager,
       root: pkgRoot,
-      reason: updateStep.exitCode === 0 ? undefined : updateStep.name,
+      reason: finalStep.exitCode === 0 ? undefined : finalStep.name,
       before: { version: beforeVersion },
       after: { version: afterVersion },
       steps,

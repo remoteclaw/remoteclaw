@@ -453,7 +453,7 @@ export async function buildStatusMessage(args: StatusArgs): Promise<string> {
   const fallbackLine = isFallbackActive
     ? `↪️ Fallback: ${activeModelLabel} (${fallbackReason})`
     : null;
-  const commit = resolveCommitHash();
+  const commit = resolveCommitHash({ moduleUrl: import.meta.url });
   const versionLine = `🦀 RemoteClaw ${VERSION}${commit ? ` (${commit})` : ""}`;
   const usagePair = formatUsagePair(inputTokens, outputTokens);
   const cacheLine = formatCacheLine(inputTokens, cacheRead, cacheWrite);

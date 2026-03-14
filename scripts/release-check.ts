@@ -15,7 +15,15 @@ type PackageJson = {
     install?: {
       npmSpec?: string;
     };
+    releaseChecks?: {
+      rootDependencyMirrorAllowlist?: unknown[];
+    };
   };
+};
+type BundledExtension = { id: string; packageJson: PackageJson };
+type BundledExtensionMetadata = BundledExtension & {
+  npmSpec?: string;
+  rootDependencyMirrorAllowlist: string[];
 };
 
 const requiredPathGroups = [
@@ -47,7 +55,7 @@ const ALLOWLISTED_BUNDLED_EXTENSION_ROOT_DEP_GAPS: Record<string, string[]> = {
 
 export function collectBundledExtensionRootDependencyGapErrors(params: {
   rootPackage: PackageJson;
-  extensions: Array<{ id: string; packageJson: PackageJson }>;
+  extensions: BundledExtension[];
 }): string[] {
   const rootDeps = {
     ...params.rootPackage.dependencies,
@@ -55,8 +63,8 @@ export function collectBundledExtensionRootDependencyGapErrors(params: {
   };
   const errors: string[] = [];
 
-  for (const extension of params.extensions) {
-    if (!extension.packageJson.remoteclaw?.install?.npmSpec) {
+  for (const extension of normalizeBundledExtensionMetadata(params.extensions)) {
+    if (!extension.npmSpec) {
       continue;
     }
 
@@ -86,7 +94,57 @@ export function collectBundledExtensionRootDependencyGapErrors(params: {
   return errors;
 }
 
-function collectBundledExtensions(): Array<{ id: string; packageJson: PackageJson }> {
+function normalizeBundledExtensionMetadata(
+  extensions: BundledExtension[],
+): BundledExtensionMetadata[] {
+  return extensions.map((extension) => ({
+    ...extension,
+    npmSpec:
+      typeof extension.packageJson.remoteclaw?.install?.npmSpec === "string"
+        ? extension.packageJson.remoteclaw.install.npmSpec.trim()
+        : undefined,
+    rootDependencyMirrorAllowlist:
+      extension.packageJson.remoteclaw?.releaseChecks?.rootDependencyMirrorAllowlist?.filter(
+        (entry): entry is string => typeof entry === "string" && entry.trim().length > 0,
+      ) ?? [],
+  }));
+}
+
+export function collectBundledExtensionManifestErrors(extensions: BundledExtension[]): string[] {
+  const errors: string[] = [];
+  for (const extension of extensions) {
+    const install = extension.packageJson.remoteclaw?.install;
+    if (
+      install &&
+      (!install.npmSpec || typeof install.npmSpec !== "string" || !install.npmSpec.trim())
+    ) {
+      errors.push(
+        `bundled extension '${extension.id}' manifest invalid | remoteclaw.install.npmSpec must be a non-empty string`,
+      );
+    }
+
+    const allowlist =
+      extension.packageJson.remoteclaw?.releaseChecks?.rootDependencyMirrorAllowlist;
+    if (allowlist === undefined) {
+      continue;
+    }
+    if (!Array.isArray(allowlist)) {
+      errors.push(
+        `bundled extension '${extension.id}' manifest invalid | remoteclaw.releaseChecks.rootDependencyMirrorAllowlist must be an array of non-empty strings`,
+      );
+      continue;
+    }
+    const invalidEntries = allowlist.filter((entry) => typeof entry !== "string" || !entry.trim());
+    if (invalidEntries.length > 0) {
+      errors.push(
+        `bundled extension '${extension.id}' manifest invalid | remoteclaw.releaseChecks.rootDependencyMirrorAllowlist must contain only non-empty strings`,
+      );
+    }
+  }
+  return errors;
+}
+
+function collectBundledExtensions(): BundledExtension[] {
   const extensionsDir = resolve("extensions");
   const entries = readdirSync(extensionsDir, { withFileTypes: true }).filter((entry) =>
     entry.isDirectory(),
@@ -109,9 +167,18 @@ function collectBundledExtensions(): Array<{ id: string; packageJson: PackageJso
 
 function checkBundledExtensionRootDependencyMirrors() {
   const rootPackage = JSON.parse(readFileSync(resolve("package.json"), "utf8")) as PackageJson;
+  const extensions = collectBundledExtensions();
+  const manifestErrors = collectBundledExtensionManifestErrors(extensions);
+  if (manifestErrors.length > 0) {
+    console.error("release-check: bundled extension manifest validation failed:");
+    for (const error of manifestErrors) {
+      console.error(`  - ${error}`);
+    }
+    process.exit(1);
+  }
   const errors = collectBundledExtensionRootDependencyGapErrors({
     rootPackage,
-    extensions: collectBundledExtensions(),
+    extensions,
   });
   if (errors.length > 0) {
     console.error("release-check: bundled extension root dependency mirror validation failed:");

@@ -476,6 +476,7 @@ async function handleSlashCommandAsync(params: {
     channel: "mattermost",
     accountId: account.accountId,
   });
+  const humanDelay = core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId);
 
   const typingCallbacks = createTypingCallbacks({
     start: () => sendMattermostTyping(client, { channelId }),
@@ -492,7 +493,7 @@ async function handleSlashCommandAsync(params: {
   const { dispatcher, replyOptions, markDispatchIdle } =
     core.channel.reply.createReplyDispatcherWithTyping({
       ...prefixOptions,
-      humanDelay: core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId),
+      humanDelay,
       deliver: async (payload: ReplyPayload) => {
         await deliverMattermostReplyPayload({
           core,

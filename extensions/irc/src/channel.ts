@@ -15,9 +15,15 @@ import {
   getChatChannelMeta,
   mapAllowFromEntries,
   PAIRING_APPROVED_MESSAGE,
+<<<<<<< HEAD
   resolveOptionalConfigString,
+||||||| parent of e885f1999f (refactor: reduce extension channel setup duplication)
+  runPassiveAccountLifecycle,
+=======
+>>>>>>> e885f1999f (refactor: reduce extension channel setup duplication)
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
+<<<<<<< HEAD
 } from "remoteclaw/plugin-sdk";
 ||||||| parent of d868ee0882 (refactor: adopt chat plugin builder in irc)
   composeWarningCollectors,
@@ -42,6 +48,12 @@ import {
 } from "openclaw/plugin-sdk/directory-runtime";
 import { runStoppablePassiveMonitor } from "openclaw/plugin-sdk/extension-shared";
 >>>>>>> d868ee0882 (refactor: adopt chat plugin builder in irc)
+||||||| parent of e885f1999f (refactor: reduce extension channel setup duplication)
+} from "openclaw/plugin-sdk/irc";
+=======
+} from "openclaw/plugin-sdk/irc";
+import { runStoppablePassiveMonitor } from "../../shared/passive-monitor.js";
+>>>>>>> e885f1999f (refactor: reduce extension channel setup duplication)
 import {
   listIrcAccountIds,
   resolveDefaultIrcAccountId,

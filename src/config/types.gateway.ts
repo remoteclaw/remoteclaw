@@ -56,7 +56,7 @@ export type TalkProviderConfig = {
   /** Default provider output format (for example pcm_44100). */
   outputFormat?: string;
   /** Provider API key (optional; provider-specific env fallback may apply). */
-  apiKey?: string;
+  apiKey?: string | { source: "env" | "file" | "exec"; provider: string; id: string };
   /** Provider-specific extensions. */
   [key: string]: unknown;
 };
@@ -86,7 +86,7 @@ export type TalkConfig = {
   voiceAliases?: Record<string, string>;
   modelId?: string;
   outputFormat?: string;
-  apiKey?: string;
+  apiKey?: string | { source: "env" | "file" | "exec"; provider: string; id: string };
 };
 
 export type TalkConfigResponse = TalkConfig & {

@@ -1,3 +1,4 @@
+import { shouldSuppressLocalDiscordExecApprovalPrompt } from "../../../extensions/discord/src/exec-approvals.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {

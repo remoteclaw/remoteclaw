@@ -1,12 +1,16 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { ZodIssue } from "zod";
-import { normalizeChatChannelId } from "../channels/registry.js";
+import { inspectTelegramAccount } from "../../extensions/telegram/src/account-inspect.js";
+import {
+  listTelegramAccountIds,
+  resolveTelegramAccount,
+} from "../../extensions/telegram/src/accounts.js";
 import {
   isNumericTelegramUserId,
   normalizeTelegramAllowFromEntry,
-} from "../channels/telegram/allow-from.js";
-import { lookupTelegramChatId } from "../channels/telegram/api.js";
+} from "../../extensions/telegram/src/allow-from.js";
+import { fetchTelegramChatId } from "../../extensions/telegram/src/api-fetch.js";
+import { normalizeChatChannelId } from "../channels/registry.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { listRouteBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -37,7 +41,6 @@ import {
   isSlackMutableAllowEntry,
   isZalouserMutableGroupEntry,
 } from "../security/mutable-allowlist-detectors.js";
-import { listTelegramAccountIds, resolveTelegramAccount } from "../telegram/accounts.js";
 import { note } from "../terminal/note.js";
 import { resolveHomeDir } from "../utils.js";
 import { normalizeCompatibilityConfigValues } from "./doctor-legacy-config.js";

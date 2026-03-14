@@ -1,16 +1,17 @@
-import type { RemoteClawConfig } from "../../config/config.js";
-import { readBooleanParam } from "../../plugin-sdk/boolean-param.js";
-import { resolvePollMaxSelections } from "../../polls.js";
+import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import {
   createTelegramActionGate,
   resolveTelegramPollActionGateState,
-} from "../../telegram/accounts.js";
-import type { TelegramButtonStyle, TelegramInlineButtons } from "../../telegram/button-types.js";
+} from "../../../extensions/telegram/src/accounts.js";
+import type {
+  TelegramButtonStyle,
+  TelegramInlineButtons,
+} from "../../../extensions/telegram/src/button-types.js";
 import {
   resolveTelegramInlineButtonsScope,
   resolveTelegramTargetChatType,
-} from "../../telegram/inline-buttons.js";
-import { resolveTelegramReactionLevel } from "../../telegram/reaction-level.js";
+} from "../../../extensions/telegram/src/inline-buttons.js";
+import { resolveTelegramReactionLevel } from "../../../extensions/telegram/src/reaction-level.js";
 import {
   createForumTopicTelegram,
   deleteMessageTelegram,
@@ -20,10 +21,12 @@ import {
   sendMessageTelegram,
   sendPollTelegram,
   sendStickerTelegram,
-} from "../../telegram/send.js";
-import { getCacheStats, searchStickers } from "../../telegram/sticker-cache.js";
-import { resolveTelegramToken } from "../../telegram/token.js";
-import type { AgentToolResult } from "../agent-types.js";
+} from "../../../extensions/telegram/src/send.js";
+import { getCacheStats, searchStickers } from "../../../extensions/telegram/src/sticker-cache.js";
+import { resolveTelegramToken } from "../../../extensions/telegram/src/token.js";
+import type { RemoteClawConfig } from "../../config/config.js";
+import { readBooleanParam } from "../../plugin-sdk/boolean-param.js";
+import { resolvePollMaxSelections } from "../../polls.js";
 import {
   jsonResult,
   readNumberParam,

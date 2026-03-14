@@ -1,4 +1,9 @@
 import {
+  markdownToSignalTextChunks,
+  type SignalTextStyleRange,
+} from "../../../extensions/signal/src/format.js";
+import { sendMessageSignal } from "../../../extensions/signal/src/send.js";
+import {
   chunkByParagraph,
   chunkMarkdownTextWithMode,
   resolveChunkMode,
@@ -26,12 +31,9 @@ import {
   toPluginMessageContext,
   toPluginMessageSentEvent,
 } from "../../hooks/message-hook-mappers.js";
-import type { sendMessageIMessage } from "../../imessage/send.js";
-import { markdownToSignalTextChunks, type SignalTextStyleRange } from "../../signal/format.js";
-import { sendMessageSignal } from "../../signal/send.js";
-import type { sendMessageSlack } from "../../slack/send.js";
-import type { sendMessageTelegram } from "../../telegram/send.js";
-import type { sendMessageWhatsApp } from "../../web/outbound.js";
+import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
+import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { throwIfAborted } from "./abort.js";
 import { ackDelivery, enqueueDelivery, failDelivery } from "./delivery-queue.js";
 import type { OutboundIdentity } from "./identity.js";

@@ -1,6 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseSlackTarget } from "../../../extensions/slack/src/targets.js";
+import { parseTelegramTarget } from "../../../extensions/telegram/src/targets.js";
+import { loadWebMedia } from "../../../extensions/whatsapp/src/media.js";
+import { assertMediaNotDataUrl, resolveSandboxedMediaSource } from "../../agents/sandbox-paths.js";
 import { readStringParam } from "../../agents/tools/common.js";
 import type {
   ChannelId,
@@ -10,9 +14,6 @@ import type {
 import type { RemoteClawConfig } from "../../config/config.js";
 import { extensionForMime } from "../../media/mime.js";
 import { readBooleanParam as readBooleanParamShared } from "../../plugin-sdk/boolean-param.js";
-import { parseSlackTarget } from "../../slack/targets.js";
-import { parseTelegramTarget } from "../../telegram/targets.js";
-import { loadWebMedia } from "../../web/media.js";
 
 export const readBooleanParam = readBooleanParamShared;
 

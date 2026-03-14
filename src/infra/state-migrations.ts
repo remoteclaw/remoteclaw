@@ -1,5 +1,37 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { listTelegramAccountIds } from "../../extensions/telegram/src/accounts.js";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import type { RemoteClawConfig } from "../config/config.js";
+import {
+  resolveLegacyStateDirs,
+  resolveNewStateDir,
+  resolveOAuthDir,
+  resolveStateDir,
+} from "../config/paths.js";
+import type { SessionEntry } from "../config/sessions.js";
+import { saveSessionStore } from "../config/sessions.js";
+import { canonicalizeMainSessionAlias } from "../config/sessions/main-session.js";
 import type { SessionScope } from "../config/sessions/types.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
+import { resolveChannelAllowFromPath } from "../pairing/pairing-store.js";
+import {
+  buildAgentMainSessionKey,
+  DEFAULT_ACCOUNT_ID,
+  DEFAULT_MAIN_KEY,
+  normalizeAgentId,
+} from "../routing/session-key.js";
+import { isWithinDir } from "./path-safety.js";
+import {
+  ensureDir,
+  existsDir,
+  fileExists,
+  isLegacyWhatsAppAuthFile,
+  readSessionStoreJson5,
+  type SessionEntryLike,
+  safeReadDir,
+} from "./state-migrations.fs.js";
 
 export type LegacyStateDetection = {
   targetAgentId: string;

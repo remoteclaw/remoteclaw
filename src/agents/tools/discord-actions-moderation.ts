@@ -1,11 +1,11 @@
-import type { DiscordActionConfig } from "../../config/config.js";
+import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import {
   banMemberDiscord,
   hasAnyGuildPermissionDiscord,
   kickMemberDiscord,
   timeoutMemberDiscord,
-} from "../../discord/send.js";
-import type { AgentToolResult } from "../agent-types.js";
+} from "../../../extensions/discord/src/send.js";
+import type { DiscordActionConfig } from "../../config/config.js";
 import { type ActionGate, jsonResult, readStringParam } from "./common.js";
 import {
   isDiscordModerationAction,

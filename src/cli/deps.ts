@@ -60,30 +60,36 @@ function loadIMessageSenderRuntime() {
 
 export function createDefaultDeps(): CliDeps {
   return {
-    sendMessageWhatsApp: async (...args) => {
-      const { sendMessageWhatsApp } = await loadWhatsAppSenderRuntime();
-      return await sendMessageWhatsApp(...args);
-    },
-    sendMessageTelegram: async (...args) => {
-      const { sendMessageTelegram } = await loadTelegramSenderRuntime();
-      return await sendMessageTelegram(...args);
-    },
-    sendMessageDiscord: async (...args) => {
-      const { sendMessageDiscord } = await loadDiscordSenderRuntime();
-      return await sendMessageDiscord(...args);
-    },
-    sendMessageSlack: async (...args) => {
-      const { sendMessageSlack } = await loadSlackSenderRuntime();
-      return await sendMessageSlack(...args);
-    },
-    sendMessageSignal: async (...args) => {
-      const { sendMessageSignal } = await loadSignalSenderRuntime();
-      return await sendMessageSignal(...args);
-    },
-    sendMessageIMessage: async (...args) => {
-      const { sendMessageIMessage } = await loadIMessageSenderRuntime();
-      return await sendMessageIMessage(...args);
-    },
+    whatsapp: createLazySender(
+      "whatsapp",
+      () => import("../channels/web/index.js") as Promise<Record<string, unknown>>,
+      "sendMessageWhatsApp",
+    ),
+    telegram: createLazySender(
+      "telegram",
+      () => import("../../extensions/telegram/src/send.js") as Promise<Record<string, unknown>>,
+      "sendMessageTelegram",
+    ),
+    discord: createLazySender(
+      "discord",
+      () => import("../../extensions/discord/src/send.js") as Promise<Record<string, unknown>>,
+      "sendMessageDiscord",
+    ),
+    slack: createLazySender(
+      "slack",
+      () => import("../../extensions/slack/src/send.js") as Promise<Record<string, unknown>>,
+      "sendMessageSlack",
+    ),
+    signal: createLazySender(
+      "signal",
+      () => import("../../extensions/signal/src/send.js") as Promise<Record<string, unknown>>,
+      "sendMessageSignal",
+    ),
+    imessage: createLazySender(
+      "imessage",
+      () => import("../../extensions/imessage/src/send.js") as Promise<Record<string, unknown>>,
+      "sendMessageIMessage",
+    ),
   };
 }
 
@@ -91,4 +97,4 @@ export function createOutboundSendDeps(deps: CliDeps): OutboundSendDeps {
   return createOutboundSendDepsFromCliSource(deps);
 }
 
-export { logWebSelfId } from "../web/auth-store.js";
+export { logWebSelfId } from "../../extensions/whatsapp/src/auth-store.js";

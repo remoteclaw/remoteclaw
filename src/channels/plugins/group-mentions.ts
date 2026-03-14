@@ -1,3 +1,4 @@
+import { inspectSlackAccount } from "../../../extensions/slack/src/account-inspect.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   resolveChannelGroupRequireMention,
@@ -5,7 +6,12 @@ import {
   resolveToolsBySender,
 } from "../../config/group-policy.js";
 import type { DiscordConfig } from "../../config/types.js";
-import { resolveSlackAccount } from "../../slack/accounts.js";
+import type {
+  GroupToolPolicyBySenderConfig,
+  GroupToolPolicyConfig,
+} from "../../config/types.tools.js";
+import { resolveExactLineGroupConfigKey } from "../../line/group-keys.js";
+import { normalizeAtHashSlug, normalizeHyphenSlug } from "../../shared/string-normalization.js";
 import type { ChannelGroupContext } from "./types.js";
 
 type GroupMentionParams = ChannelGroupContext;

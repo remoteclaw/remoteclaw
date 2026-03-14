@@ -1,10 +1,15 @@
-import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
-import type { listChannelPlugins } from "../channels/plugins/index.js";
-import type { ChannelId } from "../channels/plugins/types.js";
 import {
   isNumericTelegramUserId,
   normalizeTelegramAllowFromEntry,
-} from "../channels/telegram/allow-from.js";
+} from "../../extensions/telegram/src/allow-from.js";
+import {
+  hasConfiguredUnavailableCredentialStatus,
+  hasResolvedCredentialValue,
+} from "../channels/account-snapshot-fields.js";
+import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
+import type { listChannelPlugins } from "../channels/plugins/index.js";
+import type { ChannelId } from "../channels/plugins/types.js";
+import { inspectReadOnlyChannelAccount } from "../channels/read-only-account-inspect.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolveNativeCommandsEnabled } from "../config/commands.js";
 import type { RemoteClawConfig } from "../config/config.js";

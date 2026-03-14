@@ -1,3 +1,4 @@
+import { isSlackInteractiveRepliesEnabled } from "../../extensions/slack/src/interactive-replies.js";
 import { resolveEffectiveMessagesConfig, resolveIdentityName } from "../agents/identity.js";
 import {
   extractShortModelName,

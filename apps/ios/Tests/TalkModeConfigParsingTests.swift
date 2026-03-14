@@ -1,3 +1,5 @@
+import Foundation
+import RemoteClawKit
 import Testing
 @testable import RemoteClaw
 
@@ -14,9 +16,10 @@ import Testing
             "voiceId": "voice-legacy",
         ]
 
-        let selection = TalkModeManager.selectTalkProviderConfig(talk)
+        let selection = TalkModeManager.selectTalkProviderConfig(
+            TalkConfigParsing.bridgeFoundationDictionary(talk))
         #expect(selection?.provider == "elevenlabs")
-        #expect(selection?.config["voiceId"] as? String == "voice-normalized")
+        #expect(selection?.config["voiceId"]?.stringValue == "voice-normalized")
     }
 
     @Test func ignoresLegacyTalkFieldsWhenNormalizedPayloadMissing() {
@@ -25,7 +28,8 @@ import Testing
             "apiKey": "legacy-key",
         ]
 
-        let selection = TalkModeManager.selectTalkProviderConfig(talk)
+        let selection = TalkModeManager.selectTalkProviderConfig(
+            TalkConfigParsing.bridgeFoundationDictionary(talk))
         #expect(selection == nil)
     }
 
@@ -34,7 +38,7 @@ import Testing
             "silenceTimeoutMs": 1500,
         ]
 
-        #expect(TalkModeManager.resolvedSilenceTimeoutMs(talk) == 1500)
+        #expect(TalkModeManager.resolvedSilenceTimeoutMs(TalkConfigParsing.bridgeFoundationDictionary(talk)) == 1500)
     }
 
     @Test func defaultsSilenceTimeoutMsWhenMissing() {
@@ -46,7 +50,7 @@ import Testing
             "silenceTimeoutMs": 0,
         ]
 
-        #expect(TalkModeManager.resolvedSilenceTimeoutMs(talk) == 900)
+        #expect(TalkModeManager.resolvedSilenceTimeoutMs(TalkConfigParsing.bridgeFoundationDictionary(talk)) == 900)
     }
 
     @Test func defaultsSilenceTimeoutMsWhenBool() {
@@ -54,6 +58,6 @@ import Testing
             "silenceTimeoutMs": true,
         ]
 
-        #expect(TalkModeManager.resolvedSilenceTimeoutMs(talk) == 900)
+        #expect(TalkModeManager.resolvedSilenceTimeoutMs(TalkConfigParsing.bridgeFoundationDictionary(talk)) == 900)
     }
 }

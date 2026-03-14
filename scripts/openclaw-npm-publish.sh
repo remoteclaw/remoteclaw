@@ -20,7 +20,16 @@ fi
 
 echo "Resolved package version: ${package_version}"
 echo "Resolved release channel: ${release_channel}"
-echo "Publish auth: GitHub OIDC trusted publishing"
+
+if [[ -n "${NODE_AUTH_TOKEN:-}" ]]; then
+  if [[ "${mode}" == "--dry-run" ]]; then
+    echo 'Would write npm auth config to $HOME/.npmrc using NODE_AUTH_TOKEN'
+  else
+    printf '//registry.npmjs.org/:_authToken=%s\n' "${NODE_AUTH_TOKEN}" > "${HOME}/.npmrc"
+  fi
+else
+  echo 'No NODE_AUTH_TOKEN set in this environment'
+fi
 
 printf 'Publish command:'
 printf ' %q' "${publish_cmd[@]}"

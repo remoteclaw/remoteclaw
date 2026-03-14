@@ -151,6 +151,53 @@ async function addMainSystemEventCronJob(params: { ws: WebSocket; name: string; 
   return expectCronJobIdFromResponse(response);
 }
 
+async function addWebhookCronJob(params: {
+  ws: WebSocket;
+  name: string;
+  sessionTarget?: "main" | "isolated";
+  payloadText?: string;
+  delivery: Record<string, unknown>;
+}) {
+  const response = await rpcReq(params.ws, "cron.add", {
+    name: params.name,
+    enabled: true,
+    schedule: { kind: "every", everyMs: 60_000 },
+    sessionTarget: params.sessionTarget ?? "main",
+    wakeMode: "next-heartbeat",
+    payload: {
+      kind: params.sessionTarget === "isolated" ? "agentTurn" : "systemEvent",
+      ...(params.sessionTarget === "isolated"
+        ? { message: params.payloadText ?? "test" }
+        : { text: params.payloadText ?? "send webhook" }),
+    },
+    delivery: params.delivery,
+  });
+  return expectCronJobIdFromResponse(response);
+}
+
+async function writeCronConfig(config: unknown) {
+  const configPath = process.env.REMOTECLAW_CONFIG_PATH;
+  expect(typeof configPath).toBe("string");
+  await fs.mkdir(path.dirname(configPath as string), { recursive: true });
+  await fs.writeFile(configPath as string, JSON.stringify(config, null, 2), "utf-8");
+}
+
+async function runCronJobForce(ws: WebSocket, id: string) {
+  const response = await rpcReq(ws, "cron.run", { id, mode: "force" }, 20_000);
+  expect(response.ok).toBe(true);
+  expect(response.payload).toEqual({ ok: true, enqueued: true, runId: expect.any(String) });
+  return response;
+}
+
+async function runCronJobAndWaitForFinished(ws: WebSocket, jobId: string) {
+  const finished = waitForCronEvent(
+    ws,
+    (payload) => payload?.jobId === jobId && payload?.action === "finished",
+  );
+  await runCronJobForce(ws, jobId);
+  await finished;
+}
+
 function getWebhookCall(index: number) {
   const [args] = fetchWithSsrFGuardMock.mock.calls[index] as unknown as [
     {
@@ -539,23 +586,12 @@ describe("gateway server cron", () => {
       jobs: [legacyNotifyJob],
     });
 
-    const configPath = process.env.REMOTECLAW_CONFIG_PATH;
-    expect(typeof configPath).toBe("string");
-    await fs.mkdir(path.dirname(configPath as string), { recursive: true });
-    await fs.writeFile(
-      configPath as string,
-      JSON.stringify(
-        {
-          cron: {
-            webhook: "https://legacy.example.invalid/cron-finished",
-            webhookToken: "cron-webhook-token",
-          },
-        },
-        null,
-        2,
-      ),
-      "utf-8",
-    );
+    await writeCronConfig({
+      cron: {
+        webhook: "https://legacy.example.invalid/cron-finished",
+        webhookToken: "cron-webhook-token",
+      },
+    });
 
     fetchWithSsrFGuardMock.mockClear();
 
@@ -583,18 +619,7 @@ describe("gateway server cron", () => {
         payload: { kind: "systemEvent", text: "send webhook" },
         delivery: { mode: "webhook", to: "https://example.invalid/cron-finished" },
       });
-      expect(notifyRes.ok).toBe(true);
-      const notifyJobIdValue = (notifyRes.payload as { id?: unknown } | null)?.id;
-      const notifyJobId = typeof notifyJobIdValue === "string" ? notifyJobIdValue : "";
-      expect(notifyJobId.length > 0).toBe(true);
-
-      const notifyRunRes = await rpcReq(ws, "cron.run", { id: notifyJobId, mode: "force" }, 20_000);
-      expect(notifyRunRes.ok).toBe(true);
-
-      await waitForCondition(
-        () => fetchWithSsrFGuardMock.mock.calls.length === 1,
-        CRON_WAIT_TIMEOUT_MS,
-      );
+      await runCronJobAndWaitForFinished(ws, notifyJobId);
       const notifyCall = getWebhookCall(0);
       expect(notifyCall.url).toBe("https://example.invalid/cron-finished");
       expect(notifyCall.init.method).toBe("POST");
@@ -700,16 +725,39 @@ describe("gateway server cron", () => {
       const noSummaryJobId = typeof noSummaryJobIdValue === "string" ? noSummaryJobIdValue : "";
       expect(noSummaryJobId.length > 0).toBe(true);
 
-      const noSummaryRunRes = await rpcReq(
+    await writeCronConfig({
+      cron: {
+        webhookToken: {
+          opaque: true,
+        },
+      },
+    });
+
+    fetchWithSsrFGuardMock.mockClear();
+
+    const { server, ws } = await startServerWithClient();
+    await connectOk(ws);
+
+    try {
+      const notifyJobId = await addWebhookCronJob({
         ws,
-        "cron.run",
-        { id: noSummaryJobId, mode: "force" },
-        20_000,
-      );
-      expect(noSummaryRunRes.ok).toBe(true);
-      await yieldToEventLoop();
-      await yieldToEventLoop();
-      expect(fetchWithSsrFGuardMock).toHaveBeenCalledTimes(1);
+        name: "webhook secretinput object",
+        delivery: { mode: "webhook", to: "https://example.invalid/cron-finished" },
+      });
+      await runCronJobAndWaitForFinished(ws, notifyJobId);
+      const [notifyArgs] = fetchWithSsrFGuardMock.mock.calls[0] as unknown as [
+        {
+          url?: string;
+          init?: {
+            method?: string;
+            headers?: Record<string, string>;
+          };
+        },
+      ];
+      expect(notifyArgs.url).toBe("https://example.invalid/cron-finished");
+      expect(notifyArgs.init?.method).toBe("POST");
+      expect(notifyArgs.init?.headers?.Authorization).toBeUndefined();
+      expect(notifyArgs.init?.headers?.["Content-Type"]).toBe("application/json");
     } finally {
       await cleanupCronTestRun({ ws, server, prevSkipCron });
     }

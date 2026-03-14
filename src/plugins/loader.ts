@@ -740,12 +740,10 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     const register = resolved.register;
 
     if (definition?.id && definition.id !== record.id) {
-      registry.diagnostics.push({
-        level: "warn",
-        pluginId: record.id,
-        source: record.source,
-        message: `plugin id mismatch (config uses "${record.id}", export uses "${definition.id}")`,
-      });
+      pushPluginLoadError(
+        `plugin id mismatch (config uses "${record.id}", export uses "${definition.id}")`,
+      );
+      continue;
     }
 
     record.name = definition?.name ?? record.name;

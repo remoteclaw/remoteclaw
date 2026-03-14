@@ -1,6 +1,10 @@
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { loadSessionStore, resolveStorePath } from "../../config/sessions.js";
+import {
+  loadSessionStore,
+  parseSessionThreadInfo,
+  resolveStorePath,
+} from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { fireAndForgetHook } from "../../hooks/fire-and-forget.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
@@ -156,6 +160,11 @@ export async function dispatchReplyFromConfig(params: {
     return { queuedFinal: false, counts: dispatcher.getQueuedCounts() };
   }
 
+  // Restore route thread context only from the active turn or the thread-scoped session key.
+  // Do not read thread ids from the normalised session store here: `origin.threadId` can be
+  // folded back into lastThreadId/deliveryContext during store normalisation and resurrect a
+  // stale route after thread delivery was intentionally cleared.
+  const routeThreadId = ctx.MessageThreadId ?? parseSessionThreadInfo(sessionKey).threadId;
   const inboundAudio = isInboundAudioContext(ctx);
   const sessionTtsAuto = resolveSessionTtsAuto(ctx, cfg);
   const hookRunner = getGlobalHookRunner();
@@ -243,7 +252,7 @@ export async function dispatchReplyFromConfig(params: {
       to: originatingTo,
       sessionKey: ctx.SessionKey,
       accountId: ctx.AccountId,
-      threadId: ctx.MessageThreadId,
+      threadId: routeThreadId,
       cfg,
       abortSignal,
       mirror,
@@ -272,7 +281,7 @@ export async function dispatchReplyFromConfig(params: {
           to: originatingTo,
           sessionKey: ctx.SessionKey,
           accountId: ctx.AccountId,
-          threadId: ctx.MessageThreadId,
+          threadId: routeThreadId,
           cfg,
           isGroup,
           groupId,
@@ -417,7 +426,7 @@ export async function dispatchReplyFromConfig(params: {
           to: originatingTo,
           sessionKey: ctx.SessionKey,
           accountId: ctx.AccountId,
-          threadId: ctx.MessageThreadId,
+          threadId: routeThreadId,
           cfg,
           isGroup,
           groupId,
@@ -469,7 +478,7 @@ export async function dispatchReplyFromConfig(params: {
               to: originatingTo,
               sessionKey: ctx.SessionKey,
               accountId: ctx.AccountId,
-              threadId: ctx.MessageThreadId,
+              threadId: routeThreadId,
               cfg,
               isGroup,
               groupId,

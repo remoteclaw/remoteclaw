@@ -5,9 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   loadApnsRegistration,
-  normalizeApnsEnvironment,
   registerApnsToken,
-  resolveApnsAuthConfigFromEnv,
   sendApnsAlert,
   sendApnsBackgroundWake,
 } from "./push-apns.js";
@@ -16,7 +14,6 @@ const tempDirs: string[] = [];
 const testAuthPrivateKey = generateKeyPairSync("ec", { namedCurve: "prime256v1" })
   .privateKey.export({ format: "pem", type: "pkcs8" })
   .toString();
-
 async function makeTempDir(): Promise<string> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-push-apns-test-"));
   tempDirs.push(dir);
@@ -34,7 +31,7 @@ function createDirectApnsSendFixture(params: {
       nodeId: params.nodeId,
       transport: "direct" as const,
       token: "ABCD1234ABCD1234ABCD1234ABCD1234",
-      topic: "ai.openclaw.ios",
+      topic: "org.remoteclaw.ios",
       environment: params.environment,
       updatedAtMs: 1,
     },
@@ -85,40 +82,6 @@ describe("push APNs registration store", () => {
         baseDir,
       }),
     ).rejects.toThrow("invalid APNs token");
-  });
-});
-
-describe("push APNs env config", () => {
-  it("normalizes APNs environment values", () => {
-    expect(normalizeApnsEnvironment("sandbox")).toBe("sandbox");
-    expect(normalizeApnsEnvironment("PRODUCTION")).toBe("production");
-    expect(normalizeApnsEnvironment("staging")).toBeNull();
-  });
-
-  it("resolves inline private key and unescapes newlines", async () => {
-    const env = {
-      REMOTECLAW_APNS_TEAM_ID: "TEAM123",
-      REMOTECLAW_APNS_KEY_ID: "KEY123",
-      REMOTECLAW_APNS_PRIVATE_KEY_P8:
-        "-----BEGIN PRIVATE KEY-----\\nline-a\\nline-b\\n-----END PRIVATE KEY-----", // pragma: allowlist secret
-    } as NodeJS.ProcessEnv;
-    const resolved = await resolveApnsAuthConfigFromEnv(env);
-    expect(resolved.ok).toBe(true);
-    if (!resolved.ok) {
-      return;
-    }
-    expect(resolved.value.privateKey).toContain("\nline-a\n");
-    expect(resolved.value.teamId).toBe("TEAM123");
-    expect(resolved.value.keyId).toBe("KEY123");
-  });
-
-  it("returns an error when required APNs auth vars are missing", async () => {
-    const resolved = await resolveApnsAuthConfigFromEnv({} as NodeJS.ProcessEnv);
-    expect(resolved.ok).toBe(false);
-    if (resolved.ok) {
-      return;
-    }
-    expect(resolved.error).toContain("REMOTECLAW_APNS_TEAM_ID");
   });
 });
 

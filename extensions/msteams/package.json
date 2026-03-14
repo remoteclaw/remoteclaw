@@ -27,6 +27,11 @@
       "npmSpec": "@remoteclaw/msteams",
       "localPath": "extensions/msteams",
       "defaultChoice": "npm"
+    },
+    "releaseChecks": {
+      "rootDependencyMirrorAllowlist": [
+        "@microsoft/agents-hosting"
+      ]
     }
   }
 }

@@ -25,6 +25,11 @@
       "npmSpec": "@remoteclaw/nostr",
       "localPath": "extensions/nostr",
       "defaultChoice": "npm"
+    },
+    "releaseChecks": {
+      "rootDependencyMirrorAllowlist": [
+        "nostr-tools"
+      ]
     }
   }
 }

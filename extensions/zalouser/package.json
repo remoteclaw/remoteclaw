@@ -27,6 +27,11 @@
       "npmSpec": "@remoteclaw/zalouser",
       "localPath": "extensions/zalouser",
       "defaultChoice": "npm"
+    },
+    "releaseChecks": {
+      "rootDependencyMirrorAllowlist": [
+        "zca-js"
+      ]
     }
   }
 }

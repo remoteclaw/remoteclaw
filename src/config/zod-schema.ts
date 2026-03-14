@@ -69,6 +69,7 @@ const TalkSchema = z
     outputFormat: z.string().optional(),
     apiKey: z.string().optional().register(sensitive),
     interruptOnSpeech: z.boolean().optional(),
+    silenceTimeoutMs: z.number().int().positive().optional(),
   })
   .strict()
   .superRefine((talk, ctx) => {

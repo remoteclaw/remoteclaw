@@ -55,6 +55,11 @@ class TalkModeManager(
     private const val defaultModelIdFallback = "eleven_v3"
     private const val defaultOutputFormatFallback = "pcm_24000"
     private const val defaultTalkProvider = "elevenlabs"
+    private const val defaultSilenceTimeoutMs = 700L
+    private const val listenWatchdogMs = 12_000L
+    private const val chatFinalWaitWithSubscribeMs = 45_000L
+    private const val chatFinalWaitWithoutSubscribeMs = 6_000L
+    private const val maxCachedRunCompletions = 128
 
     internal data class TalkProviderConfigSelection(
       val provider: String,
@@ -114,6 +119,14 @@ class TalkModeManager(
         normalizedPayload = false,
       )
     }
+
+    internal fun resolvedSilenceTimeoutMs(talk: JsonObject?): Long {
+      val timeout = talk?.get("silenceTimeoutMs").asDoubleOrNull() ?: return defaultSilenceTimeoutMs
+      if (timeout <= 0 || timeout % 1.0 != 0.0 || timeout > Long.MAX_VALUE.toDouble()) {
+        return defaultSilenceTimeoutMs
+      }
+      return timeout.toLong()
+    }
   }
 
   private val mainHandler = Handler(Looper.getMainLooper())
@@ -143,7 +156,7 @@ class TalkModeManager(
   private var listeningMode = false
 
   private var silenceJob: Job? = null
-  private val silenceWindowMs = 700L
+  private var silenceWindowMs = defaultSilenceTimeoutMs
   private var lastTranscript: String = ""
   private var lastHeardAtMs: Long? = null
   private var lastSpokenText: String? = null
@@ -893,6 +906,7 @@ class TalkModeManager(
         activeConfig?.get("outputFormat")?.asStringOrNull()?.trim()?.takeIf { it.isNotEmpty() }
       val key = activeConfig?.get("apiKey")?.asStringOrNull()?.trim()?.takeIf { it.isNotEmpty() }
       val interrupt = talk?.get("interruptOnSpeech")?.asBooleanOrNull()
+      val silenceTimeoutMs = resolvedSilenceTimeoutMs(talk)
 
       if (!isCanonicalMainSessionKey(mainSessionKey)) {
         mainSessionKey = mainKey
@@ -914,6 +928,11 @@ class TalkModeManager(
         } else {
           null
         }
+      silenceWindowMs = silenceTimeoutMs
+      Log.d(
+        tag,
+        "reloadConfig apiKey=${if (apiKey != null) "set" else "null"} voiceId=$defaultVoiceId silenceTimeoutMs=$silenceTimeoutMs",
+      )
       if (interrupt != null) interruptOnSpeech = interrupt
       if (activeProvider != defaultTalkProvider) {
         Log.w(tag, "talk provider $activeProvider unsupported; using system voice fallback")
@@ -921,6 +940,7 @@ class TalkModeManager(
         Log.d(tag, "talk config provider=elevenlabs")
       }
     } catch (_: Throwable) {
+      silenceWindowMs = defaultSilenceTimeoutMs
       defaultVoiceId = envVoice?.takeIf { it.isNotEmpty() } ?: sagVoice?.takeIf { it.isNotEmpty() }
       defaultModelId = defaultModelIdFallback
       if (!modelOverrideActive) currentModelId = defaultModelId

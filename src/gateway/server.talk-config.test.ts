@@ -56,7 +56,11 @@ async function connectOperator(ws: GatewaySocket, scopes: string[]) {
   });
 }
 
-async function writeTalkConfig(config: { apiKey?: string; voiceId?: string }) {
+async function writeTalkConfig(config: {
+  apiKey?: string;
+  voiceId?: string;
+  silenceTimeoutMs?: number;
+}) {
   const { writeConfigFile } = await import("../config/config.js");
   await writeConfigFile({ talk: config });
 }
@@ -68,6 +72,7 @@ describe("gateway talk.config", () => {
       talk: {
         voiceId: "voice-123",
         apiKey: "secret-key-abc",
+        silenceTimeoutMs: 1500,
       },
       session: {
         mainKey: "main-test",
@@ -92,6 +97,7 @@ describe("gateway talk.config", () => {
             };
             apiKey?: string;
             voiceId?: string;
+            silenceTimeoutMs?: number;
           };
         };
       }>(ws, "talk.config", {});
@@ -106,6 +112,7 @@ describe("gateway talk.config", () => {
       expect(res.payload?.config?.talk?.resolved?.config?.apiKey).toBe("__REMOTECLAW_REDACTED__");
       expect(res.payload?.config?.talk?.voiceId).toBe("voice-123");
       expect(res.payload?.config?.talk?.apiKey).toBe("__REMOTECLAW_REDACTED__");
+      expect(res.payload?.config?.talk?.silenceTimeoutMs).toBe(1500);
     });
   });
 

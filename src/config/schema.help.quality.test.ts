@@ -234,6 +234,7 @@ const TARGET_KEYS = [
   "talk.modelId",
   "talk.outputFormat",
   "talk.interruptOnSpeech",
+  "talk.silenceTimeoutMs",
   "meta",
   "env",
   "env.shellEnv",

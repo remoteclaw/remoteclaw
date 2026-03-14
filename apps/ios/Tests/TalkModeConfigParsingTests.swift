@@ -28,4 +28,24 @@ import Testing
         let selection = TalkModeManager.selectTalkProviderConfig(talk)
         #expect(selection == nil)
     }
+
+    @Test func readsConfiguredSilenceTimeoutMs() {
+        let talk: [String: Any] = [
+            "silenceTimeoutMs": 1500,
+        ]
+
+        #expect(TalkModeManager.resolvedSilenceTimeoutMs(talk) == 1500)
+    }
+
+    @Test func defaultsSilenceTimeoutMsWhenMissing() {
+        #expect(TalkModeManager.resolvedSilenceTimeoutMs(nil) == 900)
+    }
+
+    @Test func defaultsSilenceTimeoutMsWhenInvalid() {
+        let talk: [String: Any] = [
+            "silenceTimeoutMs": 0,
+        ]
+
+        #expect(TalkModeManager.resolvedSilenceTimeoutMs(talk) == 900)
+    }
 }

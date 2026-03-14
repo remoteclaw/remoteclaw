@@ -36,7 +36,7 @@ vi.mock("../gateway/call.js", () => ({
   randomIdempotencyKey: () => "idem-1",
 }));
 
-const webAuthExists = vi.hoisted(() => vi.fn(async () => false));
+const webAuthExists = vi.fn(async () => false);
 vi.mock("../../extensions/whatsapp/src/session.js", () => ({
   webAuthExists,
 }));

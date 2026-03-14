@@ -1,12 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import { afterAll, afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import type { PluginCandidate } from "./discovery.js";
 import { loadPluginManifestRegistry } from "./manifest-registry.js";
 import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fixtures.js";
 
 const tempDirs: string[] = [];
-const previousUmask = process.umask(0o022);
 
 function chmodSafeDir(dir: string) {
   if (process.platform === "win32") {
@@ -126,10 +125,6 @@ function expectUnsafeWorkspaceManifestRejected(params: {
 
 afterEach(() => {
   cleanupTrackedTempDirs(tempDirs);
-});
-
-afterAll(() => {
-  process.umask(previousUmask);
 });
 
 describe("loadPluginManifestRegistry", () => {

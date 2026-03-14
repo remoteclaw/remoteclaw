@@ -1,5 +1,5 @@
 import { createAccountListHelpers } from "../../../src/channels/plugins/account-helpers.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
+import type { OpenClawConfig } from "../../../src/config/config.js";
 import type { SignalAccountConfig } from "../../../src/config/types.js";
 import { resolveAccountEntry } from "../../../src/routing/account-lookup.js";
 import { normalizeAccountId } from "../../../src/routing/session-key.js";
@@ -18,13 +18,13 @@ export const listSignalAccountIds = listAccountIds;
 export const resolveDefaultSignalAccountId = resolveDefaultAccountId;
 
 function resolveAccountConfig(
-  cfg: RemoteClawConfig,
+  cfg: OpenClawConfig,
   accountId: string,
 ): SignalAccountConfig | undefined {
   return resolveAccountEntry(cfg.channels?.signal?.accounts, accountId);
 }
 
-function mergeSignalAccountConfig(cfg: RemoteClawConfig, accountId: string): SignalAccountConfig {
+function mergeSignalAccountConfig(cfg: OpenClawConfig, accountId: string): SignalAccountConfig {
   const { accounts: _ignored, ...base } = (cfg.channels?.signal ?? {}) as SignalAccountConfig & {
     accounts?: unknown;
   };
@@ -33,7 +33,7 @@ function mergeSignalAccountConfig(cfg: RemoteClawConfig, accountId: string): Sig
 }
 
 export function resolveSignalAccount(params: {
-  cfg: RemoteClawConfig;
+  cfg: OpenClawConfig;
   accountId?: string | null;
 }): ResolvedSignalAccount {
   const accountId = normalizeAccountId(params.accountId);
@@ -62,7 +62,7 @@ export function resolveSignalAccount(params: {
   };
 }
 
-export function listEnabledSignalAccounts(cfg: RemoteClawConfig): ResolvedSignalAccount[] {
+export function listEnabledSignalAccounts(cfg: OpenClawConfig): ResolvedSignalAccount[] {
   return listSignalAccountIds(cfg)
     .map((accountId) => resolveSignalAccount({ cfg, accountId }))
     .filter((account) => account.enabled);

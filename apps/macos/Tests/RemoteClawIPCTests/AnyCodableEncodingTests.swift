@@ -4,8 +4,8 @@ import Testing
 
 @testable import RemoteClaw
 
-@Suite struct AnyCodableEncodingTests {
-    @Test func encodesSwiftArrayAndDictionaryValues() throws {
+struct AnyCodableEncodingTests {
+    @Test func `encodes swift array and dictionary values`() throws {
         let payload: [String: Any] = [
             "tags": ["node", "ios"],
             "meta": ["count": 2],
@@ -20,7 +20,7 @@ import Testing
         #expect(obj["null"] is NSNull)
     }
 
-    @Test func protocolAnyCodableEncodesPrimitiveArrays() throws {
+    @Test func `protocol any codable encodes primitive arrays`() throws {
         let payload: [String: Any] = [
             "items": [1, "two", NSNull(), ["ok": true]],
         ]

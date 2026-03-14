@@ -3,16 +3,15 @@ import Testing
 
 @testable import RemoteClaw
 
-@Suite("PermissionManager Location")
 struct PermissionManagerLocationTests {
-    @Test("authorizedAlways counts for both modes")
-    func authorizedAlwaysCountsForBothModes() {
+    @Test
+    func `authorizedAlways counts for both modes`() {
         #expect(PermissionManager.isLocationAuthorized(status: .authorizedAlways, requireAlways: false))
         #expect(PermissionManager.isLocationAuthorized(status: .authorizedAlways, requireAlways: true))
     }
 
-    @Test("other statuses not authorized")
-    func otherStatusesNotAuthorized() {
+    @Test
+    func `other statuses not authorized`() {
         #expect(!PermissionManager.isLocationAuthorized(status: .notDetermined, requireAlways: false))
         #expect(!PermissionManager.isLocationAuthorized(status: .denied, requireAlways: false))
         #expect(!PermissionManager.isLocationAuthorized(status: .restricted, requireAlways: false))

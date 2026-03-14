@@ -124,6 +124,10 @@ android {
                     "/META-INF/LICENSE*.txt",
                     "DebugProbesKt.bin",
                     "kotlin-tooling-metadata.json",
+                    "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+                    "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+                    "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+                    "org/bouncycastle/x509/CertPathReviewerMessages*.properties",
                 )
         }
     }
@@ -193,7 +197,6 @@ dependencies {
     // material-icons-extended pulled in full icon set (~20 MB DEX). Only ~18 icons used.
     // R8 will tree-shake unused icons when minify is enabled on release builds.
     implementation("androidx.compose.material:material-icons-extended")
-    implementation("androidx.navigation:navigation-compose:2.9.7")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 

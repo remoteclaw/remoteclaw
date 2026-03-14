@@ -64,13 +64,7 @@ SIGN_IDENTITY="Developer ID Application: <Developer Name> (<TEAMID>)" \
 scripts/package-mac-dist.sh
 
 # Optional: ship dSYM alongside the release
-<<<<<<< HEAD
-ditto -c -k --keepParent apps/macos/.build/release/RemoteClaw.app.dSYM dist/RemoteClaw-2026.3.9.dSYM.zip
-||||||| parent of 96485701a7 (docs: update 2026.3.11 release examples)
-ditto -c -k --keepParent apps/macos/.build/release/OpenClaw.app.dSYM dist/OpenClaw-2026.3.10.dSYM.zip
-=======
-ditto -c -k --keepParent apps/macos/.build/release/OpenClaw.app.dSYM dist/OpenClaw-2026.3.11.dSYM.zip
->>>>>>> 96485701a7 (docs: update 2026.3.11 release examples)
+ditto -c -k --keepParent apps/macos/.build/release/RemoteClaw.app.dSYM dist/RemoteClaw-2026.3.11.dSYM.zip
 ```
 
 ## Appcast entry

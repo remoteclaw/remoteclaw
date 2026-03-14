@@ -5,8 +5,8 @@ const { resolveProfileMock, ensureChromeExtensionRelayServerMock } = vi.hoisted(
   ensureChromeExtensionRelayServerMock: vi.fn(),
 }));
 
-const { stopOpenClawChromeMock, stopChromeExtensionRelayServerMock } = vi.hoisted(() => ({
-  stopOpenClawChromeMock: vi.fn(async () => {}),
+const { stopRemoteClawChromeMock, stopChromeExtensionRelayServerMock } = vi.hoisted(() => ({
+  stopRemoteClawChromeMock: vi.fn(async () => {}),
   stopChromeExtensionRelayServerMock: vi.fn(async () => true),
 }));
 
@@ -16,7 +16,7 @@ const { createBrowserRouteContextMock, listKnownProfileNamesMock } = vi.hoisted(
 }));
 
 vi.mock("./chrome.js", () => ({
-  stopOpenClawChrome: stopOpenClawChromeMock,
+  stopRemoteClawChrome: stopRemoteClawChromeMock,
 }));
 
 vi.mock("./config.js", () => ({
@@ -86,7 +86,7 @@ describe("stopKnownBrowserProfiles", () => {
   beforeEach(() => {
     createBrowserRouteContextMock.mockClear();
     listKnownProfileNamesMock.mockClear();
-    stopOpenClawChromeMock.mockClear();
+    stopRemoteClawChromeMock.mockClear();
     stopChromeExtensionRelayServerMock.mockClear();
   });
 
@@ -156,7 +156,7 @@ describe("stopKnownBrowserProfiles", () => {
       onWarn: vi.fn(),
     });
 
-    expect(stopOpenClawChromeMock).toHaveBeenCalledWith(launchedBrowser);
+    expect(stopRemoteClawChromeMock).toHaveBeenCalledWith(launchedBrowser);
     expect(localRuntime.running).toBeNull();
     expect(stopChromeExtensionRelayServerMock).toHaveBeenCalledWith({
       cdpUrl: "http://127.0.0.1:19999",

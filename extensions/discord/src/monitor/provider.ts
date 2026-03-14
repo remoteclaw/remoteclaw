@@ -273,18 +273,14 @@ async function deployDiscordCommands(params: {
       body === undefined
         ? undefined
         : Buffer.byteLength(typeof body === "string" ? body : JSON.stringify(body), "utf8");
-    if (shouldLogVerbose()) {
-      params.runtime.log?.(
-        `discord startup [${accountId}] deploy-rest:put:start ${Math.max(0, Date.now() - startupStartedAt)}ms path=${path}${typeof commandCount === "number" ? ` commands=${commandCount}` : ""}${typeof bodyBytes === "number" ? ` bytes=${bodyBytes}` : ""}`,
-      );
-    }
+    params.runtime.log?.(
+      `discord startup [${accountId}] deploy-rest:put:start ${Math.max(0, Date.now() - startupStartedAt)}ms path=${path}${typeof commandCount === "number" ? ` commands=${commandCount}` : ""}${typeof bodyBytes === "number" ? ` bytes=${bodyBytes}` : ""}`,
+    );
     try {
       const result = await originalPut(path, data, query);
-      if (shouldLogVerbose()) {
-        params.runtime.log?.(
-          `discord startup [${accountId}] deploy-rest:put:done ${Math.max(0, Date.now() - startupStartedAt)}ms path=${path} requestMs=${Date.now() - startedAt}`,
-        );
-      }
+      params.runtime.log?.(
+        `discord startup [${accountId}] deploy-rest:put:done ${Math.max(0, Date.now() - startupStartedAt)}ms path=${path} requestMs=${Date.now() - startedAt}`,
+      );
       return result;
     } catch (err) {
       params.runtime.error?.(
@@ -363,9 +359,6 @@ function logDiscordStartupPhase(params: {
   gateway?: GatewayPlugin;
   details?: string;
 }) {
-  if (!shouldLogVerbose()) {
-    return;
-  }
   const elapsedMs = Math.max(0, Date.now() - params.startAt);
   const suffix = [params.details, formatDiscordStartupGatewayState(params.gateway)]
     .filter((value): value is string => Boolean(value))
@@ -776,9 +769,6 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     const lifecycleGateway = client.getPlugin<GatewayPlugin>("gateway");
     earlyGatewayEmitter = getDiscordGatewayEmitter(lifecycleGateway);
     onEarlyGatewayDebug = (msg: unknown) => {
-      if (!shouldLogVerbose()) {
-        return;
-      }
       runtime.log?.(
         `discord startup [${account.accountId}] gateway-debug ${Math.max(0, Date.now() - startupStartedAt)}ms ${String(msg)}`,
       );

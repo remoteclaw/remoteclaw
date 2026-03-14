@@ -1,3 +1,4 @@
+<<<<<<<< HEAD:extensions/discord/src/exec-approvals.ts
 import type { ReplyPayload } from "../../../src/auto-reply/types.js";
 import type { OpenClawConfig } from "../../../src/config/config.js";
 import { getExecApprovalReplyMetadata } from "../../../src/infra/exec-approval-reply.js";
@@ -21,3 +22,30 @@ export function shouldSuppressLocalDiscordExecApprovalPrompt(params: {
     getExecApprovalReplyMetadata(params.payload) !== null
   );
 }
+|||||||| parent of 5682ec37fa (refactor: move Discord channel implementation to extensions/ (#45660)):src/discord/exec-approvals.ts
+import type { ReplyPayload } from "../auto-reply/types.js";
+import type { OpenClawConfig } from "../config/config.js";
+import { getExecApprovalReplyMetadata } from "../infra/exec-approval-reply.js";
+import { resolveDiscordAccount } from "./accounts.js";
+
+export function isDiscordExecApprovalClientEnabled(params: {
+  cfg: OpenClawConfig;
+  accountId?: string | null;
+}): boolean {
+  const config = resolveDiscordAccount(params).config.execApprovals;
+  return Boolean(config?.enabled && (config.approvers?.length ?? 0) > 0);
+}
+
+export function shouldSuppressLocalDiscordExecApprovalPrompt(params: {
+  cfg: OpenClawConfig;
+  accountId?: string | null;
+  payload: ReplyPayload;
+}): boolean {
+  return (
+    isDiscordExecApprovalClientEnabled(params) &&
+    getExecApprovalReplyMetadata(params.payload) !== null
+  );
+}
+========
+export * from "../../extensions/discord/src/exec-approvals.js";
+>>>>>>>> 5682ec37fa (refactor: move Discord channel implementation to extensions/ (#45660)):src/discord/exec-approvals.ts

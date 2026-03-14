@@ -48,7 +48,6 @@ class NodeRuntime(context: Context) {
   val canvas = CanvasController()
   val camera = CameraCaptureManager(appContext)
   val location = LocationCaptureManager(appContext)
-  val screenRecorder = ScreenRecordManager(appContext)
   val sms = SmsManager(appContext)
   private val json = Json { ignoreUnknownKeys = true }
 
@@ -87,11 +86,7 @@ class NodeRuntime(context: Context) {
     appContext = appContext,
   )
 
-  private val screenHandler: ScreenHandler = ScreenHandler(
-    screenRecorder = screenRecorder,
-    setScreenRecordActive = { _screenRecordActive.value = it },
-    invokeErrorFromThrowable = { invokeErrorFromThrowable(it) },
-  )
+
 
   private val smsHandlerImpl: SmsHandler = SmsHandler(
     sms = sms,
@@ -119,7 +114,8 @@ class NodeRuntime(context: Context) {
     cameraHandler = cameraHandler,
     locationHandler = locationHandler,
     notificationsHandler = notificationsHandler,
-    screenHandler = screenHandler,
+
+
     smsHandler = smsHandlerImpl,
     a2uiHandler = a2uiHandler,
     debugHandler = debugHandler,
@@ -162,9 +158,6 @@ class NodeRuntime(context: Context) {
 
   private val _cameraFlashToken = MutableStateFlow(0L)
   val cameraFlashToken: StateFlow<Long> = _cameraFlashToken.asStateFlow()
-
-  private val _screenRecordActive = MutableStateFlow(false)
-  val screenRecordActive: StateFlow<Boolean> = _screenRecordActive.asStateFlow()
 
   private val _canvasA2uiHydrated = MutableStateFlow(false)
   val canvasA2uiHydrated: StateFlow<Boolean> = _canvasA2uiHydrated.asStateFlow()
@@ -511,6 +504,9 @@ class NodeRuntime(context: Context) {
 
   fun setForeground(value: Boolean) {
     _isForeground.value = value
+    if (!value) {
+      stopActiveVoiceSession()
+    }
   }
 
   fun setDisplayName(value: String) {

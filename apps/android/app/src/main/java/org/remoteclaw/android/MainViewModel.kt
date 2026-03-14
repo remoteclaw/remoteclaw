@@ -6,7 +6,6 @@ import org.remoteclaw.android.gateway.GatewayEndpoint
 import org.remoteclaw.android.chat.OutgoingAttachment
 import org.remoteclaw.android.node.CameraCaptureManager
 import org.remoteclaw.android.node.CanvasController
-import org.remoteclaw.android.node.ScreenRecordManager
 import org.remoteclaw.android.node.SmsManager
 import kotlinx.coroutines.flow.StateFlow
 
@@ -19,7 +18,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
   val canvasRehydratePending: StateFlow<Boolean> = runtime.canvasRehydratePending
   val canvasRehydrateErrorText: StateFlow<String?> = runtime.canvasRehydrateErrorText
   val camera: CameraCaptureManager = runtime.camera
-  val screenRecorder: ScreenRecordManager = runtime.screenRecorder
   val sms: SmsManager = runtime.sms
 
   val gateways: StateFlow<List<GatewayEndpoint>> = runtime.gateways
@@ -37,7 +35,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
   val cameraHud: StateFlow<CameraHudState?> = runtime.cameraHud
   val cameraFlashToken: StateFlow<Long> = runtime.cameraFlashToken
-  val screenRecordActive: StateFlow<Boolean> = runtime.screenRecordActive
 
   val instanceId: StateFlow<String> = runtime.instanceId
   val displayName: StateFlow<String> = runtime.displayName

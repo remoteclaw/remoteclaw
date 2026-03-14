@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../../../src/config/config.js";
+import { sanitizeTerminalText } from "../../../../src/terminal/safe-text.js";
 import {
   describeIMessageEchoDropLog,
   resolveIMessageInboundDecision,

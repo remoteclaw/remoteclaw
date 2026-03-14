@@ -42,7 +42,7 @@ import Testing
     }
 
     @Test func defaultsSilenceTimeoutMsWhenMissing() {
-        #expect(TalkModeManager.resolvedSilenceTimeoutMs(nil) == 900)
+        #expect(TalkModeManager.resolvedSilenceTimeoutMs(nil) == TalkDefaults.silenceTimeoutMs)
     }
 
     @Test func defaultsSilenceTimeoutMsWhenInvalid() {
@@ -50,7 +50,7 @@ import Testing
             "silenceTimeoutMs": 0,
         ]
 
-        #expect(TalkModeManager.resolvedSilenceTimeoutMs(TalkConfigParsing.bridgeFoundationDictionary(talk)) == 900)
+        #expect(TalkModeManager.resolvedSilenceTimeoutMs(TalkConfigParsing.bridgeFoundationDictionary(talk)) == TalkDefaults.silenceTimeoutMs)
     }
 
     @Test func defaultsSilenceTimeoutMsWhenBool() {
@@ -58,6 +58,6 @@ import Testing
             "silenceTimeoutMs": true,
         ]
 
-        #expect(TalkModeManager.resolvedSilenceTimeoutMs(TalkConfigParsing.bridgeFoundationDictionary(talk)) == 900)
+        #expect(TalkModeManager.resolvedSilenceTimeoutMs(TalkConfigParsing.bridgeFoundationDictionary(talk)) == TalkDefaults.silenceTimeoutMs)
     }
 }

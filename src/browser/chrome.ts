@@ -6,7 +6,7 @@ import WebSocket from "ws";
 import { ensurePortAvailable } from "../infra/ports.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { CONFIG_DIR } from "../utils.js";
-import { appendCdpPath } from "./cdp.helpers.js";
+import { appendCdpPath, isWebSocketUrl } from "./cdp.helpers.js";
 import { getHeadersWithAuth, normalizeCdpWsUrl } from "./cdp.js";
 import {
   type BrowserExecutable,
@@ -70,6 +70,10 @@ function cdpUrlForPort(cdpPort: number) {
 }
 
 export async function isChromeReachable(cdpUrl: string, timeoutMs = 500): Promise<boolean> {
+  if (isWebSocketUrl(cdpUrl)) {
+    // Direct WebSocket endpoint (e.g. Browserbase) — probe via WS handshake.
+    return await canOpenWebSocket(cdpUrl, timeoutMs);
+  }
   const version = await fetchChromeVersion(cdpUrl, timeoutMs);
   return Boolean(version);
 }
@@ -108,6 +112,10 @@ export async function getChromeWebSocketUrl(
   cdpUrl: string,
   timeoutMs = 500,
 ): Promise<string | null> {
+  if (isWebSocketUrl(cdpUrl)) {
+    // Direct WebSocket endpoint — the cdpUrl is already the WebSocket URL.
+    return cdpUrl;
+  }
   const version = await fetchChromeVersion(cdpUrl, timeoutMs);
   const wsUrl = String(version?.webSocketDebuggerUrl ?? "").trim();
   if (!wsUrl) {

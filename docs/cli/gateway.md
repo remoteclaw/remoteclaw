@@ -1,5 +1,5 @@
 ---
-summary: "OpenClaw Gateway CLI (`remoteclaw gateway`) — run, query, and discover gateways"
+summary: "OpenClaw Gateway CLI (`openclaw gateway`) — run, query, and discover gateways"
 read_when:
   - Running the Gateway from the CLI (dev or servers)
   - Debugging Gateway auth, bind modes, and connectivity
@@ -11,7 +11,7 @@ title: "gateway"
 
 The Gateway is OpenClaw’s WebSocket server (channels, nodes, sessions, hooks).
 
-Subcommands in this page live under `remoteclaw gateway …`.
+Subcommands in this page live under `openclaw gateway …`.
 
 Related docs:
 
@@ -24,13 +24,13 @@ Related docs:
 Run a local Gateway process:
 
 ```bash
-remoteclaw gateway
+openclaw gateway
 ```
 
 Foreground alias:
 
 ```bash
-remoteclaw gateway run
+openclaw gateway run
 ```
 
 Notes:
@@ -85,7 +85,7 @@ Pass `--token` or `--password` explicitly. Missing explicit credentials is an er
 ### `gateway health`
 
 ```bash
-remoteclaw gateway health --url ws://127.0.0.1:18789
+openclaw gateway health --url ws://127.0.0.1:18789
 ```
 
 ### `gateway status`
@@ -93,9 +93,9 @@ remoteclaw gateway health --url ws://127.0.0.1:18789
 `gateway status` shows the Gateway service (launchd/systemd/schtasks) plus an optional RPC probe.
 
 ```bash
-remoteclaw gateway status
-remoteclaw gateway status --json
-remoteclaw gateway status --require-rpc
+openclaw gateway status
+openclaw gateway status --json
+openclaw gateway status --require-rpc
 ```
 
 Options:
@@ -111,8 +111,7 @@ Options:
 Notes:
 
 - `gateway status` resolves configured auth SecretRefs for probe auth when possible.
-- If a required auth SecretRef is unresolved in this command path, `gateway status --json` reports `rpc.authWarning` when probe connectivity/auth fails; pass `--token`/`--password` explicitly or resolve the secret source first.
-- If the probe succeeds, unresolved auth-ref warnings are suppressed to avoid false positives.
+- If a required auth SecretRef is unresolved in this command path, probe auth can fail; pass `--token`/`--password` explicitly or resolve the secret source first.
 - Use `--require-rpc` in scripts and automation when a listening service is not enough and you need the Gateway RPC itself to be healthy.
 - On Linux systemd installs, service auth drift checks read both `Environment=` and `EnvironmentFile=` values from the unit (including `%h`, quoted paths, multiple files, and optional `-` files).
 
@@ -126,8 +125,8 @@ Notes:
 If multiple gateways are reachable, it prints all of them. Multiple gateways are supported when you use isolated profiles/ports (e.g., a rescue bot), but most installs still run a single gateway.
 
 ```bash
-remoteclaw gateway probe
-remoteclaw gateway probe --json
+openclaw gateway probe
+openclaw gateway probe --json
 ```
 
 Interpretation:
@@ -154,7 +153,7 @@ The macOS app “Remote over SSH” mode uses a local port-forward so the remote
 CLI equivalent:
 
 ```bash
-remoteclaw gateway probe --ssh user@gateway-host
+openclaw gateway probe --ssh user@gateway-host
 ```
 
 Options:
@@ -173,18 +172,18 @@ Config (optional, used as defaults):
 Low-level RPC helper.
 
 ```bash
-remoteclaw gateway call status
-remoteclaw gateway call logs.tail --params '{"sinceMs": 60000}'
+openclaw gateway call status
+openclaw gateway call logs.tail --params '{"sinceMs": 60000}'
 ```
 
 ## Manage the Gateway service
 
 ```bash
-remoteclaw gateway install
-remoteclaw gateway start
-remoteclaw gateway stop
-remoteclaw gateway restart
-remoteclaw gateway uninstall
+openclaw gateway install
+openclaw gateway start
+openclaw gateway stop
+openclaw gateway restart
+openclaw gateway uninstall
 ```
 
 Notes:
@@ -219,7 +218,7 @@ Wide-Area discovery records include (TXT):
 ### `gateway discover`
 
 ```bash
-remoteclaw gateway discover
+openclaw gateway discover
 ```
 
 Options:
@@ -230,6 +229,6 @@ Options:
 Examples:
 
 ```bash
-remoteclaw gateway discover --timeout 4000
-remoteclaw gateway discover --json | jq '.beacons[].wsUrl'
+openclaw gateway discover --timeout 4000
+openclaw gateway discover --json | jq '.beacons[].wsUrl'
 ```

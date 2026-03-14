@@ -1,35 +1,44 @@
 ---
 title: "Default AGENTS.md"
-description: "Default RemoteClaw agent instructions and skills roster for the personal assistant setup"
+summary: "Default OpenClaw agent instructions and skills roster for the personal assistant setup"
 read_when:
-  - Starting a new RemoteClaw agent session
+  - Starting a new OpenClaw agent session
   - Enabling or auditing default skills
 ---
 
-# AGENTS.md - RemoteClaw Personal Assistant (default)
+# AGENTS.md — OpenClaw Personal Assistant (default)
 
 ## First run (recommended)
 
-RemoteClaw uses a dedicated workspace directory for the agent. Configure it via `agents.defaults.workspace` (no built-in default).
+OpenClaw uses a dedicated workspace directory for the agent. Default: `~/.openclaw/workspace` (configurable via `agents.defaults.workspace`).
 
 1. Create the workspace (if it doesn’t already exist):
 
 ```bash
-mkdir -p ~/.remoteclaw/workspace
+mkdir -p ~/.openclaw/workspace
 ```
 
-2. Configure the workspace path:
+2. Copy the default workspace templates into the workspace:
+
+```bash
+cp docs/reference/templates/AGENTS.md ~/.openclaw/workspace/AGENTS.md
+cp docs/reference/templates/SOUL.md ~/.openclaw/workspace/SOUL.md
+cp docs/reference/templates/TOOLS.md ~/.openclaw/workspace/TOOLS.md
+```
+
+3. Optional: if you want the personal assistant skill roster, replace AGENTS.md with this file:
+
+```bash
+cp docs/reference/AGENTS.default.md ~/.openclaw/workspace/AGENTS.md
+```
+
+4. Optional: choose a different workspace by setting `agents.defaults.workspace` (supports `~`):
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/projects" } },
+  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
 }
 ```
-
-3. Run `remoteclaw setup` to create the workspace directory.
-
-> **Note:** RemoteClaw no longer seeds template files in the workspace.
-> Agents bring their own config (e.g. `CLAUDE.md` for Claude Code).
 
 ## Safety defaults
 
@@ -39,8 +48,14 @@ mkdir -p ~/.remoteclaw/workspace
 
 ## Session start (required)
 
-- Read `memory.md` and today+yesterday in `memory/` if present.
+- Read `SOUL.md`, `USER.md`, and today+yesterday in `memory/`.
+- Read `MEMORY.md` when present; only fall back to lowercase `memory.md` when `MEMORY.md` is absent.
 - Do it before responding.
+
+## Soul (required)
+
+- `SOUL.md` defines identity, tone, and boundaries. Keep it current.
+- If you change `SOUL.md`, tell the user.
 - You are a fresh instance each session; continuity lives in these files.
 
 ## Shared spaces (recommended)
@@ -51,35 +66,36 @@ mkdir -p ~/.remoteclaw/workspace
 ## Memory system (recommended)
 
 - Daily log: `memory/YYYY-MM-DD.md` (create `memory/` if needed).
-- Long-term memory: `memory.md` for durable facts, preferences, and decisions.
-- On session start, read today + yesterday + `memory.md` if present.
+- Long-term memory: `MEMORY.md` for durable facts, preferences, and decisions.
+- Lowercase `memory.md` is legacy fallback only; do not keep both root files on purpose.
+- On session start, read today + yesterday + `MEMORY.md` when present, otherwise `memory.md`.
 - Capture: decisions, preferences, constraints, open loops.
 - Avoid secrets unless explicitly requested.
 
 ## Tools & skills
 
 - Tools live in skills; follow each skill’s `SKILL.md` when you need it.
-- Keep environment-specific notes in native agent config.
+- Keep environment-specific notes in `TOOLS.md` (Notes for Skills).
 
 ## Backup tip (recommended)
 
 If you treat this workspace as Clawd’s “memory”, make it a git repo (ideally private) so `AGENTS.md` and your memory files are backed up.
 
 ```bash
-cd ~/.remoteclaw/workspace
+cd ~/.openclaw/workspace
 git init
 git add AGENTS.md
 git commit -m "Add Clawd workspace"
 # Optional: add a private remote + push
 ```
 
-## What RemoteClaw Does
+## What OpenClaw Does
 
-- Runs the WhatsApp gateway and bridges messages to a CLI agent subprocess (claude, gemini, codex, opencode) so the assistant can read/write chats, fetch context, and run skills via the host Mac.
-- macOS app manages permissions (screen recording, notifications, microphone) and exposes the `remoteclaw` CLI via its bundled binary.
+- Runs WhatsApp gateway + Pi coding agent so the assistant can read/write chats, fetch context, and run skills via the host Mac.
+- macOS app manages permissions (screen recording, notifications, microphone) and exposes the `openclaw` CLI via its bundled binary.
 - Direct chats collapse into the agent's `main` session by default; groups stay isolated as `agent:<agentId>:<channel>:group:<id>` (rooms/channels: `agent:<agentId>:<channel>:channel:<id>`); heartbeats keep background tasks alive.
 
-## Core Skills
+## Core Skills (enable in Settings → Skills)
 
 - **mcporter** — Tool server runtime/CLI for managing external skill backends.
 - **Peekaboo** — Fast macOS screenshots with optional AI vision analysis.
@@ -101,10 +117,10 @@ git commit -m "Add Clawd workspace"
 
 ## Usage Notes
 
-- Prefer the `remoteclaw` CLI for scripting; mac app handles permissions.
-- Install skills by dropping them into `~/.remoteclaw/skills/<name>/SKILL.md` or `<workspace>/skills/<name>/SKILL.md`.
+- Prefer the `openclaw` CLI for scripting; mac app handles permissions.
+- Run installs from the Skills tab; it hides the button if a binary is already present.
 - Keep heartbeats enabled so the assistant can schedule reminders, monitor inboxes, and trigger camera captures.
 - Canvas UI runs full-screen with native overlays. Avoid placing critical controls in the top-left/top-right/bottom edges; add explicit gutters in the layout and don’t rely on safe-area insets.
-- For browser-driven verification, use `remoteclaw browser` (tabs/status/screenshot) with the RemoteClaw-managed Chrome profile.
-- For DOM inspection, use `remoteclaw browser eval|query|dom|snapshot` (and `--json`/`--out` when you need machine output).
-- For interactions, use `remoteclaw browser click|type|hover|drag|select|upload|press|wait|navigate|back|evaluate|run` (click/type require snapshot refs; use `evaluate` for CSS selectors).
+- For browser-driven verification, use `openclaw browser` (tabs/status/screenshot) with the OpenClaw-managed Chrome profile.
+- For DOM inspection, use `openclaw browser eval|query|dom|snapshot` (and `--json`/`--out` when you need machine output).
+- For interactions, use `openclaw browser click|type|hover|drag|select|upload|press|wait|navigate|back|evaluate|run` (click/type require snapshot refs; use `evaluate` for CSS selectors).

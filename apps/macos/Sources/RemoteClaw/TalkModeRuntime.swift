@@ -826,6 +826,9 @@ extension TalkModeRuntime {
                 timeoutMs: 8000)
             let talk = snap.config?["talk"]?.dictionaryValue
             let selection = Self.selectTalkProviderConfig(talk)
+            if talk != nil, selection == nil {
+                self.ttsLogger.info("talk config ignored: normalized payload missing talk.resolved")
+            }
             let activeProvider = selection?.provider ?? Self.defaultTalkProvider
             let activeConfig = selection?.config
             let silenceTimeoutMs = Self.resolvedSilenceTimeoutMs(talk)
@@ -865,7 +868,7 @@ extension TalkModeRuntime {
                 self.ttsLogger
                     .info("talk provider \(activeProvider, privacy: .public) unsupported; using system voice")
             } else if selection?.normalizedPayload == true {
-                self.ttsLogger.info("talk config provider elevenlabs")
+                self.ttsLogger.info("talk config provider from talk.resolved")
             }
             return TalkRuntimeConfig(
                 voiceId: resolvedVoice,

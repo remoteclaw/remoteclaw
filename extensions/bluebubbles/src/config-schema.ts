@@ -1,7 +1,10 @@
-import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk";
+import {
+  AllowFromEntrySchema,
+  buildCatchallMultiAccountChannelSchema,
+  MarkdownConfigSchema,
+  ToolPolicySchema,
+} from "remoteclaw/plugin-sdk";
 import { z } from "zod";
-
-const allowFromEntry = z.union([z.string(), z.number()]);
 
 const bluebubblesActionSchema = z
   .object({
@@ -33,8 +36,8 @@ const bluebubblesAccountSchema = z
     password: z.string().optional(),
     webhookPath: z.string().optional(),
     dmPolicy: z.enum(["pairing", "allowlist", "open", "disabled"]).optional(),
-    allowFrom: z.array(allowFromEntry).optional(),
-    groupAllowFrom: z.array(allowFromEntry).optional(),
+    allowFrom: z.array(AllowFromEntrySchema).optional(),
+    groupAllowFrom: z.array(AllowFromEntrySchema).optional(),
     groupPolicy: z.enum(["open", "disabled", "allowlist"]).optional(),
     historyLimit: z.number().int().min(0).optional(),
     dmHistoryLimit: z.number().int().min(0).optional(),
@@ -59,7 +62,8 @@ const bluebubblesAccountSchema = z
     }
   });
 
-export const BlueBubblesConfigSchema = bluebubblesAccountSchema.extend({
-  accounts: z.object({}).catchall(bluebubblesAccountSchema).optional(),
+export const BlueBubblesConfigSchema = buildCatchallMultiAccountChannelSchema(
+  bluebubblesAccountSchema,
+).extend({
   actions: bluebubblesActionSchema,
 });

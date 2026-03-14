@@ -82,13 +82,41 @@ describe("warning filter", () => {
         type: "DeprecationWarning",
         code: "DEP0060",
       });
+      emitWarning(
+        Object.assign(new Error("The punycode module is deprecated."), {
+          name: "DeprecationWarning",
+          code: "DEP0040",
+        }),
+      );
+      emitWarning(new Error("SQLite is an experimental feature and might change at any time"), {
+        type: "ExperimentalWarning",
+      });
       await new Promise((resolve) => setImmediate(resolve));
       expect(seenWarnings.find((warning) => warning.code === "DEP0060")).toBeUndefined();
+      expect(seenWarnings.find((warning) => warning.code === "DEP0040")).toBeUndefined();
+      expect(
+        seenWarnings.find((warning) =>
+          warning.message.includes("SQLite is an experimental feature"),
+        ),
+      ).toBeUndefined();
 
       emitWarning("Visible warning", { type: "Warning", code: "REMOTECLAW_TEST_WARNING" });
+      emitWarning(
+        Object.assign(new Error("The punycode module is deprecated."), {
+          name: "DeprecationWarning",
+          code: "DEP0040",
+        }),
+        { type: "Warning", code: "REMOTECLAW_VISIBLE_OVERRIDE" },
+      );
       await new Promise((resolve) => setImmediate(resolve));
       expect(
         seenWarnings.find((warning) => warning.code === "REMOTECLAW_TEST_WARNING"),
+      ).toBeDefined();
+      expect(
+        seenWarnings.find(
+          (warning) =>
+            warning.code === "DEP0040" && warning.message === "The punycode module is deprecated.",
+        ),
       ).toBeDefined();
     } finally {
       process.off("warning", onWarning);

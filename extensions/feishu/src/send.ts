@@ -7,7 +7,7 @@ import { parsePostContent } from "./post.js";
 import { getFeishuRuntime } from "./runtime.js";
 import { assertFeishuMessageApiSuccess, toFeishuSendResult } from "./send-result.js";
 import { resolveFeishuSendTarget } from "./send-target.js";
-import type { FeishuSendResult } from "./types.js";
+import type { FeishuChatType, FeishuMessageInfo, FeishuSendResult } from "./types.js";
 
 const WITHDRAWN_REPLY_ERROR_CODES = new Set([230011, 231003]);
 const FEISHU_CARD_TEMPLATES = new Set([
@@ -66,6 +66,31 @@ type FeishuCreateMessageClient = {
   };
 };
 
+type FeishuMessageSender = {
+  id?: string;
+  id_type?: string;
+  sender_type?: string;
+};
+
+type FeishuMessageGetItem = {
+  message_id?: string;
+  chat_id?: string;
+  chat_type?: FeishuChatType;
+  thread_id?: string;
+  msg_type?: string;
+  body?: { content?: string };
+  sender?: FeishuMessageSender;
+  create_time?: string;
+};
+
+type FeishuGetMessageResponse = {
+  code?: number;
+  msg?: string;
+  data?: FeishuMessageGetItem & {
+    items?: FeishuMessageGetItem[];
+  };
+};
+
 /** Send a direct message as a fallback when a reply target is unavailable. */
 async function sendFallbackDirect(
   client: FeishuCreateMessageClient,
@@ -89,29 +114,24 @@ async function sendFallbackDirect(
   return toFeishuSendResult(response, params.receiveId);
 }
 
-export type FeishuMessageInfo = {
-  messageId: string;
-  chatId: string;
-  senderId?: string;
-  senderOpenId?: string;
-  senderType?: string;
-  content: string;
-  contentType: string;
-  createTime?: number;
-};
-
 function parseInteractiveCardContent(parsed: unknown): string {
   if (!parsed || typeof parsed !== "object") {
     return "[Interactive Card]";
   }
 
-  const candidate = parsed as { elements?: unknown };
-  if (!Array.isArray(candidate.elements)) {
+  // Support both schema 1.0 (top-level `elements`) and 2.0 (`body.elements`).
+  const candidate = parsed as { elements?: unknown; body?: { elements?: unknown } };
+  const elements = Array.isArray(candidate.elements)
+    ? candidate.elements
+    : Array.isArray(candidate.body?.elements)
+      ? candidate.body!.elements
+      : null;
+  if (!elements) {
     return "[Interactive Card]";
   }
 
   const texts: string[] = [];
-  for (const element of candidate.elements) {
+  for (const element of elements) {
     if (!element || typeof element !== "object") {
       continue;
     }
@@ -131,7 +151,7 @@ function parseInteractiveCardContent(parsed: unknown): string {
   return texts.join("\n").trim() || "[Interactive Card]";
 }
 
-function parseQuotedMessageContent(rawContent: string, msgType: string): string {
+function parseFeishuMessageContent(rawContent: string, msgType: string): string {
   if (!rawContent) {
     return "";
   }
@@ -170,6 +190,30 @@ function parseQuotedMessageContent(rawContent: string, msgType: string): string 
   }
 
   return `[${msgType || "unknown"} message]`;
+}
+
+function parseFeishuMessageItem(
+  item: FeishuMessageGetItem,
+  fallbackMessageId?: string,
+): FeishuMessageInfo {
+  const msgType = item.msg_type ?? "text";
+  const rawContent = item.body?.content ?? "";
+
+  return {
+    messageId: item.message_id ?? fallbackMessageId ?? "",
+    chatId: item.chat_id ?? "",
+    chatType:
+      item.chat_type === "group" || item.chat_type === "private" || item.chat_type === "p2p"
+        ? item.chat_type
+        : undefined,
+    senderId: item.sender?.id,
+    senderOpenId: item.sender?.id_type === "open_id" ? item.sender?.id : undefined,
+    senderType: item.sender?.sender_type,
+    content: parseFeishuMessageContent(rawContent, msgType),
+    contentType: msgType,
+    createTime: item.create_time ? parseInt(String(item.create_time), 10) : undefined,
+    threadId: item.thread_id || undefined,
+  };
 }
 
 /**
@@ -236,23 +280,96 @@ export async function getMessageFeishu(params: {
       return null;
     }
 
-    const msgType = item.msg_type ?? "text";
-    const rawContent = item.body?.content ?? "";
-    const content = parseQuotedMessageContent(rawContent, msgType);
-
-    return {
-      messageId: item.message_id ?? messageId,
-      chatId: item.chat_id ?? "",
-      senderId: item.sender?.id,
-      senderOpenId: item.sender?.id_type === "open_id" ? item.sender?.id : undefined,
-      senderType: item.sender?.sender_type,
-      content,
-      contentType: msgType,
-      createTime: item.create_time ? parseInt(String(item.create_time), 10) : undefined,
-    };
+    return parseFeishuMessageItem(item, messageId);
   } catch {
     return null;
   }
+}
+
+export type FeishuThreadMessageInfo = {
+  messageId: string;
+  senderId?: string;
+  senderType?: string;
+  content: string;
+  contentType: string;
+  createTime?: number;
+};
+
+/**
+ * List messages in a Feishu thread (topic).
+ * Uses container_id_type=thread to directly query thread messages,
+ * which includes both the root message and all replies (including bot replies).
+ */
+export async function listFeishuThreadMessages(params: {
+  cfg: ClawdbotConfig;
+  threadId: string;
+  currentMessageId?: string;
+  /** Exclude the root message (already provided separately as ThreadStarterBody). */
+  rootMessageId?: string;
+  limit?: number;
+  accountId?: string;
+}): Promise<FeishuThreadMessageInfo[]> {
+  const { cfg, threadId, currentMessageId, rootMessageId, limit = 20, accountId } = params;
+  const account = resolveFeishuAccount({ cfg, accountId });
+  if (!account.configured) {
+    throw new Error(`Feishu account "${account.accountId}" not configured`);
+  }
+
+  const client = createFeishuClient(account);
+
+  const response = (await client.im.message.list({
+    params: {
+      container_id_type: "thread",
+      container_id: threadId,
+      // Fetch newest messages first so long threads keep the most recent turns.
+      // Results are reversed below to restore chronological order.
+      sort_type: "ByCreateTimeDesc",
+      page_size: Math.min(limit + 1, 50),
+    },
+  })) as {
+    code?: number;
+    msg?: string;
+    data?: {
+      items?: Array<
+        {
+          message_id?: string;
+          root_id?: string;
+          parent_id?: string;
+        } & FeishuMessageGetItem
+      >;
+    };
+  };
+
+  if (response.code !== 0) {
+    throw new Error(
+      `Feishu thread list failed: code=${response.code} msg=${response.msg ?? "unknown"}`,
+    );
+  }
+
+  const items = response.data?.items ?? [];
+  const results: FeishuThreadMessageInfo[] = [];
+
+  for (const item of items) {
+    if (currentMessageId && item.message_id === currentMessageId) continue;
+    if (rootMessageId && item.message_id === rootMessageId) continue;
+
+    const parsed = parseFeishuMessageItem(item);
+
+    results.push({
+      messageId: parsed.messageId,
+      senderId: parsed.senderId,
+      senderType: parsed.senderType,
+      content: parsed.content,
+      contentType: parsed.contentType,
+      createTime: parsed.createTime,
+    });
+
+    if (results.length >= limit) break;
+  }
+
+  // Restore chronological order (oldest first) since we fetched newest-first.
+  results.reverse();
+  return results;
 }
 
 export type SendFeishuMessageParams = {

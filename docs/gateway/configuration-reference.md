@@ -1347,7 +1347,7 @@ Defaults for Talk mode (macOS/iOS/Android).
 - Voice IDs fall back to `ELEVENLABS_VOICE_ID` or `SAG_VOICE_ID`.
 - `apiKey` falls back to `ELEVENLABS_API_KEY`.
 - `voiceAliases` lets Talk directives use friendly names.
-- `silenceTimeoutMs` controls how long Talk mode waits after user silence before it sends the transcript. Unset keeps the platform default pause window (`700` ms on macOS and Android, `900` ms on iOS).
+- `silenceTimeoutMs` controls how long Talk mode waits after user silence before it sends the transcript. Unset keeps the platform default pause window (`700 ms on macOS and Android, 900 ms on iOS`).
 
 ---
 

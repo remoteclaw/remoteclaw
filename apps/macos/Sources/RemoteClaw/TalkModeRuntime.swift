@@ -12,6 +12,7 @@ actor TalkModeRuntime {
     private let ttsLogger = Logger(subsystem: "org.remoteclaw", category: "talk.tts")
     private static let defaultModelIdFallback = "eleven_v3"
     private static let defaultTalkProvider = "elevenlabs"
+    private static let defaultSilenceTimeoutMs = 700
 
     private final class RMSMeter: @unchecked Sendable {
         private let lock = NSLock()
@@ -66,7 +67,7 @@ actor TalkModeRuntime {
     private var fallbackVoiceId: String?
     private var lastPlaybackWasPCM: Bool = false
 
-    private let silenceWindow: TimeInterval = 0.7
+    private var silenceWindow: TimeInterval = TimeInterval(TalkModeRuntime.defaultSilenceTimeoutMs) / 1000
     private let minSpeechRMS: Double = 1e-3
     private let speechBoostFactor: Double = 6.0
 
@@ -778,6 +779,7 @@ extension TalkModeRuntime {
         }
         self.defaultOutputFormat = cfg.outputFormat
         self.interruptOnSpeech = cfg.interruptOnSpeech
+        self.silenceWindow = TimeInterval(cfg.silenceTimeoutMs) / 1000
         self.apiKey = cfg.apiKey
         let hasApiKey = (cfg.apiKey?.isEmpty == false)
         let voiceLabel = (cfg.voiceId?.isEmpty == false) ? cfg.voiceId! : "none"
@@ -787,7 +789,8 @@ extension TalkModeRuntime {
                 "talk config voiceId=\(voiceLabel, privacy: .public) " +
                     "modelId=\(modelLabel, privacy: .public) " +
                     "apiKey=\(hasApiKey, privacy: .public) " +
-                    "interrupt=\(cfg.interruptOnSpeech, privacy: .public)")
+                    "interrupt=\(cfg.interruptOnSpeech, privacy: .public) " +
+                    "silenceTimeoutMs=\(cfg.silenceTimeoutMs, privacy: .public)")
     }
 
     private struct TalkRuntimeConfig {
@@ -796,6 +799,7 @@ extension TalkModeRuntime {
         let modelId: String?
         let outputFormat: String?
         let interruptOnSpeech: Bool
+        let silenceTimeoutMs: Int
         let apiKey: String?
     }
 
@@ -875,6 +879,21 @@ extension TalkModeRuntime {
             normalizedPayload: false)
     }
 
+    static func resolvedSilenceTimeoutMs(_ talk: [String: AnyCodable]?) -> Int {
+        if let timeout = talk?["silenceTimeoutMs"]?.intValue, timeout > 0 {
+            return timeout
+        }
+        if
+            let timeout = talk?["silenceTimeoutMs"]?.doubleValue,
+            timeout > 0,
+            timeout.rounded(.towardZero) == timeout,
+            timeout <= Double(Int.max)
+        {
+            return Int(timeout)
+        }
+        return Self.defaultSilenceTimeoutMs
+    }
+
     private func fetchTalkConfig() async -> TalkRuntimeConfig {
         let env = ProcessInfo.processInfo.environment
         let envVoice = env["ELEVENLABS_VOICE_ID"]?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -890,6 +909,7 @@ extension TalkModeRuntime {
             let selection = Self.selectTalkProviderConfig(talk)
             let activeProvider = selection?.provider ?? Self.defaultTalkProvider
             let activeConfig = selection?.config
+            let silenceTimeoutMs = Self.resolvedSilenceTimeoutMs(talk)
             let ui = snap.config?["ui"]?.dictionaryValue
             let rawSeam = ui?["seamColor"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             await MainActor.run {
@@ -934,6 +954,7 @@ extension TalkModeRuntime {
                 modelId: resolvedModel,
                 outputFormat: outputFormat,
                 interruptOnSpeech: interrupt ?? true,
+                silenceTimeoutMs: silenceTimeoutMs,
                 apiKey: resolvedApiKey)
         } catch {
             let resolvedVoice =
@@ -946,6 +967,7 @@ extension TalkModeRuntime {
                 modelId: Self.defaultModelIdFallback,
                 outputFormat: nil,
                 interruptOnSpeech: true,
+                silenceTimeoutMs: Self.defaultSilenceTimeoutMs,
                 apiKey: resolvedApiKey)
         }
     }

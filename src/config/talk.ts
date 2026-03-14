@@ -43,6 +43,13 @@ function normalizeVoiceAliases(value: unknown): Record<string, string> | undefin
   return Object.keys(aliases).length > 0 ? aliases : undefined;
 }
 
+function normalizeSilenceTimeoutMs(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isInteger(value) || value <= 0) {
+    return undefined;
+  }
+  return value;
+}
+
 function normalizeTalkProviderConfig(value: unknown): TalkProviderConfig | undefined {
   if (!isPlainObject(value)) {
     return undefined;
@@ -113,6 +120,10 @@ function normalizedLegacyTalkFields(source: Record<string, unknown>): Partial<Ta
   const apiKey = normalizeString(source.apiKey);
   if (apiKey) {
     legacy.apiKey = apiKey;
+  }
+  const silenceTimeoutMs = normalizeSilenceTimeoutMs(source.silenceTimeoutMs);
+  if (silenceTimeoutMs !== undefined) {
+    legacy.silenceTimeoutMs = silenceTimeoutMs;
   }
   return legacy;
 }
@@ -258,6 +269,9 @@ export function buildTalkConfigResponse(value: unknown): TalkConfigResponse | un
   const payload: TalkConfigResponse = {};
   if (typeof normalized.interruptOnSpeech === "boolean") {
     payload.interruptOnSpeech = normalized.interruptOnSpeech;
+  }
+  if (typeof normalized.silenceTimeoutMs === "number") {
+    payload.silenceTimeoutMs = normalized.silenceTimeoutMs;
   }
   if (normalized.providers && Object.keys(normalized.providers).length > 0) {
     payload.providers = normalized.providers;

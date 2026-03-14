@@ -55,6 +55,7 @@ describe("talk normalization", () => {
       outputFormat: "pcm_44100",
       apiKey: "secret-key",
       interruptOnSpeech: false,
+      silenceTimeoutMs: 1500,
     });
 
     expect(normalized).toEqual({
@@ -74,6 +75,7 @@ describe("talk normalization", () => {
       outputFormat: "pcm_44100",
       apiKey: "secret-key",
       interruptOnSpeech: false,
+      silenceTimeoutMs: 1500,
     });
   });
 

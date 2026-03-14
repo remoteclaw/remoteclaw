@@ -33,15 +33,6 @@ function normalizePluginSyncVersion(version: string): string {
   return normalized.replace(/[-+].*$/, "");
 }
 
-const ALLOWLISTED_BUNDLED_EXTENSION_ROOT_DEP_GAPS: Record<string, string[]> = {
-  googlechat: ["google-auth-library"],
-  matrix: ["@matrix-org/matrix-sdk-crypto-nodejs", "@vector-im/matrix-bot-sdk", "music-metadata"],
-  msteams: ["@microsoft/agents-hosting"],
-  nostr: ["nostr-tools"],
-  tlon: ["@tloncorp/api", "@tloncorp/tlon-skill", "@urbit/aura"],
-  zalouser: ["zca-js"],
-};
-
 export function collectBundledExtensionRootDependencyGapErrors(params: {
   rootPackage: PackageJson;
   extensions: BundledExtension[];
@@ -60,9 +51,7 @@ export function collectBundledExtensionRootDependencyGapErrors(params: {
     const missing = Object.keys(extension.packageJson.dependencies ?? {})
       .filter((dep) => dep !== "remoteclaw" && !rootDeps[dep])
       .toSorted();
-    const allowlisted = [
-      ...(ALLOWLISTED_BUNDLED_EXTENSION_ROOT_DEP_GAPS[extension.id] ?? []),
-    ].toSorted();
+    const allowlisted = [...extension.rootDependencyMirrorAllowlist].toSorted();
     if (missing.join("\n") !== allowlisted.join("\n")) {
       const unexpected = missing.filter((dep) => !allowlisted.includes(dep));
       const resolved = allowlisted.filter((dep) => !missing.includes(dep));

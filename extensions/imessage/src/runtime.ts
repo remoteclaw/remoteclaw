@@ -1,14 +1,6 @@
+import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk";
 import type { PluginRuntime } from "remoteclaw/plugin-sdk";
 
-let runtime: PluginRuntime | null = null;
-
-export function setIMessageRuntime(next: PluginRuntime) {
-  runtime = next;
-}
-
-export function getIMessageRuntime(): PluginRuntime {
-  if (!runtime) {
-    throw new Error("iMessage runtime not initialized");
-  }
-  return runtime;
-}
+const { setRuntime: setIMessageRuntime, getRuntime: getIMessageRuntime } =
+  createPluginRuntimeStore<PluginRuntime>("iMessage runtime not initialized");
+export { getIMessageRuntime, setIMessageRuntime };

@@ -116,6 +116,7 @@ export {
   AllowFromEntrySchema,
   buildCatchallMultiAccountChannelSchema,
 } from "../channels/plugins/config-schema.js";
+export { createPluginRuntimeStore } from "./runtime-store.js";
 export type { ChannelDock } from "../channels/dock.js";
 export { getChatChannelMeta } from "../channels/registry.js";
 export type {

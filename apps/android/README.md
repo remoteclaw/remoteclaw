@@ -30,6 +30,8 @@ cd apps/android
 ./gradlew :app:assembleDebug
 ./gradlew :app:installDebug
 ./gradlew :app:testDebugUnitTest
+cd ../..
+bun run android:bundle:release
 ```
 
 `bun run android:bundle:release` auto-bumps Android `versionName`/`versionCode` in `apps/android/app/build.gradle.kts`, then builds two signed release bundles:

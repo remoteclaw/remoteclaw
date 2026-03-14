@@ -113,6 +113,7 @@ function getRelayAuthTokenFromRequest(req: IncomingMessage, url?: URL): string |
 
 export type ChromeExtensionRelayServer = {
   host: string;
+  bindHost: string;
   port: number;
   baseUrl: string;
   cdpWsUrl: string;
@@ -618,7 +619,9 @@ export async function ensureChromeExtensionRelayServer(opts: {
       const pathname = url.pathname;
       const remote = req.socket.remoteAddress;
 
-      if (!isLoopbackAddress(remote)) {
+      // When bindHost is explicitly non-loopback (e.g. 0.0.0.0 for WSL2),
+      // allow non-loopback connections; otherwise enforce loopback-only.
+      if (!isLoopbackAddress(remote) && isLoopbackHost(bindHost)) {
         rejectUpgrade(socket, 403, "Forbidden");
         return;
       }
@@ -902,6 +905,7 @@ export async function ensureChromeExtensionRelayServer(opts: {
       ) {
         const existingRelay: ChromeExtensionRelayServer = {
           host: info.host,
+          bindHost,
           port: info.port,
           baseUrl: info.baseUrl,
           cdpWsUrl: `ws://${info.host}:${info.port}/cdp`,
@@ -923,6 +927,7 @@ export async function ensureChromeExtensionRelayServer(opts: {
 
     const relay: ChromeExtensionRelayServer = {
       host,
+      bindHost,
       port,
       baseUrl,
       cdpWsUrl: `ws://${host}:${port}/cdp`,

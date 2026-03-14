@@ -245,7 +245,7 @@ export const RemoteClawSchema = z
               }),
           )
           .optional(),
-        relayBindHost: z.string().optional(),
+        relayBindHost: z.union([z.string().ipv4(), z.string().ipv6()]).optional(),
       })
       .strict()
       .optional(),

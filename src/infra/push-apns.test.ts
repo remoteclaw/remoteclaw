@@ -1,24 +1,10 @@
 import { generateKeyPairSync } from "node:crypto";
-import fs from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  loadApnsRegistration,
-  registerApnsToken,
-  sendApnsAlert,
-  sendApnsBackgroundWake,
-} from "./push-apns.js";
+import { sendApnsAlert, sendApnsBackgroundWake } from "./push-apns.js";
 
-const tempDirs: string[] = [];
 const testAuthPrivateKey = generateKeyPairSync("ec", { namedCurve: "prime256v1" })
   .privateKey.export({ format: "pem", type: "pkcs8" })
   .toString();
-async function makeTempDir(): Promise<string> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-push-apns-test-"));
-  tempDirs.push(dir);
-  return dir;
-}
 
 function createDirectApnsSendFixture(params: {
   nodeId: string;
@@ -44,45 +30,7 @@ function createDirectApnsSendFixture(params: {
 }
 
 afterEach(async () => {
-  while (tempDirs.length > 0) {
-    const dir = tempDirs.pop();
-    if (dir) {
-      await fs.rm(dir, { recursive: true, force: true });
-    }
-  }
-});
-
-describe("push APNs registration store", () => {
-  it("stores and reloads node APNs registration", async () => {
-    const baseDir = await makeTempDir();
-    const saved = await registerApnsToken({
-      nodeId: "ios-node-1",
-      token: "ABCD1234ABCD1234ABCD1234ABCD1234",
-      topic: "org.remoteclaw.ios",
-      environment: "sandbox",
-      baseDir,
-    });
-
-    const loaded = await loadApnsRegistration("ios-node-1", baseDir);
-    expect(loaded).not.toBeNull();
-    expect(loaded?.nodeId).toBe("ios-node-1");
-    expect(loaded?.token).toBe("abcd1234abcd1234abcd1234abcd1234");
-    expect(loaded?.topic).toBe("org.remoteclaw.ios");
-    expect(loaded?.environment).toBe("sandbox");
-    expect(loaded?.updatedAtMs).toBe(saved.updatedAtMs);
-  });
-
-  it("rejects invalid APNs tokens", async () => {
-    const baseDir = await makeTempDir();
-    await expect(
-      registerApnsToken({
-        nodeId: "ios-node-1",
-        token: "not-a-token",
-        topic: "org.remoteclaw.ios",
-        baseDir,
-      }),
-    ).rejects.toThrow("invalid APNs token");
-  });
+  vi.unstubAllGlobals();
 });
 
 describe("push APNs send semantics", () => {

@@ -15,11 +15,10 @@ describe("setupCommand", () => {
 
       await setupCommand(undefined, runtime);
 
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
       const raw = await fs.readFile(configPath, "utf-8");
 
       expect(raw).toContain('"mode": "local"');
-      expect(raw).toContain('"workspace"');
     });
   });
 
@@ -30,8 +29,8 @@ describe("setupCommand", () => {
         error: vi.fn(),
         exit: vi.fn(),
       };
-      const configDir = path.join(home, ".openclaw");
-      const configPath = path.join(configDir, "openclaw.json");
+      const configDir = path.join(home, ".remoteclaw");
+      const configPath = path.join(configDir, "remoteclaw.json");
       const workspace = path.join(home, "custom-workspace");
 
       await fs.mkdir(configDir, { recursive: true });

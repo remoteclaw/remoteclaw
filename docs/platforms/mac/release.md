@@ -32,7 +32,9 @@ Notes:
 
 ```bash
 # From repo root; set release IDs so Sparkle feed is enabled.
+# This command builds release artifacts without notarization.
 # APP_BUILD must be numeric + monotonic for Sparkle compare.
+SKIP_NOTARIZE=1 \
 BUNDLE_ID=org.remoteclaw.mac \
 APP_VERSION=0.1.0 \
 APP_BUILD="$(git rev-list --count HEAD)" \

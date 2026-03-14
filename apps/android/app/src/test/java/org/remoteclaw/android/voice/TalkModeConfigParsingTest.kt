@@ -34,7 +34,7 @@ class TalkModeConfigParsingTest {
         )
         .jsonObject
 
-    val selection = TalkModeManager.selectTalkProviderConfig(talk)
+    val selection = TalkModeGatewayConfigParser.selectTalkProviderConfig(talk)
     assertNotNull(selection)
     assertEquals("elevenlabs", selection?.provider)
     assertTrue(selection?.normalizedPayload == true)
@@ -59,7 +59,7 @@ class TalkModeConfigParsingTest {
         )
         .jsonObject
 
-    val selection = TalkModeManager.selectTalkProviderConfig(talk)
+    val selection = TalkModeGatewayConfigParser.selectTalkProviderConfig(talk)
     assertEquals(null, selection)
   }
 
@@ -80,7 +80,7 @@ class TalkModeConfigParsingTest {
         )
         .jsonObject
 
-    val selection = TalkModeManager.selectTalkProviderConfig(talk)
+    val selection = TalkModeGatewayConfigParser.selectTalkProviderConfig(talk)
     assertEquals(null, selection)
   }
 
@@ -103,7 +103,7 @@ class TalkModeConfigParsingTest {
         )
         .jsonObject
 
-    val selection = TalkModeManager.selectTalkProviderConfig(talk)
+    val selection = TalkModeGatewayConfigParser.selectTalkProviderConfig(talk)
     assertEquals(null, selection)
   }
 
@@ -120,7 +120,7 @@ class TalkModeConfigParsingTest {
         )
         .jsonObject
 
-    val selection = TalkModeManager.selectTalkProviderConfig(talk)
+    val selection = TalkModeGatewayConfigParser.selectTalkProviderConfig(talk)
     assertNotNull(selection)
     assertEquals("elevenlabs", selection?.provider)
     assertTrue(selection?.normalizedPayload == false)
@@ -132,25 +132,34 @@ class TalkModeConfigParsingTest {
   fun readsConfiguredSilenceTimeoutMs() {
     val talk = buildJsonObject { put("silenceTimeoutMs", 1500) }
 
-    assertEquals(1500L, TalkModeManager.resolvedSilenceTimeoutMs(talk))
+    assertEquals(1500L, TalkModeGatewayConfigParser.resolvedSilenceTimeoutMs(talk))
   }
 
   @Test
   fun defaultsSilenceTimeoutMsWhenMissing() {
-    assertEquals(TalkDefaults.defaultSilenceTimeoutMs, TalkModeManager.resolvedSilenceTimeoutMs(null))
+    assertEquals(
+      TalkDefaults.defaultSilenceTimeoutMs,
+      TalkModeGatewayConfigParser.resolvedSilenceTimeoutMs(null),
+    )
   }
 
   @Test
   fun defaultsSilenceTimeoutMsWhenInvalid() {
     val talk = buildJsonObject { put("silenceTimeoutMs", 0) }
 
-    assertEquals(TalkDefaults.defaultSilenceTimeoutMs, TalkModeManager.resolvedSilenceTimeoutMs(talk))
+    assertEquals(
+      TalkDefaults.defaultSilenceTimeoutMs,
+      TalkModeGatewayConfigParser.resolvedSilenceTimeoutMs(talk),
+    )
   }
 
   @Test
   fun defaultsSilenceTimeoutMsWhenString() {
     val talk = buildJsonObject { put("silenceTimeoutMs", "1500") }
 
-    assertEquals(TalkDefaults.defaultSilenceTimeoutMs, TalkModeManager.resolvedSilenceTimeoutMs(talk))
+    assertEquals(
+      TalkDefaults.defaultSilenceTimeoutMs,
+      TalkModeGatewayConfigParser.resolvedSilenceTimeoutMs(talk),
+    )
   }
 }

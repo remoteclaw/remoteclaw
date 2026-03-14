@@ -2,10 +2,10 @@ import RemoteClawProtocol
 import Testing
 @testable import RemoteClaw
 
-@Suite struct InstancesStoreTests {
+struct InstancesStoreTests {
     @Test
     @MainActor
-    func presenceEventPayloadDecodesViaJSONEncoder() {
+    func `presence event payload decodes via JSON encoder`() {
         // Build a payload that mirrors the gateway's presence event shape:
         // { "presence": [ PresenceEntry ] }
         let entry: [String: RemoteClawProtocol.AnyCodable] = [

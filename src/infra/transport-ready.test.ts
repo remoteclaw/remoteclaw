@@ -1,45 +1,43 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { waitForTransportReady } from "./transport-ready.js";
 
 let injectedSleepError: Error | null = null;
-type TransportReadyModule = typeof import("./transport-ready.js");
-let waitForTransportReady: TransportReadyModule["waitForTransportReady"];
+
+// Perf: `sleepWithAbort` uses `node:timers/promises` which isn't controlled by fake timers.
+// Route sleeps through global `setTimeout` so tests can advance time deterministically.
+vi.mock("./backoff.js", () => ({
+  sleepWithAbort: async (ms: number, signal?: AbortSignal) => {
+    if (injectedSleepError) {
+      throw injectedSleepError;
+    }
+    if (signal?.aborted) {
+      throw new Error("aborted");
+    }
+    if (ms <= 0) {
+      return;
+    }
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        signal?.removeEventListener("abort", onAbort);
+        resolve();
+      }, ms);
+      const onAbort = () => {
+        clearTimeout(timer);
+        signal?.removeEventListener("abort", onAbort);
+        reject(new Error("aborted"));
+      };
+      signal?.addEventListener("abort", onAbort, { once: true });
+    });
+  },
+}));
 
 function createRuntime() {
   return { log: vi.fn(), error: vi.fn(), exit: vi.fn() };
 }
 
 describe("waitForTransportReady", () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.useFakeTimers();
-    vi.resetModules();
-    // Perf: `sleepWithAbort` uses `node:timers/promises` which isn't controlled by fake timers.
-    // Route sleeps through global `setTimeout` so tests can advance time deterministically.
-    vi.doMock("./backoff.js", () => ({
-      sleepWithAbort: async (ms: number, signal?: AbortSignal) => {
-        if (injectedSleepError) {
-          throw injectedSleepError;
-        }
-        if (signal?.aborted) {
-          throw new Error("aborted");
-        }
-        if (ms <= 0) {
-          return;
-        }
-        await new Promise<void>((resolve, reject) => {
-          const timer = setTimeout(() => {
-            signal?.removeEventListener("abort", onAbort);
-            resolve();
-          }, ms);
-          const onAbort = () => {
-            clearTimeout(timer);
-            signal?.removeEventListener("abort", onAbort);
-            reject(new Error("aborted"));
-          };
-          signal?.addEventListener("abort", onAbort, { once: true });
-        });
-      },
-    }));
-    ({ waitForTransportReady } = await import("./transport-ready.js"));
   });
 
   afterEach(() => {

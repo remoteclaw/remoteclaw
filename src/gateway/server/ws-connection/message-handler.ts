@@ -659,7 +659,10 @@ export function attachGatewayWsMessageHandler(params: {
           authOk,
           authMethod,
         });
+        // auth.mode=none disables all authentication — device pairing is an
+        // auth mechanism and must also be skipped when the operator opted out.
         const skipPairing =
+          resolvedAuth.mode === "none" ||
           shouldSkipBackendSelfPairing({
             connectParams,
             isLocalClient,

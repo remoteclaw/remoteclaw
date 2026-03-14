@@ -1,9 +1,9 @@
 ---
-description: "Symptom first troubleshooting hub for RemoteClaw"
+summary: "Symptom first troubleshooting hub for OpenClaw"
 read_when:
-  - RemoteClaw is not working and you need the fastest path to a fix
+  - OpenClaw is not working and you need the fastest path to a fix
   - You want a triage flow before diving into deep runbooks
-title: "General Troubleshooting"
+title: "Troubleshooting"
 ---
 
 # Troubleshooting
@@ -21,18 +21,24 @@ remoteclaw gateway probe
 remoteclaw gateway status
 remoteclaw doctor
 remoteclaw channels status --probe
-remoteclaw logs --follow
+openclaw logs --follow
 ```
 
 Good output in one line:
 
 - `remoteclaw status` → shows configured channels and no obvious auth errors.
 - `remoteclaw status --all` → full report is present and shareable.
-- `remoteclaw gateway probe` → expected gateway target is reachable.
+- `remoteclaw gateway probe` → expected gateway target is reachable (`Reachable: yes`). `RPC: limited - missing scope: operator.read` is degraded diagnostics, not a connect failure.
 - `remoteclaw gateway status` → `Runtime: running` and `RPC probe: ok`.
 - `remoteclaw doctor` → no blocking config/service errors.
 - `remoteclaw channels status --probe` → channels report `connected` or `ready`.
-- `remoteclaw logs --follow` → steady activity, no repeating fatal errors.
+- `openclaw logs --follow` → steady activity, no repeating fatal errors.
+
+## Anthropic long context 429
+
+If you see:
+`HTTP 429: rate_limit_error: Extra usage is required for long context requests`,
+go to [/gateway/troubleshooting#anthropic-429-extra-usage-required-for-long-context](/gateway/troubleshooting#anthropic-429-extra-usage-required-for-long-context).
 
 ## Plugin install fails with missing openclaw extensions
 
@@ -43,7 +49,7 @@ Fix in the plugin package:
 
 1. Add `openclaw.extensions` to `package.json`.
 2. Point entries at built runtime files (usually `./dist/index.js`).
-3. Republish the plugin and run `openclaw plugins install <npm-spec>` again.
+3. Republish the plugin and run `remoteclaw plugins install <npm-spec>` again.
 
 Example:
 
@@ -57,13 +63,13 @@ Example:
 }
 ```
 
-Reference: [Plugin architecture](/plugins/architecture)
+Reference: [/tools/plugin#distribution-npm](/tools/plugin#distribution-npm)
 
 ## Decision tree
 
 ```mermaid
 flowchart TD
-  A[RemoteClaw is not working] --> B{What breaks first}
+  A[OpenClaw is not working] --> B{What breaks first}
   B --> C[No replies]
   B --> D[Dashboard or Control UI will not connect]
   B --> E[Gateway will not start or service not running]
@@ -81,15 +87,14 @@ flowchart TD
   I --> I1[/Browser section/]
 ```
 
-  <details>
-<summary>No replies</summary>
-
+<AccordionGroup>
+  <Accordion title="No replies">
     ```bash
     remoteclaw status
     remoteclaw gateway status
     remoteclaw channels status --probe
-    remoteclaw pairing list --channel <channel> [--account <id>]
-    remoteclaw logs --follow
+    openclaw pairing list --channel <channel> [--account <id>]
+    openclaw logs --follow
     ```
 
     Good output looks like:
@@ -111,15 +116,13 @@ flowchart TD
     - [/channels/troubleshooting](/channels/troubleshooting)
     - [/channels/pairing](/channels/pairing)
 
-</details>
+  </Accordion>
 
-  <details>
-<summary>Dashboard or Control UI will not connect</summary>
-
+  <Accordion title="Dashboard or Control UI will not connect">
     ```bash
     remoteclaw status
     remoteclaw gateway status
-    remoteclaw logs --follow
+    openclaw logs --follow
     remoteclaw doctor
     remoteclaw channels status --probe
     ```
@@ -143,15 +146,13 @@ flowchart TD
     - [/web/control-ui](/web/control-ui)
     - [/gateway/authentication](/gateway/authentication)
 
-</details>
+  </Accordion>
 
-  <details>
-<summary>Gateway will not start or service installed but not running</summary>
-
+  <Accordion title="Gateway will not start or service installed but not running">
     ```bash
     remoteclaw status
     remoteclaw gateway status
-    remoteclaw logs --follow
+    openclaw logs --follow
     remoteclaw doctor
     remoteclaw channels status --probe
     ```
@@ -174,15 +175,13 @@ flowchart TD
     - [/gateway/background-process](/gateway/background-process)
     - [/gateway/configuration](/gateway/configuration)
 
-</details>
+  </Accordion>
 
-  <details>
-<summary>Channel connects but messages do not flow</summary>
-
+  <Accordion title="Channel connects but messages do not flow">
     ```bash
     remoteclaw status
     remoteclaw gateway status
-    remoteclaw logs --follow
+    openclaw logs --follow
     remoteclaw doctor
     remoteclaw channels status --probe
     ```
@@ -204,18 +203,16 @@ flowchart TD
     - [/gateway/troubleshooting#channel-connected-messages-not-flowing](/gateway/troubleshooting#channel-connected-messages-not-flowing)
     - [/channels/troubleshooting](/channels/troubleshooting)
 
-</details>
+  </Accordion>
 
-  <details>
-<summary>Cron or heartbeat did not fire or did not deliver</summary>
-
+  <Accordion title="Cron or heartbeat did not fire or did not deliver">
     ```bash
     remoteclaw status
     remoteclaw gateway status
-    remoteclaw cron status
-    remoteclaw cron list
-    remoteclaw cron runs --id <jobId> --limit 20
-    remoteclaw logs --follow
+    openclaw cron status
+    openclaw cron list
+    openclaw cron runs --id <jobId> --limit 20
+    openclaw logs --follow
     ```
 
     Good output looks like:
@@ -237,17 +234,15 @@ flowchart TD
     - [/automation/troubleshooting](/automation/troubleshooting)
     - [/gateway/heartbeat](/gateway/heartbeat)
 
-</details>
+  </Accordion>
 
-  <details>
-<summary>Node is paired but tool fails camera canvas screen exec</summary>
-
+  <Accordion title="Node is paired but tool fails camera canvas screen exec">
     ```bash
     remoteclaw status
     remoteclaw gateway status
     remoteclaw nodes status
     remoteclaw nodes describe --node <idOrNameOrIp>
-    remoteclaw logs --follow
+    openclaw logs --follow
     ```
 
     Good output looks like:
@@ -267,24 +262,23 @@ flowchart TD
 
     - [/gateway/troubleshooting#node-paired-tool-fails](/gateway/troubleshooting#node-paired-tool-fails)
     - [/nodes/troubleshooting](/nodes/troubleshooting)
+    - [/tools/exec-approvals](/tools/exec-approvals)
 
-</details>
+  </Accordion>
 
-  <details>
-<summary>Browser tool fails</summary>
-
+  <Accordion title="Browser tool fails">
     ```bash
     remoteclaw status
     remoteclaw gateway status
-    remoteclaw browser status
-    remoteclaw logs --follow
+    openclaw browser status
+    openclaw logs --follow
     remoteclaw doctor
     ```
 
     Good output looks like:
 
     - Browser status shows `running: true` and a chosen browser/profile.
-    - `remoteclaw` profile starts or `chrome` relay has an attached tab.
+    - `openclaw` profile starts or `chrome` relay has an attached tab.
 
     Common log signatures:
 
@@ -300,4 +294,5 @@ flowchart TD
     - [/tools/browser-wsl2-windows-remote-cdp-troubleshooting](/tools/browser-wsl2-windows-remote-cdp-troubleshooting)
     - [/tools/chrome-extension](/tools/chrome-extension)
 
-</details>
+  </Accordion>
+</AccordionGroup>

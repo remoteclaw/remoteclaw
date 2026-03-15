@@ -1,17 +1,13 @@
-import { resolveAccountWithDefaultFallback } from "remoteclaw/plugin-sdk/account-resolution";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { coerceSecretRef } from "remoteclaw/plugin-sdk/config-runtime";
-import { tryReadSecretFileSync } from "remoteclaw/plugin-sdk/infra-runtime";
-import { resolveDefaultSecretProviderAlias } from "remoteclaw/plugin-sdk/provider-auth";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
+import type { TelegramAccountConfig } from "openclaw/plugin-sdk/telegram";
+import type { OpenClawConfig } from "../../../src/config/config.js";
 import {
   hasConfiguredSecretInput,
   normalizeSecretInputString,
-} from "openclaw/plugin-sdk/config-runtime";
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/infra-runtime";
-import { resolveDefaultSecretProviderAlias } from "openclaw/plugin-sdk/provider-auth";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/routing";
-import type { TelegramAccountConfig } from "../runtime-api.js";
+} from "../../../src/config/types.secrets.js";
+import { tryReadSecretFileSync } from "../../../src/infra/secret-file.js";
+import { resolveAccountWithDefaultFallback } from "../../../src/plugin-sdk/account-resolution.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
+import { resolveDefaultSecretProviderAlias } from "../../../src/secrets/ref-contract.js";
 import {
   mergeTelegramAccountConfig,
   resolveDefaultTelegramAccountId,

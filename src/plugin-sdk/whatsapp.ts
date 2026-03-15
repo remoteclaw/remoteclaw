@@ -1,21 +1,14 @@
 export type { ChannelMessageActionName } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
-export type { RemoteClawConfig } from "../config/config.js";
+export type { OpenClawConfig } from "../config/config.js";
 export type { DmPolicy, GroupPolicy, WhatsAppAccountConfig } from "../config/types.js";
-export type {
-  WebChannelStatus,
-  WebMonitorTuning,
-} from "../../extensions/whatsapp/src/auto-reply.js";
-export type {
-  WebInboundMessage,
-  WebListenerCloseReason,
-} from "../../extensions/whatsapp/src/inbound.js";
-export type {
-  ChannelMessageActionContext,
-  ChannelPlugin,
-  RemoteClawPluginApi,
-  PluginRuntime,
-} from "./channel-plugin-common.js";
+export type { PluginRuntime } from "../plugins/runtime/types.js";
+export type { OpenClawPluginApi } from "../plugins/types.js";
+
+export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
+
+export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
+
 export {
   applyAccountNameToChannelSection,
   migrateBaseNameToDefaultAccount,

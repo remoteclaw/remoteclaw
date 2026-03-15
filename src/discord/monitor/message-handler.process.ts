@@ -117,7 +117,7 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
     return;
   }
 
-  const boundThreadId = ctx.threadBinding?.conversation?.conversationId?.trim();
+  const boundThreadId = ctx.threadBinding?.threadId?.trim();
   if (boundThreadId && typeof threadBindings.touchThread === "function") {
     threadBindings.touchThread({ threadId: boundThreadId });
   }

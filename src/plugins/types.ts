@@ -1,20 +1,30 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import type { TopLevelComponents } from "@buape/carbon";
+import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { StreamFn } from "@mariozechner/pi-agent-core";
+import type { Api, Model } from "@mariozechner/pi-ai";
+import type { ModelRegistry } from "@mariozechner/pi-coding-agent";
 import type { Command } from "commander";
+import type {
+  ApiKeyCredential,
+  AuthProfileCredential,
+  OAuthCredential,
+} from "../agents/auth-profiles/types.js";
+import type { ProviderCapabilities } from "../agents/provider-capabilities.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
-import type { AuthProfileCredential } from "../auth/types.js";
+import type { ThinkLevel } from "../auto-reply/thinking.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import type { ChannelDock } from "../channels/dock.js";
 import type { ChannelId, ChannelPlugin } from "../channels/plugins/types.js";
 import type { createVpsAwareOAuthHandlers } from "../commands/oauth-flow.js";
-import type { RemoteClawConfig } from "../config/config.js";
+import type { OnboardOptions } from "../commands/onboard-types.js";
+import type { OpenClawConfig } from "../config/config.js";
 import type { ModelProviderConfig } from "../config/types.js";
 import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
 import type { InternalHookHandler } from "../hooks/internal-hooks.js";
 import type { HookEntry } from "../hooks/types.js";
+import type { ProviderUsageSnapshot } from "../infra/provider-usage.types.js";
 import type { RuntimeEnv } from "../runtime.js";
-import type { SttProvider } from "../stt/types.js";
-import type { TtsProviderImpl } from "../tts/types.js";
-import type { AgentMessage } from "../types/agent-types.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { PluginRuntime } from "./runtime/types.js";
 
@@ -37,13 +47,13 @@ export type PluginConfigUiHint = {
   placeholder?: string;
 };
 
-export type PluginKind = string;
+export type PluginKind = "memory" | "context-engine";
 
 export type PluginConfigValidation =
   | { ok: true; value?: unknown }
   | { ok: false; errors: string[] };
 
-export type RemoteClawPluginConfigSchema = {
+export type OpenClawPluginConfigSchema = {
   safeParse?: (value: unknown) => {
     success: boolean;
     data?: unknown;
@@ -57,8 +67,8 @@ export type RemoteClawPluginConfigSchema = {
   jsonSchema?: Record<string, unknown>;
 };
 
-export type RemoteClawPluginToolContext = {
-  config?: RemoteClawConfig;
+export type OpenClawPluginToolContext = {
+  config?: OpenClawConfig;
   workspaceDir?: string;
   agentDir?: string;
   agentId?: string;
@@ -74,17 +84,17 @@ export type RemoteClawPluginToolContext = {
   sandboxed?: boolean;
 };
 
-export type RemoteClawPluginToolFactory = (
-  ctx: RemoteClawPluginToolContext,
+export type OpenClawPluginToolFactory = (
+  ctx: OpenClawPluginToolContext,
 ) => AnyAgentTool | AnyAgentTool[] | null | undefined;
 
-export type RemoteClawPluginToolOptions = {
+export type OpenClawPluginToolOptions = {
   name?: string;
   names?: string[];
   optional?: boolean;
 };
 
-export type RemoteClawPluginHookOptions = {
+export type OpenClawPluginHookOptions = {
   entry?: HookEntry;
   name?: string;
   description?: string;
@@ -95,13 +105,13 @@ export type ProviderAuthKind = "oauth" | "api_key" | "token" | "device_code" | "
 
 export type ProviderAuthResult = {
   profiles: Array<{ profileId: string; credential: AuthProfileCredential }>;
-  configPatch?: Partial<RemoteClawConfig>;
+  configPatch?: Partial<OpenClawConfig>;
   defaultModel?: string;
   notes?: string[];
 };
 
 export type ProviderAuthContext = {
-  config: RemoteClawConfig;
+  config: OpenClawConfig;
   agentDir?: string;
   workspaceDir?: string;
   prompter: WizardPrompter;
@@ -113,26 +123,449 @@ export type ProviderAuthContext = {
   };
 };
 
+export type ProviderNonInteractiveApiKeyResult = {
+  key: string;
+  source: "profile" | "env" | "flag";
+  envVarName?: string;
+};
+
+export type ProviderResolveNonInteractiveApiKeyParams = {
+  provider: string;
+  flagValue?: string;
+  flagName: `--${string}`;
+  envVar: string;
+  envVarName?: string;
+  allowProfile?: boolean;
+  required?: boolean;
+};
+
+export type ProviderNonInteractiveApiKeyCredentialParams = {
+  provider: string;
+  resolved: ProviderNonInteractiveApiKeyResult;
+  email?: string;
+  metadata?: Record<string, string>;
+};
+
+export type ProviderAuthMethodNonInteractiveContext = {
+  authChoice: string;
+  config: OpenClawConfig;
+  baseConfig: OpenClawConfig;
+  opts: OnboardOptions;
+  runtime: RuntimeEnv;
+  agentDir?: string;
+  workspaceDir?: string;
+  resolveApiKey: (
+    params: ProviderResolveNonInteractiveApiKeyParams,
+  ) => Promise<ProviderNonInteractiveApiKeyResult | null>;
+  toApiKeyCredential: (
+    params: ProviderNonInteractiveApiKeyCredentialParams,
+  ) => ApiKeyCredential | null;
+};
+
 export type ProviderAuthMethod = {
   id: string;
   label: string;
   hint?: string;
   kind: ProviderAuthKind;
   run: (ctx: ProviderAuthContext) => Promise<ProviderAuthResult>;
+  runNonInteractive?: (
+    ctx: ProviderAuthMethodNonInteractiveContext,
+  ) => Promise<OpenClawConfig | null>;
+};
+
+export type ProviderCatalogOrder = "simple" | "profile" | "paired" | "late";
+
+export type ProviderCatalogContext = {
+  config: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  env: NodeJS.ProcessEnv;
+  resolveProviderApiKey: (providerId?: string) => {
+    apiKey: string | undefined;
+    discoveryApiKey?: string;
+  };
+};
+
+export type ProviderCatalogResult =
+  | { provider: ModelProviderConfig }
+  | { providers: Record<string, ModelProviderConfig> }
+  | null
+  | undefined;
+
+export type ProviderPluginCatalog = {
+  order?: ProviderCatalogOrder;
+  run: (ctx: ProviderCatalogContext) => Promise<ProviderCatalogResult>;
+};
+
+/**
+ * Fully-resolved runtime model shape used by the embedded runner.
+ *
+ * Catalog hooks publish config-time `models.providers` entries.
+ * Runtime hooks below operate on the final `pi-ai` model object after
+ * discovery/override merging, just before inference runs.
+ */
+export type ProviderRuntimeModel = Model<Api>;
+
+export type ProviderRuntimeProviderConfig = {
+  baseUrl?: string;
+  api?: ModelProviderConfig["api"];
+  models?: ModelProviderConfig["models"];
+  headers?: unknown;
+};
+
+/**
+ * Sync hook for provider-owned model ids that are not present in the local
+ * registry/catalog yet.
+ *
+ * Use this for pass-through providers or provider-specific forward-compat
+ * behavior. The hook should be cheap and side-effect free; async refreshes
+ * belong in `prepareDynamicModel`.
+ */
+export type ProviderResolveDynamicModelContext = {
+  config?: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  provider: string;
+  modelId: string;
+  modelRegistry: ModelRegistry;
+  providerConfig?: ProviderRuntimeProviderConfig;
+};
+
+/**
+ * Optional async warm-up for dynamic model resolution.
+ *
+ * Called only from async model resolution paths, before retrying
+ * `resolveDynamicModel`. This is the place to refresh caches or fetch provider
+ * metadata over the network.
+ */
+export type ProviderPrepareDynamicModelContext = ProviderResolveDynamicModelContext;
+
+/**
+ * Last-chance rewrite hook for provider-owned transport normalization.
+ *
+ * Runs after OpenClaw resolves an explicit/discovered/dynamic model and before
+ * the embedded runner uses it. Typical uses: swap API ids, fix base URLs, or
+ * patch provider-specific compat bits.
+ */
+export type ProviderNormalizeResolvedModelContext = {
+  config?: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  provider: string;
+  modelId: string;
+  model: ProviderRuntimeModel;
+};
+
+/**
+ * Runtime auth input for providers that need an extra exchange step before
+ * inference. The incoming `apiKey` is the raw credential resolved from auth
+ * profiles/env/config. The returned value should be the actual token/key to use
+ * for the request.
+ */
+export type ProviderPrepareRuntimeAuthContext = {
+  config?: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  env: NodeJS.ProcessEnv;
+  provider: string;
+  modelId: string;
+  model: ProviderRuntimeModel;
+  apiKey: string;
+  authMode: string;
+  profileId?: string;
+};
+
+/**
+ * Result of `prepareRuntimeAuth`.
+ *
+ * `apiKey` is required and becomes the runtime credential stored in auth
+ * storage. `baseUrl` is optional and lets providers like GitHub Copilot swap to
+ * an entitlement-specific endpoint at request time. `expiresAt` enables generic
+ * background refresh in long-running turns.
+ */
+export type ProviderPreparedRuntimeAuth = {
+  apiKey: string;
+  baseUrl?: string;
+  expiresAt?: number;
+};
+
+/**
+ * Usage/billing auth input for providers that expose quota/usage endpoints.
+ *
+ * This hook is intentionally separate from `prepareRuntimeAuth`: usage
+ * snapshots often need a different credential source than live inference
+ * requests, and they run outside the embedded runner.
+ *
+ * The helper methods cover the common OpenClaw auth resolution paths:
+ *
+ * - `resolveApiKeyFromConfigAndStore`: env/config/plain token/api_key profiles
+ * - `resolveOAuthToken`: oauth/token profiles resolved through the auth store
+ *
+ * Plugins can still do extra provider-specific work on top (for example parse a
+ * token blob, read a legacy credential file, or pick between aliases).
+ */
+export type ProviderResolveUsageAuthContext = {
+  config: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  env: NodeJS.ProcessEnv;
+  provider: string;
+  resolveApiKeyFromConfigAndStore: (params?: {
+    providerIds?: string[];
+    envDirect?: Array<string | undefined>;
+  }) => string | undefined;
+  resolveOAuthToken: () => Promise<ProviderResolvedUsageAuth | null>;
+};
+
+/**
+ * Result of `resolveUsageAuth`.
+ *
+ * `token` is the credential used for provider usage/billing endpoints.
+ * `accountId` is optional provider-specific metadata used by some usage APIs.
+ */
+export type ProviderResolvedUsageAuth = {
+  token: string;
+  accountId?: string;
+};
+
+/**
+ * Usage/quota snapshot input for providers that own their usage endpoint
+ * fetch/parsing behavior.
+ *
+ * This hook runs after `resolveUsageAuth` succeeds. Core still owns summary
+ * fan-out, timeout wrapping, filtering, and formatting; the provider plugin
+ * owns the provider-specific HTTP request + response normalization.
+ *
+ * Return `null`/`undefined` to fall back to legacy core fetchers.
+ */
+export type ProviderFetchUsageSnapshotContext = {
+  config: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  env: NodeJS.ProcessEnv;
+  provider: string;
+  token: string;
+  accountId?: string;
+  timeoutMs: number;
+  fetchFn: typeof fetch;
+};
+
+/**
+ * Provider-owned extra-param normalization before OpenClaw builds its generic
+ * stream option wrapper.
+ *
+ * Use this to set provider defaults or rewrite provider-specific config keys
+ * into the merged `extraParams` object. Return the full next extraParams object.
+ */
+export type ProviderPrepareExtraParamsContext = {
+  config?: OpenClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  provider: string;
+  modelId: string;
+  extraParams?: Record<string, unknown>;
+  thinkingLevel?: ThinkLevel;
+};
+
+/**
+ * Provider-owned stream wrapper hook after OpenClaw applies its generic
+ * transport-independent wrappers.
+ *
+ * Use this for provider-specific payload/header/model mutations that still run
+ * through the normal `pi-ai` stream path.
+ */
+export type ProviderWrapStreamFnContext = ProviderPrepareExtraParamsContext & {
+  streamFn?: StreamFn;
+};
+
+/**
+ * Provider-owned prompt-cache eligibility.
+ *
+ * Return `true` or `false` to override OpenClaw's built-in provider cache TTL
+ * detection for this provider. Return `undefined` to fall back to core rules.
+ */
+export type ProviderCacheTtlEligibilityContext = {
+  provider: string;
+  modelId: string;
+};
+
+/**
+ * @deprecated Use ProviderCatalogOrder.
+ */
+export type ProviderDiscoveryOrder = ProviderCatalogOrder;
+
+/**
+ * @deprecated Use ProviderCatalogContext.
+ */
+export type ProviderDiscoveryContext = ProviderCatalogContext;
+
+/**
+ * @deprecated Use ProviderCatalogResult.
+ */
+export type ProviderDiscoveryResult = ProviderCatalogResult;
+
+/**
+ * @deprecated Use ProviderPluginCatalog.
+ */
+export type ProviderPluginDiscovery = ProviderPluginCatalog;
+
+export type ProviderPluginWizardOnboarding = {
+  choiceId?: string;
+  choiceLabel?: string;
+  choiceHint?: string;
+  groupId?: string;
+  groupLabel?: string;
+  groupHint?: string;
+  methodId?: string;
+};
+
+export type ProviderPluginWizardModelPicker = {
+  label?: string;
+  hint?: string;
+  methodId?: string;
+};
+
+export type ProviderPluginWizard = {
+  onboarding?: ProviderPluginWizardOnboarding;
+  modelPicker?: ProviderPluginWizardModelPicker;
+};
+
+export type ProviderModelSelectedContext = {
+  config: OpenClawConfig;
+  model: string;
+  prompter: WizardPrompter;
+  agentDir?: string;
+  workspaceDir?: string;
 };
 
 export type ProviderPlugin = {
   id: string;
+  pluginId?: string;
   label: string;
   docsPath?: string;
   aliases?: string[];
   envVars?: string[];
-  models?: ModelProviderConfig;
   auth: ProviderAuthMethod[];
+  /**
+   * Preferred hook for plugin-defined provider catalogs.
+   * Returns provider config/model definitions that merge into models.providers.
+   */
+  catalog?: ProviderPluginCatalog;
+  /**
+   * Legacy alias for catalog.
+   * Kept for compatibility with existing provider plugins.
+   */
+  discovery?: ProviderPluginDiscovery;
+  /**
+   * Sync runtime fallback for model ids not present in the local catalog.
+   *
+   * Hook order:
+   * 1. discovered/static model lookup
+   * 2. plugin `resolveDynamicModel`
+   * 3. core fallback heuristics
+   * 4. generic provider-config fallback
+   *
+   * Keep this hook cheap and deterministic. If you need network I/O first, use
+   * `prepareDynamicModel` to prime state for the async retry path.
+   */
+  resolveDynamicModel?: (
+    ctx: ProviderResolveDynamicModelContext,
+  ) => ProviderRuntimeModel | null | undefined;
+  /**
+   * Optional async prefetch for dynamic model resolution.
+   *
+   * OpenClaw calls this only from async model resolution paths. After it
+   * completes, `resolveDynamicModel` is called again.
+   */
+  prepareDynamicModel?: (ctx: ProviderPrepareDynamicModelContext) => Promise<void>;
+  /**
+   * Provider-owned transport normalization.
+   *
+   * Use this to rewrite a resolved model without forking the generic runner:
+   * swap API ids, update base URLs, or adjust compat flags for a provider's
+   * transport quirks.
+   */
+  normalizeResolvedModel?: (
+    ctx: ProviderNormalizeResolvedModelContext,
+  ) => ProviderRuntimeModel | null | undefined;
+  /**
+   * Static provider capability overrides consumed by shared transcript/tooling
+   * logic.
+   *
+   * Use this when the provider behaves like OpenAI/Anthropic, needs transcript
+   * sanitization quirks, or requires provider-family hints.
+   */
+  capabilities?: Partial<ProviderCapabilities>;
+  /**
+   * Provider-owned extra-param normalization before generic stream option
+   * wrapping.
+   *
+   * Typical uses: set provider-default `transport`, map provider-specific
+   * config aliases, or inject extra request metadata sourced from
+   * `agents.defaults.models.<provider>/<model>.params`.
+   */
+  prepareExtraParams?: (
+    ctx: ProviderPrepareExtraParamsContext,
+  ) => Record<string, unknown> | null | undefined;
+  /**
+   * Provider-owned stream wrapper applied after generic OpenClaw wrappers.
+   *
+   * Typical uses: provider attribution headers, request-body rewrites, or
+   * provider-specific compat payload patches that do not justify a separate
+   * transport implementation.
+   */
+  wrapStreamFn?: (ctx: ProviderWrapStreamFnContext) => StreamFn | null | undefined;
+  /**
+   * Runtime auth exchange hook.
+   *
+   * Called after OpenClaw resolves the raw configured credential but before the
+   * runner stores it in runtime auth storage. This lets plugins exchange a
+   * source credential (for example a GitHub token) into a short-lived runtime
+   * token plus optional base URL override.
+   */
+  prepareRuntimeAuth?: (
+    ctx: ProviderPrepareRuntimeAuthContext,
+  ) => Promise<ProviderPreparedRuntimeAuth | null | undefined>;
+  /**
+   * Usage/billing auth resolution hook.
+   *
+   * Called by provider-usage surfaces (`/usage`, status snapshots, reporting)
+   * before OpenClaw falls back to legacy core auth resolution. Use this when a
+   * provider's usage endpoint needs provider-owned token extraction, blob
+   * parsing, or alias handling.
+   */
+  resolveUsageAuth?: (
+    ctx: ProviderResolveUsageAuthContext,
+  ) =>
+    | Promise<ProviderResolvedUsageAuth | null | undefined>
+    | ProviderResolvedUsageAuth
+    | null
+    | undefined;
+  /**
+   * Usage/quota snapshot fetch hook.
+   *
+   * Called after `resolveUsageAuth` by `/usage` and related reporting surfaces.
+   * Use this when the provider's usage endpoint or payload shape is
+   * provider-specific and you want that logic to live with the provider plugin
+   * instead of the core switchboard.
+   */
+  fetchUsageSnapshot?: (
+    ctx: ProviderFetchUsageSnapshotContext,
+  ) => Promise<ProviderUsageSnapshot | null | undefined> | ProviderUsageSnapshot | null | undefined;
+  /**
+   * Provider-owned cache TTL eligibility.
+   *
+   * Use this when a proxy provider supports Anthropic-style prompt caching for
+   * only a subset of upstream models.
+   */
+  isCacheTtlEligible?: (ctx: ProviderCacheTtlEligibilityContext) => boolean | undefined;
+  wizard?: ProviderPluginWizard;
   formatApiKey?: (cred: AuthProfileCredential) => string;
+  refreshOAuth?: (cred: OAuthCredential) => Promise<OAuthCredential>;
+  onModelSelected?: (ctx: ProviderModelSelectedContext) => Promise<void>;
 };
 
-export type RemoteClawPluginGatewayMethod = {
+export type OpenClawPluginGatewayMethod = {
   method: string;
   handler: GatewayRequestHandler;
 };
@@ -153,14 +586,12 @@ export type PluginCommandContext = {
   channelId?: ChannelId;
   /** Whether the sender is on the allowlist */
   isAuthorizedSender: boolean;
-  /** Gateway client scopes for internal control-plane callers */
-  gatewayClientScopes?: string[];
   /** Raw command arguments after the command name */
   args?: string;
   /** The full normalized command body */
   commandBody: string;
-  /** Current RemoteClaw configuration */
-  config: RemoteClawConfig;
+  /** Current OpenClaw configuration */
+  config: OpenClawConfig;
   /** Raw "From" value (channel-scoped id) */
   from?: string;
   /** Raw "To" value (channel-scoped id) */
@@ -169,7 +600,47 @@ export type PluginCommandContext = {
   accountId?: string;
   /** Thread/topic id if available */
   messageThreadId?: number;
+  requestConversationBinding: (
+    params?: PluginConversationBindingRequestParams,
+  ) => Promise<PluginConversationBindingRequestResult>;
+  detachConversationBinding: () => Promise<{ removed: boolean }>;
+  getCurrentConversationBinding: () => Promise<PluginConversationBinding | null>;
 };
+
+export type PluginConversationBindingRequestParams = {
+  summary?: string;
+  detachHint?: string;
+};
+
+export type PluginConversationBinding = {
+  bindingId: string;
+  pluginId: string;
+  pluginName?: string;
+  pluginRoot: string;
+  channel: string;
+  accountId: string;
+  conversationId: string;
+  parentConversationId?: string;
+  threadId?: string | number;
+  boundAt: number;
+  summary?: string;
+  detachHint?: string;
+};
+
+export type PluginConversationBindingRequestResult =
+  | {
+      status: "bound";
+      binding: PluginConversationBinding;
+    }
+  | {
+      status: "pending";
+      approvalId: string;
+      reply: ReplyPayload;
+    }
+  | {
+      status: "error";
+      message: string;
+    };
 
 /**
  * Result returned by a plugin command handler.
@@ -186,7 +657,7 @@ export type PluginCommandHandler = (
 /**
  * Definition for a plugin-registered command.
  */
-export type RemoteClawPluginCommandDefinition = {
+export type OpenClawPluginCommandDefinition = {
   /** Command name without leading slash (e.g., "tts") */
   name: string;
   /**
@@ -205,98 +676,207 @@ export type RemoteClawPluginCommandDefinition = {
   handler: PluginCommandHandler;
 };
 
-export type RemoteClawPluginHttpRouteHandler = (
+export type PluginInteractiveChannel = "telegram" | "discord";
+
+export type PluginInteractiveButtons = Array<
+  Array<{ text: string; callback_data: string; style?: "danger" | "success" | "primary" }>
+>;
+
+export type PluginInteractiveTelegramHandlerResult = {
+  handled?: boolean;
+} | void;
+
+export type PluginInteractiveTelegramHandlerContext = {
+  channel: "telegram";
+  accountId: string;
+  callbackId: string;
+  conversationId: string;
+  parentConversationId?: string;
+  senderId?: string;
+  senderUsername?: string;
+  threadId?: number;
+  isGroup: boolean;
+  isForum: boolean;
+  auth: {
+    isAuthorizedSender: boolean;
+  };
+  callback: {
+    data: string;
+    namespace: string;
+    payload: string;
+    messageId: number;
+    chatId: string;
+    messageText?: string;
+  };
+  respond: {
+    reply: (params: { text: string; buttons?: PluginInteractiveButtons }) => Promise<void>;
+    editMessage: (params: { text: string; buttons?: PluginInteractiveButtons }) => Promise<void>;
+    editButtons: (params: { buttons: PluginInteractiveButtons }) => Promise<void>;
+    clearButtons: () => Promise<void>;
+    deleteMessage: () => Promise<void>;
+  };
+  requestConversationBinding: (
+    params?: PluginConversationBindingRequestParams,
+  ) => Promise<PluginConversationBindingRequestResult>;
+  detachConversationBinding: () => Promise<{ removed: boolean }>;
+  getCurrentConversationBinding: () => Promise<PluginConversationBinding | null>;
+};
+
+export type PluginInteractiveDiscordHandlerResult = {
+  handled?: boolean;
+} | void;
+
+export type PluginInteractiveDiscordHandlerContext = {
+  channel: "discord";
+  accountId: string;
+  interactionId: string;
+  conversationId: string;
+  parentConversationId?: string;
+  guildId?: string;
+  senderId?: string;
+  senderUsername?: string;
+  auth: {
+    isAuthorizedSender: boolean;
+  };
+  interaction: {
+    kind: "button" | "select" | "modal";
+    data: string;
+    namespace: string;
+    payload: string;
+    messageId?: string;
+    values?: string[];
+    fields?: Array<{ id: string; name: string; values: string[] }>;
+  };
+  respond: {
+    acknowledge: () => Promise<void>;
+    reply: (params: { text: string; ephemeral?: boolean }) => Promise<void>;
+    followUp: (params: { text: string; ephemeral?: boolean }) => Promise<void>;
+    editMessage: (params: { text?: string; components?: TopLevelComponents[] }) => Promise<void>;
+    clearComponents: (params?: { text?: string }) => Promise<void>;
+  };
+  requestConversationBinding: (
+    params?: PluginConversationBindingRequestParams,
+  ) => Promise<PluginConversationBindingRequestResult>;
+  detachConversationBinding: () => Promise<{ removed: boolean }>;
+  getCurrentConversationBinding: () => Promise<PluginConversationBinding | null>;
+};
+
+export type PluginInteractiveTelegramHandlerRegistration = {
+  channel: "telegram";
+  namespace: string;
+  handler: (
+    ctx: PluginInteractiveTelegramHandlerContext,
+  ) => Promise<PluginInteractiveTelegramHandlerResult> | PluginInteractiveTelegramHandlerResult;
+};
+
+export type PluginInteractiveDiscordHandlerRegistration = {
+  channel: "discord";
+  namespace: string;
+  handler: (
+    ctx: PluginInteractiveDiscordHandlerContext,
+  ) => Promise<PluginInteractiveDiscordHandlerResult> | PluginInteractiveDiscordHandlerResult;
+};
+
+export type PluginInteractiveHandlerRegistration =
+  | PluginInteractiveTelegramHandlerRegistration
+  | PluginInteractiveDiscordHandlerRegistration;
+
+export type OpenClawPluginHttpRouteAuth = "gateway" | "plugin";
+export type OpenClawPluginHttpRouteMatch = "exact" | "prefix";
+
+export type OpenClawPluginHttpRouteHandler = (
   req: IncomingMessage,
   res: ServerResponse,
 ) => Promise<boolean | void> | boolean | void;
 
-export type RemoteClawPluginHttpRouteAuth = "gateway" | "plugin";
-
-export type RemoteClawPluginHttpRouteMatch = "exact" | "prefix";
-
-export type RemoteClawPluginHttpRouteParams = {
+export type OpenClawPluginHttpRouteParams = {
   path: string;
-  handler: RemoteClawPluginHttpRouteHandler;
-  auth?: RemoteClawPluginHttpRouteAuth;
-  match?: RemoteClawPluginHttpRouteMatch;
+  handler: OpenClawPluginHttpRouteHandler;
+  auth: OpenClawPluginHttpRouteAuth;
+  match?: OpenClawPluginHttpRouteMatch;
+  replaceExisting?: boolean;
 };
 
-export type RemoteClawPluginCliContext = {
+export type OpenClawPluginCliContext = {
   program: Command;
-  config: RemoteClawConfig;
+  config: OpenClawConfig;
   workspaceDir?: string;
   logger: PluginLogger;
 };
 
-export type RemoteClawPluginCliRegistrar = (
-  ctx: RemoteClawPluginCliContext,
-) => void | Promise<void>;
+export type OpenClawPluginCliRegistrar = (ctx: OpenClawPluginCliContext) => void | Promise<void>;
 
-export type RemoteClawPluginServiceContext = {
-  config: RemoteClawConfig;
+export type OpenClawPluginServiceContext = {
+  config: OpenClawConfig;
   workspaceDir?: string;
   stateDir: string;
   logger: PluginLogger;
 };
 
-export type RemoteClawPluginService = {
+export type OpenClawPluginService = {
   id: string;
-  start: (ctx: RemoteClawPluginServiceContext) => void | Promise<void>;
-  stop?: (ctx: RemoteClawPluginServiceContext) => void | Promise<void>;
+  start: (ctx: OpenClawPluginServiceContext) => void | Promise<void>;
+  stop?: (ctx: OpenClawPluginServiceContext) => void | Promise<void>;
 };
 
-export type RemoteClawPluginChannelRegistration = {
+export type OpenClawPluginChannelRegistration = {
   plugin: ChannelPlugin;
   dock?: ChannelDock;
 };
 
-export type RemoteClawPluginDefinition = {
+export type OpenClawPluginDefinition = {
   id?: string;
   name?: string;
   description?: string;
   version?: string;
   kind?: PluginKind;
-  configSchema?: RemoteClawPluginConfigSchema;
-  register?: (api: RemoteClawPluginApi) => void | Promise<void>;
-  activate?: (api: RemoteClawPluginApi) => void | Promise<void>;
+  configSchema?: OpenClawPluginConfigSchema;
+  register?: (api: OpenClawPluginApi) => void | Promise<void>;
+  activate?: (api: OpenClawPluginApi) => void | Promise<void>;
 };
 
-export type RemoteClawPluginModule =
-  | RemoteClawPluginDefinition
-  | ((api: RemoteClawPluginApi) => void | Promise<void>);
+export type OpenClawPluginModule =
+  | OpenClawPluginDefinition
+  | ((api: OpenClawPluginApi) => void | Promise<void>);
 
-export type RemoteClawPluginApi = {
+export type OpenClawPluginApi = {
   id: string;
   name: string;
   version?: string;
   description?: string;
   source: string;
-  config: RemoteClawConfig;
+  rootDir?: string;
+  config: OpenClawConfig;
   pluginConfig?: Record<string, unknown>;
   runtime: PluginRuntime;
   logger: PluginLogger;
   registerTool: (
-    tool: AnyAgentTool | RemoteClawPluginToolFactory,
-    opts?: RemoteClawPluginToolOptions,
+    tool: AnyAgentTool | OpenClawPluginToolFactory,
+    opts?: OpenClawPluginToolOptions,
   ) => void;
   registerHook: (
     events: string | string[],
     handler: InternalHookHandler,
-    opts?: RemoteClawPluginHookOptions,
+    opts?: OpenClawPluginHookOptions,
   ) => void;
-  registerHttpRoute: (params: RemoteClawPluginHttpRouteParams) => void;
-  registerChannel: (registration: RemoteClawPluginChannelRegistration | ChannelPlugin) => void;
+  registerHttpRoute: (params: OpenClawPluginHttpRouteParams) => void;
+  registerChannel: (registration: OpenClawPluginChannelRegistration | ChannelPlugin) => void;
   registerGatewayMethod: (method: string, handler: GatewayRequestHandler) => void;
-  registerCli: (registrar: RemoteClawPluginCliRegistrar, opts?: { commands?: string[] }) => void;
-  registerService: (service: RemoteClawPluginService) => void;
+  registerCli: (registrar: OpenClawPluginCliRegistrar, opts?: { commands?: string[] }) => void;
+  registerService: (service: OpenClawPluginService) => void;
+  registerProvider: (provider: ProviderPlugin) => void;
+  registerInteractiveHandler: (registration: PluginInteractiveHandlerRegistration) => void;
   /**
    * Register a custom command that bypasses the LLM agent.
    * Plugin commands are processed before built-in commands and before agent invocation.
    * Use this for simple state-toggling or status commands that don't need AI reasoning.
    */
-  registerCommand: (command: RemoteClawPluginCommandDefinition) => void;
-  registerSttProvider: (provider: SttProvider) => void;
-  registerTtsProvider: (provider: TtsProviderImpl) => void;
+  registerCommand: (command: OpenClawPluginCommandDefinition) => void;
+  /** Register a context engine implementation (exclusive slot — only one active at a time). */
+  registerContextEngine: (
+    id: string,
+    factory: import("../context-engine/registry.js").ContextEngineFactory,
+  ) => void;
   resolvePath: (input: string) => string;
   /** Register a lifecycle hook handler */
   on: <K extends PluginHookName>(
@@ -307,6 +887,10 @@ export type RemoteClawPluginApi = {
 };
 
 export type PluginOrigin = "bundled" | "global" | "workspace" | "config";
+
+export type PluginFormat = "openclaw" | "bundle";
+
+export type PluginBundleFormat = "codex" | "claude" | "cursor";
 
 export type PluginDiagnostic = {
   level: "warn" | "error";
@@ -320,12 +904,22 @@ export type PluginDiagnostic = {
 // ============================================================================
 
 export type PluginHookName =
+  | "before_model_resolve"
+  | "before_prompt_build"
+  | "before_agent_start"
+  | "llm_input"
+  | "llm_output"
+  | "agent_end"
+  | "before_compaction"
+  | "after_compaction"
   | "before_reset"
+  | "inbound_claim"
   | "message_received"
   | "message_sending"
   | "message_sent"
   | "before_tool_call"
   | "after_tool_call"
+  | "tool_result_persist"
   | "before_message_write"
   | "session_start"
   | "session_end"
@@ -334,11 +928,57 @@ export type PluginHookName =
   | "subagent_spawned"
   | "subagent_ended"
   | "gateway_start"
-  | "gateway_stop"
-  | "before_runtime_spawn"
-  | "after_runtime_exit"
-  | "session_resumed"
-  | "agent_end";
+  | "gateway_stop";
+
+export const PLUGIN_HOOK_NAMES = [
+  "before_model_resolve",
+  "before_prompt_build",
+  "before_agent_start",
+  "llm_input",
+  "llm_output",
+  "agent_end",
+  "before_compaction",
+  "after_compaction",
+  "before_reset",
+  "inbound_claim",
+  "message_received",
+  "message_sending",
+  "message_sent",
+  "before_tool_call",
+  "after_tool_call",
+  "tool_result_persist",
+  "before_message_write",
+  "session_start",
+  "session_end",
+  "subagent_spawning",
+  "subagent_delivery_target",
+  "subagent_spawned",
+  "subagent_ended",
+  "gateway_start",
+  "gateway_stop",
+] as const satisfies readonly PluginHookName[];
+
+type MissingPluginHookNames = Exclude<PluginHookName, (typeof PLUGIN_HOOK_NAMES)[number]>;
+type AssertAllPluginHookNamesListed = MissingPluginHookNames extends never ? true : never;
+const assertAllPluginHookNamesListed: AssertAllPluginHookNamesListed = true;
+void assertAllPluginHookNamesListed;
+
+const pluginHookNameSet = new Set<PluginHookName>(PLUGIN_HOOK_NAMES);
+
+export const isPluginHookName = (hookName: unknown): hookName is PluginHookName =>
+  typeof hookName === "string" && pluginHookNameSet.has(hookName as PluginHookName);
+
+export const PROMPT_INJECTION_HOOK_NAMES = [
+  "before_prompt_build",
+  "before_agent_start",
+] as const satisfies readonly PluginHookName[];
+
+export type PromptInjectionHookName = (typeof PROMPT_INJECTION_HOOK_NAMES)[number];
+
+const promptInjectionHookNameSet = new Set<PluginHookName>(PROMPT_INJECTION_HOOK_NAMES);
+
+export const isPromptInjectionHookName = (hookName: PluginHookName): boolean =>
+  promptInjectionHookNameSet.has(hookName);
 
 // Agent context shared across agent hooks
 export type PluginHookAgentContext = {
@@ -353,6 +993,138 @@ export type PluginHookAgentContext = {
   channelId?: string;
 };
 
+// before_model_resolve hook
+export type PluginHookBeforeModelResolveEvent = {
+  /** User prompt for this run. No session messages are available yet in this phase. */
+  prompt: string;
+};
+
+export type PluginHookBeforeModelResolveResult = {
+  /** Override the model for this agent run. E.g. "llama3.3:8b" */
+  modelOverride?: string;
+  /** Override the provider for this agent run. E.g. "ollama" */
+  providerOverride?: string;
+};
+
+// before_prompt_build hook
+export type PluginHookBeforePromptBuildEvent = {
+  prompt: string;
+  /** Session messages prepared for this run. */
+  messages: unknown[];
+};
+
+export type PluginHookBeforePromptBuildResult = {
+  systemPrompt?: string;
+  prependContext?: string;
+  /**
+   * Prepended to the agent system prompt so providers can cache it (e.g. prompt caching).
+   * Use for static plugin guidance instead of prependContext to avoid per-turn token cost.
+   */
+  prependSystemContext?: string;
+  /**
+   * Appended to the agent system prompt so providers can cache it (e.g. prompt caching).
+   * Use for static plugin guidance instead of prependContext to avoid per-turn token cost.
+   */
+  appendSystemContext?: string;
+};
+
+export const PLUGIN_PROMPT_MUTATION_RESULT_FIELDS = [
+  "systemPrompt",
+  "prependContext",
+  "prependSystemContext",
+  "appendSystemContext",
+] as const satisfies readonly (keyof PluginHookBeforePromptBuildResult)[];
+
+type MissingPluginPromptMutationResultFields = Exclude<
+  keyof PluginHookBeforePromptBuildResult,
+  (typeof PLUGIN_PROMPT_MUTATION_RESULT_FIELDS)[number]
+>;
+type AssertAllPluginPromptMutationResultFieldsListed =
+  MissingPluginPromptMutationResultFields extends never ? true : never;
+const assertAllPluginPromptMutationResultFieldsListed: AssertAllPluginPromptMutationResultFieldsListed = true;
+void assertAllPluginPromptMutationResultFieldsListed;
+
+// before_agent_start hook (legacy compatibility: combines both phases)
+export type PluginHookBeforeAgentStartEvent = {
+  prompt: string;
+  /** Optional because legacy hook can run in pre-session phase. */
+  messages?: unknown[];
+};
+
+export type PluginHookBeforeAgentStartResult = PluginHookBeforePromptBuildResult &
+  PluginHookBeforeModelResolveResult;
+
+export type PluginHookBeforeAgentStartOverrideResult = Omit<
+  PluginHookBeforeAgentStartResult,
+  keyof PluginHookBeforePromptBuildResult
+>;
+
+export const stripPromptMutationFieldsFromLegacyHookResult = (
+  result: PluginHookBeforeAgentStartResult | void,
+): PluginHookBeforeAgentStartOverrideResult | void => {
+  if (!result || typeof result !== "object") {
+    return result;
+  }
+  const remaining: Partial<PluginHookBeforeAgentStartResult> = { ...result };
+  for (const field of PLUGIN_PROMPT_MUTATION_RESULT_FIELDS) {
+    delete remaining[field];
+  }
+  return Object.keys(remaining).length > 0
+    ? (remaining as PluginHookBeforeAgentStartOverrideResult)
+    : undefined;
+};
+
+// llm_input hook
+export type PluginHookLlmInputEvent = {
+  runId: string;
+  sessionId: string;
+  provider: string;
+  model: string;
+  systemPrompt?: string;
+  prompt: string;
+  historyMessages: unknown[];
+  imagesCount: number;
+};
+
+// llm_output hook
+export type PluginHookLlmOutputEvent = {
+  runId: string;
+  sessionId: string;
+  provider: string;
+  model: string;
+  assistantTexts: string[];
+  lastAssistant?: unknown;
+  usage?: {
+    input?: number;
+    output?: number;
+    cacheRead?: number;
+    cacheWrite?: number;
+    total?: number;
+  };
+};
+
+// agent_end hook
+export type PluginHookAgentEndEvent = {
+  messages: unknown[];
+  success: boolean;
+  error?: string;
+  durationMs?: number;
+};
+
+// Compaction hooks
+export type PluginHookBeforeCompactionEvent = {
+  /** Total messages in the session before any truncation or compaction */
+  messageCount: number;
+  /** Messages being fed to the compaction LLM (after history-limit truncation) */
+  compactingCount?: number;
+  tokenCount?: number;
+  messages?: unknown[];
+  /** Path to the session JSONL transcript. All messages are already on disk
+   *  before compaction starts, so plugins can read this file asynchronously
+   *  and process in parallel with the compaction LLM call. */
+  sessionFile?: string;
+};
+
 // before_reset hook — fired when /new or /reset clears a session
 export type PluginHookBeforeResetEvent = {
   sessionFile?: string;
@@ -360,11 +1132,52 @@ export type PluginHookBeforeResetEvent = {
   reason?: string;
 };
 
+export type PluginHookAfterCompactionEvent = {
+  messageCount: number;
+  tokenCount?: number;
+  compactedCount: number;
+  /** Path to the session JSONL transcript. All pre-compaction messages are
+   *  preserved on disk, so plugins can read and process them asynchronously
+   *  without blocking the compaction pipeline. */
+  sessionFile?: string;
+};
+
 // Message context
 export type PluginHookMessageContext = {
   channelId: string;
   accountId?: string;
   conversationId?: string;
+};
+
+export type PluginHookInboundClaimContext = PluginHookMessageContext & {
+  parentConversationId?: string;
+  senderId?: string;
+  messageId?: string;
+};
+
+export type PluginHookInboundClaimEvent = {
+  content: string;
+  body?: string;
+  bodyForAgent?: string;
+  transcript?: string;
+  timestamp?: number;
+  channel: string;
+  accountId?: string;
+  conversationId?: string;
+  parentConversationId?: string;
+  senderId?: string;
+  senderName?: string;
+  senderUsername?: string;
+  threadId?: string | number;
+  messageId?: string;
+  isGroup: boolean;
+  commandAuthorized?: boolean;
+  wasMentioned?: boolean;
+  metadata?: Record<string, unknown>;
+};
+
+export type PluginHookInboundClaimResult = {
+  handled: boolean;
 };
 
 // message_received hook
@@ -437,6 +1250,30 @@ export type PluginHookAfterToolCallEvent = {
   durationMs?: number;
 };
 
+// tool_result_persist hook
+export type PluginHookToolResultPersistContext = {
+  agentId?: string;
+  sessionKey?: string;
+  toolName?: string;
+  toolCallId?: string;
+};
+
+export type PluginHookToolResultPersistEvent = {
+  toolName?: string;
+  toolCallId?: string;
+  /**
+   * The toolResult message about to be written to the session transcript.
+   * Handlers may return a modified message (e.g. drop non-essential fields).
+   */
+  message: AgentMessage;
+  /** True when the tool result was synthesized by a guard/repair step. */
+  isSynthetic?: boolean;
+};
+
+export type PluginHookToolResultPersistResult = {
+  message?: AgentMessage;
+};
+
 // before_message_write hook
 export type PluginHookBeforeMessageWriteEvent = {
   message: AgentMessage;
@@ -480,8 +1317,7 @@ export type PluginHookSubagentContext = {
 
 export type PluginHookSubagentTargetKind = "subagent" | "acp";
 
-// subagent_spawning hook
-export type PluginHookSubagentSpawningEvent = {
+type PluginHookSubagentSpawnBase = {
   childSessionKey: string;
   agentId: string;
   label?: string;
@@ -494,6 +1330,9 @@ export type PluginHookSubagentSpawningEvent = {
   };
   threadRequested: boolean;
 };
+
+// subagent_spawning hook
+export type PluginHookSubagentSpawningEvent = PluginHookSubagentSpawnBase;
 
 export type PluginHookSubagentSpawningResult =
   | {
@@ -530,19 +1369,8 @@ export type PluginHookSubagentDeliveryTargetResult = {
 };
 
 // subagent_spawned hook
-export type PluginHookSubagentSpawnedEvent = {
+export type PluginHookSubagentSpawnedEvent = PluginHookSubagentSpawnBase & {
   runId: string;
-  childSessionKey: string;
-  agentId: string;
-  label?: string;
-  mode: "run" | "session";
-  requester?: {
-    channel?: string;
-    accountId?: string;
-    to?: string;
-    threadId?: string | number;
-  };
-  threadRequested: boolean;
 };
 
 // subagent_ended hook
@@ -573,69 +1401,45 @@ export type PluginHookGatewayStopEvent = {
   reason?: string;
 };
 
-// ── ChannelBridge Runtime Hooks ──────────────────────────────────────────
-
-// before_runtime_spawn hook — fired before CLI subprocess starts (modifiable)
-export type PluginHookBeforeRuntimeSpawnEvent = {
-  runtimeName: string;
-  sessionId: string | undefined;
-  command: string;
-  args: string[];
-  env: Record<string, string>;
-  workspaceDir: string;
-  channelId: string;
-};
-
-export type PluginHookBeforeRuntimeSpawnResult = {
-  env?: Record<string, string>;
-  workspaceDir?: string;
-};
-
-// after_runtime_exit hook — fired after CLI subprocess exits (observe-only)
-export type PluginHookAfterRuntimeExitEvent = {
-  runtimeName: string;
-  sessionId: string | undefined;
-  exitCode: number | undefined;
-  durationMs: number;
-  stdout: string;
-  stderr: string | undefined;
-  mcpSideEffects: {
-    sentTexts: string[];
-    sentMediaUrls: string[];
-    cronAdds: number;
-  };
-};
-
-// session_resumed hook — fired when an existing session is reused
-export type PluginHookSessionResumedEvent = {
-  sessionId: string;
-  runtimeName: string;
-  channelId: string;
-  userId: string;
-  resumeMethod: "session_map";
-};
-
-// agent_end hook — reconstructed from CLI subprocess exit
-export type PluginHookAgentEndEvent = {
-  runId: string;
-  sessionId: string | undefined;
-  success: boolean;
-  durationMs: number;
-};
-
-// Runtime hook context (shared across before_runtime_spawn / after_runtime_exit)
-export type PluginHookRuntimeContext = {
-  sessionId?: string;
-  channelId: string;
-  runtimeName: string;
-};
-
 // Hook handler types mapped by hook name
 export type PluginHookHandlerMap = {
+  before_model_resolve: (
+    event: PluginHookBeforeModelResolveEvent,
+    ctx: PluginHookAgentContext,
+  ) =>
+    | Promise<PluginHookBeforeModelResolveResult | void>
+    | PluginHookBeforeModelResolveResult
+    | void;
+  before_prompt_build: (
+    event: PluginHookBeforePromptBuildEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<PluginHookBeforePromptBuildResult | void> | PluginHookBeforePromptBuildResult | void;
+  before_agent_start: (
+    event: PluginHookBeforeAgentStartEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<PluginHookBeforeAgentStartResult | void> | PluginHookBeforeAgentStartResult | void;
+  llm_input: (event: PluginHookLlmInputEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
+  llm_output: (
+    event: PluginHookLlmOutputEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
+  agent_end: (event: PluginHookAgentEndEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
+  before_compaction: (
+    event: PluginHookBeforeCompactionEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
+  after_compaction: (
+    event: PluginHookAfterCompactionEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
   before_reset: (
     event: PluginHookBeforeResetEvent,
     ctx: PluginHookAgentContext,
   ) => Promise<void> | void;
+  inbound_claim: (
+    event: PluginHookInboundClaimEvent,
+    ctx: PluginHookInboundClaimContext,
+  ) => Promise<PluginHookInboundClaimResult | void> | PluginHookInboundClaimResult | void;
   message_received: (
     event: PluginHookMessageReceivedEvent,
     ctx: PluginHookMessageContext,
@@ -656,6 +1460,10 @@ export type PluginHookHandlerMap = {
     event: PluginHookAfterToolCallEvent,
     ctx: PluginHookToolContext,
   ) => Promise<void> | void;
+  tool_result_persist: (
+    event: PluginHookToolResultPersistEvent,
+    ctx: PluginHookToolResultPersistContext,
+  ) => PluginHookToolResultPersistResult | void;
   before_message_write: (
     event: PluginHookBeforeMessageWriteEvent,
     ctx: { agentId?: string; sessionKey?: string },
@@ -694,25 +1502,6 @@ export type PluginHookHandlerMap = {
   gateway_stop: (
     event: PluginHookGatewayStopEvent,
     ctx: PluginHookGatewayContext,
-  ) => Promise<void> | void;
-  before_runtime_spawn: (
-    event: PluginHookBeforeRuntimeSpawnEvent,
-    ctx: PluginHookRuntimeContext,
-  ) =>
-    | Promise<PluginHookBeforeRuntimeSpawnResult | void>
-    | PluginHookBeforeRuntimeSpawnResult
-    | void;
-  after_runtime_exit: (
-    event: PluginHookAfterRuntimeExitEvent,
-    ctx: PluginHookRuntimeContext,
-  ) => Promise<void> | void;
-  session_resumed: (
-    event: PluginHookSessionResumedEvent,
-    ctx: PluginHookRuntimeContext,
-  ) => Promise<void> | void;
-  agent_end: (
-    event: PluginHookAgentEndEvent,
-    ctx: PluginHookRuntimeContext,
   ) => Promise<void> | void;
 };
 

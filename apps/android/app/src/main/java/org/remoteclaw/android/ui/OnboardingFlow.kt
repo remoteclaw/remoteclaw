@@ -1563,8 +1563,8 @@ private fun FinalStep(
       } else {
         GuideBlock(title = "Pairing Required") {
           Text("Run these on the gateway host:", style = onboardingCalloutStyle, color = onboardingTextSecondary)
-          CommandBlock("remoteclaw nodes pending")
-          CommandBlock("remoteclaw nodes approve <requestId>")
+          CommandBlock("remoteclaw devices list")
+          CommandBlock("remoteclaw devices approve <requestId>")
           Text("Then tap Connect again.", style = onboardingCalloutStyle, color = onboardingTextSecondary)
         }
       }

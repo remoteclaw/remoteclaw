@@ -1,14 +1,30 @@
 import "./monitor-inbox.test-harness.js";
 import { describe, expect, it, vi } from "vitest";
+import { monitorWebInbox } from "./inbound.js";
 import {
+  DEFAULT_ACCOUNT_ID,
+  getAuthDir,
+  getSock,
   installWebMonitorInboxUnitTestHooks,
-  settleInboundWork,
-  startInboxMonitor,
-  waitForMessageCalls,
 } from "./monitor-inbox.test-harness.js";
 
 describe("append upsert handling (#20952)", () => {
   installWebMonitorInboxUnitTestHooks();
+  type InboxOnMessage = NonNullable<Parameters<typeof monitorWebInbox>[0]["onMessage"]>;
+
+  async function tick() {
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+
+  async function startInboxMonitor(onMessage: InboxOnMessage) {
+    const listener = await monitorWebInbox({
+      verbose: false,
+      onMessage,
+      accountId: DEFAULT_ACCOUNT_ID,
+      authDir: getAuthDir(),
+    });
+    return { listener, sock: getSock() };
+  }
 
   it("processes recent append messages (within 60s of connect)", async () => {
     const onMessage = vi.fn(async () => {});
@@ -27,7 +43,7 @@ describe("append upsert handling (#20952)", () => {
         },
       ],
     });
-    await waitForMessageCalls(onMessage, 1);
+    await tick();
 
     expect(onMessage).toHaveBeenCalledTimes(1);
 
@@ -51,7 +67,7 @@ describe("append upsert handling (#20952)", () => {
         },
       ],
     });
-    await settleInboundWork();
+    await tick();
 
     expect(onMessage).not.toHaveBeenCalled();
 
@@ -74,7 +90,7 @@ describe("append upsert handling (#20952)", () => {
         },
       ],
     });
-    await settleInboundWork();
+    await tick();
 
     expect(onMessage).not.toHaveBeenCalled();
 
@@ -100,7 +116,7 @@ describe("append upsert handling (#20952)", () => {
         },
       ],
     });
-    await waitForMessageCalls(onMessage, 1);
+    await tick();
 
     expect(onMessage).toHaveBeenCalledTimes(1);
 
@@ -124,7 +140,7 @@ describe("append upsert handling (#20952)", () => {
         },
       ],
     });
-    await waitForMessageCalls(onMessage, 1);
+    await tick();
 
     expect(onMessage).toHaveBeenCalledTimes(1);
 

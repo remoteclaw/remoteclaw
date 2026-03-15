@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { TelegramAccountConfig } from "../config/types.js";
 import { evaluateTelegramGroupPolicyAccess } from "./group-access.js";
 
@@ -8,7 +8,7 @@ import { evaluateTelegramGroupPolicyAccess } from "./group-access.js";
  */
 const baseCfg = {
   channels: { telegram: {} },
-} as unknown as OpenClawConfig;
+} as unknown as RemoteClawConfig;
 
 const baseTelegramCfg: TelegramAccountConfig = {
   groupPolicy: "allowlist",

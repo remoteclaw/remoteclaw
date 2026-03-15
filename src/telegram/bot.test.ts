@@ -423,7 +423,7 @@ describe("createTelegramBot", () => {
             from: { first_name: "Ada" },
           },
         },
-        me: { username: "openclaw_bot" },
+        me: { username: "remoteclaw_bot" },
         getFile: async () => ({}),
       });
 
@@ -472,7 +472,7 @@ describe("createTelegramBot", () => {
           from: { first_name: "Ada" },
         },
       },
-      me: { username: "openclaw_bot" },
+      me: { username: "remoteclaw_bot" },
       getFile: async () => ({}),
     });
 
@@ -491,6 +491,7 @@ describe("createTelegramBot", () => {
         defaults: {
           envelopeTimezone: "utc",
         },
+        list: [{ id: "main", workspace: "/tmp/test-workspace" }],
       },
       messages: {
         inbound: {
@@ -530,7 +531,7 @@ describe("createTelegramBot", () => {
             from: { first_name: "Ada" },
           },
         },
-        me: { username: "openclaw_bot" },
+        me: { username: "remoteclaw_bot" },
         getFile: async () => ({}),
       });
       await handler({
@@ -546,7 +547,7 @@ describe("createTelegramBot", () => {
             from: { first_name: "Ada" },
           },
         },
-        me: { username: "openclaw_bot" },
+        me: { username: "remoteclaw_bot" },
         getFile: async () => ({}),
       });
 

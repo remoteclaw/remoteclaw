@@ -166,7 +166,7 @@ describe("deliverOutboundPayloads", () => {
 
   it("clamps telegram text chunk size to protocol max even with higher config", async () => {
     const sendTelegram = vi.fn().mockResolvedValue({ messageId: "m1", chatId: "c1" });
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: { telegram: { botToken: "tok-1", textChunkLimit: 10_000 } },
     };
     const text = "<".repeat(3_000);

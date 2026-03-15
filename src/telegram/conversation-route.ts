@@ -5,10 +5,13 @@ import { getSessionBindingService } from "../infra/outbound/session-binding-serv
 import {
   buildAgentSessionKey,
   deriveLastRoutePolicy,
-  pickFirstExistingAgentId,
   resolveAgentRoute,
 } from "../routing/resolve-route.js";
-import { buildAgentMainSessionKey, resolveAgentIdFromSessionKey } from "../routing/session-key.js";
+import {
+  buildAgentMainSessionKey,
+  resolveAgentIdFromSessionKey,
+  sanitizeAgentId,
+} from "../routing/session-key.js";
 import {
   buildTelegramGroupPeerId,
   buildTelegramParentPeer,
@@ -53,7 +56,9 @@ export function resolveTelegramConversationRoute(params: {
 
   const rawTopicAgentId = params.topicAgentId?.trim();
   if (rawTopicAgentId) {
-    const topicAgentId = pickFirstExistingAgentId(params.cfg, rawTopicAgentId);
+    // Preserve the configured topic agent ID so topic-bound sessions stay stable
+    // even when that agent is not present in the current config snapshot.
+    const topicAgentId = sanitizeAgentId(rawTopicAgentId);
     route = {
       ...route,
       agentId: topicAgentId,

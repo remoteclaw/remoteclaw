@@ -9,7 +9,7 @@ import {
   normalizeAccountId,
   TelegramConfigSchema,
   type ChannelPlugin,
-  type OpenClawConfig,
+  type RemoteClawConfig,
 } from "openclaw/plugin-sdk/telegram";
 import { inspectTelegramAccount } from "./account-inspect.js";
 import {
@@ -22,7 +22,7 @@ import {
 export const TELEGRAM_CHANNEL = "telegram" as const;
 
 export function findTelegramTokenOwnerAccountId(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId: string;
 }): string | null {
   const normalizedAccountId = normalizeAccountId(params.accountId);

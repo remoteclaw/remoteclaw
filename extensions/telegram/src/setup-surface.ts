@@ -1,22 +1,41 @@
 import {
+  type ChannelOnboardingAdapter,
+  type ChannelOnboardingDmPolicy,
+} from "../../../src/channels/plugins/onboarding-types.js";
+import {
   patchChannelConfigForAccount,
+  promptResolvedAllowFrom,
+  resolveOnboardingAccountId,
+  setChannelDmPolicyWithAllowFrom,
+  setOnboardingChannelEnabled,
   splitOnboardingEntries,
 } from "../../../src/channels/plugins/onboarding/helpers.js";
 import {
   applyAccountNameToChannelSection,
   migrateBaseNameToDefaultAccount,
 } from "../../../src/channels/plugins/setup-helpers.js";
+import {
+  buildChannelOnboardingAdapterFromSetupWizard,
+  type ChannelSetupWizard,
+} from "../../../src/channels/plugins/setup-wizard.js";
 import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import { getChatChannelMeta } from "../../../src/channels/registry.js";
 import { formatCliCommand } from "../../../src/cli/command-format.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
-import { resolveDefaultTelegramAccountId, resolveTelegramAccount } from "./accounts.js";
+import { inspectTelegramAccount } from "./account-inspect.js";
+import {
+  listTelegramAccountIds,
+  resolveDefaultTelegramAccountId,
+  resolveTelegramAccount,
+} from "./accounts.js";
 import { fetchTelegramChatId } from "./api-fetch.js";
 
 const channel = "telegram" as const;
 
-export const TELEGRAM_TOKEN_HELP_LINES = [
+const TELEGRAM_TOKEN_HELP_LINES = [
   "1) Open Telegram and chat with @BotFather",
   "2) Run /newbot (or /mybots)",
   "3) Copy the token (looks like 123456:ABC...)",
@@ -25,7 +44,7 @@ export const TELEGRAM_TOKEN_HELP_LINES = [
   "Website: https://openclaw.ai",
 ];
 
-export const TELEGRAM_USER_ID_HELP_LINES = [
+const TELEGRAM_USER_ID_HELP_LINES = [
   `1) DM your bot, then read from.id in \`${formatCliCommand("openclaw logs --follow")}\` (safest)`,
   "2) Or call https://api.telegram.org/bot<bot_token>/getUpdates and read message.from.id",
   "3) Third-party: DM @userinfobot or @getidsbot",
@@ -45,7 +64,7 @@ export function parseTelegramAllowFromId(raw: string): string | null {
   return /^\d+$/.test(stripped) ? stripped : null;
 }
 
-export async function resolveTelegramAllowFromEntries(params: {
+async function resolveTelegramAllowFromEntries(params: {
   entries: string[];
   credentialValue?: string;
 }) {
@@ -69,16 +88,15 @@ export async function resolveTelegramAllowFromEntries(params: {
   );
 }
 
-export async function promptTelegramAllowFromForAccount(params: {
+async function promptTelegramAllowFromForAccount(params: {
   cfg: RemoteClawConfig;
-  prompter: Parameters<
-    NonNullable<
-      import("../../../src/channels/plugins/onboarding-types.js").ChannelOnboardingDmPolicy["promptAllowFrom"]
-    >
-  >[0]["prompter"];
+  prompter: Parameters<NonNullable<ChannelOnboardingDmPolicy["promptAllowFrom"]>>[0]["prompter"];
   accountId?: string;
-}) {
-  const accountId = params.accountId ?? resolveDefaultTelegramAccountId(params.cfg);
+}): Promise<RemoteClawConfig> {
+  const accountId = resolveOnboardingAccountId({
+    accountId: params.accountId,
+    defaultAccountId: resolveDefaultTelegramAccountId(params.cfg),
+  });
   const resolved = resolveTelegramAccount({ cfg: params.cfg, accountId });
   await params.prompter.note(TELEGRAM_USER_ID_HELP_LINES.join("\n"), "Telegram user id");
   if (!resolved.token?.trim()) {
@@ -87,8 +105,6 @@ export async function promptTelegramAllowFromForAccount(params: {
       "Telegram",
     );
   }
-  const { promptResolvedAllowFrom } =
-    await import("../../../src/channels/plugins/onboarding/helpers.js");
   const unique = await promptResolvedAllowFrom({
     prompter: params.prompter,
     existing: resolved.config.allowFrom ?? [],
@@ -113,6 +129,21 @@ export async function promptTelegramAllowFromForAccount(params: {
     patch: { dmPolicy: "allowlist", allowFrom: unique },
   });
 }
+
+const dmPolicy: ChannelOnboardingDmPolicy = {
+  label: "Telegram",
+  channel,
+  policyKey: "channels.telegram.dmPolicy",
+  allowFromKey: "channels.telegram.allowFrom",
+  getCurrent: (cfg) => cfg.channels?.telegram?.dmPolicy ?? "pairing",
+  setPolicy: (cfg, policy) =>
+    setChannelDmPolicyWithAllowFrom({
+      cfg,
+      channel,
+      dmPolicy: policy,
+    }),
+  promptAllowFrom: promptTelegramAllowFromForAccount,
+};
 
 export const telegramSetupAdapter: ChannelSetupAdapter = {
   resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
@@ -189,3 +220,93 @@ export const telegramSetupAdapter: ChannelSetupAdapter = {
     };
   },
 };
+
+export const telegramSetupWizard: ChannelSetupWizard = {
+  channel,
+  status: {
+    configuredLabel: "configured",
+    unconfiguredLabel: "needs token",
+    configuredHint: "recommended · configured",
+    unconfiguredHint: "recommended · newcomer-friendly",
+    configuredScore: 1,
+    unconfiguredScore: 10,
+    resolveConfigured: ({ cfg }) =>
+      listTelegramAccountIds(cfg).some((accountId) => {
+        const account = inspectTelegramAccount({ cfg, accountId });
+        return account.configured;
+      }),
+  },
+  credential: {
+    inputKey: "token",
+    providerHint: channel,
+    credentialLabel: "Telegram bot token",
+    preferredEnvVar: "TELEGRAM_BOT_TOKEN",
+    helpTitle: "Telegram bot token",
+    helpLines: TELEGRAM_TOKEN_HELP_LINES,
+    envPrompt: "TELEGRAM_BOT_TOKEN detected. Use env var?",
+    keepPrompt: "Telegram token already configured. Keep it?",
+    inputPrompt: "Enter Telegram bot token",
+    allowEnv: ({ accountId }) => accountId === DEFAULT_ACCOUNT_ID,
+    inspect: ({ cfg, accountId }) => {
+      const resolved = resolveTelegramAccount({ cfg, accountId });
+      const hasConfiguredBotToken = hasConfiguredSecretInput(resolved.config.botToken);
+      const hasConfiguredValue =
+        hasConfiguredBotToken || Boolean(resolved.config.tokenFile?.trim());
+      return {
+        accountConfigured: Boolean(resolved.token) || hasConfiguredValue,
+        hasConfiguredValue,
+        resolvedValue: resolved.token?.trim() || undefined,
+        envValue:
+          accountId === DEFAULT_ACCOUNT_ID
+            ? process.env.TELEGRAM_BOT_TOKEN?.trim() || undefined
+            : undefined,
+      };
+    },
+  },
+  allowFrom: {
+    helpTitle: "Telegram user id",
+    helpLines: TELEGRAM_USER_ID_HELP_LINES,
+    message: "Telegram allowFrom (numeric sender id; @username resolves to id)",
+    placeholder: "@username",
+    invalidWithoutCredentialNote:
+      "Telegram token missing; use numeric sender ids (usernames require a bot token).",
+    parseInputs: splitOnboardingEntries,
+    parseId: parseTelegramAllowFromId,
+    resolveEntries: async ({ credentialValue, entries }) =>
+      resolveTelegramAllowFromEntries({
+        credentialValue,
+        entries,
+      }),
+    apply: async ({ cfg, accountId, allowFrom }) =>
+      patchChannelConfigForAccount({
+        cfg,
+        channel,
+        accountId,
+        patch: { dmPolicy: "allowlist", allowFrom },
+      }),
+  },
+  dmPolicy,
+  disable: (cfg) => setOnboardingChannelEnabled(cfg, channel, false),
+};
+
+const telegramSetupPlugin = {
+  id: channel,
+  meta: {
+    ...getChatChannelMeta(channel),
+    quickstartAllowFrom: true,
+  },
+  config: {
+    listAccountIds: listTelegramAccountIds,
+    resolveAccount: (cfg: RemoteClawConfig, accountId?: string | null) =>
+      resolveTelegramAccount({ cfg, accountId }),
+    resolveAllowFrom: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId?: string | null }) =>
+      resolveTelegramAccount({ cfg, accountId }).config.allowFrom,
+  },
+  setup: telegramSetupAdapter,
+} as const;
+
+export const telegramOnboardingAdapter: ChannelOnboardingAdapter =
+  buildChannelOnboardingAdapterFromSetupWizard({
+    plugin: telegramSetupPlugin,
+    wizard: telegramSetupWizard,
+  });

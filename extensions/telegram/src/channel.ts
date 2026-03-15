@@ -86,7 +86,7 @@ type TelegramSendFn = ReturnType<
 type TelegramSendOptions = NonNullable<Parameters<TelegramSendFn>[2]>;
 
 function buildTelegramSendOptions(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   mediaUrl?: string;
   mediaLocalRoots?: readonly string[];
   accountId?: string;
@@ -107,7 +107,7 @@ function buildTelegramSendOptions(params: {
 }
 
 async function sendTelegramOutbound(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   to: string;
   text: string;
   mediaUrl?: string;

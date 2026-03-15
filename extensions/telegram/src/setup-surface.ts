@@ -1,13 +1,21 @@
+import { type ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
 import {
-  DEFAULT_ACCOUNT_ID,
-  hasConfiguredSecretInput,
-  type RemoteClawConfig,
   patchChannelConfigForAccount,
   setChannelDmPolicyWithAllowFrom,
-  setSetupChannelEnabled,
-  splitSetupEntries,
-} from "remoteclaw/plugin-sdk/setup";
-import type { ChannelSetupDmPolicy, ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
+  setOnboardingChannelEnabled,
+  splitOnboardingEntries,
+} from "../../../src/channels/plugins/onboarding/helpers.js";
+import {
+  applyAccountNameToChannelSection,
+  migrateBaseNameToDefaultAccount,
+} from "../../../src/channels/plugins/setup-helpers.js";
+import { type ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import { formatCliCommand } from "../../../src/cli/command-format.js";
+import type { OpenClawConfig } from "../../../src/config/config.js";
+import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import { inspectTelegramAccount } from "./account-inspect.js";
 import { listTelegramAccountIds, resolveTelegramAccount } from "./accounts.js";
 import {
@@ -90,7 +98,7 @@ export const telegramSetupWizard: ChannelSetupWizard = {
       "Telegram token missing; use numeric sender ids (usernames require a bot token).",
     parseInputs: splitSetupEntries,
     parseId: parseTelegramAllowFromId,
-    resolveEntries: async ({ cfg, accountId, credentialValues, entries }) =>
+    resolveEntries: async ({ credentialValues, entries }) =>
       resolveTelegramAllowFromEntries({
         credentialValue: credentialValues.token,
         entries,
@@ -107,5 +115,3 @@ export const telegramSetupWizard: ChannelSetupWizard = {
   dmPolicy,
   disable: (cfg) => setSetupChannelEnabled(cfg, channel, false),
 };
-
-export { parseTelegramAllowFromId, telegramSetupAdapter };

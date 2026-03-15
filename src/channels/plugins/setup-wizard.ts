@@ -48,13 +48,13 @@ export type ChannelSetupWizardCredentialState = {
   envValue?: string;
 };
 
-type ChannelSetupWizardCredentialValues = Partial<Record<string, string>>;
+type ChannelSetupWizardCredentialValues = Partial<Record<keyof ChannelSetupInput, string>>;
 
 export type ChannelSetupWizardNote = {
   title: string;
   lines: string[];
   shouldShow?: (params: {
-    cfg: RemoteClawConfig;
+    cfg: OpenClawConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
   }) => boolean | Promise<boolean>;
@@ -63,11 +63,11 @@ export type ChannelSetupWizardNote = {
 export type ChannelSetupWizardEnvShortcut = {
   prompt: string;
   preferredEnvVar?: string;
-  isAvailable: (params: { cfg: RemoteClawConfig; accountId: string }) => boolean;
+  isAvailable: (params: { cfg: OpenClawConfig; accountId: string }) => boolean;
   apply: (params: {
-    cfg: RemoteClawConfig;
+    cfg: OpenClawConfig;
     accountId: string;
-  }) => RemoteClawConfig | Promise<RemoteClawConfig>;
+  }) => OpenClawConfig | Promise<OpenClawConfig>;
 };
 
 export type ChannelSetupWizardCredential = {
@@ -85,114 +85,15 @@ export type ChannelSetupWizardCredential = {
     cfg: RemoteClawConfig;
     accountId: string;
   }) => ChannelSetupWizardCredentialState;
-  shouldPrompt?: (params: {
-    cfg: RemoteClawConfig;
-    accountId: string;
-    credentialValues: ChannelSetupWizardCredentialValues;
-    currentValue?: string;
-    state: ChannelSetupWizardCredentialState;
-  }) => boolean | Promise<boolean>;
   applyUseEnv?: (params: {
-    cfg: RemoteClawConfig;
+    cfg: OpenClawConfig;
     accountId: string;
-  }) => RemoteClawConfig | Promise<RemoteClawConfig>;
+  }) => OpenClawConfig | Promise<OpenClawConfig>;
   applySet?: (params: {
-    cfg: RemoteClawConfig;
+    cfg: OpenClawConfig;
     accountId: string;
-    credentialValues: ChannelSetupWizardCredentialValues;
     value: unknown;
     resolvedValue: string;
-  }) => RemoteClawConfig | Promise<RemoteClawConfig>;
-};
-
-export type ChannelSetupWizardTextInput = {
-  inputKey: keyof ChannelSetupInput;
-  message: string;
-  placeholder?: string;
-  required?: boolean;
-  applyEmptyValue?: boolean;
-  helpTitle?: string;
-  helpLines?: string[];
-  confirmCurrentValue?: boolean;
-  keepPrompt?: string | ((value: string) => string);
-  currentValue?: (params: {
-    cfg: RemoteClawConfig;
-    accountId: string;
-    credentialValues: ChannelSetupWizardCredentialValues;
-  }) => string | undefined | Promise<string | undefined>;
-  initialValue?: (params: {
-    cfg: RemoteClawConfig;
-    accountId: string;
-    credentialValues: ChannelSetupWizardCredentialValues;
-  }) => string | undefined | Promise<string | undefined>;
-  shouldPrompt?: (params: {
-    cfg: RemoteClawConfig;
-    accountId: string;
-    credentialValues: ChannelSetupWizardCredentialValues;
-    currentValue?: string;
-  }) => boolean | Promise<boolean>;
-  applyCurrentValue?: boolean;
-  validate?: (params: {
-    value: string;
-    cfg: RemoteClawConfig;
-    accountId: string;
-    credentialValues: ChannelSetupWizardCredentialValues;
-  }) => string | undefined;
-  normalizeValue?: (params: {
-    value: string;
-    cfg: RemoteClawConfig;
-    accountId: string;
-    credentialValues: ChannelSetupWizardCredentialValues;
-  }) => string;
-  applySet?: (params: {
-    cfg: RemoteClawConfig;
-    accountId: string;
-    value: string;
-  }) => RemoteClawConfig | Promise<RemoteClawConfig>;
-};
-
-export type ChannelSetupWizardTextInput = {
-  inputKey: keyof ChannelSetupInput;
-  message: string;
-  placeholder?: string;
-  required?: boolean;
-  helpTitle?: string;
-  helpLines?: string[];
-  confirmCurrentValue?: boolean;
-  keepPrompt?: string | ((value: string) => string);
-  currentValue?: (params: {
-    cfg: OpenClawConfig;
-    accountId: string;
-    credentialValues: ChannelSetupWizardCredentialValues;
-  }) => string | undefined | Promise<string | undefined>;
-  initialValue?: (params: {
-    cfg: OpenClawConfig;
-    accountId: string;
-    credentialValues: ChannelSetupWizardCredentialValues;
-  }) => string | undefined | Promise<string | undefined>;
-  shouldPrompt?: (params: {
-    cfg: OpenClawConfig;
-    accountId: string;
-    credentialValues: ChannelSetupWizardCredentialValues;
-    currentValue?: string;
-  }) => boolean | Promise<boolean>;
-  applyCurrentValue?: boolean;
-  validate?: (params: {
-    value: string;
-    cfg: OpenClawConfig;
-    accountId: string;
-    credentialValues: ChannelSetupWizardCredentialValues;
-  }) => string | undefined;
-  normalizeValue?: (params: {
-    value: string;
-    cfg: OpenClawConfig;
-    accountId: string;
-    credentialValues: ChannelSetupWizardCredentialValues;
-  }) => string;
-  applySet?: (params: {
-    cfg: OpenClawConfig;
-    accountId: string;
-    value: string;
   }) => OpenClawConfig | Promise<OpenClawConfig>;
 };
 
@@ -229,59 +130,38 @@ export type ChannelSetupWizardGroupAccess = {
   placeholder: string;
   helpTitle?: string;
   helpLines?: string[];
-  currentPolicy: (params: { cfg: RemoteClawConfig; accountId: string }) => ChannelAccessPolicy;
-  currentEntries: (params: { cfg: RemoteClawConfig; accountId: string }) => string[];
-  updatePrompt: (params: { cfg: RemoteClawConfig; accountId: string }) => boolean;
+  currentPolicy: (params: { cfg: OpenClawConfig; accountId: string }) => ChannelAccessPolicy;
+  currentEntries: (params: { cfg: OpenClawConfig; accountId: string }) => string[];
+  updatePrompt: (params: { cfg: OpenClawConfig; accountId: string }) => boolean;
   setPolicy: (params: {
-    cfg: RemoteClawConfig;
+    cfg: OpenClawConfig;
     accountId: string;
     policy: ChannelAccessPolicy;
-  }) => RemoteClawConfig;
+  }) => OpenClawConfig;
   resolveAllowlist: (params: {
-    cfg: RemoteClawConfig;
+    cfg: OpenClawConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
     entries: string[];
     prompter: Pick<WizardPrompter, "note">;
   }) => Promise<unknown>;
   applyAllowlist: (params: {
-    cfg: RemoteClawConfig;
+    cfg: OpenClawConfig;
     accountId: string;
     resolved: unknown;
-  }) => RemoteClawConfig;
+  }) => OpenClawConfig;
 };
-
-export type ChannelSetupWizardPrepare = (params: {
-  cfg: OpenClawConfig;
-  accountId: string;
-  credentialValues: ChannelSetupWizardCredentialValues;
-  runtime: ChannelOnboardingConfigureContext["runtime"];
-  prompter: WizardPrompter;
-  options?: ChannelOnboardingConfigureContext["options"];
-}) =>
-  | {
-      cfg?: OpenClawConfig;
-      credentialValues?: ChannelSetupWizardCredentialValues;
-    }
-  | void
-  | Promise<{
-      cfg?: OpenClawConfig;
-      credentialValues?: ChannelSetupWizardCredentialValues;
-    } | void>;
 
 export type ChannelSetupWizard = {
   channel: string;
   status: ChannelSetupWizardStatus;
   introNote?: ChannelSetupWizardNote;
   envShortcut?: ChannelSetupWizardEnvShortcut;
-  prepare?: ChannelSetupWizardPrepare;
   credentials: ChannelSetupWizardCredential[];
-  textInputs?: ChannelSetupWizardTextInput[];
-  completionNote?: ChannelSetupWizardNote;
   dmPolicy?: ChannelOnboardingDmPolicy;
   allowFrom?: ChannelSetupWizardAllowFrom;
   groupAccess?: ChannelSetupWizardGroupAccess;
-  disable?: (cfg: RemoteClawConfig) => RemoteClawConfig;
+  disable?: (cfg: OpenClawConfig) => OpenClawConfig;
   onAccountRecorded?: ChannelOnboardingAdapter["onAccountRecorded"];
 };
 
@@ -367,7 +247,7 @@ function trimResolvedValue(value?: string): string | undefined {
 
 function collectCredentialValues(params: {
   wizard: ChannelSetupWizard;
-  cfg: RemoteClawConfig;
+  cfg: OpenClawConfig;
   accountId: string;
 }): ChannelSetupWizardCredentialValues {
   const values: ChannelSetupWizardCredentialValues = {};
@@ -383,29 +263,6 @@ function collectCredentialValues(params: {
     }
   }
   return values;
-}
-
-async function applyWizardTextInputValue(params: {
-  plugin: ChannelSetupWizardPlugin;
-  input: ChannelSetupWizardTextInput;
-  cfg: OpenClawConfig;
-  accountId: string;
-  value: string;
-}) {
-  return params.input.applySet
-    ? await params.input.applySet({
-        cfg: params.cfg,
-        accountId: params.accountId,
-        value: params.value,
-      })
-    : applySetupInput({
-        plugin: params.plugin,
-        cfg: params.cfg,
-        accountId: params.accountId,
-        input: {
-          [params.input.inputKey]: params.value,
-        },
-      }).cfg;
 }
 
 export function buildChannelOnboardingAdapterFromSetupWizard(params: {
@@ -492,47 +349,10 @@ export function buildChannelOnboardingAdapterFromSetupWizard(params: {
         await prompter.note(wizard.introNote.lines.join("\n"), wizard.introNote.title);
       }
 
-      if (wizard.prepare) {
-        const prepared = await wizard.prepare({
-          cfg: next,
-          accountId,
-          credentialValues,
-          runtime,
-          prompter,
-          options,
-        });
-        if (prepared?.cfg) {
-          next = prepared.cfg;
-        }
-        if (prepared?.credentialValues) {
-          credentialValues = {
-            ...credentialValues,
-            ...prepared.credentialValues,
-          };
-        }
-      }
-
       if (!usedEnvShortcut) {
         for (const credential of wizard.credentials) {
           let credentialState = credential.inspect({ cfg: next, accountId });
           let resolvedCredentialValue = trimResolvedValue(credentialState.resolvedValue);
-          const shouldPrompt = credential.shouldPrompt
-            ? await credential.shouldPrompt({
-                cfg: next,
-                accountId,
-                credentialValues,
-                currentValue: resolvedCredentialValue,
-                state: credentialState,
-              })
-            : true;
-          if (!shouldPrompt) {
-            if (resolvedCredentialValue) {
-              credentialValues[credential.inputKey] = resolvedCredentialValue;
-            } else {
-              delete credentialValues[credential.inputKey];
-            }
-            continue;
-          }
           const allowEnv = credential.allowEnv?.({ cfg: next, accountId }) ?? false;
 
           const credentialResult = await runSingleChannelSecretStep({
@@ -579,7 +399,6 @@ export function buildChannelOnboardingAdapterFromSetupWizard(params: {
                 ? await credential.applySet({
                     cfg: currentCfg,
                     accountId,
-                    credentialValues,
                     value,
                     resolvedValue,
                   })
@@ -606,272 +425,6 @@ export function buildChannelOnboardingAdapterFromSetupWizard(params: {
             delete credentialValues[credential.inputKey];
           }
         }
-      };
-
-      const runTextInputSteps = async () => {
-        for (const textInput of wizard.textInputs ?? []) {
-          let currentValue = trimResolvedValue(
-            typeof credentialValues[textInput.inputKey] === "string"
-              ? credentialValues[textInput.inputKey]
-              : undefined,
-          );
-          if (!currentValue && textInput.currentValue) {
-            currentValue = trimResolvedValue(
-              await textInput.currentValue({
-                cfg: next,
-                accountId,
-                credentialValues,
-              }),
-            );
-          }
-          const shouldPrompt = textInput.shouldPrompt
-            ? await textInput.shouldPrompt({
-                cfg: next,
-                accountId,
-                credentialValues,
-                currentValue,
-              })
-            : true;
-
-          if (!shouldPrompt) {
-            if (currentValue) {
-              credentialValues[textInput.inputKey] = currentValue;
-              if (textInput.applyCurrentValue) {
-                next = await applyWizardTextInputValue({
-                  plugin,
-                  input: textInput,
-                  cfg: next,
-                  accountId,
-                  value: currentValue,
-                });
-              }
-            }
-            continue;
-          }
-
-          if (textInput.helpLines && textInput.helpLines.length > 0) {
-            await prompter.note(
-              textInput.helpLines.join("\n"),
-              textInput.helpTitle ?? textInput.message,
-            );
-          }
-
-          if (currentValue && textInput.confirmCurrentValue !== false) {
-            const keep = await prompter.confirm({
-              message:
-                typeof textInput.keepPrompt === "function"
-                  ? textInput.keepPrompt(currentValue)
-                  : (textInput.keepPrompt ??
-                    `${textInput.message} set (${currentValue}). Keep it?`),
-              initialValue: true,
-            });
-            if (keep) {
-              credentialValues[textInput.inputKey] = currentValue;
-              if (textInput.applyCurrentValue) {
-                next = await applyWizardTextInputValue({
-                  plugin,
-                  input: textInput,
-                  cfg: next,
-                  accountId,
-                  value: currentValue,
-                });
-              }
-              continue;
-            }
-          }
-
-          const initialValue = trimResolvedValue(
-            (await textInput.initialValue?.({
-              cfg: next,
-              accountId,
-              credentialValues,
-            })) ?? currentValue,
-          );
-          const rawValue = String(
-            await prompter.text({
-              message: textInput.message,
-              initialValue,
-              placeholder: textInput.placeholder,
-              validate: (value) => {
-                const trimmed = String(value ?? "").trim();
-                if (!trimmed && textInput.required !== false) {
-                  return "Required";
-                }
-                return textInput.validate?.({
-                  value: trimmed,
-                  cfg: next,
-                  accountId,
-                  credentialValues,
-                });
-              },
-            }),
-          );
-          const trimmedValue = rawValue.trim();
-          if (!trimmedValue && textInput.required === false) {
-            if (textInput.applyEmptyValue) {
-              next = await applyWizardTextInputValue({
-                plugin,
-                input: textInput,
-                cfg: next,
-                accountId,
-                value: "",
-              });
-            }
-            delete credentialValues[textInput.inputKey];
-            continue;
-          }
-          const normalizedValue = trimResolvedValue(
-            textInput.normalizeValue?.({
-              value: trimmedValue,
-              cfg: next,
-              accountId,
-              credentialValues,
-            }) ?? trimmedValue,
-          );
-          if (!normalizedValue) {
-            delete credentialValues[textInput.inputKey];
-            continue;
-          }
-          next = await applyWizardTextInputValue({
-            plugin,
-            input: textInput,
-            cfg: next,
-            accountId,
-            value: normalizedValue,
-          });
-          credentialValues[textInput.inputKey] = normalizedValue;
-        }
-      };
-
-      if (wizard.stepOrder === "text-first") {
-        await runTextInputSteps();
-        await runCredentialSteps();
-      } else {
-        await runCredentialSteps();
-        await runTextInputSteps();
-      }
-
-      for (const textInput of wizard.textInputs ?? []) {
-        let currentValue = trimResolvedValue(
-          typeof credentialValues[textInput.inputKey] === "string"
-            ? credentialValues[textInput.inputKey]
-            : undefined,
-        );
-        if (!currentValue && textInput.currentValue) {
-          currentValue = trimResolvedValue(
-            await textInput.currentValue({
-              cfg: next,
-              accountId,
-              credentialValues,
-            }),
-          );
-        }
-        const shouldPrompt = textInput.shouldPrompt
-          ? await textInput.shouldPrompt({
-              cfg: next,
-              accountId,
-              credentialValues,
-              currentValue,
-            })
-          : true;
-
-        if (!shouldPrompt) {
-          if (currentValue) {
-            credentialValues[textInput.inputKey] = currentValue;
-            if (textInput.applyCurrentValue) {
-              next = await applyWizardTextInputValue({
-                plugin,
-                input: textInput,
-                cfg: next,
-                accountId,
-                value: currentValue,
-              });
-            }
-          }
-          continue;
-        }
-
-        if (textInput.helpLines && textInput.helpLines.length > 0) {
-          await prompter.note(
-            textInput.helpLines.join("\n"),
-            textInput.helpTitle ?? textInput.message,
-          );
-        }
-
-        if (currentValue && textInput.confirmCurrentValue !== false) {
-          const keep = await prompter.confirm({
-            message:
-              typeof textInput.keepPrompt === "function"
-                ? textInput.keepPrompt(currentValue)
-                : (textInput.keepPrompt ?? `${textInput.message} set (${currentValue}). Keep it?`),
-            initialValue: true,
-          });
-          if (keep) {
-            credentialValues[textInput.inputKey] = currentValue;
-            if (textInput.applyCurrentValue) {
-              next = await applyWizardTextInputValue({
-                plugin,
-                input: textInput,
-                cfg: next,
-                accountId,
-                value: currentValue,
-              });
-            }
-            continue;
-          }
-        }
-
-        const initialValue = trimResolvedValue(
-          (await textInput.initialValue?.({
-            cfg: next,
-            accountId,
-            credentialValues,
-          })) ?? currentValue,
-        );
-        const rawValue = String(
-          await prompter.text({
-            message: textInput.message,
-            initialValue,
-            placeholder: textInput.placeholder,
-            validate: (value) => {
-              const trimmed = String(value ?? "").trim();
-              if (!trimmed && textInput.required !== false) {
-                return "Required";
-              }
-              return textInput.validate?.({
-                value: trimmed,
-                cfg: next,
-                accountId,
-                credentialValues,
-              });
-            },
-          }),
-        );
-        const trimmedValue = rawValue.trim();
-        if (!trimmedValue && textInput.required === false) {
-          delete credentialValues[textInput.inputKey];
-          continue;
-        }
-        const normalizedValue = trimResolvedValue(
-          textInput.normalizeValue?.({
-            value: trimmedValue,
-            cfg: next,
-            accountId,
-            credentialValues,
-          }) ?? trimmedValue,
-        );
-        if (!normalizedValue) {
-          delete credentialValues[textInput.inputKey];
-          continue;
-        }
-        next = await applyWizardTextInputValue({
-          plugin,
-          input: textInput,
-          cfg: next,
-          accountId,
-          value: normalizedValue,
-        });
-        credentialValues[textInput.inputKey] = normalizedValue;
       }
 
       if (wizard.groupAccess) {

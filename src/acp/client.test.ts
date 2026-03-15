@@ -22,7 +22,7 @@ function makePermissionRequest(
     sessionId: "session-1",
     toolCall: {
       toolCallId: "tool-1",
-      title: "search: foo",
+      title: "read: src/index.ts",
       status: "pending",
     },
     options: [
@@ -47,22 +47,22 @@ afterEach(async () => {
 });
 
 describe("resolveAcpClientSpawnEnv", () => {
-  it("sets REMOTECLAW_SHELL marker and preserves existing env values", () => {
+  it("sets OPENCLAW_SHELL marker and preserves existing env values", () => {
     const env = resolveAcpClientSpawnEnv({
       PATH: "/usr/bin",
       USER: "openclaw",
     });
 
-    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
+    expect(env.OPENCLAW_SHELL).toBe("acp-client");
     expect(env.PATH).toBe("/usr/bin");
     expect(env.USER).toBe("openclaw");
   });
 
-  it("overrides pre-existing REMOTECLAW_SHELL to acp-client", () => {
+  it("overrides pre-existing OPENCLAW_SHELL to acp-client", () => {
     const env = resolveAcpClientSpawnEnv({
-      REMOTECLAW_SHELL: "wrong",
+      OPENCLAW_SHELL: "wrong",
     });
-    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
+    expect(env.OPENCLAW_SHELL).toBe("acp-client");
   });
 
   it("strips skill-injected env keys when stripKeys is provided", () => {
@@ -81,7 +81,7 @@ describe("resolveAcpClientSpawnEnv", () => {
     );
 
     expect(env.PATH).toBe("/usr/bin");
-    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
+    expect(env.OPENCLAW_SHELL).toBe("acp-client");
     expect(env.ANTHROPIC_API_KEY).toBe("anthropic-test-value");
     expect(env.OPENAI_API_KEY).toBeUndefined();
     expect(env.ELEVENLABS_API_KEY).toBeUndefined();
@@ -99,17 +99,17 @@ describe("resolveAcpClientSpawnEnv", () => {
     expect(baseEnv.OPENAI_API_KEY).toBe("openai-original");
   });
 
-  it("preserves REMOTECLAW_SHELL even when stripKeys contains it", () => {
+  it("preserves OPENCLAW_SHELL even when stripKeys contains it", () => {
     const openAiApiKeyEnv = envVar("OPENAI", "API", "KEY");
     const env = resolveAcpClientSpawnEnv(
       {
-        REMOTECLAW_SHELL: "skill-overridden",
+        OPENCLAW_SHELL: "skill-overridden",
         [openAiApiKeyEnv]: "openai-leaked", // pragma: allowlist secret
       },
-      { stripKeys: new Set(["REMOTECLAW_SHELL", openAiApiKeyEnv]) },
+      { stripKeys: new Set(["OPENCLAW_SHELL", openAiApiKeyEnv]) },
     );
 
-    expect(env.REMOTECLAW_SHELL).toBe("acp-client");
+    expect(env.OPENCLAW_SHELL).toBe("acp-client");
     expect(env.OPENAI_API_KEY).toBeUndefined();
   });
 
@@ -307,6 +307,20 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
   }
 
+  async function expectAutoAllowWithoutPrompt(params: {
+    request: Partial<RequestPermissionRequest>;
+    cwd?: string;
+  }) {
+    const prompt = vi.fn(async () => true);
+    const res = await resolvePermissionRequest(makePermissionRequest(params.request), {
+      prompt,
+      log: () => {},
+      cwd: params.cwd,
+    });
+    expect(prompt).not.toHaveBeenCalled();
+    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
+  }
+
   it("auto-approves safe tools without prompting", async () => {
     const prompt = vi.fn(async () => true);
     const res = await resolvePermissionRequest(makePermissionRequest(), { prompt, log: () => {} });
@@ -327,7 +341,7 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
   });
 
-  it("prompts for non-search tools (write)", async () => {
+  it("prompts for non-read/search tools (write)", async () => {
     const prompt = vi.fn(async () => true);
     const res = await resolvePermissionRequest(
       makePermissionRequest({
@@ -352,16 +366,120 @@ describe("resolvePermissionRequest", () => {
     expect(prompt).not.toHaveBeenCalled();
   });
 
-  it("prompts for read tool (no longer auto-approved)", async () => {
+  it("auto-approves safe tools when rawInput is the only identity hint", async () => {
+    const prompt = vi.fn(async () => true);
+    const res = await resolvePermissionRequest(
+      makePermissionRequest({
+        toolCall: {
+          toolCallId: "tool-raw-only",
+          title: "Searching files",
+          status: "pending",
+          rawInput: {
+            name: "search",
+            query: "foo",
+          },
+        },
+      }),
+      { prompt, log: () => {} },
+    );
+    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "allow" } });
+    expect(prompt).not.toHaveBeenCalled();
+  });
+
+  it("prompts when raw input spoofs a safe tool name for a dangerous title", async () => {
     const prompt = vi.fn(async () => false);
     const res = await resolvePermissionRequest(
       makePermissionRequest({
-        toolCall: { toolCallId: "tool-r", title: "read: src/index.ts", status: "pending" },
+        toolCall: {
+          toolCallId: "tool-exec-spoof",
+          title: "exec: cat /etc/passwd",
+          status: "pending",
+          rawInput: {
+            command: "cat /etc/passwd",
+            name: "search",
+          },
+        },
       }),
       { prompt, log: () => {} },
     );
     expect(prompt).toHaveBeenCalledTimes(1);
-    expect(prompt).toHaveBeenCalledWith("read", "read: src/index.ts");
+    expect(prompt).toHaveBeenCalledWith(undefined, "exec: cat /etc/passwd");
+    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
+  });
+
+  it("prompts for read outside cwd scope", async () => {
+    const prompt = vi.fn(async () => false);
+    const res = await resolvePermissionRequest(
+      makePermissionRequest({
+        toolCall: { toolCallId: "tool-r", title: "read: ~/.ssh/id_rsa", status: "pending" },
+      }),
+      { prompt, log: () => {} },
+    );
+    expect(prompt).toHaveBeenCalledTimes(1);
+    expect(prompt).toHaveBeenCalledWith("read", "read: ~/.ssh/id_rsa");
+    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
+  });
+
+  it("auto-approves read when rawInput path resolves inside cwd", async () => {
+    await expectAutoAllowWithoutPrompt({
+      request: {
+        toolCall: {
+          toolCallId: "tool-read-inside-cwd",
+          title: "read: ignored-by-raw-input",
+          status: "pending",
+          rawInput: { path: "docs/security.md" },
+        },
+      },
+      cwd: "/tmp/openclaw-acp-cwd",
+    });
+  });
+
+  it("auto-approves read when rawInput file URL resolves inside cwd", async () => {
+    await expectAutoAllowWithoutPrompt({
+      request: {
+        toolCall: {
+          toolCallId: "tool-read-inside-cwd-file-url",
+          title: "read: ignored-by-raw-input",
+          status: "pending",
+          rawInput: { path: "file:///tmp/openclaw-acp-cwd/docs/security.md" },
+        },
+      },
+      cwd: "/tmp/openclaw-acp-cwd",
+    });
+  });
+
+  it("prompts for read when rawInput path escapes cwd via traversal", async () => {
+    const prompt = vi.fn(async () => false);
+    const res = await resolvePermissionRequest(
+      makePermissionRequest({
+        toolCall: {
+          toolCallId: "tool-read-escape-cwd",
+          title: "read: ignored-by-raw-input",
+          status: "pending",
+          rawInput: { path: "../.ssh/id_rsa" },
+        },
+      }),
+      { prompt, log: () => {}, cwd: "/tmp/openclaw-acp-cwd/workspace" },
+    );
+    expect(prompt).toHaveBeenCalledTimes(1);
+    expect(prompt).toHaveBeenCalledWith("read", "read: ignored-by-raw-input");
+    expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
+  });
+
+  it("prompts for read when scoped path is missing", async () => {
+    const prompt = vi.fn(async () => false);
+    const res = await resolvePermissionRequest(
+      makePermissionRequest({
+        toolCall: {
+          toolCallId: "tool-read-no-path",
+          title: "read",
+          status: "pending",
+        },
+      }),
+      { prompt, log: () => {} },
+    );
+    expect(prompt).toHaveBeenCalledTimes(1);
+    expect(prompt).toHaveBeenCalledWith("read", "read");
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
   });
 

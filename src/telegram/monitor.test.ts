@@ -59,6 +59,10 @@ const { createTelegramBotErrors } = vi.hoisted(() => ({
   createTelegramBotErrors: [] as unknown[],
 }));
 
+const { createdBotStops } = vi.hoisted(() => ({
+  createdBotStops: [] as Array<ReturnType<typeof vi.fn<() => void>>>,
+}));
+
 const { createTelegramBotCalls } = vi.hoisted(() => ({
   createTelegramBotCalls: [] as Array<Record<string, unknown>>,
 }));
@@ -128,12 +132,14 @@ vi.mock("./bot.js", () => ({
       }
       await api.sendMessage(chatId, `echo:${text}`, { parse_mode: "HTML" });
     };
+    const stop = vi.fn<() => void>();
+    createdBotStops.push(stop);
     return {
       on: vi.fn(),
       api,
       me: { username: "mybot" },
       init: initSpy,
-      stop: vi.fn(),
+      stop,
       start: vi.fn(),
     };
   },
@@ -184,6 +190,7 @@ describe("monitorTelegramProvider (grammY)", () => {
     registerUnhandledRejectionHandlerMock.mockClear();
     resetUnhandledRejection();
     createTelegramBotErrors.length = 0;
+    createdBotStops.length = 0;
     createTelegramBotCalls.length = 0;
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   });
@@ -386,6 +393,22 @@ describe("monitorTelegramProvider (grammY)", () => {
     expect(computeBackoff).toHaveBeenCalled();
     expect(sleepWithAbort).toHaveBeenCalled();
     expect(runSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops bot instance when polling cycle exits", async () => {
+    const abort = new AbortController();
+    runSpy.mockImplementationOnce(() =>
+      makeRunnerStub({
+        task: async () => {
+          abort.abort();
+        },
+      }),
+    );
+
+    await monitorTelegramProvider({ token: "tok", abortSignal: abort.signal });
+
+    expect(createdBotStops.length).toBe(1);
+    expect(createdBotStops[0]).toHaveBeenCalledTimes(1);
   });
 
   it("surfaces non-recoverable errors", async () => {

@@ -198,6 +198,11 @@ export class TelegramPollingSession {
     } finally {
       this.opts.abortSignal?.removeEventListener("abort", stopOnAbort);
       await stopRunner();
+      await Promise.resolve(bot.stop())
+        .then(() => undefined)
+        .catch(() => {
+          // Bot may already be stopped by runner stop/abort paths.
+        });
       this.#activeRunner = undefined;
       if (this.#activeFetchAbort === fetchAbortController) {
         this.#activeFetchAbort = undefined;

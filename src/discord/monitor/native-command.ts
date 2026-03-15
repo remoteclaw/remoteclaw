@@ -45,7 +45,6 @@ import { upsertChannelPairingRequest } from "../../pairing/pairing-store.js";
 import { resolveAgentRoute } from "../../routing/resolve-route.js";
 import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import { buildUntrustedChannelMetadata } from "../../security/channel-metadata.js";
-import { readStoreAllowFromForDmPolicy } from "../../security/dm-policy-shared.js";
 import { chunkItems } from "../../utils/chunk-items.js";
 import { loadWebMedia } from "../../web/media.js";
 import { chunkDiscordTextWithMode } from "../chunk.js";
@@ -59,6 +58,7 @@ import {
   resolveDiscordMemberAccessState,
   resolveDiscordOwnerAllowFrom,
 } from "./allow-list.js";
+import { resolveDiscordDmCommandAccess } from "./dm-command-auth.js";
 import { resolveDiscordChannelInfo } from "./message-utils.js";
 import { resolveDiscordSenderIdentity } from "./sender-identity.js";
 import type { ThreadBindingManager } from "./thread-bindings.js";
@@ -650,56 +650,44 @@ async function dispatchDiscordCommandInteraction(params: {
       await respond("Discord DMs are disabled.");
       return;
     }
-    if (dmPolicy !== "open") {
-      const storeAllowFrom = await readStoreAllowFromForDmPolicy({
-        provider: "discord",
-        accountId,
-        dmPolicy,
-      });
-      const effectiveAllowFrom = [
-        ...(discordConfig?.allowFrom ?? discordConfig?.dm?.allowFrom ?? []),
-        ...storeAllowFrom,
-      ];
-      const allowList = normalizeDiscordAllowList(effectiveAllowFrom, ["discord:", "user:", "pk:"]);
-      const permitted = allowList
-        ? allowListMatches(
-            allowList,
-            {
-              id: sender.id,
-              name: sender.name,
-              tag: sender.tag,
-            },
-            { allowNameMatching: isDangerousNameMatchingEnabled(discordConfig) },
-          )
-        : false;
-      if (!permitted) {
-        commandAuthorized = false;
-        if (dmPolicy === "pairing") {
-          const { code, created } = await upsertChannelPairingRequest({
-            channel: "discord",
-            id: user.id,
-            accountId,
-            meta: {
-              tag: sender.tag,
-              name: sender.name,
-            },
-          });
-          if (created) {
-            await respond(
-              buildPairingReply({
-                channel: "discord",
-                idLine: `Your Discord user id: ${user.id}`,
-                code,
-              }),
-              { ephemeral: true },
-            );
-          }
-        } else {
-          await respond("You are not authorized to use this command.", { ephemeral: true });
+    const dmAccess = await resolveDiscordDmCommandAccess({
+      accountId,
+      dmPolicy,
+      configuredAllowFrom: discordConfig?.allowFrom ?? discordConfig?.dm?.allowFrom ?? [],
+      sender: {
+        id: sender.id,
+        name: sender.name,
+        tag: sender.tag,
+      },
+      allowNameMatching: isDangerousNameMatchingEnabled(discordConfig),
+      useAccessGroups,
+    });
+    commandAuthorized = dmAccess.commandAuthorized;
+    if (dmAccess.decision !== "allow") {
+      if (dmAccess.decision === "pairing") {
+        const { code, created } = await upsertChannelPairingRequest({
+          channel: "discord",
+          id: user.id,
+          accountId,
+          meta: {
+            tag: sender.tag,
+            name: sender.name,
+          },
+        });
+        if (created) {
+          await respond(
+            buildPairingReply({
+              channel: "discord",
+              idLine: `Your Discord user id: ${user.id}`,
+              code,
+            }),
+            { ephemeral: true },
+          );
         }
-        return;
+      } else {
+        await respond("You are not authorized to use this command.", { ephemeral: true });
       }
-      commandAuthorized = true;
+      return;
     }
   }
   if (!isDirectMessage) {

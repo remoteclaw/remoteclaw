@@ -381,7 +381,7 @@ export const dispatchTelegramMessage = async ({
           if (info.kind === "final") {
             await answerLane.stream?.stop();
           }
-          const canSendAsIs = hasMedia || typeof text !== "string" || text.length > 0;
+          const canSendAsIs = hasMedia || (typeof text === "string" && text.length > 0);
           if (!canSendAsIs) {
             return;
           }

@@ -73,6 +73,12 @@ const createRegistry = (channels: PluginRegistry["channels"]): PluginRegistry =>
   typedHooks: [],
   commands: [],
   channels,
+  channelSetups: channels.map((entry) => ({
+    pluginId: entry.pluginId,
+    plugin: entry.plugin,
+    source: entry.source,
+    enabled: true,
+  })),
   providers: [],
   sttProviders: [],
   ttsProviders: [],

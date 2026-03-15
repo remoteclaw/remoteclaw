@@ -4,7 +4,7 @@ import { sanitizeAgentId } from "../routing/session-key.js";
 /** ACP session mode – inlined because ./runtime/types.js was gutted. */
 export type AcpRuntimeSessionMode = "persistent" | "oneshot";
 
-export type ConfiguredAcpBindingChannel = "discord" | "telegram";
+export type ConfiguredAcpBindingChannel = "discord" | "telegram" | "feishu";
 
 export type ConfiguredAcpBindingSpec = {
   channel: ConfiguredAcpBindingChannel;

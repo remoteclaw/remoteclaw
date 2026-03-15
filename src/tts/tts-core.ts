@@ -1,4 +1,4 @@
-import { rmSync } from "node:fs";
+import { rmSync, statSync } from "node:fs";
 import { EdgeTTS } from "node-edge-tts";
 import type { RemoteClawConfig } from "../config/config.js";
 import type {
@@ -594,4 +594,10 @@ export async function edgeTTS(params: {
     timeout: config.timeoutMs ?? timeoutMs,
   });
   await tts.ttsPromise(text, outputPath);
+
+  const { size } = statSync(outputPath);
+
+  if (size === 0) {
+    throw new Error("Edge TTS produced empty audio file");
+  }
 }

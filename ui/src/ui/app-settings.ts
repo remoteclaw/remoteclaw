@@ -99,6 +99,9 @@ export function applySettingsFromUrl(host: SettingsHost) {
   const tokenRaw = hashParams.get("token");
   const passwordRaw = params.get("password") ?? hashParams.get("password");
   const sessionRaw = params.get("session") ?? hashParams.get("session");
+  const shouldResetSessionForToken = Boolean(
+    tokenRaw?.trim() && !sessionRaw?.trim() && !gatewayUrlChanged,
+  );
   let shouldCleanUrl = false;
 
   if (params.has("token")) {
@@ -115,6 +118,15 @@ export function applySettingsFromUrl(host: SettingsHost) {
     }
     hashParams.delete("token");
     shouldCleanUrl = true;
+  }
+
+  if (shouldResetSessionForToken) {
+    host.sessionKey = "main";
+    applySettings(host, {
+      ...host.settings,
+      sessionKey: "main",
+      lastActiveSessionKey: "main",
+    });
   }
 
   if (passwordRaw != null) {

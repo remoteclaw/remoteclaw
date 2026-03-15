@@ -1853,10 +1853,16 @@ describe("createTelegramBot", () => {
       });
 
       expect(sendMessageSpy.mock.calls.length).toBeGreaterThan(1);
-      for (const call of sendMessageSpy.mock.calls) {
-        expect((call[2] as { reply_to_message_id?: number } | undefined)?.reply_to_message_id).toBe(
-          messageId,
-        );
+      for (let i = 0; i < sendMessageSpy.mock.calls.length; i++) {
+        const call = sendMessageSpy.mock.calls[i];
+        const replyTo = (call[2] as { reply_to_message_id?: number } | undefined)
+          ?.reply_to_message_id;
+        if (mode === "all") {
+          expect(replyTo).toBe(messageId);
+        } else {
+          // mode === "first": only the first chunk carries reply-to
+          expect(replyTo).toBe(i === 0 ? messageId : undefined);
+        }
       }
     }
   });

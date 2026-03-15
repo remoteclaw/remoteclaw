@@ -376,6 +376,7 @@ describe("deliverReplies", () => {
           mediaUrl: "https://example.com/note.ogg",
           text: "chunk-one\n\nchunk-two",
           replyToId: "77",
+          audioAsVoice: true,
         },
       ],
       runtime,

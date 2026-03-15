@@ -1566,7 +1566,7 @@
       "deprecated": false,
       "sensitive": false,
       "tags": ["automation"],
-      "help": "Delivery target (\"last\", \"none\", or a channel id). Known channels: telegram, whatsapp, discord, irc, googlechat, slack, signal, imessage, line, zalouser, zalo, tlon, feishu, nextcloud-talk, msteams, bluebubbles, synology-chat, mattermost, twitch, matrix, nostr.",
+      "help": "Delivery target (\"last\", \"none\", or a channel id). Known channels: telegram, whatsapp, discord, irc, googlechat, slack, signal, imessage, line, bluebubbles, feishu, matrix, mattermost, msteams, nextcloud-talk, nostr, synology-chat, tlon, twitch, zalo, zalouser.",
       "hasChildren": false
     },
     {
@@ -3254,216 +3254,6 @@
       "hasChildren": false
     },
     {
-      "path": "agents.defaults.sandbox.ssh",
-      "kind": "core",
-      "type": "object",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": true
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.certificateData",
-      "kind": "core",
-      "type": ["object", "string"],
-      "required": false,
-      "deprecated": false,
-      "sensitive": true,
-      "tags": ["security", "storage"],
-      "hasChildren": true
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.certificateData.id",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.certificateData.provider",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.certificateData.source",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.certificateFile",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.command",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.identityData",
-      "kind": "core",
-      "type": ["object", "string"],
-      "required": false,
-      "deprecated": false,
-      "sensitive": true,
-      "tags": ["security", "storage"],
-      "hasChildren": true
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.identityData.id",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.identityData.provider",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.identityData.source",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.identityFile",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.knownHostsData",
-      "kind": "core",
-      "type": ["object", "string"],
-      "required": false,
-      "deprecated": false,
-      "sensitive": true,
-      "tags": ["security", "storage"],
-      "hasChildren": true
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.knownHostsData.id",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.knownHostsData.provider",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.knownHostsData.source",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.knownHostsFile",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.strictHostKeyChecking",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.target",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.updateHostKeys",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.defaults.sandbox.ssh.workspaceRoot",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
       "path": "agents.defaults.sandbox.workspaceAccess",
       "kind": "core",
       "type": "string",
@@ -3949,7 +3739,7 @@
       "deprecated": false,
       "sensitive": false,
       "tags": ["automation"],
-      "help": "Delivery target (\"last\", \"none\", or a channel id). Known channels: telegram, whatsapp, discord, irc, googlechat, slack, signal, imessage, line, zalouser, zalo, tlon, feishu, nextcloud-talk, msteams, bluebubbles, synology-chat, mattermost, twitch, matrix, nostr.",
+      "help": "Delivery target (\"last\", \"none\", or a channel id). Known channels: telegram, whatsapp, discord, irc, googlechat, slack, signal, imessage, line, bluebubbles, feishu, matrix, mattermost, msteams, nextcloud-talk, nostr, synology-chat, tlon, twitch, zalo, zalouser.",
       "hasChildren": false
     },
     {
@@ -5494,216 +5284,6 @@
       "hasChildren": false
     },
     {
-      "path": "agents.list.*.sandbox.ssh",
-      "kind": "core",
-      "type": "object",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": true
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.certificateData",
-      "kind": "core",
-      "type": ["object", "string"],
-      "required": false,
-      "deprecated": false,
-      "sensitive": true,
-      "tags": ["security", "storage"],
-      "hasChildren": true
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.certificateData.id",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.certificateData.provider",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.certificateData.source",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.certificateFile",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.command",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.identityData",
-      "kind": "core",
-      "type": ["object", "string"],
-      "required": false,
-      "deprecated": false,
-      "sensitive": true,
-      "tags": ["security", "storage"],
-      "hasChildren": true
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.identityData.id",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.identityData.provider",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.identityData.source",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.identityFile",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.knownHostsData",
-      "kind": "core",
-      "type": ["object", "string"],
-      "required": false,
-      "deprecated": false,
-      "sensitive": true,
-      "tags": ["security", "storage"],
-      "hasChildren": true
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.knownHostsData.id",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.knownHostsData.provider",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.knownHostsData.source",
-      "kind": "core",
-      "type": "string",
-      "required": true,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.knownHostsFile",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.strictHostKeyChecking",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.target",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.updateHostKeys",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.sandbox.ssh.workspaceRoot",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
       "path": "agents.list.*.sandbox.workspaceAccess",
       "kind": "core",
       "type": "string",
@@ -6327,16 +5907,6 @@
       "type": "string",
       "required": false,
       "enumValues": ["deny", "allowlist", "full"],
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "agents.list.*.tools.exec.strictInlineEval",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
       "deprecated": false,
       "sensitive": false,
       "tags": [],
@@ -13850,7 +13420,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Feishu",
-      "help": "飞书/Lark enterprise messaging with doc/wiki/drive tools.",
+      "help": "飞书/Lark enterprise messaging.",
       "hasChildren": true
     },
     {
@@ -15691,7 +15261,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Google Chat",
-      "help": "Google Workspace Chat app via HTTP webhooks.",
+      "help": "Google Workspace Chat app with HTTP webhook.",
       "hasChildren": true
     },
     {
@@ -20247,7 +19817,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Matrix",
-      "help": "open protocol; install the plugin to enable.",
+      "help": "open protocol; configure a homeserver + access token.",
       "hasChildren": true
     },
     {
@@ -24032,7 +23602,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Nostr",
-      "help": "Decentralized protocol; encrypted DMs via NIP-04.",
+      "help": "Decentralized DMs via Nostr relays (NIP-04)",
       "hasChildren": true
     },
     {
@@ -28291,7 +27861,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Synology Chat",
-      "help": "Connect your Synology NAS Chat to OpenClaw with full agent capabilities.",
+      "help": "Connect your Synology NAS Chat to OpenClaw",
       "hasChildren": true
     },
     {
@@ -31938,7 +31508,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Tlon",
-      "help": "decentralized messaging on Urbit; install the plugin to enable.",
+      "help": "Decentralized messaging on Urbit",
       "hasChildren": true
     },
     {
@@ -38115,46 +37685,6 @@
       "sensitive": false,
       "tags": [],
       "hasChildren": true
-    },
-    {
-      "path": "hooks.internal.installs.*.clawhubChannel",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "hooks.internal.installs.*.clawhubFamily",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "hooks.internal.installs.*.clawhubPackage",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "hooks.internal.installs.*.clawhubUrl",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
     },
     {
       "path": "hooks.internal.installs.*.hooks",
@@ -45620,46 +45150,6 @@
       "hasChildren": true
     },
     {
-      "path": "plugins.installs.*.clawhubChannel",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "plugins.installs.*.clawhubFamily",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "plugins.installs.*.clawhubPackage",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
-      "path": "plugins.installs.*.clawhubUrl",
-      "kind": "core",
-      "type": "string",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": [],
-      "hasChildren": false
-    },
-    {
       "path": "plugins.installs.*.installedAt",
       "kind": "core",
       "type": "string",
@@ -48078,18 +47568,6 @@
       "tags": ["tools"],
       "label": "Exec Security",
       "help": "Execution security posture selector controlling sandbox/approval expectations for command execution. Keep strict security mode for untrusted prompts and relax only for trusted operator workflows.",
-      "hasChildren": false
-    },
-    {
-      "path": "tools.exec.strictInlineEval",
-      "kind": "core",
-      "type": "boolean",
-      "required": false,
-      "deprecated": false,
-      "sensitive": false,
-      "tags": ["tools"],
-      "label": "Require Inline-Eval Approval",
-      "help": "Require explicit approval for interpreter inline-eval forms such as `python -c`, `node -e`, `ruby -e`, or `osascript -e`. Prevents silent allowlist reuse and downgrades allow-always to ask-each-time for those forms.",
       "hasChildren": false
     },
     {
@@ -51978,7 +51456,7 @@
       "sensitive": false,
       "tags": ["advanced"],
       "label": "Wizard Last Run Mode",
-      "help": "Wizard execution mode recorded as \"local\" or \"remote\" for the most recent setup flow. Use this to understand whether setup targeted direct local runtime or remote gateway topology.",
+      "help": "Wizard execution mode recorded as \"local\" or \"remote\" for the most recent onboarding flow. Use this to understand whether setup targeted direct local runtime or remote gateway topology.",
       "hasChildren": false
     },
     {

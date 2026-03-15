@@ -20,6 +20,10 @@ const {
   mockResolveAgentRoute,
   mockReadSessionUpdatedAt,
   mockResolveStorePath,
+  mockResolveConfiguredAcpRoute,
+  mockEnsureConfiguredAcpRouteReady,
+  mockResolveBoundConversation,
+  mockTouchBinding,
 } = vi.hoisted(() => ({
   mockCreateFeishuReplyDispatcher: vi.fn(() => ({
     dispatcher: vi.fn(),
@@ -46,6 +50,13 @@ const {
   })),
   mockReadSessionUpdatedAt: vi.fn(),
   mockResolveStorePath: vi.fn(() => "/tmp/feishu-sessions.json"),
+  mockResolveConfiguredAcpRoute: vi.fn(({ route }) => ({
+    configuredBinding: null,
+    route,
+  })),
+  mockEnsureConfiguredAcpRouteReady: vi.fn(async (_params?: unknown) => ({ ok: true })),
+  mockResolveBoundConversation: vi.fn(() => null),
+  mockTouchBinding: vi.fn(),
 }));
 
 vi.mock("./reply-dispatcher.js", () => ({
@@ -64,6 +75,18 @@ vi.mock("./media.js", () => ({
 
 vi.mock("./client.js", () => ({
   createFeishuClient: mockCreateFeishuClient,
+}));
+
+vi.mock("../../../src/acp/persistent-bindings.route.js", () => ({
+  resolveConfiguredAcpRoute: (params: unknown) => mockResolveConfiguredAcpRoute(params),
+  ensureConfiguredAcpRouteReady: (params: unknown) => mockEnsureConfiguredAcpRouteReady(params),
+}));
+
+vi.mock("../../../src/infra/outbound/session-binding-service.js", () => ({
+  getSessionBindingService: () => ({
+    resolveByConversation: mockResolveBoundConversation,
+    touch: mockTouchBinding,
+  }),
 }));
 
 function createRuntimeEnv(): RuntimeEnv {
@@ -129,6 +152,16 @@ describe("handleFeishuMessage command authorization", () => {
     mockListFeishuThreadMessages.mockReset().mockResolvedValue([]);
     mockReadSessionUpdatedAt.mockReturnValue(undefined);
     mockResolveStorePath.mockReturnValue("/tmp/feishu-sessions.json");
+    mockResolveConfiguredAcpRoute.mockReset().mockImplementation(
+      ({ route }) =>
+        ({
+          configuredBinding: null,
+          route,
+        }) as any,
+    );
+    mockEnsureConfiguredAcpRouteReady.mockReset().mockResolvedValue({ ok: true });
+    mockResolveBoundConversation.mockReset().mockReturnValue(null);
+    mockTouchBinding.mockReset();
     mockResolveAgentRoute.mockReturnValue({
       agentId: "main",
       channel: "feishu",

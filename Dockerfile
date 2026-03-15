@@ -114,7 +114,7 @@ WORKDIR /app
 # On the full bookworm image these are already installed (apt-get is a no-op).
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      procps hostname curl git openssl && \
+      procps hostname curl git lsof openssl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 

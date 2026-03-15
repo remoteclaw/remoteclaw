@@ -9,6 +9,7 @@ import {
   issuePairingChallenge,
   normalizeAgentId,
   recordPendingHistoryEntryIfEnabled,
+  resolveAgentOutboundIdentity,
   resolveOpenProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
@@ -1389,6 +1390,7 @@ export async function handleFeishuMessage(params: {
 
         if (agentId === activeAgentId) {
           // Active agent: real Feishu dispatcher (responds on Feishu)
+          const identity = resolveAgentOutboundIdentity(cfg, agentId);
           const { dispatcher, replyOptions, markDispatchIdle } = createFeishuReplyDispatcher({
             cfg,
             agentId,
@@ -1401,6 +1403,7 @@ export async function handleFeishuMessage(params: {
             threadReply,
             mentionTargets: ctx.mentionTargets,
             accountId: account.accountId,
+            identity,
             messageCreateTimeMs,
           });
 
@@ -1487,6 +1490,7 @@ export async function handleFeishuMessage(params: {
         ctx.mentionedBot,
       );
 
+      const identity = resolveAgentOutboundIdentity(cfg, route.agentId);
       const { dispatcher, replyOptions, markDispatchIdle } = createFeishuReplyDispatcher({
         cfg,
         agentId: route.agentId,
@@ -1499,6 +1503,7 @@ export async function handleFeishuMessage(params: {
         threadReply,
         mentionTargets: ctx.mentionTargets,
         accountId: account.accountId,
+        identity,
         messageCreateTimeMs,
       });
 

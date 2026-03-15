@@ -20,6 +20,8 @@ import org.remoteclaw.android.gateway.probeGatewayTlsFingerprint
 import org.remoteclaw.android.node.*
 import org.remoteclaw.android.protocol.RemoteClawCanvasA2UIAction
 import org.remoteclaw.android.voice.MicCaptureManager
+import org.remoteclaw.android.voice.TalkModeManager
+import org.remoteclaw.android.voice.VoiceConversationEntry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -265,6 +267,18 @@ class NodeRuntime(context: Context) {
       json = json,
       supportsChatSubscribe = false,
     )
+  private val voiceReplySpeaker: TalkModeManager by lazy {
+    // Reuse the existing TalkMode speech engine (ElevenLabs + deterministic system-TTS fallback)
+    // without enabling the legacy talk capture loop.
+    TalkModeManager(
+      context = appContext,
+      scope = scope,
+      session = operatorSession,
+      supportsChatSubscribe = false,
+      isConnected = { operatorConnected },
+    )
+  }
+
   private val micCapture: MicCaptureManager by lazy {
     MicCaptureManager(
       context = appContext,
@@ -281,6 +295,9 @@ class NodeRuntime(context: Context) {
           }
         val response = operatorSession.request("chat.send", params.toString())
         parseChatSendRunId(response) ?: idempotencyKey
+      },
+      speakAssistantReply = { text ->
+        voiceReplySpeaker.speakAssistantReply(text)
       },
     )
   }

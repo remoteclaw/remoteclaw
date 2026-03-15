@@ -10,6 +10,7 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.util.Log
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -25,8 +27,10 @@ class MicCaptureManager(
   private val context: Context,
   private val scope: CoroutineScope,
   private val sendToGateway: suspend (String) -> String?,
+  private val speakAssistantReply: suspend (String) -> Unit = {},
 ) {
   companion object {
+    private const val tag = "MicCapture"
     private const val speechMinSessionMs = 30_000L
     private const val speechCompleteSilenceMs = 1_500L
     private const val speechPossibleSilenceMs = 900L
@@ -109,6 +113,10 @@ class MicCaptureManager(
     if (messageQueue.isNotEmpty()) {
       messageQueue.removeFirst()
       publishQueue()
+    }
+    val finalText = parseAssistantText(obj)?.trim().orEmpty()
+    if (finalText.isNotEmpty()) {
+      playAssistantReplyAsync(finalText)
     }
     pendingRunId = null
     _isSending.value = false
@@ -244,6 +252,34 @@ class MicCaptureManager(
       }
     }
   }
+
+  private fun parseAssistantText(payload: JsonObject): String? {
+    val message = payload["message"].asObjectOrNull() ?: return null
+    if (message["role"].asStringOrNull() != "assistant") return null
+    val content = message["content"] as? JsonArray ?: return null
+
+    val parts =
+      content.mapNotNull { item ->
+        val obj = item.asObjectOrNull() ?: return@mapNotNull null
+        if (obj["type"].asStringOrNull() != "text") return@mapNotNull null
+        obj["text"].asStringOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+      }
+    if (parts.isEmpty()) return null
+    return parts.joinToString("\n")
+  }
+
+  private fun playAssistantReplyAsync(text: String) {
+    val spoken = text.trim()
+    if (spoken.isEmpty()) return
+    scope.launch {
+      try {
+        speakAssistantReply(spoken)
+      } catch (err: Throwable) {
+        Log.w(tag, "assistant speech failed: ${err.message ?: err::class.simpleName}")
+      }
+    }
+  }
+
 
   private fun disableMic(status: String) {
     stopRequested = true

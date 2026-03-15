@@ -22,6 +22,7 @@ function createThreadBinding(
     agentId: "main",
     boundBy: "test",
     boundAt: 1,
+    lastActivityAt: 1,
     webhookId: "wh-1",
     webhookToken: "tok-1",
     ...overrides,

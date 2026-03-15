@@ -74,7 +74,8 @@ function createFakeThreadBindingManager(initialBindings: FakeBinding[] = []) {
   );
 
   const manager = {
-    getSessionTtlMs: vi.fn(() => 24 * 60 * 60 * 1000),
+    getIdleTimeoutMs: vi.fn(() => 24 * 60 * 60 * 1000),
+    getMaxAgeMs: vi.fn(() => 0),
     getByThreadId: vi.fn((threadId: string) => byThread.get(threadId)),
     listBySessionKey: vi.fn((targetSessionKey: string) =>
       [...byThread.values()].filter((binding) => binding.targetSessionKey === targetSessionKey),
@@ -189,7 +190,7 @@ describe("/focus, /unfocus, /agents", () => {
         targetKind: "acp",
         targetSessionKey: "agent:codex-acp:session-1",
         introText:
-          "🤖 codex-acp session active (auto-unfocus in 24h). Messages here go directly to this session.",
+          "🤖 codex-acp session active (idle auto-unfocus after 24h inactivity). Messages here go directly to this session.",
       }),
     );
   });

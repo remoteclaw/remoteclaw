@@ -829,7 +829,8 @@ describe("dispatchTelegramMessage draft streaming", () => {
   it.each([undefined, null] as const)(
     "skips outbound send when final payload text is %s and has no media",
     async (emptyText) => {
-      setupDraftStreams({ answerMessageId: 999 });
+      const draftStream = createDraftStream(999);
+      createTelegramDraftStream.mockReturnValue(draftStream);
       dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ dispatcherOptions }) => {
         await dispatcherOptions.deliver(
           { text: emptyText as unknown as string },

@@ -6,6 +6,7 @@ import {
   Row,
   StringSelectMenu,
   TextDisplay,
+  type TopLevelComponents,
   type AutocompleteInteraction,
   type ButtonInteraction,
   type CommandInteraction,
@@ -14,13 +15,13 @@ import {
   type StringSelectMenuInteraction,
 } from "@buape/carbon";
 import { ApplicationCommandOptionType } from "discord-api-types/v10";
-import { resolveHumanDelayConfig } from "openclaw/plugin-sdk/agent-runtime";
-import { createChannelReplyPipeline } from "openclaw/plugin-sdk/channel-reply-pipeline";
-import { resolveCommandAuthorizedFromAuthorizers } from "openclaw/plugin-sdk/channel-runtime";
-import { resolveNativeCommandSessionTargets } from "openclaw/plugin-sdk/channel-runtime";
-import type { OpenClawConfig, loadConfig } from "openclaw/plugin-sdk/config-runtime";
-import { isDangerousNameMatchingEnabled } from "openclaw/plugin-sdk/config-runtime";
-import { resolveOpenProviderRuntimeGroupPolicy } from "openclaw/plugin-sdk/config-runtime";
+import { resolveHumanDelayConfig } from "remoteclaw/plugin-sdk/agent-runtime";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveNativeCommandSessionTargets } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { RemoteClawConfig, loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { isDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveOpenProviderRuntimeGroupPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   ensureConfiguredAcpRouteReady,
   resolveConfiguredAcpRoute,
@@ -279,6 +280,12 @@ function hasRenderableReplyPayload(payload: ReplyPayload): boolean {
     return true;
   }
   if (payload.mediaUrls?.some((entry) => entry.trim())) {
+    return true;
+  }
+  const discordData = payload.channelData?.discord as
+    | { components?: TopLevelComponents[] }
+    | undefined;
+  if (Array.isArray(discordData?.components) && discordData.components.length > 0) {
     return true;
   }
   return false;
@@ -1779,13 +1786,25 @@ async function deliverDiscordInteractionReply(params: {
   const { interaction, payload, textLimit, maxLinesPerMessage, preferFollowUp, chunkMode } = params;
   const mediaList = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
   const text = payload.text ?? "";
+  const discordData = payload.channelData?.discord as
+    | { components?: TopLevelComponents[] }
+    | undefined;
+  let firstMessageComponents =
+    Array.isArray(discordData?.components) && discordData.components.length > 0
+      ? discordData.components
+      : undefined;
 
   let hasReplied = false;
-  const sendMessage = async (content: string, files?: { name: string; data: Buffer }[]) => {
+  const sendMessage = async (
+    content: string,
+    files?: { name: string; data: Buffer }[],
+    components?: TopLevelComponents[],
+  ) => {
     const payload =
       files && files.length > 0
         ? {
             content,
+            ...(components ? { components } : {}),
             files: files.map((file) => {
               if (file.data instanceof Blob) {
                 return { name: file.name, data: file.data };
@@ -1794,15 +1813,20 @@ async function deliverDiscordInteractionReply(params: {
               return { name: file.name, data: new Blob([arrayBuffer]) };
             }),
           }
-        : { content };
+        : {
+            content,
+            ...(components ? { components } : {}),
+          };
     await safeDiscordInteractionCall("interaction send", async () => {
       if (!preferFollowUp && !hasReplied) {
         await interaction.reply(payload);
         hasReplied = true;
+        firstMessageComponents = undefined;
         return;
       }
       await interaction.followUp(payload);
       hasReplied = true;
+      firstMessageComponents = undefined;
     });
   };
 
@@ -1827,7 +1851,7 @@ async function deliverDiscordInteractionReply(params: {
       chunks.push(text);
     }
     const caption = chunks[0] ?? "";
-    await sendMessage(caption, media);
+    await sendMessage(caption, media, firstMessageComponents);
     for (const chunk of chunks.slice(1)) {
       if (!chunk.trim()) {
         continue;
@@ -1837,7 +1861,7 @@ async function deliverDiscordInteractionReply(params: {
     return;
   }
 
-  if (!text.trim()) {
+  if (!text.trim() && !firstMessageComponents) {
     return;
   }
   const chunks = chunkDiscordTextWithMode(text, {
@@ -1845,13 +1869,13 @@ async function deliverDiscordInteractionReply(params: {
     maxLines: maxLinesPerMessage,
     chunkMode,
   });
-  if (!chunks.length && text) {
+  if (!chunks.length && (text || firstMessageComponents)) {
     chunks.push(text);
   }
   for (const chunk of chunks) {
-    if (!chunk.trim()) {
+    if (!chunk.trim() && !firstMessageComponents) {
       continue;
     }
-    await sendMessage(chunk);
+    await sendMessage(chunk, undefined, firstMessageComponents);
   }
 }

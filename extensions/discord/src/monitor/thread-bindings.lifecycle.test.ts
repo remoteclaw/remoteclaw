@@ -7,6 +7,7 @@ import {
   setRuntimeConfigSnapshot,
   type RemoteClawConfig,
 } from "../../../../src/config/config.js";
+import { getSessionBindingService } from "../../../../src/infra/outbound/session-binding-service.js";
 
 const hoisted = vi.hoisted(() => {
   const sendMessageDiscord = vi.fn(async (_to: string, _text: string, _opts?: unknown) => ({}));
@@ -806,6 +807,57 @@ describe("thread binding lifecycle", () => {
     expect(usedTokenNew).toBe(true);
   });
 
+  it("binds current Discord DMs as direct conversation bindings", async () => {
+    createThreadBindingManager({
+      accountId: "default",
+      persist: false,
+      enableSweeper: false,
+      idleTimeoutMs: 24 * 60 * 60 * 1000,
+      maxAgeMs: 0,
+    });
+
+    hoisted.restGet.mockClear();
+    hoisted.restPost.mockClear();
+
+    const bound = await getSessionBindingService().bind({
+      targetSessionKey: "plugin-binding:openclaw-codex-app-server:dm",
+      targetKind: "session",
+      conversation: {
+        channel: "discord",
+        accountId: "default",
+        conversationId: "user:1177378744822943744",
+      },
+      placement: "current",
+      metadata: {
+        pluginBindingOwner: "plugin",
+        pluginId: "openclaw-codex-app-server",
+        pluginRoot: "/Users/huntharo/github/openclaw-app-server",
+      },
+    });
+
+    expect(bound).toMatchObject({
+      conversation: {
+        channel: "discord",
+        accountId: "default",
+        conversationId: "user:1177378744822943744",
+        parentConversationId: "user:1177378744822943744",
+      },
+    });
+    expect(
+      getSessionBindingService().resolveByConversation({
+        channel: "discord",
+        accountId: "default",
+        conversationId: "user:1177378744822943744",
+      }),
+    ).toMatchObject({
+      conversation: {
+        conversationId: "user:1177378744822943744",
+      },
+    });
+    expect(hoisted.restGet).not.toHaveBeenCalled();
+    expect(hoisted.restPost).not.toHaveBeenCalled();
+  });
+
   it("keeps overlapping thread ids isolated per account", async () => {
     const a = createThreadBindingManager({
       accountId: "a",
@@ -975,6 +1027,47 @@ describe("thread binding lifecycle", () => {
       threadId: "thread-acp-uncertain",
       targetKind: "acp",
       targetSessionKey: "agent:codex:acp:uncertain",
+    });
+  });
+
+  it("does not reconcile plugin-owned direct bindings as stale ACP sessions", async () => {
+    const manager = createThreadBindingManager({
+      accountId: "default",
+      persist: false,
+      enableSweeper: false,
+      idleTimeoutMs: 24 * 60 * 60 * 1000,
+      maxAgeMs: 0,
+    });
+
+    await manager.bindTarget({
+      threadId: "user:1177378744822943744",
+      channelId: "user:1177378744822943744",
+      targetKind: "acp",
+      targetSessionKey: "plugin-binding:openclaw-codex-app-server:dm",
+      agentId: "codex",
+      metadata: {
+        pluginBindingOwner: "plugin",
+        pluginId: "openclaw-codex-app-server",
+        pluginRoot: "/Users/huntharo/github/openclaw-app-server",
+      },
+    });
+
+    hoisted.readAcpSessionEntry.mockReturnValue(null);
+
+    const result = await reconcileAcpThreadBindingsOnStartup({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+    });
+
+    expect(result.checked).toBe(0);
+    expect(result.removed).toBe(0);
+    expect(result.staleSessionKeys).toEqual([]);
+    expect(manager.getByThreadId("user:1177378744822943744")).toMatchObject({
+      threadId: "user:1177378744822943744",
+      metadata: {
+        pluginBindingOwner: "plugin",
+        pluginId: "openclaw-codex-app-server",
+      },
     });
   });
 

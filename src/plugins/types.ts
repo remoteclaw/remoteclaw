@@ -1,4 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import type { TopLevelComponents } from "@buape/carbon";
+import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { StreamFn } from "@mariozechner/pi-agent-core";
+import type { Api, Model } from "@mariozechner/pi-ai";
+import type { ModelRegistry } from "@mariozechner/pi-coding-agent";
 import type { Command } from "commander";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import type { AuthProfileCredential } from "../auth/types.js";
@@ -169,7 +174,47 @@ export type PluginCommandContext = {
   accountId?: string;
   /** Thread/topic id if available */
   messageThreadId?: number;
+  requestConversationBinding: (
+    params?: PluginConversationBindingRequestParams,
+  ) => Promise<PluginConversationBindingRequestResult>;
+  detachConversationBinding: () => Promise<{ removed: boolean }>;
+  getCurrentConversationBinding: () => Promise<PluginConversationBinding | null>;
 };
+
+export type PluginConversationBindingRequestParams = {
+  summary?: string;
+  detachHint?: string;
+};
+
+export type PluginConversationBinding = {
+  bindingId: string;
+  pluginId: string;
+  pluginName?: string;
+  pluginRoot: string;
+  channel: string;
+  accountId: string;
+  conversationId: string;
+  parentConversationId?: string;
+  threadId?: string | number;
+  boundAt: number;
+  summary?: string;
+  detachHint?: string;
+};
+
+export type PluginConversationBindingRequestResult =
+  | {
+      status: "bound";
+      binding: PluginConversationBinding;
+    }
+  | {
+      status: "pending";
+      approvalId: string;
+      reply: ReplyPayload;
+    }
+  | {
+      status: "error";
+      message: string;
+    };
 
 /**
  * Result returned by a plugin command handler.
@@ -205,7 +250,115 @@ export type RemoteClawPluginCommandDefinition = {
   handler: PluginCommandHandler;
 };
 
-export type RemoteClawPluginHttpRouteHandler = (
+export type PluginInteractiveChannel = "telegram" | "discord";
+
+export type PluginInteractiveButtons = Array<
+  Array<{ text: string; callback_data: string; style?: "danger" | "success" | "primary" }>
+>;
+
+export type PluginInteractiveTelegramHandlerResult = {
+  handled?: boolean;
+} | void;
+
+export type PluginInteractiveTelegramHandlerContext = {
+  channel: "telegram";
+  accountId: string;
+  callbackId: string;
+  conversationId: string;
+  parentConversationId?: string;
+  senderId?: string;
+  senderUsername?: string;
+  threadId?: number;
+  isGroup: boolean;
+  isForum: boolean;
+  auth: {
+    isAuthorizedSender: boolean;
+  };
+  callback: {
+    data: string;
+    namespace: string;
+    payload: string;
+    messageId: number;
+    chatId: string;
+    messageText?: string;
+  };
+  respond: {
+    reply: (params: { text: string; buttons?: PluginInteractiveButtons }) => Promise<void>;
+    editMessage: (params: { text: string; buttons?: PluginInteractiveButtons }) => Promise<void>;
+    editButtons: (params: { buttons: PluginInteractiveButtons }) => Promise<void>;
+    clearButtons: () => Promise<void>;
+    deleteMessage: () => Promise<void>;
+  };
+  requestConversationBinding: (
+    params?: PluginConversationBindingRequestParams,
+  ) => Promise<PluginConversationBindingRequestResult>;
+  detachConversationBinding: () => Promise<{ removed: boolean }>;
+  getCurrentConversationBinding: () => Promise<PluginConversationBinding | null>;
+};
+
+export type PluginInteractiveDiscordHandlerResult = {
+  handled?: boolean;
+} | void;
+
+export type PluginInteractiveDiscordHandlerContext = {
+  channel: "discord";
+  accountId: string;
+  interactionId: string;
+  conversationId: string;
+  parentConversationId?: string;
+  guildId?: string;
+  senderId?: string;
+  senderUsername?: string;
+  auth: {
+    isAuthorizedSender: boolean;
+  };
+  interaction: {
+    kind: "button" | "select" | "modal";
+    data: string;
+    namespace: string;
+    payload: string;
+    messageId?: string;
+    values?: string[];
+    fields?: Array<{ id: string; name: string; values: string[] }>;
+  };
+  respond: {
+    acknowledge: () => Promise<void>;
+    reply: (params: { text: string; ephemeral?: boolean }) => Promise<void>;
+    followUp: (params: { text: string; ephemeral?: boolean }) => Promise<void>;
+    editMessage: (params: { text?: string; components?: TopLevelComponents[] }) => Promise<void>;
+    clearComponents: (params?: { text?: string }) => Promise<void>;
+  };
+  requestConversationBinding: (
+    params?: PluginConversationBindingRequestParams,
+  ) => Promise<PluginConversationBindingRequestResult>;
+  detachConversationBinding: () => Promise<{ removed: boolean }>;
+  getCurrentConversationBinding: () => Promise<PluginConversationBinding | null>;
+};
+
+export type PluginInteractiveTelegramHandlerRegistration = {
+  channel: "telegram";
+  namespace: string;
+  handler: (
+    ctx: PluginInteractiveTelegramHandlerContext,
+  ) => Promise<PluginInteractiveTelegramHandlerResult> | PluginInteractiveTelegramHandlerResult;
+};
+
+export type PluginInteractiveDiscordHandlerRegistration = {
+  channel: "discord";
+  namespace: string;
+  handler: (
+    ctx: PluginInteractiveDiscordHandlerContext,
+  ) => Promise<PluginInteractiveDiscordHandlerResult> | PluginInteractiveDiscordHandlerResult;
+};
+
+export type PluginInteractiveHandlerRegistration =
+  | PluginInteractiveTelegramHandlerRegistration
+  | PluginInteractiveDiscordHandlerRegistration;
+
+export type OpenClawPluginHttpRouteAuth = "gateway" | "plugin";
+export type OpenClawPluginHttpRouteMatch = "exact" | "prefix";
+
+export type OpenClawPluginHttpRouteHandler = (
   req: IncomingMessage,
   res: ServerResponse,
 ) => Promise<boolean | void> | boolean | void;
@@ -271,6 +424,7 @@ export type RemoteClawPluginApi = {
   version?: string;
   description?: string;
   source: string;
+  rootDir?: string;
   config: RemoteClawConfig;
   pluginConfig?: Record<string, unknown>;
   runtime: PluginRuntime;
@@ -287,8 +441,10 @@ export type RemoteClawPluginApi = {
   registerHttpRoute: (params: RemoteClawPluginHttpRouteParams) => void;
   registerChannel: (registration: RemoteClawPluginChannelRegistration | ChannelPlugin) => void;
   registerGatewayMethod: (method: string, handler: GatewayRequestHandler) => void;
-  registerCli: (registrar: RemoteClawPluginCliRegistrar, opts?: { commands?: string[] }) => void;
+  registerCli: (registrar: OpenClawPluginCliRegistrar, opts?: { commands?: string[] }) => void;
   registerService: (service: RemoteClawPluginService) => void;
+  registerProvider: (provider: ProviderPlugin) => void;
+  registerInteractiveHandler: (registration: PluginInteractiveHandlerRegistration) => void;
   /**
    * Register a custom command that bypasses the LLM agent.
    * Plugin commands are processed before built-in commands and before agent invocation.
@@ -321,6 +477,7 @@ export type PluginDiagnostic = {
 
 export type PluginHookName =
   | "before_reset"
+  | "inbound_claim"
   | "message_received"
   | "message_sending"
   | "message_sent"
@@ -334,11 +491,57 @@ export type PluginHookName =
   | "subagent_spawned"
   | "subagent_ended"
   | "gateway_start"
-  | "gateway_stop"
-  | "before_runtime_spawn"
-  | "after_runtime_exit"
-  | "session_resumed"
-  | "agent_end";
+  | "gateway_stop";
+
+export const PLUGIN_HOOK_NAMES = [
+  "before_model_resolve",
+  "before_prompt_build",
+  "before_agent_start",
+  "llm_input",
+  "llm_output",
+  "agent_end",
+  "before_compaction",
+  "after_compaction",
+  "before_reset",
+  "inbound_claim",
+  "message_received",
+  "message_sending",
+  "message_sent",
+  "before_tool_call",
+  "after_tool_call",
+  "tool_result_persist",
+  "before_message_write",
+  "session_start",
+  "session_end",
+  "subagent_spawning",
+  "subagent_delivery_target",
+  "subagent_spawned",
+  "subagent_ended",
+  "gateway_start",
+  "gateway_stop",
+] as const satisfies readonly PluginHookName[];
+
+type MissingPluginHookNames = Exclude<PluginHookName, (typeof PLUGIN_HOOK_NAMES)[number]>;
+type AssertAllPluginHookNamesListed = MissingPluginHookNames extends never ? true : never;
+const assertAllPluginHookNamesListed: AssertAllPluginHookNamesListed = true;
+void assertAllPluginHookNamesListed;
+
+const pluginHookNameSet = new Set<PluginHookName>(PLUGIN_HOOK_NAMES);
+
+export const isPluginHookName = (hookName: unknown): hookName is PluginHookName =>
+  typeof hookName === "string" && pluginHookNameSet.has(hookName as PluginHookName);
+
+export const PROMPT_INJECTION_HOOK_NAMES = [
+  "before_prompt_build",
+  "before_agent_start",
+] as const satisfies readonly PluginHookName[];
+
+export type PromptInjectionHookName = (typeof PROMPT_INJECTION_HOOK_NAMES)[number];
+
+const promptInjectionHookNameSet = new Set<PluginHookName>(PROMPT_INJECTION_HOOK_NAMES);
+
+export const isPromptInjectionHookName = (hookName: PluginHookName): boolean =>
+  promptInjectionHookNameSet.has(hookName);
 
 // Agent context shared across agent hooks
 export type PluginHookAgentContext = {
@@ -365,6 +568,37 @@ export type PluginHookMessageContext = {
   channelId: string;
   accountId?: string;
   conversationId?: string;
+};
+
+export type PluginHookInboundClaimContext = PluginHookMessageContext & {
+  parentConversationId?: string;
+  senderId?: string;
+  messageId?: string;
+};
+
+export type PluginHookInboundClaimEvent = {
+  content: string;
+  body?: string;
+  bodyForAgent?: string;
+  transcript?: string;
+  timestamp?: number;
+  channel: string;
+  accountId?: string;
+  conversationId?: string;
+  parentConversationId?: string;
+  senderId?: string;
+  senderName?: string;
+  senderUsername?: string;
+  threadId?: string | number;
+  messageId?: string;
+  isGroup: boolean;
+  commandAuthorized?: boolean;
+  wasMentioned?: boolean;
+  metadata?: Record<string, unknown>;
+};
+
+export type PluginHookInboundClaimResult = {
+  handled: boolean;
 };
 
 // message_received hook
@@ -636,6 +870,10 @@ export type PluginHookHandlerMap = {
     event: PluginHookBeforeResetEvent,
     ctx: PluginHookAgentContext,
   ) => Promise<void> | void;
+  inbound_claim: (
+    event: PluginHookInboundClaimEvent,
+    ctx: PluginHookInboundClaimContext,
+  ) => Promise<PluginHookInboundClaimResult | void> | PluginHookInboundClaimResult | void;
   message_received: (
     event: PluginHookMessageReceivedEvent,
     ctx: PluginHookMessageContext,

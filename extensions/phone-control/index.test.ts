@@ -51,6 +51,12 @@ function createCommandContext(args: string): PluginCommandContext {
     commandBody: `/phone ${args}`,
     args,
     config: {},
+    requestConversationBinding: async () => ({
+      status: "error",
+      message: "unsupported",
+    }),
+    detachConversationBinding: async () => ({ removed: false }),
+    getCurrentConversationBinding: async () => null,
   };
 }
 

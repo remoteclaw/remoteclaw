@@ -19,19 +19,13 @@ import {
 import {
   getSessionBindingService,
   type SessionBindingRecord,
-} from "remoteclaw/plugin-sdk/conversation-runtime";
-import { buildPairingReply } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { isPluginOwnedSessionBindingRecord } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { recordChannelActivity } from "remoteclaw/plugin-sdk/infra-runtime";
-import { enqueueSystemEvent } from "remoteclaw/plugin-sdk/infra-runtime";
-import {
-  recordPendingHistoryEntryIfEnabled,
-  type HistoryEntry,
-} from "remoteclaw/plugin-sdk/reply-history";
-import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
-import { logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import { getChildLogger } from "remoteclaw/plugin-sdk/runtime-env";
-import { logDebug } from "remoteclaw/plugin-sdk/text-runtime";
+} from "../../../../src/infra/outbound/session-binding-service.js";
+import { enqueueSystemEvent } from "../../../../src/infra/system-events.js";
+import { logDebug } from "../../../../src/logger.js";
+import { getChildLogger } from "../../../../src/logging.js";
+import { buildPairingReply } from "../../../../src/pairing/pairing-messages.js";
+import { isPluginOwnedSessionBindingRecord } from "../../../../src/plugins/conversation-binding.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../../src/routing/session-key.js";
 import { fetchPluralKitMessageInfo } from "../pluralkit.js";
 import { sendMessageDiscord } from "../send.js";
 import {
@@ -352,12 +346,13 @@ export async function preflightDiscordMessage(
     }),
     parentConversationId: earlyThreadParentId,
   });
+  const bindingConversationId = isDirectMessage ? `user:${author.id}` : messageChannelId;
   let threadBinding: SessionBindingRecord | undefined;
   threadBinding =
     getSessionBindingService().resolveByConversation({
       channel: "discord",
       accountId: params.accountId,
-      conversationId: messageChannelId,
+      conversationId: bindingConversationId,
       parentConversationId: earlyThreadParentId,
     }) ?? undefined;
   const configuredRoute =
@@ -386,7 +381,9 @@ export async function preflightDiscordMessage(
     logVerbose(`discord: drop bound-thread webhook echo message ${message.id}`);
     return null;
   }
-  const boundSessionKey = threadBinding?.targetSessionKey?.trim();
+  const boundSessionKey = isPluginOwnedSessionBindingRecord(threadBinding)
+    ? ""
+    : threadBinding?.targetSessionKey?.trim();
   const effectiveRoute = resolveDiscordEffectiveRoute({
     route,
     boundSessionKey,
@@ -394,7 +391,7 @@ export async function preflightDiscordMessage(
     matchedBy: "binding.channel",
   });
   const boundAgentId = boundSessionKey ? effectiveRoute.agentId : undefined;
-  const isBoundThreadSession = Boolean(boundSessionKey && earlyThreadChannel);
+  const isBoundThreadSession = Boolean(threadBinding && earlyThreadChannel);
   if (
     isBoundThreadBotSystemMessage({
       isBoundThreadSession,

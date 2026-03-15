@@ -35,6 +35,7 @@ export type TelegramThreadBindingRecord = {
   lastActivityAt: number;
   idleTimeoutMs?: number;
   maxAgeMs?: number;
+  metadata?: Record<string, unknown>;
 };
 
 type StoredTelegramBindingState = {
@@ -177,6 +178,7 @@ function toSessionBindingRecord(
         typeof record.maxAgeMs === "number"
           ? Math.max(0, Math.floor(record.maxAgeMs))
           : defaults.maxAgeMs,
+      ...record.metadata,
     },
   };
 }
@@ -218,6 +220,10 @@ function fromSessionBindingInput(params: {
         : existing?.boundBy,
     boundAt: now,
     lastActivityAt: now,
+    metadata: {
+      ...existing?.metadata,
+      ...metadata,
+    },
   };
 
   if (typeof metadata.idleTimeoutMs === "number" && Number.isFinite(metadata.idleTimeoutMs)) {
@@ -302,6 +308,9 @@ function loadBindingsFromDisk(accountId: string): TelegramThreadBindingRecord[] 
       }
       if (typeof entry?.boundBy === "string" && entry.boundBy.trim()) {
         record.boundBy = entry.boundBy.trim();
+      }
+      if (entry?.metadata && typeof entry.metadata === "object") {
+        record.metadata = { ...entry.metadata };
       }
       bindings.push(record);
     }
@@ -595,11 +604,7 @@ export function createTelegramThreadBindingManager(
         resolveBindingKey({ accountId, conversationId }),
         record,
       );
-      await enqueuePersistBindings({
-        accountId,
-        persist: manager.shouldPersistMutations(),
-        bindings: listBindingsForAccount(accountId),
-      });
+      await persistBindingsToDisk({ accountId, persist: manager.shouldPersistMutations() });
       logVerbose(
         `telegram: bound conversation ${conversationId} -> ${targetSessionKey} (${summarizeLifecycleForLog(
           record,
@@ -660,11 +665,7 @@ export function createTelegramThreadBindingManager(
           sendFarewell: false,
         });
         if (removed.length > 0) {
-          await enqueuePersistBindings({
-            accountId,
-            persist: manager.shouldPersistMutations(),
-            bindings: listBindingsForAccount(accountId),
-          });
+          await persistBindingsToDisk({ accountId, persist: manager.shouldPersistMutations() });
         }
         return removed.map((entry) =>
           toSessionBindingRecord(entry, {
@@ -686,11 +687,7 @@ export function createTelegramThreadBindingManager(
         sendFarewell: false,
       });
       if (removed) {
-        await enqueuePersistBindings({
-          accountId,
-          persist: manager.shouldPersistMutations(),
-          bindings: listBindingsForAccount(accountId),
-        });
+        await persistBindingsToDisk({ accountId, persist: manager.shouldPersistMutations() });
       }
       return removed
         ? [

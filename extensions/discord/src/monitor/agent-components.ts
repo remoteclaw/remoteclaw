@@ -13,26 +13,48 @@ import {
   type ModalInteraction,
   type RoleSelectMenuInteraction,
   type StringSelectMenuInteraction,
+  type TopLevelComponents,
   type UserSelectMenuInteraction,
 } from "@buape/carbon";
 import type { APIStringSelectComponent } from "discord-api-types/v10";
 import { ButtonStyle, ChannelType } from "discord-api-types/v10";
-import { resolveHumanDelayConfig } from "openclaw/plugin-sdk/agent-runtime";
-import { createChannelReplyPipeline } from "openclaw/plugin-sdk/channel-reply-pipeline";
-import { recordInboundSession } from "openclaw/plugin-sdk/channel-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
-import { isDangerousNameMatchingEnabled } from "openclaw/plugin-sdk/config-runtime";
-import { resolveMarkdownTableMode } from "openclaw/plugin-sdk/config-runtime";
-import { readSessionUpdatedAt, resolveStorePath } from "openclaw/plugin-sdk/config-runtime";
-import type { DiscordAccountConfig } from "openclaw/plugin-sdk/config-runtime";
+import { resolveHumanDelayConfig } from "remoteclaw/plugin-sdk/agent-runtime";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+import { recordInboundSession } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { isDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { readSessionUpdatedAt, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
+import type { DiscordAccountConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import {
+  formatInboundEnvelope,
+  resolveEnvelopeFormatOptions,
+} from "../../../../src/auto-reply/envelope.js";
+import { finalizeInboundContext } from "../../../../src/auto-reply/reply/inbound-context.js";
+import { dispatchReplyWithBufferedBlockDispatcher } from "../../../../src/auto-reply/reply/provider-dispatcher.js";
+import { createReplyReferencePlanner } from "../../../../src/auto-reply/reply/reply-reference.js";
+import { resolveCommandAuthorizedFromAuthorizers } from "../../../../src/channels/command-gating.js";
+import { createReplyPrefixOptions } from "../../../../src/channels/reply-prefix.js";
+import { recordInboundSession } from "../../../../src/channels/session.js";
+import type { RemoteClawConfig } from "../../../../src/config/config.js";
+import { isDangerousNameMatchingEnabled } from "../../../../src/config/dangerous-name-matching.js";
+import { resolveMarkdownTableMode } from "../../../../src/config/markdown-tables.js";
+import { readSessionUpdatedAt, resolveStorePath } from "../../../../src/config/sessions.js";
+import type { DiscordAccountConfig } from "../../../../src/config/types.discord.js";
+import { logVerbose } from "../../../../src/globals.js";
+import { enqueueSystemEvent } from "../../../../src/infra/system-events.js";
+import { logDebug, logError } from "../../../../src/logger.js";
+import { getAgentScopedMediaLocalRoots } from "../../../../src/media/local-roots.js";
+import { issuePairingChallenge } from "../../../../src/pairing/pairing-challenge.js";
+import { upsertChannelPairingRequest } from "../../../../src/pairing/pairing-store.js";
 import {
   buildPluginBindingResolvedText,
   parsePluginBindingApprovalCustomId,
   resolvePluginConversationBindingApproval,
-} from "remoteclaw/plugin-sdk/conversation-runtime";
-import { recordInboundSession } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { enqueueSystemEvent } from "remoteclaw/plugin-sdk/infra-runtime";
-import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
+} from "../../../../src/plugins/conversation-binding.js";
+import { dispatchPluginInteractiveHandler } from "../../../../src/plugins/interactive.js";
+import { resolveAgentRoute } from "../../../../src/routing/resolve-route.js";
+import { createNonExitingRuntime, type RuntimeEnv } from "../../../../src/runtime.js";
 import {
   dispatchPluginInteractiveHandler,
   type PluginInteractiveDiscordHandlerContext,
@@ -770,6 +792,159 @@ function formatModalSubmissionText(
   return lines.join("\n");
 }
 
+function resolveDiscordInteractionId(interaction: AgentComponentInteraction): string {
+  const rawId =
+    interaction.rawData && typeof interaction.rawData === "object" && "id" in interaction.rawData
+      ? (interaction.rawData as { id?: unknown }).id
+      : undefined;
+  if (typeof rawId === "string" && rawId.trim()) {
+    return rawId.trim();
+  }
+  if (typeof rawId === "number" && Number.isFinite(rawId)) {
+    return String(rawId);
+  }
+  return `discord-interaction:${Date.now()}`;
+}
+
+async function dispatchPluginDiscordInteractiveEvent(params: {
+  ctx: AgentComponentContext;
+  interaction: AgentComponentInteraction;
+  interactionCtx: ComponentInteractionContext;
+  channelCtx: DiscordChannelContext;
+  isAuthorizedSender: boolean;
+  data: string;
+  kind: "button" | "select" | "modal";
+  values?: string[];
+  fields?: Array<{ id: string; name: string; values: string[] }>;
+  messageId?: string;
+}): Promise<"handled" | "unmatched"> {
+  const normalizedConversationId =
+    params.interactionCtx.rawGuildId || params.channelCtx.channelType === ChannelType.GroupDM
+      ? `channel:${params.interactionCtx.channelId}`
+      : `user:${params.interactionCtx.userId}`;
+  let responded = false;
+  const respond = {
+    acknowledge: async () => {
+      responded = true;
+      await params.interaction.acknowledge();
+    },
+    reply: async ({ text, ephemeral = true }: { text: string; ephemeral?: boolean }) => {
+      responded = true;
+      await params.interaction.reply({
+        content: text,
+        ephemeral,
+      });
+    },
+    followUp: async ({ text, ephemeral = true }: { text: string; ephemeral?: boolean }) => {
+      responded = true;
+      await params.interaction.followUp({
+        content: text,
+        ephemeral,
+      });
+    },
+    editMessage: async ({
+      text,
+      components,
+    }: {
+      text?: string;
+      components?: TopLevelComponents[];
+    }) => {
+      if (!("update" in params.interaction) || typeof params.interaction.update !== "function") {
+        throw new Error("Discord interaction cannot update the source message");
+      }
+      responded = true;
+      await params.interaction.update({
+        ...(text !== undefined ? { content: text } : {}),
+        ...(components !== undefined ? { components } : {}),
+      });
+    },
+    clearComponents: async (input?: { text?: string }) => {
+      if (!("update" in params.interaction) || typeof params.interaction.update !== "function") {
+        throw new Error("Discord interaction cannot clear components on the source message");
+      }
+      responded = true;
+      await params.interaction.update({
+        ...(input?.text !== undefined ? { content: input.text } : {}),
+        components: [],
+      });
+    },
+  };
+  const pluginBindingApproval = parsePluginBindingApprovalCustomId(params.data);
+  if (pluginBindingApproval) {
+    const resolved = await resolvePluginConversationBindingApproval({
+      approvalId: pluginBindingApproval.approvalId,
+      decision: pluginBindingApproval.decision,
+      senderId: params.interactionCtx.userId,
+    });
+    let cleared = false;
+    try {
+      await respond.clearComponents();
+      cleared = true;
+    } catch {
+      try {
+        await respond.acknowledge();
+      } catch {
+        // Interaction may already be acknowledged; continue with best-effort follow-up.
+      }
+    }
+    try {
+      await respond.followUp({
+        text: buildPluginBindingResolvedText(resolved),
+        ephemeral: true,
+      });
+    } catch (err) {
+      logError(`discord plugin binding approval: failed to follow up: ${String(err)}`);
+      if (!cleared) {
+        try {
+          await respond.reply({
+            text: buildPluginBindingResolvedText(resolved),
+            ephemeral: true,
+          });
+        } catch {
+          // Interaction may no longer accept a direct reply.
+        }
+      }
+    }
+    return "handled";
+  }
+  const dispatched = await dispatchPluginInteractiveHandler({
+    channel: "discord",
+    data: params.data,
+    interactionId: resolveDiscordInteractionId(params.interaction),
+    ctx: {
+      accountId: params.ctx.accountId,
+      interactionId: resolveDiscordInteractionId(params.interaction),
+      conversationId: normalizedConversationId,
+      parentConversationId: params.channelCtx.parentId,
+      guildId: params.interactionCtx.rawGuildId,
+      senderId: params.interactionCtx.userId,
+      senderUsername: params.interactionCtx.username,
+      auth: { isAuthorizedSender: params.isAuthorizedSender },
+      interaction: {
+        kind: params.kind,
+        messageId: params.messageId,
+        values: params.values,
+        fields: params.fields,
+      },
+    },
+    respond,
+  });
+  if (!dispatched.matched) {
+    return "unmatched";
+  }
+  if (dispatched.handled) {
+    if (!responded) {
+      try {
+        await respond.acknowledge();
+      } catch {
+        // Interaction may have expired after the handler finished.
+      }
+    }
+    return "handled";
+  }
+  return "unmatched";
+}
+
 function resolveComponentCommandAuthorized(params: {
   ctx: AgentComponentContext;
   interactionCtx: ComponentInteractionContext;
@@ -1101,6 +1276,17 @@ async function handleDiscordComponentEvent(params: {
     guildEntries: params.ctx.guildEntries,
   });
   const channelCtx = resolveDiscordChannelContext(params.interaction);
+  const allowNameMatching = isDangerousNameMatchingEnabled(params.ctx.discordConfig);
+  const channelConfig = resolveDiscordChannelConfigWithFallback({
+    guildInfo,
+    channelId,
+    channelName: channelCtx.channelName,
+    channelSlug: channelCtx.channelSlug,
+    parentId: channelCtx.parentId,
+    parentName: channelCtx.parentName,
+    parentSlug: channelCtx.parentSlug,
+    scope: channelCtx.isThread ? "thread" : "channel",
+  });
   const unauthorizedReply = `You are not authorized to use this ${params.componentLabel}.`;
   const memberAllowed = await ensureGuildComponentMemberAllowed({
     interaction: params.interaction,
@@ -1113,7 +1299,7 @@ async function handleDiscordComponentEvent(params: {
     replyOpts,
     componentLabel: params.componentLabel,
     unauthorizedReply,
-    allowNameMatching: isDangerousNameMatchingEnabled(params.ctx.discordConfig),
+    allowNameMatching,
   });
   if (!memberAllowed) {
     return;
@@ -1126,11 +1312,18 @@ async function handleDiscordComponentEvent(params: {
     replyOpts,
     componentLabel: params.componentLabel,
     unauthorizedReply,
-    allowNameMatching: isDangerousNameMatchingEnabled(params.ctx.discordConfig),
+    allowNameMatching,
   });
   if (!componentAllowed) {
     return;
   }
+  const commandAuthorized = resolveComponentCommandAuthorized({
+    ctx: params.ctx,
+    interactionCtx,
+    channelConfig,
+    guildInfo,
+    allowNameMatching,
+  });
 
   const consumed = resolveDiscordComponentEntry({
     id: parsed.componentId,
@@ -1161,6 +1354,22 @@ async function handleDiscordComponentEvent(params: {
   }
 
   const values = params.values ? mapSelectValues(consumed, params.values) : undefined;
+  if (consumed.callbackData) {
+    const pluginDispatch = await dispatchPluginDiscordInteractiveEvent({
+      ctx: params.ctx,
+      interaction: params.interaction,
+      interactionCtx,
+      channelCtx,
+      isAuthorizedSender: commandAuthorized,
+      data: consumed.callbackData,
+      kind: consumed.kind === "select" ? "select" : "button",
+      values,
+      messageId: consumed.messageId ?? params.interaction.message?.id,
+    });
+    if (pluginDispatch === "handled") {
+      return;
+    }
+  }
   const eventText = formatDiscordComponentEventText({
     kind: consumed.kind === "select" ? "select" : "button",
     label: consumed.label,
@@ -1705,6 +1914,17 @@ class DiscordComponentModal extends Modal {
       guildEntries: this.ctx.guildEntries,
     });
     const channelCtx = resolveDiscordChannelContext(interaction);
+    const allowNameMatching = isDangerousNameMatchingEnabled(this.ctx.discordConfig);
+    const channelConfig = resolveDiscordChannelConfigWithFallback({
+      guildInfo,
+      channelId,
+      channelName: channelCtx.channelName,
+      channelSlug: channelCtx.channelSlug,
+      parentId: channelCtx.parentId,
+      parentName: channelCtx.parentName,
+      parentSlug: channelCtx.parentSlug,
+      scope: channelCtx.isThread ? "thread" : "channel",
+    });
     const memberAllowed = await ensureGuildComponentMemberAllowed({
       interaction,
       guildInfo,
@@ -1716,11 +1936,36 @@ class DiscordComponentModal extends Modal {
       replyOpts,
       componentLabel: "form",
       unauthorizedReply: "You are not authorized to use this form.",
-      allowNameMatching: isDangerousNameMatchingEnabled(this.ctx.discordConfig),
+      allowNameMatching,
     });
     if (!memberAllowed) {
       return;
     }
+
+    const modalAllowed = await ensureComponentUserAllowed({
+      entry: {
+        id: modalEntry.id,
+        kind: "button",
+        label: modalEntry.title,
+        allowedUsers: modalEntry.allowedUsers,
+      },
+      interaction,
+      user,
+      replyOpts,
+      componentLabel: "form",
+      unauthorizedReply: "You are not authorized to use this form.",
+      allowNameMatching,
+    });
+    if (!modalAllowed) {
+      return;
+    }
+    const commandAuthorized = resolveComponentCommandAuthorized({
+      ctx: this.ctx,
+      interactionCtx,
+      channelConfig,
+      guildInfo,
+      allowNameMatching,
+    });
 
     const consumed = resolveDiscordModalEntry({
       id: modalId,
@@ -1736,6 +1981,28 @@ class DiscordComponentModal extends Modal {
         // Interaction may have expired
       }
       return;
+    }
+
+    if (consumed.callbackData) {
+      const fields = consumed.fields.map((field) => ({
+        id: field.id,
+        name: field.name,
+        values: resolveModalFieldValues(field, interaction),
+      }));
+      const pluginDispatch = await dispatchPluginDiscordInteractiveEvent({
+        ctx: this.ctx,
+        interaction,
+        interactionCtx,
+        channelCtx,
+        isAuthorizedSender: commandAuthorized,
+        data: consumed.callbackData,
+        kind: "modal",
+        fields,
+        messageId: consumed.messageId,
+      });
+      if (pluginDispatch === "handled") {
+        return;
+      }
     }
 
     try {

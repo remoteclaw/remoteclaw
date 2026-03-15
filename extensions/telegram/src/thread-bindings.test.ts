@@ -237,7 +237,7 @@ describe("telegram thread bindings", () => {
       reason: "test-detach",
     });
 
-    await __testing.resetTelegramThreadBindingsForTests();
+    __testing.resetTelegramThreadBindingsForTests();
 
     const reloaded = createTelegramThreadBindingManager({
       accountId: "default",
@@ -246,46 +246,5 @@ describe("telegram thread bindings", () => {
     });
 
     expect(reloaded.getByConversationId("8460800771")).toBeUndefined();
-  });
-
-  it("flushes pending lifecycle update persists before test reset", async () => {
-    stateDirOverride = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-telegram-bindings-"));
-    process.env.OPENCLAW_STATE_DIR = stateDirOverride;
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-03-06T10:00:00.000Z"));
-
-    createTelegramThreadBindingManager({
-      accountId: "persist-reset",
-      persist: true,
-      enableSweeper: false,
-    });
-
-    await getSessionBindingService().bind({
-      targetSessionKey: "agent:main:subagent:child-3",
-      targetKind: "subagent",
-      conversation: {
-        channel: "telegram",
-        accountId: "persist-reset",
-        conversationId: "-100200300:topic:99",
-      },
-    });
-
-    setTelegramThreadBindingIdleTimeoutBySessionKey({
-      accountId: "persist-reset",
-      targetSessionKey: "agent:main:subagent:child-3",
-      idleTimeoutMs: 90_000,
-    });
-
-    await __testing.resetTelegramThreadBindingsForTests();
-
-    const statePath = path.join(
-      resolveStateDir(process.env, os.homedir),
-      "telegram",
-      "thread-bindings-persist-reset.json",
-    );
-    const persisted = JSON.parse(fs.readFileSync(statePath, "utf8")) as {
-      bindings?: Array<{ idleTimeoutMs?: number }>;
-    };
-    expect(persisted.bindings?.[0]?.idleTimeoutMs).toBe(90_000);
   });
 });

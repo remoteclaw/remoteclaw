@@ -16,6 +16,7 @@ export type UiSettings = {
   theme: ThemeMode;
   chatFocusMode: boolean;
   chatShowThinking: boolean;
+  chatShowToolCalls: boolean;
   splitRatio: number; // Sidebar split ratio (0.4 to 0.7, default 0.6)
   navCollapsed: boolean; // Collapsible sidebar state
   navGroupsCollapsed: Record<string, boolean>; // Which nav groups are collapsed
@@ -109,6 +110,7 @@ export function loadSettings(): UiSettings {
     theme: "system",
     chatFocusMode: false,
     chatShowThinking: true,
+    chatShowToolCalls: true,
     splitRatio: 0.6,
     navCollapsed: false,
     navGroupsCollapsed: {},
@@ -150,6 +152,10 @@ export function loadSettings(): UiSettings {
         typeof parsed.chatShowThinking === "boolean"
           ? parsed.chatShowThinking
           : defaults.chatShowThinking,
+      chatShowToolCalls:
+        typeof parsed.chatShowToolCalls === "boolean"
+          ? parsed.chatShowToolCalls
+          : defaults.chatShowToolCalls,
       splitRatio:
         typeof parsed.splitRatio === "number" &&
         parsed.splitRatio >= 0.4 &&
@@ -186,6 +192,7 @@ function persistSettings(next: UiSettings) {
     theme: next.theme,
     chatFocusMode: next.chatFocusMode,
     chatShowThinking: next.chatShowThinking,
+    chatShowToolCalls: next.chatShowToolCalls,
     splitRatio: next.splitRatio,
     navCollapsed: next.navCollapsed,
     navGroupsCollapsed: next.navGroupsCollapsed,

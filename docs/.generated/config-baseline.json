@@ -1566,7 +1566,7 @@
       "deprecated": false,
       "sensitive": false,
       "tags": ["automation"],
-      "help": "Delivery target (\"last\", \"none\", or a channel id). Known channels: telegram, whatsapp, discord, irc, googlechat, slack, signal, imessage, line, zalouser, zalo, tlon, feishu, nextcloud-talk, msteams, bluebubbles, synology-chat, mattermost, twitch, matrix, nostr.",
+      "help": "Delivery target (\"last\", \"none\", or a channel id). Known channels: telegram, whatsapp, discord, irc, googlechat, slack, signal, imessage, line, bluebubbles, feishu, matrix, mattermost, msteams, nextcloud-talk, nostr, synology-chat, tlon, twitch, zalo, zalouser.",
       "hasChildren": false
     },
     {
@@ -3739,7 +3739,7 @@
       "deprecated": false,
       "sensitive": false,
       "tags": ["automation"],
-      "help": "Delivery target (\"last\", \"none\", or a channel id). Known channels: telegram, whatsapp, discord, irc, googlechat, slack, signal, imessage, line, zalouser, zalo, tlon, feishu, nextcloud-talk, msteams, bluebubbles, synology-chat, mattermost, twitch, matrix, nostr.",
+      "help": "Delivery target (\"last\", \"none\", or a channel id). Known channels: telegram, whatsapp, discord, irc, googlechat, slack, signal, imessage, line, bluebubbles, feishu, matrix, mattermost, msteams, nextcloud-talk, nostr, synology-chat, tlon, twitch, zalo, zalouser.",
       "hasChildren": false
     },
     {
@@ -13420,7 +13420,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Feishu",
-      "help": "飞书/Lark enterprise messaging with doc/wiki/drive tools.",
+      "help": "飞书/Lark enterprise messaging.",
       "hasChildren": true
     },
     {
@@ -15261,7 +15261,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Google Chat",
-      "help": "Google Workspace Chat app via HTTP webhooks.",
+      "help": "Google Workspace Chat app with HTTP webhook.",
       "hasChildren": true
     },
     {
@@ -19817,7 +19817,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Matrix",
-      "help": "open protocol; install the plugin to enable.",
+      "help": "open protocol; configure a homeserver + access token.",
       "hasChildren": true
     },
     {
@@ -23602,7 +23602,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Nostr",
-      "help": "Decentralized protocol; encrypted DMs via NIP-04.",
+      "help": "Decentralized DMs via Nostr relays (NIP-04)",
       "hasChildren": true
     },
     {
@@ -27861,7 +27861,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Synology Chat",
-      "help": "Connect your Synology NAS Chat to OpenClaw with full agent capabilities.",
+      "help": "Connect your Synology NAS Chat to OpenClaw",
       "hasChildren": true
     },
     {
@@ -31508,7 +31508,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Tlon",
-      "help": "decentralized messaging on Urbit; install the plugin to enable.",
+      "help": "Decentralized messaging on Urbit",
       "hasChildren": true
     },
     {

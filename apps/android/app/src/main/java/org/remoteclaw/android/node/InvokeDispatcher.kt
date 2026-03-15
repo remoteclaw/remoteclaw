@@ -1,23 +1,36 @@
 package org.remoteclaw.android.node
 
 import org.remoteclaw.android.gateway.GatewaySession
+import org.remoteclaw.android.protocol.RemoteClawCalendarCommand
 import org.remoteclaw.android.protocol.RemoteClawCanvasA2UICommand
 import org.remoteclaw.android.protocol.RemoteClawCanvasCommand
 import org.remoteclaw.android.protocol.RemoteClawCameraCommand
+import org.remoteclaw.android.protocol.RemoteClawContactsCommand
+import org.remoteclaw.android.protocol.RemoteClawDeviceCommand
 import org.remoteclaw.android.protocol.RemoteClawLocationCommand
+import org.remoteclaw.android.protocol.RemoteClawMotionCommand
 import org.remoteclaw.android.protocol.RemoteClawNotificationsCommand
+import org.remoteclaw.android.protocol.RemoteClawPhotosCommand
+import org.remoteclaw.android.protocol.RemoteClawScreenCommand
 import org.remoteclaw.android.protocol.RemoteClawSmsCommand
+import org.remoteclaw.android.protocol.RemoteClawSystemCommand
 
 class InvokeDispatcher(
   private val canvas: CanvasController,
   private val cameraHandler: CameraHandler,
   private val locationHandler: LocationHandler,
+  private val deviceHandler: DeviceHandler,
   private val notificationsHandler: NotificationsHandler,
-
-
+  private val systemHandler: SystemHandler,
+  private val photosHandler: PhotosHandler,
+  private val contactsHandler: ContactsHandler,
+  private val calendarHandler: CalendarHandler,
+  private val motionHandler: MotionHandler,
+  private val screenHandler: ScreenHandler,
   private val smsHandler: SmsHandler,
   private val a2uiHandler: A2UIHandler,
   private val debugHandler: DebugHandler,
+  private val appUpdateHandler: AppUpdateHandler,
   private val isForeground: () -> Boolean,
   private val cameraEnabled: () -> Boolean,
   private val locationEnabled: () -> Boolean,
@@ -26,6 +39,8 @@ class InvokeDispatcher(
   private val refreshNodeCanvasCapability: suspend () -> Boolean,
   private val onCanvasA2uiPush: () -> Unit,
   private val onCanvasA2uiReset: () -> Unit,
+  private val motionActivityAvailable: () -> Boolean,
+  private val motionPedometerAvailable: () -> Boolean,
 ) {
   suspend fun handleInvoke(command: String, paramsJson: String?): GatewaySession.InvokeResult {
     val spec =
@@ -117,10 +132,36 @@ class InvokeDispatcher(
       // Location command
       RemoteClawLocationCommand.Get.rawValue -> locationHandler.handleLocationGet(paramsJson)
 
+      // Device commands
+      RemoteClawDeviceCommand.Status.rawValue -> deviceHandler.handleDeviceStatus(paramsJson)
+      RemoteClawDeviceCommand.Info.rawValue -> deviceHandler.handleDeviceInfo(paramsJson)
+      RemoteClawDeviceCommand.Permissions.rawValue -> deviceHandler.handleDevicePermissions(paramsJson)
+      RemoteClawDeviceCommand.Health.rawValue -> deviceHandler.handleDeviceHealth(paramsJson)
+
       // Notifications command
       RemoteClawNotificationsCommand.List.rawValue -> notificationsHandler.handleNotificationsList(paramsJson)
+      RemoteClawNotificationsCommand.Actions.rawValue -> notificationsHandler.handleNotificationsActions(paramsJson)
 
+      // System command
+      RemoteClawSystemCommand.Notify.rawValue -> systemHandler.handleSystemNotify(paramsJson)
 
+      // Photos command
+      RemoteClawPhotosCommand.Latest.rawValue -> photosHandler.handlePhotosLatest(paramsJson)
+
+      // Contacts command
+      RemoteClawContactsCommand.Search.rawValue -> contactsHandler.handleContactsSearch(paramsJson)
+      RemoteClawContactsCommand.Add.rawValue -> contactsHandler.handleContactsAdd(paramsJson)
+
+      // Calendar command
+      RemoteClawCalendarCommand.Events.rawValue -> calendarHandler.handleCalendarEvents(paramsJson)
+      RemoteClawCalendarCommand.Add.rawValue -> calendarHandler.handleCalendarAdd(paramsJson)
+
+      // Motion command
+      RemoteClawMotionCommand.Activity.rawValue -> motionHandler.handleMotionActivity(paramsJson)
+      RemoteClawMotionCommand.Pedometer.rawValue -> motionHandler.handleMotionPedometer(paramsJson)
+
+      // Screen command
+      RemoteClawScreenCommand.Record.rawValue -> screenHandler.handleScreenRecord(paramsJson)
 
       // SMS command
       RemoteClawSmsCommand.Send.rawValue -> smsHandler.handleSmsSend(paramsJson)
@@ -128,6 +169,10 @@ class InvokeDispatcher(
       // Debug commands
       "debug.ed25519" -> debugHandler.handleEd25519()
       "debug.logs" -> debugHandler.handleLogs()
+
+      // App update
+      "app.update" -> appUpdateHandler.handleUpdate(paramsJson)
+
       else -> GatewaySession.InvokeResult.error(code = "INVALID_REQUEST", message = "INVALID_REQUEST: unknown command")
     }
   }
@@ -195,6 +240,24 @@ class InvokeDispatcher(
           GatewaySession.InvokeResult.error(
             code = "LOCATION_DISABLED",
             message = "LOCATION_DISABLED: enable Location in Settings",
+          )
+        }
+      InvokeCommandAvailability.MotionActivityAvailable ->
+        if (motionActivityAvailable()) {
+          null
+        } else {
+          GatewaySession.InvokeResult.error(
+            code = "MOTION_UNAVAILABLE",
+            message = "MOTION_UNAVAILABLE: accelerometer not available",
+          )
+        }
+      InvokeCommandAvailability.MotionPedometerAvailable ->
+        if (motionPedometerAvailable()) {
+          null
+        } else {
+          GatewaySession.InvokeResult.error(
+            code = "PEDOMETER_UNAVAILABLE",
+            message = "PEDOMETER_UNAVAILABLE: step counter not available",
           )
         }
       InvokeCommandAvailability.SmsAvailable ->

@@ -437,8 +437,21 @@ class TalkModeManager(
     playAssistant(text, playbackToken)
   }
 
-  suspend fun speakAssistantReply(text: String) {
+  fun setPlaybackEnabled(enabled: Boolean) {
+    playbackEnabled = enabled
+    if (!enabled) {
+      stopSpeaking()
+    }
+  }
+
+  suspend fun refreshConfig() {
     reloadConfig()
+  }
+
+  suspend fun speakAssistantReply(text: String) {
+    if (!playbackEnabled) return
+    ensureConfigLoaded()
+    if (!playbackEnabled) return
     playAssistant(text)
   }
 
@@ -1372,6 +1385,7 @@ class TalkModeManager(
       reloadConfig()
     }
   }
+
 
   private suspend fun reloadConfig() {
     val envVoice = System.getenv("ELEVENLABS_VOICE_ID")?.trim()

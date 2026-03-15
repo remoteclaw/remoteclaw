@@ -473,7 +473,7 @@ describe("Slack native command argument menus", () => {
       channelsConfig: undefined,
       slashCommand: {
         enabled: true,
-        name: "openclaw",
+        name: "remoteclaw",
         ephemeral: true,
         sessionPrefix: "slack:slash",
       },
@@ -491,7 +491,7 @@ describe("Slack native command argument menus", () => {
     // Registration should not throw despite app.options() throwing
     await registerCommands(ctx, account);
     expect(commands.size).toBeGreaterThan(0);
-    expect(actions.has("openclaw_cmdarg")).toBe(true);
+    expect(actions.has("remoteclaw_cmdarg")).toBe(true);
 
     // The /reportexternal command (140 choices) should fall back to static_select
     // instead of external_select since options registration failed

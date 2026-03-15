@@ -31,6 +31,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -438,8 +439,10 @@ class TalkModeManager(
   }
 
   fun setPlaybackEnabled(enabled: Boolean) {
+    if (playbackEnabled == enabled) return
     playbackEnabled = enabled
     if (!enabled) {
+      playbackGeneration += 1
       stopSpeaking()
     }
   }
@@ -450,9 +453,10 @@ class TalkModeManager(
 
   suspend fun speakAssistantReply(text: String) {
     if (!playbackEnabled) return
+    val playbackToken = playbackGeneration
     ensureConfigLoaded()
-    if (!playbackEnabled) return
-    playAssistant(text)
+    ensurePlaybackActive(playbackToken)
+    playAssistant(text, playbackToken)
   }
 
   private fun start() {
@@ -946,7 +950,6 @@ class TalkModeManager(
         Log.w(tag, "system voice failed: ${fallbackErr.message ?: fallbackErr::class.simpleName}")
       }
     } finally {
-
       _isSpeaking.value = false
     }
   }
@@ -1379,6 +1382,7 @@ class TalkModeManager(
     if (err is CancellationException) return true
     return !playbackEnabled || playbackToken != playbackGeneration.get()
   }
+
 
   private suspend fun ensureConfigLoaded() {
     if (!configLoaded) {

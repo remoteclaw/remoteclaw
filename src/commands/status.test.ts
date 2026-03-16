@@ -167,7 +167,7 @@ const mocks = vi.hoisted(() => ({
     configSnapshot: null,
   }),
   callGateway: vi.fn().mockResolvedValue({}),
-  listAgentsForGateway: vi.fn().mockReturnValue({
+  listGatewayAgentsBasic: vi.fn().mockReturnValue({
     defaultId: "main",
     mainKey: "agent:main:main",
     scope: "per-sender",
@@ -298,11 +298,18 @@ vi.mock("../gateway/call.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../gateway/call.js")>();
   return { ...actual, callGateway: mocks.callGateway };
 });
+vi.mock("../gateway/agent-list.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../gateway/agent-list.js")>();
+  return {
+    ...actual,
+    listGatewayAgentsBasic: mocks.listGatewayAgentsBasic,
+  };
+});
+
 vi.mock("../gateway/session-utils.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../gateway/session-utils.js")>();
   return {
     ...actual,
-    listAgentsForGateway: mocks.listAgentsForGateway,
   };
 });
 vi.mock("../infra/remoteclaw-root.js", () => ({
@@ -569,11 +576,11 @@ describe("statusCommand", () => {
   });
 
   it("includes sessions across agents in JSON output", async () => {
-    const originalAgents = mocks.listAgentsForGateway.getMockImplementation();
+    const originalAgents = mocks.listGatewayAgentsBasic.getMockImplementation();
     const originalResolveStorePath = mocks.resolveStorePath.getMockImplementation();
     const originalLoadSessionStore = mocks.loadSessionStore.getMockImplementation();
 
-    mocks.listAgentsForGateway.mockReturnValue({
+    mocks.listGatewayAgentsBasic.mockReturnValue({
       defaultId: "main",
       mainKey: "agent:main:main",
       scope: "per-sender",
@@ -612,7 +619,7 @@ describe("statusCommand", () => {
     ).toBe(true);
 
     if (originalAgents) {
-      mocks.listAgentsForGateway.mockImplementation(originalAgents);
+      mocks.listGatewayAgentsBasic.mockImplementation(originalAgents);
     }
     if (originalResolveStorePath) {
       mocks.resolveStorePath.mockImplementation(originalResolveStorePath);

@@ -25,8 +25,6 @@ import {
   type TopLevelComponents,
 } from "@buape/carbon";
 import { ButtonStyle, MessageFlags, TextInputStyle } from "discord-api-types/v10";
-import { reduceInteractiveReply } from "../../../src/channels/plugins/outbound/interactive.js";
-import type { InteractiveButtonStyle, InteractiveReply } from "../../../src/interactive/payload.js";
 
 // Some test-only module graphs partially mock `@buape/carbon` and can drop `Modal`.
 // Keep dynamic form definitions loadable instead of crashing unrelated suites.
@@ -217,52 +215,7 @@ export type DiscordComponentBuildResult = {
   entries: DiscordComponentEntry[];
   modals: DiscordModalEntry[];
 };
-
-function resolveDiscordInteractiveButtonStyle(
-  style?: InteractiveButtonStyle,
-): DiscordComponentButtonStyle | undefined {
-  return style ?? "secondary";
-}
-
-export function buildDiscordInteractiveComponents(
-  interactive?: InteractiveReply,
-): DiscordComponentMessageSpec | undefined {
-  const blocks = reduceInteractiveReply(
-    interactive,
-    [] as NonNullable<DiscordComponentMessageSpec["blocks"]>,
-    (state, block) => {
-      if (block.type === "buttons") {
-        if (block.buttons.length === 0) {
-          return state;
-        }
-        state.push({
-          type: "actions",
-          buttons: block.buttons.map((button) => ({
-            label: button.label,
-            style: resolveDiscordInteractiveButtonStyle(button.style),
-            callbackData: button.value,
-          })),
-        });
-        return state;
-      }
-      if (block.type === "select" && block.options.length > 0) {
-        state.push({
-          type: "actions",
-          select: {
-            type: "string",
-            placeholder: block.placeholder,
-            options: block.options.map((option) => ({
-              label: option.label,
-              value: option.value,
-            })),
-          },
-        });
-      }
-      return state;
-    },
-  );
-  return blocks.length > 0 ? { blocks } : undefined;
-}
+export { buildDiscordInteractiveComponents } from "./shared-interactive.js";
 
 const BLOCK_ALIASES = new Map<string, DiscordComponentBlock["type"]>([
   ["row", "actions"],

@@ -539,6 +539,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.telegram.retry.jitter": "Telegram Retry Jitter",
   "channels.telegram.network.autoSelectFamily": "Telegram autoSelectFamily",
   "channels.telegram.timeoutSeconds": "Telegram API Timeout (seconds)",
+  "channels.telegram.silentErrorReplies": "Telegram Silent Error Replies",
   "channels.telegram.capabilities.inlineButtons": "Telegram Inline Buttons",
   "channels.telegram.threadBindings.enabled": "Telegram Thread Binding Enabled",
   "channels.telegram.threadBindings.idleHours": "Telegram Thread Binding Idle Timeout (hours)",

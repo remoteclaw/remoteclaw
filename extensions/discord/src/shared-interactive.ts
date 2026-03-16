@@ -1,8 +1,5 @@
-import { reduceInteractiveReply } from "remoteclaw/plugin-sdk/interactive-runtime";
-import type {
-  InteractiveButtonStyle,
-  InteractiveReply,
-} from "remoteclaw/plugin-sdk/interactive-runtime";
+import { reduceInteractiveReply } from "../../../src/channels/plugins/outbound/interactive.js";
+import type { InteractiveButtonStyle, InteractiveReply } from "../../../src/interactive/payload.js";
 import type { DiscordComponentButtonStyle, DiscordComponentMessageSpec } from "./components.js";
 
 function resolveDiscordInteractiveButtonStyle(

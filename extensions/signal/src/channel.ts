@@ -2,9 +2,8 @@ import {
   buildAccountScopedDmSecurityPolicy,
   createScopedAccountConfigAccessors,
   collectAllowlistProviderRestrictSendersWarnings,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/compat";
 import {
-  applyAccountNameToChannelSection,
   buildBaseAccountStatusSnapshot,
   buildBaseChannelStatusSummary,
   buildChannelConfigSchema,
@@ -15,24 +14,30 @@ import {
   getChatChannelMeta,
   listSignalAccountIds,
   looksLikeSignalTargetId,
-  mapAllowFromEntries,
-  migrateBaseNameToDefaultAccount,
-  normalizeAccountId,
   normalizeE164,
   normalizeSignalMessagingTarget,
   PAIRING_APPROVED_MESSAGE,
   resolveChannelMediaMaxBytes,
   resolveDefaultSignalAccountId,
-  resolveOptionalConfigString,
   resolveSignalAccount,
   setAccountEnabledInConfigSection,
-  signalOnboardingAdapter,
   SignalConfigSchema,
   type ChannelMessageActionAdapter,
   type ChannelPlugin,
   type ResolvedSignalAccount,
 } from "remoteclaw/plugin-sdk/signal";
+import { resolveOutboundSendDep } from "../../../src/infra/outbound/send-deps.js";
+import type { SignalProbe } from "./probe.js";
 import { getSignalRuntime } from "./runtime.js";
+import { createSignalSetupWizardProxy, signalSetupAdapter } from "./setup-core.js";
+
+async function loadSignalChannelRuntime() {
+  return await import("./channel.runtime.js");
+}
+
+const signalSetupWizard = createSignalSetupWizardProxy(async () => ({
+  signalSetupWizard: (await loadSignalChannelRuntime()).signalSetupWizard,
+}));
 
 const signalMessageActions: ChannelMessageActionAdapter = {
   listActions: (ctx) => getSignalRuntime().channel.signal.messageActions?.listActions?.(ctx) ?? [],
@@ -47,10 +52,8 @@ const signalMessageActions: ChannelMessageActionAdapter = {
   },
 };
 
-const meta = getChatChannelMeta("signal");
-
 const signalConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: resolveSignalAccount,
+  resolveAccount: ({ cfg, accountId }) => resolveSignalAccount({ cfg, accountId }),
   resolveAllowFrom: (account: ResolvedSignalAccount) => account.config.allowFrom,
   formatAllowFrom: (allowFrom) =>
     allowFrom
@@ -61,22 +64,6 @@ const signalConfigAccessors = createScopedAccountConfigAccessors({
   resolveDefaultTo: (account: ResolvedSignalAccount) => account.config.defaultTo,
 });
 
-function buildSignalSetupPatch(input: {
-  signalNumber?: string;
-  cliPath?: string;
-  httpUrl?: string;
-  httpHost?: string;
-  httpPort?: string;
-}) {
-  return {
-    ...(input.signalNumber ? { account: input.signalNumber } : {}),
-    ...(input.cliPath ? { cliPath: input.cliPath } : {}),
-    ...(input.httpUrl ? { httpUrl: input.httpUrl } : {}),
-    ...(input.httpHost ? { httpHost: input.httpHost } : {}),
-    ...(input.httpPort ? { httpPort: Number(input.httpPort) } : {}),
-  };
-}
-
 type SignalSendFn = ReturnType<typeof getSignalRuntime>["channel"]["signal"]["sendMessageSignal"];
 
 async function sendSignalOutbound(params: {
@@ -86,9 +73,11 @@ async function sendSignalOutbound(params: {
   mediaUrl?: string;
   mediaLocalRoots?: readonly string[];
   accountId?: string;
-  deps?: { sendSignal?: SignalSendFn };
+  deps?: { [channelId: string]: unknown };
 }) {
-  const send = params.deps?.sendSignal ?? getSignalRuntime().channel.signal.sendMessageSignal;
+  const send =
+    resolveOutboundSendDep<SignalSendFn>(params.deps, "signal") ??
+    getSignalRuntime().channel.signal.sendMessageSignal;
   const maxBytes = resolveChannelMediaMaxBytes({
     cfg: params.cfg,
     resolveChannelLimitMb: ({ cfg, accountId }) =>
@@ -107,9 +96,9 @@ async function sendSignalOutbound(params: {
 export const signalPlugin: ChannelPlugin<ResolvedSignalAccount> = {
   id: "signal",
   meta: {
-    ...meta,
+    ...getChatChannelMeta("signal"),
   },
-  onboarding: signalOnboardingAdapter,
+  setupWizard: signalSetupWizard,
   pairing: {
     idLabel: "signalNumber",
     normalizeAllowEntry: (entry) => entry.replace(/^signal:/i, ""),
@@ -190,74 +179,7 @@ export const signalPlugin: ChannelPlugin<ResolvedSignalAccount> = {
       hint: "<E.164|uuid:ID|group:ID|signal:group:ID|signal:+E.164>",
     },
   },
-  setup: {
-    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-    applyAccountName: ({ cfg, accountId, name }) =>
-      applyAccountNameToChannelSection({
-        cfg,
-        channelKey: "signal",
-        accountId,
-        name,
-      }),
-    validateInput: ({ input }) => {
-      if (
-        !input.signalNumber &&
-        !input.httpUrl &&
-        !input.httpHost &&
-        !input.httpPort &&
-        !input.cliPath
-      ) {
-        return "Signal requires --signal-number or --http-url/--http-host/--http-port/--cli-path.";
-      }
-      return null;
-    },
-    applyAccountConfig: ({ cfg, accountId, input }) => {
-      const namedConfig = applyAccountNameToChannelSection({
-        cfg,
-        channelKey: "signal",
-        accountId,
-        name: input.name,
-      });
-      const next =
-        accountId !== DEFAULT_ACCOUNT_ID
-          ? migrateBaseNameToDefaultAccount({
-              cfg: namedConfig,
-              channelKey: "signal",
-            })
-          : namedConfig;
-      if (accountId === DEFAULT_ACCOUNT_ID) {
-        return {
-          ...next,
-          channels: {
-            ...next.channels,
-            signal: {
-              ...next.channels?.signal,
-              enabled: true,
-              ...buildSignalSetupPatch(input),
-            },
-          },
-        };
-      }
-      return {
-        ...next,
-        channels: {
-          ...next.channels,
-          signal: {
-            ...next.channels?.signal,
-            enabled: true,
-            accounts: {
-              ...next.channels?.signal?.accounts,
-              [accountId]: {
-                ...next.channels?.signal?.accounts?.[accountId],
-                enabled: true,
-                ...buildSignalSetupPatch(input),
-              },
-            },
-          },
-        },
-      };
-    },
-  },
+  setup: signalSetupAdapter,
   outbound: {
     deliveryMode: "direct",
     chunker: (text, limit) => getSignalRuntime().channel.text.chunkText(text, limit),
@@ -289,16 +211,20 @@ export const signalPlugin: ChannelPlugin<ResolvedSignalAccount> = {
   status: {
     defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),
     collectStatusIssues: (accounts) => collectStatusIssuesFromLastError("signal", accounts),
-    buildChannelSummary: ({ snapshot }) =>
-      buildBaseChannelStatusSummary(snapshot, {
-        baseUrl: snapshot.baseUrl ?? null,
-        probe: snapshot.probe,
-        lastProbeAt: snapshot.lastProbeAt ?? null,
-      }),
+    buildChannelSummary: ({ snapshot }) => ({
+      ...buildBaseChannelStatusSummary(snapshot),
+      baseUrl: snapshot.baseUrl ?? null,
+      probe: snapshot.probe,
+      lastProbeAt: snapshot.lastProbeAt ?? null,
+    }),
     probeAccount: async ({ account, timeoutMs }) => {
       const baseUrl = account.baseUrl;
       return await getSignalRuntime().channel.signal.probeSignal(baseUrl, timeoutMs);
     },
+    formatCapabilitiesProbe: ({ probe }) =>
+      (probe as SignalProbe | undefined)?.version
+        ? [{ text: `Signal daemon: ${(probe as SignalProbe).version}` }]
+        : [],
     buildAccountSnapshot: ({ account, runtime, probe }) => ({
       ...buildBaseAccountStatusSnapshot({ account, runtime, probe }),
       baseUrl: account.baseUrl,

@@ -250,6 +250,9 @@ describe("scanStatus", () => {
     await scanStatus({ json: true }, {} as never);
 
     expect(mocks.ensurePluginRegistryLoaded).toHaveBeenCalledWith({ scope: "channels" });
+    expect(mocks.probeGateway).toHaveBeenCalledWith(
+      expect.objectContaining({ detailLevel: "presence" }),
+    );
   });
 
   it("preloads channel plugins for status --json when channel auth is env-only", async () => {

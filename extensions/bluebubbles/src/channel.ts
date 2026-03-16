@@ -1,12 +1,23 @@
-import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
+import type { ChannelAccountSnapshot, ChannelPlugin } from "remoteclaw/plugin-sdk/bluebubbles";
 import {
-  createScopedAccountConfigAccessors,
-  createScopedChannelConfigBase,
-  createScopedDmSecurityResolver,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
-import { collectOpenGroupPolicyRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
-import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
+  buildChannelConfigSchema,
+  buildComputedAccountStatusSnapshot,
+  buildProbeChannelStatusSummary,
+  collectBlueBubblesStatusIssues,
+  DEFAULT_ACCOUNT_ID,
+  deleteAccountFromConfigSection,
+  PAIRING_APPROVED_MESSAGE,
+  resolveBlueBubblesGroupRequireMention,
+  resolveBlueBubblesGroupToolPolicy,
+  setAccountEnabledInConfigSection,
+} from "remoteclaw/plugin-sdk/bluebubbles";
+import {
+  buildAccountScopedDmSecurityPolicy,
+  collectOpenGroupPolicyRestrictSendersWarnings,
+  createAccountStatusSink,
+  formatNormalizedAllowFromEntries,
+  mapAllowFromEntries,
+} from "remoteclaw/plugin-sdk/compat";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,
@@ -14,21 +25,13 @@ import {
   resolveDefaultBlueBubblesAccountId,
 } from "./accounts.js";
 import { bluebubblesMessageActions } from "./actions.js";
-import { applyBlueBubblesConnectionConfig } from "./config-apply.js";
 import { BlueBubblesConfigSchema } from "./config-schema.js";
-import type { ChannelAccountSnapshot, ChannelPlugin } from "./runtime-api.js";
-import {
-  buildChannelConfigSchema,
-  buildComputedAccountStatusSnapshot,
-  buildProbeChannelStatusSummary,
-  collectBlueBubblesStatusIssues,
-  DEFAULT_ACCOUNT_ID,
-  PAIRING_APPROVED_MESSAGE,
-  resolveBlueBubblesGroupRequireMention,
-  resolveBlueBubblesGroupToolPolicy,
-} from "./runtime-api.js";
-import { blueBubblesSetupAdapter } from "./setup-core.js";
-import { blueBubblesSetupWizard } from "./setup-surface.js";
+import { sendBlueBubblesMedia } from "./media-send.js";
+import { resolveBlueBubblesMessageId } from "./monitor.js";
+import { monitorBlueBubblesProvider, resolveWebhookPathFromConfig } from "./monitor.js";
+import { probeBlueBubbles, type BlueBubblesProbe } from "./probe.js";
+import { sendMessageBlueBubbles } from "./send.js";
+import { blueBubblesSetupAdapter, blueBubblesSetupWizard } from "./setup-surface.js";
 import {
   extractHandleFromChatGuid,
   looksLikeBlueBubblesTargetId,
@@ -108,7 +111,7 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
   },
   reload: { configPrefixes: ["channels.bluebubbles"] },
   configSchema: buildChannelConfigSchema(BlueBubblesConfigSchema),
-  onboarding: blueBubblesOnboardingAdapter,
+  setupWizard: blueBubblesSetupWizard,
   config: {
     ...bluebubblesConfigBase,
     isConfigured: (account) => account.configured,
@@ -208,12 +211,15 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
       // Last resort: return display or target as-is
       return display?.trim() || target?.trim() || "";
     },
-    security: {
-      resolveDmPolicy: resolveBlueBubblesDmPolicy,
-      collectWarnings: projectAccountWarningCollector<
-        ResolvedBlueBubblesAccount,
-        { account: ResolvedBlueBubblesAccount }
-      >(collectBlueBubblesSecurityWarnings),
+  },
+  setup: blueBubblesSetupAdapter,
+  pairing: {
+    idLabel: "bluebubblesSenderId",
+    normalizeAllowEntry: (entry) => normalizeBlueBubblesHandle(entry.replace(/^bluebubbles:/i, "")),
+    notifyApproval: async ({ cfg, id }) => {
+      await sendMessageBlueBubbles(id, PAIRING_APPROVED_MESSAGE, {
+        cfg: cfg,
+      });
     },
   }),
   outbound: {

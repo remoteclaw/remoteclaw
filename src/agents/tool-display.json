@@ -25,6 +25,16 @@
     ]
   },
   "tools": {
+    "tool_call": {
+      "emoji": "🧰",
+      "title": "Tool Call",
+      "detailKeys": []
+    },
+    "tool_call_update": {
+      "emoji": "🧰",
+      "title": "Tool Call",
+      "detailKeys": []
+    },
     "attach": {
       "emoji": "📎",
       "title": "Attach",

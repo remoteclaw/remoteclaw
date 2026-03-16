@@ -49,8 +49,6 @@ const requiredPathGroups = [
   "dist/plugin-sdk/diffs.d.ts",
   "dist/plugin-sdk/feishu.js",
   "dist/plugin-sdk/feishu.d.ts",
-  "dist/plugin-sdk/google-gemini-cli-auth.js",
-  "dist/plugin-sdk/google-gemini-cli-auth.d.ts",
   "dist/plugin-sdk/googlechat.js",
   "dist/plugin-sdk/googlechat.d.ts",
   "dist/plugin-sdk/irc.js",

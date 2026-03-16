@@ -549,7 +549,7 @@ describe("backward compatibility: peer.kind dm → direct", () => {
 
 describe("backward compatibility: peer.kind group ↔ channel", () => {
   test("config group binding matches runtime channel scope", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         {
           agentId: "slack-group-agent",
@@ -571,7 +571,7 @@ describe("backward compatibility: peer.kind group ↔ channel", () => {
   });
 
   test("config channel binding matches runtime group scope", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         {
           agentId: "slack-channel-agent",
@@ -593,7 +593,7 @@ describe("backward compatibility: peer.kind group ↔ channel", () => {
   });
 
   test("group/channel compatibility does not match direct peer kind", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       bindings: [
         {
           agentId: "group-only-agent",

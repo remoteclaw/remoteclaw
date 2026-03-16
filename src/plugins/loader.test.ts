@@ -490,7 +490,7 @@ describe("loadRemoteClawPlugins", () => {
         filename: "index.js",
       });
 
-      const registry = loadOpenClawPlugins({
+      const registry = loadRemoteClawPlugins({
         cache: false,
         config: {
           plugins: {
@@ -502,9 +502,9 @@ describe("loadRemoteClawPlugins", () => {
         },
       });
 
-      const entries = registry.plugins.filter((entry) => entry.id === "feishu");
-      const loaded = entries.find((entry) => entry.status === "loaded");
-      const overridden = entries.find((entry) => entry.status === "disabled");
+      const entries = registry.plugins.filter((entry: { id: string }) => entry.id === "feishu");
+      const loaded = entries.find((entry: { status: string }) => entry.status === "loaded");
+      const overridden = entries.find((entry: { status: string }) => entry.status === "disabled");
       expect(loaded?.origin).toBe("bundled");
       expect(overridden?.origin).toBe("global");
       expect(overridden?.error).toContain("overridden by bundled plugin");

@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { saveSessionStore } from "../../config/sessions.js";
+import type { SessionEntry } from "../../config/sessions/types.js";
 import { formatZonedTimestamp } from "../../infra/format-time/format-datetime.ts";
 import { enqueueSystemEvent, resetSystemEventsForTest } from "../../infra/system-events.js";
 import { prependSystemEvents } from "./session-updates.js";
@@ -1245,7 +1246,7 @@ describe("initSessionState dmScope delivery migration", () => {
     });
     const cfg = {
       session: { store: storePath, dmScope: "per-channel-peer" },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -1291,7 +1292,7 @@ describe("initSessionState dmScope delivery migration", () => {
     });
     const cfg = {
       session: { store: storePath, dmScope: "per-channel-peer" },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     await initSessionState({
       ctx: {
@@ -1368,7 +1369,7 @@ describe("initSessionState internal channel routing preservation", () => {
         },
       },
     });
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -1408,7 +1409,7 @@ describe("initSessionState internal channel routing preservation", () => {
 
   it("keeps internal route when there is no persisted external fallback", async () => {
     const storePath = await createStorePath("no-external-fallback-");
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {

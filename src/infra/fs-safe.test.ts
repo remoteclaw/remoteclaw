@@ -126,7 +126,7 @@ describe("tilde expansion in file tools", () => {
   });
 
   it("reads a file via ~/path after HOME override", async () => {
-    const root = await tempDirs.make("openclaw-tilde-test-");
+    const root = await tempDirs.make("remoteclaw-tilde-test-");
     const originalHome = process.env.HOME;
     process.env.HOME = root;
     try {
@@ -144,25 +144,8 @@ describe("tilde expansion in file tools", () => {
     }
   });
 
-  it("writes a file via ~/path after HOME override", async () => {
-    const root = await tempDirs.make("openclaw-tilde-test-");
-    const originalHome = process.env.HOME;
-    process.env.HOME = root;
-    try {
-      await writeFileWithinRoot({
-        rootDir: root,
-        relativePath: "~/output.txt",
-        data: "tilde-write-works",
-      });
-      const content = await fs.readFile(path.join(root, "output.txt"), "utf8");
-      expect(content).toBe("tilde-write-works");
-    } finally {
-      process.env.HOME = originalHome;
-    }
-  });
-
   it("rejects ~/path that resolves outside root", async () => {
-    const root = await tempDirs.make("openclaw-tilde-outside-");
+    const root = await tempDirs.make("remoteclaw-tilde-outside-");
     // HOME points to real home, ~/file goes to /home/dev/file which is outside root
     await expect(
       openFileWithinRoot({

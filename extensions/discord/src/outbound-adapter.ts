@@ -6,6 +6,8 @@ import { getThreadBindingManager, type ThreadBindingRecord } from "./monitor/thr
 import { normalizeDiscordOutboundTarget } from "./normalize.js";
 import { sendMessageDiscord, sendPollDiscord, sendWebhookMessageDiscord } from "./send.js";
 
+export const DISCORD_TEXT_CHUNK_LIMIT = 2000;
+
 function resolveDiscordOutboundTarget(params: {
   to: string;
   threadId?: string | number | null;
@@ -74,7 +76,7 @@ async function maybeSendDiscordWebhookText(params: {
 export const discordOutbound: ChannelOutboundAdapter = {
   deliveryMode: "direct",
   chunker: null,
-  textChunkLimit: 2000,
+  textChunkLimit: DISCORD_TEXT_CHUNK_LIMIT,
   pollMaxOptions: 10,
   resolveTarget: ({ to }) => normalizeDiscordOutboundTarget(to),
   sendPayload: async (ctx) =>

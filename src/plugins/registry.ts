@@ -1,6 +1,5 @@
 import path from "node:path";
 import type { AnyAgentTool } from "../agents/tools/common.js";
-import type { ChannelDock } from "../channels/dock.js";
 import type { ChannelPlugin } from "../channels/plugins/types.js";
 import type {
   GatewayRequestHandler,
@@ -73,7 +72,6 @@ export type PluginHttpRouteRegistration = {
 export type PluginChannelRegistration = {
   pluginId: string;
   plugin: ChannelPlugin;
-  dock?: ChannelDock;
   source: string;
 };
 
@@ -431,7 +429,6 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     registry.channels.push({
       pluginId: record.id,
       plugin,
-      dock: normalized.dock,
       source: record.source,
     });
   };

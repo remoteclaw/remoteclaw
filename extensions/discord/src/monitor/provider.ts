@@ -31,27 +31,14 @@ import {
   resolveOpenProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "remoteclaw/plugin-sdk/config-runtime";
-import {
-  resolveThreadBindingIdleTimeoutMs,
-  resolveThreadBindingMaxAgeMs,
-  resolveThreadBindingsEnabled,
-} from "remoteclaw/plugin-sdk/conversation-runtime";
-import { createConnectedChannelStatusPatch } from "remoteclaw/plugin-sdk/gateway-runtime";
-import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
-import { getPluginCommandSpecs } from "remoteclaw/plugin-sdk/plugin-runtime";
-import type { HistoryEntry } from "remoteclaw/plugin-sdk/reply-history";
-import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
-import {
-  danger,
-  isVerbose,
-  logVerbose,
-  shouldLogVerbose,
-  warn,
-} from "remoteclaw/plugin-sdk/runtime-env";
-import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
-import { createNonExitingRuntime, type RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import { summarizeStringEntries } from "remoteclaw/plugin-sdk/text-runtime";
+} from "../../../../src/config/runtime-group-policy.js";
+import { createConnectedChannelStatusPatch } from "../../../../src/gateway/channel-status-patches.js";
+import { danger, isVerbose, logVerbose, shouldLogVerbose, warn } from "../../../../src/globals.js";
+import { formatErrorMessage } from "../../../../src/infra/errors.js";
+import { createSubsystemLogger } from "../../../../src/logging/subsystem.js";
+import { getPluginCommandSpecs } from "../../../../src/plugins/commands.js";
+import { createNonExitingRuntime, type RuntimeEnv } from "../../../../src/runtime.js";
+import { summarizeStringEntries } from "../../../../src/shared/string-sample.js";
 import { resolveDiscordAccount } from "../accounts.js";
 import { getDiscordGatewayEmitter } from "../monitor.gateway.js";
 import { fetchDiscordApplicationId } from "../probe.js";
@@ -367,6 +354,9 @@ function logDiscordStartupPhase(params: {
   gateway?: GatewayPlugin;
   details?: string;
 }) {
+  if (!isVerbose()) {
+    return;
+  }
   const elapsedMs = Math.max(0, Date.now() - params.startAt);
   const suffix = [params.details, formatDiscordStartupGatewayState(params.gateway)]
     .filter((value): value is string => Boolean(value))
@@ -777,6 +767,9 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     const lifecycleGateway = client.getPlugin<GatewayPlugin>("gateway");
     earlyGatewayEmitter = getDiscordGatewayEmitter(lifecycleGateway);
     onEarlyGatewayDebug = (msg: unknown) => {
+      if (!isVerbose()) {
+        return;
+      }
       runtime.log?.(
         `discord startup [${account.accountId}] gateway-debug ${Math.max(0, Date.now() - startupStartedAt)}ms ${String(msg)}`,
       );

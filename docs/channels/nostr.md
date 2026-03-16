@@ -1,7 +1,7 @@
 ---
-description: "Nostr DM channel via NIP-04 encrypted messages"
+summary: "Nostr DM channel via NIP-04 encrypted messages"
 read_when:
-  - You want RemoteClaw to receive DMs via Nostr
+  - You want OpenClaw to receive DMs via Nostr
   - You're setting up decentralized messaging
 title: "Nostr"
 ---
@@ -10,13 +10,13 @@ title: "Nostr"
 
 **Status:** Optional plugin (disabled by default).
 
-Nostr is a decentralized protocol for social networking. This channel enables RemoteClaw to receive and respond to encrypted direct messages (DMs) via NIP-04.
+Nostr is a decentralized protocol for social networking. This channel enables OpenClaw to receive and respond to encrypted direct messages (DMs) via NIP-04.
 
 ## Install (on demand)
 
 ### Onboarding (recommended)
 
-- The onboarding wizard (`remoteclaw onboard`) and `remoteclaw channels add` list optional channel plugins.
+- The setup wizard (`openclaw onboard`) and `openclaw channels add` list optional channel plugins.
 - Selecting Nostr prompts you to install the plugin on demand.
 
 Install defaults:
@@ -29,16 +29,25 @@ You can always override the choice in the prompt.
 ### Manual install
 
 ```bash
-remoteclaw plugins install @remoteclaw/nostr
+openclaw plugins install @openclaw/nostr
 ```
 
 Use a local checkout (dev workflows):
 
 ```bash
-remoteclaw plugins install --link <path-to-remoteclaw>/extensions/nostr
+openclaw plugins install --link <path-to-openclaw>/extensions/nostr
 ```
 
 Restart the Gateway after installing or enabling plugins.
+
+### Non-interactive setup
+
+```bash
+openclaw channels add --channel nostr --private-key "$NOSTR_PRIVATE_KEY"
+openclaw channels add --channel nostr --private-key "$NOSTR_PRIVATE_KEY" --relay-urls "wss://relay.damus.io,wss://relay.primal.net"
+```
+
+Use `--use-env` to keep `NOSTR_PRIVATE_KEY` in the environment instead of storing the key in config.
 
 ## Quick setup
 
@@ -51,13 +60,13 @@ nak key generate
 
 2. Add to config:
 
-```json5
+```json
 {
-  channels: {
-    nostr: {
-      privateKey: "${NOSTR_PRIVATE_KEY}",
-    },
-  },
+  "channels": {
+    "nostr": {
+      "privateKey": "${NOSTR_PRIVATE_KEY}"
+    }
+  }
 }
 ```
 
@@ -87,23 +96,23 @@ Profile data is published as a NIP-01 `kind:0` event. You can manage it from the
 
 Example:
 
-```json5
+```json
 {
-  channels: {
-    nostr: {
-      privateKey: "${NOSTR_PRIVATE_KEY}",
-      profile: {
-        name: "remoteclaw",
-        displayName: "RemoteClaw",
-        about: "Personal assistant DM bot",
-        picture: "https://example.com/avatar.png",
-        banner: "https://example.com/banner.png",
-        website: "https://example.com",
-        nip05: "remoteclaw@example.com",
-        lud16: "remoteclaw@example.com",
-      },
-    },
-  },
+  "channels": {
+    "nostr": {
+      "privateKey": "${NOSTR_PRIVATE_KEY}",
+      "profile": {
+        "name": "openclaw",
+        "displayName": "OpenClaw",
+        "about": "Personal assistant DM bot",
+        "picture": "https://example.com/avatar.png",
+        "banner": "https://example.com/banner.png",
+        "website": "https://example.com",
+        "nip05": "openclaw@example.com",
+        "lud16": "openclaw@example.com"
+      }
+    }
+  }
 }
 ```
 
@@ -123,15 +132,15 @@ Notes:
 
 ### Allowlist example
 
-```json5
+```json
 {
-  channels: {
-    nostr: {
-      privateKey: "${NOSTR_PRIVATE_KEY}",
-      dmPolicy: "allowlist",
-      allowFrom: ["npub1abc...", "npub1xyz..."],
-    },
-  },
+  "channels": {
+    "nostr": {
+      "privateKey": "${NOSTR_PRIVATE_KEY}",
+      "dmPolicy": "allowlist",
+      "allowFrom": ["npub1abc...", "npub1xyz..."]
+    }
+  }
 }
 ```
 
@@ -146,14 +155,14 @@ Accepted formats:
 
 Defaults: `relay.damus.io` and `nos.lol`.
 
-```json5
+```json
 {
-  channels: {
-    nostr: {
-      privateKey: "${NOSTR_PRIVATE_KEY}",
-      relays: ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nostr.wine"],
-    },
-  },
+  "channels": {
+    "nostr": {
+      "privateKey": "${NOSTR_PRIVATE_KEY}",
+      "relays": ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nostr.wine"]
+    }
+  }
 }
 ```
 
@@ -182,14 +191,14 @@ Tips:
 docker run -p 7777:7777 ghcr.io/hoytech/strfry
 ```
 
-```json5
+```json
 {
-  channels: {
-    nostr: {
-      privateKey: "${NOSTR_PRIVATE_KEY}",
-      relays: ["ws://localhost:7777"],
-    },
-  },
+  "channels": {
+    "nostr": {
+      "privateKey": "${NOSTR_PRIVATE_KEY}",
+      "relays": ["ws://localhost:7777"]
+    }
+  }
 }
 ```
 

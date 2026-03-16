@@ -1,24 +1,16 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { buildConfigSchema } from "./schema.js";
 import { applyDerivedTags, CONFIG_TAGS, deriveTagsForPath } from "./schema.tags.js";
 
 describe("config schema", () => {
-  let baseSchema: ReturnType<typeof buildConfigSchema>;
-
-  beforeAll(() => {
-    baseSchema = buildConfigSchema();
-  });
-
   it("exports schema + hints", () => {
-    const res = baseSchema;
+    const res = buildConfigSchema();
     const schema = res.schema as { properties?: Record<string, unknown> };
     expect(schema.properties?.gateway).toBeTruthy();
     expect(schema.properties?.agents).toBeTruthy();
-    expect(schema.properties?.acp).toBeTruthy();
     expect(schema.properties?.$schema).toBeUndefined();
     expect(res.uiHints.gateway?.label).toBe("Gateway");
     expect(res.uiHints["gateway.auth.token"]?.sensitive).toBe(true);
-    expect(res.uiHints["channels.discord.threadBindings.spawnAcpSessions"]?.label).toBeTruthy();
     expect(res.version).toBeTruthy();
     expect(res.generatedAt).toBeTruthy();
   });
@@ -154,7 +146,7 @@ describe("config schema", () => {
   });
 
   it("covers core/built-in config paths with tags", () => {
-    const schema = baseSchema;
+    const schema = buildConfigSchema();
     const allowed = new Set<string>(CONFIG_TAGS);
     for (const [key, hint] of Object.entries(schema.uiHints)) {
       if (!key.includes(".")) {

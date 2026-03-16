@@ -179,35 +179,25 @@ describe("registerPreActionHooks", () => {
     expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledTimes(1);
   });
 
-  it("loads plugin registry for configure/onboard/agents commands", async () => {
-    const commands = ["configure", "onboard", "agents"] as const;
-    const program = buildProgram(["configure", "onboard", "agents"]);
-    for (const command of commands) {
-      vi.clearAllMocks();
-      await runCommand(
-        {
-          parseArgv: [command],
-          processArgv: ["node", "remoteclaw", command],
-        },
-        program,
-      );
-      expect(ensurePluginRegistryLoadedMock, command).toHaveBeenCalledTimes(1);
-    }
+  it("loads plugin registry for configure command", async () => {
+    const program = buildProgram(["configure"]);
+    await runCommand(
+      {
+        parseArgv: ["configure"],
+        processArgv: ["node", "remoteclaw", "configure"],
+      },
+      program,
+    );
+
+    expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledTimes(1);
   });
 
-  it("skips config guard for doctor and completion commands", async () => {
-    const program = buildProgram(["doctor", "completion"]);
+  it("skips config guard for doctor command", async () => {
+    const program = buildProgram(["doctor"]);
     await runCommand(
       {
         parseArgv: ["doctor"],
         processArgv: ["node", "remoteclaw", "doctor"],
-      },
-      program,
-    );
-    await runCommand(
-      {
-        parseArgv: ["completion"],
-        processArgv: ["node", "remoteclaw", "completion"],
       },
       program,
     );

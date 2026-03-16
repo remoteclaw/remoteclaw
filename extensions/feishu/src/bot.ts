@@ -1122,6 +1122,10 @@ export async function handleFeishuMessage(params: {
       Body: combinedBody,
       BodyForAgent: messageBody,
       InboundHistory: inboundHistory,
+      // Quote/reply message support: use standard ReplyToId for parent,
+      // and pass root_id for thread reconstruction.
+      ReplyToId: ctx.parentId,
+      RootMessageId: ctx.rootId,
       RawBody: ctx.content,
       CommandBody: ctx.content,
       From: feishuFrom,

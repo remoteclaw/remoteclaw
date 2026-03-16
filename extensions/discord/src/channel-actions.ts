@@ -1,95 +1,86 @@
 import {
-  createDiscordMessageToolComponentsSchema,
   createUnionActionGate,
   listTokenSourcedAccounts,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "../../../src/channels/plugins/actions/shared.js";
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import type { DiscordActionConfig } from "remoteclaw/plugin-sdk/config-runtime";
+} from "../../../src/channels/plugins/types.js";
+import type { DiscordActionConfig } from "../../../src/config/types.discord.js";
 import { createDiscordActionGate, listEnabledDiscordAccounts } from "./accounts.js";
 import { handleDiscordMessageAction } from "./actions/handle-action.js";
 
-function resolveDiscordActionDiscovery(cfg: Parameters<typeof listEnabledDiscordAccounts>[0]) {
-  const accounts = listTokenSourcedAccounts(listEnabledDiscordAccounts(cfg));
-  if (accounts.length === 0) {
-    return null;
-  }
-  const unionGate = createUnionActionGate(accounts, (account) =>
-    createDiscordActionGate({
-      cfg,
-      accountId: account.accountId,
-    }),
-  );
-  return {
-    isEnabled: (key: keyof DiscordActionConfig, defaultValue = true) =>
-      unionGate(key, defaultValue),
-  };
-}
-
 export const discordMessageActions: ChannelMessageActionAdapter = {
   listActions: ({ cfg }) => {
-    const discovery = resolveDiscordActionDiscovery(cfg);
-    if (!discovery) {
+    const accounts = listTokenSourcedAccounts(listEnabledDiscordAccounts(cfg));
+    if (accounts.length === 0) {
       return [];
     }
+    // Union of all accounts' action gates (any account enabling an action makes it available)
+    const gate = createUnionActionGate(accounts, (account) =>
+      createDiscordActionGate({
+        cfg,
+        accountId: account.accountId,
+      }),
+    );
+    const isEnabled = (key: keyof DiscordActionConfig, defaultValue = true) =>
+      gate(key, defaultValue);
     const actions = new Set<ChannelMessageActionName>(["send"]);
-    if (discovery.isEnabled("polls")) {
+    if (isEnabled("polls")) {
       actions.add("poll");
     }
-    if (discovery.isEnabled("reactions")) {
+    if (isEnabled("reactions")) {
       actions.add("react");
       actions.add("reactions");
     }
-    if (discovery.isEnabled("messages")) {
+    if (isEnabled("messages")) {
       actions.add("read");
       actions.add("edit");
       actions.add("delete");
     }
-    if (discovery.isEnabled("pins")) {
+    if (isEnabled("pins")) {
       actions.add("pin");
       actions.add("unpin");
       actions.add("list-pins");
     }
-    if (discovery.isEnabled("permissions")) {
+    if (isEnabled("permissions")) {
       actions.add("permissions");
     }
-    if (discovery.isEnabled("threads")) {
+    if (isEnabled("threads")) {
       actions.add("thread-create");
       actions.add("thread-list");
       actions.add("thread-reply");
     }
-    if (discovery.isEnabled("search")) {
+    if (isEnabled("search")) {
       actions.add("search");
     }
-    if (discovery.isEnabled("stickers")) {
+    if (isEnabled("stickers")) {
       actions.add("sticker");
     }
-    if (discovery.isEnabled("memberInfo")) {
+    if (isEnabled("memberInfo")) {
       actions.add("member-info");
     }
-    if (discovery.isEnabled("roleInfo")) {
+    if (isEnabled("roleInfo")) {
       actions.add("role-info");
     }
-    if (discovery.isEnabled("reactions")) {
+    if (isEnabled("reactions")) {
       actions.add("emoji-list");
     }
-    if (discovery.isEnabled("emojiUploads")) {
+    if (isEnabled("emojiUploads")) {
       actions.add("emoji-upload");
     }
-    if (discovery.isEnabled("stickerUploads")) {
+    if (isEnabled("stickerUploads")) {
       actions.add("sticker-upload");
     }
-    if (discovery.isEnabled("roles", false)) {
+    if (isEnabled("roles", false)) {
       actions.add("role-add");
       actions.add("role-remove");
     }
-    if (discovery.isEnabled("channelInfo")) {
+    if (isEnabled("channelInfo")) {
       actions.add("channel-info");
       actions.add("channel-list");
     }
-    if (discovery.isEnabled("channels")) {
+    if (isEnabled("channels")) {
       actions.add("channel-create");
       actions.add("channel-edit");
       actions.add("channel-delete");
@@ -98,33 +89,25 @@ export const discordMessageActions: ChannelMessageActionAdapter = {
       actions.add("category-edit");
       actions.add("category-delete");
     }
-    if (discovery.isEnabled("voiceStatus")) {
+    if (isEnabled("voiceStatus")) {
       actions.add("voice-status");
     }
-    if (discovery.isEnabled("events")) {
+    if (isEnabled("events")) {
       actions.add("event-list");
       actions.add("event-create");
     }
-    if (discovery.isEnabled("moderation", false)) {
+    if (isEnabled("moderation", false)) {
       actions.add("timeout");
       actions.add("kick");
       actions.add("ban");
     }
-    if (discovery.isEnabled("presence", false)) {
+    if (isEnabled("presence", false)) {
       actions.add("set-presence");
     }
     return Array.from(actions);
   },
-  getCapabilities: ({ cfg }) =>
-    resolveDiscordActionDiscovery(cfg) ? (["interactive", "components"] as const) : [],
-  getToolSchema: ({ cfg }) =>
-    resolveDiscordActionDiscovery(cfg)
-      ? {
-          properties: {
-            components: createDiscordMessageToolComponentsSchema(),
-          },
-        }
-      : null,
+  supportsInteractive: ({ cfg }) =>
+    listTokenSourcedAccounts(listEnabledDiscordAccounts(cfg)).length > 0,
   extractToolSend: ({ args }) => {
     const action = typeof args.action === "string" ? args.action.trim() : "";
     if (action === "sendMessage") {

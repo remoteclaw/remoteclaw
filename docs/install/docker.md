@@ -96,7 +96,7 @@ Running on a VPS? See [Hetzner (Docker VPS)](/install/hetzner).
 
 Official pre-built images are published at:
 
-- [GitHub Container Registry package](https://github.com/remoteclaw/remoteclaw/pkgs/container/openclaw)
+- [GitHub Container Registry package](https://github.com/remoteclaw/remoteclaw/pkgs/container/remoteclaw)
 
 Use image name `ghcr.io/remoteclaw/remoteclaw` (not similarly named Docker Hub
 images).
@@ -406,7 +406,7 @@ pnpm test:docker:qr
 
 ### LAN vs loopback (Docker Compose)
 
-`docker-setup.sh` defaults `OPENCLAW_GATEWAY_BIND=lan` so host access to
+`docker-setup.sh` defaults `REMOTECLAW_GATEWAY_BIND=lan` so host access to
 `http://127.0.0.1:18789` works with Docker port publishing.
 
 - `lan` (default): host browser + host CLI can reach the published gateway port.
@@ -427,7 +427,7 @@ docker compose run --rm remoteclaw-cli devices list --url ws://127.0.0.1:18789
 
 ### Notes
 
-- Gateway bind defaults to `lan` for container use (`OPENCLAW_GATEWAY_BIND`).
+- Gateway bind defaults to `lan` for container use (`REMOTECLAW_GATEWAY_BIND`).
 - Dockerfile CMD uses `--allow-unconfigured`; mounted config with `gateway.mode` not `local` will still start. Override CMD to enforce the guard.
 - The gateway container is the source of truth for sessions (`~/.remoteclaw/agents/<agentId>/sessions/`).
 

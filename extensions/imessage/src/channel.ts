@@ -26,9 +26,17 @@ import {
   type ResolvedIMessageAccount,
 } from "remoteclaw/plugin-sdk/imessage";
 import { getIMessageRuntime } from "./runtime.js";
-import { imessageSetupAdapter, imessageSetupWizard } from "./setup-surface.js";
+import { createIMessageSetupWizardProxy, imessageSetupAdapter } from "./setup-core.js";
 
 const meta = getChatChannelMeta("imessage");
+
+async function loadIMessageChannelRuntime() {
+  return await import("./channel.runtime.js");
+}
+
+const imessageSetupWizard = createIMessageSetupWizardProxy(async () => ({
+  imessageSetupWizard: (await loadIMessageChannelRuntime()).imessageSetupWizard,
+}));
 
 type IMessageSendFn = ReturnType<
   typeof getIMessageRuntime

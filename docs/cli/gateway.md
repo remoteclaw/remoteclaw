@@ -1,5 +1,5 @@
 ---
-description: "RemoteClaw Gateway CLI (`remoteclaw gateway`) — run, query, and discover gateways"
+summary: "OpenClaw Gateway CLI (`remoteclaw gateway`) — run, query, and discover gateways"
 read_when:
   - Running the Gateway from the CLI (dev or servers)
   - Debugging Gateway auth, bind modes, and connectivity
@@ -9,7 +9,7 @@ title: "gateway"
 
 # Gateway CLI
 
-The Gateway is RemoteClaw’s WebSocket server (channels, nodes, sessions, hooks).
+The Gateway is OpenClaw’s WebSocket server (channels, nodes, sessions, hooks).
 
 Subcommands in this page live under `remoteclaw gateway …`.
 
@@ -35,7 +35,7 @@ remoteclaw gateway run
 
 Notes:
 
-- By default, the Gateway refuses to start unless `gateway.mode=local` is set in `~/.remoteclaw/remoteclaw.json`. Use `--allow-unconfigured` for ad-hoc/dev runs.
+- By default, the Gateway refuses to start unless `gateway.mode=local` is set in `~/.openclaw/openclaw.json`. Use `--allow-unconfigured` for ad-hoc/dev runs.
 - Binding beyond loopback without auth is blocked (safety guardrail).
 - `SIGUSR1` triggers an in-process restart when authorized (`commands.restart` is enabled by default; set `commands.restart: false` to block manual restart, while gateway tool/config apply/update remain allowed).
 - `SIGINT`/`SIGTERM` handlers stop the gateway process, but they don’t restore any custom terminal state. If you wrap the CLI with a TUI or raw-mode input, restore the terminal before exit.
@@ -45,12 +45,14 @@ Notes:
 - `--port <port>`: WebSocket port (default comes from config/env; usually `18789`).
 - `--bind <loopback|lan|tailnet|auto|custom>`: listener bind mode.
 - `--auth <token|password>`: auth mode override.
-- `--token <token>`: token override (also sets `REMOTECLAW_GATEWAY_TOKEN` for the process).
+- `--token <token>`: token override (also sets `OPENCLAW_GATEWAY_TOKEN` for the process).
 - `--password <password>`: password override. Warning: inline passwords can be exposed in local process listings.
 - `--password-file <path>`: read the gateway password from a file.
 - `--tailscale <off|serve|funnel>`: expose the Gateway via Tailscale.
 - `--tailscale-reset-on-exit`: reset Tailscale serve/funnel config on shutdown.
 - `--allow-unconfigured`: allow gateway start without `gateway.mode=local` in config.
+- `--dev`: create a dev config + workspace if missing (skips BOOTSTRAP.md).
+- `--reset`: reset dev config + credentials + sessions + workspace (requires `--dev`).
 - `--force`: kill any existing listener on the selected port before starting.
 - `--verbose`: verbose logs.
 - `--claude-cli-logs`: only show claude-cli logs in the console (and enable its stdout/stderr).
@@ -93,6 +95,7 @@ remoteclaw gateway health --url ws://127.0.0.1:18789
 ```bash
 remoteclaw gateway status
 remoteclaw gateway status --json
+remoteclaw gateway status --require-rpc
 ```
 
 Options:
@@ -103,12 +106,14 @@ Options:
 - `--timeout <ms>`: probe timeout (default `10000`).
 - `--no-probe`: skip the RPC probe (service-only view).
 - `--deep`: scan system-level services too.
+- `--require-rpc`: exit non-zero when the RPC probe fails. Cannot be combined with `--no-probe`.
 
 Notes:
 
 - `gateway status` resolves configured auth SecretRefs for probe auth when possible.
 - If a required auth SecretRef is unresolved in this command path, `gateway status --json` reports `rpc.authWarning` when probe connectivity/auth fails; pass `--token`/`--password` explicitly or resolve the secret source first.
 - If the probe succeeds, unresolved auth-ref warnings are suppressed to avoid false positives.
+- Use `--require-rpc` in scripts and automation when a listening service is not enough and you need the Gateway RPC itself to be healthy.
 - On Linux systemd installs, service auth drift checks read both `Environment=` and `EnvironmentFile=` values from the unit (including `%h`, quoted paths, multiple files, and optional `-` files).
 
 ### `gateway probe`
@@ -124,6 +129,23 @@ If multiple gateways are reachable, it prints all of them. Multiple gateways are
 remoteclaw gateway probe
 remoteclaw gateway probe --json
 ```
+
+Interpretation:
+
+- `Reachable: yes` means at least one target accepted a WebSocket connect.
+- `RPC: ok` means detail RPC calls (`health`/`status`/`system-presence`/`config.get`) also succeeded.
+- `RPC: limited - missing scope: operator.read` means connect succeeded but detail RPC is scope-limited. This is reported as **degraded** reachability, not full failure.
+- Exit code is non-zero only when no probed target is reachable.
+
+JSON notes (`--json`):
+
+- Top level:
+  - `ok`: at least one target is reachable.
+  - `degraded`: at least one target had scope-limited detail RPC.
+- Per target (`targets[].connect`):
+  - `ok`: reachability after connect + degraded classification.
+  - `rpcOk`: full detail RPC success.
+  - `scopeLimited`: detail RPC failed due to missing operator scope.
 
 #### Remote over SSH (Mac app parity)
 
@@ -168,15 +190,19 @@ remoteclaw gateway uninstall
 Notes:
 
 - `gateway install` supports `--port`, `--runtime`, `--token`, `--force`, `--json`.
-- For password auth on `gateway run`, prefer `REMOTECLAW_GATEWAY_PASSWORD`, `--password-file`, or a config-backed `gateway.auth.password` over inline `--password`.
+- When token auth requires a token and `gateway.auth.token` is SecretRef-managed, `gateway install` validates that the SecretRef is resolvable but does not persist the resolved token into service environment metadata.
+- If token auth requires a token and the configured token SecretRef is unresolved, install fails closed instead of persisting fallback plaintext.
+- For password auth on `gateway run`, prefer `OPENCLAW_GATEWAY_PASSWORD`, `--password-file`, or a SecretRef-backed `gateway.auth.password` over inline `--password`.
+- In inferred auth mode, shell-only `OPENCLAW_GATEWAY_PASSWORD`/`CLAWDBOT_GATEWAY_PASSWORD` does not relax install token requirements; use durable config (`gateway.auth.password` or config `env`) when installing a managed service.
+- If both `gateway.auth.token` and `gateway.auth.password` are configured and `gateway.auth.mode` is unset, install is blocked until mode is set explicitly.
 - Lifecycle commands accept `--json` for scripting.
 
 ## Discover gateways (Bonjour)
 
-`gateway discover` scans for Gateway beacons (`_remoteclaw-gw._tcp`).
+`gateway discover` scans for Gateway beacons (`_openclaw-gw._tcp`).
 
 - Multicast DNS-SD: `local.`
-- Unicast DNS-SD (Wide-Area Bonjour): choose a domain (example: `remoteclaw.internal.`) and set up split DNS + a DNS server; see [/gateway/bonjour](/gateway/bonjour)
+- Unicast DNS-SD (Wide-Area Bonjour): choose a domain (example: `openclaw.internal.`) and set up split DNS + a DNS server; see [/gateway/bonjour](/gateway/bonjour)
 
 Only gateways with Bonjour discovery enabled (default) advertise the beacon.
 

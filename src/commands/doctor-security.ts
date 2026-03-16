@@ -176,8 +176,14 @@ export async function noteSecurityWarnings(cfg: RemoteClawConfig) {
     if (!plugin.security) {
       continue;
     }
-    const { defaultAccountId, account, enabled, configured } =
-      await resolveDefaultChannelAccountContext(plugin, cfg);
+    const { defaultAccountId, account, enabled, configured, diagnostics } =
+      await resolveDefaultChannelAccountContext(plugin, cfg, {
+        mode: "read_only",
+        commandName: "doctor",
+      });
+    for (const diagnostic of diagnostics) {
+      warnings.push(`- [secrets] ${diagnostic}`);
+    }
     if (!enabled) {
       continue;
     }

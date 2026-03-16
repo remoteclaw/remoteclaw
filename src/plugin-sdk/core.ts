@@ -49,3 +49,5 @@ export {
 export { buildOutboundBaseSessionKey } from "../infra/outbound/base-session-key.js";
 export { normalizeOutboundThreadId } from "../infra/outbound/thread-id.js";
 export { resolveThreadSessionKeys } from "../routing/session-key.js";
+export { runPassiveAccountLifecycle } from "./channel-lifecycle.js";
+export { createLoggerBackedRuntime } from "./runtime.js";

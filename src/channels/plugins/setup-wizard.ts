@@ -8,14 +8,14 @@ import type {
   ChannelOnboardingStatus,
   ChannelOnboardingStatusContext,
 } from "./onboarding-types.js";
+import { configureChannelAccessWithAllowlist } from "./onboarding/channel-access-configure.js";
+import type { ChannelAccessPolicy } from "./onboarding/channel-access.js";
 import {
   promptResolvedAllowFrom,
   resolveAccountIdForConfigure,
   runSingleChannelSecretStep,
   splitOnboardingEntries,
 } from "./onboarding/helpers.js";
-import { configureChannelAccessWithAllowlist } from "./setup-group-access-configure.js";
-import type { ChannelAccessPolicy } from "./setup-group-access.js";
 import type { ChannelSetupInput } from "./types.core.js";
 import type { ChannelPlugin } from "./types.js";
 
@@ -110,7 +110,6 @@ export type ChannelSetupWizardTextInput = {
   message: string;
   placeholder?: string;
   required?: boolean;
-  applyEmptyValue?: boolean;
   helpTitle?: string;
   helpLines?: string[];
   confirmCurrentValue?: boolean;
@@ -184,7 +183,6 @@ export type ChannelSetupWizardGroupAccess = {
   placeholder: string;
   helpTitle?: string;
   helpLines?: string[];
-  skipAllowlistEntries?: boolean;
   currentPolicy: (params: { cfg: RemoteClawConfig; accountId: string }) => ChannelAccessPolicy;
   currentEntries: (params: { cfg: RemoteClawConfig; accountId: string }) => string[];
   updatePrompt: (params: { cfg: RemoteClawConfig; accountId: string }) => boolean;
@@ -193,14 +191,14 @@ export type ChannelSetupWizardGroupAccess = {
     accountId: string;
     policy: ChannelAccessPolicy;
   }) => RemoteClawConfig;
-  resolveAllowlist?: (params: {
+  resolveAllowlist: (params: {
     cfg: RemoteClawConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
     entries: string[];
     prompter: Pick<WizardPrompter, "note">;
   }) => Promise<unknown>;
-  applyAllowlist?: (params: {
+  applyAllowlist: (params: {
     cfg: RemoteClawConfig;
     accountId: string;
     resolved: unknown;
@@ -225,49 +223,15 @@ export type ChannelSetupWizardPrepare = (params: {
       credentialValues?: ChannelSetupWizardCredentialValues;
     } | void>;
 
-export type ChannelSetupWizardFinalize = (params: {
-  cfg: RemoteClawConfig;
-  accountId: string;
-  credentialValues: ChannelSetupWizardCredentialValues;
-  runtime: ChannelOnboardingConfigureContext["runtime"];
-  prompter: WizardPrompter;
-  options?: ChannelOnboardingConfigureContext["options"];
-  forceAllowFrom: boolean;
-}) =>
-  | {
-      cfg?: RemoteClawConfig;
-      credentialValues?: ChannelSetupWizardCredentialValues;
-    }
-  | void
-  | Promise<{
-      cfg?: RemoteClawConfig;
-      credentialValues?: ChannelSetupWizardCredentialValues;
-    } | void>;
-
 export type ChannelSetupWizard = {
   channel: string;
   status: ChannelSetupWizardStatus;
   introNote?: ChannelSetupWizardNote;
   envShortcut?: ChannelSetupWizardEnvShortcut;
-  resolveAccountIdForConfigure?: (params: {
-    cfg: RemoteClawConfig;
-    prompter: WizardPrompter;
-    options?: ChannelOnboardingConfigureContext["options"];
-    accountOverride?: string;
-    shouldPromptAccountIds: boolean;
-    listAccountIds: ChannelSetupWizardPlugin["config"]["listAccountIds"];
-    defaultAccountId: string;
-  }) => string | Promise<string>;
-  resolveShouldPromptAccountIds?: (params: {
-    cfg: RemoteClawConfig;
-    options?: ChannelOnboardingConfigureContext["options"];
-    shouldPromptAccountIds: boolean;
-  }) => boolean;
   prepare?: ChannelSetupWizardPrepare;
   stepOrder?: "credentials-first" | "text-first";
   credentials: ChannelSetupWizardCredential[];
   textInputs?: ChannelSetupWizardTextInput[];
-  finalize?: ChannelSetupWizardFinalize;
   completionNote?: ChannelSetupWizardNote;
   dmPolicy?: ChannelOnboardingDmPolicy;
   allowFrom?: ChannelSetupWizardAllowFrom;
@@ -420,31 +384,15 @@ export function buildChannelOnboardingAdapterFromSetupWizard(params: {
         plugin.config.defaultAccountId?.(cfg) ??
         plugin.config.listAccountIds(cfg)[0] ??
         DEFAULT_ACCOUNT_ID;
-      const resolvedShouldPromptAccountIds =
-        wizard.resolveShouldPromptAccountIds?.({
-          cfg,
-          options,
-          shouldPromptAccountIds,
-        }) ?? shouldPromptAccountIds;
-      const accountId = await (wizard.resolveAccountIdForConfigure
-        ? wizard.resolveAccountIdForConfigure({
-            cfg,
-            prompter,
-            options,
-            accountOverride: accountOverrides[plugin.id],
-            shouldPromptAccountIds: resolvedShouldPromptAccountIds,
-            listAccountIds: plugin.config.listAccountIds,
-            defaultAccountId,
-          })
-        : resolveAccountIdForConfigure({
-            cfg,
-            prompter,
-            label: plugin.meta.label,
-            accountOverride: accountOverrides[plugin.id],
-            shouldPromptAccountIds: resolvedShouldPromptAccountIds,
-            listAccountIds: plugin.config.listAccountIds,
-            defaultAccountId,
-          }));
+      const accountId = await resolveAccountIdForConfigure({
+        cfg,
+        prompter,
+        label: plugin.meta.label,
+        accountOverride: accountOverrides[plugin.id],
+        shouldPromptAccountIds,
+        listAccountIds: plugin.config.listAccountIds,
+        defaultAccountId,
+      });
 
       let next = cfg;
       let credentialValues = collectCredentialValues({
@@ -702,15 +650,6 @@ export function buildChannelOnboardingAdapterFromSetupWizard(params: {
           );
           const trimmedValue = rawValue.trim();
           if (!trimmedValue && textInput.required === false) {
-            if (textInput.applyEmptyValue) {
-              next = await applyWizardTextInputValue({
-                plugin,
-                input: textInput,
-                cfg: next,
-                accountId,
-                value: "",
-              });
-            }
             delete credentialValues[textInput.inputKey];
             continue;
           }
@@ -758,31 +697,26 @@ export function buildChannelOnboardingAdapterFromSetupWizard(params: {
           currentEntries: access.currentEntries({ cfg: next, accountId }),
           placeholder: access.placeholder,
           updatePrompt: access.updatePrompt({ cfg: next, accountId }),
-          skipAllowlistEntries: access.skipAllowlistEntries,
           setPolicy: (currentCfg, policy) =>
             access.setPolicy({
               cfg: currentCfg,
               accountId,
               policy,
             }),
-          resolveAllowlist: access.resolveAllowlist
-            ? async ({ cfg: currentCfg, entries }) =>
-                await access.resolveAllowlist!({
-                  cfg: currentCfg,
-                  accountId,
-                  credentialValues,
-                  entries,
-                  prompter,
-                })
-            : undefined,
-          applyAllowlist: access.applyAllowlist
-            ? ({ cfg: currentCfg, resolved }) =>
-                access.applyAllowlist!({
-                  cfg: currentCfg,
-                  accountId,
-                  resolved,
-                })
-            : undefined,
+          resolveAllowlist: async ({ cfg: currentCfg, entries }) =>
+            await access.resolveAllowlist({
+              cfg: currentCfg,
+              accountId,
+              credentialValues,
+              entries,
+              prompter,
+            }),
+          applyAllowlist: ({ cfg: currentCfg, resolved }) =>
+            access.applyAllowlist({
+              cfg: currentCfg,
+              accountId,
+              resolved,
+            }),
         });
       }
 
@@ -825,27 +759,6 @@ export function buildChannelOnboardingAdapterFromSetupWizard(params: {
           accountId,
           allowFrom: unique,
         });
-      }
-
-      if (wizard.finalize) {
-        const finalized = await wizard.finalize({
-          cfg: next,
-          accountId,
-          credentialValues,
-          runtime,
-          prompter,
-          options,
-          forceAllowFrom,
-        });
-        if (finalized?.cfg) {
-          next = finalized.cfg;
-        }
-        if (finalized?.credentialValues) {
-          credentialValues = {
-            ...credentialValues,
-            ...finalized.credentialValues,
-          };
-        }
       }
 
       const shouldShowCompletionNote =

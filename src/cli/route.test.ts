@@ -50,7 +50,7 @@ describe("tryRouteCli", () => {
     originalForceStderr = loggingState.forceConsoleToStderr;
     loggingState.forceConsoleToStderr = false;
     findRoutedCommandMock.mockReturnValue({
-      loadPlugins: false,
+      loadPlugins: true,
       run: runRouteMock,
     });
   });
@@ -75,6 +75,7 @@ describe("tryRouteCli", () => {
         suppressDoctorStdout: true,
       }),
     );
+    expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledWith({ scope: "channels" });
   });
 
   it("does not pass suppressDoctorStdout for routed non-json commands", async () => {
@@ -84,6 +85,7 @@ describe("tryRouteCli", () => {
       runtime: expect.any(Object),
       commandPath: ["status"],
     });
+    expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledWith({ scope: "channels" });
   });
 
   it("routes logs to stderr during plugin loading in --json mode and restores after", async () => {
@@ -134,5 +136,6 @@ describe("tryRouteCli", () => {
       runtime: expect.any(Object),
       commandPath: ["status"],
     });
+    expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledWith({ scope: "channels" });
   });
 });

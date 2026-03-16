@@ -68,6 +68,10 @@ function loadPluginRegistryModule() {
   return pluginRegistryModulePromise;
 }
 
+function resolvePluginRegistryScope(commandPath: string[]): "channels" | "all" {
+  return commandPath[0] === "status" || commandPath[0] === "health" ? "channels" : "all";
+}
+
 function getRootCommand(command: Command): Command {
   let current = command;
   while (current.parent) {
@@ -147,7 +151,7 @@ export function registerPreActionHooks(program: Command, programVersion: string)
         loggingState.forceConsoleToStderr = true;
       }
       try {
-        ensurePluginRegistryLoaded();
+        ensurePluginRegistryLoaded({ scope: resolvePluginRegistryScope(commandPath) });
       } finally {
         loggingState.forceConsoleToStderr = prev;
       }

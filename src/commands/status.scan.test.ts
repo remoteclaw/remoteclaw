@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   readBestEffortConfig: vi.fn(),
   resolveCommandSecretRefsViaGateway: vi.fn(),
   buildChannelsTable: vi.fn(),
+  callGateway: vi.fn(),
   getUpdateCheckResult: vi.fn(),
   getAgentLocalStatuses: vi.fn(),
   getStatusSummary: vi.fn(),
@@ -57,7 +58,7 @@ vi.mock("./status.scan.deps.runtime.js", () => ({
 
 vi.mock("../gateway/call.js", () => ({
   buildGatewayConnectionDetails: mocks.buildGatewayConnectionDetails,
-  callGateway: vi.fn(),
+  callGateway: mocks.callGateway,
 }));
 
 vi.mock("../gateway/probe.js", () => ({
@@ -249,6 +250,9 @@ describe("scanStatus", () => {
     expect(mocks.ensurePluginRegistryLoaded).toHaveBeenCalledWith({ scope: "channels" });
     expect(mocks.probeGateway).toHaveBeenCalledWith(
       expect.objectContaining({ detailLevel: "presence" }),
+    );
+    expect(mocks.callGateway).not.toHaveBeenCalledWith(
+      expect.objectContaining({ method: "channels.status" }),
     );
   });
 

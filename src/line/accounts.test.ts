@@ -101,7 +101,7 @@ describe("LINE accounts", () => {
 
   describe("resolveDefaultLineAccountId", () => {
     it("prefers channels.line.defaultAccount when configured", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           line: {
             defaultAccount: "business",
@@ -118,7 +118,7 @@ describe("LINE accounts", () => {
     });
 
     it("normalizes channels.line.defaultAccount before lookup", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           line: {
             defaultAccount: "Business Ops",
@@ -150,7 +150,7 @@ describe("LINE accounts", () => {
     });
 
     it("falls back when channels.line.defaultAccount is missing", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         channels: {
           line: {
             defaultAccount: "missing",

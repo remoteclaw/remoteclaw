@@ -1,10 +1,10 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { describe, expect, it } from "vitest";
 import { resolveDefaultMattermostAccountId } from "./accounts.js";
 
 describe("resolveDefaultMattermostAccountId", () => {
   it("prefers channels.mattermost.defaultAccount when it matches a configured account", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         mattermost: {
           defaultAccount: "alerts",
@@ -20,7 +20,7 @@ describe("resolveDefaultMattermostAccountId", () => {
   });
 
   it("normalizes channels.mattermost.defaultAccount before lookup", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         mattermost: {
           defaultAccount: "Ops Team",
@@ -35,7 +35,7 @@ describe("resolveDefaultMattermostAccountId", () => {
   });
 
   it("falls back when channels.mattermost.defaultAccount is missing", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         mattermost: {
           defaultAccount: "missing",

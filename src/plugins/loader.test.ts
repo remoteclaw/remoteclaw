@@ -25,7 +25,8 @@ async function importFreshPluginTestModules() {
   };
 }
 
-const { loadRemoteClawPlugins, __testing } = await importFreshPluginTestModules();
+const { loadRemoteClawPlugins, getGlobalHookRunner, resetGlobalHookRunner, __testing } =
+  await importFreshPluginTestModules();
 
 type TempPlugin = { dir: string; file: string; id: string };
 
@@ -323,13 +324,13 @@ describe("loadRemoteClawPlugins", () => {
       },
     };
 
-    const first = loadOpenClawPlugins(options);
+    const first = loadRemoteClawPlugins(options);
     expect(getGlobalHookRunner()).not.toBeNull();
 
     resetGlobalHookRunner();
     expect(getGlobalHookRunner()).toBeNull();
 
-    const second = loadOpenClawPlugins(options);
+    const second = loadRemoteClawPlugins(options);
     expect(second).toBe(first);
     expect(getGlobalHookRunner()).not.toBeNull();
 

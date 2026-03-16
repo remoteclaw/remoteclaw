@@ -54,7 +54,9 @@ export async function loadLazyLocaleTranslation(locale: Locale): Promise<Transla
   if (locale === DEFAULT_LOCALE) {
     return null;
   }
-  const registration = LAZY_LOCALE_REGISTRY[locale];
+  const registration = (LAZY_LOCALE_REGISTRY as Partial<Record<Locale, LazyLocaleRegistration>>)[
+    locale
+  ];
   if (!registration) {
     return null;
   }

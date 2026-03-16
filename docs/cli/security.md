@@ -19,6 +19,8 @@ Related:
 ```bash
 remoteclaw security audit
 remoteclaw security audit --deep
+remoteclaw security audit --deep --password <password>
+remoteclaw security audit --deep --token <token>
 remoteclaw security audit --fix
 remoteclaw security audit --json
 ```
@@ -38,6 +40,12 @@ It warns when channel allowlists rely on mutable names/emails/tags instead of st
 It warns when `gateway.auth.mode="none"` leaves Gateway HTTP APIs reachable without a shared secret (`/tools/invoke` plus any enabled `/v1/*` endpoint).
 Settings prefixed with `dangerous`/`dangerously` are explicit break-glass operator overrides; enabling one is not, by itself, a security vulnerability report.
 For the complete dangerous-parameter inventory, see the "Insecure or dangerous flags summary" section in [Security](/gateway/security).
+
+SecretRef behavior:
+
+- `security audit` resolves supported SecretRefs in read-only mode for its targeted paths.
+- If a SecretRef is unavailable in the current command path, audit continues and reports `secretDiagnostics` (instead of crashing).
+- `--token` and `--password` only override deep-probe auth for that command invocation; they do not rewrite config or SecretRef mappings.
 
 ## JSON output
 

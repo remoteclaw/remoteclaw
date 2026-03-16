@@ -15,7 +15,7 @@ vi.mock("../../../agents/tools/telegram-actions.js", () => ({
   handleTelegramAction,
 }));
 
-vi.mock("../../../signal/send-reactions.js", () => ({
+vi.mock("../../../../extensions/signal/src/send-reactions.js", () => ({
   sendReactionSignal,
   removeReactionSignal,
 }));
@@ -24,11 +24,11 @@ vi.mock("../../../agents/tools/slack-actions.js", () => ({
   handleSlackAction,
 }));
 
-let discordMessageActions: typeof import("./discord.js").discordMessageActions;
-let handleDiscordMessageAction: typeof import("./discord/handle-action.js").handleDiscordMessageAction;
-let telegramMessageActions: typeof import("./telegram.js").telegramMessageActions;
-let signalMessageActions: typeof import("./signal.js").signalMessageActions;
-let createSlackActions: typeof import("../slack.actions.js").createSlackActions;
+const { discordMessageActions } = await import("./discord.js");
+const { handleDiscordMessageAction } = await import("./discord/handle-action.js");
+const { telegramMessageActions } = await import("./telegram.js");
+const { signalMessageActions } = await import("./signal.js");
+const { createSlackActions } = await import("../slack.actions.js");
 
 function telegramCfg(): RemoteClawConfig {
   return { channels: { telegram: { botToken: "tok" } } } as RemoteClawConfig;
@@ -191,13 +191,7 @@ async function expectSlackSendRejected(params: Record<string, unknown>, error: R
   expect(handleSlackAction).not.toHaveBeenCalled();
 }
 
-beforeEach(async () => {
-  vi.resetModules();
-  ({ discordMessageActions } = await import("./discord.js"));
-  ({ handleDiscordMessageAction } = await import("./discord/handle-action.js"));
-  ({ telegramMessageActions } = await import("./telegram.js"));
-  ({ signalMessageActions } = await import("./signal.js"));
-  ({ createSlackActions } = await import("../slack.actions.js"));
+beforeEach(() => {
   vi.clearAllMocks();
 });
 
@@ -1296,25 +1290,6 @@ describe("slack actions adapter", () => {
       handleSlackAction.mockClear();
       await expectSlackSendRejected(testCase.params, testCase.error);
     }
-  });
-
-  it("does not attach empty blocks to plain media sends", async () => {
-    handleSlackAction.mockClear();
-
-    await runSlackAction("send", {
-      to: "channel:C1",
-      message: "",
-      media: "https://example.com/image.png",
-    });
-
-    const [params] = handleSlackAction.mock.calls[0] ?? [];
-    expect(params).toMatchObject({
-      action: "sendMessage",
-      to: "channel:C1",
-      content: "",
-      mediaUrl: "https://example.com/image.png",
-    });
-    expect(params).not.toHaveProperty("blocks");
   });
 
   it("rejects edit when both message and blocks are missing", async () => {

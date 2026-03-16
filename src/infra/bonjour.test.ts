@@ -20,28 +20,39 @@ function enableAdvertiserUnitMode(hostname = "test-host") {
   delete process.env.VITEST;
   process.env.NODE_ENV = "development";
   vi.spyOn(os, "hostname").mockReturnValue(hostname);
-  process.env.REMOTECLAW_MDNS_HOSTNAME = hostname;
+  process.env.OPENCLAW_MDNS_HOSTNAME = hostname;
 }
 
 function mockCiaoService(params?: {
   advertise?: ReturnType<typeof vi.fn>;
   destroy?: ReturnType<typeof vi.fn>;
   serviceState?: string;
+  stateRef?: { value: string };
   on?: ReturnType<typeof vi.fn>;
 }) {
   const advertise = params?.advertise ?? vi.fn().mockResolvedValue(undefined);
   const destroy = params?.destroy ?? vi.fn().mockResolvedValue(undefined);
   const on = params?.on ?? vi.fn();
   createService.mockImplementation((options: Record<string, unknown>) => {
-    return {
+    const service = {
       advertise,
       destroy,
-      serviceState: params?.serviceState ?? "announced",
       on,
       getFQDN: () => `${asString(options.type, "service")}.${asString(options.domain, "local")}.`,
       getHostname: () => asString(options.hostname, "unknown"),
       getPort: () => Number(options.port ?? -1),
     };
+    Object.defineProperty(service, "serviceState", {
+      configurable: true,
+      enumerable: true,
+      get: () => params?.stateRef?.value ?? params?.serviceState ?? "announced",
+      set: (value: string) => {
+        if (params?.stateRef) {
+          params.stateRef.value = value;
+        }
+      },
+    });
+    return service;
   });
   return { advertise, destroy, on };
 }
@@ -129,12 +140,12 @@ describe("gateway bonjour advertiser", () => {
       gatewayPort: 18789,
       sshPort: 2222,
       tailnetDns: "host.tailnet.ts.net",
-      cliPath: "/opt/homebrew/bin/remoteclaw",
+      cliPath: "/opt/homebrew/bin/openclaw",
     });
 
     expect(createService).toHaveBeenCalledTimes(1);
     const [gatewayCall] = createService.mock.calls as Array<[Record<string, unknown>]>;
-    expect(gatewayCall?.[0]?.type).toBe("remoteclaw-gw");
+    expect(gatewayCall?.[0]?.type).toBe("openclaw-gw");
     const gatewayType = asString(gatewayCall?.[0]?.type, "");
     expect(gatewayType.length).toBeLessThanOrEqual(15);
     expect(gatewayCall?.[0]?.port).toBe(18789);
@@ -144,7 +155,7 @@ describe("gateway bonjour advertiser", () => {
     expect((gatewayCall?.[0]?.txt as Record<string, string>)?.gatewayPort).toBe("18789");
     expect((gatewayCall?.[0]?.txt as Record<string, string>)?.sshPort).toBe("2222");
     expect((gatewayCall?.[0]?.txt as Record<string, string>)?.cliPath).toBe(
-      "/opt/homebrew/bin/remoteclaw",
+      "/opt/homebrew/bin/openclaw",
     );
     expect((gatewayCall?.[0]?.txt as Record<string, string>)?.transport).toBe("gateway");
 
@@ -168,7 +179,7 @@ describe("gateway bonjour advertiser", () => {
     const started = await startGatewayBonjourAdvertiser({
       gatewayPort: 18789,
       sshPort: 2222,
-      cliPath: "/opt/homebrew/bin/remoteclaw",
+      cliPath: "/opt/homebrew/bin/openclaw",
       minimal: true,
     });
 
@@ -253,15 +264,13 @@ describe("gateway bonjour advertiser", () => {
     await Promise.resolve();
     expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("advertise failed"));
 
-    // The watchdog runs every 5 s. After ~10 s the service has been stuck in
-    // "unannounced" for longer than STUCK_ANNOUNCING_MS (8 s), so the watchdog
-    // tears down the cycle and recreates it, which calls advertise() again.
-    await vi.advanceTimersByTimeAsync(10_000);
+    // watchdog should attempt re-advertise at the 60s interval tick
+    await vi.advanceTimersByTimeAsync(15_000);
     expect(advertise).toHaveBeenCalledTimes(2);
 
     await started.stop();
 
-    await vi.advanceTimersByTimeAsync(10_000);
+    await vi.advanceTimersByTimeAsync(60_000);
     expect(advertise).toHaveBeenCalledTimes(2);
   });
 
@@ -285,6 +294,50 @@ describe("gateway bonjour advertiser", () => {
     await started.stop();
   });
 
+  it("recreates the advertiser when ciao gets stuck announcing", async () => {
+    enableAdvertiserUnitMode();
+    vi.useFakeTimers();
+
+    const stateRef = { value: "announcing" };
+    const events: string[] = [];
+    let advertiseCount = 0;
+    const destroy = vi.fn().mockImplementation(async () => {
+      events.push("destroy");
+    });
+    const advertise = vi.fn().mockImplementation(() => {
+      advertiseCount += 1;
+      events.push(`advertise:${advertiseCount}`);
+      if (advertiseCount === 1) {
+        stateRef.value = "announcing";
+        return new Promise<void>(() => {});
+      }
+      stateRef.value = "announced";
+      return Promise.resolve();
+    });
+    mockCiaoService({ advertise, destroy, stateRef });
+
+    const started = await startGatewayBonjourAdvertiser({
+      gatewayPort: 18789,
+      sshPort: 2222,
+    });
+
+    expect(createService).toHaveBeenCalledTimes(1);
+    expect(advertise).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("restarting advertiser"));
+    expect(createService).toHaveBeenCalledTimes(2);
+    expect(advertise).toHaveBeenCalledTimes(2);
+    expect(destroy).toHaveBeenCalledTimes(1);
+    expect(shutdown).toHaveBeenCalledTimes(1);
+    expect(events).toEqual(["advertise:1", "destroy", "advertise:2"]);
+
+    await started.stop();
+    expect(destroy).toHaveBeenCalledTimes(2);
+    expect(shutdown).toHaveBeenCalledTimes(2);
+  });
+
   it("normalizes hostnames with domains for service names", async () => {
     // Allow advertiser to run in unit tests.
     delete process.env.VITEST;
@@ -302,10 +355,10 @@ describe("gateway bonjour advertiser", () => {
     });
 
     const [gatewayCall] = createService.mock.calls as Array<[ServiceCall]>;
-    expect(gatewayCall?.[0]?.name).toBe("remoteclaw (RemoteClaw)");
+    expect(gatewayCall?.[0]?.name).toBe("openclaw (OpenClaw)");
     expect(gatewayCall?.[0]?.domain).toBe("local");
-    expect(gatewayCall?.[0]?.hostname).toBe("remoteclaw");
-    expect((gatewayCall?.[0]?.txt as Record<string, string>)?.lanHost).toBe("remoteclaw.local");
+    expect(gatewayCall?.[0]?.hostname).toBe("openclaw");
+    expect((gatewayCall?.[0]?.txt as Record<string, string>)?.lanHost).toBe("openclaw.local");
 
     await started.stop();
   });

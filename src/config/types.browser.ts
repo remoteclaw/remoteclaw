@@ -3,6 +3,8 @@ export type BrowserProfileConfig = {
   cdpPort?: number;
   /** CDP URL for this profile (use for remote Chrome). */
   cdpUrl?: string;
+  /** Explicit user data directory for existing-session Chrome MCP attachment. */
+  userDataDir?: string;
   /** Profile driver (default: remoteclaw). */
   driver?: "remoteclaw" | "clawd" | "extension" | "existing-session";
   /** If true, never launch a browser for this profile; only attach. Falls back to browser.attachOnly. */

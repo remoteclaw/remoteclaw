@@ -204,6 +204,7 @@ const TARGET_KEYS = [
   "browser.headless",
   "browser.noSandbox",
   "browser.profiles",
+  "browser.profiles.*.userDataDir",
   "browser.profiles.*.driver",
   "browser.profiles.*.attachOnly",
   "tools",

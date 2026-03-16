@@ -74,6 +74,7 @@ describe("warning filter", () => {
 
   it("installs once and suppresses known warnings at emit time", async () => {
     const seenWarnings: Array<{ code?: string; name: string; message: string }> = [];
+    const stderrWrites: string[] = [];
     const onWarning = (warning: Error & { code?: string }) => {
       seenWarnings.push({
         code: warning.code,
@@ -81,6 +82,12 @@ describe("warning filter", () => {
         message: warning.message,
       });
     };
+    const stderrWriteSpy = vi.spyOn(process.stderr, "write").mockImplementation(((
+      chunk: string | Uint8Array,
+    ) => {
+      stderrWrites.push(typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8"));
+      return true;
+    }) as typeof process.stderr.write);
 
     process.on("warning", onWarning);
     try {
@@ -114,7 +121,9 @@ describe("warning filter", () => {
       expect(
         seenWarnings.find((warning) => warning.code === "REMOTECLAW_TEST_WARNING"),
       ).toBeDefined();
+      expect(stderrWrites.join("")).toContain("Visible warning");
     } finally {
+      stderrWriteSpy.mockRestore();
       process.off("warning", onWarning);
     }
   });

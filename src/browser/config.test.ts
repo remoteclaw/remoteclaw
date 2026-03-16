@@ -244,26 +244,26 @@ describe("browser config", () => {
       expect(resolved.defaultProfile).toBe("chrome");
     });
 
-    it("prefers openclaw profile when headless=true", () => {
+    it("prefers remoteclaw profile when headless=true", () => {
       const resolved = resolveBrowserConfig({
         headless: true,
       });
-      expect(resolved.defaultProfile).toBe("openclaw");
+      expect(resolved.defaultProfile).toBe("remoteclaw");
     });
 
-    it("prefers openclaw profile when noSandbox=true", () => {
+    it("prefers remoteclaw profile when noSandbox=true", () => {
       const resolved = resolveBrowserConfig({
         noSandbox: true,
       });
-      expect(resolved.defaultProfile).toBe("openclaw");
+      expect(resolved.defaultProfile).toBe("remoteclaw");
     });
 
-    it("prefers openclaw profile when both headless and noSandbox are true", () => {
+    it("prefers remoteclaw profile when both headless and noSandbox are true", () => {
       const resolved = resolveBrowserConfig({
         headless: true,
         noSandbox: true,
       });
-      expect(resolved.defaultProfile).toBe("openclaw");
+      expect(resolved.defaultProfile).toBe("remoteclaw");
     });
 
     it("explicit defaultProfile config overrides headless preference", () => {

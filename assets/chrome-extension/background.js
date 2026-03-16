@@ -833,7 +833,7 @@ async function onDebuggerDetach(source, reason) {
         setBadge(tabId, 'connecting')
         void chrome.action.setTitle({
           tabId,
-          title: 'OpenClaw Browser Relay: attached, waiting for relay reconnect…',
+          title: 'RemoteClaw Browser Relay: attached, waiting for relay reconnect…',
         })
       }
       return

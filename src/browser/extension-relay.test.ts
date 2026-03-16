@@ -530,7 +530,7 @@ describe("chrome extension relay server", () => {
   });
 
   it("stops advertising websocket endpoint after reconnect grace expires", async () => {
-    process.env.OPENCLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS = "120";
+    process.env.REMOTECLAW_EXTENSION_RELAY_RECONNECT_GRACE_MS = "120";
 
     const { ext } = await startRelayWithExtension();
     ext.send(

@@ -9,6 +9,7 @@
   "remoteclaw": {
     "extensions": [
       "./index.ts"
-    ]
+    ],
+    "setupEntry": "./setup-entry.ts"
   }
 }

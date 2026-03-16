@@ -12,6 +12,7 @@
     "extensions": [
       "./index.ts"
     ],
+    "setupEntry": "./setup-entry.ts",
     "channel": {
       "id": "msteams",
       "label": "Microsoft Teams",

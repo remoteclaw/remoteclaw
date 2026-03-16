@@ -149,6 +149,7 @@ export type RemoteClawPackageStartup = {
 
 export type RemoteClawPackageManifest = {
   extensions?: string[];
+  setupEntry?: string;
   channel?: PluginPackageChannel;
   install?: PluginPackageInstall;
   startup?: RemoteClawPackageStartup;

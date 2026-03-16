@@ -18,6 +18,7 @@ const EXTENSION_EXTS = new Set([".ts", ".js", ".mts", ".cts", ".mjs", ".cjs"]);
 export type PluginCandidate = {
   idHint: string;
   source: string;
+  setupSource?: string;
   rootDir: string;
   origin: PluginOrigin;
   workspaceDir?: string;
@@ -359,6 +360,7 @@ function addCandidate(params: {
   seen: Set<string>;
   idHint: string;
   source: string;
+  setupSource?: string;
   rootDir: string;
   origin: PluginOrigin;
   ownershipUid?: number | null;
@@ -387,6 +389,7 @@ function addCandidate(params: {
   params.candidates.push({
     idHint: params.idHint,
     source: resolved,
+    setupSource: params.setupSource,
     rootDir: resolvedRoot,
     origin: params.origin,
     workspaceDir: params.workspaceDir,
@@ -474,6 +477,17 @@ function discoverInDirectory(params: {
     const manifest = readPackageManifest(fullPath, rejectHardlinks);
     const extensionResolution = resolvePackageExtensionEntries(manifest ?? undefined);
     const extensions = extensionResolution.status === "ok" ? extensionResolution.entries : [];
+    const setupEntryPath = getPackageManifestMetadata(manifest ?? undefined)?.setupEntry;
+    const setupSource =
+      typeof setupEntryPath === "string" && setupEntryPath.trim().length > 0
+        ? resolvePackageEntrySource({
+            packageDir: fullPath,
+            entryPath: setupEntryPath,
+            sourceLabel: fullPath,
+            diagnostics: params.diagnostics,
+            rejectHardlinks,
+          })
+        : null;
 
     if (extensions.length > 0) {
       for (const extPath of extensions) {
@@ -497,6 +511,7 @@ function discoverInDirectory(params: {
             hasMultipleExtensions: extensions.length > 1,
           }),
           source: resolved,
+          ...(setupSource ? { setupSource } : {}),
           rootDir: fullPath,
           origin: params.origin,
           ownershipUid: params.ownershipUid,
@@ -518,6 +533,7 @@ function discoverInDirectory(params: {
         seen: params.seen,
         idHint: entry.name,
         source: indexFile,
+        ...(setupSource ? { setupSource } : {}),
         rootDir: fullPath,
         origin: params.origin,
         ownershipUid: params.ownershipUid,
@@ -577,6 +593,17 @@ function discoverFromPath(params: {
     const manifest = readPackageManifest(resolved, rejectHardlinks);
     const extensionResolution = resolvePackageExtensionEntries(manifest ?? undefined);
     const extensions = extensionResolution.status === "ok" ? extensionResolution.entries : [];
+    const setupEntryPath = getPackageManifestMetadata(manifest ?? undefined)?.setupEntry;
+    const setupSource =
+      typeof setupEntryPath === "string" && setupEntryPath.trim().length > 0
+        ? resolvePackageEntrySource({
+            packageDir: resolved,
+            entryPath: setupEntryPath,
+            sourceLabel: resolved,
+            diagnostics: params.diagnostics,
+            rejectHardlinks,
+          })
+        : null;
 
     if (extensions.length > 0) {
       for (const extPath of extensions) {
@@ -600,6 +627,7 @@ function discoverFromPath(params: {
             hasMultipleExtensions: extensions.length > 1,
           }),
           source,
+          ...(setupSource ? { setupSource } : {}),
           rootDir: resolved,
           origin: params.origin,
           ownershipUid: params.ownershipUid,
@@ -622,6 +650,7 @@ function discoverFromPath(params: {
         seen: params.seen,
         idHint: path.basename(resolved),
         source: indexFile,
+        ...(setupSource ? { setupSource } : {}),
         rootDir: resolved,
         origin: params.origin,
         ownershipUid: params.ownershipUid,

@@ -724,6 +724,35 @@ describe("security audit", () => {
     );
   });
 
+  it("warns when Feishu doc tool is enabled because create can grant requester access", async () => {
+    const cfg: RemoteClawConfig = {
+      channels: {
+        feishu: {
+          appId: "cli_test",
+          appSecret: "secret_test",
+        },
+      },
+    };
+
+    const res = await audit(cfg);
+    expectFinding(res, "channels.feishu.doc_owner_open_id", "warn");
+  });
+
+  it("does not warn for Feishu doc grant risk when doc tools are disabled", async () => {
+    const cfg: RemoteClawConfig = {
+      channels: {
+        feishu: {
+          appId: "cli_test",
+          appSecret: "secret_test",
+          tools: { doc: false },
+        },
+      },
+    };
+
+    const res = await audit(cfg);
+    expectNoFinding(res, "channels.feishu.doc_owner_open_id");
+  });
+
   it("scores X-Real-IP fallback risk by gateway exposure", async () => {
     const trustedProxyCfg = (trustedProxies: string[]): RemoteClawConfig => ({
       gateway: {

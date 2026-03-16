@@ -705,13 +705,13 @@ describe("security audit", () => {
   });
 
   it("flags wildcard Control UI origins by exposure level", async () => {
-    const loopbackCfg: OpenClawConfig = {
+    const loopbackCfg: RemoteClawConfig = {
       gateway: {
         bind: "loopback",
         controlUi: { allowedOrigins: ["*"] },
       },
     };
-    const exposedCfg: OpenClawConfig = {
+    const exposedCfg: RemoteClawConfig = {
       gateway: {
         bind: "lan",
         auth: { mode: "token", token: "very-long-browser-token-0123456789" },

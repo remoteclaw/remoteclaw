@@ -4,17 +4,13 @@ import {
   shouldSuppressReasoningPayload,
 } from "../../auto-reply/reply/reply-payloads.js";
 import type { ReplyPayload } from "../../auto-reply/types.js";
+import type { InteractiveReply } from "../../interactive/payload.js";
 
 export type NormalizedOutboundPayload = {
   text: string;
   mediaUrls: string[];
   audioAsVoice?: boolean;
-  interactive?: {
-    blocks: Array<{
-      type: string;
-      buttons?: Array<{ label: string; value: string; style?: string }>;
-    }>;
-  };
+  interactive?: InteractiveReply;
   channelData?: Record<string, unknown>;
 };
 
@@ -23,6 +19,7 @@ export type OutboundPayloadJson = {
   mediaUrl: string | null;
   mediaUrls?: string[];
   audioAsVoice?: boolean;
+  interactive?: InteractiveReply;
   channelData?: Record<string, unknown>;
 };
 
@@ -92,16 +89,19 @@ export function normalizeOutboundPayloads(
   const normalizedPayloads: NormalizedOutboundPayload[] = [];
   for (const payload of normalizeReplyPayloadsForDelivery(payloads)) {
     const mediaUrls = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
+    const interactive = payload.interactive;
     const channelData = payload.channelData;
     const hasChannelData = Boolean(channelData && Object.keys(channelData).length > 0);
+    const hasInteractive = Boolean(interactive?.blocks.length);
     const text = payload.text ?? "";
-    if (!text && mediaUrls.length === 0 && !hasChannelData) {
+    if (!text && mediaUrls.length === 0 && !hasInteractive && !hasChannelData) {
       continue;
     }
     normalizedPayloads.push({
       text,
       mediaUrls,
       audioAsVoice: payload.audioAsVoice === true ? true : undefined,
+      ...(hasInteractive ? { interactive } : {}),
       ...(hasChannelData ? { channelData } : {}),
     });
   }
@@ -118,6 +118,7 @@ export function normalizeOutboundPayloadsForJson(
       mediaUrl: payload.mediaUrl ?? null,
       mediaUrls: payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : undefined),
       audioAsVoice: payload.audioAsVoice === true ? true : undefined,
+      interactive: payload.interactive,
       channelData: payload.channelData,
     });
   }

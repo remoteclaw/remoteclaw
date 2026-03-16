@@ -24,7 +24,7 @@ function createTypingHarness(overrides: Partial<Parameters<typeof createTypingCa
     start,
     stop,
     onStartError,
-    ...(overrides.onStopError !== undefined ? { onStopError } : {}),
+    onStopError,
     ...(overrides.maxConsecutiveFailures !== undefined
       ? { maxConsecutiveFailures: overrides.maxConsecutiveFailures }
       : {}),

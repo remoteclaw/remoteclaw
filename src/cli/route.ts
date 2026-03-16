@@ -28,7 +28,12 @@ async function prepareRoutedCommand(params: {
       loggingState.forceConsoleToStderr = true;
     }
     try {
-      ensurePluginRegistryLoaded();
+      ensurePluginRegistryLoaded({
+        scope:
+          params.commandPath[0] === "status" || params.commandPath[0] === "health"
+            ? "channels"
+            : "all",
+      });
     } finally {
       loggingState.forceConsoleToStderr = prev;
     }

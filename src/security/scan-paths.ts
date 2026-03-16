@@ -29,7 +29,23 @@ export function isPathInsideWithRealpath(
   if (!baseReal || !candidateReal) {
     return opts?.requireRealpath !== true;
   }
-  return isPathInside(baseReal, candidateReal);
+  if (!isPathInside(baseReal, candidateReal)) {
+    return false;
+  }
+  // Hardlinks share the same inode but realpath cannot detect them.
+  // When strict mode is requested, reject files with multiple hard links
+  // because they may alias content outside the base directory.
+  if (opts?.requireRealpath) {
+    try {
+      const stat = fs.statSync(candidatePath);
+      if (stat.isFile() && stat.nlink > 1) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+  }
+  return true;
 }
 
 export function extensionUsesSkippedScannerPath(entry: string): boolean {

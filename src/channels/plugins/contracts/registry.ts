@@ -99,17 +99,6 @@ type SurfaceContractEntry = {
   surfaces: readonly ChannelPluginSurface[];
 };
 
-type ThreadingContractEntry = {
-  id: string;
-  plugin: Pick<ChannelPlugin, "id" | "threading">;
-};
-
-type DirectoryContractEntry = {
-  id: string;
-  plugin: Pick<ChannelPlugin, "id" | "directory">;
-  invokeLookups: boolean;
-};
-
 const telegramListActionsMock = vi.fn();
 const telegramGetCapabilitiesMock = vi.fn();
 const discordListActionsMock = vi.fn();
@@ -502,12 +491,12 @@ export const statusContractRegistry: StatusContractEntry[] = [
 export const surfaceContractRegistry: SurfaceContractEntry[] = [
   {
     id: "bluebubbles",
-    plugin: requireBundledChannelPlugin("bluebubbles"),
+    plugin: bluebubblesPlugin,
     surfaces: ["actions", "setup", "status", "outbound", "messaging", "threading", "gateway"],
   },
   {
     id: "discord",
-    plugin: requireBundledChannelPlugin("discord"),
+    plugin: discordPlugin,
     surfaces: [
       "actions",
       "setup",
@@ -521,12 +510,12 @@ export const surfaceContractRegistry: SurfaceContractEntry[] = [
   },
   {
     id: "feishu",
-    plugin: requireBundledChannelPlugin("feishu"),
+    plugin: feishuPlugin,
     surfaces: ["actions", "setup", "status", "outbound", "messaging", "directory", "gateway"],
   },
   {
     id: "googlechat",
-    plugin: requireBundledChannelPlugin("googlechat"),
+    plugin: googlechatPlugin,
     surfaces: [
       "actions",
       "setup",
@@ -540,22 +529,22 @@ export const surfaceContractRegistry: SurfaceContractEntry[] = [
   },
   {
     id: "imessage",
-    plugin: requireBundledChannelPlugin("imessage"),
+    plugin: imessagePlugin,
     surfaces: ["setup", "status", "outbound", "messaging", "gateway"],
   },
   {
     id: "irc",
-    plugin: requireBundledChannelPlugin("irc"),
+    plugin: ircPlugin,
     surfaces: ["setup", "status", "outbound", "messaging", "directory", "gateway"],
   },
   {
     id: "line",
-    plugin: requireBundledChannelPlugin("line"),
+    plugin: linePlugin,
     surfaces: ["setup", "status", "outbound", "messaging", "directory", "gateway"],
   },
   {
     id: "matrix",
-    plugin: requireBundledChannelPlugin("matrix"),
+    plugin: matrixPlugin,
     surfaces: [
       "actions",
       "setup",
@@ -569,7 +558,7 @@ export const surfaceContractRegistry: SurfaceContractEntry[] = [
   },
   {
     id: "mattermost",
-    plugin: requireBundledChannelPlugin("mattermost"),
+    plugin: mattermostPlugin,
     surfaces: [
       "actions",
       "setup",
@@ -583,7 +572,7 @@ export const surfaceContractRegistry: SurfaceContractEntry[] = [
   },
   {
     id: "msteams",
-    plugin: requireBundledChannelPlugin("msteams"),
+    plugin: msteamsPlugin,
     surfaces: [
       "actions",
       "setup",
@@ -597,22 +586,22 @@ export const surfaceContractRegistry: SurfaceContractEntry[] = [
   },
   {
     id: "nextcloud-talk",
-    plugin: requireBundledChannelPlugin("nextcloud-talk"),
+    plugin: nextcloudTalkPlugin,
     surfaces: ["setup", "status", "outbound", "messaging", "gateway"],
   },
   {
     id: "nostr",
-    plugin: requireBundledChannelPlugin("nostr"),
+    plugin: nostrPlugin,
     surfaces: ["setup", "status", "outbound", "messaging", "gateway"],
   },
   {
     id: "signal",
-    plugin: requireBundledChannelPlugin("signal"),
+    plugin: signalPlugin,
     surfaces: ["actions", "setup", "status", "outbound", "messaging", "gateway"],
   },
   {
     id: "slack",
-    plugin: requireBundledChannelPlugin("slack"),
+    plugin: slackPlugin,
     surfaces: [
       "actions",
       "setup",
@@ -626,12 +615,12 @@ export const surfaceContractRegistry: SurfaceContractEntry[] = [
   },
   {
     id: "synology-chat",
-    plugin: requireBundledChannelPlugin("synology-chat"),
+    plugin: synologyChatPlugin,
     surfaces: ["setup", "outbound", "messaging", "directory", "gateway"],
   },
   {
     id: "telegram",
-    plugin: requireBundledChannelPlugin("telegram"),
+    plugin: telegramPlugin,
     surfaces: [
       "actions",
       "setup",
@@ -645,17 +634,17 @@ export const surfaceContractRegistry: SurfaceContractEntry[] = [
   },
   {
     id: "tlon",
-    plugin: requireBundledChannelPlugin("tlon"),
+    plugin: tlonPlugin,
     surfaces: ["setup", "status", "outbound", "messaging", "gateway"],
   },
   {
     id: "whatsapp",
-    plugin: requireBundledChannelPlugin("whatsapp"),
+    plugin: whatsappPlugin,
     surfaces: ["actions", "setup", "status", "outbound", "messaging", "directory", "gateway"],
   },
   {
     id: "zalo",
-    plugin: requireBundledChannelPlugin("zalo"),
+    plugin: zaloPlugin,
     surfaces: [
       "actions",
       "setup",
@@ -669,7 +658,7 @@ export const surfaceContractRegistry: SurfaceContractEntry[] = [
   },
   {
     id: "zalouser",
-    plugin: requireBundledChannelPlugin("zalouser"),
+    plugin: zalouserPlugin,
     surfaces: [
       "actions",
       "setup",
@@ -682,20 +671,3 @@ export const surfaceContractRegistry: SurfaceContractEntry[] = [
     ],
   },
 ];
-
-export const threadingContractRegistry: ThreadingContractEntry[] = surfaceContractRegistry
-  .filter((entry) => entry.surfaces.includes("threading"))
-  .map((entry) => ({
-    id: entry.id,
-    plugin: entry.plugin,
-  }));
-
-const directoryPresenceOnlyIds = new Set(["whatsapp", "zalouser"]);
-
-export const directoryContractRegistry: DirectoryContractEntry[] = surfaceContractRegistry
-  .filter((entry) => entry.surfaces.includes("directory"))
-  .map((entry) => ({
-    id: entry.id,
-    plugin: entry.plugin,
-    coverage: directoryPresenceOnlyIds.has(entry.id) ? "presence" : "lookups",
-  }));

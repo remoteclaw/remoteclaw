@@ -1,5 +1,5 @@
 ---
-description: "Mattermost bot setup and RemoteClaw config"
+summary: "Mattermost bot setup and OpenClaw config"
 read_when:
   - Setting up Mattermost
   - Debugging Mattermost routing
@@ -19,17 +19,17 @@ Mattermost ships as a plugin and is not bundled with the core install.
 Install via CLI (npm registry):
 
 ```bash
-remoteclaw plugins install @remoteclaw/mattermost
+openclaw plugins install @openclaw/mattermost
 ```
 
 Local checkout (when running from a git repo):
 
 ```bash
-remoteclaw plugins install ./extensions/mattermost
+openclaw plugins install ./extensions/mattermost
 ```
 
-If you choose Mattermost during configure/onboarding and a git checkout is detected,
-RemoteClaw will offer the local install path automatically.
+If you choose Mattermost during setup and a git checkout is detected,
+OpenClaw will offer the local install path automatically.
 
 Details: [Plugins](/tools/plugin)
 
@@ -38,7 +38,7 @@ Details: [Plugins](/tools/plugin)
 1. Install the Mattermost plugin.
 2. Create a Mattermost bot account and copy the **bot token**.
 3. Copy the Mattermost **base URL** (e.g., `https://chat.example.com`).
-4. Configure RemoteClaw and start the gateway.
+4. Configure OpenClaw and start the gateway.
 
 Minimal config:
 
@@ -162,8 +162,8 @@ Notes:
 
 - Default: `channels.mattermost.dmPolicy = "pairing"` (unknown senders get a pairing code).
 - Approve via:
-  - `remoteclaw pairing list mattermost`
-  - `remoteclaw pairing approve mattermost <CODE>`
+  - `openclaw pairing list mattermost`
+  - `openclaw pairing approve mattermost <CODE>`
 - Public DMs: `channels.mattermost.dmPolicy="open"` plus `channels.mattermost.allowFrom=["*"]`.
 
 ## Channels (groups)
@@ -176,42 +176,20 @@ Notes:
 
 ## Targets for outbound delivery
 
-Use these target formats with `remoteclaw message send` or cron/webhooks:
+Use these target formats with `openclaw message send` or cron/webhooks:
 
 - `channel:<id>` for a channel
 - `user:<id>` for a DM
 - `@username` for a DM (resolved via the Mattermost API)
 
-Bare IDs are treated as channels.
+Bare opaque IDs (like `64ifufp...`) are **ambiguous** in Mattermost (user ID vs channel ID).
 
-## DM channel retry
+OpenClaw resolves them **user-first**:
 
-When OpenClaw sends to a Mattermost DM target and needs to resolve the direct channel first, it
-retries transient direct-channel creation failures by default.
+- If the ID exists as a user (`GET /api/v4/users/<id>` succeeds), OpenClaw sends a **DM** by resolving the direct channel via `/api/v4/channels/direct`.
+- Otherwise the ID is treated as a **channel ID**.
 
-Use `channels.mattermost.dmChannelRetry` to tune that behavior globally for the Mattermost plugin,
-or `channels.mattermost.accounts.<id>.dmChannelRetry` for one account.
-
-```json5
-{
-  channels: {
-    mattermost: {
-      dmChannelRetry: {
-        maxRetries: 3,
-        initialDelayMs: 1000,
-        maxDelayMs: 10000,
-        timeoutMs: 30000,
-      },
-    },
-  },
-}
-```
-
-Notes:
-
-- This applies only to DM channel creation (`/api/v4/channels/direct`), not every Mattermost API call.
-- Retries apply to transient failures such as rate limits, 5xx responses, and network or timeout errors.
-- 4xx client errors other than `429` are treated as permanent and are not retried.
+If you need deterministic behavior, always use the explicit prefixes (`user:<id>` / `channel:<id>`).
 
 ## Reactions (message tool)
 

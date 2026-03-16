@@ -261,32 +261,12 @@ export function resolveToolVerbAndDetail(params: {
   detailFormatKey?: (raw: string) => string;
 }): { verb?: string; detail?: string } {
   const actionSpec = resolveActionSpec(params.spec, params.action);
-  const fallbackVerb =
-    params.toolKey === "web_search"
-      ? "search"
-      : params.toolKey === "web_fetch"
-        ? "fetch"
-        : params.toolKey.replace(/_/g, " ").replace(/\./g, " ");
+  const fallbackVerb = params.toolKey.replace(/_/g, " ").replace(/\./g, " ");
   const verb = normalizeVerb(actionSpec?.label ?? params.action ?? fallbackVerb);
 
   let detail: string | undefined;
-  if (params.toolKey === "exec") {
-    detail = resolveExecDetail(params.args);
-  }
-  if (!detail && params.toolKey === "read") {
-    detail = resolveReadDetail(params.args);
-  }
-  if (
-    !detail &&
-    (params.toolKey === "write" || params.toolKey === "edit" || params.toolKey === "attach")
-  ) {
+  if (params.toolKey === "attach") {
     detail = resolveWriteDetail(params.toolKey, params.args);
-  }
-  if (!detail && params.toolKey === "web_search") {
-    detail = resolveWebSearchDetail(params.args);
-  }
-  if (!detail && params.toolKey === "web_fetch") {
-    detail = resolveWebFetchDetail(params.args);
   }
 
   const detailKeys =

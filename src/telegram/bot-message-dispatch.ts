@@ -389,6 +389,7 @@ export const dispatchTelegramMessage = async ({
   });
 
   let queuedFinal = false;
+  let hadErrorReplyFailureOrSkip = false;
 
   // Determine if this is the first turn in session (for auto-topic-label).
   const isDmTopic = !isGroup && threadSpec.scope === "dm" && threadSpec.id != null;
@@ -437,6 +438,9 @@ export const dispatchTelegramMessage = async ({
         ...prefixOptions,
         typingCallbacks,
         deliver: async (payload, info) => {
+          if (payload.isError === true) {
+            hadErrorReplyFailureOrSkip = true;
+          }
           if (info.kind === "final") {
             // Assistant callbacks are fire-and-forget; ensure queued boundary
             // rotations/partials are applied before final delivery mapping.
@@ -468,7 +472,10 @@ export const dispatchTelegramMessage = async ({
           }
           await sendPayload(payload);
         },
-        onSkip: (_payload, info) => {
+        onSkip: (payload, info) => {
+          if (payload.isError === true) {
+            hadErrorReplyFailureOrSkip = true;
+          }
           if (info.reason !== "silent") {
             deliveryState.markNonSilentSkip();
           }
@@ -575,7 +582,7 @@ export const dispatchTelegramMessage = async ({
     const result = await deliverReplies({
       replies: [{ text: fallbackText }],
       ...deliveryBaseOptions,
-      silent: silentErrorReplies && dispatchError != null,
+      silent: silentErrorReplies && (dispatchError != null || hadErrorReplyFailureOrSkip),
     });
     sentFallback = result.delivered;
   }

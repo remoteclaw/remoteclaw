@@ -1,20 +1,21 @@
-import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk";
+import {
+  collectAllowlistProviderRestrictSendersWarnings,
+  formatAllowFromLowercase,
+} from "openclaw/plugin-sdk/compat";
 import type {
   ChannelMessageActionName,
   ChannelPlugin,
-  RemoteClawConfig,
-} from "remoteclaw/plugin-sdk";
+  OpenClawConfig,
+} from "openclaw/plugin-sdk/msteams";
 import {
   buildProbeChannelStatusSummary,
   buildRuntimeAccountStatusSnapshot,
   buildChannelConfigSchema,
   createDefaultChannelRuntimeState,
   DEFAULT_ACCOUNT_ID,
-  formatAllowFromLowercase,
   MSTeamsConfigSchema,
   PAIRING_APPROVED_MESSAGE,
-} from "remoteclaw/plugin-sdk";
-import { msteamsOnboardingAdapter } from "./onboarding.js";
+} from "openclaw/plugin-sdk/msteams";
 import { resolveMSTeamsGroupToolPolicy } from "./policy.js";
 import {
   normalizeMSTeamsMessagingTarget,
@@ -25,6 +26,7 @@ import {
   resolveMSTeamsUserAllowlist,
 } from "./resolve-allowlist.js";
 import { getMSTeamsRuntime } from "./runtime.js";
+import { msteamsSetupAdapter, msteamsSetupWizard } from "./setup-surface.js";
 import { resolveMSTeamsCredentials } from "./token.js";
 
 type ResolvedMSTeamsAccount = {
@@ -54,7 +56,7 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
     ...meta,
     aliases: [...meta.aliases],
   },
-  onboarding: msteamsOnboardingAdapter,
+  setupWizard: msteamsSetupWizard,
   pairing: {
     idLabel: "msteamsUserId",
     normalizeAllowEntry: (entry) => entry.replace(/^(msteams|user):/i, ""),
@@ -75,7 +77,7 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
   },
   agentPrompt: {
     messageToolHints: () => [
-      "- Adaptive Cards supported. Use the `msteams_send` MCP tool with a `card` parameter (`{type, version, body}`) to send rich Adaptive Card messages.",
+      "- Adaptive Cards supported. Use `action=send` with `card={type,version,body}` to send rich cards.",
       "- MSTeams targeting: omit `target` to reply to the current conversation (auto-inferred). Explicit targets: `user:ID` or `user:Display Name` (requires Graph API) for DMs, `conversation:19:...@thread.tacv2` for groups/channels. Prefer IDs over display names for speed.",
     ],
   },
@@ -110,7 +112,7 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
       },
     }),
     deleteAccount: ({ cfg }) => {
-      const next = { ...cfg } as RemoteClawConfig;
+      const next = { ...cfg } as OpenClawConfig;
       const nextChannels = { ...cfg.channels };
       delete nextChannels.msteams;
       if (Object.keys(nextChannels).length > 0) {
@@ -143,19 +145,7 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
       });
     },
   },
-  setup: {
-    resolveAccountId: () => DEFAULT_ACCOUNT_ID,
-    applyAccountConfig: ({ cfg }) => ({
-      ...cfg,
-      channels: {
-        ...cfg.channels,
-        msteams: {
-          ...cfg.channels?.msteams,
-          enabled: true,
-        },
-      },
-    }),
-  },
+  setup: msteamsSetupAdapter,
   messaging: {
     normalizeTarget: normalizeMSTeamsMessagingTarget,
     targetResolver: {
@@ -178,13 +168,7 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
     },
   },
   directory: {
-    self: async ({ cfg }) => {
-      const creds = resolveMSTeamsCredentials(cfg.channels?.msteams);
-      if (!creds) {
-        return null;
-      }
-      return { kind: "user" as const, id: creds.appId, name: creds.appId };
-    },
+    self: async () => null,
     listPeers: async ({ cfg, query, limit }) => {
       const q = query?.trim().toLowerCase() || "";
       const ids = new Set<string>();

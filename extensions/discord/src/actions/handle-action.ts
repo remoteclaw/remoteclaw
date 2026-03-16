@@ -1,4 +1,4 @@
-import { resolveDiscordChannelId } from "../../../../extensions/discord/src/targets.js";
+import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import {
   readNumberParam,
   readStringArrayParam,
@@ -8,8 +8,10 @@ import { readDiscordParentIdParam } from "../../../../src/agents/tools/discord-a
 import { handleDiscordAction } from "../../../../src/agents/tools/discord-actions.js";
 import { resolveReactionMessageId } from "../../../../src/channels/plugins/actions/reaction-message-id.js";
 import type { ChannelMessageActionContext } from "../../../../src/channels/plugins/types.js";
+import { normalizeInteractiveReply } from "../../../../src/interactive/payload.js";
 import { readBooleanParam } from "../../../../src/plugin-sdk/boolean-param.js";
-import type { AgentToolResult } from "../../../../src/types/agent-types.js";
+import { buildDiscordInteractiveComponents } from "../shared-interactive.js";
+import { resolveDiscordChannelId } from "../targets.js";
 import { tryHandleDiscordMessageActionGuildAdmin } from "./handle-action.guild-admin.js";
 
 const providerId = "discord";
@@ -25,7 +27,7 @@ export async function handleDiscordMessageAction(
     | "toolContext"
     | "mediaLocalRoots"
   >,
-): Promise<AgentToolResult> {
+): Promise<AgentToolResult<unknown>> {
   const { action, params, cfg } = ctx;
   const accountId = ctx.accountId ?? readStringParam(params, "accountId");
   const actionOptions = {
@@ -40,7 +42,9 @@ export async function handleDiscordMessageAction(
   if (action === "send") {
     const to = readStringParam(params, "to", { required: true });
     const asVoice = readBooleanParam(params, "asVoice") === true;
-    const rawComponents = params.components;
+    const rawComponents =
+      params.components ??
+      buildDiscordInteractiveComponents(normalizeInteractiveReply(params.interactive));
     const hasComponents =
       Boolean(rawComponents) &&
       (typeof rawComponents === "function" || typeof rawComponents === "object");
@@ -230,6 +234,7 @@ export async function handleDiscordMessageAction(
     const autoArchiveMinutes = readNumberParam(params, "autoArchiveMin", {
       integer: true,
     });
+    const appliedTags = readStringArrayParam(params, "appliedTags");
     return await handleDiscordAction(
       {
         action: "threadCreate",
@@ -239,6 +244,7 @@ export async function handleDiscordMessageAction(
         messageId,
         content,
         autoArchiveMinutes,
+        appliedTags: appliedTags ?? undefined,
       },
       cfg,
       actionOptions,

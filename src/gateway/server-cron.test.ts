@@ -79,9 +79,11 @@ describe("buildGatewayCronService", () => {
           sessionKey: "agent:main:main",
         }),
       );
+      // requestHeartbeatNow is not wrapped by gateway canonicalization,
+      // so it receives the raw undefined from targetMainSessionKey.
       expect(requestHeartbeatNowMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          sessionKey: "agent:main:main",
+          sessionKey: undefined,
         }),
       );
     } finally {

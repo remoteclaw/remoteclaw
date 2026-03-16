@@ -5,7 +5,6 @@ import { createOptionalChannelSetupSurface } from "./channel-setup.js";
 
 export type { ReplyPayload } from "../auto-reply/types.js";
 export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
-export type { ChannelOnboardingAdapter } from "../channels/plugins/onboarding-types.js";
 export {
   promptAccountId,
   resolveAccountIdForConfigure,

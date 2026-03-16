@@ -14,8 +14,8 @@ export {
   buildSingleChannelSecretPromptState,
   addWildcardAllowFrom,
   mergeAllowFromEntries,
-  promptAccountId,
-  promptSingleChannelToken,
+  promptSingleChannelSecretInput,
+  runSingleChannelSecretStep,
   setTopLevelChannelDmPolicyWithAllowFrom,
 } from "../channels/plugins/onboarding/helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";

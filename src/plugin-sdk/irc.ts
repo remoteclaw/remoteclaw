@@ -20,8 +20,6 @@ export type {
 export { promptChannelAccessConfig } from "../channels/plugins/onboarding/channel-access.js";
 export {
   addWildcardAllowFrom,
-  promptAccountId,
-  resolveAccountIdForConfigure,
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
 } from "../channels/plugins/onboarding/helpers.js";

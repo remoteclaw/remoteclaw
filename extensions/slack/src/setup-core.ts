@@ -337,7 +337,11 @@ export function createSlackSetupWizardBase(handlers: {
         prompter: { note: (message: string, title?: string) => Promise<void> };
       }) => {
         try {
-          return await handlers.resolveGroupAllowlist({
+          const wizard = (await loadWizard()).slackSetupWizard;
+          if (!wizard.groupAccess?.resolveAllowlist) {
+            return entries;
+          }
+          return await wizard.groupAccess.resolveAllowlist({
             cfg,
             accountId,
             credentialValues,

@@ -179,6 +179,10 @@ export function createDiscordSetupWizardBase(handlers: {
         entries: string[];
         prompter: { note: (message: string, title?: string) => Promise<void> };
       }) => {
+        const wizard = (await loadWizard()).discordSetupWizard;
+        if (!wizard.groupAccess?.resolveAllowlist) {
+          return entries.map((input) => ({ input, resolved: false }));
+        }
         try {
           return await handlers.resolveGroupAllowlist({
             cfg,

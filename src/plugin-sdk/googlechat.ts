@@ -32,8 +32,6 @@ export type {
 export {
   addWildcardAllowFrom,
   mergeAllowFromEntries,
-  promptAccountId,
-  resolveAccountIdForConfigure,
   splitOnboardingEntries,
   setTopLevelChannelDmPolicyWithAllowFrom,
 } from "../channels/plugins/onboarding/helpers.js";

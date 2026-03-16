@@ -44,6 +44,8 @@ const meta = getChatChannelMeta("discord");
 const discordMessageActions: ChannelMessageActionAdapter = {
   listActions: (ctx) =>
     getDiscordRuntime().channel.discord.messageActions?.listActions?.(ctx) ?? [],
+  getCapabilities: (ctx) =>
+    getDiscordRuntime().channel.discord.messageActions?.getCapabilities?.(ctx) ?? [],
   extractToolSend: (ctx) =>
     getDiscordRuntime().channel.discord.messageActions?.extractToolSend?.(ctx) ?? null,
   handleAction: async (ctx) => {

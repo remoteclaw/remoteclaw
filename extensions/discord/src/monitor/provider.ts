@@ -365,7 +365,6 @@ function logDiscordStartupPhase(params: {
     `discord startup [${params.accountId}] ${params.phase} ${elapsedMs}ms${suffix ? ` ${suffix}` : ""}`,
   );
 }
-
 function formatDiscordDeployErrorDetails(err: unknown): string {
   if (!err || typeof err !== "object") {
     return "";

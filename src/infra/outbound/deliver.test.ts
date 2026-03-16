@@ -350,6 +350,107 @@ describe("deliverOutboundPayloads", () => {
     );
   });
 
+  it("does not inject telegram approval buttons from plain approval text", async () => {
+    const sendTelegram = vi.fn().mockResolvedValue({ messageId: "m1", chatId: "c1" });
+
+    await deliverTelegramPayload({
+      sendTelegram,
+      cfg: {
+        channels: {
+          telegram: {
+            botToken: "tok-1",
+            execApprovals: {
+              enabled: true,
+              approvers: ["123"],
+              target: "dm",
+            },
+          },
+        },
+      },
+      payload: {
+        text: "Mode: foreground\nRun: /approve 117ba06d allow-once (or allow-always / deny).",
+      },
+    });
+
+    const sendOpts = sendTelegram.mock.calls[0]?.[2] as { buttons?: unknown } | undefined;
+    expect(sendOpts?.buttons).toBeUndefined();
+  });
+
+  it("preserves explicit telegram buttons when sender path provides them", async () => {
+    const sendTelegram = vi.fn().mockResolvedValue({ messageId: "m1", chatId: "c1" });
+    const cfg: RemoteClawConfig = {
+      channels: {
+        telegram: {
+          execApprovals: {
+            enabled: true,
+            approvers: ["123"],
+            target: "dm",
+          },
+        },
+      },
+    };
+
+    await deliverTelegramPayload({
+      sendTelegram,
+      cfg,
+      payload: {
+        text: "Approval required",
+        channelData: {
+          telegram: {
+            buttons: [
+              [
+                { text: "Allow Once", callback_data: "/approve 117ba06d allow-once" },
+                { text: "Allow Always", callback_data: "/approve 117ba06d allow-always" },
+              ],
+              [{ text: "Deny", callback_data: "/approve 117ba06d deny" }],
+            ],
+          },
+        },
+      },
+    });
+
+    const sendOpts = sendTelegram.mock.calls[0]?.[2] as { buttons?: unknown } | undefined;
+    expect(sendOpts?.buttons).toEqual([
+      [
+        { text: "Allow Once", callback_data: "/approve 117ba06d allow-once" },
+        { text: "Allow Always", callback_data: "/approve 117ba06d allow-always" },
+      ],
+      [{ text: "Deny", callback_data: "/approve 117ba06d deny" }],
+    ]);
+  });
+
+  it("renders shared interactive payloads into telegram buttons", async () => {
+    const sendTelegram = vi.fn().mockResolvedValue({ messageId: "m1", chatId: "c1" });
+
+    await deliverTelegramPayload({
+      sendTelegram,
+      payload: {
+        text: "Approval required",
+        interactive: {
+          blocks: [
+            {
+              type: "buttons",
+              buttons: [
+                { label: "Allow once", value: "allow-once", style: "success" },
+                { label: "Always allow", value: "allow-always", style: "primary" },
+                { label: "Deny", value: "deny", style: "danger" },
+              ],
+            },
+          ],
+        },
+      },
+    });
+
+    const sendOpts = sendTelegram.mock.calls[0]?.[2] as { buttons?: unknown } | undefined;
+    expect(sendOpts?.buttons).toEqual([
+      [
+        { text: "Allow once", callback_data: "allow-once", style: "success" },
+        { text: "Always allow", callback_data: "allow-always", style: "primary" },
+        { text: "Deny", callback_data: "deny", style: "danger" },
+      ],
+    ]);
+  });
+
   it("scopes media local roots to the active agent workspace when agentId is provided", async () => {
     const sendTelegram = vi.fn().mockResolvedValue({ messageId: "m1", chatId: "c1" });
 

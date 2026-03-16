@@ -1,5 +1,6 @@
+import { getChannelPlugin } from "../channels/plugins/index.js";
 import { listAcpBindings } from "../config/bindings.js";
-import type { RemoteClawConfig } from "../config/config.js";
+import type { OpenClawConfig } from "../config/config.js";
 import type { AgentAcpBinding } from "../config/types.js";
 import { pickFirstExistingAgentId } from "../routing/resolve-route.js";
 import {
@@ -7,7 +8,6 @@ import {
   normalizeAccountId,
   parseAgentSessionKey,
 } from "../routing/session-key.js";
-import { parseTelegramTopicConversation } from "./conversation-id.js";
 import {
   buildConfiguredAcpSessionKey,
   normalizeBindingConfig,
@@ -21,10 +21,11 @@ import {
 
 function normalizeBindingChannel(value: string | undefined): ConfiguredAcpBindingChannel | null {
   const normalized = (value ?? "").trim().toLowerCase();
-  if (normalized === "discord" || normalized === "telegram") {
-    return normalized;
+  if (!normalized) {
+    return null;
   }
-  return null;
+  const plugin = getChannelPlugin(normalized);
+  return plugin?.acpBindings ? plugin.id : null;
 }
 
 function resolveAccountMatchPriority(match: string | undefined, actual: string): 0 | 1 | 2 {
@@ -59,14 +60,13 @@ function parseConfiguredBindingSessionKey(params: {
   if (!channel) {
     return null;
   }
-  const accountId = normalizeAccountId(tokens[3]);
   return {
     channel,
-    accountId,
+    accountId: normalizeAccountId(tokens[3]),
   };
 }
 
-function resolveAgentRuntimeAcpDefaults(params: { cfg: RemoteClawConfig; ownerAgentId: string }): {
+function resolveAgentRuntimeAcpDefaults(params: { cfg: OpenClawConfig; ownerAgentId: string }): {
   acpAgentId?: string;
   mode?: string;
   cwd?: string;
@@ -75,17 +75,19 @@ function resolveAgentRuntimeAcpDefaults(params: { cfg: RemoteClawConfig; ownerAg
   const agent = params.cfg.agents?.list?.find(
     (entry) => entry.id?.trim().toLowerCase() === params.ownerAgentId.toLowerCase(),
   );
-  if (!agent || typeof agent.runtime !== "string") {
+  if (!agent || agent.runtime?.type !== "acp") {
     return {};
   }
-  // In this fork, agent.runtime is a string union ("claude"|"gemini"|"codex"|"opencode"),
-  // not an object with .type/.acp properties. ACP defaults are not carried on the runtime
-  // field, so return empty defaults.
-  return {};
+  return {
+    acpAgentId: normalizeText(agent.runtime.acp?.agent),
+    mode: normalizeText(agent.runtime.acp?.mode),
+    cwd: normalizeText(agent.runtime.acp?.cwd),
+    backend: normalizeText(agent.runtime.acp?.backend),
+  };
 }
 
 function toConfiguredBindingSpec(params: {
-  cfg: RemoteClawConfig;
+  cfg: OpenClawConfig;
   channel: ConfiguredAcpBindingChannel;
   accountId: string;
   conversationId: string;
@@ -120,14 +122,23 @@ function resolveConfiguredBindingRecord(params: {
   bindings: AgentAcpBinding[];
   channel: ConfiguredAcpBindingChannel;
   accountId: string;
-  selectConversation: (
-    binding: AgentAcpBinding,
-  ) => { conversationId: string; parentConversationId?: string } | null;
+  selectConversation: (binding: AgentAcpBinding) => {
+    conversationId: string;
+    parentConversationId?: string;
+    matchPriority?: number;
+  } | null;
 }): ResolvedConfiguredAcpBinding | null {
   let wildcardMatch: {
     binding: AgentAcpBinding;
     conversationId: string;
     parentConversationId?: string;
+    matchPriority: number;
+  } | null = null;
+  let exactMatch: {
+    binding: AgentAcpBinding;
+    conversationId: string;
+    parentConversationId?: string;
+    matchPriority: number;
   } | null = null;
   for (const binding of params.bindings) {
     if (normalizeBindingChannel(binding.match.channel) !== params.channel) {
@@ -144,23 +155,40 @@ function resolveConfiguredBindingRecord(params: {
     if (!conversation) {
       continue;
     }
+    const matchPriority = conversation.matchPriority ?? 0;
+    if (accountMatchPriority === 2) {
+      if (!exactMatch || matchPriority > exactMatch.matchPriority) {
+        exactMatch = {
+          binding,
+          conversationId: conversation.conversationId,
+          parentConversationId: conversation.parentConversationId,
+          matchPriority,
+        };
+      }
+      continue;
+    }
+    if (!wildcardMatch || matchPriority > wildcardMatch.matchPriority) {
+      wildcardMatch = {
+        binding,
+        conversationId: conversation.conversationId,
+        parentConversationId: conversation.parentConversationId,
+        matchPriority,
+      };
+    }
+  }
+  if (exactMatch) {
     const spec = toConfiguredBindingSpec({
       cfg: params.cfg,
       channel: params.channel,
       accountId: params.accountId,
-      conversationId: conversation.conversationId,
-      parentConversationId: conversation.parentConversationId,
-      binding,
+      conversationId: exactMatch.conversationId,
+      parentConversationId: exactMatch.parentConversationId,
+      binding: exactMatch.binding,
     });
-    if (accountMatchPriority === 2) {
-      return {
-        spec,
-        record: toConfiguredAcpBindingRecord(spec),
-      };
-    }
-    if (!wildcardMatch) {
-      wildcardMatch = { binding, ...conversation };
-    }
+    return {
+      spec,
+      record: toConfiguredAcpBindingRecord(spec),
+    };
   }
   if (!wildcardMatch) {
     return null;
@@ -180,7 +208,7 @@ function resolveConfiguredBindingRecord(params: {
 }
 
 export function resolveConfiguredAcpBindingSpecBySessionKey(params: {
-  cfg: RemoteClawConfig;
+  cfg: OpenClawConfig;
   sessionKey: string;
 }): ConfiguredAcpBindingSpec | null {
   const sessionKey = params.sessionKey.trim();
@@ -191,6 +219,12 @@ export function resolveConfiguredAcpBindingSpecBySessionKey(params: {
   if (!parsedSessionKey) {
     return null;
   }
+  const plugin = getChannelPlugin(parsedSessionKey.channel);
+  const acpBindings = plugin?.acpBindings;
+  if (!acpBindings?.normalizeConfiguredBindingTarget) {
+    return null;
+  }
+
   let wildcardMatch: ConfiguredAcpBindingSpec | null = null;
   for (const binding of listAcpBindings(params.cfg)) {
     const channel = normalizeBindingChannel(binding.match.channel);
@@ -208,129 +242,71 @@ export function resolveConfiguredAcpBindingSpecBySessionKey(params: {
     if (!targetConversationId) {
       continue;
     }
-    if (channel === "discord") {
-      const spec = toConfiguredBindingSpec({
-        cfg: params.cfg,
-        channel: "discord",
-        accountId: parsedSessionKey.accountId,
-        conversationId: targetConversationId,
-        binding,
-      });
-      if (buildConfiguredAcpSessionKey(spec) === sessionKey) {
-        if (accountMatchPriority === 2) {
-          return spec;
-        }
-        if (!wildcardMatch) {
-          wildcardMatch = spec;
-        }
-      }
-      continue;
-    }
-    const parsedTopic = parseTelegramTopicConversation({
+    const target = acpBindings.normalizeConfiguredBindingTarget({
+      binding,
       conversationId: targetConversationId,
     });
-    if (!parsedTopic || !parsedTopic.chatId.startsWith("-")) {
+    if (!target) {
       continue;
     }
     const spec = toConfiguredBindingSpec({
       cfg: params.cfg,
-      channel: "telegram",
+      channel,
       accountId: parsedSessionKey.accountId,
-      conversationId: parsedTopic.canonicalConversationId,
-      parentConversationId: parsedTopic.chatId,
+      conversationId: target.conversationId,
+      parentConversationId: target.parentConversationId,
       binding,
     });
-    if (buildConfiguredAcpSessionKey(spec) === sessionKey) {
-      if (accountMatchPriority === 2) {
-        return spec;
-      }
-      if (!wildcardMatch) {
-        wildcardMatch = spec;
-      }
+    if (buildConfiguredAcpSessionKey(spec) !== sessionKey) {
+      continue;
+    }
+    if (accountMatchPriority === 2) {
+      return spec;
+    }
+    if (!wildcardMatch) {
+      wildcardMatch = spec;
     }
   }
   return wildcardMatch;
 }
 
 export function resolveConfiguredAcpBindingRecord(params: {
-  cfg: RemoteClawConfig;
+  cfg: OpenClawConfig;
   channel: string;
   accountId: string;
   conversationId: string;
   parentConversationId?: string;
 }): ResolvedConfiguredAcpBinding | null {
-  const channel = params.channel.trim().toLowerCase();
+  const channel = normalizeBindingChannel(params.channel);
   const accountId = normalizeAccountId(params.accountId);
   const conversationId = params.conversationId.trim();
   const parentConversationId = params.parentConversationId?.trim() || undefined;
-  if (!conversationId) {
+  if (!channel || !conversationId) {
     return null;
   }
+  const plugin = getChannelPlugin(channel);
+  const acpBindings = plugin?.acpBindings;
+  if (!acpBindings?.matchConfiguredBinding) {
+    return null;
+  }
+  const matchConfiguredBinding = acpBindings.matchConfiguredBinding;
 
-  if (channel === "discord") {
-    const bindings = listAcpBindings(params.cfg);
-    const resolveDiscordBindingForConversation = (targetConversationId: string) =>
-      resolveConfiguredBindingRecord({
-        cfg: params.cfg,
-        bindings,
-        channel: "discord",
-        accountId,
-        selectConversation: (binding) => {
-          const bindingConversationId = resolveBindingConversationId(binding);
-          if (!bindingConversationId || bindingConversationId !== targetConversationId) {
-            return null;
-          }
-          return { conversationId: targetConversationId };
-        },
-      });
-
-    const directMatch = resolveDiscordBindingForConversation(conversationId);
-    if (directMatch) {
-      return directMatch;
-    }
-    if (parentConversationId && parentConversationId !== conversationId) {
-      const inheritedMatch = resolveDiscordBindingForConversation(parentConversationId);
-      if (inheritedMatch) {
-        return inheritedMatch;
+  return resolveConfiguredBindingRecord({
+    cfg: params.cfg,
+    bindings: listAcpBindings(params.cfg),
+    channel,
+    accountId,
+    selectConversation: (binding) => {
+      const bindingConversationId = resolveBindingConversationId(binding);
+      if (!bindingConversationId) {
+        return null;
       }
-    }
-    return null;
-  }
-
-  if (channel === "telegram") {
-    const parsed = parseTelegramTopicConversation({
-      conversationId,
-      parentConversationId,
-    });
-    if (!parsed || !parsed.chatId.startsWith("-")) {
-      return null;
-    }
-    return resolveConfiguredBindingRecord({
-      cfg: params.cfg,
-      bindings: listAcpBindings(params.cfg),
-      channel: "telegram",
-      accountId,
-      selectConversation: (binding) => {
-        const targetConversationId = resolveBindingConversationId(binding);
-        if (!targetConversationId) {
-          return null;
-        }
-        const targetParsed = parseTelegramTopicConversation({
-          conversationId: targetConversationId,
-        });
-        if (!targetParsed || !targetParsed.chatId.startsWith("-")) {
-          return null;
-        }
-        if (targetParsed.canonicalConversationId !== parsed.canonicalConversationId) {
-          return null;
-        }
-        return {
-          conversationId: parsed.canonicalConversationId,
-          parentConversationId: parsed.chatId,
-        };
-      },
-    });
-  }
-
-  return null;
+      return matchConfiguredBinding({
+        binding,
+        bindingConversationId,
+        conversationId,
+        parentConversationId,
+      });
+    },
+  });
 }

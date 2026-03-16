@@ -1,15 +1,11 @@
 import { normalizeChatType, type ChatType } from "../../channels/chat-type.js";
-import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
 import { formatCliCommand } from "../../cli/command-format.js";
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { OpenClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { AgentDefaultsConfig } from "../../config/types.agent-defaults.js";
-import { parseDiscordTarget } from "../../discord/targets.js";
 import { mapAllowFromEntries } from "../../plugin-sdk/channel-config-helpers.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
-import { parseSlackTarget } from "../../slack/targets.js";
-import { parseTelegramTarget, resolveTelegramTargetChatType } from "../../telegram/targets.js";
 import { deliveryContextFromSession } from "../../utils/delivery-context.js";
 import type {
   DeliverableMessageChannel,
@@ -20,7 +16,10 @@ import {
   isDeliverableMessageChannel,
   normalizeMessageChannel,
 } from "../../utils/message-channel.js";
-import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
+import {
+  normalizeDeliverableOutboundChannel,
+  resolveOutboundChannelPlugin,
+} from "./channel-resolution.js";
 import { missingTargetError } from "./target-errors.js";
 
 export type OutboundChannel = DeliverableMessageChannel | "none";
@@ -59,6 +58,26 @@ export type SessionDeliveryTarget = {
   lastThreadId?: string | number;
 };
 
+function parseExplicitTargetWithPlugin(params: {
+  channel?: DeliverableMessageChannel;
+  fallbackChannel?: DeliverableMessageChannel;
+  raw?: string;
+}) {
+  const raw = params.raw?.trim();
+  if (!raw) {
+    return null;
+  }
+  const provider = params.channel ?? params.fallbackChannel;
+  if (!provider) {
+    return null;
+  }
+  return (
+    resolveOutboundChannelPlugin({ channel: provider })?.messaging?.parseExplicitTarget?.({
+      raw,
+    }) ?? null
+  );
+}
+
 export function resolveSessionDeliveryTarget(params: {
   entry?: SessionEntry;
   requestedChannel?: GatewayMessageChannel | "last";
@@ -77,7 +96,7 @@ export function resolveSessionDeliveryTarget(params: {
    * Callers should set this to the channel that originated the current
    * agent turn so the reply always routes back to the correct channel.
    *
-   * @see https://github.com/remoteclaw/remoteclaw/issues/24152
+   * @see https://github.com/openclaw/openclaw/issues/24152
    */
   turnSourceChannel?: DeliverableMessageChannel;
   /** Turn-source `to` — paired with `turnSourceChannel`. */
@@ -118,22 +137,19 @@ export function resolveSessionDeliveryTarget(params: {
     channel = params.fallbackChannel;
   }
 
-  // Parse :topic:NNN from explicitTo (Telegram topic syntax).
-  // Only applies when we positively know the channel is Telegram.
-  // When channel is unknown, the downstream send path (resolveTelegramSession)
-  // handles :topic: parsing independently.
-  const isTelegramContext = channel === "telegram" || (!channel && lastChannel === "telegram");
   let explicitTo = rawExplicitTo;
-  let parsedThreadId: number | undefined;
-  if (isTelegramContext && rawExplicitTo && rawExplicitTo.includes(":topic:")) {
-    const parsed = parseTelegramTarget(rawExplicitTo);
-    explicitTo = parsed.chatId;
-    parsedThreadId = parsed.messageThreadId;
+  const parsedExplicitTarget = parseExplicitTargetWithPlugin({
+    channel,
+    fallbackChannel: !channel ? lastChannel : undefined,
+    raw: rawExplicitTo,
+  });
+  if (parsedExplicitTarget?.to) {
+    explicitTo = parsedExplicitTarget.to;
   }
   const explicitThreadId =
     params.explicitThreadId != null && params.explicitThreadId !== ""
       ? params.explicitThreadId
-      : parsedThreadId;
+      : parsedExplicitTarget?.threadId;
 
   let to = explicitTo;
   if (!to && lastTo) {
@@ -169,7 +185,7 @@ export function resolveOutboundTarget(params: {
   channel: GatewayMessageChannel;
   to?: string;
   allowFrom?: string[];
-  cfg?: RemoteClawConfig;
+  cfg?: OpenClawConfig;
   accountId?: string | null;
   mode?: ChannelOutboundTargetMode;
 }): OutboundTargetResolution {
@@ -177,12 +193,15 @@ export function resolveOutboundTarget(params: {
     return {
       ok: false,
       error: new Error(
-        `Delivering to WebChat is not supported via \`${formatCliCommand("remoteclaw agent")}\`; use WhatsApp/Telegram or run with --deliver=false.`,
+        `Delivering to WebChat is not supported via \`${formatCliCommand("openclaw agent")}\`; use WhatsApp/Telegram or run with --deliver=false.`,
       ),
     };
   }
 
-  const plugin = getChannelPlugin(params.channel);
+  const plugin = resolveOutboundChannelPlugin({
+    channel: params.channel,
+    cfg: params.cfg,
+  });
   if (!plugin) {
     return {
       ok: false,
@@ -232,7 +251,7 @@ export function resolveOutboundTarget(params: {
 }
 
 export function resolveHeartbeatDeliveryTarget(params: {
-  cfg: RemoteClawConfig;
+  cfg: OpenClawConfig;
   entry?: SessionEntry;
   heartbeat?: AgentDefaultsConfig["heartbeat"];
 }): OutboundTarget {
@@ -243,7 +262,7 @@ export function resolveHeartbeatDeliveryTarget(params: {
   if (rawTarget === "none" || rawTarget === "last") {
     target = rawTarget;
   } else if (typeof rawTarget === "string") {
-    const normalized = normalizeChannelId(rawTarget);
+    const normalized = normalizeDeliverableOutboundChannel(rawTarget);
     if (normalized) {
       target = normalized;
     }
@@ -270,7 +289,10 @@ export function resolveHeartbeatDeliveryTarget(params: {
   let effectiveAccountId = heartbeatAccountId || resolvedTarget.accountId;
 
   if (heartbeatAccountId && resolvedTarget.channel) {
-    const plugin = getChannelPlugin(resolvedTarget.channel);
+    const plugin = resolveOutboundChannelPlugin({
+      channel: resolvedTarget.channel,
+      cfg,
+    });
     const listAccountIds = plugin?.config.listAccountIds;
     const accountIds = listAccountIds ? listAccountIds(cfg) : [];
     if (accountIds.length > 0) {
@@ -332,7 +354,10 @@ export function resolveHeartbeatDeliveryTarget(params: {
   }
 
   let reason: string | undefined;
-  const plugin = getChannelPlugin(resolvedTarget.channel);
+  const plugin = resolveOutboundChannelPlugin({
+    channel: resolvedTarget.channel,
+    cfg,
+  });
   if (plugin?.config.resolveAllowFrom) {
     const explicit = resolveOutboundTarget({
       channel: resolvedTarget.channel,
@@ -372,70 +397,6 @@ function buildNoHeartbeatDeliveryTarget(params: {
   };
 }
 
-function inferDiscordTargetChatType(to: string): ChatType | undefined {
-  try {
-    const target = parseDiscordTarget(to, { defaultKind: "channel" });
-    if (!target) {
-      return undefined;
-    }
-    return target.kind === "user" ? "direct" : "channel";
-  } catch {
-    return undefined;
-  }
-}
-
-function inferSlackTargetChatType(to: string): ChatType | undefined {
-  const target = parseSlackTarget(to, { defaultKind: "channel" });
-  if (!target) {
-    return undefined;
-  }
-  return target.kind === "user" ? "direct" : "channel";
-}
-
-function inferTelegramTargetChatType(to: string): ChatType | undefined {
-  const chatType = resolveTelegramTargetChatType(to);
-  return chatType === "unknown" ? undefined : chatType;
-}
-
-function inferWhatsAppTargetChatType(to: string): ChatType | undefined {
-  const normalized = normalizeWhatsAppTarget(to);
-  if (!normalized) {
-    return undefined;
-  }
-  return isWhatsAppGroupJid(normalized) ? "group" : "direct";
-}
-
-function inferSignalTargetChatType(rawTo: string): ChatType | undefined {
-  let to = rawTo.trim();
-  if (!to) {
-    return undefined;
-  }
-  if (/^signal:/i.test(to)) {
-    to = to.replace(/^signal:/i, "").trim();
-  }
-  if (!to) {
-    return undefined;
-  }
-  const lower = to.toLowerCase();
-  if (lower.startsWith("group:")) {
-    return "group";
-  }
-  if (lower.startsWith("username:") || lower.startsWith("u:")) {
-    return "direct";
-  }
-  return "direct";
-}
-
-const HEARTBEAT_TARGET_CHAT_TYPE_INFERERS: Partial<
-  Record<DeliverableMessageChannel, (to: string) => ChatType | undefined>
-> = {
-  discord: inferDiscordTargetChatType,
-  slack: inferSlackTargetChatType,
-  telegram: inferTelegramTargetChatType,
-  whatsapp: inferWhatsAppTargetChatType,
-  signal: inferSignalTargetChatType,
-};
-
 function inferChatTypeFromTarget(params: {
   channel: DeliverableMessageChannel;
   to: string;
@@ -454,7 +415,9 @@ function inferChatTypeFromTarget(params: {
   if (/^group:/i.test(to)) {
     return "group";
   }
-  return HEARTBEAT_TARGET_CHAT_TYPE_INFERERS[params.channel]?.(to);
+  return resolveOutboundChannelPlugin({
+    channel: params.channel,
+  })?.messaging?.inferTargetChatType?.({ to });
 }
 
 function resolveHeartbeatDeliveryChatType(params: {
@@ -505,7 +468,7 @@ function resolveHeartbeatSenderId(params: {
 }
 
 export function resolveHeartbeatSenderContext(params: {
-  cfg: RemoteClawConfig;
+  cfg: OpenClawConfig;
   entry?: SessionEntry;
   delivery: OutboundTarget;
 }): HeartbeatSenderContext {
@@ -515,7 +478,10 @@ export function resolveHeartbeatSenderContext(params: {
     params.delivery.accountId ??
     (provider === params.delivery.lastChannel ? params.delivery.lastAccountId : undefined);
   const allowFromRaw = provider
-    ? (getChannelPlugin(provider)?.config.resolveAllowFrom?.({
+    ? (resolveOutboundChannelPlugin({
+        channel: provider,
+        cfg: params.cfg,
+      })?.config.resolveAllowFrom?.({
         cfg: params.cfg,
         accountId,
       }) ?? [])

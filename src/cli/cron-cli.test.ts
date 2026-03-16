@@ -153,15 +153,17 @@ async function expectCronEditWithScheduleLookupExit(
 describe("cron cli", () => {
   it("exits 0 for cron run when job executes successfully", async () => {
     resetGatewayMock();
-    callGatewayFromCli.mockImplementation(async (method: string) => {
-      if (method === "cron.status") {
-        return { enabled: true };
-      }
-      if (method === "cron.run") {
-        return { ok: true, ran: true };
-      }
-      return { ok: true };
-    });
+    callGatewayFromCli.mockImplementation(
+      async (method: string, _opts: unknown, params?: unknown) => {
+        if (method === "cron.status") {
+          return { enabled: true } as never;
+        }
+        if (method === "cron.run") {
+          return { ok: true, ran: true, params } as never;
+        }
+        return { ok: true, params };
+      },
+    );
 
     const runtimeModule = await import("../runtime.js");
     const runtime = runtimeModule.defaultRuntime as { exit: (code: number) => void };
@@ -179,15 +181,17 @@ describe("cron cli", () => {
 
   it("exits 1 for cron run when job does not execute", async () => {
     resetGatewayMock();
-    callGatewayFromCli.mockImplementation(async (method: string) => {
-      if (method === "cron.status") {
-        return { enabled: true };
-      }
-      if (method === "cron.run") {
-        return { ok: true, ran: false };
-      }
-      return { ok: true };
-    });
+    callGatewayFromCli.mockImplementation(
+      async (method: string, _opts: unknown, params?: unknown) => {
+        if (method === "cron.status") {
+          return { enabled: true } as never;
+        }
+        if (method === "cron.run") {
+          return { ok: true, ran: false, params } as never;
+        }
+        return { ok: true, params };
+      },
+    );
 
     const runtimeModule = await import("../runtime.js");
     const runtime = runtimeModule.defaultRuntime as { exit: (code: number) => void };

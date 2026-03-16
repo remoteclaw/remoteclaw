@@ -68,9 +68,7 @@ describe("buildStatusMessage", () => {
 
   it("falls back to sessionEntry verboseLevel when resolvedVerbose is not passed", async () => {
     const text = await buildStatusMessage({
-      agent: {
-        model: "anthropic/pi:opus",
-      },
+      agent: {},
       sessionEntry: {
         sessionId: "abc",
         updatedAt: 0,

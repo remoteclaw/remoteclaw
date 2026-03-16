@@ -359,7 +359,7 @@ export async function readChannelAllowFromStore(
 
   const scopedPath = resolveAllowFromPath(channel, env, resolvedAccountId);
   const scopedEntries = await readAllowFromStateForPath(channel, scopedPath);
-  if (!shouldIncludeLegacyAllowFromEntries(normalizedAccountId)) {
+  if (!shouldIncludeLegacyAllowFromEntries(resolvedAccountId)) {
     return scopedEntries;
   }
   // Backward compatibility: legacy channel-level allowFrom store was unscoped.
@@ -386,7 +386,7 @@ export function readChannelAllowFromStoreSync(
 
   const scopedPath = resolveAllowFromPath(channel, env, resolvedAccountId);
   const scopedEntries = readAllowFromStateForPathSync(channel, scopedPath);
-  if (!shouldIncludeLegacyAllowFromEntries(normalizedAccountId)) {
+  if (!shouldIncludeLegacyAllowFromEntries(resolvedAccountId)) {
     return scopedEntries;
   }
   const legacyPath = resolveAllowFromPath(channel, env);

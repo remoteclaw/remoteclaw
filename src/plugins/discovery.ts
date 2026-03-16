@@ -71,17 +71,31 @@ function checkSourceEscapesRoot(params: {
   if (!sourceRealPath || !rootRealPath) {
     return null;
   }
-  if (isPathInside(rootRealPath, sourceRealPath)) {
-    return null;
+  if (!isPathInside(rootRealPath, sourceRealPath)) {
+    return {
+      reason: "source_escapes_root",
+      sourcePath: params.source,
+      rootPath: params.rootDir,
+      targetPath: params.source,
+      sourceRealPath,
+      rootRealPath,
+    };
   }
-  return {
-    reason: "source_escapes_root",
-    sourcePath: params.source,
-    rootPath: params.rootDir,
-    targetPath: params.source,
-    sourceRealPath,
-    rootRealPath,
-  };
+  // Hardlinks share the same inode but realpath cannot detect them.
+  // Reject files with multiple hard links because they may alias content
+  // outside the root directory.
+  const stat = safeStatSync(params.source);
+  if (stat?.isFile() && stat.nlink > 1) {
+    return {
+      reason: "source_escapes_root",
+      sourcePath: params.source,
+      rootPath: params.rootDir,
+      targetPath: params.source,
+      sourceRealPath,
+      rootRealPath,
+    };
+  }
+  return null;
 }
 
 function checkPathStatAndPermissions(params: {
@@ -229,6 +243,12 @@ function readPackageManifest(dir: string): PackageManifest | null {
     return null;
   }
   try {
+    // Reject hardlinked manifests — they may alias content outside the
+    // package directory and bypass path containment checks.
+    const stat = fs.statSync(manifestPath);
+    if (stat.isFile() && stat.nlink > 1) {
+      return null;
+    }
     const raw = fs.readFileSync(manifestPath, "utf-8");
     return JSON.parse(raw) as PackageManifest;
   } catch {

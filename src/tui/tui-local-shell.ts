@@ -111,7 +111,7 @@ export function createLocalShellRunner(deps: LocalShellDeps) {
         // and is gated behind an explicit in-session approval prompt.
         shell: true,
         cwd: getCwd(),
-        env,
+        env: { ...env, REMOTECLAW_SHELL: "tui-local" },
       });
 
       let stdout = "";

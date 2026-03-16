@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 import {
-  buildSystemRunApprovalBinding,
+  buildSystemRunApprovalBindingV1,
   buildSystemRunApprovalEnvBinding,
-  matchSystemRunApprovalBinding,
+  matchSystemRunApprovalBindingV1,
   matchSystemRunApprovalEnvHash,
   toSystemRunApprovalMismatchError,
 } from "../infra/system-run-approval-binding.js";
@@ -48,16 +48,16 @@ describe("matchSystemRunApprovalEnvHash", () => {
   });
 });
 
-describe("matchSystemRunApprovalBinding", () => {
+describe("matchSystemRunApprovalBindingV1", () => {
   test("accepts matching binding with reordered env keys", () => {
-    const expected = buildSystemRunApprovalBinding({
+    const expected = buildSystemRunApprovalBindingV1({
       argv: ["git", "diff"],
       cwd: null,
       agentId: null,
       sessionKey: null,
       env: { SAFE_A: "1", SAFE_B: "2" },
     });
-    const actual = buildSystemRunApprovalBinding({
+    const actual = buildSystemRunApprovalBindingV1({
       argv: ["git", "diff"],
       cwd: null,
       agentId: null,
@@ -65,7 +65,7 @@ describe("matchSystemRunApprovalBinding", () => {
       env: { SAFE_B: "2", SAFE_A: "1" },
     });
     expect(
-      matchSystemRunApprovalBinding({
+      matchSystemRunApprovalBindingV1({
         expected: expected.binding,
         actual: actual.binding,
         actualEnvKeys: actual.envKeys,
@@ -74,21 +74,21 @@ describe("matchSystemRunApprovalBinding", () => {
   });
 
   test("rejects env mismatch", () => {
-    const expected = buildSystemRunApprovalBinding({
+    const expected = buildSystemRunApprovalBindingV1({
       argv: ["git", "diff"],
       cwd: null,
       agentId: null,
       sessionKey: null,
       env: { SAFE: "1" },
     });
-    const actual = buildSystemRunApprovalBinding({
+    const actual = buildSystemRunApprovalBindingV1({
       argv: ["git", "diff"],
       cwd: null,
       agentId: null,
       sessionKey: null,
       env: { SAFE: "2" },
     });
-    const result = matchSystemRunApprovalBinding({
+    const result = matchSystemRunApprovalBindingV1({
       expected: expected.binding,
       actual: actual.binding,
       actualEnvKeys: actual.envKeys,

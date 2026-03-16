@@ -67,7 +67,7 @@ struct ExecApprovalsStoreRefactorTests {
     @Test
     func ensureFileHardensStateDirectoryPermissions() async throws {
         let stateDir = FileManager().temporaryDirectory
-            .appendingPathComponent("openclaw-state-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("remoteclaw-state-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager().removeItem(at: stateDir) }
         try FileManager().createDirectory(at: stateDir, withIntermediateDirectories: true)
         try FileManager().setAttributes([.posixPermissions: 0o755], ofItemAtPath: stateDir.path)

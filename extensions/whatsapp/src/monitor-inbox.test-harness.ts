@@ -44,7 +44,7 @@ export type MockSock = {
       getPNForLID: AnyMockFn;
     };
   };
-  user: { id: string };
+  user: { id: string; lid?: string };
 };
 
 const sessionState = vi.hoisted(() => ({
@@ -70,7 +70,7 @@ function createMockSock(): MockSock {
         getPNForLID: vi.fn().mockResolvedValue(null),
       },
     },
-    user: { id: "123@s.whatsapp.net" },
+    user: { id: "123@s.whatsapp.net", lid: "123:1@lid" },
   };
 }
 
@@ -96,7 +96,8 @@ vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
 });
 
 vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
+  const actual =
+    await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
   return {
     ...actual,
     upsertChannelPairingRequest: (...args: unknown[]) => upsertPairingRequestMock(...args),

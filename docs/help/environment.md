@@ -62,6 +62,18 @@ Env var equivalents:
 - `REMOTECLAW_THEME=dark`: force the dark TUI palette.
 - `COLORFGBG`: if your terminal exports it, OpenClaw uses the background color hint to auto-pick the TUI palette.
 
+## Runtime-injected env vars
+
+OpenClaw also injects context markers into spawned child processes:
+
+- `REMOTECLAW_SHELL=exec`: set for commands run through the `exec` tool.
+- `REMOTECLAW_SHELL=acp`: set for ACP runtime backend process spawns (for example `acpx`).
+- `REMOTECLAW_SHELL=acp-client`: set for `remoteclaw acp client` when it spawns the ACP bridge process.
+- `REMOTECLAW_SHELL=tui-local`: set for local TUI `!` shell commands.
+
+These are runtime markers (not required user config). They can be used in shell/profile logic
+to apply context-specific rules.
+
 ## Env var substitution in config
 
 You can reference env vars directly in config string values using `${VAR_NAME}` syntax:

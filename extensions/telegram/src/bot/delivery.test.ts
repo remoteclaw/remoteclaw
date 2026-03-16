@@ -233,6 +233,37 @@ describe("deliverReplies", () => {
     );
   });
 
+  it("emits internal message:sent when session hook context is available", async () => {
+    const runtime = createRuntime(false);
+    const sendMessage = vi.fn().mockResolvedValue({ message_id: 9, chat: { id: "123" } });
+    const bot = createBot({ sendMessage });
+
+    await deliverWith({
+      sessionKeyForInternalHooks: "agent:test:telegram:123",
+      mirrorIsGroup: true,
+      mirrorGroupId: "123",
+      replies: [{ text: "hello" }],
+      runtime,
+      bot,
+    });
+    const bot = createBot({ sendMessage });
+
+    await deliverWith({
+      replies: [{ text: "hello" }],
+      runtime,
+      bot,
+      silent: true,
+    });
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      "123",
+      expect.any(String),
+      expect.objectContaining({
+        disable_notification: true,
+      }),
+    );
+  });
+
   it("passes media metadata to message_sending hooks", async () => {
     messageHookRunner.hasHooks.mockImplementation((name: string) => name === "message_sending");
 

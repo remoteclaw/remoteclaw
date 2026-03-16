@@ -275,13 +275,6 @@ describe("registerTelegramNativeCommands", () => {
 
   it("sends plugin command error replies silently when silentErrorReplies is enabled", async () => {
     const commandHandlers = new Map<string, (ctx: unknown) => Promise<void>>();
-    const cfg: OpenClawConfig = {
-      channels: {
-        telegram: {
-          silentErrorReplies: true,
-        },
-      },
-    };
 
     pluginCommandMocks.getPluginCommandSpecs.mockReturnValue([
       {
@@ -299,25 +292,32 @@ describe("registerTelegramNativeCommands", () => {
     } as never);
 
     registerTelegramNativeCommands({
-      ...createNativeCommandTestParams(cfg, {
-        bot: {
-          api: {
-            setMyCommands: vi.fn().mockResolvedValue(undefined),
-            sendMessage: vi.fn().mockResolvedValue(undefined),
-          },
-          command: vi.fn((name: string, cb: (ctx: unknown) => Promise<void>) => {
-            commandHandlers.set(name, cb);
-          }),
-        } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
-      }),
+      ...buildParams({}),
+      bot: {
+        api: {
+          setMyCommands: vi.fn().mockResolvedValue(undefined),
+          sendMessage: vi.fn().mockResolvedValue(undefined),
+        },
+        command: vi.fn((name: string, cb: (ctx: unknown) => Promise<void>) => {
+          commandHandlers.set(name, cb);
+        }),
+      } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
       telegramCfg: { silentErrorReplies: true } as TelegramAccountConfig,
     });
 
     const handler = commandHandlers.get("plug");
     expect(handler).toBeTruthy();
-    await handler?.(createPrivateCommandContext());
+    await handler?.({
+      match: "",
+      message: {
+        message_id: 1,
+        date: Math.floor(Date.now() / 1000),
+        chat: { id: 123, type: "private" },
+        from: { id: 456, username: "alice" },
+      },
+    });
 
-    expect(deliverReplies).toHaveBeenCalledWith(
+    expect(deliveryMocks.deliverReplies).toHaveBeenCalledWith(
       expect.objectContaining({
         silent: true,
         replies: [expect.objectContaining({ isError: true })],

@@ -213,33 +213,7 @@ Notes:
 
 Related docs: [Plugins](/tools/plugin), [Channels](/channels/index), [Configuration](/gateway/configuration).
 
-## Capability plan alignment
-
-The plugin SDK refactor now aligns with the public capability model documented
-in [Plugins](/tools/plugin#public-capability-model).
-
-Key decisions:
-
-- Capabilities are the public plugin model. Registration is explicit and typed.
-- Legacy hook-only plugins remain supported without migration.
-- Plugin shapes (plain-capability, hybrid-capability, hook-only, non-capability)
-  are classified from actual registration behavior.
-- `remoteclaw plugins inspect` provides canonical deep introspection for any
-  loaded plugin, showing shape, capabilities, hooks, tools, and diagnostics.
-- Export boundary: export capabilities, not implementation convenience. Trim
-  non-contract helper exports.
-
-Required test matrix for the capability model:
-
-- hook-only legacy plugin fixture
-- plain capability plugin fixture
-- hybrid capability plugin fixture
-- real-world legacy hook-style plugin fixture
-- `before_agent_start` still works
-- typed hooks remain additive
-- capability usage and plugin shape are inspectable
-
-## Implemented channel-owned capabilities
+## Implemented channel-owned seams
 
 Recent refactor work widened the channel plugin contract so core can stop owning
 channel-specific UX and routing behavior:
@@ -260,5 +234,5 @@ channel-specific UX and routing behavior:
   config mutation/removal
 - `allowlist.supportsScope`: channel-owned allowlist scope advertisement
 
-These capabilities should be preferred over new `channel === "discord"` /
-`telegram` branches in shared core flows.
+These hooks should be preferred over new `channel === "discord"` / `telegram`
+branches in shared core flows.

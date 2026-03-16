@@ -320,10 +320,18 @@ describe("feishu_doc image fetch hardening", () => {
       registerTool,
     } as any);
 
-    const feishuDocTool = registerTool.mock.calls
+    const feishuDocToolOrFactory = registerTool.mock.calls
       .map((call) => call[0])
-      .find((tool) => tool.name === "feishu_doc");
-    expect(feishuDocTool).toBeDefined();
+      .find((entry) =>
+        typeof entry === "function"
+          ? entry({ messageChannel: "feishu" })?.name === "feishu_doc"
+          : entry.name === "feishu_doc",
+      );
+    expect(feishuDocToolOrFactory).toBeDefined();
+    const feishuDocTool =
+      typeof feishuDocToolOrFactory === "function"
+        ? feishuDocToolOrFactory({ messageChannel: "feishu" })
+        : feishuDocToolOrFactory;
 
     const result = await feishuDocTool.execute("tool-call", {
       action: "write",

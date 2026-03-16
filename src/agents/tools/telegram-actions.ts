@@ -14,6 +14,7 @@ import { resolveTelegramReactionLevel } from "../../telegram/reaction-level.js";
 import {
   createForumTopicTelegram,
   deleteMessageTelegram,
+  editForumTopicTelegram,
   editMessageTelegram,
   reactMessageTelegram,
   sendMessageTelegram,
@@ -467,6 +468,37 @@ export async function handleTelegramAction(
       name: result.name,
       chatId: result.chatId,
     });
+  }
+
+  if (action === "editForumTopic") {
+    if (!isActionEnabled("editForumTopic")) {
+      throw new Error("Telegram editForumTopic is disabled.");
+    }
+    const chatId = readStringOrNumberParam(params, "chatId", {
+      required: true,
+    });
+    const messageThreadId =
+      readNumberParam(params, "messageThreadId", { integer: true }) ??
+      readNumberParam(params, "threadId", { integer: true });
+    if (typeof messageThreadId !== "number") {
+      throw new Error("messageThreadId or threadId is required.");
+    }
+    const name = readStringParam(params, "name");
+    const iconCustomEmojiId = readStringParam(params, "iconCustomEmojiId");
+    const token = resolveTelegramToken(cfg, { accountId }).token;
+    if (!token) {
+      throw new Error(
+        "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
+      );
+    }
+    const result = await editForumTopicTelegram(chatId ?? "", messageThreadId, {
+      cfg,
+      token,
+      accountId: accountId ?? undefined,
+      name: name ?? undefined,
+      iconCustomEmojiId: iconCustomEmojiId ?? undefined,
+    });
+    return jsonResult(result);
   }
 
   throw new Error(`Unsupported Telegram action: ${action}`);

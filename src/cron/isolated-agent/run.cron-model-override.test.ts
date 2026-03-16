@@ -1,67 +1,76 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { runWithModelFallback } from "../../agents/model-fallback.js";
+import type { ChannelMessage } from "../../middleware/types.js";
 
 // ---------- mocks ----------
 
 const resolveAgentConfigMock = vi.fn();
+const channelBridgeHandleMock = vi.fn();
+
+vi.mock("../../middleware/channel-bridge.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../middleware/channel-bridge.js")>();
+  return {
+    ...actual,
+    ChannelBridge: class MockChannelBridge {
+      readonly provider: string;
+      readonly workspaceDir?: string;
+
+      constructor(opts: { provider: string; workspaceDir?: string }) {
+        this.provider = opts.provider;
+        this.workspaceDir = opts.workspaceDir;
+      }
+
+      handle(message: ChannelMessage, callbacks?: unknown, abortSignal?: AbortSignal) {
+        return channelBridgeHandleMock(message, callbacks, abortSignal);
+      }
+    },
+  };
+});
+
+vi.mock("../../agents/channel-tools.js", () => ({
+  resolveChannelMessageToolHints: vi.fn().mockReturnValue([]),
+}));
 
 vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentConfig: resolveAgentConfigMock,
   resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),
-  resolveAgentModelFallbacksOverride: vi.fn().mockReturnValue(undefined),
+  resolveAgentRuntimeArgs: vi.fn().mockReturnValue(undefined),
+  resolveAgentRuntimeEnv: vi.fn().mockReturnValue(undefined),
+  resolveAgentRuntimeOrThrow: vi.fn().mockReturnValue("claude"),
   resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
   resolveDefaultAgentId: vi.fn().mockReturnValue("default"),
-  resolveAgentSkillsFilter: vi.fn().mockReturnValue(undefined),
-}));
-
-vi.mock("../../agents/skills.js", () => ({
-  buildWorkspaceSkillSnapshot: vi.fn().mockReturnValue({
-    prompt: "<available_skills></available_skills>",
-    resolvedSkills: [],
-    version: 42,
-  }),
-}));
-
-vi.mock("../../agents/skills/refresh.js", () => ({
-  getSkillsSnapshotVersion: vi.fn().mockReturnValue(42),
 }));
 
 vi.mock("../../agents/workspace.js", () => ({
-  ensureAgentWorkspace: vi.fn().mockResolvedValue({ dir: "/tmp/workspace" }),
+  ensureAgentWorkspace: vi.fn().mockResolvedValue("/tmp/workspace"),
 }));
 
-vi.mock("../../agents/model-catalog.js", () => ({
-  loadModelCatalog: vi.fn().mockResolvedValue({ models: [] }),
+// Dead mock — model-selection.js was gutted in this fork but vi.mock still
+// needs an entry so the module ID resolves for any transitive imports.
+vi.mock("../../agents/model-selection.js", () => ({
+  getModelRefStatus: vi.fn().mockReturnValue({ allowed: false }),
+  resolveAllowedModelRef: vi.fn().mockReturnValue({
+    ref: { provider: "claude", model: "claude-sonnet-4-5" },
+  }),
+  resolveConfiguredModelRef: vi.fn().mockReturnValue({
+    provider: "claude",
+    model: "claude-sonnet-4-5",
+  }),
+  resolveHooksGmailModel: vi.fn().mockReturnValue(null),
 }));
 
-const resolveAllowedModelRefMock = vi.fn();
-const resolveConfiguredModelRefMock = vi.fn();
-
-vi.mock("../../agents/model-selection.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../agents/model-selection.js")>();
+vi.mock("../../agents/provider-utils.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../agents/provider-utils.js")>();
   return {
     ...actual,
-    getModelRefStatus: vi.fn().mockReturnValue({ allowed: false }),
-    isCliProvider: vi.fn().mockReturnValue(false),
-    resolveAllowedModelRef: resolveAllowedModelRefMock,
-    resolveConfiguredModelRef: resolveConfiguredModelRefMock,
-    resolveHooksGmailModel: vi.fn().mockReturnValue(null),
-    resolveThinkingDefault: vi.fn().mockReturnValue(undefined),
+    isCliProvider: vi.fn().mockReturnValue(true),
   };
 });
 
-vi.mock("../../agents/model-fallback.js", () => ({
-  runWithModelFallback: vi.fn(),
-}));
-
-const runWithModelFallbackMock = vi.mocked(runWithModelFallback);
-
-vi.mock("../../agents/pi-embedded.js", () => ({
-  runEmbeddedPiAgent: vi.fn(),
-}));
-
-vi.mock("../../agents/context.js", () => ({
-  lookupContextTokens: vi.fn().mockReturnValue(128000),
+vi.mock("../../agents/current-time.js", () => ({
+  resolveCronStyleNow: vi.fn().mockReturnValue({
+    formattedTime: "2026-02-10 12:00",
+    timeLine: "[Current time: 2026-02-10 12:00 UTC]",
+  }),
 }));
 
 vi.mock("../../agents/date-time.js", () => ({
@@ -79,23 +88,13 @@ vi.mock("../../agents/usage.js", () => ({
   hasNonzeroUsage: vi.fn().mockReturnValue(false),
 }));
 
-vi.mock("../../agents/subagent-announce.js", () => ({
-  runSubagentAnnounceFlow: vi.fn().mockResolvedValue(true),
-}));
-
-vi.mock("../../agents/cli-runner.js", () => ({
-  runCliAgent: vi.fn(),
-}));
-
 vi.mock("../../agents/cli-session.js", () => ({
   getCliSessionId: vi.fn().mockReturnValue(undefined),
   setCliSessionId: vi.fn(),
 }));
 
 vi.mock("../../auto-reply/thinking.js", () => ({
-  normalizeThinkLevel: vi.fn().mockReturnValue(undefined),
   normalizeVerboseLevel: vi.fn().mockReturnValue("off"),
-  supportsXHighThinking: vi.fn().mockReturnValue(false),
 }));
 
 vi.mock("../../cli/outbound-send-deps.js", () => ({
@@ -106,9 +105,15 @@ const updateSessionStoreMock = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../../config/sessions.js", () => ({
   resolveAgentMainSessionKey: vi.fn().mockReturnValue("main:default"),
-  resolveSessionTranscriptPath: vi.fn().mockReturnValue("/tmp/transcript.jsonl"),
-  setSessionRuntimeModel: vi.fn(),
   updateSessionStore: updateSessionStoreMock,
+}));
+
+vi.mock("../../config/paths.js", () => ({
+  resolveGatewayPort: vi.fn().mockReturnValue(3579),
+}));
+
+vi.mock("../../gateway/credentials.js", () => ({
+  resolveGatewayCredentialsFromConfig: vi.fn().mockReturnValue({ token: "test-token" }),
 }));
 
 vi.mock("../../routing/session-key.js", async (importOriginal) => {
@@ -122,14 +127,6 @@ vi.mock("../../routing/session-key.js", async (importOriginal) => {
 
 vi.mock("../../infra/agent-events.js", () => ({
   registerAgentRunContext: vi.fn(),
-}));
-
-vi.mock("../../infra/outbound/deliver.js", () => ({
-  deliverOutboundPayloads: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("../../infra/skills-remote.js", () => ({
-  getRemoteSkillEligibility: vi.fn().mockReturnValue({}),
 }));
 
 const logWarnMock = vi.fn();
@@ -154,7 +151,17 @@ vi.mock("./delivery-target.js", () => ({
     to: undefined,
     accountId: undefined,
     error: undefined,
+    ok: true,
   }),
+}));
+
+vi.mock("./delivery-dispatch.js", () => ({
+  dispatchCronDelivery: vi.fn().mockResolvedValue({
+    delivered: false,
+    deliveryAttempted: false,
+  }),
+  matchesMessagingToolDeliveryTarget: vi.fn().mockReturnValue(false),
+  resolveCronDeliveryBestEffort: vi.fn().mockReturnValue(false),
 }));
 
 vi.mock("./helpers.js", () => ({
@@ -166,15 +173,13 @@ vi.mock("./helpers.js", () => ({
   resolveHeartbeatAckMaxChars: vi.fn().mockReturnValue(100),
 }));
 
+vi.mock("./session-key.js", () => ({
+  resolveCronAgentSessionKey: vi.fn().mockReturnValue("cron:digest:default"),
+}));
+
 const resolveCronSessionMock = vi.fn();
 vi.mock("./session.js", () => ({
   resolveCronSession: resolveCronSessionMock,
-}));
-
-vi.mock("../../agents/defaults.js", () => ({
-  DEFAULT_CONTEXT_TOKENS: 128000,
-  DEFAULT_MODEL: "gpt-4",
-  DEFAULT_PROVIDER: "openai",
 }));
 
 const { runCronIsolatedAgentTurn } = await import("./run.js");
@@ -213,59 +218,58 @@ function makeFreshSessionEntry(overrides?: Record<string, unknown>) {
     updatedAt: 0,
     systemSent: false,
     skillsSnapshot: undefined,
-    // Crucially: no model or modelProvider — simulates a brand-new session
+    // Crucially: no model or modelProvider -- simulates a brand-new session
     model: undefined as string | undefined,
     modelProvider: undefined as string | undefined,
     ...overrides,
   };
 }
 
-function makeSuccessfulRunResult(overrides?: Record<string, unknown>) {
+/** Build a successful AgentDeliveryResult matching ChannelBridge.handle() shape. */
+function makeSuccessfulDeliveryResult(overrides?: Record<string, unknown>) {
   return {
-    result: {
-      payloads: [{ text: "digest complete" }],
-      meta: {
-        agentMeta: {
-          model: "claude-sonnet-4-6",
-          provider: "anthropic",
-          usage: { input: 100, output: 50 },
-        },
-      },
+    payloads: [{ text: "digest complete" }],
+    run: {
+      text: "digest complete",
+      sessionId: "cli-session-new",
+      durationMs: 1500,
+      usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      aborted: false,
+      stopReason: "end_turn",
     },
-    provider: "anthropic",
-    model: "claude-sonnet-4-6",
-    attempts: [],
+    mcp: {
+      sentTexts: [],
+      sentMediaUrls: [],
+      sentTargets: [],
+      cronAdds: 0,
+    },
+    error: undefined,
     ...overrides,
   };
 }
 
 // ---------- tests ----------
 
-describe("runCronIsolatedAgentTurn — cron model override (#21057)", () => {
+describe("runCronIsolatedAgentTurn -- cron model override (#21057)", () => {
   let previousFastTestEnv: string | undefined;
-  // Hold onto the cron session *object* — the code may reassign its
+  // Hold onto the cron session *object* -- the code may reassign its
   // `sessionEntry` property (e.g. during skills snapshot refresh), so
   // checking a stale reference would give a false negative.
-  let cronSession: { sessionEntry: ReturnType<typeof makeFreshSessionEntry>; [k: string]: unknown };
+  let cronSession: {
+    sessionEntry: ReturnType<typeof makeFreshSessionEntry>;
+    [k: string]: unknown;
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    previousFastTestEnv = process.env.OPENCLAW_TEST_FAST;
-    delete process.env.OPENCLAW_TEST_FAST;
-
-    // Agent default model is Opus
-    resolveConfiguredModelRefMock.mockReturnValue({
-      provider: "anthropic",
-      model: "claude-opus-4-6",
-    });
-
-    // Cron payload model override resolves to Sonnet
-    resolveAllowedModelRefMock.mockReturnValue({
-      ref: { provider: "anthropic", model: "claude-sonnet-4-6" },
-    });
+    previousFastTestEnv = process.env.REMOTECLAW_TEST_FAST;
+    delete process.env.REMOTECLAW_TEST_FAST;
 
     resolveAgentConfigMock.mockReturnValue(undefined);
     updateSessionStoreMock.mockResolvedValue(undefined);
+
+    // Default: ChannelBridge.handle() returns a successful delivery
+    channelBridgeHandleMock.mockResolvedValue(makeSuccessfulDeliveryResult());
 
     cronSession = {
       storePath: "/tmp/store.json",
@@ -279,22 +283,22 @@ describe("runCronIsolatedAgentTurn — cron model override (#21057)", () => {
 
   afterEach(() => {
     if (previousFastTestEnv == null) {
-      delete process.env.OPENCLAW_TEST_FAST;
+      delete process.env.REMOTECLAW_TEST_FAST;
       return;
     }
-    process.env.OPENCLAW_TEST_FAST = previousFastTestEnv;
+    process.env.REMOTECLAW_TEST_FAST = previousFastTestEnv;
   });
 
   it("persists cron payload model on session entry even when the run throws", async () => {
     // Simulate the agent run throwing (e.g. LLM provider timeout)
-    runWithModelFallbackMock.mockRejectedValueOnce(new Error("LLM provider timeout"));
+    channelBridgeHandleMock.mockRejectedValueOnce(new Error("LLM provider timeout"));
 
     const result = await runCronIsolatedAgentTurn(makeParams());
 
     expect(result.status).toBe("error");
 
     // The session entry should record the intended cron model override (Sonnet)
-    // so that sessions_list does not fall back to the agent default (Opus).
+    // so that sessions_list does not fall back to the agent default.
     //
     // BUG (#21057): before the fix, the model was only written to the session
     // entry AFTER a successful run (in the post-run telemetry block), so it
@@ -306,7 +310,7 @@ describe("runCronIsolatedAgentTurn — cron model override (#21057)", () => {
 
   it("session entry already carries cron model at pre-run persist time (race condition)", async () => {
     // Capture a deep snapshot of the session entry at each persist call so we
-    // can inspect what sessions_list would see mid-run — before the post-run
+    // can inspect what sessions_list would see mid-run -- before the post-run
     // persist overwrites the entry with the actual model from agentMeta.
     const persistedSnapshots: Array<{
       model?: string;
@@ -326,38 +330,22 @@ describe("runCronIsolatedAgentTurn — cron model override (#21057)", () => {
       },
     );
 
-    runWithModelFallbackMock.mockResolvedValueOnce(makeSuccessfulRunResult());
+    channelBridgeHandleMock.mockResolvedValueOnce(makeSuccessfulDeliveryResult());
 
     await runCronIsolatedAgentTurn(makeParams());
 
-    // Persist ordering: [0] skills snapshot, [1] pre-run model+systemSent,
-    // [2] post-run telemetry.  Index 1 is what a concurrent sessions_list
-    // would read while the agent run is in flight.
-    expect(persistedSnapshots.length).toBeGreaterThanOrEqual(3);
-    const preRunSnapshot = persistedSnapshots[1];
+    // Persist ordering: [0] pre-run model+systemSent, [1] post-run telemetry.
+    // Index 0 is what a concurrent sessions_list would read while the agent
+    // run is in flight.
+    expect(persistedSnapshots.length).toBeGreaterThanOrEqual(2);
+    const preRunSnapshot = persistedSnapshots[0];
     expect(preRunSnapshot.model).toBe("claude-sonnet-4-6");
     expect(preRunSnapshot.modelProvider).toBe("anthropic");
     expect(preRunSnapshot.systemSent).toBe(true);
   });
 
-  it("returns error without persisting model when payload model is disallowed", async () => {
-    resolveAllowedModelRefMock.mockReturnValueOnce({
-      error: "Model not allowed: anthropic/claude-sonnet-4-6",
-    });
-
-    const result = await runCronIsolatedAgentTurn(makeParams());
-
-    expect(result.status).toBe("error");
-    expect(result.error).toContain("Model not allowed");
-    // Model should remain undefined — the early return happens before the
-    // pre-run persist block, so neither the session entry nor the store
-    // should be touched with a rejected model.
-    expect(cronSession.sessionEntry.model).toBeUndefined();
-    expect(cronSession.sessionEntry.modelProvider).toBeUndefined();
-  });
-
   it("persists session-level /model override on session entry before the run", async () => {
-    // No cron payload model — the job has no model field
+    // No cron payload model -- the job has no model field
     const jobWithoutModel = makeJob({
       payload: { kind: "agentTurn", message: "run daily digest" },
     });
@@ -369,35 +357,28 @@ describe("runCronIsolatedAgentTurn — cron model override (#21057)", () => {
     });
     resolveCronSessionMock.mockReturnValue(cronSession);
 
-    // resolveAllowedModelRef is called for the session override path too
-    resolveAllowedModelRefMock.mockReturnValue({
-      ref: { provider: "anthropic", model: "claude-haiku-4-5" },
-    });
-
-    runWithModelFallbackMock.mockRejectedValueOnce(new Error("LLM provider timeout"));
+    channelBridgeHandleMock.mockRejectedValueOnce(new Error("LLM provider timeout"));
 
     const result = await runCronIsolatedAgentTurn(makeParams({ job: jobWithoutModel }));
 
     expect(result.status).toBe("error");
     // Even though the run failed, the session-level model override should
-    // be persisted on the entry — not the agent default (Opus).
+    // be persisted on the entry -- not the agent default.
     expect(cronSession.sessionEntry.model).toBe("claude-haiku-4-5");
     expect(cronSession.sessionEntry.modelProvider).toBe("anthropic");
   });
 
   it("logs warning and continues when pre-run persist fails", async () => {
-    // Persist ordering: [1] skills snapshot, [2] pre-run, [3] post-run.
-    // Only the pre-run persist (call 2) should fail — the skills snapshot
-    // persist is pre-existing code without a try-catch guard.
+    // The pre-run persist (call 1) should fail.
     let callCount = 0;
     updateSessionStoreMock.mockImplementation(async () => {
       callCount++;
-      if (callCount === 2) {
+      if (callCount === 1) {
         throw new Error("ENOSPC: no space left on device");
       }
     });
 
-    runWithModelFallbackMock.mockResolvedValueOnce(makeSuccessfulRunResult());
+    channelBridgeHandleMock.mockResolvedValueOnce(makeSuccessfulDeliveryResult());
 
     const result = await runCronIsolatedAgentTurn(makeParams());
 
@@ -414,14 +395,14 @@ describe("runCronIsolatedAgentTurn — cron model override (#21057)", () => {
       payload: { kind: "agentTurn", message: "run daily digest" },
     });
 
-    runWithModelFallbackMock.mockRejectedValueOnce(new Error("LLM provider timeout"));
+    channelBridgeHandleMock.mockRejectedValueOnce(new Error("LLM provider timeout"));
 
     const result = await runCronIsolatedAgentTurn(makeParams({ job: jobWithoutModel }));
 
     expect(result.status).toBe("error");
-    // With no override, the default model (Opus) should still be persisted
-    // on the session entry rather than left undefined.
-    expect(cronSession.sessionEntry.model).toBe("claude-opus-4-6");
-    expect(cronSession.sessionEntry.modelProvider).toBe("anthropic");
+    // With no override, the default model (from normalizeModelRef("unknown","unknown"))
+    // should still be persisted on the session entry rather than left undefined.
+    expect(cronSession.sessionEntry.model).toBe("unknown");
+    expect(cronSession.sessionEntry.modelProvider).toBe("unknown");
   });
 });

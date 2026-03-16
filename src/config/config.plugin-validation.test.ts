@@ -34,8 +34,6 @@ async function writePluginFixture(params: {
 describe("config plugin validation", () => {
   let fixtureRoot = "";
   let suiteHome = "";
-  let badPluginDir = "";
-  let bluebubblesPluginDir = "";
   const envSnapshot = {
     REMOTECLAW_STATE_DIR: process.env.REMOTECLAW_STATE_DIR,
     REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS: process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS,
@@ -50,32 +48,11 @@ describe("config plugin validation", () => {
     fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-config-plugin-validation-"));
     suiteHome = path.join(fixtureRoot, "home");
     await fs.mkdir(suiteHome, { recursive: true });
-    badPluginDir = path.join(suiteHome, "bad-plugin");
-    bluebubblesPluginDir = path.join(suiteHome, "bluebubbles-plugin");
-    await writePluginFixture({
-      dir: badPluginDir,
-      id: "bad-plugin",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          value: { type: "boolean" },
-        },
-        required: ["value"],
-      },
-    });
-    await writePluginFixture({
-      dir: bluebubblesPluginDir,
-      id: "bluebubbles-plugin",
-      channels: ["bluebubbles"],
-      schema: { type: "object" },
-    });
     process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS = "10000";
     clearPluginManifestRegistryCache();
   });
 
   afterAll(async () => {
-    await fs.rm(fixtureRoot, { recursive: true, force: true });
     clearPluginManifestRegistryCache();
     if (envSnapshot.REMOTECLAW_STATE_DIR === undefined) {
       delete process.env.REMOTECLAW_STATE_DIR;
@@ -88,6 +65,7 @@ describe("config plugin validation", () => {
       process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS =
         envSnapshot.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS;
     }
+    await fs.rm(fixtureRoot, { recursive: true, force: true });
   });
 
   it("rejects missing plugin load paths", async () => {
@@ -121,14 +99,13 @@ describe("config plugin validation", () => {
     }
   });
 
-  it("rejects missing plugin ids in allow/deny/slots", async () => {
+  it("rejects missing plugin ids in allow/deny", async () => {
     const res = validateInSuite({
       agents: { list: [{ id: "pi", workspace: "/tmp/test-workspace" }] },
       plugins: {
         enabled: false,
         allow: ["missing-allow"],
         deny: ["missing-deny"],
-        slots: { memory: "missing-slot" },
       },
     });
     expect(res.ok).toBe(false);
@@ -137,7 +114,6 @@ describe("config plugin validation", () => {
         expect.arrayContaining([
           { path: "plugins.allow", message: "plugin not found: missing-allow" },
           { path: "plugins.deny", message: "plugin not found: missing-deny" },
-          { path: "plugins.slots.memory", message: "plugin not found: missing-slot" },
         ]),
       );
     }
@@ -152,7 +128,6 @@ describe("config plugin validation", () => {
         entries: { [removedId]: { enabled: true } },
         allow: [removedId],
         deny: [removedId],
-        slots: { memory: removedId },
       },
     });
     expect(res.ok).toBe(true);
@@ -174,22 +149,31 @@ describe("config plugin validation", () => {
             message:
               "plugin removed: google-antigravity-auth (stale config entry ignored; remove it from plugins config)",
           },
-          {
-            path: "plugins.slots.memory",
-            message:
-              "plugin removed: google-antigravity-auth (stale config entry ignored; remove it from plugins config)",
-          },
         ]),
       );
     }
   });
 
   it("surfaces plugin config diagnostics", async () => {
+    const pluginDir = path.join(suiteHome, "bad-plugin");
+    await writePluginFixture({
+      dir: pluginDir,
+      id: "bad-plugin",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          value: { type: "boolean" },
+        },
+        required: ["value"],
+      },
+    });
+
     const res = validateInSuite({
       agents: { list: [{ id: "pi", workspace: "/tmp/test-workspace" }] },
       plugins: {
         enabled: true,
-        load: { paths: [badPluginDir] },
+        load: { paths: [pluginDir] },
         entries: { "bad-plugin": { config: { value: "nope" } } },
       },
     });
@@ -227,12 +211,20 @@ describe("config plugin validation", () => {
   });
 
   it("accepts plugin heartbeat targets", async () => {
+    const pluginDir = path.join(suiteHome, "bluebubbles-plugin");
+    await writePluginFixture({
+      dir: pluginDir,
+      id: "bluebubbles-plugin",
+      channels: ["bluebubbles"],
+      schema: { type: "object" },
+    });
+
     const res = validateInSuite({
       agents: {
         defaults: { heartbeat: { target: "bluebubbles" } },
         list: [{ id: "pi", workspace: "/tmp/test-workspace" }],
       },
-      plugins: { enabled: false, load: { paths: [bluebubblesPluginDir] } },
+      plugins: { enabled: false, load: { paths: [pluginDir] } },
     });
     expect(res.ok).toBe(true);
   });

@@ -8,17 +8,16 @@ import { resolveInteractiveTextFallback } from "remoteclaw/plugin-sdk/interactiv
 import {
   resolvePayloadMediaUrls,
   sendPayloadMediaSequence,
-} from "openclaw/plugin-sdk/channel-runtime";
-import type { ChannelOutboundAdapter } from "openclaw/plugin-sdk/channel-runtime";
-import { resolveOutboundSendDep, type OutboundSendDeps } from "openclaw/plugin-sdk/channel-runtime";
-import { resolveInteractiveTextFallback } from "openclaw/plugin-sdk/interactive-runtime";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveOutboundSendDep, type OutboundSendDeps } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveInteractiveTextFallback } from "remoteclaw/plugin-sdk/interactive-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { TelegramInlineButtons } from "./button-types.js";
-import { resolveTelegramInlineButtons } from "./button-types.js";
+import { buildTelegramInteractiveButtons } from "./button-types.js";
 import { markdownToTelegramHtmlChunks } from "./format.js";
 import { parseTelegramReplyToMessageId, parseTelegramThreadId } from "./outbound-params.js";
 import { sendMessageTelegram } from "./send.js";
-import { buildTelegramInteractiveButtons } from "./shared-interactive.js";
 
 type TelegramSendFn = typeof sendMessageTelegram;
 type TelegramSendOpts = Parameters<TelegramSendFn>[2];

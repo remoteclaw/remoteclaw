@@ -11,9 +11,15 @@ import {
   sendTextMediaPayload,
 } from "remoteclaw/plugin-sdk/reply-payload";
 import type { DiscordComponentMessageSpec } from "./components.js";
+import { buildDiscordInteractiveComponents } from "./components.js";
 import { getThreadBindingManager, type ThreadBindingRecord } from "./monitor/thread-bindings.js";
 import { normalizeDiscordOutboundTarget } from "./normalize.js";
-import { sendMessageDiscord, sendPollDiscord, sendWebhookMessageDiscord } from "./send.js";
+import {
+  sendDiscordComponentMessage,
+  sendMessageDiscord,
+  sendPollDiscord,
+  sendWebhookMessageDiscord,
+} from "./send.js";
 
 function resolveDiscordOutboundTarget(params: {
   to: string;

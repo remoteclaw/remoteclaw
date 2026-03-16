@@ -2,10 +2,32 @@ import { describe, expect, it, vi } from "vitest";
 import { registerSlackInteractionEvents } from "./interactions.js";
 
 const enqueueSystemEventMock = vi.fn();
+const dispatchPluginInteractiveHandlerMock = vi.fn(async () => ({
+  matched: false,
+  handled: false,
+  duplicate: false,
+}));
+const resolvePluginConversationBindingApprovalMock = vi.fn();
+const buildPluginBindingResolvedTextMock = vi.fn(() => "Binding updated.");
 
 vi.mock("../../../../../src/infra/system-events.js", () => ({
   enqueueSystemEvent: (...args: unknown[]) => enqueueSystemEventMock(...args),
 }));
+
+vi.mock("../../../../../src/plugins/conversation-binding.js", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../../../src/plugins/conversation-binding.js")
+  >("../../../../../src/plugins/conversation-binding.js");
+  return {
+    ...actual,
+    resolvePluginConversationBindingApproval: (...args: unknown[]) =>
+      (resolvePluginConversationBindingApprovalMock as (...innerArgs: unknown[]) => unknown)(
+        ...args,
+      ),
+    buildPluginBindingResolvedText: (...args: unknown[]) =>
+      (buildPluginBindingResolvedTextMock as (...innerArgs: unknown[]) => unknown)(...args),
+  };
+});
 
 type RegisteredHandler = (args: {
   ack: () => Promise<void>;
@@ -151,6 +173,20 @@ function createContext(overrides?: {
 }
 
 describe("registerSlackInteractionEvents", () => {
+  beforeEach(() => {
+    enqueueSystemEventMock.mockClear();
+    dispatchPluginInteractiveHandlerMock.mockClear();
+    resolvePluginConversationBindingApprovalMock.mockClear();
+    resolvePluginConversationBindingApprovalMock.mockResolvedValue({ status: "expired" });
+    buildPluginBindingResolvedTextMock.mockClear();
+    buildPluginBindingResolvedTextMock.mockReturnValue("Binding updated.");
+    dispatchPluginInteractiveHandlerMock.mockResolvedValue({
+      matched: false,
+      handled: false,
+      duplicate: false,
+    });
+  });
+
   it("enqueues structured events and updates button rows", async () => {
     enqueueSystemEventMock.mockClear();
     const { ctx, app, getHandler, resolveSessionKey } = createContext();
@@ -226,6 +262,141 @@ describe("registerSlackInteractionEvents", () => {
       senderId: "U123",
     });
     expect(app.client.chat.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes matching Slack actions through the shared plugin interactive dispatcher", async () => {
+    dispatchPluginInteractiveHandlerMock.mockResolvedValueOnce({
+      matched: true,
+      handled: true,
+      duplicate: false,
+    });
+    const { ctx, app, getHandler } = createContext();
+    registerSlackInteractionEvents({ ctx: ctx as never });
+
+    const handler = getHandler();
+    expect(handler).toBeTruthy();
+
+    const ack = vi.fn().mockResolvedValue(undefined);
+    const respond = vi.fn().mockResolvedValue(undefined);
+    await handler!({
+      ack,
+      respond,
+      body: {
+        user: { id: "U123" },
+        team: { id: "T9" },
+        trigger_id: "123.trigger",
+        response_url: "https://hooks.slack.test/response",
+        channel: { id: "C1" },
+        container: { channel_id: "C1", message_ts: "100.200", thread_ts: "100.100" },
+        message: {
+          ts: "100.200",
+          text: "fallback",
+          blocks: [
+            {
+              type: "actions",
+              block_id: "codex_actions",
+              elements: [{ type: "button", action_id: "codex" }],
+            },
+          ],
+        },
+      },
+      action: {
+        type: "button",
+        action_id: "codex",
+        block_id: "codex_actions",
+        value: "approve:thread-1",
+        text: { type: "plain_text", text: "Approve" },
+      },
+    });
+
+    expect(ack).toHaveBeenCalled();
+    expect(dispatchPluginInteractiveHandlerMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: "slack",
+        data: "codex:approve:thread-1",
+        interactionId: "U123:C1:100.200:codex:approve:thread-1",
+        ctx: expect.objectContaining({
+          accountId: ctx.accountId,
+          conversationId: "C1",
+          interactionId: "U123:C1:100.200:codex:approve:thread-1",
+          threadId: "100.100",
+          interaction: expect.objectContaining({
+            actionId: "codex",
+            value: "approve:thread-1",
+          }),
+        }),
+      }),
+    );
+    expect(enqueueSystemEventMock).not.toHaveBeenCalled();
+    expect(app.client.chat.update).not.toHaveBeenCalled();
+  });
+
+  it("resolves plugin binding approvals from shared interactive Slack actions", async () => {
+    resolvePluginConversationBindingApprovalMock.mockResolvedValueOnce({
+      status: "approved",
+      decision: "allow-once",
+      request: {
+        pluginId: "codex",
+        pluginName: "Codex",
+        summary: "for this thread",
+      },
+    });
+    const { ctx, app, getHandler } = createContext();
+    registerSlackInteractionEvents({ ctx: ctx as never });
+
+    const handler = getHandler();
+    expect(handler).toBeTruthy();
+
+    const ack = vi.fn().mockResolvedValue(undefined);
+    const respond = vi.fn().mockResolvedValue(undefined);
+    await handler!({
+      ack,
+      respond,
+      body: {
+        user: { id: "U123" },
+        channel: { id: "C1" },
+        container: { channel_id: "C1", message_ts: "100.200", thread_ts: "100.100" },
+        message: {
+          ts: "100.200",
+          text: "Approve this bind?",
+          blocks: [
+            {
+              type: "actions",
+              block_id: "bind_actions",
+              elements: [{ type: "button", action_id: "openclaw:reply_button" }],
+            },
+          ],
+        },
+      },
+      action: {
+        type: "button",
+        action_id: "openclaw:reply_button",
+        block_id: "bind_actions",
+        value: "pluginbind:approval-123:o",
+        text: { type: "plain_text", text: "Allow once" },
+      },
+    });
+
+    expect(ack).toHaveBeenCalled();
+    expect(resolvePluginConversationBindingApprovalMock).toHaveBeenCalledWith({
+      approvalId: "approval-123",
+      decision: "allow-once",
+      senderId: "U123",
+    });
+    expect(dispatchPluginInteractiveHandlerMock).not.toHaveBeenCalled();
+    expect(app.client.chat.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: "C1",
+        ts: "100.200",
+        text: "Approve this bind?",
+        blocks: [],
+      }),
+    );
+    expect(respond).toHaveBeenCalledWith({
+      text: "Binding updated.",
+      response_type: "ephemeral",
+    });
+    expect(enqueueSystemEventMock).not.toHaveBeenCalled();
   });
 
   it("drops block actions when mismatch guard triggers", async () => {

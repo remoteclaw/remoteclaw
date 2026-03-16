@@ -1,21 +1,19 @@
+import type { ReplyPayload } from "../../../src/auto-reply/types.js";
 import {
   resolvePayloadMediaUrls,
   sendPayloadMediaSequence,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
+} from "../../../src/channels/plugins/outbound/direct-text-media.js";
+import type { ChannelOutboundAdapter } from "../../../src/channels/plugins/types.js";
 import {
   resolveOutboundSendDep,
   type OutboundSendDeps,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveInteractiveTextFallback } from "remoteclaw/plugin-sdk/interactive-runtime";
-import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+} from "../../../src/infra/outbound/send-deps.js";
+import { resolveInteractiveTextFallback } from "../../../src/interactive/payload.js";
 import type { TelegramInlineButtons } from "./button-types.js";
-import { resolveTelegramInlineButtons } from "./button-types.js";
+import { buildTelegramInteractiveButtons } from "./button-types.js";
 import { markdownToTelegramHtmlChunks } from "./format.js";
 import { parseTelegramReplyToMessageId, parseTelegramThreadId } from "./outbound-params.js";
 import { sendMessageTelegram } from "./send.js";
-
-export const TELEGRAM_TEXT_CHUNK_LIMIT = 4000;
 
 type TelegramSendFn = typeof sendMessageTelegram;
 type TelegramSendOpts = Parameters<TelegramSendFn>[2];
@@ -69,10 +67,8 @@ export async function sendTelegramPayloadMessages(params: {
       interactive: params.payload.interactive,
     }) ?? "";
   const mediaUrls = resolvePayloadMediaUrls(params.payload);
-  const buttons = resolveTelegramInlineButtons({
-    buttons: telegramData?.buttons,
-    interactive: params.payload.interactive,
-  });
+  const interactiveButtons = buildTelegramInteractiveButtons(params.payload.interactive);
+  const buttons = telegramData?.buttons ?? interactiveButtons;
   const payloadOpts = {
     ...params.baseOpts,
     quoteText,
@@ -103,10 +99,7 @@ export const telegramOutbound: ChannelOutboundAdapter = {
   deliveryMode: "direct",
   chunker: markdownToTelegramHtmlChunks,
   chunkerMode: "markdown",
-  textChunkLimit: TELEGRAM_TEXT_CHUNK_LIMIT,
-  shouldSkipPlainTextSanitization: ({ payload }) => Boolean(payload.channelData),
-  resolveEffectiveTextChunkLimit: ({ fallbackLimit }) =>
-    typeof fallbackLimit === "number" ? Math.min(fallbackLimit, 4096) : 4096,
+  textChunkLimit: 4000,
   sendText: async ({ cfg, to, text, accountId, deps, replyToId, threadId }) => {
     const { send, baseOpts } = resolveTelegramSendContext({
       cfg,

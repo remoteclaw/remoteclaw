@@ -1,9 +1,9 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import type { ChannelMessageActionContext } from "remoteclaw/plugin-sdk/channel-contract";
-import { normalizeInteractiveReply } from "remoteclaw/plugin-sdk/interactive-runtime";
-import { readNumberParam, readStringParam } from "remoteclaw/plugin-sdk/param-readers";
-import { parseSlackBlocksInput } from "./blocks-input.js";
-import { buildSlackInteractiveBlocks } from "./blocks-render.js";
+import { parseSlackBlocksInput } from "../../extensions/slack/src/blocks-input.js";
+import { buildSlackInteractiveBlocks } from "../../extensions/slack/src/blocks-render.js";
+import { readNumberParam, readStringParam } from "../agents/tools/common.js";
+import type { ChannelMessageActionContext } from "../channels/plugins/types.js";
+import { normalizeInteractiveReply } from "../interactive/payload.js";
 
 type SlackActionInvoke = (
   action: Record<string, unknown>,
@@ -15,7 +15,6 @@ function readSlackBlocksParam(actionParams: Record<string, unknown>) {
   return parseSlackBlocksInput(actionParams.blocks) as Record<string, unknown>[] | undefined;
 }
 
-/** Translate generic channel action requests into Slack-specific tool invocations and payload shapes. */
 export async function handleSlackMessageAction(params: {
   providerId: string;
   ctx: ChannelMessageActionContext;
@@ -40,9 +39,9 @@ export async function handleSlackMessageAction(params: {
       allowEmpty: true,
     });
     const mediaUrl = readStringParam(actionParams, "media", { trim: false });
-    const interactive = normalizeInteractiveReply(actionParams.interactive);
-    const interactiveBlocks = interactive ? buildSlackInteractiveBlocks(interactive) : undefined;
-    const blocks = readSlackBlocksParam(actionParams) ?? interactiveBlocks;
+    const blocks =
+      readSlackBlocksParam(actionParams) ??
+      buildSlackInteractiveBlocks(normalizeInteractiveReply(actionParams.interactive));
     if (!content && !mediaUrl && !blocks) {
       throw new Error("Slack send requires message, blocks, or media.");
     }
@@ -57,9 +56,9 @@ export async function handleSlackMessageAction(params: {
         to,
         content: content ?? "",
         mediaUrl: mediaUrl ?? undefined,
+        blocks,
         accountId,
         threadTs: threadId ?? replyTo ?? undefined,
-        ...(blocks ? { blocks } : {}),
       },
       cfg,
       ctx.toolContext,

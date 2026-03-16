@@ -3,16 +3,16 @@ import {
   readNumberParam,
   readStringArrayParam,
   readStringParam,
-} from "remoteclaw/plugin-sdk/agent-runtime";
-import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
-import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelMessageActionContext } from "remoteclaw/plugin-sdk/channel-runtime";
-import { normalizeInteractiveReply } from "remoteclaw/plugin-sdk/interactive-runtime";
-import { buildDiscordInteractiveComponents } from "../shared-interactive.js";
+} from "../../../../src/agents/tools/common.js";
+import { readDiscordParentIdParam } from "../../../../src/agents/tools/discord-actions-shared.js";
+import { handleDiscordAction } from "../../../../src/agents/tools/discord-actions.js";
+import { resolveReactionMessageId } from "../../../../src/channels/plugins/actions/reaction-message-id.js";
+import type { ChannelMessageActionContext } from "../../../../src/channels/plugins/types.js";
+import { normalizeInteractiveReply } from "../../../../src/interactive/payload.js";
+import { readBooleanParam } from "../../../../src/plugin-sdk/boolean-param.js";
+import { buildDiscordInteractiveComponents } from "../components.js";
 import { resolveDiscordChannelId } from "../targets.js";
 import { tryHandleDiscordMessageActionGuildAdmin } from "./handle-action.guild-admin.js";
-import { handleDiscordAction } from "./runtime.js";
-import { readDiscordParentIdParam } from "./runtime.shared.js";
 
 const providerId = "discord";
 

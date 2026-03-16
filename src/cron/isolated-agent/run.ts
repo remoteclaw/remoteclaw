@@ -520,7 +520,7 @@ export async function runCronIsolatedAgentTurn(params: {
     Object.keys(deliveryPayload?.channelData ?? {}).length > 0;
   const deliveryBestEffort = resolveCronDeliveryBestEffort(params.job);
   const hasErrorPayload = payloads.some((payload) => payload?.isError === true);
-  const runLevelError = runResult.meta?.error;
+  const runLevelError = runResult.error;
   const lastErrorPayloadIndex = payloads.findLastIndex((payload) => payload?.isError === true);
   const hasSuccessfulPayloadAfterLastError =
     !runLevelError &&

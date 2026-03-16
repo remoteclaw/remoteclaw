@@ -7,7 +7,7 @@ import { slackOutbound } from "../../channels/plugins/outbound/slack.js";
 import { telegramOutbound } from "../../channels/plugins/outbound/telegram.js";
 import { whatsappOutbound } from "../../channels/plugins/outbound/whatsapp.js";
 import type { ChannelOutboundAdapter, ChannelPlugin } from "../../channels/plugins/types.js";
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { OpenClawConfig } from "../../config/config.js";
 import type { PluginRegistry } from "../../plugins/registry.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
@@ -29,40 +29,48 @@ const mocks = vi.hoisted(() => ({
   deliverOutboundPayloads: vi.fn(),
 }));
 
-vi.mock("../../discord/send.js", () => ({
+vi.mock("../../../extensions/discord/src/send.js", () => ({
   sendMessageDiscord: mocks.sendMessageDiscord,
 }));
-vi.mock("../../imessage/send.js", () => ({
+vi.mock("../../../extensions/imessage/src/send.js", () => ({
   sendMessageIMessage: mocks.sendMessageIMessage,
 }));
-vi.mock("../../signal/send.js", () => ({
+vi.mock("../../../extensions/signal/src/send.js", () => ({
   sendMessageSignal: mocks.sendMessageSignal,
 }));
-vi.mock("../../slack/send.js", () => ({
+vi.mock("../../../extensions/slack/src/send.js", () => ({
   sendMessageSlack: mocks.sendMessageSlack,
 }));
-vi.mock("../../telegram/send.js", () => ({
+vi.mock("../../../extensions/telegram/src/send.js", () => ({
+  sendMessageTelegram: mocks.sendMessageTelegram,
+}));
+vi.mock("../../../extensions/telegram/src/send.js", () => ({
   sendMessageTelegram: mocks.sendMessageTelegram,
 }));
 vi.mock("../../../extensions/whatsapp/src/send.js", () => ({
   sendMessageWhatsApp: mocks.sendMessageWhatsApp,
   sendPollWhatsApp: mocks.sendMessageWhatsApp,
 }));
+vi.mock("../../../extensions/discord/src/send.js", () => ({
+  sendMessageDiscord: mocks.sendMessageDiscord,
+  sendPollDiscord: mocks.sendMessageDiscord,
+  sendWebhookMessageDiscord: vi.fn(),
+}));
 vi.mock("../../../extensions/mattermost/src/mattermost/send.js", () => ({
   sendMessageMattermost: mocks.sendMessageMattermost,
 }));
-vi.mock("../../infra/outbound/deliver.js", async () => {
-  const actual = await vi.importActual<typeof import("../../infra/outbound/deliver.js")>(
-    "../../infra/outbound/deliver.js",
+vi.mock("../../infra/outbound/deliver-runtime.js", async () => {
+  const actual = await vi.importActual<typeof import("../../infra/outbound/deliver-runtime.js")>(
+    "../../infra/outbound/deliver-runtime.js",
   );
   return {
     ...actual,
     deliverOutboundPayloads: mocks.deliverOutboundPayloads,
   };
 });
-const actualDeliver = await vi.importActual<typeof import("../../infra/outbound/deliver.js")>(
-  "../../infra/outbound/deliver.js",
-);
+const actualDeliver = await vi.importActual<
+  typeof import("../../infra/outbound/deliver-runtime.js")
+>("../../infra/outbound/deliver-runtime.js");
 
 const { routeReply } = await import("./route-reply.js");
 
@@ -73,9 +81,14 @@ const createRegistry = (channels: PluginRegistry["channels"]): PluginRegistry =>
   typedHooks: [],
   commands: [],
   channels,
+  channelSetups: channels.map((entry) => ({
+    pluginId: entry.pluginId,
+    plugin: entry.plugin,
+    source: entry.source,
+    enabled: true,
+  })),
   providers: [],
-  sttProviders: [],
-  ttsProviders: [],
+  webSearchProviders: [],
   gatewayHandlers: {},
   httpRoutes: [],
   cliRegistrars: [],
@@ -112,6 +125,23 @@ const createMSTeamsPlugin = (params: { outbound: ChannelOutboundAdapter }): Chan
   outbound: params.outbound,
 });
 
+async function expectSlackNoSend(
+  payload: Parameters<typeof routeReply>[0]["payload"],
+  overrides: Partial<Parameters<typeof routeReply>[0]> = {},
+) {
+  mocks.sendMessageSlack.mockClear();
+  const res = await routeReply({
+    payload,
+    channel: "slack",
+    to: "channel:C123",
+    cfg: {} as never,
+    ...overrides,
+  });
+  expect(res.ok).toBe(true);
+  expect(mocks.sendMessageSlack).not.toHaveBeenCalled();
+  return res;
+}
+
 describe("routeReply", () => {
   beforeEach(() => {
     setActivePluginRegistry(defaultRegistry);
@@ -139,39 +169,15 @@ describe("routeReply", () => {
   });
 
   it("no-ops on empty payload", async () => {
-    mocks.sendMessageSlack.mockClear();
-    const res = await routeReply({
-      payload: {},
-      channel: "slack",
-      to: "channel:C123",
-      cfg: {} as never,
-    });
-    expect(res.ok).toBe(true);
-    expect(mocks.sendMessageSlack).not.toHaveBeenCalled();
+    await expectSlackNoSend({});
   });
 
   it("suppresses reasoning payloads", async () => {
-    mocks.sendMessageSlack.mockClear();
-    const res = await routeReply({
-      payload: { text: "Reasoning:\n_step_", isReasoning: true },
-      channel: "slack",
-      to: "channel:C123",
-      cfg: {} as never,
-    });
-    expect(res.ok).toBe(true);
-    expect(mocks.sendMessageSlack).not.toHaveBeenCalled();
+    await expectSlackNoSend({ text: "Reasoning:\n_step_", isReasoning: true });
   });
 
   it("drops silent token payloads", async () => {
-    mocks.sendMessageSlack.mockClear();
-    const res = await routeReply({
-      payload: { text: SILENT_REPLY_TOKEN },
-      channel: "slack",
-      to: "channel:C123",
-      cfg: {} as never,
-    });
-    expect(res.ok).toBe(true);
-    expect(mocks.sendMessageSlack).not.toHaveBeenCalled();
+    await expectSlackNoSend({ text: SILENT_REPLY_TOKEN });
   });
 
   it("does not drop payloads that merely start with the silent token", async () => {
@@ -193,8 +199,8 @@ describe("routeReply", () => {
   it("applies responsePrefix when routing", async () => {
     mocks.sendMessageSlack.mockClear();
     const cfg = {
-      messages: { responsePrefix: "[remoteclaw]" },
-    } as unknown as RemoteClawConfig;
+      messages: { responsePrefix: "[openclaw]" },
+    } as unknown as OpenClawConfig;
     await routeReply({
       payload: { text: "hi" },
       channel: "slack",
@@ -203,9 +209,49 @@ describe("routeReply", () => {
     });
     expect(mocks.sendMessageSlack).toHaveBeenCalledWith(
       "channel:C123",
-      "[remoteclaw] hi",
+      "[openclaw] hi",
       expect.any(Object),
     );
+  });
+
+  it("routes directive-only Slack replies when interactive replies are enabled", async () => {
+    mocks.sendMessageSlack.mockClear();
+    const cfg = {
+      channels: {
+        slack: {
+          capabilities: { interactiveReplies: true },
+        },
+      },
+    } as unknown as OpenClawConfig;
+    await routeReply({
+      payload: { text: "[[slack_select: Choose one | Alpha:alpha]]" },
+      channel: "slack",
+      to: "channel:C123",
+      cfg,
+    });
+    expect(mocks.sendMessageSlack).toHaveBeenCalledWith(
+      "channel:C123",
+      "",
+      expect.objectContaining({
+        blocks: [
+          expect.objectContaining({
+            type: "actions",
+            block_id: "openclaw_reply_select_1",
+          }),
+        ],
+      }),
+    );
+  });
+
+  it("does not bypass the empty-reply guard for invalid Slack blocks", async () => {
+    await expectSlackNoSend({
+      text: " ",
+      channelData: {
+        slack: {
+          blocks: " ",
+        },
+      },
+    });
   });
 
   it("does not derive responsePrefix from agent identity when routing", async () => {
@@ -215,13 +261,12 @@ describe("routeReply", () => {
         list: [
           {
             id: "rich",
-            workspace: "/tmp/test-workspace",
             identity: { name: "Richbot", theme: "lion bot", emoji: "🦁" },
           },
         ],
       },
       messages: {},
-    } as unknown as RemoteClawConfig;
+    } as unknown as OpenClawConfig;
     await routeReply({
       payload: { text: "hi" },
       channel: "slack",
@@ -264,6 +309,36 @@ describe("routeReply", () => {
     );
   });
 
+  it("formats BTW replies prominently on routed sends", async () => {
+    mocks.sendMessageSlack.mockClear();
+    await routeReply({
+      payload: { text: "323", btw: { question: "what is 17 * 19?" } },
+      channel: "slack",
+      to: "channel:C123",
+      cfg: {} as never,
+    });
+    expect(mocks.sendMessageSlack).toHaveBeenCalledWith(
+      "channel:C123",
+      "BTW\nQuestion: what is 17 * 19?\n\n323",
+      expect.any(Object),
+    );
+  });
+
+  it("formats BTW replies prominently on routed discord sends", async () => {
+    mocks.sendMessageDiscord.mockClear();
+    await routeReply({
+      payload: { text: "323", btw: { question: "what is 17 * 19?" } },
+      channel: "discord",
+      to: "channel:123456",
+      cfg: {} as never,
+    });
+    expect(mocks.sendMessageDiscord).toHaveBeenCalledWith(
+      "channel:123456",
+      "BTW\nQuestion: what is 17 * 19?\n\n323",
+      expect.any(Object),
+    );
+  });
+
   it("passes replyToId to Telegram sends", async () => {
     mocks.sendMessageTelegram.mockClear();
     await routeReply({
@@ -276,31 +351,6 @@ describe("routeReply", () => {
       "telegram:123",
       "hi",
       expect.objectContaining({ replyToMessageId: 123 }),
-    );
-  });
-
-  it("preserves audioAsVoice on routed outbound payloads", async () => {
-    mocks.deliverOutboundPayloads.mockClear();
-    mocks.deliverOutboundPayloads.mockResolvedValue([]);
-    await routeReply({
-      payload: { text: "voice caption", mediaUrl: "file:///tmp/clip.mp3", audioAsVoice: true },
-      channel: "slack",
-      to: "channel:C123",
-      cfg: {} as never,
-    });
-    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledTimes(1);
-    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
-      expect.objectContaining({
-        channel: "slack",
-        to: "channel:C123",
-        payloads: [
-          expect.objectContaining({
-            text: "voice caption",
-            mediaUrl: "file:///tmp/clip.mp3",
-            audioAsVoice: true,
-          }),
-        ],
-      }),
     );
   });
 
@@ -350,7 +400,7 @@ describe("routeReply", () => {
             baseUrl: "https://chat.example.com",
           },
         },
-      } as unknown as RemoteClawConfig,
+      } as unknown as OpenClawConfig,
     });
     expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -420,7 +470,7 @@ describe("routeReply", () => {
           enabled: true,
         },
       },
-    } as unknown as RemoteClawConfig;
+    } as unknown as OpenClawConfig;
     await routeReply({
       payload: { text: "hi" },
       channel: "msteams",

@@ -100,19 +100,19 @@ function createJsonListFetchMock(entries: JsonListEntry[]) {
 
 describe("browser server-context remote profile tab operations", () => {
   it("uses profile-level attachOnly when global attachOnly is false", async () => {
-    const state = makeState("openclaw");
+    const state = makeState("remoteclaw");
     state.resolved.attachOnly = false;
-    state.resolved.profiles.openclaw = {
+    state.resolved.profiles.remoteclaw = {
       cdpPort: 18800,
       attachOnly: true,
       color: "#FF4500",
     };
 
     const reachableMock = vi.mocked(chromeModule.isChromeReachable).mockResolvedValueOnce(false);
-    const launchMock = vi.mocked(chromeModule.launchOpenClawChrome);
+    const launchMock = vi.mocked(chromeModule.launchRemoteClawChrome);
     const ctx = createBrowserRouteContext({ getState: () => state });
 
-    await expect(ctx.forProfile("openclaw").ensureBrowserAvailable()).rejects.toThrow(
+    await expect(ctx.forProfile("remoteclaw").ensureBrowserAvailable()).rejects.toThrow(
       /attachOnly is enabled/i,
     );
     expect(reachableMock).toHaveBeenCalled();
@@ -120,9 +120,9 @@ describe("browser server-context remote profile tab operations", () => {
   });
 
   it("keeps attachOnly websocket failures off the loopback ownership error path", async () => {
-    const state = makeState("openclaw");
+    const state = makeState("remoteclaw");
     state.resolved.attachOnly = false;
-    state.resolved.profiles.openclaw = {
+    state.resolved.profiles.remoteclaw = {
       cdpPort: 18800,
       attachOnly: true,
       color: "#FF4500",
@@ -130,10 +130,10 @@ describe("browser server-context remote profile tab operations", () => {
 
     const httpReachableMock = vi.mocked(chromeModule.isChromeReachable).mockResolvedValueOnce(true);
     const wsReachableMock = vi.mocked(chromeModule.isChromeCdpReady).mockResolvedValueOnce(false);
-    const launchMock = vi.mocked(chromeModule.launchOpenClawChrome);
+    const launchMock = vi.mocked(chromeModule.launchRemoteClawChrome);
     const ctx = createBrowserRouteContext({ getState: () => state });
 
-    await expect(ctx.forProfile("openclaw").ensureBrowserAvailable()).rejects.toThrow(
+    await expect(ctx.forProfile("remoteclaw").ensureBrowserAvailable()).rejects.toThrow(
       /attachOnly is enabled and CDP websocket/i,
     );
     expect(httpReachableMock).toHaveBeenCalled();

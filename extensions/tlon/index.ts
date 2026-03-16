@@ -131,6 +131,9 @@ const plugin = {
   register(api: RemoteClawPluginApi) {
     setTlonRuntime(api.runtime);
     api.registerChannel({ plugin: tlonPlugin });
+    if (api.registrationMode !== "full") {
+      return;
+    }
 
     // Register the tlon tool
     const tlonBinary = findTlonBinary();

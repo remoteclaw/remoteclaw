@@ -12,6 +12,9 @@ const plugin = {
   register(api: RemoteClawPluginApi) {
     setDiscordRuntime(api.runtime);
     api.registerChannel({ plugin: discordPlugin });
+    if (api.registrationMode !== "full") {
+      return;
+    }
     registerDiscordSubagentHooks(api);
   },
 };

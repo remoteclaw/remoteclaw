@@ -112,8 +112,9 @@ describe("form-utils preserves numeric types", () => {
     const model = parsed.models.providers.xai.models[0] as Record<string, unknown>;
 
     expectNumericModelCore(model);
-    expect(typeof model.cost.input).toBe("number");
-    expect(model.cost.input).toBe(0.5);
+    const cost = model.cost as Record<string, unknown>;
+    expect(typeof cost.input).toBe("number");
+    expect(cost.input).toBe(0.5);
   });
 
   it("cloneConfigObject + setPathValue preserves unrelated numeric fields", () => {

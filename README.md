@@ -16,7 +16,7 @@
 
 **RemoteClaw** is AI agent middleware. It connects agent CLIs you already run — Claude Code, Gemini CLI, Codex, OpenCode — to the messaging channels you already use, so you can reach your agents from anywhere: your phone, your team Slack, your WhatsApp, anywhere.
 
-Your agents keep their full power — MCP servers, filesystem access, tools, config — RemoteClaw just bridges the messaging layer. Middleware, not a platform.
+RemoteClaw adds messaging reach, persistent sessions, cron scheduling, and 50 MCP tools on top of whatever agent CLI you run. Middleware, not a platform.
 
 ## Quick Start
 
@@ -49,7 +49,7 @@ Create `~/.remoteclaw/remoteclaw.json` with a channel adapter. Telegram is the s
 
 RemoteClaw spawns agent CLIs as subprocesses — install the one you want and make sure it's authenticated on the gateway host. The easiest way is to install the CLI and log in, though you can also configure a token or API key through onboarding.
 
-Claude Code is the default runtime. See each CLI's own docs for setup. Set `runtime` in your config to switch runtimes.
+Set `runtime` in your config to pick your agent CLI — `claude`, `gemini`, `codex`, or `opencode`. See each CLI's own docs for authentication.
 
 ### 4. Start the gateway
 
@@ -61,7 +61,7 @@ remoteclaw
 
 Send a message to your Telegram bot — you should get a reply from the agent.
 
-To use a different runtime (Gemini, Codex, OpenCode), set `runtime` in your config. See the [configuration reference](https://docs.remoteclaw.org/gateway/configuration) for all options.
+See the [configuration reference](https://docs.remoteclaw.org/gateway/configuration) for all runtime and channel options.
 
 ## How It Works
 
@@ -84,8 +84,8 @@ WhatsApp / Telegram / Slack / Discord / Signal / Teams / iMessage / WebChat / ..
 
 ## Why RemoteClaw
 
-- **Use your agents from anywhere** — message your Claude/Gemini from WhatsApp, Telegram, Slack, Discord, or any supported channel. One agent, all your surfaces.
-- **Your config, your tools, your rules** — agents run with your `~/.claude`, your MCP servers, your filesystem. RemoteClaw doesn't touch the agentic loop.
+- **Reach your agent from anywhere** — WhatsApp, Telegram, Slack, Discord, or any supported channel. One agent, all your messaging surfaces.
+- **Agents bring their full toolkit** — MCP servers, filesystem, tools all work through the messaging layer. No capability loss.
 - **Multi-channel, multi-agent** — route different channels or contacts to isolated agents, each with their own workspace and session.
 - **Voice built in** — talk to your agent with always-on Voice Wake or push-to-talk on macOS, iOS, and Android.
 - **Browser, canvas, and device control** — agents can browse the web, drive a live visual workspace, snap photos, record screens, and send notifications.

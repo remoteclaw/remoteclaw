@@ -55,9 +55,9 @@ try to be the agent?
 | Agent Middleware                    | Agent Platform                         |
 | ----------------------------------- | -------------------------------------- |
 | Bridges to your CLI agent           | Runs its own LLM calls                 |
-| Preserves your agent's config       | Requires its own configuration         |
+| Agent brings its own config         | Requires its own configuration         |
 | Adds channels, sessions, scheduling | Adds memory, skills, model management  |
-| Your `~/.claude` is the agent       | Its built-in orchestrator is the agent |
+| The CLI is the agent                | Its built-in orchestrator is the agent |
 
 This is not a quality judgment. Platforms like OpenClaw, NanoClaw, and Nanobot are excellent at what
 they do. The distinction is architectural: they own the agent loop, agent middleware does not.

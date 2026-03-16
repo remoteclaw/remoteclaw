@@ -22,9 +22,18 @@ import type { OpenClawConfig, loadConfig } from "openclaw/plugin-sdk/config-runt
 import { isDangerousNameMatchingEnabled } from "openclaw/plugin-sdk/config-runtime";
 import { resolveOpenProviderRuntimeGroupPolicy } from "openclaw/plugin-sdk/config-runtime";
 import {
-  resolveCommandAuthorizedFromAuthorizers,
-  resolveNativeCommandSessionTargets,
-} from "remoteclaw/plugin-sdk/command-auth";
+  ensureConfiguredAcpRouteReady,
+  resolveConfiguredAcpRoute,
+} from "../../../../src/acp/persistent-bindings.route.js";
+import { resolveHumanDelayConfig } from "../../../../src/agents/identity.js";
+import { resolveChunkMode, resolveTextChunkLimit } from "../../../../src/auto-reply/chunk.js";
+import type {
+  ChatCommandDefinition,
+  CommandArgDefinition,
+  CommandArgValues,
+  CommandArgs,
+  NativeCommandSpec,
+} from "../../../../src/auto-reply/commands-registry.js";
 import {
   buildCommandTextFromArgs,
   findCommandByNativeName,
@@ -63,8 +72,10 @@ import { resolveDiscordMaxLinesPerMessage } from "../accounts.js";
 import { chunkDiscordTextWithMode } from "../chunk.js";
 import {
   isDiscordGroupAllowedByPolicy,
+  normalizeDiscordAllowList,
   normalizeDiscordSlug,
   resolveDiscordChannelConfigWithFallback,
+  resolveDiscordAllowListMatch,
   resolveDiscordGuildEntry,
   resolveDiscordMemberAccessState,
   resolveDiscordOwnerAccess,
@@ -110,33 +121,26 @@ function resolveDiscordNativeCommandAllowlistAccess(params: {
   if (!commandsAllowFrom || typeof commandsAllowFrom !== "object") {
     return { configured: false, allowed: false } as const;
   }
-  const configured =
-    Array.isArray(commandsAllowFrom.discord) || Array.isArray(commandsAllowFrom["*"]);
-  if (!configured) {
+  const rawAllowList = Array.isArray(commandsAllowFrom.discord)
+    ? commandsAllowFrom.discord
+    : commandsAllowFrom["*"];
+  if (!Array.isArray(rawAllowList)) {
     return { configured: false, allowed: false } as const;
   }
-
-  const from =
-    params.chatType === "direct"
-      ? `discord:${params.sender.id}`
-      : `discord:${params.chatType}:${params.conversationId ?? "unknown"}`;
-  const auth = resolveCommandAuthorization({
-    ctx: {
-      Provider: "discord",
-      Surface: "discord",
-      OriginatingChannel: "discord",
-      AccountId: params.accountId ?? undefined,
-      ChatType: params.chatType,
-      From: from,
-      SenderId: params.sender.id,
-      SenderUsername: params.sender.name,
-      SenderTag: params.sender.tag,
-    },
-    cfg: params.cfg,
-    // We only want explicit commands.allowFrom authorization here.
-    commandAuthorized: false,
+  const allowList = normalizeDiscordAllowList(rawAllowList.map(String), [
+    "discord:",
+    "user:",
+    "pk:",
+  ]);
+  if (!allowList) {
+    return { configured: true, allowed: false } as const;
+  }
+  const match = resolveDiscordAllowListMatch({
+    allowList,
+    candidate: params.sender,
+    allowNameMatching: false,
   });
-  return { configured: true, allowed: auth.isAuthorizedSender } as const;
+  return { configured: true, allowed: match.allowed } as const;
 }
 
 function buildDiscordCommandOptions(params: {

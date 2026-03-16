@@ -90,7 +90,7 @@ function makeRemotePasswordGatewayConfig(remotePassword: string, localPassword =
 }
 
 describe("callGateway url resolution", () => {
-  const envSnapshot = captureEnv(["OPENCLAW_ALLOW_INSECURE_PRIVATE_WS"]);
+  const envSnapshot = captureEnv(["REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS"]);
 
   beforeEach(() => {
     envSnapshot.restore();
@@ -325,8 +325,8 @@ describe("buildGatewayConnectionDetails", () => {
     expect((thrown as Error).message).toContain("remoteclaw doctor --fix");
   });
 
-  it("allows ws:// private remote URLs only when OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1", () => {
-    process.env.OPENCLAW_ALLOW_INSECURE_PRIVATE_WS = "1";
+  it("allows ws:// private remote URLs only when REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS=1", () => {
+    process.env.REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS = "1";
     loadConfig.mockReturnValue({
       gateway: {
         mode: "remote",

@@ -28,7 +28,7 @@ describe("broadcast groups", () => {
       broadcast: {
         "+1000": ["alfred", "missing"],
       },
-    } satisfies OpenClawConfig);
+    } satisfies RemoteClawConfig);
 
     const { seen, resolver } = await sendWebDirectInboundAndCollectSessionKeys();
 

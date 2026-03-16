@@ -24,7 +24,7 @@ function createTypingHarness(overrides: Partial<Parameters<typeof createTypingCa
     start,
     stop,
     onStartError,
-    ...(onStopError ? { onStopError } : {}),
+    ...(overrides.onStopError !== undefined ? { onStopError } : {}),
     ...(overrides.maxConsecutiveFailures !== undefined
       ? { maxConsecutiveFailures: overrides.maxConsecutiveFailures }
       : {}),
@@ -264,7 +264,7 @@ describe("createTypingCallbacks", () => {
         expect(stop).toHaveBeenCalledTimes(1);
 
         // Reset mock to track second start
-        stop.mockClear();
+        vi.mocked(stop).mockClear();
 
         // After stop, callbacks are closed, so new onReplyStart should be no-op
         await callbacks.onReplyStart();

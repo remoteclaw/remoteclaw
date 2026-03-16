@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
           pid: 1,
           cdpPort: 18800,
           chosenBrowser: "chrome",
-          userDataDir: "/tmp/openclaw",
+          userDataDir: "/tmp/remoteclaw",
           color: "blue",
           headless: true,
           attachOnly: false,

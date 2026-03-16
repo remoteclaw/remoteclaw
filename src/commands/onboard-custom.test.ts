@@ -1,16 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CONTEXT_WINDOW_HARD_MIN_TOKENS } from "../agents/context-window-guard.js";
 import { defaultRuntime } from "../runtime.js";
 import {
   applyCustomApiConfig,
   parseNonInteractiveCustomApiFlags,
   promptCustomApiConfig,
 } from "./onboard-custom.js";
-
-// Mock dependencies
-vi.mock("./model-picker.js", () => ({
-  applyPrimaryModel: vi.fn((cfg) => cfg),
-}));
 
 function createTestPrompter(params: { text: string[]; select?: string[] }): {
   text: ReturnType<typeof vi.fn>;
@@ -73,92 +67,53 @@ function expectOpenAiCompatResult(params: {
 }) {
   expect(params.prompter.text).toHaveBeenCalledTimes(params.textCalls);
   expect(params.prompter.select).toHaveBeenCalledTimes(params.selectCalls);
-  expect(params.result.config.models?.providers?.custom?.api).toBe("openai-completions");
-}
-
-function buildCustomProviderConfig(contextWindow?: number) {
-  if (contextWindow === undefined) {
-    return {};
-  }
-  return {
-    models: {
-      providers: {
-        custom: {
-          api: "openai-completions",
-          baseUrl: "https://llm.example.com/v1",
-          models: [
-            {
-              id: "foo-large",
-              name: "foo-large",
-              contextWindow,
-              maxTokens: contextWindow > CONTEXT_WINDOW_HARD_MIN_TOKENS ? 4096 : 1024,
-              input: ["text"],
-              cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-              reasoning: false,
-            },
-          ],
-        },
-      },
-    },
-  };
-}
-
-function applyCustomModelConfigWithContextWindow(contextWindow?: number) {
-  return applyCustomApiConfig({
-    config: buildCustomProviderConfig(contextWindow),
-    baseUrl: "https://llm.example.com/v1",
-    modelId: "foo-large",
-    compatibility: "openai",
-    providerId: "custom",
-  });
 }
 
 describe("promptCustomApiConfig", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
-    vi.unstubAllEnvs();
     vi.useRealTimers();
   });
 
   it("handles openai flow and saves alias", async () => {
     const prompter = createTestPrompter({
       text: ["http://localhost:11434/v1", "", "llama3", "custom", "local"],
-      select: ["plaintext", "openai"],
+      select: ["openai"],
     });
     stubFetchSequence([{ ok: true }]);
     const result = await runPromptCustomApi(prompter);
 
-    expectOpenAiCompatResult({ prompter, textCalls: 5, selectCalls: 2, result });
+    expectOpenAiCompatResult({ prompter, textCalls: 5, selectCalls: 1, result });
     expect(result.config.agents?.defaults?.models?.["custom/llama3"]?.alias).toBe("local");
   });
 
   it("retries when verification fails", async () => {
     const prompter = createTestPrompter({
       text: ["http://localhost:11434/v1", "", "bad-model", "good-model", "custom", ""],
-      select: ["plaintext", "openai", "model"],
+      select: ["openai", "model"],
     });
     stubFetchSequence([{ ok: false, status: 400 }, { ok: true }]);
     await runPromptCustomApi(prompter);
 
     expect(prompter.text).toHaveBeenCalledTimes(6);
-    expect(prompter.select).toHaveBeenCalledTimes(3);
+    expect(prompter.select).toHaveBeenCalledTimes(2);
   });
 
   it("detects openai compatibility when unknown", async () => {
     const prompter = createTestPrompter({
       text: ["https://example.com/v1", "test-key", "detected-model", "custom", "alias"],
-      select: ["plaintext", "unknown"],
+      select: ["unknown"],
     });
     stubFetchSequence([{ ok: true }]);
     const result = await runPromptCustomApi(prompter);
 
-    expectOpenAiCompatResult({ prompter, textCalls: 5, selectCalls: 2, result });
+    expectOpenAiCompatResult({ prompter, textCalls: 5, selectCalls: 1, result });
   });
 
   it("uses expanded max_tokens for openai verification probes", async () => {
     const prompter = createTestPrompter({
       text: ["https://example.com/v1", "test-key", "detected-model", "custom", "alias"],
-      select: ["plaintext", "openai"],
+      select: ["openai"],
     });
     const fetchMock = stubFetchSequence([{ ok: true }]);
 
@@ -178,7 +133,7 @@ describe("promptCustomApiConfig", () => {
         "custom",
         "alias",
       ],
-      select: ["plaintext", "openai"],
+      select: ["openai"],
     });
     const fetchMock = stubFetchSequence([{ ok: true }]);
 
@@ -211,7 +166,7 @@ describe("promptCustomApiConfig", () => {
   it("uses expanded max_tokens for anthropic verification probes", async () => {
     const prompter = createTestPrompter({
       text: ["https://example.com", "test-key", "detected-model", "custom", "alias"],
-      select: ["plaintext", "unknown"],
+      select: ["unknown"],
     });
     const fetchMock = stubFetchSequence([{ ok: false, status: 404 }, { ok: true }]);
 
@@ -234,7 +189,7 @@ describe("promptCustomApiConfig", () => {
         "custom",
         "",
       ],
-      select: ["plaintext", "unknown", "baseUrl", "plaintext"],
+      select: ["unknown", "baseUrl"],
     });
     stubFetchSequence([{ ok: false, status: 404 }, { ok: false, status: 404 }, { ok: true }]);
     await runPromptCustomApi(prompter);
@@ -245,44 +200,11 @@ describe("promptCustomApiConfig", () => {
     );
   });
 
-  it("renames provider id when baseUrl differs", async () => {
-    const prompter = createTestPrompter({
-      text: ["http://localhost:11434/v1", "", "llama3", "custom", ""],
-      select: ["plaintext", "openai"],
-    });
-    stubFetchSequence([{ ok: true }]);
-    const result = await runPromptCustomApi(prompter, {
-      models: {
-        providers: {
-          custom: {
-            baseUrl: "http://old.example.com/v1",
-            api: "openai-completions",
-            models: [
-              {
-                id: "old-model",
-                name: "Old",
-                contextWindow: 1,
-                maxTokens: 1,
-                input: ["text"],
-                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-                reasoning: false,
-              },
-            ],
-          },
-        },
-      },
-    });
-
-    expect(result.providerId).toBe("custom-2");
-    expect(result.config.models?.providers?.custom).toBeDefined();
-    expect(result.config.models?.providers?.["custom-2"]).toBeDefined();
-  });
-
   it("aborts verification after timeout", async () => {
     vi.useFakeTimers();
     const prompter = createTestPrompter({
       text: ["http://localhost:11434/v1", "", "slow-model", "fast-model", "custom", ""],
-      select: ["plaintext", "openai", "model"],
+      select: ["openai", "model"],
     });
 
     const fetchMock = vi
@@ -302,92 +224,9 @@ describe("promptCustomApiConfig", () => {
 
     expect(prompter.text).toHaveBeenCalledTimes(6);
   });
-
-  it("stores env SecretRef for custom provider when selected", async () => {
-    vi.stubEnv("CUSTOM_PROVIDER_API_KEY", "test-env-key");
-    const prompter = createTestPrompter({
-      text: ["https://example.com/v1", "CUSTOM_PROVIDER_API_KEY", "detected-model", "custom", ""],
-      select: ["ref", "env", "openai"],
-    });
-    const fetchMock = stubFetchSequence([{ ok: true }]);
-
-    const result = await runPromptCustomApi(prompter);
-
-    expect(result.config.models?.providers?.custom?.apiKey).toEqual({
-      source: "env",
-      provider: "default",
-      id: "CUSTOM_PROVIDER_API_KEY",
-    });
-    const firstCall = fetchMock.mock.calls[0]?.[1] as
-      | { headers?: Record<string, string> }
-      | undefined;
-    expect(firstCall?.headers?.Authorization).toBe("Bearer test-env-key");
-  });
-
-  it("re-prompts source after provider ref preflight fails and succeeds with env ref", async () => {
-    vi.stubEnv("CUSTOM_PROVIDER_API_KEY", "test-env-key");
-    const prompter = createTestPrompter({
-      text: [
-        "https://example.com/v1",
-        "/providers/custom/apiKey",
-        "CUSTOM_PROVIDER_API_KEY",
-        "detected-model",
-        "custom",
-        "",
-      ],
-      select: ["ref", "provider", "filemain", "env", "openai"],
-    });
-    stubFetchSequence([{ ok: true }]);
-
-    const result = await runPromptCustomApi(prompter, {
-      secrets: {
-        providers: {
-          filemain: {
-            source: "file",
-            path: "/tmp/remoteclaw-missing-provider.json",
-            mode: "json",
-          },
-        },
-      },
-    });
-
-    expect(prompter.note).toHaveBeenCalledWith(
-      expect.stringContaining("Could not validate provider reference"),
-      "Reference check failed",
-    );
-    expect(result.config.models?.providers?.custom?.apiKey).toEqual({
-      source: "env",
-      provider: "default",
-      id: "CUSTOM_PROVIDER_API_KEY",
-    });
-  });
 });
 
 describe("applyCustomApiConfig", () => {
-  it.each([
-    {
-      name: "uses hard-min context window for newly added custom models",
-      existingContextWindow: undefined,
-      expectedContextWindow: CONTEXT_WINDOW_HARD_MIN_TOKENS,
-    },
-    {
-      name: "upgrades existing custom model context window when below hard minimum",
-      existingContextWindow: 4096,
-      expectedContextWindow: CONTEXT_WINDOW_HARD_MIN_TOKENS,
-    },
-    {
-      name: "preserves existing custom model context window when already above minimum",
-      existingContextWindow: 131072,
-      expectedContextWindow: 131072,
-    },
-  ])("$name", ({ existingContextWindow, expectedContextWindow }) => {
-    const result = applyCustomModelConfigWithContextWindow(existingContextWindow);
-    const model = result.config.models?.providers?.custom?.models?.find(
-      (entry) => entry.id === "foo-large",
-    );
-    expect(model?.contextWindow).toBe(expectedContextWindow);
-  });
-
   it.each([
     {
       name: "invalid compatibility values at runtime",

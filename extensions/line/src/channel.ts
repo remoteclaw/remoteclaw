@@ -20,6 +20,7 @@ import {
   type ResolvedLineAccount,
 } from "remoteclaw/plugin-sdk/line";
 import { getLineRuntime } from "./runtime.js";
+import { lineSetupAdapter, lineSetupWizard } from "./setup-surface.js";
 
 // LINE channel metadata
 const meta = {
@@ -44,6 +45,7 @@ const lineConfigAccessors = createScopedAccountConfigAccessors({
       .map((entry) => entry.replace(/^line:(?:user:)?/i, "")),
 });
 
+<<<<<<< HEAD
 function patchLineAccountConfig(
   cfg: RemoteClawConfig,
   lineConfig: LineConfig,
@@ -80,6 +82,81 @@ function patchLineAccountConfig(
   };
 }
 
+||||||| parent of ec93398d7b (refactor: move line to setup wizard)
+const lineConfigBase = createScopedChannelConfigBase<ResolvedLineAccount, OpenClawConfig>({
+  sectionKey: "line",
+  listAccountIds: (cfg) => getLineRuntime().channel.line.listLineAccountIds(cfg),
+  resolveAccount: (cfg, accountId) =>
+    getLineRuntime().channel.line.resolveLineAccount({ cfg, accountId: accountId ?? undefined }),
+  defaultAccountId: (cfg) => getLineRuntime().channel.line.resolveDefaultLineAccountId(cfg),
+  clearBaseFields: ["channelSecret", "tokenFile", "secretFile"],
+});
+
+const resolveLineDmPolicy = createScopedDmSecurityResolver<ResolvedLineAccount>({
+  channelKey: "line",
+  resolvePolicy: (account) => account.config.dmPolicy,
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  policyPathSuffix: "dmPolicy",
+  approveHint: "openclaw pairing approve line <code>",
+  normalizeEntry: (raw) => raw.replace(/^line:(?:user:)?/i, ""),
+});
+
+function patchLineAccountConfig(
+  cfg: OpenClawConfig,
+  lineConfig: LineConfig,
+  accountId: string,
+  patch: Record<string, unknown>,
+): OpenClawConfig {
+  if (accountId === DEFAULT_ACCOUNT_ID) {
+    return {
+      ...cfg,
+      channels: {
+        ...cfg.channels,
+        line: {
+          ...lineConfig,
+          ...patch,
+        },
+      },
+    };
+  }
+  return {
+    ...cfg,
+    channels: {
+      ...cfg.channels,
+      line: {
+        ...lineConfig,
+        accounts: {
+          ...lineConfig.accounts,
+          [accountId]: {
+            ...lineConfig.accounts?.[accountId],
+            ...patch,
+          },
+        },
+      },
+    },
+  };
+}
+
+=======
+const lineConfigBase = createScopedChannelConfigBase<ResolvedLineAccount, OpenClawConfig>({
+  sectionKey: "line",
+  listAccountIds: (cfg) => getLineRuntime().channel.line.listLineAccountIds(cfg),
+  resolveAccount: (cfg, accountId) =>
+    getLineRuntime().channel.line.resolveLineAccount({ cfg, accountId: accountId ?? undefined }),
+  defaultAccountId: (cfg) => getLineRuntime().channel.line.resolveDefaultLineAccountId(cfg),
+  clearBaseFields: ["channelSecret", "tokenFile", "secretFile"],
+});
+
+const resolveLineDmPolicy = createScopedDmSecurityResolver<ResolvedLineAccount>({
+  channelKey: "line",
+  resolvePolicy: (account) => account.config.dmPolicy,
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  policyPathSuffix: "dmPolicy",
+  approveHint: "openclaw pairing approve line <code>",
+  normalizeEntry: (raw) => raw.replace(/^line:(?:user:)?/i, ""),
+});
+
+>>>>>>> ec93398d7b (refactor: move line to setup wizard)
 export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
   id: "line",
   meta: {
@@ -113,6 +190,7 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
   },
   reload: { configPrefixes: ["channels.line"] },
   configSchema: buildChannelConfigSchema(LineConfigSchema),
+  setupWizard: lineSetupWizard,
   config: {
     listAccountIds: (cfg) => getLineRuntime().channel.line.listLineAccountIds(cfg),
     resolveAccount: (cfg, accountId) =>
@@ -227,101 +305,7 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
     listPeers: async () => [],
     listGroups: async () => [],
   },
-  setup: {
-    resolveAccountId: ({ accountId }) =>
-      getLineRuntime().channel.line.normalizeAccountId(accountId),
-    applyAccountName: ({ cfg, accountId, name }) => {
-      const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
-      return patchLineAccountConfig(cfg, lineConfig, accountId, { name });
-    },
-    validateInput: ({ accountId, input }) => {
-      const typedInput = input as {
-        useEnv?: boolean;
-        channelAccessToken?: string;
-        channelSecret?: string;
-        tokenFile?: string;
-        secretFile?: string;
-      };
-      if (typedInput.useEnv && accountId !== DEFAULT_ACCOUNT_ID) {
-        return "LINE_CHANNEL_ACCESS_TOKEN can only be used for the default account.";
-      }
-      if (!typedInput.useEnv && !typedInput.channelAccessToken && !typedInput.tokenFile) {
-        return "LINE requires channelAccessToken or --token-file (or --use-env).";
-      }
-      if (!typedInput.useEnv && !typedInput.channelSecret && !typedInput.secretFile) {
-        return "LINE requires channelSecret or --secret-file (or --use-env).";
-      }
-      return null;
-    },
-    applyAccountConfig: ({ cfg, accountId, input }) => {
-      const typedInput = input as {
-        name?: string;
-        useEnv?: boolean;
-        channelAccessToken?: string;
-        channelSecret?: string;
-        tokenFile?: string;
-        secretFile?: string;
-      };
-      const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
-
-      if (accountId === DEFAULT_ACCOUNT_ID) {
-        return {
-          ...cfg,
-          channels: {
-            ...cfg.channels,
-            line: {
-              ...lineConfig,
-              enabled: true,
-              ...(typedInput.name ? { name: typedInput.name } : {}),
-              ...(typedInput.useEnv
-                ? {}
-                : typedInput.tokenFile
-                  ? { tokenFile: typedInput.tokenFile }
-                  : typedInput.channelAccessToken
-                    ? { channelAccessToken: typedInput.channelAccessToken }
-                    : {}),
-              ...(typedInput.useEnv
-                ? {}
-                : typedInput.secretFile
-                  ? { secretFile: typedInput.secretFile }
-                  : typedInput.channelSecret
-                    ? { channelSecret: typedInput.channelSecret }
-                    : {}),
-            },
-          },
-        };
-      }
-
-      return {
-        ...cfg,
-        channels: {
-          ...cfg.channels,
-          line: {
-            ...lineConfig,
-            enabled: true,
-            accounts: {
-              ...lineConfig.accounts,
-              [accountId]: {
-                ...lineConfig.accounts?.[accountId],
-                enabled: true,
-                ...(typedInput.name ? { name: typedInput.name } : {}),
-                ...(typedInput.tokenFile
-                  ? { tokenFile: typedInput.tokenFile }
-                  : typedInput.channelAccessToken
-                    ? { channelAccessToken: typedInput.channelAccessToken }
-                    : {}),
-                ...(typedInput.secretFile
-                  ? { secretFile: typedInput.secretFile }
-                  : typedInput.channelSecret
-                    ? { channelSecret: typedInput.channelSecret }
-                    : {}),
-              },
-            },
-          },
-        },
-      };
-    },
-  },
+  setup: lineSetupAdapter,
   outbound: {
     deliveryMode: "direct",
     chunker: (text, limit) => getLineRuntime().channel.text.chunkMarkdownText(text, limit),

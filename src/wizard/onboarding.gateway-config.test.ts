@@ -87,9 +87,9 @@ describe("configureGatewayForOnboarding", () => {
     ]);
   });
 
-  it("prefers OPENCLAW_GATEWAY_TOKEN during quickstart token setup", async () => {
-    const prevToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    process.env.OPENCLAW_GATEWAY_TOKEN = "token-from-env";
+  it("prefers REMOTECLAW_GATEWAY_TOKEN during quickstart token setup", async () => {
+    const prevToken = process.env.REMOTECLAW_GATEWAY_TOKEN;
+    process.env.REMOTECLAW_GATEWAY_TOKEN = "token-from-env";
     mocks.randomToken.mockReturnValue("generated-token");
     mocks.randomToken.mockClear();
 
@@ -113,9 +113,9 @@ describe("configureGatewayForOnboarding", () => {
       expect(result.settings.gatewayToken).toBe("token-from-env");
     } finally {
       if (prevToken === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.REMOTECLAW_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = prevToken;
+        process.env.REMOTECLAW_GATEWAY_TOKEN = prevToken;
       }
     }
   });

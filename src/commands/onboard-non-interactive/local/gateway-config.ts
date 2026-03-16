@@ -51,7 +51,7 @@ export function applyNonInteractiveGatewayConfig(params: {
   let nextConfig = params.nextConfig;
   let gatewayToken =
     normalizeGatewayTokenInput(opts.gatewayToken) ||
-    normalizeGatewayTokenInput(process.env.OPENCLAW_GATEWAY_TOKEN) ||
+    normalizeGatewayTokenInput(process.env.REMOTECLAW_GATEWAY_TOKEN) ||
     undefined;
 
   if (authMode === "token") {

@@ -1,4 +1,4 @@
-// Private helper surface for the bundled irc plugin.
+// Narrow plugin-sdk surface for the bundled irc plugin.
 // Keep this list additive and scoped to symbols used under extensions/irc.
 
 export { resolveControlCommandGate } from "../channels/command-gating.js";
@@ -13,25 +13,18 @@ export {
   formatPairingApproveHint,
   parseOptionalDelimitedEntries,
 } from "../channels/plugins/helpers.js";
-export type {
-  ChannelOnboardingAdapter,
-  ChannelOnboardingDmPolicy,
-} from "../channels/plugins/onboarding-types.js";
-export { promptChannelAccessConfig } from "../channels/plugins/onboarding/channel-access.js";
 export {
   addWildcardAllowFrom,
-  promptAccountId,
-  resolveAccountIdForConfigure,
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
 } from "../channels/plugins/onboarding/helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
+export { patchScopedAccountConfig } from "../channels/plugins/setup-helpers.js";
 export type { BaseProbeResult } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { getChatChannelMeta } from "../channels/registry.js";
 export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export type { RemoteClawConfig } from "../config/config.js";
-
 export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 export {
   GROUP_POLICY_BLOCKED_LABEL,
@@ -48,7 +41,7 @@ export type {
   GroupToolPolicyConfig,
   MarkdownConfig,
 } from "../config/types.js";
-export { normalizeSecretInputString } from "../config/types.secrets.js";
+export { normalizeResolvedSecretInputString } from "../config/types.secrets.js";
 export { ToolPolicySchema } from "../config/zod-schema.agent-runtime.js";
 export {
   BlockStreamingCoalesceSchema,
@@ -64,6 +57,12 @@ export type { PluginRuntime } from "../plugins/runtime/types.js";
 export type { RemoteClawPluginApi } from "../plugins/types.js";
 export { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 export type { RuntimeEnv } from "../runtime.js";
+export { createAccountStatusSink, runPassiveAccountLifecycle } from "./channel-lifecycle.js";
+export {
+  listIrcAccountIds,
+  resolveDefaultIrcAccountId,
+  resolveIrcAccount,
+} from "../../extensions/irc/src/accounts.js";
 export {
   readStoreAllowFromForDmPolicy,
   resolveEffectiveAllowFromLists,
@@ -72,8 +71,8 @@ export { formatDocsLink } from "../terminal/links.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { createScopedPairingAccess } from "./pairing-access.js";
 export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
-
 export { dispatchInboundReplyWithBase } from "./inbound-reply-dispatch.js";
+export { ircSetupAdapter, ircSetupWizard } from "../../extensions/irc/src/setup-surface.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
 export {
   createNormalizedOutboundDeliverer,

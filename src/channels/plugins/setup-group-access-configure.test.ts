@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import type { RemoteClawConfig } from "../../../config/config.js";
-import { configureChannelAccessWithAllowlist } from "./channel-access-configure.js";
-import type { ChannelAccessPolicy } from "./channel-access.js";
+import type { RemoteClawConfig } from "../../config/config.js";
+import { configureChannelAccessWithAllowlist } from "./setup-group-access-configure.js";
+import type { ChannelAccessPolicy } from "./setup-group-access.js";
 
 function createPrompter(params: { confirm: boolean; policy?: ChannelAccessPolicy; text?: string }) {
   return {
@@ -89,6 +89,41 @@ describe("configureChannelAccessWithAllowlist", () => {
     expect(applyAllowlist).not.toHaveBeenCalled();
   });
 
+  it("supports allowlist policies without prompting for entries", async () => {
+    const cfg: RemoteClawConfig = {};
+    const prompter = createPrompter({
+      confirm: true,
+      policy: "allowlist",
+    });
+    const setPolicy = vi.fn(
+      (next: RemoteClawConfig, policy: ChannelAccessPolicy): RemoteClawConfig => ({
+        ...next,
+        channels: { twitch: { groupPolicy: policy } },
+      }),
+    );
+    const resolveAllowlist = vi.fn(async () => ["ignored"]);
+    const applyAllowlist = vi.fn((params: { cfg: RemoteClawConfig }) => params.cfg);
+
+    const next = await configureChannelAccessWithAllowlist({
+      cfg,
+      // oxlint-disable-next-line typescript/no-explicit-any
+      prompter: prompter as any,
+      label: "Twitch chat",
+      currentPolicy: "disabled",
+      currentEntries: [],
+      placeholder: "",
+      updatePrompt: false,
+      skipAllowlistEntries: true,
+      setPolicy,
+      resolveAllowlist,
+      applyAllowlist,
+    });
+
+    expect(next.channels).toEqual({ twitch: { groupPolicy: "allowlist" } });
+    expect(resolveAllowlist).not.toHaveBeenCalled();
+    expect(applyAllowlist).not.toHaveBeenCalled();
+  });
+
   it("resolves allowlist entries and applies them after forcing allowlist policy", async () => {
     const cfg: RemoteClawConfig = {};
     const prompter = createPrompter({
@@ -97,15 +132,13 @@ describe("configureChannelAccessWithAllowlist", () => {
       text: "#general, #support",
     });
     const calls: string[] = [];
-    const setPolicy = vi.fn(
-      (next: RemoteClawConfig, policy: ChannelAccessPolicy): RemoteClawConfig => {
-        calls.push("setPolicy");
-        return {
-          ...next,
-          channels: { slack: { groupPolicy: policy } },
-        };
-      },
-    );
+    const setPolicy = vi.fn((next: RemoteClawConfig, policy: ChannelAccessPolicy): RemoteClawConfig => {
+      calls.push("setPolicy");
+      return {
+        ...next,
+        channels: { slack: { groupPolicy: policy } },
+      };
+    });
     const resolveAllowlist = vi.fn(async (params: { cfg: RemoteClawConfig; entries: string[] }) => {
       calls.push("resolve");
       expect(params.cfg).toBe(cfg);

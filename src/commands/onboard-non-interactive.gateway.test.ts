@@ -159,8 +159,6 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
             nonInteractive: true,
             mode: "local",
             workspace,
-            authChoice: "skip",
-            skipSkills: true,
             skipHealth: true,
             installDaemon: false,
             gatewayBind: "loopback",

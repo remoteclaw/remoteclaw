@@ -110,9 +110,9 @@ describe("form-utils preserves numeric types", () => {
     const raw = serializeConfigForm(form);
     const parsed = JSON.parse(raw);
     const model = parsed.models.providers.xai.models[0] as Record<string, unknown>;
+    const cost = model.cost as Record<string, unknown>;
 
     expectNumericModelCore(model);
-    const cost = model.cost as Record<string, unknown>;
     expect(typeof cost.input).toBe("number");
     expect(cost.input).toBe(0.5);
   });

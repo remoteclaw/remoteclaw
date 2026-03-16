@@ -1,4 +1,5 @@
 import * as compatSdk from "remoteclaw/plugin-sdk/compat";
+import * as coreSdk from "remoteclaw/plugin-sdk/core";
 import * as discordSdk from "remoteclaw/plugin-sdk/discord";
 import * as imessageSdk from "remoteclaw/plugin-sdk/imessage";
 import * as lineSdk from "remoteclaw/plugin-sdk/line";
@@ -50,6 +51,11 @@ describe("plugin-sdk subpath exports", () => {
   it("exports compat helpers", () => {
     expect(typeof compatSdk.emptyPluginConfigSchema).toBe("function");
     expect(typeof compatSdk.resolveControlCommandGate).toBe("function");
+  });
+
+  it("exports core routing helpers", () => {
+    expect(typeof coreSdk.buildAgentSessionKey).toBe("function");
+    expect(typeof coreSdk.resolveThreadSessionKeys).toBe("function");
   });
 
   it("exports Discord helpers", () => {

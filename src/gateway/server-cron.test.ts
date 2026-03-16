@@ -70,15 +70,20 @@ describe("buildGatewayCronService", () => {
 
       await state.cron.run(job.id, "force");
 
+      // main-target cron jobs now force the main session (sessionKey=undefined at
+      // timer level, canonicalized to "agent:main:main" by gateway wrapper) instead
+      // of forwarding persisted channel session keys (#28898).
       expect(enqueueSystemEventMock).toHaveBeenCalledWith(
         "hello",
         expect.objectContaining({
-          sessionKey: "agent:main:discord:channel:ops",
+          sessionKey: "agent:main:main",
         }),
       );
+      // requestHeartbeatNow is not wrapped by gateway canonicalization,
+      // so it receives the raw undefined from targetMainSessionKey.
       expect(requestHeartbeatNowMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          sessionKey: "agent:main:discord:channel:ops",
+          sessionKey: undefined,
         }),
       );
     } finally {

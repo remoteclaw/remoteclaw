@@ -133,7 +133,7 @@ describe("promptCustomApiConfig", () => {
         "custom",
         "alias",
       ],
-      select: ["plaintext", "openai"],
+      select: ["openai"],
     });
     const fetchMock = stubFetchSequence([{ ok: true }]);
 

@@ -5,7 +5,6 @@ import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
 import { info } from "../globals.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import type { HeartbeatEventPayload } from "../infra/heartbeat-events.js";
-import { formatUsageReportLines, loadProviderUsageSummary } from "../infra/provider-usage.js";
 import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../infra/update-channels.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { runSecurityAudit } from "../security/audit.js";
@@ -29,6 +28,13 @@ import {
   formatUpdateOneLiner,
   resolveUpdateAvailability,
 } from "./status.update.js";
+
+let providerUsagePromise: Promise<typeof import("../infra/provider-usage.js")> | undefined;
+
+function loadProviderUsage() {
+  providerUsagePromise ??= import("../infra/provider-usage.js");
+  return providerUsagePromise;
+}
 
 function resolvePairingRecoveryContext(params: {
   error?: string | null;
@@ -126,7 +132,10 @@ export async function statusCommand(
           indeterminate: true,
           enabled: opts.json !== true,
         },
-        async () => await loadProviderUsageSummary({ timeoutMs: opts.timeoutMs }),
+        async () => {
+          const { loadProviderUsageSummary } = await loadProviderUsage();
+          return await loadProviderUsageSummary({ timeoutMs: opts.timeoutMs });
+        },
       )
     : undefined;
   const health: HealthSummary | undefined = opts.deep
@@ -590,6 +599,7 @@ export async function statusCommand(
   }
 
   if (usage) {
+    const { formatUsageReportLines } = await loadProviderUsage();
     runtime.log("");
     runtime.log(theme.heading("Usage"));
     for (const line of formatUsageReportLines(usage)) {

@@ -225,6 +225,8 @@ Security note:
 
 - `--token` and `--password` can be visible in local process listings on some systems.
 - Prefer `--token-file`/`--password-file` or environment variables (`REMOTECLAW_GATEWAY_TOKEN`, `REMOTECLAW_GATEWAY_PASSWORD`).
+- ACP runtime backend child processes receive `REMOTECLAW_SHELL=acp`, which can be used for context-specific shell/profile rules.
+- `remoteclaw acp client` sets `REMOTECLAW_SHELL=acp-client` on the spawned bridge process.
 
 ### `acp client` options
 

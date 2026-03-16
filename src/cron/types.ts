@@ -70,6 +70,7 @@ export type CronPayload =
       channel?: CronMessageChannel;
       to?: string;
       bestEffortDeliver?: boolean;
+      lightContext?: boolean;
     };
 
 export type CronPayloadPatch =
@@ -85,6 +86,7 @@ export type CronPayloadPatch =
       channel?: CronMessageChannel;
       to?: string;
       bestEffortDeliver?: boolean;
+      lightContext?: boolean;
     };
 
 export type CronJobState = {

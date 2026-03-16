@@ -1,9 +1,17 @@
-import { expect, it } from "vitest";
+import { expect, it, type Mock } from "vitest";
+import type { MsgContext } from "../../../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
 import type {
   SessionBindingCapabilities,
   SessionBindingRecord,
 } from "../../../infra/outbound/session-binding-service.js";
+import type {
+  ResolveProviderRuntimeGroupPolicyParams,
+  RuntimeGroupPolicyResolution,
+} from "../../../config/runtime-group-policy.js";
+import { normalizeChatType } from "../../chat-type.js";
+import { resolveConversationLabel } from "../../conversation-label.js";
+import { validateSenderIdentity } from "../../sender-identity.js";
 import type {
   ChannelAccountSnapshot,
   ChannelAccountState,
@@ -600,5 +608,193 @@ export function installChannelStatusContractSuite<ResolvedAccount, Probe = unkno
         expect(state).toBe(testCase.expectedState);
       }
     });
+  }
+}
+
+type PayloadLike = {
+  mediaUrl?: string;
+  mediaUrls?: string[];
+  text?: string;
+};
+
+type SendResultLike = {
+  messageId: string;
+  [key: string]: unknown;
+};
+
+type ChunkingMode =
+  | {
+      longTextLength: number;
+      maxChunkLength: number;
+      mode: "split";
+    }
+  | {
+      longTextLength: number;
+      mode: "passthrough";
+    };
+
+export function installChannelOutboundPayloadContractSuite(params: {
+  channel: string;
+  chunking: ChunkingMode;
+  createHarness: (params: { payload: PayloadLike; sendResults?: SendResultLike[] }) => {
+    run: () => Promise<Record<string, unknown>>;
+    sendMock: Mock;
+    to: string;
+  };
+}) {
+  it("text-only delegates to sendText", async () => {
+    const { run, sendMock, to } = params.createHarness({
+      payload: { text: "hello" },
+    });
+    const result = await run();
+
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(sendMock).toHaveBeenCalledWith(to, "hello", expect.any(Object));
+    expect(result).toMatchObject({ channel: params.channel });
+  });
+
+  it("single media delegates to sendMedia", async () => {
+    const { run, sendMock, to } = params.createHarness({
+      payload: { text: "cap", mediaUrl: "https://example.com/a.jpg" },
+    });
+    const result = await run();
+
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(sendMock).toHaveBeenCalledWith(
+      to,
+      "cap",
+      expect.objectContaining({ mediaUrl: "https://example.com/a.jpg" }),
+    );
+    expect(result).toMatchObject({ channel: params.channel });
+  });
+
+  it("multi-media iterates URLs with caption on first", async () => {
+    const { run, sendMock, to } = params.createHarness({
+      payload: {
+        text: "caption",
+        mediaUrls: ["https://example.com/1.jpg", "https://example.com/2.jpg"],
+      },
+      sendResults: [{ messageId: "m-1" }, { messageId: "m-2" }],
+    });
+    const result = await run();
+
+    expect(sendMock).toHaveBeenCalledTimes(2);
+    expect(sendMock).toHaveBeenNthCalledWith(
+      1,
+      to,
+      "caption",
+      expect.objectContaining({ mediaUrl: "https://example.com/1.jpg" }),
+    );
+    expect(sendMock).toHaveBeenNthCalledWith(
+      2,
+      to,
+      "",
+      expect.objectContaining({ mediaUrl: "https://example.com/2.jpg" }),
+    );
+    expect(result).toMatchObject({ channel: params.channel, messageId: "m-2" });
+  });
+
+  it("empty payload returns no-op", async () => {
+    const { run, sendMock } = params.createHarness({ payload: {} });
+    const result = await run();
+
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ channel: params.channel, messageId: "" });
+  });
+
+  if (params.chunking.mode === "passthrough") {
+    it("text exceeding chunk limit is sent as-is when chunker is null", async () => {
+      const text = "a".repeat(params.chunking.longTextLength);
+      const { run, sendMock, to } = params.createHarness({ payload: { text } });
+      const result = await run();
+
+      expect(sendMock).toHaveBeenCalledTimes(1);
+      expect(sendMock).toHaveBeenCalledWith(to, text, expect.any(Object));
+      expect(result).toMatchObject({ channel: params.channel });
+    });
+    return;
+  }
+
+  const chunking = params.chunking;
+
+  it("chunking splits long text", async () => {
+    const text = "a".repeat(chunking.longTextLength);
+    const { run, sendMock } = params.createHarness({
+      payload: { text },
+      sendResults: [{ messageId: "c-1" }, { messageId: "c-2" }],
+    });
+    const result = await run();
+
+    expect(sendMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+    for (const call of sendMock.mock.calls) {
+      expect((call[1] as string).length).toBeLessThanOrEqual(chunking.maxChunkLength);
+    }
+    expect(result).toMatchObject({ channel: params.channel });
+  });
+}
+
+export function primeChannelOutboundSendMock(
+  sendMock: Mock,
+  fallbackResult: Record<string, unknown>,
+  sendResults: SendResultLike[] = [],
+) {
+  sendMock.mockReset();
+  if (sendResults.length === 0) {
+    sendMock.mockResolvedValue(fallbackResult);
+    return;
+  }
+  for (const result of sendResults) {
+    sendMock.mockResolvedValueOnce(result);
+  }
+}
+
+type RuntimeGroupPolicyResolver = (
+  params: ResolveProviderRuntimeGroupPolicyParams,
+) => RuntimeGroupPolicyResolution;
+
+export function installChannelRuntimeGroupPolicyFallbackSuite(params: {
+  configuredLabel: string;
+  defaultGroupPolicyUnderTest: "allowlist" | "disabled" | "open";
+  missingConfigLabel: string;
+  missingDefaultLabel: string;
+  resolve: RuntimeGroupPolicyResolver;
+}) {
+  it(params.missingConfigLabel, () => {
+    const resolved = params.resolve({
+      providerConfigPresent: false,
+    });
+    expect(resolved.groupPolicy).toBe("allowlist");
+    expect(resolved.providerMissingFallbackApplied).toBe(true);
+  });
+
+  it(params.configuredLabel, () => {
+    const resolved = params.resolve({
+      providerConfigPresent: true,
+    });
+    expect(resolved.groupPolicy).toBe("open");
+    expect(resolved.providerMissingFallbackApplied).toBe(false);
+  });
+
+  it(params.missingDefaultLabel, () => {
+    const resolved = params.resolve({
+      providerConfigPresent: false,
+      defaultGroupPolicy: params.defaultGroupPolicyUnderTest,
+    });
+    expect(resolved.groupPolicy).toBe("allowlist");
+    expect(resolved.providerMissingFallbackApplied).toBe(true);
+  });
+}
+
+export function expectChannelInboundContextContract(ctx: MsgContext) {
+  expect(validateSenderIdentity(ctx)).toEqual([]);
+
+  expect(ctx.Body).toBeTypeOf("string");
+  expect(ctx.BodyForAgent).toBeTypeOf("string");
+  expect(ctx.BodyForCommands).toBeTypeOf("string");
+
+  const chatType = normalizeChatType(ctx.ChatType);
+  if (chatType && chatType !== "direct") {
+    const label = ctx.ConversationLabel?.trim() || resolveConversationLabel(ctx);
+    expect(label).toBeTruthy();
   }
 }

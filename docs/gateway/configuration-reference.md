@@ -1,7 +1,6 @@
 ---
 title: "Configuration Reference"
-description: "Complete field-by-field reference for ~/.openclaw/openclaw.json"
-summary: "Complete reference for every OpenClaw config key, defaults, and channel settings"
+description: "Complete field-by-field reference for ~/.remoteclaw/remoteclaw.json"
 read_when:
   - You need exact field-level config semantics or defaults
   - You are validating channel, model, gateway, or tool config blocks
@@ -9,9 +8,9 @@ read_when:
 
 # Configuration Reference
 
-Every field available in `~/.openclaw/openclaw.json`. For a task-oriented overview, see [Configuration](/gateway/configuration).
+Every field available in `~/.remoteclaw/remoteclaw.json`. For a task-oriented overview, see [Configuration](/gateway/configuration).
 
-Config format is **JSON5** (comments + trailing commas allowed). All fields are optional — OpenClaw uses safe defaults when omitted.
+Config format is **JSON5** (comments + trailing commas allowed). All fields are optional — RemoteClaw uses safe defaults when omitted.
 
 ---
 
@@ -36,58 +35,11 @@ All channels support DM policies and group policies:
 | `open`                | Bypass group allowlists (mention-gating still applies) |
 | `disabled`            | Block all group/room messages                          |
 
-<Note>
+:::note
 `channels.defaults.groupPolicy` sets the default when a provider's `groupPolicy` is unset.
 Pairing codes expire after 1 hour. Pending DM pairing requests are capped at **3 per channel**.
 If a provider block is missing entirely (`channels.<provider>` absent), runtime group policy falls back to `allowlist` (fail-closed) with a startup warning.
-</Note>
-
-### Channel model overrides
-
-Use `channels.modelByChannel` to pin specific channel IDs to a model. Values accept `provider/model` or configured model aliases. The channel mapping applies when a session does not already have a model override (for example, set via `/model`).
-
-```json5
-{
-  channels: {
-    modelByChannel: {
-      discord: {
-        "123456789012345678": "anthropic/claude-opus-4-6",
-      },
-      slack: {
-        C1234567890: "openai/gpt-4.1",
-      },
-      telegram: {
-        "-1001234567890": "openai/gpt-4.1-mini",
-        "-1001234567890:topic:99": "anthropic/claude-sonnet-4-6",
-      },
-    },
-  },
-}
-```
-
-### Channel defaults and heartbeat
-
-Use `channels.defaults` for shared group-policy and heartbeat behavior across providers:
-
-```json5
-{
-  channels: {
-    defaults: {
-      groupPolicy: "allowlist", // open | allowlist | disabled
-      heartbeat: {
-        showOk: false,
-        showAlerts: true,
-        useIndicator: true,
-      },
-    },
-  },
-}
-```
-
-- `channels.defaults.groupPolicy`: fallback group policy when a provider-level `groupPolicy` is unset.
-- `channels.defaults.heartbeat.showOk`: include healthy channel statuses in heartbeat output.
-- `channels.defaults.heartbeat.showAlerts`: include degraded/error statuses in heartbeat output.
-- `channels.defaults.heartbeat.useIndicator`: render compact indicator-style heartbeat output.
+:::
 
 ### WhatsApp
 
@@ -124,7 +76,8 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 }
 ```
 
-<Accordion title="Multi-account WhatsApp">
+<details>
+<summary>Multi-account WhatsApp</summary>
 
 ```json5
 {
@@ -134,7 +87,7 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
         default: {},
         personal: {},
         biz: {
-          // authDir: "~/.openclaw/credentials/whatsapp/biz",
+          // authDir: "~/.remoteclaw/credentials/whatsapp/biz",
         },
       },
     },
@@ -144,10 +97,10 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 
 - Outbound commands default to account `default` if present; otherwise the first configured account id (sorted).
 - Optional `channels.whatsapp.defaultAccount` overrides that fallback default account selection when it matches a configured account id.
-- Legacy single-account Baileys auth dir is migrated by `openclaw doctor` into `whatsapp/default`.
+- Legacy single-account Baileys auth dir is migrated by `remoteclaw doctor` into `whatsapp/default`.
 - Per-account overrides: `channels.whatsapp.accounts.<id>.sendReadReceipts`, `channels.whatsapp.accounts.<id>.dmPolicy`, `channels.whatsapp.accounts.<id>.allowFrom`.
 
-</Accordion>
+</details>
 
 ### Telegram
 
@@ -239,10 +192,10 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
       replyToMode: "off", // off | first | all
       dmPolicy: "pairing",
       allowFrom: ["1234567890", "123456789012345678"],
-      dm: { enabled: true, groupEnabled: false, groupChannels: ["openclaw-dm"] },
+      dm: { enabled: true, groupEnabled: false, groupChannels: ["remoteclaw-dm"] },
       guilds: {
         "123456789012345678": {
-          slug: "friends-of-openclaw",
+          slug: "friends-of-remoteclaw",
           requireMention: false,
           reactionNotifications: "own",
           users: ["987654321098765432"],
@@ -314,7 +267,7 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 - `channels.discord.ui.components.accentColor` sets the accent color for Discord components v2 containers.
 - `channels.discord.voice` enables Discord voice channel conversations and optional auto-join + TTS overrides.
 - `channels.discord.voice.daveEncryption` and `channels.discord.voice.decryptionFailureTolerance` pass through to `@discordjs/voice` DAVE options (`true` and `24` by default).
-- OpenClaw additionally attempts voice receive recovery by leaving/rejoining a voice session after repeated decrypt failures.
+- RemoteClaw additionally attempts voice receive recovery by leaving/rejoining a voice session after repeated decrypt failures.
 - `channels.discord.streaming` is the canonical stream mode key. Legacy `streamMode` and boolean `streaming` values are auto-migrated.
 - `channels.discord.dangerouslyAllowNameMatching` re-enables mutable name/tag matching (break-glass compatibility mode).
 
@@ -350,7 +303,6 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 ```
 
 - Service account JSON: inline (`serviceAccount`) or file-based (`serviceAccountFile`).
-- Service account SecretRef is also supported (`serviceAccountRef`).
 - Env fallbacks: `GOOGLE_CHAT_SERVICE_ACCOUNT` or `GOOGLE_CHAT_SERVICE_ACCOUNT_FILE`.
 - Use `spaces/<spaceId>` or `users/<userId>` for delivery targets.
 - `channels.googlechat.dangerouslyAllowNameMatching` re-enables mutable email principal matching (break-glass compatibility mode).
@@ -396,7 +348,7 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
       },
       slashCommand: {
         enabled: true,
-        name: "openclaw",
+        name: "remoteclaw",
         sessionPrefix: "slack:slash",
         ephemeral: true,
       },
@@ -431,7 +383,7 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 
 ### Mattermost
 
-Mattermost ships as a plugin: `openclaw plugins install @openclaw/mattermost`.
+Mattermost ships as a plugin: `remoteclaw plugins install @remoteclaw/mattermost`.
 
 ```json5
 {
@@ -452,8 +404,6 @@ Mattermost ships as a plugin: `openclaw plugins install @openclaw/mattermost`.
 
 Chat modes: `oncall` (respond on @-mention, default), `onmessage` (every message), `onchar` (messages starting with trigger prefix).
 
-- `channels.mattermost.configWrites`: allow or deny Mattermost-initiated config writes.
-- `channels.mattermost.requireMention`: require `@mention` before replying in channels.
 - Optional `channels.mattermost.defaultAccount` overrides default account selection when it matches a configured account id.
 
 ### Signal
@@ -462,11 +412,6 @@ Chat modes: `oncall` (respond on @-mention, default), `onmessage` (every message
 {
   channels: {
     signal: {
-      enabled: true,
-      account: "+15555550123", // optional account binding
-      dmPolicy: "pairing",
-      allowFrom: ["+15551234567", "uuid:123e4567-e89b-12d3-a456-426614174000"],
-      configWrites: true,
       reactionNotifications: "own", // off | own | all | allowlist
       reactionAllowlist: ["+15551234567", "uuid:123e4567-e89b-12d3-a456-426614174000"],
       historyLimit: 50,
@@ -477,34 +422,11 @@ Chat modes: `oncall` (respond on @-mention, default), `onmessage` (every message
 
 **Reaction notification modes:** `off`, `own` (default), `all`, `allowlist` (from `reactionAllowlist`).
 
-- `channels.signal.account`: pin channel startup to a specific Signal account identity.
-- `channels.signal.configWrites`: allow or deny Signal-initiated config writes.
 - Optional `channels.signal.defaultAccount` overrides default account selection when it matches a configured account id.
-
-### BlueBubbles
-
-BlueBubbles is the recommended iMessage path (plugin-backed, configured under `channels.bluebubbles`).
-
-```json5
-{
-  channels: {
-    bluebubbles: {
-      enabled: true,
-      dmPolicy: "pairing",
-      // serverUrl, password, webhookPath, group controls, and advanced actions:
-      // see /channels/bluebubbles
-    },
-  },
-}
-```
-
-- Core key paths covered here: `channels.bluebubbles`, `channels.bluebubbles.dmPolicy`.
-- Optional `channels.bluebubbles.defaultAccount` overrides default account selection when it matches a configured account id.
-- Full BlueBubbles channel configuration is documented in [BlueBubbles](/channels/bluebubbles).
 
 ### iMessage
 
-OpenClaw spawns `imsg rpc` (JSON-RPC over stdio). No daemon or port required.
+RemoteClaw spawns `imsg rpc` (JSON-RPC over stdio). No daemon or port required.
 
 ```json5
 {
@@ -529,69 +451,21 @@ OpenClaw spawns `imsg rpc` (JSON-RPC over stdio). No daemon or port required.
 ```
 
 - Optional `channels.imessage.defaultAccount` overrides default account selection when it matches a configured account id.
-
 - Requires Full Disk Access to the Messages DB.
 - Prefer `chat_id:<id>` targets. Use `imsg chats --limit 20` to list chats.
 - `cliPath` can point to an SSH wrapper; set `remoteHost` (`host` or `user@host`) for SCP attachment fetching.
 - `attachmentRoots` and `remoteAttachmentRoots` restrict inbound attachment paths (default: `/Users/*/Library/Messages/Attachments`).
 - SCP uses strict host-key checking, so ensure the relay host key already exists in `~/.ssh/known_hosts`.
-- `channels.imessage.configWrites`: allow or deny iMessage-initiated config writes.
 
-<Accordion title="iMessage SSH wrapper example">
+<details>
+<summary>iMessage SSH wrapper example</summary>
 
 ```bash
 #!/usr/bin/env bash
 exec ssh -T gateway-host imsg "$@"
 ```
 
-</Accordion>
-
-### Microsoft Teams
-
-Microsoft Teams is extension-backed and configured under `channels.msteams`.
-
-```json5
-{
-  channels: {
-    msteams: {
-      enabled: true,
-      configWrites: true,
-      // appId, appPassword, tenantId, webhook, team/channel policies:
-      // see /channels/msteams
-    },
-  },
-}
-```
-
-- Core key paths covered here: `channels.msteams`, `channels.msteams.configWrites`.
-- Full Teams config (credentials, webhook, DM/group policy, per-team/per-channel overrides) is documented in [Microsoft Teams](/channels/msteams).
-
-### IRC
-
-IRC is extension-backed and configured under `channels.irc`.
-
-```json5
-{
-  channels: {
-    irc: {
-      enabled: true,
-      dmPolicy: "pairing",
-      configWrites: true,
-      nickserv: {
-        enabled: true,
-        service: "NickServ",
-        password: "${IRC_NICKSERV_PASSWORD}",
-        register: false,
-        registerEmail: "bot@example.com",
-      },
-    },
-  },
-}
-```
-
-- Core key paths covered here: `channels.irc`, `channels.irc.dmPolicy`, `channels.irc.configWrites`, `channels.irc.nickserv.*`.
-- Optional `channels.irc.defaultAccount` overrides default account selection when it matches a configured account id.
-- Full IRC channel configuration (host/port/TLS/channels/allowlists/mention gating) is documented in [IRC](/channels/irc).
+</details>
 
 ### Multi-account (all channels)
 
@@ -620,14 +494,9 @@ Run multiple accounts per channel (each with its own `accountId`):
 - Env tokens only apply to the **default** account.
 - Base channel settings apply to all accounts unless overridden per account.
 - Use `bindings[].match.accountId` to route each account to a different agent.
-- If you add a non-default account via `openclaw channels add` (or channel onboarding) while still on a single-account top-level channel config, OpenClaw moves account-scoped top-level single-account values into `channels.<channel>.accounts.default` first so the original account keeps working.
+- If you add a non-default account via `remoteclaw channels add` (or channel onboarding) while still on a single-account top-level channel config, RemoteClaw moves account-scoped top-level single-account values into `channels.<channel>.accounts.default` first so the original account keeps working.
 - Existing channel-only bindings (no `accountId`) keep matching the default account; account-scoped bindings remain optional.
-- `openclaw doctor --fix` also repairs mixed shapes by moving account-scoped top-level single-account values into `accounts.default` when named accounts exist but `default` is missing.
-
-### Other extension channels
-
-Many extension channels are configured as `channels.<id>` and documented in their dedicated channel pages (for example Feishu, Matrix, LINE, Nostr, Zalo, Nextcloud Talk, Synology Chat, and Twitch).
-See the full channel index: [Channels](/channels).
+- `remoteclaw doctor --fix` also repairs mixed shapes by moving account-scoped top-level single-account values into `accounts.default` when named accounts exist but `default` is missing.
 
 ### Group chat mention gating
 
@@ -645,7 +514,7 @@ Group messages default to **require mention** (metadata mention or regex pattern
     groupChat: { historyLimit: 50 },
   },
   agents: {
-    list: [{ id: "main", groupChat: { mentionPatterns: ["@openclaw", "openclaw"] } }],
+    list: [{ id: "main", groupChat: { mentionPatterns: ["@remoteclaw", "remoteclaw"] } }],
   },
 }
 ```
@@ -687,7 +556,7 @@ Include your own number in `allowFrom` to enable self-chat mode (ignores native 
     list: [
       {
         id: "main",
-        groupChat: { mentionPatterns: ["reisponde", "@openclaw"] },
+        groupChat: { mentionPatterns: ["reisponde", "@remoteclaw"] },
       },
     ],
   },
@@ -701,8 +570,6 @@ Include your own number in `allowFrom` to enable self-chat mode (ignores native 
   commands: {
     native: "auto", // register native commands when supported
     text: true, // parse /commands in chat messages
-    bash: false, // allow ! (alias: /bash)
-    bashForegroundMs: 2000,
     config: false, // allow /config
     debug: false, // allow /debug
     restart: false, // allow /restart + gateway restart tool
@@ -715,19 +582,19 @@ Include your own number in `allowFrom` to enable self-chat mode (ignores native 
 }
 ```
 
-<Accordion title="Command details">
+<details>
+<summary>Command details</summary>
 
 - Text commands must be **standalone** messages with leading `/`.
 - `native: "auto"` turns on native commands for Discord/Telegram, leaves Slack off.
 - Override per channel: `channels.discord.commands.native` (bool or `"auto"`). `false` clears previously registered commands.
 - `channels.telegram.customCommands` adds extra Telegram bot menu entries.
-- `bash: true` enables `! <cmd>` for host shell. Requires `tools.elevated.enabled` and sender in `tools.elevated.allowFrom.<channel>`.
-- `config: true` enables `/config` (reads/writes `openclaw.json`).
+- `config: true` enables `/config` (reads/writes `remoteclaw.json`).
 - `channels.<provider>.configWrites` gates config mutations per channel (default: true).
 - `allowFrom` is per-provider. When set, it is the **only** authorization source (channel allowlists/pairing and `useAccessGroups` are ignored).
 - `useAccessGroups: false` allows commands to bypass access-group policies when `allowFrom` is not set.
 
-</Accordion>
+</details>
 
 ---
 
@@ -735,51 +602,32 @@ Include your own number in `allowFrom` to enable self-chat mode (ignores native 
 
 ### `agents.defaults.workspace`
 
-Default: `~/.openclaw/workspace`.
+No built-in default — must be configured. Per-agent override: `agents.list[].workspace`.
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
+  agents: { defaults: { workspace: "~/projects" } },
 }
 ```
 
 ### `agents.defaults.repoRoot`
 
-Optional repository root shown in the system prompt's Runtime line. If unset, OpenClaw auto-detects by walking upward from the workspace.
+Optional repository root shown in the system prompt's Runtime line. If unset, RemoteClaw auto-detects by walking upward from the workspace.
 
 ```json5
 {
-  agents: { defaults: { repoRoot: "~/Projects/openclaw" } },
+  agents: { defaults: { repoRoot: "~/Projects/remoteclaw" } },
 }
 ```
 
-### `agents.defaults.skipBootstrap`
+### `agents.defaults.editableFiles`
 
-Disables automatic creation of workspace bootstrap files (`AGENTS.md`, `SOUL.md`, `TOOLS.md`, `IDENTITY.md`, `USER.md`, `HEARTBEAT.md`, `BOOTSTRAP.md`).
-
-```json5
-{
-  agents: { defaults: { skipBootstrap: true } },
-}
-```
-
-### `agents.defaults.bootstrapMaxChars`
-
-Max characters per workspace bootstrap file before truncation. Default: `20000`.
+Glob patterns for workspace files exposed by the gateway file editor.
+Per-agent override: `agents.list[].editableFiles`.
 
 ```json5
 {
-  agents: { defaults: { bootstrapMaxChars: 20000 } },
-}
-```
-
-### `agents.defaults.bootstrapTotalMaxChars`
-
-Max total characters injected across all workspace bootstrap files. Default: `150000`.
-
-```json5
-{
-  agents: { defaults: { bootstrapTotalMaxChars: 150000 } },
+  agents: { defaults: { editableFiles: ["HEARTBEAT.md", "memory/**/*.md"] } },
 }
 ```
 
@@ -817,27 +665,13 @@ Time format in system prompt. Default: `auto` (OS preference).
 }
 ```
 
-### `agents.defaults.model`
+### `agents.defaults` (runtime)
 
 ```json5
 {
   agents: {
     defaults: {
-      models: {
-        "anthropic/claude-opus-4-6": { alias: "opus" },
-        "minimax/MiniMax-M2.1": { alias: "minimax" },
-      },
-      model: {
-        primary: "anthropic/claude-opus-4-6",
-        fallbacks: ["minimax/MiniMax-M2.1"],
-      },
-      imageModel: {
-        primary: "openrouter/qwen/qwen-2.5-vl-72b-instruct:free",
-        fallbacks: ["openrouter/google/gemini-2.0-flash-vision:free"],
-      },
-      thinkingDefault: "low",
       verboseDefault: "off",
-      elevatedDefault: "on",
       timeoutSeconds: 600,
       mediaMaxMb: 5,
       contextTokens: 200000,
@@ -847,37 +681,11 @@ Time format in system prompt. Default: `auto` (OS preference).
 }
 ```
 
-- `model`: accepts either a string (`"provider/model"`) or an object (`{ primary, fallbacks }`).
-  - String form sets only the primary model.
-  - Object form sets primary plus ordered failover models.
-- `imageModel`: accepts either a string (`"provider/model"`) or an object (`{ primary, fallbacks }`).
-  - Used by the `image` tool path as its vision-model config.
-  - Also used as fallback routing when the selected/default model cannot accept image input.
-- `model.primary`: format `provider/model` (e.g. `anthropic/claude-opus-4-6`). If you omit the provider, OpenClaw assumes `anthropic` (deprecated).
-- `models`: the configured model catalog and allowlist for `/model`. Each entry can include `alias` (shortcut) and `params` (provider-specific, for example `temperature`, `maxTokens`, `cacheRetention`, `context1m`).
-- `params` merge precedence (config): `agents.defaults.models["provider/model"].params` is the base, then `agents.list[].params` (matching agent id) overrides by key.
-- Config writers that mutate these fields (for example `/models set`, `/models set-image`, and fallback add/remove commands) save canonical object form and preserve existing fallback lists when possible.
 - `maxConcurrent`: max parallel agent runs across sessions (each session still serialized). Default: 1.
-
-**Built-in alias shorthands** (only apply when the model is in `agents.defaults.models`):
-
-| Alias          | Model                           |
-| -------------- | ------------------------------- |
-| `opus`         | `anthropic/claude-opus-4-6`     |
-| `sonnet`       | `anthropic/claude-sonnet-4-5`   |
-| `gpt`          | `openai/gpt-5.2`                |
-| `gpt-mini`     | `openai/gpt-5-mini`             |
-| `gemini`       | `google/gemini-3-pro-preview`   |
-| `gemini-flash` | `google/gemini-3-flash-preview` |
-
-Your configured aliases always win over defaults.
-
-Z.AI GLM-4.x models automatically enable thinking mode unless you set `--thinking off` or define `agents.defaults.models["zai/<model>"].params.thinking` yourself.
-Z.AI models enable `tool_stream` by default for tool call streaming. Set `agents.defaults.models["zai/<model>"].params.tool_stream` to `false` to disable it.
 
 ### `agents.defaults.cliBackends`
 
-Optional CLI backends for text-only fallback runs (no tool calls). Useful as a backup when API providers fail.
+Optional CLI backends for text-only runs (no tool calls). See [CLI Backends](/gateway/cli-backends) for details.
 
 ```json5
 {
@@ -919,14 +727,11 @@ Periodic heartbeat runs.
     defaults: {
       heartbeat: {
         every: "30m", // 0m disables
-        model: "openai/gpt-5.2-mini",
-        includeReasoning: false,
         session: "main",
         to: "+15555550123",
         directPolicy: "allow", // allow (default) | block
         target: "none", // default: none | options: last | whatsapp | telegram | discord | ...
         prompt: "Read HEARTBEAT.md if it exists...",
-        ackMaxChars: 300,
         suppressToolErrorWarnings: false,
       },
     },
@@ -949,8 +754,6 @@ Periodic heartbeat runs.
       compaction: {
         mode: "safeguard", // default | safeguard
         reserveTokensFloor: 24000,
-        identifierPolicy: "strict", // strict | off | custom
-        identifierInstructions: "Preserve deployment IDs, ticket IDs, and host:port pairs exactly.", // used when identifierPolicy=custom
         memoryFlush: {
           enabled: true,
           softThresholdTokens: 6000,
@@ -963,9 +766,7 @@ Periodic heartbeat runs.
 }
 ```
 
-- `mode`: `default` or `safeguard` (chunked summarization for long histories). See [Compaction](/concepts/compaction).
-- `identifierPolicy`: `strict` (default), `off`, or `custom`. `strict` prepends built-in opaque identifier retention guidance during compaction summarization.
-- `identifierInstructions`: optional custom identifier-preservation text used when `identifierPolicy=custom`.
+- `mode`: `default` or `safeguard` (chunked summarization for long histories). See [Session management — compaction](/reference/session-management-compaction).
 - `memoryFlush`: silent agentic turn before auto-compaction to store durable memories. Skipped when workspace is read-only.
 
 ### `agents.defaults.contextPruning`
@@ -992,7 +793,8 @@ Prunes **old tool results** from in-memory context before sending to the LLM. Do
 }
 ```
 
-<Accordion title="cache-ttl mode behavior">
+<details>
+<summary>cache-ttl mode behavior</summary>
 
 - `mode: "cache-ttl"` enables pruning passes.
 - `ttl` controls how often pruning can run again (after the last cache touch).
@@ -1008,7 +810,7 @@ Notes:
 - Ratios are character-based (approximate), not exact token counts.
 - If fewer than `keepLastAssistants` assistant messages exist, pruning is skipped.
 
-</Accordion>
+</details>
 
 See [Session Pruning](/concepts/session-pruning) for behavior details.
 
@@ -1040,7 +842,7 @@ See [Streaming](/concepts/streaming) for behavior + chunking details.
 {
   agents: {
     defaults: {
-      typingMode: "instant", // never | instant | thinking | message
+      typingMode: "instant", // never | instant | message
       typingIntervalSeconds: 6,
     },
   },
@@ -1054,7 +856,7 @@ See [Typing Indicators](/concepts/typing-indicators).
 
 ### `agents.defaults.sandbox`
 
-Optional **Docker sandboxing** for the embedded agent. See [Sandboxing](/gateway/sandboxing) for the full guide.
+Optional **Docker sandboxing** for the embedded agent.
 
 ```json5
 {
@@ -1064,10 +866,10 @@ Optional **Docker sandboxing** for the embedded agent. See [Sandboxing](/gateway
         mode: "non-main", // off | non-main | all
         scope: "agent", // session | agent | shared
         workspaceAccess: "none", // none | ro | rw
-        workspaceRoot: "~/.openclaw/sandboxes",
+        workspaceRoot: "~/.remoteclaw/sandboxes",
         docker: {
-          image: "openclaw-sandbox:bookworm-slim",
-          containerPrefix: "openclaw-sbx-",
+          image: "remoteclaw-sandbox:bookworm-slim",
+          containerPrefix: "remoteclaw-sbx-",
           workdir: "/workspace",
           readOnlyRoot: true,
           tmpfs: ["/tmp", "/var/tmp", "/run"],
@@ -1085,15 +887,15 @@ Optional **Docker sandboxing** for the embedded agent. See [Sandboxing](/gateway
             nproc: 256,
           },
           seccompProfile: "/path/to/seccomp.json",
-          apparmorProfile: "openclaw-sandbox",
+          apparmorProfile: "remoteclaw-sandbox",
           dns: ["1.1.1.1", "8.8.8.8"],
           extraHosts: ["internal.service:10.0.0.5"],
           binds: ["/home/user/source:/source:rw"],
         },
         browser: {
           enabled: false,
-          image: "openclaw-sandbox-browser:bookworm-slim",
-          network: "openclaw-sandbox-browser",
+          image: "remoteclaw-sandbox-browser:bookworm-slim",
+          network: "remoteclaw-sandbox-browser",
           cdpPort: 9222,
           cdpSourceRange: "172.21.0.1/32",
           vncPort: 5900,
@@ -1134,11 +936,12 @@ Optional **Docker sandboxing** for the embedded agent. See [Sandboxing](/gateway
 }
 ```
 
-<Accordion title="Sandbox details">
+<details>
+<summary>Sandbox details</summary>
 
 **Workspace access:**
 
-- `none`: per-scope sandbox workspace under `~/.openclaw/sandboxes`
+- `none`: per-scope sandbox workspace under `~/.remoteclaw/sandboxes`
 - `ro`: sandbox workspace at `/workspace`, agent workspace mounted read-only at `/agent`
 - `rw`: agent workspace mounted read/write at `/workspace`
 
@@ -1159,14 +962,14 @@ Optional **Docker sandboxing** for the embedded agent. See [Sandboxing](/gateway
 **`docker.binds`** mounts additional host directories; global and per-agent binds are merged.
 
 **Sandboxed browser** (`sandbox.browser.enabled`): Chromium + CDP in a container. noVNC URL injected into system prompt. Does not require `browser.enabled` in main config.
-noVNC observer access uses VNC auth by default and OpenClaw emits a short-lived token URL that serves a local bootstrap page; noVNC password is passed via URL fragment (instead of URL query).
+noVNC observer access uses VNC auth by default and RemoteClaw emits a short-lived token URL (instead of exposing the password in the shared URL).
 
 - `allowHostControl: false` (default) blocks sandboxed sessions from targeting the host browser.
-- `network` defaults to `openclaw-sandbox-browser` (dedicated bridge network). Set to `bridge` only when you explicitly want global bridge connectivity.
+- `network` defaults to `remoteclaw-sandbox-browser` (dedicated bridge network). Set to `bridge` only when you explicitly want global bridge connectivity.
 - `cdpSourceRange` optionally restricts CDP ingress at the container edge to a CIDR range (for example `172.21.0.1/32`).
 - `sandbox.browser.binds` mounts additional host directories into the sandbox browser container only. When set (including `[]`), it replaces `docker.binds` for the browser container.
 
-</Accordion>
+</details>
 
 Build images:
 
@@ -1185,24 +988,21 @@ scripts/sandbox-browser-setup.sh   # optional browser image
         id: "main",
         default: true,
         name: "Main Agent",
-        workspace: "~/.openclaw/workspace",
-        agentDir: "~/.openclaw/agents/main/agent",
-        model: "anthropic/claude-opus-4-6", // or { primary, fallbacks }
-        params: { cacheRetention: "none" }, // overrides matching defaults.models params by key
+        workspace: "~/.remoteclaw/workspace",
+        agentDir: "~/.remoteclaw/agents/main/agent",
         identity: {
           name: "Samantha",
           theme: "helpful sloth",
           emoji: "🦥",
           avatar: "avatars/samantha.png",
         },
-        groupChat: { mentionPatterns: ["@openclaw"] },
+        groupChat: { mentionPatterns: ["@remoteclaw"] },
         sandbox: { mode: "off" },
         subagents: { allowAgents: ["*"] },
         tools: {
           profile: "coding",
           allow: ["browser"],
           deny: ["canvas"],
-          elevated: { enabled: true },
         },
       },
     ],
@@ -1212,12 +1012,9 @@ scripts/sandbox-browser-setup.sh   # optional browser image
 
 - `id`: stable agent id (required).
 - `default`: when multiple are set, first wins (warning logged). If none set, first list entry is default.
-- `model`: string form overrides `primary` only; object form `{ primary, fallbacks }` overrides both (`[]` disables global fallbacks). Cron jobs that only override `primary` still inherit default fallbacks unless you set `fallbacks: []`.
-- `params`: per-agent stream params merged over the selected model entry in `agents.defaults.models`. Use this for agent-specific overrides like `cacheRetention`, `temperature`, or `maxTokens` without duplicating the whole model catalog.
 - `identity.avatar`: workspace-relative path, `http(s)` URL, or `data:` URI.
 - `identity` derives defaults: `ackReaction` from `emoji`, `mentionPatterns` from `name`/`emoji`.
 - `subagents.allowAgents`: allowlist of agent ids for `sessions_spawn` (`["*"]` = any; default: same agent only).
-- Sandbox inheritance guard: if the requester session is sandboxed, `sessions_spawn` rejects targets that would run unsandboxed.
 
 ---
 
@@ -1229,8 +1026,8 @@ Run multiple isolated agents inside one Gateway. See [Multi-Agent](/concepts/mul
 {
   agents: {
     list: [
-      { id: "home", default: true, workspace: "~/.openclaw/workspace-home" },
-      { id: "work", workspace: "~/.openclaw/workspace-work" },
+      { id: "home", default: true, workspace: "~/.remoteclaw/workspace-home" },
+      { id: "work", workspace: "~/.remoteclaw/workspace-work" },
     ],
   },
   bindings: [
@@ -1260,7 +1057,8 @@ Within each tier, the first matching `bindings` entry wins.
 
 ### Per-agent access profiles
 
-<Accordion title="Full access (no sandbox)">
+<details>
+<summary>Full access (no sandbox)</summary>
 
 ```json5
 {
@@ -1268,7 +1066,7 @@ Within each tier, the first matching `bindings` entry wins.
     list: [
       {
         id: "personal",
-        workspace: "~/.openclaw/workspace-personal",
+        workspace: "~/.remoteclaw/workspace-personal",
         sandbox: { mode: "off" },
       },
     ],
@@ -1276,9 +1074,10 @@ Within each tier, the first matching `bindings` entry wins.
 }
 ```
 
-</Accordion>
+</details>
 
-<Accordion title="Read-only tools + workspace">
+<details>
+<summary>Read-only tools + workspace</summary>
 
 ```json5
 {
@@ -1286,7 +1085,7 @@ Within each tier, the first matching `bindings` entry wins.
     list: [
       {
         id: "family",
-        workspace: "~/.openclaw/workspace-family",
+        workspace: "~/.remoteclaw/workspace-family",
         sandbox: { mode: "all", scope: "agent", workspaceAccess: "ro" },
         tools: {
           allow: [
@@ -1305,9 +1104,10 @@ Within each tier, the first matching `bindings` entry wins.
 }
 ```
 
-</Accordion>
+</details>
 
-<Accordion title="No filesystem access (messaging only)">
+<details>
+<summary>No filesystem access (messaging only)</summary>
 
 ```json5
 {
@@ -1315,7 +1115,7 @@ Within each tier, the first matching `bindings` entry wins.
     list: [
       {
         id: "public",
-        workspace: "~/.openclaw/workspace-public",
+        workspace: "~/.remoteclaw/workspace-public",
         sandbox: { mode: "all", scope: "agent", workspaceAccess: "none" },
         tools: {
           allow: [
@@ -1351,9 +1151,9 @@ Within each tier, the first matching `bindings` entry wins.
 }
 ```
 
-</Accordion>
+</details>
 
-See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for precedence details.
+See [Multi-Agent Routing](/concepts/multi-agent) for precedence details.
 
 ---
 
@@ -1378,7 +1178,7 @@ See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for preceden
       group: { mode: "idle", idleMinutes: 120 },
     },
     resetTriggers: ["/new", "/reset"],
-    store: "~/.openclaw/agents/{agentId}/sessions/sessions.json",
+    store: "~/.remoteclaw/agents/{agentId}/sessions/sessions.json",
     parentForkMaxTokens: 100000, // skip parent-thread fork above this token count (0 disables)
     maintenance: {
       mode: "warn", // warn | enforce
@@ -1404,7 +1204,8 @@ See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for preceden
 }
 ```
 
-<Accordion title="Session field details">
+<details>
+<summary>Session field details</summary>
 
 - **`dmScope`**: how DMs are grouped.
   - `main`: all DMs share the main session.
@@ -1415,7 +1216,7 @@ See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for preceden
 - **`reset`**: primary reset policy. `daily` resets at `atHour` local time; `idle` resets after `idleMinutes`. When both configured, whichever expires first wins.
 - **`resetByType`**: per-type overrides (`direct`, `group`, `thread`). Legacy `dm` accepted as alias for `direct`.
 - **`parentForkMaxTokens`**: max parent-session `totalTokens` allowed when creating a forked thread session (default `100000`).
-  - If parent `totalTokens` is above this value, OpenClaw starts a fresh thread session instead of inheriting parent transcript history.
+  - If parent `totalTokens` is above this value, RemoteClaw starts a fresh thread session instead of inheriting parent transcript history.
   - Set `0` to disable this guard and always allow parent forking.
 - **`mainKey`**: legacy field. Runtime now always uses `"main"` for the main direct-chat bucket.
 - **`sendPolicy`**: match by `channel`, `chatType` (`direct|group|channel`, with legacy `dm` alias), `keyPrefix`, or `rawKeyPrefix`. First deny wins.
@@ -1432,7 +1233,7 @@ See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for preceden
   - `idleHours`: default inactivity auto-unfocus in hours (`0` disables; providers can override)
   - `maxAgeHours`: default hard max age in hours (`0` disables; providers can override)
 
-</Accordion>
+</details>
 
 ---
 
@@ -1441,7 +1242,7 @@ See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for preceden
 ```json5
 {
   messages: {
-    responsePrefix: "🦞", // or "auto"
+    responsePrefix: "🦀", // or "auto"
     ackReaction: "👀",
     ackReactionScope: "group-mentions", // group-mentions | group-all | direct | all
     removeAckAfterReply: false,
@@ -1474,15 +1275,11 @@ Resolution (most specific wins): account → channel → global. `""` disables a
 
 **Template variables:**
 
-| Variable          | Description            | Example                     |
-| ----------------- | ---------------------- | --------------------------- |
-| `{model}`         | Short model name       | `claude-opus-4-6`           |
-| `{modelFull}`     | Full model identifier  | `anthropic/claude-opus-4-6` |
-| `{provider}`      | Provider name          | `anthropic`                 |
-| `{thinkingLevel}` | Current thinking level | `high`, `low`, `off`        |
-| `{identity.name}` | Agent identity name    | (same as `"auto"`)          |
+| Variable          | Description         | Example            |
+| ----------------- | ------------------- | ------------------ |
+| `{identity.name}` | Agent identity name | (same as `"auto"`) |
 
-Variables are case-insensitive. `{think}` is an alias for `{thinkingLevel}`.
+Variables are case-insensitive.
 
 ### Ack reaction
 
@@ -1505,11 +1302,9 @@ Batches rapid text-only messages from the same sender into a single agent turn. 
       auto: "always", // off | always | inbound | tagged
       mode: "final", // final | all
       provider: "elevenlabs",
-      summaryModel: "openai/gpt-4.1-mini",
-      modelOverrides: { enabled: true },
       maxTextLength: 4000,
       timeoutMs: 30000,
-      prefsPath: "~/.openclaw/settings/tts.json",
+      prefsPath: "~/.remoteclaw/settings/tts.json",
       elevenlabs: {
         apiKey: "elevenlabs_api_key",
         baseUrl: "https://api.elevenlabs.io",
@@ -1537,8 +1332,6 @@ Batches rapid text-only messages from the same sender into a single agent turn. 
 ```
 
 - `auto` controls auto-TTS. `/tts off|always|inbound|tagged` overrides per session.
-- `summaryModel` overrides `agents.defaults.model.primary` for auto-summary.
-- `modelOverrides` is enabled by default; `modelOverrides.allowProvider` defaults to `false` (opt-in).
 - API keys fall back to `ELEVENLABS_API_KEY`/`XI_API_KEY` and `OPENAI_API_KEY`.
 
 ---
@@ -1558,6 +1351,7 @@ Defaults for Talk mode (macOS/iOS/Android).
     modelId: "eleven_v3",
     outputFormat: "mp3_44100_128",
     apiKey: "elevenlabs_api_key",
+    silenceTimeoutMs: 1500,
     interruptOnSpeech: true,
   },
 }
@@ -1566,6 +1360,7 @@ Defaults for Talk mode (macOS/iOS/Android).
 - Voice IDs fall back to `ELEVENLABS_VOICE_ID` or `SAG_VOICE_ID`.
 - `apiKey` falls back to `ELEVENLABS_API_KEY`.
 - `voiceAliases` lets Talk directives use friendly names.
+- `silenceTimeoutMs` controls how long Talk mode waits after user silence before it sends the transcript. Unset keeps the platform default pause window (`700 ms on macOS and Android, 900 ms on iOS`).
 
 ---
 
@@ -1587,15 +1382,14 @@ Defaults for Talk mode (macOS/iOS/Android).
 | Group              | Tools                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------- |
 | `group:runtime`    | `exec`, `process` (`bash` is accepted as an alias for `exec`)                            |
-| `group:fs`         | `read`, `write`, `edit`, `apply_patch`                                                   |
+| `group:fs`         | `read`, `write`, `edit`                                                                  |
 | `group:sessions`   | `sessions_list`, `sessions_history`, `sessions_send`, `sessions_spawn`, `session_status` |
-| `group:memory`     | `memory_search`, `memory_get`                                                            |
 | `group:web`        | `web_search`, `web_fetch`                                                                |
 | `group:ui`         | `browser`, `canvas`                                                                      |
 | `group:automation` | `cron`, `gateway`                                                                        |
 | `group:messaging`  | `message`                                                                                |
 | `group:nodes`      | `nodes`                                                                                  |
-| `group:openclaw`   | All built-in tools (excludes provider plugins)                                           |
+| `group:remoteclaw` | All built-in tools (excludes provider plugins)                                           |
 
 ### `tools.allow` / `tools.deny`
 
@@ -1622,28 +1416,6 @@ Further restrict tools for specific providers or models. Order: base profile →
   },
 }
 ```
-
-### `tools.elevated`
-
-Controls elevated (host) exec access:
-
-```json5
-{
-  tools: {
-    elevated: {
-      enabled: true,
-      allowFrom: {
-        whatsapp: ["+15555550123"],
-        discord: ["1234567890123", "987654321098765432"],
-      },
-    },
-  },
-}
-```
-
-- Per-agent override (`agents.list[].tools.elevated`) can only further restrict.
-- `/elevated on|off|ask|full` stores state per session; inline directives apply to single message.
-- Elevated `exec` runs on the host, bypasses sandboxing.
 
 ### `tools.exec`
 
@@ -1740,28 +1512,19 @@ Configures inbound media understanding (image/audio/video):
           default: "deny",
           rules: [{ action: "allow", match: { chatType: "direct" } }],
         },
-        models: [
-          { provider: "openai", model: "gpt-4o-mini-transcribe" },
-          { type: "cli", command: "whisper", args: ["--model", "base", "{{MediaPath}}"] },
-        ],
+        models: [{ type: "cli", command: "whisper", args: ["--model", "base", "{{MediaPath}}"] }],
       },
       video: {
         enabled: true,
         maxBytes: 52428800,
-        models: [{ provider: "google", model: "gemini-3-flash-preview" }],
       },
     },
   },
 }
 ```
 
-<Accordion title="Media model entry fields">
-
-**Provider entry** (`type: "provider"` or omitted):
-
-- `provider`: API provider id (`openai`, `anthropic`, `google`/`gemini`, `groq`, etc.)
-- `model`: model id override
-- `profile` / `preferredProfile`: auth profile selection
+<details>
+<summary>Media model entry fields</summary>
 
 **CLI entry** (`type: "cli"`):
 
@@ -1770,13 +1533,11 @@ Configures inbound media understanding (image/audio/video):
 
 **Common fields:**
 
-- `capabilities`: optional list (`image`, `audio`, `video`). Defaults: `openai`/`anthropic`/`minimax` → image, `google` → image+audio+video, `groq` → audio.
+- `capabilities`: optional list (`image`, `audio`, `video`).
 - `prompt`, `maxChars`, `maxBytes`, `timeoutSeconds`, `language`: per-entry overrides.
 - Failures fall back to the next entry.
 
-Provider auth follows standard order: auth profiles → env vars → `models.providers.*.apiKey`.
-
-</Accordion>
+</details>
 
 ### `tools.agentToAgent`
 
@@ -1823,7 +1584,6 @@ Notes:
   agents: {
     defaults: {
       subagents: {
-        model: "minimax/MiniMax-M2.1",
         maxConcurrent: 1,
         runTimeoutSeconds: 900,
         archiveAfterMinutes: 60,
@@ -1833,289 +1593,8 @@ Notes:
 }
 ```
 
-- `model`: default model for spawned sub-agents. If omitted, sub-agents inherit the caller's model.
 - `runTimeoutSeconds`: default timeout (seconds) for `sessions_spawn` when the tool call omits `runTimeoutSeconds`. `0` means no timeout.
 - Per-subagent tool policy: `tools.subagents.tools.allow` / `tools.subagents.tools.deny`.
-
----
-
-## Custom providers and base URLs
-
-OpenClaw uses the pi-coding-agent model catalog. Add custom providers via `models.providers` in config or `~/.openclaw/agents/<agentId>/agent/models.json`.
-
-```json5
-{
-  models: {
-    mode: "merge", // merge (default) | replace
-    providers: {
-      "custom-proxy": {
-        baseUrl: "http://localhost:4000/v1",
-        apiKey: "LITELLM_KEY",
-        api: "openai-completions", // openai-completions | openai-responses | anthropic-messages | google-generative-ai
-        models: [
-          {
-            id: "llama-3.1-8b",
-            name: "Llama 3.1 8B",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 128000,
-            maxTokens: 32000,
-          },
-        ],
-      },
-    },
-  },
-}
-```
-
-- Use `authHeader: true` + `headers` for custom auth needs.
-- Override agent config root with `OPENCLAW_AGENT_DIR` (or `PI_CODING_AGENT_DIR`).
-- Merge precedence for matching provider IDs:
-  - Non-empty agent `models.json` `apiKey`/`baseUrl` win.
-  - Empty or missing agent `apiKey`/`baseUrl` fall back to `models.providers` in config.
-  - Matching model `contextWindow`/`maxTokens` use the higher value between explicit config and implicit catalog values.
-  - Use `models.mode: "replace"` when you want config to fully rewrite `models.json`.
-
-### Provider field details
-
-- `models.mode`: provider catalog behavior (`merge` or `replace`).
-- `models.providers`: custom provider map keyed by provider id.
-- `models.providers.*.api`: request adapter (`openai-completions`, `openai-responses`, `anthropic-messages`, `google-generative-ai`, etc).
-- `models.providers.*.apiKey`: provider credential (prefer SecretRef/env substitution).
-- `models.providers.*.auth`: auth strategy (`api-key`, `token`, `oauth`, `aws-sdk`).
-- `models.providers.*.injectNumCtxForOpenAICompat`: for Ollama + `openai-completions`, inject `options.num_ctx` into requests (default: `true`).
-- `models.providers.*.authHeader`: force credential transport in the `Authorization` header when required.
-- `models.providers.*.baseUrl`: upstream API base URL.
-- `models.providers.*.headers`: extra static headers for proxy/tenant routing.
-- `models.providers.*.models`: explicit provider model catalog entries.
-- `models.bedrockDiscovery`: Bedrock auto-discovery settings root.
-- `models.bedrockDiscovery.enabled`: turn discovery polling on/off.
-- `models.bedrockDiscovery.region`: AWS region for discovery.
-- `models.bedrockDiscovery.providerFilter`: optional provider-id filter for targeted discovery.
-- `models.bedrockDiscovery.refreshInterval`: polling interval for discovery refresh.
-- `models.bedrockDiscovery.defaultContextWindow`: fallback context window for discovered models.
-- `models.bedrockDiscovery.defaultMaxTokens`: fallback max output tokens for discovered models.
-
-### Provider examples
-
-<Accordion title="Cerebras (GLM 4.6 / 4.7)">
-
-```json5
-{
-  env: { CEREBRAS_API_KEY: "sk-..." },
-  agents: {
-    defaults: {
-      model: {
-        primary: "cerebras/zai-glm-4.7",
-        fallbacks: ["cerebras/zai-glm-4.6"],
-      },
-      models: {
-        "cerebras/zai-glm-4.7": { alias: "GLM 4.7 (Cerebras)" },
-        "cerebras/zai-glm-4.6": { alias: "GLM 4.6 (Cerebras)" },
-      },
-    },
-  },
-  models: {
-    mode: "merge",
-    providers: {
-      cerebras: {
-        baseUrl: "https://api.cerebras.ai/v1",
-        apiKey: "${CEREBRAS_API_KEY}",
-        api: "openai-completions",
-        models: [
-          { id: "zai-glm-4.7", name: "GLM 4.7 (Cerebras)" },
-          { id: "zai-glm-4.6", name: "GLM 4.6 (Cerebras)" },
-        ],
-      },
-    },
-  },
-}
-```
-
-Use `cerebras/zai-glm-4.7` for Cerebras; `zai/glm-4.7` for Z.AI direct.
-
-</Accordion>
-
-<Accordion title="OpenCode Zen">
-
-```json5
-{
-  agents: {
-    defaults: {
-      model: { primary: "opencode/claude-opus-4-6" },
-      models: { "opencode/claude-opus-4-6": { alias: "Opus" } },
-    },
-  },
-}
-```
-
-Set `OPENCODE_API_KEY` (or `OPENCODE_ZEN_API_KEY`). Shortcut: `openclaw onboard --auth-choice opencode-zen`.
-
-</Accordion>
-
-<Accordion title="Z.AI (GLM-4.7)">
-
-```json5
-{
-  agents: {
-    defaults: {
-      model: { primary: "zai/glm-4.7" },
-      models: { "zai/glm-4.7": {} },
-    },
-  },
-}
-```
-
-Set `ZAI_API_KEY`. `z.ai/*` and `z-ai/*` are accepted aliases. Shortcut: `openclaw onboard --auth-choice zai-api-key`.
-
-- General endpoint: `https://api.z.ai/api/paas/v4`
-- Coding endpoint (default): `https://api.z.ai/api/coding/paas/v4`
-- For the general endpoint, define a custom provider with the base URL override.
-
-</Accordion>
-
-<Accordion title="Moonshot AI (Kimi)">
-
-```json5
-{
-  env: { MOONSHOT_API_KEY: "sk-..." },
-  agents: {
-    defaults: {
-      model: { primary: "moonshot/kimi-k2.5" },
-      models: { "moonshot/kimi-k2.5": { alias: "Kimi K2.5" } },
-    },
-  },
-  models: {
-    mode: "merge",
-    providers: {
-      moonshot: {
-        baseUrl: "https://api.moonshot.ai/v1",
-        apiKey: "${MOONSHOT_API_KEY}",
-        api: "openai-completions",
-        models: [
-          {
-            id: "kimi-k2.5",
-            name: "Kimi K2.5",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 256000,
-            maxTokens: 8192,
-          },
-        ],
-      },
-    },
-  },
-}
-```
-
-For the China endpoint: `baseUrl: "https://api.moonshot.cn/v1"` or `openclaw onboard --auth-choice moonshot-api-key-cn`.
-
-</Accordion>
-
-<Accordion title="Kimi Coding">
-
-```json5
-{
-  env: { KIMI_API_KEY: "sk-..." },
-  agents: {
-    defaults: {
-      model: { primary: "kimi-coding/k2p5" },
-      models: { "kimi-coding/k2p5": { alias: "Kimi K2.5" } },
-    },
-  },
-}
-```
-
-Anthropic-compatible, built-in provider. Shortcut: `openclaw onboard --auth-choice kimi-code-api-key`.
-
-</Accordion>
-
-<Accordion title="Synthetic (Anthropic-compatible)">
-
-```json5
-{
-  env: { SYNTHETIC_API_KEY: "sk-..." },
-  agents: {
-    defaults: {
-      model: { primary: "synthetic/hf:MiniMaxAI/MiniMax-M2.1" },
-      models: { "synthetic/hf:MiniMaxAI/MiniMax-M2.1": { alias: "MiniMax M2.1" } },
-    },
-  },
-  models: {
-    mode: "merge",
-    providers: {
-      synthetic: {
-        baseUrl: "https://api.synthetic.new/anthropic",
-        apiKey: "${SYNTHETIC_API_KEY}",
-        api: "anthropic-messages",
-        models: [
-          {
-            id: "hf:MiniMaxAI/MiniMax-M2.1",
-            name: "MiniMax M2.1",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-            contextWindow: 192000,
-            maxTokens: 65536,
-          },
-        ],
-      },
-    },
-  },
-}
-```
-
-Base URL should omit `/v1` (Anthropic client appends it). Shortcut: `openclaw onboard --auth-choice synthetic-api-key`.
-
-</Accordion>
-
-<Accordion title="MiniMax M2.1 (direct)">
-
-```json5
-{
-  agents: {
-    defaults: {
-      model: { primary: "minimax/MiniMax-M2.1" },
-      models: {
-        "minimax/MiniMax-M2.1": { alias: "Minimax" },
-      },
-    },
-  },
-  models: {
-    mode: "merge",
-    providers: {
-      minimax: {
-        baseUrl: "https://api.minimax.io/anthropic",
-        apiKey: "${MINIMAX_API_KEY}",
-        api: "anthropic-messages",
-        models: [
-          {
-            id: "MiniMax-M2.1",
-            name: "MiniMax M2.1",
-            reasoning: false,
-            input: ["text"],
-            cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 },
-            contextWindow: 200000,
-            maxTokens: 8192,
-          },
-        ],
-      },
-    },
-  },
-}
-```
-
-Set `MINIMAX_API_KEY`. Shortcut: `openclaw onboard --auth-choice minimax-api`.
-
-</Accordion>
-
-<Accordion title="Local models (LM Studio)">
-
-See [Local Models](/gateway/local-models). TL;DR: run MiniMax M2.1 via LM Studio Responses API on serious hardware; keep hosted models merged for fallback.
-
-</Accordion>
 
 ---
 
@@ -2134,7 +1613,7 @@ See [Local Models](/gateway/local-models). TL;DR: run MiniMax M2.1 via LM Studio
     },
     entries: {
       "nano-banana-pro": {
-        apiKey: { source: "env", provider: "default", id: "GEMINI_API_KEY" }, // or plaintext string
+        apiKey: "GEMINI_KEY_HERE",
         env: { GEMINI_API_KEY: "GEMINI_KEY_HERE" },
       },
       peekaboo: { enabled: true },
@@ -2146,7 +1625,7 @@ See [Local Models](/gateway/local-models). TL;DR: run MiniMax M2.1 via LM Studio
 
 - `allowBundled`: optional allowlist for bundled skills only (managed/workspace skills unaffected).
 - `entries.<skillKey>.enabled: false` disables a skill even if bundled/installed.
-- `entries.<skillKey>.apiKey`: convenience for skills declaring a primary env var (plaintext string or SecretRef object).
+- `entries.<skillKey>.apiKey`: convenience for skills declaring a primary env var.
 
 ---
 
@@ -2171,16 +1650,9 @@ See [Local Models](/gateway/local-models). TL;DR: run MiniMax M2.1 via LM Studio
 }
 ```
 
-- Loaded from `~/.openclaw/extensions`, `<workspace>/.openclaw/extensions`, plus `plugins.load.paths`.
+- Loaded from `~/.remoteclaw/extensions`, `<workspace>/.remoteclaw/extensions`, plus `plugins.load.paths`.
 - **Config changes require a gateway restart.**
 - `allow`: optional allowlist (only listed plugins load). `deny` wins.
-- `plugins.entries.<id>.apiKey`: plugin-level API key convenience field (when supported by the plugin).
-- `plugins.entries.<id>.env`: plugin-scoped env var map.
-- `plugins.entries.<id>.config`: plugin-defined config object (validated by plugin schema).
-- `plugins.slots.memory`: pick the active memory plugin id, or `"none"` to disable memory plugins.
-- `plugins.installs`: CLI-managed install metadata used by `openclaw plugins update`.
-  - Includes `source`, `spec`, `sourcePath`, `installPath`, `version`, `resolvedName`, `resolvedVersion`, `resolvedSpec`, `integrity`, `shasum`, `resolvedAt`, `installedAt`.
-  - Treat `plugins.installs.*` as managed state; prefer CLI commands over manual edits.
 
 See [Plugins](/tools/plugin).
 
@@ -2201,13 +1673,14 @@ See [Plugins](/tools/plugin).
       // allowedHostnames: ["localhost"],
     },
     profiles: {
-      openclaw: { cdpPort: 18800, color: "#FF4500" },
+      remoteclaw: { cdpPort: 18800, color: "#FF4500" },
       work: { cdpPort: 18801, color: "#0066CC" },
       remote: { cdpUrl: "http://10.0.0.42:9222", color: "#00AA00" },
     },
     color: "#FF4500",
     // headless: false,
     // noSandbox: false,
+    // relayBindHost: "0.0.0.0", // only when the extension relay must be reachable across namespaces (for example WSL2)
     // executablePath: "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
     // attachOnly: false,
   },
@@ -2222,6 +1695,7 @@ See [Plugins](/tools/plugin).
 - Remote profiles are attach-only (start/stop/reset disabled).
 - Auto-detect order: default browser if Chromium-based → Chrome → Brave → Edge → Chromium → Chrome Canary.
 - Control service: loopback only (port derived from `gateway.port`, default `18791`).
+- `relayBindHost` changes where the Chrome extension relay listens. Leave unset for loopback-only access; set an explicit non-loopback bind address such as `0.0.0.0` only when the relay must cross a namespace boundary (for example WSL2) and the host network is already trusted.
 
 ---
 
@@ -2232,7 +1706,7 @@ See [Plugins](/tools/plugin).
   ui: {
     seamColor: "#FF4500",
     assistant: {
-      name: "OpenClaw",
+      name: "RemoteClaw",
       avatar: "CB", // emoji, short text, image URL, or data URI
     },
   },
@@ -2255,7 +1729,7 @@ See [Plugins](/tools/plugin).
     auth: {
       mode: "token", // none | token | password | trusted-proxy
       token: "your-token",
-      // password: "your-password", // or OPENCLAW_GATEWAY_PASSWORD
+      // password: "your-password", // or REMOTECLAW_GATEWAY_PASSWORD
       // trustedProxy: { userHeader: "x-forwarded-user" }, // for mode=trusted-proxy; see /gateway/trusted-proxy-auth
       allowTailscale: true,
       rateLimit: {
@@ -2271,7 +1745,7 @@ See [Plugins](/tools/plugin).
     },
     controlUi: {
       enabled: true,
-      basePath: "/openclaw",
+      basePath: "/remoteclaw",
       // root: "dist/control-ui",
       // allowedOrigins: ["https://control.example.com"], // required for non-loopback Control UI
       // dangerouslyAllowHostHeaderOriginFallback: false, // dangerous Host-header origin fallback mode
@@ -2297,24 +1771,26 @@ See [Plugins](/tools/plugin).
 }
 ```
 
-<Accordion title="Gateway field details">
+<details>
+<summary>Gateway field details</summary>
 
 - `mode`: `local` (run gateway) or `remote` (connect to remote gateway). Gateway refuses to start unless `local`.
-- `port`: single multiplexed port for WS + HTTP. Precedence: `--port` > `OPENCLAW_GATEWAY_PORT` > `gateway.port` > `18789`.
+- `port`: single multiplexed port for WS + HTTP. Precedence: `--port` > `REMOTECLAW_GATEWAY_PORT` > `gateway.port` > `18789`.
 - `bind`: `auto`, `loopback` (default), `lan` (`0.0.0.0`), `tailnet` (Tailscale IP only), or `custom`.
 - **Legacy bind aliases**: use bind mode values in `gateway.bind` (`auto`, `loopback`, `lan`, `tailnet`, `custom`), not host aliases (`0.0.0.0`, `127.0.0.1`, `localhost`, `::`, `::1`).
 - **Docker note**: the default `loopback` bind listens on `127.0.0.1` inside the container. With Docker bridge networking (`-p 18789:18789`), traffic arrives on `eth0`, so the gateway is unreachable. Use `--network host`, or set `bind: "lan"` (or `bind: "custom"` with `customBindHost: "0.0.0.0"`) to listen on all interfaces.
 - **Auth**: required by default. Non-loopback binds require a shared token/password. Onboarding wizard generates a token by default.
-- `gateway.auth.mode: "none"`: explicit no-auth mode. Use only for trusted local loopback setups; this is intentionally not offered by onboarding prompts.
-- `gateway.auth.mode: "trusted-proxy"`: delegate auth to an identity-aware reverse proxy and trust identity headers from `gateway.trustedProxies` (see [Trusted Proxy Auth](/gateway/trusted-proxy-auth)).
-- `gateway.auth.allowTailscale`: when `true`, Tailscale Serve identity headers can satisfy Control UI/WebSocket auth (verified via `tailscale whois`); HTTP API endpoints still require token/password auth. This tokenless flow assumes the gateway host is trusted. Defaults to `true` when `tailscale.mode = "serve"`.
-- `gateway.auth.rateLimit`: optional failed-auth limiter. Applies per client IP and per auth scope (shared-secret and device-token are tracked independently). Blocked attempts return `429` + `Retry-After`.
-  - `gateway.auth.rateLimit.exemptLoopback` defaults to `true`; set `false` when you intentionally want localhost traffic rate-limited too (for test setups or strict proxy deployments).
+- `auth.mode: "none"`: explicit no-auth mode. Use only for trusted local loopback setups; this is intentionally not offered by onboarding prompts.
+- `auth.mode: "trusted-proxy"`: delegate auth to an identity-aware reverse proxy and trust identity headers from `gateway.trustedProxies` (see [Trusted Proxy Auth](/gateway/trusted-proxy-auth)).
+- `auth.allowTailscale`: when `true`, Tailscale Serve identity headers can satisfy Control UI/WebSocket auth (verified via `tailscale whois`); HTTP API endpoints still require token/password auth. This tokenless flow assumes the gateway host is trusted. Defaults to `true` when `tailscale.mode = "serve"`.
+- `auth.rateLimit`: optional failed-auth limiter. Applies per client IP and per auth scope (shared-secret and device-token are tracked independently). Blocked attempts return `429` + `Retry-After`.
+  - `auth.rateLimit.exemptLoopback` defaults to `true`; set `false` when you intentionally want localhost traffic rate-limited too (for test setups or strict proxy deployments).
 - Browser-origin WS auth attempts are always throttled with loopback exemption disabled (defense-in-depth against browser-based localhost brute force).
 - `tailscale.mode`: `serve` (tailnet only, loopback bind) or `funnel` (public, requires auth).
 - `controlUi.allowedOrigins`: explicit browser-origin allowlist for Gateway WebSocket connects. Required when browser clients are expected from non-loopback origins.
 - `controlUi.dangerouslyAllowHostHeaderOriginFallback`: dangerous mode that enables Host-header origin fallback for deployments that intentionally rely on Host-header origin policy.
 - `remote.transport`: `ssh` (default) or `direct` (ws/wss). For `direct`, `remote.url` must be `ws://` or `wss://`.
+- `REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS=1`: client-side break-glass override that allows plaintext `ws://` to trusted private-network IPs; default remains loopback-only for plaintext.
 - `gateway.remote.token` / `.password` are remote-client credential fields. They do not configure gateway auth by themselves.
 - Local gateway call paths can use `gateway.remote.*` as fallback when `gateway.auth.*` is unset.
 - `trustedProxies`: reverse proxy IPs that terminate TLS. Only list proxies you control.
@@ -2322,7 +1798,7 @@ See [Plugins](/tools/plugin).
 - `gateway.tools.deny`: extra tool names blocked for HTTP `POST /tools/invoke` (extends default deny list).
 - `gateway.tools.allow`: remove tool names from the default HTTP deny list.
 
-</Accordion>
+</details>
 
 ### OpenAI-compatible endpoints
 
@@ -2340,12 +1816,12 @@ See [Plugins](/tools/plugin).
 Run multiple gateways on one host with unique ports and state dirs:
 
 ```bash
-OPENCLAW_CONFIG_PATH=~/.openclaw/a.json \
-OPENCLAW_STATE_DIR=~/.openclaw-a \
-openclaw gateway --port 19001
+REMOTECLAW_CONFIG_PATH=~/.remoteclaw/a.json \
+REMOTECLAW_STATE_DIR=~/.remoteclaw-a \
+remoteclaw gateway --port 19001
 ```
 
-Convenience flags: `--dev` (uses `~/.openclaw-dev` + port `19001`), `--profile <name>` (uses `~/.openclaw-<name>`).
+Convenience flags: `--dev` (uses `~/.remoteclaw-dev` + port `19001`), `--profile <name>` (uses `~/.remoteclaw-<name>`).
 
 See [Multiple Gateways](/gateway/multiple-gateways).
 
@@ -2365,7 +1841,7 @@ See [Multiple Gateways](/gateway/multiple-gateways).
     allowedSessionKeyPrefixes: ["hook:"],
     allowedAgentIds: ["hooks", "main"],
     presets: ["gmail"],
-    transformsDir: "~/.openclaw/hooks/transforms",
+    transformsDir: "~/.remoteclaw/hooks/transforms",
     mappings: [
       {
         match: { path: "gmail" },
@@ -2384,16 +1860,17 @@ See [Multiple Gateways](/gateway/multiple-gateways).
 }
 ```
 
-Auth: `Authorization: Bearer <token>` or `x-openclaw-token: <token>`.
+Auth: `Authorization: Bearer <token>` or `x-remoteclaw-token: <token>`.
 
 **Endpoints:**
 
 - `POST /hooks/wake` → `{ text, mode?: "now"|"next-heartbeat" }`
-- `POST /hooks/agent` → `{ message, name?, agentId?, sessionKey?, wakeMode?, deliver?, channel?, to?, model?, thinking?, timeoutSeconds? }`
+- `POST /hooks/agent` → `{ message, name?, agentId?, sessionKey?, wakeMode?, deliver?, channel?, to?, model?, timeoutSeconds? }`
   - `sessionKey` from request payload is accepted only when `hooks.allowRequestSessionKey=true` (default: `false`).
 - `POST /hooks/<name>` → resolved via `hooks.mappings`
 
-<Accordion title="Mapping details">
+<details>
+<summary>Mapping details</summary>
 
 - `match.path` matches sub-path after `/hooks` (e.g. `/hooks/gmail` → `gmail`).
 - `match.source` matches a payload field for generic paths.
@@ -2408,7 +1885,7 @@ Auth: `Authorization: Bearer <token>` or `x-openclaw-token: <token>`.
 - `deliver: true` sends final reply to a channel; `channel` defaults to `last`.
 - `model` overrides LLM for this hook run (must be allowed if model catalog is set).
 
-</Accordion>
+</details>
 
 ### Gmail integration
 
@@ -2416,7 +1893,7 @@ Auth: `Authorization: Bearer <token>` or `x-openclaw-token: <token>`.
 {
   hooks: {
     gmail: {
-      account: "openclaw@gmail.com",
+      account: "remoteclaw@gmail.com",
       topic: "projects/<project-id>/topics/gog-gmail-watch",
       subscription: "gog-gmail-watch-push",
       pushToken: "shared-push-token",
@@ -2427,13 +1904,12 @@ Auth: `Authorization: Bearer <token>` or `x-openclaw-token: <token>`.
       serve: { bind: "127.0.0.1", port: 8788, path: "/" },
       tailscale: { mode: "funnel", path: "/gmail-pubsub" },
       model: "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-      thinking: "off",
     },
   },
 }
 ```
 
-- Gateway auto-starts `gog gmail watch serve` on boot when configured. Set `OPENCLAW_SKIP_GMAIL_WATCHER=1` to disable.
+- Gateway auto-starts `gog gmail watch serve` on boot when configured. Set `REMOTECLAW_SKIP_GMAIL_WATCHER=1` to disable.
 - Don't run a separate `gog gmail watch serve` alongside the Gateway.
 
 ---
@@ -2443,23 +1919,23 @@ Auth: `Authorization: Bearer <token>` or `x-openclaw-token: <token>`.
 ```json5
 {
   canvasHost: {
-    root: "~/.openclaw/workspace/canvas",
+    root: "~/.remoteclaw/workspace/canvas",
     liveReload: true,
-    // enabled: false, // or OPENCLAW_SKIP_CANVAS_HOST=1
+    // enabled: false, // or REMOTECLAW_SKIP_CANVAS_HOST=1
   },
 }
 ```
 
 - Serves agent-editable HTML/CSS/JS and A2UI over HTTP under the Gateway port:
-  - `http://<gateway-host>:<gateway.port>/__openclaw__/canvas/`
-  - `http://<gateway-host>:<gateway.port>/__openclaw__/a2ui/`
+  - `http://<gateway-host>:<gateway.port>/__remoteclaw__/canvas/`
+  - `http://<gateway-host>:<gateway.port>/__remoteclaw__/a2ui/`
 - Local-only: keep `gateway.bind: "loopback"` (default).
 - Non-loopback binds: canvas routes require Gateway auth (token/password/trusted-proxy), same as other Gateway HTTP surfaces.
 - Node WebViews typically don't send auth headers; after a node is paired and connected, the Gateway advertises node-scoped capability URLs for canvas/A2UI access.
 - Capability URLs are bound to the active node WS session and expire quickly. IP-based fallback is not used.
 - Injects live-reload client into served HTML.
 - Auto-creates starter `index.html` when empty.
-- Also serves A2UI at `/__openclaw__/a2ui/`.
+- Also serves A2UI at `/__remoteclaw__/a2ui/`.
 - Changes require a gateway restart.
 - Disable live reload for large directories or `EMFILE` errors.
 
@@ -2481,7 +1957,7 @@ Auth: `Authorization: Bearer <token>` or `x-openclaw-token: <token>`.
 
 - `minimal` (default): omit `cliPath` + `sshPort` from TXT records.
 - `full`: include `cliPath` + `sshPort`.
-- Hostname defaults to `openclaw`. Override with `OPENCLAW_MDNS_HOSTNAME`.
+- Hostname defaults to `remoteclaw`. Override with `REMOTECLAW_MDNS_HOSTNAME`.
 
 ### Wide-area (DNS-SD)
 
@@ -2493,9 +1969,9 @@ Auth: `Authorization: Bearer <token>` or `x-openclaw-token: <token>`.
 }
 ```
 
-Writes a unicast DNS-SD zone under `~/.openclaw/dns/`. For cross-network discovery, pair with a DNS server (CoreDNS recommended) + Tailscale split DNS.
+Writes a unicast DNS-SD zone under `~/.remoteclaw/dns/`. For cross-network discovery, pair with a DNS server (CoreDNS recommended) + Tailscale split DNS.
 
-Setup: `openclaw dns setup --apply`.
+Setup: `remoteclaw dns setup --apply`.
 
 ---
 
@@ -2519,7 +1995,7 @@ Setup: `openclaw dns setup --apply`.
 ```
 
 - Inline env vars are only applied if the process env is missing the key.
-- `.env` files: CWD `.env` + `~/.openclaw/.env` (neither overrides existing vars).
+- `.env` files: CWD `.env` + `~/.remoteclaw/.env` (neither overrides existing vars).
 - `shellEnv`: imports missing expected keys from your login shell profile.
 - See [Environment](/help/environment) for full precedence.
 
@@ -2530,7 +2006,7 @@ Reference env vars in any config string with `${VAR_NAME}`:
 ```json5
 {
   gateway: {
-    auth: { token: "${OPENCLAW_GATEWAY_TOKEN}" },
+    auth: { token: "${REMOTECLAW_GATEWAY_TOKEN}" },
   },
 }
 ```
@@ -2542,105 +2018,13 @@ Reference env vars in any config string with `${VAR_NAME}`:
 
 ---
 
-## Secrets
-
-Secret refs are additive: plaintext values still work.
-
-### `SecretRef`
-
-Use one object shape:
-
-```json5
-{ source: "env" | "file" | "exec", provider: "default", id: "..." }
-```
-
-Validation:
-
-- `provider` pattern: `^[a-z][a-z0-9_-]{0,63}$`
-- `source: "env"` id pattern: `^[A-Z][A-Z0-9_]{0,127}$`
-- `source: "file"` id: absolute JSON pointer (for example `"/providers/openai/apiKey"`)
-- `source: "exec"` id pattern: `^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$`
-
-### Supported fields in config
-
-- `models.providers.<provider>.apiKey`
-- `skills.entries.<skillKey>.apiKey`
-- `channels.googlechat.serviceAccount`
-- `channels.googlechat.serviceAccountRef`
-- `channels.googlechat.accounts.<accountId>.serviceAccount`
-- `channels.googlechat.accounts.<accountId>.serviceAccountRef`
-
-### Secret providers config
-
-```json5
-{
-  secrets: {
-    providers: {
-      default: { source: "env" }, // optional explicit env provider
-      filemain: {
-        source: "file",
-        path: "~/.openclaw/secrets.json",
-        mode: "json",
-        timeoutMs: 5000,
-      },
-      vault: {
-        source: "exec",
-        command: "/usr/local/bin/openclaw-vault-resolver",
-        passEnv: ["PATH", "VAULT_ADDR"],
-      },
-    },
-    defaults: {
-      env: "default",
-      file: "filemain",
-      exec: "vault",
-    },
-  },
-}
-```
-
-Notes:
-
-- `file` provider supports `mode: "json"` and `mode: "singleValue"` (`id` must be `"value"` in singleValue mode).
-- `exec` provider requires an absolute `command` path and uses protocol payloads on stdin/stdout.
-- By default, symlink command paths are rejected. Set `allowSymlinkCommand: true` to allow symlink paths while validating the resolved target path.
-- If `trustedDirs` is configured, the trusted-dir check applies to the resolved target path.
-- `exec` child environment is minimal by default; pass required variables explicitly with `passEnv`.
-- Secret refs are resolved at activation time into an in-memory snapshot, then request paths read the snapshot only.
-
----
-
-## Auth storage
-
-```json5
-{
-  auth: {
-    profiles: {
-      "anthropic:me@example.com": { provider: "anthropic", mode: "oauth", email: "me@example.com" },
-      "anthropic:work": { provider: "anthropic", mode: "api_key" },
-    },
-    order: {
-      anthropic: ["anthropic:me@example.com", "anthropic:work"],
-    },
-  },
-}
-```
-
-- Per-agent auth profiles stored at `<agentDir>/auth-profiles.json`.
-- Auth profiles support value-level refs (`keyRef` for `api_key`, `tokenRef` for `token`).
-- Static runtime credentials come from in-memory resolved snapshots; legacy static `auth.json` entries are scrubbed when discovered.
-- Legacy OAuth imports from `~/.openclaw/credentials/oauth.json`.
-- See [OAuth](/concepts/oauth).
-- Secrets runtime behavior and `audit/configure/apply` tooling: [Secrets Management](/gateway/secrets).
-
----
-
 ## Logging
 
 ```json5
 {
   logging: {
     level: "info",
-    file: "/tmp/openclaw/openclaw.log",
+    file: "/tmp/remoteclaw/remoteclaw.log",
     consoleLevel: "info",
     consoleStyle: "pretty", // pretty | compact | json
     redactSensitive: "tools", // off | tools
@@ -2649,7 +2033,7 @@ Notes:
 }
 ```
 
-- Default log file: `/tmp/openclaw/openclaw-YYYY-MM-DD.log`.
+- Default log file: `/tmp/remoteclaw/remoteclaw-YYYY-MM-DD.log`.
 - Set `logging.file` for a stable path.
 - `consoleLevel` bumps to `debug` when `--verbose`.
 
@@ -2703,9 +2087,10 @@ Written by the macOS onboarding assistant. Derives defaults:
 
 ## Bridge (legacy, removed)
 
-Current builds no longer include the TCP bridge. Nodes connect over the Gateway WebSocket. `bridge.*` keys are no longer part of the config schema (validation fails until removed; `openclaw doctor --fix` can strip unknown keys).
+Current builds no longer include the TCP bridge. Nodes connect over the Gateway WebSocket. `bridge.*` keys are no longer part of the config schema (validation fails until removed; `remoteclaw doctor --fix` can strip unknown keys).
 
-<Accordion title="Legacy bridge config (historical reference)">
+<details>
+<summary>Legacy bridge config (historical reference)</summary>
 
 ```json
 {
@@ -2721,7 +2106,7 @@ Current builds no longer include the TCP bridge. Nodes connect over the Gateway 
 }
 ```
 
-</Accordion>
+</details>
 
 ---
 
@@ -2755,7 +2140,7 @@ See [Cron Jobs](/automation/cron-jobs).
 
 ## Media model template variables
 
-Template placeholders expanded in `tools.media.models[].args`:
+Template placeholders expanded in `tools.media.*.models[].args`:
 
 | Variable           | Description                                       |
 | ------------------ | ------------------------------------------------- |
@@ -2787,7 +2172,7 @@ Template placeholders expanded in `tools.media.models[].args`:
 Split config into multiple files:
 
 ```json5
-// ~/.openclaw/openclaw.json
+// ~/.remoteclaw/remoteclaw.json
 {
   gateway: { port: 18789 },
   agents: { $include: "./agents.json5" },

@@ -40,7 +40,27 @@ import {
   resolveBlueBubblesGroupRequireMention,
   resolveBlueBubblesGroupToolPolicy,
   setAccountEnabledInConfigSection,
-} from "./runtime-api.js";
+} from "remoteclaw/plugin-sdk/bluebubbles";
+import {
+  buildAccountScopedDmSecurityPolicy,
+  collectOpenGroupPolicyRestrictSendersWarnings,
+  createAccountStatusSink,
+  formatNormalizedAllowFromEntries,
+  mapAllowFromEntries,
+} from "remoteclaw/plugin-sdk/compat";
+import {
+  listBlueBubblesAccountIds,
+  type ResolvedBlueBubblesAccount,
+  resolveBlueBubblesAccount,
+  resolveDefaultBlueBubblesAccountId,
+} from "./accounts.js";
+import { bluebubblesMessageActions } from "./actions.js";
+import { BlueBubblesConfigSchema } from "./config-schema.js";
+import { sendBlueBubblesMedia } from "./media-send.js";
+import { resolveBlueBubblesMessageId } from "./monitor.js";
+import { monitorBlueBubblesProvider, resolveWebhookPathFromConfig } from "./monitor.js";
+import { probeBlueBubbles, type BlueBubblesProbe } from "./probe.js";
+import { sendMessageBlueBubbles } from "./send.js";
 import { blueBubblesSetupAdapter } from "./setup-core.js";
 import { blueBubblesSetupWizard } from "./setup-surface.js";
 import {

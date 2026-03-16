@@ -47,7 +47,7 @@ Last run (2025-12-31, 20 runs):
 
 ## CLI startup bench
 
-Script: [`scripts/bench-cli-startup.ts`](https://github.com/openclaw/openclaw/blob/main/scripts/bench-cli-startup.ts)
+Script: [`scripts/bench-cli-startup.ts`](https://github.com/remoteclaw/remoteclaw/blob/main/scripts/bench-cli-startup.ts)
 
 Usage:
 

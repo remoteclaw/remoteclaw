@@ -14,14 +14,14 @@ type GetPluginCommandSpecsFn =
   typeof import("remoteclaw/plugin-sdk/plugin-runtime").getPluginCommandSpecs;
 type MatchPluginCommandFn = typeof import("remoteclaw/plugin-sdk/plugin-runtime").matchPluginCommand;
 type ExecutePluginCommandFn =
-  typeof import("remoteclaw/plugin-sdk/plugin-runtime").executePluginCommand;
+  typeof import("../../../src/plugins/commands.js").executePluginCommand;
 type DispatchReplyWithBufferedBlockDispatcherFn =
-  typeof import("remoteclaw/plugin-sdk/reply-runtime").dispatchReplyWithBufferedBlockDispatcher;
+  typeof import("../../../src/auto-reply/reply/provider-dispatcher.js").dispatchReplyWithBufferedBlockDispatcher;
 type DispatchReplyWithBufferedBlockDispatcherResult = Awaited<
   ReturnType<DispatchReplyWithBufferedBlockDispatcherFn>
 >;
 type RecordInboundSessionMetaSafeFn =
-  typeof import("remoteclaw/plugin-sdk/conversation-runtime").recordInboundSessionMetaSafe;
+  typeof import("../../../src/channels/session-meta.js").recordInboundSessionMetaSafe;
 type AnyMock = MockFn<(...args: unknown[]) => unknown>;
 type AnyAsyncMock = MockFn<(...args: unknown[]) => Promise<unknown>>;
 type NativeCommandHarness = {
@@ -70,23 +70,19 @@ const replyPipelineMocks = vi.hoisted(() => {
 export const dispatchReplyWithBufferedBlockDispatcher =
   replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher;
 
-vi.mock("openclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/reply-runtime")>();
-  return {
-    ...actual,
-    finalizeInboundContext: replyPipelineMocks.finalizeInboundContext,
-    dispatchReplyWithBufferedBlockDispatcher:
-      replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
-  };
-});
-vi.mock("openclaw/plugin-sdk/channel-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-runtime")>();
-  return {
-    ...actual,
-    createReplyPrefixOptions: replyPipelineMocks.createReplyPrefixOptions,
-    recordInboundSessionMetaSafe: replyPipelineMocks.recordInboundSessionMetaSafe,
-  };
-});
+vi.mock("../../../src/auto-reply/reply/inbound-context.js", () => ({
+  finalizeInboundContext: replyPipelineMocks.finalizeInboundContext,
+}));
+vi.mock("../../../src/auto-reply/reply/provider-dispatcher.js", () => ({
+  dispatchReplyWithBufferedBlockDispatcher:
+    replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
+}));
+vi.mock("../../../src/channels/reply-prefix.js", () => ({
+  createReplyPrefixOptions: replyPipelineMocks.createReplyPrefixOptions,
+}));
+vi.mock("../../../src/channels/session-meta.js", () => ({
+  recordInboundSessionMetaSafe: replyPipelineMocks.recordInboundSessionMetaSafe,
+}));
 
 const deliveryMocks = vi.hoisted(() => ({
   deliverReplies: vi.fn(async () => {}),

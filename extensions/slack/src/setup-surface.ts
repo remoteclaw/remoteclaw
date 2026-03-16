@@ -1,3 +1,4 @@
+import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
 import {
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
@@ -12,14 +13,20 @@ import {
   resolveSetupAccountId,
   setAccountGroupPolicyForChannel,
   setLegacyChannelDmPolicyWithAllowFrom,
-  setSetupChannelEnabled,
-  type WizardPrompter,
-} from "openclaw/plugin-sdk/setup";
+  setOnboardingChannelEnabled,
+} from "../../../src/channels/plugins/onboarding/helpers.js";
+import {
+  applyAccountNameToChannelSection,
+  migrateBaseNameToDefaultAccount,
+} from "../../../src/channels/plugins/setup-helpers.js";
 import type {
-  ChannelSetupDmPolicy,
   ChannelSetupWizard,
   ChannelSetupWizardAllowFromEntry,
-} from "openclaw/plugin-sdk/setup";
+} from "../../../src/channels/plugins/setup-wizard.js";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import type { OpenClawConfig } from "../../../src/config/config.js";
+import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
 import { inspectSlackAccount } from "./account-inspect.js";
 import {

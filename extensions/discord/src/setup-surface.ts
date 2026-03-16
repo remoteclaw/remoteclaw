@@ -1,12 +1,22 @@
+import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
 import {
   noteChannelLookupFailure,
   noteChannelLookupSummary,
   type OpenClawConfig,
   promptLegacyChannelAllowFrom,
-  resolveSetupAccountId,
-  type WizardPrompter,
-} from "openclaw/plugin-sdk/setup";
-import { type ChannelSetupDmPolicy, type ChannelSetupWizard } from "openclaw/plugin-sdk/setup";
+  resolveOnboardingAccountId,
+  setLegacyChannelDmPolicyWithAllowFrom,
+  setOnboardingChannelEnabled,
+} from "../../../src/channels/plugins/onboarding/helpers.js";
+import {
+  applyAccountNameToChannelSection,
+  migrateBaseNameToDefaultAccount,
+} from "../../../src/channels/plugins/setup-helpers.js";
+import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { DiscordGuildEntry } from "../../../src/config/types.discord.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import {
@@ -182,4 +192,6 @@ export const discordSetupWizard: ChannelSetupWizard = createDiscordSetupWizardBa
     }
     return resolved;
   },
-});
+  dmPolicy: discordDmPolicy,
+  disable: (cfg) => setOnboardingChannelEnabled(cfg, channel, false),
+};

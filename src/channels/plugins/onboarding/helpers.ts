@@ -331,8 +331,8 @@ export function patchLegacyDmChannelConfig(params: {
 }
 
 export function setOnboardingChannelEnabled(
-  cfg: RemoteClawConfig,
-  channel: AccountScopedChannel,
+  cfg: OpenClawConfig,
+  channel: string,
   enabled: boolean,
 ): RemoteClawConfig {
   const channelConfig = (cfg.channels?.[channel] as Record<string, unknown> | undefined) ?? {};

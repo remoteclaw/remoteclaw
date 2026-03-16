@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { finalizeInboundContext } from "../../../../src/auto-reply/reply/inbound-context.js";
 import { expectChannelInboundContextContract as expectInboundContextContract } from "../../../../src/channels/plugins/contracts/suites.js";
-import { buildDiscordInboundAccessContext } from "./inbound-context.js";
+import { inboundCtxCapture as capture } from "../../../../test/helpers/inbound-contract-dispatch-mock.js";
+import type { DiscordMessagePreflightContext } from "./message-handler.preflight.js";
+import { processDiscordMessage } from "./message-handler.process.js";
+import {
+  createBaseDiscordMessageContext,
+  createDiscordDirectMessageContextOverrides,
+} from "./message-handler.test-harness.js";
 
 describe("discord processDiscordMessage inbound context", () => {
   it("builds a finalized direct-message MsgContext shape", () => {

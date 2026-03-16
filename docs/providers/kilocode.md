@@ -1,5 +1,4 @@
 ---
-title: "Kilo Gateway"
 summary: "Use Kilo Gateway's unified API to access many models in RemoteClaw"
 read_when:
   - You want a single API key for many LLMs

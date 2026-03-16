@@ -9,113 +9,158 @@ title: "Install"
 
 # Install
 
-## Recommended: installer script
-
-The fastest way to install. It detects your OS, installs Node if needed, installs RemoteClaw, and launches onboarding.
-
-<Tabs>
-  <Tab title="macOS / Linux / WSL2">
-    ```bash
-    curl -fsSL https://remoteclaw.ai/install.sh | bash
-    ```
-  </Tab>
-  <Tab title="Windows (PowerShell)">
-    ```powershell
-    iwr -useb https://remoteclaw.ai/install.ps1 | iex
-    ```
-  </Tab>
-</Tabs>
-
-To install without running onboarding:
-
-<Tabs>
-  <Tab title="macOS / Linux / WSL2">
-    ```bash
-    curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --no-onboard
-    ```
-  </Tab>
-  <Tab title="Windows (PowerShell)">
-    ```powershell
-    & ([scriptblock]::Create((iwr -useb https://remoteclaw.ai/install.ps1))) -NoOnboard
-    ```
-  </Tab>
-</Tabs>
-
-For all flags and CI/automation options, see [Installer internals](/install/installer).
+Already followed [Getting Started](/start/getting-started)? You're all set — this page is for alternative install methods, platform-specific instructions, and maintenance.
 
 ## System requirements
 
-- **Node 24** (recommended) or Node 22.16+ — the installer script handles this automatically
-- **macOS, Linux, or Windows** — both native Windows and WSL2 are supported; WSL2 is more stable. See [Windows](/platforms/windows).
-- `pnpm` is only needed if you build from source
+- **[Node 24 (recommended)](/install/node)** (Node 22 LTS, currently `22.16+`, is still supported for compatibility; the [installer script](#install-methods) will install Node 24 if missing)
+- macOS, Linux, or Windows
+- `pnpm` only if you build from source
 
-## Alternative install methods
+<Note>
+On Windows, we strongly recommend running RemoteClaw under [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install).
+</Note>
 
-### npm or pnpm
+## Install methods
 
-If you already manage Node yourself:
+<Tip>
+The **installer script** is the recommended way to install RemoteClaw. It handles Node detection, installation, and onboarding in one step.
+</Tip>
 
-<Tabs>
-  <Tab title="npm">
+<Warning>
+For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possible. Prefer a clean base OS image (for example Ubuntu LTS), then install RemoteClaw yourself with the installer script.
+</Warning>
+
+<AccordionGroup>
+  <Accordion title="Installer script" icon="rocket" defaultOpen>
+    Downloads the CLI, installs it globally via npm, and launches the setup wizard.
+
+    <Tabs>
+      <Tab title="macOS / Linux / WSL2">
+        ```bash
+        curl -fsSL https://remoteclaw.ai/install.sh | bash
+        ```
+      </Tab>
+      <Tab title="Windows (PowerShell)">
+        ```powershell
+        iwr -useb https://remoteclaw.ai/install.ps1 | iex
+        ```
+      </Tab>
+    </Tabs>
+
+    That's it — the script handles Node detection, installation, and onboarding.
+
+    To skip onboarding and just install the binary:
+
+    <Tabs>
+      <Tab title="macOS / Linux / WSL2">
+        ```bash
+        curl -fsSL https://remoteclaw.ai/install.sh | bash -s -- --no-onboard
+        ```
+      </Tab>
+      <Tab title="Windows (PowerShell)">
+        ```powershell
+        & ([scriptblock]::Create((iwr -useb https://remoteclaw.ai/install.ps1))) -NoOnboard
+        ```
+      </Tab>
+    </Tabs>
+
+    For all flags, env vars, and CI/automation options, see [Installer internals](/install/installer).
+
+  </Accordion>
+
+  <Accordion title="npm / pnpm" icon="package">
+    If you already manage Node yourself, we recommend Node 24. RemoteClaw still supports Node 22 LTS, currently `22.16+`, for compatibility:
+
+    <Tabs>
+      <Tab title="npm">
+        ```bash
+        npm install -g remoteclaw@latest
+        remoteclaw onboard --install-daemon
+        ```
+
+        <Accordion title="sharp build errors?">
+          If you have libvips installed globally (common on macOS via Homebrew) and `sharp` fails, force prebuilt binaries:
+
+          ```bash
+          SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g remoteclaw@latest
+          ```
+
+          If you see `sharp: Please add node-gyp to your dependencies`, either install build tooling (macOS: Xcode CLT + `npm install -g node-gyp`) or use the env var above.
+        </Accordion>
+      </Tab>
+      <Tab title="pnpm">
+        ```bash
+        pnpm add -g remoteclaw@latest
+        pnpm approve-builds -g        # approve remoteclaw, node-llama-cpp, sharp, etc.
+        remoteclaw onboard --install-daemon
+        ```
+
+        <Note>
+        pnpm requires explicit approval for packages with build scripts. After the first install shows the "Ignored build scripts" warning, run `pnpm approve-builds -g` and select the listed packages.
+        </Note>
+      </Tab>
+    </Tabs>
+
+    Want the current GitHub `main` head with a package-manager install?
+
     ```bash
-    npm install -g remoteclaw@latest
-    remoteclaw onboard --install-daemon
+    npm install -g github:remoteclaw/remoteclaw#main
     ```
-  </Tab>
-  <Tab title="pnpm">
+
     ```bash
-    pnpm add -g remoteclaw@latest
-    pnpm approve-builds -g
-    remoteclaw onboard --install-daemon
+    pnpm add -g github:remoteclaw/remoteclaw#main
     ```
 
-    <Note>
-    pnpm requires explicit approval for packages with build scripts. Run `pnpm approve-builds -g` after the first install.
-    </Note>
+  </Accordion>
 
-  </Tab>
-</Tabs>
+  <Accordion title="From source" icon="github">
+    For contributors or anyone who wants to run from a local checkout.
 
-<Accordion title="Troubleshooting: sharp build errors (npm)">
-  If `sharp` fails due to a globally installed libvips:
+    <Steps>
+      <Step title="Clone and build">
+        Clone the [RemoteClaw repo](https://github.com/remoteclaw/remoteclaw) and build:
 
-```bash
-SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g remoteclaw@latest
-```
+        ```bash
+        git clone https://github.com/remoteclaw/remoteclaw.git
+        cd remoteclaw
+        pnpm install
+        pnpm ui:build
+        pnpm build
+        ```
+      </Step>
+      <Step title="Link the CLI">
+        Make the `remoteclaw` command available globally:
 
-</Accordion>
+        ```bash
+        pnpm link --global
+        ```
 
-### From source
+        Alternatively, skip the link and run commands via `pnpm remoteclaw ...` from inside the repo.
+      </Step>
+      <Step title="Run onboarding">
+        ```bash
+        remoteclaw onboard --install-daemon
+        ```
+      </Step>
+    </Steps>
 
-For contributors or anyone who wants to run from a local checkout:
+    For deeper development workflows, see [Setup](/start/setup).
 
-```bash
-git clone https://github.com/remoteclaw/remoteclaw.git
-cd remoteclaw
-pnpm install && pnpm ui:build && pnpm build
-pnpm link --global
-remoteclaw onboard --install-daemon
-```
+  </Accordion>
+</AccordionGroup>
 
-Or skip the link and use `pnpm remoteclaw ...` from inside the repo. See [Setup](/start/setup) for full development workflows.
-
-### Install from GitHub main
-
-```bash
-npm install -g github:remoteclaw/remoteclaw#main
-```
-
-### Containers and package managers
+## Other install methods
 
 <CardGroup cols={2}>
   <Card title="Docker" href="/install/docker" icon="container">
     Containerized or headless deployments.
   </Card>
   <Card title="Podman" href="/install/podman" icon="container">
-    Rootless container alternative to Docker.
+    Rootless container: run `setup-podman.sh` once, then the launch script.
   </Card>
   <Card title="Nix" href="/install/nix" icon="snowflake">
-    Declarative install via Nix flake.
+    Declarative install via Nix.
   </Card>
   <Card title="Ansible" href="/install/ansible" icon="server">
     Automated fleet provisioning.
@@ -125,32 +170,50 @@ npm install -g github:remoteclaw/remoteclaw#main
   </Card>
 </CardGroup>
 
-## Verify the install
+## After install
+
+Verify everything is working:
 
 ```bash
-remoteclaw --version      # confirm the CLI is available
 remoteclaw doctor         # check for config issues
-remoteclaw gateway status # verify the Gateway is running
+remoteclaw status         # gateway status
+remoteclaw dashboard      # open the browser UI
 ```
 
-## Hosting and deployment
+If you need custom runtime paths, use:
 
-Deploy RemoteClaw on a cloud server or VPS:
+- `OPENCLAW_HOME` for home-directory based internal paths
+- `OPENCLAW_STATE_DIR` for mutable state location
+- `OPENCLAW_CONFIG_PATH` for config file location
 
-<CardGroup cols={3}>
-  <Card title="VPS" href="/vps">Any Linux VPS</Card>
-  <Card title="Docker VM" href="/install/docker-vm-runtime">Shared Docker steps</Card>
-  <Card title="Kubernetes" href="/install/kubernetes">K8s</Card>
-  <Card title="Fly.io" href="/install/fly">Fly.io</Card>
-  <Card title="Hetzner" href="/install/hetzner">Hetzner</Card>
-  <Card title="GCP" href="/install/gcp">Google Cloud</Card>
-  <Card title="Azure" href="/install/azure">Azure</Card>
-  <Card title="Railway" href="/install/railway">Railway</Card>
-  <Card title="Render" href="/install/render">Render</Card>
-  <Card title="Northflank" href="/install/northflank">Northflank</Card>
-</CardGroup>
+See [Environment vars](/help/environment) for precedence and full details.
 
-## Update, migrate, or uninstall
+## Troubleshooting: `remoteclaw` not found
+
+<Accordion title="PATH diagnosis and fix">
+  Quick diagnosis:
+
+```bash
+node -v
+npm -v
+npm prefix -g
+echo "$PATH"
+```
+
+If `$(npm prefix -g)/bin` (macOS/Linux) or `$(npm prefix -g)` (Windows) is **not** in your `$PATH`, your shell can't find global npm binaries (including `remoteclaw`).
+
+Fix — add it to your shell startup file (`~/.zshrc` or `~/.bashrc`):
+
+```bash
+export PATH="$(npm prefix -g)/bin:$PATH"
+```
+
+On Windows, add the output of `npm prefix -g` to your PATH.
+
+Then open a new terminal (or `rehash` in zsh / `hash -r` in bash).
+</Accordion>
+
+## Update / uninstall
 
 <CardGroup cols={3}>
   <Card title="Updating" href="/install/updating" icon="refresh-cw">
@@ -163,21 +226,3 @@ Deploy RemoteClaw on a cloud server or VPS:
     Remove RemoteClaw completely.
   </Card>
 </CardGroup>
-
-## Troubleshooting: `remoteclaw` not found
-
-If the install succeeded but `remoteclaw` is not found in your terminal:
-
-```bash
-node -v           # Node installed?
-npm prefix -g     # Where are global packages?
-echo "$PATH"      # Is the global bin dir in PATH?
-```
-
-If `$(npm prefix -g)/bin` is not in your `$PATH`, add it to your shell startup file (`~/.zshrc` or `~/.bashrc`):
-
-```bash
-export PATH="$(npm prefix -g)/bin:$PATH"
-```
-
-Then open a new terminal. See [Node setup](/install/node) for more details.

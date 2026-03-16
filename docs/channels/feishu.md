@@ -1,5 +1,5 @@
 ---
-description: "Feishu bot overview, features, and configuration"
+summary: "Feishu bot overview, features, and configuration"
 read_when:
   - You want to connect a Feishu/Lark bot
   - You are configuring the Feishu channel
@@ -30,9 +30,9 @@ remoteclaw plugins install @remoteclaw/feishu
 
 There are two ways to add the Feishu channel:
 
-### Method 1: onboarding wizard (recommended)
+### Method 1: setup wizard (recommended)
 
-If you just installed RemoteClaw, run the wizard:
+If you just installed RemoteClaw, run the setup wizard:
 
 ```bash
 remoteclaw onboard
@@ -81,7 +81,7 @@ Lark (global) tenants should use [https://open.larksuite.com/app](https://open.l
 2. Fill in the app name + description
 3. Choose an app icon
 
-![Create enterprise app](/images/feishu-step2-create-app.png)
+![Create enterprise app](../images/feishu-step2-create-app.png)
 
 ### 3. Copy credentials
 
@@ -92,7 +92,7 @@ From **Credentials & Basic Info**, copy:
 
 ❗ **Important:** keep the App Secret private.
 
-![Get credentials](/images/feishu-step3-credentials.png)
+![Get credentials](../images/feishu-step3-credentials.png)
 
 ### 4. Configure permissions
 
@@ -126,7 +126,7 @@ On **Permissions**, click **Batch import** and paste:
 }
 ```
 
-![Configure permissions](/images/feishu-step4-permissions.png)
+![Configure permissions](../images/feishu-step4-permissions.png)
 
 ### 5. Enable bot capability
 
@@ -135,7 +135,7 @@ In **App Capability** > **Bot**:
 1. Enable bot capability
 2. Set the bot name
 
-![Enable bot capability](/images/feishu-step5-bot-capability.png)
+![Enable bot capability](../images/feishu-step5-bot-capability.png)
 
 ### 6. Configure event subscription
 
@@ -151,7 +151,7 @@ In **Event Subscription**:
 
 ⚠️ If the gateway is not running, the long-connection setup may fail to save.
 
-![Configure event subscription](/images/feishu-step6-event-subscription.png)
+![Configure event subscription](../images/feishu-step6-event-subscription.png)
 
 ### 7. Publish the app
 
@@ -185,7 +185,7 @@ Edit `~/.remoteclaw/remoteclaw.json`:
         main: {
           appId: "cli_xxx",
           appSecret: "xxx",
-          name: "My AI assistant",
+          botName: "My AI assistant",
         },
       },
     },
@@ -206,7 +206,7 @@ When using webhook mode, set both `channels.feishu.verificationToken` and `chann
 
 The screenshot below shows where to find the **Verification Token**. The **Encrypt Key** is listed in the same **Encryption** section.
 
-![Verification Token location](../public/images/feishu-verification-token.png)
+![Verification Token location](../images/feishu-verification-token.png)
 
 ### Configure via environment variables
 
@@ -433,6 +433,7 @@ remoteclaw pairing list feishu
 | --------- | ----------------- |
 | `/status` | Show bot status   |
 | `/reset`  | Reset the session |
+| `/model`  | Show/switch model |
 
 > Note: Feishu does not support native command menus yet, so commands must be sent as text.
 
@@ -493,12 +494,12 @@ remoteclaw pairing list feishu
         main: {
           appId: "cli_xxx",
           appSecret: "xxx",
-          name: "Primary bot",
+          botName: "Primary bot",
         },
         backup: {
           appId: "cli_yyy",
           appSecret: "yyy",
-          name: "Backup bot",
+          botName: "Backup bot",
           enabled: false,
         },
       },
@@ -530,6 +531,75 @@ Feishu supports streaming replies via interactive cards. When enabled, the bot u
 ```
 
 Set `streaming: false` to wait for the full reply before sending.
+
+### ACP sessions
+
+Feishu supports ACP for:
+
+- DMs
+- group topic conversations
+
+Feishu ACP is text-command driven. There are no native slash-command menus, so use `/acp ...` messages directly in the conversation.
+
+#### Persistent ACP bindings
+
+Use top-level typed ACP bindings to pin a Feishu DM or topic conversation to a persistent ACP session.
+
+```json5
+{
+  agents: {
+    list: [
+      {
+        id: "codex",
+        runtime: {
+          type: "acp",
+          acp: {
+            agent: "codex",
+            backend: "acpx",
+            mode: "persistent",
+            cwd: "/workspace/remoteclaw",
+          },
+        },
+      },
+    ],
+  },
+  bindings: [
+    {
+      type: "acp",
+      agentId: "codex",
+      match: {
+        channel: "feishu",
+        accountId: "default",
+        peer: { kind: "direct", id: "ou_1234567890" },
+      },
+    },
+    {
+      type: "acp",
+      agentId: "codex",
+      match: {
+        channel: "feishu",
+        accountId: "default",
+        peer: { kind: "group", id: "oc_group_chat:topic:om_topic_root" },
+      },
+      acp: { label: "codex-feishu-topic" },
+    },
+  ],
+}
+```
+
+#### Thread-bound ACP spawn from chat
+
+In a Feishu DM or topic conversation, you can spawn and bind an ACP session in place:
+
+```text
+/acp spawn codex --thread here
+```
+
+Notes:
+
+- `--thread here` works for DMs and Feishu topics.
+- Follow-up messages in the bound DM/topic route directly to that ACP session.
+- v1 does not target generic non-topic group chats.
 
 ### Multi-agent routing
 

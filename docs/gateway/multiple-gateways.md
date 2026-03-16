@@ -1,5 +1,5 @@
 ---
-description: "Run multiple RemoteClaw Gateways on one host (isolation, ports, and profiles)"
+summary: "Run multiple RemoteClaw Gateways on one host (isolation, ports, and profiles)"
 read_when:
   - Running more than one Gateway on the same machine
   - You need isolated config/state/ports per Gateway
@@ -12,8 +12,8 @@ Most setups should use one Gateway because a single Gateway can handle multiple 
 
 ## Isolation checklist (required)
 
-- `REMOTECLAW_CONFIG_PATH` — per-instance config file
-- `REMOTECLAW_STATE_DIR` — per-instance sessions, creds, caches
+- `OPENCLAW_CONFIG_PATH` — per-instance config file
+- `OPENCLAW_STATE_DIR` — per-instance sessions, creds, caches
 - `agents.defaults.workspace` — per-instance workspace root
 - `gateway.port` (or `--port`) — unique per instance
 - Derived ports (browser/canvas) must not overlap
@@ -22,7 +22,7 @@ If these are shared, you will hit config races and port conflicts.
 
 ## Recommended: profiles (`--profile`)
 
-Profiles auto-scope `REMOTECLAW_STATE_DIR` + `REMOTECLAW_CONFIG_PATH` and suffix service names.
+Profiles auto-scope `OPENCLAW_STATE_DIR` + `OPENCLAW_CONFIG_PATH` and suffix service names.
 
 ```bash
 # main
@@ -70,13 +70,13 @@ remoteclaw --profile rescue onboard
 #   better choose completely different base port, like 19789,
 # - rest of the onboarding is the same as normal
 
-# To install the service (if not happened automatically during onboarding)
+# To install the service (if not happened automatically during setup)
 remoteclaw --profile rescue gateway install
 ```
 
 ## Port mapping (derived)
 
-Base port = `gateway.port` (or `REMOTECLAW_GATEWAY_PORT` / `--port`).
+Base port = `gateway.port` (or `OPENCLAW_GATEWAY_PORT` / `--port`).
 
 - browser control service port = base + 2 (loopback only)
 - canvas host is served on the Gateway HTTP server (same port as `gateway.port`)
@@ -94,12 +94,12 @@ If you override any of these in config or env, you must keep them unique per ins
 ## Manual env example
 
 ```bash
-REMOTECLAW_CONFIG_PATH=~/.remoteclaw/main.json \
-REMOTECLAW_STATE_DIR=~/.remoteclaw-main \
+OPENCLAW_CONFIG_PATH=~/.remoteclaw/main.json \
+OPENCLAW_STATE_DIR=~/.remoteclaw-main \
 remoteclaw gateway --port 18789
 
-REMOTECLAW_CONFIG_PATH=~/.remoteclaw/rescue.json \
-REMOTECLAW_STATE_DIR=~/.remoteclaw-rescue \
+OPENCLAW_CONFIG_PATH=~/.remoteclaw/rescue.json \
+OPENCLAW_STATE_DIR=~/.remoteclaw-rescue \
 remoteclaw gateway --port 19001
 ```
 

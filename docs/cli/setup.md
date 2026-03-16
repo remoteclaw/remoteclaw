@@ -1,7 +1,7 @@
 ---
-description: "CLI reference for `remoteclaw setup` (initialize config + workspace)"
+summary: "CLI reference for `remoteclaw setup` (initialize config + workspace)"
 read_when:
-  - You’re doing first-run setup without the full onboarding wizard
+  - You’re doing first-run setup without the full setup wizard
   - You want to set the default workspace path
 title: "setup"
 ---
@@ -13,7 +13,7 @@ Initialize `~/.remoteclaw/remoteclaw.json` and the agent workspace.
 Related:
 
 - Getting started: [Getting started](/start/getting-started)
-- Configuration: [Configuration](/gateway/configuration)
+- Wizard: [Onboarding](/start/onboarding)
 
 ## Examples
 

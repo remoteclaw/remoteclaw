@@ -1,21 +1,26 @@
 ---
-description: "CLI agent authentication: API keys and setup-token on the gateway host"
+summary: "Model authentication: OAuth, API keys, and setup-token"
 read_when:
-  - Debugging CLI agent auth issues
-  - Documenting authentication or credential setup
+  - Debugging model auth or OAuth expiry
+  - Documenting authentication or credential storage
 title: "Authentication"
 ---
 
 # Authentication
 
-RemoteClaw is middleware — it spawns CLI agents (Claude, Gemini, Codex, OpenCode)
-as subprocesses. Each CLI agent manages its own credentials. RemoteClaw's job is
-to ensure the gateway host environment exposes the right credentials so the CLI
-agent can authenticate when spawned.
+RemoteClaw supports OAuth and API keys for model providers. For always-on gateway
+hosts, API keys are usually the most predictable option. Subscription/OAuth
+flows are also supported when they match your provider account model.
+
+See [/concepts/oauth](/concepts/oauth) for the full OAuth flow and storage
+layout.
+For SecretRef-based auth (`env`/`file`/`exec` providers), see [Secrets Management](/gateway/secrets).
+For credential eligibility/reason-code rules used by `models status --probe`, see
+[Auth Credential Semantics](/auth-credential-semantics).
 
 ## Recommended setup (API key, any provider)
 
-If you're running a long-lived gateway, start with an API key for your chosen
+If you’re running a long-lived gateway, start with an API key for your chosen
 provider.
 For Anthropic specifically, API key auth is the safe path and is recommended
 over subscription setup-token auth.
@@ -25,6 +30,7 @@ over subscription setup-token auth.
 
 ```bash
 export <PROVIDER>_API_KEY="..."
+remoteclaw models status
 ```
 
 3. If the Gateway runs under systemd/launchd, prefer putting the key in
@@ -36,29 +42,39 @@ cat >> ~/.remoteclaw/.env <<'EOF'
 EOF
 ```
 
-Then restart the daemon (or restart your Gateway process) and verify the CLI
-agent can authenticate:
+Then restart the daemon (or restart your Gateway process) and re-check:
 
 ```bash
-claude --version   # confirm Claude CLI is available
+remoteclaw models status
 remoteclaw doctor
 ```
+
+If you’d rather not manage env vars yourself, the setup wizard can store
+API keys for daemon use: `remoteclaw onboard`.
 
 See [Help](/help) for details on env inheritance (`env.shellEnv`,
 `~/.remoteclaw/.env`, systemd/launchd).
 
 ## Anthropic: setup-token (subscription auth)
 
-If you're using a Claude subscription, the setup-token flow is supported. Run
+If you’re using a Claude subscription, the setup-token flow is supported. Run
 it on the **gateway host**:
 
 ```bash
 claude setup-token
 ```
 
-This stores the token in the Claude CLI's own config. RemoteClaw does not ingest
-or manage CLI agent tokens — the Claude CLI reads its own credential store when
-spawned.
+Then paste it into RemoteClaw:
+
+```bash
+remoteclaw models auth setup-token --provider anthropic
+```
+
+If the token was created on another machine, paste it manually:
+
+```bash
+remoteclaw models auth paste-token --provider anthropic
+```
 
 If you see an Anthropic error like:
 
@@ -74,33 +90,88 @@ some subscription usage outside Claude Code in the past. Use it only if you deci
 the policy risk is acceptable, and verify Anthropic's current terms yourself.
 </Warning>
 
-> `claude setup-token` requires an interactive TTY.
-
-## Checking auth status
-
-Verify the CLI agent's own credential state by running the CLI interactively on
-the gateway host:
+Manual token entry (any provider; writes `auth-profiles.json` + updates config):
 
 ```bash
-claude         # confirm Claude CLI authenticates
+remoteclaw models auth paste-token --provider anthropic
+remoteclaw models auth paste-token --provider openrouter
+```
+
+Auth profile refs are also supported for static credentials:
+
+- `api_key` credentials can use `keyRef: { source, provider, id }`
+- `token` credentials can use `tokenRef: { source, provider, id }`
+
+Automation-friendly check (exit `1` when expired/missing, `2` when expiring):
+
+```bash
+remoteclaw models status --check
+```
+
+Optional ops scripts (systemd/Termux) are documented here:
+[/automation/auth-monitoring](/automation/auth-monitoring)
+
+> `claude setup-token` requires an interactive TTY.
+
+## Checking model auth status
+
+```bash
+remoteclaw models status
 remoteclaw doctor
 ```
 
-## Troubleshooting
+## API key rotation behavior (gateway)
 
-### "No credentials found"
+Some providers support retrying a request with alternative keys when an API call
+hits a provider rate limit.
 
-Run `claude setup-token` on the **gateway host**, or set `ANTHROPIC_API_KEY` in
-the gateway environment, then verify:
+- Priority order:
+  - `OPENCLAW_LIVE_<PROVIDER>_KEY` (single override)
+  - `<PROVIDER>_API_KEYS`
+  - `<PROVIDER>_API_KEY`
+  - `<PROVIDER>_API_KEY_*`
+- Google providers also include `GOOGLE_API_KEY` as an additional fallback.
+- The same key list is deduplicated before use.
+- RemoteClaw retries with the next key only for rate-limit errors (for example
+  `429`, `rate_limit`, `quota`, `resource exhausted`).
+- Non-rate-limit errors are not retried with alternate keys.
+- If all keys fail, the final error from the last attempt is returned.
+
+## Controlling which credential is used
+
+### Per-session (chat command)
+
+Use `/model <alias-or-id>@<profileId>` to pin a specific provider credential for the current session (example profile ids: `anthropic:default`, `anthropic:work`).
+
+Use `/model` (or `/model list`) for a compact picker; use `/model status` for the full view (candidates + next auth profile, plus provider endpoint details when configured).
+
+### Per-agent (CLI override)
+
+Set an explicit auth profile order override for an agent (stored in that agent’s `auth-profiles.json`):
 
 ```bash
-remoteclaw doctor
+remoteclaw models auth order get --provider anthropic
+remoteclaw models auth order set --provider anthropic anthropic:default
+remoteclaw models auth order clear --provider anthropic
+```
+
+Use `--agent <id>` to target a specific agent; omit it to use the configured default agent.
+
+## Troubleshooting
+
+### “No credentials found”
+
+If the Anthropic token profile is missing, run `claude setup-token` on the
+**gateway host**, then re-check:
+
+```bash
+remoteclaw models status
 ```
 
 ### Token expiring/expired
 
-Rerun `claude setup-token` on the gateway host. The Claude CLI manages its own
-token lifecycle.
+Run `remoteclaw models status` to confirm which profile is expiring. If the profile
+is missing, rerun `claude setup-token` and paste the token again.
 
 ## Requirements
 

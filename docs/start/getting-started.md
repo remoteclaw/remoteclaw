@@ -20,11 +20,9 @@ Docs: [Dashboard](/web/dashboard) and [Control UI](/web/control-ui).
 ## Prereqs
 
 - Node 24 recommended (Node 22 LTS, currently `22.16+`, still supported for compatibility)
-- An API key from a model provider (Anthropic, OpenAI, Google, etc.) — onboarding will prompt you for this
 
 <Tip>
 Check your Node version with `node --version` if you are unsure.
-Windows users: WSL2 is strongly recommended. See [Windows](/platforms/windows).
 </Tip>
 
 ## Quick setup (CLI)
@@ -54,13 +52,13 @@ Windows users: WSL2 is strongly recommended. See [Windows](/platforms/windows).
     </Note>
 
   </Step>
-  <Step title="Run onboarding">
+  <Step title="Run the setup wizard">
     ```bash
     remoteclaw onboard --install-daemon
     ```
 
-    Onboarding configures auth, gateway settings, and optional channels.
-    See [Onboarding (CLI)](/start/wizard) for details.
+    The wizard configures auth, gateway settings, and optional channels.
+    See [Setup Wizard](/start/wizard) for details.
 
   </Step>
   <Step title="Check the Gateway">
@@ -75,20 +73,33 @@ Windows users: WSL2 is strongly recommended. See [Windows](/platforms/windows).
     ```bash
     remoteclaw dashboard
     ```
-
-    If the Control UI loads, your Gateway is ready.
-
-  </Step>
-  <Step title="Send your first message">
-    The fastest way to chat is directly in the Control UI browser tab.
-    Type a message and you should get an AI reply.
-
-    Want to chat from a messaging app instead? The fastest channel setup
-    is usually [Telegram](/channels/telegram) (just a bot token, no QR
-    pairing). See [Channels](/channels) for all options.
-
   </Step>
 </Steps>
+
+<Check>
+If the Control UI loads, your Gateway is ready for use.
+</Check>
+
+## Optional checks and extras
+
+<AccordionGroup>
+  <Accordion title="Run the Gateway in the foreground">
+    Useful for quick tests or troubleshooting.
+
+    ```bash
+    remoteclaw gateway --port 18789
+    ```
+
+  </Accordion>
+  <Accordion title="Send a test message">
+    Requires a configured channel.
+
+    ```bash
+    remoteclaw message send --target +15555550123 --message "Hello from RemoteClaw"
+    ```
+
+  </Accordion>
+</AccordionGroup>
 
 ## Useful environment variables
 
@@ -103,8 +114,8 @@ Full environment variable reference: [Environment vars](/help/environment).
 ## Go deeper
 
 <Columns>
-  <Card title="Onboarding (CLI)" href="/start/wizard">
-    Full CLI onboarding reference and advanced options.
+  <Card title="Setup Wizard (details)" href="/start/wizard">
+    Full CLI wizard reference and advanced options.
   </Card>
   <Card title="macOS app onboarding" href="/start/onboarding">
     First run flow for the macOS app.

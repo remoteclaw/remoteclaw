@@ -1,10 +1,10 @@
 ---
-description: "RemoteClaw on Raspberry Pi (budget self-hosted setup)"
+summary: "RemoteClaw on Raspberry Pi (budget self-hosted setup)"
 read_when:
   - Setting up RemoteClaw on a Raspberry Pi
   - Running RemoteClaw on ARM devices
   - Building a cheap always-on personal AI
-title: "Raspberry Pi (Platform)"
+title: "Raspberry Pi"
 ---
 
 # RemoteClaw on Raspberry Pi
@@ -33,7 +33,7 @@ Perfect for:
 **Minimum specs:** 1GB RAM, 1 core, 500MB disk  
 **Recommended:** 2GB+ RAM, 64-bit OS, 16GB+ SD card (or USB SSD)
 
-## What you need
+## What You'll Need
 
 - Raspberry Pi 4 or 5 (2GB+ recommended)
 - MicroSD card (16GB+) or USB SSD (better performance)
@@ -112,7 +112,7 @@ sudo sysctl -p
 ### Option A: Standard Install (Recommended)
 
 ```bash
-curl -fsSL https://remoteclaw.org/install.sh | bash
+curl -fsSL https://remoteclaw.ai/install.sh | bash
 ```
 
 ### Option B: Hackable Install (For tinkering)
@@ -136,8 +136,9 @@ remoteclaw onboard --install-daemon
 Follow the wizard:
 
 1. **Gateway mode:** Local
-2. **Channels:** Telegram is easiest to start with
-3. **Daemon:** Yes (systemd)
+2. **Auth:** API keys recommended (OAuth can be finicky on headless Pi)
+3. **Channels:** Telegram is easiest to start with
+4. **Daemon:** Yes (systemd)
 
 ## 8) Verify Installation
 
@@ -152,29 +153,32 @@ sudo systemctl status remoteclaw
 journalctl -u remoteclaw -f
 ```
 
-## 9) Access the Dashboard
+## 9) Access the RemoteClaw Dashboard
 
-Since the Pi is headless, use an SSH tunnel:
+Replace `user@gateway-host` with your Pi username and hostname or IP address.
 
-```bash
-# From your laptop/desktop
-ssh -L 18789:localhost:18789 user@gateway-host
-
-# Then open in browser
-open http://localhost:18789
-```
-
-Or use Tailscale for always-on access:
+On your computer, ask the Pi to print a fresh dashboard URL:
 
 ```bash
-# On the Pi
-curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up
-
-# Update config
-remoteclaw config set gateway.bind tailnet
-sudo systemctl restart remoteclaw
+ssh user@gateway-host 'remoteclaw dashboard --no-open'
 ```
+
+The command prints `Dashboard URL:`. Depending on how `gateway.auth.token`
+is configured, the URL may be a plain `http://127.0.0.1:18789/` link or one
+that includes `#token=...`.
+
+In another terminal on your computer, create the SSH tunnel:
+
+```bash
+ssh -N -L 18789:127.0.0.1:18789 user@gateway-host
+```
+
+Then open the printed Dashboard URL in your local browser.
+
+If the UI asks for auth, paste the token from `gateway.auth.token`
+(or `OPENCLAW_GATEWAY_TOKEN`) into Control UI settings.
+
+For always-on remote access, see [Tailscale](/gateway/tailscale).
 
 ---
 
@@ -196,10 +200,10 @@ See [Pi USB boot guide](https://www.raspberrypi.com/documentation/computers/rasp
 On lower-power Pi hosts, enable Node's module compile cache so repeated CLI runs are faster:
 
 ```bash
-grep -q 'NODE_COMPILE_CACHE=/var/tmp/remoteclaw-compile-cache' ~/.bashrc || cat >> ~/.bashrc <<'EOF'
+grep -q 'NODE_COMPILE_CACHE=/var/tmp/remoteclaw-compile-cache' ~/.bashrc || cat >> ~/.bashrc <<'EOF' # pragma: allowlist secret
 export NODE_COMPILE_CACHE=/var/tmp/remoteclaw-compile-cache
 mkdir -p /var/tmp/remoteclaw-compile-cache
-export REMOTECLAW_NO_RESPAWN=1
+export OPENCLAW_NO_RESPAWN=1
 EOF
 source ~/.bashrc
 ```
@@ -208,7 +212,7 @@ Notes:
 
 - `NODE_COMPILE_CACHE` speeds up subsequent runs (`status`, `health`, `--help`).
 - `/var/tmp` survives reboots better than `/tmp`.
-- `REMOTECLAW_NO_RESPAWN=1` avoids extra startup cost from CLI self-respawn.
+- `OPENCLAW_NO_RESPAWN=1` avoids extra startup cost from CLI self-respawn.
 - First run warms the cache; later runs benefit most.
 
 ### systemd startup tuning (optional)
@@ -222,7 +226,7 @@ sudo systemctl edit remoteclaw
 
 ```ini
 [Service]
-Environment=REMOTECLAW_NO_RESPAWN=1
+Environment=OPENCLAW_NO_RESPAWN=1
 Environment=NODE_COMPILE_CACHE=/var/tmp/remoteclaw-compile-cache
 Restart=always
 RestartSec=2
@@ -281,7 +285,7 @@ Most RemoteClaw features work on ARM64, but some external binaries may need ARM 
 | gog (Gmail CLI)    | ⚠️           | Check for ARM release               |
 | Chromium (browser) | ✅           | `sudo apt install chromium-browser` |
 
-If a tool fails, check if its binary has an ARM build. Many Go/Rust tools do; some don't.
+If a skill fails, check if its binary has an ARM build. Many Go/Rust tools do; some don't.
 
 ### 32-bit vs 64-bit
 
@@ -294,25 +298,30 @@ uname -m
 
 ---
 
-## Recommended Setup
+## Recommended Model Setup
 
-Since the Pi is just the Gateway (the CLI agent handles model interaction in the cloud), configure your CLI agent's credentials:
+Since the Pi is just the Gateway (models run in the cloud), use API-based models:
 
-```bash
-# For Claude CLI
-export ANTHROPIC_API_KEY=sk-ant-...
-
-# For Gemini CLI
-export GOOGLE_API_KEY=...
+```json
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "anthropic/claude-sonnet-4-20250514",
+        "fallbacks": ["openai/gpt-4o-mini"]
+      }
+    }
+  }
+}
 ```
 
-**Don't try to run local LLMs on a Pi** — even small models are too slow. Use a cloud-backed CLI agent runtime.
+**Don't try to run local LLMs on a Pi** — even small models are too slow. Let Claude/GPT do the heavy lifting.
 
 ---
 
 ## Auto-Start on Boot
 
-The onboarding wizard sets this up, but to verify:
+The setup wizard sets this up, but to verify:
 
 ```bash
 # Check service is enabled
@@ -345,7 +354,7 @@ free -h
 - Disable unused services: `sudo systemctl disable cups bluetooth avahi-daemon`
 - Check CPU throttling: `vcgencmd get_throttled` (should return `0x0`)
 
-### Service will not start
+### Service Won't Start
 
 ```bash
 # Check logs
@@ -359,7 +368,7 @@ sudo systemctl restart remoteclaw
 
 ### ARM Binary Issues
 
-If a tool fails with "exec format error":
+If a skill fails with "exec format error":
 
 1. Check if the binary has an ARM64 build
 2. Try building from source

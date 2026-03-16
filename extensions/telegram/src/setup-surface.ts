@@ -1,4 +1,3 @@
-import { type ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
 import {
   createAllowFromSection,
   DEFAULT_ACCOUNT_ID,
@@ -8,8 +7,8 @@ import {
   setChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
   splitSetupEntries,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import { type ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import { type ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import { type ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
@@ -22,20 +21,37 @@ import {
   telegramSetupAdapter,
 } from "./setup-core.js";
 
-export const telegramSetupWizard: ChannelSetupWizard = createTelegramSetupWizardBase({
-  inspectToken: ({ cfg, accountId }) => {
-    const resolved = resolveTelegramAccount({ cfg, accountId });
-    const hasConfiguredBotToken = hasConfiguredSecretInput(resolved.config.botToken);
-    const hasConfiguredValue = hasConfiguredBotToken || Boolean(resolved.config.tokenFile?.trim());
-    return {
-      accountConfigured: Boolean(resolved.token) || hasConfiguredValue,
-      hasConfiguredValue,
-      resolvedValue: resolved.token?.trim() || undefined,
-      envValue:
-        accountId === DEFAULT_ACCOUNT_ID
-          ? process.env.TELEGRAM_BOT_TOKEN?.trim() || undefined
-          : undefined,
-    };
+const channel = "telegram" as const;
+
+const dmPolicy: ChannelSetupDmPolicy = {
+  label: "Telegram",
+  channel,
+  policyKey: "channels.telegram.dmPolicy",
+  allowFromKey: "channels.telegram.allowFrom",
+  getCurrent: (cfg) => cfg.channels?.telegram?.dmPolicy ?? "pairing",
+  setPolicy: (cfg, policy) =>
+    setChannelDmPolicyWithAllowFrom({
+      cfg,
+      channel,
+      dmPolicy: policy,
+    }),
+  promptAllowFrom: promptTelegramAllowFromForAccount,
+};
+
+export const telegramSetupWizard: ChannelSetupWizard = {
+  channel,
+  status: {
+    configuredLabel: "configured",
+    unconfiguredLabel: "needs token",
+    configuredHint: "recommended · configured",
+    unconfiguredHint: "recommended · newcomer-friendly",
+    configuredScore: 1,
+    unconfiguredScore: 10,
+    resolveConfigured: ({ cfg }) =>
+      listTelegramAccountIds(cfg).some((accountId) => {
+        const account = inspectTelegramAccount({ cfg, accountId });
+        return account.configured;
+      }),
   },
   credentials: [
     {

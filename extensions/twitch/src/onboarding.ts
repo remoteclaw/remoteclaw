@@ -2,7 +2,7 @@
  * Twitch onboarding adapter for CLI setup wizard.
  */
 
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
@@ -210,7 +210,7 @@ async function configureWithEnvToken(
   account: TwitchAccountConfig | null,
   envToken: string,
   forceAllowFrom: boolean,
-  dmPolicy: ChannelOnboardingDmPolicy,
+  dmPolicy: ChannelSetupDmPolicy,
 ): Promise<{ cfg: RemoteClawConfig } | null> {
   const useEnv = await prompter.confirm({
     message: "Twitch env var REMOTECLAW_TWITCH_ACCESS_TOKEN detected. Use env token?",
@@ -277,7 +277,7 @@ function setTwitchGroupPolicy(
   return setTwitchAccessControl(cfg, allowedRoles, true);
 }
 
-const twitchDmPolicy: ChannelOnboardingDmPolicy = {
+const twitchDmPolicy: ChannelSetupDmPolicy = {
   label: "Twitch",
   channel,
   policyKey: "channels.twitch.allowedRoles", // Twitch uses roles instead of DM policy

@@ -1,11 +1,8 @@
-import type { DmPolicy } from "remoteclaw/plugin-sdk/config-runtime";
-import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
 import {
-  createAllowFromSection,
-  promptParsedAllowFromForAccount,
+  resolveSetupAccountId,
   setSetupChannelEnabled,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { DmPolicy } from "../../../src/config/types.js";
 import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
@@ -173,7 +170,10 @@ const ircDmPolicy: ChannelSetupDmPolicy = {
     await promptIrcAllowFrom({
       cfg: cfg as CoreConfig,
       prompter,
-      accountId,
+      accountId: resolveSetupAccountId({
+        accountId,
+        defaultAccountId: resolveDefaultIrcAccountId(cfg as CoreConfig),
+      }),
     }),
 };
 

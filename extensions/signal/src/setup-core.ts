@@ -1,4 +1,11 @@
 import {
+  parseSetupEntriesAllowingWildcard,
+  promptParsedAllowFromForScopedChannel,
+  setChannelDmPolicyWithAllowFrom,
+  setSetupChannelEnabled,
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
+import {
   applyAccountNameToChannelSection,
   migrateBaseNameToDefaultAccount,
 } from "../../../src/channels/plugins/setup-helpers.js";
@@ -201,8 +208,25 @@ export const signalSetupAdapter: ChannelSetupAdapter = createPatchedAccountSetup
   buildPatch: (input) => buildSignalSetupPatch(input),
 });
 
-export function createSignalSetupWizardProxy(loadWizard: () => Promise<ChannelSetupWizard>) {
-  return createDelegatedSetupWizardProxy({
+export function createSignalSetupWizardProxy(
+  loadWizard: () => Promise<{ signalSetupWizard: ChannelSetupWizard }>,
+) {
+  const signalDmPolicy: ChannelSetupDmPolicy = {
+    label: "Signal",
+    channel,
+    policyKey: "channels.signal.dmPolicy",
+    allowFromKey: "channels.signal.allowFrom",
+    getCurrent: (cfg: RemoteClawConfig) => cfg.channels?.signal?.dmPolicy ?? "pairing",
+    setPolicy: (cfg: RemoteClawConfig, policy) =>
+      setChannelDmPolicyWithAllowFrom({
+        cfg,
+        channel,
+        dmPolicy: policy,
+      }),
+    promptAllowFrom: promptSignalAllowFrom,
+  };
+
+  return {
     channel,
     loadWizard,
     status: {
@@ -235,5 +259,5 @@ export function createSignalSetupWizardProxy(loadWizard: () => Promise<ChannelSe
     },
     dmPolicy: signalDmPolicy,
     disable: (cfg: RemoteClawConfig) => setSetupChannelEnabled(cfg, channel, false),
-  });
+  } satisfies ChannelSetupWizard;
 }

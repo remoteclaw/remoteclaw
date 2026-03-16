@@ -1,10 +1,3 @@
-import type {
-  ChannelOnboardingAdapter,
-  ChannelOnboardingDmPolicy,
-  ClawdbotConfig,
-  DmPolicy,
-  WizardPrompter,
-} from "remoteclaw/plugin-sdk";
 import {
   buildSingleChannelSecretPromptState,
   DEFAULT_ACCOUNT_ID,
@@ -14,9 +7,12 @@ import {
   patchTopLevelChannelConfigSection,
   promptParsedAllowFromForAccount,
   promptSingleChannelSecretInput,
+  setTopLevelChannelAllowFrom,
+  setTopLevelChannelDmPolicyWithAllowFrom,
+  setTopLevelChannelGroupPolicy,
   splitSetupEntries,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { DmPolicy } from "../../../src/config/types.js";
@@ -58,25 +54,34 @@ async function promptFeishuAllowFrom(params: {
   cfg: RemoteClawConfig;
   prompter: Parameters<NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>>[0]["prompter"];
 }): Promise<RemoteClawConfig> {
-  return await promptParsedAllowFromForAccount({
-    cfg: params.cfg,
-    defaultAccountId: DEFAULT_ACCOUNT_ID,
-    prompter: params.prompter,
-    noteTitle: "Feishu allowlist",
-    noteLines: [
+  const existing = params.cfg.channels?.feishu?.allowFrom ?? [];
+  await params.prompter.note(
+    [
       "Allowlist Feishu DMs by open_id or user_id.",
       "You can find user open_id in Feishu admin console or via API.",
       "Examples:",
       "- ou_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       "- on_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    ],
-    message: "Feishu allowFrom (user open_ids)",
-    placeholder: "ou_xxxxx, ou_yyyyy",
-    parseEntries: (raw) => ({ entries: splitSetupEntries(raw) }),
-    getExistingAllowFrom: ({ cfg }) => cfg.channels?.feishu?.allowFrom ?? [],
-    mergeEntries: ({ existing, parsed }) => mergeAllowFromEntries(existing, parsed),
-    applyAllowFrom: ({ cfg, allowFrom }) => setFeishuAllowFrom(cfg, allowFrom),
-  });
+    ].join("\n"),
+    "Feishu allowlist",
+  );
+
+  while (true) {
+    const entry = await params.prompter.text({
+      message: "Feishu allowFrom (user open_ids)",
+      placeholder: "ou_xxxxx, ou_yyyyy",
+      initialValue: existing[0] ? String(existing[0]) : undefined,
+      validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
+    });
+    const parts = splitSetupEntries(String(entry));
+    if (parts.length === 0) {
+      await params.prompter.note("Enter at least one user.", "Feishu allowlist");
+      continue;
+    }
+
+    const unique = mergeAllowFromEntries(existing, parts);
+    return setFeishuAllowFrom(params.cfg, unique);
+  }
 }
 
 async function noteFeishuCredentialHelp(prompter: WizardPrompter): Promise<void> {
@@ -113,32 +118,7 @@ async function promptFeishuCredentials(prompter: WizardPrompter): Promise<{
   return { appId, appSecret };
 }
 
-function setFeishuGroupPolicy(
-  cfg: ClawdbotConfig,
-  groupPolicy: "open" | "allowlist" | "disabled",
-): ClawdbotConfig {
-  return setTopLevelChannelGroupPolicy({
-    cfg,
-    channel: "feishu",
-    groupPolicy,
-    enabled: true,
-  }) as ClawdbotConfig;
-}
-
-function setFeishuGroupAllowFrom(cfg: ClawdbotConfig, groupAllowFrom: string[]): ClawdbotConfig {
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      feishu: {
-        ...cfg.channels?.feishu,
-        groupAllowFrom,
-      },
-    },
-  };
-}
-
-const dmPolicy: ChannelOnboardingDmPolicy = {
+const feishuDmPolicy: ChannelSetupDmPolicy = {
   label: "Feishu",
   channel,
   policyKey: "channels.feishu.dmPolicy",
@@ -314,7 +294,7 @@ export const feishuOnboardingAdapter: ChannelOnboardingAdapter = {
         initialValue: existing.length > 0 ? existing.map(String).join(", ") : undefined,
       });
       if (entry) {
-        const parts = splitOnboardingEntries(String(entry));
+        const parts = splitSetupEntries(String(entry));
         if (parts.length > 0) {
           next = setFeishuGroupAllowFrom(next, parts);
         }

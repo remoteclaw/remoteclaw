@@ -1,14 +1,13 @@
-import { createAllowFromSection, createTopLevelChannelDmPolicy } from "remoteclaw/plugin-sdk/setup";
 import {
-  DEFAULT_ACCOUNT_ID,
-  formatDocsLink,
-  resolveLineAccount,
   setSetupChannelEnabled,
   setTopLevelChannelDmPolicyWithAllowFrom,
   splitSetupEntries,
-  type ChannelSetupDmPolicy,
-  type ChannelSetupWizard,
-} from "../runtime-api.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
+import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { resolveLineAccount } from "../../../src/line/accounts.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   isLineConfigured,
   listLineAccountIds,

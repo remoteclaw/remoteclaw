@@ -3,11 +3,9 @@ import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
   normalizeAllowFromEntries,
-  normalizeE164,
-  pathExists,
   splitSetupEntries,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import { setSetupChannelEnabled } from "../../../src/channels/plugins/setup-wizard-helpers.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import { setSetupChannelEnabled } from "../../../src/channels/plugins/setup-flow-helpers.js";
 import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { formatCliCommand } from "../../../src/cli/command-format.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
@@ -120,7 +118,7 @@ async function applyWhatsAppOwnerAllowlist(params: {
 }
 
 function parseWhatsAppAllowFromEntries(raw: string): { entries: string[]; invalidEntry?: string } {
-  const parts = splitOnboardingEntries(raw);
+  const parts = splitSetupEntries(raw);
   if (parts.length === 0) {
     return { entries: [] };
   }
@@ -366,6 +364,7 @@ export const whatsappOnboardingAdapter: ChannelOnboardingAdapter = {
 
     return { cfg: next, accountId };
   },
+  disable: (cfg) => setSetupChannelEnabled(cfg, channel, false),
   onAccountRecorded: (accountId, options) => {
     options?.onWhatsAppAccountId?.(accountId);
   },

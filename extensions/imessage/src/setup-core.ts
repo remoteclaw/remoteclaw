@@ -1,4 +1,11 @@
 import {
+  parseSetupEntriesAllowingWildcard,
+  promptParsedAllowFromForScopedChannel,
+  setChannelDmPolicyWithAllowFrom,
+  setSetupChannelEnabled,
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
+import {
   applyAccountNameToChannelSection,
   migrateBaseNameToDefaultAccount,
 } from "../../../src/channels/plugins/setup-helpers.js";
@@ -219,8 +226,25 @@ export const imessageSetupStatusBase = {
   },
 };
 
-export function createIMessageSetupWizardProxy(loadWizard: () => Promise<ChannelSetupWizard>) {
-  return createDelegatedSetupWizardProxy({
+export function createIMessageSetupWizardProxy(
+  loadWizard: () => Promise<{ imessageSetupWizard: ChannelSetupWizard }>,
+) {
+  const imessageDmPolicy: ChannelSetupDmPolicy = {
+    label: "iMessage",
+    channel,
+    policyKey: "channels.imessage.dmPolicy",
+    allowFromKey: "channels.imessage.allowFrom",
+    getCurrent: (cfg: RemoteClawConfig) => cfg.channels?.imessage?.dmPolicy ?? "pairing",
+    setPolicy: (cfg: RemoteClawConfig, policy) =>
+      setChannelDmPolicyWithAllowFrom({
+        cfg,
+        channel,
+        dmPolicy: policy,
+      }),
+    promptAllowFrom: promptIMessageAllowFrom,
+  };
+
+  return {
     channel,
     loadWizard,
     status: {
@@ -252,5 +276,5 @@ export function createIMessageSetupWizardProxy(loadWizard: () => Promise<Channel
     },
     dmPolicy: imessageDmPolicy,
     disable: (cfg: RemoteClawConfig) => setSetupChannelEnabled(cfg, channel, false),
-  });
+  } satisfies ChannelSetupWizard;
 }

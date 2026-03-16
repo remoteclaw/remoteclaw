@@ -1,21 +1,21 @@
 import type { RemoteClawConfig } from "../../config/config.js";
 import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
-import { configureChannelAccessWithAllowlist } from "./setup-group-access-configure.js";
-import type { ChannelAccessPolicy } from "./setup-group-access.js";
 import {
   promptResolvedAllowFrom,
   resolveAccountIdForConfigure,
   runSingleChannelSecretStep,
   splitSetupEntries,
-} from "./setup-wizard-helpers.js";
+} from "./setup-flow-helpers.js";
 import type {
-  ChannelSetupWizardAdapter,
+  ChannelSetupFlowAdapter,
   ChannelSetupConfigureContext,
   ChannelSetupDmPolicy,
   ChannelSetupStatus,
   ChannelSetupStatusContext,
-} from "./setup-wizard-types.js";
+} from "./setup-flow-types.js";
+import { configureChannelAccessWithAllowlist } from "./setup-group-access-configure.js";
+import type { ChannelAccessPolicy } from "./setup-group-access.js";
 import type { ChannelSetupInput } from "./types.core.js";
 import type { ChannelPlugin } from "./types.js";
 
@@ -161,19 +161,73 @@ export type ChannelSetupWizardGroupAccess = {
   }) => RemoteClawConfig;
 };
 
+export type ChannelSetupWizardPrepare = (params: {
+  cfg: RemoteClawConfig;
+  accountId: string;
+  credentialValues: ChannelSetupWizardCredentialValues;
+  runtime: ChannelSetupConfigureContext["runtime"];
+  prompter: WizardPrompter;
+  options?: ChannelSetupConfigureContext["options"];
+}) =>
+  | {
+      cfg?: RemoteClawConfig;
+      credentialValues?: ChannelSetupWizardCredentialValues;
+    }
+  | void
+  | Promise<{
+      cfg?: RemoteClawConfig;
+      credentialValues?: ChannelSetupWizardCredentialValues;
+    } | void>;
+
+export type ChannelSetupWizardFinalize = (params: {
+  cfg: RemoteClawConfig;
+  accountId: string;
+  credentialValues: ChannelSetupWizardCredentialValues;
+  runtime: ChannelSetupConfigureContext["runtime"];
+  prompter: WizardPrompter;
+  options?: ChannelSetupConfigureContext["options"];
+  forceAllowFrom: boolean;
+}) =>
+  | {
+      cfg?: RemoteClawConfig;
+      credentialValues?: ChannelSetupWizardCredentialValues;
+    }
+  | void
+  | Promise<{
+      cfg?: RemoteClawConfig;
+      credentialValues?: ChannelSetupWizardCredentialValues;
+    } | void>;
+
 export type ChannelSetupWizard = {
   channel: string;
   status: ChannelSetupWizardStatus;
   introNote?: ChannelSetupWizardNote;
   envShortcut?: ChannelSetupWizardEnvShortcut;
+  resolveAccountIdForConfigure?: (params: {
+    cfg: RemoteClawConfig;
+    prompter: WizardPrompter;
+    options?: ChannelSetupConfigureContext["options"];
+    accountOverride?: string;
+    shouldPromptAccountIds: boolean;
+    listAccountIds: ChannelSetupWizardPlugin["config"]["listAccountIds"];
+    defaultAccountId: string;
+  }) => string | Promise<string>;
+  resolveShouldPromptAccountIds?: (params: {
+    cfg: RemoteClawConfig;
+    options?: ChannelSetupConfigureContext["options"];
+    shouldPromptAccountIds: boolean;
+  }) => boolean;
   prepare?: ChannelSetupWizardPrepare;
   stepOrder?: "credentials-first" | "text-first";
   credentials: ChannelSetupWizardCredential[];
-  dmPolicy?: ChannelOnboardingDmPolicy;
+  textInputs?: ChannelSetupWizardTextInput[];
+  finalize?: ChannelSetupWizardFinalize;
+  completionNote?: ChannelSetupWizardNote;
+  dmPolicy?: ChannelSetupDmPolicy;
   allowFrom?: ChannelSetupWizardAllowFrom;
   groupAccess?: ChannelSetupWizardGroupAccess;
   disable?: (cfg: RemoteClawConfig) => RemoteClawConfig;
-  onAccountRecorded?: ChannelSetupWizardAdapter["onAccountRecorded"];
+  onAccountRecorded?: ChannelSetupFlowAdapter["onAccountRecorded"];
 };
 
 type ChannelSetupWizardPlugin = Pick<ChannelPlugin, "id" | "meta" | "config" | "setup">;
@@ -181,8 +235,8 @@ type ChannelSetupWizardPlugin = Pick<ChannelPlugin, "id" | "meta" | "config" | "
 async function buildStatus(
   plugin: ChannelSetupWizardPlugin,
   wizard: ChannelSetupWizard,
-  ctx: ChannelOnboardingStatusContext,
-): Promise<ChannelOnboardingStatus> {
+  ctx: ChannelSetupStatusContext,
+): Promise<ChannelSetupStatus> {
   const configured = await wizard.status.resolveConfigured({ cfg: ctx.cfg });
   const statusLines = (await wizard.status.resolveStatusLines?.({
     cfg: ctx.cfg,
@@ -299,10 +353,10 @@ async function applyWizardTextInputValue(params: {
       }).cfg;
 }
 
-export function buildChannelSetupWizardAdapterFromSetupWizard(params: {
+export function buildChannelSetupFlowAdapterFromSetupWizard(params: {
   plugin: ChannelSetupWizardPlugin;
   wizard: ChannelSetupWizard;
-}): ChannelSetupWizardAdapter {
+}): ChannelSetupFlowAdapter {
   const { plugin, wizard } = params;
   return {
     channel: plugin.id,
@@ -700,7 +754,7 @@ export function buildChannelSetupWizardAdapterFromSetupWizard(params: {
           message: allowFrom.message,
           placeholder: allowFrom.placeholder,
           label: allowFrom.helpTitle ?? `${plugin.meta.label} allowlist`,
-          parseInputs: allowFrom.parseInputs ?? splitOnboardingEntries,
+          parseInputs: allowFrom.parseInputs ?? splitSetupEntries,
           parseId: allowFrom.parseId,
           invalidWithoutTokenNote: allowFrom.invalidWithoutCredentialNote,
           resolveEntries: async ({ entries }) =>

@@ -3,8 +3,8 @@ import {
   formatDocsLink,
   mergeAllowFromEntries,
   resolveSetupAccountId,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { DmPolicy } from "../../../src/config/types.js";
@@ -57,8 +57,7 @@ async function promptBlueBubblesAllowFrom(params: {
   prompter: WizardPrompter;
   accountId?: string;
 }): Promise<RemoteClawConfig> {
-  return await promptParsedAllowFromForAccount({
-    cfg: params.cfg,
+  const accountId = resolveSetupAccountId({
     accountId: params.accountId,
     defaultAccountId: resolveDefaultBlueBubblesAccountId(params.cfg),
     prompter: params.prompter,

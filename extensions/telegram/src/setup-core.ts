@@ -1,4 +1,8 @@
 import {
+  patchChannelConfigForAccount,
+  splitSetupEntries,
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import {
   applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
   migrateBaseNameToDefaultAccount,
@@ -79,7 +83,7 @@ export async function promptTelegramAllowFromForAccount(params: {
   cfg: RemoteClawConfig;
   prompter: Parameters<
     NonNullable<
-      import("../../../src/channels/plugins/setup-wizard-types.js").ChannelSetupDmPolicy["promptAllowFrom"]
+      import("../../../src/channels/plugins/setup-flow-types.js").ChannelSetupDmPolicy["promptAllowFrom"]
     >
   >[0]["prompter"];
   accountId?: string;
@@ -94,7 +98,7 @@ export async function promptTelegramAllowFromForAccount(params: {
     );
   }
   const { promptResolvedAllowFrom } =
-    await import("../../../src/channels/plugins/setup-wizard-helpers.js");
+    await import("../../../src/channels/plugins/setup-flow-helpers.js");
   const unique = await promptResolvedAllowFrom({
     prompter: params.prompter,
     existing: resolved.config.allowFrom ?? [],

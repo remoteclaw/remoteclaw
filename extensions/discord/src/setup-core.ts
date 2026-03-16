@@ -1,8 +1,3 @@
-import type { DiscordGuildEntry } from "../../../src/config/types.discord.js";
-import {
-  applyAccountNameToChannelSection,
-  migrateBaseNameToDefaultAccount,
-} from "../../../src/channels/plugins/setup-helpers.js";
 import {
   noteChannelLookupFailure,
   noteChannelLookupSummary,
@@ -10,8 +5,12 @@ import {
   patchChannelConfigForAccount,
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
+import {
+  applyAccountNameToChannelSection,
+  migrateBaseNameToDefaultAccount,
+} from "../../../src/channels/plugins/setup-helpers.js";
 import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
@@ -92,36 +91,9 @@ type DiscordAllowFromResolverParams = {
   entries: string[];
 };
 
-type DiscordGroupAllowlistResolverParams = DiscordAllowFromResolverParams & {
-  prompter: { note: (message: string, title?: string) => Promise<void> };
-};
-
-type DiscordGroupAllowlistResolution = Array<{
-  input: string;
-  resolved: boolean;
-}>;
-
-type DiscordSetupWizardHandlers = {
-  promptAllowFrom: (params: {
-    cfg: RemoteClawConfig;
-    prompter: import("../../../src/plugin-sdk-internal/setup.js").WizardPrompter;
-    accountId?: string;
-  }) => Promise<RemoteClawConfig>;
-  resolveAllowFromEntries: (params: DiscordAllowFromResolverParams) => Promise<
-    Array<{
-      input: string;
-      resolved: boolean;
-      id: string | null;
-    }>
-  >;
-  resolveGroupAllowlist: (
-    params: DiscordGroupAllowlistResolverParams,
-  ) => Promise<DiscordGroupAllowlistResolution>;
-};
-
-export function createDiscordSetupWizardBase(
-  handlers: DiscordSetupWizardHandlers,
-): ChannelSetupWizard {
+export function createDiscordSetupWizardProxy(
+  loadWizard: () => Promise<{ discordSetupWizard: ChannelSetupWizard }>,
+) {
   const discordDmPolicy: ChannelSetupDmPolicy = {
     label: "Discord",
     channel,

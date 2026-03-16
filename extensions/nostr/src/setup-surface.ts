@@ -1,14 +1,11 @@
-import type { ChannelSetupAdapter } from "remoteclaw/plugin-sdk/channel-setup";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
 import {
   mergeAllowFromEntries,
   parseSetupEntriesWithParser,
-  patchTopLevelChannelConfigSection,
-  promptParsedAllowFromForAccount,
+  setTopLevelChannelAllowFrom,
+  setTopLevelChannelDmPolicyWithAllowFrom,
   splitSetupEntries,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";

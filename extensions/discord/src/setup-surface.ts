@@ -1,12 +1,11 @@
-import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
 import {
   type RemoteClawConfig,
   promptLegacyChannelAllowFrom,
   resolveSetupAccountId,
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
@@ -121,26 +120,21 @@ async function resolveDiscordGroupAllowlist(params: {
   });
 }
 
-async function resolveDiscordGroupAllowlist(params: {
-  cfg: RemoteClawConfig;
-  accountId: string;
-  credentialValues: { token?: string };
-  entries: string[];
-}) {
-  const token =
-    resolveDiscordAccount({ cfg: params.cfg, accountId: params.accountId }).token ||
-    (typeof params.credentialValues.token === "string" ? params.credentialValues.token : "");
-  if (!token || params.entries.length === 0) {
-    return params.entries.map((input) => ({
-      input,
-      resolved: false,
-    }));
-  }
-  return await resolveDiscordChannelAllowlist({
-    token,
-    entries: params.entries,
-  });
-}
+const discordDmPolicy: ChannelSetupDmPolicy = {
+  label: "Discord",
+  channel,
+  policyKey: "channels.discord.dmPolicy",
+  allowFromKey: "channels.discord.allowFrom",
+  getCurrent: (cfg) =>
+    cfg.channels?.discord?.dmPolicy ?? cfg.channels?.discord?.dm?.policy ?? "pairing",
+  setPolicy: (cfg, policy) =>
+    setLegacyChannelDmPolicyWithAllowFrom({
+      cfg,
+      channel,
+      dmPolicy: policy,
+    }),
+  promptAllowFrom: promptDiscordAllowFrom,
+};
 
 <<<<<<< HEAD
 export const discordSetupWizard: ChannelSetupWizard = createDiscordSetupWizardBase({
@@ -149,14 +143,101 @@ export const discordSetupWizard: ChannelSetupWizard = createDiscordSetupWizardBa
     await resolveDiscordAllowFromEntries({
       token:
         resolveDiscordAccount({ cfg, accountId }).token ||
-        (typeof credentialValues.token === "string" ? credentialValues.token : ""),
-      entries,
-    }),
-  resolveGroupAllowlist: async ({ cfg, accountId, credentialValues, entries }) =>
-    await resolveDiscordGroupAllowlist({
-      cfg,
-      accountId,
-      credentialValues,
-      entries,
-    }),
-});
+        (typeof credentialValues.token === "string" ? credentialValues.token : "");
+      let resolved: DiscordChannelResolution[] = entries.map((input) => ({
+        input,
+        resolved: false,
+      }));
+      if (!token || entries.length === 0) {
+        return resolved;
+      }
+      try {
+        resolved = await resolveDiscordChannelAllowlist({
+          token,
+          entries,
+        });
+        const resolvedChannels = resolved.filter((entry) => entry.resolved && entry.channelId);
+        const resolvedGuilds = resolved.filter(
+          (entry) => entry.resolved && entry.guildId && !entry.channelId,
+        );
+        const unresolved = resolved.filter((entry) => !entry.resolved).map((entry) => entry.input);
+        await noteChannelLookupSummary({
+          prompter,
+          label: "Discord channels",
+          resolvedSections: [
+            {
+              title: "Resolved channels",
+              values: resolvedChannels
+                .map((entry) => entry.channelId)
+                .filter((value): value is string => Boolean(value)),
+            },
+            {
+              title: "Resolved guilds",
+              values: resolvedGuilds
+                .map((entry) => entry.guildId)
+                .filter((value): value is string => Boolean(value)),
+            },
+          ],
+          unresolved,
+        });
+      } catch (error) {
+        await noteChannelLookupFailure({
+          prompter,
+          label: "Discord channels",
+          error,
+        });
+      }
+      return resolved;
+    },
+    applyAllowlist: ({ cfg, accountId, resolved }) => {
+      const allowlistEntries: Array<{ guildKey: string; channelKey?: string }> = [];
+      for (const entry of resolved as DiscordChannelResolution[]) {
+        const guildKey =
+          entry.guildId ??
+          (entry.guildName ? normalizeDiscordSlug(entry.guildName) : undefined) ??
+          "*";
+        const channelKey =
+          entry.channelId ??
+          (entry.channelName ? normalizeDiscordSlug(entry.channelName) : undefined);
+        if (!channelKey && guildKey === "*") {
+          continue;
+        }
+        allowlistEntries.push({ guildKey, ...(channelKey ? { channelKey } : {}) });
+      }
+      return setDiscordGuildChannelAllowlist(cfg, accountId, allowlistEntries);
+    },
+  },
+  allowFrom: {
+    credentialInputKey: "token",
+    helpTitle: "Discord allowlist",
+    helpLines: [
+      "Allowlist Discord DMs by username (we resolve to user ids).",
+      "Examples:",
+      "- 123456789012345678",
+      "- @alice",
+      "- alice#1234",
+      "Multiple entries: comma-separated.",
+      `Docs: ${formatDocsLink("/discord", "discord")}`,
+    ],
+    message: "Discord allowFrom (usernames or ids)",
+    placeholder: "@alice, 123456789012345678",
+    invalidWithoutCredentialNote: "Bot token missing; use numeric user ids (or mention form) only.",
+    parseId: parseDiscordAllowFromId,
+    resolveEntries: async ({ cfg, accountId, credentialValues, entries }) =>
+      await resolveDiscordAllowFromEntries({
+        token:
+          resolveDiscordAccount({ cfg, accountId }).token ||
+          (typeof credentialValues.token === "string" ? credentialValues.token : ""),
+        entries,
+      }),
+    apply: async ({ cfg, accountId, allowFrom }) =>
+      patchChannelConfigForAccount({
+        cfg,
+        channel,
+        accountId,
+        patch: { dmPolicy: "allowlist", allowFrom },
+      }),
+  },
+  dmPolicy: discordDmPolicy,
+  disable: (cfg) => setSetupChannelEnabled(cfg, channel, false),
+};

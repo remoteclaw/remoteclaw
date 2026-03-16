@@ -34,7 +34,7 @@ export type PromptAccountIdParams = {
 
 export type PromptAccountId = (params: PromptAccountIdParams) => Promise<string>;
 
-export type ChannelOnboardingStatus = {
+export type ChannelSetupStatus = {
   channel: ChannelId;
   configured: boolean;
   statusLines: string[];
@@ -42,13 +42,13 @@ export type ChannelOnboardingStatus = {
   quickstartScore?: number;
 };
 
-export type ChannelOnboardingStatusContext = {
+export type ChannelSetupStatusContext = {
   cfg: RemoteClawConfig;
   options?: SetupChannelsOptions;
   accountOverrides: Partial<Record<ChannelId, string>>;
 };
 
-export type ChannelOnboardingConfigureContext = {
+export type ChannelSetupConfigureContext = {
   cfg: RemoteClawConfig;
   runtime: RuntimeEnv;
   prompter: WizardPrompter;
@@ -58,19 +58,19 @@ export type ChannelOnboardingConfigureContext = {
   forceAllowFrom: boolean;
 };
 
-export type ChannelOnboardingResult = {
+export type ChannelSetupResult = {
   cfg: RemoteClawConfig;
   accountId?: string;
 };
 
-export type ChannelOnboardingConfiguredResult = ChannelOnboardingResult | "skip";
+export type ChannelSetupConfiguredResult = ChannelSetupResult | "skip";
 
-export type ChannelOnboardingInteractiveContext = ChannelOnboardingConfigureContext & {
+export type ChannelSetupInteractiveContext = ChannelSetupConfigureContext & {
   configured: boolean;
   label: string;
 };
 
-export type ChannelOnboardingDmPolicy = {
+export type ChannelSetupDmPolicy = {
   label: string;
   channel: ChannelId;
   policyKey: string;
@@ -84,17 +84,17 @@ export type ChannelOnboardingDmPolicy = {
   }) => Promise<RemoteClawConfig>;
 };
 
-export type ChannelSetupWizardAdapter = {
+export type ChannelSetupFlowAdapter = {
   channel: ChannelId;
-  getStatus: (ctx: ChannelOnboardingStatusContext) => Promise<ChannelOnboardingStatus>;
-  configure: (ctx: ChannelOnboardingConfigureContext) => Promise<ChannelOnboardingResult>;
+  getStatus: (ctx: ChannelSetupStatusContext) => Promise<ChannelSetupStatus>;
+  configure: (ctx: ChannelSetupConfigureContext) => Promise<ChannelSetupResult>;
   configureInteractive?: (
-    ctx: ChannelOnboardingInteractiveContext,
-  ) => Promise<ChannelOnboardingConfiguredResult>;
+    ctx: ChannelSetupInteractiveContext,
+  ) => Promise<ChannelSetupConfiguredResult>;
   configureWhenConfigured?: (
-    ctx: ChannelOnboardingInteractiveContext,
-  ) => Promise<ChannelOnboardingConfiguredResult>;
-  dmPolicy?: ChannelOnboardingDmPolicy;
+    ctx: ChannelSetupInteractiveContext,
+  ) => Promise<ChannelSetupConfiguredResult>;
+  dmPolicy?: ChannelSetupDmPolicy;
   onAccountRecorded?: (accountId: string, options?: SetupChannelsOptions) => void;
   disable?: (cfg: RemoteClawConfig) => RemoteClawConfig;
 };

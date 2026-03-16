@@ -22,7 +22,7 @@ export {
   addWildcardAllowFrom,
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
-} from "../channels/plugins/setup-wizard-helpers.js";
+} from "../channels/plugins/setup-flow-helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
 export type { BaseProbeResult } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";

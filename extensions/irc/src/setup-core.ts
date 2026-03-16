@@ -2,9 +2,9 @@ import type { ChannelSetupAdapter, ChannelSetupInput } from "remoteclaw/plugin-s
 import type { DmPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import { normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 import {
-  patchScopedAccountConfig,
-  prepareScopedSetupConfig,
-} from "../../../src/channels/plugins/setup-helpers.js";
+  setTopLevelChannelAllowFrom,
+  setTopLevelChannelDmPolicyWithAllowFrom,
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
 import {
   applyAccountNameToChannelSection,
   patchScopedAccountConfig,

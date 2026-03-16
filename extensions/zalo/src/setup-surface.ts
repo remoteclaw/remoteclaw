@@ -1,9 +1,3 @@
-import type {
-  ChannelOnboardingAdapter,
-  ChannelOnboardingDmPolicy,
-  RemoteClawConfig,
-  WizardPrompter,
-} from "remoteclaw/plugin-sdk";
 import {
   buildSingleChannelSecretPromptState,
   DEFAULT_ACCOUNT_ID,
@@ -14,8 +8,8 @@ import {
   promptSingleChannelSecretInput,
   runSingleChannelSecretStep,
   setTopLevelChannelDmPolicyWithAllowFrom,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { SecretInput } from "../../../src/config/types.secrets.js";
@@ -129,7 +123,7 @@ async function noteZaloTokenHelp(prompter: WizardPrompter): Promise<void> {
 
 async function promptZaloAllowFrom(params: {
   cfg: RemoteClawConfig;
-  prompter: WizardPrompter;
+  prompter: Parameters<NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>>[0]["prompter"];
   accountId: string;
 }): Promise<RemoteClawConfig> {
   const { cfg, prompter, accountId } = params;
@@ -189,7 +183,7 @@ async function promptZaloAllowFrom(params: {
   } as RemoteClawConfig;
 }
 
-const dmPolicy: ChannelOnboardingDmPolicy = {
+const zaloDmPolicy: ChannelSetupDmPolicy = {
   label: "Zalo",
   channel,
   policyKey: "channels.zalo.dmPolicy",

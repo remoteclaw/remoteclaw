@@ -1,9 +1,3 @@
-import { createPatchedAccountSetupAdapter } from "../../../src/channels/plugins/setup-helpers.js";
-import { createAllowlistSetupWizardProxy } from "../../../src/channels/plugins/setup-wizard-proxy.js";
-import {
-  applyAccountNameToChannelSection,
-  migrateBaseNameToDefaultAccount,
-} from "../../../src/channels/plugins/setup-helpers.js";
 import {
   noteChannelLookupFailure,
   noteChannelLookupSummary,
@@ -12,8 +6,12 @@ import {
   setAccountGroupPolicyForChannel,
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
+import {
+  applyAccountNameToChannelSection,
+  migrateBaseNameToDefaultAccount,
+} from "../../../src/channels/plugins/setup-helpers.js";
 import type {
   ChannelSetupWizard,
   ChannelSetupWizardAllowFromEntry,
@@ -102,26 +100,9 @@ function createSlackTokenCredential(params: {
   };
 }
 
-export const slackSetupAdapter: ChannelSetupAdapter = createEnvPatchedAccountSetupAdapter({
-  channelKey: channel,
-  defaultAccountOnlyEnvError: "Slack env tokens can only be used for the default account.",
-  missingCredentialError: "Slack requires --bot-token and --app-token (or --use-env).",
-  hasCredentials: (input) => Boolean(input.botToken && input.appToken),
-  buildPatch: (input) => ({
-    ...(input.botToken ? { botToken: input.botToken } : {}),
-    ...(input.appToken ? { appToken: input.appToken } : {}),
-  }),
-});
-
-export function createSlackSetupWizardBase(handlers: {
-  promptAllowFrom: NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>;
-  resolveAllowFromEntries: NonNullable<
-    NonNullable<ChannelSetupWizard["allowFrom"]>["resolveEntries"]
-  >;
-  resolveGroupAllowlist: NonNullable<
-    NonNullable<NonNullable<ChannelSetupWizard["groupAccess"]>["resolveAllowlist"]>
-  >;
-}) {
+export function createSlackSetupWizardProxy(
+  loadWizard: () => Promise<{ slackSetupWizard: ChannelSetupWizard }>,
+) {
   const slackDmPolicy: ChannelSetupDmPolicy = {
     label: "Slack",
     channel,

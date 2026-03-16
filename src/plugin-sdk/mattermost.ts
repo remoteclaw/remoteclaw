@@ -26,7 +26,7 @@ export {
   buildSingleChannelSecretPromptState,
   promptSingleChannelSecretInput,
   runSingleChannelSecretStep,
-} from "../channels/plugins/setup-wizard-helpers.js";
+} from "../channels/plugins/setup-flow-helpers.js";
 export {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,

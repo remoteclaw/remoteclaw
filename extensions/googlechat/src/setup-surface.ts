@@ -1,4 +1,11 @@
 import {
+  addWildcardAllowFrom,
+  mergeAllowFromEntries,
+  setTopLevelChannelDmPolicyWithAllowFrom,
+  splitSetupEntries,
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
+import {
   applySetupAccountConfigPatch,
   migrateBaseNameToDefaultAccount,
 } from "../../../src/channels/plugins/setup-helpers.js";

@@ -1,23 +1,10 @@
 import {
-  createDetectedBinaryStatus,
-  setSetupChannelEnabled,
-  type ChannelSetupWizard,
-} from "remoteclaw/plugin-sdk/setup";
-import { detectBinary, installSignalCli } from "remoteclaw/plugin-sdk/setup-tools";
-import { listSignalAccountIds, resolveSignalAccount } from "./accounts.js";
-import {
-  DEFAULT_ACCOUNT_ID,
-  detectBinary,
-  formatCliCommand,
-  formatDocsLink,
-  installSignalCli,
-  type RemoteClawConfig,
   parseSetupEntriesAllowingWildcard,
   promptParsedAllowFromForScopedChannel,
   setChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import { type ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { formatCliCommand } from "../../../src/cli/command-format.js";
 import { detectBinary } from "../../../src/commands/onboard-helpers.js";

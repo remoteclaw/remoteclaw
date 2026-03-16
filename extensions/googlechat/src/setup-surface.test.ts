@@ -1,6 +1,6 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/googlechat";
 import { describe, expect, it, vi } from "vitest";
-import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { buildChannelSetupFlowAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 import { googlechatPlugin } from "./channel.js";
 
@@ -26,7 +26,7 @@ function createPrompter(overrides: Partial<WizardPrompter>): WizardPrompter {
   };
 }
 
-const googlechatConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+const googlechatConfigureAdapter = buildChannelSetupFlowAdapterFromSetupWizard({
   plugin: googlechatPlugin,
   wizard: googlechatPlugin.setupWizard!,
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { buildChannelSetupFlowAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 import {
   createTestWizardPrompter,
@@ -31,8 +31,8 @@ async function createBlueBubblesConfigureAdapter() {
         }).config.allowFrom ?? [],
     },
     setup: blueBubblesSetupAdapter,
-  } as Parameters<typeof buildChannelSetupWizardAdapterFromSetupWizard>[0]["plugin"];
-  return buildChannelSetupWizardAdapterFromSetupWizard({
+  } as Parameters<typeof buildChannelSetupFlowAdapterFromSetupWizard>[0]["plugin"];
+  return buildChannelSetupFlowAdapterFromSetupWizard({
     plugin,
     wizard: blueBubblesSetupWizard,
   });

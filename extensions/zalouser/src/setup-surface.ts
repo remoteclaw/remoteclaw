@@ -1,3 +1,8 @@
+import {
+  mergeAllowFromEntries,
+  setTopLevelChannelDmPolicyWithAllowFrom,
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import { patchScopedAccountConfig } from "../../../src/channels/plugins/setup-helpers.js";
 import {
   DEFAULT_ACCOUNT_ID,
@@ -96,7 +101,7 @@ async function noteZalouserHelp(prompter: WizardPrompter): Promise<void> {
 
 async function promptZalouserAllowFrom(params: {
   cfg: RemoteClawConfig;
-  prompter: WizardPrompter;
+  prompter: Parameters<NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>>[0]["prompter"];
   accountId: string;
 }): Promise<RemoteClawConfig> {
   const { cfg, prompter, accountId } = params;
@@ -149,28 +154,7 @@ async function promptZalouserAllowFrom(params: {
   }
 }
 
-function setZalouserGroupPolicy(
-  cfg: RemoteClawConfig,
-  accountId: string,
-  groupPolicy: "open" | "allowlist" | "disabled",
-): RemoteClawConfig {
-  return setZalouserAccountScopedConfig(cfg, accountId, {
-    groupPolicy,
-  });
-}
-
-function setZalouserGroupAllowlist(
-  cfg: RemoteClawConfig,
-  accountId: string,
-  groupKeys: string[],
-): RemoteClawConfig {
-  const groups = Object.fromEntries(groupKeys.map((key) => [key, { allow: true }]));
-  return setZalouserAccountScopedConfig(cfg, accountId, {
-    groups,
-  });
-}
-
-const dmPolicy: ChannelOnboardingDmPolicy = {
+const zalouserDmPolicy: ChannelSetupDmPolicy = {
   label: "Zalo Personal",
   channel,
   policyKey: "channels.zalouser.dmPolicy",

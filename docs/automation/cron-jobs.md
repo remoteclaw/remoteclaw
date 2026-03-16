@@ -346,7 +346,7 @@ Notes:
 
 ## Retry policy
 
-When a job fails, OpenClaw classifies errors as **transient** (retryable) or **permanent** (disable immediately).
+When a job fails, RemoteClaw classifies errors as **transient** (retryable) or **permanent** (disable immediately).
 
 ### Transient errors (retried)
 

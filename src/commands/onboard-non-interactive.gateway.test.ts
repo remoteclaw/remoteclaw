@@ -146,12 +146,12 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
     });
   }, 60_000);
 
-  it("uses OPENCLAW_GATEWAY_TOKEN when --gateway-token is omitted", async () => {
+  it("uses REMOTECLAW_GATEWAY_TOKEN when --gateway-token is omitted", async () => {
     await withStateDir("state-env-token-", async (stateDir) => {
       const envToken = "tok_env_fallback_123";
-      const workspace = path.join(stateDir, "openclaw");
-      const prevToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-      process.env.OPENCLAW_GATEWAY_TOKEN = envToken;
+      const workspace = path.join(stateDir, "remoteclaw");
+      const prevToken = process.env.REMOTECLAW_GATEWAY_TOKEN;
+      process.env.REMOTECLAW_GATEWAY_TOKEN = envToken;
 
       try {
         await runNonInteractiveOnboarding(
@@ -178,9 +178,9 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
         expect(cfg?.gateway?.auth?.token).toBe(envToken);
       } finally {
         if (prevToken === undefined) {
-          delete process.env.OPENCLAW_GATEWAY_TOKEN;
+          delete process.env.REMOTECLAW_GATEWAY_TOKEN;
         } else {
-          process.env.OPENCLAW_GATEWAY_TOKEN = prevToken;
+          process.env.REMOTECLAW_GATEWAY_TOKEN = prevToken;
         }
       }
     });

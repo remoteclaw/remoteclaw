@@ -3,10 +3,15 @@ import { findRoutedCommand } from "./routes.js";
 
 const runConfigGetMock = vi.hoisted(() => vi.fn(async () => {}));
 const runConfigUnsetMock = vi.hoisted(() => vi.fn(async () => {}));
+const gatewayStatusCommandMock = vi.hoisted(() => vi.fn(async () => {}));
 
 vi.mock("../config-cli.js", () => ({
   runConfigGet: runConfigGetMock,
   runConfigUnset: runConfigUnsetMock,
+}));
+
+vi.mock("../../commands/gateway-status.js", () => ({
+  gatewayStatusCommand: gatewayStatusCommandMock,
 }));
 
 describe("program routes", () => {
@@ -36,6 +41,73 @@ describe("program routes", () => {
     const shouldLoad = route?.loadPlugins as (argv: string[]) => boolean;
     expect(shouldLoad(["node", "openclaw", "health"])).toBe(true);
     expect(shouldLoad(["node", "openclaw", "health", "--json"])).toBe(false);
+  });
+
+  it("matches gateway status route without plugin preload", () => {
+    const route = expectRoute(["gateway", "status"]);
+    expect(route?.loadPlugins).toBeUndefined();
+  });
+
+  it("returns false for gateway status route when option values are missing", async () => {
+    await expectRunFalse(["gateway", "status"], ["node", "openclaw", "gateway", "status", "--url"]);
+    await expectRunFalse(
+      ["gateway", "status"],
+      ["node", "openclaw", "gateway", "status", "--token"],
+    );
+    await expectRunFalse(
+      ["gateway", "status"],
+      ["node", "openclaw", "gateway", "status", "--password"],
+    );
+    await expectRunFalse(
+      ["gateway", "status"],
+      ["node", "openclaw", "gateway", "status", "--timeout"],
+    );
+    await expectRunFalse(["gateway", "status"], ["node", "openclaw", "gateway", "status", "--ssh"]);
+    await expectRunFalse(
+      ["gateway", "status"],
+      ["node", "openclaw", "gateway", "status", "--ssh-identity"],
+    );
+  });
+
+  it("passes parsed gateway status flags through", async () => {
+    const route = expectRoute(["gateway", "status"]);
+    await expect(
+      route?.run([
+        "node",
+        "openclaw",
+        "--profile",
+        "work",
+        "gateway",
+        "status",
+        "--url",
+        "ws://127.0.0.1:18789",
+        "--token",
+        "abc",
+        "--password",
+        "def",
+        "--timeout",
+        "5000",
+        "--ssh",
+        "user@host",
+        "--ssh-identity",
+        "~/.ssh/id_test",
+        "--ssh-auto",
+        "--json",
+      ]),
+    ).resolves.toBe(true);
+    expect(gatewayStatusCommandMock).toHaveBeenCalledWith(
+      {
+        url: "ws://127.0.0.1:18789",
+        token: "abc",
+        password: "def",
+        timeout: "5000",
+        json: true,
+        ssh: "user@host",
+        sshIdentity: "~/.ssh/id_test",
+        sshAuto: true,
+      },
+      expect.any(Object),
+    );
   });
 
   it("returns false when status timeout flag value is missing", async () => {

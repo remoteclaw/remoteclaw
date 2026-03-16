@@ -13,7 +13,11 @@ import type {
   ChannelAccountState,
   ChannelSetupInput,
 } from "../types.core.js";
-import type { ChannelMessageActionName, ChannelPlugin } from "../types.js";
+import type {
+  ChannelMessageActionName,
+  ChannelMessageCapability,
+  ChannelPlugin,
+} from "../types.js";
 
 function sortStrings(values: readonly string[]) {
   return [...values].toSorted((left, right) => left.localeCompare(right));
@@ -45,7 +49,7 @@ type ChannelActionsContractCase = {
   name: string;
   cfg: RemoteClawConfig;
   expectedActions: readonly ChannelMessageActionName[];
-  expectedCapabilities?: readonly string[];
+  expectedCapabilities?: readonly ChannelMessageCapability[];
   beforeTest?: () => void;
 };
 
@@ -64,13 +68,7 @@ export function installChannelActionsContractSuite(params: {
       testCase.beforeTest?.();
 
       const actions = params.plugin.actions?.listActions?.({ cfg: testCase.cfg }) ?? [];
-      const capabilities: string[] = [];
-      if (params.plugin.actions?.supportsButtons?.({ cfg: testCase.cfg })) {
-        capabilities.push("buttons");
-      }
-      if (params.plugin.actions?.supportsCards?.({ cfg: testCase.cfg })) {
-        capabilities.push("cards");
-      }
+      const capabilities = params.plugin.actions?.getCapabilities?.({ cfg: testCase.cfg }) ?? [];
 
       expect(actions).toEqual([...new Set(actions)]);
       expect(capabilities).toEqual([...new Set(capabilities)]);
@@ -139,7 +137,7 @@ export function installChannelSurfaceContractSuite(params: {
     }
 
     if (surface === "outbound") {
-      const outbound = plugin.outbound as Record<string, unknown> | undefined;
+      const outbound = plugin.outbound;
       expect(outbound).toBeDefined();
       expect(["direct", "gateway", "hybrid"]).toContain(outbound?.deliveryMode);
       expect(
@@ -156,7 +154,7 @@ export function installChannelSurfaceContractSuite(params: {
     }
 
     if (surface === "messaging") {
-      const messaging = plugin.messaging as Record<string, unknown> | undefined;
+      const messaging = plugin.messaging;
       expect(messaging).toBeDefined();
       expect(
         [
@@ -170,24 +168,23 @@ export function installChannelSurfaceContractSuite(params: {
           messaging?.resolveOutboundSessionRoute,
         ].some((value) => typeof value === "function"),
       ).toBe(true);
-      const targetResolver = messaging?.targetResolver as Record<string, unknown> | undefined;
-      if (targetResolver) {
-        if (targetResolver.looksLikeId) {
-          expect(typeof targetResolver.looksLikeId).toBe("function");
+      if (messaging?.targetResolver) {
+        if (messaging.targetResolver.looksLikeId) {
+          expect(typeof messaging.targetResolver.looksLikeId).toBe("function");
         }
-        if (targetResolver.hint !== undefined) {
-          expect(typeof targetResolver.hint).toBe("string");
-          expect((targetResolver.hint as string).trim()).not.toBe("");
+        if (messaging.targetResolver.hint !== undefined) {
+          expect(typeof messaging.targetResolver.hint).toBe("string");
+          expect(messaging.targetResolver.hint.trim()).not.toBe("");
         }
-        if (targetResolver.resolveTarget) {
-          expect(typeof targetResolver.resolveTarget).toBe("function");
+        if (messaging.targetResolver.resolveTarget) {
+          expect(typeof messaging.targetResolver.resolveTarget).toBe("function");
         }
       }
       return;
     }
 
     if (surface === "threading") {
-      const threading = plugin.threading as Record<string, unknown> | undefined;
+      const threading = plugin.threading;
       expect(threading).toBeDefined();
       expect(
         [

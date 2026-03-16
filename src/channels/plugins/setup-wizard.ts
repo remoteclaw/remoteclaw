@@ -1,21 +1,21 @@
 import type { RemoteClawConfig } from "../../config/config.js";
 import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
-import { configureChannelAccessWithAllowlist } from "./setup-group-access-configure.js";
-import type { ChannelAccessPolicy } from "./setup-group-access.js";
 import {
   promptResolvedAllowFrom,
   resolveAccountIdForConfigure,
   runSingleChannelSecretStep,
   splitSetupEntries,
-} from "./setup-wizard-helpers.js";
+} from "./setup-flow-helpers.js";
 import type {
-  ChannelSetupWizardAdapter,
+  ChannelSetupFlowAdapter,
   ChannelSetupConfigureContext,
   ChannelSetupDmPolicy,
   ChannelSetupStatus,
   ChannelSetupStatusContext,
-} from "./setup-wizard-types.js";
+} from "./setup-flow-types.js";
+import { configureChannelAccessWithAllowlist } from "./setup-group-access-configure.js";
+import type { ChannelAccessPolicy } from "./setup-group-access.js";
 import type { ChannelSetupInput } from "./types.core.js";
 import type { ChannelPlugin } from "./types.js";
 
@@ -273,7 +273,7 @@ export type ChannelSetupWizard = {
   allowFrom?: ChannelSetupWizardAllowFrom;
   groupAccess?: ChannelSetupWizardGroupAccess;
   disable?: (cfg: RemoteClawConfig) => RemoteClawConfig;
-  onAccountRecorded?: ChannelSetupWizardAdapter["onAccountRecorded"];
+  onAccountRecorded?: ChannelSetupFlowAdapter["onAccountRecorded"];
 };
 
 type ChannelSetupWizardPlugin = Pick<ChannelPlugin, "id" | "meta" | "config" | "setup">;
@@ -399,10 +399,10 @@ async function applyWizardTextInputValue(params: {
       }).cfg;
 }
 
-export function buildChannelSetupWizardAdapterFromSetupWizard(params: {
+export function buildChannelSetupFlowAdapterFromSetupWizard(params: {
   plugin: ChannelSetupWizardPlugin;
   wizard: ChannelSetupWizard;
-}): ChannelSetupWizardAdapter {
+}): ChannelSetupFlowAdapter {
   const { plugin, wizard } = params;
   return {
     channel: plugin.id,

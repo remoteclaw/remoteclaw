@@ -1,13 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { buildChannelSetupFlowAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
-import {
-  createTestWizardPrompter,
-  runSetupWizardConfigure,
-  type WizardPrompter,
-} from "../../../test/helpers/extensions/setup-wizard.js";
+import type { WizardPrompter } from "../../../src/wizard/prompts.js";
 import { resolveBlueBubblesAccount } from "./accounts.js";
-import { DEFAULT_WEBHOOK_PATH } from "./webhook-shared.js";
+import { DEFAULT_WEBHOOK_PATH } from "./monitor-shared.js";
 
 async function createBlueBubblesConfigureAdapter() {
   const { blueBubblesSetupAdapter, blueBubblesSetupWizard } = await import("./setup-surface.js");
@@ -31,26 +27,17 @@ async function createBlueBubblesConfigureAdapter() {
         }).config.allowFrom ?? [],
     },
     setup: blueBubblesSetupAdapter,
-  } as Parameters<typeof buildChannelSetupWizardAdapterFromSetupWizard>[0]["plugin"];
-  return buildChannelSetupWizardAdapterFromSetupWizard({
+  } as Parameters<typeof buildChannelSetupFlowAdapterFromSetupWizard>[0]["plugin"];
+  return buildChannelSetupFlowAdapterFromSetupWizard({
     plugin,
     wizard: blueBubblesSetupWizard,
   });
 }
 
-async function runBlueBubblesConfigure(params: { cfg: unknown; prompter: WizardPrompter }) {
-  const adapter = await createBlueBubblesConfigureAdapter();
-  type ConfigureContext = Parameters<NonNullable<typeof adapter.configure>>[0];
-  return await runSetupWizardConfigure({
-    configure: adapter.configure,
-    cfg: params.cfg as ConfigureContext["cfg"],
-    runtime: { ...console, exit: vi.fn() } as ConfigureContext["runtime"],
-    prompter: params.prompter,
-  });
-}
-
 describe("bluebubbles setup surface", () => {
   it("preserves existing password SecretRef and keeps default webhook path", async () => {
+    const adapter = await createBlueBubblesConfigureAdapter();
+    type ConfigureContext = Parameters<NonNullable<typeof adapter.configure>>[0];
     const passwordRef = { source: "env", provider: "default", id: "BLUEBUBBLES_PASSWORD" };
     const confirm = vi
       .fn()
@@ -58,8 +45,10 @@ describe("bluebubbles setup surface", () => {
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(true);
     const text = vi.fn();
+    const note = vi.fn();
 
-    const result = await runBlueBubblesConfigure({
+    const prompter = { confirm, text, note } as unknown as WizardPrompter;
+    const context = {
       cfg: {
         channels: {
           bluebubbles: {
@@ -69,8 +58,14 @@ describe("bluebubbles setup surface", () => {
           },
         },
       },
-      prompter: createTestWizardPrompter({ confirm, text }),
-    });
+      prompter,
+      runtime: { ...console, exit: vi.fn() } as ConfigureContext["runtime"],
+      forceAllowFrom: false,
+      accountOverrides: {},
+      shouldPromptAccountIds: false,
+    } satisfies ConfigureContext;
+
+    const result = await adapter.configure(context);
 
     expect(result.cfg.channels?.bluebubbles?.password).toEqual(passwordRef);
     expect(result.cfg.channels?.bluebubbles?.webhookPath).toBe(DEFAULT_WEBHOOK_PATH);
@@ -78,14 +73,18 @@ describe("bluebubbles setup surface", () => {
   });
 
   it("applies a custom webhook path when requested", async () => {
+    const adapter = await createBlueBubblesConfigureAdapter();
+    type ConfigureContext = Parameters<NonNullable<typeof adapter.configure>>[0];
     const confirm = vi
       .fn()
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(true);
     const text = vi.fn().mockResolvedValueOnce("/custom-bluebubbles");
+    const note = vi.fn();
 
-    const result = await runBlueBubblesConfigure({
+    const prompter = { confirm, text, note } as unknown as WizardPrompter;
+    const context = {
       cfg: {
         channels: {
           bluebubbles: {
@@ -95,8 +94,14 @@ describe("bluebubbles setup surface", () => {
           },
         },
       },
-      prompter: createTestWizardPrompter({ confirm, text }),
-    });
+      prompter,
+      runtime: { ...console, exit: vi.fn() } as ConfigureContext["runtime"],
+      forceAllowFrom: false,
+      accountOverrides: {},
+      shouldPromptAccountIds: false,
+    } satisfies ConfigureContext;
+
+    const result = await adapter.configure(context);
 
     expect(result.cfg.channels?.bluebubbles?.webhookPath).toBe("/custom-bluebubbles");
     expect(text).toHaveBeenCalledWith(
@@ -108,13 +113,23 @@ describe("bluebubbles setup surface", () => {
   });
 
   it("validates server URLs before accepting input", async () => {
+    const adapter = await createBlueBubblesConfigureAdapter();
+    type ConfigureContext = Parameters<NonNullable<typeof adapter.configure>>[0];
     const confirm = vi.fn().mockResolvedValueOnce(false);
     const text = vi.fn().mockResolvedValueOnce("127.0.0.1:1234").mockResolvedValueOnce("secret");
+    const note = vi.fn();
 
-    await runBlueBubblesConfigure({
+    const prompter = { confirm, text, note } as unknown as WizardPrompter;
+    const context = {
       cfg: { channels: { bluebubbles: {} } },
-      prompter: createTestWizardPrompter({ confirm, text }),
-    });
+      prompter,
+      runtime: { ...console, exit: vi.fn() } as ConfigureContext["runtime"],
+      forceAllowFrom: false,
+      accountOverrides: {},
+      shouldPromptAccountIds: false,
+    } satisfies ConfigureContext;
+
+    await adapter.configure(context);
 
     const serverUrlPrompt = text.mock.calls[0]?.[0] as {
       validate?: (value: string) => string | undefined;

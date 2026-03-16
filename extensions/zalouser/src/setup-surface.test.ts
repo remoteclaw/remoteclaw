@@ -1,6 +1,6 @@
 import type { RemoteClawConfig, WizardPrompter } from "remoteclaw/plugin-sdk/zalouser";
 import { describe, expect, it, vi } from "vitest";
-import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { buildChannelSetupFlowAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 
 vi.mock("./zalo-js.js", async (importOriginal) => {
@@ -50,7 +50,7 @@ function createPrompter(overrides: Partial<WizardPrompter>): WizardPrompter {
   };
 }
 
-const zalouserConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+const zalouserConfigureAdapter = buildChannelSetupFlowAdapterFromSetupWizard({
   plugin: zalouserPlugin,
   wizard: zalouserPlugin.setupWizard!,
 });

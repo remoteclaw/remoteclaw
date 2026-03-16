@@ -1,75 +1,21 @@
 import {
-  promptSecretRefForSetup,
+  promptSecretRefForOnboarding,
   resolveSecretInputModeForEnvSelection,
-<<<<<<<< HEAD:src/channels/plugins/onboarding/helpers.ts
-} from "../../../commands/auth-choice.apply-helpers.js";
-import type { RemoteClawConfig } from "../../../config/config.js";
-import type { DmPolicy, GroupPolicy } from "../../../config/types.js";
-import type { SecretInput } from "../../../config/types.secrets.js";
-import { promptAccountId as promptAccountIdSdk } from "../../../plugin-sdk/onboarding.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
-import type { WizardPrompter } from "../../../wizard/prompts.js";
-import type { PromptAccountId, PromptAccountIdParams } from "../onboarding-types.js";
-|||||||| parent of 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-flow-helpers.ts
 } from "../../commands/auth-choice.apply-helpers.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { DmPolicy, GroupPolicy } from "../../config/types.js";
 import type { SecretInput } from "../../config/types.secrets.js";
-import { promptAccountId as promptAccountIdSdk } from "../../plugin-sdk/setup.js";
+import { promptAccountId as promptAccountIdSdk } from "../../plugin-sdk/onboarding.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
 import type { PromptAccountId, PromptAccountIdParams } from "./setup-flow-types.js";
-========
-} from "../../commands/auth-choice.apply-helpers.js";
-import type { RemoteClawConfig } from "../../config/config.js";
-import type { DmPolicy, GroupPolicy } from "../../config/types.js";
-import type { SecretInput } from "../../config/types.secrets.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
-import type { WizardPrompter } from "../../wizard/prompts.js";
->>>>>>>> 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-wizard-helpers.ts
 import {
   moveSingleAccountChannelSectionToDefaultAccount,
   patchScopedAccountConfig,
-<<<<<<<< HEAD:src/channels/plugins/onboarding/helpers.ts
-} from "../setup-helpers.js";
-|||||||| parent of 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-flow-helpers.ts
 } from "./setup-helpers.js";
-========
-} from "./setup-helpers.js";
-import type { PromptAccountId, PromptAccountIdParams } from "./setup-wizard-types.js";
->>>>>>>> 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-wizard-helpers.ts
 
 export const promptAccountId: PromptAccountId = async (params: PromptAccountIdParams) => {
-  const existingIds = params.listAccountIds(params.cfg);
-  const initial = params.currentId?.trim() || params.defaultAccountId || DEFAULT_ACCOUNT_ID;
-  const choice = await params.prompter.select({
-    message: `${params.label} account`,
-    options: [
-      ...existingIds.map((id) => ({
-        value: id,
-        label: id === DEFAULT_ACCOUNT_ID ? "default (primary)" : id,
-      })),
-      { value: "__new__", label: "Add a new account" },
-    ],
-    initialValue: initial,
-  });
-
-  if (choice !== "__new__") {
-    return normalizeAccountId(choice);
-  }
-
-  const entered = await params.prompter.text({
-    message: `New ${params.label} account id`,
-    validate: (value) => (value?.trim() ? undefined : "Required"),
-  });
-  const normalized = normalizeAccountId(String(entered));
-  if (String(entered).trim() !== normalized) {
-    await params.prompter.note(
-      `Normalized account id to "${normalized}".`,
-      `${params.label} account`,
-    );
-  }
-  return normalized;
+  return await promptAccountIdSdk(params);
 };
 
 export function addWildcardAllowFrom(allowFrom?: Array<string | number> | null): string[] {
@@ -88,20 +34,20 @@ export function mergeAllowFromEntries(
   return [...new Set(merged)];
 }
 
-export function splitOnboardingEntries(raw: string): string[] {
+export function splitSetupEntries(raw: string): string[] {
   return raw
     .split(/[\n,;]+/g)
     .map((entry) => entry.trim())
     .filter(Boolean);
 }
 
-type ParsedOnboardingEntry = { value: string } | { error: string };
+type ParsedSetupEntry = { value: string } | { error: string };
 
-export function parseOnboardingEntriesWithParser(
+export function parseSetupEntriesWithParser(
   raw: string,
-  parseEntry: (entry: string) => ParsedOnboardingEntry,
+  parseEntry: (entry: string) => ParsedSetupEntry,
 ): { entries: string[]; error?: string } {
-  const parts = splitOnboardingEntries(String(raw ?? ""));
+  const parts = splitSetupEntries(String(raw ?? ""));
   const entries: string[] = [];
   for (const part of parts) {
     const parsed = parseEntry(part);
@@ -113,11 +59,11 @@ export function parseOnboardingEntriesWithParser(
   return { entries: normalizeAllowFromEntries(entries) };
 }
 
-export function parseOnboardingEntriesAllowingWildcard(
+export function parseSetupEntriesAllowingWildcard(
   raw: string,
-  parseEntry: (entry: string) => ParsedOnboardingEntry,
+  parseEntry: (entry: string) => ParsedSetupEntry,
 ): { entries: string[]; error?: string } {
-  return parseOnboardingEntriesWithParser(raw, (entry) => {
+  return parseSetupEntriesWithParser(raw, (entry) => {
     if (entry === "*") {
       return { value: "*" };
     }
@@ -171,7 +117,7 @@ export function normalizeAllowFromEntries(
   return [...new Set(normalized)];
 }
 
-export function resolveOnboardingAccountId(params: {
+export function resolveSetupAccountId(params: {
   accountId?: string;
   defaultAccountId: string;
 }): string {
@@ -392,7 +338,7 @@ export function patchLegacyDmChannelConfig(params: {
   };
 }
 
-export function setOnboardingChannelEnabled(
+export function setSetupChannelEnabled(
   cfg: RemoteClawConfig,
   channel: string,
   enabled: boolean,
@@ -671,7 +617,7 @@ export async function promptSingleChannelSecretInput(params: {
     }
   }
 
-  const resolved = await promptSecretRefForSetup({
+  const resolved = await promptSecretRefForOnboarding({
     provider: params.providerHint,
     config: params.cfg,
     prompter: params.prompter as WizardPrompter,
@@ -710,7 +656,7 @@ export async function promptParsedAllowFromForScopedChannel(params: {
     accountId: string;
   }) => Array<string | number>;
 }): Promise<RemoteClawConfig> {
-  const accountId = resolveOnboardingAccountId({
+  const accountId = resolveSetupAccountId({
     accountId: params.accountId,
     defaultAccountId: params.defaultAccountId,
   });
@@ -853,7 +799,7 @@ export async function promptLegacyChannelAllowFrom(params: {
     message: params.message,
     placeholder: params.placeholder,
     label: params.noteTitle,
-    parseInputs: splitOnboardingEntries,
+    parseInputs: splitSetupEntries,
     parseId: params.parseId,
     invalidWithoutTokenNote: params.invalidWithoutTokenNote,
     resolveEntries: params.resolveEntries,

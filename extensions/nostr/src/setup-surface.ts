@@ -4,8 +4,8 @@ import {
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
   splitSetupEntries,
-} from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+} from "../../../src/channels/plugins/setup-flow-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-flow-types.js";
 import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
@@ -13,8 +13,7 @@ import type { DmPolicy } from "../../../src/config/types.js";
 import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
 import type { WizardPrompter } from "../../../src/wizard/prompts.js";
-import { DEFAULT_RELAYS } from "./default-relays.js";
-import { getPublicKeyFromPrivate, normalizePubkey } from "./nostr-bus.js";
+import { DEFAULT_RELAYS, getPublicKeyFromPrivate, normalizePubkey } from "./nostr-bus.js";
 import { resolveNostrAccount } from "./types.js";
 
 const channel = "nostr" as const;

@@ -1,9 +1,9 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/zalo";
 import { describe, expect, it } from "vitest";
-import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { buildChannelSetupFlowAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { zaloPlugin } from "./channel.js";
 
-const zaloConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+const zaloConfigureAdapter = buildChannelSetupFlowAdapterFromSetupWizard({
   plugin: zaloPlugin,
   wizard: zaloPlugin.setupWizard!,
 });

@@ -1,9 +1,9 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/feishu";
 import { describe, expect, it } from "vitest";
-import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { buildChannelSetupFlowAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { feishuPlugin } from "./channel.js";
 
-const feishuConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+const feishuConfigureAdapter = buildChannelSetupFlowAdapterFromSetupWizard({
   plugin: feishuPlugin,
   wizard: feishuPlugin.setupWizard!,
 });

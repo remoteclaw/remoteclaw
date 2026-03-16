@@ -22,7 +22,7 @@ export {
   setTopLevelChannelDmPolicyWithAllowFrom,
   setTopLevelChannelGroupPolicy,
   splitSetupEntries,
-} from "../channels/plugins/setup-wizard-helpers.js";
+} from "../channels/plugins/setup-flow-helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
 export type {
   BaseProbeResult,
@@ -31,14 +31,9 @@ export type {
   ChannelMeta,
   ChannelOutboundAdapter,
 } from "../channels/plugins/types.js";
-export type {
-  ChannelConfiguredBindingProvider,
-  ChannelConfiguredBindingConversationRef,
-  ChannelConfiguredBindingMatch,
-} from "../channels/plugins/types.adapters.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { createReplyPrefixContext } from "../channels/reply-prefix.js";
-export { createChannelReplyPipeline } from "./channel-reply-pipeline.js";
+export { createTypingCallbacks } from "../channels/typing.js";
 export type { RemoteClawConfig as ClawdbotConfig, RemoteClawConfig } from "../config/config.js";
 export {
   resolveAllowlistProviderRuntimeGroupPolicy,
@@ -47,13 +42,13 @@ export {
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "../config/runtime-group-policy.js";
 export type { DmPolicy, GroupToolPolicyConfig } from "../config/types.js";
-export type { SecretInput } from "./secret-input.js";
+export type { SecretInput } from "../config/types.secrets.js";
 export {
-  buildSecretInputSchema,
   hasConfiguredSecretInput,
   normalizeResolvedSecretInputString,
   normalizeSecretInputString,
-} from "./secret-input.js";
+} from "../config/types.secrets.js";
+export { buildSecretInputSchema } from "./secret-input-schema.js";
 export { createDedupeCache } from "../infra/dedupe.js";
 export { installRequestBodyLimitGuard, readJsonBodyWithLimit } from "../infra/http-body.js";
 export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
@@ -67,10 +62,12 @@ export type { RuntimeEnv } from "../runtime.js";
 export { formatDocsLink } from "../terminal/links.js";
 export { evaluateSenderGroupAccessForPolicy } from "./group-access.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
-export { feishuSetupWizard, feishuSetupAdapter } from "../../extensions/feishu/setup-api.js";
+export { feishuSetupWizard } from "../../extensions/feishu/src/setup-surface.js";
+export { feishuSetupAdapter } from "../../extensions/feishu/src/setup-core.js";
 export { buildAgentMediaPayload } from "./agent-media-payload.js";
 export { readJsonFileWithFallback } from "./json-store.js";
-export { createChannelPairingController } from "./channel-pairing.js";
+export { createScopedPairingAccess } from "./pairing-access.js";
+export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 export { createPersistentDedupe } from "./persistent-dedupe.js";
 export {
   buildBaseChannelStatusSummary,
@@ -80,13 +77,9 @@ export {
 } from "./status-helpers.js";
 export { withTempDownloadPath } from "./temp-path.js";
 export {
-  buildFeishuConversationId,
-  parseFeishuConversationId,
-} from "../../extensions/feishu/src/conversation-id.js";
-export {
-  createWebhookAnomalyTracker,
   createFixedWindowRateLimiter,
+  createWebhookAnomalyTracker,
   WEBHOOK_ANOMALY_COUNTER_DEFAULTS,
   WEBHOOK_RATE_LIMIT_DEFAULTS,
-} from "./webhook-ingress.js";
-export { applyBasicWebhookRequestGuards } from "./webhook-ingress.js";
+} from "./webhook-memory-guards.js";
+export { applyBasicWebhookRequestGuards } from "./webhook-request-guards.js";

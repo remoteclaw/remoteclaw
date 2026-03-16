@@ -4,13 +4,18 @@ import type { RuntimeEnv } from "../../runtime.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
 import type { ChannelId, ChannelPlugin } from "./types.js";
 
+export type ChannelOnboardingSetupPlugin = Pick<
+  ChannelPlugin,
+  "id" | "meta" | "capabilities" | "config" | "setup" | "setupWizard"
+>;
+
 export type SetupChannelsOptions = {
   allowDisable?: boolean;
   allowSignalInstall?: boolean;
   onSelection?: (selection: ChannelId[]) => void;
   accountIds?: Partial<Record<ChannelId, string>>;
   onAccountId?: (channel: ChannelId, accountId: string) => void;
-  onResolvedPlugin?: (channel: ChannelId, plugin: ChannelPlugin) => void;
+  onResolvedPlugin?: (channel: ChannelId, plugin: ChannelOnboardingSetupPlugin) => void;
   promptAccountIds?: boolean;
   whatsappAccountId?: string;
   promptWhatsAppAccountId?: boolean;
@@ -21,6 +26,7 @@ export type SetupChannelsOptions = {
   skipConfirm?: boolean;
   quickstartDefaults?: boolean;
   initialSelection?: ChannelId[];
+  secretInputMode?: "plaintext" | "ref";
 };
 
 export type PromptAccountIdParams = {
@@ -34,7 +40,7 @@ export type PromptAccountIdParams = {
 
 export type PromptAccountId = (params: PromptAccountIdParams) => Promise<string>;
 
-export type ChannelOnboardingStatus = {
+export type ChannelSetupStatus = {
   channel: ChannelId;
   configured: boolean;
   statusLines: string[];
@@ -42,13 +48,13 @@ export type ChannelOnboardingStatus = {
   quickstartScore?: number;
 };
 
-export type ChannelOnboardingStatusContext = {
+export type ChannelSetupStatusContext = {
   cfg: RemoteClawConfig;
   options?: SetupChannelsOptions;
   accountOverrides: Partial<Record<ChannelId, string>>;
 };
 
-export type ChannelOnboardingConfigureContext = {
+export type ChannelSetupConfigureContext = {
   cfg: RemoteClawConfig;
   runtime: RuntimeEnv;
   prompter: WizardPrompter;
@@ -58,19 +64,19 @@ export type ChannelOnboardingConfigureContext = {
   forceAllowFrom: boolean;
 };
 
-export type ChannelOnboardingResult = {
+export type ChannelSetupResult = {
   cfg: RemoteClawConfig;
   accountId?: string;
 };
 
-export type ChannelOnboardingConfiguredResult = ChannelOnboardingResult | "skip";
+export type ChannelSetupConfiguredResult = ChannelSetupResult | "skip";
 
-export type ChannelOnboardingInteractiveContext = ChannelOnboardingConfigureContext & {
+export type ChannelSetupInteractiveContext = ChannelSetupConfigureContext & {
   configured: boolean;
   label: string;
 };
 
-export type ChannelOnboardingDmPolicy = {
+export type ChannelSetupDmPolicy = {
   label: string;
   channel: ChannelId;
   policyKey: string;
@@ -84,23 +90,17 @@ export type ChannelOnboardingDmPolicy = {
   }) => Promise<RemoteClawConfig>;
 };
 
-<<<<<<<< HEAD:src/channels/plugins/onboarding-types.ts
-export type ChannelOnboardingAdapter = {
-|||||||| parent of 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-flow-types.ts
 export type ChannelSetupFlowAdapter = {
-========
-export type ChannelSetupWizardAdapter = {
->>>>>>>> 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-wizard-types.ts
   channel: ChannelId;
-  getStatus: (ctx: ChannelOnboardingStatusContext) => Promise<ChannelOnboardingStatus>;
-  configure: (ctx: ChannelOnboardingConfigureContext) => Promise<ChannelOnboardingResult>;
+  getStatus: (ctx: ChannelSetupStatusContext) => Promise<ChannelSetupStatus>;
+  configure: (ctx: ChannelSetupConfigureContext) => Promise<ChannelSetupResult>;
   configureInteractive?: (
-    ctx: ChannelOnboardingInteractiveContext,
-  ) => Promise<ChannelOnboardingConfiguredResult>;
+    ctx: ChannelSetupInteractiveContext,
+  ) => Promise<ChannelSetupConfiguredResult>;
   configureWhenConfigured?: (
-    ctx: ChannelOnboardingInteractiveContext,
-  ) => Promise<ChannelOnboardingConfiguredResult>;
-  dmPolicy?: ChannelOnboardingDmPolicy;
+    ctx: ChannelSetupInteractiveContext,
+  ) => Promise<ChannelSetupConfiguredResult>;
+  dmPolicy?: ChannelSetupDmPolicy;
   onAccountRecorded?: (accountId: string, options?: SetupChannelsOptions) => void;
   disable?: (cfg: RemoteClawConfig) => RemoteClawConfig;
 };

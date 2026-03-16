@@ -39,6 +39,9 @@ import {
   type ResolvedTelegramAccount,
   type TelegramProbe,
 } from "remoteclaw/plugin-sdk/telegram";
+import { auditTelegramGroupMembership, collectTelegramUnmentionedGroupIds } from "./audit.js";
+import { monitorTelegramProvider } from "./monitor.js";
+import { probeTelegram } from "./probe.js";
 import { getTelegramRuntime } from "./runtime.js";
 
 const meta = getChatChannelMeta("telegram");
@@ -386,7 +389,7 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
     collectStatusIssues: collectTelegramStatusIssues,
     buildChannelSummary: ({ snapshot }) => buildTokenChannelStatusSummary(snapshot),
     probeAccount: async ({ account, timeoutMs }) =>
-      getTelegramRuntime().channel.telegram.probeTelegram(account.token, timeoutMs, {
+      probeTelegram(account.token, timeoutMs, {
         accountId: account.accountId,
         proxyUrl: account.config.proxy,
         network: account.config.network,
@@ -397,7 +400,7 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
         cfg.channels?.telegram?.accounts?.[account.accountId]?.groups ??
         cfg.channels?.telegram?.groups;
       const { groupIds, unresolvedGroups, hasWildcardUnmentionedGroups } =
-        getTelegramRuntime().channel.telegram.collectUnmentionedGroupIds(groups);
+        collectTelegramUnmentionedGroupIds(groups);
       if (!groupIds.length && unresolvedGroups === 0 && !hasWildcardUnmentionedGroups) {
         return undefined;
       }
@@ -412,7 +415,7 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
           elapsedMs: 0,
         };
       }
-      const audit = await getTelegramRuntime().channel.telegram.auditGroupMembership({
+      const audit = await auditTelegramGroupMembership({
         token: account.token,
         botId,
         groupIds,
@@ -480,7 +483,7 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
       const token = (account.token ?? "").trim();
       let telegramBotLabel = "";
       try {
-        const probe = await getTelegramRuntime().channel.telegram.probeTelegram(token, 2500, {
+        const probe = await probeTelegram(token, 2500, {
           accountId: account.accountId,
           proxyUrl: account.config.proxy,
           network: account.config.network,
@@ -496,7 +499,7 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
         }
       }
       ctx.log?.info(`[${account.accountId}] starting provider${telegramBotLabel}`);
-      return getTelegramRuntime().channel.telegram.monitorTelegramProvider({
+      return monitorTelegramProvider({
         token,
         accountId: account.accountId,
         config: ctx.cfg,

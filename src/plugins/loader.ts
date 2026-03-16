@@ -47,9 +47,10 @@ const defaultLogger = () => createSubsystemLogger("plugins");
 const resolvePluginSdkAliasFile = (params: {
   srcFile: string;
   distFile: string;
+  modulePath?: string;
 }): string | null => {
   try {
-    const modulePath = fileURLToPath(import.meta.url);
+    const modulePath = params.modulePath ?? fileURLToPath(import.meta.url);
     const isProduction = process.env.NODE_ENV === "production";
     const isTest = process.env.VITEST || process.env.NODE_ENV === "test";
     let cursor = path.dirname(modulePath);
@@ -664,3 +665,6 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   initializeGlobalHookRunner(registry);
   return registry;
 }
+
+/** @internal Exposed for unit tests only. */
+export const __testing = { resolvePluginSdkAliasFile };

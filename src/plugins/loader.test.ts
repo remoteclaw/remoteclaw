@@ -25,7 +25,7 @@ async function importFreshPluginTestModules() {
   };
 }
 
-const { loadRemoteClawPlugins } = await importFreshPluginTestModules();
+const { loadRemoteClawPlugins, __testing } = await importFreshPluginTestModules();
 
 type TempPlugin = { dir: string; file: string; id: string };
 

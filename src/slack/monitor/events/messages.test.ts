@@ -90,18 +90,18 @@ describe("registerSlackMessageEvents", () => {
   it.each([
     {
       name: "enqueues message_changed system events when dmPolicy is open",
-      input: { overrides: { dmPolicy: "open" }, event: makeChangedEvent() },
+      input: { overrides: { dmPolicy: "open" as const }, event: makeChangedEvent() },
       calls: 1,
     },
     {
       name: "blocks message_changed system events when dmPolicy is disabled",
-      input: { overrides: { dmPolicy: "disabled" }, event: makeChangedEvent() },
+      input: { overrides: { dmPolicy: "disabled" as const }, event: makeChangedEvent() },
       calls: 0,
     },
     {
       name: "blocks message_changed system events for unauthorized senders in allowlist mode",
       input: {
-        overrides: { dmPolicy: "allowlist", allowFrom: ["U2"] },
+        overrides: { dmPolicy: "allowlist" as const, allowFrom: ["U2"] },
         event: makeChangedEvent({ user: "U1" }),
       },
       calls: 0,
@@ -110,8 +110,8 @@ describe("registerSlackMessageEvents", () => {
       name: "blocks message_deleted system events for users outside channel users allowlist",
       input: {
         overrides: {
-          dmPolicy: "open",
-          channelType: "channel",
+          dmPolicy: "open" as const,
+          channelType: "channel" as const,
           channelUsers: ["U_OWNER"],
         },
         event: makeDeletedEvent({ channel: "C1", user: "U_ATTACKER" }),
@@ -121,7 +121,7 @@ describe("registerSlackMessageEvents", () => {
     {
       name: "blocks thread_broadcast system events without an authenticated sender",
       input: {
-        overrides: { dmPolicy: "open" },
+        overrides: { dmPolicy: "open" as const },
         event: {
           ...makeThreadBroadcastEvent(),
           user: undefined,

@@ -39,6 +39,7 @@ export type PluginLoadOptions = {
   coreGatewayHandlers?: Record<string, GatewayRequestHandler>;
   cache?: boolean;
   mode?: "full" | "validate";
+  preferSetupRuntimeForChannelPlugins?: boolean;
 };
 
 const registryCache = new Map<string, PluginRegistry>();
@@ -224,9 +225,11 @@ export const __testing = {
 function buildCacheKey(params: {
   workspaceDir?: string;
   plugins: NormalizedPluginsConfig;
+  preferSetupRuntimeForChannelPlugins?: boolean;
 }): string {
   const workspaceKey = params.workspaceDir ? resolveUserPath(params.workspaceDir) : "";
-  return `${workspaceKey}::${JSON.stringify(params.plugins)}`;
+  const channelMode = params.preferSetupRuntimeForChannelPlugins === true ? "prefer-setup" : "full";
+  return `${workspaceKey}::${JSON.stringify(params.plugins)}::${channelMode}`;
 }
 
 function validatePluginConfig(params: {
@@ -510,9 +513,11 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   const logger = options.logger ?? defaultLogger();
   const validateOnly = options.mode === "validate";
   const normalized = normalizePluginsConfig(cfg.plugins);
+  const preferSetupRuntimeForChannelPlugins = options.preferSetupRuntimeForChannelPlugins === true;
   const cacheKey = buildCacheKey({
     workspaceDir: options.workspaceDir,
     plugins: normalized,
+    preferSetupRuntimeForChannelPlugins,
   });
   const cacheEnabled = options.cache !== false;
   if (cacheEnabled) {

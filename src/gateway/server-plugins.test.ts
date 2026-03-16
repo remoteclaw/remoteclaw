@@ -58,4 +58,61 @@ describe("loadGatewayPlugins", () => {
     );
     expect(log.warn).not.toHaveBeenCalled();
   });
+
+  test("can prefer setup-runtime channel plugins during startup loads", () => {
+    loadRemoteClawPlugins.mockReturnValue(createRegistry([]));
+
+    const log = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+    };
+
+    loadGatewayPlugins({
+      cfg: {},
+      workspaceDir: "/tmp",
+      log,
+      coreGatewayHandlers: {},
+      baseMethods: [],
+      preferSetupRuntimeForChannelPlugins: true,
+    });
+
+    expect(loadRemoteClawPlugins).toHaveBeenCalledWith(
+      expect.objectContaining({
+        preferSetupRuntimeForChannelPlugins: true,
+      }),
+    );
+  });
+
+  test("can suppress duplicate diagnostics when reloading full runtime plugins", () => {
+    const diagnostics: PluginDiagnostic[] = [
+      {
+        level: "error",
+        pluginId: "telegram",
+        source: "/tmp/telegram/index.ts",
+        message: "failed to load plugin: boom",
+      },
+    ];
+    loadRemoteClawPlugins.mockReturnValue(createRegistry(diagnostics));
+
+    const log = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+    };
+
+    loadGatewayPlugins({
+      cfg: {},
+      workspaceDir: "/tmp",
+      log,
+      coreGatewayHandlers: {},
+      baseMethods: [],
+      logDiagnostics: false,
+    });
+
+    expect(log.error).not.toHaveBeenCalled();
+    expect(log.info).not.toHaveBeenCalled();
+  });
 });

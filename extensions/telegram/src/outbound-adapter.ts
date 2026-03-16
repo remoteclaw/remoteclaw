@@ -11,6 +11,7 @@ import {
 } from "remoteclaw/plugin-sdk/reply-payload";
 import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { TelegramInlineButtons } from "./button-types.js";
+import { resolveTelegramInlineButtons } from "./button-types.js";
 import { markdownToTelegramHtmlChunks } from "./format.js";
 import { parseTelegramReplyToMessageId, parseTelegramThreadId } from "./outbound-params.js";
 import { sendMessageTelegram } from "./send.js";
@@ -63,6 +64,10 @@ export async function sendTelegramPayloadMessages(params: {
     typeof telegramData?.quoteText === "string" ? telegramData.quoteText : undefined;
   const text = params.payload.text ?? "";
   const mediaUrls = resolvePayloadMediaUrls(params.payload);
+  const buttons = resolveTelegramInlineButtons({
+    buttons: telegramData?.buttons,
+    interactive: params.payload.interactive,
+  });
   const payloadOpts = {
     ...params.baseOpts,
     quoteText,

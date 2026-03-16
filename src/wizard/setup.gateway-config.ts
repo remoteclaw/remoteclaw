@@ -1,4 +1,8 @@
 import {
+  promptSecretRefForSetup,
+  resolveSecretInputModeForEnvSelection,
+} from "../commands/auth-choice.apply-helpers.js";
+import {
   normalizeGatewayTokenInput,
   randomToken,
   validateGatewayPasswordInput,
@@ -16,12 +20,13 @@ import { resolveSecretInputModeForEnvSelection } from "../plugins/provider-auth-
 import { promptSecretRefForSetup } from "../plugins/provider-auth-ref.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { validateIPv4AddressInput } from "../shared/net/ipv4.js";
+import type { WizardPrompter } from "./prompts.js";
+import { resolveSetupSecretInputString } from "./setup.secret-input.js";
 import type {
   GatewayWizardSettings,
   QuickstartGatewayDefaults,
   WizardFlow,
-} from "./onboarding.types.js";
-import type { WizardPrompter } from "./prompts.js";
+} from "./setup.types.js";
 
 type ConfigureGatewayOptions = {
   flow: WizardFlow;
@@ -39,22 +44,7 @@ type ConfigureGatewayResult = {
   settings: GatewayWizardSettings;
 };
 
-function buildDefaultControlUiAllowedOrigins(params: {
-  port: number;
-  bind: GatewayWizardSettings["bind"];
-  customBindHost?: string;
-}): string[] {
-  const origins = new Set<string>([
-    `http://localhost:${params.port}`,
-    `http://127.0.0.1:${params.port}`,
-  ]);
-  if (params.bind === "custom" && params.customBindHost) {
-    origins.add(`http://${params.customBindHost}:${params.port}`);
-  }
-  return [...origins];
-}
-
-export async function configureGatewayForOnboarding(
+export async function configureGatewayForSetup(
   opts: ConfigureGatewayOptions,
 ): Promise<ConfigureGatewayResult> {
   const { flow, localPort, quickstartGateway, prompter } = opts;
@@ -161,7 +151,51 @@ export async function configureGatewayForOnboarding(
 
   let gatewayToken: string | undefined;
   if (authMode === "token") {
-    if (flow === "quickstart") {
+    const quickstartTokenString = normalizeSecretInputString(quickstartGateway.token);
+    const quickstartTokenRef = resolveSecretInputRef({
+      value: quickstartGateway.token,
+      defaults: nextConfig.secrets?.defaults,
+    }).ref;
+    const tokenMode =
+      flow === "quickstart" && opts.secretInputMode !== "ref" // pragma: allowlist secret
+        ? quickstartTokenRef
+          ? "ref"
+          : "plaintext"
+        : await resolveSecretInputModeForEnvSelection({
+            prompter,
+            explicitMode: opts.secretInputMode,
+            copy: {
+              modeMessage: "How do you want to provide the gateway token?",
+              plaintextLabel: "Generate/store plaintext token",
+              plaintextHint: "Default",
+              refLabel: "Use SecretRef",
+              refHint: "Store a reference instead of plaintext",
+            },
+          });
+    if (tokenMode === "ref") {
+      if (flow === "quickstart" && quickstartTokenRef) {
+        gatewayTokenInput = quickstartTokenRef;
+        gatewayToken = await resolveSetupSecretInputString({
+          config: nextConfig,
+          value: quickstartTokenRef,
+          path: "gateway.auth.token",
+          env: process.env,
+        });
+      } else {
+        const resolved = await promptSecretRefForSetup({
+          provider: "gateway-auth-token",
+          config: nextConfig,
+          prompter,
+          preferredEnvVar: "OPENCLAW_GATEWAY_TOKEN",
+          copy: {
+            sourceMessage: "Where is this gateway token stored?",
+            envVarPlaceholder: "OPENCLAW_GATEWAY_TOKEN",
+          },
+        });
+        gatewayTokenInput = resolved.ref;
+        gatewayToken = resolved.resolvedValue;
+      }
+    } else if (flow === "quickstart") {
       gatewayToken =
         (quickstartGateway.token ??
           normalizeGatewayTokenInput(process.env.REMOTECLAW_GATEWAY_TOKEN)) ||
@@ -180,10 +214,33 @@ export async function configureGatewayForOnboarding(
   }
 
   if (authMode === "password") {
-    const password =
-      flow === "quickstart" && quickstartGateway.password
-        ? quickstartGateway.password
-        : await prompter.text({
+    let password: SecretInput | undefined =
+      flow === "quickstart" && quickstartGateway.password ? quickstartGateway.password : undefined;
+    if (!password) {
+      const selectedMode = await resolveSecretInputModeForEnvSelection({
+        prompter,
+        explicitMode: opts.secretInputMode,
+        copy: {
+          modeMessage: "How do you want to provide the gateway password?",
+          plaintextLabel: "Enter password now",
+          plaintextHint: "Stores the password directly in OpenClaw config",
+        },
+      });
+      if (selectedMode === "ref") {
+        const resolved = await promptSecretRefForSetup({
+          provider: "gateway-auth-password",
+          config: nextConfig,
+          prompter,
+          preferredEnvVar: "OPENCLAW_GATEWAY_PASSWORD",
+          copy: {
+            sourceMessage: "Where is this gateway password stored?",
+            envVarPlaceholder: "OPENCLAW_GATEWAY_PASSWORD",
+          },
+        });
+        password = resolved.ref;
+      } else {
+        password = String(
+          (await prompter.text({
             message: "Gateway password",
             validate: validateGatewayPasswordInput,
           });

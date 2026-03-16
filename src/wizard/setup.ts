@@ -18,9 +18,10 @@ import {
 import { coerceSecretRef } from "../config/types.secrets.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
-import { resolveUserPath, shortenHomePath } from "../utils.js";
-import type { QuickstartGatewayDefaults, WizardFlow } from "./onboarding.types.js";
+import { resolveUserPath } from "../utils.js";
 import { WizardCancelledError, type WizardPrompter } from "./prompts.js";
+import { resolveSetupSecretInputString } from "./setup.secret-input.js";
+import type { QuickstartGatewayDefaults, WizardFlow } from "./setup.types.js";
 
 // Skip guidance messages shown when user chooses "Skip" for credential.
 // Skipping sets `agents.defaults.auth: false` — the CLI handles its own authentication.
@@ -296,7 +297,7 @@ async function requireRiskAcknowledgement(params: {
   }
 }
 
-export async function runOnboardingWizard(
+export async function runSetupWizard(
   opts: OnboardOptions,
   runtime: RuntimeEnv = defaultRuntime,
   prompter: WizardPrompter,
@@ -346,7 +347,7 @@ export async function runOnboardingWizard(
       );
     }
     await prompter.outro(
-      `Config invalid. Run \`${formatCliCommand("remoteclaw doctor")}\` to repair it, then re-run onboarding.`,
+      `Config invalid. Run \`${formatCliCommand("openclaw doctor")}\` to repair it, then re-run setup.`,
     );
     runtime.exit(1);
     return;
@@ -539,20 +540,74 @@ export async function runOnboardingWizard(
 
   const localPort = resolveGatewayPort(baseConfig);
   const localUrl = `ws://127.0.0.1:${localPort}`;
-  const rawPassword = baseConfig.gateway?.auth?.password;
-  const passwordRef = coerceSecretRef(rawPassword);
-  const resolvedPassword =
-    typeof rawPassword === "string"
-      ? rawPassword
-      : passwordRef?.source === "env"
-        ? process.env[passwordRef.id]
-        : undefined;
+  let localGatewayToken = process.env.OPENCLAW_GATEWAY_TOKEN ?? process.env.CLAWDBOT_GATEWAY_TOKEN;
+  try {
+    const resolvedGatewayToken = await resolveSetupSecretInputString({
+      config: baseConfig,
+      value: baseConfig.gateway?.auth?.token,
+      path: "gateway.auth.token",
+      env: process.env,
+    });
+    if (resolvedGatewayToken) {
+      localGatewayToken = resolvedGatewayToken;
+    }
+  } catch (error) {
+    await prompter.note(
+      [
+        "Could not resolve gateway.auth.token SecretRef for onboarding probe.",
+        error instanceof Error ? error.message : String(error),
+      ].join("\n"),
+      "Gateway auth",
+    );
+  }
+  let localGatewayPassword =
+    process.env.OPENCLAW_GATEWAY_PASSWORD ?? process.env.CLAWDBOT_GATEWAY_PASSWORD;
+  try {
+    const resolvedGatewayPassword = await resolveSetupSecretInputString({
+      config: baseConfig,
+      value: baseConfig.gateway?.auth?.password,
+      path: "gateway.auth.password",
+      env: process.env,
+    });
+    if (resolvedGatewayPassword) {
+      localGatewayPassword = resolvedGatewayPassword;
+    }
+  } catch (error) {
+    await prompter.note(
+      [
+        "Could not resolve gateway.auth.password SecretRef for onboarding probe.",
+        error instanceof Error ? error.message : String(error),
+      ].join("\n"),
+      "Gateway auth",
+    );
+  }
+
   const localProbe = await onboardHelpers.probeGatewayReachable({
     url: localUrl,
     token: baseConfig.gateway?.auth?.token ?? process.env.REMOTECLAW_GATEWAY_TOKEN,
     password: resolvedPassword ?? process.env.REMOTECLAW_GATEWAY_PASSWORD,
   });
   const remoteUrl = baseConfig.gateway?.remote?.url?.trim() ?? "";
+  let remoteGatewayToken = normalizeSecretInputString(baseConfig.gateway?.remote?.token);
+  try {
+    const resolvedRemoteGatewayToken = await resolveSetupSecretInputString({
+      config: baseConfig,
+      value: baseConfig.gateway?.remote?.token,
+      path: "gateway.remote.token",
+      env: process.env,
+    });
+    if (resolvedRemoteGatewayToken) {
+      remoteGatewayToken = resolvedRemoteGatewayToken;
+    }
+  } catch (error) {
+    await prompter.note(
+      [
+        "Could not resolve gateway.remote.token SecretRef for onboarding probe.",
+        error instanceof Error ? error.message : String(error),
+      ].join("\n"),
+      "Gateway auth",
+    );
+  }
   const remoteProbe = remoteUrl
     ? await onboardHelpers.probeGatewayReachable({
         url: remoteUrl,
@@ -600,10 +655,37 @@ export async function runOnboardingWizard(
   const existingWorkspaceDirs = collectWorkspaceDirs(baseConfig);
   const workspaceInput =
     opts.workspace ??
-    existingWorkspaceDirs[0] ??
-    (await prompter.text({
-      message: "Workspace directory",
-      initialValue: "~/remoteclaw-workspace",
+    (flow === "quickstart"
+      ? (baseConfig.agents?.defaults?.workspace ?? onboardHelpers.DEFAULT_WORKSPACE)
+      : await prompter.text({
+          message: "Workspace directory",
+          initialValue: baseConfig.agents?.defaults?.workspace ?? onboardHelpers.DEFAULT_WORKSPACE,
+        }));
+
+  const workspaceDir = resolveUserPath(workspaceInput.trim() || onboardHelpers.DEFAULT_WORKSPACE);
+
+  const { applyLocalSetupWorkspaceConfig } = await import("../commands/onboard-config.js");
+  let nextConfig: RemoteClawConfig = applyLocalSetupWorkspaceConfig(baseConfig, workspaceDir);
+
+  const { ensureAuthProfileStore } = await import("../agents/auth-profiles.runtime.js");
+  const { promptAuthChoiceGrouped } = await import("../commands/auth-choice-prompt.js");
+  const { promptCustomApiConfig } = await import("../commands/onboard-custom.js");
+  const { applyAuthChoice, resolvePreferredProviderForAuthChoice, warnIfModelConfigLooksOff } =
+    await import("../commands/auth-choice.js");
+  const { applyPrimaryModel, promptDefaultModel } = await import("../commands/model-picker.js");
+
+  const authStore = ensureAuthProfileStore(undefined, {
+    allowKeychainPrompt: false,
+  });
+  const authChoiceFromPrompt = opts.authChoice === undefined;
+  const authChoice =
+    opts.authChoice ??
+    (await promptAuthChoiceGrouped({
+      prompter,
+      store: authStore,
+      includeSkip: true,
+      config: nextConfig,
+      workspaceDir,
     }));
 
   const trimmedWorkspace = workspaceInput.trim();
@@ -656,8 +738,8 @@ export async function runOnboardingWizard(
     opts,
   });
 
-  const { configureGatewayForOnboarding } = await import("./onboarding.gateway-config.js");
-  const gateway = await configureGatewayForOnboarding({
+  const { configureGatewayForSetup } = await import("./setup.gateway-config.js");
+  const gateway = await configureGatewayForSetup({
     flow,
     baseConfig,
     nextConfig,
@@ -708,8 +790,8 @@ export async function runOnboardingWizard(
   nextConfig = onboardHelpers.applyWizardMetadata(nextConfig, { command: "onboard", mode });
   await writeConfigFile(nextConfig);
 
-  const { finalizeOnboardingWizard } = await import("./onboarding.finalize.js");
-  const { launchedTui } = await finalizeOnboardingWizard({
+  const { finalizeSetupWizard } = await import("./setup.finalize.js");
+  const { launchedTui } = await finalizeSetupWizard({
     flow,
     opts,
     baseConfig,

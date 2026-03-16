@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createPluginSetupWizardStatus } from "../../../test/helpers/extensions/setup-wizard.js";
-import type { RemoteClawConfig } from "../runtime-api.js";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { zaloPlugin } from "./channel.js";
 
-const zaloGetStatus = createPluginSetupWizardStatus(zaloPlugin);
+const zaloConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+  plugin: zaloPlugin,
+  wizard: zaloPlugin.setupWizard!,
+});
 
 describe("zalo setup wizard status", () => {
   it("treats SecretRef botToken as configured", async () => {

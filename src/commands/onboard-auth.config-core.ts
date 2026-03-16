@@ -155,8 +155,13 @@ export function applyVeniceProviderConfig(cfg: RemoteClawConfig): RemoteClawConf
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
+/**
+ * Apply Venice provider configuration AND set Venice as the default model.
+ * Use this when Venice is the primary provider choice during setup.
+ */
 export function applyVeniceConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  return applyVeniceProviderConfig(cfg);
+  const next = applyVeniceProviderConfig(cfg);
+  return applyAgentDefaultModelPrimary(next, VENICE_DEFAULT_MODEL_REF);
 }
 
 /**
@@ -173,8 +178,13 @@ export function applyTogetherProviderConfig(cfg: RemoteClawConfig): RemoteClawCo
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
+/**
+ * Apply Together provider configuration AND set Together as the default model.
+ * Use this when Together is the primary provider choice during setup.
+ */
 export function applyTogetherConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  return applyTogetherProviderConfig(cfg);
+  const next = applyTogetherProviderConfig(cfg);
+  return applyAgentDefaultModelPrimary(next, TOGETHER_DEFAULT_MODEL_REF);
 }
 
 /**
@@ -238,8 +248,13 @@ export function applyKilocodeProviderConfig(cfg: RemoteClawConfig): RemoteClawCo
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });
 }
 
+/**
+ * Apply Kilo Gateway provider configuration AND set Kilo Gateway as the default model.
+ * Use this when Kilo Gateway is the primary provider choice during setup.
+ */
 export function applyKilocodeConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  return applyKilocodeProviderConfig(cfg);
+  const next = applyKilocodeProviderConfig(cfg);
+  return applyAgentDefaultModelPrimary(next, KILOCODE_DEFAULT_MODEL_REF);
 }
 
 export function applyAuthProfileConfig(

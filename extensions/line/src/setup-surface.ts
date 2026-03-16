@@ -5,10 +5,12 @@ import {
   setSetupChannelEnabled,
   setTopLevelChannelDmPolicyWithAllowFrom,
   splitSetupEntries,
-  type ChannelSetupDmPolicy,
-  type ChannelSetupWizard,
-} from "remoteclaw/plugin-sdk/line-core";
-import { createAllowFromSection, createTopLevelChannelDmPolicy } from "remoteclaw/plugin-sdk/setup";
+} from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { resolveLineAccount } from "../../../src/line/accounts.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   isLineConfigured,
   listLineAccountIds,

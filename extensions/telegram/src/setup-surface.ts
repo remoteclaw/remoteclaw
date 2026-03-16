@@ -8,11 +8,12 @@ import {
   setChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
   splitSetupEntries,
-} from "../../../src/plugin-sdk-internal/setup.js";
-import type {
-  ChannelSetupDmPolicy,
-  ChannelSetupWizard,
-} from "../../../src/plugin-sdk-internal/setup.js";
+} from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import { type ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+import { type ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 import { inspectTelegramAccount } from "./account-inspect.js";
 import { listTelegramAccountIds, resolveTelegramAccount } from "./accounts.js";
 import {

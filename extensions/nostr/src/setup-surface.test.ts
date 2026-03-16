@@ -1,15 +1,34 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/nostr";
 import { describe, expect, it, vi } from "vitest";
-import {
-  createPluginSetupWizardAdapter,
-  createTestWizardPrompter,
-  runSetupWizardConfigure,
-  type WizardPrompter,
-} from "../../../test/helpers/extensions/setup-wizard.js";
-import type { RemoteClawConfig } from "../runtime-api.js";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 import { nostrPlugin } from "./channel.js";
 
-const nostrConfigureAdapter = createPluginSetupWizardAdapter(nostrPlugin);
+function createPrompter(overrides: Partial<WizardPrompter>): WizardPrompter {
+  return {
+    intro: vi.fn(async () => {}),
+    outro: vi.fn(async () => {}),
+    note: vi.fn(async () => {}),
+    select: vi.fn(async ({ options }: { options: Array<{ value: string }> }) => {
+      const first = options[0];
+      if (!first) {
+        throw new Error("no options");
+      }
+      return first.value;
+    }) as WizardPrompter["select"],
+    multiselect: vi.fn(async () => []),
+    text: vi.fn(async () => "") as WizardPrompter["text"],
+    confirm: vi.fn(async () => false),
+    progress: vi.fn(() => ({ update: vi.fn(), stop: vi.fn() })),
+    ...overrides,
+  };
+}
+
+const nostrConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+  plugin: nostrPlugin,
+  wizard: nostrPlugin.setupWizard!,
+});
 
 describe("nostr setup wizard", () => {
   it("configures a private key and relay URLs", async () => {

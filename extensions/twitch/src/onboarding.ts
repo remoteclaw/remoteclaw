@@ -2,14 +2,12 @@
  * Twitch onboarding adapter for CLI setup wizard.
  */
 
-import {
-  formatDocsLink,
-  type ChannelSetupAdapter,
-  type ChannelSetupDmPolicy,
-  type ChannelSetupWizard,
-  type RemoteClawConfig,
-  type WizardPrompter,
-} from "remoteclaw/plugin-sdk/setup";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
+import type { WizardPrompter } from "../../../src/wizard/prompts.js";
 import { DEFAULT_ACCOUNT_ID, getAccountConfig } from "./config.js";
 import type { TwitchAccountConfig, TwitchRole } from "./types.js";
 import { isAccountConfigured } from "./utils/twitch.js";

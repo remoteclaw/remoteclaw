@@ -1,15 +1,35 @@
 import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/tlon";
 import { describe, expect, it, vi } from "vitest";
-import {
-  createPluginSetupWizardAdapter,
-  createTestWizardPrompter,
-  runSetupWizardConfigure,
-  type WizardPrompter,
-} from "../../../test/helpers/extensions/setup-wizard.js";
-import type { RemoteClawConfig } from "../api.js";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 import { tlonPlugin } from "./channel.js";
 
-const tlonConfigureAdapter = createPluginSetupWizardAdapter(tlonPlugin);
+const selectFirstOption = async <T>(params: { options: Array<{ value: T }> }): Promise<T> => {
+  const first = params.options[0];
+  if (!first) {
+    throw new Error("no options");
+  }
+  return first.value;
+};
+
+function createPrompter(overrides: Partial<WizardPrompter>): WizardPrompter {
+  return {
+    intro: vi.fn(async () => {}),
+    outro: vi.fn(async () => {}),
+    note: vi.fn(async () => {}),
+    select: selectFirstOption as WizardPrompter["select"],
+    multiselect: vi.fn(async () => []),
+    text: vi.fn(async () => "") as WizardPrompter["text"],
+    confirm: vi.fn(async () => false),
+    progress: vi.fn(() => ({ update: vi.fn(), stop: vi.fn() })),
+    ...overrides,
+  };
+}
+
+const tlonConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+  plugin: tlonPlugin,
+  wizard: tlonPlugin.setupWizard!,
+});
 
 describe("tlon setup wizard", () => {
   it("configures ship, auth, and discovery settings", async () => {

@@ -4,11 +4,13 @@ import {
   createAllowFromSection,
   promptParsedAllowFromForAccount,
   setSetupChannelEnabled,
-} from "remoteclaw/plugin-sdk/setup";
-import type { ChannelSetupDmPolicy } from "remoteclaw/plugin-sdk/setup";
-import type { ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
-import { formatDocsLink } from "remoteclaw/plugin-sdk/setup";
-import type { WizardPrompter } from "remoteclaw/plugin-sdk/setup";
+} from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import type { DmPolicy } from "../../../src/config/types.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
+import type { WizardPrompter } from "../../../src/wizard/prompts.js";
 import { listIrcAccountIds, resolveDefaultIrcAccountId, resolveIrcAccount } from "./accounts.js";
 import {
   isChannelTarget,

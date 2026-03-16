@@ -5,11 +5,11 @@ import type { ToolProfileId } from "../config/types.tools.js";
 export const ONBOARDING_DEFAULT_DM_SCOPE: DmScope = "per-channel-peer";
 export const ONBOARDING_DEFAULT_TOOLS_PROFILE: ToolProfileId = "coding";
 
-export function applyOnboardingLocalWorkspaceConfig(
+export function applyLocalSetupWorkspaceConfig(
   baseConfig: RemoteClawConfig,
-  workspace?: string,
+  workspaceDir: string,
 ): RemoteClawConfig {
-  const result: RemoteClawConfig = {
+  return {
     ...baseConfig,
     gateway: {
       ...baseConfig.gateway,

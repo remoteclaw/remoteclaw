@@ -1,11 +1,22 @@
-import type { ChannelSetupInput } from "remoteclaw/plugin-sdk/channel-setup";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
-import { hasConfiguredSecretInput } from "remoteclaw/plugin-sdk/secret-input";
-import { setSetupChannelEnabled } from "remoteclaw/plugin-sdk/setup";
-import { type ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
-import { formatDocsLink } from "remoteclaw/plugin-sdk/setup";
-import { listNextcloudTalkAccountIds, resolveNextcloudTalkAccount } from "./accounts.js";
+import {
+  mergeAllowFromEntries,
+  resolveSetupAccountId,
+  setSetupChannelEnabled,
+  setTopLevelChannelDmPolicyWithAllowFrom,
+} from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+import { type ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import type { ChannelSetupInput } from "../../../src/channels/plugins/types.core.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
+import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+import {
+  listNextcloudTalkAccountIds,
+  resolveDefaultNextcloudTalkAccountId,
+  resolveNextcloudTalkAccount,
+} from "./accounts.js";
 import {
   clearNextcloudTalkAccountFields,
   nextcloudTalkSetupAdapter,

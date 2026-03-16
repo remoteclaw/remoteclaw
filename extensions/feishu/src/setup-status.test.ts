@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createPluginSetupWizardStatus } from "../../../test/helpers/extensions/setup-wizard.js";
-import type { RemoteClawConfig } from "../runtime-api.js";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { feishuPlugin } from "./channel.js";
 
-const feishuGetStatus = createPluginSetupWizardStatus(feishuPlugin);
+const feishuConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+  plugin: feishuPlugin,
+  wizard: feishuPlugin.setupWizard!,
+});
 
 describe("feishu setup wizard status", () => {
   it("treats SecretRef appSecret as configured when appId is present", async () => {

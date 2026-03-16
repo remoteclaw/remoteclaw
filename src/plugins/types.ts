@@ -124,6 +124,359 @@ export type ProviderAuthMethod = {
   hint?: string;
   kind: ProviderAuthKind;
   run: (ctx: ProviderAuthContext) => Promise<ProviderAuthResult>;
+  runNonInteractive?: (
+    ctx: ProviderAuthMethodNonInteractiveContext,
+  ) => Promise<RemoteClawConfig | null>;
+};
+
+export type ProviderCatalogOrder = "simple" | "profile" | "paired" | "late";
+
+export type ProviderCatalogContext = {
+  config: RemoteClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  env: NodeJS.ProcessEnv;
+  resolveProviderApiKey: (providerId?: string) => {
+    apiKey: string | undefined;
+    discoveryApiKey?: string;
+  };
+};
+
+export type ProviderCatalogResult =
+  | { provider: ModelProviderConfig }
+  | { providers: Record<string, ModelProviderConfig> }
+  | null
+  | undefined;
+
+export type ProviderPluginCatalog = {
+  order?: ProviderCatalogOrder;
+  run: (ctx: ProviderCatalogContext) => Promise<ProviderCatalogResult>;
+};
+
+/**
+ * Fully-resolved runtime model shape used by the embedded runner.
+ *
+ * Catalog hooks publish config-time `models.providers` entries.
+ * Runtime hooks below operate on the final `pi-ai` model object after
+ * discovery/override merging, just before inference runs.
+ */
+export type ProviderRuntimeModel = Model<Api>;
+
+export type ProviderRuntimeProviderConfig = {
+  baseUrl?: string;
+  api?: ModelProviderConfig["api"];
+  models?: ModelProviderConfig["models"];
+  headers?: unknown;
+};
+
+/**
+ * Sync hook for provider-owned model ids that are not present in the local
+ * registry/catalog yet.
+ *
+ * Use this for pass-through providers or provider-specific forward-compat
+ * behavior. The hook should be cheap and side-effect free; async refreshes
+ * belong in `prepareDynamicModel`.
+ */
+export type ProviderResolveDynamicModelContext = {
+  config?: RemoteClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  provider: string;
+  modelId: string;
+  modelRegistry: ModelRegistry;
+  providerConfig?: ProviderRuntimeProviderConfig;
+};
+
+/**
+ * Optional async warm-up for dynamic model resolution.
+ *
+ * Called only from async model resolution paths, before retrying
+ * `resolveDynamicModel`. This is the place to refresh caches or fetch provider
+ * metadata over the network.
+ */
+export type ProviderPrepareDynamicModelContext = ProviderResolveDynamicModelContext;
+
+/**
+ * Last-chance rewrite hook for provider-owned transport normalization.
+ *
+ * Runs after OpenClaw resolves an explicit/discovered/dynamic model and before
+ * the embedded runner uses it. Typical uses: swap API ids, fix base URLs, or
+ * patch provider-specific compat bits.
+ */
+export type ProviderNormalizeResolvedModelContext = {
+  config?: RemoteClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  provider: string;
+  modelId: string;
+  model: ProviderRuntimeModel;
+};
+
+/**
+ * Runtime auth input for providers that need an extra exchange step before
+ * inference. The incoming `apiKey` is the raw credential resolved from auth
+ * profiles/env/config. The returned value should be the actual token/key to use
+ * for the request.
+ */
+export type ProviderPrepareRuntimeAuthContext = {
+  config?: RemoteClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  env: NodeJS.ProcessEnv;
+  provider: string;
+  modelId: string;
+  model: ProviderRuntimeModel;
+  apiKey: string;
+  authMode: string;
+  profileId?: string;
+};
+
+/**
+ * Result of `prepareRuntimeAuth`.
+ *
+ * `apiKey` is required and becomes the runtime credential stored in auth
+ * storage. `baseUrl` is optional and lets providers like GitHub Copilot swap to
+ * an entitlement-specific endpoint at request time. `expiresAt` enables generic
+ * background refresh in long-running turns.
+ */
+export type ProviderPreparedRuntimeAuth = {
+  apiKey: string;
+  baseUrl?: string;
+  expiresAt?: number;
+};
+
+/**
+ * Usage/billing auth input for providers that expose quota/usage endpoints.
+ *
+ * This hook is intentionally separate from `prepareRuntimeAuth`: usage
+ * snapshots often need a different credential source than live inference
+ * requests, and they run outside the embedded runner.
+ *
+ * The helper methods cover the common OpenClaw auth resolution paths:
+ *
+ * - `resolveApiKeyFromConfigAndStore`: env/config/plain token/api_key profiles
+ * - `resolveOAuthToken`: oauth/token profiles resolved through the auth store
+ *
+ * Plugins can still do extra provider-specific work on top (for example parse a
+ * token blob, read a legacy credential file, or pick between aliases).
+ */
+export type ProviderResolveUsageAuthContext = {
+  config: RemoteClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  env: NodeJS.ProcessEnv;
+  provider: string;
+  resolveApiKeyFromConfigAndStore: (params?: {
+    providerIds?: string[];
+    envDirect?: Array<string | undefined>;
+  }) => string | undefined;
+  resolveOAuthToken: () => Promise<ProviderResolvedUsageAuth | null>;
+};
+
+/**
+ * Result of `resolveUsageAuth`.
+ *
+ * `token` is the credential used for provider usage/billing endpoints.
+ * `accountId` is optional provider-specific metadata used by some usage APIs.
+ */
+export type ProviderResolvedUsageAuth = {
+  token: string;
+  accountId?: string;
+};
+
+/**
+ * Usage/quota snapshot input for providers that own their usage endpoint
+ * fetch/parsing behavior.
+ *
+ * This hook runs after `resolveUsageAuth` succeeds. Core still owns summary
+ * fan-out, timeout wrapping, filtering, and formatting; the provider plugin
+ * owns the provider-specific HTTP request + response normalization.
+ */
+export type ProviderFetchUsageSnapshotContext = {
+  config: RemoteClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  env: NodeJS.ProcessEnv;
+  provider: string;
+  token: string;
+  accountId?: string;
+  timeoutMs: number;
+  fetchFn: typeof fetch;
+};
+
+/**
+ * Provider-owned extra-param normalization before OpenClaw builds its generic
+ * stream option wrapper.
+ *
+ * Use this to set provider defaults or rewrite provider-specific config keys
+ * into the merged `extraParams` object. Return the full next extraParams object.
+ */
+export type ProviderPrepareExtraParamsContext = {
+  config?: RemoteClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  provider: string;
+  modelId: string;
+  extraParams?: Record<string, unknown>;
+  thinkingLevel?: ThinkLevel;
+};
+
+/**
+ * Provider-owned stream wrapper hook after OpenClaw applies its generic
+ * transport-independent wrappers.
+ *
+ * Use this for provider-specific payload/header/model mutations that still run
+ * through the normal `pi-ai` stream path.
+ */
+export type ProviderWrapStreamFnContext = ProviderPrepareExtraParamsContext & {
+  streamFn?: StreamFn;
+};
+
+/**
+ * Provider-owned prompt-cache eligibility.
+ *
+ * Return `true` or `false` to override OpenClaw's built-in provider cache TTL
+ * detection for this provider. Return `undefined` to fall back to core rules.
+ */
+export type ProviderCacheTtlEligibilityContext = {
+  provider: string;
+  modelId: string;
+};
+
+/**
+ * Provider-owned missing-auth message override.
+ *
+ * Runs only after OpenClaw exhausts normal env/profile/config auth resolution
+ * for the requested provider. Return a custom message to replace the generic
+ * "No API key found" error.
+ */
+export type ProviderBuildMissingAuthMessageContext = {
+  config?: RemoteClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  env: NodeJS.ProcessEnv;
+  provider: string;
+  listProfileIds: (providerId: string) => string[];
+};
+
+/**
+ * Built-in model suppression hook.
+ *
+ * Use this when a provider/plugin needs to hide stale upstream catalog rows or
+ * replace them with a vendor-specific hint. This hook is consulted by model
+ * resolution, model listing, and catalog loading.
+ */
+export type ProviderBuiltInModelSuppressionContext = {
+  config?: RemoteClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  env: NodeJS.ProcessEnv;
+  provider: string;
+  modelId: string;
+};
+
+export type ProviderBuiltInModelSuppressionResult = {
+  suppress: boolean;
+  errorMessage?: string;
+};
+
+/**
+ * Provider-owned thinking policy input.
+ *
+ * Used by shared `/think`, ACP controls, and directive parsing to ask a
+ * provider whether a model supports special reasoning UX such as xhigh or a
+ * binary on/off toggle.
+ */
+export type ProviderThinkingPolicyContext = {
+  provider: string;
+  modelId: string;
+};
+
+/**
+ * Provider-owned default thinking policy input.
+ *
+ * `reasoning` is the merged catalog hint for the selected model when one is
+ * available. Providers can use it to keep "reasoning model => low" behavior
+ * without re-reading the catalog themselves.
+ */
+export type ProviderDefaultThinkingPolicyContext = ProviderThinkingPolicyContext & {
+  reasoning?: boolean;
+};
+
+/**
+ * Provider-owned "modern model" policy input.
+ *
+ * Live smoke/model-profile selection uses this to keep provider-specific
+ * inclusion/exclusion rules out of core.
+ */
+export type ProviderModernModelPolicyContext = {
+  provider: string;
+  modelId: string;
+};
+
+/**
+ * Final catalog augmentation hook.
+ *
+ * Runs after OpenClaw loads the discovered model catalog and merges configured
+ * opt-in providers. Use this for forward-compat rows or vendor-owned synthetic
+ * entries that should appear in `models list` and model pickers even when the
+ * upstream registry has not caught up yet.
+ */
+export type ProviderAugmentModelCatalogContext = {
+  config?: RemoteClawConfig;
+  agentDir?: string;
+  workspaceDir?: string;
+  env: NodeJS.ProcessEnv;
+  entries: ModelCatalogEntry[];
+};
+
+/**
+ * @deprecated Use ProviderCatalogOrder.
+ */
+export type ProviderDiscoveryOrder = ProviderCatalogOrder;
+
+/**
+ * @deprecated Use ProviderCatalogContext.
+ */
+export type ProviderDiscoveryContext = ProviderCatalogContext;
+
+/**
+ * @deprecated Use ProviderCatalogResult.
+ */
+export type ProviderDiscoveryResult = ProviderCatalogResult;
+
+/**
+ * @deprecated Use ProviderPluginCatalog.
+ */
+export type ProviderPluginDiscovery = ProviderPluginCatalog;
+
+export type ProviderPluginWizardSetup = {
+  choiceId?: string;
+  choiceLabel?: string;
+  choiceHint?: string;
+  groupId?: string;
+  groupLabel?: string;
+  groupHint?: string;
+  methodId?: string;
+};
+
+export type ProviderPluginWizardModelPicker = {
+  label?: string;
+  hint?: string;
+  methodId?: string;
+};
+
+export type ProviderPluginWizard = {
+  setup?: ProviderPluginWizardSetup;
+  modelPicker?: ProviderPluginWizardModelPicker;
+};
+
+export type ProviderModelSelectedContext = {
+  config: RemoteClawConfig;
+  model: string;
+  prompter: WizardPrompter;
+  agentDir?: string;
+  workspaceDir?: string;
 };
 
 export type ProviderPlugin = {
@@ -131,6 +484,12 @@ export type ProviderPlugin = {
   label: string;
   docsPath?: string;
   aliases?: string[];
+  /**
+   * Provider-related env vars shown in setup/search/help surfaces.
+   *
+   * Keep entries in preferred display order. This can include direct auth env
+   * vars or setup inputs such as OAuth client id/secret vars.
+   */
   envVars?: string[];
   models?: ModelProviderConfig;
   auth: ProviderAuthMethod[];

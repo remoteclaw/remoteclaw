@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 import type { RuntimeEnv } from "../../../src/runtime.js";
 import {
@@ -43,7 +44,10 @@ function createRuntime(): RuntimeEnv {
   } as unknown as RuntimeEnv;
 }
 
-const whatsappConfigure = createPluginSetupWizardConfigure(whatsappPlugin);
+const whatsappConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+  plugin: whatsappPlugin,
+  wizard: whatsappPlugin.setupWizard!,
+});
 
 async function runConfigureWithHarness(params: {
   harness: ReturnType<typeof createQueuedWizardPrompter>;

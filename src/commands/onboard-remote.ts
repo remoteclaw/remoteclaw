@@ -2,13 +2,9 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { isSecureWebSocketUrl } from "../gateway/net.js";
 import { discoverGatewayBeacons, type GatewayBonjourBeacon } from "../infra/bonjour-discovery.js";
 import {
-  buildGatewayDiscoveryLabel,
-  buildGatewayDiscoveryTarget,
-} from "../infra/gateway-discovery-targets.js";
-import { resolveWideAreaDiscoveryDomain } from "../infra/widearea-dns.js";
-import { resolveSecretInputModeForEnvSelection } from "../plugins/provider-auth-mode.js";
-import { promptSecretRefForSetup } from "../plugins/provider-auth-ref.js";
-import type { WizardPrompter } from "../wizard/prompts.js";
+  promptSecretRefForSetup,
+  resolveSecretInputModeForEnvSelection,
+} from "./auth-choice.apply-helpers.js";
 import { detectBinary } from "./onboard-helpers.js";
 
 const DEFAULT_GATEWAY_URL = "ws://127.0.0.1:18789";
@@ -149,13 +145,69 @@ export async function promptRemoteGatewayConfig(
 
   let token = cfg.gateway?.remote?.token ?? "";
   if (authChoice === "token") {
-    token = String(
-      await prompter.text({
-        message: "Gateway token",
-        initialValue: token,
-        validate: (value) => (value?.trim() ? undefined : "Required"),
-      }),
-    ).trim();
+    const selectedMode = await resolveSecretInputModeForEnvSelection({
+      prompter,
+      explicitMode: options?.secretInputMode,
+      copy: {
+        modeMessage: "How do you want to provide this gateway token?",
+        plaintextLabel: "Enter token now",
+        plaintextHint: "Stores the token directly in OpenClaw config",
+      },
+    });
+    if (selectedMode === "ref") {
+      const resolved = await promptSecretRefForSetup({
+        provider: "gateway-remote-token",
+        config: cfg,
+        prompter,
+        preferredEnvVar: "OPENCLAW_GATEWAY_TOKEN",
+        copy: {
+          sourceMessage: "Where is this gateway token stored?",
+          envVarPlaceholder: "OPENCLAW_GATEWAY_TOKEN",
+        },
+      });
+      token = resolved.ref;
+    } else {
+      token = String(
+        await prompter.text({
+          message: "Gateway token",
+          initialValue: typeof token === "string" ? token : undefined,
+          validate: (value) => (value?.trim() ? undefined : "Required"),
+        }),
+      ).trim();
+    }
+    password = undefined;
+  } else if (authChoice === "password") {
+    const selectedMode = await resolveSecretInputModeForEnvSelection({
+      prompter,
+      explicitMode: options?.secretInputMode,
+      copy: {
+        modeMessage: "How do you want to provide this gateway password?",
+        plaintextLabel: "Enter password now",
+        plaintextHint: "Stores the password directly in OpenClaw config",
+      },
+    });
+    if (selectedMode === "ref") {
+      const resolved = await promptSecretRefForSetup({
+        provider: "gateway-remote-password",
+        config: cfg,
+        prompter,
+        preferredEnvVar: "OPENCLAW_GATEWAY_PASSWORD",
+        copy: {
+          sourceMessage: "Where is this gateway password stored?",
+          envVarPlaceholder: "OPENCLAW_GATEWAY_PASSWORD",
+        },
+      });
+      password = resolved.ref;
+    } else {
+      password = String(
+        await prompter.text({
+          message: "Gateway password",
+          initialValue: typeof password === "string" ? password : undefined,
+          validate: (value) => (value?.trim() ? undefined : "Required"),
+        }),
+      ).trim();
+    }
+    token = undefined;
   } else {
     token = "";
   }

@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
-  applyOnboardingLocalWorkspaceConfig,
+  applyLocalSetupWorkspaceConfig,
   ONBOARDING_DEFAULT_DM_SCOPE,
   ONBOARDING_DEFAULT_TOOLS_PROFILE,
 } from "./onboard-config.js";
 
-describe("applyOnboardingLocalWorkspaceConfig", () => {
+describe("applyLocalSetupWorkspaceConfig", () => {
   it("defaults local onboarding tool profile to coding", () => {
     expect(ONBOARDING_DEFAULT_TOOLS_PROFILE).toBe("coding");
   });
 
   it("sets secure dmScope default when unset", () => {
     const baseConfig: RemoteClawConfig = {};
-    const result = applyOnboardingLocalWorkspaceConfig(baseConfig);
+    const result = applyLocalSetupWorkspaceConfig(baseConfig, "/tmp/workspace");
 
     expect(result.session?.dmScope).toBe(ONBOARDING_DEFAULT_DM_SCOPE);
     expect(result.gateway?.mode).toBe("local");
@@ -26,7 +26,7 @@ describe("applyOnboardingLocalWorkspaceConfig", () => {
         dmScope: "main",
       },
     };
-    const result = applyOnboardingLocalWorkspaceConfig(baseConfig);
+    const result = applyLocalSetupWorkspaceConfig(baseConfig, "/tmp/workspace");
 
     expect(result.session?.dmScope).toBe("main");
   });
@@ -37,7 +37,7 @@ describe("applyOnboardingLocalWorkspaceConfig", () => {
         dmScope: "per-account-channel-peer",
       },
     };
-    const result = applyOnboardingLocalWorkspaceConfig(baseConfig);
+    const result = applyLocalSetupWorkspaceConfig(baseConfig, "/tmp/workspace");
 
     expect(result.session?.dmScope).toBe("per-account-channel-peer");
   });
@@ -48,7 +48,7 @@ describe("applyOnboardingLocalWorkspaceConfig", () => {
         profile: "full",
       },
     };
-    const result = applyOnboardingLocalWorkspaceConfig(baseConfig, "/tmp/workspace");
+    const result = applyLocalSetupWorkspaceConfig(baseConfig, "/tmp/workspace");
 
     expect(result.tools?.profile).toBe("full");
   });

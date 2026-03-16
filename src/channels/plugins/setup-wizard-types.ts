@@ -84,7 +84,7 @@ export type ChannelOnboardingDmPolicy = {
   }) => Promise<RemoteClawConfig>;
 };
 
-export type ChannelOnboardingAdapter = {
+export type ChannelSetupWizardAdapter = {
   channel: ChannelId;
   getStatus: (ctx: ChannelOnboardingStatusContext) => Promise<ChannelOnboardingStatus>;
   configure: (ctx: ChannelOnboardingConfigureContext) => Promise<ChannelOnboardingResult>;

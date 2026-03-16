@@ -1,5 +1,5 @@
 import type { WizardPrompter } from "../../wizard/prompts.js";
-import { splitOnboardingEntries } from "./onboarding/helpers.js";
+import { splitSetupEntries } from "./setup-wizard-helpers.js";
 
 export type ChannelAccessPolicy = "allowlist" | "open" | "disabled";
 

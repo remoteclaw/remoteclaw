@@ -6,9 +6,17 @@ import {
   prepareScopedSetupConfig,
 } from "../../../src/channels/plugins/setup-helpers.js";
 import {
+  applyAccountNameToChannelSection,
+  patchScopedAccountConfig,
+} from "../../../src/channels/plugins/setup-helpers.js";
+import {
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
-} from "remoteclaw/plugin-sdk/setup";
+} from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import type { ChannelSetupInput } from "../../../src/channels/plugins/types.core.js";
+import type { DmPolicy } from "../../../src/config/types.js";
+import { normalizeAccountId } from "../../../src/routing/session-key.js";
 import type { CoreConfig, IrcAccountConfig, IrcNickServConfig } from "./types.js";
 
 const channel = "irc" as const;

@@ -6,13 +6,12 @@ import {
   normalizeE164,
   pathExists,
   splitSetupEntries,
-  setSetupChannelEnabled,
-  type DmPolicy,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/setup";
+} from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import { setSetupChannelEnabled } from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import { formatCliCommand } from "../../../src/cli/command-format.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
-import type { ChannelSetupWizard } from "openclaw/plugin-sdk/setup";
+import type { ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
 import { listWhatsAppAccountIds, resolveWhatsAppAuthDir } from "./accounts.js";
 import { loginWeb } from "./login.js";
 import { whatsappSetupAdapter } from "./setup-core.js";
@@ -20,10 +19,10 @@ import { whatsappSetupAdapter } from "./setup-core.js";
 const channel = "whatsapp" as const;
 
 function mergeWhatsAppConfig(
-  cfg: OpenClawConfig,
-  patch: Partial<NonNullable<OpenClawConfig["channels"]>["whatsapp"]>,
+  cfg: RemoteClawConfig,
+  patch: Partial<NonNullable<RemoteClawConfig["channels"]>["whatsapp"]>,
   options?: { unsetOnUndefined?: string[] },
-): OpenClawConfig {
+): RemoteClawConfig {
   const base = { ...(cfg.channels?.whatsapp ?? {}) } as Record<string, unknown>;
   for (const [key, value] of Object.entries(patch)) {
     if (value === undefined) {
@@ -43,7 +42,7 @@ function mergeWhatsAppConfig(
   };
 }
 
-function setWhatsAppDmPolicy(cfg: OpenClawConfig, dmPolicy: DmPolicy): OpenClawConfig {
+function setWhatsAppDmPolicy(cfg: RemoteClawConfig, dmPolicy: DmPolicy): RemoteClawConfig {
   return mergeWhatsAppConfig(cfg, { dmPolicy });
 }
 

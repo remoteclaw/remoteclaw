@@ -11,7 +11,11 @@ import { runExec } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { buildChannelsTable } from "./status-all/channels.js";
 import { getAgentLocalStatuses } from "./status.agent-local.js";
-import { pickGatewaySelfPresence, resolveGatewayProbeAuth } from "./status.gateway-probe.js";
+import {
+  pickGatewaySelfPresence,
+  resolveGatewayProbeAuthResolution,
+} from "./status.gateway-probe.js";
+import type { buildChannelsTable, collectChannelStatusIssues } from "./status.scan.runtime.js";
 import { getStatusSummary } from "./status.summary.js";
 import { getUpdateCheckResult } from "./status.update.js";
 

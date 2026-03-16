@@ -25,9 +25,11 @@ import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { restoreTerminalState } from "../terminal/restore.js";
 import { runTui } from "../tui/tui.js";
-import { setupOnboardingShellCompletion } from "./onboarding.completion.js";
-import type { GatewayWizardSettings, WizardFlow } from "./onboarding.types.js";
+import { resolveUserPath } from "../utils.js";
 import type { WizardPrompter } from "./prompts.js";
+import { setupWizardShellCompletion } from "./setup.completion.js";
+import { resolveSetupSecretInputString } from "./setup.secret-input.js";
+import type { GatewayWizardSettings, WizardFlow } from "./setup.types.js";
 
 type FinalizeOnboardingOptions = {
   flow: WizardFlow;
@@ -40,7 +42,7 @@ type FinalizeOnboardingOptions = {
   runtime: RuntimeEnv;
 };
 
-export async function finalizeOnboardingWizard(
+export async function finalizeSetupWizard(
   options: FinalizeOnboardingOptions,
 ): Promise<{ launchedTui: boolean }> {
   const { flow, opts, baseConfig, nextConfig, settings, prompter, runtime } = options;
@@ -249,6 +251,27 @@ export async function finalizeOnboardingWizard(
     settings.authMode === "token" && settings.gatewayToken
       ? `${links.httpUrl}#token=${encodeURIComponent(settings.gatewayToken)}`
       : links.httpUrl;
+  let resolvedGatewayPassword = "";
+  if (settings.authMode === "password") {
+    try {
+      resolvedGatewayPassword =
+        (await resolveSetupSecretInputString({
+          config: nextConfig,
+          value: nextConfig.gateway?.auth?.password,
+          path: "gateway.auth.password",
+          env: process.env,
+        })) ?? "";
+    } catch (error) {
+      await prompter.note(
+        [
+          "Could not resolve gateway.auth.password SecretRef for onboarding auth.",
+          error instanceof Error ? error.message : String(error),
+        ].join("\n"),
+        "Gateway auth",
+      );
+    }
+  }
+
   const gatewayProbe = await probeGatewayReachable({
     url: links.wsUrl,
     token: settings.authMode === "token" ? settings.gatewayToken : undefined,
@@ -366,7 +389,7 @@ export async function finalizeOnboardingWizard(
     "Security",
   );
 
-  await setupOnboardingShellCompletion({ flow, prompter });
+  await setupWizardShellCompletion({ flow, prompter });
 
   const shouldOpenControlUi =
     !opts.skipUi &&

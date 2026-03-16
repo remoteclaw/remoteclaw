@@ -1,3 +1,4 @@
+import { patchScopedAccountConfig } from "../../../src/channels/plugins/setup-helpers.js";
 import {
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
@@ -6,10 +7,13 @@ import {
   normalizeAccountId,
   patchScopedAccountConfig,
   setTopLevelChannelDmPolicyWithAllowFrom,
-  type ChannelSetupDmPolicy,
-  type ChannelSetupWizard,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/setup";
+} from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { formatResolvedUnresolvedNote } from "../../../src/plugin-sdk/resolution-notes.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,

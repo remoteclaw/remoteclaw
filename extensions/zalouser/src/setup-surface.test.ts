@@ -1,12 +1,31 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/zalouser";
 import { describe, expect, it, vi } from "vitest";
-import {
-  createPluginSetupWizardAdapter,
-  createTestWizardPrompter,
-  runSetupWizardConfigure,
-} from "../../../test/helpers/extensions/setup-wizard.js";
-import type { RemoteClawConfig } from "../runtime-api.js";
-import "./zalo-js.test-mocks.js";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
+
+vi.mock("./zalo-js.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./zalo-js.js")>();
+  return {
+    ...actual,
+    checkZaloAuthenticated: vi.fn(async () => false),
+    logoutZaloProfile: vi.fn(async () => {}),
+    startZaloQrLogin: vi.fn(async () => ({
+      message: "qr pending",
+      qrDataUrl: undefined,
+    })),
+    waitForZaloQrLogin: vi.fn(async () => ({
+      connected: false,
+      message: "login pending",
+    })),
+    resolveZaloAllowFromEntries: vi.fn(async ({ entries }: { entries: string[] }) =>
+      entries.map((entry) => ({ input: entry, resolved: true, id: entry, note: undefined })),
+    ),
+    resolveZaloGroupsByEntries: vi.fn(async ({ entries }: { entries: string[] }) =>
+      entries.map((entry) => ({ input: entry, resolved: true, id: entry, note: undefined })),
+    ),
+  };
+});
+
 import { zalouserPlugin } from "./channel.js";
 
 const zalouserConfigureAdapter = createPluginSetupWizardAdapter(zalouserPlugin);
@@ -25,6 +44,11 @@ async function runSetup(params: {
     forceAllowFrom: params.forceAllowFrom,
   });
 }
+
+const zalouserConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+  plugin: zalouserPlugin,
+  wizard: zalouserPlugin.setupWizard!,
+});
 
 describe("zalouser setup wizard", () => {
   it("enables the account without forcing QR login", async () => {

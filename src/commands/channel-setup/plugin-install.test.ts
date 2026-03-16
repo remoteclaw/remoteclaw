@@ -59,10 +59,12 @@ import type { ChannelPluginCatalogEntry } from "../../channels/plugins/catalog.j
 import type { RemoteClawConfig } from "../../config/config.js";
 import { loadRemoteClawPlugins } from "../../plugins/loader.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
-import { makePrompter, makeRuntime } from "./__tests__/test-utils.js";
+import { makePrompter, makeRuntime } from "../setup/__tests__/test-utils.js";
 import {
-  ensureOnboardingPluginInstalled,
-  reloadOnboardingPluginRegistry,
+  ensureChannelSetupPluginInstalled,
+  loadChannelSetupPluginRegistrySnapshotForChannel,
+  reloadChannelSetupPluginRegistry,
+  reloadChannelSetupPluginRegistryForChannel,
 } from "./plugin-install.js";
 
 const baseEntry: ChannelPluginCatalogEntry = {
@@ -100,7 +102,7 @@ async function runInitialValueForChannel(channel: "next" | "beta") {
   const cfg: RemoteClawConfig = { update: { channel } };
   mockRepoLocalPathExists();
 
-  await ensureOnboardingPluginInstalled({
+  await ensureChannelSetupPluginInstalled({
     cfg,
     entry: baseEntry,
     prompter,
@@ -112,14 +114,14 @@ async function runInitialValueForChannel(channel: "next" | "beta") {
 }
 
 function expectPluginLoadedFromLocalPath(
-  result: Awaited<ReturnType<typeof ensureOnboardingPluginInstalled>>,
+  result: Awaited<ReturnType<typeof ensureChannelSetupPluginInstalled>>,
 ) {
   const expectedPath = path.resolve(process.cwd(), "extensions/zalo");
   expect(result.installed).toBe(true);
   expect(result.cfg.plugins?.load?.paths).toContain(expectedPath);
 }
 
-describe("ensureOnboardingPluginInstalled", () => {
+describe("ensureChannelSetupPluginInstalled", () => {
   it("installs from npm and enables the plugin", async () => {
     const runtime = makeRuntime();
     const prompter = makePrompter({
@@ -134,7 +136,7 @@ describe("ensureOnboardingPluginInstalled", () => {
       extensions: [],
     });
 
-    const result = await ensureOnboardingPluginInstalled({
+    const result = await ensureChannelSetupPluginInstalled({
       cfg,
       entry: baseEntry,
       prompter,
@@ -160,7 +162,7 @@ describe("ensureOnboardingPluginInstalled", () => {
     const cfg: RemoteClawConfig = {};
     mockRepoLocalPathExists();
 
-    const result = await ensureOnboardingPluginInstalled({
+    const result = await ensureChannelSetupPluginInstalled({
       cfg,
       entry: baseEntry,
       prompter,
@@ -171,8 +173,32 @@ describe("ensureOnboardingPluginInstalled", () => {
     expect(result.cfg.plugins?.entries?.zalo?.enabled).toBe(true);
   });
 
-  it("defaults to local on next channel when local path exists", async () => {
-    expect(await runInitialValueForChannel("next")).toBe("local");
+  it("uses the catalog plugin id for local-path installs", async () => {
+    const runtime = makeRuntime();
+    const prompter = makePrompter({
+      select: vi.fn(async () => "local") as WizardPrompter["select"],
+    });
+    const cfg: RemoteClawConfig = {};
+    mockRepoLocalPathExists();
+
+    const result = await ensureChannelSetupPluginInstalled({
+      cfg,
+      entry: {
+        ...baseEntry,
+        id: "teams",
+        pluginId: "@openclaw/msteams-plugin",
+      },
+      prompter,
+      runtime,
+    });
+
+    expect(result.installed).toBe(true);
+    expect(result.pluginId).toBe("@openclaw/msteams-plugin");
+    expect(result.cfg.plugins?.entries?.["@openclaw/msteams-plugin"]?.enabled).toBe(true);
+  });
+
+  it("defaults to local on dev channel when local path exists", async () => {
+    expect(await runInitialValueForChannel("dev")).toBe("local");
   });
 
   it("defaults to npm on beta channel even when local path exists", async () => {
@@ -198,7 +224,7 @@ describe("ensureOnboardingPluginInstalled", () => {
       ]),
     );
 
-    await ensureOnboardingPluginInstalled({
+    await ensureChannelSetupPluginInstalled({
       cfg,
       entry: baseEntry,
       prompter,
@@ -234,7 +260,7 @@ describe("ensureOnboardingPluginInstalled", () => {
       error: "nope",
     });
 
-    const result = await ensureOnboardingPluginInstalled({
+    const result = await ensureChannelSetupPluginInstalled({
       cfg,
       entry: baseEntry,
       prompter,
@@ -250,7 +276,7 @@ describe("ensureOnboardingPluginInstalled", () => {
     const runtime = makeRuntime();
     const cfg: RemoteClawConfig = {};
 
-    reloadOnboardingPluginRegistry({
+    reloadChannelSetupPluginRegistry({
       cfg,
       runtime,
       workspaceDir: "/tmp/openclaw-workspace",
@@ -265,7 +291,116 @@ describe("ensureOnboardingPluginInstalled", () => {
       }),
     );
     expect(clearPluginDiscoveryCache.mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(loadRemoteClawPlugins).mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+      vi.mocked(loadOpenClawPlugins).mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+    );
+  });
+
+  it("scopes channel reloads when setup starts from an empty registry", () => {
+    const runtime = makeRuntime();
+    const cfg: RemoteClawConfig = {};
+
+    reloadChannelSetupPluginRegistryForChannel({
+      cfg,
+      runtime,
+      channel: "telegram",
+      workspaceDir: "/tmp/openclaw-workspace",
+    });
+
+    expect(loadOpenClawPlugins).toHaveBeenCalledWith(
+      expect.objectContaining({
+        config: cfg,
+        workspaceDir: "/tmp/openclaw-workspace",
+        cache: false,
+        onlyPluginIds: ["telegram"],
+        includeSetupOnlyChannelPlugins: true,
+      }),
+    );
+  });
+
+  it("keeps full reloads when the active plugin registry is already populated", () => {
+    const runtime = makeRuntime();
+    const cfg: RemoteClawConfig = {};
+    const registry = createEmptyPluginRegistry();
+    registry.plugins.push({
+      id: "loaded",
+      name: "loaded",
+      source: "/tmp/loaded.cjs",
+      origin: "bundled",
+      enabled: true,
+      status: "loaded",
+      toolNames: [],
+      hookNames: [],
+      channelIds: [],
+      providerIds: [],
+      webSearchProviderIds: [],
+      gatewayMethods: [],
+      cliCommands: [],
+      services: [],
+      commands: [],
+      httpRoutes: 0,
+      hookCount: 0,
+      configSchema: true,
+    });
+    setActivePluginRegistry(registry);
+
+    reloadChannelSetupPluginRegistryForChannel({
+      cfg,
+      runtime,
+      channel: "telegram",
+      workspaceDir: "/tmp/openclaw-workspace",
+    });
+
+    expect(loadOpenClawPlugins).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        onlyPluginIds: expect.anything(),
+      }),
+    );
+  });
+
+  it("can load a channel-scoped snapshot without activating the global registry", () => {
+    const runtime = makeRuntime();
+    const cfg: RemoteClawConfig = {};
+
+    loadChannelSetupPluginRegistrySnapshotForChannel({
+      cfg,
+      runtime,
+      channel: "telegram",
+      workspaceDir: "/tmp/openclaw-workspace",
+    });
+
+    expect(loadOpenClawPlugins).toHaveBeenCalledWith(
+      expect.objectContaining({
+        config: cfg,
+        workspaceDir: "/tmp/openclaw-workspace",
+        cache: false,
+        onlyPluginIds: ["telegram"],
+        includeSetupOnlyChannelPlugins: true,
+        activate: false,
+      }),
+    );
+  });
+
+  it("scopes snapshots by plugin id when channel and plugin ids differ", () => {
+    const runtime = makeRuntime();
+    const cfg: RemoteClawConfig = {};
+
+    loadChannelSetupPluginRegistrySnapshotForChannel({
+      cfg,
+      runtime,
+      channel: "msteams",
+      pluginId: "@openclaw/msteams-plugin",
+      workspaceDir: "/tmp/openclaw-workspace",
+    });
+
+    expect(loadOpenClawPlugins).toHaveBeenCalledWith(
+      expect.objectContaining({
+        config: cfg,
+        workspaceDir: "/tmp/openclaw-workspace",
+        cache: false,
+        onlyPluginIds: ["@openclaw/msteams-plugin"],
+        includeSetupOnlyChannelPlugins: true,
+        activate: false,
+      }),
     );
   });
 });

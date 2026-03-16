@@ -52,7 +52,6 @@ export {
   promptSingleChannelSecretInput,
   setTopLevelChannelGroupPolicy,
 } from "../channels/plugins/setup-wizard-helpers.js";
-export { promptChannelAccessConfig } from "../channels/plugins/setup-group-access.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
 export {
   applyAccountNameToChannelSection,

@@ -136,7 +136,7 @@ function resolveInstallDefaultChoice(params: {
   return localPath ? "local" : "npm";
 }
 
-export async function ensureOnboardingPluginInstalled(params: {
+export async function ensureChannelSetupPluginInstalled(params: {
   cfg: RemoteClawConfig;
   entry: ChannelPluginCatalogEntry;
   prompter: WizardPrompter;
@@ -220,11 +220,21 @@ export async function ensureOnboardingPluginInstalled(params: {
   return { cfg: next, installed: false };
 }
 
-export function reloadOnboardingPluginRegistry(params: {
+export function reloadChannelSetupPluginRegistry(params: {
   cfg: RemoteClawConfig;
   runtime: RuntimeEnv;
   workspaceDir?: string;
 }): void {
+  loadChannelSetupPluginRegistry(params);
+}
+
+function loadChannelSetupPluginRegistry(params: {
+  cfg: RemoteClawConfig;
+  runtime: RuntimeEnv;
+  workspaceDir?: string;
+  onlyPluginIds?: string[];
+  activate?: boolean;
+}): PluginRegistry {
   clearPluginDiscoveryCache();
   const workspaceDir =
     params.workspaceDir ?? resolveAgentWorkspaceDir(params.cfg, resolveDefaultAgentId(params.cfg));
@@ -234,5 +244,41 @@ export function reloadOnboardingPluginRegistry(params: {
     workspaceDir,
     cache: false,
     logger: createPluginLoaderLogger(log),
+    onlyPluginIds: params.onlyPluginIds,
+    includeSetupOnlyChannelPlugins: true,
+    activate: params.activate,
+  });
+}
+
+export function reloadChannelSetupPluginRegistryForChannel(params: {
+  cfg: RemoteClawConfig;
+  runtime: RuntimeEnv;
+  channel: string;
+  pluginId?: string;
+  workspaceDir?: string;
+}): void {
+  const activeRegistry = getActivePluginRegistry();
+  // On low-memory hosts, the empty-registry fallback should only recover the selected
+  // plugin instead of importing every bundled extension during setup.
+  const onlyPluginIds = activeRegistry?.plugins.length
+    ? undefined
+    : [params.pluginId ?? params.channel];
+  loadChannelSetupPluginRegistry({
+    ...params,
+    onlyPluginIds,
+  });
+}
+
+export function loadChannelSetupPluginRegistrySnapshotForChannel(params: {
+  cfg: RemoteClawConfig;
+  runtime: RuntimeEnv;
+  channel: string;
+  pluginId?: string;
+  workspaceDir?: string;
+}): PluginRegistry {
+  return loadChannelSetupPluginRegistry({
+    ...params,
+    onlyPluginIds: [params.pluginId ?? params.channel],
+    activate: false,
   });
 }

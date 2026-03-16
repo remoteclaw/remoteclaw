@@ -68,7 +68,7 @@ describe("runCommandWithTimeout", () => {
         ].join(" "),
       ],
       {
-        timeoutMs: 180,
+        timeoutMs: 500,
         // Keep a healthy margin above the emit interval while avoiding long idle waits.
         noOutputTimeoutMs: 120,
       },

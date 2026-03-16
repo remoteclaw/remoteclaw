@@ -1,10 +1,23 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { installChromeUserDataDirHooks } from "./chrome-user-data-dir.test-harness.js";
 import * as chromeModule from "./chrome.js";
-import "./server-context.chrome-test-harness.js";
 import type { BrowserServerState } from "./server-context.js";
 import { createBrowserRouteContext } from "./server-context.js";
+
+const chromeUserDataDir = { dir: "/tmp/remoteclaw" };
+installChromeUserDataDirHooks(chromeUserDataDir);
+
+vi.mock("./chrome.js", () => ({
+  isChromeCdpReady: vi.fn(async () => true),
+  isChromeReachable: vi.fn(async () => true),
+  launchRemoteClawChrome: vi.fn(async () => {
+    throw new Error("unexpected launch");
+  }),
+  resolveRemoteClawUserDataDir: vi.fn(() => chromeUserDataDir.dir),
+  stopRemoteClawChrome: vi.fn(async () => {}),
+}));
 
 function makeBrowserState(): BrowserServerState {
   return {
@@ -14,6 +27,8 @@ function makeBrowserState(): BrowserServerState {
     resolved: {
       enabled: true,
       controlPort: 18791,
+      cdpPortRangeStart: 18800,
+      cdpPortRangeEnd: 18899,
       cdpProtocol: "http",
       cdpHost: "127.0.0.1",
       cdpIsLoopback: true,
@@ -26,9 +41,9 @@ function makeBrowserState(): BrowserServerState {
       noSandbox: false,
       attachOnly: false,
       ssrfPolicy: { allowPrivateNetwork: true },
-      defaultProfile: "openclaw",
+      defaultProfile: "remoteclaw",
       profiles: {
-        openclaw: { cdpPort: 18800, color: "#FF4500" },
+        remoteclaw: { cdpPort: 18800, color: "#FF4500" },
       },
     },
     profiles: new Map(),
@@ -44,19 +59,18 @@ describe("browser server-context ensureBrowserAvailable", () => {
   it("waits for CDP readiness after launching to avoid follow-up PortInUseError races (#21149)", async () => {
     vi.useFakeTimers();
 
-    const launchOpenClawChrome = vi.mocked(chromeModule.launchOpenClawChrome);
-    const stopOpenClawChrome = vi.mocked(chromeModule.stopOpenClawChrome);
     const isChromeReachable = vi.mocked(chromeModule.isChromeReachable);
     const isChromeCdpReady = vi.mocked(chromeModule.isChromeCdpReady);
+    const launchRemoteClawChrome = vi.mocked(chromeModule.launchRemoteClawChrome);
 
     isChromeReachable.mockResolvedValue(false);
     isChromeCdpReady.mockResolvedValueOnce(false).mockResolvedValue(true);
 
     const proc = new EventEmitter() as unknown as ChildProcessWithoutNullStreams;
-    launchOpenClawChrome.mockResolvedValue({
+    launchRemoteClawChrome.mockResolvedValue({
       pid: 123,
       exe: { kind: "chromium", path: "/usr/bin/chromium" },
-      userDataDir: "/tmp/openclaw-test",
+      userDataDir: "/tmp/remoteclaw-test",
       cdpPort: 18800,
       startedAt: Date.now(),
       proc,
@@ -64,14 +78,14 @@ describe("browser server-context ensureBrowserAvailable", () => {
 
     const state = makeBrowserState();
     const ctx = createBrowserRouteContext({ getState: () => state });
-    const profile = ctx.forProfile("openclaw");
+    const profile = ctx.forProfile("remoteclaw");
 
     const promise = profile.ensureBrowserAvailable();
     await vi.advanceTimersByTimeAsync(100);
     await expect(promise).resolves.toBeUndefined();
 
-    expect(launchOpenClawChrome).toHaveBeenCalledTimes(1);
+    expect(launchRemoteClawChrome).toHaveBeenCalledTimes(1);
     expect(isChromeCdpReady).toHaveBeenCalled();
-    expect(stopOpenClawChrome).not.toHaveBeenCalled();
+    expect(chromeModule.stopRemoteClawChrome).not.toHaveBeenCalled();
   });
 });

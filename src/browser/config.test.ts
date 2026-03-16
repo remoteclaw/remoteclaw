@@ -59,10 +59,10 @@ describe("browser config", () => {
     const resolved = resolveBrowserConfig({
       cdpPortRangeStart: 19000,
     });
-    const openclaw = resolveProfile(resolved, "openclaw");
+    const remoteclaw = resolveProfile(resolved, "remoteclaw");
     expect(resolved.cdpPortRangeStart).toBe(19000);
-    expect(openclaw?.cdpPort).toBe(19000);
-    expect(openclaw?.cdpUrl).toBe("http://127.0.0.1:19000");
+    expect(remoteclaw?.cdpPort).toBe(19000);
+    expect(remoteclaw?.cdpUrl).toBe("http://127.0.0.1:19000");
   });
 
   it("rejects cdpPortRangeStart values that overflow the CDP range window", () => {

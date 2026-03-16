@@ -283,7 +283,7 @@ function createProfileContext(
     const profileState = getProfileState();
     const httpReachable = await isHttpReachable();
     const waitForCdpReadyAfterLaunch = async () => {
-      // launchOpenClawChrome() can return before Chrome is fully ready to serve /json/version + CDP WS.
+      // launchRemoteClawChrome() can return before Chrome is fully ready to serve /json/version + CDP WS.
       // If a follow-up call (snapshot/screenshot/etc.) races ahead, we can hit PortInUseError trying to
       // launch again on the same port. Poll briefly so browser(action="start"/"open") is stable.
       const maxAttempts = 50;
@@ -340,7 +340,7 @@ function createProfileContext(
       try {
         await waitForCdpReadyAfterLaunch();
       } catch (err) {
-        await stopOpenClawChrome(launched).catch(() => {});
+        await stopRemoteClawChrome(launched).catch(() => {});
         setProfileRunning(null);
         throw err;
       }

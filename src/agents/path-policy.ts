@@ -1,5 +1,26 @@
+import os from "node:os";
 import path from "node:path";
-import { resolveSandboxInputPath } from "./sandbox-paths.js";
+
+const UNICODE_SPACES = /[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g;
+
+function expandPath(filePath: string): string {
+  const normalized = filePath.replace(UNICODE_SPACES, " ");
+  if (normalized === "~") {
+    return os.homedir();
+  }
+  if (normalized.startsWith("~/")) {
+    return os.homedir() + normalized.slice(1);
+  }
+  return normalized;
+}
+
+function resolveSandboxInputPath(filePath: string, cwd: string): string {
+  const expanded = expandPath(filePath);
+  if (path.isAbsolute(expanded)) {
+    return expanded;
+  }
+  return path.resolve(cwd, expanded);
+}
 
 type RelativePathOptions = {
   allowRoot?: boolean;

@@ -23,8 +23,8 @@ describe("ui i18n locale registry", () => {
     const de = await loadLazyLocaleTranslation("de");
     const zhCN = await loadLazyLocaleTranslation("zh-CN");
 
-    expect(de?.common?.health).toBe("Status");
-    expect(zhCN?.common?.health).toBe("健康状况");
+    expect((de?.common as Record<string, string> | undefined)?.health).toBe("Status");
+    expect((zhCN?.common as Record<string, string> | undefined)?.health).toBe("健康状况");
     expect(await loadLazyLocaleTranslation("en")).toBeNull();
   });
 });

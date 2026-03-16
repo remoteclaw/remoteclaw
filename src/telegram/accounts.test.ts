@@ -106,7 +106,7 @@ describe("resolveTelegramAccount", () => {
 
 describe("resolveDefaultTelegramAccountId", () => {
   it("prefers channels.telegram.defaultAccount when it matches a configured account", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         telegram: {
           defaultAccount: "work",
@@ -119,7 +119,7 @@ describe("resolveDefaultTelegramAccountId", () => {
   });
 
   it("normalizes channels.telegram.defaultAccount before lookup", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         telegram: {
           defaultAccount: "Router D",
@@ -132,7 +132,7 @@ describe("resolveDefaultTelegramAccountId", () => {
   });
 
   it("falls back when channels.telegram.defaultAccount is not configured", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         telegram: {
           defaultAccount: "missing",

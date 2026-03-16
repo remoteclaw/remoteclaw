@@ -900,7 +900,7 @@ describe("sessions tools", () => {
       startedAt: now - 60_000,
     });
 
-    const tool = createOpenClawTools({
+    const tool = createRemoteClawTools({
       agentSessionKey: "agent:main:main",
     }).find((candidate) => candidate.name === "subagents");
     expect(tool).toBeDefined();

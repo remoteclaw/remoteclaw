@@ -1163,7 +1163,14 @@ describe("security audit", () => {
   });
 
   it("warns when multiple DM senders share the main session", async () => {
-    const cfg: RemoteClawConfig = { session: { dmScope: "main" } };
+    const cfg: RemoteClawConfig = {
+      session: { dmScope: "main" },
+      channels: {
+        whatsapp: {
+          enabled: true,
+        },
+      },
+    };
     const plugins: ChannelPlugin[] = [
       {
         id: "whatsapp",

@@ -12,14 +12,16 @@ import {
   createTelegramPollExtraToolSchemas,
   createUnionActionGate,
   listTokenSourcedAccounts,
-  resolveReactionMessageId,
-  type ChannelMessageActionAdapter,
-  type ChannelMessageActionName,
-  type ChannelMessageToolDiscovery,
-  type ChannelMessageToolSchemaContribution,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import type { TelegramActionConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { extractToolSend } from "remoteclaw/plugin-sdk/tool-send";
+} from "../../../src/channels/plugins/actions/shared.js";
+import type {
+  ChannelMessageActionAdapter,
+  ChannelMessageActionName,
+} from "../../../src/channels/plugins/types.js";
+import type { TelegramActionConfig } from "../../../src/config/types.telegram.js";
+import { normalizeInteractiveReply } from "../../../src/interactive/payload.js";
+import { readBooleanParam } from "../../../src/plugin-sdk/boolean-param.js";
+import { extractToolSend } from "../../../src/plugin-sdk/tool-send.js";
+import { resolveTelegramPollVisibility } from "../../../src/poll-params.js";
 import {
   createTelegramActionGate,
   listEnabledTelegramAccounts,
@@ -28,48 +30,27 @@ import {
 import { handleTelegramAction } from "./action-runtime.js";
 import { resolveTelegramInlineButtons } from "./button-types.js";
 import { isTelegramInlineButtonsEnabled } from "./inline-buttons.js";
+import { buildTelegramInteractiveButtons } from "./shared-interactive.js";
 
 export const telegramMessageActionRuntime = {
   handleTelegramAction,
 };
 
-const TELEGRAM_MESSAGE_ACTION_MAP = {
-  delete: "deleteMessage",
-  edit: "editMessage",
-  poll: "poll",
-  react: "react",
-  send: "sendMessage",
-  sticker: "sendSticker",
-  "sticker-search": "searchSticker",
-  "topic-create": "createForumTopic",
-  "topic-edit": "editForumTopic",
-} as const satisfies Partial<Record<ChannelMessageActionName, string>>;
-
-function resolveTelegramMessageActionName(action: ChannelMessageActionName) {
-  return TELEGRAM_MESSAGE_ACTION_MAP[action as keyof typeof TELEGRAM_MESSAGE_ACTION_MAP];
-}
-
-function resolveTelegramActionDiscovery(cfg: Parameters<typeof listEnabledTelegramAccounts>[0]) {
-  const accounts = listTokenSourcedAccounts(listEnabledTelegramAccounts(cfg));
-  if (accounts.length === 0) {
-    return null;
-  }
-  const unionGate = createUnionActionGate(accounts, (account) =>
-    createTelegramActionGate({
-      cfg,
-      accountId: account.accountId,
-    }),
-  );
-  const pollEnabled = accounts.some((account) => {
-    const accountGate = createTelegramActionGate({
-      cfg,
-      accountId: account.accountId,
-    });
-    return resolveTelegramPollActionGateState(accountGate).enabled;
-  });
-  const buttonsEnabled = accounts.some((account) =>
-    isTelegramInlineButtonsEnabled({ cfg, accountId: account.accountId }),
-  );
+function readTelegramSendParams(params: Record<string, unknown>) {
+  const to = readStringParam(params, "to", { required: true });
+  const mediaUrl = readStringParam(params, "media", { trim: false });
+  const message = readStringParam(params, "message", { required: !mediaUrl, allowEmpty: true });
+  const caption = readStringParam(params, "caption", { allowEmpty: true });
+  const content = message || caption || "";
+  const replyTo = readStringParam(params, "replyTo");
+  const threadId = readStringParam(params, "threadId");
+  const buttons =
+    params.buttons ??
+    buildTelegramInteractiveButtons(normalizeInteractiveReply(params.interactive));
+  const asVoice = readBooleanParam(params, "asVoice");
+  const silent = readBooleanParam(params, "silent");
+  const forceDocument = readBooleanParam(params, "forceDocument");
+  const quoteText = readStringParam(params, "quoteText");
   return {
     isEnabled: (key: keyof TelegramActionConfig, defaultValue = true) =>
       unionGate(key, defaultValue),
@@ -136,8 +117,70 @@ function describeTelegramMessageTool({
 }
 
 export const telegramMessageActions: ChannelMessageActionAdapter = {
-  describeMessageTool: describeTelegramMessageTool,
-  ...createLegacyMessageToolDiscoveryMethods(describeTelegramMessageTool),
+  listActions: ({ cfg }) => {
+    const accounts = listTokenSourcedAccounts(listEnabledTelegramAccounts(cfg));
+    if (accounts.length === 0) {
+      return [];
+    }
+    // Union of all accounts' action gates (any account enabling an action makes it available)
+    const gate = createUnionActionGate(accounts, (account) =>
+      createTelegramActionGate({
+        cfg,
+        accountId: account.accountId,
+      }),
+    );
+    const isEnabled = (key: keyof TelegramActionConfig, defaultValue = true) =>
+      gate(key, defaultValue);
+    const actions = new Set<ChannelMessageActionName>(["send"]);
+    const pollEnabledForAnyAccount = accounts.some((account) => {
+      const accountGate = createTelegramActionGate({
+        cfg,
+        accountId: account.accountId,
+      });
+      return resolveTelegramPollActionGateState(accountGate).enabled;
+    });
+    if (pollEnabledForAnyAccount) {
+      actions.add("poll");
+    }
+    if (isEnabled("reactions")) {
+      actions.add("react");
+    }
+    if (isEnabled("deleteMessage")) {
+      actions.add("delete");
+    }
+    if (isEnabled("editMessage")) {
+      actions.add("edit");
+    }
+    if (isEnabled("sticker", false)) {
+      actions.add("sticker");
+      actions.add("sticker-search");
+    }
+    if (isEnabled("createForumTopic")) {
+      actions.add("topic-create");
+    }
+    if (isEnabled("editForumTopic")) {
+      actions.add("topic-edit");
+    }
+    return Array.from(actions);
+  },
+  supportsInteractive: ({ cfg }) => {
+    const accounts = listTokenSourcedAccounts(listEnabledTelegramAccounts(cfg));
+    if (accounts.length === 0) {
+      return false;
+    }
+    return accounts.some((account) =>
+      isTelegramInlineButtonsEnabled({ cfg, accountId: account.accountId }),
+    );
+  },
+  supportsButtons: ({ cfg }) => {
+    const accounts = listTokenSourcedAccounts(listEnabledTelegramAccounts(cfg));
+    if (accounts.length === 0) {
+      return false;
+    }
+    return accounts.some((account) =>
+      isTelegramInlineButtonsEnabled({ cfg, accountId: account.accountId }),
+    );
+  },
   extractToolSend: ({ args }) => {
     return extractToolSend(args, "sendMessage");
   },

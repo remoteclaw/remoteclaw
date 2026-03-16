@@ -1,25 +1,43 @@
 import {
+  createScopedAccountConfigAccessors,
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderRestrictSendersWarnings,
-} from "../../../src/plugin-sdk-internal/channel-config.js";
+} from "remoteclaw/plugin-sdk/compat";
 import {
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   getChatChannelMeta,
+  listSignalAccountIds,
   normalizeE164,
+  resolveDefaultSignalAccountId,
+  resolveSignalAccount,
   setAccountEnabledInConfigSection,
   SignalConfigSchema,
   type ChannelPlugin,
-} from "../../../src/plugin-sdk-internal/signal.js";
-import {
-  listSignalAccountIds,
-  resolveDefaultSignalAccountId,
-  resolveSignalAccount,
   type ResolvedSignalAccount,
-} from "./accounts.js";
-import { signalConfigAccessors, signalSetupWizard } from "./plugin-shared.js";
-import { signalSetupAdapter } from "./setup-core.js";
+} from "remoteclaw/plugin-sdk/signal";
+import { createSignalSetupWizardProxy, signalSetupAdapter } from "./setup-core.js";
+
+async function loadSignalChannelRuntime() {
+  return await import("./channel.runtime.js");
+}
+
+const signalSetupWizard = createSignalSetupWizardProxy(async () => ({
+  signalSetupWizard: (await loadSignalChannelRuntime()).signalSetupWizard,
+}));
+
+const signalConfigAccessors = createScopedAccountConfigAccessors({
+  resolveAccount: ({ cfg, accountId }) => resolveSignalAccount({ cfg, accountId }),
+  resolveAllowFrom: (account: ResolvedSignalAccount) => account.config.allowFrom,
+  formatAllowFrom: (allowFrom) =>
+    allowFrom
+      .map((entry) => String(entry).trim())
+      .filter(Boolean)
+      .map((entry) => (entry === "*" ? "*" : normalizeE164(entry.replace(/^signal:/i, ""))))
+      .filter(Boolean),
+  resolveDefaultTo: (account: ResolvedSignalAccount) => account.config.defaultTo,
+});
 
 export const signalSetupPlugin: ChannelPlugin<ResolvedSignalAccount> = {
   id: "signal",

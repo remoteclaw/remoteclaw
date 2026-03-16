@@ -1,7 +1,7 @@
 import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderRestrictSendersWarnings,
-} from "../../../src/plugin-sdk-internal/channel-config.js";
+} from "remoteclaw/plugin-sdk/compat";
 import {
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
@@ -9,19 +9,24 @@ import {
   formatTrimmedAllowFromEntries,
   getChatChannelMeta,
   IMessageConfigSchema,
+  listIMessageAccountIds,
+  resolveDefaultIMessageAccountId,
+  resolveIMessageAccount,
   resolveIMessageConfigAllowFrom,
   resolveIMessageConfigDefaultTo,
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
-} from "../../../src/plugin-sdk-internal/imessage.js";
-import {
-  listIMessageAccountIds,
-  resolveDefaultIMessageAccountId,
-  resolveIMessageAccount,
   type ResolvedIMessageAccount,
-} from "./accounts.js";
-import { imessageSetupWizard } from "./plugin-shared.js";
-import { imessageSetupAdapter } from "./setup-core.js";
+} from "remoteclaw/plugin-sdk/imessage";
+import { createIMessageSetupWizardProxy, imessageSetupAdapter } from "./setup-core.js";
+
+async function loadIMessageChannelRuntime() {
+  return await import("./channel.runtime.js");
+}
+
+const imessageSetupWizard = createIMessageSetupWizardProxy(async () => ({
+  imessageSetupWizard: (await loadIMessageChannelRuntime()).imessageSetupWizard,
+}));
 
 export const imessageSetupPlugin: ChannelPlugin<ResolvedIMessageAccount> = {
   id: "imessage",

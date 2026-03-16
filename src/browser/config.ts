@@ -20,6 +20,8 @@ export type ResolvedBrowserConfig = {
   enabled: boolean;
   evaluateEnabled: boolean;
   controlPort: number;
+  cdpPortRangeStart: number;
+  cdpPortRangeEnd: number;
   cdpProtocol: "http" | "https";
   cdpHost: string;
   cdpIsLoopback: boolean;
@@ -62,6 +64,27 @@ function normalizeHexColor(raw: string | undefined) {
 function normalizeTimeoutMs(raw: number | undefined, fallback: number) {
   const value = typeof raw === "number" && Number.isFinite(raw) ? Math.floor(raw) : fallback;
   return value < 0 ? fallback : value;
+}
+
+function resolveCdpPortRangeStart(
+  rawStart: number | undefined,
+  fallbackStart: number,
+  rangeSpan: number,
+) {
+  const start =
+    typeof rawStart === "number" && Number.isFinite(rawStart)
+      ? Math.floor(rawStart)
+      : fallbackStart;
+  if (start < 1 || start > 65535) {
+    throw new Error(`browser.cdpPortRangeStart must be between 1 and 65535, got: ${start}`);
+  }
+  const maxStart = 65535 - rangeSpan;
+  if (start > maxStart) {
+    throw new Error(
+      `browser.cdpPortRangeStart (${start}) is too high for a ${rangeSpan + 1}-port range; max is ${maxStart}.`,
+    );
+  }
+  return start;
 }
 
 function normalizeStringList(raw: string[] | undefined): string[] | undefined {
@@ -201,6 +224,13 @@ export function resolveBrowserConfig(
   );
 
   const derivedCdpRange = deriveDefaultBrowserCdpPortRange(controlPort);
+  const cdpRangeSpan = derivedCdpRange.end - derivedCdpRange.start;
+  const cdpPortRangeStart = resolveCdpPortRangeStart(
+    cfg?.cdpPortRangeStart,
+    derivedCdpRange.start,
+    cdpRangeSpan,
+  );
+  const cdpPortRangeEnd = cdpPortRangeStart + cdpRangeSpan;
 
   const rawCdpUrl = (cfg?.cdpUrl ?? "").trim();
   let cdpInfo:
@@ -242,7 +272,7 @@ export function resolveBrowserConfig(
       cfg?.profiles,
       defaultColor,
       legacyCdpPort,
-      derivedCdpRange.start,
+      cdpPortRangeStart,
       legacyCdpUrl,
     ),
     controlPort,
@@ -270,6 +300,8 @@ export function resolveBrowserConfig(
     enabled,
     evaluateEnabled,
     controlPort,
+    cdpPortRangeStart,
+    cdpPortRangeEnd,
     cdpProtocol,
     cdpHost: cdpInfo.parsed.hostname,
     cdpIsLoopback: isLoopbackHost(cdpInfo.parsed.hostname),

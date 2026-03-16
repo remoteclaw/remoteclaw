@@ -93,5 +93,6 @@ describe("registerPluginCommand", () => {
         acceptsArgs: false,
       },
     ]);
+
   });
 });

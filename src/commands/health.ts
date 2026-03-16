@@ -13,7 +13,7 @@ import { formatErrorMessage } from "../infra/errors.js";
 import {
   type HeartbeatSummary,
   resolveHeartbeatSummaryForAgent,
-} from "../infra/heartbeat-runner.js";
+} from "../infra/heartbeat-summary.js";
 import { buildChannelAccountBindings, resolvePreferredAccountId } from "../routing/bindings.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { type RuntimeEnv, writeRuntimeJson } from "../runtime.js";

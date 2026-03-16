@@ -1,27 +1,17 @@
-import { createPatchedAccountSetupAdapter } from "../../../src/channels/plugins/setup-helpers.js";
 import {
-  DEFAULT_ACCOUNT_ID,
-  formatCliCommand,
+  applyAccountNameToChannelSection,
+  migrateBaseNameToDefaultAccount,
+} from "../../../src/channels/plugins/setup-helpers.js";
+import {
   patchChannelConfigForAccount,
-  promptResolvedAllowFrom,
-  setSetupChannelEnabled,
-  setChannelDmPolicyWithAllowFrom,
   splitSetupEntries,
-  type RemoteClawConfig,
-  type WizardPrompter,
-} from "../../../src/plugin-sdk-internal/setup.js";
-import type {
-  ChannelSetupAdapter,
-  ChannelSetupDmPolicy,
-  ChannelSetupWizard,
-} from "../../../src/plugin-sdk-internal/setup.js";
+} from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import { formatCliCommand } from "../../../src/cli/command-format.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
-import { inspectTelegramAccount } from "./account-inspect.js";
-import {
-  listTelegramAccountIds,
-  resolveDefaultTelegramAccountId,
-  resolveTelegramAccount,
-} from "./accounts.js";
+import { resolveDefaultTelegramAccountId, resolveTelegramAccount } from "./accounts.js";
 import { fetchTelegramChatId } from "./api-fetch.js";
 
 const channel = "telegram" as const;
@@ -81,7 +71,11 @@ export async function resolveTelegramAllowFromEntries(params: {
 
 export async function promptTelegramAllowFromForAccount(params: {
   cfg: RemoteClawConfig;
-  prompter: WizardPrompter;
+  prompter: Parameters<
+    NonNullable<
+      import("../../../src/channels/plugins/setup-wizard-types.js").ChannelSetupDmPolicy["promptAllowFrom"]
+    >
+  >[0]["prompter"];
   accountId?: string;
 }) {
   const accountId = params.accountId ?? resolveDefaultTelegramAccountId(params.cfg);
@@ -93,6 +87,8 @@ export async function promptTelegramAllowFromForAccount(params: {
       "Telegram",
     );
   }
+  const { promptResolvedAllowFrom } =
+    await import("../../../src/channels/plugins/setup-wizard-helpers.runtime.js");
   const unique = await promptResolvedAllowFrom({
     prompter: params.prompter,
     existing: resolved.config.allowFrom ?? [],
@@ -118,93 +114,15 @@ export async function promptTelegramAllowFromForAccount(params: {
   });
 }
 
-type TelegramSetupWizardHandlers = {
-  inspectToken: (params: { cfg: RemoteClawConfig; accountId: string }) => {
-    accountConfigured: boolean;
-    hasConfiguredValue: boolean;
-    resolvedValue?: string;
-    envValue?: string;
-  };
-};
-
-export function createTelegramSetupWizardBase(
-  handlers: TelegramSetupWizardHandlers,
-): ChannelSetupWizard {
-  const dmPolicy: ChannelSetupDmPolicy = {
-    label: "Telegram",
-    channel,
-    policyKey: "channels.telegram.dmPolicy",
-    allowFromKey: "channels.telegram.allowFrom",
-    getCurrent: (cfg) => cfg.channels?.telegram?.dmPolicy ?? "pairing",
-    setPolicy: (cfg, policy) =>
-      setChannelDmPolicyWithAllowFrom({
-        cfg,
-        channel,
-        dmPolicy: policy,
-      }),
-    promptAllowFrom: promptTelegramAllowFromForAccount,
-  };
-
-  return {
-    channel,
-    status: {
-      configuredLabel: "configured",
-      unconfiguredLabel: "needs token",
-      configuredHint: "recommended · configured",
-      unconfiguredHint: "recommended · newcomer-friendly",
-      configuredScore: 1,
-      unconfiguredScore: 10,
-      resolveConfigured: ({ cfg }) =>
-        listTelegramAccountIds(cfg).some((accountId) => {
-          const account = inspectTelegramAccount({ cfg, accountId });
-          return account.configured;
-        }),
-    },
-    credentials: [
-      {
-        inputKey: "token",
-        providerHint: channel,
-        credentialLabel: "Telegram bot token",
-        preferredEnvVar: "TELEGRAM_BOT_TOKEN",
-        helpTitle: "Telegram bot token",
-        helpLines: TELEGRAM_TOKEN_HELP_LINES,
-        envPrompt: "TELEGRAM_BOT_TOKEN detected. Use env var?",
-        keepPrompt: "Telegram token already configured. Keep it?",
-        inputPrompt: "Enter Telegram bot token",
-        allowEnv: ({ accountId }) => accountId === DEFAULT_ACCOUNT_ID,
-        inspect: ({ cfg, accountId }) => handlers.inspectToken({ cfg, accountId }),
-      },
-    ],
-    allowFrom: {
-      helpTitle: "Telegram user id",
-      helpLines: TELEGRAM_USER_ID_HELP_LINES,
-      credentialInputKey: "token",
-      message: "Telegram allowFrom (numeric sender id; @username resolves to id)",
-      placeholder: "@username",
-      invalidWithoutCredentialNote:
-        "Telegram token missing; use numeric sender ids (usernames require a bot token).",
-      parseInputs: splitSetupEntries,
-      parseId: parseTelegramAllowFromId,
-      resolveEntries: async ({ credentialValues, entries }) =>
-        resolveTelegramAllowFromEntries({
-          credentialValue: credentialValues.token,
-          entries,
-        }),
-      apply: async ({ cfg, accountId, allowFrom }) =>
-        patchChannelConfigForAccount({
-          cfg,
-          channel,
-          accountId,
-          patch: { dmPolicy: "allowlist", allowFrom },
-        }),
-    },
-    dmPolicy,
-    disable: (cfg) => setSetupChannelEnabled(cfg, channel, false),
-  } satisfies ChannelSetupWizard;
-}
-
-export const telegramSetupAdapter: ChannelSetupAdapter = createPatchedAccountSetupAdapter({
-  channelKey: channel,
+export const telegramSetupAdapter: ChannelSetupAdapter = {
+  resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
+  applyAccountName: ({ cfg, accountId, name }) =>
+    applyAccountNameToChannelSection({
+      cfg,
+      channelKey: channel,
+      accountId,
+      name,
+    }),
   validateInput: ({ accountId, input }) => {
     if (input.useEnv && accountId !== DEFAULT_ACCOUNT_ID) {
       return "TELEGRAM_BOT_TOKEN can only be used for the default account.";
@@ -214,12 +132,60 @@ export const telegramSetupAdapter: ChannelSetupAdapter = createPatchedAccountSet
     }
     return null;
   },
-  buildPatch: (input) =>
-    input.useEnv
-      ? {}
-      : input.tokenFile
-        ? { tokenFile: input.tokenFile }
-        : input.token
-          ? { botToken: input.token }
-          : {},
-});
+  applyAccountConfig: ({ cfg, accountId, input }) => {
+    const namedConfig = applyAccountNameToChannelSection({
+      cfg,
+      channelKey: channel,
+      accountId,
+      name: input.name,
+    });
+    const next =
+      accountId !== DEFAULT_ACCOUNT_ID
+        ? migrateBaseNameToDefaultAccount({
+            cfg: namedConfig,
+            channelKey: channel,
+          })
+        : namedConfig;
+    if (accountId === DEFAULT_ACCOUNT_ID) {
+      return {
+        ...next,
+        channels: {
+          ...next.channels,
+          telegram: {
+            ...next.channels?.telegram,
+            enabled: true,
+            ...(input.useEnv
+              ? {}
+              : input.tokenFile
+                ? { tokenFile: input.tokenFile }
+                : input.token
+                  ? { botToken: input.token }
+                  : {}),
+          },
+        },
+      };
+    }
+    return {
+      ...next,
+      channels: {
+        ...next.channels,
+        telegram: {
+          ...next.channels?.telegram,
+          enabled: true,
+          accounts: {
+            ...next.channels?.telegram?.accounts,
+            [accountId]: {
+              ...next.channels?.telegram?.accounts?.[accountId],
+              enabled: true,
+              ...(input.tokenFile
+                ? { tokenFile: input.tokenFile }
+                : input.token
+                  ? { botToken: input.token }
+                  : {}),
+            },
+          },
+        },
+      },
+    };
+  },
+};

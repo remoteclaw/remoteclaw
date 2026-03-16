@@ -143,7 +143,7 @@ describe("config cli", () => {
     });
 
     it("auto-seeds a valid Ollama provider when setting only models.providers.ollama.apiKey", async () => {
-      const resolved: OpenClawConfig = {
+      const resolved: RemoteClawConfig = {
         gateway: { port: 18789 },
       };
       setSnapshot(resolved, resolved);
@@ -151,8 +151,10 @@ describe("config cli", () => {
       await runConfigCommand(["config", "set", "models.providers.ollama.apiKey", '"ollama-local"']);
 
       expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
-      const written = mockWriteConfigFile.mock.calls[0]?.[0];
-      expect(written.models?.providers?.ollama).toEqual({
+      const written = mockWriteConfigFile.mock.calls[0]?.[0] as Record<string, unknown>;
+      expect(
+        (written as { models?: { providers?: { ollama?: unknown } } }).models?.providers?.ollama,
+      ).toEqual({
         baseUrl: "http://127.0.0.1:11434",
         api: "ollama",
         models: [],

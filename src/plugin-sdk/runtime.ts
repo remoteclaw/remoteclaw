@@ -6,6 +6,7 @@ type LoggerLike = {
   error: (message: string) => void;
 };
 
+/** Adapt a simple logger into the RuntimeEnv contract used by shared plugin SDK helpers. */
 export function createLoggerBackedRuntime(params: {
   logger: LoggerLike;
   exitError?: (code: number) => Error;
@@ -29,6 +30,7 @@ export function createLoggerBackedRuntime(params: {
   };
 }
 
+/** Reuse an existing runtime when present, otherwise synthesize one from the provided logger. */
 export function resolveRuntimeEnv(params: {
   runtime?: RuntimeEnv;
   logger: LoggerLike;
@@ -37,6 +39,7 @@ export function resolveRuntimeEnv(params: {
   return params.runtime ?? createLoggerBackedRuntime(params);
 }
 
+/** Resolve a runtime that treats exit requests as unsupported errors instead of process termination. */
 export function resolveRuntimeEnvWithUnavailableExit(params: {
   runtime?: RuntimeEnv;
   logger: LoggerLike;

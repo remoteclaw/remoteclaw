@@ -42,22 +42,22 @@ describe("loadSettings default gateway URL derivation", () => {
       host: "gateway.example:8443",
       pathname: "/ignored/path",
     } as Location);
-    vi.stubGlobal("window", { __OPENCLAW_CONTROL_UI_BASE_PATH__: " /openclaw/ " } as Window &
+    vi.stubGlobal("window", { __REMOTECLAW_CONTROL_UI_BASE_PATH__: " /remoteclaw/ " } as Window &
       typeof globalThis);
 
     const { loadSettings } = await import("./storage.ts");
-    expect(loadSettings().gatewayUrl).toBe("wss://gateway.example:8443/openclaw");
+    expect(loadSettings().gatewayUrl).toBe("wss://gateway.example:8443/remoteclaw");
   });
 
   it("infers base path from nested pathname when configured base path is not set", async () => {
     vi.stubGlobal("location", {
       protocol: "http:",
       host: "gateway.example:18789",
-      pathname: "/apps/openclaw/chat",
+      pathname: "/apps/remoteclaw/chat",
     } as Location);
     vi.stubGlobal("window", {} as Window & typeof globalThis);
 
     const { loadSettings } = await import("./storage.ts");
-    expect(loadSettings().gatewayUrl).toBe("ws://gateway.example:18789/apps/openclaw");
+    expect(loadSettings().gatewayUrl).toBe("ws://gateway.example:18789/apps/remoteclaw");
   });
 });

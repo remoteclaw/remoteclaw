@@ -48,7 +48,7 @@ export const de: TranslationMap = {
     skills: "Skill-Verfügbarkeit und API-Schlüsselinjektion verwalten.",
     nodes: "Gekoppelte Geräte, Fähigkeiten und Befehlsfreigabe.",
     chat: "Direkte Gateway-Chat-Sitzung für schnelle Eingriffe.",
-    config: "~/.openclaw/openclaw.json sicher bearbeiten.",
+    config: "~/.remoteclaw/remoteclaw.json sicher bearbeiten.",
     debug: "Gateway-Snapshots, Ereignisse und manuelle RPC-Aufrufe.",
     logs: "Live-Verfolgung der Gateway-Protokolldateien.",
   },
@@ -102,7 +102,7 @@ export const de: TranslationMap = {
     pairing: {
       hint: "Dieses Gerät benötigt eine Pairing-Freigabe vom Gateway-Host.",
       mobileHint:
-        "Auf dem Mobilgerät? Kopieren Sie die vollständige URL (einschließlich #token=...) von openclaw dashboard --no-open auf Ihrem Desktop.",
+        "Auf dem Mobilgerät? Kopieren Sie die vollständige URL (einschließlich #token=...) von remoteclaw dashboard --no-open auf Ihrem Desktop.",
     },
     insecure: {
       hint: "Diese Seite ist HTTP, daher blockiert der Browser die Geräteidentifikation. Verwenden Sie HTTPS (Tailscale Serve) oder öffnen Sie {url} auf dem Gateway-Host.",

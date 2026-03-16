@@ -8,7 +8,7 @@ import {
   resetSubagentRegistryForTests,
 } from "../../agents/subagent-registry.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { updateSessionStore } from "../../config/sessions.js";
+import { updateSessionStore, type SessionEntry } from "../../config/sessions.js";
 import * as internalHooks from "../../hooks/internal-hooks.js";
 import { clearPluginCommands, registerPluginCommand } from "../../plugins/commands.js";
 import { typedCases } from "../../test-utils/typed-cases.js";

@@ -92,15 +92,17 @@ async function ensureSharedClientStarted(params: {
     // resolveSharedMatrixClient() calls know to retry.
     const startPromiseInner = client.start();
     let settled = false;
+    let startError: unknown = undefined;
     startPromiseInner.catch((err: unknown) => {
       settled = true;
+      startError = err;
       params.state.started = false;
       LogService.error("MatrixClientLite", "client.start() error:", err);
     });
     // Give the sync loop a moment to initialize before marking ready
     await new Promise((resolve) => setTimeout(resolve, 2000));
     if (settled) {
-      throw new Error("Matrix client.start() failed during initialization");
+      throw startError;
     }
     params.state.started = true;
   })();

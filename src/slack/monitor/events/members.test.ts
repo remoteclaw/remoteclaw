@@ -25,7 +25,6 @@ type MemberCaseArgs = {
   body?: unknown;
   overrides?: MemberOverrides;
   handler?: "joined" | "left";
-  trackEvent?: () => void;
   shouldDropMismatchedSlackEvent?: (body: unknown) => boolean;
 };
 
@@ -40,14 +39,13 @@ function makeMemberEvent(overrides?: { channel?: string; user?: string }) {
 
 function getMemberHandlers(params: {
   overrides?: MemberOverrides;
-  trackEvent?: () => void;
   shouldDropMismatchedSlackEvent?: (body: unknown) => boolean;
 }) {
   const harness = initSlackHarness(params.overrides);
   if (params.shouldDropMismatchedSlackEvent) {
     harness.ctx.shouldDropMismatchedSlackEvent = params.shouldDropMismatchedSlackEvent;
   }
-  registerSlackMemberEvents({ ctx: harness.ctx, trackEvent: params.trackEvent });
+  registerSlackMemberEvents({ ctx: harness.ctx });
   return {
     joined: harness.getHandler("member_joined_channel") as MemberHandler | null,
     left: harness.getHandler("member_left_channel") as MemberHandler | null,
@@ -59,7 +57,6 @@ async function runMemberCase(args: MemberCaseArgs = {}): Promise<void> {
   memberMocks.readAllow.mockReset().mockResolvedValue([]);
   const handlers = getMemberHandlers({
     overrides: args.overrides,
-    trackEvent: args.trackEvent,
     shouldDropMismatchedSlackEvent: args.shouldDropMismatchedSlackEvent,
   });
   const key = args.handler ?? "joined";
@@ -75,18 +72,18 @@ describe("registerSlackMemberEvents", () => {
   it.each([
     {
       name: "enqueues DM member events when dmPolicy is open",
-      args: { overrides: { dmPolicy: "open" } },
+      args: { overrides: { dmPolicy: "open" as const } },
       calls: 1,
     },
     {
       name: "blocks DM member events when dmPolicy is disabled",
-      args: { overrides: { dmPolicy: "disabled" } },
+      args: { overrides: { dmPolicy: "disabled" as const } },
       calls: 0,
     },
     {
       name: "blocks DM member events for unauthorized senders in allowlist mode",
       args: {
-        overrides: { dmPolicy: "allowlist", allowFrom: ["U2"] },
+        overrides: { dmPolicy: "allowlist" as const, allowFrom: ["U2"] },
         event: makeMemberEvent({ user: "U1" }),
       },
       calls: 0,
@@ -95,7 +92,7 @@ describe("registerSlackMemberEvents", () => {
       name: "allows DM member events for authorized senders in allowlist mode",
       args: {
         handler: "left" as const,
-        overrides: { dmPolicy: "allowlist", allowFrom: ["U1"] },
+        overrides: { dmPolicy: "allowlist" as const, allowFrom: ["U1"] },
         event: { ...makeMemberEvent({ user: "U1" }), type: "member_left_channel" },
       },
       calls: 1,
@@ -104,8 +101,8 @@ describe("registerSlackMemberEvents", () => {
       name: "blocks channel member events for users outside channel users allowlist",
       args: {
         overrides: {
-          dmPolicy: "open",
-          channelType: "channel",
+          dmPolicy: "open" as const,
+          channelType: "channel" as const,
           channelUsers: ["U_OWNER"],
         },
         event: makeMemberEvent({ channel: "C1", user: "U_ATTACKER" }),
@@ -117,21 +114,12 @@ describe("registerSlackMemberEvents", () => {
     expect(memberMocks.enqueue).toHaveBeenCalledTimes(calls);
   });
 
-  it("does not track mismatched events", async () => {
-    const trackEvent = vi.fn();
+  it("drops mismatched events", async () => {
     await runMemberCase({
-      trackEvent,
       shouldDropMismatchedSlackEvent: () => true,
       body: { api_app_id: "A_OTHER" },
     });
 
-    expect(trackEvent).not.toHaveBeenCalled();
-  });
-
-  it("tracks accepted member events", async () => {
-    const trackEvent = vi.fn();
-    await runMemberCase({ trackEvent });
-
-    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(memberMocks.enqueue).not.toHaveBeenCalled();
   });
 });

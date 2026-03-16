@@ -22,7 +22,6 @@ type PinCase = {
   event?: Record<string, unknown>;
   handler?: "added" | "removed";
   overrides?: PinOverrides;
-  trackEvent?: () => void;
   shouldDropMismatchedSlackEvent?: (body: unknown) => boolean;
 };
 
@@ -41,14 +40,13 @@ function makePinEvent(overrides?: { channel?: string; user?: string }) {
 
 function installPinHandlers(args: {
   overrides?: PinOverrides;
-  trackEvent?: () => void;
   shouldDropMismatchedSlackEvent?: (body: unknown) => boolean;
 }) {
   const harness = buildPinHarness(args.overrides);
   if (args.shouldDropMismatchedSlackEvent) {
     harness.ctx.shouldDropMismatchedSlackEvent = args.shouldDropMismatchedSlackEvent;
   }
-  registerSlackPinEvents({ ctx: harness.ctx, trackEvent: args.trackEvent });
+  registerSlackPinEvents({ ctx: harness.ctx });
   return {
     added: harness.getHandler("pin_added") as PinHandler | null,
     removed: harness.getHandler("pin_removed") as PinHandler | null,
@@ -60,7 +58,6 @@ async function runPinCase(input: PinCase = {}): Promise<void> {
   pinAllowMock.mockReset().mockResolvedValue([]);
   const { added, removed } = installPinHandlers({
     overrides: input.overrides,
-    trackEvent: input.trackEvent,
     shouldDropMismatchedSlackEvent: input.shouldDropMismatchedSlackEvent,
   });
   const handlerKey = input.handler ?? "added";
@@ -76,16 +73,20 @@ async function runPinCase(input: PinCase = {}): Promise<void> {
 
 describe("registerSlackPinEvents", () => {
   it.each([
-    ["enqueues DM pin system events when dmPolicy is open", { overrides: { dmPolicy: "open" } }, 1],
+    [
+      "enqueues DM pin system events when dmPolicy is open",
+      { overrides: { dmPolicy: "open" as const } },
+      1,
+    ],
     [
       "blocks DM pin system events when dmPolicy is disabled",
-      { overrides: { dmPolicy: "disabled" } },
+      { overrides: { dmPolicy: "disabled" as const } },
       0,
     ],
     [
       "blocks DM pin system events for unauthorized senders in allowlist mode",
       {
-        overrides: { dmPolicy: "allowlist", allowFrom: ["U2"] },
+        overrides: { dmPolicy: "allowlist" as const, allowFrom: ["U2"] },
         event: makePinEvent({ user: "U1" }),
       },
       0,
@@ -93,7 +94,7 @@ describe("registerSlackPinEvents", () => {
     [
       "allows DM pin system events for authorized senders in allowlist mode",
       {
-        overrides: { dmPolicy: "allowlist", allowFrom: ["U1"] },
+        overrides: { dmPolicy: "allowlist" as const, allowFrom: ["U1"] },
         event: makePinEvent({ user: "U1" }),
       },
       1,
@@ -102,8 +103,8 @@ describe("registerSlackPinEvents", () => {
       "blocks channel pin events for users outside channel users allowlist",
       {
         overrides: {
-          dmPolicy: "open",
-          channelType: "channel",
+          dmPolicy: "open" as const,
+          channelType: "channel" as const,
           channelUsers: ["U_OWNER"],
         },
         event: makePinEvent({ channel: "C1", user: "U_ATTACKER" }),
@@ -115,21 +116,12 @@ describe("registerSlackPinEvents", () => {
     expect(pinEnqueueMock).toHaveBeenCalledTimes(expectedCalls);
   });
 
-  it("does not track mismatched events", async () => {
-    const trackEvent = vi.fn();
+  it("drops mismatched events", async () => {
     await runPinCase({
-      trackEvent,
       shouldDropMismatchedSlackEvent: () => true,
       body: { api_app_id: "A_OTHER" },
     });
 
-    expect(trackEvent).not.toHaveBeenCalled();
-  });
-
-  it("tracks accepted pin events", async () => {
-    const trackEvent = vi.fn();
-    await runPinCase({ trackEvent });
-
-    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(pinEnqueueMock).not.toHaveBeenCalled();
   });
 });

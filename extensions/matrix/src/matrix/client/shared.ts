@@ -92,7 +92,7 @@ async function ensureSharedClientStarted(params: {
       LogService.error("MatrixClientLite", "client.start() error:", err);
     });
     // Give the sync loop a moment to initialize
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     params.state.started = true;
   })();
   sharedClientStartPromises.set(key, startPromise);

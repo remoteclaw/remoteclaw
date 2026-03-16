@@ -1,9 +1,20 @@
 import {
+  buildAccountScopedDmSecurityPolicy,
+  buildChannelConfigSchema,
+  collectAllowlistProviderGroupPolicyWarnings,
+  collectOpenGroupPolicyRouteAllowlistWarnings,
+  DEFAULT_ACCOUNT_ID,
+  formatWhatsAppConfigAllowFromEntries,
+  getChatChannelMeta,
+  normalizeE164,
+  resolveWhatsAppConfigAllowFrom,
+  resolveWhatsAppConfigDefaultTo,
   resolveWhatsAppGroupIntroHint,
   resolveWhatsAppGroupRequireMention,
   resolveWhatsAppGroupToolPolicy,
+  WhatsAppConfigSchema,
   type ChannelPlugin,
-} from "../../../src/plugin-sdk-internal/whatsapp.js";
+} from "remoteclaw/plugin-sdk/whatsapp";
 import {
   listWhatsAppAccountIds,
   resolveDefaultWhatsAppAccountId,
@@ -11,18 +22,118 @@ import {
   type ResolvedWhatsAppAccount,
 } from "./accounts.js";
 import { webAuthExists } from "./auth-store.js";
-import { whatsappSetupWizardProxy } from "./plugin-shared.js";
 import { whatsappSetupAdapter } from "./setup-core.js";
 
-export const whatsappSetupPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
-  ...createWhatsAppPluginBase({
-    groups: {
-      resolveRequireMention: resolveWhatsAppGroupRequireMention,
-      resolveToolPolicy: resolveWhatsAppGroupToolPolicy,
-      resolveGroupIntroHint: resolveWhatsAppGroupIntroHint,
+async function loadWhatsAppChannelRuntime() {
+  return await import("./channel.runtime.js");
+}
+
+const whatsappSetupWizardProxy = {
+  channel: "whatsapp",
+  status: {
+    configuredLabel: "linked",
+    unconfiguredLabel: "not linked",
+    configuredHint: "linked",
+    unconfiguredHint: "not linked",
+    configuredScore: 5,
+    unconfiguredScore: 4,
+    resolveConfigured: async ({ cfg }) =>
+      await (
+        await loadWhatsAppChannelRuntime()
+      ).whatsappSetupWizard.status.resolveConfigured({
+        cfg,
+      }),
+    resolveStatusLines: async ({ cfg, configured }) =>
+      (await (
+        await loadWhatsAppChannelRuntime()
+      ).whatsappSetupWizard.status.resolveStatusLines?.({
+        cfg,
+        configured,
+      })) ?? [],
+  },
+  resolveShouldPromptAccountIds: (params) =>
+    (params.shouldPromptAccountIds || params.options?.promptWhatsAppAccountId) ?? false,
+  credentials: [],
+  finalize: async (params) =>
+    await (
+      await loadWhatsAppChannelRuntime()
+    ).whatsappSetupWizard.finalize!(params),
+  disable: (cfg) => ({
+    ...cfg,
+    channels: {
+      ...cfg.channels,
+      whatsapp: {
+        ...cfg.channels?.whatsapp,
+        enabled: false,
+      },
     },
-    setupWizard: whatsappSetupWizardProxy,
-    setup: whatsappSetupAdapter,
+  }),
+  onAccountRecorded: (accountId, options) => {
+    options?.onWhatsAppAccountId?.(accountId);
+  },
+} satisfies NonNullable<ChannelPlugin<ResolvedWhatsAppAccount>["setupWizard"]>;
+
+export const whatsappSetupPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
+  id: "whatsapp",
+  meta: {
+    ...getChatChannelMeta("whatsapp"),
+    showConfigured: false,
+    quickstartAllowFrom: true,
+    forceAccountBinding: true,
+    preferSessionLookupForAnnounceTarget: true,
+  },
+  setupWizard: whatsappSetupWizardProxy,
+  capabilities: {
+    chatTypes: ["direct", "group"],
+    polls: true,
+    reactions: true,
+    media: true,
+  },
+  reload: { configPrefixes: ["web"], noopPrefixes: ["channels.whatsapp"] },
+  gatewayMethods: ["web.login.start", "web.login.wait"],
+  configSchema: buildChannelConfigSchema(WhatsAppConfigSchema),
+  config: {
+    listAccountIds: (cfg) => listWhatsAppAccountIds(cfg),
+    resolveAccount: (cfg, accountId) => resolveWhatsAppAccount({ cfg, accountId }),
+    defaultAccountId: (cfg) => resolveDefaultWhatsAppAccountId(cfg),
+    setAccountEnabled: ({ cfg, accountId, enabled }) => {
+      const accountKey = accountId || DEFAULT_ACCOUNT_ID;
+      const accounts = { ...cfg.channels?.whatsapp?.accounts };
+      const existing = accounts[accountKey] ?? {};
+      return {
+        ...cfg,
+        channels: {
+          ...cfg.channels,
+          whatsapp: {
+            ...cfg.channels?.whatsapp,
+            accounts: {
+              ...accounts,
+              [accountKey]: {
+                ...existing,
+                enabled,
+              },
+            },
+          },
+        },
+      };
+    },
+    deleteAccount: ({ cfg, accountId }) => {
+      const accountKey = accountId || DEFAULT_ACCOUNT_ID;
+      const accounts = { ...cfg.channels?.whatsapp?.accounts };
+      delete accounts[accountKey];
+      return {
+        ...cfg,
+        channels: {
+          ...cfg.channels,
+          whatsapp: {
+            ...cfg.channels?.whatsapp,
+            accounts: Object.keys(accounts).length ? accounts : undefined,
+          },
+        },
+      };
+    },
+    isEnabled: (account, cfg) => account.enabled && cfg.web?.enabled !== false,
+    disabledReason: () => "disabled",
     isConfigured: async (account) => await webAuthExists(account.authDir),
     unconfiguredReason: () => "not linked",
     describeAccount: (account) => ({

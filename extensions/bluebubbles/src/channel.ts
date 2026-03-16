@@ -20,20 +20,8 @@ import {
   resolveDefaultBlueBubblesAccountId,
 } from "./accounts.js";
 import { bluebubblesMessageActions } from "./actions.js";
+import type { BlueBubblesProbe } from "./channel.runtime.js";
 import { BlueBubblesConfigSchema } from "./config-schema.js";
-import {
-  resolveBlueBubblesGroupRequireMention,
-  resolveBlueBubblesGroupToolPolicy,
-} from "./group-policy.js";
-import type { ChannelAccountSnapshot, ChannelPlugin } from "./runtime-api.js";
-import {
-  buildChannelConfigSchema,
-  buildProbeChannelStatusSummary,
-  collectBlueBubblesStatusIssues,
-  DEFAULT_ACCOUNT_ID,
-  PAIRING_APPROVED_MESSAGE,
-} from "./runtime-api.js";
-import { resolveBlueBubblesOutboundSessionRoute } from "./session-route.js";
 import { blueBubblesSetupAdapter } from "./setup-core.js";
 import { blueBubblesSetupWizard } from "./setup-surface.js";
 import {
@@ -46,40 +34,12 @@ import {
   parseBlueBubblesTarget,
 } from "./targets.js";
 
-const loadBlueBubblesChannelRuntime = createLazyRuntimeNamedExport(
-  () => import("./channel.runtime.js"),
-  "blueBubblesChannelRuntime",
-);
+let blueBubblesChannelRuntimePromise: Promise<typeof import("./channel.runtime.js")> | null = null;
 
-const bluebubblesConfigAdapter = createScopedChannelConfigAdapter<ResolvedBlueBubblesAccount>({
-  sectionKey: "bluebubbles",
-  listAccountIds: listBlueBubblesAccountIds,
-  resolveAccount: adaptScopedAccountAccessor(resolveBlueBubblesAccount),
-  defaultAccountId: resolveDefaultBlueBubblesAccountId,
-  clearBaseFields: ["serverUrl", "password", "name", "webhookPath"],
-  resolveAllowFrom: (account: ResolvedBlueBubblesAccount) => account.config.allowFrom,
-  formatAllowFrom: (allowFrom) =>
-    formatNormalizedAllowFromEntries({
-      allowFrom,
-      normalizeEntry: (entry) => normalizeBlueBubblesHandle(entry.replace(/^bluebubbles:/i, "")),
-    }),
-});
-
-const bluebubblesConfigBase = createScopedChannelConfigBase<ResolvedBlueBubblesAccount>({
-  sectionKey: "bluebubbles",
-  listAccountIds: listBlueBubblesAccountIds,
-  resolveAccount: (cfg, accountId) => resolveBlueBubblesAccount({ cfg, accountId }),
-  defaultAccountId: resolveDefaultBlueBubblesAccountId,
-  clearBaseFields: ["serverUrl", "password", "name", "webhookPath"],
-});
-
-const resolveBlueBubblesDmPolicy = createScopedDmSecurityResolver<ResolvedBlueBubblesAccount>({
-  channelKey: "bluebubbles",
-  resolvePolicy: (account) => account.config.dmPolicy,
-  resolveAllowFrom: (account) => account.config.allowFrom,
-  policyPathSuffix: "dmPolicy",
-  normalizeEntry: (raw) => normalizeBlueBubblesHandle(raw.replace(/^bluebubbles:/i, "")),
-});
+function loadBlueBubblesChannelRuntime() {
+  blueBubblesChannelRuntimePromise ??= import("./channel.runtime.js");
+  return blueBubblesChannelRuntimePromise;
+}
 
 const meta = {
   id: "bluebubbles",
@@ -216,66 +176,20 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = crea
             return cleanTarget;
           }
 
-          // Last resort: return display or target as-is
-          return display?.trim() || target?.trim() || "";
-        },
-      },
-      setup: blueBubblesSetupAdapter,
-      status: createComputedAccountStatusAdapter<ResolvedBlueBubblesAccount, BlueBubblesProbe>({
-        defaultRuntime: {
-          accountId: DEFAULT_ACCOUNT_ID,
-          running: false,
-          lastStartAt: null,
-          lastStopAt: null,
-          lastError: null,
-        },
-        collectStatusIssues: collectBlueBubblesStatusIssues,
-        buildChannelSummary: ({ snapshot }) =>
-          buildProbeChannelStatusSummary(snapshot, { baseUrl: snapshot.baseUrl ?? null }),
-        probeAccount: async ({ account, timeoutMs }) =>
-          (await loadBlueBubblesChannelRuntime()).probeBlueBubbles({
-            baseUrl: account.baseUrl,
-            password: account.config.password ?? null,
-            timeoutMs,
-          }),
-        resolveAccountSnapshot: ({ account, runtime, probe }) => {
-          const running = runtime?.running ?? false;
-          const probeOk = probe?.ok;
-          return {
-            accountId: account.accountId,
-            name: account.name,
-            enabled: account.enabled,
-            configured: account.configured,
-            extra: {
-              baseUrl: account.baseUrl,
-              connected: probeOk ?? running,
-            },
-          };
-        },
-      }),
-      gateway: {
-        startAccount: async (ctx) => {
-          const runtime = await loadBlueBubblesChannelRuntime();
-          const account = ctx.account;
-          const webhookPath = runtime.resolveWebhookPathFromConfig(account.config);
-          const statusSink = createAccountStatusSink({
-            accountId: ctx.accountId,
-            setStatus: ctx.setStatus,
-          });
-          statusSink({
-            baseUrl: account.baseUrl,
-          });
-          ctx.log?.info(`[${account.accountId}] starting provider (webhook=${webhookPath})`);
-          return runtime.monitorBlueBubblesProvider({
-            account,
-            config: ctx.cfg,
-            runtime: ctx.runtime,
-            abortSignal: ctx.abortSignal,
-            statusSink,
-            webhookPath,
-          });
-        },
-      },
+      // Last resort: return display or target as-is
+      return display?.trim() || target?.trim() || "";
+    },
+  },
+  setup: blueBubblesSetupAdapter,
+  pairing: {
+    idLabel: "bluebubblesSenderId",
+    normalizeAllowEntry: (entry) => normalizeBlueBubblesHandle(entry.replace(/^bluebubbles:/i, "")),
+    notifyApproval: async ({ cfg, id }) => {
+      await (
+        await loadBlueBubblesChannelRuntime()
+      ).sendMessageBlueBubbles(id, PAIRING_APPROVED_MESSAGE, {
+        cfg: cfg,
+      });
     },
     security: {
       resolveDmPolicy: resolveBlueBubblesDmPolicy,
@@ -284,12 +198,45 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = crea
         collectBlueBubblesSecurityWarnings,
       ),
     },
-    threading: {
-      buildToolContext: ({ context, hasRepliedRef }) => ({
-        currentChannelId: context.To?.trim() || undefined,
-        currentThreadTs: context.ReplyToIdFull ?? context.ReplyToId,
-        hasRepliedRef,
-      }),
+    sendText: async ({ cfg, to, text, accountId, replyToId }) => {
+      const runtime = await loadBlueBubblesChannelRuntime();
+      const rawReplyToId = typeof replyToId === "string" ? replyToId.trim() : "";
+      // Resolve short ID (e.g., "5") to full UUID
+      const replyToMessageGuid = rawReplyToId
+        ? runtime.resolveBlueBubblesMessageId(rawReplyToId, { requireKnownShortId: true })
+        : "";
+      const result = await runtime.sendMessageBlueBubbles(to, text, {
+        cfg: cfg,
+        accountId: accountId ?? undefined,
+        replyToMessageGuid: replyToMessageGuid || undefined,
+      });
+      return { channel: "bluebubbles", ...result };
+    },
+    sendMedia: async (ctx) => {
+      const runtime = await loadBlueBubblesChannelRuntime();
+      const { cfg, to, text, mediaUrl, accountId, replyToId } = ctx;
+      const { mediaPath, mediaBuffer, contentType, filename, caption } = ctx as {
+        mediaPath?: string;
+        mediaBuffer?: Uint8Array;
+        contentType?: string;
+        filename?: string;
+        caption?: string;
+      };
+      const resolvedCaption = caption ?? text;
+      const result = await runtime.sendBlueBubblesMedia({
+        cfg: cfg,
+        to,
+        mediaUrl,
+        mediaPath,
+        mediaBuffer,
+        contentType,
+        filename,
+        caption: resolvedCaption ?? undefined,
+        replyToId: replyToId ?? null,
+        accountId: accountId ?? undefined,
+      });
+
+      return { channel: "bluebubbles", ...result };
     },
     pairing: createTextPairingAdapter({
       idLabel: "bluebubblesSenderId",
@@ -343,7 +290,7 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = crea
     startAccount: async (ctx) => {
       const runtime = await loadBlueBubblesChannelRuntime();
       const account = ctx.account;
-      const webhookPath = resolveWebhookPathFromConfig(account.config);
+      const webhookPath = runtime.resolveWebhookPathFromConfig(account.config);
       const statusSink = createAccountStatusSink({
         accountId: ctx.accountId,
         setStatus: ctx.setStatus,

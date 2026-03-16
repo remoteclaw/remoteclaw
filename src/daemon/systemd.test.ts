@@ -61,7 +61,7 @@ describe("isSystemdServiceEnabled", () => {
   it("calls systemctl is-enabled when systemctl is present", async () => {
     const { isSystemdServiceEnabled } = await import("./systemd.js");
     execFileMock.mockImplementationOnce((_cmd, args, _opts, cb) => {
-      expect(args).toEqual(["--user", "is-enabled", "openclaw-gateway.service"]);
+      expect(args).toEqual(["--user", "is-enabled", "remoteclaw-gateway.service"]);
       cb(null, "enabled", "");
     });
     const result = await isSystemdServiceEnabled({ env: {} });

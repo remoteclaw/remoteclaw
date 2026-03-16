@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-const resolvePluginToolsMock = vi.fn(() => []);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock typing
+const resolvePluginToolsMock = vi.fn((_params: any) => []);
 
 vi.mock("../plugins/tools.js", () => ({
   resolvePluginTools: (params: unknown) => resolvePluginToolsMock(params),

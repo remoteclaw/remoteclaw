@@ -1,4 +1,4 @@
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/discord";
+import type { OpenClawPluginApi } from "openclaw/plugin-sdk/discord";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { registerDiscordSubagentHooks } from "./subagent-hooks.js";
 
@@ -35,8 +35,10 @@ const hookMocks = vi.hoisted(() => ({
   unbindThreadBindingsBySessionKey: vi.fn(() => []),
 }));
 
-vi.mock("remoteclaw/plugin-sdk/discord", () => ({
+vi.mock("./accounts.js", () => ({
   resolveDiscordAccount: hookMocks.resolveDiscordAccount,
+}));
+vi.mock("./monitor/thread-bindings.js", () => ({
   autoBindSpawnedDiscordSubagent: hookMocks.autoBindSpawnedDiscordSubagent,
   listThreadBindingsBySessionKey: hookMocks.listThreadBindingsBySessionKey,
   unbindThreadBindingsBySessionKey: hookMocks.unbindThreadBindingsBySessionKey,
@@ -59,7 +61,7 @@ function registerHandlersForTest(
     on: (hookName: string, handler: (event: unknown, ctx: unknown) => unknown) => {
       handlers.set(hookName, handler);
     },
-  } as unknown as RemoteClawPluginApi;
+  } as unknown as OpenClawPluginApi;
   registerDiscordSubagentHooks(api);
   return handlers;
 }

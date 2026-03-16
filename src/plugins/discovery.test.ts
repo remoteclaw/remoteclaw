@@ -1,48 +1,52 @@
 import fs from "node:fs";
 import path from "node:path";
-import { afterAll, afterEach, describe, expect, it } from "vitest";
-import { withEnvAsync } from "../test-utils/env.js";
-import { clearPluginDiscoveryCache, discoverRemoteClawPlugins } from "./discovery.js";
-import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fixtures.js";
+import { afterEach, describe, expect, it } from "vitest";
+import { clearPluginDiscoveryCache, discoverOpenClawPlugins } from "./discovery.js";
+import {
+  cleanupTrackedTempDirs,
+  makeTrackedTempDir,
+  mkdirSafeDir,
+} from "./test-helpers/fs-fixtures.js";
 
 const tempDirs: string[] = [];
-const previousUmask = process.umask(0o022);
-
-function chmodSafeDir(dir: string) {
-  if (process.platform === "win32") {
-    return;
-  }
-  fs.chmodSync(dir, 0o755);
-}
-
-function mkdirSafe(dir: string) {
-  fs.mkdirSync(dir, { recursive: true });
-  chmodSafeDir(dir);
-}
 
 function makeTempDir() {
-  return makeTrackedTempDir("remoteclaw-plugins", tempDirs);
+  return makeTrackedTempDir("openclaw-plugins", tempDirs);
 }
 
-async function withStateDir<T>(stateDir: string, fn: () => Promise<T>) {
-  return await withEnvAsync(
-    {
-      REMOTECLAW_HOME: undefined,
-      REMOTECLAW_STATE_DIR: stateDir,
-      CLAWDBOT_STATE_DIR: undefined,
-      REMOTECLAW_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
-    },
-    fn,
+const mkdirSafe = mkdirSafeDir;
+
+function normalizePathForAssertion(value: string | undefined): string | undefined {
+  if (!value) {
+    return value;
+  }
+  return value.replace(/\\/g, "/");
+}
+
+function hasDiagnosticSourceSuffix(
+  diagnostics: Array<{ source?: string }>,
+  suffix: string,
+): boolean {
+  const normalizedSuffix = normalizePathForAssertion(suffix);
+  return diagnostics.some((entry) =>
+    normalizePathForAssertion(entry.source)?.endsWith(normalizedSuffix ?? suffix),
   );
+}
+
+function buildDiscoveryEnv(stateDir: string): NodeJS.ProcessEnv {
+  return {
+    OPENCLAW_STATE_DIR: stateDir,
+    CLAWDBOT_STATE_DIR: undefined,
+    OPENCLAW_HOME: undefined,
+    OPENCLAW_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
+  };
 }
 
 async function discoverWithStateDir(
   stateDir: string,
-  params: Parameters<typeof discoverRemoteClawPlugins>[0],
+  params: Parameters<typeof discoverOpenClawPlugins>[0],
 ) {
-  return await withStateDir(stateDir, async () => {
-    return discoverRemoteClawPlugins(params);
-  });
+  return discoverOpenClawPlugins({ ...params, env: buildDiscoveryEnv(stateDir) });
 }
 
 function writePluginPackageManifest(params: {
@@ -54,7 +58,7 @@ function writePluginPackageManifest(params: {
     path.join(params.packageDir, "package.json"),
     JSON.stringify({
       name: params.packageName,
-      remoteclaw: { extensions: params.extensions },
+      openclaw: { extensions: params.extensions },
     }),
     "utf-8",
   );
@@ -71,11 +75,7 @@ afterEach(() => {
   cleanupTrackedTempDirs(tempDirs);
 });
 
-afterAll(() => {
-  process.umask(previousUmask);
-});
-
-describe("discoverRemoteClawPlugins", () => {
+describe("discoverOpenClawPlugins", () => {
   it("discovers global and workspace extensions", async () => {
     const stateDir = makeTempDir();
     const workspaceDir = path.join(stateDir, "workspace");
@@ -84,17 +84,36 @@ describe("discoverRemoteClawPlugins", () => {
     mkdirSafe(globalExt);
     fs.writeFileSync(path.join(globalExt, "alpha.ts"), "export default function () {}", "utf-8");
 
-    const workspaceExt = path.join(workspaceDir, ".remoteclaw", "extensions");
+    const workspaceExt = path.join(workspaceDir, ".openclaw", "extensions");
     mkdirSafe(workspaceExt);
     fs.writeFileSync(path.join(workspaceExt, "beta.ts"), "export default function () {}", "utf-8");
 
-    const { candidates } = await withStateDir(stateDir, async () => {
-      return discoverRemoteClawPlugins({ workspaceDir });
-    });
+    const { candidates } = await discoverWithStateDir(stateDir, { workspaceDir });
 
     const ids = candidates.map((c) => c.idHint);
     expect(ids).toContain("alpha");
     expect(ids).toContain("beta");
+  });
+
+  it("resolves tilde workspace dirs against the provided env", () => {
+    const stateDir = makeTempDir();
+    const homeDir = makeTempDir();
+    const workspaceRoot = path.join(homeDir, "workspace");
+    const workspaceExt = path.join(workspaceRoot, ".openclaw", "extensions");
+    mkdirSafe(workspaceExt);
+    fs.writeFileSync(path.join(workspaceExt, "tilde-workspace.ts"), "export default {}", "utf-8");
+
+    const result = discoverOpenClawPlugins({
+      workspaceDir: "~/workspace",
+      env: {
+        ...buildDiscoveryEnv(stateDir),
+        HOME: homeDir,
+      },
+    });
+
+    expect(result.candidates.some((candidate) => candidate.idHint === "tilde-workspace")).toBe(
+      true,
+    );
   });
 
   it("ignores backup and disabled plugin directories in scanned roots", async () => {
@@ -118,9 +137,7 @@ describe("discoverRemoteClawPlugins", () => {
     mkdirSafe(liveDir);
     fs.writeFileSync(path.join(liveDir, "index.ts"), "export default function () {}", "utf-8");
 
-    const { candidates } = await withStateDir(stateDir, async () => {
-      return discoverRemoteClawPlugins({});
-    });
+    const { candidates } = await discoverWithStateDir(stateDir, {});
 
     const ids = candidates.map((candidate) => candidate.idHint);
     expect(ids).toContain("live");
@@ -132,7 +149,7 @@ describe("discoverRemoteClawPlugins", () => {
   it("loads package extension packs", async () => {
     const stateDir = makeTempDir();
     const globalExt = path.join(stateDir, "extensions", "pack");
-    fs.mkdirSync(path.join(globalExt, "src"), { recursive: true });
+    mkdirSafe(path.join(globalExt, "src"));
 
     writePluginPackageManifest({
       packageDir: globalExt,
@@ -150,9 +167,7 @@ describe("discoverRemoteClawPlugins", () => {
       "utf-8",
     );
 
-    const { candidates } = await withStateDir(stateDir, async () => {
-      return discoverRemoteClawPlugins({});
-    });
+    const { candidates } = await discoverWithStateDir(stateDir, {});
 
     const ids = candidates.map((c) => c.idHint);
     expect(ids).toContain("pack/one");
@@ -162,11 +177,11 @@ describe("discoverRemoteClawPlugins", () => {
   it("derives unscoped ids for scoped packages", async () => {
     const stateDir = makeTempDir();
     const globalExt = path.join(stateDir, "extensions", "voice-call-pack");
-    fs.mkdirSync(path.join(globalExt, "src"), { recursive: true });
+    mkdirSafe(path.join(globalExt, "src"));
 
     writePluginPackageManifest({
       packageDir: globalExt,
-      packageName: "@remoteclaw/voice-call",
+      packageName: "@openclaw/voice-call",
       extensions: ["./src/index.ts"],
     });
     fs.writeFileSync(
@@ -175,12 +190,33 @@ describe("discoverRemoteClawPlugins", () => {
       "utf-8",
     );
 
-    const { candidates } = await withStateDir(stateDir, async () => {
-      return discoverRemoteClawPlugins({});
-    });
+    const { candidates } = await discoverWithStateDir(stateDir, {});
 
     const ids = candidates.map((c) => c.idHint);
     expect(ids).toContain("voice-call");
+  });
+
+  it("normalizes bundled provider package ids to canonical plugin ids", async () => {
+    const stateDir = makeTempDir();
+    const globalExt = path.join(stateDir, "extensions", "ollama-provider-pack");
+    mkdirSafe(path.join(globalExt, "src"));
+
+    writePluginPackageManifest({
+      packageDir: globalExt,
+      packageName: "@openclaw/ollama-provider",
+      extensions: ["./src/index.ts"],
+    });
+    fs.writeFileSync(
+      path.join(globalExt, "src", "index.ts"),
+      "export default function () {}",
+      "utf-8",
+    );
+
+    const { candidates } = await discoverWithStateDir(stateDir, {});
+
+    const ids = candidates.map((c) => c.idHint);
+    expect(ids).toContain("ollama");
+    expect(ids).not.toContain("ollama-provider");
   });
 
   it("treats configured directory paths as plugin packages", async () => {
@@ -190,18 +226,117 @@ describe("discoverRemoteClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: packDir,
-      packageName: "@remoteclaw/demo-plugin-dir",
+      packageName: "@openclaw/demo-plugin-dir",
       extensions: ["./index.js"],
     });
     fs.writeFileSync(path.join(packDir, "index.js"), "module.exports = {}", "utf-8");
 
-    const { candidates } = await withStateDir(stateDir, async () => {
-      return discoverRemoteClawPlugins({ extraPaths: [packDir] });
-    });
+    const { candidates } = await discoverWithStateDir(stateDir, { extraPaths: [packDir] });
 
     const ids = candidates.map((c) => c.idHint);
     expect(ids).toContain("demo-plugin-dir");
   });
+
+  it("auto-detects Codex bundles as bundle candidates", async () => {
+    const stateDir = makeTempDir();
+    const bundleDir = path.join(stateDir, "extensions", "sample-bundle");
+    mkdirSafe(path.join(bundleDir, ".codex-plugin"));
+    mkdirSafe(path.join(bundleDir, "skills"));
+    fs.writeFileSync(
+      path.join(bundleDir, ".codex-plugin", "plugin.json"),
+      JSON.stringify({
+        name: "Sample Bundle",
+        skills: "skills",
+      }),
+      "utf-8",
+    );
+
+    const { candidates } = await discoverWithStateDir(stateDir, {});
+    const bundle = candidates.find((candidate) => candidate.idHint === "sample-bundle");
+
+    expect(bundle).toBeDefined();
+    expect(bundle?.idHint).toBe("sample-bundle");
+    expect(bundle?.format).toBe("bundle");
+    expect(bundle?.bundleFormat).toBe("codex");
+    expect(bundle?.source).toBe(bundleDir);
+    expect(normalizePathForAssertion(bundle?.rootDir)).toBe(
+      normalizePathForAssertion(fs.realpathSync(bundleDir)),
+    );
+  });
+
+  it("auto-detects manifestless Claude bundles from the default layout", async () => {
+    const stateDir = makeTempDir();
+    const bundleDir = path.join(stateDir, "extensions", "claude-bundle");
+    mkdirSafe(path.join(bundleDir, "commands"));
+    fs.writeFileSync(path.join(bundleDir, "settings.json"), '{"hideThinkingBlock":true}', "utf-8");
+
+    const { candidates } = await discoverWithStateDir(stateDir, {});
+    const bundle = candidates.find((candidate) => candidate.idHint === "claude-bundle");
+
+    expect(bundle).toBeDefined();
+    expect(bundle?.format).toBe("bundle");
+    expect(bundle?.bundleFormat).toBe("claude");
+    expect(bundle?.source).toBe(bundleDir);
+  });
+
+  it("auto-detects Cursor bundles as bundle candidates", async () => {
+    const stateDir = makeTempDir();
+    const bundleDir = path.join(stateDir, "extensions", "cursor-bundle");
+    mkdirSafe(path.join(bundleDir, ".cursor-plugin"));
+    mkdirSafe(path.join(bundleDir, ".cursor", "commands"));
+    fs.writeFileSync(
+      path.join(bundleDir, ".cursor-plugin", "plugin.json"),
+      JSON.stringify({
+        name: "Cursor Bundle",
+      }),
+      "utf-8",
+    );
+
+    const { candidates } = await discoverWithStateDir(stateDir, {});
+    const bundle = candidates.find((candidate) => candidate.idHint === "cursor-bundle");
+
+    expect(bundle).toBeDefined();
+    expect(bundle?.format).toBe("bundle");
+    expect(bundle?.bundleFormat).toBe("cursor");
+    expect(bundle?.source).toBe(bundleDir);
+  });
+
+  it("falls back to legacy index discovery when a scanned bundle sidecar is malformed", async () => {
+    const stateDir = makeTempDir();
+    const pluginDir = path.join(stateDir, "extensions", "legacy-with-bad-bundle");
+    mkdirSafe(path.join(pluginDir, ".claude-plugin"));
+    fs.writeFileSync(path.join(pluginDir, "index.ts"), "export default {}", "utf-8");
+    fs.writeFileSync(path.join(pluginDir, ".claude-plugin", "plugin.json"), "{", "utf-8");
+
+    const result = await discoverWithStateDir(stateDir, {});
+    const legacy = result.candidates.find(
+      (candidate) => candidate.idHint === "legacy-with-bad-bundle",
+    );
+
+    expect(legacy).toBeDefined();
+    expect(legacy?.format).toBe("openclaw");
+    expect(hasDiagnosticSourceSuffix(result.diagnostics, ".claude-plugin/plugin.json")).toBe(true);
+  });
+
+  it("falls back to legacy index discovery for configured paths with malformed bundle sidecars", async () => {
+    const stateDir = makeTempDir();
+    const pluginDir = path.join(stateDir, "plugins", "legacy-with-bad-bundle");
+    mkdirSafe(path.join(pluginDir, ".codex-plugin"));
+    fs.writeFileSync(path.join(pluginDir, "index.ts"), "export default {}", "utf-8");
+    fs.writeFileSync(path.join(pluginDir, ".codex-plugin", "plugin.json"), "{", "utf-8");
+
+    const result = await discoverWithStateDir(stateDir, {
+      extraPaths: [pluginDir],
+    });
+    const legacy = result.candidates.find(
+      (candidate) => candidate.idHint === "legacy-with-bad-bundle",
+    );
+
+    expect(legacy).toBeDefined();
+    expect(legacy?.format).toBe("openclaw");
+    expect(hasDiagnosticSourceSuffix(result.diagnostics, ".codex-plugin/plugin.json")).toBe(true);
+  });
+
   it("blocks extension entries that escape package directory", async () => {
     const stateDir = makeTempDir();
     const globalExt = path.join(stateDir, "extensions", "escape-pack");
@@ -210,7 +345,7 @@ describe("discoverRemoteClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: globalExt,
-      packageName: "@remoteclaw/escape-pack",
+      packageName: "@openclaw/escape-pack",
       extensions: ["../../outside.js"],
     });
     fs.writeFileSync(outside, "export default function () {}", "utf-8");
@@ -237,7 +372,7 @@ describe("discoverRemoteClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: globalExt,
-      packageName: "@remoteclaw/pack",
+      packageName: "@openclaw/pack",
       extensions: ["./linked/escape.ts"],
     });
 
@@ -270,13 +405,11 @@ describe("discoverRemoteClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: globalExt,
-      packageName: "@remoteclaw/pack",
+      packageName: "@openclaw/pack",
       extensions: ["./escape.ts"],
     });
 
-    const { candidates, diagnostics } = await withStateDir(stateDir, async () => {
-      return discoverRemoteClawPlugins({});
-    });
+    const { candidates, diagnostics } = await discoverWithStateDir(stateDir, {});
 
     expect(candidates.some((candidate) => candidate.idHint === "pack")).toBe(false);
     expectEscapesPackageDiagnostic(diagnostics);
@@ -297,8 +430,8 @@ describe("discoverRemoteClawPlugins", () => {
     fs.writeFileSync(
       outsideManifest,
       JSON.stringify({
-        name: "@remoteclaw/pack",
-        remoteclaw: { extensions: ["./entry.ts"] },
+        name: "@openclaw/pack",
+        openclaw: { extensions: ["./entry.ts"] },
       }),
       "utf-8",
     );
@@ -311,9 +444,7 @@ describe("discoverRemoteClawPlugins", () => {
       throw err;
     }
 
-    const { candidates } = await withStateDir(stateDir, async () => {
-      return discoverRemoteClawPlugins({});
-    });
+    const { candidates } = await discoverWithStateDir(stateDir, {});
 
     expect(candidates.some((candidate) => candidate.idHint === "pack")).toBe(false);
   });
@@ -326,9 +457,7 @@ describe("discoverRemoteClawPlugins", () => {
     fs.writeFileSync(pluginPath, "export default function () {}", "utf-8");
     fs.chmodSync(pluginPath, 0o777);
 
-    const result = await withStateDir(stateDir, async () => {
-      return discoverRemoteClawPlugins({});
-    });
+    const result = await discoverWithStateDir(stateDir, {});
 
     expect(result.candidates).toHaveLength(0);
     expect(result.diagnostics.some((diag) => diag.message.includes("world-writable path"))).toBe(
@@ -346,14 +475,14 @@ describe("discoverRemoteClawPlugins", () => {
       fs.writeFileSync(path.join(packDir, "index.ts"), "export default function () {}", "utf-8");
       fs.chmodSync(packDir, 0o777);
 
-      const result = await withEnvAsync(
-        {
-          REMOTECLAW_STATE_DIR: stateDir,
+      const result = discoverOpenClawPlugins({
+        env: {
+          ...process.env,
+          OPENCLAW_STATE_DIR: stateDir,
           CLAWDBOT_STATE_DIR: undefined,
-          REMOTECLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+          OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
         },
-        async () => discoverRemoteClawPlugins({}),
-      );
+      });
 
       expect(result.candidates.some((candidate) => candidate.idHint === "demo-pack")).toBe(true);
       expect(
@@ -378,9 +507,7 @@ describe("discoverRemoteClawPlugins", () => {
       );
 
       const actualUid = (process as NodeJS.Process & { getuid: () => number }).getuid();
-      const result = await withStateDir(stateDir, async () => {
-        return discoverRemoteClawPlugins({ ownershipUid: actualUid + 1 });
-      });
+      const result = await discoverWithStateDir(stateDir, { ownershipUid: actualUid + 1 });
       const shouldBlockForMismatch = actualUid !== 0;
       expect(result.candidates).toHaveLength(shouldBlockForMismatch ? 0 : 1);
       expect(result.diagnostics.some((diag) => diag.message.includes("suspicious ownership"))).toBe(
@@ -396,32 +523,121 @@ describe("discoverRemoteClawPlugins", () => {
     const pluginPath = path.join(globalExt, "cached.ts");
     fs.writeFileSync(pluginPath, "export default function () {}", "utf-8");
 
-    const first = await withEnvAsync(
-      {
+    const first = discoverOpenClawPlugins({
+      env: {
+        ...buildDiscoveryEnv(stateDir),
         OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
       },
-      async () => withStateDir(stateDir, async () => discoverRemoteClawPlugins({})),
-    );
+    });
     expect(first.candidates.some((candidate) => candidate.idHint === "cached")).toBe(true);
 
     fs.rmSync(pluginPath, { force: true });
 
-    const second = await withEnvAsync(
-      {
+    const second = discoverOpenClawPlugins({
+      env: {
+        ...buildDiscoveryEnv(stateDir),
         OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
       },
-      async () => withStateDir(stateDir, async () => discoverRemoteClawPlugins({})),
-    );
+    });
     expect(second.candidates.some((candidate) => candidate.idHint === "cached")).toBe(true);
 
     clearPluginDiscoveryCache();
 
-    const third = await withEnvAsync(
-      {
+    const third = discoverOpenClawPlugins({
+      env: {
+        ...buildDiscoveryEnv(stateDir),
         OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
       },
-      async () => withStateDir(stateDir, async () => discoverRemoteClawPlugins({})),
-    );
+    });
     expect(third.candidates.some((candidate) => candidate.idHint === "cached")).toBe(false);
+  });
+
+  it("does not reuse discovery results across env root changes", () => {
+    const stateDirA = makeTempDir();
+    const stateDirB = makeTempDir();
+    const globalExtA = path.join(stateDirA, "extensions");
+    const globalExtB = path.join(stateDirB, "extensions");
+    mkdirSafe(globalExtA);
+    mkdirSafe(globalExtB);
+    fs.writeFileSync(path.join(globalExtA, "alpha.ts"), "export default function () {}", "utf-8");
+    fs.writeFileSync(path.join(globalExtB, "beta.ts"), "export default function () {}", "utf-8");
+
+    const first = discoverOpenClawPlugins({
+      env: {
+        ...buildDiscoveryEnv(stateDirA),
+        OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
+      },
+    });
+    const second = discoverOpenClawPlugins({
+      env: {
+        ...buildDiscoveryEnv(stateDirB),
+        OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
+      },
+    });
+
+    expect(first.candidates.some((candidate) => candidate.idHint === "alpha")).toBe(true);
+    expect(first.candidates.some((candidate) => candidate.idHint === "beta")).toBe(false);
+    expect(second.candidates.some((candidate) => candidate.idHint === "alpha")).toBe(false);
+    expect(second.candidates.some((candidate) => candidate.idHint === "beta")).toBe(true);
+  });
+
+  it("does not reuse extra-path discovery across env home changes", () => {
+    const stateDir = makeTempDir();
+    const homeA = makeTempDir();
+    const homeB = makeTempDir();
+    const pluginA = path.join(homeA, "plugins", "demo.ts");
+    const pluginB = path.join(homeB, "plugins", "demo.ts");
+    mkdirSafe(path.dirname(pluginA));
+    mkdirSafe(path.dirname(pluginB));
+    fs.writeFileSync(pluginA, "export default {}", "utf-8");
+    fs.writeFileSync(pluginB, "export default {}", "utf-8");
+
+    const first = discoverOpenClawPlugins({
+      extraPaths: ["~/plugins/demo.ts"],
+      env: {
+        ...buildDiscoveryEnv(stateDir),
+        HOME: homeA,
+        OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
+      },
+    });
+    const second = discoverOpenClawPlugins({
+      extraPaths: ["~/plugins/demo.ts"],
+      env: {
+        ...buildDiscoveryEnv(stateDir),
+        HOME: homeB,
+        OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
+      },
+    });
+
+    expect(first.candidates.find((candidate) => candidate.idHint === "demo")?.source).toBe(pluginA);
+    expect(second.candidates.find((candidate) => candidate.idHint === "demo")?.source).toBe(
+      pluginB,
+    );
+  });
+
+  it("treats configured load-path order as cache-significant", () => {
+    const stateDir = makeTempDir();
+    const pluginA = path.join(stateDir, "plugins", "alpha.ts");
+    const pluginB = path.join(stateDir, "plugins", "beta.ts");
+    mkdirSafe(path.dirname(pluginA));
+    fs.writeFileSync(pluginA, "export default {}", "utf-8");
+    fs.writeFileSync(pluginB, "export default {}", "utf-8");
+
+    const env = {
+      ...buildDiscoveryEnv(stateDir),
+      OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
+    };
+
+    const first = discoverOpenClawPlugins({
+      extraPaths: [pluginA, pluginB],
+      env,
+    });
+    const second = discoverOpenClawPlugins({
+      extraPaths: [pluginB, pluginA],
+      env,
+    });
+
+    expect(first.candidates.map((candidate) => candidate.idHint)).toEqual(["alpha", "beta"]);
+    expect(second.candidates.map((candidate) => candidate.idHint)).toEqual(["beta", "alpha"]);
   });
 });

@@ -31,19 +31,16 @@ export {
 } from "../channels/plugins/group-mentions.js";
 export { formatPairingApproveHint } from "../channels/plugins/helpers.js";
 export { resolveChannelMediaMaxBytes } from "../channels/plugins/media-limits.js";
-export type {
-  ChannelOnboardingAdapter,
-  ChannelOnboardingDmPolicy,
-} from "../channels/plugins/onboarding-types.js";
 export {
   addWildcardAllowFrom,
   mergeAllowFromEntries,
   setTopLevelChannelDmPolicyWithAllowFrom,
-} from "../channels/plugins/onboarding/helpers.js";
+} from "../channels/plugins/setup-wizard-helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
 export {
   applyAccountNameToChannelSection,
   migrateBaseNameToDefaultAccount,
+  patchScopedAccountConfig,
 } from "../channels/plugins/setup-helpers.js";
 export { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
 export { collectBlueBubblesStatusIssues } from "../channels/plugins/status-issues/bluebubbles.js";
@@ -57,7 +54,11 @@ export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export type { RemoteClawConfig } from "../config/config.js";
 export type { DmPolicy, GroupPolicy } from "../config/types.js";
-export { normalizeSecretInputString } from "../config/types.secrets.js";
+export {
+  hasConfiguredSecretInput,
+  normalizeResolvedSecretInputString,
+  normalizeSecretInputString,
+} from "../config/types.secrets.js";
 export { buildSecretInputSchema } from "./secret-input-schema.js";
 export { ToolPolicySchema } from "../config/zod-schema.agent-runtime.js";
 export { MarkdownConfigSchema } from "../config/zod-schema.core.js";
@@ -98,4 +99,9 @@ export {
   createWebhookInFlightLimiter,
   readWebhookBodyOrReject,
 } from "./webhook-request-guards.js";
-export { resolveWebhookTargets } from "./webhook-targets.js";
+export {
+  registerWebhookTargetWithPluginRoute,
+  resolveWebhookTargets,
+  resolveWebhookTargetWithAuthOrRejectSync,
+  withResolvedWebhookRequestPipeline,
+} from "./webhook-targets.js";

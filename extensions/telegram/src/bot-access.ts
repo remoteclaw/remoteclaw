@@ -1,7 +1,7 @@
 import {
   firstDefined,
   isSenderIdAllowed,
-  mergeAllowFromSources,
+  mergeDmAllowFromSources,
 } from "../../../src/channels/allow-from.js";
 import type { AllowlistMatch } from "../../../src/channels/allowlist-match.js";
 import { createSubsystemLogger } from "../../../src/logging/subsystem.js";
@@ -31,8 +31,9 @@ function warnInvalidAllowFromEntries(entries: string[]) {
       [
         "Invalid allowFrom entry:",
         JSON.stringify(entry),
-        "- allowFrom/groupAllowFrom authorization requires numeric Telegram sender IDs only.",
-        'If you had "@username" entries, re-run onboarding (it resolves @username to IDs) or replace them manually.',
+        "- allowFrom/groupAllowFrom authorization expects numeric Telegram sender user IDs only.",
+        'To allow a Telegram group or supergroup, add its negative chat ID under "channels.telegram.groups" instead.',
+        'If you had "@username" entries, re-run setup (it resolves @username to IDs) or replace them manually.',
       ].join(" "),
     );
   }
@@ -57,11 +58,11 @@ export const normalizeAllowFrom = (list?: Array<string | number>): NormalizedAll
   };
 };
 
-export const normalizeAllowFromWithStore = (params: {
+export const normalizeDmAllowFromWithStore = (params: {
   allowFrom?: Array<string | number>;
   storeAllowFrom?: string[];
   dmPolicy?: string;
-}): NormalizedAllowFrom => normalizeAllowFrom(mergeAllowFromSources(params));
+}): NormalizedAllowFrom => normalizeAllowFrom(mergeDmAllowFromSources(params));
 
 export const isSenderAllowed = (params: {
   allow: NormalizedAllowFrom;

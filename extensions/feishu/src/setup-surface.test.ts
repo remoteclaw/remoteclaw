@@ -1,16 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
-import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
-import {
-  createPluginSetupWizardAdapter,
-  createTestWizardPrompter,
-  runSetupWizardConfigure,
-} from "../../../test/helpers/extensions/setup-wizard.js";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 
 vi.mock("./probe.js", () => ({
   probeFeishu: vi.fn(async () => ({ ok: false, error: "mocked" })),
 }));
 
 import { feishuPlugin } from "./channel.js";
+
+const baseConfigureContext = {
+  runtime: {} as never,
+  accountOverrides: {},
+  shouldPromptAccountIds: false,
+  forceAllowFrom: false,
+};
 
 const baseStatusContext = {
   accountOverrides: {},
@@ -54,7 +56,10 @@ async function getStatusWithEnvRefs(params: { appIdKey: string; appSecretKey: st
   });
 }
 
-const feishuConfigureAdapter = createPluginSetupWizardAdapter(feishuPlugin);
+const feishuConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+  plugin: feishuPlugin,
+  wizard: feishuPlugin.setupWizard!,
+});
 
 describe("feishu setup wizard", () => {
   it("does not throw when config appId/appSecret are SecretRef objects", async () => {
@@ -63,17 +68,18 @@ describe("feishu setup wizard", () => {
       .mockResolvedValueOnce("cli_from_prompt")
       .mockResolvedValueOnce("secret_from_prompt")
       .mockResolvedValueOnce("oc_group_1");
-    const prompter = createTestWizardPrompter({
+
+    const prompter = {
+      note: vi.fn(async () => undefined),
       text,
       confirm: vi.fn(async () => true),
       select: vi.fn(
         async ({ initialValue }: { initialValue?: string }) => initialValue ?? "allowlist",
-      ) as never,
-    });
+      ),
+    } as never;
 
     await expect(
-      runSetupWizardConfigure({
-        configure: feishuConfigureAdapter.configure,
+      feishuConfigureAdapter.configure({
         cfg: {
           channels: {
             feishu: {
@@ -83,7 +89,7 @@ describe("feishu setup wizard", () => {
           },
         } as never,
         prompter,
-        runtime: createRuntimeEnv({ throwOnExit: false }) as never,
+        ...baseConfigureContext,
       }),
     ).resolves.toBeTruthy();
   });

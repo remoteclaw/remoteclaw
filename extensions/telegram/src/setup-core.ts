@@ -1,16 +1,15 @@
 import {
   applyAccountNameToChannelSection,
-  DEFAULT_ACCOUNT_ID,
   migrateBaseNameToDefaultAccount,
-  normalizeAccountId,
+} from "../../../src/channels/plugins/setup-helpers.js";
+import {
   patchChannelConfigForAccount,
-  promptResolvedAllowFrom,
   splitSetupEntries,
-  type RemoteClawConfig,
-  type WizardPrompter,
-} from "remoteclaw/plugin-sdk/setup";
-import type { ChannelSetupAdapter, ChannelSetupDmPolicy } from "remoteclaw/plugin-sdk/setup";
+} from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
 import { formatCliCommand } from "../../../src/cli/command-format.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
 import { resolveDefaultTelegramAccountId, resolveTelegramAccount } from "./accounts.js";
 import { fetchTelegramChatId } from "./api-fetch.js";
@@ -72,7 +71,11 @@ export async function resolveTelegramAllowFromEntries(params: {
 
 export async function promptTelegramAllowFromForAccount(params: {
   cfg: RemoteClawConfig;
-  prompter: WizardPrompter;
+  prompter: Parameters<
+    NonNullable<
+      import("../../../src/channels/plugins/setup-wizard-types.js").ChannelSetupDmPolicy["promptAllowFrom"]
+    >
+  >[0]["prompter"];
   accountId?: string;
 }) {
   const accountId = params.accountId ?? resolveDefaultTelegramAccountId(params.cfg);
@@ -84,6 +87,8 @@ export async function promptTelegramAllowFromForAccount(params: {
       "Telegram",
     );
   }
+  const { promptResolvedAllowFrom } =
+    await import("../../../src/channels/plugins/setup-wizard-helpers.js");
   const unique = await promptResolvedAllowFrom({
     prompter: params.prompter,
     existing: resolved.config.allowFrom ?? [],

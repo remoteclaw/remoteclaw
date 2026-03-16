@@ -1,4 +1,4 @@
-// Private helper surface for the bundled msteams plugin.
+// Narrow plugin-sdk surface for the bundled msteams plugin.
 // Keep this list additive and scoped to symbols used under extensions/msteams.
 
 export type { ChunkMode } from "../auto-reply/chunk.js";
@@ -32,19 +32,14 @@ export {
 export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
 export { resolveChannelMediaMaxBytes } from "../channels/plugins/media-limits.js";
 export { buildMediaPayload } from "../channels/plugins/media-payload.js";
-export type {
-  ChannelOnboardingAdapter,
-  ChannelOnboardingDmPolicy,
-} from "../channels/plugins/onboarding-types.js";
-export { promptChannelAccessConfig } from "../channels/plugins/onboarding/channel-access.js";
 export {
   addWildcardAllowFrom,
   mergeAllowFromEntries,
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
   setTopLevelChannelGroupPolicy,
-  splitOnboardingEntries,
-} from "../channels/plugins/onboarding/helpers.js";
+  splitSetupEntries,
+} from "../channels/plugins/setup-wizard-helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
 export type {
   BaseProbeResult,
@@ -73,7 +68,11 @@ export type {
   MSTeamsReplyStyle,
   MSTeamsTeamConfig,
 } from "../config/types.js";
-export { normalizeSecretInputString } from "../config/types.secrets.js";
+export {
+  hasConfiguredSecretInput,
+  normalizeResolvedSecretInputString,
+  normalizeSecretInputString,
+} from "../config/types.secrets.js";
 export { MSTeamsConfigSchema } from "../config/zod-schema.providers-core.js";
 export { DEFAULT_WEBHOOK_MAX_BODY_BYTES } from "../infra/http-body.js";
 export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
@@ -118,3 +117,5 @@ export {
   createDefaultChannelRuntimeState,
 } from "./status-helpers.js";
 export { normalizeStringEntries } from "../shared/string-normalization.js";
+export { msteamsSetupWizard } from "../../extensions/msteams/src/setup-surface.js";
+export { msteamsSetupAdapter } from "../../extensions/msteams/src/setup-core.js";

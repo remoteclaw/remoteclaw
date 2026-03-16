@@ -1,19 +1,31 @@
+import type { RemoteClawConfig, RuntimeEnv, WizardPrompter } from "remoteclaw/plugin-sdk/zalo";
 import { describe, expect, it, vi } from "vitest";
-import {
-  createPluginSetupWizardAdapter,
-  createTestWizardPrompter,
-  runSetupWizardConfigure,
-  type WizardPrompter,
-} from "../../../test/helpers/extensions/setup-wizard.js";
-import type { RemoteClawConfig } from "../runtime-api.js";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 import { zaloPlugin } from "./channel.js";
 
-const zaloConfigureAdapter = createPluginSetupWizardAdapter(zaloPlugin);
+function createPrompter(overrides: Partial<WizardPrompter>): WizardPrompter {
+  return {
+    intro: vi.fn(async () => {}),
+    outro: vi.fn(async () => {}),
+    note: vi.fn(async () => {}),
+    select: vi.fn(async () => "plaintext") as WizardPrompter["select"],
+    multiselect: vi.fn(async () => []),
+    text: vi.fn(async () => "") as WizardPrompter["text"],
+    confirm: vi.fn(async () => false),
+    progress: vi.fn(() => ({ update: vi.fn(), stop: vi.fn() })),
+    ...overrides,
+  };
+}
+
+const zaloConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+  plugin: zaloPlugin,
+  wizard: zaloPlugin.setupWizard!,
+});
 
 describe("zalo setup wizard", () => {
   it("configures a polling token flow", async () => {
-    const prompter = createTestWizardPrompter({
-      select: vi.fn(async () => "plaintext") as WizardPrompter["select"],
+    const prompter = createPrompter({
       text: vi.fn(async ({ message }: { message: string }) => {
         if (message === "Enter Zalo bot token") {
           return "12345689:abc-xyz";
@@ -28,11 +40,16 @@ describe("zalo setup wizard", () => {
       }),
     });
 
-    const result = await runSetupWizardConfigure({
-      configure: zaloConfigureAdapter.configure,
+    const runtime: RuntimeEnv = createRuntimeEnv();
+
+    const result = await zaloConfigureAdapter.configure({
       cfg: {} as RemoteClawConfig,
+      runtime,
       prompter,
-      options: { secretInputMode: "plaintext" as const },
+      options: { secretInputMode: "plaintext" },
+      accountOverrides: {},
+      shouldPromptAccountIds: false,
+      forceAllowFrom: false,
     });
 
     expect(result.accountId).toBe("default");

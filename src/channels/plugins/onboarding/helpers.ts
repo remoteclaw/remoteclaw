@@ -1,6 +1,7 @@
 import {
-  promptSecretRefForOnboarding,
+  promptSecretRefForSetup,
   resolveSecretInputModeForEnvSelection,
+<<<<<<<< HEAD:src/channels/plugins/onboarding/helpers.ts
 } from "../../../commands/auth-choice.apply-helpers.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
 import type { DmPolicy, GroupPolicy } from "../../../config/types.js";
@@ -9,13 +10,66 @@ import { promptAccountId as promptAccountIdSdk } from "../../../plugin-sdk/onboa
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
 import type { WizardPrompter } from "../../../wizard/prompts.js";
 import type { PromptAccountId, PromptAccountIdParams } from "../onboarding-types.js";
+|||||||| parent of 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-flow-helpers.ts
+} from "../../commands/auth-choice.apply-helpers.js";
+import type { RemoteClawConfig } from "../../config/config.js";
+import type { DmPolicy, GroupPolicy } from "../../config/types.js";
+import type { SecretInput } from "../../config/types.secrets.js";
+import { promptAccountId as promptAccountIdSdk } from "../../plugin-sdk/setup.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
+import type { WizardPrompter } from "../../wizard/prompts.js";
+import type { PromptAccountId, PromptAccountIdParams } from "./setup-flow-types.js";
+========
+} from "../../commands/auth-choice.apply-helpers.js";
+import type { RemoteClawConfig } from "../../config/config.js";
+import type { DmPolicy, GroupPolicy } from "../../config/types.js";
+import type { SecretInput } from "../../config/types.secrets.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
+import type { WizardPrompter } from "../../wizard/prompts.js";
+>>>>>>>> 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-wizard-helpers.ts
 import {
   moveSingleAccountChannelSectionToDefaultAccount,
   patchScopedAccountConfig,
+<<<<<<<< HEAD:src/channels/plugins/onboarding/helpers.ts
 } from "../setup-helpers.js";
+|||||||| parent of 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-flow-helpers.ts
+} from "./setup-helpers.js";
+========
+} from "./setup-helpers.js";
+import type { PromptAccountId, PromptAccountIdParams } from "./setup-wizard-types.js";
+>>>>>>>> 656848dcd7 (refactor: rename setup wizard surfaces):src/channels/plugins/setup-wizard-helpers.ts
 
 export const promptAccountId: PromptAccountId = async (params: PromptAccountIdParams) => {
-  return await promptAccountIdSdk(params);
+  const existingIds = params.listAccountIds(params.cfg);
+  const initial = params.currentId?.trim() || params.defaultAccountId || DEFAULT_ACCOUNT_ID;
+  const choice = await params.prompter.select({
+    message: `${params.label} account`,
+    options: [
+      ...existingIds.map((id) => ({
+        value: id,
+        label: id === DEFAULT_ACCOUNT_ID ? "default (primary)" : id,
+      })),
+      { value: "__new__", label: "Add a new account" },
+    ],
+    initialValue: initial,
+  });
+
+  if (choice !== "__new__") {
+    return normalizeAccountId(choice);
+  }
+
+  const entered = await params.prompter.text({
+    message: `New ${params.label} account id`,
+    validate: (value) => (value?.trim() ? undefined : "Required"),
+  });
+  const normalized = normalizeAccountId(String(entered));
+  if (String(entered).trim() !== normalized) {
+    await params.prompter.note(
+      `Normalized account id to "${normalized}".`,
+      `${params.label} account`,
+    );
+  }
+  return normalized;
 };
 
 export function addWildcardAllowFrom(allowFrom?: Array<string | number> | null): string[] {
@@ -617,7 +671,7 @@ export async function promptSingleChannelSecretInput(params: {
     }
   }
 
-  const resolved = await promptSecretRefForOnboarding({
+  const resolved = await promptSecretRefForSetup({
     provider: params.providerHint,
     config: params.cfg,
     prompter: params.prompter as WizardPrompter,

@@ -1,47 +1,22 @@
 import path from "node:path";
+import { loginWeb } from "../../../src/channel-web.js";
 import {
-  DEFAULT_ACCOUNT_ID,
-  formatCliCommand,
-  formatDocsLink,
-  normalizeAccountId,
   normalizeAllowFromEntries,
-  normalizeE164,
-  pathExists,
   splitSetupEntries,
-  setSetupChannelEnabled,
-  type DmPolicy,
-  type RemoteClawConfig,
-} from "../../../src/plugin-sdk-internal/setup.js";
-import type { ChannelSetupWizard } from "../../../src/plugin-sdk-internal/setup.js";
+} from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import { setSetupChannelEnabled } from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { formatCliCommand } from "../../../src/cli/command-format.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { mergeWhatsAppConfig } from "../../../src/config/merge-config.js";
+import type { DmPolicy } from "../../../src/config/types.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
+import { normalizeE164, pathExists } from "../../../src/utils.js";
 import { listWhatsAppAccountIds, resolveWhatsAppAuthDir } from "./accounts.js";
-import { loginWeb } from "./login.js";
 import { whatsappSetupAdapter } from "./setup-core.js";
 
 const channel = "whatsapp" as const;
-
-function mergeWhatsAppConfig(
-  cfg: RemoteClawConfig,
-  patch: Partial<NonNullable<NonNullable<RemoteClawConfig["channels"]>["whatsapp"]>>,
-  options?: { unsetOnUndefined?: string[] },
-): RemoteClawConfig {
-  const base = { ...(cfg.channels?.whatsapp ?? {}) } as Record<string, unknown>;
-  for (const [key, value] of Object.entries(patch)) {
-    if (value === undefined) {
-      if (options?.unsetOnUndefined?.includes(key)) {
-        delete base[key];
-      }
-      continue;
-    }
-    base[key] = value;
-  }
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      whatsapp: base,
-    },
-  };
-}
 
 function setWhatsAppDmPolicy(cfg: RemoteClawConfig, dmPolicy: DmPolicy): RemoteClawConfig {
   return mergeWhatsAppConfig(cfg, { dmPolicy });

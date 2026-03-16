@@ -1,3 +1,4 @@
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/line";
 import { describe, expect, it, vi } from "vitest";
 import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
 import {
@@ -5,13 +6,29 @@ import {
   resolveDefaultLineAccountId,
   resolveLineAccount,
 } from "../../../src/line/accounts.js";
-import {
-  createTestWizardPrompter,
-  runSetupWizardConfigure,
-  type WizardPrompter,
-} from "../../../test/helpers/extensions/setup-wizard.js";
-import type { RemoteClawConfig } from "../api.js";
+import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 import { lineSetupAdapter, lineSetupWizard } from "./setup-surface.js";
+
+function createPrompter(overrides: Partial<WizardPrompter> = {}): WizardPrompter {
+  return {
+    intro: vi.fn(async () => {}),
+    outro: vi.fn(async () => {}),
+    note: vi.fn(async () => {}),
+    select: vi.fn(async ({ options }: { options: Array<{ value: string }> }) => {
+      const first = options[0];
+      if (!first) {
+        throw new Error("no options");
+      }
+      return first.value;
+    }) as WizardPrompter["select"],
+    multiselect: vi.fn(async () => []),
+    text: vi.fn(async () => "") as WizardPrompter["text"],
+    confirm: vi.fn(async () => false),
+    progress: vi.fn(() => ({ update: vi.fn(), stop: vi.fn() })),
+    ...overrides,
+  };
+}
 
 const lineConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
   plugin: {
@@ -20,13 +37,8 @@ const lineConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
     config: {
       listAccountIds: listLineAccountIds,
       defaultAccountId: resolveDefaultLineAccountId,
-      resolveAllowFrom: ({
-        cfg,
-        accountId,
-      }: {
-        cfg: RemoteClawConfig;
-        accountId?: string | null;
-      }) => resolveLineAccount({ cfg, accountId: accountId ?? undefined }).config.allowFrom,
+      resolveAllowFrom: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId?: string | null }) =>
+        resolveLineAccount({ cfg, accountId: accountId ?? undefined }).config.allowFrom,
     },
     setup: lineSetupAdapter,
   } as Parameters<typeof buildChannelSetupWizardAdapterFromSetupWizard>[0]["plugin"],
@@ -35,7 +47,7 @@ const lineConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
 
 describe("line setup wizard", () => {
   it("configures token and secret for the default account", async () => {
-    const prompter = createTestWizardPrompter({
+    const prompter = createPrompter({
       text: vi.fn(async ({ message }: { message: string }) => {
         if (message === "Enter LINE channel access token") {
           return "line-token";
@@ -47,11 +59,14 @@ describe("line setup wizard", () => {
       }) as WizardPrompter["text"],
     });
 
-    const result = await runSetupWizardConfigure({
-      configure: lineConfigureAdapter.configure,
+    const result = await lineConfigureAdapter.configure({
       cfg: {} as RemoteClawConfig,
+      runtime: createRuntimeEnv(),
       prompter,
       options: {},
+      accountOverrides: {},
+      shouldPromptAccountIds: false,
+      forceAllowFrom: false,
     });
 
     expect(result.accountId).toBe("default");

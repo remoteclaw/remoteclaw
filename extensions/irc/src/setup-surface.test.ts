@@ -1,18 +1,40 @@
+import type { RuntimeEnv, WizardPrompter } from "remoteclaw/plugin-sdk/irc";
 import { describe, expect, it, vi } from "vitest";
-import {
-  createPluginSetupWizardAdapter,
-  createTestWizardPrompter,
-  runSetupWizardConfigure,
-  type WizardPrompter,
-} from "../../../test/helpers/extensions/setup-wizard.js";
+import { buildChannelSetupWizardAdapterFromSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 import { ircPlugin } from "./channel.js";
 import type { CoreConfig } from "./types.js";
 
-const ircConfigureAdapter = createPluginSetupWizardAdapter(ircPlugin);
+const selectFirstOption = async <T>(params: { options: Array<{ value: T }> }): Promise<T> => {
+  const first = params.options[0];
+  if (!first) {
+    throw new Error("no options");
+  }
+  return first.value;
+};
+
+function createPrompter(overrides: Partial<WizardPrompter>): WizardPrompter {
+  return {
+    intro: vi.fn(async () => {}),
+    outro: vi.fn(async () => {}),
+    note: vi.fn(async () => {}),
+    select: selectFirstOption as WizardPrompter["select"],
+    multiselect: vi.fn(async () => []),
+    text: vi.fn(async () => "") as WizardPrompter["text"],
+    confirm: vi.fn(async () => false),
+    progress: vi.fn(() => ({ update: vi.fn(), stop: vi.fn() })),
+    ...overrides,
+  };
+}
+
+const ircConfigureAdapter = buildChannelSetupWizardAdapterFromSetupWizard({
+  plugin: ircPlugin,
+  wizard: ircPlugin.setupWizard!,
+});
 
 describe("irc setup wizard", () => {
   it("configures host and nick via setup prompts", async () => {
-    const prompter = createTestWizardPrompter({
+    const prompter = createPrompter({
       text: vi.fn(async ({ message }: { message: string }) => {
         if (message === "IRC server host") {
           return "irc.libera.chat";
@@ -48,11 +70,16 @@ describe("irc setup wizard", () => {
       }),
     });
 
-    const result = await runSetupWizardConfigure({
-      configure: ircConfigureAdapter.configure,
+    const runtime: RuntimeEnv = createRuntimeEnv();
+
+    const result = await ircConfigureAdapter.configure({
       cfg: {} as CoreConfig,
+      runtime,
       prompter,
       options: {},
+      accountOverrides: {},
+      shouldPromptAccountIds: false,
+      forceAllowFrom: false,
     });
 
     expect(result.accountId).toBe("default");
@@ -66,7 +93,7 @@ describe("irc setup wizard", () => {
   });
 
   it("writes DM allowFrom to top-level config for non-default account prompts", async () => {
-    const prompter = createTestWizardPrompter({
+    const prompter = createPrompter({
       text: vi.fn(async ({ message }: { message: string }) => {
         if (message === "IRC allowFrom (nick or nick!user@host)") {
           return "Alice, Bob!ident@example.org";

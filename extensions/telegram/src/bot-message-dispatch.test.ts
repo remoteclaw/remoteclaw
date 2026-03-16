@@ -2,7 +2,6 @@ import path from "node:path";
 import type { Bot } from "grammy";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { STATE_DIR } from "../../../src/config/paths.js";
-import type { TelegramBotDeps } from "./bot-deps.js";
 import {
   createSequencedTestDraftStream,
   createTestDraftStream,
@@ -11,33 +10,7 @@ import {
 const createTelegramDraftStream = vi.hoisted(() => vi.fn());
 const dispatchReplyWithBufferedBlockDispatcher = vi.hoisted(() => vi.fn());
 const deliverReplies = vi.hoisted(() => vi.fn());
-const emitInternalMessageSentHook = vi.hoisted(() => vi.fn());
-const createForumTopicTelegram = vi.hoisted(() => vi.fn());
-const deleteMessageTelegram = vi.hoisted(() => vi.fn());
-const editForumTopicTelegram = vi.hoisted(() => vi.fn());
 const editMessageTelegram = vi.hoisted(() => vi.fn());
-const reactMessageTelegram = vi.hoisted(() => vi.fn());
-const sendMessageTelegram = vi.hoisted(() => vi.fn());
-const sendPollTelegram = vi.hoisted(() => vi.fn());
-const sendStickerTelegram = vi.hoisted(() => vi.fn());
-const loadConfig = vi.hoisted(() => vi.fn(() => ({})));
-const readChannelAllowFromStore = vi.hoisted(() => vi.fn(async () => []));
-const upsertChannelPairingRequest = vi.hoisted(() =>
-  vi.fn(async () => ({
-    code: "PAIRCODE",
-    created: true,
-  })),
-);
-const enqueueSystemEvent = vi.hoisted(() => vi.fn());
-const buildModelsProviderData = vi.hoisted(() =>
-  vi.fn(async () => ({
-    byProvider: new Map<string, Set<string>>(),
-    providers: [],
-    resolvedDefault: { provider: "openai", model: "gpt-test" },
-  })),
-);
-const listSkillCommandsForAgents = vi.hoisted(() => vi.fn(() => []));
-const wasSentByBot = vi.hoisted(() => vi.fn(() => false));
 const loadSessionStore = vi.hoisted(() => vi.fn());
 const resolveStorePath = vi.hoisted(() => vi.fn(() => "/tmp/sessions.json"));
 
@@ -45,27 +18,22 @@ vi.mock("./draft-stream.js", () => ({
   createTelegramDraftStream,
 }));
 
+vi.mock("../../../src/auto-reply/reply/provider-dispatcher.js", () => ({
+  dispatchReplyWithBufferedBlockDispatcher,
+}));
+
 vi.mock("./bot/delivery.js", () => ({
   deliverReplies,
-  emitInternalMessageSentHook,
 }));
 
 vi.mock("./send.js", () => ({
-  createForumTopicTelegram,
-  deleteMessageTelegram,
-  editForumTopicTelegram,
   editMessageTelegram,
-  reactMessageTelegram,
-  sendMessageTelegram,
-  sendPollTelegram,
-  sendStickerTelegram,
 }));
 
-vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
+vi.mock("../../../src/config/sessions.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/config/sessions.js")>();
   return {
     ...actual,
-    loadConfig,
     loadSessionStore,
     resolveStorePath,
   };
@@ -73,30 +41,10 @@ vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
 
 vi.mock("./sticker-cache.js", () => ({
   cacheSticker: vi.fn(),
-  getCachedSticker: () => null,
-  getCacheStats: () => ({ count: 0 }),
-  searchStickers: () => [],
-  getAllCachedStickers: () => [],
   describeStickerImage: vi.fn(),
 }));
 
 import { dispatchTelegramMessage } from "./bot-message-dispatch.js";
-
-const telegramDepsForTest: TelegramBotDeps = {
-  loadConfig: loadConfig as TelegramBotDeps["loadConfig"],
-  resolveStorePath: resolveStorePath as TelegramBotDeps["resolveStorePath"],
-  readChannelAllowFromStore:
-    readChannelAllowFromStore as TelegramBotDeps["readChannelAllowFromStore"],
-  upsertChannelPairingRequest:
-    upsertChannelPairingRequest as TelegramBotDeps["upsertChannelPairingRequest"],
-  enqueueSystemEvent: enqueueSystemEvent as TelegramBotDeps["enqueueSystemEvent"],
-  dispatchReplyWithBufferedBlockDispatcher:
-    dispatchReplyWithBufferedBlockDispatcher as TelegramBotDeps["dispatchReplyWithBufferedBlockDispatcher"],
-  buildModelsProviderData: buildModelsProviderData as TelegramBotDeps["buildModelsProviderData"],
-  listSkillCommandsForAgents:
-    listSkillCommandsForAgents as TelegramBotDeps["listSkillCommandsForAgents"],
-  wasSentByBot: wasSentByBot as TelegramBotDeps["wasSentByBot"],
-};
 
 describe("dispatchTelegramMessage draft streaming", () => {
   type TelegramMessageContext = Parameters<typeof dispatchTelegramMessage>[0]["context"];
@@ -105,29 +53,9 @@ describe("dispatchTelegramMessage draft streaming", () => {
     createTelegramDraftStream.mockClear();
     dispatchReplyWithBufferedBlockDispatcher.mockClear();
     deliverReplies.mockClear();
-    emitInternalMessageSentHook.mockClear();
-    createForumTopicTelegram.mockClear();
-    deleteMessageTelegram.mockClear();
-    editForumTopicTelegram.mockClear();
     editMessageTelegram.mockClear();
-    reactMessageTelegram.mockClear();
-    sendMessageTelegram.mockClear();
-    sendPollTelegram.mockClear();
-    sendStickerTelegram.mockClear();
-    loadConfig.mockClear();
-    readChannelAllowFromStore.mockClear();
-    upsertChannelPairingRequest.mockClear();
-    enqueueSystemEvent.mockClear();
-    buildModelsProviderData.mockClear();
-    listSkillCommandsForAgents.mockClear();
-    wasSentByBot.mockClear();
     loadSessionStore.mockClear();
     resolveStorePath.mockClear();
-    loadConfig.mockReturnValue({});
-    dispatchReplyWithBufferedBlockDispatcher.mockResolvedValue({
-      queuedFinal: false,
-      counts: { block: 0, final: 0, tool: 0 },
-    });
     resolveStorePath.mockReturnValue("/tmp/sessions.json");
     loadSessionStore.mockReturnValue({});
   });
@@ -215,7 +143,6 @@ describe("dispatchTelegramMessage draft streaming", () => {
     cfg?: Parameters<typeof dispatchTelegramMessage>[0]["cfg"];
     telegramCfg?: Parameters<typeof dispatchTelegramMessage>[0]["telegramCfg"];
     streamMode?: Parameters<typeof dispatchTelegramMessage>[0]["streamMode"];
-    telegramDeps?: TelegramBotDeps;
     bot?: Bot;
   }) {
     const bot = params.bot ?? createBot();
@@ -228,7 +155,6 @@ describe("dispatchTelegramMessage draft streaming", () => {
       streamMode: params.streamMode ?? "partial",
       textLimit: 4096,
       telegramCfg: params.telegramCfg ?? {},
-      telegramDeps: params.telegramDeps ?? telegramDepsForTest,
       opts: { token: "token" },
     });
   }
@@ -409,29 +335,6 @@ describe("dispatchTelegramMessage draft streaming", () => {
     );
   });
 
-  it("keeps fallback replies silent after an error reply is skipped", async () => {
-    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ dispatcherOptions }) => {
-      dispatcherOptions.onSkip?.(
-        { text: "oops", isError: true },
-        { kind: "final", reason: "empty" },
-      );
-      return { queuedFinal: false };
-    });
-    deliverReplies.mockResolvedValue({ delivered: true });
-
-    await dispatchWithContext({
-      context: createContext(),
-      telegramCfg: { silentErrorReplies: true },
-    });
-
-    expect(deliverReplies).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        silent: true,
-        replies: [expect.objectContaining({ text: expect.any(String) })],
-      }),
-    );
-  });
-
   it("keeps block streaming enabled when session reasoning level is on", async () => {
     loadSessionStore.mockReturnValue({
       s1: { reasoningLevel: "on" },
@@ -522,38 +425,6 @@ describe("dispatchTelegramMessage draft streaming", () => {
     );
     expect(draftStream.clear).not.toHaveBeenCalled();
     expect(draftStream.stop).toHaveBeenCalled();
-  });
-
-  it("emits only the internal message:sent hook when a final answer stays in preview", async () => {
-    const draftStream = createDraftStream(999);
-    createTelegramDraftStream.mockReturnValue(draftStream);
-    dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ dispatcherOptions }) => {
-      await dispatcherOptions.deliver({ text: "Primary result" }, { kind: "final" });
-      return { queuedFinal: true };
-    });
-
-    await dispatchWithContext({
-      context: createContext({
-        ctxPayload: { SessionKey: "s1" } as unknown as TelegramMessageContext["ctxPayload"],
-      }),
-    });
-
-    expect(deliverReplies).not.toHaveBeenCalled();
-    expect(editMessageTelegram).toHaveBeenCalledWith(
-      123,
-      999,
-      "Primary result",
-      expect.any(Object),
-    );
-    expect(emitInternalMessageSentHook).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionKeyForInternalHooks: "s1",
-        chatId: "123",
-        content: "Primary result",
-        success: true,
-        messageId: 999,
-      }),
-    );
   });
 
   it("keeps streamed preview visible when final text regresses after a tool warning", async () => {

@@ -23,11 +23,12 @@ For plaintext private-network `ws://` targets (trusted networks only), set
 
 Non-interactive with auth token:
 
-````bash
+```bash
 remoteclaw onboard --non-interactive \
   --runtime claude \
   --auth-token "$CLAUDE_CODE_OAUTH_TOKEN" \
   --accept-risk
+```
 
 Non-interactive custom provider:
 
@@ -39,7 +40,7 @@ remoteclaw onboard --non-interactive \
   --custom-api-key "$CUSTOM_API_KEY" \
   --custom-compatibility openai \
   --accept-risk
-````
+```
 
 ## Options
 

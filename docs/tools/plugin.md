@@ -169,76 +169,6 @@ For example, TTS follows this shape:
 
 That same pattern should be preferred for future capabilities.
 
-### Multi-capability company plugin example
-
-A company plugin should feel cohesive from the outside. If RemoteClaw has shared
-contracts for models, speech, media understanding, and web search, a vendor can
-own all of its surfaces in one place:
-
-```ts
-import type { RemoteClawPluginDefinition } from "remoteclaw/plugin-sdk";
-import {
-  buildOpenAISpeechProvider,
-  createPluginBackedWebSearchProvider,
-  describeImageWithModel,
-  transcribeOpenAiCompatibleAudio,
-} from "remoteclaw/plugin-sdk";
-
-const plugin: RemoteClawPluginDefinition = {
-  id: "exampleai",
-  name: "ExampleAI",
-  register(api) {
-    api.registerProvider({
-      id: "exampleai",
-      // auth/model catalog/runtime hooks
-    });
-
-    api.registerSpeechProvider(
-      buildOpenAISpeechProvider({
-        id: "exampleai",
-        // vendor speech config
-      }),
-    );
-
-    api.registerMediaUnderstandingProvider({
-      id: "exampleai",
-      capabilities: ["image", "audio", "video"],
-      async describeImage(req) {
-        return describeImageWithModel({
-          provider: "exampleai",
-          model: req.model,
-          input: req.input,
-        });
-      },
-      async transcribeAudio(req) {
-        return transcribeOpenAiCompatibleAudio({
-          provider: "exampleai",
-          model: req.model,
-          input: req.input,
-        });
-      },
-    });
-
-    api.registerWebSearchProvider(
-      createPluginBackedWebSearchProvider({
-        id: "exampleai-search",
-        // credential + fetch logic
-      }),
-    );
-  },
-};
-
-export default plugin;
-```
-
-What matters is not the exact helper names. The shape matters:
-
-- one plugin owns the vendor surface
-- core still owns the capability contracts
-- channels and feature plugins consume `api.runtime.*` helpers, not vendor code
-- contract tests can assert that the plugin registered the capabilities it
-  claims to own
-
 ### Capability example: video understanding
 
 RemoteClaw already treats image/audio/video understanding as one shared
@@ -284,23 +214,18 @@ plugins:
   RemoteClaw skill loader
 - supported now: Claude bundle `settings.json` defaults for embedded Pi agent
   settings (with shell override keys sanitized)
-- supported now: bundle MCP config, merged into embedded Pi agent settings as
-  `mcpServers`, with supported stdio bundle MCP tools exposed during embedded
-  Pi agent turns
 - supported now: Cursor `.cursor/commands/*.md` roots, mapped into the normal
   RemoteClaw skill loader
 - supported now: Codex bundle hook directories that use the RemoteClaw hook-pack
   layout (`HOOK.md` + `handler.ts`/`handler.js`)
 - detected but not wired yet: other declared bundle capabilities such as
-  agents, Claude hook automation, Cursor rules/hooks metadata, app/LSP
+  agents, Claude hook automation, Cursor rules/hooks/MCP metadata, MCP/app/LSP
   metadata, output styles
 
 That means bundle install/discovery/list/info/enablement all work, and bundle
 skills, Claude command-skills, Claude bundle settings defaults, and compatible
-Codex hook directories load when the bundle is enabled. Supported bundle MCP
-servers may also run as subprocesses for embedded Pi tool calls when they use
-supported stdio transport, but bundle runtime modules are not loaded
-in-process.
+Codex hook directories load when the bundle is enabled, but bundle runtime code
+is not executed in-process.
 
 Bundle hook support is limited to the normal RemoteClaw hook directory format
 (`HOOK.md` plus `handler.ts`/`handler.js` under the declared hook roots).
@@ -822,26 +747,10 @@ Notes:
 - If RemoteClaw adds a new capability such as video generation later, define the
   core capability contract first, then let vendor plugins register against it.
 
-For media-understanding runtime helpers, plugins can call:
+For STT/transcription, plugins can call:
 
 ```ts
-const image = await api.runtime.mediaUnderstanding.describeImageFile({
-  filePath: "/tmp/inbound-photo.jpg",
-  cfg: api.config,
-  agentDir: "/tmp/agent",
-});
-
-const video = await api.runtime.mediaUnderstanding.describeVideoFile({
-  filePath: "/tmp/inbound-video.mp4",
-  cfg: api.config,
-});
-```
-
-For audio transcription, plugins can use either the media-understanding runtime
-or the older STT alias:
-
-```ts
-const { text } = await api.runtime.mediaUnderstanding.transcribeAudioFile({
+const { text } = await api.runtime.stt.transcribeAudioFile({
   filePath: "/tmp/inbound-audio.ogg",
   cfg: api.config,
   // Optional when MIME cannot be inferred reliably:
@@ -851,37 +760,8 @@ const { text } = await api.runtime.mediaUnderstanding.transcribeAudioFile({
 
 Notes:
 
-- `api.runtime.mediaUnderstanding.*` is the preferred shared surface for
-  image/audio/video understanding.
 - Uses core media-understanding audio configuration (`tools.media.audio`) and provider fallback order.
 - Returns `{ text: undefined }` when no transcription output is produced (for example skipped/unsupported input).
-- `api.runtime.stt.transcribeAudioFile(...)` remains as a compatibility alias.
-
-For web search, plugins can consume the shared runtime helper instead of
-reaching into the agent tool wiring:
-
-```ts
-const providers = api.runtime.webSearch.listProviders({
-  config: api.config,
-});
-
-const result = await api.runtime.webSearch.search({
-  config: api.config,
-  args: {
-    query: "RemoteClaw plugin runtime helpers",
-    count: 5,
-  },
-});
-```
-
-Plugins can also register web-search providers via
-`api.registerWebSearchProvider(...)`.
-
-Notes:
-
-- Keep provider selection, credential resolution, and shared request semantics in core.
-- Use web-search providers for vendor-specific search transports.
-- `api.runtime.webSearch.*` is the preferred shared surface for feature/channel plugins that need search behavior without depending on the agent tool wrapper.
 
 ## Gateway HTTP routes
 
@@ -1486,65 +1366,6 @@ Recommended sequence:
 
 This is how RemoteClaw stays opinionated without becoming hardcoded to one
 provider's worldview.
-
-### Capability checklist
-
-When you add a new capability, the implementation should usually touch these
-surfaces together:
-
-- core contract types in `src/<capability>/types.ts`
-- core runner/runtime helper in `src/<capability>/runtime.ts`
-- plugin API registration surface in `src/plugins/types.ts`
-- plugin registry wiring in `src/plugins/registry.ts`
-- plugin runtime exposure in `src/plugins/runtime/*` when feature/channel
-  plugins need to consume it
-- capture/test helpers in `src/test-utils/plugin-registration.ts`
-- ownership/contract assertions in `src/plugins/contracts/registry.ts`
-- operator/plugin docs in `docs/`
-
-If one of those surfaces is missing, that is usually a sign the capability is
-not fully integrated yet.
-
-### Capability template
-
-Minimal pattern:
-
-```ts
-// core contract
-export type VideoGenerationProviderPlugin = {
-  id: string;
-  label: string;
-  generateVideo: (req: VideoGenerationRequest) => Promise<VideoGenerationResult>;
-};
-
-// plugin API
-api.registerVideoGenerationProvider({
-  id: "openai",
-  label: "OpenAI",
-  async generateVideo(req) {
-    return await generateOpenAiVideo(req);
-  },
-});
-
-// shared runtime helper for feature/channel plugins
-const clip = await api.runtime.videoGeneration.generateFile({
-  prompt: "Show the robot walking through the lab.",
-  cfg,
-});
-```
-
-Contract test pattern:
-
-```ts
-expect(findVideoGenerationProviderIdsForPlugin("openai")).toEqual(["openai"]);
-```
-
-That keeps the rule simple:
-
-- core owns the capability contract + orchestration
-- vendor plugins own vendor implementations
-- feature/channel plugins consume runtime helpers
-- contract tests keep ownership explicit
 
 Context engine plugins can also register a runtime-owned context manager:
 

@@ -1,4 +1,4 @@
-import { loadOutboundMediaFromUrl, type RemoteClawConfig } from "remoteclaw/plugin-sdk";
+import { loadOutboundMediaFromUrl, type OpenClawConfig } from "openclaw/plugin-sdk/mattermost";
 import { getMattermostRuntime } from "../runtime.js";
 import { resolveMattermostAccount } from "./accounts.js";
 import {
@@ -20,9 +20,10 @@ import {
   setInteractionSecret,
   type MattermostInteractiveButtonInput,
 } from "./interactions.js";
+import { isMattermostId, resolveMattermostOpaqueTarget } from "./target-resolution.js";
 
 export type MattermostSendOpts = {
-  cfg?: RemoteClawConfig;
+  cfg?: OpenClawConfig;
   botToken?: string;
   baseUrl?: string;
   accountId?: string;
@@ -53,6 +54,7 @@ type MattermostTarget =
 const botUserCache = new Map<string, MattermostUser>();
 const userByNameCache = new Map<string, MattermostUser>();
 const channelByNameCache = new Map<string, string>();
+const dmChannelCache = new Map<string, string>();
 
 const getCore = () => getMattermostRuntime();
 
@@ -69,12 +71,6 @@ function normalizeMessage(text: string, mediaUrl?: string): string {
 function isHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
 }
-
-/** Mattermost IDs are 26-character lowercase alphanumeric strings. */
-function isMattermostId(value: string): boolean {
-  return /^[a-z0-9]{26}$/.test(value);
-}
-
 export function parseMattermostTarget(raw: string): MattermostTarget {
   const trimmed = raw.trim();
   if (!trimmed) {
@@ -240,11 +236,17 @@ async function resolveTargetChannelId(params: ResolveTargetChannelIdParams): Pro
         token: params.token,
         username: params.target.username ?? "",
       });
+  const dmKey = `${cacheKey(params.baseUrl, params.token)}::dm::${userId}`;
+  const cachedDm = dmChannelCache.get(dmKey);
+  if (cachedDm) {
+    return cachedDm;
+  }
   const botUser = await resolveBotUser(params.baseUrl, params.token);
   const client = createMattermostClient({
     baseUrl: params.baseUrl,
     botToken: params.token,
   });
+
   const channel = await createMattermostDirectChannelWithRetry(client, [botUser.id, userId], {
     ...params.dmRetryOptions,
     onRetry: (attempt, delayMs, error) => {
@@ -258,11 +260,12 @@ async function resolveTargetChannelId(params: ResolveTargetChannelIdParams): Pro
       }
     },
   });
+  dmChannelCache.set(dmKey, channel.id);
   return channel.id;
 }
 
 type MattermostSendContext = {
-  cfg: RemoteClawConfig;
+  cfg: OpenClawConfig;
   accountId: string;
   token: string;
   baseUrl: string;
@@ -293,7 +296,18 @@ async function resolveMattermostSendContext(
     );
   }
 
-  const target = parseMattermostTarget(to);
+  const trimmedTo = to?.trim() ?? "";
+  const opaqueTarget = await resolveMattermostOpaqueTarget({
+    input: trimmedTo,
+    token,
+    baseUrl,
+  });
+  const target =
+    opaqueTarget?.kind === "user"
+      ? { kind: "user" as const, id: opaqueTarget.id }
+      : opaqueTarget?.kind === "channel"
+        ? { kind: "channel" as const, id: opaqueTarget.id }
+        : parseMattermostTarget(trimmedTo);
   // Build retry options from account config, allowing opts to override
   const accountRetryConfig: CreateDmChannelRetryOptions | undefined = account.config.dmChannelRetry
     ? {

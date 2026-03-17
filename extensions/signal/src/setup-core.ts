@@ -1,7 +1,8 @@
 import {
-  createPatchedAccountSetupAdapter,
-  formatCliCommand,
-  formatDocsLink,
+  applyAccountNameToChannelSection,
+  DEFAULT_ACCOUNT_ID,
+  migrateBaseNameToDefaultAccount,
+  normalizeAccountId,
   normalizeE164,
   parseSetupEntriesAllowingWildcard,
   promptParsedAllowFromForScopedChannel,
@@ -16,6 +17,8 @@ import type {
   ChannelSetupWizard,
   ChannelSetupWizardTextInput,
 } from "remoteclaw/plugin-sdk/setup";
+import { formatCliCommand } from "../../../src/cli/command-format.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,
@@ -184,8 +187,15 @@ export const signalCompletionNote = {
   ],
 };
 
-export const signalSetupAdapter: ChannelSetupAdapter = createPatchedAccountSetupAdapter({
-  channelKey: channel,
+export const signalSetupAdapter: ChannelSetupAdapter = {
+  resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
+  applyAccountName: ({ cfg, accountId, name }) =>
+    applyAccountNameToChannelSection({
+      cfg,
+      channelKey: channel,
+      accountId,
+      name,
+    }),
   validateInput: ({ input }) => {
     if (
       !input.signalNumber &&
@@ -198,8 +208,53 @@ export const signalSetupAdapter: ChannelSetupAdapter = createPatchedAccountSetup
     }
     return null;
   },
-  buildPatch: (input) => buildSignalSetupPatch(input),
-});
+  applyAccountConfig: ({ cfg, accountId, input }) => {
+    const namedConfig = applyAccountNameToChannelSection({
+      cfg,
+      channelKey: channel,
+      accountId,
+      name: input.name,
+    });
+    const next =
+      accountId !== DEFAULT_ACCOUNT_ID
+        ? migrateBaseNameToDefaultAccount({
+            cfg: namedConfig,
+            channelKey: channel,
+          })
+        : namedConfig;
+    if (accountId === DEFAULT_ACCOUNT_ID) {
+      return {
+        ...next,
+        channels: {
+          ...next.channels,
+          signal: {
+            ...next.channels?.signal,
+            enabled: true,
+            ...buildSignalSetupPatch(input),
+          },
+        },
+      };
+    }
+    return {
+      ...next,
+      channels: {
+        ...next.channels,
+        signal: {
+          ...next.channels?.signal,
+          enabled: true,
+          accounts: {
+            ...next.channels?.signal?.accounts,
+            [accountId]: {
+              ...next.channels?.signal?.accounts?.[accountId],
+              enabled: true,
+              ...buildSignalSetupPatch(input),
+            },
+          },
+        },
+      },
+    };
+  },
+};
 
 export function createSignalSetupWizardProxy(
   loadWizard: () => Promise<{ signalSetupWizard: ChannelSetupWizard }>,

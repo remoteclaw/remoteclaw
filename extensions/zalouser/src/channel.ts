@@ -1,28 +1,24 @@
+import { createAccountStatusSink } from "openclaw/plugin-sdk/channel-lifecycle";
+import { buildAccountScopedDmSecurityPolicy } from "openclaw/plugin-sdk/channel-policy";
+import type {
+  ChannelAccountSnapshot,
+  ChannelDirectoryEntry,
+  ChannelGroupContext,
+  ChannelMessageActionAdapter,
+  ChannelPlugin,
+  OpenClawConfig,
+  GroupToolPolicyConfig,
+} from "openclaw/plugin-sdk/zalouser";
 import {
-  buildAccountScopedDmSecurityPolicy,
-  mapAllowFromEntries,
-  applyAccountNameToChannelSection,
-  applySetupAccountConfigPatch,
   buildChannelSendResult,
   buildBaseAccountStatusSnapshot,
-  buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
-  chunkTextForOutbound,
-  deleteAccountFromConfigSection,
-  formatAllowFromLowercase,
+  isDangerousNameMatchingEnabled,
   isNumericTargetId,
   normalizeAccountId,
   sendPayloadWithChunkedTextAndMedia,
-  setAccountEnabledInConfigSection,
-  type ChannelAccountSnapshot,
-  type ChannelDirectoryEntry,
-  type ChannelDock,
-  type ChannelGroupContext,
-  type ChannelMessageActionAdapter,
-  type ChannelPlugin,
-  type RemoteClawConfig,
-  type GroupToolPolicyConfig,
-} from "remoteclaw/plugin-sdk";
+} from "openclaw/plugin-sdk/zalouser";
+import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,
@@ -31,13 +27,15 @@ import {
   checkZcaAuthenticated,
   type ResolvedZalouserAccount,
 } from "./accounts.js";
-import { ZalouserConfigSchema } from "./config-schema.js";
 import { buildZalouserGroupCandidates, findZalouserGroupEntry } from "./group-policy.js";
 import { resolveZalouserReactionMessageIds } from "./message-sid.js";
 import { probeZalouser } from "./probe.js";
 import { writeQrDataUrlToTempFile } from "./qr-temp-file.js";
+import { getZalouserRuntime } from "./runtime.js";
 import { sendMessageZalouser, sendReactionZalouser } from "./send.js";
-import { zalouserOnboardingAdapter } from "./setup-surface.js";
+import { zalouserSetupAdapter } from "./setup-core.js";
+import { zalouserSetupWizard } from "./setup-surface.js";
+import { createZalouserPluginBase } from "./shared.js";
 import { collectZalouserStatusIssues } from "./status-issues.js";
 import {
   listZaloFriendsMatching,
@@ -49,17 +47,7 @@ import {
   getZaloUserInfo,
 } from "./zalo-js.js";
 
-const meta = {
-  id: "zalouser",
-  label: "Zalo Personal",
-  selectionLabel: "Zalo (Personal Account)",
-  docsPath: "/channels/zalouser",
-  docsLabel: "zalouser",
-  blurb: "Zalo personal account via QR code login.",
-  aliases: ["zlu"],
-  order: 85,
-  quickstartAllowFrom: true,
-};
+const ZALOUSER_TEXT_CHUNK_LIMIT = 2000;
 
 function stripZalouserTargetPrefix(raw: string): string {
   return raw
@@ -160,6 +148,16 @@ function resolveZalouserQrProfile(accountId?: string | null): string {
   return normalized;
 }
 
+function resolveZalouserOutboundChunkMode(cfg: OpenClawConfig, accountId?: string) {
+  return getZalouserRuntime().channel.text.resolveChunkMode(cfg, "zalouser", accountId);
+}
+
+function resolveZalouserOutboundTextChunkLimit(cfg: OpenClawConfig, accountId?: string) {
+  return getZalouserRuntime().channel.text.resolveTextChunkLimit(cfg, "zalouser", accountId, {
+    fallbackLimit: ZALOUSER_TEXT_CHUNK_LIMIT,
+  });
+}
+
 function mapUser(params: {
   id: string;
   name?: string | null;
@@ -200,6 +198,7 @@ function resolveZalouserGroupPolicyEntry(params: ChannelGroupContext) {
       groupId: params.groupId,
       groupChannel: params.groupChannel,
       includeWildcard: true,
+      allowNameMatching: isDangerousNameMatchingEnabled(account.config),
     }),
   );
 }
@@ -287,85 +286,11 @@ const zalouserMessageActions: ChannelMessageActionAdapter = {
   },
 };
 
-export const zalouserDock: ChannelDock = {
-  id: "zalouser",
-  capabilities: {
-    chatTypes: ["direct", "group"],
-    media: true,
-    blockStreaming: true,
-  },
-  outbound: { textChunkLimit: 2000 },
-  config: {
-    resolveAllowFrom: ({ cfg, accountId }) =>
-      mapAllowFromEntries(resolveZalouserAccountSync({ cfg: cfg, accountId }).config.allowFrom),
-    formatAllowFrom: ({ allowFrom }) =>
-      formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalouser|zlu):/i }),
-  },
-  groups: {
-    resolveRequireMention: resolveZalouserRequireMention,
-    resolveToolPolicy: resolveZalouserGroupToolPolicy,
-  },
-  threading: {
-    resolveReplyToMode: () => "off",
-  },
-};
-
 export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
-  id: "zalouser",
-  meta,
-  onboarding: zalouserOnboardingAdapter,
-  capabilities: {
-    chatTypes: ["direct", "group"],
-    media: true,
-    reactions: true,
-    threads: false,
-    polls: false,
-    nativeCommands: false,
-    blockStreaming: true,
-  },
-  reload: { configPrefixes: ["channels.zalouser"] },
-  configSchema: buildChannelConfigSchema(ZalouserConfigSchema),
-  config: {
-    listAccountIds: (cfg) => listZalouserAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveZalouserAccountSync({ cfg: cfg, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultZalouserAccountId(cfg),
-    setAccountEnabled: ({ cfg, accountId, enabled }) =>
-      setAccountEnabledInConfigSection({
-        cfg: cfg,
-        sectionKey: "zalouser",
-        accountId,
-        enabled,
-        allowTopLevel: true,
-      }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg: cfg,
-        sectionKey: "zalouser",
-        accountId,
-        clearBaseFields: [
-          "profile",
-          "name",
-          "dmPolicy",
-          "allowFrom",
-          "historyLimit",
-          "groupAllowFrom",
-          "groupPolicy",
-          "groups",
-          "messagePrefix",
-        ],
-      }),
-    isConfigured: async (account) => await checkZcaAuthenticated(account.profile),
-    describeAccount: (account): ChannelAccountSnapshot => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: undefined,
-    }),
-    resolveAllowFrom: ({ cfg, accountId }) =>
-      mapAllowFromEntries(resolveZalouserAccountSync({ cfg: cfg, accountId }).config.allowFrom),
-    formatAllowFrom: ({ allowFrom }) =>
-      formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalouser|zlu):/i }),
-  },
+  ...createZalouserPluginBase({
+    setupWizard: zalouserSetupWizard,
+    setup: zalouserSetupAdapter,
+  }),
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
       return buildAccountScopedDmSecurityPolicy({
@@ -557,14 +482,11 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
   },
   outbound: {
     deliveryMode: "direct",
-    chunker: chunkTextForOutbound,
-    chunkerMode: "text",
-    textChunkLimit: 2000,
+    chunker: (text, limit) => getZalouserRuntime().channel.text.chunkMarkdownText(text, limit),
+    chunkerMode: "markdown",
     sendPayload: async (ctx) =>
       await sendPayloadWithChunkedTextAndMedia({
         ctx,
-        textChunkLimit: zalouserPlugin.outbound!.textChunkLimit,
-        chunker: zalouserPlugin.outbound!.chunker,
         sendText: (nextCtx) => zalouserPlugin.outbound!.sendText!(nextCtx),
         sendMedia: (nextCtx) => zalouserPlugin.outbound!.sendMedia!(nextCtx),
         emptyResult: { channel: "zalouser", messageId: "" },
@@ -575,6 +497,9 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
       const result = await sendMessageZalouser(target.threadId, text, {
         profile: account.profile,
         isGroup: target.isGroup,
+        textMode: "markdown",
+        textChunkMode: resolveZalouserOutboundChunkMode(cfg, account.accountId),
+        textChunkLimit: resolveZalouserOutboundTextChunkLimit(cfg, account.accountId),
       });
       return buildChannelSendResult("zalouser", result);
     },
@@ -586,6 +511,9 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
         isGroup: target.isGroup,
         mediaUrl,
         mediaLocalRoots,
+        textMode: "markdown",
+        textChunkMode: resolveZalouserOutboundChunkMode(cfg, account.accountId),
+        textChunkLimit: resolveZalouserOutboundTextChunkLimit(cfg, account.accountId),
       });
       return buildChannelSendResult("zalouser", result);
     },
@@ -599,15 +527,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
       lastError: null,
     },
     collectStatusIssues: collectZalouserStatusIssues,
-    buildChannelSummary: ({ snapshot }) => ({
-      configured: snapshot.configured ?? false,
-      running: snapshot.running ?? false,
-      lastStartAt: snapshot.lastStartAt ?? null,
-      lastStopAt: snapshot.lastStopAt ?? null,
-      lastError: snapshot.lastError ?? null,
-      probe: snapshot.probe,
-      lastProbeAt: snapshot.lastProbeAt ?? null,
-    }),
+    buildChannelSummary: ({ snapshot }) => buildPassiveProbedChannelStatusSummary(snapshot),
     probeAccount: async ({ account, timeoutMs }) => probeZalouser(account.profile, timeoutMs),
     buildAccountSnapshot: async ({ account, runtime }) => {
       const configured = await checkZcaAuthenticated(account.profile);
@@ -645,6 +565,10 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
       } catch {
         // ignore probe errors
       }
+      const statusSink = createAccountStatusSink({
+        accountId: ctx.accountId,
+        setStatus: ctx.setStatus,
+      });
       ctx.log?.info(`[${account.accountId}] starting zalouser provider${userLabel}`);
       const { monitorZalouserProvider } = await import("./monitor.js");
       return monitorZalouserProvider({
@@ -652,7 +576,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
         config: ctx.cfg,
         runtime: ctx.runtime,
         abortSignal: ctx.abortSignal,
-        statusSink: (patch) => ctx.setStatus({ accountId: ctx.accountId, ...patch }),
+        statusSink,
       });
     },
     loginWithQrStart: async (params) => {

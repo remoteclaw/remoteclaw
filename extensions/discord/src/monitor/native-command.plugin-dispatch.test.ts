@@ -79,6 +79,71 @@ function createStatusCommand(cfg: RemoteClawConfig) {
   });
 }
 
+function createPluginCommand(params: { cfg: OpenClawConfig; name: string }) {
+  return createDiscordNativeCommand({
+    command: {
+      name: params.name,
+      description: "Pair",
+      acceptsArgs: true,
+    } satisfies NativeCommandSpec,
+    cfg: params.cfg,
+    discordConfig: params.cfg.channels?.discord ?? {},
+    accountId: "default",
+    sessionPrefix: "discord:slash",
+    ephemeralDefault: true,
+    threadBindings: createNoopThreadBindingManager("default"),
+  });
+}
+
+function registerPairPlugin(params?: { discordNativeName?: string }) {
+  expect(
+    registerPluginCommand("demo-plugin", {
+      name: "pair",
+      ...(params?.discordNativeName
+        ? {
+            nativeNames: {
+              telegram: "pair_device",
+              discord: params.discordNativeName,
+            },
+          }
+        : {}),
+      description: "Pair device",
+      acceptsArgs: true,
+      requireAuth: false,
+      handler: async ({ args }) => ({ text: `paired:${args ?? ""}` }),
+    }),
+  ).toEqual({ ok: true });
+}
+
+async function expectPairCommandReply(params: {
+  cfg: OpenClawConfig;
+  commandName: string;
+  interaction: MockCommandInteraction;
+}) {
+  const command = createPluginCommand({
+    cfg: params.cfg,
+    name: params.commandName,
+  });
+  const dispatchSpy = vi
+    .spyOn(dispatcherModule, "dispatchReplyWithDispatcher")
+    .mockResolvedValue({} as never);
+
+  await (command as { run: (interaction: unknown) => Promise<void> }).run(
+    Object.assign(params.interaction, {
+      options: {
+        getString: () => "now",
+        getBoolean: () => null,
+        getFocused: () => "",
+      },
+    }) as unknown,
+  );
+
+  expect(dispatchSpy).not.toHaveBeenCalled();
+  expect(params.interaction.reply).toHaveBeenCalledWith(
+    expect.objectContaining({ content: "paired:now" }),
+  );
+}
+
 function setConfiguredBinding(channelId: string, boundSessionKey: string) {
   persistentBindingMocks.resolveConfiguredAcpBindingRecord.mockReturnValue({
     spec: {
@@ -160,6 +225,103 @@ describe("Discord native plugin command dispatch", () => {
       ok: true,
       sessionKey: "agent:codex:acp:binding:discord:default:seed",
     });
+  });
+
+  it("executes plugin commands from the real registry through the native Discord command path", async () => {
+    const cfg = createConfig();
+    const interaction = createInteraction();
+
+    registerPairPlugin();
+    await expectPairCommandReply({
+      cfg,
+      commandName: "pair",
+      interaction,
+    });
+  });
+
+  it("round-trips Discord native aliases through the real plugin registry", async () => {
+    const cfg = createConfig();
+    const interaction = createInteraction();
+
+    registerPairPlugin({ discordNativeName: "pairdiscord" });
+    await expectPairCommandReply({
+      cfg,
+      commandName: "pairdiscord",
+      interaction,
+    });
+  });
+
+  it("blocks unauthorized Discord senders before requireAuth:false plugin commands execute", async () => {
+    const cfg = {
+      commands: {
+        allowFrom: {
+          discord: ["user:123456789012345678"],
+        },
+      },
+      channels: {
+        discord: {
+          groupPolicy: "allowlist",
+          guilds: {
+            "345678901234567890": {
+              channels: {
+                "234567890123456789": {
+                  allow: true,
+                  requireMention: false,
+                },
+              },
+            },
+          },
+        },
+      },
+    } as OpenClawConfig;
+    const commandSpec: NativeCommandSpec = {
+      name: "pair",
+      description: "Pair",
+      acceptsArgs: true,
+    };
+    const command = createDiscordNativeCommand({
+      command: commandSpec,
+      cfg,
+      discordConfig: cfg.channels?.discord ?? {},
+      accountId: "default",
+      sessionPrefix: "discord:slash",
+      ephemeralDefault: true,
+      threadBindings: createNoopThreadBindingManager("default"),
+    });
+    const interaction = createInteraction({
+      channelType: ChannelType.GuildText,
+      channelId: "234567890123456789",
+      guildId: "345678901234567890",
+      guildName: "Test Guild",
+    });
+    interaction.user.id = "999999999999999999";
+    interaction.options.getString.mockReturnValue("now");
+
+    expect(
+      registerPluginCommand("demo-plugin", {
+        name: "pair",
+        description: "Pair device",
+        acceptsArgs: true,
+        requireAuth: false,
+        handler: async ({ args }) => ({ text: `open:${args ?? ""}` }),
+      }),
+    ).toEqual({ ok: true });
+
+    const executeSpy = vi.spyOn(pluginCommandsModule, "executePluginCommand");
+    const dispatchSpy = vi
+      .spyOn(dispatcherModule, "dispatchReplyWithDispatcher")
+      .mockResolvedValue({} as never);
+
+    await (command as { run: (interaction: unknown) => Promise<void> }).run(interaction as unknown);
+
+    expect(executeSpy).not.toHaveBeenCalled();
+    expect(dispatchSpy).not.toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: "You are not authorized to use this command.",
+        ephemeral: true,
+      }),
+    );
   });
 
   it("executes matched plugin commands directly without invoking the agent dispatcher", async () => {

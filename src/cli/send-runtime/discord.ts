@@ -1,9 +1,9 @@
-import { sendMessageDiscord as sendMessageDiscordImpl } from "../../../extensions/discord/runtime-api.js";
+import { sendMessageDiscord as sendMessageDiscordImpl } from "../../plugin-sdk/discord.js";
 
-type RuntimeSend = {
-  sendMessage: typeof import("../../../extensions/discord/runtime-api.js").sendMessageDiscord;
-};
+type SendMessageDiscord = typeof import("../../plugin-sdk/discord.js").sendMessageDiscord;
 
-export const runtimeSend = {
-  sendMessage: sendMessageDiscordImpl,
-} satisfies RuntimeSend;
+export async function sendMessageDiscord(
+  ...args: Parameters<SendMessageDiscord>
+): ReturnType<SendMessageDiscord> {
+  return await sendMessageDiscordImpl(...args);
+}

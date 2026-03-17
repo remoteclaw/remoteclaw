@@ -1,9 +1,9 @@
-import { sendMessageTelegram as sendMessageTelegramImpl } from "../../../extensions/telegram/runtime-api.js";
+import { sendMessageTelegram as sendMessageTelegramImpl } from "../../plugin-sdk/telegram.js";
 
-type RuntimeSend = {
-  sendMessage: typeof import("../../../extensions/telegram/runtime-api.js").sendMessageTelegram;
-};
+type SendMessageTelegram = typeof import("../../plugin-sdk/telegram.js").sendMessageTelegram;
 
-export const runtimeSend = {
-  sendMessage: sendMessageTelegramImpl,
-} satisfies RuntimeSend;
+export async function sendMessageTelegram(
+  ...args: Parameters<SendMessageTelegram>
+): ReturnType<SendMessageTelegram> {
+  return await sendMessageTelegramImpl(...args);
+}

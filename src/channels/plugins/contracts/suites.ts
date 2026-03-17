@@ -1,10 +1,15 @@
 import { expect, it, type Mock } from "vitest";
 import type { MsgContext } from "../../../auto-reply/templating.js";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { RemoteClawConfig } from "../../../config/config.js";
 import type {
   ResolveProviderRuntimeGroupPolicyParams,
   RuntimeGroupPolicyResolution,
 } from "../../../config/runtime-group-policy.js";
+import type {
+  SessionBindingCapabilities,
+  SessionBindingRecord,
+} from "../../../infra/outbound/session-binding-service.js";
+import { createNonExitingRuntime } from "../../../runtime.js";
 import { normalizeChatType } from "../../chat-type.js";
 import { resolveConversationLabel } from "../../conversation-label.js";
 import { validateSenderIdentity } from "../../sender-identity.js";
@@ -22,6 +27,8 @@ import type { ChannelMessageActionName, ChannelPlugin } from "../types.js";
 function sortStrings(values: readonly string[]) {
   return [...values].toSorted((left, right) => left.localeCompare(right));
 }
+
+const contractRuntime = createNonExitingRuntime();
 
 function expectDirectoryEntryShape(entry: ChannelDirectoryEntry) {
   expect(["user", "group", "channel"]).toContain(entry.kind);
@@ -293,6 +300,189 @@ export function installChannelSurfaceContractSuite(params: {
         gateway?.logoutAccount,
       ].some((value) => typeof value === "function"),
     ).toBe(true);
+  });
+}
+
+export function installChannelThreadingContractSuite(params: {
+  plugin: Pick<ChannelPlugin, "id" | "threading">;
+}) {
+  it("exposes the base threading contract", () => {
+    expect(params.plugin.threading).toBeDefined();
+  });
+
+  it("keeps threading return values normalized", () => {
+    const threading = params.plugin.threading;
+    expect(threading).toBeDefined();
+
+    if (threading?.resolveReplyToMode) {
+      expect(
+        ["off", "first", "all"].includes(
+          threading.resolveReplyToMode({
+            cfg: {} as RemoteClawConfig,
+            accountId: "default",
+            chatType: "group",
+          }),
+        ),
+      ).toBe(true);
+    }
+
+    const repliedRef = { value: false };
+    const toolContext = threading?.buildToolContext?.({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+      context: {
+        Channel: "group:test",
+        From: "user:test",
+        To: "group:test",
+        ChatType: "group",
+        CurrentMessageId: "msg-1",
+        ReplyToId: "msg-0",
+        ReplyToIdFull: "thread-0",
+        MessageThreadId: "thread-0",
+        NativeChannelId: "native:test",
+      },
+      hasRepliedRef: repliedRef,
+    });
+
+    if (toolContext) {
+      expectThreadingToolContextShape(toolContext);
+      if (toolContext.hasRepliedRef) {
+        expect(toolContext.hasRepliedRef).toBe(repliedRef);
+      }
+    }
+
+    const autoThreadId = threading?.resolveAutoThreadId?.({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+      to: "group:test",
+      toolContext,
+      replyToId: null,
+    });
+    if (autoThreadId !== undefined) {
+      expect(typeof autoThreadId).toBe("string");
+      expect(autoThreadId.trim()).not.toBe("");
+    }
+
+    const replyTransport = threading?.resolveReplyTransport?.({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+      threadId: "thread-0",
+      replyToId: "msg-0",
+    });
+    if (replyTransport) {
+      expectReplyTransportShape(replyTransport);
+    }
+
+    const focusedBinding = threading?.resolveFocusedBinding?.({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+      context: {
+        Channel: "group:test",
+        From: "user:test",
+        To: "group:test",
+        ChatType: "group",
+        CurrentMessageId: "msg-1",
+        ReplyToId: "msg-0",
+        ReplyToIdFull: "thread-0",
+        MessageThreadId: "thread-0",
+        NativeChannelId: "native:test",
+      },
+    });
+    if (focusedBinding) {
+      expectFocusedBindingShape(focusedBinding);
+    }
+  });
+}
+
+export function installChannelDirectoryContractSuite(params: {
+  plugin: Pick<ChannelPlugin, "id" | "directory">;
+  invokeLookups?: boolean;
+}) {
+  it("exposes the base directory contract", async () => {
+    const directory = params.plugin.directory;
+    expect(directory).toBeDefined();
+
+    if (params.invokeLookups === false) {
+      return;
+    }
+
+    const self = await directory?.self?.({
+      cfg: {} as RemoteClawConfig,
+      accountId: "default",
+      runtime: contractRuntime,
+    });
+    if (self) {
+      expectDirectoryEntryShape(self);
+    }
+
+    const peers =
+      (await directory?.listPeers?.({
+        cfg: {} as RemoteClawConfig,
+        accountId: "default",
+        query: "",
+        limit: 5,
+        runtime: contractRuntime,
+      })) ?? [];
+    expect(Array.isArray(peers)).toBe(true);
+    for (const peer of peers) {
+      expectDirectoryEntryShape(peer);
+    }
+
+    const groups =
+      (await directory?.listGroups?.({
+        cfg: {} as RemoteClawConfig,
+        accountId: "default",
+        query: "",
+        limit: 5,
+        runtime: contractRuntime,
+      })) ?? [];
+    expect(Array.isArray(groups)).toBe(true);
+    for (const group of groups) {
+      expectDirectoryEntryShape(group);
+    }
+
+    if (directory?.listGroupMembers && groups[0]?.id) {
+      const members = await directory.listGroupMembers({
+        cfg: {} as RemoteClawConfig,
+        accountId: "default",
+        groupId: groups[0].id,
+        limit: 5,
+        runtime: contractRuntime,
+      });
+      expect(Array.isArray(members)).toBe(true);
+      for (const member of members) {
+        expectDirectoryEntryShape(member);
+      }
+    }
+  });
+}
+
+export function installSessionBindingContractSuite(params: {
+  getCapabilities: () => SessionBindingCapabilities;
+  bindAndResolve: () => Promise<SessionBindingRecord>;
+  cleanup: () => Promise<void> | void;
+  expectedCapabilities: SessionBindingCapabilities;
+}) {
+  it("registers the expected session binding capabilities", () => {
+    expect(params.getCapabilities()).toEqual(params.expectedCapabilities);
+  });
+
+  it("binds and resolves a session binding through the shared service", async () => {
+    const binding = await params.bindAndResolve();
+    expect(typeof binding.bindingId).toBe("string");
+    expect(binding.bindingId.trim()).not.toBe("");
+    expect(typeof binding.targetSessionKey).toBe("string");
+    expect(binding.targetSessionKey.trim()).not.toBe("");
+    expect(["session", "subagent"]).toContain(binding.targetKind);
+    expect(typeof binding.conversation.channel).toBe("string");
+    expect(typeof binding.conversation.accountId).toBe("string");
+    expect(typeof binding.conversation.conversationId).toBe("string");
+    expect(["active", "ending", "ended"]).toContain(binding.status);
+    expect(typeof binding.boundAt).toBe("number");
+  });
+
+  it("cleans up registered bindings", async () => {
+    await params.cleanup();
   });
 }
 

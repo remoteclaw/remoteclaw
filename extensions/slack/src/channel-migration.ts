@@ -1,6 +1,6 @@
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { SlackChannelConfig } from "../../../src/config/types.slack.js";
-import { normalizeAccountId } from "../../../src/routing/session-key.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { SlackChannelConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 
 type SlackChannels = Record<string, SlackChannelConfig>;
 

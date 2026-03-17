@@ -1,6 +1,6 @@
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { TelegramGroupConfig } from "../../../src/config/types.telegram.js";
-import { normalizeAccountId } from "../../../src/routing/session-key.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { TelegramGroupConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 
 type TelegramGroups = Record<string, TelegramGroupConfig>;
 

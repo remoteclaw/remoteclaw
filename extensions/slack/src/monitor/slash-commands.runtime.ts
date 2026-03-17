@@ -4,4 +4,4 @@ export {
   listNativeCommandSpecsForConfig,
   parseCommandArgs,
   resolveCommandArgMenu,
-} from "../../../../src/auto-reply/commands-registry.js";
+} from "remoteclaw/plugin-sdk/reply-runtime";

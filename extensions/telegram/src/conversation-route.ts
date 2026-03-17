@@ -1,17 +1,19 @@
-import { resolveConfiguredAcpRoute } from "../../../src/acp/persistent-bindings.route.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { logVerbose } from "../../../src/globals.js";
-import { getSessionBindingService } from "../../../src/infra/outbound/session-binding-service.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveConfiguredAcpRoute } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { getSessionBindingService } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { isPluginOwnedSessionBindingRecord } from "remoteclaw/plugin-sdk/conversation-runtime";
 import {
   buildAgentSessionKey,
   deriveLastRoutePolicy,
   pickFirstExistingAgentId,
   resolveAgentRoute,
-} from "../../../src/routing/resolve-route.js";
+} from "remoteclaw/plugin-sdk/routing";
 import {
   buildAgentMainSessionKey,
   resolveAgentIdFromSessionKey,
-} from "../../../src/routing/session-key.js";
+  sanitizeAgentId,
+} from "remoteclaw/plugin-sdk/routing";
+import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import {
   buildTelegramGroupPeerId,
   buildTelegramParentPeer,

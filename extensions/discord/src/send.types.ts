@@ -1,6 +1,6 @@
 import type { RequestClient } from "@buape/carbon";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { RetryConfig } from "../../../src/infra/retry.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { RetryConfig } from "remoteclaw/plugin-sdk/infra-runtime";
 
 export class DiscordSendError extends Error {
   kind?: "missing-permissions" | "dm-blocked";

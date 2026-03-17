@@ -1,6 +1,5 @@
-import type { Mock } from "vitest";
+import type { MockFn } from "remoteclaw/plugin-sdk/test-utils";
 import { vi } from "vitest";
-import type { MockFn } from "../../../../src/test-utils/vitest-mock-fn.js";
 
 export const preflightDiscordMessageMock: Mock = vi.fn();
 export const processDiscordMessageMock: Mock = vi.fn();

@@ -1,17 +1,17 @@
 import { type Block, type KnownBlock, type WebClient } from "@slack/web-api";
+import { loadConfig, type RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import {
+  fetchWithSsrFGuard,
+  withTrustedEnvProxyGuardedFetchMode,
+} from "remoteclaw/plugin-sdk/infra-runtime";
 import {
   chunkMarkdownTextWithMode,
   resolveChunkMode,
   resolveTextChunkLimit,
-} from "../../../src/auto-reply/chunk.js";
-import { isSilentReplyText } from "../../../src/auto-reply/tokens.js";
-import { loadConfig, type RemoteClawConfig } from "../../../src/config/config.js";
-import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
-import { logVerbose } from "../../../src/globals.js";
-import {
-  fetchWithSsrFGuard,
-  withTrustedEnvProxyGuardedFetchMode,
-} from "../../../src/infra/net/fetch-guard.js";
+} from "remoteclaw/plugin-sdk/reply-runtime";
+import { isSilentReplyText } from "remoteclaw/plugin-sdk/reply-runtime";
+import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { loadWebMedia } from "../../whatsapp/src/media.js";
 import type { SlackTokenSource } from "./accounts.js";
 import { resolveSlackAccount } from "./accounts.js";

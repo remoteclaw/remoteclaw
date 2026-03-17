@@ -1,8 +1,8 @@
-import type { BaseProbeResult } from "../../../src/channels/plugins/types.js";
-import { detectBinary } from "../../../src/commands/onboard-helpers.js";
-import { loadConfig } from "../../../src/config/config.js";
-import { runCommandWithTimeout } from "../../../src/process/exec.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
+import type { BaseProbeResult } from "remoteclaw/plugin-sdk/channel-runtime";
+import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { runCommandWithTimeout } from "remoteclaw/plugin-sdk/process-runtime";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import { detectBinary } from "remoteclaw/plugin-sdk/setup";
 import { createIMessageRpcClient } from "./client.js";
 import { DEFAULT_IMESSAGE_PROBE_TIMEOUT_MS } from "./constants.js";
 

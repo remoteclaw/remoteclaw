@@ -1,4 +1,5 @@
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/discord";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
+import { resolveDiscordAccount } from "./accounts.js";
 import {
   autoBindSpawnedDiscordSubagent,
   listThreadBindingsBySessionKey,

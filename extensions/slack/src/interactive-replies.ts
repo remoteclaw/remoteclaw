@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { listSlackAccountIds, resolveSlackAccount } from "./accounts.js";
 
 function resolveInteractiveRepliesFromCapabilities(capabilities: unknown): boolean {

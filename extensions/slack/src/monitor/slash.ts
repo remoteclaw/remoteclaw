@@ -1,17 +1,14 @@
 import type { SlackActionMiddlewareArgs, SlackCommandMiddlewareArgs } from "@slack/bolt";
-import {
-  type ChatCommandDefinition,
-  type CommandArgs,
-} from "../../../../src/auto-reply/commands-registry.js";
-import type { ReplyPayload } from "../../../../src/auto-reply/types.js";
-import { resolveCommandAuthorizedFromAuthorizers } from "../../../../src/channels/command-gating.js";
-import { resolveNativeCommandSessionTargets } from "../../../../src/channels/native-command-session-targets.js";
+import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveNativeCommandSessionTargets } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,
-} from "../../../../src/config/commands.js";
-import { danger, logVerbose } from "../../../../src/globals.js";
-import { chunkItems } from "../../../../src/utils/chunk-items.js";
+} from "remoteclaw/plugin-sdk/config-runtime";
+import { type ChatCommandDefinition, type CommandArgs } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import { chunkItems } from "remoteclaw/plugin-sdk/text-runtime";
 import type { ResolvedSlackAccount } from "../accounts.js";
 import { truncateSlackText } from "../truncate.js";
 import { resolveSlackAllowListMatch, resolveSlackUserAllowed } from "./allow-list.js";

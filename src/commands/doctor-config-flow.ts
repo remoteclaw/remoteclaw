@@ -23,6 +23,14 @@ import { parseToolsBySenderTypedKey } from "../config/types.tools.js";
 import { RemoteClawSchema } from "../config/zod-schema.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
 import {
+  fetchTelegramChatId,
+  inspectTelegramAccount,
+  isNumericTelegramUserId,
+  listTelegramAccountIds,
+  normalizeTelegramAllowFromEntry,
+  resolveTelegramAccount,
+} from "../plugin-sdk/telegram.js";
+import {
   formatChannelAccountsDefaultPath,
   formatSetExplicitDefaultInstruction,
   formatSetExplicitDefaultToConfiguredInstruction,

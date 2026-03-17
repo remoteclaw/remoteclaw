@@ -3,21 +3,21 @@ import {
   readStringArrayParam,
   readStringOrNumberParam,
   readStringParam,
-} from "../../../src/agents/tools/common.js";
-import { handleTelegramAction } from "../../../src/agents/tools/telegram-actions.js";
-import { resolveReactionMessageId } from "../../../src/channels/plugins/actions/reaction-message-id.js";
+} from "remoteclaw/plugin-sdk/agent-runtime";
+import { handleTelegramAction } from "remoteclaw/plugin-sdk/agent-runtime";
+import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
+import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
   createUnionActionGate,
   listTokenSourcedAccounts,
-} from "../../../src/channels/plugins/actions/shared.js";
+} from "remoteclaw/plugin-sdk/channel-runtime";
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
-} from "../../../src/channels/plugins/types.js";
-import type { TelegramActionConfig } from "../../../src/config/types.telegram.js";
-import { readBooleanParam } from "../../../src/plugin-sdk/boolean-param.js";
-import { extractToolSend } from "../../../src/plugin-sdk/tool-send.js";
-import { resolveTelegramPollVisibility } from "../../../src/poll-params.js";
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import type { TelegramActionConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveTelegramPollVisibility } from "remoteclaw/plugin-sdk/telegram";
+import { extractToolSend } from "remoteclaw/plugin-sdk/tool-send";
 import {
   createTelegramActionGate,
   listEnabledTelegramAccounts,

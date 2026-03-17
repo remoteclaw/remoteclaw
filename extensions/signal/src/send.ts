@@ -1,14 +1,14 @@
-import { loadConfig, type OpenClawConfig } from "../../../src/config/config.js";
-import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
-import { kindFromMime } from "../../../src/media/mime.js";
-import { resolveOutboundAttachmentFromUrl } from "../../../src/media/outbound-attachment.js";
+import { loadConfig, type RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
+import { resolveOutboundAttachmentFromUrl } from "remoteclaw/plugin-sdk/media-runtime";
 import { resolveSignalAccount } from "./accounts.js";
 import { signalRpcRequest } from "./client.js";
 import { markdownToSignalText, type SignalTextStyleRange } from "./format.js";
 import { resolveSignalRpcContext } from "./rpc-context.js";
 
 export type SignalSendOpts = {
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   baseUrl?: string;
   account?: string;
   accountId?: string;

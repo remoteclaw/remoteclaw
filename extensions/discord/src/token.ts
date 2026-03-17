@@ -1,7 +1,7 @@
-import type { BaseTokenResolution } from "../../../src/channels/plugins/types.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { normalizeResolvedSecretInputString } from "../../../src/config/types.secrets.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
+import type { BaseTokenResolution } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { normalizeResolvedSecretInputString } from "remoteclaw/plugin-sdk/config-runtime";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 
 export type DiscordTokenSource = "env" | "config" | "none";
 

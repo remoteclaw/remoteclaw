@@ -7,12 +7,12 @@ import {
   makeWASocket,
   useMultiFileAuthState,
 } from "@whiskeysockets/baileys";
+import { formatCliCommand } from "remoteclaw/plugin-sdk/cli-runtime";
+import { VERSION } from "remoteclaw/plugin-sdk/cli-runtime";
+import { danger, success } from "remoteclaw/plugin-sdk/runtime-env";
+import { getChildLogger, toPinoLikeLogger } from "remoteclaw/plugin-sdk/runtime-env";
+import { ensureDir, resolveUserPath } from "remoteclaw/plugin-sdk/text-runtime";
 import qrcode from "qrcode-terminal";
-import { formatCliCommand } from "../../../src/cli/command-format.js";
-import { danger, success } from "../../../src/globals.js";
-import { getChildLogger, toPinoLikeLogger } from "../../../src/logging.js";
-import { ensureDir, resolveUserPath } from "../../../src/utils.js";
-import { VERSION } from "../../../src/version.js";
 import {
   maybeRestoreCredsFromBackup,
   readCredsJsonRaw,

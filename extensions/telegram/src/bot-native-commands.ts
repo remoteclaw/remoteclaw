@@ -1,8 +1,33 @@
 import type { Bot, Context } from "grammy";
-import { ensureConfiguredAcpRouteReady } from "../../../src/acp/persistent-bindings.route.js";
-import { resolveChunkMode } from "../../../src/auto-reply/chunk.js";
-import { resolveCommandAuthorization } from "../../../src/auto-reply/command-auth.js";
-import type { CommandArgs } from "../../../src/auto-reply/commands-registry.js";
+import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveNativeCommandSessionTargets } from "remoteclaw/plugin-sdk/channel-runtime";
+import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk/channel-runtime";
+import { recordInboundSessionMetaSafe } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { ChannelGroupPolicy } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import {
+  normalizeTelegramCommandName,
+  resolveTelegramCustomCommands,
+  TELEGRAM_COMMAND_NAME_PATTERN,
+} from "remoteclaw/plugin-sdk/config-runtime";
+import type {
+  ReplyToMode,
+  TelegramAccountConfig,
+  TelegramDirectConfig,
+  TelegramGroupConfig,
+  TelegramTopicConfig,
+} from "remoteclaw/plugin-sdk/config-runtime";
+import { ensureConfiguredAcpRouteReady } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
+import {
+  executePluginCommand,
+  getPluginCommandSpecs,
+  matchPluginCommand,
+} from "remoteclaw/plugin-sdk/plugin-runtime";
+import { resolveChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
+import { resolveCommandAuthorization } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { CommandArgs } from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   buildCommandTextFromArgs,
   findCommandByNativeName,
@@ -10,40 +35,15 @@ import {
   listNativeCommandSpecsForConfig,
   parseCommandArgs,
   resolveCommandArgMenu,
-} from "../../../src/auto-reply/commands-registry.js";
-import { finalizeInboundContext } from "../../../src/auto-reply/reply/inbound-context.js";
-import { dispatchReplyWithBufferedBlockDispatcher } from "../../../src/auto-reply/reply/provider-dispatcher.js";
-import { listSkillCommandsForAgents } from "../../../src/auto-reply/skill-commands.js";
-import { resolveCommandAuthorizedFromAuthorizers } from "../../../src/channels/command-gating.js";
-import { resolveNativeCommandSessionTargets } from "../../../src/channels/native-command-session-targets.js";
-import { createReplyPrefixOptions } from "../../../src/channels/reply-prefix.js";
-import { recordInboundSessionMetaSafe } from "../../../src/channels/session-meta.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { ChannelGroupPolicy } from "../../../src/config/group-policy.js";
-import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
-import {
-  normalizeTelegramCommandName,
-  resolveTelegramCustomCommands,
-  TELEGRAM_COMMAND_NAME_PATTERN,
-} from "../../../src/config/telegram-custom-commands.js";
-import type {
-  ReplyToMode,
-  TelegramAccountConfig,
-  TelegramDirectConfig,
-  TelegramGroupConfig,
-  TelegramTopicConfig,
-} from "../../../src/config/types.js";
-import { danger, logVerbose } from "../../../src/globals.js";
-import { getChildLogger } from "../../../src/logging.js";
-import { getAgentScopedMediaLocalRoots } from "../../../src/media/local-roots.js";
-import {
-  executePluginCommand,
-  getPluginCommandSpecs,
-  matchPluginCommand,
-} from "../../../src/plugins/commands.js";
-import { resolveAgentRoute } from "../../../src/routing/resolve-route.js";
-import { resolveThreadSessionKeys } from "../../../src/routing/session-key.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
+} from "remoteclaw/plugin-sdk/reply-runtime";
+import { finalizeInboundContext } from "remoteclaw/plugin-sdk/reply-runtime";
+import { dispatchReplyWithBufferedBlockDispatcher } from "remoteclaw/plugin-sdk/reply-runtime";
+import { listSkillCommandsForAgents } from "remoteclaw/plugin-sdk/reply-runtime";
+import { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
+import { resolveThreadSessionKeys } from "remoteclaw/plugin-sdk/routing";
+import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import { getChildLogger } from "remoteclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { isSenderAllowed, normalizeDmAllowFromWithStore } from "./bot-access.js";
 import type { TelegramMediaRef } from "./bot-message-context.js";

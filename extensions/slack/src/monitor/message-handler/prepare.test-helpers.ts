@@ -1,6 +1,6 @@
 import type { App } from "@slack/bolt";
-import type { RemoteClawConfig } from "../../../../../src/config/config.js";
-import type { RuntimeEnv } from "../../../../../src/runtime.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import type { ResolvedSlackAccount } from "../../accounts.js";
 import { createSlackMonitorContext } from "../context.js";
 

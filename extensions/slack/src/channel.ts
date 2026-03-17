@@ -1,21 +1,21 @@
+import { buildAccountScopedAllowlistConfigEditor } from "remoteclaw/plugin-sdk/allowlist-config-edit";
 import {
   buildAccountScopedDmSecurityPolicy,
-  collectOpenProviderGroupPolicyWarnings,
   collectOpenGroupPolicyConfiguredRouteWarnings,
-  createScopedAccountConfigAccessors,
-} from "remoteclaw/plugin-sdk";
+  collectOpenProviderGroupPolicyWarnings,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
+import {
+  buildAgentSessionKey,
+  resolveThreadSessionKeys,
+  type RoutePeer,
+} from "remoteclaw/plugin-sdk/core";
 import {
   applyAccountNameToChannelSection,
   buildComputedAccountStatusSnapshot,
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
-  deleteAccountFromConfigSection,
-  extractSlackToolSend,
-  formatAllowFromLowercase,
   getChatChannelMeta,
-  handleSlackMessageAction,
-  listSlackMessageActions,
-  listSlackAccountIds,
   listSlackDirectoryGroupsFromConfig,
   listSlackDirectoryPeersFromConfig,
   looksLikeSlackTargetId,
@@ -24,7 +24,17 @@ import {
   normalizeAccountId,
   normalizeSlackMessagingTarget,
   PAIRING_APPROVED_MESSAGE,
-  resolveDefaultSlackAccountId,
+  projectCredentialSnapshotFields,
+  resolveConfiguredFromRequiredCredentialStatuses,
+  resolveSlackGroupRequireMention,
+  resolveSlackGroupToolPolicy,
+  SlackConfigSchema,
+  type ChannelPlugin,
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/slack";
+import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
+import {
+  listEnabledSlackAccounts,
   resolveSlackAccount,
   resolveSlackReplyToMode,
   resolveOptionalConfigString,
@@ -36,10 +46,29 @@ import {
   SlackConfigSchema,
   type ChannelPlugin,
   type ResolvedSlackAccount,
-} from "remoteclaw/plugin-sdk/slack";
+} from "./accounts.js";
+import { parseSlackBlocksInput } from "./blocks-input.js";
+import { createSlackWebClient } from "./client.js";
+import { isSlackInteractiveRepliesEnabled } from "./interactive-replies.js";
+import { handleSlackMessageAction } from "./message-action-dispatch.js";
+import { extractSlackToolSend, listSlackMessageActions } from "./message-actions.js";
+import { normalizeAllowListLower } from "./monitor/allow-list.js";
+import {
+  isSlackPluginAccountConfigured,
+  slackConfigAccessors,
+  slackConfigBase,
+  slackSetupWizard,
+} from "./plugin-shared.js";
+import type { SlackProbe } from "./probe.js";
+import { resolveSlackUserAllowlist } from "./resolve-users.js";
 import { getSlackRuntime } from "./runtime.js";
+import { fetchSlackScopes } from "./scopes.js";
+import { slackSetupAdapter } from "./setup-core.js";
+import { parseSlackTarget } from "./targets.js";
+import { buildSlackThreadingToolContext } from "./threading-tool-context.js";
 
 const meta = getChatChannelMeta("slack");
+const SLACK_CHANNEL_TYPE_CACHE = new Map<string, "channel" | "group" | "dm" | "unknown">();
 
 // Select the appropriate Slack token for read/write operations.
 function getTokenForOperation(
@@ -88,12 +117,239 @@ function resolveSlackSendContext(params: {
   return { send, threadTsValue, tokenOverride };
 }
 
-const slackConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: resolveSlackAccount,
-  resolveAllowFrom: (account: ResolvedSlackAccount) => account.dm?.allowFrom,
-  formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom }),
-  resolveDefaultTo: (account: ResolvedSlackAccount) => account.config.defaultTo,
-});
+function resolveSlackAutoThreadId(params: {
+  cfg: Parameters<typeof resolveSlackAccount>[0]["cfg"];
+  accountId?: string | null;
+  to: string;
+  toolContext?: {
+    currentChannelId?: string;
+    currentThreadTs?: string;
+    replyToMode?: "off" | "first" | "all";
+    hasRepliedRef?: { value: boolean };
+  };
+}): string | undefined {
+  const context = params.toolContext;
+  if (!context?.currentThreadTs || !context.currentChannelId) {
+    return undefined;
+  }
+  if (context.replyToMode !== "all" && context.replyToMode !== "first") {
+    return undefined;
+  }
+  const parsedTarget = parseSlackTarget(params.to, { defaultKind: "channel" });
+  if (!parsedTarget || parsedTarget.kind !== "channel") {
+    return undefined;
+  }
+  if (parsedTarget.id.toLowerCase() !== context.currentChannelId.toLowerCase()) {
+    return undefined;
+  }
+  if (context.replyToMode === "first" && context.hasRepliedRef?.value) {
+    return undefined;
+  }
+  return context.currentThreadTs;
+}
+
+function parseSlackExplicitTarget(raw: string) {
+  const target = parseSlackTarget(raw, { defaultKind: "channel" });
+  if (!target) {
+    return null;
+  }
+  return {
+    to: target.id,
+    chatType: target.kind === "user" ? ("direct" as const) : ("channel" as const),
+  };
+}
+
+function normalizeOutboundThreadId(value?: string | number | null): string | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      return undefined;
+    }
+    return String(Math.trunc(value));
+  }
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function buildSlackBaseSessionKey(params: {
+  cfg: RemoteClawConfig;
+  agentId: string;
+  accountId?: string | null;
+  peer: RoutePeer;
+}) {
+  return buildAgentSessionKey({
+    agentId: params.agentId,
+    channel: "slack",
+    accountId: params.accountId,
+    peer: params.peer,
+    dmScope: params.cfg.session?.dmScope ?? "main",
+    identityLinks: params.cfg.session?.identityLinks,
+  });
+}
+
+async function resolveSlackChannelType(params: {
+  cfg: RemoteClawConfig;
+  accountId?: string | null;
+  channelId: string;
+}): Promise<"channel" | "group" | "dm" | "unknown"> {
+  const channelId = params.channelId.trim();
+  if (!channelId) {
+    return "unknown";
+  }
+  const cacheKey = `${params.accountId ?? "default"}:${channelId}`;
+  const cached = SLACK_CHANNEL_TYPE_CACHE.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const account = resolveSlackAccount({ cfg: params.cfg, accountId: params.accountId });
+  const groupChannels = normalizeAllowListLower(account.dm?.groupChannels);
+  const channelIdLower = channelId.toLowerCase();
+  if (
+    groupChannels.includes(channelIdLower) ||
+    groupChannels.includes(`slack:${channelIdLower}`) ||
+    groupChannels.includes(`channel:${channelIdLower}`) ||
+    groupChannels.includes(`group:${channelIdLower}`) ||
+    groupChannels.includes(`mpim:${channelIdLower}`)
+  ) {
+    SLACK_CHANNEL_TYPE_CACHE.set(cacheKey, "group");
+    return "group";
+  }
+
+  const channelKeys = Object.keys(account.channels ?? {});
+  if (
+    channelKeys.some((key) => {
+      const normalized = key.trim().toLowerCase();
+      return (
+        normalized === channelIdLower ||
+        normalized === `channel:${channelIdLower}` ||
+        normalized.replace(/^#/, "") === channelIdLower
+      );
+    })
+  ) {
+    SLACK_CHANNEL_TYPE_CACHE.set(cacheKey, "channel");
+    return "channel";
+  }
+
+  const token = account.botToken?.trim() || account.config.userToken?.trim() || "";
+  if (!token) {
+    SLACK_CHANNEL_TYPE_CACHE.set(cacheKey, "unknown");
+    return "unknown";
+  }
+
+  try {
+    const client = createSlackWebClient(token);
+    const info = await client.conversations.info({ channel: channelId });
+    const channel = info.channel as { is_im?: boolean; is_mpim?: boolean } | undefined;
+    const type = channel?.is_im ? "dm" : channel?.is_mpim ? "group" : "channel";
+    SLACK_CHANNEL_TYPE_CACHE.set(cacheKey, type);
+    return type;
+  } catch {
+    SLACK_CHANNEL_TYPE_CACHE.set(cacheKey, "unknown");
+    return "unknown";
+  }
+}
+
+async function resolveSlackOutboundSessionRoute(params: {
+  cfg: RemoteClawConfig;
+  agentId: string;
+  accountId?: string | null;
+  target: string;
+  replyToId?: string | null;
+  threadId?: string | number | null;
+}) {
+  const parsed = parseSlackTarget(params.target, { defaultKind: "channel" });
+  if (!parsed) {
+    return null;
+  }
+  const isDm = parsed.kind === "user";
+  let peerKind: "direct" | "channel" | "group" = isDm ? "direct" : "channel";
+  if (!isDm && /^G/i.test(parsed.id)) {
+    const channelType = await resolveSlackChannelType({
+      cfg: params.cfg,
+      accountId: params.accountId,
+      channelId: parsed.id,
+    });
+    if (channelType === "group") {
+      peerKind = "group";
+    }
+    if (channelType === "dm") {
+      peerKind = "direct";
+    }
+  }
+  const peer: RoutePeer = {
+    kind: peerKind,
+    id: parsed.id,
+  };
+  const baseSessionKey = buildSlackBaseSessionKey({
+    cfg: params.cfg,
+    agentId: params.agentId,
+    accountId: params.accountId,
+    peer,
+  });
+  const threadId = normalizeOutboundThreadId(params.threadId ?? params.replyToId);
+  const threadKeys = resolveThreadSessionKeys({
+    baseSessionKey,
+    threadId,
+  });
+  return {
+    sessionKey: threadKeys.sessionKey,
+    baseSessionKey,
+    peer,
+    chatType: peerKind === "direct" ? ("direct" as const) : ("channel" as const),
+    from:
+      peerKind === "direct"
+        ? `slack:${parsed.id}`
+        : peerKind === "group"
+          ? `slack:group:${parsed.id}`
+          : `slack:channel:${parsed.id}`,
+    to: peerKind === "direct" ? `user:${parsed.id}` : `channel:${parsed.id}`,
+    threadId,
+  };
+}
+
+function formatSlackScopeDiagnostic(params: {
+  tokenType: "bot" | "user";
+  result: Awaited<ReturnType<typeof fetchSlackScopes>>;
+}) {
+  const source = params.result.source ? ` (${params.result.source})` : "";
+  const label = params.tokenType === "user" ? "User scopes" : "Bot scopes";
+  if (params.result.ok && params.result.scopes?.length) {
+    return { text: `${label}${source}: ${params.result.scopes.join(", ")}` } as const;
+  }
+  return {
+    text: `${label}: ${params.result.error ?? "scope lookup failed"}`,
+    tone: "error",
+  } as const;
+}
+
+function readSlackAllowlistConfig(account: ResolvedSlackAccount) {
+  return {
+    dmAllowFrom: (account.config.allowFrom ?? account.config.dm?.allowFrom ?? []).map(String),
+    groupPolicy: account.groupPolicy,
+    groupOverrides: Object.entries(account.channels ?? {})
+      .map(([key, value]) => {
+        const entries = (value?.users ?? []).map(String).filter(Boolean);
+        return entries.length > 0 ? { label: key, entries } : null;
+      })
+      .filter(Boolean) as Array<{ label: string; entries: string[] }>,
+  };
+}
+
+async function resolveSlackAllowlistNames(params: {
+  cfg: Parameters<typeof resolveSlackAccount>[0]["cfg"];
+  accountId?: string | null;
+  entries: string[];
+}) {
+  const account = resolveSlackAccount({ cfg: params.cfg, accountId: params.accountId });
+  const token = account.config.userToken?.trim() || account.botToken?.trim();
+  if (!token) {
+    return [];
+  }
+  return await resolveSlackUserAllowlist({ token, entries: params.entries });
+}
 
 export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
   id: "slack",
@@ -101,7 +357,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
     ...meta,
     preferSessionLookupForAnnounceTarget: true,
   },
-  onboarding: slackOnboardingAdapter,
+  setupWizard: slackSetupWizard,
   pairing: {
     idLabel: "slackUserId",
     normalizeAllowEntry: (entry) => entry.replace(/^(slack|user):/i, ""),
@@ -137,38 +393,53 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
     media: true,
     nativeCommands: true,
   },
+  agentPrompt: {
+    messageToolHints: ({ cfg, accountId }) =>
+      isSlackInteractiveRepliesEnabled({ cfg, accountId })
+        ? [
+            "- Slack interactive replies: use `[[slack_buttons: Label:value, Other:other]]` to add action buttons that route clicks back as Slack interaction system events.",
+            "- Slack selects: use `[[slack_select: Placeholder | Label:value, Other:other]]` to add a static select menu that routes the chosen value back as a Slack interaction system event.",
+          ]
+        : [
+            "- Slack interactive replies are disabled. If needed, ask to set `channels.slack.capabilities.interactiveReplies=true` (or the same under `channels.slack.accounts.<account>.capabilities`).",
+          ],
+  },
   streaming: {
     blockStreamingCoalesceDefaults: { minChars: 1500, idleMs: 1000 },
   },
   reload: { configPrefixes: ["channels.slack"] },
   configSchema: buildChannelConfigSchema(SlackConfigSchema),
   config: {
-    listAccountIds: (cfg) => listSlackAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveSlackAccount({ cfg, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultSlackAccountId(cfg),
-    setAccountEnabled: ({ cfg, accountId, enabled }) =>
-      setAccountEnabledInConfigSection({
-        cfg,
-        sectionKey: "slack",
-        accountId,
-        enabled,
-        allowTopLevel: true,
-      }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg,
-        sectionKey: "slack",
-        accountId,
-        clearBaseFields: ["botToken", "appToken", "name"],
-      }),
-    isConfigured: (account) => isSlackAccountConfigured(account),
+    ...slackConfigBase,
+    isConfigured: (account) => isSlackPluginAccountConfigured(account),
     describeAccount: (account) => ({
       accountId: account.accountId,
       name: account.name,
       enabled: account.enabled,
-      configured: isSlackAccountConfigured(account),
+      configured: isSlackPluginAccountConfigured(account),
       botTokenSource: account.botTokenSource,
       appTokenSource: account.appTokenSource,
+    }),
+    ...slackConfigAccessors,
+  },
+  allowlist: {
+    supportsScope: ({ scope }) => scope === "dm",
+    readConfig: ({ cfg, accountId }) =>
+      readSlackAllowlistConfig(resolveSlackAccount({ cfg, accountId })),
+    resolveNames: async ({ cfg, accountId, entries }) =>
+      await resolveSlackAllowlistNames({ cfg, accountId, entries }),
+    applyConfigEdit: buildAccountScopedAllowlistConfigEditor({
+      channelId: "slack",
+      normalize: ({ cfg, accountId, values }) =>
+        slackConfigAccessors.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
+      resolvePaths: (scope) =>
+        scope === "dm"
+          ? {
+              readPaths: [["allowFrom"], ["dm", "allowFrom"]],
+              writePath: ["allowFrom"],
+              cleanupPaths: [["dm", "allowFrom"]],
+            }
+          : null,
     }),
     ...slackConfigAccessors,
   },
@@ -359,6 +630,29 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
       };
     },
   },
+  actions: {
+    listActions: ({ cfg }) => listSlackMessageActions(cfg),
+    getCapabilities: ({ cfg }) => {
+      const capabilities = new Set<"interactive" | "blocks">();
+      if (listSlackMessageActions(cfg).includes("send")) {
+        capabilities.add("blocks");
+      }
+      if (isSlackInteractiveRepliesEnabled({ cfg })) {
+        capabilities.add("interactive");
+      }
+      return Array.from(capabilities);
+    },
+    extractToolSend: ({ args }) => extractSlackToolSend(args),
+    handleAction: async (ctx) =>
+      await handleSlackMessageAction({
+        providerId: meta.id,
+        ctx,
+        includeReadThreadId: true,
+        invoke: async (action, cfg, toolContext) =>
+          await getSlackRuntime().channel.slack.handleSlackAction(action, cfg, toolContext),
+      }),
+  },
+  setup: slackSetupAdapter,
   outbound: {
     deliveryMode: "direct",
     chunker: null,

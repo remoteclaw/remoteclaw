@@ -16,26 +16,30 @@ import {
   type AudioPlayer,
   type VoiceConnection,
 } from "@discordjs/voice";
-import { resolveAgentDir } from "../../../../src/agents/agent-scope.js";
-import type { MsgContext } from "../../../../src/auto-reply/templating.js";
-import { agentCommandFromIngress } from "../../../../src/commands/agent.js";
-import type { RemoteClawConfig } from "../../../../src/config/config.js";
-import { isDangerousNameMatchingEnabled } from "../../../../src/config/dangerous-name-matching.js";
-import type { DiscordAccountConfig, TtsConfig } from "../../../../src/config/types.js";
-import { logVerbose, shouldLogVerbose } from "../../../../src/globals.js";
-import { formatErrorMessage } from "../../../../src/infra/errors.js";
-import { resolvePreferredOpenClawTmpDir } from "../../../../src/infra/tmp-openclaw-dir.js";
-import { createSubsystemLogger } from "../../../../src/logging/subsystem.js";
+import { resolveAgentDir } from "remoteclaw/plugin-sdk/agent-runtime";
+import { agentCommandFromIngress } from "remoteclaw/plugin-sdk/agent-runtime";
+import {
+  resolveTtsConfig,
+  textToSpeech,
+  type ResolvedTtsConfig,
+} from "remoteclaw/plugin-sdk/agent-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { isDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk/config-runtime";
+import type { DiscordAccountConfig, TtsConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
+import { resolvePreferredOpenClawTmpDir } from "remoteclaw/plugin-sdk/infra-runtime";
 import {
   buildProviderRegistry,
   createMediaAttachmentCache,
   normalizeMediaAttachments,
   runCapability,
-} from "../../../../src/media-understanding/runner.js";
-import { resolveAgentRoute } from "../../../../src/routing/resolve-route.js";
-import type { RuntimeEnv } from "../../../../src/runtime.js";
-import { parseTtsDirectives } from "../../../../src/tts/tts-core.js";
-import { resolveTtsConfig, textToSpeech, type ResolvedTtsConfig } from "../../../../src/tts/tts.js";
+} from "remoteclaw/plugin-sdk/media-runtime";
+import type { MsgContext } from "remoteclaw/plugin-sdk/reply-runtime";
+import { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
+import { logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import { parseTtsDirectives } from "remoteclaw/plugin-sdk/speech";
 import { formatMention } from "../mentions.js";
 import { resolveDiscordOwnerAccess } from "../monitor/allow-list.js";
 import { formatDiscordUserTag } from "../monitor/format.js";

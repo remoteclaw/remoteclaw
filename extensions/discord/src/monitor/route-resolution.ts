@@ -1,11 +1,11 @@
-import type { RemoteClawConfig } from "../../../../src/config/config.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   deriveLastRoutePolicy,
   resolveAgentRoute,
   type ResolvedAgentRoute,
   type RoutePeer,
-} from "../../../../src/routing/resolve-route.js";
-import { resolveAgentIdFromSessionKey } from "../../../../src/routing/session-key.js";
+} from "remoteclaw/plugin-sdk/routing";
+import { resolveAgentIdFromSessionKey } from "remoteclaw/plugin-sdk/routing";
 
 export function buildDiscordRoutePeer(params: {
   isDirectMessage: boolean;

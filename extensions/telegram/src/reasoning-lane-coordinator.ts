@@ -1,7 +1,7 @@
-import { formatReasoningMessage } from "../../../src/agents/pi-embedded-utils.js";
-import type { ReplyPayload } from "../../../src/auto-reply/types.js";
-import { findCodeRegions, isInsideCode } from "../../../src/shared/text/code-regions.js";
-import { stripReasoningTagsFromText } from "../../../src/shared/text/reasoning-tags.js";
+import { formatReasoningMessage } from "remoteclaw/plugin-sdk/agent-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+import { findCodeRegions, isInsideCode } from "remoteclaw/plugin-sdk/text-runtime";
+import { stripReasoningTagsFromText } from "remoteclaw/plugin-sdk/text-runtime";
 
 const REASONING_MESSAGE_PREFIX = "Reasoning:\n";
 const REASONING_TAG_PREFIXES = [

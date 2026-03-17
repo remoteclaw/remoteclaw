@@ -2,9 +2,9 @@ import {
   resolveThreadBindingIdleTimeoutMs,
   resolveThreadBindingMaxAgeMs,
   resolveThreadBindingsEnabled,
-} from "../../../../src/channels/thread-bindings-policy.js";
-import type { RemoteClawConfig } from "../../../../src/config/config.js";
-import { normalizeAccountId } from "../../../../src/routing/session-key.js";
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 
 export {
   resolveThreadBindingIdleTimeoutMs,

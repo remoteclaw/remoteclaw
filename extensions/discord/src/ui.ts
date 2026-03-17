@@ -1,5 +1,5 @@
 import { Container } from "@buape/carbon";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { inspectDiscordAccount } from "./account-inspect.js";
 
 const DEFAULT_DISCORD_ACCENT_COLOR = "#5865F2";

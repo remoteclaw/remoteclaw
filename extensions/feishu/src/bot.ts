@@ -1,4 +1,9 @@
-import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
+import {
+  ensureConfiguredAcpRouteReady,
+  resolveConfiguredAcpRoute,
+} from "remoteclaw/plugin-sdk/conversation-runtime";
+import { getSessionBindingService } from "remoteclaw/plugin-sdk/conversation-runtime";
+import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/feishu";
 import {
   buildAgentMediaPayload,
   buildPendingHistoryContextFromMap,
@@ -13,7 +18,9 @@ import {
   resolveOpenProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/feishu";
+import { deriveLastRoutePolicy } from "remoteclaw/plugin-sdk/routing";
+import { resolveAgentIdFromSessionKey } from "remoteclaw/plugin-sdk/routing";
 import { resolveFeishuAccount } from "./accounts.js";
 import { type FeishuPermissionError, resolveFeishuSenderName } from "./bot-sender-name.js";
 import { createFeishuClient } from "./client.js";

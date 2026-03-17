@@ -3,40 +3,33 @@ import { loginWeb } from "../../../src/channel-web.js";
 import type { ChannelOnboardingAdapter } from "../../../src/channels/plugins/onboarding-types.js";
 import {
   normalizeAllowFromEntries,
-  resolveAccountIdForConfigure,
-  resolveOnboardingAccountId,
-  splitOnboardingEntries,
-} from "../../../src/channels/plugins/onboarding/helpers.js";
-import { formatCliCommand } from "../../../src/cli/command-format.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import { mergeWhatsAppConfig } from "../../../src/config/merge-config.js";
-import type { DmPolicy } from "../../../src/config/types.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
-import { normalizeE164, pathExists } from "../../../src/utils.js";
-import type { WizardPrompter } from "../../../src/wizard/prompts.js";
-import {
-  listWhatsAppAccountIds,
-  resolveDefaultWhatsAppAccountId,
-  resolveWhatsAppAuthDir,
-} from "./accounts.js";
+  normalizeE164,
+  pathExists,
+  splitSetupEntries,
+  setSetupChannelEnabled,
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/setup";
+import type { ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
+import { type DmPolicy } from "remoteclaw/plugin-sdk/whatsapp";
+import { listWhatsAppAccountIds, resolveWhatsAppAuthDir } from "./accounts.js";
+import { loginWeb } from "./login.js";
+import { whatsappSetupAdapter } from "./setup-core.js";
 
 const channel = "whatsapp" as const;
 
-function setWhatsAppDmPolicy(cfg: OpenClawConfig, dmPolicy: DmPolicy): OpenClawConfig {
+function setWhatsAppDmPolicy(cfg: RemoteClawConfig, dmPolicy: DmPolicy): RemoteClawConfig {
   return mergeWhatsAppConfig(cfg, { dmPolicy });
 }
 
-function setWhatsAppAllowFrom(cfg: OpenClawConfig, allowFrom?: string[]): OpenClawConfig {
+function setWhatsAppAllowFrom(cfg: RemoteClawConfig, allowFrom?: string[]): RemoteClawConfig {
   return mergeWhatsAppConfig(cfg, { allowFrom }, { unsetOnUndefined: ["allowFrom"] });
 }
 
-function setWhatsAppSelfChatMode(cfg: OpenClawConfig, selfChatMode: boolean): OpenClawConfig {
+function setWhatsAppSelfChatMode(cfg: RemoteClawConfig, selfChatMode: boolean): RemoteClawConfig {
   return mergeWhatsAppConfig(cfg, { selfChatMode });
 }
 
-async function detectWhatsAppLinked(cfg: OpenClawConfig, accountId: string): Promise<boolean> {
+async function detectWhatsAppLinked(cfg: RemoteClawConfig, accountId: string): Promise<boolean> {
   const { authDir } = resolveWhatsAppAuthDir({ cfg, accountId });
   const credsPath = path.join(authDir, "creds.json");
   return await pathExists(credsPath);
@@ -81,12 +74,12 @@ async function promptWhatsAppOwnerAllowFrom(params: {
 }
 
 async function applyWhatsAppOwnerAllowlist(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   prompter: WizardPrompter;
   existingAllowFrom: string[];
   title: string;
   messageLines: string[];
-}): Promise<OpenClawConfig> {
+}): Promise<RemoteClawConfig> {
   const { normalized, allowFrom } = await promptWhatsAppOwnerAllowFrom({
     prompter: params.prompter,
     existingAllowFrom: params.existingAllowFrom,
@@ -122,11 +115,11 @@ function parseWhatsAppAllowFromEntries(raw: string): { entries: string[]; invali
 }
 
 async function promptWhatsAppAllowFrom(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   _runtime: RuntimeEnv,
   prompter: WizardPrompter,
   options?: { forceAllowlist?: boolean },
-): Promise<OpenClawConfig> {
+): Promise<RemoteClawConfig> {
   const existingPolicy = cfg.channels?.whatsapp?.dmPolicy ?? "pairing";
   const existingAllowFrom = cfg.channels?.whatsapp?.allowFrom ?? [];
   const existingLabel = existingAllowFrom.length > 0 ? existingAllowFrom.join(", ") : "unset";

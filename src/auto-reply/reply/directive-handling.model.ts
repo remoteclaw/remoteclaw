@@ -9,6 +9,7 @@ import {
 } from "../../agents/model-selection.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
+import { buildBrowseProvidersButton } from "../../plugin-sdk/telegram.js";
 import { shortenHomePath } from "../../utils.js";
 import { resolveSelectedAndActiveModel } from "../model-runtime.js";
 import type { ReplyPayload } from "../types.js";

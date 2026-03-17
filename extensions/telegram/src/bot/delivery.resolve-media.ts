@@ -1,9 +1,9 @@
 import { GrammyError } from "grammy";
-import { logVerbose, warn } from "../../../../src/globals.js";
-import { formatErrorMessage } from "../../../../src/infra/errors.js";
-import { retryAsync } from "../../../../src/infra/retry.js";
-import { fetchRemoteMedia } from "../../../../src/media/fetch.js";
-import { saveMediaBuffer } from "../../../../src/media/store.js";
+import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
+import { retryAsync } from "remoteclaw/plugin-sdk/infra-runtime";
+import { fetchRemoteMedia } from "remoteclaw/plugin-sdk/media-runtime";
+import { saveMediaBuffer } from "remoteclaw/plugin-sdk/media-runtime";
+import { logVerbose, warn } from "remoteclaw/plugin-sdk/runtime-env";
 import { shouldRetryTelegramIpv4Fallback, type TelegramTransport } from "../fetch.js";
 import { cacheSticker, getCachedSticker } from "../sticker-cache.js";
 import { resolveTelegramMediaPlaceholder } from "./helpers.js";

@@ -1,13 +1,13 @@
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { ChannelGroupPolicy } from "../../../src/config/group-policy.js";
-import { resolveOpenProviderRuntimeGroupPolicy } from "../../../src/config/runtime-group-policy.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { ChannelGroupPolicy } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveOpenProviderRuntimeGroupPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import type {
   TelegramAccountConfig,
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "../../../src/config/types.js";
-import { evaluateMatchedGroupAccessForPolicy } from "../../../src/plugin-sdk/group-access.js";
+} from "remoteclaw/plugin-sdk/config-runtime";
+import { evaluateMatchedGroupAccessForPolicy } from "remoteclaw/plugin-sdk/group-access";
 import { isSenderAllowed, type NormalizedAllowFrom } from "./bot-access.js";
 import { firstDefined } from "./bot-access.js";
 

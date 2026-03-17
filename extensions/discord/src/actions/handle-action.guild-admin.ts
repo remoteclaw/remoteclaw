@@ -4,13 +4,13 @@ import {
   readNumberParam,
   readStringArrayParam,
   readStringParam,
-} from "../../../../src/agents/tools/common.js";
+} from "remoteclaw/plugin-sdk/agent-runtime";
 import {
   isDiscordModerationAction,
   readDiscordModerationCommand,
-} from "../../../../src/agents/tools/discord-actions-moderation-shared.js";
-import { handleDiscordAction } from "../../../../src/agents/tools/discord-actions.js";
-import type { ChannelMessageActionContext } from "../../../../src/channels/plugins/types.js";
+} from "remoteclaw/plugin-sdk/agent-runtime";
+import { handleDiscordAction } from "remoteclaw/plugin-sdk/agent-runtime";
+import type { ChannelMessageActionContext } from "remoteclaw/plugin-sdk/channel-runtime";
 
 type Ctx = Pick<
   ChannelMessageActionContext,

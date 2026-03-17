@@ -1,5 +1,5 @@
-import type { RemoteClawConfig, SlackSlashCommandConfig } from "../../../../src/config/config.js";
-import type { RuntimeEnv } from "../../../../src/runtime.js";
+import type { RemoteClawConfig, SlackSlashCommandConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import type { SlackFile, SlackMessageEvent } from "../types.js";
 
 export type MonitorSlackOpts = {

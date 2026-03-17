@@ -1,8 +1,13 @@
-import { sendTextMediaPayload } from "../../../src/channels/plugins/outbound/direct-text-media.js";
-import type { ChannelOutboundAdapter } from "../../../src/channels/plugins/types.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { resolveOutboundSendDep } from "../../../src/infra/outbound/deliver.js";
-import type { OutboundIdentity } from "../../../src/infra/outbound/identity.js";
+import {
+  resolvePayloadMediaUrls,
+  sendPayloadMediaSequence,
+  sendTextMediaPayload,
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { OutboundIdentity } from "remoteclaw/plugin-sdk/infra-runtime";
+import type { DiscordComponentMessageSpec } from "./components.js";
 import { getThreadBindingManager, type ThreadBindingRecord } from "./monitor/thread-bindings.js";
 import { normalizeDiscordOutboundTarget } from "./normalize.js";
 import { sendMessageDiscord, sendPollDiscord, sendWebhookMessageDiscord } from "./send.js";

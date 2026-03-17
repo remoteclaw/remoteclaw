@@ -1,5 +1,5 @@
-import type { RemoteClawConfig } from "../../../../src/config/config.js";
-import { resolveStorePath, updateSessionStore } from "../../../../src/config/sessions.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveStorePath, updateSessionStore } from "remoteclaw/plugin-sdk/config-runtime";
 
 /**
  * Marks every session entry in the store whose key contains {@link threadId}

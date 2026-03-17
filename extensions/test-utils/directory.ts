@@ -1,3 +1,5 @@
+import type { ChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
+
 export function createDirectoryTestRuntime() {
   return {
     log: () => {},

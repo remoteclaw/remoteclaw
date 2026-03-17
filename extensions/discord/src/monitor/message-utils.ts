@@ -1,10 +1,10 @@
 import type { ChannelType, Client, Message } from "@buape/carbon";
 import { StickerFormatType, type APIAttachment, type APIStickerItem } from "discord-api-types/v10";
-import { buildMediaPayload } from "../../../../src/channels/plugins/media-payload.js";
-import { logVerbose } from "../../../../src/globals.js";
-import type { SsrFPolicy } from "../../../../src/infra/net/ssrf.js";
-import { fetchRemoteMedia, type FetchLike } from "../../../../src/media/fetch.js";
-import { saveMediaBuffer } from "../../../../src/media/store.js";
+import { buildMediaPayload } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { SsrFPolicy } from "remoteclaw/plugin-sdk/infra-runtime";
+import { fetchRemoteMedia, type FetchLike } from "remoteclaw/plugin-sdk/media-runtime";
+import { saveMediaBuffer } from "remoteclaw/plugin-sdk/media-runtime";
+import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 
 const DISCORD_CDN_HOSTNAMES = [
   "cdn.discordapp.com",

@@ -1,3 +1,10 @@
+import { reduceInteractiveReply } from "remoteclaw/plugin-sdk/channel-runtime";
+import {
+  normalizeInteractiveReply,
+  type InteractiveReply,
+  type InteractiveReplyButton,
+} from "remoteclaw/plugin-sdk/channel-runtime";
+
 export type TelegramButtonStyle = "danger" | "success" | "primary";
 
 export type TelegramInlineButton = {

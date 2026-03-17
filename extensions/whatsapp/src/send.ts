@@ -1,13 +1,13 @@
-import { loadConfig, type OpenClawConfig } from "../../../src/config/config.js";
-import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
-import { generateSecureUuid } from "../../../src/infra/secure-random.js";
-import { getChildLogger } from "../../../src/logging/logger.js";
-import { redactIdentifier } from "../../../src/logging/redact-identifier.js";
-import { createSubsystemLogger } from "../../../src/logging/subsystem.js";
-import { convertMarkdownTables } from "../../../src/markdown/tables.js";
-import { markdownToWhatsApp } from "../../../src/markdown/whatsapp.js";
-import { normalizePollInput, type PollInput } from "../../../src/polls.js";
-import { toWhatsappJid } from "../../../src/utils.js";
+import { loadConfig, type RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { generateSecureUuid } from "remoteclaw/plugin-sdk/infra-runtime";
+import { normalizePollInput, type PollInput } from "remoteclaw/plugin-sdk/media-runtime";
+import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
+import { getChildLogger } from "remoteclaw/plugin-sdk/text-runtime";
+import { redactIdentifier } from "remoteclaw/plugin-sdk/text-runtime";
+import { convertMarkdownTables } from "remoteclaw/plugin-sdk/text-runtime";
+import { markdownToWhatsApp } from "remoteclaw/plugin-sdk/text-runtime";
+import { toWhatsappJid } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveWhatsAppAccount, resolveWhatsAppMediaMaxBytes } from "./accounts.js";
 import { type ActiveWebSendOptions, requireActiveWebListener } from "./active-listener.js";
 import { loadWebMedia } from "./media.js";
@@ -19,7 +19,7 @@ export async function sendMessageWhatsApp(
   body: string,
   options: {
     verbose: boolean;
-    cfg?: OpenClawConfig;
+    cfg?: RemoteClawConfig;
     mediaUrl?: string;
     mediaLocalRoots?: readonly string[];
     gifPlayback?: boolean;
@@ -160,7 +160,7 @@ export async function sendReactionWhatsApp(
 export async function sendPollWhatsApp(
   to: string,
   poll: PollInput,
-  options: { verbose: boolean; accountId?: string; cfg?: OpenClawConfig },
+  options: { verbose: boolean; accountId?: string; cfg?: RemoteClawConfig },
 ): Promise<{ messageId: string; toJid: string }> {
   const correlationId = generateSecureUuid();
   const startedAt = Date.now();

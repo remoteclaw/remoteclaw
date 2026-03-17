@@ -1,25 +1,22 @@
 import { type Bot, GrammyError, InputFile } from "grammy";
-import { chunkMarkdownTextWithMode, type ChunkMode } from "../../../../src/auto-reply/chunk.js";
-import type { ReplyPayload } from "../../../../src/auto-reply/types.js";
-import type { ReplyToMode } from "../../../../src/config/config.js";
-import type { MarkdownTableMode } from "../../../../src/config/types.base.js";
-import { danger, logVerbose } from "../../../../src/globals.js";
-import { fireAndForgetHook } from "../../../../src/hooks/fire-and-forget.js";
-import {
-  createInternalHookEvent,
-  triggerInternalHook,
-} from "../../../../src/hooks/internal-hooks.js";
+import type { ReplyToMode } from "remoteclaw/plugin-sdk/config-runtime";
+import type { MarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { fireAndForgetHook } from "remoteclaw/plugin-sdk/hook-runtime";
+import { createInternalHookEvent, triggerInternalHook } from "remoteclaw/plugin-sdk/hook-runtime";
 import {
   buildCanonicalSentMessageHookContext,
   toInternalMessageSentContext,
   toPluginMessageContext,
   toPluginMessageSentEvent,
-} from "../../../../src/hooks/message-hook-mappers.js";
-import { formatErrorMessage } from "../../../../src/infra/errors.js";
-import { buildOutboundMediaLoadOptions } from "../../../../src/media/load-options.js";
-import { isGifMedia, kindFromMime } from "../../../../src/media/mime.js";
-import { getGlobalHookRunner } from "../../../../src/plugins/hook-runner-global.js";
-import type { RuntimeEnv } from "../../../../src/runtime.js";
+} from "remoteclaw/plugin-sdk/hook-runtime";
+import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
+import { buildOutboundMediaLoadOptions } from "remoteclaw/plugin-sdk/media-runtime";
+import { isGifMedia, kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
+import { getGlobalHookRunner } from "remoteclaw/plugin-sdk/plugin-runtime";
+import { chunkMarkdownTextWithMode, type ChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { loadWebMedia } from "../../../whatsapp/src/media.js";
 import type { TelegramInlineButtons } from "../button-types.js";
 import { splitTelegramCaption } from "../caption.js";

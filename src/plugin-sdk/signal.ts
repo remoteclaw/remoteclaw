@@ -1,6 +1,13 @@
 export type { ChannelMessageActionAdapter } from "../channels/plugins/types.js";
+export type { RemoteClawConfig } from "../config/config.js";
+export type { SignalAccountConfig } from "../config/types.js";
 export type { ResolvedSignalAccount } from "../../extensions/signal/src/accounts.js";
-export * from "./channel-plugin-common.js";
+export type {
+  ChannelMessageActionContext,
+  ChannelPlugin,
+  RemoteClawPluginApi,
+  PluginRuntime,
+} from "./channel-plugin-common.js";
 export {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,
@@ -28,4 +35,15 @@ export {
   createDefaultChannelRuntimeState,
 } from "./status-helpers.js";
 
-export { mapAllowFromEntries, resolveOptionalConfigString } from "./channel-config-helpers.js";
+export {
+  listEnabledSignalAccounts,
+  listSignalAccountIds,
+  resolveDefaultSignalAccountId,
+  resolveSignalAccount,
+} from "../../extensions/signal/src/accounts.js";
+export { resolveSignalReactionLevel } from "../../extensions/signal/src/reaction-level.js";
+export {
+  removeReactionSignal,
+  sendReactionSignal,
+} from "../../extensions/signal/src/send-reactions.js";
+export { sendMessageSignal } from "../../extensions/signal/src/send.js";

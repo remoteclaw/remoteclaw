@@ -5,9 +5,7 @@ import {
 import { resolveSignalReactionLevel } from "../../../../extensions/signal/src/reaction-level.js";
 import {
   sendReactionSignal,
-  removeReactionSignal,
-} from "../../../../extensions/signal/src/send-reactions.js";
-import { createActionGate, jsonResult, readStringParam } from "../../../agents/tools/common.js";
+} from "../../../plugin-sdk/signal.js";
 import type { ChannelMessageActionAdapter, ChannelMessageActionName } from "../types.js";
 
 const providerId = "signal";

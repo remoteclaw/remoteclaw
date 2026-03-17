@@ -1,5 +1,5 @@
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { vi } from "vitest";
-import type { RemoteClawConfig } from "../../../../src/config/types.js";
 import type { createDiscordMessageHandler } from "./message-handler.js";
 import { createNoopThreadBindingManager } from "./thread-bindings.js";
 

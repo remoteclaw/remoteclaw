@@ -1,11 +1,6 @@
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
-
-type ElevenLabsVoice = {
-  voice_id: string;
-  name?: string;
-  category?: string;
-  description?: string;
-};
+import { resolveActiveTalkProviderConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { SpeechVoiceOption } from "remoteclaw/plugin-sdk/speech";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/talk-voice";
 
 function mask(s: string, keep: number = 6): string {
   const trimmed = s.trim();

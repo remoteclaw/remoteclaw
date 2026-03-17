@@ -1,8 +1,8 @@
-import { resolveTextChunkLimit } from "../../../src/auto-reply/chunk.js";
-import { getChannelDock } from "../../../src/channels/dock.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { resolveAccountEntry } from "../../../src/routing/account-lookup.js";
-import { normalizeAccountId } from "../../../src/routing/session-key.js";
+import { type RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
+import { resolveAccountEntry } from "remoteclaw/plugin-sdk/routing";
+import { normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
+import { TELEGRAM_TEXT_CHUNK_LIMIT } from "./outbound-adapter.js";
 
 const DEFAULT_TELEGRAM_DRAFT_STREAM_MIN = 200;
 const DEFAULT_TELEGRAM_DRAFT_STREAM_MAX = 800;

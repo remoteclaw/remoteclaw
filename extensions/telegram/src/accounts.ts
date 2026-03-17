@@ -1,24 +1,22 @@
 import util from "node:util";
-import { createAccountActionGate } from "../../../src/channels/plugins/account-action-gate.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { TelegramAccountConfig, TelegramActionConfig } from "../../../src/config/types.js";
-import { isTruthyEnvValue } from "../../../src/infra/env.js";
-import { createSubsystemLogger } from "../../../src/logging/subsystem.js";
 import {
+  createAccountActionGate,
+  DEFAULT_ACCOUNT_ID,
   listConfiguredAccountIds as listConfiguredAccountIdsFromSection,
+  normalizeAccountId,
+  normalizeOptionalAccountId,
+  resolveAccountEntry,
   resolveAccountWithDefaultFallback,
-} from "../../../src/plugin-sdk/account-resolution.js";
-import { resolveAccountEntry } from "../../../src/routing/account-lookup.js";
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/account-resolution";
+import { isTruthyEnvValue } from "remoteclaw/plugin-sdk/infra-runtime";
 import {
   listBoundAccountIds,
   resolveDefaultAgentBoundAccountId,
-} from "../../../src/routing/bindings.js";
-import { formatSetExplicitDefaultInstruction } from "../../../src/routing/default-account-warnings.js";
-import {
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  normalizeOptionalAccountId,
-} from "../../../src/routing/session-key.js";
+} from "remoteclaw/plugin-sdk/routing";
+import { formatSetExplicitDefaultInstruction } from "remoteclaw/plugin-sdk/routing";
+import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
+import type { TelegramAccountConfig, TelegramActionConfig } from "remoteclaw/plugin-sdk/telegram";
 import { resolveTelegramToken } from "./token.js";
 
 const log = createSubsystemLogger("telegram/accounts");

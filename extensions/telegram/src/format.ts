@@ -1,11 +1,11 @@
-import type { MarkdownTableMode } from "../../../src/config/types.base.js";
+import type { MarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   chunkMarkdownIR,
   markdownToIR,
   type MarkdownLinkSpan,
   type MarkdownIR,
-} from "../../../src/markdown/ir.js";
-import { renderMarkdownWithMarkers } from "../../../src/markdown/render.js";
+} from "remoteclaw/plugin-sdk/text-runtime";
+import { renderMarkdownWithMarkers } from "remoteclaw/plugin-sdk/text-runtime";
 
 export type TelegramFormattedChunk = {
   html: string;

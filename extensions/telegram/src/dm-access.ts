@@ -1,9 +1,9 @@
 import type { Message } from "@grammyjs/types";
 import type { Bot } from "grammy";
-import type { DmPolicy } from "../../../src/config/types.js";
-import { logVerbose } from "../../../src/globals.js";
-import { issuePairingChallenge } from "../../../src/pairing/pairing-challenge.js";
-import { upsertChannelPairingRequest } from "../../../src/pairing/pairing-store.js";
+import type { DmPolicy } from "remoteclaw/plugin-sdk/config-runtime";
+import { issuePairingChallenge } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { upsertChannelPairingRequest } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { resolveSenderAllowMatch, type NormalizedAllowFrom } from "./bot-access.js";
 

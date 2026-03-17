@@ -6,3 +6,4 @@ export type { ChannelAccountSnapshot, ChannelGatewayContext } from "../channels/
 export type { RemoteClawConfig } from "../config/config.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
 export type { RuntimeEnv } from "../runtime.js";
+export type { MockFn } from "../test-utils/vitest-mock-fn.js";

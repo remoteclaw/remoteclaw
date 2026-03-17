@@ -1,6 +1,6 @@
-import type { ReplyPayload } from "../../../src/auto-reply/types.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { getExecApprovalReplyMetadata } from "../../../src/infra/exec-approval-reply.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { getExecApprovalReplyMetadata } from "remoteclaw/plugin-sdk/infra-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import { resolveDiscordAccount } from "./accounts.js";
 
 export function isDiscordExecApprovalClientEnabled(params: {

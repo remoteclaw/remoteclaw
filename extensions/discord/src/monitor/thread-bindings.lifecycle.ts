@@ -1,9 +1,6 @@
-import {
-  readAcpSessionEntry,
-  type AcpSessionStoreEntry,
-} from "../../../../src/acp/runtime/session-meta.js";
-import type { RemoteClawConfig } from "../../../../src/config/config.js";
-import { normalizeAccountId } from "../../../../src/routing/session-key.js";
+import { readAcpSessionEntry, type AcpSessionStoreEntry } from "remoteclaw/plugin-sdk/acp-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 import { parseDiscordTarget } from "../targets.js";
 import { resolveChannelIdForBinding } from "./thread-bindings.discord-api.js";
 import { getThreadBindingManager } from "./thread-bindings.manager.js";

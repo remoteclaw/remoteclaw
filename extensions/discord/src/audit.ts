@@ -1,6 +1,9 @@
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { DiscordGuildChannelConfig, DiscordGuildEntry } from "../../../src/config/types.js";
-import { isRecord } from "../../../src/utils.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type {
+  DiscordGuildChannelConfig,
+  DiscordGuildEntry,
+} from "remoteclaw/plugin-sdk/config-runtime";
+import { isRecord } from "remoteclaw/plugin-sdk/text-runtime";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import { fetchChannelPermissionsDiscord } from "./send.js";
 

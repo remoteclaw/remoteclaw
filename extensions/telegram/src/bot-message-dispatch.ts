@@ -1,33 +1,33 @@
 import type { Bot } from "grammy";
-import { resolveAgentDir } from "../../../src/agents/agent-scope.js";
+import { resolveAgentDir } from "remoteclaw/plugin-sdk/agent-runtime";
 import {
   findModelInCatalog,
   loadModelCatalog,
   modelSupportsVision,
-} from "../../../src/agents/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../../../src/agents/model-selection.js";
-import { resolveChunkMode } from "../../../src/auto-reply/chunk.js";
-import { clearHistoryEntriesIfEnabled } from "../../../src/auto-reply/reply/history.js";
-import { dispatchReplyWithBufferedBlockDispatcher } from "../../../src/auto-reply/reply/provider-dispatcher.js";
-import type { ReplyPayload } from "../../../src/auto-reply/types.js";
-import { removeAckReactionAfterReply } from "../../../src/channels/ack-reactions.js";
-import { logAckFailure, logTypingFailure } from "../../../src/channels/logging.js";
-import { createReplyPrefixOptions } from "../../../src/channels/reply-prefix.js";
-import { createTypingCallbacks } from "../../../src/channels/typing.js";
-import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
+} from "remoteclaw/plugin-sdk/agent-runtime";
+import { resolveDefaultModelForAgent } from "remoteclaw/plugin-sdk/agent-runtime";
+import { removeAckReactionAfterReply } from "remoteclaw/plugin-sdk/channel-runtime";
+import { logAckFailure, logTypingFailure } from "remoteclaw/plugin-sdk/channel-runtime";
+import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk/channel-runtime";
+import { createTypingCallbacks } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   loadSessionStore,
   resolveSessionStoreEntry,
   resolveStorePath,
-} from "../../../src/config/sessions.js";
+} from "remoteclaw/plugin-sdk/config-runtime";
 import type {
   RemoteClawConfig,
   ReplyToMode,
   TelegramAccountConfig,
-} from "../../../src/config/types.js";
-import { danger, logVerbose } from "../../../src/globals.js";
-import { getAgentScopedMediaLocalRoots } from "../../../src/media/local-roots.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
+} from "remoteclaw/plugin-sdk/config-runtime";
+import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
+import { resolveChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
+import { clearHistoryEntriesIfEnabled } from "remoteclaw/plugin-sdk/reply-runtime";
+import { dispatchReplyWithBufferedBlockDispatcher } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import type { TelegramMessageContext } from "./bot-message-context.js";
 import type { TelegramBotOptions } from "./bot.js";
 import { deliverReplies } from "./bot/delivery.js";

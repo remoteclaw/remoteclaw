@@ -1,4 +1,5 @@
-import type { PluginRuntime } from "remoteclaw/plugin-sdk/whatsapp";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/core";
+import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
 
 let runtime: PluginRuntime | null = null;
 

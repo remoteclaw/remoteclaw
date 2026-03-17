@@ -99,6 +99,69 @@ type SurfaceContractEntry = {
   surfaces: readonly ChannelPluginSurface[];
 };
 
+type ThreadingContractEntry = {
+  id: string;
+  plugin: Pick<ChannelPlugin, "id" | "threading">;
+};
+
+type DirectoryContractEntry = {
+  id: string;
+  plugin: Pick<ChannelPlugin, "id" | "directory">;
+  coverage: "lookups" | "presence";
+  cfg?: OpenClawConfig;
+  accountId?: string;
+};
+
+type SessionBindingContractEntry = {
+  id: string;
+  expectedCapabilities: SessionBindingCapabilities;
+  getCapabilities: () => SessionBindingCapabilities;
+  bindAndResolve: () => Promise<SessionBindingRecord>;
+  unbindAndVerify: (binding: SessionBindingRecord) => Promise<void>;
+  cleanup: () => Promise<void> | void;
+};
+
+function expectResolvedSessionBinding(params: {
+  channel: string;
+  accountId: string;
+  conversationId: string;
+  targetSessionKey: string;
+}) {
+  expect(
+    getSessionBindingService().resolveByConversation({
+      channel: params.channel,
+      accountId: params.accountId,
+      conversationId: params.conversationId,
+    }),
+  )?.toMatchObject({
+    targetSessionKey: params.targetSessionKey,
+  });
+}
+
+async function unbindAndExpectClearedSessionBinding(binding: SessionBindingRecord) {
+  const service = getSessionBindingService();
+  const removed = await service.unbind({
+    bindingId: binding.bindingId,
+    reason: "contract-test",
+  });
+  expect(removed.map((entry) => entry.bindingId)).toContain(binding.bindingId);
+  expect(service.resolveByConversation(binding.conversation)).toBeNull();
+}
+
+function expectClearedSessionBinding(params: {
+  channel: string;
+  accountId: string;
+  conversationId: string;
+}) {
+  expect(
+    getSessionBindingService().resolveByConversation({
+      channel: params.channel,
+      accountId: params.accountId,
+      conversationId: params.conversationId,
+    }),
+  ).toBeNull();
+}
+
 const telegramListActionsMock = vi.fn();
 const telegramGetCapabilitiesMock = vi.fn();
 const discordListActionsMock = vi.fn();
@@ -496,178 +559,182 @@ export const surfaceContractRegistry: SurfaceContractEntry[] = [
   },
   {
     id: "discord",
-    plugin: discordPlugin,
-    surfaces: [
-      "actions",
-      "setup",
-      "status",
-      "outbound",
-      "messaging",
-      "threading",
-      "directory",
-      "gateway",
-    ],
+    expectedCapabilities: {
+      adapterAvailable: true,
+      bindSupported: true,
+      unbindSupported: true,
+      placements: ["current", "child"],
+    },
+    getCapabilities: () => {
+      createDiscordThreadBindingManager({
+        accountId: "default",
+        persist: false,
+        enableSweeper: false,
+      });
+      return getSessionBindingService().getCapabilities({
+        channel: "discord",
+        accountId: "default",
+      });
+    },
+    bindAndResolve: async () => {
+      createDiscordThreadBindingManager({
+        accountId: "default",
+        persist: false,
+        enableSweeper: false,
+      });
+      const service = getSessionBindingService();
+      const binding = await service.bind({
+        targetSessionKey: "agent:discord:child:thread-1",
+        targetKind: "subagent",
+        conversation: {
+          channel: "discord",
+          accountId: "default",
+          conversationId: "channel:123456789012345678",
+        },
+        placement: "current",
+        metadata: {
+          label: "codex-discord",
+        },
+      });
+      expectResolvedSessionBinding({
+        channel: "discord",
+        accountId: "default",
+        conversationId: "channel:123456789012345678",
+        targetSessionKey: "agent:discord:child:thread-1",
+      });
+      return binding;
+    },
+    unbindAndVerify: unbindAndExpectClearedSessionBinding,
+    cleanup: async () => {
+      const manager = createDiscordThreadBindingManager({
+        accountId: "default",
+        persist: false,
+        enableSweeper: false,
+      });
+      manager.stop();
+      discordThreadBindingTesting.resetThreadBindingsForTests();
+      expectClearedSessionBinding({
+        channel: "discord",
+        accountId: "default",
+        conversationId: "channel:123456789012345678",
+      });
+    },
   },
   {
     id: "feishu",
-    plugin: feishuPlugin,
-    surfaces: ["actions", "setup", "status", "outbound", "messaging", "directory", "gateway"],
-  },
-  {
-    id: "googlechat",
-    plugin: googlechatPlugin,
-    surfaces: [
-      "actions",
-      "setup",
-      "status",
-      "outbound",
-      "messaging",
-      "threading",
-      "directory",
-      "gateway",
-    ],
-  },
-  {
-    id: "imessage",
-    plugin: imessagePlugin,
-    surfaces: ["setup", "status", "outbound", "messaging", "gateway"],
-  },
-  {
-    id: "irc",
-    plugin: ircPlugin,
-    surfaces: ["setup", "status", "outbound", "messaging", "directory", "gateway"],
-  },
-  {
-    id: "line",
-    plugin: linePlugin,
-    surfaces: ["setup", "status", "outbound", "messaging", "directory", "gateway"],
-  },
-  {
-    id: "matrix",
-    plugin: matrixPlugin,
-    surfaces: [
-      "actions",
-      "setup",
-      "status",
-      "outbound",
-      "messaging",
-      "threading",
-      "directory",
-      "gateway",
-    ],
-  },
-  {
-    id: "mattermost",
-    plugin: mattermostPlugin,
-    surfaces: [
-      "actions",
-      "setup",
-      "status",
-      "outbound",
-      "messaging",
-      "threading",
-      "directory",
-      "gateway",
-    ],
-  },
-  {
-    id: "msteams",
-    plugin: msteamsPlugin,
-    surfaces: [
-      "actions",
-      "setup",
-      "status",
-      "outbound",
-      "messaging",
-      "threading",
-      "directory",
-      "gateway",
-    ],
-  },
-  {
-    id: "nextcloud-talk",
-    plugin: nextcloudTalkPlugin,
-    surfaces: ["setup", "status", "outbound", "messaging", "gateway"],
-  },
-  {
-    id: "nostr",
-    plugin: nostrPlugin,
-    surfaces: ["setup", "status", "outbound", "messaging", "gateway"],
-  },
-  {
-    id: "signal",
-    plugin: signalPlugin,
-    surfaces: ["actions", "setup", "status", "outbound", "messaging", "gateway"],
-  },
-  {
-    id: "slack",
-    plugin: slackPlugin,
-    surfaces: [
-      "actions",
-      "setup",
-      "status",
-      "outbound",
-      "messaging",
-      "threading",
-      "directory",
-      "gateway",
-    ],
-  },
-  {
-    id: "synology-chat",
-    plugin: synologyChatPlugin,
-    surfaces: ["setup", "outbound", "messaging", "directory", "gateway"],
+    expectedCapabilities: {
+      adapterAvailable: true,
+      bindSupported: true,
+      unbindSupported: true,
+      placements: ["current"],
+    },
+    getCapabilities: () => {
+      createFeishuThreadBindingManager({ cfg: baseSessionBindingCfg, accountId: "default" });
+      return getSessionBindingService().getCapabilities({
+        channel: "feishu",
+        accountId: "default",
+      });
+    },
+    bindAndResolve: async () => {
+      createFeishuThreadBindingManager({ cfg: baseSessionBindingCfg, accountId: "default" });
+      const service = getSessionBindingService();
+      const binding = await service.bind({
+        targetSessionKey: "agent:codex:acp:binding:feishu:default:abc123",
+        targetKind: "session",
+        conversation: {
+          channel: "feishu",
+          accountId: "default",
+          conversationId: "oc_group_chat:topic:om_topic_root",
+          parentConversationId: "oc_group_chat",
+        },
+        placement: "current",
+        metadata: {
+          agentId: "codex",
+          label: "codex-main",
+        },
+      });
+      expectResolvedSessionBinding({
+        channel: "feishu",
+        accountId: "default",
+        conversationId: "oc_group_chat:topic:om_topic_root",
+        targetSessionKey: "agent:codex:acp:binding:feishu:default:abc123",
+      });
+      return binding;
+    },
+    unbindAndVerify: unbindAndExpectClearedSessionBinding,
+    cleanup: async () => {
+      const manager = createFeishuThreadBindingManager({
+        cfg: baseSessionBindingCfg,
+        accountId: "default",
+      });
+      manager.stop();
+      expectClearedSessionBinding({
+        channel: "feishu",
+        accountId: "default",
+        conversationId: "oc_group_chat:topic:om_topic_root",
+      });
+    },
   },
   {
     id: "telegram",
-    plugin: telegramPlugin,
-    surfaces: [
-      "actions",
-      "setup",
-      "status",
-      "outbound",
-      "messaging",
-      "threading",
-      "directory",
-      "gateway",
-    ],
-  },
-  {
-    id: "tlon",
-    plugin: tlonPlugin,
-    surfaces: ["setup", "status", "outbound", "messaging", "gateway"],
-  },
-  {
-    id: "whatsapp",
-    plugin: whatsappPlugin,
-    surfaces: ["actions", "setup", "status", "outbound", "messaging", "directory", "gateway"],
-  },
-  {
-    id: "zalo",
-    plugin: zaloPlugin,
-    surfaces: [
-      "actions",
-      "setup",
-      "status",
-      "outbound",
-      "messaging",
-      "threading",
-      "directory",
-      "gateway",
-    ],
-  },
-  {
-    id: "zalouser",
-    plugin: zalouserPlugin,
-    surfaces: [
-      "actions",
-      "setup",
-      "status",
-      "outbound",
-      "messaging",
-      "threading",
-      "directory",
-      "gateway",
-    ],
+    expectedCapabilities: {
+      adapterAvailable: true,
+      bindSupported: true,
+      unbindSupported: true,
+      placements: ["current"],
+    },
+    getCapabilities: () => {
+      createTelegramThreadBindingManager({
+        accountId: "default",
+        persist: false,
+        enableSweeper: false,
+      });
+      return getSessionBindingService().getCapabilities({
+        channel: "telegram",
+        accountId: "default",
+      });
+    },
+    bindAndResolve: async () => {
+      createTelegramThreadBindingManager({
+        accountId: "default",
+        persist: false,
+        enableSweeper: false,
+      });
+      const service = getSessionBindingService();
+      const binding = await service.bind({
+        targetSessionKey: "agent:main:subagent:child-1",
+        targetKind: "subagent",
+        conversation: {
+          channel: "telegram",
+          accountId: "default",
+          conversationId: "-100200300:topic:77",
+        },
+        placement: "current",
+        metadata: {
+          boundBy: "user-1",
+        },
+      });
+      expectResolvedSessionBinding({
+        channel: "telegram",
+        accountId: "default",
+        conversationId: "-100200300:topic:77",
+        targetSessionKey: "agent:main:subagent:child-1",
+      });
+      return binding;
+    },
+    unbindAndVerify: unbindAndExpectClearedSessionBinding,
+    cleanup: async () => {
+      const manager = createTelegramThreadBindingManager({
+        accountId: "default",
+        persist: false,
+        enableSweeper: false,
+      });
+      manager.stop();
+      expectClearedSessionBinding({
+        channel: "telegram",
+        accountId: "default",
+        conversationId: "-100200300:topic:77",
+      });
+    },
   },
 ];

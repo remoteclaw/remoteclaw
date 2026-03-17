@@ -1,5 +1,5 @@
 import { normalizeWhatsAppAllowFromEntries } from "../channels/plugins/normalize/whatsapp.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { resolveIMessageAccount } from "../imessage/accounts.js";
 import { normalizeAccountId } from "../routing/session-key.js";
 import { resolveWhatsAppAccount } from "../web/accounts.js";
@@ -9,7 +9,7 @@ export function formatTrimmedAllowFromEntries(allowFrom: Array<string | number>)
 }
 
 export function resolveWhatsAppConfigAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string | null;
 }): string[] {
   return resolveWhatsAppAccount(params).allowFrom ?? [];
@@ -20,7 +20,7 @@ export function formatWhatsAppConfigAllowFromEntries(allowFrom: Array<string | n
 }
 
 export function resolveWhatsAppConfigDefaultTo(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string | null;
 }): string | undefined {
   const root = params.cfg.channels?.whatsapp;
@@ -30,14 +30,14 @@ export function resolveWhatsAppConfigDefaultTo(params: {
 }
 
 export function resolveIMessageConfigAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string | null;
 }): string[] {
   return (resolveIMessageAccount(params).config.allowFrom ?? []).map((entry) => String(entry));
 }
 
 export function resolveIMessageConfigDefaultTo(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string | null;
 }): string | undefined {
   return resolveIMessageAccount(params).config.defaultTo?.trim() || undefined;

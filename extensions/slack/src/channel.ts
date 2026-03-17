@@ -357,32 +357,36 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
     chunker: null,
     textChunkLimit: 4000,
     sendText: async ({ to, text, accountId, deps, replyToId, threadId, cfg }) => {
+      const normalizedAccountId = accountId ?? undefined;
+      const normalizedThreadId = threadId != null ? String(threadId) : undefined;
       const { send, threadTsValue, tokenOverride } = resolveSlackSendContext({
         cfg,
-        accountId,
+        accountId: normalizedAccountId,
         deps,
         replyToId,
-        threadId,
+        threadId: normalizedThreadId,
       });
       const result = await send(to, text, {
         threadTs: threadTsValue != null ? String(threadTsValue) : undefined,
-        accountId: accountId ?? undefined,
+        accountId: normalizedAccountId,
         ...(tokenOverride ? { token: tokenOverride } : {}),
       });
       return { channel: "slack", ...result };
     },
     sendMedia: async ({ to, text, mediaUrl, accountId, deps, replyToId, threadId, cfg }) => {
+      const normalizedAccountId = accountId ?? undefined;
+      const normalizedThreadId = threadId != null ? String(threadId) : undefined;
       const { send, threadTsValue, tokenOverride } = resolveSlackSendContext({
         cfg,
-        accountId,
+        accountId: normalizedAccountId,
         deps,
         replyToId,
-        threadId,
+        threadId: normalizedThreadId,
       });
       const result = await send(to, text, {
         mediaUrl,
         threadTs: threadTsValue != null ? String(threadTsValue) : undefined,
-        accountId: accountId ?? undefined,
+        accountId: normalizedAccountId,
         ...(tokenOverride ? { token: tokenOverride } : {}),
       });
       return { channel: "slack", ...result };

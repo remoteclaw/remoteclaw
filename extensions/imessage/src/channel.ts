@@ -233,9 +233,9 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
         cfg,
         to,
         text,
-        accountId,
+        accountId: accountId ?? undefined,
         deps,
-        replyToId,
+        replyToId: replyToId ?? undefined,
       });
       return { channel: "imessage", ...result };
     },
@@ -245,9 +245,9 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
         to,
         text,
         mediaUrl,
-        accountId,
+        accountId: accountId ?? undefined,
         deps,
-        replyToId,
+        replyToId: replyToId ?? undefined,
       });
       return { channel: "imessage", ...result };
     },

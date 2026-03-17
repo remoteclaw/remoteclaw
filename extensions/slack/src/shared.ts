@@ -3,14 +3,18 @@ import {
   createScopedAccountConfigAccessors,
   createScopedChannelConfigBase,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { buildChannelConfigSchema } from "../../../src/channels/plugins/config-schema.js";
-import { patchChannelConfigForAccount } from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { ChannelPlugin } from "../../../src/channels/plugins/types.plugin.js";
-import { getChatChannelMeta } from "../../../src/channels/registry.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
-import { SlackConfigSchema } from "../../../src/config/zod-schema.providers-core.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+import {
+  formatDocsLink,
+  hasConfiguredSecretInput,
+  patchChannelConfigForAccount,
+} from "remoteclaw/plugin-sdk/setup";
+import {
+  buildChannelConfigSchema,
+  getChatChannelMeta,
+  SlackConfigSchema,
+  type ChannelPlugin,
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/slack";
 import { inspectSlackAccount } from "./account-inspect.js";
 import {
   listSlackAccountIds,

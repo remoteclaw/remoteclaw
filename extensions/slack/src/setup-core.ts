@@ -1,6 +1,9 @@
 import {
   applyAccountNameToChannelSection,
+  createAllowlistSetupWizardProxy,
+  createPatchedAccountSetupAdapter,
   DEFAULT_ACCOUNT_ID,
+  formatDocsLink,
   hasConfiguredSecretInput,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
@@ -12,14 +15,13 @@ import {
   setAccountGroupPolicyForChannel,
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-} from "../../../src/plugin-sdk-internal/setup.js";
+} from "remoteclaw/plugin-sdk/setup";
 import {
   type ChannelSetupAdapter,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
   type ChannelSetupWizardAllowFromEntry,
-} from "../../../src/plugin-sdk-internal/setup.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "remoteclaw/plugin-sdk/setup";
 import { inspectSlackAccount } from "./account-inspect.js";
 import { listSlackAccountIds, resolveSlackAccount, type ResolvedSlackAccount } from "./accounts.js";
 import {
@@ -110,30 +112,15 @@ export const slackSetupAdapter: ChannelSetupAdapter = {
   },
 };
 
-type SlackAllowFromResolverParams = {
-  cfg: RemoteClawConfig;
-  accountId: string;
-  credentialValues: { botToken?: string };
-  entries: string[];
-};
-
-type SlackGroupAllowlistResolverParams = SlackAllowFromResolverParams & {
-  prompter: { note: (message: string, title?: string) => Promise<void> };
-};
-
-type SlackSetupWizardHandlers = {
-  promptAllowFrom: (params: {
-    cfg: RemoteClawConfig;
-    prompter: import("../../../src/plugin-sdk-internal/setup.js").WizardPrompter;
-    accountId?: string;
-  }) => Promise<RemoteClawConfig>;
-  resolveAllowFromEntries: (
-    params: SlackAllowFromResolverParams,
-  ) => Promise<ChannelSetupWizardAllowFromEntry[]>;
-  resolveGroupAllowlist: (params: SlackGroupAllowlistResolverParams) => Promise<string[]>;
-};
-
-export function createSlackSetupWizardBase(handlers: SlackSetupWizardHandlers): ChannelSetupWizard {
+export function createSlackSetupWizardBase(handlers: {
+  promptAllowFrom: NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>;
+  resolveAllowFromEntries: NonNullable<
+    NonNullable<ChannelSetupWizard["allowFrom"]>["resolveEntries"]
+  >;
+  resolveGroupAllowlist: NonNullable<
+    NonNullable<NonNullable<ChannelSetupWizard["groupAccess"]>["resolveAllowlist"]>
+  >;
+}) {
   const slackDmPolicy: ChannelSetupDmPolicy = {
     label: "Slack",
     channel,
@@ -288,7 +275,17 @@ export function createSlackSetupWizardBase(handlers: SlackSetupWizardHandlers): 
           idPattern: /^[A-Z][A-Z0-9]+$/i,
           normalizeId: (id) => id.toUpperCase(),
         }),
-      resolveEntries: handlers.resolveAllowFromEntries,
+      resolveEntries: async ({
+        cfg,
+        accountId,
+        credentialValues,
+        entries,
+      }: {
+        cfg: RemoteClawConfig;
+        accountId: string;
+        credentialValues: { botToken?: string };
+        entries: string[];
+      }) => await handlers.resolveAllowFromEntries({ cfg, accountId, credentialValues, entries }),
       apply: ({
         cfg,
         accountId,
@@ -331,22 +328,40 @@ export function createSlackSetupWizardBase(handlers: SlackSetupWizardHandlers): 
           accountId,
           groupPolicy: policy,
         }),
-      resolveAllowlist: async (params: SlackGroupAllowlistResolverParams) => {
+      resolveAllowlist: async ({
+        cfg,
+        accountId,
+        credentialValues,
+        entries,
+        prompter,
+      }: {
+        cfg: RemoteClawConfig;
+        accountId: string;
+        credentialValues: { botToken?: string };
+        entries: string[];
+        prompter: { note: (message: string, title?: string) => Promise<void> };
+      }) => {
         try {
-          return await handlers.resolveGroupAllowlist(params);
+          return await handlers.resolveGroupAllowlist({
+            cfg,
+            accountId,
+            credentialValues,
+            entries,
+            prompter,
+          });
         } catch (error) {
           await noteChannelLookupFailure({
-            prompter: params.prompter,
+            prompter,
             label: "Slack channels",
             error,
           });
           await noteChannelLookupSummary({
-            prompter: params.prompter,
+            prompter,
             label: "Slack channels",
             resolvedSections: [],
-            unresolved: params.entries,
+            unresolved: entries,
           });
-          return params.entries;
+          return entries;
         }
       },
       applyAllowlist: ({
@@ -362,42 +377,12 @@ export function createSlackSetupWizardBase(handlers: SlackSetupWizardHandlers): 
     disable: (cfg: RemoteClawConfig) => setSetupChannelEnabled(cfg, channel, false),
   } satisfies ChannelSetupWizard;
 }
-
 export function createSlackSetupWizardProxy(
   loadWizard: () => Promise<{ slackSetupWizard: ChannelSetupWizard }>,
 ) {
-  return createSlackSetupWizardBase({
-    promptAllowFrom: async ({ cfg, prompter, accountId }) => {
-      const wizard = (await loadWizard()).slackSetupWizard;
-      if (!wizard.dmPolicy?.promptAllowFrom) {
-        return cfg;
-      }
-      return await wizard.dmPolicy.promptAllowFrom({ cfg, prompter, accountId });
-    },
-    resolveAllowFromEntries: async ({ cfg, accountId, credentialValues, entries }) => {
-      const wizard = (await loadWizard()).slackSetupWizard;
-      if (!wizard.allowFrom) {
-        return entries.map((input) => ({ input, resolved: false, id: null }));
-      }
-      return await wizard.allowFrom.resolveEntries({
-        cfg,
-        accountId,
-        credentialValues,
-        entries,
-      });
-    },
-    resolveGroupAllowlist: async ({ cfg, accountId, credentialValues, entries, prompter }) => {
-      const wizard = (await loadWizard()).slackSetupWizard;
-      if (!wizard.groupAccess?.resolveAllowlist) {
-        return entries;
-      }
-      return (await wizard.groupAccess.resolveAllowlist({
-        cfg,
-        accountId,
-        credentialValues,
-        entries,
-        prompter,
-      })) as string[];
-    },
+  return createAllowlistSetupWizardProxy({
+    loadWizard: async () => (await loadWizard()).slackSetupWizard,
+    createBase: createSlackSetupWizardBase,
+    fallbackResolvedGroupAllowlist: (entries) => entries,
   });
 }

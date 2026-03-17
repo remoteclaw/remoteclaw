@@ -1,9 +1,30 @@
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import type { RemoteClawConfig, TelegramAccountConfig } from "remoteclaw/plugin-sdk/telegram";
 import { vi } from "vitest";
-import type { RemoteClawConfig, TelegramAccountConfig } from "../runtime-api.js";
-import type { RegisterTelegramNativeCommandsParams } from "./bot-native-commands.js";
 
-export type NativeCommandTestParams = RegisterTelegramNativeCommandsParams;
+type RegisterTelegramNativeCommandsParams = Parameters<
+  typeof import("./bot-native-commands.js").registerTelegramNativeCommands
+>[0];
+
+export type NativeCommandTestParams = {
+  bot: RegisterTelegramNativeCommandsParams["bot"];
+  cfg: RemoteClawConfig;
+  runtime: RuntimeEnv;
+  accountId: string;
+  telegramCfg: TelegramAccountConfig;
+  allowFrom: string[];
+  groupAllowFrom: string[];
+  replyToMode: RegisterTelegramNativeCommandsParams["replyToMode"];
+  textLimit: number;
+  useAccessGroups: boolean;
+  nativeEnabled: boolean;
+  nativeSkillsEnabled: boolean;
+  nativeDisabledExplicit: boolean;
+  resolveGroupPolicy: () => { allowlistEnabled: boolean; allowed: boolean };
+  resolveTelegramGroupConfig: RegisterTelegramNativeCommandsParams["resolveTelegramGroupConfig"];
+  shouldSkipUpdate: () => boolean;
+  opts: { token: string };
+};
 
 export function createDeferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -54,9 +75,8 @@ export function createNativeCommandTestParams(
         }) as ReturnType<NativeCommandTestParams["resolveGroupPolicy"]>),
     resolveTelegramGroupConfig:
       params.resolveTelegramGroupConfig ??
-      ((_chatId, _messageThreadId) => ({ groupConfig: undefined, topicConfig: undefined })),
+      (() => ({ groupConfig: undefined, topicConfig: undefined })),
     shouldSkipUpdate: params.shouldSkipUpdate ?? (() => false),
-    telegramDeps: params.telegramDeps,
     opts: params.opts ?? { token: "token" },
   };
 }

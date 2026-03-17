@@ -1,6 +1,8 @@
 import {
   applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
+  formatCliCommand,
+  formatDocsLink,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   normalizeE164,
@@ -15,9 +17,8 @@ import type {
   ChannelSetupAdapter,
   ChannelSetupDmPolicy,
   ChannelSetupWizard,
+  ChannelSetupWizardTextInput,
 } from "remoteclaw/plugin-sdk/setup";
-import { formatCliCommand } from "../../../src/cli/command-format.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,
@@ -87,7 +88,7 @@ function buildSignalSetupPatch(input: {
   };
 }
 
-async function promptSignalAllowFrom(params: {
+export async function promptSignalAllowFrom(params: {
   cfg: RemoteClawConfig;
   prompter: WizardPrompter;
   accountId?: string;
@@ -114,6 +115,77 @@ async function promptSignalAllowFrom(params: {
       resolveSignalAccount({ cfg, accountId }).config.allowFrom ?? [],
   });
 }
+
+export const signalDmPolicy: ChannelSetupDmPolicy = {
+  label: "Signal",
+  channel,
+  policyKey: "channels.signal.dmPolicy",
+  allowFromKey: "channels.signal.allowFrom",
+  getCurrent: (cfg: RemoteClawConfig) => cfg.channels?.signal?.dmPolicy ?? "pairing",
+  setPolicy: (cfg: RemoteClawConfig, policy) =>
+    setChannelDmPolicyWithAllowFrom({
+      cfg,
+      channel,
+      dmPolicy: policy,
+    }),
+  promptAllowFrom: promptSignalAllowFrom,
+};
+
+function resolveSignalCliPath(params: {
+  cfg: RemoteClawConfig;
+  accountId: string;
+  credentialValues: Record<string, unknown>;
+}) {
+  return (
+    (typeof params.credentialValues.cliPath === "string"
+      ? params.credentialValues.cliPath
+      : undefined) ??
+    resolveSignalAccount({ cfg: params.cfg, accountId: params.accountId }).config.cliPath ??
+    "signal-cli"
+  );
+}
+
+export function createSignalCliPathTextInput(
+  shouldPrompt: NonNullable<ChannelSetupWizardTextInput["shouldPrompt"]>,
+): ChannelSetupWizardTextInput {
+  return {
+    inputKey: "cliPath",
+    message: "signal-cli path",
+    currentValue: ({ cfg, accountId, credentialValues }) =>
+      resolveSignalCliPath({ cfg, accountId, credentialValues }),
+    initialValue: ({ cfg, accountId, credentialValues }) =>
+      resolveSignalCliPath({ cfg, accountId, credentialValues }),
+    shouldPrompt,
+    confirmCurrentValue: false,
+    applyCurrentValue: true,
+    helpTitle: "Signal",
+    helpLines: [
+      "signal-cli not found. Install it, then rerun this step or set channels.signal.cliPath.",
+    ],
+  };
+}
+
+export const signalNumberTextInput: ChannelSetupWizardTextInput = {
+  inputKey: "signalNumber",
+  message: "Signal bot number (E.164)",
+  currentValue: ({ cfg, accountId }) =>
+    normalizeSignalAccountInput(resolveSignalAccount({ cfg, accountId }).config.account) ??
+    undefined,
+  keepPrompt: (value) => `Signal account set (${value}). Keep it?`,
+  validate: ({ value }) =>
+    normalizeSignalAccountInput(value) ? undefined : INVALID_SIGNAL_ACCOUNT_ERROR,
+  normalizeValue: ({ value }) => normalizeSignalAccountInput(value) ?? value,
+};
+
+export const signalCompletionNote = {
+  title: "Signal next steps",
+  lines: [
+    'Link device with: signal-cli link -n "RemoteClaw"',
+    "Scan QR in Signal -> Linked Devices",
+    `Then run: ${formatCliCommand("remoteclaw gateway call channels.status --params '{\"probe\":true}'")}`,
+    `Docs: ${formatDocsLink("/signal", "signal")}`,
+  ],
+};
 
 export const signalSetupAdapter: ChannelSetupAdapter = {
   resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
@@ -187,21 +259,6 @@ export const signalSetupAdapter: ChannelSetupAdapter = {
 export function createSignalSetupWizardProxy(
   loadWizard: () => Promise<{ signalSetupWizard: ChannelSetupWizard }>,
 ) {
-  const signalDmPolicy: ChannelSetupDmPolicy = {
-    label: "Signal",
-    channel,
-    policyKey: "channels.signal.dmPolicy",
-    allowFromKey: "channels.signal.allowFrom",
-    getCurrent: (cfg: RemoteClawConfig) => cfg.channels?.signal?.dmPolicy ?? "pairing",
-    setPolicy: (cfg: RemoteClawConfig, policy) =>
-      setChannelDmPolicyWithAllowFrom({
-        cfg,
-        channel,
-        dmPolicy: policy,
-      }),
-    promptAllowFrom: promptSignalAllowFrom,
-  };
-
   return {
     channel,
     status: {
@@ -225,51 +282,15 @@ export function createSignalSetupWizardProxy(
     prepare: async (params) => await (await loadWizard()).signalSetupWizard.prepare?.(params),
     credentials: [],
     textInputs: [
-      {
-        inputKey: "cliPath",
-        message: "signal-cli path",
-        currentValue: ({ cfg, accountId, credentialValues }) =>
-          (typeof credentialValues.cliPath === "string" ? credentialValues.cliPath : undefined) ??
-          resolveSignalAccount({ cfg, accountId }).config.cliPath ??
-          "signal-cli",
-        initialValue: ({ cfg, accountId, credentialValues }) =>
-          (typeof credentialValues.cliPath === "string" ? credentialValues.cliPath : undefined) ??
-          resolveSignalAccount({ cfg, accountId }).config.cliPath ??
-          "signal-cli",
-        shouldPrompt: async (params) => {
-          const input = (await loadWizard()).signalSetupWizard.textInputs?.find(
-            (entry) => entry.inputKey === "cliPath",
-          );
-          return (await input?.shouldPrompt?.(params)) ?? false;
-        },
-        confirmCurrentValue: false,
-        applyCurrentValue: true,
-        helpTitle: "Signal",
-        helpLines: [
-          "signal-cli not found. Install it, then rerun this step or set channels.signal.cliPath.",
-        ],
-      },
-      {
-        inputKey: "signalNumber",
-        message: "Signal bot number (E.164)",
-        currentValue: ({ cfg, accountId }) =>
-          normalizeSignalAccountInput(resolveSignalAccount({ cfg, accountId }).config.account) ??
-          undefined,
-        keepPrompt: (value) => `Signal account set (${value}). Keep it?`,
-        validate: ({ value }) =>
-          normalizeSignalAccountInput(value) ? undefined : INVALID_SIGNAL_ACCOUNT_ERROR,
-        normalizeValue: ({ value }) => normalizeSignalAccountInput(value) ?? value,
-      },
+      createSignalCliPathTextInput(async (params) => {
+        const input = (await loadWizard()).signalSetupWizard.textInputs?.find(
+          (entry) => entry.inputKey === "cliPath",
+        );
+        return (await input?.shouldPrompt?.(params)) ?? false;
+      }),
+      signalNumberTextInput,
     ],
-    completionNote: {
-      title: "Signal next steps",
-      lines: [
-        'Link device with: signal-cli link -n "RemoteClaw"',
-        "Scan QR in Signal -> Linked Devices",
-        `Then run: ${formatCliCommand("remoteclaw gateway call channels.status --params '{\"probe\":true}'")}`,
-        `Docs: ${formatDocsLink("/signal", "signal")}`,
-      ],
-    },
+    completionNote: signalCompletionNote,
     dmPolicy: signalDmPolicy,
     disable: (cfg: RemoteClawConfig) => setSetupChannelEnabled(cfg, channel, false),
   } satisfies ChannelSetupWizard;

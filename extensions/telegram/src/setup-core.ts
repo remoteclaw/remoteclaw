@@ -2,6 +2,7 @@ import {
   applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
   formatCliCommand,
+  formatDocsLink,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   patchChannelConfigForAccount,
@@ -9,12 +10,8 @@ import {
   splitSetupEntries,
   type RemoteClawConfig,
   type WizardPrompter,
-} from "../../../src/plugin-sdk-internal/setup.js";
-import type {
-  ChannelSetupAdapter,
-  ChannelSetupDmPolicy,
-} from "../../../src/plugin-sdk-internal/setup.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "remoteclaw/plugin-sdk/setup";
+import type { ChannelSetupAdapter, ChannelSetupDmPolicy } from "remoteclaw/plugin-sdk/setup";
 import { resolveDefaultTelegramAccountId, resolveTelegramAccount } from "./accounts.js";
 import { fetchTelegramChatId } from "./api-fetch.js";
 

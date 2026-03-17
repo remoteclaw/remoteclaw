@@ -1,18 +1,11 @@
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import { expect, vi } from "vitest";
 import {
   __testing as discordThreadBindingTesting,
   createThreadBindingManager as createDiscordThreadBindingManager,
-} from "../../../../extensions/discord/runtime-api.js";
-import { createFeishuThreadBindingManager } from "../../../../extensions/feishu/api.js";
-import {
-  createMatrixThreadBindingManager,
-  resetMatrixThreadBindingsForTests,
-} from "../../../../extensions/matrix/api.js";
-import { setMatrixRuntime } from "../../../../extensions/matrix/index.js";
-import { createTelegramThreadBindingManager } from "../../../../extensions/telegram/runtime-api.js";
+} from "../../../../extensions/discord/src/monitor/thread-bindings.manager.js";
+import { createFeishuThreadBindingManager } from "../../../../extensions/feishu/src/thread-bindings.js";
+import { setMatrixRuntime } from "../../../../extensions/matrix/src/runtime.js";
+import { createTelegramThreadBindingManager } from "../../../../extensions/telegram/src/thread-bindings.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
 import {
   getSessionBindingService,
@@ -134,69 +127,23 @@ type DirectoryContractEntry = {
 type SessionBindingContractEntry = {
   id: string;
   expectedCapabilities: SessionBindingCapabilities;
-  getCapabilities: () => SessionBindingCapabilities | Promise<SessionBindingCapabilities>;
+  getCapabilities: () => SessionBindingCapabilities;
   bindAndResolve: () => Promise<SessionBindingRecord>;
   unbindAndVerify: (binding: SessionBindingRecord) => Promise<void>;
   cleanup: () => Promise<void> | void;
 };
 
-function expectResolvedSessionBinding(params: {
-  channel: string;
-  accountId: string;
-  conversationId: string;
-  parentConversationId?: string;
-  targetSessionKey: string;
-}) {
-  expect(
-    getSessionBindingService().resolveByConversation({
-      channel: params.channel,
-      accountId: params.accountId,
-      conversationId: params.conversationId,
-      parentConversationId: params.parentConversationId,
-    }),
-  )?.toMatchObject({
-    targetSessionKey: params.targetSessionKey,
-  });
-}
-
-async function unbindAndExpectClearedSessionBinding(binding: SessionBindingRecord) {
-  const service = getSessionBindingService();
-  const removed = await service.unbind({
-    bindingId: binding.bindingId,
-    reason: "contract-test",
-  });
-  expect(removed.map((entry) => entry.bindingId)).toContain(binding.bindingId);
-  expect(service.resolveByConversation(binding.conversation)).toBeNull();
-}
-
-function expectClearedSessionBinding(params: {
-  channel: string;
-  accountId: string;
-  conversationId: string;
-}) {
-  expect(
-    getSessionBindingService().resolveByConversation({
-      channel: params.channel,
-      accountId: params.accountId,
-      conversationId: params.conversationId,
-    }),
-  ).toBeNull();
-}
-
-const telegramDescribeMessageToolMock = vi.fn();
-const discordDescribeMessageToolMock = vi.fn();
-const sendMessageMatrixMock = vi.hoisted(() =>
-  vi.fn(async (to: string, _message: string, opts?: { threadId?: string }) => ({
-    messageId: opts?.threadId ? "$matrix-thread" : "$matrix-root",
-    roomId: to.replace(/^room:/, ""),
-  })),
-);
+const telegramListActionsMock = vi.fn();
+const telegramGetCapabilitiesMock = vi.fn();
+const discordListActionsMock = vi.fn();
+const discordGetCapabilitiesMock = vi.fn();
 
 bundledChannelRuntimeSetters.setTelegramRuntime({
   channel: {
     telegram: {
       messageActions: {
-        describeMessageTool: telegramDescribeMessageToolMock,
+        listActions: telegramListActionsMock,
+        getCapabilities: telegramGetCapabilitiesMock,
       },
     },
   },
@@ -206,7 +153,8 @@ bundledChannelRuntimeSetters.setDiscordRuntime({
   channel: {
     discord: {
       messageActions: {
-        describeMessageTool: discordDescribeMessageToolMock,
+        listActions: discordListActionsMock,
+        getCapabilities: discordGetCapabilitiesMock,
       },
     },
   },
@@ -223,47 +171,11 @@ bundledChannelRuntimeSetters.setLineRuntime({
   },
 } as never);
 
-vi.mock("../../../../extensions/matrix/src/matrix/send.js", async () => {
-  const actual = await vi.importActual<
-    typeof import("../../../../extensions/matrix/src/matrix/send.js")
-  >("../../../../extensions/matrix/src/matrix/send.js");
-  return {
-    ...actual,
-    sendMessageMatrix: sendMessageMatrixMock,
-  };
-});
-
-const matrixSessionBindingStateDir = fs.mkdtempSync(
-  path.join(os.tmpdir(), "remoteclaw-matrix-session-binding-contract-"),
-);
-const matrixSessionBindingAuth = {
-  accountId: "ops",
-  homeserver: "https://matrix.example.org",
-  userId: "@bot:example.org",
-  accessToken: "token",
-} as const;
-
-function resetMatrixSessionBindingStateDir() {
-  fs.rmSync(matrixSessionBindingStateDir, { recursive: true, force: true });
-  fs.mkdirSync(matrixSessionBindingStateDir, { recursive: true });
-}
-
-async function createContractMatrixThreadBindingManager() {
-  resetMatrixSessionBindingStateDir();
-  setMatrixRuntime({
-    state: {
-      resolveStateDir: () => matrixSessionBindingStateDir,
-    },
-  } as never);
-  return await createMatrixThreadBindingManager({
-    accountId: matrixSessionBindingAuth.accountId,
-    auth: matrixSessionBindingAuth,
-    client: {} as never,
-    idleTimeoutMs: 24 * 60 * 60 * 1000,
-    maxAgeMs: 0,
-    enableSweeper: false,
-  });
-}
+setMatrixRuntime({
+  state: {
+    resolveStateDir: (_env: unknown, homeDir?: () => string) => (homeDir ?? (() => "/tmp"))(),
+  },
+} as never);
 
 export const pluginContractRegistry: PluginContractEntry[] = bundledChannelPlugins.map(
   (plugin) => ({
@@ -405,11 +317,10 @@ export const actionContractRegistry: ActionsContractEntry[] = [
         expectedActions: ["send", "poll", "react"],
         expectedCapabilities: ["interactive", "buttons"],
         beforeTest: () => {
-          telegramDescribeMessageToolMock.mockReset();
-          telegramDescribeMessageToolMock.mockReturnValue({
-            actions: ["send", "poll", "react"],
-            capabilities: ["interactive", "buttons"],
-          });
+          telegramListActionsMock.mockReset();
+          telegramGetCapabilitiesMock.mockReset();
+          telegramListActionsMock.mockReturnValue(["send", "poll", "react"]);
+          telegramGetCapabilitiesMock.mockReturnValue(["interactive", "buttons"]);
         },
       },
     ],
@@ -424,11 +335,10 @@ export const actionContractRegistry: ActionsContractEntry[] = [
         expectedActions: ["send", "react", "poll"],
         expectedCapabilities: ["interactive", "components"],
         beforeTest: () => {
-          discordDescribeMessageToolMock.mockReset();
-          discordDescribeMessageToolMock.mockReturnValue({
-            actions: ["send", "react", "poll"],
-            capabilities: ["interactive", "components"],
-          });
+          discordListActionsMock.mockReset();
+          discordGetCapabilitiesMock.mockReset();
+          discordListActionsMock.mockReturnValue(["send", "react", "poll"]);
+          discordGetCapabilitiesMock.mockReturnValue(["interactive", "components"]);
         },
       },
     ],
@@ -634,6 +544,25 @@ export const threadingContractRegistry: ThreadingContractEntry[] = surfaceContra
   }));
 
 const directoryPresenceOnlyIds = new Set(["whatsapp", "zalouser"]);
+const matrixDirectoryCfg = {
+  channels: {
+    matrix: {
+      enabled: true,
+      homeserver: "https://matrix.example.com",
+      userId: "@lobster:example.com",
+      accessToken: "matrix-access-token",
+      dm: {
+        allowFrom: ["matrix:@alice:example.com"],
+      },
+      groupAllowFrom: ["matrix:@team:example.com"],
+      groups: {
+        "!room:example.com": {
+          users: ["matrix:@alice:example.com"],
+        },
+      },
+    },
+  },
+} as RemoteClawConfig;
 
 export const directoryContractRegistry: DirectoryContractEntry[] = surfaceContractRegistry
   .filter((entry) => entry.surfaces.includes("directory"))
@@ -641,6 +570,7 @@ export const directoryContractRegistry: DirectoryContractEntry[] = surfaceContra
     id: entry.id,
     plugin: entry.plugin,
     coverage: directoryPresenceOnlyIds.has(entry.id) ? "presence" : "lookups",
+    ...(entry.id === "matrix" ? { cfg: matrixDirectoryCfg } : {}),
   }));
 
 const baseSessionBindingCfg = {
@@ -687,15 +617,26 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
           label: "codex-discord",
         },
       });
-      expectResolvedSessionBinding({
-        channel: "discord",
-        accountId: "default",
-        conversationId: "channel:123456789012345678",
+      expect(
+        service.resolveByConversation({
+          channel: "discord",
+          accountId: "default",
+          conversationId: "channel:123456789012345678",
+        }),
+      )?.toMatchObject({
         targetSessionKey: "agent:discord:child:thread-1",
       });
       return binding;
     },
-    unbindAndVerify: unbindAndExpectClearedSessionBinding,
+    unbindAndVerify: async (binding) => {
+      const service = getSessionBindingService();
+      const removed = await service.unbind({
+        bindingId: binding.bindingId,
+        reason: "contract-test",
+      });
+      expect(removed.map((entry) => entry.bindingId)).toContain(binding.bindingId);
+      expect(service.resolveByConversation(binding.conversation)).toBeNull();
+    },
     cleanup: async () => {
       const manager = createDiscordThreadBindingManager({
         accountId: "default",
@@ -704,11 +645,13 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
       });
       manager.stop();
       discordThreadBindingTesting.resetThreadBindingsForTests();
-      expectClearedSessionBinding({
-        channel: "discord",
-        accountId: "default",
-        conversationId: "channel:123456789012345678",
-      });
+      expect(
+        getSessionBindingService().resolveByConversation({
+          channel: "discord",
+          accountId: "default",
+          conversationId: "channel:123456789012345678",
+        }),
+      ).toBeNull();
     },
   },
   {
@@ -744,77 +687,39 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
           label: "codex-main",
         },
       });
-      expectResolvedSessionBinding({
-        channel: "feishu",
-        accountId: "default",
-        conversationId: "oc_group_chat:topic:om_topic_root",
+      expect(
+        service.resolveByConversation({
+          channel: "feishu",
+          accountId: "default",
+          conversationId: "oc_group_chat:topic:om_topic_root",
+        }),
+      )?.toMatchObject({
         targetSessionKey: "agent:codex:acp:binding:feishu:default:abc123",
       });
       return binding;
     },
-    unbindAndVerify: unbindAndExpectClearedSessionBinding,
+    unbindAndVerify: async (binding) => {
+      const service = getSessionBindingService();
+      const removed = await service.unbind({
+        bindingId: binding.bindingId,
+        reason: "contract-test",
+      });
+      expect(removed.map((entry) => entry.bindingId)).toContain(binding.bindingId);
+      expect(service.resolveByConversation(binding.conversation)).toBeNull();
+    },
     cleanup: async () => {
       const manager = createFeishuThreadBindingManager({
         cfg: baseSessionBindingCfg,
         accountId: "default",
       });
       manager.stop();
-      expectClearedSessionBinding({
-        channel: "feishu",
-        accountId: "default",
-        conversationId: "oc_group_chat:topic:om_topic_root",
-      });
-    },
-  },
-  {
-    id: "matrix",
-    expectedCapabilities: {
-      adapterAvailable: true,
-      bindSupported: true,
-      unbindSupported: true,
-      placements: ["current", "child"],
-    },
-    getCapabilities: async () => {
-      await createContractMatrixThreadBindingManager();
-      return getSessionBindingService().getCapabilities({
-        channel: "matrix",
-        accountId: matrixSessionBindingAuth.accountId,
-      });
-    },
-    bindAndResolve: async () => {
-      await createContractMatrixThreadBindingManager();
-      const service = getSessionBindingService();
-      const binding = await service.bind({
-        targetSessionKey: "agent:matrix:child:thread-1",
-        targetKind: "subagent",
-        conversation: {
-          channel: "matrix",
-          accountId: matrixSessionBindingAuth.accountId,
-          conversationId: "$thread",
-          parentConversationId: "!room:example",
-        },
-        placement: "current",
-        metadata: {
-          label: "codex-matrix",
-        },
-      });
-      expectResolvedSessionBinding({
-        channel: "matrix",
-        accountId: matrixSessionBindingAuth.accountId,
-        conversationId: "$thread",
-        targetSessionKey: "agent:matrix:child:thread-1",
-      });
-      return binding;
-    },
-    unbindAndVerify: unbindAndExpectClearedSessionBinding,
-    cleanup: async () => {
-      resetMatrixThreadBindingsForTests();
-      resetMatrixSessionBindingStateDir();
-      expectClearedSessionBinding({
-        channel: "matrix",
-        accountId: matrixSessionBindingAuth.accountId,
-        conversationId: "$thread",
-      });
+      expect(
+        getSessionBindingService().resolveByConversation({
+          channel: "feishu",
+          accountId: "default",
+          conversationId: "oc_group_chat:topic:om_topic_root",
+        }),
+      ).toBeNull();
     },
   },
   {
@@ -856,15 +761,26 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
           boundBy: "user-1",
         },
       });
-      expectResolvedSessionBinding({
-        channel: "telegram",
-        accountId: "default",
-        conversationId: "-100200300:topic:77",
+      expect(
+        service.resolveByConversation({
+          channel: "telegram",
+          accountId: "default",
+          conversationId: "-100200300:topic:77",
+        }),
+      )?.toMatchObject({
         targetSessionKey: "agent:main:subagent:child-1",
       });
       return binding;
     },
-    unbindAndVerify: unbindAndExpectClearedSessionBinding,
+    unbindAndVerify: async (binding) => {
+      const service = getSessionBindingService();
+      const removed = await service.unbind({
+        bindingId: binding.bindingId,
+        reason: "contract-test",
+      });
+      expect(removed.map((entry) => entry.bindingId)).toContain(binding.bindingId);
+      expect(service.resolveByConversation(binding.conversation)).toBeNull();
+    },
     cleanup: async () => {
       const manager = createTelegramThreadBindingManager({
         accountId: "default",
@@ -872,11 +788,13 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
         enableSweeper: false,
       });
       manager.stop();
-      expectClearedSessionBinding({
-        channel: "telegram",
-        accountId: "default",
-        conversationId: "-100200300:topic:77",
-      });
+      expect(
+        getSessionBindingService().resolveByConversation({
+          channel: "telegram",
+          accountId: "default",
+          conversationId: "-100200300:topic:77",
+        }),
+      ).toBeNull();
     },
   },
 ];

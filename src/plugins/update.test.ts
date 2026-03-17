@@ -10,6 +10,8 @@ vi.mock("./install.js", () => ({
   },
 }));
 
+const { updateNpmInstalledPlugins } = await import("./update.js");
+
 describe("updateNpmInstalledPlugins", () => {
   beforeEach(() => {
     installPluginFromNpmSpecMock.mockReset();
@@ -24,7 +26,6 @@ describe("updateNpmInstalledPlugins", () => {
       extensions: ["index.ts"],
     });
 
-    const { updateNpmInstalledPlugins } = await import("./update.js");
     await updateNpmInstalledPlugins({
       config: {
         plugins: {
@@ -59,7 +60,6 @@ describe("updateNpmInstalledPlugins", () => {
       extensions: ["index.ts"],
     });
 
-    const { updateNpmInstalledPlugins } = await import("./update.js");
     await updateNpmInstalledPlugins({
       config: {
         plugins: {
@@ -92,7 +92,6 @@ describe("updateNpmInstalledPlugins", () => {
       error: "Package not found on npm: @openclaw/missing.",
     });
 
-    const { updateNpmInstalledPlugins } = await import("./update.js");
     const result = await updateNpmInstalledPlugins({
       config: {
         plugins: {
@@ -125,7 +124,6 @@ describe("updateNpmInstalledPlugins", () => {
       error: "unsupported npm spec: github:evil/evil",
     });
 
-    const { updateNpmInstalledPlugins } = await import("./update.js");
     const result = await updateNpmInstalledPlugins({
       config: {
         plugins: {

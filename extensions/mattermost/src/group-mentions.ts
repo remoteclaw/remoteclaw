@@ -1,5 +1,5 @@
-import type { ChannelGroupContext } from "clawdbot/plugin-sdk";
-
+import { resolveChannelGroupRequireMention } from "remoteclaw/plugin-sdk/channel-policy";
+import type { ChannelGroupContext } from "remoteclaw/plugin-sdk/mattermost";
 import { resolveMattermostAccount } from "./mattermost/accounts.js";
 
 export function resolveMattermostGroupRequireMention(

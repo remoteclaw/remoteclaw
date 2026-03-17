@@ -1,9 +1,12 @@
 import {
-  buildAccountScopedDmSecurityPolicy,
+  createScopedAccountConfigAccessors,
+  createScopedChannelConfigBase,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import {
   buildOpenGroupPolicyWarning,
   collectAllowlistProviderGroupPolicyWarnings,
-  createScopedAccountConfigAccessors,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/channel-policy";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,

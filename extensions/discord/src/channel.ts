@@ -8,12 +8,6 @@ import {
 import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
 import { normalizeMessageChannel } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
-  buildAgentSessionKey,
-  resolveThreadSessionKeys,
-  type RoutePeer,
-} from "remoteclaw/plugin-sdk/core";
-import {
-  applyAccountNameToChannelSection,
   buildComputedAccountStatusSnapshot,
   buildChannelConfigSchema,
   buildTokenChannelStatusSummary,
@@ -33,6 +27,11 @@ import {
   type ChannelPlugin,
   type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/discord";
+import {
+  buildAgentSessionKey,
+  resolveThreadSessionKeys,
+  type RoutePeer,
+} from "remoteclaw/plugin-sdk/routing";
 import {
   listDiscordAccountIds,
   resolveDiscordAccount,

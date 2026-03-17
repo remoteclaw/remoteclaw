@@ -5,8 +5,8 @@ import {
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
 import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
-import { buildAgentSessionKey, type RoutePeer } from "remoteclaw/plugin-sdk/core";
 import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
+import { buildAgentSessionKey, type RoutePeer } from "remoteclaw/plugin-sdk/routing";
 import {
   buildAccountScopedDmSecurityPolicy,
   createScopedAccountConfigAccessors,

@@ -4,7 +4,7 @@ import type {
   ProviderResolveDynamicModelContext,
   ProviderRuntimeModel,
 } from "remoteclaw/plugin-sdk/core";
-import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/core";
+import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/provider-auth";
 import {
   CODEX_CLI_PROFILE_ID,
   ensureAuthProfileStore,

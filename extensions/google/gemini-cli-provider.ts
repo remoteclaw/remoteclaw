@@ -1,9 +1,9 @@
-import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/core";
 import type {
   RemoteClawPluginApi,
   ProviderAuthContext,
   ProviderFetchUsageSnapshotContext,
 } from "remoteclaw/plugin-sdk/core";
+import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/provider-auth";
 import { fetchGeminiUsage } from "remoteclaw/plugin-sdk/provider-usage";
 import { loginGeminiCliOAuth } from "./oauth.js";
 import { isModernGoogleModel, resolveGoogle31ForwardCompatModel } from "./provider-models.js";

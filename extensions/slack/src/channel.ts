@@ -9,7 +9,7 @@ import {
   buildAgentSessionKey,
   resolveThreadSessionKeys,
   type RoutePeer,
-} from "remoteclaw/plugin-sdk/core";
+} from "remoteclaw/plugin-sdk/routing";
 import {
   applyAccountNameToChannelSection,
   buildComputedAccountStatusSnapshot,

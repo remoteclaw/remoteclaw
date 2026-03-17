@@ -17,16 +17,36 @@ import {
   applySyntheticConfig,
   applyXaiConfig,
   applyXaiProviderConfig,
-  applyXiaomiConfig,
-  applyZaiConfig,
-  applyZaiProviderConfig,
+  XAI_DEFAULT_MODEL_REF,
+} from "../../extensions/xai/onboard.js";
+import { applyXiaomiConfig, applyXiaomiProviderConfig } from "../../extensions/xiaomi/onboard.js";
+import { applyZaiConfig, applyZaiProviderConfig } from "../../extensions/zai/onboard.js";
+import { SYNTHETIC_DEFAULT_MODEL_ID } from "../agents/synthetic-models.js";
+import type { RemoteClawConfig } from "../config/config.js";
+import {
+  resolveAgentModelFallbackValues,
+  resolveAgentModelPrimaryValue,
+} from "../config/model-input.js";
+import type { ModelApi } from "../config/types.models.js";
+import {
+  MISTRAL_DEFAULT_MODEL_REF,
+  ZAI_CODING_CN_BASE_URL,
+  ZAI_GLOBAL_BASE_URL,
+} from "../plugin-sdk/provider-models.js";
+import { applyAuthProfileConfig } from "../plugins/provider-auth-helpers.js";
+import {
   OPENROUTER_DEFAULT_MODEL_REF,
   MISTRAL_DEFAULT_MODEL_REF,
   XAI_DEFAULT_MODEL_REF,
   setMinimaxApiKey,
   writeOAuthCredentials,
-} from "./onboard-auth.js";
-import { createAuthTestLifecycle, setupAuthTestEnv } from "./test-wizard-helpers.js";
+} from "../plugins/provider-auth-storage.js";
+import { applyLitellmProviderConfig } from "./onboard-auth.config-litellm.js";
+import {
+  createAuthTestLifecycle,
+  readAuthProfilesForAgent,
+  setupAuthTestEnv,
+} from "./test-wizard-helpers.js";
 
 function createLegacyProviderConfig(_params: {
   providerId: string;

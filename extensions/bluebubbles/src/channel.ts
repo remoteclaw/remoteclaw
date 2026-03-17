@@ -1,8 +1,5 @@
-import type {
-  ChannelAccountSnapshot,
-  ChannelPlugin,
-  RemoteClawConfig,
-} from "remoteclaw/plugin-sdk";
+import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
+import type { ChannelAccountSnapshot, ChannelPlugin } from "remoteclaw/plugin-sdk/bluebubbles";
 import {
   applyAccountNameToChannelSection,
   buildAccountScopedDmSecurityPolicy,
@@ -20,7 +17,13 @@ import {
   resolveBlueBubblesGroupRequireMention,
   resolveBlueBubblesGroupToolPolicy,
   setAccountEnabledInConfigSection,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/bluebubbles";
+import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
+import {
+  buildAccountScopedDmSecurityPolicy,
+  collectOpenGroupPolicyRestrictSendersWarnings,
+} from "remoteclaw/plugin-sdk/channel-policy";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,

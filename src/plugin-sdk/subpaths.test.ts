@@ -20,7 +20,6 @@ import * as setupSdk from "remoteclaw/plugin-sdk/setup";
 import * as signalSdk from "remoteclaw/plugin-sdk/signal";
 import * as slackSdk from "remoteclaw/plugin-sdk/slack";
 import * as telegramSdk from "remoteclaw/plugin-sdk/telegram";
-import * as testingSdk from "remoteclaw/plugin-sdk/testing";
 import * as whatsappSdk from "remoteclaw/plugin-sdk/whatsapp";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { ChannelMessageActionContext } from "../channels/plugins/types.js";
@@ -79,9 +78,6 @@ describe("plugin-sdk subpath exports", () => {
 
   it("keeps core focused on generic shared exports", () => {
     expect(typeof coreSdk.emptyPluginConfigSchema).toBe("function");
-    expect(typeof coreSdk.definePluginEntry).toBe("function");
-    expect(typeof coreSdk.defineChannelPluginEntry).toBe("function");
-    expect(typeof coreSdk.defineSetupPluginEntry).toBe("function");
     expect("runPassiveAccountLifecycle" in asExports(coreSdk)).toBe(false);
     expect("createLoggerBackedRuntime" in asExports(coreSdk)).toBe(false);
     expect("registerSandboxBackend" in asExports(coreSdk)).toBe(false);

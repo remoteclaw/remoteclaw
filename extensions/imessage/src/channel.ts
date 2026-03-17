@@ -4,7 +4,7 @@ import {
   collectAllowlistProviderRestrictSendersWarnings,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
-import { buildAgentSessionKey, type RoutePeer } from "remoteclaw/plugin-sdk/core";
+import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
   buildChannelConfigSchema,
   collectStatusIssuesFromLastError,
@@ -26,6 +26,7 @@ import {
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
 } from "remoteclaw/plugin-sdk/imessage";
+import { buildAgentSessionKey, type RoutePeer } from "remoteclaw/plugin-sdk/routing";
 import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
   listIMessageAccountIds,

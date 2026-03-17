@@ -1,4 +1,3 @@
-import { requireActivePluginRegistry } from "../plugins/runtime.js";
 import { CHANNEL_IDS, CHAT_CHANNEL_ORDER, type ChatChannelId } from "./ids.js";
 import type { ChannelMeta } from "./plugins/types.js";
 import type { ChannelId } from "./plugins/types.js";
@@ -23,7 +22,22 @@ export const DEFAULT_CHAT_CHANNEL: ChatChannelId = "whatsapp";
 
 export type ChatChannelMeta = ChannelMeta;
 
-const WEBSITE_URL = "https://remoteclaw.org";
+const WEBSITE_URL = "https://openclaw.ai";
+const REGISTRY_STATE = Symbol.for("openclaw.pluginRegistryState");
+
+type RegisteredChannelPluginEntry = {
+  plugin: {
+    id?: string | null;
+    meta?: { aliases?: string[] | null } | null;
+  };
+};
+
+function listRegisteredChannelPluginEntries(): RegisteredChannelPluginEntry[] {
+  const globalState = globalThis as typeof globalThis & {
+    [REGISTRY_STATE]?: { registry?: { channels?: RegisteredChannelPluginEntry[] | null } | null };
+  };
+  return globalState[REGISTRY_STATE]?.registry?.channels ?? [];
+}
 
 const CHAT_CHANNEL_META: Record<ChatChannelId, ChannelMeta> = {
   telegram: {
@@ -170,15 +184,14 @@ export function normalizeAnyChannelId(raw?: string | null): ChannelId | null {
     return null;
   }
 
-  const registry = requireActivePluginRegistry();
-  const hit = registry.channels.find((entry) => {
+  const hit = listRegisteredChannelPluginEntries().find((entry) => {
     const id = String(entry.plugin.id ?? "")
       .trim()
       .toLowerCase();
     if (id && id === key) {
       return true;
     }
-    return (entry.plugin.meta.aliases ?? []).some((alias) => alias.trim().toLowerCase() === key);
+    return (entry.plugin.meta?.aliases ?? []).some((alias) => alias.trim().toLowerCase() === key);
   });
   return hit?.plugin.id ?? null;
 }

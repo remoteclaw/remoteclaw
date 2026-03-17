@@ -1,8 +1,6 @@
-import {
-  collectAllowlistProviderRestrictSendersWarnings,
-  formatAllowFromLowercase,
-  mapAllowFromEntries,
-} from "remoteclaw/plugin-sdk/compat";
+import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
+import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
 import type { ChannelMeta, ChannelPlugin, ClawdbotConfig } from "remoteclaw/plugin-sdk/feishu";
 import {
   buildProbeChannelStatusSummary,

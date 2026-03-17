@@ -7,13 +7,13 @@ import {
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { type OutboundSendDeps, resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
 import { normalizeMessageChannel } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveExecApprovalCommandDisplay } from "remoteclaw/plugin-sdk/infra-runtime";
+import { buildExecApprovalPendingReplyPayload } from "remoteclaw/plugin-sdk/infra-runtime";
 import {
   buildAgentSessionKey,
   resolveThreadSessionKeys,
   type RoutePeer,
-} from "remoteclaw/plugin-sdk/core";
-import { resolveExecApprovalCommandDisplay } from "remoteclaw/plugin-sdk/infra-runtime";
-import { buildExecApprovalPendingReplyPayload } from "remoteclaw/plugin-sdk/infra-runtime";
+} from "remoteclaw/plugin-sdk/routing";
 import { parseTelegramTopicConversation } from "remoteclaw/plugin-sdk/telegram";
 import {
   buildChannelConfigSchema,

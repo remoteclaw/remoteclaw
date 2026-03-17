@@ -1,9 +1,11 @@
+import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   buildAccountScopedDmSecurityPolicy,
   collectOpenProviderGroupPolicyWarnings,
   buildOpenGroupPolicyRestrictSendersWarning,
   buildOpenGroupPolicyWarning,
-} from "remoteclaw/plugin-sdk";
+  collectOpenProviderGroupPolicyWarnings,
+} from "remoteclaw/plugin-sdk/channel-policy";
 import type {
   ChannelAccountSnapshot,
   ChannelDock,

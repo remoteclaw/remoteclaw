@@ -1,4 +1,5 @@
-import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk";
+import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
+import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
 import type {
   ChannelMessageActionName,
   ChannelPlugin,

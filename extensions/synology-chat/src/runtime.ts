@@ -1,8 +1,5 @@
-/**
- * Plugin runtime singleton.
- * Stores the PluginRuntime from api.runtime (set during register()).
- * Used by channel.ts to access dispatch functions.
- */
+import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/synology-chat";
 
 import type { PluginRuntime } from "remoteclaw/plugin-sdk";
 

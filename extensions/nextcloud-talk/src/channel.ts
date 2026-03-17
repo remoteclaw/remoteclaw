@@ -1,8 +1,11 @@
+import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
+import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderGroupPolicyWarnings,
   collectOpenGroupPolicyRouteAllowlistWarnings,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/channel-policy";
 import {
   applyAccountNameToChannelSection,
   buildBaseChannelStatusSummary,

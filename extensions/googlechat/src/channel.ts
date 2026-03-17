@@ -1,9 +1,14 @@
+import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
+import {
+  createScopedAccountConfigAccessors,
+  createScopedChannelConfigBase,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   buildAccountScopedDmSecurityPolicy,
   buildOpenGroupPolicyConfigureRouteAllowlistWarning,
   collectAllowlistProviderGroupPolicyWarnings,
-  createScopedAccountConfigAccessors,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/channel-policy";
 import {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,

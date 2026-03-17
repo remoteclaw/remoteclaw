@@ -1,8 +1,10 @@
 import {
   AllowFromEntrySchema,
   buildCatchallMultiAccountChannelSchema,
-  MarkdownConfigSchema,
-} from "remoteclaw/plugin-sdk";
+  DmPolicySchema,
+  GroupPolicySchema,
+} from "remoteclaw/plugin-sdk/channel-config-schema";
+import { MarkdownConfigSchema } from "remoteclaw/plugin-sdk/zalo";
 import { z } from "zod";
 
 const zaloAccountSchema = z.object({

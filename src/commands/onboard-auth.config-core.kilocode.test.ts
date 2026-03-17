@@ -14,7 +14,8 @@ import {
   KILOCODE_DEFAULT_CONTEXT_WINDOW,
   KILOCODE_DEFAULT_MAX_TOKENS,
   KILOCODE_DEFAULT_COST,
-} from "./onboard-auth.models.js";
+} from "../plugin-sdk/provider-models.js";
+import { captureEnv } from "../test-utils/env.js";
 
 const emptyCfg: RemoteClawConfig = {};
 

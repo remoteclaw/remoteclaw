@@ -43,8 +43,8 @@ function loadMonolithicSdk() {
     extensions: [".ts", ".tsx", ".mts", ".cts", ".mtsx", ".ctsx", ".js", ".mjs", ".cjs", ".json"],
   });
 
-  const distCandidate = path.resolve(__dirname, "..", "..", "dist", "plugin-sdk", "index.js");
-  if (!shouldPreferSourceInTests && fs.existsSync(distCandidate)) {
+  const distCandidate = path.resolve(__dirname, "..", "..", "dist", "plugin-sdk", "compat.js");
+  if (fs.existsSync(distCandidate)) {
     try {
       monolithicSdk = jiti(distCandidate);
       return monolithicSdk;
@@ -53,7 +53,7 @@ function loadMonolithicSdk() {
     }
   }
 
-  monolithicSdk = jiti(path.join(__dirname, "index.ts"));
+  monolithicSdk = jiti(path.join(__dirname, "compat.ts"));
   return monolithicSdk;
 }
 

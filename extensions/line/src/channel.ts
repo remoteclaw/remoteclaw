@@ -1,8 +1,9 @@
 import {
-  buildAccountScopedDmSecurityPolicy,
   createScopedAccountConfigAccessors,
-  collectAllowlistProviderRestrictSendersWarnings,
-} from "remoteclaw/plugin-sdk";
+  createScopedChannelConfigBase,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
 import {
   buildChannelConfigSchema,
   buildComputedAccountStatusSnapshot,

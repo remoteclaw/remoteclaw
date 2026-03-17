@@ -383,6 +383,10 @@
       "types": "./dist/plugin-sdk/allow-from.d.ts",
       "default": "./dist/plugin-sdk/allow-from.js"
     },
+    "./plugin-sdk/allowlist-resolution": {
+      "types": "./dist/plugin-sdk/allowlist-resolution.d.ts",
+      "default": "./dist/plugin-sdk/allowlist-resolution.js"
+    },
     "./plugin-sdk/allowlist-config-edit": {
       "types": "./dist/plugin-sdk/allowlist-config-edit.d.ts",
       "default": "./dist/plugin-sdk/allowlist-config-edit.js"
@@ -395,9 +399,21 @@
       "types": "./dist/plugin-sdk/channel-config-helpers.d.ts",
       "default": "./dist/plugin-sdk/channel-config-helpers.js"
     },
+    "./plugin-sdk/channel-config-schema": {
+      "types": "./dist/plugin-sdk/channel-config-schema.d.ts",
+      "default": "./dist/plugin-sdk/channel-config-schema.js"
+    },
+    "./plugin-sdk/channel-policy": {
+      "types": "./dist/plugin-sdk/channel-policy.d.ts",
+      "default": "./dist/plugin-sdk/channel-policy.js"
+    },
     "./plugin-sdk/group-access": {
       "types": "./dist/plugin-sdk/group-access.d.ts",
       "default": "./dist/plugin-sdk/group-access.js"
+    },
+    "./plugin-sdk/directory-runtime": {
+      "types": "./dist/plugin-sdk/directory-runtime.d.ts",
+      "default": "./dist/plugin-sdk/directory-runtime.js"
     },
     "./plugin-sdk/json-store": {
       "types": "./dist/plugin-sdk/json-store.d.ts",
@@ -430,6 +446,18 @@
     "./plugin-sdk/provider-web-search": {
       "types": "./dist/plugin-sdk/provider-web-search.d.ts",
       "default": "./dist/plugin-sdk/provider-web-search.js"
+    },
+    "./plugin-sdk/reply-history": {
+      "types": "./dist/plugin-sdk/reply-history.d.ts",
+      "default": "./dist/plugin-sdk/reply-history.js"
+    },
+    "./plugin-sdk/media-understanding": {
+      "types": "./dist/plugin-sdk/media-understanding.d.ts",
+      "default": "./dist/plugin-sdk/media-understanding.js"
+    },
+    "./plugin-sdk/google": {
+      "types": "./dist/plugin-sdk/google.d.ts",
+      "default": "./dist/plugin-sdk/google.js"
     },
     "./plugin-sdk/request-url": {
       "types": "./dist/plugin-sdk/request-url.d.ts",

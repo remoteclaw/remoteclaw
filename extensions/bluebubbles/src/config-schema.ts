@@ -1,4 +1,10 @@
-import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk";
+import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk/bluebubbles";
+import {
+  AllowFromListSchema,
+  buildCatchallMultiAccountChannelSchema,
+  DmPolicySchema,
+  GroupPolicySchema,
+} from "remoteclaw/plugin-sdk/channel-config-schema";
 import { z } from "zod";
 
 const allowFromEntry = z.union([z.string(), z.number()]);

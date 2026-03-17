@@ -3,15 +3,25 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { writeSkill } from "../../../src/agents/skills.e2e-test-helpers.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { TelegramAccountConfig } from "../../../src/config/types.js";
+import type { OpenClawConfig } from "../../../src/config/config.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 import {
   createNativeCommandTestParams,
-  listSkillCommandsForAgents,
   resetNativeCommandMenuMocks,
   waitForRegisteredCommands,
 } from "./bot-native-commands.menu-test-support.js";
+
+const pluginCommandMocks = vi.hoisted(() => ({
+  getPluginCommandSpecs: vi.fn(() => []),
+  matchPluginCommand: vi.fn(() => null),
+  executePluginCommand: vi.fn(async () => ({ text: "ok" })),
+}));
+
+vi.mock("../../../src/plugins/commands.js", () => ({
+  getPluginCommandSpecs: pluginCommandMocks.getPluginCommandSpecs,
+  matchPluginCommand: pluginCommandMocks.matchPluginCommand,
+  executePluginCommand: pluginCommandMocks.executePluginCommand,
+}));
 
 const tempDirs: string[] = [];
 
@@ -23,10 +33,10 @@ async function makeWorkspace(prefix: string) {
 
 describe("registerTelegramNativeCommands skill allowlist integration", () => {
   afterEach(async () => {
+    resetNativeCommandMenuMocks();
     pluginCommandMocks.getPluginCommandSpecs.mockClear().mockReturnValue([]);
     pluginCommandMocks.matchPluginCommand.mockClear().mockReturnValue(null);
     pluginCommandMocks.executePluginCommand.mockClear().mockResolvedValue({ text: "ok" });
-    deliveryMocks.deliverReplies.mockClear().mockResolvedValue({ delivered: true });
     await Promise.all(
       tempDirs
         .splice(0, tempDirs.length)
@@ -68,49 +78,22 @@ describe("registerTelegramNativeCommands skill allowlist integration", () => {
     );
 
     registerTelegramNativeCommands({
-      bot: {
-        api: {
-          setMyCommands,
-          sendMessage: vi.fn().mockResolvedValue(undefined),
-        },
-        command: vi.fn(),
-      } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
-      cfg,
-      runtime: { log: vi.fn() } as unknown as Parameters<
-        typeof registerTelegramNativeCommands
-      >[0]["runtime"],
-      accountId: "bot-a",
-      telegramCfg: {} as TelegramAccountConfig,
-      allowFrom: [],
-      groupAllowFrom: [],
-      replyToMode: "off",
-      textLimit: 4000,
-      useAccessGroups: false,
-      nativeEnabled: true,
-      nativeSkillsEnabled: true,
-      nativeDisabledExplicit: false,
-      resolveGroupPolicy: () =>
-        ({
-          allowlistEnabled: false,
-          allowed: true,
-        }) as ReturnType<
-          Parameters<typeof registerTelegramNativeCommands>[0]["resolveGroupPolicy"]
-        >,
-      resolveTelegramGroupConfig: () => ({
-        groupConfig: undefined,
-        topicConfig: undefined,
+      ...createNativeCommandTestParams(cfg, {
+        bot: {
+          api: {
+            setMyCommands,
+            sendMessage: vi.fn().mockResolvedValue(undefined),
+          },
+          command: vi.fn(),
+        } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
+        runtime: { log: vi.fn() } as unknown as Parameters<
+          typeof registerTelegramNativeCommands
+        >[0]["runtime"],
+        accountId: "bot-a",
       }),
-      shouldSkipUpdate: () => false,
-      opts: { token: "token" },
     });
 
-    await vi.waitFor(() => {
-      expect(setMyCommands).toHaveBeenCalled();
-    });
-    const registeredCommands = setMyCommands.mock.calls[0]?.[0] as Array<{
-      command: string;
-      description: string;
-    }>;
+    const registeredCommands = await waitForRegisteredCommands(setMyCommands);
 
     expect(registeredCommands.some((entry) => entry.command === "alpha_skill")).toBe(true);
     expect(registeredCommands.some((entry) => entry.command === "beta_skill")).toBe(false);

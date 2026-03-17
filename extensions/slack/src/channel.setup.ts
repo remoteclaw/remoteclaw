@@ -1,52 +1,17 @@
-import { createScopedChannelConfigBase } from "remoteclaw/plugin-sdk/compat";
-import {
-  createScopedAccountConfigAccessors,
-  formatAllowFromLowercase,
-} from "remoteclaw/plugin-sdk/compat";
 import {
   buildChannelConfigSchema,
   getChatChannelMeta,
-  inspectSlackAccount,
-  listSlackAccountIds,
-  resolveDefaultSlackAccountId,
-  resolveSlackAccount,
   SlackConfigSchema,
   type ChannelPlugin,
-  type ResolvedSlackAccount,
 } from "remoteclaw/plugin-sdk/slack";
+import { type ResolvedSlackAccount } from "./accounts.js";
+import { isSlackInteractiveRepliesEnabled } from "./interactive-replies.js";
 import { createSlackSetupWizardProxy, slackSetupAdapter } from "./setup-core.js";
+import { isSlackPluginAccountConfigured, slackConfigAccessors, slackConfigBase } from "./shared.js";
 
 async function loadSlackChannelRuntime() {
   return await import("./channel.runtime.js");
 }
-
-function isSlackAccountConfigured(account: ResolvedSlackAccount): boolean {
-  const mode = account.config.mode ?? "socket";
-  const hasBotToken = Boolean(account.botToken?.trim());
-  if (!hasBotToken) {
-    return false;
-  }
-  if (mode === "http") {
-    return Boolean(account.config.signingSecret?.trim());
-  }
-  return Boolean(account.appToken?.trim());
-}
-
-const slackConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveSlackAccount({ cfg, accountId }),
-  resolveAllowFrom: (account: ResolvedSlackAccount) => account.dm?.allowFrom,
-  formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom }),
-  resolveDefaultTo: (account: ResolvedSlackAccount) => account.config.defaultTo,
-});
-
-const slackConfigBase = createScopedChannelConfigBase({
-  sectionKey: "slack",
-  listAccountIds: listSlackAccountIds,
-  resolveAccount: (cfg, accountId) => resolveSlackAccount({ cfg, accountId }),
-  inspectAccount: (cfg, accountId) => inspectSlackAccount({ cfg, accountId }),
-  defaultAccountId: resolveDefaultSlackAccountId,
-  clearBaseFields: ["botToken", "appToken", "name"],
-});
 
 const slackSetupWizard = createSlackSetupWizardProxy(async () => ({
   slackSetupWizard: (await loadSlackChannelRuntime()).slackSetupWizard,
@@ -68,8 +33,7 @@ export const slackSetupPlugin: ChannelPlugin<ResolvedSlackAccount> = {
   },
   agentPrompt: {
     messageToolHints: ({ cfg, accountId }) =>
-      cfg.channels?.slack?.accounts?.[accountId ?? "default"]?.capabilities?.interactiveReplies ===
-        true || cfg.channels?.slack?.capabilities?.interactiveReplies === true
+      isSlackInteractiveRepliesEnabled({ cfg, accountId })
         ? [
             "- Slack interactive replies: use `[[slack_buttons: Label:value, Other:other]]` to add action buttons that route clicks back as Slack interaction system events.",
             "- Slack selects: use `[[slack_select: Placeholder | Label:value, Other:other]]` to add a static select menu that routes the chosen value back as a Slack interaction system event.",
@@ -85,12 +49,12 @@ export const slackSetupPlugin: ChannelPlugin<ResolvedSlackAccount> = {
   configSchema: buildChannelConfigSchema(SlackConfigSchema),
   config: {
     ...slackConfigBase,
-    isConfigured: (account) => isSlackAccountConfigured(account),
+    isConfigured: (account) => isSlackPluginAccountConfigured(account),
     describeAccount: (account) => ({
       accountId: account.accountId,
       name: account.name,
       enabled: account.enabled,
-      configured: isSlackAccountConfigured(account),
+      configured: isSlackPluginAccountConfigured(account),
       botTokenSource: account.botTokenSource,
       appTokenSource: account.appTokenSource,
     }),

@@ -1,14 +1,12 @@
-import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
+import { patchChannelConfigForAccount } from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
+import { formatAllowFromLowercase } from "../../../src/plugin-sdk/allow-from.js";
 import {
   createScopedAccountConfigAccessors,
   createScopedChannelConfigBase,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import {
-  formatDocsLink,
-  hasConfiguredSecretInput,
-  patchChannelConfigForAccount,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/setup";
+} from "../../../src/plugin-sdk/channel-config-helpers.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import { inspectSlackAccount } from "./account-inspect.js";
 import {
   listSlackAccountIds,

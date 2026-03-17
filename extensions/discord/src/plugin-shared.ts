@@ -3,7 +3,7 @@ import {
   createScopedAccountConfigAccessors,
   createScopedChannelConfigBase,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/discord";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import {
   listDiscordAccountIds,

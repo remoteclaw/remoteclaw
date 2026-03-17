@@ -1,14 +1,12 @@
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
 import {
   createScopedAccountConfigAccessors,
-  createScopedChannelConfigBase,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import {
-  buildChannelConfigSchema,
-  DiscordConfigSchema,
-  getChatChannelMeta,
-  type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/discord";
+  formatAllowFromLowercase,
+} from "remoteclaw/plugin-sdk/compat";
+import { buildChannelConfigSchema } from "../../../src/channels/plugins/config-schema.js";
+import type { ChannelPlugin } from "../../../src/channels/plugins/types.plugin.js";
+import { getChatChannelMeta } from "../../../src/channels/registry.js";
+import { DiscordConfigSchema } from "../../../src/config/zod-schema.providers-core.js";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import {
   listDiscordAccountIds,

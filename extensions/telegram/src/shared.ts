@@ -1,16 +1,14 @@
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
 import {
   createScopedAccountConfigAccessors,
-  createScopedChannelConfigBase,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import {
-  buildChannelConfigSchema,
-  getChatChannelMeta,
-  normalizeAccountId,
-  TelegramConfigSchema,
-  type ChannelPlugin,
-  type OpenClawConfig,
-} from "../runtime-api.js";
+  formatAllowFromLowercase,
+} from "remoteclaw/plugin-sdk/compat";
+import { buildChannelConfigSchema } from "../../../src/channels/plugins/config-schema.js";
+import type { ChannelPlugin } from "../../../src/channels/plugins/types.plugin.js";
+import { getChatChannelMeta } from "../../../src/channels/registry.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { TelegramConfigSchema } from "../../../src/config/zod-schema.providers-core.js";
+import { normalizeAccountId } from "../../../src/routing/session-key.js";
 import { inspectTelegramAccount } from "./account-inspect.js";
 import {
   listTelegramAccountIds,

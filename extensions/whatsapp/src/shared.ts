@@ -1,32 +1,30 @@
 import {
-  createScopedChannelConfigAdapter,
-  createScopedDmSecurityResolver,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { createAllowlistProviderRouteAllowlistWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
-import { createChannelPluginBase } from "remoteclaw/plugin-sdk/core";
-import { createDelegatedSetupWizardProxy } from "remoteclaw/plugin-sdk/setup";
+  buildAccountScopedDmSecurityPolicy,
+  collectAllowlistProviderGroupPolicyWarnings,
+  collectOpenGroupPolicyRouteAllowlistWarnings,
+} from "remoteclaw/plugin-sdk/compat";
+import {
+  formatWhatsAppConfigAllowFromEntries,
+  resolveWhatsAppConfigAllowFrom,
+  resolveWhatsAppConfigDefaultTo,
+} from "../../../src/plugin-sdk/channel-config-helpers.js";
+import { buildChannelConfigSchema } from "../../../src/channels/plugins/config-schema.js";
+import type { ChannelPlugin } from "../../../src/channels/plugins/types.plugin.js";
+import {
+  resolveWhatsAppGroupRequireMention,
+  resolveWhatsAppGroupToolPolicy,
+} from "../../../src/channels/plugins/group-mentions.js";
+import { resolveWhatsAppGroupIntroHint } from "../../../src/channels/plugins/whatsapp-shared.js";
+import { getChatChannelMeta } from "../../../src/channels/registry.js";
+import { WhatsAppConfigSchema } from "../../../src/config/zod-schema.providers-whatsapp.js";
+import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
+import { normalizeE164 } from "../../../src/utils.js";
 import {
   listWhatsAppAccountIds,
   resolveDefaultWhatsAppAccountId,
   resolveWhatsAppAccount,
   type ResolvedWhatsAppAccount,
 } from "./accounts.js";
-import {
-  buildChannelConfigSchema,
-  collectAllowlistProviderGroupPolicyWarnings,
-  collectOpenGroupPolicyRouteAllowlistWarnings,
-  DEFAULT_ACCOUNT_ID,
-  formatWhatsAppConfigAllowFromEntries,
-  getChatChannelMeta,
-  normalizeE164,
-  resolveWhatsAppConfigAllowFrom,
-  resolveWhatsAppConfigDefaultTo,
-  resolveWhatsAppGroupIntroHint,
-  resolveWhatsAppGroupRequireMention,
-  resolveWhatsAppGroupToolPolicy,
-  WhatsAppConfigSchema,
-  type ChannelPlugin,
-} from "./runtime-api.js";
 
 export const WHATSAPP_CHANNEL = "whatsapp" as const;
 

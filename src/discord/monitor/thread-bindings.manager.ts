@@ -1,14 +1,14 @@
 import { Routes } from "discord-api-types/v10";
-import { resolveThreadBindingConversationIdFromBindingId } from "../../channels/thread-binding-id.js";
-import { getRuntimeConfigSnapshot, type RemoteClawConfig } from "../../config/config.js";
-import { logVerbose } from "../../globals.js";
+import { resolveThreadBindingConversationIdFromBindingId } from "remoteclaw/plugin-sdk/channel-runtime";
+import { getRuntimeConfigSnapshot, type OpenClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   registerSessionBindingAdapter,
   unregisterSessionBindingAdapter,
   type BindingTargetKind,
   type SessionBindingRecord,
-} from "../../infra/outbound/session-binding-service.js";
-import { normalizeAccountId, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
+} from "remoteclaw/plugin-sdk/conversation-runtime";
+import { normalizeAccountId, resolveAgentIdFromSessionKey } from "remoteclaw/plugin-sdk/routing";
+import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { createDiscordRestClient } from "../client.js";
 import {
   createThreadForBinding,
@@ -69,6 +69,8 @@ function unregisterManager(accountId: string, manager: ThreadBindingManager) {
   }
 }
 
+const SWEEPERS_BY_ACCOUNT_ID = new Map<string, () => Promise<void>>();
+
 function resolveEffectiveBindingExpiresAt(params: {
   record: ThreadBindingRecord;
   defaultIdleTimeoutMs: number;
@@ -114,6 +116,11 @@ function toThreadBindingTargetKind(raw: BindingTargetKind): "subagent" | "acp" {
   return raw === "subagent" ? "subagent" : "acp";
 }
 
+function isDirectConversationBindingId(value?: string | null): boolean {
+  const trimmed = value?.trim();
+  return Boolean(trimmed && /^(user:|channel:)/i.test(trimmed));
+}
+
 function toSessionBindingRecord(
   record: ThreadBindingRecord,
   defaults: { idleTimeoutMs: number; maxAgeMs: number },
@@ -155,6 +162,7 @@ function toSessionBindingRecord(
         record,
         defaultMaxAgeMs: defaults.maxAgeMs,
       }),
+      ...record.metadata,
     },
   };
 }
@@ -163,7 +171,7 @@ export function createThreadBindingManager(
   params: {
     accountId?: string;
     token?: string;
-    cfg?: RemoteClawConfig;
+    cfg?: OpenClawConfig;
     persist?: boolean;
     enableSweeper?: boolean;
     idleTimeoutMs?: number;
@@ -194,6 +202,111 @@ export function createThreadBindingManager(
   const resolveCurrentToken = () => getThreadBindingToken(accountId) ?? params.token;
 
   let sweepTimer: NodeJS.Timeout | null = null;
+  const runSweepOnce = async () => {
+    const bindings = manager.listBindings();
+    if (bindings.length === 0) {
+      return;
+    }
+    let rest: ReturnType<typeof createDiscordRestClient>["rest"] | null = null;
+    for (const snapshotBinding of bindings) {
+      // Re-read live state after any awaited work from earlier iterations.
+      // This avoids unbinding based on stale snapshot data when activity touches
+      // happen while the sweeper loop is in-flight.
+      const binding = manager.getByThreadId(snapshotBinding.threadId);
+      if (!binding) {
+        continue;
+      }
+      const now = Date.now();
+      const inactivityExpiresAt = resolveThreadBindingInactivityExpiresAt({
+        record: binding,
+        defaultIdleTimeoutMs: idleTimeoutMs,
+      });
+      const maxAgeExpiresAt = resolveThreadBindingMaxAgeExpiresAt({
+        record: binding,
+        defaultMaxAgeMs: maxAgeMs,
+      });
+      const expirationCandidates: Array<{
+        reason: "idle-expired" | "max-age-expired";
+        at: number;
+      }> = [];
+      if (inactivityExpiresAt != null && now >= inactivityExpiresAt) {
+        expirationCandidates.push({ reason: "idle-expired", at: inactivityExpiresAt });
+      }
+      if (maxAgeExpiresAt != null && now >= maxAgeExpiresAt) {
+        expirationCandidates.push({ reason: "max-age-expired", at: maxAgeExpiresAt });
+      }
+      if (expirationCandidates.length > 0) {
+        expirationCandidates.sort((a, b) => a.at - b.at);
+        const reason = expirationCandidates[0]?.reason ?? "idle-expired";
+        manager.unbindThread({
+          threadId: binding.threadId,
+          reason,
+          sendFarewell: true,
+          farewellText: resolveThreadBindingFarewellText({
+            reason,
+            idleTimeoutMs: resolveThreadBindingIdleTimeoutMs({
+              record: binding,
+              defaultIdleTimeoutMs: idleTimeoutMs,
+            }),
+            maxAgeMs: resolveThreadBindingMaxAgeMs({
+              record: binding,
+              defaultMaxAgeMs: maxAgeMs,
+            }),
+          }),
+        });
+        continue;
+      }
+      if (isDirectConversationBindingId(binding.threadId)) {
+        continue;
+      }
+      if (!rest) {
+        try {
+          const cfg = resolveCurrentCfg();
+          rest = createDiscordRestClient(
+            {
+              accountId,
+              token: resolveCurrentToken(),
+            },
+            cfg,
+          ).rest;
+        } catch {
+          return;
+        }
+      }
+      try {
+        const channel = await rest.get(Routes.channel(binding.threadId));
+        if (!channel || typeof channel !== "object") {
+          logVerbose(
+            `discord thread binding sweep probe returned invalid payload for ${binding.threadId}`,
+          );
+          continue;
+        }
+        if (isThreadArchived(channel)) {
+          manager.unbindThread({
+            threadId: binding.threadId,
+            reason: "thread-archived",
+            sendFarewell: true,
+          });
+        }
+      } catch (err) {
+        if (isDiscordThreadGoneError(err)) {
+          logVerbose(
+            `discord thread binding sweep removing stale binding ${binding.threadId}: ${summarizeDiscordError(err)}`,
+          );
+          manager.unbindThread({
+            threadId: binding.threadId,
+            reason: "thread-delete",
+            sendFarewell: false,
+          });
+          continue;
+        }
+        logVerbose(
+          `discord thread binding sweep probe failed for ${binding.threadId}: ${summarizeDiscordError(err)}`,
+        );
+      }
+    }
+  };
+  SWEEPERS_BY_ACCOUNT_ID.set(accountId, runSweepOnce);
 
   const manager: ThreadBindingManager = {
     accountId,
@@ -261,6 +374,8 @@ export function createThreadBindingManager(
       const cfg = resolveCurrentCfg();
       let threadId = normalizeThreadId(bindParams.threadId);
       let channelId = bindParams.channelId?.trim() || "";
+      const directConversationBinding =
+        isDirectConversationBindingId(threadId) || isDirectConversationBindingId(channelId);
 
       if (!threadId && bindParams.createThread) {
         if (!channelId) {
@@ -282,6 +397,10 @@ export function createThreadBindingManager(
 
       if (!threadId) {
         return null;
+      }
+
+      if (!channelId && directConversationBinding) {
+        channelId = threadId;
       }
 
       if (!channelId) {
@@ -306,12 +425,12 @@ export function createThreadBindingManager(
       const targetKind = normalizeTargetKind(bindParams.targetKind, targetSessionKey);
       let webhookId = bindParams.webhookId?.trim() || "";
       let webhookToken = bindParams.webhookToken?.trim() || "";
-      if (!webhookId || !webhookToken) {
+      if (!directConversationBinding && (!webhookId || !webhookToken)) {
         const cachedWebhook = findReusableWebhook({ accountId, channelId });
         webhookId = cachedWebhook.webhookId ?? "";
         webhookToken = cachedWebhook.webhookToken ?? "";
       }
-      if (!webhookId || !webhookToken) {
+      if (!directConversationBinding && (!webhookId || !webhookToken)) {
         const createdWebhook = await createWebhookForChannel({
           cfg,
           accountId,
@@ -338,6 +457,10 @@ export function createThreadBindingManager(
         lastActivityAt: now,
         idleTimeoutMs,
         maxAgeMs,
+        metadata:
+          bindParams.metadata && typeof bindParams.metadata === "object"
+            ? { ...bindParams.metadata }
+            : undefined,
       };
 
       setBindingRecord(record);
@@ -428,6 +551,7 @@ export function createThreadBindingManager(
         clearInterval(sweepTimer);
         sweepTimer = null;
       }
+      SWEEPERS_BY_ACCOUNT_ID.delete(accountId);
       unregisterManager(accountId, manager);
       unregisterSessionBindingAdapter({
         channel: "discord",
@@ -439,112 +563,21 @@ export function createThreadBindingManager(
 
   if (params.enableSweeper !== false) {
     sweepTimer = setInterval(() => {
-      void (async () => {
-        const bindings = manager.listBindings();
-        if (bindings.length === 0) {
-          return;
-        }
-        let rest;
-        try {
-          const cfg = resolveCurrentCfg();
-          rest = createDiscordRestClient(
-            {
-              accountId,
-              token: resolveCurrentToken(),
-            },
-            cfg,
-          ).rest;
-        } catch {
-          return;
-        }
-        for (const snapshotBinding of bindings) {
-          // Re-read live state after any awaited work from earlier iterations.
-          // This avoids unbinding based on stale snapshot data when activity touches
-          // happen while the sweeper loop is in-flight.
-          const binding = manager.getByThreadId(snapshotBinding.threadId);
-          if (!binding) {
-            continue;
-          }
-          const now = Date.now();
-          const inactivityExpiresAt = resolveThreadBindingInactivityExpiresAt({
-            record: binding,
-            defaultIdleTimeoutMs: idleTimeoutMs,
-          });
-          const maxAgeExpiresAt = resolveThreadBindingMaxAgeExpiresAt({
-            record: binding,
-            defaultMaxAgeMs: maxAgeMs,
-          });
-          const expirationCandidates: Array<{
-            reason: "idle-expired" | "max-age-expired";
-            at: number;
-          }> = [];
-          if (inactivityExpiresAt != null && now >= inactivityExpiresAt) {
-            expirationCandidates.push({ reason: "idle-expired", at: inactivityExpiresAt });
-          }
-          if (maxAgeExpiresAt != null && now >= maxAgeExpiresAt) {
-            expirationCandidates.push({ reason: "max-age-expired", at: maxAgeExpiresAt });
-          }
-          if (expirationCandidates.length > 0) {
-            expirationCandidates.sort((a, b) => a.at - b.at);
-            const reason = expirationCandidates[0]?.reason ?? "idle-expired";
-            manager.unbindThread({
-              threadId: binding.threadId,
-              reason,
-              sendFarewell: true,
-              farewellText: resolveThreadBindingFarewellText({
-                reason,
-                idleTimeoutMs: resolveThreadBindingIdleTimeoutMs({
-                  record: binding,
-                  defaultIdleTimeoutMs: idleTimeoutMs,
-                }),
-                maxAgeMs: resolveThreadBindingMaxAgeMs({
-                  record: binding,
-                  defaultMaxAgeMs: maxAgeMs,
-                }),
-              }),
-            });
-            continue;
-          }
-          try {
-            const channel = await rest.get(Routes.channel(binding.threadId));
-            if (!channel || typeof channel !== "object") {
-              logVerbose(
-                `discord thread binding sweep probe returned invalid payload for ${binding.threadId}`,
-              );
-              continue;
-            }
-            if (isThreadArchived(channel)) {
-              manager.unbindThread({
-                threadId: binding.threadId,
-                reason: "thread-archived",
-                sendFarewell: true,
-              });
-            }
-          } catch (err) {
-            if (isDiscordThreadGoneError(err)) {
-              logVerbose(
-                `discord thread binding sweep removing stale binding ${binding.threadId}: ${summarizeDiscordError(err)}`,
-              );
-              manager.unbindThread({
-                threadId: binding.threadId,
-                reason: "thread-delete",
-                sendFarewell: false,
-              });
-              continue;
-            }
-            logVerbose(
-              `discord thread binding sweep probe failed for ${binding.threadId}: ${summarizeDiscordError(err)}`,
-            );
-          }
-        }
-      })();
+      void runSweepOnce();
     }, THREAD_BINDINGS_SWEEP_INTERVAL_MS);
-    sweepTimer.unref?.();
+    // Keep the production process free to exit, but avoid breaking fake-timer
+    // sweeper tests where unref'd intervals may never fire.
+    if (!(process.env.VITEST || process.env.NODE_ENV === "test")) {
+      sweepTimer.unref?.();
+    }
   }
 
   registerSessionBindingAdapter({
     channel: "discord",
     accountId,
+    capabilities: {
+      placements: ["current", "child"],
+    },
     bind: async (input) => {
       if (input.conversation.channel !== "discord") {
         return null;
@@ -554,6 +587,7 @@ export function createThreadBindingManager(
         return null;
       }
       const conversationId = input.conversation.conversationId.trim();
+      const placement = input.placement === "child" ? "child" : "current";
       const metadata = input.metadata ?? {};
       const label =
         typeof metadata.label === "string" ? metadata.label.trim() || undefined : undefined;
@@ -567,10 +601,29 @@ export function createThreadBindingManager(
         typeof metadata.boundBy === "string" ? metadata.boundBy.trim() || undefined : undefined;
       const agentId =
         typeof metadata.agentId === "string" ? metadata.agentId.trim() || undefined : undefined;
+      let threadId: string | undefined;
+      let channelId = input.conversation.parentConversationId?.trim() || undefined;
+      let createThread = false;
+
+      if (placement === "child") {
+        createThread = true;
+        if (!channelId && conversationId) {
+          const cfg = resolveCurrentCfg();
+          channelId =
+            (await resolveChannelIdForBinding({
+              cfg,
+              accountId,
+              token: resolveCurrentToken(),
+              threadId: conversationId,
+            })) ?? undefined;
+        }
+      } else {
+        threadId = conversationId || undefined;
+      }
       const bound = await manager.bindTarget({
-        threadId: conversationId || undefined,
-        channelId: input.conversation.parentConversationId?.trim() || undefined,
-        createThread: !conversationId,
+        threadId,
+        channelId,
+        createThread,
         threadName,
         targetKind: toThreadBindingTargetKind(input.targetKind),
         targetSessionKey,
@@ -578,6 +631,7 @@ export function createThreadBindingManager(
         label,
         boundBy,
         introText,
+        metadata,
       });
       return bound
         ? toSessionBindingRecord(bound, {
@@ -647,4 +701,10 @@ export const __testing = {
   resolveThreadBindingsPath,
   resolveThreadBindingThreadName,
   resetThreadBindingsForTests,
+  runThreadBindingSweepForAccount: async (accountId?: string) => {
+    const sweep = SWEEPERS_BY_ACCOUNT_ID.get(normalizeAccountId(accountId));
+    if (sweep) {
+      await sweep();
+    }
+  },
 };

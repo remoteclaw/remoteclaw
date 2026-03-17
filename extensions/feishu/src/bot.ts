@@ -1,4 +1,9 @@
-import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
+import {
+  ensureConfiguredBindingRouteReady,
+  resolveConfiguredBindingRoute,
+} from "remoteclaw/plugin-sdk/conversation-runtime";
+import { getSessionBindingService } from "remoteclaw/plugin-sdk/conversation-runtime";
+import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/feishu";
 import {
   buildAgentMediaPayload,
   buildPendingHistoryContextFromMap,
@@ -13,9 +18,12 @@ import {
   resolveOpenProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/feishu";
+import { deriveLastRoutePolicy } from "remoteclaw/plugin-sdk/routing";
+import { resolveAgentIdFromSessionKey } from "remoteclaw/plugin-sdk/routing";
 import { resolveFeishuAccount } from "./accounts.js";
 import { createFeishuClient } from "./client.js";
+import { buildFeishuConversationId } from "./conversation-id.js";
 import { finalizeFeishuMessageProcessing, tryRecordMessagePersistent } from "./dedup.js";
 import { maybeCreateDynamicAgent } from "./dynamic-agent.js";
 import { normalizeFeishuExternalKey } from "./external-keys.js";
@@ -273,15 +281,34 @@ function resolveFeishuGroupSession(params: {
   let peerId = chatId;
   switch (groupSessionScope) {
     case "group_sender":
-      peerId = `${chatId}:sender:${senderOpenId}`;
+      peerId = buildFeishuConversationId({
+        chatId,
+        scope: "group_sender",
+        senderOpenId,
+      });
       break;
     case "group_topic":
-      peerId = topicScope ? `${chatId}:topic:${topicScope}` : chatId;
+      peerId = topicScope
+        ? buildFeishuConversationId({
+            chatId,
+            scope: "group_topic",
+            topicId: topicScope,
+          })
+        : chatId;
       break;
     case "group_topic_sender":
       peerId = topicScope
-        ? `${chatId}:topic:${topicScope}:sender:${senderOpenId}`
-        : `${chatId}:sender:${senderOpenId}`;
+        ? buildFeishuConversationId({
+            chatId,
+            scope: "group_topic_sender",
+            topicId: topicScope,
+            senderOpenId,
+          })
+        : buildFeishuConversationId({
+            chatId,
+            scope: "group_sender",
+            senderOpenId,
+          });
       break;
     case "group":
     default:
@@ -524,17 +551,17 @@ function parseMediaKeys(
     const fileKey = normalizeFeishuExternalKey(parsed.file_key);
     switch (messageType) {
       case "image":
-        return { imageKey };
+        return { imageKey, fileName: parsed.file_name };
       case "file":
         return { fileKey, fileName: parsed.file_name };
       case "audio":
-        return { fileKey };
+        return { fileKey, fileName: parsed.file_name };
       case "video":
       case "media":
         // Video/media has both file_key (video) and image_key (thumbnail)
-        return { fileKey, imageKey };
+        return { fileKey, imageKey, fileName: parsed.file_name };
       case "sticker":
-        return { fileKey };
+        return { fileKey, fileName: parsed.file_name };
       default:
         return {};
     }
@@ -859,6 +886,7 @@ export function buildFeishuAgentBody(params: {
 
   return messageBody;
 }
+
 export async function handleFeishuMessage(params: {
   cfg: ClawdbotConfig;
   event: FeishuMessageEvent;
@@ -1167,6 +1195,10 @@ export async function handleFeishuMessage(params: {
     const peerId = isGroup ? (groupSession?.peerId ?? ctx.chatId) : ctx.senderOpenId;
     const parentPeer = isGroup ? (groupSession?.parentPeer ?? null) : null;
     const replyInThread = isGroup ? (groupSession?.replyInThread ?? false) : false;
+    const feishuAcpConversationSupported =
+      !isGroup ||
+      groupSession?.groupSessionScope === "group_topic" ||
+      groupSession?.groupSessionScope === "group_topic_sender";
 
     if (isGroup && groupSession) {
       log(
@@ -1212,6 +1244,78 @@ export async function handleFeishuMessage(params: {
             `feishu[${account.accountId}]: dynamic agent created, new route: ${route.sessionKey}`,
           );
         }
+      }
+    }
+
+    const currentConversationId = peerId;
+    const parentConversationId = isGroup ? (parentPeer?.id ?? ctx.chatId) : undefined;
+    let configuredBinding = null;
+    if (feishuAcpConversationSupported) {
+      const configuredRoute = resolveConfiguredBindingRoute({
+        cfg: effectiveCfg,
+        route,
+        conversation: {
+          channel: "feishu",
+          accountId: account.accountId,
+          conversationId: currentConversationId,
+          parentConversationId,
+        },
+      });
+      configuredBinding = configuredRoute.bindingResolution;
+      route = configuredRoute.route;
+
+      // Bound Feishu conversations intentionally require an exact live conversation-id match.
+      // Sender-scoped topic sessions therefore bind on `chat:topic:root:sender:user`, while
+      // configured ACP bindings may still inherit the shared `chat:topic:root` topic session.
+      const threadBinding = getSessionBindingService().resolveByConversation({
+        channel: "feishu",
+        accountId: account.accountId,
+        conversationId: currentConversationId,
+        ...(parentConversationId ? { parentConversationId } : {}),
+      });
+      const boundSessionKey = threadBinding?.targetSessionKey?.trim();
+      if (threadBinding && boundSessionKey) {
+        route = {
+          ...route,
+          sessionKey: boundSessionKey,
+          agentId: resolveAgentIdFromSessionKey(boundSessionKey) || route.agentId,
+          lastRoutePolicy: deriveLastRoutePolicy({
+            sessionKey: boundSessionKey,
+            mainSessionKey: route.mainSessionKey,
+          }),
+          matchedBy: "binding.channel",
+        };
+        configuredBinding = null;
+        getSessionBindingService().touch(threadBinding.bindingId);
+        log(
+          `feishu[${account.accountId}]: routed via bound conversation ${currentConversationId} -> ${boundSessionKey}`,
+        );
+      }
+    }
+
+    if (configuredBinding) {
+      const ensured = await ensureConfiguredBindingRouteReady({
+        cfg: effectiveCfg,
+        bindingResolution: configuredBinding,
+      });
+      if (!ensured.ok) {
+        const replyTargetMessageId =
+          isGroup &&
+          (groupSession?.groupSessionScope === "group_topic" ||
+            groupSession?.groupSessionScope === "group_topic_sender")
+            ? (ctx.rootId ?? ctx.messageId)
+            : ctx.messageId;
+        await sendMessageFeishu({
+          cfg: effectiveCfg,
+          to: `chat:${ctx.chatId}`,
+          text: `⚠️ Failed to initialize the configured ACP session for this Feishu conversation: ${ensured.error}`,
+          replyToMessageId: replyTargetMessageId,
+          replyInThread: isGroup ? (groupSession?.replyInThread ?? false) : false,
+          accountId: account.accountId,
+        }).catch((err) => {
+          log(`feishu[${account.accountId}]: failed to send ACP init error reply: ${String(err)}`);
+        });
+        return;
       }
     }
 
@@ -1272,6 +1376,10 @@ export async function handleFeishuMessage(params: {
       botOpenId,
     });
     const envelopeFrom = isGroup ? `${ctx.chatId}:${ctx.senderOpenId}` : ctx.senderOpenId;
+    if (permissionErrorForAgent) {
+      // Keep the notice in a single dispatch to avoid duplicate replies (#27372).
+      log(`feishu[${account.accountId}]: appending permission error notice to message body`);
+    }
 
     const body = core.channel.reply.formatAgentEnvelope({
       channel: "Feishu",

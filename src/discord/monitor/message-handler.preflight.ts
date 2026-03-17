@@ -1,31 +1,34 @@
-import { ChannelType, MessageType, type User } from "@buape/carbon";
+import { ChannelType, MessageType, type Message, type User } from "@buape/carbon";
+import { Routes, type APIMessage } from "discord-api-types/v10";
+import { formatAllowlistMatchMeta } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveControlCommandGate } from "remoteclaw/plugin-sdk/channel-runtime";
+import { logInboundDrop } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveMentionGatingWithBypass } from "remoteclaw/plugin-sdk/channel-runtime";
+import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { isDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk/config-runtime";
 import {
-  ensureConfiguredAcpRouteReady,
-  resolveConfiguredAcpRoute,
-} from "../../acp/persistent-bindings.route.js";
-import { hasControlCommand } from "../../auto-reply/command-detection.js";
-import { shouldHandleTextCommands } from "../../auto-reply/commands-registry.js";
+  ensureConfiguredBindingRouteReady,
+  resolveConfiguredBindingRoute,
+} from "remoteclaw/plugin-sdk/conversation-runtime";
+import {
+  getSessionBindingService,
+  type SessionBindingRecord,
+} from "remoteclaw/plugin-sdk/conversation-runtime";
+import { buildPairingReply } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { isPluginOwnedSessionBindingRecord } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { recordChannelActivity } from "remoteclaw/plugin-sdk/infra-runtime";
+import { enqueueSystemEvent } from "remoteclaw/plugin-sdk/infra-runtime";
+import { hasControlCommand } from "remoteclaw/plugin-sdk/reply-runtime";
+import { shouldHandleTextCommands } from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   recordPendingHistoryEntryIfEnabled,
   type HistoryEntry,
-} from "../../auto-reply/reply/history.js";
-import {
-  buildMentionRegexes,
-  matchesMentionWithExplicit,
-} from "../../auto-reply/reply/mentions.js";
-import { formatAllowlistMatchMeta } from "../../channels/allowlist-match.js";
-import { resolveControlCommandGate } from "../../channels/command-gating.js";
-import { logInboundDrop } from "../../channels/logging.js";
-import { resolveMentionGatingWithBypass } from "../../channels/mention-gating.js";
-import { loadConfig } from "../../config/config.js";
-import { isDangerousNameMatchingEnabled } from "../../config/dangerous-name-matching.js";
-import { logVerbose, shouldLogVerbose } from "../../globals.js";
-import { recordChannelActivity } from "../../infra/channel-activity.js";
-import { enqueueSystemEvent } from "../../infra/system-events.js";
-import { logDebug } from "../../logger.js";
-import { getChildLogger } from "../../logging.js";
-import { buildPairingReply } from "../../pairing/pairing-messages.js";
-import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";
+} from "remoteclaw/plugin-sdk/reply-runtime";
+import { buildMentionRegexes, matchesMentionWithExplicit } from "remoteclaw/plugin-sdk/reply-runtime";
+import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
+import { logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import { getChildLogger } from "remoteclaw/plugin-sdk/runtime-env";
+import { logDebug } from "remoteclaw/plugin-sdk/text-runtime";
 import { fetchPluralKitMessageInfo } from "../pluralkit.js";
 import { sendMessageDiscord } from "../send.js";
 import {
@@ -62,10 +65,7 @@ import {
 } from "./route-resolution.js";
 import { resolveDiscordSenderIdentity, resolveDiscordWebhookId } from "./sender-identity.js";
 import { resolveDiscordSystemEvent } from "./system-events.js";
-import {
-  isRecentlyUnboundThreadWebhookMessage,
-  type ThreadBindingRecord,
-} from "./thread-bindings.js";
+import { isRecentlyUnboundThreadWebhookMessage } from "./thread-bindings.js";
 import { resolveDiscordThreadChannel, resolveDiscordThreadParentInfo } from "./threading.js";
 
 export type {
@@ -96,25 +96,28 @@ function isBoundThreadBotSystemMessage(params: {
 
 export function resolvePreflightMentionRequirement(params: {
   shouldRequireMention: boolean;
-  isBoundThreadSession: boolean;
+  bypassMentionRequirement: boolean;
 }): boolean {
   if (!params.shouldRequireMention) {
     return false;
   }
-  return !params.isBoundThreadSession;
+  return !params.bypassMentionRequirement;
 }
 
 export function shouldIgnoreBoundThreadWebhookMessage(params: {
   accountId?: string;
   threadId?: string;
   webhookId?: string | null;
-  threadBinding?: ThreadBindingRecord;
+  threadBinding?: SessionBindingRecord;
 }): boolean {
   const webhookId = params.webhookId?.trim() || "";
   if (!webhookId) {
     return false;
   }
-  const boundWebhookId = params.threadBinding?.webhookId?.trim() || "";
+  const boundWebhookId =
+    typeof params.threadBinding?.metadata?.webhookId === "string"
+      ? params.threadBinding.metadata.webhookId.trim()
+      : "";
   if (!boundWebhookId) {
     const threadId = params.threadId?.trim() || "";
     if (!threadId) {
@@ -129,6 +132,95 @@ export function shouldIgnoreBoundThreadWebhookMessage(params: {
   return webhookId === boundWebhookId;
 }
 
+function mergeFetchedDiscordMessage(base: Message, fetched: APIMessage): Message {
+  const baseReferenced = (
+    base as unknown as {
+      referencedMessage?: {
+        mentionedUsers?: unknown[];
+        mentionedRoles?: unknown[];
+        mentionedEveryone?: boolean;
+      };
+    }
+  ).referencedMessage;
+  const fetchedMentions = Array.isArray(fetched.mentions)
+    ? fetched.mentions.map((mention) => ({
+        ...mention,
+        globalName: mention.global_name ?? undefined,
+      }))
+    : undefined;
+  const referencedMessage = fetched.referenced_message
+    ? ({
+        ...((base as { referencedMessage?: object }).referencedMessage ?? {}),
+        ...fetched.referenced_message,
+        mentionedUsers: Array.isArray(fetched.referenced_message.mentions)
+          ? fetched.referenced_message.mentions.map((mention) => ({
+              ...mention,
+              globalName: mention.global_name ?? undefined,
+            }))
+          : (baseReferenced?.mentionedUsers ?? []),
+        mentionedRoles:
+          fetched.referenced_message.mention_roles ?? baseReferenced?.mentionedRoles ?? [],
+        mentionedEveryone:
+          fetched.referenced_message.mention_everyone ?? baseReferenced?.mentionedEveryone ?? false,
+      } satisfies Record<string, unknown>)
+    : (base as { referencedMessage?: Message }).referencedMessage;
+  const rawData = {
+    ...((base as { rawData?: Record<string, unknown> }).rawData ?? {}),
+    message_snapshots:
+      fetched.message_snapshots ??
+      (base as { rawData?: { message_snapshots?: unknown } }).rawData?.message_snapshots,
+    sticker_items:
+      (fetched as { sticker_items?: unknown }).sticker_items ??
+      (base as { rawData?: { sticker_items?: unknown } }).rawData?.sticker_items,
+  };
+  return {
+    ...base,
+    ...fetched,
+    content: fetched.content ?? base.content,
+    attachments: fetched.attachments ?? base.attachments,
+    embeds: fetched.embeds ?? base.embeds,
+    stickers:
+      (fetched as { stickers?: unknown }).stickers ??
+      (fetched as { sticker_items?: unknown }).sticker_items ??
+      base.stickers,
+    mentionedUsers: fetchedMentions ?? base.mentionedUsers,
+    mentionedRoles: fetched.mention_roles ?? base.mentionedRoles,
+    mentionedEveryone: fetched.mention_everyone ?? base.mentionedEveryone,
+    referencedMessage,
+    rawData,
+  } as unknown as Message;
+}
+
+async function hydrateDiscordMessageIfEmpty(params: {
+  client: DiscordMessagePreflightParams["client"];
+  message: Message;
+  messageChannelId: string;
+}): Promise<Message> {
+  const currentText = resolveDiscordMessageText(params.message, {
+    includeForwarded: true,
+  });
+  if (currentText) {
+    return params.message;
+  }
+  const rest = params.client.rest as { get?: (route: string) => Promise<unknown> } | undefined;
+  if (typeof rest?.get !== "function") {
+    return params.message;
+  }
+  try {
+    const fetched = (await rest.get(
+      Routes.channelMessage(params.messageChannelId, params.message.id),
+    )) as APIMessage | null | undefined;
+    if (!fetched) {
+      return params.message;
+    }
+    logVerbose(`discord: hydrated empty inbound payload via REST for ${params.message.id}`);
+    return mergeFetchedDiscordMessage(params.message, fetched);
+  } catch (err) {
+    logVerbose(`discord: failed to hydrate message ${params.message.id}: ${String(err)}`);
+    return params.message;
+  }
+}
+
 export async function preflightDiscordMessage(
   params: DiscordMessagePreflightParams,
 ): Promise<DiscordMessagePreflightContext | null> {
@@ -136,7 +228,7 @@ export async function preflightDiscordMessage(
     return null;
   }
   const logger = getChildLogger({ module: "discord-auto-reply" });
-  const message = params.data.message;
+  let message = params.data.message;
   const author = params.data.author;
   if (!author) {
     return null;
@@ -155,6 +247,15 @@ export async function preflightDiscordMessage(
     allowBotsSetting === "mentions" ? "mentions" : allowBotsSetting === true ? "all" : "off";
   if (params.botUserId && author.id === params.botUserId) {
     // Always ignore own messages to prevent self-reply loops
+    return null;
+  }
+
+  message = await hydrateDiscordMessageIfEmpty({
+    client: params.client,
+    message,
+    messageChannelId,
+  });
+  if (isPreflightAborted(params.abortSignal)) {
     return null;
   }
 
@@ -195,6 +296,7 @@ export async function preflightDiscordMessage(
   }
   const isDirectMessage = channelInfo?.type === ChannelType.DM;
   const isGroupDm = channelInfo?.type === ChannelType.GroupDM;
+  const data = message === params.data.message ? params.data : { ...params.data, message };
   logDebug(
     `[discord-preflight] channelId=${messageChannelId} guild_id=${params.data.guild_id} channelType=${channelInfo?.type} isGuild=${isGuildMessage} isDM=${isDirectMessage} isGroupDm=${isGroupDm}`,
   );
@@ -346,36 +448,31 @@ export async function preflightDiscordMessage(
     }),
     parentConversationId: earlyThreadParentId,
   });
-  let threadBinding: ThreadBindingRecord | undefined = earlyThreadChannel
-    ? params.threadBindings.getByThreadId(messageChannelId)
-    : undefined;
+  const bindingConversationId = isDirectMessage ? `user:${author.id}` : messageChannelId;
+  let threadBinding: SessionBindingRecord | undefined;
+  threadBinding =
+    getSessionBindingService().resolveByConversation({
+      channel: "discord",
+      accountId: params.accountId,
+      conversationId: bindingConversationId,
+      parentConversationId: earlyThreadParentId,
+    }) ?? undefined;
   const configuredRoute =
     threadBinding == null
-      ? resolveConfiguredAcpRoute({
+      ? resolveConfiguredBindingRoute({
           cfg: freshCfg,
           route,
-          channel: "discord",
-          accountId: params.accountId,
-          conversationId: messageChannelId,
-          parentConversationId: earlyThreadParentId,
+          conversation: {
+            channel: "discord",
+            accountId: params.accountId,
+            conversationId: messageChannelId,
+            parentConversationId: earlyThreadParentId,
+          },
         })
       : null;
-  const configuredBinding = configuredRoute?.configuredBinding ?? null;
+  const configuredBinding = configuredRoute?.bindingResolution ?? null;
   if (!threadBinding && configuredBinding) {
-    // Adapt SessionBindingRecord to ThreadBindingRecord shape for downstream usage
-    const rec = configuredBinding.record;
-    threadBinding = {
-      accountId: params.accountId,
-      channelId: rec.conversation.parentConversationId ?? rec.conversation.conversationId,
-      threadId: rec.conversation.conversationId,
-      targetKind: "acp",
-      targetSessionKey: rec.targetSessionKey,
-      agentId: configuredBinding.spec.agentId,
-      label: configuredBinding.spec.label,
-      boundBy: "config",
-      boundAt: rec.boundAt,
-      lastActivityAt: rec.boundAt,
-    };
+    threadBinding = configuredBinding.record;
   }
   if (
     shouldIgnoreBoundThreadWebhookMessage({
@@ -388,7 +485,9 @@ export async function preflightDiscordMessage(
     logVerbose(`discord: drop bound-thread webhook echo message ${message.id}`);
     return null;
   }
-  const boundSessionKey = threadBinding?.targetSessionKey?.trim();
+  const boundSessionKey = isPluginOwnedSessionBindingRecord(threadBinding)
+    ? ""
+    : threadBinding?.targetSessionKey?.trim();
   const effectiveRoute = resolveDiscordEffectiveRoute({
     route,
     boundSessionKey,
@@ -396,7 +495,8 @@ export async function preflightDiscordMessage(
     matchedBy: "binding.channel",
   });
   const boundAgentId = boundSessionKey ? effectiveRoute.agentId : undefined;
-  const isBoundThreadSession = Boolean(boundSessionKey && earlyThreadChannel);
+  const isBoundThreadSession = Boolean(threadBinding && earlyThreadChannel);
+  const bypassMentionRequirement = isBoundThreadSession || Boolean(configuredBinding);
   if (
     isBoundThreadBotSystemMessage({
       isBoundThreadSession,
@@ -434,6 +534,7 @@ export async function preflightDiscordMessage(
   const guildInfo = isGuildMessage
     ? resolveDiscordGuildEntry({
         guild: params.data.guild ?? undefined,
+        guildId: params.data.guild_id ?? undefined,
         guildEntries: params.guildEntries,
       })
     : null;
@@ -488,7 +589,7 @@ export async function preflightDiscordMessage(
   const channelMatchMeta = formatAllowlistMatchMeta(channelConfig);
   if (shouldLogVerbose()) {
     const channelConfigSummary = channelConfig
-      ? `allowed=${channelConfig.allowed} enabled=${channelConfig.enabled ?? "unset"} requireMention=${channelConfig.requireMention ?? "unset"} ignoreOtherMentions=${channelConfig.ignoreOtherMentions ?? "unset"} matchKey=${channelConfig.matchKey ?? "none"} matchSource=${channelConfig.matchSource ?? "none"} users=${channelConfig.users?.length ?? 0} roles=${channelConfig.roles?.length ?? 0}`
+      ? `allowed=${channelConfig.allowed} enabled=${channelConfig.enabled ?? "unset"} requireMention=${channelConfig.requireMention ?? "unset"} ignoreOtherMentions=${channelConfig.ignoreOtherMentions ?? "unset"} matchKey=${channelConfig.matchKey ?? "none"} matchSource=${channelConfig.matchSource ?? "none"} users=${channelConfig.users?.length ?? 0} roles=${channelConfig.roles?.length ?? 0} skills=${channelConfig.skills?.length ?? 0}`
       : "none";
     logDebug(
       `[discord-preflight] channelConfig=${channelConfigSummary} channelMatchMeta=${channelMatchMeta} channelId=${messageChannelId}`,
@@ -527,12 +628,17 @@ export async function preflightDiscordMessage(
     })
   ) {
     if (params.groupPolicy === "disabled") {
+      logDebug(`[discord-preflight] drop: groupPolicy disabled`);
       logVerbose(`discord: drop guild message (groupPolicy: disabled, ${channelMatchMeta})`);
     } else if (!channelAllowlistConfigured) {
+      logDebug(`[discord-preflight] drop: groupPolicy allowlist, no channel allowlist configured`);
       logVerbose(
         `discord: drop guild message (groupPolicy: allowlist, no channel allowlist, ${channelMatchMeta})`,
       );
     } else {
+      logDebug(
+        `[discord] Ignored message from channel ${messageChannelId} (not in guild allowlist). Add to guilds.<guildId>.channels to enable.`,
+      );
       logVerbose(
         `Blocked discord channel ${messageChannelId} not in guild channel allowlist (groupPolicy: allowlist, ${channelMatchMeta})`,
       );
@@ -576,7 +682,7 @@ export async function preflightDiscordMessage(
   });
   const shouldRequireMention = resolvePreflightMentionRequirement({
     shouldRequireMention: shouldRequireMentionByConfig,
-    isBoundThreadSession,
+    bypassMentionRequirement,
   });
 
   // Preflight audio transcription for mention detection in guilds.
@@ -761,13 +867,13 @@ export async function preflightDiscordMessage(
     return null;
   }
   if (configuredBinding) {
-    const ensured = await ensureConfiguredAcpRouteReady({
+    const ensured = await ensureConfiguredBindingRouteReady({
       cfg: freshCfg,
-      configuredBinding,
+      bindingResolution: configuredBinding,
     });
     if (!ensured.ok) {
       logVerbose(
-        `discord: configured ACP binding unavailable for channel ${configuredBinding.spec.conversationId}: ${ensured.error}`,
+        `discord: configured ACP binding unavailable for channel ${configuredBinding.record.conversation.conversationId}: ${ensured.error}`,
       );
       return null;
     }
@@ -791,7 +897,7 @@ export async function preflightDiscordMessage(
     replyToMode: params.replyToMode,
     ackReactionScope: params.ackReactionScope,
     groupPolicy: params.groupPolicy,
-    data: params.data,
+    data,
     client: params.client,
     message,
     messageChannelId,

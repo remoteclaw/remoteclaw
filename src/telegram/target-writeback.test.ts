@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { RemoteClawConfig } from "../config/config.js";
+import type { OpenClawConfig } from "../../../src/config/config.js";
 
 const readConfigFileSnapshotForWrite = vi.fn();
 const writeConfigFile = vi.fn();
@@ -7,29 +7,24 @@ const loadCronStore = vi.fn();
 const resolveCronStorePath = vi.fn();
 const saveCronStore = vi.fn();
 
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("openclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
     readConfigFileSnapshotForWrite,
     writeConfigFile,
-  };
-});
-
-vi.mock("../cron/store.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../cron/store.js")>();
-  return {
-    ...actual,
     loadCronStore,
     resolveCronStorePath,
     saveCronStore,
   };
 });
 
-const { maybePersistResolvedTelegramTarget } = await import("./target-writeback.js");
-
 describe("maybePersistResolvedTelegramTarget", () => {
-  beforeEach(() => {
+  let maybePersistResolvedTelegramTarget: typeof import("./target-writeback.js").maybePersistResolvedTelegramTarget;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ maybePersistResolvedTelegramTarget } = await import("./target-writeback.js"));
     readConfigFileSnapshotForWrite.mockReset();
     writeConfigFile.mockReset();
     loadCronStore.mockReset();
@@ -40,7 +35,7 @@ describe("maybePersistResolvedTelegramTarget", () => {
 
   it("skips writeback when target is already numeric", async () => {
     await maybePersistResolvedTelegramTarget({
-      cfg: {} as RemoteClawConfig,
+      cfg: {} as OpenClawConfig,
       rawTarget: "-100123",
       resolvedChatId: "-100123",
     });
@@ -65,7 +60,7 @@ describe("maybePersistResolvedTelegramTarget", () => {
           },
         },
       },
-      writeOptions: { expectedConfigPath: "/tmp/remoteclaw.json" },
+      writeOptions: { expectedConfigPath: "/tmp/openclaw.json" },
     });
     loadCronStore.mockResolvedValue({
       version: 1,
@@ -78,7 +73,7 @@ describe("maybePersistResolvedTelegramTarget", () => {
     await maybePersistResolvedTelegramTarget({
       cfg: {
         cron: { store: "/tmp/cron/jobs.json" },
-      } as RemoteClawConfig,
+      } as OpenClawConfig,
       rawTarget: "t.me/mychannel",
       resolvedChatId: "-100123",
     });
@@ -97,7 +92,7 @@ describe("maybePersistResolvedTelegramTarget", () => {
           },
         },
       }),
-      expect.objectContaining({ expectedConfigPath: "/tmp/remoteclaw.json" }),
+      expect.objectContaining({ expectedConfigPath: "/tmp/openclaw.json" }),
     );
     expect(saveCronStore).toHaveBeenCalledTimes(1);
     expect(saveCronStore).toHaveBeenCalledWith(
@@ -127,7 +122,7 @@ describe("maybePersistResolvedTelegramTarget", () => {
     loadCronStore.mockResolvedValue({ version: 1, jobs: [] });
 
     await maybePersistResolvedTelegramTarget({
-      cfg: {} as RemoteClawConfig,
+      cfg: {} as OpenClawConfig,
       rawTarget: "t.me/mychannel:topic:9",
       resolvedChatId: "-100123",
     });
@@ -163,7 +158,7 @@ describe("maybePersistResolvedTelegramTarget", () => {
     });
 
     await maybePersistResolvedTelegramTarget({
-      cfg: {} as RemoteClawConfig,
+      cfg: {} as OpenClawConfig,
       rawTarget: "@MyChannel",
       resolvedChatId: "-100123",
     });

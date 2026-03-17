@@ -1,10 +1,5 @@
-import {
-  TtsAutoSchema,
-  TtsConfigSchema,
-  TtsModeSchema,
-  TtsProviderSchema,
-} from "remoteclaw/plugin-sdk";
 import { z } from "zod";
+import { TtsAutoSchema, TtsConfigSchema, TtsModeSchema, TtsProviderSchema } from "../api.js";
 import { deepMergeDefined } from "./deep-merge.js";
 
 // -----------------------------------------------------------------------------

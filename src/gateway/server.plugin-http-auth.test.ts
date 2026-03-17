@@ -781,7 +781,7 @@ describe("gateway plugin HTTP auth boundary", () => {
     });
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-auth-encoded-order-test-",
+      prefix: "remoteclaw-plugin-http-auth-encoded-order-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: { handlePluginRequest },
       run: async (server) => {

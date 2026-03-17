@@ -4,11 +4,10 @@ import {
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
-  createAllowlistProviderOpenWarningCollector,
-  projectAccountConfigWarningCollector,
+  buildOpenGroupPolicyWarning,
+  collectAllowlistProviderGroupPolicyWarnings,
 } from "remoteclaw/plugin-sdk/channel-policy";
-import { createScopedAccountReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { createLazyRuntimeSurface } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
   createChannelDirectoryAdapter,
   createPairingPrefixStripper,
@@ -31,7 +30,8 @@ import {
   PAIRING_APPROVED_MESSAGE,
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/matrix";
+import { buildTrafficStatusSummary } from "../../shared/channel-status-summary.js";
 import { matrixMessageActions } from "./actions.js";
 import { MatrixConfigSchema } from "./config-schema.js";
 import { listMatrixDirectoryGroupsLive, listMatrixDirectoryPeersLive } from "./directory-live.js";

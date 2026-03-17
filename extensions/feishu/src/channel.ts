@@ -26,6 +26,8 @@ import {
   DEFAULT_ACCOUNT_ID,
   PAIRING_APPROVED_MESSAGE,
 } from "remoteclaw/plugin-sdk/feishu";
+import type { ChannelMessageActionName } from "remoteclaw/plugin-sdk/feishu";
+import { createLazyRuntimeSurface } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
   resolveFeishuAccount,
   resolveFeishuCredentials,

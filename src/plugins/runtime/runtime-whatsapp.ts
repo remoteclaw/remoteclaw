@@ -5,7 +5,7 @@ import {
   logWebSelfId,
   readWebSelfId,
   webAuthExists,
-} from "../../../extensions/whatsapp/runtime-api.js";
+} from "../../../extensions/whatsapp/src/auth-store.js";
 import {
   createLazyRuntimeMethodBinder,
   createLazyRuntimeSurface,
@@ -13,24 +13,28 @@ import {
 import { createRuntimeWhatsAppLoginTool } from "./runtime-whatsapp-login-tool.js";
 import type { PluginRuntime } from "./types.js";
 
-const sendMessageWhatsAppLazy: PluginRuntime["channel"]["whatsapp"]["sendMessageWhatsApp"] = async (
-  ...args
-) => {
-  const { sendMessageWhatsApp } = await loadWebOutbound();
-  return sendMessageWhatsApp(...args);
-};
+const loadWebOutbound = createLazyRuntimeSurface(
+  () => import("./runtime-whatsapp-outbound.runtime.js"),
+  ({ runtimeWhatsAppOutbound }) => runtimeWhatsAppOutbound,
+);
 
-const sendPollWhatsAppLazy: PluginRuntime["channel"]["whatsapp"]["sendPollWhatsApp"] = async (
-  ...args
-) => {
-  const { sendPollWhatsApp } = await loadWebOutbound();
-  return sendPollWhatsApp(...args);
-};
+const loadWebLogin = createLazyRuntimeSurface(
+  () => import("./runtime-whatsapp-login.runtime.js"),
+  ({ runtimeWhatsAppLogin }) => runtimeWhatsAppLogin,
+);
 
-const loginWebLazy: PluginRuntime["channel"]["whatsapp"]["loginWeb"] = async (...args) => {
-  const { loginWeb } = await loadWebLogin();
-  return loginWeb(...args);
-};
+const bindWhatsAppOutboundMethod = createLazyRuntimeMethodBinder(loadWebOutbound);
+const bindWhatsAppLoginMethod = createLazyRuntimeMethodBinder(loadWebLogin);
+
+const sendMessageWhatsAppLazy = bindWhatsAppOutboundMethod(
+  (runtimeWhatsAppOutbound) => runtimeWhatsAppOutbound.sendMessageWhatsApp,
+);
+const sendPollWhatsAppLazy = bindWhatsAppOutboundMethod(
+  (runtimeWhatsAppOutbound) => runtimeWhatsAppOutbound.sendPollWhatsApp,
+);
+const loginWebLazy = bindWhatsAppLoginMethod(
+  (runtimeWhatsAppLogin) => runtimeWhatsAppLogin.loginWeb,
+);
 
 const startWebLoginWithQrLazy: PluginRuntime["channel"]["whatsapp"]["startWebLoginWithQr"] = async (
   ...args

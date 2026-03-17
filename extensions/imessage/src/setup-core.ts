@@ -1,17 +1,18 @@
-import { createPatchedAccountSetupAdapter } from "../../../src/channels/plugins/setup-helpers.js";
 import {
+  createPatchedAccountSetupAdapter,
   parseSetupEntriesAllowingWildcard,
   promptParsedAllowFromForScopedChannel,
   setChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
   type RemoteClawConfig,
   type WizardPrompter,
-} from "../../../src/plugin-sdk-internal/setup.js";
+} from "remoteclaw/plugin-sdk/setup";
 import type {
   ChannelSetupAdapter,
   ChannelSetupDmPolicy,
   ChannelSetupWizard,
-} from "../../../src/plugin-sdk-internal/setup.js";
+  ChannelSetupWizardTextInput,
+} from "remoteclaw/plugin-sdk/setup";
 import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   listIMessageAccountIds,
@@ -65,7 +66,7 @@ function buildIMessageSetupPatch(input: {
   };
 }
 
-async function promptIMessageAllowFrom(params: {
+export async function promptIMessageAllowFrom(params: {
   cfg: RemoteClawConfig;
   prompter: WizardPrompter;
   accountId?: string;
@@ -95,38 +96,60 @@ async function promptIMessageAllowFrom(params: {
   });
 }
 
+export const imessageDmPolicy: ChannelSetupDmPolicy = {
+  label: "iMessage",
+  channel,
+  policyKey: "channels.imessage.dmPolicy",
+  allowFromKey: "channels.imessage.allowFrom",
+  getCurrent: (cfg: RemoteClawConfig) => cfg.channels?.imessage?.dmPolicy ?? "pairing",
+  setPolicy: (cfg: RemoteClawConfig, policy) =>
+    setChannelDmPolicyWithAllowFrom({
+      cfg,
+      channel,
+      dmPolicy: policy,
+    }),
+  promptAllowFrom: promptIMessageAllowFrom,
+};
+
+function resolveIMessageCliPath(params: { cfg: RemoteClawConfig; accountId: string }) {
+  return resolveIMessageAccount(params).config.cliPath ?? "imsg";
+}
+
+export function createIMessageCliPathTextInput(
+  shouldPrompt: NonNullable<ChannelSetupWizardTextInput["shouldPrompt"]>,
+): ChannelSetupWizardTextInput {
+  return {
+    inputKey: "cliPath",
+    message: "imsg CLI path",
+    initialValue: ({ cfg, accountId }) => resolveIMessageCliPath({ cfg, accountId }),
+    currentValue: ({ cfg, accountId }) => resolveIMessageCliPath({ cfg, accountId }),
+    shouldPrompt,
+    confirmCurrentValue: false,
+    applyCurrentValue: true,
+    helpTitle: "iMessage",
+    helpLines: ["imsg CLI path required to enable iMessage."],
+  };
+}
+
+export const imessageCompletionNote = {
+  title: "iMessage next steps",
+  lines: [
+    "This is still a work in progress.",
+    "Ensure RemoteClaw has Full Disk Access to Messages DB.",
+    "Grant Automation permission for Messages when prompted.",
+    "List chats with: imsg chats --limit 20",
+    `Docs: ${formatDocsLink("/imessage", "imessage")}`,
+  ],
+};
+
 export const imessageSetupAdapter: ChannelSetupAdapter = createPatchedAccountSetupAdapter({
   channelKey: channel,
   buildPatch: (input) => buildIMessageSetupPatch(input),
 });
 
-type IMessageSetupWizardHandlers = {
-  resolveStatusLines: NonNullable<ChannelSetupWizard["status"]>["resolveStatusLines"];
-  resolveSelectionHint: NonNullable<ChannelSetupWizard["status"]>["resolveSelectionHint"];
-  resolveQuickstartScore: NonNullable<ChannelSetupWizard["status"]>["resolveQuickstartScore"];
-  shouldPromptCliPath: NonNullable<
-    NonNullable<ChannelSetupWizard["textInputs"]>[number]["shouldPrompt"]
-  >;
-};
-
-export function createIMessageSetupWizardBase(
-  handlers: IMessageSetupWizardHandlers,
-): ChannelSetupWizard {
-  const imessageDmPolicy: ChannelSetupDmPolicy = {
-    label: "iMessage",
-    channel,
-    policyKey: "channels.imessage.dmPolicy",
-    allowFromKey: "channels.imessage.allowFrom",
-    getCurrent: (cfg: RemoteClawConfig) => cfg.channels?.imessage?.dmPolicy ?? "pairing",
-    setPolicy: (cfg: RemoteClawConfig, policy) =>
-      setChannelDmPolicyWithAllowFrom({
-        cfg,
-        channel,
-        dmPolicy: policy,
-      }),
-    promptAllowFrom: promptIMessageAllowFrom,
-  };
-
+export function createIMessageSetupWizardProxy(
+  loadWizard: () => Promise<{ imessageSetupWizard: ChannelSetupWizard }>,
+) {
   return {
     channel,
     status: {
@@ -147,56 +170,24 @@ export function createIMessageSetupWizardBase(
             account.config.region,
           );
         }),
-      resolveStatusLines: handlers.resolveStatusLines,
-      resolveSelectionHint: handlers.resolveSelectionHint,
-      resolveQuickstartScore: handlers.resolveQuickstartScore,
+      resolveStatusLines: async (params) =>
+        (await loadWizard()).imessageSetupWizard.status.resolveStatusLines?.(params) ?? [],
+      resolveSelectionHint: async (params) =>
+        await (await loadWizard()).imessageSetupWizard.status.resolveSelectionHint?.(params),
+      resolveQuickstartScore: async (params) =>
+        await (await loadWizard()).imessageSetupWizard.status.resolveQuickstartScore?.(params),
     },
     credentials: [],
     textInputs: [
-      {
-        inputKey: "cliPath",
-        message: "imsg CLI path",
-        initialValue: ({ cfg, accountId }) =>
-          resolveIMessageAccount({ cfg, accountId }).config.cliPath ?? "imsg",
-        currentValue: ({ cfg, accountId }) =>
-          resolveIMessageAccount({ cfg, accountId }).config.cliPath ?? "imsg",
-        shouldPrompt: handlers.shouldPromptCliPath,
-        confirmCurrentValue: false,
-        applyCurrentValue: true,
-        helpTitle: "iMessage",
-        helpLines: ["imsg CLI path required to enable iMessage."],
-      },
+      createIMessageCliPathTextInput(async (params) => {
+        const input = (await loadWizard()).imessageSetupWizard.textInputs?.find(
+          (entry) => entry.inputKey === "cliPath",
+        );
+        return (await input?.shouldPrompt?.(params)) ?? false;
+      }),
     ],
-    completionNote: {
-      title: "iMessage next steps",
-      lines: [
-        "This is still a work in progress.",
-        "Ensure RemoteClaw has Full Disk Access to Messages DB.",
-        "Grant Automation permission for Messages when prompted.",
-        "List chats with: imsg chats --limit 20",
-        `Docs: ${formatDocsLink("/imessage", "imessage")}`,
-      ],
-    },
+    completionNote: imessageCompletionNote,
     dmPolicy: imessageDmPolicy,
     disable: (cfg: RemoteClawConfig) => setSetupChannelEnabled(cfg, channel, false),
   } satisfies ChannelSetupWizard;
-}
-
-export function createIMessageSetupWizardProxy(
-  loadWizard: () => Promise<{ imessageSetupWizard: ChannelSetupWizard }>,
-) {
-  return createIMessageSetupWizardBase({
-    resolveStatusLines: async (params) =>
-      (await loadWizard()).imessageSetupWizard.status.resolveStatusLines?.(params) ?? [],
-    resolveSelectionHint: async (params) =>
-      await (await loadWizard()).imessageSetupWizard.status.resolveSelectionHint?.(params),
-    resolveQuickstartScore: async (params) =>
-      await (await loadWizard()).imessageSetupWizard.status.resolveQuickstartScore?.(params),
-    shouldPromptCliPath: async (params) => {
-      const input = (await loadWizard()).imessageSetupWizard.textInputs?.find(
-        (entry) => entry.inputKey === "cliPath",
-      );
-      return (await input?.shouldPrompt?.(params)) ?? false;
-    },
-  });
 }

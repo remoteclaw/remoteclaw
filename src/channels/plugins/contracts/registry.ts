@@ -2,9 +2,10 @@ import { expect, vi } from "vitest";
 import {
   __testing as discordThreadBindingTesting,
   createThreadBindingManager as createDiscordThreadBindingManager,
-} from "../../../../extensions/discord/runtime-api.js";
-import { createFeishuThreadBindingManager } from "../../../../extensions/feishu/api.js";
-import { createTelegramThreadBindingManager } from "../../../../extensions/telegram/runtime-api.js";
+} from "../../../../extensions/discord/src/monitor/thread-bindings.manager.js";
+import { createFeishuThreadBindingManager } from "../../../../extensions/feishu/src/thread-bindings.js";
+import { setMatrixRuntime } from "../../../../extensions/matrix/src/runtime.js";
+import { createTelegramThreadBindingManager } from "../../../../extensions/telegram/src/thread-bindings.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
 import {
   getSessionBindingService,
@@ -173,14 +174,17 @@ function expectClearedSessionBinding(params: {
   ).toBeNull();
 }
 
-const telegramDescribeMessageToolMock = vi.fn();
-const discordDescribeMessageToolMock = vi.fn();
+const telegramListActionsMock = vi.fn();
+const telegramGetCapabilitiesMock = vi.fn();
+const discordListActionsMock = vi.fn();
+const discordGetCapabilitiesMock = vi.fn();
 
 bundledChannelRuntimeSetters.setTelegramRuntime({
   channel: {
     telegram: {
       messageActions: {
-        describeMessageTool: telegramDescribeMessageToolMock,
+        listActions: telegramListActionsMock,
+        getCapabilities: telegramGetCapabilitiesMock,
       },
     },
   },
@@ -190,7 +194,8 @@ bundledChannelRuntimeSetters.setDiscordRuntime({
   channel: {
     discord: {
       messageActions: {
-        describeMessageTool: discordDescribeMessageToolMock,
+        listActions: discordListActionsMock,
+        getCapabilities: discordGetCapabilitiesMock,
       },
     },
   },
@@ -204,6 +209,12 @@ bundledChannelRuntimeSetters.setLineRuntime({
       resolveLineAccount: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId?: string }) =>
         resolveLineAccount({ cfg, accountId }),
     },
+  },
+} as never);
+
+setMatrixRuntime({
+  state: {
+    resolveStateDir: (_env: unknown, homeDir?: () => string) => (homeDir ?? (() => "/tmp"))(),
   },
 } as never);
 
@@ -347,11 +358,10 @@ export const actionContractRegistry: ActionsContractEntry[] = [
         expectedActions: ["send", "poll", "react"],
         expectedCapabilities: ["interactive", "buttons"],
         beforeTest: () => {
-          telegramDescribeMessageToolMock.mockReset();
-          telegramDescribeMessageToolMock.mockReturnValue({
-            actions: ["send", "poll", "react"],
-            capabilities: ["interactive", "buttons"],
-          });
+          telegramListActionsMock.mockReset();
+          telegramGetCapabilitiesMock.mockReset();
+          telegramListActionsMock.mockReturnValue(["send", "poll", "react"]);
+          telegramGetCapabilitiesMock.mockReturnValue(["interactive", "buttons"]);
         },
       },
     ],
@@ -366,11 +376,10 @@ export const actionContractRegistry: ActionsContractEntry[] = [
         expectedActions: ["send", "react", "poll"],
         expectedCapabilities: ["interactive", "components"],
         beforeTest: () => {
-          discordDescribeMessageToolMock.mockReset();
-          discordDescribeMessageToolMock.mockReturnValue({
-            actions: ["send", "react", "poll"],
-            capabilities: ["interactive", "components"],
-          });
+          discordListActionsMock.mockReset();
+          discordGetCapabilitiesMock.mockReset();
+          discordListActionsMock.mockReturnValue(["send", "react", "poll"]);
+          discordGetCapabilitiesMock.mockReturnValue(["interactive", "components"]);
         },
       },
     ],
@@ -576,6 +585,25 @@ export const threadingContractRegistry: ThreadingContractEntry[] = surfaceContra
   }));
 
 const directoryPresenceOnlyIds = new Set(["whatsapp", "zalouser"]);
+const matrixDirectoryCfg = {
+  channels: {
+    matrix: {
+      enabled: true,
+      homeserver: "https://matrix.example.com",
+      userId: "@lobster:example.com",
+      accessToken: "matrix-access-token",
+      dm: {
+        allowFrom: ["matrix:@alice:example.com"],
+      },
+      groupAllowFrom: ["matrix:@team:example.com"],
+      groups: {
+        "!room:example.com": {
+          users: ["matrix:@alice:example.com"],
+        },
+      },
+    },
+  },
+} as RemoteClawConfig;
 
 export const directoryContractRegistry: DirectoryContractEntry[] = surfaceContractRegistry
   .filter((entry) => entry.surfaces.includes("directory"))
@@ -583,6 +611,7 @@ export const directoryContractRegistry: DirectoryContractEntry[] = surfaceContra
     id: entry.id,
     plugin: entry.plugin,
     coverage: directoryPresenceOnlyIds.has(entry.id) ? "presence" : "lookups",
+    ...(entry.id === "matrix" ? { cfg: matrixDirectoryCfg } : {}),
   }));
 
 const baseSessionBindingCfg = {

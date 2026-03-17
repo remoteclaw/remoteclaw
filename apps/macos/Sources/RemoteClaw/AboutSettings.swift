@@ -50,7 +50,7 @@ struct AboutSettings: View {
                     icon: "chevron.left.slash.chevron.right",
                     title: "GitHub",
                     url: "https://github.com/remoteclaw/remoteclaw")
-                AboutLinkRow(icon: "globe", title: "Website", url: "https://remoteclaw.com")
+                AboutLinkRow(icon: "globe", title: "Website", url: "https://remoteclaw.org")
                 AboutLinkRow(icon: "bubble.left.and.bubble.right", title: "Discussions", url: "https://github.com/remoteclaw/remoteclaw/discussions")
                 AboutLinkRow(icon: "exclamationmark.triangle", title: "Issues", url: "https://github.com/remoteclaw/remoteclaw/issues")
             }

@@ -259,7 +259,7 @@ describe("packNpmSpecToArchive", () => {
     if (!result.ok) {
       expect(result.error).toContain("Package not found on npm");
       expect(result.error).toContain("@remoteclaw/whatsapp");
-      expect(result.error).toContain("docs.remoteclaw.com/tools/plugin");
+      expect(result.error).toContain("docs.remoteclaw.org/tools/plugin");
     }
   });
 

@@ -9,8 +9,8 @@ Providers:
 - **Plivo** (Voice API + XML transfer + GetInput speech)
 - **Mock** (dev/no network)
 
-Docs: `https://docs.remoteclaw.com/plugins/voice-call`
-Plugin system: `https://docs.remoteclaw.com/plugin`
+Docs: `https://docs.remoteclaw.org/plugins/voice-call`
+Plugin system: `https://docs.remoteclaw.org/plugin`
 
 ## Install (local dev)
 

@@ -85,19 +85,15 @@ vi.mock("@discordjs/voice", () => ({
   joinVoiceChannel: joinVoiceChannelMock,
 }));
 
-vi.mock("remoteclaw/plugin-sdk/routing", () => ({
+vi.mock("../../../../src/routing/resolve-route.js", () => ({
   resolveAgentRoute: resolveAgentRouteMock,
 }));
 
-vi.mock("remoteclaw/plugin-sdk/agent-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/agent-runtime")>();
-  return {
-    ...actual,
-    agentCommandFromIngress: agentCommandMock,
-  };
-});
+vi.mock("../../../../src/commands/agent.js", () => ({
+  agentCommandFromIngress: agentCommandMock,
+}));
 
-vi.mock("remoteclaw/plugin-sdk/media-understanding-runtime", () => ({
+vi.mock("../../../../src/media-understanding/runtime.js", () => ({
   transcribeAudioFile: transcribeAudioFileMock,
 }));
 

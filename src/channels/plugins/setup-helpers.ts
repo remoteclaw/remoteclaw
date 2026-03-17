@@ -125,7 +125,97 @@ export function applySetupAccountConfigPatch(params: {
   channelKey: string;
   accountId: string;
   patch: Record<string, unknown>;
-}): RemoteClawConfig {
+}): OpenClawConfig {
+  return patchScopedAccountConfig({
+    cfg: params.cfg,
+    channelKey: params.channelKey,
+    accountId: params.accountId,
+    patch: params.patch,
+  });
+}
+
+export function createPatchedAccountSetupAdapter(params: {
+  channelKey: string;
+  alwaysUseAccounts?: boolean;
+  ensureChannelEnabled?: boolean;
+  ensureAccountEnabled?: boolean;
+  validateInput?: ChannelSetupAdapter["validateInput"];
+  buildPatch: (input: ChannelSetupInput) => Record<string, unknown>;
+}): ChannelSetupAdapter {
+  return {
+    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
+    applyAccountName: ({ cfg, accountId, name }) =>
+      prepareScopedSetupConfig({
+        cfg,
+        channelKey: params.channelKey,
+        accountId,
+        name,
+        alwaysUseAccounts: params.alwaysUseAccounts,
+      }),
+    validateInput: params.validateInput,
+    applyAccountConfig: ({ cfg, accountId, input }) => {
+      const next = prepareScopedSetupConfig({
+        cfg,
+        channelKey: params.channelKey,
+        accountId,
+        name: input.name,
+        alwaysUseAccounts: params.alwaysUseAccounts,
+        migrateBaseName: !params.alwaysUseAccounts,
+      });
+      const patch = params.buildPatch(input);
+      return patchScopedAccountConfig({
+        cfg: next,
+        channelKey: params.channelKey,
+        accountId,
+        patch,
+        accountPatch: patch,
+        ensureChannelEnabled: params.ensureChannelEnabled ?? !params.alwaysUseAccounts,
+        ensureAccountEnabled: params.ensureAccountEnabled ?? true,
+        scopeDefaultToAccounts: params.alwaysUseAccounts,
+      });
+    },
+  };
+}
+
+export function createEnvPatchedAccountSetupAdapter(params: {
+  channelKey: string;
+  alwaysUseAccounts?: boolean;
+  ensureChannelEnabled?: boolean;
+  ensureAccountEnabled?: boolean;
+  defaultAccountOnlyEnvError: string;
+  missingCredentialError: string;
+  hasCredentials: (input: ChannelSetupInput) => boolean;
+  validateInput?: ChannelSetupAdapter["validateInput"];
+  buildPatch: (input: ChannelSetupInput) => Record<string, unknown>;
+}): ChannelSetupAdapter {
+  return createPatchedAccountSetupAdapter({
+    channelKey: params.channelKey,
+    alwaysUseAccounts: params.alwaysUseAccounts,
+    ensureChannelEnabled: params.ensureChannelEnabled,
+    ensureAccountEnabled: params.ensureAccountEnabled,
+    validateInput: (inputParams) => {
+      if (inputParams.input.useEnv && inputParams.accountId !== DEFAULT_ACCOUNT_ID) {
+        return params.defaultAccountOnlyEnvError;
+      }
+      if (!inputParams.input.useEnv && !params.hasCredentials(inputParams.input)) {
+        return params.missingCredentialError;
+      }
+      return params.validateInput?.(inputParams) ?? null;
+    },
+    buildPatch: params.buildPatch,
+  });
+}
+
+export function patchScopedAccountConfig(params: {
+  cfg: OpenClawConfig;
+  channelKey: string;
+  accountId: string;
+  patch: Record<string, unknown>;
+  accountPatch?: Record<string, unknown>;
+  ensureChannelEnabled?: boolean;
+  ensureAccountEnabled?: boolean;
+  scopeDefaultToAccounts?: boolean;
+}): OpenClawConfig {
   const accountId = normalizeAccountId(params.accountId);
   const channels = params.cfg.channels as Record<string, unknown> | undefined;
   const channelConfig = channels?.[params.channelKey];

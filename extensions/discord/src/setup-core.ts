@@ -1,11 +1,7 @@
 import type { DiscordGuildEntry } from "openclaw/plugin-sdk/config-runtime";
 import {
-  applyAccountNameToChannelSection,
-  createPatchedAccountSetupAdapter,
   DEFAULT_ACCOUNT_ID,
-  formatDocsLink,
-  migrateBaseNameToDefaultAccount,
-  normalizeAccountId,
+  createEnvPatchedAccountSetupAdapter,
   noteChannelLookupFailure,
   noteChannelLookupSummary,
   parseMentionOrPrefixedId,
@@ -77,18 +73,12 @@ export function parseDiscordAllowFromId(value: string): string | null {
   });
 }
 
-export const discordSetupAdapter: ChannelSetupAdapter = createPatchedAccountSetupAdapter({
+export const discordSetupAdapter: ChannelSetupAdapter = createEnvPatchedAccountSetupAdapter({
   channelKey: channel,
-  validateInput: ({ accountId, input }) => {
-    if (input.useEnv && accountId !== DEFAULT_ACCOUNT_ID) {
-      return "DISCORD_BOT_TOKEN can only be used for the default account.";
-    }
-    if (!input.useEnv && !input.token) {
-      return "Discord requires token (or --use-env).";
-    }
-    return null;
-  },
-  buildPatch: (input) => (input.useEnv ? {} : input.token ? { token: input.token } : {}),
+  defaultAccountOnlyEnvError: "DISCORD_BOT_TOKEN can only be used for the default account.",
+  missingCredentialError: "Discord requires token (or --use-env).",
+  hasCredentials: (input) => Boolean(input.token),
+  buildPatch: (input) => (input.token ? { token: input.token } : {}),
 });
 
 export function createDiscordSetupWizardBase(handlers: {

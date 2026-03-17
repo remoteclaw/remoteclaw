@@ -1,13 +1,9 @@
 import {
-  applyAccountNameToChannelSection,
   createAllowlistSetupWizardProxy,
-  createPatchedAccountSetupAdapter,
   DEFAULT_ACCOUNT_ID,
-  formatDocsLink,
+  createEnvPatchedAccountSetupAdapter,
   hasConfiguredSecretInput,
-  migrateBaseNameToDefaultAccount,
-  normalizeAccountId,
-  type RemoteClawConfig,
+  type OpenClawConfig,
   noteChannelLookupFailure,
   noteChannelLookupSummary,
   parseMentionOrPrefixedId,
@@ -43,77 +39,71 @@ function enableSlackAccount(cfg: RemoteClawConfig, accountId: string): RemoteCla
   });
 }
 
-export const slackSetupAdapter: ChannelSetupAdapter = {
-  resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-  applyAccountName: ({ cfg, accountId, name }) =>
-    applyAccountNameToChannelSection({
-      cfg,
-      channelKey: channel,
-      accountId,
-      name,
-    }),
-  validateInput: ({ accountId, input }) => {
-    if (input.useEnv && accountId !== DEFAULT_ACCOUNT_ID) {
-      return "Slack env tokens can only be used for the default account.";
-    }
-    if (!input.useEnv && (!input.botToken || !input.appToken)) {
-      return "Slack requires --bot-token and --app-token (or --use-env).";
-    }
-    return null;
-  },
-  applyAccountConfig: ({ cfg, accountId, input }) => {
-    const namedConfig = applyAccountNameToChannelSection({
-      cfg,
-      channelKey: channel,
-      accountId,
-      name: input.name,
-    });
-    const next =
-      accountId !== DEFAULT_ACCOUNT_ID
-        ? migrateBaseNameToDefaultAccount({
-            cfg: namedConfig,
-            channelKey: channel,
-          })
-        : namedConfig;
-    if (accountId === DEFAULT_ACCOUNT_ID) {
+function createSlackTokenCredential(params: {
+  inputKey: "botToken" | "appToken";
+  providerHint: "slack-bot" | "slack-app";
+  credentialLabel: string;
+  preferredEnvVar: "SLACK_BOT_TOKEN" | "SLACK_APP_TOKEN";
+  keepPrompt: string;
+  inputPrompt: string;
+}) {
+  return {
+    inputKey: params.inputKey,
+    providerHint: params.providerHint,
+    credentialLabel: params.credentialLabel,
+    preferredEnvVar: params.preferredEnvVar,
+    envPrompt: `${params.preferredEnvVar} detected. Use env var?`,
+    keepPrompt: params.keepPrompt,
+    inputPrompt: params.inputPrompt,
+    allowEnv: ({ accountId }: { accountId: string }) => accountId === DEFAULT_ACCOUNT_ID,
+    inspect: ({ cfg, accountId }: { cfg: OpenClawConfig; accountId: string }) => {
+      const resolved = resolveSlackAccount({ cfg, accountId });
+      const configuredValue =
+        params.inputKey === "botToken" ? resolved.config.botToken : resolved.config.appToken;
+      const resolvedValue = params.inputKey === "botToken" ? resolved.botToken : resolved.appToken;
       return {
-        ...next,
-        channels: {
-          ...next.channels,
-          slack: {
-            ...next.channels?.slack,
-            enabled: true,
-            ...(input.useEnv
-              ? {}
-              : {
-                  ...(input.botToken ? { botToken: input.botToken } : {}),
-                  ...(input.appToken ? { appToken: input.appToken } : {}),
-                }),
-          },
-        },
+        accountConfigured: Boolean(resolvedValue) || hasConfiguredSecretInput(configuredValue),
+        hasConfiguredValue: hasConfiguredSecretInput(configuredValue),
+        resolvedValue: resolvedValue?.trim() || undefined,
+        envValue:
+          accountId === DEFAULT_ACCOUNT_ID
+            ? process.env[params.preferredEnvVar]?.trim()
+            : undefined,
       };
-    }
-    return {
-      ...next,
-      channels: {
-        ...next.channels,
-        slack: {
-          ...next.channels?.slack,
+    },
+    applyUseEnv: ({ cfg, accountId }: { cfg: OpenClawConfig; accountId: string }) =>
+      enableSlackAccount(cfg, accountId),
+    applySet: ({
+      cfg,
+      accountId,
+      value,
+    }: {
+      cfg: OpenClawConfig;
+      accountId: string;
+      value: unknown;
+    }) =>
+      patchChannelConfigForAccount({
+        cfg,
+        channel,
+        accountId,
+        patch: {
           enabled: true,
-          accounts: {
-            ...next.channels?.slack?.accounts,
-            [accountId]: {
-              ...next.channels?.slack?.accounts?.[accountId],
-              enabled: true,
-              ...(input.botToken ? { botToken: input.botToken } : {}),
-              ...(input.appToken ? { appToken: input.appToken } : {}),
-            },
-          },
+          [params.inputKey]: value,
         },
-      },
-    };
-  },
-};
+      }),
+  };
+}
+
+export const slackSetupAdapter: ChannelSetupAdapter = createEnvPatchedAccountSetupAdapter({
+  channelKey: channel,
+  defaultAccountOnlyEnvError: "Slack env tokens can only be used for the default account.",
+  missingCredentialError: "Slack requires --bot-token and --app-token (or --use-env).",
+  hasCredentials: (input) => Boolean(input.botToken && input.appToken),
+  buildPatch: (input) => ({
+    ...(input.botToken ? { botToken: input.botToken } : {}),
+    ...(input.appToken ? { appToken: input.appToken } : {}),
+  }),
+});
 
 export function createSlackSetupWizardBase(handlers: {
   promptAllowFrom: NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>;

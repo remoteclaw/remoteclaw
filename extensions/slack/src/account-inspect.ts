@@ -1,13 +1,13 @@
 import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
-  type OpenClawConfig,
-  type SlackAccountConfig,
-} from "openclaw/plugin-sdk/slack";
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/account-resolution";
 import {
   hasConfiguredSecretInput,
   normalizeSecretInputString,
-} from "../../../src/config/types.secrets.js";
+} from "remoteclaw/plugin-sdk/config-runtime";
+import type { SlackAccountConfig } from "remoteclaw/plugin-sdk/slack";
 import type { SlackAccountSurfaceFields } from "./account-surface-fields.js";
 import {
   mergeSlackAccountConfig,

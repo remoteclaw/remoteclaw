@@ -1,8 +1,5 @@
-import type {
-  ProviderResolveDynamicModelContext,
-  ProviderRuntimeModel,
-} from "remoteclaw/plugin-sdk/core";
-import { normalizeModelCompat } from "remoteclaw/plugin-sdk/provider-models";
+import { findCatalogTemplate } from "remoteclaw/plugin-sdk/provider-catalog";
+import { cloneFirstTemplateModel } from "remoteclaw/plugin-sdk/provider-models";
 
 export const OPENAI_API_BASE_URL = "https://api.openai.com/v1";
 

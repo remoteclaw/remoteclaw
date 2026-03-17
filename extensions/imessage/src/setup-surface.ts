@@ -1,4 +1,9 @@
-import { detectBinary } from "../../../src/commands/onboard-helpers.js";
+import {
+  detectBinary,
+  setSetupChannelEnabled,
+  type ChannelSetupWizard,
+} from "remoteclaw/plugin-sdk/setup";
+import { listIMessageAccountIds, resolveIMessageAccount } from "./accounts.js";
 import {
   DEFAULT_ACCOUNT_ID,
   type RemoteClawConfig,

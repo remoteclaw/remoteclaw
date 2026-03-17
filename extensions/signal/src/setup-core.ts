@@ -1,5 +1,11 @@
 import { createPatchedAccountSetupAdapter } from "../../../src/channels/plugins/setup-helpers.js";
 import {
+  applyAccountNameToChannelSection,
+  DEFAULT_ACCOUNT_ID,
+  formatCliCommand,
+  formatDocsLink,
+  migrateBaseNameToDefaultAccount,
+  normalizeAccountId,
   normalizeE164,
   parseSetupEntriesAllowingWildcard,
   promptParsedAllowFromForScopedChannel,
@@ -12,8 +18,8 @@ import type {
   ChannelSetupAdapter,
   ChannelSetupDmPolicy,
   ChannelSetupWizard,
+  ChannelSetupWizardTextInput,
 } from "remoteclaw/plugin-sdk/setup";
-import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,

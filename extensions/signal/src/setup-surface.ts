@@ -1,6 +1,10 @@
-import { formatCliCommand } from "../../../src/cli/command-format.js";
-import { detectBinary } from "../../../src/commands/onboard-helpers.js";
-import { installSignalCli } from "../../../src/commands/signal-install.js";
+import {
+  detectBinary,
+  installSignalCli,
+  setSetupChannelEnabled,
+  type ChannelSetupWizard,
+} from "remoteclaw/plugin-sdk/setup";
+import { listSignalAccountIds, resolveSignalAccount } from "./accounts.js";
 import {
   DEFAULT_ACCOUNT_ID,
   type RemoteClawConfig,

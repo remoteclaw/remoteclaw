@@ -208,47 +208,11 @@ setLineRuntime({
   },
 } as never);
 
-vi.mock("../../../../extensions/matrix/src/matrix/send.js", async () => {
-  const actual = await vi.importActual<
-    typeof import("../../../../extensions/matrix/src/matrix/send.js")
-  >("../../../../extensions/matrix/src/matrix/send.js");
-  return {
-    ...actual,
-    sendMessageMatrix: sendMessageMatrixMock,
-  };
-});
-
-const matrixSessionBindingStateDir = fs.mkdtempSync(
-  path.join(os.tmpdir(), "openclaw-matrix-session-binding-contract-"),
-);
-const matrixSessionBindingAuth = {
-  accountId: "ops",
-  homeserver: "https://matrix.example.org",
-  userId: "@bot:example.org",
-  accessToken: "token",
-} as const;
-
-function resetMatrixSessionBindingStateDir() {
-  fs.rmSync(matrixSessionBindingStateDir, { recursive: true, force: true });
-  fs.mkdirSync(matrixSessionBindingStateDir, { recursive: true });
-}
-
-async function createContractMatrixThreadBindingManager() {
-  resetMatrixSessionBindingStateDir();
-  setMatrixRuntime({
-    state: {
-      resolveStateDir: () => matrixSessionBindingStateDir,
-    },
-  } as never);
-  return await createMatrixThreadBindingManager({
-    accountId: matrixSessionBindingAuth.accountId,
-    auth: matrixSessionBindingAuth,
-    client: {} as never,
-    idleTimeoutMs: 24 * 60 * 60 * 1000,
-    maxAgeMs: 0,
-    enableSweeper: false,
-  });
-}
+setMatrixRuntime({
+  state: {
+    resolveStateDir: (_env: unknown, homeDir?: () => string) => (homeDir ?? (() => "/tmp"))(),
+  },
+} as never);
 
 export const pluginContractRegistry: PluginContractEntry[] = bundledChannelPlugins.map(
   (plugin) => ({

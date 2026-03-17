@@ -10,7 +10,9 @@ import type {
 import { formatDocsLink } from "remoteclaw/plugin-sdk/setup-tools";
 import {
   applyAccountNameToChannelSection,
+  createPatchedAccountSetupAdapter,
   DEFAULT_ACCOUNT_ID,
+  formatDocsLink,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   noteChannelLookupFailure,
@@ -19,14 +21,14 @@ import {
   patchChannelConfigForAccount,
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-  type OpenClawConfig,
+  type RemoteClawConfig,
 } from "../../../src/plugin-sdk-internal/setup.js";
 import {
+  createAllowlistSetupWizardProxy,
   type ChannelSetupAdapter,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
-} from "../../../src/plugin-sdk-internal/setup.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "remoteclaw/plugin-sdk/setup";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import { listDiscordAccountIds, resolveDiscordAccount } from "./accounts.js";
 
@@ -95,9 +97,15 @@ export const discordSetupAdapter: ChannelSetupAdapter = createPatchedAccountSetu
   buildPatch: (input) => (input.useEnv ? {} : input.token ? { token: input.token } : {}),
 });
 
-export function createDiscordSetupWizardProxy(
-  loadWizard: () => Promise<{ discordSetupWizard: ChannelSetupWizard }>,
-) {
+export function createDiscordSetupWizardBase(handlers: {
+  promptAllowFrom: NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>;
+  resolveAllowFromEntries: NonNullable<
+    NonNullable<ChannelSetupWizard["allowFrom"]>["resolveEntries"]
+  >;
+  resolveGroupAllowlist: NonNullable<
+    NonNullable<NonNullable<ChannelSetupWizard["groupAccess"]>["resolveAllowlist"]>
+  >;
+}) {
   const discordDmPolicy: ChannelSetupDmPolicy = {
     label: "Discord",
     channel,
@@ -111,13 +119,7 @@ export function createDiscordSetupWizardProxy(
         channel,
         dmPolicy: policy,
       }),
-    promptAllowFrom: async ({ cfg, prompter, accountId }) => {
-      const wizard = (await loadWizard()).discordSetupWizard;
-      if (!wizard.dmPolicy?.promptAllowFrom) {
-        return cfg;
-      }
-      return await wizard.dmPolicy.promptAllowFrom({ cfg, prompter, accountId });
-    },
+    promptAllowFrom: handlers.promptAllowFrom,
   };
 
   return {
@@ -178,10 +180,42 @@ export function createDiscordSetupWizardProxy(
           }
           return channelKeys.map((channelKey) => `${guildKey}/${channelKey}`);
         }),
-      updatePrompt: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId: string }) =>
-        Boolean(resolveDiscordSetupAccountConfig({ cfg, accountId }).config.guilds),
-      resolveAllowlist: handlers.resolveGroupAllowlist,
-      fallbackResolved: (entries) => entries.map((input) => ({ input, resolved: false })),
+      resolveAllowlist: async ({
+        cfg,
+        accountId,
+        credentialValues,
+        entries,
+        prompter,
+      }: {
+        cfg: RemoteClawConfig;
+        accountId: string;
+        credentialValues: { token?: string };
+        entries: string[];
+        prompter: { note: (message: string, title?: string) => Promise<void> };
+      }) => {
+        try {
+          return await handlers.resolveGroupAllowlist({
+            cfg,
+            accountId,
+            credentialValues,
+            entries,
+            prompter,
+          });
+        } catch (error) {
+          await noteChannelLookupFailure({
+            prompter,
+            label: "Discord channels",
+            error,
+          });
+          await noteChannelLookupSummary({
+            prompter,
+            label: "Discord channels",
+            resolvedSections: [],
+            unresolved: entries,
+          });
+          return entries.map((input) => ({ input, resolved: false }));
+        }
+      },
       applyAllowlist: ({
         cfg,
         accountId,
@@ -219,18 +253,7 @@ export function createDiscordSetupWizardProxy(
         accountId: string;
         credentialValues: { token?: string };
         entries: string[];
-      }) => {
-        const wizard = (await loadWizard()).discordSetupWizard;
-        if (!wizard.allowFrom) {
-          return entries.map((input) => ({ input, resolved: false, id: null }));
-        }
-        return await wizard.allowFrom.resolveEntries({
-          cfg,
-          accountId,
-          credentialValues,
-          entries,
-        });
-      },
+      }) => await handlers.resolveAllowFromEntries({ cfg, accountId, credentialValues, entries }),
       apply: async ({
         cfg,
         accountId,

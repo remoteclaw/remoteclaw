@@ -1,8 +1,9 @@
 import {
   DEFAULT_ACCOUNT_ID,
+  formatDocsLink,
   noteChannelLookupFailure,
   noteChannelLookupSummary,
-  type OpenClawConfig,
+  type RemoteClawConfig,
   parseMentionOrPrefixedId,
   patchChannelConfigForAccount,
   promptLegacyChannelAllowFrom,
@@ -10,9 +11,8 @@ import {
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
   type WizardPrompter,
-  type ChannelSetupWizard,
-} from "../../../src/plugin-sdk-internal/setup.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "remoteclaw/plugin-sdk/setup";
+import { type ChannelSetupDmPolicy, type ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import {
   listDiscordAccountIds,

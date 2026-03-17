@@ -21,6 +21,7 @@ export { normalizeE164, pathExists } from "../utils.js";
 export {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
+  createEnvPatchedAccountSetupAdapter,
   createPatchedAccountSetupAdapter,
   migrateBaseNameToDefaultAccount,
   patchScopedAccountConfig,

@@ -10,6 +10,8 @@ import {
   requireOpenClawAgentDir,
   setupAuthTestEnv,
 } from "../../commands/test-wizard-helpers.js";
+import { clearRuntimeAuthProfileStoreSnapshots } from "../../agents/auth-profiles/store.js";
+import { applyAuthChoiceLoadedPluginProvider } from "../../plugins/provider-auth-choice.js";
 import { buildProviderPluginMethodChoice } from "../provider-wizard.js";
 import { requireProviderContractProvider, uniqueProviderContractProviders } from "./registry.js";
 import { registerProviders, requireProvider } from "./testkit.js";
@@ -49,6 +51,8 @@ type StoredAuthProfile = {
   key?: string;
   token?: string;
 };
+
+const qwenPortalPlugin = (await import("../../../extensions/qwen-portal-auth/index.js")).default;
 
 describe("provider auth-choice contract", () => {
   const lifecycle = createAuthTestLifecycle([

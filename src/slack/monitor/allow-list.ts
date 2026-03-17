@@ -40,7 +40,10 @@ export function resolveSlackAllowListMatch(params: {
   const id = params.id?.toLowerCase();
   const name = params.name?.toLowerCase();
   const slug = normalizeSlackSlug(name);
-  const candidates: Array<{ value?: string; source: SlackAllowListMatch["matchSource"] }> = [
+  const candidates: Array<{
+    value?: string;
+    source: NonNullable<SlackAllowListMatch["matchSource"]>;
+  }> = [
     { value: id, source: "id" },
     { value: id ? `slack:${id}` : undefined, source: "prefixed-id" },
     { value: id ? `user:${id}` : undefined, source: "prefixed-user" },
@@ -49,7 +52,10 @@ export function resolveSlackAllowListMatch(params: {
           { value: name, source: "name" as const },
           { value: name ? `slack:${name}` : undefined, source: "prefixed-name" as const },
           { value: slug, source: "slug" as const },
-        ] satisfies Array<{ value?: string; source: SlackAllowListMatch["matchSource"] }>)
+        ] satisfies Array<{
+          value?: string;
+          source: NonNullable<SlackAllowListMatch["matchSource"]>;
+        }>)
       : []),
   ];
   return resolveAllowlistMatchByCandidates({ allowList, candidates }) as SlackAllowListMatch;

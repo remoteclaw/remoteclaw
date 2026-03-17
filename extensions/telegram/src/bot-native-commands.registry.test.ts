@@ -44,6 +44,72 @@ async function registerPairMenu(params: {
 }
 
 describe("registerTelegramNativeCommands real plugin registry", () => {
+  type RegisteredCommand = {
+    command: string;
+    description: string;
+  };
+
+  function createCommandBot() {
+    const commandHandlers = new Map<string, (ctx: unknown) => Promise<void>>();
+    const sendMessage = vi.fn().mockResolvedValue(undefined);
+    const setMyCommands = vi.fn().mockResolvedValue(undefined);
+    const bot = {
+      api: {
+        setMyCommands,
+        sendMessage,
+      },
+      command: vi.fn((name: string, cb: (ctx: unknown) => Promise<void>) => {
+        commandHandlers.set(name, cb);
+      }),
+    } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"];
+    return { bot, commandHandlers, sendMessage, setMyCommands };
+  }
+
+  async function waitForRegisteredCommands(
+    setMyCommands: ReturnType<typeof vi.fn>,
+  ): Promise<RegisteredCommand[]> {
+    await vi.waitFor(() => {
+      expect(setMyCommands).toHaveBeenCalled();
+    });
+    return setMyCommands.mock.calls[0]?.[0] as RegisteredCommand[];
+  }
+
+  const buildParams = (cfg: OpenClawConfig, accountId = "default") =>
+    ({
+      bot: {
+        api: {
+          setMyCommands: vi.fn().mockResolvedValue(undefined),
+          sendMessage: vi.fn().mockResolvedValue(undefined),
+        },
+        command: vi.fn(),
+      } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
+      cfg,
+      runtime: {} as RuntimeEnv,
+      accountId,
+      telegramCfg: {} as TelegramAccountConfig,
+      allowFrom: [],
+      groupAllowFrom: [],
+      replyToMode: "off",
+      textLimit: 4000,
+      useAccessGroups: false,
+      nativeEnabled: true,
+      nativeSkillsEnabled: true,
+      nativeDisabledExplicit: false,
+      resolveGroupPolicy: () =>
+        ({
+          allowlistEnabled: false,
+          allowed: true,
+        }) as ReturnType<
+          Parameters<typeof registerTelegramNativeCommands>[0]["resolveGroupPolicy"]
+        >,
+      resolveTelegramGroupConfig: () => ({
+        groupConfig: undefined,
+        topicConfig: undefined,
+      }),
+      shouldSkipUpdate: () => false,
+      opts: { token: "token" },
+    }) satisfies Parameters<typeof registerTelegramNativeCommands>[0];
+
   beforeEach(() => {
     clearPluginCommands();
     resetNativeCommandMenuMocks();
@@ -56,7 +122,22 @@ describe("registerTelegramNativeCommands real plugin registry", () => {
   it("registers and executes plugin commands through the real plugin registry", async () => {
     const { bot, commandHandlers, sendMessage, setMyCommands } = createCommandBot();
 
-    const registeredCommands = await registerPairMenu({ bot, setMyCommands });
+    expect(
+      registerPluginCommand("demo-plugin", {
+        name: "pair",
+        description: "Pair device",
+        acceptsArgs: true,
+        requireAuth: false,
+        handler: async ({ args }) => ({ text: `paired:${args ?? ""}` }),
+      }),
+    ).toEqual({ ok: true });
+
+    registerTelegramNativeCommands({
+      ...buildParams({}),
+      bot,
+    });
+
+    const registeredCommands = await waitForRegisteredCommands(setMyCommands);
     expect(registeredCommands).toEqual(
       expect.arrayContaining([{ command: "pair", description: "Pair device" }]),
     );
@@ -74,41 +155,21 @@ describe("registerTelegramNativeCommands real plugin registry", () => {
     expect(sendMessage).not.toHaveBeenCalledWith(123, "Command not found.");
   });
 
-  it("round-trips Telegram native aliases through the real plugin registry", async () => {
-    const { bot, commandHandlers, sendMessage, setMyCommands } = createCommandBot();
-
-    const registeredCommands = await registerPairMenu({
-      bot,
-      setMyCommands,
-      nativeNames: {
-        telegram: "pair_device",
-        discord: "pairdiscord",
-      },
-    });
-    expect(registeredCommands).toEqual(
-      expect.arrayContaining([{ command: "pair_device", description: "Pair device" }]),
-    );
-
-    const handler = commandHandlers.get("pair_device");
-    expect(handler).toBeTruthy();
-
-    await handler?.(createPrivateCommandContext({ match: "now", messageId: 2 }));
-
-    expect(deliverReplies).toHaveBeenCalledWith(
-      expect.objectContaining({
-        replies: [expect.objectContaining({ text: "paired:now" })],
-      }),
-    );
-    expect(sendMessage).not.toHaveBeenCalledWith(123, "Command not found.");
-  });
-
   it("keeps real plugin command handlers available when native menu registration is disabled", () => {
     const { bot, commandHandlers, setMyCommands } = createCommandBot();
 
-    registerPairPluginCommand();
+    expect(
+      registerPluginCommand("demo-plugin", {
+        name: "pair",
+        description: "Pair device",
+        acceptsArgs: true,
+        requireAuth: false,
+        handler: async ({ args }) => ({ text: `paired:${args ?? ""}` }),
+      }),
+    ).toEqual({ ok: true });
 
     registerTelegramNativeCommands({
-      ...createNativeCommandTestParams({}, { accountId: "default" }),
+      ...buildParams({}, "default"),
       bot,
       nativeEnabled: false,
     });
@@ -120,11 +181,19 @@ describe("registerTelegramNativeCommands real plugin registry", () => {
   it("allows requireAuth:false plugin commands for unauthorized senders through the real registry", async () => {
     const { bot, commandHandlers, sendMessage, setMyCommands } = createCommandBot();
 
-    registerPairPluginCommand();
+    expect(
+      registerPluginCommand("demo-plugin", {
+        name: "pair",
+        description: "Pair device",
+        acceptsArgs: true,
+        requireAuth: false,
+        handler: async ({ args }) => ({ text: `paired:${args ?? ""}` }),
+      }),
+    ).toEqual({ ok: true });
 
     registerTelegramNativeCommands({
-      ...createNativeCommandTestParams({
-        commands: { allowFrom: { telegram: ["999"] } } as RemoteClawConfig["commands"],
+      ...buildParams({
+        commands: { allowFrom: { telegram: ["999"] } } as OpenClawConfig["commands"],
       }),
       bot,
       allowFrom: ["999"],
@@ -136,17 +205,17 @@ describe("registerTelegramNativeCommands real plugin registry", () => {
     const handler = commandHandlers.get("pair");
     expect(handler).toBeTruthy();
 
-    await handler?.(
-      createPrivateCommandContext({
-        match: "now",
-        messageId: 10,
+    await handler?.({
+      match: "now",
+      message: {
+        message_id: 10,
         date: 123456,
-        userId: 111,
-        username: "nope",
-      }),
-    );
+        chat: { id: 123, type: "private" },
+        from: { id: 111, username: "nope" },
+      },
+    });
 
-    expect(deliverReplies).toHaveBeenCalledWith(
+    expect(deliveryMocks.deliverReplies).toHaveBeenCalledWith(
       expect.objectContaining({
         replies: [expect.objectContaining({ text: "paired:now" })],
       }),

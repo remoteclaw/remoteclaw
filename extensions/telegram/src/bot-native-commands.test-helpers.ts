@@ -4,9 +4,12 @@ import type { TelegramAccountConfig } from "remoteclaw/plugin-sdk/config-runtime
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import type { MockFn } from "remoteclaw/plugin-sdk/testing";
 import { vi } from "vitest";
+import {
+  createNativeCommandTestParams,
+  type NativeCommandTestParams,
+} from "./bot-native-commands.fixture-test-support.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 
-type RegisterTelegramNativeCommandsParams = Parameters<typeof registerTelegramNativeCommands>[0];
 type GetPluginCommandSpecsFn =
   typeof import("remoteclaw/plugin-sdk/plugin-runtime").getPluginCommandSpecs;
 type MatchPluginCommandFn = typeof import("remoteclaw/plugin-sdk/plugin-runtime").matchPluginCommand;
@@ -90,79 +93,10 @@ const deliveryMocks = vi.hoisted(() => ({
 }));
 export const deliverReplies = deliveryMocks.deliverReplies;
 vi.mock("./bot/delivery.js", () => ({ deliverReplies: deliveryMocks.deliverReplies }));
-vi.mock("openclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/conversation-runtime")>();
-  return {
-    ...actual,
-    readChannelAllowFromStore: vi.fn(async () => []),
-  };
-});
+vi.mock("openclaw/plugin-sdk/conversation-runtime", () => ({
+  readChannelAllowFromStore: vi.fn(async () => []),
+}));
 export { createNativeCommandTestParams };
-
-export function createNativeCommandsHarness(params?: {
-  cfg?: RemoteClawConfig;
-  runtime?: RuntimeEnv;
-  telegramCfg?: TelegramAccountConfig;
-  allowFrom?: string[];
-  groupAllowFrom?: string[];
-  useAccessGroups?: boolean;
-  nativeEnabled?: boolean;
-  groupConfig?: Record<string, unknown>;
-  resolveGroupPolicy?: () => ChannelGroupPolicy;
-}): NativeCommandHarness {
-  const handlers: Record<string, (ctx: unknown) => Promise<void>> = {};
-  const sendMessage: AnyAsyncMock = vi.fn(async () => undefined);
-  const setMyCommands: AnyAsyncMock = vi.fn(async () => undefined);
-  const log: AnyMock = vi.fn();
-  const telegramDeps = {
-    loadConfig: vi.fn(() => params?.cfg ?? ({} as OpenClawConfig)),
-    resolveStorePath: vi.fn((storePath?: string) => storePath ?? "/tmp/sessions.json"),
-    readChannelAllowFromStore: vi.fn(async () => []),
-    enqueueSystemEvent: vi.fn(),
-    dispatchReplyWithBufferedBlockDispatcher:
-      replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
-    listSkillCommandsForAgents: vi.fn(() => []),
-    wasSentByBot: vi.fn(() => false),
-  };
-  const bot = {
-    api: {
-      setMyCommands,
-      sendMessage,
-    },
-    command: (name: string, handler: (ctx: unknown) => Promise<void>) => {
-      handlers[name] = handler;
-    },
-  } as unknown as RegisterTelegramNativeCommandsParams["bot"];
-
-  registerTelegramNativeCommands({
-    bot,
-    cfg: params?.cfg ?? ({} as RemoteClawConfig),
-    runtime: params?.runtime ?? ({ log } as unknown as RuntimeEnv),
-    accountId: "default",
-    telegramCfg: params?.telegramCfg ?? ({} as TelegramAccountConfig),
-    allowFrom: params?.allowFrom ?? [],
-    groupAllowFrom: params?.groupAllowFrom ?? [],
-    replyToMode: "off",
-    textLimit: 4000,
-    useAccessGroups: params?.useAccessGroups ?? false,
-    nativeEnabled: params?.nativeEnabled ?? true,
-    nativeSkillsEnabled: false,
-    nativeDisabledExplicit: false,
-    telegramDeps,
-    resolveGroupPolicy:
-      params.resolveGroupPolicy ??
-      (() =>
-        ({
-          allowlistEnabled: false,
-          allowed: true,
-        }) as ReturnType<RegisterTelegramNativeCommandsParams["resolveGroupPolicy"]>),
-    resolveTelegramGroupConfig:
-      params.resolveTelegramGroupConfig ??
-      (() => ({ groupConfig: undefined, topicConfig: undefined })),
-    shouldSkipUpdate: params.shouldSkipUpdate ?? (() => false),
-    opts: params.opts ?? { token: "token" },
-  };
-}
 
 export function createNativeCommandsHarness(params?: {
   cfg?: RemoteClawConfig;
@@ -175,10 +109,60 @@ export function createNativeCommandsHarness(params?: {
   textLimit?: number;
   useAccessGroups?: boolean;
   nativeEnabled?: boolean;
-  nativeDisabledExplicit?: boolean;
-  resolveTelegramGroupConfig?: RegisterTelegramNativeCommandParams["resolveTelegramGroupConfig"];
-  opts?: RegisterTelegramNativeCommandParams["opts"];
-}): RegisterTelegramNativeCommandParams {
+  groupConfig?: Record<string, unknown>;
+  resolveGroupPolicy?: () => ChannelGroupPolicy;
+}): NativeCommandHarness {
+  const handlers: Record<string, (ctx: unknown) => Promise<void>> = {};
+  const sendMessage: AnyAsyncMock = vi.fn(async () => undefined);
+  const setMyCommands: AnyAsyncMock = vi.fn(async () => undefined);
+  const log: AnyMock = vi.fn();
+  const bot: NativeCommandHarness["bot"] = {
+    api: {
+      setMyCommands,
+      sendMessage,
+    },
+    command: (name: string, handler: (ctx: unknown) => Promise<void>) => {
+      handlers[name] = handler;
+    },
+  } as const;
+
+  registerTelegramNativeCommands({
+    bot: bot as unknown as NativeCommandTestParams["bot"],
+    cfg: params?.cfg ?? ({} as OpenClawConfig),
+    runtime: params?.runtime ?? ({ log } as unknown as RuntimeEnv),
+    accountId: "default",
+    telegramCfg: params?.telegramCfg ?? ({} as TelegramAccountConfig),
+    allowFrom: params?.allowFrom ?? [],
+    groupAllowFrom: params?.groupAllowFrom ?? [],
+    replyToMode: "off",
+    textLimit: 4000,
+    useAccessGroups: params?.useAccessGroups ?? false,
+    nativeEnabled: params?.nativeEnabled ?? true,
+    nativeSkillsEnabled: false,
+    nativeDisabledExplicit: false,
+    resolveGroupPolicy:
+      params?.resolveGroupPolicy ??
+      (() =>
+        ({
+          allowlistEnabled: false,
+          allowed: true,
+        }) as ChannelGroupPolicy),
+    resolveTelegramGroupConfig: () => ({
+      groupConfig: params?.groupConfig as undefined,
+      topicConfig: undefined,
+    }),
+    shouldSkipUpdate: () => false,
+    opts: { token: "token" },
+  });
+
+  return { handlers, sendMessage, setMyCommands, log, bot };
+}
+
+export function createTelegramGroupCommandContext(params?: {
+  senderId?: number;
+  username?: string;
+  threadId?: number;
+}) {
   return {
     bot: params.bot,
     cfg: params.cfg ?? { agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] } },

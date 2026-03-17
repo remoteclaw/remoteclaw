@@ -10,11 +10,16 @@ import {
   type NativeCommandTestParams,
 } from "./bot-native-commands.fixture-test-support.js";
 import {
+  createDeferred,
+  createNativeCommandTestParams,
+  createTelegramPrivateCommandContext,
+  createTelegramTopicCommandContext,
+  type NativeCommandTestParams,
+} from "./bot-native-commands.fixture-test-support.js";
+import {
   registerTelegramNativeCommands,
   type RegisterTelegramHandlerParams,
 } from "./bot-native-commands.js";
-
-type RegisterTelegramNativeCommandsParams = Parameters<typeof registerTelegramNativeCommands>[0];
 
 // All mocks scoped to this file only — does not affect bot-native-commands.test.ts
 
@@ -146,55 +151,51 @@ vi.mock("./bot/delivery.js", () => ({
   deliverReplies: vi.fn(async () => ({ delivered: true })),
 }));
 
-function createDeferred<T>() {
-  let resolve!: (value: T | PromiseLike<T>) => void;
-  const promise = new Promise<T>((res) => {
-    resolve = res;
-  });
-  return { promise, resolve };
-}
-
 type TelegramCommandHandler = (ctx: unknown) => Promise<void>;
-
-function buildStatusCommandContext() {
-  return {
-    match: "",
-    message: {
-      message_id: 1,
-      date: Math.floor(Date.now() / 1000),
-      chat: { id: 100, type: "private" as const },
-      from: { id: 200, username: "bob" },
-    },
-  };
-}
-
-function buildStatusTopicCommandContext() {
-  return {
-    match: "",
-    message: {
-      message_id: 2,
-      date: Math.floor(Date.now() / 1000),
-      chat: {
-        id: -1001234567890,
-        type: "supergroup" as const,
-        title: "OpenClaw",
-        is_forum: true,
-      },
-      message_thread_id: 42,
-      from: { id: 200, username: "bob" },
-    },
-  };
-}
 
 function registerAndResolveStatusHandler(params: {
   cfg: RemoteClawConfig;
   allowFrom?: string[];
   groupAllowFrom?: string[];
+  telegramCfg?: NativeCommandTestParams["telegramCfg"];
+  resolveTelegramGroupConfig?: RegisterTelegramHandlerParams["resolveTelegramGroupConfig"];
 }): {
   handler: TelegramCommandHandler;
   sendMessage: ReturnType<typeof vi.fn>;
 } {
-  const { cfg, allowFrom, groupAllowFrom } = params;
+  const { cfg, allowFrom, groupAllowFrom, telegramCfg, resolveTelegramGroupConfig } = params;
+  return registerAndResolveCommandHandlerBase({
+    commandName: "status",
+    cfg,
+    allowFrom: allowFrom ?? ["*"],
+    groupAllowFrom: groupAllowFrom ?? [],
+    useAccessGroups: true,
+    telegramCfg,
+    resolveTelegramGroupConfig,
+  });
+}
+
+function registerAndResolveCommandHandlerBase(params: {
+  commandName: string;
+  cfg: OpenClawConfig;
+  allowFrom: string[];
+  groupAllowFrom: string[];
+  useAccessGroups: boolean;
+  telegramCfg?: NativeCommandTestParams["telegramCfg"];
+  resolveTelegramGroupConfig?: RegisterTelegramHandlerParams["resolveTelegramGroupConfig"];
+}): {
+  handler: TelegramCommandHandler;
+  sendMessage: ReturnType<typeof vi.fn>;
+} {
+  const {
+    commandName,
+    cfg,
+    allowFrom,
+    groupAllowFrom,
+    useAccessGroups,
+    telegramCfg,
+    resolveTelegramGroupConfig,
+  } = params;
   const commandHandlers = new Map<string, TelegramCommandHandler>();
   const sendMessage = vi.fn().mockResolvedValue(undefined);
   const telegramDeps: TelegramBotDeps = {
@@ -217,7 +218,7 @@ function registerAndResolveStatusHandler(params: {
         command: vi.fn((name: string, cb: TelegramCommandHandler) => {
           commandHandlers.set(name, cb);
         }),
-      } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
+      } as unknown as NativeCommandTestParams["bot"],
       cfg,
       allowFrom,
       groupAllowFrom,
@@ -239,6 +240,8 @@ function registerAndResolveCommandHandler(params: {
   allowFrom?: string[];
   groupAllowFrom?: string[];
   useAccessGroups?: boolean;
+  telegramCfg?: NativeCommandTestParams["telegramCfg"];
+  resolveTelegramGroupConfig?: RegisterTelegramHandlerParams["resolveTelegramGroupConfig"];
 }): {
   handler: TelegramCommandHandler;
   sendMessage: ReturnType<typeof vi.fn>;
@@ -320,7 +323,7 @@ describe("registerTelegramNativeCommands — session metadata", () => {
       agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
     };
     const { handler } = registerAndResolveStatusHandler({ cfg });
-    await handler(buildStatusCommandContext());
+    await handler(createTelegramPrivateCommandContext());
 
     expect(sessionMocks.recordSessionMetaFromInbound).toHaveBeenCalledTimes(1);
     const call = (
@@ -341,7 +344,7 @@ describe("registerTelegramNativeCommands — session metadata", () => {
       agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
     };
     const { handler } = registerAndResolveStatusHandler({ cfg });
-    const runPromise = handler(buildStatusCommandContext());
+    const runPromise = handler(createTelegramPrivateCommandContext());
 
     await vi.waitFor(() => {
       expect(sessionMocks.recordSessionMetaFromInbound).toHaveBeenCalledTimes(1);
@@ -352,6 +355,106 @@ describe("registerTelegramNativeCommands — session metadata", () => {
     await runPromise;
 
     expect(replyMocks.dispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not inject approval buttons for native command replies once the monitor owns approvals", async () => {
+    replyMocks.dispatchReplyWithBufferedBlockDispatcher.mockImplementationOnce(
+      async ({ dispatcherOptions }: DispatchReplyWithBufferedBlockDispatcherParams) => {
+        await dispatcherOptions.deliver(
+          {
+            text: "Mode: foreground\nRun: /approve 7f423fdc allow-once (or allow-always / deny).",
+          },
+          { kind: "final" },
+        );
+        return dispatchReplyResult;
+      },
+    );
+
+    const { handler } = registerAndResolveStatusHandler({
+      cfg: {
+        channels: {
+          telegram: {
+            execApprovals: {
+              enabled: true,
+              approvers: ["12345"],
+              target: "dm",
+            },
+          },
+        },
+      },
+    });
+    await handler(createTelegramPrivateCommandContext());
+
+    const deliveredCall = deliveryMocks.deliverReplies.mock.calls[0]?.[0] as
+      | DeliverRepliesParams
+      | undefined;
+    const deliveredPayload = deliveredCall?.replies?.[0];
+    expect(deliveredPayload).toBeTruthy();
+    expect(deliveredPayload?.["text"]).toContain("/approve 7f423fdc allow-once");
+    expect(deliveredPayload?.["channelData"]).toBeUndefined();
+  });
+
+  it("suppresses local structured exec approval replies for native commands", async () => {
+    replyMocks.dispatchReplyWithBufferedBlockDispatcher.mockImplementationOnce(
+      async ({ dispatcherOptions }: DispatchReplyWithBufferedBlockDispatcherParams) => {
+        await dispatcherOptions.deliver(
+          {
+            text: "Approval required.\n\n```txt\n/approve 7f423fdc allow-once\n```",
+            channelData: {
+              execApproval: {
+                approvalId: "7f423fdc-1111-2222-3333-444444444444",
+                approvalSlug: "7f423fdc",
+                allowedDecisions: ["allow-once", "allow-always", "deny"],
+              },
+            },
+          },
+          { kind: "tool" },
+        );
+        return dispatchReplyResult;
+      },
+    );
+
+    const { handler } = registerAndResolveStatusHandler({
+      cfg: {
+        channels: {
+          telegram: {
+            execApprovals: {
+              enabled: true,
+              approvers: ["12345"],
+              target: "dm",
+            },
+          },
+        },
+      },
+    });
+    await handler(createTelegramPrivateCommandContext());
+
+    expect(deliveryMocks.deliverReplies).not.toHaveBeenCalled();
+  });
+
+  it("sends native command error replies silently when silentErrorReplies is enabled", async () => {
+    replyMocks.dispatchReplyWithBufferedBlockDispatcher.mockImplementationOnce(
+      async ({ dispatcherOptions }: DispatchReplyWithBufferedBlockDispatcherParams) => {
+        await dispatcherOptions.deliver({ text: "oops", isError: true }, { kind: "final" });
+        return dispatchReplyResult;
+      },
+    );
+
+    const { handler } = registerAndResolveStatusHandler({
+      cfg: {},
+      telegramCfg: { silentErrorReplies: true },
+    });
+    await handler(createTelegramPrivateCommandContext());
+
+    const deliveredCall = deliveryMocks.deliverReplies.mock.calls[0]?.[0] as
+      | DeliverRepliesParams
+      | undefined;
+    expect(deliveredCall).toEqual(
+      expect.objectContaining({
+        silent: true,
+        replies: [expect.objectContaining({ isError: true })],
+      }),
+    );
   });
 
   it("routes Telegram native commands through configured ACP topic bindings", async () => {
@@ -389,7 +492,7 @@ describe("registerTelegramNativeCommands — session metadata", () => {
       allowFrom: ["200"],
       groupAllowFrom: ["200"],
     });
-    await handler(buildStatusTopicCommandContext());
+    await handler(createTelegramTopicCommandContext());
 
     expect(persistentBindingMocks.resolveConfiguredAcpBindingRecord).toHaveBeenCalledTimes(1);
     expect(persistentBindingMocks.ensureConfiguredAcpBindingSession).toHaveBeenCalledTimes(1);
@@ -405,6 +508,58 @@ describe("registerTelegramNativeCommands — session metadata", () => {
       >
     )[0]?.[0];
     expect(sessionMetaCall?.sessionKey).toBe("agent:codex:telegram:slash:200");
+  });
+
+  it("routes Telegram native commands through topic-specific agent sessions", async () => {
+    const { handler } = registerAndResolveStatusHandler({
+      cfg: {},
+      allowFrom: ["200"],
+      groupAllowFrom: ["200"],
+      resolveTelegramGroupConfig: () => ({
+        groupConfig: { requireMention: false },
+        topicConfig: { agentId: "zu" },
+      }),
+    });
+    await handler(createTelegramTopicCommandContext());
+
+    const dispatchCall = (
+      replyMocks.dispatchReplyWithBufferedBlockDispatcher.mock.calls as unknown as Array<
+        [{ ctx?: { CommandTargetSessionKey?: string } }]
+      >
+    )[0]?.[0];
+    expect(dispatchCall?.ctx?.CommandTargetSessionKey).toBe(
+      "agent:zu:telegram:group:-1001234567890:topic:42",
+    );
+  });
+
+  it("routes Telegram native commands through bound topic sessions", async () => {
+    sessionBindingMocks.resolveByConversation.mockReturnValue({
+      bindingId: "default:-1001234567890:topic:42",
+      targetSessionKey: "agent:codex-acp:session-1",
+    });
+
+    const { handler } = registerAndResolveStatusHandler({
+      cfg: {},
+      allowFrom: ["200"],
+      groupAllowFrom: ["200"],
+    });
+    await handler(createTelegramTopicCommandContext());
+
+    expect(sessionBindingMocks.resolveByConversation).toHaveBeenCalledWith({
+      channel: "telegram",
+      accountId: "default",
+      conversationId: "-1001234567890:topic:42",
+    });
+    const dispatchCall = (
+      replyMocks.dispatchReplyWithBufferedBlockDispatcher.mock.calls as unknown as Array<
+        [{ ctx?: { CommandTargetSessionKey?: string } }]
+      >
+    )[0]?.[0];
+    expect(dispatchCall?.ctx?.CommandTargetSessionKey).toBe("agent:codex-acp:session-1");
+    expect(sessionBindingMocks.touch).toHaveBeenCalledWith(
+      "default:-1001234567890:topic:42",
+      undefined,
+    );
   });
 
   it("aborts native command dispatch when configured ACP topic binding cannot initialize", async () => {
@@ -443,7 +598,7 @@ describe("registerTelegramNativeCommands — session metadata", () => {
       allowFrom: ["200"],
       groupAllowFrom: ["200"],
     });
-    await handler(buildStatusTopicCommandContext());
+    await handler(createTelegramTopicCommandContext());
 
     expect(replyMocks.dispatchReplyWithBufferedBlockDispatcher).not.toHaveBeenCalled();
     expect(sendMessage).toHaveBeenCalledWith(
@@ -490,7 +645,7 @@ describe("registerTelegramNativeCommands — session metadata", () => {
       groupAllowFrom: [],
       useAccessGroups: true,
     });
-    await handler(buildStatusTopicCommandContext());
+    await handler(createTelegramTopicCommandContext());
 
     expect(replyMocks.dispatchReplyWithBufferedBlockDispatcher).not.toHaveBeenCalled();
     expect(persistentBindingMocks.resolveConfiguredAcpBindingRecord).not.toHaveBeenCalled();
@@ -512,7 +667,7 @@ describe("registerTelegramNativeCommands — session metadata", () => {
       groupAllowFrom: [],
       useAccessGroups: true,
     });
-    await handler(buildStatusTopicCommandContext());
+    await handler(createTelegramTopicCommandContext());
 
     expect(replyMocks.dispatchReplyWithBufferedBlockDispatcher).not.toHaveBeenCalled();
     expect(persistentBindingMocks.resolveConfiguredAcpBindingRecord).not.toHaveBeenCalled();

@@ -2,7 +2,7 @@ import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import type { ChannelGroupPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import type { TelegramAccountConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import type { MockFn } from "remoteclaw/plugin-sdk/test-utils";
+import type { MockFn } from "remoteclaw/plugin-sdk/testing";
 import { vi } from "vitest";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 

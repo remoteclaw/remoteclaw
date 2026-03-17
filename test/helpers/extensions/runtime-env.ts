@@ -1,4 +1,4 @@
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/testing";
 import { vi } from "vitest";
 
 export function createRuntimeEnv(): RuntimeEnv {

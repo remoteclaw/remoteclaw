@@ -2,7 +2,7 @@ import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { resetInboundDedupe } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { MsgContext } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { GetReplyOptions, ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { MockFn } from "remoteclaw/plugin-sdk/test-utils";
+import type { MockFn } from "remoteclaw/plugin-sdk/testing";
 import { beforeEach, vi } from "vitest";
 
 type AnyMock = MockFn<(...args: unknown[]) => unknown>;

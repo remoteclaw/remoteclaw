@@ -2,11 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import type {
-  RemoteClawPluginApi,
-  RemoteClawPluginCommandDefinition,
-  PluginCommandContext,
-} from "../../src/plugins/types.js";
+import { createTestPluginApi } from "../../test/helpers/extensions/plugin-api.js";
 import registerPhoneControl from "./index.js";
 
 function createApi(params: {

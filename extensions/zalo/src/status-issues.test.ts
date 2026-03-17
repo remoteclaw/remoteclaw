@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { expectOpenDmPolicyConfigIssue } from "../../../test/helpers/extensions/status-issues.js";
 import { collectZaloStatusIssues } from "./status-issues.js";
 
 describe("collectZaloStatusIssues", () => {

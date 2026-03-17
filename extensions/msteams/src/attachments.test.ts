@@ -1,7 +1,13 @@
 import type { PluginRuntime, SsrFPolicy } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createPluginRuntimeMock } from "../../test-utils/plugin-runtime-mock.js";
-import { downloadMSTeamsAttachments, downloadMSTeamsGraphMedia } from "./attachments.js";
+import { createPluginRuntimeMock } from "../../../test/helpers/extensions/plugin-runtime-mock.js";
+import {
+  buildMSTeamsAttachmentPlaceholder,
+  buildMSTeamsGraphMessageUrls,
+  buildMSTeamsMediaPayload,
+  downloadMSTeamsAttachments,
+  downloadMSTeamsGraphMedia,
+} from "./attachments.js";
 import { setMSTeamsRuntime } from "./runtime.js";
 
 const GRAPH_HOST = "graph.microsoft.com";

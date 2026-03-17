@@ -1,6 +1,6 @@
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "remoteclaw/plugin-sdk/agent-runtime";
-import type { PluginRuntime } from "remoteclaw/plugin-sdk/test-utils";
-import { removeAckReactionAfterReply, shouldAckReaction } from "remoteclaw/plugin-sdk/test-utils";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/testing";
+import { removeAckReactionAfterReply, shouldAckReaction } from "remoteclaw/plugin-sdk/testing";
 import { vi } from "vitest";
 
 type DeepPartial<T> = {

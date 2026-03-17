@@ -1,4 +1,4 @@
-import type { MockFn } from "remoteclaw/plugin-sdk/test-utils";
+import type { MockFn } from "remoteclaw/plugin-sdk/testing";
 import { vi } from "vitest";
 
 type DiscordWebMediaMockFactoryResult = {

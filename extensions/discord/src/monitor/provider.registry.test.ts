@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import { clearPluginCommands, registerPluginCommand } from "../../../../src/plugins/commands.js";
-import type { RuntimeEnv } from "../../../../src/runtime.js";
+import {
+  baseConfig,
+  baseRuntime,
+  getProviderMonitorTestMocks,
+  resetDiscordProviderMonitorMocks,
+} from "../../../../test/helpers/extensions/discord-provider.test-support.js";
 
 type NativeCommandSpecMock = {
   name: string;

@@ -2,10 +2,11 @@ import "./test-helpers.js";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { setLoggerOverride } from "../../../src/logging.js";
 import { withEnvAsync } from "../../../src/test-utils/env.js";
 import { escapeRegExp, formatEnvelopeTimestamp } from "../../../test/helpers/envelope-timestamp.js";
+import { withEnvAsync } from "../../../test/helpers/extensions/env.js";
 import {
   createMockWebListener,
   createWebListenerFactoryCapture,

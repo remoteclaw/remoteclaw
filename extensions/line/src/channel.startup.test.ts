@@ -4,8 +4,7 @@ import type {
   ResolvedLineAccount,
 } from "remoteclaw/plugin-sdk/line";
 import { describe, expect, it, vi } from "vitest";
-import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
-import { createStartAccountContext } from "../../test-utils/start-account-context.js";
+import { createRuntimeEnv } from "../../../test/helpers/extensions/runtime-env.js";
 import { linePlugin } from "./channel.js";
 import { setLineRuntime } from "./runtime.js";
 

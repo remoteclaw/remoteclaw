@@ -1,6 +1,6 @@
 import { resetSystemEventsForTest } from "remoteclaw/plugin-sdk/infra-runtime";
 import { resetInboundDedupe } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { MockFn } from "remoteclaw/plugin-sdk/test-utils";
+import type { MockFn } from "remoteclaw/plugin-sdk/testing";
 import { beforeEach, vi } from "vitest";
 import type { SignalDaemonExitEvent, SignalDaemonHandle } from "./daemon.js";
 

@@ -5,6 +5,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { withEnvAsync } from "../../../src/test-utils/env.js";
 import { useFrozenTime, useRealTime } from "../../../src/test-utils/frozen-time.js";
 import { escapeRegExp, formatEnvelopeTimestamp } from "../../../test/helpers/envelope-timestamp.js";
+import { withEnvAsync } from "../../../test/helpers/extensions/env.js";
+import { useFrozenTime, useRealTime } from "../../../test/helpers/extensions/frozen-time.js";
 import {
   answerCallbackQuerySpy,
   botCtorSpy,

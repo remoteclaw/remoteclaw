@@ -43,11 +43,7 @@ async function withCapturedStdout(run: () => Promise<void>): Promise<string> {
 }
 
 describe("ensureConfigReady", () => {
-  let ensureConfigReady: (params: {
-    runtime: unknown;
-    commandPath: string[];
-    suppressDoctorStdout?: boolean;
-  }) => Promise<void>;
+  let ensureConfigReady: typeof import("./config-guard.js").ensureConfigReady;
   let resetConfigGuardStateForTests: () => void;
 
   async function runEnsureConfigReady(commandPath: string[], suppressDoctorStdout = false) {

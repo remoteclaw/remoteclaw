@@ -2,12 +2,14 @@
  * Twitch onboarding adapter for CLI setup wizard.
  */
 
-import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
-import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
-import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+import {
+  formatDocsLink,
+  type ChannelSetupAdapter,
+  type ChannelSetupDmPolicy,
+  type ChannelSetupWizard,
+  type RemoteClawConfig,
+  type WizardPrompter,
+} from "remoteclaw/plugin-sdk/setup";
 import { DEFAULT_ACCOUNT_ID, getAccountConfig } from "./config.js";
 import type { TwitchAccountConfig, TwitchRole } from "./types.js";
 import { isAccountConfigured } from "./utils/twitch.js";
@@ -257,7 +259,7 @@ function setTwitchAccessControl(
   });
 }
 
-function resolveTwitchGroupPolicy(cfg: OpenClawConfig): "open" | "allowlist" | "disabled" {
+function resolveTwitchGroupPolicy(cfg: RemoteClawConfig): "open" | "allowlist" | "disabled" {
   const account = getAccountConfig(cfg, DEFAULT_ACCOUNT_ID);
   if (account?.allowedRoles?.includes("all")) {
     return "open";
@@ -269,9 +271,9 @@ function resolveTwitchGroupPolicy(cfg: OpenClawConfig): "open" | "allowlist" | "
 }
 
 function setTwitchGroupPolicy(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   policy: "open" | "allowlist" | "disabled",
-): OpenClawConfig {
+): RemoteClawConfig {
   const allowedRoles: TwitchRole[] =
     policy === "open" ? ["all"] : policy === "allowlist" ? ["moderator", "vip"] : [];
   return setTwitchAccessControl(cfg, allowedRoles, true);
@@ -324,18 +326,18 @@ const twitchGroupAccess: NonNullable<ChannelSetupWizard["groupAccess"]> = {
   label: "Twitch chat",
   placeholder: "",
   skipAllowlistEntries: true,
-  currentPolicy: ({ cfg }) => resolveTwitchGroupPolicy(cfg as OpenClawConfig),
+  currentPolicy: ({ cfg }) => resolveTwitchGroupPolicy(cfg as RemoteClawConfig),
   currentEntries: ({ cfg }) => {
-    const account = getAccountConfig(cfg as OpenClawConfig, DEFAULT_ACCOUNT_ID);
+    const account = getAccountConfig(cfg as RemoteClawConfig, DEFAULT_ACCOUNT_ID);
     return account?.allowFrom ?? [];
   },
   updatePrompt: ({ cfg }) => {
-    const account = getAccountConfig(cfg as OpenClawConfig, DEFAULT_ACCOUNT_ID);
+    const account = getAccountConfig(cfg as RemoteClawConfig, DEFAULT_ACCOUNT_ID);
     return Boolean(account?.allowedRoles?.length || account?.allowFrom?.length);
   },
-  setPolicy: ({ cfg, policy }) => setTwitchGroupPolicy(cfg as OpenClawConfig, policy),
+  setPolicy: ({ cfg, policy }) => setTwitchGroupPolicy(cfg as RemoteClawConfig, policy),
   resolveAllowlist: async () => [],
-  applyAllowlist: ({ cfg }) => cfg as OpenClawConfig,
+  applyAllowlist: ({ cfg }) => cfg as RemoteClawConfig,
 };
 
 export const twitchSetupAdapter: ChannelSetupAdapter = {

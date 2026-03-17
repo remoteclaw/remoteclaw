@@ -1,10 +1,11 @@
 import {
-  createAllowFromSection,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
-  promptParsedAllowFromForAccount,
+  mergeAllowFromEntries,
+  resolveSetupAccountId,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
+  type DmPolicy,
   type RemoteClawConfig,
   type WizardPrompter,
 } from "remoteclaw/plugin-sdk/setup";

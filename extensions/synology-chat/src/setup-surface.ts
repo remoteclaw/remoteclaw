@@ -1,5 +1,4 @@
 import {
-  createAllowFromSection,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
   mergeAllowFromEntries,

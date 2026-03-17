@@ -1,18 +1,15 @@
-import type {
-  ChannelOnboardingAdapter,
-  ChannelOnboardingDmPolicy,
-  RemoteClawConfig,
-  WizardPrompter,
-} from "remoteclaw/plugin-sdk";
 import {
   DEFAULT_ACCOUNT_ID,
+  formatDocsLink,
   formatResolvedUnresolvedNote,
   mergeAllowFromEntries,
   normalizeAccountId,
-  promptChannelAccessConfig,
-  resolveAccountIdForConfigure,
+  patchScopedAccountConfig,
   setTopLevelChannelDmPolicyWithAllowFrom,
-} from "remoteclaw/plugin-sdk";
+  type ChannelSetupDmPolicy,
+  type ChannelSetupWizard,
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/setup";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,

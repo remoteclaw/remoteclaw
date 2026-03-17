@@ -7,11 +7,18 @@ import type {
 import {
   buildSingleChannelSecretPromptState,
   DEFAULT_ACCOUNT_ID,
+  formatDocsLink,
+  hasConfiguredSecretInput,
   mergeAllowFromEntries,
   normalizeAccountId,
-  resolveAccountIdForConfigure,
+  promptSingleChannelSecretInput,
+  runSingleChannelSecretStep,
   setTopLevelChannelDmPolicyWithAllowFrom,
-} from "remoteclaw/plugin-sdk";
+  type ChannelSetupDmPolicy,
+  type ChannelSetupWizard,
+  type RemoteClawConfig,
+  type SecretInput,
+} from "remoteclaw/plugin-sdk/setup";
 import { listZaloAccountIds, resolveDefaultZaloAccountId, resolveZaloAccount } from "./accounts.js";
 
 const channel = "zalo" as const;

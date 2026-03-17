@@ -2,15 +2,20 @@ import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/on
 import {
   addWildcardAllowFrom,
   buildSingleChannelSecretPromptState,
-  formatResolvedUnresolvedNote,
+  DEFAULT_ACCOUNT_ID,
   formatDocsLink,
+  formatResolvedUnresolvedNote,
+  hasConfiguredSecretInput,
   mergeAllowFromEntries,
   promptChannelAccessConfig,
   setTopLevelChannelGroupPolicy,
-  type ChannelOnboardingAdapter,
-  type ChannelOnboardingDmPolicy,
+  type ChannelSetupDmPolicy,
+  type ChannelSetupWizard,
+  type DmPolicy,
+  type RemoteClawConfig,
+  type SecretInput,
   type WizardPrompter,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/setup";
 import { listMatrixDirectoryGroupsLive } from "./directory-live.js";
 import { resolveMatrixAccount } from "./matrix/accounts.js";
 import { ensureMatrixSdkInstalled, isMatrixSdkAvailable } from "./matrix/deps.js";

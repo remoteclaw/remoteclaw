@@ -1,12 +1,10 @@
 import {
+  applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
-  formatDocsLink,
   normalizeAccountId,
   patchScopedAccountConfig,
-  prepareScopedSetupConfig,
   type ChannelSetupAdapter,
   type ChannelSetupInput,
-  type ChannelSetupWizard,
   type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/setup";
 import { buildTlonAccountFields } from "./account-fields.js";

@@ -1,4 +1,4 @@
-import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
+import type { MSTeamsTeamConfig } from "remoteclaw/plugin-sdk/msteams";
 import {
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
@@ -7,8 +7,13 @@ import {
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
   setTopLevelChannelGroupPolicy,
-  splitOnboardingEntries,
-} from "remoteclaw/plugin-sdk";
+  splitSetupEntries,
+  type ChannelSetupDmPolicy,
+  type ChannelSetupWizard,
+  type DmPolicy,
+  type RemoteClawConfig,
+  type WizardPrompter,
+} from "remoteclaw/plugin-sdk/setup";
 import {
   parseMSTeamsTeamEntry,
   resolveMSTeamsChannelAllowlist,
@@ -185,7 +190,7 @@ function setMSTeamsTeamsAllowlist(
   };
 }
 
-function listMSTeamsGroupEntries(cfg: OpenClawConfig): string[] {
+function listMSTeamsGroupEntries(cfg: RemoteClawConfig): string[] {
   return Object.entries(cfg.channels?.msteams?.teams ?? {}).flatMap(([teamKey, value]) => {
     const channels = value?.channels ?? {};
     const channelKeys = Object.keys(channels);
@@ -197,7 +202,7 @@ function listMSTeamsGroupEntries(cfg: OpenClawConfig): string[] {
 }
 
 async function resolveMSTeamsGroupAllowlist(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   entries: string[];
   prompter: Pick<WizardPrompter, "note">;
 }): Promise<Array<{ teamKey: string; channelKey?: string }>> {

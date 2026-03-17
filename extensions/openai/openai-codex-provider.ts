@@ -3,25 +3,18 @@ import type {
   ProviderAuthContext,
   ProviderResolveDynamicModelContext,
   ProviderRuntimeModel,
-} from "remoteclaw/plugin-sdk/plugin-entry";
-import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/provider-auth";
-import {
-  CODEX_CLI_PROFILE_ID,
-  ensureAuthProfileStore,
-  listProfilesForProvider,
-  loginOpenAICodexOAuth,
-  type OAuthCredential,
-} from "remoteclaw/plugin-sdk/provider-auth";
-import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/provider-auth";
-import { loginOpenAICodexOAuth } from "remoteclaw/plugin-sdk/provider-auth-login";
-import {
-  DEFAULT_CONTEXT_TOKENS,
-  normalizeModelCompat,
-  normalizeProviderId,
-  type ProviderPlugin,
-} from "remoteclaw/plugin-sdk/provider-models";
-import { createOpenAIAttributionHeadersWrapper } from "remoteclaw/plugin-sdk/provider-stream";
-import { fetchCodexUsage } from "remoteclaw/plugin-sdk/provider-usage";
+} from "remoteclaw/plugin-sdk/core";
+import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/core";
+import { CODEX_CLI_PROFILE_ID } from "../../src/agents/auth-profiles.js";
+import { listProfilesForProvider } from "../../src/agents/auth-profiles/profiles.js";
+import { ensureAuthProfileStore } from "../../src/agents/auth-profiles/store.js";
+import type { OAuthCredential } from "../../src/agents/auth-profiles/types.js";
+import { DEFAULT_CONTEXT_TOKENS } from "../../src/agents/defaults.js";
+import { normalizeModelCompat } from "../../src/agents/model-compat.js";
+import { normalizeProviderId } from "../../src/agents/provider-id.js";
+import { loginOpenAICodexOAuth } from "../../src/commands/openai-codex-oauth.js";
+import { fetchCodexUsage } from "../../src/infra/provider-usage.fetch.js";
+import type { ProviderPlugin } from "../../src/plugins/types.js";
 import { buildOpenAICodexProvider } from "./openai-codex-catalog.js";
 import {
   cloneFirstTemplateModel,

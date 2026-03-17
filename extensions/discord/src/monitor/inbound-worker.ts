@@ -1,7 +1,7 @@
-import { createRunStateMachine } from "remoteclaw/plugin-sdk/channel-lifecycle";
-import { formatDurationSeconds } from "remoteclaw/plugin-sdk/infra-runtime";
 import { KeyedAsyncQueue } from "remoteclaw/plugin-sdk/keyed-async-queue";
-import { danger } from "remoteclaw/plugin-sdk/runtime-env";
+import { createRunStateMachine } from "../../../../src/channels/run-state-machine.js";
+import { danger } from "../../../../src/globals.js";
+import { formatDurationSeconds } from "../../../../src/infra/format-time/format-duration.ts";
 import { materializeDiscordInboundJob, type DiscordInboundJob } from "./inbound-job.js";
 import type { RuntimeEnv } from "./message-handler.preflight.types.js";
 import { processDiscordMessage } from "./message-handler.process.js";

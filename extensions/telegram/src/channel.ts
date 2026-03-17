@@ -29,7 +29,6 @@ import {
   normalizeMessageChannel,
   normalizeOutboundThreadId,
   resolveThreadSessionKeys,
-  type ChannelPlugin,
   type RoutePeer,
 } from "../../../src/plugin-sdk-internal/core.js";
 import {

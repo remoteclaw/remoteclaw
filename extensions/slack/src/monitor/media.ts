@@ -1,9 +1,9 @@
 import type { WebClient as SlackWebClient } from "@slack/web-api";
-import { normalizeHostname } from "remoteclaw/plugin-sdk/infra-runtime";
-import type { FetchLike } from "remoteclaw/plugin-sdk/media-runtime";
-import { fetchRemoteMedia } from "remoteclaw/plugin-sdk/media-runtime";
-import { saveMediaBuffer } from "remoteclaw/plugin-sdk/media-runtime";
 import { resolveRequestUrl } from "remoteclaw/plugin-sdk/request-url";
+import { normalizeHostname } from "../../../../src/infra/net/hostname.js";
+import type { FetchLike } from "../../../../src/media/fetch.js";
+import { fetchRemoteMedia } from "../../../../src/media/fetch.js";
+import { saveMediaBuffer } from "../../../../src/media/store.js";
 import type { SlackAttachment, SlackFile } from "../types.js";
 
 function isSlackHostname(hostname: string): boolean {

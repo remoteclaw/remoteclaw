@@ -9,6 +9,7 @@ import {
   buildSingleChannelSecretPromptState,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
+  hasConfiguredSecretInput,
   mergeAllowFromEntries,
   patchTopLevelChannelConfigSection,
   promptParsedAllowFromForAccount,
@@ -16,6 +17,7 @@ import {
   splitSetupEntries,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
+  type DmPolicy,
   type RemoteClawConfig,
   type SecretInput,
 } from "remoteclaw/plugin-sdk/setup";

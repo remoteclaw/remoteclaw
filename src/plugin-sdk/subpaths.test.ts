@@ -33,28 +33,20 @@ import type {
   RemoteClawPluginApi as CoreRemoteClawPluginApi,
   PluginRuntime as CorePluginRuntime,
 } from "remoteclaw/plugin-sdk/core";
-import * as directoryRuntimeSdk from "remoteclaw/plugin-sdk/directory-runtime";
-import * as infraRuntimeSdk from "remoteclaw/plugin-sdk/infra-runtime";
-import * as lazyRuntimeSdk from "remoteclaw/plugin-sdk/lazy-runtime";
-import * as matrixRuntimeSharedSdk from "remoteclaw/plugin-sdk/matrix-runtime-shared";
-import * as mediaRuntimeSdk from "remoteclaw/plugin-sdk/media-runtime";
+import * as discordSdk from "remoteclaw/plugin-sdk/discord";
+import * as imessageSdk from "remoteclaw/plugin-sdk/imessage";
+import * as lineSdk from "remoteclaw/plugin-sdk/line";
+import * as msteamsSdk from "remoteclaw/plugin-sdk/msteams";
+import * as nostrSdk from "remoteclaw/plugin-sdk/nostr";
 import * as ollamaSetupSdk from "remoteclaw/plugin-sdk/ollama-setup";
-import * as providerAuthSdk from "remoteclaw/plugin-sdk/provider-auth";
-import * as providerModelsSdk from "remoteclaw/plugin-sdk/provider-models";
 import * as providerSetupSdk from "remoteclaw/plugin-sdk/provider-setup";
-import * as replyHistorySdk from "remoteclaw/plugin-sdk/reply-history";
-import * as replyPayloadSdk from "remoteclaw/plugin-sdk/reply-payload";
-import * as replyRuntimeSdk from "remoteclaw/plugin-sdk/reply-runtime";
-import * as routingSdk from "remoteclaw/plugin-sdk/routing";
-import * as runtimeSdk from "remoteclaw/plugin-sdk/runtime";
 import * as sandboxSdk from "remoteclaw/plugin-sdk/sandbox";
-import * as secretInputSdk from "remoteclaw/plugin-sdk/secret-input";
 import * as selfHostedProviderSetupSdk from "remoteclaw/plugin-sdk/self-hosted-provider-setup";
 import * as setupSdk from "remoteclaw/plugin-sdk/setup";
-import * as ssrfRuntimeSdk from "remoteclaw/plugin-sdk/ssrf-runtime";
-import * as testingSdk from "remoteclaw/plugin-sdk/testing";
-import * as threadBindingsRuntimeSdk from "remoteclaw/plugin-sdk/thread-bindings-runtime";
-import * as webhookIngressSdk from "remoteclaw/plugin-sdk/webhook-ingress";
+import * as signalSdk from "remoteclaw/plugin-sdk/signal";
+import * as slackSdk from "remoteclaw/plugin-sdk/slack";
+import * as telegramSdk from "remoteclaw/plugin-sdk/telegram";
+import * as whatsappSdk from "remoteclaw/plugin-sdk/whatsapp";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { ChannelMessageActionContext } from "../channels/plugins/types.js";
 import type {
@@ -553,6 +545,14 @@ describe("plugin-sdk subpath exports", () => {
     expect(typeof setupSdk.resolveGroupAllowlistWithLookupNotes).toBe("function");
     expect(typeof setupSdk.setAccountAllowFromForChannel).toBe("function");
     expect(typeof setupSdk.setAccountDmAllowFromForChannel).toBe("function");
+    expect(typeof setupSdk.setTopLevelChannelDmPolicyWithAllowFrom).toBe("function");
+    expect(typeof setupSdk.formatResolvedUnresolvedNote).toBe("function");
+  });
+
+  it("exports shared setup helpers from the dedicated subpath", () => {
+    expect(typeof setupSdk.DEFAULT_ACCOUNT_ID).toBe("string");
+    expect(typeof setupSdk.formatDocsLink).toBe("function");
+    expect(typeof setupSdk.mergeAllowFromEntries).toBe("function");
     expect(typeof setupSdk.setTopLevelChannelDmPolicyWithAllowFrom).toBe("function");
     expect(typeof setupSdk.formatResolvedUnresolvedNote).toBe("function");
   });

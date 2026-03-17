@@ -1,11 +1,11 @@
 import os from "node:os";
 import path from "node:path";
 import { normalizeAccountId as normalizeSharedAccountId } from "remoteclaw/plugin-sdk/account-id";
-import { normalizeProviderId } from "remoteclaw/plugin-sdk/agent-runtime";
-import { withFileLock } from "remoteclaw/plugin-sdk/infra-runtime";
-import { resolveRequiredHomeDir } from "remoteclaw/plugin-sdk/infra-runtime";
 import { readJsonFileWithFallback, writeJsonFileAtomically } from "remoteclaw/plugin-sdk/json-store";
-import { resolveStateDir } from "remoteclaw/plugin-sdk/state-paths";
+import { normalizeProviderId } from "../../../../src/agents/model-selection.js";
+import { resolveStateDir } from "../../../../src/config/paths.js";
+import { withFileLock } from "../../../../src/infra/file-lock.js";
+import { resolveRequiredHomeDir } from "../../../../src/infra/home-dir.js";
 
 const MODEL_PICKER_PREFERENCES_LOCK_OPTIONS = {
   retries: {

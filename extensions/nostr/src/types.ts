@@ -1,13 +1,9 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
   normalizeOptionalAccountId,
-} from "remoteclaw/plugin-sdk/account-id";
-import {
-  listCombinedAccountIds,
-  resolveListedDefaultAccountId,
-} from "remoteclaw/plugin-sdk/account-resolution";
+} from "openclaw/plugin-sdk/account-id";
+import type { OpenClawConfig } from "../api.js";
 import type { NostrProfile } from "./config-schema.js";
 import { DEFAULT_RELAYS } from "./default-relays.js";
 import { getPublicKeyFromPrivate } from "./nostr-bus.js";
@@ -35,7 +31,7 @@ export interface ResolvedNostrAccount {
   config: NostrAccountConfig;
 }
 
-function resolveConfiguredDefaultNostrAccountId(cfg: RemoteClawConfig): string | undefined {
+function resolveConfiguredDefaultNostrAccountId(cfg: OpenClawConfig): string | undefined {
   const nostrCfg = (cfg.channels as Record<string, unknown> | undefined)?.nostr as
     | NostrAccountConfig
     | undefined;
@@ -45,33 +41,39 @@ function resolveConfiguredDefaultNostrAccountId(cfg: RemoteClawConfig): string |
 /**
  * List all configured Nostr account IDs
  */
-export function listNostrAccountIds(cfg: RemoteClawConfig): string[] {
+export function listNostrAccountIds(cfg: OpenClawConfig): string[] {
   const nostrCfg = (cfg.channels as Record<string, unknown> | undefined)?.nostr as
     | NostrAccountConfig
     | undefined;
-  return listCombinedAccountIds({
-    configuredAccountIds: [],
-    implicitAccountId: nostrCfg?.privateKey
-      ? (resolveConfiguredDefaultNostrAccountId(cfg) ?? DEFAULT_ACCOUNT_ID)
-      : undefined,
-  });
+
+  // If privateKey is configured at top level, we have a default account
+  if (nostrCfg?.privateKey) {
+    return [resolveConfiguredDefaultNostrAccountId(cfg) ?? DEFAULT_ACCOUNT_ID];
+  }
+
+  return [];
 }
 
 /**
  * Get the default account ID
  */
-export function resolveDefaultNostrAccountId(cfg: RemoteClawConfig): string {
-  return resolveListedDefaultAccountId({
-    accountIds: listNostrAccountIds(cfg),
-    configuredDefaultAccountId: resolveConfiguredDefaultNostrAccountId(cfg),
-  });
+export function resolveDefaultNostrAccountId(cfg: OpenClawConfig): string {
+  const preferred = resolveConfiguredDefaultNostrAccountId(cfg);
+  if (preferred) {
+    return preferred;
+  }
+  const ids = listNostrAccountIds(cfg);
+  if (ids.includes(DEFAULT_ACCOUNT_ID)) {
+    return DEFAULT_ACCOUNT_ID;
+  }
+  return ids[0] ?? DEFAULT_ACCOUNT_ID;
 }
 
 /**
  * Resolve a Nostr account from config
  */
 export function resolveNostrAccount(opts: {
-  cfg: RemoteClawConfig;
+  cfg: OpenClawConfig;
   accountId?: string | null;
 }): ResolvedNostrAccount {
   const accountId = normalizeAccountId(opts.accountId ?? resolveDefaultNostrAccountId(opts.cfg));

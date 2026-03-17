@@ -1,7 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { clearRuntimeAuthProfileStoreSnapshots } from "../../agents/auth-profiles/store.js";
-import type { AuthChoice } from "../../commands/onboard-types.js";
-import { applyAuthChoiceLoadedPluginProvider } from "../../plugins/provider-auth-choice.js";
 import {
   createAuthTestLifecycle,
   createExitThrowingRuntime,
@@ -9,7 +6,7 @@ import {
   readAuthProfilesForAgent,
   requireOpenClawAgentDir,
   setupAuthTestEnv,
-} from "../../commands/test-wizard-helpers.js";
+} from "../../../test/helpers/auth-wizard.js";
 import { clearRuntimeAuthProfileStoreSnapshots } from "../../agents/auth-profiles/store.js";
 import { applyAuthChoiceLoadedPluginProvider } from "../../plugins/provider-auth-choice.js";
 import { buildProviderPluginMethodChoice } from "../provider-wizard.js";
@@ -29,7 +26,6 @@ const resolveProviderPluginChoiceMock = vi.hoisted(() => vi.fn<ResolveProviderPl
 const runProviderModelSelectedHookMock = vi.hoisted(() =>
   vi.fn<RunProviderModelSelectedHook>(async () => {}),
 );
-import qwenPortalPlugin from "../../../extensions/qwen-portal-auth/index.js";
 
 vi.mock("../../../extensions/qwen-portal-auth/oauth.js", () => ({
   loginQwenPortalOAuth: loginQwenPortalOAuthMock,
@@ -42,6 +38,9 @@ vi.mock("../../plugins/provider-auth-choice.runtime.js", () => ({
   resolveProviderPluginChoice: resolveProviderPluginChoiceMock,
   runProviderModelSelectedHook: runProviderModelSelectedHookMock,
 }));
+
+const { resolvePreferredProviderForAuthChoice } =
+  await import("../../plugins/provider-auth-choice-preference.js");
 
 type StoredAuthProfile = {
   type?: string;

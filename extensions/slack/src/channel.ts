@@ -19,9 +19,11 @@ import {
   resolveSlackGroupToolPolicy,
   createSlackActions,
   type ChannelPlugin,
-  type OpenClawConfig,
+  type RemoteClawConfig,
   type SlackActionContext,
-} from "openclaw/plugin-sdk/slack";
+} from "remoteclaw/plugin-sdk/slack";
+import type { SlackActionContext } from "../../../src/agents/tools/slack-actions.js";
+import { createSlackActions } from "../../../src/channels/plugins/slack.actions.js";
 import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
   listEnabledSlackAccounts,
@@ -570,111 +572,14 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
       }));
     },
   },
-  actions: {
-    listActions: ({ cfg }) => listSlackMessageActions(cfg),
-    extractToolSend: ({ args }) => extractSlackToolSend(args),
-    handleAction: async (ctx) =>
-      await handleSlackMessageAction({
-        providerId: meta.id,
-        ctx,
-        includeReadThreadId: true,
-        invoke: async (action, cfg, toolContext) =>
-          await getSlackRuntime().channel.slack.handleSlackAction(action, cfg, toolContext),
-      }),
-  },
-  setup: {
-    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-    applyAccountName: ({ cfg, accountId, name }) =>
-      applyAccountNameToChannelSection({
-        cfg,
-        channelKey: "slack",
-        accountId,
-        name,
-      }),
-    validateInput: ({ accountId, input }) => {
-      if (input.useEnv && accountId !== DEFAULT_ACCOUNT_ID) {
-        return "Slack env tokens can only be used for the default account.";
-      }
-      if (!input.useEnv && (!input.botToken || !input.appToken)) {
-        return "Slack requires --bot-token and --app-token (or --use-env).";
-      }
-      return null;
-    },
-    applyAccountConfig: ({ cfg, accountId, input }) => {
-      const namedConfig = applyAccountNameToChannelSection({
-        cfg,
-        channelKey: "slack",
-        accountId,
-        name: input.name,
-      });
-      const next =
-        accountId !== DEFAULT_ACCOUNT_ID
-          ? migrateBaseNameToDefaultAccount({
-              cfg: namedConfig,
-              channelKey: "slack",
-            })
-          : namedConfig;
-      if (accountId === DEFAULT_ACCOUNT_ID) {
-        return {
-          ...next,
-          channels: {
-            ...next.channels,
-            slack: {
-              ...next.channels?.slack,
-              enabled: true,
-              ...(input.useEnv
-                ? {}
-                : {
-                    ...(input.botToken ? { botToken: input.botToken } : {}),
-                    ...(input.appToken ? { appToken: input.appToken } : {}),
-                  }),
-            },
-          },
-        };
-      }
-      return {
-        ...next,
-        channels: {
-          ...next.channels,
-          slack: {
-            ...next.channels?.slack,
-            enabled: true,
-            accounts: {
-              ...next.channels?.slack?.accounts,
-              [accountId]: {
-                ...next.channels?.slack?.accounts?.[accountId],
-                enabled: true,
-                ...(input.botToken ? { botToken: input.botToken } : {}),
-                ...(input.appToken ? { appToken: input.appToken } : {}),
-              },
-            },
-          },
-        },
-      };
-    },
-  },
-  actions: {
-    listActions: ({ cfg }) => listSlackMessageActions(cfg),
-    getCapabilities: ({ cfg }) => {
-      const capabilities = new Set<"interactive" | "blocks">();
-      if (listSlackMessageActions(cfg).includes("send")) {
-        capabilities.add("blocks");
-      }
-      if (isSlackInteractiveRepliesEnabled({ cfg })) {
-        capabilities.add("interactive");
-      }
-      return Array.from(capabilities);
-    },
-    extractToolSend: ({ args }) => extractSlackToolSend(args),
-    handleAction: async (ctx) =>
-      await handleSlackMessageAction({
-        providerId: meta.id,
-        ctx,
-        includeReadThreadId: true,
-        invoke: async (action, cfg, toolContext) =>
-          await getSlackRuntime().channel.slack.handleSlackAction(action, cfg, toolContext),
-      }),
-  },
+  actions: createSlackActions(SLACK_CHANNEL, {
+    invoke: async (action, cfg, toolContext) =>
+      await getSlackRuntime().channel.slack.handleSlackAction(
+        action,
+        cfg as RemoteClawConfig,
+        toolContext as SlackActionContext | undefined,
+      ),
+  }),
   setup: slackSetupAdapter,
   outbound: {
     deliveryMode: "direct",

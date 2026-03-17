@@ -7,88 +7,65 @@ import type { sendMessageSlack } from "../slack/send.js";
 import type { sendMessageTelegram } from "../telegram/send.js";
 import { createOutboundSendDepsFromCliSource } from "./outbound-send-mapping.js";
 
-export type CliDeps = {
-  sendMessageWhatsApp: typeof sendMessageWhatsApp;
-  sendMessageTelegram: typeof sendMessageTelegram;
-  sendMessageDiscord: typeof sendMessageDiscord;
-  sendMessageSlack: typeof sendMessageSlack;
-  sendMessageSignal: typeof sendMessageSignal;
-  sendMessageIMessage: typeof sendMessageIMessage;
+/**
+ * Lazy-loaded per-channel send functions, keyed by channel ID.
+ * Values are proxy functions that dynamically import the real module on first use.
+ */
+export type CliDeps = { [channelId: string]: unknown };
+type RuntimeSend = {
+  sendMessage: (...args: unknown[]) => Promise<unknown>;
+};
+type RuntimeSendModule = {
+  runtimeSend: RuntimeSend;
 };
 
-let whatsappSenderRuntimePromise: Promise<typeof import("./deps-send-whatsapp.runtime.js")> | null =
-  null;
-let telegramSenderRuntimePromise: Promise<typeof import("./deps-send-telegram.runtime.js")> | null =
-  null;
-let discordSenderRuntimePromise: Promise<typeof import("./deps-send-discord.runtime.js")> | null =
-  null;
-let slackSenderRuntimePromise: Promise<typeof import("./deps-send-slack.runtime.js")> | null = null;
-let signalSenderRuntimePromise: Promise<typeof import("./deps-send-signal.runtime.js")> | null =
-  null;
-let imessageSenderRuntimePromise: Promise<typeof import("./deps-send-imessage.runtime.js")> | null =
-  null;
+// Per-channel module caches for lazy loading.
+const senderCache = new Map<string, Promise<RuntimeSend>>();
 
-function loadWhatsAppSenderRuntime() {
-  whatsappSenderRuntimePromise ??= import("./deps-send-whatsapp.runtime.js");
-  return whatsappSenderRuntimePromise;
-}
-
-function loadTelegramSenderRuntime() {
-  telegramSenderRuntimePromise ??= import("./deps-send-telegram.runtime.js");
-  return telegramSenderRuntimePromise;
-}
-
-function loadDiscordSenderRuntime() {
-  discordSenderRuntimePromise ??= import("./deps-send-discord.runtime.js");
-  return discordSenderRuntimePromise;
-}
-
-function loadSlackSenderRuntime() {
-  slackSenderRuntimePromise ??= import("./deps-send-slack.runtime.js");
-  return slackSenderRuntimePromise;
-}
-
-function loadSignalSenderRuntime() {
-  signalSenderRuntimePromise ??= import("./deps-send-signal.runtime.js");
-  return signalSenderRuntimePromise;
-}
-
-function loadIMessageSenderRuntime() {
-  imessageSenderRuntimePromise ??= import("./deps-send-imessage.runtime.js");
-  return imessageSenderRuntimePromise;
+/**
+ * Create a lazy-loading send function proxy for a channel.
+ * The channel's module is loaded on first call and cached for reuse.
+ */
+function createLazySender(
+  channelId: string,
+  loader: () => Promise<RuntimeSendModule>,
+): (...args: unknown[]) => Promise<unknown> {
+  return async (...args: unknown[]) => {
+    let cached = senderCache.get(channelId);
+    if (!cached) {
+      cached = loader().then(({ runtimeSend }) => runtimeSend);
+      senderCache.set(channelId, cached);
+    }
+    const runtimeSend = await cached;
+    return await runtimeSend.sendMessage(...args);
+  };
 }
 
 export function createDefaultDeps(): CliDeps {
   return {
     whatsapp: createLazySender(
       "whatsapp",
-      () => import("./send-runtime/whatsapp.js") as Promise<Record<string, unknown>>,
-      "sendMessageWhatsApp",
+      () => import("./send-runtime/whatsapp.js") as Promise<RuntimeSendModule>,
     ),
     telegram: createLazySender(
       "telegram",
-      () => import("./send-runtime/telegram.js") as Promise<Record<string, unknown>>,
-      "sendMessageTelegram",
+      () => import("./send-runtime/telegram.js") as Promise<RuntimeSendModule>,
     ),
     discord: createLazySender(
       "discord",
-      () => import("./send-runtime/discord.js") as Promise<Record<string, unknown>>,
-      "sendMessageDiscord",
+      () => import("./send-runtime/discord.js") as Promise<RuntimeSendModule>,
     ),
     slack: createLazySender(
       "slack",
-      () => import("./send-runtime/slack.js") as Promise<Record<string, unknown>>,
-      "sendMessageSlack",
+      () => import("./send-runtime/slack.js") as Promise<RuntimeSendModule>,
     ),
     signal: createLazySender(
       "signal",
-      () => import("./send-runtime/signal.js") as Promise<Record<string, unknown>>,
-      "sendMessageSignal",
+      () => import("./send-runtime/signal.js") as Promise<RuntimeSendModule>,
     ),
     imessage: createLazySender(
       "imessage",
-      () => import("./send-runtime/imessage.js") as Promise<Record<string, unknown>>,
-      "sendMessageIMessage",
+      () => import("./send-runtime/imessage.js") as Promise<RuntimeSendModule>,
     ),
   };
 }

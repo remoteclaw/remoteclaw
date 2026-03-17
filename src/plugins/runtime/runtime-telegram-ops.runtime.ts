@@ -1,8 +1,6 @@
-import {
-  auditTelegramGroupMembership as auditTelegramGroupMembershipImpl,
-  monitorTelegramProvider as monitorTelegramProviderImpl,
-  probeTelegram as probeTelegramImpl,
-} from "../../../extensions/telegram/runtime-api.js";
+import { auditTelegramGroupMembership as auditTelegramGroupMembershipImpl } from "../../../extensions/telegram/src/audit.js";
+import { monitorTelegramProvider as monitorTelegramProviderImpl } from "../../../extensions/telegram/src/monitor.js";
+import { probeTelegram as probeTelegramImpl } from "../../../extensions/telegram/src/probe.js";
 import {
   deleteMessageTelegram as deleteMessageTelegramImpl,
   editMessageReplyMarkupTelegram as editMessageReplyMarkupTelegramImpl,
@@ -13,7 +11,7 @@ import {
   sendPollTelegram as sendPollTelegramImpl,
   sendTypingTelegram as sendTypingTelegramImpl,
   unpinMessageTelegram as unpinMessageTelegramImpl,
-} from "../../../extensions/telegram/runtime-api.js";
+} from "../../../extensions/telegram/src/send.js";
 import type { PluginRuntimeChannel } from "./types-channel.js";
 
 type RuntimeTelegramOps = Pick<

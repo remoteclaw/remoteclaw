@@ -18,7 +18,7 @@ import {
   sendPollDiscord as sendPollDiscordImpl,
   sendTypingDiscord as sendTypingDiscordImpl,
   unpinMessageDiscord as unpinMessageDiscordImpl,
-} from "../../../extensions/discord/runtime-api.js";
+} from "../../../extensions/discord/src/send.js";
 import type { PluginRuntimeChannel } from "./types-channel.js";
 
 type RuntimeDiscordOps = Pick<

@@ -2,13 +2,12 @@ import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import type { ChannelGroupPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import type { TelegramAccountConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import type { MockFn } from "remoteclaw/plugin-sdk/testing";
+import type { MockFn } from "remoteclaw/plugin-sdk/test-utils";
 import { vi } from "vitest";
 import {
   createNativeCommandTestParams,
   type NativeCommandTestParams,
 } from "./bot-native-commands.fixture-test-support.js";
-import type { RegisterTelegramNativeCommandsParams } from "./bot-native-commands.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 
 type GetPluginCommandSpecsFn =
@@ -31,7 +30,13 @@ type NativeCommandHarness = {
   sendMessage: AnyAsyncMock;
   setMyCommands: AnyAsyncMock;
   log: AnyMock;
-  bot: RegisterTelegramNativeCommandsParams["bot"];
+  bot: {
+    api: {
+      setMyCommands: AnyAsyncMock;
+      sendMessage: AnyAsyncMock;
+    };
+    command: (name: string, handler: (ctx: unknown) => Promise<void>) => void;
+  };
 };
 
 const pluginCommandMocks = vi.hoisted(() => ({
@@ -66,37 +71,28 @@ const replyPipelineMocks = vi.hoisted(() => {
 export const dispatchReplyWithBufferedBlockDispatcher =
   replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher;
 
-vi.mock("remoteclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/reply-runtime")>();
-  return {
-    ...actual,
-    finalizeInboundContext: replyPipelineMocks.finalizeInboundContext,
-    dispatchReplyWithBufferedBlockDispatcher:
-      replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
-  };
-});
-vi.mock("remoteclaw/plugin-sdk/channel-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/channel-runtime")>();
-  return {
-    ...actual,
-    createReplyPrefixOptions: replyPipelineMocks.createReplyPrefixOptions,
-    recordInboundSessionMetaSafe: replyPipelineMocks.recordInboundSessionMetaSafe,
-  };
-});
+vi.mock("remoteclaw/plugin-sdk/reply-runtime", () => ({
+  finalizeInboundContext: replyPipelineMocks.finalizeInboundContext,
+}));
+vi.mock("remoteclaw/plugin-sdk/reply-runtime", () => ({
+  dispatchReplyWithBufferedBlockDispatcher:
+    replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
+}));
+vi.mock("remoteclaw/plugin-sdk/channel-runtime", () => ({
+  createReplyPrefixOptions: replyPipelineMocks.createReplyPrefixOptions,
+}));
+vi.mock("remoteclaw/plugin-sdk/channel-runtime", () => ({
+  recordInboundSessionMetaSafe: replyPipelineMocks.recordInboundSessionMetaSafe,
+}));
 
 const deliveryMocks = vi.hoisted(() => ({
   deliverReplies: vi.fn(async () => {}),
 }));
 export const deliverReplies = deliveryMocks.deliverReplies;
 vi.mock("./bot/delivery.js", () => ({ deliverReplies: deliveryMocks.deliverReplies }));
-vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
-  return {
-    ...actual,
-    readChannelAllowFromStore: vi.fn(async () => []),
-  };
-});
+vi.mock("remoteclaw/plugin-sdk/conversation-runtime", () => ({
+  readChannelAllowFromStore: vi.fn(async () => []),
+}));
 export { createNativeCommandTestParams };
 
 export function createNativeCommandsHarness(params?: {
@@ -114,17 +110,7 @@ export function createNativeCommandsHarness(params?: {
   const sendMessage: AnyAsyncMock = vi.fn(async () => undefined);
   const setMyCommands: AnyAsyncMock = vi.fn(async () => undefined);
   const log: AnyMock = vi.fn();
-  const telegramDeps = {
-    loadConfig: vi.fn(() => params?.cfg ?? ({} as RemoteClawConfig)),
-    resolveStorePath: vi.fn((storePath?: string) => storePath ?? "/tmp/sessions.json"),
-    readChannelAllowFromStore: vi.fn(async () => []),
-    enqueueSystemEvent: vi.fn(),
-    dispatchReplyWithBufferedBlockDispatcher:
-      replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
-    listSkillCommandsForAgents: vi.fn(() => []),
-    wasSentByBot: vi.fn(() => false),
-  };
-  const bot = {
+  const bot: NativeCommandHarness["bot"] = {
     api: {
       setMyCommands,
       sendMessage,
@@ -132,10 +118,10 @@ export function createNativeCommandsHarness(params?: {
     command: (name: string, handler: (ctx: unknown) => Promise<void>) => {
       handlers[name] = handler;
     },
-  } as unknown as RegisterTelegramNativeCommandsParams["bot"];
+  } as const;
 
   registerTelegramNativeCommands({
-    bot,
+    bot: bot as unknown as NativeCommandTestParams["bot"],
     cfg: params?.cfg ?? ({} as RemoteClawConfig),
     runtime: params?.runtime ?? ({ log } as unknown as RuntimeEnv),
     accountId: "default",
@@ -148,7 +134,6 @@ export function createNativeCommandsHarness(params?: {
     nativeEnabled: params?.nativeEnabled ?? true,
     nativeSkillsEnabled: false,
     nativeDisabledExplicit: false,
-    telegramDeps,
     resolveGroupPolicy:
       params?.resolveGroupPolicy ??
       (() =>

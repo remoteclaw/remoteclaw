@@ -10,6 +10,13 @@ import {
   type NativeCommandTestParams,
 } from "./bot-native-commands.fixture-test-support.js";
 import {
+  createDeferred,
+  createNativeCommandTestParams,
+  createTelegramPrivateCommandContext,
+  createTelegramTopicCommandContext,
+  type NativeCommandTestParams,
+} from "./bot-native-commands.fixture-test-support.js";
+import {
   registerTelegramNativeCommands,
   type RegisterTelegramHandlerParams,
 } from "./bot-native-commands.js";

@@ -1,7 +1,6 @@
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/telegram";
 import { expect, vi } from "vitest";
-import type { TelegramBotDeps } from "./bot-deps.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import type { RuntimeEnv } from "../../../src/runtime.js";
 import {
   createNativeCommandTestParams as createBaseNativeCommandTestParams,
   createTelegramPrivateCommandContext,
@@ -11,13 +10,6 @@ import {
 type RegisteredCommand = {
   command: string;
   description: string;
-};
-
-type CreateCommandBotResult = {
-  bot: RegisterTelegramNativeCommandsParams["bot"];
-  commandHandlers: Map<string, (ctx: unknown) => Promise<void>>;
-  sendMessage: ReturnType<typeof vi.fn>;
-  setMyCommands: ReturnType<typeof vi.fn>;
 };
 
 const skillCommandMocks = vi.hoisted(() => ({
@@ -31,8 +23,8 @@ const deliveryMocks = vi.hoisted(() => ({
 export const listSkillCommandsForAgents = skillCommandMocks.listSkillCommandsForAgents;
 export const deliverReplies = deliveryMocks.deliverReplies;
 
-vi.mock("remoteclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/reply-runtime")>();
+vi.mock("../../../src/auto-reply/skill-commands.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/auto-reply/skill-commands.js")>();
   return {
     ...actual,
     listSkillCommandsForAgents,
@@ -59,7 +51,7 @@ export function resetNativeCommandMenuMocks() {
   deliverReplies.mockResolvedValue({ delivered: true });
 }
 
-export function createCommandBot(): CreateCommandBotResult {
+export function createCommandBot() {
   const commandHandlers = new Map<string, (ctx: unknown) => Promise<void>>();
   const sendMessage = vi.fn().mockResolvedValue(undefined);
   const setMyCommands = vi.fn().mockResolvedValue(undefined);
@@ -79,29 +71,12 @@ export function createNativeCommandTestParams(
   cfg: RemoteClawConfig,
   params: Partial<RegisterTelegramNativeCommandsParams> = {},
 ): RegisterTelegramNativeCommandsParams {
-  const telegramDeps: TelegramBotDeps = {
-    loadConfig: vi.fn(() => ({})),
-    resolveStorePath: vi.fn((storePath?: string) => storePath ?? "/tmp/sessions.json"),
-    readChannelAllowFromStore: vi.fn(async () => []),
-    enqueueSystemEvent: vi.fn(),
-    dispatchReplyWithBufferedBlockDispatcher: vi.fn(async () => ({
-      queuedFinal: false,
-      counts: {},
-    })),
-    listSkillCommandsForAgents,
-    wasSentByBot: vi.fn(() => false),
-  };
   return createBaseNativeCommandTestParams({
     cfg,
     runtime: params.runtime ?? ({} as RuntimeEnv),
     nativeSkillsEnabled: true,
-    telegramDeps,
     ...params,
   });
 }
 
-export function createPrivateCommandContext(
-  params?: Parameters<typeof createTelegramPrivateCommandContext>[0],
-) {
-  return createTelegramPrivateCommandContext(params);
-}
+export { createTelegramPrivateCommandContext as createPrivateCommandContext };

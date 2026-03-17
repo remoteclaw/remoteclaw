@@ -18,3 +18,4 @@ export {
 } from "./status-helpers.js";
 export { createFixedWindowRateLimiter } from "./webhook-memory-guards.js";
 export { mapAllowFromEntries } from "./channel-config-helpers.js";
+export { nostrSetupAdapter, nostrSetupWizard } from "../../extensions/nostr/api.js";

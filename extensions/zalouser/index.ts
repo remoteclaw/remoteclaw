@@ -4,7 +4,10 @@ import { zalouserDock, zalouserPlugin } from "./src/channel.js";
 import { setZalouserRuntime } from "./src/runtime.js";
 import { ZalouserToolSchema, executeZalouserTool } from "./src/tool.js";
 
-const plugin = {
+export { zalouserPlugin } from "./src/channel.js";
+export { setZalouserRuntime } from "./src/runtime.js";
+
+export default defineChannelPluginEntry({
   id: "zalouser",
   name: "Zalo Personal",
   description: "Zalo personal account messaging via native zca-js integration",

@@ -3,7 +3,10 @@ import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { zaloDock, zaloPlugin } from "./src/channel.js";
 import { setZaloRuntime } from "./src/runtime.js";
 
-const plugin = {
+export { zaloPlugin } from "./src/channel.js";
+export { setZaloRuntime } from "./src/runtime.js";
+
+export default defineChannelPluginEntry({
   id: "zalo",
   name: "Zalo",
   description: "Zalo channel plugin (Bot API)",

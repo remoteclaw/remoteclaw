@@ -277,6 +277,8 @@ function fieldLabelForKey(
     payloadThinking: t("cron.form.thinking"),
     timeoutSeconds: t("cron.form.timeoutSeconds"),
     deliveryTo: t("cron.form.to"),
+    failureAlertAfter: t("cron.form.failureAlertAfter"),
+    failureAlertCooldownSeconds: t("cron.form.failureAlertCooldown"),
   };
   return labels[key];
 }
@@ -297,6 +299,8 @@ function collectBlockingFields(
     "payloadThinking",
     "timeoutSeconds",
     "deliveryTo",
+    "failureAlertAfter",
+    "failureAlertCooldownSeconds",
   ];
   const fields: BlockingField[] = [];
   for (const key of orderedKeys) {

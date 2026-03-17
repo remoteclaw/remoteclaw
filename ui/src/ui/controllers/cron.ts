@@ -30,7 +30,9 @@ export type CronFieldKey =
   | "payloadModel"
   | "payloadThinking"
   | "timeoutSeconds"
-  | "deliveryTo";
+  | "deliveryTo"
+  | "failureAlertAfter"
+  | "failureAlertCooldownSeconds";
 
 export type CronFieldErrors = Partial<Record<CronFieldKey, string>>;
 

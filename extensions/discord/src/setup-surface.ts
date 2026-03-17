@@ -1,6 +1,8 @@
 import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
 import {
-  formatDocsLink,
+  DEFAULT_ACCOUNT_ID,
+  noteChannelLookupFailure,
+  noteChannelLookupSummary,
   type OpenClawConfig,
   parseMentionOrPrefixedId,
   patchChannelConfigForAccount,
@@ -10,8 +12,14 @@ import {
   setSetupChannelEnabled,
   type WizardPrompter,
 } from "openclaw/plugin-sdk/setup";
-import { type ChannelSetupWizard } from "openclaw/plugin-sdk/setup";
-import { resolveDefaultDiscordAccountId, resolveDiscordAccount } from "./accounts.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
+import { type ChannelSetupDmPolicy, type ChannelSetupWizard } from "openclaw/plugin-sdk/setup";
+import { inspectDiscordAccount } from "./account-inspect.js";
+import {
+  listDiscordAccountIds,
+  resolveDefaultDiscordAccountId,
+  resolveDiscordAccount,
+} from "./accounts.js";
 import { normalizeDiscordSlug } from "./monitor/allow-list.js";
 import {
   resolveDiscordChannelAllowlist,

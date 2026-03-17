@@ -3,8 +3,6 @@ import { createAllowlistSetupWizardProxy } from "../../../src/channels/plugins/s
 import {
   applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
-  createEnvPatchedAccountSetupAdapter,
-  formatDocsLink,
   hasConfiguredSecretInput,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
@@ -16,7 +14,8 @@ import {
   setAccountGroupPolicyForChannel,
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-} from "../../../src/plugin-sdk-internal/setup.js";
+} from "openclaw/plugin-sdk/setup";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   type ChannelSetupAdapter,
   type ChannelSetupDmPolicy,

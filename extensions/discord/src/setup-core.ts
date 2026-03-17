@@ -2,8 +2,8 @@ import type { DiscordGuildEntry } from "../../../src/config/types.discord.js";
 import {
   applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
-  createEnvPatchedAccountSetupAdapter,
-  formatDocsLink,
+  migrateBaseNameToDefaultAccount,
+  normalizeAccountId,
   noteChannelLookupFailure,
   noteChannelLookupSummary,
   parseMentionOrPrefixedId,
@@ -11,7 +11,8 @@ import {
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
   type OpenClawConfig,
-} from "../../../src/plugin-sdk-internal/setup.js";
+} from "openclaw/plugin-sdk/setup";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   type ChannelSetupAdapter,
   type ChannelSetupDmPolicy,

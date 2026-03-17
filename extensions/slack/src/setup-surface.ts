@@ -1,6 +1,7 @@
 import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
 import {
-  formatDocsLink,
+  DEFAULT_ACCOUNT_ID,
+  hasConfiguredSecretInput,
   noteChannelLookupFailure,
   noteChannelLookupSummary,
   normalizeAccountId,
@@ -13,7 +14,8 @@ import {
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
   type WizardPrompter,
-} from "../../../src/plugin-sdk-internal/setup.js";
+} from "openclaw/plugin-sdk/setup";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import type {
   ChannelSetupDmPolicy,
   ChannelSetupWizard,

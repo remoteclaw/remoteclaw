@@ -3,41 +3,86 @@ import {
   readStringArrayParam,
   readStringOrNumberParam,
   readStringParam,
-} from "../../../src/agents/tools/common.js";
-import { handleTelegramAction } from "../../../src/agents/tools/telegram-actions.js";
-import { resolveReactionMessageId } from "../../../src/channels/plugins/actions/reaction-message-id.js";
+} from "remoteclaw/plugin-sdk/agent-runtime";
+import { handleTelegramAction } from "remoteclaw/plugin-sdk/agent-runtime";
+import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
+import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
+  createMessageToolButtonsSchema,
+  createTelegramPollExtraToolSchemas,
   createUnionActionGate,
   listTokenSourcedAccounts,
-} from "../../../src/channels/plugins/actions/shared.js";
+} from "remoteclaw/plugin-sdk/channel-runtime";
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
-} from "../../../src/channels/plugins/types.js";
-import type { TelegramActionConfig } from "../../../src/config/types.telegram.js";
-import { readBooleanParam } from "../../../src/plugin-sdk/boolean-param.js";
-import { extractToolSend } from "../../../src/plugin-sdk/tool-send.js";
-import { resolveTelegramPollVisibility } from "../../../src/poll-params.js";
+  ChannelMessageToolSchemaContribution,
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import type { TelegramActionConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveTelegramPollVisibility } from "remoteclaw/plugin-sdk/telegram";
+import { extractToolSend } from "remoteclaw/plugin-sdk/tool-send";
 import {
   createTelegramActionGate,
   listEnabledTelegramAccounts,
   resolveTelegramPollActionGateState,
 } from "./accounts.js";
+import { resolveTelegramInlineButtons } from "./button-types.js";
 import { isTelegramInlineButtonsEnabled } from "./inline-buttons.js";
 
 const providerId = "telegram";
 
+export const telegramMessageActionRuntime = {
+  handleTelegramAction,
+};
+
+function resolveTelegramActionDiscovery(cfg: Parameters<typeof listEnabledTelegramAccounts>[0]) {
+  const accounts = listTokenSourcedAccounts(listEnabledTelegramAccounts(cfg));
+  if (accounts.length === 0) {
+    return null;
+  }
+  const unionGate = createUnionActionGate(accounts, (account) =>
+    createTelegramActionGate({
+      cfg,
+      accountId: account.accountId,
+    }),
+  );
+  const pollEnabled = accounts.some((account) => {
+    const accountGate = createTelegramActionGate({
+      cfg,
+      accountId: account.accountId,
+    });
+    return resolveTelegramPollActionGateState(accountGate).enabled;
+  });
+  const buttonsEnabled = accounts.some((account) =>
+    isTelegramInlineButtonsEnabled({ cfg, accountId: account.accountId }),
+  );
+  return {
+    isEnabled: (key: keyof TelegramActionConfig, defaultValue = true) =>
+      unionGate(key, defaultValue),
+    pollEnabled,
+    buttonsEnabled,
+  };
+}
+
 function readTelegramSendParams(params: Record<string, unknown>) {
   const to = readStringParam(params, "to", { required: true });
   const mediaUrl = readStringParam(params, "media", { trim: false });
-  const message = readStringParam(params, "message", { required: !mediaUrl, allowEmpty: true });
+  const buttons = resolveTelegramInlineButtons({
+    buttons: params.buttons as ReturnType<typeof resolveTelegramInlineButtons>,
+    interactive: params.interactive,
+  });
+  const hasButtons = Array.isArray(buttons) && buttons.length > 0;
+  const message = readStringParam(params, "message", {
+    required: !mediaUrl && !hasButtons,
+    allowEmpty: true,
+  });
   const caption = readStringParam(params, "caption", { allowEmpty: true });
   const content = message || caption || "";
   const replyTo = readStringParam(params, "replyTo");
   const threadId = readStringParam(params, "threadId");
-  const buttons = params.buttons;
   const asVoice = readBooleanParam(params, "asVoice");
   const silent = readBooleanParam(params, "silent");
+  const forceDocument = readBooleanParam(params, "forceDocument");
   const quoteText = readStringParam(params, "quoteText");
   return {
     to,
@@ -48,6 +93,7 @@ function readTelegramSendParams(params: Record<string, unknown>) {
     buttons,
     asVoice,
     silent,
+    forceDocument,
     quoteText: quoteText ?? undefined,
   };
 }
@@ -73,56 +119,62 @@ function readTelegramMessageIdParam(params: Record<string, unknown>): number {
 
 export const telegramMessageActions: ChannelMessageActionAdapter = {
   listActions: ({ cfg }) => {
-    const accounts = listTokenSourcedAccounts(listEnabledTelegramAccounts(cfg));
-    if (accounts.length === 0) {
+    const discovery = resolveTelegramActionDiscovery(cfg);
+    if (!discovery) {
       return [];
     }
-    // Union of all accounts' action gates (any account enabling an action makes it available)
-    const gate = createUnionActionGate(accounts, (account) =>
-      createTelegramActionGate({
-        cfg,
-        accountId: account.accountId,
-      }),
-    );
-    const isEnabled = (key: keyof TelegramActionConfig, defaultValue = true) =>
-      gate(key, defaultValue);
     const actions = new Set<ChannelMessageActionName>(["send"]);
-    const pollEnabledForAnyAccount = accounts.some((account) => {
-      const accountGate = createTelegramActionGate({
-        cfg,
-        accountId: account.accountId,
-      });
-      return resolveTelegramPollActionGateState(accountGate).enabled;
-    });
-    if (pollEnabledForAnyAccount) {
+    if (discovery.pollEnabled) {
       actions.add("poll");
     }
-    if (isEnabled("reactions")) {
+    if (discovery.isEnabled("reactions")) {
       actions.add("react");
     }
-    if (isEnabled("deleteMessage")) {
+    if (discovery.isEnabled("deleteMessage")) {
       actions.add("delete");
     }
-    if (isEnabled("editMessage")) {
+    if (discovery.isEnabled("editMessage")) {
       actions.add("edit");
     }
-    if (isEnabled("sticker", false)) {
+    if (discovery.isEnabled("sticker", false)) {
       actions.add("sticker");
       actions.add("sticker-search");
     }
-    if (isEnabled("createForumTopic")) {
+    if (discovery.isEnabled("createForumTopic")) {
       actions.add("topic-create");
+    }
+    if (discovery.isEnabled("editForumTopic")) {
+      actions.add("topic-edit");
     }
     return Array.from(actions);
   },
-  supportsButtons: ({ cfg }) => {
-    const accounts = listTokenSourcedAccounts(listEnabledTelegramAccounts(cfg));
-    if (accounts.length === 0) {
-      return false;
+  getCapabilities: ({ cfg }) => {
+    const discovery = resolveTelegramActionDiscovery(cfg);
+    if (!discovery) {
+      return [];
     }
-    return accounts.some((account) =>
-      isTelegramInlineButtonsEnabled({ cfg, accountId: account.accountId }),
-    );
+    return discovery.buttonsEnabled ? (["interactive", "buttons"] as const) : [];
+  },
+  getToolSchema: ({ cfg }) => {
+    const discovery = resolveTelegramActionDiscovery(cfg);
+    if (!discovery) {
+      return null;
+    }
+    const entries: ChannelMessageToolSchemaContribution[] = [];
+    if (discovery.buttonsEnabled) {
+      entries.push({
+        properties: {
+          buttons: createMessageToolButtonsSchema(),
+        },
+      });
+    }
+    if (discovery.pollEnabled) {
+      entries.push({
+        properties: createTelegramPollExtraToolSchemas(),
+        visibility: "all-configured" as const,
+      });
+    }
+    return entries.length > 0 ? entries : null;
   },
   extractToolSend: ({ args }) => {
     return extractToolSend(args, "sendMessage");
@@ -130,7 +182,7 @@ export const telegramMessageActions: ChannelMessageActionAdapter = {
   handleAction: async ({ action, params, cfg, accountId, mediaLocalRoots, toolContext }) => {
     if (action === "send") {
       const sendParams = readTelegramSendParams(params);
-      return await handleTelegramAction(
+      return await telegramMessageActionRuntime.handleTelegramAction(
         {
           action: "sendMessage",
           ...sendParams,
@@ -145,7 +197,7 @@ export const telegramMessageActions: ChannelMessageActionAdapter = {
       const messageId = resolveReactionMessageId({ args: params, toolContext });
       const emoji = readStringParam(params, "emoji", { allowEmpty: true });
       const remove = readBooleanParam(params, "remove");
-      return await handleTelegramAction(
+      return await telegramMessageActionRuntime.handleTelegramAction(
         {
           action: "react",
           chatId: readTelegramChatIdParam(params),
@@ -178,7 +230,7 @@ export const telegramMessageActions: ChannelMessageActionAdapter = {
       const pollPublic = readBooleanParam(params, "pollPublic");
       const isAnonymous = resolveTelegramPollVisibility({ pollAnonymous, pollPublic });
       const silent = readBooleanParam(params, "silent");
-      return await handleTelegramAction(
+      return await telegramMessageActionRuntime.handleTelegramAction(
         {
           action: "poll",
           to,
@@ -201,7 +253,7 @@ export const telegramMessageActions: ChannelMessageActionAdapter = {
     if (action === "delete") {
       const chatId = readTelegramChatIdParam(params);
       const messageId = readTelegramMessageIdParam(params);
-      return await handleTelegramAction(
+      return await telegramMessageActionRuntime.handleTelegramAction(
         {
           action: "deleteMessage",
           chatId,
@@ -218,7 +270,7 @@ export const telegramMessageActions: ChannelMessageActionAdapter = {
       const messageId = readTelegramMessageIdParam(params);
       const message = readStringParam(params, "message", { required: true, allowEmpty: false });
       const buttons = params.buttons;
-      return await handleTelegramAction(
+      return await telegramMessageActionRuntime.handleTelegramAction(
         {
           action: "editMessage",
           chatId,
@@ -240,7 +292,7 @@ export const telegramMessageActions: ChannelMessageActionAdapter = {
       const fileId = stickerIds?.[0] ?? readStringParam(params, "fileId", { required: true });
       const replyToMessageId = readNumberParam(params, "replyTo", { integer: true });
       const messageThreadId = readNumberParam(params, "threadId", { integer: true });
-      return await handleTelegramAction(
+      return await telegramMessageActionRuntime.handleTelegramAction(
         {
           action: "sendSticker",
           to,
@@ -257,7 +309,7 @@ export const telegramMessageActions: ChannelMessageActionAdapter = {
     if (action === "sticker-search") {
       const query = readStringParam(params, "query", { required: true });
       const limit = readNumberParam(params, "limit", { integer: true });
-      return await handleTelegramAction(
+      return await telegramMessageActionRuntime.handleTelegramAction(
         {
           action: "searchSticker",
           query,
@@ -274,12 +326,36 @@ export const telegramMessageActions: ChannelMessageActionAdapter = {
       const name = readStringParam(params, "name", { required: true });
       const iconColor = readNumberParam(params, "iconColor", { integer: true });
       const iconCustomEmojiId = readStringParam(params, "iconCustomEmojiId");
-      return await handleTelegramAction(
+      return await telegramMessageActionRuntime.handleTelegramAction(
         {
           action: "createForumTopic",
           chatId,
           name,
           iconColor: iconColor ?? undefined,
+          iconCustomEmojiId: iconCustomEmojiId ?? undefined,
+          accountId: accountId ?? undefined,
+        },
+        cfg,
+        { mediaLocalRoots },
+      );
+    }
+
+    if (action === "topic-edit") {
+      const chatId = readTelegramChatIdParam(params);
+      const messageThreadId =
+        readNumberParam(params, "messageThreadId", { integer: true }) ??
+        readNumberParam(params, "threadId", { integer: true });
+      if (typeof messageThreadId !== "number") {
+        throw new Error("messageThreadId or threadId is required.");
+      }
+      const name = readStringParam(params, "name");
+      const iconCustomEmojiId = readStringParam(params, "iconCustomEmojiId");
+      return await telegramMessageActionRuntime.handleTelegramAction(
+        {
+          action: "editForumTopic",
+          chatId,
+          messageThreadId,
+          name: name ?? undefined,
           iconCustomEmojiId: iconCustomEmojiId ?? undefined,
           accountId: accountId ?? undefined,
         },

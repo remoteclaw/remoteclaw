@@ -6,7 +6,6 @@ describe("plugin-sdk exports", () => {
     const forbidden = [
       "chunkMarkdownText",
       "chunkText",
-      "resolveTextChunkLimit",
       "hasControlCommand",
       "isControlCommandMessage",
       "shouldComputeCommandAuthorized",
@@ -14,9 +13,7 @@ describe("plugin-sdk exports", () => {
       "buildMentionRegexes",
       "matchesMentionPatterns",
       "resolveStateDir",
-      "loadConfig",
       "writeConfigFile",
-      "runCommandWithTimeout",
       "enqueueSystemEvent",
       "fetchRemoteMedia",
       "saveMediaBuffer",

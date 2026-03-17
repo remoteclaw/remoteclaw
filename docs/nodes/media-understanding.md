@@ -1,5 +1,5 @@
 ---
-description: "Inbound image/audio/video understanding (optional) with provider + CLI fallbacks"
+summary: "Inbound image/audio/video understanding (optional) with provider + CLI fallbacks"
 read_when:
   - Designing or refactoring media understanding
   - Tuning inbound audio/video/image preprocessing
@@ -9,6 +9,10 @@ title: "Media Understanding"
 # Media Understanding (Inbound) — 2026-01-17
 
 RemoteClaw can **summarize inbound media** (image/audio/video) before the reply pipeline runs. It auto‑detects when local tools or provider keys are available, and can be disabled or customized. If understanding is off, models still receive the original files/URLs as usual.
+
+Vendor-specific media behavior is registered by vendor plugins, while RemoteClaw
+core owns the shared `tools.media` config, fallback order, and reply-pipeline
+integration.
 
 ## Goals
 
@@ -75,6 +79,21 @@ Each `models[]` entry can be **provider** or **CLI**:
 
 ```json5
 {
+  type: "provider", // default if omitted
+  provider: "openai",
+  model: "gpt-5.2",
+  prompt: "Describe the image in <= 500 chars.",
+  maxChars: 500,
+  maxBytes: 10485760,
+  timeoutSeconds: 60,
+  capabilities: ["image"], // optional, used for multi‑modal entries
+  profile: "vision-profile",
+  preferredProfile: "vision-fallback",
+}
+```
+
+```json5
+{
   type: "cli",
   command: "gemini",
   args: [
@@ -114,8 +133,8 @@ Rules:
 - Audio files smaller than **1024 bytes** are treated as empty/corrupt and skipped before provider/CLI transcription.
 - If the model returns more than `maxChars`, output is trimmed.
 - `prompt` defaults to simple “Describe the {media}.” plus the `maxChars` guidance (image/video only).
-- If `<capability>.enabled: true` but no models are configured, RemoteClaw auto-detects
-  available providers and CLIs (see auto-detect section below).
+- If `<capability>.enabled: true` but no models are configured, RemoteClaw tries the
+  **active reply model** when its provider supports the capability.
 
 ### Auto-detect media understanding (default)
 
@@ -151,7 +170,7 @@ Note: Binary detection is best-effort across macOS/Linux/Windows; ensure the CLI
 
 ### Proxy environment support (provider models)
 
-When provider-based **audio** and **video** media understanding is enabled, OpenClaw
+When provider-based **audio** and **video** media understanding is enabled, RemoteClaw
 honors standard outbound proxy environment variables for provider HTTP calls:
 
 - `HTTPS_PROXY`
@@ -160,7 +179,7 @@ honors standard outbound proxy environment variables for provider HTTP calls:
 - `http_proxy`
 
 If no proxy env vars are set, media understanding uses direct egress.
-If the proxy value is malformed, OpenClaw logs a warning and falls back to direct
+If the proxy value is malformed, RemoteClaw logs a warning and falls back to direct
 fetch.
 
 ## Capabilities (optional)
@@ -169,7 +188,10 @@ If you set `capabilities`, the entry only runs for those media types. For shared
 lists, RemoteClaw can infer defaults:
 
 - `openai`, `anthropic`, `minimax`: **image**
+- `moonshot`: **image + video**
 - `google` (Gemini API): **image + audio + video**
+- `mistral`: **audio**
+- `zai`: **image**
 - `groq`: **audio**
 - `deepgram`: **audio**
 
@@ -178,30 +200,19 @@ If you omit `capabilities`, the entry is eligible for the list it appears in.
 
 ## Provider support matrix (RemoteClaw integrations)
 
-| Capability | Provider integration                    | Notes                                                     |
-| ---------- | --------------------------------------- | --------------------------------------------------------- |
-| Image      | OpenAI / Anthropic / Google / MiniMax   | Any image-capable provider integration works.             |
-| Audio      | OpenAI, Groq, Deepgram, Google, Mistral | Provider transcription (Whisper/Deepgram/Gemini/Voxtral). |
-| Video      | Google (Gemini API)                     | Provider video understanding.                             |
+| Capability | Provider integration                               | Notes                                                                   |
+| ---------- | -------------------------------------------------- | ----------------------------------------------------------------------- |
+| Image      | OpenAI, Anthropic, Google, MiniMax, Moonshot, Z.AI | Vendor plugins register image support against core media understanding. |
+| Audio      | OpenAI, Groq, Deepgram, Google, Mistral            | Provider transcription (Whisper/Deepgram/Gemini/Voxtral).               |
+| Video      | Google, Moonshot                                   | Provider video understanding via vendor plugins.                        |
 
-## Recommended providers
+## Model selection guidance
 
-**Image**
-
-- Prefer your active model if it supports images.
-- Good defaults: `openai/gpt-5.2`, `anthropic/claude-opus-4-6`, `google/gemini-3-pro-preview`.
-
-**Audio**
-
-- `openai/gpt-4o-mini-transcribe`, `groq/whisper-large-v3-turbo`, `deepgram/nova-3`, or `mistral/voxtral-mini-latest`.
-- CLI fallback: `whisper-cli` (whisper-cpp) or `whisper`.
-- `parakeet-mlx` note: with `--output-dir`, OpenClaw reads `<output-dir>/<media-basename>.txt` when output format is `txt` (or unspecified); non-`txt` formats fall back to stdout.
-- Deepgram setup: [Deepgram (audio transcription)](/providers/deepgram).
-
-**Video**
-
-- `google/gemini-3-flash-preview` (fast), `google/gemini-3-pro-preview` (richer).
-- CLI fallback: `gemini` CLI (supports `read_file` on video/audio).
+- Prefer the strongest latest-generation model available for each media capability when quality and safety matter.
+- For tool-enabled agents handling untrusted inputs, avoid older/weaker media models.
+- Keep at least one fallback per capability for availability (quality model + faster/cheaper model).
+- CLI fallbacks (`whisper-cli`, `whisper`, `gemini`) are useful when provider APIs are unavailable.
+- `parakeet-mlx` note: with `--output-dir`, RemoteClaw reads `<output-dir>/<media-basename>.txt` when output format is `txt` (or unspecified); non-`txt` formats fall back to stdout.
 
 ## Attachment policy
 

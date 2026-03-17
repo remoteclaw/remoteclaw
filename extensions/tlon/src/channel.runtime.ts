@@ -1,19 +1,12 @@
 import crypto from "node:crypto";
 import type {
-  ChannelAccountSnapshot,
   ChannelOutboundAdapter,
   ChannelPlugin,
-  OpenClawConfig,
-} from "../api.js";
-import { createLoggerBackedRuntime, createReplyPrefixOptions } from "../api.js";
+  RemoteClawConfig,
+} from "remoteclaw/plugin-sdk";
 import { monitorTlonProvider } from "./monitor/index.js";
 import { tlonSetupWizard } from "./setup-surface.js";
-import {
-  formatTargetHint,
-  normalizeShip,
-  parseTlonTarget,
-  resolveTlonOutboundTarget,
-} from "./targets.js";
+import { formatTargetHint, normalizeShip, parseTlonTarget } from "./targets.js";
 import { configureClient } from "./tlon-api.js";
 import { resolveTlonAccount } from "./types.js";
 import { authenticate } from "./urbit/auth.js";
@@ -92,7 +85,7 @@ async function createHttpPokeApi(params: {
 }
 
 function resolveOutboundContext(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string | null;
   to: string;
 }) {
@@ -138,7 +131,19 @@ async function withHttpPokeAccountApi<T>(
 export const tlonRuntimeOutbound: ChannelOutboundAdapter = {
   deliveryMode: "direct",
   textChunkLimit: 10000,
-  resolveTarget: ({ to }) => resolveTlonOutboundTarget(to),
+  resolveTarget: ({ to }) => {
+    const parsed = parseTlonTarget(to ?? "");
+    if (!parsed) {
+      return {
+        ok: false,
+        error: new Error(`Invalid Tlon target. Use ${formatTargetHint()}`),
+      };
+    }
+    if (parsed.kind === "dm") {
+      return { ok: true, to: parsed.ship };
+    }
+    return { ok: true, to: parsed.nest };
+  },
   sendText: async ({ cfg, to, text, accountId, replyToId, threadId }) => {
     const { account, parsed } = resolveOutboundContext({ cfg, accountId, to });
     return withHttpPokeAccountApi(account, async (api) => {
@@ -169,7 +174,6 @@ export const tlonRuntimeOutbound: ChannelOutboundAdapter = {
       shipName: account.ship.replace(/^~/, ""),
       verbose: false,
       getCode: async () => account.code,
-      allowPrivateNetwork: account.allowPrivateNetwork ?? undefined,
     });
 
     const uploadedUrl = mediaUrl ? await uploadImageFromUrl(mediaUrl) : undefined;
@@ -226,14 +230,14 @@ export async function probeTlonAccount(account: ConfiguredTlonAccount) {
 }
 
 export async function startTlonGatewayAccount(
-  ctx: Parameters<NonNullable<NonNullable<ChannelPlugin["gateway"]>["startAccount"]>>[0],
+  ctx: Parameters<NonNullable<ChannelPlugin["gateway"]>["startAccount"]>[0],
 ) {
   const account = ctx.account;
   ctx.setStatus({
     accountId: account.accountId,
     ship: account.ship,
     url: account.url,
-  } as ChannelAccountSnapshot);
+  } as import("remoteclaw/plugin-sdk").ChannelAccountSnapshot);
   ctx.log?.info(`[${account.accountId}] starting Tlon provider for ${account.ship ?? "tlon"}`);
   return monitorTlonProvider({
     runtime: ctx.runtime,

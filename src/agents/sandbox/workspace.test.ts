@@ -8,7 +8,7 @@ import { ensureSandboxWorkspace } from "./workspace.js";
 const tempRoots: string[] = [];
 
 async function makeTempRoot(): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sandbox-workspace-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-sandbox-workspace-"));
   tempRoots.push(root);
   return root;
 }

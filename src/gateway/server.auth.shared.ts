@@ -289,7 +289,7 @@ async function startRateLimitedTokenServerWithPairedDeviceToken() {
   const { server, ws, port, prevToken } = await startServerWithClient();
   const deviceIdentityPath = path.join(
     os.tmpdir(),
-    "openclaw-auth-rate-limit-" + randomUUID() + ".json",
+    "remoteclaw-auth-rate-limit-" + randomUUID() + ".json",
   );
   try {
     const initial = await connectReq(ws, { token: "secret", deviceIdentityPath });
@@ -323,7 +323,7 @@ async function ensurePairedDeviceTokenForCurrentIdentity(ws: WebSocket): Promise
 
   const deviceIdentityPath = path.join(
     os.tmpdir(),
-    "openclaw-auth-device-" + randomUUID() + ".json",
+    "remoteclaw-auth-device-" + randomUUID() + ".json",
   );
 
   const res = await connectReq(ws, { token: "secret", deviceIdentityPath });

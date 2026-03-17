@@ -440,7 +440,8 @@ async function processMessageWithPipeline(params: {
       kind: isGroup ? "group" : "direct",
       id: chatId,
     },
-    runtime: core.channel,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    runtime: core.channel as any,
     sessionStore: config.session?.store,
   });
 

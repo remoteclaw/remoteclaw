@@ -83,7 +83,7 @@ export function resolveMatrixAllowListMatch(params: {
     { value: userId ? `matrix:${userId}` : "", source: "prefixed-id" },
     { value: userId ? `user:${userId}` : "", source: "prefixed-user" },
   ];
-  return resolveAllowlistMatchByCandidates({ allowList, candidates });
+  return resolveAllowlistMatchByCandidates({ allowList, candidates }) as MatrixAllowListMatch;
 }
 
 export function resolveMatrixAllowListMatches(params: { allowList: string[]; userId?: string }) {

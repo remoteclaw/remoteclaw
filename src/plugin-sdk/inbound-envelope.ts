@@ -1,5 +1,6 @@
 type RouteLike = {
   agentId: string;
+  accountId?: string;
   sessionKey: string;
 };
 

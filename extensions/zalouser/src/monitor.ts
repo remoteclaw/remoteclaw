@@ -177,7 +177,6 @@ async function processMessage(
 
   const dmPolicy = account.config.dmPolicy ?? "pairing";
   const configAllowFrom = (account.config.allowFrom ?? []).map((v) => String(v));
-  const rawBody = content.trim();
   const { senderAllowedForCommands, commandAuthorized } =
     await resolveSenderCommandAuthorizationWithRuntime({
       cfg: config,
@@ -264,7 +263,8 @@ async function processMessage(
       kind: peer.kind,
       id: peer.id,
     },
-    runtime: core.channel,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    runtime: core.channel as any,
     sessionStore: config.session?.store,
   });
 

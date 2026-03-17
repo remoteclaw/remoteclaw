@@ -15,7 +15,12 @@ import { buildTlonAccountFields } from "./account-fields.js";
 import { tlonChannelConfigSchema } from "./config-schema.js";
 import { monitorTlonProvider } from "./monitor/index.js";
 import { tlonOnboardingAdapter } from "./onboarding.js";
-import { formatTargetHint, normalizeShip, parseTlonTarget } from "./targets.js";
+import {
+  formatTargetHint,
+  normalizeShip,
+  parseTlonTarget,
+  resolveTlonOutboundTarget,
+} from "./targets.js";
 import { resolveTlonAccount, listTlonAccountIds } from "./types.js";
 import { authenticate } from "./urbit/auth.js";
 import { ssrfPolicyFromAllowPrivateNetwork } from "./urbit/context.js";
@@ -156,19 +161,7 @@ function applyTlonSetupConfig(params: {
 const tlonOutbound: ChannelOutboundAdapter = {
   deliveryMode: "direct",
   textChunkLimit: 10000,
-  resolveTarget: ({ to }) => {
-    const parsed = parseTlonTarget(to ?? "");
-    if (!parsed) {
-      return {
-        ok: false,
-        error: new Error(`Invalid Tlon target. Use ${formatTargetHint()}`),
-      };
-    }
-    if (parsed.kind === "dm") {
-      return { ok: true, to: parsed.ship };
-    }
-    return { ok: true, to: parsed.nest };
-  },
+  resolveTarget: ({ to }) => resolveTlonOutboundTarget(to),
   sendText: async ({ cfg, to, text, accountId, replyToId, threadId }) => {
     const account = resolveTlonAccount(cfg, accountId ?? undefined);
     if (!account.configured || !account.ship || !account.url || !account.code) {

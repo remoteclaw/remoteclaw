@@ -1,4 +1,4 @@
-import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk";
+import { fetchWithSsrFGuard } from "../../../api.js";
 
 type GuardedJsonApiRequestParams = {
   url: string;

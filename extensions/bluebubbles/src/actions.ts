@@ -19,19 +19,10 @@ import { resolveBlueBubblesAccount } from "./accounts.js";
 import { getCachedBlueBubblesPrivateApiStatus, isMacOS26OrHigher } from "./probe.js";
 import { normalizeSecretInputString } from "./secret-input.js";
 import {
-  editBlueBubblesMessage,
-  unsendBlueBubblesMessage,
-  renameBlueBubblesChat,
-  setGroupIconBlueBubbles,
-  addBlueBubblesParticipant,
-  removeBlueBubblesParticipant,
-  leaveBlueBubblesChat,
-} from "./chat.js";
-import { resolveBlueBubblesMessageId } from "./monitor.js";
-import { getCachedBlueBubblesPrivateApiStatus, isMacOS26OrHigher } from "./probe.js";
-import { sendBlueBubblesReaction } from "./reactions.js";
-import { resolveChatGuidForTarget, sendMessageBlueBubbles } from "./send.js";
-import { normalizeBlueBubblesHandle, parseBlueBubblesTarget } from "./targets.js";
+  normalizeBlueBubblesHandle,
+  normalizeBlueBubblesMessagingTarget,
+  parseBlueBubblesTarget,
+} from "./targets.js";
 import type { BlueBubblesSendTarget } from "./types.js";
 
 const providerId = "bluebubbles";
@@ -74,7 +65,7 @@ const PRIVATE_API_ACTIONS = new Set<ChannelMessageActionName>([
 ]);
 
 export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
-  describeMessageTool: ({ cfg, currentChannelId }) => {
+  listActions: ({ cfg, currentChannelId }) => {
     const account = resolveBlueBubblesAccount({ cfg: cfg });
     if (!account.enabled || !account.configured) {
       return null;
@@ -114,7 +105,7 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         }
       }
     }
-    return { actions: Array.from(actions) };
+    return Array.from(actions);
   },
   supportsAction: ({ action }) => SUPPORTED_ACTIONS.has(action),
   extractToolSend: ({ args }) => extractToolSend(args, "sendMessage"),

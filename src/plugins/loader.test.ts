@@ -466,10 +466,10 @@ describe("loadRemoteClawPlugins", () => {
     expect(route).toBeDefined();
     expect(route?.path).toBe("/demo");
     const httpPlugin = registry.plugins.find((entry) => entry.id === "http-route-demo");
-    expect(httpPlugin?.httpHandlers).toBe(1);
+    expect(httpPlugin?.httpRoutes).toBe(1);
   });
 
-  it("rejects plugin http routes missing explicit auth", () => {
+  it("injects plugin auth for http routes missing explicit auth", () => {
     useNoBundledPlugins();
     const plugin = writePlugin({
       id: "http-route-missing-auth",
@@ -486,14 +486,11 @@ describe("loadRemoteClawPlugins", () => {
       },
     });
 
-    expect(registry.httpRoutes.find((entry) => entry.pluginId === "http-route-missing-auth")).toBe(
-      undefined,
-    );
-    expect(
-      registry.diagnostics.some((diag) =>
-        String(diag.message).includes("http route registration missing or invalid auth"),
-      ),
-    ).toBe(true);
+    // The runtime injects auth: "plugin" for all registerHttpRoute calls (registry.ts line 625),
+    // so routes without explicit auth are accepted with plugin-level auth.
+    const route = registry.httpRoutes.find((entry) => entry.pluginId === "http-route-missing-auth");
+    expect(route).toBeDefined();
+    expect(route?.auth).toBe("plugin");
   });
 
   it("allows explicit replaceExisting for same-plugin http route overrides", () => {

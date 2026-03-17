@@ -1,4 +1,5 @@
 import { createPatchedAccountSetupAdapter } from "../../../src/channels/plugins/setup-helpers.js";
+import { createAllowlistSetupWizardProxy } from "../../../src/channels/plugins/setup-wizard-proxy.js";
 import type { DiscordGuildEntry } from "../../../src/config/types.discord.js";
 import {
   DEFAULT_ACCOUNT_ID,
@@ -282,38 +283,10 @@ export function createDiscordSetupWizardBase(
 export function createDiscordSetupWizardProxy(
   loadWizard: () => Promise<{ discordSetupWizard: ChannelSetupWizard }>,
 ) {
-  return createDiscordSetupWizardBase({
-    promptAllowFrom: async ({ cfg, prompter, accountId }) => {
-      const wizard = (await loadWizard()).discordSetupWizard;
-      if (!wizard.dmPolicy?.promptAllowFrom) {
-        return cfg;
-      }
-      return await wizard.dmPolicy.promptAllowFrom({ cfg, prompter, accountId });
-    },
-    resolveAllowFromEntries: async ({ cfg, accountId, credentialValues, entries }) => {
-      const wizard = (await loadWizard()).discordSetupWizard;
-      if (!wizard.allowFrom) {
-        return entries.map((input) => ({ input, resolved: false, id: null }));
-      }
-      return await wizard.allowFrom.resolveEntries({
-        cfg,
-        accountId,
-        credentialValues,
-        entries,
-      });
-    },
-    resolveGroupAllowlist: async ({ cfg, accountId, credentialValues, entries, prompter }) => {
-      const wizard = (await loadWizard()).discordSetupWizard;
-      if (!wizard.groupAccess?.resolveAllowlist) {
-        return entries.map((input) => ({ input, resolved: false }));
-      }
-      return (await wizard.groupAccess.resolveAllowlist({
-        cfg,
-        accountId,
-        credentialValues,
-        entries,
-        prompter,
-      })) as DiscordGroupAllowlistResolution;
-    },
+  return createAllowlistSetupWizardProxy({
+    loadWizard: async () => (await loadWizard()).discordSetupWizard,
+    createBase: createDiscordSetupWizardBase,
+    fallbackResolvedGroupAllowlist: (entries) =>
+      entries.map((input) => ({ input, resolved: false })),
   });
 }

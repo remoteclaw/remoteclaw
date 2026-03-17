@@ -1,6 +1,13 @@
 export type { RemoteClawConfig } from "../config/config.js";
-export type { ResolvedSlackAccount } from "../slack/accounts.js";
-export * from "./channel-plugin-common.js";
+export type { SlackAccountConfig } from "../config/types.slack.js";
+export type { InspectedSlackAccount } from "../../extensions/slack/api.js";
+export type { ResolvedSlackAccount } from "../../extensions/slack/api.js";
+export type {
+  ChannelMessageActionContext,
+  ChannelPlugin,
+  OpenClawPluginApi,
+  PluginRuntime,
+} from "./channel-plugin-common.js";
 export {
   listSlackAccountIds,
   resolveDefaultSlackAccountId,
@@ -30,6 +37,37 @@ export {
 export { slackOnboardingAdapter } from "../channels/plugins/onboarding/slack.js";
 export { SlackConfigSchema } from "../config/zod-schema.providers-core.js";
 
+export {
+  listEnabledSlackAccounts,
+  listSlackAccountIds,
+  resolveDefaultSlackAccountId,
+  resolveSlackReplyToMode,
+} from "../../extensions/slack/api.js";
+export { isSlackInteractiveRepliesEnabled } from "../../extensions/slack/api.js";
+export { inspectSlackAccount } from "../../extensions/slack/api.js";
+export { parseSlackTarget, resolveSlackChannelId } from "./slack-targets.js";
+export { extractSlackToolSend, listSlackMessageActions } from "../../extensions/slack/api.js";
+export { buildSlackThreadingToolContext } from "../../extensions/slack/api.js";
+export { parseSlackBlocksInput } from "../../extensions/slack/api.js";
+export { handleSlackHttpRequest } from "../../extensions/slack/api.js";
+export { sendMessageSlack } from "../../extensions/slack/api.js";
+export {
+  deleteSlackMessage,
+  downloadSlackFile,
+  editSlackMessage,
+  getSlackMemberInfo,
+  listSlackEmojis,
+  listSlackPins,
+  listSlackReactions,
+  pinSlackMessage,
+  reactSlackMessage,
+  readSlackMessages,
+  removeOwnSlackReactions,
+  removeSlackReaction,
+  sendSlackMessage,
+  unpinSlackMessage,
+} from "../../extensions/slack/api.js";
+export { recordSlackThreadParticipation } from "../../extensions/slack/api.js";
 export { handleSlackMessageAction } from "./slack-message-actions.js";
 
 export { formatAllowFromLowercase } from "./allow-from.js";

@@ -6,7 +6,10 @@ import { createNostrProfileHttpHandler } from "./src/nostr-profile-http.js";
 import { setNostrRuntime, getNostrRuntime } from "./src/runtime.js";
 import { resolveNostrAccount } from "./src/types.js";
 
-const plugin = {
+export { nostrPlugin } from "./src/channel.js";
+export { setNostrRuntime } from "./src/runtime.js";
+
+export default defineChannelPluginEntry({
   id: "nostr",
   name: "Nostr",
   description: "Nostr DM channel plugin via NIP-04",

@@ -17,10 +17,18 @@ import type { WizardPrompter } from "../../../wizard/prompts.js";
 import type { ChannelOnboardingAdapter } from "../onboarding-types.js";
 import {
   normalizeAllowFromEntries,
-  resolveAccountIdForConfigure,
-  resolveOnboardingAccountId,
-  splitOnboardingEntries,
-} from "./helpers.js";
+  normalizeE164,
+  pathExists,
+  splitSetupEntries,
+  setSetupChannelEnabled,
+  type DmPolicy,
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/setup";
+import type { ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
+import { formatCliCommand, formatDocsLink } from "remoteclaw/plugin-sdk/setup-tools";
+import { listWhatsAppAccountIds, resolveWhatsAppAuthDir } from "./accounts.js";
+import { loginWeb } from "./login.js";
+import { whatsappSetupAdapter } from "./setup-core.js";
 
 const channel = "whatsapp" as const;
 

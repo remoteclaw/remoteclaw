@@ -3,7 +3,10 @@ import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { bluebubblesPlugin } from "./src/channel.js";
 import { setBlueBubblesRuntime } from "./src/runtime.js";
 
-const plugin = {
+export { bluebubblesPlugin } from "./src/channel.js";
+export { setBlueBubblesRuntime } from "./src/runtime.js";
+
+export default defineChannelPluginEntry({
   id: "bluebubbles",
   name: "BlueBubbles",
   description: "BlueBubbles channel plugin (macOS app)",

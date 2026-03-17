@@ -4,7 +4,10 @@ import { matrixPlugin } from "./src/channel.js";
 import { ensureMatrixCryptoRuntime } from "./src/matrix/deps.js";
 import { setMatrixRuntime } from "./src/runtime.js";
 
-const plugin = {
+export { matrixPlugin } from "./src/channel.js";
+export { setMatrixRuntime } from "./src/runtime.js";
+
+export default defineChannelPluginEntry({
   id: "matrix",
   name: "Matrix",
   description: "Matrix channel plugin (matrix-js-sdk)",

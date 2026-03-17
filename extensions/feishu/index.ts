@@ -9,6 +9,8 @@ import { registerFeishuPermTools } from "./src/perm.js";
 import { setFeishuRuntime } from "./src/runtime.js";
 import { registerFeishuWikiTools } from "./src/wiki.js";
 
+export { feishuPlugin } from "./src/channel.js";
+export { setFeishuRuntime } from "./src/runtime.js";
 export { monitorFeishuProvider } from "./src/monitor.js";
 export {
   sendMessageFeishu,

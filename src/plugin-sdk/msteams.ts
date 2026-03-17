@@ -115,3 +115,5 @@ export {
   createDefaultChannelRuntimeState,
 } from "./status-helpers.js";
 export { normalizeStringEntries } from "../shared/string-normalization.js";
+export { msteamsSetupWizard } from "../../extensions/msteams/api.js";
+export { msteamsSetupAdapter } from "../../extensions/msteams/api.js";

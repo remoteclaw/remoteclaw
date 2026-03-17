@@ -1,7 +1,44 @@
-export type { ChannelMessageActionAdapter } from "../channels/plugins/types.js";
+export type {
+  ChannelAccountSnapshot,
+  ChannelGatewayContext,
+  ChannelMessageActionAdapter,
+} from "../channels/plugins/types.js";
 export type { RemoteClawConfig } from "../config/config.js";
-export type { ResolvedDiscordAccount } from "../discord/accounts.js";
-export * from "./channel-plugin-common.js";
+export type { DiscordAccountConfig, DiscordActionConfig } from "../config/types.js";
+export type { DiscordPluralKitConfig } from "../../extensions/discord/api.js";
+export type { InspectedDiscordAccount } from "../../extensions/discord/api.js";
+export type { ResolvedDiscordAccount } from "../../extensions/discord/api.js";
+export type { DiscordSendComponents, DiscordSendEmbeds } from "../../extensions/discord/api.js";
+export type {
+  ThreadBindingManager,
+  ThreadBindingRecord,
+  ThreadBindingTargetKind,
+} from "../../extensions/discord/api.js";
+export type {
+  ChannelConfiguredBindingProvider,
+  ChannelConfiguredBindingConversationRef,
+  ChannelConfiguredBindingMatch,
+} from "../channels/plugins/types.adapters.js";
+export type {
+  ChannelMessageActionContext,
+  ChannelPlugin,
+  OpenClawPluginApi,
+  PluginRuntime,
+} from "./channel-plugin-common.js";
+export {
+  DEFAULT_ACCOUNT_ID,
+  PAIRING_APPROVED_MESSAGE,
+  applyAccountNameToChannelSection,
+  buildChannelConfigSchema,
+  deleteAccountFromConfigSection,
+  emptyPluginConfigSchema,
+  formatPairingApproveHint,
+  getChatChannelMeta,
+  migrateBaseNameToDefaultAccount,
+  normalizeAccountId,
+  setAccountEnabledInConfigSection,
+} from "./channel-plugin-common.js";
+export { formatDocsLink } from "../terminal/links.js";
 
 export {
   listDiscordAccountIds,
@@ -32,15 +69,79 @@ export { discordOnboardingAdapter } from "../channels/plugins/onboarding/discord
 export { DiscordConfigSchema } from "../config/zod-schema.providers-core.js";
 
 export {
-  autoBindSpawnedDiscordSubagent,
-  listThreadBindingsBySessionKey,
-  unbindThreadBindingsBySessionKey,
-} from "../discord/monitor/thread-bindings.js";
-
-export {
   buildComputedAccountStatusSnapshot,
   buildTokenChannelStatusSummary,
 } from "./status-helpers.js";
 
-export { formatAllowFromLowercase } from "./allow-from.js";
-export { mapAllowFromEntries, resolveOptionalConfigString } from "./channel-config-helpers.js";
+export {
+  createDiscordActionGate,
+  listDiscordAccountIds,
+  resolveDefaultDiscordAccountId,
+} from "../../extensions/discord/api.js";
+export { inspectDiscordAccount } from "../../extensions/discord/api.js";
+export {
+  looksLikeDiscordTargetId,
+  normalizeDiscordMessagingTarget,
+  normalizeDiscordOutboundTarget,
+} from "../../extensions/discord/api.js";
+export { collectDiscordAuditChannelIds } from "../../extensions/discord/api.js";
+export { collectDiscordStatusIssues } from "../../extensions/discord/api.js";
+export {
+  DISCORD_DEFAULT_INBOUND_WORKER_TIMEOUT_MS,
+  DISCORD_DEFAULT_LISTENER_TIMEOUT_MS,
+} from "../../extensions/discord/api.js";
+export { normalizeExplicitDiscordSessionKey } from "../../extensions/discord/api.js";
+export {
+  autoBindSpawnedDiscordSubagent,
+  listThreadBindingsBySessionKey,
+  unbindThreadBindingsBySessionKey,
+} from "../../extensions/discord/api.js";
+export { getGateway } from "../../extensions/discord/api.js";
+export { getPresence } from "../../extensions/discord/api.js";
+export { readDiscordComponentSpec } from "../../extensions/discord/api.js";
+export { resolveDiscordChannelId } from "../../extensions/discord/api.js";
+export {
+  addRoleDiscord,
+  banMemberDiscord,
+  createChannelDiscord,
+  createScheduledEventDiscord,
+  createThreadDiscord,
+  deleteChannelDiscord,
+  deleteMessageDiscord,
+  editChannelDiscord,
+  editMessageDiscord,
+  fetchChannelInfoDiscord,
+  fetchChannelPermissionsDiscord,
+  fetchMemberInfoDiscord,
+  fetchMessageDiscord,
+  fetchReactionsDiscord,
+  fetchRoleInfoDiscord,
+  fetchVoiceStatusDiscord,
+  hasAnyGuildPermissionDiscord,
+  kickMemberDiscord,
+  listGuildChannelsDiscord,
+  listGuildEmojisDiscord,
+  listPinsDiscord,
+  listScheduledEventsDiscord,
+  listThreadsDiscord,
+  moveChannelDiscord,
+  pinMessageDiscord,
+  reactMessageDiscord,
+  readMessagesDiscord,
+  removeChannelPermissionDiscord,
+  removeOwnReactionsDiscord,
+  removeReactionDiscord,
+  removeRoleDiscord,
+  searchMessagesDiscord,
+  sendDiscordComponentMessage,
+  sendMessageDiscord,
+  sendPollDiscord,
+  sendStickerDiscord,
+  sendVoiceMessageDiscord,
+  setChannelPermissionDiscord,
+  timeoutMemberDiscord,
+  unpinMessageDiscord,
+  uploadEmojiDiscord,
+  uploadStickerDiscord,
+} from "../../extensions/discord/api.js";
+export { discordMessageActions } from "../../extensions/discord/api.js";

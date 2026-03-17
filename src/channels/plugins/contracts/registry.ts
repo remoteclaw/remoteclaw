@@ -1,28 +1,17 @@
 import { expect, vi } from "vitest";
-import { bluebubblesPlugin } from "../../../../extensions/bluebubbles/src/channel.js";
-import { discordPlugin } from "../../../../extensions/discord/src/channel.js";
-import { setDiscordRuntime } from "../../../../extensions/discord/src/runtime.js";
-import { feishuPlugin } from "../../../../extensions/feishu/src/channel.js";
-import { googlechatPlugin } from "../../../../extensions/googlechat/src/channel.js";
-import { imessagePlugin } from "../../../../extensions/imessage/src/channel.js";
-import { ircPlugin } from "../../../../extensions/irc/src/channel.js";
-import { linePlugin } from "../../../../extensions/line/src/channel.js";
-import { setLineRuntime } from "../../../../extensions/line/src/runtime.js";
-import { matrixPlugin } from "../../../../extensions/matrix/src/channel.js";
-import { mattermostPlugin } from "../../../../extensions/mattermost/src/channel.js";
-import { msteamsPlugin } from "../../../../extensions/msteams/src/channel.js";
-import { nextcloudTalkPlugin } from "../../../../extensions/nextcloud-talk/src/channel.js";
-import { nostrPlugin } from "../../../../extensions/nostr/src/channel.js";
-import { signalPlugin } from "../../../../extensions/signal/src/channel.js";
-import { slackPlugin } from "../../../../extensions/slack/src/channel.js";
-import { createSynologyChatPlugin } from "../../../../extensions/synology-chat/src/channel.js";
-import { telegramPlugin } from "../../../../extensions/telegram/src/channel.js";
-import { setTelegramRuntime } from "../../../../extensions/telegram/src/runtime.js";
-import { tlonPlugin } from "../../../../extensions/tlon/src/channel.js";
-import { whatsappPlugin } from "../../../../extensions/whatsapp/src/channel.js";
-import { zaloPlugin } from "../../../../extensions/zalo/src/channel.js";
-import { zalouserPlugin } from "../../../../extensions/zalouser/src/channel.js";
+import {
+  __testing as discordThreadBindingTesting,
+  createThreadBindingManager as createDiscordThreadBindingManager,
+} from "../../../../extensions/discord/api.js";
+import { createFeishuThreadBindingManager } from "../../../../extensions/feishu/api.js";
+import { setMatrixRuntime } from "../../../../extensions/matrix/api.js";
+import { createTelegramThreadBindingManager } from "../../../../extensions/telegram/api.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
+import {
+  getSessionBindingService,
+  type SessionBindingCapabilities,
+  type SessionBindingRecord,
+} from "../../../infra/outbound/session-binding-service.js";
 import {
   resolveDefaultLineAccountId,
   resolveLineAccount,

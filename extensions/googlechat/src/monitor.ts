@@ -7,6 +7,7 @@ import {
   createScopedPairingAccess,
   createReplyPrefixOptions,
   readJsonBodyWithLimit,
+  readJsonWebhookBodyOrReject,
   registerWebhookTargetWithPluginRoute,
   rejectNonPostWebhookRequest,
   isDangerousNameMatchingEnabled,
@@ -1057,7 +1058,7 @@ export function monitorGoogleChatProvider(options: GoogleChatMonitorOptions): ()
   });
 
   return () => {
-    unregisterTarget();
+    unregister();
   };
 }
 

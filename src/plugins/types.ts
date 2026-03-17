@@ -200,6 +200,15 @@ export type RemoteClawPluginHttpHandler = (
   res: ServerResponse,
 ) => Promise<boolean> | boolean;
 
+export type RemoteClawPluginHttpRouteHandler = (
+  req: IncomingMessage,
+  res: ServerResponse,
+) => Promise<void> | void;
+
+export type RemoteClawPluginHttpRouteAuth = "gateway" | "plugin";
+
+export type RemoteClawPluginHttpRouteMatch = "exact" | "prefix";
+
 export type RemoteClawPluginHttpRouteParams = {
   path: string;
   handler: RemoteClawPluginHttpRouteHandler;

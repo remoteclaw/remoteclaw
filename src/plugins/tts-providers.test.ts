@@ -31,6 +31,7 @@ function makeRecord(overrides?: Partial<PluginRecord>): PluginRecord {
     services: [],
     commands: [],
     httpHandlers: 0,
+    httpRoutes: 0,
     hookCount: 0,
     configSchema: false,
     ...overrides,

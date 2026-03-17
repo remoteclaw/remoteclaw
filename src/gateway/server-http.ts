@@ -61,6 +61,7 @@ import { handleOpenAiHttpRequest } from "./openai-http.js";
 import { handleOpenResponsesHttpRequest } from "./openresponses-http.js";
 import { GATEWAY_CLIENT_MODES, normalizeGatewayClientMode } from "./protocol/client-info.js";
 import { isProtectedPluginRoutePath } from "./security-path.js";
+import type { PluginHttpRequestHandler } from "./server/plugins-http.js";
 import type { PluginRoutePathContext } from "./server/plugins-http/path-context.js";
 import { resolvePluginRoutePathContext } from "./server/plugins-http/path-context.js";
 import type { GatewayWsClient } from "./server/ws-types.js";
@@ -284,6 +285,17 @@ async function runGatewayHttpRequestStages(
   return false;
 }
 
+function shouldEnforceDefaultPluginGatewayAuth(pathContext: PluginRoutePathContext): boolean {
+  // By default, protected plugin route prefixes require gateway auth.
+  // This fallback does not consult per-route auth annotations; callers
+  // can supply a registry-aware override via shouldEnforcePluginGatewayAuth.
+  return (
+    pathContext.malformedEncoding ||
+    pathContext.decodePassLimitReached ||
+    pathContext.candidates.some((c) => c.startsWith("/plugins/"))
+  );
+}
+
 function buildPluginRequestStages(params: {
   req: IncomingMessage;
   res: ServerResponse;
@@ -313,6 +325,7 @@ function buildPluginRequestStages(params: {
           return false;
         }
         const pluginAuthOk = await enforcePluginRouteGatewayAuth({
+          requestPath: params.requestPath,
           req: params.req,
           res: params.res,
           auth: params.resolvedAuth,
@@ -329,9 +342,7 @@ function buildPluginRequestStages(params: {
     {
       name: "plugin-http",
       run: () => {
-        const pathContext =
-          params.pluginPathContext ?? resolvePluginRoutePathContext(params.requestPath);
-        return params.handlePluginRequest?.(params.req, params.res, pathContext) ?? false;
+        return params.handlePluginRequest?.(params.req, params.res) ?? false;
       },
     },
   ];
@@ -634,26 +645,6 @@ export function createGatewayHttpServer(opts: {
       if (await handleSlackHttpRequest(req, res)) {
         return;
       }
-      if (handlePluginRequest) {
-        // Protected plugin route prefixes are gateway-auth protected by default.
-        // Non-protected plugin routes remain plugin-owned and must enforce
-        // their own auth when exposing sensitive functionality.
-        const pluginAuthOk = await enforcePluginRouteGatewayAuth({
-          requestPath,
-          req,
-          res,
-          auth: resolvedAuth,
-          trustedProxies,
-          allowRealIpFallback,
-          rateLimiter,
-        });
-        if (!pluginAuthOk) {
-          return;
-        }
-        if (await handlePluginRequest(req, res)) {
-          return;
-        }
-      }
       if (openResponsesEnabled) {
         if (
           await handleOpenResponsesHttpRequest(req, res, {
@@ -724,6 +715,8 @@ export function createGatewayHttpServer(opts: {
       }
       // Plugins run after built-in gateway routes so core surfaces keep
       // precedence on overlapping paths.
+      const pluginPathContext: PluginRoutePathContext | null = null;
+      const requestStages: GatewayHttpRequestStage[] = [];
       requestStages.push(
         ...buildPluginRequestStages({
           req,
@@ -731,7 +724,6 @@ export function createGatewayHttpServer(opts: {
           requestPath,
           pluginPathContext,
           handlePluginRequest,
-          shouldEnforcePluginGatewayAuth,
           resolvedAuth,
           trustedProxies,
           allowRealIpFallback,

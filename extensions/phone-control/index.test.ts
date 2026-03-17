@@ -33,6 +33,7 @@ function createApi(params: {
     logger: { info() {}, warn() {}, error() {} },
     registerTool() {},
     registerHook() {},
+    registerHttpHandler() {},
     registerHttpRoute() {},
     registerChannel() {},
     registerGatewayMethod() {},

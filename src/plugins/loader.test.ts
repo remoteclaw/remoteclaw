@@ -539,7 +539,7 @@ describe("loadRemoteClawPlugins", () => {
 } };`,
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadRemoteClawPlugins({
       cache: false,
       config: {
         plugins: {

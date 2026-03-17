@@ -7,7 +7,6 @@ import {
 import { readBooleanParam } from "openclaw/plugin-sdk/boolean-param";
 import { resolveReactionMessageId } from "openclaw/plugin-sdk/channel-runtime";
 import {
-  createLegacyMessageToolDiscoveryMethods,
   createMessageToolButtonsSchema,
   createTelegramPollExtraToolSchemas,
   createUnionActionGate,
@@ -31,6 +30,10 @@ import { handleTelegramAction } from "./action-runtime.js";
 import { resolveTelegramInlineButtons } from "./button-types.js";
 import { isTelegramInlineButtonsEnabled } from "./inline-buttons.js";
 import { buildTelegramInteractiveButtons } from "./shared-interactive.js";
+
+export const telegramMessageActionRuntime = {
+  handleTelegramAction,
+};
 
 export const telegramMessageActionRuntime = {
   handleTelegramAction,
@@ -181,27 +184,225 @@ export const telegramMessageActions: ChannelMessageActionAdapter = {
       isTelegramInlineButtonsEnabled({ cfg, accountId: account.accountId }),
     );
   },
+  getToolSchema: ({ cfg }) => {
+    const accounts = listTokenSourcedAccounts(listEnabledTelegramAccounts(cfg));
+    if (accounts.length === 0) {
+      return null;
+    }
+    const buttonsEnabled = accounts.some((account) =>
+      isTelegramInlineButtonsEnabled({ cfg, accountId: account.accountId }),
+    );
+    const pollEnabledForAnyAccount = accounts.some((account) => {
+      const accountGate = createTelegramActionGate({
+        cfg,
+        accountId: account.accountId,
+      });
+      return resolveTelegramPollActionGateState(accountGate).enabled;
+    });
+    const entries = [];
+    if (buttonsEnabled) {
+      entries.push({
+        properties: {
+          buttons: createMessageToolButtonsSchema(),
+        },
+      });
+    }
+    if (pollEnabledForAnyAccount) {
+      entries.push({
+        properties: createTelegramPollExtraToolSchemas(),
+        visibility: "all-configured" as const,
+      });
+    }
+    return entries.length > 0 ? entries : null;
+  },
   extractToolSend: ({ args }) => {
     return extractToolSend(args, "sendMessage");
   },
   handleAction: async ({ action, params, cfg, accountId, mediaLocalRoots, toolContext }) => {
-    const telegramAction = resolveTelegramMessageActionName(action);
-    if (!telegramAction) {
-      throw new Error(`Unsupported Telegram action: ${action}`);
+    if (action === "send") {
+      const sendParams = readTelegramSendParams(params);
+      return await telegramMessageActionRuntime.handleTelegramAction(
+        {
+          action: "sendMessage",
+          ...sendParams,
+          accountId: accountId ?? undefined,
+        },
+        cfg,
+        { mediaLocalRoots },
+      );
     }
-    return await telegramMessageActionRuntime.handleTelegramAction(
-      {
-        ...params,
-        action: telegramAction,
-        accountId: accountId ?? undefined,
-        ...(action === "react"
-          ? {
-              messageId: resolveReactionMessageId({ args: params, toolContext }),
-            }
-          : {}),
-      },
-      cfg,
-      { mediaLocalRoots },
-    );
+
+    if (action === "react") {
+      const messageId = resolveReactionMessageId({ args: params, toolContext });
+      const emoji = readStringParam(params, "emoji", { allowEmpty: true });
+      const remove = readBooleanParam(params, "remove");
+      return await telegramMessageActionRuntime.handleTelegramAction(
+        {
+          action: "react",
+          chatId: readTelegramChatIdParam(params),
+          messageId,
+          emoji,
+          remove,
+          accountId: accountId ?? undefined,
+        },
+        cfg,
+        { mediaLocalRoots },
+      );
+    }
+
+    if (action === "poll") {
+      const to = readStringParam(params, "to", { required: true });
+      const question = readStringParam(params, "pollQuestion", { required: true });
+      const answers = readStringArrayParam(params, "pollOption", { required: true });
+      const durationHours = readNumberParam(params, "pollDurationHours", {
+        integer: true,
+        strict: true,
+      });
+      const durationSeconds = readNumberParam(params, "pollDurationSeconds", {
+        integer: true,
+        strict: true,
+      });
+      const replyToMessageId = readNumberParam(params, "replyTo", { integer: true });
+      const messageThreadId = readNumberParam(params, "threadId", { integer: true });
+      const allowMultiselect = readBooleanParam(params, "pollMulti");
+      const pollAnonymous = readBooleanParam(params, "pollAnonymous");
+      const pollPublic = readBooleanParam(params, "pollPublic");
+      const isAnonymous = resolveTelegramPollVisibility({ pollAnonymous, pollPublic });
+      const silent = readBooleanParam(params, "silent");
+      return await telegramMessageActionRuntime.handleTelegramAction(
+        {
+          action: "poll",
+          to,
+          question,
+          answers,
+          allowMultiselect,
+          durationHours: durationHours ?? undefined,
+          durationSeconds: durationSeconds ?? undefined,
+          replyToMessageId: replyToMessageId ?? undefined,
+          messageThreadId: messageThreadId ?? undefined,
+          isAnonymous,
+          silent,
+          accountId: accountId ?? undefined,
+        },
+        cfg,
+        { mediaLocalRoots },
+      );
+    }
+
+    if (action === "delete") {
+      const chatId = readTelegramChatIdParam(params);
+      const messageId = readTelegramMessageIdParam(params);
+      return await telegramMessageActionRuntime.handleTelegramAction(
+        {
+          action: "deleteMessage",
+          chatId,
+          messageId,
+          accountId: accountId ?? undefined,
+        },
+        cfg,
+        { mediaLocalRoots },
+      );
+    }
+
+    if (action === "edit") {
+      const chatId = readTelegramChatIdParam(params);
+      const messageId = readTelegramMessageIdParam(params);
+      const message = readStringParam(params, "message", { required: true, allowEmpty: false });
+      const buttons = params.buttons;
+      return await telegramMessageActionRuntime.handleTelegramAction(
+        {
+          action: "editMessage",
+          chatId,
+          messageId,
+          content: message,
+          buttons,
+          accountId: accountId ?? undefined,
+        },
+        cfg,
+        { mediaLocalRoots },
+      );
+    }
+
+    if (action === "sticker") {
+      const to =
+        readStringParam(params, "to") ?? readStringParam(params, "target", { required: true });
+      // Accept stickerId (array from shared schema) and use first element as fileId
+      const stickerIds = readStringArrayParam(params, "stickerId");
+      const fileId = stickerIds?.[0] ?? readStringParam(params, "fileId", { required: true });
+      const replyToMessageId = readNumberParam(params, "replyTo", { integer: true });
+      const messageThreadId = readNumberParam(params, "threadId", { integer: true });
+      return await telegramMessageActionRuntime.handleTelegramAction(
+        {
+          action: "sendSticker",
+          to,
+          fileId,
+          replyToMessageId: replyToMessageId ?? undefined,
+          messageThreadId: messageThreadId ?? undefined,
+          accountId: accountId ?? undefined,
+        },
+        cfg,
+        { mediaLocalRoots },
+      );
+    }
+
+    if (action === "sticker-search") {
+      const query = readStringParam(params, "query", { required: true });
+      const limit = readNumberParam(params, "limit", { integer: true });
+      return await telegramMessageActionRuntime.handleTelegramAction(
+        {
+          action: "searchSticker",
+          query,
+          limit: limit ?? undefined,
+          accountId: accountId ?? undefined,
+        },
+        cfg,
+        { mediaLocalRoots },
+      );
+    }
+
+    if (action === "topic-create") {
+      const chatId = readTelegramChatIdParam(params);
+      const name = readStringParam(params, "name", { required: true });
+      const iconColor = readNumberParam(params, "iconColor", { integer: true });
+      const iconCustomEmojiId = readStringParam(params, "iconCustomEmojiId");
+      return await telegramMessageActionRuntime.handleTelegramAction(
+        {
+          action: "createForumTopic",
+          chatId,
+          name,
+          iconColor: iconColor ?? undefined,
+          iconCustomEmojiId: iconCustomEmojiId ?? undefined,
+          accountId: accountId ?? undefined,
+        },
+        cfg,
+        { mediaLocalRoots },
+      );
+    }
+
+    if (action === "topic-edit") {
+      const chatId = readTelegramChatIdParam(params);
+      const messageThreadId =
+        readNumberParam(params, "messageThreadId", { integer: true }) ??
+        readNumberParam(params, "threadId", { integer: true });
+      if (typeof messageThreadId !== "number") {
+        throw new Error("messageThreadId or threadId is required.");
+      }
+      const name = readStringParam(params, "name");
+      const iconCustomEmojiId = readStringParam(params, "iconCustomEmojiId");
+      return await telegramMessageActionRuntime.handleTelegramAction(
+        {
+          action: "editForumTopic",
+          chatId,
+          messageThreadId,
+          name: name ?? undefined,
+          iconCustomEmojiId: iconCustomEmojiId ?? undefined,
+          accountId: accountId ?? undefined,
+        },
+        cfg,
+        { mediaLocalRoots },
+      );
+    }
+
+    throw new Error(`Action ${action} is not supported for provider ${providerId}.`);
   },
 };

@@ -2,9 +2,9 @@ import type { ChannelSetupAdapter, ChannelSetupInput } from "remoteclaw/plugin-s
 import type { DmPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import { normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 import {
-  applyAccountNameToChannelSection,
   patchScopedAccountConfig,
-} from "remoteclaw/plugin-sdk/setup";
+  prepareScopedSetupConfig,
+} from "../../../src/channels/plugins/setup-helpers.js";
 import {
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
@@ -99,7 +99,7 @@ export function setIrcGroupAccess(
 export const ircSetupAdapter: ChannelSetupAdapter = {
   resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
   applyAccountName: ({ cfg, accountId, name }) =>
-    applyAccountNameToChannelSection({
+    prepareScopedSetupConfig({
       cfg,
       channelKey: channel,
       accountId,
@@ -117,7 +117,7 @@ export const ircSetupAdapter: ChannelSetupAdapter = {
   },
   applyAccountConfig: ({ cfg, accountId, input }) => {
     const setupInput = input as IrcSetupInput;
-    const namedConfig = applyAccountNameToChannelSection({
+    const namedConfig = prepareScopedSetupConfig({
       cfg,
       channelKey: channel,
       accountId,

@@ -1,12 +1,11 @@
 import {
-  applyAccountNameToChannelSection,
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
   patchScopedAccountConfig,
-  type ChannelSetupAdapter,
-  type ChannelSetupInput,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/setup";
+  prepareScopedSetupConfig,
+} from "../../../src/channels/plugins/setup-helpers.js";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import type { ChannelSetupInput } from "../../../src/channels/plugins/types.core.js";
+import type { OpenClawConfig } from "../../../src/config/config.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 import { buildTlonAccountFields } from "./account-fields.js";
 import { normalizeShip } from "./targets.js";
 import { listTlonAccountIds, resolveTlonAccount, type TlonResolvedAccount } from "./types.js";

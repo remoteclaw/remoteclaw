@@ -2,9 +2,9 @@ import type { ChannelSetupAdapter, ChannelSetupInput } from "remoteclaw/plugin-s
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 import {
-  applyAccountNameToChannelSection,
   patchScopedAccountConfig,
-} from "remoteclaw/plugin-sdk/setup";
+  prepareScopedSetupConfig,
+} from "../../../src/channels/plugins/setup-helpers.js";
 import {
   mergeAllowFromEntries,
   createTopLevelChannelDmPolicy,
@@ -185,7 +185,7 @@ const nextcloudTalkDmPolicy: ChannelSetupDmPolicy = {
 export const nextcloudTalkSetupAdapter: ChannelSetupAdapter = {
   resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
   applyAccountName: ({ cfg, accountId, name }) =>
-    applyAccountNameToChannelSection({
+    prepareScopedSetupConfig({
       cfg,
       channelKey: channel,
       accountId,
@@ -206,7 +206,7 @@ export const nextcloudTalkSetupAdapter: ChannelSetupAdapter = {
   },
   applyAccountConfig: ({ cfg, accountId, input }) => {
     const setupInput = input as NextcloudSetupInput;
-    const namedConfig = applyAccountNameToChannelSection({
+    const namedConfig = prepareScopedSetupConfig({
       cfg,
       channelKey: channel,
       accountId,

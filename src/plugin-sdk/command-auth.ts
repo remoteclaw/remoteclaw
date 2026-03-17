@@ -19,7 +19,7 @@ export type ResolveSenderCommandAuthorizationParams = {
 };
 
 export type CommandAuthorizationRuntime = {
-  shouldComputeCommandAuthorized: (rawBody: string, cfg: OpenClawConfig) => boolean;
+  shouldComputeCommandAuthorized: (rawBody: string, cfg: RemoteClawConfig) => boolean;
   resolveCommandAuthorizedFromAuthorizers: (params: {
     useAccessGroups: boolean;
     authorizers: Array<{ configured: boolean; allowed: boolean }>;

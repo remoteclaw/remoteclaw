@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import {
   listConfiguredAccountIds as listConfiguredAccountIdsFromSection,
   resolveAccountWithDefaultFallback,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,

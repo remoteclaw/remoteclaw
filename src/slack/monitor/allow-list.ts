@@ -52,7 +52,7 @@ export function resolveSlackAllowListMatch(params: {
         ] satisfies Array<{ value?: string; source: SlackAllowListMatch["matchSource"] }>)
       : []),
   ];
-  return resolveAllowlistMatchByCandidates({ allowList, candidates });
+  return resolveAllowlistMatchByCandidates({ allowList, candidates }) as SlackAllowListMatch;
 }
 
 export function allowListMatches(params: {

@@ -1,7 +1,7 @@
 import type { CliDeps } from "../cli/deps.js";
 import { createOutboundSendDeps } from "../cli/outbound-send-deps.js";
 import type { CronFailureDestinationConfig } from "../config/types.cron.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { RemoteClawConfig } from "../config/types.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { deliverOutboundPayloads } from "../infra/outbound/deliver.js";
 import { resolveAgentOutboundIdentity } from "../infra/outbound/identity.js";
@@ -240,7 +240,7 @@ const cronDeliveryLogger = getChildLogger({ subsystem: "cron-delivery" });
 
 export async function sendFailureNotificationAnnounce(
   deps: CliDeps,
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   agentId: string,
   jobId: string,
   target: { channel?: string; to?: string; accountId?: string },

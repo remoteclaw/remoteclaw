@@ -5,6 +5,7 @@ import type {
   CronJob,
   CronJobCreate,
   CronJobPatch,
+  CronMessageChannel,
   CronRunOutcome,
   CronRunStatus,
   CronRunTelemetry,

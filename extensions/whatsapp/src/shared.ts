@@ -2,7 +2,7 @@ import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderGroupPolicyWarnings,
   collectOpenGroupPolicyRouteAllowlistWarnings,
-} from "openclaw/plugin-sdk/compat";
+} from "openclaw/plugin-sdk/channel-policy";
 import { buildChannelConfigSchema } from "../../../src/channels/plugins/config-schema.js";
 import {
   resolveWhatsAppGroupRequireMention,

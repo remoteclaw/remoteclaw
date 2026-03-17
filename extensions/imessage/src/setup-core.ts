@@ -10,13 +10,14 @@ import {
   setSetupChannelEnabled,
   type RemoteClawConfig,
   type WizardPrompter,
-} from "remoteclaw/plugin-sdk/setup";
+} from "openclaw/plugin-sdk/setup";
 import type {
   ChannelSetupAdapter,
   ChannelSetupDmPolicy,
   ChannelSetupWizard,
   ChannelSetupWizardTextInput,
-} from "remoteclaw/plugin-sdk/setup";
+} from "openclaw/plugin-sdk/setup";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   listIMessageAccountIds,
   resolveDefaultIMessageAccountId,

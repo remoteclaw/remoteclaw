@@ -1,5 +1,5 @@
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/telegram";
+import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/telegram";
 import { expect, vi } from "vitest";
 import {
   createNativeCommandTestParams as createBaseNativeCommandTestParams,

@@ -1,7 +1,7 @@
 import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderRestrictSendersWarnings,
-} from "remoteclaw/plugin-sdk/channel-policy";
+} from "openclaw/plugin-sdk/channel-policy";
 import {
   deleteAccountFromConfigSection,
   setAccountEnabledInConfigSection,
@@ -12,8 +12,6 @@ import { getChatChannelMeta } from "../../../src/channels/registry.js";
 import { IMessageConfigSchema } from "../../../src/config/zod-schema.providers-core.js";
 import {
   formatTrimmedAllowFromEntries,
-  getChatChannelMeta,
-  IMessageConfigSchema,
   resolveIMessageConfigAllowFrom,
   resolveIMessageConfigDefaultTo,
 } from "../../../src/plugin-sdk/channel-config-helpers.js";

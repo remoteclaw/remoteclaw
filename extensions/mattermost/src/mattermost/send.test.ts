@@ -8,9 +8,11 @@ const mockState = vi.hoisted(() => ({
     accountId: "default",
     botToken: "bot-token",
     baseUrl: "https://mattermost.example.com",
+    config: {},
   })),
   createMattermostClient: vi.fn(),
   createMattermostDirectChannel: vi.fn(),
+  createMattermostDirectChannelWithRetry: vi.fn(),
   createMattermostPost: vi.fn(),
   fetchMattermostChannelByName: vi.fn(),
   fetchMattermostMe: vi.fn(),
@@ -31,6 +33,7 @@ vi.mock("./accounts.js", () => ({
 vi.mock("./client.js", () => ({
   createMattermostClient: mockState.createMattermostClient,
   createMattermostDirectChannel: mockState.createMattermostDirectChannel,
+  createMattermostDirectChannelWithRetry: mockState.createMattermostDirectChannelWithRetry,
   createMattermostPost: mockState.createMattermostPost,
   fetchMattermostChannelByName: mockState.fetchMattermostChannelByName,
   fetchMattermostMe: mockState.fetchMattermostMe,
@@ -70,10 +73,12 @@ describe("sendMessageMattermost", () => {
       accountId: "default",
       botToken: "bot-token",
       baseUrl: "https://mattermost.example.com",
+      config: {},
     });
     mockState.loadOutboundMediaFromUrl.mockReset();
     mockState.createMattermostClient.mockReset();
     mockState.createMattermostDirectChannel.mockReset();
+    mockState.createMattermostDirectChannelWithRetry.mockReset();
     mockState.createMattermostPost.mockReset();
     mockState.fetchMattermostChannelByName.mockReset();
     mockState.fetchMattermostMe.mockReset();
@@ -82,6 +87,7 @@ describe("sendMessageMattermost", () => {
     mockState.uploadMattermostFile.mockReset();
     mockState.createMattermostClient.mockReturnValue({});
     mockState.createMattermostPost.mockResolvedValue({ id: "post-1" });
+    mockState.createMattermostDirectChannelWithRetry.mockResolvedValue({ id: "dm-channel-1" });
     mockState.fetchMattermostMe.mockResolvedValue({ id: "bot-user" });
     mockState.fetchMattermostUserTeams.mockResolvedValue([{ id: "team-1" }]);
     mockState.fetchMattermostChannelByName.mockResolvedValue({ id: "town-square" });
@@ -96,6 +102,12 @@ describe("sendMessageMattermost", () => {
         },
       },
     };
+    mockState.resolveMattermostAccount.mockReturnValue({
+      accountId: "work",
+      botToken: "provided-token",
+      baseUrl: "https://mattermost.example.com",
+      config: {},
+    });
 
     await sendMessageMattermost("channel:town-square", "hello", {
       cfg: providedCfg as any,
@@ -118,6 +130,12 @@ describe("sendMessageMattermost", () => {
       },
     };
     mockState.loadConfig.mockReturnValueOnce(runtimeCfg);
+    mockState.resolveMattermostAccount.mockReturnValue({
+      accountId: "default",
+      botToken: "runtime-token",
+      baseUrl: "https://mattermost.example.com",
+      config: {},
+    });
 
     await sendMessageMattermost("channel:town-square", "hello");
 
@@ -134,6 +152,12 @@ describe("sendMessageMattermost", () => {
       fileName: "photo.png",
       contentType: "image/png",
       kind: "image",
+    });
+    mockState.resolveMattermostAccount.mockReturnValue({
+      accountId: "default",
+      botToken: "bot-token",
+      baseUrl: "https://mattermost.example.com",
+      config: {},
     });
 
     await sendMessageMattermost("channel:town-square", "hello", {
@@ -158,6 +182,13 @@ describe("sendMessageMattermost", () => {
   });
 
   it("builds interactive button props when buttons are provided", async () => {
+    mockState.resolveMattermostAccount.mockReturnValue({
+      accountId: "default",
+      botToken: "bot-token",
+      baseUrl: "https://mattermost.example.com",
+      config: {},
+    });
+
     await sendMessageMattermost("channel:town-square", "Pick a model", {
       buttons: [[{ callback_data: "mdlprov", text: "Browse providers" }]],
     });

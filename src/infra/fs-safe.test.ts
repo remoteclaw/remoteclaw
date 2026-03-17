@@ -3,7 +3,14 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { withRealpathSymlinkRebindRace } from "../test-utils/symlink-rebind-race.js";
 import { createTrackedTempDirs } from "../test-utils/tracked-temp-dirs.js";
-import { SafeOpenError, openFileWithinRoot, readLocalFileSafely } from "./fs-safe.js";
+import {
+  SafeOpenError,
+  copyFileWithinRoot,
+  openFileWithinRoot,
+  readLocalFileSafely,
+  writeFileFromPathWithinRoot,
+  writeFileWithinRoot,
+} from "./fs-safe.js";
 
 const tempDirs = createTrackedTempDirs();
 

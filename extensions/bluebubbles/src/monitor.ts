@@ -4,7 +4,7 @@ import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import {
   beginWebhookRequestPipelineOrReject,
   createWebhookInFlightLimiter,
-  registerWebhookTargetWithPluginRoute,
+  registerWebhookTarget,
   readWebhookBodyOrReject,
   resolveSingleWebhookTarget,
   resolveWebhookTargets,

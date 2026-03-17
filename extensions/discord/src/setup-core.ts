@@ -1,3 +1,5 @@
+import { createPatchedAccountSetupAdapter } from "../../../src/channels/plugins/setup-helpers.js";
+import { createAllowlistSetupWizardProxy } from "../../../src/channels/plugins/setup-wizard-proxy.js";
 import type { DiscordGuildEntry } from "openclaw/plugin-sdk/config-runtime";
 import {
   DEFAULT_ACCOUNT_ID,
@@ -257,4 +259,14 @@ export function createDiscordSetupWizardBase(handlers: {
     dmPolicy: discordDmPolicy,
     disable: (cfg: RemoteClawConfig) => setSetupChannelEnabled(cfg, channel, false),
   } satisfies ChannelSetupWizard;
+}
+export function createDiscordSetupWizardProxy(
+  loadWizard: () => Promise<{ discordSetupWizard: ChannelSetupWizard }>,
+) {
+  return createAllowlistSetupWizardProxy({
+    loadWizard: async () => (await loadWizard()).discordSetupWizard,
+    createBase: createDiscordSetupWizardBase,
+    fallbackResolvedGroupAllowlist: (entries) =>
+      entries.map((input) => ({ input, resolved: false })),
+  });
 }

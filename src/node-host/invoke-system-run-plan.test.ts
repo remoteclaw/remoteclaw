@@ -57,7 +57,7 @@ describe("hardenApprovedExecutionPaths", () => {
 
   for (const testCase of cases) {
     it.runIf(process.platform !== "win32")(testCase.name, () => {
-      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-hardening-"));
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-approval-hardening-"));
       const oldPath = process.env.PATH;
       let pathToken: PathTokenSetup | null = null;
       if (testCase.withPathToken) {

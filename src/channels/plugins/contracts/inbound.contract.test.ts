@@ -73,6 +73,10 @@ vi.mock("../../../../extensions/whatsapp/src/auto-reply/deliver-reply.js", () =>
   deliverWebReply: vi.fn(async () => {}),
 }));
 
+const { processDiscordMessage } =
+  await import("../../../../extensions/discord/src/monitor/message-handler.process.js");
+const { createBaseDiscordMessageContext, createDiscordDirectMessageContextOverrides } =
+  await import("../../../../extensions/discord/src/monitor/message-handler.test-harness.js");
 const { finalizeInboundContext } = await import("../../../auto-reply/reply/inbound-context.js");
 const { prepareSlackMessage } =
   await import("../../../../extensions/slack/src/monitor/message-handler/prepare.js");
@@ -112,14 +116,12 @@ describe("channel inbound contract", () => {
     dispatchInboundMessageMock.mockClear();
   });
 
-  it("keeps Discord inbound context finalized", () => {
-    const { groupSystemPrompt, ownerAllowFrom, untrustedContext } =
-      buildDiscordInboundAccessContext({
-        channelConfig: null,
-        guildInfo: null,
-        sender: { id: "U1", name: "Alice", tag: "alice" },
-        isGuild: false,
-      });
+  it("keeps Discord inbound context finalized", async () => {
+    const messageCtx = await createBaseDiscordMessageContext({
+      cfg: { messages: {} },
+      ackReactionScope: "direct",
+      ...createDiscordDirectMessageContextOverrides(),
+    });
 
     const ctx = finalizeInboundContext({
       Body: "hi",

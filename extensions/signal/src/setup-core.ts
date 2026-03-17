@@ -1,10 +1,7 @@
 import {
-  applyAccountNameToChannelSection,
-  DEFAULT_ACCOUNT_ID,
+  createPatchedAccountSetupAdapter,
   formatCliCommand,
   formatDocsLink,
-  migrateBaseNameToDefaultAccount,
-  normalizeAccountId,
   normalizeE164,
   parseSetupEntriesAllowingWildcard,
   promptParsedAllowFromForScopedChannel,
@@ -17,7 +14,8 @@ import type {
   ChannelSetupAdapter,
   ChannelSetupDmPolicy,
   ChannelSetupWizard,
-} from "../../../src/plugin-sdk-internal/setup.js";
+  ChannelSetupWizardTextInput,
+} from "openclaw/plugin-sdk/setup";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,

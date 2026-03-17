@@ -2,19 +2,19 @@ import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
 import {
   createScopedAccountConfigAccessors,
   createScopedChannelConfigBase,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
+} from "openclaw/plugin-sdk/channel-config-helpers";
 import {
   formatDocsLink,
   hasConfiguredSecretInput,
   patchChannelConfigForAccount,
-} from "remoteclaw/plugin-sdk/setup";
+} from "openclaw/plugin-sdk/setup";
 import {
   buildChannelConfigSchema,
   getChatChannelMeta,
   SlackConfigSchema,
   type ChannelPlugin,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/slack";
+  type OpenClawConfig,
+} from "openclaw/plugin-sdk/slack";
 import { inspectSlackAccount } from "./account-inspect.js";
 import {
   listSlackAccountIds,

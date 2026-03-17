@@ -1,9 +1,6 @@
 import {
-  applyAccountNameToChannelSection,
-  DEFAULT_ACCOUNT_ID,
+  createPatchedAccountSetupAdapter,
   formatDocsLink,
-  migrateBaseNameToDefaultAccount,
-  normalizeAccountId,
   parseSetupEntriesAllowingWildcard,
   promptParsedAllowFromForScopedChannel,
   setChannelDmPolicyWithAllowFrom,
@@ -15,7 +12,8 @@ import type {
   ChannelSetupAdapter,
   ChannelSetupDmPolicy,
   ChannelSetupWizard,
-} from "../../../src/plugin-sdk-internal/setup.js";
+  ChannelSetupWizardTextInput,
+} from "openclaw/plugin-sdk/setup";
 import {
   listIMessageAccountIds,
   resolveDefaultIMessageAccountId,

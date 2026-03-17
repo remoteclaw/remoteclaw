@@ -6,28 +6,23 @@ import {
   collectOpenProviderGroupPolicyWarnings,
 } from "../../../src/plugin-sdk-internal/channel-config.js";
 import {
-  createPairingPrefixStripper,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-pairing";
-import { createOpenProviderConfiguredRouteWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
-import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
-import { resolveTargetsWithOptionalToken } from "remoteclaw/plugin-sdk/channel-targets";
-import { createScopedAccountReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
-import {
-  createChannelDirectoryAdapter,
-  createRuntimeDirectoryLiveAdapter,
-} from "remoteclaw/plugin-sdk/directory-runtime";
-import { buildPassiveProbedChannelStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
-import {
-  createRuntimeOutboundDelegates,
-  resolveOutboundSendDep,
-} from "remoteclaw/plugin-sdk/infra-runtime";
-import {
-  buildOutboundBaseSessionKey,
-  normalizeOutboundThreadId,
-  resolveThreadSessionKeys,
-  type RoutePeer,
-} from "../../../src/plugin-sdk-internal/core.js";
+  buildComputedAccountStatusSnapshot,
+  DEFAULT_ACCOUNT_ID,
+  listSlackDirectoryGroupsFromConfig,
+  listSlackDirectoryPeersFromConfig,
+  looksLikeSlackTargetId,
+  normalizeSlackMessagingTarget,
+  PAIRING_APPROVED_MESSAGE,
+  projectCredentialSnapshotFields,
+  resolveConfiguredFromRequiredCredentialStatuses,
+  resolveSlackGroupRequireMention,
+  resolveSlackGroupToolPolicy,
+  createSlackActions,
+  type ChannelPlugin,
+  type OpenClawConfig,
+  type SlackActionContext,
+} from "openclaw/plugin-sdk/slack";
+import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
   listEnabledSlackAccounts,
   resolveSlackAccount,

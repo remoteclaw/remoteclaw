@@ -1,8 +1,6 @@
 import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
 import {
-  DEFAULT_ACCOUNT_ID,
   formatDocsLink,
-  hasConfiguredSecretInput,
   noteChannelLookupFailure,
   noteChannelLookupSummary,
   normalizeAccountId,
@@ -20,14 +18,8 @@ import type {
   ChannelSetupDmPolicy,
   ChannelSetupWizard,
   ChannelSetupWizardAllowFromEntry,
-} from "../../../src/plugin-sdk-internal/setup.js";
-import { inspectSlackAccount } from "./account-inspect.js";
-import {
-  listSlackAccountIds,
-  resolveDefaultSlackAccountId,
-  resolveSlackAccount,
-  type ResolvedSlackAccount,
-} from "./accounts.js";
+} from "openclaw/plugin-sdk/setup";
+import { resolveDefaultSlackAccountId, resolveSlackAccount } from "./accounts.js";
 import { resolveSlackChannelAllowlist } from "./resolve-channels.js";
 import { resolveSlackUserAllowlist } from "./resolve-users.js";
 import { slackSetupAdapter } from "./setup-core.js";

@@ -3,6 +3,7 @@ import { createAllowlistSetupWizardProxy } from "../../../src/channels/plugins/s
 import {
   applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
+  createEnvPatchedAccountSetupAdapter,
   formatDocsLink,
   hasConfiguredSecretInput,
   migrateBaseNameToDefaultAccount,
@@ -21,7 +22,7 @@ import {
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
   type ChannelSetupWizardAllowFromEntry,
-} from "../../../src/plugin-sdk-internal/setup.js";
+} from "openclaw/plugin-sdk/setup";
 import { inspectSlackAccount } from "./account-inspect.js";
 import { listSlackAccountIds, resolveSlackAccount, type ResolvedSlackAccount } from "./accounts.js";
 import {

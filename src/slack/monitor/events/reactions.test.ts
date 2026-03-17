@@ -27,7 +27,6 @@ type ReactionRunInput = {
   overrides?: SlackSystemEventTestOverrides;
   event?: Record<string, unknown>;
   body?: unknown;
-  trackEvent?: () => void;
   shouldDropMismatchedSlackEvent?: (body: unknown) => boolean;
 };
 
@@ -47,7 +46,6 @@ function buildReactionEvent(overrides?: { user?: string; channel?: string }) {
 
 function createReactionHandlers(params: {
   overrides?: SlackSystemEventTestOverrides;
-  trackEvent?: () => void;
   shouldDropMismatchedSlackEvent?: (body: unknown) => boolean;
 }) {
   const harness = createSlackSystemEventTestHarness(params.overrides);
@@ -66,7 +64,6 @@ async function executeReactionCase(input: ReactionRunInput = {}) {
   reactionAllowMock.mockReset().mockResolvedValue([]);
   const handlers = createReactionHandlers({
     overrides: input.overrides,
-    trackEvent: input.trackEvent,
     shouldDropMismatchedSlackEvent: input.shouldDropMismatchedSlackEvent,
   });
   const handler = handlers[input.handler ?? "added"];
@@ -137,20 +134,11 @@ describe("registerSlackReactionEvents", () => {
   });
 
   it("does not track mismatched events", async () => {
-    const trackEvent = vi.fn();
     await executeReactionCase({
-      trackEvent,
       shouldDropMismatchedSlackEvent: () => true,
       body: { api_app_id: "A_OTHER" },
     });
 
-    expect(trackEvent).not.toHaveBeenCalled();
-  });
-
-  it("tracks accepted message reactions", async () => {
-    const trackEvent = vi.fn();
-    await executeReactionCase({ trackEvent });
-
-    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(reactionQueueMock).not.toHaveBeenCalled();
   });
 });

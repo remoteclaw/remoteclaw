@@ -155,6 +155,10 @@ async function openVerifiedLocalFile(
       throw new SafeOpenError("path-mismatch", "path mismatch");
     }
 
+    if (_options?.rejectHardlinks && stat.nlink > 1) {
+      throw new SafeOpenError("invalid-path", "hardlinked path not allowed");
+    }
+
     return { handle, realPath, stat };
   } catch (err) {
     await handle.close().catch(() => {});
@@ -199,7 +203,9 @@ export async function openFileWithinRoot(params: {
 
   let opened: SafeOpenResult;
   try {
-    opened = await openVerifiedLocalFile(resolved);
+    opened = await openVerifiedLocalFile(resolved, {
+      rejectHardlinks: params.rejectHardlinks ?? true,
+    });
   } catch (err) {
     if (err instanceof SafeOpenError) {
       if (err.code === "not-found") {

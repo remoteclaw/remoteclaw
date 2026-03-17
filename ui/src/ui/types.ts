@@ -1,5 +1,4 @@
 export type UpdateAvailable = import("../../../src/infra/update-startup.js").UpdateAvailable;
-export type { ConfigUiHints } from "../../../src/shared/config-ui-hints-types.js";
 import type { ConfigUiHints } from "../../../src/shared/config-ui-hints-types.js";
 export type { ConfigUiHints } from "../../../src/shared/config-ui-hints-types.js";
 

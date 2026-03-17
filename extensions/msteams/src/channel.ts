@@ -1,18 +1,6 @@
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
-import { createTopLevelChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import {
-  createAllowlistProviderGroupPolicyWarningCollector,
-  projectConfigWarningCollector,
-} from "remoteclaw/plugin-sdk/channel-policy";
-import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
-import {
-  createChannelDirectoryAdapter,
-  createMessageToolCardSchema,
-  createPairingPrefixStripper,
-  createRuntimeDirectoryLiveAdapter,
-  createRuntimeOutboundDelegates,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
+import { createLazyRuntimeSurface } from "remoteclaw/plugin-sdk/lazy-runtime";
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageToolDiscovery,
@@ -29,10 +17,7 @@ import {
   formatAllowFromLowercase,
   MSTeamsConfigSchema,
   PAIRING_APPROVED_MESSAGE,
-} from "remoteclaw/plugin-sdk";
-import { listMSTeamsDirectoryGroupsLive, listMSTeamsDirectoryPeersLive } from "./directory-live.js";
-import { msteamsOnboardingAdapter } from "./onboarding.js";
-import { msteamsOutbound } from "./outbound.js";
+} from "remoteclaw/plugin-sdk/msteams";
 import { resolveMSTeamsGroupToolPolicy } from "./policy.js";
 import { probeMSTeams } from "./probe.js";
 import {

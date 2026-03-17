@@ -40,8 +40,10 @@ import {
   type ChannelPlugin,
   type ChannelStatusIssue,
   type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk";
-import { GoogleChatConfigSchema } from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/googlechat";
+import { GoogleChatConfigSchema } from "remoteclaw/plugin-sdk/googlechat";
+import { createLazyRuntimeSurface } from "remoteclaw/plugin-sdk/lazy-runtime";
+import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
   listGoogleChatAccountIds,
   resolveDefaultGoogleChatAccountId,

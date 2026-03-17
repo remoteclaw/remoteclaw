@@ -13,7 +13,10 @@ import {
   readStringParam,
   type ChannelMessageActionAdapter,
   type ChannelMessageActionName,
-} from "./runtime-api.js";
+} from "remoteclaw/plugin-sdk/bluebubbles";
+import { createLazyRuntimeSurface } from "remoteclaw/plugin-sdk/lazy-runtime";
+import { resolveBlueBubblesAccount } from "./accounts.js";
+import { getCachedBlueBubblesPrivateApiStatus, isMacOS26OrHigher } from "./probe.js";
 import { normalizeSecretInputString } from "./secret-input.js";
 import {
   editBlueBubblesMessage,

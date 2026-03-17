@@ -44,10 +44,8 @@ import {
 import {
   buildAccountScopedDmSecurityPolicy,
   collectOpenGroupPolicyRestrictSendersWarnings,
-  createAccountStatusSink,
-  formatNormalizedAllowFromEntries,
-  mapAllowFromEntries,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/channel-policy";
+import { createLazyRuntimeSurface } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,

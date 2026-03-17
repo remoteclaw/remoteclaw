@@ -8,6 +8,7 @@ import { registerUnhandledRejectionHandler } from "../infra/unhandled-rejections
 import type { RuntimeEnv } from "../runtime.js";
 import { resolveTelegramAccount } from "./accounts.js";
 import { resolveTelegramAllowedUpdates } from "./allowed-updates.js";
+import { resolveTelegramTransport } from "./fetch.js";
 import { isRecoverableTelegramNetworkError } from "./network-errors.js";
 import { TelegramPollingSession } from "./polling-session.js";
 import { makeProxyFetch } from "./proxy.js";
@@ -163,6 +164,11 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
       return;
     }
 
+    // Create transport once to preserve sticky IPv4 fallback state across polling restarts
+    const telegramTransport = resolveTelegramTransport(proxyFetch, {
+      network: account.config.network,
+    });
+
     pollingSession = new TelegramPollingSession({
       token,
       config: cfg,
@@ -174,6 +180,7 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
       getLastUpdateId: () => lastUpdateId,
       persistUpdateId,
       log,
+      telegramTransport,
     });
     await pollingSession.runUntilAbort();
   } finally {

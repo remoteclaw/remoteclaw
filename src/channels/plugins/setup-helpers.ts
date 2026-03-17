@@ -147,6 +147,31 @@ export function prepareScopedSetupConfig(params: {
   });
 }
 
+export function prepareScopedSetupConfig(params: {
+  cfg: OpenClawConfig;
+  channelKey: string;
+  accountId: string;
+  name?: string;
+  alwaysUseAccounts?: boolean;
+  migrateBaseName?: boolean;
+}): OpenClawConfig {
+  const namedConfig = applyAccountNameToChannelSection({
+    cfg: params.cfg,
+    channelKey: params.channelKey,
+    accountId: params.accountId,
+    name: params.name,
+    alwaysUseAccounts: params.alwaysUseAccounts,
+  });
+  if (!params.migrateBaseName || normalizeAccountId(params.accountId) === DEFAULT_ACCOUNT_ID) {
+    return namedConfig;
+  }
+  return migrateBaseNameToDefaultAccount({
+    cfg: namedConfig,
+    channelKey: params.channelKey,
+    alwaysUseAccounts: params.alwaysUseAccounts,
+  });
+}
+
 export function applySetupAccountConfigPatch(params: {
   cfg: RemoteClawConfig;
   channelKey: string;

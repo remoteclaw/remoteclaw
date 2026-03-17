@@ -1,28 +1,27 @@
-import type { ChannelSetupAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelSetupInput } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 import {
-  applyAccountNameToChannelSection,
   patchScopedAccountConfig,
-} from "remoteclaw/plugin-sdk/setup";
+  prepareScopedSetupConfig,
+} from "../../../src/channels/plugins/setup-helpers.js";
 import {
   mergeAllowFromEntries,
-  createTopLevelChannelDmPolicy,
-  promptParsedAllowFromForAccount,
   resolveSetupAccountId,
   setSetupChannelEnabled,
-} from "remoteclaw/plugin-sdk/setup";
-import type { ChannelSetupDmPolicy } from "remoteclaw/plugin-sdk/setup";
-import { type ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
-import { formatDocsLink } from "remoteclaw/plugin-sdk/setup";
-import type { WizardPrompter } from "remoteclaw/plugin-sdk/setup";
+  setTopLevelChannelDmPolicyWithAllowFrom,
+} from "../../../src/channels/plugins/setup-wizard-helpers.js";
+import type { ChannelSetupDmPolicy } from "../../../src/channels/plugins/setup-wizard-types.js";
+import { type ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
+import type { ChannelSetupAdapter } from "../../../src/channels/plugins/types.adapters.js";
+import type { ChannelSetupInput } from "../../../src/channels/plugins/types.core.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
+import type { WizardPrompter } from "../../../src/wizard/prompts.js";
 import {
   listNextcloudTalkAccountIds,
   resolveDefaultNextcloudTalkAccountId,
   resolveNextcloudTalkAccount,
 } from "./accounts.js";
-import type { CoreConfig } from "./types.js";
+import type { CoreConfig, DmPolicy } from "./types.js";
 
 const channel = "nextcloud-talk" as const;
 
@@ -45,6 +44,14 @@ export function validateNextcloudTalkBaseUrl(value: string): string | undefined 
     return "URL must start with http:// or https://";
   }
   return undefined;
+}
+
+function setNextcloudTalkDmPolicy(cfg: CoreConfig, dmPolicy: DmPolicy): CoreConfig {
+  return setTopLevelChannelDmPolicyWithAllowFrom({
+    cfg,
+    channel,
+    dmPolicy,
+  }) as CoreConfig;
 }
 
 export function setNextcloudTalkAccountConfig(
@@ -108,47 +115,50 @@ export function clearNextcloudTalkAccountFields(
   } as CoreConfig;
 }
 
-async function promptNextcloudTalkAllowFrom(params: {
+export async function promptNextcloudTalkAllowFrom(params: {
   cfg: CoreConfig;
   prompter: WizardPrompter;
   accountId: string;
 }): Promise<CoreConfig> {
-  return await promptParsedAllowFromForAccount({
-    cfg: params.cfg,
-    accountId: params.accountId,
-    defaultAccountId: params.accountId,
-    prompter: params.prompter,
-    noteTitle: "Nextcloud Talk user id",
-    noteLines: [
+  const resolved = resolveNextcloudTalkAccount({ cfg: params.cfg, accountId: params.accountId });
+  const existingAllowFrom = resolved.config.allowFrom ?? [];
+  await params.prompter.note(
+    [
       "1) Check the Nextcloud admin panel for user IDs",
       "2) Or look at the webhook payload logs when someone messages",
       "3) User IDs are typically lowercase usernames in Nextcloud",
-      `Docs: ${formatDocsLink("/channels/nextcloud-talk", "nextcloud-talk")}`,
-    ],
-    message: "Nextcloud Talk allowFrom (user id)",
-    placeholder: "username",
-    parseEntries: (raw) => ({
-      entries: String(raw)
-        .split(/[\n,;]+/g)
-        .map((value) => value.trim().toLowerCase())
-        .filter(Boolean),
-    }),
-    getExistingAllowFrom: ({ cfg, accountId }) =>
-      resolveNextcloudTalkAccount({ cfg, accountId }).config.allowFrom ?? [],
-    mergeEntries: ({ existing, parsed }) =>
-      mergeAllowFromEntries(
-        existing.map((value) => String(value).trim().toLowerCase()),
-        parsed,
-      ),
-    applyAllowFrom: ({ cfg, accountId, allowFrom }) =>
-      setNextcloudTalkAccountConfig(cfg, accountId, {
-        dmPolicy: "allowlist",
-        allowFrom,
-      }),
+      `Docs: ${formatDocsLink("/channels/nextcloud-talk", "channels/nextcloud-talk")}`,
+    ].join("\n"),
+    "Nextcloud Talk user id",
+  );
+
+  let resolvedIds: string[] = [];
+  while (resolvedIds.length === 0) {
+    const entry = await params.prompter.text({
+      message: "Nextcloud Talk allowFrom (user id)",
+      placeholder: "username",
+      initialValue: existingAllowFrom[0] ? String(existingAllowFrom[0]) : undefined,
+      validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
+    });
+    resolvedIds = String(entry)
+      .split(/[\n,;]+/g)
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+    if (resolvedIds.length === 0) {
+      await params.prompter.note("Please enter at least one valid user ID.", "Nextcloud Talk");
+    }
+  }
+
+  return setNextcloudTalkAccountConfig(params.cfg, params.accountId, {
+    dmPolicy: "allowlist",
+    allowFrom: mergeAllowFromEntries(
+      existingAllowFrom.map((value) => String(value).trim().toLowerCase()),
+      resolvedIds,
+    ),
   });
 }
 
-async function promptNextcloudTalkAllowFromForAccount(params: {
+export async function promptNextcloudTalkAllowFromForAccount(params: {
   cfg: RemoteClawConfig;
   prompter: WizardPrompter;
   accountId?: string;
@@ -164,19 +174,20 @@ async function promptNextcloudTalkAllowFromForAccount(params: {
   });
 }
 
-export const nextcloudTalkDmPolicy: ChannelSetupDmPolicy = createTopLevelChannelDmPolicy({
+export const nextcloudTalkDmPolicy: ChannelSetupDmPolicy = {
   label: "Nextcloud Talk",
   channel,
   policyKey: "channels.nextcloud-talk.dmPolicy",
   allowFromKey: "channels.nextcloud-talk.allowFrom",
   getCurrent: (cfg) => cfg.channels?.["nextcloud-talk"]?.dmPolicy ?? "pairing",
+  setPolicy: (cfg, policy) => setNextcloudTalkDmPolicy(cfg as CoreConfig, policy as DmPolicy),
   promptAllowFrom: promptNextcloudTalkAllowFromForAccount,
-});
+};
 
 export const nextcloudTalkSetupAdapter: ChannelSetupAdapter = {
   resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
   applyAccountName: ({ cfg, accountId, name }) =>
-    applyAccountNameToChannelSection({
+    prepareScopedSetupConfig({
       cfg,
       channelKey: channel,
       accountId,
@@ -197,7 +208,7 @@ export const nextcloudTalkSetupAdapter: ChannelSetupAdapter = {
   },
   applyAccountConfig: ({ cfg, accountId, input }) => {
     const setupInput = input as NextcloudSetupInput;
-    const namedConfig = applyAccountNameToChannelSection({
+    const namedConfig = prepareScopedSetupConfig({
       cfg,
       channelKey: channel,
       accountId,

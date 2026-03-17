@@ -1,8 +1,9 @@
 import {
-  createAllowlistSetupWizardProxy,
+  applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
-  createEnvPatchedAccountSetupAdapter,
   hasConfiguredSecretInput,
+  migrateBaseNameToDefaultAccount,
+  normalizeAccountId,
   type RemoteClawConfig,
   noteChannelLookupFailure,
   noteChannelLookupSummary,
@@ -18,6 +19,8 @@ import {
   type ChannelSetupWizard,
   type ChannelSetupWizardAllowFromEntry,
 } from "remoteclaw/plugin-sdk/setup";
+import { createPatchedAccountSetupAdapter } from "../../../src/channels/plugins/setup-helpers.js";
+import { createAllowlistSetupWizardProxy } from "../../../src/channels/plugins/setup-wizard-proxy.js";
 import { formatDocsLink } from "../../../src/terminal/links.js";
 import { inspectSlackAccount } from "./account-inspect.js";
 import { listSlackAccountIds, resolveSlackAccount, type ResolvedSlackAccount } from "./accounts.js";
@@ -37,81 +40,81 @@ function enableSlackAccount(cfg: RemoteClawConfig, accountId: string): RemoteCla
   });
 }
 
-function createSlackTokenCredential(params: {
-  inputKey: "botToken" | "appToken";
-  providerHint: "slack-bot" | "slack-app";
-  credentialLabel: string;
-  preferredEnvVar: "SLACK_BOT_TOKEN" | "SLACK_APP_TOKEN";
-  keepPrompt: string;
-  inputPrompt: string;
-}) {
-  return {
-    inputKey: params.inputKey,
-    providerHint: params.providerHint,
-    credentialLabel: params.credentialLabel,
-    preferredEnvVar: params.preferredEnvVar,
-    envPrompt: `${params.preferredEnvVar} detected. Use env var?`,
-    keepPrompt: params.keepPrompt,
-    inputPrompt: params.inputPrompt,
-    allowEnv: ({ accountId }: { accountId: string }) => accountId === DEFAULT_ACCOUNT_ID,
-    inspect: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId: string }) => {
-      const resolved = resolveSlackAccount({ cfg, accountId });
-      const configuredValue =
-        params.inputKey === "botToken" ? resolved.config.botToken : resolved.config.appToken;
-      const resolvedValue = params.inputKey === "botToken" ? resolved.botToken : resolved.appToken;
-      return {
-        accountConfigured: Boolean(resolvedValue) || hasConfiguredSecretInput(configuredValue),
-        hasConfiguredValue: hasConfiguredSecretInput(configuredValue),
-        resolvedValue: resolvedValue?.trim() || undefined,
-        envValue:
-          accountId === DEFAULT_ACCOUNT_ID
-            ? process.env[params.preferredEnvVar]?.trim()
-            : undefined,
-      };
-    },
-    applyUseEnv: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId: string }) =>
-      enableSlackAccount(cfg, accountId),
-    applySet: ({
+export const slackSetupAdapter: ChannelSetupAdapter = {
+  resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
+  applyAccountName: ({ cfg, accountId, name }) =>
+    applyAccountNameToChannelSection({
       cfg,
+      channelKey: channel,
       accountId,
-      value,
-    }: {
-      cfg: RemoteClawConfig;
-      accountId: string;
-      value: unknown;
-    }) =>
-      patchChannelConfigForAccount({
-        cfg,
-        channel,
-        accountId,
-        patch: {
-          enabled: true,
-          [params.inputKey]: value,
+      name,
+    }),
+  validateInput: ({ accountId, input }) => {
+    if (input.useEnv && accountId !== DEFAULT_ACCOUNT_ID) {
+      return "Slack env tokens can only be used for the default account.";
+    }
+    if (!input.useEnv && (!input.botToken || !input.appToken)) {
+      return "Slack requires --bot-token and --app-token (or --use-env).";
+    }
+    return null;
+  },
+  applyAccountConfig: ({ cfg, accountId, input }) => {
+    const namedConfig = applyAccountNameToChannelSection({
+      cfg,
+      channelKey: channel,
+      accountId,
+      name: input.name,
+    });
+    const next =
+      accountId !== DEFAULT_ACCOUNT_ID
+        ? migrateBaseNameToDefaultAccount({
+            cfg: namedConfig,
+            channelKey: channel,
+          })
+        : namedConfig;
+    if (accountId === DEFAULT_ACCOUNT_ID) {
+      return {
+        ...next,
+        channels: {
+          ...next.channels,
+          slack: {
+            ...next.channels?.slack,
+            enabled: true,
+            ...(input.useEnv
+              ? {}
+              : {
+                  ...(input.botToken ? { botToken: input.botToken } : {}),
+                  ...(input.appToken ? { appToken: input.appToken } : {}),
+                }),
+          },
         },
-      }),
-  };
-}
+      };
+    }
+    return {
+      ...next,
+      channels: {
+        ...next.channels,
+        slack: {
+          ...next.channels?.slack,
+          enabled: true,
+          accounts: {
+            ...next.channels?.slack?.accounts,
+            [accountId]: {
+              ...next.channels?.slack?.accounts?.[accountId],
+              enabled: true,
+              ...(input.botToken ? { botToken: input.botToken } : {}),
+              ...(input.appToken ? { appToken: input.appToken } : {}),
+            },
+          },
+        },
+      },
+    };
+  },
+};
 
-export const slackSetupAdapter: ChannelSetupAdapter = createEnvPatchedAccountSetupAdapter({
-  channelKey: channel,
-  defaultAccountOnlyEnvError: "Slack env tokens can only be used for the default account.",
-  missingCredentialError: "Slack requires --bot-token and --app-token (or --use-env).",
-  hasCredentials: (input) => Boolean(input.botToken && input.appToken),
-  buildPatch: (input) => ({
-    ...(input.botToken ? { botToken: input.botToken } : {}),
-    ...(input.appToken ? { appToken: input.appToken } : {}),
-  }),
-});
-
-export function createSlackSetupWizardBase(handlers: {
-  promptAllowFrom: NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>;
-  resolveAllowFromEntries: NonNullable<
-    NonNullable<ChannelSetupWizard["allowFrom"]>["resolveEntries"]
-  >;
-  resolveGroupAllowlist: NonNullable<
-    NonNullable<NonNullable<ChannelSetupWizard["groupAccess"]>["resolveAllowlist"]>
-  >;
-}) {
+export function createSlackSetupWizardBase(
+  loadWizard: () => Promise<{ slackSetupWizard: ChannelSetupWizard }>,
+) {
   const slackDmPolicy: ChannelSetupDmPolicy = {
     label: "Slack",
     channel,
@@ -125,7 +128,13 @@ export function createSlackSetupWizardBase(handlers: {
         channel,
         dmPolicy: policy,
       }),
-    promptAllowFrom: handlers.promptAllowFrom,
+    promptAllowFrom: async ({ cfg, prompter, accountId }) => {
+      const wizard = (await loadWizard()).slackSetupWizard;
+      if (!wizard.dmPolicy?.promptAllowFrom) {
+        return cfg;
+      }
+      return await wizard.dmPolicy.promptAllowFrom({ cfg, prompter, accountId });
+    },
   };
 
   return {
@@ -160,22 +169,88 @@ export function createSlackSetupWizardBase(handlers: {
       apply: ({ cfg, accountId }) => enableSlackAccount(cfg, accountId),
     },
     credentials: [
-      createSlackTokenCredential({
+      {
         inputKey: "botToken",
         providerHint: "slack-bot",
         credentialLabel: "Slack bot token",
         preferredEnvVar: "SLACK_BOT_TOKEN",
+        envPrompt: "SLACK_BOT_TOKEN detected. Use env var?",
         keepPrompt: "Slack bot token already configured. Keep it?",
         inputPrompt: "Enter Slack bot token (xoxb-...)",
-      }),
-      createSlackTokenCredential({
+        allowEnv: ({ accountId }: { accountId: string }) => accountId === DEFAULT_ACCOUNT_ID,
+        inspect: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId: string }) => {
+          const resolved = resolveSlackAccount({ cfg, accountId });
+          return {
+            accountConfigured:
+              Boolean(resolved.botToken) || hasConfiguredSecretInput(resolved.config.botToken),
+            hasConfiguredValue: hasConfiguredSecretInput(resolved.config.botToken),
+            resolvedValue: resolved.botToken?.trim() || undefined,
+            envValue:
+              accountId === DEFAULT_ACCOUNT_ID ? process.env.SLACK_BOT_TOKEN?.trim() : undefined,
+          };
+        },
+        applyUseEnv: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId: string }) =>
+          enableSlackAccount(cfg, accountId),
+        applySet: ({
+          cfg,
+          accountId,
+          value,
+        }: {
+          cfg: RemoteClawConfig;
+          accountId: string;
+          value: unknown;
+        }) =>
+          patchChannelConfigForAccount({
+            cfg,
+            channel,
+            accountId,
+            patch: {
+              enabled: true,
+              botToken: value,
+            },
+          }),
+      },
+      {
         inputKey: "appToken",
         providerHint: "slack-app",
         credentialLabel: "Slack app token",
         preferredEnvVar: "SLACK_APP_TOKEN",
+        envPrompt: "SLACK_APP_TOKEN detected. Use env var?",
         keepPrompt: "Slack app token already configured. Keep it?",
         inputPrompt: "Enter Slack app token (xapp-...)",
-      }),
+        allowEnv: ({ accountId }: { accountId: string }) => accountId === DEFAULT_ACCOUNT_ID,
+        inspect: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId: string }) => {
+          const resolved = resolveSlackAccount({ cfg, accountId });
+          return {
+            accountConfigured:
+              Boolean(resolved.appToken) || hasConfiguredSecretInput(resolved.config.appToken),
+            hasConfiguredValue: hasConfiguredSecretInput(resolved.config.appToken),
+            resolvedValue: resolved.appToken?.trim() || undefined,
+            envValue:
+              accountId === DEFAULT_ACCOUNT_ID ? process.env.SLACK_APP_TOKEN?.trim() : undefined,
+          };
+        },
+        applyUseEnv: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId: string }) =>
+          enableSlackAccount(cfg, accountId),
+        applySet: ({
+          cfg,
+          accountId,
+          value,
+        }: {
+          cfg: RemoteClawConfig;
+          accountId: string;
+          value: unknown;
+        }) =>
+          patchChannelConfigForAccount({
+            cfg,
+            channel,
+            accountId,
+            patch: {
+              enabled: true,
+              appToken: value,
+            },
+          }),
+      },
     ],
     dmPolicy: slackDmPolicy,
     allowFrom: {
@@ -210,7 +285,18 @@ export function createSlackSetupWizardBase(handlers: {
         accountId: string;
         credentialValues: { botToken?: string };
         entries: string[];
-      }) => await handlers.resolveAllowFromEntries({ cfg, accountId, credentialValues, entries }),
+      }) => {
+        const wizard = (await loadWizard()).slackSetupWizard;
+        if (!wizard.allowFrom) {
+          return entries.map((input) => ({ input, resolved: false, id: null }));
+        }
+        return await wizard.allowFrom.resolveEntries({
+          cfg,
+          accountId,
+          credentialValues,
+          entries,
+        });
+      },
       apply: ({
         cfg,
         accountId,
@@ -267,7 +353,11 @@ export function createSlackSetupWizardBase(handlers: {
         prompter: { note: (message: string, title?: string) => Promise<void> };
       }) => {
         try {
-          return await handlers.resolveGroupAllowlist({
+          const wizard = (await loadWizard()).slackSetupWizard;
+          if (!wizard.groupAccess?.resolveAllowlist) {
+            return entries;
+          }
+          return await wizard.groupAccess.resolveAllowlist({
             cfg,
             accountId,
             credentialValues,

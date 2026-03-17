@@ -1,7 +1,6 @@
 import path from "node:path";
 import {
   DEFAULT_ACCOUNT_ID,
-  type DmPolicy,
   formatCliCommand,
   formatDocsLink,
   normalizeAccountId,
@@ -10,9 +9,10 @@ import {
   pathExists,
   splitSetupEntries,
   setSetupChannelEnabled,
+  type DmPolicy,
   type RemoteClawConfig,
-} from "../../../src/plugin-sdk-internal/setup.js";
-import type { ChannelSetupWizard } from "../../../src/plugin-sdk-internal/setup.js";
+} from "remoteclaw/plugin-sdk/setup";
+import type { ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
 import { listWhatsAppAccountIds, resolveWhatsAppAuthDir } from "./accounts.js";
 import { loginWeb } from "./login.js";
 import { whatsappSetupAdapter } from "./setup-core.js";
@@ -21,7 +21,7 @@ const channel = "whatsapp" as const;
 
 function mergeWhatsAppConfig(
   cfg: RemoteClawConfig,
-  patch: Partial<NonNullable<RemoteClawConfig["channels"]>["whatsapp"]>,
+  patch: Partial<NonNullable<NonNullable<RemoteClawConfig["channels"]>["whatsapp"]>>,
   options?: { unsetOnUndefined?: string[] },
 ): RemoteClawConfig {
   const base = { ...(cfg.channels?.whatsapp ?? {}) } as Record<string, unknown>;

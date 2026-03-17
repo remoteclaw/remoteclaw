@@ -1,8 +1,7 @@
 import {
   GROUP_POLICY_BLOCKED_LABEL,
   createScopedPairingAccess,
-  createNormalizedOutboundDeliverer,
-  createReplyPrefixOptions,
+  dispatchInboundReplyWithBase,
   formatTextWithAttachmentLinks,
   issuePairingChallenge,
   logInboundDrop,
@@ -13,9 +12,9 @@ import {
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
   type OutboundReplyPayload,
-  type RemoteClawConfig,
+  type OpenClawConfig,
   type RuntimeEnv,
-} from "remoteclaw/plugin-sdk";
+} from "../runtime-api.js";
 import type { ResolvedNextcloudTalkAccount } from "./accounts.js";
 import {
   normalizeNextcloudTalkAllowlist,
@@ -85,7 +84,7 @@ export async function handleNextcloudTalkInbound(params: {
   statusSink?.({ lastInboundAt: message.timestamp });
 
   const dmPolicy = account.config.dmPolicy ?? "pairing";
-  const defaultGroupPolicy = resolveDefaultGroupPolicy(config as RemoteClawConfig);
+  const defaultGroupPolicy = resolveDefaultGroupPolicy(config as OpenClawConfig);
   const { groupPolicy, providerMissingFallbackApplied } =
     resolveAllowlistProviderRuntimeGroupPolicy({
       providerConfigPresent:
@@ -115,7 +114,6 @@ export async function handleNextcloudTalkInbound(params: {
   const roomMatch = resolveNextcloudTalkRoomMatch({
     rooms: account.config.rooms,
     roomToken,
-    roomName,
   });
   const roomConfig = roomMatch.roomConfig;
   if (isGroup && !roomMatch.allowed) {
@@ -130,15 +128,12 @@ export async function handleNextcloudTalkInbound(params: {
   const roomAllowFrom = normalizeNextcloudTalkAllowlist(roomConfig?.allowFrom);
 
   const allowTextCommands = core.channel.commands.shouldHandleTextCommands({
-    cfg: config as RemoteClawConfig,
+    cfg: config as OpenClawConfig,
     surface: CHANNEL_ID,
   });
   const useAccessGroups =
     (config.commands as Record<string, unknown> | undefined)?.useAccessGroups !== false;
-  const hasControlCommand = core.channel.text.hasControlCommand(
-    rawBody,
-    config as RemoteClawConfig,
-  );
+  const hasControlCommand = core.channel.text.hasControlCommand(rawBody, config as OpenClawConfig);
   const access = resolveDmGroupAccessWithCommandGate({
     isGroup,
     dmPolicy,
@@ -208,7 +203,7 @@ export async function handleNextcloudTalkInbound(params: {
     return;
   }
 
-  const mentionRegexes = core.channel.mentions.buildMentionRegexes(config as RemoteClawConfig);
+  const mentionRegexes = core.channel.mentions.buildMentionRegexes(config as OpenClawConfig);
   const wasMentioned = mentionRegexes.length
     ? core.channel.mentions.matchesMentionPatterns(rawBody, mentionRegexes)
     : false;
@@ -232,7 +227,7 @@ export async function handleNextcloudTalkInbound(params: {
   }
 
   const route = core.channel.routing.resolveAgentRoute({
-    cfg: config as RemoteClawConfig,
+    cfg: config as OpenClawConfig,
     channel: CHANNEL_ID,
     accountId: account.accountId,
     peer: {
@@ -248,9 +243,7 @@ export async function handleNextcloudTalkInbound(params: {
       agentId: route.agentId,
     },
   );
-  const envelopeOptions = core.channel.reply.resolveEnvelopeFormatOptions(
-    config as RemoteClawConfig,
-  );
+  const envelopeOptions = core.channel.reply.resolveEnvelopeFormatOptions(config as OpenClawConfig);
   const previousTimestamp = core.channel.session.readSessionUpdatedAt({
     storePath,
     sessionKey: route.sessionKey,
@@ -291,42 +284,30 @@ export async function handleNextcloudTalkInbound(params: {
     CommandAuthorized: commandAuthorized,
   });
 
-  await core.channel.session.recordInboundSession({
-    storePath,
-    sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
-    ctx: ctxPayload,
-    onRecordError: (err: any) => {
-      runtime.error?.(`nextcloud-talk: failed updating session meta: ${String(err)}`);
-    },
-  });
-
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
-    cfg: config as RemoteClawConfig,
-    agentId: route.agentId,
+  await dispatchInboundReplyWithBase({
+    cfg: config as OpenClawConfig,
     channel: CHANNEL_ID,
     accountId: account.accountId,
-  });
-  const deliverReply = createNormalizedOutboundDeliverer(async (payload) => {
-    await deliverNextcloudTalkReply({
-      payload,
-      roomToken,
-      accountId: account.accountId,
-      statusSink,
-    });
-  });
-
-  await core.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
-    ctx: ctxPayload,
-    cfg: config as RemoteClawConfig,
-    dispatcherOptions: {
-      ...prefixOptions,
-      deliver: deliverReply,
-      onError: (err: any, info: any) => {
-        runtime.error?.(`nextcloud-talk ${info.kind} reply failed: ${String(err)}`);
-      },
+    route,
+    storePath,
+    ctxPayload,
+    core,
+    deliver: async (payload) => {
+      await deliverNextcloudTalkReply({
+        payload,
+        roomToken,
+        accountId: account.accountId,
+        statusSink,
+      });
+    },
+    onRecordError: (err) => {
+      runtime.error?.(`nextcloud-talk: failed updating session meta: ${String(err)}`);
+    },
+    onDispatchError: (err, info) => {
+      runtime.error?.(`nextcloud-talk ${info.kind} reply failed: ${String(err)}`);
     },
     replyOptions: {
-      onModelSelected,
+      skillFilter: roomConfig?.skills,
       disableBlockStreaming:
         typeof account.config.blockStreaming === "boolean"
           ? !account.config.blockStreaming

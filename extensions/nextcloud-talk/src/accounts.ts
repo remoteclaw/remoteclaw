@@ -1,10 +1,11 @@
-import { readFileSync } from "node:fs";
+import { tryReadSecretFileSync } from "openclaw/plugin-sdk/infra-runtime";
 import {
   createAccountListHelpers,
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
   resolveAccountWithDefaultFallback,
-} from "remoteclaw/plugin-sdk/nextcloud-talk";
+} from "../runtime-api.js";
+import { normalizeResolvedSecretInputString } from "./secret-input.js";
 import type { CoreConfig, NextcloudTalkAccountConfig } from "./types.js";
 
 function isTruthyEnvValue(value?: string): boolean {
@@ -87,18 +88,22 @@ function resolveNextcloudTalkSecret(
   }
 
   if (merged.botSecretFile) {
-    try {
-      const fileSecret = readFileSync(merged.botSecretFile, "utf-8").trim();
-      if (fileSecret) {
-        return { secret: fileSecret, source: "secretFile" };
-      }
-    } catch {
-      // File not found or unreadable, fall through.
+    const fileSecret = tryReadSecretFileSync(
+      merged.botSecretFile,
+      "Nextcloud Talk bot secret file",
+      { rejectSymlink: true },
+    );
+    if (fileSecret) {
+      return { secret: fileSecret, source: "secretFile" };
     }
   }
 
-  if (merged.botSecret?.trim()) {
-    return { secret: merged.botSecret.trim(), source: "config" };
+  const inlineSecret = normalizeResolvedSecretInputString({
+    value: merged.botSecret,
+    path: `channels.nextcloud-talk.accounts.${opts.accountId ?? DEFAULT_ACCOUNT_ID}.botSecret`,
+  });
+  if (inlineSecret) {
+    return { secret: inlineSecret, source: "config" };
   }
 
   return { secret: "", source: "none" };

@@ -31,6 +31,8 @@ Notes:
 - Doctor also scans `~/.remoteclaw/cron/jobs.json` (or `cron.store`) for legacy cron job shapes and can rewrite them in place before the scheduler has to auto-normalize them at runtime.
 - If sandbox mode is enabled but Docker is unavailable, doctor reports a high-signal warning with remediation (`install Docker` or `remoteclaw config set agents.defaults.sandbox.mode off`).
 - If `gateway.auth.token`/`gateway.auth.password` are SecretRef-managed and unavailable in the current command path, doctor reports a read-only warning and does not write plaintext fallback credentials.
+- If channel SecretRef inspection fails in a fix path, doctor continues and reports a warning instead of exiting early.
+- Telegram `allowFrom` username auto-resolution (`doctor --fix`) requires a resolvable Telegram token in the current command path. If token inspection is unavailable, doctor reports a warning and skips auto-resolution for that pass.
 
 ## macOS: `launchctl` env overrides
 

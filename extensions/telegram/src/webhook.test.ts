@@ -73,10 +73,6 @@ vi.mock("grammy", async (importOriginal) => {
   const actual = await importOriginal<typeof import("grammy")>();
   return {
     ...actual,
-    API_CONSTANTS: actual.API_CONSTANTS ?? {
-      DEFAULT_UPDATE_TYPES: ["message"],
-      ALL_UPDATE_TYPES: ["message"],
-    },
     webhookCallback: webhookCallbackSpy,
   };
 });
@@ -213,7 +209,7 @@ async function postWebhookPayloadWithChunkPlan(params: {
         },
       },
       (res) => {
-        collectResponseBody(res, (body) => settle.resolve(body));
+        collectResponseBody(res, settle.resolve);
       },
     );
 

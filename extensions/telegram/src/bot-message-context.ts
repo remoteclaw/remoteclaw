@@ -1,27 +1,30 @@
-import { ensureConfiguredAcpRouteReady } from "../../../src/acp/persistent-bindings.route.js";
-import { resolveAckReaction } from "../../../src/agents/identity.js";
-import { shouldAckReaction as shouldAckReactionGate } from "../../../src/channels/ack-reactions.js";
-import { logInboundDrop } from "../../../src/channels/logging.js";
+import { resolveAckReaction } from "remoteclaw/plugin-sdk/agent-runtime";
+import { shouldAckReaction as shouldAckReactionGate } from "remoteclaw/plugin-sdk/channel-runtime";
+import { logInboundDrop } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
   createStatusReactionController,
   type StatusReactionController,
-} from "../../../src/channels/status-reactions.js";
-import { loadConfig } from "../../../src/config/config.js";
-import { logVerbose } from "../../../src/globals.js";
-import { recordChannelActivity } from "../../../src/infra/channel-activity.js";
-import { buildAgentSessionKey, deriveLastRoutePolicy } from "../../../src/routing/resolve-route.js";
-import { DEFAULT_ACCOUNT_ID, resolveThreadSessionKeys } from "../../../src/routing/session-key.js";
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type {
+  TelegramDirectConfig,
+  TelegramGroupConfig,
+} from "remoteclaw/plugin-sdk/config-runtime";
+import { ensureConfiguredAcpRouteReady } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { recordChannelActivity } from "remoteclaw/plugin-sdk/infra-runtime";
+import { deriveLastRoutePolicy } from "remoteclaw/plugin-sdk/routing";
+import { DEFAULT_ACCOUNT_ID, resolveThreadSessionKeys } from "remoteclaw/plugin-sdk/routing";
+import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
-import { firstDefined, normalizeAllowFrom, normalizeAllowFromWithStore } from "./bot-access.js";
+import { firstDefined, normalizeAllowFrom, normalizeDmAllowFromWithStore } from "./bot-access.js";
 import { resolveTelegramInboundBody } from "./bot-message-context.body.js";
 import { buildTelegramInboundContextPayload } from "./bot-message-context.session.js";
 import type { BuildTelegramMessageContextParams } from "./bot-message-context.types.js";
+import { buildTypingThreadParams, resolveTelegramThreadSpec } from "./bot/helpers.js";
 import {
-  buildTypingThreadParams,
-  resolveTelegramDirectPeerId,
-  resolveTelegramThreadSpec,
-} from "./bot/helpers.js";
-import { resolveTelegramConversationRoute } from "./conversation-route.js";
+  resolveTelegramConversationBaseSessionKey,
+  resolveTelegramConversationRoute,
+} from "./conversation-route.js";
 import { enforceTelegramDmAccess } from "./dm-access.js";
 import { evaluateTelegramGroupBaseAccess } from "./group-access.js";
 import {
@@ -76,7 +79,7 @@ export const buildTelegramMessageContext = async ({
   // Use direct config dmPolicy override if available for DMs
   const effectiveDmPolicy =
     !isGroup && groupConfig && "dmPolicy" in groupConfig
-      ? (((groupConfig as Record<string, unknown>).dmPolicy as typeof dmPolicy) ?? dmPolicy)
+      ? (groupConfig.dmPolicy ?? dmPolicy)
       : dmPolicy;
   // Fresh config for bindings lookup; other routing inputs are payload-derived.
   const freshCfg = loadConfig();
@@ -109,7 +112,7 @@ export const buildTelegramMessageContext = async ({
   const groupAllowOverride = firstDefined(topicConfig?.allowFrom, groupConfig?.allowFrom);
   // For DMs, prefer per-DM/topic allowFrom (groupAllowOverride) over account-level allowFrom
   const dmAllowFrom = groupAllowOverride ?? allowFrom;
-  const effectiveDmAllow = normalizeAllowFromWithStore({
+  const effectiveDmAllow = normalizeDmAllowFromWithStore({
     allowFrom: dmAllowFrom,
     storeAllowFrom,
     dmPolicy: effectiveDmPolicy,
@@ -148,7 +151,7 @@ export const buildTelegramMessageContext = async ({
     return null;
   }
 
-  const requireTopic = (groupConfig as Record<string, unknown> | undefined)?.requireTopic;
+  const requireTopic = (groupConfig as TelegramDirectConfig | undefined)?.requireTopic;
   const topicRequiredButMissing = !isGroup && requireTopic === true && dmThreadId == null;
   if (topicRequiredButMissing) {
     logVerbose(`Blocked telegram DM ${chatId}: requireTopic=true but no topic present`);
@@ -223,22 +226,13 @@ export const buildTelegramMessageContext = async ({
     return false;
   };
 
-  const baseSessionKey = isNamedAccountFallback
-    ? buildAgentSessionKey({
-        agentId: route.agentId,
-        channel: "telegram",
-        accountId: route.accountId,
-        peer: {
-          kind: "direct",
-          id: resolveTelegramDirectPeerId({
-            chatId,
-            senderId,
-          }),
-        },
-        dmScope: "per-account-channel-peer",
-        identityLinks: freshCfg.session?.identityLinks,
-      }).toLowerCase()
-    : route.sessionKey;
+  const baseSessionKey = resolveTelegramConversationBaseSessionKey({
+    cfg: freshCfg,
+    route,
+    chatId,
+    isGroup,
+    senderId,
+  });
   // DMs: use thread suffix for session isolation (works regardless of dmScope)
   const threadKeys =
     dmThreadId != null
@@ -264,7 +258,7 @@ export const buildTelegramMessageContext = async ({
   const requireMention = firstDefined(
     activationOverride,
     topicConfig?.requireMention,
-    groupConfig?.requireMention,
+    (groupConfig as TelegramGroupConfig | undefined)?.requireMention,
     baseRequireMention,
   );
 
@@ -448,7 +442,6 @@ export const buildTelegramMessageContext = async ({
     msg,
     chatId,
     isGroup,
-    groupConfig,
     resolvedThreadId,
     threadSpec,
     replyThreadId,

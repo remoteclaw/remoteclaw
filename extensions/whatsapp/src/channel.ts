@@ -1,27 +1,22 @@
 import { buildAccountScopedAllowlistConfigEditor } from "remoteclaw/plugin-sdk/allowlist-config-edit";
-// WhatsApp-specific imports from local extension code (moved from src/web/ and src/channels/plugins/)
-import { resolveWhatsAppAccount, type ResolvedWhatsAppAccount } from "./accounts.js";
-import {
-  listWhatsAppDirectoryGroupsFromConfig,
-  listWhatsAppDirectoryPeersFromConfig,
-} from "./directory-config.js";
-import { looksLikeWhatsAppTargetId, normalizeWhatsAppMessagingTarget } from "./normalize.js";
 import {
   createActionGate,
   createWhatsAppOutboundBase,
   DEFAULT_ACCOUNT_ID,
-  formatWhatsAppConfigAllowFromEntries,
+  listWhatsAppDirectoryGroupsFromConfig,
+  listWhatsAppDirectoryPeersFromConfig,
   readStringParam,
   resolveWhatsAppOutboundTarget,
   resolveWhatsAppHeartbeatRecipients,
   resolveWhatsAppMentionStripRegexes,
   type ChannelMessageActionName,
   type ChannelPlugin,
-  isWhatsAppGroupJid,
-  normalizeWhatsAppTarget,
-} from "./runtime-api.js";
+} from "remoteclaw/plugin-sdk/whatsapp";
+import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "remoteclaw/plugin-sdk/whatsapp";
+// WhatsApp-specific imports from local extension code (moved from src/web/ and src/channels/plugins/)
+import { resolveWhatsAppAccount, type ResolvedWhatsAppAccount } from "./accounts.js";
+import { looksLikeWhatsAppTargetId, normalizeWhatsAppMessagingTarget } from "./normalize.js";
 import { getWhatsAppRuntime } from "./runtime.js";
-import { resolveWhatsAppOutboundSessionRoute } from "./session-route.js";
 import { whatsappSetupAdapter } from "./setup-core.js";
 import {
   createWhatsAppPluginBase,
@@ -30,7 +25,6 @@ import {
   WHATSAPP_CHANNEL,
 } from "./shared.js";
 import { collectWhatsAppStatusIssues } from "./status-issues.js";
-
 function normalizeWhatsAppPayloadText(text: string | undefined): string {
   return (text ?? "").replace(/^(?:[ \t]*\r?\n)+/, "");
 }
@@ -86,7 +80,6 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
   },
   messaging: {
     normalizeTarget: normalizeWhatsAppMessagingTarget,
-    resolveOutboundSessionRoute: (params) => resolveWhatsAppOutboundSessionRoute(params),
     parseExplicitTarget: ({ raw }) => parseWhatsAppExplicitTarget(raw),
     inferTargetChatType: ({ to }) => parseWhatsAppExplicitTarget(to)?.chatType,
     targetResolver: {
@@ -113,9 +106,9 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
     listGroups: async (params) => listWhatsAppDirectoryGroupsFromConfig(params),
   },
   actions: {
-    describeMessageTool: ({ cfg }) => {
+    listActions: ({ cfg }) => {
       if (!cfg.channels?.whatsapp) {
-        return null;
+        return [];
       }
       const gate = createActionGate(cfg.channels.whatsapp.actions);
       const actions = new Set<ChannelMessageActionName>();
@@ -125,7 +118,7 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
       if (gate("polls")) {
         actions.add("poll");
       }
-      return { actions: Array.from(actions) };
+      return Array.from(actions);
     },
     supportsAction: ({ action }) => action === "react",
     handleAction: async ({ action, params, cfg, accountId }) => {
@@ -171,8 +164,7 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
   },
   auth: {
     login: async ({ cfg, accountId, runtime, verbose }) => {
-      const resolvedAccountId =
-        accountId?.trim() || whatsappPlugin.config.defaultAccountId?.(cfg) || DEFAULT_ACCOUNT_ID;
+      const resolvedAccountId = accountId?.trim() || whatsappPlugin.config.defaultAccountId(cfg);
       await (
         await loadWhatsAppChannelRuntime()
       ).loginWeb(Boolean(verbose), undefined, runtime, resolvedAccountId);

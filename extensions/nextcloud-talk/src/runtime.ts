@@ -1,5 +1,5 @@
-import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk";
-import type { PluginRuntime } from "remoteclaw/plugin-sdk";
+import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
+import type { PluginRuntime } from "../runtime-api.js";
 
 const { setRuntime: setNextcloudTalkRuntime, getRuntime: getNextcloudTalkRuntime } =
   createPluginRuntimeStore<PluginRuntime>("Nextcloud Talk runtime not initialized");

@@ -152,18 +152,6 @@ export const providerContractRegistry: ProviderContractEntry[] = buildCapability
   select: (captured) => captured.providers,
 });
 
-export const uniqueProviderContractProviders: ProviderPlugin[] = [
-  ...new Map(providerContractRegistry.map((entry) => [entry.provider.id, entry.provider])).values(),
-];
-
-export const providerContractPluginIds = [
-  ...new Set(providerContractRegistry.map((entry) => entry.pluginId)),
-].toSorted((left, right) => left.localeCompare(right));
-
-export const providerContractCompatPluginIds = providerContractPluginIds.map((pluginId) =>
-  pluginId === "kimi-coding" ? "kimi" : pluginId,
-);
-
 export function requireProviderContractProvider(providerId: string): ProviderPlugin {
   const provider = uniqueProviderContractProviders.find((entry) => entry.id === providerId);
   if (!provider) {

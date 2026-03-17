@@ -7,6 +7,7 @@ import {
   pathExists,
   splitSetupEntries,
   setSetupChannelEnabled,
+  type DmPolicy,
   type OpenClawConfig,
 } from "openclaw/plugin-sdk/setup";
 import { formatCliCommand } from "../../../src/cli/command-format.js";

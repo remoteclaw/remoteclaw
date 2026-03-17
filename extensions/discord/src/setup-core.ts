@@ -9,20 +9,26 @@ import type {
 } from "remoteclaw/plugin-sdk/setup-runtime";
 import { formatDocsLink } from "remoteclaw/plugin-sdk/setup-tools";
 import {
-  inspectDiscordSetupAccount,
-  listDiscordSetupAccountIds,
-  resolveDiscordSetupAccountConfig,
-} from "./setup-account-state.js";
-import {
-  createAccountScopedAllowFromSection,
-  createAccountScopedGroupAccessSection,
-  createAllowlistSetupWizardProxy,
-  createLegacyCompatChannelDmPolicy,
+  applyAccountNameToChannelSection,
+  DEFAULT_ACCOUNT_ID,
+  migrateBaseNameToDefaultAccount,
+  normalizeAccountId,
+  noteChannelLookupFailure,
+  noteChannelLookupSummary,
   parseMentionOrPrefixedId,
   patchChannelConfigForAccount,
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-} from "./setup-runtime-helpers.js";
+  type OpenClawConfig,
+} from "../../../src/plugin-sdk-internal/setup.js";
+import {
+  type ChannelSetupAdapter,
+  type ChannelSetupDmPolicy,
+  type ChannelSetupWizard,
+} from "../../../src/plugin-sdk-internal/setup.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
+import { inspectDiscordAccount } from "./account-inspect.js";
+import { listDiscordAccountIds, resolveDiscordAccount } from "./accounts.js";
 
 const channel = "discord" as const;
 

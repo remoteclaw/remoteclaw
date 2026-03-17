@@ -1,10 +1,29 @@
 import {
-  type RemoteClawConfig,
+  DEFAULT_ACCOUNT_ID,
+  noteChannelLookupFailure,
+  noteChannelLookupSummary,
+  type OpenClawConfig,
+  parseMentionOrPrefixedId,
+  patchChannelConfigForAccount,
+  promptLegacyChannelAllowFrom,
+  resolveSetupAccountId,
+  setLegacyChannelDmPolicyWithAllowFrom,
+  setSetupChannelEnabled,
   type WizardPrompter,
   type ChannelSetupWizard,
-} from "remoteclaw/plugin-sdk/setup-runtime";
-import { formatDocsLink } from "remoteclaw/plugin-sdk/setup-tools";
-import { resolveDiscordChannelAllowlist } from "./resolve-channels.js";
+} from "../../../src/plugin-sdk-internal/setup.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
+import { inspectDiscordAccount } from "./account-inspect.js";
+import {
+  listDiscordAccountIds,
+  resolveDefaultDiscordAccountId,
+  resolveDiscordAccount,
+} from "./accounts.js";
+import { normalizeDiscordSlug } from "./monitor/allow-list.js";
+import {
+  resolveDiscordChannelAllowlist,
+  type DiscordChannelResolution,
+} from "./resolve-channels.js";
 import { resolveDiscordUserAllowlist } from "./resolve-users.js";
 import {
   resolveDefaultDiscordSetupAccountId,

@@ -132,6 +132,27 @@ async function resolveDiscordGroupAllowlist(params: {
   });
 }
 
+async function resolveDiscordGroupAllowlist(params: {
+  cfg: OpenClawConfig;
+  accountId: string;
+  credentialValues: { token?: string };
+  entries: string[];
+}) {
+  const token =
+    resolveDiscordAccount({ cfg: params.cfg, accountId: params.accountId }).token ||
+    (typeof params.credentialValues.token === "string" ? params.credentialValues.token : "");
+  if (!token || params.entries.length === 0) {
+    return params.entries.map((input) => ({
+      input,
+      resolved: false,
+    }));
+  }
+  return await resolveDiscordChannelAllowlist({
+    token,
+    entries: params.entries,
+  });
+}
+
 export const discordSetupWizard: ChannelSetupWizard = createDiscordSetupWizardBase({
   promptAllowFrom: promptDiscordAllowFrom,
   resolveAllowFromEntries: async ({ cfg, accountId, credentialValues, entries }) =>

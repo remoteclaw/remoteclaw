@@ -9,7 +9,7 @@ import {
   getProviderMonitorTestMocks,
   mockResolvedDiscordAccountConfig,
   resetDiscordProviderMonitorMocks,
-} from "./provider.test-support.js";
+} from "../../../../test/helpers/extensions/discord-provider.test-support.js";
 
 const {
   clientConstructorOptionsMock,

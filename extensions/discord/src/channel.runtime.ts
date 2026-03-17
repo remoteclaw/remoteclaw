@@ -1,7 +1,5 @@
-import { createDiscordSetupWizardProxy } from "./setup-core.js";
+import { discordSetupWizard as discordSetupWizardImpl } from "./setup-surface.js";
 
 type DiscordSetupWizard = typeof import("./setup-surface.js").discordSetupWizard;
 
-export const discordSetupWizard: DiscordSetupWizard = createDiscordSetupWizardProxy(
-  async () => (await import("./setup-surface.js")).discordSetupWizard,
-);
+export const discordSetupWizard: DiscordSetupWizard = { ...discordSetupWizardImpl };

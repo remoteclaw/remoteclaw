@@ -145,14 +145,14 @@ final class PeekabooBridgeHostCoordinator {
                 let destination = try FileManager.default.destinationOfSymbolicLink(atPath: legacyPath)
                 let destinationURL = URL(fileURLWithPath: destination, relativeTo: linkURL.deletingLastPathComponent())
                     .standardizedFileURL
-                if destinationURL.path == URL(fileURLWithPath: Self.openclawSocketPath).standardizedFileURL.path {
+                if destinationURL.path == URL(fileURLWithPath: Self.remoteclawSocketPath).standardizedFileURL.path {
                     return
                 }
                 try fileManager.removeItem(atPath: legacyPath)
             } else if fileManager.fileExists(atPath: legacyPath) {
                 try fileManager.removeItem(atPath: legacyPath)
             }
-            try fileManager.createSymbolicLink(atPath: legacyPath, withDestinationPath: Self.openclawSocketPath)
+            try fileManager.createSymbolicLink(atPath: legacyPath, withDestinationPath: Self.remoteclawSocketPath)
         } catch {
             self.logger.debug("Failed to create legacy PeekabooBridge socket symlink: \(error.localizedDescription, privacy: .public)")
         }

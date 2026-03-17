@@ -9,7 +9,7 @@ describe("logger timestamp format", () => {
   let logPath = "";
 
   beforeEach(() => {
-    logPath = path.join(os.tmpdir(), `openclaw-log-ts-${crypto.randomUUID()}.log`);
+    logPath = path.join(os.tmpdir(), `remoteclaw-log-ts-${crypto.randomUUID()}.log`);
     resetLogger();
     setLoggerOverride(null);
   });

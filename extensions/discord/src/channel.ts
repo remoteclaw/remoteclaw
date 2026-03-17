@@ -1,19 +1,16 @@
 import { Separator, TextDisplay } from "@buape/carbon";
-import { buildAccountScopedAllowlistConfigEditor } from "remoteclaw/plugin-sdk/allowlist-config-edit";
+import { resolveOutboundSendDep } from "../../../src/infra/outbound/send-deps.js";
 import {
-  buildLegacyDmAccountAllowlistAdapter,
-  createAccountScopedAllowlistNameResolver,
-  createNestedAllowlistOverrideResolver,
-} from "remoteclaw/plugin-sdk/allowlist-config-edit";
-import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
+  buildAccountScopedAllowlistConfigEditor,
+  buildAccountScopedDmSecurityPolicy,
+  collectOpenGroupPolicyConfiguredRouteWarnings,
+  collectOpenProviderGroupPolicyWarnings,
+} from "../../../src/plugin-sdk-internal/channel-config.js";
 import {
-  createPairingPrefixStripper,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-pairing";
-import { createOpenProviderConfiguredRouteWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
-import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
-import { resolveTargetsWithOptionalToken } from "remoteclaw/plugin-sdk/channel-targets";
-import { createTopLevelChannelReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
+  buildAgentSessionKey,
+  resolveThreadSessionKeys,
+  type RoutePeer,
+} from "../../../src/plugin-sdk-internal/core.js";
 import {
   buildComputedAccountStatusSnapshot,
   buildTokenChannelStatusSummary,
@@ -29,18 +26,8 @@ import {
   type ChannelMessageActionAdapter,
   type ChannelPlugin,
   type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/discord";
-import {
-  createRuntimeOutboundDelegates,
-  resolveOutboundSendDep,
-} from "remoteclaw/plugin-sdk/infra-runtime";
-import {
-  buildOutboundBaseSessionKey,
-  normalizeMessageChannel,
-  normalizeOutboundThreadId,
-  resolveThreadSessionKeys,
-  type RoutePeer,
-} from "remoteclaw/plugin-sdk/routing";
+} from "../../../src/plugin-sdk-internal/discord.js";
+import { normalizeMessageChannel } from "../../../src/utils/message-channel.js";
 import {
   listDiscordAccountIds,
   resolveDiscordAccount,
@@ -58,12 +45,12 @@ import {
   normalizeDiscordMessagingTarget,
   normalizeDiscordOutboundTarget,
 } from "./normalize.js";
+import { discordConfigAccessors, discordConfigBase, discordSetupWizard } from "./plugin-shared.js";
 import type { DiscordProbe } from "./probe.js";
 import { resolveDiscordUserAllowlist } from "./resolve-users.js";
 import { getDiscordRuntime } from "./runtime.js";
 import { fetchChannelPermissionsDiscord } from "./send.js";
 import { discordSetupAdapter } from "./setup-core.js";
-import { createDiscordPluginBase } from "./shared.js";
 import { collectDiscordStatusIssues } from "./status-issues.js";
 import { parseDiscordTarget } from "./targets.js";
 import { DiscordUiContainer } from "./ui.js";

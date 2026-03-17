@@ -1,7 +1,6 @@
 import util from "node:util";
-import type { TelegramAccountConfig, TelegramActionConfig } from "openclaw/plugin-sdk/telegram";
 import { createAccountActionGate } from "../../../src/channels/plugins/account-action-gate.js";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { isTruthyEnvValue } from "../../../src/infra/env.js";
 import { createSubsystemLogger } from "../../../src/logging/subsystem.js";
 import {
@@ -12,15 +11,18 @@ import {
   normalizeOptionalAccountId,
   resolveAccountEntry,
   resolveAccountWithDefaultFallback,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/account-resolution";
-import { isTruthyEnvValue } from "remoteclaw/plugin-sdk/infra-runtime";
+} from "../../../src/plugin-sdk-internal/accounts.js";
+import type {
+  TelegramAccountConfig,
+  TelegramActionConfig,
+} from "../../../src/plugin-sdk-internal/telegram.js";
+import { resolveAccountEntry } from "../../../src/routing/account-lookup.js";
 import {
   listBoundAccountIds,
   resolveDefaultAgentBoundAccountId,
-} from "openclaw/plugin-sdk/routing";
-import { formatSetExplicitDefaultInstruction } from "openclaw/plugin-sdk/routing";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
+} from "remoteclaw/plugin-sdk/routing";
+import { formatSetExplicitDefaultInstruction } from "remoteclaw/plugin-sdk/routing";
+import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
 import type { TelegramAccountConfig, TelegramActionConfig } from "../runtime-api.js";
 import { resolveTelegramToken } from "./token.js";
 

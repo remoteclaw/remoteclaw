@@ -1,7 +1,7 @@
 import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderRestrictSendersWarnings,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
+} from "../../../src/plugin-sdk-internal/channel-config.js";
 import {
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
@@ -11,7 +11,7 @@ import {
   setAccountEnabledInConfigSection,
   SignalConfigSchema,
   type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/signal";
+} from "../../../src/plugin-sdk-internal/signal.js";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,

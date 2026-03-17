@@ -1,9 +1,10 @@
-import { buildDmGroupAccountAllowlistAdapter } from "remoteclaw/plugin-sdk/allowlist-config-edit";
-import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
-import { buildPassiveProbedChannelStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
-import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/infra-runtime";
-import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
-import { buildOutboundBaseSessionKey, type RoutePeer } from "remoteclaw/plugin-sdk/routing";
+import { resolveOutboundSendDep } from "../../../src/infra/outbound/send-deps.js";
+import {
+  buildAccountScopedAllowlistConfigEditor,
+  buildAccountScopedDmSecurityPolicy,
+  collectAllowlistProviderRestrictSendersWarnings,
+} from "../../../src/plugin-sdk-internal/channel-config.js";
+import { buildAgentSessionKey, type RoutePeer } from "../../../src/plugin-sdk-internal/core.js";
 import {
   buildChannelConfigSchema,
   collectStatusIssuesFromLastError,
@@ -24,8 +25,7 @@ import {
   resolveIMessageGroupToolPolicy,
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/imessage";
-import { buildAgentSessionKey, type RoutePeer } from "remoteclaw/plugin-sdk/routing";
+} from "../../../src/plugin-sdk-internal/imessage.js";
 import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
   listIMessageAccountIds,

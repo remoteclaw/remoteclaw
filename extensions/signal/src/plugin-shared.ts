@@ -1,6 +1,5 @@
-import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { createScopedAccountConfigAccessors } from "../../../src/plugin-sdk-internal/channel-config.js";
-import { normalizeE164 } from "../../../src/utils.js";
+import { normalizeE164, type RemoteClawConfig } from "../../../src/plugin-sdk-internal/signal.js";
 import { resolveSignalAccount, type ResolvedSignalAccount } from "./accounts.js";
 import { createSignalSetupWizardProxy } from "./setup-core.js";
 

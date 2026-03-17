@@ -1,9 +1,9 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/account-resolution";
-import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
 import {
   createScopedAccountConfigAccessors,
   createScopedChannelConfigBase,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
+  formatAllowFromLowercase,
+} from "../../../src/plugin-sdk-internal/channel-config.js";
+import { type RemoteClawConfig } from "../../../src/plugin-sdk-internal/discord.js";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import {
   listDiscordAccountIds,

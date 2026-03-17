@@ -1,4 +1,9 @@
-import { type ChannelPlugin } from "../runtime-api.js";
+import {
+  buildChannelConfigSchema,
+  getChatChannelMeta,
+  TelegramConfigSchema,
+  type ChannelPlugin,
+} from "../../../src/plugin-sdk-internal/telegram.js";
 import { type ResolvedTelegramAccount } from "./accounts.js";
 import {
   findTelegramTokenOwnerAccountId,

@@ -1,4 +1,4 @@
-import { isAllowedParsedChatSender } from "remoteclaw/plugin-sdk/allow-from";
+import { isAllowedParsedChatSender } from "../../../src/plugin-sdk-internal/imessage.js";
 
 export type ServicePrefix<TService extends string> = { prefix: string; service: TService };
 

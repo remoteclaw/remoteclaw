@@ -1,9 +1,12 @@
-import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
 import {
   createScopedAccountConfigAccessors,
   createScopedChannelConfigBase,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { normalizeAccountId, type RemoteClawConfig } from "remoteclaw/plugin-sdk/telegram";
+  formatAllowFromLowercase,
+} from "../../../src/plugin-sdk-internal/channel-config.js";
+import {
+  normalizeAccountId,
+  type RemoteClawConfig,
+} from "../../../src/plugin-sdk-internal/telegram.js";
 import { inspectTelegramAccount } from "./account-inspect.js";
 import {
   listTelegramAccountIds,

@@ -1,4 +1,4 @@
-import { buildAccountScopedAllowlistConfigEditor } from "remoteclaw/plugin-sdk/allowlist-config-edit";
+import { buildAccountScopedAllowlistConfigEditor } from "../../../src/plugin-sdk-internal/channel-config.js";
 import {
   buildAccountScopedDmSecurityPolicy,
   buildChannelConfigSchema,
@@ -26,8 +26,8 @@ import {
   WhatsAppConfigSchema,
   type ChannelMessageActionName,
   type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/whatsapp";
-import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "remoteclaw/plugin-sdk/whatsapp";
+} from "../../../src/plugin-sdk-internal/whatsapp.js";
+import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../../src/whatsapp/normalize.js";
 // WhatsApp-specific imports from local extension code (moved from src/web/ and src/channels/plugins/)
 import {
   listWhatsAppAccountIds,
@@ -40,6 +40,8 @@ import { whatsappSetupWizardProxy } from "./plugin-shared.js";
 import { getWhatsAppRuntime } from "./runtime.js";
 import { whatsappSetupAdapter } from "./setup-core.js";
 import { collectWhatsAppStatusIssues } from "./status-issues.js";
+
+const meta = getChatChannelMeta("whatsapp");
 
 function normalizeWhatsAppPayloadText(text: string | undefined): string {
   return (text ?? "").replace(/^(?:[ \t]*\r?\n)+/, "");

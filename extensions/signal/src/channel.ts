@@ -1,18 +1,37 @@
-import { buildAccountScopedAllowlistConfigEditor } from "remoteclaw/plugin-sdk/allowlist-config-edit";
+import { resolveTextChunkLimit } from "../../../src/auto-reply/chunk.js";
+import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
+import { resolveOutboundSendDep } from "../../../src/infra/outbound/send-deps.js";
 import {
-  createPairingPrefixStripper,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-pairing";
+  buildAccountScopedAllowlistConfigEditor,
+  buildAccountScopedDmSecurityPolicy,
+  collectAllowlistProviderRestrictSendersWarnings,
+} from "../../../src/plugin-sdk-internal/channel-config.js";
+import { buildAgentSessionKey, type RoutePeer } from "../../../src/plugin-sdk-internal/core.js";
 import {
-  attachChannelToResult,
-  attachChannelToResults,
-  createAttachedChannelResultAdapter,
-} from "remoteclaw/plugin-sdk/channel-send-result";
-import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
-import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/infra-runtime";
-import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
-import { buildOutboundBaseSessionKey, type RoutePeer } from "remoteclaw/plugin-sdk/routing";
-import { resolveSignalAccount, type ResolvedSignalAccount } from "./accounts.js";
+  buildBaseAccountStatusSnapshot,
+  buildBaseChannelStatusSummary,
+  buildChannelConfigSchema,
+  collectStatusIssuesFromLastError,
+  createDefaultChannelRuntimeState,
+  DEFAULT_ACCOUNT_ID,
+  deleteAccountFromConfigSection,
+  getChatChannelMeta,
+  looksLikeSignalTargetId,
+  normalizeE164,
+  normalizeSignalMessagingTarget,
+  PAIRING_APPROVED_MESSAGE,
+  resolveChannelMediaMaxBytes,
+  setAccountEnabledInConfigSection,
+  SignalConfigSchema,
+  type ChannelMessageActionAdapter,
+  type ChannelPlugin,
+} from "../../../src/plugin-sdk-internal/signal.js";
+import {
+  listSignalAccountIds,
+  resolveDefaultSignalAccountId,
+  resolveSignalAccount,
+  type ResolvedSignalAccount,
+} from "./accounts.js";
 import { markdownToSignalTextChunks } from "./format.js";
 import {
   looksLikeUuid,
@@ -38,26 +57,12 @@ const signalMessageActions: ChannelMessageActionAdapter = {
   },
 };
 
-const meta = getChatChannelMeta("signal");
+type SignalSendFn = ReturnType<typeof getSignalRuntime>["channel"]["signal"]["sendMessageSignal"];
 
-const signalConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: resolveSignalAccount,
-  resolveAllowFrom: (account: ResolvedSignalAccount) => account.config.allowFrom,
-  formatAllowFrom: (allowFrom) =>
-    allowFrom
-      .map((entry) => String(entry).trim())
-      .filter(Boolean)
-      .map((entry) => (entry === "*" ? "*" : normalizeE164(entry.replace(/^signal:/i, ""))))
-      .filter(Boolean),
-  resolveDefaultTo: (account: ResolvedSignalAccount) => account.config.defaultTo,
-});
-
-function buildSignalSetupPatch(input: {
-  signalNumber?: string;
-  cliPath?: string;
-  httpUrl?: string;
-  httpHost?: string;
-  httpPort?: string;
+function resolveSignalSendContext(params: {
+  cfg: Parameters<typeof resolveSignalAccount>[0]["cfg"];
+  accountId?: string;
+  deps?: { [channelId: string]: unknown };
 }) {
   return {
     ...(input.signalNumber ? { account: input.signalNumber } : {}),

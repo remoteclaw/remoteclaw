@@ -1,5 +1,5 @@
-import { evaluateSenderGroupAccessForPolicy } from "remoteclaw/plugin-sdk/group-access";
-import { normalizeE164 } from "remoteclaw/plugin-sdk/text-runtime";
+import { evaluateSenderGroupAccessForPolicy } from "../../../src/plugin-sdk-internal/signal.js";
+import { normalizeE164 } from "../../../src/utils.js";
 
 export type SignalSender =
   | { kind: "phone"; raw: string; e164: string }

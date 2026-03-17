@@ -1,7 +1,7 @@
 import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderRestrictSendersWarnings,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
+} from "../../../src/plugin-sdk-internal/channel-config.js";
 import {
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
@@ -13,7 +13,7 @@ import {
   resolveIMessageConfigDefaultTo,
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/imessage";
+} from "../../../src/plugin-sdk-internal/imessage.js";
 import {
   listIMessageAccountIds,
   resolveDefaultIMessageAccountId,

@@ -2,9 +2,8 @@ import {
   createAccountListHelpers,
   normalizeAccountId,
   resolveAccountEntry,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/account-resolution";
-import type { SignalAccountConfig } from "remoteclaw/plugin-sdk/signal";
+} from "../../../src/plugin-sdk-internal/accounts.js";
+import type { SignalAccountConfig } from "../../../src/plugin-sdk-internal/signal.js";
 
 export type ResolvedSignalAccount = {
   accountId: string;

@@ -1,5 +1,7 @@
-import type { PluginRuntime } from "remoteclaw/plugin-sdk/core";
-import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
+import {
+  createPluginRuntimeStore,
+  type PluginRuntime,
+} from "../../../src/plugin-sdk-internal/core.js";
 
 const { setRuntime: setTelegramRuntime, getRuntime: getTelegramRuntime } =
   createPluginRuntimeStore<PluginRuntime>("Telegram runtime not initialized");

@@ -1,4 +1,4 @@
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
+import type { RemoteClawPluginApi } from "../../../src/plugin-sdk-internal/core.js";
 import { resolveDiscordAccount } from "./accounts.js";
 import {
   autoBindSpawnedDiscordSubagent,

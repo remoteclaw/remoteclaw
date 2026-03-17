@@ -3,9 +3,15 @@ import {
   resolveWhatsAppGroupRequireMention,
   resolveWhatsAppGroupToolPolicy,
   type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/whatsapp";
-import { type ResolvedWhatsAppAccount } from "./accounts.js";
+} from "../../../src/plugin-sdk-internal/whatsapp.js";
+import {
+  listWhatsAppAccountIds,
+  resolveDefaultWhatsAppAccountId,
+  resolveWhatsAppAccount,
+  type ResolvedWhatsAppAccount,
+} from "./accounts.js";
 import { webAuthExists } from "./auth-store.js";
+import { whatsappSetupWizardProxy } from "./plugin-shared.js";
 import { whatsappSetupAdapter } from "./setup-core.js";
 
 export const whatsappSetupPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {

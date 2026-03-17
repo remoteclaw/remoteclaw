@@ -3,9 +3,12 @@ import {
   createAccountListHelpers,
   normalizeAccountId,
   resolveAccountEntry,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/account-resolution";
-import type { DiscordAccountConfig, DiscordActionConfig } from "remoteclaw/plugin-sdk/discord";
+} from "../../../src/plugin-sdk-internal/accounts.js";
+import type {
+  RemoteClawConfig,
+  DiscordAccountConfig,
+  DiscordActionConfig,
+} from "../../../src/plugin-sdk-internal/discord.js";
 import { resolveDiscordToken } from "./token.js";
 
 export type ResolvedDiscordAccount = {

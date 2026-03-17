@@ -405,7 +405,6 @@ export function installChannelDirectoryContractSuite(params: {
     if (params.invokeLookups === false) {
       return;
     }
-
     const self = await directory?.self?.({
       cfg: {} as RemoteClawConfig,
       accountId: "default",

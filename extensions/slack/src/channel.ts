@@ -1,10 +1,10 @@
-import { buildAccountScopedAllowlistConfigEditor } from "remoteclaw/plugin-sdk/allowlist-config-edit";
+import { resolveOutboundSendDep } from "../../../src/infra/outbound/send-deps.js";
 import {
-  buildLegacyDmAccountAllowlistAdapter,
-  createAccountScopedAllowlistNameResolver,
-  createFlatAllowlistOverrideResolver,
-} from "remoteclaw/plugin-sdk/allowlist-config-edit";
-import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
+  buildAccountScopedAllowlistConfigEditor,
+  buildAccountScopedDmSecurityPolicy,
+  collectOpenGroupPolicyConfiguredRouteWarnings,
+  collectOpenProviderGroupPolicyWarnings,
+} from "../../../src/plugin-sdk-internal/channel-config.js";
 import {
   createPairingPrefixStripper,
   createTextPairingAdapter,
@@ -27,7 +27,7 @@ import {
   normalizeOutboundThreadId,
   resolveThreadSessionKeys,
   type RoutePeer,
-} from "remoteclaw/plugin-sdk/routing";
+} from "../../../src/plugin-sdk-internal/core.js";
 import {
   listEnabledSlackAccounts,
   resolveSlackAccount,
@@ -59,7 +59,7 @@ import {
   SlackConfigSchema,
   type ChannelPlugin,
   type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/slack";
+} from "../../../src/plugin-sdk-internal/slack.js";
 import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
   listEnabledSlackAccounts,

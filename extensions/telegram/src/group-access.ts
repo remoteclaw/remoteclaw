@@ -6,8 +6,8 @@ import type {
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "remoteclaw/plugin-sdk/config-runtime";
-import { evaluateMatchedGroupAccessForPolicy } from "remoteclaw/plugin-sdk/group-access";
+} from "../../../src/config/types.js";
+import { evaluateMatchedGroupAccessForPolicy } from "../../../src/plugin-sdk-internal/telegram.js";
 import { isSenderAllowed, type NormalizedAllowFrom } from "./bot-access.js";
 import { firstDefined } from "./bot-access.js";
 

@@ -3,9 +3,9 @@ import {
   readStringArrayParam,
   readStringOrNumberParam,
   readStringParam,
-} from "openclaw/plugin-sdk/agent-runtime";
-import { readBooleanParam } from "openclaw/plugin-sdk/boolean-param";
-import { resolveReactionMessageId } from "openclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/agent-runtime";
+import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
+import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
   createMessageToolButtonsSchema,
   createTelegramPollExtraToolSchemas,
@@ -17,8 +17,7 @@ import type {
   ChannelMessageActionName,
 } from "../../../src/channels/plugins/types.js";
 import type { TelegramActionConfig } from "../../../src/config/types.telegram.js";
-import { readBooleanParam } from "../../../src/plugin-sdk/boolean-param.js";
-import { extractToolSend } from "../../../src/plugin-sdk/tool-send.js";
+import { extractToolSend, readBooleanParam } from "../../../src/plugin-sdk-internal/telegram.js";
 import { resolveTelegramPollVisibility } from "../../../src/poll-params.js";
 import {
   createTelegramActionGate,

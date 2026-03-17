@@ -1,4 +1,4 @@
-import type { ChannelPlugin } from "remoteclaw/plugin-sdk/whatsapp";
+import { type ChannelPlugin } from "../../../src/plugin-sdk-internal/whatsapp.js";
 import { type ResolvedWhatsAppAccount } from "./accounts.js";
 
 async function loadWhatsAppChannelRuntime() {

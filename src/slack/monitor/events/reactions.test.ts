@@ -54,7 +54,7 @@ function createReactionHandlers(params: {
   if (params.shouldDropMismatchedSlackEvent) {
     harness.ctx.shouldDropMismatchedSlackEvent = params.shouldDropMismatchedSlackEvent;
   }
-  registerSlackReactionEvents({ ctx: harness.ctx, trackEvent: params.trackEvent });
+  registerSlackReactionEvents({ ctx: harness.ctx });
   return {
     added: harness.getHandler("reaction_added") as ReactionHandler | null,
     removed: harness.getHandler("reaction_removed") as ReactionHandler | null,

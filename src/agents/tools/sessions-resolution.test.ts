@@ -36,7 +36,7 @@ describe("resolveMainSessionAlias", () => {
     const cfg = {
       session: { mainKey: "  work ", scope: "per-sender" },
       routing: { sessions: { mainKey: "legacy-main" } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     expect(resolveMainSessionAlias(cfg)).toEqual({
       mainKey: "work",

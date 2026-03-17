@@ -69,7 +69,6 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       runCommand,
       runViaMacAppExecHost,
       sendInvokeResult,
-      sendNodeEvent,
       sendExecFinishedEvent,
     };
   }

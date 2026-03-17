@@ -4,10 +4,10 @@ import {
   readStringOrNumberParam,
   readStringParam,
 } from "remoteclaw/plugin-sdk/agent-runtime";
+import { handleTelegramAction } from "remoteclaw/plugin-sdk/agent-runtime";
 import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
 import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
-  createLegacyMessageToolDiscoveryMethods,
   createMessageToolButtonsSchema,
   createTelegramPollExtraToolSchemas,
   createUnionActionGate,
@@ -16,8 +16,6 @@ import {
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
-  ChannelMessageToolDiscovery,
-  ChannelMessageToolSchemaContribution,
 } from "remoteclaw/plugin-sdk/channel-runtime";
 import type { TelegramActionConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { resolveTelegramPollVisibility } from "remoteclaw/plugin-sdk/telegram";
@@ -27,7 +25,6 @@ import {
   listEnabledTelegramAccounts,
   resolveTelegramPollActionGateState,
 } from "./accounts.js";
-import { handleTelegramAction } from "./action-runtime.js";
 import { resolveTelegramInlineButtons } from "./button-types.js";
 import { isTelegramInlineButtonsEnabled } from "./inline-buttons.js";
 
@@ -36,92 +33,6 @@ const providerId = "telegram";
 export const telegramMessageActionRuntime = {
   handleTelegramAction,
 };
-
-function resolveTelegramActionDiscovery(cfg: Parameters<typeof listEnabledTelegramAccounts>[0]) {
-  const accounts = listTokenSourcedAccounts(listEnabledTelegramAccounts(cfg));
-  if (accounts.length === 0) {
-    return null;
-  }
-  const unionGate = createUnionActionGate(accounts, (account) =>
-    createTelegramActionGate({
-      cfg,
-      accountId: account.accountId,
-    }),
-  );
-  const pollEnabled = accounts.some((account) => {
-    const accountGate = createTelegramActionGate({
-      cfg,
-      accountId: account.accountId,
-    });
-    return resolveTelegramPollActionGateState(accountGate).enabled;
-  });
-  const buttonsEnabled = accounts.some((account) =>
-    isTelegramInlineButtonsEnabled({ cfg, accountId: account.accountId }),
-  );
-  return {
-    isEnabled: (key: keyof TelegramActionConfig, defaultValue = true) =>
-      unionGate(key, defaultValue),
-    pollEnabled,
-    buttonsEnabled,
-  };
-}
-
-function describeTelegramMessageTool({
-  cfg,
-}: Parameters<
-  NonNullable<ChannelMessageActionAdapter["describeMessageTool"]>
->[0]): ChannelMessageToolDiscovery {
-  const discovery = resolveTelegramActionDiscovery(cfg);
-  if (!discovery) {
-    return {
-      actions: [],
-      capabilities: [],
-      schema: null,
-    };
-  }
-  const actions = new Set<ChannelMessageActionName>(["send"]);
-  if (discovery.pollEnabled) {
-    actions.add("poll");
-  }
-  if (discovery.isEnabled("reactions")) {
-    actions.add("react");
-  }
-  if (discovery.isEnabled("deleteMessage")) {
-    actions.add("delete");
-  }
-  if (discovery.isEnabled("editMessage")) {
-    actions.add("edit");
-  }
-  if (discovery.isEnabled("sticker", false)) {
-    actions.add("sticker");
-    actions.add("sticker-search");
-  }
-  if (discovery.isEnabled("createForumTopic")) {
-    actions.add("topic-create");
-  }
-  if (discovery.isEnabled("editForumTopic")) {
-    actions.add("topic-edit");
-  }
-  const schema: ChannelMessageToolSchemaContribution[] = [];
-  if (discovery.buttonsEnabled) {
-    schema.push({
-      properties: {
-        buttons: createMessageToolButtonsSchema(),
-      },
-    });
-  }
-  if (discovery.pollEnabled) {
-    schema.push({
-      properties: createTelegramPollExtraToolSchemas(),
-      visibility: "all-configured",
-    });
-  }
-  return {
-    actions: Array.from(actions),
-    capabilities: discovery.buttonsEnabled ? ["interactive", "buttons"] : [],
-    schema,
-  };
-}
 
 function readTelegramSendParams(params: Record<string, unknown>) {
   const to = readStringParam(params, "to", { required: true });
@@ -177,8 +88,93 @@ function readTelegramMessageIdParam(params: Record<string, unknown>): number {
 }
 
 export const telegramMessageActions: ChannelMessageActionAdapter = {
-  describeMessageTool: describeTelegramMessageTool,
-  ...createLegacyMessageToolDiscoveryMethods(describeTelegramMessageTool),
+  listActions: ({ cfg }) => {
+    const accounts = listTokenSourcedAccounts(listEnabledTelegramAccounts(cfg));
+    if (accounts.length === 0) {
+      return [];
+    }
+    // Union of all accounts' action gates (any account enabling an action makes it available)
+    const gate = createUnionActionGate(accounts, (account) =>
+      createTelegramActionGate({
+        cfg,
+        accountId: account.accountId,
+      }),
+    );
+    const isEnabled = (key: keyof TelegramActionConfig, defaultValue = true) =>
+      gate(key, defaultValue);
+    const actions = new Set<ChannelMessageActionName>(["send"]);
+    const pollEnabledForAnyAccount = accounts.some((account) => {
+      const accountGate = createTelegramActionGate({
+        cfg,
+        accountId: account.accountId,
+      });
+      return resolveTelegramPollActionGateState(accountGate).enabled;
+    });
+    if (pollEnabledForAnyAccount) {
+      actions.add("poll");
+    }
+    if (isEnabled("reactions")) {
+      actions.add("react");
+    }
+    if (isEnabled("deleteMessage")) {
+      actions.add("delete");
+    }
+    if (isEnabled("editMessage")) {
+      actions.add("edit");
+    }
+    if (isEnabled("sticker", false)) {
+      actions.add("sticker");
+      actions.add("sticker-search");
+    }
+    if (isEnabled("createForumTopic")) {
+      actions.add("topic-create");
+    }
+    if (isEnabled("editForumTopic")) {
+      actions.add("topic-edit");
+    }
+    return Array.from(actions);
+  },
+  getCapabilities: ({ cfg }) => {
+    const accounts = listTokenSourcedAccounts(listEnabledTelegramAccounts(cfg));
+    if (accounts.length === 0) {
+      return [];
+    }
+    const buttonsEnabled = accounts.some((account) =>
+      isTelegramInlineButtonsEnabled({ cfg, accountId: account.accountId }),
+    );
+    return buttonsEnabled ? (["interactive", "buttons"] as const) : [];
+  },
+  getToolSchema: ({ cfg }) => {
+    const accounts = listTokenSourcedAccounts(listEnabledTelegramAccounts(cfg));
+    if (accounts.length === 0) {
+      return null;
+    }
+    const buttonsEnabled = accounts.some((account) =>
+      isTelegramInlineButtonsEnabled({ cfg, accountId: account.accountId }),
+    );
+    const pollEnabledForAnyAccount = accounts.some((account) => {
+      const accountGate = createTelegramActionGate({
+        cfg,
+        accountId: account.accountId,
+      });
+      return resolveTelegramPollActionGateState(accountGate).enabled;
+    });
+    const entries = [];
+    if (buttonsEnabled) {
+      entries.push({
+        properties: {
+          buttons: createMessageToolButtonsSchema(),
+        },
+      });
+    }
+    if (pollEnabledForAnyAccount) {
+      entries.push({
+        properties: createTelegramPollExtraToolSchemas(),
+        visibility: "all-configured" as const,
+      });
+    }
+    return entries.length > 0 ? entries : null;
+  },
   extractToolSend: ({ args }) => {
     return extractToolSend(args, "sendMessage");
   },

@@ -3,19 +3,18 @@ import {
   createScopedAccountConfigAccessors,
   createScopedChannelConfigBase,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { createChannelPluginBase } from "remoteclaw/plugin-sdk/core";
 import {
   formatDocsLink,
   hasConfiguredSecretInput,
   patchChannelConfigForAccount,
+  type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/setup";
 import {
   buildChannelConfigSchema,
   getChatChannelMeta,
   SlackConfigSchema,
   type ChannelPlugin,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/slack-core";
+} from "remoteclaw/plugin-sdk/slack";
 import { inspectSlackAccount } from "./account-inspect.js";
 import {
   listSlackAccountIds,
@@ -177,7 +176,7 @@ export function createSlackPluginBase(params: {
   | "config"
   | "setup"
 > {
-  return createChannelPluginBase({
+  return {
     id: SLACK_CHANNEL,
     meta: {
       ...getChatChannelMeta(SLACK_CHANNEL),
@@ -221,17 +220,5 @@ export function createSlackPluginBase(params: {
       ...slackConfigAccessors,
     },
     setup: params.setup,
-  }) as Pick<
-    ChannelPlugin<ResolvedSlackAccount>,
-    | "id"
-    | "meta"
-    | "setupWizard"
-    | "capabilities"
-    | "agentPrompt"
-    | "streaming"
-    | "reload"
-    | "configSchema"
-    | "config"
-    | "setup"
-  >;
+  };
 }

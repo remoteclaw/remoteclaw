@@ -1,14 +1,27 @@
-// Private helper surface for the bundled signal plugin.
-// Keep this list additive and scoped to symbols used under extensions/signal.
-
 export type { ChannelMessageActionAdapter } from "../channels/plugins/types.js";
+export type { RemoteClawConfig } from "../config/config.js";
+export type { SignalAccountConfig } from "../config/types.js";
 export type { ResolvedSignalAccount } from "../../extensions/signal/src/accounts.js";
-export * from "./channel-plugin-common.js";
+export type {
+  ChannelMessageActionContext,
+  ChannelPlugin,
+  RemoteClawPluginApi,
+  PluginRuntime,
+} from "./channel-plugin-common.js";
 export {
-  listSignalAccountIds,
-  resolveDefaultSignalAccountId,
-  resolveSignalAccount,
-} from "../../extensions/signal/src/accounts.js";
+  DEFAULT_ACCOUNT_ID,
+  PAIRING_APPROVED_MESSAGE,
+  applyAccountNameToChannelSection,
+  buildChannelConfigSchema,
+  deleteAccountFromConfigSection,
+  emptyPluginConfigSchema,
+  formatPairingApproveHint,
+  getChatChannelMeta,
+  migrateBaseNameToDefaultAccount,
+  normalizeAccountId,
+  setAccountEnabledInConfigSection,
+} from "./channel-plugin-common.js";
+
 export {
   looksLikeSignalTargetId,
   normalizeSignalMessagingTarget,
@@ -18,7 +31,6 @@ export {
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
 } from "../config/runtime-group-policy.js";
-export { signalOnboardingAdapter } from "../channels/plugins/onboarding/signal.js";
 export { SignalConfigSchema } from "../config/zod-schema.providers-core.js";
 
 export { normalizeE164 } from "../utils.js";
@@ -31,4 +43,14 @@ export {
   createDefaultChannelRuntimeState,
 } from "./status-helpers.js";
 
-export { mapAllowFromEntries, resolveOptionalConfigString } from "./channel-config-helpers.js";
+export {
+  listEnabledSignalAccounts,
+  listSignalAccountIds,
+  resolveDefaultSignalAccountId,
+} from "../../extensions/signal/src/accounts.js";
+export { resolveSignalReactionLevel } from "../../extensions/signal/src/reaction-level.js";
+export {
+  removeReactionSignal,
+  sendReactionSignal,
+} from "../../extensions/signal/src/send-reactions.js";
+export { sendMessageSignal } from "../../extensions/signal/src/send.js";

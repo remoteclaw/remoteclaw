@@ -1,30 +1,40 @@
-import { buildAccountScopedAllowlistConfigEditor } from "remoteclaw/plugin-sdk/allowlist-config-edit";
-import {
-  collectAllowlistProviderGroupPolicyWarnings,
-  collectOpenGroupPolicyRouteAllowlistWarnings,
-  createScopedDmSecurityResolver,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { parseTelegramTopicConversation } from "../../../src/acp/conversation-id.js";
+import { resolveExecApprovalCommandDisplay } from "../../../src/infra/exec-approval-command-display.js";
+import { buildExecApprovalPendingReplyPayload } from "../../../src/infra/exec-approval-reply.js";
 import {
   type OutboundSendDeps,
   resolveOutboundSendDep,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import { normalizeMessageChannel } from "remoteclaw/plugin-sdk/channel-runtime";
-import { buildOutboundBaseSessionKey, normalizeOutboundThreadId } from "remoteclaw/plugin-sdk/core";
-import { resolveExecApprovalCommandDisplay } from "remoteclaw/plugin-sdk/infra-runtime";
-import { buildExecApprovalPendingReplyPayload } from "remoteclaw/plugin-sdk/infra-runtime";
-import { resolveThreadSessionKeys, type RoutePeer } from "remoteclaw/plugin-sdk/routing";
-import { parseTelegramTopicConversation } from "../runtime-api.js";
+} from "../../../src/infra/outbound/send-deps.js";
 import {
+  buildAccountScopedAllowlistConfigEditor,
+  collectAllowlistProviderGroupPolicyWarnings,
+  collectOpenGroupPolicyRouteAllowlistWarnings,
+  createScopedDmSecurityResolver,
+} from "../../../src/plugin-sdk-internal/channel-config.js";
+import {
+  buildAgentSessionKey,
+  resolveThreadSessionKeys,
+  type ChannelPlugin,
+  type RoutePeer,
+} from "../../../src/plugin-sdk-internal/core.js";
+import {
+  buildChannelConfigSchema,
   buildTokenChannelStatusSummary,
   clearAccountEntryFields,
   DEFAULT_ACCOUNT_ID,
+  getChatChannelMeta,
+  listTelegramDirectoryGroupsFromConfig,
+  listTelegramDirectoryPeersFromConfig,
   PAIRING_APPROVED_MESSAGE,
   projectCredentialSnapshotFields,
   resolveConfiguredFromCredentialStatuses,
-  type ChannelPlugin,
+  resolveTelegramGroupRequireMention,
+  resolveTelegramGroupToolPolicy,
+  TelegramConfigSchema,
   type ChannelMessageActionAdapter,
   type RemoteClawConfig,
-} from "../runtime-api.js";
+} from "../../../src/plugin-sdk-internal/telegram.js";
+import { normalizeMessageChannel } from "../../../src/utils/message-channel.js";
 import {
   listTelegramAccountIds,
   resolveTelegramAccount,
@@ -34,38 +44,32 @@ import { buildTelegramExecApprovalButtons } from "./approval-buttons.js";
 import { auditTelegramGroupMembership, collectTelegramUnmentionedGroupIds } from "./audit.js";
 import { buildTelegramGroupPeerId } from "./bot/helpers.js";
 import {
-  listTelegramDirectoryGroupsFromConfig,
-  listTelegramDirectoryPeersFromConfig,
-} from "./directory-config.js";
-import {
   isTelegramExecApprovalClientEnabled,
   resolveTelegramExecApprovalTarget,
 } from "./exec-approvals.js";
-import {
-  resolveTelegramGroupRequireMention,
-  resolveTelegramGroupToolPolicy,
-} from "./group-policy.js";
 import { monitorTelegramProvider } from "./monitor.js";
 import { looksLikeTelegramTargetId, normalizeTelegramMessagingTarget } from "./normalize.js";
 import { sendTelegramPayloadMessages } from "./outbound-adapter.js";
 import { parseTelegramReplyToMessageId, parseTelegramThreadId } from "./outbound-params.js";
+import {
+  findTelegramTokenOwnerAccountId,
+  formatDuplicateTelegramTokenReason,
+  telegramConfigAccessors,
+  telegramConfigBase,
+} from "./plugin-shared.js";
 import { probeTelegram, type TelegramProbe } from "./probe.js";
 import { getTelegramRuntime } from "./runtime.js";
 import { sendTypingTelegram } from "./send.js";
 import { telegramSetupAdapter } from "./setup-core.js";
 import { telegramSetupWizard } from "./setup-surface.js";
-import {
-  createTelegramPluginBase,
-  findTelegramTokenOwnerAccountId,
-  formatDuplicateTelegramTokenReason,
-  telegramConfigAdapter,
-} from "./shared.js";
 import { collectTelegramStatusIssues } from "./status-issues.js";
 import { parseTelegramTarget } from "./targets.js";
 
 type TelegramSendFn = ReturnType<
   typeof getTelegramRuntime
 >["channel"]["telegram"]["sendMessageTelegram"];
+
+const meta = getChatChannelMeta("telegram");
 
 type TelegramSendOptions = NonNullable<Parameters<TelegramSendFn>[2]>;
 
@@ -184,13 +188,34 @@ function parseTelegramExplicitTarget(raw: string) {
   };
 }
 
+function normalizeOutboundThreadId(value?: string | number | null): string | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      return undefined;
+    }
+    return String(Math.trunc(value));
+  }
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
 function buildTelegramBaseSessionKey(params: {
   cfg: RemoteClawConfig;
   agentId: string;
   accountId?: string | null;
   peer: RoutePeer;
 }) {
-  return buildOutboundBaseSessionKey({ ...params, channel: "telegram" });
+  return buildAgentSessionKey({
+    agentId: params.agentId,
+    channel: "telegram",
+    accountId: params.accountId,
+    peer: params.peer,
+    dmScope: params.cfg.session?.dmScope ?? "main",
+    identityLinks: params.cfg.session?.identityLinks,
+  });
 }
 
 function resolveTelegramOutboundSessionRoute(params: {
@@ -255,8 +280,10 @@ function hasTelegramExecApprovalDmRoute(cfg: RemoteClawConfig): boolean {
 }
 
 const telegramMessageActions: ChannelMessageActionAdapter = {
-  describeMessageTool: (ctx) =>
-    getTelegramRuntime().channel.telegram.messageActions?.describeMessageTool?.(ctx) ?? null,
+  listActions: (ctx) =>
+    getTelegramRuntime().channel.telegram.messageActions?.listActions?.(ctx) ?? [],
+  getCapabilities: (ctx) =>
+    getTelegramRuntime().channel.telegram.messageActions?.getCapabilities?.(ctx) ?? [],
   extractToolSend: (ctx) =>
     getTelegramRuntime().channel.telegram.messageActions?.extractToolSend?.(ctx) ?? null,
   handleAction: async (ctx) => {
@@ -300,10 +327,12 @@ function readTelegramAllowlistConfig(account: ResolvedTelegramAccount) {
 }
 
 export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProbe> = {
-  ...createTelegramPluginBase({
-    setupWizard: telegramSetupWizard,
-    setup: telegramSetupAdapter,
-  }),
+  id: "telegram",
+  meta: {
+    ...meta,
+    quickstartAllowFrom: true,
+  },
+  setupWizard: telegramSetupWizard,
   pairing: {
     idLabel: "telegramUserId",
     normalizeAllowEntry: (entry) => entry.replace(/^(telegram|tg):/i, ""),
@@ -321,6 +350,49 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
       );
     },
   },
+  capabilities: {
+    chatTypes: ["direct", "group", "channel", "thread"],
+    reactions: true,
+    threads: true,
+    media: true,
+    polls: true,
+    nativeCommands: true,
+    blockStreaming: true,
+  },
+  reload: { configPrefixes: ["channels.telegram"] },
+  configSchema: buildChannelConfigSchema(TelegramConfigSchema),
+  config: {
+    ...telegramConfigBase,
+    isConfigured: (account, cfg) => {
+      if (!account.token?.trim()) {
+        return false;
+      }
+      return !findTelegramTokenOwnerAccountId({ cfg, accountId: account.accountId });
+    },
+    unconfiguredReason: (account, cfg) => {
+      if (!account.token?.trim()) {
+        return "not configured";
+      }
+      const ownerAccountId = findTelegramTokenOwnerAccountId({ cfg, accountId: account.accountId });
+      if (!ownerAccountId) {
+        return "not configured";
+      }
+      return formatDuplicateTelegramTokenReason({
+        accountId: account.accountId,
+        ownerAccountId,
+      });
+    },
+    describeAccount: (account, cfg) => ({
+      accountId: account.accountId,
+      name: account.name,
+      enabled: account.enabled,
+      configured:
+        Boolean(account.token?.trim()) &&
+        !findTelegramTokenOwnerAccountId({ cfg, accountId: account.accountId }),
+      tokenSource: account.tokenSource,
+    }),
+    ...telegramConfigAccessors,
+  },
   allowlist: {
     supportsScope: ({ scope }) => scope === "dm" || scope === "group" || scope === "all",
     readConfig: ({ cfg, accountId }) =>
@@ -328,22 +400,18 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
     applyConfigEdit: buildAccountScopedAllowlistConfigEditor({
       channelId: "telegram",
       normalize: ({ cfg, accountId, values }) =>
-        telegramConfigAdapter.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
+        telegramConfigAccessors.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
       resolvePaths: (scope) => ({
         readPaths: [[scope === "dm" ? "allowFrom" : "groupAllowFrom"]],
         writePath: [scope === "dm" ? "allowFrom" : "groupAllowFrom"],
       }),
     }),
   },
-  bindings: {
-    compileConfiguredBinding: ({ conversationId }) =>
+  acpBindings: {
+    normalizeConfiguredBindingTarget: ({ conversationId }) =>
       normalizeTelegramAcpConversationId(conversationId),
-    matchInboundConversation: ({ compiledBinding, conversationId, parentConversationId }) =>
-      matchTelegramAcpConversation({
-        bindingConversationId: compiledBinding.conversationId,
-        conversationId,
-        parentConversationId,
-      }),
+    matchConfiguredBinding: ({ bindingConversationId, conversationId, parentConversationId }) =>
+      matchTelegramAcpConversation({ bindingConversationId, conversationId, parentConversationId }),
   },
   security: {
     resolveDmPolicy: resolveTelegramDmPolicy,

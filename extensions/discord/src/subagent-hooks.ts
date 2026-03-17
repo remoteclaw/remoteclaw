@@ -1,10 +1,10 @@
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/discord";
+import type { RemoteClawPluginApi } from "../../../src/plugin-sdk-internal/core.js";
+import { resolveDiscordAccount } from "./accounts.js";
 import {
   autoBindSpawnedDiscordSubagent,
   listThreadBindingsBySessionKey,
-  resolveDiscordAccount,
   unbindThreadBindingsBySessionKey,
-} from "remoteclaw/plugin-sdk/discord";
+} from "./monitor/thread-bindings.js";
 
 function summarizeError(err: unknown): string {
   if (err instanceof Error) {

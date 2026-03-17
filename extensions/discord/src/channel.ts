@@ -1,19 +1,22 @@
 import { Separator, TextDisplay } from "@buape/carbon";
+import { resolveOutboundSendDep } from "../../../src/infra/outbound/send-deps.js";
 import {
   buildAccountScopedAllowlistConfigEditor,
-  resolveLegacyDmAllowlistConfigPaths,
-} from "remoteclaw/plugin-sdk/allowlist-config-edit";
-import {
   buildAccountScopedDmSecurityPolicy,
   collectOpenGroupPolicyConfiguredRouteWarnings,
   collectOpenProviderGroupPolicyWarnings,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
-import { normalizeMessageChannel } from "remoteclaw/plugin-sdk/channel-runtime";
+} from "../../../src/plugin-sdk-internal/channel-config.js";
+import {
+  buildAgentSessionKey,
+  resolveThreadSessionKeys,
+  type RoutePeer,
+} from "../../../src/plugin-sdk-internal/core.js";
 import {
   buildComputedAccountStatusSnapshot,
+  buildChannelConfigSchema,
   buildTokenChannelStatusSummary,
   DEFAULT_ACCOUNT_ID,
+  DiscordConfigSchema,
   getChatChannelMeta,
   listDiscordDirectoryGroupsFromConfig,
   listDiscordDirectoryPeersFromConfig,
@@ -25,12 +28,8 @@ import {
   type ChannelMessageActionAdapter,
   type ChannelPlugin,
   type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/discord";
-import {
-  buildAgentSessionKey,
-  resolveThreadSessionKeys,
-  type RoutePeer,
-} from "remoteclaw/plugin-sdk/routing";
+} from "../../../src/plugin-sdk-internal/discord.js";
+import { normalizeMessageChannel } from "../../../src/utils/message-channel.js";
 import {
   listDiscordAccountIds,
   resolveDiscordAccount,
@@ -46,12 +45,12 @@ import {
   normalizeDiscordMessagingTarget,
   normalizeDiscordOutboundTarget,
 } from "./normalize.js";
+import { discordConfigAccessors, discordConfigBase, discordSetupWizard } from "./plugin-shared.js";
 import type { DiscordProbe } from "./probe.js";
 import { resolveDiscordUserAllowlist } from "./resolve-users.js";
 import { getDiscordRuntime } from "./runtime.js";
 import { fetchChannelPermissionsDiscord } from "./send.js";
 import { discordSetupAdapter } from "./setup-core.js";
-import { createDiscordPluginBase } from "./shared.js";
 import { collectDiscordStatusIssues } from "./status-issues.js";
 import { parseDiscordTarget } from "./targets.js";
 import { DiscordUiContainer } from "./ui.js";
@@ -298,9 +297,11 @@ function resolveDiscordOutboundSessionRoute(params: {
 }
 
 export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
-  ...createDiscordPluginBase({
-    setup: discordSetupAdapter,
-  }),
+  id: "discord",
+  meta: {
+    ...meta,
+  },
+  setupWizard: discordSetupWizard,
   pairing: {
     idLabel: "discordUserId",
     normalizeAllowEntry: (entry) => entry.replace(/^(discord|user):/i, ""),
@@ -310,6 +311,31 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
         PAIRING_APPROVED_MESSAGE,
       );
     },
+  },
+  capabilities: {
+    chatTypes: ["direct", "channel", "thread"],
+    polls: true,
+    reactions: true,
+    threads: true,
+    media: true,
+    nativeCommands: true,
+  },
+  streaming: {
+    blockStreamingCoalesceDefaults: { minChars: 1500, idleMs: 1000 },
+  },
+  reload: { configPrefixes: ["channels.discord"] },
+  configSchema: buildChannelConfigSchema(DiscordConfigSchema),
+  config: {
+    ...discordConfigBase,
+    isConfigured: (account) => Boolean(account.token?.trim()),
+    describeAccount: (account) => ({
+      accountId: account.accountId,
+      name: account.name,
+      enabled: account.enabled,
+      configured: Boolean(account.token?.trim()),
+      tokenSource: account.tokenSource,
+    }),
+    ...discordConfigAccessors,
   },
   allowlist: {
     supportsScope: ({ scope }) => scope === "dm",
@@ -321,7 +347,14 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
       channelId: "discord",
       normalize: ({ cfg, accountId, values }) =>
         discordConfigAccessors.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
-      resolvePaths: resolveLegacyDmAllowlistConfigPaths,
+      resolvePaths: (scope) =>
+        scope === "dm"
+          ? {
+              readPaths: [["allowFrom"], ["dm", "allowFrom"]],
+              writePath: ["allowFrom"],
+              cleanupPaths: [["dm", "allowFrom"]],
+            }
+          : null,
     }),
   },
   security: {

@@ -13,10 +13,12 @@ function createRoute(
   overrides: Partial<PluginHttpRouteRegistration> & { path: string },
 ): PluginHttpRouteRegistration {
   return {
-    handler: async (_req, res) => {
+    handler: async (_req: IncomingMessage, res: ServerResponse) => {
       res.statusCode = 200;
       res.end("OK");
     },
+    auth: "plugin" as const,
+    match: "exact" as const,
     ...overrides,
   };
 }
@@ -77,6 +79,8 @@ describe("createGatewayPluginRequestHandler", () => {
             pluginId: "route",
             path: "/demo",
             handler: routeHandler,
+            auth: "plugin" as const,
+            match: "exact" as const,
             source: "route",
           },
         ],

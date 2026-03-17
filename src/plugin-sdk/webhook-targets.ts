@@ -53,11 +53,17 @@ function getPathTeardownMap<T>(targetsByPath: Map<string, T[]>): Map<string, () 
 export function registerWebhookTarget<T extends { path: string }>(
   targetsByPath: Map<string, T[]>,
   target: T,
+  opts?: RegisterWebhookTargetOptions<T>,
 ): RegisteredWebhookTarget<T> {
   const key = normalizeWebhookPath(target.path);
   const normalizedTarget = { ...target, path: key };
   const existing = targetsByPath.get(key) ?? [];
+  const isFirstForPath = existing.length === 0;
   targetsByPath.set(key, [...existing, normalizedTarget]);
+  let pathTeardown: (() => void) | void;
+  if (isFirstForPath && opts?.onFirstPathTarget) {
+    pathTeardown = opts.onFirstPathTarget({ path: key, target: normalizedTarget });
+  }
   const unregister = () => {
     const updated = (targetsByPath.get(key) ?? []).filter((entry) => entry !== normalizedTarget);
     if (updated.length > 0) {
@@ -65,6 +71,10 @@ export function registerWebhookTarget<T extends { path: string }>(
       return;
     }
     targetsByPath.delete(key);
+    if (pathTeardown) {
+      pathTeardown();
+    }
+    opts?.onLastPathTargetRemoved?.({ path: key });
   };
   return { target: normalizedTarget, unregister };
 }

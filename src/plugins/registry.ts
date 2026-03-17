@@ -20,7 +20,10 @@ import type {
   RemoteClawPluginCliRegistrar,
   RemoteClawPluginCommandDefinition,
   RemoteClawPluginHttpHandler,
+  RemoteClawPluginHttpRouteAuth,
   RemoteClawPluginHttpRouteHandler,
+  RemoteClawPluginHttpRouteMatch,
+  RemoteClawPluginHttpRouteParams,
   RemoteClawPluginHookOptions,
   ProviderPlugin,
   RemoteClawPluginService,
@@ -61,6 +64,8 @@ export type PluginHttpRouteRegistration = {
   pluginId?: string;
   path: string;
   handler: RemoteClawPluginHttpRouteHandler;
+  auth: RemoteClawPluginHttpRouteAuth;
+  match: RemoteClawPluginHttpRouteMatch;
   source?: string;
 };
 
@@ -131,6 +136,7 @@ export type PluginRecord = {
   services: string[];
   commands: string[];
   httpHandlers: number;
+  httpRoutes: number;
   hookCount: number;
   configSchema: boolean;
   configUiHints?: Record<string, PluginConfigUiHint>;
@@ -342,6 +348,15 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     }
     registry.gatewayHandlers[trimmed] = handler;
     record.gatewayMethods.push(trimmed);
+  };
+
+  const registerHttpHandler = (record: PluginRecord, handler: RemoteClawPluginHttpHandler) => {
+    record.httpHandlers += 1;
+    registry.httpHandlers.push({
+      pluginId: record.id,
+      handler,
+      source: record.source,
+    });
   };
 
   const describeHttpRouteOwner = (entry: PluginHttpRouteRegistration): string => {
@@ -606,7 +621,8 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       registerHook: (events, handler, opts) =>
         registerHook(record, events, handler, opts, params.config),
       registerHttpHandler: (handler) => registerHttpHandler(record, handler),
-      registerHttpRoute: (params) => registerHttpRoute(record, params),
+      registerHttpRoute: (params) =>
+        registerHttpRoute(record, { ...params, auth: "plugin", match: "exact" }),
       registerChannel: (registration) => registerChannel(record, registration),
       registerGatewayMethod: (method, handler) => registerGatewayMethod(record, method, handler),
       registerCli: (registrar, opts) => registerCli(record, registrar, opts),

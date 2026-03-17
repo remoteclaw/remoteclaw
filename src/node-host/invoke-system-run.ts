@@ -282,7 +282,7 @@ function hasMutableSymlinkPathComponentSync(targetPath: string): boolean {
   return false;
 }
 
-function hardenApprovedExecutionPaths(params: {
+export function hardenApprovedExecutionPaths(params: {
   approvedByAsk: boolean;
   argv: string[];
   shellCommand: string | null;

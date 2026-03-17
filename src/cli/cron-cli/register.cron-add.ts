@@ -83,6 +83,7 @@ export function registerCronAddCommand(cron: Command) {
       .option("--message <text>", "Agent message payload")
       .option("--thinking <level>", "Thinking level for agent jobs (off|minimal|low|medium|high)")
       .option("--model <model>", "Model override for agent jobs (provider/model or alias)")
+      .option("--light-context", "Use light context for agent jobs", false)
       .option("--timeout-seconds <n>", "Timeout seconds for agent jobs")
       .option("--announce", "Announce summary to a chat (subagent-style)", false)
       .option("--deliver", "Deprecated (use --announce). Announces a summary to a chat.")
@@ -189,6 +190,7 @@ export function registerCronAddCommand(cron: Command) {
                   : undefined,
               timeoutSeconds:
                 timeoutSeconds && Number.isFinite(timeoutSeconds) ? timeoutSeconds : undefined,
+              lightContext: opts.lightContext ? true : undefined,
             };
           })();
 

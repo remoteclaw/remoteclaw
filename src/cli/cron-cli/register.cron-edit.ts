@@ -51,6 +51,8 @@ export function registerCronEditCommand(cron: Command) {
       .option("--thinking <level>", "Thinking level for agent jobs")
       .option("--model <model>", "Model override for agent jobs")
       .option("--timeout-seconds <n>", "Timeout seconds for agent jobs")
+      .option("--light-context", "Use light context for agent jobs")
+      .option("--no-light-context", "Disable light context for agent jobs")
       .option("--announce", "Announce summary to a chat (subagent-style)")
       .option("--deliver", "Deprecated (use --announce). Announces a summary to a chat.")
       .option("--no-deliver", "Disable announce delivery")
@@ -62,6 +64,11 @@ export function registerCronEditCommand(cron: Command) {
       .option("--account <id>", "Channel account id for delivery (multi-account setups)")
       .option("--best-effort-deliver", "Do not fail job if delivery fails")
       .option("--no-best-effort-deliver", "Fail job when delivery fails")
+      .option("--failure-alert-after <n>", "Alert after N consecutive failures")
+      .option("--failure-alert-cooldown <duration>", "Cooldown between failure alerts (e.g. 1h)")
+      .option("--failure-alert-channel <channel>", "Channel for failure alerts")
+      .option("--failure-alert-to <dest>", "Destination for failure alerts")
+      .option("--no-failure-alert", "Disable failure alerts")
       .action(async (id, opts) => {
         try {
           if (opts.session === "main" && opts.message) {
@@ -212,11 +219,13 @@ export function registerCronEditCommand(cron: Command) {
           const hasDeliveryTarget = typeof opts.channel === "string" || typeof opts.to === "string";
           const hasDeliveryAccount = typeof opts.account === "string";
           const hasBestEffort = typeof opts.bestEffortDeliver === "boolean";
+          const hasLightContext = typeof opts.lightContext === "boolean";
           const hasAgentTurnPatch =
             typeof opts.message === "string" ||
             Boolean(model) ||
             Boolean(thinking) ||
             hasTimeoutSeconds ||
+            hasLightContext ||
             hasDeliveryModeFlag ||
             hasDeliveryTarget ||
             hasDeliveryAccount ||
@@ -235,6 +244,7 @@ export function registerCronEditCommand(cron: Command) {
             assignIf(payload, "model", model, Boolean(model));
             assignIf(payload, "thinking", thinking, Boolean(thinking));
             assignIf(payload, "timeoutSeconds", timeoutSeconds, hasTimeoutSeconds);
+            assignIf(payload, "lightContext", opts.lightContext, hasLightContext);
             patch.payload = payload;
           }
 
@@ -262,6 +272,40 @@ export function registerCronEditCommand(cron: Command) {
               delivery.bestEffort = opts.bestEffortDeliver;
             }
             patch.delivery = delivery;
+          }
+
+          if (opts.failureAlert === false) {
+            patch.failureAlert = false;
+          } else {
+            const hasFailureAlertSetting =
+              typeof opts.failureAlertAfter === "string" ||
+              typeof opts.failureAlertCooldown === "string" ||
+              typeof opts.failureAlertChannel === "string" ||
+              typeof opts.failureAlertTo === "string";
+            if (hasFailureAlertSetting) {
+              const fa: Record<string, unknown> = {};
+              if (typeof opts.failureAlertAfter === "string") {
+                const afterN = Number.parseInt(opts.failureAlertAfter, 10);
+                if (!Number.isFinite(afterN) || afterN < 1) {
+                  throw new Error("--failure-alert-after must be a positive integer");
+                }
+                fa.after = afterN;
+              }
+              if (typeof opts.failureAlertCooldown === "string") {
+                const cooldownMs = parseDurationMs(opts.failureAlertCooldown);
+                if (!cooldownMs) {
+                  throw new Error("Invalid --failure-alert-cooldown; use e.g. 30m, 1h");
+                }
+                fa.cooldownMs = cooldownMs;
+              }
+              if (typeof opts.failureAlertChannel === "string") {
+                fa.channel = opts.failureAlertChannel.trim() || undefined;
+              }
+              if (typeof opts.failureAlertTo === "string") {
+                fa.to = opts.failureAlertTo.trim() || undefined;
+              }
+              patch.failureAlert = fa;
+            }
           }
 
           const res = await callGatewayFromCli("cron.update", opts, {

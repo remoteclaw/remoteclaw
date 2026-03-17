@@ -1,4 +1,3 @@
-import { createPatchedAccountSetupAdapter } from "../../../src/channels/plugins/setup-helpers.js";
 import {
   applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
@@ -19,7 +18,9 @@ import type {
   ChannelSetupDmPolicy,
   ChannelSetupWizard,
   ChannelSetupWizardTextInput,
-} from "remoteclaw/plugin-sdk/setup";
+} from "openclaw/plugin-sdk/setup";
+import { formatCliCommand } from "../../../src/cli/command-format.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,

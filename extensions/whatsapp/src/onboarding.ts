@@ -1,6 +1,4 @@
 import path from "node:path";
-import { formatCliCommand } from "../../../src/cli/command-format.js";
-import type { DmPolicy } from "../../../src/config/types.js";
 import {
   DEFAULT_ACCOUNT_ID,
   formatCliCommand,
@@ -11,10 +9,12 @@ import {
   pathExists,
   splitSetupEntries,
   setSetupChannelEnabled,
-  type DmPolicy,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/setup";
-import type { ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
+  type OpenClawConfig,
+} from "openclaw/plugin-sdk/setup";
+import type { ChannelSetupWizard } from "openclaw/plugin-sdk/setup";
+import { formatCliCommand } from "../../../src/cli/command-format.js";
+import type { DmPolicy } from "../../../src/config/types.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import { listWhatsAppAccountIds, resolveWhatsAppAuthDir } from "./accounts.js";
 import { loginWeb } from "./login.js";
 import { whatsappSetupAdapter } from "./setup-core.js";

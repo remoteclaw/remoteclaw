@@ -1,4 +1,9 @@
 import {
+  hasConfiguredSecretInput,
+  normalizeSecretInputString,
+} from "openclaw/plugin-sdk/config-runtime";
+import type { DiscordAccountConfig } from "../../../src/config/types.js";
+import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
   type RemoteClawConfig,

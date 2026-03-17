@@ -1,13 +1,4 @@
-import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/account-id";
-import type { DiscordGuildEntry } from "remoteclaw/plugin-sdk/config-runtime";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { createEnvPatchedAccountSetupAdapter } from "remoteclaw/plugin-sdk/setup-adapter-runtime";
-import type {
-  ChannelSetupAdapter,
-  ChannelSetupDmPolicy,
-  ChannelSetupWizard,
-} from "remoteclaw/plugin-sdk/setup-runtime";
-import { formatDocsLink } from "remoteclaw/plugin-sdk/setup-tools";
+import type { DiscordGuildEntry } from "openclaw/plugin-sdk/config-runtime";
 import {
   applyAccountNameToChannelSection,
   createPatchedAccountSetupAdapter,
@@ -28,7 +19,10 @@ import {
   type ChannelSetupAdapter,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
-} from "remoteclaw/plugin-sdk/setup";
+} from "openclaw/plugin-sdk/setup";
+import { createPatchedAccountSetupAdapter } from "../../../src/channels/plugins/setup-helpers.js";
+import { createAllowlistSetupWizardProxy } from "../../../src/channels/plugins/setup-wizard-proxy.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import { listDiscordAccountIds, resolveDiscordAccount } from "./accounts.js";
 

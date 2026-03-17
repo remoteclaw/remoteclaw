@@ -3,8 +3,7 @@ import { withBundledPluginAllowlistCompat } from "../bundled-compat.js";
 import { loadPluginManifestRegistry } from "../manifest-registry.js";
 import { __testing as providerTesting } from "../providers.js";
 import { resolvePluginWebSearchProviders } from "../web-search-providers.js";
-import { providerContractCompatPluginIds, webSearchProviderContractRegistry } from "./registry.js";
-import { uniqueSortedStrings } from "./testkit.js";
+import { providerContractPluginIds, webSearchProviderContractRegistry } from "./registry.js";
 
 function resolveBundledManifestProviderPluginIds() {
   return uniqueSortedStrings(

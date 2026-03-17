@@ -1,8 +1,6 @@
-import {
-  detectBinary,
-  setSetupChannelEnabled,
-  type ChannelSetupWizard,
-} from "remoteclaw/plugin-sdk/setup";
+import { setSetupChannelEnabled } from "openclaw/plugin-sdk/setup";
+import type { ChannelSetupWizard } from "openclaw/plugin-sdk/setup";
+import { detectBinary } from "../../../src/commands/onboard-helpers.js";
 import { listIMessageAccountIds, resolveIMessageAccount } from "./accounts.js";
 import {
   DEFAULT_ACCOUNT_ID,

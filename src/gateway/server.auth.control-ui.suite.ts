@@ -161,7 +161,10 @@ export function registerControlUiAndPairingSuite(): void {
   });
 
   test("does not bypass pairing for control ui device identity when insecure auth is enabled", async () => {
-    testState.gatewayControlUi = { allowInsecureAuth: true };
+    testState.gatewayControlUi = {
+      allowInsecureAuth: true,
+      allowedOrigins: ["https://localhost"],
+    };
     testState.gatewayAuth = { mode: "token", token: "secret" };
     await writeTrustedProxyControlUiConfig({ allowInsecureAuth: true });
     const prevToken = process.env.OPENCLAW_GATEWAY_TOKEN;

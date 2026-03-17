@@ -2,7 +2,7 @@ import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderGroupPolicyWarnings,
   collectOpenGroupPolicyRouteAllowlistWarnings,
-} from "remoteclaw/plugin-sdk/compat";
+} from "remoteclaw/plugin-sdk/channel-policy";
 import { buildChannelConfigSchema } from "../../../src/channels/plugins/config-schema.js";
 import {
   resolveWhatsAppGroupRequireMention,

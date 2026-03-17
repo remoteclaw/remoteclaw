@@ -1,8 +1,5 @@
-import {
-  detectBinary,
-  setSetupChannelEnabled,
-  type ChannelSetupWizard,
-} from "remoteclaw/plugin-sdk/setup";
+import { setSetupChannelEnabled, type ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
+import { detectBinary } from "../../../src/plugins/setup-binary.js";
 import { listIMessageAccountIds, resolveIMessageAccount } from "./accounts.js";
 import {
   createIMessageCliPathTextInput,

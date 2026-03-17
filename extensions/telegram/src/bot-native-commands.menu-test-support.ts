@@ -1,4 +1,4 @@
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/telegram";
 import { expect, vi } from "vitest";
 import {

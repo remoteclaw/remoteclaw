@@ -7,7 +7,7 @@ import {
   createScopedPairingAccess,
   createReplyPrefixOptions,
   readJsonWebhookBodyOrReject,
-  registerWebhookTargetWithPluginRoute,
+  registerWebhookTarget,
   isDangerousNameMatchingEnabled,
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,

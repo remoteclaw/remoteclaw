@@ -560,7 +560,7 @@ describe("BlueBubbles webhook monitor", () => {
 
     it("rejects unauthorized requests before reading the body", async () => {
       const account = createMockAccount({ password: "secret-token" });
-      const config: OpenClawConfig = {};
+      const config: RemoteClawConfig = {};
       const core = createMockRuntime();
       setBlueBubblesRuntime(core);
 

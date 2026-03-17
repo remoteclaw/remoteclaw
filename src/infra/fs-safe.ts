@@ -4,6 +4,7 @@ import type { FileHandle } from "node:fs/promises";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { pipeline } from "node:stream/promises";
 import { sameFileIdentity } from "./file-identity.js";
 import { expandHomePrefix } from "./home-dir.js";
 import {
@@ -46,8 +47,50 @@ export type SafeLocalReadResult = {
 
 const SUPPORTS_NOFOLLOW = process.platform !== "win32" && "O_NOFOLLOW" in fsConstants;
 const OPEN_READ_FLAGS = fsConstants.O_RDONLY | (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
+const OPEN_WRITE_EXISTING_FLAGS =
+  fsConstants.O_WRONLY | (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
+const OPEN_WRITE_CREATE_FLAGS =
+  fsConstants.O_WRONLY |
+  fsConstants.O_CREAT |
+  fsConstants.O_EXCL |
+  (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
 
 const ensureTrailingSep = (value: string) => (value.endsWith(path.sep) ? value : value + path.sep);
+
+/**
+ * Inline path-alias escape guard. Upstream splits this into path-alias-guards →
+ * boundary-path → hardlink-guards; the fork stubs it as a canonical-path boundary
+ * check until the full upstream chain is cherry-picked.
+ */
+async function assertNoPathAliasEscape(params: {
+  absolutePath: string;
+  rootPath: string;
+  boundaryLabel: string;
+}): Promise<void> {
+  const rootReal = await fs.realpath(params.rootPath);
+  const rootWithSep = ensureTrailingSep(rootReal);
+  // Walk each existing ancestor to ensure no symlink redirects outside root.
+  let current = path.resolve(params.absolutePath);
+  while (current !== rootReal && isPathInside(rootWithSep, current)) {
+    try {
+      const lstat = await fs.lstat(current);
+      if (lstat.isSymbolicLink()) {
+        const target = await fs.realpath(current);
+        if (!isPathInside(rootWithSep, target)) {
+          throw new Error(`Path alias escapes ${params.boundaryLabel}`);
+        }
+      }
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+        // Path segment doesn't exist yet — walk up.
+        current = path.dirname(current);
+        continue;
+      }
+      throw err;
+    }
+    current = path.dirname(current);
+  }
+}
 
 async function expandRelativePathWithHome(relativePath: string): Promise<string> {
   let home = process.env.HOME || process.env.USERPROFILE || os.homedir();
@@ -59,7 +102,10 @@ async function expandRelativePathWithHome(relativePath: string): Promise<string>
   return expandHomePrefix(relativePath, { home });
 }
 
-async function openVerifiedLocalFile(filePath: string): Promise<SafeOpenResult> {
+async function openVerifiedLocalFile(
+  filePath: string,
+  _options?: { rejectHardlinks?: boolean },
+): Promise<SafeOpenResult> {
   // Reject directories before opening so we never surface EISDIR to callers (e.g. tool
   // results that get sent to messaging channels). See upstream openclaw#31186.
   try {

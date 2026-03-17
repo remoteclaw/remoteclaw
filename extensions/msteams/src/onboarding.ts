@@ -1,17 +1,18 @@
-import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
+import type { MSTeamsTeamConfig } from "remoteclaw/plugin-sdk/msteams";
 import {
+  DEFAULT_ACCOUNT_ID,
+  formatDocsLink,
   mergeAllowFromEntries,
   setTopLevelChannelAllowFrom,
   setTopLevelChannelDmPolicyWithAllowFrom,
   setTopLevelChannelGroupPolicy,
-  splitOnboardingEntries,
-} from "../../../src/channels/plugins/onboarding/helpers.js";
-import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { DmPolicy, MSTeamsTeamConfig } from "../../../src/config/types.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
-import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+  splitSetupEntries,
+  type ChannelSetupDmPolicy,
+  type ChannelSetupWizard,
+  type DmPolicy,
+  type RemoteClawConfig,
+  type WizardPrompter,
+} from "remoteclaw/plugin-sdk/setup";
 import {
   parseMSTeamsTeamEntry,
   resolveMSTeamsChannelAllowlist,
@@ -93,7 +94,7 @@ async function promptMSTeamsAllowFrom(params: {
       initialValue: existing[0] ? String(existing[0]) : undefined,
       validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
     });
-    const parts = splitOnboardingEntries(String(entry));
+    const parts = splitSetupEntries(String(entry));
     if (parts.length === 0) {
       await params.prompter.note("Enter at least one user.", "MS Teams allowlist");
       continue;
@@ -280,7 +281,7 @@ const msteamsGroupAccess: NonNullable<ChannelSetupWizard["groupAccess"]> = {
     setMSTeamsTeamsAllowlist(cfg, resolved as Array<{ teamKey: string; channelKey?: string }>),
 };
 
-const msteamsDmPolicy: ChannelOnboardingDmPolicy = {
+const msteamsDmPolicy: ChannelSetupDmPolicy = {
   label: "MS Teams",
   channel,
   policyKey: "channels.msteams.dmPolicy",

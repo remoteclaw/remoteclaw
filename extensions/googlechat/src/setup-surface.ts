@@ -1,15 +1,15 @@
 import {
+  addWildcardAllowFrom,
   applySetupAccountConfigPatch,
-  createNestedChannelParsedAllowFromPrompt,
-  createNestedChannelDmPolicy,
-  createStandardChannelSetupStatus,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
   mergeAllowFromEntries,
   migrateBaseNameToDefaultAccount,
+  setTopLevelChannelDmPolicyWithAllowFrom,
   splitSetupEntries,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
+  type DmPolicy,
   type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/setup";
 import {
@@ -25,45 +25,85 @@ const ENV_SERVICE_ACCOUNT_FILE = "GOOGLE_CHAT_SERVICE_ACCOUNT_FILE";
 const USE_ENV_FLAG = "__googlechatUseEnv";
 const AUTH_METHOD_FLAG = "__googlechatAuthMethod";
 
-const promptAllowFrom = createNestedChannelParsedAllowFromPrompt({
-  channel,
-  section: "dm",
-  defaultAccountId: DEFAULT_ACCOUNT_ID,
-  enabled: true,
-  message: "Google Chat allowFrom (users/<id> or raw email; avoid users/<email>)",
-  placeholder: "users/123456789, name@example.com",
-  parseEntries: (raw) => ({
-    entries: mergeAllowFromEntries(undefined, splitSetupEntries(raw)),
-  }),
-});
+function setGoogleChatDmPolicy(cfg: RemoteClawConfig, policy: DmPolicy) {
+  const allowFrom =
+    policy === "open" ? addWildcardAllowFrom(cfg.channels?.googlechat?.dm?.allowFrom) : undefined;
+  return {
+    ...cfg,
+    channels: {
+      ...cfg.channels,
+      googlechat: {
+        ...cfg.channels?.googlechat,
+        dm: {
+          ...cfg.channels?.googlechat?.dm,
+          policy,
+          ...(allowFrom ? { allowFrom } : {}),
+        },
+      },
+    },
+  };
+}
 
-const googlechatDmPolicy: ChannelSetupDmPolicy = createNestedChannelDmPolicy({
+async function promptAllowFrom(params: {
+  cfg: RemoteClawConfig;
+  prompter: Parameters<NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>>[0]["prompter"];
+}): Promise<RemoteClawConfig> {
+  const current = params.cfg.channels?.googlechat?.dm?.allowFrom ?? [];
+  const entry = await params.prompter.text({
+    message: "Google Chat allowFrom (users/<id> or raw email; avoid users/<email>)",
+    placeholder: "users/123456789, name@example.com",
+    initialValue: current[0] ? String(current[0]) : undefined,
+    validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
+  });
+  const parts = splitSetupEntries(String(entry));
+  const unique = mergeAllowFromEntries(undefined, parts);
+  return {
+    ...params.cfg,
+    channels: {
+      ...params.cfg.channels,
+      googlechat: {
+        ...params.cfg.channels?.googlechat,
+        enabled: true,
+        dm: {
+          ...params.cfg.channels?.googlechat?.dm,
+          policy: "allowlist",
+          allowFrom: unique,
+        },
+      },
+    },
+  };
+}
+
+const googlechatDmPolicy: ChannelSetupDmPolicy = {
   label: "Google Chat",
   channel,
-  section: "dm",
   policyKey: "channels.googlechat.dm.policy",
   allowFromKey: "channels.googlechat.dm.allowFrom",
   getCurrent: (cfg) => cfg.channels?.googlechat?.dm?.policy ?? "pairing",
+  setPolicy: (cfg, policy) => setGoogleChatDmPolicy(cfg, policy),
   promptAllowFrom,
-  enabled: true,
-});
+};
 
 export { googlechatSetupAdapter } from "./setup-core.js";
 
 export const googlechatSetupWizard: ChannelSetupWizard = {
   channel,
-  status: createStandardChannelSetupStatus({
-    channelLabel: "Google Chat",
+  status: {
     configuredLabel: "configured",
     unconfiguredLabel: "needs service account",
     configuredHint: "configured",
     unconfiguredHint: "needs auth",
-    includeStatusLine: true,
     resolveConfigured: ({ cfg }) =>
       listGoogleChatAccountIds(cfg).some(
         (accountId) => resolveGoogleChatAccount({ cfg, accountId }).credentialSource !== "none",
       ),
-  }),
+    resolveStatusLines: ({ cfg }) => {
+      const configured = listGoogleChatAccountIds(cfg).some(
+        (accountId) => resolveGoogleChatAccount({ cfg, accountId }).credentialSource !== "none",
+      );
+      return [`Google Chat: ${configured ? "configured" : "needs service account"}`];
+    },
+  },
   introNote: {
     title: "Google Chat setup",
     lines: [

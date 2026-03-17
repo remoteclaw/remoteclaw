@@ -1,7 +1,9 @@
 import {
+  applyAccountNameToChannelSection,
+  DEFAULT_ACCOUNT_ID,
+  migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   normalizeSecretInputString,
-  prepareScopedSetupConfig,
   type ChannelSetupAdapter,
 } from "remoteclaw/plugin-sdk/setup";
 import type { CoreConfig } from "./types.js";
@@ -43,12 +45,12 @@ export function buildMatrixConfigUpdate(
 export const matrixSetupAdapter: ChannelSetupAdapter = {
   resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
   applyAccountName: ({ cfg, accountId, name }) =>
-    prepareScopedSetupConfig({
+    applyAccountNameToChannelSection({
       cfg: cfg as CoreConfig,
       channelKey: channel,
       accountId,
       name,
-    }) as CoreConfig,
+    }),
   validateInput: ({ input }) => {
     if (input.useEnv) {
       return null;
@@ -73,13 +75,19 @@ export const matrixSetupAdapter: ChannelSetupAdapter = {
     return null;
   },
   applyAccountConfig: ({ cfg, accountId, input }) => {
-    const next = prepareScopedSetupConfig({
+    const namedConfig = applyAccountNameToChannelSection({
       cfg: cfg as CoreConfig,
       channelKey: channel,
       accountId,
       name: input.name,
-      migrateBaseName: true,
-    }) as CoreConfig;
+    });
+    const next =
+      accountId !== DEFAULT_ACCOUNT_ID
+        ? migrateBaseNameToDefaultAccount({
+            cfg: namedConfig,
+            channelKey: channel,
+          })
+        : namedConfig;
     if (input.useEnv) {
       return {
         ...next,

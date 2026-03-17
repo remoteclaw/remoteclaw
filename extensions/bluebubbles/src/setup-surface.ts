@@ -1,10 +1,11 @@
 import {
-  createAllowFromSection,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
-  promptParsedAllowFromForAccount,
+  mergeAllowFromEntries,
+  resolveSetupAccountId,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
+  type DmPolicy,
   type RemoteClawConfig,
   type WizardPrompter,
 } from "remoteclaw/plugin-sdk/setup";
@@ -54,13 +55,14 @@ async function promptBlueBubblesAllowFrom(params: {
   prompter: WizardPrompter;
   accountId?: string;
 }): Promise<RemoteClawConfig> {
-  return await promptParsedAllowFromForAccount({
-    cfg: params.cfg,
+  const accountId = resolveSetupAccountId({
     accountId: params.accountId,
     defaultAccountId: resolveDefaultBlueBubblesAccountId(params.cfg),
-    prompter: params.prompter,
-    noteTitle: "BlueBubbles allowlist",
-    noteLines: [
+  });
+  const resolved = resolveBlueBubblesAccount({ cfg: params.cfg, accountId });
+  const existing = resolved.config.allowFrom ?? [];
+  await params.prompter.note(
+    [
       "Allowlist BlueBubbles DMs by handle or chat target.",
       "Examples:",
       "- +15555550123",
@@ -69,23 +71,30 @@ async function promptBlueBubblesAllowFrom(params: {
       "- chat_guid:iMessage;-;+15555550123",
       "Multiple entries: comma- or newline-separated.",
       `Docs: ${formatDocsLink("/channels/bluebubbles", "bluebubbles")}`,
-    ],
+    ].join("\n"),
+    "BlueBubbles allowlist",
+  );
+  const entry = await params.prompter.text({
     message: "BlueBubbles allowFrom (handle or chat_id)",
     placeholder: "+15555550123, user@example.com, chat_id:123",
-    parseEntries: (raw) => {
-      const entries = parseBlueBubblesAllowFromInput(raw);
-      for (const entry of entries) {
-        if (!validateBlueBubblesAllowFromEntry(entry)) {
-          return { entries: [], error: `Invalid entry: ${entry}` };
+    initialValue: existing[0] ? String(existing[0]) : undefined,
+    validate: (value) => {
+      const raw = String(value ?? "").trim();
+      if (!raw) {
+        return "Required";
+      }
+      const parts = parseBlueBubblesAllowFromInput(raw);
+      for (const part of parts) {
+        if (!validateBlueBubblesAllowFromEntry(part)) {
+          return `Invalid entry: ${part}`;
         }
       }
-      return { entries };
+      return undefined;
     },
-    getExistingAllowFrom: ({ cfg, accountId }) =>
-      resolveBlueBubblesAccount({ cfg, accountId }).config.allowFrom ?? [],
-    applyAllowFrom: ({ cfg, accountId, allowFrom }) =>
-      setBlueBubblesAllowFrom(cfg, accountId, allowFrom),
   });
+  const parts = parseBlueBubblesAllowFromInput(String(entry));
+  const unique = mergeAllowFromEntries(undefined, parts);
+  return setBlueBubblesAllowFrom(params.cfg, accountId, unique);
 }
 
 function validateBlueBubblesServerUrlInput(value: unknown): string | undefined {
@@ -124,10 +133,7 @@ function resolveBlueBubblesServerUrl(cfg: RemoteClawConfig, accountId: string): 
   return resolveBlueBubblesAccount({ cfg, accountId }).config.serverUrl?.trim() || undefined;
 }
 
-function resolveBlueBubblesWebhookPath(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): string | undefined {
+function resolveBlueBubblesWebhookPath(cfg: RemoteClawConfig, accountId: string): string | undefined {
   return resolveBlueBubblesAccount({ cfg, accountId }).config.webhookPath?.trim() || undefined;
 }
 
@@ -266,7 +272,7 @@ export const blueBubblesSetupWizard: ChannelSetupWizard = {
     ],
   },
   dmPolicy,
-  allowFrom: createAllowFromSection({
+  allowFrom: {
     helpTitle: "BlueBubbles allowlist",
     helpLines: [
       "Allowlist BlueBubbles DMs by handle or chat target.",
@@ -284,9 +290,15 @@ export const blueBubblesSetupWizard: ChannelSetupWizard = {
       "Use a BlueBubbles handle or chat target like +15555550123 or chat_id:123.",
     parseInputs: parseBlueBubblesAllowFromInput,
     parseId: (raw) => validateBlueBubblesAllowFromEntry(raw),
+    resolveEntries: async ({ entries }) =>
+      entries.map((entry) => ({
+        input: entry,
+        resolved: Boolean(validateBlueBubblesAllowFromEntry(entry)),
+        id: validateBlueBubblesAllowFromEntry(entry),
+      })),
     apply: async ({ cfg, accountId, allowFrom }) =>
       setBlueBubblesAllowFrom(cfg, accountId, allowFrom),
-  }),
+  },
   disable: (cfg) => ({
     ...cfg,
     channels: {

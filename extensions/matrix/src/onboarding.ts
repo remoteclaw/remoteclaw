@@ -1,20 +1,20 @@
-import type { ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/onboarding-types.js";
 import {
   addWildcardAllowFrom,
   buildSingleChannelSecretPromptState,
+  DEFAULT_ACCOUNT_ID,
+  formatDocsLink,
+  formatResolvedUnresolvedNote,
+  hasConfiguredSecretInput,
   mergeAllowFromEntries,
   promptSingleChannelSecretInput,
   setTopLevelChannelGroupPolicy,
-} from "../../../src/channels/plugins/onboarding/helpers.js";
-import type { ChannelSetupWizard } from "../../../src/channels/plugins/setup-wizard.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { DmPolicy } from "../../../src/config/types.js";
-import type { SecretInput } from "../../../src/config/types.secrets.js";
-import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
-import { formatResolvedUnresolvedNote } from "../../../src/plugin-sdk/resolution-notes.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
-import type { WizardPrompter } from "../../../src/wizard/prompts.js";
+  type ChannelSetupDmPolicy,
+  type ChannelSetupWizard,
+  type DmPolicy,
+  type RemoteClawConfig,
+  type SecretInput,
+  type WizardPrompter,
+} from "remoteclaw/plugin-sdk/setup";
 import { listMatrixDirectoryGroupsLive } from "./directory-live.js";
 import { resolveMatrixAccount } from "./matrix/accounts.js";
 import { ensureMatrixSdkInstalled, isMatrixSdkAvailable } from "./matrix/deps.js";
@@ -242,7 +242,7 @@ const matrixGroupAccess: NonNullable<ChannelSetupWizard["groupAccess"]> = {
     setMatrixGroupRooms(cfg as CoreConfig, resolved as string[]),
 };
 
-const matrixDmPolicy: ChannelOnboardingDmPolicy = {
+const matrixDmPolicy: ChannelSetupDmPolicy = {
   label: "Matrix",
   channel,
   policyKey: "channels.matrix.dm.policy",

@@ -1,18 +1,17 @@
 import {
   buildSingleChannelSecretPromptState,
-  createTopLevelChannelAllowFromSetter,
-  createTopLevelChannelDmPolicy,
-  createTopLevelChannelGroupPolicySetter,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
   hasConfiguredSecretInput,
   mergeAllowFromEntries,
-  patchTopLevelChannelConfigSection,
-  promptParsedAllowFromForAccount,
   promptSingleChannelSecretInput,
+  setTopLevelChannelAllowFrom,
+  setTopLevelChannelDmPolicyWithAllowFrom,
+  setTopLevelChannelGroupPolicy,
   splitSetupEntries,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
+  type DmPolicy,
   type RemoteClawConfig,
   type SecretInput,
 } from "remoteclaw/plugin-sdk/setup";
@@ -22,13 +21,6 @@ import { feishuSetupAdapter } from "./setup-core.js";
 import type { FeishuConfig } from "./types.js";
 
 const channel = "feishu" as const;
-const setFeishuAllowFrom = createTopLevelChannelAllowFromSetter({
-  channel,
-});
-const setFeishuGroupPolicy = createTopLevelChannelGroupPolicySetter({
-  channel,
-  enabled: true,
-});
 
 function normalizeString(value: unknown): string | undefined {
   if (typeof value !== "string") {
@@ -38,10 +30,35 @@ function normalizeString(value: unknown): string | undefined {
   return trimmed || undefined;
 }
 
-function setFeishuGroupAllowFrom(
+function setFeishuDmPolicy(cfg: RemoteClawConfig, dmPolicy: DmPolicy): RemoteClawConfig {
+  return setTopLevelChannelDmPolicyWithAllowFrom({
+    cfg,
+    channel,
+    dmPolicy,
+  }) as RemoteClawConfig;
+}
+
+function setFeishuAllowFrom(cfg: RemoteClawConfig, allowFrom: string[]): RemoteClawConfig {
+  return setTopLevelChannelAllowFrom({
+    cfg,
+    channel,
+    allowFrom,
+  }) as RemoteClawConfig;
+}
+
+function setFeishuGroupPolicy(
   cfg: RemoteClawConfig,
-  groupAllowFrom: string[],
+  groupPolicy: "open" | "allowlist" | "disabled",
 ): RemoteClawConfig {
+  return setTopLevelChannelGroupPolicy({
+    cfg,
+    channel,
+    groupPolicy,
+    enabled: true,
+  }) as RemoteClawConfig;
+}
+
+function setFeishuGroupAllowFrom(cfg: RemoteClawConfig, groupAllowFrom: string[]): RemoteClawConfig {
   return {
     ...cfg,
     channels: {
@@ -100,25 +117,34 @@ async function promptFeishuAllowFrom(params: {
   cfg: RemoteClawConfig;
   prompter: Parameters<NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>>[0]["prompter"];
 }): Promise<RemoteClawConfig> {
-  return await promptParsedAllowFromForAccount({
-    cfg: params.cfg,
-    defaultAccountId: DEFAULT_ACCOUNT_ID,
-    prompter: params.prompter,
-    noteTitle: "Feishu allowlist",
-    noteLines: [
+  const existing = params.cfg.channels?.feishu?.allowFrom ?? [];
+  await params.prompter.note(
+    [
       "Allowlist Feishu DMs by open_id or user_id.",
       "You can find user open_id in Feishu admin console or via API.",
       "Examples:",
       "- ou_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       "- on_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    ],
-    message: "Feishu allowFrom (user open_ids)",
-    placeholder: "ou_xxxxx, ou_yyyyy",
-    parseEntries: (raw) => ({ entries: splitSetupEntries(raw) }),
-    getExistingAllowFrom: ({ cfg }) => cfg.channels?.feishu?.allowFrom ?? [],
-    mergeEntries: ({ existing, parsed }) => mergeAllowFromEntries(existing, parsed),
-    applyAllowFrom: ({ cfg, allowFrom }) => setFeishuAllowFrom(cfg, allowFrom),
-  });
+    ].join("\n"),
+    "Feishu allowlist",
+  );
+
+  while (true) {
+    const entry = await params.prompter.text({
+      message: "Feishu allowFrom (user open_ids)",
+      placeholder: "ou_xxxxx, ou_yyyyy",
+      initialValue: existing[0] ? String(existing[0]) : undefined,
+      validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
+    });
+    const parts = splitSetupEntries(String(entry));
+    if (parts.length === 0) {
+      await params.prompter.note("Enter at least one user.", "Feishu allowlist");
+      continue;
+    }
+
+    const unique = mergeAllowFromEntries(existing, parts);
+    return setFeishuAllowFrom(params.cfg, unique);
+  }
 }
 
 async function noteFeishuCredentialHelp(
@@ -151,14 +177,15 @@ async function promptFeishuAppId(params: {
   ).trim();
 }
 
-const feishuDmPolicy: ChannelSetupDmPolicy = createTopLevelChannelDmPolicy({
+const feishuDmPolicy: ChannelSetupDmPolicy = {
   label: "Feishu",
   channel,
   policyKey: "channels.feishu.dmPolicy",
   allowFromKey: "channels.feishu.allowFrom",
   getCurrent: (cfg) => (cfg.channels?.feishu as FeishuConfig | undefined)?.dmPolicy ?? "pairing",
+  setPolicy: (cfg, policy) => setFeishuDmPolicy(cfg as RemoteClawConfig, policy),
   promptAllowFrom: promptFeishuAllowFrom,
-});
+};
 
 export { feishuSetupAdapter } from "./setup-core.js";
 
@@ -236,12 +263,13 @@ export const feishuSetupWizard: ChannelSetupWizard = {
     });
 
     if (appSecretResult.action === "use-env") {
-      next = patchTopLevelChannelConfigSection({
-        cfg: next,
-        channel,
-        enabled: true,
-        patch: {},
-      }) as RemoteClawConfig;
+      next = {
+        ...next,
+        channels: {
+          ...next.channels,
+          feishu: { ...next.channels?.feishu, enabled: true },
+        },
+      };
     } else if (appSecretResult.action === "set") {
       appSecret = appSecretResult.value;
       appSecretProbeValue = appSecretResult.resolvedValue;
@@ -253,15 +281,18 @@ export const feishuSetupWizard: ChannelSetupWizard = {
     }
 
     if (appId && appSecret) {
-      next = patchTopLevelChannelConfigSection({
-        cfg: next,
-        channel,
-        enabled: true,
-        patch: {
-          appId,
-          appSecret,
+      next = {
+        ...next,
+        channels: {
+          ...next.channels,
+          feishu: {
+            ...next.channels?.feishu,
+            enabled: true,
+            appId,
+            appSecret,
+          },
         },
-      }) as RemoteClawConfig;
+      };
 
       try {
         const probe = await probeFeishu({
@@ -295,11 +326,16 @@ export const feishuSetupWizard: ChannelSetupWizard = {
       ],
       initialValue: currentMode,
     })) as "websocket" | "webhook";
-    next = patchTopLevelChannelConfigSection({
-      cfg: next,
-      channel,
-      patch: { connectionMode },
-    }) as RemoteClawConfig;
+    next = {
+      ...next,
+      channels: {
+        ...next.channels,
+        feishu: {
+          ...next.channels?.feishu,
+          connectionMode,
+        },
+      },
+    };
 
     if (connectionMode === "webhook") {
       const currentVerificationToken = (next.channels?.feishu as FeishuConfig | undefined)
@@ -321,11 +357,16 @@ export const feishuSetupWizard: ChannelSetupWizard = {
         preferredEnvVar: "FEISHU_VERIFICATION_TOKEN",
       });
       if (verificationTokenResult.action === "set") {
-        next = patchTopLevelChannelConfigSection({
-          cfg: next,
-          channel,
-          patch: { verificationToken: verificationTokenResult.value },
-        }) as RemoteClawConfig;
+        next = {
+          ...next,
+          channels: {
+            ...next.channels,
+            feishu: {
+              ...next.channels?.feishu,
+              verificationToken: verificationTokenResult.value,
+            },
+          },
+        };
       }
 
       const currentEncryptKey = (next.channels?.feishu as FeishuConfig | undefined)?.encryptKey;
@@ -346,11 +387,16 @@ export const feishuSetupWizard: ChannelSetupWizard = {
         preferredEnvVar: "FEISHU_ENCRYPT_KEY",
       });
       if (encryptKeyResult.action === "set") {
-        next = patchTopLevelChannelConfigSection({
-          cfg: next,
-          channel,
-          patch: { encryptKey: encryptKeyResult.value },
-        }) as RemoteClawConfig;
+        next = {
+          ...next,
+          channels: {
+            ...next.channels,
+            feishu: {
+              ...next.channels?.feishu,
+              encryptKey: encryptKeyResult.value,
+            },
+          },
+        };
       }
 
       const currentWebhookPath = (next.channels?.feishu as FeishuConfig | undefined)?.webhookPath;
@@ -361,11 +407,16 @@ export const feishuSetupWizard: ChannelSetupWizard = {
           validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
         }),
       ).trim();
-      next = patchTopLevelChannelConfigSection({
-        cfg: next,
-        channel,
-        patch: { webhookPath },
-      }) as RemoteClawConfig;
+      next = {
+        ...next,
+        channels: {
+          ...next.channels,
+          feishu: {
+            ...next.channels?.feishu,
+            webhookPath,
+          },
+        },
+      };
     }
 
     const currentDomain = (next.channels?.feishu as FeishuConfig | undefined)?.domain ?? "feishu";
@@ -377,11 +428,16 @@ export const feishuSetupWizard: ChannelSetupWizard = {
       ],
       initialValue: currentDomain,
     });
-    next = patchTopLevelChannelConfigSection({
-      cfg: next,
-      channel,
-      patch: { domain: domain as "feishu" | "lark" },
-    }) as RemoteClawConfig;
+    next = {
+      ...next,
+      channels: {
+        ...next.channels,
+        feishu: {
+          ...next.channels?.feishu,
+          domain: domain as "feishu" | "lark",
+        },
+      },
+    };
 
     const groupPolicy = (await prompter.select({
       message: "Group chat policy",
@@ -412,10 +468,11 @@ export const feishuSetupWizard: ChannelSetupWizard = {
     return { cfg: next };
   },
   dmPolicy: feishuDmPolicy,
-  disable: (cfg) =>
-    patchTopLevelChannelConfigSection({
-      cfg,
-      channel,
-      patch: { enabled: false },
-    }),
+  disable: (cfg) => ({
+    ...cfg,
+    channels: {
+      ...cfg.channels,
+      feishu: { ...cfg.channels?.feishu, enabled: false },
+    },
+  }),
 };

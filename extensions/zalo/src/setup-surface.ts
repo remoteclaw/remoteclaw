@@ -1,7 +1,5 @@
 import {
   buildSingleChannelSecretPromptState,
-  createTopLevelChannelDmPolicy,
-  createStandardChannelSetupStatus,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
   hasConfiguredSecretInput,
@@ -9,6 +7,7 @@ import {
   normalizeAccountId,
   promptSingleChannelSecretInput,
   runSingleChannelSecretStep,
+  setTopLevelChannelDmPolicyWithAllowFrom,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
   type RemoteClawConfig,
@@ -20,6 +19,17 @@ import { zaloSetupAdapter } from "./setup-core.js";
 const channel = "zalo" as const;
 
 type UpdateMode = "polling" | "webhook";
+
+function setZaloDmPolicy(
+  cfg: RemoteClawConfig,
+  dmPolicy: "pairing" | "allowlist" | "open" | "disabled",
+) {
+  return setTopLevelChannelDmPolicyWithAllowFrom({
+    cfg,
+    channel,
+    dmPolicy,
+  }) as RemoteClawConfig;
+}
 
 function setZaloUpdateMode(
   cfg: RemoteClawConfig,
@@ -173,12 +183,13 @@ async function promptZaloAllowFrom(params: {
   } as RemoteClawConfig;
 }
 
-const zaloDmPolicy: ChannelSetupDmPolicy = createTopLevelChannelDmPolicy({
+const zaloDmPolicy: ChannelSetupDmPolicy = {
   label: "Zalo",
   channel,
   policyKey: "channels.zalo.dmPolicy",
   allowFromKey: "channels.zalo.allowFrom",
   getCurrent: (cfg) => (cfg.channels?.zalo?.dmPolicy ?? "pairing") as "pairing",
+  setPolicy: (cfg, policy) => setZaloDmPolicy(cfg as RemoteClawConfig, policy),
   promptAllowFrom: async ({ cfg, prompter, accountId }) => {
     const id =
       accountId && normalizeAccountId(accountId)
@@ -190,21 +201,19 @@ const zaloDmPolicy: ChannelSetupDmPolicy = createTopLevelChannelDmPolicy({
       accountId: id,
     });
   },
-});
+};
 
 export { zaloSetupAdapter } from "./setup-core.js";
 
 export const zaloSetupWizard: ChannelSetupWizard = {
   channel,
-  status: createStandardChannelSetupStatus({
-    channelLabel: "Zalo",
+  status: {
     configuredLabel: "configured",
     unconfiguredLabel: "needs token",
     configuredHint: "recommended · configured",
     unconfiguredHint: "recommended · newcomer-friendly",
     configuredScore: 1,
     unconfiguredScore: 10,
-    includeStatusLine: true,
     resolveConfigured: ({ cfg }) =>
       listZaloAccountIds(cfg).some((accountId) => {
         const account = resolveZaloAccount({
@@ -218,7 +227,11 @@ export const zaloSetupWizard: ChannelSetupWizard = {
           Boolean(account.config.tokenFile?.trim())
         );
       }),
-  }),
+    resolveStatusLines: ({ cfg, configured }) => {
+      void cfg;
+      return [`Zalo: ${configured ? "configured" : "needs token"}`];
+    },
+  },
   credentials: [],
   finalize: async ({ cfg, accountId, forceAllowFrom, options, prompter }) => {
     let next = cfg;

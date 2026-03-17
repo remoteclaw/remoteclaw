@@ -1,5 +1,4 @@
 import {
-  createAllowFromSection,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
   mergeAllowFromEntries,
@@ -282,7 +281,7 @@ export const synologyChatSetupWizard: ChannelSetupWizard = {
         }),
     },
   ],
-  allowFrom: createAllowFromSection({
+  allowFrom: {
     helpTitle: "Synology Chat allowlist",
     helpLines: SYNOLOGY_ALLOW_FROM_HELP_LINES,
     message: "Allowed Synology Chat user ids",
@@ -290,6 +289,15 @@ export const synologyChatSetupWizard: ChannelSetupWizard = {
     invalidWithoutCredentialNote: "Synology Chat user ids must be numeric.",
     parseInputs: splitSetupEntries,
     parseId: parseSynologyUserId,
+    resolveEntries: async ({ entries }) =>
+      entries.map((entry) => {
+        const id = parseSynologyUserId(entry);
+        return {
+          input: entry,
+          resolved: Boolean(id),
+          id,
+        };
+      }),
     apply: async ({ cfg, accountId, allowFrom }) =>
       patchSynologyChatAccountConfig({
         cfg,
@@ -303,7 +311,7 @@ export const synologyChatSetupWizard: ChannelSetupWizard = {
           ),
         },
       }),
-  }),
+  },
   completionNote: {
     title: "Synology Chat access control",
     lines: [

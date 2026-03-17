@@ -1,9 +1,10 @@
-import { createPatchedAccountSetupAdapter } from "../../../src/channels/plugins/setup-helpers.js";
-import { createAllowlistSetupWizardProxy } from "../../../src/channels/plugins/setup-wizard-proxy.js";
-import type { DiscordGuildEntry } from "openclaw/plugin-sdk/config-runtime";
+import type { DiscordGuildEntry } from "../../../src/config/types.discord.js";
 import {
+  applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
-  createEnvPatchedAccountSetupAdapter,
+  formatDocsLink,
+  migrateBaseNameToDefaultAccount,
+  normalizeAccountId,
   noteChannelLookupFailure,
   noteChannelLookupSummary,
   parseMentionOrPrefixedId,
@@ -11,14 +12,12 @@ import {
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
   type OpenClawConfig,
-} from "openclaw/plugin-sdk/setup";
+} from "../../../src/plugin-sdk-internal/setup.js";
 import {
-  createAllowlistSetupWizardProxy,
   type ChannelSetupAdapter,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
-} from "openclaw/plugin-sdk/setup";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "../../../src/plugin-sdk-internal/setup.js";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import { listDiscordAccountIds, resolveDiscordAccount } from "./accounts.js";
 

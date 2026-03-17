@@ -1,10 +1,12 @@
 import { createPatchedAccountSetupAdapter } from "../../../src/channels/plugins/setup-helpers.js";
 import { createAllowlistSetupWizardProxy } from "../../../src/channels/plugins/setup-wizard-proxy.js";
 import {
-  createAllowlistSetupWizardProxy,
+  applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
-  createEnvPatchedAccountSetupAdapter,
+  formatDocsLink,
   hasConfiguredSecretInput,
+  migrateBaseNameToDefaultAccount,
+  normalizeAccountId,
   type OpenClawConfig,
   noteChannelLookupFailure,
   noteChannelLookupSummary,
@@ -13,14 +15,13 @@ import {
   setAccountGroupPolicyForChannel,
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-} from "openclaw/plugin-sdk/setup";
+} from "../../../src/plugin-sdk-internal/setup.js";
 import {
   type ChannelSetupAdapter,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
   type ChannelSetupWizardAllowFromEntry,
-} from "openclaw/plugin-sdk/setup";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "../../../src/plugin-sdk-internal/setup.js";
 import { inspectSlackAccount } from "./account-inspect.js";
 import { listSlackAccountIds, resolveSlackAccount, type ResolvedSlackAccount } from "./accounts.js";
 import {

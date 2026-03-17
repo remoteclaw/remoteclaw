@@ -4,14 +4,21 @@ import { installSignalCli } from "../../../src/plugins/signal-cli-install.js";
 import { listSignalAccountIds, resolveSignalAccount } from "./accounts.js";
 import {
   DEFAULT_ACCOUNT_ID,
-  type RemoteClawConfig,
+  detectBinary,
+  formatCliCommand,
+  formatDocsLink,
+  installSignalCli,
+  type OpenClawConfig,
+  parseSetupEntriesAllowingWildcard,
   promptParsedAllowFromForScopedChannel,
   setChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
   type WizardPrompter,
-} from "remoteclaw/plugin-sdk/setup";
-import type { ChannelSetupDmPolicy, ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "../../../src/plugin-sdk-internal/setup.js";
+import type {
+  ChannelSetupDmPolicy,
+  ChannelSetupWizard,
+} from "../../../src/plugin-sdk-internal/setup.js";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,

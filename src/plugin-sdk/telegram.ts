@@ -2,32 +2,18 @@ export type {
   ChannelAccountSnapshot,
   ChannelGatewayContext,
   ChannelMessageActionAdapter,
-  ChannelPlugin,
 } from "../channels/plugins/types.js";
-export type { RemoteClawConfig } from "../config/config.js";
+export type { OpenClawConfig } from "../config/config.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
-export type { RemoteClawPluginApi } from "../plugins/types.js";
+export type { OpenClawPluginApi } from "../plugins/types.js";
 export type {
   TelegramAccountConfig,
   TelegramActionConfig,
   TelegramNetworkConfig,
 } from "../config/types.js";
-export type {
-  ChannelConfiguredBindingProvider,
-  ChannelConfiguredBindingConversationRef,
-  ChannelConfiguredBindingMatch,
-} from "../channels/plugins/types.adapters.js";
-export type { InspectedTelegramAccount } from "../../extensions/telegram/api.js";
-export type { ResolvedTelegramAccount } from "../../extensions/telegram/api.js";
-export type { TelegramProbe } from "../../extensions/telegram/runtime-api.js";
-export type { TelegramButtonStyle, TelegramInlineButtons } from "../../extensions/telegram/api.js";
-export type { StickerMetadata } from "../../extensions/telegram/api.js";
 
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
-export { parseTelegramTopicConversation } from "../acp/conversation-id.js";
-export { clearAccountEntryFields } from "../channels/plugins/config-helpers.js";
-export { resolveTelegramPollVisibility } from "../poll-params.js";
 
 export {
   PAIRING_APPROVED_MESSAGE,

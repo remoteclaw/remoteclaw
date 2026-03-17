@@ -3,7 +3,7 @@ import {
   type ChannelSetupAdapter,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
-} from "remoteclaw/plugin-sdk/setup";
+} from "../../../src/plugin-sdk-internal/setup.js";
 
 const channel = "whatsapp" as const;
 

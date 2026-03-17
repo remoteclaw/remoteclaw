@@ -8,7 +8,13 @@ import type {
   RemoteClawConfig,
   DiscordAccountConfig,
   DiscordActionConfig,
-} from "../../../src/plugin-sdk-internal/discord.js";
+} from "openclaw/plugin-sdk/discord";
+import {
+  createAccountActionGate,
+  createAccountListHelpers,
+  normalizeAccountId,
+  resolveAccountEntry,
+} from "../../../src/plugin-sdk-internal/accounts.js";
 import { resolveDiscordToken } from "./token.js";
 
 export type ResolvedDiscordAccount = {

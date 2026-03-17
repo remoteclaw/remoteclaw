@@ -10,17 +10,14 @@ import {
   promptParsedAllowFromForScopedChannel,
   setChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-  type RemoteClawConfig,
+  type OpenClawConfig,
   type WizardPrompter,
-} from "remoteclaw/plugin-sdk/setup";
+} from "../../../src/plugin-sdk-internal/setup.js";
 import type {
   ChannelSetupAdapter,
   ChannelSetupDmPolicy,
   ChannelSetupWizard,
-  ChannelSetupWizardTextInput,
-} from "openclaw/plugin-sdk/setup";
-import { formatCliCommand } from "../../../src/cli/command-format.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "../../../src/plugin-sdk-internal/setup.js";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,

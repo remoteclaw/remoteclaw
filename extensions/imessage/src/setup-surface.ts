@@ -3,15 +3,19 @@ import { detectBinary } from "../../../src/plugins/setup-binary.js";
 import { listIMessageAccountIds, resolveIMessageAccount } from "./accounts.js";
 import {
   DEFAULT_ACCOUNT_ID,
-  type RemoteClawConfig,
+  detectBinary,
+  formatDocsLink,
+  type OpenClawConfig,
   parseSetupEntriesAllowingWildcard,
   promptParsedAllowFromForScopedChannel,
   setChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
   type WizardPrompter,
-} from "remoteclaw/plugin-sdk/setup";
-import type { ChannelSetupDmPolicy, ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "../../../src/plugin-sdk-internal/setup.js";
+import type {
+  ChannelSetupDmPolicy,
+  ChannelSetupWizard,
+} from "../../../src/plugin-sdk-internal/setup.js";
 import {
   listIMessageAccountIds,
   resolveDefaultIMessageAccountId,

@@ -8,16 +8,14 @@ import {
   promptParsedAllowFromForScopedChannel,
   setChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-  type RemoteClawConfig,
+  type OpenClawConfig,
   type WizardPrompter,
-} from "openclaw/plugin-sdk/setup";
+} from "../../../src/plugin-sdk-internal/setup.js";
 import type {
   ChannelSetupAdapter,
   ChannelSetupDmPolicy,
   ChannelSetupWizard,
-  ChannelSetupWizardTextInput,
-} from "openclaw/plugin-sdk/setup";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "../../../src/plugin-sdk-internal/setup.js";
 import {
   listIMessageAccountIds,
   resolveDefaultIMessageAccountId,

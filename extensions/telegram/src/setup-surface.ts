@@ -2,9 +2,18 @@ import { type ChannelOnboardingDmPolicy } from "../../../src/channels/plugins/on
 import {
   DEFAULT_ACCOUNT_ID,
   hasConfiguredSecretInput,
+  type OpenClawConfig,
+  patchChannelConfigForAccount,
+  setChannelDmPolicyWithAllowFrom,
+  setSetupChannelEnabled,
+  splitSetupEntries,
 } from "../../../src/plugin-sdk-internal/setup.js";
-import type { ChannelSetupWizard } from "../../../src/plugin-sdk-internal/setup.js";
-import { resolveTelegramAccount } from "./accounts.js";
+import type {
+  ChannelSetupDmPolicy,
+  ChannelSetupWizard,
+} from "../../../src/plugin-sdk-internal/setup.js";
+import { inspectTelegramAccount } from "./account-inspect.js";
+import { listTelegramAccountIds, resolveTelegramAccount } from "./accounts.js";
 import {
   createTelegramSetupWizardBase,
   parseTelegramAllowFromId,

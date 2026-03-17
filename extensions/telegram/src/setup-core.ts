@@ -1,5 +1,5 @@
 import {
-  createEnvPatchedAccountSetupAdapter,
+  applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
   formatCliCommand,
   formatDocsLink,
@@ -7,15 +7,14 @@ import {
   normalizeAccountId,
   patchChannelConfigForAccount,
   promptResolvedAllowFrom,
-  setSetupChannelEnabled,
-  setChannelDmPolicyWithAllowFrom,
   splitSetupEntries,
-  type RemoteClawConfig,
+  type OpenClawConfig,
   type WizardPrompter,
-} from "openclaw/plugin-sdk/setup";
-import type { ChannelSetupAdapter, ChannelSetupDmPolicy } from "openclaw/plugin-sdk/setup";
-import { formatCliCommand } from "../../../src/cli/command-format.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "../../../src/plugin-sdk-internal/setup.js";
+import type {
+  ChannelSetupAdapter,
+  ChannelSetupDmPolicy,
+} from "../../../src/plugin-sdk-internal/setup.js";
 import { resolveDefaultTelegramAccountId, resolveTelegramAccount } from "./accounts.js";
 import { fetchTelegramChatId } from "./api-fetch.js";
 
@@ -81,7 +80,7 @@ export async function resolveTelegramAllowFromEntries(params: {
 }
 
 export async function promptTelegramAllowFromForAccount(params: {
-  cfg: RemoteClawConfig;
+  cfg: OpenClawConfig;
   prompter: WizardPrompter;
   accountId?: string;
 }) {
@@ -94,8 +93,6 @@ export async function promptTelegramAllowFromForAccount(params: {
       "Telegram",
     );
   }
-  const { promptResolvedAllowFrom } =
-    await import("../../../src/channels/plugins/setup-wizard-helpers.runtime.js");
   const unique = await promptResolvedAllowFrom({
     prompter: params.prompter,
     existing: resolved.config.allowFrom ?? [],

@@ -1,21 +1,89 @@
-import { setSetupChannelEnabled, type ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
-import { detectBinary } from "../../../src/plugins/setup-binary.js";
-import { listIMessageAccountIds, resolveIMessageAccount } from "./accounts.js";
 import {
-  createIMessageCliPathTextInput,
-  imessageCompletionNote,
-  imessageDmPolicy,
-  imessageSetupAdapter,
-  imessageSetupStatusBase,
-  parseIMessageAllowFromEntries,
-} from "./setup-core.js";
+  DEFAULT_ACCOUNT_ID,
+  type RemoteClawConfig,
+  parseSetupEntriesAllowingWildcard,
+  promptParsedAllowFromForScopedChannel,
+  setChannelDmPolicyWithAllowFrom,
+  setSetupChannelEnabled,
+  type WizardPrompter,
+} from "remoteclaw/plugin-sdk/setup";
+import type { ChannelSetupDmPolicy, ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
+import { detectBinary } from "../../../src/commands/onboard-helpers.js";
+import { formatDocsLink } from "../../../src/terminal/links.js";
+import {
+  listIMessageAccountIds,
+  resolveDefaultIMessageAccountId,
+  resolveIMessageAccount,
+} from "./accounts.js";
+import { imessageSetupAdapter, parseIMessageAllowFromEntries } from "./setup-core.js";
 
 const channel = "imessage" as const;
+
+async function promptIMessageAllowFrom(params: {
+  cfg: RemoteClawConfig;
+  prompter: WizardPrompter;
+  accountId?: string;
+}): Promise<RemoteClawConfig> {
+  return promptParsedAllowFromForScopedChannel({
+    cfg: params.cfg,
+    channel,
+    accountId: params.accountId,
+    defaultAccountId: resolveDefaultIMessageAccountId(params.cfg),
+    prompter: params.prompter,
+    noteTitle: "iMessage allowlist",
+    noteLines: [
+      "Allowlist iMessage DMs by handle or chat target.",
+      "Examples:",
+      "- +15555550123",
+      "- user@example.com",
+      "- chat_id:123",
+      "- chat_guid:... or chat_identifier:...",
+      "Multiple entries: comma-separated.",
+      `Docs: ${formatDocsLink("/imessage", "imessage")}`,
+    ],
+    message: "iMessage allowFrom (handle or chat_id)",
+    placeholder: "+15555550123, user@example.com, chat_id:123",
+    parseEntries: parseIMessageAllowFromEntries,
+    getExistingAllowFrom: ({ cfg, accountId }) =>
+      resolveIMessageAccount({ cfg, accountId }).config.allowFrom ?? [],
+  });
+}
+
+const imessageDmPolicy: ChannelSetupDmPolicy = {
+  label: "iMessage",
+  channel,
+  policyKey: "channels.imessage.dmPolicy",
+  allowFromKey: "channels.imessage.allowFrom",
+  getCurrent: (cfg) => cfg.channels?.imessage?.dmPolicy ?? "pairing",
+  setPolicy: (cfg, policy) =>
+    setChannelDmPolicyWithAllowFrom({
+      cfg,
+      channel,
+      dmPolicy: policy,
+    }),
+  promptAllowFrom: promptIMessageAllowFrom,
+};
 
 export const imessageSetupWizard: ChannelSetupWizard = {
   channel,
   status: {
-    ...imessageSetupStatusBase,
+    configuredLabel: "configured",
+    unconfiguredLabel: "needs setup",
+    configuredHint: "imsg found",
+    unconfiguredHint: "imsg missing",
+    configuredScore: 1,
+    unconfiguredScore: 0,
+    resolveConfigured: ({ cfg }) =>
+      listIMessageAccountIds(cfg).some((accountId) => {
+        const account = resolveIMessageAccount({ cfg, accountId });
+        return Boolean(
+          account.config.cliPath ||
+          account.config.dbPath ||
+          account.config.allowFrom ||
+          account.config.service ||
+          account.config.region,
+        );
+      }),
     resolveStatusLines: async ({ cfg, configured }) => {
       const cliPath = cfg.channels?.imessage?.cliPath ?? "imsg";
       const cliDetected = await detectBinary(cliPath);
@@ -35,11 +103,30 @@ export const imessageSetupWizard: ChannelSetupWizard = {
   },
   credentials: [],
   textInputs: [
-    createIMessageCliPathTextInput(async ({ currentValue }) => {
-      return !(await detectBinary(currentValue ?? "imsg"));
-    }),
+    {
+      inputKey: "cliPath",
+      message: "imsg CLI path",
+      initialValue: ({ cfg, accountId }) =>
+        resolveIMessageAccount({ cfg, accountId }).config.cliPath ?? "imsg",
+      currentValue: ({ cfg, accountId }) =>
+        resolveIMessageAccount({ cfg, accountId }).config.cliPath ?? "imsg",
+      shouldPrompt: async ({ currentValue }) => !(await detectBinary(currentValue ?? "imsg")),
+      confirmCurrentValue: false,
+      applyCurrentValue: true,
+      helpTitle: "iMessage",
+      helpLines: ["imsg CLI path required to enable iMessage."],
+    },
   ],
-  completionNote: imessageCompletionNote,
+  completionNote: {
+    title: "iMessage next steps",
+    lines: [
+      "This is still a work in progress.",
+      "Ensure RemoteClaw has Full Disk Access to Messages DB.",
+      "Grant Automation permission for Messages when prompted.",
+      "List chats with: imsg chats --limit 20",
+      `Docs: ${formatDocsLink("/imessage", "imessage")}`,
+    ],
+  },
   dmPolicy: imessageDmPolicy,
   disable: (cfg) => setSetupChannelEnabled(cfg, channel, false),
 };

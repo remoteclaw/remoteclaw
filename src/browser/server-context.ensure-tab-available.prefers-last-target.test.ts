@@ -99,7 +99,9 @@ describe("browser server-context ensureTabAvailable", () => {
     expect(second.targetId).toBe("A");
   });
 
-  it("rejects invalid targetId even when only one extension tab remains", async () => {
+  it("recovers from invalid targetId when only one extension tab remains", async () => {
+    // When a single extension tab is available and an agent passes a stale/foreign
+    // targetId, the recovery path uses that sole tab instead of failing hard.
     const responses = [
       [{ id: "A", type: "page", url: "https://a.example", webSocketDebuggerUrl: "ws://x/a" }],
       [{ id: "A", type: "page", url: "https://a.example", webSocketDebuggerUrl: "ws://x/a" }],
@@ -109,7 +111,8 @@ describe("browser server-context ensureTabAvailable", () => {
 
     const ctx = createBrowserRouteContext({ getState: () => state });
     const chrome = ctx.forProfile("chrome");
-    await expect(chrome.ensureTabAvailable("NOT_A_TAB")).rejects.toThrow(/tab not found/i);
+    const tab = await chrome.ensureTabAvailable("NOT_A_TAB");
+    expect(tab.targetId).toBe("A");
   });
 
   it("returns a descriptive message when no extension tabs are attached", async () => {

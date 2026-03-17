@@ -1,8 +1,7 @@
+import { formatCliCommand } from "../../../src/cli/command-format.js";
 import {
   applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
-  formatCliCommand,
-  formatDocsLink,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   patchChannelConfigForAccount,
@@ -12,19 +11,10 @@ import {
   splitSetupEntries,
   type RemoteClawConfig,
   type WizardPrompter,
-} from "../../../src/plugin-sdk-internal/setup.js";
-import type {
-  ChannelSetupAdapter,
-  ChannelSetupDmPolicy,
-  ChannelSetupWizard,
-} from "../../../src/plugin-sdk-internal/setup.js";
+} from "remoteclaw/plugin-sdk/setup";
+import type { ChannelSetupAdapter, ChannelSetupDmPolicy } from "remoteclaw/plugin-sdk/setup";
 import { formatDocsLink } from "../../../src/terminal/links.js";
-import { inspectTelegramAccount } from "./account-inspect.js";
-import {
-  listTelegramAccountIds,
-  resolveDefaultTelegramAccountId,
-  resolveTelegramAccount,
-} from "./accounts.js";
+import { resolveDefaultTelegramAccountId, resolveTelegramAccount } from "./accounts.js";
 import { fetchTelegramChatId } from "./api-fetch.js";
 
 const channel = "telegram" as const;
@@ -133,7 +123,7 @@ export async function promptTelegramAllowFromForAccount(params: {
 }
 
 type TelegramSetupWizardHandlers = {
-  inspectToken: (params: { cfg: OpenClawConfig; accountId: string }) => {
+  inspectToken: (params: { cfg: RemoteClawConfig; accountId: string }) => {
     accountConfigured: boolean;
     hasConfiguredValue: boolean;
     resolvedValue?: string;

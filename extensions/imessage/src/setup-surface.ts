@@ -1,7 +1,6 @@
+import { detectBinary } from "../../../src/commands/onboard-helpers.js";
 import {
   DEFAULT_ACCOUNT_ID,
-  detectBinary,
-  formatDocsLink,
   type RemoteClawConfig,
   parseSetupEntriesAllowingWildcard,
   promptParsedAllowFromForScopedChannel,
@@ -10,6 +9,7 @@ import {
   type WizardPrompter,
 } from "remoteclaw/plugin-sdk/setup";
 import type { ChannelSetupDmPolicy, ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   listIMessageAccountIds,
   resolveDefaultIMessageAccountId,

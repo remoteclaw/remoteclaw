@@ -1,6 +1,5 @@
 import {
   DEFAULT_ACCOUNT_ID,
-  formatDocsLink,
   noteChannelLookupFailure,
   noteChannelLookupSummary,
   type RemoteClawConfig,
@@ -13,6 +12,7 @@ import {
   type WizardPrompter,
 } from "remoteclaw/plugin-sdk/setup";
 import { type ChannelSetupDmPolicy, type ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import {
   listDiscordAccountIds,

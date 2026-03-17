@@ -1,12 +1,12 @@
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import type { SlackAccountConfig } from "../../../src/config/types.slack.js";
 import {
   createAccountListHelpers,
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
   normalizeChatType,
   resolveAccountEntry,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/account-resolution";
-import type { SlackAccountConfig } from "remoteclaw/plugin-sdk/slack";
+} from "../../../src/plugin-sdk-internal/accounts.js";
 import type { SlackAccountSurfaceFields } from "./account-surface-fields.js";
 import { resolveSlackAppToken, resolveSlackBotToken, resolveSlackUserToken } from "./token.js";
 

@@ -1,9 +1,13 @@
-import type { DiscordAccountConfig, OpenClawConfig } from "openclaw/plugin-sdk/discord-core";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import type { DiscordAccountConfig } from "../../../src/config/types.js";
 import {
   hasConfiguredSecretInput,
   normalizeSecretInputString,
-} from "openclaw/plugin-sdk/config-runtime";
+} from "remoteclaw/plugin-sdk/config-runtime";
+import {
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+  type RemoteClawConfig,
+} from "../../../src/plugin-sdk-internal/accounts.js";
 import {
   mergeDiscordAccountConfig,
   resolveDefaultDiscordAccountId,

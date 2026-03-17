@@ -2,7 +2,6 @@ import type { DiscordGuildEntry } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   applyAccountNameToChannelSection,
   DEFAULT_ACCOUNT_ID,
-  formatDocsLink,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   noteChannelLookupFailure,
@@ -18,6 +17,7 @@ import {
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
 } from "remoteclaw/plugin-sdk/setup";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import { listDiscordAccountIds, resolveDiscordAccount } from "./accounts.js";
 

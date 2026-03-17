@@ -1,17 +1,16 @@
+import { formatCliCommand } from "../../../src/cli/command-format.js";
+import { detectBinary } from "../../../src/commands/onboard-helpers.js";
+import { installSignalCli } from "../../../src/commands/signal-install.js";
 import {
   DEFAULT_ACCOUNT_ID,
-  detectBinary,
-  formatCliCommand,
-  formatDocsLink,
-  installSignalCli,
   type RemoteClawConfig,
-  parseSetupEntriesAllowingWildcard,
   promptParsedAllowFromForScopedChannel,
   setChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
   type WizardPrompter,
 } from "remoteclaw/plugin-sdk/setup";
 import type { ChannelSetupDmPolicy, ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
+import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,

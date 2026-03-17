@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
+import * as subsystemModule from "../../../src/logging/subsystem.js";
 import { withEnv } from "../../../src/test-utils/env.js";
 import {
   listTelegramAccountIds,
@@ -29,15 +30,16 @@ function resolveAccountWithEnv(
   return withEnv(env, () => resolveTelegramAccount({ cfg, ...(accountId ? { accountId } : {}) }));
 }
 
-vi.mock("../../../src/logging/subsystem.js", () => ({
-  createSubsystemLogger: () => {
+beforeEach(() => {
+  vi.restoreAllMocks();
+  vi.spyOn(subsystemModule, "createSubsystemLogger").mockImplementation(() => {
     const logger = {
       warn: warnMock,
       child: () => logger,
     };
-    return logger;
-  },
-}));
+    return logger as ReturnType<typeof subsystemModule.createSubsystemLogger>;
+  });
+});
 
 describe("resolveTelegramAccount", () => {
   afterEach(() => {
@@ -103,7 +105,7 @@ describe("resolveTelegramAccount", () => {
   });
 
   it("formats debug logs with inspect-style output when debug env is enabled", () => {
-    withEnv({ TELEGRAM_BOT_TOKEN: "", REMOTECLAW_DEBUG_TELEGRAM_ACCOUNTS: "1" }, () => {
+    withEnv({ TELEGRAM_BOT_TOKEN: "", OPENCLAW_DEBUG_TELEGRAM_ACCOUNTS: "1" }, () => {
       const cfg: RemoteClawConfig = {
         channels: {
           telegram: { accounts: { work: { botToken: "tok-work" } } },

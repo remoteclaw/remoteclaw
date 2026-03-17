@@ -1,10 +1,10 @@
+import type { IMessageAccountConfig } from "remoteclaw/plugin-sdk/imessage";
 import {
   type RemoteClawConfig,
   createAccountListHelpers,
   normalizeAccountId,
   resolveAccountEntry,
 } from "../../../src/plugin-sdk-internal/accounts.js";
-import type { IMessageAccountConfig } from "../../../src/plugin-sdk-internal/imessage.js";
 
 export type ResolvedIMessageAccount = {
   accountId: string;

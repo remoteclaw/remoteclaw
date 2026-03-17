@@ -1,8 +1,7 @@
 import {
   applyAccountNameToChannelSection,
-  createAllowlistSetupWizardProxy,
-  createPatchedAccountSetupAdapter,
   DEFAULT_ACCOUNT_ID,
+  formatDocsLink,
   hasConfiguredSecretInput,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
@@ -14,22 +13,101 @@ import {
   setAccountGroupPolicyForChannel,
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-} from "remoteclaw/plugin-sdk/setup";
+} from "../../../src/plugin-sdk-internal/setup.js";
 import {
   type ChannelSetupAdapter,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
   type ChannelSetupWizardAllowFromEntry,
-} from "remoteclaw/plugin-sdk/setup";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "../../../src/plugin-sdk-internal/setup.js";
 import { inspectSlackAccount } from "./account-inspect.js";
 import { listSlackAccountIds, resolveSlackAccount, type ResolvedSlackAccount } from "./accounts.js";
-import {
-  buildSlackSetupLines,
-  isSlackSetupAccountConfigured,
-  setSlackChannelAllowlist,
-  SLACK_CHANNEL as channel,
-} from "./shared.js";
+
+const channel = "slack" as const;
+
+function buildSlackManifest(botName: string) {
+  const safeName = botName.trim() || "RemoteClaw";
+  const manifest = {
+    display_information: {
+      name: safeName,
+      description: `${safeName} connector for RemoteClaw`,
+    },
+    features: {
+      bot_user: {
+        display_name: safeName,
+        always_online: false,
+      },
+      app_home: {
+        messages_tab_enabled: true,
+        messages_tab_read_only_enabled: false,
+      },
+      slash_commands: [
+        {
+          command: "/remoteclaw",
+          description: "Send a message to RemoteClaw",
+          should_escape: false,
+        },
+      ],
+    },
+    oauth_config: {
+      scopes: {
+        bot: [
+          "chat:write",
+          "channels:history",
+          "channels:read",
+          "groups:history",
+          "im:history",
+          "mpim:history",
+          "users:read",
+          "app_mentions:read",
+          "reactions:read",
+          "reactions:write",
+          "pins:read",
+          "pins:write",
+          "emoji:read",
+          "commands",
+          "files:read",
+          "files:write",
+        ],
+      },
+    },
+    settings: {
+      socket_mode_enabled: true,
+      event_subscriptions: {
+        bot_events: [
+          "app_mention",
+          "message.channels",
+          "message.groups",
+          "message.im",
+          "message.mpim",
+          "reaction_added",
+          "reaction_removed",
+          "member_joined_channel",
+          "member_left_channel",
+          "channel_rename",
+          "pin_added",
+          "pin_removed",
+        ],
+      },
+    },
+  };
+  return JSON.stringify(manifest, null, 2);
+}
+
+function buildSlackSetupLines(botName = "RemoteClaw"): string[] {
+  return [
+    "1) Slack API -> Create App -> From scratch or From manifest (with the JSON below)",
+    "2) Add Socket Mode + enable it to get the app-level token (xapp-...)",
+    "3) Install App to workspace to get the xoxb- bot token",
+    "4) Enable Event Subscriptions (socket) for message events",
+    "5) App Home -> enable the Messages tab for DMs",
+    "Tip: set SLACK_BOT_TOKEN + SLACK_APP_TOKEN in your env.",
+    `Docs: ${formatDocsLink("/slack", "slack")}`,
+    "",
+    "Manifest (JSON):",
+    buildSlackManifest(botName),
+  ];
+}
 
 function enableSlackAccount(cfg: RemoteClawConfig, accountId: string): RemoteClawConfig {
   return patchChannelConfigForAccount({
@@ -38,6 +116,28 @@ function enableSlackAccount(cfg: RemoteClawConfig, accountId: string): RemoteCla
     accountId,
     patch: { enabled: true },
   });
+}
+
+function setSlackChannelAllowlist(
+  cfg: RemoteClawConfig,
+  accountId: string,
+  channelKeys: string[],
+): RemoteClawConfig {
+  const channels = Object.fromEntries(channelKeys.map((key) => [key, { allow: true }]));
+  return patchChannelConfigForAccount({
+    cfg,
+    channel,
+    accountId,
+    patch: { channels },
+  });
+}
+
+function isSlackAccountConfigured(account: ResolvedSlackAccount): boolean {
+  const hasConfiguredBotToken =
+    Boolean(account.botToken?.trim()) || hasConfiguredSecretInput(account.config.botToken);
+  const hasConfiguredAppToken =
+    Boolean(account.appToken?.trim()) || hasConfiguredSecretInput(account.config.appToken);
+  return hasConfiguredBotToken && hasConfiguredAppToken;
 }
 
 export const slackSetupAdapter: ChannelSetupAdapter = {
@@ -112,15 +212,9 @@ export const slackSetupAdapter: ChannelSetupAdapter = {
   },
 };
 
-export function createSlackSetupWizardBase(handlers: {
-  promptAllowFrom: NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>;
-  resolveAllowFromEntries: NonNullable<
-    NonNullable<ChannelSetupWizard["allowFrom"]>["resolveEntries"]
-  >;
-  resolveGroupAllowlist: NonNullable<
-    NonNullable<NonNullable<ChannelSetupWizard["groupAccess"]>["resolveAllowlist"]>
-  >;
-}) {
+export function createSlackSetupWizardProxy(
+  loadWizard: () => Promise<{ slackSetupWizard: ChannelSetupWizard }>,
+) {
   const slackDmPolicy: ChannelSetupDmPolicy = {
     label: "Slack",
     channel,
@@ -134,7 +228,13 @@ export function createSlackSetupWizardBase(handlers: {
         channel,
         dmPolicy: policy,
       }),
-    promptAllowFrom: handlers.promptAllowFrom,
+    promptAllowFrom: async ({ cfg, prompter, accountId }) => {
+      const wizard = (await loadWizard()).slackSetupWizard;
+      if (!wizard.dmPolicy?.promptAllowFrom) {
+        return cfg;
+      }
+      return await wizard.dmPolicy.promptAllowFrom({ cfg, prompter, accountId });
+    },
   };
 
   return {
@@ -156,7 +256,7 @@ export function createSlackSetupWizardBase(handlers: {
       title: "Slack socket mode tokens",
       lines: buildSlackSetupLines(),
       shouldShow: ({ cfg, accountId }) =>
-        !isSlackSetupAccountConfigured(resolveSlackAccount({ cfg, accountId })),
+        !isSlackAccountConfigured(resolveSlackAccount({ cfg, accountId })),
     },
     envShortcut: {
       prompt: "SLACK_BOT_TOKEN + SLACK_APP_TOKEN detected. Use env vars?",
@@ -165,7 +265,7 @@ export function createSlackSetupWizardBase(handlers: {
         accountId === DEFAULT_ACCOUNT_ID &&
         Boolean(process.env.SLACK_BOT_TOKEN?.trim()) &&
         Boolean(process.env.SLACK_APP_TOKEN?.trim()) &&
-        !isSlackSetupAccountConfigured(resolveSlackAccount({ cfg, accountId })),
+        !isSlackAccountConfigured(resolveSlackAccount({ cfg, accountId })),
       apply: ({ cfg, accountId }) => enableSlackAccount(cfg, accountId),
     },
     credentials: [
@@ -285,7 +385,18 @@ export function createSlackSetupWizardBase(handlers: {
         accountId: string;
         credentialValues: { botToken?: string };
         entries: string[];
-      }) => await handlers.resolveAllowFromEntries({ cfg, accountId, credentialValues, entries }),
+      }) => {
+        const wizard = (await loadWizard()).slackSetupWizard;
+        if (!wizard.allowFrom) {
+          return entries.map((input) => ({ input, resolved: false, id: null }));
+        }
+        return await wizard.allowFrom.resolveEntries({
+          cfg,
+          accountId,
+          credentialValues,
+          entries,
+        });
+      },
       apply: ({
         cfg,
         accountId,
@@ -342,7 +453,11 @@ export function createSlackSetupWizardBase(handlers: {
         prompter: { note: (message: string, title?: string) => Promise<void> };
       }) => {
         try {
-          return await handlers.resolveGroupAllowlist({
+          const wizard = (await loadWizard()).slackSetupWizard;
+          if (!wizard.groupAccess?.resolveAllowlist) {
+            return entries;
+          }
+          return await wizard.groupAccess.resolveAllowlist({
             cfg,
             accountId,
             credentialValues,
@@ -376,13 +491,4 @@ export function createSlackSetupWizardBase(handlers: {
     },
     disable: (cfg: RemoteClawConfig) => setSetupChannelEnabled(cfg, channel, false),
   } satisfies ChannelSetupWizard;
-}
-export function createSlackSetupWizardProxy(
-  loadWizard: () => Promise<{ slackSetupWizard: ChannelSetupWizard }>,
-) {
-  return createAllowlistSetupWizardProxy({
-    loadWizard: async () => (await loadWizard()).slackSetupWizard,
-    createBase: createSlackSetupWizardBase,
-    fallbackResolvedGroupAllowlist: (entries) => entries,
-  });
 }

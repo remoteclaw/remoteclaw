@@ -1,21 +1,7 @@
-import type { BaseTokenResolution } from "../../../src/channels/plugins/types.js";
+import type { BaseTokenResolution } from "../../../src/channels/plugins/types.core.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { SecretInput } from "../../../src/config/types.secrets.js";
+import { normalizeResolvedSecretInputString } from "../../../src/config/types.secrets.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
-
-function resolveSecretToString(input?: SecretInput | null): string | undefined {
-  if (!input) {
-    return undefined;
-  }
-  if (typeof input === "string") {
-    return input;
-  }
-  // SecretRef — resolve from configured source
-  if (input.source === "env") {
-    return process.env[input.id] ?? undefined;
-  }
-  return undefined;
-}
 
 export type DiscordTokenSource = "env" | "config" | "none";
 
@@ -23,11 +9,8 @@ export type DiscordTokenResolution = BaseTokenResolution & {
   source: DiscordTokenSource;
 };
 
-export function normalizeDiscordToken(raw?: string | null): string | undefined {
-  if (!raw) {
-    return undefined;
-  }
-  const trimmed = raw.trim();
+export function normalizeDiscordToken(raw: unknown, path: string): string | undefined {
+  const trimmed = normalizeResolvedSecretInputString({ value: raw, path });
   if (!trimmed) {
     return undefined;
   }
@@ -40,25 +23,45 @@ export function resolveDiscordToken(
 ): DiscordTokenResolution {
   const accountId = normalizeAccountId(opts.accountId);
   const discordCfg = cfg?.channels?.discord;
-  const accountCfg =
-    accountId !== DEFAULT_ACCOUNT_ID
-      ? discordCfg?.accounts?.[accountId]
-      : discordCfg?.accounts?.[DEFAULT_ACCOUNT_ID];
-  const accountToken = normalizeDiscordToken(resolveSecretToString(accountCfg?.token));
+  const resolveAccountCfg = (id: string) => {
+    const accounts = discordCfg?.accounts;
+    if (!accounts || typeof accounts !== "object" || Array.isArray(accounts)) {
+      return undefined;
+    }
+    const direct = accounts[id];
+    if (direct) {
+      return direct;
+    }
+    const matchKey = Object.keys(accounts).find((key) => normalizeAccountId(key) === id);
+    return matchKey ? accounts[matchKey] : undefined;
+  };
+  const accountCfg = resolveAccountCfg(accountId);
+  const hasAccountToken = Boolean(
+    accountCfg &&
+    Object.prototype.hasOwnProperty.call(accountCfg as Record<string, unknown>, "token"),
+  );
+  const accountToken = normalizeDiscordToken(
+    (accountCfg as { token?: unknown } | undefined)?.token ?? undefined,
+    `channels.discord.accounts.${accountId}.token`,
+  );
   if (accountToken) {
     return { token: accountToken, source: "config" };
   }
+  if (hasAccountToken) {
+    return { token: "", source: "none" };
+  }
 
-  const allowEnv = accountId === DEFAULT_ACCOUNT_ID;
-  const configToken = allowEnv
-    ? normalizeDiscordToken(resolveSecretToString(discordCfg?.token))
-    : undefined;
+  const configToken = normalizeDiscordToken(
+    discordCfg?.token ?? undefined,
+    "channels.discord.token",
+  );
   if (configToken) {
     return { token: configToken, source: "config" };
   }
 
+  const allowEnv = accountId === DEFAULT_ACCOUNT_ID;
   const envToken = allowEnv
-    ? normalizeDiscordToken(opts.envToken ?? process.env.DISCORD_BOT_TOKEN)
+    ? normalizeDiscordToken(opts.envToken ?? process.env.DISCORD_BOT_TOKEN, "DISCORD_BOT_TOKEN")
     : undefined;
   if (envToken) {
     return { token: envToken, source: "env" };

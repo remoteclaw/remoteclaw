@@ -1,4 +1,3 @@
-import type { MockFn } from "remoteclaw/plugin-sdk/test-utils";
 import { expect, vi } from "vitest";
 import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import type { RuntimeEnv } from "../../../../src/runtime.js";
@@ -15,34 +14,6 @@ export type PluginCommandSpecMock = {
   acceptsArgs: boolean;
 };
 
-type AnyMock = MockFn;
-
-type ProviderMonitorTestMocks = {
-  clientHandleDeployRequestMock: AnyMock;
-  clientFetchUserMock: AnyMock;
-  clientGetPluginMock: AnyMock;
-  clientConstructorOptionsMock: AnyMock;
-  createDiscordAutoPresenceControllerMock: AnyMock;
-  createDiscordNativeCommandMock: AnyMock;
-  createDiscordMessageHandlerMock: AnyMock;
-  createNoopThreadBindingManagerMock: AnyMock;
-  createThreadBindingManagerMock: AnyMock;
-  reconcileAcpThreadBindingsOnStartupMock: AnyMock;
-  createdBindingManagers: Array<{ stop: ReturnType<typeof vi.fn> }>;
-  getAcpSessionStatusMock: AnyMock;
-  getPluginCommandSpecsMock: AnyMock;
-  listNativeCommandSpecsForConfigMock: AnyMock;
-  listSkillCommandsForAgentsMock: AnyMock;
-  monitorLifecycleMock: AnyMock;
-  resolveDiscordAccountMock: AnyMock;
-  resolveDiscordAllowlistConfigMock: AnyMock;
-  resolveNativeCommandsEnabledMock: AnyMock;
-  resolveNativeSkillsEnabledMock: AnyMock;
-  isVerboseMock: AnyMock;
-  shouldLogVerboseMock: AnyMock;
-  voiceRuntimeModuleLoadedMock: AnyMock;
-};
-
 export function baseDiscordAccountConfig() {
   return {
     commands: { native: true, nativeSkills: false },
@@ -52,7 +23,7 @@ export function baseDiscordAccountConfig() {
   };
 }
 
-const providerMonitorTestMocks: ProviderMonitorTestMocks = vi.hoisted(() => {
+const providerMonitorTestMocks = vi.hoisted(() => {
   const createdBindingManagers: Array<{ stop: ReturnType<typeof vi.fn> }> = [];
   const isVerboseMock = vi.fn(() => false);
   const shouldLogVerboseMock = vi.fn(() => false);
@@ -152,7 +123,7 @@ const {
   voiceRuntimeModuleLoadedMock,
 } = providerMonitorTestMocks;
 
-export function getProviderMonitorTestMocks(): typeof providerMonitorTestMocks {
+export function getProviderMonitorTestMocks() {
   return providerMonitorTestMocks;
 }
 

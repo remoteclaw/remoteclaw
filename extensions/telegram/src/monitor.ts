@@ -1,15 +1,19 @@
 import type { RunOptions } from "@grammyjs/runner";
-import { resolveAgentMaxConcurrent } from "../../../src/config/agent-limits.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { loadConfig } from "../../../src/config/config.js";
-import { waitForAbortSignal } from "../../../src/infra/abort-signal.js";
-import { formatErrorMessage } from "../../../src/infra/errors.js";
-import { registerUnhandledRejectionHandler } from "../../../src/infra/unhandled-rejections.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
+import { resolveAgentMaxConcurrent } from "remoteclaw/plugin-sdk/config-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
+import { waitForAbortSignal } from "remoteclaw/plugin-sdk/runtime-env";
+import { registerUnhandledRejectionHandler } from "remoteclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { resolveTelegramAccount } from "./accounts.js";
 import { resolveTelegramAllowedUpdates } from "./allowed-updates.js";
+import { TelegramExecApprovalHandler } from "./exec-approvals-handler.js";
 import { resolveTelegramTransport } from "./fetch.js";
-import { isRecoverableTelegramNetworkError } from "./network-errors.js";
+import {
+  isRecoverableTelegramNetworkError,
+  isTelegramPollingNetworkError,
+} from "./network-errors.js";
 import { TelegramPollingSession } from "./polling-session.js";
 import { makeProxyFetch } from "./proxy.js";
 import { readTelegramUpdateOffset, writeTelegramUpdateOffset } from "./update-offset-store.js";
@@ -74,16 +78,18 @@ const isGrammyHttpError = (err: unknown): boolean => {
 export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
   const log = opts.runtime?.error ?? console.error;
   let pollingSession: TelegramPollingSession | undefined;
+  let execApprovalsHandler: TelegramExecApprovalHandler | undefined;
 
   const unregisterHandler = registerUnhandledRejectionHandler((err) => {
     const isNetworkError = isRecoverableTelegramNetworkError(err, { context: "polling" });
-    if (isGrammyHttpError(err) && isNetworkError) {
+    const isTelegramPollingError = isTelegramPollingNetworkError(err);
+    if (isGrammyHttpError(err) && isNetworkError && isTelegramPollingError) {
       log(`[telegram] Suppressed network error: ${formatErrorMessage(err)}`);
       return true;
     }
 
     const activeRunner = pollingSession?.activeRunner;
-    if (isNetworkError && activeRunner && activeRunner.isRunning()) {
+    if (isNetworkError && isTelegramPollingError && activeRunner && activeRunner.isRunning()) {
       pollingSession?.markForceRestarted();
       pollingSession?.abortActiveFetch();
       void activeRunner.stop().catch(() => {});
@@ -112,6 +118,14 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
     const proxyFetch =
       opts.proxyFetch ?? (account.config.proxy ? makeProxyFetch(account.config.proxy) : undefined);
 
+    execApprovalsHandler = new TelegramExecApprovalHandler({
+      token,
+      accountId: account.accountId,
+      cfg,
+      runtime: opts.runtime,
+    });
+    await execApprovalsHandler.start();
+
     const persistedOffsetRaw = await readTelegramUpdateOffset({
       accountId: account.accountId,
       botToken: token,
@@ -122,6 +136,7 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
         `[telegram] Ignoring invalid persisted update offset (${String(persistedOffsetRaw)}); starting without offset confirmation.`,
       );
     }
+
     const persistUpdateId = async (updateId: number) => {
       const normalizedUpdateId = normalizePersistedUpdateId(updateId);
       if (normalizedUpdateId === null) {
@@ -184,6 +199,7 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
     });
     await pollingSession.runUntilAbort();
   } finally {
+    await execApprovalsHandler?.stop().catch(() => {});
     unregisterHandler();
   }
 }

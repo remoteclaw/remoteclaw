@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { describe, expect, test, vi } from "vitest";
 import type { createSubsystemLogger } from "../logging/subsystem.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
-import type { HooksConfigResolved } from "./hooks.js";
+import { createHooksConfig } from "./hooks-test-helpers.js";
 import { canonicalizePathVariant } from "./security-path.js";
 import { createGatewayHttpServer, createHooksRequestHandler } from "./server-http.js";
 import { withTempConfig } from "./test-temp-config.js";
@@ -66,25 +66,6 @@ async function dispatchRequest(
 ): Promise<void> {
   server.emit("request", req, res);
   await new Promise((resolve) => setImmediate(resolve));
-}
-
-function createHooksConfig(): HooksConfigResolved {
-  return {
-    basePath: "/hooks",
-    token: "hook-secret",
-    maxBodyBytes: 1024,
-    mappings: [],
-    agentPolicy: {
-      defaultAgentId: "main",
-      knownAgentIds: new Set(["main"]),
-      allowedAgentIds: undefined,
-    },
-    sessionPolicy: {
-      allowRequestSessionKey: false,
-      defaultSessionKey: undefined,
-      allowedSessionKeyPrefixes: undefined,
-    },
-  };
 }
 
 function canonicalizePluginPath(pathname: string): string {

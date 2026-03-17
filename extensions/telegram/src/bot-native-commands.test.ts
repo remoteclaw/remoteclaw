@@ -8,8 +8,7 @@ import type { RuntimeEnv } from "../../../src/runtime.js";
 import {
   pluginCommandMocks,
   resetPluginCommandMocks,
-} from "../../../test/helpers/extensions/telegram-plugin-command.js";
-import type { TelegramBotDeps } from "./bot-deps.js";
+} from "./bot-native-commands.plugin-command-test-support.js";
 const skillCommandMocks = vi.hoisted(() => ({
   listSkillCommandsForAgents: vi.fn(() => []),
 }));
@@ -40,49 +39,13 @@ import {
   waitForRegisteredCommands,
 } from "./bot-native-commands.menu-test-support.js";
 
-function createNativeCommandTestParams(
-  cfg: RemoteClawConfig,
-  params: Partial<Parameters<typeof registerTelegramNativeCommands>[0]> = {},
-) {
-  const telegramDeps: TelegramBotDeps = {
-    loadConfig: vi.fn(() => cfg) as TelegramBotDeps["loadConfig"],
-    resolveStorePath: vi.fn(
-      (storePath?: string) => storePath ?? "/tmp/sessions.json",
-    ) as TelegramBotDeps["resolveStorePath"],
-    readChannelAllowFromStore: vi.fn(
-      async () => [],
-    ) as TelegramBotDeps["readChannelAllowFromStore"],
-    upsertChannelPairingRequest: vi.fn(async () => ({
-      code: "PAIRCODE",
-      created: true,
-    })) as TelegramBotDeps["upsertChannelPairingRequest"],
-    enqueueSystemEvent: vi.fn() as TelegramBotDeps["enqueueSystemEvent"],
-    dispatchReplyWithBufferedBlockDispatcher: vi.fn(
-      async () => dispatchResult,
-    ) as TelegramBotDeps["dispatchReplyWithBufferedBlockDispatcher"],
-    buildModelsProviderData: vi.fn(async () => ({
-      byProvider: new Map<string, Set<string>>(),
-      providers: [],
-      resolvedDefault: { provider: "openai", model: "gpt-4.1" },
-    })) as TelegramBotDeps["buildModelsProviderData"],
-    listSkillCommandsForAgents: skillCommandMocks.listSkillCommandsForAgents,
-    wasSentByBot: vi.fn(() => false),
-  };
-  return createNativeCommandTestParamsBase(cfg, {
-    telegramDeps,
-    ...params,
-  });
-}
-
 describe("registerTelegramNativeCommands", () => {
   beforeEach(() => {
-    resetNativeCommandMenuMocks();
-    pluginCommandMocks.getPluginCommandSpecs.mockClear();
-    pluginCommandMocks.getPluginCommandSpecs.mockReturnValue([]);
-    pluginCommandMocks.matchPluginCommand.mockClear();
-    pluginCommandMocks.matchPluginCommand.mockReturnValue(null);
-    pluginCommandMocks.executePluginCommand.mockClear();
-    pluginCommandMocks.executePluginCommand.mockResolvedValue({ text: "ok" });
+    skillCommandMocks.listSkillCommandsForAgents.mockClear();
+    skillCommandMocks.listSkillCommandsForAgents.mockReturnValue([]);
+    deliveryMocks.deliverReplies.mockClear();
+    deliveryMocks.deliverReplies.mockResolvedValue({ delivered: true });
+    resetPluginCommandMocks();
   });
 
   it("scopes skill commands when account binding exists", () => {

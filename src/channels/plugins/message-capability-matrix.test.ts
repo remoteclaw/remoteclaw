@@ -158,15 +158,13 @@ describe("channel action capability matrix", () => {
     const result = getCapabilities(telegramPlugin, {} as RemoteClawConfig);
 
     expect(result).toEqual(["interactive", "buttons"]);
-    expect(telegramDescribeMessageToolMock).toHaveBeenCalledWith({ cfg: {} });
-    discordDescribeMessageToolMock.mockReturnValue({
-      capabilities: ["interactive", "components"],
-    });
+    expect(telegramGetCapabilitiesMock).toHaveBeenCalledWith({ cfg: {} });
+    discordGetCapabilitiesMock.mockReturnValue(["interactive", "components"]);
 
-    const discordResult = getCapabilities(discordPlugin, {} as RemoteClawConfig);
+    const discordResult = discordPlugin.actions?.getCapabilities?.({ cfg: {} as OpenClawConfig });
 
     expect(discordResult).toEqual(["interactive", "components"]);
-    expect(discordDescribeMessageToolMock).toHaveBeenCalledWith({ cfg: {} });
+    expect(discordGetCapabilitiesMock).toHaveBeenCalledWith({ cfg: {} });
   });
 
   it("exposes configured channel capabilities only when required credentials are present", () => {
@@ -185,7 +183,7 @@ describe("channel action capability matrix", () => {
           enabled: true,
         },
       },
-    } as RemoteClawConfig;
+    } as OpenClawConfig;
     const configuredFeishuCfg = {
       channels: {
         feishu: {
@@ -194,7 +192,7 @@ describe("channel action capability matrix", () => {
           appSecret: "secret",
         },
       },
-    } as RemoteClawConfig;
+    } as OpenClawConfig;
     const disabledFeishuCfg = {
       channels: {
         feishu: {
@@ -203,7 +201,7 @@ describe("channel action capability matrix", () => {
           appSecret: "secret",
         },
       },
-    } as RemoteClawConfig;
+    } as OpenClawConfig;
     const configuredMsteamsCfg = {
       channels: {
         msteams: {
@@ -213,7 +211,7 @@ describe("channel action capability matrix", () => {
           appPassword: "secret",
         },
       },
-    } as RemoteClawConfig;
+    } as OpenClawConfig;
     const disabledMsteamsCfg = {
       channels: {
         msteams: {
@@ -223,14 +221,20 @@ describe("channel action capability matrix", () => {
           appPassword: "secret",
         },
       },
-    } as RemoteClawConfig;
+    } as OpenClawConfig;
 
-    expect(getCapabilities(mattermostPlugin, configuredCfg)).toEqual(["buttons"]);
-    expect(getCapabilities(mattermostPlugin, unconfiguredCfg)).toEqual([]);
-    expect(getCapabilities(feishuPlugin, configuredFeishuCfg)).toEqual(["cards"]);
-    expect(getCapabilities(feishuPlugin, disabledFeishuCfg)).toEqual([]);
-    expect(getCapabilities(msteamsPlugin, configuredMsteamsCfg)).toEqual(["cards"]);
-    expect(getCapabilities(msteamsPlugin, disabledMsteamsCfg)).toEqual([]);
+    expect(mattermostPlugin.actions?.getCapabilities?.({ cfg: configuredCfg })).toEqual([
+      "buttons",
+    ]);
+    expect(mattermostPlugin.actions?.getCapabilities?.({ cfg: unconfiguredCfg })).toEqual([]);
+    expect(feishuPlugin.actions?.getCapabilities?.({ cfg: configuredFeishuCfg })).toEqual([
+      "cards",
+    ]);
+    expect(feishuPlugin.actions?.getCapabilities?.({ cfg: disabledFeishuCfg })).toEqual([]);
+    expect(msteamsPlugin.actions?.getCapabilities?.({ cfg: configuredMsteamsCfg })).toEqual([
+      "cards",
+    ]);
+    expect(msteamsPlugin.actions?.getCapabilities?.({ cfg: disabledMsteamsCfg })).toEqual([]);
   });
 
   it("keeps Zalo actions on the empty capability set", () => {

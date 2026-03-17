@@ -1,4 +1,5 @@
 import {
+  createReplyPrefixOptions as createReplyPrefixOptionsImpl,
   recordInboundSessionMetaSafe as recordInboundSessionMetaSafeImpl,
   resolveConversationLabel as resolveConversationLabelImpl,
 } from "remoteclaw/plugin-sdk/channel-runtime";
@@ -18,6 +19,8 @@ type DispatchReplyWithDispatcher =
   typeof import("remoteclaw/plugin-sdk/reply-runtime").dispatchReplyWithDispatcher;
 type ResolveConversationLabel =
   typeof import("remoteclaw/plugin-sdk/channel-runtime").resolveConversationLabel;
+type CreateReplyPrefixOptions =
+  typeof import("remoteclaw/plugin-sdk/channel-runtime").createReplyPrefixOptions;
 type RecordInboundSessionMetaSafe =
   typeof import("remoteclaw/plugin-sdk/channel-runtime").recordInboundSessionMetaSafe;
 type ResolveMarkdownTableMode =
@@ -47,6 +50,12 @@ export function resolveConversationLabel(
   ...args: Parameters<ResolveConversationLabel>
 ): ReturnType<ResolveConversationLabel> {
   return resolveConversationLabelImpl(...args);
+}
+
+export function createReplyPrefixOptions(
+  ...args: Parameters<CreateReplyPrefixOptions>
+): ReturnType<CreateReplyPrefixOptions> {
+  return createReplyPrefixOptionsImpl(...args);
 }
 
 export function recordInboundSessionMetaSafe(

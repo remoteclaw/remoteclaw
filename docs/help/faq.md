@@ -80,13 +80,9 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   - [Can I run Apple macOS-only skills from Linux?](#can-i-run-apple-macos-only-skills-from-linux)
   - [Do you have a Notion or HeyGen integration?](#do-you-have-a-notion-or-heygen-integration)
   - [How do I install the Chrome extension for browser takeover?](#how-do-i-install-the-chrome-extension-for-browser-takeover)
-- [Sandboxing and memory](#sandboxing-and-memory)
+- [Sandboxing](#sandboxing)
   - [Is there a dedicated sandboxing doc?](#is-there-a-dedicated-sandboxing-doc)
   - [How do I bind a host folder into the sandbox?](#how-do-i-bind-a-host-folder-into-the-sandbox)
-  - [How does memory work?](#how-does-memory-work)
-  - [Memory keeps forgetting things. How do I make it stick?](#memory-keeps-forgetting-things-how-do-i-make-it-stick)
-  - [Does memory persist forever? What are the limits?](#does-memory-persist-forever-what-are-the-limits)
-  - [Does semantic memory search require an OpenAI API key?](#does-semantic-memory-search-require-an-openai-api-key)
 - [Where things live on disk](#where-things-live-on-disk)
   - [Is all data used with RemoteClaw saved locally?](#is-all-data-used-with-remoteclaw-saved-locally)
   - [Where does RemoteClaw store its data?](#where-does-remoteclaw-store-its-data)
@@ -963,8 +959,7 @@ Highlights:
   workspace and defaults.
 - **Open source and hackable:** inspect, extend, and self-host without vendor lock-in.
 
-Docs: [Gateway](/gateway), [Channels](/channels), [Multi-agent](/concepts/multi-agent),
-[Memory](/concepts/memory).
+Docs: [Gateway](/gateway), [Channels](/channels), [Multi-agent](/concepts/multi-agent).
 
 ### I just set it up what should I do first
 
@@ -1193,7 +1188,7 @@ If the Gateway runs on the same machine as Chrome (default setup), you usually *
 If the Gateway runs elsewhere, run a node host on the browser machine so the Gateway can proxy browser actions.
 You still need to click the extension button on the tab you want to control (it doesn't auto-attach).
 
-## Sandboxing and memory
+## Sandboxing
 
 ### Is there a dedicated sandboxing doc
 
@@ -1226,58 +1221,6 @@ Key config reference: [Gateway configuration](/gateway/configuration#agentsdefau
 
 Set `agents.defaults.sandbox.docker.binds` to `["host:path:mode"]` (e.g., `"/home/user/src:/src:ro"`). Global + per-agent binds merge; per-agent binds are ignored when `scope: "shared"`. Use `:ro` for anything sensitive and remember binds bypass the sandbox filesystem walls. See [Sandboxing](/gateway/sandboxing#custom-bind-mounts) and [Sandbox vs Tool Policy vs Elevated](/gateway/sandbox-vs-tool-policy-vs-elevated#bind-mounts-security-quick-check) for examples and safety notes.
 
-### How does memory work
-
-RemoteClaw memory is just Markdown files in the agent workspace:
-
-- Daily notes in `memory/YYYY-MM-DD.md`
-- Curated long-term notes in `MEMORY.md` (main/private sessions only)
-
-RemoteClaw also runs a **silent pre-compaction memory flush** to remind the model
-to write durable notes before auto-compaction. This only runs when the workspace
-is writable (read-only sandboxes skip it). See [Memory](/concepts/memory).
-
-### Memory keeps forgetting things How do I make it stick
-
-Ask the bot to **write the fact to memory**. Long-term notes belong in `MEMORY.md`,
-short-term context goes into `memory/YYYY-MM-DD.md`.
-
-This is still an area we are improving. It helps to remind the model to store memories;
-it will know what to do. If it keeps forgetting, verify the Gateway is using the same
-workspace on every run.
-
-Docs: [Memory](/concepts/memory), [Agent workspace](/concepts/agent-workspace).
-
-### Does semantic memory search require an OpenAI API key
-
-Only if you use **OpenAI embeddings**. Codex OAuth covers chat/completions and
-does **not** grant embeddings access, so **signing in with Codex (OAuth or the
-Codex CLI login)** does not help for semantic memory search. OpenAI embeddings
-still need a real API key (`OPENAI_API_KEY` or `models.providers.openai.apiKey`).
-
-If you don't set a provider explicitly, RemoteClaw auto-selects a provider when it
-can resolve an API key (auth profiles, `models.providers.*.apiKey`, or env vars).
-It prefers OpenAI if an OpenAI key resolves, otherwise Gemini if a Gemini key
-resolves, then Voyage, then Mistral. If no remote key is available, memory
-search stays disabled until you configure it. If you have a local model path
-configured and present, RemoteClaw
-prefers `local`.
-
-If you'd rather stay local, set `memorySearch.provider = "local"` (and optionally
-`memorySearch.fallback = "none"`). If you want Gemini embeddings, set
-`memorySearch.provider = "gemini"` and provide `GEMINI_API_KEY` (or
-`memorySearch.remote.apiKey`). We support **OpenAI, Gemini, Voyage, Mistral, or local** embedding
-models - see [Memory](/concepts/memory) for the setup details.
-
-### Does memory persist forever What are the limits
-
-Memory files live on disk and persist until you delete them. The limit is your
-storage, not the model. The **session context** is still limited by the model
-context window, so long conversations can compact or truncate. That is why
-memory search exists - it pulls only the relevant parts back into context.
-
-Docs: [Memory](/concepts/memory), [Context](/concepts/context).
-
 ## Where things live on disk
 
 ### Is all data used with RemoteClaw saved locally
@@ -1292,7 +1235,7 @@ No - **RemoteClaw's state is local**, but **external services still see what you
 - **You control the footprint:** using local models keeps prompts on your machine, but channel
   traffic still goes through the channel's servers.
 
-Related: [Agent workspace](/concepts/agent-workspace), [Memory](/concepts/memory).
+Related: [Agent workspace](/concepts/agent-workspace).
 
 ### Where does RemoteClaw store its data
 
@@ -1338,7 +1281,7 @@ workspace, not your local laptop).
 Tip: if you want a durable behavior or preference, ask the bot to **write it into
 AGENTS.md or MEMORY.md** rather than relying on chat history.
 
-See [Agent workspace](/concepts/agent-workspace) and [Memory](/concepts/memory).
+See [Agent workspace](/concepts/agent-workspace).
 
 ### What's the recommended backup strategy
 

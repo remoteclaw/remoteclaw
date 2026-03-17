@@ -91,6 +91,65 @@ function canonicalizePluginPath(pathname: string): string {
   return canonicalizePathVariant(pathname);
 }
 
+const AUTH_TOKEN: ResolvedGatewayAuth = {
+  mode: "token",
+  token: "test-token",
+  password: undefined,
+  allowTailscale: false,
+};
+
+const AUTH_NONE: ResolvedGatewayAuth = {
+  mode: "none",
+  token: undefined,
+  password: undefined,
+  allowTailscale: false,
+};
+
+async function withGatewayServer(params: {
+  prefix: string;
+  resolvedAuth: ResolvedGatewayAuth;
+  overrides?: {
+    handlePluginRequest?: (req: IncomingMessage, res: ServerResponse) => Promise<boolean>;
+    controlUiEnabled?: boolean;
+    controlUiBasePath?: string;
+    controlUiRoot?: { kind: string };
+  };
+  run: (server: ReturnType<typeof createGatewayHttpServer>) => Promise<void>;
+}): Promise<void> {
+  await withTempConfig({
+    cfg: { gateway: { trustedProxies: [] } },
+    prefix: params.prefix,
+    run: async () => {
+      const server = createGatewayHttpServer({
+        canvasHost: null,
+        clients: new Set(),
+        controlUiEnabled: params.overrides?.controlUiEnabled ?? false,
+        controlUiBasePath: params.overrides?.controlUiBasePath ?? "/__control__",
+        openAiChatCompletionsEnabled: false,
+        openResponsesEnabled: false,
+        handleHooksRequest: async () => false,
+        handlePluginRequest: params.overrides?.handlePluginRequest,
+        resolvedAuth: params.resolvedAuth,
+      });
+      await params.run(server);
+    },
+  });
+}
+
+async function sendRequest(
+  server: ReturnType<typeof createGatewayHttpServer>,
+  params: { path: string; authorization?: string; method?: string },
+): Promise<{ res: ServerResponse; getBody: () => string }> {
+  const response = createResponse();
+  await dispatchRequest(server, createRequest(params), response.res);
+  return { res: response.res, getBody: response.getBody };
+}
+
+function expectUnauthorizedResponse(response: { res: ServerResponse; getBody: () => string }) {
+  expect(response.res.statusCode).toBe(401);
+  expect(response.getBody()).toContain("Unauthorized");
+}
+
 type RouteVariant = {
   label: string;
   path: string;
@@ -471,50 +530,6 @@ describe("gateway plugin HTTP auth boundary", () => {
         expect(unauthenticatedPublic.getBody()).toContain('"route":"public"');
 
         expect(handlePluginRequest).toHaveBeenCalledTimes(1);
-      },
-    });
-  });
-
-  test("keeps wildcard plugin handlers ungated when auth enforcement predicate excludes their paths", async () => {
-    const handlePluginRequest = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
-      const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
-      if (pathname === "/plugin/routed") {
-        res.statusCode = 200;
-        res.setHeader("Content-Type", "application/json; charset=utf-8");
-        res.end(JSON.stringify({ ok: true, route: "routed" }));
-        return true;
-      }
-      if (pathname === "/googlechat") {
-        res.statusCode = 200;
-        res.setHeader("Content-Type", "application/json; charset=utf-8");
-        res.end(JSON.stringify({ ok: true, route: "wildcard-handler" }));
-        return true;
-      }
-      return false;
-    });
-
-    await withGatewayServer({
-      prefix: "remoteclaw-plugin-http-auth-wildcard-handler-test-",
-      resolvedAuth: AUTH_TOKEN,
-      overrides: {
-        handlePluginRequest,
-        shouldEnforcePluginGatewayAuth: (requestPath) =>
-          requestPath.startsWith("/api/channels") || requestPath === "/plugin/routed",
-      },
-      run: async (server) => {
-        const unauthenticatedRouted = await sendRequest(server, { path: "/plugin/routed" });
-        expectUnauthorizedResponse(unauthenticatedRouted);
-
-        const unauthenticatedWildcard = await sendRequest(server, { path: "/googlechat" });
-        expect(unauthenticatedWildcard.res.statusCode).toBe(200);
-        expect(unauthenticatedWildcard.getBody()).toContain('"route":"wildcard-handler"');
-
-        const authenticatedRouted = await sendRequest(server, {
-          path: "/plugin/routed",
-          authorization: "Bearer test-token",
-        });
-        expect(authenticatedRouted.res.statusCode).toBe(200);
-        expect(authenticatedRouted.getBody()).toContain('"route":"routed"');
       },
     });
   });

@@ -112,7 +112,7 @@ export function registerVoiceCallCli(params: {
   const root = program
     .command("voicecall")
     .description("Voice call utilities")
-    .addHelpText("after", () => `\nDocs: https://docs.remoteclaw.com/cli/voicecall\n`);
+    .addHelpText("after", () => `\nDocs: https://docs.remoteclaw.org/cli/voicecall\n`);
 
   root
     .command("call")

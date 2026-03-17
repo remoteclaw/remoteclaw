@@ -29,7 +29,7 @@ import {
 } from "./chrome.profile-decoration.js";
 import type { ResolvedBrowserConfig, ResolvedBrowserProfile } from "./config.js";
 import {
-  DEFAULT_OPENCLAW_BROWSER_COLOR,
+  DEFAULT_REMOTECLAW_BROWSER_COLOR,
   DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME,
 } from "./constants.js";
 
@@ -203,7 +203,7 @@ export async function launchRemoteClawChrome(
   const needsDecorate = !isProfileDecorated(
     userDataDir,
     profile.name,
-    (profile.color ?? DEFAULT_OPENCLAW_BROWSER_COLOR).toUpperCase(),
+    (profile.color ?? DEFAULT_REMOTECLAW_BROWSER_COLOR).toUpperCase(),
   );
 
   // First launch to create preference files if missing, then decorate and relaunch.

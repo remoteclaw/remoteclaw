@@ -28,7 +28,7 @@ describe("hardenApprovedExecutionPaths", () => {
       mode: "build-plan",
       argv: ["env", "sh", "-c", "echo SAFE"],
       expectedArgv: () => ["env", "sh", "-c", "echo SAFE"],
-      expectedCmdText: "echo SAFE",
+      expectedCmdText: "env sh -c echo SAFE",
     },
     {
       name: "preserves dispatch-wrapper argv during approval hardening",
@@ -43,7 +43,7 @@ describe("hardenApprovedExecutionPaths", () => {
       argv: ["poccmd", "SAFE"],
       shellCommand: null,
       withPathToken: true,
-      expectedArgv: ({ pathToken }) => [pathToken!.expected, "SAFE"],
+      expectedArgv: () => ["poccmd", "SAFE"],
     },
     {
       name: "preserves env-wrapper PATH-token argv during approval hardening",

@@ -60,9 +60,11 @@ export function registerWebhookTarget<T extends { path: string }>(
   const existing = targetsByPath.get(key) ?? [];
   const isFirstForPath = existing.length === 0;
   targetsByPath.set(key, [...existing, normalizedTarget]);
-  let pathTeardown: (() => void) | void;
   if (isFirstForPath && opts?.onFirstPathTarget) {
-    pathTeardown = opts.onFirstPathTarget({ path: key, target: normalizedTarget });
+    const teardown = opts.onFirstPathTarget({ path: key, target: normalizedTarget });
+    if (teardown) {
+      getPathTeardownMap(targetsByPath).set(key, teardown);
+    }
   }
   const unregister = () => {
     const updated = (targetsByPath.get(key) ?? []).filter((entry) => entry !== normalizedTarget);
@@ -71,8 +73,13 @@ export function registerWebhookTarget<T extends { path: string }>(
       return;
     }
     targetsByPath.delete(key);
-    if (pathTeardown) {
-      pathTeardown();
+    const teardownMap = pathTeardownByTargetMap.get(
+      targetsByPath as unknown as Map<string, unknown[]>,
+    );
+    const teardown = teardownMap?.get(key);
+    if (teardown) {
+      teardownMap!.delete(key);
+      teardown();
     }
     opts?.onLastPathTargetRemoved?.({ path: key });
   };

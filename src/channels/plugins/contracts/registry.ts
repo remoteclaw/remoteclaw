@@ -1,28 +1,16 @@
 import { expect, vi } from "vitest";
-import { bluebubblesPlugin } from "../../../../extensions/bluebubbles/src/channel.js";
-import { discordPlugin } from "../../../../extensions/discord/src/channel.js";
-import { setDiscordRuntime } from "../../../../extensions/discord/src/runtime.js";
-import { feishuPlugin } from "../../../../extensions/feishu/src/channel.js";
-import { googlechatPlugin } from "../../../../extensions/googlechat/src/channel.js";
-import { imessagePlugin } from "../../../../extensions/imessage/src/channel.js";
-import { ircPlugin } from "../../../../extensions/irc/src/channel.js";
-import { linePlugin } from "../../../../extensions/line/src/channel.js";
-import { setLineRuntime } from "../../../../extensions/line/src/runtime.js";
-import { matrixPlugin } from "../../../../extensions/matrix/src/channel.js";
-import { mattermostPlugin } from "../../../../extensions/mattermost/src/channel.js";
-import { msteamsPlugin } from "../../../../extensions/msteams/src/channel.js";
-import { nextcloudTalkPlugin } from "../../../../extensions/nextcloud-talk/src/channel.js";
-import { nostrPlugin } from "../../../../extensions/nostr/src/channel.js";
-import { signalPlugin } from "../../../../extensions/signal/src/channel.js";
-import { slackPlugin } from "../../../../extensions/slack/src/channel.js";
-import { createSynologyChatPlugin } from "../../../../extensions/synology-chat/src/channel.js";
-import { telegramPlugin } from "../../../../extensions/telegram/src/channel.js";
-import { setTelegramRuntime } from "../../../../extensions/telegram/src/runtime.js";
-import { tlonPlugin } from "../../../../extensions/tlon/src/channel.js";
-import { whatsappPlugin } from "../../../../extensions/whatsapp/src/channel.js";
-import { zaloPlugin } from "../../../../extensions/zalo/src/channel.js";
-import { zalouserPlugin } from "../../../../extensions/zalouser/src/channel.js";
+import {
+  __testing as discordThreadBindingTesting,
+  createThreadBindingManager as createDiscordThreadBindingManager,
+} from "../../../../extensions/discord/runtime-api.js";
+import { createFeishuThreadBindingManager } from "../../../../extensions/feishu/api.js";
+import { createTelegramThreadBindingManager } from "../../../../extensions/telegram/runtime-api.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
+import {
+  getSessionBindingService,
+  type SessionBindingCapabilities,
+  type SessionBindingRecord,
+} from "../../../infra/outbound/session-binding-service.js";
 import {
   resolveDefaultLineAccountId,
   resolveLineAccount,
@@ -160,28 +148,12 @@ setLineRuntime({
   },
 } as never);
 
-export const pluginContractRegistry: PluginContractEntry[] = [
-  { id: "bluebubbles", plugin: bluebubblesPlugin },
-  { id: "discord", plugin: discordPlugin },
-  { id: "feishu", plugin: feishuPlugin },
-  { id: "googlechat", plugin: googlechatPlugin },
-  { id: "imessage", plugin: imessagePlugin },
-  { id: "irc", plugin: ircPlugin },
-  { id: "line", plugin: linePlugin },
-  { id: "matrix", plugin: matrixPlugin },
-  { id: "mattermost", plugin: mattermostPlugin },
-  { id: "msteams", plugin: msteamsPlugin },
-  { id: "nextcloud-talk", plugin: nextcloudTalkPlugin },
-  { id: "nostr", plugin: nostrPlugin },
-  { id: "signal", plugin: signalPlugin },
-  { id: "slack", plugin: slackPlugin },
-  { id: "synology-chat", plugin: createSynologyChatPlugin() },
-  { id: "telegram", plugin: telegramPlugin },
-  { id: "tlon", plugin: tlonPlugin },
-  { id: "whatsapp", plugin: whatsappPlugin },
-  { id: "zalo", plugin: zaloPlugin },
-  { id: "zalouser", plugin: zalouserPlugin },
-];
+export const pluginContractRegistry: PluginContractEntry[] = bundledChannelPlugins.map(
+  (plugin) => ({
+    id: plugin.id,
+    plugin,
+  }),
+);
 
 export const actionContractRegistry: ActionsContractEntry[] = [
   {
@@ -718,12 +690,12 @@ export const threadingContractRegistry: ThreadingContractEntry[] = surfaceContra
     plugin: entry.plugin,
   }));
 
-const directoryShapeOnlyIds = new Set(["matrix", "whatsapp", "zalouser"]);
+const directoryPresenceOnlyIds = new Set(["whatsapp", "zalouser"]);
 
 export const directoryContractRegistry: DirectoryContractEntry[] = surfaceContractRegistry
   .filter((entry) => entry.surfaces.includes("directory"))
   .map((entry) => ({
     id: entry.id,
     plugin: entry.plugin,
-    invokeLookups: !directoryShapeOnlyIds.has(entry.id),
+    coverage: directoryPresenceOnlyIds.has(entry.id) ? "presence" : "lookups",
   }));

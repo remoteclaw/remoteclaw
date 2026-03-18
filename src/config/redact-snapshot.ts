@@ -1,6 +1,9 @@
 import JSON5 from "json5";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { replaceSensitiveValuesInRaw } from "./redact-snapshot.raw.js";
+import {
+  replaceSensitiveValuesInRaw,
+  shouldFallbackToStructuredRawRedaction,
+} from "./redact-snapshot.raw.js";
 import { isSecretRefShape, redactSecretRefId } from "./redact-snapshot.secret-ref.js";
 import { isSensitiveConfigPath, type ConfigUiHints } from "./schema.hints.js";
 import type { ConfigFileSnapshot } from "./types.remoteclaw.js";
@@ -39,7 +42,16 @@ function collectSensitiveStrings(value: unknown, values: string[]): void {
     return;
   }
   if (value && typeof value === "object") {
-    for (const item of Object.values(value as Record<string, unknown>)) {
+    const obj = value as Record<string, unknown>;
+    // SecretRef objects include structural fields like source/provider that are
+    // not secret material and may appear widely in config text.
+    if (isSecretRefShape(obj)) {
+      if (!isEnvVarPlaceholder(obj.id)) {
+        values.push(obj.id);
+      }
+      return;
+    }
+    for (const item of Object.values(obj)) {
       collectSensitiveStrings(item, values);
     }
   }
@@ -306,20 +318,15 @@ function redactRawText(raw: string, config: unknown, hints?: ConfigUiHints): str
   });
 }
 
-function shouldFallbackToStructuredRawRedaction(params: {
-  redactedRaw: string;
-  originalConfig: unknown;
-  hints?: ConfigUiHints;
-}): boolean {
+let suppressRestoreWarnings = false;
+
+function withRestoreWarningsSuppressed<T>(fn: () => T): T {
+  const prev = suppressRestoreWarnings;
+  suppressRestoreWarnings = true;
   try {
-    const parsed = JSON5.parse(params.redactedRaw);
-    const restored = restoreRedactedValues(parsed, params.originalConfig, params.hints);
-    if (!restored.ok) {
-      return true;
-    }
-    return JSON.stringify(restored.result) !== JSON.stringify(params.originalConfig);
-  } catch {
-    return true;
+    return fn();
+  } finally {
+    suppressRestoreWarnings = prev;
   }
 }
 
@@ -374,7 +381,10 @@ export function redactConfigSnapshot(
     shouldFallbackToStructuredRawRedaction({
       redactedRaw,
       originalConfig: snapshot.config,
-      hints: uiHints,
+      restoreParsed: (parsed) =>
+        withRestoreWarningsSuppressed(() =>
+          restoreRedactedValues(parsed, snapshot.config, uiHints),
+        ),
     })
   ) {
     redactedRaw = JSON5.stringify(redactedParsed ?? redactedConfig, null, 2);
@@ -459,7 +469,9 @@ function restoreOriginalValueOrThrow(params: {
   if (params.key in params.original) {
     return params.original[params.key];
   }
-  log.warn(`Cannot un-redact config key ${params.path} as it doesn't have any value`);
+  if (!suppressRestoreWarnings) {
+    log.warn(`Cannot un-redact config key ${params.path} as it doesn't have any value`);
+  }
   throw new RedactionError(params.path);
 }
 

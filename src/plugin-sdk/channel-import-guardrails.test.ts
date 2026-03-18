@@ -127,6 +127,7 @@ const SETUP_BARREL_GUARDS: GuardedSource[] = [
 ];
 
 const LOCAL_EXTENSION_API_BARREL_GUARDS = [
+  "acpx",
   "bluebubbles",
   "device-pair",
   "diagnostics-otel",
@@ -134,11 +135,13 @@ const LOCAL_EXTENSION_API_BARREL_GUARDS = [
   "feishu",
   "llm-task",
   "line",
+  "lobster",
   "matrix",
   "mattermost",
   "memory-lancedb",
   "msteams",
   "nextcloud-talk",
+  "qwen-portal-auth",
   "synology-chat",
   "talk-voice",
   "thread-ownership",

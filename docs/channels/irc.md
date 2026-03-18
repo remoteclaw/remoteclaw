@@ -6,6 +6,8 @@ read_when:
   - You are configuring IRC allowlists, group policy, or mention gating
 ---
 
+# IRC
+
 Use IRC when you want RemoteClaw in classic channels (`#room`) and direct messages.
 IRC ships as an extension plugin, but it is configured in the main config under `channels.irc`.
 

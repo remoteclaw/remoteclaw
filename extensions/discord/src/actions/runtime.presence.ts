@@ -4,8 +4,8 @@ import {
   type ActionGate,
   jsonResult,
   readStringParam,
-  type DiscordActionConfig,
-} from "remoteclaw/plugin-sdk/discord-core";
+} from "../../../../src/agents/tools/common.js";
+import type { DiscordActionConfig } from "../../../../src/config/types.discord.js";
 import { getGateway } from "../monitor/gateway-registry.js";
 
 const ACTIVITY_TYPE_MAP: Record<string, number> = {

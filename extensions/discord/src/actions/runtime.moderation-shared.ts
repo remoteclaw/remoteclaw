@@ -1,5 +1,5 @@
 import { PermissionFlagsBits } from "discord-api-types/v10";
-import { readNumberParam, readStringParam } from "remoteclaw/plugin-sdk/discord-core";
+import { readNumberParam, readStringParam } from "../../../../src/agents/tools/common.js";
 
 export type DiscordModerationAction = "timeout" | "kick" | "ban";
 

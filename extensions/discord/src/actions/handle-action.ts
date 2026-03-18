@@ -5,12 +5,14 @@ import {
   readStringParam,
 } from "remoteclaw/plugin-sdk/agent-runtime";
 import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
-import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-actions";
-import type { ChannelMessageActionContext } from "remoteclaw/plugin-sdk/channel-contract";
-import { normalizeInteractiveReply } from "remoteclaw/plugin-sdk/interactive-runtime";
+import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelMessageActionContext } from "remoteclaw/plugin-sdk/channel-runtime";
+import { normalizeInteractiveReply } from "remoteclaw/plugin-sdk/channel-runtime";
 import { buildDiscordInteractiveComponents } from "../shared-interactive.js";
 import { resolveDiscordChannelId } from "../targets.js";
 import { tryHandleDiscordMessageActionGuildAdmin } from "./handle-action.guild-admin.js";
+import { handleDiscordAction } from "./runtime.js";
+import { readDiscordParentIdParam } from "./runtime.shared.js";
 
 const providerId = "discord";
 

@@ -8,9 +8,8 @@ import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,
-} from "remoteclaw/plugin-sdk/config-runtime";
-import type { RemoteClawConfig, ReplyToMode } from "remoteclaw/plugin-sdk/config-runtime";
-import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+} from "openclaw/plugin-sdk/config-runtime";
+import type { OpenClawConfig, ReplyToMode } from "openclaw/plugin-sdk/config-runtime";
 import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
@@ -29,6 +28,7 @@ import { getChildLogger } from "remoteclaw/plugin-sdk/runtime-env";
 import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
 import { createNonExitingRuntime, type RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { resolveTelegramAccount } from "./accounts.js";
+import { defaultTelegramBotDeps, type TelegramBotDeps } from "./bot-deps.js";
 import { registerTelegramHandlers } from "./bot-handlers.js";
 import { createTelegramMessageProcessor } from "./bot-message.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
@@ -69,6 +69,7 @@ export type TelegramBotOptions = {
   };
   /** Pre-resolved Telegram transport to reuse across bot instances. If not provided, creates a new one. */
   telegramTransport?: TelegramTransport;
+  telegramDeps?: TelegramBotDeps;
 };
 
 export { getTelegramSequentialKey };
@@ -77,14 +78,12 @@ type TelegramBotRuntime = {
   Bot: typeof Bot;
   sequentialize: typeof sequentialize;
   apiThrottler: typeof apiThrottler;
-  loadConfig: typeof loadConfig;
 };
 
 const DEFAULT_TELEGRAM_BOT_RUNTIME: TelegramBotRuntime = {
   Bot,
   sequentialize,
   apiThrottler,
-  loadConfig,
 };
 
 let telegramBotRuntimeForTest: TelegramBotRuntime | undefined;
@@ -129,7 +128,8 @@ function extractTelegramApiMethod(input: TelegramFetchInput): string | null {
 export function createTelegramBot(opts: TelegramBotOptions) {
   const botRuntime = telegramBotRuntimeForTest ?? DEFAULT_TELEGRAM_BOT_RUNTIME;
   const runtime: RuntimeEnv = opts.runtime ?? createNonExitingRuntime();
-  const cfg = opts.config ?? botRuntime.loadConfig();
+  const telegramDeps = opts.telegramDeps ?? defaultTelegramBotDeps;
+  const cfg = opts.config ?? telegramDeps.loadConfig();
   const account = resolveTelegramAccount({
     cfg,
     accountId: opts.accountId,
@@ -512,6 +512,7 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     streamMode,
     textLimit,
     opts,
+    telegramDeps,
   });
 
   registerTelegramNativeCommands({
@@ -532,6 +533,7 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     resolveTelegramGroupConfig,
     shouldSkipUpdate,
     opts,
+    telegramDeps,
   });
 
   registerTelegramHandlers({
@@ -550,6 +552,7 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     shouldSkipUpdate,
     processMessage,
     logger,
+    telegramDeps,
   });
 
   const originalStop = bot.stop.bind(bot);

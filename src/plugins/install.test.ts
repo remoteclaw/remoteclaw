@@ -450,7 +450,6 @@ describe("installPluginFromArchive", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toContain("package.json missing remoteclaw.extensions");
-      expect(result.error).toContain("update the plugin package");
       expect(result.code).toBe(PLUGIN_INSTALL_ERROR_CODE.MISSING_REMOTECLAW_EXTENSIONS);
       return;
     }

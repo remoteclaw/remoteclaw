@@ -132,6 +132,17 @@ describe("bundled plugin sources", () => {
       })?.pluginId,
     ).toBe("feishu");
 
+    discoverRemoteClawPluginsMock.mockReturnValue({
+      candidates: [
+        {
+          origin: "bundled",
+          rootDir: "/app/extensions/diffs",
+          packageName: "@remoteclaw/diffs",
+          packageManifest: { install: { npmSpec: "@remoteclaw/diffs" } },
+        },
+      ],
+      diagnostics: [],
+    });
     loadPluginManifestMock.mockReturnValue({ ok: true, manifest: { id: "diffs" } });
 
     const resolved = findBundledPluginSource({

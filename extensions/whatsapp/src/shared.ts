@@ -1,8 +1,11 @@
 import {
   buildAccountScopedDmSecurityPolicy,
-  buildChannelConfigSchema,
   collectAllowlistProviderGroupPolicyWarnings,
   collectOpenGroupPolicyRouteAllowlistWarnings,
+} from "remoteclaw/plugin-sdk/channel-policy";
+import { createChannelPluginBase } from "remoteclaw/plugin-sdk/core";
+import {
+  buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
   formatWhatsAppConfigAllowFromEntries,
   getChatChannelMeta,
@@ -10,19 +13,17 @@ import {
   resolveWhatsAppConfigAllowFrom,
   resolveWhatsAppConfigDefaultTo,
   resolveWhatsAppGroupIntroHint,
+  resolveWhatsAppGroupRequireMention,
+  resolveWhatsAppGroupToolPolicy,
   WhatsAppConfigSchema,
   type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/whatsapp";
+} from "remoteclaw/plugin-sdk/whatsapp-core";
 import {
   listWhatsAppAccountIds,
   resolveDefaultWhatsAppAccountId,
   resolveWhatsAppAccount,
   type ResolvedWhatsAppAccount,
 } from "./accounts.js";
-import {
-  resolveWhatsAppGroupRequireMention,
-  resolveWhatsAppGroupToolPolicy,
-} from "./group-policy.js";
 
 export const WHATSAPP_CHANNEL = "whatsapp" as const;
 
@@ -96,7 +97,7 @@ export function createWhatsAppPluginBase(params: {
   | "setup"
   | "groups"
 > {
-  return {
+  return createChannelPluginBase({
     id: WHATSAPP_CHANNEL,
     meta: {
       ...getChatChannelMeta(WHATSAPP_CHANNEL),
@@ -218,5 +219,18 @@ export function createWhatsAppPluginBase(params: {
       resolveToolPolicy: resolveWhatsAppGroupToolPolicy,
       resolveGroupIntroHint: resolveWhatsAppGroupIntroHint,
     },
-  };
+  }) as Pick<
+    ChannelPlugin<ResolvedWhatsAppAccount>,
+    | "id"
+    | "meta"
+    | "setupWizard"
+    | "capabilities"
+    | "reload"
+    | "gatewayMethods"
+    | "configSchema"
+    | "config"
+    | "security"
+    | "setup"
+    | "groups"
+  >;
 }

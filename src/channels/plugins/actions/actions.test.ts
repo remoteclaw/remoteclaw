@@ -464,7 +464,7 @@ describe("handleDiscordMessageAction", () => {
         channelId: "123",
         emoji: "ok",
       },
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       toolContext: { currentMessageId: "9001" },
     });
 
@@ -487,7 +487,7 @@ describe("handleDiscordMessageAction", () => {
           channelId: "123",
           emoji: "ok",
         },
-        cfg: {} as OpenClawConfig,
+        cfg: {} as RemoteClawConfig,
       }),
     ).rejects.toThrow(/messageId required/i);
 

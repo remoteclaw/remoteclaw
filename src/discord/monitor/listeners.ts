@@ -43,6 +43,7 @@ type DiscordReactionEvent = Parameters<MessageReactionAddListener["handle"]>[0];
 
 type DiscordReactionListenerParams = {
   cfg: LoadedConfig;
+  accountId: string;
   runtime: RuntimeEnv;
   logger: Logger;
   onEvent?: () => void;

@@ -1,5 +1,5 @@
 import { resolveChannelGroupRequireMention } from "remoteclaw/plugin-sdk/channel-policy";
-import { resolveExactLineGroupConfigKey, type RemoteClawConfig } from "remoteclaw/plugin-sdk/line-core";
+import { resolveExactLineGroupConfigKey, type RemoteClawConfig } from "../runtime-api.js";
 
 type LineGroupContext = {
   cfg: RemoteClawConfig;

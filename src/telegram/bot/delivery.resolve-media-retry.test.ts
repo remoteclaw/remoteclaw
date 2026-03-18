@@ -27,10 +27,15 @@ vi.mock("../../globals.js", () => ({
 vi.mock("../sticker-cache.js", () => ({
   cacheSticker: () => {},
   getCachedSticker: () => null,
+  getCacheStats: () => ({ count: 0 }),
+  searchStickers: () => [],
+  getAllCachedStickers: () => [],
+  describeStickerImage: async () => null,
 }));
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-const { resolveMedia } = await import("./delivery.js");
+import { resolveMedia } from "./delivery.js";
+
+
 const MAX_MEDIA_BYTES = 10_000_000;
 const BOT_TOKEN = "tok123";
 

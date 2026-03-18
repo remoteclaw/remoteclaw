@@ -10,15 +10,15 @@ import {
   createTypingCallbacks,
   createScopedPairingAccess,
   createReplyPrefixOptions,
+  deliverTextOrMediaReply,
   evaluateGroupRouteAccessForPolicy,
   issuePairingChallenge,
-  resolveOutboundMediaUrls,
   mergeAllowlist,
   resolveMentionGatingWithBypass,
   resolveOpenProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   resolveSenderCommandAuthorization,
-  sendMediaWithLeadingCaption,
+  resolveSenderScopedGroupPolicy,
   summarizeMapping,
   warnMissingProviderGroupPolicyFallbackOnce,
   type MarkdownTableMode,
@@ -699,11 +699,28 @@ async function deliverZalouserReply(params: {
     params;
   const tableMode = params.tableMode ?? "code";
   const text = core.channel.text.convertMarkdownTables(payload.text ?? "", tableMode);
-
-  const sentMedia = await sendMediaWithLeadingCaption({
-    mediaUrls: resolveOutboundMediaUrls(payload),
-    caption: text,
-    send: async ({ mediaUrl, caption }) => {
+  const chunkMode = core.channel.text.resolveChunkMode(config, "zalouser", accountId);
+  const textChunkLimit = core.channel.text.resolveTextChunkLimit(config, "zalouser", accountId, {
+    fallbackLimit: ZALOUSER_TEXT_LIMIT,
+  });
+  await deliverTextOrMediaReply({
+    payload,
+    text,
+    sendText: async (chunk) => {
+      try {
+        await sendMessageZalouser(chatId, chunk, {
+          profile,
+          isGroup,
+          textMode: "markdown",
+          textChunkMode: chunkMode,
+          textChunkLimit,
+        });
+        statusSink?.({ lastOutboundAt: Date.now() });
+      } catch (err) {
+        runtime.error(`Zalouser message send failed: ${String(err)}`);
+      }
+    },
+    sendMedia: async ({ mediaUrl, caption }) => {
       logVerbose(core, runtime, `Sending media to ${chatId}`);
       await sendMessageZalouser(chatId, caption ?? "", {
         profile,
@@ -712,31 +729,10 @@ async function deliverZalouserReply(params: {
       });
       statusSink?.({ lastOutboundAt: Date.now() });
     },
-    onError: (error) => {
+    onMediaError: (error) => {
       runtime.error(`Zalouser media send failed: ${String(error)}`);
     },
   });
-  if (sentMedia) {
-    return;
-  }
-
-  if (text) {
-    const chunkMode = core.channel.text.resolveChunkMode(config, "zalouser", accountId);
-    const chunks = core.channel.text.chunkMarkdownTextWithMode(
-      text,
-      ZALOUSER_TEXT_LIMIT,
-      chunkMode,
-    );
-    logVerbose(core, runtime, `Sending ${chunks.length} text chunk(s) to ${chatId}`);
-    for (const chunk of chunks) {
-      try {
-        await sendMessageZalouser(chatId, chunk, { profile, isGroup });
-        statusSink?.({ lastOutboundAt: Date.now() });
-      } catch (err) {
-        runtime.error(`Zalouser message send failed: ${String(err)}`);
-      }
-    }
-  }
 }
 
 export async function monitorZalouserProvider(

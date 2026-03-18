@@ -4,6 +4,13 @@ import {
   shouldSuppressReasoningPayload,
 } from "../../auto-reply/reply/reply-payloads.js";
 import type { ReplyPayload } from "../../auto-reply/types.js";
+import {
+  hasInteractiveReplyBlocks,
+  hasReplyChannelData,
+  hasReplyContent,
+  type InteractiveReply,
+} from "../../interactive/payload.js";
+import { resolveOutboundMediaUrls } from "../../plugin-sdk/reply-payload.js";
 
 export type NormalizedOutboundPayload = {
   text: string;
@@ -83,7 +90,8 @@ export function normalizeOutboundPayloads(
 ): NormalizedOutboundPayload[] {
   const normalizedPayloads: NormalizedOutboundPayload[] = [];
   for (const payload of normalizeReplyPayloadsForDelivery(payloads)) {
-    const mediaUrls = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
+    const mediaUrls = resolveOutboundMediaUrls(payload);
+    const interactive = payload.interactive;
     const channelData = payload.channelData;
     const hasChannelData = Boolean(channelData && Object.keys(channelData).length > 0);
     const text = payload.text ?? "";
@@ -104,10 +112,12 @@ export function normalizeOutboundPayloadsForJson(
 ): OutboundPayloadJson[] {
   const normalized: OutboundPayloadJson[] = [];
   for (const payload of normalizeReplyPayloadsForDelivery(payloads)) {
+    const mediaUrls = resolveOutboundMediaUrls(payload);
     normalized.push({
       text: payload.text ?? "",
       mediaUrl: payload.mediaUrl ?? null,
-      mediaUrls: payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : undefined),
+      mediaUrls: mediaUrls.length ? mediaUrls : undefined,
+      interactive: payload.interactive,
       channelData: payload.channelData,
     });
   }

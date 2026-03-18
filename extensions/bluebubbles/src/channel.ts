@@ -16,9 +16,11 @@ import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channe
 import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
 import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
-  createComputedAccountStatusAdapter,
-  createDefaultChannelRuntimeState,
-} from "remoteclaw/plugin-sdk/status-helpers";
+  createAttachedChannelResultAdapter,
+  createPairingPrefixStripper,
+  createTextPairingAdapter,
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,
@@ -260,44 +262,44 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
       }
       return { ok: true, to: trimmed };
     },
-    sendText: async ({ cfg, to, text, accountId, replyToId }) => {
-      const rawReplyToId = typeof replyToId === "string" ? replyToId.trim() : "";
-      // Resolve short ID (e.g., "5") to full UUID
-      const replyToMessageGuid = rawReplyToId
-        ? resolveBlueBubblesMessageId(rawReplyToId, { requireKnownShortId: true })
-        : "";
-      const result = await sendMessageBlueBubbles(to, text, {
-        cfg: cfg,
-        accountId: accountId ?? undefined,
-        replyToMessageGuid: replyToMessageGuid || undefined,
-      });
-      return { channel: "bluebubbles", ...result };
-    },
-    sendMedia: async (ctx) => {
-      const { cfg, to, text, mediaUrl, accountId, replyToId } = ctx;
-      const { mediaPath, mediaBuffer, contentType, filename, caption } = ctx as {
-        mediaPath?: string;
-        mediaBuffer?: Uint8Array;
-        contentType?: string;
-        filename?: string;
-        caption?: string;
-      };
-      const resolvedCaption = caption ?? text;
-      const result = await sendBlueBubblesMedia({
-        cfg: cfg,
-        to,
-        mediaUrl,
-        mediaPath,
-        mediaBuffer,
-        contentType,
-        filename,
-        caption: resolvedCaption ?? undefined,
-        replyToId: replyToId ?? null,
-        accountId: accountId ?? undefined,
-      });
-
-      return { channel: "bluebubbles", ...result };
-    },
+    ...createAttachedChannelResultAdapter({
+      channel: "bluebubbles",
+      sendText: async ({ cfg, to, text, accountId, replyToId }) => {
+        const runtime = await loadBlueBubblesChannelRuntime();
+        const rawReplyToId = typeof replyToId === "string" ? replyToId.trim() : "";
+        const replyToMessageGuid = rawReplyToId
+          ? runtime.resolveBlueBubblesMessageId(rawReplyToId, { requireKnownShortId: true })
+          : "";
+        return await runtime.sendMessageBlueBubbles(to, text, {
+          cfg: cfg,
+          accountId: accountId ?? undefined,
+          replyToMessageGuid: replyToMessageGuid || undefined,
+        });
+      },
+      sendMedia: async (ctx) => {
+        const runtime = await loadBlueBubblesChannelRuntime();
+        const { cfg, to, text, mediaUrl, accountId, replyToId } = ctx;
+        const { mediaPath, mediaBuffer, contentType, filename, caption } = ctx as {
+          mediaPath?: string;
+          mediaBuffer?: Uint8Array;
+          contentType?: string;
+          filename?: string;
+          caption?: string;
+        };
+        return await runtime.sendBlueBubblesMedia({
+          cfg: cfg,
+          to,
+          mediaUrl,
+          mediaPath,
+          mediaBuffer,
+          contentType,
+          filename,
+          caption: caption ?? text ?? undefined,
+          replyToId: replyToId ?? null,
+          accountId: accountId ?? undefined,
+        });
+      },
+    }),
   },
   status: {
     defaultRuntime: {

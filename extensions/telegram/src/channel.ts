@@ -5,8 +5,11 @@ import {
 import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAllowlistProviderRouteAllowlistWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
 import {
+  attachChannelToResult,
+  createAttachedChannelResultAdapter,
   createChannelDirectoryAdapter,
   createPairingPrefixStripper,
+  createTopLevelChannelReplyToModeResolver,
   createTextPairingAdapter,
   normalizeMessageChannel,
   type OutboundSendDeps,
@@ -244,7 +247,9 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
     resolveToolPolicy: resolveTelegramGroupToolPolicy,
   },
   threading: {
-    resolveReplyToMode: ({ cfg }) => cfg.channels?.telegram?.replyToMode ?? "off",
+    resolveReplyToMode: createTopLevelChannelReplyToModeResolver("telegram"),
+    resolveAutoThreadId: ({ to, toolContext, replyToId }) =>
+      replyToId ? undefined : resolveTelegramAutoThreadId({ to, toolContext }),
   },
   messaging: {
     normalizeTarget: normalizeTelegramMessagingTarget,
@@ -367,55 +372,84 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
     chunkerMode: "markdown",
     textChunkLimit: 4000,
     pollMaxOptions: 10,
-    sendText: async ({ cfg, to, text, accountId, deps, replyToId, threadId, silent }) => {
-      const send = deps?.sendTelegram ?? getTelegramRuntime().channel.telegram.sendMessageTelegram;
-      const replyToMessageId = parseTelegramReplyToMessageId(replyToId);
-      const messageThreadId = parseTelegramThreadId(threadId);
-      const result = await send(to, text, {
-        verbose: false,
-        cfg,
-        messageThreadId,
-        replyToMessageId,
-        accountId: accountId ?? undefined,
-        silent: silent ?? undefined,
-      });
-      return { channel: "telegram", ...result };
-    },
-    sendMedia: async ({
+    shouldSkipPlainTextSanitization: ({ payload }) => Boolean(payload.channelData),
+    resolveEffectiveTextChunkLimit: ({ fallbackLimit }) =>
+      typeof fallbackLimit === "number" ? Math.min(fallbackLimit, 4096) : 4096,
+    sendPayload: async ({
       cfg,
       to,
-      text,
-      mediaUrl,
+      payload,
       mediaLocalRoots,
       accountId,
       deps,
       replyToId,
       threadId,
       silent,
+      forceDocument,
     }) => {
-      const send = deps?.sendTelegram ?? getTelegramRuntime().channel.telegram.sendMessageTelegram;
-      const replyToMessageId = parseTelegramReplyToMessageId(replyToId);
-      const messageThreadId = parseTelegramThreadId(threadId);
-      const result = await send(to, text, {
-        verbose: false,
+      const send =
+        resolveOutboundSendDep<TelegramSendFn>(deps, "telegram") ??
+        getTelegramRuntime().channel.telegram.sendMessageTelegram;
+      const result = await sendTelegramPayloadMessages({
+        send,
+        to,
+        payload,
+        baseOpts: buildTelegramSendOptions({
+          cfg,
+          mediaLocalRoots,
+          accountId,
+          replyToId,
+          threadId,
+          silent,
+          forceDocument,
+        }),
+      });
+      return attachChannelToResult("telegram", result);
+    },
+    ...createAttachedChannelResultAdapter({
+      channel: "telegram",
+      sendText: async ({ cfg, to, text, accountId, deps, replyToId, threadId, silent }) =>
+        await sendTelegramOutbound({
+          cfg,
+          to,
+          text,
+          accountId,
+          deps,
+          replyToId,
+          threadId,
+          silent,
+        }),
+      sendMedia: async ({
         cfg,
         mediaUrl,
         mediaLocalRoots,
-        messageThreadId,
-        replyToMessageId,
-        accountId: accountId ?? undefined,
-        silent: silent ?? undefined,
-      });
-      return { channel: "telegram", ...result };
-    },
-    sendPoll: async ({ cfg, to, poll, accountId, threadId, silent, isAnonymous }) =>
-      await getTelegramRuntime().channel.telegram.sendPollTelegram(to, poll, {
-        cfg,
-        accountId: accountId ?? undefined,
-        messageThreadId: parseTelegramThreadId(threadId),
-        silent: silent ?? undefined,
-        isAnonymous: isAnonymous ?? undefined,
-      }),
+        accountId,
+        deps,
+        replyToId,
+        threadId,
+        silent,
+      }) =>
+        await sendTelegramOutbound({
+          cfg,
+          to,
+          text,
+          mediaUrl,
+          mediaLocalRoots,
+          accountId,
+          deps,
+          replyToId,
+          threadId,
+          silent,
+        }),
+      sendPoll: async ({ cfg, to, poll, accountId, threadId, silent, isAnonymous }) =>
+        await getTelegramRuntime().channel.telegram.sendPollTelegram(to, poll, {
+          cfg,
+          accountId: accountId ?? undefined,
+          messageThreadId: parseTelegramThreadId(threadId),
+          silent: silent ?? undefined,
+          isAnonymous: isAnonymous ?? undefined,
+        }),
+    }),
   },
   status: {
     defaultRuntime: {

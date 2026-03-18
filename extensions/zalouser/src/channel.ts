@@ -1,7 +1,10 @@
 import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import {
+  createEmptyChannelResult,
   createPairingPrefixStripper,
+  createRawChannelSendResultAdapter,
+  createStaticReplyToModeResolver,
   createTextPairingAdapter,
 } from "remoteclaw/plugin-sdk/channel-runtime";
 import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
@@ -15,11 +18,6 @@ import type {
   GroupToolPolicyConfig,
 } from "../runtime-api.js";
 import {
-  buildAccountScopedDmSecurityPolicy,
-  mapAllowFromEntries,
-  applyAccountNameToChannelSection,
-  applySetupAccountConfigPatch,
-  buildChannelSendResult,
   buildBaseAccountStatusSnapshot,
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
@@ -401,7 +399,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
     resolveToolPolicy: resolveZalouserGroupToolPolicy,
   },
   threading: {
-    resolveReplyToMode: () => "off",
+    resolveReplyToMode: createStaticReplyToModeResolver("off"),
   },
   actions: zalouserMessageActions,
   messaging: {
@@ -584,28 +582,35 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
         chunker: zalouserPlugin.outbound!.chunker,
         sendText: (nextCtx) => zalouserPlugin.outbound!.sendText!(nextCtx),
         sendMedia: (nextCtx) => zalouserPlugin.outbound!.sendMedia!(nextCtx),
-        emptyResult: { channel: "zalouser", messageId: "" },
+        emptyResult: createEmptyChannelResult("zalouser"),
       }),
-    sendText: async ({ to, text, accountId, cfg }) => {
-      const account = resolveZalouserAccountSync({ cfg: cfg, accountId });
-      const target = parseZalouserOutboundTarget(to);
-      const result = await sendMessageZalouser(target.threadId, text, {
-        profile: account.profile,
-        isGroup: target.isGroup,
-      });
-      return buildChannelSendResult("zalouser", result);
-    },
-    sendMedia: async ({ to, text, mediaUrl, accountId, cfg, mediaLocalRoots }) => {
-      const account = resolveZalouserAccountSync({ cfg: cfg, accountId });
-      const target = parseZalouserOutboundTarget(to);
-      const result = await sendMessageZalouser(target.threadId, text, {
-        profile: account.profile,
-        isGroup: target.isGroup,
-        mediaUrl,
-        mediaLocalRoots,
-      });
-      return buildChannelSendResult("zalouser", result);
-    },
+    ...createRawChannelSendResultAdapter({
+      channel: "zalouser",
+      sendText: async ({ to, text, accountId, cfg }) => {
+        const account = resolveZalouserAccountSync({ cfg: cfg, accountId });
+        const target = parseZalouserOutboundTarget(to);
+        return await sendMessageZalouser(target.threadId, text, {
+          profile: account.profile,
+          isGroup: target.isGroup,
+          textMode: "markdown",
+          textChunkMode: resolveZalouserOutboundChunkMode(cfg, account.accountId),
+          textChunkLimit: resolveZalouserOutboundTextChunkLimit(cfg, account.accountId),
+        });
+      },
+      sendMedia: async ({ to, text, mediaUrl, accountId, cfg, mediaLocalRoots }) => {
+        const account = resolveZalouserAccountSync({ cfg: cfg, accountId });
+        const target = parseZalouserOutboundTarget(to);
+        return await sendMessageZalouser(target.threadId, text, {
+          profile: account.profile,
+          isGroup: target.isGroup,
+          mediaUrl,
+          mediaLocalRoots,
+          textMode: "markdown",
+          textChunkMode: resolveZalouserOutboundChunkMode(cfg, account.accountId),
+          textChunkLimit: resolveZalouserOutboundTextChunkLimit(cfg, account.accountId),
+        });
+      },
+    }),
   },
   status: {
     defaultRuntime: {

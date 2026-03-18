@@ -1,9 +1,10 @@
-import { chunkTextWithMode, resolveChunkMode } from "../../auto-reply/chunk.js";
-import type { ReplyPayload } from "../../auto-reply/types.js";
-import { loadConfig } from "../../config/config.js";
-import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
-import { convertMarkdownTables } from "../../markdown/tables.js";
-import type { RuntimeEnv } from "../../runtime.js";
+import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { deliverTextOrMediaReply } from "remoteclaw/plugin-sdk/reply-payload";
+import { chunkTextWithMode, resolveChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import { convertMarkdownTables } from "remoteclaw/plugin-sdk/text-runtime";
 import type { createIMessageRpcClient } from "../client.js";
 import { sendMessageIMessage } from "../send.js";
 import type { SentMessageCache } from "./echo-cache.js";
@@ -30,15 +31,17 @@ export async function deliverReplies(params: {
   });
   const chunkMode = resolveChunkMode(cfg, "imessage", accountId);
   for (const payload of replies) {
-    const mediaList = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
     const rawText = sanitizeOutboundText(payload.text ?? "");
     const text = convertMarkdownTables(rawText, tableMode);
-    if (!text && mediaList.length === 0) {
-      continue;
-    }
-    if (mediaList.length === 0) {
+    const hasMedia = Boolean(payload.mediaUrls?.length ?? payload.mediaUrl);
+    if (!hasMedia && text) {
       sentMessageCache?.remember(scope, { text });
-      for (const chunk of chunkTextWithMode(text, textLimit, chunkMode)) {
+    }
+    const delivered = await deliverTextOrMediaReply({
+      payload,
+      text,
+      chunkText: (value) => chunkTextWithMode(value, textLimit, chunkMode),
+      sendText: async (chunk) => {
         const sent = await sendMessageIMessage(target, chunk, {
           maxBytes,
           client,
@@ -46,14 +49,10 @@ export async function deliverReplies(params: {
           replyToId: payload.replyToId,
         });
         sentMessageCache?.remember(scope, { text: chunk, messageId: sent.messageId });
-      }
-    } else {
-      let first = true;
-      for (const url of mediaList) {
-        const caption = first ? text : "";
-        first = false;
-        const sent = await sendMessageIMessage(target, caption, {
-          mediaUrl: url,
+      },
+      sendMedia: async ({ mediaUrl, caption }) => {
+        const sent = await sendMessageIMessage(target, caption ?? "", {
+          mediaUrl,
           maxBytes,
           client,
           accountId,
@@ -63,8 +62,10 @@ export async function deliverReplies(params: {
           text: caption || undefined,
           messageId: sent.messageId,
         });
-      }
+      },
+    });
+    if (delivered !== "empty") {
+      runtime.log?.(`imessage: delivered reply to ${target}`);
     }
-    runtime.log?.(`imessage: delivered reply to ${target}`);
   }
 }

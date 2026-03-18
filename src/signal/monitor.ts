@@ -7,14 +7,22 @@ import {
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "../config/runtime-group-policy.js";
-import type { SignalReactionNotificationMode } from "../config/types.js";
-import type { BackoffPolicy } from "../infra/backoff.js";
-import { waitForTransportReady } from "../infra/transport-ready.js";
-import { saveMediaBuffer } from "../media/store.js";
-import { createNonExitingRuntime, type RuntimeEnv } from "../runtime.js";
-import { normalizeStringEntries } from "../shared/string-normalization.js";
-import { normalizeE164 } from "../utils.js";
+} from "remoteclaw/plugin-sdk/config-runtime";
+import type { SignalReactionNotificationMode } from "remoteclaw/plugin-sdk/config-runtime";
+import type { BackoffPolicy } from "remoteclaw/plugin-sdk/infra-runtime";
+import { waitForTransportReady } from "remoteclaw/plugin-sdk/infra-runtime";
+import { saveMediaBuffer } from "remoteclaw/plugin-sdk/media-runtime";
+import { deliverTextOrMediaReply } from "remoteclaw/plugin-sdk/reply-payload";
+import {
+  chunkTextWithMode,
+  resolveChunkMode,
+  resolveTextChunkLimit,
+} from "remoteclaw/plugin-sdk/reply-runtime";
+import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+import { createNonExitingRuntime, type RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import { normalizeStringEntries } from "remoteclaw/plugin-sdk/text-runtime";
+import { normalizeE164 } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveSignalAccount } from "./accounts.js";
 import { signalCheck, signalRpcRequest } from "./client.js";
 import { formatSignalDaemonExit, spawnSignalDaemon, type SignalDaemonHandle } from "./daemon.js";
@@ -292,35 +300,31 @@ async function deliverReplies(params: {
   const { replies, target, baseUrl, account, accountId, runtime, maxBytes, textLimit, chunkMode } =
     params;
   for (const payload of replies) {
-    const mediaList = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
-    const text = payload.text ?? "";
-    if (!text && mediaList.length === 0) {
-      continue;
-    }
-    if (mediaList.length === 0) {
-      for (const chunk of chunkTextWithMode(text, textLimit, chunkMode)) {
+    const delivered = await deliverTextOrMediaReply({
+      payload,
+      text: payload.text ?? "",
+      chunkText: (value) => chunkTextWithMode(value, textLimit, chunkMode),
+      sendText: async (chunk) => {
         await sendMessageSignal(target, chunk, {
           baseUrl,
           account,
           maxBytes,
           accountId,
         });
-      }
-    } else {
-      let first = true;
-      for (const url of mediaList) {
-        const caption = first ? text : "";
-        first = false;
-        await sendMessageSignal(target, caption, {
+      },
+      sendMedia: async ({ mediaUrl, caption }) => {
+        await sendMessageSignal(target, caption ?? "", {
           baseUrl,
           account,
-          mediaUrl: url,
+          mediaUrl,
           maxBytes,
           accountId,
         });
-      }
+      },
+    });
+    if (delivered !== "empty") {
+      runtime.log?.(`delivered reply to ${target}`);
     }
-    runtime.log?.(`delivered reply to ${target}`);
   }
 }
 

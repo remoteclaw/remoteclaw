@@ -10,12 +10,13 @@ import {
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   createConditionalWarningCollector,
-  projectAccountWarningCollector,
+  projectWarningCollector,
 } from "remoteclaw/plugin-sdk/channel-policy";
-import { attachChannelToResult } from "remoteclaw/plugin-sdk/channel-send-result";
-import { createChatChannelPlugin, type ChannelPlugin } from "remoteclaw/plugin-sdk/core";
-import { createEmptyChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
-import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/setup";
+import {
+  attachChannelToResult,
+  createEmptyChannelDirectoryAdapter,
+  createTextPairingAdapter,
+} from "remoteclaw/plugin-sdk/channel-runtime";
 import { z } from "zod";
 import { listAccountIds, resolveAccount } from "./accounts.js";
 import { sendMessage, sendFileUrl } from "./client.js";
@@ -184,7 +185,7 @@ export function createSynologyChatPlugin() {
         if (!ok) {
           throw new Error("Failed to send message to Synology Chat");
         }
-        return { channel: CHANNEL_ID, messageId: `sc-${Date.now()}`, chatId: to };
+        return attachChannelToResult(CHANNEL_ID, { messageId: `sc-${Date.now()}`, chatId: to });
       },
 
       sendMedia: async ({ to, mediaUrl, accountId, cfg }: any) => {
@@ -201,7 +202,7 @@ export function createSynologyChatPlugin() {
         if (!ok) {
           throw new Error("Failed to send media to Synology Chat");
         }
-        return { channel: CHANNEL_ID, messageId: `sc-${Date.now()}`, chatId: to };
+        return attachChannelToResult(CHANNEL_ID, { messageId: `sc-${Date.now()}`, chatId: to });
       },
     },
 

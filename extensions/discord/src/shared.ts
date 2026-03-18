@@ -1,12 +1,5 @@
-import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
-import {
-  createScopedAccountConfigAccessors,
-  createScopedChannelConfigBase,
-} from "openclaw/plugin-sdk/channel-config-helpers";
-import { buildChannelConfigSchema } from "../../../src/channels/plugins/config-schema.js";
-import type { ChannelPlugin } from "../../../src/channels/plugins/types.plugin.js";
-import { getChatChannelMeta } from "../../../src/channels/registry.js";
-import { DiscordConfigSchema } from "../../../src/config/zod-schema.providers-core.js";
+import { formatAllowFromLowercase } from "openclaw/plugin-sdk/allow-from";
+import { createChannelPluginBase } from "openclaw/plugin-sdk/core";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import {
   listDiscordAccountIds,
@@ -14,6 +7,14 @@ import {
   resolveDiscordAccount,
   type ResolvedDiscordAccount,
 } from "./accounts.js";
+import {
+  createScopedAccountConfigAccessors,
+  createScopedChannelConfigBase,
+  buildChannelConfigSchema,
+  DiscordConfigSchema,
+  getChatChannelMeta,
+  type ChannelPlugin,
+} from "./runtime-api.js";
 import { createDiscordSetupWizardProxy } from "./setup-core.js";
 
 export const DISCORD_CHANNEL = "discord" as const;

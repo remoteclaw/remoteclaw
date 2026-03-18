@@ -14,6 +14,8 @@ import {
 import {
   buildComputedAccountStatusSnapshot,
   buildTokenChannelStatusSummary,
+  type ChannelMessageActionAdapter,
+  type ChannelPlugin,
   DEFAULT_ACCOUNT_ID,
   getChatChannelMeta,
   listDiscordDirectoryGroupsFromConfig,
@@ -21,13 +23,9 @@ import {
   PAIRING_APPROVED_MESSAGE,
   projectCredentialSnapshotFields,
   resolveConfiguredFromCredentialStatuses,
-  resolveDiscordGroupRequireMention,
-  resolveDiscordGroupToolPolicy,
-  type ChannelMessageActionAdapter,
-  type ChannelPlugin,
-  type RemoteClawConfig,
-} from "../../../src/plugin-sdk-internal/discord.js";
-import { normalizeMessageChannel } from "../../../src/utils/message-channel.js";
+  type OpenClawConfig,
+} from "./runtime-api.js";
+import { resolveThreadSessionKeys, type RoutePeer } from "openclaw/plugin-sdk/routing";
 import {
   listDiscordAccountIds,
   resolveDiscordAccount,

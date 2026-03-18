@@ -1,44 +1,7 @@
-import { createScopedChannelConfigBase } from "remoteclaw/plugin-sdk/compat";
-import {
-  createScopedAccountConfigAccessors,
-  formatAllowFromLowercase,
-} from "remoteclaw/plugin-sdk/compat";
-import {
-  buildChannelConfigSchema,
-  DiscordConfigSchema,
-  getChatChannelMeta,
-  inspectDiscordAccount,
-  listDiscordAccountIds,
-  resolveDefaultDiscordAccountId,
-  resolveDiscordAccount,
-  type ChannelPlugin,
-  type ResolvedDiscordAccount,
-} from "remoteclaw/plugin-sdk/discord";
-import { createDiscordSetupWizardProxy, discordSetupAdapter } from "./setup-core.js";
-
-async function loadDiscordChannelRuntime() {
-  return await import("./channel.runtime.js");
-}
-
-const discordConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveDiscordAccount({ cfg, accountId }),
-  resolveAllowFrom: (account: ResolvedDiscordAccount) => account.config.dm?.allowFrom,
-  formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom }),
-  resolveDefaultTo: (account: ResolvedDiscordAccount) => account.config.defaultTo,
-});
-
-const discordConfigBase = createScopedChannelConfigBase({
-  sectionKey: "discord",
-  listAccountIds: listDiscordAccountIds,
-  resolveAccount: (cfg, accountId) => resolveDiscordAccount({ cfg, accountId }),
-  inspectAccount: (cfg, accountId) => inspectDiscordAccount({ cfg, accountId }),
-  defaultAccountId: resolveDefaultDiscordAccountId,
-  clearBaseFields: ["token", "name"],
-});
-
-const discordSetupWizard = createDiscordSetupWizardProxy(async () => ({
-  discordSetupWizard: (await loadDiscordChannelRuntime()).discordSetupWizard,
-}));
+import { type ResolvedDiscordAccount } from "./accounts.js";
+import { type ChannelPlugin } from "./runtime-api.js";
+import { discordSetupAdapter } from "./setup-core.js";
+import { createDiscordPluginBase } from "./shared.js";
 
 export const discordSetupPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
   id: "discord",

@@ -24,10 +24,10 @@ import type {
 import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
 import { resolveChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
 import { clearHistoryEntriesIfEnabled } from "remoteclaw/plugin-sdk/reply-runtime";
+import { dispatchReplyWithBufferedBlockDispatcher } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import { defaultTelegramBotDeps, type TelegramBotDeps } from "./bot-deps.js";
 import type { TelegramMessageContext } from "./bot-message-context.js";
 import type { TelegramBotOptions } from "./bot.js";
 import { deliverReplies } from "./bot/delivery.js";
@@ -52,6 +52,18 @@ import { editMessageTelegram } from "./send.js";
 import { cacheSticker, describeStickerImage } from "./sticker-cache.js";
 
 const EMPTY_RESPONSE_FALLBACK = "No response generated. Please try again.";
+const DEFAULT_BOT_MESSAGE_DISPATCH_RUNTIME = {
+  dispatchReplyWithBufferedBlockDispatcher,
+};
+let botMessageDispatchRuntimeForTest:
+  | Partial<typeof DEFAULT_BOT_MESSAGE_DISPATCH_RUNTIME>
+  | undefined;
+
+export function setBotMessageDispatchRuntimeForTest(
+  runtime?: Partial<typeof DEFAULT_BOT_MESSAGE_DISPATCH_RUNTIME>,
+): void {
+  botMessageDispatchRuntimeForTest = runtime;
+}
 
 /** Minimum chars before sending first streaming message (improves push notification UX) */
 const DRAFT_MIN_INITIAL_CHARS = 30;
@@ -110,7 +122,6 @@ type DispatchTelegramMessageParams = {
   streamMode: TelegramStreamMode;
   textLimit: number;
   telegramCfg: TelegramAccountConfig;
-  telegramDeps?: TelegramBotDeps;
   opts: Pick<TelegramBotOptions, "token">;
 };
 
@@ -148,9 +159,12 @@ export const dispatchTelegramMessage = async ({
   streamMode,
   textLimit,
   telegramCfg,
-  telegramDeps = defaultTelegramBotDeps,
   opts,
 }: DispatchTelegramMessageParams) => {
+  const botMessageDispatchRuntime = {
+    ...DEFAULT_BOT_MESSAGE_DISPATCH_RUNTIME,
+    ...botMessageDispatchRuntimeForTest,
+  };
   const {
     ctxPayload,
     msg,
@@ -480,7 +494,6 @@ export const dispatchTelegramMessage = async ({
       replies: [payload],
       onVoiceRecording: sendRecordVoice,
       silent: silentErrorReplies && payload.isError === true,
-      mediaLoader: telegramDeps.loadWebMedia,
     });
     if (result.delivered) {
       deliveryState.markDelivered();
@@ -538,7 +551,7 @@ export const dispatchTelegramMessage = async ({
 
   let dispatchError: unknown;
   try {
-    ({ queuedFinal } = await telegramDeps.dispatchReplyWithBufferedBlockDispatcher({
+    ({ queuedFinal } = await botMessageDispatchRuntime.dispatchReplyWithBufferedBlockDispatcher({
       ctx: ctxPayload,
       cfg,
       dispatcherOptions: {
@@ -822,7 +835,6 @@ export const dispatchTelegramMessage = async ({
       replies: [{ text: fallbackText }],
       ...deliveryBaseOptions,
       silent: silentErrorReplies && (dispatchError != null || hadErrorReplyFailureOrSkip),
-      mediaLoader: telegramDeps.loadWebMedia,
     });
     sentFallback = result.delivered;
   }

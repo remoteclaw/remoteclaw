@@ -1,53 +1,56 @@
 import type { Message, ReactionTypeEmoji } from "@grammyjs/types";
-import { resolveAgentDir, resolveDefaultAgentId } from "openclaw/plugin-sdk/agent-runtime";
-import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk/agent-runtime";
-import { shouldDebounceTextInbound } from "openclaw/plugin-sdk/channel-runtime";
-import { resolveChannelConfigWrites } from "openclaw/plugin-sdk/channel-runtime";
-import { loadConfig } from "openclaw/plugin-sdk/config-runtime";
-import { writeConfigFile } from "openclaw/plugin-sdk/config-runtime";
+import { resolveAgentDir, resolveDefaultAgentId } from "remoteclaw/plugin-sdk/agent-runtime";
+import { resolveDefaultModelForAgent } from "remoteclaw/plugin-sdk/agent-runtime";
+import { shouldDebounceTextInbound } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveChannelConfigWrites } from "remoteclaw/plugin-sdk/channel-runtime";
+import { writeConfigFile } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   loadSessionStore,
   resolveSessionStoreEntry,
-  resolveStorePath,
   updateSessionStore,
-} from "openclaw/plugin-sdk/config-runtime";
-import type { DmPolicy } from "openclaw/plugin-sdk/config-runtime";
+} from "remoteclaw/plugin-sdk/config-runtime";
+import type { DmPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import type {
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "openclaw/plugin-sdk/config-runtime";
-import { applyModelOverrideToSessionEntry } from "openclaw/plugin-sdk/config-runtime";
-import { readChannelAllowFromStore } from "openclaw/plugin-sdk/conversation-runtime";
+} from "remoteclaw/plugin-sdk/config-runtime";
+import { applyModelOverrideToSessionEntry } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   buildPluginBindingResolvedText,
   parsePluginBindingApprovalCustomId,
   resolvePluginConversationBindingApproval,
-} from "openclaw/plugin-sdk/conversation-runtime";
-import { enqueueSystemEvent } from "openclaw/plugin-sdk/infra-runtime";
-import { MediaFetchError } from "openclaw/plugin-sdk/media-runtime";
-import { dispatchPluginInteractiveHandler } from "openclaw/plugin-sdk/plugin-runtime";
+} from "remoteclaw/plugin-sdk/conversation-runtime";
+import { dispatchPluginInteractiveHandler } from "remoteclaw/plugin-sdk/plugin-runtime";
 import {
   createInboundDebouncer,
   resolveInboundDebounceMs,
-} from "openclaw/plugin-sdk/reply-runtime";
-import { buildCommandsPaginationKeyboard } from "openclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/reply-runtime";
+import { buildCommandsPaginationKeyboard } from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   buildModelsProviderData,
   formatModelsAvailableHeader,
-} from "openclaw/plugin-sdk/reply-runtime";
-import { resolveStoredModelOverride } from "openclaw/plugin-sdk/reply-runtime";
-import { listSkillCommandsForAgents } from "openclaw/plugin-sdk/reply-runtime";
-import { buildCommandsMessagePaginated } from "openclaw/plugin-sdk/reply-runtime";
-import { resolveAgentRoute } from "openclaw/plugin-sdk/routing";
-import { resolveThreadSessionKeys } from "openclaw/plugin-sdk/routing";
-import { danger, logVerbose, warn } from "openclaw/plugin-sdk/runtime-env";
+} from "remoteclaw/plugin-sdk/reply-runtime";
+import { resolveStoredModelOverride } from "remoteclaw/plugin-sdk/reply-runtime";
+import { buildCommandsMessagePaginated } from "remoteclaw/plugin-sdk/reply-runtime";
+import { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
+import { resolveThreadSessionKeys } from "remoteclaw/plugin-sdk/routing";
+import { danger, logVerbose, warn } from "remoteclaw/plugin-sdk/runtime-env";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import {
   isSenderAllowed,
   normalizeDmAllowFromWithStore,
   type NormalizedAllowFrom,
 } from "./bot-access.js";
+import { defaultTelegramBotDeps } from "./bot-deps.js";
+import {
+  APPROVE_CALLBACK_DATA_RE,
+  hasInboundMedia,
+  hasReplyTargetMedia,
+  isMediaSizeLimitError,
+  isRecoverableMediaGroupError,
+  resolveInboundMediaFileId,
+} from "./bot-handlers.media.js";
 import type { TelegramMediaRef } from "./bot-message-context.js";
 import { RegisterTelegramHandlerParams } from "./bot-native-commands.js";
 import {
@@ -90,45 +93,6 @@ import {
   type ProviderInfo,
 } from "./model-buttons.js";
 import { buildInlineKeyboard } from "./send.js";
-import { wasSentByBot } from "./sent-message-cache.js";
-
-const APPROVE_CALLBACK_DATA_RE =
-  /^\/approve(?:@[^\s]+)?\s+[A-Za-z0-9][A-Za-z0-9._:-]*\s+(allow-once|allow-always|deny)\b/i;
-
-function isMediaSizeLimitError(err: unknown): boolean {
-  const errMsg = String(err);
-  return errMsg.includes("exceeds") && errMsg.includes("MB limit");
-}
-
-function isRecoverableMediaGroupError(err: unknown): boolean {
-  return err instanceof MediaFetchError || isMediaSizeLimitError(err);
-}
-
-function hasInboundMedia(msg: Message): boolean {
-  return (
-    Boolean(msg.media_group_id) ||
-    (Array.isArray(msg.photo) && msg.photo.length > 0) ||
-    Boolean(msg.video ?? msg.video_note ?? msg.document ?? msg.audio ?? msg.voice ?? msg.sticker)
-  );
-}
-
-function hasReplyTargetMedia(msg: Message): boolean {
-  const externalReply = (msg as Message & { external_reply?: Message }).external_reply;
-  const replyTarget = msg.reply_to_message ?? externalReply;
-  return Boolean(replyTarget && hasInboundMedia(replyTarget));
-}
-
-function resolveInboundMediaFileId(msg: Message): string | undefined {
-  return (
-    msg.sticker?.file_id ??
-    msg.photo?.[msg.photo.length - 1]?.file_id ??
-    msg.video?.file_id ??
-    msg.video_note?.file_id ??
-    msg.document?.file_id ??
-    msg.audio?.file_id ??
-    msg.voice?.file_id
-  );
-}
 
 export const registerTelegramHandlers = ({
   cfg,
@@ -146,6 +110,7 @@ export const registerTelegramHandlers = ({
   shouldSkipUpdate,
   processMessage,
   logger,
+  telegramDeps = defaultTelegramBotDeps,
 }: RegisterTelegramHandlerParams) => {
   const DEFAULT_TEXT_FRAGMENT_MAX_GAP_MS = 1500;
   const TELEGRAM_TEXT_FRAGMENT_START_THRESHOLD_CHARS = 4000;
@@ -346,7 +311,9 @@ export const registerTelegramHandlers = ({
         ? resolveThreadSessionKeys({ baseSessionKey, threadId: `${params.chatId}:${dmThreadId}` })
         : null;
     const sessionKey = threadKeys?.sessionKey ?? baseSessionKey;
-    const storePath = resolveStorePath(cfg.session?.store, { agentId: route.agentId });
+    const storePath = telegramDeps.resolveStorePath(cfg.session?.store, {
+      agentId: route.agentId,
+    });
     const store = loadSessionStore(storePath);
     const entry = resolveSessionStoreEntry({ store, sessionKey }).existing;
     const storedOverride = resolveStoredModelOverride({
@@ -475,7 +442,7 @@ export const registerTelegramHandlers = ({
   };
 
   const loadStoreAllowFrom = async () =>
-    readChannelAllowFromStore("telegram", process.env, accountId).catch(() => []);
+    telegramDeps.readChannelAllowFromStore("telegram", process.env, accountId).catch(() => []);
 
   const resolveReplyMediaForMessage = async (
     ctx: TelegramContext,
@@ -791,7 +758,7 @@ export const registerTelegramHandlers = ({
       if (user?.is_bot) {
         return;
       }
-      if (reactionMode === "own" && !wasSentByBot(chatId, messageId)) {
+      if (reactionMode === "own" && !telegramDeps.wasSentByBot(chatId, messageId)) {
         return;
       }
       const eventAuthContext = await resolveTelegramEventAuthorizationContext({
@@ -866,7 +833,7 @@ export const registerTelegramHandlers = ({
       const parentPeer = buildTelegramParentPeer({ isGroup, resolvedThreadId, chatId });
       // Fresh config for bindings lookup; other routing inputs are payload-derived.
       const route = resolveAgentRoute({
-        cfg: loadConfig(),
+        cfg: telegramDeps.loadConfig(),
         channel: "telegram",
         accountId,
         peer: { kind: isGroup ? "group" : "direct", id: peerId },
@@ -878,7 +845,7 @@ export const registerTelegramHandlers = ({
       for (const r of addedReactions) {
         const emoji = r.emoji;
         const text = `Telegram reaction added: ${emoji} by ${senderLabel} on msg ${messageId}`;
-        enqueueSystemEvent(text, {
+        telegramDeps.enqueueSystemEvent(text, {
           sessionKey,
           contextKey: `telegram:reaction:add:${chatId}:${messageId}:${user?.id ?? "anon"}:${emoji}`,
         });
@@ -1020,7 +987,6 @@ export const registerTelegramHandlers = ({
             fn: () =>
               bot.api.sendMessage(chatId, `⚠️ File too large. Maximum size is ${limitMb}MB.`, {
                 reply_to_message_id: msg.message_id,
-                allow_sending_without_reply: true,
               }),
           }).catch(() => {});
         }
@@ -1034,7 +1000,6 @@ export const registerTelegramHandlers = ({
         fn: () =>
           bot.api.sendMessage(chatId, "⚠️ Failed to download media. Please try again.", {
             reply_to_message_id: msg.message_id,
-            allow_sending_without_reply: true,
           }),
       }).catch(() => {});
       return;
@@ -1336,7 +1301,7 @@ export const registerTelegramHandlers = ({
         }
 
         const agentId = paginationMatch[2]?.trim() || resolveDefaultAgentId(cfg);
-        const skillCommands = listSkillCommandsForAgents({
+        const skillCommands = telegramDeps.listSkillCommandsForAgents({
           cfg,
           agentIds: [agentId],
         });
@@ -1493,7 +1458,7 @@ export const registerTelegramHandlers = ({
           // Directly set model override in session
           try {
             // Get session store path
-            const storePath = resolveStorePath(cfg.session?.store, {
+            const storePath = telegramDeps.resolveStorePath(cfg.session?.store, {
               agentId: sessionState.agentId,
             });
 
@@ -1573,7 +1538,7 @@ export const registerTelegramHandlers = ({
       }
 
       // Check if old chat ID has config and migrate it
-      const currentConfig = loadConfig();
+      const currentConfig = telegramDeps.loadConfig();
       const migration = migrateTelegramGroupConfig({
         cfg: currentConfig,
         accountId,

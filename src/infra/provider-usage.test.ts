@@ -277,6 +277,7 @@ describe("provider usage loading", () => {
           now: usageNow,
           providers: ["anthropic"],
           fetch: mockFetch as unknown as typeof fetch,
+          config: { plugins: { enabled: false } },
         });
 
         const claude = expectSingleAnthropicProvider(summary);

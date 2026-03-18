@@ -1,1 +1,1 @@
-export * from "./runtime-api.js";
+export * from "remoteclaw/plugin-sdk/nostr";

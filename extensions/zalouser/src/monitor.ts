@@ -17,12 +17,11 @@ import type {
   RuntimeEnv,
 } from "remoteclaw/plugin-sdk/zalouser";
 import {
-  createTypingCallbacks,
-  createScopedPairingAccess,
-  createReplyPrefixOptions,
+  createChannelPairingController,
+  createChannelReplyPipeline,
+  deliverTextOrMediaReply,
   evaluateGroupRouteAccessForPolicy,
-  issuePairingChallenge,
-  resolveOutboundMediaUrls,
+  isDangerousNameMatchingEnabled,
   mergeAllowlist,
   resolveMentionGatingWithBypass,
   resolveOpenProviderRuntimeGroupPolicy,
@@ -261,7 +260,7 @@ async function processMessage(
   historyState: ZalouserGroupHistoryState,
   statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void,
 ): Promise<void> {
-  const pairing = createScopedPairingAccess({
+  const pairing = createChannelPairingController({
     core,
     channel: "zalouser",
     accountId: account.accountId,
@@ -391,12 +390,10 @@ async function processMessage(
 
   if (!isGroup && accessDecision.decision !== "allow") {
     if (accessDecision.decision === "pairing") {
-      await issuePairingChallenge({
-        channel: "zalouser",
+      await pairing.issueChallenge({
         senderId,
         senderIdLine: `Your Zalo user id: ${senderId}`,
         meta: { name: senderName || undefined },
-        upsertPairingRequest: pairing.upsertPairingRequest,
         onCreated: () => {
           logVerbose(core, runtime, `zalouser pairing request sender=${senderId}`);
         },
@@ -631,24 +628,24 @@ async function processMessage(
     },
   });
 
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
     cfg: config,
     agentId: route.agentId,
     channel: "zalouser",
     accountId: account.accountId,
-  });
-  const typingCallbacks = createTypingCallbacks({
-    start: async () => {
-      await sendTypingZalouser(chatId, {
-        profile: account.profile,
-        isGroup,
-      });
-    },
-    onStartError: (err) => {
-      runtime.error?.(
-        `[${account.accountId}] zalouser typing start failed for ${chatId}: ${String(err)}`,
-      );
-      logVerbose(core, runtime, `zalouser typing failed for ${chatId}: ${String(err)}`);
+    typing: {
+      start: async () => {
+        await sendTypingZalouser(chatId, {
+          profile: account.profile,
+          isGroup,
+        });
+      },
+      onStartError: (err) => {
+        runtime.error?.(
+          `[${account.accountId}] zalouser typing start failed for ${chatId}: ${String(err)}`,
+        );
+        logVerbose(core, runtime, `zalouser typing failed for ${chatId}: ${String(err)}`);
+      },
     },
   });
 
@@ -656,8 +653,7 @@ async function processMessage(
     ctx: ctxPayload,
     cfg: config,
     dispatcherOptions: {
-      ...prefixOptions,
-      typingCallbacks,
+      ...replyPipeline,
       deliver: async (payload) => {
         await deliverZalouserReply({
           payload: payload as { text?: string; mediaUrls?: string[]; mediaUrl?: string },

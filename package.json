@@ -91,6 +91,14 @@
       "types": "./dist/plugin-sdk/setup.d.ts",
       "default": "./dist/plugin-sdk/setup.js"
     },
+    "./plugin-sdk/channel-setup": {
+      "types": "./dist/plugin-sdk/channel-setup.d.ts",
+      "default": "./dist/plugin-sdk/channel-setup.js"
+    },
+    "./plugin-sdk/setup-tools": {
+      "types": "./dist/plugin-sdk/setup-tools.d.ts",
+      "default": "./dist/plugin-sdk/setup-tools.js"
+    },
     "./plugin-sdk/config-runtime": {
       "types": "./dist/plugin-sdk/config-runtime.d.ts",
       "default": "./dist/plugin-sdk/config-runtime.js"
@@ -98,6 +106,14 @@
     "./plugin-sdk/reply-runtime": {
       "types": "./dist/plugin-sdk/reply-runtime.d.ts",
       "default": "./dist/plugin-sdk/reply-runtime.js"
+    },
+    "./plugin-sdk/reply-payload": {
+      "types": "./dist/plugin-sdk/reply-payload.d.ts",
+      "default": "./dist/plugin-sdk/reply-payload.js"
+    },
+    "./plugin-sdk/channel-reply-pipeline": {
+      "types": "./dist/plugin-sdk/channel-reply-pipeline.d.ts",
+      "default": "./dist/plugin-sdk/channel-reply-pipeline.js"
     },
     "./plugin-sdk/channel-runtime": {
       "types": "./dist/plugin-sdk/channel-runtime.d.ts",
@@ -403,6 +419,14 @@
       "types": "./dist/plugin-sdk/channel-config-schema.d.ts",
       "default": "./dist/plugin-sdk/channel-config-schema.js"
     },
+    "./plugin-sdk/channel-lifecycle": {
+      "types": "./dist/plugin-sdk/channel-lifecycle.d.ts",
+      "default": "./dist/plugin-sdk/channel-lifecycle.js"
+    },
+    "./plugin-sdk/channel-pairing": {
+      "types": "./dist/plugin-sdk/channel-pairing.d.ts",
+      "default": "./dist/plugin-sdk/channel-pairing.js"
+    },
     "./plugin-sdk/channel-policy": {
       "types": "./dist/plugin-sdk/channel-policy.d.ts",
       "default": "./dist/plugin-sdk/channel-policy.js"
@@ -463,9 +487,25 @@
       "types": "./dist/plugin-sdk/request-url.d.ts",
       "default": "./dist/plugin-sdk/request-url.js"
     },
+    "./plugin-sdk/webhook-ingress": {
+      "types": "./dist/plugin-sdk/webhook-ingress.d.ts",
+      "default": "./dist/plugin-sdk/webhook-ingress.js"
+    },
+    "./plugin-sdk/webhook-path": {
+      "types": "./dist/plugin-sdk/webhook-path.d.ts",
+      "default": "./dist/plugin-sdk/webhook-path.js"
+    },
     "./plugin-sdk/runtime-store": {
       "types": "./dist/plugin-sdk/runtime-store.d.ts",
       "default": "./dist/plugin-sdk/runtime-store.js"
+    },
+    "./plugin-sdk/secret-input": {
+      "types": "./dist/plugin-sdk/secret-input.d.ts",
+      "default": "./dist/plugin-sdk/secret-input.js"
+    },
+    "./plugin-sdk/web-media": {
+      "types": "./dist/plugin-sdk/web-media.d.ts",
+      "default": "./dist/plugin-sdk/web-media.js"
     },
     "./plugin-sdk/speech": {
       "types": "./dist/plugin-sdk/speech.d.ts",

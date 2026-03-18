@@ -6,10 +6,9 @@ import {
   modelSupportsVision,
 } from "remoteclaw/plugin-sdk/agent-runtime";
 import { resolveDefaultModelForAgent } from "remoteclaw/plugin-sdk/agent-runtime";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
 import { removeAckReactionAfterReply } from "remoteclaw/plugin-sdk/channel-runtime";
 import { logAckFailure, logTypingFailure } from "remoteclaw/plugin-sdk/channel-runtime";
-import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk/channel-runtime";
-import { createTypingCallbacks } from "remoteclaw/plugin-sdk/channel-runtime";
 import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   loadSessionStore,
@@ -378,12 +377,6 @@ export const dispatchTelegramMessage = async ({
           ? true
           : undefined;
 
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
-    cfg,
-    agentId: route.agentId,
-    channel: "telegram",
-    accountId: route.accountId,
-  });
   const chunkMode = resolveChunkMode(cfg, "telegram", route.accountId);
 
   // Handle uncached stickers: get a dedicated vision description before dispatch
@@ -518,15 +511,21 @@ export const dispatchTelegramMessage = async ({
     void statusReactionController.setThinking();
   }
 
-  const typingCallbacks = createTypingCallbacks({
-    start: sendTyping,
-    onStartError: (err) => {
-      logTypingFailure({
-        log: logVerbose,
-        channel: "telegram",
-        target: String(chatId),
-        error: err,
-      });
+  const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
+    cfg,
+    agentId: route.agentId,
+    channel: "telegram",
+    accountId: route.accountId,
+    typing: {
+      start: sendTyping,
+      onStartError: (err) => {
+        logTypingFailure({
+          log: logVerbose,
+          channel: "telegram",
+          target: String(chatId),
+          error: err,
+        });
+      },
     },
   });
 
@@ -536,8 +535,7 @@ export const dispatchTelegramMessage = async ({
       ctx: ctxPayload,
       cfg,
       dispatcherOptions: {
-        ...prefixOptions,
-        typingCallbacks,
+        ...replyPipeline,
         deliver: async (payload, info) => {
           if (info.kind === "final") {
             // Assistant callbacks are fire-and-forget; ensure queued boundary

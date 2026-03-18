@@ -1,16 +1,14 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import {
-  GROUP_POLICY_BLOCKED_LABEL,
-  createScopedPairingAccess,
-  createReplyPrefixOptions,
-  readJsonBodyWithLimit,
-  registerPluginHttpRoute,
-  registerWebhookTarget,
-  rejectNonPostWebhookRequest,
-  isDangerousNameMatchingEnabled,
-  resolveAllowlistProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
+  deliverTextOrMediaReply,
+  resolveSendableOutboundReplyParts,
+} from "remoteclaw/plugin-sdk/reply-payload";
+import type { RemoteClawConfig } from "../runtime-api.js";
+import {
+  createChannelReplyPipeline,
+  createWebhookInFlightLimiter,
+  registerWebhookTargetWithPluginRoute,
   resolveInboundRouteEnvelopeBuilderWithRuntime,
   resolveSingleWebhookTargetAsync,
   resolveWebhookPath,
@@ -764,7 +762,7 @@ async function processMessageWithPipeline(params: {
     }
   }
 
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
     cfg: config,
     agentId: route.agentId,
     channel: "googlechat",
@@ -775,7 +773,7 @@ async function processMessageWithPipeline(params: {
     ctx: ctxPayload,
     cfg: config,
     dispatcherOptions: {
-      ...prefixOptions,
+      ...replyPipeline,
       deliver: async (payload) => {
         await deliverGoogleChatReply({
           payload,

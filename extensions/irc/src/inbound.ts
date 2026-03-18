@@ -26,6 +26,23 @@ import {
   resolveIrcGroupSenderAllowed,
   resolveIrcRequireMention,
 } from "./policy.js";
+import {
+  GROUP_POLICY_BLOCKED_LABEL,
+  createChannelPairingController,
+  deliverFormattedTextWithAttachments,
+  dispatchInboundReplyWithBase,
+  logInboundDrop,
+  isDangerousNameMatchingEnabled,
+  readStoreAllowFromForDmPolicy,
+  resolveControlCommandGate,
+  resolveAllowlistProviderRuntimeGroupPolicy,
+  resolveDefaultGroupPolicy,
+  resolveEffectiveAllowFromLists,
+  warnMissingProviderGroupPolicyFallbackOnce,
+  type OutboundReplyPayload,
+  type RemoteClawConfig,
+  type RuntimeEnv,
+} from "./runtime-api.js";
 import { getIrcRuntime } from "./runtime.js";
 import { sendMessageIrc } from "./send.js";
 import type { CoreConfig, IrcInboundMessage } from "./types.js";
@@ -85,7 +102,7 @@ export async function handleIrcInbound(params: {
 }): Promise<void> {
   const { message, account, config, runtime, connectedNick, statusSink } = params;
   const core = getIrcRuntime();
-  const pairing = createScopedPairingAccess({
+  const pairing = createChannelPairingController({
     core,
     channel: CHANNEL_ID,
     accountId: account.accountId,
@@ -205,12 +222,10 @@ export async function handleIrcInbound(params: {
       }).allowed;
       if (!dmAllowed) {
         if (dmPolicy === "pairing") {
-          await issuePairingChallenge({
-            channel: CHANNEL_ID,
+          await pairing.issueChallenge({
             senderId: senderDisplay.toLowerCase(),
             senderIdLine: `Your IRC id: ${senderDisplay}`,
             meta: { name: message.senderNick || undefined },
-            upsertPairingRequest: pairing.upsertPairingRequest,
             sendPairingReply: async (text) => {
               await deliverIrcReply({
                 payload: { text },

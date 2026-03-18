@@ -1,10 +1,10 @@
 import { resolveHumanDelayConfig } from "remoteclaw/plugin-sdk/agent-runtime";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
 import { removeAckReactionAfterReply } from "remoteclaw/plugin-sdk/channel-runtime";
 import { logAckFailure, logTypingFailure } from "remoteclaw/plugin-sdk/channel-runtime";
-import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk/channel-runtime";
-import { createTypingCallbacks } from "remoteclaw/plugin-sdk/channel-runtime";
 import { resolveStorePath, updateLastRoute } from "remoteclaw/plugin-sdk/config-runtime";
 import { resolveAgentOutboundIdentity } from "remoteclaw/plugin-sdk/infra-runtime";
+import { resolveSendableOutboundReplyParts } from "remoteclaw/plugin-sdk/reply-payload";
 import { dispatchInboundMessage } from "remoteclaw/plugin-sdk/reply-runtime";
 import { clearHistoryEntriesIfEnabled } from "remoteclaw/plugin-sdk/reply-runtime";
 import { createReplyDispatcherWithTyping } from "remoteclaw/plugin-sdk/reply-runtime";
@@ -141,63 +141,62 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
 
   const typingTarget = statusThreadTs ? `${message.channel}/${statusThreadTs}` : message.channel;
   const typingReaction = ctx.typingReaction;
-  const typingCallbacks = createTypingCallbacks({
-    start: async () => {
-      didSetStatus = true;
-      await ctx.setSlackThreadStatus({
-        channelId: message.channel,
-        threadTs: statusThreadTs,
-        status: "is typing...",
-      });
-      if (typingReaction && message.ts) {
-        await reactSlackMessage(message.channel, message.ts, typingReaction, {
-          token: ctx.botToken,
-          client: ctx.app.client,
-        }).catch(() => {});
-      }
-    },
-    stop: async () => {
-      if (!didSetStatus) {
-        return;
-      }
-      didSetStatus = false;
-      await ctx.setSlackThreadStatus({
-        channelId: message.channel,
-        threadTs: statusThreadTs,
-        status: "",
-      });
-      if (typingReaction && message.ts) {
-        await removeSlackReaction(message.channel, message.ts, typingReaction, {
-          token: ctx.botToken,
-          client: ctx.app.client,
-        }).catch(() => {});
-      }
-    },
-    onStartError: (err) => {
-      logTypingFailure({
-        log: (message) => runtime.error?.(danger(message)),
-        channel: "slack",
-        action: "start",
-        target: typingTarget,
-        error: err,
-      });
-    },
-    onStopError: (err) => {
-      logTypingFailure({
-        log: (message) => runtime.error?.(danger(message)),
-        channel: "slack",
-        action: "stop",
-        target: typingTarget,
-        error: err,
-      });
-    },
-  });
-
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
     cfg,
     agentId: route.agentId,
     channel: "slack",
     accountId: route.accountId,
+    typing: {
+      start: async () => {
+        didSetStatus = true;
+        await ctx.setSlackThreadStatus({
+          channelId: message.channel,
+          threadTs: statusThreadTs,
+          status: "is typing...",
+        });
+        if (typingReaction && message.ts) {
+          await reactSlackMessage(message.channel, message.ts, typingReaction, {
+            token: ctx.botToken,
+            client: ctx.app.client,
+          }).catch(() => {});
+        }
+      },
+      stop: async () => {
+        if (!didSetStatus) {
+          return;
+        }
+        didSetStatus = false;
+        await ctx.setSlackThreadStatus({
+          channelId: message.channel,
+          threadTs: statusThreadTs,
+          status: "",
+        });
+        if (typingReaction && message.ts) {
+          await removeSlackReaction(message.channel, message.ts, typingReaction, {
+            token: ctx.botToken,
+            client: ctx.app.client,
+          }).catch(() => {});
+        }
+      },
+      onStartError: (err) => {
+        logTypingFailure({
+          log: (message) => runtime.error?.(danger(message)),
+          channel: "slack",
+          action: "start",
+          target: typingTarget,
+          error: err,
+        });
+      },
+      onStopError: (err) => {
+        logTypingFailure({
+          log: (message) => runtime.error?.(danger(message)),
+          channel: "slack",
+          action: "stop",
+          target: typingTarget,
+          error: err,
+        });
+      },
+    },
   });
 
   const slackStreaming = resolveSlackStreamingConfig({
@@ -292,9 +291,8 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
   };
 
   const { dispatcher, replyOptions, markDispatchIdle } = createReplyDispatcherWithTyping({
-    ...prefixOptions,
+    ...replyPipeline,
     humanDelay: resolveHumanDelayConfig(cfg, route.agentId),
-    typingCallbacks,
     deliver: async (payload) => {
       if (useStreaming) {
         await deliverWithStreaming(payload);
@@ -354,7 +352,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
     },
     onError: (err, info) => {
       runtime.error?.(danger(`slack ${info.kind} reply failed: ${String(err)}`));
-      typingCallbacks.onIdle?.();
+      replyPipeline.typingCallbacks?.onIdle?.();
     },
   });
 

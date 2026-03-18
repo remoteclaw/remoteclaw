@@ -1,6 +1,5 @@
 import {
-  applyAgentDefaultModelPrimary,
-  applyProviderConfigWithDefaultModel,
+  applyProviderConfigWithDefaultModelPreset,
   type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/provider-onboard";
 import {
@@ -23,38 +22,32 @@ export function applyMoonshotProviderConfigCn(cfg: RemoteClawConfig): RemoteClaw
 function applyMoonshotProviderConfigWithBaseUrl(
   cfg: RemoteClawConfig,
   baseUrl: string,
+  primaryModelRef?: string,
 ): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[MOONSHOT_DEFAULT_MODEL_REF] = {
-    ...models[MOONSHOT_DEFAULT_MODEL_REF],
-    alias: models[MOONSHOT_DEFAULT_MODEL_REF]?.alias ?? "Kimi",
-  };
-
   const defaultModel = buildMoonshotProvider().models[0];
   if (!defaultModel) {
     return cfg;
   }
 
-  return applyProviderConfigWithDefaultModel(cfg, {
-    agentModels: models,
+  return applyProviderConfigWithDefaultModelPreset(cfg, {
     providerId: "moonshot",
     api: "openai-completions",
     baseUrl,
     defaultModel,
     defaultModelId: MOONSHOT_DEFAULT_MODEL_ID,
+    aliases: [{ modelRef: MOONSHOT_DEFAULT_MODEL_REF, alias: "Kimi" }],
+    primaryModelRef,
   });
 }
 
 export function applyMoonshotConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  return applyAgentDefaultModelPrimary(
-    applyMoonshotProviderConfig(cfg),
-    MOONSHOT_DEFAULT_MODEL_REF,
-  );
+  return applyMoonshotProviderConfigWithBaseUrl(cfg, MOONSHOT_BASE_URL, MOONSHOT_DEFAULT_MODEL_REF);
 }
 
 export function applyMoonshotConfigCn(cfg: RemoteClawConfig): RemoteClawConfig {
-  return applyAgentDefaultModelPrimary(
-    applyMoonshotProviderConfigCn(cfg),
+  return applyMoonshotProviderConfigWithBaseUrl(
+    cfg,
+    MOONSHOT_CN_BASE_URL,
     MOONSHOT_DEFAULT_MODEL_REF,
   );
 }

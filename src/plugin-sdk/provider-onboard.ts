@@ -9,8 +9,13 @@ export type {
 export {
   applyAgentDefaultModelPrimary,
   applyOnboardAuthAgentModelsAndProviders,
+  applyProviderConfigWithDefaultModelPreset,
+  applyProviderConfigWithDefaultModelsPreset,
   applyProviderConfigWithDefaultModel,
   applyProviderConfigWithDefaultModels,
+  applyProviderConfigWithModelCatalogPreset,
   applyProviderConfigWithModelCatalog,
-} from "../commands/onboard-auth.config-shared.js";
-export { ensureModelAllowlistEntry } from "../commands/model-allowlist.js";
+  withAgentModelAliases,
+} from "../plugins/provider-onboarding-config.js";
+export type { AgentModelAliasEntry } from "../plugins/provider-onboarding-config.js";
+export { ensureModelAllowlistEntry } from "../plugins/provider-model-allowlist.js";

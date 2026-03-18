@@ -30,7 +30,7 @@ export type {
 } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { createReplyPrefixContext } from "../channels/reply-prefix.js";
-export { createTypingCallbacks } from "../channels/typing.js";
+export { createChannelReplyPipeline, createTypingCallbacks } from "./channel-reply-pipeline.js";
 export type { RemoteClawConfig as ClawdbotConfig, RemoteClawConfig } from "../config/config.js";
 export {
   resolveAllowlistProviderRuntimeGroupPolicy,
@@ -39,9 +39,13 @@ export {
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "../config/runtime-group-policy.js";
 export type { DmPolicy, GroupToolPolicyConfig } from "../config/types.js";
-export type { SecretInput } from "../config/types.secrets.js";
-export { hasConfiguredSecretInput, normalizeSecretInputString } from "../config/types.secrets.js";
-export { buildSecretInputSchema } from "./secret-input-schema.js";
+export type { SecretInput } from "./secret-input.js";
+export {
+  buildSecretInputSchema,
+  hasConfiguredSecretInput,
+  normalizeResolvedSecretInputString,
+  normalizeSecretInputString,
+} from "./secret-input.js";
 export { createDedupeCache } from "../infra/dedupe.js";
 export { installRequestBodyLimitGuard, readJsonBodyWithLimit } from "../infra/http-body.js";
 export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
@@ -57,8 +61,7 @@ export { evaluateSenderGroupAccessForPolicy } from "./group-access.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { buildAgentMediaPayload } from "./agent-media-payload.js";
 export { readJsonFileWithFallback } from "./json-store.js";
-export { createScopedPairingAccess } from "./pairing-access.js";
-export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
+export { createChannelPairingController, createScopedPairingAccess } from "./channel-pairing.js";
 export { createPersistentDedupe } from "./persistent-dedupe.js";
 export {
   buildBaseChannelStatusSummary,
@@ -68,9 +71,13 @@ export {
 } from "./status-helpers.js";
 export { withTempDownloadPath } from "./temp-path.js";
 export {
-  createFixedWindowRateLimiter,
+  buildFeishuConversationId,
+  parseFeishuConversationId,
+} from "../../extensions/feishu/src/conversation-id.js";
+export {
   createWebhookAnomalyTracker,
+  createFixedWindowRateLimiter,
   WEBHOOK_ANOMALY_COUNTER_DEFAULTS,
   WEBHOOK_RATE_LIMIT_DEFAULTS,
-} from "./webhook-memory-guards.js";
-export { applyBasicWebhookRequestGuards } from "./webhook-request-guards.js";
+} from "./webhook-ingress.js";
+export { applyBasicWebhookRequestGuards } from "./webhook-ingress.js";

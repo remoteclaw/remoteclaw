@@ -4,32 +4,27 @@ import {
   HUGGINGFACE_MODEL_CATALOG,
 } from "remoteclaw/plugin-sdk/provider-models";
 import {
-  applyAgentDefaultModelPrimary,
-  applyProviderConfigWithModelCatalog,
+  applyProviderConfigWithModelCatalogPreset,
   type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/provider-onboard";
 
 export const HUGGINGFACE_DEFAULT_MODEL_REF = "huggingface/deepseek-ai/DeepSeek-R1";
 
-export function applyHuggingfaceProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[HUGGINGFACE_DEFAULT_MODEL_REF] = {
-    ...models[HUGGINGFACE_DEFAULT_MODEL_REF],
-    alias: models[HUGGINGFACE_DEFAULT_MODEL_REF]?.alias ?? "Hugging Face",
-  };
-
-  return applyProviderConfigWithModelCatalog(cfg, {
-    agentModels: models,
+function applyHuggingfacePreset(cfg: RemoteClawConfig, primaryModelRef?: string): RemoteClawConfig {
+  return applyProviderConfigWithModelCatalogPreset(cfg, {
     providerId: "huggingface",
     api: "openai-completions",
     baseUrl: HUGGINGFACE_BASE_URL,
     catalogModels: HUGGINGFACE_MODEL_CATALOG.map(buildHuggingfaceModelDefinition),
+    aliases: [{ modelRef: HUGGINGFACE_DEFAULT_MODEL_REF, alias: "Hugging Face" }],
+    primaryModelRef,
   });
 }
 
+export function applyHuggingfaceProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
+  return applyHuggingfacePreset(cfg);
+}
+
 export function applyHuggingfaceConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  return applyAgentDefaultModelPrimary(
-    applyHuggingfaceProviderConfig(cfg),
-    HUGGINGFACE_DEFAULT_MODEL_REF,
-  );
+  return applyHuggingfacePreset(cfg, HUGGINGFACE_DEFAULT_MODEL_REF);
 }

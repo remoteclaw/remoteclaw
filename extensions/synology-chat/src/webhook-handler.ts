@@ -9,7 +9,7 @@ import {
   isRequestBodyLimitError,
   readRequestBodyWithLimit,
   requestBodyErrorToText,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import { sendMessage, resolveChatUserId } from "./client.js";
 import { validateToken, authorizeUserForDm, sanitizeInput, RateLimiter } from "./security.js";
 import type { SynologyWebhookPayload, ResolvedSynologyChatAccount } from "./types.js";
@@ -53,7 +53,7 @@ async function readBody(req: IncomingMessage): Promise<
       timeoutMs: 30_000,
     });
     return { ok: true, body };
-  } catch (err) {
+  } catch (err: unknown) {
     if (isRequestBodyLimitError(err)) {
       return {
         ok: false,

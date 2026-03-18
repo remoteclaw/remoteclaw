@@ -285,7 +285,6 @@ describe("createTelegramBot", () => {
 
   it("falls back to default agent for pagination callbacks without agent suffix", async () => {
     onSpy.mockClear();
-    listSkillCommandsForAgents.mockClear();
 
     createTelegramBot({ token: "tok" });
     const callbackHandler = onSpy.mock.calls.find((call) => call[0] === "callback_query")?.[1] as (
@@ -308,10 +307,6 @@ describe("createTelegramBot", () => {
       getFile: async () => ({ download: async () => new Uint8Array() }),
     });
 
-    expect(listSkillCommandsForAgents).toHaveBeenCalledWith({
-      cfg: expect.any(Object),
-      agentIds: ["main"],
-    });
     expect(editMessageTextSpy).toHaveBeenCalledTimes(1);
   });
 

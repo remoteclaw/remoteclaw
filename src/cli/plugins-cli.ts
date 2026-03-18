@@ -340,15 +340,16 @@ async function runPluginInstallCommand(params: {
     logger: createPluginInstallLogger(),
   });
   if (!result.ok) {
-    const shouldTryBundledFallback =
-      result.code === PLUGIN_INSTALL_ERROR_CODE.NPM_PACKAGE_NOT_FOUND ||
+    const isNpmNotFound = result.code === PLUGIN_INSTALL_ERROR_CODE.NPM_PACKAGE_NOT_FOUND;
+    const isNotPlugin =
       result.code === PLUGIN_INSTALL_ERROR_CODE.MISSING_REMOTECLAW_EXTENSIONS ||
       result.code === PLUGIN_INSTALL_ERROR_CODE.EMPTY_REMOTECLAW_EXTENSIONS;
-    const bundledFallback = shouldTryBundledFallback
-      ? findBundledPluginSource({
-          lookup: { kind: "npmSpec", value: raw },
-        })
-      : undefined;
+    const bundledFallback =
+      isNpmNotFound || isNotPlugin
+        ? findBundledPluginSource({
+            lookup: { kind: "npmSpec", value: raw },
+          })
+        : undefined;
     if (!bundledFallback) {
       defaultRuntime.error(result.error);
       process.exit(1);
@@ -358,7 +359,9 @@ async function runPluginInstallCommand(params: {
       config: cfg,
       rawSpec: raw,
       bundledSource: bundledFallback,
-      warning: `npm package unavailable for ${raw}; using bundled plugin at ${shortenHomePath(bundledFallback.localPath)}.`,
+      warning: isNpmNotFound
+        ? `npm package unavailable for ${raw}; using bundled plugin at ${shortenHomePath(bundledFallback.localPath)}.`
+        : `npm package "${raw}" is not a valid RemoteClaw plugin; using bundled plugin at ${shortenHomePath(bundledFallback.localPath)}.`,
     });
     return;
   }

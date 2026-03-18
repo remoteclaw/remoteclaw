@@ -56,11 +56,11 @@ describe("config backup rotation", () => {
 
   it("hardenBackupPermissions sets 0o600 on all backup files", async () => {
     await withTempHome(async () => {
-      const stateDir = process.env.OPENCLAW_STATE_DIR?.trim();
+      const stateDir = process.env.REMOTECLAW_STATE_DIR?.trim();
       if (!stateDir) {
-        throw new Error("Expected OPENCLAW_STATE_DIR to be set by withTempHome");
+        throw new Error("Expected REMOTECLAW_STATE_DIR to be set by withTempHome");
       }
-      const configPath = path.join(stateDir, "openclaw.json");
+      const configPath = path.join(stateDir, "remoteclaw.json");
 
       // Create .bak and .bak.1 with permissive mode
       await fs.writeFile(`${configPath}.bak`, "secret", { mode: 0o644 });
@@ -79,11 +79,11 @@ describe("config backup rotation", () => {
 
   it("cleanOrphanBackups removes stale files outside the rotation ring", async () => {
     await withTempHome(async () => {
-      const stateDir = process.env.OPENCLAW_STATE_DIR?.trim();
+      const stateDir = process.env.REMOTECLAW_STATE_DIR?.trim();
       if (!stateDir) {
-        throw new Error("Expected OPENCLAW_STATE_DIR to be set by withTempHome");
+        throw new Error("Expected REMOTECLAW_STATE_DIR to be set by withTempHome");
       }
-      const configPath = path.join(stateDir, "openclaw.json");
+      const configPath = path.join(stateDir, "remoteclaw.json");
 
       // Create valid backups
       await fs.writeFile(configPath, "current");

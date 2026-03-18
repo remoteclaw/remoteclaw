@@ -34,3 +34,42 @@ describe("discordPlugin outbound", () => {
     expect(result).toMatchObject({ channel: "discord", messageId: "m1" });
   });
 });
+
+describe("discordPlugin groups", () => {
+  it("uses plugin-owned group policy resolvers", () => {
+    const cfg = {
+      channels: {
+        discord: {
+          token: "discord-test",
+          guilds: {
+            guild1: {
+              requireMention: false,
+              tools: { allow: ["message.guild"] },
+              channels: {
+                "123": {
+                  requireMention: true,
+                  tools: { allow: ["message.channel"] },
+                },
+              },
+            },
+          },
+        },
+      },
+    } as OpenClawConfig;
+
+    expect(
+      discordPlugin.groups?.resolveRequireMention?.({
+        cfg,
+        groupSpace: "guild1",
+        groupId: "123",
+      }),
+    ).toBe(true);
+    expect(
+      discordPlugin.groups?.resolveToolPolicy?.({
+        cfg,
+        groupSpace: "guild1",
+        groupId: "123",
+      }),
+    ).toEqual({ allow: ["message.channel"] });
+  });
+});

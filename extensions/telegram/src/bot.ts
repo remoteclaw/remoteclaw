@@ -1,8 +1,9 @@
-import { sequentialize } from "@grammyjs/runner";
-import { apiThrottler } from "@grammyjs/transformer-throttler";
-import type { ApiClientOptions } from "grammy";
-import { Bot } from "grammy";
-import { resolveDefaultAgentId } from "remoteclaw/plugin-sdk/agent-runtime";
+import { resolveDefaultAgentId } from "openclaw/plugin-sdk/agent-runtime";
+import {
+  resolveThreadBindingIdleTimeoutMsForChannel,
+  resolveThreadBindingMaxAgeMsForChannel,
+  resolveThreadBindingSpawnPolicy,
+} from "openclaw/plugin-sdk/channel-runtime";
 import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
@@ -37,6 +38,7 @@ import {
   resolveTelegramUpdateId,
   type TelegramUpdateKeyContext,
 } from "./bot-updates.js";
+import { apiThrottler, Bot, sequentialize, type ApiClientOptions } from "./bot.runtime.js";
 import { buildTelegramGroupPeerId, resolveTelegramStreamMode } from "./bot/helpers.js";
 import { resolveTelegramTransport } from "./fetch.js";
 import { tagTelegramNetworkError } from "./network-errors.js";
@@ -68,6 +70,26 @@ export type TelegramBotOptions = {
 };
 
 export { getTelegramSequentialKey };
+
+type TelegramBotRuntime = {
+  Bot: typeof Bot;
+  sequentialize: typeof sequentialize;
+  apiThrottler: typeof apiThrottler;
+  loadConfig: typeof loadConfig;
+};
+
+const DEFAULT_TELEGRAM_BOT_RUNTIME: TelegramBotRuntime = {
+  Bot,
+  sequentialize,
+  apiThrottler,
+  loadConfig,
+};
+
+let telegramBotRuntimeForTest: TelegramBotRuntime | undefined;
+
+export function setTelegramBotRuntimeForTest(runtime?: TelegramBotRuntime): void {
+  telegramBotRuntimeForTest = runtime;
+}
 
 type TelegramFetchInput = Parameters<NonNullable<ApiClientOptions["fetch"]>>[0];
 type TelegramFetchInit = Parameters<NonNullable<ApiClientOptions["fetch"]>>[1];
@@ -103,8 +125,9 @@ function extractTelegramApiMethod(input: TelegramFetchInput): string | null {
 }
 
 export function createTelegramBot(opts: TelegramBotOptions) {
+  const botRuntime = telegramBotRuntimeForTest ?? DEFAULT_TELEGRAM_BOT_RUNTIME;
   const runtime: RuntimeEnv = opts.runtime ?? createNonExitingRuntime();
-  const cfg = opts.config ?? loadConfig();
+  const cfg = opts.config ?? botRuntime.loadConfig();
   const account = resolveTelegramAccount({
     cfg,
     accountId: opts.accountId,
@@ -216,8 +239,8 @@ export function createTelegramBot(opts: TelegramBotOptions) {
         }
       : undefined;
 
-  const bot = new Bot(opts.token, client ? { client } : undefined);
-  bot.api.config.use(apiThrottler());
+  const bot = new botRuntime.Bot(opts.token, client ? { client } : undefined);
+  bot.api.config.use(botRuntime.apiThrottler());
   // Catch all errors from bot middleware to prevent unhandled rejections
   bot.catch((err) => {
     runtime.error?.(danger(`telegram bot error: ${formatUncaughtError(err)}`));
@@ -292,7 +315,7 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     }
   });
 
-  bot.use(sequentialize(getTelegramSequentialKey));
+  bot.use(botRuntime.sequentialize(getTelegramSequentialKey));
 
   const rawUpdateLogger = createSubsystemLogger("gateway/channels/telegram/raw-update");
   const MAX_RAW_UPDATE_CHARS = 8000;

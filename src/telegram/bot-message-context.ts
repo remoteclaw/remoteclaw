@@ -698,7 +698,7 @@ export const buildTelegramMessageContext = async ({
   const pinnedMainDmOwner = !isGroup
     ? resolvePinnedMainDmOwnerFromAllowlist({
         dmScope: cfg.session?.dmScope,
-        allowFrom: dmAllowFrom,
+        allowFrom,
         normalizeEntry: (entry) => normalizeAllowFrom([entry]).entries[0],
       })
     : null;

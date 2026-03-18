@@ -52,6 +52,16 @@ export type PluginUninstallOptions = {
   dryRun?: boolean;
 };
 
+/**
+ * Returns true when the raw install spec looks like a reference to a local file
+ * (e.g. ends with `.tgz`, `.ts`, etc.) so the CLI can emit a clear "path not found"
+ * error instead of falling through to the npm registry path.
+ */
+function looksLikeLocalInstallSpec(spec: string, extensions: string[]): boolean {
+  const lower = spec.toLowerCase();
+  return extensions.some((ext) => lower.endsWith(ext));
+}
+
 function resolveFileNpmSpecToLocalPath(
   raw: string,
 ): { ok: true; path: string } | { ok: false; error: string } | null {

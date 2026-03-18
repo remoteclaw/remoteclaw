@@ -238,39 +238,29 @@ async function readInstalledPackageVersion(dir: string): Promise<string | undefi
   }
 }
 
-function buildCodeSafetySummaryCacheKey(params: {
-  dirPath: string;
-  includeFiles?: string[];
-}): string {
-  const includeFiles = (params.includeFiles ?? []).map((entry) => entry.trim()).filter(Boolean);
-  const includeKey = includeFiles.length > 0 ? includeFiles.toSorted().join("\u0000") : "";
-  return `${params.dirPath}\u0000${includeKey}`;
-}
-
-async function getCodeSafetySummary(params: {
+// Skill scanner infrastructure was gutted in the fork; code safety scanning is
+// not available.  Return null so callers skip the scan-result branch.
+type CodeSafetyScanResult = {
+  critical: number;
+  warn: number;
+  scannedFiles: number;
+  findings: Array<{ severity: string; file: string; line: number; message: string }>;
+};
+async function getCodeSafetySummary(_params: {
   dirPath: string;
   includeFiles?: string[];
   summaryCache?: CodeSafetySummaryCache;
-}): Promise<Awaited<ReturnType<typeof skillScanner.scanDirectoryWithSummary>>> {
-  const cacheKey = buildCodeSafetySummaryCacheKey({
-    dirPath: params.dirPath,
-    includeFiles: params.includeFiles,
-  });
-  const cache = params.summaryCache;
-  if (cache) {
-    const hit = cache.get(cacheKey);
-    if (hit) {
-      return (await hit) as Awaited<ReturnType<typeof skillScanner.scanDirectoryWithSummary>>;
-    }
-    const pending = skillScanner.scanDirectoryWithSummary(params.dirPath, {
-      includeFiles: params.includeFiles,
-    });
-    cache.set(cacheKey, pending);
-    return await pending;
-  }
-  return await skillScanner.scanDirectoryWithSummary(params.dirPath, {
-    includeFiles: params.includeFiles,
-  });
+}): Promise<CodeSafetyScanResult | null> {
+  return null;
+}
+
+function formatCodeSafetyDetails(
+  findings: Array<{ file: string; line: number; message: string }>,
+  basePath: string,
+): string {
+  return findings
+    .map((f) => `  - ${path.relative(basePath, f.file)}:${f.line}: ${f.message}`)
+    .join("\n");
 }
 
 // --------------------------------------------------------------------------

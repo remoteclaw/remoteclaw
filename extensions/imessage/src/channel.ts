@@ -18,13 +18,6 @@ import {
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   formatTrimmedAllowFromEntries,
-  getChatChannelMeta,
-  imessageOnboardingAdapter,
-  IMessageConfigSchema,
-  listIMessageAccountIds,
-  looksLikeIMessageTargetId,
-  migrateBaseNameToDefaultAccount,
-  normalizeAccountId,
   normalizeIMessageMessagingTarget,
   PAIRING_APPROVED_MESSAGE,
   resolveChannelMediaMaxBytes,
@@ -53,8 +46,6 @@ import {
   normalizeIMessageHandle,
   parseIMessageTarget,
 } from "./targets.js";
-
-const meta = getChatChannelMeta("imessage");
 
 const resolveIMessageDmPolicy = createScopedDmSecurityResolver<ResolvedIMessageAccount>({
   channelKey: "imessage",
@@ -153,9 +144,26 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
   },
   messaging: {
     normalizeTarget: normalizeIMessageMessagingTarget,
+    inferTargetChatType: ({ to }) => inferIMessageTargetChatType(to),
+    resolveOutboundSessionRoute: (params) => resolveIMessageOutboundSessionRoute(params),
     targetResolver: {
-      looksLikeId: looksLikeIMessageTargetId,
+      looksLikeId: looksLikeIMessageExplicitTargetId,
       hint: "<handle|chat_id:ID>",
+      resolveTarget: async ({ normalized }) => {
+        const to = normalized?.trim();
+        if (!to) {
+          return null;
+        }
+        const chatType = inferIMessageTargetChatType(to);
+        if (!chatType) {
+          return null;
+        }
+        return {
+          to,
+          kind: chatType === "direct" ? "user" : "group",
+          source: "normalized" as const,
+        };
+      },
     },
   },
   setup: {

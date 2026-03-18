@@ -28,6 +28,7 @@ export {
 
 export { resolveGatewayBindUrl } from "../shared/gateway-bind-url.js";
 export type { GatewayBindUrlResult } from "../shared/gateway-bind-url.js";
+export { normalizeHyphenSlug } from "../shared/string-normalization.js";
 
 export { resolveTailnetHostWithRunner } from "../shared/tailscale-status.js";
 export type {

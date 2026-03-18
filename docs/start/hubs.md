@@ -151,6 +151,18 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [macOS XPC](/platforms/mac/xpc)
 - [macOS Peekaboo](/platforms/mac/peekaboo)
 
+## Extensions + plugins
+
+- [Plugins overview](/tools/plugin)
+- [Building extensions](/plugins/building-extensions)
+- [Plugin manifest](/plugins/manifest)
+- [Agent tools](/plugins/agent-tools)
+- [Plugin bundles](/plugins/bundles)
+- [Community plugins](/plugins/community)
+- [Capability cookbook](/tools/capability-cookbook)
+- [Voice call plugin](/plugins/voice-call)
+- [Zalo user plugin](/plugins/zalouser)
+
 ## Workspace + templates
 
 - [Default AGENTS](/reference/AGENTS.default)

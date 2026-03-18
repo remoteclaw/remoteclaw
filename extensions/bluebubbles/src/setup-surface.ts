@@ -1,12 +1,12 @@
 import {
   createAllowFromSection,
-  createPromptParsedAllowFromForAccount,
-  createStandardChannelSetupStatus,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
+  promptParsedAllowFromForAccount,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
   type RemoteClawConfig,
+  type WizardPrompter,
 } from "remoteclaw/plugin-sdk/setup";
 import {
   listBlueBubblesAccountIds,
@@ -14,6 +14,7 @@ import {
   resolveDefaultBlueBubblesAccountId,
 } from "./accounts.js";
 import { applyBlueBubblesConnectionConfig } from "./config-apply.js";
+import { DEFAULT_WEBHOOK_PATH } from "./monitor-shared.js";
 import { hasConfiguredSecretInput, normalizeSecretInputString } from "./secret-input.js";
 import {
   blueBubblesSetupAdapter,
@@ -22,7 +23,6 @@ import {
 } from "./setup-core.js";
 import { parseBlueBubblesAllowTarget } from "./targets.js";
 import { normalizeBlueBubblesServerUrl } from "./types.js";
-import { DEFAULT_WEBHOOK_PATH } from "./webhook-shared.js";
 
 const channel = "bluebubbles" as const;
 const CONFIGURE_CUSTOM_WEBHOOK_FLAG = "__bluebubblesConfigureCustomWebhookPath";
@@ -49,35 +49,44 @@ function validateBlueBubblesAllowFromEntry(value: string): string | null {
   }
 }
 
-const promptBlueBubblesAllowFrom = createPromptParsedAllowFromForAccount({
-  defaultAccountId: (cfg) => resolveDefaultBlueBubblesAccountId(cfg),
-  noteTitle: "BlueBubbles allowlist",
-  noteLines: [
-    "Allowlist BlueBubbles DMs by handle or chat target.",
-    "Examples:",
-    "- +15555550123",
-    "- user@example.com",
-    "- chat_id:123",
-    "- chat_guid:iMessage;-;+15555550123",
-    "Multiple entries: comma- or newline-separated.",
-    `Docs: ${formatDocsLink("/channels/bluebubbles", "bluebubbles")}`,
-  ],
-  message: "BlueBubbles allowFrom (handle or chat_id)",
-  placeholder: "+15555550123, user@example.com, chat_id:123",
-  parseEntries: (raw) => {
-    const entries = parseBlueBubblesAllowFromInput(raw);
-    for (const entry of entries) {
-      if (!validateBlueBubblesAllowFromEntry(entry)) {
-        return { entries: [], error: `Invalid entry: ${entry}` };
+async function promptBlueBubblesAllowFrom(params: {
+  cfg: RemoteClawConfig;
+  prompter: WizardPrompter;
+  accountId?: string;
+}): Promise<RemoteClawConfig> {
+  return await promptParsedAllowFromForAccount({
+    cfg: params.cfg,
+    accountId: params.accountId,
+    defaultAccountId: resolveDefaultBlueBubblesAccountId(params.cfg),
+    prompter: params.prompter,
+    noteTitle: "BlueBubbles allowlist",
+    noteLines: [
+      "Allowlist BlueBubbles DMs by handle or chat target.",
+      "Examples:",
+      "- +15555550123",
+      "- user@example.com",
+      "- chat_id:123",
+      "- chat_guid:iMessage;-;+15555550123",
+      "Multiple entries: comma- or newline-separated.",
+      `Docs: ${formatDocsLink("/channels/bluebubbles", "bluebubbles")}`,
+    ],
+    message: "BlueBubbles allowFrom (handle or chat_id)",
+    placeholder: "+15555550123, user@example.com, chat_id:123",
+    parseEntries: (raw) => {
+      const entries = parseBlueBubblesAllowFromInput(raw);
+      for (const entry of entries) {
+        if (!validateBlueBubblesAllowFromEntry(entry)) {
+          return { entries: [], error: `Invalid entry: ${entry}` };
+        }
       }
-    }
-    return { entries };
-  },
-  getExistingAllowFrom: ({ cfg, accountId }) =>
-    resolveBlueBubblesAccount({ cfg, accountId }).config.allowFrom ?? [],
-  applyAllowFrom: ({ cfg, accountId, allowFrom }) =>
-    setBlueBubblesAllowFrom(cfg, accountId, allowFrom),
-});
+      return { entries };
+    },
+    getExistingAllowFrom: ({ cfg, accountId }) =>
+      resolveBlueBubblesAccount({ cfg, accountId }).config.allowFrom ?? [],
+    applyAllowFrom: ({ cfg, accountId, allowFrom }) =>
+      setBlueBubblesAllowFrom(cfg, accountId, allowFrom),
+  });
+}
 
 function validateBlueBubblesServerUrlInput(value: unknown): string | undefined {
   const trimmed = String(value ?? "").trim();
@@ -147,21 +156,20 @@ export const blueBubblesSetupWizard: ChannelSetupWizard = {
   channel,
   stepOrder: "text-first",
   status: {
-    ...createStandardChannelSetupStatus({
-      channelLabel: "BlueBubbles",
-      configuredLabel: "configured",
-      unconfiguredLabel: "needs setup",
-      configuredHint: "configured",
-      unconfiguredHint: "iMessage via BlueBubbles app",
-      configuredScore: 1,
-      unconfiguredScore: 0,
-      includeStatusLine: true,
-      resolveConfigured: ({ cfg }) =>
-        listBlueBubblesAccountIds(cfg).some((accountId) => {
-          const account = resolveBlueBubblesAccount({ cfg, accountId });
-          return account.configured;
-        }),
-    }),
+    configuredLabel: "configured",
+    unconfiguredLabel: "needs setup",
+    configuredHint: "configured",
+    unconfiguredHint: "iMessage via BlueBubbles app",
+    configuredScore: 1,
+    unconfiguredScore: 0,
+    resolveConfigured: ({ cfg }) =>
+      listBlueBubblesAccountIds(cfg).some((accountId) => {
+        const account = resolveBlueBubblesAccount({ cfg, accountId });
+        return account.configured;
+      }),
+    resolveStatusLines: ({ configured }) => [
+      `BlueBubbles: ${configured ? "configured" : "needs setup"}`,
+    ],
     resolveSelectionHint: ({ configured }) =>
       configured ? "configured" : "iMessage via BlueBubbles app",
   },

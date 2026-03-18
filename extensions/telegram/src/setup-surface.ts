@@ -1,4 +1,5 @@
 import {
+  createAllowFromSection,
   DEFAULT_ACCOUNT_ID,
   hasConfiguredSecretInput,
   type RemoteClawConfig,
@@ -83,7 +84,7 @@ export const telegramSetupWizard: ChannelSetupWizard = {
       },
     },
   ],
-  allowFrom: {
+  allowFrom: createAllowFromSection({
     helpTitle: "Telegram user id",
     helpLines: TELEGRAM_USER_ID_HELP_LINES,
     credentialInputKey: "token",
@@ -105,7 +106,7 @@ export const telegramSetupWizard: ChannelSetupWizard = {
         accountId,
         patch: { dmPolicy: "allowlist", allowFrom },
       }),
-  },
+  }),
   dmPolicy,
   disable: (cfg) => setSetupChannelEnabled(cfg, channel, false),
 };

@@ -334,11 +334,9 @@ export function createDiscordSetupWizardBase(handlers: {
     disable: (cfg: RemoteClawConfig) => setSetupChannelEnabled(cfg, channel, false),
   } satisfies ChannelSetupWizard;
 }
-export function createDiscordSetupWizardProxy(
-  loadWizard: () => Promise<{ discordSetupWizard: ChannelSetupWizard }>,
-) {
+export function createDiscordSetupWizardProxy(loadWizard: () => Promise<ChannelSetupWizard>) {
   return createAllowlistSetupWizardProxy({
-    loadWizard: async () => (await loadWizard()).discordSetupWizard,
+    loadWizard,
     createBase: createDiscordSetupWizardBase,
     fallbackResolvedGroupAllowlist: (entries) =>
       entries.map((input) => ({ input, resolved: false })),

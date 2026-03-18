@@ -2,8 +2,7 @@ import type { DmPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
 import {
   createAllowFromSection,
-  createPromptParsedAllowFromForAccount,
-  createStandardChannelSetupStatus,
+  promptParsedAllowFromForAccount,
   setSetupChannelEnabled,
 } from "remoteclaw/plugin-sdk/setup";
 import type { ChannelSetupDmPolicy } from "remoteclaw/plugin-sdk/setup";
@@ -53,27 +52,36 @@ function normalizeGroupEntry(raw: string): string | null {
   return `#${normalized.replace(/^#+/, "")}`;
 }
 
-const promptIrcAllowFrom = createPromptParsedAllowFromForAccount<CoreConfig>({
-  defaultAccountId: (cfg) => resolveDefaultIrcAccountId(cfg),
-  noteTitle: "IRC allowlist",
-  noteLines: [
-    "Allowlist IRC DMs by sender.",
-    "Examples:",
-    "- alice",
-    "- alice!ident@example.org",
-    "Multiple entries: comma-separated.",
-  ],
-  message: "IRC allowFrom (nick or nick!user@host)",
-  placeholder: "alice, bob!ident@example.org",
-  parseEntries: (raw) => ({
-    entries: parseListInput(raw)
-      .map((entry) => normalizeIrcAllowEntry(entry))
-      .map((entry) => entry.trim())
-      .filter(Boolean),
-  }),
-  getExistingAllowFrom: ({ cfg }) => cfg.channels?.irc?.allowFrom ?? [],
-  applyAllowFrom: ({ cfg, allowFrom }) => setIrcAllowFrom(cfg, allowFrom),
-});
+async function promptIrcAllowFrom(params: {
+  cfg: CoreConfig;
+  prompter: WizardPrompter;
+  accountId?: string;
+}): Promise<CoreConfig> {
+  return await promptParsedAllowFromForAccount({
+    cfg: params.cfg,
+    accountId: params.accountId,
+    defaultAccountId: resolveDefaultIrcAccountId(params.cfg),
+    prompter: params.prompter,
+    noteTitle: "IRC allowlist",
+    noteLines: [
+      "Allowlist IRC DMs by sender.",
+      "Examples:",
+      "- alice",
+      "- alice!ident@example.org",
+      "Multiple entries: comma-separated.",
+    ],
+    message: "IRC allowFrom (nick or nick!user@host)",
+    placeholder: "alice, bob!ident@example.org",
+    parseEntries: (raw) => ({
+      entries: parseListInput(raw)
+        .map((entry) => normalizeIrcAllowEntry(entry))
+        .map((entry) => entry.trim())
+        .filter(Boolean),
+    }),
+    getExistingAllowFrom: ({ cfg }) => cfg.channels?.irc?.allowFrom ?? [],
+    applyAllowFrom: ({ cfg, allowFrom }) => setIrcAllowFrom(cfg, allowFrom),
+  });
+}
 
 async function promptIrcNickServConfig(params: {
   cfg: CoreConfig;
@@ -169,20 +177,21 @@ const ircDmPolicy: ChannelSetupDmPolicy = {
 
 export const ircSetupWizard: ChannelSetupWizard = {
   channel,
-  status: createStandardChannelSetupStatus({
-    channelLabel: "IRC",
+  status: {
     configuredLabel: "configured",
     unconfiguredLabel: "needs host + nick",
     configuredHint: "configured",
     unconfiguredHint: "needs host + nick",
     configuredScore: 1,
     unconfiguredScore: 0,
-    includeStatusLine: true,
     resolveConfigured: ({ cfg }) =>
       listIrcAccountIds(cfg as CoreConfig).some(
         (accountId) => resolveIrcAccount({ cfg: cfg as CoreConfig, accountId }).configured,
       ),
-  }),
+    resolveStatusLines: ({ configured }) => [
+      `IRC: ${configured ? "configured" : "needs host + nick"}`,
+    ],
+  },
   introNote: {
     title: "IRC setup",
     lines: [

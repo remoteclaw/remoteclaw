@@ -1,9 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  captureConsoleSnapshot,
-  type ConsoleSnapshot,
-  restoreConsoleSnapshot,
-} from "./test-helpers/console-snapshot.js";
+import { captureConsoleSnapshot, type ConsoleSnapshot } from "./test-helpers/console-snapshot.js";
 
 vi.mock("./config.js", () => ({
   readLoggingConfig: () => undefined,

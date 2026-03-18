@@ -387,48 +387,6 @@ async function runPluginInstallCommand(params: {
   defaultRuntime.log(`Restart the gateway to load plugins.`);
 }
 
-async function installBundledPluginSource(params: {
-  config: OpenClawConfig;
-  rawSpec: string;
-  bundledSource: BundledPluginSource;
-  warning: string;
-}) {
-  const existing = params.config.plugins?.load?.paths ?? [];
-  const mergedPaths = Array.from(new Set([...existing, params.bundledSource.localPath]));
-  let next: OpenClawConfig = {
-    ...params.config,
-    plugins: {
-      ...params.config.plugins,
-      load: {
-        ...params.config.plugins?.load,
-        paths: mergedPaths,
-      },
-      entries: {
-        ...params.config.plugins?.entries,
-        [params.bundledSource.pluginId]: {
-          ...(params.config.plugins?.entries?.[params.bundledSource.pluginId] as
-            | object
-            | undefined),
-          enabled: true,
-        },
-      },
-    },
-  };
-  next = recordPluginInstall(next, {
-    pluginId: params.bundledSource.pluginId,
-    source: "path",
-    spec: params.rawSpec,
-    sourcePath: params.bundledSource.localPath,
-    installPath: params.bundledSource.localPath,
-  });
-  const slotResult = applySlotSelectionForPlugin(next, params.bundledSource.pluginId);
-  next = slotResult.config;
-  await writeConfigFile(next);
-  logSlotWarnings(slotResult.warnings);
-  defaultRuntime.log(theme.warn(params.warning));
-  defaultRuntime.log(`Installed plugin: ${params.bundledSource.pluginId}`);
-  defaultRuntime.log(`Restart the gateway to load plugins.`);
-}
 export function registerPluginsCli(program: Command) {
   const plugins = program
     .command("plugins")

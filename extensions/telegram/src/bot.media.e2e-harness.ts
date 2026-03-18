@@ -1,62 +1,14 @@
-import path from "node:path";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { MediaFetchError } from "remoteclaw/plugin-sdk/media-runtime";
-import {
-  resetInboundDedupe,
-  type GetReplyOptions,
-  type MsgContext,
-  type ReplyPayload,
-} from "remoteclaw/plugin-sdk/reply-runtime";
+import { resetInboundDedupe } from "remoteclaw/plugin-sdk/reply-runtime";
 import { beforeEach, vi, type Mock } from "vitest";
-import type { TelegramBotDeps } from "./bot-deps.js";
 
 export const useSpy: Mock = vi.fn();
 export const middlewareUseSpy: Mock = vi.fn();
 export const onSpy: Mock = vi.fn();
 export const stopSpy: Mock = vi.fn();
 export const sendChatActionSpy: Mock = vi.fn();
-function defaultUndiciFetch(input: RequestInfo | URL, init?: RequestInit) {
-  return globalThis.fetch(input, init);
-}
-
-export const undiciFetchSpy: Mock = vi.fn(defaultUndiciFetch);
-
-export function resetUndiciFetchMock() {
-  undiciFetchSpy.mockReset();
-  undiciFetchSpy.mockImplementation(defaultUndiciFetch);
-}
-
-type FetchRemoteMediaFn = typeof import("remoteclaw/plugin-sdk/media-runtime").fetchRemoteMedia;
-
-async function defaultFetchRemoteMedia(
-  params: Parameters<FetchRemoteMediaFn>[0],
-): ReturnType<FetchRemoteMediaFn> {
-  if (!params.fetchImpl) {
-    throw new MediaFetchError("fetch_failed", `Missing fetchImpl for ${params.url}`);
-  }
-  const response = await params.fetchImpl(params.url, {
-    redirect: "manual",
-  });
-  if (!response.ok) {
-    throw new MediaFetchError(
-      "http_error",
-      `Failed to fetch media from ${params.url}: HTTP ${response.status} ${response.statusText}`,
-    );
-  }
-  const arrayBuffer = await response.arrayBuffer();
-  return {
-    buffer: Buffer.from(arrayBuffer),
-    contentType: response.headers.get("content-type") ?? undefined,
-    fileName: params.filePathHint ? path.basename(params.filePathHint) : undefined,
-  } as Awaited<ReturnType<FetchRemoteMediaFn>>;
-}
-
-export const fetchRemoteMediaSpy: Mock = vi.fn(defaultFetchRemoteMedia);
-
-export function resetFetchRemoteMediaMock() {
-  fetchRemoteMediaSpy.mockReset();
-  fetchRemoteMediaSpy.mockImplementation(defaultFetchRemoteMedia);
-}
+export const undiciFetchSpy: Mock = vi.fn((input: RequestInfo | URL, init?: RequestInit) =>
+  globalThis.fetch(input, init),
+);
 
 async function defaultSaveMediaBuffer(buffer: Buffer, contentType?: string) {
   return {
@@ -104,11 +56,7 @@ const apiStub: ApiStub = {
   setMyCommands: vi.fn(async () => undefined),
 };
 
-export const telegramBotRuntimeForTest: {
-  Bot: new (token: string) => unknown;
-  sequentialize: () => unknown;
-  apiThrottler: () => unknown;
-} = {
+export const telegramBotRuntimeForTest = {
   Bot: class {
     api = apiStub;
     use = middlewareUseSpy;
@@ -120,71 +68,14 @@ export const telegramBotRuntimeForTest: {
   },
   sequentialize: () => vi.fn(),
   apiThrottler: () => throttlerSpy(),
-};
-
-type MediaHarnessReplyFn = (
-  ctx: MsgContext,
-  opts?: GetReplyOptions,
-  configOverride?: RemoteClawConfig,
-) => Promise<ReplyPayload | ReplyPayload[] | undefined>;
-
-const mediaHarnessReplySpy = vi.hoisted(() => vi.fn<MediaHarnessReplyFn>(async () => undefined));
-type DispatchReplyWithBufferedBlockDispatcherFn =
-  typeof import("remoteclaw/plugin-sdk/reply-runtime").dispatchReplyWithBufferedBlockDispatcher;
-type DispatchReplyHarnessParams = Parameters<DispatchReplyWithBufferedBlockDispatcherFn>[0];
-
-let actualDispatchReplyWithBufferedBlockDispatcherPromise:
-  | Promise<DispatchReplyWithBufferedBlockDispatcherFn>
-  | undefined;
-
-async function getActualDispatchReplyWithBufferedBlockDispatcher() {
-  actualDispatchReplyWithBufferedBlockDispatcherPromise ??= vi
-    .importActual<typeof import("remoteclaw/plugin-sdk/reply-runtime")>(
-      "remoteclaw/plugin-sdk/reply-runtime",
-    )
-    .then(
-      (module) =>
-        module.dispatchReplyWithBufferedBlockDispatcher as DispatchReplyWithBufferedBlockDispatcherFn,
-    );
-  return await actualDispatchReplyWithBufferedBlockDispatcherPromise;
-}
-
-async function dispatchReplyWithBufferedBlockDispatcherViaActual(
-  params: DispatchReplyHarnessParams,
-) {
-  const actualDispatchReplyWithBufferedBlockDispatcher =
-    await getActualDispatchReplyWithBufferedBlockDispatcher();
-  return await actualDispatchReplyWithBufferedBlockDispatcher({
-    ...params,
-    replyResolver: async (ctx, opts, configOverride) => {
-      await opts?.onReplyStart?.();
-      return await mediaHarnessReplySpy(ctx, opts, configOverride as RemoteClawConfig | undefined);
-    },
-  });
-}
-
-const mediaHarnessDispatchReplyWithBufferedBlockDispatcher = vi.hoisted(() =>
-  vi.fn<DispatchReplyWithBufferedBlockDispatcherFn>(
-    dispatchReplyWithBufferedBlockDispatcherViaActual,
-  ),
-);
-export const telegramBotDepsForTest: TelegramBotDeps = {
   loadConfig: () => ({
     channels: { telegram: { dmPolicy: "open", allowFrom: ["*"] } },
   }),
-  resolveStorePath: vi.fn((storePath?: string) => storePath ?? "/tmp/telegram-media-sessions.json"),
-  readChannelAllowFromStore: vi.fn(async () => [] as string[]),
-  enqueueSystemEvent: vi.fn(),
-  dispatchReplyWithBufferedBlockDispatcher: mediaHarnessDispatchReplyWithBufferedBlockDispatcher,
-  listSkillCommandsForAgents: vi.fn(() => []),
-  wasSentByBot: vi.fn(() => false),
 };
 
 beforeEach(() => {
   resetInboundDedupe();
   resetSaveMediaBufferMock();
-  resetUndiciFetchMock();
-  resetFetchRemoteMediaMock();
 });
 
 const throttlerSpy = vi.fn(() => "throttler");
@@ -205,12 +96,6 @@ vi.doMock("remoteclaw/plugin-sdk/media-runtime", async (importOriginal) => {
   const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/media-runtime")>();
   const mockModule = Object.create(null) as Record<string, unknown>;
   Object.defineProperties(mockModule, Object.getOwnPropertyDescriptors(actual));
-  Object.defineProperty(mockModule, "fetchRemoteMedia", {
-    configurable: true,
-    enumerable: true,
-    writable: true,
-    value: (...args: Parameters<typeof fetchRemoteMediaSpy>) => fetchRemoteMediaSpy(...args),
-  });
   Object.defineProperty(mockModule, "saveMediaBuffer", {
     configurable: true,
     enumerable: true,
@@ -227,41 +112,29 @@ vi.doMock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
     loadConfig: () => ({
       channels: { telegram: { dmPolicy: "open", allowFrom: ["*"] } },
     }),
+  };
+});
+
+vi.doMock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
+  return {
+    ...actual,
     updateLastRoute: vi.fn(async () => undefined),
   };
 });
 
-vi.doMock("remoteclaw/plugin-sdk/agent-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/agent-runtime")>();
-  return {
-    ...actual,
-    findModelInCatalog: vi.fn(() => undefined),
-    loadModelCatalog: vi.fn(async () => []),
-    modelSupportsVision: vi.fn(() => false),
-    resolveDefaultModelForAgent: vi.fn(() => ({
-      provider: "openai",
-      model: "gpt-test",
-    })),
-  };
-});
+vi.doMock("remoteclaw/plugin-sdk/conversation-runtime", () => ({
+  readChannelAllowFromStore: vi.fn(async () => [] as string[]),
+  upsertChannelPairingRequest: vi.fn(async () => ({
+    code: "PAIRCODE",
+    created: true,
+  })),
+}));
 
-vi.doMock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
-  return {
-    ...actual,
-    readChannelAllowFromStore: vi.fn(async () => [] as string[]),
-    upsertChannelPairingRequest: vi.fn(async () => ({
-      code: "PAIRCODE",
-      created: true,
-    })),
-  };
-});
-
-vi.doMock("remoteclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/reply-runtime")>();
-  return {
-    ...actual,
-    getReplyFromConfig: mediaHarnessReplySpy,
-    __replySpy: mediaHarnessReplySpy,
-  };
+vi.doMock("remoteclaw/plugin-sdk/reply-runtime", () => {
+  const replySpy = vi.fn(async (_ctx, opts) => {
+    await opts?.onReplyStart?.();
+    return undefined;
+  });
+  return { getReplyFromConfig: replySpy, __replySpy: replySpy };
 });

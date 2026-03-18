@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Command } from "commander";
-import type { AuthProfileCredential, OAuthCredential } from "../agents/auth-profiles/types.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
+import type { AuthProfileCredential } from "../auth/types.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import type { ChannelDock } from "../channels/dock.js";
 import type { ChannelId, ChannelPlugin } from "../channels/plugins/types.js";
@@ -12,6 +12,8 @@ import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
 import type { InternalHookHandler } from "../hooks/internal-hooks.js";
 import type { HookEntry } from "../hooks/types.js";
 import type { RuntimeEnv } from "../runtime.js";
+import type { SttProvider } from "../stt/types.js";
+import type { TtsProviderImpl } from "../tts/types.js";
 import type { AgentMessage } from "../types/agent-types.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { PluginRuntime } from "./runtime/types.js";
@@ -35,7 +37,7 @@ export type PluginConfigUiHint = {
   placeholder?: string;
 };
 
-export type PluginKind = "memory";
+export type PluginKind = string;
 
 export type PluginConfigValidation =
   | { ok: true; value?: unknown }
@@ -126,7 +128,6 @@ export type ProviderPlugin = {
   models?: ModelProviderConfig;
   auth: ProviderAuthMethod[];
   formatApiKey?: (cred: AuthProfileCredential) => string;
-  refreshOAuth?: (cred: OAuthCredential) => Promise<OAuthCredential>;
 };
 
 export type RemoteClawPluginGatewayMethod = {
@@ -194,13 +195,14 @@ export type RemoteClawPluginCommandDefinition = {
   handler: PluginCommandHandler;
 };
 
-export type RemoteClawPluginHttpRouteAuth = "gateway" | "plugin";
-export type RemoteClawPluginHttpRouteMatch = "exact" | "prefix";
-
 export type RemoteClawPluginHttpRouteHandler = (
   req: IncomingMessage,
   res: ServerResponse,
 ) => Promise<boolean | void> | boolean | void;
+
+export type RemoteClawPluginHttpRouteAuth = "gateway" | "plugin";
+
+export type RemoteClawPluginHttpRouteMatch = "exact" | "prefix";
 
 export type RemoteClawPluginHttpRouteParams = {
   path: string;
@@ -277,13 +279,14 @@ export type RemoteClawPluginApi = {
   registerGatewayMethod: (method: string, handler: GatewayRequestHandler) => void;
   registerCli: (registrar: RemoteClawPluginCliRegistrar, opts?: { commands?: string[] }) => void;
   registerService: (service: RemoteClawPluginService) => void;
-  registerProvider: (provider: ProviderPlugin) => void;
   /**
    * Register a custom command that bypasses the LLM agent.
    * Plugin commands are processed before built-in commands and before agent invocation.
    * Use this for simple state-toggling or status commands that don't need AI reasoning.
    */
   registerCommand: (command: RemoteClawPluginCommandDefinition) => void;
+  registerSttProvider: (provider: SttProvider) => void;
+  registerTtsProvider: (provider: TtsProviderImpl) => void;
   resolvePath: (input: string) => string;
   /** Register a lifecycle hook handler */
   on: <K extends PluginHookName>(
@@ -307,21 +310,12 @@ export type PluginDiagnostic = {
 // ============================================================================
 
 export type PluginHookName =
-  | "before_model_resolve"
-  | "before_prompt_build"
-  | "before_agent_start"
-  | "llm_input"
-  | "llm_output"
-  | "agent_end"
-  | "before_compaction"
-  | "after_compaction"
   | "before_reset"
   | "message_received"
   | "message_sending"
   | "message_sent"
   | "before_tool_call"
   | "after_tool_call"
-  | "tool_result_persist"
   | "before_message_write"
   | "session_start"
   | "session_end"
@@ -330,7 +324,11 @@ export type PluginHookName =
   | "subagent_spawned"
   | "subagent_ended"
   | "gateway_start"
-  | "gateway_stop";
+  | "gateway_stop"
+  | "before_runtime_spawn"
+  | "after_runtime_exit"
+  | "session_resumed"
+  | "agent_end";
 
 // Agent context shared across agent hooks
 export type PluginHookAgentContext = {
@@ -341,107 +339,11 @@ export type PluginHookAgentContext = {
   messageProvider?: string;
 };
 
-// before_model_resolve hook
-export type PluginHookBeforeModelResolveEvent = {
-  /** User prompt for this run. No session messages are available yet in this phase. */
-  prompt: string;
-};
-
-export type PluginHookBeforeModelResolveResult = {
-  /** Override the model for this agent run. E.g. "llama3.3:8b" */
-  modelOverride?: string;
-  /** Override the provider for this agent run. E.g. "ollama" */
-  providerOverride?: string;
-};
-
-// before_prompt_build hook
-export type PluginHookBeforePromptBuildEvent = {
-  prompt: string;
-  /** Session messages prepared for this run. */
-  messages: unknown[];
-};
-
-export type PluginHookBeforePromptBuildResult = {
-  systemPrompt?: string;
-  prependContext?: string;
-};
-
-// before_agent_start hook (legacy compatibility: combines both phases)
-export type PluginHookBeforeAgentStartEvent = {
-  prompt: string;
-  /** Optional because legacy hook can run in pre-session phase. */
-  messages?: unknown[];
-};
-
-export type PluginHookBeforeAgentStartResult = PluginHookBeforePromptBuildResult &
-  PluginHookBeforeModelResolveResult;
-
-// llm_input hook
-export type PluginHookLlmInputEvent = {
-  runId: string;
-  sessionId: string;
-  provider: string;
-  model: string;
-  systemPrompt?: string;
-  prompt: string;
-  historyMessages: unknown[];
-  imagesCount: number;
-};
-
-// llm_output hook
-export type PluginHookLlmOutputEvent = {
-  runId: string;
-  sessionId: string;
-  provider: string;
-  model: string;
-  assistantTexts: string[];
-  lastAssistant?: unknown;
-  usage?: {
-    input?: number;
-    output?: number;
-    cacheRead?: number;
-    cacheWrite?: number;
-    total?: number;
-  };
-};
-
-// agent_end hook
-export type PluginHookAgentEndEvent = {
-  messages: unknown[];
-  success: boolean;
-  error?: string;
-  durationMs?: number;
-};
-
-// Compaction hooks
-export type PluginHookBeforeCompactionEvent = {
-  /** Total messages in the session before any truncation or compaction */
-  messageCount: number;
-  /** Messages being fed to the compaction LLM (after history-limit truncation) */
-  compactingCount?: number;
-  tokenCount?: number;
-  messages?: unknown[];
-  /** Path to the session JSONL transcript. All messages are already on disk
-   *  before compaction starts, so plugins can read this file asynchronously
-   *  and process in parallel with the compaction LLM call. */
-  sessionFile?: string;
-};
-
 // before_reset hook — fired when /new or /reset clears a session
 export type PluginHookBeforeResetEvent = {
   sessionFile?: string;
   messages?: unknown[];
   reason?: string;
-};
-
-export type PluginHookAfterCompactionEvent = {
-  messageCount: number;
-  tokenCount?: number;
-  compactedCount: number;
-  /** Path to the session JSONL transcript. All pre-compaction messages are
-   *  preserved on disk, so plugins can read and process them asynchronously
-   *  without blocking the compaction pipeline. */
-  sessionFile?: string;
 };
 
 // Message context
@@ -505,30 +407,6 @@ export type PluginHookAfterToolCallEvent = {
   result?: unknown;
   error?: string;
   durationMs?: number;
-};
-
-// tool_result_persist hook
-export type PluginHookToolResultPersistContext = {
-  agentId?: string;
-  sessionKey?: string;
-  toolName?: string;
-  toolCallId?: string;
-};
-
-export type PluginHookToolResultPersistEvent = {
-  toolName?: string;
-  toolCallId?: string;
-  /**
-   * The toolResult message about to be written to the session transcript.
-   * Handlers may return a modified message (e.g. drop non-essential fields).
-   */
-  message: AgentMessage;
-  /** True when the tool result was synthesized by a guard/repair step. */
-  isSynthetic?: boolean;
-};
-
-export type PluginHookToolResultPersistResult = {
-  message?: AgentMessage;
 };
 
 // before_message_write hook
@@ -664,37 +542,65 @@ export type PluginHookGatewayStopEvent = {
   reason?: string;
 };
 
+// ── ChannelBridge Runtime Hooks ──────────────────────────────────────────
+
+// before_runtime_spawn hook — fired before CLI subprocess starts (modifiable)
+export type PluginHookBeforeRuntimeSpawnEvent = {
+  runtimeName: string;
+  sessionId: string | undefined;
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+  workspaceDir: string;
+  channelId: string;
+};
+
+export type PluginHookBeforeRuntimeSpawnResult = {
+  env?: Record<string, string>;
+  workspaceDir?: string;
+};
+
+// after_runtime_exit hook — fired after CLI subprocess exits (observe-only)
+export type PluginHookAfterRuntimeExitEvent = {
+  runtimeName: string;
+  sessionId: string | undefined;
+  exitCode: number | undefined;
+  durationMs: number;
+  stdout: string;
+  stderr: string | undefined;
+  mcpSideEffects: {
+    sentTexts: string[];
+    sentMediaUrls: string[];
+    cronAdds: number;
+  };
+};
+
+// session_resumed hook — fired when an existing session is reused
+export type PluginHookSessionResumedEvent = {
+  sessionId: string;
+  runtimeName: string;
+  channelId: string;
+  userId: string;
+  resumeMethod: "session_map";
+};
+
+// agent_end hook — reconstructed from CLI subprocess exit
+export type PluginHookAgentEndEvent = {
+  runId: string;
+  sessionId: string | undefined;
+  success: boolean;
+  durationMs: number;
+};
+
+// Runtime hook context (shared across before_runtime_spawn / after_runtime_exit)
+export type PluginHookRuntimeContext = {
+  sessionId?: string;
+  channelId: string;
+  runtimeName: string;
+};
+
 // Hook handler types mapped by hook name
 export type PluginHookHandlerMap = {
-  before_model_resolve: (
-    event: PluginHookBeforeModelResolveEvent,
-    ctx: PluginHookAgentContext,
-  ) =>
-    | Promise<PluginHookBeforeModelResolveResult | void>
-    | PluginHookBeforeModelResolveResult
-    | void;
-  before_prompt_build: (
-    event: PluginHookBeforePromptBuildEvent,
-    ctx: PluginHookAgentContext,
-  ) => Promise<PluginHookBeforePromptBuildResult | void> | PluginHookBeforePromptBuildResult | void;
-  before_agent_start: (
-    event: PluginHookBeforeAgentStartEvent,
-    ctx: PluginHookAgentContext,
-  ) => Promise<PluginHookBeforeAgentStartResult | void> | PluginHookBeforeAgentStartResult | void;
-  llm_input: (event: PluginHookLlmInputEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
-  llm_output: (
-    event: PluginHookLlmOutputEvent,
-    ctx: PluginHookAgentContext,
-  ) => Promise<void> | void;
-  agent_end: (event: PluginHookAgentEndEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
-  before_compaction: (
-    event: PluginHookBeforeCompactionEvent,
-    ctx: PluginHookAgentContext,
-  ) => Promise<void> | void;
-  after_compaction: (
-    event: PluginHookAfterCompactionEvent,
-    ctx: PluginHookAgentContext,
-  ) => Promise<void> | void;
   before_reset: (
     event: PluginHookBeforeResetEvent,
     ctx: PluginHookAgentContext,
@@ -719,10 +625,6 @@ export type PluginHookHandlerMap = {
     event: PluginHookAfterToolCallEvent,
     ctx: PluginHookToolContext,
   ) => Promise<void> | void;
-  tool_result_persist: (
-    event: PluginHookToolResultPersistEvent,
-    ctx: PluginHookToolResultPersistContext,
-  ) => PluginHookToolResultPersistResult | void;
   before_message_write: (
     event: PluginHookBeforeMessageWriteEvent,
     ctx: { agentId?: string; sessionKey?: string },
@@ -761,6 +663,25 @@ export type PluginHookHandlerMap = {
   gateway_stop: (
     event: PluginHookGatewayStopEvent,
     ctx: PluginHookGatewayContext,
+  ) => Promise<void> | void;
+  before_runtime_spawn: (
+    event: PluginHookBeforeRuntimeSpawnEvent,
+    ctx: PluginHookRuntimeContext,
+  ) =>
+    | Promise<PluginHookBeforeRuntimeSpawnResult | void>
+    | PluginHookBeforeRuntimeSpawnResult
+    | void;
+  after_runtime_exit: (
+    event: PluginHookAfterRuntimeExitEvent,
+    ctx: PluginHookRuntimeContext,
+  ) => Promise<void> | void;
+  session_resumed: (
+    event: PluginHookSessionResumedEvent,
+    ctx: PluginHookRuntimeContext,
+  ) => Promise<void> | void;
+  agent_end: (
+    event: PluginHookAgentEndEvent,
+    ctx: PluginHookRuntimeContext,
   ) => Promise<void> | void;
 };
 

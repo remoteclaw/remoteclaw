@@ -4,15 +4,14 @@ import { fileURLToPath } from "node:url";
 import { createJiti } from "jiti";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
-import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { isPathInsideWithRealpath } from "../security/scan-paths.js";
 import { resolveUserPath } from "../utils.js";
 import { clearPluginCommands } from "./commands.js";
 import {
   applyTestPluginDefaults,
   normalizePluginsConfig,
   resolveEffectiveEnableState,
-  resolveMemorySlotDecision,
   type NormalizedPluginsConfig,
 } from "./config-state.js";
 import { discoverRemoteClawPlugins } from "./discovery.js";
@@ -54,15 +53,15 @@ const resolvePluginSdkAliasFile = (params: {
     const modulePath = params.modulePath ?? fileURLToPath(import.meta.url);
     const isProduction = process.env.NODE_ENV === "production";
     const isTest = process.env.VITEST || process.env.NODE_ENV === "test";
-    const normalizedModulePath = modulePath.replace(/\\/g, "/");
-    const isDistRuntime = normalizedModulePath.includes("/dist/");
+    // When the loader itself runs from dist/, prefer the dist SDK alias even
+    // in non-production mode (e.g. test-from-dist scenarios).
+    const loaderFromDist = /[\\/]dist[\\/]/.test(modulePath);
     let cursor = path.dirname(modulePath);
     for (let i = 0; i < 6; i += 1) {
       const srcCandidate = path.join(cursor, "src", "plugin-sdk", params.srcFile);
       const distCandidate = path.join(cursor, "dist", "plugin-sdk", params.distFile);
-      const orderedCandidates = isDistRuntime
-        ? [distCandidate, srcCandidate]
-        : isProduction
+      const orderedCandidates =
+        isProduction || loaderFromDist
           ? isTest
             ? [distCandidate, srcCandidate]
             : [distCandidate]
@@ -89,10 +88,6 @@ const resolvePluginSdkAlias = (): string | null =>
 
 const resolvePluginSdkAccountIdAlias = (): string | null => {
   return resolvePluginSdkAliasFile({ srcFile: "account-id.ts", distFile: "account-id.js" });
-};
-
-export const __testing = {
-  resolvePluginSdkAliasFile,
 };
 
 function buildCacheKey(params: {
@@ -172,6 +167,8 @@ function createPluginRecord(params: {
     hookNames: [],
     channelIds: [],
     providerIds: [],
+    sttProviderIds: [],
+    ttsProviderIds: [],
     gatewayMethods: [],
     cliCommands: [],
     services: [],
@@ -457,10 +454,6 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   );
 
   const seenIds = new Map<string, PluginRecord["origin"]>();
-  const memorySlot = normalized.slots.memory;
-  let selectedMemoryPluginId: string | null = null;
-  let memorySlotMatched = false;
-
   for (const candidate of discovery.candidates) {
     const manifestRecord = manifestByRoot.get(candidate.rootDir);
     if (!manifestRecord) {
@@ -530,19 +523,13 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       continue;
     }
 
-    const pluginRoot = safeRealpathOrResolve(candidate.rootDir);
-    const opened = openBoundaryFileSync({
-      absolutePath: candidate.source,
-      rootPath: pluginRoot,
-      boundaryLabel: "plugin root",
-      // Discovery stores rootDir as realpath but source may still be a lexical alias
-      // (e.g. /var/... vs /private/var/... on macOS). Canonical boundary checks
-      // still enforce containment; skip lexical pre-check to avoid false escapes.
-      skipLexicalRootCheck: true,
-    });
-    if (!opened.ok) {
+    if (
+      !isPathInsideWithRealpath(candidate.rootDir, candidate.source, {
+        requireRealpath: true,
+      })
+    ) {
       record.status = "error";
-      record.error = "plugin entry path escapes plugin root or fails alias checks";
+      record.error = "plugin entry path escapes plugin root";
       registry.plugins.push(record);
       seenIds.set(pluginId, candidate.origin);
       registry.diagnostics.push({
@@ -553,12 +540,10 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       });
       continue;
     }
-    const safeSource = opened.path;
-    fs.closeSync(opened.fd);
 
     let mod: RemoteClawPluginModule | null = null;
     try {
-      mod = getJiti()(safeSource) as RemoteClawPluginModule;
+      mod = getJiti()(candidate.source) as RemoteClawPluginModule;
     } catch (err) {
       recordPluginError({
         logger,
@@ -590,8 +575,8 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     record.name = definition?.name ?? record.name;
     record.description = definition?.description ?? record.description;
     record.version = definition?.version ?? record.version;
-    const manifestKind = record.kind as string | undefined;
-    const exportKind = definition?.kind as string | undefined;
+    const manifestKind = record.kind;
+    const exportKind = definition?.kind;
     if (manifestKind && exportKind && exportKind !== manifestKind) {
       registry.diagnostics.push({
         level: "warn",
@@ -601,30 +586,6 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       });
     }
     record.kind = definition?.kind ?? record.kind;
-
-    if (record.kind === "memory" && memorySlot === record.id) {
-      memorySlotMatched = true;
-    }
-
-    const memoryDecision = resolveMemorySlotDecision({
-      id: record.id,
-      kind: record.kind,
-      slot: memorySlot,
-      selectedId: selectedMemoryPluginId,
-    });
-
-    if (!memoryDecision.enabled) {
-      record.enabled = false;
-      record.status = "disabled";
-      record.error = memoryDecision.reason;
-      registry.plugins.push(record);
-      seenIds.set(pluginId, candidate.origin);
-      continue;
-    }
-
-    if (memoryDecision.selected && record.kind === "memory") {
-      selectedMemoryPluginId = record.id;
-    }
 
     const validatedConfig = validatePluginConfig({
       schema: manifestRecord.configSchema,
@@ -700,13 +661,6 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     }
   }
 
-  if (typeof memorySlot === "string" && !memorySlotMatched) {
-    registry.diagnostics.push({
-      level: "warn",
-      message: `memory slot plugin not found or not marked as memory: ${String(memorySlot)}`,
-    });
-  }
-
   warnAboutUntrackedLoadedPlugins({
     registry,
     provenance,
@@ -720,10 +674,5 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   return registry;
 }
 
-function safeRealpathOrResolve(value: string): string {
-  try {
-    return fs.realpathSync(value);
-  } catch {
-    return path.resolve(value);
-  }
-}
+/** @internal Exposed for unit tests only. */
+export const __testing = { resolvePluginSdkAliasFile };

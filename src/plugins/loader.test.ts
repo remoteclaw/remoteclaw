@@ -1,42 +1,59 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { withEnv } from "../test-utils/env.js";
-import { getGlobalHookRunner, resetGlobalHookRunner } from "./hook-runner-global.js";
-import { __testing, loadRemoteClawPlugins } from "./loader.js";
+async function importFreshPluginTestModules() {
+  vi.resetModules();
+  vi.unmock("node:fs");
+  vi.unmock("node:fs/promises");
+  vi.unmock("node:module");
+  vi.unmock("./hook-runner-global.js");
+  vi.unmock("./hooks.js");
+  vi.unmock("./loader.js");
+  vi.unmock("jiti");
+  const [loader, hookRunnerGlobal, hooks] = await Promise.all([
+    import("./loader.js"),
+    import("./hook-runner-global.js"),
+    import("./hooks.js"),
+  ]);
+  return {
+    ...loader,
+    ...hookRunnerGlobal,
+    ...hooks,
+  };
+}
+
+const { loadRemoteClawPlugins, getGlobalHookRunner, resetGlobalHookRunner, __testing } =
+  await importFreshPluginTestModules();
 
 type TempPlugin = { dir: string; file: string; id: string };
 
-const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-plugin-"));
+const fixtureRoot = path.join(os.tmpdir(), `remoteclaw-plugin-${randomUUID()}`);
 let tempDirIndex = 0;
-const prevBundledDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+const prevBundledDir = process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR;
 const EMPTY_PLUGIN_SCHEMA = { type: "object", additionalProperties: false, properties: {} };
-let cachedBundledTelegramDir = "";
-let cachedBundledMemoryDir = "";
-const BUNDLED_TELEGRAM_PLUGIN_BODY = `module.exports = {
-  id: "telegram",
-  register(api) {
-    api.registerChannel({
-      plugin: {
+const BUNDLED_TELEGRAM_PLUGIN_BODY = `export default { id: "telegram", register(api) {
+  api.registerChannel({
+    plugin: {
+      id: "telegram",
+      meta: {
         id: "telegram",
-        meta: {
-          id: "telegram",
-          label: "Telegram",
-          selectionLabel: "Telegram",
-          docsPath: "/channels/telegram",
-          blurb: "telegram channel",
-        },
-        capabilities: { chatTypes: ["direct"] },
-        config: {
-          listAccountIds: () => [],
-          resolveAccount: () => ({ accountId: "default" }),
-        },
-        outbound: { deliveryMode: "direct" },
+        label: "Telegram",
+        selectionLabel: "Telegram",
+        docsPath: "/channels/telegram",
+        blurb: "telegram channel"
       },
-    });
-  },
-};`;
+      capabilities: { chatTypes: ["direct"] },
+      config: {
+        listAccountIds: () => [],
+        resolveAccount: () => ({ accountId: "default" })
+      },
+      outbound: { deliveryMode: "direct" }
+    }
+  });
+} };`;
 
 function makeTempDir() {
   const dir = path.join(fixtureRoot, `case-${tempDirIndex++}`);
@@ -51,7 +68,7 @@ function writePlugin(params: {
   filename?: string;
 }): TempPlugin {
   const dir = params.dir ?? makeTempDir();
-  const filename = params.filename ?? `${params.id}.cjs`;
+  const filename = params.filename ?? `${params.id}.js`;
   const file = path.join(dir, filename);
   fs.writeFileSync(file, params.body, "utf-8");
   fs.writeFileSync(
@@ -69,87 +86,15 @@ function writePlugin(params: {
   return { dir, file, id: params.id };
 }
 
-function loadBundledMemoryPluginRegistry(options?: {
-  packageMeta?: { name: string; version: string; description?: string };
-  pluginBody?: string;
-  pluginFilename?: string;
-}) {
-  if (!options && cachedBundledMemoryDir) {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = cachedBundledMemoryDir;
-    return loadRemoteClawPlugins({
-      cache: false,
-      workspaceDir: cachedBundledMemoryDir,
-      config: {
-        plugins: {
-          slots: {
-            memory: "memory-core",
-          },
-        },
-      },
-    });
-  }
-
-  const bundledDir = makeTempDir();
-  let pluginDir = bundledDir;
-  let pluginFilename = options?.pluginFilename ?? "memory-core.cjs";
-
-  if (options?.packageMeta) {
-    pluginDir = path.join(bundledDir, "memory-core");
-    pluginFilename = options.pluginFilename ?? "index.js";
-    fs.mkdirSync(pluginDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(pluginDir, "package.json"),
-      JSON.stringify(
-        {
-          name: options.packageMeta.name,
-          version: options.packageMeta.version,
-          description: options.packageMeta.description,
-          remoteclaw: { extensions: [`./${pluginFilename}`] },
-        },
-        null,
-        2,
-      ),
-      "utf-8",
-    );
-  }
-
-  writePlugin({
-    id: "memory-core",
-    body:
-      options?.pluginBody ??
-      `module.exports = { id: "memory-core", kind: "memory", register() {} };`,
-    dir: pluginDir,
-    filename: pluginFilename,
-  });
-  if (!options) {
-    cachedBundledMemoryDir = bundledDir;
-  }
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
-
-  return loadRemoteClawPlugins({
-    cache: false,
-    workspaceDir: bundledDir,
-    config: {
-      plugins: {
-        slots: {
-          memory: "memory-core",
-        },
-      },
-    },
-  });
-}
-
 function setupBundledTelegramPlugin() {
-  if (!cachedBundledTelegramDir) {
-    cachedBundledTelegramDir = makeTempDir();
-    writePlugin({
-      id: "telegram",
-      body: BUNDLED_TELEGRAM_PLUGIN_BODY,
-      dir: cachedBundledTelegramDir,
-      filename: "telegram.cjs",
-    });
-  }
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = cachedBundledTelegramDir;
+  const bundledDir = makeTempDir();
+  writePlugin({
+    id: "telegram",
+    body: BUNDLED_TELEGRAM_PLUGIN_BODY,
+    dir: bundledDir,
+    filename: "telegram.js",
+  });
+  process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 }
 
 function expectTelegramLoaded(registry: ReturnType<typeof loadRemoteClawPlugins>) {
@@ -159,7 +104,7 @@ function expectTelegramLoaded(registry: ReturnType<typeof loadRemoteClawPlugins>
 }
 
 function useNoBundledPlugins() {
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+  process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
 }
 
 function loadRegistryFromSinglePlugin(params: {
@@ -193,8 +138,8 @@ function createWarningLogger(warnings: string[]) {
 function createEscapingEntryFixture(params: { id: string; sourceBody: string }) {
   const pluginDir = makeTempDir();
   const outsideDir = makeTempDir();
-  const outsideEntry = path.join(outsideDir, "outside.cjs");
-  const linkedEntry = path.join(pluginDir, "entry.cjs");
+  const outsideEntry = path.join(outsideDir, "outside.js");
+  const linkedEntry = path.join(pluginDir, "entry.js");
   fs.writeFileSync(outsideEntry, params.sourceBody, "utf-8");
   fs.writeFileSync(
     path.join(pluginDir, "remoteclaw.plugin.json"),
@@ -224,9 +169,9 @@ function createPluginSdkAliasFixture() {
 
 afterEach(() => {
   if (prevBundledDir === undefined) {
-    delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+    delete process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR;
   } else {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = prevBundledDir;
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = prevBundledDir;
   }
 });
 
@@ -235,9 +180,6 @@ afterAll(() => {
     fs.rmSync(fixtureRoot, { recursive: true, force: true });
   } catch {
     // ignore cleanup failures
-  } finally {
-    cachedBundledTelegramDir = "";
-    cachedBundledMemoryDir = "";
   }
 });
 
@@ -246,11 +188,11 @@ describe("loadRemoteClawPlugins", () => {
     const bundledDir = makeTempDir();
     writePlugin({
       id: "bundled",
-      body: `module.exports = { id: "bundled", register() {} };`,
+      body: `export default { id: "bundled", register() {} };`,
       dir: bundledDir,
-      filename: "bundled.cjs",
+      filename: "bundled.js",
     });
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
     const registry = loadRemoteClawPlugins({
       cache: false,
@@ -270,7 +212,6 @@ describe("loadRemoteClawPlugins", () => {
 
     const registry = loadRemoteClawPlugins({
       cache: false,
-      workspaceDir: cachedBundledTelegramDir,
       config: {
         plugins: {
           allow: ["telegram"],
@@ -289,7 +230,6 @@ describe("loadRemoteClawPlugins", () => {
 
     const registry = loadRemoteClawPlugins({
       cache: false,
-      workspaceDir: cachedBundledTelegramDir,
       config: {
         channels: {
           telegram: {
@@ -310,7 +250,6 @@ describe("loadRemoteClawPlugins", () => {
 
     const registry = loadRemoteClawPlugins({
       cache: false,
-      workspaceDir: cachedBundledTelegramDir,
       config: {
         channels: {
           telegram: {
@@ -330,41 +269,11 @@ describe("loadRemoteClawPlugins", () => {
     expect(telegram?.error).toBe("disabled in config");
   });
 
-  it("enables bundled memory plugin when selected by slot", () => {
-    const registry = loadBundledMemoryPluginRegistry();
-
-    const memory = registry.plugins.find((entry) => entry.id === "memory-core");
-    expect(memory?.status).toBe("loaded");
-  });
-
-  it("preserves package.json metadata for bundled memory plugins", () => {
-    const registry = loadBundledMemoryPluginRegistry({
-      packageMeta: {
-        name: "@remoteclaw/memory-core",
-        version: "1.2.3",
-        description: "Memory plugin package",
-      },
-      pluginBody:
-        'module.exports = { id: "memory-core", kind: "memory", name: "Memory (Core)", register() {} };',
-    });
-
-    const memory = registry.plugins.find((entry) => entry.id === "memory-core");
-    expect(memory?.status).toBe("loaded");
-    expect(memory?.origin).toBe("bundled");
-    expect(memory?.name).toBe("Memory (Core)");
-    expect(memory?.version).toBe("1.2.3");
-  });
   it("loads plugins from config paths", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "allowed",
-      filename: "allowed.cjs",
-      body: `module.exports = {
-  id: "allowed",
-  register(api) {
-    api.registerGatewayMethod("allowed.ping", ({ respond }) => respond(true, { ok: true }));
-  },
-};`,
+      body: `export default { id: "allowed", register(api) { api.registerGatewayMethod("allowed.ping", ({ respond }) => respond(true, { ok: true })); } };`,
     });
 
     const registry = loadRemoteClawPlugins({
@@ -387,8 +296,7 @@ describe("loadRemoteClawPlugins", () => {
     process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "cache-hook-runner",
-      filename: "cache-hook-runner.cjs",
-      body: `module.exports = { id: "cache-hook-runner", register() {} };`,
+      body: `export default { id: "cache-hook-runner", register() {} };`,
     });
 
     const options = {
@@ -418,8 +326,7 @@ describe("loadRemoteClawPlugins", () => {
     useNoBundledPlugins();
     const plugin = writePlugin({
       id: "alias-safe",
-      filename: "alias-safe.cjs",
-      body: `module.exports = { id: "alias-safe", register() {} };`,
+      body: `export default { id: "alias-safe", register() {} };`,
     });
     const realRoot = fs.realpathSync(plugin.dir);
     if (realRoot === plugin.dir) {
@@ -441,7 +348,7 @@ describe("loadRemoteClawPlugins", () => {
     useNoBundledPlugins();
     const plugin = writePlugin({
       id: "blocked",
-      body: `module.exports = { id: "blocked", register() {} };`,
+      body: `export default { id: "blocked", register() {} };`,
     });
 
     const registry = loadRegistryFromSinglePlugin({
@@ -460,8 +367,7 @@ describe("loadRemoteClawPlugins", () => {
     useNoBundledPlugins();
     const plugin = writePlugin({
       id: "configurable",
-      filename: "configurable.cjs",
-      body: `module.exports = { id: "configurable", register() {} };`,
+      body: `export default { id: "configurable", register() {} };`,
     });
 
     const registry = loadRegistryFromSinglePlugin({
@@ -484,8 +390,7 @@ describe("loadRemoteClawPlugins", () => {
     useNoBundledPlugins();
     const plugin = writePlugin({
       id: "channel-demo",
-      filename: "channel-demo.cjs",
-      body: `module.exports = { id: "channel-demo", register(api) {
+      body: `export default { id: "channel-demo", register(api) {
   api.registerChannel({
     plugin: {
       id: "demo",
@@ -518,7 +423,7 @@ describe("loadRemoteClawPlugins", () => {
     expect(channel).toBeDefined();
   });
 
-  it("registers http routes with auth and match options", () => {
+  it("registers http routes", () => {
     useNoBundledPlugins();
     const plugin = writePlugin({
       id: "http-demo",
@@ -543,43 +448,37 @@ describe("loadRemoteClawPlugins", () => {
     const route = registry.httpRoutes.find((entry) => entry.pluginId === "http-demo");
     expect(route).toBeDefined();
     expect(route?.path).toBe("/webhook");
-    expect(route?.auth).toBe("plugin");
-    expect(route?.match).toBe("prefix");
     const httpPlugin = registry.plugins.find((entry) => entry.id === "http-demo");
     expect(httpPlugin?.httpRoutes).toBe(1);
   });
 
-  it("registers http routes", () => {
+  it("defaults to gateway auth for http routes missing explicit auth", () => {
     useNoBundledPlugins();
     const plugin = writePlugin({
-      id: "http-route-demo",
-      filename: "http-route-demo.cjs",
-      body: `module.exports = { id: "http-route-demo", register(api) {
-  api.registerHttpRoute({ path: "/demo", handler: async (_req, res) => { res.statusCode = 200; res.end("ok"); } });
+      id: "http-route-missing-auth",
+      filename: "http-route-missing-auth.cjs",
+      body: `module.exports = { id: "http-route-missing-auth", register(api) {
+  api.registerHttpRoute({ path: "/demo", handler: async () => true });
 } };`,
     });
 
     const registry = loadRegistryFromSinglePlugin({
       plugin,
       pluginConfig: {
-        allow: ["http-route-demo"],
+        allow: ["http-route-missing-auth"],
       },
     });
 
-    const route = registry.httpRoutes.find((entry) => entry.pluginId === "http-route-demo");
+    const route = registry.httpRoutes.find((entry) => entry.pluginId === "http-route-missing-auth");
     expect(route).toBeDefined();
-    expect(route?.path).toBe("/demo");
     expect(route?.auth).toBe("gateway");
-    expect(route?.match).toBe("exact");
-    const httpPlugin = registry.plugins.find((entry) => entry.id === "http-route-demo");
-    expect(httpPlugin?.httpRoutes).toBe(1);
   });
 
   it("respects explicit disable in config", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({
       id: "config-disable",
-      body: `module.exports = { id: "config-disable", register() {} };`,
+      body: `export default { id: "config-disable", register() {} };`,
     });
 
     const registry = loadRemoteClawPlugins({
@@ -598,67 +497,19 @@ describe("loadRemoteClawPlugins", () => {
     expect(disabled?.status).toBe("disabled");
   });
 
-  it("enforces memory slot selection", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
-    const memoryA = writePlugin({
-      id: "memory-a",
-      body: `module.exports = { id: "memory-a", kind: "memory", register() {} };`,
-    });
-    const memoryB = writePlugin({
-      id: "memory-b",
-      body: `module.exports = { id: "memory-b", kind: "memory", register() {} };`,
-    });
-
-    const registry = loadRemoteClawPlugins({
-      cache: false,
-      config: {
-        plugins: {
-          load: { paths: [memoryA.file, memoryB.file] },
-          slots: { memory: "memory-b" },
-        },
-      },
-    });
-
-    const a = registry.plugins.find((entry) => entry.id === "memory-a");
-    const b = registry.plugins.find((entry) => entry.id === "memory-b");
-    expect(b?.status).toBe("loaded");
-    expect(a?.status).toBe("disabled");
-  });
-
-  it("disables memory plugins when slot is none", () => {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
-    const memory = writePlugin({
-      id: "memory-off",
-      body: `module.exports = { id: "memory-off", kind: "memory", register() {} };`,
-    });
-
-    const registry = loadRemoteClawPlugins({
-      cache: false,
-      config: {
-        plugins: {
-          load: { paths: [memory.file] },
-          slots: { memory: "none" },
-        },
-      },
-    });
-
-    const entry = registry.plugins.find((item) => item.id === "memory-off");
-    expect(entry?.status).toBe("disabled");
-  });
-
   it("prefers higher-precedence plugins with the same id", () => {
     const bundledDir = makeTempDir();
     writePlugin({
       id: "shadow",
-      body: `module.exports = { id: "shadow", register() {} };`,
+      body: `export default { id: "shadow", register() {} };`,
       dir: bundledDir,
-      filename: "shadow.cjs",
+      filename: "shadow.js",
     });
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
     const override = writePlugin({
       id: "shadow",
-      body: `module.exports = { id: "shadow", register() {} };`,
+      body: `export default { id: "shadow", register() {} };`,
     });
 
     const registry = loadRemoteClawPlugins({
@@ -684,21 +535,21 @@ describe("loadRemoteClawPlugins", () => {
     const bundledDir = makeTempDir();
     writePlugin({
       id: "feishu",
-      body: `module.exports = { id: "feishu", register() {} };`,
+      body: `export default { id: "feishu", register() {} };`,
       dir: bundledDir,
-      filename: "index.cjs",
+      filename: "index.js",
     });
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = bundledDir;
 
     const stateDir = makeTempDir();
-    withEnv({ OPENCLAW_STATE_DIR: stateDir, CLAWDBOT_STATE_DIR: undefined }, () => {
+    withEnv({ REMOTECLAW_STATE_DIR: stateDir, CLAWDBOT_STATE_DIR: undefined }, () => {
       const globalDir = path.join(stateDir, "extensions", "feishu");
       fs.mkdirSync(globalDir, { recursive: true });
       writePlugin({
         id: "feishu",
-        body: `module.exports = { id: "feishu", register() {} };`,
+        body: `export default { id: "feishu", register() {} };`,
         dir: globalDir,
-        filename: "index.cjs",
+        filename: "index.js",
       });
 
       const registry = loadRemoteClawPlugins({
@@ -713,9 +564,9 @@ describe("loadRemoteClawPlugins", () => {
         },
       });
 
-      const entries = registry.plugins.filter((entry) => entry.id === "feishu");
-      const loaded = entries.find((entry) => entry.status === "loaded");
-      const overridden = entries.find((entry) => entry.status === "disabled");
+      const entries = registry.plugins.filter((entry: { id: string }) => entry.id === "feishu");
+      const loaded = entries.find((entry: { status: string }) => entry.status === "loaded");
+      const overridden = entries.find((entry: { status: string }) => entry.status === "disabled");
       expect(loaded?.origin).toBe("bundled");
       expect(overridden?.origin).toBe("global");
       expect(overridden?.error).toContain("overridden by bundled plugin");
@@ -726,7 +577,7 @@ describe("loadRemoteClawPlugins", () => {
     useNoBundledPlugins();
     const plugin = writePlugin({
       id: "warn-open-allow",
-      body: `module.exports = { id: "warn-open-allow", register() {} };`,
+      body: `export default { id: "warn-open-allow", register() {} };`,
     });
     const warnings: string[] = [];
     loadRemoteClawPlugins({
@@ -746,14 +597,14 @@ describe("loadRemoteClawPlugins", () => {
   it("warns when loaded non-bundled plugin has no install/load-path provenance", () => {
     useNoBundledPlugins();
     const stateDir = makeTempDir();
-    withEnv({ OPENCLAW_STATE_DIR: stateDir, CLAWDBOT_STATE_DIR: undefined }, () => {
+    withEnv({ REMOTECLAW_STATE_DIR: stateDir, CLAWDBOT_STATE_DIR: undefined }, () => {
       const globalDir = path.join(stateDir, "extensions", "rogue");
       fs.mkdirSync(globalDir, { recursive: true });
       writePlugin({
         id: "rogue",
-        body: `module.exports = { id: "rogue", register() {} };`,
+        body: `export default { id: "rogue", register() {} };`,
         dir: globalDir,
-        filename: "index.cjs",
+        filename: "index.js",
       });
 
       const warnings: string[] = [];
@@ -783,7 +634,7 @@ describe("loadRemoteClawPlugins", () => {
     const { outsideEntry, linkedEntry } = createEscapingEntryFixture({
       id: "symlinked",
       sourceBody:
-        'module.exports = { id: "symlinked", register() { throw new Error("should not run"); } };',
+        'export default { id: "symlinked", register() { throw new Error("should not run"); } };',
     });
     try {
       fs.symlinkSync(outsideEntry, linkedEntry);
@@ -814,7 +665,7 @@ describe("loadRemoteClawPlugins", () => {
     const { outsideEntry, linkedEntry } = createEscapingEntryFixture({
       id: "hardlinked",
       sourceBody:
-        'module.exports = { id: "hardlinked", register() { throw new Error("should not run"); } };',
+        'export default { id: "hardlinked", register() { throw new Error("should not run"); } };',
     });
     try {
       fs.linkSync(outsideEntry, linkedEntry);

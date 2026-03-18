@@ -25,13 +25,13 @@ export function registerPluginHttpRoute(params: {
   registry.httpRoutes = routes;
 
   const normalizedPath = normalizePluginHttpPath(params.path, params.fallbackPath);
+  const routeMatch = params.match ?? "exact";
   const suffix = params.accountId ? ` for account "${params.accountId}"` : "";
   if (!normalizedPath) {
     params.log?.(`plugin: webhook path missing${suffix}`);
     return () => {};
   }
 
-  const routeMatch = params.match ?? "exact";
   const existingIndex = routes.findIndex(
     (entry) => entry.path === normalizedPath && entry.match === routeMatch,
   );

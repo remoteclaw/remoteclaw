@@ -1,28 +1,32 @@
 import util from "node:util";
-import { createAccountActionGate } from "../../../src/channels/plugins/account-action-gate.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { TelegramAccountConfig, TelegramActionConfig } from "../../../src/config/types.js";
-import { isTruthyEnvValue } from "../../../src/infra/env.js";
-import { createSubsystemLogger } from "../../../src/logging/subsystem.js";
 import {
-  listCombinedAccountIds,
+  createAccountActionGate,
+  DEFAULT_ACCOUNT_ID,
+  listConfiguredAccountIds as listConfiguredAccountIdsFromSection,
+  normalizeAccountId,
+  normalizeOptionalAccountId,
+  resolveAccountEntry,
   resolveAccountWithDefaultFallback,
-  resolveListedDefaultAccountId,
-} from "../../../src/plugin-sdk/account-resolution.js";
-import { resolveAccountEntry } from "../../../src/routing/account-lookup.js";
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/account-resolution";
+import { isTruthyEnvValue } from "remoteclaw/plugin-sdk/infra-runtime";
 import {
   listBoundAccountIds,
   resolveDefaultAgentBoundAccountId,
-} from "../../../src/routing/bindings.js";
-import { formatSetExplicitDefaultInstruction } from "../../../src/routing/default-account-warnings.js";
-import {
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  normalizeOptionalAccountId,
-} from "../../../src/routing/session-key.js";
+} from "remoteclaw/plugin-sdk/routing";
+import { formatSetExplicitDefaultInstruction } from "remoteclaw/plugin-sdk/routing";
+import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
+import type { TelegramAccountConfig, TelegramActionConfig } from "../runtime-api.js";
 import { resolveTelegramToken } from "./token.js";
 
-const log = createSubsystemLogger("telegram/accounts");
+let log: ReturnType<typeof createSubsystemLogger> | null = null;
+
+function getLog() {
+  if (!log) {
+    log = createSubsystemLogger("telegram/accounts");
+  }
+  return log;
+}
 
 function formatDebugArg(value: unknown): string {
   if (typeof value === "string") {
@@ -35,9 +39,9 @@ function formatDebugArg(value: unknown): string {
 }
 
 const debugAccounts = (...args: unknown[]) => {
-  if (isTruthyEnvValue(process.env.REMOTECLAW_DEBUG_TELEGRAM_ACCOUNTS)) {
+  if (isTruthyEnvValue(process.env.OPENCLAW_DEBUG_TELEGRAM_ACCOUNTS)) {
     const parts = args.map((arg) => formatDebugArg(arg));
-    log.warn(parts.join(" ").trim());
+    getLog().warn(parts.join(" ").trim());
   }
 };
 
@@ -51,23 +55,21 @@ export type ResolvedTelegramAccount = {
 };
 
 function listConfiguredAccountIds(cfg: RemoteClawConfig): string[] {
-  const ids = new Set<string>();
-  for (const key of Object.keys(cfg.channels?.telegram?.accounts ?? {})) {
-    if (key) {
-      ids.add(normalizeAccountId(key));
-    }
-  }
-  return [...ids];
+  return listConfiguredAccountIdsFromSection({
+    accounts: cfg.channels?.telegram?.accounts,
+    normalizeAccountId,
+  });
 }
 
 export function listTelegramAccountIds(cfg: RemoteClawConfig): string[] {
-  const ids = listCombinedAccountIds({
-    configuredAccountIds: listConfiguredAccountIds(cfg),
-    additionalAccountIds: listBoundAccountIds(cfg, "telegram"),
-    fallbackAccountIdWhenEmpty: DEFAULT_ACCOUNT_ID,
-  });
+  const ids = Array.from(
+    new Set([...listConfiguredAccountIds(cfg), ...listBoundAccountIds(cfg, "telegram")]),
+  );
   debugAccounts("listTelegramAccountIds", ids);
-  return ids;
+  if (ids.length === 0) {
+    return [DEFAULT_ACCOUNT_ID];
+  }
+  return ids.toSorted((a, b) => a.localeCompare(b));
 }
 
 let emittedMissingDefaultWarn = false;
@@ -82,22 +84,25 @@ export function resolveDefaultTelegramAccountId(cfg: RemoteClawConfig): string {
   if (boundDefault) {
     return boundDefault;
   }
+  const preferred = normalizeOptionalAccountId(cfg.channels?.telegram?.defaultAccount);
+  if (
+    preferred &&
+    listTelegramAccountIds(cfg).some((accountId) => normalizeAccountId(accountId) === preferred)
+  ) {
+    return preferred;
+  }
   const ids = listTelegramAccountIds(cfg);
-  const resolved = resolveListedDefaultAccountId({
-    accountIds: ids,
-    configuredDefaultAccountId: normalizeOptionalAccountId(cfg.channels?.telegram?.defaultAccount),
-  });
-  if (resolved !== ids[0] || ids.includes(DEFAULT_ACCOUNT_ID) || ids.length <= 1) {
-    return resolved;
+  if (ids.includes(DEFAULT_ACCOUNT_ID)) {
+    return DEFAULT_ACCOUNT_ID;
   }
   if (ids.length > 1 && !emittedMissingDefaultWarn) {
     emittedMissingDefaultWarn = true;
-    log.warn(
+    getLog().warn(
       `channels.telegram: accounts.default is missing; falling back to "${ids[0]}". ` +
         `${formatSetExplicitDefaultInstruction("telegram")} to avoid routing surprises in multi-account setups.`,
     );
   }
-  return resolved;
+  return ids[0] ?? DEFAULT_ACCOUNT_ID;
 }
 
 export function resolveTelegramAccountConfig(

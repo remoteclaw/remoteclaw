@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "../agents/provider-utils.js";
+import { normalizeProviderIdForAuth } from "../agents/provider-utils.js";
 import { normalizeSecretInput } from "../utils/normalize-secret-input.js";
 import {
   ensureAuthProfileStore,
@@ -42,8 +42,8 @@ export async function upsertAuthProfileWithLock(params: {
 }
 
 export function listProfilesForProvider(store: AuthProfileStore, provider: string): string[] {
-  const providerKey = normalizeProviderId(provider);
+  const providerKey = normalizeProviderIdForAuth(provider);
   return Object.entries(store.profiles)
-    .filter(([, cred]) => normalizeProviderId(cred.provider) === providerKey)
+    .filter(([, cred]) => normalizeProviderIdForAuth(cred.provider) === providerKey)
     .map(([id]) => id);
 }

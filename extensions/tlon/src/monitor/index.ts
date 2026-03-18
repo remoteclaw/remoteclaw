@@ -18,7 +18,7 @@ import {
   isSummarizationRequest,
 } from "./utils.js";
 
-function formatError(err: unknown): string {
+function formatError(err: any): string {
   if (err instanceof Error) return err.message;
   return String(err);
 }
@@ -435,7 +435,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
             await sendDm({ api: api, fromShip: botShipName, toShip: senderShip, text: replyText });
           }
         },
-        onError: (err: unknown, info: unknown) => {
+        onError: (err: any, info: any) => {
           const dispatchDuration = Date.now() - dispatchStartTime;
           runtime.error?.(
             `[tlon] ${info.kind} reply failed after ${dispatchDuration}ms: ${String(err)}`,

@@ -69,7 +69,7 @@ export function createMSTeamsReplyDispatcher(params: {
       ...prefixOptions,
       humanDelay: core.channel.reply.resolveHumanDelayConfig(params.cfg, params.agentId),
       typingCallbacks,
-      deliver: async (payload: unknown) => {
+      deliver: async (payload: any) => {
         const tableMode = core.channel.text.resolveMarkdownTableMode({
           cfg: params.cfg,
           channel: "msteams",
@@ -108,7 +108,7 @@ export function createMSTeamsReplyDispatcher(params: {
           params.onSentMessageIds?.(ids);
         }
       },
-      onError: (err: unknown, info: unknown) => {
+      onError: (err: any, info: any) => {
         const errMsg = formatUnknownError(err);
         const classification = classifyMSTeamsSendError(err);
         const hint = formatMSTeamsSendErrorHint(classification);

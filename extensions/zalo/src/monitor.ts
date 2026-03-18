@@ -507,7 +507,7 @@ async function processMessageWithPipeline(params: {
     storePath,
     sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
     ctx: ctxPayload,
-    onRecordError: (err: unknown) => {
+    onRecordError: (err: any) => {
       runtime.error?.(`zalo: failed updating session meta: ${String(err)}`);
     },
   });
@@ -529,7 +529,7 @@ async function processMessageWithPipeline(params: {
     cfg: config,
     dispatcherOptions: {
       ...prefixOptions,
-      deliver: async (payload: unknown) => {
+      deliver: async (payload: any) => {
         await deliverZaloReply({
           payload,
           token,
@@ -543,7 +543,7 @@ async function processMessageWithPipeline(params: {
           tableMode,
         });
       },
-      onError: (err: unknown, info: unknown) => {
+      onError: (err: any, info: any) => {
         runtime.error?.(`[${account.accountId}] Zalo ${info.kind} reply failed: ${String(err)}`);
       },
     },

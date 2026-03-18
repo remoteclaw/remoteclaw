@@ -311,7 +311,7 @@ async function processMessage(
     storePath,
     sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
     ctx: ctxPayload,
-    onRecordError: (err: unknown) => {
+    onRecordError: (err: any) => {
       runtime.error?.(`zalouser: failed updating session meta: ${String(err)}`);
     },
   });
@@ -328,7 +328,7 @@ async function processMessage(
     cfg: config,
     dispatcherOptions: {
       ...prefixOptions,
-      deliver: async (payload: unknown) => {
+      deliver: async (payload: any) => {
         await deliverZalouserReply({
           payload: payload as { text?: string; mediaUrls?: string[]; mediaUrl?: string },
           profile: account.profile,
@@ -346,7 +346,7 @@ async function processMessage(
           }),
         });
       },
-      onError: (err: unknown, info: unknown) => {
+      onError: (err: any, info: any) => {
         runtime.error(`[${account.accountId}] Zalouser ${info.kind} reply failed: ${String(err)}`);
       },
     },

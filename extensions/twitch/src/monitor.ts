@@ -95,7 +95,7 @@ async function processTwitchMessage(params: {
     storePath,
     sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
     ctx: ctxPayload,
-    onRecordError: (err: unknown) => {
+    onRecordError: (err: any) => {
       runtime.error?.(`Failed updating session meta: ${String(err)}`);
     },
   });
@@ -117,7 +117,7 @@ async function processTwitchMessage(params: {
     cfg,
     dispatcherOptions: {
       ...prefixOptions,
-      deliver: async (payload: unknown) => {
+      deliver: async (payload: any) => {
         await deliverTwitchReply({
           payload,
           channel: message.channel,

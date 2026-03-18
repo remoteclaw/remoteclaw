@@ -1,11 +1,10 @@
-import { createDiscordActionGate } from "../../../extensions/discord/src/accounts.js";
-import type { RemoteClawConfig } from "../../config/config.js";
-import type { AgentToolResult } from "../agent-types.js";
-import { readStringParam } from "./common.js";
-import { handleDiscordGuildAction } from "./discord-actions-guild.js";
-import { handleDiscordMessagingAction } from "./discord-actions-messaging.js";
-import { handleDiscordModerationAction } from "./discord-actions-moderation.js";
-import { handleDiscordPresenceAction } from "./discord-actions-presence.js";
+import type { AgentToolResult } from "@mariozechner/pi-agent-core";
+import { readStringParam, type RemoteClawConfig } from "remoteclaw/plugin-sdk/discord-core";
+import { createDiscordActionGate } from "../accounts.js";
+import { handleDiscordGuildAction } from "./runtime.guild.js";
+import { handleDiscordMessagingAction } from "./runtime.messaging.js";
+import { handleDiscordModerationAction } from "./runtime.moderation.js";
+import { handleDiscordPresenceAction } from "./runtime.presence.js";
 
 const messagingActions = new Set([
   "react",
@@ -61,7 +60,7 @@ export async function handleDiscordAction(
   options?: {
     mediaLocalRoots?: readonly string[];
   },
-): Promise<AgentToolResult> {
+): Promise<AgentToolResult<unknown>> {
   const action = readStringParam(params, "action", { required: true });
   const accountId = readStringParam(params, "accountId");
   const isActionEnabled = createDiscordActionGate({ cfg, accountId });

@@ -1,7 +1,8 @@
-// Private helper surface for the bundled nostr plugin.
+// Narrow plugin-sdk surface for the bundled nostr plugin.
 // Keep this list additive and scoped to symbols used under extensions/nostr.
 
 export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
+export type { ChannelSetupAdapter } from "../channels/plugins/types.adapters.js";
 export { formatPairingApproveHint } from "../channels/plugins/helpers.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export type { RemoteClawConfig } from "../config/config.js";
@@ -13,9 +14,9 @@ export type { PluginRuntime } from "../plugins/runtime/types.js";
 export type { RemoteClawPluginApi } from "../plugins/types.js";
 export { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 export {
-  buildComputedAccountStatusSnapshot,
   collectStatusIssuesFromLastError,
   createDefaultChannelRuntimeState,
 } from "./status-helpers.js";
 export { createFixedWindowRateLimiter } from "./webhook-memory-guards.js";
 export { mapAllowFromEntries } from "./channel-config-helpers.js";
+export { nostrSetupAdapter, nostrSetupWizard } from "../../extensions/nostr/setup-api.js";

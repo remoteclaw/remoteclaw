@@ -1,9 +1,9 @@
-import { resolveWhatsAppAccount } from "./accounts.js";
 import {
   ToolAuthorizationError,
   resolveWhatsAppOutboundTarget,
   type RemoteClawConfig,
-} from "./runtime-api.js";
+} from "remoteclaw/plugin-sdk/whatsapp-core";
+import { resolveWhatsAppAccount } from "./accounts.js";
 
 export function resolveAuthorizedWhatsAppOutboundTarget(params: {
   cfg: RemoteClawConfig;

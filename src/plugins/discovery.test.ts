@@ -26,6 +26,15 @@ async function withStateDir<T>(stateDir: string, fn: () => Promise<T>) {
   );
 }
 
+async function discoverWithStateDir(
+  stateDir: string,
+  params: Parameters<typeof discoverRemoteClawPlugins>[0],
+) {
+  return await withStateDir(stateDir, async () => {
+    return discoverRemoteClawPlugins(params);
+  });
+}
+
 function writePluginPackageManifest(params: {
   packageDir: string;
   packageName: string;
@@ -197,9 +206,7 @@ describe("discoverRemoteClawPlugins", () => {
     });
     fs.writeFileSync(outside, "export default function () {}", "utf-8");
 
-    const result = await withStateDir(stateDir, async () => {
-      return discoverRemoteClawPlugins({});
-    });
+    const result = await discoverWithStateDir(stateDir, {});
 
     expect(result.candidates).toHaveLength(0);
     expectEscapesPackageDiagnostic(result.diagnostics);
@@ -225,9 +232,7 @@ describe("discoverRemoteClawPlugins", () => {
       extensions: ["./linked/escape.ts"],
     });
 
-    const { candidates, diagnostics } = await withStateDir(stateDir, async () => {
-      return discoverRemoteClawPlugins({});
-    });
+    const { candidates, diagnostics } = await discoverWithStateDir(stateDir, {});
 
     expect(candidates.some((candidate) => candidate.idHint === "pack")).toBe(false);
     expectEscapesPackageDiagnostic(diagnostics);

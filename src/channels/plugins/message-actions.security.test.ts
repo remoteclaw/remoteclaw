@@ -23,7 +23,7 @@ const discordPlugin: ChannelPlugin = {
     },
   }),
   actions: {
-    listActions: () => ["kick"],
+    describeMessageTool: () => ({ actions: ["kick"] }),
     supportsAction: ({ action }) => action === "kick",
     handleAction,
   },

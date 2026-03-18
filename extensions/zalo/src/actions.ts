@@ -16,15 +16,14 @@ function listEnabledAccounts(cfg: RemoteClawConfig) {
 }
 
 export const zaloMessageActions: ChannelMessageActionAdapter = {
-  listActions: ({ cfg }) => {
+  describeMessageTool: ({ cfg }) => {
     const accounts = listEnabledAccounts(cfg);
     if (accounts.length === 0) {
-      return [];
+      return null;
     }
     const actions = new Set<ChannelMessageActionName>(["send"]);
-    return Array.from(actions);
+    return { actions: Array.from(actions), capabilities: [] };
   },
-  supportsButtons: () => false,
   extractToolSend: ({ args }) => extractToolSend(args, "sendMessage"),
   handleAction: async ({ action, params, cfg, accountId }) => {
     if (action === "send") {

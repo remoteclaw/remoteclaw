@@ -24,12 +24,22 @@ import {
 } from "./accounts.js";
 import { bluebubblesMessageActions } from "./actions.js";
 import { BlueBubblesConfigSchema } from "./config-schema.js";
-import { sendBlueBubblesMedia } from "./media-send.js";
-import { resolveBlueBubblesMessageId } from "./monitor.js";
-import { monitorBlueBubblesProvider, resolveWebhookPathFromConfig } from "./monitor.js";
-import { probeBlueBubbles, type BlueBubblesProbe } from "./probe.js";
-import { sendMessageBlueBubbles } from "./send.js";
-import { blueBubblesSetupAdapter, blueBubblesSetupWizard } from "./setup-surface.js";
+import {
+  resolveBlueBubblesGroupRequireMention,
+  resolveBlueBubblesGroupToolPolicy,
+} from "./group-policy.js";
+import type { ChannelAccountSnapshot, ChannelPlugin } from "./runtime-api.js";
+import {
+  buildChannelConfigSchema,
+  buildComputedAccountStatusSnapshot,
+  buildProbeChannelStatusSummary,
+  collectBlueBubblesStatusIssues,
+  DEFAULT_ACCOUNT_ID,
+  PAIRING_APPROVED_MESSAGE,
+} from "./runtime-api.js";
+import { resolveBlueBubblesOutboundSessionRoute } from "./session-route.js";
+import { blueBubblesSetupAdapter } from "./setup-core.js";
+import { blueBubblesSetupWizard } from "./setup-surface.js";
 import {
   extractHandleFromChatGuid,
   inferBlueBubblesTargetChatType,
@@ -145,7 +155,6 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
   },
   messaging: {
     normalizeTarget: normalizeBlueBubblesMessagingTarget,
-    inferTargetChatType: ({ to }) => inferBlueBubblesTargetChatType(to),
     resolveOutboundSessionRoute: (params) => resolveBlueBubblesOutboundSessionRoute(params),
     targetResolver: {
       looksLikeId: looksLikeBlueBubblesExplicitTargetId,

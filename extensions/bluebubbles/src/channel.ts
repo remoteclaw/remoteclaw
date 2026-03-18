@@ -1,25 +1,11 @@
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
-import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import {
-  adaptScopedAccountAccessor,
-  createScopedChannelConfigAdapter,
+  createScopedAccountConfigAccessors,
+  createScopedChannelConfigBase,
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
-import { createPairingPrefixStripper } from "remoteclaw/plugin-sdk/channel-pairing";
-import {
-  createOpenGroupPolicyRestrictSendersWarningCollector,
-  projectAccountWarningCollector,
-} from "remoteclaw/plugin-sdk/channel-policy";
-import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
-import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
-import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
-import {
-  createAttachedChannelResultAdapter,
-  createPairingPrefixStripper,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+import { collectOpenGroupPolicyRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
 import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
   listBlueBubblesAccountIds,
@@ -37,30 +23,10 @@ import {
   buildProbeChannelStatusSummary,
   collectBlueBubblesStatusIssues,
   DEFAULT_ACCOUNT_ID,
-  deleteAccountFromConfigSection,
   PAIRING_APPROVED_MESSAGE,
   resolveBlueBubblesGroupRequireMention,
   resolveBlueBubblesGroupToolPolicy,
-  setAccountEnabledInConfigSection,
-} from "remoteclaw/plugin-sdk/bluebubbles";
-import {
-  buildAccountScopedDmSecurityPolicy,
-  collectOpenGroupPolicyRestrictSendersWarnings,
-} from "remoteclaw/plugin-sdk/channel-policy";
-import { createLazyRuntimeSurface } from "remoteclaw/plugin-sdk/lazy-runtime";
-import {
-  listBlueBubblesAccountIds,
-  type ResolvedBlueBubblesAccount,
-  resolveBlueBubblesAccount,
-  resolveDefaultBlueBubblesAccountId,
-} from "./accounts.js";
-import { bluebubblesMessageActions } from "./actions.js";
-import { BlueBubblesConfigSchema } from "./config-schema.js";
-import { sendBlueBubblesMedia } from "./media-send.js";
-import { resolveBlueBubblesMessageId } from "./monitor.js";
-import { monitorBlueBubblesProvider, resolveWebhookPathFromConfig } from "./monitor.js";
-import { probeBlueBubbles, type BlueBubblesProbe } from "./probe.js";
-import { sendMessageBlueBubbles } from "./send.js";
+} from "./runtime-api.js";
 import { blueBubblesSetupAdapter } from "./setup-core.js";
 import { blueBubblesSetupWizard } from "./setup-surface.js";
 import {
@@ -76,18 +42,22 @@ const loadBlueBubblesChannelRuntime = createLazyRuntimeNamedExport(
   "blueBubblesChannelRuntime",
 );
 
-const bluebubblesConfigAdapter = createScopedChannelConfigAdapter<ResolvedBlueBubblesAccount>({
-  sectionKey: "bluebubbles",
-  listAccountIds: listBlueBubblesAccountIds,
-  resolveAccount: (cfg, accountId) => resolveBlueBubblesAccount({ cfg, accountId }),
-  defaultAccountId: resolveDefaultBlueBubblesAccountId,
-  clearBaseFields: ["serverUrl", "password", "name", "webhookPath"],
+const bluebubblesConfigAccessors = createScopedAccountConfigAccessors({
+  resolveAccount: ({ cfg, accountId }) => resolveBlueBubblesAccount({ cfg, accountId }),
   resolveAllowFrom: (account: ResolvedBlueBubblesAccount) => account.config.allowFrom,
   formatAllowFrom: (allowFrom) =>
     formatNormalizedAllowFromEntries({
       allowFrom,
       normalizeEntry: (entry) => normalizeBlueBubblesHandle(entry.replace(/^bluebubbles:/i, "")),
     }),
+});
+
+const bluebubblesConfigBase = createScopedChannelConfigBase<ResolvedBlueBubblesAccount>({
+  sectionKey: "bluebubbles",
+  listAccountIds: listBlueBubblesAccountIds,
+  resolveAccount: (cfg, accountId) => resolveBlueBubblesAccount({ cfg, accountId }),
+  defaultAccountId: resolveDefaultBlueBubblesAccountId,
+  clearBaseFields: ["serverUrl", "password", "name", "webhookPath"],
 });
 
 const resolveBlueBubblesDmPolicy = createScopedDmSecurityResolver<ResolvedBlueBubblesAccount>({
@@ -97,17 +67,6 @@ const resolveBlueBubblesDmPolicy = createScopedDmSecurityResolver<ResolvedBlueBu
   policyPathSuffix: "dmPolicy",
   normalizeEntry: (raw) => normalizeBlueBubblesHandle(raw.replace(/^bluebubbles:/i, "")),
 });
-
-const collectBlueBubblesSecurityWarnings =
-  createOpenGroupPolicyRestrictSendersWarningCollector<ResolvedBlueBubblesAccount>({
-    resolveGroupPolicy: (account) => account.config.groupPolicy,
-    defaultGroupPolicy: "allowlist",
-    surface: "BlueBubbles groups",
-    openScope: "any member",
-    groupPolicyPath: "channels.bluebubbles.groupPolicy",
-    groupAllowFromPath: "channels.bluebubbles.groupAllowFrom",
-    mentionGated: false,
-  });
 
 const meta = {
   id: "bluebubbles",
@@ -151,7 +110,7 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
   configSchema: buildChannelConfigSchema(BlueBubblesConfigSchema),
   onboarding: blueBubblesOnboardingAdapter,
   config: {
-    ...bluebubblesConfigAdapter,
+    ...bluebubblesConfigBase,
     isConfigured: (account) => account.configured,
     describeAccount: (account): ChannelAccountSnapshot => ({
       accountId: account.accountId,
@@ -160,14 +119,22 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
       configured: account.configured,
       baseUrl: account.baseUrl,
     }),
+    ...bluebubblesConfigAccessors,
   },
   actions: bluebubblesMessageActions,
   security: {
     resolveDmPolicy: resolveBlueBubblesDmPolicy,
-    collectWarnings: projectWarningCollector(
-      ({ account }: { account: ResolvedBlueBubblesAccount }) => account,
-      collectBlueBubblesSecurityWarnings,
-    ),
+    collectWarnings: ({ account }) => {
+      const groupPolicy = account.config.groupPolicy ?? "allowlist";
+      return collectOpenGroupPolicyRestrictSendersWarnings({
+        groupPolicy,
+        surface: "BlueBubbles groups",
+        openScope: "any member",
+        groupPolicyPath: "channels.bluebubbles.groupPolicy",
+        groupAllowFromPath: "channels.bluebubbles.groupAllowFrom",
+        mentionGated: false,
+      });
+    },
   },
   messaging: {
     normalizeTarget: normalizeBlueBubblesMessagingTarget,

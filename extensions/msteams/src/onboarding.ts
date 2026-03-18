@@ -7,15 +7,19 @@ import type {
   MSTeamsTeamConfig,
 } from "remoteclaw/plugin-sdk";
 import {
+  createTopLevelChannelAllowFromSetter,
+  createTopLevelChannelDmPolicy,
+  createTopLevelChannelGroupPolicySetter,
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
   mergeAllowFromEntries,
-  promptChannelAccessConfig,
-  setTopLevelChannelAllowFrom,
-  setTopLevelChannelDmPolicyWithAllowFrom,
-  setTopLevelChannelGroupPolicy,
-  splitOnboardingEntries,
-} from "remoteclaw/plugin-sdk";
+  splitSetupEntries,
+  type ChannelSetupDmPolicy,
+  type ChannelSetupWizard,
+  type RemoteClawConfig,
+  type WizardPrompter,
+} from "remoteclaw/plugin-sdk/setup";
+import type { MSTeamsTeamConfig } from "../runtime-api.js";
 import {
   parseMSTeamsTeamEntry,
   resolveMSTeamsChannelAllowlist,
@@ -24,22 +28,13 @@ import {
 import { resolveMSTeamsCredentials } from "./token.js";
 
 const channel = "msteams" as const;
-
-function setMSTeamsDmPolicy(cfg: RemoteClawConfig, dmPolicy: DmPolicy) {
-  return setTopLevelChannelDmPolicyWithAllowFrom({
-    cfg,
-    channel: "msteams",
-    dmPolicy,
-  });
-}
-
-function setMSTeamsAllowFrom(cfg: RemoteClawConfig, allowFrom: string[]): RemoteClawConfig {
-  return setTopLevelChannelAllowFrom({
-    cfg,
-    channel: "msteams",
-    allowFrom,
-  });
-}
+const setMSTeamsAllowFrom = createTopLevelChannelAllowFromSetter({
+  channel,
+});
+const setMSTeamsGroupPolicy = createTopLevelChannelGroupPolicySetter({
+  channel,
+  enabled: true,
+});
 
 function looksLikeGuid(value: string): boolean {
   return /^[0-9a-fA-F-]{16,}$/.test(value);
@@ -147,18 +142,6 @@ async function noteMSTeamsCredentialHelp(prompter: WizardPrompter): Promise<void
   );
 }
 
-function setMSTeamsGroupPolicy(
-  cfg: RemoteClawConfig,
-  groupPolicy: "open" | "allowlist" | "disabled",
-): RemoteClawConfig {
-  return setTopLevelChannelGroupPolicy({
-    cfg,
-    channel: "msteams",
-    groupPolicy,
-    enabled: true,
-  });
-}
-
 function setMSTeamsTeamsAllowlist(
   cfg: RemoteClawConfig,
   entries: Array<{ teamKey: string; channelKey?: string }>,
@@ -192,15 +175,104 @@ function setMSTeamsTeamsAllowlist(
   };
 }
 
-const dmPolicy: ChannelOnboardingDmPolicy = {
+function listMSTeamsGroupEntries(cfg: RemoteClawConfig): string[] {
+  return Object.entries(cfg.channels?.msteams?.teams ?? {}).flatMap(([teamKey, value]) => {
+    const channels = value?.channels ?? {};
+    const channelKeys = Object.keys(channels);
+    if (channelKeys.length === 0) {
+      return [teamKey];
+    }
+    return channelKeys.map((channelKey) => `${teamKey}/${channelKey}`);
+  });
+}
+
+async function resolveMSTeamsGroupAllowlist(params: {
+  cfg: RemoteClawConfig;
+  entries: string[];
+  prompter: Pick<WizardPrompter, "note">;
+}): Promise<Array<{ teamKey: string; channelKey?: string }>> {
+  let resolvedEntries = params.entries
+    .map((entry) => parseMSTeamsTeamEntry(entry))
+    .filter(Boolean) as Array<{ teamKey: string; channelKey?: string }>;
+  if (params.entries.length === 0 || !resolveMSTeamsCredentials(params.cfg.channels?.msteams)) {
+    return resolvedEntries;
+  }
+  try {
+    const lookups = await resolveMSTeamsChannelAllowlist({
+      cfg: params.cfg,
+      entries: params.entries,
+    });
+    const resolvedChannels = lookups.filter(
+      (entry) => entry.resolved && entry.teamId && entry.channelId,
+    );
+    const resolvedTeams = lookups.filter(
+      (entry) => entry.resolved && entry.teamId && !entry.channelId,
+    );
+    const unresolved = lookups.filter((entry) => !entry.resolved).map((entry) => entry.input);
+    resolvedEntries = [
+      ...resolvedChannels.map((entry) => ({
+        teamKey: entry.teamId as string,
+        channelKey: entry.channelId as string,
+      })),
+      ...resolvedTeams.map((entry) => ({
+        teamKey: entry.teamId as string,
+      })),
+      ...unresolved.map((entry) => parseMSTeamsTeamEntry(entry)).filter(Boolean),
+    ] as Array<{ teamKey: string; channelKey?: string }>;
+    const summary: string[] = [];
+    if (resolvedChannels.length > 0) {
+      summary.push(
+        `Resolved channels: ${resolvedChannels
+          .map((entry) => entry.channelId)
+          .filter(Boolean)
+          .join(", ")}`,
+      );
+    }
+    if (resolvedTeams.length > 0) {
+      summary.push(
+        `Resolved teams: ${resolvedTeams
+          .map((entry) => entry.teamId)
+          .filter(Boolean)
+          .join(", ")}`,
+      );
+    }
+    if (unresolved.length > 0) {
+      summary.push(`Unresolved (kept as typed): ${unresolved.join(", ")}`);
+    }
+    if (summary.length > 0) {
+      await params.prompter.note(summary.join("\n"), "MS Teams channels");
+    }
+    return resolvedEntries;
+  } catch (err) {
+    await params.prompter.note(
+      `Channel lookup failed; keeping entries as typed. ${String(err)}`,
+      "MS Teams channels",
+    );
+    return resolvedEntries;
+  }
+}
+
+const msteamsGroupAccess: NonNullable<ChannelSetupWizard["groupAccess"]> = {
+  label: "MS Teams channels",
+  placeholder: "Team Name/Channel Name, teamId/conversationId",
+  currentPolicy: ({ cfg }) => cfg.channels?.msteams?.groupPolicy ?? "allowlist",
+  currentEntries: ({ cfg }) => listMSTeamsGroupEntries(cfg),
+  updatePrompt: ({ cfg }) => Boolean(cfg.channels?.msteams?.teams),
+  setPolicy: ({ cfg, policy }) => setMSTeamsGroupPolicy(cfg, policy),
+  resolveAllowlist: async ({ cfg, entries, prompter }) =>
+    await resolveMSTeamsGroupAllowlist({ cfg, entries, prompter }),
+  applyAllowlist: ({ cfg, resolved }) =>
+    setMSTeamsTeamsAllowlist(cfg, resolved as Array<{ teamKey: string; channelKey?: string }>),
+};
+
+const msteamsDmPolicy: ChannelSetupDmPolicy = createTopLevelChannelDmPolicy({
   label: "MS Teams",
   channel,
   policyKey: "channels.msteams.dmPolicy",
   allowFromKey: "channels.msteams.allowFrom",
   getCurrent: (cfg) => cfg.channels?.msteams?.dmPolicy ?? "pairing",
-  setPolicy: (cfg, policy) => setMSTeamsDmPolicy(cfg, policy),
   promptAllowFrom: promptMSTeamsAllowFrom,
-};
+});
 
 export const msteamsOnboardingAdapter: ChannelOnboardingAdapter = {
   channel,

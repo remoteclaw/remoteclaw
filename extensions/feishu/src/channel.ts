@@ -1,18 +1,10 @@
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
-import { createHybridChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
-  createAllowlistProviderGroupPolicyWarningCollector,
-  projectConfigAccountIdWarningCollector,
-} from "remoteclaw/plugin-sdk/channel-policy";
-import { createChatChannelPlugin } from "remoteclaw/plugin-sdk/core";
-import {
-  createChannelDirectoryAdapter,
-  createMessageToolCardSchema,
-  createPairingPrefixStripper,
-  createRuntimeDirectoryLiveAdapter,
-  createRuntimeOutboundDelegates,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+  createHybridChannelConfigBase,
+  createScopedAccountConfigAccessors,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
+import { createMessageToolCardSchema } from "remoteclaw/plugin-sdk/channel-runtime";
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageToolDiscovery,
@@ -156,16 +148,17 @@ function setFeishuNamedAccountEnabled(
   };
 }
 
-const feishuConfigAdapter = createHybridChannelConfigAdapter<
-  ResolvedFeishuAccount,
-  ResolvedFeishuAccount,
-  ClawdbotConfig
->({
+const feishuConfigBase = createHybridChannelConfigBase<ResolvedFeishuAccount, ClawdbotConfig>({
   sectionKey: "feishu",
   listAccountIds: listFeishuAccountIds,
   resolveAccount: (cfg, accountId) => resolveFeishuAccount({ cfg, accountId }),
   defaultAccountId: resolveDefaultFeishuAccountId,
   clearBaseFields: [],
+});
+
+const feishuConfigAccessors = createScopedAccountConfigAccessors<ResolvedFeishuAccount>({
+  resolveAccount: ({ cfg, accountId }) =>
+    resolveFeishuAccount({ cfg: cfg as ClawdbotConfig, accountId }),
   resolveAllowFrom: (account) => account.config.allowFrom,
   formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom }),
 });
@@ -483,13 +476,10 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
     },
   },
   config: {
-    ...feishuConfigAdapter,
+    ...feishuConfigBase,
     setAccountEnabled: ({ cfg, accountId, enabled }) => {
-      const account = resolveFeishuAccount({ cfg, accountId });
       const isDefault = accountId === DEFAULT_ACCOUNT_ID;
-
       if (isDefault) {
-        // For default account, set top-level enabled
         return {
           ...cfg,
           channels: {
@@ -501,8 +491,6 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
           },
         };
       }
-
-      // For named accounts, set enabled in accounts[accountId]
       return setFeishuNamedAccountEnabled(cfg, accountId, enabled);
     },
     deleteAccount: ({ cfg, accountId }) => {
@@ -546,6 +534,7 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
       appId: account.appId,
       domain: account.domain,
     }),
+    ...feishuConfigAccessors,
   },
   actions: {
     describeMessageTool: describeFeishuMessageTool,

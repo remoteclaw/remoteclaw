@@ -1,13 +1,5 @@
 import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
-import {
-  createEmptyChannelResult,
-  createPairingPrefixStripper,
-  createRawChannelSendResultAdapter,
-  createStaticReplyToModeResolver,
-  createTextPairingAdapter,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import type {
   ChannelAccountSnapshot,
   ChannelDirectoryEntry,
@@ -232,6 +224,14 @@ function resolveZalouserRequireMention(params: ChannelGroupContext): boolean {
   return true;
 }
 
+const resolveZalouserDmPolicy = createScopedDmSecurityResolver<ResolvedZalouserAccount>({
+  channelKey: "zalouser",
+  resolvePolicy: (account) => account.config.dmPolicy,
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  policyPathSuffix: "dmPolicy",
+  normalizeEntry: (raw) => raw.replace(/^(zalouser|zlu):/i, ""),
+});
+
 const zalouserMessageActions: ChannelMessageActionAdapter = {
   describeMessageTool: ({ cfg }) => {
     const accounts = listZalouserAccountIds(cfg)
@@ -381,18 +381,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
       formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalouser|zlu):/i }),
   },
   security: {
-    resolveDmPolicy: ({ cfg, accountId, account }) => {
-      return buildAccountScopedDmSecurityPolicy({
-        cfg,
-        channelKey: "zalouser",
-        accountId,
-        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-        policy: account.config.dmPolicy,
-        allowFrom: account.config.allowFrom ?? [],
-        policyPathSuffix: "dmPolicy",
-        normalizeEntry: (raw) => raw.replace(/^(zalouser|zlu):/i, ""),
-      });
-    },
+    resolveDmPolicy: resolveZalouserDmPolicy,
   },
   groups: {
     resolveRequireMention: resolveZalouserRequireMention,

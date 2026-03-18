@@ -1,19 +1,23 @@
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
 import {
-  createScopedChannelConfigAdapter,
+  createScopedAccountConfigAccessors,
+  createScopedChannelConfigBase,
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
-  composeWarningCollectors,
-  createAllowlistProviderOpenWarningCollector,
-  createConditionalWarningCollector,
+  buildOpenGroupPolicyWarning,
+  collectAllowlistProviderGroupPolicyWarnings,
 } from "remoteclaw/plugin-sdk/channel-policy";
 import {
-  createAttachedChannelResultAdapter,
-  createChannelDirectoryAdapter,
-  createTextPairingAdapter,
-  listResolvedDirectoryEntriesFromSources,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+  buildBaseAccountStatusSnapshot,
+  buildBaseChannelStatusSummary,
+  buildChannelConfigSchema,
+  createAccountStatusSink,
+  DEFAULT_ACCOUNT_ID,
+  getChatChannelMeta,
+  PAIRING_APPROVED_MESSAGE,
+  type ChannelPlugin,
+} from "remoteclaw/plugin-sdk/irc";
 import { runStoppablePassiveMonitor } from "../../shared/passive-monitor.js";
 import {
   listIrcAccountIds,
@@ -76,6 +80,25 @@ const ircConfigAdapter = createScopedChannelConfigAdapter<
   resolveDefaultTo: (account: ResolvedIrcAccount) => account.config.defaultTo,
 });
 
+const ircConfigBase = createScopedChannelConfigBase<ResolvedIrcAccount, CoreConfig>({
+  sectionKey: "irc",
+  listAccountIds: listIrcAccountIds,
+  resolveAccount: (cfg, accountId) => resolveIrcAccount({ cfg, accountId }),
+  defaultAccountId: resolveDefaultIrcAccountId,
+  clearBaseFields: [
+    "name",
+    "host",
+    "port",
+    "tls",
+    "nick",
+    "username",
+    "realname",
+    "password",
+    "passwordFile",
+    "channels",
+  ],
+});
+
 const resolveIrcDmPolicy = createScopedDmSecurityResolver<ResolvedIrcAccount>({
   channelKey: "irc",
   resolvePolicy: (account) => account.config.dmPolicy,
@@ -83,36 +106,6 @@ const resolveIrcDmPolicy = createScopedDmSecurityResolver<ResolvedIrcAccount>({
   policyPathSuffix: "dmPolicy",
   normalizeEntry: (raw) => normalizeIrcAllowEntry(raw),
 });
-
-const collectIrcGroupPolicyWarnings =
-  createAllowlistProviderOpenWarningCollector<ResolvedIrcAccount>({
-    providerConfigPresent: (cfg) => cfg.channels?.irc !== undefined,
-    resolveGroupPolicy: (account) => account.config.groupPolicy,
-    buildOpenWarning: {
-      surface: "IRC channels",
-      openBehavior: "allows all channels and senders (mention-gated)",
-      remediation: 'Prefer channels.irc.groupPolicy="allowlist" with channels.irc.groups',
-    },
-  });
-
-const collectIrcSecurityWarnings = composeWarningCollectors<{
-  account: ResolvedIrcAccount;
-  cfg: CoreConfig;
-}>(
-  collectIrcGroupPolicyWarnings,
-  createConditionalWarningCollector(
-    ({ account }) =>
-      !account.config.tls &&
-      "- IRC TLS is disabled (channels.irc.tls=false); traffic and credentials are plaintext.",
-    ({ account }) =>
-      account.config.nickserv?.register &&
-      '- IRC NickServ registration is enabled (channels.irc.nickserv.register=true); this sends "REGISTER" on every connect. Disable after first successful registration.',
-    ({ account }) =>
-      account.config.nickserv?.register &&
-      !account.config.nickserv.password?.trim() &&
-      "- IRC NickServ registration is enabled but no NickServ password is resolved; set channels.irc.nickserv.password, channels.irc.nickserv.passwordFile, or IRC_NICKSERV_PASSWORD.",
-  ),
-);
 
 export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
   id: "irc",
@@ -142,7 +135,7 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
   reload: { configPrefixes: ["channels.irc"] },
   configSchema: buildChannelConfigSchema(IrcConfigSchema),
   config: {
-    ...ircConfigAdapter,
+    ...ircConfigBase,
     isConfigured: (account) => account.configured,
     describeAccount: (account) => ({
       accountId: account.accountId,
@@ -158,7 +151,40 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
   },
   security: {
     resolveDmPolicy: resolveIrcDmPolicy,
-    collectWarnings: collectIrcSecurityWarnings,
+    collectWarnings: ({ account, cfg }) => {
+      const warnings = collectAllowlistProviderGroupPolicyWarnings({
+        cfg,
+        providerConfigPresent: cfg.channels?.irc !== undefined,
+        configuredGroupPolicy: account.config.groupPolicy,
+        collect: (groupPolicy) =>
+          groupPolicy === "open"
+            ? [
+                buildOpenGroupPolicyWarning({
+                  surface: "IRC channels",
+                  openBehavior: "allows all channels and senders (mention-gated)",
+                  remediation:
+                    'Prefer channels.irc.groupPolicy="allowlist" with channels.irc.groups',
+                }),
+              ]
+            : [],
+      });
+      if (!account.config.tls) {
+        warnings.push(
+          "- IRC TLS is disabled (channels.irc.tls=false); traffic and credentials are plaintext.",
+        );
+      }
+      if (account.config.nickserv?.register) {
+        warnings.push(
+          '- IRC NickServ registration is enabled (channels.irc.nickserv.register=true); this sends "REGISTER" on every connect. Disable after first successful registration.',
+        );
+        if (!account.config.nickserv.password?.trim()) {
+          warnings.push(
+            "- IRC NickServ registration is enabled but no NickServ password is resolved; set channels.irc.nickserv.password, channels.irc.nickserv.passwordFile, or IRC_NICKSERV_PASSWORD.",
+          );
+        }
+      }
+      return warnings;
+    },
   },
   groups: {
     resolveRequireMention: ({ cfg, accountId, groupId }) => {

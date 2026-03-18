@@ -5,14 +5,18 @@ import type {
   WizardPrompter,
 } from "remoteclaw/plugin-sdk";
 import {
+  createTopLevelChannelDmPolicy,
+  createTopLevelChannelDmPolicySetter,
   DEFAULT_ACCOUNT_ID,
   formatResolvedUnresolvedNote,
   mergeAllowFromEntries,
   normalizeAccountId,
-  promptChannelAccessConfig,
-  resolveAccountIdForConfigure,
-  setTopLevelChannelDmPolicyWithAllowFrom,
-} from "remoteclaw/plugin-sdk";
+  patchScopedAccountConfig,
+  type ChannelSetupDmPolicy,
+  type ChannelSetupWizard,
+  type DmPolicy,
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/setup";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,
@@ -29,6 +33,21 @@ import {
 } from "./zalo-js.js";
 
 const channel = "zalouser" as const;
+const setZalouserDmPolicy = createTopLevelChannelDmPolicySetter({
+  channel,
+});
+const ZALOUSER_ALLOW_FROM_PLACEHOLDER = "Alice, 123456789, or leave empty to configure later";
+const ZALOUSER_GROUPS_PLACEHOLDER = "Family, Work, 123456789, or leave empty for now";
+const ZALOUSER_DM_ACCESS_TITLE = "Zalo Personal DM access";
+const ZALOUSER_ALLOWLIST_TITLE = "Zalo Personal allowlist";
+const ZALOUSER_GROUPS_TITLE = "Zalo groups";
+
+function parseZalouserEntries(raw: string): string[] {
+  return raw
+    .split(/[\n,;]+/g)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
 
 function setZalouserAccountScopedConfig(
   cfg: RemoteClawConfig,
@@ -36,11 +55,45 @@ function setZalouserAccountScopedConfig(
   defaultPatch: Record<string, unknown>,
   accountPatch: Record<string, unknown> = defaultPatch,
 ): RemoteClawConfig {
-  if (accountId === DEFAULT_ACCOUNT_ID) {
-    return {
-      ...cfg,
-      channels: {
-        ...cfg.channels,
+  return patchScopedAccountConfig({
+    cfg,
+    channelKey: channel,
+    accountId,
+    patch: defaultPatch,
+    accountPatch,
+  }) as RemoteClawConfig;
+}
+
+function setZalouserGroupPolicy(
+  cfg: RemoteClawConfig,
+  accountId: string,
+  groupPolicy: "open" | "allowlist" | "disabled",
+): RemoteClawConfig {
+  return setZalouserAccountScopedConfig(cfg, accountId, {
+    groupPolicy,
+  });
+}
+
+function setZalouserGroupAllowlist(
+  cfg: RemoteClawConfig,
+  accountId: string,
+  groupKeys: string[],
+): RemoteClawConfig {
+  const groups = Object.fromEntries(
+    groupKeys.map((key) => [key, { allow: true, requireMention: true }]),
+  );
+  return setZalouserAccountScopedConfig(cfg, accountId, {
+    groups,
+  });
+}
+
+function ensureZalouserPluginEnabled(cfg: RemoteClawConfig): RemoteClawConfig {
+  const next: RemoteClawConfig = {
+    ...cfg,
+    plugins: {
+      ...cfg.plugins,
+      entries: {
+        ...cfg.plugins?.entries,
         zalouser: {
           ...cfg.channels?.zalouser,
           enabled: true,
@@ -148,34 +201,12 @@ async function promptZalouserAllowFrom(params: {
   }
 }
 
-function setZalouserGroupPolicy(
-  cfg: RemoteClawConfig,
-  accountId: string,
-  groupPolicy: "open" | "allowlist" | "disabled",
-): RemoteClawConfig {
-  return setZalouserAccountScopedConfig(cfg, accountId, {
-    groupPolicy,
-  });
-}
-
-function setZalouserGroupAllowlist(
-  cfg: RemoteClawConfig,
-  accountId: string,
-  groupKeys: string[],
-): RemoteClawConfig {
-  const groups = Object.fromEntries(groupKeys.map((key) => [key, { allow: true }]));
-  return setZalouserAccountScopedConfig(cfg, accountId, {
-    groups,
-  });
-}
-
-const dmPolicy: ChannelOnboardingDmPolicy = {
+const zalouserDmPolicy: ChannelSetupDmPolicy = createTopLevelChannelDmPolicy({
   label: "Zalo Personal",
   channel,
   policyKey: "channels.zalouser.dmPolicy",
   allowFromKey: "channels.zalouser.allowFrom",
-  getCurrent: (cfg) => (cfg.channels?.zalouser?.dmPolicy ?? "pairing") as "pairing",
-  setPolicy: (cfg, policy) => setZalouserDmPolicy(cfg, policy),
+  getCurrent: (cfg) => (cfg.channels?.zalouser?.dmPolicy ?? "pairing") as DmPolicy,
   promptAllowFrom: async ({ cfg, prompter, accountId }) => {
     const id =
       accountId && normalizeAccountId(accountId)
@@ -187,7 +218,7 @@ const dmPolicy: ChannelOnboardingDmPolicy = {
       accountId: id,
     });
   },
-};
+});
 
 export const zalouserOnboardingAdapter: ChannelOnboardingAdapter = {
   channel,

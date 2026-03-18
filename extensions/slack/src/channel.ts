@@ -6,17 +6,27 @@ import {
 import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createOpenProviderConfiguredRouteWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
 import {
-  createAttachedChannelResultAdapter,
-  createChannelDirectoryAdapter,
-  createPairingPrefixStripper,
-  createScopedAccountReplyToModeResolver,
-  createRuntimeDirectoryLiveAdapter,
-  createTextPairingAdapter,
-  resolveOutboundSendDep,
-  resolveTargetsWithOptionalToken,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+  createScopedDmSecurityResolver,
+  collectOpenGroupPolicyConfiguredRouteWarnings,
+  collectOpenProviderGroupPolicyWarnings,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
 import { buildOutboundBaseSessionKey, normalizeOutboundThreadId } from "remoteclaw/plugin-sdk/core";
 import { resolveThreadSessionKeys, type RoutePeer } from "remoteclaw/plugin-sdk/routing";
+import {
+  buildComputedAccountStatusSnapshot,
+  DEFAULT_ACCOUNT_ID,
+  listSlackDirectoryGroupsFromConfig,
+  listSlackDirectoryPeersFromConfig,
+  looksLikeSlackTargetId,
+  normalizeSlackMessagingTarget,
+  PAIRING_APPROVED_MESSAGE,
+  projectCredentialSnapshotFields,
+  resolveConfiguredFromRequiredCredentialStatuses,
+  type ChannelPlugin,
+  type RemoteClawConfig,
+  type SlackActionContext,
+} from "remoteclaw/plugin-sdk/slack";
 import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
   listEnabledSlackAccounts,
@@ -80,6 +90,14 @@ import { parseSlackTarget } from "./targets.js";
 import { buildSlackThreadingToolContext } from "./threading-tool-context.js";
 
 const meta = getChatChannelMeta("slack");
+
+const resolveSlackDmPolicy = createScopedDmSecurityResolver<ResolvedSlackAccount>({
+  channelKey: "slack",
+  resolvePolicy: (account) => account.dm?.policy,
+  resolveAllowFrom: (account) => account.dm?.allowFrom,
+  allowFromPathSuffix: "dm.",
+  normalizeEntry: (raw) => raw.replace(/^(slack|user):/i, ""),
+});
 
 // Select the appropriate Slack token for read/write operations.
 function getTokenForOperation(
@@ -389,7 +407,33 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
   },
   security: {
     resolveDmPolicy: resolveSlackDmPolicy,
-    collectWarnings: collectSlackSecurityWarnings,
+    collectWarnings: ({ account, cfg }) => {
+      const channelAllowlistConfigured =
+        Boolean(account.config.channels) && Object.keys(account.config.channels ?? {}).length > 0;
+
+      return collectOpenProviderGroupPolicyWarnings({
+        cfg,
+        providerConfigPresent: cfg.channels?.slack !== undefined,
+        configuredGroupPolicy: account.config.groupPolicy,
+        collect: (groupPolicy) =>
+          collectOpenGroupPolicyConfiguredRouteWarnings({
+            groupPolicy,
+            routeAllowlistConfigured: channelAllowlistConfigured,
+            configureRouteAllowlist: {
+              surface: "Slack channels",
+              openScope: "any channel not explicitly denied",
+              groupPolicyPath: "channels.slack.groupPolicy",
+              routeAllowlistPath: "channels.slack.channels",
+            },
+            missingRouteAllowlist: {
+              surface: "Slack channels",
+              openBehavior: "with no channel allowlist; any channel can trigger (mention-gated)",
+              remediation:
+                'Set channels.slack.groupPolicy="allowlist" and configure channels.slack.channels',
+            },
+          }),
+      });
+    },
   },
   groups: {
     resolveRequireMention: resolveSlackGroupRequireMention,

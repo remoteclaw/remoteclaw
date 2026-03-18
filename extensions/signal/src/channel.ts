@@ -14,10 +14,14 @@ import { type RoutePeer } from "remoteclaw/plugin-sdk/routing";
 import { resolveSignalAccount, type ResolvedSignalAccount } from "./accounts.js";
 import { markdownToSignalTextChunks } from "./format.js";
 import {
-  buildAccountScopedDmSecurityPolicy,
-  createScopedAccountConfigAccessors,
   collectAllowlistProviderRestrictSendersWarnings,
-} from "remoteclaw/plugin-sdk";
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { buildOutboundBaseSessionKey } from "remoteclaw/plugin-sdk/core";
+import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
+import { type RoutePeer } from "remoteclaw/plugin-sdk/routing";
 import {
   applyAccountNameToChannelSection,
   buildBaseAccountStatusSnapshot,
@@ -49,13 +53,15 @@ import {
 } from "remoteclaw/plugin-sdk/signal";
 import { getSignalRuntime } from "./runtime.js";
 import { signalSetupAdapter } from "./setup-core.js";
-import {
-  collectSignalSecurityWarnings,
-  signalConfigAdapter,
-  createSignalPluginBase,
-  signalResolveDmPolicy,
-  signalSetupWizard,
-} from "./shared.js";
+import { createSignalPluginBase, signalConfigAccessors, signalSetupWizard } from "./shared.js";
+
+const resolveSignalDmPolicy = createScopedDmSecurityResolver<ResolvedSignalAccount>({
+  channelKey: "signal",
+  resolvePolicy: (account) => account.config.dmPolicy,
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  policyPathSuffix: "dmPolicy",
+  normalizeEntry: (raw) => normalizeE164(raw.replace(/^signal:/i, "").trim()),
+});
 type SignalSendFn = ReturnType<typeof getSignalRuntime>["channel"]["signal"]["sendMessageSignal"];
 
 const signalMessageActions: ChannelMessageActionAdapter = {
@@ -343,18 +349,7 @@ export const signalPlugin: ChannelPlugin<ResolvedSignalAccount> = {
     resolveGroupPolicy: (account) => account.config.groupPolicy,
   }),
   security: {
-    resolveDmPolicy: ({ cfg, accountId, account }) => {
-      return buildAccountScopedDmSecurityPolicy({
-        cfg,
-        channelKey: "signal",
-        accountId,
-        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-        policy: account.config.dmPolicy,
-        allowFrom: account.config.allowFrom ?? [],
-        policyPathSuffix: "dmPolicy",
-        normalizeEntry: (raw) => normalizeE164(raw.replace(/^signal:/i, "").trim()),
-      });
-    },
+    resolveDmPolicy: resolveSignalDmPolicy,
     collectWarnings: ({ account, cfg }) => {
       return collectAllowlistProviderRestrictSendersWarnings({
         cfg,

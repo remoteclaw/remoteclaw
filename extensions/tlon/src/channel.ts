@@ -1,9 +1,5 @@
-import { createHybridChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import {
-  createRuntimeOutboundDelegates,
-  type ChannelAccountSnapshot,
-  type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+import { createHybridChannelConfigBase } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import type { ChannelAccountSnapshot, ChannelPlugin } from "remoteclaw/plugin-sdk/channel-runtime";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
 import { tlonChannelConfigSchema } from "./config-schema.js";
@@ -115,7 +111,7 @@ const tlonSetupWizardProxy = createTlonSetupWizardBase({
     ).tlonSetupWizard.finalize!(params),
 }) satisfies NonNullable<ChannelPlugin["setupWizard"]>;
 
-const tlonConfigAdapter = createHybridChannelConfigAdapter({
+const tlonConfigBase = createHybridChannelConfigBase({
   sectionKey: TLON_CHANNEL_ID,
   listAccountIds: (cfg: RemoteClawConfig) => listTlonAccountIds(cfg),
   resolveAccount: (cfg: RemoteClawConfig, accountId?: string | null) =>
@@ -123,9 +119,6 @@ const tlonConfigAdapter = createHybridChannelConfigAdapter({
   defaultAccountId: () => "default",
   clearBaseFields: ["ship", "code", "url", "name"],
   preserveSectionOnDefaultDelete: true,
-  resolveAllowFrom: (account) => account.dmAllowlist,
-  formatAllowFrom: (allowFrom) =>
-    allowFrom.map((entry) => normalizeShip(String(entry))).filter(Boolean),
 });
 
 export const tlonPlugin: ChannelPlugin = {
@@ -150,50 +143,16 @@ export const tlonPlugin: ChannelPlugin = {
   reload: { configPrefixes: ["channels.tlon"] },
   configSchema: tlonChannelConfigSchema,
   config: {
-    ...tlonConfigAdapter,
+    ...tlonConfigBase,
     isConfigured: (account) => account.configured,
-    describeAccount: (account) =>
-      describeAccountSnapshot({
-        account,
-        configured: account.configured,
-        extra: {
-          ship: account.ship,
-          url: account.url,
-        },
-      }),
-  },
-  setup: {
-    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-    applyAccountName: ({ cfg, accountId, name }) =>
-      applyAccountNameToChannelSection({
-        cfg: cfg,
-        channelKey: "tlon",
-        accountId,
-        name,
-      }),
-    validateInput: ({ cfg, accountId, input }) => {
-      const setupInput = input as TlonSetupInput;
-      const resolved = resolveTlonAccount(cfg, accountId ?? undefined);
-      const ship = setupInput.ship?.trim() || resolved.ship;
-      const url = setupInput.url?.trim() || resolved.url;
-      const code = setupInput.code?.trim() || resolved.code;
-      if (!ship) {
-        return "Tlon requires --ship.";
-      }
-      if (!url) {
-        return "Tlon requires --url.";
-      }
-      if (!code) {
-        return "Tlon requires --code.";
-      }
-      return null;
-    },
-    applyAccountConfig: ({ cfg, accountId, input }) =>
-      applyTlonSetupConfig({
-        cfg: cfg,
-        accountId,
-        input: input as TlonSetupInput,
-      }),
+    describeAccount: (account) => ({
+      accountId: account.accountId,
+      name: account.name,
+      enabled: account.enabled,
+      configured: account.configured,
+      ship: account.ship,
+      url: account.url,
+    }),
   },
   messaging: {
     normalizeTarget: (target) => {

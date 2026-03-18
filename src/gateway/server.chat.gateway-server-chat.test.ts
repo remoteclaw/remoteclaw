@@ -18,6 +18,22 @@ import {
 import { agentCommand } from "./test-helpers.mocks.js";
 import { installConnectedControlUiServerSuite } from "./test-with-server.js";
 
+function extractFirstTextBlock(message: unknown): string | undefined {
+  if (!message || typeof message !== "object") {
+    return undefined;
+  }
+  const content = (message as { content?: unknown }).content;
+  if (!Array.isArray(content)) {
+    return undefined;
+  }
+  const first = content[0];
+  if (!first || typeof first !== "object") {
+    return undefined;
+  }
+  const firstText = (first as { text?: unknown }).text;
+  return typeof firstText === "string" ? firstText : undefined;
+}
+
 installGatewayTestHooks({ scope: "suite" });
 const CHAT_RESPONSE_TIMEOUT_MS = 4_000;
 

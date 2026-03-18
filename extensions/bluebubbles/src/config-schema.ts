@@ -1,7 +1,12 @@
-import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk";
+import {
+  AllowFromListSchema,
+  buildCatchallMultiAccountChannelSchema,
+  DmPolicySchema,
+  GroupPolicySchema,
+} from "remoteclaw/plugin-sdk/channel-config-schema";
 import { z } from "zod";
-
-const allowFromEntry = z.union([z.string(), z.number()]);
+import { MarkdownConfigSchema, ToolPolicySchema } from "./runtime-api.js";
+import { buildSecretInputSchema, hasConfiguredSecretInput } from "./secret-input.js";
 
 const bluebubblesActionSchema = z
   .object({

@@ -1,5 +1,6 @@
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
+import { createAccountListHelpers, type RemoteClawConfig } from "./runtime-api.js";
+import { hasConfiguredSecretInput, normalizeSecretInputString } from "./secret-input.js";
 import { normalizeBlueBubblesServerUrl, type BlueBubblesAccountConfig } from "./types.js";
 
 export type ResolvedBlueBubblesAccount = {

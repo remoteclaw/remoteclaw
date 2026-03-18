@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
 import path from "node:path";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { resolveBlueBubblesServerAccount } from "./account-resolve.js";
 import { postMultipartFormData } from "./multipart.js";
 import {
@@ -8,6 +7,7 @@ import {
   isBlueBubblesPrivateApiStatusEnabled,
 } from "./probe.js";
 import { resolveRequestUrl } from "./request-url.js";
+import type { OpenClawConfig } from "./runtime-api.js";
 import { getBlueBubblesRuntime, warnBlueBubbles } from "./runtime.js";
 import { extractBlueBubblesMessageId, resolveBlueBubblesSendTarget } from "./send-helpers.js";
 import { resolveChatGuidForTarget, createChatForHandle } from "./send.js";

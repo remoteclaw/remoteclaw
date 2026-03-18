@@ -40,6 +40,21 @@ import {
   type TelegramProbe,
 } from "remoteclaw/plugin-sdk/telegram";
 import { getTelegramRuntime } from "./runtime.js";
+import { sendTypingTelegram } from "./send.js";
+import { telegramSetupAdapter } from "./setup-core.js";
+import { telegramSetupWizard } from "./setup-surface.js";
+import {
+  createTelegramPluginBase,
+  findTelegramTokenOwnerAccountId,
+  formatDuplicateTelegramTokenReason,
+  telegramConfigAdapter,
+} from "./shared.js";
+import { collectTelegramStatusIssues } from "./status-issues.js";
+import { parseTelegramTarget } from "./targets.js";
+
+type TelegramSendFn = ReturnType<
+  typeof getTelegramRuntime
+>["channel"]["telegram"]["sendMessageTelegram"];
 
 const meta = getChatChannelMeta("telegram");
 
@@ -125,14 +140,19 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
       );
     },
   },
-  capabilities: {
-    chatTypes: ["direct", "group", "channel", "thread"],
-    reactions: true,
-    threads: true,
-    media: true,
-    polls: true,
-    nativeCommands: true,
-    blockStreaming: true,
+  allowlist: {
+    supportsScope: ({ scope }) => scope === "dm" || scope === "group" || scope === "all",
+    readConfig: ({ cfg, accountId }) =>
+      readTelegramAllowlistConfig(resolveTelegramAccount({ cfg, accountId })),
+    applyConfigEdit: buildAccountScopedAllowlistConfigEditor({
+      channelId: "telegram",
+      normalize: ({ cfg, accountId, values }) =>
+        telegramConfigAdapter.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
+      resolvePaths: (scope) => ({
+        readPaths: [[scope === "dm" ? "allowFrom" : "groupAllowFrom"]],
+        writePath: [scope === "dm" ? "allowFrom" : "groupAllowFrom"],
+      }),
+    }),
   },
   reload: { configPrefixes: ["channels.telegram"] },
   configSchema: buildChannelConfigSchema(TelegramConfigSchema),

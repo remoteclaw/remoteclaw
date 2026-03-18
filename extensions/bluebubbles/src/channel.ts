@@ -7,23 +7,12 @@ import type {
 import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
 import {
-  applyAccountNameToChannelSection,
-  buildAccountScopedDmSecurityPolicy,
-  buildChannelConfigSchema,
-  buildProbeChannelStatusSummary,
-  collectBlueBubblesStatusIssues,
-  collectOpenGroupPolicyRestrictSendersWarnings,
-  DEFAULT_ACCOUNT_ID,
-  deleteAccountFromConfigSection,
-  formatNormalizedAllowFromEntries,
-  mapAllowFromEntries,
-  migrateBaseNameToDefaultAccount,
-  normalizeAccountId,
-  PAIRING_APPROVED_MESSAGE,
-  resolveBlueBubblesGroupRequireMention,
-  resolveBlueBubblesGroupToolPolicy,
-  setAccountEnabledInConfigSection,
-} from "remoteclaw/plugin-sdk";
+  createScopedChannelConfigAdapter,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
+import { collectOpenGroupPolicyRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
+import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,
@@ -46,6 +35,33 @@ import {
   normalizeBlueBubblesMessagingTarget,
   parseBlueBubblesTarget,
 } from "./targets.js";
+
+const loadBlueBubblesChannelRuntime = createLazyRuntimeNamedExport(
+  () => import("./channel.runtime.js"),
+  "blueBubblesChannelRuntime",
+);
+
+const bluebubblesConfigAdapter = createScopedChannelConfigAdapter<ResolvedBlueBubblesAccount>({
+  sectionKey: "bluebubbles",
+  listAccountIds: listBlueBubblesAccountIds,
+  resolveAccount: (cfg, accountId) => resolveBlueBubblesAccount({ cfg, accountId }),
+  defaultAccountId: resolveDefaultBlueBubblesAccountId,
+  clearBaseFields: ["serverUrl", "password", "name", "webhookPath"],
+  resolveAllowFrom: (account: ResolvedBlueBubblesAccount) => account.config.allowFrom,
+  formatAllowFrom: (allowFrom) =>
+    formatNormalizedAllowFromEntries({
+      allowFrom,
+      normalizeEntry: (entry) => normalizeBlueBubblesHandle(entry.replace(/^bluebubbles:/i, "")),
+    }),
+});
+
+const resolveBlueBubblesDmPolicy = createScopedDmSecurityResolver<ResolvedBlueBubblesAccount>({
+  channelKey: "bluebubbles",
+  resolvePolicy: (account) => account.config.dmPolicy,
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  policyPathSuffix: "dmPolicy",
+  normalizeEntry: (raw) => normalizeBlueBubblesHandle(raw.replace(/^bluebubbles:/i, "")),
+});
 
 const meta = {
   id: "bluebubbles",
@@ -89,40 +105,15 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
   configSchema: buildChannelConfigSchema(BlueBubblesConfigSchema),
   onboarding: blueBubblesOnboardingAdapter,
   config: {
-    listAccountIds: (cfg) => listBlueBubblesAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveBlueBubblesAccount({ cfg: cfg, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultBlueBubblesAccountId(cfg),
-    setAccountEnabled: ({ cfg, accountId, enabled }) =>
-      setAccountEnabledInConfigSection({
-        cfg: cfg,
-        sectionKey: "bluebubbles",
-        accountId,
-        enabled,
-        allowTopLevel: true,
-      }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg: cfg,
-        sectionKey: "bluebubbles",
-        accountId,
-        clearBaseFields: ["serverUrl", "password", "name", "webhookPath"],
-      }),
+    ...bluebubblesConfigAdapter,
     isConfigured: (account) => account.configured,
-    describeAccount: (account): ChannelAccountSnapshot =>
-      describeAccountSnapshot({
-        account,
-        configured: account.configured,
-        extra: {
-          baseUrl: account.baseUrl,
-        },
-      }),
-    resolveAllowFrom: ({ cfg, accountId }) =>
-      mapAllowFromEntries(resolveBlueBubblesAccount({ cfg: cfg, accountId }).config.allowFrom),
-    formatAllowFrom: ({ allowFrom }) =>
-      formatNormalizedAllowFromEntries({
-        allowFrom,
-        normalizeEntry: (entry) => normalizeBlueBubblesHandle(entry.replace(/^bluebubbles:/i, "")),
-      }),
+    describeAccount: (account): ChannelAccountSnapshot => ({
+      accountId: account.accountId,
+      name: account.name,
+      enabled: account.enabled,
+      configured: account.configured,
+      baseUrl: account.baseUrl,
+    }),
   },
   actions: bluebubblesMessageActions,
   security: {

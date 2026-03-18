@@ -33,6 +33,15 @@ import {
   type ResolvedSignalAccount,
 } from "remoteclaw/plugin-sdk/signal";
 import { getSignalRuntime } from "./runtime.js";
+import { signalSetupAdapter } from "./setup-core.js";
+import {
+  collectSignalSecurityWarnings,
+  signalConfigAdapter,
+  createSignalPluginBase,
+  signalResolveDmPolicy,
+  signalSetupWizard,
+} from "./shared.js";
+type SignalSendFn = ReturnType<typeof getSignalRuntime>["channel"]["signal"]["sendMessageSignal"];
 
 const signalMessageActions: ChannelMessageActionAdapter = {
   listActions: (ctx) => getSignalRuntime().channel.signal.messageActions?.listActions?.(ctx) ?? [],
@@ -123,22 +132,24 @@ export const signalPlugin: ChannelPlugin<ResolvedSignalAccount> = {
     reactions: true,
   },
   actions: signalMessageActions,
-  streaming: {
-    blockStreamingCoalesceDefaults: { minChars: 1500, idleMs: 1000 },
-  },
-  reload: { configPrefixes: ["channels.signal"] },
-  configSchema: buildChannelConfigSchema(SignalConfigSchema),
-  config: {
-    listAccountIds: (cfg) => listSignalAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveSignalAccount({ cfg, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultSignalAccountId(cfg),
-    setAccountEnabled: ({ cfg, accountId, enabled }) =>
-      setAccountEnabledInConfigSection({
-        cfg,
-        sectionKey: "signal",
-        accountId,
-        enabled,
-        allowTopLevel: true,
+  allowlist: {
+    supportsScope: ({ scope }) => scope === "dm" || scope === "group" || scope === "all",
+    readConfig: ({ cfg, accountId }) => {
+      const account = resolveSignalAccount({ cfg, accountId });
+      return {
+        dmAllowFrom: (account.config.allowFrom ?? []).map(String),
+        groupAllowFrom: (account.config.groupAllowFrom ?? []).map(String),
+        dmPolicy: account.config.dmPolicy,
+        groupPolicy: account.config.groupPolicy,
+      };
+    },
+    applyConfigEdit: buildAccountScopedAllowlistConfigEditor({
+      channelId: "signal",
+      normalize: ({ cfg, accountId, values }) =>
+        signalConfigAdapter.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
+      resolvePaths: (scope) => ({
+        readPaths: [[scope === "dm" ? "allowFrom" : "groupAllowFrom"]],
+        writePath: [scope === "dm" ? "allowFrom" : "groupAllowFrom"],
       }),
     deleteAccount: ({ cfg, accountId }) =>
       deleteAccountFromConfigSection({

@@ -1,7 +1,10 @@
 import { describeAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
 import {
-  buildAccountScopedDmSecurityPolicy,
-  collectOpenProviderGroupPolicyWarnings,
+  createScopedChannelConfigAdapter,
+  createScopedDmSecurityResolver,
+  mapAllowFromEntries,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import {
   buildOpenGroupPolicyRestrictSendersWarning,
   buildOpenGroupPolicyWarning,
 } from "remoteclaw/plugin-sdk";
@@ -62,27 +65,26 @@ function normalizeZaloMessagingTarget(raw: string): string | undefined {
   return trimmed.replace(/^(zalo|zl):/i, "");
 }
 
-export const zaloDock: ChannelDock = {
-  id: "zalo",
-  capabilities: {
-    chatTypes: ["direct", "group"],
-    media: true,
-    blockStreaming: true,
-  },
-  outbound: { textChunkLimit: 2000 },
-  config: {
-    resolveAllowFrom: ({ cfg, accountId }) =>
-      mapAllowFromEntries(resolveZaloAccount({ cfg: cfg, accountId }).config.allowFrom),
-    formatAllowFrom: ({ allowFrom }) =>
-      formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalo|zl):/i }),
-  },
-  groups: {
-    resolveRequireMention: () => true,
-  },
-  threading: {
-    resolveReplyToMode: () => "off",
-  },
-};
+const loadZaloChannelRuntime = createLazyRuntimeModule(() => import("./channel.runtime.js"));
+
+const zaloConfigAdapter = createScopedChannelConfigAdapter<ResolvedZaloAccount>({
+  sectionKey: "zalo",
+  listAccountIds: listZaloAccountIds,
+  resolveAccount: (cfg, accountId) => resolveZaloAccount({ cfg, accountId }),
+  defaultAccountId: resolveDefaultZaloAccountId,
+  clearBaseFields: ["botToken", "tokenFile", "name"],
+  resolveAllowFrom: (account: ResolvedZaloAccount) => account.config.allowFrom,
+  formatAllowFrom: (allowFrom) =>
+    formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalo|zl):/i }),
+});
+
+const resolveZaloDmPolicy = createScopedDmSecurityResolver<ResolvedZaloAccount>({
+  channelKey: "zalo",
+  resolvePolicy: (account) => account.config.dmPolicy,
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  policyPathSuffix: "dmPolicy",
+  normalizeEntry: (raw) => raw.replace(/^(zalo|zl):/i, ""),
+});
 
 export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
   id: "zalo",
@@ -100,37 +102,15 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
   reload: { configPrefixes: ["channels.zalo"] },
   configSchema: buildChannelConfigSchema(ZaloConfigSchema),
   config: {
-    listAccountIds: (cfg) => listZaloAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveZaloAccount({ cfg: cfg, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultZaloAccountId(cfg),
-    setAccountEnabled: ({ cfg, accountId, enabled }) =>
-      setAccountEnabledInConfigSection({
-        cfg: cfg,
-        sectionKey: "zalo",
-        accountId,
-        enabled,
-        allowTopLevel: true,
-      }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg: cfg,
-        sectionKey: "zalo",
-        accountId,
-        clearBaseFields: ["botToken", "tokenFile", "name"],
-      }),
+    ...zaloConfigAdapter,
     isConfigured: (account) => Boolean(account.token?.trim()),
-    describeAccount: (account): ChannelAccountSnapshot =>
-      describeAccountSnapshot({
-        account,
-        configured: Boolean(account.token?.trim()),
-        extra: {
-          tokenSource: account.tokenSource,
-        },
-      }),
-    resolveAllowFrom: ({ cfg, accountId }) =>
-      mapAllowFromEntries(resolveZaloAccount({ cfg: cfg, accountId }).config.allowFrom),
-    formatAllowFrom: ({ allowFrom }) =>
-      formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalo|zl):/i }),
+    describeAccount: (account): ChannelAccountSnapshot => ({
+      accountId: account.accountId,
+      name: account.name,
+      enabled: account.enabled,
+      configured: Boolean(account.token?.trim()),
+      tokenSource: account.tokenSource,
+    }),
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {

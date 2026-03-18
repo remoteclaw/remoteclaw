@@ -17,7 +17,6 @@ import {
   missingTargetError,
   PAIRING_APPROVED_MESSAGE,
   resolveChannelMediaMaxBytes,
-  resolveGoogleChatGroupRequireMention,
   runPassiveAccountLifecycle,
   type ChannelDock,
   type ChannelMessageActionAdapter,
@@ -34,6 +33,7 @@ import {
   type ResolvedGoogleChatAccount,
 } from "./accounts.js";
 import { googlechatMessageActions } from "./actions.js";
+import { resolveGoogleChatGroupRequireMention } from "./group-policy.js";
 import { getGoogleChatRuntime } from "./runtime.js";
 import { googlechatSetupAdapter, googlechatSetupWizard } from "./setup-surface.js";
 import {

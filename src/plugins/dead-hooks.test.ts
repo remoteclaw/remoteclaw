@@ -30,7 +30,6 @@ function makeRecord(overrides?: Partial<PluginRecord>): PluginRecord {
     cliCommands: [],
     services: [],
     commands: [],
-    httpHandlers: 0,
     httpRoutes: 0,
     hookCount: 0,
     configSchema: false,

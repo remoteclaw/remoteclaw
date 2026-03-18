@@ -187,6 +187,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
   },
   messaging: {
     normalizeTarget: normalizeDiscordMessagingTarget,
+    resolveSessionTarget: ({ id }) => normalizeDiscordMessagingTarget(`channel:${id}`),
     targetResolver: {
       looksLikeId: looksLikeDiscordTargetId,
       hint: "<channelId|user:ID|channel:ID>",

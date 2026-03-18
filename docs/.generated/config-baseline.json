@@ -13420,7 +13420,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Feishu",
-      "help": "飞书/Lark enterprise messaging.",
+      "help": "飞书/Lark enterprise messaging with doc/wiki/drive tools.",
       "hasChildren": true
     },
     {
@@ -15261,7 +15261,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Google Chat",
-      "help": "Google Workspace Chat app with HTTP webhook.",
+      "help": "Google Workspace Chat app via HTTP webhooks.",
       "hasChildren": true
     },
     {
@@ -19817,7 +19817,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Matrix",
-      "help": "open protocol; configure a homeserver + access token.",
+      "help": "open protocol; install the plugin to enable.",
       "hasChildren": true
     },
     {
@@ -23602,7 +23602,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Nostr",
-      "help": "Decentralized DMs via Nostr relays (NIP-04)",
+      "help": "Decentralized protocol; encrypted DMs via NIP-04.",
       "hasChildren": true
     },
     {
@@ -27861,7 +27861,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Synology Chat",
-      "help": "Connect your Synology NAS Chat to OpenClaw",
+      "help": "Connect your Synology NAS Chat to OpenClaw with full agent capabilities.",
       "hasChildren": true
     },
     {
@@ -31508,7 +31508,7 @@
       "sensitive": false,
       "tags": ["channels", "network"],
       "label": "Tlon",
-      "help": "Decentralized messaging on Urbit",
+      "help": "decentralized messaging on Urbit; install the plugin to enable.",
       "hasChildren": true
     },
     {

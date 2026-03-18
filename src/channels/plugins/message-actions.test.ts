@@ -30,9 +30,10 @@ function createMessageActionsPlugin(params: {
       },
     }),
     actions: {
-      listActions: () => ["send"],
-      supportsButtons: () => params.supportsButtons,
-      supportsCards: () => params.supportsCards,
+      describeMessageTool: () => ({
+        actions: ["send"],
+        capabilities: params.capabilities,
+      }),
     },
   };
 }
@@ -82,6 +83,108 @@ describe("message action capability checks", () => {
     expect(
       supportsChannelMessageCardsForChannel({ cfg: {} as RemoteClawConfig, channel: "telegram" }),
     ).toBe(true);
-    expect(supportsChannelMessageCardsForChannel({ cfg: {} as RemoteClawConfig })).toBe(false);
+    expect(
+      channelSupportsMessageCapabilityForChannel(
+        { cfg: {} as RemoteClawConfig, channel: "telegram" },
+        "buttons",
+      ),
+    ).toBe(false);
+    expect(
+      channelSupportsMessageCapabilityForChannel(
+        { cfg: {} as RemoteClawConfig, channel: "telegram" },
+        "cards",
+      ),
+    ).toBe(true);
+    expect(channelSupportsMessageCapabilityForChannel({ cfg: {} as RemoteClawConfig }, "cards")).toBe(
+      false,
+    );
+  });
+
+  it("normalizes channel aliases for per-channel capability checks", () => {
+    setActivePluginRegistry(
+      createTestRegistry([
+        {
+          pluginId: "telegram",
+          source: "test",
+          plugin: createMessageActionsPlugin({
+            id: "telegram",
+            aliases: ["tg"],
+            capabilities: ["cards"],
+          }),
+        },
+      ]),
+    );
+
+    expect(
+      listChannelMessageCapabilitiesForChannel({
+        cfg: {} as RemoteClawConfig,
+        channel: "tg",
+      }),
+    ).toEqual(["cards"]);
+  });
+
+  it("uses unified message tool discovery for actions, capabilities, and schema", () => {
+    const unifiedPlugin: ChannelPlugin = {
+      ...createChannelTestPluginBase({
+        id: "discord",
+        label: "Discord",
+        capabilities: { chatTypes: ["direct", "group"] },
+        config: {
+          listAccountIds: () => ["default"],
+        },
+      }),
+      actions: {
+        describeMessageTool: () => ({
+          actions: ["react"],
+          capabilities: ["interactive"],
+          schema: {
+            properties: {
+              components: Type.Array(Type.String()),
+            },
+          },
+        }),
+      },
+    };
+    setActivePluginRegistry(
+      createTestRegistry([{ pluginId: "discord", source: "test", plugin: unifiedPlugin }]),
+    );
+
+    expect(listChannelMessageActions({} as RemoteClawConfig)).toEqual(["send", "broadcast", "react"]);
+    expect(listChannelMessageCapabilities({} as RemoteClawConfig)).toEqual(["interactive"]);
+    expect(
+      resolveChannelMessageToolSchemaProperties({
+        cfg: {} as RemoteClawConfig,
+        channel: "discord",
+      }),
+    ).toHaveProperty("components");
+  });
+
+  it("skips crashing action/capability discovery paths and logs once", () => {
+    const crashingPlugin: ChannelPlugin = {
+      ...createChannelTestPluginBase({
+        id: "discord",
+        label: "Discord",
+        capabilities: { chatTypes: ["direct", "group"] },
+        config: {
+          listAccountIds: () => ["default"],
+        },
+      }),
+      actions: {
+        describeMessageTool: () => {
+          throw new Error("boom");
+        },
+      },
+    };
+    setActivePluginRegistry(
+      createTestRegistry([{ pluginId: "discord", source: "test", plugin: crashingPlugin }]),
+    );
+
+    expect(listChannelMessageActions({} as RemoteClawConfig)).toEqual(["send", "broadcast"]);
+    expect(listChannelMessageCapabilities({} as RemoteClawConfig)).toEqual([]);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+
+    expect(listChannelMessageActions({} as RemoteClawConfig)).toEqual(["send", "broadcast"]);
+    expect(listChannelMessageCapabilities({} as RemoteClawConfig)).toEqual([]);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
   });
 });

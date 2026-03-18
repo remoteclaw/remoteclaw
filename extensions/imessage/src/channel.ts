@@ -8,7 +8,7 @@ import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
 import { type RoutePeer } from "remoteclaw/plugin-sdk/routing";
 import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
-  buildAccountScopedDmSecurityPolicy,
+  createScopedDmSecurityResolver,
   collectAllowlistProviderRestrictSendersWarnings,
 } from "remoteclaw/plugin-sdk";
 import {
@@ -56,11 +56,18 @@ import {
 
 const meta = getChatChannelMeta("imessage");
 
-function buildIMessageSetupPatch(input: {
-  cliPath?: string;
-  dbPath?: string;
-  service?: string;
-  region?: string;
+const resolveIMessageDmPolicy = createScopedDmSecurityResolver<ResolvedIMessageAccount>({
+  channelKey: "imessage",
+  resolvePolicy: (account) => account.config.dmPolicy,
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  policyPathSuffix: "dmPolicy",
+});
+
+function buildIMessageBaseSessionKey(params: {
+  cfg: Parameters<typeof resolveIMessageAccount>[0]["cfg"];
+  agentId: string;
+  accountId?: string | null;
+  peer: RoutePeer;
 }) {
   return {
     ...(input.cliPath ? { cliPath: input.cliPath } : {}),
@@ -126,17 +133,7 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
     resolveGroupPolicy: (account) => account.config.groupPolicy,
   }),
   security: {
-    resolveDmPolicy: ({ cfg, accountId, account }) => {
-      return buildAccountScopedDmSecurityPolicy({
-        cfg,
-        channelKey: "imessage",
-        accountId,
-        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-        policy: account.config.dmPolicy,
-        allowFrom: account.config.allowFrom ?? [],
-        policyPathSuffix: "dmPolicy",
-      });
-    },
+    resolveDmPolicy: resolveIMessageDmPolicy,
     collectWarnings: ({ account, cfg }) => {
       return collectAllowlistProviderRestrictSendersWarnings({
         cfg,

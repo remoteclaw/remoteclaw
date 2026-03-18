@@ -1,8 +1,7 @@
 import { normalizeWhatsAppAllowFromEntries } from "../channels/plugins/normalize/whatsapp.js";
 import type { ChannelConfigAdapter } from "../channels/plugins/types.adapters.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolveIMessageAccount } from "../imessage/accounts.js";
-import { normalizeAccountId } from "../routing/session-key.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 import { normalizeStringEntries } from "../shared/string-normalization.js";
 import { resolveWhatsAppAccount } from "../web/accounts.js";
 
@@ -98,59 +97,6 @@ export function createScopedChannelConfigBase<
         accountId,
         clearBaseFields: params.clearBaseFields,
       }),
-  };
-}
-
-/** Build the full shared config adapter for account-scoped channels with allowlist/default target accessors. */
-export function createScopedChannelConfigAdapter<
-  ResolvedAccount,
-  AccessorAccount = ResolvedAccount,
-  Config extends RemoteClawConfig = RemoteClawConfig,
->(params: {
-  sectionKey: string;
-  listAccountIds: (cfg: Config) => string[];
-  resolveAccount: (cfg: Config, accountId?: string | null) => ResolvedAccount;
-  resolveAccessorAccount?: (params: { cfg: Config; accountId?: string | null }) => AccessorAccount;
-  defaultAccountId: (cfg: Config) => string;
-  inspectAccount?: (cfg: Config, accountId?: string | null) => unknown;
-  clearBaseFields: string[];
-  allowTopLevel?: boolean;
-  resolveAllowFrom: (account: AccessorAccount) => Array<string | number> | null | undefined;
-  formatAllowFrom: (allowFrom: Array<string | number>) => string[];
-  resolveDefaultTo?: (account: AccessorAccount) => string | number | null | undefined;
-}): Pick<
-  ChannelConfigAdapter<ResolvedAccount>,
-  | "listAccountIds"
-  | "resolveAccount"
-  | "inspectAccount"
-  | "defaultAccountId"
-  | "setAccountEnabled"
-  | "deleteAccount"
-  | "resolveAllowFrom"
-  | "formatAllowFrom"
-  | "resolveDefaultTo"
-> {
-  const resolveAccessorAccount =
-    params.resolveAccessorAccount ??
-    (({ cfg, accountId }: { cfg: Config; accountId?: string | null }) =>
-      params.resolveAccount(cfg, accountId) as unknown as AccessorAccount);
-
-  return {
-    ...createScopedChannelConfigBase<ResolvedAccount, Config>({
-      sectionKey: params.sectionKey,
-      listAccountIds: params.listAccountIds,
-      resolveAccount: params.resolveAccount,
-      inspectAccount: params.inspectAccount,
-      defaultAccountId: params.defaultAccountId,
-      clearBaseFields: params.clearBaseFields,
-      allowTopLevel: params.allowTopLevel,
-    }),
-    ...createScopedAccountConfigAccessors<AccessorAccount>({
-      resolveAccount: resolveAccessorAccount,
-      resolveAllowFrom: params.resolveAllowFrom,
-      formatAllowFrom: params.formatAllowFrom,
-      resolveDefaultTo: params.resolveDefaultTo,
-    }),
   };
 }
 
@@ -257,59 +203,6 @@ export function createTopLevelChannelConfigBase<
   };
 }
 
-/** Build the full shared config adapter for top-level single-account channels with allowlist/default target accessors. */
-export function createTopLevelChannelConfigAdapter<
-  ResolvedAccount,
-  AccessorAccount = ResolvedAccount,
-  Config extends RemoteClawConfig = RemoteClawConfig,
->(params: {
-  sectionKey: string;
-  resolveAccount: (cfg: Config) => ResolvedAccount;
-  resolveAccessorAccount?: (params: { cfg: Config; accountId?: string | null }) => AccessorAccount;
-  listAccountIds?: (cfg: Config) => string[];
-  defaultAccountId?: (cfg: Config) => string;
-  inspectAccount?: (cfg: Config) => unknown;
-  deleteMode?: "remove-section" | "clear-fields";
-  clearBaseFields?: string[];
-  resolveAllowFrom: (account: AccessorAccount) => Array<string | number> | null | undefined;
-  formatAllowFrom: (allowFrom: Array<string | number>) => string[];
-  resolveDefaultTo?: (account: AccessorAccount) => string | number | null | undefined;
-}): Pick<
-  ChannelConfigAdapter<ResolvedAccount>,
-  | "listAccountIds"
-  | "resolveAccount"
-  | "inspectAccount"
-  | "defaultAccountId"
-  | "setAccountEnabled"
-  | "deleteAccount"
-  | "resolveAllowFrom"
-  | "formatAllowFrom"
-  | "resolveDefaultTo"
-> {
-  const resolveAccessorAccount =
-    params.resolveAccessorAccount ??
-    (({ cfg }: { cfg: Config; accountId?: string | null }) =>
-      params.resolveAccount(cfg) as unknown as AccessorAccount);
-
-  return {
-    ...createTopLevelChannelConfigBase<ResolvedAccount, Config>({
-      sectionKey: params.sectionKey,
-      resolveAccount: params.resolveAccount,
-      listAccountIds: params.listAccountIds,
-      defaultAccountId: params.defaultAccountId,
-      inspectAccount: params.inspectAccount,
-      deleteMode: params.deleteMode,
-      clearBaseFields: params.clearBaseFields,
-    }),
-    ...createScopedAccountConfigAccessors<AccessorAccount>({
-      resolveAccount: resolveAccessorAccount,
-      resolveAllowFrom: params.resolveAllowFrom,
-      formatAllowFrom: params.formatAllowFrom,
-      resolveDefaultTo: params.resolveDefaultTo,
-    }),
-  };
-}
-
 /** Build CRUD/config helpers for channels where the default account lives at channel root and named accounts live under `accounts`. */
 export function createHybridChannelConfigBase<
   ResolvedAccount,
@@ -376,59 +269,6 @@ export function createHybridChannelConfigBase<
         clearBaseFields: params.clearBaseFields,
       });
     },
-  };
-}
-
-/** Build the full shared config adapter for hybrid channels with allowlist/default target accessors. */
-export function createHybridChannelConfigAdapter<
-  ResolvedAccount,
-  AccessorAccount = ResolvedAccount,
-  Config extends RemoteClawConfig = RemoteClawConfig,
->(params: {
-  sectionKey: string;
-  listAccountIds: (cfg: Config) => string[];
-  resolveAccount: (cfg: Config, accountId?: string | null) => ResolvedAccount;
-  resolveAccessorAccount?: (params: { cfg: Config; accountId?: string | null }) => AccessorAccount;
-  defaultAccountId: (cfg: Config) => string;
-  inspectAccount?: (cfg: Config, accountId?: string | null) => unknown;
-  clearBaseFields: string[];
-  preserveSectionOnDefaultDelete?: boolean;
-  resolveAllowFrom: (account: AccessorAccount) => Array<string | number> | null | undefined;
-  formatAllowFrom: (allowFrom: Array<string | number>) => string[];
-  resolveDefaultTo?: (account: AccessorAccount) => string | number | null | undefined;
-}): Pick<
-  ChannelConfigAdapter<ResolvedAccount>,
-  | "listAccountIds"
-  | "resolveAccount"
-  | "inspectAccount"
-  | "defaultAccountId"
-  | "setAccountEnabled"
-  | "deleteAccount"
-  | "resolveAllowFrom"
-  | "formatAllowFrom"
-  | "resolveDefaultTo"
-> {
-  const resolveAccessorAccount =
-    params.resolveAccessorAccount ??
-    (({ cfg, accountId }: { cfg: Config; accountId?: string | null }) =>
-      params.resolveAccount(cfg, accountId) as unknown as AccessorAccount);
-
-  return {
-    ...createHybridChannelConfigBase<ResolvedAccount, Config>({
-      sectionKey: params.sectionKey,
-      listAccountIds: params.listAccountIds,
-      resolveAccount: params.resolveAccount,
-      inspectAccount: params.inspectAccount,
-      defaultAccountId: params.defaultAccountId,
-      clearBaseFields: params.clearBaseFields,
-      preserveSectionOnDefaultDelete: params.preserveSectionOnDefaultDelete,
-    }),
-    ...createScopedAccountConfigAccessors<AccessorAccount>({
-      resolveAccount: resolveAccessorAccount,
-      resolveAllowFrom: params.resolveAllowFrom,
-      formatAllowFrom: params.formatAllowFrom,
-      resolveDefaultTo: params.resolveDefaultTo,
-    }),
   };
 }
 

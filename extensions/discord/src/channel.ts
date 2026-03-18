@@ -1,23 +1,15 @@
 import {
-  buildLegacyDmAccountAllowlistAdapter,
-  createAccountScopedAllowlistNameResolver,
-  createNestedAllowlistOverrideResolver,
+  buildAccountScopedAllowlistConfigEditor,
+  resolveLegacyDmAllowlistConfigPaths,
 } from "remoteclaw/plugin-sdk/allowlist-config-edit";
 import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { createOpenProviderConfiguredRouteWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
 import {
-  createAttachedChannelResultAdapter,
-  createChannelDirectoryAdapter,
-  createPairingPrefixStripper,
-  createTopLevelChannelReplyToModeResolver,
-  createRuntimeDirectoryLiveAdapter,
-  createTextPairingAdapter,
-  normalizeMessageChannel,
-  resolveOutboundSendDep,
-  resolveTargetsWithOptionalToken,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+  collectOpenGroupPolicyConfiguredRouteWarnings,
+  collectOpenProviderGroupPolicyWarnings,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
+import { normalizeMessageChannel } from "remoteclaw/plugin-sdk/channel-runtime";
 import { buildOutboundBaseSessionKey, normalizeOutboundThreadId } from "remoteclaw/plugin-sdk/core";
-import { resolveThreadSessionKeys, type RoutePeer } from "remoteclaw/plugin-sdk/routing";
 import {
   applyAccountNameToChannelSection,
   buildComputedAccountStatusSnapshot,
@@ -64,6 +56,30 @@ type DiscordSendFn = ReturnType<
 >["channel"]["discord"]["sendMessageDiscord"];
 
 const meta = getChatChannelMeta("discord");
+const REQUIRED_DISCORD_PERMISSIONS = ["ViewChannel", "SendMessages"] as const;
+
+const resolveDiscordDmPolicy = createScopedDmSecurityResolver<ResolvedDiscordAccount>({
+  channelKey: "discord",
+  resolvePolicy: (account) => account.config.dm?.policy,
+  resolveAllowFrom: (account) => account.config.dm?.allowFrom,
+  allowFromPathSuffix: "dm.",
+  normalizeEntry: (raw) => raw.replace(/^(discord|user):/i, "").replace(/^<@!?(\d+)>$/, "$1"),
+});
+
+function formatDiscordIntents(intents?: {
+  messageContent?: string;
+  guildMembers?: string;
+  presence?: string;
+}) {
+  if (!intents) {
+    return "unknown";
+  }
+  return [
+    `messageContent=${intents.messageContent ?? "unknown"}`,
+    `guildMembers=${intents.guildMembers ?? "unknown"}`,
+    `presence=${intents.presence ?? "unknown"}`,
+  ].join(" ");
+}
 
 const discordMessageActions: ChannelMessageActionAdapter = {
   listActions: (ctx) =>
@@ -285,7 +301,35 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
   },
   security: {
     resolveDmPolicy: resolveDiscordDmPolicy,
-    collectWarnings: collectDiscordSecurityWarnings,
+    collectWarnings: ({ account, cfg }) => {
+      const guildEntries = account.config.guilds ?? {};
+      const guildsConfigured = Object.keys(guildEntries).length > 0;
+      const channelAllowlistConfigured = guildsConfigured;
+
+      return collectOpenProviderGroupPolicyWarnings({
+        cfg,
+        providerConfigPresent: cfg.channels?.discord !== undefined,
+        configuredGroupPolicy: account.config.groupPolicy,
+        collect: (groupPolicy) =>
+          collectOpenGroupPolicyConfiguredRouteWarnings({
+            groupPolicy,
+            routeAllowlistConfigured: channelAllowlistConfigured,
+            configureRouteAllowlist: {
+              surface: "Discord guilds",
+              openScope: "any channel not explicitly denied",
+              groupPolicyPath: "channels.discord.groupPolicy",
+              routeAllowlistPath: "channels.discord.guilds.<id>.channels",
+            },
+            missingRouteAllowlist: {
+              surface: "Discord guilds",
+              openBehavior:
+                "with no guild/channel allowlist; any channel can trigger (mention-gated)",
+              remediation:
+                'Set channels.discord.groupPolicy="allowlist" and configure channels.discord.guilds.<id>.channels',
+            },
+          }),
+      });
+    },
   },
   groups: {
     resolveRequireMention: resolveDiscordGroupRequireMention,

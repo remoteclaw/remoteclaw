@@ -1,19 +1,12 @@
-import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
-import { createMessageToolButtonsSchema } from "remoteclaw/plugin-sdk/channel-actions";
 import {
-  createScopedChannelConfigAdapter,
+  createScopedAccountConfigAccessors,
+  createScopedChannelConfigBase,
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { createAllowlistProviderRestrictSendersWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
-import {
-  createAttachedChannelResultAdapter,
-  createChannelDirectoryAdapter,
-  createLoggedPairingApprovalNotifier,
-  createMessageToolButtonsSchema,
-  createScopedAccountReplyToModeResolver,
-  type ChannelMessageToolDiscovery,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
+import { createMessageToolButtonsSchema } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelMessageToolDiscovery } from "remoteclaw/plugin-sdk/channel-runtime";
 import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import { MattermostConfigSchema } from "./config-schema.js";
 import { resolveMattermostGroupRequireMention } from "./group-mentions.js";
@@ -34,7 +27,17 @@ import { probeMattermost } from "./mattermost/probe.js";
 import { addMattermostReaction, removeMattermostReaction } from "./mattermost/reactions.js";
 import { sendMessageMattermost } from "./mattermost/send.js";
 import { looksLikeMattermostTargetId, normalizeMattermostMessagingTarget } from "./normalize.js";
-import { mattermostOnboardingAdapter } from "./onboarding.js";
+import {
+  buildComputedAccountStatusSnapshot,
+  buildChannelConfigSchema,
+  createAccountStatusSink,
+  DEFAULT_ACCOUNT_ID,
+  resolveAllowlistProviderRuntimeGroupPolicy,
+  resolveDefaultGroupPolicy,
+  type ChannelMessageActionAdapter,
+  type ChannelMessageActionName,
+  type ChannelPlugin,
+} from "./runtime-api.js";
 import { getMattermostRuntime } from "./runtime.js";
 
 const collectMattermostSecurityWarnings =
@@ -246,6 +249,14 @@ const mattermostConfigAdapter = createScopedChannelConfigAdapter<ResolvedMatterm
     }),
 });
 
+const mattermostConfigBase = createScopedChannelConfigBase<ResolvedMattermostAccount>({
+  sectionKey: "mattermost",
+  listAccountIds: listMattermostAccountIds,
+  resolveAccount: (cfg, accountId) => resolveMattermostAccount({ cfg, accountId }),
+  defaultAccountId: resolveDefaultMattermostAccountId,
+  clearBaseFields: ["botToken", "baseUrl", "name"],
+});
+
 const resolveMattermostDmPolicy = createScopedDmSecurityResolver<ResolvedMattermostAccount>({
   channelKey: "mattermost",
   resolvePolicy: (account) => account.config.dmPolicy,
@@ -293,7 +304,7 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
   reload: { configPrefixes: ["channels.mattermost"] },
   configSchema: buildChannelConfigSchema(MattermostConfigSchema),
   config: {
-    ...mattermostConfigAdapter,
+    ...mattermostConfigBase,
     isConfigured: (account) => Boolean(account.botToken && account.baseUrl),
     describeAccount: (account) => ({
       accountId: account.accountId,
@@ -306,7 +317,17 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
   },
   security: {
     resolveDmPolicy: resolveMattermostDmPolicy,
-    collectWarnings: collectMattermostSecurityWarnings,
+    collectWarnings: ({ account, cfg }) => {
+      return collectAllowlistProviderRestrictSendersWarnings({
+        cfg,
+        providerConfigPresent: cfg.channels?.mattermost !== undefined,
+        configuredGroupPolicy: account.config.groupPolicy,
+        surface: "Mattermost channels",
+        openScope: "any member",
+        groupPolicyPath: "channels.mattermost.groupPolicy",
+        groupAllowFromPath: "channels.mattermost.groupAllowFrom",
+      });
+    },
   },
   groups: {
     resolveRequireMention: resolveMattermostGroupRequireMention,

@@ -1,6 +1,6 @@
-import { describeAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
 import {
-  createScopedChannelConfigAdapter,
+  createScopedAccountConfigAccessors,
+  createScopedChannelConfigBase,
   createScopedDmSecurityResolver,
   mapAllowFromEntries,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
@@ -30,7 +30,6 @@ import {
   buildChannelConfigSchema,
   buildTokenChannelStatusSummary,
   DEFAULT_ACCOUNT_ID,
-  deleteAccountFromConfigSection,
   chunkTextForOutbound,
   formatAllowFromLowercase,
   mapAllowFromEntries,
@@ -39,8 +38,7 @@ import {
   PAIRING_APPROVED_MESSAGE,
   resolveOutboundMediaUrls,
   sendPayloadWithChunkedTextAndMedia,
-  setAccountEnabledInConfigSection,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/zalo";
 import {
   listZaloAccountIds,
   resolveDefaultZaloAccountId,
@@ -77,15 +75,19 @@ function normalizeZaloMessagingTarget(raw: string): string | undefined {
 
 const loadZaloChannelRuntime = createLazyRuntimeModule(() => import("./channel.runtime.js"));
 
-const zaloConfigAdapter = createScopedChannelConfigAdapter<ResolvedZaloAccount>({
+const zaloConfigAccessors = createScopedAccountConfigAccessors({
+  resolveAccount: ({ cfg, accountId }) => resolveZaloAccount({ cfg, accountId }),
+  resolveAllowFrom: (account: ResolvedZaloAccount) => account.config.allowFrom,
+  formatAllowFrom: (allowFrom) =>
+    formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalo|zl):/i }),
+});
+
+const zaloConfigBase = createScopedChannelConfigBase<ResolvedZaloAccount>({
   sectionKey: "zalo",
   listAccountIds: listZaloAccountIds,
   resolveAccount: (cfg, accountId) => resolveZaloAccount({ cfg, accountId }),
   defaultAccountId: resolveDefaultZaloAccountId,
   clearBaseFields: ["botToken", "tokenFile", "name"],
-  resolveAllowFrom: (account: ResolvedZaloAccount) => account.config.allowFrom,
-  formatAllowFrom: (allowFrom) =>
-    formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalo|zl):/i }),
 });
 
 const resolveZaloDmPolicy = createScopedDmSecurityResolver<ResolvedZaloAccount>({
@@ -94,41 +96,6 @@ const resolveZaloDmPolicy = createScopedDmSecurityResolver<ResolvedZaloAccount>(
   resolveAllowFrom: (account) => account.config.allowFrom,
   policyPathSuffix: "dmPolicy",
   normalizeEntry: (raw) => raw.replace(/^(zalo|zl):/i, ""),
-});
-
-const collectZaloSecurityWarnings = createOpenProviderGroupPolicyWarningCollector<{
-  cfg: OpenClawConfig;
-  account: ResolvedZaloAccount;
-}>({
-  providerConfigPresent: (cfg) => cfg.channels?.zalo !== undefined,
-  resolveGroupPolicy: ({ account }) => account.config.groupPolicy,
-  collect: ({ account, groupPolicy }) => {
-    if (groupPolicy !== "open") {
-      return [];
-    }
-    const explicitGroupAllowFrom = mapAllowFromEntries(account.config.groupAllowFrom);
-    const dmAllowFrom = mapAllowFromEntries(account.config.allowFrom);
-    const effectiveAllowFrom =
-      explicitGroupAllowFrom.length > 0 ? explicitGroupAllowFrom : dmAllowFrom;
-    if (effectiveAllowFrom.length > 0) {
-      return [
-        buildOpenGroupPolicyRestrictSendersWarning({
-          surface: "Zalo groups",
-          openScope: "any member",
-          groupPolicyPath: "channels.zalo.groupPolicy",
-          groupAllowFromPath: "channels.zalo.groupAllowFrom",
-        }),
-      ];
-    }
-    return [
-      buildOpenGroupPolicyWarning({
-        surface: "Zalo groups",
-        openBehavior:
-          "with no groupAllowFrom/allowFrom allowlist; any member can trigger (mention-gated)",
-        remediation: 'Set channels.zalo.groupPolicy="allowlist" + channels.zalo.groupAllowFrom',
-      }),
-    ];
-  },
 });
 
 export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
@@ -147,7 +114,7 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
   reload: { configPrefixes: ["channels.zalo"] },
   configSchema: buildChannelConfigSchema(ZaloConfigSchema),
   config: {
-    ...zaloConfigAdapter,
+    ...zaloConfigBase,
     isConfigured: (account) => Boolean(account.token?.trim()),
     describeAccount: (account): ChannelAccountSnapshot => ({
       accountId: account.accountId,
@@ -156,10 +123,45 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
       configured: Boolean(account.token?.trim()),
       tokenSource: account.tokenSource,
     }),
+    ...zaloConfigAccessors,
   },
   security: {
     resolveDmPolicy: resolveZaloDmPolicy,
-    collectWarnings: collectZaloSecurityWarnings,
+    collectWarnings: ({ account, cfg }) => {
+      return collectOpenProviderGroupPolicyWarnings({
+        cfg,
+        providerConfigPresent: cfg.channels?.zalo !== undefined,
+        configuredGroupPolicy: account.config.groupPolicy,
+        collect: (groupPolicy) => {
+          if (groupPolicy !== "open") {
+            return [];
+          }
+          const explicitGroupAllowFrom = mapAllowFromEntries(account.config.groupAllowFrom);
+          const dmAllowFrom = mapAllowFromEntries(account.config.allowFrom);
+          const effectiveAllowFrom =
+            explicitGroupAllowFrom.length > 0 ? explicitGroupAllowFrom : dmAllowFrom;
+          if (effectiveAllowFrom.length > 0) {
+            return [
+              buildOpenGroupPolicyRestrictSendersWarning({
+                surface: "Zalo groups",
+                openScope: "any member",
+                groupPolicyPath: "channels.zalo.groupPolicy",
+                groupAllowFromPath: "channels.zalo.groupAllowFrom",
+              }),
+            ];
+          }
+          return [
+            buildOpenGroupPolicyWarning({
+              surface: "Zalo groups",
+              openBehavior:
+                "with no groupAllowFrom/allowFrom allowlist; any member can trigger (mention-gated)",
+              remediation:
+                'Set channels.zalo.groupPolicy="allowlist" + channels.zalo.groupAllowFrom',
+            }),
+          ];
+        },
+      });
+    },
   },
   groups: {
     resolveRequireMention: () => true,

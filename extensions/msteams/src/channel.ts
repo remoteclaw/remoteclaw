@@ -1,6 +1,10 @@
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
+import {
+  createScopedAccountConfigAccessors,
+  createTopLevelChannelConfigBase,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
-import { createLazyRuntimeSurface } from "remoteclaw/plugin-sdk/lazy-runtime";
+import { createMessageToolCardSchema } from "remoteclaw/plugin-sdk/channel-runtime";
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageToolDiscovery,
@@ -81,20 +85,20 @@ const resolveMSTeamsChannelConfig = (cfg: RemoteClawConfig) => ({
   defaultTo: cfg.channels?.msteams?.defaultTo,
 });
 
-const msteamsConfigAdapter = createTopLevelChannelConfigAdapter<
-  ResolvedMSTeamsAccount,
-  {
-    allowFrom?: Array<string | number>;
-    defaultTo?: string;
-  }
->({
+const msteamsConfigBase = createTopLevelChannelConfigBase<ResolvedMSTeamsAccount>({
   sectionKey: "msteams",
   resolveAccount: (cfg) => ({
     accountId: DEFAULT_ACCOUNT_ID,
     enabled: cfg.channels?.msteams?.enabled !== false,
     configured: Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams)),
   }),
-  resolveAccessorAccount: ({ cfg }) => resolveMSTeamsChannelConfig(cfg),
+});
+
+const msteamsConfigAccessors = createScopedAccountConfigAccessors<{
+  allowFrom?: Array<string | number>;
+  defaultTo?: string;
+}>({
+  resolveAccount: ({ cfg }) => resolveMSTeamsChannelConfig(cfg),
   resolveAllowFrom: (account) => account.allowFrom,
   formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom }),
   resolveDefaultTo: (account) => account.defaultTo,
@@ -166,32 +170,14 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
   reload: { configPrefixes: ["channels.msteams"] },
   configSchema: buildChannelConfigSchema(MSTeamsConfigSchema),
   config: {
-    ...msteamsConfigAdapter,
+    ...msteamsConfigBase,
     isConfigured: (_account, cfg) => Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams)),
     describeAccount: (account) => ({
       accountId: account.accountId,
       enabled: account.enabled,
       configured: account.configured,
     }),
-  },
-  security: {
-    collectWarnings: projectWarningCollector(
-      ({ cfg }: { cfg: OpenClawConfig }) => ({ cfg }),
-      collectMSTeamsSecurityWarnings,
-    ),
-  },
-  setup: {
-    resolveAccountId: () => DEFAULT_ACCOUNT_ID,
-    applyAccountConfig: ({ cfg }) => ({
-      ...cfg,
-      channels: {
-        ...cfg.channels,
-        msteams: {
-          ...cfg.channels?.msteams,
-          enabled: true,
-        },
-      },
-    }),
+    ...msteamsConfigAccessors,
   },
   messaging: {
     normalizeTarget: normalizeMSTeamsMessagingTarget,

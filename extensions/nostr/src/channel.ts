@@ -1,3 +1,4 @@
+import { createScopedDmSecurityResolver } from "openclaw/plugin-sdk/channel-config-helpers";
 import {
   createScopedDmSecurityResolver,
   createTopLevelChannelConfigAdapter,
@@ -50,39 +51,6 @@ const resolveNostrDmPolicy = createScopedDmSecurityResolver<ResolvedNostrAccount
   },
 });
 
-const nostrConfigAdapter = createTopLevelChannelConfigAdapter<ResolvedNostrAccount>({
-  sectionKey: "nostr",
-  resolveAccount: (cfg) => resolveNostrAccount({ cfg }),
-  listAccountIds: listNostrAccountIds,
-  defaultAccountId: resolveDefaultNostrAccountId,
-  deleteMode: "clear-fields",
-  clearBaseFields: [
-    "name",
-    "defaultAccount",
-    "privateKey",
-    "relays",
-    "dmPolicy",
-    "allowFrom",
-    "profile",
-  ],
-  resolveAllowFrom: (account) => account.config.allowFrom,
-  formatAllowFrom: (allowFrom) =>
-    allowFrom
-      .map((entry) => String(entry).trim())
-      .filter(Boolean)
-      .map((entry) => {
-        if (entry === "*") {
-          return "*";
-        }
-        try {
-          return normalizePubkey(entry);
-        } catch {
-          return entry;
-        }
-      })
-      .filter(Boolean),
-});
-
 export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
   id: "nostr",
   meta: {
@@ -132,22 +100,7 @@ export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
   },
 
   security: {
-    resolveDmPolicy: ({ account }) => {
-      return {
-        policy: account.config.dmPolicy ?? "pairing",
-        allowFrom: account.config.allowFrom ?? [],
-        policyPath: "channels.nostr.dmPolicy",
-        allowFromPath: "channels.nostr.allowFrom",
-        approveHint: formatPairingApproveHint("nostr"),
-        normalizeEntry: (raw) => {
-          try {
-            return normalizePubkey(raw.replace(/^nostr:/i, "").trim());
-          } catch {
-            return raw.trim();
-          }
-        },
-      };
-    },
+    resolveDmPolicy: resolveNostrDmPolicy,
   },
 
   messaging: {

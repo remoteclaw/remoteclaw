@@ -10,6 +10,16 @@ export * from "../channels/plugins/normalize/whatsapp.js";
 export * from "../channels/plugins/outbound/interactive.js";
 export * from "../channels/plugins/whatsapp-heartbeat.js";
 export * from "../polls.js";
+export * from "../utils/message-channel.js";
+export * from "../whatsapp/normalize.js";
+export { createActionGate, jsonResult, readStringParam } from "../agents/tools/common.js";
+export * from "./channel-lifecycle.js";
+export * from "./directory-runtime.js";
+export type {
+  InteractiveButtonStyle,
+  InteractiveReplyButton,
+  InteractiveReply,
+} from "../interactive/payload.js";
 export {
   isWhatsAppGroupJid,
   isWhatsAppUserTarget,

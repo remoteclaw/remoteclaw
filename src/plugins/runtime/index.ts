@@ -242,6 +242,9 @@ export function createPluginRuntime(): PluginRuntime {
     system: createRuntimeSystem(),
     media: createRuntimeMedia(),
     tts: { textToSpeechTelephony },
+    stt: {
+      transcribeAudioFile: async () => ({ text: undefined }),
+    },
     tools: createRuntimeTools(),
     channel: createRuntimeChannel(),
     logging: createRuntimeLogging(),

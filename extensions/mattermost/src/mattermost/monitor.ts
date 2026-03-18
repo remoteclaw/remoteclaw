@@ -828,7 +828,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
           }
           runtime.log?.(`delivered reply to ${to}`);
         },
-        onError: (err: unknown, info: unknown) => {
+        onError: (err: any, info: any) => {
           runtime.error?.(`mattermost ${info.kind} reply failed: ${String(err)}`);
         },
       });
@@ -986,7 +986,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
     payload: MattermostEventPayload;
   }>({
     debounceMs: inboundDebounceMs,
-    buildKey: (entry: unknown) => {
+    buildKey: (entry: any) => {
       const channelId =
         entry.post.channel_id ??
         entry.payload.data?.channel_id ??
@@ -998,7 +998,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       const threadKey = threadId ? `thread:${threadId}` : "channel";
       return `mattermost:${account.accountId}:${channelId}:${threadKey}`;
     },
-    shouldDebounce: (entry: unknown) => {
+    shouldDebounce: (entry: any) => {
       if (entry.post.file_ids && entry.post.file_ids.length > 0) {
         return false;
       }
@@ -1018,7 +1018,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
         return;
       }
       const combinedText = entries
-        .map((entry: unknown) => entry.post.message?.trim() ?? "")
+        .map((entry: any) => entry.post.message?.trim() ?? "")
         .filter(Boolean)
         .join("\n");
       const mergedPost: MattermostPost = {
@@ -1026,10 +1026,10 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
         message: combinedText,
         file_ids: [],
       };
-      const ids = entries.map((entry: unknown) => entry.post.id).filter(Boolean);
+      const ids = entries.map((entry: any) => entry.post.id).filter(Boolean);
       await handlePost(mergedPost, last.payload, ids.length > 0 ? ids : undefined);
     },
-    onError: (err: unknown) => {
+    onError: (err: any) => {
       runtime.error?.(`mattermost debounce flush failed: ${String(err)}`);
     },
   });

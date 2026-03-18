@@ -30,6 +30,17 @@ type RelativePathOptions = {
   includeRootInError?: boolean;
 };
 
+function normalizeWindowsPathForComparison(input: string): string {
+  let normalized = path.win32.normalize(input);
+  if (normalized.startsWith("\\\\?\\")) {
+    normalized = normalized.slice(4);
+    if (normalized.toUpperCase().startsWith("UNC\\")) {
+      normalized = `\\\\${normalized.slice(4)}`;
+    }
+  }
+  return normalized.replaceAll("/", "\\").toLowerCase();
+}
+
 function toRelativePathUnderRoot(params: {
   root: string;
   candidate: string;

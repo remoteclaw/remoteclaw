@@ -23,18 +23,9 @@ export {
 export { DiscordConfigSchema } from "openclaw/plugin-sdk/discord-core";
 export { readBooleanParam } from "openclaw/plugin-sdk/boolean-param";
 export {
-  assertMediaNotDataUrl,
-  parseAvailableTags,
-  readReactionParams,
-  withNormalizedTimestamp,
-} from "../../../src/plugin-sdk/discord-core.js";
-export {
-  createHybridChannelConfigAdapter,
-  createScopedChannelConfigAdapter,
   createScopedAccountConfigAccessors,
   createScopedChannelConfigBase,
-  createTopLevelChannelConfigAdapter,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
+} from "openclaw/plugin-sdk/channel-config-helpers";
 export {
   createAccountActionGate,
   createAccountListHelpers,
@@ -45,6 +36,11 @@ export type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
 } from "openclaw/plugin-sdk/channel-runtime";
+export { withNormalizedTimestamp } from "../../../src/agents/date-time.js";
+export { assertMediaNotDataUrl } from "../../../src/agents/sandbox-paths.js";
+export { parseAvailableTags, readReactionParams } from "openclaw/plugin-sdk/discord-core";
+export { resolvePollMaxSelections } from "../../../src/polls.js";
+export type { DiscordAccountConfig, DiscordActionConfig } from "../../../src/config/types.js";
 export {
   hasConfiguredSecretInput,
   normalizeResolvedSecretInputString,

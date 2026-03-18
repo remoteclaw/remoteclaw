@@ -1,29 +1,34 @@
+export type { RemoteClawConfig } from "../../../src/config/config.js";
+export type { SlackAccountConfig } from "../../../src/config/types.slack.js";
+export type { ChannelPlugin } from "../../../src/channels/plugins/types.js";
+
 export {
-  buildComputedAccountStatusSnapshot,
   DEFAULT_ACCOUNT_ID,
-  looksLikeSlackTargetId,
-  normalizeSlackMessagingTarget,
+  buildChannelConfigSchema,
+  getChatChannelMeta,
   PAIRING_APPROVED_MESSAGE,
-  projectCredentialSnapshotFields,
-  resolveConfiguredFromRequiredCredentialStatuses,
-  type ChannelPlugin,
-  type RemoteClawConfig,
-  type SlackAccountConfig,
-} from "remoteclaw/plugin-sdk/slack";
+} from "../../../src/plugin-sdk/channel-plugin-common.js";
+export { buildComputedAccountStatusSnapshot } from "../../../src/plugin-sdk/status-helpers.js";
 export {
   listSlackDirectoryGroupsFromConfig,
   listSlackDirectoryPeersFromConfig,
-} from "./directory-config.js";
+} from "../../../src/channels/plugins/directory-config.js";
 export {
-  buildChannelConfigSchema,
-  getChatChannelMeta,
+  looksLikeSlackTargetId,
+  normalizeSlackMessagingTarget,
+} from "../../../src/channels/plugins/normalize/slack.js";
+export {
+  projectCredentialSnapshotFields,
+  resolveConfiguredFromRequiredCredentialStatuses,
+} from "../../../src/channels/account-snapshot-fields.js";
+export { SlackConfigSchema } from "../../../src/config/zod-schema.providers-core.js";
+export {
   createActionGate,
   imageResultFromFile,
   jsonResult,
   readNumberParam,
   readReactionParams,
   readStringParam,
-  SlackConfigSchema,
-  withNormalizedTimestamp,
-} from "remoteclaw/plugin-sdk/slack-core";
+} from "../../../src/agents/tools/common.js";
+export { withNormalizedTimestamp } from "../../../src/agents/date-time.js";
 export { isSlackInteractiveRepliesEnabled } from "./interactive-replies.js";

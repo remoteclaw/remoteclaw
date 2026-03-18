@@ -1,14 +1,13 @@
-import type { SlackAccountConfig } from "remoteclaw/plugin-sdk/slack";
 import {
-  type RemoteClawConfig,
   createAccountListHelpers,
   DEFAULT_ACCOUNT_ID,
-  mergeAccountConfig,
   normalizeAccountId,
   normalizeChatType,
   resolveAccountEntry,
-} from "../../../src/plugin-sdk-internal/accounts.js";
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/account-resolution";
 import type { SlackAccountSurfaceFields } from "./account-surface-fields.js";
+import type { SlackAccountConfig } from "./runtime-api.js";
 import { resolveSlackAppToken, resolveSlackBotToken, resolveSlackUserToken } from "./token.js";
 
 export type SlackTokenSource = "env" | "config" | "none";
@@ -41,10 +40,11 @@ export function mergeSlackAccountConfig(
   cfg: RemoteClawConfig,
   accountId: string,
 ): SlackAccountConfig {
-  return mergeAccountConfig<SlackAccountConfig>({
-    channelConfig: cfg.channels?.slack as SlackAccountConfig | undefined,
-    accountConfig: resolveAccountConfig(cfg, accountId),
-  });
+  const { accounts: _ignored, ...base } = (cfg.channels?.slack ?? {}) as SlackAccountConfig & {
+    accounts?: unknown;
+  };
+  const account = resolveAccountConfig(cfg, accountId) ?? {};
+  return { ...base, ...account };
 }
 
 export function resolveSlackAccount(params: {

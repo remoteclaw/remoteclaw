@@ -1,18 +1,14 @@
-import {
-  buildChannelConfigSchema,
-  getChatChannelMeta,
-  SlackConfigSchema,
-  type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/slack";
-import { patchChannelConfigForAccount } from "../../../src/channels/plugins/setup-wizard-helpers.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { hasConfiguredSecretInput } from "../../../src/config/types.secrets.js";
-import { formatAllowFromLowercase } from "../../../src/plugin-sdk/allow-from.js";
+import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
 import {
   createScopedAccountConfigAccessors,
   createScopedChannelConfigBase,
-} from "../../../src/plugin-sdk/channel-config-helpers.js";
-import { formatDocsLink } from "../../../src/terminal/links.js";
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createChannelPluginBase } from "remoteclaw/plugin-sdk/core";
+import {
+  formatDocsLink,
+  hasConfiguredSecretInput,
+  patchChannelConfigForAccount,
+} from "remoteclaw/plugin-sdk/setup";
 import { inspectSlackAccount } from "./account-inspect.js";
 import {
   listSlackAccountIds,
@@ -21,6 +17,13 @@ import {
   type ResolvedSlackAccount,
 } from "./accounts.js";
 import { isSlackInteractiveRepliesEnabled } from "./interactive-replies.js";
+import {
+  buildChannelConfigSchema,
+  getChatChannelMeta,
+  SlackConfigSchema,
+  type ChannelPlugin,
+  type RemoteClawConfig,
+} from "./runtime-api.js";
 
 export const SLACK_CHANNEL = "slack" as const;
 
@@ -174,7 +177,7 @@ export function createSlackPluginBase(params: {
   | "config"
   | "setup"
 > {
-  return {
+  return createChannelPluginBase({
     id: SLACK_CHANNEL,
     meta: {
       ...getChatChannelMeta(SLACK_CHANNEL),
@@ -218,5 +221,17 @@ export function createSlackPluginBase(params: {
       ...slackConfigAccessors,
     },
     setup: params.setup,
-  };
+  }) as Pick<
+    ChannelPlugin<ResolvedSlackAccount>,
+    | "id"
+    | "meta"
+    | "setupWizard"
+    | "capabilities"
+    | "agentPrompt"
+    | "streaming"
+    | "reload"
+    | "configSchema"
+    | "config"
+    | "setup"
+  >;
 }

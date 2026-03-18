@@ -45,7 +45,7 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
 export function resolveChannelAccountEnabled(params: {
   plugin: ChannelPlugin;
   account: unknown;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
 }): boolean {
   if (params.plugin.config.isEnabled) {
     return params.plugin.config.isEnabled(params.account, params.cfg);
@@ -57,7 +57,7 @@ export function resolveChannelAccountEnabled(params: {
 export async function resolveChannelAccountConfigured(params: {
   plugin: ChannelPlugin;
   account: unknown;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   readAccountConfiguredField?: boolean;
 }): Promise<boolean> {
   if (params.plugin.config.isConfigured) {

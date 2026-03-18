@@ -76,38 +76,32 @@ export type CronFailureAlert = {
   accountId?: string;
 };
 
-export type CronPayload =
-  | { kind: "systemEvent"; text: string }
-  | {
-      kind: "agentTurn";
-      message: string;
-      /** Optional model override (provider/model or alias). */
-      model?: string;
-      thinking?: string;
-      timeoutSeconds?: number;
-      allowUnsafeExternalContent?: boolean;
-      deliver?: boolean;
-      channel?: CronMessageChannel;
-      to?: string;
-      bestEffortDeliver?: boolean;
-      lightContext?: boolean;
-    };
+export type CronPayload = { kind: "systemEvent"; text: string } | CronAgentTurnPayload;
 
-export type CronPayloadPatch =
-  | { kind: "systemEvent"; text?: string }
-  | {
-      kind: "agentTurn";
-      message?: string;
-      model?: string;
-      thinking?: string;
-      timeoutSeconds?: number;
-      allowUnsafeExternalContent?: boolean;
-      deliver?: boolean;
-      channel?: CronMessageChannel;
-      to?: string;
-      bestEffortDeliver?: boolean;
-      lightContext?: boolean;
-    };
+export type CronPayloadPatch = { kind: "systemEvent"; text?: string } | CronAgentTurnPayloadPatch;
+
+type CronAgentTurnPayloadFields = {
+  message: string;
+  /** Optional model override (provider/model or alias). */
+  model?: string;
+  thinking?: string;
+  timeoutSeconds?: number;
+  allowUnsafeExternalContent?: boolean;
+  /** If true, run with lightweight bootstrap context. */
+  lightContext?: boolean;
+  deliver?: boolean;
+  channel?: CronMessageChannel;
+  to?: string;
+  bestEffortDeliver?: boolean;
+};
+
+type CronAgentTurnPayload = {
+  kind: "agentTurn";
+} & CronAgentTurnPayloadFields;
+
+type CronAgentTurnPayloadPatch = {
+  kind: "agentTurn";
+} & Partial<CronAgentTurnPayloadFields>;
 
 export type CronJobState = {
   nextRunAtMs?: number;

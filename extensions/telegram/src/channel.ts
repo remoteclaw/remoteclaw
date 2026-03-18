@@ -1,9 +1,16 @@
 import { buildAccountScopedAllowlistConfigEditor } from "remoteclaw/plugin-sdk/allowlist-config-edit";
 import {
-  buildDmGroupAccountAllowlistAdapter,
-  createNestedAllowlistOverrideResolver,
-} from "remoteclaw/plugin-sdk/allowlist-config-edit";
-import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
+  collectAllowlistProviderGroupPolicyWarnings,
+  collectOpenGroupPolicyRouteAllowlistWarnings,
+  createScopedDmSecurityResolver,
+} from "openclaw/plugin-sdk/channel-config-helpers";
+import { type OutboundSendDeps, resolveOutboundSendDep } from "openclaw/plugin-sdk/channel-runtime";
+import { normalizeMessageChannel } from "openclaw/plugin-sdk/channel-runtime";
+import { buildOutboundBaseSessionKey, normalizeOutboundThreadId } from "openclaw/plugin-sdk/core";
+import { resolveExecApprovalCommandDisplay } from "openclaw/plugin-sdk/infra-runtime";
+import { buildExecApprovalPendingReplyPayload } from "openclaw/plugin-sdk/infra-runtime";
+import { resolveThreadSessionKeys, type RoutePeer } from "openclaw/plugin-sdk/routing";
+import { parseTelegramTopicConversation } from "../runtime-api.js";
 import {
   createPairingPrefixStripper,
   createTextPairingAdapter,
@@ -51,8 +58,8 @@ import {
   TelegramConfigSchema,
   type ChannelPlugin,
   type ChannelMessageActionAdapter,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/telegram";
+  type OpenClawConfig,
+} from "../runtime-api.js";
 import {
   listTelegramAccountIds,
   resolveTelegramAccount,

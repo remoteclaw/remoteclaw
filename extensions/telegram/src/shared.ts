@@ -9,8 +9,8 @@ import {
   normalizeAccountId,
   TelegramConfigSchema,
   type ChannelPlugin,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/telegram";
+  type OpenClawConfig,
+} from "../runtime-api.js";
 import { inspectTelegramAccount } from "./account-inspect.js";
 import {
   listTelegramAccountIds,

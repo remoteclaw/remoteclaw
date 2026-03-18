@@ -1,9 +1,4 @@
-import {
-  buildChannelConfigSchema,
-  getChatChannelMeta,
-  TelegramConfigSchema,
-  type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/telegram";
+import { type ChannelPlugin } from "../runtime-api.js";
 import { type ResolvedTelegramAccount } from "./accounts.js";
 import {
   findTelegramTokenOwnerAccountId,

@@ -13,10 +13,10 @@ import { isTruthyEnvValue } from "remoteclaw/plugin-sdk/infra-runtime";
 import {
   listBoundAccountIds,
   resolveDefaultAgentBoundAccountId,
-} from "remoteclaw/plugin-sdk/routing";
-import { formatSetExplicitDefaultInstruction } from "remoteclaw/plugin-sdk/routing";
-import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
-import type { TelegramAccountConfig, TelegramActionConfig } from "remoteclaw/plugin-sdk/telegram";
+} from "openclaw/plugin-sdk/routing";
+import { formatSetExplicitDefaultInstruction } from "openclaw/plugin-sdk/routing";
+import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
+import type { TelegramAccountConfig, TelegramActionConfig } from "../runtime-api.js";
 import { resolveTelegramToken } from "./token.js";
 
 const log = createSubsystemLogger("telegram/accounts");

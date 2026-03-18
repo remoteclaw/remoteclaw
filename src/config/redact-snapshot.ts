@@ -271,8 +271,22 @@ function redactObjectGuessing(
   }
 
   if (typeof obj === "object") {
+    const objRecord = obj as Record<string, unknown>;
+
+    // SecretRef objects at this level: only redact the id field, preserve structural
+    // fields — but only when schema hints are available to confirm the shape.
+    // Without hints, fall through to per-field guessing for safety.
+    if (hints && isSecretRefShape(objRecord)) {
+      return redactSecretRefId({
+        value: objRecord,
+        values,
+        redactedSentinel: REDACTED_SENTINEL,
+        isEnvVarPlaceholder,
+      });
+    }
+
     const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+    for (const [key, value] of Object.entries(objRecord)) {
       const dotPath = prefix ? `${prefix}.${key}` : key;
       const wildcardPath = prefix ? `${prefix}.*` : "*";
       if (
@@ -291,8 +305,18 @@ function redactObjectGuessing(
         typeof value === "object" &&
         !Array.isArray(value)
       ) {
-        collectSensitiveStrings(value, values);
-        result[key] = REDACTED_SENTINEL;
+        const objectValue = value as Record<string, unknown>;
+        if (isSecretRefShape(objectValue)) {
+          result[key] = redactSecretRefId({
+            value: objectValue,
+            values,
+            redactedSentinel: REDACTED_SENTINEL,
+            isEnvVarPlaceholder,
+          });
+        } else {
+          collectSensitiveStrings(objectValue, values);
+          result[key] = REDACTED_SENTINEL;
+        }
       } else if (typeof value === "object" && value !== null) {
         result[key] = redactObjectGuessing(value, dotPath, values, hints);
       } else {

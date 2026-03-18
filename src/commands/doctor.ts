@@ -196,7 +196,10 @@ export async function doctorCommand(
   await noteMacLaunchctlGatewayEnvOverrides(cfg);
 
   await noteSecurityWarnings(cfg);
-  await noteOpenAIOAuthTlsPrerequisites();
+  await noteOpenAIOAuthTlsPrerequisites({
+    cfg,
+    deep: options.deep === true,
+  });
 
   if (
     options.nonInteractive !== true &&

@@ -1,79 +1,8 @@
-export type {
-  ChannelMessageActionAdapter,
-  ChannelPlugin,
-  RemoteClawConfig,
-  RemoteClawPluginApi,
-  PluginRuntime,
-  TelegramAccountConfig,
-  TelegramActionConfig,
-  TelegramNetworkConfig,
-} from "../../src/plugin-sdk/telegram.js";
-export type {
-  RemoteClawPluginService,
-  RemoteClawPluginServiceContext,
-  PluginLogger,
-} from "remoteclaw/plugin-sdk/core";
-export type {
-  AcpRuntime,
-  AcpRuntimeCapabilities,
-  AcpRuntimeDoctorReport,
-  AcpRuntimeEnsureInput,
-  AcpRuntimeEvent,
-  AcpRuntimeHandle,
-  AcpRuntimeStatus,
-  AcpRuntimeTurnInput,
-  AcpRuntimeErrorCode,
-  AcpSessionUpdateTag,
-} from "remoteclaw/plugin-sdk/acp-runtime";
-export { AcpRuntimeError } from "remoteclaw/plugin-sdk/acp-runtime";
-
-export {
-  buildTokenChannelStatusSummary,
-  clearAccountEntryFields,
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  PAIRING_APPROVED_MESSAGE,
-  parseTelegramTopicConversation,
-  projectCredentialSnapshotFields,
-  resolveConfiguredFromCredentialStatuses,
-  resolveTelegramPollVisibility,
-} from "../../src/plugin-sdk/telegram.js";
-export {
-  buildChannelConfigSchema,
-  getChatChannelMeta,
-  jsonResult,
-  readNumberParam,
-  readReactionParams,
-  readStringArrayParam,
-  readStringOrNumberParam,
-  readStringParam,
-  resolvePollMaxSelections,
-  TelegramConfigSchema,
-} from "../../src/plugin-sdk/telegram-core.js";
-export type { TelegramProbe } from "./src/probe.js";
-export { auditTelegramGroupMembership, collectTelegramUnmentionedGroupIds } from "./src/audit.js";
-export { telegramMessageActions } from "./src/channel-actions.js";
-export { monitorTelegramProvider } from "./src/monitor.js";
-export { probeTelegram } from "./src/probe.js";
-export {
-  createForumTopicTelegram,
-  deleteMessageTelegram,
-  editForumTopicTelegram,
-  editMessageReplyMarkupTelegram,
-  editMessageTelegram,
-  pinMessageTelegram,
-  reactMessageTelegram,
-  renameForumTopicTelegram,
-  sendMessageTelegram,
-  sendPollTelegram,
-  sendStickerTelegram,
-  sendTypingTelegram,
-  unpinMessageTelegram,
-} from "./src/send.js";
-export {
-  createTelegramThreadBindingManager,
-  getTelegramThreadBindingManager,
-  setTelegramThreadBindingIdleTimeoutBySessionKey,
-  setTelegramThreadBindingMaxAgeBySessionKey,
-} from "./src/thread-bindings.js";
-export { resolveTelegramToken } from "./src/token.js";
+export * from "./src/audit.js";
+export * from "./src/action-runtime.js";
+export * from "./src/channel-actions.js";
+export * from "./src/monitor.js";
+export * from "./src/probe.js";
+export * from "./src/send.js";
+export * from "./src/thread-bindings.js";
+export * from "./src/token.js";

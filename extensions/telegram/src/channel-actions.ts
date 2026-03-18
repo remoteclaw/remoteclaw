@@ -1,5 +1,13 @@
-import { Type } from "@sinclair/typebox";
 import {
+  readNumberParam,
+  readStringArrayParam,
+  readStringOrNumberParam,
+  readStringParam,
+} from "openclaw/plugin-sdk/agent-runtime";
+import { readBooleanParam } from "openclaw/plugin-sdk/boolean-param";
+import { resolveReactionMessageId } from "openclaw/plugin-sdk/channel-runtime";
+import {
+  createLegacyMessageToolDiscoveryMethods,
   createMessageToolButtonsSchema,
   createTelegramPollExtraToolSchemas,
   createUnionActionGate,
@@ -18,6 +26,7 @@ import {
   resolveTelegramPollActionGateState,
 } from "./accounts.js";
 import { handleTelegramAction } from "./action-runtime.js";
+import { resolveTelegramInlineButtons } from "./button-types.js";
 import { isTelegramInlineButtonsEnabled } from "./inline-buttons.js";
 
 export const telegramMessageActionRuntime = {
@@ -127,64 +136,8 @@ function describeTelegramMessageTool({
 }
 
 export const telegramMessageActions: ChannelMessageActionAdapter = {
-  listActions: ({ cfg }) => {
-    const discovery = resolveTelegramActionDiscovery(cfg);
-    if (!discovery) {
-      return [];
-    }
-    const actions = new Set<ChannelMessageActionName>(["send"]);
-    if (discovery.pollEnabled) {
-      actions.add("poll");
-    }
-    if (discovery.isEnabled("reactions")) {
-      actions.add("react");
-    }
-    if (discovery.isEnabled("deleteMessage")) {
-      actions.add("delete");
-    }
-    if (discovery.isEnabled("editMessage")) {
-      actions.add("edit");
-    }
-    if (discovery.isEnabled("sticker", false)) {
-      actions.add("sticker");
-      actions.add("sticker-search");
-    }
-    if (discovery.isEnabled("createForumTopic")) {
-      actions.add("topic-create");
-    }
-    if (discovery.isEnabled("editForumTopic")) {
-      actions.add("topic-edit");
-    }
-    return Array.from(actions);
-  },
-  getCapabilities: ({ cfg }) => {
-    const discovery = resolveTelegramActionDiscovery(cfg);
-    if (!discovery) {
-      return [];
-    }
-    return discovery.buttonsEnabled ? (["interactive", "buttons"] as const) : [];
-  },
-  getToolSchema: ({ cfg }) => {
-    const discovery = resolveTelegramActionDiscovery(cfg);
-    if (!discovery) {
-      return null;
-    }
-    const entries: ChannelMessageToolSchemaContribution[] = [];
-    if (discovery.buttonsEnabled) {
-      entries.push({
-        properties: {
-          buttons: createMessageToolButtonsSchema(),
-        },
-      });
-    }
-    if (discovery.pollEnabled) {
-      entries.push({
-        properties: createTelegramPollExtraToolSchemas(),
-        visibility: "all-configured" as const,
-      });
-    }
-    return entries.length > 0 ? entries : null;
-  },
+  describeMessageTool: describeTelegramMessageTool,
+  ...createLegacyMessageToolDiscoveryMethods(describeTelegramMessageTool),
   extractToolSend: ({ args }) => {
     return extractToolSend(args, "sendMessage");
   },

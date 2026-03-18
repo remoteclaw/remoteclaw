@@ -26,3 +26,15 @@ export * from "../agents/tools/web-fetch-utils.js";
 export * from "../agents/vllm-defaults.js";
 export * from "../commands/agent.js";
 export * from "../tts/tts.js";
+// Legacy channel action runtime re-exports. New bundled plugin code should use
+// local extension-owned modules instead of adding more public SDK surface here.
+export {
+  handleDiscordAction,
+  readDiscordParentIdParam,
+  isDiscordModerationAction,
+  readDiscordModerationCommand,
+} from "../../extensions/discord/runtime-api.js";
+export {
+  handleTelegramAction,
+  readTelegramButtons,
+} from "../../extensions/telegram/runtime-api.js";

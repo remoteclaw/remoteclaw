@@ -1,7 +1,5 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
-import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveTelegramPollVisibility } from "remoteclaw/plugin-sdk/telegram";
+import { readBooleanParam } from "openclaw/plugin-sdk/boolean-param";
 import {
   jsonResult,
   readNumberParam,
@@ -9,13 +7,12 @@ import {
   readStringArrayParam,
   readStringOrNumberParam,
   readStringParam,
-  resolvePollMaxSelections,
-  type RemoteClawConfig,
-  type TelegramActionConfig,
-} from "remoteclaw/plugin-sdk/telegram-core";
+} from "../../../src/agents/tools/common.js";
+import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { TelegramActionConfig } from "../../../src/config/types.telegram.js";
+import { resolvePollMaxSelections } from "../../../src/polls.js";
 import { createTelegramActionGate, resolveTelegramPollActionGateState } from "./accounts.js";
 import type { TelegramButtonStyle, TelegramInlineButtons } from "./button-types.js";
-import { resolveTelegramInlineButtons } from "./button-types.js";
 import {
   resolveTelegramInlineButtonsScope,
   resolveTelegramTargetChatType,
@@ -253,14 +250,19 @@ export async function handleTelegramAction(
         hint: "Telegram bot token missing. Do not retry.",
       });
     }
-    let reactionResult: Awaited<ReturnType<typeof reactMessageTelegram>>;
+    let reactionResult: Awaited<ReturnType<typeof telegramActionRuntime.reactMessageTelegram>>;
     try {
-      reactionResult = await reactMessageTelegram(chatId ?? "", messageId ?? 0, emoji ?? "", {
-        cfg,
-        token,
-        remove,
-        accountId: accountId ?? undefined,
-      });
+      reactionResult = await telegramActionRuntime.reactMessageTelegram(
+        chatId ?? "",
+        messageId ?? 0,
+        emoji ?? "",
+        {
+          cfg,
+          token,
+          remove,
+          accountId: accountId ?? undefined,
+        },
+      );
     } catch (err) {
       const isInvalid = String(err).includes("REACTION_INVALID");
       return jsonResult({
@@ -338,7 +340,7 @@ export async function handleTelegramAction(
         "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
       );
     }
-    const result = await sendMessageTelegram(to, content, {
+    const result = await telegramActionRuntime.sendMessageTelegram(to, content, {
       cfg,
       token,
       accountId: accountId ?? undefined,
@@ -402,7 +404,7 @@ export async function handleTelegramAction(
         "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
       );
     }
-    const result = await sendPollTelegram(
+    const result = await telegramActionRuntime.sendPollTelegram(
       to,
       {
         question,
@@ -444,7 +446,7 @@ export async function handleTelegramAction(
         "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
       );
     }
-    await deleteMessageTelegram(chatId ?? "", messageId ?? 0, {
+    await telegramActionRuntime.deleteMessageTelegram(chatId ?? "", messageId ?? 0, {
       cfg,
       token,
       accountId: accountId ?? undefined,
@@ -482,12 +484,17 @@ export async function handleTelegramAction(
         "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
       );
     }
-    const result = await editMessageTelegram(chatId ?? "", messageId ?? 0, content, {
-      cfg,
-      token,
-      accountId: accountId ?? undefined,
-      buttons,
-    });
+    const result = await telegramActionRuntime.editMessageTelegram(
+      chatId ?? "",
+      messageId ?? 0,
+      content,
+      {
+        cfg,
+        token,
+        accountId: accountId ?? undefined,
+        buttons,
+      },
+    );
     return jsonResult({
       ok: true,
       messageId: result.messageId,
@@ -516,7 +523,7 @@ export async function handleTelegramAction(
         "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
       );
     }
-    const result = await sendStickerTelegram(to, fileId, {
+    const result = await telegramActionRuntime.sendStickerTelegram(to, fileId, {
       cfg,
       token,
       accountId: accountId ?? undefined,
@@ -538,7 +545,7 @@ export async function handleTelegramAction(
     }
     const query = readStringParam(params, "query", { required: true });
     const limit = readNumberParam(params, "limit", { integer: true }) ?? 5;
-    const results = searchStickers(query, limit);
+    const results = telegramActionRuntime.searchStickers(query, limit);
     return jsonResult({
       ok: true,
       count: results.length,
@@ -552,7 +559,7 @@ export async function handleTelegramAction(
   }
 
   if (action === "stickerCacheStats") {
-    const stats = getCacheStats();
+    const stats = telegramActionRuntime.getCacheStats();
     return jsonResult({ ok: true, ...stats });
   }
 
@@ -570,7 +577,7 @@ export async function handleTelegramAction(
         "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
       );
     }
-    const result = await createForumTopicTelegram(chatId ?? "", name, {
+    const result = await telegramActionRuntime.createForumTopicTelegram(chatId ?? "", name, {
       cfg,
       token,
       accountId: accountId ?? undefined,
@@ -602,13 +609,17 @@ export async function handleTelegramAction(
         "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
       );
     }
-    const result = await editForumTopicTelegram(chatId ?? "", messageThreadId, {
-      cfg,
-      token,
-      accountId: accountId ?? undefined,
-      name: name ?? undefined,
-      iconCustomEmojiId: iconCustomEmojiId ?? undefined,
-    });
+    const result = await telegramActionRuntime.editForumTopicTelegram(
+      chatId ?? "",
+      messageThreadId,
+      {
+        cfg,
+        token,
+        accountId: accountId ?? undefined,
+        name: name ?? undefined,
+        iconCustomEmojiId: iconCustomEmojiId ?? undefined,
+      },
+    );
     return jsonResult(result);
   }
 

@@ -24,6 +24,11 @@ describe("plugin-sdk subpath exports", () => {
     expect(typeof compatSdk.resolveControlCommandGate).toBe("function");
   });
 
+  it("exports account helper builders from the dedicated subpath", async () => {
+    const accountHelpersSdk = await import("openclaw/plugin-sdk/account-helpers");
+    expect(typeof accountHelpersSdk.createAccountListHelpers).toBe("function");
+  });
+
   it("exports Discord helpers", () => {
     expect(typeof discordSdk.resolveDiscordAccount).toBe("function");
     expect(typeof discordSdk.inspectDiscordAccount).toBe("function");

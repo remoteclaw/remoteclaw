@@ -126,8 +126,10 @@ export {
   collectStatusIssuesFromLastError,
   createDefaultChannelRuntimeState,
 } from "./status-helpers.js";
-export { buildOauthProviderAuthResult } from "./provider-auth-result.js";
 export { formatResolvedUnresolvedNote } from "./resolution-notes.js";
+export type { AgentToolResult } from "../agents/agent-types.js";
+export type { OutboundDeliveryResult } from "../infra/outbound/deliver.js";
+export { validateVoiceCredentials } from "../channels/voice-credentials.js";
 export type { ChannelDock } from "../channels/dock.js";
 export { getChatChannelMeta } from "../channels/registry.js";
 export { resolveAllowlistMatchByCandidates } from "../channels/allowlist-match.js";

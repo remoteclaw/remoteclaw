@@ -17,7 +17,6 @@ export type {
   ChannelDirectoryAdapter,
   ChannelDirectoryEntry,
   ChannelDirectoryEntryKind,
-  ChannelElevatedAdapter,
   ChannelGatewayAdapter,
   ChannelGatewayContext,
   ChannelGroupAdapter,
@@ -71,29 +70,6 @@ export {
   listThreadBindingsBySessionKey,
   unbindThreadBindingsBySessionKey,
 } from "../discord/monitor/thread-bindings.js";
-export type {
-  AcpRuntimeCapabilities,
-  AcpRuntimeControl,
-  AcpRuntimeDoctorReport,
-  AcpRuntime,
-  AcpRuntimeEnsureInput,
-  AcpRuntimeEvent,
-  AcpRuntimeHandle,
-  AcpRuntimePromptMode,
-  AcpSessionUpdateTag,
-  AcpRuntimeSessionMode,
-  AcpRuntimeStatus,
-  AcpRuntimeTurnInput,
-} from "../acp/runtime/types.js";
-export type { AcpRuntimeBackend } from "../acp/runtime/registry.js";
-export {
-  getAcpRuntimeBackend,
-  registerAcpRuntimeBackend,
-  requireAcpRuntimeBackend,
-  unregisterAcpRuntimeBackend,
-} from "../acp/runtime/registry.js";
-export { ACP_ERROR_CODES, AcpRuntimeError } from "../acp/runtime/errors.js";
-export type { AcpRuntimeErrorCode } from "../acp/runtime/errors.js";
 export type {
   AnyAgentTool,
   RemoteClawPluginConfigSchema,

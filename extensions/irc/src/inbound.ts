@@ -1,22 +1,3 @@
-import {
-  GROUP_POLICY_BLOCKED_LABEL,
-  createScopedPairingAccess,
-  createNormalizedOutboundDeliverer,
-  createReplyPrefixOptions,
-  formatTextWithAttachmentLinks,
-  issuePairingChallenge,
-  logInboundDrop,
-  isDangerousNameMatchingEnabled,
-  readStoreAllowFromForDmPolicy,
-  resolveControlCommandGate,
-  resolveOutboundMediaUrls,
-  resolveAllowlistProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
-  warnMissingProviderGroupPolicyFallbackOnce,
-  type OutboundReplyPayload,
-  type RemoteClawConfig,
-  type RuntimeEnv,
-} from "remoteclaw/plugin-sdk";
 import type { ResolvedIrcAccount } from "./accounts.js";
 import { normalizeIrcAllowlist, resolveIrcAllowlistMatch } from "./normalize.js";
 import {
@@ -26,6 +7,25 @@ import {
   resolveIrcGroupSenderAllowed,
   resolveIrcRequireMention,
 } from "./policy.js";
+import {
+  GROUP_POLICY_BLOCKED_LABEL,
+  createScopedPairingAccess,
+  dispatchInboundReplyWithBase,
+  formatTextWithAttachmentLinks,
+  issuePairingChallenge,
+  logInboundDrop,
+  isDangerousNameMatchingEnabled,
+  readStoreAllowFromForDmPolicy,
+  resolveControlCommandGate,
+  resolveOutboundMediaUrls,
+  resolveAllowlistProviderRuntimeGroupPolicy,
+  resolveDefaultGroupPolicy,
+  resolveEffectiveAllowFromLists,
+  warnMissingProviderGroupPolicyFallbackOnce,
+  type OutboundReplyPayload,
+  type OpenClawConfig,
+  type RuntimeEnv,
+} from "./runtime-api.js";
 import { getIrcRuntime } from "./runtime.js";
 import { sendMessageIrc } from "./send.js";
 import type { CoreConfig, IrcInboundMessage } from "./types.js";
@@ -38,13 +38,19 @@ function resolveIrcEffectiveAllowlists(params: {
   configAllowFrom: string[];
   configGroupAllowFrom: string[];
   storeAllowList: string[];
+  dmPolicy: string;
 }): {
   effectiveAllowFrom: string[];
   effectiveGroupAllowFrom: string[];
 } {
-  const effectiveAllowFrom = [...params.configAllowFrom, ...params.storeAllowList].filter(Boolean);
-  // Pairing-store entries are DM approvals and must not widen group sender authorization.
-  const effectiveGroupAllowFrom = [...params.configGroupAllowFrom].filter(Boolean);
+  const { effectiveAllowFrom, effectiveGroupAllowFrom } = resolveEffectiveAllowFromLists({
+    allowFrom: params.configAllowFrom,
+    groupAllowFrom: params.configGroupAllowFrom,
+    storeAllowFrom: params.storeAllowList,
+    dmPolicy: params.dmPolicy,
+    // IRC intentionally requires explicit groupAllowFrom; do not fallback to allowFrom.
+    groupAllowFromFallbackToAllowFrom: false,
+  });
   return { effectiveAllowFrom, effectiveGroupAllowFrom };
 }
 
@@ -151,10 +157,11 @@ export async function handleIrcInbound(params: {
     configAllowFrom,
     configGroupAllowFrom,
     storeAllowList,
+    dmPolicy,
   });
 
   const allowTextCommands = core.channel.commands.shouldHandleTextCommands({
-    cfg: config as RemoteClawConfig,
+    cfg: config as OpenClawConfig,
     surface: CHANNEL_ID,
   });
   const useAccessGroups = config.commands?.useAccessGroups !== false;
@@ -163,10 +170,7 @@ export async function handleIrcInbound(params: {
     message,
     allowNameMatching,
   }).allowed;
-  const hasControlCommand = core.channel.text.hasControlCommand(
-    rawBody,
-    config as RemoteClawConfig,
-  );
+  const hasControlCommand = core.channel.text.hasControlCommand(rawBody, config as OpenClawConfig);
   const commandGate = resolveControlCommandGate({
     useAccessGroups,
     authorizers: [
@@ -241,7 +245,7 @@ export async function handleIrcInbound(params: {
     return;
   }
 
-  const mentionRegexes = core.channel.mentions.buildMentionRegexes(config as RemoteClawConfig);
+  const mentionRegexes = core.channel.mentions.buildMentionRegexes(config as OpenClawConfig);
   const mentionNick = connectedNick?.trim() || account.nick;
   const explicitMentionRegex = mentionNick
     ? new RegExp(`\\b${escapeIrcRegexLiteral(mentionNick)}\\b[:,]?`, "i")
@@ -272,7 +276,7 @@ export async function handleIrcInbound(params: {
 
   const peerId = message.isGroup ? message.target : message.senderNick;
   const route = core.channel.routing.resolveAgentRoute({
-    cfg: config as RemoteClawConfig,
+    cfg: config as OpenClawConfig,
     channel: CHANNEL_ID,
     accountId: account.accountId,
     peer: {
@@ -285,9 +289,7 @@ export async function handleIrcInbound(params: {
   const storePath = core.channel.session.resolveStorePath(config.session?.store, {
     agentId: route.agentId,
   });
-  const envelopeOptions = core.channel.reply.resolveEnvelopeFormatOptions(
-    config as RemoteClawConfig,
-  );
+  const envelopeOptions = core.channel.reply.resolveEnvelopeFormatOptions(config as OpenClawConfig);
   const previousTimestamp = core.channel.session.readSessionUpdatedAt({
     storePath,
     sessionKey: route.sessionKey,
@@ -327,43 +329,31 @@ export async function handleIrcInbound(params: {
     CommandAuthorized: commandAuthorized,
   });
 
-  await core.channel.session.recordInboundSession({
-    storePath,
-    sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
-    ctx: ctxPayload,
-    onRecordError: (err: any) => {
-      runtime.error?.(`irc: failed updating session meta: ${String(err)}`);
-    },
-  });
-
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
-    cfg: config as RemoteClawConfig,
-    agentId: route.agentId,
+  await dispatchInboundReplyWithBase({
+    cfg: config as OpenClawConfig,
     channel: CHANNEL_ID,
     accountId: account.accountId,
-  });
-  const deliverReply = createNormalizedOutboundDeliverer(async (payload) => {
-    await deliverIrcReply({
-      payload,
-      target: peerId,
-      accountId: account.accountId,
-      sendReply: params.sendReply,
-      statusSink,
-    });
-  });
-
-  await core.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
-    ctx: ctxPayload,
-    cfg: config as RemoteClawConfig,
-    dispatcherOptions: {
-      ...prefixOptions,
-      deliver: deliverReply,
-      onError: (err: any, info: any) => {
-        runtime.error?.(`irc ${info.kind} reply failed: ${String(err)}`);
-      },
+    route,
+    storePath,
+    ctxPayload,
+    core,
+    deliver: async (payload) => {
+      await deliverIrcReply({
+        payload,
+        target: peerId,
+        accountId: account.accountId,
+        sendReply: params.sendReply,
+        statusSink,
+      });
+    },
+    onRecordError: (err) => {
+      runtime.error?.(`irc: failed updating session meta: ${String(err)}`);
+    },
+    onDispatchError: (err, info) => {
+      runtime.error?.(`irc ${info.kind} reply failed: ${String(err)}`);
     },
     replyOptions: {
-      onModelSelected,
+      skillFilter: groupMatch.groupConfig?.skills,
       disableBlockStreaming:
         typeof account.config.blockStreaming === "boolean"
           ? !account.config.blockStreaming

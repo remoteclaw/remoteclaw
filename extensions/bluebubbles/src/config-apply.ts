@@ -1,4 +1,4 @@
-import { DEFAULT_ACCOUNT_ID, type RemoteClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
+import { DEFAULT_ACCOUNT_ID, type RemoteClawConfig } from "./runtime-api.js";
 
 type BlueBubblesConfigPatch = {
   serverUrl?: string;

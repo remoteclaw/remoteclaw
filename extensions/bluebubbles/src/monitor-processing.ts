@@ -1,22 +1,3 @@
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
-import {
-  DM_GROUP_ACCESS_REASON,
-  createScopedPairingAccess,
-  createReplyPrefixOptions,
-  evictOldHistoryKeys,
-  issuePairingChallenge,
-  logAckFailure,
-  logInboundDrop,
-  logTypingFailure,
-  mapAllowFromEntries,
-  readStoreAllowFromForDmPolicy,
-  recordPendingHistoryEntryIfEnabled,
-  resolveAckReaction,
-  resolveDmGroupAccessWithLists,
-  resolveControlCommandGate,
-  stripMarkdown,
-  type HistoryEntry,
-} from "remoteclaw/plugin-sdk";
 import { downloadBlueBubblesAttachment } from "./attachments.js";
 import { markBlueBubblesChatRead, sendBlueBubblesTyping } from "./chat.js";
 import { fetchBlueBubblesHistory } from "./history.js";
@@ -45,6 +26,26 @@ import type {
 } from "./monitor-shared.js";
 import { isBlueBubblesPrivateApiEnabled } from "./probe.js";
 import { normalizeBlueBubblesReactionInput, sendBlueBubblesReaction } from "./reactions.js";
+import type { RemoteClawConfig } from "./runtime-api.js";
+import {
+  DM_GROUP_ACCESS_REASON,
+  createScopedPairingAccess,
+  createReplyPrefixOptions,
+  evictOldHistoryKeys,
+  issuePairingChallenge,
+  logAckFailure,
+  logInboundDrop,
+  logTypingFailure,
+  mapAllowFromEntries,
+  readStoreAllowFromForDmPolicy,
+  recordPendingHistoryEntryIfEnabled,
+  resolveAckReaction,
+  resolveDmGroupAccessWithLists,
+  resolveControlCommandGate,
+  stripMarkdown,
+  type HistoryEntry,
+} from "./runtime-api.js";
+import { normalizeSecretInputString } from "./secret-input.js";
 import { resolveChatGuidForTarget, sendMessageBlueBubbles } from "./send.js";
 import { formatBlueBubblesChatTarget, isAllowedBlueBubblesSender } from "./targets.js";
 

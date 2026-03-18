@@ -1,6 +1,6 @@
-import type { DmPolicy, GroupPolicy } from "remoteclaw/plugin-sdk";
+import type { DmPolicy, GroupPolicy } from "./runtime-api.js";
 
-export type { DmPolicy, GroupPolicy } from "remoteclaw/plugin-sdk";
+export type { DmPolicy, GroupPolicy } from "./runtime-api.js";
 
 export type BlueBubblesGroupConfig = {
   /** If true, only respond in this group when mentioned. */

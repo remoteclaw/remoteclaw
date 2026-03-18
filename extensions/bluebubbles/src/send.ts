@@ -1,11 +1,11 @@
 import crypto from "node:crypto";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
-import { stripMarkdown } from "remoteclaw/plugin-sdk";
 import { resolveBlueBubblesAccount } from "./accounts.js";
 import {
   getCachedBlueBubblesPrivateApiStatus,
   isBlueBubblesPrivateApiStatusEnabled,
 } from "./probe.js";
+import type { OpenClawConfig } from "./runtime-api.js";
+import { stripMarkdown } from "./runtime-api.js";
 import { warnBlueBubbles } from "./runtime.js";
 import { extractBlueBubblesMessageId, resolveBlueBubblesSendTarget } from "./send-helpers.js";
 import { extractHandleFromChatGuid, normalizeBlueBubblesHandle } from "./targets.js";

@@ -1,4 +1,5 @@
-import type { BaseProbeResult } from "remoteclaw/plugin-sdk";
+import type { BaseProbeResult } from "./runtime-api.js";
+import { normalizeSecretInputString } from "./secret-input.js";
 import { buildBlueBubblesApiUrl, blueBubblesFetchWithTimeout } from "./types.js";
 
 export type BlueBubblesProbe = BaseProbeResult & {

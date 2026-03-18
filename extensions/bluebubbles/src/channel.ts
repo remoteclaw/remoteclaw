@@ -1,20 +1,6 @@
-import type {
-  ChannelAccountSnapshot,
-  ChannelPlugin,
-  RemoteClawConfig,
-} from "remoteclaw/plugin-sdk";
-
-import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
-import {
-  createScopedChannelConfigAdapter,
-  createScopedDmSecurityResolver,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
-import {
-  createOpenGroupPolicyRestrictSendersWarningCollector,
-  projectWarningCollector,
-} from "remoteclaw/plugin-sdk/channel-policy";
 import {
   createPairingPrefixStripper,
   createTextPairingAdapter,
@@ -29,12 +15,21 @@ import {
 import { bluebubblesMessageActions } from "./actions.js";
 import { applyBlueBubblesConnectionConfig } from "./config-apply.js";
 import { BlueBubblesConfigSchema } from "./config-schema.js";
-import { sendBlueBubblesMedia } from "./media-send.js";
-import { resolveBlueBubblesMessageId } from "./monitor.js";
-import { monitorBlueBubblesProvider, resolveWebhookPathFromConfig } from "./monitor.js";
-import { blueBubblesOnboardingAdapter } from "./onboarding.js";
-import { probeBlueBubbles, type BlueBubblesProbe } from "./probe.js";
-import { sendMessageBlueBubbles } from "./send.js";
+import type { ChannelAccountSnapshot, ChannelPlugin } from "./runtime-api.js";
+import {
+  buildChannelConfigSchema,
+  buildComputedAccountStatusSnapshot,
+  buildProbeChannelStatusSummary,
+  collectBlueBubblesStatusIssues,
+  DEFAULT_ACCOUNT_ID,
+  deleteAccountFromConfigSection,
+  PAIRING_APPROVED_MESSAGE,
+  resolveBlueBubblesGroupRequireMention,
+  resolveBlueBubblesGroupToolPolicy,
+  setAccountEnabledInConfigSection,
+} from "./runtime-api.js";
+import { blueBubblesSetupAdapter } from "./setup-core.js";
+import { blueBubblesSetupWizard } from "./setup-surface.js";
 import {
   extractHandleFromChatGuid,
   looksLikeBlueBubblesTargetId,

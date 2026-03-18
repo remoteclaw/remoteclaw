@@ -326,6 +326,26 @@ function respondWorkspaceFileInvalid(respond: RespondFn, name: string, reason: s
   );
 }
 
+async function resolveWorkspaceFilePathOrRespond(params: {
+  respond: RespondFn;
+  workspaceDir: string;
+  name: string;
+}): Promise<
+  | Exclude<Awaited<ReturnType<typeof resolveAgentWorkspaceFilePath>>, { kind: "invalid" }>
+  | undefined
+> {
+  const resolvedPath = await resolveAgentWorkspaceFilePath({
+    workspaceDir: params.workspaceDir,
+    name: params.name,
+    allowMissing: true,
+  });
+  if (resolvedPath.kind === "invalid") {
+    respondWorkspaceFileInvalid(params.respond, params.name, resolvedPath.reason);
+    return undefined;
+  }
+  return resolvedPath;
+}
+
 function respondWorkspaceFileUnsafe(respond: RespondFn, name: string): void {
   respond(
     false,
@@ -641,13 +661,12 @@ export const agentsHandlers: GatewayRequestHandlers = {
     }
     const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
     const filePath = path.join(workspaceDir, name);
-    const resolvedPath = await resolveAgentWorkspaceFilePath({
+    const resolvedPath = await resolveWorkspaceFilePathOrRespond({
+      respond,
       workspaceDir,
       name,
-      allowMissing: true,
     });
-    if (resolvedPath.kind === "invalid") {
-      respondWorkspaceFileInvalid(respond, name, resolvedPath.reason);
+    if (!resolvedPath) {
       return;
     }
     if (resolvedPath.kind === "missing") {
@@ -734,13 +753,12 @@ export const agentsHandlers: GatewayRequestHandlers = {
     const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
     await fs.mkdir(workspaceDir, { recursive: true });
     const filePath = path.join(workspaceDir, name);
-    const resolvedPath = await resolveAgentWorkspaceFilePath({
+    const resolvedPath = await resolveWorkspaceFilePathOrRespond({
+      respond,
       workspaceDir,
       name,
-      allowMissing: true,
     });
-    if (resolvedPath.kind === "invalid") {
-      respondWorkspaceFileInvalid(respond, name, resolvedPath.reason);
+    if (!resolvedPath) {
       return;
     }
     const parentDir = path.dirname(resolvedPath.ioPath);

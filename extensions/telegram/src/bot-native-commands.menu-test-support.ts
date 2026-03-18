@@ -1,38 +1,10 @@
 import { expect, vi } from "vitest";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { TelegramAccountConfig } from "../../../src/config/types.js";
-import type { RuntimeEnv } from "../../../src/runtime.js";
-
-type NativeCommandBot = {
-  api: {
-    setMyCommands: ReturnType<typeof vi.fn>;
-    sendMessage: ReturnType<typeof vi.fn>;
-  };
-  command: ReturnType<typeof vi.fn>;
-};
-
-type RegisterTelegramNativeCommandsParams = {
-  bot: NativeCommandBot;
-  cfg: RemoteClawConfig;
-  runtime: RuntimeEnv;
-  accountId: string;
-  telegramCfg: TelegramAccountConfig;
-  allowFrom: string[];
-  groupAllowFrom: string[];
-  replyToMode: string;
-  textLimit: number;
-  useAccessGroups: boolean;
-  nativeEnabled: boolean;
-  nativeSkillsEnabled: boolean;
-  nativeDisabledExplicit: boolean;
-  resolveGroupPolicy: () => { allowlistEnabled: boolean; allowed: boolean };
-  resolveTelegramGroupConfig: () => {
-    groupConfig: undefined;
-    topicConfig: undefined;
-  };
-  shouldSkipUpdate: () => boolean;
-  opts: { token: string };
-};
+import type { TelegramBotDeps } from "./bot-deps.js";
+import {
+  createNativeCommandTestParams as createBaseNativeCommandTestParams,
+  createTelegramPrivateCommandContext,
+  type NativeCommandTestParams as RegisterTelegramNativeCommandsParams,
+} from "./bot-native-commands.fixture-test-support.js";
 
 type RegisteredCommand = {
   command: string;
@@ -98,44 +70,25 @@ export function createNativeCommandTestParams(
   cfg: RemoteClawConfig,
   params: Partial<RegisterTelegramNativeCommandsParams> = {},
 ): RegisterTelegramNativeCommandsParams {
-  return {
-    bot:
-      params.bot ??
-      ({
-        api: {
-          setMyCommands: vi.fn().mockResolvedValue(undefined),
-          sendMessage: vi.fn().mockResolvedValue(undefined),
-        },
-        command: vi.fn(),
-      } as unknown as RegisterTelegramNativeCommandsParams["bot"]),
+  const telegramDeps: TelegramBotDeps = {
+    loadConfig: vi.fn(() => ({})),
+    resolveStorePath: vi.fn((storePath?: string) => storePath ?? "/tmp/sessions.json"),
+    readChannelAllowFromStore: vi.fn(async () => []),
+    enqueueSystemEvent: vi.fn(),
+    dispatchReplyWithBufferedBlockDispatcher: vi.fn(async () => ({
+      queuedFinal: false,
+      counts: {},
+    })),
+    listSkillCommandsForAgents,
+    wasSentByBot: vi.fn(() => false),
+  };
+  return createBaseNativeCommandTestParams({
     cfg,
     runtime: params.runtime ?? ({} as RuntimeEnv),
-    accountId: params.accountId ?? "default",
-    telegramCfg: params.telegramCfg ?? ({} as TelegramAccountConfig),
-    allowFrom: params.allowFrom ?? [],
-    groupAllowFrom: params.groupAllowFrom ?? [],
-    replyToMode: params.replyToMode ?? "off",
-    textLimit: params.textLimit ?? 4000,
-    useAccessGroups: params.useAccessGroups ?? false,
-    nativeEnabled: params.nativeEnabled ?? true,
-    nativeSkillsEnabled: params.nativeSkillsEnabled ?? true,
-    nativeDisabledExplicit: params.nativeDisabledExplicit ?? false,
-    resolveGroupPolicy:
-      params.resolveGroupPolicy ??
-      (() =>
-        ({
-          allowlistEnabled: false,
-          allowed: true,
-        }) as ReturnType<RegisterTelegramNativeCommandsParams["resolveGroupPolicy"]>),
-    resolveTelegramGroupConfig:
-      params.resolveTelegramGroupConfig ??
-      (() => ({
-        groupConfig: undefined,
-        topicConfig: undefined,
-      })),
-    shouldSkipUpdate: params.shouldSkipUpdate ?? (() => false),
-    opts: params.opts ?? { token: "token" },
-  };
+    nativeSkillsEnabled: true,
+    telegramDeps,
+    ...params,
+  });
 }
 
 export function createPrivateCommandContext(params?: {

@@ -452,7 +452,7 @@ describe("loadRemoteClawPlugins", () => {
     expect(httpPlugin?.httpRoutes).toBe(1);
   });
 
-  it("defaults to gateway auth for http routes missing explicit auth", () => {
+  it("rejects http routes missing explicit auth", () => {
     useNoBundledPlugins();
     const plugin = writePlugin({
       id: "http-route-missing-auth",
@@ -470,8 +470,12 @@ describe("loadRemoteClawPlugins", () => {
     });
 
     const route = registry.httpRoutes.find((entry) => entry.pluginId === "http-route-missing-auth");
-    expect(route).toBeDefined();
-    expect(route?.auth).toBe("gateway");
+    expect(route).toBeUndefined();
+    const diag = registry.diagnostics.find(
+      (d) => d.pluginId === "http-route-missing-auth" && d.level === "error",
+    );
+    expect(diag).toBeDefined();
+    expect(diag?.message).toContain("missing or invalid auth");
   });
 
   it("respects explicit disable in config", () => {

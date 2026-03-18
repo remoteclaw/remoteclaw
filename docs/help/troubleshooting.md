@@ -3,7 +3,7 @@ description: "Symptom first troubleshooting hub for RemoteClaw"
 read_when:
   - RemoteClaw is not working and you need the fastest path to a fix
   - You want a triage flow before diving into deep runbooks
-title: "Troubleshooting"
+title: "General Troubleshooting"
 ---
 
 # Troubleshooting

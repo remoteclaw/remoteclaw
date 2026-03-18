@@ -2,12 +2,13 @@ import { createAllowFromSection, createTopLevelChannelDmPolicy } from "remotecla
 import {
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
+  resolveLineAccount,
   setSetupChannelEnabled,
   setTopLevelChannelDmPolicyWithAllowFrom,
   splitSetupEntries,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
-} from "../../../src/plugin-sdk/line-core.js";
+} from "remoteclaw/plugin-sdk/line-core";
 import {
   isLineConfigured,
   listLineAccountIds,

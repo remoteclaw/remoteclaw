@@ -4,6 +4,7 @@ import {
   createThreadBindingManager as createDiscordThreadBindingManager,
 } from "../../../../extensions/discord/runtime-api.js";
 import { createFeishuThreadBindingManager } from "../../../../extensions/feishu/api.js";
+import { setMatrixRuntime } from "../../../../extensions/matrix/index.js";
 import { createTelegramThreadBindingManager } from "../../../../extensions/telegram/runtime-api.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
 import {
@@ -108,7 +109,7 @@ type DirectoryContractEntry = {
   id: string;
   plugin: Pick<ChannelPlugin, "id" | "directory">;
   coverage: "lookups" | "presence";
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   accountId?: string;
 };
 

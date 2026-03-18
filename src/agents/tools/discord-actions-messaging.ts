@@ -1,7 +1,19 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import type { DiscordActionConfig } from "../../config/config.js";
-import type { RemoteClawConfig } from "../../config/config.js";
-import { readBooleanParam } from "../../plugin-sdk/boolean-param.js";
+import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
+import {
+  type ActionGate,
+  assertMediaNotDataUrl,
+  jsonResult,
+  readNumberParam,
+  readReactionParams,
+  readStringArrayParam,
+  readStringParam,
+  resolvePollMaxSelections,
+  type DiscordActionConfig,
+  type RemoteClawConfig,
+  withNormalizedTimestamp,
+} from "remoteclaw/plugin-sdk/discord-core";
+import { readDiscordComponentSpec } from "../components.js";
 import {
   createThreadDiscord,
   deleteMessageDiscord,
@@ -23,20 +35,34 @@ import {
   sendStickerDiscord,
   sendVoiceMessageDiscord,
   unpinMessageDiscord,
-} from "../../plugin-sdk/discord.js";
-import type { DiscordSendComponents, DiscordSendEmbeds } from "../../plugin-sdk/discord.js";
-import { readDiscordComponentSpec, resolveDiscordChannelId } from "../../plugin-sdk/discord.js";
-import { resolvePollMaxSelections } from "../../polls.js";
-import type { AgentToolResult } from "../agent-types.js";
-import { withNormalizedTimestamp } from "../date-time.js";
-import {
-  type ActionGate,
-  jsonResult,
-  readNumberParam,
-  readReactionParams,
-  readStringArrayParam,
-  readStringParam,
-} from "./common.js";
+} from "../send.js";
+import type { DiscordSendComponents, DiscordSendEmbeds } from "../send.shared.js";
+import { resolveDiscordChannelId } from "../targets.js";
+
+export const discordMessagingActionRuntime = {
+  createThreadDiscord,
+  deleteMessageDiscord,
+  editMessageDiscord,
+  fetchChannelPermissionsDiscord,
+  fetchMessageDiscord,
+  fetchReactionsDiscord,
+  listPinsDiscord,
+  listThreadsDiscord,
+  pinMessageDiscord,
+  reactMessageDiscord,
+  readDiscordComponentSpec,
+  readMessagesDiscord,
+  removeOwnReactionsDiscord,
+  removeReactionDiscord,
+  resolveDiscordChannelId,
+  searchMessagesDiscord,
+  sendDiscordComponentMessage,
+  sendMessageDiscord,
+  sendPollDiscord,
+  sendStickerDiscord,
+  sendVoiceMessageDiscord,
+  unpinMessageDiscord,
+};
 
 function parseDiscordMessageLink(link: string) {
   const normalized = link.trim();

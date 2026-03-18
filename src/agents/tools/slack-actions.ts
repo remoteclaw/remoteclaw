@@ -1,5 +1,15 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { resolveSlackAccount } from "../../../extensions/slack/src/accounts.js";
+import {
+  createActionGate,
+  imageResultFromFile,
+  jsonResult,
+  readNumberParam,
+  readReactionParams,
+  readStringParam,
+  type RemoteClawConfig,
+  withNormalizedTimestamp,
+} from "remoteclaw/plugin-sdk/slack-core";
+import { resolveSlackAccount } from "./accounts.js";
 import {
   deleteSlackMessage,
   downloadSlackFile,

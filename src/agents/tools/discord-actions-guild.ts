@@ -28,8 +28,51 @@ import {
   readNumberParam,
   readStringArrayParam,
   readStringParam,
-} from "./common.js";
-import { readDiscordParentIdParam } from "./discord-actions-shared.js";
+  type DiscordActionConfig,
+} from "remoteclaw/plugin-sdk/discord-core";
+import { getPresence } from "../monitor/presence-cache.js";
+import {
+  addRoleDiscord,
+  createChannelDiscord,
+  createScheduledEventDiscord,
+  deleteChannelDiscord,
+  editChannelDiscord,
+  fetchChannelInfoDiscord,
+  fetchMemberInfoDiscord,
+  fetchRoleInfoDiscord,
+  fetchVoiceStatusDiscord,
+  listGuildChannelsDiscord,
+  listGuildEmojisDiscord,
+  listScheduledEventsDiscord,
+  moveChannelDiscord,
+  removeChannelPermissionDiscord,
+  removeRoleDiscord,
+  setChannelPermissionDiscord,
+  uploadEmojiDiscord,
+  uploadStickerDiscord,
+} from "../send.js";
+import { readDiscordParentIdParam } from "./runtime.shared.js";
+
+export const discordGuildActionRuntime = {
+  addRoleDiscord,
+  createChannelDiscord,
+  createScheduledEventDiscord,
+  deleteChannelDiscord,
+  editChannelDiscord,
+  fetchChannelInfoDiscord,
+  fetchMemberInfoDiscord,
+  fetchRoleInfoDiscord,
+  fetchVoiceStatusDiscord,
+  listGuildChannelsDiscord,
+  listGuildEmojisDiscord,
+  listScheduledEventsDiscord,
+  moveChannelDiscord,
+  removeChannelPermissionDiscord,
+  removeRoleDiscord,
+  setChannelPermissionDiscord,
+  uploadEmojiDiscord,
+  uploadStickerDiscord,
+};
 
 type DiscordRoleMutation = (params: {
   guildId: string;

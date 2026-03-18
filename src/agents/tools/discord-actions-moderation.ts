@@ -1,5 +1,11 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import {
+  type ActionGate,
+  jsonResult,
+  readStringParam,
+  type DiscordActionConfig,
+} from "remoteclaw/plugin-sdk/discord-core";
+import {
   banMemberDiscord,
   hasAnyGuildPermissionDiscord,
   kickMemberDiscord,

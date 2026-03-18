@@ -1,8 +1,18 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import type { RemoteClawConfig } from "../../config/config.js";
-import { sendReactionWhatsApp } from "../../plugin-sdk/whatsapp.js";
-import { createActionGate, jsonResult, readReactionParams, readStringParam } from "./common.js";
-import { resolveAuthorizedWhatsAppOutboundTarget } from "./whatsapp-target-auth.js";
+import {
+  createActionGate,
+  jsonResult,
+  readReactionParams,
+  readStringParam,
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/whatsapp-core";
+import { resolveAuthorizedWhatsAppOutboundTarget } from "./action-runtime-target-auth.js";
+import { sendReactionWhatsApp } from "./send.js";
+
+export const whatsAppActionRuntime = {
+  resolveAuthorizedWhatsAppOutboundTarget,
+  sendReactionWhatsApp,
+};
 
 export async function handleWhatsAppAction(
   params: Record<string, unknown>,

@@ -21,13 +21,4 @@ export {
 } from "./status-helpers.js";
 export { createFixedWindowRateLimiter } from "./webhook-memory-guards.js";
 export { mapAllowFromEntries } from "./channel-config-helpers.js";
-
-const nostrSetup = createOptionalChannelSetupSurface({
-  channel: "nostr",
-  label: "Nostr",
-  npmSpec: "@openclaw/nostr",
-  docsPath: "/channels/nostr",
-});
-
-export const nostrSetupAdapter = nostrSetup.setupAdapter;
-export const nostrSetupWizard = nostrSetup.setupWizard;
+export { nostrSetupAdapter, nostrSetupWizard } from "../../extensions/nostr/setup-api.js";

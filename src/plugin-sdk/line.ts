@@ -31,10 +31,10 @@ export {
   normalizeAccountId,
   resolveDefaultLineAccountId,
   resolveLineAccount,
-} from "../../extensions/line/api.js";
-export { LineConfigSchema } from "../../extensions/line/api.js";
-export type { LineChannelData, LineConfig, ResolvedLineAccount } from "../../extensions/line/api.js";
-export type { LineProbeResult } from "../../extensions/line/api.js";
+} from "../line/accounts.js";
+export { lineSetupAdapter, lineSetupWizard } from "../../extensions/line/setup-api.js";
+export { LineConfigSchema } from "../line/config-schema.js";
+export type { LineChannelData, LineConfig, ResolvedLineAccount } from "../line/types.js";
 export {
   createActionCard,
   createAgendaCard,

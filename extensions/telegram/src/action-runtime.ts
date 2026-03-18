@@ -1,6 +1,6 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { readBooleanParam } from "openclaw/plugin-sdk/boolean-param";
-import { resolveReactionMessageId } from "openclaw/plugin-sdk/channel-runtime";
+import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
+import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-runtime";
 import { resolveTelegramPollVisibility } from "../runtime-api.js";
 import {
   jsonResult,
@@ -10,9 +10,9 @@ import {
   readStringOrNumberParam,
   readStringParam,
   resolvePollMaxSelections,
-  type OpenClawConfig,
+  type RemoteClawConfig,
   type TelegramActionConfig,
-} from "../runtime-api.js";
+} from "remoteclaw/plugin-sdk/telegram-core";
 import { createTelegramActionGate, resolveTelegramPollActionGateState } from "./accounts.js";
 import type { TelegramButtonStyle, TelegramInlineButtons } from "./button-types.js";
 import {

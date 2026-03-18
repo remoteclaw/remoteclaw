@@ -32,13 +32,4 @@ export { buildComputedAccountStatusSnapshot } from "./status-helpers.js";
 export { formatDocsLink } from "../terminal/links.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { createLoggerBackedRuntime } from "./runtime.js";
-
-const tlonSetup = createOptionalChannelSetupSurface({
-  channel: "tlon",
-  label: "Tlon",
-  npmSpec: "@openclaw/tlon",
-  docsPath: "/channels/tlon",
-});
-
-export const tlonSetupAdapter = tlonSetup.setupAdapter;
-export const tlonSetupWizard = tlonSetup.setupWizard;
+export { tlonSetupAdapter, tlonSetupWizard } from "../../extensions/tlon/setup-api.js";

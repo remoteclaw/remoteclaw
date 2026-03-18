@@ -61,7 +61,7 @@ let webOutboundPromise: Promise<typeof import("./runtime-whatsapp-outbound.runti
   null;
 let webLoginPromise: Promise<typeof import("./runtime-whatsapp-login.runtime.js")> | null = null;
 let whatsappActionsPromise: Promise<
-  typeof import("../../agents/tools/whatsapp-actions.js")
+  typeof import("../../../extensions/whatsapp/runtime-api.js")
 > | null = null;
 
 function loadWebOutbound() {
@@ -85,7 +85,7 @@ function loadWebChannel() {
 }
 
 function loadWhatsAppActions() {
-  whatsappActionsPromise ??= import("../../agents/tools/whatsapp-actions.js");
+  whatsappActionsPromise ??= import("../../../extensions/whatsapp/runtime-api.js");
   return whatsappActionsPromise;
 }
 

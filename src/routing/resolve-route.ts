@@ -328,7 +328,7 @@ function getEvaluatedBindingsForChannelAccount(
 }
 
 function getEvaluatedBindingIndexForChannelAccount(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   channel: string,
   accountId: string,
 ): EvaluatedBindingsIndex {

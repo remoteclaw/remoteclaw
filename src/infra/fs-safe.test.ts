@@ -8,11 +8,8 @@ import {
 import { createTrackedTempDirs } from "../test-utils/tracked-temp-dirs.js";
 import {
   copyFileWithinRoot,
-  createRootScopedReadFile,
   SafeOpenError,
   openFileWithinRoot,
-  readFileWithinRoot,
-  readPathWithinRoot,
   readLocalFileSafely,
   writeFileWithinRoot,
   writeFileFromPathWithinRoot,
@@ -96,37 +93,6 @@ describe("fs-safe", () => {
     }).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(SafeOpenError);
     expect((err as SafeOpenError).message).not.toMatch(/EISDIR/i);
-  });
-
-  it("reads a file within root", async () => {
-    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
-    await fs.writeFile(path.join(root, "inside.txt"), "inside");
-    const result = await readFileWithinRoot({
-      rootDir: root,
-      relativePath: "inside.txt",
-    });
-    expect(result.buffer.toString("utf8")).toBe("inside");
-    expect(result.realPath).toContain("inside.txt");
-    expect(result.stat.size).toBe(6);
-  });
-
-  it("reads an absolute path within root via readPathWithinRoot", async () => {
-    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
-    const insidePath = path.join(root, "absolute.txt");
-    await fs.writeFile(insidePath, "absolute");
-    const result = await readPathWithinRoot({
-      rootDir: root,
-      filePath: insidePath,
-    });
-    expect(result.buffer.toString("utf8")).toBe("absolute");
-  });
-
-  it("creates a root-scoped read callback", async () => {
-    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
-    const insidePath = path.join(root, "scoped.txt");
-    await fs.writeFile(insidePath, "scoped");
-    const readScoped = createRootScopedReadFile({ rootDir: root });
-    await expect(readScoped(insidePath)).resolves.toEqual(Buffer.from("scoped"));
   });
 
   it.runIf(process.platform !== "win32")("blocks symlink escapes under root", async () => {

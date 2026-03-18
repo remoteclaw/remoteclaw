@@ -1,6 +1,6 @@
 import path from "node:path";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { note } from "../terminal/note.js";
 
 const TLS_CERT_ERROR_CODES = new Set([
@@ -79,18 +79,19 @@ function resolveCertBundlePath(): string | null {
   return path.join(prefix, "etc", "openssl@3", "cert.pem");
 }
 
-function hasOpenAICodexOAuthProfile(cfg: OpenClawConfig): boolean {
+function hasOpenAICodexOAuthProfile(cfg: RemoteClawConfig): boolean {
   const profiles = cfg.auth?.profiles;
   if (!profiles) {
     return false;
   }
   return Object.values(profiles).some(
-    (profile) => profile.provider === "openai-codex" && profile.mode === "oauth",
+    (profile: { provider?: string; mode?: string }) =>
+      profile.provider === "openai-codex" && profile.mode === "oauth",
   );
 }
 
 function shouldRunOpenAIOAuthTlsPrerequisites(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   deep?: boolean;
 }): boolean {
   if (params.deep === true) {
@@ -150,7 +151,7 @@ export function formatOpenAIOAuthTlsPreflightFix(
 }
 
 export async function noteOpenAIOAuthTlsPrerequisites(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   deep?: boolean;
 }): Promise<void> {
   if (!shouldRunOpenAIOAuthTlsPrerequisites(params)) {

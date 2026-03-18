@@ -1,7 +1,5 @@
 import os from "node:os";
 import path from "node:path";
-import { normalizeWindowsPathForComparison } from "../infra/path-guards.js";
-
 const UNICODE_SPACES = /[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g;
 
 function expandPath(filePath: string): string {

@@ -876,7 +876,7 @@ describe("signalMessageActions", () => {
   it("rejects reaction when neither messageId nor toolContext.currentMessageId is provided", async () => {
     const cfg = {
       channels: { signal: { account: "+15550001111" } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     await expectSignalActionRejected(
       { to: "+15559999999", emoji: "✅" },
       /messageId.*required/,

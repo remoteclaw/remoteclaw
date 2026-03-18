@@ -300,7 +300,7 @@ export async function handleNextcloudTalkInbound(params: {
     storePath,
     sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
     ctx: ctxPayload,
-    onRecordError: (err: unknown) => {
+    onRecordError: (err: any) => {
       runtime.error?.(`nextcloud-talk: failed updating session meta: ${String(err)}`);
     },
   });
@@ -326,7 +326,7 @@ export async function handleNextcloudTalkInbound(params: {
     dispatcherOptions: {
       ...prefixOptions,
       deliver: deliverReply,
-      onError: (err: unknown, info: unknown) => {
+      onError: (err: any, info: any) => {
         runtime.error?.(`nextcloud-talk ${info.kind} reply failed: ${String(err)}`);
       },
     },

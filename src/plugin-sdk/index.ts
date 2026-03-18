@@ -70,6 +70,12 @@ export {
   listThreadBindingsBySessionKey,
   unbindThreadBindingsBySessionKey,
 } from "../discord/monitor/thread-bindings.js";
+export { createPluginRuntimeStore } from "./runtime-store.js";
+export {
+  AllowFromEntrySchema,
+  buildCatchallMultiAccountChannelSchema,
+} from "../channels/plugins/config-schema.js";
+export { resolveChannelGroupPolicy } from "../config/group-policy.js";
 export type {
   AnyAgentTool,
   RemoteClawPluginConfigSchema,

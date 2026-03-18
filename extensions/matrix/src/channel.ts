@@ -11,6 +11,7 @@ import { createLazyRuntimeSurface } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
   createChannelDirectoryAdapter,
   createPairingPrefixStripper,
+  createScopedAccountReplyToModeResolver,
   createRuntimeDirectoryLiveAdapter,
   createRuntimeOutboundDelegates,
   createTextPairingAdapter,
@@ -174,8 +175,11 @@ export const matrixPlugin: ChannelPlugin<ResolvedMatrixAccount> = {
     resolveToolPolicy: resolveMatrixGroupToolPolicy,
   },
   threading: {
-    resolveReplyToMode: ({ cfg, accountId }) =>
-      resolveMatrixAccountConfig({ cfg: cfg as CoreConfig, accountId }).replyToMode ?? "off",
+    resolveReplyToMode: createScopedAccountReplyToModeResolver({
+      resolveAccount: (cfg, accountId) =>
+        resolveMatrixAccountConfig({ cfg: cfg as CoreConfig, accountId }),
+      resolveReplyToMode: (account) => account.replyToMode,
+    }),
     buildToolContext: ({ context, hasRepliedRef }) => {
       const currentTarget = context.To;
       return {

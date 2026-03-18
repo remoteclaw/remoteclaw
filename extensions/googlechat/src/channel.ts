@@ -10,7 +10,9 @@ import {
   createAllowlistProviderOpenWarningCollector,
 } from "remoteclaw/plugin-sdk/channel-policy";
 import {
+  createAttachedChannelResultAdapter,
   createChannelDirectoryAdapter,
+  createTopLevelChannelReplyToModeResolver,
   createTextPairingAdapter,
 } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
@@ -195,7 +197,7 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
     resolveRequireMention: resolveGoogleChatGroupRequireMention,
   },
   threading: {
-    resolveReplyToMode: ({ cfg }) => cfg.channels?.["googlechat"]?.replyToMode ?? "off",
+    resolveReplyToMode: createTopLevelChannelReplyToModeResolver("googlechat"),
   },
   messaging: {
     normalizeTarget: normalizeGoogleChatTarget,
@@ -327,88 +329,97 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
         error: missingTargetError("Google Chat", "<spaces/{space}|users/{user}>"),
       };
     },
-    sendText: async ({ cfg, to, text, accountId, replyToId, threadId }) => {
-      const account = resolveGoogleChatAccount({
-        cfg: cfg,
-        accountId,
-      });
-      const space = await resolveGoogleChatOutboundSpace({ account, target: to });
-      const thread = (threadId ?? replyToId ?? undefined) as string | undefined;
-      const result = await sendGoogleChatMessage({
-        account,
-        space,
+    ...createAttachedChannelResultAdapter({
+      channel: "googlechat",
+      sendText: async ({ cfg, to, text, accountId, replyToId, threadId }) => {
+        const account = resolveGoogleChatAccount({
+          cfg: cfg,
+          accountId,
+        });
+        const space = await resolveGoogleChatOutboundSpace({ account, target: to });
+        const thread = (threadId ?? replyToId ?? undefined) as string | undefined;
+        const { sendGoogleChatMessage } = await loadGoogleChatChannelRuntime();
+        const result = await sendGoogleChatMessage({
+          account,
+          space,
+          text,
+          thread,
+        });
+        return {
+          messageId: result?.messageName ?? "",
+          chatId: space,
+        };
+      },
+      sendMedia: async ({
+        cfg,
+        to,
         text,
-        thread,
-      });
-      return {
-        channel: "googlechat",
-        messageId: result?.messageName ?? "",
-        chatId: space,
-      };
-    },
-    sendMedia: async ({
-      cfg,
-      to,
-      text,
-      mediaUrl,
-      mediaLocalRoots,
-      accountId,
-      replyToId,
-      threadId,
-    }) => {
-      if (!mediaUrl) {
-        throw new Error("Google Chat mediaUrl is required.");
-      }
-      const account = resolveGoogleChatAccount({
-        cfg: cfg,
+        mediaUrl,
+        mediaLocalRoots,
         accountId,
-      });
-      const space = await resolveGoogleChatOutboundSpace({ account, target: to });
-      const thread = (threadId ?? replyToId ?? undefined) as string | undefined;
-      const runtime = getGoogleChatRuntime();
-      const maxBytes = resolveChannelMediaMaxBytes({
-        cfg: cfg,
-        resolveChannelLimitMb: ({ cfg, accountId }) =>
-          (
-            cfg.channels?.["googlechat"] as
-              | { accounts?: Record<string, { mediaMaxMb?: number }>; mediaMaxMb?: number }
-              | undefined
-          )?.accounts?.[accountId]?.mediaMaxMb ??
-          (cfg.channels?.["googlechat"] as { mediaMaxMb?: number } | undefined)?.mediaMaxMb,
-        accountId,
-      });
-      const effectiveMaxBytes = maxBytes ?? (account.config.mediaMaxMb ?? 20) * 1024 * 1024;
-      const loaded = /^https?:\/\//i.test(mediaUrl)
-        ? await runtime.channel.media.fetchRemoteMedia({
-            url: mediaUrl,
-            maxBytes: effectiveMaxBytes,
-          })
-        : await runtime.media.loadWebMedia(mediaUrl, {
-            maxBytes: effectiveMaxBytes,
-            localRoots: mediaLocalRoots?.length ? mediaLocalRoots : undefined,
-          });
-      const upload = await uploadGoogleChatAttachment({
-        account,
-        space,
-        filename: loaded.fileName ?? "attachment",
-        buffer: loaded.buffer,
-        contentType: loaded.contentType,
-      });
-      const result = await sendGoogleChatMessage({
-        account,
-        space,
-        text,
-        thread,
-        attachments: upload.attachmentUploadToken
-          ? [{ attachmentUploadToken: upload.attachmentUploadToken, contentName: loaded.fileName }]
-          : undefined,
-      });
-      return {
-        channel: "googlechat",
-        messageId: result?.messageName ?? "",
-        chatId: space,
-      };
-    },
+        replyToId,
+        threadId,
+      }) => {
+        if (!mediaUrl) {
+          throw new Error("Google Chat mediaUrl is required.");
+        }
+        const account = resolveGoogleChatAccount({
+          cfg: cfg,
+          accountId,
+        });
+        const space = await resolveGoogleChatOutboundSpace({ account, target: to });
+        const thread = (threadId ?? replyToId ?? undefined) as string | undefined;
+        const runtime = getGoogleChatRuntime();
+        const maxBytes = resolveChannelMediaMaxBytes({
+          cfg: cfg,
+          resolveChannelLimitMb: ({ cfg, accountId }) =>
+            (
+              cfg.channels?.["googlechat"] as
+                | { accounts?: Record<string, { mediaMaxMb?: number }>; mediaMaxMb?: number }
+                | undefined
+            )?.accounts?.[accountId]?.mediaMaxMb ??
+            (cfg.channels?.["googlechat"] as { mediaMaxMb?: number } | undefined)?.mediaMaxMb,
+          accountId,
+        });
+        const effectiveMaxBytes = maxBytes ?? (account.config.mediaMaxMb ?? 20) * 1024 * 1024;
+        const loaded = /^https?:\/\//i.test(mediaUrl)
+          ? await runtime.channel.media.fetchRemoteMedia({
+              url: mediaUrl,
+              maxBytes: effectiveMaxBytes,
+            })
+          : await runtime.media.loadWebMedia(mediaUrl, {
+              maxBytes: effectiveMaxBytes,
+              localRoots: mediaLocalRoots?.length ? mediaLocalRoots : undefined,
+            });
+        const { sendGoogleChatMessage, uploadGoogleChatAttachment } =
+          await loadGoogleChatChannelRuntime();
+        const upload = await uploadGoogleChatAttachment({
+          account,
+          space,
+          filename: loaded.fileName ?? "attachment",
+          buffer: loaded.buffer,
+          contentType: loaded.contentType,
+        });
+        const result = await sendGoogleChatMessage({
+          account,
+          space,
+          text,
+          thread,
+          attachments: upload.attachmentUploadToken
+            ? [
+                {
+                  attachmentUploadToken: upload.attachmentUploadToken,
+                  contentName: loaded.fileName,
+                },
+              ]
+            : undefined,
+        });
+        return {
+          messageId: result?.messageName ?? "",
+          chatId: space,
+        };
+      },
+    }),
   },
   status: {
     defaultRuntime: {

@@ -12,12 +12,17 @@ import {
 } from "@buape/carbon";
 import { ApplicationCommandOptionType, ButtonStyle } from "discord-api-types/v10";
 import {
-  ensureConfiguredAcpRouteReady,
-  resolveConfiguredAcpRoute,
-} from "../../acp/persistent-bindings.route.js";
-import { resolveHumanDelayConfig } from "../../agents/identity.js";
-import { resolveChunkMode, resolveTextChunkLimit } from "../../auto-reply/chunk.js";
-import { resolveCommandAuthorization } from "../../auto-reply/command-auth.js";
+  ensureConfiguredBindingRouteReady,
+  resolveConfiguredBindingRoute,
+} from "remoteclaw/plugin-sdk/conversation-runtime";
+import { buildPairingReply } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
+import { executePluginCommand, matchPluginCommand } from "remoteclaw/plugin-sdk/plugin-runtime";
+import {
+  resolveOutboundMediaUrls,
+  resolveTextChunksWithFallback,
+} from "remoteclaw/plugin-sdk/reply-payload";
+import { resolveChunkMode, resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
 import type {
   ChatCommandDefinition,
   CommandArgDefinition,
@@ -1042,7 +1047,7 @@ async function deliverDiscordInteractionReply(params: {
   chunkMode: "length" | "newline";
 }) {
   const { interaction, payload, textLimit, maxLinesPerMessage, preferFollowUp, chunkMode } = params;
-  const mediaList = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
+  const mediaList = resolveOutboundMediaUrls(payload);
   const text = payload.text ?? "";
 
   let hasReplied = false;
@@ -1083,14 +1088,14 @@ async function deliverDiscordInteractionReply(params: {
         };
       }),
     );
-    const chunks = chunkDiscordTextWithMode(text, {
-      maxChars: textLimit,
-      maxLines: maxLinesPerMessage,
-      chunkMode,
-    });
-    if (!chunks.length && text) {
-      chunks.push(text);
-    }
+    const chunks = resolveTextChunksWithFallback(
+      text,
+      chunkDiscordTextWithMode(text, {
+        maxChars: textLimit,
+        maxLines: maxLinesPerMessage,
+        chunkMode,
+      }),
+    );
     const caption = chunks[0] ?? "";
     await sendMessage(caption, media);
     for (const chunk of chunks.slice(1)) {
@@ -1105,14 +1110,17 @@ async function deliverDiscordInteractionReply(params: {
   if (!text.trim()) {
     return;
   }
-  const chunks = chunkDiscordTextWithMode(text, {
-    maxChars: textLimit,
-    maxLines: maxLinesPerMessage,
-    chunkMode,
-  });
-  if (!chunks.length && text) {
-    chunks.push(text);
-  }
+  const chunks =
+    text || firstMessageComponents
+      ? resolveTextChunksWithFallback(
+          text,
+          chunkDiscordTextWithMode(text, {
+            maxChars: textLimit,
+            maxLines: maxLinesPerMessage,
+            chunkMode,
+          }),
+        )
+      : [];
   for (const chunk of chunks) {
     if (!chunk.trim()) {
       continue;

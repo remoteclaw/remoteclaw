@@ -1,4 +1,5 @@
 import * as channelRuntimeSdk from "remoteclaw/plugin-sdk/channel-runtime";
+import * as channelSendResultSdk from "remoteclaw/plugin-sdk/channel-send-result";
 import * as compatSdk from "remoteclaw/plugin-sdk/compat";
 import * as coreSdk from "remoteclaw/plugin-sdk/core";
 import type {
@@ -16,6 +17,7 @@ import * as msteamsSdk from "remoteclaw/plugin-sdk/msteams";
 import * as nostrSdk from "remoteclaw/plugin-sdk/nostr";
 import * as ollamaSetupSdk from "remoteclaw/plugin-sdk/ollama-setup";
 import * as providerSetupSdk from "remoteclaw/plugin-sdk/provider-setup";
+import * as replyPayloadSdk from "remoteclaw/plugin-sdk/reply-payload";
 import * as routingSdk from "remoteclaw/plugin-sdk/routing";
 import * as runtimeSdk from "remoteclaw/plugin-sdk/runtime";
 import * as sandboxSdk from "remoteclaw/plugin-sdk/sandbox";
@@ -93,6 +95,16 @@ describe("plugin-sdk subpath exports", () => {
     expect(typeof routingSdk.resolveThreadSessionKeys).toBe("function");
   });
 
+  it("exports reply payload helpers from the dedicated subpath", () => {
+    expect(typeof replyPayloadSdk.deliverFormattedTextWithAttachments).toBe("function");
+    expect(typeof replyPayloadSdk.deliverTextOrMediaReply).toBe("function");
+    expect(typeof replyPayloadSdk.formatTextWithAttachmentLinks).toBe("function");
+    expect(typeof replyPayloadSdk.resolveOutboundMediaUrls).toBe("function");
+    expect(typeof replyPayloadSdk.resolveTextChunksWithFallback).toBe("function");
+    expect(typeof replyPayloadSdk.sendMediaWithLeadingCaption).toBe("function");
+    expect(typeof replyPayloadSdk.sendPayloadWithChunkedTextAndMedia).toBe("function");
+  });
+
   it("exports account helper builders from the dedicated subpath", () => {
     expect(typeof accountHelpersSdk.createAccountListHelpers).toBe("function");
   });
@@ -122,15 +134,34 @@ describe("plugin-sdk subpath exports", () => {
   });
 
   it("exports channel runtime helpers from the dedicated subpath", () => {
+    expect(typeof channelRuntimeSdk.attachChannelToResult).toBe("function");
+    expect(typeof channelRuntimeSdk.attachChannelToResults).toBe("function");
     expect(typeof channelRuntimeSdk.buildUnresolvedTargetResults).toBe("function");
+    expect(typeof channelRuntimeSdk.createAttachedChannelResultAdapter).toBe("function");
     expect(typeof channelRuntimeSdk.createChannelDirectoryAdapter).toBe("function");
+    expect(typeof channelRuntimeSdk.createEmptyChannelResult).toBe("function");
     expect(typeof channelRuntimeSdk.createEmptyChannelDirectoryAdapter).toBe("function");
+    expect(typeof channelRuntimeSdk.createRawChannelSendResultAdapter).toBe("function");
     expect(typeof channelRuntimeSdk.createLoggedPairingApprovalNotifier).toBe("function");
     expect(typeof channelRuntimeSdk.createPairingPrefixStripper).toBe("function");
+    expect(typeof channelRuntimeSdk.createScopedAccountReplyToModeResolver).toBe("function");
+    expect(typeof channelRuntimeSdk.createStaticReplyToModeResolver).toBe("function");
+    expect(typeof channelRuntimeSdk.createTopLevelChannelReplyToModeResolver).toBe("function");
     expect(typeof channelRuntimeSdk.createRuntimeDirectoryLiveAdapter).toBe("function");
     expect(typeof channelRuntimeSdk.createRuntimeOutboundDelegates).toBe("function");
+    expect(typeof channelRuntimeSdk.sendPayloadMediaSequenceAndFinalize).toBe("function");
+    expect(typeof channelRuntimeSdk.sendPayloadMediaSequenceOrFallback).toBe("function");
     expect(typeof channelRuntimeSdk.resolveTargetsWithOptionalToken).toBe("function");
     expect(typeof channelRuntimeSdk.createTextPairingAdapter).toBe("function");
+  });
+
+  it("exports channel send-result helpers from the dedicated subpath", () => {
+    expect(typeof channelSendResultSdk.attachChannelToResult).toBe("function");
+    expect(typeof channelSendResultSdk.attachChannelToResults).toBe("function");
+    expect(typeof channelSendResultSdk.buildChannelSendResult).toBe("function");
+    expect(typeof channelSendResultSdk.createAttachedChannelResultAdapter).toBe("function");
+    expect(typeof channelSendResultSdk.createEmptyChannelResult).toBe("function");
+    expect(typeof channelSendResultSdk.createRawChannelSendResultAdapter).toBe("function");
   });
 
   it("exports provider setup helpers from the dedicated subpath", () => {

@@ -11,6 +11,7 @@ import {
 import { normalizeReplyPayloadsForDelivery } from "../../infra/outbound/payloads.js";
 import { buildOutboundSessionContext } from "../../infra/outbound/session-context.js";
 import { resolveOutboundTarget } from "../../infra/outbound/targets.js";
+import { resolveOutboundMediaUrls } from "../../plugin-sdk/reply-payload.js";
 import { normalizePollInput } from "../../polls.js";
 import {
   ErrorCodes,
@@ -201,8 +202,8 @@ export const sendHandlers: GatewayRequestHandlers = {
           .map((payload) => payload.text)
           .filter(Boolean)
           .join("\n");
-        const mirrorMediaUrls = mirrorPayloads.flatMap(
-          (payload) => payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []),
+        const mirrorMediaUrls = mirrorPayloads.flatMap((payload) =>
+          resolveOutboundMediaUrls(payload),
         );
         const providedSessionKey =
           typeof request.sessionKey === "string" && request.sessionKey.trim()

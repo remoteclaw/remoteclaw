@@ -17,6 +17,7 @@ import {
   normalizePollInput,
   type PollInput,
 } from "remoteclaw/plugin-sdk/media-runtime";
+import { resolveTextChunksWithFallback } from "remoteclaw/plugin-sdk/reply-payload";
 import type { ChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
 import { loadWebMedia } from "remoteclaw/plugin-sdk/web-media";
 import { resolveDiscordAccount } from "./accounts.js";
@@ -276,10 +277,7 @@ export function buildDiscordTextChunks(
     maxLines: opts.maxLinesPerMessage,
     chunkMode: opts.chunkMode,
   });
-  if (!chunks.length && text) {
-    chunks.push(text);
-  }
-  return chunks;
+  return resolveTextChunksWithFallback(text, chunks);
 }
 
 function hasV2Components(components?: TopLevelComponents[]): boolean {

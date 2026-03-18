@@ -1,10 +1,12 @@
-import type { ChunkMode } from "../../auto-reply/chunk.js";
-import { chunkMarkdownTextWithMode } from "../../auto-reply/chunk.js";
-import { createReplyReferencePlanner } from "../../auto-reply/reply/reply-reference.js";
-import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
-import type { ReplyPayload } from "../../auto-reply/types.js";
-import type { MarkdownTableMode } from "../../config/types.base.js";
-import type { RuntimeEnv } from "../../runtime.js";
+import type { MarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { deliverTextOrMediaReply } from "remoteclaw/plugin-sdk/reply-payload";
+import type { ChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
+import { chunkMarkdownTextWithMode } from "remoteclaw/plugin-sdk/reply-runtime";
+import { createReplyReferencePlanner } from "remoteclaw/plugin-sdk/reply-runtime";
+import { isSilentReplyText, SILENT_REPLY_TOKEN } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import { parseSlackBlocksInput } from "../blocks-input.js";
 import { markdownToSlackMrkdwnChunks } from "../format.js";
 import { sendMessageSlack, type SlackSendIdentity } from "../send.js";
 
@@ -30,7 +32,7 @@ export async function deliverReplies(params: {
       continue;
     }
 
-    if (mediaList.length === 0) {
+    if (mediaList.length === 0 && slackBlocks?.length) {
       const trimmed = text.trim();
       if (!trimmed || isSilentReplyText(trimmed, SILENT_REPLY_TOKEN)) {
         continue;
@@ -41,21 +43,44 @@ export async function deliverReplies(params: {
         accountId: params.accountId,
         ...(params.identity ? { identity: params.identity } : {}),
       });
-    } else {
-      let first = true;
-      for (const mediaUrl of mediaList) {
-        const caption = first ? text : "";
-        first = false;
-        await sendMessageSlack(params.target, caption, {
+      params.runtime.log?.(`delivered reply to ${params.target}`);
+      continue;
+    }
+
+    const delivered = await deliverTextOrMediaReply({
+      payload,
+      text,
+      chunkText:
+        mediaList.length === 0
+          ? (value) => {
+              const trimmed = value.trim();
+              if (!trimmed || isSilentReplyText(trimmed, SILENT_REPLY_TOKEN)) {
+                return [];
+              }
+              return [trimmed];
+            }
+          : undefined,
+      sendText: async (trimmed) => {
+        await sendMessageSlack(params.target, trimmed, {
+          token: params.token,
+          threadTs,
+          accountId: params.accountId,
+          ...(params.identity ? { identity: params.identity } : {}),
+        });
+      },
+      sendMedia: async ({ mediaUrl, caption }) => {
+        await sendMessageSlack(params.target, caption ?? "", {
           token: params.token,
           mediaUrl,
           threadTs,
           accountId: params.accountId,
           ...(params.identity ? { identity: params.identity } : {}),
         });
-      }
+      },
+    });
+    if (delivered !== "empty") {
+      params.runtime.log?.(`delivered reply to ${params.target}`);
     }
-    params.runtime.log?.(`delivered reply to ${params.target}`);
   }
 }
 

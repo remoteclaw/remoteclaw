@@ -9,7 +9,12 @@ import {
   buildOpenGroupPolicyWarning,
   createOpenProviderGroupPolicyWarningCollector,
 } from "remoteclaw/plugin-sdk/channel-policy";
-import { createChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
+import {
+  createChannelDirectoryAdapter,
+  createEmptyChannelResult,
+  createRawChannelSendResultAdapter,
+  createStaticReplyToModeResolver,
+} from "remoteclaw/plugin-sdk/channel-runtime";
 import { listResolvedDirectoryUserEntriesFromAllowFrom } from "remoteclaw/plugin-sdk/directory-runtime";
 import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
@@ -24,7 +29,6 @@ import {
   buildBaseAccountStatusSnapshot,
   buildChannelConfigSchema,
   buildTokenChannelStatusSummary,
-  buildChannelSendResult,
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   chunkTextForOutbound,
@@ -161,7 +165,7 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
     resolveRequireMention: () => true,
   },
   threading: {
-    resolveReplyToMode: () => "off",
+    resolveReplyToMode: createStaticReplyToModeResolver("off"),
   },
   actions: zaloMessageActions,
   messaging: {
@@ -204,23 +208,30 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
         chunker: zaloPlugin.outbound!.chunker,
         sendText: (nextCtx) => zaloPlugin.outbound!.sendText!(nextCtx),
         sendMedia: (nextCtx) => zaloPlugin.outbound!.sendMedia!(nextCtx),
-        emptyResult: { channel: "zalo", messageId: "" },
+        emptyResult: createEmptyChannelResult("zalo"),
       }),
-    sendText: async ({ to, text, accountId, cfg }) => {
-      const result = await sendMessageZalo(to, text, {
-        accountId: accountId ?? undefined,
-        cfg: cfg,
-      });
-      return buildChannelSendResult("zalo", result);
-    },
-    sendMedia: async ({ to, text, mediaUrl, accountId, cfg }) => {
-      const result = await sendMessageZalo(to, text, {
-        accountId: accountId ?? undefined,
-        mediaUrl,
-        cfg: cfg,
-      });
-      return buildChannelSendResult("zalo", result);
-    },
+    ...createRawChannelSendResultAdapter({
+      channel: "zalo",
+      sendText: async ({ to, text, accountId, cfg }) =>
+        await (
+          await loadZaloChannelRuntime()
+        ).sendZaloText({
+          to,
+          text,
+          accountId: accountId ?? undefined,
+          cfg: cfg,
+        }),
+      sendMedia: async ({ to, text, mediaUrl, accountId, cfg }) =>
+        await (
+          await loadZaloChannelRuntime()
+        ).sendZaloText({
+          to,
+          text,
+          accountId: accountId ?? undefined,
+          mediaUrl,
+          cfg: cfg,
+        }),
+    }),
   },
   status: {
     defaultRuntime: {

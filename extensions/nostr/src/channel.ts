@@ -2,6 +2,11 @@ import {
   createScopedDmSecurityResolver,
   createTopLevelChannelConfigAdapter,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { attachChannelToResult } from "remoteclaw/plugin-sdk/channel-send-result";
+import {
+  buildPassiveChannelStatusSummary,
+  buildTrafficStatusSummary,
+} from "../../shared/channel-status-summary.js";
 import {
   buildChannelConfigSchema,
   collectStatusIssuesFromLastError,
@@ -182,11 +187,10 @@ export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
       const message = core.channel.text.convertMarkdownTables(text ?? "", tableMode);
       const normalizedTo = normalizePubkey(to);
       await bus.sendDm(normalizedTo, message);
-      return {
-        channel: "nostr" as const,
+      return attachChannelToResult("nostr", {
         to: normalizedTo,
         messageId: `nostr-${Date.now()}`,
-      };
+      });
     },
   },
 

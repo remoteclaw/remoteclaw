@@ -1,9 +1,12 @@
 import { buildDmGroupAccountAllowlistAdapter } from "remoteclaw/plugin-sdk/allowlist-config-edit";
 import {
+  attachChannelToResult,
+  createAttachedChannelResultAdapter,
   createPairingPrefixStripper,
   createTextPairingAdapter,
   resolveOutboundSendDep,
 } from "remoteclaw/plugin-sdk/channel-runtime";
+import { attachChannelToResults } from "remoteclaw/plugin-sdk/channel-send-result";
 import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
 import { buildOutboundBaseSessionKey } from "remoteclaw/plugin-sdk/core";
 import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
@@ -126,6 +129,195 @@ async function sendSignalOutbound(params: {
   });
 }
 
+function inferSignalTargetChatType(rawTo: string) {
+  let to = rawTo.trim();
+  if (!to) {
+    return undefined;
+  }
+  if (/^signal:/i.test(to)) {
+    to = to.replace(/^signal:/i, "").trim();
+  }
+  if (!to) {
+    return undefined;
+  }
+  const lower = to.toLowerCase();
+  if (lower.startsWith("group:")) {
+    return "group" as const;
+  }
+  if (lower.startsWith("username:") || lower.startsWith("u:")) {
+    return "direct" as const;
+  }
+  return "direct" as const;
+}
+
+function parseSignalExplicitTarget(raw: string) {
+  const normalized = normalizeSignalMessagingTarget(raw);
+  if (!normalized) {
+    return null;
+  }
+  return {
+    to: normalized,
+    chatType: inferSignalTargetChatType(normalized),
+  };
+}
+
+function buildSignalBaseSessionKey(params: {
+  cfg: Parameters<typeof resolveSignalAccount>[0]["cfg"];
+  agentId: string;
+  accountId?: string | null;
+  peer: RoutePeer;
+}) {
+  return buildOutboundBaseSessionKey({ ...params, channel: "signal" });
+}
+
+function resolveSignalOutboundSessionRoute(params: {
+  cfg: Parameters<typeof resolveSignalAccount>[0]["cfg"];
+  agentId: string;
+  accountId?: string | null;
+  target: string;
+}) {
+  const stripped = params.target.replace(/^signal:/i, "").trim();
+  const lowered = stripped.toLowerCase();
+  if (lowered.startsWith("group:")) {
+    const groupId = stripped.slice("group:".length).trim();
+    if (!groupId) {
+      return null;
+    }
+    const peer: RoutePeer = { kind: "group", id: groupId };
+    const baseSessionKey = buildSignalBaseSessionKey({
+      cfg: params.cfg,
+      agentId: params.agentId,
+      accountId: params.accountId,
+      peer,
+    });
+    return {
+      sessionKey: baseSessionKey,
+      baseSessionKey,
+      peer,
+      chatType: "group" as const,
+      from: `group:${groupId}`,
+      to: `group:${groupId}`,
+    };
+  }
+
+  let recipient = stripped.trim();
+  if (lowered.startsWith("username:")) {
+    recipient = stripped.slice("username:".length).trim();
+  } else if (lowered.startsWith("u:")) {
+    recipient = stripped.slice("u:".length).trim();
+  }
+  if (!recipient) {
+    return null;
+  }
+
+  const uuidCandidate = recipient.toLowerCase().startsWith("uuid:")
+    ? recipient.slice("uuid:".length)
+    : recipient;
+  const sender = resolveSignalSender({
+    sourceUuid: looksLikeUuid(uuidCandidate) ? uuidCandidate : null,
+    sourceNumber: looksLikeUuid(uuidCandidate) ? null : recipient,
+  });
+  const peerId = sender ? resolveSignalPeerId(sender) : recipient;
+  const displayRecipient = sender ? resolveSignalRecipient(sender) : recipient;
+  const peer: RoutePeer = { kind: "direct", id: peerId };
+  const baseSessionKey = buildSignalBaseSessionKey({
+    cfg: params.cfg,
+    agentId: params.agentId,
+    accountId: params.accountId,
+    peer,
+  });
+  return {
+    sessionKey: baseSessionKey,
+    baseSessionKey,
+    peer,
+    chatType: "direct" as const,
+    from: `signal:${displayRecipient}`,
+    to: `signal:${displayRecipient}`,
+  };
+}
+
+async function sendFormattedSignalText(ctx: {
+  cfg: Parameters<typeof resolveSignalAccount>[0]["cfg"];
+  to: string;
+  text: string;
+  accountId?: string | null;
+  deps?: { [channelId: string]: unknown };
+  abortSignal?: AbortSignal;
+}) {
+  const { send, maxBytes } = resolveSignalSendContext({
+    cfg: ctx.cfg,
+    accountId: ctx.accountId ?? undefined,
+    deps: ctx.deps,
+  });
+  const limit = resolveTextChunkLimit(ctx.cfg, "signal", ctx.accountId ?? undefined, {
+    fallbackLimit: 4000,
+  });
+  const tableMode = resolveMarkdownTableMode({
+    cfg: ctx.cfg,
+    channel: "signal",
+    accountId: ctx.accountId ?? undefined,
+  });
+  let chunks =
+    limit === undefined
+      ? markdownToSignalTextChunks(ctx.text, Number.POSITIVE_INFINITY, { tableMode })
+      : markdownToSignalTextChunks(ctx.text, limit, { tableMode });
+  if (chunks.length === 0 && ctx.text) {
+    chunks = [{ text: ctx.text, styles: [] }];
+  }
+  const results = [];
+  for (const chunk of chunks) {
+    ctx.abortSignal?.throwIfAborted();
+    const result = await send(ctx.to, chunk.text, {
+      cfg: ctx.cfg,
+      maxBytes,
+      accountId: ctx.accountId ?? undefined,
+      textMode: "plain",
+      textStyles: chunk.styles,
+    });
+    results.push(result);
+  }
+  return attachChannelToResults("signal", results);
+}
+
+async function sendFormattedSignalMedia(ctx: {
+  cfg: Parameters<typeof resolveSignalAccount>[0]["cfg"];
+  to: string;
+  text: string;
+  mediaUrl: string;
+  mediaLocalRoots?: readonly string[];
+  accountId?: string | null;
+  deps?: { [channelId: string]: unknown };
+  abortSignal?: AbortSignal;
+}) {
+  ctx.abortSignal?.throwIfAborted();
+  const { send, maxBytes } = resolveSignalSendContext({
+    cfg: ctx.cfg,
+    accountId: ctx.accountId ?? undefined,
+    deps: ctx.deps,
+  });
+  const tableMode = resolveMarkdownTableMode({
+    cfg: ctx.cfg,
+    channel: "signal",
+    accountId: ctx.accountId ?? undefined,
+  });
+  const formatted = markdownToSignalTextChunks(ctx.text, Number.POSITIVE_INFINITY, {
+    tableMode,
+  })[0] ?? {
+    text: ctx.text,
+    styles: [],
+  };
+  const result = await send(ctx.to, formatted.text, {
+    cfg: ctx.cfg,
+    mediaUrl: ctx.mediaUrl,
+    mediaLocalRoots: ctx.mediaLocalRoots,
+    maxBytes,
+    accountId: ctx.accountId ?? undefined,
+    textMode: "plain",
+    textStyles: formatted.styles,
+  });
+  return attachChannelToResult("signal", result);
+}
+
 export const signalPlugin: ChannelPlugin<ResolvedSignalAccount> = {
   ...createSignalPluginBase({
     setupWizard: signalSetupWizard,
@@ -209,75 +401,30 @@ export const signalPlugin: ChannelPlugin<ResolvedSignalAccount> = {
         cfg,
         channelKey: "signal",
         accountId,
-        name: input.name,
-      });
-      const next =
-        accountId !== DEFAULT_ACCOUNT_ID
-          ? migrateBaseNameToDefaultAccount({
-              cfg: namedConfig,
-              channelKey: "signal",
-            })
-          : namedConfig;
-      if (accountId === DEFAULT_ACCOUNT_ID) {
-        return {
-          ...next,
-          channels: {
-            ...next.channels,
-            signal: {
-              ...next.channels?.signal,
-              enabled: true,
-              ...buildSignalSetupPatch(input),
-            },
-          },
-        };
-      }
-      return {
-        ...next,
-        channels: {
-          ...next.channels,
-          signal: {
-            ...next.channels?.signal,
-            enabled: true,
-            accounts: {
-              ...next.channels?.signal?.accounts,
-              [accountId]: {
-                ...next.channels?.signal?.accounts?.[accountId],
-                enabled: true,
-                ...buildSignalSetupPatch(input),
-              },
-            },
-          },
-        },
-      };
-    },
-  },
-  outbound: {
-    deliveryMode: "direct",
-    chunker: (text, limit) => getSignalRuntime().channel.text.chunkText(text, limit),
-    chunkerMode: "text",
-    textChunkLimit: 4000,
-    sendText: async ({ cfg, to, text, accountId, deps }) => {
-      const result = await sendSignalOutbound({
-        cfg,
-        to,
-        text,
-        accountId: accountId ?? undefined,
         deps,
-      });
-      return { channel: "signal", ...result };
-    },
-    sendMedia: async ({ cfg, to, text, mediaUrl, mediaLocalRoots, accountId, deps }) => {
-      const result = await sendSignalOutbound({
-        cfg,
-        to,
-        text,
-        mediaUrl,
-        mediaLocalRoots,
-        accountId: accountId ?? undefined,
-        deps,
-      });
-      return { channel: "signal", ...result };
-    },
+        abortSignal,
+      }),
+    ...createAttachedChannelResultAdapter({
+      channel: "signal",
+      sendText: async ({ cfg, to, text, accountId, deps }) =>
+        await sendSignalOutbound({
+          cfg,
+          to,
+          text,
+          accountId: accountId ?? undefined,
+          deps,
+        }),
+      sendMedia: async ({ cfg, to, text, mediaUrl, mediaLocalRoots, accountId, deps }) =>
+        await sendSignalOutbound({
+          cfg,
+          to,
+          text,
+          mediaUrl,
+          mediaLocalRoots,
+          accountId: accountId ?? undefined,
+          deps,
+        }),
+    }),
   },
   status: {
     defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID),

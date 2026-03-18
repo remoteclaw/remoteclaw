@@ -1,46 +1,52 @@
-import { bluebubblesPlugin } from "../../../extensions/bluebubbles/src/channel.js";
-import { discordPlugin } from "../../../extensions/discord/src/channel.js";
-import { feishuPlugin } from "../../../extensions/feishu/src/channel.js";
-import { googlechatPlugin } from "../../../extensions/googlechat/src/channel.js";
-import { imessagePlugin } from "../../../extensions/imessage/src/channel.js";
-import { ircPlugin } from "../../../extensions/irc/src/channel.js";
-import { linePlugin } from "../../../extensions/line/src/channel.js";
-import { matrixPlugin } from "../../../extensions/matrix/src/channel.js";
-import { mattermostPlugin } from "../../../extensions/mattermost/src/channel.js";
-import { msteamsPlugin } from "../../../extensions/msteams/src/channel.js";
-import { nextcloudTalkPlugin } from "../../../extensions/nextcloud-talk/src/channel.js";
-import { nostrPlugin } from "../../../extensions/nostr/src/channel.js";
-import { signalPlugin } from "../../../extensions/signal/src/channel.js";
-import { slackPlugin } from "../../../extensions/slack/src/channel.js";
-import { synologyChatPlugin } from "../../../extensions/synology-chat/src/channel.js";
-import { telegramPlugin } from "../../../extensions/telegram/src/channel.js";
-import { tlonPlugin } from "../../../extensions/tlon/src/channel.js";
-import { whatsappPlugin } from "../../../extensions/whatsapp/src/channel.js";
-import { zaloPlugin } from "../../../extensions/zalo/src/channel.js";
-import { zalouserPlugin } from "../../../extensions/zalouser/src/channel.js";
+import { bluebubblesPlugin } from "../../../extensions/bluebubbles/index.js";
+import { discordPlugin, setDiscordRuntime } from "../../../extensions/discord/index.js";
+import { discordSetupPlugin } from "../../../extensions/discord/setup-entry.js";
+import { feishuPlugin } from "../../../extensions/feishu/index.js";
+import { imessagePlugin } from "../../../extensions/imessage/index.js";
+import { imessageSetupPlugin } from "../../../extensions/imessage/setup-entry.js";
+import { ircPlugin } from "../../../extensions/irc/index.js";
+import { linePlugin, setLineRuntime } from "../../../extensions/line/index.js";
+import { lineSetupPlugin } from "../../../extensions/line/setup-entry.js";
+import { mattermostPlugin } from "../../../extensions/mattermost/index.js";
+import { nextcloudTalkPlugin } from "../../../extensions/nextcloud-talk/index.js";
+import { signalPlugin } from "../../../extensions/signal/index.js";
+import { signalSetupPlugin } from "../../../extensions/signal/setup-entry.js";
+import { slackPlugin } from "../../../extensions/slack/index.js";
+import { slackSetupPlugin } from "../../../extensions/slack/setup-entry.js";
+import { synologyChatPlugin } from "../../../extensions/synology-chat/index.js";
+import { telegramPlugin, setTelegramRuntime } from "../../../extensions/telegram/index.js";
+import { telegramSetupPlugin } from "../../../extensions/telegram/setup-entry.js";
+import { whatsappPlugin } from "../../../extensions/whatsapp/index.js";
+import { whatsappSetupPlugin } from "../../../extensions/whatsapp/setup-entry.js";
+import { zaloPlugin } from "../../../extensions/zalo/index.js";
 import type { ChannelId, ChannelPlugin } from "./types.js";
 
 export const bundledChannelPlugins = [
   bluebubblesPlugin,
   discordPlugin,
   feishuPlugin,
-  googlechatPlugin,
   imessagePlugin,
   ircPlugin,
   linePlugin,
-  matrixPlugin,
   mattermostPlugin,
-  msteamsPlugin,
   nextcloudTalkPlugin,
-  nostrPlugin,
   signalPlugin,
   slackPlugin,
   synologyChatPlugin,
   telegramPlugin,
-  tlonPlugin,
   whatsappPlugin,
   zaloPlugin,
-  zalouserPlugin,
+] as ChannelPlugin[];
+
+export const bundledChannelSetupPlugins = [
+  telegramSetupPlugin,
+  whatsappSetupPlugin,
+  discordSetupPlugin,
+  ircPlugin,
+  slackSetupPlugin,
+  signalSetupPlugin,
+  imessageSetupPlugin,
+  lineSetupPlugin,
 ] as ChannelPlugin[];
 
 const bundledChannelPluginsById = new Map(
@@ -58,3 +64,9 @@ export function requireBundledChannelPlugin(id: ChannelId): ChannelPlugin {
   }
   return plugin;
 }
+
+export const bundledChannelRuntimeSetters = {
+  setDiscordRuntime,
+  setLineRuntime,
+  setTelegramRuntime,
+};

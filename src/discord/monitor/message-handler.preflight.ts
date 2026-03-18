@@ -489,11 +489,13 @@ export async function preflightDiscordMessage(
   const hasAudioAttachment = message.attachments?.some((att: { content_type?: string }) =>
     att.content_type?.startsWith("audio/"),
   );
+  const hasTypedText = Boolean(message.content?.trim());
   const needsPreflightTranscription =
     !isDirectMessage &&
     shouldRequireMention &&
     hasAudioAttachment &&
-    !baseText &&
+    // `baseText` includes media placeholders; gate on typed text only.
+    !hasTypedText &&
     mentionRegexes.length > 0;
 
   if (needsPreflightTranscription) {
@@ -526,10 +528,11 @@ export async function preflightDiscordMessage(
     }
   }
 
+  const mentionText = hasTypedText ? baseText : "";
   const wasMentioned =
     !isDirectMessage &&
     matchesMentionWithExplicit({
-      text: baseText,
+      text: mentionText,
       mentionRegexes,
       explicit: {
         hasAnyMention,

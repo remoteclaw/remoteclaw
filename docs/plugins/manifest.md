@@ -14,6 +14,8 @@ code**. Missing or invalid manifests are treated as plugin errors and block
 config validation.
 
 See the full plugin system guide: [Plugins](/tools/plugin).
+For the native capability model and current external-compatibility guidance:
+[Capability model](/tools/plugin#public-capability-model).
 
 ## Required fields
 

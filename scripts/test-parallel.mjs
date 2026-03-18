@@ -232,6 +232,35 @@ const silentArgs =
 const rawPassthroughArgs = process.argv.slice(2);
 const passthroughArgs =
   rawPassthroughArgs[0] === "--" ? rawPassthroughArgs.slice(1) : rawPassthroughArgs;
+const parsePassthroughArgs = (args) => {
+  const fileFilters = [];
+  const optionArgs = [];
+  let consumeNextAsOptionValue = false;
+
+  for (const arg of args) {
+    if (consumeNextAsOptionValue) {
+      optionArgs.push(arg);
+      consumeNextAsOptionValue = false;
+      continue;
+    }
+    if (arg === "--") {
+      optionArgs.push(arg);
+      continue;
+    }
+    if (arg.startsWith("-")) {
+      optionArgs.push(arg);
+      consumeNextAsOptionValue = !arg.includes("=") && OPTION_TAKES_VALUE.has(arg);
+      continue;
+    }
+    fileFilters.push(arg);
+  }
+
+  return { fileFilters, optionArgs };
+};
+const countExplicitEntryFilters = (entryArgs) => {
+  const { fileFilters } = parsePassthroughArgs(entryArgs.slice(2));
+  return fileFilters.length > 0 ? fileFilters.length : null;
+};
 const topLevelParallelEnabled = testProfile !== "low" && testProfile !== "serial";
 const overrideWorkers = Number.parseInt(process.env.REMOTECLAW_TEST_WORKERS ?? "", 10);
 const resolvedOverride =
@@ -401,15 +430,27 @@ const runOnce = (entry, extraArgs = []) =>
   });
 
 const run = async (entry) => {
-  if (shardCount <= 1) {
+  const explicitFilterCount = countExplicitEntryFilters(entry.args);
+  // Wrapper-generated singleton/small-file lanes should not ask Vitest to shard
+  // into more buckets than there are explicit test filters.
+  const effectiveShardCount =
+    explicitFilterCount === null ? shardCount : Math.min(shardCount, explicitFilterCount);
+
+  if (effectiveShardCount <= 1) {
+    if (shardIndexOverride !== null && shardIndexOverride > effectiveShardCount) {
+      return 0;
+    }
     return runOnce(entry);
   }
   if (shardIndexOverride !== null) {
-    return runOnce(entry, ["--shard", `${shardIndexOverride}/${shardCount}`]);
+    if (shardIndexOverride > effectiveShardCount) {
+      return 0;
+    }
+    return runOnce(entry, ["--shard", `${shardIndexOverride}/${effectiveShardCount}`]);
   }
-  for (let shardIndex = 1; shardIndex <= shardCount; shardIndex += 1) {
+  for (let shardIndex = 1; shardIndex <= effectiveShardCount; shardIndex += 1) {
     // eslint-disable-next-line no-await-in-loop
-    const code = await runOnce(entry, ["--shard", `${shardIndex}/${shardCount}`]);
+    const code = await runOnce(entry, ["--shard", `${shardIndex}/${effectiveShardCount}`]);
     if (code !== 0) {
       return code;
     }

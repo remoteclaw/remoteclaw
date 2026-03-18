@@ -3,7 +3,7 @@ import {
   resolveChannelGroupToolsPolicy,
   type GroupToolPolicyConfig,
 } from "remoteclaw/plugin-sdk/channel-policy";
-import type { RemoteClawConfig } from "./runtime-api.js";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/whatsapp-core";
 
 type WhatsAppGroupContext = {
   cfg: RemoteClawConfig;

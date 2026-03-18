@@ -10,8 +10,6 @@ import {
   resolveWhatsAppConfigAllowFrom,
   resolveWhatsAppConfigDefaultTo,
   resolveWhatsAppGroupIntroHint,
-  resolveWhatsAppGroupRequireMention,
-  resolveWhatsAppGroupToolPolicy,
   WhatsAppConfigSchema,
   type ChannelPlugin,
 } from "remoteclaw/plugin-sdk/whatsapp";
@@ -21,6 +19,10 @@ import {
   resolveWhatsAppAccount,
   type ResolvedWhatsAppAccount,
 } from "./accounts.js";
+import {
+  resolveWhatsAppGroupRequireMention,
+  resolveWhatsAppGroupToolPolicy,
+} from "./group-policy.js";
 
 export const WHATSAPP_CHANNEL = "whatsapp" as const;
 

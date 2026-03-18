@@ -135,6 +135,10 @@ export type ChannelOutboundAdapter = {
   sendPayload?: (ctx: ChannelOutboundPayloadContext) => Promise<OutboundDeliveryResult>;
   sendText?: (ctx: ChannelOutboundContext) => Promise<OutboundDeliveryResult>;
   sendMedia?: (ctx: ChannelOutboundContext) => Promise<OutboundDeliveryResult>;
+  /**
+   * Shared outbound poll adapter for channels that fit the common poll model.
+   * Channels with extra poll semantics should prefer `actions.handleAction("poll")`.
+   */
   sendPoll?: (ctx: ChannelPollContext) => Promise<ChannelPollResult>;
 };
 

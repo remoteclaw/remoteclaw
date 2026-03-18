@@ -1,8 +1,8 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
+import { readDiscordComponentSpec } from "../components.js";
 import {
-  type ActionGate,
   assertMediaNotDataUrl,
+  type ActionGate,
   jsonResult,
   readNumberParam,
   readReactionParams,
@@ -12,8 +12,8 @@ import {
   type DiscordActionConfig,
   type RemoteClawConfig,
   withNormalizedTimestamp,
-} from "remoteclaw/plugin-sdk/discord-core";
-import { readDiscordComponentSpec } from "../components.js";
+  readBooleanParam,
+} from "../runtime-api.js";
 import {
   createThreadDiscord,
   deleteMessageDiscord,

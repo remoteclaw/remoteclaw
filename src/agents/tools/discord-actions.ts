@@ -1,6 +1,6 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { readStringParam, type RemoteClawConfig } from "remoteclaw/plugin-sdk/discord-core";
 import { createDiscordActionGate } from "../accounts.js";
+import { readStringParam, type RemoteClawConfig } from "../runtime-api.js";
 import { handleDiscordGuildAction } from "./runtime.guild.js";
 import { handleDiscordMessagingAction } from "./runtime.messaging.js";
 import { handleDiscordModerationAction } from "./runtime.moderation.js";

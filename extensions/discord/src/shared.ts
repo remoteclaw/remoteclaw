@@ -1,12 +1,5 @@
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
-import {
-  createScopedAccountConfigAccessors,
-  createScopedChannelConfigBase,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { buildChannelConfigSchema } from "../../../src/channels/plugins/config-schema.js";
-import type { ChannelPlugin } from "../../../src/channels/plugins/types.plugin.js";
-import { getChatChannelMeta } from "../../../src/channels/registry.js";
-import { DiscordConfigSchema } from "../../../src/config/zod-schema.providers-core.js";
+import { createChannelPluginBase } from "remoteclaw/plugin-sdk/core";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import {
   listDiscordAccountIds,
@@ -14,6 +7,14 @@ import {
   resolveDiscordAccount,
   type ResolvedDiscordAccount,
 } from "./accounts.js";
+import {
+  createScopedAccountConfigAccessors,
+  createScopedChannelConfigBase,
+  buildChannelConfigSchema,
+  DiscordConfigSchema,
+  getChatChannelMeta,
+  type ChannelPlugin,
+} from "./runtime-api.js";
 import { createDiscordSetupWizardProxy } from "./setup-core.js";
 
 export const DISCORD_CHANNEL = "discord" as const;
@@ -56,12 +57,10 @@ export function createDiscordPluginBase(params: {
   | "config"
   | "setup"
 > {
-  return {
+  return createChannelPluginBase({
     id: DISCORD_CHANNEL,
-    meta: {
-      ...getChatChannelMeta(DISCORD_CHANNEL),
-    },
     setupWizard: discordSetupWizard,
+    meta: { ...getChatChannelMeta(DISCORD_CHANNEL) },
     capabilities: {
       chatTypes: ["direct", "channel", "thread"],
       polls: true,
@@ -88,5 +87,16 @@ export function createDiscordPluginBase(params: {
       ...discordConfigAccessors,
     },
     setup: params.setup,
-  };
+  }) as Pick<
+    ChannelPlugin<ResolvedDiscordAccount>,
+    | "id"
+    | "meta"
+    | "setupWizard"
+    | "capabilities"
+    | "streaming"
+    | "reload"
+    | "configSchema"
+    | "config"
+    | "setup"
+  >;
 }

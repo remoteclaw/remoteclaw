@@ -1,5 +1,6 @@
+import { createAccountListHelpers } from "remoteclaw/plugin-sdk/account-helpers";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/zalo";
+import type { RemoteClawConfig } from "./runtime-api.js";
 import { resolveZaloToken } from "./token.js";
 import type { ResolvedZaloAccount, ZaloAccountConfig, ZaloConfig } from "./types.js";
 

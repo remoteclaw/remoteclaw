@@ -1,9 +1,6 @@
 import JSON5 from "json5";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import {
-  replaceSensitiveValuesInRaw,
-  shouldFallbackToStructuredRawRedaction,
-} from "./redact-snapshot.raw.js";
+import { replaceSensitiveValuesInRaw } from "./redact-snapshot.raw.js";
 import { isSecretRefShape, redactSecretRefId } from "./redact-snapshot.secret-ref.js";
 import { isSensitiveConfigPath, type ConfigUiHints } from "./schema.hints.js";
 import type { ConfigFileSnapshot } from "./types.remoteclaw.js";

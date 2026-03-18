@@ -116,11 +116,11 @@ describe("config backup rotation", () => {
 
   it("maintainConfigBackups composes rotate/copy/harden/prune flow", async () => {
     await withTempHome(async () => {
-      const stateDir = process.env.OPENCLAW_STATE_DIR?.trim();
+      const stateDir = process.env.REMOTECLAW_STATE_DIR?.trim();
       if (!stateDir) {
-        throw new Error("Expected OPENCLAW_STATE_DIR to be set by withTempHome");
+        throw new Error("Expected REMOTECLAW_STATE_DIR to be set by withTempHome");
       }
-      const configPath = path.join(stateDir, "openclaw.json");
+      const configPath = path.join(stateDir, "remoteclaw.json");
       await fs.writeFile(configPath, JSON.stringify({ token: "secret" }), { mode: 0o600 });
       await fs.writeFile(`${configPath}.bak`, "previous", { mode: 0o644 });
       await fs.writeFile(`${configPath}.bak.orphan`, "old");

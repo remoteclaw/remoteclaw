@@ -80,25 +80,12 @@ export function findBundledPluginSource(params: {
     if (source.npmSpec === targetValue) {
       return source;
     }
-    // Also match by plugin id so that e.g. `openclaw plugins install diffs`
-    // resolves to the bundled @openclaw/diffs plugin when the unscoped npm
-    // package `diffs` is not a valid OpenClaw plugin.
-    // See: https://github.com/openclaw/openclaw/issues/32019
-    if (source.pluginId === targetSpec) {
+    // Also match by plugin id so that e.g. `remoteclaw plugins install diffs`
+    // resolves to the bundled @remoteclaw/diffs plugin when the unscoped npm
+    // package `diffs` is not a valid RemoteClaw plugin.
+    if (source.pluginId === targetValue) {
       return source;
     }
   }
   return undefined;
-}
-
-export function findBundledPluginByPluginId(params: {
-  pluginId: string;
-  workspaceDir?: string;
-}): BundledPluginSource | undefined {
-  const targetPluginId = params.pluginId.trim();
-  if (!targetPluginId) {
-    return undefined;
-  }
-  const bundled = resolveBundledPluginSources({ workspaceDir: params.workspaceDir });
-  return bundled.get(targetPluginId);
 }

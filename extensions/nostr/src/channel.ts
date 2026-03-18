@@ -13,6 +13,13 @@ import type { MetricEvent, MetricsSnapshot } from "./metrics.js";
 import { normalizePubkey, startNostrBus, type NostrBusHandle } from "./nostr-bus.js";
 import type { ProfilePublishResult } from "./nostr-profile.js";
 import { getNostrRuntime } from "./runtime.js";
+<<<<<<< HEAD
+||||||| parent of de0285d8ea (Nostr: move outbound session routing behind plugin boundary)
+import { nostrSetupAdapter, nostrSetupWizard } from "./setup-surface.js";
+=======
+import { resolveNostrOutboundSessionRoute } from "./session-route.js";
+import { nostrSetupAdapter, nostrSetupWizard } from "./setup-surface.js";
+>>>>>>> de0285d8ea (Nostr: move outbound session routing behind plugin boundary)
 import {
   listNostrAccountIds,
   resolveDefaultNostrAccountId,
@@ -129,6 +136,7 @@ export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
       },
       hint: "<npub|hex pubkey|nostr:npub...>",
     },
+    resolveOutboundSessionRoute: (params) => resolveNostrOutboundSessionRoute(params),
   },
 
   outbound: {

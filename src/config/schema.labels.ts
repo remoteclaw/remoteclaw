@@ -123,6 +123,8 @@ export const FIELD_LABELS: Record<string, string> = {
   "tools.media.audio.timeoutSeconds": "Audio Transcription Timeout (sec)",
   "tools.media.audio.language": "Audio Transcription Language",
   "tools.media.audio.models": "Audio Transcription Models",
+  "tools.media.audio.echoTranscript": "Echo Transcript to Chat",
+  "tools.media.audio.echoFormat": "Transcript Echo Format",
   "tools.profile": "Tool Profile",
   "tools.alsoAllow": "Tool Allowlist Additions",
   "agents.list[].tools.profile": "Agent Tool Profile",

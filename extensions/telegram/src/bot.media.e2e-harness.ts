@@ -104,11 +104,7 @@ const apiStub: ApiStub = {
   setMyCommands: vi.fn(async () => undefined),
 };
 
-export const telegramBotRuntimeForTest: {
-  Bot: new (token: string) => unknown;
-  sequentialize: () => unknown;
-  apiThrottler: () => unknown;
-} = {
+export const telegramBotRuntimeForTest = {
   Bot: class {
     api = apiStub;
     use = middlewareUseSpy;
@@ -120,71 +116,14 @@ export const telegramBotRuntimeForTest: {
   },
   sequentialize: () => vi.fn(),
   apiThrottler: () => throttlerSpy(),
-};
-
-type MediaHarnessReplyFn = (
-  ctx: MsgContext,
-  opts?: GetReplyOptions,
-  configOverride?: OpenClawConfig,
-) => Promise<ReplyPayload | ReplyPayload[] | undefined>;
-
-const mediaHarnessReplySpy = vi.hoisted(() => vi.fn<MediaHarnessReplyFn>(async () => undefined));
-type DispatchReplyWithBufferedBlockDispatcherFn =
-  typeof import("openclaw/plugin-sdk/reply-runtime").dispatchReplyWithBufferedBlockDispatcher;
-type DispatchReplyHarnessParams = Parameters<DispatchReplyWithBufferedBlockDispatcherFn>[0];
-
-let actualDispatchReplyWithBufferedBlockDispatcherPromise:
-  | Promise<DispatchReplyWithBufferedBlockDispatcherFn>
-  | undefined;
-
-async function getActualDispatchReplyWithBufferedBlockDispatcher() {
-  actualDispatchReplyWithBufferedBlockDispatcherPromise ??= vi
-    .importActual<typeof import("openclaw/plugin-sdk/reply-runtime")>(
-      "openclaw/plugin-sdk/reply-runtime",
-    )
-    .then(
-      (module) =>
-        module.dispatchReplyWithBufferedBlockDispatcher as DispatchReplyWithBufferedBlockDispatcherFn,
-    );
-  return await actualDispatchReplyWithBufferedBlockDispatcherPromise;
-}
-
-async function dispatchReplyWithBufferedBlockDispatcherViaActual(
-  params: DispatchReplyHarnessParams,
-) {
-  const actualDispatchReplyWithBufferedBlockDispatcher =
-    await getActualDispatchReplyWithBufferedBlockDispatcher();
-  return await actualDispatchReplyWithBufferedBlockDispatcher({
-    ...params,
-    replyResolver: async (ctx, opts, configOverride) => {
-      await opts?.onReplyStart?.();
-      return await mediaHarnessReplySpy(ctx, opts, configOverride as OpenClawConfig | undefined);
-    },
-  });
-}
-
-const mediaHarnessDispatchReplyWithBufferedBlockDispatcher = vi.hoisted(() =>
-  vi.fn<DispatchReplyWithBufferedBlockDispatcherFn>(
-    dispatchReplyWithBufferedBlockDispatcherViaActual,
-  ),
-);
-export const telegramBotDepsForTest: TelegramBotDeps = {
   loadConfig: () => ({
     channels: { telegram: { dmPolicy: "open", allowFrom: ["*"] } },
   }),
-  resolveStorePath: vi.fn((storePath?: string) => storePath ?? "/tmp/telegram-media-sessions.json"),
-  readChannelAllowFromStore: vi.fn(async () => [] as string[]),
-  enqueueSystemEvent: vi.fn(),
-  dispatchReplyWithBufferedBlockDispatcher: mediaHarnessDispatchReplyWithBufferedBlockDispatcher,
-  listSkillCommandsForAgents: vi.fn(() => []),
-  wasSentByBot: vi.fn(() => false),
 };
 
 beforeEach(() => {
   resetInboundDedupe();
   resetSaveMediaBufferMock();
-  resetUndiciFetchMock();
-  resetFetchRemoteMediaMock();
 });
 
 const throttlerSpy = vi.fn(() => "throttler");
@@ -193,16 +132,7 @@ vi.doMock("./bot.runtime.js", () => ({
   ...telegramBotRuntimeForTest,
 }));
 
-vi.mock("@grammyjs/runner", () => ({
-  sequentialize: () => vi.fn(),
-}));
-
-const throttlerSpy = vi.fn(() => "throttler");
-vi.mock("@grammyjs/transformer-throttler", () => ({
-  apiThrottler: () => throttlerSpy(),
-}));
-
-vi.mock("undici", async (importOriginal) => {
+vi.doMock("undici", async (importOriginal) => {
   const actual = await importOriginal<typeof import("undici")>();
   return {
     ...actual,
@@ -210,8 +140,8 @@ vi.mock("undici", async (importOriginal) => {
   };
 });
 
-vi.mock("remoteclaw/plugin-sdk/media-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/media-runtime")>();
+vi.doMock("openclaw/plugin-sdk/media-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/media-runtime")>();
   const mockModule = Object.create(null) as Record<string, unknown>;
   Object.defineProperties(mockModule, Object.getOwnPropertyDescriptors(actual));
   Object.defineProperty(mockModule, "fetchRemoteMedia", {
@@ -229,45 +159,34 @@ vi.mock("remoteclaw/plugin-sdk/media-runtime", async (importOriginal) => {
   return mockModule;
 });
 
-vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
+vi.doMock("openclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
     loadConfig: () => ({
       agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: { telegram: { dmPolicy: "open", allowFrom: ["*"] } },
     }),
+  };
+});
+
+vi.doMock("openclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/config-runtime")>();
+  return {
+    ...actual,
     updateLastRoute: vi.fn(async () => undefined),
   };
 });
 
-vi.doMock("openclaw/plugin-sdk/agent-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/agent-runtime")>();
-  return {
-    ...actual,
-    findModelInCatalog: vi.fn(() => undefined),
-    loadModelCatalog: vi.fn(async () => []),
-    modelSupportsVision: vi.fn(() => false),
-    resolveDefaultModelForAgent: vi.fn(() => ({
-      provider: "openai",
-      model: "gpt-test",
-    })),
-  };
-});
+vi.doMock("openclaw/plugin-sdk/conversation-runtime", () => ({
+  readChannelAllowFromStore: vi.fn(async () => [] as string[]),
+  upsertChannelPairingRequest: vi.fn(async () => ({
+    code: "PAIRCODE",
+    created: true,
+  })),
+}));
 
-vi.doMock("openclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/conversation-runtime")>();
-  return {
-    ...actual,
-    readChannelAllowFromStore: vi.fn(async () => [] as string[]),
-    upsertChannelPairingRequest: vi.fn(async () => ({
-      code: "PAIRCODE",
-      created: true,
-    })),
-  };
-});
-
-vi.mock("remoteclaw/plugin-sdk/reply-runtime", () => {
+vi.doMock("openclaw/plugin-sdk/reply-runtime", () => {
   const replySpy = vi.fn(async (_ctx, opts) => {
     await opts?.onReplyStart?.();
     return undefined;

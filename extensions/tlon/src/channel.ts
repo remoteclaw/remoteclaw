@@ -1,5 +1,9 @@
 import { createHybridChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import type { ChannelAccountSnapshot, ChannelPlugin } from "remoteclaw/plugin-sdk/channel-runtime";
+import {
+  createRuntimeOutboundDelegates,
+  type ChannelAccountSnapshot,
+  type ChannelPlugin,
+} from "remoteclaw/plugin-sdk/channel-runtime";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
 import { tlonChannelConfigSchema } from "./config-schema.js";
@@ -206,6 +210,17 @@ export const tlonPlugin: ChannelPlugin = {
       looksLikeId: (target) => Boolean(parseTlonTarget(target)),
       hint: formatTargetHint(),
     },
+    resolveOutboundSessionRoute: (params) => resolveTlonOutboundSessionRoute(params),
+  },
+  outbound: {
+    deliveryMode: "direct",
+    textChunkLimit: 10000,
+    resolveTarget: ({ to }) => resolveTlonOutboundTarget(to),
+    ...createRuntimeOutboundDelegates({
+      getRuntime: loadTlonChannelRuntime,
+      sendText: { resolve: (runtime) => runtime.tlonRuntimeOutbound.sendText },
+      sendMedia: { resolve: (runtime) => runtime.tlonRuntimeOutbound.sendMedia },
+    }),
   },
   outbound: tlonOutbound,
   status: {

@@ -1,3 +1,15 @@
+import { buildDmGroupAccountAllowlistAdapter } from "remoteclaw/plugin-sdk/allowlist-config-edit";
+import {
+  createPairingPrefixStripper,
+  createTextPairingAdapter,
+  resolveOutboundSendDep,
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { buildOutboundBaseSessionKey } from "remoteclaw/plugin-sdk/core";
+import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
+import { type RoutePeer } from "remoteclaw/plugin-sdk/routing";
+import { resolveSignalAccount, type ResolvedSignalAccount } from "./accounts.js";
+import { markdownToSignalTextChunks } from "./format.js";
 import {
   buildAccountScopedDmSecurityPolicy,
   createScopedAccountConfigAccessors,
@@ -114,60 +126,29 @@ async function sendSignalOutbound(params: {
 }
 
 export const signalPlugin: ChannelPlugin<ResolvedSignalAccount> = {
-  id: "signal",
-  meta: {
-    ...meta,
-  },
-  onboarding: signalOnboardingAdapter,
-  pairing: {
+  ...createSignalPluginBase({
+    setupWizard: signalSetupWizard,
+    setup: signalSetupAdapter,
+  }),
+  pairing: createTextPairingAdapter({
     idLabel: "signalNumber",
-    normalizeAllowEntry: (entry) => entry.replace(/^signal:/i, ""),
-    notifyApproval: async ({ id }) => {
-      await getSignalRuntime().channel.signal.sendMessageSignal(id, PAIRING_APPROVED_MESSAGE);
+    message: PAIRING_APPROVED_MESSAGE,
+    normalizeAllowEntry: createPairingPrefixStripper(/^signal:/i),
+    notify: async ({ id, message }) => {
+      await getSignalRuntime().channel.signal.sendMessageSignal(id, message);
     },
-  },
-  capabilities: {
-    chatTypes: ["direct", "group"],
-    media: true,
-    reactions: true,
-  },
+  }),
   actions: signalMessageActions,
-  allowlist: {
-    supportsScope: ({ scope }) => scope === "dm" || scope === "group" || scope === "all",
-    readConfig: ({ cfg, accountId }) => {
-      const account = resolveSignalAccount({ cfg, accountId });
-      return {
-        dmAllowFrom: (account.config.allowFrom ?? []).map(String),
-        groupAllowFrom: (account.config.groupAllowFrom ?? []).map(String),
-        dmPolicy: account.config.dmPolicy,
-        groupPolicy: account.config.groupPolicy,
-      };
-    },
-    applyConfigEdit: buildAccountScopedAllowlistConfigEditor({
-      channelId: "signal",
-      normalize: ({ cfg, accountId, values }) =>
-        signalConfigAdapter.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
-      resolvePaths: (scope) => ({
-        readPaths: [[scope === "dm" ? "allowFrom" : "groupAllowFrom"]],
-        writePath: [scope === "dm" ? "allowFrom" : "groupAllowFrom"],
-      }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg,
-        sectionKey: "signal",
-        accountId,
-        clearBaseFields: ["account", "httpUrl", "httpHost", "httpPort", "cliPath", "name"],
-      }),
-    isConfigured: (account) => account.configured,
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: account.configured,
-      baseUrl: account.baseUrl,
-    }),
-    ...signalConfigAccessors,
-  },
+  allowlist: buildDmGroupAccountAllowlistAdapter({
+    channelId: "signal",
+    resolveAccount: ({ cfg, accountId }) => resolveSignalAccount({ cfg, accountId }),
+    normalize: ({ cfg, accountId, values }) =>
+      signalConfigAdapter.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
+    resolveDmAllowFrom: (account) => account.config.allowFrom,
+    resolveGroupAllowFrom: (account) => account.config.groupAllowFrom,
+    resolveDmPolicy: (account) => account.config.dmPolicy,
+    resolveGroupPolicy: (account) => account.config.groupPolicy,
+  }),
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
       return buildAccountScopedDmSecurityPolicy({

@@ -1,3 +1,9 @@
+import { buildDmGroupAccountAllowlistAdapter } from "remoteclaw/plugin-sdk/allowlist-config-edit";
+import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
+import { buildOutboundBaseSessionKey } from "remoteclaw/plugin-sdk/core";
+import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
+import { type RoutePeer } from "remoteclaw/plugin-sdk/routing";
+import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderRestrictSendersWarnings,
@@ -30,6 +36,20 @@ import {
   type ResolvedIMessageAccount,
 } from "remoteclaw/plugin-sdk/imessage";
 import { getIMessageRuntime } from "./runtime.js";
+import { imessageSetupAdapter } from "./setup-core.js";
+import {
+  collectIMessageSecurityWarnings,
+  createIMessagePluginBase,
+  imessageConfigAdapter,
+  imessageResolveDmPolicy,
+  imessageSetupWizard,
+} from "./shared.js";
+import {
+  inferIMessageTargetChatType,
+  looksLikeIMessageExplicitTargetId,
+  normalizeIMessageHandle,
+  parseIMessageTarget,
+} from "./targets.js";
 
 const meta = getChatChannelMeta("imessage");
 
@@ -90,46 +110,18 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
   onboarding: imessageOnboardingAdapter,
   pairing: {
     idLabel: "imessageSenderId",
-    notifyApproval: async ({ id }) => {
-      await getIMessageRuntime().channel.imessage.sendMessageIMessage(id, PAIRING_APPROVED_MESSAGE);
-    },
+    notifyApproval: async ({ id }) =>
+      await (await loadIMessageChannelRuntime()).notifyIMessageApproval(id),
   },
-  capabilities: {
-    chatTypes: ["direct", "group"],
-    media: true,
-  },
-  reload: { configPrefixes: ["channels.imessage"] },
-  configSchema: buildChannelConfigSchema(IMessageConfigSchema),
-  config: {
-    listAccountIds: (cfg) => listIMessageAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveIMessageAccount({ cfg, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultIMessageAccountId(cfg),
-    setAccountEnabled: ({ cfg, accountId, enabled }) =>
-      setAccountEnabledInConfigSection({
-        cfg,
-        sectionKey: "imessage",
-        accountId,
-        enabled,
-        allowTopLevel: true,
-      }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg,
-        sectionKey: "imessage",
-        accountId,
-        clearBaseFields: ["cliPath", "dbPath", "service", "region", "name"],
-      }),
-    isConfigured: (account) => account.configured,
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: account.configured,
-    }),
-    resolveAllowFrom: ({ cfg, accountId }) => resolveIMessageConfigAllowFrom({ cfg, accountId }),
-    formatAllowFrom: ({ allowFrom }) => formatTrimmedAllowFromEntries(allowFrom),
-    resolveDefaultTo: ({ cfg, accountId }) => resolveIMessageConfigDefaultTo({ cfg, accountId }),
-  },
+  allowlist: buildDmGroupAccountAllowlistAdapter({
+    channelId: "imessage",
+    resolveAccount: ({ cfg, accountId }) => resolveIMessageAccount({ cfg, accountId }),
+    normalize: ({ values }) => formatTrimmedAllowFromEntries(values),
+    resolveDmAllowFrom: (account) => account.config.allowFrom,
+    resolveGroupAllowFrom: (account) => account.config.groupAllowFrom,
+    resolveDmPolicy: (account) => account.config.dmPolicy,
+    resolveGroupPolicy: (account) => account.config.groupPolicy,
+  }),
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
       return buildAccountScopedDmSecurityPolicy({

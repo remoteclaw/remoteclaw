@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { expect } from "vitest";
@@ -22,6 +21,22 @@ import {
   testState,
   withGatewayServer,
 } from "./test-helpers.js";
+
+let authIdentityPathSeq = 0;
+
+function nextAuthIdentityPath(prefix: string): string {
+  const poolId = process.env.VITEST_POOL_ID ?? "0";
+  const fileName =
+    prefix +
+    "-" +
+    String(process.pid) +
+    "-" +
+    poolId +
+    "-" +
+    String(authIdentityPathSeq++) +
+    ".json";
+  return path.join(os.tmpdir(), fileName);
+}
 
 async function waitForWsClose(ws: WebSocket, timeoutMs: number): Promise<boolean> {
   if (ws.readyState === WebSocket.CLOSED) {
@@ -288,10 +303,7 @@ async function startRateLimitedTokenServerWithPairedDeviceToken() {
   } as any;
 
   const { server, ws, port, prevToken } = await startServerWithClient();
-  const deviceIdentityPath = path.join(
-    os.tmpdir(),
-    "remoteclaw-auth-rate-limit-" + randomUUID() + ".json",
-  );
+  const deviceIdentityPath = nextAuthIdentityPath("remoteclaw-auth-rate-limit");
   try {
     const initial = await connectReq(ws, { token: "secret", deviceIdentityPath });
     if (!initial.ok) {
@@ -322,10 +334,7 @@ async function ensurePairedDeviceTokenForCurrentIdentity(ws: WebSocket): Promise
   const { loadOrCreateDeviceIdentity } = await import("../infra/device-identity.js");
   const { getPairedDevice } = await import("../infra/device-pairing.js");
 
-  const deviceIdentityPath = path.join(
-    os.tmpdir(),
-    "remoteclaw-auth-device-" + randomUUID() + ".json",
-  );
+  const deviceIdentityPath = nextAuthIdentityPath("remoteclaw-auth-device");
 
   const res = await connectReq(ws, { token: "secret", deviceIdentityPath });
   if (!res.ok) {

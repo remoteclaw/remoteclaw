@@ -528,14 +528,14 @@ describe("CronService", () => {
     await store.cleanup();
   });
 
-  it("runs an isolated job without posting a fallback summary to main", async () => {
+  it("posts a cron summary to main for an isolated announce job", async () => {
     const runIsolatedAgentJob = vi.fn(async () => ({ status: "ok" as const, summary: "done" }));
     const { store, cron, enqueueSystemEvent, requestHeartbeatNow, events } =
       await createIsolatedAnnounceHarness(runIsolatedAgentJob);
     await runIsolatedAnnounceJobAndWait({ cron, events, name: "weekly", status: "ok" });
     expect(runIsolatedAgentJob).toHaveBeenCalledTimes(1);
-    expect(enqueueSystemEvent).not.toHaveBeenCalled();
-    expect(requestHeartbeatNow).not.toHaveBeenCalled();
+    expect(enqueueSystemEvent).toHaveBeenCalledTimes(1);
+    expect(requestHeartbeatNow).toHaveBeenCalledTimes(1);
     cron.stop();
     await store.cleanup();
   });
@@ -583,7 +583,7 @@ describe("CronService", () => {
     await store.cleanup();
   });
 
-  it("does not post a fallback main summary when an isolated job errors", async () => {
+  it("posts a cron error summary to main when an isolated job errors", async () => {
     const runIsolatedAgentJob = vi.fn(async () => ({
       status: "error" as const,
       summary: "last output",
@@ -598,8 +598,8 @@ describe("CronService", () => {
       status: "error",
     });
 
-    expect(enqueueSystemEvent).not.toHaveBeenCalled();
-    expect(requestHeartbeatNow).not.toHaveBeenCalled();
+    expect(enqueueSystemEvent).toHaveBeenCalledTimes(1);
+    expect(requestHeartbeatNow).toHaveBeenCalledTimes(1);
     cron.stop();
     await store.cleanup();
   });

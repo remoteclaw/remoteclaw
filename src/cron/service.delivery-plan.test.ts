@@ -86,7 +86,7 @@ describe("CronService delivery plan consistency", () => {
     });
   });
 
-  it("treats delivery object without mode as announce without reviving legacy relay fallback", async () => {
+  it("treats delivery object without mode as announce and posts cron summary", async () => {
     await withCronService({}, async ({ cron, enqueueSystemEvent }) => {
       const job = await addIsolatedAgentTurnJob(cron, {
         name: "partial-delivery",
@@ -96,7 +96,9 @@ describe("CronService delivery plan consistency", () => {
 
       const result = await cron.run(job.id, "force");
       expect(result).toEqual({ ok: true, ran: true });
-      expect(enqueueSystemEvent).not.toHaveBeenCalled();
+      // With the cron main summary posting logic, announce delivery jobs
+      // that haven't actually delivered will post a summary to main.
+      expect(enqueueSystemEvent).toHaveBeenCalledTimes(1);
       expect(cron.getJob(job.id)?.state.lastDeliveryStatus).toBe("unknown");
     });
   });

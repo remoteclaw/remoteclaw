@@ -12,6 +12,9 @@ import {
   normalizeE164,
   formatWhatsAppConfigAllowFromEntries,
   readStringParam,
+  resolveWhatsAppGroupIntroHint,
+  resolveWhatsAppGroupRequireMention,
+  resolveWhatsAppGroupToolPolicy,
   resolveWhatsAppOutboundTarget,
   resolveWhatsAppConfigAllowFrom,
   resolveWhatsAppConfigDefaultTo,
@@ -54,15 +57,17 @@ function parseWhatsAppExplicitTarget(raw: string) {
 }
 
 export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
-  id: "whatsapp",
-  meta: {
-    ...meta,
-    showConfigured: false,
-    quickstartAllowFrom: true,
-    forceAccountBinding: true,
-    preferSessionLookupForAnnounceTarget: true,
-  },
-  setupWizard: whatsappSetupWizardProxy,
+  ...createWhatsAppPluginBase({
+    groups: {
+      resolveRequireMention: resolveWhatsAppGroupRequireMention,
+      resolveToolPolicy: resolveWhatsAppGroupToolPolicy,
+      resolveGroupIntroHint: resolveWhatsAppGroupIntroHint,
+    },
+    setupWizard: whatsappSetupWizardProxy,
+    setup: whatsappSetupAdapter,
+    isConfigured: async (account) =>
+      await getWhatsAppRuntime().channel.whatsapp.webAuthExists(account.authDir),
+  }),
   agentTools: () => [getWhatsAppRuntime().channel.whatsapp.createLoginTool()],
   pairing: {
     idLabel: "whatsappSenderId",

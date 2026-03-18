@@ -20,6 +20,17 @@ import { WhatsAppConfigSchema } from "../../../src/config/zod-schema.providers-w
 import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
 import { normalizeE164 } from "../../../src/utils.js";
 import {
+  buildChannelConfigSchema,
+  formatWhatsAppConfigAllowFromEntries,
+  getChatChannelMeta,
+  normalizeE164,
+  resolveWhatsAppGroupIntroHint,
+  resolveWhatsAppGroupRequireMention,
+  resolveWhatsAppGroupToolPolicy,
+  WhatsAppConfigSchema,
+  type ChannelPlugin,
+} from "remoteclaw/plugin-sdk/whatsapp-core";
+import {
   listWhatsAppAccountIds,
   resolveDefaultWhatsAppAccountId,
   resolveWhatsAppAccount,
@@ -81,6 +92,7 @@ export function createWhatsAppSetupWizardProxy(
 }
 
 export function createWhatsAppPluginBase(params: {
+  groups: NonNullable<ChannelPlugin<ResolvedWhatsAppAccount>["groups"]>;
   setupWizard: NonNullable<ChannelPlugin<ResolvedWhatsAppAccount>["setupWizard"]>;
   setup: NonNullable<ChannelPlugin<ResolvedWhatsAppAccount>["setup"]>;
   isConfigured: NonNullable<ChannelPlugin<ResolvedWhatsAppAccount>["config"]>["isConfigured"];
@@ -215,10 +227,6 @@ export function createWhatsAppPluginBase(params: {
       },
     },
     setup: params.setup,
-    groups: {
-      resolveRequireMention: resolveWhatsAppGroupRequireMention,
-      resolveToolPolicy: resolveWhatsAppGroupToolPolicy,
-      resolveGroupIntroHint: resolveWhatsAppGroupIntroHint,
-    },
+    groups: params.groups,
   };
 }

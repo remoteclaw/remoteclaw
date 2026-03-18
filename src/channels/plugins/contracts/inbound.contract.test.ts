@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildDiscordInboundAccessContext } from "../../../../extensions/discord/src/monitor/inbound-context.js";
 import type { ResolvedSlackAccount } from "../../../../extensions/slack/src/accounts.js";
 import type { SlackMessageEvent } from "../../../../extensions/slack/src/types.js";
-import { withTempHome } from "../../../../test/helpers/temp-home.js";
 import type { MsgContext } from "../../../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
 import { inboundCtxCapture } from "./inbound-testkit.js";
@@ -39,8 +38,8 @@ vi.mock("remoteclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
   };
 });
 
-vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
+vi.mock("remoteclaw/plugin-sdk/channel-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/channel-runtime")>();
   return {
     ...actual,
     recordInboundSession: vi.fn(async (params: { ctx: MsgContext }) => {
@@ -117,11 +116,39 @@ describe("channel inbound contract", () => {
     dispatchInboundMessageMock.mockClear();
   });
 
-  it("keeps Discord inbound context finalized", async () => {
-    const messageCtx = await createBaseDiscordMessageContext({
-      cfg: { messages: {} },
-      ackReactionScope: "direct",
-      ...createDiscordDirectMessageContextOverrides(),
+  it("keeps Discord inbound context finalized", () => {
+    const { groupSystemPrompt, ownerAllowFrom, untrustedContext } =
+      buildDiscordInboundAccessContext({
+        channelConfig: null,
+        guildInfo: null,
+        sender: { id: "U1", name: "Alice", tag: "alice" },
+        isGuild: false,
+      });
+
+    const ctx = finalizeInboundContext({
+      Body: "hi",
+      BodyForAgent: "hi",
+      RawBody: "hi",
+      CommandBody: "hi",
+      From: "discord:U1",
+      To: "user:U1",
+      SessionKey: "agent:main:discord:direct:u1",
+      AccountId: "default",
+      ChatType: "direct",
+      ConversationLabel: "Alice",
+      SenderName: "Alice",
+      SenderId: "U1",
+      SenderUsername: "alice",
+      GroupSystemPrompt: groupSystemPrompt,
+      OwnerAllowFrom: ownerAllowFrom,
+      UntrustedContext: untrustedContext,
+      Provider: "discord",
+      Surface: "discord",
+      WasMentioned: false,
+      MessageSid: "m1",
+      CommandAuthorized: true,
+      OriginatingChannel: "discord",
+      OriginatingTo: "user:U1",
     });
 
     expectChannelInboundContextContract(ctx);
@@ -159,7 +186,7 @@ describe("channel inbound contract", () => {
       const ctx = createInboundSlackTestContext({
         cfg: {
           channels: { slack: { enabled: true } },
-        } as OpenClawConfig,
+        } as RemoteClawConfig,
       });
       // oxlint-disable-next-line typescript/no-explicit-any
       ctx.resolveUserName = async () => ({ name: "Alice" }) as any;

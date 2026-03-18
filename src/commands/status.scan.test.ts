@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   probeGateway: vi.fn(),
   resolveGatewayProbeAuthResolution: vi.fn(),
   ensurePluginRegistryLoaded: vi.fn(),
+  buildPluginCompatibilityNotices: vi.fn(() => []),
 }));
 
 vi.mock("../cli/progress.js", () => ({
@@ -76,6 +77,10 @@ vi.mock("../process/exec.js", () => ({
 
 vi.mock("../cli/plugin-registry.js", () => ({
   ensurePluginRegistryLoaded: mocks.ensurePluginRegistryLoaded,
+}));
+
+vi.mock("../plugins/status.js", () => ({
+  buildPluginCompatibilityNotices: mocks.buildPluginCompatibilityNotices,
 }));
 
 import { scanStatus } from "./status.scan.js";

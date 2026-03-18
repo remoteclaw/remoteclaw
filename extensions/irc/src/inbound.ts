@@ -333,7 +333,7 @@ export async function handleIrcInbound(params: {
     storePath,
     sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
     ctx: ctxPayload,
-    onRecordError: (err) => {
+    onRecordError: (err: unknown) => {
       runtime.error?.(`irc: failed updating session meta: ${String(err)}`);
     },
   });
@@ -360,7 +360,7 @@ export async function handleIrcInbound(params: {
     dispatcherOptions: {
       ...prefixOptions,
       deliver: deliverReply,
-      onError: (err, info) => {
+      onError: (err: unknown, info: unknown) => {
         runtime.error?.(`irc ${info.kind} reply failed: ${String(err)}`);
       },
     },

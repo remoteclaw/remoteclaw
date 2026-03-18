@@ -206,7 +206,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
           token,
           entries: inputs,
         });
-        return resolved.map((entry) => ({
+        return resolved.map((entry: unknown) => ({
           input: entry.input,
           resolved: entry.resolved,
           id: entry.channelId ?? entry.guildId,
@@ -221,7 +221,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
         token,
         entries: inputs,
       });
-      return resolved.map((entry) => ({
+      return resolved.map((entry: unknown) => ({
         input: entry.input,
         resolved: entry.resolved,
         id: entry.id,

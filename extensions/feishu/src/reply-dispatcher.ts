@@ -191,7 +191,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
         }
         void typingCallbacks.onReplyStart?.();
       },
-      deliver: async (payload: ReplyPayload, info) => {
+      deliver: async (payload: ReplyPayload, info: unknown) => {
         const text = payload.text ?? "";
         const mediaList =
           payload.mediaUrls && payload.mediaUrls.length > 0
@@ -289,7 +289,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
           }
         }
       },
-      onError: async (error, info) => {
+      onError: async (error: unknown, info: unknown) => {
         params.runtime.error?.(
           `feishu[${account.accountId}] ${info.kind} reply failed: ${String(error)}`,
         );

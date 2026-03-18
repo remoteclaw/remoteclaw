@@ -728,7 +728,7 @@ async function processMessageWithPipeline(params: {
       sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
       ctx: ctxPayload,
     })
-    .catch((err) => {
+    .catch((err: unknown) => {
       runtime.error?.(`googlechat: failed updating session meta: ${String(err)}`);
     });
 

@@ -145,7 +145,7 @@ describe("gateway plugin HTTP auth boundary", () => {
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
-        shouldEnforcePluginGatewayAuth: (pathContext) =>
+        shouldEnforcePluginGatewayAuth: (pathContext: { pathname: string }) =>
           isProtectedPluginRoutePath(pathContext.pathname) ||
           pathContext.pathname === "/plugin/public",
       },
@@ -198,7 +198,7 @@ describe("gateway plugin HTTP auth boundary", () => {
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
-        shouldEnforcePluginGatewayAuth: (pathContext) =>
+        shouldEnforcePluginGatewayAuth: (pathContext: { pathname: string }) =>
           pathContext.pathname.startsWith("/api/channels") ||
           pathContext.pathname === "/plugin/routed",
       },
@@ -409,7 +409,7 @@ describe("gateway plugin HTTP auth boundary", () => {
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
-        shouldEnforcePluginGatewayAuth: (pathContext) =>
+        shouldEnforcePluginGatewayAuth: (pathContext: { pathname: string }) =>
           isProtectedPluginRoutePath(pathContext.pathname),
       },
       run: async (server) => {
@@ -434,7 +434,7 @@ describe("gateway plugin HTTP auth boundary", () => {
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
-        shouldEnforcePluginGatewayAuth: (pathContext) =>
+        shouldEnforcePluginGatewayAuth: (pathContext: { pathname: string }) =>
           isProtectedPluginRoutePath(pathContext.pathname),
       },
       run: async (server) => {

@@ -435,7 +435,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
             await sendDm({ api: api, fromShip: botShipName, toShip: senderShip, text: replyText });
           }
         },
-        onError: (err, info) => {
+        onError: (err: unknown, info: unknown) => {
           const dispatchDuration = Date.now() - dispatchStartTime;
           runtime.error?.(
             `[tlon] ${info.kind} reply failed after ${dispatchDuration}ms: ${String(err)}`,

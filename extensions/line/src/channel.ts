@@ -135,7 +135,7 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
       (
         getLineRuntime().channel.line.resolveLineAccount({ cfg, accountId: accountId ?? undefined })
           .config.allowFrom ?? []
-      ).map((entry) => String(entry)),
+      ).map((entry: unknown) => String(entry)),
     formatAllowFrom: ({ allowFrom }) =>
       allowFrom
         .map((entry) => String(entry).trim())

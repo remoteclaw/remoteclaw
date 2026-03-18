@@ -38,6 +38,16 @@ export function noteWorkspaceStatus(cfg: RemoteClawConfig) {
         : null,
     ].filter((line): line is string => Boolean(line));
 
+    const bundlePlugins = loaded.filter(
+      (p) => p.format === "bundle" && (p.bundleCapabilities?.length ?? 0) > 0,
+    );
+    if (bundlePlugins.length > 0) {
+      const allCaps = new Set(bundlePlugins.flatMap((p) => p.bundleCapabilities ?? []));
+      lines.push(
+        `Bundle plugins: ${bundlePlugins.length} (${[...allCaps].toSorted((a, b) => a.localeCompare(b)).join(", ")})`,
+      );
+    }
+
     note(lines.join("\n"), "Plugins");
   }
   if (pluginRegistry.diagnostics.length > 0) {

@@ -1,6 +1,11 @@
 // Narrow plugin-sdk surface for the bundled zalouser plugin.
 // Keep this list additive and scoped to symbols used under extensions/zalouser.
 
+import {
+  createOptionalChannelSetupAdapter,
+  createOptionalChannelSetupWizard,
+} from "./optional-channel-setup.js";
+
 export type { ReplyPayload } from "../auto-reply/types.js";
 export { mergeAllowlist, summarizeMapping } from "../channels/allowlists/resolve-utils.js";
 export { resolveMentionGatingWithBypass } from "../channels/mention-gating.js";
@@ -13,13 +18,13 @@ export { formatPairingApproveHint } from "../channels/plugins/helpers.js";
 export {
   addWildcardAllowFrom,
   mergeAllowFromEntries,
-  promptAccountId,
   setTopLevelChannelDmPolicyWithAllowFrom,
-} from "../channels/plugins/onboarding/helpers.js";
+} from "../channels/plugins/setup-wizard-helpers.js";
 export {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
   migrateBaseNameToDefaultAccount,
+  patchScopedAccountConfig,
 } from "../channels/plugins/setup-helpers.js";
 export { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
 export type {
@@ -33,8 +38,8 @@ export type {
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export { createTypingCallbacks } from "../channels/typing.js";
-export type { RemoteClawConfig } from "../config/config.js";
-
+export type { OpenClawConfig } from "../config/config.js";
+export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 export {
   resolveDefaultGroupPolicy,
   resolveOpenProviderRuntimeGroupPolicy,
@@ -43,21 +48,23 @@ export {
 export type { GroupToolPolicyConfig, MarkdownTableMode } from "../config/types.js";
 export { ToolPolicySchema } from "../config/zod-schema.agent-runtime.js";
 export { MarkdownConfigSchema } from "../config/zod-schema.core.js";
-export { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
+export { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
-export type { AnyAgentTool, RemoteClawPluginApi } from "../plugins/types.js";
+export type { AnyAgentTool, OpenClawPluginApi } from "../plugins/types.js";
 export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 export type { RuntimeEnv } from "../runtime.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { formatAllowFromLowercase } from "./allow-from.js";
 export { resolveSenderCommandAuthorization } from "./command-auth.js";
 export { resolveChannelAccountConfigBasePath } from "./config-paths.js";
-export { evaluateGroupRouteAccessForPolicy } from "./group-access.js";
+export {
+  evaluateGroupRouteAccessForPolicy,
+  resolveSenderScopedGroupPolicy,
+} from "./group-access.js";
 export { loadOutboundMediaFromUrl } from "./outbound-media.js";
 export { createScopedPairingAccess } from "./pairing-access.js";
 export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
-
 export { buildChannelSendResult } from "./channel-send-result.js";
 export type { OutboundReplyPayload } from "./reply-payload.js";
 export {
@@ -69,3 +76,17 @@ export {
 export { formatResolvedUnresolvedNote } from "./resolution-notes.js";
 export { buildBaseAccountStatusSnapshot } from "./status-helpers.js";
 export { chunkTextForOutbound } from "./text-chunking.js";
+
+export const zalouserSetupAdapter = createOptionalChannelSetupAdapter({
+  channel: "zalouser",
+  label: "Zalo Personal",
+  npmSpec: "@openclaw/zalouser",
+  docsPath: "/channels/zalouser",
+});
+
+export const zalouserSetupWizard = createOptionalChannelSetupWizard({
+  channel: "zalouser",
+  label: "Zalo Personal",
+  npmSpec: "@openclaw/zalouser",
+  docsPath: "/channels/zalouser",
+});

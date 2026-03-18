@@ -19,7 +19,8 @@ export {
   listDirectoryUserEntriesFromAllowFrom,
 } from "../channels/plugins/directory-config-helpers.js";
 export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
-export { resolveGoogleChatGroupRequireMention } from "../channels/plugins/group-mentions.js";
+export { createAccountStatusSink, runPassiveAccountLifecycle } from "./channel-lifecycle.js";
+export { resolveGoogleChatGroupRequireMention } from "../../extensions/googlechat/runtime-api.js";
 export { formatPairingApproveHint } from "../channels/plugins/helpers.js";
 export { resolveChannelMediaMaxBytes } from "../channels/plugins/media-limits.js";
 export type {

@@ -82,18 +82,20 @@ import { runWithReconnect } from "./reconnect.js";
 import { deliverMattermostReplyPayload } from "./reply-delivery.js";
 import { sendMessageMattermost } from "./send.js";
 import {
-  DEFAULT_COMMAND_SPECS,
   cleanupSlashCommands,
   isSlashCommandsEnabled,
-  registerSlashCommands,
-  resolveCallbackUrl,
   resolveSlashCommandConfig,
 } from "./slash-commands.js";
-import {
-  activateSlashCommands,
-  deactivateSlashCommands,
-  getSlashCommandState,
-} from "./slash-state.js";
+import { deactivateSlashCommands, getSlashCommandState } from "./slash-state.js";
+
+export {
+  evaluateMattermostMentionGate,
+  mapMattermostChannelTypeToChatType,
+} from "./monitor-gating.js";
+export type {
+  MattermostMentionGateInput,
+  MattermostRequireMentionResolverInput,
+} from "./monitor-gating.js";
 
 export type MonitorMattermostOpts = {
   botToken?: string;
@@ -426,6 +428,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
   const botUserId = botUser.id;
   const botUsername = botUser.username?.trim() || undefined;
   runtime.log?.(`mattermost connected as ${botUsername ? `@${botUsername}` : botUserId}`);
+  const slashEnabled = isSlashCommandsEnabled(resolveSlashCommandConfig(account.config.commands));
 
   // ─── Slash command registration ──────────────────────────────────────────
   const commandsRaw = account.config.commands as

@@ -1,23 +1,30 @@
 import { normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import {
-  listResolvedDirectoryEntriesFromSources,
+  applyDirectoryQueryAndLimit,
+  collectNormalizedDirectoryIds,
+  inspectReadOnlyChannelAccount,
+  toDirectoryEntries,
   type DirectoryConfigParams,
-} from "remoteclaw/plugin-sdk/directory-runtime";
-import { inspectDiscordAccount, type InspectedDiscordAccount } from "./account-inspect.js";
+} from "openclaw/plugin-sdk/directory-runtime";
+import type { InspectedDiscordAccount } from "../api.js";
 
 export async function listDiscordDirectoryPeersFromConfig(params: DirectoryConfigParams) {
-  return listResolvedDirectoryEntriesFromSources({
-    ...params,
-    kind: "user",
-    resolveAccount: (cfg, accountId) => resolveDiscordDirectoryConfigAccount(cfg, accountId),
-    resolveSources: (account) => {
-      const allowFrom = account.config.allowFrom ?? account.config.dm?.allowFrom ?? [];
-      const guildUsers = Object.values(account.config.guilds ?? {}).flatMap((guild) => [
-        ...(guild.users ?? []),
-        ...Object.values(guild.channels ?? {}).flatMap((channel) => channel.users ?? []),
-      ]);
-      return [allowFrom, Object.keys(account.config.dms ?? {}), guildUsers];
-    },
+  const account = (await inspectReadOnlyChannelAccount({
+    channelId: "discord",
+    cfg: params.cfg,
+    accountId: params.accountId,
+  })) as InspectedDiscordAccount | null;
+  if (!account || !("config" in account)) {
+    return [];
+  }
+
+  const allowFrom = account.config.allowFrom ?? account.config.dm?.allowFrom ?? [];
+  const guildUsers = Object.values(account.config.guilds ?? {}).flatMap((guild) => [
+    ...(guild.users ?? []),
+    ...Object.values(guild.channels ?? {}).flatMap((channel) => channel.users ?? []),
+  ]);
+  const ids = collectNormalizedDirectoryIds({
+    sources: [allowFrom, Object.keys(account.config.dms ?? {}), guildUsers],
     normalizeId: (raw) => {
       const mention = raw.match(/^<@!?(\d+)>$/);
       const cleaned = (mention?.[1] ?? raw).replace(/^(discord|user):/i, "").trim();
@@ -28,12 +35,19 @@ export async function listDiscordDirectoryPeersFromConfig(params: DirectoryConfi
 }
 
 export async function listDiscordDirectoryGroupsFromConfig(params: DirectoryConfigParams) {
-  return listResolvedDirectoryEntriesFromSources({
-    ...params,
-    kind: "group",
-    resolveAccount: (cfg, accountId) => resolveDiscordDirectoryConfigAccount(cfg, accountId),
-    resolveSources: (account) =>
-      Object.values(account.config.guilds ?? {}).map((guild) => Object.keys(guild.channels ?? {})),
+  const account = (await inspectReadOnlyChannelAccount({
+    channelId: "discord",
+    cfg: params.cfg,
+    accountId: params.accountId,
+  })) as InspectedDiscordAccount | null;
+  if (!account || !("config" in account)) {
+    return [];
+  }
+
+  const ids = collectNormalizedDirectoryIds({
+    sources: Object.values(account.config.guilds ?? {}).map((guild) =>
+      Object.keys(guild.channels ?? {}),
+    ),
     normalizeId: (raw) => {
       const mention = raw.match(/^<#(\d+)>$/);
       const cleaned = (mention?.[1] ?? raw).replace(/^(discord|channel|group):/i, "").trim();

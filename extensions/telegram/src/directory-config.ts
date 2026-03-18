@@ -2,14 +2,19 @@ import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helper
 import {
   applyDirectoryQueryAndLimit,
   collectNormalizedDirectoryIds,
+  inspectReadOnlyChannelAccount,
   listDirectoryGroupEntriesFromMapKeys,
   toDirectoryEntries,
   type DirectoryConfigParams,
-} from "remoteclaw/plugin-sdk/directory-runtime";
-import { inspectTelegramAccount, type InspectedTelegramAccount } from "./account-inspect.js";
+} from "openclaw/plugin-sdk/directory-runtime";
+import type { InspectedTelegramAccount } from "../api.js";
 
 export async function listTelegramDirectoryPeersFromConfig(params: DirectoryConfigParams) {
-  const account = await inspectTelegramDirectoryAccount(params);
+  const account = (await inspectReadOnlyChannelAccount({
+    channelId: "telegram",
+    cfg: params.cfg,
+    accountId: params.accountId,
+  })) as InspectedTelegramAccount | null;
   if (!account || !("config" in account)) {
     return [];
   }
@@ -31,7 +36,11 @@ export async function listTelegramDirectoryPeersFromConfig(params: DirectoryConf
 }
 
 export async function listTelegramDirectoryGroupsFromConfig(params: DirectoryConfigParams) {
-  const account = await inspectTelegramDirectoryAccount(params);
+  const account = (await inspectReadOnlyChannelAccount({
+    channelId: "telegram",
+    cfg: params.cfg,
+    accountId: params.accountId,
+  })) as InspectedTelegramAccount | null;
   if (!account || !("config" in account)) {
     return [];
   }

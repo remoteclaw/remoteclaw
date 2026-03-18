@@ -1,1 +1,1 @@
-export { normalizeGoogleModelId, parseGeminiAuth } from "remoteclaw/plugin-sdk/provider-google";
+export { normalizeGoogleModelId, parseGeminiAuth } from "remoteclaw/plugin-sdk/google";

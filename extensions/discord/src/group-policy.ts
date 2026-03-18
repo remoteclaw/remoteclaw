@@ -4,6 +4,7 @@ import {
   type GroupToolPolicyBySenderConfig,
   type GroupToolPolicyConfig,
 } from "remoteclaw/plugin-sdk/channel-policy";
+import { type ChannelGroupContext } from "remoteclaw/plugin-sdk/channel-runtime";
 import { normalizeAtHashSlug } from "remoteclaw/plugin-sdk/core";
 import type { DiscordConfig } from "./runtime-api.js";
 

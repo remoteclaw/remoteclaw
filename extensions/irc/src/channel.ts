@@ -6,16 +6,10 @@ import {
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createTextPairingAdapter } from "remoteclaw/plugin-sdk/channel-pairing";
 import {
-  composeWarningCollectors,
-  createAllowlistProviderOpenWarningCollector,
-  createConditionalWarningCollector,
+  buildOpenGroupPolicyWarning,
+  collectAllowlistProviderGroupPolicyWarnings,
 } from "remoteclaw/plugin-sdk/channel-policy";
-import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
-import {
-  createChannelDirectoryAdapter,
-  listResolvedDirectoryEntriesFromSources,
-} from "remoteclaw/plugin-sdk/directory-runtime";
-import { runStoppablePassiveMonitor } from "remoteclaw/plugin-sdk/extension-shared";
+import { runStoppablePassiveMonitor } from "../../shared/passive-monitor.js";
 import {
   listIrcAccountIds,
   resolveDefaultIrcAccountId,
@@ -33,6 +27,16 @@ import {
 import { ircOnboardingAdapter } from "./onboarding.js";
 import { resolveIrcGroupMatch, resolveIrcRequireMention } from "./policy.js";
 import { probeIrc } from "./probe.js";
+import {
+  buildBaseAccountStatusSnapshot,
+  buildBaseChannelStatusSummary,
+  buildChannelConfigSchema,
+  createAccountStatusSink,
+  DEFAULT_ACCOUNT_ID,
+  getChatChannelMeta,
+  PAIRING_APPROVED_MESSAGE,
+  type ChannelPlugin,
+} from "./runtime-api.js";
 import { getIrcRuntime } from "./runtime.js";
 import { sendMessageIrc } from "./send.js";
 import type { CoreConfig, IrcProbe } from "./types.js";

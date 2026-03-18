@@ -1,6 +1,7 @@
 import {
   collectAllowlistProviderRestrictSendersWarnings,
-  createScopedChannelConfigAdapter,
+  createScopedAccountConfigAccessors,
+  createScopedChannelConfigBase,
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createChannelPluginBase } from "remoteclaw/plugin-sdk/core";
@@ -10,7 +11,7 @@ import {
   normalizeE164,
   SignalConfigSchema,
   type ChannelPlugin,
-} from "./runtime-api.js";
+} from "../runtime-api.js";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,
@@ -29,12 +30,8 @@ export const signalSetupWizard = createSignalSetupWizardProxy(
   async () => (await loadSignalChannelRuntime()).signalSetupWizard,
 );
 
-export const signalConfigAdapter = createScopedChannelConfigAdapter<ResolvedSignalAccount>({
-  sectionKey: SIGNAL_CHANNEL,
-  listAccountIds: listSignalAccountIds,
-  resolveAccount: (cfg, accountId) => resolveSignalAccount({ cfg, accountId }),
-  defaultAccountId: resolveDefaultSignalAccountId,
-  clearBaseFields: ["account", "httpUrl", "httpHost", "httpPort", "cliPath", "name"],
+export const signalConfigAccessors = createScopedAccountConfigAccessors({
+  resolveAccount: ({ cfg, accountId }) => resolveSignalAccount({ cfg, accountId }),
   resolveAllowFrom: (account: ResolvedSignalAccount) => account.config.allowFrom,
   formatAllowFrom: (allowFrom) =>
     allowFrom
@@ -43,6 +40,14 @@ export const signalConfigAdapter = createScopedChannelConfigAdapter<ResolvedSign
       .map((entry) => (entry === "*" ? "*" : normalizeE164(entry.replace(/^signal:/i, ""))))
       .filter(Boolean),
   resolveDefaultTo: (account: ResolvedSignalAccount) => account.config.defaultTo,
+});
+
+export const signalConfigBase = createScopedChannelConfigBase<ResolvedSignalAccount>({
+  sectionKey: SIGNAL_CHANNEL,
+  listAccountIds: listSignalAccountIds,
+  resolveAccount: (cfg, accountId) => resolveSignalAccount({ cfg, accountId }),
+  defaultAccountId: resolveDefaultSignalAccountId,
+  clearBaseFields: ["account", "httpUrl", "httpHost", "httpPort", "cliPath", "name"],
 });
 
 export const signalResolveDmPolicy = createScopedDmSecurityResolver<ResolvedSignalAccount>({
@@ -102,7 +107,7 @@ export function createSignalPluginBase(params: {
     reload: { configPrefixes: ["channels.signal"] },
     configSchema: buildChannelConfigSchema(SignalConfigSchema),
     config: {
-      ...signalConfigAdapter,
+      ...signalConfigBase,
       isConfigured: (account) => account.configured,
       describeAccount: (account) => ({
         accountId: account.accountId,
@@ -111,6 +116,7 @@ export function createSignalPluginBase(params: {
         configured: account.configured,
         baseUrl: account.baseUrl,
       }),
+      ...signalConfigAccessors,
     },
     security: {
       resolveDmPolicy: signalResolveDmPolicy,

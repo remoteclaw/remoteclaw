@@ -296,7 +296,6 @@ export function createSynologyChatPlugin() {
         const unregister = registerPluginHttpRoute({
           path: account.webhookPath,
           auth: "plugin",
-          replaceExisting: true,
           pluginId: CHANNEL_ID,
           accountId: account.accountId,
           log: (msg: string) => log?.info?.(msg),

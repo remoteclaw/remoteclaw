@@ -94,9 +94,6 @@ function buildCoreDistEntries(): Record<string, string> {
     "infra/warning-filter": "src/infra/warning-filter.ts",
     extensionAPI: "src/extensionAPI.ts",
     // Keep sync lazy-runtime channel modules as concrete dist files.
-    "channels/plugins/actions/discord": "src/channels/plugins/actions/discord.ts",
-    "channels/plugins/actions/signal": "src/channels/plugins/actions/signal.ts",
-    "channels/plugins/actions/telegram": "src/channels/plugins/actions/telegram.ts",
     "telegram/audit": "src/telegram/audit.ts",
     "telegram/token": "src/telegram/token.ts",
     "line/accounts": "src/line/accounts.ts",

@@ -1,5 +1,7 @@
 export {
+  isWhatsAppGroupJid,
   looksLikeWhatsAppTargetId,
   normalizeWhatsAppAllowFromEntries,
   normalizeWhatsAppMessagingTarget,
-} from "../../../src/channels/plugins/normalize/whatsapp.js";
+  normalizeWhatsAppTarget,
+} from "remoteclaw/plugin-sdk/channel-runtime";

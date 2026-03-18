@@ -1,13 +1,15 @@
-import { parseSlackBlocksInput } from "../../extensions/slack/src/blocks-input.js";
-import { readNumberParam, readStringParam } from "../agents/tools/common.js";
-import type { ChannelMessageActionContext } from "../channels/plugins/types.js";
-import type { AgentToolResult } from "../types/agent-types.js";
+import type { AgentToolResult } from "@mariozechner/pi-agent-core";
+import type { ChannelMessageActionContext } from "remoteclaw/plugin-sdk/channel-runtime";
+import { normalizeInteractiveReply } from "remoteclaw/plugin-sdk/interactive-runtime";
+import { readNumberParam, readStringParam } from "remoteclaw/plugin-sdk/slack-core";
+import { parseSlackBlocksInput } from "./blocks-input.js";
+import { buildSlackInteractiveBlocks } from "./blocks-render.js";
 
 type SlackActionInvoke = (
   action: Record<string, unknown>,
   cfg: ChannelMessageActionContext["cfg"],
   toolContext?: ChannelMessageActionContext["toolContext"],
-) => Promise<AgentToolResult>;
+) => Promise<AgentToolResult<unknown>>;
 
 function readSlackBlocksParam(actionParams: Record<string, unknown>) {
   return parseSlackBlocksInput(actionParams.blocks) as Record<string, unknown>[] | undefined;
@@ -20,7 +22,7 @@ export async function handleSlackMessageAction(params: {
   invoke: SlackActionInvoke;
   normalizeChannelId?: (channelId: string) => string;
   includeReadThreadId?: boolean;
-}): Promise<AgentToolResult> {
+}): Promise<AgentToolResult<unknown>> {
   const { providerId, ctx, invoke, normalizeChannelId, includeReadThreadId = false } = params;
   const { action, cfg, params: actionParams } = ctx;
   const accountId = ctx.accountId ?? undefined;
@@ -38,7 +40,9 @@ export async function handleSlackMessageAction(params: {
       allowEmpty: true,
     });
     const mediaUrl = readStringParam(actionParams, "media", { trim: false });
-    const blocks = readSlackBlocksParam(actionParams);
+    const interactive = normalizeInteractiveReply(actionParams.interactive);
+    const interactiveBlocks = interactive ? buildSlackInteractiveBlocks(interactive) : undefined;
+    const blocks = readSlackBlocksParam(actionParams) ?? interactiveBlocks;
     if (!content && !mediaUrl && !blocks) {
       throw new Error("Slack send requires message, blocks, or media.");
     }
@@ -53,9 +57,9 @@ export async function handleSlackMessageAction(params: {
         to,
         content: content ?? "",
         mediaUrl: mediaUrl ?? undefined,
-        ...(blocks ? { blocks } : {}),
         accountId,
         threadTs: threadId ?? replyTo ?? undefined,
+        ...(blocks ? { blocks } : {}),
       },
       cfg,
       ctx.toolContext,

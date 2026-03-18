@@ -1,5 +1,11 @@
 import { MarkdownConfigSchema } from "remoteclaw/plugin-sdk";
 import { z } from "zod";
+<<<<<<< HEAD
+||||||| parent of d1fe30b35f (Plugins: add Twitch runtime barrel)
+import { MarkdownConfigSchema } from "../api.js";
+=======
+import { MarkdownConfigSchema } from "../runtime-api.js";
+>>>>>>> d1fe30b35f (Plugins: add Twitch runtime barrel)
 
 /**
  * Twitch user roles that can be allowed to interact with the bot

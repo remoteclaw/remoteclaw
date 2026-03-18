@@ -22,7 +22,13 @@ import type {
   OutboundDeliveryResult,
   RemoteClawConfig,
   RuntimeEnv,
+<<<<<<< HEAD
 } from "remoteclaw/plugin-sdk";
+||||||| parent of d1fe30b35f (Plugins: add Twitch runtime barrel)
+} from "../api.js";
+=======
+} from "../runtime-api.js";
+>>>>>>> d1fe30b35f (Plugins: add Twitch runtime barrel)
 
 // ============================================================================
 // Twitch-Specific Types

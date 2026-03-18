@@ -1,4 +1,4 @@
-import type { OpenClawConfig, PluginRuntime, RuntimeEnv } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { __testing } from "./monitor.js";
 import { setZalouserRuntime } from "./runtime.js";
@@ -31,7 +31,7 @@ function createAccount(): ResolvedZalouserAccount {
   };
 }
 
-function createConfig(): OpenClawConfig {
+function createConfig(): RemoteClawConfig {
   return {
     channels: {
       zalouser: {
@@ -84,7 +84,7 @@ function installRuntime(params: { commandAuthorized: boolean }) {
       },
       groups: {
         resolveRequireMention: vi.fn((input) => {
-          const cfg = input.cfg as OpenClawConfig;
+          const cfg = input.cfg as RemoteClawConfig;
           const groupCfg = cfg.channels?.zalouser?.groups ?? {};
           const groupEntry = input.groupId ? groupCfg[input.groupId] : undefined;
           const defaultEntry = groupCfg["*"];

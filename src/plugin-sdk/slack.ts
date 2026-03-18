@@ -8,10 +8,6 @@ export {
   resolveSlackReplyToMode,
 } from "../slack/accounts.js";
 export {
-  listSlackDirectoryGroupsFromConfig,
-  listSlackDirectoryPeersFromConfig,
-} from "../channels/plugins/directory-config.js";
-export {
   looksLikeSlackTargetId,
   normalizeSlackMessagingTarget,
 } from "../channels/plugins/normalize/slack.js";
@@ -19,6 +15,10 @@ export { extractSlackToolSend, listSlackMessageActions } from "../slack/message-
 export { buildSlackThreadingToolContext } from "../slack/threading-tool-context.js";
 export { buildComputedAccountStatusSnapshot } from "./status-helpers.js";
 
+export {
+  listSlackDirectoryGroupsFromConfig,
+  listSlackDirectoryPeersFromConfig,
+} from "../../extensions/slack/src/directory-config.js";
 export {
   resolveDefaultGroupPolicy,
   resolveOpenProviderRuntimeGroupPolicy,

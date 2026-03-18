@@ -1291,6 +1291,7 @@ let configCache: {
   expiresAt: number;
   config: RemoteClawConfig;
 } | null = null;
+let runtimeConfigSnapshot: RemoteClawConfig | null = null;
 
 function resolveConfigCacheMs(env: NodeJS.ProcessEnv): number {
   const raw = env.REMOTECLAW_CONFIG_CACHE_MS?.trim();
@@ -1318,7 +1319,20 @@ export function clearConfigCache(): void {
   configCache = null;
 }
 
+export function setRuntimeConfigSnapshot(config: RemoteClawConfig): void {
+  runtimeConfigSnapshot = config;
+  clearConfigCache();
+}
+
+export function clearRuntimeConfigSnapshot(): void {
+  runtimeConfigSnapshot = null;
+  clearConfigCache();
+}
+
 export function loadConfig(): RemoteClawConfig {
+  if (runtimeConfigSnapshot) {
+    return runtimeConfigSnapshot;
+  }
   const io = createConfigIO();
   const configPath = io.configPath;
   const now = Date.now();

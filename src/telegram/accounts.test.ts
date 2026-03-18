@@ -227,7 +227,7 @@ describe("resolveTelegramAccount groups inheritance (#30673)", () => {
     },
   });
 
-  const createDefaultAccountGroupsConfig = (includeDevAccount: boolean): OpenClawConfig => ({
+  const createDefaultAccountGroupsConfig = (includeDevAccount: boolean): RemoteClawConfig => ({
     channels: {
       telegram: {
         groups: { "-100999": { requireMention: true } },

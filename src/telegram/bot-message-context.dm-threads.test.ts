@@ -113,7 +113,7 @@ describe("buildTelegramMessageContext direct peer routing", () => {
 
   it("isolates dm sessions by sender id when chat id differs", async () => {
     const runtimeCfg = {
-      agents: { defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/openclaw" } },
+      agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: { telegram: {} },
       messages: { groupChat: { mentionPatterns: [] } },
       session: { dmScope: "per-channel-peer" as const },

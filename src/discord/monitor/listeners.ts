@@ -324,6 +324,7 @@ async function handleDiscordReactionEvent(
     client: Client;
     action: "added" | "removed";
     cfg: LoadedConfig;
+    accountId: string;
     logger: Logger;
   } & DiscordReactionRoutingParams,
 ) {

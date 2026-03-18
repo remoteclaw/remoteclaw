@@ -46,6 +46,7 @@ const TELEGRAM_TEST_TIMINGS = {
   mediaGroupFlushMs: 20,
   textFragmentGapMs: 30,
 } as const;
+const EMPTY_REPLY_COUNTS = { block: 0, final: 0, tool: 0 } as const;
 
 describe("createTelegramBot", () => {
   beforeAll(() => {
@@ -380,6 +381,12 @@ describe("createTelegramBot", () => {
     }
   });
   it("triggers typing cue via onReplyStart", async () => {
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementationOnce(
+      async ({ dispatcherOptions }) => {
+        await dispatcherOptions.typingCallbacks?.onReplyStart?.();
+        return { queuedFinal: false, counts: { ...EMPTY_REPLY_COUNTS } };
+      },
+    );
     createTelegramBot({ token: "tok" });
     const handler = getOnHandler("message") as (ctx: Record<string, unknown>) => Promise<void>;
     await handler({
@@ -1466,6 +1473,21 @@ describe("createTelegramBot", () => {
     for (const testCase of forumCases) {
       resetHarnessSpies();
       sendChatActionSpy.mockClear();
+      let dispatchCall:
+        | {
+            ctx: {
+              SessionKey?: unknown;
+              From?: unknown;
+              MessageThreadId?: unknown;
+              IsForum?: unknown;
+            };
+          }
+        | undefined;
+      dispatchReplyWithBufferedBlockDispatcher.mockImplementationOnce(async (params) => {
+        dispatchCall = params as typeof dispatchCall;
+        await params.dispatcherOptions.typingCallbacks?.onReplyStart?.();
+        return { queuedFinal: false, counts: { ...EMPTY_REPLY_COUNTS } };
+      });
       loadConfig.mockReturnValue({
         agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
         channels: {
@@ -1482,6 +1504,9 @@ describe("createTelegramBot", () => {
       expect(replySpy.mock.calls.length, testCase.name).toBe(1);
       const payload = replySpy.mock.calls[0][0];
       if (testCase.assertTopicMetadata) {
+        if (!payload) {
+          throw new Error("Expected forum dispatch payload");
+        }
         expect(payload.SessionKey).toContain("telegram:group:-1001234567890:topic:99");
         expect(payload.From).toBe("telegram:group:-1001234567890:topic:99");
         expect(payload.MessageThreadId).toBe(99);
@@ -1796,6 +1821,20 @@ describe("createTelegramBot", () => {
   });
 
   it("applies topic skill filters and system prompts", async () => {
+    let dispatchCall:
+      | {
+          ctx: {
+            GroupSystemPrompt?: unknown;
+          };
+          replyOptions?: {
+            skillFilter?: unknown;
+          };
+        }
+      | undefined;
+    dispatchReplyWithBufferedBlockDispatcher.mockImplementationOnce(async (params) => {
+      dispatchCall = params as typeof dispatchCall;
+      return { queuedFinal: false, counts: { ...EMPTY_REPLY_COUNTS } };
+    });
     loadConfig.mockReturnValue({
       agents: { list: [{ id: "main", workspace: "/tmp/test-workspace" }] },
       channels: {
@@ -1822,8 +1861,10 @@ describe("createTelegramBot", () => {
 
     await handler(makeForumGroupMessageCtx({ threadId: 99 }));
 
-    expect(replySpy).toHaveBeenCalledTimes(1);
-    const payload = replySpy.mock.calls[0][0];
+    const payload = dispatchCall?.ctx;
+    if (!payload) {
+      throw new Error("Expected topic dispatch payload");
+    }
     expect(payload.GroupSystemPrompt).toBe("Group prompt\n\nTopic prompt");
     expect(replySpy.mock.calls[0][1]).toBeDefined();
   });

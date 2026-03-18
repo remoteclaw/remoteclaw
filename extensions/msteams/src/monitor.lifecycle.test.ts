@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { OpenClawConfig, RuntimeEnv } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MSTeamsConversationStore } from "./conversation-store.js";
 import type { MSTeamsPollStore } from "./polls.js";
@@ -15,7 +15,7 @@ const expressControl = vi.hoisted(() => ({
   mode: { value: "listening" as "listening" | "error" },
 }));
 
-vi.mock("openclaw/plugin-sdk", () => ({
+vi.mock("remoteclaw/plugin-sdk", () => ({
   DEFAULT_WEBHOOK_MAX_BODY_BYTES: 1024 * 1024,
   keepHttpServerTaskAlive: vi.fn(
     async (params: { abortSignal?: AbortSignal; onAbort?: () => Promise<void> | void }) => {
@@ -128,7 +128,7 @@ vi.mock("./runtime.js", () => ({
 
 import { monitorMSTeamsProvider } from "./monitor.js";
 
-function createConfig(port: number): OpenClawConfig {
+function createConfig(port: number): RemoteClawConfig {
   return {
     channels: {
       msteams: {
@@ -142,7 +142,7 @@ function createConfig(port: number): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as RemoteClawConfig;
 }
 
 function createRuntime(): RuntimeEnv {

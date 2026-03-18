@@ -1,3 +1,19 @@
+import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
+import {
+  createPairingPrefixStripper,
+  createTextPairingAdapter,
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
+import type {
+  ChannelAccountSnapshot,
+  ChannelDirectoryEntry,
+  ChannelGroupContext,
+  ChannelMessageActionAdapter,
+  ChannelPlugin,
+  RemoteClawConfig,
+  GroupToolPolicyConfig,
+} from "../runtime-api.js";
 import {
   buildAccountScopedDmSecurityPolicy,
   mapAllowFromEntries,
@@ -507,20 +523,21 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
       return results;
     },
   },
-  pairing: {
+  pairing: createTextPairingAdapter({
     idLabel: "zalouserUserId",
-    normalizeAllowEntry: (entry) => entry.replace(/^(zalouser|zlu):/i, ""),
-    notifyApproval: async ({ cfg, id }) => {
+    message: "Your pairing request has been approved.",
+    normalizeAllowEntry: createPairingPrefixStripper(/^(zalouser|zlu):/i),
+    notify: async ({ cfg, id, message }) => {
       const account = resolveZalouserAccountSync({ cfg: cfg });
       const authenticated = await checkZcaAuthenticated(account.profile);
       if (!authenticated) {
         throw new Error("Zalouser not authenticated");
       }
-      await sendMessageZalouser(id, "Your pairing request has been approved.", {
+      await sendMessageZalouser(id, message, {
         profile: account.profile,
       });
     },
-  },
+  }),
   auth: {
     login: async ({ cfg, accountId, runtime }) => {
       const account = resolveZalouserAccountSync({

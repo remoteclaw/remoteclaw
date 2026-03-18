@@ -4,11 +4,21 @@ import {
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
-  buildAccountScopedDmSecurityPolicy,
-  buildOpenGroupPolicyConfigureRouteAllowlistWarning,
-  collectAllowlistProviderGroupPolicyWarnings,
-  createScopedAccountConfigAccessors,
-} from "remoteclaw/plugin-sdk";
+  composeWarningCollectors,
+  createAllowlistProviderGroupPolicyWarningCollector,
+  createConditionalWarningCollector,
+  createAllowlistProviderOpenWarningCollector,
+} from "remoteclaw/plugin-sdk/channel-policy";
+import {
+  createChannelDirectoryAdapter,
+  createTextPairingAdapter,
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import {
+  listResolvedDirectoryGroupEntriesFromMapKeys,
+  listResolvedDirectoryUserEntriesFromAllowFrom,
+} from "remoteclaw/plugin-sdk/directory-runtime";
+import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
+import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
@@ -18,10 +28,6 @@ import {
   deleteAccountFromConfigSection,
   formatNormalizedAllowFromEntries,
   getChatChannelMeta,
-  listDirectoryGroupEntriesFromMapKeys,
-  listDirectoryUserEntriesFromAllowFrom,
-  mapAllowFromEntries,
-  migrateBaseNameToDefaultAccount,
   missingTargetError,
   normalizeAccountId,
   PAIRING_APPROVED_MESSAGE,
@@ -107,14 +113,40 @@ const googlechatActions: ChannelMessageActionAdapter = {
   },
 };
 
+const collectGoogleChatGroupPolicyWarnings =
+  createAllowlistProviderOpenWarningCollector<ResolvedGoogleChatAccount>({
+    providerConfigPresent: (cfg) => cfg.channels?.googlechat !== undefined,
+    resolveGroupPolicy: (account) => account.config.groupPolicy,
+    buildOpenWarning: {
+      surface: "Google Chat spaces",
+      openBehavior: "allows any space to trigger (mention-gated)",
+      remediation:
+        'Set channels.googlechat.groupPolicy="allowlist" and configure channels.googlechat.groups',
+    },
+  });
+
+const collectGoogleChatSecurityWarnings = composeWarningCollectors<{
+  cfg: OpenClawConfig;
+  account: ResolvedGoogleChatAccount;
+}>(
+  collectGoogleChatGroupPolicyWarnings,
+  createConditionalWarningCollector(
+    ({ account }) =>
+      account.config.dm?.policy === "open" &&
+      '- Google Chat DMs are open to anyone. Set channels.googlechat.dm.policy="pairing" or "allowlist".',
+  ),
+);
+
 export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
   id: "googlechat",
   meta: { ...meta },
-  onboarding: googlechatOnboardingAdapter,
-  pairing: {
+  setup: googlechatSetupAdapter,
+  setupWizard: googlechatSetupWizard,
+  pairing: createTextPairingAdapter({
     idLabel: "googlechatUserId",
+    message: PAIRING_APPROVED_MESSAGE,
     normalizeAllowEntry: (entry) => formatAllowFromEntry(entry),
-    notifyApproval: async ({ cfg, id }) => {
+    notify: async ({ cfg, id, message }) => {
       const account = resolveGoogleChatAccount({ cfg: cfg });
       if (account.credentialSource === "none") {
         return;
@@ -125,10 +157,10 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
       await sendGoogleChatMessage({
         account,
         space,
-        text: PAIRING_APPROVED_MESSAGE,
+        text: message,
       });
     },
-  },
+  }),
   capabilities: {
     chatTypes: ["direct", "group", "thread"],
     reactions: true,
@@ -154,56 +186,8 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
     }),
   },
   security: {
-    resolveDmPolicy: ({ cfg, accountId, account }) => {
-      return buildAccountScopedDmSecurityPolicy({
-        cfg,
-        channelKey: "googlechat",
-        accountId,
-        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-        policy: account.config.dm?.policy,
-        allowFrom: account.config.dm?.allowFrom ?? [],
-        allowFromPathSuffix: "dm.",
-        normalizeEntry: (raw) => formatAllowFromEntry(raw),
-      });
-
-    reload: { configPrefixes: ["channels.googlechat"] },
-    configSchema: buildChannelConfigSchema(GoogleChatConfigSchema),
-    config: {
-      ...googleChatConfigAdapter,
-      isConfigured: (account) => account.credentialSource !== "none",
-      describeAccount: (account) =>
-        describeAccountSnapshot({
-          account,
-          configured: account.credentialSource !== "none",
-          extra: {
-            credentialSource: account.credentialSource,
-          },
-        }),
-    },
-    collectWarnings: ({ account, cfg }) => {
-      const warnings = collectAllowlistProviderGroupPolicyWarnings({
-        cfg,
-        providerConfigPresent: cfg.channels?.googlechat !== undefined,
-        configuredGroupPolicy: account.config.groupPolicy,
-        collect: (groupPolicy) =>
-          groupPolicy === "open"
-            ? [
-                buildOpenGroupPolicyConfigureRouteAllowlistWarning({
-                  surface: "Google Chat spaces",
-                  openScope: "any space",
-                  groupPolicyPath: "channels.googlechat.groupPolicy",
-                  routeAllowlistPath: "channels.googlechat.groups",
-                }),
-              ]
-            : [],
-      });
-      if (account.config.dm?.policy === "open") {
-        warnings.push(
-          `- Google Chat DMs are open to anyone. Set channels.googlechat.dm.policy="pairing" or "allowlist".`,
-        );
-      }
-      return warnings;
-    },
+    resolveDmPolicy: resolveGoogleChatDmPolicy,
+    collectWarnings: collectGoogleChatSecurityWarnings,
   },
   groups: {
     resolveRequireMention: resolveGoogleChatGroupRequireMention,
@@ -221,32 +205,21 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
       hint: "<spaces/{space}|users/{user}>",
     },
   },
-  directory: {
-    self: async () => null,
-    listPeers: async ({ cfg, accountId, query, limit }) => {
-      const account = resolveGoogleChatAccount({
-        cfg: cfg,
-        accountId,
-      });
-      return listDirectoryUserEntriesFromAllowFrom({
-        allowFrom: account.config.dm?.allowFrom,
-        query,
-        limit,
+  directory: createChannelDirectoryAdapter({
+    listPeers: async (params) =>
+      listResolvedDirectoryUserEntriesFromAllowFrom({
+        ...params,
+        resolveAccount: (cfg, accountId) => resolveGoogleChatAccount({ cfg, accountId }),
+        resolveAllowFrom: (account) => account.config.dm?.allowFrom,
         normalizeId: (entry) => normalizeGoogleChatTarget(entry) ?? entry,
-      });
-    },
-    listGroups: async ({ cfg, accountId, query, limit }) => {
-      const account = resolveGoogleChatAccount({
-        cfg: cfg,
-        accountId,
-      });
-      return listDirectoryGroupEntriesFromMapKeys({
-        groups: account.config.groups,
-        query,
-        limit,
-      });
-    },
-  },
+      }),
+    listGroups: async (params) =>
+      listResolvedDirectoryGroupEntriesFromMapKeys({
+        ...params,
+        resolveAccount: (cfg, accountId) => resolveGoogleChatAccount({ cfg, accountId }),
+        resolveGroups: (account) => account.config.groups,
+      }),
+  }),
   resolver: {
     resolveTargets: async ({ inputs, kind }) => {
       const resolved = inputs.map((input) => {

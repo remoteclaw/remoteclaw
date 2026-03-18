@@ -1,5 +1,10 @@
 import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
+import { createAllowlistProviderRestrictSendersWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
+import {
+  createEmptyChannelDirectoryAdapter,
+  createPairingPrefixStripper,
+  createTextPairingAdapter,
+} from "remoteclaw/plugin-sdk/channel-runtime";
 import {
   buildChannelConfigSchema,
   buildComputedAccountStatusSnapshot,
@@ -40,29 +45,39 @@ const resolveLineDmPolicy = createScopedDmSecurityResolver<ResolvedLineAccount>(
   normalizeEntry: (raw) => raw.replace(/^line:(?:user:)?/i, ""),
 });
 
+const collectLineSecurityWarnings =
+  createAllowlistProviderRestrictSendersWarningCollector<ResolvedLineAccount>({
+    providerConfigPresent: (cfg) => cfg.channels?.line !== undefined,
+    resolveGroupPolicy: (account) => account.config.groupPolicy,
+    surface: "LINE groups",
+    openScope: "any member in groups",
+    groupPolicyPath: "channels.line.groupPolicy",
+    groupAllowFromPath: "channels.line.groupAllowFrom",
+    mentionGated: false,
+  });
+
 export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
   id: "line",
   meta: {
     ...meta,
     quickstartAllowFrom: true,
   },
-  pairing: {
+  pairing: createTextPairingAdapter({
     idLabel: "lineUserId",
-    normalizeAllowEntry: (entry) => {
-      // LINE IDs are case-sensitive; only strip prefix variants (line: / line:user:).
-      return entry.replace(/^line:(?:user:)?/i, "");
-    },
-    notifyApproval: async ({ cfg, id }) => {
+    message: "OpenClaw: your access has been approved.",
+    // LINE IDs are case-sensitive; only strip prefix variants (line: / line:user:).
+    normalizeAllowEntry: createPairingPrefixStripper(/^line:(?:user:)?/i),
+    notify: async ({ cfg, id, message }) => {
       const line = getLineRuntime().channel.line;
       const account = line.resolveLineAccount({ cfg });
       if (!account.channelAccessToken) {
         throw new Error("LINE channel access token not configured");
       }
-      await line.pushMessageLine(id, "OpenClaw: your access has been approved.", {
+      await line.pushMessageLine(id, message, {
         channelAccessToken: account.channelAccessToken,
       });
     },
-  },
+  }),
   capabilities: {
     chatTypes: ["direct", "group"],
     reactions: false,
@@ -86,31 +101,8 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
     }),
   },
   security: {
-    resolveDmPolicy: ({ cfg, accountId, account }) => {
-      return buildAccountScopedDmSecurityPolicy({
-        cfg,
-        channelKey: "line",
-        accountId,
-        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-        policy: account.config.dmPolicy,
-        allowFrom: account.config.allowFrom ?? [],
-        policyPathSuffix: "dmPolicy",
-        approveHint: "openclaw pairing approve line <code>",
-        normalizeEntry: (raw) => raw.replace(/^line:(?:user:)?/i, ""),
-      });
-    },
-    collectWarnings: ({ account, cfg }) => {
-      return collectAllowlistProviderRestrictSendersWarnings({
-        cfg,
-        providerConfigPresent: cfg.channels?.line !== undefined,
-        configuredGroupPolicy: account.config.groupPolicy,
-        surface: "LINE groups",
-        openScope: "any member in groups",
-        groupPolicyPath: "channels.line.groupPolicy",
-        groupAllowFromPath: "channels.line.groupAllowFrom",
-        mentionGated: false,
-      });
-    },
+    resolveDmPolicy: resolveLineDmPolicy,
+    collectWarnings: collectLineSecurityWarnings,
   },
   groups: {
     resolveRequireMention: ({ cfg, accountId, groupId }) => {
@@ -148,106 +140,8 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
       hint: "<userId|groupId|roomId>",
     },
   },
-  directory: {
-    self: async () => null,
-    listPeers: async () => [],
-    listGroups: async () => [],
-  },
-  setup: {
-    resolveAccountId: ({ accountId }) =>
-      getLineRuntime().channel.line.normalizeAccountId(accountId),
-    applyAccountName: ({ cfg, accountId, name }) => {
-      const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
-      return patchLineAccountConfig(cfg, lineConfig, accountId, { name });
-    },
-    validateInput: ({ accountId, input }) => {
-      const typedInput = input as {
-        useEnv?: boolean;
-        channelAccessToken?: string;
-        channelSecret?: string;
-        tokenFile?: string;
-        secretFile?: string;
-      };
-      if (typedInput.useEnv && accountId !== DEFAULT_ACCOUNT_ID) {
-        return "LINE_CHANNEL_ACCESS_TOKEN can only be used for the default account.";
-      }
-      if (!typedInput.useEnv && !typedInput.channelAccessToken && !typedInput.tokenFile) {
-        return "LINE requires channelAccessToken or --token-file (or --use-env).";
-      }
-      if (!typedInput.useEnv && !typedInput.channelSecret && !typedInput.secretFile) {
-        return "LINE requires channelSecret or --secret-file (or --use-env).";
-      }
-      return null;
-    },
-    applyAccountConfig: ({ cfg, accountId, input }) => {
-      const typedInput = input as {
-        name?: string;
-        useEnv?: boolean;
-        channelAccessToken?: string;
-        channelSecret?: string;
-        tokenFile?: string;
-        secretFile?: string;
-      };
-      const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
-
-      if (accountId === DEFAULT_ACCOUNT_ID) {
-        return {
-          ...cfg,
-          channels: {
-            ...cfg.channels,
-            line: {
-              ...lineConfig,
-              enabled: true,
-              ...(typedInput.name ? { name: typedInput.name } : {}),
-              ...(typedInput.useEnv
-                ? {}
-                : typedInput.tokenFile
-                  ? { tokenFile: typedInput.tokenFile }
-                  : typedInput.channelAccessToken
-                    ? { channelAccessToken: typedInput.channelAccessToken }
-                    : {}),
-              ...(typedInput.useEnv
-                ? {}
-                : typedInput.secretFile
-                  ? { secretFile: typedInput.secretFile }
-                  : typedInput.channelSecret
-                    ? { channelSecret: typedInput.channelSecret }
-                    : {}),
-            },
-          },
-        };
-      }
-
-      return {
-        ...cfg,
-        channels: {
-          ...cfg.channels,
-          line: {
-            ...lineConfig,
-            enabled: true,
-            accounts: {
-              ...lineConfig.accounts,
-              [accountId]: {
-                ...lineConfig.accounts?.[accountId],
-                enabled: true,
-                ...(typedInput.name ? { name: typedInput.name } : {}),
-                ...(typedInput.tokenFile
-                  ? { tokenFile: typedInput.tokenFile }
-                  : typedInput.channelAccessToken
-                    ? { channelAccessToken: typedInput.channelAccessToken }
-                    : {}),
-                ...(typedInput.secretFile
-                  ? { secretFile: typedInput.secretFile }
-                  : typedInput.channelSecret
-                    ? { channelSecret: typedInput.channelSecret }
-                    : {}),
-              },
-            },
-          },
-        },
-      };
-    },
-  },
+  directory: createEmptyChannelDirectoryAdapter(),
+  setup: lineSetupAdapter,
   outbound: {
     deliveryMode: "direct",
     chunker: (text, limit) => getLineRuntime().channel.text.chunkMarkdownText(text, limit),

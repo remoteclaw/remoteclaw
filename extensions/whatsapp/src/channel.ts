@@ -1,3 +1,6 @@
+import { buildDmGroupAccountAllowlistAdapter } from "remoteclaw/plugin-sdk/allowlist-config-edit";
+// WhatsApp-specific imports from local extension code (moved from src/web/ and src/channels/plugins/)
+import { resolveWhatsAppAccount, type ResolvedWhatsAppAccount } from "./accounts.js";
 import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderGroupPolicyWarnings,
@@ -54,162 +57,15 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
   pairing: {
     idLabel: "whatsappSenderId",
   },
-  capabilities: {
-    chatTypes: ["direct", "group"],
-    polls: true,
-    reactions: true,
-    media: true,
-  },
-  reload: { configPrefixes: ["web"], noopPrefixes: ["channels.whatsapp"] },
-  gatewayMethods: ["web.login.start", "web.login.wait"],
-  configSchema: buildChannelConfigSchema(WhatsAppConfigSchema),
-  config: {
-    listAccountIds: (cfg) => listWhatsAppAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveWhatsAppAccount({ cfg, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultWhatsAppAccountId(cfg),
-    setAccountEnabled: ({ cfg, accountId, enabled }) => {
-      const accountKey = accountId || DEFAULT_ACCOUNT_ID;
-      const accounts = { ...cfg.channels?.whatsapp?.accounts };
-      const existing = accounts[accountKey] ?? {};
-      return {
-        ...cfg,
-        channels: {
-          ...cfg.channels,
-          whatsapp: {
-            ...cfg.channels?.whatsapp,
-            accounts: {
-              ...accounts,
-              [accountKey]: {
-                ...existing,
-                enabled,
-              },
-            },
-          },
-        },
-      };
-    },
-    deleteAccount: ({ cfg, accountId }) => {
-      const accountKey = accountId || DEFAULT_ACCOUNT_ID;
-      const accounts = { ...cfg.channels?.whatsapp?.accounts };
-      delete accounts[accountKey];
-      return {
-        ...cfg,
-        channels: {
-          ...cfg.channels,
-          whatsapp: {
-            ...cfg.channels?.whatsapp,
-            accounts: Object.keys(accounts).length ? accounts : undefined,
-          },
-        },
-      };
-    },
-    isEnabled: (account, cfg) => account.enabled && cfg.web?.enabled !== false,
-    disabledReason: () => "disabled",
-    isConfigured: async (account) =>
-      await getWhatsAppRuntime().channel.whatsapp.webAuthExists(account.authDir),
-    unconfiguredReason: () => "not linked",
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: Boolean(account.authDir),
-      linked: Boolean(account.authDir),
-      dmPolicy: account.dmPolicy,
-      allowFrom: account.allowFrom,
-    }),
-    resolveAllowFrom: ({ cfg, accountId }) => resolveWhatsAppConfigAllowFrom({ cfg, accountId }),
-    formatAllowFrom: ({ allowFrom }) => formatWhatsAppConfigAllowFromEntries(allowFrom),
-    resolveDefaultTo: ({ cfg, accountId }) => resolveWhatsAppConfigDefaultTo({ cfg, accountId }),
-  },
-  security: {
-    resolveDmPolicy: ({ cfg, accountId, account }) => {
-      return buildAccountScopedDmSecurityPolicy({
-        cfg,
-        channelKey: "whatsapp",
-        accountId,
-        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-        policy: account.dmPolicy,
-        allowFrom: account.allowFrom ?? [],
-        policyPathSuffix: "dmPolicy",
-        normalizeEntry: (raw) => normalizeE164(raw),
-      });
-    },
-    collectWarnings: ({ account, cfg }) => {
-      const groupAllowlistConfigured =
-        Boolean(account.groups) && Object.keys(account.groups ?? {}).length > 0;
-      return collectAllowlistProviderGroupPolicyWarnings({
-        cfg,
-        providerConfigPresent: cfg.channels?.whatsapp !== undefined,
-        configuredGroupPolicy: account.groupPolicy,
-        collect: (groupPolicy) =>
-          collectOpenGroupPolicyRouteAllowlistWarnings({
-            groupPolicy,
-            routeAllowlistConfigured: groupAllowlistConfigured,
-            restrictSenders: {
-              surface: "WhatsApp groups",
-              openScope: "any member in allowed groups",
-              groupPolicyPath: "channels.whatsapp.groupPolicy",
-              groupAllowFromPath: "channels.whatsapp.groupAllowFrom",
-            },
-            noRouteAllowlist: {
-              surface: "WhatsApp groups",
-              routeAllowlistPath: "channels.whatsapp.groups",
-              routeScope: "group",
-              groupPolicyPath: "channels.whatsapp.groupPolicy",
-              groupAllowFromPath: "channels.whatsapp.groupAllowFrom",
-            },
-          }),
-      });
-    },
-  },
-  setup: {
-    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-    applyAccountName: ({ cfg, accountId, name }) =>
-      applyAccountNameToChannelSection({
-        cfg,
-        channelKey: "whatsapp",
-        accountId,
-        name,
-        alwaysUseAccounts: true,
-      }),
-    applyAccountConfig: ({ cfg, accountId, input }) => {
-      const namedConfig = applyAccountNameToChannelSection({
-        cfg,
-        channelKey: "whatsapp",
-        accountId,
-        name: input.name,
-        alwaysUseAccounts: true,
-      });
-      const next = migrateBaseNameToDefaultAccount({
-        cfg: namedConfig,
-        channelKey: "whatsapp",
-        alwaysUseAccounts: true,
-      });
-      const entry = {
-        ...next.channels?.whatsapp?.accounts?.[accountId],
-        ...(input.authDir ? { authDir: input.authDir } : {}),
-        enabled: true,
-      };
-      return {
-        ...next,
-        channels: {
-          ...next.channels,
-          whatsapp: {
-            ...next.channels?.whatsapp,
-            accounts: {
-              ...next.channels?.whatsapp?.accounts,
-              [accountId]: entry,
-            },
-          },
-        },
-      };
-    },
-  },
-  groups: {
-    resolveRequireMention: resolveWhatsAppGroupRequireMention,
-    resolveToolPolicy: resolveWhatsAppGroupToolPolicy,
-    resolveGroupIntroHint: resolveWhatsAppGroupIntroHint,
-  },
+  allowlist: buildDmGroupAccountAllowlistAdapter({
+    channelId: "whatsapp",
+    resolveAccount: ({ cfg, accountId }) => resolveWhatsAppAccount({ cfg, accountId }),
+    normalize: ({ values }) => formatWhatsAppConfigAllowFromEntries(values),
+    resolveDmAllowFrom: (account) => account.allowFrom,
+    resolveGroupAllowFrom: (account) => account.groupAllowFrom,
+    resolveDmPolicy: (account) => account.dmPolicy,
+    resolveGroupPolicy: (account) => account.groupPolicy,
+  }),
   mentions: {
     stripPatterns: ({ ctx }) => resolveWhatsAppMentionStripPatterns(ctx),
   },

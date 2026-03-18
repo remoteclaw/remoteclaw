@@ -5,9 +5,13 @@ import {
   createScopedChannelConfigAdapter,
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
-import { createMessageToolButtonsSchema } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelMessageToolDiscovery } from "remoteclaw/plugin-sdk/channel-runtime";
+import { createAllowlistProviderRestrictSendersWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
+import {
+  createChannelDirectoryAdapter,
+  createLoggedPairingApprovalNotifier,
+  createMessageToolButtonsSchema,
+  type ChannelMessageToolDiscovery,
+} from "remoteclaw/plugin-sdk/channel-runtime";
 import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import { MattermostConfigSchema } from "./config-schema.js";
 import { resolveMattermostGroupRequireMention } from "./group-mentions.js";
@@ -31,12 +35,25 @@ import { looksLikeMattermostTargetId, normalizeMattermostMessagingTarget } from 
 import { mattermostOnboardingAdapter } from "./onboarding.js";
 import { getMattermostRuntime } from "./runtime.js";
 
-const mattermostMessageActions: ChannelMessageActionAdapter = {
-  listActions: ({ cfg }) => {
-    const enabledAccounts = listMattermostAccountIds(cfg)
-      .map((accountId) => resolveMattermostAccount({ cfg, accountId }))
-      .filter((account) => account.enabled)
-      .filter((account) => Boolean(account.botToken?.trim() && account.baseUrl?.trim()));
+const collectMattermostSecurityWarnings =
+  createAllowlistProviderRestrictSendersWarningCollector<ResolvedMattermostAccount>({
+    providerConfigPresent: (cfg) => cfg.channels?.mattermost !== undefined,
+    resolveGroupPolicy: (account) => account.config.groupPolicy,
+    surface: "Mattermost channels",
+    openScope: "any member",
+    groupPolicyPath: "channels.mattermost.groupPolicy",
+    groupAllowFromPath: "channels.mattermost.groupAllowFrom",
+  });
+
+function describeMattermostMessageTool({
+  cfg,
+}: Parameters<
+  NonNullable<ChannelMessageActionAdapter["describeMessageTool"]>
+>[0]): ChannelMessageToolDiscovery {
+  const enabledAccounts = listMattermostAccountIds(cfg)
+    .map((accountId) => resolveMattermostAccount({ cfg, accountId }))
+    .filter((account) => account.enabled)
+    .filter((account) => Boolean(account.botToken?.trim() && account.baseUrl?.trim()));
 
     const actions: ChannelMessageActionName[] = [];
 
@@ -244,9 +261,9 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
   pairing: {
     idLabel: "mattermostUserId",
     normalizeAllowEntry: (entry) => normalizeAllowEntry(entry),
-    notifyApproval: async ({ id }) => {
-      console.log(`[mattermost] User ${id} approved for pairing`);
-    },
+    notifyApproval: createLoggedPairingApprovalNotifier(
+      ({ id }) => `[mattermost] User ${id} approved for pairing`,
+    ),
   },
   capabilities: {
     chatTypes: ["direct", "channel", "group", "thread"],
@@ -283,40 +300,19 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
     }),
   },
   security: {
-    resolveDmPolicy: ({ cfg, accountId, account }) => {
-      return buildAccountScopedDmSecurityPolicy({
-        cfg,
-        channelKey: "mattermost",
-        accountId,
-        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-        policy: account.config.dmPolicy,
-        allowFrom: account.config.allowFrom ?? [],
-        policyPathSuffix: "dmPolicy",
-        normalizeEntry: (raw) => normalizeAllowEntry(raw),
-      });
-    },
-    collectWarnings: ({ account, cfg }) => {
-      return collectAllowlistProviderRestrictSendersWarnings({
-        cfg,
-        providerConfigPresent: cfg.channels?.mattermost !== undefined,
-        configuredGroupPolicy: account.config.groupPolicy,
-        surface: "Mattermost channels",
-        openScope: "any member",
-        groupPolicyPath: "channels.mattermost.groupPolicy",
-        groupAllowFromPath: "channels.mattermost.groupAllowFrom",
-      });
-    },
+    resolveDmPolicy: resolveMattermostDmPolicy,
+    collectWarnings: collectMattermostSecurityWarnings,
   },
   groups: {
     resolveRequireMention: resolveMattermostGroupRequireMention,
   },
   actions: mattermostMessageActions,
-  directory: {
+  directory: createChannelDirectoryAdapter({
     listGroups: async (params) => listMattermostDirectoryGroups(params),
     listGroupsLive: async (params) => listMattermostDirectoryGroups(params),
     listPeers: async (params) => listMattermostDirectoryPeers(params),
     listPeersLive: async (params) => listMattermostDirectoryPeers(params),
-  },
+  }),
   messaging: {
     normalizeTarget: normalizeMattermostMessagingTarget,
     targetResolver: {

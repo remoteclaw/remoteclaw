@@ -11,7 +11,14 @@ import {
   createScopedDmSecurityResolver,
 } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
-import { collectOpenGroupPolicyRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
+import {
+  createOpenGroupPolicyRestrictSendersWarningCollector,
+  projectWarningCollector,
+} from "remoteclaw/plugin-sdk/channel-policy";
+import {
+  createPairingPrefixStripper,
+  createTextPairingAdapter,
+} from "remoteclaw/plugin-sdk/channel-runtime";
 import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
   listBlueBubblesAccountIds,
@@ -62,6 +69,17 @@ const resolveBlueBubblesDmPolicy = createScopedDmSecurityResolver<ResolvedBlueBu
   policyPathSuffix: "dmPolicy",
   normalizeEntry: (raw) => normalizeBlueBubblesHandle(raw.replace(/^bluebubbles:/i, "")),
 });
+
+const collectBlueBubblesSecurityWarnings =
+  createOpenGroupPolicyRestrictSendersWarningCollector<ResolvedBlueBubblesAccount>({
+    resolveGroupPolicy: (account) => account.config.groupPolicy,
+    defaultGroupPolicy: "allowlist",
+    surface: "BlueBubbles groups",
+    openScope: "any member",
+    groupPolicyPath: "channels.bluebubbles.groupPolicy",
+    groupAllowFromPath: "channels.bluebubbles.groupAllowFrom",
+    mentionGated: false,
+  });
 
 const meta = {
   id: "bluebubbles",
@@ -117,29 +135,11 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
   },
   actions: bluebubblesMessageActions,
   security: {
-    resolveDmPolicy: ({ cfg, accountId, account }) => {
-      return buildAccountScopedDmSecurityPolicy({
-        cfg,
-        channelKey: "bluebubbles",
-        accountId,
-        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-        policy: account.config.dmPolicy,
-        allowFrom: account.config.allowFrom ?? [],
-        policyPathSuffix: "dmPolicy",
-        normalizeEntry: (raw) => normalizeBlueBubblesHandle(raw.replace(/^bluebubbles:/i, "")),
-      });
-    },
-    collectWarnings: ({ account }) => {
-      const groupPolicy = account.config.groupPolicy ?? "allowlist";
-      return collectOpenGroupPolicyRestrictSendersWarnings({
-        groupPolicy,
-        surface: "BlueBubbles groups",
-        openScope: "any member",
-        groupPolicyPath: "channels.bluebubbles.groupPolicy",
-        groupAllowFromPath: "channels.bluebubbles.groupAllowFrom",
-        mentionGated: false,
-      });
-    },
+    resolveDmPolicy: resolveBlueBubblesDmPolicy,
+    collectWarnings: projectWarningCollector(
+      ({ account }: { account: ResolvedBlueBubblesAccount }) => account,
+      collectBlueBubblesSecurityWarnings,
+    ),
   },
   messaging: {
     normalizeTarget: normalizeBlueBubblesMessagingTarget,
@@ -214,62 +214,19 @@ export const bluebubblesPlugin: ChannelPlugin<ResolvedBlueBubblesAccount> = {
       return display?.trim() || target?.trim() || "";
     },
   },
-  setup: {
-    resolveAccountId: ({ accountId }) => normalizeAccountId(accountId),
-    applyAccountName: ({ cfg, accountId, name }) =>
-      applyAccountNameToChannelSection({
-        cfg: cfg,
-        channelKey: "bluebubbles",
-        accountId,
-        name,
-      }),
-    validateInput: ({ input }) => {
-      if (!input.httpUrl && !input.password) {
-        return "BlueBubbles requires --http-url and --password.";
-      }
-      if (!input.httpUrl) {
-        return "BlueBubbles requires --http-url.";
-      }
-      if (!input.password) {
-        return "BlueBubbles requires --password.";
-      }
-      return null;
-    },
-    applyAccountConfig: ({ cfg, accountId, input }) => {
-      const namedConfig = applyAccountNameToChannelSection({
-        cfg: cfg,
-        channelKey: "bluebubbles",
-        accountId,
-        name: input.name,
-      });
-      const next =
-        accountId !== DEFAULT_ACCOUNT_ID
-          ? migrateBaseNameToDefaultAccount({
-              cfg: namedConfig,
-              channelKey: "bluebubbles",
-            })
-          : namedConfig;
-      return applyBlueBubblesConnectionConfig({
-        cfg: next,
-        accountId,
-        patch: {
-          serverUrl: input.httpUrl,
-          password: input.password,
-          webhookPath: input.webhookPath,
-        },
-        onlyDefinedFields: true,
-      });
-    },
-  },
-  pairing: {
+  setup: blueBubblesSetupAdapter,
+  pairing: createTextPairingAdapter({
     idLabel: "bluebubblesSenderId",
-    normalizeAllowEntry: (entry) => normalizeBlueBubblesHandle(entry.replace(/^bluebubbles:/i, "")),
-    notifyApproval: async ({ cfg, id }) => {
-      await sendMessageBlueBubbles(id, PAIRING_APPROVED_MESSAGE, {
+    message: PAIRING_APPROVED_MESSAGE,
+    normalizeAllowEntry: createPairingPrefixStripper(/^bluebubbles:/i, normalizeBlueBubblesHandle),
+    notify: async ({ cfg, id, message }) => {
+      await (
+        await loadBlueBubblesChannelRuntime()
+      ).sendMessageBlueBubbles(id, message, {
         cfg: cfg,
       });
     },
-  },
+  }),
   outbound: {
     deliveryMode: "direct",
     textChunkLimit: 4000,

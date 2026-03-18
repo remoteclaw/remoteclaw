@@ -17,6 +17,7 @@
   "reply-payload",
   "channel-reply-pipeline",
   "channel-runtime",
+  "interactive-runtime",
   "infra-runtime",
   "media-runtime",
   "conversation-runtime",

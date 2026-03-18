@@ -1,11 +1,11 @@
 import {
   resolvePayloadMediaUrls,
   sendPayloadMediaSequence,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveOutboundSendDep, type OutboundSendDeps } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveInteractiveTextFallback } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+} from "openclaw/plugin-sdk/channel-runtime";
+import type { ChannelOutboundAdapter } from "openclaw/plugin-sdk/channel-runtime";
+import { resolveOutboundSendDep, type OutboundSendDeps } from "openclaw/plugin-sdk/channel-runtime";
+import { resolveInteractiveTextFallback } from "openclaw/plugin-sdk/interactive-runtime";
+import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
 import type { TelegramInlineButtons } from "./button-types.js";
 import { markdownToTelegramHtmlChunks } from "./format.js";
 import { parseTelegramReplyToMessageId, parseTelegramThreadId } from "./outbound-params.js";

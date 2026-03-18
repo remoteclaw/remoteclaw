@@ -69,7 +69,8 @@ Plugins can register:
 - Optional config validation
 - **Auto-reply commands** (execute without invoking the AI agent)
 
-Plugins run **in‑process** with the Gateway, so treat them as trusted code.
+Plugins run in-process with the Gateway (see
+[Execution model](#execution-model) for trust implications).
 Tool authoring guide: [Plugin agent tools](/plugins/agent-tools).
 
 ## Runtime helpers
@@ -563,7 +564,7 @@ remoteclaw plugins install ./extensions/voice-call # relative path ok
 remoteclaw plugins install ./plugin.tgz           # install from a local tarball
 remoteclaw plugins install ./plugin.zip           # install from a local zip
 remoteclaw plugins install -l ./extensions/voice-call # link (no copy) for dev
-remoteclaw plugins install @remoteclaw/voice-call # install from npm
+remoteclaw plugins install @remoteclaw/voice-call   # install from npm
 remoteclaw plugins install @remoteclaw/voice-call --pin # store exact resolved name@version
 remoteclaw plugins update <id>
 remoteclaw plugins update --all
@@ -572,10 +573,11 @@ remoteclaw plugins disable <id>
 remoteclaw plugins doctor
 ```
 
-`plugins update` only works for npm installs tracked under `plugins.installs`.
-If stored integrity metadata changes between updates, RemoteClaw warns and asks for confirmation (use global `--yes` to bypass prompts).
+See [`remoteclaw plugins` CLI reference](/cli/plugins) for full details on each
+command (install rules, inspect output, marketplace installs, uninstall).
 
-Plugins may also register their own top‑level commands (example: `remoteclaw voicecall`).
+Plugins may also register their own top-level commands (example:
+`remoteclaw voicecall`).
 
 ## Plugin API (overview)
 
@@ -933,7 +935,7 @@ See [Voice Call](/plugins/voice-call) and `extensions/voice-call/README.md` for 
 
 ## Safety notes
 
-Plugins run in-process with the Gateway. Treat them as trusted code:
+Plugins run in-process with the Gateway (see [Execution model](#execution-model)):
 
 - Only install plugins you trust.
 - Prefer `plugins.allow` allowlists.

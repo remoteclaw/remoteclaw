@@ -6,24 +6,12 @@ import { writeSkill } from "../../../src/agents/skills.e2e-test-helpers.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { TelegramAccountConfig } from "../../../src/config/types.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
-
-const pluginCommandMocks = vi.hoisted(() => ({
-  getPluginCommandSpecs: vi.fn(() => []),
-  matchPluginCommand: vi.fn(() => null),
-  executePluginCommand: vi.fn(async () => ({ text: "ok" })),
-}));
-const deliveryMocks = vi.hoisted(() => ({
-  deliverReplies: vi.fn(async () => ({ delivered: true })),
-}));
-
-vi.mock("../../../src/plugins/commands.js", () => ({
-  getPluginCommandSpecs: pluginCommandMocks.getPluginCommandSpecs,
-  matchPluginCommand: pluginCommandMocks.matchPluginCommand,
-  executePluginCommand: pluginCommandMocks.executePluginCommand,
-}));
-vi.mock("./bot/delivery.js", () => ({
-  deliverReplies: deliveryMocks.deliverReplies,
-}));
+import {
+  createNativeCommandTestParams,
+  listSkillCommandsForAgents,
+  resetNativeCommandMenuMocks,
+  waitForRegisteredCommands,
+} from "./bot-native-commands.menu-test-support.js";
 
 const tempDirs: string[] = [];
 
@@ -74,6 +62,10 @@ describe("registerTelegramNativeCommands skill allowlist integration", () => {
         },
       ],
     };
+    const actualSkillCommands = await import("../../../src/auto-reply/skill-commands.js");
+    listSkillCommandsForAgents.mockImplementation(({ cfg, agentIds }) =>
+      actualSkillCommands.listSkillCommandsForAgents({ cfg, agentIds }),
+    );
 
     registerTelegramNativeCommands({
       bot: {

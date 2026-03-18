@@ -1,5 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
+import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { ResolvedAgentRoute } from "../../../src/routing/resolve-route.js";
+import type { TelegramBotDeps } from "./bot-deps.js";
+import {
+  createDeferred,
+  createNativeCommandTestParams,
+  createTelegramPrivateCommandContext,
+  createTelegramTopicCommandContext,
+  type NativeCommandTestParams,
+} from "./bot-native-commands.fixture-test-support.js";
 import {
   registerTelegramNativeCommands,
   type RegisterTelegramHandlerParams,
@@ -188,6 +197,16 @@ function registerAndResolveStatusHandler(params: {
   const { cfg, allowFrom, groupAllowFrom } = params;
   const commandHandlers = new Map<string, TelegramCommandHandler>();
   const sendMessage = vi.fn().mockResolvedValue(undefined);
+  const telegramDeps: TelegramBotDeps = {
+    loadConfig: vi.fn(() => cfg),
+    resolveStorePath: sessionMocks.resolveStorePath as TelegramBotDeps["resolveStorePath"],
+    readChannelAllowFromStore: vi.fn(async () => []),
+    enqueueSystemEvent: vi.fn(),
+    dispatchReplyWithBufferedBlockDispatcher:
+      replyMocks.dispatchReplyWithBufferedBlockDispatcher as TelegramBotDeps["dispatchReplyWithBufferedBlockDispatcher"],
+    listSkillCommandsForAgents: vi.fn(() => []),
+    wasSentByBot: vi.fn(() => false),
+  };
   registerTelegramNativeCommands({
     ...createNativeCommandTestParams({
       bot: {
@@ -200,8 +219,12 @@ function registerAndResolveStatusHandler(params: {
         }),
       } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
       cfg,
-      allowFrom: allowFrom ?? ["*"],
-      groupAllowFrom: groupAllowFrom ?? [],
+      allowFrom,
+      groupAllowFrom,
+      useAccessGroups,
+      telegramCfg,
+      resolveTelegramGroupConfig,
+      telegramDeps,
     }),
   });
 

@@ -230,6 +230,7 @@ export function resolveGatewayConnection(opts: GatewayConnectionOptions) {
   const explicitAuth = resolveExplicitGatewayAuth({ token: opts.token, password: opts.password });
   ensureExplicitGatewayAuth({
     urlOverride,
+    urlOverrideSource: urlOverride ? "cli" : undefined,
     explicitAuth,
     errorHint: "Fix: pass --token or --password when using --url.",
   });

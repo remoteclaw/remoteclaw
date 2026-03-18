@@ -1,5 +1,5 @@
 ---
-description: "Voice Call plugin: outbound + inbound calls via Twilio/Telnyx/Plivo (plugin install + config + CLI)"
+summary: "Voice Call plugin: outbound + inbound calls via Twilio/Telnyx/Plivo (plugin install + config + CLI)"
 read_when:
   - You want to place an outbound voice call from RemoteClaw
   - You are configuring or developing the voice-call plugin
@@ -204,7 +204,7 @@ Example with a stable public host:
 
 ## TTS for calls
 
-Voice Call uses the core `messages.tts` configuration (OpenAI or ElevenLabs) for
+Voice Call uses the core `messages.tts` configuration for
 streaming speech on calls. You can override it under the plugin config with the
 **same shape** — it deep‑merges with `messages.tts`.
 
@@ -222,7 +222,7 @@ streaming speech on calls. You can override it under the plugin config with the
 
 Notes:
 
-- **Edge TTS is ignored for voice calls** (telephony audio needs PCM; Edge output is unreliable).
+- **Microsoft speech is ignored for voice calls** (telephony audio needs PCM; the current Microsoft transport does not expose telephony PCM output).
 - Core TTS is used when Twilio media streaming is enabled; otherwise calls fall back to provider native voices.
 
 ### More examples
@@ -304,22 +304,28 @@ caller-ID filtering, not strong caller identity.
 
 Auto-responses use the agent system. Tune with:
 
+- `responseModel`
 - `responseSystemPrompt`
 - `responseTimeoutMs`
-
-Model selection is the CLI agent's responsibility and is not configurable here.
 
 ## CLI
 
 ```bash
 remoteclaw voicecall call --to "+15555550123" --message "Hello from RemoteClaw"
+remoteclaw voicecall start --to "+15555550123"   # alias for call
 remoteclaw voicecall continue --call-id <id> --message "Any questions?"
 remoteclaw voicecall speak --call-id <id> --message "One moment"
 remoteclaw voicecall end --call-id <id>
 remoteclaw voicecall status --call-id <id>
 remoteclaw voicecall tail
+remoteclaw voicecall latency                     # summarize turn latency from logs
 remoteclaw voicecall expose --mode funnel
 ```
+
+`latency` reads `calls.jsonl` from the default voice-call storage path. Use
+`--file <path>` to point at a different log and `--last <n>` to limit analysis
+to the last N records (default 200). Output includes p50/p90/p99 for turn
+latency and listen-wait times.
 
 ## Agent tool
 

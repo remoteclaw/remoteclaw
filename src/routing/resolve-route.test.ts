@@ -4,7 +4,7 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { resolveAgentRoute } from "./resolve-route.js";
 
 describe("resolveAgentRoute", () => {
-  const resolveDiscordGuildRoute = (cfg: OpenClawConfig) =>
+  const resolveDiscordGuildRoute = (cfg: RemoteClawConfig) =>
     resolveAgentRoute({
       cfg,
       channel: "discord",

@@ -1,10 +1,6 @@
-import { resolveOutboundSendDep } from "../../../src/infra/outbound/send-deps.js";
-import {
-  buildAccountScopedAllowlistConfigEditor,
-  buildAccountScopedDmSecurityPolicy,
-  collectAllowlistProviderRestrictSendersWarnings,
-} from "../../../src/plugin-sdk-internal/channel-config.js";
-import { buildAgentSessionKey, type RoutePeer } from "../../../src/plugin-sdk-internal/core.js";
+import { buildAccountScopedAllowlistConfigEditor } from "remoteclaw/plugin-sdk/allowlist-config-edit";
+import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
+import { buildOutboundBaseSessionKey } from "remoteclaw/plugin-sdk/core";
 import {
   buildChannelConfigSchema,
   collectStatusIssuesFromLastError,
@@ -36,15 +32,17 @@ import {
 import { imessageSetupWizard } from "./plugin-shared.js";
 import { getIMessageRuntime } from "./runtime.js";
 import { imessageSetupAdapter } from "./setup-core.js";
+import {
+  collectIMessageSecurityWarnings,
+  createIMessagePluginBase,
+  imessageResolveDmPolicy,
+  imessageSetupWizard,
+} from "./shared.js";
 import { normalizeIMessageHandle, parseIMessageTarget } from "./targets.js";
 
 const meta = getChatChannelMeta("imessage");
 
-type IMessageSendFn = ReturnType<
-  typeof getIMessageRuntime
->["channel"]["imessage"]["sendMessageIMessage"];
-
-async function sendIMessageOutbound(params: {
+function buildIMessageBaseSessionKey(params: {
   cfg: Parameters<typeof resolveIMessageAccount>[0]["cfg"];
   to: string;
   text: string;
@@ -160,54 +158,8 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
     resolveDefaultTo: ({ cfg, accountId }) => resolveIMessageConfigDefaultTo({ cfg, accountId }),
   },
   security: {
-    resolveDmPolicy: ({ cfg, accountId, account }) => {
-      return buildAccountScopedDmSecurityPolicy({
-        cfg,
-        channelKey: "imessage",
-        accountId,
-        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-        policy: account.config.dmPolicy,
-        allowFrom: account.config.allowFrom ?? [],
-        policyPathSuffix: "dmPolicy",
-      });
-    },
-    collectWarnings: ({ account, cfg }) => {
-      return collectAllowlistProviderRestrictSendersWarnings({
-        cfg,
-        providerConfigPresent: cfg.channels?.imessage !== undefined,
-        configuredGroupPolicy: account.config.groupPolicy,
-        surface: "iMessage groups",
-        openScope: "any member",
-        groupPolicyPath: "channels.imessage.groupPolicy",
-        groupAllowFromPath: "channels.imessage.groupAllowFrom",
-        mentionGated: false,
-      });
-    },
-  },
-  security: {
-    resolveDmPolicy: ({ cfg, accountId, account }) => {
-      return buildAccountScopedDmSecurityPolicy({
-        cfg,
-        channelKey: "imessage",
-        accountId,
-        fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-        policy: account.config.dmPolicy,
-        allowFrom: account.config.allowFrom ?? [],
-        policyPathSuffix: "dmPolicy",
-      });
-    },
-    collectWarnings: ({ account, cfg }) => {
-      return collectAllowlistProviderRestrictSendersWarnings({
-        cfg,
-        providerConfigPresent: cfg.channels?.imessage !== undefined,
-        configuredGroupPolicy: account.config.groupPolicy,
-        surface: "iMessage groups",
-        openScope: "any member",
-        groupPolicyPath: "channels.imessage.groupPolicy",
-        groupAllowFromPath: "channels.imessage.groupAllowFrom",
-        mentionGated: false,
-      });
-    },
+    resolveDmPolicy: imessageResolveDmPolicy,
+    collectWarnings: collectIMessageSecurityWarnings,
   },
   groups: {
     resolveRequireMention: resolveIMessageGroupRequireMention,

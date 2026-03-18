@@ -1,5 +1,5 @@
-import { formatAllowFromLowercase } from "openclaw/plugin-sdk/allow-from";
-import { createChannelPluginBase } from "openclaw/plugin-sdk/core";
+import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
+import { createChannelPluginBase } from "remoteclaw/plugin-sdk/core";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import {
   listDiscordAccountIds,
@@ -23,9 +23,9 @@ async function loadDiscordChannelRuntime() {
   return await import("./channel.runtime.js");
 }
 
-export const discordSetupWizard = createDiscordSetupWizardProxy(async () => ({
-  discordSetupWizard: (await loadDiscordChannelRuntime()).discordSetupWizard,
-}));
+export const discordSetupWizard = createDiscordSetupWizardProxy(
+  async () => (await loadDiscordChannelRuntime()).discordSetupWizard,
+);
 
 export const discordConfigAccessors = createScopedAccountConfigAccessors({
   resolveAccount: ({ cfg, accountId }) => resolveDiscordAccount({ cfg, accountId }),

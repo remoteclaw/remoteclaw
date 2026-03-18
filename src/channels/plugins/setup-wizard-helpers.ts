@@ -13,29 +13,7 @@ import type {
   PromptAccountId,
   PromptAccountIdParams,
 } from "./setup-wizard-types.js";
-import type {
-  ChannelSetupWizard,
-  ChannelSetupWizardAllowFromEntry,
-  ChannelSetupWizardStatus,
-} from "./setup-wizard.js";
-
-let providerAuthInputPromise:
-  | Promise<Pick<typeof import("../../plugins/provider-auth-ref.js"), "promptSecretRefForSetup">>
-  | undefined;
-
-function loadProviderAuthInput() {
-  providerAuthInputPromise ??= import("../../plugins/provider-auth-ref.js");
-  return providerAuthInputPromise;
-}
-
-let providerAuthInputPromise:
-  | Promise<Pick<typeof import("../../plugins/provider-auth-ref.js"), "promptSecretRefForSetup">>
-  | undefined;
-
-function loadProviderAuthInput() {
-  providerAuthInputPromise ??= import("../../plugins/provider-auth-ref.js");
-  return providerAuthInputPromise;
-}
+import type { ChannelSetupWizard, ChannelSetupWizardAllowFromEntry } from "./setup-wizard.js";
 
 export const promptAccountId: PromptAccountId = async (params: PromptAccountIdParams) => {
   const existingIds = params.listAccountIds(params.cfg);
@@ -1176,41 +1154,6 @@ export async function promptParsedAllowFromForAccount<TConfig extends RemoteClaw
   });
 }
 
-export function createPromptParsedAllowFromForAccount<TConfig extends RemoteClawConfig>(params: {
-  defaultAccountId: string | ((cfg: TConfig) => string);
-  noteTitle?: string;
-  noteLines?: string[];
-  message: string;
-  placeholder: string;
-  parseEntries: (raw: string) => ParsedAllowFromResult;
-  getExistingAllowFrom: (params: { cfg: TConfig; accountId: string }) => Array<string | number>;
-  mergeEntries?: (params: { existing: Array<string | number>; parsed: string[] }) => string[];
-  applyAllowFrom: (params: {
-    cfg: TConfig;
-    accountId: string;
-    allowFrom: string[];
-  }) => TConfig | Promise<TConfig>;
-}): NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]> {
-  return async ({ cfg, prompter, accountId }) =>
-    await promptParsedAllowFromForAccount({
-      cfg: cfg as TConfig,
-      accountId,
-      defaultAccountId:
-        typeof params.defaultAccountId === "function"
-          ? params.defaultAccountId(cfg as TConfig)
-          : params.defaultAccountId,
-      prompter,
-      ...(params.noteTitle ? { noteTitle: params.noteTitle } : {}),
-      ...(params.noteLines ? { noteLines: params.noteLines } : {}),
-      message: params.message,
-      placeholder: params.placeholder,
-      parseEntries: params.parseEntries,
-      getExistingAllowFrom: params.getExistingAllowFrom,
-      ...(params.mergeEntries ? { mergeEntries: params.mergeEntries } : {}),
-      applyAllowFrom: params.applyAllowFrom,
-    });
-}
-
 export async function promptParsedAllowFromForScopedChannel(params: {
   cfg: RemoteClawConfig;
   channel: "imessage" | "signal";
@@ -1245,76 +1188,6 @@ export async function promptParsedAllowFromForScopedChannel(params: {
         accountId,
         allowFrom,
       }),
-  });
-}
-
-export function createTopLevelChannelParsedAllowFromPrompt(params: {
-  channel: string;
-  defaultAccountId: string;
-  enabled?: boolean;
-  noteTitle?: string;
-  noteLines?: string[];
-  message: string;
-  placeholder: string;
-  parseEntries: (raw: string) => ParsedAllowFromResult;
-  getExistingAllowFrom?: (cfg: RemoteClawConfig) => Array<string | number>;
-  mergeEntries?: (params: { existing: Array<string | number>; parsed: string[] }) => string[];
-}): NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]> {
-  const setAllowFrom = createTopLevelChannelAllowFromSetter({
-    channel: params.channel,
-    ...(params.enabled ? { enabled: true } : {}),
-  });
-  return createPromptParsedAllowFromForAccount({
-    defaultAccountId: params.defaultAccountId,
-    ...(params.noteTitle ? { noteTitle: params.noteTitle } : {}),
-    ...(params.noteLines ? { noteLines: params.noteLines } : {}),
-    message: params.message,
-    placeholder: params.placeholder,
-    parseEntries: params.parseEntries,
-    getExistingAllowFrom: ({ cfg }) =>
-      params.getExistingAllowFrom?.(cfg) ??
-      (((cfg.channels?.[params.channel] as { allowFrom?: Array<string | number> } | undefined)
-        ?.allowFrom ?? []) as Array<string | number>),
-    ...(params.mergeEntries ? { mergeEntries: params.mergeEntries } : {}),
-    applyAllowFrom: ({ cfg, allowFrom }) => setAllowFrom(cfg, allowFrom),
-  });
-}
-
-export function createNestedChannelParsedAllowFromPrompt(params: {
-  channel: string;
-  section: string;
-  defaultAccountId: string;
-  enabled?: boolean;
-  noteTitle?: string;
-  noteLines?: string[];
-  message: string;
-  placeholder: string;
-  parseEntries: (raw: string) => ParsedAllowFromResult;
-  getExistingAllowFrom?: (cfg: RemoteClawConfig) => Array<string | number>;
-  mergeEntries?: (params: { existing: Array<string | number>; parsed: string[] }) => string[];
-}): NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]> {
-  const setAllowFrom = createNestedChannelAllowFromSetter({
-    channel: params.channel,
-    section: params.section,
-    ...(params.enabled ? { enabled: true } : {}),
-  });
-  return createPromptParsedAllowFromForAccount({
-    defaultAccountId: params.defaultAccountId,
-    ...(params.noteTitle ? { noteTitle: params.noteTitle } : {}),
-    ...(params.noteLines ? { noteLines: params.noteLines } : {}),
-    message: params.message,
-    placeholder: params.placeholder,
-    parseEntries: params.parseEntries,
-    getExistingAllowFrom: ({ cfg }) =>
-      params.getExistingAllowFrom?.(cfg) ??
-      (
-        (cfg.channels?.[params.channel] as Record<string, unknown> | undefined)?.[params.section] as
-          | { allowFrom?: Array<string | number> }
-          | undefined
-      )?.allowFrom ??
-      [],
-    ...(params.mergeEntries ? { mergeEntries: params.mergeEntries } : {}),
-    applyAllowFrom: ({ cfg, allowFrom }) => setAllowFrom(cfg, allowFrom),
   });
 }
 

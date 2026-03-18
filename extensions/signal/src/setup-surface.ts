@@ -1,9 +1,9 @@
 import {
+  createDetectedBinaryStatus,
   setSetupChannelEnabled,
   type ChannelSetupWizard,
-} from "openclaw/plugin-sdk/setup";
-import { detectBinary } from "../../../src/plugins/setup-binary.js";
-import { installSignalCli } from "../../../src/plugins/signal-cli-install.js";
+} from "remoteclaw/plugin-sdk/setup";
+import { detectBinary, installSignalCli } from "remoteclaw/plugin-sdk/setup-tools";
 import { listSignalAccountIds, resolveSignalAccount } from "./accounts.js";
 import {
   DEFAULT_ACCOUNT_ID,
@@ -11,7 +11,7 @@ import {
   formatCliCommand,
   formatDocsLink,
   installSignalCli,
-  type OpenClawConfig,
+  type RemoteClawConfig,
   parseSetupEntriesAllowingWildcard,
   promptParsedAllowFromForScopedChannel,
   setChannelDmPolicyWithAllowFrom,
@@ -82,7 +82,9 @@ const signalDmPolicy: ChannelSetupDmPolicy = {
 
 export const signalSetupWizard: ChannelSetupWizard = {
   channel,
-  status: {
+  status: createDetectedBinaryStatus({
+    channelLabel: "Signal",
+    binaryLabel: "signal-cli",
     configuredLabel: "configured",
     unconfiguredLabel: "needs setup",
     configuredHint: "signal-cli found",
@@ -93,23 +95,9 @@ export const signalSetupWizard: ChannelSetupWizard = {
       listSignalAccountIds(cfg).some(
         (accountId) => resolveSignalAccount({ cfg, accountId }).configured,
       ),
-    resolveStatusLines: async ({ cfg, configured }) => {
-      const signalCliPath = cfg.channels?.signal?.cliPath ?? "signal-cli";
-      const signalCliDetected = await detectBinary(signalCliPath);
-      return [
-        `Signal: ${configured ? "configured" : "needs setup"}`,
-        `signal-cli: ${signalCliDetected ? "found" : "missing"} (${signalCliPath})`,
-      ];
-    },
-    resolveSelectionHint: async ({ cfg }) => {
-      const signalCliPath = cfg.channels?.signal?.cliPath ?? "signal-cli";
-      return (await detectBinary(signalCliPath)) ? "signal-cli found" : "signal-cli missing";
-    },
-    resolveQuickstartScore: async ({ cfg }) => {
-      const signalCliPath = cfg.channels?.signal?.cliPath ?? "signal-cli";
-      return (await detectBinary(signalCliPath)) ? 1 : 0;
-    },
-  },
+    resolveBinaryPath: ({ cfg }) => cfg.channels?.signal?.cliPath ?? "signal-cli",
+    detectBinary,
+  }),
   prepare: async ({ cfg, accountId, credentialValues, runtime, prompter, options }) => {
     if (!options?.allowSignalInstall) {
       return;

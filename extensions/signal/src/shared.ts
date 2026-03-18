@@ -1,18 +1,17 @@
-import { createScopedAccountConfigAccessors } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
-  buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderRestrictSendersWarnings,
-} from "remoteclaw/plugin-sdk/channel-policy";
+  createScopedAccountConfigAccessors,
+  createScopedChannelConfigBase,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createChannelPluginBase } from "remoteclaw/plugin-sdk/core";
 import {
-  deleteAccountFromConfigSection,
-  setAccountEnabledInConfigSection,
-} from "../../../src/channels/plugins/config-helpers.js";
-import { buildChannelConfigSchema } from "../../../src/channels/plugins/config-schema.js";
-import type { ChannelPlugin } from "../../../src/channels/plugins/types.plugin.js";
-import { getChatChannelMeta } from "../../../src/channels/registry.js";
-import { SignalConfigSchema } from "../../../src/config/zod-schema.providers-core.js";
-import { DEFAULT_ACCOUNT_ID } from "../../../src/routing/session-key.js";
-import { normalizeE164 } from "../../../src/utils.js";
+  buildChannelConfigSchema,
+  getChatChannelMeta,
+  normalizeE164,
+  SignalConfigSchema,
+  type ChannelPlugin,
+} from "remoteclaw/plugin-sdk/signal-core";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,
@@ -27,9 +26,9 @@ async function loadSignalChannelRuntime() {
   return await import("./channel.runtime.js");
 }
 
-export const signalSetupWizard = createSignalSetupWizardProxy(async () => ({
-  signalSetupWizard: (await loadSignalChannelRuntime()).signalSetupWizard,
-}));
+export const signalSetupWizard = createSignalSetupWizardProxy(
+  async () => (await loadSignalChannelRuntime()).signalSetupWizard,
+);
 
 export const signalConfigAccessors = createScopedAccountConfigAccessors({
   resolveAccount: ({ cfg, accountId }) => resolveSignalAccount({ cfg, accountId }),
@@ -42,6 +41,38 @@ export const signalConfigAccessors = createScopedAccountConfigAccessors({
       .filter(Boolean),
   resolveDefaultTo: (account: ResolvedSignalAccount) => account.config.defaultTo,
 });
+
+export const signalConfigBase = createScopedChannelConfigBase<ResolvedSignalAccount>({
+  sectionKey: SIGNAL_CHANNEL,
+  listAccountIds: listSignalAccountIds,
+  resolveAccount: (cfg, accountId) => resolveSignalAccount({ cfg, accountId }),
+  defaultAccountId: resolveDefaultSignalAccountId,
+  clearBaseFields: ["account", "httpUrl", "httpHost", "httpPort", "cliPath", "name"],
+});
+
+export const signalResolveDmPolicy = createScopedDmSecurityResolver<ResolvedSignalAccount>({
+  channelKey: SIGNAL_CHANNEL,
+  resolvePolicy: (account) => account.config.dmPolicy,
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  policyPathSuffix: "dmPolicy",
+  normalizeEntry: (raw) => normalizeE164(raw.replace(/^signal:/i, "").trim()),
+});
+
+export function collectSignalSecurityWarnings(params: {
+  account: ResolvedSignalAccount;
+  cfg: Parameters<typeof resolveSignalAccount>[0]["cfg"];
+}) {
+  return collectAllowlistProviderRestrictSendersWarnings({
+    cfg: params.cfg,
+    providerConfigPresent: params.cfg.channels?.signal !== undefined,
+    configuredGroupPolicy: params.account.config.groupPolicy,
+    surface: "Signal groups",
+    openScope: "any member",
+    groupPolicyPath: "channels.signal.groupPolicy",
+    groupAllowFromPath: "channels.signal.groupAllowFrom",
+    mentionGated: false,
+  });
+}
 
 export function createSignalPluginBase(params: {
   setupWizard?: NonNullable<ChannelPlugin<ResolvedSignalAccount>["setupWizard"]>;
@@ -76,24 +107,7 @@ export function createSignalPluginBase(params: {
     reload: { configPrefixes: ["channels.signal"] },
     configSchema: buildChannelConfigSchema(SignalConfigSchema),
     config: {
-      listAccountIds: (cfg) => listSignalAccountIds(cfg),
-      resolveAccount: (cfg, accountId) => resolveSignalAccount({ cfg, accountId }),
-      defaultAccountId: (cfg) => resolveDefaultSignalAccountId(cfg),
-      setAccountEnabled: ({ cfg, accountId, enabled }) =>
-        setAccountEnabledInConfigSection({
-          cfg,
-          sectionKey: SIGNAL_CHANNEL,
-          accountId,
-          enabled,
-          allowTopLevel: true,
-        }),
-      deleteAccount: ({ cfg, accountId }) =>
-        deleteAccountFromConfigSection({
-          cfg,
-          sectionKey: SIGNAL_CHANNEL,
-          accountId,
-          clearBaseFields: ["account", "httpUrl", "httpHost", "httpPort", "cliPath", "name"],
-        }),
+      ...signalConfigBase,
       isConfigured: (account) => account.configured,
       describeAccount: (account) => ({
         accountId: account.accountId,
@@ -105,28 +119,8 @@ export function createSignalPluginBase(params: {
       ...signalConfigAccessors,
     },
     security: {
-      resolveDmPolicy: ({ cfg, accountId, account }) =>
-        buildAccountScopedDmSecurityPolicy({
-          cfg,
-          channelKey: SIGNAL_CHANNEL,
-          accountId,
-          fallbackAccountId: account.accountId ?? DEFAULT_ACCOUNT_ID,
-          policy: account.config.dmPolicy,
-          allowFrom: account.config.allowFrom ?? [],
-          policyPathSuffix: "dmPolicy",
-          normalizeEntry: (raw) => normalizeE164(raw.replace(/^signal:/i, "").trim()),
-        }),
-      collectWarnings: ({ account, cfg }) =>
-        collectAllowlistProviderRestrictSendersWarnings({
-          cfg,
-          providerConfigPresent: cfg.channels?.signal !== undefined,
-          configuredGroupPolicy: account.config.groupPolicy,
-          surface: "Signal groups",
-          openScope: "any member",
-          groupPolicyPath: "channels.signal.groupPolicy",
-          groupAllowFromPath: "channels.signal.groupAllowFrom",
-          mentionGated: false,
-        }),
+      resolveDmPolicy: signalResolveDmPolicy,
+      collectWarnings: collectSignalSecurityWarnings,
     },
     setup: params.setup,
   };

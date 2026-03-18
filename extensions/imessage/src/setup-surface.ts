@@ -1,14 +1,15 @@
 import {
+  createDetectedBinaryStatus,
   setSetupChannelEnabled,
   type ChannelSetupWizard,
-} from "openclaw/plugin-sdk/setup";
-import { detectBinary } from "../../../src/plugins/setup-binary.js";
+} from "remoteclaw/plugin-sdk/setup";
+import { detectBinary } from "remoteclaw/plugin-sdk/setup-tools";
 import { listIMessageAccountIds, resolveIMessageAccount } from "./accounts.js";
 import {
   DEFAULT_ACCOUNT_ID,
   detectBinary,
   formatDocsLink,
-  type OpenClawConfig,
+  type RemoteClawConfig,
   parseSetupEntriesAllowingWildcard,
   promptParsedAllowFromForScopedChannel,
   setChannelDmPolicyWithAllowFrom,
@@ -75,41 +76,19 @@ const imessageDmPolicy: ChannelSetupDmPolicy = {
 
 export const imessageSetupWizard: ChannelSetupWizard = {
   channel,
-  status: {
-    configuredLabel: "configured",
-    unconfiguredLabel: "needs setup",
-    configuredHint: "imsg found",
-    unconfiguredHint: "imsg missing",
-    configuredScore: 1,
-    unconfiguredScore: 0,
-    resolveConfigured: ({ cfg }) =>
-      listIMessageAccountIds(cfg).some((accountId) => {
-        const account = resolveIMessageAccount({ cfg, accountId });
-        return Boolean(
-          account.config.cliPath ||
-          account.config.dbPath ||
-          account.config.allowFrom ||
-          account.config.service ||
-          account.config.region,
-        );
-      }),
-    resolveStatusLines: async ({ cfg, configured }) => {
-      const cliPath = cfg.channels?.imessage?.cliPath ?? "imsg";
-      const cliDetected = await detectBinary(cliPath);
-      return [
-        `iMessage: ${configured ? "configured" : "needs setup"}`,
-        `imsg: ${cliDetected ? "found" : "missing"} (${cliPath})`,
-      ];
-    },
-    resolveSelectionHint: async ({ cfg }) => {
-      const cliPath = cfg.channels?.imessage?.cliPath ?? "imsg";
-      return (await detectBinary(cliPath)) ? "imsg found" : "imsg missing";
-    },
-    resolveQuickstartScore: async ({ cfg }) => {
-      const cliPath = cfg.channels?.imessage?.cliPath ?? "imsg";
-      return (await detectBinary(cliPath)) ? 1 : 0;
-    },
-  },
+  status: createDetectedBinaryStatus({
+    channelLabel: "iMessage",
+    binaryLabel: "imsg",
+    configuredLabel: imessageSetupStatusBase.configuredLabel,
+    unconfiguredLabel: imessageSetupStatusBase.unconfiguredLabel,
+    configuredHint: imessageSetupStatusBase.configuredHint,
+    unconfiguredHint: imessageSetupStatusBase.unconfiguredHint,
+    configuredScore: imessageSetupStatusBase.configuredScore,
+    unconfiguredScore: imessageSetupStatusBase.unconfiguredScore,
+    resolveConfigured: imessageSetupStatusBase.resolveConfigured,
+    resolveBinaryPath: ({ cfg }) => cfg.channels?.imessage?.cliPath ?? "imsg",
+    detectBinary,
+  }),
   credentials: [],
   textInputs: [
     {

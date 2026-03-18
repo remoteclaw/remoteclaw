@@ -10,14 +10,14 @@ import {
   patchChannelConfigForAccount,
   setLegacyChannelDmPolicyWithAllowFrom,
   setSetupChannelEnabled,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/setup";
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/setup";
 import { formatDocsLink } from "../../../src/terminal/links.js";
 import {
   type ChannelSetupAdapter,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
-} from "openclaw/plugin-sdk/setup";
+} from "remoteclaw/plugin-sdk/setup";
 import { inspectDiscordAccount } from "./account-inspect.js";
 import { listDiscordAccountIds, resolveDiscordAccount } from "./accounts.js";
 
@@ -81,7 +81,7 @@ export const discordSetupAdapter: ChannelSetupAdapter = createEnvPatchedAccountS
 });
 
 type DiscordAllowFromResolverParams = {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId: string;
   credentialValues: { token?: string };
   entries: string[];
@@ -98,10 +98,10 @@ type DiscordGroupAllowlistResolution = Array<{
 
 type DiscordSetupWizardHandlers = {
   promptAllowFrom: (params: {
-    cfg: OpenClawConfig;
+    cfg: RemoteClawConfig;
     prompter: import("../../../src/plugin-sdk-internal/setup.js").WizardPrompter;
     accountId?: string;
-  }) => Promise<OpenClawConfig>;
+  }) => Promise<RemoteClawConfig>;
   resolveAllowFromEntries: (params: DiscordAllowFromResolverParams) => Promise<
     Array<{
       input: string;
@@ -257,42 +257,11 @@ export function createDiscordSetupWizardBase(
     disable: (cfg: RemoteClawConfig) => setSetupChannelEnabled(cfg, channel, false),
   } satisfies ChannelSetupWizard;
 }
-
-export function createDiscordSetupWizardProxy(
-  loadWizard: () => Promise<{ discordSetupWizard: ChannelSetupWizard }>,
-) {
-  return createDiscordSetupWizardBase({
-    promptAllowFrom: async ({ cfg, prompter, accountId }) => {
-      const wizard = (await loadWizard()).discordSetupWizard;
-      if (!wizard.dmPolicy?.promptAllowFrom) {
-        return cfg;
-      }
-      return await wizard.dmPolicy.promptAllowFrom({ cfg, prompter, accountId });
-    },
-    resolveAllowFromEntries: async ({ cfg, accountId, credentialValues, entries }) => {
-      const wizard = (await loadWizard()).discordSetupWizard;
-      if (!wizard.allowFrom) {
-        return entries.map((input) => ({ input, resolved: false, id: null }));
-      }
-      return await wizard.allowFrom.resolveEntries({
-        cfg,
-        accountId,
-        credentialValues,
-        entries,
-      });
-    },
-    resolveGroupAllowlist: async ({ cfg, accountId, credentialValues, entries, prompter }) => {
-      const wizard = (await loadWizard()).discordSetupWizard;
-      if (!wizard.groupAccess?.resolveAllowlist) {
-        return entries.map((input) => ({ input, resolved: false }));
-      }
-      return (await wizard.groupAccess.resolveAllowlist({
-        cfg,
-        accountId,
-        credentialValues,
-        entries,
-        prompter,
-      })) as DiscordGroupAllowlistResolution;
-    },
+export function createDiscordSetupWizardProxy(loadWizard: () => Promise<ChannelSetupWizard>) {
+  return createAllowlistSetupWizardProxy({
+    loadWizard,
+    createBase: createDiscordSetupWizardBase,
+    fallbackResolvedGroupAllowlist: (entries) =>
+      entries.map((input) => ({ input, resolved: false })),
   });
 }

@@ -1,6 +1,10 @@
 import type { DmPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
-import { resolveSetupAccountId, setSetupChannelEnabled } from "remoteclaw/plugin-sdk/setup";
+import {
+  createAllowFromSection,
+  promptParsedAllowFromForAccount,
+  setSetupChannelEnabled,
+} from "remoteclaw/plugin-sdk/setup";
 import type { ChannelSetupDmPolicy } from "remoteclaw/plugin-sdk/setup";
 import type { ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
 import { formatDocsLink } from "remoteclaw/plugin-sdk/setup";
@@ -53,36 +57,30 @@ async function promptIrcAllowFrom(params: {
   prompter: WizardPrompter;
   accountId?: string;
 }): Promise<CoreConfig> {
-  const existing = params.cfg.channels?.irc?.allowFrom ?? [];
-
-  await params.prompter.note(
-    [
+  return await promptParsedAllowFromForAccount({
+    cfg: params.cfg,
+    accountId: params.accountId,
+    defaultAccountId: resolveDefaultIrcAccountId(params.cfg),
+    prompter: params.prompter,
+    noteTitle: "IRC allowlist",
+    noteLines: [
       "Allowlist IRC DMs by sender.",
       "Examples:",
       "- alice",
       "- alice!ident@example.org",
       "Multiple entries: comma-separated.",
-    ].join("\n"),
-    "IRC allowlist",
-  );
-
-  const raw = await params.prompter.text({
+    ],
     message: "IRC allowFrom (nick or nick!user@host)",
     placeholder: "alice, bob!ident@example.org",
-    initialValue: existing[0] ? String(existing[0]) : undefined,
-    validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
-  });
-
-  const parsed = parseListInput(String(raw));
-  const normalized = [
-    ...new Set(
-      parsed
+    parseEntries: (raw) => ({
+      entries: parseListInput(raw)
         .map((entry) => normalizeIrcAllowEntry(entry))
         .map((entry) => entry.trim())
         .filter(Boolean),
-    ),
-  ];
-  return setIrcAllowFrom(params.cfg, normalized);
+    }),
+    getExistingAllowFrom: ({ cfg }) => cfg.channels?.irc?.allowFrom ?? [],
+    applyAllowFrom: ({ cfg, allowFrom }) => setIrcAllowFrom(cfg, allowFrom),
+  });
 }
 
 async function promptIrcNickServConfig(params: {
@@ -173,10 +171,7 @@ const ircDmPolicy: ChannelSetupDmPolicy = {
     await promptIrcAllowFrom({
       cfg: cfg as CoreConfig,
       prompter,
-      accountId: resolveSetupAccountId({
-        accountId,
-        defaultAccountId: resolveDefaultIrcAccountId(cfg as CoreConfig),
-      }),
+      accountId,
     }),
 };
 
@@ -388,7 +383,7 @@ export const ircSetupWizard: ChannelSetupWizard = {
         normalizeGroupEntry,
       ),
   },
-  allowFrom: {
+  allowFrom: createAllowFromSection({
     helpTitle: "IRC allowlist",
     helpLines: [
       "Allowlist IRC DMs by sender.",
@@ -404,17 +399,8 @@ export const ircSetupWizard: ChannelSetupWizard = {
       const normalized = normalizeIrcAllowEntry(raw);
       return normalized || null;
     },
-    resolveEntries: async ({ entries }) =>
-      entries.map((entry) => {
-        const normalized = normalizeIrcAllowEntry(entry);
-        return {
-          input: entry,
-          resolved: Boolean(normalized),
-          id: normalized || null,
-        };
-      }),
     apply: async ({ cfg, allowFrom }) => setIrcAllowFrom(cfg as CoreConfig, allowFrom),
-  },
+  }),
   finalize: async ({ cfg, accountId, prompter }) => {
     let next = cfg as CoreConfig;
 

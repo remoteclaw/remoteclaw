@@ -10,12 +10,16 @@ import {
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
   mergeAllowFromEntries,
-  setTopLevelChannelAllowFrom,
-  setTopLevelChannelDmPolicyWithAllowFrom,
-  setTopLevelChannelGroupPolicy,
-  splitOnboardingEntries,
-} from "remoteclaw/plugin-sdk";
-import { resolveFeishuCredentials } from "./accounts.js";
+  patchTopLevelChannelConfigSection,
+  promptParsedAllowFromForAccount,
+  promptSingleChannelSecretInput,
+  splitSetupEntries,
+  type ChannelSetupDmPolicy,
+  type ChannelSetupWizard,
+  type RemoteClawConfig,
+  type SecretInput,
+} from "remoteclaw/plugin-sdk/setup";
+import { listFeishuAccountIds, resolveFeishuCredentials } from "./accounts.js";
 import { probeFeishu } from "./probe.js";
 import type { FeishuConfig } from "./types.js";
 
@@ -46,37 +50,28 @@ function setFeishuAllowFrom(cfg: ClawdbotConfig, allowFrom: string[]): ClawdbotC
 }
 
 async function promptFeishuAllowFrom(params: {
-  cfg: ClawdbotConfig;
-  prompter: WizardPrompter;
-}): Promise<ClawdbotConfig> {
-  const existing = params.cfg.channels?.feishu?.allowFrom ?? [];
-  await params.prompter.note(
-    [
+  cfg: RemoteClawConfig;
+  prompter: Parameters<NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>>[0]["prompter"];
+}): Promise<RemoteClawConfig> {
+  return await promptParsedAllowFromForAccount({
+    cfg: params.cfg,
+    defaultAccountId: DEFAULT_ACCOUNT_ID,
+    prompter: params.prompter,
+    noteTitle: "Feishu allowlist",
+    noteLines: [
       "Allowlist Feishu DMs by open_id or user_id.",
       "You can find user open_id in Feishu admin console or via API.",
       "Examples:",
       "- ou_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       "- on_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    ].join("\n"),
-    "Feishu allowlist",
-  );
-
-  while (true) {
-    const entry = await params.prompter.text({
-      message: "Feishu allowFrom (user open_ids)",
-      placeholder: "ou_xxxxx, ou_yyyyy",
-      initialValue: existing[0] ? String(existing[0]) : undefined,
-      validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
-    });
-    const parts = splitOnboardingEntries(String(entry));
-    if (parts.length === 0) {
-      await params.prompter.note("Enter at least one user.", "Feishu allowlist");
-      continue;
-    }
-
-    const unique = mergeAllowFromEntries(existing, parts);
-    return setFeishuAllowFrom(params.cfg, unique);
-  }
+    ],
+    message: "Feishu allowFrom (user open_ids)",
+    placeholder: "ou_xxxxx, ou_yyyyy",
+    parseEntries: (raw) => ({ entries: splitSetupEntries(raw) }),
+    getExistingAllowFrom: ({ cfg }) => cfg.channels?.feishu?.allowFrom ?? [],
+    mergeEntries: ({ existing, parsed }) => mergeAllowFromEntries(existing, parsed),
+    applyAllowFrom: ({ cfg, allowFrom }) => setFeishuAllowFrom(cfg, allowFrom),
+  });
 }
 
 async function noteFeishuCredentialHelp(prompter: WizardPrompter): Promise<void> {

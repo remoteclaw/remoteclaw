@@ -34,6 +34,17 @@ export {
 export {
   addWildcardAllowFrom,
   buildSingleChannelSecretPromptState,
+  createAccountScopedAllowFromSection,
+  createAccountScopedGroupAccessSection,
+  createAllowFromSection,
+  createLegacyCompatChannelDmPolicy,
+  createNestedChannelAllowFromSetter,
+  createNestedChannelDmPolicy,
+  createNestedChannelDmPolicySetter,
+  createTopLevelChannelAllowFromSetter,
+  createTopLevelChannelDmPolicy,
+  createTopLevelChannelDmPolicySetter,
+  createTopLevelChannelGroupPolicySetter,
   mergeAllowFromEntries,
   normalizeAllowFromEntries,
   noteChannelLookupFailure,
@@ -43,11 +54,17 @@ export {
   parseSetupEntriesWithParser,
   patchChannelConfigForAccount,
   promptLegacyChannelAllowFrom,
+  promptLegacyChannelAllowFromForAccount,
+  promptParsedAllowFromForAccount,
   promptParsedAllowFromForScopedChannel,
   promptSingleChannelSecretInput,
   promptResolvedAllowFrom,
+  resolveParsedAllowFromEntries,
+  resolveEntriesWithOptionalToken,
   resolveSetupAccountId,
   runSingleChannelSecretStep,
+  setAccountAllowFromForChannel,
+  setAccountDmAllowFromForChannel,
   setAccountGroupPolicyForChannel,
   setChannelDmPolicyWithAllowFrom,
   setLegacyChannelDmPolicyWithAllowFrom,
@@ -58,6 +75,18 @@ export {
   splitSetupEntries,
 } from "../channels/plugins/setup-wizard-helpers.js";
 export { createAllowlistSetupWizardProxy } from "../channels/plugins/setup-wizard-proxy.js";
+export {
+  createDelegatedFinalize,
+  createDelegatedPrepare,
+  createDelegatedResolveConfigured,
+  createDelegatedSetupWizardProxy,
+} from "../channels/plugins/setup-wizard-proxy.js";
+export {
+  createCliPathTextInput,
+  createDelegatedSetupWizardStatusResolvers,
+  createDelegatedTextInputShouldPrompt,
+  createDetectedBinaryStatus,
+} from "../channels/plugins/setup-wizard-binary.js";
 
   const entered = await params.prompter.text({
     message: `New ${params.label} account id`,

@@ -1,13 +1,23 @@
-import { sendReactionWhatsApp } from "../../../extensions/whatsapp/src/send.js";
-import type { RemoteClawConfig } from "../../config/config.js";
-import type { AgentToolResult } from "../agent-types.js";
-import { createActionGate, jsonResult, readReactionParams, readStringParam } from "./common.js";
-import { resolveAuthorizedWhatsAppOutboundTarget } from "./whatsapp-target-auth.js";
+import type { AgentToolResult } from "@mariozechner/pi-agent-core";
+import { resolveAuthorizedWhatsAppOutboundTarget } from "./action-runtime-target-auth.js";
+import {
+  createActionGate,
+  jsonResult,
+  readReactionParams,
+  readStringParam,
+  type RemoteClawConfig,
+} from "./runtime-api.js";
+import { sendReactionWhatsApp } from "./send.js";
+
+export const whatsAppActionRuntime = {
+  resolveAuthorizedWhatsAppOutboundTarget,
+  sendReactionWhatsApp,
+};
 
 export async function handleWhatsAppAction(
   params: Record<string, unknown>,
   cfg: RemoteClawConfig,
-): Promise<AgentToolResult> {
+): Promise<AgentToolResult<unknown>> {
   const action = readStringParam(params, "action", { required: true });
   const isActionEnabled = createActionGate(cfg.channels?.whatsapp?.actions);
 
@@ -26,7 +36,7 @@ export async function handleWhatsAppAction(
     const fromMe = typeof fromMeRaw === "boolean" ? fromMeRaw : undefined;
 
     // Resolve account + allowFrom via shared account logic so auth and routing stay aligned.
-    const resolved = resolveAuthorizedWhatsAppOutboundTarget({
+    const resolved = whatsAppActionRuntime.resolveAuthorizedWhatsAppOutboundTarget({
       cfg,
       chatJid,
       accountId,
@@ -34,7 +44,7 @@ export async function handleWhatsAppAction(
     });
 
     const resolvedEmoji = remove ? "" : emoji;
-    await sendReactionWhatsApp(resolved.to, messageId, resolvedEmoji, {
+    await whatsAppActionRuntime.sendReactionWhatsApp(resolved.to, messageId, resolvedEmoji, {
       verbose: false,
       fromMe,
       participant: participant ?? undefined,

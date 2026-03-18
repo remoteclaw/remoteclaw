@@ -6,7 +6,7 @@ read_when:
   - Enabling or auditing default skills
 ---
 
-# AGENTS.md — RemoteClaw Personal Assistant (default)
+# AGENTS.md - RemoteClaw Personal Assistant (default)
 
 ## First run (recommended)
 

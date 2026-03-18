@@ -1,8 +1,8 @@
-import { inspectSlackAccount as inspectSlackAccountImpl } from "../../extensions/slack/api.js";
+import { inspectSlackAccount as inspectSlackAccountImpl } from "openclaw/plugin-sdk/slack";
 
-export type { InspectedSlackAccount } from "../../extensions/slack/api.js";
+export type { InspectedSlackAccount } from "openclaw/plugin-sdk/slack";
 
-type InspectSlackAccount = typeof import("../../extensions/slack/api.js").inspectSlackAccount;
+type InspectSlackAccount = typeof import("openclaw/plugin-sdk/slack").inspectSlackAccount;
 
 export function inspectSlackAccount(
   ...args: Parameters<InspectSlackAccount>

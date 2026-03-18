@@ -1,7 +1,7 @@
-import { sendMessageSlack as sendMessageSlackImpl } from "../../../extensions/slack/runtime-api.js";
+import { sendMessageSlack as sendMessageSlackImpl } from "openclaw/plugin-sdk/slack";
 
 type RuntimeSend = {
-  sendMessage: typeof import("../../../extensions/slack/runtime-api.js").sendMessageSlack;
+  sendMessage: typeof import("openclaw/plugin-sdk/slack").sendMessageSlack;
 };
 
 export const runtimeSend = {

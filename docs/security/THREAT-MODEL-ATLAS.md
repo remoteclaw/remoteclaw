@@ -1,5 +1,9 @@
 ---
-title: "Threat Model"
+title: "Threat Model (MITRE ATLAS)"
+summary: "RemoteClaw threat model mapped to the MITRE ATLAS framework"
+read_when:
+  - Reviewing security posture or threat scenarios
+  - Working on security features or audit responses
 ---
 
 # RemoteClaw Threat Model v1.0
@@ -38,7 +42,7 @@ This is a living document maintained by the RemoteClaw community. See [CONTRIBUT
 
 ### 1.1 Purpose
 
-This threat model documents adversarial threats to the RemoteClaw AI agent platform, using the MITRE ATLAS framework designed specifically for AI/ML systems.
+This threat model documents adversarial threats to the RemoteClaw AI agent platform and ClawHub skill marketplace, using the MITRE ATLAS framework designed specifically for AI/ML systems.
 
 ### 1.2 Scope
 
@@ -47,6 +51,7 @@ This threat model documents adversarial threats to the RemoteClaw AI agent platf
 | RemoteClaw Agent Runtime | Yes      | Core agent execution, tool calls, sessions       |
 | Gateway                  | Yes      | Authentication, routing, channel integration     |
 | Channel Integrations     | Yes      | WhatsApp, Telegram, Discord, Signal, Slack, etc. |
+| ClawHub Marketplace      | Yes      | Skill publishing, moderation, distribution       |
 | MCP Servers              | Yes      | External tool providers                          |
 | User Devices             | Partial  | Mobile apps, desktop clients                     |
 
@@ -95,8 +100,8 @@ Nothing is explicitly out of scope for this threat model.
 ┌─────────────────────────────────────────────────────────────────┐
 │                 TRUST BOUNDARY 3: Tool Execution                 │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │                  TOOL EXECUTION                            │   │
-│  │  • Host execution with exec-approvals                     │   │
+│  │                  EXECUTION SANDBOX                        │   │
+│  │  • Docker sandbox OR Host (exec-approvals)                │   │
 │  │  • Node remote execution                                  │   │
 │  │  • SSRF protection (DNS pinning + IP blocking)            │   │
 │  └──────────────────────────────────────────────────────────┘   │
@@ -116,23 +121,25 @@ Nothing is explicitly out of scope for this threat model.
 ┌─────────────────────────────────────────────────────────────────┐
 │                 TRUST BOUNDARY 5: Supply Chain                   │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │                    SKILL LOADING                          │   │
-│  │  • Local skill directories                                │   │
-│  │  • Workspace skills precedence                            │   │
+│  │                      CLAWHUB                              │   │
+│  │  • Skill publishing (semver, SKILL.md required)           │   │
+│  │  • Pattern-based moderation flags                         │   │
+│  │  • VirusTotal scanning (coming soon)                      │   │
+│  │  • GitHub account age verification                        │   │
 │  └──────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ### 2.2 Data Flows
 
-| Flow | Source  | Destination | Data               | Protection         |
-| ---- | ------- | ----------- | ------------------ | ------------------ |
-| F1   | Channel | Gateway     | User messages      | TLS, AllowFrom     |
-| F2   | Gateway | Agent       | Routed messages    | Session isolation  |
-| F3   | Agent   | Tools       | Tool invocations   | Policy enforcement |
-| F4   | Agent   | External    | web_fetch requests | SSRF blocking      |
-| F5   | Skills  | Agent       | Skill code         | Local file access  |
-| F6   | Agent   | Channel     | Responses          | Output filtering   |
+| Flow | Source  | Destination | Data               | Protection           |
+| ---- | ------- | ----------- | ------------------ | -------------------- |
+| F1   | Channel | Gateway     | User messages      | TLS, AllowFrom       |
+| F2   | Gateway | Agent       | Routed messages    | Session isolation    |
+| F3   | Agent   | Tools       | Tool invocations   | Policy enforcement   |
+| F4   | Agent   | External    | web_fetch requests | SSRF blocking        |
+| F5   | ClawHub | Agent       | Skill code         | Moderation, scanning |
+| F6   | Agent   | Channel     | Responses          | Output filtering     |
 
 ---
 
@@ -262,17 +269,29 @@ Nothing is explicitly out of scope for this threat model.
 
 #### T-PERSIST-001: Malicious Skill Installation
 
-| Attribute               | Value                                                                |
-| ----------------------- | -------------------------------------------------------------------- |
-| **ATLAS ID**            | AML.T0010.001 - Supply Chain Compromise: AI Software                 |
-| **Description**         | Attacker places malicious skill in a skills directory                |
-| **Attack Vector**       | Social engineering user to drop malicious skill files into workspace |
-| **Affected Components** | Skill loading, agent execution                                       |
-| **Current Mitigations** | File permissions                                                     |
-| **Residual Risk**       | Critical - Skills are prompt text with no integrity checks           |
-| **Recommendations**     | Skill integrity verification, community review                       |
+| Attribute               | Value                                                                    |
+| ----------------------- | ------------------------------------------------------------------------ |
+| **ATLAS ID**            | AML.T0010.001 - Supply Chain Compromise: AI Software                     |
+| **Description**         | Attacker publishes malicious skill to ClawHub                            |
+| **Attack Vector**       | Create account, publish skill with hidden malicious code                 |
+| **Affected Components** | ClawHub, skill loading, agent execution                                  |
+| **Current Mitigations** | GitHub account age verification, pattern-based moderation flags          |
+| **Residual Risk**       | Critical - No sandboxing, limited review                                 |
+| **Recommendations**     | VirusTotal integration (in progress), skill sandboxing, community review |
 
-#### T-PERSIST-002: Agent Configuration Tampering
+#### T-PERSIST-002: Skill Update Poisoning
+
+| Attribute               | Value                                                          |
+| ----------------------- | -------------------------------------------------------------- |
+| **ATLAS ID**            | AML.T0010.001 - Supply Chain Compromise: AI Software           |
+| **Description**         | Attacker compromises popular skill and pushes malicious update |
+| **Attack Vector**       | Account compromise, social engineering of skill owner          |
+| **Affected Components** | ClawHub versioning, auto-update flows                          |
+| **Current Mitigations** | Version fingerprinting                                         |
+| **Residual Risk**       | High - Auto-updates may pull malicious versions                |
+| **Recommendations**     | Implement update signing, rollback capability, version pinning |
+
+#### T-PERSIST-003: Agent Configuration Tampering
 
 | Attribute               | Value                                                           |
 | ----------------------- | --------------------------------------------------------------- |
@@ -288,7 +307,19 @@ Nothing is explicitly out of scope for this threat model.
 
 ### 3.5 Defense Evasion (AML.TA0007)
 
-#### T-EVADE-001: Content Wrapper Escape
+#### T-EVADE-001: Moderation Pattern Bypass
+
+| Attribute               | Value                                                                  |
+| ----------------------- | ---------------------------------------------------------------------- |
+| **ATLAS ID**            | AML.T0043 - Craft Adversarial Data                                     |
+| **Description**         | Attacker crafts skill content to evade moderation patterns             |
+| **Attack Vector**       | Unicode homoglyphs, encoding tricks, dynamic loading                   |
+| **Affected Components** | ClawHub moderation.ts                                                  |
+| **Current Mitigations** | Pattern-based FLAG_RULES                                               |
+| **Residual Risk**       | High - Simple regex easily bypassed                                    |
+| **Recommendations**     | Add behavioral analysis (VirusTotal Code Insight), AST-based detection |
+
+#### T-EVADE-002: Content Wrapper Escape
 
 | Attribute               | Value                                                     |
 | ----------------------- | --------------------------------------------------------- |
@@ -380,9 +411,9 @@ Nothing is explicitly out of scope for this threat model.
 | **Description**         | Attacker executes arbitrary commands on user system |
 | **Attack Vector**       | Prompt injection combined with exec approval bypass |
 | **Affected Components** | Bash tool, command execution                        |
-| **Current Mitigations** | Exec approvals, command allowlist                   |
-| **Residual Risk**       | Critical - Host execution relies on approval UX     |
-| **Recommendations**     | Strengthen exec-approval defaults, improve UX       |
+| **Current Mitigations** | Exec approvals, Docker sandbox option               |
+| **Residual Risk**       | Critical - Host execution without sandbox           |
+| **Recommendations**     | Default to sandbox, improve approval UX             |
 
 #### T-IMPACT-002: Resource Exhaustion (DoS)
 
@@ -410,9 +441,58 @@ Nothing is explicitly out of scope for this threat model.
 
 ---
 
-## 4. Risk Matrix
+## 4. ClawHub Supply Chain Analysis
 
-### 4.1 Likelihood vs Impact
+### 4.1 Current Security Controls
+
+| Control              | Implementation              | Effectiveness                                        |
+| -------------------- | --------------------------- | ---------------------------------------------------- |
+| GitHub Account Age   | `requireGitHubAccountAge()` | Medium - Raises bar for new attackers                |
+| Path Sanitization    | `sanitizePath()`            | High - Prevents path traversal                       |
+| File Type Validation | `isTextFile()`              | Medium - Only text files, but can still be malicious |
+| Size Limits          | 50MB total bundle           | High - Prevents resource exhaustion                  |
+| Required SKILL.md    | Mandatory readme            | Low security value - Informational only              |
+| Pattern Moderation   | FLAG_RULES in moderation.ts | Low - Easily bypassed                                |
+| Moderation Status    | `moderationStatus` field    | Medium - Manual review possible                      |
+
+### 4.2 Moderation Flag Patterns
+
+Current patterns in `moderation.ts`:
+
+```javascript
+// Known-bad identifiers
+/(keepcold131\/ClawdAuthenticatorTool|ClawdAuthenticatorTool)/i
+
+// Suspicious keywords
+/(malware|stealer|phish|phishing|keylogger)/i
+/(api[-_ ]?key|token|password|private key|secret)/i
+/(wallet|seed phrase|mnemonic|crypto)/i
+/(discord\.gg|webhook|hooks\.slack)/i
+/(curl[^\n]+\|\s*(sh|bash))/i
+/(bit\.ly|tinyurl\.com|t\.co|goo\.gl|is\.gd)/i
+```
+
+**Limitations:**
+
+- Only checks slug, displayName, summary, frontmatter, metadata, file paths
+- Does not analyze actual skill code content
+- Simple regex easily bypassed with obfuscation
+- No behavioral analysis
+
+### 4.3 Planned Improvements
+
+| Improvement            | Status                                | Impact                                                                |
+| ---------------------- | ------------------------------------- | --------------------------------------------------------------------- |
+| VirusTotal Integration | In Progress                           | High - Code Insight behavioral analysis                               |
+| Community Reporting    | Partial (`skillReports` table exists) | Medium                                                                |
+| Audit Logging          | Partial (`auditLogs` table exists)    | Medium                                                                |
+| Badge System           | Implemented                           | Medium - `highlighted`, `official`, `deprecated`, `redactionApproved` |
+
+---
+
+## 5. Risk Matrix
+
+### 5.1 Likelihood vs Impact
 
 | Threat ID     | Likelihood | Impact   | Risk Level   | Priority |
 | ------------- | ---------- | -------- | ------------ | -------- |
@@ -425,17 +505,18 @@ Nothing is explicitly out of scope for this threat model.
 | T-ACCESS-003  | Medium     | High     | **High**     | P1       |
 | T-EXFIL-001   | Medium     | High     | **High**     | P1       |
 | T-IMPACT-002  | High       | Medium   | **High**     | P1       |
+| T-EVADE-001   | High       | Medium   | **Medium**   | P2       |
 | T-ACCESS-001  | Low        | High     | **Medium**   | P2       |
 | T-ACCESS-002  | Low        | High     | **Medium**   | P2       |
-| T-PERSIST-002 | Low        | Medium   | **Medium**   | P2       |
+| T-PERSIST-002 | Low        | High     | **Medium**   | P2       |
 
-### 4.2 Critical Path Attack Chains
+### 5.2 Critical Path Attack Chains
 
 **Attack Chain 1: Skill-Based Data Theft**
 
 ```
-T-PERSIST-001 → T-EXFIL-003
-(Install malicious skill) → (Harvest credentials)
+T-PERSIST-001 → T-EVADE-001 → T-EXFIL-003
+(Publish malicious skill) → (Evade moderation) → (Harvest credentials)
 ```
 
 **Attack Chain 2: Prompt Injection to RCE**
@@ -454,49 +535,52 @@ T-EXEC-002 → T-EXFIL-001 → External exfiltration
 
 ---
 
-## 5. Recommendations Summary
+## 6. Recommendations Summary
 
-### 5.1 Immediate (P0)
+### 6.1 Immediate (P0)
 
 | ID    | Recommendation                              | Addresses                  |
 | ----- | ------------------------------------------- | -------------------------- |
-| R-001 | Implement skill review and integrity checks | T-PERSIST-001, T-EXFIL-003 |
-| R-002 | Add output validation for sensitive actions | T-EXEC-001, T-EXEC-002     |
+| R-001 | Complete VirusTotal integration             | T-PERSIST-001, T-EVADE-001 |
+| R-002 | Implement skill sandboxing                  | T-PERSIST-001, T-EXFIL-003 |
+| R-003 | Add output validation for sensitive actions | T-EXEC-001, T-EXEC-002     |
 
-### 5.2 Short-term (P1)
+### 6.2 Short-term (P1)
 
-| ID    | Recommendation                          | Addresses    |
-| ----- | --------------------------------------- | ------------ |
-| R-003 | Implement rate limiting                 | T-IMPACT-002 |
-| R-004 | Add token encryption at rest            | T-ACCESS-003 |
-| R-005 | Improve exec approval UX and validation | T-EXEC-004   |
+| ID    | Recommendation                           | Addresses    |
+| ----- | ---------------------------------------- | ------------ |
+| R-004 | Implement rate limiting                  | T-IMPACT-002 |
+| R-005 | Add token encryption at rest             | T-ACCESS-003 |
+| R-006 | Improve exec approval UX and validation  | T-EXEC-004   |
+| R-007 | Implement URL allowlisting for web_fetch | T-EXFIL-001  |
 
-### 5.3 Medium-term (P2)
+### 6.3 Medium-term (P2)
 
 | ID    | Recommendation                                        | Addresses     |
 | ----- | ----------------------------------------------------- | ------------- |
-| R-006 | Add cryptographic channel verification where possible | T-ACCESS-002  |
-| R-007 | Implement config integrity verification               | T-PERSIST-002 |
+| R-008 | Add cryptographic channel verification where possible | T-ACCESS-002  |
+| R-009 | Implement config integrity verification               | T-PERSIST-003 |
+| R-010 | Add update signing and version pinning                | T-PERSIST-002 |
 
 ---
 
-## 6. Appendices
+## 7. Appendices
 
-### 6.1 ATLAS Technique Mapping
+### 7.1 ATLAS Technique Mapping
 
 | ATLAS ID      | Technique Name                 | RemoteClaw Threats                                               |
 | ------------- | ------------------------------ | ---------------------------------------------------------------- |
 | AML.T0006     | Active Scanning                | T-RECON-001, T-RECON-002                                         |
 | AML.T0009     | Collection                     | T-EXFIL-001, T-EXFIL-002, T-EXFIL-003                            |
-| AML.T0010.001 | Supply Chain: AI Software      | T-PERSIST-001                                                    |
-| AML.T0010.002 | Supply Chain: Data             | T-PERSIST-002                                                    |
+| AML.T0010.001 | Supply Chain: AI Software      | T-PERSIST-001, T-PERSIST-002                                     |
+| AML.T0010.002 | Supply Chain: Data             | T-PERSIST-003                                                    |
 | AML.T0031     | Erode AI Model Integrity       | T-IMPACT-001, T-IMPACT-002, T-IMPACT-003                         |
 | AML.T0040     | AI Model Inference API Access  | T-ACCESS-001, T-ACCESS-002, T-ACCESS-003, T-DISC-001, T-DISC-002 |
-| AML.T0043     | Craft Adversarial Data         | T-EXEC-004, T-EVADE-001                                          |
+| AML.T0043     | Craft Adversarial Data         | T-EXEC-004, T-EVADE-001, T-EVADE-002                             |
 | AML.T0051.000 | LLM Prompt Injection: Direct   | T-EXEC-001, T-EXEC-003                                           |
 | AML.T0051.001 | LLM Prompt Injection: Indirect | T-EXEC-002                                                       |
 
-### 6.2 Key Security Files
+### 7.2 Key Security Files
 
 | Path                                | Purpose                     | Risk Level   |
 | ----------------------------------- | --------------------------- | ------------ |
@@ -505,20 +589,23 @@ T-EXEC-002 → T-EXFIL-001 → External exfiltration
 | `src/web/inbound/access-control.ts` | Channel access control      | **Critical** |
 | `src/infra/net/ssrf.ts`             | SSRF protection             | **Critical** |
 | `src/security/external-content.ts`  | Prompt injection mitigation | **Critical** |
-| `src/agents/tool-policy.ts`         | Tool policy enforcement     | **Critical** |
+| `src/agents/sandbox/tool-policy.ts` | Tool policy enforcement     | **Critical** |
+| `convex/lib/moderation.ts`          | ClawHub moderation          | **High**     |
+| `convex/lib/skillPublish.ts`        | Skill publishing flow       | **High**     |
 | `src/routing/resolve-route.ts`      | Session isolation           | **Medium**   |
 
-### 6.3 Glossary
+### 7.3 Glossary
 
 | Term                 | Definition                                                |
 | -------------------- | --------------------------------------------------------- |
 | **ATLAS**            | MITRE's Adversarial Threat Landscape for AI Systems       |
+| **ClawHub**          | RemoteClaw's skill marketplace                            |
 | **Gateway**          | RemoteClaw's message routing and authentication layer     |
 | **MCP**              | Model Context Protocol - tool provider interface          |
 | **Prompt Injection** | Attack where malicious instructions are embedded in input |
-| **Skill**            | Loadable extension for RemoteClaw agents                  |
+| **Skill**            | Downloadable extension for RemoteClaw agents              |
 | **SSRF**             | Server-Side Request Forgery                               |
 
 ---
 
-_This threat model is a living document. Report security issues to security@remoteclaw.org_
+_This threat model is a living document. Report security issues to security@remoteclaw.ai_

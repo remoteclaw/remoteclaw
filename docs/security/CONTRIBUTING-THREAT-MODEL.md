@@ -1,5 +1,9 @@
 ---
 title: "Contributing to the Threat Model"
+summary: "How to contribute to the RemoteClaw threat model"
+read_when:
+  - You want to contribute security findings or threat scenarios
+  - Reviewing or updating the threat model
 ---
 
 # Contributing to the RemoteClaw Threat Model
@@ -15,13 +19,13 @@ Spotted an attack vector or risk we haven't covered? Open an issue on [remotecla
 **Helpful to include (but not required):**
 
 - The attack scenario and how it could be exploited
-- Which parts of RemoteClaw are affected (CLI, gateway, channels, skills, MCP servers, etc.)
+- Which parts of RemoteClaw are affected (CLI, gateway, channels, ClawHub, MCP servers, etc.)
 - How severe you think it is (low / medium / high / critical)
 - Any links to related research, CVEs, or real-world examples
 
 We'll handle the ATLAS mapping, threat IDs, and risk assessment during review. If you want to include those details, great - but it's not expected.
 
-> **This is for adding to the threat model, not reporting live vulnerabilities.** If you've found an exploitable vulnerability, see our [Trust page](https://trust.remoteclaw.org) for responsible disclosure instructions.
+> **This is for adding to the threat model, not reporting live vulnerabilities.** If you've found an exploitable vulnerability, see our [Trust page](https://trust.remoteclaw.ai) for responsible disclosure instructions.
 
 ### Suggest a Mitigation
 
@@ -85,7 +89,7 @@ If you're unsure about the risk level, just describe the impact and we'll assess
 
 ## Contact
 
-- **Security vulnerabilities:** See our [Trust page](https://trust.remoteclaw.org) for reporting instructions
+- **Security vulnerabilities:** See our [Trust page](https://trust.remoteclaw.ai) for reporting instructions
 - **Threat model questions:** Open an issue on [remoteclaw/trust](https://github.com/remoteclaw/trust/issues)
 - **General chat:** Discord #security channel
 

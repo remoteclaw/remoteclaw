@@ -374,29 +374,15 @@ export const telegramBotRuntimeForTest = {
     return sequentializeSpy();
   },
   apiThrottler: () => runnerHoisted.throttlerSpy(),
-  loadConfig,
 };
-export const telegramBotMessageDispatchRuntimeForTest = {
-  dispatchReplyWithBufferedBlockDispatcher,
-};
-export const telegramBotNativeCommandsRuntimeForTest = {
-  dispatchReplyWithBufferedBlockDispatcher,
-  listSkillCommandsForAgents,
-};
-export const telegramBotHandlersRuntimeForTest = {
+export const telegramBotDepsForTest = {
   loadConfig,
   resolveStorePath: resolveStorePathMock,
-  readChannelAllowFromStore:
-    readChannelAllowFromStore as TelegramBotDeps["readChannelAllowFromStore"],
-  upsertChannelPairingRequest:
-    upsertChannelPairingRequest as TelegramBotDeps["upsertChannelPairingRequest"],
-  enqueueSystemEvent: enqueueSystemEventSpy as TelegramBotDeps["enqueueSystemEvent"],
+  readChannelAllowFromStore,
+  enqueueSystemEvent: enqueueSystemEventSpy,
   dispatchReplyWithBufferedBlockDispatcher,
-  loadWebMedia: loadWebMedia as TelegramBotDeps["loadWebMedia"],
-  buildModelsProviderData: buildModelsProviderData as TelegramBotDeps["buildModelsProviderData"],
-  listSkillCommandsForAgents:
-    listSkillCommandsForAgents as TelegramBotDeps["listSkillCommandsForAgents"],
-  wasSentByBot: wasSentByBot as TelegramBotDeps["wasSentByBot"],
+  listSkillCommandsForAgents,
+  wasSentByBot,
 };
 
 vi.doMock("./bot.runtime.js", () => telegramBotRuntimeForTest);

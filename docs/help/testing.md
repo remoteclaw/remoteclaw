@@ -52,17 +52,10 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
   - Runs in CI
   - No real keys required
   - Should be fast and stable
-- Embedded runner note:
-  - When you change message-tool discovery inputs or compaction runtime context,
-    keep both levels of coverage.
-  - Add focused helper regressions for pure routing/normalization seams.
-  - Also keep the embedded runner integration suites healthy:
-    `src/agents/pi-embedded-runner/compact.hooks.test.ts`,
-    `src/agents/pi-embedded-runner/run.overflow-compaction.test.ts`, and
-    `src/agents/pi-embedded-runner/run.overflow-compaction.loop.test.ts`.
-  - Those suites verify that scoped ids and compaction behavior still flow
-    through the real `run.ts` / `compact.ts` paths; helper-only tests are not a
-    sufficient substitute for those seams.
+- Scheduler note:
+  - `pnpm test` now keeps a small checked-in behavioral manifest for true pool/isolation overrides and a separate timing snapshot for the slowest unit files.
+  - Shared unit coverage stays on, but the wrapper peels the heaviest measured files into dedicated lanes instead of relying on a growing hand-maintained exclusion list.
+  - Refresh the timing snapshot with `pnpm test:perf:update-timings` after major suite shape changes.
 - Pool note:
   - RemoteClaw uses Vitest `vmForks` on Node 22/23 for faster unit shards.
   - On Node 24+, RemoteClaw automatically falls back to regular `forks` to avoid Node VM linking errors (`ERR_VM_MODULE_LINK_FAILURE` / `module is already linked`).
@@ -72,7 +65,7 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
 
 - Command: `pnpm test:e2e`
 - Config: `vitest.e2e.config.ts`
-- Files: `src/**/*.e2e.test.ts`, `test/**/*.e2e.test.ts`
+- Files: `src/**/*.e2e.test.ts`
 - Runtime defaults:
   - Uses Vitest `vmForks` for faster file startup.
   - Uses adaptive workers (CI: 2-4, local: 4-8).
@@ -87,23 +80,6 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
   - Runs in CI (when enabled in the pipeline)
   - No real keys required
   - More moving parts than unit tests (can be slower)
-
-### E2E: OpenShell backend smoke
-
-- Command: `pnpm test:e2e:openshell`
-- File: `test/openshell-sandbox.e2e.test.ts`
-- Scope:
-  - Starts an isolated OpenShell gateway on the host via Docker
-  - Creates a sandbox from a temporary local Dockerfile
-  - Exercises OpenClaw's OpenShell backend over real `sandbox ssh-config` + SSH exec
-  - Verifies remote-canonical filesystem behavior through the sandbox fs bridge
-- Expectations:
-  - Opt-in only; not part of the default `pnpm test:e2e` run
-  - Requires a local `openshell` CLI plus a working Docker daemon
-  - Uses isolated `HOME` / `XDG_CONFIG_HOME`, then destroys the test gateway and sandbox
-- Useful overrides:
-  - `OPENCLAW_E2E_OPENSHELL=1` to enable the test when running the broader e2e suite manually
-  - `OPENCLAW_E2E_OPENSHELL_COMMAND=/path/to/openshell` to point at a non-default CLI binary or wrapper script
 
 ### Live (real providers + real models)
 

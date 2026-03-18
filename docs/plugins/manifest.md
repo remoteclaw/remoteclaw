@@ -64,6 +64,7 @@ Optional keys:
 - The manifest is **required for all plugins**, including local filesystem loads.
 - Runtime still loads the plugin module separately; the manifest is only for
   discovery + validation.
+
 - Exclusive plugin kinds are selected through `plugins.slots.*`.
   - `kind: "memory"` is selected by `plugins.slots.memory`.
   - `kind: "context-engine"` is selected by `plugins.slots.contextEngine`

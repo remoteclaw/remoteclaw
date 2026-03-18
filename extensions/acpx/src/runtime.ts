@@ -10,8 +10,8 @@ import type {
   AcpRuntimeStatus,
   AcpRuntimeTurnInput,
   PluginLogger,
-} from "remoteclaw/plugin-sdk/acpx";
-import { AcpRuntimeError } from "remoteclaw/plugin-sdk/acpx";
+} from "../runtime-api.js";
+import { AcpRuntimeError } from "../runtime-api.js";
 import { toAcpMcpServers, type ResolvedAcpxPluginConfig } from "./config.js";
 import { checkAcpxVersion, type AcpxVersionCheckResult } from "./ensure.js";
 import {

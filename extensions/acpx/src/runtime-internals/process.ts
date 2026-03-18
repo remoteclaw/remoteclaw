@@ -5,14 +5,14 @@ import type {
   WindowsSpawnProgram,
   WindowsSpawnProgramCandidate,
   WindowsSpawnResolution,
-} from "remoteclaw/plugin-sdk/acpx";
+} from "../runtime-api.js";
 import {
   applyWindowsSpawnProgramPolicy,
   listKnownProviderAuthEnvVarNames,
   materializeWindowsSpawnProgram,
   omitEnvKeysCaseInsensitive,
   resolveWindowsSpawnProgramCandidate,
-} from "remoteclaw/plugin-sdk/acpx";
+} from "../runtime-api.js";
 
 export type SpawnExit = {
   code: number | null;

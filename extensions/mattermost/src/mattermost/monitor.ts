@@ -1008,7 +1008,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       }
       return !core.channel.text.hasControlCommand(text, cfg);
     },
-    onFlush: async (entries: unknown[]) => {
+    onFlush: async (entries: any[]) => {
       const last = entries.at(-1);
       if (!last) {
         return;

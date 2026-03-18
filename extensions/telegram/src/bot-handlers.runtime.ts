@@ -1,19 +1,9 @@
 import type { Message, ReactionTypeEmoji } from "@grammyjs/types";
-import { resolveAgentDir, resolveDefaultAgentId } from "remoteclaw/plugin-sdk/agent-runtime";
-import { resolveDefaultModelForAgent } from "remoteclaw/plugin-sdk/agent-runtime";
-import { resolveChannelConfigWrites } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { shouldDebounceTextInbound } from "remoteclaw/plugin-sdk/channel-inbound";
-import {
-  createInboundDebouncer,
-  resolveInboundDebounceMs,
-} from "remoteclaw/plugin-sdk/channel-inbound";
-import {
-  buildCommandsMessagePaginated,
-  buildCommandsPaginationKeyboard,
-  formatModelsAvailableHeader,
-  resolveStoredModelOverride,
-} from "remoteclaw/plugin-sdk/command-auth";
-import { writeConfigFile } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveAgentDir, resolveDefaultAgentId } from "openclaw/plugin-sdk/agent-runtime";
+import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk/agent-runtime";
+import { shouldDebounceTextInbound } from "openclaw/plugin-sdk/channel-runtime";
+import { resolveChannelConfigWrites } from "openclaw/plugin-sdk/channel-runtime";
+import { writeConfigFile } from "openclaw/plugin-sdk/config-runtime";
 import {
   loadSessionStore,
   resolveSessionStoreEntry,
@@ -24,14 +14,19 @@ import type {
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "remoteclaw/plugin-sdk/config-runtime";
-import { applyModelOverrideToSessionEntry } from "remoteclaw/plugin-sdk/config-runtime";
+} from "openclaw/plugin-sdk/config-runtime";
+import { applyModelOverrideToSessionEntry } from "openclaw/plugin-sdk/config-runtime";
 import {
   buildPluginBindingResolvedText,
   parsePluginBindingApprovalCustomId,
   resolvePluginConversationBindingApproval,
 } from "openclaw/plugin-sdk/conversation-runtime";
 import { dispatchPluginInteractiveHandler } from "openclaw/plugin-sdk/plugin-runtime";
+import {
+  createInboundDebouncer,
+  resolveInboundDebounceMs,
+} from "openclaw/plugin-sdk/reply-runtime";
+import { buildCommandsPaginationKeyboard } from "openclaw/plugin-sdk/reply-runtime";
 import {
   createInboundDebouncer,
   resolveInboundDebounceMs,
@@ -319,7 +314,7 @@ export const registerTelegramHandlers = ({
         ? resolveThreadSessionKeys({ baseSessionKey, threadId: `${params.chatId}:${dmThreadId}` })
         : null;
     const sessionKey = threadKeys?.sessionKey ?? baseSessionKey;
-    const storePath = telegramDeps.resolveStorePath(runtimeCfg.session?.store, {
+    const storePath = telegramDeps.resolveStorePath(cfg.session?.store, {
       agentId: route.agentId,
     });
     const store = loadSessionStore(storePath);
@@ -369,13 +364,7 @@ export const registerTelegramHandlers = ({
       for (const { ctx } of entry.messages) {
         let media;
         try {
-          media = await resolveMedia(
-            ctx,
-            mediaMaxBytes,
-            opts.token,
-            telegramTransport,
-            telegramCfg.apiRoot,
-          );
+          media = await resolveMedia(ctx, mediaMaxBytes, opts.token, telegramTransport);
         } catch (mediaErr) {
           if (!isRecoverableMediaGroupError(mediaErr)) {
             throw mediaErr;
@@ -480,7 +469,6 @@ export const registerTelegramHandlers = ({
         mediaMaxBytes,
         opts.token,
         telegramTransport,
-        telegramCfg.apiRoot,
       );
       if (!media) {
         return [];
@@ -1325,9 +1313,9 @@ export const registerTelegramHandlers = ({
           return;
         }
 
-        const agentId = paginationMatch[2]?.trim() || resolveDefaultAgentId(runtimeCfg);
+        const agentId = paginationMatch[2]?.trim() || resolveDefaultAgentId(cfg);
         const skillCommands = telegramDeps.listSkillCommandsForAgents({
-          cfg: runtimeCfg,
+          cfg,
           agentIds: [agentId],
         });
         const result = buildCommandsMessagePaginated(runtimeCfg, skillCommands, {

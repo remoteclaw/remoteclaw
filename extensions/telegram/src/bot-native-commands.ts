@@ -54,6 +54,19 @@ import { resolveTelegramGroupPromptSettings } from "./group-config-helpers.js";
 import { buildInlineKeyboard } from "./send.js";
 
 const EMPTY_RESPONSE_FALLBACK = "No response generated. Please try again.";
+const DEFAULT_BOT_NATIVE_COMMANDS_RUNTIME = {
+  dispatchReplyWithBufferedBlockDispatcher,
+  listSkillCommandsForAgents,
+};
+let botNativeCommandsRuntimeForTest:
+  | Partial<typeof DEFAULT_BOT_NATIVE_COMMANDS_RUNTIME>
+  | undefined;
+
+export function setBotNativeCommandsRuntimeForTest(
+  runtime?: Partial<typeof DEFAULT_BOT_NATIVE_COMMANDS_RUNTIME>,
+): void {
+  botNativeCommandsRuntimeForTest = runtime;
+}
 
 type TelegramNativeCommandContext = Context & { match?: string };
 
@@ -349,6 +362,10 @@ export const registerTelegramNativeCommands = ({
   telegramDeps = defaultTelegramBotDeps,
   opts,
 }: RegisterTelegramNativeCommandsParams) => {
+  const botNativeCommandsRuntime = {
+    ...DEFAULT_BOT_NATIVE_COMMANDS_RUNTIME,
+    ...botNativeCommandsRuntimeForTest,
+  };
   const silentErrorReplies = telegramCfg.silentErrorReplies === true;
   const boundRoute =
     nativeEnabled && nativeSkillsEnabled
@@ -361,7 +378,7 @@ export const registerTelegramNativeCommands = ({
   }
   const skillCommands =
     nativeEnabled && nativeSkillsEnabled && boundRoute
-      ? telegramDeps.listSkillCommandsForAgents({
+      ? botNativeCommandsRuntime.listSkillCommandsForAgents({
           cfg,
           agentIds: [boundRoute.agentId],
         })
@@ -763,7 +780,7 @@ export const registerTelegramNativeCommands = ({
             accountId: route.accountId,
           });
 
-          await telegramDeps.dispatchReplyWithBufferedBlockDispatcher({
+          await botNativeCommandsRuntime.dispatchReplyWithBufferedBlockDispatcher({
             ctx: ctxPayload,
             cfg: runtimeCfg,
             dispatcherOptions: {

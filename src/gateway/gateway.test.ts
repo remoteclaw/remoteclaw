@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -14,6 +13,11 @@ import {
 let writeConfigFile: typeof import("../config/config.js").writeConfigFile;
 let resolveConfigPath: typeof import("../config/config.js").resolveConfigPath;
 const GATEWAY_E2E_TIMEOUT_MS = 30_000;
+let gatewayTestSeq = 0;
+
+function nextGatewayId(prefix: string): string {
+  return `${prefix}-${process.pid}-${process.env.VITEST_POOL_ID ?? "0"}-${gatewayTestSeq++}`;
+}
 
 describe("gateway e2e", () => {
   beforeAll(async () => {
@@ -52,7 +56,7 @@ describe("gateway e2e", () => {
       const tempWorkspace = path.join(tempHome, "workspace");
       await writeConfigFile({ agents: { list: [{ id: "main", workspace: tempWorkspace }] } });
 
-      const wizardToken = `wiz-${randomUUID()}`;
+      const wizardToken = nextGatewayId("wiz-token");
       const port = await getFreeGatewayPort();
       const server = await startGatewayServer(port, {
         bind: "loopback",

@@ -60,6 +60,7 @@ const GATEWAY_TEST_ENV_KEYS = [
 let gatewayEnvSnapshot: ReturnType<typeof captureEnv> | undefined;
 let tempHome: string | undefined;
 let tempConfigRoot: string | undefined;
+let suiteConfigRootSeq = 0;
 
 export async function writeSessionStore(params: {
   entries: Record<string, Partial<SessionEntry>>;
@@ -120,7 +121,11 @@ async function resetGatewayTestState(options: { uniqueConfigRoot: boolean }) {
   }
   applyGatewaySkipEnv();
   if (options.uniqueConfigRoot) {
-    tempConfigRoot = await fs.mkdtemp(path.join(tempHome, "remoteclaw-test-"));
+    const suiteRoot = path.join(tempHome, ".remoteclaw-test-suite");
+    await fs.mkdir(suiteRoot, { recursive: true });
+    tempConfigRoot = path.join(suiteRoot, `case-${suiteConfigRootSeq++}`);
+    await fs.rm(tempConfigRoot, { recursive: true, force: true });
+    await fs.mkdir(tempConfigRoot, { recursive: true });
   } else {
     tempConfigRoot = path.join(tempHome, ".remoteclaw-test");
     await fs.rm(tempConfigRoot, { recursive: true, force: true });
@@ -175,6 +180,9 @@ async function cleanupGatewayTestHome(options: { restoreEnv: boolean }) {
     tempHome = undefined;
   }
   tempConfigRoot = undefined;
+  if (options.restoreEnv) {
+    suiteConfigRootSeq = 0;
+  }
 }
 
 export function installGatewayTestHooks(options?: { scope?: "test" | "suite" }) {

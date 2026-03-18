@@ -39,7 +39,7 @@ describe("applyOnboardingLocalWorkspaceConfig", () => {
   });
 
   it("preserves an explicit tools.profile when already configured", () => {
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: RemoteClawConfig = {
       tools: {
         profile: "full",
       },

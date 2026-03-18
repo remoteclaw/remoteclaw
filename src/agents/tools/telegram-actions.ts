@@ -1,6 +1,7 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
-import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-actions";
+import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveTelegramPollVisibility } from "remoteclaw/plugin-sdk/telegram";
 import {
   jsonResult,
   readNumberParam,
@@ -11,7 +12,7 @@ import {
   resolvePollMaxSelections,
   type RemoteClawConfig,
   type TelegramActionConfig,
-} from "../runtime-api.js";
+} from "remoteclaw/plugin-sdk/telegram-core";
 import { createTelegramActionGate, resolveTelegramPollActionGateState } from "./accounts.js";
 import type { TelegramButtonStyle, TelegramInlineButtons } from "./button-types.js";
 import { resolveTelegramInlineButtons } from "./button-types.js";
@@ -68,22 +69,6 @@ const TELEGRAM_ACTION_ALIASES = {
 } as const;
 
 type TelegramActionName = (typeof TELEGRAM_ACTION_ALIASES)[keyof typeof TELEGRAM_ACTION_ALIASES];
-
-function resolveTelegramPollVisibility(params: {
-  pollAnonymous?: boolean;
-  pollPublic?: boolean;
-}): boolean | undefined {
-  if (params.pollAnonymous && params.pollPublic) {
-    throw new Error("pollAnonymous and pollPublic are mutually exclusive");
-  }
-  if (params.pollAnonymous) {
-    return true;
-  }
-  if (params.pollPublic) {
-    return false;
-  }
-  return undefined;
-}
 
 export function readTelegramButtons(
   params: Record<string, unknown>,

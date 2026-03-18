@@ -1,4 +1,5 @@
-import { emptyPluginConfigSchema, type RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
+import { buildGoogleImageGenerationProvider } from "remoteclaw/plugin-sdk/image-generation";
+import { definePluginEntry } from "remoteclaw/plugin-sdk/plugin-entry";
 import { createProviderApiKeyAuthMethod } from "remoteclaw/plugin-sdk/provider-auth";
 import {
   GOOGLE_GEMINI_DEFAULT_MODEL,

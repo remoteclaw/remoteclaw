@@ -1,7 +1,7 @@
 import {
   type ProviderResolveDynamicModelContext,
   type ProviderRuntimeModel,
-} from "remoteclaw/plugin-sdk/core";
+} from "remoteclaw/plugin-sdk/plugin-entry";
 import { createProviderApiKeyAuthMethod } from "remoteclaw/plugin-sdk/provider-auth";
 import {
   applyOpenAIConfig,

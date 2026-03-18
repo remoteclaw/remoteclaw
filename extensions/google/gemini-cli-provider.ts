@@ -2,7 +2,7 @@ import type {
   RemoteClawPluginApi,
   ProviderAuthContext,
   ProviderFetchUsageSnapshotContext,
-} from "remoteclaw/plugin-sdk/core";
+} from "remoteclaw/plugin-sdk/plugin-entry";
 import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/provider-auth";
 import { fetchGeminiUsage } from "remoteclaw/plugin-sdk/provider-usage";
 import { loginGeminiCliOAuth } from "./oauth.js";

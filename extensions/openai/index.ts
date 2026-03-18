@@ -1,5 +1,7 @@
-import { emptyPluginConfigSchema, type RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
+import { buildOpenAIImageGenerationProvider } from "remoteclaw/plugin-sdk/image-generation";
+import { definePluginEntry } from "remoteclaw/plugin-sdk/plugin-entry";
 import { buildOpenAISpeechProvider } from "remoteclaw/plugin-sdk/speech";
+import { openaiMediaUnderstandingProvider } from "./media-understanding-provider.js";
 import { buildOpenAICodexProviderPlugin } from "./openai-codex-provider.js";
 import { buildOpenAIProvider } from "./openai-provider.js";
 

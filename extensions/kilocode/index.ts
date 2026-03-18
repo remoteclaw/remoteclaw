@@ -1,5 +1,6 @@
-import { emptyPluginConfigSchema, type RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
+import { definePluginEntry } from "remoteclaw/plugin-sdk/plugin-entry";
 import { createProviderApiKeyAuthMethod } from "remoteclaw/plugin-sdk/provider-auth";
+import { buildSingleProviderApiKeyCatalog } from "remoteclaw/plugin-sdk/provider-catalog";
 import {
   createKilocodeWrapper,
   isProxyReasoningUnsupported,

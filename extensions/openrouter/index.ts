@@ -4,9 +4,9 @@ import {
   type RemoteClawPluginApi,
   type ProviderResolveDynamicModelContext,
   type ProviderRuntimeModel,
-} from "remoteclaw/plugin-sdk/core";
-import { createProviderApiKeyAuthMethod } from "remoteclaw/plugin-sdk/provider-auth";
-import { DEFAULT_CONTEXT_TOKENS } from "remoteclaw/plugin-sdk/provider-models";
+} from "remoteclaw/plugin-sdk/plugin-entry";
+import { createProviderApiKeyAuthMethod } from "remoteclaw/plugin-sdk/provider-auth-api-key";
+import { applyXaiModelCompat, DEFAULT_CONTEXT_TOKENS } from "remoteclaw/plugin-sdk/provider-models";
 import {
   getOpenRouterModelCapabilities,
   loadOpenRouterModelCapabilities,

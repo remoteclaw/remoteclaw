@@ -1,8 +1,8 @@
 import type {
   ProviderResolveDynamicModelContext,
   ProviderRuntimeModel,
-} from "remoteclaw/plugin-sdk/core";
-import { normalizeModelCompat } from "remoteclaw/plugin-sdk/provider-models";
+} from "remoteclaw/plugin-sdk/plugin-entry";
+import { cloneFirstTemplateModel } from "remoteclaw/plugin-sdk/provider-models";
 
 const GEMINI_3_1_PRO_PREFIX = "gemini-3.1-pro";
 const GEMINI_3_1_FLASH_PREFIX = "gemini-3.1-flash";

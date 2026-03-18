@@ -32,7 +32,7 @@ Every native RemoteClaw plugin **must** ship a `remoteclaw.plugin.json` file in 
 plugin errors and block config validation.
 
 See the full plugin system guide: [Plugins](/tools/plugin).
-For the public capability model: [Capability model](/tools/plugin#public-capability-model).
+For the public capability model: [Capability model](/plugins/architecture#public-capability-model).
 
 ## Required fields
 

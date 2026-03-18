@@ -528,7 +528,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
       storePath,
       sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
       ctx: ctxPayload,
-      onRecordError: (err: unknown) => {
+      onRecordError: (err: any) => {
         logVerboseMessage(`msteams: failed updating session meta: ${String(err)}`);
       },
     });
@@ -611,7 +611,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
 
   const inboundDebouncer = core.channel.debounce.createInboundDebouncer<MSTeamsDebounceEntry>({
     debounceMs: inboundDebounceMs,
-    buildKey: (entry: unknown) => {
+    buildKey: (entry: any) => {
       const conversationId = normalizeMSTeamsConversationId(
         entry.context.activity.conversation?.id ?? "",
       );
@@ -622,7 +622,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
       }
       return `msteams:${appId}:${conversationId}:${senderId}`;
     },
-    shouldDebounce: (entry: unknown) => {
+    shouldDebounce: (entry: any) => {
       if (!entry.text.trim()) {
         return false;
       }
@@ -641,18 +641,18 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
         return;
       }
       const combinedText = entries
-        .map((entry: unknown) => entry.text)
+        .map((entry: any) => entry.text)
         .filter(Boolean)
         .join("\n");
       if (!combinedText.trim()) {
         return;
       }
       const combinedRawText = entries
-        .map((entry: unknown) => entry.rawText)
+        .map((entry: any) => entry.rawText)
         .filter(Boolean)
         .join("\n");
-      const wasMentioned = entries.some((entry: unknown) => entry.wasMentioned);
-      const implicitMention = entries.some((entry: unknown) => entry.implicitMention);
+      const wasMentioned = entries.some((entry: any) => entry.wasMentioned);
+      const implicitMention = entries.some((entry: any) => entry.implicitMention);
       await handleTeamsMessageNow({
         context: last.context,
         rawText: combinedRawText,
@@ -662,7 +662,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
         implicitMention,
       });
     },
-    onError: (err: unknown) => {
+    onError: (err: any) => {
       runtime.error?.(`msteams debounce flush failed: ${String(err)}`);
     },
   });

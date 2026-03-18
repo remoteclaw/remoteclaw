@@ -390,7 +390,7 @@ describe("resolveSessionModelRef", () => {
 
 describe("resolveSessionModelIdentityRef", () => {
   const resolveLegacyIdentityRef = (
-    cfg: OpenClawConfig,
+    cfg: RemoteClawConfig,
     modelProvider: string | undefined = undefined,
   ) =>
     resolveSessionModelIdentityRef(cfg, {

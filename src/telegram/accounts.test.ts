@@ -215,7 +215,7 @@ describe("resolveTelegramAccount allowFrom precedence", () => {
 });
 
 describe("resolveTelegramAccount groups inheritance (#30673)", () => {
-  const createMultiAccountGroupsConfig = (): OpenClawConfig => ({
+  const createMultiAccountGroupsConfig = (): RemoteClawConfig => ({
     channels: {
       telegram: {
         groups: { "-100123": { requireMention: false } },

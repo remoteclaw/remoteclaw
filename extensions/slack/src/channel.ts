@@ -38,6 +38,17 @@ import {
   type ResolvedSlackAccount,
 } from "remoteclaw/plugin-sdk/slack";
 import { getSlackRuntime } from "./runtime.js";
+import { fetchSlackScopes } from "./scopes.js";
+import { slackSetupAdapter } from "./setup-core.js";
+import { slackSetupWizard } from "./setup-surface.js";
+import {
+  createSlackPluginBase,
+  isSlackPluginAccountConfigured,
+  slackConfigAdapter,
+  SLACK_CHANNEL,
+} from "./shared.js";
+import { parseSlackTarget } from "./targets.js";
+import { buildSlackThreadingToolContext } from "./threading-tool-context.js";
 
 const meta = getChatChannelMeta("slack");
 
@@ -130,45 +141,17 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
       }
     },
   },
-  capabilities: {
-    chatTypes: ["direct", "channel", "thread"],
-    reactions: true,
-    threads: true,
-    media: true,
-    nativeCommands: true,
-  },
-  streaming: {
-    blockStreamingCoalesceDefaults: { minChars: 1500, idleMs: 1000 },
-  },
-  reload: { configPrefixes: ["channels.slack"] },
-  configSchema: buildChannelConfigSchema(SlackConfigSchema),
-  config: {
-    listAccountIds: (cfg) => listSlackAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveSlackAccount({ cfg, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultSlackAccountId(cfg),
-    setAccountEnabled: ({ cfg, accountId, enabled }) =>
-      setAccountEnabledInConfigSection({
-        cfg,
-        sectionKey: "slack",
-        accountId,
-        enabled,
-        allowTopLevel: true,
-      }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg,
-        sectionKey: "slack",
-        accountId,
-        clearBaseFields: ["botToken", "appToken", "name"],
-      }),
-    isConfigured: (account) => isSlackAccountConfigured(account),
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: isSlackAccountConfigured(account),
-      botTokenSource: account.botTokenSource,
-      appTokenSource: account.appTokenSource,
+  allowlist: {
+    supportsScope: ({ scope }) => scope === "dm",
+    readConfig: ({ cfg, accountId }) =>
+      readSlackAllowlistConfig(resolveSlackAccount({ cfg, accountId })),
+    resolveNames: async ({ cfg, accountId, entries }) =>
+      await resolveSlackAllowlistNames({ cfg, accountId, entries }),
+    applyConfigEdit: buildAccountScopedAllowlistConfigEditor({
+      channelId: "slack",
+      normalize: ({ cfg, accountId, values }) =>
+        slackConfigAdapter.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
+      resolvePaths: resolveLegacyDmAllowlistConfigPaths,
     }),
     ...slackConfigAccessors,
   },

@@ -1,20 +1,7 @@
-import crypto from "node:crypto";
-import { configureClient } from "@tloncorp/api";
-import type {
-  ChannelOutboundAdapter,
-  ChannelPlugin,
-  ChannelSetupInput,
-  RemoteClawConfig,
-} from "remoteclaw/plugin-sdk";
-
-import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
-import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/account-id";
 import { createHybridChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import type { ChannelAccountSnapshot } from "remoteclaw/plugin-sdk/channel-contract";
+import type { ChannelAccountSnapshot, ChannelPlugin } from "remoteclaw/plugin-sdk/channel-runtime";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import type { ChannelPlugin } from "remoteclaw/plugin-sdk/core";
 import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
-import { createRuntimeOutboundDelegates } from "remoteclaw/plugin-sdk/outbound-runtime";
 import { tlonChannelConfigSchema } from "./config-schema.js";
 import { resolveTlonOutboundSessionRoute } from "./session-route.js";
 import {
@@ -106,190 +93,36 @@ async function createHttpPokeApi(params: {
 
 const TLON_CHANNEL_ID = "tlon" as const;
 
-type TlonSetupInput = ChannelSetupInput & {
-  ship?: string;
-  url?: string;
-  code?: string;
-  allowPrivateNetwork?: boolean;
-  groupChannels?: string[];
-  dmAllowlist?: string[];
-  autoDiscoverChannels?: boolean;
-  ownerShip?: string;
-};
+const loadTlonChannelRuntime = createLazyRuntimeModule(() => import("./channel.runtime.js"));
 
-function applyTlonSetupConfig(params: {
-  cfg: RemoteClawConfig;
-  accountId: string;
-  input: TlonSetupInput;
-}): RemoteClawConfig {
-  const { cfg, accountId, input } = params;
-  const useDefault = accountId === DEFAULT_ACCOUNT_ID;
-  const namedConfig = applyAccountNameToChannelSection({
-    cfg,
-    channelKey: "tlon",
-    accountId,
-    name: input.name,
-  });
-  const base = namedConfig.channels?.tlon ?? {};
+const tlonSetupWizardProxy = createTlonSetupWizardBase({
+  resolveConfigured: async ({ cfg }) =>
+    await (await loadTlonChannelRuntime()).tlonSetupWizard.status.resolveConfigured({ cfg }),
+  resolveStatusLines: async ({ cfg, configured }) =>
+    (await (
+      await loadTlonChannelRuntime()
+    ).tlonSetupWizard.status.resolveStatusLines?.({
+      cfg,
+      configured,
+    })) ?? [],
+  finalize: async (params) =>
+    await (
+      await loadTlonChannelRuntime()
+    ).tlonSetupWizard.finalize!(params),
+}) satisfies NonNullable<ChannelPlugin["setupWizard"]>;
 
-  const payload = buildTlonAccountFields(input);
-
-  if (useDefault) {
-    return {
-      ...namedConfig,
-      channels: {
-        ...namedConfig.channels,
-        tlon: {
-          ...base,
-          enabled: true,
-          ...payload,
-        },
-      },
-    };
-  }
-
-  return {
-    ...namedConfig,
-    channels: {
-      ...namedConfig.channels,
-      tlon: {
-        ...base,
-        enabled: base.enabled ?? true,
-        accounts: {
-          ...(base as { accounts?: Record<string, unknown> }).accounts,
-          [accountId]: {
-            ...(base as { accounts?: Record<string, Record<string, unknown>> }).accounts?.[
-              accountId
-            ],
-            enabled: true,
-            ...payload,
-          },
-        },
-      },
-    },
-  };
-}
-
-const tlonOutbound: ChannelOutboundAdapter = {
-  deliveryMode: "direct",
-  textChunkLimit: 10000,
-  resolveTarget: ({ to }) => {
-    const parsed = parseTlonTarget(to ?? "");
-    if (!parsed) {
-      return {
-        ok: false,
-        error: new Error(`Invalid Tlon target. Use ${formatTargetHint()}`),
-      };
-    }
-    if (parsed.kind === "dm") {
-      return { ok: true, to: parsed.ship };
-    }
-    return { ok: true, to: parsed.nest };
-  },
-  sendText: async ({ cfg, to, text, accountId, replyToId, threadId }) => {
-    const account = resolveTlonAccount(cfg, accountId ?? undefined);
-    if (!account.configured || !account.ship || !account.url || !account.code) {
-      throw new Error("Tlon account not configured");
-    }
-
-    const parsed = parseTlonTarget(to);
-    if (!parsed) {
-      throw new Error(`Invalid Tlon target. Use ${formatTargetHint()}`);
-    }
-
-    // Use HTTP-only poke (no EventSource) to avoid conflicts with monitor's SSE connection
-    const api = await createHttpPokeApi({
-      url: account.url,
-      ship: account.ship,
-      code: account.code,
-      allowPrivateNetwork: account.allowPrivateNetwork ?? undefined,
-    });
-
-    try {
-      const fromShip = normalizeShip(account.ship);
-      if (parsed.kind === "dm") {
-        return await sendDm({
-          api,
-          fromShip,
-          toShip: parsed.ship,
-          text,
-        });
-      }
-      const replyId = (replyToId ?? threadId) ? String(replyToId ?? threadId) : undefined;
-      return await sendGroupMessage({
-        api,
-        fromShip,
-        hostShip: parsed.hostShip,
-        channelName: parsed.channelName,
-        text,
-        replyToId: replyId,
-      });
-    } finally {
-      try {
-        await api.delete();
-      } catch {
-        // ignore cleanup errors
-      }
-    }
-  },
-  sendMedia: async ({ cfg, to, text, mediaUrl, accountId, replyToId, threadId }) => {
-    const account = resolveTlonAccount(cfg, accountId ?? undefined);
-    if (!account.configured || !account.ship || !account.url || !account.code) {
-      throw new Error("Tlon account not configured");
-    }
-
-    const parsed = parseTlonTarget(to);
-    if (!parsed) {
-      throw new Error(`Invalid Tlon target. Use ${formatTargetHint()}`);
-    }
-
-    // Configure the API client for uploads
-    configureClient({
-      shipUrl: account.url,
-      shipName: account.ship.replace(/^~/, ""),
-      verbose: false,
-      getCode: async () => account.code!,
-    });
-
-    const uploadedUrl = mediaUrl ? await uploadImageFromUrl(mediaUrl) : undefined;
-
-    const api = await createHttpPokeApi({
-      url: account.url,
-      ship: account.ship,
-      code: account.code,
-      allowPrivateNetwork: account.allowPrivateNetwork ?? undefined,
-    });
-
-    try {
-      const fromShip = normalizeShip(account.ship);
-      const story = buildMediaStory(text, uploadedUrl);
-
-      if (parsed.kind === "dm") {
-        return await sendDmWithStory({
-          api,
-          fromShip,
-          toShip: parsed.ship,
-          story,
-        });
-      }
-      const replyId = (replyToId ?? threadId) ? String(replyToId ?? threadId) : undefined;
-      return await sendGroupMessageWithStory({
-        api,
-        fromShip,
-        hostShip: parsed.hostShip,
-        channelName: parsed.channelName,
-        story,
-        replyToId: replyId,
-      });
-    } finally {
-      try {
-        await api.delete();
-      } catch {
-        // ignore cleanup errors
-      }
-    }
-  },
-};
+const tlonConfigAdapter = createHybridChannelConfigAdapter({
+  sectionKey: TLON_CHANNEL_ID,
+  listAccountIds: (cfg: RemoteClawConfig) => listTlonAccountIds(cfg),
+  resolveAccount: (cfg: RemoteClawConfig, accountId?: string | null) =>
+    resolveTlonAccount(cfg, accountId ?? undefined),
+  defaultAccountId: () => "default",
+  clearBaseFields: ["ship", "code", "url", "name"],
+  preserveSectionOnDefaultDelete: true,
+  resolveAllowFrom: (account) => account.dmAllowlist,
+  formatAllowFrom: (allowFrom) =>
+    allowFrom.map((entry) => normalizeShip(String(entry))).filter(Boolean),
+});
 
 export const tlonPlugin: ChannelPlugin = {
   id: TLON_CHANNEL_ID,
@@ -313,70 +146,7 @@ export const tlonPlugin: ChannelPlugin = {
   reload: { configPrefixes: ["channels.tlon"] },
   configSchema: tlonChannelConfigSchema,
   config: {
-    listAccountIds: (cfg) => listTlonAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveTlonAccount(cfg, accountId ?? undefined),
-    defaultAccountId: () => DEFAULT_ACCOUNT_ID,
-    setAccountEnabled: ({ cfg, accountId, enabled }) => {
-      const useDefault = !accountId || accountId === "default";
-      if (useDefault) {
-        return {
-          ...cfg,
-          channels: {
-            ...cfg.channels,
-            tlon: {
-              ...cfg.channels?.tlon,
-              enabled,
-            },
-          },
-        } as RemoteClawConfig;
-      }
-      return {
-        ...cfg,
-        channels: {
-          ...cfg.channels,
-          tlon: {
-            ...cfg.channels?.tlon,
-            accounts: {
-              ...cfg.channels?.tlon?.accounts,
-              [accountId]: {
-                ...cfg.channels?.tlon?.accounts?.[accountId],
-                enabled,
-              },
-            },
-          },
-        },
-      } as RemoteClawConfig;
-    },
-    deleteAccount: ({ cfg, accountId }) => {
-      const useDefault = !accountId || accountId === "default";
-      if (useDefault) {
-        const {
-          ship: _ship,
-          code: _code,
-          url: _url,
-          name: _name,
-          ...rest
-        } = cfg.channels?.tlon ?? {};
-        return {
-          ...cfg,
-          channels: {
-            ...cfg.channels,
-            tlon: rest,
-          },
-        } as RemoteClawConfig;
-      }
-      const { [accountId]: _removed, ...remainingAccounts } = cfg.channels?.tlon?.accounts ?? {};
-      return {
-        ...cfg,
-        channels: {
-          ...cfg.channels,
-          tlon: {
-            ...cfg.channels?.tlon,
-            accounts: remainingAccounts,
-          },
-        },
-      } as RemoteClawConfig;
-    },
+    ...tlonConfigAdapter,
     isConfigured: (account) => account.configured,
     describeAccount: (account) =>
       describeAccountSnapshot({

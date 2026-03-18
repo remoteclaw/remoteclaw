@@ -2,28 +2,13 @@ import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
 import { createMessageToolButtonsSchema } from "remoteclaw/plugin-sdk/channel-actions";
 import {
-  buildAccountScopedDmSecurityPolicy,
-  collectAllowlistProviderRestrictSendersWarnings,
-  createScopedAccountConfigAccessors,
-} from "remoteclaw/plugin-sdk";
-import {
-  applyAccountNameToChannelSection,
-  applySetupAccountConfigPatch,
-  buildComputedAccountStatusSnapshot,
-  buildChannelConfigSchema,
-  DEFAULT_ACCOUNT_ID,
-  deleteAccountFromConfigSection,
-  formatNormalizedAllowFromEntries,
-  mapAllowFromEntries,
-  migrateBaseNameToDefaultAccount,
-  normalizeAccountId,
-  resolveAllowlistProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
-  setAccountEnabledInConfigSection,
-  type ChannelMessageActionAdapter,
-  type ChannelMessageActionName,
-  type ChannelPlugin,
-} from "remoteclaw/plugin-sdk";
+  createScopedChannelConfigAdapter,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
+import { createMessageToolButtonsSchema } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelMessageToolDiscovery } from "remoteclaw/plugin-sdk/channel-runtime";
+import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import { MattermostConfigSchema } from "./config-schema.js";
 import { resolveMattermostGroupRequireMention } from "./group-mentions.js";
 import {
@@ -228,14 +213,26 @@ function formatAllowEntry(entry: string): string {
   return trimmed.replace(/^(mattermost|user):/i, "").toLowerCase();
 }
 
-const mattermostConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveMattermostAccount({ cfg, accountId }),
+const mattermostConfigAdapter = createScopedChannelConfigAdapter<ResolvedMattermostAccount>({
+  sectionKey: "mattermost",
+  listAccountIds: listMattermostAccountIds,
+  resolveAccount: (cfg, accountId) => resolveMattermostAccount({ cfg, accountId }),
+  defaultAccountId: resolveDefaultMattermostAccountId,
+  clearBaseFields: ["botToken", "baseUrl", "name"],
   resolveAllowFrom: (account: ResolvedMattermostAccount) => account.config.allowFrom,
   formatAllowFrom: (allowFrom) =>
     formatNormalizedAllowFromEntries({
       allowFrom,
       normalizeEntry: formatAllowEntry,
     }),
+});
+
+const resolveMattermostDmPolicy = createScopedDmSecurityResolver<ResolvedMattermostAccount>({
+  channelKey: "mattermost",
+  resolvePolicy: (account) => account.config.dmPolicy,
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  policyPathSuffix: "dmPolicy",
+  normalizeEntry: (raw) => normalizeAllowEntry(raw),
 });
 
 export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
@@ -274,35 +271,16 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
   reload: { configPrefixes: ["channels.mattermost"] },
   configSchema: buildChannelConfigSchema(MattermostConfigSchema),
   config: {
-    listAccountIds: (cfg) => listMattermostAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveMattermostAccount({ cfg, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultMattermostAccountId(cfg),
-    setAccountEnabled: ({ cfg, accountId, enabled }) =>
-      setAccountEnabledInConfigSection({
-        cfg,
-        sectionKey: "mattermost",
-        accountId,
-        enabled,
-        allowTopLevel: true,
-      }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg,
-        sectionKey: "mattermost",
-        accountId,
-        clearBaseFields: ["botToken", "baseUrl", "name"],
-      }),
+    ...mattermostConfigAdapter,
     isConfigured: (account) => Boolean(account.botToken && account.baseUrl),
-    describeAccount: (account) =>
-      describeAccountSnapshot({
-        account,
-        configured: Boolean(account.botToken && account.baseUrl),
-        extra: {
-          botTokenSource: account.botTokenSource,
-          baseUrl: account.baseUrl,
-        },
-      }),
-    ...mattermostConfigAccessors,
+    describeAccount: (account) => ({
+      accountId: account.accountId,
+      name: account.name,
+      enabled: account.enabled,
+      configured: Boolean(account.botToken && account.baseUrl),
+      botTokenSource: account.botTokenSource,
+      baseUrl: account.baseUrl,
+    }),
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {

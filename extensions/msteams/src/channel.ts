@@ -1,9 +1,7 @@
-import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk";
-
-import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
-import { createMessageToolCardSchema } from "remoteclaw/plugin-sdk/channel-actions";
 import { createTopLevelChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
+import { createMessageToolCardSchema } from "remoteclaw/plugin-sdk/channel-runtime";
 import type {
   ChannelMessageActionName,
   ChannelPlugin,
@@ -52,6 +50,66 @@ const meta = {
   order: 60,
 } as const;
 
+const TEAMS_GRAPH_PERMISSION_HINTS: Record<string, string> = {
+  "ChannelMessage.Read.All": "channel history",
+  "Chat.Read.All": "chat history",
+  "Channel.ReadBasic.All": "channel list",
+  "Team.ReadBasic.All": "team list",
+  "TeamsActivity.Read.All": "teams activity",
+  "Sites.Read.All": "files (SharePoint)",
+  "Files.Read.All": "files (OneDrive)",
+};
+
+const loadMSTeamsChannelRuntime = createLazyRuntimeNamedExport(
+  () => import("./channel.runtime.js"),
+  "msTeamsChannelRuntime",
+);
+
+const resolveMSTeamsChannelConfig = (cfg: RemoteClawConfig) => ({
+  allowFrom: cfg.channels?.msteams?.allowFrom,
+  defaultTo: cfg.channels?.msteams?.defaultTo,
+});
+
+const msteamsConfigAdapter = createTopLevelChannelConfigAdapter<
+  ResolvedMSTeamsAccount,
+  {
+    allowFrom?: Array<string | number>;
+    defaultTo?: string;
+  }
+>({
+  sectionKey: "msteams",
+  resolveAccount: (cfg) => ({
+    accountId: DEFAULT_ACCOUNT_ID,
+    enabled: cfg.channels?.msteams?.enabled !== false,
+    configured: Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams)),
+  }),
+  resolveAccessorAccount: ({ cfg }) => resolveMSTeamsChannelConfig(cfg),
+  resolveAllowFrom: (account) => account.allowFrom,
+  formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom }),
+  resolveDefaultTo: (account) => account.defaultTo,
+});
+
+function describeMSTeamsMessageTool({
+  cfg,
+}: Parameters<
+  NonNullable<ChannelMessageActionAdapter["describeMessageTool"]>
+>[0]): ChannelMessageToolDiscovery {
+  const enabled =
+    cfg.channels?.msteams?.enabled !== false &&
+    Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams));
+  return {
+    actions: enabled ? (["poll"] satisfies ChannelMessageActionName[]) : [],
+    capabilities: enabled ? ["cards"] : [],
+    schema: enabled
+      ? {
+          properties: {
+            card: createMessageToolCardSchema(),
+          },
+        }
+      : null,
+  };
+}
+
 export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
   id: "msteams",
   meta: {
@@ -95,43 +153,13 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
   reload: { configPrefixes: ["channels.msteams"] },
   configSchema: buildChannelConfigSchema(MSTeamsConfigSchema),
   config: {
-    listAccountIds: () => [DEFAULT_ACCOUNT_ID],
-    resolveAccount: (cfg) => ({
-      accountId: DEFAULT_ACCOUNT_ID,
-      enabled: cfg.channels?.msteams?.enabled !== false,
-      configured: Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams)),
-    }),
-    defaultAccountId: () => DEFAULT_ACCOUNT_ID,
-    setAccountEnabled: ({ cfg, enabled }) => ({
-      ...cfg,
-      channels: {
-        ...cfg.channels,
-        msteams: {
-          ...cfg.channels?.msteams,
-          enabled,
-        },
-      },
-    }),
-    deleteAccount: ({ cfg }) => {
-      const next = { ...cfg } as RemoteClawConfig;
-      const nextChannels = { ...cfg.channels };
-      delete nextChannels.msteams;
-      if (Object.keys(nextChannels).length > 0) {
-        next.channels = nextChannels;
-      } else {
-        delete next.channels;
-      }
-      return next;
-    },
+    ...msteamsConfigAdapter,
     isConfigured: (_account, cfg) => Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams)),
-    describeAccount: (account) =>
-      describeAccountSnapshot({
-        account,
-        configured: account.configured,
-      }),
-    resolveAllowFrom: ({ cfg }) => cfg.channels?.msteams?.allowFrom ?? [],
-    formatAllowFrom: ({ allowFrom }) => formatAllowFromLowercase({ allowFrom }),
-    resolveDefaultTo: ({ cfg }) => cfg.channels?.msteams?.defaultTo?.trim() || undefined,
+    describeAccount: (account) => ({
+      accountId: account.accountId,
+      enabled: account.enabled,
+      configured: account.configured,
+    }),
   },
   security: {
     collectWarnings: ({ cfg }) => {

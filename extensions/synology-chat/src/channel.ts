@@ -5,11 +5,9 @@
  */
 
 import {
-  DEFAULT_ACCOUNT_ID,
-  setAccountEnabledInConfigSection,
-  registerPluginHttpRoute,
-  buildChannelConfigSchema,
-} from "remoteclaw/plugin-sdk";
+  createHybridChannelConfigAdapter,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { z } from "zod";
 import { listAccountIds, resolveAccount } from "./accounts.js";
 import { sendMessage, sendFileUrl } from "./client.js";
@@ -21,6 +19,37 @@ const CHANNEL_ID = "synology-chat";
 const SynologyChatConfigSchema = buildChannelConfigSchema(z.object({}).passthrough());
 
 const activeRouteUnregisters = new Map<string, () => void>();
+
+const resolveSynologyChatDmPolicy = createScopedDmSecurityResolver<ResolvedSynologyChatAccount>({
+  channelKey: CHANNEL_ID,
+  resolvePolicy: (account) => account.dmPolicy,
+  resolveAllowFrom: (account) => account.allowedUserIds,
+  policyPathSuffix: "dmPolicy",
+  defaultPolicy: "allowlist",
+  approveHint: "openclaw pairing approve synology-chat <code>",
+  normalizeEntry: (raw) => raw.toLowerCase().trim(),
+});
+
+const synologyChatConfigAdapter = createHybridChannelConfigAdapter<ResolvedSynologyChatAccount>({
+  sectionKey: CHANNEL_ID,
+  listAccountIds: (cfg: any) => listAccountIds(cfg),
+  resolveAccount: (cfg: any, accountId?: string | null) => resolveAccount(cfg, accountId),
+  defaultAccountId: () => DEFAULT_ACCOUNT_ID,
+  clearBaseFields: [
+    "token",
+    "incomingUrl",
+    "nasHost",
+    "webhookPath",
+    "dmPolicy",
+    "allowedUserIds",
+    "rateLimitPerMinute",
+    "botName",
+    "allowInsecureSsl",
+  ],
+  resolveAllowFrom: (account) => account.allowedUserIds,
+  formatAllowFrom: (allowFrom) =>
+    allowFrom.map((entry) => String(entry).trim().toLowerCase()).filter(Boolean),
+});
 
 function waitUntilAbort(signal?: AbortSignal, onAbort?: () => void): Promise<void> {
   return new Promise((resolve) => {
@@ -70,30 +99,7 @@ export function createSynologyChatPlugin() {
     configSchema: SynologyChatConfigSchema,
 
     config: {
-      listAccountIds: (cfg: any) => listAccountIds(cfg),
-
-      resolveAccount: (cfg: any, accountId?: string | null) => resolveAccount(cfg, accountId),
-
-      defaultAccountId: (_cfg: any) => DEFAULT_ACCOUNT_ID,
-
-      setAccountEnabled: ({ cfg, accountId, enabled }: any) => {
-        const channelConfig = cfg?.channels?.[CHANNEL_ID] ?? {};
-        if (accountId === DEFAULT_ACCOUNT_ID) {
-          return {
-            ...cfg,
-            channels: {
-              ...cfg.channels,
-              [CHANNEL_ID]: { ...channelConfig, enabled },
-            },
-          };
-        }
-        return setAccountEnabledInConfigSection({
-          cfg,
-          sectionKey: `channels.${CHANNEL_ID}`,
-          accountId,
-          enabled,
-        });
-      },
+      ...synologyChatConfigAdapter,
     },
 
     pairing: {

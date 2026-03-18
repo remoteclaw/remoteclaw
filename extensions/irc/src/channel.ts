@@ -1,5 +1,8 @@
-import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
+import {
+  createScopedChannelConfigAdapter,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   buildAccountScopedDmSecurityPolicy,
   buildOpenGroupPolicyWarning,
@@ -51,8 +54,27 @@ function normalizePairingTarget(raw: string): string {
   return normalized.split(/[!@]/, 1)[0]?.trim() ?? "";
 }
 
-const ircConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveIrcAccount({ cfg: cfg as CoreConfig, accountId }),
+const ircConfigAdapter = createScopedChannelConfigAdapter<
+  ResolvedIrcAccount,
+  ResolvedIrcAccount,
+  CoreConfig
+>({
+  sectionKey: "irc",
+  listAccountIds: listIrcAccountIds,
+  resolveAccount: (cfg, accountId) => resolveIrcAccount({ cfg, accountId }),
+  defaultAccountId: resolveDefaultIrcAccountId,
+  clearBaseFields: [
+    "name",
+    "host",
+    "port",
+    "tls",
+    "nick",
+    "username",
+    "realname",
+    "password",
+    "passwordFile",
+    "channels",
+  ],
   resolveAllowFrom: (account: ResolvedIrcAccount) => account.config.allowFrom,
   formatAllowFrom: (allowFrom) =>
     formatNormalizedAllowFromEntries({
@@ -60,6 +82,14 @@ const ircConfigAccessors = createScopedAccountConfigAccessors({
       normalizeEntry: normalizeIrcAllowEntry,
     }),
   resolveDefaultTo: (account: ResolvedIrcAccount) => account.config.defaultTo,
+});
+
+const resolveIrcDmPolicy = createScopedDmSecurityResolver<ResolvedIrcAccount>({
+  channelKey: "irc",
+  resolvePolicy: (account) => account.config.dmPolicy,
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  policyPathSuffix: "dmPolicy",
+  normalizeEntry: (raw) => normalizeIrcAllowEntry(raw),
 });
 
 export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
@@ -88,49 +118,19 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
   reload: { configPrefixes: ["channels.irc"] },
   configSchema: buildChannelConfigSchema(IrcConfigSchema),
   config: {
-    listAccountIds: (cfg) => listIrcAccountIds(cfg as CoreConfig),
-    resolveAccount: (cfg, accountId) => resolveIrcAccount({ cfg: cfg as CoreConfig, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultIrcAccountId(cfg as CoreConfig),
-    setAccountEnabled: ({ cfg, accountId, enabled }) =>
-      setAccountEnabledInConfigSection({
-        cfg: cfg as CoreConfig,
-        sectionKey: "irc",
-        accountId,
-        enabled,
-        allowTopLevel: true,
-      }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg: cfg as CoreConfig,
-        sectionKey: "irc",
-        accountId,
-        clearBaseFields: [
-          "name",
-          "host",
-          "port",
-          "tls",
-          "nick",
-          "username",
-          "realname",
-          "password",
-          "passwordFile",
-          "channels",
-        ],
-      }),
+    ...ircConfigAdapter,
     isConfigured: (account) => account.configured,
-    describeAccount: (account) =>
-      describeAccountSnapshot({
-        account,
-        configured: account.configured,
-        extra: {
-          host: account.host,
-          port: account.port,
-          tls: account.tls,
-          nick: account.nick,
-          passwordSource: account.passwordSource,
-        },
-      }),
-    ...ircConfigAccessors,
+    describeAccount: (account) => ({
+      accountId: account.accountId,
+      name: account.name,
+      enabled: account.enabled,
+      configured: account.configured,
+      host: account.host,
+      port: account.port,
+      tls: account.tls,
+      nick: account.nick,
+      passwordSource: account.passwordSource,
+    }),
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {

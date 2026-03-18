@@ -1,12 +1,13 @@
-import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
-import { createMessageToolCardSchema } from "remoteclaw/plugin-sdk/channel-actions";
-import {
-  collectAllowlistProviderRestrictSendersWarnings,
-  formatAllowFromLowercase,
-  mapAllowFromEntries,
-} from "remoteclaw/plugin-sdk/compat";
-import type { ChannelMeta, ChannelPlugin, ClawdbotConfig } from "remoteclaw/plugin-sdk/feishu";
+import { createHybridChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
+import { createMessageToolCardSchema } from "remoteclaw/plugin-sdk/channel-runtime";
+import type {
+  ChannelMessageActionAdapter,
+  ChannelMessageToolDiscovery,
+} from "remoteclaw/plugin-sdk/channel-runtime";
+import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
+import type { ChannelMeta, ChannelPlugin, ClawdbotConfig } from "../runtime-api.js";
 import {
   buildProbeChannelStatusSummary,
   buildRuntimeAccountStatusSnapshot,
@@ -83,6 +84,229 @@ function setFeishuNamedAccountEnabled(
       },
     },
   };
+}
+
+const feishuConfigAdapter = createHybridChannelConfigAdapter<
+  ResolvedFeishuAccount,
+  ResolvedFeishuAccount,
+  ClawdbotConfig
+>({
+  sectionKey: "feishu",
+  listAccountIds: listFeishuAccountIds,
+  resolveAccount: (cfg, accountId) => resolveFeishuAccount({ cfg, accountId }),
+  defaultAccountId: resolveDefaultFeishuAccountId,
+  clearBaseFields: [],
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom }),
+});
+
+function isFeishuReactionsActionEnabled(params: {
+  cfg: ClawdbotConfig;
+  account: ResolvedFeishuAccount;
+}): boolean {
+  if (!params.account.enabled || !params.account.configured) {
+    return false;
+  }
+  const gate = createActionGate(
+    (params.account.config.actions ??
+      (params.cfg.channels?.feishu as { actions?: unknown } | undefined)?.actions) as Record<
+      string,
+      boolean | undefined
+    >,
+  );
+  return gate("reactions");
+}
+
+function areAnyFeishuReactionActionsEnabled(cfg: ClawdbotConfig): boolean {
+  for (const account of listEnabledFeishuAccounts(cfg)) {
+    if (isFeishuReactionsActionEnabled({ cfg, account })) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isSupportedFeishuDirectConversationId(conversationId: string): boolean {
+  const trimmed = conversationId.trim();
+  if (!trimmed || trimmed.includes(":")) {
+    return false;
+  }
+  if (trimmed.startsWith("oc_") || trimmed.startsWith("on_")) {
+    return false;
+  }
+  return true;
+}
+
+function normalizeFeishuAcpConversationId(conversationId: string) {
+  const parsed = parseFeishuConversationId({ conversationId });
+  if (
+    !parsed ||
+    (parsed.scope !== "group_topic" &&
+      parsed.scope !== "group_topic_sender" &&
+      !isSupportedFeishuDirectConversationId(parsed.canonicalConversationId))
+  ) {
+    return null;
+  }
+  return {
+    conversationId: parsed.canonicalConversationId,
+    parentConversationId:
+      parsed.scope === "group_topic" || parsed.scope === "group_topic_sender"
+        ? parsed.chatId
+        : undefined,
+  };
+}
+
+function matchFeishuAcpConversation(params: {
+  bindingConversationId: string;
+  conversationId: string;
+  parentConversationId?: string;
+}) {
+  const binding = normalizeFeishuAcpConversationId(params.bindingConversationId);
+  if (!binding) {
+    return null;
+  }
+  const incoming = parseFeishuConversationId({
+    conversationId: params.conversationId,
+    parentConversationId: params.parentConversationId,
+  });
+  if (
+    !incoming ||
+    (incoming.scope !== "group_topic" &&
+      incoming.scope !== "group_topic_sender" &&
+      !isSupportedFeishuDirectConversationId(incoming.canonicalConversationId))
+  ) {
+    return null;
+  }
+  const matchesCanonicalConversation = binding.conversationId === incoming.canonicalConversationId;
+  const matchesParentTopicForSenderScopedConversation =
+    incoming.scope === "group_topic_sender" &&
+    binding.parentConversationId === incoming.chatId &&
+    binding.conversationId === `${incoming.chatId}:topic:${incoming.topicId}`;
+  if (!matchesCanonicalConversation && !matchesParentTopicForSenderScopedConversation) {
+    return null;
+  }
+  return {
+    conversationId: matchesParentTopicForSenderScopedConversation
+      ? binding.conversationId
+      : incoming.canonicalConversationId,
+    parentConversationId:
+      incoming.scope === "group_topic" || incoming.scope === "group_topic_sender"
+        ? incoming.chatId
+        : undefined,
+    matchPriority: matchesCanonicalConversation ? 2 : 1,
+  };
+}
+
+function jsonActionResult(details: Record<string, unknown>) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(details) }],
+    details,
+  };
+}
+
+function readFirstString(
+  params: Record<string, unknown>,
+  keys: string[],
+  fallback?: string | null,
+): string | undefined {
+  for (const key of keys) {
+    const value = params[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  if (typeof fallback === "string" && fallback.trim()) {
+    return fallback.trim();
+  }
+  return undefined;
+}
+
+function readOptionalNumber(params: Record<string, unknown>, keys: string[]): number | undefined {
+  for (const key of keys) {
+    const value = params[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+  return undefined;
+}
+
+function resolveFeishuActionTarget(ctx: {
+  params: Record<string, unknown>;
+  toolContext?: { currentChannelId?: string } | null;
+}): string | undefined {
+  return readFirstString(ctx.params, ["to", "target"], ctx.toolContext?.currentChannelId);
+}
+
+function resolveFeishuChatId(ctx: {
+  params: Record<string, unknown>;
+  toolContext?: { currentChannelId?: string } | null;
+}): string | undefined {
+  const raw = readFirstString(
+    ctx.params,
+    ["chatId", "chat_id", "channelId", "channel_id", "to", "target"],
+    ctx.toolContext?.currentChannelId,
+  );
+  if (!raw) {
+    return undefined;
+  }
+  if (/^(user|dm|open_id):/i.test(raw)) {
+    return undefined;
+  }
+  if (/^(chat|group|channel):/i.test(raw)) {
+    return normalizeFeishuTarget(raw) ?? undefined;
+  }
+  return raw;
+}
+
+function resolveFeishuMessageId(params: Record<string, unknown>): string | undefined {
+  return readFirstString(params, ["messageId", "message_id", "replyTo", "reply_to"]);
+}
+
+function resolveFeishuMemberId(params: Record<string, unknown>): string | undefined {
+  return readFirstString(params, [
+    "memberId",
+    "member_id",
+    "userId",
+    "user_id",
+    "openId",
+    "open_id",
+    "unionId",
+    "union_id",
+  ]);
+}
+
+function resolveFeishuMemberIdType(
+  params: Record<string, unknown>,
+): "open_id" | "user_id" | "union_id" {
+  const raw = readFirstString(params, [
+    "memberIdType",
+    "member_id_type",
+    "userIdType",
+    "user_id_type",
+  ]);
+  if (raw === "open_id" || raw === "user_id" || raw === "union_id") {
+    return raw;
+  }
+  if (
+    readFirstString(params, ["userId", "user_id"]) &&
+    !readFirstString(params, ["openId", "open_id", "unionId", "union_id"])
+  ) {
+    return "user_id";
+  }
+  if (
+    readFirstString(params, ["unionId", "union_id"]) &&
+    !readFirstString(params, ["openId", "open_id"])
+  ) {
+    return "union_id";
+  }
+  return "open_id";
 }
 
 export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
@@ -187,9 +411,7 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
     },
   },
   config: {
-    listAccountIds: (cfg) => listFeishuAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveFeishuAccount({ cfg, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultFeishuAccountId(cfg),
+    ...feishuConfigAdapter,
     setAccountEnabled: ({ cfg, accountId, enabled }) => {
       const account = resolveFeishuAccount({ cfg, accountId });
       const isDefault = accountId === DEFAULT_ACCOUNT_ID;
@@ -252,19 +474,6 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
       appId: account.appId,
       domain: account.domain,
     }),
-    resolveAllowFrom: ({ cfg, accountId }) => {
-      const account = resolveFeishuAccount({ cfg, accountId });
-      return mapAllowFromEntries(account.config?.allowFrom);
-
-    describeAccount: (account) =>
-      describeAccountSnapshot({
-        account,
-        configured: account.configured,
-        extra: {
-          appId: account.appId,
-          domain: account.domain,
-        },
-      }),
   },
   actions: {
     describeMessageTool: describeFeishuMessageTool,

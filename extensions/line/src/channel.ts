@@ -1,8 +1,5 @@
-import {
-  buildAccountScopedDmSecurityPolicy,
-  createScopedAccountConfigAccessors,
-  collectAllowlistProviderRestrictSendersWarnings,
-} from "remoteclaw/plugin-sdk";
+import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
 import {
   buildChannelConfigSchema,
   buildComputedAccountStatusSnapshot,
@@ -14,11 +11,12 @@ import {
   processLineMessage,
   type ChannelPlugin,
   type ChannelStatusIssue,
-  type RemoteClawConfig,
   type LineConfig,
   type LineChannelData,
   type ResolvedLineAccount,
-} from "remoteclaw/plugin-sdk/line";
+} from "../api.js";
+import { lineConfigAdapter } from "./config-adapter.js";
+import { resolveLineGroupRequireMention } from "./group-policy.js";
 import { getLineRuntime } from "./runtime.js";
 
 // LINE channel metadata
@@ -33,52 +31,14 @@ const meta = {
   systemImage: "message.fill",
 };
 
-const lineConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) =>
-    getLineRuntime().channel.line.resolveLineAccount({ cfg, accountId: accountId ?? undefined }),
-  resolveAllowFrom: (account: ResolvedLineAccount) => account.config.allowFrom,
-  formatAllowFrom: (allowFrom) =>
-    allowFrom
-      .map((entry) => String(entry).trim())
-      .filter(Boolean)
-      .map((entry) => entry.replace(/^line:(?:user:)?/i, "")),
+const resolveLineDmPolicy = createScopedDmSecurityResolver<ResolvedLineAccount>({
+  channelKey: "line",
+  resolvePolicy: (account) => account.config.dmPolicy,
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  policyPathSuffix: "dmPolicy",
+  approveHint: "openclaw pairing approve line <code>",
+  normalizeEntry: (raw) => raw.replace(/^line:(?:user:)?/i, ""),
 });
-
-function patchLineAccountConfig(
-  cfg: RemoteClawConfig,
-  lineConfig: LineConfig,
-  accountId: string,
-  patch: Record<string, unknown>,
-): RemoteClawConfig {
-  if (accountId === DEFAULT_ACCOUNT_ID) {
-    return {
-      ...cfg,
-      channels: {
-        ...cfg.channels,
-        line: {
-          ...lineConfig,
-          ...patch,
-        },
-      },
-    };
-  }
-  return {
-    ...cfg,
-    channels: {
-      ...cfg.channels,
-      line: {
-        ...lineConfig,
-        accounts: {
-          ...lineConfig.accounts,
-          [accountId]: {
-            ...lineConfig.accounts?.[accountId],
-            ...patch,
-          },
-        },
-      },
-    },
-  };
-}
 
 export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
   id: "line",
@@ -114,40 +74,7 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
   reload: { configPrefixes: ["channels.line"] },
   configSchema: buildChannelConfigSchema(LineConfigSchema),
   config: {
-    listAccountIds: (cfg) => getLineRuntime().channel.line.listLineAccountIds(cfg),
-    resolveAccount: (cfg, accountId) =>
-      getLineRuntime().channel.line.resolveLineAccount({ cfg, accountId: accountId ?? undefined }),
-    defaultAccountId: (cfg) => getLineRuntime().channel.line.resolveDefaultLineAccountId(cfg),
-    setAccountEnabled: ({ cfg, accountId, enabled }) => {
-      const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
-      return patchLineAccountConfig(cfg, lineConfig, accountId, { enabled });
-    },
-    deleteAccount: ({ cfg, accountId }) => {
-      const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
-      if (accountId === DEFAULT_ACCOUNT_ID) {
-        // oxlint-disable-next-line no-unused-vars
-        const { channelSecret, tokenFile, secretFile, ...rest } = lineConfig;
-        return {
-          ...cfg,
-          channels: {
-            ...cfg.channels,
-            line: rest,
-          },
-        };
-      }
-      const accounts = { ...lineConfig.accounts };
-      delete accounts[accountId];
-      return {
-        ...cfg,
-        channels: {
-          ...cfg.channels,
-          line: {
-            ...lineConfig,
-            accounts: Object.keys(accounts).length > 0 ? accounts : undefined,
-          },
-        },
-      };
-    },
+    ...lineConfigAdapter,
     isConfigured: (account) =>
       Boolean(account.channelAccessToken?.trim() && account.channelSecret?.trim()),
     describeAccount: (account) => ({
@@ -157,7 +84,6 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
       configured: Boolean(account.channelAccessToken?.trim() && account.channelSecret?.trim()),
       tokenSource: account.tokenSource ?? undefined,
     }),
-    ...lineConfigAccessors,
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {

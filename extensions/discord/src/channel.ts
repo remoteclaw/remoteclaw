@@ -38,6 +38,16 @@ import {
   type ResolvedDiscordAccount,
 } from "remoteclaw/plugin-sdk/discord";
 import { getDiscordRuntime } from "./runtime.js";
+import { fetchChannelPermissionsDiscord } from "./send.js";
+import { discordSetupAdapter } from "./setup-core.js";
+import { createDiscordPluginBase, discordConfigAdapter } from "./shared.js";
+import { collectDiscordStatusIssues } from "./status-issues.js";
+import { parseDiscordTarget } from "./targets.js";
+import { DiscordUiContainer } from "./ui.js";
+
+type DiscordSendFn = ReturnType<
+  typeof getDiscordRuntime
+>["channel"]["discord"]["sendMessageDiscord"];
 
 const meta = getChatChannelMeta("discord");
 
@@ -80,45 +90,17 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
       );
     },
   },
-  capabilities: {
-    chatTypes: ["direct", "channel", "thread"],
-    polls: true,
-    reactions: true,
-    threads: true,
-    media: true,
-    nativeCommands: true,
-  },
-  streaming: {
-    blockStreamingCoalesceDefaults: { minChars: 1500, idleMs: 1000 },
-  },
-  reload: { configPrefixes: ["channels.discord"] },
-  configSchema: buildChannelConfigSchema(DiscordConfigSchema),
-  config: {
-    listAccountIds: (cfg) => listDiscordAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveDiscordAccount({ cfg, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultDiscordAccountId(cfg),
-    setAccountEnabled: ({ cfg, accountId, enabled }) =>
-      setAccountEnabledInConfigSection({
-        cfg,
-        sectionKey: "discord",
-        accountId,
-        enabled,
-        allowTopLevel: true,
-      }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg,
-        sectionKey: "discord",
-        accountId,
-        clearBaseFields: ["token", "name"],
-      }),
-    isConfigured: (account) => Boolean(account.token?.trim()),
-    describeAccount: (account) => ({
-      accountId: account.accountId,
-      name: account.name,
-      enabled: account.enabled,
-      configured: Boolean(account.token?.trim()),
-      tokenSource: account.tokenSource,
+  allowlist: {
+    supportsScope: ({ scope }) => scope === "dm",
+    readConfig: ({ cfg, accountId }) =>
+      readDiscordAllowlistConfig(resolveDiscordAccount({ cfg, accountId })),
+    resolveNames: async ({ cfg, accountId, entries }) =>
+      await resolveDiscordAllowlistNames({ cfg, accountId, entries }),
+    applyConfigEdit: buildAccountScopedAllowlistConfigEditor({
+      channelId: "discord",
+      normalize: ({ cfg, accountId, values }) =>
+        discordConfigAdapter.formatAllowFrom!({ cfg, accountId, allowFrom: values }),
+      resolvePaths: resolveLegacyDmAllowlistConfigPaths,
     }),
     ...discordConfigAccessors,
   },

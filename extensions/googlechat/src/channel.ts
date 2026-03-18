@@ -1,5 +1,8 @@
-import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
+import {
+  createScopedChannelConfigAdapter,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
   buildAccountScopedDmSecurityPolicy,
   buildOpenGroupPolicyConfigureRouteAllowlistWarning,
@@ -61,8 +64,21 @@ const formatAllowFromEntry = (entry: string) =>
     .replace(/^users\//i, "")
     .toLowerCase();
 
-const googleChatConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) => resolveGoogleChatAccount({ cfg, accountId }),
+const googleChatConfigAdapter = createScopedChannelConfigAdapter<ResolvedGoogleChatAccount>({
+  sectionKey: "googlechat",
+  listAccountIds: listGoogleChatAccountIds,
+  resolveAccount: (cfg, accountId) => resolveGoogleChatAccount({ cfg, accountId }),
+  defaultAccountId: resolveDefaultGoogleChatAccountId,
+  clearBaseFields: [
+    "serviceAccount",
+    "serviceAccountFile",
+    "audienceType",
+    "audience",
+    "webhookPath",
+    "webhookUrl",
+    "botUser",
+    "name",
+  ],
   resolveAllowFrom: (account: ResolvedGoogleChatAccount) => account.config.dm?.allowFrom,
   formatAllowFrom: (allowFrom) =>
     formatNormalizedAllowFromEntries({
@@ -72,32 +88,13 @@ const googleChatConfigAccessors = createScopedAccountConfigAccessors({
   resolveDefaultTo: (account: ResolvedGoogleChatAccount) => account.config.defaultTo,
 });
 
-export const googlechatDock: ChannelDock = {
-  id: "googlechat",
-  capabilities: {
-    chatTypes: ["direct", "group", "thread"],
-    reactions: true,
-    media: true,
-    threads: true,
-    blockStreaming: true,
-  },
-  outbound: { textChunkLimit: 4000 },
-  config: googleChatConfigAccessors,
-  groups: {
-    resolveRequireMention: resolveGoogleChatGroupRequireMention,
-  },
-  threading: {
-    resolveReplyToMode: ({ cfg }) => cfg.channels?.["googlechat"]?.replyToMode ?? "off",
-    buildToolContext: ({ context, hasRepliedRef }) => {
-      const threadId = context.MessageThreadId ?? context.ReplyToId;
-      return {
-        currentChannelId: context.To?.trim() || undefined,
-        currentThreadTs: threadId != null ? String(threadId) : undefined,
-        hasRepliedRef,
-      };
-    },
-  },
-};
+const resolveGoogleChatDmPolicy = createScopedDmSecurityResolver<ResolvedGoogleChatAccount>({
+  channelKey: "googlechat",
+  resolvePolicy: (account) => account.config.dm?.policy,
+  resolveAllowFrom: (account) => account.config.dm?.allowFrom,
+  allowFromPathSuffix: "dm.",
+  normalizeEntry: (raw) => formatAllowFromEntry(raw),
+});
 
 const googlechatActions: ChannelMessageActionAdapter = {
   listActions: (ctx) => googlechatMessageActions.listActions?.(ctx) ?? [],
@@ -146,33 +143,7 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
   reload: { configPrefixes: ["channels.googlechat"] },
   configSchema: buildChannelConfigSchema(GoogleChatConfigSchema),
   config: {
-    listAccountIds: (cfg) => listGoogleChatAccountIds(cfg),
-    resolveAccount: (cfg, accountId) => resolveGoogleChatAccount({ cfg: cfg, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultGoogleChatAccountId(cfg),
-    setAccountEnabled: ({ cfg, accountId, enabled }) =>
-      setAccountEnabledInConfigSection({
-        cfg: cfg,
-        sectionKey: "googlechat",
-        accountId,
-        enabled,
-        allowTopLevel: true,
-      }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg: cfg,
-        sectionKey: "googlechat",
-        accountId,
-        clearBaseFields: [
-          "serviceAccount",
-          "serviceAccountFile",
-          "audienceType",
-          "audience",
-          "webhookPath",
-          "webhookUrl",
-          "botUser",
-          "name",
-        ],
-      }),
+    ...googleChatConfigAdapter,
     isConfigured: (account) => account.credentialSource !== "none",
     describeAccount: (account) => ({
       accountId: account.accountId,
@@ -181,7 +152,6 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
       configured: account.credentialSource !== "none",
       credentialSource: account.credentialSource,
     }),
-    ...googleChatConfigAccessors,
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {

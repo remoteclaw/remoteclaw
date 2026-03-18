@@ -1,5 +1,9 @@
-import { describeAccountSnapshot } from "remoteclaw/plugin-sdk/account-helpers";
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
+import {
+  createScopedChannelConfigAdapter,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import {
   buildAccountScopedDmSecurityPolicy,
   collectAllowlistProviderGroupPolicyWarnings,
@@ -52,12 +56,31 @@ const meta = {
   quickstartAllowFrom: true,
 };
 
-type NextcloudSetupInput = ChannelSetupInput & {
-  baseUrl?: string;
-  secret?: string;
-  secretFile?: string;
-  useEnv?: boolean;
-};
+const nextcloudTalkConfigAdapter = createScopedChannelConfigAdapter<
+  ResolvedNextcloudTalkAccount,
+  ResolvedNextcloudTalkAccount,
+  CoreConfig
+>({
+  sectionKey: "nextcloud-talk",
+  listAccountIds: listNextcloudTalkAccountIds,
+  resolveAccount: (cfg, accountId) => resolveNextcloudTalkAccount({ cfg, accountId }),
+  defaultAccountId: resolveDefaultNextcloudTalkAccountId,
+  clearBaseFields: ["botSecret", "botSecretFile", "baseUrl", "name"],
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  formatAllowFrom: (allowFrom) =>
+    formatAllowFromLowercase({
+      allowFrom,
+      stripPrefixRe: /^(nextcloud-talk|nc-talk|nc):/i,
+    }),
+});
+
+const resolveNextcloudTalkDmPolicy = createScopedDmSecurityResolver<ResolvedNextcloudTalkAccount>({
+  channelKey: "nextcloud-talk",
+  resolvePolicy: (account) => account.config.dmPolicy,
+  resolveAllowFrom: (account) => account.config.allowFrom,
+  policyPathSuffix: "dmPolicy",
+  normalizeEntry: (raw) => raw.replace(/^(nextcloud-talk|nc-talk|nc):/i, "").toLowerCase(),
+});
 
 export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = {
   id: "nextcloud-talk",
@@ -82,44 +105,16 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
   reload: { configPrefixes: ["channels.nextcloud-talk"] },
   configSchema: buildChannelConfigSchema(NextcloudTalkConfigSchema),
   config: {
-    listAccountIds: (cfg) => listNextcloudTalkAccountIds(cfg as CoreConfig),
-    resolveAccount: (cfg, accountId) =>
-      resolveNextcloudTalkAccount({ cfg: cfg as CoreConfig, accountId }),
-    defaultAccountId: (cfg) => resolveDefaultNextcloudTalkAccountId(cfg as CoreConfig),
-    setAccountEnabled: ({ cfg, accountId, enabled }) =>
-      setAccountEnabledInConfigSection({
-        cfg,
-        sectionKey: "nextcloud-talk",
-        accountId,
-        enabled,
-        allowTopLevel: true,
-      }),
-    deleteAccount: ({ cfg, accountId }) =>
-      deleteAccountFromConfigSection({
-        cfg,
-        sectionKey: "nextcloud-talk",
-        accountId,
-        clearBaseFields: ["botSecret", "botSecretFile", "baseUrl", "name"],
-      }),
+    ...nextcloudTalkConfigAdapter,
     isConfigured: (account) => Boolean(account.secret?.trim() && account.baseUrl?.trim()),
-    describeAccount: (account) =>
-      describeAccountSnapshot({
-        account,
-        configured: Boolean(account.secret?.trim() && account.baseUrl?.trim()),
-        extra: {
-          secretSource: account.secretSource,
-          baseUrl: account.baseUrl ? "[set]" : "[missing]",
-        },
-      }),
-    resolveAllowFrom: ({ cfg, accountId }) =>
-      mapAllowFromEntries(
-        resolveNextcloudTalkAccount({ cfg: cfg as CoreConfig, accountId }).config.allowFrom,
-      ).map((entry) => entry.toLowerCase()),
-    formatAllowFrom: ({ allowFrom }) =>
-      formatAllowFromLowercase({
-        allowFrom,
-        stripPrefixRe: /^(nextcloud-talk|nc-talk|nc):/i,
-      }),
+    describeAccount: (account) => ({
+      accountId: account.accountId,
+      name: account.name,
+      enabled: account.enabled,
+      configured: Boolean(account.secret?.trim() && account.baseUrl?.trim()),
+      secretSource: account.secretSource,
+      baseUrl: account.baseUrl ? "[set]" : "[missing]",
+    }),
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {

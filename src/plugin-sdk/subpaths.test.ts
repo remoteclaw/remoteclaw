@@ -51,6 +51,9 @@ describe("plugin-sdk subpath exports", () => {
   it("exports compat helpers", () => {
     expect(typeof compatSdk.emptyPluginConfigSchema).toBe("function");
     expect(typeof compatSdk.resolveControlCommandGate).toBe("function");
+    expect(typeof compatSdk.createScopedChannelConfigAdapter).toBe("function");
+    expect(typeof compatSdk.createTopLevelChannelConfigAdapter).toBe("function");
+    expect(typeof compatSdk.createHybridChannelConfigAdapter).toBe("function");
   });
 
   it("exports core routing helpers", () => {

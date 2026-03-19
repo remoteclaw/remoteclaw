@@ -29,6 +29,10 @@ import { onHeartbeatEvent } from "../infra/heartbeat-events.js";
 import { startHeartbeatRunner, type HeartbeatRunner } from "../infra/heartbeat-runner.js";
 import { getMachineDisplayName } from "../infra/machine-name.js";
 import { ensureRemoteClawCliOnPath } from "../infra/path-env.js";
+import {
+  detectPluginInstallPathIssue,
+  formatPluginInstallPathIssue,
+} from "../infra/plugin-install-path-warnings.js";
 import { setGatewaySigusr1RestartPolicy, setPreRestartDeferralCheck } from "../infra/restart.js";
 import { scheduleGatewayUpdateCheck } from "../infra/update-startup.js";
 import { startDiagnosticHeartbeat, stopDiagnosticHeartbeat } from "../logging/diagnostic.js";
@@ -282,6 +286,23 @@ export async function startGatewayServer(
   }
   setGatewaySigusr1RestartPolicy({ allowExternal: isRestartEnabled(cfgAtStart) });
   setPreRestartDeferralCheck(() => getTotalQueueSize() + getTotalPendingReplies());
+  const matrixInstallPathIssue = await detectPluginInstallPathIssue({
+    pluginId: "matrix",
+    install: cfgAtStart.plugins?.installs?.matrix,
+  });
+  if (matrixInstallPathIssue) {
+    const lines = formatPluginInstallPathIssue({
+      issue: matrixInstallPathIssue,
+      pluginLabel: "Matrix",
+      defaultInstallCommand: "remoteclaw plugins install @remoteclaw/matrix",
+      repoInstallCommand: "remoteclaw plugins install ./extensions/matrix",
+      formatCommand: formatCliCommand,
+    });
+    log.warn(
+      `gateway: matrix install path warning:\n${lines.map((entry) => `- ${entry}`).join("\n")}`,
+    );
+  }
+
   initSubagentRegistry();
   const defaultAgentId = resolveDefaultAgentId(cfgAtStart);
   const defaultWorkspaceDir = resolveAgentWorkspaceDir(cfgAtStart, defaultAgentId);

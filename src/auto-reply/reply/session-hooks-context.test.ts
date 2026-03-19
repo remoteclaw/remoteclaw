@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { HookRunner } from "../../plugins/hooks.js";
 
@@ -56,7 +56,7 @@ describe("session hook context wiring", () => {
     const sessionKey = "agent:main:telegram:direct:123";
     const storePath = await createStorePath("openclaw-session-hook-start");
     await writeStore(storePath, {});
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     await initSessionState({
       ctx: { Body: "hello", SessionKey: sessionKey },
@@ -79,7 +79,7 @@ describe("session hook context wiring", () => {
         updatedAt: Date.now(),
       },
     });
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     await initSessionState({
       ctx: { Body: "/new", SessionKey: sessionKey },

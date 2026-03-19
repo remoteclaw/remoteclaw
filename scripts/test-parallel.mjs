@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
+import path from "node:path";
 
 // On Windows, `.cmd` launchers can fail with `spawn EINVAL` when invoked without a shell
 // (especially under GitHub Actions + Git Bash). Use `shell: true` and let the shell resolve pnpm.
@@ -375,6 +376,47 @@ const maxOldSpaceSizeMb = (() => {
   }
   return null;
 })();
+const _formatElapsedMs = (elapsedMs) =>
+  elapsedMs >= 1000 ? `${(elapsedMs / 1000).toFixed(1)}s` : `${Math.round(elapsedMs)}ms`;
+const formatMemoryKb = (rssKb) =>
+  rssKb >= 1024 ** 2
+    ? `${(rssKb / 1024 ** 2).toFixed(2)}GiB`
+    : rssKb >= 1024
+      ? `${(rssKb / 1024).toFixed(1)}MiB`
+      : `${rssKb}KiB`;
+const _formatMemoryDeltaKb = (rssKb) =>
+  `${rssKb >= 0 ? "+" : "-"}${formatMemoryKb(Math.abs(rssKb))}`;
+const rawMemoryTrace = process.env.REMOTECLAW_TEST_MEMORY_TRACE?.trim().toLowerCase();
+const _memoryTraceEnabled =
+  process.platform !== "win32" &&
+  (rawMemoryTrace === "1" ||
+    rawMemoryTrace === "true" ||
+    (rawMemoryTrace !== "0" && rawMemoryTrace !== "false" && isCI));
+const _memoryTracePollMs = Math.max(
+  250,
+  parseEnvNumber("REMOTECLAW_TEST_MEMORY_TRACE_POLL_MS", 1000),
+);
+const _memoryTraceTopCount = Math.max(
+  1,
+  parseEnvNumber("REMOTECLAW_TEST_MEMORY_TRACE_TOP_COUNT", 6),
+);
+const heapSnapshotIntervalMs = Math.max(
+  0,
+  parseEnvNumber("REMOTECLAW_TEST_HEAPSNAPSHOT_INTERVAL_MS", 0),
+);
+const heapSnapshotMinIntervalMs = 5000;
+const heapSnapshotEnabled =
+  process.platform !== "win32" && heapSnapshotIntervalMs >= heapSnapshotMinIntervalMs;
+const heapSnapshotSignal = process.env.REMOTECLAW_TEST_HEAPSNAPSHOT_SIGNAL?.trim() || "SIGUSR2";
+const heapSnapshotBaseDir = heapSnapshotEnabled
+  ? path.resolve(
+      process.env.REMOTECLAW_TEST_HEAPSNAPSHOT_DIR?.trim() ||
+        path.join(os.tmpdir(), `remoteclaw-heapsnapshots-${Date.now()}`),
+    )
+  : null;
+const ensureNodeOptionFlag = (nodeOptions, flagPrefix, nextValue) =>
+  nodeOptions.includes(flagPrefix) ? nodeOptions : `${nodeOptions} ${nextValue}`.trim();
+const _isNodeLikeProcess = (command) => /(?:^|\/)node(?:$|\.exe$)/iu.test(command);
 
 const runOnce = (entry, extraArgs = []) =>
   new Promise((resolve) => {
@@ -400,13 +442,33 @@ const runOnce = (entry, extraArgs = []) =>
       (acc, flag) => (acc.includes(flag) ? acc : `${acc} ${flag}`.trim()),
       nodeOptions,
     );
-    const heapFlag =
+    const heapSnapshotDir =
+      heapSnapshotBaseDir === null ? null : path.join(heapSnapshotBaseDir, entry.name);
+    let resolvedNodeOptions =
       maxOldSpaceSizeMb && !nextNodeOptions.includes("--max-old-space-size=")
-        ? `--max-old-space-size=${maxOldSpaceSizeMb}`
-        : null;
-    const resolvedNodeOptions = heapFlag
-      ? `${nextNodeOptions} ${heapFlag}`.trim()
-      : nextNodeOptions;
+        ? `${nextNodeOptions} --max-old-space-size=${maxOldSpaceSizeMb}`.trim()
+        : nextNodeOptions;
+    if (heapSnapshotEnabled && heapSnapshotDir) {
+      try {
+        fs.mkdirSync(heapSnapshotDir, { recursive: true });
+      } catch (err) {
+        console.error(
+          `[test-parallel] failed to create heap snapshot dir ${heapSnapshotDir}: ${String(err)}`,
+        );
+        resolve(1);
+        return;
+      }
+      resolvedNodeOptions = ensureNodeOptionFlag(
+        resolvedNodeOptions,
+        "--diagnostic-dir=",
+        `--diagnostic-dir=${heapSnapshotDir}`,
+      );
+      resolvedNodeOptions = ensureNodeOptionFlag(
+        resolvedNodeOptions,
+        "--heapsnapshot-signal=",
+        `--heapsnapshot-signal=${heapSnapshotSignal}`,
+      );
+    }
     let child;
     try {
       child = spawn(pnpm, args, {

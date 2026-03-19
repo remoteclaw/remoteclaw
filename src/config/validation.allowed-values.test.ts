@@ -11,8 +11,8 @@ describe("config validation allowed-values metadata", () => {
     if (!result.ok) {
       const issue = result.issues.find((entry) => entry.path === "update.channel");
       expect(issue).toBeDefined();
-      expect(issue?.message).toContain('(allowed: "stable", "beta", "dev")');
-      expect(issue?.allowedValues).toEqual(["stable", "beta", "dev"]);
+      expect(issue?.message).toContain('(allowed: "stable", "beta", "next")');
+      expect(issue?.allowedValues).toEqual(["stable", "beta", "next"]);
       expect(issue?.allowedValuesHiddenCount).toBe(0);
     }
   });

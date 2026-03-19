@@ -1701,6 +1701,7 @@ extension NodeAppModel {
         self.operatorGatewayTask = nil
         self.voiceWakeSyncTask?.cancel()
         self.voiceWakeSyncTask = nil
+        LiveActivityManager.shared.handleDisconnect()
         self.gatewayHealthMonitor.stop()
         Task {
             await self.operatorGateway.disconnect()
@@ -1737,6 +1738,7 @@ private extension NodeAppModel {
         self.operatorConnected = false
         self.voiceWakeSyncTask?.cancel()
         self.voiceWakeSyncTask = nil
+        LiveActivityManager.shared.handleDisconnect()
         self.gatewayDefaultAgentId = nil
         self.gatewayAgents = []
         self.selectedAgentId = GatewaySettingsStore.loadGatewaySelectedAgentId(stableID: stableID)
@@ -1817,6 +1819,7 @@ private extension NodeAppModel {
                             await self.refreshAgentsFromGateway()
                             await self.refreshShareRouteFromGateway()
                             await self.startVoiceWakeSync()
+                            await MainActor.run { LiveActivityManager.shared.handleReconnect() }
                             await MainActor.run { self.startGatewayHealthMonitor() }
                         },
                         onDisconnected: { [weak self] reason in
@@ -1824,6 +1827,7 @@ private extension NodeAppModel {
                             await MainActor.run {
                                 self.operatorConnected = false
                                 self.talkMode.updateGatewayConnected(false)
+                                LiveActivityManager.shared.handleDisconnect()
                             }
                             GatewayDiagnostics.log("operator gateway disconnected reason=\(reason)")
                             await MainActor.run { self.stopGatewayHealthMonitor() }
@@ -1888,6 +1892,14 @@ private extension NodeAppModel {
                     self.gatewayStatusText = (attempt == 0) ? "Connecting…" : "Reconnecting…"
                     self.gatewayServerName = nil
                     self.gatewayRemoteAddress = nil
+                    let liveActivity = LiveActivityManager.shared
+                    if liveActivity.isActive {
+                        liveActivity.handleConnecting()
+                    } else {
+                        liveActivity.startActivity(
+                            agentName: self.selectedAgentId ?? "main",
+                            sessionKey: self.mainSessionKey)
+                    }
                 }
 
                 do {

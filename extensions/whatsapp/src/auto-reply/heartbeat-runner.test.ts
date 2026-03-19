@@ -41,15 +41,13 @@ vi.mock("../../../../src/config/config.js", () => ({
   loadConfig: () => ({ agents: { defaults: {} }, session: {} }),
 }));
 
-vi.mock("../../../../src/routing/session-key.js", () => ({
-  normalizeMainKey: () => null,
-  DEFAULT_AGENT_ID: "default",
-}));
-
-vi.mock("../../agents/agent-scope.js", () => ({
-  resolveAgentWorkspaceDir: () => "/tmp/workspace",
-  resolveDefaultAgentId: () => "default",
-}));
+vi.mock("../../../../src/routing/session-key.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../../src/routing/session-key.js")>();
+  return {
+    ...actual,
+    normalizeMainKey: () => null,
+  };
+});
 
 vi.mock("../../../../src/infra/heartbeat-visibility.js", () => ({
   resolveHeartbeatVisibility: () => state.visibility,
@@ -80,6 +78,42 @@ vi.mock("../../../../src/logging.js", () => ({
   }),
 }));
 
+vi.mock("remoteclaw/plugin-sdk/state-paths", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/state-paths")>();
+  return {
+    ...actual,
+    resolveOAuthDir: () => "/tmp/openclaw-oauth",
+  };
+});
+
+vi.mock("remoteclaw/plugin-sdk/runtime-env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/runtime-env")>();
+  const logger = {
+    child: () => logger,
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  };
+  return {
+    ...actual,
+    createSubsystemLogger: () => logger,
+  };
+});
+
+vi.mock("../auth-store.js", () => ({
+  WA_WEB_AUTH_DIR: "/tmp/openclaw-oauth/whatsapp/default",
+  resolveDefaultWebAuthDir: () => "/tmp/openclaw-oauth/whatsapp/default",
+  hasWebCredsSync: () => false,
+  maybeRestoreCredsFromBackup: () => undefined,
+  webAuthExists: async () => false,
+  logoutWeb: async () => undefined,
+  readWebSelfId: () => null,
+  getWebAuthAgeMs: () => null,
+  logWebSelfId: () => undefined,
+  pickWebChannel: async () => undefined,
+}));
+
 vi.mock("./loggers.js", () => ({
   whatsappHeartbeatLog: {
     info: (msg: string) => state.heartbeatInfoLogs.push(msg),
@@ -93,6 +127,7 @@ vi.mock("../reconnect.js", () => ({
 
 vi.mock("../send.js", () => ({
   sendMessageWhatsApp: vi.fn(async () => ({ messageId: "m1" })),
+  sendReactionWhatsApp: vi.fn(async () => undefined),
 }));
 
 vi.mock("../session.js", () => ({

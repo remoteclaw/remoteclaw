@@ -375,7 +375,13 @@ async function resolveCommandSecretRefsLocally(params: {
   );
   const runtimeWebActivePaths = new Set<string>();
   const runtimeWebInactiveDiagnostics: string[] = [];
-  for (const target of runtimeWebTargets) {
+  for (const target of discoverConfigSecretTargetsByIds(sourceConfig, params.targetIds)) {
+    if (!targetsRuntimeWebPath(target.path)) {
+      continue;
+    }
+    if (params.allowedPaths && !params.allowedPaths.has(target.path)) {
+      continue;
+    }
     const runtimeState = classifyRuntimeWebTargetPathState({
       config: sourceConfig,
       path: target.path,

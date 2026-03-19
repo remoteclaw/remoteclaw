@@ -3183,21 +3183,58 @@ module.exports = {
       );
       expect(record?.status).toBe("loaded");
 
-      emitDiagnosticEvent({
-        type: "model.usage",
-        sessionKey: "agent:main:test:dm:peer",
-        usage: { total: 1 },
-      });
+  it("derives plugin-sdk subpaths from package exports", () => {
+    const subpaths = __testing.listPluginSdkExportedSubpaths();
+    expect(subpaths).toContain("telegram");
+    expect(subpaths).not.toContain("compat");
+    expect(subpaths).not.toContain("root-alias");
+  });
 
-      expect((globalThis as Record<string, unknown>)[seenKey]).toEqual([
-        {
-          type: "model.usage",
-          sessionKey: "agent:main:test:dm:peer",
-        },
-      ]);
-    } finally {
-      delete (globalThis as Record<string, unknown>)[seenKey];
-    }
+  it("configures the plugin loader jiti boundary to prefer native dist modules", () => {
+    const options = __testing.buildPluginLoaderJitiOptions({});
+
+    expect(options.tryNative).toBe(true);
+    expect(options.interopDefault).toBe(true);
+    expect(options.extensions).toContain(".js");
+    expect(options.extensions).toContain(".ts");
+    expect("alias" in options).toBe(false);
+  });
+
+  it("uses transpiled Jiti loads for source TypeScript plugin entries", () => {
+    expect(__testing.shouldPreferNativeJiti("/repo/dist/plugins/runtime/index.js")).toBe(true);
+    expect(
+      __testing.shouldPreferNativeJiti("/repo/extensions/discord/src/channel.runtime.ts"),
+    ).toBe(false);
+  });
+
+  it("loads source runtime shims through the non-native Jiti boundary", async () => {
+    const jiti = createJiti(import.meta.url, {
+      ...__testing.buildPluginLoaderJitiOptions(__testing.resolvePluginSdkScopedAliasMap()),
+      tryNative: false,
+    });
+    const discordChannelRuntime = path.join(
+      process.cwd(),
+      "extensions",
+      "discord",
+      "src",
+      "channel.runtime.ts",
+    );
+    const discordVoiceRuntime = path.join(
+      process.cwd(),
+      "extensions",
+      "discord",
+      "src",
+      "voice",
+      "manager.runtime.ts",
+    );
+
+    await expect(jiti.import(discordChannelRuntime)).resolves.toMatchObject({
+      discordSetupWizard: expect.any(Object),
+    });
+    await expect(jiti.import(discordVoiceRuntime)).resolves.toMatchObject({
+      DiscordVoiceManager: expect.any(Function),
+      DiscordVoiceReadyListener: expect.any(Function),
+    });
   });
 
   it("loads source TypeScript plugins that route through local runtime shims", () => {

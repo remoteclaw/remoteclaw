@@ -51,18 +51,18 @@ vi.mock("./bot/delivery.js", () => ({
 }));
 
 vi.mock("./send.js", () => ({
-  createForumTopicTelegram,
-  deleteMessageTelegram,
-  editForumTopicTelegram,
+  createForumTopicTelegram: vi.fn(),
+  deleteMessageTelegram: vi.fn(),
+  editForumTopicTelegram: vi.fn(),
   editMessageTelegram,
-  reactMessageTelegram,
-  sendMessageTelegram,
-  sendPollTelegram,
-  sendStickerTelegram,
+  reactMessageTelegram: vi.fn(),
+  sendMessageTelegram: vi.fn(),
+  sendPollTelegram: vi.fn(),
+  sendStickerTelegram: vi.fn(),
 }));
 
-vi.mock("../../../src/config/sessions.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../../src/config/sessions.js")>();
+vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
     loadConfig,

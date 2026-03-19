@@ -79,7 +79,6 @@ export const __testing = {
   buildPluginLoaderAliasMap,
   listPluginSdkAliasCandidates,
   listPluginSdkExportedSubpaths,
-  resolveExtensionApiAlias,
   resolvePluginSdkScopedAliasMap,
   resolvePluginSdkAliasCandidateOrder,
   resolvePluginSdkAliasFile,

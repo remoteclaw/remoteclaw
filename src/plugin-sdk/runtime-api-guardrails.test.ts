@@ -44,8 +44,9 @@ const RUNTIME_API_EXPORT_GUARDS: Record<string, readonly string[]> = {
     'export { probeIMessage } from "./src/probe.js";',
     'export { sendMessageIMessage } from "./src/send.js";',
   ],
+  "extensions/googlechat/runtime-api.ts": ['export * from "remoteclaw/plugin-sdk/googlechat";'],
   "extensions/nextcloud-talk/runtime-api.ts": [
-    'export * from "../../src/plugin-sdk/nextcloud-talk.js";',
+    'export * from "remoteclaw/plugin-sdk/nextcloud-talk";',
   ],
   "extensions/signal/runtime-api.ts": ['export * from "./src/runtime-api.js";'],
   "extensions/slack/runtime-api.ts": [

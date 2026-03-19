@@ -3,6 +3,7 @@ import { vi } from "vitest";
 
 export const sendMock: MockFn = vi.fn();
 export const reactMock: MockFn = vi.fn();
+export const recordInboundSessionMock: MockFn = vi.fn();
 export const updateLastRouteMock: MockFn = vi.fn();
 export const dispatchMock: MockFn = vi.fn();
 export const readAllowFromStoreMock: MockFn = vi.fn();
@@ -10,10 +11,50 @@ export const upsertPairingRequestMock: MockFn = vi.fn();
 export const loadConfigMock: MockFn = vi.fn();
 
 vi.mock("./send.js", () => ({
-  sendMessageDiscord: (...args: unknown[]) => sendMock(...args),
+  addRoleDiscord: vi.fn(),
+  banMemberDiscord: vi.fn(),
+  createChannelDiscord: vi.fn(),
+  createScheduledEventDiscord: vi.fn(),
+  createThreadDiscord: vi.fn(),
+  deleteChannelDiscord: vi.fn(),
+  deleteMessageDiscord: vi.fn(),
+  editChannelDiscord: vi.fn(),
+  editMessageDiscord: vi.fn(),
+  fetchChannelInfoDiscord: vi.fn(),
+  fetchChannelPermissionsDiscord: vi.fn(),
+  fetchMemberInfoDiscord: vi.fn(),
+  fetchMessageDiscord: vi.fn(),
+  fetchReactionsDiscord: vi.fn(),
+  fetchRoleInfoDiscord: vi.fn(),
+  fetchVoiceStatusDiscord: vi.fn(),
+  hasAnyGuildPermissionDiscord: vi.fn(),
+  kickMemberDiscord: vi.fn(),
+  listGuildChannelsDiscord: vi.fn(),
+  listGuildEmojisDiscord: vi.fn(),
+  listPinsDiscord: vi.fn(),
+  listScheduledEventsDiscord: vi.fn(),
+  listThreadsDiscord: vi.fn(),
+  moveChannelDiscord: vi.fn(),
+  pinMessageDiscord: vi.fn(),
   reactMessageDiscord: async (...args: unknown[]) => {
     reactMock(...args);
   },
+  readMessagesDiscord: vi.fn(),
+  removeChannelPermissionDiscord: vi.fn(),
+  removeOwnReactionsDiscord: vi.fn(),
+  removeReactionDiscord: vi.fn(),
+  removeRoleDiscord: vi.fn(),
+  searchMessagesDiscord: vi.fn(),
+  sendDiscordComponentMessage: vi.fn(),
+  sendMessageDiscord: (...args: unknown[]) => sendMock(...args),
+  sendPollDiscord: vi.fn(),
+  sendStickerDiscord: vi.fn(),
+  sendVoiceMessageDiscord: vi.fn(),
+  setChannelPermissionDiscord: vi.fn(),
+  timeoutMemberDiscord: vi.fn(),
+  unpinMessageDiscord: vi.fn(),
+  uploadEmojiDiscord: vi.fn(),
+  uploadStickerDiscord: vi.fn(),
 }));
 
 vi.mock("remoteclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
@@ -37,13 +78,26 @@ function createPairingStoreMocks() {
   };
 }
 
-vi.mock("remoteclaw/plugin-sdk/conversation-runtime", () => createPairingStoreMocks());
+vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
+  return {
+    ...actual,
+    ...createPairingStoreMocks(),
+  };
+});
+
+vi.mock("remoteclaw/plugin-sdk/channel-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/channel-runtime")>();
+  return {
+    ...actual,
+    recordInboundSession: (...args: unknown[]) => recordInboundSessionMock(...args),
+  };
+});
 
 vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
   const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
-    loadConfig: (...args: unknown[]) => loadConfigMock(...args),
     readSessionUpdatedAt: vi.fn(() => undefined),
     resolveStorePath: vi.fn(() => "/tmp/openclaw-sessions.json"),
     updateLastRoute: (...args: unknown[]) => updateLastRouteMock(...args),

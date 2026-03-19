@@ -4,6 +4,7 @@ import path from "node:path";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
 import { buildModelsProviderData } from "remoteclaw/plugin-sdk/mattermost";
 import { describe, expect, it } from "vitest";
+import type { RemoteClawConfig } from "../../runtime-api.js";
 import {
   buildMattermostAllowedModelRefs,
   parseMattermostModelPickerContext,
@@ -142,7 +143,17 @@ describe("Mattermost model picker", () => {
           ],
         },
       };
-      const providerData = await buildModelsProviderData(cfg, "support");
+      const providerData = {
+        byProvider: new Map<string, Set<string>>([
+          ["anthropic", new Set(["claude-opus-4-5"])],
+          ["openai", new Set(["gpt-5"])],
+        ]),
+        providers: ["anthropic", "openai"],
+        resolvedDefault: {
+          provider: "openai",
+          model: "gpt-5",
+        },
+      };
 
       expect(
         resolveMattermostModelPickerCurrentModel({

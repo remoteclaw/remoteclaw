@@ -34,6 +34,8 @@ async function writePluginFixture(params: {
 describe("config plugin validation", () => {
   let fixtureRoot = "";
   let suiteHome = "";
+  let badPluginDir = "";
+  let bluebubblesPluginDir = "";
   const envSnapshot = {
     REMOTECLAW_STATE_DIR: process.env.REMOTECLAW_STATE_DIR,
     REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS: process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS,
@@ -45,6 +47,8 @@ describe("config plugin validation", () => {
     fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-config-plugin-validation-"));
     suiteHome = path.join(fixtureRoot, "home");
     await fs.mkdir(suiteHome, { recursive: true });
+    badPluginDir = path.join(suiteHome, "bad-plugin");
+    bluebubblesPluginDir = path.join(suiteHome, "bluebubbles-plugin");
     process.env.REMOTECLAW_STATE_DIR = path.join(suiteHome, ".remoteclaw");
     process.env.REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS = "10000";
     clearPluginManifestRegistryCache();

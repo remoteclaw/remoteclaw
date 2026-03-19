@@ -1493,7 +1493,7 @@ describe("initSessionState internal channel routing preservation", () => {
         },
       },
     });
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -1524,7 +1524,7 @@ describe("initSessionState internal channel routing preservation", () => {
         },
       },
     });
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as RemoteClawConfig;
 
     const result = await initSessionState({
       ctx: {

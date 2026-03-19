@@ -280,20 +280,11 @@ export function createAgentEventHandler({
     ).text.trim();
     const shouldSuppressSilent = isSilentReplyText(text, SILENT_REPLY_TOKEN);
     const shouldSuppressSilentLeadFragment = isSilentReplyLeadFragment(text);
-    const shouldSuppressHeartbeatStreaming = shouldHideHeartbeatChatOutput(
-      clientRunId,
-      sourceRunId,
-    );
     // Flush any throttled delta so streaming clients receive the complete text
     // before the final event.  The 150 ms throttle in emitChatDelta may have
     // suppressed the most recent chunk, leaving the client with stale text.
     // Only flush if the buffer has grown since the last broadcast to avoid duplicates.
-    if (
-      text &&
-      !shouldSuppressSilent &&
-      !shouldSuppressSilentLeadFragment &&
-      !shouldSuppressHeartbeatStreaming
-    ) {
+    if (text && !shouldSuppressSilent && !shouldSuppressSilentLeadFragment) {
       const lastBroadcastLen = chatRunState.deltaLastBroadcastLen.get(clientRunId) ?? 0;
       if (text.length > lastBroadcastLen) {
         const flushPayload = {

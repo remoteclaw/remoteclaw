@@ -1,5 +1,5 @@
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/core";
 import { zaloDock, zaloPlugin } from "./src/channel.js";
 import { setZaloRuntime } from "./src/runtime.js";
 

@@ -26,6 +26,30 @@ export default defineConfig({
         replacement: path.join(repoRoot, "src", "plugin-sdk", "telegram.ts"),
       },
       {
+        find: "remoteclaw/plugin-sdk/discord",
+        replacement: path.join(repoRoot, "src", "plugin-sdk", "discord.ts"),
+      },
+      {
+        find: "remoteclaw/plugin-sdk/slack",
+        replacement: path.join(repoRoot, "src", "plugin-sdk", "slack.ts"),
+      },
+      {
+        find: "remoteclaw/plugin-sdk/signal",
+        replacement: path.join(repoRoot, "src", "plugin-sdk", "signal.ts"),
+      },
+      {
+        find: "remoteclaw/plugin-sdk/imessage",
+        replacement: path.join(repoRoot, "src", "plugin-sdk", "imessage.ts"),
+      },
+      {
+        find: "remoteclaw/plugin-sdk/whatsapp",
+        replacement: path.join(repoRoot, "src", "plugin-sdk", "whatsapp.ts"),
+      },
+      {
+        find: "remoteclaw/plugin-sdk/line",
+        replacement: path.join(repoRoot, "src", "plugin-sdk", "line.ts"),
+      },
+      {
         find: "remoteclaw/plugin-sdk/keyed-async-queue",
         replacement: path.join(repoRoot, "src", "plugin-sdk", "keyed-async-queue.ts"),
       },
@@ -52,7 +76,6 @@ export default defineConfig({
       "ui/src/ui/views/agents-utils.test.ts",
       "ui/src/ui/views/usage-render-details.test.ts",
       "ui/src/ui/controllers/agents.test.ts",
-      "ui/src/ui/app-tool-stream.node.test.ts",
       "ui/src/ui/controllers/chat.test.ts",
     ],
     setupFiles: ["test/setup.ts"],
@@ -62,7 +85,7 @@ export default defineConfig({
       "apps/macos/.build/**",
       "**/node_modules/**",
       "**/vendor/**",
-      "dist/RemoteClaw.app/**",
+      "dist/OpenClaw.app/**",
       "**/*.live.test.ts",
       "**/*.e2e.test.ts",
     ],
@@ -107,14 +130,18 @@ export default defineConfig({
         "src/channels/**",
         "src/gateway/**",
         "src/line/**",
+        "src/media-understanding/**",
         "src/node-host/**",
         "src/plugins/**",
         "src/providers/**",
 
         // Some agent integrations are intentionally validated via manual/e2e runs.
+        "src/agents/model-scan.ts",
+        "src/agents/pi-embedded-runner.ts",
         "src/agents/sandbox-paths.ts",
         "src/agents/sandbox.ts",
         "src/agents/skills-install.ts",
+        "src/agents/pi-tool-definition-adapter.ts",
         "src/agents/tools/discord-actions*.ts",
         "src/agents/tools/slack-actions.ts",
 
@@ -124,6 +151,7 @@ export default defineConfig({
         "src/infra/update-check.ts",
         "src/infra/ports-inspect.ts",
         "src/infra/outbound/outbound-session.ts",
+        "src/memory/batch-gemini.ts",
 
         // Gateway server integration surfaces are intentionally validated via manual/e2e runs.
         "src/gateway/control-ui.ts",

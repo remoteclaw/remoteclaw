@@ -4,15 +4,7 @@ import { execSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import {
-  collectBundledExtensionManifestErrors,
-  normalizeBundledExtensionMetadata,
-  type BundledExtension,
-  type ExtensionPackageJson as PackageJson,
-} from "./lib/bundled-extension-manifest.ts";
 import { sparkleBuildFloorsFromShortVersion, type SparkleBuildFloors } from "./sparkle-build.ts";
-
-export { collectBundledExtensionManifestErrors } from "./lib/bundled-extension-manifest.ts";
 
 type PackFile = { path: string };
 type PackResult = { files?: PackFile[] };
@@ -22,12 +14,33 @@ const requiredPathGroups = [
   ["dist/entry.js", "dist/entry.mjs"],
   "dist/plugin-sdk/index.js",
   "dist/plugin-sdk/index.d.ts",
+  "dist/plugin-sdk/core.js",
+  "dist/plugin-sdk/core.d.ts",
+  "dist/plugin-sdk/telegram.js",
+  "dist/plugin-sdk/telegram.d.ts",
+  "dist/plugin-sdk/discord.js",
+  "dist/plugin-sdk/discord.d.ts",
+  "dist/plugin-sdk/slack.js",
+  "dist/plugin-sdk/slack.d.ts",
+  "dist/plugin-sdk/signal.js",
+  "dist/plugin-sdk/signal.d.ts",
+  "dist/plugin-sdk/imessage.js",
+  "dist/plugin-sdk/imessage.d.ts",
+  "dist/plugin-sdk/whatsapp.js",
+  "dist/plugin-sdk/whatsapp.d.ts",
+  "dist/plugin-sdk/line.js",
+  "dist/plugin-sdk/line.d.ts",
   "dist/build-info.json",
 ];
-const forbiddenPrefixes = ["dist/RemoteClaw.app/"];
+const forbiddenPrefixes = ["dist/OpenClaw.app/"];
 const appcastPath = resolve("appcast.xml");
 const laneBuildMin = 1_000_000_000;
 const laneFloorAdoptionDateKey = 20260227;
+
+type PackageJson = {
+  name?: string;
+  version?: string;
+};
 
 function normalizePluginSyncVersion(version: string): string {
   const normalized = version.trim().replace(/^v/, "");
@@ -36,90 +49,6 @@ function normalizePluginSyncVersion(version: string): string {
     return base;
   }
   return normalized.replace(/[-+].*$/, "");
-}
-
-export function collectBundledExtensionRootDependencyGapErrors(params: {
-  rootPackage: PackageJson;
-  extensions: BundledExtension[];
-}): string[] {
-  const rootDeps = {
-    ...params.rootPackage.dependencies,
-    ...params.rootPackage.optionalDependencies,
-  };
-  const errors: string[] = [];
-
-  for (const extension of normalizeBundledExtensionMetadata(params.extensions)) {
-    if (!extension.npmSpec) {
-      continue;
-    }
-
-    const missing = Object.keys(extension.packageJson.dependencies ?? {})
-      .filter((dep) => dep !== "remoteclaw" && !rootDeps[dep])
-      .toSorted();
-    const allowlisted = [...extension.rootDependencyMirrorAllowlist].toSorted();
-    if (missing.join("\n") !== allowlisted.join("\n")) {
-      const unexpected = missing.filter((dep) => !allowlisted.includes(dep));
-      const resolved = allowlisted.filter((dep) => !missing.includes(dep));
-      const parts = [
-        `bundled extension '${extension.id}' root dependency mirror drift`,
-        `missing in root package: ${missing.length > 0 ? missing.join(", ") : "(none)"}`,
-      ];
-      if (unexpected.length > 0) {
-        parts.push(`new gaps: ${unexpected.join(", ")}`);
-      }
-      if (resolved.length > 0) {
-        parts.push(`remove stale allowlist entries: ${resolved.join(", ")}`);
-      }
-      errors.push(parts.join(" | "));
-    }
-  }
-
-  return errors;
-}
-
-function collectBundledExtensions(): BundledExtension[] {
-  const extensionsDir = resolve("extensions");
-  const entries = readdirSync(extensionsDir, { withFileTypes: true }).filter((entry) =>
-    entry.isDirectory(),
-  );
-
-  return entries.flatMap((entry) => {
-    const packagePath = join(extensionsDir, entry.name, "package.json");
-    try {
-      return [
-        {
-          id: entry.name,
-          packageJson: JSON.parse(readFileSync(packagePath, "utf8")) as PackageJson,
-        },
-      ];
-    } catch {
-      return [];
-    }
-  });
-}
-
-function checkBundledExtensionRootDependencyMirrors() {
-  const rootPackage = JSON.parse(readFileSync(resolve("package.json"), "utf8")) as PackageJson;
-  const extensions = collectBundledExtensions();
-  const manifestErrors = collectBundledExtensionManifestErrors(extensions);
-  if (manifestErrors.length > 0) {
-    console.error("release-check: bundled extension manifest validation failed:");
-    for (const error of manifestErrors) {
-      console.error(`  - ${error}`);
-    }
-    process.exit(1);
-  }
-  const errors = collectBundledExtensionRootDependencyGapErrors({
-    rootPackage,
-    extensions,
-  });
-  if (errors.length > 0) {
-    console.error("release-check: bundled extension root dependency mirror validation failed:");
-    for (const error of errors) {
-      console.error(`  - ${error}`);
-    }
-    process.exit(1);
-  }
 }
 
 function runPackDry(): PackResult[] {
@@ -217,8 +146,7 @@ export function collectAppcastSparkleVersionErrors(xml: string): string[] {
       continue;
     }
 
-    const sparkleBuild = Number(sparkleVersion);
-    calverItems.push({ title, sparkleBuild, floors });
+    calverItems.push({ title, sparkleBuild: Number(sparkleVersion), floors });
   }
 
   const observedLaneAdoptionDateKey = calverItems
@@ -234,7 +162,6 @@ export function collectAppcastSparkleVersionErrors(xml: string): string[] {
     const expectLaneFloor =
       item.sparkleBuild >= laneBuildMin || item.floors.dateKey >= effectiveLaneAdoptionDateKey;
     const floor = expectLaneFloor ? item.floors.laneFloor : item.floors.legacyFloor;
-
     if (item.sparkleBuild < floor) {
       const floorLabel = expectLaneFloor ? "lane floor" : "legacy floor";
       errors.push(
@@ -258,7 +185,7 @@ function checkAppcastSparkleVersions() {
   }
 }
 
-// Critical functions that channel extension plugins import from openclaw/plugin-sdk.
+// Critical functions that channel extension plugins import from remoteclaw/plugin-sdk.
 // If any are missing from the compiled output, plugins crash at runtime (#27569).
 const requiredPluginSdkExports = [
   "isDangerousNameMatchingEnabled",
@@ -321,7 +248,6 @@ function checkPluginSdkExports() {
 
 function main() {
   checkPluginVersions();
-  checkBundledExtensionRootDependencyMirrors();
   checkAppcastSparkleVersions();
   checkPluginSdkExports();
 

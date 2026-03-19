@@ -29,7 +29,7 @@ import {
   type ChannelMessageActionAdapter,
   type ChannelPlugin,
   type ResolvedDiscordAccount,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/discord";
 import { getDiscordRuntime } from "./runtime.js";
 
 const meta = getChatChannelMeta("discord");
@@ -170,8 +170,8 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
   },
   agentPrompt: {
     messageToolHints: () => [
-      "- Use the `discord_send` MCP tool with a `components` parameter to include buttons, selects, or v2 containers in messages.",
-      "- Forms: pass `components.modal` (with title and fields) to `discord_send`. RemoteClaw adds a trigger button and routes submissions as new messages.",
+      "- Discord components: set `components` when sending messages to include buttons, selects, or v2 containers.",
+      "- Forms: add `components.modal` (title, fields). OpenClaw adds a trigger button and routes submissions as new messages.",
     ],
   },
   messaging: {
@@ -206,7 +206,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
           token,
           entries: inputs,
         });
-        return resolved.map((entry: any) => ({
+        return resolved.map((entry) => ({
           input: entry.input,
           resolved: entry.resolved,
           id: entry.channelId ?? entry.guildId,
@@ -221,7 +221,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
         token,
         entries: inputs,
       });
-      return resolved.map((entry: any) => ({
+      return resolved.map((entry) => ({
         input: entry.input,
         resolved: entry.resolved,
         id: entry.id,
@@ -455,8 +455,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
         abortSignal: ctx.abortSignal,
         mediaMaxMb: account.config.mediaMaxMb,
         historyLimit: account.config.historyLimit,
-        setStatus: (patch: Record<string, unknown>) =>
-          ctx.setStatus({ accountId: account.accountId, ...patch }),
+        setStatus: (patch) => ctx.setStatus({ accountId: account.accountId, ...patch }),
       });
     },
   },

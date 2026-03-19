@@ -1,5 +1,5 @@
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/slack";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/slack";
 import { slackPlugin } from "./src/channel.js";
 import { setSlackRuntime } from "./src/runtime.js";
 

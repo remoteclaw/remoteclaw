@@ -29,7 +29,7 @@ import {
   SlackConfigSchema,
   type ChannelPlugin,
   type ResolvedSlackAccount,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/slack";
 import { getSlackRuntime } from "./runtime.js";
 
 const meta = getChatChannelMeta("slack");
@@ -69,8 +69,8 @@ function resolveSlackSendContext(params: {
   cfg: Parameters<typeof resolveSlackAccount>[0]["cfg"];
   accountId?: string;
   deps?: { sendSlack?: SlackSendFn };
-  replyToId?: string | null;
-  threadId?: string | null;
+  replyToId?: string | number | null;
+  threadId?: string | number | null;
 }) {
   const send = params.deps?.sendSlack ?? getSlackRuntime().channel.slack.sendMessageSlack;
   const account = resolveSlackAccount({ cfg: params.cfg, accountId: params.accountId });
@@ -248,7 +248,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
           token,
           entries: inputs,
         });
-        return resolved.map((entry: any) => ({
+        return resolved.map((entry) => ({
           input: entry.input,
           resolved: entry.resolved,
           id: entry.id,
@@ -260,7 +260,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
         token,
         entries: inputs,
       });
-      return resolved.map((entry: any) => ({
+      return resolved.map((entry) => ({
         input: entry.input,
         resolved: entry.resolved,
         id: entry.id,
@@ -357,36 +357,32 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
     chunker: null,
     textChunkLimit: 4000,
     sendText: async ({ to, text, accountId, deps, replyToId, threadId, cfg }) => {
-      const normalizedAccountId = accountId ?? undefined;
-      const normalizedThreadId = threadId != null ? String(threadId) : undefined;
       const { send, threadTsValue, tokenOverride } = resolveSlackSendContext({
         cfg,
-        accountId: normalizedAccountId,
+        accountId: accountId ?? undefined,
         deps,
         replyToId,
-        threadId: normalizedThreadId,
+        threadId,
       });
       const result = await send(to, text, {
         threadTs: threadTsValue != null ? String(threadTsValue) : undefined,
-        accountId: normalizedAccountId,
+        accountId: accountId ?? undefined,
         ...(tokenOverride ? { token: tokenOverride } : {}),
       });
       return { channel: "slack", ...result };
     },
     sendMedia: async ({ to, text, mediaUrl, accountId, deps, replyToId, threadId, cfg }) => {
-      const normalizedAccountId = accountId ?? undefined;
-      const normalizedThreadId = threadId != null ? String(threadId) : undefined;
       const { send, threadTsValue, tokenOverride } = resolveSlackSendContext({
         cfg,
-        accountId: normalizedAccountId,
+        accountId: accountId ?? undefined,
         deps,
         replyToId,
-        threadId: normalizedThreadId,
+        threadId,
       });
       const result = await send(to, text, {
         mediaUrl,
         threadTs: threadTsValue != null ? String(threadTsValue) : undefined,
-        accountId: normalizedAccountId,
+        accountId: accountId ?? undefined,
         ...(tokenOverride ? { token: tokenOverride } : {}),
       });
       return { channel: "slack", ...result };
@@ -452,6 +448,8 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
         abortSignal: ctx.abortSignal,
         mediaMaxMb: account.config.mediaMaxMb,
         slashCommand: account.config.slashCommand,
+        setStatus: ctx.setStatus as (next: Record<string, unknown>) => void,
+        getStatus: ctx.getStatus as () => Record<string, unknown>,
       });
     },
   },

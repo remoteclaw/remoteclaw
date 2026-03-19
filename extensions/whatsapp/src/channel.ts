@@ -33,7 +33,7 @@ import {
   type ChannelMessageActionName,
   type ChannelPlugin,
   type ResolvedWhatsAppAccount,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/whatsapp";
 import { getWhatsAppRuntime } from "./runtime.js";
 
 const meta = getChatChannelMeta("whatsapp");
@@ -429,7 +429,7 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
         ctx.runtime,
         ctx.abortSignal,
         {
-          statusSink: (next: any) => ctx.setStatus({ accountId: ctx.accountId, ...next }),
+          statusSink: (next) => ctx.setStatus({ accountId: ctx.accountId, ...next }),
           accountId: account.accountId,
         },
       );

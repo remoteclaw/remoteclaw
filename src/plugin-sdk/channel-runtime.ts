@@ -5,10 +5,24 @@ export * from "../channels/chat-type.js";
 export * from "../channels/reply-prefix.js";
 export * from "../channels/typing.js";
 export type * from "../channels/plugins/types.js";
+export * from "../channels/plugins/config-writes.js";
+export * from "../channels/plugins/directory-adapters.js";
+export * from "../channels/plugins/media-payload.js";
+export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
+export * from "./message-tool-schema.js";
 export * from "../channels/plugins/normalize/signal.js";
 export * from "../channels/plugins/normalize/whatsapp.js";
 export * from "../channels/plugins/outbound/interactive.js";
 export * from "../channels/plugins/whatsapp-heartbeat.js";
+export {
+  buildComputedAccountStatusSnapshot,
+  buildTokenChannelStatusSummary,
+} from "./status-helpers.js";
+export {
+  projectCredentialSnapshotFields,
+  resolveConfiguredFromCredentialStatuses,
+} from "../channels/account-snapshot-fields.js";
+export * from "../infra/outbound/send-deps.js";
 export * from "../polls.js";
 export * from "../utils/message-channel.js";
 export * from "../whatsapp/normalize.js";

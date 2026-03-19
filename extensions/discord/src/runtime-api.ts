@@ -4,7 +4,7 @@ export {
   PAIRING_APPROVED_MESSAGE,
   projectCredentialSnapshotFields,
   resolveConfiguredFromCredentialStatuses,
-} from "remoteclaw/plugin-sdk/channel-status";
+} from "remoteclaw/plugin-sdk/channel-runtime";
 export {
   buildChannelConfigSchema,
   getChatChannelMeta,

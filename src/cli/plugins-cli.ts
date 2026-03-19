@@ -8,11 +8,7 @@ import { resolveStateDir } from "../config/paths.js";
 import { resolveArchiveKind } from "../infra/archive.js";
 import { type BundledPluginSource, findBundledPluginSource } from "../plugins/bundled-sources.js";
 import { enablePluginInConfig } from "../plugins/enable.js";
-import {
-  installPluginFromNpmSpec,
-  installPluginFromPath,
-  PLUGIN_INSTALL_ERROR_CODE,
-} from "../plugins/install.js";
+import { installPluginFromNpmSpec, installPluginFromPath } from "../plugins/install.js";
 import { recordPluginInstall } from "../plugins/installs.js";
 import { clearPluginManifestRegistryCache } from "../plugins/manifest-registry.js";
 import type { PluginRecord } from "../plugins/registry.js";
@@ -27,6 +23,10 @@ import { renderTable } from "../terminal/table.js";
 import { theme } from "../terminal/theme.js";
 import { resolveUserPath, shortenHomeInString, shortenHomePath } from "../utils.js";
 import { resolvePinnedNpmInstallRecordForCli } from "./npm-resolution.js";
+import {
+  resolveBundledInstallPlanBeforeNpm,
+  resolveBundledInstallPlanForNpmFailure,
+} from "./plugin-install-plan.js";
 import { setPluginEnabledInConfig } from "./plugins-config.js";
 import { promptYesNo } from "./prompt.js";
 
@@ -166,11 +166,6 @@ function logSlotWarnings(warnings: string[]) {
   for (const warning of warnings) {
     defaultRuntime.log(theme.warn(warning));
   }
-}
-
-function isBareNpmPackageName(spec: string): boolean {
-  const trimmed = spec.trim();
-  return /^[a-z0-9][a-z0-9-._~]*$/.test(trimmed);
 }
 
 async function installBundledPluginSource(params: {
@@ -320,17 +315,16 @@ async function runPluginInstallCommand(params: {
     process.exit(1);
   }
 
-  const bundledByPluginId = isBareNpmPackageName(raw)
-    ? findBundledPluginSource({
-        lookup: { kind: "pluginId", value: raw },
-      })
-    : undefined;
-  if (bundledByPluginId) {
+  const bundledPreNpmPlan = resolveBundledInstallPlanBeforeNpm({
+    rawSpec: raw,
+    findBundledSource: (lookup) => findBundledPluginSource({ lookup }),
+  });
+  if (bundledPreNpmPlan) {
     await installBundledPluginSource({
       config: cfg,
       rawSpec: raw,
-      bundledSource: bundledByPluginId,
-      warning: `Using bundled plugin "${bundledByPluginId.pluginId}" from ${shortenHomePath(bundledByPluginId.localPath)} for bare install spec "${raw}". To install an npm package with the same name, use a scoped package name (for example @scope/${raw}).`,
+      bundledSource: bundledPreNpmPlan.bundledSource,
+      warning: bundledPreNpmPlan.warning,
     });
     return;
   }
@@ -340,17 +334,12 @@ async function runPluginInstallCommand(params: {
     logger: createPluginInstallLogger(),
   });
   if (!result.ok) {
-    const isNpmNotFound = result.code === PLUGIN_INSTALL_ERROR_CODE.NPM_PACKAGE_NOT_FOUND;
-    const isNotPlugin =
-      result.code === PLUGIN_INSTALL_ERROR_CODE.MISSING_REMOTECLAW_EXTENSIONS ||
-      result.code === PLUGIN_INSTALL_ERROR_CODE.EMPTY_REMOTECLAW_EXTENSIONS;
-    const bundledFallback =
-      isNpmNotFound || isNotPlugin
-        ? findBundledPluginSource({
-            lookup: { kind: "npmSpec", value: raw },
-          })
-        : undefined;
-    if (!bundledFallback) {
+    const bundledFallbackPlan = resolveBundledInstallPlanForNpmFailure({
+      rawSpec: raw,
+      code: result.code,
+      findBundledSource: (lookup) => findBundledPluginSource({ lookup }),
+    });
+    if (!bundledFallbackPlan) {
       defaultRuntime.error(result.error);
       process.exit(1);
     }
@@ -358,10 +347,8 @@ async function runPluginInstallCommand(params: {
     await installBundledPluginSource({
       config: cfg,
       rawSpec: raw,
-      bundledSource: bundledFallback,
-      warning: isNpmNotFound
-        ? `npm package unavailable for ${raw}; using bundled plugin at ${shortenHomePath(bundledFallback.localPath)}.`
-        : `npm package "${raw}" is not a valid RemoteClaw plugin; using bundled plugin at ${shortenHomePath(bundledFallback.localPath)}.`,
+      bundledSource: bundledFallbackPlan.bundledSource,
+      warning: bundledFallbackPlan.warning,
     });
     return;
   }

@@ -17,17 +17,14 @@ import {
 } from "@buape/carbon";
 import type { APIStringSelectComponent } from "discord-api-types/v10";
 import { ButtonStyle, ChannelType } from "discord-api-types/v10";
-import { resolveHumanDelayConfig } from "remoteclaw/plugin-sdk/agent-runtime";
-import {
-  formatInboundEnvelope,
-  resolveEnvelopeFormatOptions,
-} from "remoteclaw/plugin-sdk/channel-inbound";
-import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { isDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk/config-runtime";
-import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
-import { readSessionUpdatedAt, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
-import type { DiscordAccountConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveHumanDelayConfig } from "openclaw/plugin-sdk/agent-runtime";
+import { createChannelReplyPipeline } from "openclaw/plugin-sdk/channel-reply-pipeline";
+import { recordInboundSession } from "openclaw/plugin-sdk/channel-runtime";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/config-runtime";
+import { isDangerousNameMatchingEnabled } from "openclaw/plugin-sdk/config-runtime";
+import { resolveMarkdownTableMode } from "openclaw/plugin-sdk/config-runtime";
+import { readSessionUpdatedAt, resolveStorePath } from "openclaw/plugin-sdk/config-runtime";
+import type { DiscordAccountConfig } from "openclaw/plugin-sdk/config-runtime";
 import {
   buildPluginBindingResolvedText,
   parsePluginBindingApprovalCustomId,
@@ -982,7 +979,7 @@ async function dispatchDiscordComponentEvent(params: {
 
   const deliverTarget = `channel:${interactionCtx.channelId}`;
   const typingChannelId = interactionCtx.channelId;
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
     cfg: ctx.cfg,
     agentId,
     channel: "discord",
@@ -1010,7 +1007,7 @@ async function dispatchDiscordComponentEvent(params: {
     cfg: ctx.cfg,
     replyOptions: { onModelSelected },
     dispatcherOptions: {
-      ...prefixOptions,
+      ...replyPipeline,
       humanDelay: resolveHumanDelayConfig(ctx.cfg, agentId),
       deliver: async (payload) => {
         const replyToId = replyReference.use();

@@ -63,26 +63,37 @@ const replyPipelineMocks = vi.hoisted(() => {
     dispatchReplyWithBufferedBlockDispatcher: vi.fn<DispatchReplyWithBufferedBlockDispatcherFn>(
       async () => dispatchReplyResult,
     ),
-    createReplyPrefixOptions: vi.fn(() => ({ onModelSelected: () => {} })),
+    createChannelReplyPipeline: vi.fn(() => ({ onModelSelected: () => {} })),
     recordInboundSessionMetaSafe: vi.fn<RecordInboundSessionMetaSafeFn>(async () => undefined),
   };
 });
 export const dispatchReplyWithBufferedBlockDispatcher =
   replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher;
 
-vi.mock("../../../src/auto-reply/reply/inbound-context.js", () => ({
-  finalizeInboundContext: replyPipelineMocks.finalizeInboundContext,
-}));
-vi.mock("../../../src/auto-reply/reply/provider-dispatcher.js", () => ({
-  dispatchReplyWithBufferedBlockDispatcher:
-    replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
-}));
-vi.mock("../../../src/channels/reply-prefix.js", () => ({
-  createReplyPrefixOptions: replyPipelineMocks.createReplyPrefixOptions,
-}));
-vi.mock("../../../src/channels/session-meta.js", () => ({
-  recordInboundSessionMetaSafe: replyPipelineMocks.recordInboundSessionMetaSafe,
-}));
+vi.mock("openclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/reply-runtime")>();
+  return {
+    ...actual,
+    finalizeInboundContext: replyPipelineMocks.finalizeInboundContext,
+    dispatchReplyWithBufferedBlockDispatcher:
+      replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
+  };
+});
+vi.mock("openclaw/plugin-sdk/channel-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-runtime")>();
+  return {
+    ...actual,
+    recordInboundSessionMetaSafe: replyPipelineMocks.recordInboundSessionMetaSafe,
+  };
+});
+vi.mock("openclaw/plugin-sdk/channel-reply-pipeline", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("openclaw/plugin-sdk/channel-reply-pipeline")>();
+  return {
+    ...actual,
+    createChannelReplyPipeline: replyPipelineMocks.createChannelReplyPipeline,
+  };
+});
 
 const deliveryMocks = vi.hoisted(() => ({
   deliverReplies: vi.fn(async () => {}),

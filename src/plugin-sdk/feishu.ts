@@ -30,8 +30,8 @@ export type {
 } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { createReplyPrefixContext } from "../channels/reply-prefix.js";
-export { createChannelReplyPipeline, createTypingCallbacks } from "./channel-reply-pipeline.js";
-export type { RemoteClawConfig as ClawdbotConfig, RemoteClawConfig } from "../config/config.js";
+export { createChannelReplyPipeline } from "./channel-reply-pipeline.js";
+export type { OpenClawConfig as ClawdbotConfig, OpenClawConfig } from "../config/config.js";
 export {
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
@@ -61,7 +61,7 @@ export { evaluateSenderGroupAccessForPolicy } from "./group-access.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { buildAgentMediaPayload } from "./agent-media-payload.js";
 export { readJsonFileWithFallback } from "./json-store.js";
-export { createChannelPairingController, createScopedPairingAccess } from "./channel-pairing.js";
+export { createChannelPairingController } from "./channel-pairing.js";
 export { createPersistentDedupe } from "./persistent-dedupe.js";
 export {
   buildBaseChannelStatusSummary,

@@ -1,12 +1,13 @@
 import type { WebhookRequestBody } from "@line/bot-sdk";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
-import { dispatchReplyWithBufferedBlockDispatcher, chunkMarkdownText } from "remoteclaw/plugin-sdk/reply-runtime";
-import { danger, logVerbose, waitForAbortSignal, type RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import {
-  normalizePluginHttpPath,
-  registerPluginHttpRoute,
-} from "remoteclaw/plugin-sdk/webhook-ingress";
+import { chunkMarkdownText } from "../auto-reply/chunk.js";
+import { dispatchReplyWithBufferedBlockDispatcher } from "../auto-reply/reply/provider-dispatcher.js";
+import type { OpenClawConfig } from "../config/config.js";
+import { danger, logVerbose } from "../globals.js";
+import { waitForAbortSignal } from "../infra/abort-signal.js";
+import { createChannelReplyPipeline } from "../plugin-sdk/channel-reply-pipeline.js";
+import { normalizePluginHttpPath } from "../plugins/http-path.js";
+import { registerPluginHttpRoute } from "../plugins/http-registry.js";
+import type { RuntimeEnv } from "../runtime.js";
 import { deliverLineAutoReply } from "./auto-reply-delivery.js";
 import { createLineBot } from "./bot.js";
 import { processLineMessage } from "./markdown-to-line.js";
@@ -182,8 +183,8 @@ export async function monitorLineProvider(
       logVerbose(`line: received message from ${displayName} (${ctxPayload.From})`);
 
       try {
-        const textLimit = 5000;
-        let replyTokenUsed = false;
+        const textLimit = 5000; // LINE max message length
+        let replyTokenUsed = false; // Track if we've used the one-time reply token
         const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
           cfg: config,
           agentId: route.agentId,
@@ -195,7 +196,7 @@ export async function monitorLineProvider(
           ctx: ctxPayload,
           cfg: config,
           dispatcherOptions: {
-            ...prefixOptions,
+            ...replyPipeline,
             deliver: async (payload, _info) => {
               const lineData = (payload.channelData?.line as LineChannelData | undefined) ?? {};
 

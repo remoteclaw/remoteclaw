@@ -17,7 +17,7 @@ type FinalizeInboundContext =
 type DispatchReplyWithDispatcher =
   typeof import("remoteclaw/plugin-sdk/reply-runtime").dispatchReplyWithDispatcher;
 type ResolveConversationLabel =
-  typeof import("remoteclaw/plugin-sdk/conversation-runtime").resolveConversationLabel;
+  typeof import("openclaw/plugin-sdk/channel-runtime").resolveConversationLabel;
 type RecordInboundSessionMetaSafe =
   typeof import("remoteclaw/plugin-sdk/conversation-runtime").recordInboundSessionMetaSafe;
 type ResolveMarkdownTableMode =

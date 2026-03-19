@@ -1,10 +1,7 @@
 import type { SlackActionMiddlewareArgs, SlackCommandMiddlewareArgs } from "@slack/bolt";
-import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
-import {
-  resolveCommandAuthorizedFromAuthorizers,
-  resolveNativeCommandSessionTargets,
-} from "remoteclaw/plugin-sdk/command-auth";
-import { type ChatCommandDefinition, type CommandArgs } from "remoteclaw/plugin-sdk/command-auth";
+import { createChannelReplyPipeline } from "openclaw/plugin-sdk/channel-reply-pipeline";
+import { resolveCommandAuthorizedFromAuthorizers } from "openclaw/plugin-sdk/channel-runtime";
+import { resolveNativeCommandSessionTargets } from "openclaw/plugin-sdk/channel-runtime";
 import {
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,
@@ -513,7 +510,6 @@ export async function registerSlackMonitorSlashCommands(params: {
       const channelName = channelInfo?.name;
       const roomLabel = channelName ? `#${channelName}` : `#${command.channel_id}`;
       const {
-        createReplyPrefixOptions,
         deliverSlackSlashReplies,
         dispatchReplyWithDispatcher,
         finalizeInboundContext,
@@ -600,7 +596,7 @@ export async function registerSlackMonitorSlashCommands(params: {
           runtime.error?.(danger(`slack slash: failed updating session meta: ${String(err)}`)),
       });
 
-      const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+      const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
         cfg,
         agentId: route.agentId,
         channel: "slack",
@@ -626,7 +622,7 @@ export async function registerSlackMonitorSlashCommands(params: {
         ctx: ctxPayload,
         cfg,
         dispatcherOptions: {
-          ...prefixOptions,
+          ...replyPipeline,
           deliver: async (payload) => deliverSlashPayloads([payload]),
           onError: (err, info) => {
             runtime.error?.(danger(`slack slash ${info.kind} reply failed: ${String(err)}`));

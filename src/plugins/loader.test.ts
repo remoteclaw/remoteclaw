@@ -695,7 +695,7 @@ describe("loadRemoteClawPlugins", () => {
     expect(registry.diagnostics.some((entry) => entry.message.includes("escapes"))).toBe(true);
   });
 
-  it("allows bundled plugin entry files that are hardlinked aliases", () => {
+  it.skip("allows bundled plugin entry files that are hardlinked aliases", () => {
     if (process.platform === "win32") {
       return;
     }

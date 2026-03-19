@@ -16,7 +16,12 @@ import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { buildChannelAccountBindings } from "../../routing/bindings.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import type { AgentToolResult } from "../../types/agent-types.js";
-import { type GatewayClientMode, type GatewayClientName } from "../../utils/message-channel.js";
+import {
+  type GatewayClientMode,
+  type GatewayClientName,
+  isDeliverableMessageChannel,
+  normalizeMessageChannel,
+} from "../../utils/message-channel.js";
 import { throwIfAborted } from "./abort.js";
 import {
   listConfiguredMessageChannels,

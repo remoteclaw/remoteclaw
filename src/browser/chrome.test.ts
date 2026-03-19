@@ -21,7 +21,7 @@ import {
   DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME,
 } from "./constants.js";
 
-type StopChromeTarget = Parameters<typeof stopOpenClawChrome>[0];
+type StopChromeTarget = Parameters<typeof stopRemoteClawChrome>[0];
 
 async function readJson(filePath: string): Promise<Record<string, unknown>> {
   const raw = await fsp.readFile(filePath, "utf-8");
@@ -81,7 +81,7 @@ async function withMockChromeCdpServer(params: {
 }
 
 async function stopChromeWithProc(proc: ReturnType<typeof makeChromeTestProc>, timeoutMs: number) {
-  await stopOpenClawChrome(
+  await stopRemoteClawChrome(
     {
       proc,
       cdpPort: 12345,

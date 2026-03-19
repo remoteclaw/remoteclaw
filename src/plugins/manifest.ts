@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { isRecord } from "../utils.js";
+import { isPathInside, safeRealpathSync } from "./path-safety.js";
 import type { PluginConfigUiHint, PluginKind } from "./types.js";
 
 const MANIFEST_KEY = "remoteclaw" as const;
@@ -38,11 +39,22 @@ export function resolvePluginManifestPath(rootDir: string): string {
 
 export function loadPluginManifest(
   rootDir: string,
-  _rejectHardlinks = true,
+  rejectHardlinks = true,
 ): PluginManifestLoadResult {
   const manifestPath = resolvePluginManifestPath(rootDir);
   if (!fs.existsSync(manifestPath)) {
     return { ok: false, error: `plugin manifest not found: ${manifestPath}`, manifestPath };
+  }
+  if (rejectHardlinks) {
+    const realManifest = safeRealpathSync(manifestPath);
+    const realRoot = safeRealpathSync(rootDir);
+    if (realManifest && realRoot && !isPathInside(realRoot, realManifest)) {
+      return {
+        ok: false,
+        error: `unsafe plugin manifest path: ${manifestPath} resolves outside root ${rootDir}`,
+        manifestPath,
+      };
+    }
   }
   let raw: unknown;
   try {

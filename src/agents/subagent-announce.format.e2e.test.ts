@@ -35,6 +35,8 @@ type MockSubagentRun = {
     error?: string;
   };
 };
+type SessionEntryFixture = Omit<SessionEntry, "updatedAt"> & { updatedAt?: number };
+type SessionStoreFixture = Record<string, SessionEntryFixture | undefined>;
 
 const agentSpy = vi.fn(async (_req: AgentCallRequest) => ({ runId: "run-main", status: "ok" }));
 const sendSpy = vi.fn(async (_req: AgentCallRequest) => ({ runId: "send-main", status: "ok" }));
@@ -103,7 +105,7 @@ function loadSessionStoreFixture(): Record<string, Record<string, unknown>> {
       }
       return target[key as keyof typeof target];
     },
-  });
+  }) as unknown as Record<string, SessionEntry>;
 }
 
 vi.mock("../gateway/call.js", () => ({
@@ -2168,7 +2170,7 @@ describe("subagent announce formatting", () => {
       requesterOrigin: { channel: "whatsapp", to: "+1555", accountId: "acct-main" },
     });
     sessionStore = {
-      "agent:main:subagent:orchestrator": undefined as unknown as Record<string, unknown>,
+      "agent:main:subagent:orchestrator": undefined,
     };
 
     const didAnnounce = await runSubagentAnnounceFlow({
@@ -2192,7 +2194,7 @@ describe("subagent announce formatting", () => {
     subagentRegistryMock.isSubagentSessionRunActive.mockReturnValue(false);
     subagentRegistryMock.resolveRequesterForChildSession.mockReturnValue(null);
     sessionStore = {
-      "agent:main:subagent:orchestrator": undefined as unknown as Record<string, unknown>,
+      "agent:main:subagent:orchestrator": undefined,
     };
 
     const didAnnounce = await runSubagentAnnounceFlow({
@@ -2347,7 +2349,7 @@ describe("subagent announce formatting", () => {
     for (const testCase of cases) {
       agentSpy.mockClear();
       subagentRegistryMock.isSubagentSessionRunActive.mockReturnValue(false);
-      sessionStore = testCase.sessionStoreFixture as Record<string, Record<string, unknown>>;
+      sessionStore = testCase.sessionStoreFixture as SessionStoreFixture;
       subagentRegistryMock.resolveRequesterForChildSession.mockReturnValue({
         requesterSessionKey: "agent:main:main",
         requesterOrigin: { channel: "discord", accountId: "jaris-account" },

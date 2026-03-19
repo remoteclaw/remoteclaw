@@ -1,12 +1,12 @@
 import type { Message, ReactionTypeEmoji } from "@grammyjs/types";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { hasControlCommand } from "../auto-reply/command-detection.js";
 import {
   createInboundDebouncer,
   resolveInboundDebounceMs,
 } from "../auto-reply/inbound-debounce.js";
 import { buildCommandsPaginationKeyboard } from "../auto-reply/reply/commands-info.js";
 import { buildCommandsMessagePaginated } from "../auto-reply/status.js";
+import { shouldDebounceTextInbound } from "../channels/inbound-debounce-policy.js";
 import { resolveChannelConfigWrites } from "../channels/plugins/config-writes.js";
 import { loadConfig } from "../config/config.js";
 import { writeConfigFile } from "../config/io.js";
@@ -185,14 +185,18 @@ export const registerTelegramHandlers = ({
     buildKey: (entry) => entry.debounceKey,
     shouldDebounce: (entry) => {
       const text = entry.msg.text ?? entry.msg.caption ?? "";
-      const hasText = text.trim().length > 0;
-      if (hasText && hasControlCommand(text, cfg, { botUsername: entry.botUsername })) {
+      const hasDebounceableText = shouldDebounceTextInbound({
+        text,
+        cfg,
+        commandOptions: { botUsername: entry.botUsername },
+      });
+      if (!hasDebounceableText) {
         return false;
       }
       if (entry.debounceLane === "forward") {
         return true;
       }
-      return entry.allMedia.length === 0 && hasText;
+      return entry.allMedia.length === 0;
     },
     onFlush: async (entries) => {
       const last = entries.at(-1);

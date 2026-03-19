@@ -14,6 +14,23 @@ vi.mock("./client.js", () => ({
   createEventDispatcher: vi.fn(() => ({ register: vi.fn() })),
 }));
 
+vi.mock("./runtime.js", () => ({
+  getFeishuRuntime: () => ({
+    channel: {
+      debounce: {
+        resolveInboundDebounceMs: () => 0,
+        createInboundDebouncer: () => ({
+          enqueue: async () => {},
+          flushKey: async () => {},
+        }),
+      },
+      text: {
+        hasControlCommand: () => false,
+      },
+    },
+  }),
+}));
+
 vi.mock("@larksuiteoapi/node-sdk", () => ({
   adaptDefault: vi.fn(
     () => (_req: unknown, res: { statusCode?: number; end: (s: string) => void }) => {

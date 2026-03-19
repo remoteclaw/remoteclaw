@@ -60,11 +60,11 @@ describe("hardenApprovedExecutionPaths", () => {
       expectedArgvChanged: false,
     },
     {
-      name: "rawCommand matches hardened argv after executable path pinning",
+      name: "rawCommand matches argv when executable is not path-pinned",
       mode: "build-plan",
       argv: ["poccmd", "hello"],
       withPathToken: true,
-      expectedArgv: ({ pathToken }) => [pathToken!.expected, "hello"],
+      expectedArgv: () => ["poccmd", "hello"],
       checkRawCommandMatchesArgv: true,
     },
   ];

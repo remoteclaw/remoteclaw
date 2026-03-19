@@ -531,6 +531,18 @@ describe("installPluginFromArchive", () => {
 });
 
 describe("installPluginFromDir", () => {
+  function expectInstalledAsMemoryCognee(
+    result: Awaited<ReturnType<typeof installPluginFromDir>>,
+    extensionsDir: string,
+  ) {
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.pluginId).toBe("memory-cognee");
+    expect(result.targetDir).toBe(path.join(extensionsDir, "memory-cognee"));
+  }
+
   it("uses --ignore-scripts for dependency install", async () => {
     const { pluginDir, extensionsDir } = setupInstallPluginFromDirFixture();
 
@@ -593,12 +605,7 @@ describe("installPluginFromDir", () => {
       logger: { info: (msg: string) => infoMessages.push(msg), warn: () => {} },
     });
 
-    expect(res.ok).toBe(true);
-    if (!res.ok) {
-      return;
-    }
-    expect(res.pluginId).toBe("memory-cognee");
-    expect(res.targetDir).toBe(path.join(extensionsDir, "memory-cognee"));
+    expectInstalledAsMemoryCognee(res, extensionsDir);
     expect(
       infoMessages.some((msg) =>
         msg.includes(
@@ -620,12 +627,7 @@ describe("installPluginFromDir", () => {
       logger: { info: () => {}, warn: () => {} },
     });
 
-    expect(res.ok).toBe(true);
-    if (!res.ok) {
-      return;
-    }
-    expect(res.pluginId).toBe("memory-cognee");
-    expect(res.targetDir).toBe(path.join(extensionsDir, "memory-cognee"));
+    expectInstalledAsMemoryCognee(res, extensionsDir);
   });
 });
 

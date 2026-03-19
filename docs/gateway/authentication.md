@@ -13,15 +13,18 @@ as subprocesses. Each CLI agent manages its own credentials. RemoteClaw's job is
 to ensure the gateway host environment exposes the right credentials so the CLI
 agent can authenticate when spawned.
 
-## Recommended Anthropic setup (API key)
+## Recommended setup (API key, any provider)
 
-If you're using Anthropic directly, use an API key.
+If you're running a long-lived gateway, start with an API key for your chosen
+provider.
+For Anthropic specifically, API key auth is the safe path and is recommended
+over subscription setup-token auth.
 
-1. Create an API key in the Anthropic Console.
+1. Create an API key in your provider console.
 2. Put it on the **gateway host** (the machine running `remoteclaw gateway`).
 
 ```bash
-export ANTHROPIC_API_KEY="..."
+export <PROVIDER>_API_KEY="..."
 ```
 
 3. If the Gateway runs under systemd/launchd, prefer putting the key in
@@ -29,7 +32,7 @@ export ANTHROPIC_API_KEY="..."
 
 ```bash
 cat >> ~/.remoteclaw/.env <<'EOF'
-ANTHROPIC_API_KEY=...
+<PROVIDER>_API_KEY=...
 EOF
 ```
 
@@ -46,8 +49,8 @@ See [Help](/help) for details on env inheritance (`env.shellEnv`,
 
 ## Anthropic: setup-token (subscription auth)
 
-For Anthropic, the recommended path is an **API key**. If you're using a Claude
-subscription, the setup-token flow is also supported. Run it on the **gateway host**:
+If you're using a Claude subscription, the setup-token flow is supported. Run
+it on the **gateway host**:
 
 ```bash
 claude setup-token
@@ -64,6 +67,12 @@ This credential is only authorized for use with Claude Code and cannot be used f
 ```
 
 …use an Anthropic API key instead.
+
+<Warning>
+Anthropic setup-token support is technical compatibility only. Anthropic has blocked
+some subscription usage outside Claude Code in the past. Use it only if you decide
+the policy risk is acceptable, and verify Anthropic's current terms yourself.
+</Warning>
 
 > `claude setup-token` requires an interactive TTY.
 
@@ -95,5 +104,5 @@ token lifecycle.
 
 ## Requirements
 
-- Claude Max or Pro subscription (for `claude setup-token`)
+- Anthropic subscription account (for `claude setup-token`)
 - Claude Code CLI installed (`claude` command available)

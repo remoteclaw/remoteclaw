@@ -1,6 +1,12 @@
 import { sanitizeAgentId } from "../routing/session-key.js";
 import { isRecord } from "../utils.js";
+import {
+  buildDeliveryFromLegacyPayload,
+  hasLegacyDeliveryHints,
+  stripLegacyDeliveryFields,
+} from "./legacy-delivery.js";
 import { parseAbsoluteTimeMs } from "./parse.js";
+import { migrateLegacyCronPayload } from "./payload-migration.js";
 import { inferLegacyName } from "./service/normalize.js";
 import { normalizeCronStaggerMs, resolveDefaultCronStaggerMs } from "./stagger.js";
 import type { CronJobCreate, CronJobPatch } from "./types.js";
@@ -80,6 +86,8 @@ function coerceSchedule(schedule: UnknownRecord) {
 
 function coercePayload(payload: UnknownRecord) {
   const next: UnknownRecord = { ...payload };
+  // Back-compat: older configs used `provider` for delivery channel.
+  migrateLegacyCronPayload(next);
   const kindRaw = typeof next.kind === "string" ? next.kind.trim().toLowerCase() : "";
   if (kindRaw === "agentturn") {
     next.kind = "agentTurn";
@@ -315,6 +323,14 @@ export function normalizeCronJobInput(
     next.delivery = coerceDelivery(base.delivery);
   }
 
+  // Copy top-level legacy fields into payload before stripping.
+  const prePayload = isRecord(next.payload) ? next.payload : null;
+  if (prePayload && prePayload.kind === "agentTurn") {
+    copyTopLevelAgentTurnFields(next, prePayload);
+    copyTopLevelLegacyDeliveryFields(next, prePayload);
+  }
+  stripLegacyTopLevelFields(next);
+
   if (options.applyDefaults) {
     if (!next.wakeMode) {
       next.wakeMode = "now";
@@ -373,12 +389,85 @@ export function normalizeCronJobInput(
     const isIsolatedAgentTurn =
       sessionTarget === "isolated" || (sessionTarget === "" && payloadKind === "agentTurn");
     const hasDelivery = "delivery" in next && next.delivery !== undefined;
+    const hasLegacyDelivery = payload ? hasLegacyDeliveryHints(payload) : false;
     if (!hasDelivery && isIsolatedAgentTurn && payloadKind === "agentTurn") {
-      next.delivery = { mode: "announce" };
+      if (payload && hasLegacyDelivery) {
+        next.delivery = buildDeliveryFromLegacyPayload(payload);
+        stripLegacyDeliveryFields(payload);
+      } else {
+        next.delivery = { mode: "announce" };
+      }
     }
   }
 
   return next;
+}
+
+function copyTopLevelAgentTurnFields(next: UnknownRecord, payload: UnknownRecord) {
+  const copyString = (field: "model" | "thinking") => {
+    if (typeof payload[field] === "string" && payload[field].trim()) {
+      return;
+    }
+    const value = next[field];
+    if (typeof value === "string" && value.trim()) {
+      payload[field] = value.trim();
+    }
+  };
+  copyString("model");
+  copyString("thinking");
+
+  if (typeof payload.timeoutSeconds !== "number" && typeof next.timeoutSeconds === "number") {
+    payload.timeoutSeconds = next.timeoutSeconds;
+  }
+  if (
+    typeof payload.allowUnsafeExternalContent !== "boolean" &&
+    typeof next.allowUnsafeExternalContent === "boolean"
+  ) {
+    payload.allowUnsafeExternalContent = next.allowUnsafeExternalContent;
+  }
+}
+
+function copyTopLevelLegacyDeliveryFields(next: UnknownRecord, payload: UnknownRecord) {
+  if (typeof payload.deliver !== "boolean" && typeof next.deliver === "boolean") {
+    payload.deliver = next.deliver;
+  }
+  if (
+    typeof payload.channel !== "string" &&
+    typeof next.channel === "string" &&
+    next.channel.trim()
+  ) {
+    payload.channel = next.channel.trim();
+  }
+  if (typeof payload.to !== "string" && typeof next.to === "string" && next.to.trim()) {
+    payload.to = next.to.trim();
+  }
+  if (
+    typeof payload.bestEffortDeliver !== "boolean" &&
+    typeof next.bestEffortDeliver === "boolean"
+  ) {
+    payload.bestEffortDeliver = next.bestEffortDeliver;
+  }
+  if (
+    typeof payload.provider !== "string" &&
+    typeof next.provider === "string" &&
+    next.provider.trim()
+  ) {
+    payload.provider = next.provider.trim();
+  }
+}
+
+function stripLegacyTopLevelFields(next: UnknownRecord) {
+  delete next.model;
+  delete next.thinking;
+  delete next.timeoutSeconds;
+  delete next.allowUnsafeExternalContent;
+  delete next.message;
+  delete next.text;
+  delete next.deliver;
+  delete next.channel;
+  delete next.to;
+  delete next.bestEffortDeliver;
+  delete next.provider;
 }
 
 export function normalizeCronJobCreate(

@@ -1,20 +1,20 @@
 ---
-summary: "Run RemoteClaw Gateway 24/7 on a cheap Hetzner VPS (Docker) with durable state and baked-in binaries"
+summary: "Run OpenClaw Gateway 24/7 on a cheap Hetzner VPS (Docker) with durable state and baked-in binaries"
 read_when:
-  - You want RemoteClaw running 24/7 on a cloud VPS (not your laptop)
+  - You want OpenClaw running 24/7 on a cloud VPS (not your laptop)
   - You want a production-grade, always-on Gateway on your own VPS
   - You want full control over persistence, binaries, and restart behavior
-  - You are running RemoteClaw in Docker on Hetzner or a similar provider
+  - You are running OpenClaw in Docker on Hetzner or a similar provider
 title: "Hetzner"
 ---
 
-# RemoteClaw on Hetzner (Docker, Production VPS Guide)
+# OpenClaw on Hetzner (Docker, Production VPS Guide)
 
 ## Goal
 
-Run a persistent RemoteClaw Gateway on a Hetzner VPS using Docker, with durable state, baked-in binaries, and safe restart behavior.
+Run a persistent OpenClaw Gateway on a Hetzner VPS using Docker, with durable state, baked-in binaries, and safe restart behavior.
 
-If you want “RemoteClaw 24/7 for ~$5”, this is the simplest reliable setup.
+If you want “OpenClaw 24/7 for ~$5”, this is the simplest reliable setup.
 Hetzner pricing changes; pick the smallest Debian/Ubuntu VPS and scale up if you hit OOMs.
 
 Security model reminder:
@@ -29,8 +29,8 @@ See [Security](/gateway/security) and [VPS hosting](/vps).
 
 - Rent a small Linux server (Hetzner VPS)
 - Install Docker (isolated app runtime)
-- Start the RemoteClaw Gateway in Docker
-- Persist `~/.remoteclaw` + `~/.remoteclaw/workspace` on the host (survives restarts/rebuilds)
+- Start the OpenClaw Gateway in Docker
+- Persist `~/.openclaw` + `~/.openclaw/workspace` on the host (survives restarts/rebuilds)
 - Access the Control UI from your laptop via an SSH tunnel
 
 The Gateway can be accessed via:
@@ -48,7 +48,7 @@ For the generic Docker flow, see [Docker](/install/docker).
 
 1. Provision Hetzner VPS
 2. Install Docker
-3. Clone RemoteClaw repository
+3. Clone OpenClaw repository
 4. Create persistent host directories
 5. Configure `.env` and `docker-compose.yml`
 6. Bake required binaries into the image
@@ -72,162 +72,156 @@ For the generic Docker flow, see [Docker](/install/docker).
 
 ---
 
-## 1) Provision the VPS
+<Steps>
+  <Step title="Provision the VPS">
+    Create an Ubuntu or Debian VPS in Hetzner.
 
-Create an Ubuntu or Debian VPS in Hetzner.
+    Connect as root:
 
-Connect as root:
+    ```bash
+    ssh root@YOUR_VPS_IP
+    ```
 
-```bash
-ssh root@YOUR_VPS_IP
-```
+    This guide assumes the VPS is stateful.
+    Do not treat it as disposable infrastructure.
 
-This guide assumes the VPS is stateful.
-Do not treat it as disposable infrastructure.
+  </Step>
 
----
+  <Step title="Install Docker (on the VPS)">
+    ```bash
+    apt-get update
+    apt-get install -y git curl ca-certificates
+    curl -fsSL https://get.docker.com | sh
+    ```
 
-## 2) Install Docker (on the VPS)
+    Verify:
 
-```bash
-apt-get update
-apt-get install -y git curl ca-certificates
-curl -fsSL https://get.docker.com | sh
-```
+    ```bash
+    docker --version
+    docker compose version
+    ```
 
-Verify:
+  </Step>
 
-```bash
-docker --version
-docker compose version
-```
+  <Step title="Clone the OpenClaw repository">
+    ```bash
+    git clone https://github.com/openclaw/openclaw.git
+    cd openclaw
+    ```
 
----
+    This guide assumes you will build a custom image to guarantee binary persistence.
 
-## 3) Clone the RemoteClaw repository
+  </Step>
 
-```bash
-git clone https://github.com/remoteclaw/remoteclaw.git
-cd remoteclaw
-```
+  <Step title="Create persistent host directories">
+    Docker containers are ephemeral.
+    All long-lived state must live on the host.
 
-This guide assumes you will build a custom image to guarantee binary persistence.
+    ```bash
+    mkdir -p /root/.openclaw/workspace
 
----
+    # Set ownership to the container user (uid 1000):
+    chown -R 1000:1000 /root/.openclaw
+    ```
 
-## 4) Create persistent host directories
+  </Step>
 
-Docker containers are ephemeral.
-All long-lived state must live on the host.
+  <Step title="Configure environment variables">
+    Create `.env` in the repository root.
 
-```bash
-mkdir -p /root/.remoteclaw/workspace
+    ```bash
+    OPENCLAW_IMAGE=openclaw:latest
+    OPENCLAW_GATEWAY_TOKEN=change-me-now
+    OPENCLAW_GATEWAY_BIND=lan
+    OPENCLAW_GATEWAY_PORT=18789
 
-# Set ownership to the container user (uid 1000):
-chown -R 1000:1000 /root/.remoteclaw
-```
+    OPENCLAW_CONFIG_DIR=/root/.openclaw
+    OPENCLAW_WORKSPACE_DIR=/root/.openclaw/workspace
 
----
+    GOG_KEYRING_PASSWORD=change-me-now
+    XDG_CONFIG_HOME=/home/node/.openclaw
+    ```
 
-## 5) Configure environment variables
+    Generate strong secrets:
 
-Create `.env` in the repository root.
+    ```bash
+    openssl rand -hex 32
+    ```
 
-```bash
-OPENCLAW_IMAGE=remoteclaw:latest
-OPENCLAW_GATEWAY_TOKEN=change-me-now
-OPENCLAW_GATEWAY_BIND=lan
-OPENCLAW_GATEWAY_PORT=18789
+    **Do not commit this file.**
 
-OPENCLAW_CONFIG_DIR=/root/.remoteclaw
-OPENCLAW_WORKSPACE_DIR=/root/.remoteclaw/workspace
+  </Step>
 
-GOG_KEYRING_PASSWORD=change-me-now
-XDG_CONFIG_HOME=/home/node/.remoteclaw
-```
+  <Step title="Docker Compose configuration">
+    Create or update `docker-compose.yml`.
 
-Generate strong secrets:
+    ```yaml
+    services:
+      openclaw-gateway:
+        image: ${OPENCLAW_IMAGE}
+        build: .
+        restart: unless-stopped
+        env_file:
+          - .env
+        environment:
+          - HOME=/home/node
+          - NODE_ENV=production
+          - TERM=xterm-256color
+          - OPENCLAW_GATEWAY_BIND=${OPENCLAW_GATEWAY_BIND}
+          - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT}
+          - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+          - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
+          - XDG_CONFIG_HOME=${XDG_CONFIG_HOME}
+          - PATH=/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        volumes:
+          - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
+          - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+        ports:
+          # Recommended: keep the Gateway loopback-only on the VPS; access via SSH tunnel.
+          # To expose it publicly, remove the `127.0.0.1:` prefix and firewall accordingly.
+          - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:18789"
+        command:
+          [
+            "node",
+            "dist/index.js",
+            "gateway",
+            "--bind",
+            "${OPENCLAW_GATEWAY_BIND}",
+            "--port",
+            "${OPENCLAW_GATEWAY_PORT}",
+            "--allow-unconfigured",
+          ]
+    ```
 
-```bash
-openssl rand -hex 32
-```
+    `--allow-unconfigured` is only for bootstrap convenience, it is not a replacement for a proper gateway configuration. Still set auth (`gateway.auth.token` or password) and use safe bind settings for your deployment.
 
-**Do not commit this file.**
+  </Step>
 
----
+  <Step title="Shared Docker VM runtime steps">
+    Use the shared runtime guide for the common Docker host flow:
 
-## 6) Docker Compose configuration
+    - [Bake required binaries into the image](/install/docker-vm-runtime#bake-required-binaries-into-the-image)
+    - [Build and launch](/install/docker-vm-runtime#build-and-launch)
+    - [What persists where](/install/docker-vm-runtime#what-persists-where)
+    - [Updates](/install/docker-vm-runtime#updates)
 
-Create or update `docker-compose.yml`.
+  </Step>
 
-```yaml
-services:
-  remoteclaw-gateway:
-    image: ${OPENCLAW_IMAGE}
-    build: .
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      - HOME=/home/node
-      - NODE_ENV=production
-      - TERM=xterm-256color
-      - OPENCLAW_GATEWAY_BIND=${OPENCLAW_GATEWAY_BIND}
-      - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT}
-      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
-      - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
-      - XDG_CONFIG_HOME=${XDG_CONFIG_HOME}
-      - PATH=/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-    volumes:
-      - ${OPENCLAW_CONFIG_DIR}:/home/node/.remoteclaw
-      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.remoteclaw/workspace
-    ports:
-      # Recommended: keep the Gateway loopback-only on the VPS; access via SSH tunnel.
-      # To expose it publicly, remove the `127.0.0.1:` prefix and firewall accordingly.
-      - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:18789"
-    command:
-      [
-        "node",
-        "dist/index.js",
-        "gateway",
-        "--bind",
-        "${OPENCLAW_GATEWAY_BIND}",
-        "--port",
-        "${OPENCLAW_GATEWAY_PORT}",
-        "--allow-unconfigured",
-      ]
-```
+  <Step title="Hetzner-specific access">
+    After the shared build and launch steps, tunnel from your laptop:
 
-`--allow-unconfigured` is only for bootstrap convenience, it is not a replacement for a proper gateway configuration. Still set auth (`gateway.auth.token` or password) and use safe bind settings for your deployment.
+    ```bash
+    ssh -N -L 18789:127.0.0.1:18789 root@YOUR_VPS_IP
+    ```
 
----
+    Open:
 
-## 7) Shared Docker VM runtime steps
+    `http://127.0.0.1:18789/`
 
-Use the shared runtime guide for the common Docker host flow:
+    Paste your gateway token.
 
-- [Bake required binaries into the image](/install/docker-vm-runtime#bake-required-binaries-into-the-image)
-- [Build and launch](/install/docker-vm-runtime#build-and-launch)
-- [What persists where](/install/docker-vm-runtime#what-persists-where)
-- [Updates](/install/docker-vm-runtime#updates)
-
----
-
-## 8) Hetzner-specific access
-
-After the shared build and launch steps, tunnel from your laptop:
-
-```bash
-ssh -N -L 18789:127.0.0.1:18789 root@YOUR_VPS_IP
-```
-
-Open:
-
-`http://127.0.0.1:18789/`
-
-Paste your gateway token.
-
----
+  </Step>
+</Steps>
 
 The shared persistence map lives in [Docker VM Runtime](/install/docker-vm-runtime#what-persists-where).
 
@@ -243,9 +237,15 @@ For teams preferring infrastructure-as-code workflows, a community-maintained Te
 
 **Repositories:**
 
-- Infrastructure: [remoteclaw-terraform-hetzner](https://github.com/andreesg/remoteclaw-terraform-hetzner)
-- Docker config: [remoteclaw-docker-config](https://github.com/andreesg/remoteclaw-docker-config)
+- Infrastructure: [openclaw-terraform-hetzner](https://github.com/andreesg/openclaw-terraform-hetzner)
+- Docker config: [openclaw-docker-config](https://github.com/andreesg/openclaw-docker-config)
 
 This approach complements the Docker setup above with reproducible deployments, version-controlled infrastructure, and automated disaster recovery.
 
 > **Note:** Community-maintained. For issues or contributions, see the repository links above.
+
+## Next steps
+
+- Set up messaging channels: [Channels](/channels)
+- Configure the Gateway: [Gateway configuration](/gateway/configuration)
+- Keep OpenClaw up to date: [Updating](/install/updating)

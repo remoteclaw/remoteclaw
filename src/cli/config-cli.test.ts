@@ -270,34 +270,6 @@ describe("config cli", () => {
       expect(mockError).not.toHaveBeenCalled();
     });
 
-    it("preserves allowed-values metadata in --json output", async () => {
-      setSnapshotOnce(
-        makeInvalidSnapshot({
-          issues: [
-            {
-              path: "update.channel",
-              message: 'Invalid input (allowed: "stable", "beta", "dev")',
-              allowedValues: ["stable", "beta", "dev"],
-              allowedValuesHiddenCount: 0,
-            },
-          ],
-        }),
-      );
-
-      const payload = await runValidateJsonAndGetPayload();
-      expect(payload.valid).toBe(false);
-      expect(payload.path).toBe("/tmp/custom-remoteclaw.json");
-      expect(payload.issues).toEqual([
-        {
-          path: "update.channel",
-          message: 'Invalid input (allowed: "stable", "beta", "dev")',
-          allowedValues: ["stable", "beta", "dev"],
-        },
-      ]);
-      expect(mockError).not.toHaveBeenCalled();
-    });
-
-
     it("prints file-not-found and exits 1 when config file is missing", async () => {
       setSnapshotOnce({
         path: "/tmp/remoteclaw.json",

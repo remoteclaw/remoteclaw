@@ -99,7 +99,6 @@ describe("sanitizeToolUseResultPairing", () => {
     expect(toolResult?.toolName).toBe("read");
   });
 
-
   it("drops duplicate tool results for the same id within a span", () => {
     const input = castAgentMessages([
       ...buildDuplicateToolResultInput(),
@@ -262,7 +261,6 @@ describe("sanitizeToolCallInputs", () => {
   ) {
     return getAssistantToolCallBlocks(sanitizeAssistantContent(content, options));
   }
-
 
   it("drops tool calls missing input or arguments", () => {
     const input = castAgentMessages([

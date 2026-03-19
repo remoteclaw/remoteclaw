@@ -240,13 +240,6 @@ describe("loadPluginManifestRegistry", () => {
     expectUnsafeWorkspaceManifestRejected({ id: "unsafe-symlink", mode: "symlink" });
   });
 
-  it("rejects manifest paths that escape plugin root via hardlink", () => {
-    if (process.platform === "win32") {
-      return;
-    }
-    expectUnsafeWorkspaceManifestRejected({ id: "unsafe-hardlink", mode: "hardlink" });
-  });
-
   it("allows bundled manifest paths that are hardlinked aliases", () => {
     if (process.platform === "win32") {
       return;

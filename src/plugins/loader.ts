@@ -40,8 +40,24 @@ export type PluginLoadOptions = {
   cache?: boolean;
   mode?: "full" | "validate";
   preferSetupRuntimeForChannelPlugins?: boolean;
+  throwOnLoadError?: boolean;
 };
 
+export class PluginLoadFailureError extends Error {
+  readonly pluginIds: string[];
+  readonly registry: PluginRegistry;
+
+  constructor(registry: PluginRegistry) {
+    const failedPlugins = registry.plugins.filter((entry) => entry.status === "error");
+    const summary = failedPlugins
+      .map((entry) => `${entry.id}: ${entry.error ?? "unknown plugin load error"}`)
+      .join("; ");
+    super(`plugin load failed: ${summary}`);
+    this.name = "PluginLoadFailureError";
+    this.pluginIds = failedPlugins.map((entry) => entry.id);
+    this.registry = registry;
+  }
+}
 const registryCache = new Map<string, PluginRegistry>();
 
 const defaultLogger = () => createSubsystemLogger("plugins");
@@ -347,6 +363,19 @@ function recordPluginError(params: {
 
 function pushDiagnostics(diagnostics: PluginDiagnostic[], append: PluginDiagnostic[]) {
   diagnostics.push(...append);
+}
+
+function maybeThrowOnPluginLoadError(
+  registry: PluginRegistry,
+  throwOnLoadError: boolean | undefined,
+): void {
+  if (!throwOnLoadError) {
+    return;
+  }
+  if (!registry.plugins.some((entry) => entry.status === "error")) {
+    return;
+  }
+  throw new PluginLoadFailureError(registry);
 }
 
 type PathMatcher = {
@@ -824,6 +853,8 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     provenance,
     logger,
   });
+
+  maybeThrowOnPluginLoadError(registry, options.throwOnLoadError);
 
   if (cacheEnabled) {
     registryCache.set(cacheKey, registry);

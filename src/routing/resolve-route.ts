@@ -205,11 +205,11 @@ type EvaluatedBindingsCache = {
 const evaluatedBindingsCacheByCfg = new WeakMap<RemoteClawConfig, EvaluatedBindingsCache>();
 const MAX_EVALUATED_BINDINGS_CACHE_KEYS = 2000;
 const resolvedRouteCacheByCfg = new WeakMap<
-  OpenClawConfig,
+  RemoteClawConfig,
   {
-    bindingsRef: OpenClawConfig["bindings"];
-    agentsRef: OpenClawConfig["agents"];
-    sessionRef: OpenClawConfig["session"];
+    bindingsRef: RemoteClawConfig["bindings"];
+    agentsRef: RemoteClawConfig["agents"];
+    sessionRef: RemoteClawConfig["session"];
     byKey: Map<string, ResolvedAgentRoute>;
   }
 >();
@@ -421,7 +421,7 @@ function normalizeBindingMatch(
   };
 }
 
-function resolveRouteCacheForConfig(cfg: OpenClawConfig): Map<string, ResolvedAgentRoute> {
+function resolveRouteCacheForConfig(cfg: RemoteClawConfig): Map<string, ResolvedAgentRoute> {
   const existing = resolvedRouteCacheByCfg.get(cfg);
   if (
     existing &&

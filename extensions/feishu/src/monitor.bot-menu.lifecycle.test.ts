@@ -17,7 +17,12 @@ const monitorWebhookMock = vi.hoisted(() => vi.fn(async () => {}));
 const createFeishuThreadBindingManagerMock = vi.hoisted(() => vi.fn(() => ({ stop: vi.fn() })));
 const createFeishuReplyDispatcherMock = vi.hoisted(() => vi.fn());
 const resolveBoundConversationMock = vi.hoisted(() =>
-  vi.fn<() => BoundConversation | null>(() => null),
+  vi.fn<
+    () => {
+      bindingId: string;
+      targetSessionKey: string;
+    } | null
+  >(() => null),
 );
 const touchBindingMock = vi.hoisted(() => vi.fn());
 const resolveAgentRouteMock = vi.hoisted(() => vi.fn());

@@ -33,9 +33,11 @@ const {
   mockCreateFeishuClient: vi.fn(),
   mockResolveAgentRoute: vi.fn(() => ({
     agentId: "main",
+    channel: "feishu",
     accountId: "default",
     sessionKey: "agent:main:feishu:dm:ou-attacker",
-    matchedBy: "default",
+    mainSessionKey: "agent:main:main",
+    matchedBy: "default" as const,
   })),
 }));
 
@@ -75,7 +77,7 @@ async function dispatchMessage(params: { cfg: ClawdbotConfig; event: FeishuMessa
 }
 
 describe("handleFeishuMessage command authorization", () => {
-  const mockFinalizeInboundContext = vi.fn((ctx: unknown) => ctx);
+  const mockFinalizeInboundContext = vi.fn((ctx: Record<string, unknown>) => ctx);
   const mockDispatchReplyFromConfig = vi
     .fn()
     .mockResolvedValue({ queuedFinal: false, counts: { final: 1 } });
@@ -104,7 +106,9 @@ describe("handleFeishuMessage command authorization", () => {
   const mockBuildPairingReply = vi.fn(() => "Pairing response");
   const mockEnqueueSystemEvent = vi.fn();
   const mockSaveMediaBuffer = vi.fn().mockResolvedValue({
+    id: "test-media-id",
     path: "/tmp/inbound-clip.mp4",
+    size: 2048,
     contentType: "video/mp4",
   });
 
@@ -113,9 +117,11 @@ describe("handleFeishuMessage command authorization", () => {
     mockShouldComputeCommandAuthorized.mockReset().mockReturnValue(true);
     mockResolveAgentRoute.mockReturnValue({
       agentId: "main",
+      channel: "feishu",
       accountId: "default",
       sessionKey: "agent:main:feishu:dm:ou-attacker",
-      matchedBy: "default",
+      mainSessionKey: "agent:main:main",
+      matchedBy: "default" as const,
     });
     mockCreateFeishuClient.mockReturnValue({
       contact: {
@@ -135,11 +141,17 @@ describe("handleFeishuMessage command authorization", () => {
             resolveAgentRoute: mockResolveAgentRoute,
           },
           reply: {
-            resolveEnvelopeFormatOptions: vi.fn(() => ({ template: "channel+name+time" })),
+            resolveEnvelopeFormatOptions: vi.fn(() => ({
+              timezone: "local",
+              includeTimestamp: true,
+              includeElapsed: true,
+            })),
             formatAgentEnvelope: vi.fn((params: { body: string }) => params.body),
-            finalizeInboundContext: mockFinalizeInboundContext,
+            finalizeInboundContext:
+              mockFinalizeInboundContext as unknown as PluginRuntime["channel"]["reply"]["finalizeInboundContext"],
             dispatchReplyFromConfig: mockDispatchReplyFromConfig,
-            withReplyDispatcher: mockWithReplyDispatcher,
+            withReplyDispatcher:
+              mockWithReplyDispatcher as unknown as PluginRuntime["channel"]["reply"]["withReplyDispatcher"],
           },
           commands: {
             shouldComputeCommandAuthorized: mockShouldComputeCommandAuthorized,
@@ -1583,7 +1595,7 @@ describe("buildBroadcastSessionKey", () => {
 });
 
 describe("broadcast dispatch", () => {
-  const mockFinalizeInboundContext = vi.fn((ctx: unknown) => ctx);
+  const mockFinalizeInboundContext = vi.fn((ctx: Record<string, unknown>) => ctx);
   const mockDispatchReplyFromConfig = vi
     .fn()
     .mockResolvedValue({ queuedFinal: false, counts: { final: 1 } });
@@ -1607,7 +1619,9 @@ describe("broadcast dispatch", () => {
   );
   const mockShouldComputeCommandAuthorized = vi.fn(() => false);
   const mockSaveMediaBuffer = vi.fn().mockResolvedValue({
+    id: "test-media-id",
     path: "/tmp/inbound-clip.mp4",
+    size: 2048,
     contentType: "video/mp4",
   });
 
@@ -1619,7 +1633,7 @@ describe("broadcast dispatch", () => {
       accountId: "default",
       sessionKey: "agent:main:feishu:group:oc-broadcast-group",
       mainSessionKey: "agent:main:main",
-      matchedBy: "default",
+      matchedBy: "default" as const,
     });
     mockCreateFeishuClient.mockReturnValue({
       contact: {

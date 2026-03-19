@@ -1,9 +1,9 @@
 import {
   formatInboundFromLabel as formatInboundFromLabelShared,
   resolveThreadSessionKeys as resolveThreadSessionKeysShared,
-  type OpenClawConfig,
-} from "remoteclaw/plugin-sdk/mattermost";
-export { createDedupeCache, rawDataToString } from "remoteclaw/plugin-sdk/mattermost";
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk";
+export { createDedupeCache, rawDataToString } from "remoteclaw/plugin-sdk";
 
 export type ResponsePrefixContext = {
   model?: string;

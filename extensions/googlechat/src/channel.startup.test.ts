@@ -1,4 +1,4 @@
-import type { ChannelAccountSnapshot } from "remoteclaw/plugin-sdk/googlechat";
+import type { ChannelAccountSnapshot } from "remoteclaw/plugin-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createStartAccountContext } from "../../test-utils/start-account-context.js";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";

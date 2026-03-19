@@ -1,9 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type {
   MarkdownTableMode,
-  OpenClawConfig,
+  RemoteClawConfig,
   OutboundReplyPayload,
-} from "remoteclaw/plugin-sdk/zalo";
+} from "remoteclaw/plugin-sdk";
 import {
   createScopedPairingAccess,
   createReplyPrefixOptions,
@@ -16,7 +16,7 @@ import {
   sendMediaWithLeadingCaption,
   resolveWebhookPath,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "remoteclaw/plugin-sdk/zalo";
+} from "remoteclaw/plugin-sdk";
 import type { ResolvedZaloAccount } from "./accounts.js";
 import {
   ZaloApiError,

@@ -1,4 +1,4 @@
-import type { SsrFPolicy } from "remoteclaw/plugin-sdk/msteams";
+import type { SsrFPolicy } from "remoteclaw/plugin-sdk";
 import { getMSTeamsRuntime } from "../runtime.js";
 import { inferPlaceholder } from "./shared.js";
 import type { MSTeamsInboundMedia } from "./types.js";

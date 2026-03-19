@@ -4,7 +4,7 @@ import type {
   RemoteClawConfig,
   PluginRuntime,
   ResolvedTelegramAccount,
-} from "remoteclaw/plugin-sdk/telegram";
+} from "remoteclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { createRuntimeEnv } from "../../test-utils/runtime-env.js";
 import { telegramPlugin } from "./channel.js";

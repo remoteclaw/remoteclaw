@@ -1,5 +1,5 @@
-import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/diagnostics-otel";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/diagnostics-otel";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { createDiagnosticsOtelService } from "./src/service.js";
 
 const plugin = {

@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import {
   DM_GROUP_ACCESS_REASON,
   createScopedPairingAccess,
@@ -14,7 +14,7 @@ import {
   resolveControlCommandGate,
   stripMarkdown,
   type HistoryEntry,
-} from "remoteclaw/plugin-sdk/bluebubbles";
+} from "remoteclaw/plugin-sdk";
 import { downloadBlueBubblesAttachment } from "./attachments.js";
 import { markBlueBubblesChatRead, sendBlueBubblesTyping } from "./chat.js";
 import { fetchBlueBubblesHistory } from "./history.js";

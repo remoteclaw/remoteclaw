@@ -2,7 +2,7 @@
  * Upload an image from a URL to Tlon storage.
  */
 import { uploadFile } from "@tloncorp/api";
-import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/tlon";
+import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk";
 import { getDefaultSsrFPolicy } from "./context.js";
 
 /**

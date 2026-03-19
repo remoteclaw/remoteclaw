@@ -3,8 +3,7 @@ import type {
   DmConfig,
   DmPolicy,
   GroupPolicy,
-  SecretInput,
-} from "remoteclaw/plugin-sdk/nextcloud-talk";
+} from "remoteclaw/plugin-sdk";
 
 export type { DmPolicy, GroupPolicy };
 

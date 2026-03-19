@@ -1,4 +1,4 @@
-import { buildChannelConfigSchema } from "remoteclaw/plugin-sdk/tlon";
+import { buildChannelConfigSchema } from "remoteclaw/plugin-sdk";
 import { z } from "zod";
 
 const ShipSchema = z.string().min(1);

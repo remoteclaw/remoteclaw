@@ -11,7 +11,7 @@ import {
   resolveDefaultGroupPolicy,
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/irc";
+} from "remoteclaw/plugin-sdk";
 import {
   listIrcAccountIds,
   resolveDefaultIrcAccountId,

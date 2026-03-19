@@ -1,4 +1,4 @@
-import type { ChannelDirectoryEntry } from "remoteclaw/plugin-sdk/matrix";
+import type { ChannelDirectoryEntry } from "remoteclaw/plugin-sdk";
 import { resolveMatrixAuth } from "./matrix/client.js";
 
 type MatrixUserResult = {

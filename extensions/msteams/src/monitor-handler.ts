@@ -1,4 +1,4 @@
-import type { OpenClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/msteams";
+import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import type { MSTeamsConversationStore } from "./conversation-store.js";
 import { buildFileInfoCard, parseFileConsentInvoke, uploadToConsentUrl } from "./file-consent.js";
 import { normalizeMSTeamsConversationId } from "./inbound.js";

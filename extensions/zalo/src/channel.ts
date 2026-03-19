@@ -2,8 +2,8 @@ import type {
   ChannelAccountSnapshot,
   ChannelDock,
   ChannelPlugin,
-  OpenClawConfig,
-} from "remoteclaw/plugin-sdk/zalo";
+  RemoteClawConfig,
+} from "remoteclaw/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,
@@ -20,7 +20,7 @@ import {
   resolveOpenProviderRuntimeGroupPolicy,
   resolveChannelAccountConfigBasePath,
   setAccountEnabledInConfigSection,
-} from "remoteclaw/plugin-sdk/zalo";
+} from "remoteclaw/plugin-sdk";
 import {
   listZaloAccountIds,
   resolveDefaultZaloAccountId,

@@ -1,5 +1,5 @@
-import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/nextcloud-talk";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/nextcloud-talk";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { nextcloudTalkPlugin } from "./src/channel.js";
 import { setNextcloudTalkRuntime } from "./src/runtime.js";
 

@@ -1,4 +1,4 @@
-import type { BaseProbeResult, MSTeamsConfig } from "remoteclaw/plugin-sdk/msteams";
+import type { BaseProbeResult, MSTeamsConfig } from "remoteclaw/plugin-sdk";
 import { formatUnknownError } from "./errors.js";
 import { loadMSTeamsSdkWithAuth } from "./sdk.js";
 import { readAccessToken } from "./token-response.js";

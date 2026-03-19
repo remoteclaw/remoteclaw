@@ -1,4 +1,4 @@
-import type { PluginRuntime, SsrFPolicy } from "remoteclaw/plugin-sdk/msteams";
+import type { PluginRuntime, SsrFPolicy } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPluginRuntimeMock } from "../../test-utils/plugin-runtime-mock.js";
 import {

@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { resolveBlueBubblesAccount } from "./accounts.js";
 
 export type BlueBubblesAccountResolveOpts = {

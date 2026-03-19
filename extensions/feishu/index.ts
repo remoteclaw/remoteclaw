@@ -1,5 +1,5 @@
-import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/feishu";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/feishu";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { registerFeishuBitableTools } from "./src/bitable.js";
 import { feishuPlugin } from "./src/channel.js";
 import { registerFeishuChatTools } from "./src/chat.js";

@@ -1,4 +1,4 @@
-import type { OpenClawConfig, PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk/zalouser";
+import type { RemoteClawConfig, PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { __testing } from "./monitor.js";
 import { setZalouserRuntime } from "./runtime.js";

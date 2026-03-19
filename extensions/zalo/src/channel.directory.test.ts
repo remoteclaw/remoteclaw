@@ -1,4 +1,4 @@
-import type { OpenClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/zalo";
+import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { describe, expect, it } from "vitest";
 import { zaloPlugin } from "./channel.js";
 

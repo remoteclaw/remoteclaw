@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "remoteclaw/plugin-sdk/mattermost";
+import type { BaseProbeResult } from "remoteclaw/plugin-sdk";
 import { normalizeMattermostBaseUrl, readMattermostError, type MattermostUser } from "./client.js";
 
 export type MattermostProbe = BaseProbeResult & {

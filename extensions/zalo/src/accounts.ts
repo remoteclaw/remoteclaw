@@ -1,9 +1,9 @@
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
   normalizeOptionalAccountId,
 } from "remoteclaw/plugin-sdk/account-id";
-import type { OpenClawConfig } from "remoteclaw/plugin-sdk/zalo";
 import { resolveZaloToken } from "./token.js";
 import type { ResolvedZaloAccount, ZaloAccountConfig, ZaloConfig } from "./types.js";
 

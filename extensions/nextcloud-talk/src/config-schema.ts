@@ -7,7 +7,7 @@ import {
   ReplyRuntimeConfigSchemaShape,
   ToolPolicySchema,
   requireOpenAllowFrom,
-} from "remoteclaw/plugin-sdk/nextcloud-talk";
+} from "remoteclaw/plugin-sdk";
 import { z } from "zod";
 
 export const NextcloudTalkRoomSchema = z

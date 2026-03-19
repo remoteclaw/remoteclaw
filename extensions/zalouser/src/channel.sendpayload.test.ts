@@ -1,4 +1,4 @@
-import type { ReplyPayload } from "remoteclaw/plugin-sdk/zalouser";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { zalouserPlugin } from "./channel.js";
 

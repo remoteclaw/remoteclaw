@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "remoteclaw/plugin-sdk/twitch";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { describe, expect, it } from "vitest";
 import { twitchPlugin } from "./plugin.js";
 

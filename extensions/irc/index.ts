@@ -1,5 +1,5 @@
-import type { ChannelPlugin, OpenClawPluginApi } from "remoteclaw/plugin-sdk/irc";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/irc";
+import type { ChannelPlugin, RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { ircPlugin } from "./src/channel.js";
 import { setIrcRuntime } from "./src/runtime.js";
 

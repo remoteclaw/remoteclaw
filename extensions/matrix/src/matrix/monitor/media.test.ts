@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "remoteclaw/plugin-sdk/matrix";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { setMatrixRuntime } from "../../runtime.js";
 import { downloadMatrixMedia } from "./media.js";

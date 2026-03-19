@@ -8,7 +8,7 @@ import {
   type ChannelOnboardingDmPolicy,
   type DmPolicy,
   type WizardPrompter,
-} from "remoteclaw/plugin-sdk/irc";
+} from "remoteclaw/plugin-sdk";
 import { listIrcAccountIds, resolveDefaultIrcAccountId, resolveIrcAccount } from "./accounts.js";
 import {
   isChannelTarget,

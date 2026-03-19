@@ -11,7 +11,7 @@ import {
   resolveDefaultGroupPolicy,
   setAccountEnabledInConfigSection,
   type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/matrix";
+} from "remoteclaw/plugin-sdk";
 import { matrixMessageActions } from "./actions.js";
 import { MatrixConfigSchema } from "./config-schema.js";
 import { listMatrixDirectoryGroupsLive, listMatrixDirectoryPeersLive } from "./directory-live.js";

@@ -1,8 +1,8 @@
 import type {
   ChannelMessageActionName,
   ChannelPlugin,
-  OpenClawConfig,
-} from "remoteclaw/plugin-sdk/msteams";
+  RemoteClawConfig,
+} from "remoteclaw/plugin-sdk";
 import {
   buildBaseChannelStatusSummary,
   buildChannelConfigSchema,
@@ -12,7 +12,7 @@ import {
   PAIRING_APPROVED_MESSAGE,
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
-} from "remoteclaw/plugin-sdk/msteams";
+} from "remoteclaw/plugin-sdk";
 import { listMSTeamsDirectoryGroupsLive, listMSTeamsDirectoryPeersLive } from "./directory-live.js";
 import { msteamsOnboardingAdapter } from "./onboarding.js";
 import { msteamsOutbound } from "./outbound.js";

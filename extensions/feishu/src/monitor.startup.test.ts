@@ -1,4 +1,4 @@
-import type { ClawdbotConfig } from "remoteclaw/plugin-sdk/feishu";
+import type { ClawdbotConfig } from "remoteclaw/plugin-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { monitorFeishuProvider, stopFeishuMonitor } from "./monitor.js";
 

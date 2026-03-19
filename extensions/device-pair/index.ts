@@ -1,13 +1,13 @@
 import os from "node:os";
 import qrcode from "qrcode-terminal";
-import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/device-pair";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
 import {
   approveDevicePairing,
   listDevicePairing,
   resolveGatewayBindUrl,
   runPluginCommandWithTimeout,
   resolveTailnetHostWithRunner,
-} from "remoteclaw/plugin-sdk/device-pair";
+} from "remoteclaw/plugin-sdk";
 import {
   armPairNotifyOnce,
   formatPendingRequests,

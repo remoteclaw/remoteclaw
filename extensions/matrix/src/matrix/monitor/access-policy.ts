@@ -3,7 +3,7 @@ import {
   issuePairingChallenge,
   readStoreAllowFromForDmPolicy,
   resolveDmGroupAccessWithLists,
-} from "remoteclaw/plugin-sdk/matrix";
+} from "remoteclaw/plugin-sdk";
 import {
   normalizeMatrixAllowList,
   resolveMatrixAllowListMatch,

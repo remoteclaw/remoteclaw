@@ -5,7 +5,7 @@ import {
   type ClawdbotConfig,
   type ReplyPayload,
   type RuntimeEnv,
-} from "remoteclaw/plugin-sdk/feishu";
+} from "remoteclaw/plugin-sdk";
 import { resolveFeishuAccount } from "./accounts.js";
 import { createFeishuClient } from "./client.js";
 import { sendMediaFeishu } from "./media.js";

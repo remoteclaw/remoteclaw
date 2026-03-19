@@ -1,12 +1,12 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { describe, expect, it, vi } from "vitest";
 import type {
   RemoteClawPluginApi,
   RemoteClawPluginCommandDefinition,
   PluginCommandContext,
-} from "remoteclaw/plugin-sdk/phone-control";
-import { describe, expect, it, vi } from "vitest";
+} from "../../src/plugins/types.js";
 import registerPhoneControl from "./index.js";
 
 function createApi(params: {

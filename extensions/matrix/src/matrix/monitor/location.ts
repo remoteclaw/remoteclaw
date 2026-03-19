@@ -3,7 +3,7 @@ import {
   formatLocationText,
   toLocationContext,
   type NormalizedLocation,
-} from "remoteclaw/plugin-sdk/matrix";
+} from "remoteclaw/plugin-sdk";
 import { EventType } from "./types.js";
 
 export type MatrixLocationPayload = {

@@ -1,5 +1,5 @@
-import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/mattermost";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/mattermost";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
 import { mattermostPlugin } from "./src/channel.js";
 import { getSlashCommandState, registerSlashCommandRoute } from "./src/mattermost/slash-state.js";
 import { setMattermostRuntime } from "./src/runtime.js";

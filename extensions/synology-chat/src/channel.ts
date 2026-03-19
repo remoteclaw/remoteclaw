@@ -9,7 +9,7 @@ import {
   setAccountEnabledInConfigSection,
   registerPluginHttpRoute,
   buildChannelConfigSchema,
-} from "remoteclaw/plugin-sdk/synology-chat";
+} from "remoteclaw/plugin-sdk";
 import { z } from "zod";
 import { listAccountIds, resolveAccount } from "./accounts.js";
 import { sendMessage, sendFileUrl } from "./client.js";

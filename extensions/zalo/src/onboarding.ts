@@ -3,15 +3,14 @@ import type {
   ChannelOnboardingDmPolicy,
   RemoteClawConfig,
   WizardPrompter,
-} from "remoteclaw/plugin-sdk/zalo";
+} from "remoteclaw/plugin-sdk";
 import {
   addWildcardAllowFrom,
   DEFAULT_ACCOUNT_ID,
   mergeAllowFromEntries,
   normalizeAccountId,
   promptAccountId,
-  promptSingleChannelSecretInput,
-} from "remoteclaw/plugin-sdk/zalo";
+} from "remoteclaw/plugin-sdk";
 import { listZaloAccountIds, resolveDefaultZaloAccountId, resolveZaloAccount } from "./accounts.js";
 
 const channel = "zalo" as const;

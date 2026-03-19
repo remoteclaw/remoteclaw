@@ -11,11 +11,11 @@
  * - setTwitchAccount config updates
  */
 
-import type { WizardPrompter } from "remoteclaw/plugin-sdk/twitch";
+import type { WizardPrompter } from "remoteclaw/plugin-sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TwitchAccountConfig } from "./types.js";
 
-vi.mock("remoteclaw/plugin-sdk/twitch", () => ({
+vi.mock("remoteclaw/plugin-sdk", () => ({
   formatDocsLink: (url: string, fallback: string) => fallback || url,
   promptChannelAccessConfig: vi.fn(async () => null),
 }));

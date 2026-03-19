@@ -12,7 +12,7 @@ const mockState = vi.hoisted(() => ({
   uploadMattermostFile: vi.fn(),
 }));
 
-vi.mock("remoteclaw/plugin-sdk/mattermost", () => ({
+vi.mock("remoteclaw/plugin-sdk", () => ({
   loadOutboundMediaFromUrl: mockState.loadOutboundMediaFromUrl,
 }));
 

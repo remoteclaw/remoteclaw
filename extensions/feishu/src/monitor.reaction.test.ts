@@ -1,4 +1,4 @@
-import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/feishu";
+import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hasControlCommand } from "../../../src/auto-reply/command-detection.js";
 import {

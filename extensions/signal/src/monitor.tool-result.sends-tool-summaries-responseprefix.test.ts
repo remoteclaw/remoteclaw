@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import { peekSystemEvents } from "../../../src/infra/system-events.js";
+import type { OpenClawConfig } from "../../../src/config/config.js";
 import { resolveAgentRoute } from "../../../src/routing/resolve-route.js";
 import { normalizeE164 } from "../../../src/utils.js";
 import type { SignalDaemonExitEvent } from "./daemon.js";

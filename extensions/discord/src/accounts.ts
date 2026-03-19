@@ -1,14 +1,14 @@
 import {
   createAccountActionGate,
   createAccountListHelpers,
-  normalizeAccountId,
-  resolveAccountEntry,
-} from "remoteclaw/plugin-sdk/account-resolution";
+} from "openclaw/plugin-sdk/account-helpers";
+import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
 import type {
   DiscordAccountConfig,
   DiscordActionConfig,
-  RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/discord";
+  OpenClawConfig,
+} from "openclaw/plugin-sdk/discord-core";
+import { resolveAccountEntry } from "openclaw/plugin-sdk/routing";
 import { resolveDiscordToken } from "./token.js";
 
 export type ResolvedDiscordAccount = {

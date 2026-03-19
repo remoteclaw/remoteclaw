@@ -1,7 +1,7 @@
+import { resetSystemEventsForTest } from "remoteclaw/plugin-sdk/infra-runtime";
+import { resetInboundDedupe } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { MockFn } from "remoteclaw/plugin-sdk/testing";
 import { beforeEach, vi } from "vitest";
-import { resetInboundDedupe } from "../../../src/auto-reply/reply/inbound-dedupe.js";
-import { resetSystemEventsForTest } from "../../../src/infra/system-events.js";
-import type { MockFn } from "../../../src/test-utils/vitest-mock-fn.js";
 import type { SignalDaemonExitEvent, SignalDaemonHandle } from "./daemon.js";
 
 type SignalToolResultTestMocks = {
@@ -68,17 +68,21 @@ export function createMockSignalDaemonHandle(
   };
 }
 
-vi.mock("../../../src/config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../../src/config/config.js")>();
+vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
     loadConfig: () => config,
   };
 });
 
-vi.mock("../../../src/auto-reply/reply.js", () => ({
-  getReplyFromConfig: (...args: unknown[]) => replyMock(...args),
-}));
+vi.mock("remoteclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/reply-runtime")>();
+  return {
+    ...actual,
+    getReplyFromConfig: (...args: unknown[]) => replyMock(...args),
+  };
+});
 
 vi.mock("./send.js", () => ({
   sendMessageSignal: (...args: unknown[]) => sendMock(...args),
@@ -86,16 +90,16 @@ vi.mock("./send.js", () => ({
   sendReadReceiptSignal: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("../../../src/pairing/pairing-store.js", () => ({
+vi.mock("remoteclaw/plugin-sdk/conversation-runtime", () => ({
   readChannelAllowFromStore: (...args: unknown[]) => readAllowFromStoreMock(...args),
   upsertChannelPairingRequest: (...args: unknown[]) => upsertPairingRequestMock(...args),
 }));
 
-vi.mock("../../../src/config/sessions.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../../src/config/sessions.js")>();
+vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/config-runtime")>();
   return {
     ...actual,
-    resolveStorePath: vi.fn(() => "/tmp/openclaw-sessions.json"),
+    resolveStorePath: vi.fn(() => "/tmp/remoteclaw-sessions.json"),
     updateLastRoute: (...args: unknown[]) => updateLastRouteMock(...args),
     readSessionUpdatedAt: vi.fn(() => undefined),
     recordSessionMetaFromInbound: vi.fn().mockResolvedValue(undefined),
@@ -116,9 +120,13 @@ vi.mock("./daemon.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../../../src/infra/transport-ready.js", () => ({
-  waitForTransportReady: (...args: unknown[]) => waitForTransportReadyMock(...args),
-}));
+vi.mock("remoteclaw/plugin-sdk/infra-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/infra-runtime")>();
+  return {
+    ...actual,
+    waitForTransportReady: (...args: unknown[]) => waitForTransportReadyMock(...args),
+  };
+});
 
 export function installSignalToolResultTestHooks() {
   beforeEach(() => {

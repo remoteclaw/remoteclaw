@@ -79,6 +79,7 @@ export type ConfigDocBaselineStatefileWriteResult = {
 const GENERATED_BY = "scripts/generate-config-doc-baseline.ts" as const;
 const DEFAULT_JSON_OUTPUT = "docs/.generated/config-baseline.json";
 const DEFAULT_STATEFILE_OUTPUT = "docs/.generated/config-baseline.jsonl";
+let cachedConfigDocBaselinePromise: Promise<ConfigDocBaseline> | null = null;
 
 function logConfigDocBaselineDebug(message: string): void {
   if (process.env.REMOTECLAW_CONFIG_DOC_BASELINE_DEBUG === "1") {
@@ -673,26 +674,37 @@ export function dedupeConfigDocBaselineEntries(
 }
 
 export async function buildConfigDocBaseline(): Promise<ConfigDocBaseline> {
-  const start = Date.now();
-  logConfigDocBaselineDebug("build baseline start");
-  const response = await loadBundledConfigSchemaResponse();
-  const schemaRoot = asSchemaObject(response.schema);
-  if (!schemaRoot) {
-    throw new Error("config schema root is not an object");
+  if (cachedConfigDocBaselinePromise) {
+    return await cachedConfigDocBaselinePromise;
   }
-  const collectStart = Date.now();
-  logConfigDocBaselineDebug("collect baseline entries start");
-  const entries = dedupeConfigDocBaselineEntries(
-    collectConfigDocBaselineEntries(schemaRoot, response.uiHints),
-  );
-  logConfigDocBaselineDebug(
-    `collect baseline entries done count=${entries.length} elapsedMs=${Date.now() - collectStart}`,
-  );
-  logConfigDocBaselineDebug(`build baseline done elapsedMs=${Date.now() - start}`);
-  return {
-    generatedBy: GENERATED_BY,
-    entries,
-  };
+  cachedConfigDocBaselinePromise = (async () => {
+    const start = Date.now();
+    logConfigDocBaselineDebug("build baseline start");
+    const response = await loadBundledConfigSchemaResponse();
+    const schemaRoot = asSchemaObject(response.schema);
+    if (!schemaRoot) {
+      throw new Error("config schema root is not an object");
+    }
+    const collectStart = Date.now();
+    logConfigDocBaselineDebug("collect baseline entries start");
+    const entries = dedupeConfigDocBaselineEntries(
+      collectConfigDocBaselineEntries(schemaRoot, response.uiHints),
+    );
+    logConfigDocBaselineDebug(
+      `collect baseline entries done count=${entries.length} elapsedMs=${Date.now() - collectStart}`,
+    );
+    logConfigDocBaselineDebug(`build baseline done elapsedMs=${Date.now() - start}`);
+    return {
+      generatedBy: GENERATED_BY,
+      entries,
+    };
+  })();
+  try {
+    return await cachedConfigDocBaselinePromise;
+  } catch (error) {
+    cachedConfigDocBaselinePromise = null;
+    throw error;
+  }
 }
 
 export async function renderConfigDocBaselineStatefile(

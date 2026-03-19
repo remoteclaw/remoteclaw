@@ -37,7 +37,6 @@ describe("evaluateStoredCredentialEligibility", () => {
         provider: "anthropic",
         keyRef: {
           source: "env",
-          provider: "default",
           id: "ANTHROPIC_API_KEY",
         },
       },
@@ -53,7 +52,6 @@ describe("evaluateStoredCredentialEligibility", () => {
         provider: "github-copilot",
         tokenRef: {
           source: "env",
-          provider: "default",
           id: "GITHUB_TOKEN",
         },
       },

@@ -125,9 +125,9 @@ function buildProfileHealth(params: {
 
   return {
     profileId,
-    provider: credential.provider,
-    type: credential.type,
-    status: "static",
+    provider: (credential as AuthProfileCredential).provider,
+    type: (credential as AuthProfileCredential).type,
+    status: "missing",
     source,
     label,
   };

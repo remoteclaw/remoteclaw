@@ -1,3 +1,7 @@
+---
+title: Auth Credential Semantics
+---
+
 # Auth Credential Semantics
 
 This document defines the canonical credential eligibility and resolution semantics used across:

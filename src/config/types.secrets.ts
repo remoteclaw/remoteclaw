@@ -29,3 +29,24 @@ export type SecretsConfig = {
     file?: SopsSecretSourceConfig;
   };
 };
+
+export function coerceSecretRef(value: unknown): SecretRef | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const rec = value as Record<string, unknown>;
+  const source = typeof rec.source === "string" ? rec.source.trim().toLowerCase() : undefined;
+  const id = typeof rec.id === "string" ? rec.id.trim() : undefined;
+  if ((source === "env" || source === "file") && id) {
+    return { source, id };
+  }
+  return null;
+}
+
+export function normalizeSecretInputString(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}

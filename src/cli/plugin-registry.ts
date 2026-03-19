@@ -34,6 +34,7 @@ export function ensurePluginRegistryLoaded(): void {
     config,
     workspaceDir: workspaceDir ?? undefined,
     logger,
+    throwOnLoadError: true,
   });
   pluginRegistryLoaded = true;
 }

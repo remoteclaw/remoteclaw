@@ -144,6 +144,35 @@ describe("resolveSessionResetPolicy", () => {
       expect(groupPolicy.mode).toBe("daily");
     });
   });
+
+  it("defaults to daily resets at 4am local time", () => {
+    const policy = resolveSessionResetPolicy({
+      resetType: "direct",
+    });
+
+    expect(policy).toMatchObject({
+      mode: "daily",
+      atHour: 4,
+    });
+  });
+
+  it("treats idleMinutes=0 as never expiring by inactivity", () => {
+    const freshness = evaluateSessionFreshness({
+      updatedAt: 1_000,
+      now: 60 * 60 * 1_000,
+      policy: {
+        mode: "idle",
+        atHour: 4,
+        idleMinutes: 0,
+      },
+    });
+
+    expect(freshness).toEqual({
+      fresh: true,
+      dailyResetAt: undefined,
+      idleExpiresAt: undefined,
+    });
+  });
 });
 
 describe("session store lock (Promise chain mutex)", () => {

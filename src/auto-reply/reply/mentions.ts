@@ -54,6 +54,17 @@ function resolveMentionPatterns(cfg: RemoteClawConfig | undefined, agentId?: str
   return derived.length > 0 ? derived : [];
 }
 
+function resolveFallbackProviderMentionStripRegexes(providerId?: string | null): RegExp[] {
+  switch (providerId?.trim().toLowerCase()) {
+    case "discord":
+      return [/<@!?\d+>/gi];
+    case "slack":
+      return [/<@[^>\s]+>/gi];
+    default:
+      return [];
+  }
+}
+
 export function buildMentionRegexes(cfg: RemoteClawConfig | undefined, agentId?: string): RegExp[] {
   const patterns = normalizeMentionPatterns(resolveMentionPatterns(cfg, agentId));
   if (patterns.length === 0) {
@@ -164,6 +175,11 @@ export function stripMentions(
     } catch {
       // ignore invalid regex
     }
+  }
+  const fallbackProviderRegexes =
+    patterns.length > 0 ? [] : resolveFallbackProviderMentionStripRegexes(providerId);
+  for (const re of fallbackProviderRegexes) {
+    result = result.replace(re, " ");
   }
   if (providerMentions?.stripMentions) {
     result = providerMentions.stripMentions({

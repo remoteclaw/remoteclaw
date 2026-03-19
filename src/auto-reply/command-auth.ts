@@ -31,6 +31,7 @@ function resolveProviderFromContext(ctx: MsgContext, cfg: RemoteClawConfig): Cha
   }
   const direct =
     normalizeAnyChannelId(explicitMessageChannel ?? undefined) ??
+    (explicitMessageChannel as ChannelId | undefined) ??
     normalizeAnyChannelId(ctx.Provider) ??
     normalizeAnyChannelId(ctx.Surface) ??
     normalizeAnyChannelId(ctx.OriginatingChannel);
@@ -47,6 +48,7 @@ function resolveProviderFromContext(ctx: MsgContext, cfg: RemoteClawConfig): Cha
     }
     const normalized =
       normalizeAnyChannelId(normalizedCandidateChannel ?? undefined) ??
+      (normalizedCandidateChannel as ChannelId | undefined) ??
       normalizeAnyChannelId(candidate);
     if (normalized) {
       return normalized;
@@ -255,6 +257,50 @@ function resolveSenderCandidates(params: {
   return normalized;
 }
 
+function resolveFallbackAllowFrom(params: {
+  cfg: OpenClawConfig;
+  providerId?: ChannelId;
+  accountId?: string | null;
+}): Array<string | number> {
+  const providerId = params.providerId?.trim();
+  if (!providerId) {
+    return [];
+  }
+  const channels = params.cfg.channels as
+    | Record<
+        string,
+        | {
+            allowFrom?: Array<string | number>;
+            dm?: { allowFrom?: Array<string | number> };
+            accounts?: Record<
+              string,
+              {
+                allowFrom?: Array<string | number>;
+                dm?: { allowFrom?: Array<string | number> };
+              }
+            >;
+          }
+        | undefined
+      >
+    | undefined;
+  const channelCfg = channels?.[providerId];
+  const accountCfg = params.accountId ? channelCfg?.accounts?.[params.accountId] : undefined;
+  const allowFrom =
+    accountCfg?.allowFrom ??
+    accountCfg?.dm?.allowFrom ??
+    channelCfg?.allowFrom ??
+    channelCfg?.dm?.allowFrom;
+  return Array.isArray(allowFrom) ? allowFrom : [];
+}
+
+function resolveFallbackCommandOptions(providerId?: ChannelId): {
+  enforceOwnerForCommands: boolean;
+} {
+  return {
+    enforceOwnerForCommands: providerId === "whatsapp",
+  };
+}
+
 export function resolveCommandAuthorization(params: {
   ctx: MsgContext;
   cfg: RemoteClawConfig;
@@ -276,7 +322,11 @@ export function resolveCommandAuthorization(params: {
 
   const allowFromRaw = dock?.config?.resolveAllowFrom
     ? dock.config.resolveAllowFrom({ cfg, accountId: ctx.AccountId })
-    : [];
+    : resolveFallbackAllowFrom({
+        cfg,
+        providerId,
+        accountId: ctx.AccountId,
+      });
   const allowFromList = formatAllowFromList({
     dock,
     cfg,
@@ -345,7 +395,10 @@ export function resolveCommandAuthorization(params: {
     : undefined;
   const senderId = matchedSender ?? senderCandidates[0];
 
-  const enforceOwner = Boolean(dock?.commands?.enforceOwnerForCommands);
+  const enforceOwner = Boolean(
+    dock?.commands?.enforceOwnerForCommands ??
+    resolveFallbackCommandOptions(providerId).enforceOwnerForCommands,
+  );
   const senderIsOwnerByIdentity = Boolean(matchedSender);
   const senderIsOwnerByScope =
     isInternalMessageChannel(ctx.Provider) &&

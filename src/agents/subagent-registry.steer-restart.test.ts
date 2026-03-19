@@ -152,6 +152,8 @@ describe("subagent registry steer restarts", () => {
     });
   };
 
+  const listMainRuns = () => mod.listSubagentRunsForRequester("agent:main:main");
+
   const replaceRunAfterSteer = (params: {
     previousRunId: string;
     nextRunId: string;

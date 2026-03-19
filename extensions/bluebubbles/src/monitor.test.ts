@@ -834,6 +834,7 @@ describe("BlueBubbles webhook monitor", () => {
 
       mockDispatchReplyWithBufferedBlockDispatcher.mockImplementationOnce(async (params) => {
         await params.dispatcherOptions.deliver({ text: "replying now" }, { kind: "final" });
+        return EMPTY_DISPATCH_RESULT;
       });
 
       const account = createMockAccount({ groupPolicy: "open" });

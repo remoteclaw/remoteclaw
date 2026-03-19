@@ -323,6 +323,15 @@ export type DiscordAccountConfig = {
   activityType?: 0 | 1 | 2 | 3 | 4 | 5;
   /** Streaming URL (Twitch/YouTube). Required when activityType=1. */
   activityUrl?: string;
+  /** Carbon EventQueue configuration for this Discord account. */
+  eventQueue?: {
+    /** Max time (ms) a single listener can run before being killed. Default: 120000. */
+    listenerTimeout?: number;
+    /** Max events queued before backpressure is applied. Default: 10000. */
+    maxQueueSize?: number;
+    /** Max concurrent event processing operations. Default: 50. */
+    maxConcurrency?: number;
+  };
 };
 
 export type DiscordConfig = {

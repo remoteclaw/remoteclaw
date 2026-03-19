@@ -43,7 +43,7 @@ function shouldBypassConfigGuard(commandPath: string[]): boolean {
   if (!primary) {
     return false;
   }
-  if (CONFIG_GUARD_BYPASS_COMMANDS.has(primary)) {
+  if (primary === "doctor" || primary === "completion") {
     return true;
   }
   // config validate is the explicit validation command; let it render

@@ -93,6 +93,8 @@ function expectDeliveryNotRequested(
   updated:
     | {
         state: {
+          lastStatus?: string;
+          lastRunStatus?: string;
           lastDelivered?: boolean;
           lastDeliveryStatus?: string;
           lastDeliveryError?: string;

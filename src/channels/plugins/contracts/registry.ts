@@ -1,11 +1,14 @@
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { expect, vi } from "vitest";
 import {
   __testing as discordThreadBindingTesting,
   createThreadBindingManager as createDiscordThreadBindingManager,
-} from "../../../../extensions/discord/src/monitor/thread-bindings.manager.js";
-import { createFeishuThreadBindingManager } from "../../../../extensions/feishu/src/thread-bindings.js";
-import { setMatrixRuntime } from "../../../../extensions/matrix/src/runtime.js";
-import { createTelegramThreadBindingManager } from "../../../../extensions/telegram/src/thread-bindings.js";
+} from "../../../../extensions/discord/runtime-api.js";
+import { createFeishuThreadBindingManager } from "../../../../extensions/feishu/api.js";
+import { createMatrixThreadBindingManager } from "../../../../extensions/matrix/api.js";
+import { createTelegramThreadBindingManager } from "../../../../extensions/telegram/runtime-api.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
 import {
   getSessionBindingService,
@@ -127,23 +130,63 @@ type DirectoryContractEntry = {
 type SessionBindingContractEntry = {
   id: string;
   expectedCapabilities: SessionBindingCapabilities;
-  getCapabilities: () => SessionBindingCapabilities;
+  getCapabilities: () => SessionBindingCapabilities | Promise<SessionBindingCapabilities>;
   bindAndResolve: () => Promise<SessionBindingRecord>;
   unbindAndVerify: (binding: SessionBindingRecord) => Promise<void>;
   cleanup: () => Promise<void> | void;
 };
 
-const telegramListActionsMock = vi.fn();
-const telegramGetCapabilitiesMock = vi.fn();
-const discordListActionsMock = vi.fn();
-const discordGetCapabilitiesMock = vi.fn();
+function expectResolvedSessionBinding(params: {
+  channel: string;
+  accountId: string;
+  conversationId: string;
+  parentConversationId?: string;
+  targetSessionKey: string;
+}) {
+  expect(
+    getSessionBindingService().resolveByConversation({
+      channel: params.channel,
+      accountId: params.accountId,
+      conversationId: params.conversationId,
+      parentConversationId: params.parentConversationId,
+    }),
+  )?.toMatchObject({
+    targetSessionKey: params.targetSessionKey,
+  });
+}
+
+async function unbindAndExpectClearedSessionBinding(binding: SessionBindingRecord) {
+  const service = getSessionBindingService();
+  const removed = await service.unbind({
+    bindingId: binding.bindingId,
+    reason: "contract-test",
+  });
+  expect(removed.map((entry) => entry.bindingId)).toContain(binding.bindingId);
+  expect(service.resolveByConversation(binding.conversation)).toBeNull();
+}
+
+function expectClearedSessionBinding(params: {
+  channel: string;
+  accountId: string;
+  conversationId: string;
+}) {
+  expect(
+    getSessionBindingService().resolveByConversation({
+      channel: params.channel,
+      accountId: params.accountId,
+      conversationId: params.conversationId,
+    }),
+  ).toBeNull();
+}
+
+const telegramDescribeMessageToolMock = vi.fn();
+const discordDescribeMessageToolMock = vi.fn();
 
 bundledChannelRuntimeSetters.setTelegramRuntime({
   channel: {
     telegram: {
       messageActions: {
-        listActions: telegramListActionsMock,
-        getCapabilities: telegramGetCapabilitiesMock,
+        describeMessageTool: telegramDescribeMessageToolMock,
       },
     },
   },
@@ -153,8 +196,7 @@ bundledChannelRuntimeSetters.setDiscordRuntime({
   channel: {
     discord: {
       messageActions: {
-        listActions: discordListActionsMock,
-        getCapabilities: discordGetCapabilitiesMock,
+        describeMessageTool: discordDescribeMessageToolMock,
       },
     },
   },
@@ -168,12 +210,6 @@ bundledChannelRuntimeSetters.setLineRuntime({
       resolveLineAccount: ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId?: string }) =>
         resolveLineAccount({ cfg, accountId }),
     },
-  },
-} as never);
-
-setMatrixRuntime({
-  state: {
-    resolveStateDir: (_env: unknown, homeDir?: () => string) => (homeDir ?? (() => "/tmp"))(),
   },
 } as never);
 
@@ -317,10 +353,11 @@ export const actionContractRegistry: ActionsContractEntry[] = [
         expectedActions: ["send", "poll", "react"],
         expectedCapabilities: ["interactive", "buttons"],
         beforeTest: () => {
-          telegramListActionsMock.mockReset();
-          telegramGetCapabilitiesMock.mockReset();
-          telegramListActionsMock.mockReturnValue(["send", "poll", "react"]);
-          telegramGetCapabilitiesMock.mockReturnValue(["interactive", "buttons"]);
+          telegramDescribeMessageToolMock.mockReset();
+          telegramDescribeMessageToolMock.mockReturnValue({
+            actions: ["send", "poll", "react"],
+            capabilities: ["interactive", "buttons"],
+          });
         },
       },
     ],
@@ -335,10 +372,11 @@ export const actionContractRegistry: ActionsContractEntry[] = [
         expectedActions: ["send", "react", "poll"],
         expectedCapabilities: ["interactive", "components"],
         beforeTest: () => {
-          discordListActionsMock.mockReset();
-          discordGetCapabilitiesMock.mockReset();
-          discordListActionsMock.mockReturnValue(["send", "react", "poll"]);
-          discordGetCapabilitiesMock.mockReturnValue(["interactive", "components"]);
+          discordDescribeMessageToolMock.mockReset();
+          discordDescribeMessageToolMock.mockReturnValue({
+            actions: ["send", "react", "poll"],
+            capabilities: ["interactive", "components"],
+          });
         },
       },
     ],
@@ -544,25 +582,6 @@ export const threadingContractRegistry: ThreadingContractEntry[] = surfaceContra
   }));
 
 const directoryPresenceOnlyIds = new Set(["whatsapp", "zalouser"]);
-const matrixDirectoryCfg = {
-  channels: {
-    matrix: {
-      enabled: true,
-      homeserver: "https://matrix.example.com",
-      userId: "@lobster:example.com",
-      accessToken: "matrix-access-token",
-      dm: {
-        allowFrom: ["matrix:@alice:example.com"],
-      },
-      groupAllowFrom: ["matrix:@team:example.com"],
-      groups: {
-        "!room:example.com": {
-          users: ["matrix:@alice:example.com"],
-        },
-      },
-    },
-  },
-} as RemoteClawConfig;
 
 export const directoryContractRegistry: DirectoryContractEntry[] = surfaceContractRegistry
   .filter((entry) => entry.surfaces.includes("directory"))
@@ -570,12 +589,29 @@ export const directoryContractRegistry: DirectoryContractEntry[] = surfaceContra
     id: entry.id,
     plugin: entry.plugin,
     coverage: directoryPresenceOnlyIds.has(entry.id) ? "presence" : "lookups",
-    ...(entry.id === "matrix" ? { cfg: matrixDirectoryCfg } : {}),
   }));
 
 const baseSessionBindingCfg = {
   session: { mainKey: "main", scope: "per-sender" },
 } satisfies RemoteClawConfig;
+
+async function createContractMatrixThreadBindingManager() {
+  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "matrix-contract-thread-bindings-"));
+  return await createMatrixThreadBindingManager({
+    accountId: "ops",
+    auth: {
+      accountId: "ops",
+      homeserver: "https://matrix.example.org",
+      userId: "@bot:example.org",
+      accessToken: "token",
+    },
+    client: {} as never,
+    stateDir,
+    idleTimeoutMs: 24 * 60 * 60 * 1000,
+    maxAgeMs: 0,
+    enableSweeper: false,
+  });
+}
 
 export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
   {
@@ -617,26 +653,15 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
           label: "codex-discord",
         },
       });
-      expect(
-        service.resolveByConversation({
-          channel: "discord",
-          accountId: "default",
-          conversationId: "channel:123456789012345678",
-        }),
-      )?.toMatchObject({
+      expectResolvedSessionBinding({
+        channel: "discord",
+        accountId: "default",
+        conversationId: "channel:123456789012345678",
         targetSessionKey: "agent:discord:child:thread-1",
       });
       return binding;
     },
-    unbindAndVerify: async (binding) => {
-      const service = getSessionBindingService();
-      const removed = await service.unbind({
-        bindingId: binding.bindingId,
-        reason: "contract-test",
-      });
-      expect(removed.map((entry) => entry.bindingId)).toContain(binding.bindingId);
-      expect(service.resolveByConversation(binding.conversation)).toBeNull();
-    },
+    unbindAndVerify: unbindAndExpectClearedSessionBinding,
     cleanup: async () => {
       const manager = createDiscordThreadBindingManager({
         accountId: "default",
@@ -645,13 +670,11 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
       });
       manager.stop();
       discordThreadBindingTesting.resetThreadBindingsForTests();
-      expect(
-        getSessionBindingService().resolveByConversation({
-          channel: "discord",
-          accountId: "default",
-          conversationId: "channel:123456789012345678",
-        }),
-      ).toBeNull();
+      expectClearedSessionBinding({
+        channel: "discord",
+        accountId: "default",
+        conversationId: "channel:123456789012345678",
+      });
     },
   },
   {
@@ -687,37 +710,79 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
           label: "codex-main",
         },
       });
-      expect(
-        service.resolveByConversation({
-          channel: "feishu",
-          accountId: "default",
-          conversationId: "oc_group_chat:topic:om_topic_root",
-        }),
-      )?.toMatchObject({
+      expectResolvedSessionBinding({
+        channel: "feishu",
+        accountId: "default",
+        conversationId: "oc_group_chat:topic:om_topic_root",
         targetSessionKey: "agent:codex:acp:binding:feishu:default:abc123",
       });
       return binding;
     },
-    unbindAndVerify: async (binding) => {
-      const service = getSessionBindingService();
-      const removed = await service.unbind({
-        bindingId: binding.bindingId,
-        reason: "contract-test",
-      });
-      expect(removed.map((entry) => entry.bindingId)).toContain(binding.bindingId);
-      expect(service.resolveByConversation(binding.conversation)).toBeNull();
-    },
+    unbindAndVerify: unbindAndExpectClearedSessionBinding,
     cleanup: async () => {
       const manager = createFeishuThreadBindingManager({
         cfg: baseSessionBindingCfg,
         accountId: "default",
       });
       manager.stop();
+      expectClearedSessionBinding({
+        channel: "feishu",
+        accountId: "default",
+        conversationId: "oc_group_chat:topic:om_topic_root",
+      });
+    },
+  },
+  {
+    id: "matrix",
+    expectedCapabilities: {
+      adapterAvailable: true,
+      bindSupported: true,
+      unbindSupported: true,
+      placements: ["current", "child"],
+    },
+    getCapabilities: async () => {
+      await createContractMatrixThreadBindingManager();
+      return getSessionBindingService().getCapabilities({
+        channel: "matrix",
+        accountId: "ops",
+      });
+    },
+    bindAndResolve: async () => {
+      await createContractMatrixThreadBindingManager();
+      const service = getSessionBindingService();
+      const binding = await service.bind({
+        targetSessionKey: "agent:matrix:subagent:child-1",
+        targetKind: "subagent",
+        conversation: {
+          channel: "matrix",
+          accountId: "ops",
+          conversationId: "!room:example",
+        },
+        placement: "child",
+        metadata: {
+          label: "codex-matrix",
+          introText: "intro root",
+        },
+      });
+      expectResolvedSessionBinding({
+        channel: "matrix",
+        accountId: "ops",
+        conversationId: "$root",
+        parentConversationId: "!room:example",
+        targetSessionKey: "agent:matrix:subagent:child-1",
+      });
+      return binding;
+    },
+    unbindAndVerify: unbindAndExpectClearedSessionBinding,
+    cleanup: async () => {
+      const manager = await createContractMatrixThreadBindingManager();
+      manager.stop();
       expect(
         getSessionBindingService().resolveByConversation({
-          channel: "feishu",
-          accountId: "default",
-          conversationId: "oc_group_chat:topic:om_topic_root",
+          channel: "matrix",
+          accountId: "ops",
+          conversationId: "$root",
+          parentConversationId: "!room:example",
         }),
       ).toBeNull();
     },
@@ -761,26 +826,15 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
           boundBy: "user-1",
         },
       });
-      expect(
-        service.resolveByConversation({
-          channel: "telegram",
-          accountId: "default",
-          conversationId: "-100200300:topic:77",
-        }),
-      )?.toMatchObject({
+      expectResolvedSessionBinding({
+        channel: "telegram",
+        accountId: "default",
+        conversationId: "-100200300:topic:77",
         targetSessionKey: "agent:main:subagent:child-1",
       });
       return binding;
     },
-    unbindAndVerify: async (binding) => {
-      const service = getSessionBindingService();
-      const removed = await service.unbind({
-        bindingId: binding.bindingId,
-        reason: "contract-test",
-      });
-      expect(removed.map((entry) => entry.bindingId)).toContain(binding.bindingId);
-      expect(service.resolveByConversation(binding.conversation)).toBeNull();
-    },
+    unbindAndVerify: unbindAndExpectClearedSessionBinding,
     cleanup: async () => {
       const manager = createTelegramThreadBindingManager({
         accountId: "default",
@@ -788,13 +842,11 @@ export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
         enableSweeper: false,
       });
       manager.stop();
-      expect(
-        getSessionBindingService().resolveByConversation({
-          channel: "telegram",
-          accountId: "default",
-          conversationId: "-100200300:topic:77",
-        }),
-      ).toBeNull();
+      expectClearedSessionBinding({
+        channel: "telegram",
+        accountId: "default",
+        conversationId: "-100200300:topic:77",
+      });
     },
   },
 ];

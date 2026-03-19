@@ -1,4 +1,3 @@
-import type { DiscordPluralKitConfig } from "../../extensions/discord/src/pluralkit.js";
 import type {
   BlockStreamingChunkConfig,
   BlockStreamingCoalesceConfig,
@@ -8,13 +7,21 @@ import type {
   OutboundRetryConfig,
   ReplyToMode,
 } from "./types.base.js";
-import type { ChannelHeartbeatVisibilityConfig } from "./types.channels.js";
+import type {
+  ChannelHealthMonitorConfig,
+  ChannelHeartbeatVisibilityConfig,
+} from "./types.channels.js";
 import type { DmConfig, ProviderCommandsConfig } from "./types.messages.js";
 import type { SecretInput } from "./types.secrets.js";
 import type { GroupToolPolicyBySenderConfig, GroupToolPolicyConfig } from "./types.tools.js";
 import type { TtsConfig } from "./types.tts.js";
 
 export type DiscordStreamMode = "off" | "partial" | "block" | "progress";
+
+export type DiscordPluralKitConfig = {
+  enabled?: boolean;
+  token?: string;
+};
 
 export type DiscordDmConfig = {
   /** If false, ignore all incoming Discord DMs. Default: true. */
@@ -40,6 +47,8 @@ export type DiscordGuildChannelConfig = {
   /** Optional tool policy overrides for this channel. */
   tools?: GroupToolPolicyConfig;
   toolsBySender?: GroupToolPolicyBySenderConfig;
+  /** If specified, only load these skills for this channel. Omit = all skills; empty = no skills. */
+  skills?: string[];
   /** If false, disable the bot for this channel. */
   enabled?: boolean;
   /** Optional allowlist for channel senders (ids or names). */
@@ -179,6 +188,11 @@ export type DiscordThreadBindingsConfig = {
    * threads for subagent sessions. Default: false (opt-in).
    */
   spawnSubagentSessions?: boolean;
+  /**
+   * Allow `/acp spawn` to auto-create + bind Discord threads for ACP
+   * sessions. Default: false (opt-in).
+   */
+  spawnAcpSessions?: boolean;
 };
 
 export type DiscordSlashCommandConfig = {
@@ -290,6 +304,8 @@ export type DiscordAccountConfig = {
   guilds?: Record<string, DiscordGuildEntry>;
   /** Heartbeat visibility settings for this channel. */
   heartbeat?: ChannelHeartbeatVisibilityConfig;
+  /** Channel health monitor overrides for this channel/account. */
+  healthMonitor?: ChannelHealthMonitorConfig;
   /** Exec approval forwarding configuration. */
   execApprovals?: DiscordExecApprovalConfig;
   /** Agent-controlled interactive components (buttons, select menus). */

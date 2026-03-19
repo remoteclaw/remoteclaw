@@ -75,7 +75,7 @@ cat ~/.remoteclaw/remoteclaw.json
 - Gateway runtime best-practice checks (Node vs Bun, version-manager paths).
 - Gateway port collision diagnostics (default `18789`).
 - Security warnings for open DM policies.
-- Gateway auth checks for local token mode (offers token generation when no token source exists; does not overwrite token SecretRef configs).
+- Gateway auth warnings when no `gateway.auth.token` is set (local mode; offers token generation).
 - systemd linger check on Linux.
 - Source install checks (pnpm workspace mismatch, missing UI assets, missing tsx binary).
 - Writes updated config + wizard metadata.
@@ -222,11 +222,9 @@ Doctor prints a quick summary of skills present in the current workspace.
 
 ### 9) Gateway auth checks (local token)
 
-Doctor checks local gateway token auth readiness.
-
-- If token mode needs a token and no token source exists, doctor offers to generate one.
-- If `gateway.auth.token` is SecretRef-managed but unavailable, doctor warns and does not overwrite it with plaintext.
-- `openclaw doctor --generate-gateway-token` forces generation only when no token SecretRef is configured.
+Doctor warns when `gateway.auth` is missing on a local gateway and offers to
+generate a token. Use `remoteclaw doctor --generate-gateway-token` to force token
+creation in automation.
 
 ### 10) Gateway health check + restart
 
@@ -247,14 +245,11 @@ rewrite the service file/task to the current defaults.
 
 Notes:
 
-- `openclaw doctor` prompts before rewriting supervisor config.
-- `openclaw doctor --yes` accepts the default repair prompts.
-- `openclaw doctor --repair` applies recommended fixes without prompts.
-- `openclaw doctor --repair --force` overwrites custom supervisor configs.
-- If token auth requires a token and `gateway.auth.token` is SecretRef-managed, doctor service install/repair validates the SecretRef but does not persist resolved plaintext token values into supervisor service environment metadata.
-- If token auth requires a token and the configured token SecretRef is unresolved, doctor blocks the install/repair path with actionable guidance.
-- If both `gateway.auth.token` and `gateway.auth.password` are configured and `gateway.auth.mode` is unset, doctor blocks install/repair until mode is set explicitly.
-- You can always force a full rewrite via `openclaw gateway install --force`.
+- `remoteclaw doctor` prompts before rewriting supervisor config.
+- `remoteclaw doctor --yes` accepts the default repair prompts.
+- `remoteclaw doctor --repair` applies recommended fixes without prompts.
+- `remoteclaw doctor --repair --force` overwrites custom supervisor configs.
+- You can always force a full rewrite via `remoteclaw gateway install --force`.
 
 ### 13) Gateway runtime + port diagnostics
 

@@ -255,13 +255,6 @@ describe("sanitizeToolCallInputs", () => {
     );
   }
 
-  function sanitizeAssistantToolCalls(
-    content: unknown[],
-    options?: Parameters<typeof sanitizeToolCallInputs>[1],
-  ) {
-    return getAssistantToolCallBlocks(sanitizeAssistantContent(content, options));
-  }
-
   it("drops tool calls missing input or arguments", () => {
     const input = castAgentMessages([
       {

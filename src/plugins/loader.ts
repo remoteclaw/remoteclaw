@@ -621,25 +621,6 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       continue;
     }
 
-    // Fast-path bundled memory plugins that are guaranteed disabled by slot policy.
-    // This avoids opening/importing heavy memory plugin modules that will never register.
-    if (candidate.origin === "bundled" && manifestRecord.kind === "memory") {
-      const earlyMemoryDecision = resolveMemorySlotDecision({
-        id: record.id,
-        kind: "memory",
-        slot: memorySlot,
-        selectedId: selectedMemoryPluginId,
-      });
-      if (!earlyMemoryDecision.enabled) {
-        record.enabled = false;
-        record.status = "disabled";
-        record.error = earlyMemoryDecision.reason;
-        registry.plugins.push(record);
-        seenIds.set(pluginId, candidate.origin);
-        continue;
-      }
-    }
-
     if (!manifestRecord.configSchema) {
       pushPluginLoadError("missing config schema");
       continue;

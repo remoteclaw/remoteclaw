@@ -363,7 +363,7 @@ describe("discoverRemoteClawPlugins", () => {
       {
         OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
       },
-      async () => withStateDir(stateDir, async () => discoverOpenClawPlugins({})),
+      async () => withStateDir(stateDir, async () => discoverRemoteClawPlugins({})),
     );
     expect(first.candidates.some((candidate) => candidate.idHint === "cached")).toBe(true);
 
@@ -373,7 +373,7 @@ describe("discoverRemoteClawPlugins", () => {
       {
         OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
       },
-      async () => withStateDir(stateDir, async () => discoverOpenClawPlugins({})),
+      async () => withStateDir(stateDir, async () => discoverRemoteClawPlugins({})),
     );
     expect(second.candidates.some((candidate) => candidate.idHint === "cached")).toBe(true);
 
@@ -383,7 +383,7 @@ describe("discoverRemoteClawPlugins", () => {
       {
         OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "5000",
       },
-      async () => withStateDir(stateDir, async () => discoverOpenClawPlugins({})),
+      async () => withStateDir(stateDir, async () => discoverRemoteClawPlugins({})),
     );
     expect(third.candidates.some((candidate) => candidate.idHint === "cached")).toBe(false);
   });

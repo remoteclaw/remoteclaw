@@ -39,7 +39,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
   });
 
   function createInboundSlackCtx(params: {
-    cfg: OpenClawConfig;
+    cfg: RemoteClawConfig;
     appClient?: App["client"];
     defaultRequireMention?: boolean;
     replyToMode?: "off" | "all";

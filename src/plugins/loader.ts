@@ -2,16 +2,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createJiti } from "jiti";
-import type { RemoteClawConfig } from "../config/config.js";
+import type { OpenClawConfig } from "../config/config.js";
 import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
+import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { isPathInsideWithRealpath } from "../security/scan-paths.js";
 import { resolveUserPath } from "../utils.js";
 import { clearPluginCommands } from "./commands.js";
 import {
   applyTestPluginDefaults,
   normalizePluginsConfig,
   resolveEffectiveEnableState,
+  resolveMemorySlotDecision,
   type NormalizedPluginsConfig,
 } from "./config-state.js";
 import { discoverRemoteClawPlugins } from "./discovery.js";
@@ -33,7 +34,7 @@ import type {
 export type PluginLoadResult = PluginRegistry;
 
 export type PluginLoadOptions = {
-  config?: RemoteClawConfig;
+  config?: OpenClawConfig;
   workspaceDir?: string;
   logger?: PluginLogger;
   coreGatewayHandlers?: Record<string, GatewayRequestHandler>;
@@ -54,15 +55,15 @@ const resolvePluginSdkAliasFile = (params: {
     const modulePath = params.modulePath ?? fileURLToPath(import.meta.url);
     const isProduction = process.env.NODE_ENV === "production";
     const isTest = process.env.VITEST || process.env.NODE_ENV === "test";
-    // When the loader itself runs from dist/, prefer the dist SDK alias even
-    // in non-production mode (e.g. test-from-dist scenarios).
-    const loaderFromDist = /[\\/]dist[\\/]/.test(modulePath);
+    const normalizedModulePath = modulePath.replace(/\\/g, "/");
+    const isDistRuntime = normalizedModulePath.includes("/dist/");
     let cursor = path.dirname(modulePath);
     for (let i = 0; i < 6; i += 1) {
       const srcCandidate = path.join(cursor, "src", "plugin-sdk", params.srcFile);
       const distCandidate = path.join(cursor, "dist", "plugin-sdk", params.distFile);
-      const orderedCandidates =
-        isProduction || loaderFromDist
+      const orderedCandidates = isDistRuntime
+        ? [distCandidate, srcCandidate]
+        : isProduction
           ? isTest
             ? [distCandidate, srcCandidate]
             : [distCandidate]
@@ -97,6 +98,34 @@ const resolvePluginSdkCoreAlias = (): string | null => {
 
 const resolvePluginSdkTelegramAlias = (): string | null => {
   return resolvePluginSdkAliasFile({ srcFile: "telegram.ts", distFile: "telegram.js" });
+};
+
+const resolvePluginSdkDiscordAlias = (): string | null => {
+  return resolvePluginSdkAliasFile({ srcFile: "discord.ts", distFile: "discord.js" });
+};
+
+const resolvePluginSdkSlackAlias = (): string | null => {
+  return resolvePluginSdkAliasFile({ srcFile: "slack.ts", distFile: "slack.js" });
+};
+
+const resolvePluginSdkSignalAlias = (): string | null => {
+  return resolvePluginSdkAliasFile({ srcFile: "signal.ts", distFile: "signal.js" });
+};
+
+const resolvePluginSdkIMessageAlias = (): string | null => {
+  return resolvePluginSdkAliasFile({ srcFile: "imessage.ts", distFile: "imessage.js" });
+};
+
+const resolvePluginSdkWhatsAppAlias = (): string | null => {
+  return resolvePluginSdkAliasFile({ srcFile: "whatsapp.ts", distFile: "whatsapp.js" });
+};
+
+const resolvePluginSdkLineAlias = (): string | null => {
+  return resolvePluginSdkAliasFile({ srcFile: "line.ts", distFile: "line.js" });
+};
+
+export const __testing = {
+  resolvePluginSdkAliasFile,
 };
 
 function buildCacheKey(params: {
@@ -176,8 +205,6 @@ function createPluginRecord(params: {
     hookNames: [],
     channelIds: [],
     providerIds: [],
-    sttProviderIds: [],
-    ttsProviderIds: [],
     gatewayMethods: [],
     cliCommands: [],
     services: [],
@@ -266,7 +293,7 @@ function matchesPathMatcher(matcher: PathMatcher, sourcePath: string): boolean {
 }
 
 function buildProvenanceIndex(params: {
-  config: RemoteClawConfig;
+  config: OpenClawConfig;
   normalizedLoadPaths: string[];
 }): PluginProvenanceIndex {
   const loadPathMatcher = createPathMatcher();
@@ -475,12 +502,28 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     const pluginSdkAccountIdAlias = resolvePluginSdkAccountIdAlias();
     const pluginSdkCoreAlias = resolvePluginSdkCoreAlias();
     const pluginSdkTelegramAlias = resolvePluginSdkTelegramAlias();
+    const pluginSdkDiscordAlias = resolvePluginSdkDiscordAlias();
+    const pluginSdkSlackAlias = resolvePluginSdkSlackAlias();
+    const pluginSdkSignalAlias = resolvePluginSdkSignalAlias();
+    const pluginSdkIMessageAlias = resolvePluginSdkIMessageAlias();
+    const pluginSdkWhatsAppAlias = resolvePluginSdkWhatsAppAlias();
+    const pluginSdkLineAlias = resolvePluginSdkLineAlias();
     const aliasMap = {
       ...(pluginSdkAlias ? { "remoteclaw/plugin-sdk": pluginSdkAlias } : {}),
       ...(pluginSdkCoreAlias ? { "remoteclaw/plugin-sdk/core": pluginSdkCoreAlias } : {}),
       ...(pluginSdkTelegramAlias
         ? { "remoteclaw/plugin-sdk/telegram": pluginSdkTelegramAlias }
         : {}),
+      ...(pluginSdkDiscordAlias ? { "remoteclaw/plugin-sdk/discord": pluginSdkDiscordAlias } : {}),
+      ...(pluginSdkSlackAlias ? { "remoteclaw/plugin-sdk/slack": pluginSdkSlackAlias } : {}),
+      ...(pluginSdkSignalAlias ? { "remoteclaw/plugin-sdk/signal": pluginSdkSignalAlias } : {}),
+      ...(pluginSdkIMessageAlias
+        ? { "remoteclaw/plugin-sdk/imessage": pluginSdkIMessageAlias }
+        : {}),
+      ...(pluginSdkWhatsAppAlias
+        ? { "remoteclaw/plugin-sdk/whatsapp": pluginSdkWhatsAppAlias }
+        : {}),
+      ...(pluginSdkLineAlias ? { "remoteclaw/plugin-sdk/line": pluginSdkLineAlias } : {}),
       ...(pluginSdkAccountIdAlias
         ? { "remoteclaw/plugin-sdk/account-id": pluginSdkAccountIdAlias }
         : {}),
@@ -502,6 +545,10 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   );
 
   const seenIds = new Map<string, PluginRecord["origin"]>();
+  const memorySlot = normalized.slots.memory;
+  let selectedMemoryPluginId: string | null = null;
+  let memorySlotMatched = false;
+
   for (const candidate of discovery.candidates) {
     const manifestRecord = manifestByRoot.get(candidate.rootDir);
     if (!manifestRecord) {
@@ -574,27 +621,24 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       continue;
     }
 
-    if (
-      !isPathInsideWithRealpath(candidate.rootDir, candidate.source, {
-        requireRealpath: true,
-      })
-    ) {
-      record.status = "error";
-      record.error = "plugin entry path escapes plugin root";
-      registry.plugins.push(record);
-      seenIds.set(pluginId, candidate.origin);
-      registry.diagnostics.push({
-        level: "error",
-        pluginId: record.id,
-        source: record.source,
-        message: record.error,
-      });
+    const pluginRoot = safeRealpathOrResolve(candidate.rootDir);
+    const opened = openBoundaryFileSync({
+      absolutePath: candidate.source,
+      rootPath: pluginRoot,
+      boundaryLabel: "plugin root",
+      rejectHardlinks: candidate.origin !== "bundled",
+      skipLexicalRootCheck: true,
+    });
+    if (!opened.ok) {
+      pushPluginLoadError("plugin entry path escapes plugin root or fails alias checks");
       continue;
     }
+    const safeSource = opened.path;
+    fs.closeSync(opened.fd);
 
     let mod: RemoteClawPluginModule | null = null;
     try {
-      mod = getJiti()(candidate.source) as RemoteClawPluginModule;
+      mod = getJiti()(safeSource) as RemoteClawPluginModule;
     } catch (err) {
       recordPluginError({
         logger,
@@ -637,6 +681,30 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       });
     }
     record.kind = definition?.kind ?? record.kind;
+
+    if (record.kind === "memory" && memorySlot === record.id) {
+      memorySlotMatched = true;
+    }
+
+    const memoryDecision = resolveMemorySlotDecision({
+      id: record.id,
+      kind: record.kind,
+      slot: memorySlot,
+      selectedId: selectedMemoryPluginId,
+    });
+
+    if (!memoryDecision.enabled) {
+      record.enabled = false;
+      record.status = "disabled";
+      record.error = memoryDecision.reason;
+      registry.plugins.push(record);
+      seenIds.set(pluginId, candidate.origin);
+      continue;
+    }
+
+    if (memoryDecision.selected && record.kind === "memory") {
+      selectedMemoryPluginId = record.id;
+    }
 
     const validatedConfig = validatePluginConfig({
       schema: manifestRecord.configSchema,
@@ -694,6 +762,13 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     }
   }
 
+  if (typeof memorySlot === "string" && !memorySlotMatched) {
+    registry.diagnostics.push({
+      level: "warn",
+      message: `memory slot plugin not found or not marked as memory: ${String(memorySlot)}`,
+    });
+  }
+
   warnAboutUntrackedLoadedPlugins({
     registry,
     provenance,
@@ -707,5 +782,10 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   return registry;
 }
 
-/** @internal Exposed for unit tests only. */
-export const __testing = { resolvePluginSdkAliasFile };
+function safeRealpathOrResolve(value: string): string {
+  try {
+    return fs.realpathSync(value);
+  } catch {
+    return path.resolve(value);
+  }
+}

@@ -1,9 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import {
-  validateVoiceCredentials,
-  type GatewayRequestHandlerOptions,
-  type RemoteClawPluginApi,
-} from "remoteclaw/plugin-sdk";
+import type { GatewayRequestHandlerOptions, RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
 import { registerVoiceCallCli } from "./src/cli.js";
 import {
   VoiceCallConfigSchema,
@@ -501,19 +497,6 @@ const voiceCallPlugin = {
         if (!config.enabled) {
           return;
         }
-
-        const credentials = await validateVoiceCredentials(api.config);
-        if (!credentials.stt.available) {
-          api.logger.warn(
-            "[voice-call] No STT credentials found. Voice calls require a speech-to-text provider (openai, groq, deepgram, google, or mistral).",
-          );
-        }
-        if (!credentials.tts.available) {
-          api.logger.warn(
-            "[voice-call] No TTS credentials found. Voice calls require a text-to-speech provider (openai, elevenlabs, or edge).",
-          );
-        }
-
         try {
           await ensureRuntime();
         } catch (err) {

@@ -1,4 +1,4 @@
-import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk";
+import type { OpenClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk/discord";
 import { describe, expect, it, vi } from "vitest";
 import { discordPlugin } from "./channel.js";
 import { setDiscordRuntime } from "./runtime.js";
@@ -15,7 +15,7 @@ describe("discordPlugin outbound", () => {
     } as unknown as PluginRuntime);
 
     const result = await discordPlugin.outbound!.sendMedia!({
-      cfg: {} as RemoteClawConfig,
+      cfg: {} as OpenClawConfig,
       to: "channel:123",
       text: "hi",
       mediaUrl: "/tmp/image.png",

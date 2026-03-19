@@ -2,8 +2,8 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/core";
 import { tlonPlugin } from "./src/channel.js";
 import { setTlonRuntime } from "./src/runtime.js";
 
@@ -153,9 +153,9 @@ const plugin = {
         },
         required: ["command"],
       },
-      async execute(_id: string, params: Record<string, unknown>) {
+      async execute(_id: string, params: { command: string }) {
         try {
-          const args = shellSplit(params.command as string);
+          const args = shellSplit(params.command);
 
           // Validate first argument is a whitelisted tlon subcommand
           const subcommand = args[0];

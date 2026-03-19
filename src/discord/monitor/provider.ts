@@ -500,6 +500,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       runtime,
       setStatus: opts.setStatus,
       abortSignal: opts.abortSignal,
+      listenerTimeoutMs: eventQueueOpts.listenerTimeout,
       botUserId,
       guildHistories,
       historyLimit,
@@ -524,7 +525,9 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
 
     registerDiscordListener(
       client.listeners,
-      new DiscordMessageListener(messageHandler, logger, trackInboundEvent),
+      new DiscordMessageListener(messageHandler, logger, trackInboundEvent, {
+        timeoutMs: eventQueueOpts.listenerTimeout,
+      }),
     );
     const reactionListenerOptions = {
       cfg,

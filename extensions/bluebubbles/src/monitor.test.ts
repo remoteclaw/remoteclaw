@@ -129,6 +129,11 @@ function createMockRuntime(): PluginRuntime {
         vi.fn() as unknown as PluginRuntime["tools"]["createMemorySearchTool"],
       registerMemoryCli: vi.fn() as unknown as PluginRuntime["tools"]["registerMemoryCli"],
     },
+    events: {
+      onAgentEvent: vi.fn() as unknown as PluginRuntime["events"]["onAgentEvent"],
+      onSessionTranscriptUpdate:
+        vi.fn() as unknown as PluginRuntime["events"]["onSessionTranscriptUpdate"],
+    },
     channel: {
       text: {
         chunkMarkdownText:

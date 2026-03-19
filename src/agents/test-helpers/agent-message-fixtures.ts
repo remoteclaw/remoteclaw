@@ -1,7 +1,11 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { AssistantMessage, ToolResultMessage, Usage, UserMessage } from "@mariozechner/pi-ai";
+import type {
+  AgentMessage,
+  AssistantMessage,
+  ToolResultMessage,
+  UserMessage,
+} from "../agent-types.js";
 
-const ZERO_USAGE: Usage = {
+const ZERO_USAGE: AssistantMessage["usage"] = {
   input: 0,
   output: 0,
   cacheRead: 0,

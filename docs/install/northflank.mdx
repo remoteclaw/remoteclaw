@@ -1,5 +1,9 @@
 ---
-title: Deploy on Northflank
+summary: "Deploy RemoteClaw on Northflank with one-click template"
+read_when:
+  - Deploying RemoteClaw to Northflank
+  - You want a one-click cloud deploy with browser-based setup
+title: "Northflank"
 ---
 
 Deploy RemoteClaw on Northflank with a one-click template and finish setup in your browser.
@@ -21,18 +25,18 @@ and you configure everything via the `/setup` web wizard.
 ## What you get
 
 - Hosted RemoteClaw Gateway + Control UI
-- Web setup wizard at `/setup` (no terminal commands)
+- Web setup at `/setup` (no terminal commands)
 - Persistent storage via Northflank Volume (`/data`) so config/credentials/workspace survive redeploys
 
 ## Setup flow
 
 1. Visit `https://<your-northflank-domain>/setup` and enter your `SETUP_PASSWORD`.
-2. Select a CLI agent runtime and configure its API key.
-3. (Optional) Add channel tokens (Telegram, Discord, Slack).
+2. Choose a model/auth provider and paste your key.
+3. (Optional) Add Telegram/Discord/Slack tokens.
 4. Click **Run setup**.
 5. Open the Control UI at `https://<your-northflank-domain>/remoteclaw`
 
-If Telegram DMs are set to pairing, the setup wizard can approve the pairing code.
+If Telegram DMs are set to pairing, web setup can approve the pairing code.
 
 ## Connect a channel
 
@@ -42,3 +46,9 @@ instructions, see the channel docs:
 - [Telegram](/channels/telegram) (fastest — just a bot token)
 - [Discord](/channels/discord)
 - [All channels](/channels)
+
+## Next steps
+
+- Set up messaging channels: [Channels](/channels)
+- Configure the Gateway: [Gateway configuration](/gateway/configuration)
+- Keep RemoteClaw up to date: [Updating](/install/updating)

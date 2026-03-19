@@ -25,7 +25,6 @@ import {
   resolveDefaultGroupPolicy,
   resolveChannelMediaMaxBytes,
   warnMissingProviderGroupPolicyFallbackOnce,
-  listSkillCommandsForAgents,
   type HistoryEntry,
 } from "remoteclaw/plugin-sdk";
 import { getMattermostRuntime } from "../runtime.js";
@@ -314,7 +313,8 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
 
       if (slashConfig.nativeSkills === true) {
         try {
-          const skillCommands = listSkillCommandsForAgents({ cfg: cfg as any });
+          // Skills marketplace is gutted in RemoteClaw — stub returns empty array
+          const skillCommands: { name?: string; description?: string }[] = [];
           for (const spec of skillCommands) {
             const name = typeof spec.name === "string" ? spec.name.trim() : "";
             if (!name) continue;

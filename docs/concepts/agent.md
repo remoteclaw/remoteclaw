@@ -1,13 +1,13 @@
 ---
-description: "Agent runtime and workspace contract"
+summary: "Agent runtime, workspace contract, and session bootstrap"
 read_when:
-  - Changing agent runtime, workspace, or session behavior
+  - Changing agent runtime, workspace bootstrap, or session behavior
 title: "Agent Runtime"
 ---
 
-# Agent Runtime 🤖
+# Agent Runtime
 
-RemoteClaw runs agent CLIs (Claude, Gemini, Codex, OpenCode) as subprocess runtimes.
+RemoteClaw runs a single embedded agent runtime.
 
 ## Workspace (required)
 
@@ -21,26 +21,37 @@ If `agents.defaults.sandbox` is enabled, non-main sessions can override this wit
 per-session workspaces under `agents.defaults.sandbox.workspaceRoot` (see
 [Gateway configuration](/gateway/configuration)).
 
-## Workspace files
+## Bootstrap files (injected)
 
-The workspace is a plain working directory. Agents bring their own configuration
-(e.g. `CLAUDE.md` for Claude Code, `.gemini/` for Gemini CLI). RemoteClaw does
-not seed or manage template files in the workspace.
+Inside `agents.defaults.workspace`, RemoteClaw expects these user-editable files:
 
-Files that RemoteClaw may read or write:
+- `AGENTS.md` — operating instructions + “memory”
+- `SOUL.md` — persona, boundaries, tone
+- `TOOLS.md` — user-maintained tool notes (e.g. `imsg`, `sag`, conventions)
+- `BOOTSTRAP.md` — one-time first-run ritual (deleted after completion)
+- `IDENTITY.md` — agent name/vibe/emoji
+- `USER.md` — user profile + preferred address
 
-- `HEARTBEAT.md` — optional tiny checklist for heartbeat runs
-- Boot prompt file — configurable path via `agents.defaults.boot.file`
-- `memory/YYYY-MM-DD.md` — daily memory log
-- `MEMORY.md` — optional curated long-term memory
+On the first turn of a new session, RemoteClaw injects the contents of these files directly into the agent context.
 
-See [Agent workspace](/concepts/agent-workspace) for the full layout.
+Blank files are skipped. Large files are trimmed and truncated with a marker so prompts stay lean (read the file for full content).
+
+If a file is missing, RemoteClaw injects a single “missing file” marker line (and `remoteclaw setup` will create a safe default template).
+
+`BOOTSTRAP.md` is only created for a **brand new workspace** (no other bootstrap files present). If you delete it after completing the ritual, it should not be recreated on later restarts.
+
+To disable bootstrap file creation entirely (for pre-seeded workspaces), set:
+
+```json5
+{ agent: { skipBootstrap: true } }
+```
 
 ## Built-in tools
 
-The CLI agent brings its own tool set (e.g., Claude Code's built-in
-read/write/bash tools). RemoteClaw exposes additional MCP tools (messaging,
-sessions, cron, canvas, etc.) via the gateway.
+Core tools (read/exec/edit/write and related system tools) are always available,
+subject to tool policy. `apply_patch` is optional and gated by
+`tools.exec.applyPatch`. `TOOLS.md` does **not** control which tools exist; it’s
+guidance for how _you_ want them used.
 
 ## Skills
 
@@ -50,7 +61,11 @@ RemoteClaw loads skills from three locations (workspace wins on name conflict):
 - Managed/local: `~/.remoteclaw/skills`
 - Workspace: `<workspace>/skills`
 
-Skills loading from each location can be enabled or disabled via config (see `skills` in [Gateway configuration](/gateway/configuration)).
+Skills can be gated by config/env (see `skills` in [Gateway configuration](/gateway/configuration)).
+
+## Runtime boundaries
+
+Session management, discovery, and tool wiring are RemoteClaw-owned.
 
 ## Sessions
 
@@ -59,7 +74,7 @@ Session transcripts are stored as JSONL at:
 - `~/.remoteclaw/agents/<agentId>/sessions/<SessionId>.jsonl`
 
 The session ID is stable and chosen by RemoteClaw.
-Session folders from prior RemoteClaw versions (Pi/Tau) are **not** read.
+Legacy session folders from other tools are not read.
 
 ## Steering while streaming
 
@@ -85,6 +100,14 @@ Verbose tool summaries are emitted at tool start (no debounce); Control UI
 streams tool output via agent events when available.
 More details: [Streaming + chunking](/concepts/streaming).
 
+## Model refs
+
+Model refs in config (for example `agents.defaults.model` and `agents.defaults.models`) are parsed by splitting on the **first** `/`.
+
+- Use `provider/model` when configuring models.
+- If the model ID itself contains `/` (OpenRouter-style), include the provider prefix (example: `openrouter/moonshotai/kimi-k2`).
+- If you omit the provider, RemoteClaw treats the input as an alias or a model for the **default provider** (only works when there is no `/` in the model ID).
+
 ## Configuration (minimal)
 
 At minimum, set:
@@ -94,4 +117,4 @@ At minimum, set:
 
 ---
 
-_Next: [Group Chats](/channels/group-messages)_ 🦀
+_Next: [Group Chats](/channels/group-messages)_ 🦞

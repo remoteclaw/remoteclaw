@@ -21,6 +21,7 @@ import { isPathInside, safeStatSync } from "./path-safety.js";
 import { createPluginRegistry, type PluginRecord, type PluginRegistry } from "./registry.js";
 import { setActivePluginRegistry } from "./runtime.js";
 import { createPluginRuntime } from "./runtime/index.js";
+import type { PluginRuntime } from "./runtime/types.js";
 import { validateJsonSchemaValue } from "./schema-validator.js";
 import type {
   RemoteClawPluginDefinition,
@@ -88,6 +89,14 @@ const resolvePluginSdkAlias = (): string | null =>
 
 const resolvePluginSdkAccountIdAlias = (): string | null => {
   return resolvePluginSdkAliasFile({ srcFile: "account-id.ts", distFile: "account-id.js" });
+};
+
+const resolvePluginSdkCoreAlias = (): string | null => {
+  return resolvePluginSdkAliasFile({ srcFile: "core.ts", distFile: "core.js" });
+};
+
+const resolvePluginSdkTelegramAlias = (): string | null => {
+  return resolvePluginSdkAliasFile({ srcFile: "telegram.ts", distFile: "telegram.js" });
 };
 
 function buildCacheKey(params: {
@@ -390,7 +399,39 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
   // Clear previously registered plugin commands before reloading
   clearPluginCommands();
 
-  const runtime = createPluginRuntime();
+  // Lazily initialize the runtime so startup paths that discover/skip plugins do
+  // not eagerly load every channel runtime dependency.
+  let resolvedRuntime: PluginRuntime | null = null;
+  const resolveRuntime = (): PluginRuntime => {
+    resolvedRuntime ??= createPluginRuntime();
+    return resolvedRuntime;
+  };
+  const runtime = new Proxy({} as PluginRuntime, {
+    get(_target, prop, receiver) {
+      return Reflect.get(resolveRuntime(), prop, receiver);
+    },
+    set(_target, prop, value, receiver) {
+      return Reflect.set(resolveRuntime(), prop, value, receiver);
+    },
+    has(_target, prop) {
+      return Reflect.has(resolveRuntime(), prop);
+    },
+    ownKeys() {
+      return Reflect.ownKeys(resolveRuntime() as object);
+    },
+    getOwnPropertyDescriptor(_target, prop) {
+      return Reflect.getOwnPropertyDescriptor(resolveRuntime() as object, prop);
+    },
+    defineProperty(_target, prop, attributes) {
+      return Reflect.defineProperty(resolveRuntime() as object, prop, attributes);
+    },
+    deleteProperty(_target, prop) {
+      return Reflect.deleteProperty(resolveRuntime() as object, prop);
+    },
+    getPrototypeOf() {
+      return Reflect.getPrototypeOf(resolveRuntime() as object);
+    },
+  });
   const { registry, createApi } = createPluginRegistry({
     logger,
     runtime,
@@ -432,17 +473,24 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     }
     const pluginSdkAlias = resolvePluginSdkAlias();
     const pluginSdkAccountIdAlias = resolvePluginSdkAccountIdAlias();
+    const pluginSdkCoreAlias = resolvePluginSdkCoreAlias();
+    const pluginSdkTelegramAlias = resolvePluginSdkTelegramAlias();
+    const aliasMap = {
+      ...(pluginSdkAlias ? { "remoteclaw/plugin-sdk": pluginSdkAlias } : {}),
+      ...(pluginSdkCoreAlias ? { "remoteclaw/plugin-sdk/core": pluginSdkCoreAlias } : {}),
+      ...(pluginSdkTelegramAlias
+        ? { "remoteclaw/plugin-sdk/telegram": pluginSdkTelegramAlias }
+        : {}),
+      ...(pluginSdkAccountIdAlias
+        ? { "remoteclaw/plugin-sdk/account-id": pluginSdkAccountIdAlias }
+        : {}),
+    };
     jitiLoader = createJiti(import.meta.url, {
       interopDefault: true,
       extensions: [".ts", ".tsx", ".mts", ".cts", ".mtsx", ".ctsx", ".js", ".mjs", ".cjs", ".json"],
-      ...(pluginSdkAlias || pluginSdkAccountIdAlias
+      ...(Object.keys(aliasMap).length > 0
         ? {
-            alias: {
-              ...(pluginSdkAlias ? { "remoteclaw/plugin-sdk": pluginSdkAlias } : {}),
-              ...(pluginSdkAccountIdAlias
-                ? { "remoteclaw/plugin-sdk/account-id": pluginSdkAccountIdAlias }
-                : {}),
-            },
+            alias: aliasMap,
           }
         : {}),
     });

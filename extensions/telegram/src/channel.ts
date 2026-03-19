@@ -31,7 +31,7 @@ import {
   type RemoteClawConfig,
   type ResolvedTelegramAccount,
   type TelegramProbe,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/telegram";
 import { getTelegramRuntime } from "./runtime.js";
 
 const meta = getChatChannelMeta("telegram");

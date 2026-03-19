@@ -124,6 +124,11 @@ Current migrations:
 - `agent.*` → `agents.defaults` + `tools.*` (tools/exec/sandbox/subagents)
 - `browser.ssrfPolicy.allowPrivateNetwork` → `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork`
 
+Doctor warnings also include account-default guidance for multi-account channels:
+
+- If two or more `channels.<channel>.accounts` entries are configured without `channels.<channel>.defaultAccount` or `accounts.default`, doctor warns that fallback routing can pick an unexpected account.
+- If `channels.<channel>.defaultAccount` is set to an unknown account ID, doctor warns and lists configured account IDs.
+
 ### 3) Legacy state migrations (disk layout)
 
 Doctor can migrate older on-disk layouts into the current structure:

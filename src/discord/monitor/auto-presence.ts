@@ -1,5 +1,5 @@
 import type { Activity, UpdatePresenceData } from "@buape/carbon/gateway";
-import { ensureAuthProfileStore } from "../../auth/profiles.js";
+import { ensureAuthProfileStore } from "../../auth/index.js";
 import type { AuthProfileFailureReason, AuthProfileStore } from "../../auth/types.js";
 import {
   clearExpiredCooldowns,
@@ -101,12 +101,7 @@ function isExhaustedUnavailableReason(reason: AuthProfileFailureReason | null): 
   if (!reason) {
     return false;
   }
-  return (
-    reason === "rate_limit" ||
-    reason === "billing" ||
-    reason === "auth" ||
-    reason === "auth_permanent"
-  );
+  return reason === "rate_limit" || reason === "billing" || reason === "auth";
 }
 
 function formatUnavailableReason(reason: AuthProfileFailureReason | null): string {

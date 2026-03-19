@@ -14,8 +14,6 @@ import {
 import { withTempHome } from "./test-helpers.js";
 import type { RemoteClawConfig } from "./types.js";
 
-const IS_WINDOWS = process.platform === "win32";
-
 describe("config backup rotation", () => {
   it("keeps a 5-deep backup ring for config writes", async () => {
     await withTempHome(async () => {

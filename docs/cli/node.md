@@ -111,6 +111,10 @@ remoteclaw devices list
 remoteclaw devices approve <requestId>
 ```
 
+If the node retries pairing with changed auth details (role/scopes/public key),
+the previous pending request is superseded and a new `requestId` is created.
+Run `openclaw devices list` again before approval.
+
 The node host stores its node id, token, display name, and gateway connection info in
 `~/.remoteclaw/node.json`.
 

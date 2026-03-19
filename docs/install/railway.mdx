@@ -1,5 +1,9 @@
 ---
-title: Deploy on Railway
+summary: "Deploy RemoteClaw on Railway with one-click template"
+read_when:
+  - Deploying RemoteClaw to Railway
+  - You want a one-click cloud deploy with browser-based setup
+title: "Railway"
 ---
 
 Deploy RemoteClaw on Railway with a one-click template and finish setup in your browser.
@@ -29,13 +33,13 @@ Railway will either:
 
 Then open:
 
-- `https://<your-railway-domain>/setup` — setup wizard (password protected)
+- `https://<your-railway-domain>/setup` — web setup (password protected)
 - `https://<your-railway-domain>/remoteclaw` — Control UI
 
 ## What you get
 
 - Hosted RemoteClaw Gateway + Control UI
-- Web setup wizard at `/setup` (no terminal commands)
+- Web setup at `/setup` (no terminal commands)
 - Persistent storage via Railway Volume (`/data`) so config/credentials/workspace survive redeploys
 - Backup export at `/setup/export` to migrate off Railway later
 
@@ -59,18 +63,18 @@ Set these variables on the service:
 
 - `SETUP_PASSWORD` (required)
 - `PORT=8080` (required — must match the port in Public Networking)
-- `REMOTECLAW_STATE_DIR=/data/.remoteclaw` (recommended)
-- `REMOTECLAW_WORKSPACE_DIR=/data/workspace` (recommended)
-- `REMOTECLAW_GATEWAY_TOKEN` (recommended; treat as an admin secret)
+- `OPENCLAW_STATE_DIR=/data/.remoteclaw` (recommended)
+- `OPENCLAW_WORKSPACE_DIR=/data/workspace` (recommended)
+- `OPENCLAW_GATEWAY_TOKEN` (recommended; treat as an admin secret)
 
 ## Setup flow
 
 1. Visit `https://<your-railway-domain>/setup` and enter your `SETUP_PASSWORD`.
-2. Select a CLI agent runtime and configure its API key.
-3. (Optional) Add channel tokens (Telegram, Discord, Slack).
+2. Choose a model/auth provider and paste your key.
+3. (Optional) Add Telegram/Discord/Slack tokens.
 4. Click **Run setup**.
 
-If Telegram DMs are set to pairing, the setup wizard can approve the pairing code.
+If Telegram DMs are set to pairing, web setup can approve the pairing code.
 
 ## Connect a channel
 
@@ -88,3 +92,9 @@ Download a backup at:
 - `https://<your-railway-domain>/setup/export`
 
 This exports your RemoteClaw state + workspace so you can migrate to another host without losing config or memory.
+
+## Next steps
+
+- Set up messaging channels: [Channels](/channels)
+- Configure the Gateway: [Gateway configuration](/gateway/configuration)
+- Keep RemoteClaw up to date: [Updating](/install/updating)

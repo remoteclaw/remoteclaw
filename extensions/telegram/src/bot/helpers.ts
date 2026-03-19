@@ -1,9 +1,13 @@
 import type { Chat, Message, MessageOrigin, User } from "@grammyjs/types";
-import { formatLocationText, type NormalizedLocation } from "../../../../src/channels/location.js";
-import { resolveTelegramPreviewStreamMode } from "../../../../src/config/discord-preview-streaming.js";
-import type { TelegramGroupConfig, TelegramTopicConfig } from "../../../../src/config/types.js";
-import { readChannelAllowFromStore } from "../../../../src/pairing/pairing-store.js";
-import { normalizeAccountId } from "../../../../src/routing/session-key.js";
+import { formatLocationText, type NormalizedLocation } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveTelegramPreviewStreamMode } from "remoteclaw/plugin-sdk/config-runtime";
+import type {
+  TelegramDirectConfig,
+  TelegramGroupConfig,
+  TelegramTopicConfig,
+} from "remoteclaw/plugin-sdk/config-runtime";
+import { readChannelAllowFromStore } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 import { firstDefined, normalizeAllowFrom, type NormalizedAllowFrom } from "../bot-access.js";
 import type { TelegramStreamMode } from "./types.js";
 
@@ -17,34 +21,46 @@ export type TelegramThreadSpec = {
 export async function resolveTelegramGroupAllowFromContext(params: {
   chatId: string | number;
   accountId?: string;
-  dmPolicy?: string;
+  isGroup?: boolean;
   isForum?: boolean;
   messageThreadId?: number | null;
   groupAllowFrom?: Array<string | number>;
+  readChannelAllowFromStore?: typeof readChannelAllowFromStore;
   resolveTelegramGroupConfig: (
     chatId: string | number,
     messageThreadId?: number,
-  ) => { groupConfig?: TelegramGroupConfig; topicConfig?: TelegramTopicConfig };
+  ) => {
+    groupConfig?: TelegramGroupConfig | TelegramDirectConfig;
+    topicConfig?: TelegramTopicConfig;
+  };
 }): Promise<{
   resolvedThreadId?: number;
+  dmThreadId?: number;
   storeAllowFrom: string[];
-  groupConfig?: TelegramGroupConfig;
+  groupConfig?: TelegramGroupConfig | TelegramDirectConfig;
   topicConfig?: TelegramTopicConfig;
   groupAllowOverride?: Array<string | number>;
   effectiveGroupAllow: NormalizedAllowFrom;
   hasGroupAllowOverride: boolean;
 }> {
   const accountId = normalizeAccountId(params.accountId);
-  const resolvedThreadId = resolveTelegramForumThreadId({
+  // Use resolveTelegramThreadSpec to handle both forum groups AND DM topics
+  const threadSpec = resolveTelegramThreadSpec({
+    isGroup: params.isGroup ?? false,
     isForum: params.isForum,
     messageThreadId: params.messageThreadId,
   });
-  const storeAllowFrom = await readChannelAllowFromStore("telegram", process.env, accountId).catch(
-    () => [],
-  );
+  const resolvedThreadId = threadSpec.scope === "forum" ? threadSpec.id : undefined;
+  const dmThreadId = threadSpec.scope === "dm" ? threadSpec.id : undefined;
+  const threadIdForConfig = resolvedThreadId ?? dmThreadId;
+  const storeAllowFrom = await (params.readChannelAllowFromStore ?? readChannelAllowFromStore)(
+    "telegram",
+    process.env,
+    accountId,
+  ).catch(() => []);
   const { groupConfig, topicConfig } = params.resolveTelegramGroupConfig(
     params.chatId,
-    resolvedThreadId,
+    threadIdForConfig,
   );
   const groupAllowOverride = firstDefined(topicConfig?.allowFrom, groupConfig?.allowFrom);
   // Group sender access must remain explicit (groupAllowFrom/per-group allowFrom only).
@@ -53,6 +69,7 @@ export async function resolveTelegramGroupAllowFromContext(params: {
   const hasGroupAllowOverride = typeof groupAllowOverride !== "undefined";
   return {
     resolvedThreadId,
+    dmThreadId,
     storeAllowFrom,
     groupConfig,
     topicConfig,
@@ -389,20 +406,7 @@ export function describeReplyTarget(msg: Message): TelegramReplyTarget | null {
 
   const replyLike = reply ?? externalReply;
   if (!body && replyLike) {
-<<<<<<< HEAD
-    const replyBody = (
-      typeof replyLike.text === "string"
-        ? replyLike.text
-        : typeof replyLike.caption === "string"
-          ? replyLike.caption
-          : ""
-    ).trim();
-||||||| parent of 988bd782f7 (fix: restore Telegram topic announce delivery (#51688) (thanks @mvanhorn))
     const replyBody = (replyLike.text ?? replyLike.caption ?? "").trim();
-=======
-    const rawText = replyLike.text ?? replyLike.caption ?? "";
-    const replyBody = (typeof rawText === "string" ? rawText : "").trim();
->>>>>>> 988bd782f7 (fix: restore Telegram topic announce delivery (#51688) (thanks @mvanhorn))
     body = replyBody;
     if (!body) {
       body = resolveTelegramMediaPlaceholder(replyLike) ?? "";

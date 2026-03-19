@@ -1,13 +1,12 @@
-import {
-  buildModelsProviderData,
-  listSkillCommandsForAgents,
-} from "remoteclaw/plugin-sdk/command-auth";
 import { loadConfig, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
 import { readChannelAllowFromStore } from "remoteclaw/plugin-sdk/conversation-runtime";
 import { upsertChannelPairingRequest } from "remoteclaw/plugin-sdk/conversation-runtime";
 import { enqueueSystemEvent } from "remoteclaw/plugin-sdk/infra-runtime";
-import { dispatchReplyWithBufferedBlockDispatcher } from "remoteclaw/plugin-sdk/reply-runtime";
-import { loadWebMedia } from "remoteclaw/plugin-sdk/web-media";
+import {
+  buildModelsProviderData,
+  dispatchReplyWithBufferedBlockDispatcher,
+  listSkillCommandsForAgents,
+} from "remoteclaw/plugin-sdk/reply-runtime";
 import { wasSentByBot } from "./sent-message-cache.js";
 
 export type TelegramBotDeps = {
@@ -17,7 +16,6 @@ export type TelegramBotDeps = {
   upsertChannelPairingRequest: typeof upsertChannelPairingRequest;
   enqueueSystemEvent: typeof enqueueSystemEvent;
   dispatchReplyWithBufferedBlockDispatcher: typeof dispatchReplyWithBufferedBlockDispatcher;
-  loadWebMedia: typeof loadWebMedia;
   buildModelsProviderData: typeof buildModelsProviderData;
   listSkillCommandsForAgents: typeof listSkillCommandsForAgents;
   wasSentByBot: typeof wasSentByBot;
@@ -41,9 +39,6 @@ export const defaultTelegramBotDeps: TelegramBotDeps = {
   },
   get dispatchReplyWithBufferedBlockDispatcher() {
     return dispatchReplyWithBufferedBlockDispatcher;
-  },
-  get loadWebMedia() {
-    return loadWebMedia;
   },
   get buildModelsProviderData() {
     return buildModelsProviderData;

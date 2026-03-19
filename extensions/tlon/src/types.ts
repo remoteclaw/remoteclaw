@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "remoteclaw/plugin-sdk/tlon";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 
 export type TlonResolvedAccount = {
   accountId: string;

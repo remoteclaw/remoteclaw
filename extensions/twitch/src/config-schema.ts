@@ -1,4 +1,4 @@
-import { MarkdownConfigSchema } from "remoteclaw/plugin-sdk/twitch";
+import { MarkdownConfigSchema } from "remoteclaw/plugin-sdk";
 import { z } from "zod";
 
 /**

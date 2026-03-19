@@ -1,7 +1,4 @@
-import {
-  resolveAllowlistMatchByCandidates,
-  type AllowlistMatch,
-} from "remoteclaw/plugin-sdk/matrix";
+import { resolveAllowlistMatchByCandidates, type AllowlistMatch } from "remoteclaw/plugin-sdk";
 
 function normalizeAllowList(list?: Array<string | number>) {
   return (list ?? []).map((entry) => String(entry).trim()).filter(Boolean);

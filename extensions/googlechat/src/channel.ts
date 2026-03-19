@@ -18,9 +18,9 @@ import {
   type ChannelMessageActionAdapter,
   type ChannelPlugin,
   type ChannelStatusIssue,
-  type OpenClawConfig,
-} from "remoteclaw/plugin-sdk/googlechat";
-import { GoogleChatConfigSchema } from "remoteclaw/plugin-sdk/googlechat";
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk";
+import { GoogleChatConfigSchema } from "remoteclaw/plugin-sdk";
 import {
   listGoogleChatAccountIds,
   resolveDefaultGoogleChatAccountId,

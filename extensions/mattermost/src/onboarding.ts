@@ -1,12 +1,9 @@
+import type {
+  ChannelOnboardingAdapter,
+  RemoteClawConfig,
+  WizardPrompter,
+} from "remoteclaw/plugin-sdk";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import {
-  hasConfiguredSecretInput,
-  promptSingleChannelSecretInput,
-  type ChannelOnboardingAdapter,
-  type OpenClawConfig,
-  type SecretInput,
-  type WizardPrompter,
-} from "remoteclaw/plugin-sdk/mattermost";
 import {
   listMattermostAccountIds,
   resolveDefaultMattermostAccountId,

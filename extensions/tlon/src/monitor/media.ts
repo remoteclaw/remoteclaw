@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import * as path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/tlon";
+import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk";
 import { getDefaultSsrFPolicy } from "../urbit/context.js";
 
 // Default to RemoteClaw workspace media directory

@@ -4,7 +4,8 @@ import {
   readNumberParam,
   readReactionParams,
   readStringParam,
-} from "remoteclaw/plugin-sdk/matrix";
+  type AgentToolResult,
+} from "remoteclaw/plugin-sdk";
 import {
   deleteMatrixMessage,
   editMatrixMessage,

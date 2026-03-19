@@ -1,4 +1,4 @@
-import { normalizeWebhookPath, type OpenClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
+import { normalizeWebhookPath, type RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import type { ResolvedBlueBubblesAccount } from "./accounts.js";
 import { getBlueBubblesRuntime } from "./runtime.js";
 import type { BlueBubblesAccountConfig } from "./types.js";

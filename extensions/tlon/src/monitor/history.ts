@@ -1,4 +1,4 @@
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk/tlon";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { extractMessageText } from "./utils.js";
 
 /**

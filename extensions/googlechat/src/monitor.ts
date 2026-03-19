@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { OpenClawConfig } from "remoteclaw/plugin-sdk/googlechat";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import {
   GROUP_POLICY_BLOCKED_LABEL,
   createScopedPairingAccess,
@@ -14,7 +14,12 @@ import {
   resolveInboundRouteEnvelopeBuilderWithRuntime,
   resolveSingleWebhookTargetAsync,
   resolveWebhookPath,
-} from "remoteclaw/plugin-sdk/googlechat";
+  resolveWebhookTargets,
+  warnMissingProviderGroupPolicyFallbackOnce,
+  requestBodyErrorToText,
+  resolveMentionGatingWithBypass,
+  resolveDmGroupAccessWithLists,
+} from "remoteclaw/plugin-sdk";
 import { type ResolvedGoogleChatAccount } from "./accounts.js";
 import {
   downloadGoogleChatMedia,

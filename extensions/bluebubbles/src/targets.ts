@@ -5,7 +5,7 @@ import {
   type ParsedChatTarget,
   resolveServicePrefixedAllowTarget,
   resolveServicePrefixedTarget,
-} from "remoteclaw/plugin-sdk/bluebubbles";
+} from "remoteclaw/plugin-sdk";
 
 export type BlueBubblesService = "imessage" | "sms" | "auto";
 

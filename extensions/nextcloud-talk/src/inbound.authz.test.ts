@@ -1,4 +1,4 @@
-import type { PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk/nextcloud-talk";
+import type { PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import type { ResolvedNextcloudTalkAccount } from "./accounts.js";
 import { handleNextcloudTalkInbound } from "./inbound.js";

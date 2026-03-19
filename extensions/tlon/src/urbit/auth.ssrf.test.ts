@@ -1,5 +1,5 @@
-import type { LookupFn } from "remoteclaw/plugin-sdk/tlon";
-import { SsrFBlockedError } from "remoteclaw/plugin-sdk/tlon";
+import type { LookupFn } from "remoteclaw/plugin-sdk";
+import { SsrFBlockedError } from "remoteclaw/plugin-sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authenticate } from "./auth.js";
 

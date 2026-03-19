@@ -1,5 +1,5 @@
-import type { PluginRuntime } from "remoteclaw/plugin-sdk/test-utils";
-import { removeAckReactionAfterReply, shouldAckReaction } from "remoteclaw/plugin-sdk/test-utils";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk";
+import { removeAckReactionAfterReply, shouldAckReaction } from "remoteclaw/plugin-sdk";
 import { vi } from "vitest";
 
 type DeepPartial<T> = {

@@ -5,7 +5,7 @@ import type {
   ChannelOnboardingDmPolicy,
   RemoteClawConfig,
   WizardPrompter,
-} from "remoteclaw/plugin-sdk/zalouser";
+} from "remoteclaw/plugin-sdk";
 import {
   addWildcardAllowFrom,
   DEFAULT_ACCOUNT_ID,
@@ -14,8 +14,8 @@ import {
   normalizeAccountId,
   promptAccountId,
   promptChannelAccessConfig,
-  resolvePreferredOpenClawTmpDir,
-} from "remoteclaw/plugin-sdk/zalouser";
+  resolvePreferredRemoteClawTmpDir,
+} from "remoteclaw/plugin-sdk";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,

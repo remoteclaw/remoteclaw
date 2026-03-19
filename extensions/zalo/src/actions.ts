@@ -1,9 +1,9 @@
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
-  OpenClawConfig,
-} from "remoteclaw/plugin-sdk/zalo";
-import { extractToolSend, jsonResult, readStringParam } from "remoteclaw/plugin-sdk/zalo";
+  RemoteClawConfig,
+} from "remoteclaw/plugin-sdk";
+import { extractToolSend, jsonResult, readStringParam } from "remoteclaw/plugin-sdk";
 import { listEnabledZaloAccounts } from "./accounts.js";
 import { sendMessageZalo } from "./send.js";
 

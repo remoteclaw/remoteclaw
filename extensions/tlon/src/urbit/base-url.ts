@@ -1,4 +1,4 @@
-import { isBlockedHostnameOrIp } from "remoteclaw/plugin-sdk/tlon";
+import { isBlockedHostnameOrIp } from "remoteclaw/plugin-sdk";
 
 export type UrbitBaseUrlValidation =
   | { ok: true; baseUrl: string; hostname: string }

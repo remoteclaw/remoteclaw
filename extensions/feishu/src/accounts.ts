@@ -1,6 +1,5 @@
+import type { ClawdbotConfig } from "remoteclaw/plugin-sdk";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import type { ClawdbotConfig } from "remoteclaw/plugin-sdk/feishu";
-import { normalizeResolvedSecretInputString, normalizeSecretInputString } from "./secret-input.js";
 import type {
   FeishuConfig,
   FeishuAccountConfig,

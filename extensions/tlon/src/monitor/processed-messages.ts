@@ -1,4 +1,4 @@
-import { createDedupeCache } from "remoteclaw/plugin-sdk/tlon";
+import { createDedupeCache } from "remoteclaw/plugin-sdk";
 
 export type ProcessedMessageTracker = {
   mark: (id?: string | null) => boolean;

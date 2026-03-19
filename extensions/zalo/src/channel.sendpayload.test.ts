@@ -1,4 +1,4 @@
-import type { ReplyPayload } from "remoteclaw/plugin-sdk/zalo";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { zaloPlugin } from "./channel.js";
 

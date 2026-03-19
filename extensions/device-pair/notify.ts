@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { OpenClawPluginApi } from "remoteclaw/plugin-sdk/device-pair";
-import { listDevicePairing } from "remoteclaw/plugin-sdk/device-pair";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
+import { listDevicePairing } from "remoteclaw/plugin-sdk";
 
 const NOTIFY_STATE_FILE = "device-pair-notify.json";
 const NOTIFY_POLL_INTERVAL_MS = 10_000;

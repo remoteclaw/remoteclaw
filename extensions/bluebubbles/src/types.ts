@@ -1,6 +1,6 @@
-import type { DmPolicy, GroupPolicy } from "remoteclaw/plugin-sdk/bluebubbles";
+import type { DmPolicy, GroupPolicy } from "remoteclaw/plugin-sdk";
 
-export type { DmPolicy, GroupPolicy } from "remoteclaw/plugin-sdk/bluebubbles";
+export type { DmPolicy, GroupPolicy } from "remoteclaw/plugin-sdk";
 
 export type BlueBubblesGroupConfig = {
   /** If true, only respond in this group when mentioned. */

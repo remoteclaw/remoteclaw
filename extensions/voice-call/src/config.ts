@@ -3,7 +3,7 @@ import {
   TtsConfigSchema,
   TtsModeSchema,
   TtsProviderSchema,
-} from "remoteclaw/plugin-sdk/voice-call";
+} from "remoteclaw/plugin-sdk";
 import { z } from "zod";
 
 // -----------------------------------------------------------------------------

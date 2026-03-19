@@ -53,6 +53,22 @@ describe("handleTelegramAction", () => {
     } as RemoteClawConfig;
   }
 
+  async function sendInlineButtonsMessage(params: {
+    to: string;
+    buttons: Array<Array<{ text: string; callback_data: string; style?: string }>>;
+    inlineButtons: "dm" | "group" | "all";
+  }) {
+    await handleTelegramAction(
+      {
+        action: "sendMessage",
+        to: params.to,
+        content: "Choose",
+        buttons: params.buttons,
+      },
+      telegramConfig({ capabilities: { inlineButtons: params.inlineButtons } }),
+    );
+  }
+
   async function expectReactionAdded(reactionLevel: "minimal" | "extensive") {
     await handleTelegramAction(defaultReactionAction, reactionConfig(reactionLevel));
     expect(reactMessageTelegram).toHaveBeenCalledWith(
@@ -105,9 +121,6 @@ describe("handleTelegramAction", () => {
   });
 
   it("accepts snake_case message_id for reactions", async () => {
-    const cfg = {
-      channels: { telegram: { botToken: "tok", reactionLevel: "minimal" } },
-    } as RemoteClawConfig;
     await handleTelegramAction(
       {
         action: "react",
@@ -115,7 +128,7 @@ describe("handleTelegramAction", () => {
         message_id: "456",
         emoji: "✅",
       },
-      cfg,
+      reactionConfig("minimal"),
     );
     expect(reactMessageTelegram).toHaveBeenCalledWith(
       "123",
@@ -145,9 +158,6 @@ describe("handleTelegramAction", () => {
   });
 
   it("removes reactions on empty emoji", async () => {
-    const cfg = {
-      channels: { telegram: { botToken: "tok", reactionLevel: "minimal" } },
-    } as RemoteClawConfig;
     await handleTelegramAction(
       {
         action: "react",
@@ -155,7 +165,7 @@ describe("handleTelegramAction", () => {
         messageId: "456",
         emoji: "",
       },
-      cfg,
+      reactionConfig("minimal"),
     );
     expect(reactMessageTelegram).toHaveBeenCalledWith(
       "123",
@@ -478,44 +488,29 @@ describe("handleTelegramAction", () => {
   });
 
   it("allows inline buttons in DMs with tg: prefixed targets", async () => {
-    const cfg = telegramConfig({ capabilities: { inlineButtons: "dm" } });
-    await handleTelegramAction(
-      {
-        action: "sendMessage",
-        to: "tg:5232990709",
-        content: "Choose",
-        buttons: [[{ text: "Ok", callback_data: "cmd:ok" }]],
-      },
-      cfg,
-    );
+    await sendInlineButtonsMessage({
+      to: "tg:5232990709",
+      buttons: [[{ text: "Ok", callback_data: "cmd:ok" }]],
+      inlineButtons: "dm",
+    });
     expect(sendMessageTelegram).toHaveBeenCalled();
   });
 
   it("allows inline buttons in groups with topic targets", async () => {
-    const cfg = telegramConfig({ capabilities: { inlineButtons: "group" } });
-    await handleTelegramAction(
-      {
-        action: "sendMessage",
-        to: "telegram:group:-1001234567890:topic:456",
-        content: "Choose",
-        buttons: [[{ text: "Ok", callback_data: "cmd:ok" }]],
-      },
-      cfg,
-    );
+    await sendInlineButtonsMessage({
+      to: "telegram:group:-1001234567890:topic:456",
+      buttons: [[{ text: "Ok", callback_data: "cmd:ok" }]],
+      inlineButtons: "group",
+    });
     expect(sendMessageTelegram).toHaveBeenCalled();
   });
 
   it("sends messages with inline keyboard buttons when enabled", async () => {
-    const cfg = telegramConfig({ capabilities: { inlineButtons: "all" } });
-    await handleTelegramAction(
-      {
-        action: "sendMessage",
-        to: "@testchannel",
-        content: "Choose",
-        buttons: [[{ text: "  Option A ", callback_data: " cmd:a " }]],
-      },
-      cfg,
-    );
+    await sendInlineButtonsMessage({
+      to: "@testchannel",
+      buttons: [[{ text: "  Option A ", callback_data: " cmd:a " }]],
+      inlineButtons: "all",
+    });
     expect(sendMessageTelegram).toHaveBeenCalledWith(
       "@testchannel",
       "Choose",
@@ -526,24 +521,19 @@ describe("handleTelegramAction", () => {
   });
 
   it("forwards optional button style", async () => {
-    const cfg = telegramConfig({ capabilities: { inlineButtons: "all" } });
-    await handleTelegramAction(
-      {
-        action: "sendMessage",
-        to: "@testchannel",
-        content: "Choose",
-        buttons: [
-          [
-            {
-              text: "Option A",
-              callback_data: "cmd:a",
-              style: "primary",
-            },
-          ],
+    await sendInlineButtonsMessage({
+      to: "@testchannel",
+      inlineButtons: "all",
+      buttons: [
+        [
+          {
+            text: "Option A",
+            callback_data: "cmd:a",
+            style: "primary",
+          },
         ],
-      },
-      cfg,
-    );
+      ],
+    });
     expect(sendMessageTelegram).toHaveBeenCalledWith(
       "@testchannel",
       "Choose",
@@ -603,6 +593,25 @@ describe("readTelegramButtons", () => {
 });
 
 describe("handleTelegramAction per-account gating", () => {
+  function accountTelegramConfig(params: {
+    accounts: Record<
+      string,
+      { botToken: string; actions?: { sticker?: boolean; reactions?: boolean } }
+    >;
+    topLevelBotToken?: string;
+    topLevelActions?: { reactions?: boolean };
+  }): RemoteClawConfig {
+    return {
+      channels: {
+        telegram: {
+          ...(params.topLevelBotToken ? { botToken: params.topLevelBotToken } : {}),
+          ...(params.topLevelActions ? { actions: params.topLevelActions } : {}),
+          accounts: params.accounts,
+        },
+      },
+    } as RemoteClawConfig;
+  }
+
   async function expectAccountStickerSend(cfg: RemoteClawConfig, accountId = "media") {
     await handleTelegramAction(
       { action: "sendSticker", to: "123", fileId: "sticker-id", accountId },
@@ -616,15 +625,11 @@ describe("handleTelegramAction per-account gating", () => {
   }
 
   it("allows sticker when account config enables it", async () => {
-    const cfg = {
-      channels: {
-        telegram: {
-          accounts: {
-            media: { botToken: "tok-media", actions: { sticker: true } },
-          },
-        },
+    const cfg = accountTelegramConfig({
+      accounts: {
+        media: { botToken: "tok-media", actions: { sticker: true } },
       },
-    } as RemoteClawConfig;
+    });
     await expectAccountStickerSend(cfg);
   });
 
@@ -649,30 +654,22 @@ describe("handleTelegramAction per-account gating", () => {
 
   it("uses account-merged config, not top-level config", async () => {
     // Top-level has no sticker enabled, but the account does
-    const cfg = {
-      channels: {
-        telegram: {
-          botToken: "tok-base",
-          accounts: {
-            media: { botToken: "tok-media", actions: { sticker: true } },
-          },
-        },
+    const cfg = accountTelegramConfig({
+      topLevelBotToken: "tok-base",
+      accounts: {
+        media: { botToken: "tok-media", actions: { sticker: true } },
       },
-    } as RemoteClawConfig;
+    });
     await expectAccountStickerSend(cfg);
   });
 
   it("inherits top-level reaction gate when account overrides sticker only", async () => {
-    const cfg = {
-      channels: {
-        telegram: {
-          actions: { reactions: false },
-          accounts: {
-            media: { botToken: "tok-media", actions: { sticker: true } },
-          },
-        },
+    const cfg = accountTelegramConfig({
+      topLevelActions: { reactions: false },
+      accounts: {
+        media: { botToken: "tok-media", actions: { sticker: true } },
       },
-    } as RemoteClawConfig;
+    });
 
     const result = await handleTelegramAction(
       {
@@ -691,16 +688,12 @@ describe("handleTelegramAction per-account gating", () => {
   });
 
   it("allows account to explicitly re-enable top-level disabled reaction gate", async () => {
-    const cfg = {
-      channels: {
-        telegram: {
-          actions: { reactions: false },
-          accounts: {
-            media: { botToken: "tok-media", actions: { sticker: true, reactions: true } },
-          },
-        },
+    const cfg = accountTelegramConfig({
+      topLevelActions: { reactions: false },
+      accounts: {
+        media: { botToken: "tok-media", actions: { sticker: true, reactions: true } },
       },
-    } as RemoteClawConfig;
+    });
 
     await handleTelegramAction(
       {

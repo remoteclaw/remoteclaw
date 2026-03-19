@@ -1,4 +1,4 @@
-import { getChannelPlugin } from "../../channels/plugins/index.js";
+import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { loadConfig } from "../../config/config.js";
 import { callGatewayLeastPrivilege, randomIdempotencyKey } from "../../gateway/call.js";
@@ -108,12 +108,13 @@ async function resolveRequiredChannel(params: {
   cfg: RemoteClawConfig;
   channel?: string;
 }): Promise<string> {
-  return (
-    await resolveMessageChannelSelection({
-      cfg: params.cfg,
-      channel: params.channel,
-    })
-  ).channel;
+  const channel = params.channel?.trim()
+    ? normalizeChannelId(params.channel)
+    : (await resolveMessageChannelSelection({ cfg: params.cfg })).channel;
+  if (!channel) {
+    throw new Error(`Unknown channel: ${params.channel}`);
+  }
+  return channel;
 }
 
 function resolveRequiredPlugin(channel: string) {

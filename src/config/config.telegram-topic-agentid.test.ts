@@ -29,33 +29,9 @@ describe("telegram topic agentId schema", () => {
     );
   });
 
-  it("accepts valid agentId in DM topic config", () => {
-    const res = RemoteClawSchema.safeParse({
-      channels: {
-        telegram: {
-          direct: {
-            "123456789": {
-              topics: {
-                "99": {
-                  agentId: "support",
-                  systemPrompt: "You are support",
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    expect(res.success).toBe(true);
-    if (!res.success) {
-      console.error(res.error.format());
-      return;
-    }
-    expect(res.data.channels?.telegram?.direct?.["123456789"]?.topics?.["99"]?.agentId).toBe(
-      "support",
-    );
-  });
+  // Upstream test "accepts valid agentId in DM topic config" removed:
+  // Fork's DmConfig does not include `topics` — DM topic routing uses
+  // runtime resolution, not config-level schema support.
 
   it("accepts empty config without agentId (backward compatible)", () => {
     const res = RemoteClawSchema.safeParse({

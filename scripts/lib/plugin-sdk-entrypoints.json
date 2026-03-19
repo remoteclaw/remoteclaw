@@ -10,6 +10,8 @@
   "runtime",
   "runtime-env",
   "setup",
+  "setup-adapter-runtime",
+  "setup-runtime",
   "channel-setup",
   "setup-tools",
   "config-runtime",

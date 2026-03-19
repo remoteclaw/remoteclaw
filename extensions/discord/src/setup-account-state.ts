@@ -1,9 +1,9 @@
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   hasConfiguredSecretInput,
   normalizeSecretInputString,
-} from "remoteclaw/plugin-sdk/secret-input";
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/config-runtime";
 import type { DiscordAccountConfig } from "./runtime-api.js";
 import { resolveDiscordToken } from "./token.js";
 

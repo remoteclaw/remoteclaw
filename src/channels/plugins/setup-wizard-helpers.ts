@@ -1,7 +1,6 @@
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { DmPolicy, GroupPolicy } from "../../config/types.js";
 import type { SecretInput } from "../../config/types.secrets.js";
-import { resolveSecretInputModeForEnvSelection } from "../../plugins/provider-auth-mode.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
 import {
@@ -25,6 +24,15 @@ let providerAuthInputPromise:
 
 function loadProviderAuthInput() {
   providerAuthInputPromise ??= import("../../plugins/provider-auth-ref.js");
+  return providerAuthInputPromise;
+}
+
+let providerAuthInputPromise:
+  | Promise<typeof import("../../plugins/provider-auth-input.js")>
+  | undefined;
+
+function loadProviderAuthInput() {
+  providerAuthInputPromise ??= import("../../plugins/provider-auth-input.js");
   return providerAuthInputPromise;
 }
 
@@ -1048,6 +1056,8 @@ export async function promptSingleChannelSecretInput(params: {
   inputPrompt: string;
   preferredEnvVar?: string;
 }): Promise<SingleChannelSecretInputPromptResult> {
+  const { promptSecretRefForSetup, resolveSecretInputModeForEnvSelection } =
+    await loadProviderAuthInput();
   const selectedMode = await resolveSecretInputModeForEnvSelection({
     prompter: params.prompter as WizardPrompter,
     explicitMode: params.secretInputMode,

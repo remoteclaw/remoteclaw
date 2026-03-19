@@ -1,9 +1,16 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { expect, vi } from "vitest";
 import {
   __testing as discordThreadBindingTesting,
   createThreadBindingManager as createDiscordThreadBindingManager,
 } from "../../../../extensions/discord/runtime-api.js";
 import { createFeishuThreadBindingManager } from "../../../../extensions/feishu/api.js";
+import {
+  createMatrixThreadBindingManager,
+  resetMatrixThreadBindingsForTests,
+} from "../../../../extensions/matrix/api.js";
 import { setMatrixRuntime } from "../../../../extensions/matrix/index.js";
 import { createTelegramThreadBindingManager } from "../../../../extensions/telegram/runtime-api.js";
 import type { RemoteClawConfig } from "../../../config/config.js";
@@ -163,10 +170,14 @@ function expectClearedSessionBinding(params: {
   ).toBeNull();
 }
 
-const telegramListActionsMock = vi.fn();
-const telegramGetCapabilitiesMock = vi.fn();
-const discordListActionsMock = vi.fn();
-const discordGetCapabilitiesMock = vi.fn();
+const telegramDescribeMessageToolMock = vi.fn();
+const discordDescribeMessageToolMock = vi.fn();
+const sendMessageMatrixMock = vi.hoisted(() =>
+  vi.fn(async (to: string, _message: string, opts?: { threadId?: string }) => ({
+    messageId: opts?.threadId ? "$matrix-thread" : "$matrix-root",
+    roomId: to.replace(/^room:/, ""),
+  })),
+);
 
 setTelegramRuntime({
   channel: {
@@ -200,6 +211,48 @@ setLineRuntime({
     },
   },
 } as never);
+
+vi.mock("../../../../extensions/matrix/src/matrix/send.js", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../../extensions/matrix/src/matrix/send.js")
+  >("../../../../extensions/matrix/src/matrix/send.js");
+  return {
+    ...actual,
+    sendMessageMatrix: sendMessageMatrixMock,
+  };
+});
+
+const matrixSessionBindingStateDir = fs.mkdtempSync(
+  path.join(os.tmpdir(), "openclaw-matrix-session-binding-contract-"),
+);
+const matrixSessionBindingAuth = {
+  accountId: "ops",
+  homeserver: "https://matrix.example.org",
+  userId: "@bot:example.org",
+  accessToken: "token",
+} as const;
+
+function resetMatrixSessionBindingStateDir() {
+  fs.rmSync(matrixSessionBindingStateDir, { recursive: true, force: true });
+  fs.mkdirSync(matrixSessionBindingStateDir, { recursive: true });
+}
+
+async function createContractMatrixThreadBindingManager() {
+  resetMatrixSessionBindingStateDir();
+  setMatrixRuntime({
+    state: {
+      resolveStateDir: () => matrixSessionBindingStateDir,
+    },
+  } as never);
+  return await createMatrixThreadBindingManager({
+    accountId: matrixSessionBindingAuth.accountId,
+    auth: matrixSessionBindingAuth,
+    client: {} as never,
+    idleTimeoutMs: 24 * 60 * 60 * 1000,
+    maxAgeMs: 0,
+    enableSweeper: false,
+  });
+}
 
 export const pluginContractRegistry: PluginContractEntry[] = bundledChannelPlugins.map(
   (plugin) => ({
@@ -552,12 +605,36 @@ export const statusContractRegistry: StatusContractEntry[] = [
   },
 ];
 
-export const surfaceContractRegistry: SurfaceContractEntry[] = [
-  {
-    id: "bluebubbles",
-    plugin: bluebubblesPlugin,
-    surfaces: ["actions", "setup", "status", "outbound", "messaging", "threading", "gateway"],
-  },
+export const surfaceContractRegistry: SurfaceContractEntry[] = bundledChannelPlugins.map(
+  (plugin) => ({
+    id: plugin.id,
+    plugin,
+    surfaces: channelPluginSurfaceKeys.filter((surface) => Boolean(plugin[surface])),
+  }),
+);
+
+export const threadingContractRegistry: ThreadingContractEntry[] = surfaceContractRegistry
+  .filter((entry) => entry.surfaces.includes("threading"))
+  .map((entry) => ({
+    id: entry.id,
+    plugin: entry.plugin,
+  }));
+
+const directoryPresenceOnlyIds = new Set(["whatsapp", "zalouser"]);
+
+export const directoryContractRegistry: DirectoryContractEntry[] = surfaceContractRegistry
+  .filter((entry) => entry.surfaces.includes("directory"))
+  .map((entry) => ({
+    id: entry.id,
+    plugin: entry.plugin,
+    coverage: directoryPresenceOnlyIds.has(entry.id) ? "presence" : "lookups",
+  }));
+
+const baseSessionBindingCfg = {
+  session: { mainKey: "main", scope: "per-sender" },
+} satisfies RemoteClawConfig;
+
+export const sessionBindingContractRegistry: SessionBindingContractEntry[] = [
   {
     id: "discord",
     expectedCapabilities: {
@@ -673,6 +750,57 @@ export const surfaceContractRegistry: SurfaceContractEntry[] = [
         channel: "feishu",
         accountId: "default",
         conversationId: "oc_group_chat:topic:om_topic_root",
+      });
+    },
+  },
+  {
+    id: "matrix",
+    expectedCapabilities: {
+      adapterAvailable: true,
+      bindSupported: true,
+      unbindSupported: true,
+      placements: ["current", "child"],
+    },
+    getCapabilities: async () => {
+      await createContractMatrixThreadBindingManager();
+      return getSessionBindingService().getCapabilities({
+        channel: "matrix",
+        accountId: matrixSessionBindingAuth.accountId,
+      });
+    },
+    bindAndResolve: async () => {
+      await createContractMatrixThreadBindingManager();
+      const service = getSessionBindingService();
+      const binding = await service.bind({
+        targetSessionKey: "agent:matrix:child:thread-1",
+        targetKind: "subagent",
+        conversation: {
+          channel: "matrix",
+          accountId: matrixSessionBindingAuth.accountId,
+          conversationId: "$thread",
+          parentConversationId: "!room:example",
+        },
+        placement: "current",
+        metadata: {
+          label: "codex-matrix",
+        },
+      });
+      expectResolvedSessionBinding({
+        channel: "matrix",
+        accountId: matrixSessionBindingAuth.accountId,
+        conversationId: "$thread",
+        targetSessionKey: "agent:matrix:child:thread-1",
+      });
+      return binding;
+    },
+    unbindAndVerify: unbindAndExpectClearedSessionBinding,
+    cleanup: async () => {
+      resetMatrixThreadBindingsForTests();
+      resetMatrixSessionBindingStateDir();
+      expectClearedSessionBinding({
+        channel: "matrix",
+        accountId: matrixSessionBindingAuth.accountId,
+        conversationId: "$thread",
       });
     },
   },

@@ -1,36 +1,26 @@
 import {
-  DEFAULT_ACCOUNT_ID,
-  noteChannelLookupFailure,
-  noteChannelLookupSummary,
   type RemoteClawConfig,
-  parseMentionOrPrefixedId,
-  patchChannelConfigForAccount,
-  promptLegacyChannelAllowFrom,
-  resolveSetupAccountId,
-  setLegacyChannelDmPolicyWithAllowFrom,
-  setSetupChannelEnabled,
   type WizardPrompter,
-} from "remoteclaw/plugin-sdk/setup";
-import { type ChannelSetupDmPolicy, type ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
-import { formatDocsLink } from "../../../src/terminal/links.js";
-import { inspectDiscordAccount } from "./account-inspect.js";
-import {
-  listDiscordAccountIds,
-  resolveDefaultDiscordAccountId,
-  resolveDiscordAccount,
-} from "./accounts.js";
-import { normalizeDiscordSlug } from "./monitor/allow-list.js";
-import {
-  resolveDiscordChannelAllowlist,
-  type DiscordChannelResolution,
-} from "./resolve-channels.js";
+  type ChannelSetupWizard,
+} from "remoteclaw/plugin-sdk/setup-runtime";
+import { formatDocsLink } from "remoteclaw/plugin-sdk/setup-tools";
+import { resolveDiscordChannelAllowlist } from "./resolve-channels.js";
 import { resolveDiscordUserAllowlist } from "./resolve-users.js";
 import {
-  discordSetupAdapter,
+  resolveDefaultDiscordSetupAccountId,
+  resolveDiscordSetupAccountConfig,
+} from "./setup-account-state.js";
+import {
+  createDiscordSetupWizardBase,
   DISCORD_TOKEN_HELP_LINES,
   parseDiscordAllowFromId,
   setDiscordGuildChannelAllowlist,
 } from "./setup-core.js";
+import {
+  promptLegacyChannelAllowFromForAccount,
+  resolveEntriesWithOptionalToken,
+} from "./setup-runtime-helpers.js";
+import { resolveDiscordToken } from "./token.js";
 
 const channel = "discord" as const;
 
@@ -65,10 +55,8 @@ async function promptDiscordAllowFrom(params: {
   const resolved = resolveDiscordAccount({ cfg: params.cfg, accountId });
   return promptLegacyChannelAllowFrom({
     cfg: params.cfg,
-    channel,
     prompter: params.prompter,
-    existing: resolved.config.allowFrom ?? resolved.config.dm?.allowFrom ?? [],
-    token: resolved.token,
+    accountId: params.accountId,
     noteTitle: "Discord allowlist",
     noteLines: [
       "Allowlist Discord DMs by username (we resolve to user ids).",
@@ -83,23 +71,59 @@ async function promptDiscordAllowFrom(params: {
     placeholder: "@alice, 123456789012345678",
     parseId: parseDiscordAllowFromId,
     invalidWithoutTokenNote: "Bot token missing; use numeric user ids (or mention form) only.",
-    resolveEntries: ({ token, entries }) =>
-      resolveDiscordUserAllowlist({
+    resolveExisting: (accountId, cfg) => {
+      const account = resolveDiscordSetupAccountConfig({ cfg, accountId }).config;
+      return account.allowFrom ?? account.dm?.allowFrom ?? [];
+    },
+    resolveToken: (accountId) => resolveDiscordToken(params.cfg, { accountId }).token,
+    resolveEntries: async ({ token, entries }) =>
+      (
+        await resolveDiscordUserAllowlist({
+          token,
+          entries,
+        })
+      ).map((entry) => ({
+        input: entry.input,
+        resolved: entry.resolved,
+        id: entry.id ?? null,
+      })),
+  });
+}
+
+async function resolveDiscordGroupAllowlist(params: {
+  cfg: RemoteClawConfig;
+  accountId: string;
+  credentialValues: { token?: string };
+  entries: string[];
+}) {
+  return await resolveEntriesWithOptionalToken({
+    token:
+      resolveDiscordToken(params.cfg, { accountId: params.accountId }).token ||
+      (typeof params.credentialValues.token === "string" ? params.credentialValues.token : ""),
+    entries: params.entries,
+    buildWithoutToken: (input) => ({
+      input,
+      resolved: false,
+    }),
+    resolveEntries: async ({ token, entries }) =>
+      await resolveDiscordChannelAllowlist({
         token,
         entries,
       }),
   });
 }
 
-const discordDmPolicy: ChannelSetupDmPolicy = {
-  label: "Discord",
-  channel,
-  policyKey: "channels.discord.dmPolicy",
-  allowFromKey: "channels.discord.allowFrom",
-  getCurrent: (cfg) =>
-    cfg.channels?.discord?.dmPolicy ?? cfg.channels?.discord?.dm?.policy ?? "pairing",
-  setPolicy: (cfg, policy) =>
-    setLegacyChannelDmPolicyWithAllowFrom({
+export const discordSetupWizard: ChannelSetupWizard = createDiscordSetupWizardBase({
+  promptAllowFrom: promptDiscordAllowFrom,
+  resolveAllowFromEntries: async ({ cfg, accountId, credentialValues, entries }) =>
+    await resolveDiscordAllowFromEntries({
+      token:
+        resolveDiscordToken(cfg, { accountId }).token ||
+        (typeof credentialValues.token === "string" ? credentialValues.token : ""),
+      entries,
+    }),
+  resolveGroupAllowlist: async ({ cfg, accountId, credentialValues, entries }) =>
+    await resolveDiscordGroupAllowlist({
       cfg,
       channel,
       dmPolicy: policy,

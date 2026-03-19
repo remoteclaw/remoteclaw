@@ -1,7 +1,7 @@
 import Foundation
 import RemoteClawKit
 
-struct TailscaleServeGatewayBeacon: Equatable {
+struct TailscaleServeGatewayBeacon: Sendable, Equatable {
     var displayName: String
     var tailnetDns: String
     var host: String
@@ -13,7 +13,7 @@ enum TailscaleServeGatewayDiscovery {
     private static let probeConcurrency = 6
     private static let defaultProbeTimeoutSeconds: TimeInterval = 1.6
 
-    struct DiscoveryContext {
+    struct DiscoveryContext: Sendable {
         var tailscaleStatus: @Sendable () async -> String?
         var probeHost: @Sendable (_ host: String, _ timeout: TimeInterval) async -> Bool
 
@@ -85,13 +85,13 @@ enum TailscaleServeGatewayDiscovery {
         }
     }
 
-    private struct Candidate {
+    private struct Candidate: Sendable {
         var dnsName: String
         var displayName: String
     }
 
     private static func collectCandidates(status: TailscaleStatus) -> [Candidate] {
-        let selfDns = self.normalizeDnsName(status.selfNode?.dnsName)
+        let selfDns = normalizeDnsName(status.selfNode?.dnsName)
         var out: [Candidate] = []
         var seen = Set<String>()
 
@@ -112,7 +112,7 @@ enum TailscaleServeGatewayDiscovery {
 
             out.append(Candidate(
                 dnsName: dnsName,
-                displayName: self.displayName(hostName: node.hostName, dnsName: dnsName)))
+                displayName: displayName(hostName: node.hostName, dnsName: dnsName)))
 
             if out.count >= self.maxCandidates {
                 break
@@ -203,7 +203,6 @@ enum TailscaleServeGatewayDiscovery {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: path)
         process.arguments = args
-        process.environment = self.commandEnvironment()
         let outPipe = Pipe()
         process.standardOutput = outPipe
         process.standardError = FileHandle.nullDevice
@@ -226,19 +225,6 @@ enum TailscaleServeGatewayDiscovery {
         let data = (try? outPipe.fileHandleForReading.readToEnd()) ?? Data()
         let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
         return output?.isEmpty == false ? output : nil
-    }
-
-    static func commandEnvironment(
-        base: [String: String] = ProcessInfo.processInfo.environment) -> [String: String]
-    {
-        var env = base
-        let term = env["TERM"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if term.isEmpty {
-            // The macOS Tailscale app binary exits with CLIError error 3 when TERM is missing,
-            // which is common for GUI-launched app environments.
-            env["TERM"] = "dumb"
-        }
-        return env
     }
 
     private static func parseStatus(_ raw: String) -> TailscaleStatus? {
@@ -271,7 +257,7 @@ enum TailscaleServeGatewayDiscovery {
                 operation: {
                     while true {
                         let message = try await task.receive()
-                        if self.isConnectChallenge(message: message) {
+                        if isConnectChallenge(message: message) {
                             return true
                         }
                     }

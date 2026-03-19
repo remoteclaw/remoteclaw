@@ -18,6 +18,14 @@ export default defineConfig({
         replacement: path.join(repoRoot, "src", "plugin-sdk", "account-id.ts"),
       },
       {
+        find: "remoteclaw/plugin-sdk/core",
+        replacement: path.join(repoRoot, "src", "plugin-sdk", "core.ts"),
+      },
+      {
+        find: "remoteclaw/plugin-sdk/telegram",
+        replacement: path.join(repoRoot, "src", "plugin-sdk", "telegram.ts"),
+      },
+      {
         find: "remoteclaw/plugin-sdk/keyed-async-queue",
         replacement: path.join(repoRoot, "src", "plugin-sdk", "keyed-async-queue.ts"),
       },

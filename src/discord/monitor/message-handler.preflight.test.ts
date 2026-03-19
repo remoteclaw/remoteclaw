@@ -207,7 +207,10 @@ describe("preflightDiscordMessage", () => {
       channel: "discord",
       accountId: "default",
       listBySession: () => [],
-      resolveByConversation: (ref) => (ref.conversationId === threadId ? threadBinding : null),
+      resolveByConversation: (ref) =>
+        ref.conversationId === threadId
+          ? (threadBinding as unknown as import("../../infra/outbound/session-binding-service.js").SessionBindingRecord)
+          : null,
     });
 
     const result = await preflightDiscordMessage({

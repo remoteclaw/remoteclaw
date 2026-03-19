@@ -80,7 +80,7 @@ function parsePidsFromLsofOutput(stdout: string): number[] {
 
 /**
  * Find PIDs of gateway processes listening on the given port using synchronous lsof.
- * Returns only PIDs that belong to openclaw gateway processes (not the current process).
+ * Returns only PIDs that belong to RemoteClaw gateway processes (not the current process).
  */
 export function findGatewayPidsOnPortSync(
   port: number,

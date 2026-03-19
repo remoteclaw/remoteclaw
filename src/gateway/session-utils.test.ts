@@ -288,7 +288,7 @@ describe("gateway session utils", () => {
       const cfg = {
         session: { mainKey: "main" },
         agents: { list: [{ id: "main", default: true }] },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
 
       const { agents } = listAgentsForGateway(cfg);
       expect(agents.map((agent) => agent.id)).toEqual(["main"]);
@@ -877,7 +877,7 @@ describe("loadCombinedSessionStoreForGateway includes disk-only agents (#32804)"
         agents: {
           list: [{ id: "main", default: true }],
         },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
 
       const { store } = loadCombinedSessionStoreForGateway(cfg);
       expect(store["agent:main:main"]).toBeDefined();

@@ -257,10 +257,10 @@ describe("restart-helper", () => {
 
       const { scriptPath, content } = await prepareAndReadScript({
         HOME: "/Users/testuser",
-        OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.it's-a-test",
+        REMOTECLAW_LAUNCHD_LABEL: "org.remoteclaw.it's-a-test",
       });
       // The plist path must also shell-escape the label to prevent injection
-      expect(content).toContain("ai.openclaw.it'\\''s-a-test.plist");
+      expect(content).toContain("org.remoteclaw.it'\\''s-a-test.plist");
       await cleanupScript(scriptPath);
     });
 

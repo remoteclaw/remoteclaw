@@ -159,9 +159,11 @@ async function deliverTelegramPayload(params: {
 }
 
 describe("deliverOutboundPayloads", () => {
-  beforeEach(async () => {
-    vi.resetModules();
+  beforeAll(async () => {
     ({ deliverOutboundPayloads, normalizeOutboundPayloads } = await import("./deliver.js"));
+  });
+
+  beforeEach(() => {
     setActivePluginRegistry(defaultRegistry);
     hookMocks.runner.hasHooks.mockClear();
     hookMocks.runner.hasHooks.mockReturnValue(false);

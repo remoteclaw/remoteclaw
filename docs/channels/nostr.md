@@ -51,13 +51,13 @@ nak key generate
 
 2. Add to config:
 
-```json
+```json5
 {
-  "channels": {
-    "nostr": {
-      "privateKey": "${NOSTR_PRIVATE_KEY}"
-    }
-  }
+  channels: {
+    nostr: {
+      privateKey: "${NOSTR_PRIVATE_KEY}",
+    },
+  },
 }
 ```
 
@@ -87,23 +87,23 @@ Profile data is published as a NIP-01 `kind:0` event. You can manage it from the
 
 Example:
 
-```json
+```json5
 {
-  "channels": {
-    "nostr": {
-      "privateKey": "${NOSTR_PRIVATE_KEY}",
-      "profile": {
-        "name": "remoteclaw",
-        "displayName": "RemoteClaw",
-        "about": "Personal assistant DM bot",
-        "picture": "https://example.com/avatar.png",
-        "banner": "https://example.com/banner.png",
-        "website": "https://example.com",
-        "nip05": "remoteclaw@example.com",
-        "lud16": "remoteclaw@example.com"
-      }
-    }
-  }
+  channels: {
+    nostr: {
+      privateKey: "${NOSTR_PRIVATE_KEY}",
+      profile: {
+        name: "remoteclaw",
+        displayName: "RemoteClaw",
+        about: "Personal assistant DM bot",
+        picture: "https://example.com/avatar.png",
+        banner: "https://example.com/banner.png",
+        website: "https://example.com",
+        nip05: "remoteclaw@example.com",
+        lud16: "remoteclaw@example.com",
+      },
+    },
+  },
 }
 ```
 
@@ -123,15 +123,15 @@ Notes:
 
 ### Allowlist example
 
-```json
+```json5
 {
-  "channels": {
-    "nostr": {
-      "privateKey": "${NOSTR_PRIVATE_KEY}",
-      "dmPolicy": "allowlist",
-      "allowFrom": ["npub1abc...", "npub1xyz..."]
-    }
-  }
+  channels: {
+    nostr: {
+      privateKey: "${NOSTR_PRIVATE_KEY}",
+      dmPolicy: "allowlist",
+      allowFrom: ["npub1abc...", "npub1xyz..."],
+    },
+  },
 }
 ```
 
@@ -146,14 +146,14 @@ Accepted formats:
 
 Defaults: `relay.damus.io` and `nos.lol`.
 
-```json
+```json5
 {
-  "channels": {
-    "nostr": {
-      "privateKey": "${NOSTR_PRIVATE_KEY}",
-      "relays": ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nostr.wine"]
-    }
-  }
+  channels: {
+    nostr: {
+      privateKey: "${NOSTR_PRIVATE_KEY}",
+      relays: ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nostr.wine"],
+    },
+  },
 }
 ```
 
@@ -182,14 +182,14 @@ Tips:
 docker run -p 7777:7777 ghcr.io/hoytech/strfry
 ```
 
-```json
+```json5
 {
-  "channels": {
-    "nostr": {
-      "privateKey": "${NOSTR_PRIVATE_KEY}",
-      "relays": ["ws://localhost:7777"]
-    }
-  }
+  channels: {
+    nostr: {
+      privateKey: "${NOSTR_PRIVATE_KEY}",
+      relays: ["ws://localhost:7777"],
+    },
+  },
 }
 ```
 

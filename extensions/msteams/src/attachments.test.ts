@@ -47,7 +47,9 @@ type RemoteMediaFetchParams = {
 
 const detectMimeMock = vi.fn(async () => CONTENT_TYPE_IMAGE_PNG);
 const saveMediaBufferMock = vi.fn(async () => ({
+  id: "saved-media-id",
   path: SAVED_PNG_PATH,
+  size: 1024,
   contentType: CONTENT_TYPE_IMAGE_PNG,
 }));
 const readRemoteMediaResponse = async (
@@ -439,7 +441,9 @@ const ATTACHMENT_DOWNLOAD_SUCCESS_CASES: AttachmentDownloadSuccessCase[] = [
     beforeDownload: () => {
       detectMimeMock.mockResolvedValueOnce(CONTENT_TYPE_APPLICATION_PDF);
       saveMediaBufferMock.mockResolvedValueOnce({
+        id: "saved-pdf-id",
         path: SAVED_PDF_PATH,
+        size: 2048,
         contentType: CONTENT_TYPE_APPLICATION_PDF,
       });
     },

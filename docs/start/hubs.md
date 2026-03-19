@@ -1,5 +1,5 @@
 ---
-description: "Hubs that link to every RemoteClaw doc"
+summary: "Hubs that link to every RemoteClaw doc"
 read_when:
   - You want a complete map of the documentation
 title: "Docs Hubs"
@@ -7,9 +7,9 @@ title: "Docs Hubs"
 
 # Docs hubs
 
-:::note
+<Note>
 If you are new to RemoteClaw, start with [Getting Started](/start/getting-started).
-:::
+</Note>
 
 Use these hubs to discover every page, including deep dives and reference docs that don’t appear in the left nav.
 
@@ -17,7 +17,8 @@ Use these hubs to discover every page, including deep dives and reference docs t
 
 - [Index](/)
 - [Getting Started](/start/getting-started)
-- [Quick start](/start/quickstart)
+- [Onboarding](/start/onboarding)
+- [Onboarding (CLI)](/start/wizard)
 - [Setup](/start/setup)
 - [Dashboard (local Gateway)](http://127.0.0.1:18789/)
 - [Help](/help)
@@ -42,9 +43,11 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Network hub](/network)
 - [Agent runtime](/concepts/agent)
 - [Agent workspace](/concepts/agent-workspace)
+- [Memory](/concepts/memory)
 - [Agent loop](/concepts/agent-loop)
 - [Streaming + chunking](/concepts/streaming)
 - [Multi-agent routing](/concepts/multi-agent)
+- [Compaction](/concepts/compaction)
 - [Sessions](/concepts/session)
 - [Session pruning](/concepts/session-pruning)
 - [Session tools](/concepts/session-tool)
@@ -59,10 +62,13 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Channel routing](/channels/channel-routing)
 - [Groups](/channels/groups)
 - [Group messages](/channels/group-messages)
+- [Model failover](/concepts/model-failover)
+- [OAuth](/concepts/oauth)
 
 ## Providers + ingress
 
 - [Chat channels hub](/channels)
+- [Model providers hub](/providers/models)
 - [WhatsApp](/channels/whatsapp)
 - [Telegram](/channels/telegram)
 - [Slack](/channels/slack)
@@ -87,6 +93,7 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Heartbeat](/gateway/heartbeat)
 - [Doctor](/gateway/doctor)
 - [Logging](/gateway/logging)
+- [Sandboxing](/gateway/sandboxing)
 - [Dashboard](/web/dashboard)
 - [Control UI](/web/control-ui)
 - [Remote access](/gateway/remote)
@@ -102,8 +109,11 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [CLI reference](/cli)
 - [Exec tool](/tools/exec)
 - [PDF tool](/tools/pdf)
+- [Elevated mode](/tools/elevated)
 - [Cron jobs](/automation/cron-jobs)
 - [Cron vs Heartbeat](/automation/cron-vs-heartbeat)
+- [Thinking + verbose](/tools/thinking)
+- [Models](/concepts/models)
 - [Sub-agents](/tools/subagents)
 - [Agent send CLI](/tools/agent-send)
 - [Terminal UI](/web/tui)
@@ -146,9 +156,9 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [macOS permissions](/platforms/mac/permissions)
 - [macOS remote](/platforms/mac/remote)
 - [macOS signing](/platforms/mac/signing)
-- [macOS release](/platforms/mac/release)
 - [macOS gateway (launchd)](/platforms/mac/bundled-gateway)
 - [macOS XPC](/platforms/mac/xpc)
+- [macOS skills](/platforms/mac/skills)
 - [macOS Peekaboo](/platforms/mac/peekaboo)
 
 ## Extensions + plugins
@@ -165,18 +175,17 @@ Use these hubs to discover every page, including deep dives and reference docs t
 
 ## Workspace + templates
 
+- [Skills](/tools/skills)
+- [ClawHub](/tools/clawhub)
+- [Skills config](/tools/skills-config)
 - [Default AGENTS](/reference/AGENTS.default)
 - [Templates: AGENTS](/reference/templates/AGENTS)
+- [Templates: BOOTSTRAP](/reference/templates/BOOTSTRAP)
 - [Templates: HEARTBEAT](/reference/templates/HEARTBEAT)
 - [Templates: IDENTITY](/reference/templates/IDENTITY)
 - [Templates: SOUL](/reference/templates/SOUL)
 - [Templates: TOOLS](/reference/templates/TOOLS)
 - [Templates: USER](/reference/templates/USER)
-
-## Experiments (exploratory)
-
-- [Onboarding config protocol](/experiments/onboarding-config-protocol)
-- [Model config (historical)](/experiments/proposals/model-config)
 
 ## Project
 
@@ -185,5 +194,5 @@ Use these hubs to discover every page, including deep dives and reference docs t
 ## Testing + release
 
 - [Testing](/reference/test)
-- [Release checklist](/reference/RELEASING)
+- [Release policy](/reference/RELEASING)
 - [Device models](/reference/device-models)

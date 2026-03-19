@@ -544,8 +544,29 @@ export async function collectPluginsTrustFindings(params: {
   return findings;
 }
 
+function listAgentWorkspaceDirs(cfg: RemoteClawConfig): string[] {
+  const dirs: string[] = [];
+  const seen = new Set<string>();
+  const defaultWorkspace =
+    typeof cfg.agents?.defaults?.workspace === "string"
+      ? cfg.agents.defaults.workspace.trim()
+      : undefined;
+  if (defaultWorkspace) {
+    dirs.push(defaultWorkspace);
+    seen.add(defaultWorkspace);
+  }
+  for (const agent of cfg.agents?.list ?? []) {
+    const ws = typeof agent?.workspace === "string" ? agent.workspace.trim() : undefined;
+    if (ws && !seen.has(ws)) {
+      dirs.push(ws);
+      seen.add(ws);
+    }
+  }
+  return dirs;
+}
+
 export async function collectWorkspaceSkillSymlinkEscapeFindings(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
 }): Promise<SecurityAuditFinding[]> {
   const findings: SecurityAuditFinding[] = [];
   const workspaceDirs = listAgentWorkspaceDirs(params.cfg);

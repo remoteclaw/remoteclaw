@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CoreConfig } from "../types.js";
 import { resolveDefaultMatrixAccountId, resolveMatrixAccount } from "./accounts.js";
 
-vi.mock("./credentials.js", () => ({
+vi.mock("./credentials-read.js", () => ({
   loadMatrixCredentials: () => null,
   credentialsMatchConfig: () => false,
 }));

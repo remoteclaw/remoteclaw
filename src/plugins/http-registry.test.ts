@@ -4,13 +4,14 @@ import { createEmptyPluginRegistry } from "./registry.js";
 import {
   pinActivePluginHttpRouteRegistry,
   releasePinnedPluginHttpRouteRegistry,
+  resetPluginRuntimeStateForTest,
   setActivePluginRegistry,
 } from "./runtime.js";
 
 describe("registerPluginHttpRoute", () => {
   afterEach(() => {
     releasePinnedPluginHttpRouteRegistry();
-    setActivePluginRegistry(createEmptyPluginRegistry());
+    resetPluginRuntimeStateForTest();
   });
 
   it("registers route and unregisters it", () => {

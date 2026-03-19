@@ -1,6 +1,6 @@
 ---
 title: CI Pipeline
-description: How the RemoteClaw CI pipeline works
+summary: "CI job graph, scope gates, and local command equivalents"
 read_when:
   - You need to understand why a CI job did or did not run
   - You are debugging failing GitHub Actions checks
@@ -18,11 +18,11 @@ The CI runs on every push to `main` and every pull request. It uses smart scopin
 | `changed-scope`   | Detect which areas changed (node/macos/android/windows) | Non-doc changes                    |
 | `check`           | TypeScript types, lint, format                          | Non-docs, node changes             |
 | `check-docs`      | Markdown lint + broken link check                       | Docs changed                       |
-| `code-analysis`   | LOC threshold check (1000 lines)                        | PRs only                           |
 | `secrets`         | Detect leaked secrets                                   | Always                             |
-| `build-artifacts` | Build dist once, share with other jobs                  | Non-docs, node changes             |
-| `release-check`   | Validate npm pack contents                              | After build                        |
-| `checks`          | Node/Bun tests + protocol check                         | Non-docs, node changes             |
+| `build-artifacts` | Build dist once, share with `release-check`             | Pushes to `main`, node changes     |
+| `release-check`   | Validate npm pack contents                              | Pushes to `main` after build       |
+| `checks`          | Node tests + protocol check on PRs; Bun compat on push  | Non-docs, node changes             |
+| `compat-node22`   | Minimum supported Node runtime compatibility            | Pushes to `main`, node changes     |
 | `checks-windows`  | Windows-specific tests                                  | Non-docs, windows-relevant changes |
 | `macos`           | Swift lint/build/test + TS tests                        | PRs with macos changes             |
 | `android`         | Gradle build + tests                                    | Non-docs, android changes          |
@@ -32,11 +32,10 @@ The CI runs on every push to `main` and every pull request. It uses smart scopin
 Jobs are ordered so cheap checks fail before expensive ones run:
 
 1. `docs-scope` + `changed-scope` + `check` + `secrets` (parallel, cheap gates first)
-2. `build-artifacts` + `release-check`
-3. `checks` (Linux Node test split into 2 shards), `checks-windows`, `macos`, `android`
+2. PRs: `checks` (Linux Node test split into 2 shards), `checks-windows`, `macos`, `android`
+3. Pushes to `main`: `build-artifacts` + `release-check` + Bun compat + `compat-node22`
 
 Scope logic lives in `scripts/ci-changed-scope.mjs` and is covered by unit tests in `src/scripts/ci-changed-scope.test.ts`.
-The same shared scope module also drives the separate `install-smoke` workflow through a narrower `changed-smoke` gate, so Docker/install smoke only runs for install, packaging, and container-relevant changes.
 
 ## Runners
 

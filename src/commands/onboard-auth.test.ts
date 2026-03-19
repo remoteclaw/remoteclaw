@@ -276,7 +276,7 @@ describe("primary model defaults", () => {
   it("does not set a default primary model", () => {
     const configCases = [
       {
-        getConfig: () => applyMinimaxApiConfig({}, "MiniMax-M2.1-lightning"),
+        getConfig: () => applyMinimaxApiConfig({}, "MiniMax-M2.5-highspeed"),
       },
       {
         getConfig: () => applyZaiConfig({}, { modelId: "glm-5" }),

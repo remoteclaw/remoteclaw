@@ -1,10 +1,9 @@
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { DiscordAccountConfig } from "../../../src/config/types.discord.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import {
   hasConfiguredSecretInput,
   normalizeSecretInputString,
-} from "../../../src/config/types.secrets.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
+} from "remoteclaw/plugin-sdk/config-runtime";
+import type { DiscordAccountConfig, RemoteClawConfig } from "remoteclaw/plugin-sdk/discord-core";
 import {
   mergeDiscordAccountConfig,
   resolveDefaultDiscordAccountId,

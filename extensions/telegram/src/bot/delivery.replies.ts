@@ -1,8 +1,6 @@
+import { type Bot, GrammyError, InputFile } from "grammy";
 import type { ReplyToMode } from "remoteclaw/plugin-sdk/config-runtime";
 import type { MarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
-import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import { type Bot, GrammyError, InputFile } from "grammy";
 import { fireAndForgetHook } from "remoteclaw/plugin-sdk/hook-runtime";
 import { createInternalHookEvent, triggerInternalHook } from "remoteclaw/plugin-sdk/hook-runtime";
 import {
@@ -15,7 +13,9 @@ import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
 import { buildOutboundMediaLoadOptions } from "remoteclaw/plugin-sdk/media-runtime";
 import { isGifMedia, kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
 import { getGlobalHookRunner } from "remoteclaw/plugin-sdk/plugin-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import { chunkMarkdownTextWithMode, type ChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { loadWebMedia } from "remoteclaw/plugin-sdk/web-media";
 import type { TelegramInlineButtons } from "../button-types.js";

@@ -1,4 +1,4 @@
-import type { OpenClawConfig, PluginRuntime } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk/core";
 import { describe, expect, it, vi } from "vitest";
 
 const uploadGoogleChatAttachmentMock = vi.hoisted(() => vi.fn());
@@ -40,7 +40,7 @@ describe("googlechatPlugin outbound sendMedia", () => {
       messageName: "spaces/AAA/messages/msg-1",
     });
 
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         googlechat: {
           enabled: true,
@@ -117,7 +117,7 @@ describe("googlechatPlugin outbound sendMedia", () => {
       messageName: "spaces/AAA/messages/msg-2",
     });
 
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       channels: {
         googlechat: {
           enabled: true,

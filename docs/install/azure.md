@@ -1,23 +1,23 @@
 ---
-summary: "Run RemoteClaw Gateway 24/7 on an Azure Linux VM with durable state"
+summary: "Run OpenClaw Gateway 24/7 on an Azure Linux VM with durable state"
 read_when:
-  - You want RemoteClaw running 24/7 on Azure with Network Security Group hardening
-  - You want a production-grade, always-on RemoteClaw Gateway on your own Azure Linux VM
+  - You want OpenClaw running 24/7 on Azure with Network Security Group hardening
+  - You want a production-grade, always-on OpenClaw Gateway on your own Azure Linux VM
   - You want secure administration with Azure Bastion SSH
   - You want repeatable deployments with Azure Resource Manager templates
 title: "Azure"
 ---
 
-# RemoteClaw on Azure Linux VM
+# OpenClaw on Azure Linux VM
 
-This guide sets up an Azure Linux VM, applies Network Security Group (NSG) hardening, configures Azure Bastion (managed Azure SSH entry point), and installs RemoteClaw.
+This guide sets up an Azure Linux VM, applies Network Security Group (NSG) hardening, configures Azure Bastion (managed Azure SSH entry point), and installs OpenClaw.
 
 ## What you’ll do
 
 - Deploy Azure compute and network resources with Azure Resource Manager (ARM) templates
 - Apply Azure Network Security Group (NSG) rules so VM SSH is allowed only from Azure Bastion
 - Use Azure Bastion for SSH access
-- Install RemoteClaw with the installer script
+- Install OpenClaw with the installer script
 - Verify the Gateway
 
 ## Before you start
@@ -27,143 +27,152 @@ You’ll need:
 - An Azure subscription with permission to create compute and network resources
 - Azure CLI installed (see [Azure CLI install steps](https://learn.microsoft.com/cli/azure/install-azure-cli) if needed)
 
-## 1) Sign in to Azure CLI
+<Steps>
+  <Step title="Sign in to Azure CLI">
+    ```bash
+    az login # Sign in and select your Azure subscription
+    az extension add -n ssh # Extension required for Azure Bastion SSH management
+    ```
+  </Step>
 
-```bash
-az login # Sign in and select your Azure subscription
-az extension add -n ssh # Extension required for Azure Bastion SSH management
-```
+  <Step title="Register required resource providers (one-time)">
+    ```bash
+    az provider register --namespace Microsoft.Compute
+    az provider register --namespace Microsoft.Network
+    ```
 
-## 2) Register required resource providers (one-time)
+    Verify Azure resource provider registration. Wait until both show `Registered`.
 
-```bash
-az provider register --namespace Microsoft.Compute
-az provider register --namespace Microsoft.Network
-```
+    ```bash
+    az provider show --namespace Microsoft.Compute --query registrationState -o tsv
+    az provider show --namespace Microsoft.Network --query registrationState -o tsv
+    ```
 
-Verify Azure resource provider registration. Wait until both show `Registered`.
+  </Step>
 
-```bash
-az provider show --namespace Microsoft.Compute --query registrationState -o tsv
-az provider show --namespace Microsoft.Network --query registrationState -o tsv
-```
+  <Step title="Set deployment variables">
+    ```bash
+    RG="rg-openclaw"
+    LOCATION="westus2"
+    TEMPLATE_URI="https://raw.githubusercontent.com/openclaw/openclaw/main/infra/azure/templates/azuredeploy.json"
+    PARAMS_URI="https://raw.githubusercontent.com/openclaw/openclaw/main/infra/azure/templates/azuredeploy.parameters.json"
+    ```
+  </Step>
 
-## 3) Set deployment variables
+  <Step title="Select SSH key">
+    Use your existing public key if you have one:
 
-```bash
-RG="rg-remoteclaw"
-LOCATION="westus2"
-TEMPLATE_URI="https://raw.githubusercontent.com/remoteclaw/remoteclaw/main/infra/azure/templates/azuredeploy.json"
-PARAMS_URI="https://raw.githubusercontent.com/remoteclaw/remoteclaw/main/infra/azure/templates/azuredeploy.parameters.json"
-```
+    ```bash
+    SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)"
+    ```
 
-## 4) Select SSH key
+    If you don’t have an SSH key yet, run the following:
 
-Use your existing public key if you have one:
+    ```bash
+    ssh-keygen -t ed25519 -a 100 -f ~/.ssh/id_ed25519 -C "you@example.com"
+    SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)"
+    ```
 
-```bash
-SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)"
-```
+  </Step>
 
-If you don’t have an SSH key yet, run the following:
+  <Step title="Select VM size and OS disk size">
+    Set VM and disk sizing variables:
 
-```bash
-ssh-keygen -t ed25519 -a 100 -f ~/.ssh/id_ed25519 -C "you@example.com"
-SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)"
-```
+    ```bash
+    VM_SIZE="Standard_B2as_v2"
+    OS_DISK_SIZE_GB=64
+    ```
 
-## 5) Select VM size and OS disk size
+    Choose a VM size and OS disk size that are available in your Azure subscription/region and matches your workload:
 
-Set VM and disk sizing variables:
+    - Start smaller for light usage and scale up later
+    - Use more vCPU/RAM/OS disk size for heavier automation, more channels, or larger model/tool workloads
+    - If a VM size is unavailable in your region or subscription quota, pick the closest available SKU
 
-```bash
-VM_SIZE="Standard_B2as_v2"
-OS_DISK_SIZE_GB=64
-```
+    List VM sizes available in your target region:
 
-Choose a VM size and OS disk size that are available in your Azure subscription/region and matches your workload:
+    ```bash
+    az vm list-skus --location "${LOCATION}" --resource-type virtualMachines -o table
+    ```
 
-- Start smaller for light usage and scale up later
-- Use more vCPU/RAM/OS disk size for heavier automation, more channels, or larger model/tool workloads
-- If a VM size is unavailable in your region or subscription quota, pick the closest available SKU
+    Check your current VM vCPU and OS disk size usage/quota:
 
-List VM sizes available in your target region:
+    ```bash
+    az vm list-usage --location "${LOCATION}" -o table
+    ```
 
-```bash
-az vm list-skus --location "${LOCATION}" --resource-type virtualMachines -o table
-```
+  </Step>
 
-Check your current VM vCPU and OS disk size usage/quota:
+  <Step title="Create the resource group">
+    ```bash
+    az group create -n "${RG}" -l "${LOCATION}"
+    ```
+  </Step>
 
-```bash
-az vm list-usage --location "${LOCATION}" -o table
-```
+  <Step title="Deploy resources">
+    This command applies your selected SSH key, VM size, and OS disk size.
 
-## 6) Create the resource group
+    ```bash
+    az deployment group create \
+      -g "${RG}" \
+      --template-uri "${TEMPLATE_URI}" \
+      --parameters "${PARAMS_URI}" \
+      --parameters location="${LOCATION}" \
+      --parameters vmSize="${VM_SIZE}" \
+      --parameters osDiskSizeGb="${OS_DISK_SIZE_GB}" \
+      --parameters sshPublicKey="${SSH_PUB_KEY}"
+    ```
 
-```bash
-az group create -n "${RG}" -l "${LOCATION}"
-```
+  </Step>
 
-## 7) Deploy resources
+  <Step title="SSH into the VM through Azure Bastion">
+    ```bash
+    RG="rg-openclaw"
+    VM_NAME="vm-openclaw"
+    BASTION_NAME="bas-openclaw"
+    ADMIN_USERNAME="openclaw"
+    VM_ID="$(az vm show -g "${RG}" -n "${VM_NAME}" --query id -o tsv)"
 
-This command applies your selected SSH key, VM size, and OS disk size.
+    az network bastion ssh \
+      --name "${BASTION_NAME}" \
+      --resource-group "${RG}" \
+      --target-resource-id "${VM_ID}" \
+      --auth-type ssh-key \
+      --username "${ADMIN_USERNAME}" \
+      --ssh-key ~/.ssh/id_ed25519
+    ```
 
-```bash
-az deployment group create \
-  -g "${RG}" \
-  --template-uri "${TEMPLATE_URI}" \
-  --parameters "${PARAMS_URI}" \
-  --parameters location="${LOCATION}" \
-  --parameters vmSize="${VM_SIZE}" \
-  --parameters osDiskSizeGb="${OS_DISK_SIZE_GB}" \
-  --parameters sshPublicKey="${SSH_PUB_KEY}"
-```
+  </Step>
 
-## 8) SSH into the VM through Azure Bastion
+  <Step title="Install OpenClaw (in the VM shell)">
+    ```bash
+    curl -fsSL https://openclaw.ai/install.sh -o /tmp/openclaw-install.sh
+    bash /tmp/openclaw-install.sh
+    rm -f /tmp/openclaw-install.sh
+    openclaw --version
+    ```
 
-```bash
-RG="rg-remoteclaw"
-VM_NAME="vm-remoteclaw"
-BASTION_NAME="bas-remoteclaw"
-ADMIN_USERNAME="remoteclaw"
-VM_ID="$(az vm show -g "${RG}" -n "${VM_NAME}" --query id -o tsv)"
+    The installer script handles Node detection/installation and runs onboarding by default.
 
-az network bastion ssh \
-  --name "${BASTION_NAME}" \
-  --resource-group "${RG}" \
-  --target-resource-id "${VM_ID}" \
-  --auth-type ssh-key \
-  --username "${ADMIN_USERNAME}" \
-  --ssh-key ~/.ssh/id_ed25519
-```
+  </Step>
 
-## 9) Install RemoteClaw (in the VM shell)
+  <Step title="Verify the Gateway">
+    After onboarding completes:
 
-```bash
-curl -fsSL https://remoteclaw.org/install.sh -o /tmp/remoteclaw-install.sh
-bash /tmp/remoteclaw-install.sh
-rm -f /tmp/remoteclaw-install.sh
-remoteclaw --version
-```
+    ```bash
+    openclaw gateway status
+    ```
 
-The installer script handles Node detection/installation and runs onboarding by default.
+    Most enterprise Azure teams already have GitHub Copilot licenses. If that is your case, we recommend choosing the GitHub Copilot provider in the OpenClaw onboarding wizard. See [GitHub Copilot provider](/providers/github-copilot).
 
-## 10) Verify the Gateway
+    The included ARM template uses Ubuntu image `version: "latest"` for convenience. If you need reproducible builds, pin a specific image version in `infra/azure/templates/azuredeploy.json` (you can list versions with `az vm image list --publisher Canonical --offer ubuntu-24_04-lts --sku server --all -o table`).
 
-After onboarding completes:
-
-```bash
-remoteclaw gateway status
-```
-
-Most enterprise Azure teams already have GitHub Copilot licenses. If that is your case, we recommend choosing the GitHub Copilot provider in the RemoteClaw onboarding wizard. See [GitHub Copilot provider](/providers/github-copilot).
-
-The included ARM template uses Ubuntu image `version: "latest"` for convenience. If you need reproducible builds, pin a specific image version in `infra/azure/templates/azuredeploy.json` (you can list versions with `az vm image list --publisher Canonical --offer ubuntu-24_04-lts --sku server --all -o table`).
+  </Step>
+</Steps>
 
 ## Next steps
 
 - Set up messaging channels: [Channels](/channels)
 - Pair local devices as nodes: [Nodes](/nodes)
 - Configure the Gateway: [Gateway configuration](/gateway/configuration)
-- For more details on RemoteClaw Azure deployment with the GitHub Copilot model provider: [RemoteClaw on Azure with GitHub Copilot](https://github.com/johnsonshi/remoteclaw-azure-github-copilot)
+- For more details on OpenClaw Azure deployment with the GitHub Copilot model provider: [OpenClaw on Azure with GitHub Copilot](https://github.com/johnsonshi/openclaw-azure-github-copilot)

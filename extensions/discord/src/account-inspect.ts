@@ -1,18 +1,14 @@
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import {
   hasConfiguredSecretInput,
   normalizeSecretInputString,
 } from "remoteclaw/plugin-sdk/config-runtime";
-import type { DiscordAccountConfig } from "../../../src/config/types.js";
-import {
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  type RemoteClawConfig,
-} from "../../../src/plugin-sdk-internal/accounts.js";
 import {
   mergeDiscordAccountConfig,
   resolveDefaultDiscordAccountId,
   resolveDiscordAccountConfig,
 } from "./accounts.js";
+import type { DiscordAccountConfig, RemoteClawConfig } from "./runtime-api.js";
 
 export type DiscordCredentialStatus = "available" | "configured_unavailable" | "missing";
 

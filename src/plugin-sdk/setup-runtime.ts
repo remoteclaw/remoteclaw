@@ -15,7 +15,6 @@ export {
   createAccountScopedAllowFromSection,
   createAccountScopedGroupAccessSection,
   createLegacyCompatChannelDmPolicy,
-  createStandardChannelSetupStatus,
   parseMentionOrPrefixedId,
   patchChannelConfigForAccount,
   promptLegacyChannelAllowFromForAccount,

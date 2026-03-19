@@ -18,7 +18,7 @@ export { buildComputedAccountStatusSnapshot } from "./status-helpers.js";
 export {
   listSlackDirectoryGroupsFromConfig,
   listSlackDirectoryPeersFromConfig,
-} from "../../extensions/slack/src/directory-config.js";
+} from "../../extensions/slack/api.js";
 export {
   resolveDefaultGroupPolicy,
   resolveOpenProviderRuntimeGroupPolicy,

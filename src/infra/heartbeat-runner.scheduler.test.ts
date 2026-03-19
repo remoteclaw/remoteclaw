@@ -217,7 +217,7 @@ describe("startHeartbeatRunner", () => {
             { id: "finance", heartbeat: { every: "30m" } },
           ],
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       runOnce: runSpy,
     });
 

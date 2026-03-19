@@ -1,78 +1,86 @@
 ---
-description: "CLI reference for `remoteclaw devices` (device pairing + token rotation/revocation)"
+summary: "CLI reference for `openclaw devices` (device pairing + token rotation/revocation)"
 read_when:
   - You are approving device pairing requests
   - You need to rotate or revoke device tokens
 title: "devices"
 ---
 
-# `remoteclaw devices`
+# `openclaw devices`
 
 Manage device pairing requests and device-scoped tokens.
 
 ## Commands
 
-### `remoteclaw devices list`
+### `openclaw devices list`
 
 List pending pairing requests and paired devices.
 
 ```
-remoteclaw devices list
-remoteclaw devices list --json
+openclaw devices list
+openclaw devices list --json
 ```
 
-### `remoteclaw devices remove <deviceId>`
+Pending request output includes the requested role and scopes so approvals can
+be reviewed before you approve.
+
+### `openclaw devices remove <deviceId>`
 
 Remove one paired device entry.
 
 ```
-remoteclaw devices remove <deviceId>
-remoteclaw devices remove <deviceId> --json
+openclaw devices remove <deviceId>
+openclaw devices remove <deviceId> --json
 ```
 
-### `remoteclaw devices clear --yes [--pending]`
+### `openclaw devices clear --yes [--pending]`
 
 Clear paired devices in bulk.
 
 ```
-remoteclaw devices clear --yes
-remoteclaw devices clear --yes --pending
-remoteclaw devices clear --yes --pending --json
+openclaw devices clear --yes
+openclaw devices clear --yes --pending
+openclaw devices clear --yes --pending --json
 ```
 
-### `remoteclaw devices approve [requestId] [--latest]`
+### `openclaw devices approve [requestId] [--latest]`
 
-Approve a pending device pairing request. If `requestId` is omitted, RemoteClaw
+Approve a pending device pairing request. If `requestId` is omitted, OpenClaw
 automatically approves the most recent pending request.
 
+Note: if a device retries pairing with changed auth details (role/scopes/public
+key), OpenClaw supersedes the previous pending entry and issues a new
+`requestId`. Run `openclaw devices list` right before approval to use the
+current ID.
+
 ```
-remoteclaw devices approve
-remoteclaw devices approve <requestId>
-remoteclaw devices approve --latest
+openclaw devices approve
+openclaw devices approve <requestId>
+openclaw devices approve --latest
 ```
 
-### `remoteclaw devices reject <requestId>`
+### `openclaw devices reject <requestId>`
 
 Reject a pending device pairing request.
 
 ```
-remoteclaw devices reject <requestId>
+openclaw devices reject <requestId>
 ```
 
-### `remoteclaw devices rotate --device <id> --role <role> [--scope <scope...>]`
+### `openclaw devices rotate --device <id> --role <role> [--scope <scope...>]`
 
 Rotate a device token for a specific role (optionally updating scopes).
 
 ```
-remoteclaw devices rotate --device <deviceId> --role operator --scope operator.read --scope operator.write
+openclaw devices rotate --device <deviceId> --role operator --scope operator.read --scope operator.write
 ```
 
-### `remoteclaw devices revoke --device <id> --role <role>`
+### `openclaw devices revoke --device <id> --role <role>`
 
 Revoke a device token for a specific role.
 
 ```
-remoteclaw devices revoke --device <deviceId> --role node
+openclaw devices revoke --device <deviceId> --role node
 ```
 
 ## Common options

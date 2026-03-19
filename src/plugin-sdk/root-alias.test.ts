@@ -27,6 +27,12 @@ describe("plugin-sdk root alias", () => {
     expect(parsed.success).toBe(false);
   });
 
+  it("does not trigger monolithic sdk for promise-like or symbol reflection probes", () => {
+    expect("then" in rootSdk).toBe(false);
+    expect(Reflect.get(rootSdk, Symbol.toStringTag)).toBeUndefined();
+    expect(Object.getOwnPropertyDescriptor(rootSdk, Symbol.toStringTag)).toBeUndefined();
+  });
+
   it("loads legacy root exports lazily through the proxy", { timeout: 240_000 }, () => {
     expect(typeof rootSdk.resolveControlCommandGate).toBe("function");
     expect(typeof rootSdk.default).toBe("object");

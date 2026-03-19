@@ -61,6 +61,13 @@ const fastExports = {
   emptyPluginConfigSchema,
 };
 
+function shouldResolveMonolithic(prop) {
+  if (typeof prop !== "string") {
+    return false;
+  }
+  return prop !== "then";
+}
+
 const rootProxy = new Proxy(fastExports, {
   get(target, prop, receiver) {
     if (prop === "__esModule") {
@@ -72,6 +79,9 @@ const rootProxy = new Proxy(fastExports, {
     if (Reflect.has(target, prop)) {
       return Reflect.get(target, prop, receiver);
     }
+    if (!shouldResolveMonolithic(prop)) {
+      return undefined;
+    }
     return loadMonolithicSdk()[prop];
   },
   has(target, prop) {
@@ -80,6 +90,9 @@ const rootProxy = new Proxy(fastExports, {
     }
     if (Reflect.has(target, prop)) {
       return true;
+    }
+    if (!shouldResolveMonolithic(prop)) {
+      return false;
     }
     return prop in loadMonolithicSdk();
   },
@@ -112,6 +125,9 @@ const rootProxy = new Proxy(fastExports, {
     const own = Object.getOwnPropertyDescriptor(target, prop);
     if (own) {
       return own;
+    }
+    if (!shouldResolveMonolithic(prop)) {
+      return undefined;
     }
     const descriptor = Object.getOwnPropertyDescriptor(loadMonolithicSdk(), prop);
     if (!descriptor) {

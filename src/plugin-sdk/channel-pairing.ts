@@ -3,16 +3,16 @@ import { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 import type { PluginRuntime } from "../plugins/runtime/types.js";
 import { createScopedPairingAccess } from "./pairing-access.js";
 
+export { createScopedPairingAccess } from "./pairing-access.js";
+
 type ScopedPairingAccess = ReturnType<typeof createScopedPairingAccess>;
 
-/** Pairing helpers scoped to one channel account. */
 export type ChannelPairingController = ScopedPairingAccess & {
   issueChallenge: (
     params: Omit<Parameters<typeof issuePairingChallenge>[0], "channel" | "upsertPairingRequest">,
   ) => ReturnType<typeof issuePairingChallenge>;
 };
 
-/** Pre-bind the channel id and storage sink for pairing challenges. */
 export function createChannelPairingChallengeIssuer(params: {
   channel: ChannelId;
   upsertPairingRequest: Parameters<typeof issuePairingChallenge>[0]["upsertPairingRequest"];
@@ -30,7 +30,6 @@ export function createChannelPairingChallengeIssuer(params: {
     });
 }
 
-/** Build the full scoped pairing controller used by channel runtime code. */
 export function createChannelPairingController(params: {
   core: PluginRuntime;
   channel: ChannelId;

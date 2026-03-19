@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { PassThrough } from "node:stream";
-import type { OpenClawConfig, RuntimeEnv } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { describe, expect, it } from "vitest";
 import type { ResolvedMattermostAccount } from "./accounts.js";
 import { createSlashCommandHttpHandler } from "./slash-http.js";
@@ -62,7 +62,7 @@ describe("slash-http", () => {
   it("rejects non-POST methods", async () => {
     const handler = createSlashCommandHttpHandler({
       account: accountFixture,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       runtime: {} as RuntimeEnv,
       commandTokens: new Set(["valid-token"]),
     });
@@ -79,7 +79,7 @@ describe("slash-http", () => {
   it("rejects malformed payloads", async () => {
     const handler = createSlashCommandHttpHandler({
       account: accountFixture,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       runtime: {} as RuntimeEnv,
       commandTokens: new Set(["valid-token"]),
     });
@@ -95,7 +95,7 @@ describe("slash-http", () => {
   it("fails closed when no command tokens are registered", async () => {
     const handler = createSlashCommandHttpHandler({
       account: accountFixture,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       runtime: {} as RuntimeEnv,
       commandTokens: new Set<string>(),
     });
@@ -113,7 +113,7 @@ describe("slash-http", () => {
   it("rejects unknown command tokens", async () => {
     const handler = createSlashCommandHttpHandler({
       account: accountFixture,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as RemoteClawConfig,
       runtime: {} as RuntimeEnv,
       commandTokens: new Set(["known-token"]),
     });

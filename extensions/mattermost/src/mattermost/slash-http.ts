@@ -6,14 +6,14 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { OpenClawConfig, ReplyPayload, RuntimeEnv } from "openclaw/plugin-sdk";
+import type { RemoteClawConfig, ReplyPayload, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import {
   createReplyPrefixOptions,
   createTypingCallbacks,
   isDangerousNameMatchingEnabled,
   logTypingFailure,
   resolveControlCommandGate,
-} from "openclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk";
 import type { ResolvedMattermostAccount } from "../mattermost/accounts.js";
 import { getMattermostRuntime } from "../runtime.js";
 import {
@@ -38,7 +38,7 @@ import {
 
 type SlashHttpHandlerParams = {
   account: ResolvedMattermostAccount;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   runtime: RuntimeEnv;
   /** Expected token from registered commands (for validation). */
   commandTokens: Set<string>;
@@ -92,7 +92,7 @@ type SlashInvocationAuth = {
 
 async function authorizeSlashInvocation(params: {
   account: ResolvedMattermostAccount;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   client: ReturnType<typeof createMattermostClient>;
   commandText: string;
   channelId: string;
@@ -482,7 +482,7 @@ export function createSlashCommandHttpHandler(params: SlashHttpHandlerParams) {
 
 async function handleSlashCommandAsync(params: {
   account: ResolvedMattermostAccount;
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   runtime: RuntimeEnv;
   client: ReturnType<typeof createMattermostClient>;
   commandText: string;
@@ -587,9 +587,9 @@ async function handleSlashCommandAsync(params: {
 
   const typingCallbacks = createTypingCallbacks({
     start: () => sendMattermostTyping(client, { channelId }),
-    onStartError: (err) => {
+    onStartError: (err: unknown) => {
       logTypingFailure({
-        log: (message) => log?.(message),
+        log: (message: string) => log?.(message),
         channel: "mattermost",
         target: channelId,
         error: err,

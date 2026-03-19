@@ -1,18 +1,32 @@
-import crypto from "node:crypto";
+import { resolveSendableOutboundReplyParts } from "remoteclaw/plugin-sdk/reply-payload";
 import {
   resolveAgentConfig,
-  resolveAgentRuntimeArgs,
-  resolveAgentRuntimeEnv,
-  resolveAgentRuntimeOrThrow,
+  resolveAgentDir,
+  resolveAgentModelFallbacksOverride,
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
-import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
+import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
+import { resolveBootstrapWarningSignaturesSeen } from "../../agents/bootstrap-budget.js";
+import { runCliAgent } from "../../agents/cli-runner.js";
 import { getCliSessionId, setCliSessionId } from "../../agents/cli-session.js";
+import { lookupContextTokens } from "../../agents/context.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
-import { resolveUserTimezone } from "../../agents/date-time.js";
-// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-import { isCliProvider, normalizeModelRef, parseModelRef } from "../../agents/provider-utils.js";
+import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
+import { resolveFastModeState } from "../../agents/fast-mode.js";
+import { resolveNestedAgentLane } from "../../agents/lanes.js";
+import { loadModelCatalog } from "../../agents/model-catalog.js";
+import { runWithModelFallback } from "../../agents/model-fallback.js";
+import {
+  getModelRefStatus,
+  isCliProvider,
+  normalizeModelSelection,
+  resolveAllowedModelRef,
+  resolveConfiguredModelRef,
+  resolveHooksGmailModel,
+  resolveThinkingDefault,
+} from "../../agents/model-selection.js";
+import { runEmbeddedPiAgent } from "../../agents/pi-embedded.js";
 import {
   countActiveDescendantRuns,
   listDescendantRunsForRequester,
@@ -20,18 +34,21 @@ import {
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
-import { normalizeVerboseLevel } from "../../auto-reply/thinking.js";
+import {
+  normalizeThinkLevel,
+  normalizeVerboseLevel,
+  supportsXHighThinking,
+} from "../../auto-reply/thinking.js";
 import type { CliDeps } from "../../cli/outbound-send-deps.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { resolveGatewayPort } from "../../config/paths.js";
-import { updateSessionStore } from "../../config/sessions.js";
+import {
+  resolveSessionTranscriptPath,
+  setSessionRuntimeModel,
+  updateSessionStore,
+} from "../../config/sessions.js";
 import type { AgentDefaultsConfig } from "../../config/types.js";
-import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { logWarn } from "../../logger.js";
-import { ChannelBridge } from "../../middleware/channel-bridge.js";
-import type { SessionMap } from "../../middleware/session-map.js";
-import type { AgentDeliveryResult, ChannelMessage } from "../../middleware/types.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import {
   buildSafeExternalPrompt,
@@ -39,6 +56,7 @@ import {
   getHookType,
   isExternalHookSession,
 } from "../../security/external-content.js";
+import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
 import type { CronJob, CronRunOutcome, CronRunTelemetry } from "../types.js";
 import {
@@ -48,77 +66,21 @@ import {
 } from "./delivery-dispatch.js";
 import { resolveDeliveryTarget } from "./delivery-target.js";
 import {
+  isHeartbeatOnlyResponse,
   pickLastDeliverablePayload,
   pickLastNonEmptyTextFromPayloads,
   pickSummaryFromOutput,
   pickSummaryFromPayloads,
+  resolveHeartbeatAckMaxChars,
 } from "./helpers.js";
 import { resolveCronAgentSessionKey } from "./session-key.js";
 import { resolveCronSession } from "./session.js";
+import { resolveCronSkillsSnapshot } from "./skills-snapshot.js";
 import { isLikelyInterimCronMessage } from "./subagent-followup.js";
 
-// ── ChannelBridge helpers ───────────────────────────────────────────────
-
-/**
- * Create a SessionMap-compatible adapter that bridges the cron session
- * store to the ChannelBridge's SessionMap interface.
- *
- * `get()` returns the CLI session ID from the cron session entry.
- * `set()` is a no-op — session updates are handled by the caller after the run.
- */
-function createSessionMapAdapter(params: { getSessionId: () => string | undefined }): SessionMap {
-  return {
-    async get() {
-      return params.getSessionId();
-    },
-    async set() {
-      // Session updates handled by caller (persistSessionEntry / setCliSessionId)
-    },
-    async delete() {
-      // Session cleanup handled by caller
-    },
-  } as unknown as SessionMap;
+function resolveNonNegativeNumber(value: number | undefined): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
 }
-
-/** Resolve gateway URL from config for local gateway. */
-function resolveGatewayUrlFromConfig(cfg: RemoteClawConfig): string {
-  const port = resolveGatewayPort(cfg);
-  return `ws://127.0.0.1:${port}`;
-}
-
-/** Resolve gateway auth token from config. */
-function resolveGatewayTokenFromConfig(cfg: RemoteClawConfig): string {
-  return resolveGatewayCredentialsFromConfig({ cfg, env: process.env }).token ?? "";
-}
-
-/** Build a ChannelMessage from the cron job context. */
-function buildCronChannelMessage(params: {
-  job: CronJob;
-  commandBody: string;
-  resolvedDelivery: { channel?: string; to?: string; accountId?: string };
-  timestamp: number;
-  messageToolHints: string[] | undefined;
-  agentId?: string;
-  timezone?: string;
-  authorizedSenders?: string[];
-}): ChannelMessage {
-  return {
-    id: params.job.id ?? crypto.randomUUID(),
-    text: params.commandBody,
-    from: params.resolvedDelivery.accountId ?? "system",
-    replyToId: `cron:${params.job.id}`,
-    channelId: params.resolvedDelivery.to ?? "",
-    provider: params.resolvedDelivery.channel ?? "cron",
-    timestamp: params.timestamp,
-    messageToolHints: params.messageToolHints?.length ? params.messageToolHints : undefined,
-    senderIsOwner: false, // Cron agents must not self-modify via owner-only tools
-    agentId: params.agentId || undefined,
-    timezone: params.timezone || undefined,
-    authorizedSenders: params.authorizedSenders?.length ? params.authorizedSenders : undefined,
-  };
-}
-
-// ── Main ─────────────────────────────────────────────────────────────────
 
 export type RunCronAgentTurnResult = {
   /** Last non-empty agent text output (not truncated). */
@@ -138,6 +100,54 @@ export type RunCronAgentTurnResult = {
   deliveryAttempted?: boolean;
 } & CronRunOutcome &
   CronRunTelemetry;
+
+type ResolvedAgentConfig = NonNullable<ReturnType<typeof resolveAgentConfig>>;
+
+function extractCronAgentDefaultsOverride(agentConfigOverride?: ResolvedAgentConfig) {
+  const {
+    model: overrideModel,
+    sandbox: _agentSandboxOverride,
+    ...agentOverrideRest
+  } = agentConfigOverride ?? {};
+  return {
+    overrideModel,
+    definedOverrides: Object.fromEntries(
+      Object.entries(agentOverrideRest).filter(([, value]) => value !== undefined),
+    ) as Partial<AgentDefaultsConfig>,
+  };
+}
+
+function mergeCronAgentModelOverride(params: {
+  defaults: AgentDefaultsConfig;
+  overrideModel: ResolvedAgentConfig["model"] | undefined;
+}) {
+  const nextDefaults: AgentDefaultsConfig = { ...params.defaults };
+  const existingModel =
+    nextDefaults.model && typeof nextDefaults.model === "object" ? nextDefaults.model : {};
+  if (typeof params.overrideModel === "string") {
+    nextDefaults.model = { ...existingModel, primary: params.overrideModel };
+  } else if (params.overrideModel) {
+    nextDefaults.model = { ...existingModel, ...params.overrideModel };
+  }
+  return nextDefaults;
+}
+
+function buildCronAgentDefaultsConfig(params: {
+  defaults?: AgentDefaultsConfig;
+  agentConfigOverride?: ResolvedAgentConfig;
+}) {
+  const { overrideModel, definedOverrides } = extractCronAgentDefaultsOverride(
+    params.agentConfigOverride,
+  );
+  // Keep sandbox overrides out of `agents.defaults` here. Sandbox resolution
+  // already merges global defaults with per-agent overrides using `agentId`;
+  // copying the agent sandbox into defaults clobbers global defaults and can
+  // double-apply nested agent overrides during isolated cron runs.
+  return mergeCronAgentModelOverride({
+    defaults: Object.assign({}, params.defaults, definedOverrides),
+    overrideModel,
+  });
+}
 
 type ResolvedCronDeliveryTarget = Awaited<ReturnType<typeof resolveDeliveryTarget>>;
 
@@ -206,32 +216,6 @@ async function resolveCronDeliveryContext(params: {
   };
 }
 
-type ResolvedAgentConfig = NonNullable<ReturnType<typeof resolveAgentConfig>>;
-
-// Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
-// Upstream extractCronAgentDefaultsOverride / mergeCronAgentModelOverride simplified:
-// only sandbox exclusion and defined-override merging remain.
-function extractCronAgentDefaultsOverride(agentConfigOverride?: ResolvedAgentConfig) {
-  const { sandbox: _agentSandboxOverride, ...agentOverrideRest } = agentConfigOverride ?? {};
-  return {
-    definedOverrides: Object.fromEntries(
-      Object.entries(agentOverrideRest).filter(([, value]) => value !== undefined),
-    ) as Partial<AgentDefaultsConfig>,
-  };
-}
-
-function buildCronAgentDefaultsConfig(params: {
-  defaults?: AgentDefaultsConfig;
-  agentConfigOverride?: ResolvedAgentConfig;
-}) {
-  const { definedOverrides } = extractCronAgentDefaultsOverride(params.agentConfigOverride);
-  // Keep sandbox overrides out of `agents.defaults` here. Sandbox resolution
-  // already merges global defaults with per-agent overrides using `agentId`;
-  // copying the agent sandbox into defaults clobbers global defaults and can
-  // double-apply nested agent overrides during isolated cron runs.
-  return Object.assign({}, params.defaults, definedOverrides) as AgentDefaultsConfig;
-}
-
 function appendCronDeliveryInstruction(params: {
   commandBody: string;
   deliveryRequested: boolean;
@@ -262,7 +246,7 @@ export async function runCronIsolatedAgentTurn(params: {
       ? reason.trim()
       : "cron: job execution timed out";
   };
-  const isFastTestEnv = process.env.REMOTECLAW_TEST_FAST === "1";
+  const isFastTestEnv = process.env.OPENCLAW_TEST_FAST === "1";
   const deliveryContract = params.deliveryContract ?? "cron-owned";
   const defaultAgentId = resolveDefaultAgentId(params.cfg);
   const requestedAgentId =
@@ -292,23 +276,91 @@ export async function runCronIsolatedAgentTurn(params: {
   const agentSessionKey = resolveCronAgentSessionKey({ sessionKey: baseSessionKey, agentId });
 
   const workspaceDirRaw = resolveAgentWorkspaceDir(params.cfg, agentId);
-  const workspaceDir = await ensureAgentWorkspace(workspaceDirRaw);
+  const agentDir = resolveAgentDir(params.cfg, agentId);
+  const workspace = await ensureAgentWorkspace({
+    dir: workspaceDirRaw,
+    ensureBootstrapFiles: !agentCfg?.skipBootstrap && !isFastTestEnv,
+  });
+  const workspaceDir = workspace.dir;
 
-  const resolvedDefault = normalizeModelRef("unknown", "unknown");
+  const resolvedDefault = resolveConfiguredModelRef({
+    cfg: cfgWithAgentDefaults,
+    defaultProvider: DEFAULT_PROVIDER,
+    defaultModel: DEFAULT_MODEL,
+  });
   let provider = resolvedDefault.provider;
   let model = resolvedDefault.model;
+
+  let catalog: Awaited<ReturnType<typeof loadModelCatalog>> | undefined;
+  const loadCatalog = async () => {
+    if (!catalog) {
+      catalog = await loadModelCatalog({ config: cfgWithAgentDefaults });
+    }
+    return catalog;
+  };
+  // Isolated cron sessions are subagents — prefer subagents.model when set,
+  // but only if it passes the model allowlist.  #11461
+  const subagentModelRaw =
+    normalizeModelSelection(agentConfigOverride?.subagents?.model) ??
+    normalizeModelSelection(params.cfg.agents?.defaults?.subagents?.model);
+  if (subagentModelRaw) {
+    const resolvedSubagent = resolveAllowedModelRef({
+      cfg: cfgWithAgentDefaults,
+      catalog: await loadCatalog(),
+      raw: subagentModelRaw,
+      defaultProvider: resolvedDefault.provider,
+      defaultModel: resolvedDefault.model,
+    });
+    if (!("error" in resolvedSubagent)) {
+      provider = resolvedSubagent.ref.provider;
+      model = resolvedSubagent.ref.model;
+    }
+  }
+  // Resolve model - prefer hooks.gmail.model for Gmail hooks.
+  const isGmailHook = baseSessionKey.startsWith("hook:gmail:");
+  let hooksGmailModelApplied = false;
+  const hooksGmailModelRef = isGmailHook
+    ? resolveHooksGmailModel({
+        cfg: params.cfg,
+        defaultProvider: DEFAULT_PROVIDER,
+      })
+    : null;
+  if (hooksGmailModelRef) {
+    const status = getModelRefStatus({
+      cfg: params.cfg,
+      catalog: await loadCatalog(),
+      ref: hooksGmailModelRef,
+      defaultProvider: resolvedDefault.provider,
+      defaultModel: resolvedDefault.model,
+    });
+    if (status.allowed) {
+      provider = hooksGmailModelRef.provider;
+      model = hooksGmailModelRef.model;
+      hooksGmailModelApplied = true;
+    }
+  }
   const modelOverrideRaw =
     params.job.payload.kind === "agentTurn" ? params.job.payload.model : undefined;
   const modelOverride = typeof modelOverrideRaw === "string" ? modelOverrideRaw.trim() : undefined;
   if (modelOverride !== undefined && modelOverride.length > 0) {
-    const parsed = parseModelRef(modelOverride, resolvedDefault.provider);
-    if (!parsed) {
-      logWarn(
-        `cron: payload.model '${modelOverride}' not recognized, falling back to agent defaults`,
-      );
+    const resolvedOverride = resolveAllowedModelRef({
+      cfg: cfgWithAgentDefaults,
+      catalog: await loadCatalog(),
+      raw: modelOverride,
+      defaultProvider: resolvedDefault.provider,
+      defaultModel: resolvedDefault.model,
+    });
+    if ("error" in resolvedOverride) {
+      if (resolvedOverride.error.startsWith("model not allowed:")) {
+        logWarn(
+          `cron: payload.model '${modelOverride}' not allowed, falling back to agent defaults`,
+        );
+      } else {
+        return { status: "error", error: resolvedOverride.error };
+      }
     } else {
-      provider = parsed.provider;
-      model = parsed.model;
+      provider = resolvedOverride.ref.provider;
+      model = resolvedOverride.ref.model;
     }
   }
   const now = Date.now();
@@ -357,20 +409,47 @@ export async function runCronIsolatedAgentTurn(params: {
   // Respect session model override — check session.modelOverride before falling
   // back to the default config model. This ensures /model changes are honoured
   // by cron and isolated agent runs.
-  if (!modelOverride) {
+  if (!modelOverride && !hooksGmailModelApplied) {
     const sessionModelOverride = cronSession.sessionEntry.modelOverride?.trim();
     if (sessionModelOverride) {
       const sessionProviderOverride =
         cronSession.sessionEntry.providerOverride?.trim() || resolvedDefault.provider;
-      const parsed = parseModelRef(
-        `${sessionProviderOverride}/${sessionModelOverride}`,
-        resolvedDefault.provider,
-      );
-      if (parsed) {
-        provider = parsed.provider;
-        model = parsed.model;
+      const resolvedSessionOverride = resolveAllowedModelRef({
+        cfg: cfgWithAgentDefaults,
+        catalog: await loadCatalog(),
+        raw: `${sessionProviderOverride}/${sessionModelOverride}`,
+        defaultProvider: resolvedDefault.provider,
+        defaultModel: resolvedDefault.model,
+      });
+      if (!("error" in resolvedSessionOverride)) {
+        provider = resolvedSessionOverride.ref.provider;
+        model = resolvedSessionOverride.ref.model;
       }
     }
+  }
+
+  // Resolve thinking level - job thinking > hooks.gmail.thinking > model/global defaults
+  const hooksGmailThinking = isGmailHook
+    ? normalizeThinkLevel(params.cfg.hooks?.gmail?.thinking)
+    : undefined;
+  const jobThink = normalizeThinkLevel(
+    (params.job.payload.kind === "agentTurn" ? params.job.payload.thinking : undefined) ??
+      undefined,
+  );
+  let thinkLevel = jobThink ?? hooksGmailThinking;
+  if (!thinkLevel) {
+    thinkLevel = resolveThinkingDefault({
+      cfg: cfgWithAgentDefaults,
+      provider,
+      model,
+      catalog: await loadCatalog(),
+    });
+  }
+  if (thinkLevel === "xhigh" && !supportsXHighThinking(provider, model)) {
+    logWarn(
+      `[cron:${params.job.id}] Thinking level "xhigh" is not supported for ${provider}/${model}; downgrading to "high".`,
+    );
+    thinkLevel = "high";
   }
 
   const timeoutMs = resolveAgentTimeoutMs({
@@ -380,11 +459,7 @@ export async function runCronIsolatedAgentTurn(params: {
   });
 
   const agentPayload = params.job.payload.kind === "agentTurn" ? params.job.payload : null;
-  const {
-    deliveryRequested,
-    resolvedDelivery,
-    toolPolicy: _toolPolicy,
-  } = await resolveCronDeliveryContext({
+  const { deliveryRequested, resolvedDelivery, toolPolicy } = await resolveCronDeliveryContext({
     cfg: cfgWithAgentDefaults,
     job: params.job,
     agentId,
@@ -396,7 +471,6 @@ export async function runCronIsolatedAgentTurn(params: {
 
   // SECURITY: Wrap external hook content with security boundaries to prevent prompt injection
   // unless explicitly allowed via a dangerous config override.
-  const isGmailHook = baseSessionKey.startsWith("hook:gmail:");
   const isExternalHook = isExternalHookSession(baseSessionKey);
   const allowUnsafeExternalContent =
     agentPayload?.allowUnsafeExternalContent === true ||
@@ -433,6 +507,23 @@ export async function runCronIsolatedAgentTurn(params: {
   }
   commandBody = appendCronDeliveryInstruction({ commandBody, deliveryRequested });
 
+  const existingSkillsSnapshot = cronSession.sessionEntry.skillsSnapshot;
+  const skillsSnapshot = resolveCronSkillsSnapshot({
+    workspaceDir,
+    config: cfgWithAgentDefaults,
+    agentId,
+    existingSnapshot: existingSkillsSnapshot,
+    isFastTestEnv,
+  });
+  if (!isFastTestEnv && skillsSnapshot !== existingSkillsSnapshot) {
+    cronSession.sessionEntry = {
+      ...cronSession.sessionEntry,
+      updatedAt: Date.now(),
+      skillsSnapshot,
+    };
+    await persistSessionEntry();
+  }
+
   // Persist the intended model and systemSent before the run so that
   // sessions_list reflects the cron override even if the run fails or is
   // still in progress (#21057).  Best-effort: a filesystem error here
@@ -446,12 +537,28 @@ export async function runCronIsolatedAgentTurn(params: {
     logWarn(`[cron:${params.job.id}] Failed to persist pre-run session entry: ${String(err)}`);
   }
 
-  let runResult: AgentDeliveryResult;
-  const fallbackProvider = provider;
-  const fallbackModel = model;
+  // Resolve auth profile for the session, mirroring the inbound auto-reply path
+  // (get-reply-run.ts). Without this, isolated cron sessions fall back to env-var
+  // auth which may not match the configured auth-profiles, causing 401 errors.
+  const authProfileId = await resolveSessionAuthProfileOverride({
+    cfg: cfgWithAgentDefaults,
+    provider,
+    agentDir,
+    sessionEntry: cronSession.sessionEntry,
+    sessionStore: cronSession.store,
+    sessionKey: agentSessionKey,
+    storePath: cronSession.storePath,
+    isNewSession: cronSession.isNewSession,
+  });
+  const authProfileIdSource = cronSession.sessionEntry.authProfileOverrideSource;
+
+  let runResult: Awaited<ReturnType<typeof runEmbeddedPiAgent>> | undefined;
+  let fallbackProvider = provider;
+  let fallbackModel = model;
   const runStartedAt = Date.now();
   let runEndedAt = runStartedAt;
   try {
+    const sessionFile = resolveSessionTranscriptPath(cronSession.sessionEntry.sessionId, agentId);
     const resolvedVerboseLevel =
       normalizeVerboseLevel(cronSession.sessionEntry.verboseLevel) ??
       normalizeVerboseLevel(agentCfg?.verboseDefault) ??
@@ -460,60 +567,135 @@ export async function runCronIsolatedAgentTurn(params: {
       sessionKey: agentSessionKey,
       verboseLevel: resolvedVerboseLevel,
     });
+    const messageChannel = resolvedDelivery.channel;
+    // Per-job payload.fallbacks takes priority over agent-level fallbacks.
+    const payloadFallbacks =
+      params.job.payload.kind === "agentTurn" && Array.isArray(params.job.payload.fallbacks)
+        ? params.job.payload.fallbacks
+        : undefined;
+    let bootstrapPromptWarningSignaturesSeen = resolveBootstrapWarningSignaturesSeen(
+      cronSession.sessionEntry.systemPromptReport,
+    );
 
-    if (abortSignal?.aborted) {
-      throw new Error(abortReason());
+    const runPrompt = async (promptText: string) => {
+      const fallbackResult = await runWithModelFallback({
+        cfg: cfgWithAgentDefaults,
+        provider,
+        model,
+        runId: cronSession.sessionEntry.sessionId,
+        agentDir,
+        fallbacksOverride:
+          payloadFallbacks ?? resolveAgentModelFallbacksOverride(params.cfg, agentId),
+        run: async (providerOverride, modelOverride, runOptions) => {
+          if (abortSignal?.aborted) {
+            throw new Error(abortReason());
+          }
+          const bootstrapPromptWarningSignature =
+            bootstrapPromptWarningSignaturesSeen[bootstrapPromptWarningSignaturesSeen.length - 1];
+          if (isCliProvider(providerOverride, cfgWithAgentDefaults)) {
+            // Fresh isolated cron sessions must not reuse a stored CLI session ID.
+            // Passing an existing ID activates the resume watchdog profile
+            // (noOutputTimeoutRatio 0.3, maxMs 180 s) instead of the fresh profile
+            // (ratio 0.8, maxMs 600 s), causing jobs to time out at roughly 1/3 of
+            // the configured timeoutSeconds. See: https://github.com/remoteclaw/remoteclaw/issues/29774
+            const cliSessionId = cronSession.isNewSession
+              ? undefined
+              : getCliSessionId(cronSession.sessionEntry, providerOverride);
+            const result = await runCliAgent({
+              sessionId: cronSession.sessionEntry.sessionId,
+              sessionKey: agentSessionKey,
+              agentId,
+              sessionFile,
+              workspaceDir,
+              config: cfgWithAgentDefaults,
+              prompt: promptText,
+              provider: providerOverride,
+              model: modelOverride,
+              thinkLevel,
+              timeoutMs,
+              runId: cronSession.sessionEntry.sessionId,
+              cliSessionId,
+              bootstrapPromptWarningSignaturesSeen,
+              bootstrapPromptWarningSignature,
+            });
+            bootstrapPromptWarningSignaturesSeen = resolveBootstrapWarningSignaturesSeen(
+              result.meta?.systemPromptReport,
+            );
+            return result;
+          }
+          const result = await runEmbeddedPiAgent({
+            sessionId: cronSession.sessionEntry.sessionId,
+            sessionKey: agentSessionKey,
+            agentId,
+            trigger: "cron",
+            // Cron runs execute inside the gateway process and need the same
+            // explicit subagent late-binding as other gateway-owned runners.
+            allowGatewaySubagentBinding: true,
+            // Cron jobs are trusted local automation, so isolated runs should
+            // inherit owner-only tooling like local `remoteclaw agent` runs.
+            senderIsOwner: true,
+            messageChannel,
+            agentAccountId: resolvedDelivery.accountId,
+            sessionFile,
+            agentDir,
+            workspaceDir,
+            config: cfgWithAgentDefaults,
+            skillsSnapshot,
+            prompt: promptText,
+            lane: resolveNestedAgentLane(params.lane),
+            provider: providerOverride,
+            model: modelOverride,
+            authProfileId,
+            authProfileIdSource,
+            thinkLevel,
+            fastMode: resolveFastModeState({
+              cfg: cfgWithAgentDefaults,
+              provider: providerOverride,
+              model: modelOverride,
+              sessionEntry: cronSession.sessionEntry,
+            }).enabled,
+            verboseLevel: resolvedVerboseLevel,
+            timeoutMs,
+            bootstrapContextMode: agentPayload?.lightContext ? "lightweight" : undefined,
+            bootstrapContextRunKind: "cron",
+            runId: cronSession.sessionEntry.sessionId,
+            requireExplicitMessageTarget: toolPolicy.requireExplicitMessageTarget,
+            disableMessageTool: toolPolicy.disableMessageTool,
+            allowTransientCooldownProbe: runOptions?.allowTransientCooldownProbe,
+            abortSignal,
+            bootstrapPromptWarningSignaturesSeen,
+            bootstrapPromptWarningSignature,
+          });
+          bootstrapPromptWarningSignaturesSeen = resolveBootstrapWarningSignaturesSeen(
+            result.meta?.systemPromptReport,
+          );
+          return result;
+        },
+      });
+      runResult = fallbackResult.result;
+      fallbackProvider = fallbackResult.provider;
+      fallbackModel = fallbackResult.model;
+      provider = fallbackResult.provider;
+      model = fallbackResult.model;
+      runEndedAt = Date.now();
+    };
+
+    await runPrompt(commandBody);
+    if (!runResult) {
+      throw new Error("cron isolated run returned no result");
     }
-
-    // Fresh isolated cron sessions must not reuse a stored CLI session ID.
-    // Passing an existing ID activates the resume watchdog profile
-    // (noOutputTimeoutRatio 0.3, maxMs 180 s) instead of the fresh profile
-    // (ratio 0.8, maxMs 600 s), causing jobs to time out at roughly 1/3 of
-    // the configured timeoutSeconds. See: https://github.com/openclaw/openclaw/issues/29774
-    const sessionMap = createSessionMapAdapter({
-      getSessionId: () =>
-        cronSession.isNewSession ? undefined : getCliSessionId(cronSession.sessionEntry, provider),
-    });
-
-    const bridge = new ChannelBridge({
-      provider: resolveAgentRuntimeOrThrow(params.cfg, agentId),
-      sessionMap,
-      gatewayUrl: resolveGatewayUrlFromConfig(cfgWithAgentDefaults),
-      gatewayToken: resolveGatewayTokenFromConfig(cfgWithAgentDefaults),
-      workspaceDir,
-      runtimeArgs: resolveAgentRuntimeArgs(params.cfg, agentId),
-      runtimeEnv: resolveAgentRuntimeEnv(params.cfg, agentId),
-    });
-
-    const messageToolHints = resolveChannelMessageToolHints({
-      cfg: cfgWithAgentDefaults,
-      channel: resolvedDelivery.channel,
-      accountId: resolvedDelivery.accountId,
-    });
-
-    const message = buildCronChannelMessage({
-      job: params.job,
-      commandBody,
-      resolvedDelivery,
-      timestamp: now,
-      messageToolHints,
-      agentId,
-      timezone: resolveUserTimezone(cfgWithAgentDefaults.agents?.defaults?.userTimezone),
-    });
-
-    runResult = await bridge.handle(message, undefined, abortSignal);
-    runEndedAt = Date.now();
 
     // Guardrail for cron jobs: if the first turn is only an interim ack
     // (e.g. "on it") and no descendants are active, run one focused follow-up
     // turn so the cron run returns an actual completion.
     if (!isAborted()) {
-      const interimPayloads = runResult.payloads ?? [];
+      const interimRunResult = runResult;
+      const interimPayloads = interimRunResult.payloads ?? [];
       const interimDeliveryPayload = pickLastDeliverablePayload(interimPayloads);
       const interimPayloadHasStructuredContent =
-        Boolean(interimDeliveryPayload?.mediaUrl) ||
-        (interimDeliveryPayload?.mediaUrls?.length ?? 0) > 0 ||
-        Object.keys(interimDeliveryPayload?.channelData ?? {}).length > 0;
+        (interimDeliveryPayload
+          ? resolveSendableOutboundReplyParts(interimDeliveryPayload).hasMedia
+          : false) || Object.keys(interimDeliveryPayload?.channelData ?? {}).length > 0;
       const interimText = pickLastNonEmptyTextFromPayloads(interimPayloads)?.trim() ?? "";
       const hasDescendantsSinceRunStart = listDescendantRunsForRequester(agentSessionKey).some(
         (entry) => {
@@ -522,11 +704,9 @@ export async function runCronIsolatedAgentTurn(params: {
           return typeof descendantStartedAt === "number" && descendantStartedAt >= runStartedAt;
         },
       );
-      const didSendViaMessagingToolInterim =
-        runResult.mcp.sentTexts.length > 0 || runResult.mcp.sentMediaUrls.length > 0;
       const shouldRetryInterimAck =
-        !runResult.error &&
-        !didSendViaMessagingToolInterim &&
+        !interimRunResult.meta?.error &&
+        !interimRunResult.didSendViaMessagingTool &&
         !interimPayloadHasStructuredContent &&
         !interimPayloads.some((payload) => payload?.isError === true) &&
         countActiveDescendantRuns(agentSessionKey) === 0 &&
@@ -534,22 +714,13 @@ export async function runCronIsolatedAgentTurn(params: {
         isLikelyInterimCronMessage(interimText);
 
       if (shouldRetryInterimAck) {
-        const continuationMessage = buildCronChannelMessage({
-          job: params.job,
-          commandBody: [
-            "Your previous response was only an acknowledgement and did not complete this cron task.",
-            "Complete the original task now.",
-            "Do not send a status update like 'on it'.",
-            "Use tools when needed, including sessions_spawn for parallel subtasks, wait for spawned subagents to finish, then return only the final summary.",
-          ].join(" "),
-          resolvedDelivery,
-          timestamp: Date.now(),
-          messageToolHints,
-          agentId,
-          timezone: resolveUserTimezone(cfgWithAgentDefaults.agents?.defaults?.userTimezone),
-        });
-        runResult = await bridge.handle(continuationMessage, undefined, abortSignal);
-        runEndedAt = Date.now();
+        const continuationPrompt = [
+          "Your previous response was only an acknowledgement and did not complete this cron task.",
+          "Complete the original task now.",
+          "Do not send a status update like 'on it'.",
+          "Use tools when needed, including sessions_spawn for parallel subtasks, wait for spawned subagents to finish, then return only the final summary.",
+        ].join(" ");
+        await runPrompt(continuationPrompt);
       }
     }
   } catch (err) {
@@ -569,25 +740,23 @@ export async function runCronIsolatedAgentTurn(params: {
   // Also collect best-effort telemetry for the cron run log.
   let telemetry: CronRunTelemetry | undefined;
   {
-    const runUsage = runResult.run.usage;
-    // Map AgentUsage to NormalizedUsage shape expected by usage helpers
-    const usage = runUsage
-      ? {
-          input: runUsage.inputTokens,
-          output: runUsage.outputTokens,
-          cacheRead: runUsage.cacheReadTokens,
-          cacheWrite: runUsage.cacheWriteTokens,
-        }
-      : undefined;
-    const modelUsed = fallbackModel ?? model;
-    const providerUsed = fallbackProvider ?? provider;
-    const contextTokens = agentCfg?.contextTokens ?? 200_000;
+    if (finalRunResult.meta?.systemPromptReport) {
+      cronSession.sessionEntry.systemPromptReport = finalRunResult.meta.systemPromptReport;
+    }
+    const usage = finalRunResult.meta?.agentMeta?.usage;
+    const promptTokens = finalRunResult.meta?.agentMeta?.promptTokens;
+    const modelUsed = finalRunResult.meta?.agentMeta?.model ?? fallbackModel ?? model;
+    const providerUsed = finalRunResult.meta?.agentMeta?.provider ?? fallbackProvider ?? provider;
+    const contextTokens =
+      agentCfg?.contextTokens ?? lookupContextTokens(modelUsed) ?? DEFAULT_CONTEXT_TOKENS;
 
-    cronSession.sessionEntry.modelProvider = providerUsed;
-    cronSession.sessionEntry.model = modelUsed;
+    setSessionRuntimeModel(cronSession.sessionEntry, {
+      provider: providerUsed,
+      model: modelUsed,
+    });
     cronSession.sessionEntry.contextTokens = contextTokens;
     if (isCliProvider(providerUsed, cfgWithAgentDefaults)) {
-      const cliSessionId = runResult.run.sessionId?.trim();
+      const cliSessionId = finalRunResult.meta?.agentMeta?.sessionId?.trim();
       if (cliSessionId) {
         setCliSessionId(cronSession.sessionEntry, providerUsed, cliSessionId);
       }
@@ -595,26 +764,47 @@ export async function runCronIsolatedAgentTurn(params: {
     if (hasNonzeroUsage(usage)) {
       const input = usage.input ?? 0;
       const output = usage.output ?? 0;
-      const totalTokens =
-        deriveSessionTotalTokens({
+      const totalTokens = deriveSessionTotalTokens({
+        usage,
+        contextTokens,
+        promptTokens,
+      });
+      const runEstimatedCostUsd = resolveNonNegativeNumber(
+        estimateUsageCost({
           usage,
-          contextTokens,
-        }) ?? input;
+          cost: resolveModelCostConfig({
+            provider: providerUsed,
+            model: modelUsed,
+            config: cfgWithAgentDefaults,
+          }),
+        }),
+      );
       cronSession.sessionEntry.inputTokens = input;
       cronSession.sessionEntry.outputTokens = output;
-      cronSession.sessionEntry.totalTokens = totalTokens;
-      cronSession.sessionEntry.totalTokensFresh = true;
+      const telemetryUsage: NonNullable<CronRunTelemetry["usage"]> = {
+        input_tokens: input,
+        output_tokens: output,
+      };
+      if (typeof totalTokens === "number" && Number.isFinite(totalTokens) && totalTokens > 0) {
+        cronSession.sessionEntry.totalTokens = totalTokens;
+        cronSession.sessionEntry.totalTokensFresh = true;
+        telemetryUsage.total_tokens = totalTokens;
+      } else {
+        cronSession.sessionEntry.totalTokens = undefined;
+        cronSession.sessionEntry.totalTokensFresh = false;
+      }
       cronSession.sessionEntry.cacheRead = usage.cacheRead ?? 0;
       cronSession.sessionEntry.cacheWrite = usage.cacheWrite ?? 0;
+      if (runEstimatedCostUsd !== undefined) {
+        cronSession.sessionEntry.estimatedCostUsd =
+          (resolveNonNegativeNumber(cronSession.sessionEntry.estimatedCostUsd) ?? 0) +
+          runEstimatedCostUsd;
+      }
 
       telemetry = {
         model: modelUsed,
         provider: providerUsed,
-        usage: {
-          input_tokens: input,
-          output_tokens: output,
-          total_tokens: totalTokens,
-        },
+        usage: telemetryUsage,
       };
     } else {
       telemetry = {
@@ -640,12 +830,11 @@ export async function runCronIsolatedAgentTurn(params: {
         ? [{ text: synthesizedText }]
         : [];
   const deliveryPayloadHasStructuredContent =
-    Boolean(deliveryPayload?.mediaUrl) ||
-    (deliveryPayload?.mediaUrls?.length ?? 0) > 0 ||
+    (deliveryPayload ? resolveSendableOutboundReplyParts(deliveryPayload).hasMedia : false) ||
     Object.keys(deliveryPayload?.channelData ?? {}).length > 0;
   const deliveryBestEffort = resolveCronDeliveryBestEffort(params.job);
   const hasErrorPayload = payloads.some((payload) => payload?.isError === true);
-  const runLevelError = runResult.error;
+  const runLevelError = finalRunResult.meta?.error;
   const lastErrorPayloadIndex = payloads.findLastIndex((payload) => payload?.isError === true);
   const hasSuccessfulPayloadAfterLastError =
     !runLevelError &&
@@ -677,18 +866,14 @@ export async function runCronIsolatedAgentTurn(params: {
       ...telemetry,
     });
 
-  // Skip delivery when heartbeat_report says nothing was done.
-  const skipHeartbeatDelivery =
-    deliveryRequested &&
-    runResult.mcp.heartbeatReport != null &&
-    !runResult.mcp.heartbeatReport.anythingDone;
-  const didSendViaMessagingTool =
-    runResult.mcp.sentTexts.length > 0 || runResult.mcp.sentMediaUrls.length > 0;
+  // Skip delivery for heartbeat-only responses (HEARTBEAT_OK with no real content).
+  const ackMaxChars = resolveHeartbeatAckMaxChars(agentCfg);
+  const skipHeartbeatDelivery = deliveryRequested && isHeartbeatOnlyResponse(payloads, ackMaxChars);
   const skipMessagingToolDelivery =
     deliveryContract === "shared" &&
     deliveryRequested &&
-    didSendViaMessagingTool &&
-    runResult.mcp.sentTargets.some((target) =>
+    finalRunResult.didSendViaMessagingTool === true &&
+    (finalRunResult.messagingToolSentTargets ?? []).some((target) =>
       matchesMessagingToolDeliveryTarget(target, {
         channel: resolvedDelivery.channel,
         to: resolvedDelivery.to,

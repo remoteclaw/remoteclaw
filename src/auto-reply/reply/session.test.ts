@@ -2,14 +2,17 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import * as bootstrapCache from "../../agents/bootstrap-cache.js";
+import { buildModelAliasIndex } from "../../agents/model-selection.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import type { SessionEntry } from "../../config/sessions/types.js";
+import type { SessionEntry } from "../../config/sessions.js";
 import { formatZonedTimestamp } from "../../infra/format-time/format-datetime.ts";
 import {
   __testing as sessionBindingTesting,
   registerSessionBindingAdapter,
 } from "../../infra/outbound/session-binding-service.js";
 import { enqueueSystemEvent, resetSystemEventsForTest } from "../../infra/system-events.js";
+import { applyResetModelOverride } from "./session-reset-model.js";
 import { drainFormattedSystemEvents } from "./session-updates.js";
 import { persistSessionUsageUpdate } from "./session-usage.js";
 import { initSessionState } from "./session.js";
@@ -21,7 +24,7 @@ vi.mock("../../agents/session-write-lock.js", () => ({
 
 vi.mock("../../agents/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(async () => [
-    { provider: "minimax", id: "m2.1", name: "M2.1" },
+    { provider: "minimax", id: "m2.7", name: "M2.7" },
     { provider: "openai", id: "gpt-4o-mini", name: "GPT-4o mini" },
   ]),
 }));
@@ -704,6 +707,7 @@ describe("initSessionState RawBody", () => {
     registerSessionBindingAdapter({
       channel: "discord",
       accountId: "default",
+      capabilities: { bindSupported: false, unbindSupported: false, placements: ["current"] },
       listBySession: () => [],
       resolveByConversation: (ref) => {
         if (ref.conversationId !== channelId) {
@@ -813,7 +817,7 @@ describe("initSessionState RawBody", () => {
     const sessionFile = path.join(stateDir, "agents", agentId, "sessions", `${sessionId}.jsonl`);
     const storePath = path.join(stateDir, "agents", agentId, "sessions", "sessions.json");
 
-    vi.stubEnv("REMOTECLAW_STATE_DIR", stateDir);
+    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
     try {
       await fs.mkdir(path.dirname(storePath), { recursive: true });
       await writeSessionStoreFast(storePath, {
@@ -847,11 +851,18 @@ describe("initSessionState RawBody", () => {
 });
 
 describe("initSessionState reset policy", () => {
+  let clearBootstrapSnapshotOnSessionRolloverSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     vi.useFakeTimers();
+    clearBootstrapSnapshotOnSessionRolloverSpy = vi.spyOn(
+      bootstrapCache,
+      "clearBootstrapSnapshotOnSessionRollover",
+    );
   });
 
   afterEach(() => {
+    clearBootstrapSnapshotOnSessionRolloverSpy.mockRestore();
     vi.useRealTimers();
   });
 
@@ -878,6 +889,10 @@ describe("initSessionState reset policy", () => {
 
     expect(result.isNewSession).toBe(true);
     expect(result.sessionId).not.toBe(existingSessionId);
+    expect(clearBootstrapSnapshotOnSessionRolloverSpy).toHaveBeenCalledWith({
+      sessionKey,
+      previousSessionId: existingSessionId,
+    });
   });
 
   it("treats sessions as stale before the daily reset when updated before yesterday's boundary", async () => {
@@ -1054,6 +1069,10 @@ describe("initSessionState reset policy", () => {
 
     expect(result.isNewSession).toBe(false);
     expect(result.sessionId).toBe(existingSessionId);
+    expect(clearBootstrapSnapshotOnSessionRolloverSpy).toHaveBeenCalledWith({
+      sessionKey,
+      previousSessionId: undefined,
+    });
   });
 });
 
@@ -1242,7 +1261,100 @@ describe("initSessionState reset triggers in Slack channels", () => {
   });
 });
 
-// applyResetModelOverride tests removed (session-reset-model.ts deleted in RemoteClaw).
+describe("applyResetModelOverride", () => {
+  it("selects a model hint and strips it from the body", async () => {
+    const cfg = {} as RemoteClawConfig;
+    const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
+    const sessionEntry: SessionEntry = {
+      sessionId: "s1",
+      updatedAt: Date.now(),
+    };
+    const sessionStore: Record<string, SessionEntry> = { "agent:main:dm:1": sessionEntry };
+    const sessionCtx = { BodyStripped: "minimax summarize" };
+    const ctx = { ChatType: "direct" };
+
+    await applyResetModelOverride({
+      cfg,
+      resetTriggered: true,
+      bodyStripped: "minimax summarize",
+      sessionCtx,
+      ctx,
+      sessionEntry,
+      sessionStore,
+      sessionKey: "agent:main:dm:1",
+      defaultProvider: "openai",
+      defaultModel: "gpt-4o-mini",
+      aliasIndex,
+    });
+
+    expect(sessionEntry.providerOverride).toBe("minimax");
+    expect(sessionEntry.modelOverride).toBe("m2.7");
+    expect(sessionCtx.BodyStripped).toBe("summarize");
+  });
+
+  it("clears auth profile overrides when reset applies a model", async () => {
+    const cfg = {} as RemoteClawConfig;
+    const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
+    const sessionEntry: SessionEntry = {
+      sessionId: "s1",
+      updatedAt: Date.now(),
+      authProfileOverride: "anthropic:default",
+      authProfileOverrideSource: "user",
+      authProfileOverrideCompactionCount: 2,
+    };
+    const sessionStore: Record<string, SessionEntry> = { "agent:main:dm:1": sessionEntry };
+    const sessionCtx = { BodyStripped: "minimax summarize" };
+    const ctx = { ChatType: "direct" };
+
+    await applyResetModelOverride({
+      cfg,
+      resetTriggered: true,
+      bodyStripped: "minimax summarize",
+      sessionCtx,
+      ctx,
+      sessionEntry,
+      sessionStore,
+      sessionKey: "agent:main:dm:1",
+      defaultProvider: "openai",
+      defaultModel: "gpt-4o-mini",
+      aliasIndex,
+    });
+
+    expect(sessionEntry.authProfileOverride).toBeUndefined();
+    expect(sessionEntry.authProfileOverrideSource).toBeUndefined();
+    expect(sessionEntry.authProfileOverrideCompactionCount).toBeUndefined();
+  });
+
+  it("skips when resetTriggered is false", async () => {
+    const cfg = {} as RemoteClawConfig;
+    const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
+    const sessionEntry: SessionEntry = {
+      sessionId: "s1",
+      updatedAt: Date.now(),
+    };
+    const sessionStore: Record<string, SessionEntry> = { "agent:main:dm:1": sessionEntry };
+    const sessionCtx = { BodyStripped: "minimax summarize" };
+    const ctx = { ChatType: "direct" };
+
+    await applyResetModelOverride({
+      cfg,
+      resetTriggered: false,
+      bodyStripped: "minimax summarize",
+      sessionCtx,
+      ctx,
+      sessionEntry,
+      sessionStore,
+      sessionKey: "agent:main:dm:1",
+      defaultProvider: "openai",
+      defaultModel: "gpt-4o-mini",
+      aliasIndex,
+    });
+
+    expect(sessionEntry.providerOverride).toBeUndefined();
+    expect(sessionEntry.modelOverride).toBeUndefined();
+    expect(sessionCtx.BodyStripped).toBe("minimax summarize");
+  });
+});
 
 describe("initSessionState preserves behavior overrides across /new and /reset", () => {
   async function seedSessionStoreWithOverrides(params: {
@@ -1266,6 +1378,8 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     const existingSessionId = "existing-session-overrides";
     const overrides = {
       verboseLevel: "on",
+      thinkingLevel: "high",
+      reasoningLevel: "low",
       label: "telegram-priority",
     } as const;
     const cases = [
@@ -1297,6 +1411,63 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
           RawBody: testCase.body,
           CommandBody: testCase.body,
           From: "user-overrides",
+          To: "bot",
+          ChatType: "direct",
+          SessionKey: sessionKey,
+          Provider: "telegram",
+          Surface: "telegram",
+        },
+        cfg,
+        commandAuthorized: true,
+      });
+
+      expect(result.isNewSession, testCase.name).toBe(true);
+      expect(result.resetTriggered, testCase.name).toBe(true);
+      expect(result.sessionId, testCase.name).not.toBe(existingSessionId);
+      expect(result.sessionEntry, testCase.name).toMatchObject(overrides);
+    }
+  });
+
+  it("preserves selected auth profile overrides across /new and /reset", async () => {
+    const storePath = await createStorePath("remoteclaw-reset-model-auth-");
+    const sessionKey = "agent:main:telegram:dm:user-model-auth";
+    const existingSessionId = "existing-session-model-auth";
+    const overrides = {
+      providerOverride: "openai",
+      modelOverride: "gpt-4o",
+      authProfileOverride: "20251001",
+      authProfileOverrideSource: "user",
+      authProfileOverrideCompactionCount: 2,
+    } as const;
+    const cases = [
+      {
+        name: "new preserves selected auth profile overrides",
+        body: "/new",
+      },
+      {
+        name: "reset preserves selected auth profile overrides",
+        body: "/reset",
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      await seedSessionStoreWithOverrides({
+        storePath,
+        sessionKey,
+        sessionId: existingSessionId,
+        overrides: { ...overrides },
+      });
+
+      const cfg = {
+        session: { store: storePath, idleMinutes: 999 },
+      } as RemoteClawConfig;
+
+      const result = await initSessionState({
+        ctx: {
+          Body: testCase.body,
+          RawBody: testCase.body,
+          CommandBody: testCase.body,
+          From: "user-model-auth",
           To: "bot",
           ChatType: "direct",
           SessionKey: sessionKey,
@@ -1441,6 +1612,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     expect(result.isNewSession).toBe(true);
     expect(result.resetTriggered).toBe(false);
     expect(result.sessionEntry.verboseLevel).toBeUndefined();
+    expect(result.sessionEntry.thinkingLevel).toBeUndefined();
   });
 });
 
@@ -1509,6 +1681,40 @@ describe("persistSessionUsageUpdate", () => {
     expect(stored[sessionKey].totalTokensFresh).toBe(true);
     expect(stored[sessionKey].inputTokens).toBe(180_000);
     expect(stored[sessionKey].outputTokens).toBe(10_000);
+  });
+
+  it("uses lastCallUsage cache counters when available", async () => {
+    const storePath = await createStorePath("remoteclaw-usage-cache-");
+    const sessionKey = "main";
+    await seedSessionStore({
+      storePath,
+      sessionKey,
+      entry: { sessionId: "s1", updatedAt: Date.now() },
+    });
+
+    await persistSessionUsageUpdate({
+      storePath,
+      sessionKey,
+      usage: {
+        input: 100_000,
+        output: 8_000,
+        cacheRead: 260_000,
+        cacheWrite: 90_000,
+      },
+      lastCallUsage: {
+        input: 12_000,
+        output: 1_000,
+        cacheRead: 18_000,
+        cacheWrite: 4_000,
+      },
+      contextTokensUsed: 200_000,
+    });
+
+    const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
+    expect(stored[sessionKey].inputTokens).toBe(100_000);
+    expect(stored[sessionKey].outputTokens).toBe(8_000);
+    expect(stored[sessionKey].cacheRead).toBe(18_000);
+    expect(stored[sessionKey].cacheWrite).toBe(4_000);
   });
 
   it("marks totalTokens as unknown when no fresh context snapshot is available", async () => {
@@ -1603,6 +1809,99 @@ describe("persistSessionUsageUpdate", () => {
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
     expect(stored[sessionKey].totalTokens).toBe(250_000);
     expect(stored[sessionKey].totalTokensFresh).toBe(true);
+  });
+
+  it("accumulates estimatedCostUsd across persisted usage updates", async () => {
+    const storePath = await createStorePath("remoteclaw-usage-cost-");
+    const sessionKey = "main";
+    await seedSessionStore({
+      storePath,
+      sessionKey,
+      entry: {
+        sessionId: "s1",
+        updatedAt: Date.now(),
+        estimatedCostUsd: 0.0015,
+      },
+    });
+
+    await persistSessionUsageUpdate({
+      storePath,
+      sessionKey,
+      cfg: {
+        models: {
+          providers: {
+            openai: {
+              baseUrl: "https://api.openai.com/v1",
+              models: [
+                {
+                  id: "gpt-5.4",
+                  name: "GPT 5.4",
+                  reasoning: true,
+                  input: ["text"],
+                  cost: { input: 1.25, output: 10, cacheRead: 0.125, cacheWrite: 0.5 },
+                  contextWindow: 200_000,
+                  maxTokens: 8_192,
+                },
+              ],
+            },
+          },
+        },
+      } as RemoteClawConfig,
+      usage: { input: 2_000, output: 500, cacheRead: 1_000, cacheWrite: 200 },
+      lastCallUsage: { input: 800, output: 200, cacheRead: 300, cacheWrite: 50 },
+      providerUsed: "openai",
+      modelUsed: "gpt-5.4",
+      contextTokensUsed: 200_000,
+    });
+
+    const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
+    expect(stored[sessionKey].estimatedCostUsd).toBeCloseTo(0.009225, 8);
+  });
+
+  it("persists zero estimatedCostUsd for free priced models", async () => {
+    const storePath = await createStorePath("remoteclaw-usage-free-cost-");
+    const sessionKey = "main";
+    await seedSessionStore({
+      storePath,
+      sessionKey,
+      entry: {
+        sessionId: "s1",
+        updatedAt: Date.now(),
+      },
+    });
+
+    await persistSessionUsageUpdate({
+      storePath,
+      sessionKey,
+      cfg: {
+        models: {
+          providers: {
+            "openai-codex": {
+              baseUrl: "https://api.openai.com/v1",
+              models: [
+                {
+                  id: "gpt-5.3-codex-spark",
+                  name: "GPT 5.3 Codex Spark",
+                  reasoning: true,
+                  input: ["text"],
+                  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                  contextWindow: 200_000,
+                  maxTokens: 8_192,
+                },
+              ],
+            },
+          },
+        },
+      } as RemoteClawConfig,
+      usage: { input: 5_107, output: 1_827, cacheRead: 1_536, cacheWrite: 0 },
+      lastCallUsage: { input: 5_107, output: 1_827, cacheRead: 1_536, cacheWrite: 0 },
+      providerUsed: "openai-codex",
+      modelUsed: "gpt-5.3-codex-spark",
+      contextTokensUsed: 200_000,
+    });
+
+    const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));
+    expect(stored[sessionKey].estimatedCostUsd).toBe(0);
   });
 });
 

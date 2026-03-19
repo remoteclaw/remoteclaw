@@ -7,7 +7,7 @@ import type { ConfigFileSnapshot, RemoteClawConfig } from "../config/config.js";
 import { resolveConfigPath, resolveStateDir } from "../config/paths.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
 import { buildGatewayConnectionDetails } from "../gateway/call.js";
-import { resolveGatewayProbeAuthSafe } from "../gateway/probe-auth.js";
+import { resolveGatewayProbeAuth } from "../gateway/probe-auth.js";
 import { probeGateway } from "../gateway/probe.js";
 import { collectChannelSecurityFindings } from "./audit-channel.js";
 import {
@@ -741,10 +741,7 @@ async function maybeProbeGateway(params: {
   env: NodeJS.ProcessEnv;
   timeoutMs: number;
   probe: typeof probeGateway;
-}): Promise<{
-  deep: SecurityAuditReport["deep"];
-  authWarning?: string;
-}> {
+}): Promise<SecurityAuditReport["deep"]> {
   const connection = buildGatewayConnectionDetails({ config: params.cfg });
   const url = connection.url;
   const isRemoteMode = params.cfg.gateway?.mode === "remote";
@@ -752,39 +749,30 @@ async function maybeProbeGateway(params: {
     typeof params.cfg.gateway?.remote?.url === "string" ? params.cfg.gateway.remote.url.trim() : "";
   const remoteUrlMissing = isRemoteMode && !remoteUrlRaw;
 
-  const authResolution =
+  const auth =
     !isRemoteMode || remoteUrlMissing
-      ? resolveGatewayProbeAuthSafe({ cfg: params.cfg, env: params.env, mode: "local" })
-      : resolveGatewayProbeAuthSafe({ cfg: params.cfg, env: params.env, mode: "remote" });
-  const res = await params
-    .probe({ url, auth: authResolution.auth, timeoutMs: params.timeoutMs })
-    .catch((err) => ({
-      ok: false,
-      url,
-      connectLatencyMs: null,
-      error: String(err),
-      close: null,
-      health: null,
-      status: null,
-      presence: null,
-      configSnapshot: null,
-    }));
-
-  if (authResolution.warning && !res.ok) {
-    res.error = res.error ? `${res.error}; ${authResolution.warning}` : authResolution.warning;
-  }
+      ? resolveGatewayProbeAuth({ cfg: params.cfg, env: params.env, mode: "local" })
+      : resolveGatewayProbeAuth({ cfg: params.cfg, env: params.env, mode: "remote" });
+  const res = await params.probe({ url, auth, timeoutMs: params.timeoutMs }).catch((err) => ({
+    ok: false,
+    url,
+    connectLatencyMs: null,
+    error: String(err),
+    close: null,
+    health: null,
+    status: null,
+    presence: null,
+    configSnapshot: null,
+  }));
 
   return {
-    deep: {
-      gateway: {
-        attempted: true,
-        url,
-        ok: res.ok,
-        error: res.ok ? null : res.error,
-        close: res.close ? { code: res.close.code, reason: res.close.reason } : null,
-      },
+    gateway: {
+      attempted: true,
+      url,
+      ok: res.ok,
+      error: res.ok ? null : res.error,
+      close: res.close ? { code: res.close.code, reason: res.close.reason } : null,
     },
-    authWarning: authResolution.warning,
   };
 }
 
@@ -895,7 +883,7 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
     findings.push(...(await collectChannelSecurityFindings({ cfg, plugins })));
   }
 
-  const deepProbeResult = context.deep
+  const deep = context.deep
     ? await maybeProbeGateway({
         cfg,
         env,
@@ -903,7 +891,6 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
         probe: context.probeGatewayFn ?? probeGateway,
       })
     : undefined;
-  const deep = deepProbeResult?.deep;
 
   if (deep?.gateway?.attempted && !deep.gateway.ok) {
     findings.push({
@@ -912,15 +899,6 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
       title: "Gateway probe failed (deep)",
       detail: deep.gateway.error ?? "gateway unreachable",
       remediation: `Run "${formatCliCommand("remoteclaw status --all")}" to debug connectivity/auth, then re-run "${formatCliCommand("remoteclaw security audit --deep")}".`,
-    });
-  }
-  if (deepProbeResult?.authWarning) {
-    findings.push({
-      checkId: "gateway.probe_auth_secretref_unavailable",
-      severity: "warn",
-      title: "Gateway probe auth SecretRef is unavailable",
-      detail: deepProbeResult.authWarning,
-      remediation: `Set OPENCLAW_GATEWAY_TOKEN/OPENCLAW_GATEWAY_PASSWORD in this shell or resolve the external secret provider, then re-run "${formatCliCommand("openclaw security audit --deep")}".`,
     });
   }
 

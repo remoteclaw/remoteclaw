@@ -12,12 +12,16 @@ export type SecretRef = {
 };
 
 export type SecretInput = string | SecretRef;
-export const DEFAULT_SECRET_PROVIDER_ALIAS = "default";
-export const ENV_SECRET_REF_ID_RE = /^[A-Z][A-Z0-9_]{0,127}$/;
 
-export function isValidEnvSecretRefId(value: string): boolean {
-  return ENV_SECRET_REF_ID_RE.test(value);
-}
+export type EnvSecretSourceConfig = {
+  type?: "env";
+};
+
+export type SopsSecretSourceConfig = {
+  type: "sops";
+  path: string;
+  timeoutMs?: number;
+};
 
 export type SecretsConfig = {
   sources?: {

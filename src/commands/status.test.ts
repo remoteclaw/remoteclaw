@@ -1,5 +1,5 @@
 import type { Mock } from "vitest";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { captureEnv } from "../test-utils/env.js";
 
 let envSnapshot: ReturnType<typeof captureEnv>;
@@ -146,7 +146,6 @@ async function withEnvVar<T>(key: string, value: string, run: () => Promise<T>):
 }
 
 const mocks = vi.hoisted(() => ({
-  loadConfig: vi.fn().mockReturnValue({ session: {} }),
   loadSessionStore: vi.fn().mockReturnValue({
     "+1000": createDefaultSessionStoreEntry(),
   }),
@@ -346,7 +345,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../config/config.js")>();
   return {
     ...actual,
-    loadConfig: mocks.loadConfig,
+    loadConfig: () => ({ session: {} }),
   };
 });
 vi.mock("../daemon/service.js", () => ({
@@ -390,11 +389,6 @@ const runtime = {
 const runtimeLogMock = runtime.log as Mock<(...args: unknown[]) => void>;
 
 describe("statusCommand", () => {
-  afterEach(() => {
-    mocks.loadConfig.mockReset();
-    mocks.loadConfig.mockReturnValue({ session: {} });
-  });
-
   it("prints JSON when requested", async () => {
     await statusCommand({ json: true }, runtime as never);
     const payload = JSON.parse(String(runtimeLogMock.mock.calls[0]?.[0]));
@@ -485,28 +479,6 @@ describe("statusCommand", () => {
       const logs = await runStatusAndGetLogs();
       expect(logs.some((l: string) => l.includes("auth token"))).toBe(true);
     });
-  });
-
-  it("warns instead of crashing when gateway auth SecretRef is unresolved for probe auth", async () => {
-    mocks.loadConfig.mockReturnValue({
-      session: {},
-      gateway: {
-        auth: {
-          mode: "token",
-          token: { source: "env", provider: "default", id: "MISSING_GATEWAY_TOKEN" },
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    });
-
-    await statusCommand({ json: true }, runtime as never);
-    const payload = JSON.parse(String(runtimeLogMock.mock.calls.at(-1)?.[0]));
-    expect(payload.gateway.error).toContain("gateway.auth.token");
-    expect(payload.gateway.error).toContain("SecretRef");
   });
 
   it("surfaces channel runtime errors from the gateway", async () => {

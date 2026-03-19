@@ -7,7 +7,7 @@ import type { GatewayService } from "../daemon/service.js";
 import { resolveGatewayService } from "../daemon/service.js";
 import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
 import { normalizeControlUiBasePath } from "../gateway/control-ui-shared.js";
-import { resolveGatewayProbeAuthSafe } from "../gateway/probe-auth.js";
+import { resolveGatewayProbeAuth } from "../gateway/probe-auth.js";
 import { probeGateway } from "../gateway/probe.js";
 import { collectChannelStatusIssues } from "../infra/channels-status-issues.js";
 import { resolveOsSummary } from "../infra/os-summary.js";
@@ -103,11 +103,9 @@ export async function statusAllCommand(
     const remoteUrlMissing = isRemoteMode && !remoteUrlRaw;
     const gatewayMode = isRemoteMode ? "remote" : "local";
 
-    const localProbeAuthResolution = resolveGatewayProbeAuthSafe({ cfg, mode: "local" });
-    const remoteProbeAuthResolution = resolveGatewayProbeAuthSafe({ cfg, mode: "remote" });
-    const probeAuthResolution =
-      isRemoteMode && !remoteUrlMissing ? remoteProbeAuthResolution : localProbeAuthResolution;
-    const probeAuth = probeAuthResolution.auth;
+    const localFallbackAuth = resolveGatewayProbeAuth({ cfg, mode: "local" });
+    const remoteAuth = resolveGatewayProbeAuth({ cfg, mode: "remote" });
+    const probeAuth = isRemoteMode && !remoteUrlMissing ? remoteAuth : localFallbackAuth;
 
     const gatewayProbe = await probeGateway({
       url: connection.url,
@@ -168,8 +166,8 @@ export async function statusAllCommand(
     const callOverrides = remoteUrlMissing
       ? {
           url: connection.url,
-          token: localProbeAuthResolution.auth.token,
-          password: localProbeAuthResolution.auth.password,
+          token: localFallbackAuth.token,
+          password: localFallbackAuth.password,
         }
       : {};
 
@@ -262,10 +260,7 @@ export async function statusAllCommand(
         Item: "Gateway",
         Value: `${gatewayMode}${remoteUrlMissing ? " (remote.url missing)" : ""} · ${gatewayTarget} (${connection.urlSource}) · ${gatewayStatus}${gatewayAuth}`,
       },
-      ...(probeAuthResolution.warning
-        ? [{ Item: "Gateway auth warning", Value: probeAuthResolution.warning }]
-        : []),
-      { Item: "Security", Value: `Run: ${formatCliCommand("openclaw security audit --deep")}` },
+      { Item: "Security", Value: `Run: ${formatCliCommand("remoteclaw security audit --deep")}` },
       gatewaySelfLine
         ? { Item: "Gateway self", Value: gatewaySelfLine }
         : { Item: "Gateway self", Value: "unknown" },

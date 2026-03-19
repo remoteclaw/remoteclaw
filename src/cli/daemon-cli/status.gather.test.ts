@@ -124,15 +124,11 @@ describe("gatherDaemonStatus", () => {
       "OPENCLAW_CONFIG_PATH",
       "OPENCLAW_GATEWAY_TOKEN",
       "OPENCLAW_GATEWAY_PASSWORD",
-      "DAEMON_GATEWAY_TOKEN",
-      "DAEMON_GATEWAY_PASSWORD",
     ]);
     process.env.OPENCLAW_STATE_DIR = "/tmp/openclaw-cli";
     process.env.OPENCLAW_CONFIG_PATH = "/tmp/openclaw-cli/openclaw.json";
     delete process.env.OPENCLAW_GATEWAY_TOKEN;
     delete process.env.OPENCLAW_GATEWAY_PASSWORD;
-    delete process.env.DAEMON_GATEWAY_TOKEN;
-    delete process.env.DAEMON_GATEWAY_PASSWORD;
     callGatewayStatusProbe.mockClear();
     loadGatewayTlsRuntime.mockClear();
   });
@@ -177,99 +173,6 @@ describe("gatherDaemonStatus", () => {
     );
     expect(status.gateway?.probeUrl).toBe("wss://override.example:18790");
     expect(status.rpc?.url).toBe("wss://override.example:18790");
-  });
-
-  it("resolves daemon gateway auth password SecretRef values before probing", async () => {
-    daemonLoadedConfig = {
-      gateway: {
-        bind: "lan",
-        tls: { enabled: true },
-        auth: {
-          password: { source: "env", provider: "default", id: "DAEMON_GATEWAY_PASSWORD" },
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    };
-    process.env.DAEMON_GATEWAY_PASSWORD = "daemon-secretref-password";
-
-    await gatherDaemonStatus({
-      rpc: {},
-      probe: true,
-      deep: false,
-    });
-
-    expect(callGatewayStatusProbe).toHaveBeenCalledWith(
-      expect.objectContaining({
-        password: "daemon-secretref-password",
-      }),
-    );
-  });
-
-  it("resolves daemon gateway auth token SecretRef values before probing", async () => {
-    daemonLoadedConfig = {
-      gateway: {
-        bind: "lan",
-        tls: { enabled: true },
-        auth: {
-          mode: "token",
-          token: "${DAEMON_GATEWAY_TOKEN}",
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    };
-    process.env.DAEMON_GATEWAY_TOKEN = "daemon-secretref-token";
-
-    await gatherDaemonStatus({
-      rpc: {},
-      probe: true,
-      deep: false,
-    });
-
-    expect(callGatewayStatusProbe).toHaveBeenCalledWith(
-      expect.objectContaining({
-        token: "daemon-secretref-token",
-      }),
-    );
-  });
-
-  it("does not resolve daemon password SecretRef when token auth is configured", async () => {
-    daemonLoadedConfig = {
-      gateway: {
-        bind: "lan",
-        tls: { enabled: true },
-        auth: {
-          mode: "token",
-          token: "daemon-token",
-          password: { source: "env", provider: "default", id: "MISSING_DAEMON_GATEWAY_PASSWORD" },
-        },
-      },
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-    };
-
-    await gatherDaemonStatus({
-      rpc: {},
-      probe: true,
-      deep: false,
-    });
-
-    expect(callGatewayStatusProbe).toHaveBeenCalledWith(
-      expect.objectContaining({
-        token: "daemon-token",
-        password: undefined,
-      }),
-    );
   });
 
   it("skips TLS runtime loading when probe is disabled", async () => {

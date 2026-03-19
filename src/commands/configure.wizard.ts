@@ -10,7 +10,6 @@ import { defaultRuntime } from "../runtime.js";
 import { note } from "../terminal/note.js";
 import { resolveUserPath } from "../utils.js";
 import { createClackPrompter } from "../wizard/clack-prompter.js";
-import { resolveOnboardingSecretInputString } from "../wizard/onboarding.secret-input.js";
 import { WizardCancelledError } from "../wizard/prompts.js";
 import { collectWorkspaceDirs } from "./cleanup-utils.js";
 import { removeChannelConfigWizard } from "./configure.channels.js";
@@ -47,23 +46,6 @@ import { promptRemoteGatewayConfig } from "./onboard-remote.js";
 
 type ConfigureSectionChoice = WizardSection | "__continue";
 
-async function resolveGatewaySecretInputForWizard(params: {
-  cfg: OpenClawConfig;
-  value: unknown;
-  path: string;
-}): Promise<string | undefined> {
-  try {
-    return await resolveOnboardingSecretInputString({
-      config: params.cfg,
-      value: params.value,
-      path: params.path,
-      env: process.env,
-    });
-  } catch {
-    return undefined;
-  }
-}
-
 async function runGatewayHealthCheck(params: {
   cfg: RemoteClawConfig;
   runtime: RuntimeEnv;
@@ -77,22 +59,8 @@ async function runGatewayHealthCheck(params: {
   });
   const remoteUrl = params.cfg.gateway?.remote?.url?.trim();
   const wsUrl = params.cfg.gateway?.mode === "remote" && remoteUrl ? remoteUrl : localLinks.wsUrl;
-  const configuredToken = await resolveGatewaySecretInputForWizard({
-    cfg: params.cfg,
-    value: params.cfg.gateway?.auth?.token,
-    path: "gateway.auth.token",
-  });
-  const configuredPassword = await resolveGatewaySecretInputForWizard({
-    cfg: params.cfg,
-    value: params.cfg.gateway?.auth?.password,
-    path: "gateway.auth.password",
-  });
-  const token =
-    process.env.OPENCLAW_GATEWAY_TOKEN ?? process.env.CLAWDBOT_GATEWAY_TOKEN ?? configuredToken;
-  const password =
-    process.env.OPENCLAW_GATEWAY_PASSWORD ??
-    process.env.CLAWDBOT_GATEWAY_PASSWORD ??
-    configuredPassword;
+  const token = params.cfg.gateway?.auth?.token ?? process.env.REMOTECLAW_GATEWAY_TOKEN;
+  const password = params.cfg.gateway?.auth?.password ?? process.env.REMOTECLAW_GATEWAY_PASSWORD;
 
   await waitForGatewayReachable({
     url: wsUrl,
@@ -333,37 +301,16 @@ export async function runConfigureWizard(
     }
 
     const localUrl = "ws://127.0.0.1:18789";
-    const baseLocalProbeToken = await resolveGatewaySecretInputForWizard({
-      cfg: baseConfig,
-      value: baseConfig.gateway?.auth?.token,
-      path: "gateway.auth.token",
-    });
-    const baseLocalProbePassword = await resolveGatewaySecretInputForWizard({
-      cfg: baseConfig,
-      value: baseConfig.gateway?.auth?.password,
-      path: "gateway.auth.password",
-    });
     const localProbe = await probeGatewayReachable({
       url: localUrl,
-      token:
-        process.env.OPENCLAW_GATEWAY_TOKEN ??
-        process.env.CLAWDBOT_GATEWAY_TOKEN ??
-        baseLocalProbeToken,
-      password:
-        process.env.OPENCLAW_GATEWAY_PASSWORD ??
-        process.env.CLAWDBOT_GATEWAY_PASSWORD ??
-        baseLocalProbePassword,
+      token: baseConfig.gateway?.auth?.token ?? process.env.REMOTECLAW_GATEWAY_TOKEN,
+      password: baseConfig.gateway?.auth?.password ?? process.env.REMOTECLAW_GATEWAY_PASSWORD,
     });
     const remoteUrl = baseConfig.gateway?.remote?.url?.trim() ?? "";
-    const baseRemoteProbeToken = await resolveGatewaySecretInputForWizard({
-      cfg: baseConfig,
-      value: baseConfig.gateway?.remote?.token,
-      path: "gateway.remote.token",
-    });
     const remoteProbe = remoteUrl
       ? await probeGatewayReachable({
           url: remoteUrl,
-          token: baseRemoteProbeToken,
+          token: baseConfig.gateway?.remote?.token,
         })
       : null;
 
@@ -419,6 +366,10 @@ export async function runConfigureWizard(
     let workspaceDir =
       collectWorkspaceDirs(nextConfig)[0] ?? collectWorkspaceDirs(baseConfig)[0] ?? "";
     let gatewayPort = resolveGatewayPort(baseConfig);
+    let gatewayToken: string | undefined =
+      nextConfig.gateway?.auth?.token ??
+      baseConfig.gateway?.auth?.token ??
+      process.env.REMOTECLAW_GATEWAY_TOKEN;
 
     const persistConfig = async () => {
       nextConfig = applyWizardMetadata(nextConfig, {
@@ -534,6 +485,7 @@ export async function runConfigureWizard(
         const gateway = await promptGatewayConfig(nextConfig, runtime);
         nextConfig = gateway.config;
         gatewayPort = gateway.port;
+        gatewayToken = gateway.token;
       }
 
       if (selected.includes("channels")) {
@@ -547,7 +499,7 @@ export async function runConfigureWizard(
           await promptDaemonPort();
         }
 
-        await maybeInstallDaemon({ runtime, port: gatewayPort });
+        await maybeInstallDaemon({ runtime, port: gatewayPort, gatewayToken });
       }
 
       if (selected.includes("health")) {
@@ -583,6 +535,7 @@ export async function runConfigureWizard(
           const gateway = await promptGatewayConfig(nextConfig, runtime);
           nextConfig = gateway.config;
           gatewayPort = gateway.port;
+          gatewayToken = gateway.token;
           didConfigureGateway = true;
           await persistConfig();
         }
@@ -599,6 +552,7 @@ export async function runConfigureWizard(
           await maybeInstallDaemon({
             runtime,
             port: gatewayPort,
+            gatewayToken,
           });
         }
 
@@ -632,29 +586,10 @@ export async function runConfigureWizard(
     });
     // Try both new and old passwords since gateway may still have old config.
     const newPassword =
-      process.env.OPENCLAW_GATEWAY_PASSWORD ??
-      process.env.CLAWDBOT_GATEWAY_PASSWORD ??
-      (await resolveGatewaySecretInputForWizard({
-        cfg: nextConfig,
-        value: nextConfig.gateway?.auth?.password,
-        path: "gateway.auth.password",
-      }));
+      nextConfig.gateway?.auth?.password ?? process.env.REMOTECLAW_GATEWAY_PASSWORD;
     const oldPassword =
-      process.env.OPENCLAW_GATEWAY_PASSWORD ??
-      process.env.CLAWDBOT_GATEWAY_PASSWORD ??
-      (await resolveGatewaySecretInputForWizard({
-        cfg: baseConfig,
-        value: baseConfig.gateway?.auth?.password,
-        path: "gateway.auth.password",
-      }));
-    const token =
-      process.env.OPENCLAW_GATEWAY_TOKEN ??
-      process.env.CLAWDBOT_GATEWAY_TOKEN ??
-      (await resolveGatewaySecretInputForWizard({
-        cfg: nextConfig,
-        value: nextConfig.gateway?.auth?.token,
-        path: "gateway.auth.token",
-      }));
+      baseConfig.gateway?.auth?.password ?? process.env.REMOTECLAW_GATEWAY_PASSWORD;
+    const token = nextConfig.gateway?.auth?.token ?? process.env.REMOTECLAW_GATEWAY_TOKEN;
 
     let gatewayProbe = await probeGatewayReachable({
       url: links.wsUrl,

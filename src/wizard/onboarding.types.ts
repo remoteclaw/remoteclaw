@@ -8,8 +8,8 @@ export type QuickstartGatewayDefaults = {
   bind: "loopback" | "lan" | "auto" | "custom" | "tailnet";
   authMode: GatewayAuthChoice;
   tailscaleMode: "off" | "serve" | "funnel";
-  token?: SecretInput;
-  password?: SecretInput;
+  token?: string;
+  password?: string;
   customBindHost?: string;
   tailscaleResetOnExit: boolean;
 };

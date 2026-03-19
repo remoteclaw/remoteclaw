@@ -8,8 +8,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   buildModelsProviderData,
-  createReplyPrefixOptions,
-  createTypingCallbacks,
+  createChannelReplyPipeline,
+  isRequestBodyLimitError,
   logTypingFailure,
   resolveControlCommandGate,
   type RemoteClawConfig,
@@ -470,29 +470,29 @@ async function handleSlashCommandAsync(params: {
     accountId: account.accountId,
   });
 
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const { onModelSelected, typingCallbacks, ...replyPipeline } = createChannelReplyPipeline({
     cfg,
     agentId: route.agentId,
     channel: "mattermost",
     accountId: account.accountId,
-  });
-
-  const typingCallbacks = createTypingCallbacks({
-    start: () => sendMattermostTyping(client, { channelId }),
-    onStartError: (err: unknown) => {
-      logTypingFailure({
-        log: (message: string) => log?.(message),
-        channel: "mattermost",
-        target: channelId,
-        error: err,
-      });
+    typing: {
+      start: () => sendMattermostTyping(client, { channelId }),
+      onStartError: (err) => {
+        logTypingFailure({
+          log: (message) => log?.(message),
+          channel: "mattermost",
+          target: channelId,
+          error: err,
+        });
+      },
     },
   });
+  const humanDelay = core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId);
 
   const { dispatcher, replyOptions, markDispatchIdle } =
     core.channel.reply.createReplyDispatcherWithTyping({
-      ...prefixOptions,
-      humanDelay: core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId),
+      ...replyPipeline,
+      humanDelay,
       deliver: async (payload: ReplyPayload) => {
         await deliverMattermostReplyPayload({
           core,
@@ -510,7 +510,7 @@ async function handleSlashCommandAsync(params: {
       onError: (err, info) => {
         runtime.error?.(`mattermost slash ${info.kind} reply failed: ${String(err)}`);
       },
-      onReplyStart: typingCallbacks.onReplyStart,
+      onReplyStart: typingCallbacks?.onReplyStart,
     });
 
   await core.channel.reply.withReplyDispatcher({

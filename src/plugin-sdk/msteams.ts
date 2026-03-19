@@ -52,8 +52,7 @@ export type {
   ChannelOutboundAdapter,
 } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
-export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
-export { createTypingCallbacks } from "../channels/typing.js";
+export { createChannelReplyPipeline } from "./channel-reply-pipeline.js";
 export type { RemoteClawConfig } from "../config/config.js";
 export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 export { resolveToolsBySender } from "../config/group-policy.js";
@@ -102,7 +101,7 @@ export { withFileLock } from "./file-lock.js";
 export { dispatchReplyFromConfigWithSettledDispatcher } from "./inbound-reply-dispatch.js";
 export { readJsonFileWithFallback, writeJsonFileAtomically } from "./json-store.js";
 export { loadOutboundMediaFromUrl } from "./outbound-media.js";
-export { createScopedPairingAccess } from "./pairing-access.js";
+export { createChannelPairingController } from "./channel-pairing.js";
 export { resolveInboundSessionEnvelopeContext } from "../channels/session-envelope.js";
 export {
   buildHostnameAllowlistPolicyFromSuffixAllowlist,

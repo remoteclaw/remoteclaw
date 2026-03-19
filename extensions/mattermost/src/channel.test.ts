@@ -1,6 +1,8 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
 import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { RemoteClawConfig } from "../runtime-api.js";
+import { createChannelReplyPipeline } from "../runtime-api.js";
 const { sendMessageMattermostMock } = vi.hoisted(() => ({
   sendMessageMattermostMock: vi.fn(),
 }));
@@ -376,7 +378,7 @@ describe("mattermostPlugin", () => {
         },
       };
 
-      const prefixContext = createReplyPrefixOptions({
+      const prefixContext = createChannelReplyPipeline({
         cfg,
         agentId: "main",
         channel: "mattermost",

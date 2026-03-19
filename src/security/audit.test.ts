@@ -574,7 +574,7 @@ describe("security audit", () => {
   });
 
   it("suggests prefix-matching commands for unknown denyCommands entries", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       gateway: {
         nodes: {
           denyCommands: ["system.run.prep"],
@@ -593,7 +593,7 @@ describe("security audit", () => {
   });
 
   it("keeps unknown denyCommands entries without suggestions when no close command exists", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: RemoteClawConfig = {
       gateway: {
         nodes: {
           denyCommands: ["zzzzzzzzzzzzzz"],

@@ -120,7 +120,6 @@ describe("resolveFeishuCredentials", () => {
         appId: "cli_123",
         appSecret: { source: "file", provider: "default", id: "path/to/secret" } as never,
       }),
-      { allowUnresolvedSecretRef: true },
     );
 
     expect(creds).toBeNull();
@@ -159,7 +158,6 @@ describe("resolveFeishuCredentials", () => {
           appId: "cli_123",
           appSecret: { source: "env", provider: "default", id: key } as never,
         }),
-        { allowUnresolvedSecretRef: true },
       );
 
       expect(creds).toEqual({
@@ -189,7 +187,6 @@ describe("resolveFeishuCredentials", () => {
           appId: "cli_123",
           appSecret: { source: "env", provider: "corp-env", id: key } as never,
         }),
-        { allowUnresolvedSecretRef: true },
       );
 
       expect(creds?.appSecret).toBe("secret_from_env_alias");

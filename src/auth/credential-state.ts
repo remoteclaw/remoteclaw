@@ -1,4 +1,4 @@
-import { coerceSecretRef, normalizeSecretInputString } from "../../config/types.secrets.js";
+import { coerceSecretRef, normalizeSecretInputString } from "../config/types.secrets.js";
 import type { AuthProfileCredential } from "./types.js";
 
 export type AuthCredentialReasonCode =
@@ -64,11 +64,5 @@ export function evaluateStoredCredentialEligibility(params: {
     return { eligible: true, reasonCode: "ok" };
   }
 
-  if (
-    normalizeSecretInputString(credential.access) === undefined &&
-    normalizeSecretInputString(credential.refresh) === undefined
-  ) {
-    return { eligible: false, reasonCode: "missing_credential" };
-  }
-  return { eligible: true, reasonCode: "ok" };
+  return { eligible: false, reasonCode: "missing_credential" };
 }

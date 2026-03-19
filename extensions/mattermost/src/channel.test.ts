@@ -253,7 +253,7 @@ describe("mattermostPlugin", () => {
             baseUrl: "https://chat.example.com",
           },
         },
-      } as OpenClawConfig;
+      } as RemoteClawConfig;
 
       await sendText({
         cfg,

@@ -1,9 +1,11 @@
 import type { Bot } from "grammy";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RuntimeEnv } from "../../../../src/runtime.js";
-import { deliverReplies } from "./delivery.js";
 
-const loadWebMedia = vi.fn();
+const { loadWebMedia } = vi.hoisted(() => ({
+  loadWebMedia: vi.fn(),
+}));
+const triggerInternalHook = vi.hoisted(() => vi.fn(async () => {}));
 const messageHookRunner = vi.hoisted(() => ({
   hasHooks: vi.fn<(name: string) => boolean>(() => false),
   runMessageSending: vi.fn(),
@@ -20,16 +22,32 @@ type DeliverWithParams = Omit<
   DeliverRepliesParams,
   "chatId" | "token" | "replyToMode" | "textLimit"
 > &
-  Partial<Pick<DeliverRepliesParams, "replyToMode" | "textLimit">>;
+  Partial<Pick<DeliverRepliesParams, "replyToMode" | "textLimit" | "mediaLoader">>;
 type RuntimeStub = Pick<RuntimeEnv, "error" | "log" | "exit">;
 
-vi.mock("../../../extensions/whatsapp/src/media.js", () => ({
+vi.mock("remoteclaw/plugin-sdk/web-media", () => ({
+  loadWebMedia: (...args: unknown[]) => loadWebMedia(...args),
+}));
+vi.mock("remoteclaw/plugin-sdk/web-media.js", () => ({
   loadWebMedia: (...args: unknown[]) => loadWebMedia(...args),
 }));
 
 vi.mock("../../../../src/plugins/hook-runner-global.js", () => ({
   getGlobalHookRunner: () => messageHookRunner,
 }));
+
+vi.mock("../../../../src/hooks/internal-hooks.js", async () => {
+  const actual = await vi.importActual<typeof import("../../../../src/hooks/internal-hooks.js")>(
+    "../../../../src/hooks/internal-hooks.js",
+  );
+  return {
+    ...actual,
+    triggerInternalHook,
+  };
+});
+
+vi.resetModules();
+const { deliverReplies } = await import("./delivery.js");
 
 vi.mock("grammy", () => ({
   InputFile: class {
@@ -59,6 +77,7 @@ async function deliverWith(params: DeliverWithParams) {
   await deliverReplies({
     ...baseDeliveryParams,
     ...params,
+    mediaLoader: params.mediaLoader ?? loadWebMedia,
   });
 }
 
@@ -108,6 +127,7 @@ function createVoiceFailureHarness(params: {
 describe("deliverReplies", () => {
   beforeEach(() => {
     loadWebMedia.mockClear();
+    triggerInternalHook.mockReset();
     messageHookRunner.hasHooks.mockReset();
     messageHookRunner.hasHooks.mockReturnValue(false);
     messageHookRunner.runMessageSending.mockReset();
@@ -219,6 +239,84 @@ describe("deliverReplies", () => {
       expect.any(String),
       expect.objectContaining({
         disable_notification: true,
+      }),
+    );
+  });
+
+  it("emits internal message:sent when session hook context is available", async () => {
+    const runtime = createRuntime(false);
+    const sendMessage = vi.fn().mockResolvedValue({ message_id: 9, chat: { id: "123" } });
+    const bot = createBot({ sendMessage });
+
+    await deliverWith({
+      sessionKeyForInternalHooks: "agent:test:telegram:123",
+      mirrorIsGroup: true,
+      mirrorGroupId: "123",
+      replies: [{ text: "hello" }],
+      runtime,
+      bot,
+    });
+
+    expect(triggerInternalHook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "message",
+        action: "sent",
+        sessionKey: "agent:test:telegram:123",
+        context: expect.objectContaining({
+          to: "123",
+          content: "hello",
+          success: true,
+          channelId: "telegram",
+          conversationId: "123",
+          messageId: "9",
+          isGroup: true,
+          groupId: "123",
+        }),
+      }),
+    );
+  });
+
+  it("does not emit internal message:sent without a session key", async () => {
+    const runtime = createRuntime(false);
+    const sendMessage = vi.fn().mockResolvedValue({ message_id: 11, chat: { id: "123" } });
+    const bot = createBot({ sendMessage });
+
+    await deliverWith({
+      replies: [{ text: "hello" }],
+      runtime,
+      bot,
+    });
+
+    expect(triggerInternalHook).not.toHaveBeenCalled();
+  });
+
+  it("emits internal message:sent with success=false on delivery failure", async () => {
+    const runtime = createRuntime(false);
+    const sendMessage = vi.fn().mockRejectedValue(new Error("network error"));
+    const bot = createBot({ sendMessage });
+
+    await expect(
+      deliverWith({
+        sessionKeyForInternalHooks: "agent:test:telegram:123",
+        replies: [{ text: "hello" }],
+        runtime,
+        bot,
+      }),
+    ).rejects.toThrow("network error");
+
+    expect(triggerInternalHook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "message",
+        action: "sent",
+        sessionKey: "agent:test:telegram:123",
+        context: expect.objectContaining({
+          to: "123",
+          content: "hello",
+          success: false,
+          error: "network error",
+          channelId: "telegram",
+          conversationId: "123",
+        }),
       }),
     );
   });

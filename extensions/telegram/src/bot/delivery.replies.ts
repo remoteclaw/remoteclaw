@@ -1,6 +1,8 @@
-import { type Bot, GrammyError, InputFile } from "grammy";
 import type { ReplyToMode } from "remoteclaw/plugin-sdk/config-runtime";
 import type { MarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import { type Bot, GrammyError, InputFile } from "grammy";
 import { fireAndForgetHook } from "remoteclaw/plugin-sdk/hook-runtime";
 import { createInternalHookEvent, triggerInternalHook } from "remoteclaw/plugin-sdk/hook-runtime";
 import {
@@ -13,9 +15,7 @@ import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
 import { buildOutboundMediaLoadOptions } from "remoteclaw/plugin-sdk/media-runtime";
 import { isGifMedia, kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
 import { getGlobalHookRunner } from "remoteclaw/plugin-sdk/plugin-runtime";
-import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import { chunkMarkdownTextWithMode, type ChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { loadWebMedia } from "remoteclaw/plugin-sdk/web-media";
 import type { TelegramInlineButtons } from "../button-types.js";
@@ -491,7 +491,9 @@ async function maybePinFirstDeliveredMessage(params: {
   }
 }
 
-type EmitMessageSentHookParams = {
+function emitMessageSentHooks(params: {
+  hookRunner: ReturnType<typeof getGlobalHookRunner>;
+  enabled: boolean;
   sessionKeyForInternalHooks?: string;
   chatId: string;
   accountId?: string;
@@ -501,10 +503,11 @@ type EmitMessageSentHookParams = {
   messageId?: number;
   isGroup?: boolean;
   groupId?: string;
-};
-
-function buildTelegramSentHookContext(params: EmitMessageSentHookParams) {
-  return buildCanonicalSentMessageHookContext({
+}): void {
+  if (!params.enabled && !params.sessionKeyForInternalHooks) {
+    return;
+  }
+  const canonical = buildCanonicalSentMessageHookContext({
     to: params.chatId,
     content: params.content,
     success: params.success,
@@ -516,36 +519,6 @@ function buildTelegramSentHookContext(params: EmitMessageSentHookParams) {
     isGroup: params.isGroup,
     groupId: params.groupId,
   });
-}
-
-export function emitInternalMessageSentHook(params: EmitMessageSentHookParams): void {
-  if (!params.sessionKeyForInternalHooks) {
-    return;
-  }
-  const canonical = buildTelegramSentHookContext(params);
-  fireAndForgetHook(
-    triggerInternalHook(
-      createInternalHookEvent(
-        "message",
-        "sent",
-        params.sessionKeyForInternalHooks,
-        toInternalMessageSentContext(canonical),
-      ),
-    ),
-    "telegram: message:sent internal hook failed",
-  );
-}
-
-function emitMessageSentHooks(
-  params: EmitMessageSentHookParams & {
-    hookRunner: ReturnType<typeof getGlobalHookRunner>;
-    enabled: boolean;
-  },
-): void {
-  if (!params.enabled && !params.sessionKeyForInternalHooks) {
-    return;
-  }
-  const canonical = buildTelegramSentHookContext(params);
   if (params.enabled) {
     fireAndForgetHook(
       Promise.resolve(
@@ -557,7 +530,20 @@ function emitMessageSentHooks(
       "telegram: message_sent plugin hook failed",
     );
   }
-  emitInternalMessageSentHook(params);
+  if (!params.sessionKeyForInternalHooks) {
+    return;
+  }
+  fireAndForgetHook(
+    triggerInternalHook(
+      createInternalHookEvent(
+        "message",
+        "sent",
+        params.sessionKeyForInternalHooks,
+        toInternalMessageSentContext(canonical),
+      ),
+    ),
+    "telegram: message:sent internal hook failed",
+  );
 }
 
 export async function deliverReplies(params: {

@@ -54,7 +54,7 @@ type SendMatrixMessage = (
   to: string,
   text: string,
   opts?: {
-    cfg?: OpenClawConfig;
+    cfg?: RemoteClawConfig;
     mediaUrl?: string;
     replyToId?: string;
     threadId?: string;

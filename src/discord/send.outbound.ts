@@ -4,7 +4,7 @@ import path from "node:path";
 import { serializePayload, type MessagePayloadObject, type RequestClient } from "@buape/carbon";
 import { ChannelType, Routes } from "discord-api-types/v10";
 import { resolveChunkMode } from "../auto-reply/chunk.js";
-import { loadConfig, type OpenClawConfig } from "../config/config.js";
+import { loadConfig, type RemoteClawConfig } from "../config/config.js";
 import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
 import { recordChannelActivity } from "../infra/channel-activity.js";
 import type { RetryConfig } from "../infra/retry.js";
@@ -44,7 +44,7 @@ import {
 } from "./voice-message.js";
 
 type DiscordSendOpts = {
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   token?: string;
   accountId?: string;
   mediaUrl?: string;
@@ -311,7 +311,7 @@ export async function sendMessageDiscord(
 }
 
 type DiscordWebhookSendOpts = {
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   webhookId: string;
   webhookToken: string;
   accountId?: string;
@@ -466,7 +466,7 @@ export async function sendPollDiscord(
 }
 
 type VoiceMessageOpts = {
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   token?: string;
   accountId?: string;
   verbose?: boolean;

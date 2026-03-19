@@ -13,7 +13,7 @@ import {
 } from "./client.js";
 
 export type MattermostSendOpts = {
-  cfg?: OpenClawConfig;
+  cfg?: RemoteClawConfig;
   botToken?: string;
   baseUrl?: string;
   accountId?: string;

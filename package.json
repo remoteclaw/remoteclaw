@@ -360,7 +360,7 @@
     "test:install:e2e:openai": "REMOTECLAW_E2E_MODELS=openai bash scripts/test-install-sh-e2e-docker.sh",
     "test:install:smoke": "bash scripts/test-install-sh-docker.sh",
     "test:live": "REMOTECLAW_LIVE_TEST=1 vitest run --config vitest.live.config.ts",
-    "test:macmini": "REMOTECLAW_TEST_VM_FORKS=0 REMOTECLAW_TEST_PROFILE=serial node scripts/test-parallel.mjs",
+    "test:macmini": "REMOTECLAW_TEST_VM_FORKS=0 REMOTECLAW_TEST_PROFILE=macmini node scripts/test-parallel.mjs",
     "test:perf:budget": "node scripts/test-perf-budget.mjs",
     "test:perf:hotspots": "node scripts/test-hotspots.mjs",
     "test:perf:update-timings": "node scripts/test-update-timings.mjs",

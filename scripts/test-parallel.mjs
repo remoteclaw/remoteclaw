@@ -124,9 +124,11 @@ const testProfile =
   rawTestProfile === "low" ||
   rawTestProfile === "max" ||
   rawTestProfile === "normal" ||
-  rawTestProfile === "serial"
+  rawTestProfile === "serial" ||
+  rawTestProfile === "macmini"
     ? rawTestProfile
     : "normal";
+const _isMacMiniProfile = testProfile === "macmini";
 // Even on low-memory hosts, keep the isolated lane split so files like
 // git-commit.test.ts still get the worker/process isolation they require.
 const shouldSplitUnitRuns = testProfile !== "serial";

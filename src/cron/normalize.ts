@@ -323,6 +323,10 @@ export function normalizeCronJobInput(
     next.delivery = coerceDelivery(base.delivery);
   }
 
+  if ("isolation" in next) {
+    delete next.isolation;
+  }
+
   // Copy top-level legacy fields into payload before stripping.
   const prePayload = isRecord(next.payload) ? next.payload : null;
   if (prePayload && prePayload.kind === "agentTurn") {

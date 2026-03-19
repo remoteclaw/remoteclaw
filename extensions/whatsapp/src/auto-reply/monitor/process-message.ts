@@ -1,34 +1,35 @@
-import { resolveIdentityNamePrefix } from "../../../../../src/agents/identity.js";
-import { resolveChunkMode, resolveTextChunkLimit } from "../../../../../src/auto-reply/chunk.js";
-import { shouldComputeCommandAuthorized } from "../../../../../src/auto-reply/command-detection.js";
-import { formatInboundEnvelope } from "../../../../../src/auto-reply/envelope.js";
-import type { getReplyFromConfig } from "../../../../../src/auto-reply/reply.js";
+import { resolveIdentityNamePrefix } from "remoteclaw/plugin-sdk/agent-runtime";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+import { toLocationContext } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveInboundSessionEnvelopeContext } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { recordSessionMetaFromInbound } from "remoteclaw/plugin-sdk/config-runtime";
+import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
+import { resolveSendableOutboundReplyParts } from "remoteclaw/plugin-sdk/reply-payload";
+import { resolveChunkMode, resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
+import { shouldComputeCommandAuthorized } from "remoteclaw/plugin-sdk/reply-runtime";
+import { formatInboundEnvelope } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { getReplyFromConfig } from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   buildHistoryContextFromEntries,
   type HistoryEntry,
-} from "../../../../../src/auto-reply/reply/history.js";
-import { finalizeInboundContext } from "../../../../../src/auto-reply/reply/inbound-context.js";
-import { dispatchReplyWithBufferedBlockDispatcher } from "../../../../../src/auto-reply/reply/provider-dispatcher.js";
-import type { ReplyPayload } from "../../../../../src/auto-reply/types.js";
-import { toLocationContext } from "../../../../../src/channels/location.js";
-import { createReplyPrefixOptions } from "../../../../../src/channels/reply-prefix.js";
-import { resolveInboundSessionEnvelopeContext } from "../../../../../src/channels/session-envelope.js";
-import type { loadConfig } from "../../../../../src/config/config.js";
-import { resolveMarkdownTableMode } from "../../../../../src/config/markdown-tables.js";
-import { recordSessionMetaFromInbound } from "../../../../../src/config/sessions.js";
-import { logVerbose, shouldLogVerbose } from "../../../../../src/globals.js";
-import type { getChildLogger } from "../../../../../src/logging.js";
-import { getAgentScopedMediaLocalRoots } from "../../../../../src/media/local-roots.js";
+} from "remoteclaw/plugin-sdk/reply-runtime";
+import { finalizeInboundContext } from "remoteclaw/plugin-sdk/reply-runtime";
+import { dispatchReplyWithBufferedBlockDispatcher } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   resolveInboundLastRouteSessionKey,
   type resolveAgentRoute,
-} from "../../../../../src/routing/resolve-route.js";
+} from "remoteclaw/plugin-sdk/routing";
+import { logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import type { getChildLogger } from "remoteclaw/plugin-sdk/runtime-env";
 import {
   readStoreAllowFromForDmPolicy,
   resolvePinnedMainDmOwnerFromAllowlist,
   resolveDmGroupAccessWithCommandGate,
-} from "../../../../../src/security/dm-policy-shared.js";
-import { jidToE164, normalizeE164 } from "../../../../../src/utils.js";
+} from "remoteclaw/plugin-sdk/security-runtime";
+import { jidToE164, normalizeE164 } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveWhatsAppAccount } from "../../accounts.js";
 import { newConnectionId } from "../../reconnect.js";
 import { formatError } from "../../session.js";
@@ -263,12 +264,13 @@ export async function processMessage(params: {
     accountId: params.route.accountId,
   });
   const mediaLocalRoots = getAgentScopedMediaLocalRoots(params.cfg, params.route.agentId);
+  let didLogHeartbeatStrip = false;
   let didSendReply = false;
   const commandAuthorized = shouldComputeCommandAuthorized(params.msg.body, params.cfg)
     ? await resolveWhatsAppCommandAuthorized({ cfg: params.cfg, msg: params.msg })
     : undefined;
   const configuredResponsePrefix = params.cfg.messages?.responsePrefix;
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
     cfg: params.cfg,
     agentId: params.route.agentId,
     channel: "whatsapp",
@@ -279,7 +281,7 @@ export async function processMessage(params: {
     Boolean(params.msg.selfE164) &&
     normalizeE164(params.msg.from) === normalizeE164(params.msg.selfE164 ?? "");
   const responsePrefix =
-    prefixOptions.responsePrefix ??
+    replyPipeline.responsePrefix ??
     (configuredResponsePrefix === undefined && isSelfChat
       ? resolveIdentityNamePrefix(params.cfg, params.route.agentId)
       : undefined);
@@ -392,8 +394,14 @@ export async function processMessage(params: {
     cfg: params.cfg,
     replyResolver: params.replyResolver,
     dispatcherOptions: {
-      ...prefixOptions,
+      ...replyPipeline,
       responsePrefix,
+      onHeartbeatStrip: () => {
+        if (!didLogHeartbeatStrip) {
+          didLogHeartbeatStrip = true;
+          logVerbose("Stripped stray HEARTBEAT_OK token from web reply");
+        }
+      },
       deliver: async (payload: ReplyPayload, info) => {
         if (info.kind !== "final") {
           // Only deliver final replies to external messaging channels (WhatsApp).
@@ -422,10 +430,11 @@ export async function processMessage(params: {
         });
         const fromDisplay =
           params.msg.chatType === "group" ? conversationId : (params.msg.from ?? "unknown");
-        const hasMedia = Boolean(payload.mediaUrl || payload.mediaUrls?.length);
+        const reply = resolveSendableOutboundReplyParts(payload);
+        const hasMedia = reply.hasMedia;
         whatsappOutboundLog.info(`Auto-replied to ${fromDisplay}${hasMedia ? " (media)" : ""}`);
         if (shouldLogVerbose()) {
-          const preview = payload.text != null ? elide(payload.text, 400) : "<media>";
+          const preview = payload.text != null ? elide(reply.text, 400) : "<media>";
           whatsappOutboundLog.debug(`Reply body: ${preview}${hasMedia ? " (media)" : ""}`);
         }
       },

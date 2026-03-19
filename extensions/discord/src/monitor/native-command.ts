@@ -2,28 +2,41 @@ import {
   Button,
   ChannelType,
   Command,
-  Row,
+  StringSelectMenu,
+  type TopLevelComponents,
   type AutocompleteInteraction,
   type ButtonInteraction,
   type CommandInteraction,
   type CommandOptions,
-  type ComponentData,
   type StringSelectMenuInteraction,
 } from "@buape/carbon";
-import { ApplicationCommandOptionType, ButtonStyle } from "discord-api-types/v10";
+import { ApplicationCommandOptionType } from "discord-api-types/v10";
+import { resolveHumanDelayConfig } from "remoteclaw/plugin-sdk/agent-runtime";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveNativeCommandSessionTargets } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { RemoteClawConfig, loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { isDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveOpenProviderRuntimeGroupPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import {
-  ensureConfiguredAcpRouteReady,
-  resolveConfiguredAcpRoute,
-} from "../../../../src/acp/persistent-bindings.route.js";
-import { resolveHumanDelayConfig } from "../../../../src/agents/identity.js";
-import { resolveChunkMode, resolveTextChunkLimit } from "../../../../src/auto-reply/chunk.js";
+  ensureConfiguredBindingRouteReady,
+  resolveConfiguredBindingRoute,
+} from "remoteclaw/plugin-sdk/conversation-runtime";
+import { buildPairingReply } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
+import { executePluginCommand, matchPluginCommand } from "remoteclaw/plugin-sdk/plugin-runtime";
+import {
+  resolveSendableOutboundReplyParts,
+  resolveTextChunksWithFallback,
+} from "remoteclaw/plugin-sdk/reply-payload";
+import { resolveChunkMode, resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
 import type {
   ChatCommandDefinition,
   CommandArgDefinition,
   CommandArgValues,
   CommandArgs,
   NativeCommandSpec,
-} from "../../../../src/auto-reply/commands-registry.js";
+} from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   buildCommandTextFromArgs,
   findCommandByNativeName,
@@ -32,22 +45,12 @@ import {
   resolveCommandArgChoices,
   resolveCommandArgMenu,
   serializeCommandArgs,
-} from "../../../../src/auto-reply/commands-registry.js";
-import { dispatchReplyWithDispatcher } from "../../../../src/auto-reply/reply/provider-dispatcher.js";
-import type { ReplyPayload } from "../../../../src/auto-reply/types.js";
-import { resolveCommandAuthorizedFromAuthorizers } from "../../../../src/channels/command-gating.js";
-import { resolveNativeCommandSessionTargets } from "../../../../src/channels/native-command-session-targets.js";
-import { createReplyPrefixOptions } from "../../../../src/channels/reply-prefix.js";
-import type { RemoteClawConfig, loadConfig } from "../../../../src/config/config.js";
-import { isDangerousNameMatchingEnabled } from "../../../../src/config/dangerous-name-matching.js";
-import { resolveOpenProviderRuntimeGroupPolicy } from "../../../../src/config/runtime-group-policy.js";
-import { logVerbose } from "../../../../src/globals.js";
-import { createSubsystemLogger } from "../../../../src/logging/subsystem.js";
-import { getAgentScopedMediaLocalRoots } from "../../../../src/media/local-roots.js";
-import { buildPairingReply } from "../../../../src/pairing/pairing-messages.js";
-import { executePluginCommand, matchPluginCommand } from "../../../../src/plugins/commands.js";
-import { chunkItems } from "../../../../src/utils/chunk-items.js";
-import { loadWebMedia } from "../../../whatsapp/src/media.js";
+} from "remoteclaw/plugin-sdk/reply-runtime";
+import { dispatchReplyWithDispatcher } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
+import { loadWebMedia } from "remoteclaw/plugin-sdk/web-media";
 import { resolveDiscordMaxLinesPerMessage } from "../accounts.js";
 import { chunkDiscordTextWithMode } from "../chunk.js";
 import {
@@ -64,6 +67,16 @@ import { resolveDiscordDmCommandAccess } from "./dm-command-auth.js";
 import { handleDiscordDmCommandDecision } from "./dm-command-decision.js";
 import { resolveDiscordChannelInfo } from "./message-utils.js";
 import { buildDiscordNativeCommandContext } from "./native-command-context.js";
+import {
+  buildDiscordCommandArgMenu,
+  createDiscordCommandArgFallbackButton as createDiscordCommandArgFallbackButtonUi,
+  createDiscordModelPickerFallbackButton as createDiscordModelPickerFallbackButtonUi,
+  createDiscordModelPickerFallbackSelect as createDiscordModelPickerFallbackSelectUi,
+  replyWithDiscordModelPickerProviders,
+  shouldOpenDiscordModelPickerFromCommand,
+  type DiscordCommandArgContext,
+  type DiscordModelPickerContext,
+} from "./native-command-ui.js";
 import {
   resolveDiscordBoundConversationRoute,
   resolveDiscordEffectiveRoute,
@@ -171,6 +184,11 @@ function buildDiscordCommandOptions(params: {
   }) satisfies CommandOptions;
 }
 
+function shouldBypassConfiguredAcpEnsure(commandName: string): boolean {
+  const normalized = commandName.trim().toLowerCase();
+  return normalized === "acp" || normalized === "new" || normalized === "reset";
+}
+
 function readDiscordCommandArgs(
   interaction: CommandInteraction,
   definitions?: CommandArgDefinition[],
@@ -193,25 +211,6 @@ function readDiscordCommandArgs(
     }
   }
   return Object.keys(values).length > 0 ? { values } : undefined;
-}
-
-const DISCORD_COMMAND_ARG_CUSTOM_ID_KEY = "cmdarg";
-
-function createCommandArgsWithValue(params: { argName: string; value: string }): CommandArgs {
-  const values: CommandArgValues = { [params.argName]: params.value };
-  return { values };
-}
-
-function encodeDiscordCommandArgValue(value: string): string {
-  return encodeURIComponent(value);
-}
-
-function decodeDiscordCommandArgValue(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
 }
 
 function isDiscordUnknownInteraction(error: unknown): boolean {
@@ -237,13 +236,13 @@ function isDiscordUnknownInteraction(error: unknown): boolean {
 }
 
 function hasRenderableReplyPayload(payload: ReplyPayload): boolean {
-  if ((payload.text ?? "").trim()) {
+  if (resolveSendableOutboundReplyParts(payload).hasContent) {
     return true;
   }
-  if ((payload.mediaUrl ?? "").trim()) {
-    return true;
-  }
-  if (payload.mediaUrls?.some((entry) => entry.trim())) {
+  const discordData = payload.channelData?.discord as
+    | { components?: TopLevelComponents[] }
+    | undefined;
+  if (Array.isArray(discordData?.components) && discordData.components.length > 0) {
     return true;
   }
   return false;
@@ -262,215 +261,6 @@ async function safeDiscordInteractionCall<T>(
     }
     throw error;
   }
-}
-
-function buildDiscordCommandArgCustomId(params: {
-  command: string;
-  arg: string;
-  value: string;
-  userId: string;
-}): string {
-  return [
-    `${DISCORD_COMMAND_ARG_CUSTOM_ID_KEY}:command=${encodeDiscordCommandArgValue(params.command)}`,
-    `arg=${encodeDiscordCommandArgValue(params.arg)}`,
-    `value=${encodeDiscordCommandArgValue(params.value)}`,
-    `user=${encodeDiscordCommandArgValue(params.userId)}`,
-  ].join(";");
-}
-
-function parseDiscordCommandArgData(
-  data: ComponentData,
-): { command: string; arg: string; value: string; userId: string } | null {
-  if (!data || typeof data !== "object") {
-    return null;
-  }
-  const coerce = (value: unknown) =>
-    typeof value === "string" || typeof value === "number" ? String(value) : "";
-  const rawCommand = coerce(data.command);
-  const rawArg = coerce(data.arg);
-  const rawValue = coerce(data.value);
-  const rawUser = coerce(data.user);
-  if (!rawCommand || !rawArg || !rawValue || !rawUser) {
-    return null;
-  }
-  return {
-    command: decodeDiscordCommandArgValue(rawCommand),
-    arg: decodeDiscordCommandArgValue(rawArg),
-    value: decodeDiscordCommandArgValue(rawValue),
-    userId: decodeDiscordCommandArgValue(rawUser),
-  };
-}
-
-type DiscordCommandArgContext = {
-  cfg: ReturnType<typeof loadConfig>;
-  discordConfig: DiscordConfig;
-  accountId: string;
-  sessionPrefix: string;
-  threadBindings: ThreadBindingManager;
-};
-
-async function handleDiscordCommandArgInteraction(
-  interaction: ButtonInteraction,
-  data: ComponentData,
-  ctx: DiscordCommandArgContext,
-) {
-  const parsed = parseDiscordCommandArgData(data);
-  if (!parsed) {
-    await safeDiscordInteractionCall("command arg update", () =>
-      interaction.update({
-        content: "Sorry, that selection is no longer available.",
-        components: [],
-      }),
-    );
-    return;
-  }
-  if (interaction.user?.id && interaction.user.id !== parsed.userId) {
-    await safeDiscordInteractionCall("command arg ack", () => interaction.acknowledge());
-    return;
-  }
-  const commandDefinition =
-    findCommandByNativeName(parsed.command, "discord") ??
-    listChatCommands().find((entry) => entry.key === parsed.command);
-  if (!commandDefinition) {
-    await safeDiscordInteractionCall("command arg update", () =>
-      interaction.update({
-        content: "Sorry, that command is no longer available.",
-        components: [],
-      }),
-    );
-    return;
-  }
-  const argUpdateResult = await safeDiscordInteractionCall("command arg update", () =>
-    interaction.update({
-      content: `✅ Selected ${parsed.value}.`,
-      components: [],
-    }),
-  );
-  if (argUpdateResult === null) {
-    return;
-  }
-  const commandArgs = createCommandArgsWithValue({
-    argName: parsed.arg,
-    value: parsed.value,
-  });
-  const commandArgsWithRaw: CommandArgs = {
-    ...commandArgs,
-    raw: serializeCommandArgs(commandDefinition, commandArgs),
-  };
-  const prompt = buildCommandTextFromArgs(commandDefinition, commandArgsWithRaw);
-  await dispatchDiscordCommandInteraction({
-    interaction,
-    prompt,
-    command: commandDefinition,
-    commandArgs: commandArgsWithRaw,
-    cfg: ctx.cfg,
-    discordConfig: ctx.discordConfig,
-    accountId: ctx.accountId,
-    sessionPrefix: ctx.sessionPrefix,
-    preferFollowUp: true,
-    threadBindings: ctx.threadBindings,
-  });
-}
-
-class DiscordCommandArgButton extends Button {
-  label: string;
-  customId: string;
-  style = ButtonStyle.Secondary;
-  private cfg: ReturnType<typeof loadConfig>;
-  private discordConfig: DiscordConfig;
-  private accountId: string;
-  private sessionPrefix: string;
-  private threadBindings: ThreadBindingManager;
-
-  constructor(params: {
-    label: string;
-    customId: string;
-    cfg: ReturnType<typeof loadConfig>;
-    discordConfig: DiscordConfig;
-    accountId: string;
-    sessionPrefix: string;
-    threadBindings: ThreadBindingManager;
-  }) {
-    super();
-    this.label = params.label;
-    this.customId = params.customId;
-    this.cfg = params.cfg;
-    this.discordConfig = params.discordConfig;
-    this.accountId = params.accountId;
-    this.sessionPrefix = params.sessionPrefix;
-    this.threadBindings = params.threadBindings;
-  }
-
-  async run(interaction: ButtonInteraction, data: ComponentData) {
-    await handleDiscordCommandArgInteraction(interaction, data, {
-      cfg: this.cfg,
-      discordConfig: this.discordConfig,
-      accountId: this.accountId,
-      sessionPrefix: this.sessionPrefix,
-      threadBindings: this.threadBindings,
-    });
-  }
-}
-
-class DiscordCommandArgFallbackButton extends Button {
-  label = "cmdarg";
-  customId = "cmdarg:seed=1";
-  private ctx: DiscordCommandArgContext;
-
-  constructor(ctx: DiscordCommandArgContext) {
-    super();
-    this.ctx = ctx;
-  }
-
-  async run(interaction: ButtonInteraction, data: ComponentData) {
-    await handleDiscordCommandArgInteraction(interaction, data, this.ctx);
-  }
-}
-
-export function createDiscordCommandArgFallbackButton(params: DiscordCommandArgContext): Button {
-  return new DiscordCommandArgFallbackButton(params);
-}
-
-function buildDiscordCommandArgMenu(params: {
-  command: ChatCommandDefinition;
-  menu: {
-    arg: CommandArgDefinition;
-    choices: Array<{ value: string; label: string }>;
-    title?: string;
-  };
-  interaction: CommandInteraction;
-  cfg: ReturnType<typeof loadConfig>;
-  discordConfig: DiscordConfig;
-  accountId: string;
-  sessionPrefix: string;
-  threadBindings: ThreadBindingManager;
-}): { content: string; components: Row<Button>[] } {
-  const { command, menu, interaction } = params;
-  const commandLabel = command.nativeName ?? command.key;
-  const userId = interaction.user?.id ?? "";
-  const rows = chunkItems(menu.choices, 4).map((choices) => {
-    const buttons = choices.map(
-      (choice) =>
-        new DiscordCommandArgButton({
-          label: choice.label,
-          customId: buildDiscordCommandArgCustomId({
-            command: commandLabel,
-            arg: menu.arg.name,
-            value: choice.value,
-            userId,
-          }),
-          cfg: params.cfg,
-          discordConfig: params.discordConfig,
-          accountId: params.accountId,
-          sessionPrefix: params.sessionPrefix,
-          threadBindings: params.threadBindings,
-        }),
-    );
-    return new Row(buttons);
-  });
-  const content =
-    menu.title ?? `Choose ${menu.arg.description || menu.arg.name} for /${commandLabel}.`;
-  return { content, components: rows };
 }
 
 export function createDiscordNativeCommand(params: {
@@ -646,6 +436,7 @@ async function dispatchDiscordCommandInteraction(params: {
   });
   const guildInfo = resolveDiscordGuildEntry({
     guild: interaction.guild ?? undefined,
+    guildId: interaction.guild?.id ?? undefined,
     guildEntries: discordConfig?.guilds,
   });
   let threadParentId: string | undefined;
@@ -804,11 +595,15 @@ async function dispatchDiscordCommandInteraction(params: {
       command,
       menu,
       interaction: interaction as CommandInteraction,
-      cfg,
-      discordConfig,
-      accountId,
-      sessionPrefix,
-      threadBindings,
+      ctx: {
+        cfg,
+        discordConfig,
+        accountId,
+        sessionPrefix,
+        threadBindings,
+      },
+      safeInteractionCall: safeDiscordInteractionCall,
+      dispatchCommandInteraction: dispatchDiscordCommandInteraction,
     });
     if (preferFollowUp) {
       await safeDiscordInteractionCall("interaction follow-up", () =>
@@ -870,6 +665,24 @@ async function dispatchDiscordCommandInteraction(params: {
     return;
   }
 
+  const pickerCommandContext = shouldOpenDiscordModelPickerFromCommand({
+    command,
+    commandArgs,
+  });
+  if (pickerCommandContext) {
+    await replyWithDiscordModelPickerProviders({
+      interaction,
+      cfg,
+      command: pickerCommandContext,
+      userId: user.id,
+      accountId,
+      threadBindings,
+      preferFollowUp,
+      safeInteractionCall: safeDiscordInteractionCall,
+    });
+    return;
+  }
+
   const isGuild = Boolean(interaction.guild);
   const channelId = rawChannelId || "unknown";
   const interactionId = interaction.rawData.id;
@@ -889,24 +702,27 @@ async function dispatchDiscordCommandInteraction(params: {
   const threadBinding = isThreadChannel ? threadBindings.getByThreadId(rawChannelId) : undefined;
   const configuredRoute =
     threadBinding == null
-      ? resolveConfiguredAcpRoute({
+      ? resolveConfiguredBindingRoute({
           cfg,
           route,
-          channel: "discord",
-          accountId,
-          conversationId: channelId,
-          parentConversationId: threadParentId,
+          conversation: {
+            channel: "discord",
+            accountId,
+            conversationId: channelId,
+            parentConversationId: threadParentId,
+          },
         })
       : null;
-  const configuredBinding = configuredRoute?.configuredBinding ?? null;
-  if (configuredBinding) {
-    const ensured = await ensureConfiguredAcpRouteReady({
+  const configuredBinding = configuredRoute?.bindingResolution ?? null;
+  const commandName = command.nativeName ?? command.key;
+  if (configuredBinding && !shouldBypassConfiguredAcpEnsure(commandName)) {
+    const ensured = await ensureConfiguredBindingRouteReady({
       cfg,
-      configuredBinding,
+      bindingResolution: configuredBinding,
     });
     if (!ensured.ok) {
       logVerbose(
-        `discord native command: configured ACP binding unavailable for channel ${configuredBinding.spec.conversationId}: ${ensured.error}`,
+        `discord native command: configured ACP binding unavailable for channel ${configuredBinding.record.conversation.conversationId}: ${ensured.error}`,
       );
       await respond("Configured ACP binding is unavailable right now. Please try again.");
       return;
@@ -954,7 +770,7 @@ async function dispatchDiscordCommandInteraction(params: {
     sender: { id: sender.id, name: sender.name, tag: sender.tag },
   });
 
-  const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+  const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
     cfg,
     agentId: effectiveRoute.agentId,
     channel: "discord",
@@ -967,7 +783,7 @@ async function dispatchDiscordCommandInteraction(params: {
     ctx: ctxPayload,
     cfg,
     dispatcherOptions: {
-      ...prefixOptions,
+      ...replyPipeline,
       humanDelay: resolveHumanDelayConfig(cfg, effectiveRoute.agentId),
       deliver: async (payload) => {
         if (suppressReplies) {
@@ -1000,6 +816,7 @@ async function dispatchDiscordCommandInteraction(params: {
       },
     },
     replyOptions: {
+      skillFilter: channelConfig?.skills,
       disableBlockStreaming:
         typeof discordConfig?.blockStreaming === "boolean"
           ? !discordConfig.blockStreaming
@@ -1032,6 +849,32 @@ async function dispatchDiscordCommandInteraction(params: {
   }
 }
 
+export function createDiscordCommandArgFallbackButton(params: DiscordCommandArgContext): Button {
+  return createDiscordCommandArgFallbackButtonUi({
+    ctx: params,
+    safeInteractionCall: safeDiscordInteractionCall,
+    dispatchCommandInteraction: dispatchDiscordCommandInteraction,
+  });
+}
+
+export function createDiscordModelPickerFallbackButton(params: DiscordModelPickerContext): Button {
+  return createDiscordModelPickerFallbackButtonUi({
+    ctx: params,
+    safeInteractionCall: safeDiscordInteractionCall,
+    dispatchCommandInteraction: dispatchDiscordCommandInteraction,
+  });
+}
+
+export function createDiscordModelPickerFallbackSelect(
+  params: DiscordModelPickerContext,
+): StringSelectMenu {
+  return createDiscordModelPickerFallbackSelectUi({
+    ctx: params,
+    safeInteractionCall: safeDiscordInteractionCall,
+    dispatchCommandInteraction: dispatchDiscordCommandInteraction,
+  });
+}
+
 async function deliverDiscordInteractionReply(params: {
   interaction: CommandInteraction | ButtonInteraction | StringSelectMenuInteraction;
   payload: ReplyPayload;
@@ -1042,15 +885,26 @@ async function deliverDiscordInteractionReply(params: {
   chunkMode: "length" | "newline";
 }) {
   const { interaction, payload, textLimit, maxLinesPerMessage, preferFollowUp, chunkMode } = params;
-  const mediaList = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
-  const text = payload.text ?? "";
+  const reply = resolveSendableOutboundReplyParts(payload);
+  const discordData = payload.channelData?.discord as
+    | { components?: TopLevelComponents[] }
+    | undefined;
+  let firstMessageComponents =
+    Array.isArray(discordData?.components) && discordData.components.length > 0
+      ? discordData.components
+      : undefined;
 
   let hasReplied = false;
-  const sendMessage = async (content: string, files?: { name: string; data: Buffer }[]) => {
+  const sendMessage = async (
+    content: string,
+    files?: { name: string; data: Buffer }[],
+    components?: TopLevelComponents[],
+  ) => {
     const payload =
       files && files.length > 0
         ? {
             content,
+            ...(components ? { components } : {}),
             files: files.map((file) => {
               if (file.data instanceof Blob) {
                 return { name: file.name, data: file.data };
@@ -1059,21 +913,26 @@ async function deliverDiscordInteractionReply(params: {
               return { name: file.name, data: new Blob([arrayBuffer]) };
             }),
           }
-        : { content };
+        : {
+            content,
+            ...(components ? { components } : {}),
+          };
     await safeDiscordInteractionCall("interaction send", async () => {
       if (!preferFollowUp && !hasReplied) {
         await interaction.reply(payload);
         hasReplied = true;
+        firstMessageComponents = undefined;
         return;
       }
       await interaction.followUp(payload);
       hasReplied = true;
+      firstMessageComponents = undefined;
     });
   };
 
-  if (mediaList.length > 0) {
+  if (reply.hasMedia) {
     const media = await Promise.all(
-      mediaList.map(async (url) => {
+      reply.mediaUrls.map(async (url) => {
         const loaded = await loadWebMedia(url, {
           localRoots: params.mediaLocalRoots,
         });
@@ -1083,16 +942,16 @@ async function deliverDiscordInteractionReply(params: {
         };
       }),
     );
-    const chunks = chunkDiscordTextWithMode(text, {
-      maxChars: textLimit,
-      maxLines: maxLinesPerMessage,
-      chunkMode,
-    });
-    if (!chunks.length && text) {
-      chunks.push(text);
-    }
+    const chunks = resolveTextChunksWithFallback(
+      reply.text,
+      chunkDiscordTextWithMode(reply.text, {
+        maxChars: textLimit,
+        maxLines: maxLinesPerMessage,
+        chunkMode,
+      }),
+    );
     const caption = chunks[0] ?? "";
-    await sendMessage(caption, media);
+    await sendMessage(caption, media, firstMessageComponents);
     for (const chunk of chunks.slice(1)) {
       if (!chunk.trim()) {
         continue;
@@ -1102,21 +961,24 @@ async function deliverDiscordInteractionReply(params: {
     return;
   }
 
-  if (!text.trim()) {
+  if (!reply.hasText && !firstMessageComponents) {
     return;
   }
-  const chunks = chunkDiscordTextWithMode(text, {
-    maxChars: textLimit,
-    maxLines: maxLinesPerMessage,
-    chunkMode,
-  });
-  if (!chunks.length && text) {
-    chunks.push(text);
-  }
+  const chunks =
+    reply.text || firstMessageComponents
+      ? resolveTextChunksWithFallback(
+          reply.text,
+          chunkDiscordTextWithMode(reply.text, {
+            maxChars: textLimit,
+            maxLines: maxLinesPerMessage,
+            chunkMode,
+          }),
+        )
+      : [];
   for (const chunk of chunks) {
-    if (!chunk.trim()) {
+    if (!chunk.trim() && !firstMessageComponents) {
       continue;
     }
-    await sendMessage(chunk);
+    await sendMessage(chunk, undefined, firstMessageComponents);
   }
 }

@@ -1,14 +1,15 @@
 import type { SlackActionMiddlewareArgs, SlackCommandMiddlewareArgs } from "@slack/bolt";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveNativeCommandSessionTargets } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
-  type ChatCommandDefinition,
-  type CommandArgs,
-} from "../../../../src/auto-reply/commands-registry.js";
-import type { ReplyPayload } from "../../../../src/auto-reply/types.js";
-import { resolveCommandAuthorizedFromAuthorizers } from "../../../../src/channels/command-gating.js";
-import { resolveNativeCommandSessionTargets } from "../../../../src/channels/native-command-session-targets.js";
-import { resolveNativeCommandsEnabled } from "../../../../src/config/commands.js";
-import { danger, logVerbose } from "../../../../src/globals.js";
-import { chunkItems } from "../../../../src/utils/chunk-items.js";
+  resolveNativeCommandsEnabled,
+  resolveNativeSkillsEnabled,
+} from "remoteclaw/plugin-sdk/config-runtime";
+import { type ChatCommandDefinition, type CommandArgs } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import { chunkItems } from "remoteclaw/plugin-sdk/text-runtime";
 import type { ResolvedSlackAccount } from "../accounts.js";
 import { truncateSlackText } from "../truncate.js";
 import { resolveSlackAllowListMatch, resolveSlackUserAllowed } from "./allow-list.js";
@@ -41,6 +42,10 @@ let slashCommandsRuntimePromise: Promise<typeof import("./slash-commands.runtime
   null;
 let slashDispatchRuntimePromise: Promise<typeof import("./slash-dispatch.runtime.js")> | null =
   null;
+let slashSkillCommandsRuntimePromise: Promise<
+  typeof import("./slash-skill-commands.runtime.js")
+> | null = null;
+
 function loadSlashCommandsRuntime() {
   slashCommandsRuntimePromise ??= import("./slash-commands.runtime.js");
   return slashCommandsRuntimePromise;
@@ -49,6 +54,11 @@ function loadSlashCommandsRuntime() {
 function loadSlashDispatchRuntime() {
   slashDispatchRuntimePromise ??= import("./slash-dispatch.runtime.js");
   return slashDispatchRuntimePromise;
+}
+
+function loadSlashSkillCommandsRuntime() {
+  slashSkillCommandsRuntimePromise ??= import("./slash-skill-commands.runtime.js");
+  return slashSkillCommandsRuntimePromise;
 }
 
 type EncodedMenuChoice = SlackExternalArgMenuChoice;
@@ -501,7 +511,6 @@ export async function registerSlackMonitorSlashCommands(params: {
       const channelName = channelInfo?.name;
       const roomLabel = channelName ? `#${channelName}` : `#${command.channel_id}`;
       const {
-        createReplyPrefixOptions,
         deliverSlackSlashReplies,
         dispatchReplyWithDispatcher,
         finalizeInboundContext,
@@ -588,7 +597,7 @@ export async function registerSlackMonitorSlashCommands(params: {
           runtime.error?.(danger(`slack slash: failed updating session meta: ${String(err)}`)),
       });
 
-      const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
+      const { onModelSelected, ...replyPipeline } = createChannelReplyPipeline({
         cfg,
         agentId: route.agentId,
         channel: "slack",
@@ -614,13 +623,14 @@ export async function registerSlackMonitorSlashCommands(params: {
         ctx: ctxPayload,
         cfg,
         dispatcherOptions: {
-          ...prefixOptions,
+          ...replyPipeline,
           deliver: async (payload) => deliverSlashPayloads([payload]),
           onError: (err, info) => {
             runtime.error?.(danger(`slack slash ${info.kind} reply failed: ${String(err)}`));
           },
         },
         replyOptions: {
+          skillFilter: channelConfig?.skills,
           onModelSelected,
         },
       });
@@ -641,12 +651,21 @@ export async function registerSlackMonitorSlashCommands(params: {
     providerSetting: account.config.commands?.native,
     globalSetting: cfg.commands?.native,
   });
+  const nativeSkillsEnabled = resolveNativeSkillsEnabled({
+    providerId: "slack",
+    providerSetting: account.config.commands?.nativeSkills,
+    globalSetting: cfg.commands?.nativeSkills,
+  });
 
   let nativeCommands: Array<{ name: string }> = [];
   let slashCommandsRuntime: typeof import("./slash-commands.runtime.js") | null = null;
   if (nativeEnabled) {
     slashCommandsRuntime = await loadSlashCommandsRuntime();
+    const skillCommands = nativeSkillsEnabled
+      ? (await loadSlashSkillCommandsRuntime()).listSkillCommandsForAgents({ cfg })
+      : [];
     nativeCommands = slashCommandsRuntime.listNativeCommandSpecsForConfig(cfg, {
+      skillCommands,
       provider: "slack",
     });
   }

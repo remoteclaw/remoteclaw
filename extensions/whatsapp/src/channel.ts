@@ -406,7 +406,8 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
         ctx.runtime,
         ctx.abortSignal,
         {
-          statusSink: (next) => ctx.setStatus({ accountId: ctx.accountId, ...next }),
+          statusSink: (next: WebChannelStatus) =>
+            ctx.setStatus({ accountId: ctx.accountId, ...next }),
           accountId: account.accountId,
         },
       );

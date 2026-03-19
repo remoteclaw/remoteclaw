@@ -4,6 +4,9 @@
   "private": true,
   "description": "RemoteClaw WhatsApp channel plugin",
   "type": "module",
+  "dependencies": {
+    "@whiskeysockets/baileys": "7.0.0-rc.9"
+  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"

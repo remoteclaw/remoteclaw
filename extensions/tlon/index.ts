@@ -153,9 +153,9 @@ const plugin = {
         },
         required: ["command"],
       },
-      async execute(_id: string, params: { command: string }) {
+      async execute(_id: string, params: Record<string, unknown>) {
         try {
-          const args = shellSplit(params.command);
+          const args = shellSplit(params.command as string);
 
           // Validate first argument is a whitelisted tlon subcommand
           const subcommand = args[0];

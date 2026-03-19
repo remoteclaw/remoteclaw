@@ -1,5 +1,5 @@
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
-export type { OpenClawConfig } from "../config/config.js";
+export type { RemoteClawConfig } from "../config/config.js";
 export type { ResolvedSlackAccount } from "../slack/accounts.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
 export type { RemoteClawPluginApi } from "../plugins/types.js";

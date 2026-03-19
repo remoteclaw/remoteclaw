@@ -1,6 +1,4 @@
 import {
-  createLegacyMessageToolDiscoveryMethods,
-  createDiscordMessageToolComponentsSchema,
   createUnionActionGate,
   listTokenSourcedAccounts,
 } from "remoteclaw/plugin-sdk/channel-actions";
@@ -12,6 +10,7 @@ import type {
 import type { DiscordActionConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { createDiscordActionGate, listEnabledDiscordAccounts } from "./accounts.js";
 import { handleDiscordMessageAction } from "./actions/handle-action.js";
+import { createDiscordMessageToolComponentsSchema } from "./message-tool-schema.js";
 
 function resolveDiscordActionDiscovery(cfg: Parameters<typeof listEnabledDiscordAccounts>[0]) {
   const accounts = listTokenSourcedAccounts(listEnabledDiscordAccounts(cfg));

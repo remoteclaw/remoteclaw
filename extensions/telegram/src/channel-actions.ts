@@ -8,7 +8,6 @@ import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
 import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
   createMessageToolButtonsSchema,
-  createTelegramPollExtraToolSchemas,
   createUnionActionGate,
   listTokenSourcedAccounts,
 } from "../../../src/channels/plugins/actions/shared.js";
@@ -26,7 +25,7 @@ import {
 } from "./accounts.js";
 import { resolveTelegramInlineButtons } from "./button-types.js";
 import { isTelegramInlineButtonsEnabled } from "./inline-buttons.js";
-import { buildTelegramInteractiveButtons } from "./shared-interactive.js";
+import { createTelegramPollExtraToolSchemas } from "./message-tool-schema.js";
 
 export const telegramMessageActionRuntime = {
   handleTelegramAction,

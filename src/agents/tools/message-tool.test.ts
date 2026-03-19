@@ -1,4 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { Type } from "@sinclair/typebox";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ChannelMessageCapability } from "../../channels/plugins/message-capabilities.js";
+import { createMessageToolButtonsSchema } from "../../channels/plugins/message-tool-schema.js";
 import type { ChannelMessageActionName, ChannelPlugin } from "../../channels/plugins/types.js";
 import type { MessageActionRunResult } from "../../infra/outbound/message-action-runner.js";
 import { createMessageToolButtonsSchema } from "../../plugin-sdk/channel-actions.js";

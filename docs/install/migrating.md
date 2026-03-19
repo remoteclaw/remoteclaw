@@ -1,195 +1,110 @@
 ---
-description: "Move (migrate) a RemoteClaw install from one machine to another"
+summary: "Move (migrate) an RemoteClaw install from one machine to another"
 read_when:
   - You are moving RemoteClaw to a new laptop/server
   - You want to preserve sessions, auth, and channel logins (WhatsApp, etc.)
 title: "Migration Guide"
 ---
 
-# Migrating RemoteClaw to a new machine
+# Migrating RemoteClaw to a New Machine
 
-This guide migrates a RemoteClaw Gateway from one machine to another **without redoing onboarding**.
+This guide moves an RemoteClaw gateway to a new machine without redoing onboarding.
 
-The migration is simple conceptually:
+## What Gets Migrated
 
-- Copy the **state directory** (`$REMOTECLAW_STATE_DIR`, default: `~/.remoteclaw/`) — this includes config, auth, sessions, and channel state.
-- Copy your **workspace** (`~/.remoteclaw/workspace/` by default) — this includes your agent files (memory, prompts, etc.).
+When you copy the **state directory** (`~/.remoteclaw/` by default) and your **workspace**, you preserve:
 
-But there are common footguns around **profiles**, **permissions**, and **partial copies**.
+- **Config** -- `remoteclaw.json` and all gateway settings
+- **Auth** -- API keys, OAuth tokens, credential profiles
+- **Sessions** -- conversation history and agent state
+- **Channel state** -- WhatsApp login, Telegram session, etc.
+- **Workspace files** -- `MEMORY.md`, `USER.md`, skills, and prompts
 
-## Before you start (what you are migrating)
+<Tip>
+Run `remoteclaw status` on the old machine to confirm your state directory path.
+Custom profiles use `~/.remoteclaw-<profile>/` or a path set via `OPENCLAW_STATE_DIR`.
+</Tip>
 
-### 1) Identify your state directory
+## Migration Steps
 
-Most installs use the default:
+<Steps>
+  <Step title="Stop the gateway and back up">
+    On the **old** machine, stop the gateway so files are not changing mid-copy, then archive:
 
-- **State dir:** `~/.remoteclaw/`
+    ```bash
+    remoteclaw gateway stop
+    cd ~
+    tar -czf remoteclaw-state.tgz .remoteclaw
+    ```
 
-But it may be different if you use:
+    If you use multiple profiles (e.g. `~/.remoteclaw-work`), archive each separately.
 
-- `--profile <name>` (often becomes `~/.remoteclaw-<profile>/`)
-- `REMOTECLAW_STATE_DIR=/some/path`
+  </Step>
 
-If you’re not sure, run on the **old** machine:
+  <Step title="Install RemoteClaw on the new machine">
+    [Install](/install) the CLI (and Node if needed) on the new machine.
+    It is fine if onboarding creates a fresh `~/.remoteclaw/` -- you will overwrite it next.
+  </Step>
 
-```bash
-remoteclaw status
-```
+  <Step title="Copy state directory and workspace">
+    Transfer the archive via `scp`, `rsync -a`, or an external drive, then extract:
 
-Look for mentions of `REMOTECLAW_STATE_DIR` / profile in the output. If you run multiple gateways, repeat for each profile.
+    ```bash
+    cd ~
+    tar -xzf remoteclaw-state.tgz
+    ```
 
-### 2) Identify your workspace
+    Ensure hidden directories were included and file ownership matches the user that will run the gateway.
 
-There is no built-in default workspace path — check your `agents.defaults.workspace`
-(or per-agent `agents.list[].workspace`) in `remoteclaw.json`.
+  </Step>
 
-Your workspace is where files like `MEMORY.md` and `memory/*.md` live.
+  <Step title="Run doctor and verify">
+    On the new machine, run [Doctor](/gateway/doctor) to apply config migrations and repair services:
 
-> **Note:** RemoteClaw no longer seeds template files (`SOUL.md`, `AGENTS.md`,
-> `USER.md`, `TOOLS.md`) in the workspace. Agents bring their
-> own config (e.g. `CLAUDE.md` for Claude Code). If you're migrating from an
-> older install, these files can be safely removed.
+    ```bash
+    remoteclaw doctor
+    remoteclaw gateway restart
+    remoteclaw status
+    ```
 
-### 3) Understand what you will preserve
+  </Step>
+</Steps>
 
-If you copy **both** the state dir and workspace, you keep:
+## Common Pitfalls
 
-- Gateway configuration (`remoteclaw.json`)
-- Channel credentials and tokens
-- Session history + agent state
-- Channel state (e.g. WhatsApp login/session)
-- Your workspace files (memory, skills notes, etc.)
+<AccordionGroup>
+  <Accordion title="Profile or state-dir mismatch">
+    If the old gateway used `--profile` or `OPENCLAW_STATE_DIR` and the new one does not,
+    channels will appear logged out and sessions will be empty.
+    Launch the gateway with the **same** profile or state-dir you migrated, then rerun `remoteclaw doctor`.
+  </Accordion>
 
-If you copy **only** the workspace (e.g., via Git), you do **not** preserve:
+  <Accordion title="Copying only remoteclaw.json">
+    The config file alone is not enough. Credentials live under `credentials/`, and agent
+    state lives under `agents/`. Always migrate the **entire** state directory.
+  </Accordion>
 
-- sessions
-- credentials
-- channel logins
+  <Accordion title="Permissions and ownership">
+    If you copied as root or switched users, the gateway may fail to read credentials.
+    Ensure the state directory and workspace are owned by the user running the gateway.
+  </Accordion>
 
-Those live under `$REMOTECLAW_STATE_DIR`.
+  <Accordion title="Remote mode">
+    If your UI points at a **remote** gateway, the remote host owns sessions and workspace.
+    Migrate the gateway host itself, not your local laptop. See [FAQ](/help/faq#where-does-remoteclaw-store-its-data).
+  </Accordion>
 
-## Migration steps (recommended)
+  <Accordion title="Secrets in backups">
+    The state directory contains API keys, OAuth tokens, and channel credentials.
+    Store backups encrypted, avoid insecure transfer channels, and rotate keys if you suspect exposure.
+  </Accordion>
+</AccordionGroup>
 
-### Step 0 — Make a backup (old machine)
-
-On the **old** machine, stop the gateway first so files aren’t changing mid-copy:
-
-```bash
-remoteclaw gateway stop
-```
-
-(Optional but recommended) archive the state dir and workspace:
-
-```bash
-# Adjust paths if you use a profile or custom locations
-cd ~
-tar -czf remoteclaw-state.tgz .remoteclaw
-
-tar -czf remoteclaw-workspace.tgz .remoteclaw/workspace
-```
-
-If you have multiple profiles/state dirs (e.g. `~/.remoteclaw-main`, `~/.remoteclaw-work`), archive each.
-
-### Step 1 — Install RemoteClaw on the new machine
-
-On the **new** machine, install the CLI (and Node if needed):
-
-- See: [Install](/install)
-
-At this stage, it’s OK if onboarding creates a fresh `~/.remoteclaw/` — you will overwrite it in the next step.
-
-### Step 2 — Copy the state dir + workspace to the new machine
-
-Copy **both**:
-
-- `$REMOTECLAW_STATE_DIR` (default `~/.remoteclaw/`)
-- your workspace (configured via `agents.defaults.workspace` — no built-in default)
-
-Common approaches:
-
-- `scp` the tarballs and extract
-- `rsync -a` over SSH
-- external drive
-
-After copying, ensure:
-
-- Hidden directories were included (e.g. `.remoteclaw/`)
-- File ownership is correct for the user running the gateway
-
-### Step 3 — Run Doctor (migrations + service repair)
-
-On the **new** machine:
-
-```bash
-remoteclaw doctor
-```
-
-Doctor is the “safe boring” command. It repairs services, applies config migrations, and warns about mismatches.
-
-Then:
-
-```bash
-remoteclaw gateway restart
-remoteclaw status
-```
-
-## Common footguns (and how to avoid them)
-
-### Footgun: profile / state-dir mismatch
-
-If you ran the old gateway with a profile (or `REMOTECLAW_STATE_DIR`), and the new gateway uses a different one, you’ll see symptoms like:
-
-- config changes not taking effect
-- channels missing / logged out
-- empty session history
-
-Fix: run the gateway/service using the **same** profile/state dir you migrated, then rerun:
-
-```bash
-remoteclaw doctor
-```
-
-### Footgun: copying only `remoteclaw.json`
-
-`remoteclaw.json` is not enough. Many providers store state under:
-
-- `$REMOTECLAW_STATE_DIR/credentials/`
-- `$REMOTECLAW_STATE_DIR/agents/<agentId>/...`
-
-Always migrate the entire `$REMOTECLAW_STATE_DIR` folder.
-
-### Footgun: permissions / ownership
-
-If you copied as root or changed users, the gateway may fail to read credentials/sessions.
-
-Fix: ensure the state dir + workspace are owned by the user running the gateway.
-
-### Footgun: migrating between remote/local modes
-
-- If your UI (WebUI/TUI) points at a **remote** gateway, the remote host owns the session store + workspace.
-- Migrating your laptop won’t move the remote gateway’s state.
-
-If you’re in remote mode, migrate the **gateway host**.
-
-### Footgun: secrets in backups
-
-`$REMOTECLAW_STATE_DIR` contains secrets (API keys, OAuth tokens, WhatsApp creds). Treat backups like production secrets:
-
-- store encrypted
-- avoid sharing over insecure channels
-- rotate keys if you suspect exposure
-
-## Verification checklist
+## Verification Checklist
 
 On the new machine, confirm:
 
-- `remoteclaw status` shows the gateway running
-- Your channels are still connected (e.g. WhatsApp doesn’t require re-pair)
-- The dashboard opens and shows existing sessions
-- Your workspace files (memory, configs) are present
-
-## Related
-
-- [Doctor](/gateway/doctor)
-- [Gateway troubleshooting](/gateway/troubleshooting)
-- [Where does RemoteClaw store its data?](/help/faq#where-does-remoteclaw-store-its-data)
+- [ ] `remoteclaw status` shows the gateway running
+- [ ] Channels are still connected (no re-pairing needed)
+- [ ] The dashboard opens and shows existing sessions
+- [ ] Workspace files (memory, configs) are present

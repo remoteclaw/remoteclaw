@@ -5,8 +5,8 @@ import {
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "../../config/runtime-group-policy.js";
 import { logVerbose } from "../../globals.js";
-import { issuePairingChallenge } from "../../pairing/pairing-challenge.js";
 import { upsertChannelPairingRequest } from "../../pairing/pairing-store.js";
+import { createChannelPairingChallengeIssuer } from "../../plugin-sdk/channel-pairing.js";
 import {
   readStoreAllowFromForDmPolicy,
   resolveDmGroupAccessWithLists,
@@ -171,11 +171,8 @@ export async function checkInboundAccessControl(params: {
       if (suppressPairingReply) {
         logVerbose(`Skipping pairing reply for historical DM from ${candidate}.`);
       } else {
-        await issuePairingChallenge({
+        await createChannelPairingChallengeIssuer({
           channel: "whatsapp",
-          senderId: candidate,
-          senderIdLine: `Your WhatsApp phone number: ${candidate}`,
-          meta: { name: (params.pushName ?? "").trim() || undefined },
           upsertPairingRequest: async ({ id, meta }) =>
             await upsertChannelPairingRequest({
               channel: "whatsapp",
@@ -183,6 +180,10 @@ export async function checkInboundAccessControl(params: {
               accountId: account.accountId,
               meta,
             }),
+        })({
+          senderId: candidate,
+          senderIdLine: `Your WhatsApp phone number: ${candidate}`,
+          meta: { name: (params.pushName ?? "").trim() || undefined },
           onCreated: () => {
             logVerbose(
               `whatsapp pairing request sender=${candidate} name=${params.pushName ?? "unknown"}`,

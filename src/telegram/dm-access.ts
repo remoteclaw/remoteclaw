@@ -2,8 +2,8 @@ import type { Message } from "@grammyjs/types";
 import type { Bot } from "grammy";
 import type { DmPolicy } from "../config/types.js";
 import { logVerbose } from "../globals.js";
-import { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 import { upsertChannelPairingRequest } from "../pairing/pairing-store.js";
+import { createChannelPairingChallengeIssuer } from "../plugin-sdk/channel-pairing.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { resolveSenderAllowMatch, type NormalizedAllowFrom } from "./bot-access.js";
 
@@ -70,15 +70,8 @@ export async function enforceTelegramDmAccess(params: {
   if (dmPolicy === "pairing") {
     try {
       const telegramUserId = sender.userId ?? sender.candidateId;
-      await issuePairingChallenge({
+      await createChannelPairingChallengeIssuer({
         channel: "telegram",
-        senderId: telegramUserId,
-        senderIdLine: `Your Telegram user id: ${telegramUserId}`,
-        meta: {
-          username: sender.username || undefined,
-          firstName: sender.firstName,
-          lastName: sender.lastName,
-        },
         upsertPairingRequest: async ({ id, meta }) =>
           await upsertChannelPairingRequest({
             channel: "telegram",
@@ -86,6 +79,14 @@ export async function enforceTelegramDmAccess(params: {
             accountId,
             meta,
           }),
+      })({
+        senderId: telegramUserId,
+        senderIdLine: `Your Telegram user id: ${telegramUserId}`,
+        meta: {
+          username: sender.username || undefined,
+          firstName: sender.firstName,
+          lastName: sender.lastName,
+        },
         onCreated: () => {
           logger.info(
             {

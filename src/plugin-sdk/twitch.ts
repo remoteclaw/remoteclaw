@@ -29,6 +29,7 @@ export type {
 export { promptChannelAccessConfig } from "../channels/plugins/onboarding/channel-access.js";
 export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export type { RemoteClawConfig } from "../config/config.js";
+
 export { MarkdownConfigSchema } from "../config/zod-schema.core.js";
 export type { OutboundDeliveryResult } from "../infra/outbound/deliver.js";
 export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "./account-id.js";

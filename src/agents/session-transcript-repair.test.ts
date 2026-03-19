@@ -6,6 +6,7 @@ import {
   repairToolUseResultPairing,
   stripToolResultDetails,
 } from "./session-transcript-repair.js";
+import { castAgentMessage, castAgentMessages } from "./test-helpers/agent-message-fixtures.js";
 
 const TOOL_CALL_BLOCK_TYPES = new Set(["toolCall", "toolUse", "functionCall"]);
 
@@ -25,7 +26,7 @@ describe("sanitizeToolUseResultPairing", () => {
     middleMessage?: unknown;
     secondText?: string;
   }): AgentMessage[] =>
-    [
+    castAgentMessages([
       {
         role: "assistant",
         content: [{ type: "toolCall", id: "call_1", name: "read", arguments: {} }],
@@ -37,7 +38,7 @@ describe("sanitizeToolUseResultPairing", () => {
         content: [{ type: "text", text: "first" }],
         isError: false,
       },
-      ...(opts?.middleMessage ? [opts.middleMessage as AgentMessage] : []),
+      ...(opts?.middleMessage ? [castAgentMessage(opts.middleMessage)] : []),
       {
         role: "toolResult",
         toolCallId: "call_1",
@@ -45,10 +46,10 @@ describe("sanitizeToolUseResultPairing", () => {
         content: [{ type: "text", text: opts?.secondText ?? "second" }],
         isError: false,
       },
-    ] as unknown as AgentMessage[];
+    ]);
 
   it("moves tool results directly after tool calls and inserts missing results", () => {
-    const input = [
+    const input = castAgentMessages([
       {
         role: "assistant",
         content: [
@@ -64,7 +65,7 @@ describe("sanitizeToolUseResultPairing", () => {
         content: [{ type: "text", text: "ok" }],
         isError: false,
       },
-    ] as unknown as AgentMessage[];
+    ]);
 
     const out = sanitizeToolUseResultPairing(input);
     expect(out[0]?.role).toBe("assistant");
@@ -75,11 +76,35 @@ describe("sanitizeToolUseResultPairing", () => {
     expect(out[3]?.role).toBe("user");
   });
 
+  it("repairs blank tool result names from matching tool calls", () => {
+    const input = castAgentMessages([
+      {
+        role: "assistant",
+        content: [{ type: "toolCall", id: "call_1", name: "read", arguments: {} }],
+      },
+      {
+        role: "toolResult",
+        toolCallId: "call_1",
+        toolName: "   ",
+        content: [{ type: "text", text: "ok" }],
+        isError: false,
+      },
+    ]);
+
+    const out = sanitizeToolUseResultPairing(input);
+    const toolResult = out.find((message) => message.role === "toolResult") as {
+      toolName?: string;
+    };
+
+    expect(toolResult?.toolName).toBe("read");
+  });
+
+
   it("drops duplicate tool results for the same id within a span", () => {
-    const input = [
+    const input = castAgentMessages([
       ...buildDuplicateToolResultInput(),
       { role: "user", content: "ok" },
-    ] as AgentMessage[];
+    ]);
 
     const out = sanitizeToolUseResultPairing(input);
     expect(out.filter((m) => m.role === "toolResult")).toHaveLength(1);
@@ -100,7 +125,7 @@ describe("sanitizeToolUseResultPairing", () => {
   });
 
   it("drops orphan tool results that do not match any tool call", () => {
-    const input = [
+    const input = castAgentMessages([
       { role: "user", content: "hello" },
       {
         role: "toolResult",
@@ -113,7 +138,7 @@ describe("sanitizeToolUseResultPairing", () => {
         role: "assistant",
         content: [{ type: "text", text: "ok" }],
       },
-    ] as unknown as AgentMessage[];
+    ]);
 
     const out = sanitizeToolUseResultPairing(input);
     expect(out.some((m) => m.role === "toolResult")).toBe(false);
@@ -124,14 +149,14 @@ describe("sanitizeToolUseResultPairing", () => {
     // When an assistant message has stopReason: "error", its tool_use blocks may be
     // incomplete/malformed. We should NOT create synthetic tool_results for them,
     // as this causes API 400 errors: "unexpected tool_use_id found in tool_result blocks"
-    const input = [
+    const input = castAgentMessages([
       {
         role: "assistant",
         content: [{ type: "toolCall", id: "call_error", name: "exec", arguments: {} }],
         stopReason: "error",
       },
       { role: "user", content: "something went wrong" },
-    ] as unknown as AgentMessage[];
+    ]);
 
     const result = repairToolUseResultPairing(input);
 
@@ -146,14 +171,14 @@ describe("sanitizeToolUseResultPairing", () => {
   it("skips tool call extraction for assistant messages with stopReason 'aborted'", () => {
     // When a request is aborted mid-stream, the assistant message may have incomplete
     // tool_use blocks (with partialJson). We should NOT create synthetic tool_results.
-    const input = [
+    const input = castAgentMessages([
       {
         role: "assistant",
         content: [{ type: "toolCall", id: "call_aborted", name: "Bash", arguments: {} }],
         stopReason: "aborted",
       },
       { role: "user", content: "retrying after abort" },
-    ] as unknown as AgentMessage[];
+    ]);
 
     const result = repairToolUseResultPairing(input);
 
@@ -167,14 +192,14 @@ describe("sanitizeToolUseResultPairing", () => {
 
   it("still repairs tool results for normal assistant messages with stopReason 'toolUse'", () => {
     // Normal tool calls (stopReason: "toolUse" or "stop") should still be repaired
-    const input = [
+    const input = castAgentMessages([
       {
         role: "assistant",
         content: [{ type: "toolCall", id: "call_normal", name: "read", arguments: {} }],
         stopReason: "toolUse",
       },
       { role: "user", content: "user message" },
-    ] as unknown as AgentMessage[];
+    ]);
 
     const result = repairToolUseResultPairing(input);
 
@@ -187,7 +212,7 @@ describe("sanitizeToolUseResultPairing", () => {
     // When an assistant message is aborted, any tool results that follow should be
     // dropped as orphans (since we skip extracting tool calls from aborted messages).
     // This addresses the edge case where a partial tool result was persisted before abort.
-    const input = [
+    const input = castAgentMessages([
       {
         role: "assistant",
         content: [{ type: "toolCall", id: "call_aborted", name: "exec", arguments: {} }],
@@ -201,7 +226,7 @@ describe("sanitizeToolUseResultPairing", () => {
         isError: false,
       },
       { role: "user", content: "retrying" },
-    ] as unknown as AgentMessage[];
+    ]);
 
     const result = repairToolUseResultPairing(input);
 
@@ -216,14 +241,37 @@ describe("sanitizeToolUseResultPairing", () => {
 });
 
 describe("sanitizeToolCallInputs", () => {
+  function sanitizeAssistantContent(
+    content: unknown[],
+    options?: Parameters<typeof sanitizeToolCallInputs>[1],
+  ) {
+    return sanitizeToolCallInputs(
+      castAgentMessages([
+        {
+          role: "assistant",
+          content,
+        },
+      ]),
+      options,
+    );
+  }
+
+  function sanitizeAssistantToolCalls(
+    content: unknown[],
+    options?: Parameters<typeof sanitizeToolCallInputs>[1],
+  ) {
+    return getAssistantToolCallBlocks(sanitizeAssistantContent(content, options));
+  }
+
+
   it("drops tool calls missing input or arguments", () => {
-    const input = [
+    const input = castAgentMessages([
       {
         role: "assistant",
         content: [{ type: "toolCall", id: "call_1", name: "read" }],
       },
       { role: "user", content: "hello" },
-    ] as unknown as AgentMessage[];
+    ]);
 
     const out = sanitizeToolCallInputs(input);
     expect(out.map((m) => m.role)).toEqual(["user"]);
@@ -297,7 +345,7 @@ describe("sanitizeToolCallInputs", () => {
   });
 
   it("keeps valid tool calls and preserves text blocks", () => {
-    const input = [
+    const input = castAgentMessages([
       {
         role: "assistant",
         content: [
@@ -306,7 +354,7 @@ describe("sanitizeToolCallInputs", () => {
           { type: "toolCall", id: "call_drop", name: "read" },
         ],
       },
-    ] as unknown as AgentMessage[];
+    ]);
 
     const out = sanitizeToolCallInputs(input);
     const assistant = out[0] as Extract<AgentMessage, { role: "assistant" }>;
@@ -384,7 +432,7 @@ describe("sanitizeToolCallInputs", () => {
   });
 
   it("preserves toolUse input shape for sessions_spawn when no attachments are present", () => {
-    const input = [
+    const input = castAgentMessages([
       {
         role: "assistant",
         content: [
@@ -396,7 +444,7 @@ describe("sanitizeToolCallInputs", () => {
           },
         ],
       },
-    ] as unknown as AgentMessage[];
+    ]);
 
     const out = sanitizeToolCallInputs(input);
     const toolCalls = getAssistantToolCallBlocks(out) as Array<Record<string, unknown>>;
@@ -408,7 +456,7 @@ describe("sanitizeToolCallInputs", () => {
   });
 
   it("redacts sessions_spawn attachments for mixed-case and padded tool names", () => {
-    const input = [
+    const input = castAgentMessages([
       {
         role: "assistant",
         content: [
@@ -423,7 +471,7 @@ describe("sanitizeToolCallInputs", () => {
           },
         ],
       },
-    ] as unknown as AgentMessage[];
+    ]);
 
     const out = sanitizeToolCallInputs(input);
     const toolCalls = getAssistantToolCallBlocks(out) as Array<Record<string, unknown>>;
@@ -456,7 +504,7 @@ describe("sanitizeToolCallInputs", () => {
 
 describe("stripToolResultDetails", () => {
   it("removes details only from toolResult messages", () => {
-    const input = [
+    const input = castAgentMessages([
       {
         role: "toolResult",
         toolCallId: "call_1",
@@ -466,7 +514,7 @@ describe("stripToolResultDetails", () => {
       },
       { role: "assistant", content: [{ type: "text", text: "keep me" }], details: { no: "touch" } },
       { role: "user", content: "hello" },
-    ] as unknown as AgentMessage[];
+    ]);
 
     const out = stripToolResultDetails(input) as unknown as Array<Record<string, unknown>>;
 
@@ -480,7 +528,7 @@ describe("stripToolResultDetails", () => {
   });
 
   it("returns the same array reference when there are no toolResult details", () => {
-    const input = [
+    const input = castAgentMessages([
       { role: "assistant", content: [{ type: "text", text: "a" }] },
       {
         role: "toolResult",
@@ -489,7 +537,7 @@ describe("stripToolResultDetails", () => {
         content: [{ type: "text", text: "ok" }],
       },
       { role: "user", content: "b" },
-    ] as unknown as AgentMessage[];
+    ]);
 
     const out = stripToolResultDetails(input);
     expect(out).toBe(input);

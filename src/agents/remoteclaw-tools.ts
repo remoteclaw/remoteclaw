@@ -60,6 +60,8 @@ export function createRemoteClawTools(options?: {
   requesterSenderId?: string | null;
   /** Whether the requesting sender is an owner. */
   senderIsOwner?: boolean;
+  /** Ephemeral session UUID — regenerated on /new and /reset. */
+  sessionId?: string;
 }): AnyAgentTool[] {
   const workspaceDir = resolveWorkspaceRoot(options?.workspaceDir);
   const messageTool = options?.disableMessageTool
@@ -139,6 +141,7 @@ export function createRemoteClawTools(options?: {
         config: options?.config,
       }),
       sessionKey: options?.agentSessionKey,
+      sessionId: options?.sessionId,
       messageChannel: options?.agentChannel,
       agentAccountId: options?.agentAccountId,
       requesterSenderId: options?.requesterSenderId ?? undefined,

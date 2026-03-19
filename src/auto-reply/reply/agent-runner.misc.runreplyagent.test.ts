@@ -976,11 +976,12 @@ describe("runReplyAgent reminder commitment guard", () => {
       ],
     });
 
-    runEmbeddedPiAgentMock.mockResolvedValueOnce({
-      payloads: [{ text: "I'll ping you when it's done." }],
-      meta: {},
-      successfulCronAdds: 0,
-    });
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({
+        payloads: [{ text: "I'll ping you when it's done." }],
+        mcp: { cronAdds: 0 },
+      }),
+    );
 
     const result = await createRun();
     expect(result).toMatchObject({
@@ -1003,11 +1004,12 @@ describe("runReplyAgent reminder commitment guard", () => {
       ],
     });
 
-    runEmbeddedPiAgentMock.mockResolvedValueOnce({
-      payloads: [{ text: "I'll remind you tomorrow morning." }],
-      meta: {},
-      successfulCronAdds: 0,
-    });
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({
+        payloads: [{ text: "I'll remind you tomorrow morning." }],
+        mcp: { cronAdds: 0 },
+      }),
+    );
 
     const result = await createRun();
     expect(result).toMatchObject({
@@ -1030,11 +1032,12 @@ describe("runReplyAgent reminder commitment guard", () => {
       ],
     });
 
-    runEmbeddedPiAgentMock.mockResolvedValueOnce({
-      payloads: [{ text: "I'll check back in an hour." }],
-      meta: {},
-      successfulCronAdds: 0,
-    });
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({
+        payloads: [{ text: "I'll check back in an hour." }],
+        mcp: { cronAdds: 0 },
+      }),
+    );
 
     const result = await createRun();
     expect(result).toMatchObject({

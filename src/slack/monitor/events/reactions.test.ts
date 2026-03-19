@@ -141,4 +141,26 @@ describe("registerSlackReactionEvents", () => {
 
     expect(reactionQueueMock).not.toHaveBeenCalled();
   });
+
+  it("passes sender context when resolving reaction session keys", async () => {
+    reactionQueueMock.mockClear();
+    reactionAllowMock.mockReset().mockResolvedValue([]);
+    const harness = createSlackSystemEventTestHarness();
+    const resolveSessionKey = vi.fn().mockReturnValue("agent:ops:main");
+    harness.ctx.resolveSlackSystemEventSessionKey = resolveSessionKey;
+    registerSlackReactionEvents({ ctx: harness.ctx });
+    const handler = harness.getHandler("reaction_added");
+    expect(handler).toBeTruthy();
+
+    await handler!({
+      event: buildReactionEvent({ user: "U777", channel: "D123" }),
+      body: {},
+    });
+
+    expect(resolveSessionKey).toHaveBeenCalledWith({
+      channelId: "D123",
+      channelType: "im",
+      senderId: "U777",
+    });
+  });
 });

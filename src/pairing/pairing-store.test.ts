@@ -44,6 +44,7 @@ async function withTempStateDir<T>(fn: (stateDir: string) => Promise<T>) {
 }
 
 async function writeJsonFixture(filePath: string, value: unknown) {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 

@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import { configureClient } from "@tloncorp/api";
 import type {
   ChannelOutboundAdapter,
   ChannelPlugin,
@@ -21,6 +20,7 @@ import {
   parseTlonTarget,
   resolveTlonOutboundTarget,
 } from "./targets.js";
+import { configureClient } from "./tlon-api.js";
 import { resolveTlonAccount, listTlonAccountIds } from "./types.js";
 import { authenticate } from "./urbit/auth.js";
 import { ssrfPolicyFromAllowPrivateNetwork } from "./urbit/context.js";

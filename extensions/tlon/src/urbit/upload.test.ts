@@ -9,8 +9,8 @@ vi.mock("remoteclaw/plugin-sdk", async (importOriginal) => {
   };
 });
 
-// Mock @tloncorp/api
-vi.mock("@tloncorp/api", () => ({
+// Mock ../tlon-api.js
+vi.mock("../tlon-api.js", () => ({
   uploadFile: vi.fn(),
 }));
 
@@ -27,7 +27,7 @@ describe("uploadImageFromUrl", () => {
     const { fetchWithSsrFGuard } = await import("remoteclaw/plugin-sdk");
     const mockFetch = vi.mocked(fetchWithSsrFGuard);
 
-    const { uploadFile } = await import("@tloncorp/api");
+    const { uploadFile } = await import("../tlon-api.js");
     const mockUploadFile = vi.mocked(uploadFile);
 
     // Mock fetchWithSsrFGuard to return a successful response with a blob
@@ -82,7 +82,7 @@ describe("uploadImageFromUrl", () => {
     const { fetchWithSsrFGuard } = await import("remoteclaw/plugin-sdk");
     const mockFetch = vi.mocked(fetchWithSsrFGuard);
 
-    const { uploadFile } = await import("@tloncorp/api");
+    const { uploadFile } = await import("../tlon-api.js");
     const mockUploadFile = vi.mocked(uploadFile);
 
     // Mock fetchWithSsrFGuard to return a successful response
@@ -130,7 +130,7 @@ describe("uploadImageFromUrl", () => {
     const { fetchWithSsrFGuard } = await import("remoteclaw/plugin-sdk");
     const mockFetch = vi.mocked(fetchWithSsrFGuard);
 
-    const { uploadFile } = await import("@tloncorp/api");
+    const { uploadFile } = await import("../tlon-api.js");
     const mockUploadFile = vi.mocked(uploadFile);
 
     const mockBlob = new Blob(["fake-image"], { type: "image/jpeg" });
@@ -160,7 +160,7 @@ describe("uploadImageFromUrl", () => {
     const { fetchWithSsrFGuard } = await import("remoteclaw/plugin-sdk");
     const mockFetch = vi.mocked(fetchWithSsrFGuard);
 
-    const { uploadFile } = await import("@tloncorp/api");
+    const { uploadFile } = await import("../tlon-api.js");
     const mockUploadFile = vi.mocked(uploadFile);
 
     const mockBlob = new Blob(["fake-image"], { type: "image/png" });

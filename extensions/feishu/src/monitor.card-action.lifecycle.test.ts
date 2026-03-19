@@ -18,8 +18,8 @@ const monitorWebSocketMock = vi.hoisted(() => vi.fn(async () => {}));
 const monitorWebhookMock = vi.hoisted(() => vi.fn(async () => {}));
 const createFeishuThreadBindingManagerMock = vi.hoisted(() => vi.fn(() => ({ stop: vi.fn() })));
 const createFeishuReplyDispatcherMock = vi.hoisted(() => vi.fn());
-const resolveBoundConversationMock = vi.hoisted(() =>
-  vi.fn<() => BoundConversation | null>(() => null),
+const resolveBoundConversationMock = vi.hoisted(
+  () => vi.fn<() => BoundConversation | null>(() => null),
 );
 const touchBindingMock = vi.hoisted(() => vi.fn());
 const resolveAgentRouteMock = vi.hoisted(() => vi.fn());
@@ -134,6 +134,14 @@ function createLifecycleAccount(): ResolvedFeishuAccount {
       resolveSenderNames: false,
     },
   } as unknown as ResolvedFeishuAccount;
+}
+
+function createRuntimeEnv(): RuntimeEnv {
+  return {
+    log: vi.fn(),
+    error: vi.fn(),
+    exit: vi.fn(),
+  } as RuntimeEnv;
 }
 
 function createCardActionEvent(params: {

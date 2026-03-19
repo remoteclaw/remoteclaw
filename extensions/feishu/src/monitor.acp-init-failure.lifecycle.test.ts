@@ -140,6 +140,14 @@ function createLifecycleAccount(): ResolvedFeishuAccount {
   } as unknown as ResolvedFeishuAccount;
 }
 
+function createRuntimeEnv(): RuntimeEnv {
+  return {
+    log: vi.fn(),
+    error: vi.fn(),
+    exit: vi.fn(),
+  } as RuntimeEnv;
+}
+
 function createTopicEvent(messageId: string) {
   return {
     sender: {

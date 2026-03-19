@@ -160,6 +160,14 @@ function createLifecycleAccount(accountId: "account-A" | "account-B"): ResolvedF
   } as unknown as ResolvedFeishuAccount;
 }
 
+function createRuntimeEnv(): RuntimeEnv {
+  return {
+    log: vi.fn(),
+    error: vi.fn(),
+    exit: vi.fn(),
+  } as RuntimeEnv;
+}
+
 function createBroadcastEvent(messageId: string) {
   return {
     sender: {

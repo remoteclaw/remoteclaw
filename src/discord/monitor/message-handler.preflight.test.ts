@@ -122,10 +122,10 @@ describe("preflightDiscordMessage", () => {
           mainKey: "main",
           scope: "per-sender",
         },
-      } as import("../../config/config.js").OpenClawConfig,
+      } as import("../../config/config.js").RemoteClawConfig,
       discordConfig: {
         allowBots: true,
-      } as NonNullable<import("../../config/config.js").OpenClawConfig["channels"]>["discord"],
+      } as NonNullable<import("../../config/config.js").RemoteClawConfig["channels"]>["discord"],
       accountId: "default",
       token: "token",
       runtime: {} as import("../../runtime.js").RuntimeEnv,
@@ -215,10 +215,10 @@ describe("preflightDiscordMessage", () => {
           mainKey: "main",
           scope: "per-sender",
         },
-      } as import("../../config/config.js").OpenClawConfig,
+      } as import("../../config/config.js").RemoteClawConfig,
       discordConfig: {
         allowBots: true,
-      } as NonNullable<import("../../config/config.js").OpenClawConfig["channels"]>["discord"],
+      } as NonNullable<import("../../config/config.js").RemoteClawConfig["channels"]>["discord"],
       accountId: "default",
       token: "token",
       runtime: {} as import("../../runtime.js").RuntimeEnv,
@@ -374,10 +374,10 @@ describe("preflightDiscordMessage", () => {
           mainKey: "main",
           scope: "per-sender",
         },
-      } as import("../../config/config.js").OpenClawConfig,
+      } as import("../../config/config.js").RemoteClawConfig,
       discordConfig: {
         allowBots: "mentions",
-      } as NonNullable<import("../../config/config.js").OpenClawConfig["channels"]>["discord"],
+      } as NonNullable<import("../../config/config.js").RemoteClawConfig["channels"]>["discord"],
       accountId: "default",
       token: "token",
       runtime: {} as import("../../runtime.js").RuntimeEnv,
@@ -445,10 +445,10 @@ describe("preflightDiscordMessage", () => {
           mainKey: "main",
           scope: "per-sender",
         },
-      } as import("../../config/config.js").OpenClawConfig,
+      } as import("../../config/config.js").RemoteClawConfig,
       discordConfig: {
         allowBots: "mentions",
-      } as NonNullable<import("../../config/config.js").OpenClawConfig["channels"]>["discord"],
+      } as NonNullable<import("../../config/config.js").RemoteClawConfig["channels"]>["discord"],
       accountId: "default",
       token: "token",
       runtime: {} as import("../../runtime.js").RuntimeEnv,
@@ -516,9 +516,9 @@ describe("preflightDiscordMessage", () => {
           mainKey: "main",
           scope: "per-sender",
         },
-      } as import("../../config/config.js").OpenClawConfig,
+      } as import("../../config/config.js").RemoteClawConfig,
       discordConfig: {} as NonNullable<
-        import("../../config/config.js").OpenClawConfig["channels"]
+        import("../../config/config.js").RemoteClawConfig["channels"]
       >["discord"],
       accountId: "default",
       token: "token",
@@ -593,9 +593,9 @@ describe("preflightDiscordMessage", () => {
           mainKey: "main",
           scope: "per-sender",
         },
-      } as import("../../config/config.js").OpenClawConfig,
+      } as import("../../config/config.js").RemoteClawConfig,
       discordConfig: {} as NonNullable<
-        import("../../config/config.js").OpenClawConfig["channels"]
+        import("../../config/config.js").RemoteClawConfig["channels"]
       >["discord"],
       accountId: "default",
       token: "token",
@@ -671,10 +671,10 @@ describe("preflightDiscordMessage", () => {
           mainKey: "main",
           scope: "per-sender",
         },
-      } as import("../../config/config.js").OpenClawConfig,
+      } as import("../../config/config.js").RemoteClawConfig,
       discordConfig: {
         allowBots: true,
-      } as NonNullable<import("../../config/config.js").OpenClawConfig["channels"]>["discord"],
+      } as NonNullable<import("../../config/config.js").RemoteClawConfig["channels"]>["discord"],
       accountId: "default",
       token: "token",
       runtime: {} as import("../../runtime.js").RuntimeEnv,

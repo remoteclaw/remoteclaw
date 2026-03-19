@@ -50,6 +50,14 @@ vi.mock("../agents/tools/whatsapp-actions.js", () => ({
   handleWhatsAppAction,
 }));
 
+const resolveCommandSecretRefsViaGateway = vi.fn(async () => ({
+  resolvedConfig: {} as Record<string, unknown>,
+  diagnostics: [] as string[],
+}));
+vi.mock("../cli/command-secret-gateway.js", () => ({
+  resolveCommandSecretRefsViaGateway,
+}));
+
 let envSnapshot: ReturnType<typeof captureEnv>;
 
 const setRegistry = async (registry: ReturnType<typeof createTestRegistry>) => {

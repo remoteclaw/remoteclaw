@@ -201,7 +201,7 @@ export const buildTelegramMessageContext = async ({
       mainSessionKey: overrideMainSessionKey,
     };
     logVerbose(
-      `telegram: per-topic agent override: topic=${resolvedThreadId ?? dmThreadId} agent=${topicAgentId} sessionKey=${overrideSessionKey}`,
+      `telegram: per-topic agent override: topic=${resolvedThreadId ?? threadSpec.id} agent=${topicAgentId} sessionKey=${overrideSessionKey}`,
     );
   }
   // Fail closed for named Telegram accounts when route resolution falls back to

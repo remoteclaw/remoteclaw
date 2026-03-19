@@ -1,23 +1,23 @@
+import type { ReplyToMode } from "openclaw/plugin-sdk/config-runtime";
+import type { MarkdownTableMode } from "openclaw/plugin-sdk/config-runtime";
+import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
+import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
 import { type Bot, GrammyError, InputFile } from "grammy";
-import type { ReplyToMode } from "remoteclaw/plugin-sdk/config-runtime";
-import type { MarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
-import { fireAndForgetHook } from "remoteclaw/plugin-sdk/hook-runtime";
-import { createInternalHookEvent, triggerInternalHook } from "remoteclaw/plugin-sdk/hook-runtime";
+import { fireAndForgetHook } from "openclaw/plugin-sdk/hook-runtime";
+import { createInternalHookEvent, triggerInternalHook } from "openclaw/plugin-sdk/hook-runtime";
 import {
   buildCanonicalSentMessageHookContext,
   toInternalMessageSentContext,
   toPluginMessageContext,
   toPluginMessageSentEvent,
-} from "remoteclaw/plugin-sdk/hook-runtime";
-import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
-import { buildOutboundMediaLoadOptions } from "remoteclaw/plugin-sdk/media-runtime";
-import { isGifMedia, kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
-import { getGlobalHookRunner } from "remoteclaw/plugin-sdk/plugin-runtime";
-import { chunkMarkdownTextWithMode, type ChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
-import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
-import { loadWebMedia } from "../../../whatsapp/src/media.js";
+} from "openclaw/plugin-sdk/hook-runtime";
+import { formatErrorMessage } from "openclaw/plugin-sdk/infra-runtime";
+import { buildOutboundMediaLoadOptions } from "openclaw/plugin-sdk/media-runtime";
+import { isGifMedia, kindFromMime } from "openclaw/plugin-sdk/media-runtime";
+import { getGlobalHookRunner } from "openclaw/plugin-sdk/plugin-runtime";
+import { chunkMarkdownTextWithMode, type ChunkMode } from "openclaw/plugin-sdk/reply-runtime";
+import { danger, logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { loadWebMedia } from "openclaw/plugin-sdk/web-media";
 import type { TelegramInlineButtons } from "../button-types.js";
 import { splitTelegramCaption } from "../caption.js";
 import {
@@ -238,6 +238,7 @@ async function deliverMediaReply(params: {
   tableMode?: MarkdownTableMode;
   mediaLocalRoots?: readonly string[];
   chunkText: ChunkTextFn;
+  mediaLoader: typeof loadWebMedia;
   onVoiceRecording?: () => Promise<void> | void;
   linkPreview?: boolean;
   silent?: boolean;
@@ -252,7 +253,7 @@ async function deliverMediaReply(params: {
   let pendingFollowUpText: string | undefined;
   for (const mediaUrl of params.mediaList) {
     const isFirstMedia = first;
-    const media = await loadWebMedia(
+    const media = await params.mediaLoader(
       mediaUrl,
       buildOutboundMediaLoadOptions({ mediaLocalRoots: params.mediaLocalRoots }),
     );
@@ -583,12 +584,15 @@ export async function deliverReplies(params: {
   silent?: boolean;
   /** Optional quote text for Telegram reply_parameters. */
   replyQuoteText?: string;
+  /** Override media loader (tests). */
+  mediaLoader?: typeof loadWebMedia;
 }): Promise<{ delivered: boolean }> {
   const progress: DeliveryProgress = {
     hasReplied: false,
     hasDelivered: false,
     deliveredCount: 0,
   };
+  const mediaLoader = params.mediaLoader ?? loadWebMedia;
   const hookRunner = getGlobalHookRunner();
   const hasMessageSendingHooks = hookRunner?.hasHooks("message_sending") ?? false;
   const hasMessageSentHooks = hookRunner?.hasHooks("message_sent") ?? false;
@@ -677,6 +681,7 @@ export async function deliverReplies(params: {
           tableMode: params.tableMode,
           mediaLocalRoots: params.mediaLocalRoots,
           chunkText,
+          mediaLoader,
           onVoiceRecording: params.onVoiceRecording,
           linkPreview: params.linkPreview,
           silent: params.silent,

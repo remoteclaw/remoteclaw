@@ -365,11 +365,18 @@ describe("resolveSessionDeliveryTarget", () => {
   });
 
   it("allows heartbeat delivery to Telegram direct chats by default", () => {
-    const resolved = resolveHeartbeatTarget({
-      sessionId: "sess-heartbeat-telegram-direct",
-      updatedAt: 1,
-      lastChannel: "telegram",
-      lastTo: "5232990709",
+    const cfg: RemoteClawConfig = {};
+    const resolved = resolveHeartbeatDeliveryTarget({
+      cfg,
+      entry: {
+        sessionId: "sess-heartbeat-telegram-direct",
+        updatedAt: 1,
+        lastChannel: "telegram",
+        lastTo: "5232990709",
+      },
+      heartbeat: {
+        target: "last",
+      },
     });
 
     expect(resolved.channel).toBe("telegram");
@@ -377,15 +384,20 @@ describe("resolveSessionDeliveryTarget", () => {
   });
 
   it("blocks heartbeat delivery to Telegram direct chats when directPolicy is block", () => {
-    const resolved = resolveHeartbeatTarget(
-      {
+    const cfg: RemoteClawConfig = {};
+    const resolved = resolveHeartbeatDeliveryTarget({
+      cfg,
+      entry: {
         sessionId: "sess-heartbeat-telegram-direct",
         updatedAt: 1,
         lastChannel: "telegram",
         lastTo: "5232990709",
       },
-      "block",
-    );
+      heartbeat: {
+        target: "last",
+        directPolicy: "block",
+      },
+    });
 
     expect(resolved.channel).toBe("none");
     expect(resolved.reason).toBe("dm-blocked");

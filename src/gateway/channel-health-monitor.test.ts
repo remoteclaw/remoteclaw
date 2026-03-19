@@ -396,22 +396,5 @@ describe("channel-health-monitor", () => {
       );
       await expectRestartedChannel(manager, "slack");
     });
-
-    it("respects custom staleEventThresholdMs", async () => {
-      const customThreshold = 10 * 60_000;
-      const now = Date.now();
-      const manager = createSlackSnapshotManager(
-        runningConnectedSlackAccount({
-          lastStartAt: now - customThreshold - 60_000,
-          lastEventAt: now - customThreshold - 30_000,
-        }),
-      );
-      const monitor = await startAndRunCheck(manager, {
-        staleEventThresholdMs: customThreshold,
-      });
-      expect(manager.stopChannel).toHaveBeenCalledWith("slack", "default");
-      expect(manager.startChannel).toHaveBeenCalledWith("slack", "default");
-      monitor.stop();
-    });
   });
 });

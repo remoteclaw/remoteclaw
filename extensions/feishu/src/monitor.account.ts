@@ -428,6 +428,15 @@ function registerEventHandlers(
         if (!syntheticEvent) {
           return;
         }
+        const syntheticMessageId = syntheticEvent.message.message_id;
+        if (await hasProcessedFeishuMessage(syntheticMessageId, accountId, log)) {
+          log(`feishu[${accountId}]: dropping duplicate bot-menu event for ${syntheticMessageId}`);
+          return;
+        }
+        if (!tryBeginFeishuMessageProcessing(syntheticMessageId, accountId)) {
+          log(`feishu[${accountId}]: dropping in-flight bot-menu event for ${syntheticMessageId}`);
+          return;
+        }
         const promise = handleFeishuMessage({
           cfg,
           event: syntheticEvent,
@@ -436,7 +445,16 @@ function registerEventHandlers(
           runtime,
           chatHistories,
           accountId,
-        });
+          processingClaimHeld: true,
+        })
+          .then(async () => {
+            await recordProcessedFeishuMessage(syntheticMessageId, accountId, log);
+            releaseFeishuMessageProcessing(syntheticMessageId, accountId);
+          })
+          .catch((err) => {
+            releaseFeishuMessageProcessing(syntheticMessageId, accountId);
+            throw err;
+          });
         if (fireAndForget) {
           promise.catch((err) => {
             error(`feishu[${accountId}]: error handling reaction: ${String(err)}`);

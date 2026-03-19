@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { AuthProfileStore } from "../../agents/auth-profiles.js";
+import type { AuthProfileStore } from "../../auth/types.js";
 import {
   createDiscordAutoPresenceController,
   resolveDiscordAutoPresenceDecision,

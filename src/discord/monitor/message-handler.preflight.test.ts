@@ -6,6 +6,7 @@ const transcribeFirstAudioMock = vi.hoisted(() => vi.fn());
 vi.mock("../../media-understanding/audio-preflight.js", () => ({
   transcribeFirstAudio: (...args: unknown[]) => transcribeFirstAudioMock(...args),
 }));
+import { registerSessionBindingAdapter } from "../../infra/outbound/session-binding-service.js";
 import {
   preflightDiscordMessage,
   resolvePreflightMentionRequirement,
@@ -73,7 +74,7 @@ describe("preflightDiscordMessage", () => {
 
   it("drops bound-thread bot system messages to prevent ACP self-loop", async () => {
     const threadBinding = createThreadBinding({
-      targetKind: "session",
+      targetKind: "acp",
       targetSessionKey: "agent:main:acp:discord-thread-1",
     });
     const threadId = "thread-system-1";
@@ -160,7 +161,7 @@ describe("preflightDiscordMessage", () => {
 
   it("keeps bound-thread regular bot messages flowing when allowBots=true", async () => {
     const threadBinding = createThreadBinding({
-      targetKind: "session",
+      targetKind: "acp",
       targetSessionKey: "agent:main:acp:discord-thread-1",
     });
     const threadId = "thread-bot-regular-1";

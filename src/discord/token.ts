@@ -10,9 +10,9 @@ function resolveSecretToString(input?: SecretInput | null): string | undefined {
   if (typeof input === "string") {
     return input;
   }
-  // SecretRef — resolve from env
-  if (input.env) {
-    return process.env[input.env] ?? undefined;
+  // SecretRef — resolve from configured source
+  if (input.source === "env") {
+    return process.env[input.id] ?? undefined;
   }
   return undefined;
 }

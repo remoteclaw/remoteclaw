@@ -1,12 +1,11 @@
 import type { Activity, UpdatePresenceData } from "@buape/carbon/gateway";
+import { ensureAuthProfileStore } from "../../auth/profiles.js";
+import type { AuthProfileFailureReason, AuthProfileStore } from "../../auth/types.js";
 import {
   clearExpiredCooldowns,
-  ensureAuthProfileStore,
   isProfileInCooldown,
   resolveProfilesUnavailableReason,
-  type AuthProfileFailureReason,
-  type AuthProfileStore,
-} from "../../agents/auth-profiles.js";
+} from "../../auth/usage.js";
 import type { DiscordAccountConfig, DiscordAutoPresenceConfig } from "../../config/config.js";
 import { warn } from "../../globals.js";
 import { resolveDiscordPresenceUpdate } from "./presence.js";

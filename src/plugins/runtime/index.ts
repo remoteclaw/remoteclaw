@@ -137,6 +137,7 @@ import {
 } from "../../web/auth-store.js";
 import { loadWebMedia } from "../../web/media.js";
 import { formatNativeDependencyHint } from "./native-deps.js";
+import { createRuntimeEvents } from "./runtime-events.js";
 import type { PluginRuntime } from "./types.js";
 
 let cachedVersion: string | null = null;
@@ -246,6 +247,7 @@ export function createPluginRuntime(): PluginRuntime {
       transcribeAudioFile: async () => ({ text: undefined }),
     },
     tools: createRuntimeTools(),
+    events: createRuntimeEvents(),
     channel: createRuntimeChannel(),
     logging: createRuntimeLogging(),
     state: { resolveStateDir },

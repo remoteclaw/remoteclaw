@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { CURRENT_SESSION_VERSION, SessionManager } from "@mariozechner/pi-coding-agent";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveSessionFilePath, type SessionEntry } from "../../config/sessions.js";
+import { CURRENT_SESSION_VERSION } from "../../config/sessions/constants.js";
 
 /**
  * Default max parent token count beyond which thread/session parent forking is skipped.
@@ -12,7 +12,7 @@ import { resolveSessionFilePath, type SessionEntry } from "../../config/sessions
  */
 const DEFAULT_PARENT_FORK_MAX_TOKENS = 100_000;
 
-export function resolveParentForkMaxTokens(cfg: OpenClawConfig): number {
+export function resolveParentForkMaxTokens(cfg: RemoteClawConfig): number {
   const configured = cfg.session?.parentForkMaxTokens;
   if (typeof configured === "number" && Number.isFinite(configured) && configured >= 0) {
     return Math.floor(configured);
@@ -34,25 +34,17 @@ export function forkSessionFromParent(params: {
     return null;
   }
   try {
-    const manager = SessionManager.open(parentSessionFile);
-    const leafId = manager.getLeafId();
-    if (leafId) {
-      const sessionFile = manager.createBranchedSession(leafId) ?? manager.getSessionFile();
-      const sessionId = manager.getSessionId();
-      if (sessionFile && sessionId) {
-        return { sessionId, sessionFile };
-      }
-    }
     const sessionId = crypto.randomUUID();
     const timestamp = new Date().toISOString();
     const fileTimestamp = timestamp.replace(/[:.]/g, "-");
-    const sessionFile = path.join(manager.getSessionDir(), `${fileTimestamp}_${sessionId}.jsonl`);
+    const sessionsDir = path.dirname(parentSessionFile);
+    const sessionFile = path.join(sessionsDir, `${fileTimestamp}_${sessionId}.jsonl`);
     const header = {
       type: "session",
       version: CURRENT_SESSION_VERSION,
       id: sessionId,
       timestamp,
-      cwd: manager.getCwd(),
+      cwd: process.cwd(),
       parentSession: parentSessionFile,
     };
     fs.writeFileSync(sessionFile, `${JSON.stringify(header)}\n`, "utf-8");

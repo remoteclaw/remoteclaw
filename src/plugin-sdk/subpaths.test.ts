@@ -1,3 +1,4 @@
+import * as compatSdk from "remoteclaw/plugin-sdk/compat";
 import * as discordSdk from "remoteclaw/plugin-sdk/discord";
 import * as imessageSdk from "remoteclaw/plugin-sdk/imessage";
 import * as lineSdk from "remoteclaw/plugin-sdk/line";
@@ -7,6 +8,11 @@ import * as whatsappSdk from "remoteclaw/plugin-sdk/whatsapp";
 import { describe, expect, it } from "vitest";
 
 describe("plugin-sdk subpath exports", () => {
+  it("exports compat helpers", () => {
+    expect(typeof compatSdk.emptyPluginConfigSchema).toBe("function");
+    expect(typeof compatSdk.resolveControlCommandGate).toBe("function");
+  });
+
   it("exports Discord helpers", () => {
     expect(typeof discordSdk.resolveDiscordAccount).toBe("function");
     expect(typeof discordSdk.discordOnboardingAdapter).toBe("object");

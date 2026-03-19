@@ -18,10 +18,10 @@ export {
   type DiscordAccountConfig,
   type DiscordActionConfig,
   type DiscordConfig,
-  type RemoteClawConfig,
-} from "../../../src/plugin-sdk/discord-core.js";
-export { DiscordConfigSchema } from "../../../src/plugin-sdk/discord-core.js";
-export { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
+  type OpenClawConfig,
+} from "openclaw/plugin-sdk/discord-core";
+export { DiscordConfigSchema } from "openclaw/plugin-sdk/discord-core";
+export { readBooleanParam } from "openclaw/plugin-sdk/boolean-param";
 export {
   assertMediaNotDataUrl,
   parseAvailableTags,
@@ -44,7 +44,7 @@ export { resolveAccountEntry } from "remoteclaw/plugin-sdk/routing";
 export type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
-} from "remoteclaw/plugin-sdk/channel-contract";
+} from "openclaw/plugin-sdk/channel-runtime";
 export {
   hasConfiguredSecretInput,
   normalizeResolvedSecretInputString,

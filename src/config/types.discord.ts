@@ -1,4 +1,3 @@
-import type { DiscordPluralKitConfig } from "../plugin-sdk/discord.js";
 import type {
   BlockStreamingChunkConfig,
   BlockStreamingCoalesceConfig,
@@ -15,6 +14,11 @@ import type { GroupToolPolicyBySenderConfig, GroupToolPolicyConfig } from "./typ
 import type { TtsConfig } from "./types.tts.js";
 
 export type DiscordStreamMode = "off" | "partial" | "block" | "progress";
+
+export type DiscordPluralKitConfig = {
+  enabled?: boolean;
+  token?: string;
+};
 
 export type DiscordDmConfig = {
   /** If false, ignore all incoming Discord DMs. Default: true. */

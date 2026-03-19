@@ -1,13 +1,10 @@
 export type { ChannelMessageActionAdapter } from "../channels/plugins/types.js";
 export type { RemoteClawConfig } from "../config/config.js";
 export type { DiscordAccountConfig, DiscordActionConfig } from "../config/types.js";
-export type { DiscordPluralKitConfig } from "../../extensions/discord/src/pluralkit.js";
-export type { InspectedDiscordAccount } from "../../extensions/discord/src/account-inspect.js";
-export type { ResolvedDiscordAccount } from "../../extensions/discord/src/accounts.js";
-export type {
-  DiscordSendComponents,
-  DiscordSendEmbeds,
-} from "../../extensions/discord/src/send.shared.js";
+export type { DiscordConfig, DiscordPluralKitConfig } from "../config/types.discord.js";
+export type { InspectedDiscordAccount } from "../../extensions/discord/api.js";
+export type { ResolvedDiscordAccount } from "../../extensions/discord/api.js";
+export type { DiscordSendComponents, DiscordSendEmbeds } from "../../extensions/discord/api.js";
 export type {
   ThreadBindingManager,
   ThreadBindingRecord,

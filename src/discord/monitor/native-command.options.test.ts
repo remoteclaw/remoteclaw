@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { listNativeCommandSpecs } from "../../auto-reply/commands-registry.js";
-import type { OpenClawConfig, loadConfig } from "../../config/config.js";
+import type { RemoteClawConfig, loadConfig } from "../../config/config.js";
 import { createDiscordNativeCommand } from "./native-command.js";
 import { createNoopThreadBindingManager } from "./thread-bindings.js";
 
@@ -12,7 +12,7 @@ function createNativeCommand(name: string): ReturnType<typeof createDiscordNativ
     throw new Error(`missing native command: ${name}`);
   }
   const cfg = {} as ReturnType<typeof loadConfig>;
-  const discordConfig = {} as NonNullable<OpenClawConfig["channels"]>["discord"];
+  const discordConfig = {} as NonNullable<RemoteClawConfig["channels"]>["discord"];
   return createDiscordNativeCommand({
     command,
     cfg,

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.js";
+import type { RemoteClawConfig } from "../../config/types.js";
 import { createNoopThreadBindingManager } from "./thread-bindings.js";
 
 const preflightDiscordMessageMock = vi.hoisted(() => vi.fn());
@@ -27,7 +27,7 @@ function createHandlerParams(overrides?: {
   setStatus?: (patch: Record<string, unknown>) => void;
   abortSignal?: AbortSignal;
 }) {
-  const cfg: OpenClawConfig = {
+  const cfg: RemoteClawConfig = {
     channels: {
       discord: {
         enabled: true,

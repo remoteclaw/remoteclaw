@@ -376,7 +376,7 @@ describe("monitorDiscordProvider", () => {
   it("reports connected status on startup and shutdown", async () => {
     const { monitorDiscordProvider } = await import("./provider.js");
     const setStatus = vi.fn();
-    clientGetPluginMock.mockImplementation((name: string) =>
+    clientGetPluginMock.mockImplementation((name?: string) =>
       name === "gateway" ? { isConnected: true } : undefined,
     );
 

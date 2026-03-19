@@ -86,7 +86,7 @@ export async function isChromeReachable(
 ): Promise<boolean> {
   if (isWebSocketUrl(cdpUrl)) {
     // Direct WebSocket endpoint (e.g. Browserbase) — probe via WS handshake.
-    return await canOpenWebSocket(cdpUrl, timeoutMs);
+    return await canRunCdpHealthCommand(cdpUrl, timeoutMs);
   }
   const version = await fetchChromeVersion(cdpUrl, timeoutMs);
   return Boolean(version);

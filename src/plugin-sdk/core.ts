@@ -1,8 +1,9 @@
-export type { OpenClawPluginApi, OpenClawPluginService } from "../plugins/types.js";
+export type { RemoteClawPluginApi, RemoteClawPluginService } from "../plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
 
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
+export { createPluginRuntimeStore } from "./runtime-store.js";
 
 export {
   approveDevicePairing,

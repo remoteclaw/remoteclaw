@@ -44,8 +44,7 @@ export type {
 } from "../channels/plugins/types.js";
 export type { ChannelDirectoryEntry } from "../channels/plugins/types.core.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
-export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
-export { createTypingCallbacks } from "../channels/typing.js";
+export { createChannelReplyPipeline } from "./channel-reply-pipeline.js";
 export type { RemoteClawConfig } from "../config/config.js";
 export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 export {
@@ -54,9 +53,6 @@ export {
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "../config/runtime-group-policy.js";
 export type { BlockStreamingCoalesceConfig, DmPolicy, GroupPolicy } from "../config/types.js";
-export type { SecretInput } from "../config/types.secrets.js";
-export { normalizeSecretInputString } from "../config/types.secrets.js";
-export { buildSecretInputSchema } from "./secret-input-schema.js";
 export {
   BlockStreamingCoalesceSchema,
   DmPolicySchema,
@@ -91,31 +87,5 @@ export type { WizardPrompter } from "../wizard/prompts.js";
 export { buildAgentMediaPayload } from "./agent-media-payload.js";
 export { getAgentScopedMediaLocalRoots } from "../media/local-roots.js";
 export { loadOutboundMediaFromUrl } from "./outbound-media.js";
-export { createScopedPairingAccess } from "./pairing-access.js";
-
-// --------------------------------------------------------------------------
-// Stubs for model-picker infrastructure (upstream modules gutted in fork).
-// These satisfy type-checking for cherry-picked model-picker code until
-// the replacement execution engine provides real implementations.
-// --------------------------------------------------------------------------
-
-export type ModelsProviderData = {
-  byProvider: Map<string, Set<string>>;
-  providers: string[];
-  resolvedDefault: { provider: string; model: string };
-};
-
-export async function buildModelsProviderData(
-  _cfg: import("../config/config.js").RemoteClawConfig,
-  _agentId?: string,
-): Promise<ModelsProviderData> {
-  return { byProvider: new Map(), providers: [], resolvedDefault: { provider: "", model: "" } };
-}
-
-export function resolveStoredModelOverride(_params: {
-  sessionEntry?: unknown;
-  sessionStore?: unknown;
-  sessionKey?: string;
-}): { model?: string; provider?: string } | null {
-  return null;
-}
+export { createChannelPairingController } from "./channel-pairing.js";
+export { isRequestBodyLimitError, readRequestBodyWithLimit } from "../infra/http-body.js";

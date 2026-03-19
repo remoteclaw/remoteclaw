@@ -40,6 +40,7 @@ export const createTelegramMessageProcessor = (deps: TelegramMessageProcessorDep
     resolveGroupActivation,
     resolveGroupRequireMention,
     resolveTelegramGroupConfig,
+    loadFreshConfig,
     sendChatActionHandler,
     runtime,
     replyToMode,
@@ -75,6 +76,8 @@ export const createTelegramMessageProcessor = (deps: TelegramMessageProcessorDep
       resolveGroupRequireMention,
       resolveTelegramGroupConfig,
       sendChatActionHandler,
+      loadFreshConfig,
+      upsertPairingRequest: telegramDeps.upsertChannelPairingRequest,
     });
     if (!context) {
       return;

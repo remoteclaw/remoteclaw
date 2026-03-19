@@ -1,5 +1,6 @@
 import * as ssrf from "remoteclaw/plugin-sdk/infra-runtime";
 import { afterEach, beforeAll, beforeEach, expect, vi, type Mock } from "vitest";
+import * as harness from "./bot.media.e2e-harness.js";
 
 type StickerSpy = Mock<(...args: unknown[]) => unknown>;
 
@@ -22,6 +23,19 @@ let createTelegramBotRef: typeof import("./bot.js").createTelegramBot;
 let replySpyRef: ReturnType<typeof vi.fn>;
 let onSpyRef: Mock;
 let sendChatActionSpyRef: Mock;
+let fetchRemoteMediaSpyRef: Mock;
+let undiciFetchSpyRef: Mock;
+let resetFetchRemoteMediaMockRef: () => void;
+
+type FetchMockHandle = Mock & { mockRestore: () => void };
+
+function createFetchMockHandle(): FetchMockHandle {
+  return Object.assign(fetchRemoteMediaSpyRef, {
+    mockRestore: () => {
+      resetFetchRemoteMediaMockRef();
+    },
+  }) as FetchMockHandle;
+}
 
 export async function createBotHandler(): Promise<{
   handler: (ctx: Record<string, unknown>) => Promise<void>;
@@ -46,10 +60,11 @@ export async function createBotHandlerWithOptions(options: {
 
   const runtimeError = options.runtimeError ?? vi.fn();
   const runtimeLog = options.runtimeLog ?? vi.fn();
+  const effectiveProxyFetch = options.proxyFetch ?? (undiciFetchSpyRef as unknown as typeof fetch);
   createTelegramBotRef({
     token: "tok",
     testTimings: TELEGRAM_TEST_TIMINGS,
-    ...(options.proxyFetch ? { proxyFetch: options.proxyFetch } : {}),
+    ...(effectiveProxyFetch ? { proxyFetch: effectiveProxyFetch } : {}),
     runtime: {
       log: runtimeLog as (...data: unknown[]) => void,
       error: runtimeError as (...data: unknown[]) => void,
@@ -69,6 +84,12 @@ export function mockTelegramFileDownload(params: {
   contentType: string;
   bytes: Uint8Array;
 }): FetchMockHandle {
+  undiciFetchSpyRef.mockResolvedValueOnce(
+    new Response(Buffer.from(params.bytes), {
+      status: 200,
+      headers: { "content-type": params.contentType },
+    }),
+  );
   fetchRemoteMediaSpyRef.mockResolvedValueOnce({
     buffer: Buffer.from(params.bytes),
     contentType: params.contentType,
@@ -78,6 +99,12 @@ export function mockTelegramFileDownload(params: {
 }
 
 export function mockTelegramPngDownload(): FetchMockHandle {
+  undiciFetchSpyRef.mockResolvedValue(
+    new Response(Buffer.from(new Uint8Array([0x89, 0x50, 0x4e, 0x47])), {
+      status: 200,
+      headers: { "content-type": "image/png" },
+    }),
+  );
   fetchRemoteMediaSpyRef.mockResolvedValue({
     buffer: Buffer.from(new Uint8Array([0x89, 0x50, 0x4e, 0x47])),
     contentType: "image/png",
@@ -105,9 +132,11 @@ afterEach(() => {
 });
 
 beforeAll(async () => {
-  const harness = await import("./bot.media.e2e-harness.js");
   onSpyRef = harness.onSpy;
   sendChatActionSpyRef = harness.sendChatActionSpy;
+  fetchRemoteMediaSpyRef = harness.fetchRemoteMediaSpy;
+  undiciFetchSpyRef = harness.undiciFetchSpy;
+  resetFetchRemoteMediaMockRef = harness.resetFetchRemoteMediaMock;
   const botModule = await import("./bot.js");
   botModule.setTelegramBotRuntimeForTest(harness.telegramBotRuntimeForTest);
   ({ createTelegramBot: createTelegramBotRef } = botModule);

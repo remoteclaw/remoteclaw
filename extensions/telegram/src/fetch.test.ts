@@ -56,6 +56,15 @@ vi.mock("undici", () => ({
   setGlobalDispatcher,
 }));
 
+let resolveFetch: typeof import("../../../src/infra/fetch.js").resolveFetch;
+let resolveTelegramFetch: typeof import("./fetch.js").resolveTelegramFetch;
+let resolveTelegramTransport: typeof import("./fetch.js").resolveTelegramTransport;
+
+beforeEach(async () => {
+  ({ resolveFetch } = await import("../../../src/infra/fetch.js"));
+  ({ resolveTelegramFetch, resolveTelegramTransport } = await import("./fetch.js"));
+});
+
 function resolveTelegramFetchOrThrow(
   proxyFetch?: typeof fetch,
   options?: { network?: { autoSelectFamily?: boolean; dnsResultOrder?: "ipv4first" | "verbatim" } },

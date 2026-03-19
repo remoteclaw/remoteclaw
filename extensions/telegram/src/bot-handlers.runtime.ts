@@ -30,11 +30,19 @@ import {
   buildPluginBindingResolvedText,
   parsePluginBindingApprovalCustomId,
   resolvePluginConversationBindingApproval,
-} from "remoteclaw/plugin-sdk/conversation-runtime";
-import { dispatchPluginInteractiveHandler } from "remoteclaw/plugin-sdk/plugin-runtime";
-import { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
-import { resolveThreadSessionKeys } from "remoteclaw/plugin-sdk/routing";
-import { danger, logVerbose, warn } from "remoteclaw/plugin-sdk/runtime-env";
+} from "openclaw/plugin-sdk/conversation-runtime";
+import { dispatchPluginInteractiveHandler } from "openclaw/plugin-sdk/plugin-runtime";
+import {
+  createInboundDebouncer,
+  resolveInboundDebounceMs,
+} from "openclaw/plugin-sdk/reply-runtime";
+import { buildCommandsPaginationKeyboard } from "openclaw/plugin-sdk/reply-runtime";
+import { formatModelsAvailableHeader } from "openclaw/plugin-sdk/reply-runtime";
+import { resolveStoredModelOverride } from "openclaw/plugin-sdk/reply-runtime";
+import { buildCommandsMessagePaginated } from "openclaw/plugin-sdk/reply-runtime";
+import { resolveAgentRoute } from "openclaw/plugin-sdk/routing";
+import { resolveThreadSessionKeys } from "openclaw/plugin-sdk/routing";
+import { danger, logVerbose, warn } from "openclaw/plugin-sdk/runtime-env";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import {
   isSenderAllowed,

@@ -302,8 +302,12 @@ describe("security/dm-policy-shared", () => {
     expectedReactionAllowed: boolean;
   };
 
-  function createParityCase(overrides: Partial<ParityCase> & Pick<ParityCase, "name">): ParityCase {
+  function createParityCase({
+    name,
+    ...overrides
+  }: Partial<ParityCase> & Pick<ParityCase, "name">): ParityCase {
     return {
+      name,
       isGroup: false,
       dmPolicy: "open",
       groupPolicy: "allowlist",

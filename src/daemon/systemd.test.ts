@@ -106,7 +106,7 @@ describe("isSystemdServiceEnabled", () => {
     const { isSystemdServiceEnabled } = await import("./systemd.js");
     execFileMock
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
-        expect(args).toEqual(["--user", "is-enabled", "openclaw-gateway.service"]);
+        expect(args).toEqual(["--user", "is-enabled", "remoteclaw-gateway.service"]);
         const err = new Error("Failed to connect to bus") as Error & { code?: number };
         err.code = 1;
         cb(err, "", "Failed to connect to bus");
@@ -114,7 +114,7 @@ describe("isSystemdServiceEnabled", () => {
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
         expect(args[0]).toBe("--machine");
         expect(String(args[1])).toMatch(/^[^@]+@$/);
-        expect(args.slice(2)).toEqual(["--user", "is-enabled", "openclaw-gateway.service"]);
+        expect(args.slice(2)).toEqual(["--user", "is-enabled", "remoteclaw-gateway.service"]);
         const err = new Error("permission denied") as Error & { code?: number };
         err.code = 1;
         cb(err, "", "permission denied");
@@ -333,7 +333,7 @@ describe("systemd service control", () => {
         cb(null, "", "");
       })
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
-        expect(args).toEqual(["--user", "restart", "openclaw-gateway.service"]);
+        expect(args).toEqual(["--user", "restart", "remoteclaw-gateway.service"]);
         cb(null, "", "");
       });
     const write = vi.fn();
@@ -363,7 +363,7 @@ describe("systemd service control", () => {
         cb(null, "", "");
       })
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
-        expect(args).toEqual(["--user", "restart", "openclaw-gateway.service"]);
+        expect(args).toEqual(["--user", "restart", "remoteclaw-gateway.service"]);
         const err = new Error("Failed to connect to user scope bus") as Error & {
           stderr?: string;
           code?: number;
@@ -378,7 +378,7 @@ describe("systemd service control", () => {
           "debian@",
           "--user",
           "restart",
-          "openclaw-gateway.service",
+          "remoteclaw-gateway.service",
         ]);
         cb(null, "", "");
       });

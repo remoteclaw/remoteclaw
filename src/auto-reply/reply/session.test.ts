@@ -1017,7 +1017,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     try {
       // Simulate: it is 5am, session was last active at 3am (before 4am daily boundary)
       vi.setSystemTime(new Date(2026, 0, 18, 5, 0, 0));
-      const storePath = await createStorePath("openclaw-stale-archive-");
+      const storePath = await createStorePath("remoteclaw-stale-archive-");
       const sessionKey = "agent:main:telegram:dm:archive-stale-user";
       const existingSessionId = "stale-session-to-be-archived";
 

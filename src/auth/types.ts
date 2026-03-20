@@ -29,6 +29,7 @@ export type AuthProfileCredential = ApiKeyCredential | TokenCredential;
 export type AuthProfileFailureReason =
   | "auth"
   | "format"
+  | "overloaded"
   | "rate_limit"
   | "billing"
   | "timeout"

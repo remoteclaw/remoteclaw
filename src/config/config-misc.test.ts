@@ -180,7 +180,7 @@ describe("cron webhook schema", () => {
         retry: {
           maxAttempts: 5,
           backoffMs: [60000, 120000, 300000],
-          retryOn: ["rate_limit", "network"],
+          retryOn: ["rate_limit", "overloaded", "network"],
         },
       },
     });

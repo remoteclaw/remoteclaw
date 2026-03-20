@@ -29,6 +29,7 @@ type ConfigureGatewayOptions = {
   quickstartGateway: QuickstartGatewayDefaults;
   prompter: WizardPrompter;
   runtime: RuntimeEnv;
+  secretInputMode?: "ref" | "plaintext";
 };
 
 type ConfigureGatewayResult = {

@@ -76,7 +76,7 @@ function createChannelPlugin(params: {
   };
 }
 
-async function executeSend(params: {
+async function _executeSend(params: {
   action: Record<string, unknown>;
   toolOptions?: Partial<Parameters<typeof createMessageTool>[0]>;
 }) {

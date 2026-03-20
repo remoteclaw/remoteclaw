@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { formatThreadBindingDurationLabel } from "../channels/thread-bindings-messages.js";
 import { resolveStateDir } from "../config/paths.js";
+import { formatThreadBindingDurationLabel } from "../discord/monitor/thread-bindings.messages.js";
 import { logVerbose } from "../globals.js";
 import { writeJsonAtomic } from "../infra/json-files.js";
 import {
@@ -503,14 +503,8 @@ export function createTelegramThreadBindingManager(
   registerSessionBindingAdapter({
     channel: "telegram",
     accountId,
-    capabilities: {
-      placements: ["current"],
-    },
     bind: async (input) => {
       if (input.conversation.channel !== "telegram") {
-        return null;
-      }
-      if (input.placement === "child") {
         return null;
       }
       const conversationId = normalizeConversationId(input.conversation.conversationId);

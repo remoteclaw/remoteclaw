@@ -1,23 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { OpenClawSchema } from "./zod-schema.js";
+import { RemoteClawSchema } from "./zod-schema.js";
 
 describe("ACP binding cutover schema", () => {
   it("accepts top-level typed ACP bindings with per-agent runtime defaults", () => {
-    const parsed = OpenClawSchema.safeParse({
+    // In this fork, agent.runtime is a string union ("claude"|"codex"|etc.),
+    // not an object with .type/.acp properties.
+    const parsed = RemoteClawSchema.safeParse({
       agents: {
         list: [
-          { id: "main", default: true, runtime: { type: "embedded" } },
+          { id: "main", default: true },
           {
             id: "coding",
-            runtime: {
-              type: "acp",
-              acp: {
-                agent: "codex",
-                backend: "acpx",
-                mode: "persistent",
-                cwd: "/workspace/openclaw",
-              },
-            },
+            runtime: "codex",
           },
         ],
       },
@@ -47,7 +41,7 @@ describe("ACP binding cutover schema", () => {
   });
 
   it("rejects legacy Discord channel-local ACP binding fields", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = RemoteClawSchema.safeParse({
       channels: {
         discord: {
           guilds: {
@@ -72,7 +66,7 @@ describe("ACP binding cutover schema", () => {
   });
 
   it("rejects legacy Telegram topic-local ACP binding fields", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = RemoteClawSchema.safeParse({
       channels: {
         telegram: {
           groups: {
@@ -96,7 +90,7 @@ describe("ACP binding cutover schema", () => {
   });
 
   it("rejects ACP bindings without a peer conversation target", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = RemoteClawSchema.safeParse({
       bindings: [
         {
           type: "acp",
@@ -110,7 +104,7 @@ describe("ACP binding cutover schema", () => {
   });
 
   it("rejects ACP bindings on unsupported channels", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = RemoteClawSchema.safeParse({
       bindings: [
         {
           type: "acp",
@@ -128,7 +122,7 @@ describe("ACP binding cutover schema", () => {
   });
 
   it("rejects non-canonical Telegram ACP topic peer IDs", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = RemoteClawSchema.safeParse({
       bindings: [
         {
           type: "acp",

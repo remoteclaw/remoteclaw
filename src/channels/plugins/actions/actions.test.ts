@@ -548,7 +548,7 @@ describe("telegramMessageActions", () => {
           actions: { sendMessage: false },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const actions = telegramMessageActions.listActions?.({ cfg }) ?? [];
 
@@ -563,7 +563,7 @@ describe("telegramMessageActions", () => {
           actions: { poll: false },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const actions = telegramMessageActions.listActions?.({ cfg }) ?? [];
 
@@ -592,7 +592,7 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const actions = telegramMessageActions.listActions?.({ cfg }) ?? [];
 

@@ -75,15 +75,13 @@ function resolveAgentRuntimeAcpDefaults(params: { cfg: RemoteClawConfig; ownerAg
   const agent = params.cfg.agents?.list?.find(
     (entry) => entry.id?.trim().toLowerCase() === params.ownerAgentId.toLowerCase(),
   );
-  if (!agent || agent.runtime?.type !== "acp") {
+  if (!agent || typeof agent.runtime !== "string") {
     return {};
   }
-  return {
-    acpAgentId: normalizeText(agent.runtime.acp?.agent),
-    mode: normalizeText(agent.runtime.acp?.mode),
-    cwd: normalizeText(agent.runtime.acp?.cwd),
-    backend: normalizeText(agent.runtime.acp?.backend),
-  };
+  // In this fork, agent.runtime is a string union ("claude"|"gemini"|"codex"|"opencode"),
+  // not an object with .type/.acp properties. ACP defaults are not carried on the runtime
+  // field, so return empty defaults.
+  return {};
 }
 
 function toConfiguredBindingSpec(params: {

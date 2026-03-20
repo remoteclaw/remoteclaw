@@ -842,7 +842,7 @@ describe("runMessageAction telegram plugin poll forwarding", () => {
             botToken: "tok",
           },
         },
-      } as OpenClawConfig,
+      } as RemoteClawConfig,
       action: "poll",
       params: {
         channel: "telegram",

@@ -43,7 +43,6 @@ describe("telegram thread bindings", () => {
         accountId: "work",
         conversationId: "-100200300:topic:77",
       },
-      placement: "current",
       metadata: {
         boundBy: "user-1",
       },
@@ -54,29 +53,6 @@ describe("telegram thread bindings", () => {
     expect(bound.conversation.conversationId).toBe("-100200300:topic:77");
     expect(bound.targetSessionKey).toBe("agent:main:subagent:child-1");
     expect(manager.getByConversationId("-100200300:topic:77")?.boundBy).toBe("user-1");
-  });
-
-  it("does not support child placement", async () => {
-    createTelegramThreadBindingManager({
-      accountId: "default",
-      persist: false,
-      enableSweeper: false,
-    });
-
-    await expect(
-      getSessionBindingService().bind({
-        targetSessionKey: "agent:main:subagent:child-1",
-        targetKind: "subagent",
-        conversation: {
-          channel: "telegram",
-          accountId: "default",
-          conversationId: "-100200300:topic:77",
-        },
-        placement: "child",
-      }),
-    ).rejects.toMatchObject({
-      code: "BINDING_CAPABILITY_UNSUPPORTED",
-    });
   });
 
   it("updates lifecycle windows by session key", async () => {

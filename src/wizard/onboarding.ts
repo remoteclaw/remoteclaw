@@ -15,6 +15,7 @@ import {
   resolveGatewayPort,
   writeConfigFile,
 } from "../config/config.js";
+import { coerceSecretRef } from "../config/types.secrets.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
@@ -538,10 +539,18 @@ export async function runOnboardingWizard(
 
   const localPort = resolveGatewayPort(baseConfig);
   const localUrl = `ws://127.0.0.1:${localPort}`;
+  const rawPassword = baseConfig.gateway?.auth?.password;
+  const passwordRef = coerceSecretRef(rawPassword);
+  const resolvedPassword =
+    typeof rawPassword === "string"
+      ? rawPassword
+      : passwordRef?.source === "env"
+        ? process.env[passwordRef.id]
+        : undefined;
   const localProbe = await onboardHelpers.probeGatewayReachable({
     url: localUrl,
     token: baseConfig.gateway?.auth?.token ?? process.env.REMOTECLAW_GATEWAY_TOKEN,
-    password: baseConfig.gateway?.auth?.password ?? process.env.REMOTECLAW_GATEWAY_PASSWORD,
+    password: resolvedPassword ?? process.env.REMOTECLAW_GATEWAY_PASSWORD,
   });
   const remoteUrl = baseConfig.gateway?.remote?.url?.trim() ?? "";
   const remoteProbe = remoteUrl
@@ -656,6 +665,7 @@ export async function runOnboardingWizard(
     quickstartGateway,
     prompter,
     runtime,
+    secretInputMode: opts.secretInputMode,
   });
   nextConfig = gateway.nextConfig;
   const settings = gateway.settings;

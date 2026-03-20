@@ -101,7 +101,9 @@ function isExhaustedUnavailableReason(reason: AuthProfileFailureReason | null): 
   if (!reason) {
     return false;
   }
-  return reason === "rate_limit" || reason === "billing" || reason === "auth";
+  return (
+    reason === "rate_limit" || reason === "overloaded" || reason === "billing" || reason === "auth"
+  );
 }
 
 function formatUnavailableReason(reason: AuthProfileFailureReason | null): string {

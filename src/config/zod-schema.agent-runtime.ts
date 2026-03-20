@@ -306,7 +306,7 @@ const AgentRuntimeAcpSchema = z
   .strict()
   .optional();
 
-const AgentRuntimeSchema = z
+const _AgentRuntimeSchema = z
   .union([
     z
       .object({

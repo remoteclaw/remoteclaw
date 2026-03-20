@@ -386,29 +386,6 @@ export const buildTelegramMessageContext = async ({
     return false;
   };
 
-  const baseSessionKey = route.sessionKey;
-  // DMs: use thread suffix for session isolation (works regardless of dmScope)
-  const threadKeys =
-    dmThreadId != null
-      ? resolveThreadSessionKeys({ baseSessionKey, threadId: `${chatId}:${dmThreadId}` })
-      : null;
-  const sessionKey = threadKeys?.sessionKey ?? baseSessionKey;
-  const mentionRegexes = buildMentionRegexes(cfg, route.agentId);
-  // Compute requireMention after access checks and final route selection.
-  const activationOverride = resolveGroupActivation({
-    chatId,
-    messageThreadId: resolvedThreadId,
-    sessionKey: sessionKey,
-    agentId: route.agentId,
-  });
-  const baseRequireMention = resolveGroupRequireMention(chatId);
-  const requireMention = firstDefined(
-    activationOverride,
-    topicConfig?.requireMention,
-    (groupConfig as TelegramGroupConfig | undefined)?.requireMention,
-    baseRequireMention,
-  );
-
   recordChannelActivity({
     channel: "telegram",
     accountId: account.accountId,

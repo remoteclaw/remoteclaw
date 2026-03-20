@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import path from "node:path";
+import { resolveConversationIdFromTargets } from "../../acp/conversation-id-targets.js";
 import {
   buildTelegramTopicConversationId,
   parseTelegramChatIdFromTarget,
@@ -28,7 +29,6 @@ import {
 } from "../../config/sessions.js";
 import type { TtsAutoMode } from "../../config/types.tts.js";
 import { archiveSessionTranscripts } from "../../gateway/session-utils.fs.js";
-import { resolveConversationIdFromTargets } from "../../infra/outbound/conversation-id.js";
 import { deliverSessionMaintenanceWarning } from "../../infra/session-maintenance-warning.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
@@ -168,7 +168,7 @@ function resolveAcpResetBindingContext(ctx: MsgContext): {
 }
 
 function resolveBoundAcpSessionForReset(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   ctx: MsgContext;
 }): string | undefined {
   const activeSessionKey = normalizeSessionText(params.ctx.SessionKey);

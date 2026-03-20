@@ -704,7 +704,6 @@ describe("initSessionState RawBody", () => {
     registerSessionBindingAdapter({
       channel: "discord",
       accountId: "default",
-      capabilities: { bindSupported: false, unbindSupported: false, placements: ["current"] },
       listBySession: () => [],
       resolveByConversation: (ref) => {
         if (ref.conversationId !== channelId) {

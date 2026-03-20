@@ -342,7 +342,7 @@ export async function preflightDiscordMessage(
     // Pass parent peer for thread binding inheritance
     parentPeer: earlyThreadParentId ? { kind: "channel", id: earlyThreadParentId } : undefined,
   });
-  let threadBinding = earlyThreadChannel
+  let threadBinding: ThreadBindingRecord | undefined = earlyThreadChannel
     ? params.threadBindings.getByThreadId(messageChannelId)
     : undefined;
   const configuredRoute =
@@ -358,7 +358,20 @@ export async function preflightDiscordMessage(
       : null;
   const configuredBinding = configuredRoute?.configuredBinding ?? null;
   if (!threadBinding && configuredBinding) {
-    threadBinding = configuredBinding.record;
+    // Adapt SessionBindingRecord to ThreadBindingRecord shape for downstream usage
+    const rec = configuredBinding.record;
+    threadBinding = {
+      accountId: params.accountId,
+      channelId: rec.conversation.parentConversationId ?? rec.conversation.conversationId,
+      threadId: rec.conversation.conversationId,
+      targetKind: "acp",
+      targetSessionKey: rec.targetSessionKey,
+      agentId: configuredBinding.spec.agentId,
+      label: configuredBinding.spec.label,
+      boundBy: "config",
+      boundAt: rec.boundAt,
+      lastActivityAt: rec.boundAt,
+    };
   }
   if (
     shouldIgnoreBoundThreadWebhookMessage({

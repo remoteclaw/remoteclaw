@@ -275,6 +275,9 @@ describe("resolveConfiguredAcpBindingRecord", () => {
   });
 
   it("applies agent runtime ACP defaults for bound conversations", () => {
+    // In this fork, agent.runtime is a string union ("claude"|"codex"|etc.),
+    // not an object — ACP defaults are not carried on the runtime field.
+    // The binding still resolves with default mode/empty ACP overrides.
     const cfg = {
       ...baseCfg,
       agents: {
@@ -282,15 +285,7 @@ describe("resolveConfiguredAcpBindingRecord", () => {
           { id: "main" },
           {
             id: "coding",
-            runtime: {
-              type: "acp",
-              acp: {
-                agent: "codex",
-                backend: "acpx",
-                mode: "oneshot",
-                cwd: "/workspace/repo-a",
-              },
-            },
+            runtime: "codex",
           },
         ],
       },
@@ -315,10 +310,11 @@ describe("resolveConfiguredAcpBindingRecord", () => {
     });
 
     expect(resolved?.spec.agentId).toBe("coding");
-    expect(resolved?.spec.acpAgentId).toBe("codex");
-    expect(resolved?.spec.mode).toBe("oneshot");
-    expect(resolved?.spec.cwd).toBe("/workspace/repo-a");
-    expect(resolved?.spec.backend).toBe("acpx");
+    // ACP defaults are not populated from string runtime
+    expect(resolved?.spec.acpAgentId).toBeUndefined();
+    expect(resolved?.spec.mode).toBe("persistent");
+    expect(resolved?.spec.cwd).toBeUndefined();
+    expect(resolved?.spec.backend).toBeUndefined();
   });
 });
 

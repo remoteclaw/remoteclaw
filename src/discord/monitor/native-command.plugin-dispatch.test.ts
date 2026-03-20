@@ -168,7 +168,7 @@ describe("Discord native plugin command dispatch", () => {
           },
         },
       ],
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const commandSpec: NativeCommandSpec = {
       name: "status",
       description: "Status",
@@ -265,7 +265,7 @@ describe("Discord native plugin command dispatch", () => {
           dm: { enabled: true, policy: "open" },
         },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const commandSpec: NativeCommandSpec = {
       name: "status",
       description: "Status",

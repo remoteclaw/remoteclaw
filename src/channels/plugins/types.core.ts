@@ -39,6 +39,7 @@ export type ChannelSetupInput = {
   audience?: string;
   useEnv?: boolean;
   homeserver?: string;
+  allowPrivateNetwork?: boolean;
   userId?: string;
   accessToken?: string;
   password?: string;

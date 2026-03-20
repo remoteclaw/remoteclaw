@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import * as fences from "../markdown/fences.js";
 import { BlockChunker } from "./block-chunker.js";
 
 describe("BlockChunker", () => {
@@ -126,5 +127,22 @@ describe("BlockChunker", () => {
 
     expect(chunks).toEqual(["Intro\n```js\nconst a = 1;\n\nconst b = 2;\n```"]);
     expect(chunker.bufferedText).toBe("After fence");
+  });
+
+  it("parses fence spans once per drain call for long fenced buffers", () => {
+    const parseSpy = vi.spyOn(fences, "parseFenceSpans");
+    const chunker = new BlockChunker({
+      minChars: 20,
+      maxChars: 80,
+      breakPreference: "paragraph",
+    });
+
+    chunker.append(`\`\`\`txt\n${"line\n".repeat(600)}\`\`\``);
+    const chunks: string[] = [];
+    chunker.drain({ force: false, emit: (chunk) => chunks.push(chunk) });
+
+    expect(chunks.length).toBeGreaterThan(2);
+    expect(parseSpy).toHaveBeenCalledTimes(1);
+    parseSpy.mockRestore();
   });
 });

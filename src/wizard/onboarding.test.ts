@@ -294,7 +294,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-
+        skipSearch: true,
         skipHealth: true,
         skipUi: true,
       },
@@ -334,7 +334,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-
+        skipSearch: true,
         skipHealth: true,
         skipUi: true,
       },
@@ -376,7 +376,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-
+        skipSearch: true,
         skipHealth: true,
         skipUi: true,
       },
@@ -423,7 +423,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-
+        skipSearch: true,
         skipHealth: true,
         skipUi: true,
       },
@@ -609,6 +609,7 @@ describe("runOnboardingWizard", () => {
 
   it("passes secretInputMode through to local gateway config step", async () => {
     configureGatewayForOnboarding.mockClear();
+    const workspaceDir = await makeCaseDir("workspace-");
     const prompter = buildWizardPrompter({});
     const runtime = createRuntime();
 
@@ -618,6 +619,7 @@ describe("runOnboardingWizard", () => {
         flow: "quickstart",
         mode: "local",
         runtime: "claude",
+        workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
         skipSearch: true,

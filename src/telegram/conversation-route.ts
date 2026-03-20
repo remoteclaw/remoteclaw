@@ -1,5 +1,5 @@
 import { resolveConfiguredAcpRoute } from "../acp/persistent-bindings.route.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { logVerbose } from "../globals.js";
 import { getSessionBindingService } from "../infra/outbound/session-binding-service.js";
 import {
@@ -15,7 +15,7 @@ import {
 } from "./bot/helpers.js";
 
 export function resolveTelegramConversationRoute(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId: string;
   chatId: number | string;
   isGroup: boolean;

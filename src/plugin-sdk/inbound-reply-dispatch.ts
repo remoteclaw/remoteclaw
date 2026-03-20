@@ -7,7 +7,7 @@ import type { ReplyDispatcher } from "../auto-reply/reply/reply-dispatcher.js";
 import type { FinalizedMsgContext } from "../auto-reply/templating.js";
 import type { GetReplyOptions } from "../auto-reply/types.js";
 import { createReplyPrefixOptions } from "../channels/reply-prefix.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { createNormalizedOutboundDeliverer, type OutboundReplyPayload } from "./reply-payload.js";
 
 type ReplyOptionsWithoutModelSelected = Omit<
@@ -21,7 +21,7 @@ type DispatchReplyWithBufferedBlockDispatcherFn =
 type ReplyDispatchFromConfigOptions = Omit<GetReplyOptions, "onToolResult" | "onBlockReply">;
 
 export async function dispatchReplyFromConfigWithSettledDispatcher(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   ctxPayload: FinalizedMsgContext;
   dispatcher: ReplyDispatcher;
   onSettled: () => void | Promise<void>;
@@ -41,7 +41,7 @@ export async function dispatchReplyFromConfigWithSettledDispatcher(params: {
 }
 
 export function buildInboundReplyDispatchBase(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channel: string;
   accountId?: string;
   route: {
@@ -98,7 +98,7 @@ export async function dispatchInboundReplyWithBase(
 }
 
 export async function recordInboundSessionAndDispatchReply(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   channel: string;
   accountId?: string;
   agentId: string;

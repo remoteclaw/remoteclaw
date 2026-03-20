@@ -14,12 +14,6 @@ export type { ChatType } from "../channels/chat-type.js";
 export { resolveControlCommandGate } from "../channels/command-gating.js";
 export { logInboundDrop, logTypingFailure } from "../channels/logging.js";
 export { resolveAllowlistMatchSimple } from "../channels/plugins/allowlist-match.js";
-export { normalizeProviderId } from "../agents/model-selection.js";
-export {
-  buildModelsProviderData,
-  type ModelsProviderData,
-} from "../auto-reply/reply/commands-models.js";
-export { resolveStoredModelOverride } from "../auto-reply/reply/model-selection.js";
 export {
   deleteAccountFromConfigSection,
   setAccountEnabledInConfigSection,
@@ -49,7 +43,6 @@ export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export { createTypingCallbacks } from "../channels/typing.js";
 export type { RemoteClawConfig } from "../config/config.js";
 export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
-export { loadSessionStore, resolveStorePath } from "../config/sessions.js";
 export {
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
@@ -68,6 +61,8 @@ export {
 export { createDedupeCache } from "../infra/dedupe.js";
 export { rawDataToString } from "../infra/ws.js";
 export { isLoopbackHost, isTrustedProxyAddress, resolveClientIp } from "../gateway/net.js";
+export { normalizeProviderId } from "../agents/provider-utils.js";
+export { loadSessionStore, resolveStorePath } from "../config/sessions.js";
 export { registerPluginHttpRoute } from "../plugins/http-registry.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
@@ -88,3 +83,30 @@ export type { WizardPrompter } from "../wizard/prompts.js";
 export { buildAgentMediaPayload } from "./agent-media-payload.js";
 export { loadOutboundMediaFromUrl } from "./outbound-media.js";
 export { createScopedPairingAccess } from "./pairing-access.js";
+
+// --------------------------------------------------------------------------
+// Stubs for model-picker infrastructure (upstream modules gutted in fork).
+// These satisfy type-checking for cherry-picked model-picker code until
+// the replacement execution engine provides real implementations.
+// --------------------------------------------------------------------------
+
+export type ModelsProviderData = {
+  byProvider: Map<string, Set<string>>;
+  providers: string[];
+  resolvedDefault: { provider: string; model: string };
+};
+
+export async function buildModelsProviderData(
+  _cfg: import("../config/config.js").RemoteClawConfig,
+  _agentId?: string,
+): Promise<ModelsProviderData> {
+  return { byProvider: new Map(), providers: [], resolvedDefault: { provider: "", model: "" } };
+}
+
+export function resolveStoredModelOverride(_params: {
+  sessionEntry?: unknown;
+  sessionStore?: unknown;
+  sessionKey?: string;
+}): { model?: string; provider?: string } | null {
+  return null;
+}

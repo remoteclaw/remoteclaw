@@ -30,11 +30,11 @@ const meta = {
 };
 
 function patchLineAccountConfig(
-  cfg: OpenClawConfig,
+  cfg: RemoteClawConfig,
   lineConfig: LineConfig,
   accountId: string,
   patch: Record<string, unknown>,
-): OpenClawConfig {
+): RemoteClawConfig {
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return {
       ...cfg,

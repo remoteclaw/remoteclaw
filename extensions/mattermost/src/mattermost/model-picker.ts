@@ -5,8 +5,8 @@ import {
   resolveStorePath,
   resolveStoredModelOverride,
   type ModelsProviderData,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/mattermost";
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/mattermost";
 import type { MattermostInteractiveButtonInput } from "./interactions.js";
 
 const MATTERMOST_MODEL_PICKER_CONTEXT_KEY = "oc_model_picker";
@@ -215,7 +215,7 @@ export function buildMattermostAllowedModelRefs(data: ModelsProviderData): Set<s
 }
 
 export function resolveMattermostModelPickerCurrentModel(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   route: { agentId: string; sessionKey: string };
   data: ModelsProviderData;
   skipCache?: boolean;
@@ -275,7 +275,7 @@ export function renderMattermostProviderPickerView(params: {
   currentModel?: string;
 }): MattermostModelPickerRenderedView {
   const currentProvider = splitModelRef(params.currentModel)?.provider;
-  const rows = params.data.providers.map((provider) => [
+  const rows = params.data.providers.map((provider: string) => [
     buildButton({
       action: "list",
       ownerUserId: params.ownerUserId,
@@ -322,7 +322,7 @@ export function renderMattermostModelsPickerView(params: {
 
   const page = paginateItems(models, params.page);
   const rows: MattermostInteractiveButtonInput[][] = page.items.map((model) => {
-    const isCurrent = current?.provider === provider && current.model === model;
+    const isCurrent = current?.provider === provider && current?.model === model;
     return [
       buildButton({
         action: "select",

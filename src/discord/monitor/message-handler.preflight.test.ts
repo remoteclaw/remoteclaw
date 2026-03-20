@@ -168,7 +168,7 @@ async function runThreadBoundPreflight(params: {
   threadId: string;
   parentId: string;
   message: import("@buape/carbon").Message;
-  threadBinding: import("../../infra/outbound/session-binding-service.js").SessionBindingRecord;
+  threadBinding: import("./thread-bindings.js").ThreadBindingRecord;
   discordConfig: DiscordConfig;
   registerBindingAdapter?: boolean;
 }) {
@@ -178,7 +178,7 @@ async function runThreadBoundPreflight(params: {
       accountId: "default",
       listBySession: () => [],
       resolveByConversation: (ref) =>
-        ref.conversationId === params.threadId ? params.threadBinding : null,
+        ref.conversationId === params.threadId ? (params.threadBinding as never) : null,
     });
   }
 
@@ -210,7 +210,7 @@ async function runGuildPreflight(params: {
   guildId: string;
   message: import("@buape/carbon").Message;
   discordConfig: DiscordConfig;
-  cfg?: import("../../config/config.js").OpenClawConfig;
+  cfg?: import("../../config/config.js").RemoteClawConfig;
   guildEntries?: Parameters<typeof preflightDiscordMessage>[0]["guildEntries"];
 }) {
   return preflightDiscordMessage({

@@ -103,7 +103,7 @@ function createOpenGroupReplayContext(
     },
     runtime: createRuntime(),
     mediaMaxBytes: 1,
-    processMessage,
+    processMessage: processMessage as never,
     replayCache,
   };
 }

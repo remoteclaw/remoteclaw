@@ -80,7 +80,7 @@ describe("channel tools", () => {
 
     setActivePluginRegistry(createTestRegistry([{ pluginId: "polltest", source: "test", plugin }]));
 
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as RemoteClawConfig;
     expect(listChannelSupportedActions({ cfg, channel: "polltest" })).toEqual([]);
     expect(listAllChannelSupportedActions({ cfg })).toEqual([]);
   });

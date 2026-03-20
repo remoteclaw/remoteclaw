@@ -468,7 +468,7 @@ describe("handleTelegramAction", () => {
       channels: {
         telegram: { botToken: "tok", actions: { poll: false } },
       },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     await expect(
       handleTelegramAction(
         {

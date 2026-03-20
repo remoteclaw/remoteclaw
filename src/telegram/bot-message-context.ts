@@ -318,7 +318,6 @@ export const buildTelegramMessageContext = async ({
     baseRequireMention,
   );
 
-
   const sendTyping = async () => {
     await withTelegramApiErrorLogging({
       operation: "sendChatAction",

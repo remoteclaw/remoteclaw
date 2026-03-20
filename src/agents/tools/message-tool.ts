@@ -533,7 +533,7 @@ function resolveIncludeComponents(params: {
 }
 
 function resolveIncludeTelegramPollExtras(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   currentChannelProvider?: string;
 }): boolean {
   return listChannelSupportedActions({

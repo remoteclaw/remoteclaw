@@ -8,6 +8,7 @@ import {
 import { spawnSubagentDirect } from "../../agents/subagent-spawn.js";
 import { stopSubagentsForRequester } from "../../auto-reply/reply/abort.js";
 import { clearSessionQueues } from "../../auto-reply/reply/queue.js";
+import { closeTrackedBrowserTabsForSessions } from "../../browser/session-tab-registry.js";
 import { loadConfig } from "../../config/config.js";
 import {
   loadSessionStore,
@@ -183,6 +184,19 @@ async function ensureSessionRuntimeCleanup(params: {
   target: ReturnType<typeof resolveGatewaySessionStoreTarget>;
   sessionId?: string;
 }) {
+  const closeTrackedBrowserTabs = async () => {
+    const closeKeys = new Set<string>([
+      params.key,
+      params.target.canonicalKey,
+      ...params.target.storeKeys,
+      params.sessionId ?? "",
+    ]);
+    return await closeTrackedBrowserTabsForSessions({
+      sessionKeys: [...closeKeys],
+      onWarn: (message) => logVerbose(message),
+    });
+  };
+
   const queueKeys = new Set<string>(params.target.storeKeys);
   queueKeys.add(params.target.canonicalKey);
   if (params.sessionId) {
@@ -190,6 +204,7 @@ async function ensureSessionRuntimeCleanup(params: {
   }
   clearSessionQueues([...queueKeys]);
   stopSubagentsForRequester({ cfg: params.cfg, requesterSessionKey: params.target.canonicalKey });
+  await closeTrackedBrowserTabs();
   return undefined;
 }
 

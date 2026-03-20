@@ -43,6 +43,17 @@ export function coerceSecretRef(value: unknown): SecretRef | null {
   return null;
 }
 
+/**
+ * Returns true if the value is a configured secret — either a non-empty
+ * plaintext string or a well-formed SecretRef object.
+ */
+export function hasConfiguredSecretInput(value: unknown): boolean {
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+  return coerceSecretRef(value) !== null;
+}
+
 export function normalizeSecretInputString(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;

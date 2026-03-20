@@ -45,33 +45,15 @@ export function resolveAwsSdkEnvVarName(env: NodeJS.ProcessEnv = process.env): s
   return undefined;
 }
 
-function resolveSyntheticLocalProviderAuth(params: {
+// Stub: models.providers config was gutted from the fork. The upstream
+// resolveSyntheticLocalProviderAuth looked up per-provider config (api,
+// baseUrl, models) to emit a synthetic local key for Ollama. Without
+// per-provider config, return null unconditionally.
+function resolveSyntheticLocalProviderAuth(_params: {
   cfg: RemoteClawConfig | undefined;
   provider: string;
 }): ResolvedProviderAuth | null {
-  const normalizedProvider = normalizeProviderId(params.provider);
-  if (normalizedProvider !== "ollama") {
-    return null;
-  }
-
-  const providerConfig = resolveProviderConfig(params.cfg, params.provider);
-  if (!providerConfig) {
-    return null;
-  }
-
-  const hasApiConfig =
-    Boolean(providerConfig.api?.trim()) ||
-    Boolean(providerConfig.baseUrl?.trim()) ||
-    (Array.isArray(providerConfig.models) && providerConfig.models.length > 0);
-  if (!hasApiConfig) {
-    return null;
-  }
-
-  return {
-    apiKey: "ollama-local",
-    source: "models.providers.ollama (synthetic local key)",
-    mode: "api-key",
-  };
+  return null;
 }
 
 function resolveEnvSourceLabel(params: {

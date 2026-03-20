@@ -1,6 +1,5 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import {
-  DEFAULT_SECRET_PROVIDER_ALIAS,
   type SecretInput,
   type SecretRef,
   hasConfiguredSecretInput,
@@ -68,7 +67,7 @@ export function hasKeyInEnv(entry: SearchProviderEntry): boolean {
   return entry.envKeys.some((k) => Boolean(process.env[k]?.trim()));
 }
 
-function rawKeyValue(config: OpenClawConfig, provider: SearchProvider): unknown {
+function rawKeyValue(config: RemoteClawConfig, provider: SearchProvider): unknown {
   const search = config.tools?.web?.search;
   switch (provider) {
     case "brave":
@@ -86,14 +85,14 @@ function rawKeyValue(config: OpenClawConfig, provider: SearchProvider): unknown 
 
 /** Returns the plaintext key string, or undefined for SecretRefs/missing. */
 export function resolveExistingKey(
-  config: OpenClawConfig,
+  config: RemoteClawConfig,
   provider: SearchProvider,
 ): string | undefined {
   return normalizeSecretInputString(rawKeyValue(config, provider));
 }
 
 /** Returns true if a key is configured (plaintext string or SecretRef). */
-export function hasExistingKey(config: OpenClawConfig, provider: SearchProvider): boolean {
+export function hasExistingKey(config: RemoteClawConfig, provider: SearchProvider): boolean {
   return hasConfiguredSecretInput(rawKeyValue(config, provider));
 }
 
@@ -106,7 +105,7 @@ function buildSearchEnvRef(provider: SearchProvider): SecretRef {
       `No env var mapping for search provider "${provider}" in secret-input-mode=ref.`,
     );
   }
-  return { source: "env", provider: DEFAULT_SECRET_PROVIDER_ALIAS, id: envVar };
+  return { source: "env", id: envVar };
 }
 
 /** Resolve a plaintext key into the appropriate SecretInput based on mode. */
@@ -122,10 +121,10 @@ function resolveSearchSecretInput(
 }
 
 export function applySearchKey(
-  config: OpenClawConfig,
+  config: RemoteClawConfig,
   provider: SearchProvider,
   key: SecretInput,
-): OpenClawConfig {
+): RemoteClawConfig {
   const search = { ...config.tools?.web?.search, provider, enabled: true };
   switch (provider) {
     case "brave":
@@ -153,7 +152,7 @@ export function applySearchKey(
   };
 }
 
-function applyProviderOnly(config: OpenClawConfig, provider: SearchProvider): OpenClawConfig {
+function applyProviderOnly(config: RemoteClawConfig, provider: SearchProvider): RemoteClawConfig {
   return {
     ...config,
     tools: {
@@ -170,7 +169,10 @@ function applyProviderOnly(config: OpenClawConfig, provider: SearchProvider): Op
   };
 }
 
-function preserveDisabledState(original: OpenClawConfig, result: OpenClawConfig): OpenClawConfig {
+function preserveDisabledState(
+  original: RemoteClawConfig,
+  result: RemoteClawConfig,
+): RemoteClawConfig {
   if (original.tools?.web?.search?.enabled !== false) {
     return result;
   }
@@ -189,11 +191,11 @@ export type SetupSearchOptions = {
 };
 
 export async function setupSearch(
-  config: OpenClawConfig,
+  config: RemoteClawConfig,
   _runtime: RuntimeEnv,
   prompter: WizardPrompter,
   opts?: SetupSearchOptions,
-): Promise<OpenClawConfig> {
+): Promise<RemoteClawConfig> {
   await prompter.note(
     [
       "Web search lets your agent look things up online.",

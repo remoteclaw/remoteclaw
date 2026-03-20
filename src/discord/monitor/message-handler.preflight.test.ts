@@ -210,7 +210,7 @@ async function runGuildPreflight(params: {
   guildId: string;
   message: import("@buape/carbon").Message;
   discordConfig: DiscordConfig;
-  cfg?: import("../../config/config.js").OpenClawConfig;
+  cfg?: import("../../config/config.js").RemoteClawConfig;
   guildEntries?: Parameters<typeof preflightDiscordMessage>[0]["guildEntries"];
 }) {
   return preflightDiscordMessage({

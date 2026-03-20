@@ -247,8 +247,16 @@ function buildServerArgs(opts: AcpClientOptions): string[] {
 
 export function resolveAcpClientSpawnEnv(
   baseEnv: NodeJS.ProcessEnv = process.env,
+  options?: { stripKeys?: ReadonlySet<string> },
 ): NodeJS.ProcessEnv {
-  return { ...baseEnv, REMOTECLAW_SHELL: "acp-client" };
+  const env: NodeJS.ProcessEnv = { ...baseEnv };
+  if (options?.stripKeys) {
+    for (const key of options.stripKeys) {
+      delete env[key];
+    }
+  }
+  env.REMOTECLAW_SHELL = "acp-client";
+  return env;
 }
 
 type AcpSpawnRuntime = {
@@ -349,7 +357,7 @@ export async function createAcpClient(opts: AcpClientOptions = {}): Promise<AcpC
   const entryPath = resolveSelfEntryPath();
   const serverCommand = opts.serverCommand ?? (entryPath ? process.execPath : "remoteclaw");
   const effectiveArgs = opts.serverCommand || !entryPath ? serverArgs : [entryPath, ...serverArgs];
-  const spawnEnv = resolveAcpClientSpawnEnv();
+  const spawnEnv = resolveAcpClientSpawnEnv(process.env);
   const spawnInvocation = resolveAcpClientSpawnInvocation(
     { serverCommand, serverArgs: effectiveArgs },
     {

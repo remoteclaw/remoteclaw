@@ -1,4 +1,19 @@
-export * from "remoteclaw/plugin-sdk/matrix";
+export * from "../../../src/plugin-sdk/matrix.js";
+export {
+  assertHttpUrlTargetsPrivateNetwork,
+  closeDispatcher,
+  createPinnedDispatcher,
+  resolvePinnedHostnameWithPolicy,
+  ssrfPolicyFromAllowPrivateNetwork,
+  type LookupFn,
+  type SsrFPolicy,
+} from "remoteclaw/plugin-sdk/infra-runtime";
+export {
+  dispatchReplyFromConfigWithSettledDispatcher,
+  ensureConfiguredAcpBindingReady,
+  maybeCreateMatrixMigrationSnapshot,
+  resolveConfiguredAcpBindingRecord,
+} from "remoteclaw/plugin-sdk/matrix-runtime-heavy";
 // Keep auth-precedence available internally without re-exporting helper-api
 // twice through both plugin-sdk/matrix and ../runtime-api.js.
 export * from "./auth-precedence.js";

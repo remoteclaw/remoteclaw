@@ -171,6 +171,8 @@ describe("tui session actions", () => {
     });
 
     applySessionInfoFromPatch({
+      ok: true,
+      path: "sessions",
       key: "agent:main:main",
       entry: {
         sessionId: "session-1",

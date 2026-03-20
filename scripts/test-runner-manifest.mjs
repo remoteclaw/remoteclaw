@@ -25,25 +25,14 @@ const readJson = (filePath, fallback) => {
 };
 
 const normalizeRepoPath = (value) => value.split(path.sep).join("/");
-const repoRoot = path.resolve(process.cwd());
-const normalizeTrackedRepoPath = (value) => {
-  const normalizedValue = typeof value === "string" ? value : String(value ?? "");
-  const repoRelative = path.isAbsolute(normalizedValue)
-    ? path.relative(repoRoot, path.resolve(normalizedValue))
-    : normalizedValue;
-  if (path.isAbsolute(repoRelative) || repoRelative.startsWith("..") || repoRelative === "") {
-    return normalizeRepoPath(normalizedValue);
-  }
-  return normalizeRepoPath(repoRelative);
-};
 
 const normalizeManifestEntries = (entries) =>
   entries
     .map((entry) =>
       typeof entry === "string"
-        ? { file: normalizeTrackedRepoPath(entry), reason: "" }
+        ? { file: normalizeRepoPath(entry), reason: "" }
         : {
-            file: normalizeTrackedRepoPath(String(entry?.file ?? "")),
+            file: normalizeRepoPath(String(entry?.file ?? "")),
             reason: typeof entry?.reason === "string" ? entry.reason : "",
           },
     )
@@ -71,7 +60,7 @@ export function loadUnitTimingManifest() {
   const files = Object.fromEntries(
     Object.entries(raw.files ?? {})
       .map(([file, value]) => {
-        const normalizedFile = normalizeTrackedRepoPath(file);
+        const normalizedFile = normalizeRepoPath(file);
         const durationMs =
           Number.isFinite(value?.durationMs) && value.durationMs >= 0 ? value.durationMs : null;
         const testCount =
@@ -108,7 +97,7 @@ export function loadUnitMemoryHotspotManifest() {
   const files = Object.fromEntries(
     Object.entries(raw.files ?? {})
       .map(([file, value]) => {
-        const normalizedFile = normalizeTrackedRepoPath(file);
+        const normalizedFile = normalizeRepoPath(file);
         const deltaKb =
           Number.isFinite(value?.deltaKb) && value.deltaKb > 0 ? Math.round(value.deltaKb) : null;
         const sources = Array.isArray(value?.sources)
@@ -179,44 +168,6 @@ export function selectMemoryHeavyFiles({
     .map((entry) => entry.file);
 }
 
-export function selectUnitHeavyFileGroups({
-  candidates,
-  behaviorOverrides = new Set(),
-  timedLimit,
-  timedMinDurationMs,
-  memoryLimit,
-  memoryMinDeltaKb,
-  timings,
-  hotspots,
-}) {
-  const memoryHeavyFiles =
-    memoryLimit > 0
-      ? selectMemoryHeavyFiles({
-          candidates,
-          limit: memoryLimit,
-          minDeltaKb: memoryMinDeltaKb,
-          exclude: behaviorOverrides,
-          hotspots,
-        })
-      : [];
-  const schedulingOverrides = new Set([...behaviorOverrides, ...memoryHeavyFiles]);
-  const timedHeavyFiles =
-    timedLimit > 0
-      ? selectTimedHeavyFiles({
-          candidates,
-          limit: timedLimit,
-          minDurationMs: timedMinDurationMs,
-          exclude: schedulingOverrides,
-          timings,
-        })
-      : [];
-
-  return {
-    memoryHeavyFiles,
-    timedHeavyFiles,
-  };
-}
-
 export function packFilesByDuration(files, bucketCount, estimateDurationMs) {
   const normalizedBucketCount = Math.max(0, Math.floor(bucketCount));
   if (normalizedBucketCount <= 0 || files.length === 0) {
@@ -241,19 +192,4 @@ export function packFilesByDuration(files, bucketCount, estimateDurationMs) {
   }
 
   return buckets.map((bucket) => bucket.files).filter((bucket) => bucket.length > 0);
-}
-
-export function dedupeFilesPreserveOrder(files, exclude = new Set()) {
-  const result = [];
-  const seen = new Set();
-
-  for (const file of files) {
-    if (exclude.has(file) || seen.has(file)) {
-      continue;
-    }
-    seen.add(file);
-    result.push(file);
-  }
-
-  return result;
 }

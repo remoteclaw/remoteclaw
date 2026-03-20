@@ -866,6 +866,7 @@ export async function textToSpeechTelephony(params: {
         const audioBuffer = await openaiTTS({
           text: params.text,
           apiKey,
+          baseUrl: config.openai.baseUrl,
           model: config.openai.model,
           voice: config.openai.voice,
           responseFormat: output.format,

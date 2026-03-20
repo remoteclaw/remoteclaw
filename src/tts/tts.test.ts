@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import { withEnvAsync } from "../test-utils/env.js";
+import { withEnv, withEnvAsync } from "../test-utils/env.js";
 import * as tts from "./tts.js";
 
 const { _test, resolveTtsConfig, maybeApplyTtsToPayload, getTtsProvider } = tts;
@@ -290,7 +290,7 @@ describe("tts", () => {
 
   describe("resolveTtsConfig – openai.baseUrl", () => {
     const baseCfg: RemoteClawConfig = {
-      agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
+      agents: { defaults: {} },
       messages: { tts: {} },
     };
 

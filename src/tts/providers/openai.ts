@@ -9,6 +9,7 @@ export const openaiTtsProvider: TtsProviderImpl = {
     const buffer = await openaiTTS({
       text: req.text,
       apiKey: req.apiKey!,
+      baseUrl: req.baseUrl ?? "https://api.openai.com/v1",
       model: req.model ?? "gpt-4o-mini-tts",
       voice: req.voice ?? "alloy",
       responseFormat: format,

@@ -52,7 +52,7 @@ workflow.
       "llm-task": {
         "enabled": true,
         "config": {
-          "defaultModel": "gpt-5.2",
+          "defaultModel": "gpt-5.4",
           "maxTokens": 800,
           "timeoutMs": 30000
         }

@@ -107,6 +107,19 @@ function resolvePrivateApiDecision(params: {
   };
 }
 
+async function parseBlueBubblesMessageResponse(res: Response): Promise<BlueBubblesSendResult> {
+  const body = await res.text();
+  if (!body) {
+    return { messageId: "ok" };
+  }
+  try {
+    const parsed = JSON.parse(body) as unknown;
+    return { messageId: extractBlueBubblesMessageId(parsed) };
+  } catch {
+    return { messageId: "ok" };
+  }
+}
+
 type BlueBubblesChatRecord = Record<string, unknown>;
 
 function extractChatGuid(chat: BlueBubblesChatRecord): string | null {
@@ -341,16 +354,7 @@ async function createNewChatWithMessage(params: {
     }
     throw new Error(`BlueBubbles create chat failed (${res.status}): ${errorText || "unknown"}`);
   }
-  const body = await res.text();
-  if (!body) {
-    return { messageId: "ok" };
-  }
-  try {
-    const parsed = JSON.parse(body) as unknown;
-    return { messageId: extractBlueBubblesMessageId(parsed) };
-  } catch {
-    return { messageId: "ok" };
-  }
+  return parseBlueBubblesMessageResponse(res);
 }
 
 export async function sendMessageBlueBubbles(
@@ -459,14 +463,5 @@ export async function sendMessageBlueBubbles(
     const errorText = await res.text();
     throw new Error(`BlueBubbles send failed (${res.status}): ${errorText || "unknown"}`);
   }
-  const body = await res.text();
-  if (!body) {
-    return { messageId: "ok" };
-  }
-  try {
-    const parsed = JSON.parse(body) as unknown;
-    return { messageId: extractBlueBubblesMessageId(parsed) };
-  } catch {
-    return { messageId: "ok" };
-  }
+  return parseBlueBubblesMessageResponse(res);
 }

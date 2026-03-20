@@ -111,12 +111,16 @@ describe("promptRemoteGatewayConfig", () => {
       return "";
     }) as WizardPrompter["text"];
 
-    const { next } = await runRemotePrompt({
+    const select = createSelectPrompter({ "Gateway auth": "off" });
+
+    const cfg = {} as RemoteClawConfig;
+    const prompter = createPrompter({
+      confirm: vi.fn(async () => false),
+      select,
       text,
-      confirm: false,
-      selectResponses: { "Gateway auth": "off" },
     });
 
+    const next = await promptRemoteGatewayConfig(cfg, prompter);
     expect(next.gateway?.mode).toBe("remote");
     expect(next.gateway?.remote?.url).toBe("wss://remote.example.com:18789");
     expect(next.gateway?.remote?.token).toBeUndefined();
@@ -133,12 +137,16 @@ describe("promptRemoteGatewayConfig", () => {
       return "";
     }) as WizardPrompter["text"];
 
-    const { next } = await runRemotePrompt({
+    const select = createSelectPrompter({ "Gateway auth": "off" });
+
+    const cfg = {} as RemoteClawConfig;
+    const prompter = createPrompter({
+      confirm: vi.fn(async () => false),
+      select,
       text,
-      confirm: false,
-      selectResponses: { "Gateway auth": "off" },
     });
 
+    const next = await promptRemoteGatewayConfig(cfg, prompter);
     expect(next.gateway?.mode).toBe("remote");
     expect(next.gateway?.remote?.url).toBe("ws://remoteclaw-gateway.ai:18789");
   });

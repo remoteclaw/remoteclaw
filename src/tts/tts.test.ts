@@ -289,7 +289,7 @@ describe("tts", () => {
   });
 
   describe("resolveTtsConfig – openai.baseUrl", () => {
-    const baseCfg: OpenClawConfig = {
+    const baseCfg: RemoteClawConfig = {
       agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
       messages: { tts: {} },
     };
@@ -309,7 +309,7 @@ describe("tts", () => {
     });
 
     it("config baseUrl takes precedence over env var", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         ...baseCfg,
         messages: {
           tts: { openai: { baseUrl: "http://my-server:9000/v1" } },
@@ -322,7 +322,7 @@ describe("tts", () => {
     });
 
     it("strips trailing slashes from the resolved baseUrl", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: RemoteClawConfig = {
         ...baseCfg,
         messages: {
           tts: { openai: { baseUrl: "http://my-server:9000/v1///" } },

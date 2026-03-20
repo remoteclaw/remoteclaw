@@ -1,8 +1,4 @@
-import type {
-  ChannelDirectoryEntry,
-  OpenClawConfig,
-  RuntimeEnv,
-} from "openclaw/plugin-sdk/mattermost";
+import type { ChannelDirectoryEntry, RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk";
 import { listMattermostAccountIds, resolveMattermostAccount } from "./accounts.js";
 import {
   createMattermostClient,
@@ -13,7 +9,7 @@ import {
 } from "./client.js";
 
 export type MattermostDirectoryParams = {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string | null;
   query?: string | null;
   limit?: number | null;
@@ -21,7 +17,7 @@ export type MattermostDirectoryParams = {
 };
 
 function buildClient(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string | null;
 }): MattermostClient | null {
   const account = resolveMattermostAccount({ cfg: params.cfg, accountId: params.accountId });

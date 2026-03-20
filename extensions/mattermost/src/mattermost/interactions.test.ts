@@ -201,7 +201,6 @@ describe("resolveInteractionCallbackUrl", () => {
     const account = resolveMattermostAccount({
       cfg,
       accountId: "acct",
-      allowUnresolvedSecretRef: true,
     });
     const url = resolveInteractionCallbackUrl(account.accountId, {
       gateway: cfg.gateway,

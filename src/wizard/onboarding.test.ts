@@ -294,7 +294,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-
+        skipSearch: true,
         skipHealth: true,
         skipUi: true,
       },
@@ -334,7 +334,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-
+        skipSearch: true,
         skipHealth: true,
         skipUi: true,
       },
@@ -376,7 +376,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-
+        skipSearch: true,
         skipHealth: true,
         skipUi: true,
       },
@@ -423,7 +423,7 @@ describe("runOnboardingWizard", () => {
         workspace: workspaceDir,
         installDaemon: false,
         skipChannels: true,
-
+        skipSearch: true,
         skipHealth: true,
         skipUi: true,
       },

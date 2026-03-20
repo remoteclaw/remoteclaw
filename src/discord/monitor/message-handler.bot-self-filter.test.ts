@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { RemoteClawConfig } from "../../config/types.js";
 import { createNoopThreadBindingManager } from "./thread-bindings.js";
 
 const preflightDiscordMessageMock = vi.hoisted(() => vi.fn());

@@ -656,6 +656,7 @@ export async function runOnboardingWizard(
     quickstartGateway,
     prompter,
     runtime,
+    secretInputMode: opts.secretInputMode,
   });
   nextConfig = gateway.nextConfig;
   const settings = gateway.settings;

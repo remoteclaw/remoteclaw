@@ -143,7 +143,7 @@ describe("registerPreActionHooks", () => {
       runtime: runtimeMock,
       commandPath: ["status"],
     });
-    expect(ensurePluginRegistryLoadedMock).not.toHaveBeenCalled();
+    expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledTimes(1);
     expect(process.title).toBe("remoteclaw-status");
 
     vi.clearAllMocks();

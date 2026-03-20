@@ -1,6 +1,14 @@
-export type { RemoteClawPluginApi, RemoteClawPluginService } from "../plugins/types.js";
+export type {
+  AnyAgentTool,
+  RemoteClawPluginApi,
+  RemoteClawPluginService,
+  ProviderAuthContext,
+  ProviderAuthResult,
+} from "../plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
+export type { RemoteClawConfig } from "../config/config.js";
+export type { GatewayRequestHandlerOptions } from "../gateway/server-methods/types.js";
 
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export { createPluginRuntimeStore } from "./runtime-store.js";

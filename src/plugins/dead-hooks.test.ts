@@ -37,14 +37,7 @@ function makeRecord(overrides?: Partial<PluginRecord>): PluginRecord {
   };
 }
 
-const DEAD_HOOK_NAMES = [
-  "before_model_resolve",
-  "before_prompt_build",
-  "before_agent_start",
-  "llm_input",
-  "llm_output",
-  "tool_result_persist",
-] as const;
+const DEAD_HOOK_NAMES = ["llm_input", "llm_output", "tool_result_persist"] as const;
 
 describe("dead hook guards", () => {
   describe("registerHook (legacy string-based)", () => {

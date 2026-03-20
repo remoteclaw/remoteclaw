@@ -25,8 +25,13 @@ async function importFreshPluginTestModules() {
   };
 }
 
-const { loadRemoteClawPlugins, getGlobalHookRunner, resetGlobalHookRunner, __testing } =
-  await importFreshPluginTestModules();
+const {
+  loadRemoteClawPlugins,
+  getGlobalHookRunner,
+  resetGlobalHookRunner,
+  createHookRunner,
+  __testing,
+} = await importFreshPluginTestModules();
 
 type TempPlugin = { dir: string; file: string; id: string };
 
@@ -156,14 +161,19 @@ function createEscapingEntryFixture(params: { id: string; sourceBody: string }) 
   return { pluginDir, outsideEntry, linkedEntry };
 }
 
-function createPluginSdkAliasFixture() {
+function createPluginSdkAliasFixture(params?: {
+  srcFile?: string;
+  distFile?: string;
+  srcBody?: string;
+  distBody?: string;
+}) {
   const root = makeTempDir();
-  const srcFile = path.join(root, "src", "plugin-sdk", "index.ts");
-  const distFile = path.join(root, "dist", "plugin-sdk", "index.js");
+  const srcFile = path.join(root, "src", "plugin-sdk", params?.srcFile ?? "index.ts");
+  const distFile = path.join(root, "dist", "plugin-sdk", params?.distFile ?? "index.js");
   fs.mkdirSync(path.dirname(srcFile), { recursive: true });
   fs.mkdirSync(path.dirname(distFile), { recursive: true });
-  fs.writeFileSync(srcFile, "export {};\n", "utf-8");
-  fs.writeFileSync(distFile, "export {};\n", "utf-8");
+  fs.writeFileSync(srcFile, params?.srcBody ?? "export {};\n", "utf-8");
+  fs.writeFileSync(distFile, params?.distBody ?? "export {};\n", "utf-8");
   return { root, srcFile, distFile };
 }
 
@@ -501,6 +511,122 @@ describe("loadRemoteClawPlugins", () => {
     expect(disabled?.status).toBe("disabled");
   });
 
+  it("blocks before_prompt_build but preserves legacy model overrides when prompt injection is disabled", async () => {
+    useNoBundledPlugins();
+    const plugin = writePlugin({
+      id: "hook-policy",
+      filename: "hook-policy.cjs",
+      body: `module.exports = { id: "hook-policy", register(api) {
+  api.on("before_prompt_build", () => ({ prependContext: "prepend" }));
+  api.on("before_agent_start", () => ({
+    prependContext: "legacy",
+    modelOverride: "gpt-4o",
+    providerOverride: "anthropic",
+  }));
+  api.on("before_model_resolve", () => ({ providerOverride: "openai" }));
+} };`,
+    });
+
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: {
+        allow: ["hook-policy"],
+        entries: {
+          "hook-policy": {
+            hooks: {
+              allowPromptInjection: false,
+            },
+          },
+        },
+      },
+    });
+
+    expect(registry.plugins.find((entry) => entry.id === "hook-policy")?.status).toBe("loaded");
+    expect(registry.typedHooks.map((entry) => entry.hookName)).toEqual([
+      "before_agent_start",
+      "before_model_resolve",
+    ]);
+    const runner = createHookRunner(registry);
+    const legacyResult = await runner.runBeforeAgentStart({ prompt: "hello", messages: [] }, {});
+    expect(legacyResult).toEqual({
+      modelOverride: "gpt-4o",
+      providerOverride: "anthropic",
+    });
+    const blockedDiagnostics = registry.diagnostics.filter((diag) =>
+      String(diag.message).includes(
+        "blocked by plugins.entries.hook-policy.hooks.allowPromptInjection=false",
+      ),
+    );
+    expect(blockedDiagnostics).toHaveLength(1);
+    const constrainedDiagnostics = registry.diagnostics.filter((diag) =>
+      String(diag.message).includes(
+        "prompt fields constrained by plugins.entries.hook-policy.hooks.allowPromptInjection=false",
+      ),
+    );
+    expect(constrainedDiagnostics).toHaveLength(1);
+  });
+
+  it("keeps prompt-injection typed hooks enabled by default", () => {
+    useNoBundledPlugins();
+    const plugin = writePlugin({
+      id: "hook-policy-default",
+      filename: "hook-policy-default.cjs",
+      body: `module.exports = { id: "hook-policy-default", register(api) {
+  api.on("before_prompt_build", () => ({ prependContext: "prepend" }));
+  api.on("before_agent_start", () => ({ prependContext: "legacy" }));
+} };`,
+    });
+
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: {
+        allow: ["hook-policy-default"],
+      },
+    });
+
+    expect(registry.typedHooks.map((entry) => entry.hookName)).toEqual([
+      "before_prompt_build",
+      "before_agent_start",
+    ]);
+  });
+
+  it("ignores unknown typed hooks from plugins and keeps loading", () => {
+    useNoBundledPlugins();
+    const plugin = writePlugin({
+      id: "hook-unknown",
+      filename: "hook-unknown.cjs",
+      body: `module.exports = { id: "hook-unknown", register(api) {
+  api.on("totally_unknown_hook_name", () => ({ foo: "bar" }));
+  api.on(123, () => ({ foo: "baz" }));
+  api.on("before_model_resolve", () => ({ providerOverride: "openai" }));
+} };`,
+    });
+
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: {
+        allow: ["hook-unknown"],
+      },
+    });
+
+    expect(registry.plugins.find((entry) => entry.id === "hook-unknown")?.status).toBe("loaded");
+    expect(registry.typedHooks.map((entry) => entry.hookName)).toEqual(["before_model_resolve"]);
+    const unknownHookDiagnostics = registry.diagnostics.filter((diag) =>
+      String(diag.message).includes('unknown typed hook "'),
+    );
+    expect(unknownHookDiagnostics).toHaveLength(2);
+    expect(
+      unknownHookDiagnostics.some((diag) =>
+        String(diag.message).includes('unknown typed hook "totally_unknown_hook_name" ignored'),
+      ),
+    ).toBe(true);
+    expect(
+      unknownHookDiagnostics.some((diag) =>
+        String(diag.message).includes('unknown typed hook "123" ignored'),
+      ),
+    ).toBe(true);
+  });
+
   it("prefers higher-precedence plugins with the same id", () => {
     const bundledDir = makeTempDir();
     writePlugin({
@@ -778,6 +904,29 @@ describe("loadRemoteClawPlugins", () => {
     expect(record?.status).toBe("loaded");
   });
 
+  it("supports legacy plugins importing monolithic plugin-sdk root", () => {
+    useNoBundledPlugins();
+    const plugin = writePlugin({
+      id: "legacy-root-import",
+      filename: "legacy-root-import.cjs",
+      body: `module.exports = {
+  id: "legacy-root-import",
+  configSchema: (require("remoteclaw/plugin-sdk").emptyPluginConfigSchema)(),
+  register() {},
+};`,
+    });
+
+    const registry = loadRegistryFromSinglePlugin({
+      plugin,
+      pluginConfig: {
+        allow: ["legacy-root-import"],
+      },
+    });
+
+    const record = registry.plugins.find((entry) => entry.id === "legacy-root-import");
+    expect(record?.status).toBe("loaded");
+  });
+
   it("prefers dist plugin-sdk alias when loader runs from dist", () => {
     const { root, distFile } = createPluginSdkAliasFixture();
 
@@ -796,6 +945,40 @@ describe("loadRemoteClawPlugins", () => {
       __testing.resolvePluginSdkAliasFile({
         srcFile: "index.ts",
         distFile: "index.js",
+        modulePath: path.join(root, "src", "plugins", "loader.ts"),
+      }),
+    );
+    expect(resolved).toBe(srcFile);
+  });
+
+  it("prefers dist root-alias shim when loader runs from dist", () => {
+    const { root, distFile } = createPluginSdkAliasFixture({
+      srcFile: "root-alias.cjs",
+      distFile: "root-alias.cjs",
+      srcBody: "module.exports = {};\n",
+      distBody: "module.exports = {};\n",
+    });
+
+    const resolved = __testing.resolvePluginSdkAliasFile({
+      srcFile: "root-alias.cjs",
+      distFile: "root-alias.cjs",
+      modulePath: path.join(root, "dist", "plugins", "loader.js"),
+    });
+    expect(resolved).toBe(distFile);
+  });
+
+  it("prefers src root-alias shim when loader runs from src in non-production", () => {
+    const { root, srcFile } = createPluginSdkAliasFixture({
+      srcFile: "root-alias.cjs",
+      distFile: "root-alias.cjs",
+      srcBody: "module.exports = {};\n",
+      distBody: "module.exports = {};\n",
+    });
+
+    const resolved = withEnv({ NODE_ENV: undefined }, () =>
+      __testing.resolvePluginSdkAliasFile({
+        srcFile: "root-alias.cjs",
+        distFile: "root-alias.cjs",
         modulePath: path.join(root, "src", "plugins", "loader.ts"),
       }),
     );

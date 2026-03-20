@@ -1,6 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { normalizePluginsConfig, resolveEffectiveEnableState } from "./config-state.js";
 
+describe("normalizePluginsConfig", () => {
+  it("normalizes plugin hook policy flags", () => {
+    const result = normalizePluginsConfig({
+      entries: {
+        "voice-call": {
+          hooks: {
+            allowPromptInjection: false,
+          },
+        },
+      },
+    });
+    expect(result.entries["voice-call"]?.hooks?.allowPromptInjection).toBe(false);
+  });
+
+  it("drops invalid plugin hook policy values", () => {
+    const result = normalizePluginsConfig({
+      entries: {
+        "voice-call": {
+          hooks: {
+            allowPromptInjection: "nope",
+          } as unknown as { allowPromptInjection: boolean },
+        },
+      },
+    });
+    expect(result.entries["voice-call"]?.hooks).toBeUndefined();
+  });
+});
+
 describe("resolveEffectiveEnableState", () => {
   it("enables bundled channels when channels.<id>.enabled=true", () => {
     const normalized = normalizePluginsConfig({

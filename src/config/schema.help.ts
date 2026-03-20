@@ -621,6 +621,10 @@ export const FIELD_HELP: Record<string, string> = {
     "Per-plugin settings keyed by plugin ID including enablement and plugin-specific runtime configuration payloads. Use this for scoped plugin tuning without changing global loader policy.",
   "plugins.entries.*.enabled":
     "Per-plugin enablement override for a specific entry, applied on top of global plugin policy (restart required). Use this to stage plugin rollout gradually across environments.",
+  "plugins.entries.*.hooks":
+    "Per-plugin typed hook policy controls for core-enforced safety gates. Use this to constrain high-impact hook categories without disabling the entire plugin.",
+  "plugins.entries.*.hooks.allowPromptInjection":
+    "Controls whether this plugin may mutate prompts through typed hooks. Set false to block `before_prompt_build` and ignore prompt-mutating fields from legacy `before_agent_start`, while preserving legacy `modelOverride` and `providerOverride` behavior.",
   "plugins.entries.*.apiKey":
     "Optional API key field consumed by plugins that accept direct key configuration in entry settings. Use secret/env substitution and avoid committing real credentials into config files.",
   "plugins.entries.*.env":
@@ -1013,6 +1017,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Allow Discord to write config in response to channel events/commands (default: true).",
   "channels.discord.token":
     "Discord bot token used for gateway and REST API authentication for this provider account. Keep this secret out of committed config and rotate immediately after any leak.",
+  "channels.discord.allowBots":
+    'Allow bot-authored messages to trigger Discord replies (default: false). Set "mentions" to only accept bot messages that mention the bot.',
   "channels.discord.proxy":
     "Proxy URL for Discord gateway + API requests (app-id lookup and allowlist resolution). Set per account via channels.discord.accounts.<id>.proxy.",
   "channels.whatsapp.configWrites":
@@ -1140,6 +1146,18 @@ export const FIELD_HELP: Record<string, string> = {
     "Optional PluralKit token for resolving private systems or members.",
   "channels.discord.activity": "Discord presence activity text (defaults to custom status).",
   "channels.discord.status": "Discord presence status (online, dnd, idle, invisible).",
+  "channels.discord.autoPresence.enabled":
+    "Enable automatic Discord bot presence updates based on runtime/model availability signals. When enabled: healthy=>online, degraded/unknown=>idle, exhausted/unavailable=>dnd.",
+  "channels.discord.autoPresence.intervalMs":
+    "How often to evaluate Discord auto-presence state in milliseconds (default: 30000).",
+  "channels.discord.autoPresence.minUpdateIntervalMs":
+    "Minimum time between actual Discord presence update calls in milliseconds (default: 15000). Prevents status spam on noisy state changes.",
+  "channels.discord.autoPresence.healthyText":
+    "Optional custom status text while runtime is healthy (online). If omitted, falls back to static channels.discord.activity when set.",
+  "channels.discord.autoPresence.degradedText":
+    "Optional custom status text while runtime/model availability is degraded or unknown (idle).",
+  "channels.discord.autoPresence.exhaustedText":
+    "Optional custom status text while runtime detects exhausted/unavailable model quota (dnd). Supports {reason} template placeholder.",
   "channels.discord.activityType":
     "Discord presence activity type (0=Playing,1=Streaming,2=Listening,3=Watching,4=Custom,5=Competing).",
   "channels.discord.activityUrl": "Discord presence streaming URL (required for activityType=1).",

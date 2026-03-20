@@ -1,5 +1,5 @@
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
-import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/whatsapp";
+import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/whatsapp";
 import { whatsappPlugin } from "./src/channel.js";
 import { setWhatsAppRuntime } from "./src/runtime.js";
 

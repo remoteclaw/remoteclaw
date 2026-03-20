@@ -10,6 +10,11 @@
   "peerDependencies": {
     "remoteclaw": "workspace:*"
   },
+  "peerDependenciesMeta": {
+    "remoteclaw": {
+      "optional": true
+    }
+  },
   "remoteclaw": {
     "extensions": [
       "./index.ts"
@@ -32,11 +37,6 @@
       "npmSpec": "@remoteclaw/googlechat",
       "localPath": "extensions/googlechat",
       "defaultChoice": "npm"
-    },
-    "releaseChecks": {
-      "rootDependencyMirrorAllowlist": [
-        "google-auth-library"
-      ]
     }
   }
 }

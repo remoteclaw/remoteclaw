@@ -100,6 +100,55 @@ Notes:
 - Uses core media-understanding audio configuration (`tools.media.audio`) and provider fallback order.
 - Returns `{ text: undefined }` when no transcription output is produced (for example skipped/unsupported input).
 
+## Plugin SDK import paths
+
+Use SDK subpaths instead of the monolithic `remoteclaw/plugin-sdk` import when
+authoring plugins:
+
+- `remoteclaw/plugin-sdk/core` for generic plugin APIs, provider auth types, and shared helpers.
+- `remoteclaw/plugin-sdk/compat` for bundled/internal plugin code that needs broader shared runtime helpers than `core`.
+- `remoteclaw/plugin-sdk/telegram` for Telegram channel plugins.
+- `remoteclaw/plugin-sdk/discord` for Discord channel plugins.
+- `remoteclaw/plugin-sdk/slack` for Slack channel plugins.
+- `remoteclaw/plugin-sdk/signal` for Signal channel plugins.
+- `remoteclaw/plugin-sdk/imessage` for iMessage channel plugins.
+- `remoteclaw/plugin-sdk/whatsapp` for WhatsApp channel plugins.
+- `remoteclaw/plugin-sdk/line` for LINE channel plugins.
+- `remoteclaw/plugin-sdk/msteams` for the bundled Microsoft Teams plugin surface.
+- Bundled extension-specific subpaths are also available:
+  `remoteclaw/plugin-sdk/acpx`, `remoteclaw/plugin-sdk/bluebubbles`,
+  `remoteclaw/plugin-sdk/copilot-proxy`, `remoteclaw/plugin-sdk/device-pair`,
+  `remoteclaw/plugin-sdk/diagnostics-otel`, `remoteclaw/plugin-sdk/diffs`,
+  `remoteclaw/plugin-sdk/feishu`,
+  `remoteclaw/plugin-sdk/google-gemini-cli-auth`, `remoteclaw/plugin-sdk/googlechat`,
+  `remoteclaw/plugin-sdk/irc`, `remoteclaw/plugin-sdk/llm-task`,
+  `remoteclaw/plugin-sdk/lobster`, `remoteclaw/plugin-sdk/matrix`,
+  `remoteclaw/plugin-sdk/mattermost`,
+  `remoteclaw/plugin-sdk/minimax-portal-auth`,
+  `remoteclaw/plugin-sdk/nextcloud-talk`, `remoteclaw/plugin-sdk/nostr`,
+  `remoteclaw/plugin-sdk/open-prose`, `remoteclaw/plugin-sdk/phone-control`,
+  `remoteclaw/plugin-sdk/qwen-portal-auth`, `remoteclaw/plugin-sdk/synology-chat`,
+  `remoteclaw/plugin-sdk/talk-voice`, `remoteclaw/plugin-sdk/test-utils`,
+  `remoteclaw/plugin-sdk/thread-ownership`, `remoteclaw/plugin-sdk/tlon`,
+  `remoteclaw/plugin-sdk/twitch`, `remoteclaw/plugin-sdk/voice-call`,
+  `remoteclaw/plugin-sdk/zalo`, and `remoteclaw/plugin-sdk/zalouser`.
+
+Compatibility note:
+
+- `remoteclaw/plugin-sdk` remains supported for existing external plugins.
+- New and migrated bundled plugins should use channel or extension-specific
+  subpaths; use `core` for generic surfaces and `compat` only when broader
+  shared helpers are required.
+
+Performance note:
+
+- Plugin discovery and manifest metadata use short in-process caches to reduce
+  bursty startup/reload work.
+- Set `OPENCLAW_DISABLE_PLUGIN_DISCOVERY_CACHE=1` or
+  `OPENCLAW_DISABLE_PLUGIN_MANIFEST_CACHE=1` to disable these caches.
+- Tune cache windows with `OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS` and
+  `OPENCLAW_PLUGIN_MANIFEST_CACHE_MS`.
+
 ## Discovery & precedence
 
 RemoteClaw scans, in order:
@@ -118,13 +167,20 @@ RemoteClaw scans, in order:
 - `~/.remoteclaw/extensions/*.ts`
 - `~/.remoteclaw/extensions/*/index.ts`
 
-4. Bundled extensions (shipped with RemoteClaw, **disabled by default**)
+4. Bundled extensions (shipped with RemoteClaw, mostly disabled by default)
 
 - `<remoteclaw>/extensions/*`
 
-Bundled plugins must be enabled explicitly via `plugins.entries.<id>.enabled`
-or `remoteclaw plugins enable <id>`. Installed plugins are enabled by default,
-but can be disabled the same way.
+Most bundled plugins must be enabled explicitly via
+`plugins.entries.<id>.enabled` or `remoteclaw plugins enable <id>`.
+
+Default-on bundled plugin exceptions:
+
+- `device-pair`
+- `phone-control`
+- `talk-voice`
+
+Installed plugins are enabled by default, but can be disabled the same way.
 
 Hardening notes:
 
@@ -366,6 +422,110 @@ Notes:
 - Hook eligibility rules still apply (OS/bins/env/config requirements).
 - Plugin-managed hooks show up in `remoteclaw hooks list` with `plugin:<id>`.
 - You cannot enable/disable plugin-managed hooks via `remoteclaw hooks`; enable/disable the plugin instead.
+
+### Agent lifecycle hooks (`api.on`)
+
+For typed runtime lifecycle hooks, use `api.on(...)`:
+
+```ts
+export default function register(api) {
+  api.on(
+    "before_prompt_build",
+    (event, ctx) => {
+      return {
+        prependSystemContext: "Follow company style guide.",
+      };
+    },
+    { priority: 10 },
+  );
+}
+```
+
+Important hooks for prompt construction:
+
+- `before_model_resolve`: runs before session load (`messages` are not available). Use this to deterministically override `modelOverride` or `providerOverride`.
+- `before_prompt_build`: runs after session load (`messages` are available). Use this to shape prompt input.
+- `before_agent_start`: legacy compatibility hook. Prefer the two explicit hooks above.
+
+Core-enforced hook policy:
+
+- Operators can disable prompt mutation hooks per plugin via `plugins.entries.<id>.hooks.allowPromptInjection: false`.
+- When disabled, RemoteClaw blocks `before_prompt_build` and ignores prompt-mutating fields returned from legacy `before_agent_start` while preserving legacy `modelOverride` and `providerOverride`.
+
+`before_prompt_build` result fields:
+
+- `prependContext`: prepends text to the user prompt for this run. Best for turn-specific or dynamic content.
+- `systemPrompt`: full system prompt override.
+- `prependSystemContext`: prepends text to the current system prompt.
+- `appendSystemContext`: appends text to the current system prompt.
+
+Prompt build order in embedded runtime:
+
+1. Apply `prependContext` to the user prompt.
+2. Apply `systemPrompt` override when provided.
+3. Apply `prependSystemContext + current system prompt + appendSystemContext`.
+
+Merge and precedence notes:
+
+- Hook handlers run by priority (higher first).
+- For merged context fields, values are concatenated in execution order.
+- `before_prompt_build` values are applied before legacy `before_agent_start` fallback values.
+
+Migration guidance:
+
+- Move static guidance from `prependContext` to `prependSystemContext` (or `appendSystemContext`) so providers can cache stable system-prefix content.
+- Keep `prependContext` for per-turn dynamic context that should stay tied to the user message.
+
+## Provider plugins (model auth)
+
+Plugins can register **model provider auth** flows so users can run OAuth or
+API-key setup inside RemoteClaw (no external scripts needed).
+
+Register a provider via `api.registerProvider(...)`. Each provider exposes one
+or more auth methods (OAuth, API key, device code, etc.). These methods power:
+
+- `remoteclaw models auth login --provider <id> [--method <id>]`
+
+Example:
+
+```ts
+api.registerProvider({
+  id: "acme",
+  label: "AcmeAI",
+  auth: [
+    {
+      id: "oauth",
+      label: "OAuth",
+      kind: "oauth",
+      run: async (ctx) => {
+        // Run OAuth flow and return auth profiles.
+        return {
+          profiles: [
+            {
+              profileId: "acme:default",
+              credential: {
+                type: "oauth",
+                provider: "acme",
+                access: "...",
+                refresh: "...",
+                expires: Date.now() + 3600 * 1000,
+              },
+            },
+          ],
+          defaultModel: "acme/opus-1",
+        };
+      },
+    },
+  ],
+});
+```
+
+Notes:
+
+- `run` receives a `ProviderAuthContext` with `prompter`, `runtime`,
+  `openUrl`, and `oauth.createVpsAwareHandlers` helpers.
+- Return `configPatch` when you need to add default models or provider config.
+- Return `defaultModel` so `--set-default` can update agent defaults.
 
 ### Register a messaging channel
 

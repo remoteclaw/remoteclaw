@@ -1,6 +1,14 @@
-import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk";
-import type { PluginRuntime } from "remoteclaw/plugin-sdk";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/line";
 
-const { setRuntime: setLineRuntime, getRuntime: getLineRuntime } =
-  createPluginRuntimeStore<PluginRuntime>("LINE runtime not initialized - plugin not registered");
-export { getLineRuntime, setLineRuntime };
+let runtime: PluginRuntime | null = null;
+
+export function setLineRuntime(r: PluginRuntime): void {
+  runtime = r;
+}
+
+export function getLineRuntime(): PluginRuntime {
+  if (!runtime) {
+    throw new Error("LINE runtime not initialized - plugin not registered");
+  }
+  return runtime;
+}

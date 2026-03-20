@@ -137,7 +137,7 @@ describe("message tool schema scoping", () => {
       resolveAccount: () => ({}),
     },
     actions: {
-      listActions: () => ["send", "poll"] as const,
+      listActions: () => ["send", "poll", "poll-vote"] as const,
     },
   };
 
@@ -172,6 +172,10 @@ describe("message tool schema scoping", () => {
     expect(actionEnum).toContain("send");
     expect(actionEnum).toContain("react");
     expect(actionEnum).not.toContain("poll");
+    expect(actionEnum).not.toContain("poll-vote");
+    expect(properties.pollId).toBeDefined();
+    expect(properties.pollOptionIndex).toBeDefined();
+    expect(properties.pollOptionId).toBeDefined();
   });
 
   it("shows discord components when scoped to discord", () => {
@@ -193,7 +197,11 @@ describe("message tool schema scoping", () => {
     expect(properties.buttons).toBeUndefined();
     expect(actionEnum).toContain("send");
     expect(actionEnum).toContain("poll");
+    expect(actionEnum).toContain("poll-vote");
     expect(actionEnum).not.toContain("react");
+    expect(properties.pollId).toBeDefined();
+    expect(properties.pollOptionIndex).toBeDefined();
+    expect(properties.pollOptionId).toBeDefined();
   });
 });
 

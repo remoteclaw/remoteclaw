@@ -50,6 +50,8 @@ export function createRemoteClawTools(options?: {
   hasRepliedRef?: { value: boolean };
   /** If true, the model has native vision capability */
   modelHasVision?: boolean;
+  /** If true, nodes action="invoke" can call media-returning commands directly. */
+  allowMediaInvokeCommands?: boolean;
   /** Explicit agent ID override for cron/hook sessions. */
   requesterAgentIdOverride?: string;
   /** Require explicit message targets (no implicit last-route sends). */
@@ -84,6 +86,8 @@ export function createRemoteClawTools(options?: {
     createNodesTool({
       agentSessionKey: options?.agentSessionKey,
       config: options?.config,
+      modelHasVision: options?.modelHasVision,
+      allowMediaInvokeCommands: options?.allowMediaInvokeCommands,
     }),
     createCronTool({
       agentSessionKey: options?.agentSessionKey,

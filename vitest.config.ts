@@ -8,27 +8,58 @@ const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
 const isWindows = process.platform === "win32";
 const localWorkers = Math.max(4, Math.min(16, os.cpus().length));
 const ciWorkers = isWindows ? 2 : 3;
+const pluginSdkSubpaths = [
+  "account-id",
+  "core",
+  "compat",
+  "telegram",
+  "discord",
+  "slack",
+  "signal",
+  "imessage",
+  "whatsapp",
+  "line",
+  "msteams",
+  "acpx",
+  "bluebubbles",
+  "copilot-proxy",
+  "device-pair",
+  "diagnostics-otel",
+  "diffs",
+  "feishu",
+  "google-gemini-cli-auth",
+  "googlechat",
+  "irc",
+  "llm-task",
+  "lobster",
+  "matrix",
+  "mattermost",
+  "minimax-portal-auth",
+  "nextcloud-talk",
+  "nostr",
+  "open-prose",
+  "phone-control",
+  "qwen-portal-auth",
+  "synology-chat",
+  "talk-voice",
+  "test-utils",
+  "thread-ownership",
+  "tlon",
+  "twitch",
+  "voice-call",
+  "zalo",
+  "zalouser",
+  "keyed-async-queue",
+] as const;
 
 export default defineConfig({
   resolve: {
     // Keep this ordered: the base `remoteclaw/plugin-sdk` alias is a prefix match.
     alias: [
-      {
-        find: "remoteclaw/plugin-sdk/account-id",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "account-id.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/core",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "core.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/telegram",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "telegram.ts"),
-      },
-      {
-        find: "remoteclaw/plugin-sdk/keyed-async-queue",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "keyed-async-queue.ts"),
-      },
+      ...pluginSdkSubpaths.map((subpath) => ({
+        find: `remoteclaw/plugin-sdk/${subpath}`,
+        replacement: path.join(repoRoot, "src", "plugin-sdk", `${subpath}.ts`),
+      })),
       {
         find: "remoteclaw/plugin-sdk",
         replacement: path.join(repoRoot, "src", "plugin-sdk", "index.ts"),
@@ -52,7 +83,6 @@ export default defineConfig({
       "ui/src/ui/views/agents-utils.test.ts",
       "ui/src/ui/views/usage-render-details.test.ts",
       "ui/src/ui/controllers/agents.test.ts",
-      "ui/src/ui/app-tool-stream.node.test.ts",
       "ui/src/ui/controllers/chat.test.ts",
     ],
     setupFiles: ["test/setup.ts"],
@@ -62,7 +92,7 @@ export default defineConfig({
       "apps/macos/.build/**",
       "**/node_modules/**",
       "**/vendor/**",
-      "dist/RemoteClaw.app/**",
+      "dist/OpenClaw.app/**",
       "**/*.live.test.ts",
       "**/*.e2e.test.ts",
     ],
@@ -107,14 +137,18 @@ export default defineConfig({
         "src/channels/**",
         "src/gateway/**",
         "src/line/**",
+        "src/media-understanding/**",
         "src/node-host/**",
         "src/plugins/**",
         "src/providers/**",
 
         // Some agent integrations are intentionally validated via manual/e2e runs.
+        "src/agents/model-scan.ts",
+        "src/agents/pi-embedded-runner.ts",
         "src/agents/sandbox-paths.ts",
         "src/agents/sandbox.ts",
         "src/agents/skills-install.ts",
+        "src/agents/pi-tool-definition-adapter.ts",
         "src/agents/tools/discord-actions*.ts",
         "src/agents/tools/slack-actions.ts",
 
@@ -124,6 +158,7 @@ export default defineConfig({
         "src/infra/update-check.ts",
         "src/infra/ports-inspect.ts",
         "src/infra/outbound/outbound-session.ts",
+        "src/memory/batch-gemini.ts",
 
         // Gateway server integration surfaces are intentionally validated via manual/e2e runs.
         "src/gateway/control-ui.ts",

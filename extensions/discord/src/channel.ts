@@ -29,7 +29,7 @@ import {
   type ChannelMessageActionAdapter,
   type ChannelPlugin,
   type ResolvedDiscordAccount,
-} from "remoteclaw/plugin-sdk";
+} from "remoteclaw/plugin-sdk/discord";
 import { getDiscordRuntime } from "./runtime.js";
 
 const meta = getChatChannelMeta("discord");
@@ -170,8 +170,8 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
   },
   agentPrompt: {
     messageToolHints: () => [
-      "- Use the `discord_send` MCP tool with a `components` parameter to include buttons, selects, or v2 containers in messages.",
-      "- Forms: pass `components.modal` (with title and fields) to `discord_send`. RemoteClaw adds a trigger button and routes submissions as new messages.",
+      "- Discord components: set `components` when sending messages to include buttons, selects, or v2 containers.",
+      "- Forms: add `components.modal` (title, fields). OpenClaw adds a trigger button and routes submissions as new messages.",
     ],
   },
   messaging: {
@@ -206,7 +206,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
           token,
           entries: inputs,
         });
-        return resolved.map((entry: any) => ({
+        return resolved.map((entry) => ({
           input: entry.input,
           resolved: entry.resolved,
           id: entry.channelId ?? entry.guildId,
@@ -221,7 +221,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
         token,
         entries: inputs,
       });
-      return resolved.map((entry: any) => ({
+      return resolved.map((entry) => ({
         input: entry.input,
         resolved: entry.resolved,
         id: entry.id,
@@ -302,10 +302,11 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
     textChunkLimit: 2000,
     pollMaxOptions: 10,
     resolveTarget: ({ to }) => normalizeDiscordOutboundTarget(to),
-    sendText: async ({ to, text, accountId, deps, replyToId, silent }) => {
+    sendText: async ({ cfg, to, text, accountId, deps, replyToId, silent }) => {
       const send = deps?.sendDiscord ?? getDiscordRuntime().channel.discord.sendMessageDiscord;
       const result = await send(to, text, {
         verbose: false,
+        cfg,
         replyTo: replyToId ?? undefined,
         accountId: accountId ?? undefined,
         silent: silent ?? undefined,
@@ -313,6 +314,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
       return { channel: "discord", ...result };
     },
     sendMedia: async ({
+      cfg,
       to,
       text,
       mediaUrl,
@@ -325,6 +327,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
       const send = deps?.sendDiscord ?? getDiscordRuntime().channel.discord.sendMessageDiscord;
       const result = await send(to, text, {
         verbose: false,
+        cfg,
         mediaUrl,
         mediaLocalRoots,
         replyTo: replyToId ?? undefined,
@@ -333,8 +336,9 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
       });
       return { channel: "discord", ...result };
     },
-    sendPoll: async ({ to, poll, accountId, silent }) =>
+    sendPoll: async ({ cfg, to, poll, accountId, silent }) =>
       await getDiscordRuntime().channel.discord.sendPollDiscord(to, poll, {
+        cfg,
         accountId: accountId ?? undefined,
         silent: silent ?? undefined,
       }),
@@ -455,8 +459,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
         abortSignal: ctx.abortSignal,
         mediaMaxMb: account.config.mediaMaxMb,
         historyLimit: account.config.historyLimit,
-        setStatus: (patch: Record<string, unknown>) =>
-          ctx.setStatus({ accountId: account.accountId, ...patch }),
+        setStatus: (patch) => ctx.setStatus({ accountId: account.accountId, ...patch }),
       });
     },
   },

@@ -1,4 +1,4 @@
-import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk";
+import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk/discord";
 import { describe, expect, it, vi } from "vitest";
 import { discordPlugin } from "./channel.js";
 import { setDiscordRuntime } from "./runtime.js";

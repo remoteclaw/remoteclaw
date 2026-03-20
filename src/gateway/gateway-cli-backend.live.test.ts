@@ -21,7 +21,13 @@ const CLI_RESUME = isTruthyEnvValue(process.env.REMOTECLAW_LIVE_CLI_BACKEND_RESU
 const describeLive = LIVE && CLI_LIVE ? describe : describe.skip;
 
 const DEFAULT_MODEL = "claude-cli/claude-sonnet-4-6";
-const DEFAULT_CLAUDE_ARGS = ["-p", "--output-format", "json", "--dangerously-skip-permissions"];
+const DEFAULT_CLAUDE_ARGS = [
+  "-p",
+  "--output-format",
+  "json",
+  "--permission-mode",
+  "bypassPermissions",
+];
 const DEFAULT_CODEX_ARGS = [
   "exec",
   "--json",

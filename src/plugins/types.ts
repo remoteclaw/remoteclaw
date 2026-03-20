@@ -312,12 +312,20 @@ export type PluginDiagnostic = {
 // ============================================================================
 
 export type PluginHookName =
+  | "before_model_resolve"
+  | "before_prompt_build"
+  | "before_agent_start"
+  | "llm_input"
+  | "llm_output"
+  | "before_compaction"
+  | "after_compaction"
   | "before_reset"
   | "message_received"
   | "message_sending"
   | "message_sent"
   | "before_tool_call"
   | "after_tool_call"
+  | "tool_result_persist"
   | "before_message_write"
   | "session_start"
   | "session_end"
@@ -332,6 +340,58 @@ export type PluginHookName =
   | "session_resumed"
   | "agent_end";
 
+export const PLUGIN_HOOK_NAMES = [
+  "before_model_resolve",
+  "before_prompt_build",
+  "before_agent_start",
+  "llm_input",
+  "llm_output",
+  "agent_end",
+  "before_compaction",
+  "after_compaction",
+  "before_reset",
+  "message_received",
+  "message_sending",
+  "message_sent",
+  "before_tool_call",
+  "after_tool_call",
+  "tool_result_persist",
+  "before_message_write",
+  "session_start",
+  "session_end",
+  "subagent_spawning",
+  "subagent_delivery_target",
+  "subagent_spawned",
+  "subagent_ended",
+  "gateway_start",
+  "gateway_stop",
+  "before_runtime_spawn",
+  "after_runtime_exit",
+  "session_resumed",
+] as const satisfies readonly PluginHookName[];
+
+type MissingPluginHookNames = Exclude<PluginHookName, (typeof PLUGIN_HOOK_NAMES)[number]>;
+type AssertAllPluginHookNamesListed = MissingPluginHookNames extends never ? true : never;
+const assertAllPluginHookNamesListed: AssertAllPluginHookNamesListed = true;
+void assertAllPluginHookNamesListed;
+
+const pluginHookNameSet = new Set<PluginHookName>(PLUGIN_HOOK_NAMES);
+
+export const isPluginHookName = (hookName: unknown): hookName is PluginHookName =>
+  typeof hookName === "string" && pluginHookNameSet.has(hookName as PluginHookName);
+
+export const PROMPT_INJECTION_HOOK_NAMES = [
+  "before_prompt_build",
+  "before_agent_start",
+] as const satisfies readonly PluginHookName[];
+
+export type PromptInjectionHookName = (typeof PROMPT_INJECTION_HOOK_NAMES)[number];
+
+const promptInjectionHookNameSet = new Set<PluginHookName>(PROMPT_INJECTION_HOOK_NAMES);
+
+export const isPromptInjectionHookName = (hookName: PluginHookName): boolean =>
+  promptInjectionHookNameSet.has(hookName);
+
 // Agent context shared across agent hooks
 export type PluginHookAgentContext = {
   agentId?: string;
@@ -343,6 +403,130 @@ export type PluginHookAgentContext = {
   trigger?: string;
   /** Channel identifier (e.g. "telegram", "discord", "whatsapp"). */
   channelId?: string;
+};
+
+// before_model_resolve hook
+export type PluginHookBeforeModelResolveEvent = {
+  /** User prompt for this run. No session messages are available yet in this phase. */
+  prompt: string;
+};
+
+export type PluginHookBeforeModelResolveResult = {
+  /** Override the model for this agent run. E.g. "llama3.3:8b" */
+  modelOverride?: string;
+  /** Override the provider for this agent run. E.g. "ollama" */
+  providerOverride?: string;
+};
+
+// before_prompt_build hook
+export type PluginHookBeforePromptBuildEvent = {
+  prompt: string;
+  /** Session messages prepared for this run. */
+  messages: unknown[];
+};
+
+export type PluginHookBeforePromptBuildResult = {
+  systemPrompt?: string;
+  prependContext?: string;
+  /**
+   * Prepended to the agent system prompt so providers can cache it (e.g. prompt caching).
+   * Use for static plugin guidance instead of prependContext to avoid per-turn token cost.
+   */
+  prependSystemContext?: string;
+  /**
+   * Appended to the agent system prompt so providers can cache it (e.g. prompt caching).
+   * Use for static plugin guidance instead of prependContext to avoid per-turn token cost.
+   */
+  appendSystemContext?: string;
+};
+
+export const PLUGIN_PROMPT_MUTATION_RESULT_FIELDS = [
+  "systemPrompt",
+  "prependContext",
+  "prependSystemContext",
+  "appendSystemContext",
+] as const satisfies readonly (keyof PluginHookBeforePromptBuildResult)[];
+
+type MissingPluginPromptMutationResultFields = Exclude<
+  keyof PluginHookBeforePromptBuildResult,
+  (typeof PLUGIN_PROMPT_MUTATION_RESULT_FIELDS)[number]
+>;
+type AssertAllPluginPromptMutationResultFieldsListed =
+  MissingPluginPromptMutationResultFields extends never ? true : never;
+const assertAllPluginPromptMutationResultFieldsListed: AssertAllPluginPromptMutationResultFieldsListed = true;
+void assertAllPluginPromptMutationResultFieldsListed;
+
+// before_agent_start hook (legacy compatibility: combines both phases)
+export type PluginHookBeforeAgentStartEvent = {
+  prompt: string;
+  /** Optional because legacy hook can run in pre-session phase. */
+  messages?: unknown[];
+};
+
+export type PluginHookBeforeAgentStartResult = PluginHookBeforePromptBuildResult &
+  PluginHookBeforeModelResolveResult;
+
+export type PluginHookBeforeAgentStartOverrideResult = Omit<
+  PluginHookBeforeAgentStartResult,
+  keyof PluginHookBeforePromptBuildResult
+>;
+
+export const stripPromptMutationFieldsFromLegacyHookResult = (
+  result: PluginHookBeforeAgentStartResult | void,
+): PluginHookBeforeAgentStartOverrideResult | void => {
+  if (!result || typeof result !== "object") {
+    return result;
+  }
+  const remaining: Partial<PluginHookBeforeAgentStartResult> = { ...result };
+  for (const field of PLUGIN_PROMPT_MUTATION_RESULT_FIELDS) {
+    delete remaining[field];
+  }
+  return Object.keys(remaining).length > 0
+    ? (remaining as PluginHookBeforeAgentStartOverrideResult)
+    : undefined;
+};
+
+// llm_input hook
+export type PluginHookLlmInputEvent = {
+  runId: string;
+  sessionId: string;
+  provider: string;
+  model: string;
+  systemPrompt?: string;
+  prompt: string;
+  historyMessages: unknown[];
+  imagesCount: number;
+};
+
+// llm_output hook
+export type PluginHookLlmOutputEvent = {
+  runId: string;
+  sessionId: string;
+  provider: string;
+  model: string;
+  assistantTexts: string[];
+  lastAssistant?: unknown;
+  usage?: {
+    input?: number;
+    output?: number;
+    cacheRead?: number;
+    cacheWrite?: number;
+    total?: number;
+  };
+};
+
+// Compaction hooks
+export type PluginHookBeforeCompactionEvent = {
+  /** Total messages in the session before any truncation or compaction */
+  messageCount: number;
+  /** Messages being fed to the compaction LLM (after history-limit truncation) */
+  compactingCount?: number;
+  tokenCount?: number;
+  messages?: unknown[];
+  /** Path to the session JSONL transcript. All messages are already on disk
+   *  before compaction starts, so plugins can read this file asynchronously
+   *  and process in parallel with the compaction LLM call. */
+  sessionFile?: string;
 };
 
 // before_reset hook — fired when /new or /reset clears a session
@@ -624,6 +808,35 @@ export type PluginHookRuntimeContext = {
 
 // Hook handler types mapped by hook name
 export type PluginHookHandlerMap = {
+  before_model_resolve: (
+    event: PluginHookBeforeModelResolveEvent,
+    ctx: PluginHookAgentContext,
+  ) =>
+    | Promise<PluginHookBeforeModelResolveResult | void>
+    | PluginHookBeforeModelResolveResult
+    | void;
+  before_prompt_build: (
+    event: PluginHookBeforePromptBuildEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<PluginHookBeforePromptBuildResult | void> | PluginHookBeforePromptBuildResult | void;
+  before_agent_start: (
+    event: PluginHookBeforeAgentStartEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<PluginHookBeforeAgentStartResult | void> | PluginHookBeforeAgentStartResult | void;
+  llm_input: (event: PluginHookLlmInputEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
+  llm_output: (
+    event: PluginHookLlmOutputEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
+  before_compaction: (
+    event: PluginHookBeforeCompactionEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
+  after_compaction: (
+    event: Record<string, unknown>,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
+  tool_result_persist: (event: Record<string, unknown>, ctx: Record<string, unknown>) => void;
   before_reset: (
     event: PluginHookBeforeResetEvent,
     ctx: PluginHookAgentContext,

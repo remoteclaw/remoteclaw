@@ -1,44 +1,23 @@
 ---
-description: "Perplexity Search API and Sonar/OpenRouter compatibility for web_search"
+summary: "Perplexity Search API setup for web_search"
 read_when:
   - You want to use Perplexity Search for web search
-  - You need PERPLEXITY_API_KEY or OPENROUTER_API_KEY setup
+  - You need PERPLEXITY_API_KEY setup
 title: "Perplexity Search"
 ---
 
-# Perplexity Sonar
+# Perplexity Search API
 
-RemoteClaw can use Perplexity Sonar for the `web_search` tool. You can connect
-through Perplexity's direct API or via OpenRouter.
-
-For compatibility, RemoteClaw also supports legacy Perplexity Sonar/OpenRouter setups.
-If you use `OPENROUTER_API_KEY`, an `sk-or-...` key in `tools.web.search.perplexity.apiKey`, or set `tools.web.search.perplexity.baseUrl` / `model`, the provider switches to the chat-completions path and returns AI-synthesized answers with citations instead of structured Search API results.
+RemoteClaw uses Perplexity Search API for the `web_search` tool when `provider: "perplexity"` is set.
+Perplexity Search returns structured results (title, URL, snippet) for fast research.
 
 ## Getting a Perplexity API key
 
-### Perplexity (direct)
+1. Create a Perplexity account at <https://www.perplexity.ai/settings/api>
+2. Generate an API key in the dashboard
+3. Store the key in config (recommended) or set `PERPLEXITY_API_KEY` in the Gateway environment.
 
-- Base URL: [https://api.perplexity.ai](https://api.perplexity.ai)
-- Environment variable: `PERPLEXITY_API_KEY`
-
-### OpenRouter (alternative)
-
-- Base URL: [https://openrouter.ai/api/v1](https://openrouter.ai/api/v1)
-- Environment variable: `OPENROUTER_API_KEY`
-- Supports prepaid/crypto credits.
-
-## OpenRouter compatibility
-
-If you were already using OpenRouter for Perplexity Sonar, keep `provider: "perplexity"` and set `OPENROUTER_API_KEY` in the Gateway environment, or store an `sk-or-...` key in `tools.web.search.perplexity.apiKey`.
-
-Optional legacy controls:
-
-- `tools.web.search.perplexity.baseUrl`
-- `tools.web.search.perplexity.model`
-
-## Config examples
-
-### Native Perplexity Search API
+## Config example
 
 ```json5
 {
@@ -48,8 +27,6 @@ Optional legacy controls:
         provider: "perplexity",
         perplexity: {
           apiKey: "pplx-...",
-          baseUrl: "https://api.perplexity.ai",
-          model: "perplexity/sonar-pro",
         },
       },
     },
@@ -57,7 +34,7 @@ Optional legacy controls:
 }
 ```
 
-### OpenRouter / Sonar compatibility
+## Switching from Brave
 
 ```json5
 {
@@ -66,9 +43,7 @@ Optional legacy controls:
       search: {
         provider: "perplexity",
         perplexity: {
-          apiKey: "<openrouter-api-key>",
-          baseUrl: "https://openrouter.ai/api/v1",
-          model: "perplexity/sonar-pro",
+          apiKey: "pplx-...",
         },
       },
     },
@@ -76,18 +51,16 @@ Optional legacy controls:
 }
 ```
 
-## Where to set the key
+## Where to set the key (recommended)
 
-**Via config:** run `remoteclaw configure --section web`. It stores the key in
+**Recommended:** run `remoteclaw configure --section web`. It stores the key in
 `~/.remoteclaw/remoteclaw.json` under `tools.web.search.perplexity.apiKey`.
 
-**Via environment:** set `PERPLEXITY_API_KEY` or `OPENROUTER_API_KEY`
-in the Gateway process environment. For a gateway install, put it in
-`~/.remoteclaw/.env` (or your service environment). See [Env vars](/help/faq#how-does-remoteclaw-load-environment-variables).
+**Environment alternative:** set `PERPLEXITY_API_KEY` in the Gateway process
+environment. For a gateway install, put it in `~/.remoteclaw/.env` (or your
+service environment). See [Env vars](/help/faq#how-does-remoteclaw-load-environment-variables).
 
 ## Tool parameters
-
-These parameters apply to the native Perplexity Search API path.
 
 | Parameter             | Description                                          |
 | --------------------- | ---------------------------------------------------- |
@@ -101,9 +74,6 @@ These parameters apply to the native Perplexity Search API path.
 | `domain_filter`       | Domain allowlist/denylist array (max 20)             |
 | `max_tokens`          | Total content budget (default: 25000, max: 1000000)  |
 | `max_tokens_per_page` | Per-page token limit (default: 2048)                 |
-
-For the legacy Sonar/OpenRouter compatibility path, only `query` and `freshness` are supported.
-Search API-only filters such as `country`, `language`, `date_after`, `date_before`, `domain_filter`, `max_tokens`, and `max_tokens_per_page` return explicit errors.
 
 **Examples:**
 
@@ -148,18 +118,16 @@ await web_search({
 });
 ```
 
-If both `PERPLEXITY_API_KEY` and `OPENROUTER_API_KEY` are set, set
-`tools.web.search.perplexity.baseUrl` (or `tools.web.search.perplexity.apiKey`)
-to disambiguate.
+### Domain filter rules
 
-If no base URL is set, RemoteClaw chooses a default based on the API key source:
+- Maximum 20 domains per filter
+- Cannot mix allowlist and denylist in the same request
+- Use `-` prefix for denylist entries (e.g., `["-reddit.com"]`)
 
-- `PERPLEXITY_API_KEY` or `pplx-...` → direct Perplexity (`https://api.perplexity.ai`)
-- `OPENROUTER_API_KEY` or `sk-or-...` → OpenRouter (`https://openrouter.ai/api/v1`)
-- Unknown key formats → OpenRouter (safe fallback)
+## Notes
 
-- Perplexity Search API returns structured web search results (`title`, `url`, `snippet`)
-- OpenRouter or explicit `baseUrl` / `model` switches Perplexity back to Sonar chat completions for compatibility
+- Perplexity Search API returns structured web search results (title, URL, snippet)
 - Results are cached for 15 minutes by default (configurable via `cacheTtlMinutes`)
 
 See [Web tools](/tools/web) for the full web_search configuration.
+See [Perplexity Search API docs](https://docs.perplexity.ai/docs/search/quickstart) for more details.

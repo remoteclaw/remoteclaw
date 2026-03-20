@@ -11,6 +11,7 @@ import { GatewayCloseCodes, type GatewayPlugin } from "@buape/carbon/gateway";
 import { VoicePlugin } from "@buape/carbon/voice";
 import { Routes } from "discord-api-types/v10";
 import { resolveTextChunkLimit } from "../../auto-reply/chunk.js";
+import type { NativeCommandSpec } from "../../auto-reply/commands-registry.js";
 import { listNativeCommandSpecsForConfig } from "../../auto-reply/commands-registry.js";
 import type { HistoryEntry } from "../../auto-reply/reply/history.js";
 import {
@@ -35,6 +36,7 @@ import { danger, logVerbose, shouldLogVerbose, warn } from "../../globals.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { createDiscordRetryRunner } from "../../infra/retry-policy.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { getPluginCommandSpecs } from "../../plugins/commands.js";
 import { createNonExitingRuntime, type RuntimeEnv } from "../../runtime.js";
 import { resolveDiscordAccount } from "../accounts.js";
 import { fetchDiscordApplicationId } from "../probe.js";
@@ -52,6 +54,7 @@ import {
   createDiscordComponentStringSelect,
   createDiscordComponentUserSelect,
 } from "./agent-components.js";
+import { createDiscordAutoPresenceController } from "./auto-presence.js";
 import { resolveDiscordSlashCommandConfig } from "./commands.js";
 import { attachEarlyGatewayErrorGuard } from "./gateway-error-guard.js";
 import { createDiscordGatewayPlugin } from "./gateway-plugin.js";
@@ -60,6 +63,7 @@ import {
   DiscordPresenceListener,
   DiscordReactionListener,
   DiscordReactionRemoveListener,
+  DiscordThreadUpdateListener,
   registerDiscordListener,
 } from "./listeners.js";
 import { createDiscordMessageHandler } from "./message-handler.js";
@@ -109,6 +113,37 @@ function summarizeGuilds(entries?: Record<string, unknown>) {
 function formatThreadBindingDurationForConfigLabel(durationMs: number): string {
   const label = formatThreadBindingDurationLabel(durationMs);
   return label === "disabled" ? "off" : label;
+}
+
+function appendPluginCommandSpecs(params: {
+  commandSpecs: NativeCommandSpec[];
+  runtime: RuntimeEnv;
+}): NativeCommandSpec[] {
+  const merged = [...params.commandSpecs];
+  const existingNames = new Set(
+    merged.map((spec) => spec.name.trim().toLowerCase()).filter(Boolean),
+  );
+  for (const pluginCommand of getPluginCommandSpecs()) {
+    const normalizedName = pluginCommand.name.trim().toLowerCase();
+    if (!normalizedName) {
+      continue;
+    }
+    if (existingNames.has(normalizedName)) {
+      params.runtime.error?.(
+        danger(
+          `discord: plugin command "/${normalizedName}" duplicates an existing native command. Skipping.`,
+        ),
+      );
+      continue;
+    }
+    existingNames.add(normalizedName);
+    merged.push({
+      name: pluginCommand.name,
+      description: pluginCommand.description,
+      acceptsArgs: pluginCommand.acceptsArgs,
+    });
+  }
+  return merged;
 }
 
 async function deployDiscordCommands(params: {
@@ -274,9 +309,12 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
   }
 
   const maxDiscordCommands = 100;
-  const commandSpecs = nativeEnabled
+  let commandSpecs = nativeEnabled
     ? listNativeCommandSpecsForConfig(cfg, { provider: "discord" })
     : [];
+  if (nativeEnabled) {
+    commandSpecs = appendPluginCommandSpecs({ commandSpecs, runtime });
+  }
   if (nativeEnabled && commandSpecs.length > maxDiscordCommands) {
     runtime.log?.(
       warn(
@@ -295,6 +333,8 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     : createNoopThreadBindingManager(account.accountId);
   let lifecycleStarted = false;
   let releaseEarlyGatewayErrorGuard = () => {};
+  let deactivateMessageHandler: (() => void) | undefined;
+  let autoPresenceController: ReturnType<typeof createDiscordAutoPresenceController> | null = null;
   try {
     const commands: BaseCommand[] = commandSpecs.map((spec) =>
       createDiscordNativeCommand({
@@ -359,6 +399,11 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
 
     class DiscordStatusReadyListener extends ReadyListener {
       async handle(_data: unknown, client: Client) {
+        if (autoPresenceController?.enabled) {
+          autoPresenceController.refresh();
+          return;
+        }
+
         const gateway = client.getPlugin<GatewayPlugin>("gateway");
         if (!gateway) {
           return;
@@ -379,6 +424,12 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     if (voiceEnabled) {
       clientPlugins.push(new VoicePlugin());
     }
+    // Pass eventQueue config to Carbon so the listener timeout can be tuned.
+    // Default listenerTimeout is 120s (Carbon defaults to 30s which is too short for LLM calls).
+    const eventQueueOpts = {
+      listenerTimeout: 120_000,
+      ...discordCfg.eventQueue,
+    };
     const client = new Client(
       {
         baseUrl: "http://localhost",
@@ -387,6 +438,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
         publicKey: "a",
         token,
         autoDeploy: false,
+        eventQueue: eventQueueOpts,
       },
       {
         commands,
@@ -398,6 +450,17 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     );
     const earlyGatewayErrorGuard = attachEarlyGatewayErrorGuard(client);
     releaseEarlyGatewayErrorGuard = earlyGatewayErrorGuard.release;
+
+    const lifecycleGateway = client.getPlugin<GatewayPlugin>("gateway");
+    if (lifecycleGateway) {
+      autoPresenceController = createDiscordAutoPresenceController({
+        accountId: account.accountId,
+        discordConfig: discordCfg,
+        gateway: lifecycleGateway,
+        log: (message) => runtime.log?.(message),
+      });
+      autoPresenceController.start();
+    }
 
     await deployDiscordCommands({ client, runtime, enabled: nativeEnabled });
 
@@ -442,6 +505,9 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       accountId: account.accountId,
       token,
       runtime,
+      setStatus: opts.setStatus,
+      abortSignal: opts.abortSignal,
+      listenerTimeoutMs: eventQueueOpts.listenerTimeout,
       botUserId,
       guildHistories,
       historyLimit,
@@ -456,6 +522,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       threadBindings,
       discordRestFetch,
     });
+    deactivateMessageHandler = messageHandler.deactivate;
     const trackInboundEvent = opts.setStatus
       ? () => {
           const at = Date.now();
@@ -465,7 +532,9 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
 
     registerDiscordListener(
       client.listeners,
-      new DiscordMessageListener(messageHandler, logger, trackInboundEvent),
+      new DiscordMessageListener(messageHandler, logger, trackInboundEvent, {
+        timeoutMs: eventQueueOpts.listenerTimeout,
+      }),
     );
     const reactionListenerOptions = {
       cfg,
@@ -489,6 +558,11 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       new DiscordReactionRemoveListener(reactionListenerOptions),
     );
 
+    registerDiscordListener(
+      client.listeners,
+      new DiscordThreadUpdateListener(cfg, account.accountId, logger),
+    );
+
     if (discordCfg.intents?.presence) {
       registerDiscordListener(
         client.listeners,
@@ -500,6 +574,9 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     const botIdentity =
       botUserId && botUserName ? `${botUserId} (${botUserName})` : (botUserId ?? botUserName ?? "");
     runtime.log?.(`logged in to discord${botIdentity ? ` as ${botIdentity}` : ""}`);
+    if (lifecycleGateway?.isConnected) {
+      opts.setStatus?.({ connected: true });
+    }
 
     lifecycleStarted = true;
     await runDiscordGatewayLifecycle({
@@ -517,6 +594,9 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       releaseEarlyGatewayErrorGuard,
     });
   } finally {
+    deactivateMessageHandler?.();
+    autoPresenceController?.stop();
+    opts.setStatus?.({ connected: false });
     releaseEarlyGatewayErrorGuard();
     if (!lifecycleStarted) {
       threadBindings.stop();

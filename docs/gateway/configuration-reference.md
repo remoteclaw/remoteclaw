@@ -198,6 +198,7 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
         "123456789012345678": {
           slug: "friends-of-remoteclaw",
           requireMention: false,
+          ignoreOtherMentions: true,
           reactionNotifications: "own",
           users: ["987654321098765432"],
           channels: {
@@ -258,7 +259,8 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 - Optional `channels.discord.defaultAccount` overrides default account selection when it matches a configured account id.
 - Use `user:<id>` (DM) or `channel:<id>` (guild channel) for delivery targets; bare numeric IDs are rejected.
 - Guild slugs are lowercase with spaces replaced by `-`; channel keys use the slugged name (no `#`). Prefer guild IDs.
-- Bot-authored messages are ignored by default. `allowBots: true` enables them (own messages still filtered).
+- Bot-authored messages are ignored by default. `allowBots: true` enables them; use `allowBots: "mentions"` to only accept bot messages that mention the bot (own messages still filtered).
+- `channels.discord.guilds.<id>.ignoreOtherMentions` (and channel overrides) drops messages that mention another user or role but not the bot (excluding @everyone/@here).
 - `maxLinesPerMessage` (default 17) splits tall messages even when under 2000 chars.
 - `channels.discord.threadBindings` controls Discord thread-bound routing:
   - `enabled`: Discord override for thread-bound session features (`/focus`, `/unfocus`, `/agents`, `/session idle`, `/session max-age`, and bound delivery/routing)
@@ -270,6 +272,7 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 - `channels.discord.voice.daveEncryption` and `channels.discord.voice.decryptionFailureTolerance` pass through to `@discordjs/voice` DAVE options (`true` and `24` by default).
 - RemoteClaw additionally attempts voice receive recovery by leaving/rejoining a voice session after repeated decrypt failures.
 - `channels.discord.streaming` is the canonical stream mode key. Legacy `streamMode` and boolean `streaming` values are auto-migrated.
+- `channels.discord.autoPresence` maps runtime availability to bot presence (healthy => online, degraded => idle, exhausted => dnd) and allows optional status text overrides.
 - `channels.discord.dangerouslyAllowNameMatching` re-enables mutable name/tag matching (break-glass compatibility mode).
 
 **Reaction notification modes:** `off` (none), `own` (bot's messages, default), `all` (all messages), `allowlist` (from `guilds.<id>.users` on all messages).
@@ -1727,6 +1730,9 @@ Notes:
     entries: {
       "voice-call": {
         enabled: true,
+        hooks: {
+          allowPromptInjection: false,
+        },
         config: { provider: "twilio" },
       },
     },
@@ -1737,6 +1743,14 @@ Notes:
 - Loaded from `~/.remoteclaw/extensions`, `<workspace>/.remoteclaw/extensions`, plus `plugins.load.paths`.
 - **Config changes require a gateway restart.**
 - `allow`: optional allowlist (only listed plugins load). `deny` wins.
+- `plugins.entries.<id>.apiKey`: plugin-level API key convenience field (when supported by the plugin).
+- `plugins.entries.<id>.env`: plugin-scoped env var map.
+- `plugins.entries.<id>.hooks.allowPromptInjection`: when `false`, core blocks `before_prompt_build` and ignores prompt-mutating fields from legacy `before_agent_start`, while preserving legacy `modelOverride` and `providerOverride`.
+- `plugins.entries.<id>.config`: plugin-defined config object (validated by plugin schema).
+- `plugins.slots.memory`: pick the active memory plugin id, or `"none"` to disable memory plugins.
+- `plugins.installs`: CLI-managed install metadata used by `remoteclaw plugins update`.
+  - Includes `source`, `spec`, `sourcePath`, `installPath`, `version`, `resolvedName`, `resolvedVersion`, `resolvedSpec`, `integrity`, `shasum`, `resolvedAt`, `installedAt`.
+  - Treat `plugins.installs.*` as managed state; prefer CLI commands over manual edits.
 
 See [Plugins](/tools/plugin).
 

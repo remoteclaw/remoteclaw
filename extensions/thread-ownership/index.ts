@@ -23,11 +23,11 @@ function cleanExpiredMentions(): void {
 
 function resolveOwnershipAgent(config: RemoteClawConfig): { id: string; name: string } {
   const list = Array.isArray(config.agents?.list)
-    ? config.agents.list.filter((entry): entry is AgentEntry =>
+    ? config.agents.list.filter((entry: unknown): entry is AgentEntry =>
         Boolean(entry && typeof entry === "object"),
       )
     : [];
-  const selected = list.find((entry) => entry.default === true) ?? list[0];
+  const selected = list.find((entry: AgentEntry) => entry.default === true) ?? list[0];
 
   const id =
     typeof selected?.id === "string" && selected.id.trim() ? selected.id.trim() : "unknown";

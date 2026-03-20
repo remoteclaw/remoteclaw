@@ -68,6 +68,8 @@ type ReplyDispatcherWithTypingResult = {
   dispatcher: ReplyDispatcher;
   replyOptions: Pick<GetReplyOptions, "onReplyStart" | "onTypingController" | "onTypingCleanup">;
   markDispatchIdle: () => void;
+  /** Signal that the model run is complete so the typing controller can stop. */
+  markRunComplete: () => void;
 };
 
 export type ReplyDispatcher = {
@@ -233,6 +235,9 @@ export function createReplyDispatcherWithTyping(
     markDispatchIdle: () => {
       typingController?.markDispatchIdle();
       resolvedOnIdle?.();
+    },
+    markRunComplete: () => {
+      typingController?.markRunComplete();
     },
   };
 }

@@ -4,6 +4,7 @@ REMOTECLAW_IOS_SELECTED_TEAM = $(REMOTECLAW_IOS_DEFAULT_TEAM)
 REMOTECLAW_APP_BUNDLE_ID = org.remoteclaw.ios
 REMOTECLAW_WATCH_APP_BUNDLE_ID = org.remoteclaw.ios.watchkitapp
 REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID = org.remoteclaw.ios.watchkitapp.extension
+REMOTECLAW_ACTIVITY_WIDGET_BUNDLE_ID = org.remoteclaw.ios.activitywidget
 
 // Local contributors can override this by running scripts/ios-configure-signing.sh.
 // Keep include after defaults: xcconfig is evaluated top-to-bottom.

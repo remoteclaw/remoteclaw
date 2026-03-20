@@ -327,6 +327,32 @@ function resolveToolPolicies(params: {
   return policies;
 }
 
+function hasWebSearchKey(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): boolean {
+  const search = cfg.tools?.web?.search;
+  return Boolean(
+    search?.apiKey || search?.perplexity?.apiKey || env.BRAVE_API_KEY || env.PERPLEXITY_API_KEY,
+  );
+}
+
+function isWebSearchEnabled(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): boolean {
+  const enabled = cfg.tools?.web?.search?.enabled;
+  if (enabled === false) {
+    return false;
+  }
+  if (enabled === true) {
+    return true;
+  }
+  return hasWebSearchKey(cfg, env);
+}
+
+function isWebFetchEnabled(cfg: RemoteClawConfig): boolean {
+  const enabled = cfg.tools?.web?.fetch?.enabled;
+  if (enabled === false) {
+    return false;
+  }
+  return true;
+}
+
 function isBrowserEnabled(cfg: RemoteClawConfig): boolean {
   try {
     return resolveBrowserConfig(cfg.browser, cfg).enabled;
@@ -1184,6 +1210,16 @@ export function collectSmallModelRiskFindings(params: {
       agentId,
     });
     const exposed: string[] = [];
+    if (isWebSearchEnabled(params.cfg, params.env)) {
+      if (isToolAllowedByPolicies("web_search", policies)) {
+        exposed.push("web_search");
+      }
+    }
+    if (isWebFetchEnabled(params.cfg)) {
+      if (isToolAllowedByPolicies("web_fetch", policies)) {
+        exposed.push("web_fetch");
+      }
+    }
     if (isBrowserEnabled(params.cfg)) {
       if (isToolAllowedByPolicies("browser", policies)) {
         exposed.push("browser");

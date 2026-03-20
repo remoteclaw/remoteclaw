@@ -14,6 +14,11 @@ import { resolveUserPath } from "../utils.js";
 import { registerPluginCommand } from "./commands.js";
 import { normalizePluginHttpPath } from "./http-path.js";
 import type { PluginRuntime } from "./runtime/types.js";
+import {
+  isPluginHookName,
+  isPromptInjectionHookName,
+  stripPromptMutationFieldsFromLegacyHookResult,
+} from "./types.js";
 import type {
   RemoteClawPluginApi,
   RemoteClawPluginChannelRegistration,
@@ -158,6 +163,24 @@ export type PluginRegistryParams = {
   runtime: PluginRuntime;
 };
 
+type PluginTypedHookPolicy = {
+  allowPromptInjection?: boolean;
+};
+
+const constrainLegacyPromptInjectionHook = (
+  handler: PluginHookHandlerMap["before_agent_start"],
+): PluginHookHandlerMap["before_agent_start"] => {
+  return (event, ctx) => {
+    const result = handler(event, ctx);
+    if (result && typeof result === "object" && "then" in result) {
+      return Promise.resolve(result).then((resolved) =>
+        stripPromptMutationFieldsFromLegacyHookResult(resolved),
+      );
+    }
+    return stripPromptMutationFieldsFromLegacyHookResult(result);
+  };
+};
+
 export function createEmptyPluginRegistry(): PluginRegistry {
   return {
     plugins: [],
@@ -182,14 +205,7 @@ export function createEmptyPluginRegistry(): PluginRegistry {
  * Their trigger points no longer exist in CLI-only mode — registrations
  * are silently dropped with a diagnostic warning.
  */
-const DEAD_HOOKS: ReadonlySet<string> = new Set([
-  "before_model_resolve",
-  "before_prompt_build",
-  "before_agent_start",
-  "llm_input",
-  "llm_output",
-  "tool_result_persist",
-]);
+const DEAD_HOOKS: ReadonlySet<string> = new Set(["llm_input", "llm_output", "tool_result_persist"]);
 
 export function createPluginRegistry(registryParams: PluginRegistryParams) {
   const registry = createEmptyPluginRegistry();
@@ -533,12 +549,45 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     hookName: K,
     handler: PluginHookHandlerMap[K],
     opts?: { priority?: number },
+    policy?: PluginTypedHookPolicy,
   ) => {
+    if (!isPluginHookName(hookName)) {
+      pushDiagnostic({
+        level: "warn",
+        pluginId: record.id,
+        source: record.source,
+        message: `unknown typed hook "${String(hookName)}" ignored`,
+      });
+      return;
+    }
+    let effectiveHandler = handler;
+    if (policy?.allowPromptInjection === false && isPromptInjectionHookName(hookName)) {
+      if (hookName === "before_prompt_build") {
+        pushDiagnostic({
+          level: "warn",
+          pluginId: record.id,
+          source: record.source,
+          message: `typed hook "${hookName}" blocked by plugins.entries.${record.id}.hooks.allowPromptInjection=false`,
+        });
+        return;
+      }
+      if (hookName === "before_agent_start") {
+        pushDiagnostic({
+          level: "warn",
+          pluginId: record.id,
+          source: record.source,
+          message: `typed hook "${hookName}" prompt fields constrained by plugins.entries.${record.id}.hooks.allowPromptInjection=false`,
+        });
+        effectiveHandler = constrainLegacyPromptInjectionHook(
+          handler as PluginHookHandlerMap["before_agent_start"],
+        ) as PluginHookHandlerMap[K];
+      }
+    }
     record.hookCount += 1;
     registry.typedHooks.push({
       pluginId: record.id,
       hookName,
-      handler,
+      handler: effectiveHandler,
       priority: opts?.priority,
       source: record.source,
     } as TypedPluginHookRegistration);
@@ -556,6 +605,7 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     params: {
       config: RemoteClawPluginApi["config"];
       pluginConfig?: Record<string, unknown>;
+      hookPolicy?: PluginTypedHookPolicy;
     },
   ): RemoteClawPluginApi => {
     return {
@@ -593,7 +643,7 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
           });
           return;
         }
-        registerTypedHook(record, hookName, handler, opts);
+        registerTypedHook(record, hookName, handler, opts, params.hookPolicy);
       },
     };
   };

@@ -16,6 +16,7 @@ type PluginCommandSpecMock = {
 };
 
 const {
+  clientConstructorOptionsMock,
   clientFetchUserMock,
   clientGetPluginMock,
   createDiscordAutoPresenceControllerMock,
@@ -33,6 +34,7 @@ const {
 } = vi.hoisted(() => {
   const createdBindingManagers: Array<{ stop: ReturnType<typeof vi.fn> }> = [];
   return {
+    clientConstructorOptionsMock: vi.fn(),
     createDiscordAutoPresenceControllerMock: vi.fn(() => ({
       enabled: false,
       start: vi.fn(),
@@ -92,9 +94,12 @@ vi.mock("@buape/carbon", () => {
   class Client {
     listeners: unknown[];
     rest: { put: ReturnType<typeof vi.fn> };
-    constructor(_options: unknown, handlers: { listeners?: unknown[] }) {
+    options: unknown;
+    constructor(options: unknown, handlers: { listeners?: unknown[] }) {
+      this.options = options;
       this.listeners = handlers.listeners ?? [];
       this.rest = { put: vi.fn(async () => undefined) };
+      clientConstructorOptionsMock(options);
     }
     async handleDeployRequest() {
       return undefined;
@@ -276,6 +281,14 @@ describe("monitorDiscordProvider", () => {
         },
       },
     }) as RemoteClawConfig;
+
+  const getConstructedEventQueue = (): { listenerTimeout?: number } | undefined => {
+    expect(clientConstructorOptionsMock).toHaveBeenCalledTimes(1);
+    const opts = clientConstructorOptionsMock.mock.calls[0]?.[0] as {
+      eventQueue?: { listenerTimeout?: number };
+    };
+    return opts.eventQueue;
+  };
 
   beforeEach(() => {
     createDiscordAutoPresenceControllerMock.mockClear().mockImplementation(() => ({

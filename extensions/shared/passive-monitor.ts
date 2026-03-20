@@ -1,4 +1,4 @@
-import { runPassiveAccountLifecycle } from "remoteclaw/plugin-sdk/channel-runtime";
+import { runPassiveAccountLifecycle } from "remoteclaw/plugin-sdk/channel-lifecycle";
 
 type StoppableMonitor = {
   stop: () => void;

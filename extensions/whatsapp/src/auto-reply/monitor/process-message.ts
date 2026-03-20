@@ -1,19 +1,22 @@
 import { resolveIdentityNamePrefix } from "remoteclaw/plugin-sdk/agent-runtime";
-import { toLocationContext } from "remoteclaw/plugin-sdk/channel-runtime";
-import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveInboundSessionEnvelopeContext } from "remoteclaw/plugin-sdk/channel-runtime";
+import {
+  resolveInboundSessionEnvelopeContext,
+  toLocationContext,
+} from "remoteclaw/plugin-sdk/channel-inbound";
+import { formatInboundEnvelope } from "remoteclaw/plugin-sdk/channel-inbound";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+import { shouldComputeCommandAuthorized } from "remoteclaw/plugin-sdk/command-auth";
 import type { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
 import { recordSessionMetaFromInbound } from "remoteclaw/plugin-sdk/config-runtime";
 import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
-import { resolveChunkMode, resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
-import { shouldComputeCommandAuthorized } from "remoteclaw/plugin-sdk/reply-runtime";
-import { formatInboundEnvelope } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { getReplyFromConfig } from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   buildHistoryContextFromEntries,
   type HistoryEntry,
-} from "remoteclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/reply-history";
+import { resolveSendableOutboundReplyParts } from "remoteclaw/plugin-sdk/reply-payload";
+import { resolveChunkMode, resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { getReplyFromConfig } from "remoteclaw/plugin-sdk/reply-runtime";
 import { finalizeInboundContext } from "remoteclaw/plugin-sdk/reply-runtime";
 import { dispatchReplyWithBufferedBlockDispatcher } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";

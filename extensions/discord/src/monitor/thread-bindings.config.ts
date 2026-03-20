@@ -1,9 +1,9 @@
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   resolveThreadBindingIdleTimeoutMs,
   resolveThreadBindingMaxAgeMs,
   resolveThreadBindingsEnabled,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+} from "remoteclaw/plugin-sdk/conversation-runtime";
 import { normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 
 export {

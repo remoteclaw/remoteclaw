@@ -1,5 +1,5 @@
-import { formatAllowlistMatchMeta } from "remoteclaw/plugin-sdk/channel-runtime";
-import { issuePairingChallenge } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { formatAllowlistMatchMeta } from "remoteclaw/plugin-sdk/allow-from";
+import { createChannelPairingChallengeIssuer } from "remoteclaw/plugin-sdk/channel-pairing";
 import { upsertChannelPairingRequest } from "remoteclaw/plugin-sdk/conversation-runtime";
 import { resolveSlackAllowListMatch } from "./allow-list.js";
 import type { SlackMonitorContext } from "./context.js";

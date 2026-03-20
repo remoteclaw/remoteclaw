@@ -2,26 +2,29 @@ import { resolveAckReaction } from "remoteclaw/plugin-sdk/agent-runtime";
 import {
   shouldAckReaction as shouldAckReactionGate,
   type AckReactionScope,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveControlCommandGate } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveConversationLabel } from "remoteclaw/plugin-sdk/channel-runtime";
-import { logInboundDrop } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveMentionGatingWithBypass } from "remoteclaw/plugin-sdk/channel-runtime";
-import { recordInboundSession } from "remoteclaw/plugin-sdk/channel-runtime";
-import { readSessionUpdatedAt, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
-import { enqueueSystemEvent } from "remoteclaw/plugin-sdk/infra-runtime";
-import { hasControlCommand } from "remoteclaw/plugin-sdk/reply-runtime";
-import { shouldHandleTextCommands } from "remoteclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/channel-feedback";
 import {
+  buildMentionRegexes,
   formatInboundEnvelope,
+  logInboundDrop,
+  matchesMentionWithExplicit,
   resolveEnvelopeFormatOptions,
-} from "remoteclaw/plugin-sdk/reply-runtime";
+  resolveMentionGatingWithBypass,
+} from "remoteclaw/plugin-sdk/channel-inbound";
+import { resolveControlCommandGate } from "remoteclaw/plugin-sdk/command-auth";
+import { hasControlCommand } from "remoteclaw/plugin-sdk/command-auth";
+import { shouldHandleTextCommands } from "remoteclaw/plugin-sdk/command-auth";
+import { readSessionUpdatedAt, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
+import {
+  recordInboundSession,
+  resolveConversationLabel,
+} from "remoteclaw/plugin-sdk/conversation-runtime";
+import { enqueueSystemEvent } from "remoteclaw/plugin-sdk/infra-runtime";
 import {
   buildPendingHistoryContextFromMap,
   recordPendingHistoryEntryIfEnabled,
-} from "remoteclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/reply-history";
 import { finalizeInboundContext } from "remoteclaw/plugin-sdk/reply-runtime";
-import { buildMentionRegexes, matchesMentionWithExplicit } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { FinalizedMsgContext } from "remoteclaw/plugin-sdk/reply-runtime";
 import { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
 import { resolveThreadSessionKeys } from "remoteclaw/plugin-sdk/routing";

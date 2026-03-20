@@ -6,7 +6,7 @@ import type {
   TelegramGroupConfig,
   TelegramTopicConfig,
 } from "remoteclaw/plugin-sdk/config-runtime";
-import type { HistoryEntry } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { HistoryEntry } from "remoteclaw/plugin-sdk/reply-history";
 import type { StickerMetadata, TelegramContext } from "./bot/types.js";
 
 export type TelegramMediaRef = {

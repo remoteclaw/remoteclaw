@@ -2,4 +2,5 @@ export {
   looksLikeWhatsAppTargetId,
   normalizeWhatsAppAllowFromEntries,
   normalizeWhatsAppMessagingTarget,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+  normalizeWhatsAppTarget,
+} from "./runtime-api.js";

@@ -1,1 +1,1 @@
-export * from "remoteclaw/plugin-sdk/bluebubbles";
+export * from "../../../src/plugin-sdk/bluebubbles.js";

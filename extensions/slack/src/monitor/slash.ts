@@ -1,11 +1,14 @@
 import type { SlackActionMiddlewareArgs, SlackCommandMiddlewareArgs } from "@slack/bolt";
-import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveNativeCommandSessionTargets } from "remoteclaw/plugin-sdk/channel-runtime";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+import {
+  resolveCommandAuthorizedFromAuthorizers,
+  resolveNativeCommandSessionTargets,
+} from "remoteclaw/plugin-sdk/command-auth";
+import { type ChatCommandDefinition, type CommandArgs } from "remoteclaw/plugin-sdk/command-auth";
 import {
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,
 } from "remoteclaw/plugin-sdk/config-runtime";
-import { type ChatCommandDefinition, type CommandArgs } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { chunkItems } from "remoteclaw/plugin-sdk/text-runtime";

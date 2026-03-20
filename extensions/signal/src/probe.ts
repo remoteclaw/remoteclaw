@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { BaseProbeResult } from "remoteclaw/plugin-sdk/channel-contract";
 import { signalCheck, signalRpcRequest } from "./client.js";
 
 export type SignalProbe = BaseProbeResult & {

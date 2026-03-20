@@ -13,30 +13,13 @@ import {
   type ComponentData,
   type StringSelectMenuInteraction,
 } from "@buape/carbon";
-import { ApplicationCommandOptionType, ButtonStyle } from "discord-api-types/v10";
+import { ApplicationCommandOptionType } from "discord-api-types/v10";
 import { resolveHumanDelayConfig } from "remoteclaw/plugin-sdk/agent-runtime";
-import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveNativeCommandSessionTargets } from "remoteclaw/plugin-sdk/channel-runtime";
-import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { RemoteClawConfig, loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { isDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk/config-runtime";
-import { resolveOpenProviderRuntimeGroupPolicy } from "remoteclaw/plugin-sdk/config-runtime";
-import { loadSessionStore, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
 import {
-  ensureConfiguredAcpRouteReady,
-  resolveConfiguredAcpRoute,
-} from "remoteclaw/plugin-sdk/conversation-runtime";
-import { buildPairingReply } from "remoteclaw/plugin-sdk/conversation-runtime";
-import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
-import { executePluginCommand, matchPluginCommand } from "remoteclaw/plugin-sdk/plugin-runtime";
-import { resolveChunkMode, resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
-import type {
-  ChatCommandDefinition,
-  CommandArgDefinition,
-  CommandArgValues,
-  CommandArgs,
-  NativeCommandSpec,
-} from "remoteclaw/plugin-sdk/reply-runtime";
+  resolveCommandAuthorizedFromAuthorizers,
+  resolveNativeCommandSessionTargets,
+} from "remoteclaw/plugin-sdk/command-auth";
 import {
   buildCommandTextFromArgs,
   findCommandByNativeName,
@@ -45,16 +28,32 @@ import {
   resolveCommandArgChoices,
   resolveCommandArgMenu,
   serializeCommandArgs,
-} from "remoteclaw/plugin-sdk/reply-runtime";
-import { resolveStoredModelOverride } from "remoteclaw/plugin-sdk/reply-runtime";
+  type ChatCommandDefinition,
+  type CommandArgDefinition,
+  type CommandArgValues,
+  type CommandArgs,
+  type NativeCommandSpec,
+} from "remoteclaw/plugin-sdk/command-auth";
+import type { RemoteClawConfig, loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { isDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveOpenProviderRuntimeGroupPolicy } from "remoteclaw/plugin-sdk/config-runtime";
+import {
+  ensureConfiguredBindingRouteReady,
+  resolveConfiguredBindingRoute,
+} from "remoteclaw/plugin-sdk/conversation-runtime";
+import { buildPairingReply } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
+import { executePluginCommand, matchPluginCommand } from "remoteclaw/plugin-sdk/plugin-runtime";
+import {
+  resolveSendableOutboundReplyParts,
+  resolveTextChunksWithFallback,
+} from "remoteclaw/plugin-sdk/reply-payload";
+import { resolveChunkMode, resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
 import { dispatchReplyWithDispatcher } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { ResolvedAgentRoute } from "remoteclaw/plugin-sdk/routing";
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
-import { chunkItems } from "remoteclaw/plugin-sdk/text-runtime";
-import { withTimeout } from "remoteclaw/plugin-sdk/text-runtime";
-import { loadWebMedia } from "../../../whatsapp/src/media.js";
+import { loadWebMedia } from "remoteclaw/plugin-sdk/web-media";
 import { resolveDiscordMaxLinesPerMessage } from "../accounts.js";
 import { chunkDiscordTextWithMode } from "../chunk.js";
 import {

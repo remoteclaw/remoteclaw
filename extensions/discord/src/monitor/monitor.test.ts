@@ -75,9 +75,13 @@ vi.mock("./reply-delivery.js", () => ({
   deliverDiscordReply: (...args: unknown[]) => deliverDiscordReplyMock(...args),
 }));
 
-vi.mock("../../../../src/channels/session.js", () => ({
-  recordInboundSession: (...args: unknown[]) => recordInboundSessionMock(...args),
-}));
+vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
+  return {
+    ...actual,
+    recordInboundSession: (...args: unknown[]) => recordInboundSessionMock(...args),
+  };
+});
 
 vi.mock("../../../../src/config/sessions.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../../src/config/sessions.js")>();

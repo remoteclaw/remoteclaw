@@ -1,9 +1,9 @@
 import { resolveMessagePrefix } from "remoteclaw/plugin-sdk/agent-runtime";
-import type { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   formatInboundEnvelope,
   type EnvelopeFormatOptions,
-} from "remoteclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/channel-inbound";
+import type { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import type { WebInboundMsg } from "../types.js";
 
 export function formatReplyContext(msg: WebInboundMsg) {

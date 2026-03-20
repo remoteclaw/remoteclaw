@@ -1,5 +1,5 @@
 import type { AnyMessageContent } from "@whiskeysockets/baileys";
-import type { NormalizedLocation } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { NormalizedLocation } from "remoteclaw/plugin-sdk/channel-inbound";
 
 export type WebListenerCloseReason = {
   status?: number;

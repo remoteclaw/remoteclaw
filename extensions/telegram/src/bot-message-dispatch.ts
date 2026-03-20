@@ -6,9 +6,12 @@ import {
   modelSupportsVision,
 } from "remoteclaw/plugin-sdk/agent-runtime";
 import { resolveDefaultModelForAgent } from "remoteclaw/plugin-sdk/agent-runtime";
+import {
+  logAckFailure,
+  logTypingFailure,
+  removeAckReactionAfterReply,
+} from "remoteclaw/plugin-sdk/channel-feedback";
 import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
-import { removeAckReactionAfterReply } from "remoteclaw/plugin-sdk/channel-runtime";
-import { logAckFailure, logTypingFailure } from "remoteclaw/plugin-sdk/channel-runtime";
 import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   loadSessionStore,
@@ -21,12 +24,13 @@ import type {
   TelegramAccountConfig,
 } from "remoteclaw/plugin-sdk/config-runtime";
 import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/media-runtime";
+import { clearHistoryEntriesIfEnabled } from "remoteclaw/plugin-sdk/reply-history";
+import { resolveSendableOutboundReplyParts } from "remoteclaw/plugin-sdk/reply-payload";
 import { resolveChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
-import { clearHistoryEntriesIfEnabled } from "remoteclaw/plugin-sdk/reply-runtime";
-import { dispatchReplyWithBufferedBlockDispatcher } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import { defaultTelegramBotDeps, type TelegramBotDeps } from "./bot-deps.js";
 import type { TelegramMessageContext } from "./bot-message-context.js";
 import type { TelegramBotOptions } from "./bot.js";
 import { deliverReplies } from "./bot/delivery.js";

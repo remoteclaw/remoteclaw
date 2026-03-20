@@ -1,4 +1,4 @@
-import type { ModelsProviderData } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { ModelsProviderData } from "remoteclaw/plugin-sdk/command-auth";
 
 export function createModelsProviderData(
   entries: Record<string, string[]>,

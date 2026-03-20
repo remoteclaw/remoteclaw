@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { BaseProbeResult } from "remoteclaw/plugin-sdk/channel-contract";
 import { resolveFetch } from "remoteclaw/plugin-sdk/infra-runtime";
 import { fetchWithTimeout } from "remoteclaw/plugin-sdk/text-runtime";
 import { normalizeDiscordToken } from "./token.js";

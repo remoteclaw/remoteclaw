@@ -1,8 +1,8 @@
 import { Routes } from "discord-api-types/v10";
-import { resolveThreadBindingConversationIdFromBindingId } from "remoteclaw/plugin-sdk/channel-runtime";
 import { getRuntimeConfigSnapshot, type RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   registerSessionBindingAdapter,
+  resolveThreadBindingConversationIdFromBindingId,
   unregisterSessionBindingAdapter,
   type BindingTargetKind,
   type SessionBindingRecord,

@@ -1,4 +1,4 @@
-import { normalizeChatType } from "remoteclaw/plugin-sdk/channel-runtime";
+import { normalizeChatType } from "remoteclaw/plugin-sdk/account-resolution";
 import type { MsgContext } from "remoteclaw/plugin-sdk/reply-runtime";
 
 export function normalizeExplicitDiscordSessionKey(

@@ -1,4 +1,4 @@
-import { resolveWhatsAppAccount } from "../../../extensions/whatsapp/src/accounts.js";
+import { resolveWhatsAppAccount } from "../../../extensions/whatsapp/api.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {

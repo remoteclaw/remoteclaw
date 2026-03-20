@@ -1,9 +1,16 @@
-import { sendTextMediaPayload } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
+import {
+  type ChannelOutboundAdapter,
+  createAttachedChannelResultAdapter,
+  createEmptyChannelResult,
+} from "remoteclaw/plugin-sdk/channel-send-result";
+import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/infra-runtime";
+import {
+  resolveSendableOutboundReplyParts,
+  sendTextMediaPayload,
+} from "remoteclaw/plugin-sdk/reply-payload";
 import { chunkText } from "remoteclaw/plugin-sdk/reply-runtime";
 import { shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import { resolveWhatsAppOutboundTarget } from "remoteclaw/plugin-sdk/whatsapp";
+import { resolveWhatsAppOutboundTarget } from "./runtime-api.js";
 import { sendMessageWhatsApp, sendPollWhatsApp } from "./send.js";
 
 function trimLeadingWhitespace(text: string | undefined): string {

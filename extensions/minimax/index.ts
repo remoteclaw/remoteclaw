@@ -12,8 +12,13 @@ import {
   ensureAuthProfileStore,
   listProfilesForProvider,
 } from "remoteclaw/plugin-sdk/provider-auth";
+import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/provider-auth";
 import { fetchMinimaxUsage } from "remoteclaw/plugin-sdk/provider-usage";
-import { loginMiniMaxPortalOAuth, type MiniMaxRegion } from "./oauth.js";
+import {
+  minimaxMediaUnderstandingProvider,
+  minimaxPortalMediaUnderstandingProvider,
+} from "./media-understanding-provider.js";
+import type { MiniMaxRegion } from "./oauth.js";
 import { applyMinimaxApiConfig, applyMinimaxApiConfigCn } from "./onboard.js";
 import { buildMinimaxPortalProvider, buildMinimaxProvider } from "./provider-catalog.js";
 

@@ -4,11 +4,6 @@ import type { ApiClientOptions } from "grammy";
 import { Bot } from "grammy";
 import { resolveDefaultAgentId } from "remoteclaw/plugin-sdk/agent-runtime";
 import {
-  resolveThreadBindingIdleTimeoutMsForChannel,
-  resolveThreadBindingMaxAgeMsForChannel,
-  resolveThreadBindingSpawnPolicy,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,
@@ -20,9 +15,14 @@ import {
   resolveChannelGroupRequireMention,
 } from "remoteclaw/plugin-sdk/config-runtime";
 import { loadSessionStore, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
+import {
+  resolveThreadBindingIdleTimeoutMsForChannel,
+  resolveThreadBindingMaxAgeMsForChannel,
+  resolveThreadBindingSpawnPolicy,
+} from "remoteclaw/plugin-sdk/conversation-runtime";
 import { formatUncaughtError } from "remoteclaw/plugin-sdk/infra-runtime";
+import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "remoteclaw/plugin-sdk/reply-history";
 import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
-import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "remoteclaw/plugin-sdk/reply-runtime";
 import { danger, logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { getChildLogger } from "remoteclaw/plugin-sdk/runtime-env";
 import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";

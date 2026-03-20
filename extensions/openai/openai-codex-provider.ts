@@ -12,12 +12,15 @@ import {
   loginOpenAICodexOAuth,
   type OAuthCredential,
 } from "remoteclaw/plugin-sdk/provider-auth";
+import { buildOauthProviderAuthResult } from "remoteclaw/plugin-sdk/provider-auth";
+import { loginOpenAICodexOAuth } from "remoteclaw/plugin-sdk/provider-auth-login";
 import {
   DEFAULT_CONTEXT_TOKENS,
   normalizeModelCompat,
   normalizeProviderId,
   type ProviderPlugin,
 } from "remoteclaw/plugin-sdk/provider-models";
+import { createOpenAIAttributionHeadersWrapper } from "remoteclaw/plugin-sdk/provider-stream";
 import { fetchCodexUsage } from "remoteclaw/plugin-sdk/provider-usage";
 import { buildOpenAICodexProvider } from "./openai-codex-catalog.js";
 import {

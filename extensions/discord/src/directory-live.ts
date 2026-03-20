@@ -1,5 +1,7 @@
-import type { DirectoryConfigParams } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelDirectoryEntry } from "remoteclaw/plugin-sdk/channel-runtime";
+import type {
+  ChannelDirectoryEntry,
+  DirectoryConfigParams,
+} from "remoteclaw/plugin-sdk/directory-runtime";
 import { resolveDiscordAccount } from "./accounts.js";
 import { fetchDiscord } from "./api.js";
 import { rememberDiscordDirectoryUser } from "./directory-cache.js";

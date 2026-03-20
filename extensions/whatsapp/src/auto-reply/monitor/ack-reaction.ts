@@ -1,4 +1,4 @@
-import { shouldAckReactionForWhatsApp } from "remoteclaw/plugin-sdk/channel-runtime";
+import { shouldAckReactionForWhatsApp } from "remoteclaw/plugin-sdk/channel-feedback";
 import type { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { sendReactionWhatsApp } from "../../send.js";

@@ -3,7 +3,7 @@ import {
   buildChannelKeyCandidates,
   resolveChannelEntryMatchWithFallback,
   type ChannelMatchSource,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/channel-targets";
 import type { SlackReactionNotificationMode } from "remoteclaw/plugin-sdk/config-runtime";
 import type { SlackMessageEvent } from "../types.js";
 import { allowListMatches, normalizeAllowListLower, normalizeSlackSlug } from "./allow-list.js";

@@ -1,7 +1,12 @@
-import { createScopedChannelMediaMaxBytesResolver } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveOutboundSendDep, type OutboundSendDeps } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
+import {
+  attachChannelToResult,
+  attachChannelToResults,
+  createAttachedChannelResultAdapter,
+} from "remoteclaw/plugin-sdk/channel-send-result";
 import { resolveMarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveOutboundSendDep, type OutboundSendDeps } from "remoteclaw/plugin-sdk/infra-runtime";
+import { createScopedChannelMediaMaxBytesResolver } from "remoteclaw/plugin-sdk/media-runtime";
 import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
 import { markdownToSignalTextChunks } from "./format.js";
 import { sendMessageSignal } from "./send.js";

@@ -1,5 +1,8 @@
-import { buildBrowseProvidersButton } from "../../../extensions/telegram/src/model-buttons.js";
-import { resolveAuthStorePathForDisplay } from "../../agents/auth-profiles.js";
+import { buildBrowseProvidersButton } from "../../../extensions/telegram/api.js";
+import {
+  ensureAuthProfileStore,
+  resolveAuthStorePathForDisplay,
+} from "../../agents/auth-profiles.js";
 import {
   type ModelAliasIndex,
   modelKey,

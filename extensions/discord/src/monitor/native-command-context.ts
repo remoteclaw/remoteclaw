@@ -1,4 +1,4 @@
-import type { CommandArgs } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { CommandArgs } from "remoteclaw/plugin-sdk/command-auth";
 import { finalizeInboundContext } from "remoteclaw/plugin-sdk/reply-runtime";
 import { type DiscordChannelConfigResolved, type DiscordGuildEntryResolved } from "./allow-list.js";
 import { buildDiscordInboundAccessContext } from "./inbound-context.js";

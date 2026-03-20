@@ -1,7 +1,7 @@
 import type {
   ChannelThreadingContext,
   ChannelThreadingToolContext,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/channel-contract";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { resolveSlackAccount, resolveSlackReplyToMode } from "./accounts.js";
 

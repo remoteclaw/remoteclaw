@@ -14,10 +14,10 @@ import { Routes } from "discord-api-types/v10";
 import { getAcpSessionManager } from "remoteclaw/plugin-sdk/acp-runtime";
 import { isAcpRuntimeError } from "remoteclaw/plugin-sdk/acp-runtime";
 import {
-  resolveThreadBindingIdleTimeoutMs,
-  resolveThreadBindingMaxAgeMs,
-  resolveThreadBindingsEnabled,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+  listNativeCommandSpecsForConfig,
+  listSkillCommandsForAgents,
+  type NativeCommandSpec,
+} from "remoteclaw/plugin-sdk/command-auth";
 import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
@@ -32,14 +32,16 @@ import {
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "remoteclaw/plugin-sdk/config-runtime";
+import {
+  resolveThreadBindingIdleTimeoutMs,
+  resolveThreadBindingMaxAgeMs,
+  resolveThreadBindingsEnabled,
+} from "remoteclaw/plugin-sdk/conversation-runtime";
 import { createConnectedChannelStatusPatch } from "remoteclaw/plugin-sdk/gateway-runtime";
 import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
 import { getPluginCommandSpecs } from "remoteclaw/plugin-sdk/plugin-runtime";
+import type { HistoryEntry } from "remoteclaw/plugin-sdk/reply-history";
 import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { NativeCommandSpec } from "remoteclaw/plugin-sdk/reply-runtime";
-import { listNativeCommandSpecsForConfig } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { HistoryEntry } from "remoteclaw/plugin-sdk/reply-runtime";
-import { listSkillCommandsForAgents } from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   danger,
   isVerbose,

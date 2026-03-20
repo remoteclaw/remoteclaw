@@ -1,5 +1,4 @@
-import type { ChannelSetupAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelSetupInput } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelSetupAdapter, ChannelSetupInput } from "remoteclaw/plugin-sdk/channel-setup";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 import {

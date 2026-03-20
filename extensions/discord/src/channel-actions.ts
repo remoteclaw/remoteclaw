@@ -1,11 +1,12 @@
 import {
   createUnionActionGate,
   listTokenSourcedAccounts,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/channel-actions";
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+  ChannelMessageToolDiscovery,
+} from "remoteclaw/plugin-sdk/channel-contract";
 import type { DiscordActionConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { createDiscordActionGate, listEnabledDiscordAccounts } from "./accounts.js";
 import { handleDiscordMessageAction } from "./actions/handle-action.js";

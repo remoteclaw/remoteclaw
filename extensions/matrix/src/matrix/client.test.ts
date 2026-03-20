@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { LookupFn } from "../../runtime-api.js";
 import type { CoreConfig } from "../types.js";
 import { resolveMatrixConfig } from "./client.js";
 

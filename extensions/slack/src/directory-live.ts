@@ -1,5 +1,7 @@
-import type { DirectoryConfigParams } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelDirectoryEntry } from "remoteclaw/plugin-sdk/channel-runtime";
+import type {
+  ChannelDirectoryEntry,
+  DirectoryConfigParams,
+} from "remoteclaw/plugin-sdk/directory-runtime";
 import { resolveSlackAccount } from "./accounts.js";
 import { createSlackWebClient } from "./client.js";
 

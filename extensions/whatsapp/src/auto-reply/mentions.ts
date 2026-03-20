@@ -1,5 +1,5 @@
+import { buildMentionRegexes, normalizeMentionText } from "remoteclaw/plugin-sdk/channel-inbound";
 import type { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { buildMentionRegexes, normalizeMentionText } from "remoteclaw/plugin-sdk/reply-runtime";
 import { isSelfChatMode, jidToE164, normalizeE164 } from "remoteclaw/plugin-sdk/text-runtime";
 import type { WebInboundMsg } from "./types.js";
 

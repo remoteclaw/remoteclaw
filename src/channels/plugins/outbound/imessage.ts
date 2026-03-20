@@ -1,10 +1,8 @@
-import { sendMessageIMessage } from "../../../../extensions/imessage/src/send.js";
-import { resolveOutboundSendDep, type OutboundSendDeps } from "../../../infra/outbound/deliver.js";
+import { resolveOutboundSendDep, type OutboundSendDeps } from "remoteclaw/plugin-sdk/infra-runtime";
 import {
-  createScopedChannelMediaMaxBytesResolver,
   createDirectTextMediaOutbound,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveOutboundSendDep, type OutboundSendDeps } from "remoteclaw/plugin-sdk/channel-runtime";
+  createScopedChannelMediaMaxBytesResolver,
+} from "remoteclaw/plugin-sdk/media-runtime";
 import { sendMessageIMessage } from "./send.js";
 
 function resolveIMessageSender(deps: OutboundSendDeps | undefined) {

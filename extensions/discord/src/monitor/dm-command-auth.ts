@@ -1,4 +1,4 @@
-import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/command-auth";
 import {
   readStoreAllowFromForDmPolicy,
   resolveDmGroupAccessWithLists,

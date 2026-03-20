@@ -1,16 +1,9 @@
-import crypto from "node:crypto";
-import type {
-  ChannelOutboundAdapter,
-  ChannelPlugin,
-  ChannelSetupInput,
-  RemoteClawConfig,
-} from "remoteclaw/plugin-sdk";
-import {
-  applyAccountNameToChannelSection,
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-} from "remoteclaw/plugin-sdk";
-import { buildTlonAccountFields } from "./account-fields.js";
+import { createHybridChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import type { ChannelAccountSnapshot } from "remoteclaw/plugin-sdk/channel-contract";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { ChannelPlugin } from "remoteclaw/plugin-sdk/core";
+import { createRuntimeOutboundDelegates } from "remoteclaw/plugin-sdk/infra-runtime";
+import { createLazyRuntimeModule } from "remoteclaw/plugin-sdk/lazy-runtime";
 import { tlonChannelConfigSchema } from "./config-schema.js";
 import { monitorTlonProvider } from "./monitor/index.js";
 import { tlonOnboardingAdapter } from "./onboarding.js";

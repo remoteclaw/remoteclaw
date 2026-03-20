@@ -1,5 +1,5 @@
 import type { SlackEventMiddlewareArgs } from "@slack/bolt";
-import { resolveChannelConfigWrites } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveChannelConfigWrites } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { loadConfig, writeConfigFile } from "remoteclaw/plugin-sdk/config-runtime";
 import { enqueueSystemEvent } from "remoteclaw/plugin-sdk/infra-runtime";
 import { danger, warn } from "remoteclaw/plugin-sdk/runtime-env";

@@ -1,10 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { installCommonResolveTargetErrorCases } from "../../shared/resolve-target-test-helpers.js";
 
-vi.mock("remoteclaw/plugin-sdk/whatsapp", async () => {
-  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/whatsapp")>(
-    "remoteclaw/plugin-sdk/whatsapp",
-  );
+vi.mock("./runtime-api.js", async () => {
+  const actual = await vi.importActual<typeof import("./runtime-api.js")>("./runtime-api.js");
   const normalizeWhatsAppTarget = (value: string) => {
     if (value === "invalid-target") return null;
     // Simulate E.164 normalization: strip leading + and whatsapp: prefix.
@@ -84,7 +82,7 @@ describe("whatsapp resolveTarget", () => {
     if (!result.ok) {
       throw result.error;
     }
-    expect(result.to).toBe("+5511999999999");
+    expect(result.to).toBe("5511999999999@s.whatsapp.net");
   });
 
   it("should resolve target in implicit mode with wildcard", () => {
@@ -98,7 +96,7 @@ describe("whatsapp resolveTarget", () => {
     if (!result.ok) {
       throw result.error;
     }
-    expect(result.to).toBe("+5511999999999");
+    expect(result.to).toBe("5511999999999@s.whatsapp.net");
   });
 
   it("should resolve target in implicit mode when in allowlist", () => {
@@ -112,7 +110,7 @@ describe("whatsapp resolveTarget", () => {
     if (!result.ok) {
       throw result.error;
     }
-    expect(result.to).toBe("+5511999999999");
+    expect(result.to).toBe("5511999999999@s.whatsapp.net");
   });
 
   it("should allow group JID regardless of allowlist", () => {

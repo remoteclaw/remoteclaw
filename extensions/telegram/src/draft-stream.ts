@@ -1,5 +1,5 @@
 import type { Bot } from "grammy";
-import { createFinalizableDraftLifecycle } from "remoteclaw/plugin-sdk/channel-runtime";
+import { createFinalizableDraftLifecycle } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import { resolveGlobalSingleton } from "remoteclaw/plugin-sdk/text-runtime";
 import { buildTelegramThreadParams, type TelegramThreadSpec } from "./bot/helpers.js";
 import { isSafeToRetrySendError, isTelegramClientRejection } from "./network-errors.js";

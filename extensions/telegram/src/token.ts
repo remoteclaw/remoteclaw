@@ -1,9 +1,9 @@
-import type { BaseTokenResolution } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { BaseTokenResolution } from "remoteclaw/plugin-sdk/channel-contract";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { normalizeResolvedSecretInputString } from "remoteclaw/plugin-sdk/config-runtime";
 import { tryReadSecretFileSync } from "remoteclaw/plugin-sdk/infra-runtime";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
-import type { TelegramAccountConfig } from "remoteclaw/plugin-sdk/telegram";
+import { normalizeResolvedSecretInputString } from "remoteclaw/plugin-sdk/secret-input";
+import type { TelegramAccountConfig } from "../runtime-api.js";
 
 export type TelegramTokenSource = "env" | "tokenFile" | "config" | "none";
 

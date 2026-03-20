@@ -5,17 +5,20 @@ import {
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "remoteclaw/plugin-sdk/config-runtime";
-import type { SignalReactionNotificationMode } from "remoteclaw/plugin-sdk/config-runtime";
 import type { BackoffPolicy } from "remoteclaw/plugin-sdk/infra-runtime";
 import { waitForTransportReady } from "remoteclaw/plugin-sdk/infra-runtime";
 import { saveMediaBuffer } from "remoteclaw/plugin-sdk/media-runtime";
+import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "remoteclaw/plugin-sdk/reply-history";
+import {
+  deliverTextOrMediaReply,
+  resolveSendableOutboundReplyParts,
+} from "remoteclaw/plugin-sdk/reply-payload";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   chunkTextWithMode,
   resolveChunkMode,
   resolveTextChunkLimit,
 } from "remoteclaw/plugin-sdk/reply-runtime";
-import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "remoteclaw/plugin-sdk/reply-runtime";
-import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import { createNonExitingRuntime, type RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { normalizeStringEntries } from "remoteclaw/plugin-sdk/text-runtime";
 import { normalizeE164 } from "remoteclaw/plugin-sdk/text-runtime";

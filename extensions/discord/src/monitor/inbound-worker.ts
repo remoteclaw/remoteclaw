@@ -1,4 +1,4 @@
-import { createRunStateMachine } from "remoteclaw/plugin-sdk/channel-runtime";
+import { createRunStateMachine } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import { formatDurationSeconds } from "remoteclaw/plugin-sdk/infra-runtime";
 import { KeyedAsyncQueue } from "remoteclaw/plugin-sdk/keyed-async-queue";
 import { danger } from "remoteclaw/plugin-sdk/runtime-env";

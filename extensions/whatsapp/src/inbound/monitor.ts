@@ -1,9 +1,8 @@
 import type { AnyMessageContent, proto, WAMessage } from "@whiskeysockets/baileys";
 import { DisconnectReason, isJidGroup } from "@whiskeysockets/baileys";
-import { formatLocationText } from "remoteclaw/plugin-sdk/channel-runtime";
+import { createInboundDebouncer, formatLocationText } from "remoteclaw/plugin-sdk/channel-inbound";
 import { recordChannelActivity } from "remoteclaw/plugin-sdk/infra-runtime";
 import { saveMediaBuffer } from "remoteclaw/plugin-sdk/media-runtime";
-import { createInboundDebouncer } from "remoteclaw/plugin-sdk/reply-runtime";
 import { logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
 import { getChildLogger } from "remoteclaw/plugin-sdk/text-runtime";

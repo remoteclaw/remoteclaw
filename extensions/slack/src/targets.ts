@@ -6,7 +6,7 @@ import {
   type MessagingTarget,
   type MessagingTargetKind,
   type MessagingTargetParseOptions,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/channel-targets";
 
 export type SlackTargetKind = MessagingTargetKind;
 

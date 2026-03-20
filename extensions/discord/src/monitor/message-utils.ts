@@ -1,9 +1,9 @@
 import type { ChannelType, Client, Message } from "@buape/carbon";
 import { StickerFormatType, type APIAttachment, type APIStickerItem } from "discord-api-types/v10";
-import { buildMediaPayload } from "remoteclaw/plugin-sdk/channel-runtime";
 import type { SsrFPolicy } from "remoteclaw/plugin-sdk/infra-runtime";
 import { fetchRemoteMedia, type FetchLike } from "remoteclaw/plugin-sdk/media-runtime";
 import { saveMediaBuffer } from "remoteclaw/plugin-sdk/media-runtime";
+import { buildMediaPayload } from "remoteclaw/plugin-sdk/reply-payload";
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 
 const DISCORD_CDN_HOSTNAMES = [

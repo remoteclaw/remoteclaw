@@ -21,9 +21,15 @@ import {
 import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import {
-  buildAccountScopedDmSecurityPolicy,
-  collectOpenGroupPolicyRestrictSendersWarnings,
+  createPairingPrefixStripper,
+  createTextPairingAdapter,
+} from "remoteclaw/plugin-sdk/channel-pairing";
+import {
+  createOpenGroupPolicyRestrictSendersWarningCollector,
+  projectWarningCollector,
 } from "remoteclaw/plugin-sdk/channel-policy";
+import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
+import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,

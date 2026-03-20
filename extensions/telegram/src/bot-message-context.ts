@@ -1,15 +1,15 @@
 import { resolveAckReaction } from "remoteclaw/plugin-sdk/agent-runtime";
-import { shouldAckReaction as shouldAckReactionGate } from "remoteclaw/plugin-sdk/channel-runtime";
-import { logInboundDrop } from "remoteclaw/plugin-sdk/channel-runtime";
 import {
   createStatusReactionController,
+  shouldAckReaction as shouldAckReactionGate,
   type StatusReactionController,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/channel-feedback";
+import { logInboundDrop } from "remoteclaw/plugin-sdk/channel-inbound";
 import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import type { TelegramDirectConfig, TelegramGroupConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { ensureConfiguredAcpRouteReady } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { ensureConfiguredBindingRouteReady } from "remoteclaw/plugin-sdk/conversation-runtime";
 import { recordChannelActivity } from "remoteclaw/plugin-sdk/infra-runtime";
-import { buildAgentSessionKey, deriveLastRoutePolicy } from "remoteclaw/plugin-sdk/routing";
+import { deriveLastRoutePolicy } from "remoteclaw/plugin-sdk/routing";
 import { DEFAULT_ACCOUNT_ID, resolveThreadSessionKeys } from "remoteclaw/plugin-sdk/routing";
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { withTelegramApiErrorLogging } from "./api-logging.js";

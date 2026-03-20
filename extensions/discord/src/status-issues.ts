@@ -1,13 +1,13 @@
+import type {
+  ChannelAccountSnapshot,
+  ChannelStatusIssue,
+} from "remoteclaw/plugin-sdk/channel-contract";
 import {
   appendMatchMetadata,
   asString,
   isRecord,
   resolveEnabledConfiguredAccountId,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import type {
-  ChannelAccountSnapshot,
-  ChannelStatusIssue,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/status-helpers";
 
 type DiscordIntentSummary = {
   messageContent?: "enabled" | "limited" | "disabled";

@@ -1,12 +1,15 @@
 import {
+  attachChannelToResult,
+  type ChannelOutboundAdapter,
+  createAttachedChannelResultAdapter,
+} from "remoteclaw/plugin-sdk/channel-send-result";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { resolveOutboundSendDep, type OutboundIdentity } from "remoteclaw/plugin-sdk/infra-runtime";
+import {
   resolvePayloadMediaUrls,
   sendPayloadMediaSequence,
   sendTextMediaPayload,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import type { ChannelOutboundAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import type { OutboundIdentity } from "remoteclaw/plugin-sdk/infra-runtime";
+} from "remoteclaw/plugin-sdk/reply-payload";
 import type { DiscordComponentMessageSpec } from "./components.js";
 import { getThreadBindingManager, type ThreadBindingRecord } from "./monitor/thread-bindings.js";
 import { normalizeDiscordOutboundTarget } from "./normalize.js";

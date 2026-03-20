@@ -10,7 +10,7 @@ import {
   ChannelType as DiscordChannelType,
   type APIApplicationCommandChannelOption,
 } from "discord-api-types/v10";
-import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveCommandAuthorizedFromAuthorizers } from "remoteclaw/plugin-sdk/command-auth";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { isDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk/config-runtime";
 import type { DiscordAccountConfig } from "remoteclaw/plugin-sdk/config-runtime";

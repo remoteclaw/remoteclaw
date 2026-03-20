@@ -1,5 +1,17 @@
 import {
-  buildAccountScopedDmSecurityPolicy,
+  createScopedChannelConfigAdapter,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createAllowlistProviderRouteAllowlistWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
+import { createChannelPluginBase } from "remoteclaw/plugin-sdk/core";
+import { createDelegatedSetupWizardProxy } from "remoteclaw/plugin-sdk/setup";
+import {
+  listWhatsAppAccountIds,
+  resolveDefaultWhatsAppAccountId,
+  resolveWhatsAppAccount,
+  type ResolvedWhatsAppAccount,
+} from "./accounts.js";
+import {
   buildChannelConfigSchema,
   collectAllowlistProviderGroupPolicyWarnings,
   collectOpenGroupPolicyRouteAllowlistWarnings,
@@ -14,13 +26,7 @@ import {
   resolveWhatsAppGroupToolPolicy,
   WhatsAppConfigSchema,
   type ChannelPlugin,
-} from "remoteclaw/plugin-sdk/whatsapp";
-import {
-  listWhatsAppAccountIds,
-  resolveDefaultWhatsAppAccountId,
-  resolveWhatsAppAccount,
-  type ResolvedWhatsAppAccount,
-} from "./accounts.js";
+} from "./runtime-api.js";
 
 export const WHATSAPP_CHANNEL = "whatsapp" as const;
 

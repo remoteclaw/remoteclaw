@@ -1,11 +1,11 @@
 import type { Guild, User } from "@buape/carbon";
-import type { AllowlistMatch } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { AllowlistMatch } from "remoteclaw/plugin-sdk/allow-from";
 import {
   buildChannelKeyCandidates,
   resolveChannelEntryMatchWithFallback,
   resolveChannelMatchConfig,
   type ChannelMatchSource,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/channel-targets";
 import { evaluateGroupRouteAccessForPolicy } from "remoteclaw/plugin-sdk/group-access";
 import { formatDiscordUserTag } from "./format.js";
 

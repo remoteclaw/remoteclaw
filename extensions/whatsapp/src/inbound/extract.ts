@@ -4,7 +4,7 @@ import {
   getContentType,
   normalizeMessageContent,
 } from "@whiskeysockets/baileys";
-import { formatLocationText, type NormalizedLocation } from "remoteclaw/plugin-sdk/channel-runtime";
+import { formatLocationText, type NormalizedLocation } from "remoteclaw/plugin-sdk/channel-inbound";
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { jidToE164 } from "remoteclaw/plugin-sdk/text-runtime";
 import { parseVcard } from "../vcard.js";

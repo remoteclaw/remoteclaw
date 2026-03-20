@@ -1,22 +1,20 @@
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
-import { createScopedAccountConfigAccessors } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createMessageToolButtonsSchema } from "remoteclaw/plugin-sdk/channel-actions";
 import {
-  buildAccountScopedDmSecurityPolicy,
-  collectAllowlistProviderRestrictSendersWarnings,
-} from "remoteclaw/plugin-sdk/channel-policy";
-import {
-  applyAccountNameToChannelSection,
-  applySetupAccountConfigPatch,
-  buildComputedAccountStatusSnapshot,
-  buildChannelConfigSchema,
-  DEFAULT_ACCOUNT_ID,
-  deleteAccountFromConfigSection,
-  migrateBaseNameToDefaultAccount,
-  normalizeAccountId,
-  setAccountEnabledInConfigSection,
-  type ChannelPlugin,
-} from "clawdbot/plugin-sdk";
-
+  createScopedChannelConfigAdapter,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import type {
+  ChannelMessageActionAdapter,
+  ChannelMessageActionName,
+  ChannelMessageToolDiscovery,
+} from "remoteclaw/plugin-sdk/channel-contract";
+import { createLoggedPairingApprovalNotifier } from "remoteclaw/plugin-sdk/channel-pairing";
+import { createAllowlistProviderRestrictSendersWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
+import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
+import { createScopedAccountReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { createChannelDirectoryAdapter } from "remoteclaw/plugin-sdk/directory-runtime";
+import { buildPassiveProbedChannelStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
 import { MattermostConfigSchema } from "./config-schema.js";
 import { resolveMattermostGroupRequireMention } from "./group-mentions.js";
 import {
@@ -34,6 +32,17 @@ import { normalizeMattermostBaseUrl } from "./mattermost/client.js";
 import { monitorMattermostProvider } from "./mattermost/monitor.js";
 import { probeMattermost } from "./mattermost/probe.js";
 import { sendMessageMattermost } from "./mattermost/send.js";
+import { resolveMattermostOpaqueTarget } from "./mattermost/target-resolution.js";
+import { looksLikeMattermostTargetId, normalizeMattermostMessagingTarget } from "./normalize.js";
+import {
+  buildComputedAccountStatusSnapshot,
+  buildChannelConfigSchema,
+  createAccountStatusSink,
+  DEFAULT_ACCOUNT_ID,
+  resolveAllowlistProviderRuntimeGroupPolicy,
+  resolveDefaultGroupPolicy,
+  type ChannelPlugin,
+} from "./runtime-api.js";
 import { getMattermostRuntime } from "./runtime.js";
 import { mattermostSetupAdapter } from "./setup-core.js";
 

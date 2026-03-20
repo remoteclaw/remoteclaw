@@ -1,5 +1,6 @@
 import { Type } from "@sinclair/typebox";
-import type { ChannelAgentTool } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelAgentTool } from "remoteclaw/plugin-sdk/channel-contract";
+import { startWebLoginWithQr, waitForWebLogin } from "../login-qr-api.js";
 
 export function createWhatsAppLoginTool(): ChannelAgentTool {
   return {

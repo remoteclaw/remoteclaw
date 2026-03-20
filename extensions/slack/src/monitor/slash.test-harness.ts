@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
   resolveAgentRouteMock: vi.fn(),
   finalizeInboundContextMock: vi.fn(),
   resolveConversationLabelMock: vi.fn(),
-  createReplyPrefixOptionsMock: vi.fn(),
   recordSessionMetaFromInboundMock: vi.fn(),
   resolveStorePathMock: vi.fn(),
 }));
@@ -25,9 +24,15 @@ vi.mock("remoteclaw/plugin-sdk/routing", () => ({
   resolveAgentRoute: (...args: unknown[]) => mocks.resolveAgentRouteMock(...args),
 }));
 
-vi.mock("remoteclaw/plugin-sdk/reply-runtime", () => ({
-  finalizeInboundContext: (...args: unknown[]) => mocks.finalizeInboundContextMock(...args),
-}));
+vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
+  return {
+    ...actual,
+    resolveConversationLabel: (...args: unknown[]) => mocks.resolveConversationLabelMock(...args),
+    recordInboundSessionMetaSafe: (...args: unknown[]) =>
+      mocks.recordSessionMetaFromInboundMock(...args),
+  };
+});
 
 vi.mock("remoteclaw/plugin-sdk/channel-runtime", () => ({
   resolveConversationLabel: (...args: unknown[]) => mocks.resolveConversationLabelMock(...args),
@@ -50,7 +55,6 @@ type SlashHarnessMocks = {
   resolveAgentRouteMock: ReturnType<typeof vi.fn>;
   finalizeInboundContextMock: ReturnType<typeof vi.fn>;
   resolveConversationLabelMock: ReturnType<typeof vi.fn>;
-  createReplyPrefixOptionsMock: ReturnType<typeof vi.fn>;
   recordSessionMetaFromInboundMock: ReturnType<typeof vi.fn>;
   resolveStorePathMock: ReturnType<typeof vi.fn>;
 };
@@ -70,7 +74,6 @@ export function resetSlackSlashMocks() {
   });
   mocks.finalizeInboundContextMock.mockReset().mockImplementation((ctx: unknown) => ctx);
   mocks.resolveConversationLabelMock.mockReset().mockReturnValue(undefined);
-  mocks.createReplyPrefixOptionsMock.mockReset().mockReturnValue({ onModelSelected: () => {} });
   mocks.recordSessionMetaFromInboundMock.mockReset().mockResolvedValue(undefined);
   mocks.resolveStorePathMock.mockReset().mockReturnValue("/tmp/openclaw-sessions.json");
 }

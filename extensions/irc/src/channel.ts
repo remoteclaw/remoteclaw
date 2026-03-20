@@ -1,24 +1,21 @@
 import { formatNormalizedAllowFromEntries } from "remoteclaw/plugin-sdk/allow-from";
 import { createScopedAccountConfigAccessors } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
-  buildAccountScopedDmSecurityPolicy,
-  buildOpenGroupPolicyWarning,
-  collectAllowlistProviderGroupPolicyWarnings,
-} from "remoteclaw/plugin-sdk/channel-policy";
+  createScopedChannelConfigAdapter,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createTextPairingAdapter } from "remoteclaw/plugin-sdk/channel-pairing";
 import {
-  buildBaseAccountStatusSnapshot,
-  buildBaseChannelStatusSummary,
-  buildChannelConfigSchema,
-  DEFAULT_ACCOUNT_ID,
-  deleteAccountFromConfigSection,
-  formatNormalizedAllowFromEntries,
-  getChatChannelMeta,
-  mapAllowFromEntries,
-  PAIRING_APPROVED_MESSAGE,
-  resolveOptionalConfigString,
-  setAccountEnabledInConfigSection,
-  type ChannelPlugin,
-} from "remoteclaw/plugin-sdk";
+  composeWarningCollectors,
+  createAllowlistProviderOpenWarningCollector,
+  createConditionalWarningCollector,
+} from "remoteclaw/plugin-sdk/channel-policy";
+import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
+import {
+  createChannelDirectoryAdapter,
+  listResolvedDirectoryEntriesFromSources,
+} from "remoteclaw/plugin-sdk/directory-runtime";
+import { runStoppablePassiveMonitor } from "remoteclaw/plugin-sdk/extension-shared";
 import {
   listIrcAccountIds,
   resolveDefaultIrcAccountId,

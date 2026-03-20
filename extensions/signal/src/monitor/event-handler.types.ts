@@ -4,7 +4,7 @@ import type {
   GroupPolicy,
   SignalReactionNotificationMode,
 } from "remoteclaw/plugin-sdk/config-runtime";
-import type { HistoryEntry } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { HistoryEntry } from "remoteclaw/plugin-sdk/reply-history";
 import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import type { SignalSender } from "../identity.js";

@@ -1,15 +1,43 @@
 import { buildAccountScopedAllowlistConfigEditor } from "remoteclaw/plugin-sdk/allowlist-config-edit";
 import {
-  buildAccountScopedDmSecurityPolicy,
-  collectOpenGroupPolicyConfiguredRouteWarnings,
-  collectOpenProviderGroupPolicyWarnings,
-} from "remoteclaw/plugin-sdk/channel-config-helpers";
-import { resolveOutboundSendDep } from "remoteclaw/plugin-sdk/channel-runtime";
+  buildLegacyDmAccountAllowlistAdapter,
+  createAccountScopedAllowlistNameResolver,
+  createFlatAllowlistOverrideResolver,
+} from "remoteclaw/plugin-sdk/allowlist-config-edit";
+import { createScopedDmSecurityResolver } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import {
-  buildAgentSessionKey,
+  createPairingPrefixStripper,
+  createTextPairingAdapter,
+} from "remoteclaw/plugin-sdk/channel-pairing";
+import { createOpenProviderConfiguredRouteWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
+import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
+import { resolveTargetsWithOptionalToken } from "remoteclaw/plugin-sdk/channel-targets";
+import { createScopedAccountReplyToModeResolver } from "remoteclaw/plugin-sdk/conversation-runtime";
+import {
+  createChannelDirectoryAdapter,
+  createRuntimeDirectoryLiveAdapter,
+} from "remoteclaw/plugin-sdk/directory-runtime";
+import { buildPassiveProbedChannelStatusSummary } from "remoteclaw/plugin-sdk/extension-shared";
+import {
+  createRuntimeOutboundDelegates,
+  resolveOutboundSendDep,
+} from "remoteclaw/plugin-sdk/infra-runtime";
+import {
+  buildOutboundBaseSessionKey,
+  normalizeOutboundThreadId,
   resolveThreadSessionKeys,
   type RoutePeer,
 } from "remoteclaw/plugin-sdk/routing";
+import {
+  listEnabledSlackAccounts,
+  resolveSlackAccount,
+  resolveSlackReplyToMode,
+  type ResolvedSlackAccount,
+} from "./accounts.js";
+import type { SlackActionContext } from "./action-runtime.js";
+import { parseSlackBlocksInput } from "./blocks-input.js";
+import { createSlackActions } from "./channel-actions.js";
+import { createSlackWebClient } from "./client.js";
 import {
   applyAccountNameToChannelSection,
   buildComputedAccountStatusSnapshot,

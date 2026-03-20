@@ -1,5 +1,5 @@
+import { formatInboundEnvelope } from "remoteclaw/plugin-sdk/channel-inbound";
 import { readSessionUpdatedAt } from "remoteclaw/plugin-sdk/config-runtime";
-import { formatInboundEnvelope } from "remoteclaw/plugin-sdk/reply-runtime";
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import type { ResolvedSlackAccount } from "../../accounts.js";
 import type { SlackMessageEvent } from "../../types.js";
@@ -30,7 +30,7 @@ export async function resolveSlackThreadContextData(params: {
   storePath: string;
   sessionKey: string;
   envelopeOptions: ReturnType<
-    typeof import("remoteclaw/plugin-sdk/reply-runtime").resolveEnvelopeFormatOptions
+    typeof import("remoteclaw/plugin-sdk/channel-inbound").resolveEnvelopeFormatOptions
   >;
   effectiveDirectMedia: SlackMediaResult[] | null;
 }): Promise<SlackThreadContextData> {

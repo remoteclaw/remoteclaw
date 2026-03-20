@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { BaseProbeResult } from "remoteclaw/plugin-sdk/channel-contract";
 import { withTimeout } from "remoteclaw/plugin-sdk/text-runtime";
 import { createSlackWebClient } from "./client.js";
 

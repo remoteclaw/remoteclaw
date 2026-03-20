@@ -1,11 +1,9 @@
-import { resolveThreadBindingConversationIdFromBindingId } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   resolveThreadBindingIdleTimeoutMsForChannel,
   resolveThreadBindingMaxAgeMsForChannel,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import {
   registerSessionBindingAdapter,
+  resolveThreadBindingConversationIdFromBindingId,
   unregisterSessionBindingAdapter,
   type BindingTargetKind,
   type SessionBindingRecord,

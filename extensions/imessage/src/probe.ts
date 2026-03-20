@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { BaseProbeResult } from "remoteclaw/plugin-sdk/channel-contract";
 import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { runCommandWithTimeout } from "remoteclaw/plugin-sdk/process-runtime";
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";

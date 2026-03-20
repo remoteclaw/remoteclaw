@@ -1,5 +1,4 @@
 import { appendCronStyleCurrentTimeLine } from "remoteclaw/plugin-sdk/agent-runtime";
-import { resolveWhatsAppHeartbeatRecipients } from "remoteclaw/plugin-sdk/channel-runtime";
 import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   loadSessionStore,
@@ -21,6 +20,7 @@ import { normalizeMainKey } from "remoteclaw/plugin-sdk/routing";
 import { getChildLogger } from "remoteclaw/plugin-sdk/runtime-env";
 import { redactIdentifier } from "remoteclaw/plugin-sdk/text-runtime";
 import { newConnectionId } from "../reconnect.js";
+import { resolveWhatsAppHeartbeatRecipients } from "../runtime-api.js";
 import { sendMessageWhatsApp } from "../send.js";
 import { formatError } from "../session.js";
 import { whatsappHeartbeatLog } from "./loggers.js";

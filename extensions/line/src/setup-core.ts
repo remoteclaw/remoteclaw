@@ -1,11 +1,10 @@
+import type { ChannelSetupAdapter, RemoteClawConfig } from "remoteclaw/plugin-sdk/setup";
 import {
   listLineAccountIds,
   normalizeAccountId,
   resolveLineAccount,
   type LineConfig,
-} from "remoteclaw/plugin-sdk/line";
-import type { ChannelSetupAdapter, RemoteClawConfig } from "remoteclaw/plugin-sdk/setup";
-import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/setup";
+} from "../../../src/plugin-sdk/line-core.js";
 
 const channel = "line" as const;
 

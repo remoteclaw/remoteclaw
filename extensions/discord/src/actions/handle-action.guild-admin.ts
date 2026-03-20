@@ -5,6 +5,8 @@ import {
   readStringArrayParam,
   readStringParam,
 } from "remoteclaw/plugin-sdk/agent-runtime";
+import type { ChannelMessageActionContext } from "remoteclaw/plugin-sdk/channel-contract";
+import { handleDiscordAction } from "./runtime.js";
 import {
   isDiscordModerationAction,
   readDiscordModerationCommand,

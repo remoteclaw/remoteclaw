@@ -1,9 +1,7 @@
 import { createActionGate } from "remoteclaw/plugin-sdk/agent-runtime";
-import type {
-  ChannelMessageActionName,
-  ChannelToolSend,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelMessageActionName } from "remoteclaw/plugin-sdk/channel-contract";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import type { ChannelToolSend } from "remoteclaw/plugin-sdk/tool-send";
 import { listEnabledSlackAccounts } from "./accounts.js";
 
 export function listSlackMessageActions(cfg: RemoteClawConfig): ChannelMessageActionName[] {

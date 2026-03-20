@@ -2,10 +2,17 @@ import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
 import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
 import {
-  buildAccountScopedDmSecurityPolicy,
-  collectAllowlistProviderGroupPolicyWarnings,
-  collectOpenGroupPolicyRouteAllowlistWarnings,
-} from "remoteclaw/plugin-sdk/channel-policy";
+  createScopedChannelConfigAdapter,
+  createScopedDmSecurityResolver,
+} from "remoteclaw/plugin-sdk/channel-config-helpers";
+import { createAccountStatusSink } from "remoteclaw/plugin-sdk/channel-lifecycle";
+import {
+  createLoggedPairingApprovalNotifier,
+  createPairingPrefixStripper,
+} from "remoteclaw/plugin-sdk/channel-pairing";
+import { createAllowlistProviderRouteAllowlistWarningCollector } from "remoteclaw/plugin-sdk/channel-policy";
+import { createAttachedChannelResultAdapter } from "remoteclaw/plugin-sdk/channel-send-result";
+import { runStoppablePassiveMonitor } from "remoteclaw/plugin-sdk/extension-shared";
 import {
   applyAccountNameToChannelSection,
   buildBaseChannelStatusSummary,

@@ -1,4 +1,4 @@
-import { hasAnyWhatsAppAuth } from "../../extensions/whatsapp/src/accounts.js";
+import { hasAnyWhatsAppAuth } from "../../extensions/whatsapp/api.js";
 import { normalizeProviderId } from "../agents/model-selection.js";
 import {
   getChannelPluginCatalogEntry,

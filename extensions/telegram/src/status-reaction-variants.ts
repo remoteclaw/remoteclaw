@@ -1,4 +1,4 @@
-import { DEFAULT_EMOJIS, type StatusReactionEmojis } from "remoteclaw/plugin-sdk/channel-runtime";
+import { DEFAULT_EMOJIS, type StatusReactionEmojis } from "remoteclaw/plugin-sdk/channel-feedback";
 
 type StatusReactionEmojiKey = keyof Required<StatusReactionEmojis>;
 

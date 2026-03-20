@@ -4,7 +4,7 @@ import {
   canonicalizeAllowlistWithResolvedIds,
   patchAllowlistUsersInConfigEntries,
   summarizeMapping,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/allow-from";
 import type { DiscordGuildEntry } from "remoteclaw/plugin-sdk/config-runtime";
 import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";

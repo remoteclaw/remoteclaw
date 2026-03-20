@@ -2,8 +2,8 @@ import {
   firstDefined,
   isSenderIdAllowed,
   mergeDmAllowFromSources,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import type { AllowlistMatch } from "remoteclaw/plugin-sdk/channel-runtime";
+  type AllowlistMatch,
+} from "remoteclaw/plugin-sdk/allow-from";
 import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
 
 export type NormalizedAllowFrom = {

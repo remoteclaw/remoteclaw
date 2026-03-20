@@ -6,7 +6,7 @@ import {
   mergeAllowlist,
   patchAllowlistUsersInConfigEntries,
   summarizeMapping,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/allow-from";
 import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { isDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk/config-runtime";
 import {
@@ -15,15 +15,15 @@ import {
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "remoteclaw/plugin-sdk/config-runtime";
 import type { SessionScope } from "remoteclaw/plugin-sdk/config-runtime";
-import { normalizeResolvedSecretInputString } from "remoteclaw/plugin-sdk/config-runtime";
 import { createConnectedChannelStatusPatch } from "remoteclaw/plugin-sdk/gateway-runtime";
 import { computeBackoff, sleepWithAbort } from "remoteclaw/plugin-sdk/infra-runtime";
 import { installRequestBodyLimitGuard } from "remoteclaw/plugin-sdk/infra-runtime";
+import { DEFAULT_GROUP_HISTORY_LIMIT } from "remoteclaw/plugin-sdk/reply-history";
 import { resolveTextChunkLimit } from "remoteclaw/plugin-sdk/reply-runtime";
-import { DEFAULT_GROUP_HISTORY_LIMIT } from "remoteclaw/plugin-sdk/reply-runtime";
 import { normalizeMainKey } from "remoteclaw/plugin-sdk/routing";
 import { warn } from "remoteclaw/plugin-sdk/runtime-env";
 import { createNonExitingRuntime, type RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import { normalizeResolvedSecretInputString } from "remoteclaw/plugin-sdk/secret-input";
 import { normalizeStringEntries } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveSlackAccount } from "../accounts.js";
 import { resolveSlackWebClientOptions } from "../client.js";

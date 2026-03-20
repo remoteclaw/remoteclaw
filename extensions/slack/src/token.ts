@@ -1,4 +1,4 @@
-import { normalizeResolvedSecretInputString } from "remoteclaw/plugin-sdk/config-runtime";
+import { normalizeResolvedSecretInputString } from "remoteclaw/plugin-sdk/secret-input";
 
 export function normalizeSlackToken(raw?: unknown): string | undefined {
   return normalizeResolvedSecretInputString({

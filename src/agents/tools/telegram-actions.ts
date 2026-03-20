@@ -1,32 +1,7 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import type { RemoteClawConfig } from "../../config/config.js";
-import { readBooleanParam } from "../../plugin-sdk/boolean-param.js";
-import {
-  createTelegramActionGate,
-  resolveTelegramPollActionGateState,
-} from "../../plugin-sdk/telegram.js";
-import type { TelegramButtonStyle, TelegramInlineButtons } from "../../plugin-sdk/telegram.js";
-import {
-  resolveTelegramInlineButtonsScope,
-  resolveTelegramTargetChatType,
-} from "../../plugin-sdk/telegram.js";
-import {
-  createForumTopicTelegram,
-  deleteMessageTelegram,
-  editForumTopicTelegram,
-  editMessageTelegram,
-  reactMessageTelegram,
-  sendMessageTelegram,
-  sendPollTelegram,
-  sendStickerTelegram,
-} from "../../plugin-sdk/telegram.js";
-import {
-  getCacheStats,
-  resolveTelegramReactionLevel,
-  resolveTelegramToken,
-  searchStickers,
-} from "../../plugin-sdk/telegram.js";
-import { resolvePollMaxSelections } from "../../polls.js";
+import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
+import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-actions";
+import { resolveTelegramPollVisibility } from "../runtime-api.js";
 import {
   jsonResult,
   readNumberParam,

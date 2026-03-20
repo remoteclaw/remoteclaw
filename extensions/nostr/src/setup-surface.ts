@@ -1,6 +1,5 @@
-import type { ChannelSetupAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelSetupAdapter } from "remoteclaw/plugin-sdk/channel-setup";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import type { DmPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
 import {
   mergeAllowFromEntries,

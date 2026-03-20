@@ -1,22 +1,16 @@
 import {
-  readNumberParam,
-  readStringArrayParam,
-  readStringOrNumberParam,
-  readStringParam,
-} from "remoteclaw/plugin-sdk/agent-runtime";
-import { handleTelegramAction } from "remoteclaw/plugin-sdk/agent-runtime";
-import { readBooleanParam } from "remoteclaw/plugin-sdk/boolean-param";
-import { resolveReactionMessageId } from "remoteclaw/plugin-sdk/channel-runtime";
-import {
   createUnionActionGate,
   listTokenSourcedAccounts,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+  resolveReactionMessageId,
+} from "remoteclaw/plugin-sdk/channel-actions";
+import { createMessageToolButtonsSchema } from "remoteclaw/plugin-sdk/channel-actions";
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+  ChannelMessageToolDiscovery,
+  ChannelMessageToolSchemaContribution,
+} from "remoteclaw/plugin-sdk/channel-contract";
 import type { TelegramActionConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { resolveTelegramPollVisibility } from "remoteclaw/plugin-sdk/telegram";
 import { extractToolSend } from "remoteclaw/plugin-sdk/tool-send";
 import {
   createTelegramActionGate,

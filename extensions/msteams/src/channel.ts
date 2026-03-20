@@ -1,10 +1,26 @@
 import { formatAllowFromLowercase } from "remoteclaw/plugin-sdk/allow-from";
-import { collectAllowlistProviderRestrictSendersWarnings } from "remoteclaw/plugin-sdk/channel-policy";
+import { createMessageToolCardSchema } from "remoteclaw/plugin-sdk/channel-actions";
+import { createTopLevelChannelConfigAdapter } from "remoteclaw/plugin-sdk/channel-config-helpers";
 import type {
-  ChannelMessageActionName,
-  ChannelPlugin,
-  RemoteClawConfig,
-} from "remoteclaw/plugin-sdk";
+  ChannelMessageActionAdapter,
+  ChannelMessageToolDiscovery,
+} from "remoteclaw/plugin-sdk/channel-contract";
+import {
+  createPairingPrefixStripper,
+  createTextPairingAdapter,
+} from "remoteclaw/plugin-sdk/channel-pairing";
+import {
+  createAllowlistProviderGroupPolicyWarningCollector,
+  projectWarningCollector,
+} from "remoteclaw/plugin-sdk/channel-policy";
+import {
+  createChannelDirectoryAdapter,
+  createRuntimeDirectoryLiveAdapter,
+  listDirectoryEntriesFromSources,
+} from "remoteclaw/plugin-sdk/directory-runtime";
+import { createRuntimeOutboundDelegates } from "remoteclaw/plugin-sdk/infra-runtime";
+import { createLazyRuntimeNamedExport } from "remoteclaw/plugin-sdk/lazy-runtime";
+import type { ChannelMessageActionName, ChannelPlugin, RemoteClawConfig } from "../runtime-api.js";
 import {
   buildProbeChannelStatusSummary,
   buildRuntimeAccountStatusSnapshot,

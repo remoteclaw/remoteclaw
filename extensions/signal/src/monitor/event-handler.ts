@@ -1,33 +1,33 @@
 import { resolveHumanDelayConfig } from "remoteclaw/plugin-sdk/agent-runtime";
-import { resolveControlCommandGate } from "remoteclaw/plugin-sdk/channel-runtime";
+import { logTypingFailure } from "remoteclaw/plugin-sdk/channel-feedback";
 import {
+  buildMentionRegexes,
   createChannelInboundDebouncer,
-  shouldDebounceTextInbound,
-} from "remoteclaw/plugin-sdk/channel-runtime";
-import { logInboundDrop, logTypingFailure } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveMentionGatingWithBypass } from "remoteclaw/plugin-sdk/channel-runtime";
-import { normalizeSignalMessagingTarget } from "remoteclaw/plugin-sdk/channel-runtime";
-import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk/channel-runtime";
-import { recordInboundSession } from "remoteclaw/plugin-sdk/channel-runtime";
-import { createTypingCallbacks } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveChannelGroupRequireMention } from "remoteclaw/plugin-sdk/config-runtime";
-import { readSessionUpdatedAt, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
-import { enqueueSystemEvent } from "remoteclaw/plugin-sdk/infra-runtime";
-import { kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
-import { hasControlCommand } from "remoteclaw/plugin-sdk/reply-runtime";
-import { dispatchInboundMessage } from "remoteclaw/plugin-sdk/reply-runtime";
-import {
   formatInboundEnvelope,
   formatInboundFromLabel,
+  matchesMentionPatterns,
   resolveEnvelopeFormatOptions,
-} from "remoteclaw/plugin-sdk/reply-runtime";
+  shouldDebounceTextInbound,
+} from "remoteclaw/plugin-sdk/channel-inbound";
+import {
+  logInboundDrop,
+  resolveMentionGatingWithBypass,
+} from "remoteclaw/plugin-sdk/channel-inbound";
+import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+import { resolveControlCommandGate } from "remoteclaw/plugin-sdk/command-auth";
+import { hasControlCommand } from "remoteclaw/plugin-sdk/command-auth";
+import { resolveChannelGroupRequireMention } from "remoteclaw/plugin-sdk/config-runtime";
+import { readSessionUpdatedAt, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
+import { recordInboundSession } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { enqueueSystemEvent } from "remoteclaw/plugin-sdk/infra-runtime";
+import { kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
 import {
   buildPendingHistoryContextFromMap,
   clearHistoryEntriesIfEnabled,
   recordPendingHistoryEntryIfEnabled,
-} from "remoteclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/reply-history";
+import { dispatchInboundMessage } from "remoteclaw/plugin-sdk/reply-runtime";
 import { finalizeInboundContext } from "remoteclaw/plugin-sdk/reply-runtime";
-import { buildMentionRegexes, matchesMentionPatterns } from "remoteclaw/plugin-sdk/reply-runtime";
 import { createReplyDispatcherWithTyping } from "remoteclaw/plugin-sdk/reply-runtime";
 import { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
 import { danger, logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
@@ -47,6 +47,7 @@ import {
   resolveSignalSender,
   type SignalSender,
 } from "../identity.js";
+import { normalizeSignalMessagingTarget } from "../runtime-api.js";
 import { sendMessageSignal, sendReadReceiptSignal, sendTypingSignal } from "../send.js";
 import { handleSignalDirectMessageAccess, resolveSignalAccessState } from "./access-policy.js";
 import type {

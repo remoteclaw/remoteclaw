@@ -1,8 +1,8 @@
-import { resolveMentionGating } from "remoteclaw/plugin-sdk/channel-runtime";
+import { resolveMentionGating } from "remoteclaw/plugin-sdk/channel-inbound";
+import { hasControlCommand } from "remoteclaw/plugin-sdk/command-auth";
 import type { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { hasControlCommand } from "remoteclaw/plugin-sdk/reply-runtime";
+import { recordPendingHistoryEntryIfEnabled } from "remoteclaw/plugin-sdk/reply-history";
 import { parseActivationCommand } from "remoteclaw/plugin-sdk/reply-runtime";
-import { recordPendingHistoryEntryIfEnabled } from "remoteclaw/plugin-sdk/reply-runtime";
 import { normalizeE164 } from "remoteclaw/plugin-sdk/text-runtime";
 import type { MentionConfig } from "../mentions.js";
 import { buildMentionConfig, debugMention, resolveOwnerList } from "../mentions.js";

@@ -1,8 +1,15 @@
-import { ChannelType, MessageType, type User } from "@buape/carbon";
-import { formatAllowlistMatchMeta } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveControlCommandGate } from "remoteclaw/plugin-sdk/channel-runtime";
-import { logInboundDrop } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveMentionGatingWithBypass } from "remoteclaw/plugin-sdk/channel-runtime";
+import { ChannelType, MessageType, type Message, type User } from "@buape/carbon";
+import { Routes, type APIMessage } from "discord-api-types/v10";
+import { formatAllowlistMatchMeta } from "remoteclaw/plugin-sdk/allow-from";
+import {
+  buildMentionRegexes,
+  logInboundDrop,
+  matchesMentionWithExplicit,
+  resolveMentionGatingWithBypass,
+} from "remoteclaw/plugin-sdk/channel-inbound";
+import { resolveControlCommandGate } from "remoteclaw/plugin-sdk/command-auth";
+import { hasControlCommand } from "remoteclaw/plugin-sdk/command-auth";
+import { shouldHandleTextCommands } from "remoteclaw/plugin-sdk/command-auth";
 import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { isDangerousNameMatchingEnabled } from "remoteclaw/plugin-sdk/config-runtime";
 import {
@@ -17,13 +24,10 @@ import { buildPairingReply } from "remoteclaw/plugin-sdk/conversation-runtime";
 import { isPluginOwnedSessionBindingRecord } from "remoteclaw/plugin-sdk/conversation-runtime";
 import { recordChannelActivity } from "remoteclaw/plugin-sdk/infra-runtime";
 import { enqueueSystemEvent } from "remoteclaw/plugin-sdk/infra-runtime";
-import { hasControlCommand } from "remoteclaw/plugin-sdk/reply-runtime";
-import { shouldHandleTextCommands } from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   recordPendingHistoryEntryIfEnabled,
   type HistoryEntry,
-} from "remoteclaw/plugin-sdk/reply-runtime";
-import { buildMentionRegexes, matchesMentionWithExplicit } from "remoteclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/reply-history";
 import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
 import { logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { getChildLogger } from "remoteclaw/plugin-sdk/runtime-env";

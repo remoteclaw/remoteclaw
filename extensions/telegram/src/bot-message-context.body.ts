@@ -4,22 +4,26 @@ import {
   modelSupportsVision,
 } from "remoteclaw/plugin-sdk/agent-runtime";
 import { resolveDefaultModelForAgent } from "remoteclaw/plugin-sdk/agent-runtime";
-import { resolveControlCommandGate } from "remoteclaw/plugin-sdk/channel-runtime";
-import { formatLocationText, type NormalizedLocation } from "remoteclaw/plugin-sdk/channel-runtime";
-import { logInboundDrop } from "remoteclaw/plugin-sdk/channel-runtime";
-import { resolveMentionGatingWithBypass } from "remoteclaw/plugin-sdk/channel-runtime";
+import {
+  buildMentionRegexes,
+  formatLocationText,
+  logInboundDrop,
+  matchesMentionWithExplicit,
+  resolveMentionGatingWithBypass,
+  type NormalizedLocation,
+} from "remoteclaw/plugin-sdk/channel-inbound";
+import { resolveControlCommandGate } from "remoteclaw/plugin-sdk/command-auth";
+import { hasControlCommand } from "remoteclaw/plugin-sdk/command-auth";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import type {
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
 } from "remoteclaw/plugin-sdk/config-runtime";
-import { hasControlCommand } from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   recordPendingHistoryEntryIfEnabled,
   type HistoryEntry,
-} from "remoteclaw/plugin-sdk/reply-runtime";
-import { buildMentionRegexes, matchesMentionWithExplicit } from "remoteclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/reply-history";
 import type { MsgContext } from "remoteclaw/plugin-sdk/reply-runtime";
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import type { NormalizedAllowFrom } from "./bot-access.js";

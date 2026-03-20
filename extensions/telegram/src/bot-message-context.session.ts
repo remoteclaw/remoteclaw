@@ -1,5 +1,10 @@
-import { toLocationContext } from "remoteclaw/plugin-sdk/channel-runtime";
-import { recordInboundSession } from "remoteclaw/plugin-sdk/channel-runtime";
+import {
+  formatInboundEnvelope,
+  resolveEnvelopeFormatOptions,
+  toLocationContext,
+  type NormalizedLocation,
+} from "remoteclaw/plugin-sdk/channel-inbound";
+import { normalizeCommandBody } from "remoteclaw/plugin-sdk/command-auth";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { readSessionUpdatedAt, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
 import type {
@@ -7,15 +12,11 @@ import type {
   TelegramGroupConfig,
   TelegramTopicConfig,
 } from "remoteclaw/plugin-sdk/config-runtime";
-import { normalizeCommandBody } from "remoteclaw/plugin-sdk/reply-runtime";
-import {
-  formatInboundEnvelope,
-  resolveEnvelopeFormatOptions,
-} from "remoteclaw/plugin-sdk/reply-runtime";
+import { recordInboundSession } from "remoteclaw/plugin-sdk/conversation-runtime";
 import {
   buildPendingHistoryContextFromMap,
   type HistoryEntry,
-} from "remoteclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/reply-history";
 import { finalizeInboundContext } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { ResolvedAgentRoute } from "remoteclaw/plugin-sdk/routing";
 import { resolveInboundLastRouteSessionKey } from "remoteclaw/plugin-sdk/routing";
@@ -63,7 +64,7 @@ export async function buildTelegramInboundContextPayload(params: {
   stickerCacheHit: boolean;
   effectiveWasMentioned: boolean;
   commandAuthorized: boolean;
-  locationData?: import("remoteclaw/plugin-sdk/channel-runtime").NormalizedLocation;
+  locationData?: NormalizedLocation;
   options?: TelegramMessageContextOptions;
   dmAllowFrom?: Array<string | number>;
 }): Promise<{

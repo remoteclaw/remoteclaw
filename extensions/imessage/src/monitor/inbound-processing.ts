@@ -1,24 +1,25 @@
-import { resolveDualTextControlCommandGate } from "remoteclaw/plugin-sdk/channel-runtime";
-import { logInboundDrop } from "remoteclaw/plugin-sdk/channel-runtime";
+import {
+  buildMentionRegexes,
+  type EnvelopeFormatOptions,
+  formatInboundEnvelope,
+  formatInboundFromLabel,
+  logInboundDrop,
+  matchesMentionPatterns,
+  resolveEnvelopeFormatOptions,
+} from "remoteclaw/plugin-sdk/channel-inbound";
+import { hasControlCommand } from "remoteclaw/plugin-sdk/command-auth";
+import { resolveDualTextControlCommandGate } from "remoteclaw/plugin-sdk/command-auth";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
 } from "remoteclaw/plugin-sdk/config-runtime";
-import { hasControlCommand } from "remoteclaw/plugin-sdk/reply-runtime";
-import {
-  formatInboundEnvelope,
-  formatInboundFromLabel,
-  resolveEnvelopeFormatOptions,
-  type EnvelopeFormatOptions,
-} from "remoteclaw/plugin-sdk/reply-runtime";
 import {
   buildPendingHistoryContextFromMap,
   recordPendingHistoryEntryIfEnabled,
   type HistoryEntry,
-} from "remoteclaw/plugin-sdk/reply-runtime";
+} from "remoteclaw/plugin-sdk/reply-history";
 import { finalizeInboundContext } from "remoteclaw/plugin-sdk/reply-runtime";
-import { buildMentionRegexes, matchesMentionPatterns } from "remoteclaw/plugin-sdk/reply-runtime";
 import { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
 import {
   DM_GROUP_ACCESS_REASON,

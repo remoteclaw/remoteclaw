@@ -1,12 +1,15 @@
 import { resolveHumanDelayConfig } from "remoteclaw/plugin-sdk/agent-runtime";
+import {
+  logAckFailure,
+  logTypingFailure,
+  removeAckReactionAfterReply,
+} from "remoteclaw/plugin-sdk/channel-feedback";
 import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
-import { removeAckReactionAfterReply } from "remoteclaw/plugin-sdk/channel-runtime";
-import { logAckFailure, logTypingFailure } from "remoteclaw/plugin-sdk/channel-runtime";
 import { resolveStorePath, updateLastRoute } from "remoteclaw/plugin-sdk/config-runtime";
 import { resolveAgentOutboundIdentity } from "remoteclaw/plugin-sdk/infra-runtime";
+import { clearHistoryEntriesIfEnabled } from "remoteclaw/plugin-sdk/reply-history";
 import { resolveSendableOutboundReplyParts } from "remoteclaw/plugin-sdk/reply-payload";
 import { dispatchInboundMessage } from "remoteclaw/plugin-sdk/reply-runtime";
-import { clearHistoryEntriesIfEnabled } from "remoteclaw/plugin-sdk/reply-runtime";
 import { createReplyDispatcherWithTyping } from "remoteclaw/plugin-sdk/reply-runtime";
 import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
 import { danger, logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";

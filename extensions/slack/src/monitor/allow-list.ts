@@ -2,7 +2,7 @@ import {
   compileAllowlist,
   resolveCompiledAllowlistMatch,
   type AllowlistMatch,
-} from "remoteclaw/plugin-sdk/channel-runtime";
+} from "remoteclaw/plugin-sdk/allow-from";
 import {
   normalizeHyphenSlug,
   normalizeStringEntries,

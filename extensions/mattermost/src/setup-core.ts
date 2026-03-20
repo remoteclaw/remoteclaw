@@ -1,4 +1,6 @@
-import type { ChannelSetupAdapter } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelSetupAdapter } from "remoteclaw/plugin-sdk/channel-setup";
+import { resolveMattermostAccount, type ResolvedMattermostAccount } from "./mattermost/accounts.js";
+import { normalizeMattermostBaseUrl } from "./mattermost/client.js";
 import {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,

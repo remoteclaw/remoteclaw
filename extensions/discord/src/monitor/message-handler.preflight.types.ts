@@ -1,7 +1,7 @@
 import type { ChannelType, Client, User } from "@buape/carbon";
 import type { ReplyToMode } from "remoteclaw/plugin-sdk/config-runtime";
 import type { SessionBindingRecord } from "remoteclaw/plugin-sdk/conversation-runtime";
-import type { HistoryEntry } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { HistoryEntry } from "remoteclaw/plugin-sdk/reply-history";
 import type { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
 import type { DiscordChannelConfigResolved, DiscordGuildEntryResolved } from "./allow-list.js";
 import type { DiscordChannelInfo } from "./message-utils.js";

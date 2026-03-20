@@ -1,22 +1,11 @@
-import type { ChannelSetupInput } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { ChannelSetupInput } from "remoteclaw/plugin-sdk/channel-setup";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
-import { hasConfiguredSecretInput } from "remoteclaw/plugin-sdk/config-runtime";
 import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/routing";
-import {
-  mergeAllowFromEntries,
-  resolveSetupAccountId,
-  setSetupChannelEnabled,
-  setTopLevelChannelDmPolicyWithAllowFrom,
-} from "remoteclaw/plugin-sdk/setup";
-import type { ChannelSetupDmPolicy } from "remoteclaw/plugin-sdk/setup";
+import { hasConfiguredSecretInput } from "remoteclaw/plugin-sdk/secret-input";
+import { setSetupChannelEnabled } from "remoteclaw/plugin-sdk/setup";
 import { type ChannelSetupWizard } from "remoteclaw/plugin-sdk/setup";
 import { formatDocsLink } from "remoteclaw/plugin-sdk/setup";
-import type { WizardPrompter } from "remoteclaw/plugin-sdk/setup";
-import {
-  listNextcloudTalkAccountIds,
-  resolveDefaultNextcloudTalkAccountId,
-  resolveNextcloudTalkAccount,
-} from "./accounts.js";
+import { listNextcloudTalkAccountIds, resolveNextcloudTalkAccount } from "./accounts.js";
 import {
   clearNextcloudTalkAccountFields,
   nextcloudTalkSetupAdapter,

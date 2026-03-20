@@ -1,4 +1,4 @@
-import { resolveLineAccount } from "remoteclaw/plugin-sdk/line";
+import { createAllowFromSection, createTopLevelChannelDmPolicy } from "remoteclaw/plugin-sdk/setup";
 import {
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
@@ -7,7 +7,7 @@ import {
   splitSetupEntries,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
-} from "remoteclaw/plugin-sdk/setup";
+} from "../../../src/plugin-sdk/line-core.js";
 import {
   isLineConfigured,
   listLineAccountIds,

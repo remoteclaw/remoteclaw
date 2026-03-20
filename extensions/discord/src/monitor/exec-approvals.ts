@@ -10,7 +10,6 @@ import {
   type TopLevelComponents,
 } from "@buape/carbon";
 import { ButtonStyle, Routes } from "discord-api-types/v10";
-import { normalizeMessageChannel } from "remoteclaw/plugin-sdk/channel-runtime";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
 import { loadSessionStore, resolveStorePath } from "remoteclaw/plugin-sdk/config-runtime";
 import type { DiscordExecApprovalConfig } from "remoteclaw/plugin-sdk/config-runtime";
@@ -24,7 +23,11 @@ import type {
   ExecApprovalRequest,
   ExecApprovalResolved,
 } from "remoteclaw/plugin-sdk/infra-runtime";
-import { normalizeAccountId, resolveAgentIdFromSessionKey } from "remoteclaw/plugin-sdk/routing";
+import {
+  normalizeAccountId,
+  normalizeMessageChannel,
+  resolveAgentIdFromSessionKey,
+} from "remoteclaw/plugin-sdk/routing";
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 import { compileSafeRegex, testRegexWithBoundedInput } from "remoteclaw/plugin-sdk/security-runtime";
 import { logDebug, logError } from "remoteclaw/plugin-sdk/text-runtime";

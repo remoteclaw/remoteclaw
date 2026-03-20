@@ -18,7 +18,7 @@ type DispatchReplyWithBufferedBlockDispatcherResult = Awaited<
   ReturnType<DispatchReplyWithBufferedBlockDispatcherFn>
 >;
 type RecordInboundSessionMetaSafeFn =
-  typeof import("remoteclaw/plugin-sdk/channel-runtime").recordInboundSessionMetaSafe;
+  typeof import("remoteclaw/plugin-sdk/conversation-runtime").recordInboundSessionMetaSafe;
 type AnyMock = MockFn<(...args: unknown[]) => unknown>;
 type AnyAsyncMock = MockFn<(...args: unknown[]) => Promise<unknown>>;
 type NativeCommandHarness = {
@@ -67,56 +67,95 @@ const replyPipelineMocks = vi.hoisted(() => {
 export const dispatchReplyWithBufferedBlockDispatcher =
   replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher;
 
-vi.mock("remoteclaw/plugin-sdk/reply-runtime", () => ({
-  finalizeInboundContext: replyPipelineMocks.finalizeInboundContext,
-}));
-vi.mock("remoteclaw/plugin-sdk/reply-runtime", () => ({
-  dispatchReplyWithBufferedBlockDispatcher:
-    replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
-}));
-vi.mock("remoteclaw/plugin-sdk/channel-runtime", () => ({
-  createReplyPrefixOptions: replyPipelineMocks.createReplyPrefixOptions,
-}));
-vi.mock("remoteclaw/plugin-sdk/channel-runtime", () => ({
-  recordInboundSessionMetaSafe: replyPipelineMocks.recordInboundSessionMetaSafe,
-}));
+vi.mock("remoteclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/reply-runtime")>();
+  return {
+    ...actual,
+    finalizeInboundContext: replyPipelineMocks.finalizeInboundContext,
+    dispatchReplyWithBufferedBlockDispatcher:
+      replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
+  };
+});
+vi.mock("remoteclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/conversation-runtime")>();
+  return {
+    ...actual,
+    recordInboundSessionMetaSafe: replyPipelineMocks.recordInboundSessionMetaSafe,
+    readChannelAllowFromStore: vi.fn(async () => []),
+  };
+});
+vi.mock("remoteclaw/plugin-sdk/channel-reply-pipeline", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("remoteclaw/plugin-sdk/channel-reply-pipeline")>();
+  return {
+    ...actual,
+    createChannelReplyPipeline: replyPipelineMocks.createChannelReplyPipeline,
+  };
+});
 
 const deliveryMocks = vi.hoisted(() => ({
   deliverReplies: vi.fn(async () => {}),
 }));
 export const deliverReplies = deliveryMocks.deliverReplies;
 vi.mock("./bot/delivery.js", () => ({ deliverReplies: deliveryMocks.deliverReplies }));
-vi.mock("remoteclaw/plugin-sdk/conversation-runtime", () => ({
-  readChannelAllowFromStore: vi.fn(async () => []),
-}));
+export { createNativeCommandTestParams };
 
-export function createNativeCommandTestParams(
-  params: Partial<RegisterTelegramNativeCommandsParams> = {},
-): RegisterTelegramNativeCommandsParams {
-  const log = vi.fn();
-  return {
-    bot:
-      params.bot ??
-      ({
-        api: {
-          setMyCommands: vi.fn().mockResolvedValue(undefined),
-          sendMessage: vi.fn().mockResolvedValue(undefined),
-        },
-        command: vi.fn(),
-      } as unknown as RegisterTelegramNativeCommandsParams["bot"]),
-    cfg: params.cfg ?? ({} as RemoteClawConfig),
-    runtime:
-      params.runtime ?? ({ log } as unknown as RegisterTelegramNativeCommandsParams["runtime"]),
-    accountId: params.accountId ?? "default",
-    telegramCfg: params.telegramCfg ?? ({} as RegisterTelegramNativeCommandsParams["telegramCfg"]),
-    allowFrom: params.allowFrom ?? [],
-    groupAllowFrom: params.groupAllowFrom ?? [],
-    replyToMode: params.replyToMode ?? "off",
-    textLimit: params.textLimit ?? 4000,
-    useAccessGroups: params.useAccessGroups ?? false,
-    nativeEnabled: params.nativeEnabled ?? true,
-    nativeSkillsEnabled: params.nativeSkillsEnabled ?? false,
-    nativeDisabledExplicit: params.nativeDisabledExplicit ?? false,
+export function createNativeCommandsHarness(params?: {
+  cfg?: RemoteClawConfig;
+  runtime?: RuntimeEnv;
+  telegramCfg?: TelegramAccountConfig;
+  allowFrom?: string[];
+  groupAllowFrom?: string[];
+  useAccessGroups?: boolean;
+  nativeEnabled?: boolean;
+  groupConfig?: Record<string, unknown>;
+  resolveGroupPolicy?: () => ChannelGroupPolicy;
+}): NativeCommandHarness {
+  const handlers: Record<string, (ctx: unknown) => Promise<void>> = {};
+  const sendMessage: AnyAsyncMock = vi.fn(async () => undefined);
+  const setMyCommands: AnyAsyncMock = vi.fn(async () => undefined);
+  const log: AnyMock = vi.fn();
+  const telegramDeps = {
+    loadConfig: vi.fn(() => params?.cfg ?? ({} as RemoteClawConfig)),
+    resolveStorePath: vi.fn((storePath?: string) => storePath ?? "/tmp/sessions.json"),
+    readChannelAllowFromStore: vi.fn(async () => []),
+    upsertChannelPairingRequest: vi.fn(async () => ({ code: "PAIRCODE", created: true })),
+    enqueueSystemEvent: vi.fn(),
+    dispatchReplyWithBufferedBlockDispatcher:
+      replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher,
+    buildModelsProviderData: vi.fn(async () => ({
+      byProvider: new Map<string, Set<string>>(),
+      providers: [],
+      resolvedDefault: { provider: "openai", model: "gpt-4.1" },
+    })),
+    listSkillCommandsForAgents: vi.fn(() => []),
+    wasSentByBot: vi.fn(() => false),
+  };
+  const bot = {
+    api: {
+      setMyCommands,
+      sendMessage,
+    },
+    command: (name: string, handler: (ctx: unknown) => Promise<void>) => {
+      handlers[name] = handler;
+    },
+  } as unknown as RegisterTelegramNativeCommandsParams["bot"];
+
+  registerTelegramNativeCommands({
+    bot,
+    cfg: params?.cfg ?? ({} as RemoteClawConfig),
+    runtime: params?.runtime ?? ({ log } as unknown as RuntimeEnv),
+    accountId: "default",
+    telegramCfg: params?.telegramCfg ?? ({} as TelegramAccountConfig),
+    allowFrom: params?.allowFrom ?? [],
+    groupAllowFrom: params?.groupAllowFrom ?? [],
+    replyToMode: "off",
+    textLimit: 4000,
+    useAccessGroups: params?.useAccessGroups ?? false,
+    nativeEnabled: params?.nativeEnabled ?? true,
+    nativeSkillsEnabled: false,
+    nativeDisabledExplicit: false,
+    telegramDeps,
     resolveGroupPolicy:
       params.resolveGroupPolicy ??
       (() =>

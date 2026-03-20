@@ -1,10 +1,8 @@
+import { createAccountListHelpers } from "remoteclaw/plugin-sdk/account-helpers";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { parseOptionalDelimitedEntries } from "remoteclaw/plugin-sdk/core";
 import { tryReadSecretFileSync } from "remoteclaw/plugin-sdk/infra-runtime";
-import {
-  createAccountListHelpers,
-  normalizeResolvedSecretInputString,
-  parseOptionalDelimitedEntries,
-} from "remoteclaw/plugin-sdk/irc";
+import { normalizeResolvedSecretInputString } from "remoteclaw/plugin-sdk/secret-input";
 import type { CoreConfig, IrcAccountConfig, IrcNickServConfig } from "./types.js";
 
 const TRUTHY_ENV = new Set(["true", "1", "yes", "on"]);

@@ -1,5 +1,5 @@
 import type { App } from "@slack/bolt";
-import { formatAllowlistMatchMeta } from "remoteclaw/plugin-sdk/channel-runtime";
+import { formatAllowlistMatchMeta } from "remoteclaw/plugin-sdk/allow-from";
 import type {
   RemoteClawConfig,
   SlackReactionNotificationMode,
@@ -7,7 +7,7 @@ import type {
 import { resolveSessionKey, type SessionScope } from "remoteclaw/plugin-sdk/config-runtime";
 import type { DmPolicy, GroupPolicy } from "remoteclaw/plugin-sdk/config-runtime";
 import { createDedupeCache } from "remoteclaw/plugin-sdk/infra-runtime";
-import type { HistoryEntry } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { HistoryEntry } from "remoteclaw/plugin-sdk/reply-history";
 import { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { getChildLogger } from "remoteclaw/plugin-sdk/runtime-env";

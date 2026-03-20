@@ -1,5 +1,6 @@
 ---
 title: "Plugin SDK Migration"
+sidebarTitle: "SDK Migration"
 summary: "Migrate from remoteclaw/plugin-sdk/compat to focused subpath imports"
 read_when:
   - You see the REMOTECLAW_PLUGIN_SDK_COMPAT_DEPRECATED warning

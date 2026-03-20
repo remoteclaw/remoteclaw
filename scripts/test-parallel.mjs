@@ -263,6 +263,22 @@ const countExplicitEntryFilters = (entryArgs) => {
   return fileFilters.length > 0 ? fileFilters.length : null;
 };
 const topLevelParallelEnabled = testProfile !== "low" && testProfile !== "serial";
+const defaultTopLevelParallelLimit =
+  testProfile === "serial"
+    ? 1
+    : testProfile === "low"
+      ? 2
+      : testProfile === "max"
+        ? 5
+        : highMemLocalHost
+          ? 4
+          : lowMemLocalHost
+            ? 2
+            : 3;
+const topLevelParallelLimit = Math.max(
+  1,
+  parseEnvNumber("REMOTECLAW_TEST_TOP_LEVEL_CONCURRENCY", defaultTopLevelParallelLimit),
+);
 const overrideWorkers = Number.parseInt(process.env.REMOTECLAW_TEST_WORKERS ?? "", 10);
 const resolvedOverride =
   Number.isFinite(overrideWorkers) && overrideWorkers > 0 ? overrideWorkers : null;
@@ -520,21 +536,53 @@ const run = async (entry) => {
   return 0;
 };
 
+const runEntriesWithLimit = async (entries, concurrency = 1) => {
+  if (entries.length === 0) {
+    return undefined;
+  }
+
+  const normalizedConcurrency = Math.max(1, Math.floor(concurrency));
+  if (normalizedConcurrency <= 1) {
+    for (const entry of entries) {
+      // eslint-disable-next-line no-await-in-loop
+      const code = await run(entry);
+      if (code !== 0) {
+        return code;
+      }
+    }
+
+    return undefined;
+  }
+
+  let nextIndex = 0;
+  let firstFailure;
+  const worker = async () => {
+    while (firstFailure === undefined) {
+      const entryIndex = nextIndex;
+      nextIndex += 1;
+      if (entryIndex >= entries.length) {
+        return;
+      }
+      const code = await run(entries[entryIndex]);
+      if (code !== 0 && firstFailure === undefined) {
+        firstFailure = code;
+      }
+    }
+  };
+
+  await Promise.all(Array.from({ length: normalizedConcurrency }, () => worker()));
+  return firstFailure;
+};
+
 const runEntries = async (entries) => {
   if (topLevelParallelEnabled) {
-    const codes = await Promise.all(entries.map(run));
-    return codes.find((code) => code !== 0);
+    // Keep a bounded number of top-level Vitest processes in flight. As the
+    // singleton lane list grows, unbounded Promise.all scheduling turns
+    // isolation into cross-process contention and can reintroduce timeouts.
+    return runEntriesWithLimit(entries, topLevelParallelLimit);
   }
 
-  for (const entry of entries) {
-    // eslint-disable-next-line no-await-in-loop
-    const code = await run(entry);
-    if (code !== 0) {
-      return code;
-    }
-  }
-
-  return undefined;
+  return runEntriesWithLimit(entries);
 };
 
 const shutdown = (signal) => {

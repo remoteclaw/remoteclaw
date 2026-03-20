@@ -129,6 +129,30 @@ describe("subagent registry steer restarts", () => {
     };
   };
 
+  const registerRun = (
+    params: {
+      runId: string;
+      childSessionKey: string;
+      task: string;
+      requesterSessionKey?: string;
+      requesterDisplayKey?: string;
+    } & Partial<
+      Pick<RegisterSubagentRunInput, "spawnMode" | "requesterOrigin" | "expectsCompletionMessage">
+    >,
+  ): void => {
+    mod.registerSubagentRun({
+      runId: params.runId,
+      childSessionKey: params.childSessionKey,
+      requesterSessionKey: params.requesterSessionKey ?? "agent:main:main",
+      requesterDisplayKey: params.requesterDisplayKey ?? "main",
+      requesterOrigin: params.requesterOrigin,
+      task: params.task,
+      cleanup: "keep",
+      spawnMode: params.spawnMode,
+      expectsCompletionMessage: params.expectsCompletionMessage,
+    });
+  };
+
   const registerCompletionModeRun = (
     runId: string,
     childSessionKey: string,

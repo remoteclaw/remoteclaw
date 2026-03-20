@@ -30,7 +30,7 @@ remoteclaw agent --message "hi" --model claude-cli/opus-4.6
 Codex CLI also works out of the box:
 
 ```bash
-remoteclaw agent --message "hi" --model codex-cli/gpt-5.3-codex
+remoteclaw agent --message "hi" --model codex-cli/gpt-5.4
 ```
 
 If your gateway runs under launchd/systemd and PATH is minimal, add just the

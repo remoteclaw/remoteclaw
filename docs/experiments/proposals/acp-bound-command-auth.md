@@ -1,5 +1,5 @@
 ---
-summary: "Proposal: long-term command authorization model for ACP-bound conversations"
+description: "Proposal: long-term command authorization model for ACP-bound conversations"
 read_when:
   - Designing native command auth behavior in Telegram/Discord ACP-bound channels/topics
 title: "ACP Bound Command Authorization (Proposal)"

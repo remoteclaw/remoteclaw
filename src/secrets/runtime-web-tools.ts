@@ -1,5 +1,9 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveSecretInputRef } from "../config/types.secrets.js";
+import {
+  listBundledWebSearchPluginIds,
+  resolveBundledWebSearchPluginId,
+} from "../plugins/bundled-web-search.js";
 import type {
   PluginWebSearchProviderEntry,
   WebSearchCredentialResolutionSource,
@@ -63,6 +67,33 @@ function normalizeProvider(
     return normalized;
   }
   return undefined;
+}
+
+function hasCustomWebSearchPluginRisk(config: RemoteClawConfig): boolean {
+  const plugins = config.plugins;
+  if (!plugins) {
+    return false;
+  }
+  if (Array.isArray(plugins.load?.paths) && plugins.load.paths.length > 0) {
+    return true;
+  }
+  if (plugins.installs && Object.keys(plugins.installs).length > 0) {
+    return true;
+  }
+
+  const bundledPluginIds = new Set<string>(listBundledWebSearchPluginIds());
+  const hasNonBundledPluginId = (pluginId: string) => !bundledPluginIds.has(pluginId.trim());
+  if (Array.isArray(plugins.allow) && plugins.allow.some(hasNonBundledPluginId)) {
+    return true;
+  }
+  if (Array.isArray(plugins.deny) && plugins.deny.some(hasNonBundledPluginId)) {
+    return true;
+  }
+  if (plugins.entries && Object.keys(plugins.entries).some(hasNonBundledPluginId)) {
+    return true;
+  }
+
+  return false;
 }
 
 function readNonEmptyEnvValue(

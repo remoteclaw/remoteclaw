@@ -1,5 +1,8 @@
+import { resolveAgentRoute } from "remoteclaw/plugin-sdk/routing";
+import { normalizeE164 } from "remoteclaw/plugin-sdk/text-runtime";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../src/config/config.js";
+import type { RemoteClawConfig } from "../../../src/config/config.js";
+import type { SignalDaemonExitEvent } from "./daemon.js";
 import {
   config,
   flush,
@@ -11,6 +14,7 @@ import {
 installSignalToolResultTestHooks();
 
 // Import after the harness registers `vi.mock(...)` for Signal internals.
+vi.resetModules();
 const { monitorSignalProvider } = await import("./monitor.js");
 
 const {
@@ -18,6 +22,7 @@ const {
   sendMock,
   streamMock,
   updateLastRouteMock,
+  enqueueSystemEventMock,
   upsertPairingRequestMock,
   waitForTransportReadyMock,
 } = getSignalToolResultTestMocks();
@@ -76,14 +81,23 @@ async function receiveSignalPayloads(params: {
   await flush();
 }
 
-function getDirectSignalEventsFor(sender: string) {
+function hasQueuedReactionEventFor(sender: string) {
   const route = resolveAgentRoute({
     cfg: config as RemoteClawConfig,
     channel: "signal",
     accountId: "default",
     peer: { kind: "direct", id: normalizeE164(sender) },
   });
-  return peekSystemEvents(route.sessionKey);
+  return enqueueSystemEventMock.mock.calls.some(([text, options]) => {
+    return (
+      typeof text === "string" &&
+      text.includes("Signal reaction added") &&
+      typeof options === "object" &&
+      options !== null &&
+      "sessionKey" in options &&
+      (options as { sessionKey?: string }).sessionKey === route.sessionKey
+    );
+  });
 }
 
 function makeBaseEnvelope(overrides: Record<string, unknown> = {}) {
@@ -214,8 +228,7 @@ describe("monitorSignalProvider tool results", () => {
       },
     });
 
-    const events = getDirectSignalEventsFor("+15550001111");
-    expect(events.some((text) => text.includes("Signal reaction added"))).toBe(true);
+    expect(hasQueuedReactionEventFor("+15550001111")).toBe(true);
   });
 
   it.each([
@@ -255,8 +268,7 @@ describe("monitorSignalProvider tool results", () => {
       },
     });
 
-    const events = getDirectSignalEventsFor("+15550001111");
-    expect(events.some((text) => text.includes("Signal reaction added"))).toBe(shouldEnqueue);
+    expect(hasQueuedReactionEventFor("+15550001111")).toBe(shouldEnqueue);
     expect(sendMock).not.toHaveBeenCalled();
     expect(upsertPairingRequestMock).not.toHaveBeenCalled();
   });
@@ -273,8 +285,7 @@ describe("monitorSignalProvider tool results", () => {
       },
     });
 
-    const events = getDirectSignalEventsFor("+15550001111");
-    expect(events.some((text) => text.includes("Signal reaction added"))).toBe(true);
+    expect(hasQueuedReactionEventFor("+15550001111")).toBe(true);
   });
 
   it("processes messages when reaction metadata is present", async () => {

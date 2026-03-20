@@ -6,6 +6,7 @@ import type { SignalDaemonExitEvent, SignalDaemonHandle } from "./daemon.js";
 
 type SignalToolResultTestMocks = {
   waitForTransportReadyMock: MockFn;
+  enqueueSystemEventMock: MockFn;
   sendMock: MockFn;
   replyMock: MockFn;
   updateLastRouteMock: MockFn;
@@ -18,6 +19,7 @@ type SignalToolResultTestMocks = {
 };
 
 const waitForTransportReadyMock = vi.hoisted(() => vi.fn()) as unknown as MockFn;
+const enqueueSystemEventMock = vi.hoisted(() => vi.fn()) as unknown as MockFn;
 const sendMock = vi.hoisted(() => vi.fn()) as unknown as MockFn;
 const replyMock = vi.hoisted(() => vi.fn()) as unknown as MockFn;
 const updateLastRouteMock = vi.hoisted(() => vi.fn()) as unknown as MockFn;
@@ -31,6 +33,7 @@ const spawnSignalDaemonMock = vi.hoisted(() => vi.fn()) as unknown as MockFn;
 export function getSignalToolResultTestMocks(): SignalToolResultTestMocks {
   return {
     waitForTransportReadyMock,
+    enqueueSystemEventMock,
     sendMock,
     replyMock,
     updateLastRouteMock,
@@ -125,6 +128,10 @@ vi.mock("remoteclaw/plugin-sdk/infra-runtime", async (importOriginal) => {
   return {
     ...actual,
     waitForTransportReady: (...args: unknown[]) => waitForTransportReadyMock(...args),
+    enqueueSystemEvent: (...args: Parameters<typeof actual.enqueueSystemEvent>) => {
+      enqueueSystemEventMock(...args);
+      return actual.enqueueSystemEvent(...args);
+    },
   };
 });
 
@@ -148,6 +155,7 @@ export function installSignalToolResultTestHooks() {
     readAllowFromStoreMock.mockReset().mockResolvedValue([]);
     upsertPairingRequestMock.mockReset().mockResolvedValue({ code: "PAIRCODE", created: true });
     waitForTransportReadyMock.mockReset().mockResolvedValue(undefined);
+    enqueueSystemEventMock.mockReset();
 
     resetSystemEventsForTest();
   });

@@ -32,21 +32,39 @@ function resolveTestAuthDir() {
 
 const authDir = resolveTestAuthDir();
 
-vi.mock("../../../src/config/config.js", () => ({
-  loadConfig: () =>
-    ({
-      channels: {
-        whatsapp: {
-          accounts: {
-            default: { enabled: true, authDir: resolveTestAuthDir() },
+vi.mock("remoteclaw/plugin-sdk/config-runtime", async () => {
+  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/config-runtime")>(
+    "remoteclaw/plugin-sdk/config-runtime",
+  );
+  return {
+    ...actual,
+    loadConfig: () =>
+      ({
+        channels: {
+          whatsapp: {
+            accounts: {
+              default: { enabled: true, authDir: resolveTestAuthDir() },
+            },
           },
         },
-      },
-    }) as never,
-}));
+      }) as never,
+  };
+});
 
 vi.mock("./session.js", () => {
   const authDir = resolveTestAuthDir();
+  const sockA = { ws: { close: vi.fn() } };
+  const sockB = { ws: { close: vi.fn() } };
+  const createWaSocket = vi.fn(async () => (createWaSocket.mock.calls.length <= 1 ? sockA : sockB));
+  const waitForWaConnection = vi.fn();
+  const formatError = vi.fn((err: unknown) => `formatted:${String(err)}`);
+  const getStatusCode = vi.fn(
+    (err: unknown) =>
+      (err as { output?: { statusCode?: number } })?.output?.statusCode ??
+      (err as { status?: number })?.status ??
+      (err as { error?: { output?: { statusCode?: number } } })?.error?.output?.statusCode,
+  );
+  const waitForCredsSaveQueueWithTimeout = vi.fn(async () => {});
   return {
     createWaSocket: sessionMocks.createWaSocket,
     waitForWaConnection: sessionMocks.waitForWaConnection,
@@ -74,15 +92,10 @@ describe("loginWeb coverage", () => {
     vi.resetModules();
     vi.useFakeTimers();
     vi.clearAllMocks();
-    ({ loginWeb } = await import("./login.js"));
-    sessionMocks.sockA.ws.close.mockClear();
-    sessionMocks.sockB.ws.close.mockClear();
-    sessionMocks.createWaSocket.mockClear();
-    sessionMocks.waitForWaConnection.mockReset().mockResolvedValue(undefined);
-    sessionMocks.waitForCredsSaveQueueWithTimeout.mockReset().mockResolvedValue(undefined);
-    sessionMocks.formatError
-      .mockReset()
-      .mockImplementation((err: unknown) => `formatted:${String(err)}`);
+    createWaSocketMock.mockClear();
+    waitForWaConnectionMock.mockReset().mockResolvedValue(undefined);
+    waitForCredsSaveQueueWithTimeoutMock.mockReset().mockResolvedValue(undefined);
+    formatErrorMock.mockReset().mockImplementation((err: unknown) => `formatted:${String(err)}`);
     rmMock.mockClear();
   });
   afterEach(() => {

@@ -11,8 +11,7 @@ export {
   ssrfPolicyFromAllowPrivateNetwork,
   type LookupFn,
   type SsrFPolicy,
-} from "remoteclaw/plugin-sdk/infra-runtime";
-export { formatZonedTimestamp } from "../../src/infra/format-time/format-datetime.js";
+} from "remoteclaw/plugin-sdk/ssrf-runtime";
 export {
   setMatrixThreadBindingIdleTimeoutBySessionKey,
   setMatrixThreadBindingMaxAgeBySessionKey,

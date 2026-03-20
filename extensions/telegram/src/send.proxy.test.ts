@@ -21,8 +21,10 @@ const { resolveTelegramFetch } = vi.hoisted(() => ({
   resolveTelegramFetch: vi.fn(),
 }));
 
-vi.mock("../../../src/config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../../src/config/config.js")>();
+vi.mock("remoteclaw/plugin-sdk/config-runtime", async () => {
+  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/config-runtime")>(
+    "remoteclaw/plugin-sdk/config-runtime",
+  );
   return {
     ...actual,
     loadConfig,

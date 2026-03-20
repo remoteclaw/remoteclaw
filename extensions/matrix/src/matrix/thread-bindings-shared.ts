@@ -1,8 +1,8 @@
 import type {
   BindingTargetKind,
   SessionBindingRecord,
-} from "remoteclaw/plugin-sdk/conversation-runtime";
-import { resolveThreadBindingLifecycle } from "remoteclaw/plugin-sdk/conversation-runtime";
+} from "remoteclaw/plugin-sdk/thread-bindings-runtime";
+import { resolveThreadBindingLifecycle } from "remoteclaw/plugin-sdk/thread-bindings-runtime";
 
 export type MatrixThreadBindingTargetKind = "subagent" | "acp";
 

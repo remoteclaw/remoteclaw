@@ -36,6 +36,7 @@ import type {
 import * as directoryRuntimeSdk from "remoteclaw/plugin-sdk/directory-runtime";
 import * as infraRuntimeSdk from "remoteclaw/plugin-sdk/infra-runtime";
 import * as lazyRuntimeSdk from "remoteclaw/plugin-sdk/lazy-runtime";
+import * as matrixRuntimeSharedSdk from "remoteclaw/plugin-sdk/matrix-runtime-shared";
 import * as mediaRuntimeSdk from "remoteclaw/plugin-sdk/media-runtime";
 import * as ollamaSetupSdk from "remoteclaw/plugin-sdk/ollama-setup";
 import * as providerAuthSdk from "remoteclaw/plugin-sdk/provider-auth";
@@ -50,7 +51,9 @@ import * as sandboxSdk from "remoteclaw/plugin-sdk/sandbox";
 import * as secretInputSdk from "remoteclaw/plugin-sdk/secret-input";
 import * as selfHostedProviderSetupSdk from "remoteclaw/plugin-sdk/self-hosted-provider-setup";
 import * as setupSdk from "remoteclaw/plugin-sdk/setup";
+import * as ssrfRuntimeSdk from "remoteclaw/plugin-sdk/ssrf-runtime";
 import * as testingSdk from "remoteclaw/plugin-sdk/testing";
+import * as threadBindingsRuntimeSdk from "remoteclaw/plugin-sdk/thread-bindings-runtime";
 import * as webhookIngressSdk from "remoteclaw/plugin-sdk/webhook-ingress";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { ChannelMessageActionContext } from "../channels/plugins/types.js";
@@ -484,6 +487,22 @@ describe("plugin-sdk subpath exports", () => {
     expect(typeof conversationRuntimeSdk.createScopedAccountReplyToModeResolver).toBe("function");
     expect(typeof conversationRuntimeSdk.createStaticReplyToModeResolver).toBe("function");
     expect(typeof conversationRuntimeSdk.createTopLevelChannelReplyToModeResolver).toBe("function");
+  });
+
+  it("exports narrow binding lifecycle helpers from the dedicated subpath", () => {
+    expect(typeof threadBindingsRuntimeSdk.resolveThreadBindingLifecycle).toBe("function");
+  });
+
+  it("exports narrow matrix runtime helpers from the dedicated subpath", () => {
+    expect(typeof matrixRuntimeSharedSdk.formatZonedTimestamp).toBe("function");
+  });
+
+  it("exports narrow ssrf helpers from the dedicated subpath", () => {
+    expect(typeof ssrfRuntimeSdk.closeDispatcher).toBe("function");
+    expect(typeof ssrfRuntimeSdk.createPinnedDispatcher).toBe("function");
+    expect(typeof ssrfRuntimeSdk.resolvePinnedHostnameWithPolicy).toBe("function");
+    expect(typeof ssrfRuntimeSdk.assertHttpUrlTargetsPrivateNetwork).toBe("function");
+    expect(typeof ssrfRuntimeSdk.ssrfPolicyFromAllowPrivateNetwork).toBe("function");
   });
 
   it("exports provider setup helpers from the dedicated subpath", () => {

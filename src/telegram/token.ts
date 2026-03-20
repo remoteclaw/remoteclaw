@@ -88,7 +88,8 @@ export function resolveTelegramToken(
     }
   }
 
-  const configToken = telegramCfg?.botToken?.trim();
+  const rawToken = telegramCfg?.botToken;
+  const configToken = typeof rawToken === "string" ? rawToken.trim() : undefined;
   if (configToken && allowEnv) {
     return { token: configToken, source: "config" };
   }

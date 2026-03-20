@@ -1,5 +1,8 @@
 export function normalizeSlackToken(raw?: string): string | undefined {
-  const trimmed = raw?.trim();
+  if (typeof raw !== "string") {
+    return undefined;
+  }
+  const trimmed = raw.trim();
   return trimmed ? trimmed : undefined;
 }
 

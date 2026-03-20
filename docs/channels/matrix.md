@@ -177,6 +177,39 @@ Notes:
 - Use `bindings[].match.accountId` to route each account to a different agent.
 - Crypto state is stored per account + access token (separate key stores per account).
 
+## Private/LAN homeservers
+
+By default, RemoteClaw blocks private/internal Matrix homeservers for SSRF protection unless you
+explicitly opt in per account.
+
+If your homeserver runs on localhost, a LAN/Tailscale IP, or an internal hostname, enable
+`allowPrivateNetwork` for that Matrix account:
+
+```json5
+{
+  channels: {
+    matrix: {
+      homeserver: "http://matrix-synapse:8008",
+      allowPrivateNetwork: true,
+      accessToken: "syt_internal_xxx",
+    },
+  },
+}
+```
+
+CLI setup example:
+
+```bash
+remoteclaw matrix account add \
+  --account ops \
+  --homeserver http://matrix-synapse:8008 \
+  --allow-private-network \
+  --access-token syt_ops_xxx
+```
+
+This opt-in only allows trusted private/internal targets. Public cleartext homeservers such as
+`http://matrix.example.org:8008` remain blocked. Prefer `https://` whenever possible.
+
 ## Routing model
 
 - Replies always go back to Matrix.

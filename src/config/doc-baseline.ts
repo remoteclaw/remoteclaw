@@ -1,13 +1,11 @@
-import { spawnSync } from "node:child_process";
 import fsSync from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ChannelPlugin } from "../channels/plugins/index.js";
 import { resolveRemoteClawPackageRootSync } from "../infra/remoteclaw-root.js";
-import { loadPluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { FIELD_HELP } from "./schema.help.js";
-import { buildConfigSchema, type ConfigSchemaResponse } from "./schema.js";
+import type { ConfigSchemaResponse } from "./schema.js";
+import { findWildcardHintMatch, schemaHasChildren } from "./schema.shared.js";
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
@@ -25,12 +23,6 @@ type JsonSchemaObject = JsonSchemaNode & {
   anyOf?: JsonSchemaObject[];
   allOf?: JsonSchemaObject[];
   oneOf?: JsonSchemaObject[];
-};
-
-type PackageChannelMetadata = {
-  id: string;
-  label: string;
-  blurb?: string;
 };
 
 type ChannelSurfaceMetadata = {
@@ -155,24 +147,6 @@ function asSchemaObject(value: unknown): JsonSchemaObject | null {
   return value as JsonSchemaObject;
 }
 
-function schemaHasChildren(schema: JsonSchemaObject): boolean {
-  if (schema.properties && Object.keys(schema.properties).length > 0) {
-    return true;
-  }
-  if (schema.additionalProperties && typeof schema.additionalProperties === "object") {
-    return true;
-  }
-  if (Array.isArray(schema.items)) {
-    return schema.items.some((entry) => typeof entry === "object" && entry !== null);
-  }
-  for (const branch of [schema.oneOf, schema.anyOf, schema.allOf]) {
-    if (branch?.some((entry) => entry && typeof entry === "object" && schemaHasChildren(entry))) {
-      return true;
-    }
-  }
-  return Boolean(schema.items && typeof schema.items === "object");
-}
-
 function splitHintLookupPath(path: string): string[] {
   const normalized = normalizeBaselinePath(path);
   return normalized ? normalized.split(".").filter(Boolean) : [];
@@ -182,45 +156,11 @@ function resolveUiHintMatch(
   uiHints: ConfigSchemaResponse["uiHints"],
   path: string,
 ): ConfigSchemaResponse["uiHints"][string] | undefined {
-  const targetParts = splitHintLookupPath(path);
-  let bestMatch:
-    | {
-        hint: ConfigSchemaResponse["uiHints"][string];
-        wildcardCount: number;
-      }
-    | undefined;
-
-  for (const [hintPath, hint] of Object.entries(uiHints)) {
-    const hintParts = splitHintLookupPath(hintPath);
-    if (hintParts.length !== targetParts.length) {
-      continue;
-    }
-
-    let wildcardCount = 0;
-    let matches = true;
-    for (let index = 0; index < hintParts.length; index += 1) {
-      const hintPart = hintParts[index];
-      const targetPart = targetParts[index];
-      if (hintPart === targetPart) {
-        continue;
-      }
-      if (hintPart === "*") {
-        wildcardCount += 1;
-        continue;
-      }
-      matches = false;
-      break;
-    }
-
-    if (!matches) {
-      continue;
-    }
-    if (!bestMatch || wildcardCount < bestMatch.wildcardCount) {
-      bestMatch = { hint, wildcardCount };
-    }
-  }
-
-  return bestMatch?.hint;
+  return findWildcardHintMatch({
+    uiHints,
+    path,
+    splitPath: splitHintLookupPath,
+  })?.hint;
 }
 
 function normalizeTypeValue(value: string | string[] | undefined): string | string[] | undefined {
@@ -328,197 +268,17 @@ function resolveFirstExistingPath(candidates: string[]): string | null {
   return null;
 }
 
-function loadPackageChannelMetadata(rootDir: string): PackageChannelMetadata | null {
-  try {
-    const packageJson = JSON.parse(
-      fsSync.readFileSync(path.join(rootDir, "package.json"), "utf8"),
-    ) as {
-      remoteclaw?: {
-        channel?: {
-          id?: unknown;
-          label?: unknown;
-          blurb?: unknown;
-        };
-      };
-    };
-    const channel = packageJson.remoteclaw?.channel;
-    if (!channel) {
-      return null;
-    }
-    const id = typeof channel.id === "string" ? channel.id.trim() : "";
-    const label = typeof channel.label === "string" ? channel.label.trim() : "";
-    const blurb = typeof channel.blurb === "string" ? channel.blurb.trim() : "";
-    if (!id || !label) {
-      return null;
-    }
-    return {
-      id,
-      label,
-      ...(blurb ? { blurb } : {}),
-    };
-  } catch {
-    return null;
-  }
-}
-
-function isChannelPlugin(value: unknown): value is ChannelPlugin {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const candidate = value as { id?: unknown; meta?: unknown; capabilities?: unknown };
-  return typeof candidate.id === "string" && typeof candidate.meta === "object";
-}
-
-function resolveSetupChannelPlugin(value: unknown): ChannelPlugin | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-  const candidate = value as { plugin?: unknown };
-  return isChannelPlugin(candidate.plugin) ? candidate.plugin : null;
-}
-
-async function importChannelPluginModule(rootDir: string): Promise<ChannelPlugin> {
-  logConfigDocBaselineDebug(`resolve channel module ${rootDir}`);
-  const modulePath = resolveFirstExistingPath([
-    path.join(rootDir, "setup-entry.ts"),
-    path.join(rootDir, "setup-entry.js"),
-    path.join(rootDir, "setup-entry.mts"),
-    path.join(rootDir, "setup-entry.mjs"),
-    path.join(rootDir, "src", "channel.ts"),
-    path.join(rootDir, "src", "channel.js"),
-    path.join(rootDir, "src", "plugin.ts"),
-    path.join(rootDir, "src", "plugin.js"),
-    path.join(rootDir, "src", "index.ts"),
-    path.join(rootDir, "src", "index.js"),
-    path.join(rootDir, "src", "channel.mts"),
-    path.join(rootDir, "src", "channel.mjs"),
-    path.join(rootDir, "src", "plugin.mts"),
-    path.join(rootDir, "src", "plugin.mjs"),
-  ]);
-  if (!modulePath) {
-    throw new Error(`channel source not found under ${rootDir}`);
-  }
-
-  logConfigDocBaselineDebug(`import channel module ${modulePath}`);
-  const imported = (await import(modulePath)) as Record<string, unknown>;
-  logConfigDocBaselineDebug(`imported channel module ${modulePath}`);
-  for (const value of Object.values(imported)) {
-    if (isChannelPlugin(value)) {
-      logConfigDocBaselineDebug(`resolved channel export ${modulePath}`);
-      return value;
-    }
-    const setupPlugin = resolveSetupChannelPlugin(value);
-    if (setupPlugin) {
-      logConfigDocBaselineDebug(`resolved setup channel export ${modulePath}`);
-      return setupPlugin;
-    }
-    if (typeof value === "function" && value.length === 0) {
-      const resolved = value();
-      if (isChannelPlugin(resolved)) {
-        logConfigDocBaselineDebug(`resolved channel factory ${modulePath}`);
-        return resolved;
-      }
-    }
-  }
-
-  throw new Error(`channel plugin export not found in ${modulePath}`);
-}
-
-async function importChannelSurfaceMetadata(
-  rootDir: string,
-  repoRoot: string,
-  env: NodeJS.ProcessEnv,
-): Promise<ChannelSurfaceMetadata | null> {
-  logConfigDocBaselineDebug(`resolve channel config surface ${rootDir}`);
-  const packageMetadata = loadPackageChannelMetadata(rootDir);
-  if (!packageMetadata) {
-    logConfigDocBaselineDebug(`missing package channel metadata ${rootDir}`);
-    return null;
-  }
-
-  const modulePath = resolveFirstExistingPath([
-    path.join(rootDir, "src", "config-schema.ts"),
-    path.join(rootDir, "src", "config-schema.js"),
-    path.join(rootDir, "src", "config-schema.mts"),
-    path.join(rootDir, "src", "config-schema.mjs"),
-  ]);
-  if (!modulePath) {
-    logConfigDocBaselineDebug(`missing channel config schema module ${rootDir}`);
-    return null;
-  }
-
-  logConfigDocBaselineDebug(`import channel config schema ${modulePath}`);
-  try {
-    logConfigDocBaselineDebug(`spawn channel config schema subprocess ${modulePath}`);
-    const result = spawnSync(
-      process.execPath,
-      [
-        "--import",
-        "tsx",
-        path.join(repoRoot, "scripts", "load-channel-config-surface.ts"),
-        modulePath,
-      ],
-      {
-        cwd: repoRoot,
-        encoding: "utf8",
-        env,
-        timeout: 15_000,
-        maxBuffer: 10 * 1024 * 1024,
-      },
-    );
-    if (result.status !== 0 || result.error) {
-      throw result.error ?? new Error(result.stderr || `child exited with status ${result.status}`);
-    }
-    logConfigDocBaselineDebug(`completed channel config schema subprocess ${modulePath}`);
-    const configSchema = JSON.parse(result.stdout) as {
-      schema: Record<string, unknown>;
-      uiHints?: ConfigSchemaResponse["uiHints"];
-    };
-    return {
-      id: packageMetadata.id,
-      label: packageMetadata.label,
-      description: packageMetadata.blurb,
-      configSchema: configSchema.schema,
-      configUiHints: configSchema.uiHints,
-    };
-  } catch (error) {
-    logConfigDocBaselineDebug(
-      `channel config schema subprocess failed for ${modulePath}: ${String(error)}`,
-    );
-    return null;
-  }
-}
-
-async function loadChannelSurfaceMetadata(
-  rootDir: string,
-  repoRoot: string,
-  env: NodeJS.ProcessEnv,
-): Promise<ChannelSurfaceMetadata> {
-  logConfigDocBaselineDebug(`load channel surface ${rootDir}`);
-  const configSurface = await importChannelSurfaceMetadata(rootDir, repoRoot, env);
-  if (configSurface) {
-    logConfigDocBaselineDebug(`resolved channel config surface ${rootDir}`);
-    return configSurface;
-  }
-
-  logConfigDocBaselineDebug(`fallback to channel plugin import ${rootDir}`);
-  const plugin = await importChannelPluginModule(rootDir);
-  return {
-    id: plugin.id,
-    label: plugin.meta.label,
-    description: plugin.meta.blurb,
-    configSchema: plugin.configSchema?.schema,
-    configUiHints: plugin.configSchema?.uiHints,
-  };
-}
-
 async function loadBundledConfigSchemaResponse(): Promise<ConfigSchemaResponse> {
+  const [{ loadPluginManifestRegistry }, { buildConfigSchema }] = await Promise.all([
+    import("../plugins/manifest-registry.js"),
+    import("./schema.js"),
+  ]);
   const repoRoot = resolveRepoRoot();
   const env = {
     ...process.env,
     HOME: os.tmpdir(),
-    REMOTECLAW_STATE_DIR: path.join(os.tmpdir(), "remoteclaw-config-doc-baseline-state"),
-    REMOTECLAW_BUNDLED_PLUGINS_DIR: path.join(repoRoot, "extensions"),
+    OPENCLAW_STATE_DIR: path.join(os.tmpdir(), "remoteclaw-config-doc-baseline-state"),
+    OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(repoRoot, "extensions"),
   };
 
   const manifestRegistry = loadPluginManifestRegistry({
@@ -530,24 +290,52 @@ async function loadBundledConfigSchemaResponse(): Promise<ConfigSchemaResponse> 
   const bundledChannelPlugins = manifestRegistry.plugins.filter(
     (plugin) => plugin.origin === "bundled" && plugin.channels.length > 0,
   );
-  const loadChannelsSequentiallyForDebug = process.env.REMOTECLAW_CONFIG_DOC_BASELINE_DEBUG === "1";
-  const channelPlugins = loadChannelsSequentiallyForDebug
-    ? await bundledChannelPlugins.reduce<Promise<ChannelSurfaceMetadata[]>>(
-        async (promise, plugin) => {
-          const loaded = await promise;
-          loaded.push(await loadChannelSurfaceMetadata(plugin.rootDir, repoRoot, env));
-          return loaded;
-        },
-        Promise.resolve([]),
-      )
-    : await Promise.all(
-        bundledChannelPlugins.map(
-          async (plugin) => await loadChannelSurfaceMetadata(plugin.rootDir, repoRoot, env),
-        ),
-      );
-  logConfigDocBaselineDebug(`imported ${channelPlugins.length} bundled channel plugins`);
+  const channelPlugins =
+    process.env.OPENCLAW_CONFIG_DOC_BASELINE_DEBUG === "1"
+      ? await bundledChannelPlugins.reduce<Promise<ChannelSurfaceMetadata[]>>(
+          async (promise, plugin) => {
+            const loaded = await promise;
+            loaded.push(
+              (await loadChannelSurfaceMetadata(
+                plugin.rootDir,
+                plugin.id,
+                plugin.name ?? plugin.id,
+                repoRoot,
+              )) ?? {
+                id: plugin.id,
+                label: plugin.name ?? plugin.id,
+                description: plugin.description,
+                configSchema: plugin.configSchema,
+                configUiHints: plugin.configUiHints,
+              },
+            );
+            return loaded;
+          },
+          Promise.resolve([]),
+        )
+      : await Promise.all(
+          bundledChannelPlugins.map(
+            async (plugin) =>
+              (await loadChannelSurfaceMetadata(
+                plugin.rootDir,
+                plugin.id,
+                plugin.name ?? plugin.id,
+                repoRoot,
+              )) ?? {
+                id: plugin.id,
+                label: plugin.name ?? plugin.id,
+                description: plugin.description,
+                configSchema: plugin.configSchema,
+                configUiHints: plugin.configUiHints,
+              },
+          ),
+        );
+  logConfigDocBaselineDebug(
+    `loaded ${channelPlugins.length} bundled channel entries from channel surfaces`,
+  );
 
   return buildConfigSchema({
+    cache: false,
     plugins: manifestRegistry.plugins
       .filter((plugin) => plugin.origin === "bundled")
       .map((plugin) => ({
@@ -565,6 +353,48 @@ async function loadBundledConfigSchemaResponse(): Promise<ConfigSchemaResponse> 
       configUiHints: entry.configUiHints,
     })),
   });
+}
+
+async function loadChannelSurfaceMetadata(
+  rootDir: string,
+  id: string,
+  label: string,
+  repoRoot: string,
+): Promise<ChannelSurfaceMetadata | null> {
+  logConfigDocBaselineDebug(`resolve channel config surface ${rootDir}`);
+  const modulePath = resolveFirstExistingPath([
+    path.join(rootDir, "src", "config-schema.ts"),
+    path.join(rootDir, "src", "config-schema.js"),
+    path.join(rootDir, "src", "config-schema.mts"),
+    path.join(rootDir, "src", "config-schema.mjs"),
+  ]);
+  if (!modulePath) {
+    logConfigDocBaselineDebug(`missing channel config schema module ${rootDir}`);
+    return null;
+  }
+
+  logConfigDocBaselineDebug(`import channel config schema ${modulePath}`);
+  try {
+    const { loadChannelConfigSurfaceModule } =
+      await import("../../scripts/load-channel-config-surface.ts");
+    const configSurface = await loadChannelConfigSurfaceModule(modulePath, { repoRoot });
+    if (!configSurface) {
+      logConfigDocBaselineDebug(`channel config schema export missing ${modulePath}`);
+      return null;
+    }
+    logConfigDocBaselineDebug(`completed channel config schema import ${modulePath}`);
+    return {
+      id,
+      label,
+      configSchema: configSurface.schema,
+      configUiHints: configSurface.uiHints as ConfigSchemaResponse["uiHints"] | undefined,
+    };
+  } catch (error) {
+    logConfigDocBaselineDebug(
+      `channel config schema import failed for ${modulePath}: ${String(error)}`,
+    );
+    return null;
+  }
 }
 
 export function collectConfigDocBaselineEntries(

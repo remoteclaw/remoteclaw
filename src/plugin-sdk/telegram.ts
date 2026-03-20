@@ -21,6 +21,7 @@ export {
 export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
 export {
   deleteAccountFromConfigSection,
+  clearAccountEntryFields,
   setAccountEnabledInConfigSection,
 } from "../channels/plugins/config-helpers.js";
 export { formatPairingApproveHint } from "../channels/plugins/helpers.js";

@@ -1,57 +1,37 @@
-import path from "node:path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const ensureSandboxWorkspaceForSession = vi.hoisted(() => vi.fn());
-
-vi.mock("../../agents/sandbox.js", () => ({
-  ensureSandboxWorkspaceForSession,
-}));
-
+import { describe, expect, it } from "vitest";
 import { createReplyMediaPathNormalizer } from "./reply-media-paths.js";
 
 describe("createReplyMediaPathNormalizer", () => {
-  beforeEach(() => {
-    ensureSandboxWorkspaceForSession.mockReset().mockResolvedValue(null);
-  });
-
-  it("resolves workspace-relative media against the agent workspace", async () => {
+  it("returns the payload unchanged (pass-through stub)", async () => {
     const normalize = createReplyMediaPathNormalizer({
       cfg: {},
       sessionKey: "session-key",
       workspaceDir: "/tmp/agent-workspace",
     });
 
-    const result = await normalize({
+    const payload = {
       mediaUrls: ["./out/photo.png"],
-    });
+      mediaUrl: "./out/photo.png",
+    };
 
-    expect(result).toMatchObject({
-      mediaUrl: path.join("/tmp/agent-workspace", "out", "photo.png"),
-      mediaUrls: [path.join("/tmp/agent-workspace", "out", "photo.png")],
-    });
+    const result = await normalize(payload);
+
+    expect(result).toBe(payload);
   });
 
-  it("maps sandbox-relative media back to the host sandbox workspace", async () => {
-    ensureSandboxWorkspaceForSession.mockResolvedValue({
-      workspaceDir: "/tmp/sandboxes/session-1",
-      containerWorkdir: "/workspace",
-    });
+  it("preserves http URLs unchanged", async () => {
     const normalize = createReplyMediaPathNormalizer({
       cfg: {},
-      sessionKey: "session-key",
-      workspaceDir: "/tmp/agent-workspace",
+      workspaceDir: "/tmp/workspace",
     });
 
-    const result = await normalize({
-      mediaUrls: ["./out/photo.png", "file:///workspace/screens/final.png"],
-    });
+    const payload = {
+      mediaUrl: "https://example.com/image.png",
+      mediaUrls: ["https://example.com/image.png"],
+    };
 
-    expect(result).toMatchObject({
-      mediaUrl: path.join("/tmp/sandboxes/session-1", "out", "photo.png"),
-      mediaUrls: [
-        path.join("/tmp/sandboxes/session-1", "out", "photo.png"),
-        path.join("/tmp/sandboxes/session-1", "screens", "final.png"),
-      ],
-    });
+    const result = await normalize(payload);
+
+    expect(result).toBe(payload);
   });
 });

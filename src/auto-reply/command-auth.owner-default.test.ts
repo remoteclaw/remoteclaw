@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
 import { resolveCommandAuthorization } from "./command-auth.js";
@@ -26,7 +26,7 @@ describe("senderIsOwner defaults to true when no owner allowlist configured (#26
   it("senderIsOwner is true when no ownerAllowFrom is configured (single-user default)", () => {
     const cfg = {
       channels: { discord: {} },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const ctx = {
       Provider: "discord",
@@ -50,7 +50,7 @@ describe("senderIsOwner defaults to true when no owner allowlist configured (#26
   it("senderIsOwner is false when no ownerAllowFrom is configured in a group chat", () => {
     const cfg = {
       channels: { discord: {} },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const ctx = {
       Provider: "discord",
@@ -73,7 +73,7 @@ describe("senderIsOwner defaults to true when no owner allowlist configured (#26
     const cfg = {
       channels: { discord: {} },
       commands: { ownerAllowFrom: ["456"] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const ctx = {
       Provider: "discord",
@@ -95,7 +95,7 @@ describe("senderIsOwner defaults to true when no owner allowlist configured (#26
     const cfg = {
       channels: { discord: {} },
       commands: { ownerAllowFrom: ["456"] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const ctx = {
       Provider: "discord",
@@ -117,7 +117,7 @@ describe("senderIsOwner defaults to true when no owner allowlist configured (#26
     const cfg = {
       channels: { discord: {} },
       commands: { ownerAllowFrom: ["*"] },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
 
     const ctx = {
       Provider: "discord",
@@ -136,7 +136,7 @@ describe("senderIsOwner defaults to true when no owner allowlist configured (#26
   });
 
   it("senderIsOwner is true for internal operator.admin sessions", () => {
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as RemoteClawConfig;
 
     const ctx = {
       Provider: "webchat",

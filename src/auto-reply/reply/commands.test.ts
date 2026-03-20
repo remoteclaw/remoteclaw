@@ -416,7 +416,7 @@ describe("handleCommands /allowlist", () => {
     const cfg = {
       commands: { text: true, config: true },
       channels: { telegram: { accounts: { work: { allowFrom: ["123"] } } } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const params = buildPolicyParams("/allowlist add dm --account work 789", cfg, {
       AccountId: "work",
     });
@@ -444,7 +444,7 @@ describe("handleCommands /allowlist", () => {
     const cfg = {
       commands: { text: true, config: true },
       channels: { telegram: { allowFrom: ["123"] } },
-    } as OpenClawConfig;
+    } as RemoteClawConfig;
     const params = buildPolicyParams("/allowlist remove dm --store 789", cfg);
     const result = await handleCommands(params);
 

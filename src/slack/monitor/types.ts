@@ -12,6 +12,7 @@ export type MonitorSlackOpts = {
   abortSignal?: AbortSignal;
   mediaMaxMb?: number;
   slashCommand?: SlackSlashCommandConfig;
+  setStatus?: (next: Record<string, unknown>) => void;
 };
 
 export type SlackReactionEvent = {

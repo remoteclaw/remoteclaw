@@ -1,8 +1,9 @@
-import fs from "node:fs";
-import type { BaseTokenResolution } from "../../../src/channels/plugins/types.js";
-import type { RemoteClawConfig } from "../../../src/config/config.js";
-import type { TelegramAccountConfig } from "../../../src/config/types.telegram.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
+import type { BaseTokenResolution } from "remoteclaw/plugin-sdk/channel-runtime";
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { normalizeResolvedSecretInputString } from "remoteclaw/plugin-sdk/config-runtime";
+import { tryReadSecretFileSync } from "remoteclaw/plugin-sdk/infra-runtime";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
+import type { TelegramAccountConfig } from "../runtime-api.js";
 
 export type TelegramTokenSource = "env" | "tokenFile" | "config" | "none";
 
@@ -56,52 +57,46 @@ export function resolveTelegramToken(
 
   const accountTokenFile = accountCfg?.tokenFile?.trim();
   if (accountTokenFile) {
-    if (!fs.existsSync(accountTokenFile)) {
-      opts.logMissingFile?.(
-        `channels.telegram.accounts.${accountId}.tokenFile not found: ${accountTokenFile}`,
-      );
-      return { token: "", source: "none" };
+    const token = tryReadSecretFileSync(
+      accountTokenFile,
+      `channels.telegram.accounts.${accountId}.tokenFile`,
+      { rejectSymlink: true },
+    );
+    if (token) {
+      return { token, source: "tokenFile" };
     }
-    try {
-      const token = fs.readFileSync(accountTokenFile, "utf-8").trim();
-      if (token) {
-        return { token, source: "tokenFile" };
-      }
-    } catch (err) {
-      opts.logMissingFile?.(
-        `channels.telegram.accounts.${accountId}.tokenFile read failed: ${String(err)}`,
-      );
-      return { token: "", source: "none" };
-    }
+    opts.logMissingFile?.(
+      `channels.telegram.accounts.${accountId}.tokenFile not found or unreadable: ${accountTokenFile}`,
+    );
     return { token: "", source: "none" };
   }
 
-  const accountToken = accountCfg?.botToken?.trim();
+  const accountToken = normalizeResolvedSecretInputString({
+    value: accountCfg?.botToken,
+    path: `channels.telegram.accounts.${accountId}.botToken`,
+  });
   if (accountToken) {
     return { token: accountToken, source: "config" };
   }
 
   const allowEnv = accountId === DEFAULT_ACCOUNT_ID;
   const tokenFile = telegramCfg?.tokenFile?.trim();
-  if (tokenFile && allowEnv) {
-    if (!fs.existsSync(tokenFile)) {
-      opts.logMissingFile?.(`channels.telegram.tokenFile not found: ${tokenFile}`);
-      return { token: "", source: "none" };
+  if (tokenFile) {
+    const token = tryReadSecretFileSync(tokenFile, "channels.telegram.tokenFile", {
+      rejectSymlink: true,
+    });
+    if (token) {
+      return { token, source: "tokenFile" };
     }
-    try {
-      const token = fs.readFileSync(tokenFile, "utf-8").trim();
-      if (token) {
-        return { token, source: "tokenFile" };
-      }
-    } catch (err) {
-      opts.logMissingFile?.(`channels.telegram.tokenFile read failed: ${String(err)}`);
-      return { token: "", source: "none" };
-    }
+    opts.logMissingFile?.(`channels.telegram.tokenFile not found or unreadable: ${tokenFile}`);
+    return { token: "", source: "none" };
   }
 
-  const rawToken = telegramCfg?.botToken;
-  const configToken = typeof rawToken === "string" ? rawToken.trim() : undefined;
-  if (configToken && allowEnv) {
+  const configToken = normalizeResolvedSecretInputString({
+    value: telegramCfg?.botToken,
+    path: "channels.telegram.botToken",
+  });
+  if (configToken) {
     return { token: configToken, source: "config" };
   }
 

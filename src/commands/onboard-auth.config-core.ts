@@ -145,11 +145,11 @@ export function applyXiaomiConfig(cfg: RemoteClawConfig): RemoteClawConfig {
  * Registers Venice models and sets up the provider, but preserves existing model selection.
  */
 export function applyVeniceProviderConfig(cfg: RemoteClawConfig): RemoteClawConfig {
-  const veniceModelRef = "venice/llama-3.3-70b";
+  const veniceModelRef = "venice/kimi-k2-5";
   const models = { ...cfg.agents?.defaults?.models };
   models[veniceModelRef] = {
     ...models[veniceModelRef],
-    alias: models[veniceModelRef]?.alias ?? "Llama 3.3 70B",
+    alias: models[veniceModelRef]?.alias ?? "Kimi K2.5",
   };
 
   return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models });

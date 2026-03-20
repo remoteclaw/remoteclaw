@@ -1,4 +1,5 @@
 import type { ReplyToMode } from "../../config/types.js";
+import { logVerbose } from "../../globals.js";
 import type { OriginatingChannelType } from "../templating.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { ReplyPayload } from "../types.js";

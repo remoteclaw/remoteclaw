@@ -808,6 +808,35 @@ export type PluginHookRuntimeContext = {
 
 // Hook handler types mapped by hook name
 export type PluginHookHandlerMap = {
+  before_model_resolve: (
+    event: PluginHookBeforeModelResolveEvent,
+    ctx: PluginHookAgentContext,
+  ) =>
+    | Promise<PluginHookBeforeModelResolveResult | void>
+    | PluginHookBeforeModelResolveResult
+    | void;
+  before_prompt_build: (
+    event: PluginHookBeforePromptBuildEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<PluginHookBeforePromptBuildResult | void> | PluginHookBeforePromptBuildResult | void;
+  before_agent_start: (
+    event: PluginHookBeforeAgentStartEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<PluginHookBeforeAgentStartResult | void> | PluginHookBeforeAgentStartResult | void;
+  llm_input: (event: PluginHookLlmInputEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
+  llm_output: (
+    event: PluginHookLlmOutputEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
+  before_compaction: (
+    event: PluginHookBeforeCompactionEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
+  after_compaction: (
+    event: Record<string, unknown>,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
+  tool_result_persist: (event: Record<string, unknown>, ctx: Record<string, unknown>) => void;
   before_reset: (
     event: PluginHookBeforeResetEvent,
     ctx: PluginHookAgentContext,

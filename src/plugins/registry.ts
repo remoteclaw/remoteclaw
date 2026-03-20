@@ -205,14 +205,7 @@ export function createEmptyPluginRegistry(): PluginRegistry {
  * Their trigger points no longer exist in CLI-only mode — registrations
  * are silently dropped with a diagnostic warning.
  */
-const DEAD_HOOKS: ReadonlySet<string> = new Set([
-  "before_model_resolve",
-  "before_prompt_build",
-  "before_agent_start",
-  "llm_input",
-  "llm_output",
-  "tool_result_persist",
-]);
+const DEAD_HOOKS: ReadonlySet<string> = new Set(["llm_input", "llm_output", "tool_result_persist"]);
 
 export function createPluginRegistry(registryParams: PluginRegistryParams) {
   const registry = createEmptyPluginRegistry();

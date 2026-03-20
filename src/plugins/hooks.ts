@@ -10,6 +10,12 @@ import type {
   PluginHookAfterToolCallEvent,
   PluginHookAgentContext,
   PluginHookAgentEndEvent,
+  PluginHookBeforeAgentStartEvent,
+  PluginHookBeforeAgentStartResult,
+  PluginHookBeforeModelResolveEvent,
+  PluginHookBeforeModelResolveResult,
+  PluginHookBeforePromptBuildEvent,
+  PluginHookBeforePromptBuildResult,
   PluginHookAfterRuntimeExitEvent,
   PluginHookBeforeResetEvent,
   PluginHookBeforeRuntimeSpawnEvent,
@@ -109,6 +115,25 @@ function getHooksForName<K extends PluginHookName>(
 export function createHookRunner(registry: PluginRegistry, options: HookRunnerOptions = {}) {
   const logger = options.logger;
   const catchErrors = options.catchErrors ?? true;
+
+  const mergeBeforeModelResolve = (
+    acc: PluginHookBeforeModelResolveResult | undefined,
+    next: PluginHookBeforeModelResolveResult,
+  ): PluginHookBeforeModelResolveResult => ({
+    modelOverride: acc?.modelOverride ?? next.modelOverride,
+    providerOverride: acc?.providerOverride ?? next.providerOverride,
+  });
+
+  const mergeBeforePromptBuild = (
+    acc: PluginHookBeforePromptBuildResult | undefined,
+    next: PluginHookBeforePromptBuildResult,
+  ): PluginHookBeforePromptBuildResult => ({
+    systemPrompt: next.systemPrompt ?? acc?.systemPrompt,
+    prependContext:
+      acc?.prependContext && next.prependContext
+        ? `${acc.prependContext}\n\n${next.prependContext}`
+        : (next.prependContext ?? acc?.prependContext),
+  });
 
   const mergeSubagentSpawningResult = (
     acc: PluginHookSubagentSpawningResult | undefined,
@@ -221,6 +246,57 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
   // =========================================================================
   // Agent Hooks
   // =========================================================================
+
+  /**
+   * Run before_model_resolve hook.
+   * Allows plugins to override provider/model before model resolution.
+   */
+  async function runBeforeModelResolve(
+    event: PluginHookBeforeModelResolveEvent,
+    ctx: PluginHookAgentContext,
+  ): Promise<PluginHookBeforeModelResolveResult | undefined> {
+    return runModifyingHook<"before_model_resolve", PluginHookBeforeModelResolveResult>(
+      "before_model_resolve",
+      event,
+      ctx,
+      mergeBeforeModelResolve,
+    );
+  }
+
+  /**
+   * Run before_prompt_build hook.
+   * Allows plugins to inject context and system prompt before prompt submission.
+   */
+  async function runBeforePromptBuild(
+    event: PluginHookBeforePromptBuildEvent,
+    ctx: PluginHookAgentContext,
+  ): Promise<PluginHookBeforePromptBuildResult | undefined> {
+    return runModifyingHook<"before_prompt_build", PluginHookBeforePromptBuildResult>(
+      "before_prompt_build",
+      event,
+      ctx,
+      mergeBeforePromptBuild,
+    );
+  }
+
+  /**
+   * Run before_agent_start hook.
+   * Legacy compatibility hook that combines model resolve + prompt build phases.
+   */
+  async function runBeforeAgentStart(
+    event: PluginHookBeforeAgentStartEvent,
+    ctx: PluginHookAgentContext,
+  ): Promise<PluginHookBeforeAgentStartResult | undefined> {
+    return runModifyingHook<"before_agent_start", PluginHookBeforeAgentStartResult>(
+      "before_agent_start",
+      event,
+      ctx,
+      (acc, next) => ({
+        ...mergeBeforePromptBuild(acc, next),
+        ...mergeBeforeModelResolve(acc, next),
+      }),
+    );
+  }
 
   /**
    * Run before_reset hook.
@@ -578,7 +654,10 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
   }
 
   return {
-    // Agent hooks
+    // Agent hooks (model/prompt pipeline — registered but not fired in CLI-only mode)
+    runBeforeModelResolve,
+    runBeforePromptBuild,
+    runBeforeAgentStart,
     runBeforeReset,
     // Message hooks
     runMessageReceived,

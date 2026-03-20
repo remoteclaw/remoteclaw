@@ -239,15 +239,15 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
         debug: vi.fn(),
       })),
     },
+    subagent: {
+      run: vi.fn() as unknown as PluginRuntime["subagent"]["run"],
+      waitForRun: vi.fn() as unknown as PluginRuntime["subagent"]["waitForRun"],
+      getSessionMessages: vi.fn() as unknown as PluginRuntime["subagent"]["getSessionMessages"],
+      getSession: vi.fn() as unknown as PluginRuntime["subagent"]["getSession"],
+      deleteSession: vi.fn() as unknown as PluginRuntime["subagent"]["deleteSession"],
+    },
     state: {
       resolveStateDir: vi.fn(() => "/tmp/remoteclaw"),
-    },
-    subagent: {
-      run: vi.fn(),
-      waitForRun: vi.fn(),
-      getSessionMessages: vi.fn(),
-      getSession: vi.fn(),
-      deleteSession: vi.fn(),
     },
   };
 

@@ -280,7 +280,7 @@ describe("systemd service control", () => {
           "debian@",
           "--user",
           "restart",
-          "openclaw-gateway.service",
+          "remoteclaw-gateway.service",
         ]);
         cb(null, "", "");
       });

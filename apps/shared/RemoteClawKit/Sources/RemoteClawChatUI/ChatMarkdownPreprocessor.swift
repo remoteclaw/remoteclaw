@@ -39,7 +39,7 @@ enum ChatMarkdownPreprocessor {
         if matches.isEmpty { return Result(cleaned: self.normalize(withoutTimestamps), images: []) }
 
         var images: [InlineImage] = []
-        var cleaned = withoutTimestamps
+        let cleaned = NSMutableString(string: withoutTimestamps)
 
         for match in matches.reversed() {
             guard match.numberOfRanges >= 3 else { continue }
@@ -54,12 +54,10 @@ enum ChatMarkdownPreprocessor {
             }()
             images.append(InlineImage(label: label, image: image))
 
-            let start = cleaned.index(cleaned.startIndex, offsetBy: match.range.location)
-            let end = cleaned.index(start, offsetBy: match.range.length)
-            cleaned.replaceSubrange(start..<end, with: "")
+            cleaned.replaceCharacters(in: match.range, with: "")
         }
 
-        return Result(cleaned: self.normalize(cleaned), images: images.reversed())
+        return Result(cleaned: self.normalize(cleaned as String), images: images.reversed())
     }
 
     private static func stripInboundContextBlocks(_ raw: String) -> String {

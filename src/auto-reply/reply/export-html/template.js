@@ -655,6 +655,10 @@
     return div.innerHTML;
   }
 
+  function escapeHtmlAttr(text) {
+    return escapeHtml(text).replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+  }
+
   // Validate image fields before interpolating data URLs.
   const SAFE_IMAGE_MIME_RE = /^image\/(png|jpeg|gif|webp|svg\+xml|bmp|tiff|avif)$/i;
   const SAFE_BASE64_RE = /^[A-Za-z0-9+/]+={0,2}$/;

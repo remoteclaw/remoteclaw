@@ -1,17 +1,23 @@
 ---
-summary: "Plugin architecture internals: capability model, ownership, contracts, load pipeline, runtime helpers"
+summary: "Plugin internals: capability model, ownership, contracts, load pipeline, and runtime helpers"
 read_when:
   - Building or debugging native RemoteClaw plugins
   - Understanding the plugin capability model or ownership boundaries
   - Working on the plugin load pipeline or registry
   - Implementing provider runtime hooks or channel plugins
-title: "Plugin Architecture"
+title: "Plugin Internals"
+sidebarTitle: "Internals"
 ---
 
-# Plugin Architecture
+# Plugin Internals
 
-This page covers the internal architecture of the RemoteClaw plugin system. For
-user-facing setup, discovery, and configuration, see [Plugins](/tools/plugin).
+<Info>
+  This page is for **plugin developers and contributors**. If you just want to
+  install and use plugins, see [Plugins](/tools/plugin). If you want to build
+  a plugin, see [Building Plugins](/plugins/building-plugins).
+</Info>
+
+This page covers the internal architecture of the RemoteClaw plugin system.
 
 ## Public capability model
 
@@ -684,7 +690,10 @@ api.registerProvider({
   live-model policy.
 - OpenRouter uses `catalog` plus `resolveDynamicModel` and
   `prepareDynamicModel` because the provider is pass-through and may expose new
-  model ids before RemoteClaw's static catalog updates.
+  model ids before RemoteClaw's static catalog updates; it also uses
+  `capabilities`, `wrapStreamFn`, and `isCacheTtlEligible` to keep
+  provider-specific request headers, routing metadata, reasoning patches, and
+  prompt-cache policy out of core.
 - GitHub Copilot uses `catalog`, `auth`, `resolveDynamicModel`, and
   `capabilities` plus `prepareRuntimeAuth` and `fetchUsageSnapshot` because it
   needs provider-owned device login, model fallback behavior, Claude transcript
@@ -701,9 +710,6 @@ api.registerProvider({
   modern-model matching; Gemini CLI OAuth also uses `formatApiKey`,
   `resolveUsageAuth`, and `fetchUsageSnapshot` for token formatting, token
   parsing, and quota endpoint wiring.
-- OpenRouter uses `capabilities`, `wrapStreamFn`, and `isCacheTtlEligible`
-  to keep provider-specific request headers, routing metadata, reasoning
-  patches, and prompt-cache policy out of core.
 - Moonshot uses `catalog` plus `wrapStreamFn` because it still uses the shared
   OpenAI transport but needs provider-owned thinking payload normalization.
 - Kilocode uses `catalog`, `capabilities`, `wrapStreamFn`, and
@@ -923,10 +929,14 @@ Notes:
 Use SDK subpaths instead of the monolithic `remoteclaw/plugin-sdk` import when
 authoring plugins:
 
-- `remoteclaw/plugin-sdk/core` for the smallest generic plugin-facing contract.
-  It also carries small assembly helpers such as
-  `definePluginEntry`, `defineChannelPluginEntry`, `defineSetupPluginEntry`,
-  and `createChannelPluginBase` for bundled or third-party plugin entry wiring.
+- `remoteclaw/plugin-sdk/plugin-entry` for plugin registration primitives.
+- `remoteclaw/plugin-sdk/core` for the generic shared plugin-facing contract.
+- Stable channel primitives such as `remoteclaw/plugin-sdk/channel-setup`,
+  `remoteclaw/plugin-sdk/channel-pairing`,
+  `remoteclaw/plugin-sdk/channel-reply-pipeline`,
+  `remoteclaw/plugin-sdk/secret-input`, and
+  `remoteclaw/plugin-sdk/webhook-ingress` for shared setup/auth/reply/webhook
+  wiring.
 - Domain subpaths such as `remoteclaw/plugin-sdk/channel-config-helpers`,
   `remoteclaw/plugin-sdk/channel-config-schema`,
   `remoteclaw/plugin-sdk/channel-policy`,
@@ -939,12 +949,9 @@ authoring plugins:
   `remoteclaw/plugin-sdk/runtime-store`, and
   `remoteclaw/plugin-sdk/directory-runtime` for shared runtime/config helpers.
 - Narrow channel-core subpaths such as `remoteclaw/plugin-sdk/discord-core`,
-  `remoteclaw/plugin-sdk/telegram-core`, `remoteclaw/plugin-sdk/whatsapp-core`,
-  and `remoteclaw/plugin-sdk/line-core` for channel-specific primitives that
-  should stay smaller than the full channel helper barrels.
-- `remoteclaw/plugin-sdk/compat` remains as a legacy migration surface for older
-  external plugins. Bundled plugins should not use it, and non-test imports emit
-  a one-time deprecation warning outside test environments.
+  `remoteclaw/plugin-sdk/telegram-core`, and `remoteclaw/plugin-sdk/whatsapp-core`
+  for channel-specific primitives that should stay smaller than the full
+  channel helper barrels.
 - Bundled extension internals remain private. External plugins should use only
   `remoteclaw/plugin-sdk/*` subpaths. RemoteClaw core/test code may use the repo
   public entry points under `extensions/<id>/index.js`, `api.js`, `runtime-api.js`,
@@ -958,31 +965,24 @@ authoring plugins:
 - `remoteclaw/plugin-sdk/telegram` for Telegram channel plugin types and shared channel-facing helpers. Built-in Telegram implementation internals stay private to the bundled extension.
 - `remoteclaw/plugin-sdk/discord` for Discord channel plugin types and shared channel-facing helpers. Built-in Discord implementation internals stay private to the bundled extension.
 - `remoteclaw/plugin-sdk/slack` for Slack channel plugin types and shared channel-facing helpers. Built-in Slack implementation internals stay private to the bundled extension.
-- `remoteclaw/plugin-sdk/signal` for Signal channel plugin types and shared channel-facing helpers. Built-in Signal implementation internals stay private to the bundled extension.
 - `remoteclaw/plugin-sdk/imessage` for iMessage channel plugin types and shared channel-facing helpers. Built-in iMessage implementation internals stay private to the bundled extension.
 - `remoteclaw/plugin-sdk/whatsapp` for WhatsApp channel plugin types and shared channel-facing helpers. Built-in WhatsApp implementation internals stay private to the bundled extension.
-- `remoteclaw/plugin-sdk/line` for LINE channel plugins.
-- `remoteclaw/plugin-sdk/msteams` for the bundled Microsoft Teams plugin surface.
-- Additional bundled extension-specific subpaths remain available where RemoteClaw
-  intentionally exposes extension-facing helpers:
-  `remoteclaw/plugin-sdk/acpx`, `remoteclaw/plugin-sdk/bluebubbles`,
-  `remoteclaw/plugin-sdk/feishu`, `remoteclaw/plugin-sdk/googlechat`,
-  `remoteclaw/plugin-sdk/irc`, `remoteclaw/plugin-sdk/lobster`,
-  `remoteclaw/plugin-sdk/matrix`,
-  `remoteclaw/plugin-sdk/mattermost`, `remoteclaw/plugin-sdk/memory-core`,
-  `remoteclaw/plugin-sdk/minimax-portal-auth`,
-  `remoteclaw/plugin-sdk/nextcloud-talk`, `remoteclaw/plugin-sdk/nostr`,
-  `remoteclaw/plugin-sdk/synology-chat`, `remoteclaw/plugin-sdk/test-utils`,
-  `remoteclaw/plugin-sdk/tlon`, `remoteclaw/plugin-sdk/twitch`,
-  `remoteclaw/plugin-sdk/voice-call`,
-  `remoteclaw/plugin-sdk/zalo`, and `remoteclaw/plugin-sdk/zalouser`.
+- `remoteclaw/plugin-sdk/bluebubbles` remains public because it carries a small
+  focused helper surface that is shared intentionally.
 
 Compatibility note:
 
-- `remoteclaw/plugin-sdk` remains supported for existing external plugins.
-- New and migrated bundled plugins should use channel or extension-specific
-  subpaths; use `core` plus explicit domain subpaths for generic surfaces, and
-  treat `compat` as migration-only.
+- Avoid the root `remoteclaw/plugin-sdk` barrel for new code.
+- Prefer the narrow stable primitives first. The newer setup/pairing/reply/
+  secret-input/webhook subpaths are the intended contract for new bundled and
+  external plugin work.
+- Bundled extension-specific helper barrels are not stable by default. If a
+  helper is only needed by a bundled extension, keep it behind the extension's
+  local `api.js` or `runtime-api.js` seam instead of promoting it into
+  `remoteclaw/plugin-sdk/<extension>`.
+- Channel-branded bundled bars such as `feishu`, `googlechat`, `irc`, `line`,
+  `nostr`, `twitch`, and `zalo` stay private unless they are explicitly added
+  back to the public contract.
 - Capability-specific subpaths such as `image-generation`,
   `media-understanding`, and `speech` exist because bundled/native plugins use
   them today. Their presence does not by itself mean every exported helper is a
@@ -994,7 +994,7 @@ Plugins should own channel-specific `describeMessageTool(...)` schema
 contributions. Keep provider-specific fields in the plugin, not in shared core.
 
 For shared portable schema fragments, reuse the generic helpers exported through
-`openclaw/plugin-sdk/channel-runtime`:
+`remoteclaw/plugin-sdk/channel-runtime`:
 
 - `createMessageToolButtonsSchema()` for button-grid style payloads
 - `createMessageToolCardSchema()` for structured card payloads

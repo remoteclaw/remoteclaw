@@ -4,6 +4,13 @@ export type {
   RemoteClawPluginService,
   ProviderAuthContext,
   ProviderAuthResult,
+  OpenClawPluginToolContext,
+  OpenClawPluginToolFactory,
+  OpenClawPluginCommandDefinition,
+  OpenClawPluginDefinition,
+  PluginCommandContext,
+  PluginLogger,
+  PluginInteractiveTelegramHandlerContext,
 } from "../plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export type { ChannelMessageActionContext } from "../channels/plugins/types.js";

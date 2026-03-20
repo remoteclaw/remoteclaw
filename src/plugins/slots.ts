@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { PluginSlotsConfig } from "../config/types.plugins.js";
 import type { PluginKind } from "./types.js";
 
@@ -9,15 +9,9 @@ type SlotPluginRecord = {
   kind?: PluginKind;
 };
 
-const SLOT_BY_KIND: Record<PluginKind, PluginSlotKey> = {
-  memory: "memory",
-  "context-engine": "contextEngine",
-};
+const SLOT_BY_KIND: Partial<Record<string, PluginSlotKey>> = {};
 
-const DEFAULT_SLOT_BY_KEY: Record<PluginSlotKey, string> = {
-  memory: "memory-core",
-  contextEngine: "legacy",
-};
+const DEFAULT_SLOT_BY_KEY: Partial<Record<PluginSlotKey, string>> = {};
 
 export function slotKeyForPluginKind(kind?: PluginKind): PluginSlotKey | null {
   if (!kind) {
@@ -26,18 +20,18 @@ export function slotKeyForPluginKind(kind?: PluginKind): PluginSlotKey | null {
   return SLOT_BY_KIND[kind] ?? null;
 }
 
-export function defaultSlotIdForKey(slotKey: PluginSlotKey): string {
+export function defaultSlotIdForKey(slotKey: PluginSlotKey): string | undefined {
   return DEFAULT_SLOT_BY_KEY[slotKey];
 }
 
 export type SlotSelectionResult = {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   warnings: string[];
   changed: boolean;
 };
 
 export function applyExclusiveSlotSelection(params: {
-  config: OpenClawConfig;
+  config: RemoteClawConfig;
   selectedId: string;
   selectedKind?: PluginKind;
   registry?: { plugins: SlotPluginRecord[] };

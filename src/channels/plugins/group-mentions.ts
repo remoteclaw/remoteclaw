@@ -10,7 +10,7 @@ import type {
   GroupToolPolicyConfig,
 } from "../../config/types.tools.js";
 import { normalizeAtHashSlug, normalizeHyphenSlug } from "../../shared/string-normalization.js";
-import { inspectSlackAccount } from "../../slack/account-inspect.js";
+import { resolveSlackAccount } from "../../slack/accounts.js";
 import type { ChannelGroupContext } from "./types.js";
 
 type GroupMentionParams = ChannelGroupContext;
@@ -130,7 +130,7 @@ type ChannelGroupPolicyChannel =
 function resolveSlackChannelPolicyEntry(
   params: GroupMentionParams,
 ): SlackChannelPolicyEntry | undefined {
-  const account = inspectSlackAccount({
+  const account = resolveSlackAccount({
     cfg: params.cfg,
     accountId: params.accountId,
   });

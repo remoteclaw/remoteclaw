@@ -8,8 +8,6 @@ import {
 } from "../channels/telegram/allow-from.js";
 import { fetchTelegramChatId } from "../channels/telegram/api.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import { resolveCommandSecretRefsViaGateway } from "../cli/command-secret-gateway.js";
-import { getChannelsCommandSecretTargetIds } from "../cli/command-secret-targets.js";
 import { listRouteBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { CONFIG_PATH, migrateLegacyConfig, readConfigFileSnapshot } from "../config/config.js";
@@ -37,7 +35,6 @@ import {
   isMattermostMutableAllowEntry,
   isSlackMutableAllowEntry,
 } from "../security/mutable-allowlist-detectors.js";
-import { inspectTelegramAccount } from "../telegram/account-inspect.js";
 import { listTelegramAccountIds, resolveTelegramAccount } from "../telegram/accounts.js";
 import { note } from "../terminal/note.js";
 import { resolveHomeDir } from "../utils.js";
@@ -426,20 +423,10 @@ async function maybeRepairTelegramAllowFromUsernames(cfg: RemoteClawConfig): Pro
     return { config: cfg, changes: [] };
   }
 
-  const { resolvedConfig } = await resolveCommandSecretRefsViaGateway({
-    config: cfg,
-    commandName: "doctor --fix",
-    targetIds: getChannelsCommandSecretTargetIds(),
-    mode: "summary",
-  });
-  const hasConfiguredUnavailableToken = listTelegramAccountIds(cfg).some((accountId) => {
-    const inspected = inspectTelegramAccount({ cfg, accountId });
-    return inspected.enabled && inspected.tokenStatus === "configured_unavailable";
-  });
   const tokens = Array.from(
     new Set(
-      listTelegramAccountIds(resolvedConfig)
-        .map((accountId) => resolveTelegramAccount({ cfg: resolvedConfig, accountId }))
+      listTelegramAccountIds(cfg)
+        .map((accountId) => resolveTelegramAccount({ cfg, accountId }))
         .map((account) => (account.tokenSource === "none" ? "" : account.token))
         .map((token) => token.trim())
         .filter(Boolean),
@@ -450,9 +437,7 @@ async function maybeRepairTelegramAllowFromUsernames(cfg: RemoteClawConfig): Pro
     return {
       config: cfg,
       changes: [
-        hasConfiguredUnavailableToken
-          ? `- Telegram allowFrom contains @username entries, but configured Telegram bot credentials are unavailable in this command path; cannot auto-resolve (start the gateway or make the secret source available, then rerun doctor --fix).`
-          : `- Telegram allowFrom contains @username entries, but no Telegram bot token is configured; cannot auto-resolve (run onboarding or replace with numeric sender IDs).`,
+        `- Telegram allowFrom contains @username entries, but no Telegram bot token is configured; cannot auto-resolve (run onboarding or replace with numeric sender IDs).`,
       ],
     };
   }

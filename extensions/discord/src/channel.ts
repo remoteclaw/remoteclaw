@@ -10,7 +10,6 @@ import {
   DiscordConfigSchema,
   formatPairingApproveHint,
   getChatChannelMeta,
-  inspectDiscordAccount,
   listDiscordAccountIds,
   listDiscordDirectoryGroupsFromConfig,
   listDiscordDirectoryPeersFromConfig,
@@ -20,8 +19,6 @@ import {
   normalizeDiscordMessagingTarget,
   normalizeDiscordOutboundTarget,
   PAIRING_APPROVED_MESSAGE,
-  projectCredentialSnapshotFields,
-  resolveConfiguredFromCredentialStatuses,
   resolveDiscordAccount,
   resolveDefaultDiscordAccountId,
   resolveDiscordGroupRequireMention,
@@ -83,7 +80,6 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
   config: {
     listAccountIds: (cfg) => listDiscordAccountIds(cfg),
     resolveAccount: (cfg, accountId) => resolveDiscordAccount({ cfg, accountId }),
-    inspectAccount: (cfg, accountId) => inspectDiscordAccount({ cfg, accountId }),
     defaultAccountId: (cfg) => resolveDefaultDiscordAccountId(cfg),
     setAccountEnabled: ({ cfg, accountId, enabled }) =>
       setAccountEnabledInConfigSection({
@@ -394,8 +390,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
       return { ...audit, unresolvedChannels };
     },
     buildAccountSnapshot: ({ account, runtime, probe, audit }) => {
-      const configured =
-        resolveConfiguredFromCredentialStatuses(account) ?? Boolean(account.token?.trim());
+      const configured = Boolean(account.token?.trim());
       const app = runtime?.application ?? (probe as { application?: unknown })?.application;
       const bot = runtime?.bot ?? (probe as { bot?: unknown })?.bot;
       return {
@@ -403,7 +398,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
         name: account.name,
         enabled: account.enabled,
         configured,
-        ...projectCredentialSnapshotFields(account),
+        tokenSource: account.tokenSource,
         running: runtime?.running ?? false,
         lastStartAt: runtime?.lastStartAt ?? null,
         lastStopAt: runtime?.lastStopAt ?? null,

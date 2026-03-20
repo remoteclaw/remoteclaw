@@ -88,6 +88,24 @@ describe("resolveTelegramToken", () => {
     expect(res.token).toBe("acct-token");
     expect(res.source).toBe("config");
   });
+
+  it("does not fall through to channel-level token when non-default accountId is not in config", () => {
+    vi.stubEnv("TELEGRAM_BOT_TOKEN", "");
+    const cfg = {
+      channels: {
+        telegram: {
+          botToken: "wrong-bot-token",
+          accounts: {
+            knownBot: { botToken: "known-bot-token" },
+          },
+        },
+      },
+    } as RemoteClawConfig;
+
+    const res = resolveTelegramToken(cfg, { accountId: "unknownBot" });
+    expect(res.token).toBe("");
+    expect(res.source).toBe("none");
+  });
 });
 
 describe("telegram update offset store", () => {

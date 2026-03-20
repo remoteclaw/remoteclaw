@@ -1,15 +1,23 @@
 import { type Bot, GrammyError, InputFile } from "grammy";
-import { chunkMarkdownTextWithMode, type ChunkMode } from "../../../../src/auto-reply/chunk.js";
-import type { ReplyPayload } from "../../../../src/auto-reply/types.js";
-import type { ReplyToMode } from "../../../../src/config/config.js";
-import type { MarkdownTableMode } from "../../../../src/config/types.base.js";
-import { danger, logVerbose } from "../../../../src/globals.js";
-import { formatErrorMessage } from "../../../../src/infra/errors.js";
-import { buildOutboundMediaLoadOptions } from "../../../../src/media/load-options.js";
-import { isGifMedia, kindFromMime } from "../../../../src/media/mime.js";
-import { getGlobalHookRunner } from "../../../../src/plugins/hook-runner-global.js";
-import type { RuntimeEnv } from "../../../../src/runtime.js";
-import { loadWebMedia } from "../../../whatsapp/src/media.js";
+import type { ReplyToMode } from "remoteclaw/plugin-sdk/config-runtime";
+import type { MarkdownTableMode } from "remoteclaw/plugin-sdk/config-runtime";
+import { fireAndForgetHook } from "remoteclaw/plugin-sdk/hook-runtime";
+import { createInternalHookEvent, triggerInternalHook } from "remoteclaw/plugin-sdk/hook-runtime";
+import {
+  buildCanonicalSentMessageHookContext,
+  toInternalMessageSentContext,
+  toPluginMessageContext,
+  toPluginMessageSentEvent,
+} from "remoteclaw/plugin-sdk/hook-runtime";
+import { formatErrorMessage } from "remoteclaw/plugin-sdk/infra-runtime";
+import { buildOutboundMediaLoadOptions } from "remoteclaw/plugin-sdk/media-runtime";
+import { isGifMedia, kindFromMime } from "remoteclaw/plugin-sdk/media-runtime";
+import { getGlobalHookRunner } from "remoteclaw/plugin-sdk/plugin-runtime";
+import type { ReplyPayload } from "remoteclaw/plugin-sdk/reply-runtime";
+import { chunkMarkdownTextWithMode, type ChunkMode } from "remoteclaw/plugin-sdk/reply-runtime";
+import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import { danger, logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
+import { loadWebMedia } from "remoteclaw/plugin-sdk/web-media";
 import type { TelegramInlineButtons } from "../button-types.js";
 import { splitTelegramCaption } from "../caption.js";
 import {
@@ -230,6 +238,7 @@ async function deliverMediaReply(params: {
   tableMode?: MarkdownTableMode;
   mediaLocalRoots?: readonly string[];
   chunkText: ChunkTextFn;
+  mediaLoader: typeof loadWebMedia;
   onVoiceRecording?: () => Promise<void> | void;
   linkPreview?: boolean;
   silent?: boolean;
@@ -244,7 +253,7 @@ async function deliverMediaReply(params: {
   let pendingFollowUpText: string | undefined;
   for (const mediaUrl of params.mediaList) {
     const isFirstMedia = first;
-    const media = await loadWebMedia(
+    const media = await params.mediaLoader(
       mediaUrl,
       buildOutboundMediaLoadOptions({ mediaLocalRoots: params.mediaLocalRoots }),
     );
@@ -482,10 +491,82 @@ async function maybePinFirstDeliveredMessage(params: {
   }
 }
 
+type EmitMessageSentHookParams = {
+  sessionKeyForInternalHooks?: string;
+  chatId: string;
+  accountId?: string;
+  content: string;
+  success: boolean;
+  error?: string;
+  messageId?: number;
+  isGroup?: boolean;
+  groupId?: string;
+};
+
+function buildTelegramSentHookContext(params: EmitMessageSentHookParams) {
+  return buildCanonicalSentMessageHookContext({
+    to: params.chatId,
+    content: params.content,
+    success: params.success,
+    error: params.error,
+    channelId: "telegram",
+    accountId: params.accountId,
+    conversationId: params.chatId,
+    messageId: typeof params.messageId === "number" ? String(params.messageId) : undefined,
+    isGroup: params.isGroup,
+    groupId: params.groupId,
+  });
+}
+
+export function emitInternalMessageSentHook(params: EmitMessageSentHookParams): void {
+  if (!params.sessionKeyForInternalHooks) {
+    return;
+  }
+  const canonical = buildTelegramSentHookContext(params);
+  fireAndForgetHook(
+    triggerInternalHook(
+      createInternalHookEvent(
+        "message",
+        "sent",
+        params.sessionKeyForInternalHooks,
+        toInternalMessageSentContext(canonical),
+      ),
+    ),
+    "telegram: message:sent internal hook failed",
+  );
+}
+
+function emitMessageSentHooks(
+  params: EmitMessageSentHookParams & {
+    hookRunner: ReturnType<typeof getGlobalHookRunner>;
+    enabled: boolean;
+  },
+): void {
+  if (!params.enabled && !params.sessionKeyForInternalHooks) {
+    return;
+  }
+  const canonical = buildTelegramSentHookContext(params);
+  if (params.enabled) {
+    fireAndForgetHook(
+      Promise.resolve(
+        params.hookRunner!.runMessageSent(
+          toPluginMessageSentEvent(canonical),
+          toPluginMessageContext(canonical),
+        ),
+      ),
+      "telegram: message_sent plugin hook failed",
+    );
+  }
+  emitInternalMessageSentHook(params);
+}
+
 export async function deliverReplies(params: {
   replies: ReplyPayload[];
   chatId: string;
   accountId?: string;
+  sessionKeyForInternalHooks?: string;
+  mirrorIsGroup?: boolean;
+  mirrorGroupId?: string;
   token: string;
   runtime: RuntimeEnv;
   bot: Bot;
@@ -503,12 +584,15 @@ export async function deliverReplies(params: {
   silent?: boolean;
   /** Optional quote text for Telegram reply_parameters. */
   replyQuoteText?: string;
+  /** Override media loader (tests). */
+  mediaLoader?: typeof loadWebMedia;
 }): Promise<{ delivered: boolean }> {
   const progress: DeliveryProgress = {
     hasReplied: false,
     hasDelivered: false,
     deliveredCount: 0,
   };
+  const mediaLoader = params.mediaLoader ?? loadWebMedia;
   const hookRunner = getGlobalHookRunner();
   const hasMessageSendingHooks = hookRunner?.hasHooks("message_sending") ?? false;
   const hasMessageSentHooks = hookRunner?.hasHooks("message_sent") ?? false;
@@ -597,6 +681,7 @@ export async function deliverReplies(params: {
           tableMode: params.tableMode,
           mediaLocalRoots: params.mediaLocalRoots,
           chunkText,
+          mediaLoader,
           onVoiceRecording: params.onVoiceRecording,
           linkPreview: params.linkPreview,
           silent: params.silent,
@@ -615,37 +700,31 @@ export async function deliverReplies(params: {
         firstDeliveredMessageId,
       });
 
-      if (hasMessageSentHooks) {
-        const deliveredThisReply = progress.deliveredCount > deliveredCountBeforeReply;
-        void hookRunner?.runMessageSent(
-          {
-            to: params.chatId,
-            content: contentForSentHook,
-            success: deliveredThisReply,
-          },
-          {
-            channelId: "telegram",
-            accountId: params.accountId,
-            conversationId: params.chatId,
-          },
-        );
-      }
+      emitMessageSentHooks({
+        hookRunner,
+        enabled: hasMessageSentHooks,
+        sessionKeyForInternalHooks: params.sessionKeyForInternalHooks,
+        chatId: params.chatId,
+        accountId: params.accountId,
+        content: contentForSentHook,
+        success: progress.deliveredCount > deliveredCountBeforeReply,
+        messageId: firstDeliveredMessageId,
+        isGroup: params.mirrorIsGroup,
+        groupId: params.mirrorGroupId,
+      });
     } catch (error) {
-      if (hasMessageSentHooks) {
-        void hookRunner?.runMessageSent(
-          {
-            to: params.chatId,
-            content: contentForSentHook,
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-          },
-          {
-            channelId: "telegram",
-            accountId: params.accountId,
-            conversationId: params.chatId,
-          },
-        );
-      }
+      emitMessageSentHooks({
+        hookRunner,
+        enabled: hasMessageSentHooks,
+        sessionKeyForInternalHooks: params.sessionKeyForInternalHooks,
+        chatId: params.chatId,
+        accountId: params.accountId,
+        content: contentForSentHook,
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        isGroup: params.mirrorIsGroup,
+        groupId: params.mirrorGroupId,
+      });
       throw error;
     }
   }

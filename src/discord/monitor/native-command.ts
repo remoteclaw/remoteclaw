@@ -73,7 +73,7 @@ type DiscordConfig = NonNullable<RemoteClawConfig["channels"]>["discord"];
 const log = createSubsystemLogger("discord/native-command");
 
 function resolveDiscordNativeCommandAllowlistAccess(params: {
-  cfg: OpenClawConfig;
+  cfg: RemoteClawConfig;
   accountId?: string | null;
   sender: { id: string; name?: string; tag?: string };
   chatType: "direct" | "group" | "thread" | "channel";

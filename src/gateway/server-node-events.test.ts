@@ -315,7 +315,9 @@ describe("voice transcript events", () => {
   });
 
   it("forwards transcript with voice provenance", async () => {
+    const addChatRun = vi.fn();
     const ctx = buildCtx();
+    ctx.addChatRun = addChatRun;
 
     await handleNodeEvent(ctx, "node-v2", {
       event: "voice.transcript",
@@ -337,6 +339,12 @@ describe("voice transcript events", () => {
         sourceTool: "gateway.voice.transcript",
       },
     });
+    expect(typeof opts.runId).toBe("string");
+    expect(opts.runId).not.toBe(opts.sessionId);
+    expect(addChatRun).toHaveBeenCalledWith(
+      opts.runId,
+      expect.objectContaining({ clientRunId: expect.stringMatching(/^voice-/) }),
+    );
   });
 
   it("does not block agent dispatch when session-store touch fails", async () => {
@@ -562,5 +570,6 @@ describe("agent request events", () => {
       channel: "telegram",
       to: "123",
     });
+    expect(opts.runId).toBe(opts.sessionId);
   });
 });

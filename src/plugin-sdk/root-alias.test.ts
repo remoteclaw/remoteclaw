@@ -33,7 +33,80 @@ describe("plugin-sdk root alias", () => {
     expect(Object.getOwnPropertyDescriptor(rootSdk, Symbol.toStringTag)).toBeUndefined();
   });
 
-  it("loads legacy root exports lazily through the proxy", { timeout: 240_000 }, () => {
+  it("does not load the monolithic sdk for promise-like or symbol reflection probes", () => {
+    const lazyModule = loadRootAliasWithStubs();
+    const lazyRootSdk = lazyModule.moduleExports;
+
+    expect("then" in lazyRootSdk).toBe(false);
+    expect(Reflect.get(lazyRootSdk, Symbol.toStringTag)).toBeUndefined();
+    expect(Object.getOwnPropertyDescriptor(lazyRootSdk, Symbol.toStringTag)).toBeUndefined();
+    expect(lazyModule.createJitiCalls).toBe(0);
+    expect(lazyModule.jitiLoadCalls).toBe(0);
+  });
+
+  it("loads legacy root exports on demand and preserves reflection", () => {
+    const lazyModule = loadRootAliasWithStubs({
+      monolithicExports: {
+        slowHelper: () => "loaded",
+      },
+    });
+    const lazyRootSdk = lazyModule.moduleExports;
+
+    expect(lazyModule.createJitiCalls).toBe(0);
+    expect("slowHelper" in lazyRootSdk).toBe(true);
+    expect(lazyModule.createJitiCalls).toBe(1);
+    expect(lazyModule.jitiLoadCalls).toBe(1);
+    expect(lazyModule.createJitiOptions.at(-1)?.tryNative).toBe(false);
+    expect((lazyRootSdk.slowHelper as () => string)()).toBe("loaded");
+    expect(Object.keys(lazyRootSdk)).toContain("slowHelper");
+    expect(Object.getOwnPropertyDescriptor(lazyRootSdk, "slowHelper")).toBeDefined();
+  });
+
+  it("prefers native loading when compat resolves to dist", () => {
+    const lazyModule = loadRootAliasWithStubs({
+      distExists: true,
+      monolithicExports: {
+        slowHelper: () => "loaded",
+      },
+    });
+
+    expect((lazyModule.moduleExports.slowHelper as () => string)()).toBe("loaded");
+    expect(lazyModule.createJitiOptions.at(-1)?.tryNative).toBe(true);
+  });
+
+  it("forwards delegateCompactionToRuntime through the compat-backed root alias", () => {
+    const delegateCompactionToRuntime = () => "delegated";
+    const lazyModule = loadRootAliasWithStubs({
+      monolithicExports: {
+        delegateCompactionToRuntime,
+      },
+    });
+    const lazyRootSdk = lazyModule.moduleExports;
+
+    expect(typeof lazyRootSdk.delegateCompactionToRuntime).toBe("function");
+    expect(lazyRootSdk.delegateCompactionToRuntime).toBe(delegateCompactionToRuntime);
+    expect("delegateCompactionToRuntime" in lazyRootSdk).toBe(true);
+  });
+
+  it("forwards onDiagnosticEvent through the compat-backed root alias", () => {
+    const onDiagnosticEvent = () => () => undefined;
+    const lazyModule = loadRootAliasWithStubs({
+      monolithicExports: {
+        onDiagnosticEvent,
+      },
+    });
+    const lazyRootSdk = lazyModule.moduleExports;
+
+    expect(typeof lazyRootSdk.onDiagnosticEvent).toBe("function");
+    expect(
+      typeof (lazyRootSdk.onDiagnosticEvent as (listener: () => void) => () => void)(
+        () => undefined,
+      ),
+    ).toBe("function");
+    expect("onDiagnosticEvent" in lazyRootSdk).toBe(true);
+  });
+
+  it("loads legacy root exports through the merged root wrapper", { timeout: 240_000 }, () => {
     expect(typeof rootSdk.resolveControlCommandGate).toBe("function");
     expect(typeof rootSdk.default).toBe("object");
     expect(rootSdk.default).toBe(rootSdk);

@@ -4,8 +4,8 @@ import {
   resolveLineAccount,
   type ChannelSetupAdapter,
   type LineConfig,
-  type RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/line-core";
+} from "openclaw/plugin-sdk/line-core";
+import type { ChannelSetupAdapter, OpenClawConfig } from "openclaw/plugin-sdk/setup";
 
 const channel = "line" as const;
 

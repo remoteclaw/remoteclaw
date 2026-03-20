@@ -91,9 +91,15 @@ const statusHelpersSdk = await import("remoteclaw/plugin-sdk/status-helpers");
 describe("plugin-sdk subpath exports", () => {
   it("keeps the curated public list free of internal implementation subpaths", () => {
     expect(pluginSdkSubpaths).not.toContain("compat");
+    expect(pluginSdkSubpaths).not.toContain("device-pair");
+    expect(pluginSdkSubpaths).not.toContain("google");
+    expect(pluginSdkSubpaths).not.toContain("lobster");
     expect(pluginSdkSubpaths).not.toContain("pairing-access");
     expect(pluginSdkSubpaths).not.toContain("reply-prefix");
+    expect(pluginSdkSubpaths).not.toContain("signal-core");
+    expect(pluginSdkSubpaths).not.toContain("synology-chat");
     expect(pluginSdkSubpaths).not.toContain("typing");
+    expect(pluginSdkSubpaths).not.toContain("zai");
     expect(pluginSdkSubpaths).not.toContain("provider-model-definitions");
   });
 

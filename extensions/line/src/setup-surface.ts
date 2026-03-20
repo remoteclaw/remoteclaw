@@ -1,4 +1,3 @@
-import { createAllowFromSection, createTopLevelChannelDmPolicy } from "remoteclaw/plugin-sdk/setup";
 import {
   DEFAULT_ACCOUNT_ID,
   formatDocsLink,
@@ -8,7 +7,8 @@ import {
   splitSetupEntries,
   type ChannelSetupDmPolicy,
   type ChannelSetupWizard,
-} from "remoteclaw/plugin-sdk/line-core";
+} from "openclaw/plugin-sdk/line-core";
+import { createAllowFromSection, createTopLevelChannelDmPolicy } from "openclaw/plugin-sdk/setup";
 import {
   isLineConfigured,
   listLineAccountIds,

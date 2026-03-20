@@ -25,11 +25,11 @@ describe("Kilo Gateway provider config", () => {
     });
 
     it("KILOCODE_DEFAULT_MODEL_REF includes provider prefix", () => {
-      expect(KILOCODE_DEFAULT_MODEL_REF).toBe("kilocode/anthropic/claude-opus-4.6");
+      expect(KILOCODE_DEFAULT_MODEL_REF).toBe("kilocode/kilo/auto");
     });
 
-    it("KILOCODE_DEFAULT_MODEL_ID is anthropic/claude-opus-4.6", () => {
-      expect(KILOCODE_DEFAULT_MODEL_ID).toBe("anthropic/claude-opus-4.6");
+    it("KILOCODE_DEFAULT_MODEL_ID is kilo/auto", () => {
+      expect(KILOCODE_DEFAULT_MODEL_ID).toBe("kilo/auto");
     });
   });
 
@@ -37,7 +37,7 @@ describe("Kilo Gateway provider config", () => {
     it("returns correct model shape", () => {
       const model = buildKilocodeModelDefinition();
       expect(model.id).toBe(KILOCODE_DEFAULT_MODEL_ID);
-      expect(model.name).toBe("Claude Opus 4.6");
+      expect(model.name).toBe("Kilo Auto");
       expect(model.reasoning).toBe(true);
       expect(model.input).toEqual(["text", "image"]);
       expect(model.contextWindow).toBe(KILOCODE_DEFAULT_CONTEXT_WINDOW);
